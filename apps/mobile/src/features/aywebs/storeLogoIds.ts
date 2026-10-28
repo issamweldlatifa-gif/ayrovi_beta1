@@ -2,9 +2,9 @@
  * Quelles boutiques ont un logo OFFICIEL embarqué dans l'application ?
  *
  * ── Pourquoi cette liste existe (27/10/2026) ─────────────────────────────────
- * Le registre déclare `logo: '/stores/<id>.png'`, mais ce dossier n'a jamais été
- * servi : chaque carte de boutique affichait donc son initiale, pas sa marque.
- * Le client a envoyé les logos officiels et demandé « un logo par boutique ».
+ * Le registre déclare `logo: '/stores/<id>.png'` (vignettes du catalogue web
+ * sous `client/public/stores/`), tandis que les dix-neuf enseignes phares
+ * disposent de cartes-logo 3:4 haute définition embarquées en clair et sombre.
  *
  * Deux conséquences :
  *   1. les fichiers vivent dans `assets/aywebs/brands/` (thème clair) et

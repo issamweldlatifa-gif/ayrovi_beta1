@@ -14,7 +14,7 @@
  * La recherche porte sur le NOM et le domaine de la boutique, côté appareil,
  * sur le catalogue du serveur : aucune boutique codée en dur ici.
  */
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Linking, Pressable, StyleSheet, TextInput, useWindowDimensions, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
@@ -101,9 +101,9 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
     );
   };
 
-  /** Grille de cartes : `columns` par rangée, les rangées incomplètes gardent la même largeur. */
-  const renderGrid = (list: AyWebsStore[]) => chunkRows(list, columns).map((row, index) => (
-    <View key={`row-${index}`} style={[styles.gridRow, { gap: GRID_GAP }]}>
+  /** Grille de cartes : `columns` par rangée, identifiées par les boutiques qu'elles portent. */
+  const renderGrid = (list: AyWebsStore[]) => chunkRows(list, columns).map((row) => (
+    <View key={row.map((item) => item.id).join(':')} style={[styles.gridRow, { gap: GRID_GAP }]}>
       {row.map(renderCard)}
       {Array.from({ length: columns - row.length }, (_, pad) => (
         <View key={`pad-${pad}`} style={styles.gridPad} />
@@ -202,8 +202,12 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
      transparent, donc la plaque reste celle du design system. */
   const brand = storeLogoSources(store, theme.mode);
   /* Même repli qu'à l'accueil : un logo serveur introuvable affiche l'initiale,
-     jamais un cadre cassé. */
+     jamais un cadre cassé. Réinitialisé dès que l'identité de la boutique change. */
   const [remoteFailed, setRemoteFailed] = useState(false);
+  useEffect(() => {
+    setRemoteFailed(false);
+  }, [store.id, store.logo]);
+  const canShowLogo = Boolean(brand) || (Boolean(logo) && !remoteFailed);
   const domain = storeDomain(store);
   const visitUrl = storeVisitUrl(store);
   return (
@@ -230,10 +234,11 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
         ]}
         testID={`aywebs-store-media-${store.id}`}
       >
-        {(brand || logo) && !remoteFailed ? (
+        {canShowLogo ? (
           <AppImage
-            uri={logo}
+            uri={brand ? null : logo}
             localSource={brand?.source}
+            recyclingKey={`store:${store.id}:${theme.mode}:${brand ? 'embedded' : (logo ?? '')}`}
             onError={() => setRemoteFailed(true)}
             style={styles.cardLogo}
             /* Même règle qu'à l'accueil : la carte-logo 3:4 remplit la plaque

@@ -220,15 +220,28 @@ jobs:
 
       - name: Identifiant + libellé de la démo (dans la CI uniquement)
         working-directory: apps/mobile/android
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           set -euo pipefail
+          # `versionCode` strictement croissant pour `app.ayrovi.mobile.demo` :
+          # sur Android, Glide signe son cache disque de `R.drawable.*` avec
+          # `PackageInfo.versionCode` uniquement (`ApplicationVersionSignature`).
+          # Si deux APK démo gardent le même `versionCode` alors qu'un visuel a
+          # été ajouté/retiré sous `assets/`, les entiers `R.drawable` se
+          # décalent et Glide sert les anciens logos inversés. Ce code monotone
+          # (> 15, distinct à chaque run/tentative) invalide nativement le cache.
+          DEMO_VERSION_CODE=$(( (100000 + ${RUN_NUMBER:-1}) * 10 + ${RUN_ATTEMPT:-1} ))
           sed -i "s/applicationId 'app.ayrovi.mobile'/applicationId 'app.ayrovi.mobile.demo'/" app/build.gradle
+          sed -i -E "s/versionCode[[:space:]]+[0-9]+/versionCode ${DEMO_VERSION_CODE}/" app/build.gradle
           sed -i 's|<string name="app_name">ZAYROVI</string>|<string name="app_name">ZAYROVI Démo</string>|' app/src/main/res/values/strings.xml
           # Vérification réelle : si le motif avait changé, on échoue AU LIEU de
           # produire un APK qui écraserait l'application installée.
           grep -q "applicationId 'app.ayrovi.mobile.demo'" app/build.gradle
+          grep -q "versionCode ${DEMO_VERSION_CODE}" app/build.gradle
           grep -q '<string name="app_name">ZAYROVI Démo</string>' app/src/main/res/values/strings.xml
-          grep -n "applicationId" app/build.gradle
+          grep -n "applicationId\|versionCode" app/build.gradle
           grep -n "app_name" app/src/main/res/values/strings.xml
 
       # `assembleRelease` produit un APK AUTONOME (bundle JS embarqué), signé

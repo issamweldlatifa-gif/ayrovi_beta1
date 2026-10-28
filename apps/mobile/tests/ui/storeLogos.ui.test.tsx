@@ -108,6 +108,8 @@ describe('logos officiels dans les cartes de boutique', () => {
     // `cover` sur une carte-logo au même rapport : le dessin touche les bords
     // sans être coupé, puisque le fichier et la plaque font tous deux 3:4.
     expect(logo.props.contentFit).toBe('cover');
+    expect(logo.props.cachePolicy).toBe('memory');
+    expect(logo.props.recyclingKey).toContain('store:nike:');
     expect(logo.props.source).toBeTruthy();
   });
 

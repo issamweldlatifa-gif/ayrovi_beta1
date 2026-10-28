@@ -15,9 +15,12 @@
  * `resizeMode` de React Native devient `contentFit` (même vocabulaire qu'Expo).
  */
 import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { Image as ExpoImage, type ImageStyle } from 'expo-image';
 import { StyleSheet, View, type StyleProp } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { computeImageCacheStamp, reconcileImageCacheStamp } from './imageCacheGuard';
 import { useTheme } from './theme';
 import { useT } from '@/i18n';
 
@@ -55,6 +58,11 @@ export interface AppImageProps {
   background?: string | null;
   /** Teinte native (`expo-image`) pour les pictogrammes/mots-symboles monochromes. */
   tintColor?: string | null;
+  /**
+   * Clé de recyclage native (`expo-image`) : vide immédiatement l'ancien bitmap
+   * lorsqu'une cellule recyclée change d'élément (boutique, produit, catégorie).
+   */
+  recyclingKey?: string | null;
   blurRadius?: number;
   /**
    * Appelé UNE fois quand l'image a définitivement échoué (après tous les
@@ -65,9 +73,34 @@ export interface AppImageProps {
   testID?: string;
 }
 
+let bootCacheCheckStarted = false;
+
+/**
+ * Purge une seule fois par lancement le cache disque `expo-image` lorsque la
+ * binaire APK/IPA a changé (évite toute collision d'anciens `R.drawable`).
+ */
+export function useImageCacheGuard(): void {
+  useEffect(() => {
+    if (bootCacheCheckStarted) return;
+    bootCacheCheckStarted = true;
+    const stamp = computeImageCacheStamp({
+      version: Constants.expoConfig?.version ?? null,
+      androidVersionCode: Constants.expoConfig?.android?.versionCode ?? null,
+      iosBuildNumber: Constants.expoConfig?.ios?.buildNumber ?? null,
+      buildStamp: process.env.EXPO_PUBLIC_BUILD_STAMP ?? null,
+    });
+    void reconcileImageCacheStamp({
+      stamp,
+      storage: AsyncStorage,
+      clearDiskCache: typeof ExpoImage.clearDiskCache === 'function' ? () => ExpoImage.clearDiskCache() : null,
+      clearMemoryCache: typeof ExpoImage.clearMemoryCache === 'function' ? () => ExpoImage.clearMemoryCache() : null,
+    });
+  }, []);
+}
+
 export function AppImage({
   uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', style,
-  accessibilityLabel, decorative = false, background, tintColor, blurRadius = 0, onSettled, onError, testID,
+  accessibilityLabel, decorative = false, background, tintColor, recyclingKey, blurRadius = 0, onSettled, onError, testID,
 }: AppImageProps) {
   const theme = useTheme();
   const t = useT();
@@ -117,13 +150,27 @@ export function AppImage({
     );
   }
 
+  const effectiveRecyclingKey =
+    recyclingKey !== undefined
+      ? (recyclingKey ?? undefined)
+      : localSource != null
+        ? `local:${String(localSource)}`
+        : (activeUri ?? undefined);
+
   return (
     <ExpoImage
       testID={testID}
       source={localSource ?? { uri: activeUri as string }}
       contentFit={contentFit}
+      /* Un `localSource` (`require(...)`) est déjà embarqué dans l'APK : le mettre
+         sur disque dans Glide (`CachePolicy.DISK` par défaut) est inutile et crée
+         des collisions d'entiers `R.drawable` entre deux builds de même
+         `versionCode`. `'memory'` active `DiskCacheStrategy.NONE` tout en gardant
+         le bitmap décodé en RAM pour le défilement. */
+      cachePolicy={localSource != null ? 'memory' : 'memory-disk'}
+      recyclingKey={effectiveRecyclingKey}
       tintColor={tintColor ?? undefined}
-      transition={theme.duration.fast}
+      transition={localSource != null ? 0 : theme.duration.fast}
       blurRadius={blurRadius}
       onError={onLoadError}
       onLoad={() => onSettled?.()}

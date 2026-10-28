@@ -29,6 +29,7 @@ import { useSessionId } from '@/session/session';
 import { LoadingScreen } from '@/design/LoadingScreen';
 import { NetworkBanner } from '@/design/NetworkBanner';
 import { AppErrorBoundary, RouteErrorBoundary } from '@/design/AppErrorBoundary';
+import { useImageCacheGuard } from '@/design/appImage';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Déjà masqué (rechargement à chaud) : sans effet, ne bloque pas le rendu.
@@ -65,6 +66,9 @@ function Navigation() {
   // une raison de rester sur l'écran de démarrage — on rend avec la police
   // système plutôt que de bloquer l'utilisateur sur un écran figé.
   const readyToPaint = ready && (fontsLoaded || Boolean(fontError));
+
+  // Purge le cache disque d'images si l'empreinte de build de l'APK a changé.
+  useImageCacheGuard();
 
   // Liens profonds : branchés une fois que la navigation existe, pas avant.
   useDeepLinkRouting(readyToPaint);

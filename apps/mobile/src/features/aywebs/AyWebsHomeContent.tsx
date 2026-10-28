@@ -26,7 +26,7 @@
  * Le champ de recherche reste sur la page : dès qu'il contient du texte, les
  * trois sections laissent la place aux résultats (mêmes cartes, même grille).
  */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -427,6 +427,7 @@ function CategoryTile({ category, selected, onPress }: {
         {artwork.source ? (
           <AppImage
             localSource={artwork.source}
+            recyclingKey={`aywebs-cat:${category.id}`}
             contentFit="cover"
             accessibilityLabel={label}
             testID={`aywebs-home-category-image-${category.id}`}
@@ -456,15 +457,15 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
   const name = storeDisplayName(store);
   const tagline = storeSubtitle(store, categories, locale === 'ar' ? 'ar' : 'fr');
   const logo = mediaUrl(store.logo);
-  /* Logo OFFICIEL embarqué (27/10/2026) : il passe avant le fichier serveur,
-     qui n'a jamais été servi. PNG transparent → il se pose sur la plaque du
-     design system ; seule une marque en couleur impose sa plaque. */
+  /* Logo OFFICIEL embarqué (3:4, clair + sombre) : prioritaire sur `/stores/<id>.png`. */
   const brand = storeLogoSources(store, theme.mode);
-  /* Le fichier `/stores/<id>.png` du serveur n'existe pas encore : s'il échoue,
-     on montre l'initiale plutôt qu'un cadre d'image cassée. */
   const [remoteFailed, setRemoteFailed] = useState(false);
+  useEffect(() => {
+    setRemoteFailed(false);
+  }, [store.id, store.logo]);
   const sessionId = useSessionId();
   const enabled = Boolean(storeTarget(store) && sessionId);
+  const canShowLogo = Boolean(brand) || (Boolean(logo) && !remoteFailed);
   return (
     <View style={styles.tile} testID={`aywebs-home-store-card-${store.id}`}>
       <View
@@ -477,10 +478,11 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
         ]}
         testID={`aywebs-home-store-media-${store.id}`}
       >
-        {(brand || logo) && !remoteFailed ? (
+        {canShowLogo ? (
           <AppImage
-            uri={logo}
+            uri={brand ? null : logo}
             localSource={brand?.source}
+            recyclingKey={`store:${store.id}:${theme.mode}:${brand ? 'embedded' : (logo ?? '')}`}
             onError={() => setRemoteFailed(true)}
             /* Les cartes-logo sont dessinées en 3:4 exactement comme la plaque :
                `cover` les fait toucher les quatre bords, sans bande grise ni
