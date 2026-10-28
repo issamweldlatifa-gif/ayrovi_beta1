@@ -1645,7 +1645,14 @@ export function normalizeAttributes(value: unknown): Record<string, string> | nu
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const out: Record<string, string> = {};
   for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
-    const name = String(key).trim().toLowerCase().replace(/[^a-z0-9_\-]/g, '').slice(0, 40);
+    const name = String(key)
+      .replace(/[\u0000-\u001f\u007f]/g, ' ')
+      .trim()
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s_\-]/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 60);
     const text = String(raw ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 120);
     if (name && text) out[name] = text;
   }

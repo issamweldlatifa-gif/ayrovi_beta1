@@ -56,6 +56,7 @@ export interface QuoteCombination {
   quotedPrice?: number | null;
   quotedCurrency?: string;
   availability?: string;
+  availabilityReason?: string;
 }
 
 export interface SelectionQuoteInput {
@@ -149,15 +150,18 @@ export function selectionQuote(input: SelectionQuoteInput): SelectionQuote {
   /* 3. Aucun devis par valeur : la combinaison exacte publiée par le SERVEUR
      (`variant_details`) — c'est ce que le web affiche sur ses cartes. */
   const combination = exactCombination(input.combinations, selection);
+  const combinationState: AvailabilityState = combination ? stateOf(combination.availability) : 'UNKNOWN';
+  const comboStockMatch = combination?.availabilityReason?.match(/:(\d{1,3})$/);
+  const combinationStock = comboStockMatch ? Number(comboStockMatch[1]) : null;
   if (!known.length) {
-    if (!combination || combination.totalTnd == null) return empty;
+    if (!combination || (combination.totalTnd == null && combinationState === 'UNKNOWN')) return empty;
     return {
-      unitTnd: combination.totalTnd,
-      sourcePrice: combination.quotedPrice ?? null,
-      sourceCurrency: combination.quotedPrice != null ? (combination.quotedCurrency || '') : '',
+      unitTnd: combinationState === 'OUT_OF_STOCK' ? null : combination.totalTnd,
+      sourcePrice: combinationState === 'OUT_OF_STOCK' ? null : (combination.quotedPrice ?? null),
+      sourceCurrency: combinationState !== 'OUT_OF_STOCK' && combination.quotedPrice != null ? (combination.quotedCurrency || '') : '',
       priceFrom: false,
-      availability: stateOf(combination.availability),
-      stock: null,
+      availability: combinationState,
+      stock: combinationState === 'OUT_OF_STOCK' ? null : combinationStock,
       fromValue: false,
     };
   }
@@ -167,35 +171,52 @@ export function selectionQuote(input: SelectionQuoteInput): SelectionQuote {
   /* Devis par valeur seulement si TOUTES les dimensions choisies sont
      couvertes : un prix de taille ne prouve pas le prix d'une couleur manquante. */
   const completeValueEvidence = known.length === chosen.length;
-  const unitTnd = completeValueEvidence && amounts.size === 1
+  const fromMarginalValue = completeValueEvidence && amounts.size === 1 && !known.some((entry) => entry.priceFrom);
+  const rawUnitTnd = fromMarginalValue
     ? prices[0]!.totalTnd
-    : (combination?.totalTnd ?? null);
+    : (combination?.totalTnd ?? (completeValueEvidence && amounts.size === 1 ? prices[0]!.totalTnd : null));
 
-  const merchant = known.filter((entry) => entry.sourcePrice != null);
+  const merchant = known.filter((entry) => entry.sourcePrice != null && !entry.priceFrom);
   const currency = merchant[0]?.currency || '';
   const sameAmount = merchant.every((entry) =>
     Math.abs((entry.sourcePrice as number) - (merchant[0]!.sourcePrice as number)) < 0.005);
-  const sourcePrice = merchant.length && sameAmount ? merchant[0]!.sourcePrice : null;
+  const marginalSourcePrice = merchant.length && sameAmount ? merchant[0]!.sourcePrice : null;
+  const rawSourcePrice = fromMarginalValue && marginalSourcePrice != null
+    ? marginalSourcePrice
+    : (combination?.quotedPrice ?? marginalSourcePrice);
+  const rawSourceCurrency = fromMarginalValue && marginalSourcePrice != null
+    ? currency
+    : (combination?.quotedPrice != null ? (combination.quotedCurrency || currency) : (marginalSourcePrice != null ? currency : ''));
 
   const stocks = known.map((entry) => entry.stock).filter((value): value is number => typeof value === 'number' && value > 0);
-  const stock = stocks.length ? Math.min(...stocks) : null;
+  const marginalStock = stocks.length ? Math.min(...stocks) : null;
 
   let availability: AvailabilityState;
-  if (known.some((entry) => entry.availability === 'OUT_OF_STOCK')) availability = 'OUT_OF_STOCK';
-  else if (known.length < chosen.length) availability = 'UNKNOWN';
-  else if (known.every((entry) => entry.availability === 'AVAILABLE')) availability = stock != null ? 'LOW_STOCK' : 'AVAILABLE';
-  else if (known.every((entry) => entry.availability === 'AVAILABLE' || entry.availability === 'LOW_STOCK')) {
+  if (known.some((entry) => entry.availability === 'OUT_OF_STOCK') || combinationState === 'OUT_OF_STOCK') {
+    availability = 'OUT_OF_STOCK';
+  } else if (combinationState === 'AVAILABLE' || combinationState === 'LOW_STOCK') {
+    availability = combinationStock != null && combinationStock <= 5 ? 'LOW_STOCK' : combinationState;
+  } else if (known.length < chosen.length) {
+    availability = 'UNKNOWN';
+  } else if (known.every((entry) => entry.availability === 'AVAILABLE')) {
+    availability = marginalStock != null ? 'LOW_STOCK' : 'AVAILABLE';
+  } else if (known.every((entry) => entry.availability === 'AVAILABLE' || entry.availability === 'LOW_STOCK')) {
     availability = 'LOW_STOCK';
-  } else availability = 'UNKNOWN';
+  } else {
+    availability = 'UNKNOWN';
+  }
+
+  const effectiveStock = availability === 'OUT_OF_STOCK' ? null : (combinationStock ?? marginalStock);
+  const usedExactCombination = combination != null && (combination.totalTnd != null || combinationState !== 'UNKNOWN');
 
   return {
-    unitTnd,
-    sourcePrice,
-    sourceCurrency: sourcePrice != null ? currency : '',
-    priceFrom: known.some((entry) => entry.priceFrom),
+    unitTnd: availability === 'OUT_OF_STOCK' ? null : rawUnitTnd,
+    sourcePrice: availability === 'OUT_OF_STOCK' ? null : rawSourcePrice,
+    sourceCurrency: availability === 'OUT_OF_STOCK' || rawSourcePrice == null ? '' : rawSourceCurrency,
+    priceFrom: usedExactCombination ? false : known.some((entry) => entry.priceFrom),
     availability,
-    stock,
-    fromValue: true,
+    stock: effectiveStock,
+    fromValue: !usedExactCombination || fromMarginalValue,
   };
 }
 

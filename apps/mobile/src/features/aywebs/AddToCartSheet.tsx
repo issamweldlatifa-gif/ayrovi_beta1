@@ -385,6 +385,7 @@ export function AddToCartSheet({
       quotedPrice: option.quotedPrice,
       quotedCurrency: option.quotedCurrency,
       availability: option.availability,
+      availabilityReason: option.availabilityReason,
     })),
     selection,
   }), [pageQuote, selection, variantOptions]);
@@ -562,7 +563,7 @@ export function AddToCartSheet({
         || availability === 'OUT_OF_STOCK';
       return {
         value,
-        image: optionImage || undefined,
+        image: optionImage || published?.image || undefined,
         price: serverQuote?.totalTnd != null ? tndText(serverQuote.totalTnd) : (published?.price || undefined),
         priceFrom: published?.priceFrom === true || serverQuote?.priceFrom === true,
         unavailable,
@@ -1059,15 +1060,18 @@ function variantAvailability(
   if (!options.length) return null;
   const key = attribute.trim().toLowerCase();
   const wanted = Object.entries(selection)
-    .filter(([name]) => name !== key)
+    .filter(([name]) => !sameAttribute(name, attribute))
     .reduce<Record<string, string>>((acc, [name, chosen]) => ({ ...acc, [name]: chosen }), {});
-  const probe = { ...wanted, [key]: value };
-  const candidate = Object.keys(probe).sort();
+  const probeEntries = Object.entries({ ...wanted, [key]: value });
   const exact = options.find((option) => {
-    const keys = Object.keys(option.attributes).sort();
-    return keys.length === candidate.length
-      && keys.every((name, index) => name === candidate[index]
-        && String(option.attributes[name]).toLowerCase() === String(probe[name]).toLowerCase());
+    const optEntries = Object.entries(option.attributes);
+    return optEntries.length === probeEntries.length
+      && probeEntries.every(([pName, pVal]) =>
+        optEntries.some(([oName, oVal]) =>
+          sameAttribute(oName, pName)
+          && String(oVal).trim().toLowerCase() === String(pVal).trim().toLowerCase(),
+        ),
+      );
   });
   return exact ? exact.availability : null;
 }

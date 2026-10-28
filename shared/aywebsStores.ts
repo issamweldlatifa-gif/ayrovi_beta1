@@ -175,7 +175,7 @@ const AYWEBS_CORE_STORES: readonly AyWebsStoreDefinition[] = [
     id: 'aliexpress',
     name: 'AliExpress',
     displayName: 'AliExpress',
-    domains: ['aliexpress.com'],
+    domains: ['aliexpress.com', 'aliexpress.us', 'aliexpress.ru'],
     country: 'CN',
     currency: 'USD',
     logo: '/stores/aliexpress.png',

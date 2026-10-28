@@ -201,7 +201,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
    * prix ne peut être lu. L'API le dit désormais au lieu de laisser le client
    * découvrir un panier vide.
    */
-  const renderDependentStores = new Set(['temu', 'aliexpress']);
+  const renderDependentStores = new Set(['temu']);
   const operationalOf = (store: AyWebsStoreDefinition): { operational: boolean; operational_reason: string | null } => {
     if (!store.enabled || !ctx.storeCaptureEnabled(store)) {
       return { operational: false, operational_reason: 'CAPTURE_DISABLED_FOR_STORE' };
@@ -1429,8 +1429,10 @@ function ayWebsVariantPricingPayload(
   quoteVerified: boolean,
 ) {
   return variants.map((variant) => {
-    const hasVariantPrice = Number.isFinite(Number(variant.price)) && Number(variant.price) > 0;
-    const quotedPrice = hasVariantPrice ? Number(variant.price) : Number(product.price);
+    const isCapturedSkuMatrix = typeof variant.sourceVariantId === 'string' && variant.sourceVariantId.startsWith('ae:');
+    const isOutOfStock = variant.availability === 'OUT_OF_STOCK';
+    const hasVariantPrice = !isOutOfStock && Number.isFinite(Number(variant.price)) && Number(variant.price) > 0;
+    const quotedPrice = hasVariantPrice ? Number(variant.price) : (isCapturedSkuMatrix || isOutOfStock ? 0 : Number(product.price));
     const quotedCurrency = (hasVariantPrice ? variant.currency || product.currency : product.currency).trim().toUpperCase();
     const quote = quoteVerified && quotedPrice > 0 && quotedCurrency
       ? calculatePrice(rules, quotedPrice, quotedCurrency, { title: product.title })

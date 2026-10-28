@@ -78,7 +78,10 @@ export function ayWebsSameAttribute(left: unknown, right: unknown): boolean {
   const a = ayWebsAttributeDimension(left);
   const b = ayWebsAttributeDimension(right);
   if (a && b) return a === b;
-  return ayWebsAttributeKey(left) === ayWebsAttributeKey(right);
+  const lk = ayWebsAttributeKey(left);
+  const rk = ayWebsAttributeKey(right);
+  if (!lk || !rk) return false;
+  return lk === rk || lk.replace(/\s+/g, '') === rk.replace(/\s+/g, '');
 }
 
 /**

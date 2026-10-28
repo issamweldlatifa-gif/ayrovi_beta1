@@ -18,7 +18,7 @@ const MERCHANT_DOMAINS: ReadonlyArray<{ store: StoreType; roots: readonly string
     ],
   },
   { store: 'temu', roots: ['temu.com'] },
-  { store: 'aliexpress', roots: ['aliexpress.com'] },
+  { store: 'aliexpress', roots: ['aliexpress.com', 'aliexpress.us', 'aliexpress.ru'] },
   /* Zalando : uniquement les miroirs en EUR (le registre publie les autres pays
      dans leur devise, ils ne sont pas réclamés par l'adaptateur). */
   { store: 'zalando', roots: ['zalando.de', 'zalando.fr', 'zalando.it', 'zalando.es', 'zalando.nl', 'zalando.be', 'zalando.at'] },

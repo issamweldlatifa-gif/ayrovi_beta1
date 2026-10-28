@@ -384,6 +384,15 @@ export async function resolveAyWebsProduct(
       captureValidation!.scraped!,
       store.displayName || store.name || store.id,
     );
+    if (captureValidation!.skuCombinations.length > 0) {
+      sourceProduct = {
+        ...sourceProduct,
+        variants: captureValidation!.skuCombinations,
+        variantGroups: captureValidation!.variantGroups
+          .filter((grp) => grp.values && grp.values.length >= 2)
+          .map((grp) => ({ attribute: grp.name, values: [...grp.values] })),
+      };
+    }
   } else if (cached) {
     sourceProduct = cached.sourceProduct;
     fromCache = true;
@@ -537,20 +546,55 @@ export async function resolveAyWebsProduct(
     const publishedStock = variantEvidence.attributes
       .map((attribute) => attribute.stock)
       .filter((stock): stock is number => typeof stock === 'number' && stock > 0);
+    const matchedSkuCombination = (() => {
+      if (!captureValidation!.skuCombinations.length) return null;
+      const multiGroupNames = captureValidation!.variantGroups
+        .filter((grp) => grp.values && grp.values.length >= 2)
+        .map((grp) => grp.name);
+      if (!multiGroupNames.length) return null;
+      const { aligned } = ayWebsAlignAttributes(multiGroupNames, requestedSelection);
+      if (Object.keys(aligned).length !== multiGroupNames.length) return null;
+      return captureValidation!.skuCombinations.find((combo) =>
+        multiGroupNames.every((gName) =>
+          String(combo.attributes[gName] || '').toLowerCase() === String(aligned[gName] || '').toLowerCase(),
+        ),
+      ) || null;
+    })();
+    const skuStockMatch = matchedSkuCombination?.availabilityReason?.match(/:(\d+)$/);
+    const skuStockHint = skuStockMatch ? Number(skuStockMatch[1]) : null;
+    const effectiveQuantityHint = skuStockHint !== null
+      ? skuStockHint
+      : (publishedStock.length ? Math.min(...publishedStock) : null);
 
-    if (variantEvidence.blocked) {
-      /* Le négatif gagne : une valeur explicitement indisponible ne devient
-         jamais disponible parce que la page, elle, est achetable pour une autre. */
+    if (variantEvidence.blocked || matchedSkuCombination?.availability === 'OUT_OF_STOCK') {
+      /* Le négatif gagne : une valeur ou combinaison SKU explicitement indisponible ne
+         devient jamais disponible parce que la page, elle, est achetable pour une autre. */
       availability = {
         ...ayWebsAvailabilityRecord(
           'OUT_OF_STOCK',
           `selection_option_out_of_stock:${selectionKey}`.slice(0, 200),
           'webview_client',
           checkedAt,
-          publishedStock.length ? Math.min(...publishedStock) : null,
+          null,
         ),
         variantAvailable: false,
       };
+      if (matchedSkuCombination?.availability === 'OUT_OF_STOCK') {
+        captureValidation!.notes.push('selection_sku_out_of_stock');
+      }
+    } else if (matchedSkuCombination && (matchedSkuCombination.availability === 'AVAILABLE' || matchedSkuCombination.availability === 'LOW_STOCK')) {
+      /* Matrice SKU multi-axes vérifiée : disponibilité exacte de cette combinaison. */
+      availability = {
+        ...ayWebsAvailabilityRecord(
+          matchedSkuCombination.availability,
+          `selection_sku_available:${selectionKey}`.slice(0, 200),
+          'webview_client',
+          checkedAt,
+          effectiveQuantityHint,
+        ),
+        variantAvailable: true,
+      };
+      captureValidation!.notes.push('selection_available_by_sku');
     } else if (pageProof) {
       /* Combinaison AFFICHÉE : c'est le constat de la page qui fait foi. */
       availability = {
@@ -559,7 +603,7 @@ export async function resolveAyWebsProduct(
           captureValidation!.availabilityReason,
           'webview_client',
           checkedAt,
-          publishedStock.length ? Math.min(...publishedStock) : null,
+          effectiveQuantityHint,
         ),
         variantAvailable: availability.variantAvailable ?? null,
       };
@@ -573,7 +617,7 @@ export async function resolveAyWebsProduct(
           `selection_option_available:${selectionKey}`.slice(0, 200),
           'webview_client',
           checkedAt,
-          publishedStock.length ? Math.min(...publishedStock) : null,
+          effectiveQuantityHint,
         ),
         variantAvailable: true,
       };
@@ -585,7 +629,7 @@ export async function resolveAyWebsProduct(
           `selection_not_verified_by_capture:${selectionKey}`.slice(0, 200),
           'webview_client',
           checkedAt,
-          publishedStock.length ? Math.min(...publishedStock) : null,
+          effectiveQuantityHint,
         ),
         variantAvailable: null,
       };
@@ -594,22 +638,40 @@ export async function resolveAyWebsProduct(
 
     /* ── PRIX DE LA COMBINAISON ─────────────────────────────────────────────
        Trois cas, et aucun autre :
-       1. la capture publie un prix FERME, sans conflit et dans la devise
-          prouvée ⇒ c'est le prix marchand de cette combinaison ;
+       1. la capture publie un prix FERME (par combinaison SKU exacte ou par
+          valeur sans conflit) dans la devise prouvée ⇒ c'est le prix marchand ;
        2. le prix ferme manque mais la combinaison est celle AFFICHÉE sur la
           page ⇒ le prix de la page s'applique (comportement historique) ;
        3. sinon, le prix de la page appartient à une AUTRE combinaison : on
           refuse de coter plutôt que d'annoncer le prix d'une autre couleur. */
+    const skuPriceProven = !variantEvidence.blocked
+      && matchedSkuCombination != null
+      && matchedSkuCombination.availability !== 'OUT_OF_STOCK'
+      && matchedSkuCombination.price != null
+      && matchedSkuCombination.price > 0
+      && (!matchedSkuCombination.currency || matchedSkuCombination.currency === captureValidation!.currency);
     const optionPriceProven = !variantEvidence.blocked
       && variantEvidence.price != null
       && !variantEvidence.priceConflict
       && !variantEvidence.priceFrom
       && !variantEvidence.currencyMismatch;
-    if (optionPriceProven) {
+    if (skuPriceProven) {
+      merchantPrice = matchedSkuCombination!.price as number;
+      merchantPriceFromValue = true;
+      captureValidation!.notes.push('selection_priced_from_sku_matrix');
+      if (matchedSkuCombination!.image) {
+        const nextImages = [matchedSkuCombination!.image, ...sourceProduct.images.filter((img) => img !== matchedSkuCombination!.image)];
+        sourceProduct = {
+          ...sourceProduct,
+          images: nextImages,
+          scrapedProduct: { ...sourceProduct.scrapedProduct, images: nextImages, mainImage: nextImages[0] },
+        };
+      }
+    } else if (optionPriceProven) {
       merchantPrice = variantEvidence.price as number;
       merchantPriceFromValue = true;
       captureValidation!.notes.push('selection_priced_from_value');
-    } else if (!pageProof && !variantEvidence.blocked && variantEvidence.groupsMatched > 0) {
+    } else if (!pageProof && !variantEvidence.blocked && matchedSkuCombination?.availability !== 'OUT_OF_STOCK' && variantEvidence.groupsMatched > 0) {
       const unpublished = variantEvidence.attributes.find((attribute) => attribute.groupFound && !attribute.found);
       if (unpublished) {
         throw new AyWebsDomainError('VARIANT_UNKNOWN', {

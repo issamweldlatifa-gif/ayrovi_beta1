@@ -46,6 +46,7 @@ export interface LocalValueState {
   price: string;
   priceFrom: boolean;
   stock: number | null;
+  image?: string;
 }
 export type LocalValueStates = Record<string, Record<string, LocalValueState>>;
 
@@ -175,6 +176,43 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
     for (const [asin, attributes] of byAsin) pushVariant(asin, attributes);
   }
 
+  /* AliExpress v2 (28/10/2026) : matrice SKU multi-axes (`capture.aliexpress.skus`).
+     Chaque combinaison (Couleur × Prise × Expédié depuis…) porte son propre
+     `skuId`, son prix ferme et son stock exact. */
+  const aliexpress = isRecord(capture.aliexpress) ? capture.aliexpress : null;
+  if (!out.length && aliexpress && Array.isArray(aliexpress.skus) && aliexpress.skus.length > 0) {
+    for (const sku of aliexpress.skus.slice(0, 60)) {
+      if (!isRecord(sku) || !isRecord(sku.attributes)) continue;
+      const attributes: Record<string, string> = {};
+      for (const [rawKey, rawVal] of Object.entries(sku.attributes)) {
+        const cleanKey = text(rawKey);
+        const cleanVal = text(rawVal);
+        if (cleanKey && cleanVal && isRealChoiceValue(cleanKey, cleanVal)) {
+          attributes[cleanKey] = cleanVal;
+        }
+      }
+      const attrEntries = Object.entries(attributes);
+      if (!attrEntries.length) continue;
+      const comboKey = attrEntries.map(([k, v]) => `${k.toLowerCase()}=${v.toLowerCase()}`).sort().join('|');
+      if (seen.has(comboKey)) continue;
+      seen.add(comboKey);
+      const rawSkuId = text(sku.skuId).replace(/^ae:/i, '');
+      const variantId = /^\d{5,24}$/.test(rawSkuId) ? `ae:${rawSkuId}` : `ae:${comboKey}`;
+      const rawImg = text(sku.image);
+      const cleanImg = /^https?:\/\//i.test(rawImg) ? rawImg.slice(0, 600) : '';
+      const stockNum = Math.floor(Number(sku.stock));
+      out.push({
+        asin: variantId,
+        attributes,
+        availability: sku.available === false ? 'OUT_OF_STOCK' : sku.available === true ? 'AVAILABLE' : 'UNKNOWN',
+        cardPrice: sku.available === false ? '' : text(sku.price),
+        priceFrom: false,
+        stock: sku.available === false ? null : (Number.isFinite(stockNum) && stockNum > 0 && stockNum <= 999 ? stockNum : null),
+        ...(cleanImg ? { image: cleanImg } : {}),
+      });
+    }
+  }
+
   /* Boutiques SANS lecteur dédié (23/10/2026) : les groupes nommés de la capture
      deviennent les options de la feuille. Chaque valeur est une « variante » à
      un seul attribut ; le serveur reçoit `variant: {couleur: "Rouge"}` — c'est
@@ -188,7 +226,7 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
         ? group.values.map(text).filter((val) => Boolean(val) && isRealChoiceValue(published, val))
         : [];
       if (!name || !values.length) continue;
-      const states = new Map<string, LocalValueState & { image?: string; goodsId?: string }>();
+      const states = new Map<string, LocalValueState & { image?: string; goodsId?: string; skuId?: string }>();
       if (Array.isArray(group.options)) {
         for (const option of group.options) {
           if (!isRecord(option)) continue;
@@ -198,6 +236,8 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
           const cleanImg = /^https?:\/\//i.test(rawImg) ? rawImg.slice(0, 600) : '';
           const rawGoodsId = text(option.goodsId);
           const cleanGoodsId = /^\d{5,16}$/.test(rawGoodsId) ? rawGoodsId : '';
+          const rawSkuId = text(option.skuId).replace(/^ae:/i, '');
+          const cleanSkuId = /^\d{5,24}$/.test(rawSkuId) ? rawSkuId : '';
           states.set(value, {
             state: option.available === false ? 'OUT_OF_STOCK' : option.available === true ? 'AVAILABLE' : 'UNKNOWN',
             price: text(option.price),
@@ -205,12 +245,17 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
             stock: Number.isFinite(Number(option.stock)) && Number(option.stock) > 0 ? Math.floor(Number(option.stock)) : null,
             ...(cleanImg ? { image: cleanImg } : {}),
             ...(cleanGoodsId ? { goodsId: cleanGoodsId } : {}),
+            ...(cleanSkuId ? { skuId: cleanSkuId } : {}),
           });
         }
       }
       for (const value of values) {
         const state = states.get(value.toLowerCase());
-        const asin = state?.goodsId ? `shein:${state.goodsId}` : `${name}:${value.toLowerCase()}`;
+        const asin = state?.goodsId
+          ? `shein:${state.goodsId}`
+          : state?.skuId
+            ? `ae:${state.skuId}`
+            : `${name}:${value.toLowerCase()}`;
         const dedupeKey = `${name}:${value.toLowerCase()}`;
         if (seen.has(dedupeKey)) continue;
         seen.add(dedupeKey);
@@ -251,17 +296,20 @@ export function valueStatesFromCapture(capture: Json): LocalValueStates {
     else if (known.state === 'UNKNOWN' && state.state !== 'UNKNOWN') known.state = state.state;
     if (!known.price && state.price) { known.price = state.price; known.priceFrom = state.priceFrom; }
     if (known.stock == null && state.stock != null) known.stock = state.stock;
+    if (!known.image && state.image) known.image = state.image;
   };
   const amazon = isRecord(capture.amazon) ? capture.amazon : null;
   if (amazon && Array.isArray(amazon.options)) {
     for (const option of amazon.options) {
       if (!isRecord(option)) continue;
       const evidence = text(option.availabilityEvidence).toLowerCase();
+      const img = text(option.image);
       put(text(option.dimension), text(option.value), {
         state: VALUE_AVAILABILITY[evidence] ?? 'UNKNOWN',
         price: text(option.price),
         priceFrom: option.priceFrom === true,
         stock: Number.isFinite(Number(option.stock)) && Number(option.stock) > 0 ? Math.floor(Number(option.stock)) : null,
+        ...(img.startsWith('http') ? { image: img } : {}),
       });
     }
   }
@@ -271,11 +319,13 @@ export function valueStatesFromCapture(capture: Json): LocalValueStates {
       const name = text(group.name);
       for (const option of group.options) {
         if (!isRecord(option)) continue;
+        const img = text(option.image);
         put(name, text(option.value), {
           state: option.available === false ? 'OUT_OF_STOCK' : option.available === true ? 'AVAILABLE' : 'UNKNOWN',
           price: text(option.price),
           priceFrom: option.priceFrom === true,
           stock: Number.isFinite(Number(option.stock)) && Number(option.stock) > 0 ? Math.floor(Number(option.stock)) : null,
+          ...(img.startsWith('http') ? { image: img } : {}),
         });
       }
     }
@@ -396,6 +446,11 @@ export function selectionHasPublishedPrice(capture: Json, selection: Record<stri
   if (!capture || typeof capture !== 'object') return false;
   const entries = Object.entries(selection || {});
   if (!entries.length) return false;
+  const variants = localVariantsFromCapture(capture);
+  const chosen = variants.find((variant) => matchesSelection(variant.attributes, selection));
+  if (chosen) {
+    return Boolean(chosen.cardPrice && !chosen.priceFrom && chosen.availability !== 'OUT_OF_STOCK');
+  }
   const states = valueStatesFromCapture(capture);
   return entries.every(([name, value]) => {
     const state = states[name.trim().toLowerCase()]?.[String(value).trim().toLowerCase()];
@@ -419,7 +474,11 @@ export function displayPriceForSelection(
     if (chosen.cardPrice) return { text: chosen.cardPrice, priceFrom: chosen.priceFrom === true };
     const amazon = isRecord(capture.amazon) ? capture.amazon : null;
     const shownAsin = amazon ? text(amazon.selectedAsin).toUpperCase() : '';
-    if (shownAsin && shownAsin === chosen.asin) {
+    const aliexpress = isRecord(capture.aliexpress) ? capture.aliexpress : null;
+    const shownAeSku = aliexpress && /^\d{5,24}$/.test(text(aliexpress.selectedSkuId))
+      ? `ae:${text(aliexpress.selectedSkuId)}`
+      : '';
+    if ((shownAsin && shownAsin === chosen.asin) || (shownAeSku && shownAeSku === chosen.asin)) {
       const page = pagePriceText(capture);
       return page ? { text: page, priceFrom: false } : null;
     }
@@ -546,10 +605,15 @@ export function selectionIsShown(capture: Json, selection: Record<string, string
   if (!chosen.length) return false;
   const amazon = isRecord(capture.amazon) ? capture.amazon : null;
   const shownAsin = amazon ? text(amazon.selectedAsin).toUpperCase() : '';
+  const aliexpress = isRecord(capture.aliexpress) ? capture.aliexpress : null;
+  const shownAeSku = aliexpress && /^\d{5,24}$/.test(text(aliexpress.selectedSkuId))
+    ? `ae:${text(aliexpress.selectedSkuId)}`
+    : '';
   const variants = localVariantsFromCapture(capture);
   if (variants.length) {
     const match = variants.find((variant) => matchesSelection(variant.attributes, selection));
     if (match && shownAsin) return match.asin === shownAsin;
+    if (match && shownAeSku) return match.asin === shownAeSku;
   }
   /* Boutique sans table de variantes : la page dit elle-même quelle valeur est
      affichée (`variantGroups[].selected`). Si chaque valeur choisie est celle
@@ -612,8 +676,10 @@ export function optionsFromVariants(variants: LocalVariant[]): AyWebsVariantOpti
 export function productFromCapture(capture: Json, url: string, storeId: string, storeName: string): AyWebsResolvedProduct {
   const amazon = isRecord(capture.amazon) ? capture.amazon : null;
   const shein = isRecord(capture.shein) ? capture.shein : null;
+  const aliexpress = isRecord(capture.aliexpress) ? capture.aliexpress : null;
   const pageAsin = amazon ? text(amazon.pageAsin).toUpperCase() : '';
   const sheinGoodsId = shein && /^\d{5,16}$/.test(text(shein.pageGoodsId)) ? `SHEIN-${text(shein.pageGoodsId)}` : '';
+  const aeItemId = aliexpress && /^\d{6,20}$/.test(text(aliexpress.pageItemId)) ? `AE-${text(aliexpress.pageItemId)}` : '';
   const images = Array.isArray(capture.images)
     ? capture.images.map((item) => (isRecord(item) ? text(item.url) : text(item))).filter((item) => item.startsWith('http'))
     : [];
@@ -621,7 +687,7 @@ export function productFromCapture(capture: Json, url: string, storeId: string, 
   try { domain = new URL(url).host; } catch { domain = ''; }
   const unknown: AyWebsAvailability = { state: 'UNKNOWN', reason: '', checkedAt: '', source: 'capture', quantityHint: null };
   return {
-    productId: pageAsin || sheinGoodsId,
+    productId: pageAsin || sheinGoodsId || aeItemId,
     storeId,
     storeName,
     sourceUrl: url,
@@ -688,9 +754,9 @@ export function localAddReadiness(input: {
   if (chosenValues.some((state) => state.state === 'OUT_OF_STOCK')) {
     return { ready: false, code: 'VARIANT_UNAVAILABLE', missingAttributes: [], availability: 'OUT_OF_STOCK' };
   }
-  const chosen = Object.entries(input.selection).map(([k, v]) => `${k}=${v.toLowerCase()}`).sort().join('|');
+  const chosen = Object.entries(input.selection).map(([k, v]) => `${k.trim().toLowerCase()}=${v.toLowerCase()}`).sort().join('|');
   const match = input.variants.find((variant) => Object.entries(variant.attributes)
-    .map(([k, v]) => `${k}=${v.toLowerCase()}`).sort().join('|') === chosen);
+    .map(([k, v]) => `${k.trim().toLowerCase()}=${v.toLowerCase()}`).sort().join('|') === chosen);
   if (!match) {
     /* Toutes les valeurs choisies sont publiées DISPONIBLES ⇒ le marchand a dit,
        valeur par valeur, que ce choix est achetable. Aucune combinaison n'est

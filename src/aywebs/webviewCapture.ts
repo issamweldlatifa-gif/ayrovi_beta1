@@ -28,8 +28,10 @@
  */
 import { createHash } from 'node:crypto';
 import type { ScrapedProduct } from '../types';
+import type { AyWebsSourceProduct } from './adapters/contract';
 import { checkPriceText } from '../scraper/priceIntegrity';
 import { detectAyWebsStore } from '../../shared/aywebsStores';
+import { aliexpressItemId } from './adapters/aliexpress';
 import { sheinGoodsId } from './adapters/shein';
 import {
   AYWEBS_CAPTURE_LIMITS,
@@ -256,9 +258,10 @@ const AVAILABILITY_VOCABULARY: Array<{ state: AyWebsAvailabilityState; reason: s
     state: 'OUT_OF_STOCK', reason: 'merchant_out_of_stock',
     patterns: [
       /outofstock|sold\s*out|out\s*of\s*stock|unavailable|currently\s+unavailable/i,
-      /rupture|épuis|indisponible|non\s+disponible/i,
+      /rupture|épuis|epuis|indisponible|non\s+disponible/i,
       /ausverkauft|nicht\s+verfügbar|agotad[oa]|esgotad[oa]|esaurit[oa]/i,
-      /غير\s+متوفر|نفد(?:ت\s*الكمية)?|انتهى\s*المخزون/i,
+      /can'?t\s+ship\s+to|cannot\s+be\s+shipped|does\s+not\s+ship|livraison\s+indisponible|ne\s+peut\s+pas\s+être\s+livr|no\s+se\s+puede\s+enviar/i,
+      /غير\s+متوفر|نفد(?:ت\s*الكمية)?|انتهى\s*المخزون|لا\s*يمكن\s*الشحن/i,
     ],
   },
   {
@@ -274,7 +277,8 @@ const AVAILABILITY_VOCABULARY: Array<{ state: AyWebsAvailabilityState; reason: s
       /instock|in\s*stock|available|add\s*to\s*(?:cart|basket|bag)|buy\s*now/i,
       /en\s+stock|ajouter\s+(?:au\s+)?(?:panier|sac)|acheter/i,
       /in\s+den\s+warenkorb|in\s+die\s+einkaufstasche|auf\s+lager|lieferbar/i,
-      /a(?:ñ|n)adir\s+(?:a\s+la\s+(?:bolsa|cesta)|al\s+carrito)|aggiungi\s+(?:al\s+carrello|alla\s+borsa)/i,
+      /a(?:ñ|n)adir\s+(?:a\s+la\s+(?:bolsa|cesta)|al\s+carrito)|aggiungi\s+(?:al\s+carrello|alla\s+borsa)|adicionar\s+ao\s+carrinho|comprar\s+agora/i,
+      /\b\d+\s*(?:pieces?|pcs|pi[eè]ces?|unidades?|pe[cç]as?|stück|قطعة|قطع|حبة)\s*(?:available|disponibles?|dispon[ií]ve(?:l|is)|verfügbar|متوفرة?)?\b/i,
       /(?:أضف|إضافة)\s*(?:إلى\s*|لـ?\s*)?(?:السلة|العربة|الحقيبة|حقيبة\s*التسوق)|اشترِ?(?:\s*الآن)?|متوفر/i,
     ],
   },
@@ -348,7 +352,7 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
        un indice. Mesuré le 26/10/2026 : toutes les pointures entières étaient
        écartées, la feuille Zalando ne proposait que « 35.5 », « 51.5 »… et le
        client ne pouvait pas choisir sa taille. */
-    const sizeGroup = /(size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس)/i.test(name);
+    const sizeGroup = /(size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس|length|longueur|voltage|watt|capacity|capacit|pieces|pcs|pack|lot|pin|port|gauge|calibre)/i.test(name);
     const values = cleanTextArray((entry as { values?: unknown }).values, AYWEBS_CAPTURE_LIMITS.maxVariantGroupValues, 60)
       .filter((value) => sizeGroup || !/^\d{1,3}$/.test(value));
     if (values.length < 1) continue;
@@ -356,7 +360,7 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
       .filter((value) => values.some((known) => known.toLowerCase() === value.toLowerCase()));
     /* On conserve le groupe même sans sélection prouvée : ses `values` sont les
        choix que la page publie, donc ceux que la feuille mobile doit proposer
-       (un picker Zalando en <input checkbox> dans un <label> n'expose parfois
+       (un picker Zalando en <input checkbox> dans un label n'expose parfois
        aucun aria-checked). L'honnêteté de la preuve est ailleurs — `selected`
        reste vide et aucune `option` d'état/prix n'est fabriquée, donc une
        combinaison non observée ne peut jamais être tenue pour vérifiée. */
@@ -381,9 +385,11 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
         const image = /^https?:\/\//i.test(rawImage) ? rawImage : null;
         const rawGoodsId = collapse(record.goodsId, 32).replace(/^SHEIN-/i, '');
         const goodsId = /^\d{5,16}$/.test(rawGoodsId) ? rawGoodsId : null;
+        const rawSkuId = collapse(record.skuId, 32).replace(/^ae:/i, '');
+        const skuId = /^\d{5,24}$/.test(rawSkuId) ? rawSkuId : null;
         /* Une ligne sans état, sans prix, sans stock, sans image et sans identité
            n'apprend rien : elle est écartée (le groupe garde ses libellés). */
-        if (available === null && !price && stock === null && !image && !goodsId) continue;
+        if (available === null && !price && stock === null && !image && !goodsId && !skuId) continue;
         options.push({
           value,
           available,
@@ -392,6 +398,7 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
           stock,
           ...(image ? { image } : {}),
           ...(goodsId ? { goodsId } : {}),
+          ...(skuId ? { skuId } : {}),
         });
       }
     }
@@ -435,6 +442,12 @@ export interface AyWebsCaptureValidation {
    * Le résolveur ne publie donc que la valeur sélectionnée de chaque groupe.
    */
   variantGroups: AyWebsCapturedVariantGroup[];
+  /**
+   * Matrice vérifiée de combinaisons multi-axes (ex. AliExpress Couleur × Prise × Expédié depuis) :
+   * chaque ligne ne contient QUE des dimensions présentes dans `variantGroups`, avec
+   * prix et devise validés par `checkPriceText`.
+   */
+  skuCombinations: AyWebsSourceProduct['variants'];
   /** Piste d'audit lisible : quels candidats ont été vus, lesquels ont gagné. */
   notes: string[];
   outcome: AyWebsCaptureOutcome;
@@ -529,7 +542,7 @@ function captureRejected(
     ok: false, rejection, scraped: null, price: 0, currency: '',
     priceVerified: false, currencyVerified: false,
     availability: 'UNKNOWN', availabilityReason: `capture_rejected:${rejection}`,
-    condition: null, fingerprint, priceSource: null, corroborated: false, selectedVariantTexts: [], variantGroups: [], notes,
+    condition: null, fingerprint, priceSource: null, corroborated: false, selectedVariantTexts: [], variantGroups: [], skuCombinations: [], notes,
     outcome: { used: false, fingerprint: fingerprint || null, priceSource: null, corroborated: false, rejection },
   };
 }
@@ -661,6 +674,7 @@ export function ayWebsPageSignalsOf(payload: AyWebsCapturedPage): AyWebsPageSign
   const title = collapse(payload?.title, AYWEBS_CAPTURE_LIMITS.maxTitleLength);
   const amazon = payload?.amazon;
   const shein = payload?.shein;
+  const aliexpress = payload?.aliexpress;
   return {
     hasTitle: Boolean(title),
     hasPrice: Array.isArray(payload?.priceCandidates)
@@ -669,11 +683,13 @@ export function ayWebsPageSignalsOf(payload: AyWebsCapturedPage): AyWebsPageSign
     hasPurchaseControl: Boolean(collapse(payload?.addToCartText, AYWEBS_CAPTURE_LIMITS.maxTextLength)),
     hasVariants: (Array.isArray(payload?.variantGroups) && payload.variantGroups.length > 0)
       || (Array.isArray(amazon?.variants) && amazon.variants.length > 0)
-      || (Array.isArray(amazon?.options) && amazon.options.length > 0),
+      || (Array.isArray(amazon?.options) && amazon.options.length > 0)
+      || (Array.isArray(aliexpress?.skus) && aliexpress.skus.length > 0),
     hasImages: Array.isArray(payload?.images) && payload.images.length > 0,
     hasProductShell: Boolean(
       (amazon && typeof amazon.pageAsin === 'string' && AMAZON_ASIN_SHAPE.test(amazon.pageAsin))
-      || (shein && typeof shein.pageGoodsId === 'string' && /^\d{5,16}$/.test(shein.pageGoodsId)),
+      || (shein && typeof shein.pageGoodsId === 'string' && /^\d{5,16}$/.test(shein.pageGoodsId))
+      || (aliexpress && typeof aliexpress.pageItemId === 'string' && /^\d{6,20}$/.test(aliexpress.pageItemId)),
     ),
   };
 }
@@ -738,6 +754,18 @@ export function validateAyWebsCapturedPage(
   if (variantContractEnabled() && isAmazonHost(requestUrl)) {
     const variantRefusal = amazonVariantRefusal(payload);
     if (variantRefusal) return rejected('VARIANT_NOT_PROVEN', '', [`variant:${variantRefusal}`]);
+  }
+
+  /* ── IDENTITÉ FICHE ALIEXPRESS (anti-état SPA périmé) ──────────────────── */
+  if (payload.aliexpress && typeof payload.aliexpress === 'object') {
+    const claimedItemId = collapse(payload.aliexpress.pageItemId, 32).replace(/^AE-/i, '');
+    if (claimedItemId && /^\d{6,20}$/.test(claimedItemId)) {
+      let urlItemId: string | null = null;
+      try { urlItemId = aliexpressItemId(new URL(pageUrl || requestUrl)); } catch { urlItemId = null; }
+      if (urlItemId && urlItemId !== claimedItemId) {
+        return rejected('PRODUCT_IDENTITY_MISMATCH', '', [`ae_item_mismatch:${claimedItemId}!=${urlItemId}`]);
+      }
+    }
   }
 
   /* ── PRIX ────────────────────────────────────────────────────────────────
@@ -833,7 +861,7 @@ export function validateAyWebsCapturedPage(
   const currencyTexts = `${currencyEvidence} ${candidateCurrencyEvidence}`;
   const publishedIsos = new Set<string>();
   (currencyEvidence.toUpperCase().match(/\b[A-Z]{3}\b/g) || []).forEach((code) => publishedIsos.add(code));
-  for (const match of candidateCurrencyEvidence.matchAll(/(?:^|[^A-Za-z])(EUR|USD|GBP|JPY|TND)(?=$|[^A-Za-z])/g)) {
+  for (const match of candidateCurrencyEvidence.matchAll(/(?:^|[^A-Za-z])(EUR|USD|GBP|JPY|TND|MAD|SAR|AED|CAD|AUD|SGD|BRL|MXN|PLN|TRY|CHF|SEK)(?=$|[^A-Za-z])/g)) {
     publishedIsos.add(match[1]);
   }
   const publishedIso = [...publishedIsos][0] || '';
@@ -952,6 +980,103 @@ export function validateAyWebsCapturedPage(
     try { urlSheinId = sheinGoodsId(new URL(pageUrl || requestUrl)); } catch { urlSheinId = null; }
     const resolvedGoodsId = /^\d{5,16}$/.test(rawSheinId) ? rawSheinId : urlSheinId;
     if (resolvedGoodsId) externalId = `SHEIN-${resolvedGoodsId}`;
+  } else if (storeForPrice?.id === 'aliexpress') {
+    const rawAeId = collapse(payload.aliexpress?.pageItemId, 32).replace(/^AE-/i, '');
+    let urlAeId: string | null = null;
+    try { urlAeId = aliexpressItemId(new URL(pageUrl || requestUrl)); } catch { urlAeId = null; }
+    const resolvedAeId = /^\d{6,20}$/.test(rawAeId) ? rawAeId : urlAeId;
+    if (resolvedAeId) externalId = `AE-${resolvedAeId}`;
+  }
+
+  /* Validation serveur de la matrice SKU multi-axes (AliExpress) :
+     chaque SKU doit couvrir exactement les `variantGroups` retenus, et son prix
+     passe par `checkPriceText` avec devise cohérente avec la fiche. */
+  const skuCombinations: AyWebsSourceProduct['variants'] = [];
+  if (
+    storeForPrice?.id === 'aliexpress'
+    && variantGroups.length > 0
+    && Array.isArray(payload.aliexpress?.skus)
+  ) {
+    const seenComboKeys = new Set<string>();
+    for (const rawSku of payload.aliexpress!.skus!.slice(0, 60)) {
+      if (!rawSku || typeof rawSku !== 'object') continue;
+      const rawAttrs = (rawSku as { attributes?: unknown }).attributes;
+      if (!rawAttrs || typeof rawAttrs !== 'object' || Array.isArray(rawAttrs)) continue;
+      const rawAttrEntries = Object.entries(rawAttrs as Record<string, unknown>);
+      const alignedAttrs: Record<string, string> = {};
+      let allMatched = true;
+      for (const group of variantGroups) {
+        const hit = rawAttrEntries.find(([k]) => collapse(k, 60).toLowerCase() === group.name.toLowerCase());
+        if (!hit) { allMatched = false; break; }
+        const valText = collapse(hit[1], 60);
+        const canonicalVal = group.values.find((v) => v.toLowerCase() === valText.toLowerCase());
+        if (!canonicalVal) { allMatched = false; break; }
+        alignedAttrs[group.name] = canonicalVal;
+      }
+      if (!allMatched) continue;
+      const comboKey = variantGroups.map((g) => `${g.name.toLowerCase()}=${alignedAttrs[g.name].toLowerCase()}`).join('|');
+      if (seenComboKeys.has(comboKey)) continue;
+      seenComboKeys.add(comboKey);
+
+      const rawAvail = (rawSku as { available?: unknown }).available;
+      const stockNum = Math.floor(Number((rawSku as { stock?: unknown }).stock));
+      const validStock = Number.isFinite(stockNum) && stockNum > 0 && stockNum <= 999 ? stockNum : null;
+      const skuAvailable: boolean | null = rawAvail === true ? true : rawAvail === false ? false : null;
+      const skuAvailability: AyWebsAvailabilityState =
+        skuAvailable === false ? 'OUT_OF_STOCK'
+          : skuAvailable === true ? (validStock !== null && validStock <= 5 ? 'LOW_STOCK' : 'AVAILABLE')
+            : 'UNKNOWN';
+      const skuAvailabilityReason =
+        skuAvailability === 'OUT_OF_STOCK' ? 'sku_out_of_stock_capture'
+          : skuAvailability === 'LOW_STOCK' ? `sku_low_stock_capture:${validStock}`
+            : skuAvailability === 'AVAILABLE' ? (validStock !== null ? `sku_in_stock_capture:${validStock}` : 'sku_in_stock_capture')
+              : 'sku_stock_unspecified_capture';
+
+      let skuPrice: number | null = null;
+      let skuCurrency: string | null = null;
+      const rawSkuPriceText = collapse((rawSku as { price?: unknown }).price, AYWEBS_CAPTURE_LIMITS.maxVariantValuePriceLength);
+      if (skuAvailability !== 'OUT_OF_STOCK' && rawSkuPriceText) {
+        const skuVerdict = checkPriceText(rawSkuPriceText);
+        if (skuVerdict.ok && skuVerdict.value > 0) {
+          const explicitIsoMatch = rawSkuPriceText.toUpperCase().match(/(?:^|[^A-Z])(EUR|USD|GBP|JPY|TND|MAD|SAR|AED|CAD|AUD|SGD|BRL|MXN|PLN|TRY|CHF|SEK)(?=$|[^A-Z])/);
+          const explicitIso = explicitIsoMatch ? explicitIsoMatch[1] : null;
+          if (explicitIso) {
+            if (!currencyVerified || explicitIso === currency) {
+              skuPrice = skuVerdict.value;
+              skuCurrency = explicitIso;
+            }
+          } else if (currencyVerified) {
+            const symHit = AYWEBS_SYMBOL_CURRENCIES.find((entry) =>
+              entry.stores.includes('aliexpress')
+              && entry.pattern.test(rawSkuPriceText)
+              && (!entry.hostsOnly || hostMatchesAny(requestHost, entry.hostsOnly))
+              && !hostMatchesAny(requestHost, entry.hostsExcluded),
+            );
+            if (symHit && symHit.iso === currency) {
+              skuPrice = skuVerdict.value;
+              skuCurrency = currency;
+            }
+          }
+        }
+      }
+
+      const rawSkuId = collapse((rawSku as { skuId?: unknown }).skuId, 32).replace(/^ae:/i, '');
+      const cleanId = /^\d{5,24}$/.test(rawSkuId) ? `ae:${rawSkuId}` : null;
+      const rawSkuImg = collapse((rawSku as { image?: unknown }).image, 600);
+      const cleanImg = /^https?:\/\//i.test(rawSkuImg) ? rawSkuImg : null;
+
+      skuCombinations.push({
+        sourceVariantId: cleanId,
+        attributes: alignedAttrs,
+        label: variantGroups.map((g) => alignedAttrs[g.name]).join(' / '),
+        price: skuPrice,
+        currency: skuCurrency,
+        available: skuAvailable,
+        availability: skuAvailability,
+        availabilityReason: skuAvailabilityReason,
+        image: cleanImg,
+      });
+    }
   }
 
   const colorImages: Record<string, string[]> = {};
@@ -1044,6 +1169,7 @@ export function validateAyWebsCapturedPage(
     corroborated,
     selectedVariantTexts,
     variantGroups,
+    skuCombinations,
     notes,
     outcome: {
       used: true,
@@ -1127,6 +1253,7 @@ export function ayWebsCaptureRejectionErrorCode(rejection: string | null | undef
     case 'FUTURE_CAPTURE':
     case 'URL_HOST_MISMATCH':
     case 'CANONICAL_HOST_MISMATCH':
+    case 'PRODUCT_IDENTITY_MISMATCH':
     case 'BAD_VERSION':
     case 'NOT_AN_OBJECT':
     case 'TOO_LARGE':

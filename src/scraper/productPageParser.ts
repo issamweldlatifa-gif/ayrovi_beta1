@@ -820,7 +820,7 @@ function hasConflictingPublishedAvailability(offers: any[]): boolean {
 const STORE_AVAILABILITY_SELECTORS: Partial<Record<string, readonly string[]>> = {
   shein: ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="product-intro__stock" i]', '[class*="product-intro__soldout" i]', '[class*="goods-soldout" i]', '[class*="stock-status" i]', '[class*="sold-out" i]', '.product-intro__add-btn button', '.product-intro__add-btn', '.goods-btn__add'],
   temu: ['[data-testid*="availability" i]', '[data-testid*="sold-out" i]', '[class*="goods-status" i]', '[class*="stock-status" i]', '[class*="sold-out" i]'],
-  aliexpress: ['[data-testid*="availability" i]', '[data-pl*="quantity" i]', '[class*="product-quantity" i]', '[class*="stock-status" i]', '[class*="sold-out" i]'],
+  aliexpress: ['[data-testid*="availability" i]', '[data-pl*="quantity" i]', '[class*="product-quantity" i]', '[class*="quantity--info" i]', '[class*="stock-status" i]', '[class*="sold-out" i]', '[data-pl="product-action"] button', '.product-action button'],
   zalando: ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="availability-message" i]', '[class*="product-status" i]', '[class*="sold-out" i]'],
 };
 
@@ -851,10 +851,10 @@ function availabilityFromMerchantDom(document: Document, storeType: string): Par
         node.getAttribute('aria-label'), node.getAttribute('title'), node.textContent,
       ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().slice(0, 300);
       if (!raw) continue;
-      if (/outofstock|out\s*of\s*stock|sold\s*out|unavailable|currently\s+unavailable|ausverkauft|nicht\s+verfügbar|rupture|épuis|epuise|indisponible|agotado|esaurito|نفدت\s*الكمية|غير\s*متوفر/i.test(raw)) statuses.add('out_of_stock');
+      if (/outofstock|out\s*of\s*stock|sold\s*out|unavailable|currently\s+unavailable|ausverkauft|nicht\s+verfügbar|rupture|épuis|epuise|indisponible|agotado|esaurito|can'?t\s+ship\s+to|cannot\s+be\s+shipped|livraison\s+indisponible|نفدت\s*الكمية|غير\s*متوفر|لا\s*يمكن\s*الشحن/i.test(raw)) statuses.add('out_of_stock');
       else if (/limitedavailability|limited\s*stock|low\s*stock|only\s+\d+\s+left|nur\s+noch\s+\d+|nur\s+wenige\s+verfügbar|plus\s+que\s*\d+/i.test(raw)) statuses.add('limited');
-      else if (/instock|in\s*stock|available|lieferbar|verfügbar|en\s+stock|disponible/i.test(raw)) statuses.add('in_stock');
-      else if (!isDisabledControl && storeType === 'shein' && /\b(?:add\s*to\s*(?:bag|cart|basket)|ajouter\s*au\s*(?:panier|sac)|in\s*(?:den\s*warenkorb|die\s*einkaufstasche)|a(?:ñ|n)adir\s*(?:a\s*la\s*(?:bolsa|cesta)|al\s*carrito)|aggiungi\s*(?:al\s*carrello|alla\s*borsa))\b|أضف\s*إلى\s*(?:السلة|العربة|الحقيبة)|إضافة\s*إلى\s*(?:السلة|العربة|الحقيبة)/i.test(raw)) {
+      else if (/instock|in\s*stock|available|lieferbar|verfügbar|en\s+stock|disponible|\b\d+\s*(?:pieces?|pcs|pi[eè]ces?|unidades?|pe[cç]as?)\b/i.test(raw)) statuses.add('in_stock');
+      else if (!isDisabledControl && (storeType === 'shein' || storeType === 'aliexpress') && /\b(?:add\s*to\s*(?:bag|cart|basket)|buy\s*now|ajouter\s*au\s*(?:panier|sac)|acheter\s*maintenant|in\s*(?:den\s*warenkorb|die\s*einkaufstasche)|a(?:ñ|n)adir\s*(?:a\s*la\s*(?:bolsa|cesta)|al\s*carrito)|aggiungi\s*(?:al\s*carrello|alla\s*borsa))\b|أضف\s*إلى\s*(?:السلة|العربة|الحقيبة)|إضافة\s*إلى\s*(?:السلة|العربة|الحقيبة)/i.test(raw)) {
         statuses.add('in_stock');
       }
     }
@@ -956,9 +956,14 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     // inline JavaScript object instead of application/json.
     const inlineMarkers = ['productData:', 'var meta =', 'window.meta =', 'window.__PRODUCT__ ='];
     const sheinInlineMarkers = ['gbRawData =', 'window.gbRawData =', '"gbRawData":', 'productIntroData =', 'window.productIntroData =', '"productIntroData":', 'gbProductIntroData =', 'window.gbProductIntroData =', '__SSR_DATA__ =', 'window.__SSR_DATA__ ='];
+    const aeInlineMarkers = ['window.runParams =', 'runParams =', 'data:', '_dida_config_._init_data_ =', 'window._dida_config_ =', '__INIT_DATA__ =', 'window.__INIT_DATA__ ='];
     let sheinRawState: any = null;
+    let aeRawState: any = null;
     const urlSheinGoodsId = storeType === 'shein'
       ? (String(baseUrl || '').match(/(?:[?&](?:goods_id|goodsId|productId)=|(?:^|[-/])p-|\/p\/|\/product-item-v\d+-)(\d{5,16})(?=[-./?&#]|$)/i)?.[1] || '')
+      : '';
+    const urlAeItemId = storeType === 'aliexpress'
+      ? (String(baseUrl || '').match(/(?:\/(?:item|i)\/|\/store\/product\/[^/]+\/(?:\d+_)?|[?&](?:productId|itemId|item_id)=)(\d{6,20})(?=\.html|[/?&#]|$)/i)?.[1] || '')
       : '';
     for (const node of Array.from(document.querySelectorAll('script:not([type="application/ld+json"]):not([type="application/json"])')).slice(0, 100)) {
       const raw = node.textContent || '';
@@ -982,6 +987,21 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
           if (urlSheinGoodsId && candidateGid && candidateGid !== urlSheinGoodsId) continue;
           if (detail?.goods_id || detail?.goods_name || detail?.salePrice || unwrapped?.attrSizeList) {
             sheinRawState = { root: unwrapped, detail };
+            break;
+          }
+        }
+      }
+      if (storeType === 'aliexpress' && !aeRawState && /(?:runParams|_dida_config_|__INIT_DATA__|productInfoComponent|skuPriceList)/.test(raw)) {
+        for (const marker of aeInlineMarkers) {
+          const parsed = parseBalancedJsonObject(raw, marker);
+          if (!parsed || typeof parsed !== 'object') continue;
+          let aeRoot = parsed._init_data_?.data || parsed.data?.data || parsed.data || parsed.result || parsed;
+          if (aeRoot?.fields && typeof aeRoot.fields === 'object') aeRoot = aeRoot.fields;
+          const info = aeRoot?.productInfoComponent || aeRoot?.pageModule || aeRoot?.titleModule || {};
+          const candItemId = String(info?.id || info?.productId || aeRoot?.productId || aeRoot?.itemId || '').trim();
+          if (urlAeItemId && candItemId && /^\d{6,20}$/.test(candItemId) && candItemId !== urlAeItemId) continue;
+          if (info?.subject || aeRoot?.priceComponent || aeRoot?.priceModule || aeRoot?.skuComponent || aeRoot?.skuModule) {
+            aeRawState = aeRoot;
             break;
           }
         }
@@ -1030,6 +1050,78 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
         featured_image: sImgs[0],
         options: sMainColor && sVariants.length ? ['Color', 'Size'] : (sVariants.length ? ['Size'] : (sMainColor ? ['Color'] : [])),
         variants: sVariants,
+      });
+    }
+    if (aeRawState && !embeddedProducts.length) {
+      const aeInfo = aeRawState.productInfoComponent || aeRawState.pageModule || aeRawState.titleModule || {};
+      const aePrice = aeRawState.priceComponent || aeRawState.priceModule || {};
+      const aeSku = aeRawState.skuComponent || aeRawState.skuModule || {};
+      const aeImg = aeRawState.imageComponent || aeRawState.imageModule || {};
+      const aeCurrency = String(
+        aePrice?.currencyCode || aePrice?.currency
+        || aeRawState?.currencyComponent?.currencyCode
+        || aePrice?.discountPrice?.minActivityAmount?.currency
+        || aePrice?.origPrice?.minAmount?.currency || '',
+      ).trim().toUpperCase();
+      const minAct = parsePrice(aePrice?.discountPrice?.minActivityAmount?.value ?? aePrice?.actMinPrice ?? aePrice?.formatedActivityPrice);
+      const maxAct = parsePrice(aePrice?.discountPrice?.maxActivityAmount?.value ?? aePrice?.actMaxPrice);
+      const minOrig = parsePrice(aePrice?.origPrice?.minAmount?.value ?? aePrice?.minPrice ?? aePrice?.formatedPrice);
+      const maxOrig = parsePrice(aePrice?.origPrice?.maxAmount?.value ?? aePrice?.maxPrice);
+      const aeSinglePrice = minAct > 0 && (!maxAct || Math.abs(maxAct - minAct) < 0.005)
+        ? minAct
+        : (!minAct && minOrig > 0 && (!maxOrig || Math.abs(maxOrig - minOrig) < 0.005) ? minOrig : 0);
+      const aeImgs = (Array.isArray(aeImg?.imagePathList) ? aeImg.imagePathList : [])
+        .map((u: any) => (typeof u === 'string' && u.startsWith('//') ? `https:${u}` : u))
+        .filter((u: any) => typeof u === 'string' && /^https?:\/\//i.test(u));
+      const aeProps = Array.isArray(aeSku?.productSKUPropertyList) ? aeSku.productSKUPropertyList : [];
+      const aeOptNames = aeProps.slice(0, 3).map((p: any) => cleanLabel(p?.skuPropertyName || p?.name)).filter(Boolean);
+      const valLookup = new Map<string, { label: string; img?: string }>();
+      for (const prop of aeProps) {
+        const pid = String(prop?.skuPropertyId ?? prop?.id ?? '');
+        for (const v of (Array.isArray(prop?.skuPropertyValues) ? prop.skuPropertyValues : [])) {
+          const vid = String(v?.propertyValueIdLong ?? v?.propertyValueId ?? '');
+          const label = cleanLabel(v?.propertyValueDisplayName || v?.propertyValueName || v?.name);
+          const rawVImg = v?.skuPropertyImagePath || v?.skuPropertyImageSummPath;
+          const img = typeof rawVImg === 'string' && rawVImg.startsWith('//') ? `https:${rawVImg}` : rawVImg;
+          if (pid && vid && label) valLookup.set(`${pid}:${vid}`, { label, img });
+        }
+      }
+      const aeSkus = Array.isArray(aeSku?.skuPriceList) ? aeSku.skuPriceList : [];
+      const aeVariants = aeSkus.slice(0, 60).map((s: any) => {
+        const sVal = s?.skuVal || s || {};
+        const propStr = String(s?.skuAttr || s?.skuPropIds || '');
+        const chosen = propStr.split(/[;,]/).map((seg) => {
+          const pair = seg.split('#')[0]?.trim() || '';
+          const fallback = cleanLabel(seg.split('#')[1] || '');
+          return valLookup.get(pair)?.label || fallback;
+        }).filter(Boolean);
+        const vPrice = parsePrice(
+          sVal?.skuActivityAmount?.value ?? sVal?.actSkuMultiCurrencyCalPrice ?? sVal?.actSkuCalPrice
+          ?? sVal?.skuAmount?.value ?? sVal?.skuMultiCurrencyCalPrice ?? sVal?.skuCalPrice,
+        );
+        const qty = sVal?.availQuantity !== undefined ? Number(sVal.availQuantity) : NaN;
+        const avail = !(!Number.isNaN(qty) && qty <= 0) && s?.salable !== false;
+        return {
+          id: String(s?.skuIdStr || s?.skuId || chosen.join('/')),
+          title: chosen.join(' / ') || 'Default',
+          option1: chosen[0],
+          option2: chosen[1],
+          option3: chosen[2],
+          available: avail,
+          price: vPrice > 0 ? String(vPrice) : undefined,
+          featured_image: aeImgs[0],
+        };
+      }).filter((v: any) => v.option1 || aeSkus.length === 1);
+      const aeId = String(aeInfo?.id || aeInfo?.productId || urlAeItemId || '').trim();
+      embeddedProducts.push({
+        id: aeId ? `AE-${aeId}` : undefined,
+        title: aeInfo?.subject || aeInfo?.title || undefined,
+        currency: /^[A-Z]{3}$/.test(aeCurrency) ? aeCurrency : undefined,
+        price: aeSinglePrice || (aeVariants.length === 1 ? parsePrice(aeVariants[0].price) : undefined) || undefined,
+        images: aeImgs,
+        featured_image: aeImgs[0],
+        options: aeOptNames,
+        variants: aeOptNames.length ? aeVariants : [],
       });
     }
     const embeddedProduct = embeddedProducts.sort((a, b) => {
@@ -1195,11 +1287,36 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       }
       return text('[class*="price"]:not([style*="line-through"])');
     };
+    const cleanAliExpressDomPrice = (): string => {
+      for (const sel of [
+        '[data-pl="product-price"] [class*="price--currentPriceText" i]',
+        '[data-pl="product-price"] [class*="price--current" i]',
+        '.product-price-current',
+        '.uniform-banner-box-price',
+        '[class*="price-default--current" i]',
+      ]) {
+        const el = document.querySelector(sel);
+        if (!el) continue;
+        const clone = el.cloneNode(true) as Element;
+        for (const bad of Array.from(clone.querySelectorAll('del, s, strike, [class*="original" i], [class*="discount" i]'))) {
+          bad.remove();
+        }
+        const normalized = (clone.textContent || '')
+          .replace(/\s+/g, ' ')
+          .replace(/\s*\/\s*(?:pc|pcs|piece|pi[eè]ce|lot|set|pair|paire|pack|unit|item)s?\b.*$/i, '')
+          .replace(/(\d)\s*([.,])\s*(\d{1,2})(?!\d)/g, '$1$2$3')
+          .trim();
+        if (normalized && parsePrice(normalized) > 0) return normalized;
+      }
+      return text('[itemprop="price"], [data-price]');
+    };
     const selectorPrice = storeType === 'amazon'
       ? text('.apexPriceToPay .a-offscreen, #corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen, #priceblock_dealprice, #newBuyBoxPrice')
       : storeType === 'shein'
         ? cleanSheinDomPrice()
-        : text('[itemprop="price"], [data-price], [class*="price"]');
+        : storeType === 'aliexpress'
+          ? cleanAliExpressDomPrice()
+          : text('[itemprop="price"], [data-price], [class*="price"]');
     // Amazon : la lecture dédiée remplace le sélecteur historique, qui ne pouvait
     // pas voir un prix éclaté en spans `a-price-whole`/`a-price-fraction`.
     const amazonPriceText = amazon?.price.current || '';

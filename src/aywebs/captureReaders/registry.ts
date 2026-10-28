@@ -1,4 +1,5 @@
 import type { AyWebsCaptureReaderDefinition } from './contract';
+import { aliexpressCaptureReader } from './aliexpress';
 import { amazonCaptureReader } from './amazon';
 import { primarkCaptureReader } from './primark';
 import { sephoraCaptureReader } from './sephora';
@@ -14,6 +15,7 @@ export const AYWEBS_CAPTURE_READERS: Readonly<Record<string, AyWebsCaptureReader
   primark: primarkCaptureReader,
   shein: sheinCaptureReader,
   temu: temuCaptureReader,
+  aliexpress: aliexpressCaptureReader,
 };
 
 export function ayWebsCaptureReader(storeId: unknown): AyWebsCaptureReaderDefinition | null {

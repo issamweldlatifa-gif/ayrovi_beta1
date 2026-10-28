@@ -27,6 +27,8 @@ export interface VariantPageInput {
 const ASIN_SHAPE = /^[A-Z0-9]{10}$/i;
 const SHEIN_VARIANT_ID_SHAPE = /^(?:shein:|SHEIN-)(\d{5,16})$/i;
 const SHEIN_HOST_SHAPE = /(?:^|\.)shein\.(?:com|co\.uk|fr|de|es|it|ca|com\.mx|com\.br)$/i;
+const AE_VARIANT_ID_SHAPE = /^(?:ae:|AE-)(\d{5,24})$/i;
+const AE_HOST_SHAPE = /(?:^|\.)aliexpress\.(?:com|us|ru)$/i;
 
 const lower = (value: unknown): string => String(value ?? '').trim().toLowerCase();
 
@@ -37,6 +39,14 @@ function extractSheinGoodsIdFromUrl(rawUrl: string): string | null {
     || /\/p\/(\d{5,16})(?=[-./?&#]|$)/i.exec(rawUrl)
     || /\/product-item-v\d+-(\d{5,16})(?=[-./?&#]|$)/i.exec(rawUrl);
   return pMatch ? pMatch[1] : null;
+}
+
+function extractAliExpressItemIdFromUrl(rawUrl: string): string | null {
+  const pMatch = /\/(?:item|i)\/(\d{6,20})\.html(?:[/?#]|$)/i.exec(rawUrl)
+    || /\/store\/product\/[^/]+\/(?:\d+_)?(\d{6,20})\.html(?:[/?#]|$)/i.exec(rawUrl);
+  if (pMatch) return pMatch[1];
+  const qMatch = /[?&](?:productId|itemId|item_id)=(\d{6,20})(?:&|$)/i.exec(rawUrl);
+  return qMatch ? qMatch[1] : null;
 }
 
 export function variantPageUrlFor(input: VariantPageInput): string | null {
@@ -67,6 +77,34 @@ export function variantPageUrlFor(input: VariantPageInput): string | null {
     if (!bestShein) return null;
     const protocol = parsedUrl.protocol === 'http:' ? 'http:' : 'https:';
     return `${protocol}//${parsedUrl.host}/-p-${bestShein.goodsId}.html`;
+  }
+
+  if (input.storeId === 'aliexpress') {
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(input.sourceUrl);
+    } catch {
+      return null;
+    }
+    if (!AE_HOST_SHAPE.test(parsedUrl.hostname)) return null;
+    const itemId = extractAliExpressItemIdFromUrl(input.sourceUrl);
+    if (!itemId) return null;
+    const currentSkuId = parsedUrl.searchParams.get('sku_id') || parsedUrl.searchParams.get('skuId') || '';
+    const coveredAe = input.options.map((option) => {
+      let hits = 0;
+      for (const name of chosen) {
+        const published = Object.entries(option.attributes || {})
+          .find(([key]) => lower(key) === lower(name));
+        if (published && lower(published[1]) === lower(input.selection[name])) hits += 1;
+      }
+      const skuId = AE_VARIANT_ID_SHAPE.exec(String(option.sourceVariantId || '').trim())?.[1] ?? '';
+      return { hits, skuId };
+    }).filter((entry) => entry.hits > 0 && entry.skuId && entry.skuId !== currentSkuId);
+    coveredAe.sort((a, b) => b.hits - a.hits);
+    const bestAe = coveredAe[0];
+    if (!bestAe) return null;
+    const protocol = parsedUrl.protocol === 'http:' ? 'http:' : 'https:';
+    return `${protocol}//${parsedUrl.host}/item/${itemId}.html?sku_id=${bestAe.skuId}`;
   }
 
   if (input.storeId !== 'amazon') return null;

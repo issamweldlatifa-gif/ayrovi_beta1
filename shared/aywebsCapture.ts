@@ -76,10 +76,12 @@ export interface AyWebsCapturedVariantValue {
   priceFrom?: boolean;
   /** Stock annoncé sur la valeur (« Only 6 left ») — jamais déduit. */
   stock?: number | null;
-  /** Photo HTTP(S) de cette valeur (pastille couleur SHEIN/catalogue), telle que publiée. */
+  /** Photo HTTP(S) de cette valeur (pastille couleur SHEIN/AliExpress/catalogue), telle que publiée. */
   image?: string | null;
   /** Identifiant fiche marchande associé à cette valeur (ex. `goods_id` d'une autre couleur SHEIN). */
   goodsId?: string | null;
+  /** Identifiant SKU marchand associé à cette valeur/combinaison (ex. `sku_id` AliExpress). */
+  skuId?: string | null;
 }
 
 /** Groupe de variantes nommé, tel que lu par le script du client. */
@@ -156,6 +158,25 @@ export interface AyWebsSheinEvidence {
   skuId?: string | null;
 }
 
+export interface AyWebsAliExpressSkuEvidence {
+  skuId?: string | null;
+  /** Attributs exacts de cette combinaison (« Color » → « Red », « Plug Type » → « EU Plug »). */
+  attributes: Record<string, string>;
+  /** Prix publié pour CE SKU (« 20.99 USD », « 24,90 € ») — texte brut vérifié par le serveur. */
+  price?: string | null;
+  available?: boolean | null;
+  stock?: number | null;
+  image?: string | null;
+}
+
+export interface AyWebsAliExpressEvidence {
+  readerVersion?: number;
+  pageItemId?: string | null;
+  selectedSkuId?: string | null;
+  /** Matrice bornée des SKUs publiés sur la fiche (max 60 combinaisons). */
+  skus?: AyWebsAliExpressSkuEvidence[];
+}
+
 export interface AyWebsCapturedPage {
   /** Version du contrat : un serveur ancien refuse une capture future. */
   v: number;
@@ -174,6 +195,11 @@ export interface AyWebsCapturedPage {
    * lues depuis le DOM produit et l'état machine embarqué (`gbRawData` / `productIntroData`).
    */
   shein?: AyWebsSheinEvidence | null;
+  /**
+   * AliExpress : identité fiche (`item_id`), SKU actif et matrice des combinaisons
+   * publiées par la fiche (`runParams` / `_dida_config_` / Comet).
+   */
+  aliexpress?: AyWebsAliExpressEvidence | null;
   /** URL de la page réellement affichée dans le WebView. */
   url: string;
   /** `<link rel="canonical">` ou `og:url`, quand la page les publie. */
