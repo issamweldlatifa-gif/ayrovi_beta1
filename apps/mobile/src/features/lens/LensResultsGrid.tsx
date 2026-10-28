@@ -7,9 +7,9 @@ import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { LensResultCard } from './LensResultCard';
-import { LensFilterBar } from './LensFilterBar';
+import { LensTitleFilter } from './LensTitleFilter';
 import { LENS_COLORS } from './lensPalette';
-import { applyLensFilters, DEFAULT_FILTERS, presentMerchants, type LensFilters } from './lensRanking';
+import { applyLensFilters } from './lensRanking';
 import { useLensSheetScroll } from './lensSheetScroll';
 
 export function LensResultsGrid({
@@ -37,16 +37,16 @@ export function LensResultsGrid({
   // vers le bas baisse la feuille au lieu de faire défiler la liste.
   const onSheetScroll = useLensSheetScroll();
   /**
-   * Filtres (28/10/2026) : l'état vit ICI, pas dans l'écran. Une nouvelle
-   * recherche remonte une grille neuve (clé différente en amont), donc les
-   * filtres repartent de zéro avec les nouveaux résultats — c'est voulu.
+   * Le filtre (28/10/2026) : UN champ, sur le TITRE du produit. L'état vit
+   * ICI, pas dans l'écran — une nouvelle recherche remonte une grille neuve
+   * (clé différente en amont), donc le filtre repart de zéro avec les nouveaux
+   * résultats, c'est voulu. L'ordre, lui, n'est pas un réglage : il applique
+   * toujours la confiance marchande (`lensRanking.ts`).
    */
-  const [filters, setFilters] = useState<LensFilters>(DEFAULT_FILTERS);
+  const [query, setQuery] = useState('');
 
-  const shown = useMemo(() => applyLensFilters(candidates, filters), [candidates, filters]);
-  const merchants = useMemo(() => presentMerchants(candidates).slice(0, 6), [candidates]);
+  const shown = useMemo(() => applyLensFilters(candidates, query), [candidates, query]);
   const filteredOut = shown.length !== candidates.length;
-  const hasExternal = candidates.some((candidate) => candidate.kind !== 'catalog');
 
   if (candidates.length === 0) {
     return (
@@ -100,29 +100,17 @@ export function LensResultsGrid({
           {favoriteNote ? (
             <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{t(favoriteNote)}</AppText>
           ) : null}
-          {/* Ce que fait l'appui : la page du marchand s'ouvre dans AYWEBs.
+          {/* Ce que fait l'appui : la page du marchand s'ouvre dans AYWEBs —
+              pour TOUTES les cartes, y compris le catalogue (28/10/2026).
               Dit UNE fois, en haut — pas une étiquette sur chaque carte. */}
-          {hasExternal ? (
-            <AppText variant="caption" color={theme.colors.muted} testID="lens-open-hint">
-              {t('lens.openInAywebs')}
-            </AppText>
-          ) : null}
-          <LensFilterBar
-            filters={filters}
-            onChange={setFilters}
-            merchants={merchants}
-            shown={shown.length}
-            total={candidates.length}
-          />
+          <AppText variant="caption" color={theme.colors.muted} testID="lens-open-hint">
+            {t('lens.openInAywebs')}
+          </AppText>
+          <LensTitleFilter value={query} onChange={setQuery} shown={shown.length} total={candidates.length} />
           {shown.length === 0 ? (
             <View style={styles.filteredEmpty} testID="lens-filters-empty">
               <AppText color={theme.colors.muted} align="center">{t('lens.filters.empty')}</AppText>
-              <Button
-                label={t('lens.filters.reset')}
-                tone="quiet"
-                onPress={() => setFilters(DEFAULT_FILTERS)}
-                block
-              />
+              <Button label={t('lens.filters.clear')} tone="quiet" onPress={() => setQuery('')} block />
             </View>
           ) : null}
         </View>

@@ -11,6 +11,7 @@ import { LENS_CARD_MEDIA_RATIO } from './lensCard';
 import { lensMediaChain } from './lensMedia';
 import { LensPriceBlock } from './LensPriceBlock';
 import { LENS_COLORS } from './lensPalette';
+import { productTitle } from './lensTitle';
 
 type Props = {
   candidate: LensCandidate;
@@ -34,6 +35,9 @@ function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Pr
   const intro = useRef(new Animated.Value(theme.motion.reduced === 0 ? 1 : 0)).current;
   const media = lensMediaChain(candidate.image || candidate.images[0] || '', 'card');
   const brand = candidate.brand?.trim() || candidate.source.trim();
+  /* Titre PRODUIT, pas titre de page (28/10/2026) : la boutique est déjà écrite
+     en gras juste au-dessus, inutile de la répéter dans le titre. */
+  const title = productTitle(candidate.title, candidate);
 
   useEffect(() => {
     Animated.timing(intro, {
@@ -57,7 +61,7 @@ function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Pr
       <Pressable
         onPress={() => onOpen(candidate)}
         accessibilityRole="button"
-        accessibilityLabel={t('lens.viewProduct', { title: candidate.title })}
+        accessibilityLabel={t('lens.viewProduct', { title })}
         testID={`lens-result-${candidate.id}`}
         style={({ pressed }) => [styles.pressable, { opacity: pressed ? theme.opacity.subtle : 1 }]}
       >
@@ -68,7 +72,7 @@ function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Pr
               fallbackUris={media.slice(1)}
               contentFit="cover"
               style={styles.media}
-              accessibilityLabel={candidate.title}
+              accessibilityLabel={title}
             />
           ) : (
             <View style={styles.mediaFallback}>
@@ -105,7 +109,7 @@ function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Pr
           {brand ? (
             <AppText variant="caption" weight="bold" numberOfLines={1} style={styles.brand}>{brand}</AppText>
           ) : null}
-          <AppText variant="label" numberOfLines={2} style={styles.title}>{candidate.title}</AppText>
+          <AppText variant="label" numberOfLines={2} style={styles.title}>{title}</AppText>
           <LensPriceBlock candidate={candidate} compact onWhite />
           {candidate.ratingKind === 'merchant' && candidate.rating != null ? (
             <View style={[styles.rating, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>

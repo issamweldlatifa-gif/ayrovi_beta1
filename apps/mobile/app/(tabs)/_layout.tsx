@@ -23,6 +23,7 @@
 import { Tabs, usePathname } from 'expo-router';
 import { useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { useTheme } from '@/design/theme';
 import { revealChrome, useChromeHidden } from '@/design/chrome';
@@ -31,9 +32,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
 const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
-  aywebs: { active: 'pricetags', inactive: 'pricetags-outline' },
   account: { active: 'person', inactive: 'person-outline' },
 };
+
+/**
+ * Onglet AYWEBs — c'est le MOT-SYMBOLE qui tient lieu d'icône (28/10/2026 :
+ * « الأيقونة الحالية بش تولي شعار — هو أيقونة، بطريقة متناسقة »).
+ *
+ * Même fichier officiel que l'en-tête, même traitement : violet de marque en
+ * thème clair, blanc en thème sombre (le violet #571EF6 sur #0A0A0A ne se lit
+ * pas). 60 × 16, soit exactement le ratio du fichier (551 × 147 ≈ 3.75) :
+ * aucune déformation, et une largeur qui reste dans la moitié de la barre.
+ */
+const AYWEB_TAB_LOGO = { width: 60, height: 16 };
 
 /**
  * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
@@ -103,6 +114,22 @@ export default function TabsLayout() {
         },
         tabBarLabelStyle: { ...theme.text('caption', 'bold') },
         tabBarIcon: ({ focused, color, size }) => {
+          if (route.name === 'aywebs') {
+            return (
+              <AppImage
+                localSource={
+                  theme.mode === 'dark'
+                    ? require('../../assets/aywebs/aywebs-wordmark-white.png')
+                    : require('../../assets/aywebs/aywebs-wordmark-violet.png')
+                }
+                contentFit="contain"
+                decorative
+                background={null}
+                style={AYWEB_TAB_LOGO}
+                testID="aywebs-tab-logo"
+              />
+            );
+          }
           const pair = ICONS[route.name] ?? ICONS.account;
           return <Ionicons name={focused ? pair.active : pair.inactive} size={size ?? theme.iconSize.md} color={color} />;
         },

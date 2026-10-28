@@ -4,8 +4,10 @@
  *   1. « Explorer par catégorie » — six grandes cartes carrées, libellé SOUS
  *      la carte (jamais dans la photo, jamais tronqué) ;
  *   2. « Sponsorisé » — visuel éditorial, titre, sous-titre, bouton contour ;
- *   3. « Explorer les boutiques » — quatre grandes cartes carrées puis
- *      « Toutes les boutiques · N », qui mène à la liste complète.
+ *   3. « Explorer les boutiques » — quatre grandes cartes carrées. Le titre de
+ *      la section porte le chevron qui mène à la liste complète ; la barre
+ *      « Toutes les boutiques » qui doublait cette entrée est supprimée
+ *      (28/10/2026 : « احذف البار، مبقاش نحبو بان »).
  *
  * ── D'où viennent les formes ────────────────────────────────────────────────
  * Rien n'est réinventé ici : les tailles de texte viennent de `theme.text()`
@@ -199,7 +201,6 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
   };
 
   const gridStores = searching ? matchingStores : featuredStores;
-  const storeListLabel = theme.isRTL ? 'chevron-back' : 'chevron-forward';
 
   return (
     <View testID="aywebs-home-content" style={styles.content}>
@@ -331,42 +332,6 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
             {searching ? t('aywebs.home.noSearchResults') : t('aywebs.stores.noStores')}
           </AppText>
         )}
-
-        {!searching ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('aywebs.home.allStores')}
-            onPress={openAllStores}
-            testID="aywebs-home-all-stores"
-            style={({ pressed }) => [
-              styles.allStores,
-              {
-                borderColor: theme.colors.line,
-                backgroundColor: theme.colors.surface,
-                flexDirection: rowDirectionFor(theme.isRTL),
-                opacity: pressed ? theme.opacity.dimmed : 1,
-              },
-            ]}
-          >
-            <View style={[styles.allStoresLabel, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-              {/* Le repère de la section est le VIOLET de la marque, comme le
-                  mot-symbole : c'est `theme.colors.accent` (#571EF6), la même
-                  valeur — pas une teinte choisie à part (27/10/2026). */}
-              <Ionicons name="grid-outline" size={theme.iconSize.sm} color={theme.colors.accent} accessibilityElementsHidden />
-              <AppText variant="label" weight="bold">{t('aywebs.home.allStores')}</AppText>
-            </View>
-            {/* Pas de compteur : il affichait « 0 » quand le catalogue n'avait
-                pas encore répondu, et un chiffre qui ment vaut moins que pas de
-                chiffre (décision du 27/10/2026). La flèche suffit à dire
-                « ça ouvre une liste ». */}
-            <Ionicons
-              name={storeListLabel}
-              size={theme.iconSize.sm}
-              color={theme.colors.muted}
-              accessibilityElementsHidden
-            />
-          </Pressable>
-        ) : null}
       </View>
     </View>
   );
@@ -629,14 +594,4 @@ const styles = StyleSheet.create({
   sponsorLabel: { alignItems: 'center', gap: 4 },
   sponsorArt: { width: '100%', aspectRatio: 16 / 9 },
   sponsorTitle: { marginTop: 4 },
-  allStores: {
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: RADIUS.full,
-    paddingHorizontal: 16,
-    marginTop: 4,
-  },
-  allStoresLabel: { alignItems: 'center', gap: 8, flexShrink: 1 },
 });

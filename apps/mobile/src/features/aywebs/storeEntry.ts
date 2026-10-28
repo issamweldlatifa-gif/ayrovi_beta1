@@ -66,12 +66,22 @@ export interface ProductEntryTarget {
 }
 
 export function productEntryTarget(rawUrl: string, storeName = ''): ProductEntryTarget | null {
-  const url = String(rawUrl ?? '').trim();
-  if (!isWebPageUrl(url)) return null;
+  const raw = String(rawUrl ?? '').trim();
+  if (!isWebPageUrl(raw)) return null;
+  let url = raw;
   try {
-    /* Le navigateur intégré ne charge que HTTPS : une adresse http serait
-       bloquée par la politique de navigation, donc refusée ici aussi. */
-    if (new URL(url).protocol !== 'https:') return null;
+    const parsed = new URL(raw);
+    /* Le navigateur intégré ne charge que HTTPS (ATS iOS, politique de
+       navigation). Une fiche annoncée en `http:` n'est donc pas refusée : son
+       adresse est promue en `https:`, ce que font déjà tous les marchands qui
+       ont un certificat. Une carte Lens ne doit JAMAIS rouvrir autre chose que
+       AYWEBs — c'était l'ancien repli sur la fiche interne (28/10/2026). */
+    if (parsed.protocol === 'http:') {
+      parsed.protocol = 'https:';
+      url = parsed.toString();
+    } else if (parsed.protocol !== 'https:') {
+      return null;
+    }
   } catch {
     return null;
   }

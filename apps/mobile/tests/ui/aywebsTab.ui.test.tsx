@@ -114,12 +114,12 @@ describe('onglet AYWEBs — accueil en trois sections', () => {
     expect(screen.getByTestId('aywebs-home-sponsor-art')).toBeTruthy();
     expect(screen.getByTestId('aywebs-home-sponsor-cta')).toBeTruthy();
 
-    // 3 — boutiques : quatre cartes + l'entrée vers la liste complète
+    // 3 — boutiques : quatre cartes. La barre « Toutes les boutiques » qui
+    // doublait l'entrée de la section est supprimée (28/10/2026) : le titre de
+    // section porte le chevron, et rien d'autre ne mène à la liste.
     expect(screen.getByTestId('aywebs-home-section-stores')).toBeTruthy();
-    expect(screen.getByTestId('aywebs-home-all-stores')).toBeTruthy();
-    /* Plus de compteur dans la barre (27/10/2026) : il affichait « 0 » tant que
-       le catalogue n'avait pas répondu. On vérifie donc qu'aucun chiffre ne
-       s'y trouve — et jamais « 0 » à côté du libellé. */
+    expect(screen.queryByTestId('aywebs-home-all-stores')).toBeNull();
+    expect(screen.queryByText('Toutes les boutiques')).toBeNull();
     expect(screen.queryByText('0')).toBeNull();
     expect(screen.queryByText('4')).toBeNull();
 
@@ -173,10 +173,13 @@ describe('onglet AYWEBs — accueil en trois sections', () => {
     expect(screen.getByText('Explorer les catégories')).toBeTruthy();
   });
 
-  it('« Toutes les boutiques » mène à la liste complète', async () => {
+  it('le titre de la section boutiques mène à la liste complète', async () => {
     renderTab();
-    await waitFor(() => expect(screen.getByTestId('aywebs-home-all-stores')).toBeTruthy(), { timeout: 5000 });
-    fireEvent.press(screen.getByTestId('aywebs-home-all-stores'));
+    await waitFor(() => expect(screen.getByTestId('aywebs-home-section-stores')).toBeTruthy(), { timeout: 5000 });
+    /* Une seule entrée vers la liste : le titre de section (chevron). La barre
+       « Toutes les boutiques » n'existe plus. */
+    const entry = screen.getByRole('button', { name: 'Explorer les boutiques' });
+    fireEvent.press(entry);
     expect(router.push).toHaveBeenCalledWith('/aywebs/stores');
   });
 

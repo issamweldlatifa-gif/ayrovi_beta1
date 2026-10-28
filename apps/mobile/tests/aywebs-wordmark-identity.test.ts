@@ -141,6 +141,17 @@ describe('mot-symbole AYWEBs — couleur et taille', () => {
     expect(header).toContain('aywebs-wordmark-white.png');
     expect(sheet).toContain('aywebs-wordmark-white.png');
 
+    /* Onglet AYWEBs (28/10/2026) : le mot-symbole remplace l'icône générique
+       dans la barre du bas — même fichier, même ratio, même traitement. */
+    const tabs = readFileSync(path.join(ROOT, 'app/(tabs)/_layout.tsx'), 'utf8');
+    expect(tabs).toContain('aywebs-wordmark-violet.png');
+    expect(tabs).toContain('aywebs-wordmark-white.png');
+    expect(tabs.includes('pricetags'), 'la puce générique doit avoir disparu').toBe(false);
+    const tabSize = /AYWEB_TAB_LOGO = \{\s*width:\s*(\d+),\s*height:\s*(\d+)\s*\}/.exec(tabs);
+    expect(tabSize, 'taille du mot-symbole introuvable dans la barre du bas').not.toBeNull();
+    const [, tabWidth, tabHeight] = tabSize as RegExpExecArray;
+    expect(Number(tabWidth) / Number(tabHeight)).toBeCloseTo(ratio, 1);
+
     const sheetSize = /headerWordmark:\s*\{\s*width:\s*(\d+),\s*height:\s*(\d+)\s*\}/.exec(sheet);
     expect(sheetSize, 'taille du mot-symbole introuvable dans la feuille d’ajout').not.toBeNull();
     const [, sheetWidth, sheetHeight] = sheetSize as RegExpExecArray;

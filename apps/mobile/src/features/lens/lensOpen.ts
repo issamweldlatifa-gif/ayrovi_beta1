@@ -1,34 +1,34 @@
 /**
- * Lens — décider où mène l'appui sur une carte (23/10/2026).
+ * Lens — où mène l'appui sur une carte (règle du 28/10/2026).
  *
- * La règle est une phrase, et elle tient dans une fonction pure pour être
- * testée sans écran :
+ * Le client a été clair : « بطاقات هذه مهما كان مدخل البحث مسارها AYWEBs، وأي
+ * حاجة قديمة تمنع هذا تتحيّد كامل ». Une seule destination, donc, quel que
+ * soit le chemin qui a produit la carte — lien collé, mots-clés, photo, QR :
  *
- *   • **vente externe** (page d'un marchand) → navigateur intégré AYWEBs, à
- *     l'adresse exacte de la fiche. Le client choisit sur le site, la capture
- *     prouve le prix et la variante, et c'est la même feuille qui ajoute ;
- *   • **vente interne** (catalogue ZAYROVI) → fiche ZAYROVI : c'est notre
- *     stock, notre page, notre prix.
+ *   **la page du marchand s'ouvre dans le navigateur AYWEBs**, à l'adresse
+ *   exacte de la fiche. Là, le client choisit couleur/taille sur le site, la
+ *   capture prouve le prix et la variante, et la même feuille ajoute au panier.
  *
- * Une adresse que le navigateur refuserait (schéma inattendu, `http:`) ne
- * fabrique pas un navigateur cassé : on retombe sur la fiche, qui relit la
- * page côté serveur.
+ * Ce fichier ne connaît plus de « fiche interne » : l'ancien repli qui ouvrait
+ * le produit dans Lens (`kind === 'catalog'`, ou une adresse refusée) est
+ * supprimé. Il ne reste que deux issues :
+ *
+ *   • `browser` — la page s'ouvre dans AYWEBs ;
+ *   • `blocked` — l'adresse n'est pas une page web (`javascript:`, vide) :
+ *     la carte n'ouvre rien plutôt que d'ouvrir autre chose que AYWEBs.
  */
 import { productEntryTarget, type ProductEntryTarget } from '@/features/aywebs/storeEntry';
 
 export interface LensOpenableCandidate {
-  kind: 'catalog' | 'external';
   sourceUrl: string;
   source: string;
 }
 
 export type LensOpenDecision =
   | { screen: 'browser'; target: ProductEntryTarget }
-  | { screen: 'product' };
+  | { screen: 'blocked' };
 
 export function lensOpenDecision(candidate: LensOpenableCandidate): LensOpenDecision {
-  if (candidate.kind === 'catalog') return { screen: 'product' };
   const target = productEntryTarget(candidate.sourceUrl, candidate.source);
-  if (!target) return { screen: 'product' };
-  return { screen: 'browser', target };
+  return target ? { screen: 'browser', target } : { screen: 'blocked' };
 }
