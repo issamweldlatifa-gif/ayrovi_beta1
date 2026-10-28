@@ -201,7 +201,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
    * prix ne peut être lu. L'API le dit désormais au lieu de laisser le client
    * découvrir un panier vide.
    */
-  const renderDependentStores = new Set(['shein', 'temu', 'aliexpress']);
+  const renderDependentStores = new Set(['temu', 'aliexpress']);
   const operationalOf = (store: AyWebsStoreDefinition): { operational: boolean; operational_reason: string | null } => {
     if (!store.enabled || !ctx.storeCaptureEnabled(store)) {
       return { operational: false, operational_reason: 'CAPTURE_DISABLED_FOR_STORE' };

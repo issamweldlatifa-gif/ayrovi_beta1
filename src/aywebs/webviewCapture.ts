@@ -30,6 +30,7 @@ import { createHash } from 'node:crypto';
 import type { ScrapedProduct } from '../types';
 import { checkPriceText } from '../scraper/priceIntegrity';
 import { detectAyWebsStore } from '../../shared/aywebsStores';
+import { sheinGoodsId } from './adapters/shein';
 import {
   AYWEBS_CAPTURE_LIMITS,
   AYWEBS_CAPTURE_VERSION,
@@ -89,12 +90,18 @@ const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
   /* ¥ = JPY sur amazon.co.jp, mais CNY ailleurs : réservé à Amazon. */
   { iso: 'JPY', pattern: /[¥￥]/, stores: ['amazon'] },
   { iso: 'TND', pattern: /د\.ت/, stores: ['amazon', 'shein', 'temu', 'aliexpress'] },
-  /* `$` non-USD : les domaines Amazon dont la devise nationale n'est pas l'USD. */
+  /* `US$` est non ambigu quel que soit l'hôte (ex. `US$14.99` sur roe/ca.shein.com). */
+  { iso: 'USD', pattern: /(?:^|[^A-Za-z])US\s?\$/i, stores: ['amazon', 'shein', 'temu', 'aliexpress', 'sephora'] },
+  /* `$` nu non-USD : les domaines dont la devise nationale n'est pas l'USD sont exclus. */
   {
     iso: 'USD',
-    pattern: /\$|US\s?\$/,
+    pattern: /\$/,
     stores: ['amazon', 'shein', 'temu', 'aliexpress', 'sephora'],
-    hostsExcluded: ['amazon.ca', 'amazon.com.au', 'amazon.sg', 'amazon.com.mx', 'amazon.com.br'],
+    hostsExcluded: [
+      'amazon.ca', 'amazon.com.au', 'amazon.sg', 'amazon.com.mx', 'amazon.com.br',
+      'shein.ca', 'ca.shein.com', 'au.shein.com', 'sg.shein.com',
+      'shein.com.mx', 'mx.shein.com', 'shein.com.br', 'br.shein.com',
+    ],
   },
   /* Devises locales des domaines Amazon non-USD (19/10/2026). Chaque règle ne vaut
      que pour SON domaine et ne reconnaît que le symbole NON ambigu : un `$` nu reste
@@ -250,16 +257,26 @@ const AVAILABILITY_VOCABULARY: Array<{ state: AyWebsAvailabilityState; reason: s
     patterns: [
       /outofstock|sold\s*out|out\s*of\s*stock|unavailable|currently\s+unavailable/i,
       /rupture|épuis|indisponible|non\s+disponible/i,
-      /غير\s+متوفر|نفد/i,
+      /ausverkauft|nicht\s+verfügbar|agotad[oa]|esgotad[oa]|esaurit[oa]/i,
+      /غير\s+متوفر|نفد(?:ت\s*الكمية)?|انتهى\s*المخزون/i,
     ],
   },
   {
     state: 'LOW_STOCK', reason: 'merchant_limited_stock',
-    patterns: [/limitedavailability|limited\s*stock|low\s*stock|only\s*\d+\s*left|plus\s+que\s*\d+/i, /derniers?\s+exemplaires?/i],
+    patterns: [
+      /limitedavailability|limited\s*stock|low\s*stock|only\s*\d+\s*left|hurry\s*only\s*\d+|almost\s*sold\s*out|plus\s+que\s*\d+/i,
+      /derniers?\s+exemplaires?|nur\s*noch\s*\d+|solo\s*quedan?\s*\d+|بقي\s*\d+|متبقي\s*\d+/i,
+    ],
   },
   {
     state: 'AVAILABLE', reason: 'merchant_in_stock',
-    patterns: [/instock|in\s*stock|available|add\s*to\s*(?:cart|basket|bag)|buy\s*now|add\s*to\s*cart/i, /en\s+stock|ajouter\s+au\s+panier|acheter/i, /أضف\s+إلى\s+السلة|متوفر/i],
+    patterns: [
+      /instock|in\s*stock|available|add\s*to\s*(?:cart|basket|bag)|buy\s*now/i,
+      /en\s+stock|ajouter\s+(?:au\s+)?(?:panier|sac)|acheter/i,
+      /in\s+den\s+warenkorb|in\s+die\s+einkaufstasche|auf\s+lager|lieferbar/i,
+      /a(?:ñ|n)adir\s+(?:a\s+la\s+(?:bolsa|cesta)|al\s+carrito)|aggiungi\s+(?:al\s+carrello|alla\s+borsa)/i,
+      /(?:أضف|إضافة)\s*(?:إلى\s*|لـ?\s*)?(?:السلة|العربة|الحقيبة|حقيبة\s*التسوق)|اشترِ?(?:\s*الآن)?|متوفر/i,
+    ],
   },
 ];
 
@@ -360,10 +377,22 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
         const available = record.available === true ? true : record.available === false ? false : null;
         const price = priceText && /[0-9]/.test(priceText) ? priceText : null;
         const stock = Number.isFinite(stockNumber) && stockNumber > 0 && stockNumber <= 999 ? stockNumber : null;
-        /* Une ligne sans état, sans prix et sans stock n'apprend rien : elle est
-           écartée (le groupe garde ses libellés). */
-        if (available === null && !price && stock === null) continue;
-        options.push({ value, available, price, priceFrom: record.priceFrom === true, stock });
+        const rawImage = collapse(record.image, 600);
+        const image = /^https?:\/\//i.test(rawImage) ? rawImage : null;
+        const rawGoodsId = collapse(record.goodsId, 32).replace(/^SHEIN-/i, '');
+        const goodsId = /^\d{5,16}$/.test(rawGoodsId) ? rawGoodsId : null;
+        /* Une ligne sans état, sans prix, sans stock, sans image et sans identité
+           n'apprend rien : elle est écartée (le groupe garde ses libellés). */
+        if (available === null && !price && stock === null && !image && !goodsId) continue;
+        options.push({
+          value,
+          available,
+          price,
+          priceFrom: record.priceFrom === true,
+          stock,
+          ...(image ? { image } : {}),
+          ...(goodsId ? { goodsId } : {}),
+        });
       }
     }
     seen.add(key);
@@ -631,6 +660,7 @@ export function classifyAyWebsCapturedPage(signals: AyWebsPageSignals): { kind: 
 export function ayWebsPageSignalsOf(payload: AyWebsCapturedPage): AyWebsPageSignals {
   const title = collapse(payload?.title, AYWEBS_CAPTURE_LIMITS.maxTitleLength);
   const amazon = payload?.amazon;
+  const shein = payload?.shein;
   return {
     hasTitle: Boolean(title),
     hasPrice: Array.isArray(payload?.priceCandidates)
@@ -641,7 +671,10 @@ export function ayWebsPageSignalsOf(payload: AyWebsCapturedPage): AyWebsPageSign
       || (Array.isArray(amazon?.variants) && amazon.variants.length > 0)
       || (Array.isArray(amazon?.options) && amazon.options.length > 0),
     hasImages: Array.isArray(payload?.images) && payload.images.length > 0,
-    hasProductShell: Boolean(amazon && typeof amazon.pageAsin === 'string' && AMAZON_ASIN_SHAPE.test(amazon.pageAsin)),
+    hasProductShell: Boolean(
+      (amazon && typeof amazon.pageAsin === 'string' && AMAZON_ASIN_SHAPE.test(amazon.pageAsin))
+      || (shein && typeof shein.pageGoodsId === 'string' && /^\d{5,16}$/.test(shein.pageGoodsId)),
+    ),
   };
 }
 
@@ -800,7 +833,9 @@ export function validateAyWebsCapturedPage(
   const currencyTexts = `${currencyEvidence} ${candidateCurrencyEvidence}`;
   const publishedIsos = new Set<string>();
   (currencyEvidence.toUpperCase().match(/\b[A-Z]{3}\b/g) || []).forEach((code) => publishedIsos.add(code));
-  (candidateCurrencyEvidence.match(/\b(?:EUR|USD|GBP|JPY|TND)\b/g) || []).forEach((code) => publishedIsos.add(code));
+  for (const match of candidateCurrencyEvidence.matchAll(/(?:^|[^A-Za-z])(EUR|USD|GBP|JPY|TND)(?=$|[^A-Za-z])/g)) {
+    publishedIsos.add(match[1]);
+  }
   const publishedIso = [...publishedIsos][0] || '';
   /* Devises que le texte du montant peut désigner (table de la Phase 0). */
   const hintSet = new Set<string>();
@@ -910,6 +945,26 @@ export function validateAyWebsCapturedPage(
     ? `${title} — ${condition} — ${selectedVariantTexts.join(' / ')}`
     : title;
 
+  let externalId: string | null = null;
+  if (storeForPrice?.id === 'shein') {
+    const rawSheinId = collapse(payload.shein?.pageGoodsId, 32).replace(/^SHEIN-/i, '');
+    let urlSheinId: string | null = null;
+    try { urlSheinId = sheinGoodsId(new URL(pageUrl || requestUrl)); } catch { urlSheinId = null; }
+    const resolvedGoodsId = /^\d{5,16}$/.test(rawSheinId) ? rawSheinId : urlSheinId;
+    if (resolvedGoodsId) externalId = `SHEIN-${resolvedGoodsId}`;
+  }
+
+  const colorImages: Record<string, string[]> = {};
+  for (const group of variantGroups) {
+    if (!/(color|colour|couleur|farbe|colore|kleur|لون)/i.test(group.name)) continue;
+    for (const option of group.options || []) {
+      if (option.image && /^https?:\/\//i.test(option.image)) {
+        const colorKey = option.value.toLowerCase();
+        colorImages[colorKey] = [...new Set([...(colorImages[colorKey] || []), option.image])];
+      }
+    }
+  }
+
   /* Le `ScrapedProduct` produit ici est le MÊME objet que celui du lecteur
      serveur : le reste d'AYWEBs (normaliseur, disponibilité, panier) ne sait
      même pas que la lecture vient du client. `verificationProvider` le dit. */
@@ -918,11 +973,12 @@ export function validateAyWebsCapturedPage(
     store: pageHost,
     storeName: pageHost,
     url: pageUrl || requestUrl,
-    externalId: null,
+    externalId,
     title,
     description: summary || title,
     images,
     mainImage: images[0] || '',
+    ...(Object.keys(colorImages).length ? { colorImages } : {}),
     sourcePrice: price,
     sourceCurrency: currency,
     convertedPriceTND: 0,

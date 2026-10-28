@@ -25,13 +25,51 @@ export interface VariantPageInput {
 }
 
 const ASIN_SHAPE = /^[A-Z0-9]{10}$/i;
+const SHEIN_VARIANT_ID_SHAPE = /^(?:shein:|SHEIN-)(\d{5,16})$/i;
+const SHEIN_HOST_SHAPE = /(?:^|\.)shein\.(?:com|co\.uk|fr|de|es|it|ca|com\.mx|com\.br)$/i;
 
 const lower = (value: unknown): string => String(value ?? '').trim().toLowerCase();
 
+function extractSheinGoodsIdFromUrl(rawUrl: string): string | null {
+  const qMatch = /[?&](?:goods_id|goodsId|productId)=(\d{5,16})(?:&|$)/i.exec(rawUrl);
+  if (qMatch) return qMatch[1];
+  const pMatch = /(?:^|[-/])p-(\d{5,16})(?=[-./?&#]|$)/i.exec(rawUrl)
+    || /\/p\/(\d{5,16})(?=[-./?&#]|$)/i.exec(rawUrl)
+    || /\/product-item-v\d+-(\d{5,16})(?=[-./?&#]|$)/i.exec(rawUrl);
+  return pMatch ? pMatch[1] : null;
+}
+
 export function variantPageUrlFor(input: VariantPageInput): string | null {
-  if (input.storeId !== 'amazon') return null;
   const chosen = Object.keys(input.selection);
   if (!chosen.length) return null;
+
+  if (input.storeId === 'shein') {
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(input.sourceUrl);
+    } catch {
+      return null;
+    }
+    if (!SHEIN_HOST_SHAPE.test(parsedUrl.hostname)) return null;
+    const pageGoodsId = extractSheinGoodsIdFromUrl(input.sourceUrl);
+    const coveredShein = input.options.map((option) => {
+      let hits = 0;
+      for (const name of chosen) {
+        const published = Object.entries(option.attributes || {})
+          .find(([key]) => lower(key) === lower(name));
+        if (published && lower(published[1]) === lower(input.selection[name])) hits += 1;
+      }
+      const goodsId = SHEIN_VARIANT_ID_SHAPE.exec(String(option.sourceVariantId || '').trim())?.[1] ?? '';
+      return { hits, goodsId };
+    }).filter((entry) => entry.hits > 0 && entry.goodsId && entry.goodsId !== pageGoodsId);
+    coveredShein.sort((a, b) => b.hits - a.hits);
+    const bestShein = coveredShein[0];
+    if (!bestShein) return null;
+    const protocol = parsedUrl.protocol === 'http:' ? 'http:' : 'https:';
+    return `${protocol}//${parsedUrl.host}/-p-${bestShein.goodsId}.html`;
+  }
+
+  if (input.storeId !== 'amazon') return null;
 
   const pageAsin = /\/dp\/([A-Z0-9]{10})/i.exec(input.sourceUrl)?.[1]?.toUpperCase() ?? null;
 

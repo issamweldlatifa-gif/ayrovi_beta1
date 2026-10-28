@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { ayWebsAlignAttributes } from '../../shared/aywebsAttributes';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import type { ScrapedProduct } from '../types';
@@ -477,9 +478,20 @@ export async function resolveAyWebsProduct(
   const groupsForSelection = sourceProduct.variantGroups.length
     ? sourceProduct.variantGroups
     : capturedSelectionGroups;
+  const pageCompleteSelection: Record<string, string> | null = (() => {
+    if (input.selectedVariant && Object.keys(input.selectedVariant).length > 0) return null;
+    if (!captureUsed || !captureValidation!.variantGroups.length) return null;
+    const derived: Record<string, string> = {};
+    for (const grp of captureValidation!.variantGroups) {
+      if (!grp.values || grp.values.length < 2) continue;
+      if (!grp.selected || grp.selected.length !== 1) return null;
+      derived[grp.name] = grp.selected[0];
+    }
+    return Object.keys(derived).length > 0 ? derived : null;
+  })();
   const { matching: matchingAttributes, metadata: variantMetadata } = ayWebsSplitVariantSelection(
     { variantGroups: groupsForSelection, variants: sourceProduct.variants },
-    input.selectedVariant || null,
+    input.selectedVariant || pageCompleteSelection || null,
   );
   let availability = await adapter.checkAvailability(sourceProduct, matchingAttributes);
 
@@ -503,11 +515,22 @@ export async function resolveAyWebsProduct(
     variantEvidence.notes.forEach((note) => captureValidation!.notes.push(note));
     /* Repli historique : les libellés que le client avait VUS sélectionnés sur la
        page prouvent la combinaison affichée (utile quand la page ne nomme pas ses
-       groupes). */
+       groupes). Si la page publie des groupes à choix multiples dont au moins un
+       n'a ni sélection de page ni choix demandé, la sélection est partielle et ne
+       saurait bénéficier de la preuve de page complète. */
+    const hasUnchosenCapturedGroup = captureValidation!.variantGroups.some((grp) => {
+      if (!grp.values || grp.values.length < 2) return false;
+      const gName = String(grp.name || '').trim();
+      if (!gName) return false;
+      const { aligned } = ayWebsAlignAttributes([gName], requestedSelection);
+      const chosenInRequest = Object.keys(aligned).length > 0;
+      const chosenOnPage = Array.isArray(grp.selected) && grp.selected.length > 0;
+      return !chosenInRequest && !chosenOnPage;
+    });
     const requestedValues = Object.values(requestedSelection).map((value) => String(value).trim().toLowerCase());
     const observed = captureValidation!.selectedVariantTexts.map((value) => value.toLowerCase());
-    const textBacked = !requestedValues.length
-      || requestedValues.every((value) => observed.some((label) => label.includes(value)));
+    const textBacked = !hasUnchosenCapturedGroup && (!requestedValues.length
+      || requestedValues.every((value) => observed.some((label) => label.includes(value))));
     const pageProof = textBacked || variantEvidence.shownCombination;
     const checkedAt = new Date().toISOString();
     const selectionKey = ayWebsVariantKey(requestedSelection);

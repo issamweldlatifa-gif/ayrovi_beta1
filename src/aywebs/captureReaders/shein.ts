@@ -2,7 +2,7 @@ import type { AyWebsCaptureReaderDefinition } from './contract';
 
 export const sheinCaptureReader: AyWebsCaptureReaderDefinition = {
   storeId: 'shein',
-  version: 1,
+  version: 2,
   priceMode: 'named_containers',
-  note: 'Product-bound named price containers with struck-price filtering and unanimity.',
+  note: 'Dedicated SHEIN v2 reader: product-intro sale containers, embedded state (gbRawData/productIntroData/SSR), color swatches with goods_id/images, per-size price & stock.',
 };

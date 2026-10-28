@@ -130,7 +130,10 @@ const AYWEBS_CORE_STORES: readonly AyWebsStoreDefinition[] = [
     id: 'shein',
     name: 'SHEIN',
     displayName: 'SHEIN',
-    domains: ['shein.com', 'shein.co.uk'],
+    domains: [
+      'shein.com', 'shein.co.uk', 'shein.fr', 'shein.de', 'shein.es',
+      'shein.it', 'shein.ca', 'shein.com.mx', 'shein.com.br',
+    ],
     country: 'CN',
     currency: 'USD',
     logo: '/stores/shein.png',

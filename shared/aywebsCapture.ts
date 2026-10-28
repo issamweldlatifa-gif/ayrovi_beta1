@@ -76,6 +76,10 @@ export interface AyWebsCapturedVariantValue {
   priceFrom?: boolean;
   /** Stock annoncé sur la valeur (« Only 6 left ») — jamais déduit. */
   stock?: number | null;
+  /** Photo HTTP(S) de cette valeur (pastille couleur SHEIN/catalogue), telle que publiée. */
+  image?: string | null;
+  /** Identifiant fiche marchande associé à cette valeur (ex. `goods_id` d'une autre couleur SHEIN). */
+  goodsId?: string | null;
 }
 
 /** Groupe de variantes nommé, tel que lu par le script du client. */
@@ -144,6 +148,14 @@ export interface AyWebsAmazonEvidence {
   }>;
 }
 
+export interface AyWebsSheinEvidence {
+  readerVersion?: number;
+  pageGoodsId?: string | null;
+  selectedColor?: string | null;
+  selectedSize?: string | null;
+  skuId?: string | null;
+}
+
 export interface AyWebsCapturedPage {
   /** Version du contrat : un serveur ancien refuse une capture future. */
   v: number;
@@ -157,6 +169,11 @@ export interface AyWebsCapturedPage {
    * via variationValues, ou les écarte.
    */
   amazon?: AyWebsAmazonEvidence | null;
+  /**
+   * SHEIN : identité fiche (`goods_id`), SKU et sélection active (couleur / taille)
+   * lues depuis le DOM produit et l'état machine embarqué (`gbRawData` / `productIntroData`).
+   */
+  shein?: AyWebsSheinEvidence | null;
   /** URL de la page réellement affichée dans le WebView. */
   url: string;
   /** `<link rel="canonical">` ou `og:url`, quand la page les publie. */

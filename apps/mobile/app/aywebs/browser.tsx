@@ -183,6 +183,16 @@ export default function AyWebsBrowserScreen() {
     ? pageAnalysis
     : null;
   const currentStoreId = currentPageAnalysis?.storeId || (pageUrl === url ? storeId : '');
+  const currentStoreName = currentPageAnalysis?.storeName || storeName;
+  /* Toute interaction tactile du client avec la fiche marchande (clic sur une
+     taille ou une couleur dans la SPA SHEIN/Amazon sans changement d'URL)
+     invalide la pré-lecture déjà terminée : l'appui suivant sur « Choisir les
+     options » relira l'état réel de la page, avec le choix et le prix à jour. */
+  const invalidatePrefetchOnTouch = useCallback(() => {
+    if (prefetch.current?.status === 'ok') {
+      prefetch.current = null;
+    }
+  }, []);
   const cartUnits = useMemo(() => (storeCart.data?.items ?? [])
     .filter((item) => item.storeId === currentStoreId)
     .reduce((total, item) => total + item.quantity, 0), [currentStoreId, storeCart.data?.items]);
@@ -465,7 +475,7 @@ export default function AyWebsBrowserScreen() {
         }
         const variants = localVariantsFromCapture(captured);
         const localProduct: AyWebsResolvedProduct = {
-          ...productFromCapture(captured, pageUrl, storeId, storeName),
+          ...productFromCapture(captured, pageUrl, currentStoreId, currentStoreName),
           /* Les groupes viennent de la TABLE DES VARIANTES, et à défaut des
              groupes NOMMÉS lus sur la page (23/10/2026) : une fiche Zalando
              avait sinon une feuille sans couleur ni taille. */
@@ -490,7 +500,7 @@ export default function AyWebsBrowserScreen() {
         waitForCapture: true,
         // refresh : une intention Add ne sert jamais une lecture mémorisée (19/10/2026).
         resolve: (captured) => resolveAyWebsProductWithCapture(pageUrl, {
-          sessionId, storeId: storeId || undefined, capture: captured, refresh: true, signal: controller.signal,
+          sessionId, storeId: currentStoreId || undefined, capture: captured, refresh: true, signal: controller.signal,
         }),
         signal: controller.signal,
         onPhase: (phase) => { if (phase !== 'reading') startWaiting('resolving'); },
@@ -521,7 +531,7 @@ export default function AyWebsBrowserScreen() {
         addController.current = null;
       }
     }
-  }, [captureAllowed, capturePage, endWaiting, fail, locale, requestCapture, sessionId, startWaiting, storeId, pageUrl, t]);
+  }, [captureAllowed, capturePage, currentStoreId, currentStoreName, endWaiting, fail, locale, requestCapture, sessionId, startWaiting, pageUrl, t]);
 
   const onMessage = useCallback((event: WebViewMessageEvent) => {
     const pending = waiter.current;
@@ -633,10 +643,11 @@ export default function AyWebsBrowserScreen() {
       ) : null}
 
       {pageOk ? (
-      <WebView
-        ref={webRef}
-        source={{ uri: loadUrl }}
-        style={styles.web}
+      <View style={styles.web} onTouchEnd={invalidatePrefetchOnTouch}>
+        <WebView
+          ref={webRef}
+          source={{ uri: loadUrl }}
+          style={styles.webFill}
         /**
          * `'*'` عمداً: لو بقيت القائمة `https://*`، المكتبة تفتح كل عنوان خارجها
          * في تطبيق آخر قبل أن تسألنا. القرار كله هنا: الصفحات تبقى، والباقي يُمنع.
@@ -667,7 +678,8 @@ export default function AyWebsBrowserScreen() {
             <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.loadingPage')}</AppText>
           </View>
         )}
-      />
+        />
+      </View>
       ) : (
         <View style={[styles.web, styles.loading, { backgroundColor: theme.colors.canvas }]}>
           <AppText variant="body" color={theme.status.danger.fg}>{t('aywebs.badUrl')}</AppText>
@@ -739,6 +751,7 @@ const styles = StyleSheet.create({
   cartBadgeRTL: { left: -5 },
   titleBox: { flex: 1, paddingHorizontal: 4 },
   web: { flex: 1, marginTop: 8 },
+  webFill: { flex: 1 },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 10, gap: 6 },
 });

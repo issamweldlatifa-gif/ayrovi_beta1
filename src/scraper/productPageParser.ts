@@ -818,7 +818,7 @@ function hasConflictingPublishedAvailability(offers: any[]): boolean {
 }
 
 const STORE_AVAILABILITY_SELECTORS: Partial<Record<string, readonly string[]>> = {
-  shein: ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="product-intro__stock" i]', '[class*="stock-status" i]', '[class*="sold-out" i]'],
+  shein: ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="product-intro__stock" i]', '[class*="product-intro__soldout" i]', '[class*="goods-soldout" i]', '[class*="stock-status" i]', '[class*="sold-out" i]', '.product-intro__add-btn button', '.product-intro__add-btn', '.goods-btn__add'],
   temu: ['[data-testid*="availability" i]', '[data-testid*="sold-out" i]', '[class*="goods-status" i]', '[class*="stock-status" i]', '[class*="sold-out" i]'],
   aliexpress: ['[data-testid*="availability" i]', '[data-pl*="quantity" i]', '[class*="product-quantity" i]', '[class*="stock-status" i]', '[class*="sold-out" i]'],
   zalando: ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="availability-message" i]', '[class*="product-status" i]', '[class*="sold-out" i]'],
@@ -842,14 +842,21 @@ function availabilityFromMerchantDom(document: Document, storeType: string): Par
         }
       }
       if (excluded) continue;
+      const isDisabledControl = (node as HTMLButtonElement).disabled === true
+        || node.hasAttribute('disabled')
+        || node.getAttribute('aria-disabled') === 'true'
+        || /(?:^|[\s_-])(?:disabled|soldout|sold-out|is-disabled)(?:$|[\s_-])/i.test(typeof node.className === 'string' ? node.className : '');
       const raw = [
         node.getAttribute('data-availability'), node.getAttribute('data-stock-status'),
         node.getAttribute('aria-label'), node.getAttribute('title'), node.textContent,
       ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().slice(0, 300);
       if (!raw) continue;
-      if (/outofstock|out\s*of\s*stock|sold\s*out|unavailable|currently\s+unavailable|ausverkauft|nicht\s+verfügbar|rupture|épuis|indisponible/i.test(raw)) statuses.add('out_of_stock');
+      if (/outofstock|out\s*of\s*stock|sold\s*out|unavailable|currently\s+unavailable|ausverkauft|nicht\s+verfügbar|rupture|épuis|epuise|indisponible|agotado|esaurito|نفدت\s*الكمية|غير\s*متوفر/i.test(raw)) statuses.add('out_of_stock');
       else if (/limitedavailability|limited\s*stock|low\s*stock|only\s+\d+\s+left|nur\s+noch\s+\d+|nur\s+wenige\s+verfügbar|plus\s+que\s*\d+/i.test(raw)) statuses.add('limited');
       else if (/instock|in\s*stock|available|lieferbar|verfügbar|en\s+stock|disponible/i.test(raw)) statuses.add('in_stock');
+      else if (!isDisabledControl && storeType === 'shein' && /\b(?:add\s*to\s*(?:bag|cart|basket)|ajouter\s*au\s*(?:panier|sac)|in\s*(?:den\s*warenkorb|die\s*einkaufstasche)|a(?:ñ|n)adir\s*(?:a\s*la\s*(?:bolsa|cesta)|al\s*carrito)|aggiungi\s*(?:al\s*carrello|alla\s*borsa))\b|أضف\s*إلى\s*(?:السلة|العربة|الحقيبة)|إضافة\s*إلى\s*(?:السلة|العربة|الحقيبة)/i.test(raw)) {
+        statuses.add('in_stock');
+      }
     }
     if (statuses.size > 1) return 'unknown';
   }
@@ -948,13 +955,82 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     // Shopify and several storefront themes embed the current product in an
     // inline JavaScript object instead of application/json.
     const inlineMarkers = ['productData:', 'var meta =', 'window.meta =', 'window.__PRODUCT__ ='];
+    const sheinInlineMarkers = ['gbRawData =', 'window.gbRawData =', '"gbRawData":', 'productIntroData =', 'window.productIntroData =', '"productIntroData":', 'gbProductIntroData =', 'window.gbProductIntroData =', '__SSR_DATA__ =', 'window.__SSR_DATA__ ='];
+    let sheinRawState: any = null;
+    const urlSheinGoodsId = storeType === 'shein'
+      ? (String(baseUrl || '').match(/(?:[?&](?:goods_id|goodsId|productId)=|(?:^|[-/])p-|\/p\/|\/product-item-v\d+-)(\d{5,16})(?=[-./?&#]|$)/i)?.[1] || '')
+      : '';
     for (const node of Array.from(document.querySelectorAll('script:not([type="application/ld+json"]):not([type="application/json"])')).slice(0, 100)) {
       const raw = node.textContent || '';
-      if (!raw || raw.length > 1_800_000 || !/(?:productData:|var meta\s*=|window\.(?:meta|__PRODUCT__)\s*=)/.test(raw)) continue;
-      for (const marker of inlineMarkers) {
-        const parsed = parseBalancedJsonObject(raw, marker);
-        if (parsed) collectEmbeddedProducts(parsed, embeddedProducts, new Set(), { value: 20_000 });
+      if (!raw || raw.length > 1_800_000) continue;
+      if (/(?:productData:|var meta\s*=|window\.(?:meta|__PRODUCT__)\s*=)/.test(raw)) {
+        for (const marker of inlineMarkers) {
+          const parsed = parseBalancedJsonObject(raw, marker);
+          if (parsed) collectEmbeddedProducts(parsed, embeddedProducts, new Set(), { value: 20_000 });
+        }
       }
+      if (storeType === 'shein' && !sheinRawState && /(?:gbRawData|productIntroData|gbProductIntroData|__SSR_DATA__)/.test(raw)) {
+        for (const marker of sheinInlineMarkers) {
+          const parsed = parseBalancedJsonObject(raw, marker);
+          if (!parsed || typeof parsed !== 'object') continue;
+          const unwrapped = parsed.productIntroData && typeof parsed.productIntroData === 'object' ? parsed.productIntroData
+            : parsed.gbRawData && typeof parsed.gbRawData === 'object' ? parsed.gbRawData
+              : parsed.goodsDetail && typeof parsed.goodsDetail === 'object' ? parsed.goodsDetail : parsed;
+          const detail = unwrapped?.detail && typeof unwrapped.detail === 'object' ? unwrapped.detail
+            : unwrapped?.goodsInfo && typeof unwrapped.goodsInfo === 'object' ? unwrapped.goodsInfo : unwrapped;
+          const candidateGid = String(detail?.goods_id || unwrapped?.goods_id || '').trim();
+          if (urlSheinGoodsId && candidateGid && candidateGid !== urlSheinGoodsId) continue;
+          if (detail?.goods_id || detail?.goods_name || detail?.salePrice || unwrapped?.attrSizeList) {
+            sheinRawState = { root: unwrapped, detail };
+            break;
+          }
+        }
+      }
+    }
+    if (sheinRawState && !embeddedProducts.length) {
+      const sRoot = sheinRawState.root;
+      const sDetail = sheinRawState.detail;
+      const sCurrency = String(sRoot?.currency || sRoot?.currencyInfo?.code || sDetail?.salePrice?.currency || '').trim().toUpperCase();
+      const sMainColor = Array.isArray(sDetail?.mainSaleAttribute)
+        ? cleanLabel(sDetail.mainSaleAttribute[0]?.attr_value_name || sDetail.mainSaleAttribute[0]?.attr_value)
+        : cleanLabel(sDetail?.mainSaleAttribute?.attr_value_name || sDetail?.color_name || '');
+      const sRawSizes = Array.isArray(sRoot?.attrSizeList) ? sRoot.attrSizeList
+        : Array.isArray(sDetail?.attrSizeList) ? sDetail.attrSizeList
+          : Array.isArray(sRoot?.saleAttr?.sizeList) ? sRoot.saleAttr.sizeList : [];
+      const sSaleAmount = parsePrice(sDetail?.salePrice?.amount ?? sDetail?.salePrice?.amountWithSymbol ?? sDetail?.salePrice);
+      const sImgs = [
+        sDetail?.original_img,
+        sRoot?.goods_imgs?.main_image?.origin_image,
+        ...(Array.isArray(sRoot?.goods_imgs?.detail_image) ? sRoot.goods_imgs.detail_image.map((d: any) => d?.origin_image || d) : []),
+      ].map((u) => (typeof u === 'string' && u.startsWith('//') ? `https:${u}` : u)).filter(Boolean);
+      const sVariants = sRawSizes.map((entry: any) => {
+        const szName = cleanLabel(entry?.attr_value_name || entry?.attr_value || entry?.size_name || entry?.name);
+        if (!szName) return null;
+        const stockNum = entry?.stock !== undefined ? Number(entry.stock) : NaN;
+        const avail = !(entry?.is_sold_out === true || entry?.sold_out === 1 || (!Number.isNaN(stockNum) && stockNum <= 0));
+        const vPrice = parsePrice(entry?.price?.salePrice?.amount ?? entry?.salePrice?.amount ?? entry?.price?.amount) || sSaleAmount || 0;
+        return {
+          id: String(entry?.attr_value_id || entry?.sku_code || szName),
+          title: sMainColor ? `${sMainColor} / ${szName}` : szName,
+          option1: sMainColor || szName,
+          ...(sMainColor ? { option2: szName } : {}),
+          available: avail,
+          price: vPrice > 0 ? String(vPrice) : undefined,
+          featured_image: sImgs[0],
+        };
+      }).filter(Boolean);
+      embeddedProducts.push({
+        id: sDetail?.goods_id ? `SHEIN-${sDetail.goods_id}` : undefined,
+        sku: sDetail?.goods_sn || undefined,
+        title: sDetail?.goods_name || undefined,
+        vendor: typeof sDetail?.brand === 'object' ? sDetail.brand?.brand_name : sDetail?.brand,
+        currency: /^[A-Z]{3}$/.test(sCurrency) ? sCurrency : undefined,
+        price: sSaleAmount || undefined,
+        images: sImgs,
+        featured_image: sImgs[0],
+        options: sMainColor && sVariants.length ? ['Color', 'Size'] : (sVariants.length ? ['Size'] : (sMainColor ? ['Color'] : [])),
+        variants: sVariants,
+      });
     }
     const embeddedProduct = embeddedProducts.sort((a, b) => {
       const score = (item: any) => (item?.title || item?.name ? 10 : 0) + Math.min(20, item?.variants?.length || 0) + (item?.options ? 5 : 0);
@@ -1103,10 +1179,26 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     const offerPool = nestedOffers.length ? nestedOffers : ldOffers;
     const offers = offerPool[0] || (Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers);
     const ldSale = saleFromOffers(offerPool);
+    const cleanSheinDomPrice = (): string => {
+      for (const sel of ['.product-intro__head-mainprice', '.goods-price__main', '[data-testid="product-price-sale"]', '.product-intro__head-price']) {
+        const el = document.querySelector(sel);
+        if (!el) continue;
+        const clone = el.cloneNode(true) as Element;
+        for (const bad of Array.from(clone.querySelectorAll('del, s, strike, [class*="retail" i], [class*="original" i], [class*="delprice" i], [class*="del-price" i], [class*="club-price" i], [class*="member-price" i], [class*="discount-label" i], [class*="price-discount" i]'))) {
+          bad.remove();
+        }
+        for (const child of Array.from(clone.querySelectorAll('span, div, em, small'))) {
+          if (/^[-+]?\s*\d{1,2}\s*%(?:\s*off)?$/i.test((child.textContent || '').trim())) child.remove();
+        }
+        const cleaned = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+        if (cleaned && parsePrice(cleaned) > 0) return cleaned;
+      }
+      return text('[class*="price"]:not([style*="line-through"])');
+    };
     const selectorPrice = storeType === 'amazon'
       ? text('.apexPriceToPay .a-offscreen, #corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen, #priceblock_dealprice, #newBuyBoxPrice')
       : storeType === 'shein'
-        ? text('[class*="price"]:not([style*="line-through"])')
+        ? cleanSheinDomPrice()
         : text('[itemprop="price"], [data-price], [class*="price"]');
     // Amazon : la lecture dédiée remplace le sélecteur historique, qui ne pouvait
     // pas voir un prix éclaté en spans `a-price-whole`/`a-price-fraction`.

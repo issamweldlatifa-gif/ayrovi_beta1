@@ -184,27 +184,36 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
       if (!isRecord(group)) continue;
       const published = text(group.name);
       const name = published.toLowerCase();
-      const values = Array.isArray(group.values) ? group.values.map(text).filter(Boolean) : [];
+      const values = Array.isArray(group.values)
+        ? group.values.map(text).filter((val) => Boolean(val) && isRealChoiceValue(published, val))
+        : [];
       if (!name || !values.length) continue;
-      const states = new Map<string, LocalValueState>();
+      const states = new Map<string, LocalValueState & { image?: string; goodsId?: string }>();
       if (Array.isArray(group.options)) {
         for (const option of group.options) {
           if (!isRecord(option)) continue;
           const value = text(option.value).toLowerCase();
           if (!value) continue;
+          const rawImg = text(option.image);
+          const cleanImg = /^https?:\/\//i.test(rawImg) ? rawImg.slice(0, 600) : '';
+          const rawGoodsId = text(option.goodsId);
+          const cleanGoodsId = /^\d{5,16}$/.test(rawGoodsId) ? rawGoodsId : '';
           states.set(value, {
             state: option.available === false ? 'OUT_OF_STOCK' : option.available === true ? 'AVAILABLE' : 'UNKNOWN',
             price: text(option.price),
             priceFrom: option.priceFrom === true,
             stock: Number.isFinite(Number(option.stock)) && Number(option.stock) > 0 ? Math.floor(Number(option.stock)) : null,
+            ...(cleanImg ? { image: cleanImg } : {}),
+            ...(cleanGoodsId ? { goodsId: cleanGoodsId } : {}),
           });
         }
       }
       for (const value of values) {
         const state = states.get(value.toLowerCase());
-        const asin = `${name}:${value.toLowerCase()}`;
-        if (seen.has(asin)) continue;
-        seen.add(asin);
+        const asin = state?.goodsId ? `shein:${state.goodsId}` : `${name}:${value.toLowerCase()}`;
+        const dedupeKey = `${name}:${value.toLowerCase()}`;
+        if (seen.has(dedupeKey)) continue;
+        seen.add(dedupeKey);
         out.push({
           asin,
           attributes: { [published]: value },
@@ -212,6 +221,7 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
           cardPrice: state?.price ?? '',
           priceFrom: state?.priceFrom ?? false,
           stock: state?.stock ?? null,
+          ...(state?.image ? { image: state.image } : {}),
         });
       }
     }
@@ -510,8 +520,8 @@ export function stockForSelection(capture: Json, selection: Record<string, strin
  */
 export type LocalPageAvailability = 'AVAILABLE' | 'OUT_OF_STOCK' | 'UNKNOWN';
 
-const OUT_OF_STOCK_WORDS = /(out of stock|unavailable|currently unavailable|sold out|épuisé|indisponible|rupture|nicht verfügbar|ausverkauft|derzeit nicht|غير متوفر|نفد)/i;
-const IN_STOCK_WORDS = /(in stock|available|disponible|en stock|auf lager|lieferbar|متوفر|متوفّر)/i;
+const OUT_OF_STOCK_WORDS = /(out\s*of\s*stock|outofstock|unavailable|currently unavailable|sold\s*out|épuisé|epuise|indisponible|rupture|nicht verfügbar|ausverkauft|derzeit nicht|agotado|sin existencias|esaurito|non disponibile|غير متوفر|نفد)/i;
+const IN_STOCK_WORDS = /(in\s*stock|instock|available|disponible|en stock|auf lager|lieferbar|add\s*to\s*(?:bag|cart|basket)|buy\s*now|ajouter\s*(?:au\s*)?(?:panier|sac)|in\s*(?:den\s*warenkorb|die\s*einkaufstasche)|a(?:ñ|n)adir\s*(?:a\s*la\s*(?:bolsa|cesta)|al\s*carrito)|aggiungi\s*(?:al\s*carrello|alla\s*borsa)|أضف\s*إلى\s*(?:السلة|العربة|الحقيبة)|إضافة\s*إلى\s*(?:السلة|العربة|الحقيبة)|متوفر|متوفّر)/i;
 
 /**
  * التوفّر من نصوص الصفحة. **السلبي يغلب**: كي الصفحة تقول «غير متوفر» في
@@ -601,7 +611,9 @@ export function optionsFromVariants(variants: LocalVariant[]): AyWebsVariantOpti
 /** Titre, image et boutique depuis la capture — sans prix (le prix vient du serveur à l'ajout). */
 export function productFromCapture(capture: Json, url: string, storeId: string, storeName: string): AyWebsResolvedProduct {
   const amazon = isRecord(capture.amazon) ? capture.amazon : null;
+  const shein = isRecord(capture.shein) ? capture.shein : null;
   const pageAsin = amazon ? text(amazon.pageAsin).toUpperCase() : '';
+  const sheinGoodsId = shein && /^\d{5,16}$/.test(text(shein.pageGoodsId)) ? `SHEIN-${text(shein.pageGoodsId)}` : '';
   const images = Array.isArray(capture.images)
     ? capture.images.map((item) => (isRecord(item) ? text(item.url) : text(item))).filter((item) => item.startsWith('http'))
     : [];
@@ -609,7 +621,7 @@ export function productFromCapture(capture: Json, url: string, storeId: string, 
   try { domain = new URL(url).host; } catch { domain = ''; }
   const unknown: AyWebsAvailability = { state: 'UNKNOWN', reason: '', checkedAt: '', source: 'capture', quantityHint: null };
   return {
-    productId: pageAsin,
+    productId: pageAsin || sheinGoodsId,
     storeId,
     storeName,
     sourceUrl: url,

@@ -39,7 +39,7 @@ import {
 import { newAyWebsRequestId } from '@/features/aywebs/requestId';
 import { variantPageUrlFor } from '@/features/aywebs/variantPage';
 import {
-  defaultSelectionFromCapture, displayPriceForSelection, localVariantsFromCapture, optionsFromVariants,
+  defaultSelectionFromCapture, displayPriceForSelection, groupsFromCapture, localVariantsFromCapture, optionsFromVariants,
   splitMerchantPrice, valueStatesFromCapture,
   type LocalValueStates,
 } from '@/features/aywebs/localProduct';
@@ -126,6 +126,8 @@ export function AddToCartSheet({
   const [fetchedGroups, setFetchedGroups] = useState<AyWebsVariantGroup[] | null>(null);
   /** Groupes publiés par le SERVEUR (lecture de la page) — noms de référence. */
   const [serverGroups, setServerGroups] = useState<AyWebsVariantGroup[]>([]);
+  const [activeCapture, setActiveCapture] = useState<unknown>(capture);
+  const [activeUrl, setActiveUrl] = useState<string>(product.sourceUrl);
   const [pageQuote, setPageQuote] = useState<PageQuote | null>(null);
   const [quoting, setQuoting] = useState(false);
   /** الحقل المفتوح — واحد برك في كل وقت (الورقة تبقى قصيرة). */
@@ -137,29 +139,47 @@ export function AddToCartSheet({
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
 
+  const effectiveCapture = activeCapture ?? capture;
+  const effectiveUrl = activeUrl || product.sourceUrl;
+
+  const captureRecord = useMemo(
+    () => (effectiveCapture && typeof effectiveCapture === 'object' ? effectiveCapture as Record<string, unknown> : null),
+    [effectiveCapture],
+  );
+  const activeCaptureVariants = useMemo(
+    () => (local && activeCapture && activeCapture !== capture && typeof activeCapture === 'object'
+      ? localVariantsFromCapture(activeCapture as Record<string, unknown>)
+      : []),
+    [activeCapture, capture, local],
+  );
+
   /* Les choix affichés = union des deux lectures, sous le NOM DU SERVEUR : c'est
      lui qui juge l'ajout, et une sélection partielle (« taille » seule alors que
      la page publie aussi la couleur) était refusée (26/10/2026). */
   const groups = useMemo<AyWebsVariantGroup[]>(() => {
-    const local = product.variantGroups.length ? product.variantGroups : (fetchedGroups ?? []);
+    const baseLocal = product.variantGroups.length ? product.variantGroups : (fetchedGroups ?? []);
+    const siblingGroups = activeCaptureVariants.length && captureRecord
+      ? groupsFromCapture(captureRecord, activeCaptureVariants)
+      : [];
+    const mergedLocal = siblingGroups.length ? mergeVariantGroups(baseLocal, siblingGroups) : baseLocal;
     /* `mergeVariantGroups` unit les deux lectures ; `realChoiceGroups` est la
        dernière barrière contre les libellés d'interface (« Votre taille »,
        « Taille & coupe »…) quelle que soit leur provenance — fiche en cache,
        serveur ou capture (28/10/2026). */
-    return realChoiceGroups(mergeVariantGroups(local, serverGroups));
-  }, [fetchedGroups, product.variantGroups, serverGroups]);
+    return realChoiceGroups(mergeVariantGroups(mergedLocal, serverGroups));
+  }, [activeCaptureVariants, captureRecord, fetchedGroups, product.variantGroups, serverGroups]);
   const groupsRef = useRef(groups);
   groupsRef.current = groups;
   const variantOptions = useMemo<AyWebsVariantOption[]>(() => {
     const given = options?.length ? options : product.variantDetails;
-    return given.length ? given : fetched;
-  }, [fetched, options, product.variantDetails]);
+    const baseOptions = given.length ? given : fetched;
+    if (!activeCaptureVariants.length) return baseOptions;
+    const freshOptions = optionsFromVariants(activeCaptureVariants);
+    const seenIds = new Set(freshOptions.map((item) => item.sourceVariantId));
+    return [...freshOptions, ...baseOptions.filter((item) => !seenIds.has(item.sourceVariantId))];
+  }, [activeCaptureVariants, fetched, options, product.variantDetails]);
 
-  const captureRecord = useMemo(
-    () => (capture && typeof capture === 'object' ? capture as Record<string, unknown> : null),
-    [capture],
-  );
-  /** États/prix publiés POUR CHAQUE VALEUR — نفس القراءة اللي فتحت الورقة. */
+  /** États/prix publiés POUR CHAQUE VALEUR — نفس القراءة اللي فتحت الورقة (أو قراءة اللون الشقيق). */
   const valueStates = useMemo<LocalValueStates>(
     () => (local && captureRecord ? valueStatesFromCapture(captureRecord) : {}),
     [captureRecord, local],
@@ -295,6 +315,8 @@ export function AddToCartSheet({
     setFetched([]);
     setFetchedGroups(null);
     setServerGroups([]);
+    setActiveCapture(capture);
+    setActiveUrl(product.sourceUrl);
     setPageQuote(null);
     setQuoting(false);
     lastSelectionQuoteKey.current = '';
@@ -399,18 +421,48 @@ export function AddToCartSheet({
     const picked = { ...selection };
     setQuoting(true);
     const timer = setTimeout(() => {
-      void resolveAyWebsProductWithCapture(product.sourceUrl, {
-        sessionId,
-        storeId: product.storeId || undefined,
-        /* La capture n'est jointe que si elle décrit cette page ; sinon on
-           emprunte le chemin du web, que le serveur sait relire. */
-        ...(local && capture ? { capture } : {}),
-        variant: picked,
-        refresh: false,
-      }).then((read) => {
+      void (async () => {
+        let targetUrl = effectiveUrl;
+        let captureForResolve: unknown = local ? effectiveCapture : undefined;
+        if (local && readVariant) {
+          const currentLocalOptions = optionsFromVariants(localVariantsFromCapture(
+            (effectiveCapture && typeof effectiveCapture === 'object' ? effectiveCapture : {}) as Record<string, unknown>,
+          ));
+          const mergedForUrl = currentLocalOptions.length ? currentLocalOptions : variantOptions;
+          const siblingUrl = variantPageUrlFor({
+            sourceUrl: effectiveUrl,
+            storeId: product.storeId,
+            selection: picked,
+            options: mergedForUrl,
+          });
+          if (siblingUrl && siblingUrl !== effectiveUrl) {
+            try {
+              const freshSibling = await readVariant(siblingUrl);
+              if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
+              if (freshSibling && typeof freshSibling === 'object') {
+                targetUrl = siblingUrl;
+                captureForResolve = freshSibling;
+                setActiveUrl(siblingUrl);
+                setActiveCapture(freshSibling);
+              }
+            } catch {
+              /* Si la lecture masquée échoue, on laisse le serveur trancher. */
+            }
+          }
+        }
+        const read = await resolveAyWebsProductWithCapture(targetUrl, {
+          sessionId,
+          storeId: product.storeId || undefined,
+          /* La capture n'est jointe que si elle décrit cette page ; sinon on
+             emprunte le chemin du web, que le serveur sait relire. */
+          ...(local && captureForResolve ? { capture: captureForResolve } : {}),
+          variant: picked,
+          refresh: false,
+        });
         if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
         const totalTnd = read.product.ayroviPricing?.totalTnd ?? null;
         if (totalTnd != null && Number.isFinite(totalTnd) && totalTnd > 0) {
+          setServerGroups(read.product.variantGroups || []);
           setPageQuote({
             selection: picked,
             unitTnd: totalTnd,
@@ -426,7 +478,7 @@ export function AddToCartSheet({
         } else {
           setDiagnostic(read.priceRejection ? `price:${read.priceRejection}` : 'quote:selection_unavailable');
         }
-      }).catch((error: unknown) => {
+      })().catch((error: unknown) => {
         if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
         const code = error && typeof error === 'object' && 'code' in error
           ? String((error as { code?: unknown }).code || 'failed')
@@ -440,8 +492,8 @@ export function AddToCartSheet({
       clearTimeout(timer);
       if (selectionQuoteRequest.current === requestNumber) selectionQuoteRequest.current += 1;
     };
-  }, [capture, groups.length, local, pageQuote, product.sourceUrl, product.storeId, quote.unitTnd,
-    selection, selectionComplete, sessionId, visible]);
+  }, [effectiveCapture, effectiveUrl, groups.length, local, pageQuote, product.storeId, quote.unitTnd,
+    readVariant, selection, selectionComplete, sessionId, variantOptions, visible]);
 
   /**
    * سقف الكمية: اللي تنشرو الصفحة هو السقف — منتوج فيه 5 ما نخلّيوش 20.
@@ -564,8 +616,8 @@ export function AddToCartSheet({
       /* Le premier jugement porte sur la page que la capture décrit — jamais sur
          une autre URL : sinon la preuve et l'adresse ne parlent pas du même
          article. Les pages des autres valeurs sont lues ensuite, une par une. */
-      let target = product.sourceUrl;
-      let captureToUse: unknown = capture;
+      let target = effectiveUrl;
+      let captureToUse: unknown = effectiveCapture;
 
       /* الورقة اللي تجي من قراءة الخادم (بلا كابتشر) وعندها فاتورة موقّعة على
          التركيبة كاملة: ما نعاودوش نقراو التاجر — الإضافة تستعمل الفاتورة. */
@@ -717,7 +769,7 @@ export function AddToCartSheet({
     } finally {
       if (alive.current) setBusy(false);
     }
-  }, [busy, capture, chosenUnavailable, groups.length, local, locale, onAdded, product.productId,
+  }, [busy, chosenUnavailable, effectiveCapture, effectiveUrl, groups.length, local, locale, missing.length, onAdded, product.productId,
     product.sourceUrl, product.storeId, quantity, quoteToken, readVariant, selection, selectionComplete, sessionId, t]);
 
   const sourceLine = tndText(quote.unitTnd);

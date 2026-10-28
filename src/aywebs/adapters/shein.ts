@@ -111,14 +111,48 @@ export class SheinAdapter extends BaseStoreAdapter {
 
 /** Identifiant produit SHEIN, ou `null` si l'URL n'en porte pas. */
 export function sheinGoodsId(url: URL): string | null {
-  const fromQuery = String(url.searchParams.get('goods_id') || url.searchParams.get('goodsId') || '').trim();
-  if (/^\d{5,}$/.test(fromQuery)) return fromQuery;
-  const fromPath = url.pathname.match(/(?:^|[-/])p-(\d{5,})(?=[-./]|$)/i) || url.pathname.match(/\/p\/(\d{5,})(?=[-./]|$)/i);
+  const fromQuery = String(
+    url.searchParams.get('goods_id')
+    || url.searchParams.get('goodsId')
+    || url.searchParams.get('productId')
+    || '',
+  ).trim();
+  if (/^\d{5,16}$/.test(fromQuery)) return fromQuery;
+  const fromPath = url.pathname.match(/(?:^|[-/])p-(\d{5,16})(?=[-./]|$)/i)
+    || url.pathname.match(/\/p\/(\d{5,16})(?=[-./]|$)/i)
+    || url.pathname.match(/\/product-item-v\d+-(\d{5,16})(?=[-./]|$)/i);
   return fromPath ? fromPath[1] : null;
 }
 
-/** Hôte canonique : le marché UK garde `shein.co.uk`, tout le reste `shein.com`. */
+/**
+ * URL d'une autre couleur SHEIN (`goods_id`) sur le MÊME hôte que `sourceUrl`
+ * (ex. `fr.shein.com`, `m.shein.com`, `www.shein.co.uk`) afin que la relecture
+ * WebView conserve l'hôte, la langue et la devise de la session cliente.
+ */
+export function sheinVariantPageUrl(sourceUrl: string, goodsId: string): string | null {
+  const cleanId = String(goodsId || '').trim().replace(/^SHEIN-/i, '');
+  if (!/^\d{5,16}$/.test(cleanId)) return null;
+  try {
+    const parsed = new URL(sourceUrl);
+    if (sheinGoodsId(parsed) === cleanId) return null;
+    return `${parsed.protocol}//${parsed.host}/-p-${cleanId}.html`;
+  } catch {
+    return null;
+  }
+}
+
+const SHEIN_REGIONAL_TLDS = [
+  'shein.co.uk', 'shein.com.mx', 'shein.com.br',
+  'shein.fr', 'shein.de', 'shein.es', 'shein.it', 'shein.ca',
+] as const;
+
+/** Hôte canonique : garde le TLD régional (`shein.co.uk`, `shein.fr`…), et unifie `*.shein.com` sur `www.shein.com`. */
 function sheinCanonicalHost(hostname: string): string {
   const normalized = hostname.trim().toLowerCase().replace(/\.+$/, '');
-  return normalized.endsWith('shein.co.uk') ? 'www.shein.co.uk' : 'www.shein.com';
+  for (const regional of SHEIN_REGIONAL_TLDS) {
+    if (normalized === regional || normalized.endsWith(`.${regional}`)) {
+      return `www.${regional}`;
+    }
+  }
+  return 'www.shein.com';
 }
