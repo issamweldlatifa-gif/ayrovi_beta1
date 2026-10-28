@@ -41,6 +41,14 @@ export interface AyWebsSourceProduct {
     availability: AyWebsAvailabilityState;
     availabilityReason: string;
     image: string | null;
+    /** URL directe de cette variante (ASIN Amazon, goods_id SHEIN, couleur Zalando) pour lecture delta ciblée si son prix manque. */
+    variantUrl?: string | null;
+    /** Stock restant annoncé pour cette combinaison (1..999). */
+    stock?: number | null;
+    /** Source de preuve de la matrice (`embedded_json`, `json_ld`, `preloaded_state`, `network_cache`, `dom`). */
+    evidenceSource?: string | null;
+    /** Paliers de remise par quantité publiés par le marchand pour ce SKU. */
+    quantityTiers?: Array<{ minQuantity: number; unitPrice: number }>;
   }>;
   availability: AyWebsAvailabilityState;
   availabilityReason: string;

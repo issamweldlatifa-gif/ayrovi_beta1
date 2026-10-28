@@ -33,10 +33,12 @@ import { checkPriceText } from '../scraper/priceIntegrity';
 import { detectAyWebsStore } from '../../shared/aywebsStores';
 import { aliexpressItemId } from './adapters/aliexpress';
 import { sheinGoodsId } from './adapters/shein';
+import { ayWebsSameAttribute } from '../../shared/aywebsAttributes';
 import {
   AYWEBS_CAPTURE_LIMITS,
   AYWEBS_CAPTURE_VERSION,
   type AyWebsCaptureSource,
+  type AyWebsCapturedMatrixEntry,
   type AyWebsPageKind,
   type AyWebsPageSignals,
   type AyWebsCaptureOutcome,
@@ -993,25 +995,84 @@ export function validateAyWebsCapturedPage(
     if (resolvedAeId) externalId = `AE-${resolvedAeId}`;
   }
 
-  /* Validation serveur de la matrice SKU multi-axes (AliExpress) :
-     chaque SKU doit couvrir exactement les `variantGroups` retenus, et son prix
-     passe par `checkPriceText` avec devise cohérente avec la fiche. */
+  /* Validation serveur de la MATRICE DE VARIANTES universelle (`variantMatrix` + `aliexpress.skus`) :
+     chaque entrée couvre les `variantGroups` multi-valeurs retenus, et son prix
+     (ainsi que ses éventuels paliers de quantité `quantityTiers`) passe par
+     `checkPriceText` avec une devise cohérente avec celle prouvée sur la fiche.
+     Aucun prix de base n'est jamais extrapolé aux combinaisons sans prix (`price: null`). */
   const skuCombinations: AyWebsSourceProduct['variants'] = [];
-  if (
-    storeForPrice?.id === 'aliexpress'
-    && variantGroups.length > 0
-    && Array.isArray(payload.aliexpress?.skus)
-  ) {
+  const parseMatrixPriceForPage = (rawPriceInput: unknown, isPriceFrom: boolean): { price: number; currency: string } | null => {
+    if (isPriceFrom) return null;
+    const rawText = collapse(rawPriceInput, AYWEBS_CAPTURE_LIMITS.maxVariantValuePriceLength);
+    if (!rawText) return null;
+    const verdict = checkPriceText(rawText);
+    if (!verdict.ok || !(verdict.value > 0)) return null;
+    const explicitIsoMatch = rawText.toUpperCase().match(/(?:^|[^A-Z])(EUR|USD|GBP|JPY|TND|MAD|SAR|AED|CAD|AUD|SGD|BRL|MXN|PLN|TRY|CHF|SEK)(?=$|[^A-Z])/);
+    const explicitIso = explicitIsoMatch ? explicitIsoMatch[1] : null;
+    if (explicitIso) {
+      if (!currencyVerified || explicitIso === currency) {
+        return { price: verdict.value, currency: explicitIso };
+      }
+      return null;
+    }
+    if (!currencyVerified || !currency) return null;
+    /* Symbole marchand ou indices de devise de `checkPriceText` compatibles avec `currency` prouvée */
+    if (verdict.currencyHints.length > 0) {
+      if (storeForPrice?.id === 'aliexpress') {
+        const symHit = AYWEBS_SYMBOL_CURRENCIES.find((entry) =>
+          entry.stores.includes('aliexpress')
+          && entry.pattern.test(rawText)
+          && (!entry.hostsOnly || hostMatchesAny(requestHost, entry.hostsOnly))
+          && !hostMatchesAny(requestHost, entry.hostsExcluded),
+        );
+        if (symHit && symHit.iso === currency) return { price: verdict.value, currency };
+        return null;
+      }
+      if (verdict.currencyHints.includes(currency)) {
+        return { price: verdict.value, currency };
+      }
+    }
+    return null;
+  };
+
+  if (variantGroups.length > 0) {
+    const rawEntries: AyWebsCapturedMatrixEntry[] = [];
+    if (Array.isArray(payload.variantMatrix)) {
+      for (const item of payload.variantMatrix.slice(0, AYWEBS_CAPTURE_LIMITS.maxMatrixEntries)) {
+        if (item && typeof item === 'object') rawEntries.push(item as AyWebsCapturedMatrixEntry);
+      }
+    }
+    if (storeForPrice?.id === 'aliexpress' && Array.isArray(payload.aliexpress?.skus)) {
+      for (const aeSku of payload.aliexpress!.skus!.slice(0, 60)) {
+        if (!aeSku || typeof aeSku !== 'object') continue;
+        rawEntries.push({
+          variantId: aeSku.skuId ? `ae:${collapse(aeSku.skuId, 32).replace(/^ae:/i, '')}` : null,
+          attributes: (aeSku.attributes && typeof aeSku.attributes === 'object') ? aeSku.attributes : {},
+          price: aeSku.price ?? null,
+          priceFrom: false,
+          available: aeSku.available ?? null,
+          stock: aeSku.stock ?? null,
+          image: aeSku.image ?? null,
+          evidenceSource: 'embedded_json',
+        });
+      }
+    }
+
+    const multiGroups = variantGroups.filter((g) => g.values.length >= 2);
+    const targetGroups = multiGroups.length > 0 ? multiGroups : variantGroups;
     const seenComboKeys = new Set<string>();
-    for (const rawSku of payload.aliexpress!.skus!.slice(0, 60)) {
-      if (!rawSku || typeof rawSku !== 'object') continue;
-      const rawAttrs = (rawSku as { attributes?: unknown }).attributes;
+
+    for (const rawEntry of rawEntries) {
+      const rawAttrs = (rawEntry as { attributes?: unknown }).attributes;
       if (!rawAttrs || typeof rawAttrs !== 'object' || Array.isArray(rawAttrs)) continue;
       const rawAttrEntries = Object.entries(rawAttrs as Record<string, unknown>);
       const alignedAttrs: Record<string, string> = {};
       let allMatched = true;
-      for (const group of variantGroups) {
-        const hit = rawAttrEntries.find(([k]) => collapse(k, 60).toLowerCase() === group.name.toLowerCase());
+      for (const group of targetGroups) {
+        const hit = rawAttrEntries.find(([k]) => {
+          const cleanK = collapse(k, 60);
+          return cleanK.toLowerCase() === group.name.toLowerCase() || ayWebsSameAttribute(cleanK, group.name);
+        });
         if (!hit) { allMatched = false; break; }
         const valText = collapse(hit[1], 60);
         const canonicalVal = group.values.find((v) => v.toLowerCase() === valText.toLowerCase());
@@ -1019,12 +1080,17 @@ export function validateAyWebsCapturedPage(
         alignedAttrs[group.name] = canonicalVal;
       }
       if (!allMatched) continue;
-      const comboKey = variantGroups.map((g) => `${g.name.toLowerCase()}=${alignedAttrs[g.name].toLowerCase()}`).join('|');
+      /* Pour conserver la parité avec les groupes à valeur unique éventuels (ex. AliExpress), on ajoute aussi les groupes mono-valeur présents. */
+      for (const group of variantGroups) {
+        if (alignedAttrs[group.name]) continue;
+        if (group.values.length === 1) alignedAttrs[group.name] = group.values[0];
+      }
+      const comboKey = targetGroups.map((g) => `${g.name.toLowerCase()}=${alignedAttrs[g.name].toLowerCase()}`).join('|');
       if (seenComboKeys.has(comboKey)) continue;
       seenComboKeys.add(comboKey);
 
-      const rawAvail = (rawSku as { available?: unknown }).available;
-      const stockNum = Math.floor(Number((rawSku as { stock?: unknown }).stock));
+      const rawAvail = (rawEntry as { available?: unknown }).available;
+      const stockNum = Math.floor(Number((rawEntry as { stock?: unknown }).stock));
       const validStock = Number.isFinite(stockNum) && stockNum > 0 && stockNum <= 999 ? stockNum : null;
       const skuAvailable: boolean | null = rawAvail === true ? true : rawAvail === false ? false : null;
       const skuAvailability: AyWebsAvailabilityState =
@@ -1037,49 +1103,70 @@ export function validateAyWebsCapturedPage(
             : skuAvailability === 'AVAILABLE' ? (validStock !== null ? `sku_in_stock_capture:${validStock}` : 'sku_in_stock_capture')
               : 'sku_stock_unspecified_capture';
 
-      let skuPrice: number | null = null;
-      let skuCurrency: string | null = null;
-      const rawSkuPriceText = collapse((rawSku as { price?: unknown }).price, AYWEBS_CAPTURE_LIMITS.maxVariantValuePriceLength);
-      if (skuAvailability !== 'OUT_OF_STOCK' && rawSkuPriceText) {
-        const skuVerdict = checkPriceText(rawSkuPriceText);
-        if (skuVerdict.ok && skuVerdict.value > 0) {
-          const explicitIsoMatch = rawSkuPriceText.toUpperCase().match(/(?:^|[^A-Z])(EUR|USD|GBP|JPY|TND|MAD|SAR|AED|CAD|AUD|SGD|BRL|MXN|PLN|TRY|CHF|SEK)(?=$|[^A-Z])/);
-          const explicitIso = explicitIsoMatch ? explicitIsoMatch[1] : null;
-          if (explicitIso) {
-            if (!currencyVerified || explicitIso === currency) {
-              skuPrice = skuVerdict.value;
-              skuCurrency = explicitIso;
-            }
-          } else if (currencyVerified) {
-            const symHit = AYWEBS_SYMBOL_CURRENCIES.find((entry) =>
-              entry.stores.includes('aliexpress')
-              && entry.pattern.test(rawSkuPriceText)
-              && (!entry.hostsOnly || hostMatchesAny(requestHost, entry.hostsOnly))
-              && !hostMatchesAny(requestHost, entry.hostsExcluded),
-            );
-            if (symHit && symHit.iso === currency) {
-              skuPrice = skuVerdict.value;
-              skuCurrency = currency;
-            }
+      const parsedPrice = skuAvailability !== 'OUT_OF_STOCK'
+        ? parseMatrixPriceForPage((rawEntry as { price?: unknown }).price, (rawEntry as { priceFrom?: unknown }).priceFrom === true)
+        : null;
+      const skuPrice = parsedPrice ? parsedPrice.price : null;
+      const skuCurrency = parsedPrice ? parsedPrice.currency : null;
+
+      /* Paliers de quantité éventuels publiés par le marchand */
+      const validatedTiers: Array<{ minQuantity: number; unitPrice: number }> = [];
+      const rawTiers = (rawEntry as { quantityTiers?: unknown }).quantityTiers;
+      if (skuAvailability !== 'OUT_OF_STOCK' && Array.isArray(rawTiers)) {
+        for (const rawTier of rawTiers.slice(0, 6)) {
+          if (!rawTier || typeof rawTier !== 'object') continue;
+          const minQ = Math.floor(Number((rawTier as { minQuantity?: unknown }).minQuantity));
+          if (!Number.isFinite(minQ) || minQ < 2 || minQ > 100) continue;
+          const parsedTier = parseMatrixPriceForPage((rawTier as { unitPrice?: unknown }).unitPrice, false);
+          if (parsedTier && (!skuCurrency || parsedTier.currency === skuCurrency)) {
+            validatedTiers.push({ minQuantity: minQ, unitPrice: parsedTier.price });
           }
+        }
+        validatedTiers.sort((a, b) => a.minQuantity - b.minQuantity);
+      }
+
+      const rawVarId = collapse((rawEntry as { variantId?: unknown }).variantId ?? (rawEntry as { skuId?: unknown }).skuId, 80);
+      let cleanId: string | null = null;
+      if (rawVarId) {
+        if (/^ae:\d{5,24}$/i.test(rawVarId)) cleanId = `ae:${rawVarId.slice(3)}`;
+        else if (storeForPrice?.id === 'aliexpress' && /^\d{5,24}$/.test(rawVarId)) cleanId = `ae:${rawVarId}`;
+        else if (/^(?:asin|shein|matrix):[A-Za-z0-9:_-]{2,64}$/i.test(rawVarId)) cleanId = rawVarId;
+        else if (/^[A-Za-z0-9:_-]{2,64}$/.test(rawVarId)) cleanId = `matrix:${rawVarId}`;
+      } else {
+        cleanId = `matrix:${comboKey.slice(0, 64)}`;
+      }
+
+      let cleanVariantUrl: string | null = null;
+      const rawVarUrl = collapse((rawEntry as { variantUrl?: unknown }).variantUrl, 600);
+      if (rawVarUrl && /^https?:\/\//i.test(rawVarUrl)) {
+        const varHost = hostOf(rawVarUrl);
+        if (varHost) {
+          const sameStore = storeForPrice ? hostMatchesAny(varHost, storeForPrice.domains) : varHost === requestHost;
+          if (sameStore) cleanVariantUrl = rawVarUrl;
         }
       }
 
-      const rawSkuId = collapse((rawSku as { skuId?: unknown }).skuId, 32).replace(/^ae:/i, '');
-      const cleanId = /^\d{5,24}$/.test(rawSkuId) ? `ae:${rawSkuId}` : null;
-      const rawSkuImg = collapse((rawSku as { image?: unknown }).image, 600);
+      const rawSkuImg = collapse((rawEntry as { image?: unknown }).image, 600);
       const cleanImg = /^https?:\/\//i.test(rawSkuImg) ? rawSkuImg : null;
+      const rawEvSrc = collapse((rawEntry as { evidenceSource?: unknown }).evidenceSource, 24);
+      const cleanEvSrc = ['embedded_json', 'json_ld', 'preloaded_state', 'network_cache', 'dom'].includes(rawEvSrc)
+        ? rawEvSrc
+        : 'embedded_json';
 
       skuCombinations.push({
         sourceVariantId: cleanId,
         attributes: alignedAttrs,
-        label: variantGroups.map((g) => alignedAttrs[g.name]).join(' / '),
+        label: targetGroups.map((g) => alignedAttrs[g.name]).join(' / '),
         price: skuPrice,
         currency: skuCurrency,
         available: skuAvailable,
         availability: skuAvailability,
         availabilityReason: skuAvailabilityReason,
         image: cleanImg,
+        variantUrl: cleanVariantUrl,
+        stock: validStock,
+        evidenceSource: cleanEvSrc,
+        ...(validatedTiers.length > 0 ? { quantityTiers: validatedTiers } : {}),
       });
     }
   }

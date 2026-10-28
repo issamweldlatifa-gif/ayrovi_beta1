@@ -949,6 +949,17 @@ export function selectVariant(
     });
   }
 
+  let unitPrice = Number.isFinite(Number(match.price)) && Number(match.price) > 0 ? Number(match.price) : null;
+  if (unitPrice !== null && quantity >= 2 && Array.isArray(match.quantityTiers) && match.quantityTiers.length > 0) {
+    let bestMin = 0;
+    for (const tier of match.quantityTiers) {
+      if (tier.minQuantity <= quantity && tier.minQuantity >= bestMin && Number(tier.unitPrice) > 0) {
+        bestMin = tier.minQuantity;
+        unitPrice = Number(tier.unitPrice);
+      }
+    }
+  }
+
   return {
     selection: {
       variantId: match.sourceVariantId || key,
@@ -958,7 +969,7 @@ export function selectVariant(
     },
     availability: match.availability,
     reason: match.availabilityReason || product.availability.reason,
-    price: Number.isFinite(Number(match.price)) && Number(match.price) > 0 ? Number(match.price) : null,
+    price: unitPrice,
     currency: match.currency ? String(match.currency).trim().toUpperCase() || null : null,
   };
 }
@@ -973,16 +984,27 @@ interface AyWebsStoredSourceQuote {
 /** Resolve the server-stored exact variant price first, then the product price. */
 function storedSourceQuote(
   product: AyWebsStoredProduct,
-  item: Pick<AyWebsCartItem, 'variantSnapshot'>,
+  item: Pick<AyWebsCartItem, 'variantSnapshot' | 'quantity'>,
 ): AyWebsStoredSourceQuote {
   const variantKey = ayWebsVariantKey(item.variantSnapshot?.attributes || null);
   const variant = variantKey
     ? (product.variants || []).find((candidate) => ayWebsVariantKey(candidate.attributes) === variantKey) || null
     : null;
   const hasVariantPrice = Boolean(variant && Number.isFinite(Number(variant.price)) && Number(variant.price) > 0);
+  let resolvedVariantPrice = hasVariantPrice ? Number(variant!.price) : product.price;
+  const qty = Math.max(1, Math.floor(Number(item.quantity) || 1));
+  if (hasVariantPrice && qty >= 2 && Array.isArray(variant!.quantityTiers) && variant!.quantityTiers.length > 0) {
+    let bestMin = 0;
+    for (const tier of variant!.quantityTiers) {
+      if (tier.minQuantity <= qty && tier.minQuantity >= bestMin && Number(tier.unitPrice) > 0) {
+        bestMin = tier.minQuantity;
+        resolvedVariantPrice = Number(tier.unitPrice);
+      }
+    }
+  }
   return {
     variant,
-    price: hasVariantPrice ? Number(variant!.price) : product.price,
+    price: resolvedVariantPrice,
     currency: (hasVariantPrice ? variant!.currency || product.currency : product.currency).trim().toUpperCase(),
     availability: variant?.availability || product.availability.state,
   };

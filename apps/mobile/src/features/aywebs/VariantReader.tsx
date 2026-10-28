@@ -19,6 +19,7 @@ import {
 import { ApiError } from '@/api/errors';
 import { AYWEBS_CAPTURE_WATCHDOG_MS } from '@/features/aywebs/captureFlow';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
+import { AYWEBS_NETWORK_OBSERVER_SCRIPT } from '@/features/aywebs/networkObserverScript';
 import { decideWebNavigation, isFatalMainPageLoadError } from '@/features/aywebs/webNavigation';
 
 /* Même contournement de typage que l'écran du magasin (react-native-webview 13.17). */
@@ -107,6 +108,7 @@ export const VariantReader = forwardRef<VariantReaderHandle, { storeId?: string 
           originWhitelist={['*']}
           onShouldStartLoadWithRequest={(req: { url: string }) => decideWebNavigation(req.url) === 'allow'}
           javaScriptEnabled
+          injectedJavaScriptBeforeContentLoaded={AYWEBS_NETWORK_OBSERVER_SCRIPT}
           setSupportMultipleWindows={false}
           onLoadStart={() => { loading.current = true; }}
           onLoadEnd={onLoadEnd}

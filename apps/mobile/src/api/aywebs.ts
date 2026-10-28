@@ -206,6 +206,7 @@ export interface AyWebsPricingBreakdown {
 export interface AyWebsPricing {
   totalTnd: number | null;
   pricingVersion: number | null;
+  quantityTotalsTnd?: number[] | null;
   breakdown: AyWebsPricingBreakdown | null;
 }
 
@@ -224,6 +225,7 @@ export interface AyWebsVariantQuote {
   currency: string;
   priceFrom: boolean;
   totalTnd: number | null;
+  quantityTotalsTnd?: number[] | null;
   pricingVersion: number | null;
 }
 
@@ -299,6 +301,7 @@ export function parseAyWebsResolvedProduct(payload: unknown): AyWebsResolvedProd
       ? {
         totalTnd: numOrNull(pricing.total_tnd),
         pricingVersion: numOrNull(pricing.pricing_version),
+        quantityTotalsTnd: numListOrNull(pricing.quantity_totals_tnd),
         breakdown: breakdown
           ? {
             convertedSourcePrice: numOrNull(breakdown.converted_source_price),
@@ -633,8 +636,14 @@ export interface AyWebsVariantGroup {
   values: string[];
 }
 
+export interface AyWebsQuantityTier {
+  minQuantity: number;
+  unitPrice: number;
+}
+
 export interface AyWebsVariantOption {
   sourceVariantId: string;
+  variantUrl?: string | null;
   attributes: Record<string, string>;
   label: string;
   /** السعر المنشور من التاجر لهذا الخيار (قد لا يكون منشوراً). */
@@ -646,14 +655,44 @@ export interface AyWebsVariantOption {
   priceSource: string;
   availability: string;
   availabilityReason: string;
+  stock?: number | null;
+  evidenceSource?: string | null;
+  quantityTiers?: AyWebsQuantityTier[];
   image: string;
   /** السعر بالدينار لهذا الخيار — يصدر من الخادم، `null` كي ما حسبش. */
   totalTnd: number | null;
+  /** إجماليات الكميات 1..10 بالدينار شاملة خصومات الكمية والتوصيل غير الخطي. */
+  quantityTotalsTnd?: number[] | null;
 }
 
-/** مفتاح الخصائص كما يفهمه الخادم: حروف صغيرة، بلا فراغات ولا محارف غريبة. */
+const numListOrNull = (value: unknown): number[] | null => {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const out: number[] = [];
+  for (const item of value) {
+    const n = numOrNull(item);
+    if (n === null || n <= 0) return null;
+    out.push(n);
+  }
+  return out;
+};
+
+const quantityTierList = (value: unknown): AyWebsQuantityTier[] => {
+  if (!Array.isArray(value)) return [];
+  const out: AyWebsQuantityTier[] = [];
+  for (const entry of value) {
+    if (!isRecord(entry)) continue;
+    const minQuantity = numOrNull(entry.minQuantity ?? entry.min_quantity);
+    const unitPrice = numOrNull(entry.unitPrice ?? entry.unit_price);
+    if (minQuantity !== null && minQuantity >= 2 && unitPrice !== null && unitPrice > 0) {
+      out.push({ minQuantity: Math.floor(minQuantity), unitPrice });
+    }
+  }
+  return out;
+};
+
+/** مفتاح الخصائص كما يفهمه الخادم: حروف صغيرة، مع الحفاظ على المسافات والحروف العالمية (`Âge`, `Plug Type`, `اللون`). */
 const attributeKey = (value: unknown): string =>
-  String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+  String(value ?? '').trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 60);
 
 const attributesOf = (value: unknown): Record<string, string> => {
   if (!isRecord(value)) return {};
@@ -678,8 +717,12 @@ export function ayWebsVariantKey(attributes: Record<string, string> | null | und
 export function parseAyWebsVariantOption(entry: unknown): AyWebsVariantOption {
   if (!isRecord(entry)) throw malformed('option de variante');
   const pricing = isRecord(entry.ayrovi_pricing) ? entry.ayrovi_pricing : null;
+  const rawVariantUrl = str(entry.variant_url).trim();
+  const rawEvSrc = str(entry.evidence_source).trim();
+  const tiers = quantityTierList(entry.quantity_tiers);
   return {
     sourceVariantId: str(entry.source_variant_id),
+    variantUrl: rawVariantUrl || null,
     attributes: attributesOf(entry.attributes),
     label: str(entry.label),
     price: numOrNull(entry.price),
@@ -689,8 +732,12 @@ export function parseAyWebsVariantOption(entry: unknown): AyWebsVariantOption {
     priceSource: str(entry.price_source),
     availability: str(entry.availability),
     availabilityReason: str(entry.availability_reason),
+    stock: numOrNull(entry.stock),
+    evidenceSource: rawEvSrc || null,
+    ...(tiers.length > 0 ? { quantityTiers: tiers } : {}),
     image: str(entry.image),
     totalTnd: pricing ? numOrNull(pricing.total_tnd) : null,
+    quantityTotalsTnd: pricing ? numListOrNull(pricing.quantity_totals_tnd) : null,
   };
 }
 
@@ -725,6 +772,7 @@ function variantQuoteList(value: unknown): AyWebsVariantQuote[] {
       currency: str(entry.currency),
       priceFrom: bool(entry.price_from),
       totalTnd: numOrNull(entry.total_tnd),
+      quantityTotalsTnd: numListOrNull(entry.quantity_totals_tnd),
       pricingVersion: numOrNull(entry.pricing_version),
     });
   }

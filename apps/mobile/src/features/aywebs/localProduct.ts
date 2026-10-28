@@ -20,6 +20,7 @@ const ASIN = /^[A-Z0-9]{10}$/;
 
 export interface LocalVariant {
   asin: string;
+  variantUrl?: string;
   attributes: Record<string, string>;
   availability: 'AVAILABLE' | 'OUT_OF_STOCK' | 'UNKNOWN';
   /** Prix affiché SUR LA CARTE de ce choix (texte tel quel) — jamais un devis. */
@@ -177,6 +178,64 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
   }
 
   /* AliExpress v2 (28/10/2026) : matrice SKU multi-axes (`capture.aliexpress.skus`).
+  /* Matrice universelle `variantMatrix` (SHEIN, Zalando, Amazon, AliExpress, JSON-LD) :
+     enrichit les variantes Amazon existantes (prix/URL/stock) ou fournit directement
+     les combinaisons multi-axes exactes pour toutes les autres boutiques. */
+  if (Array.isArray(capture.variantMatrix) && capture.variantMatrix.length > 0) {
+    if (out.length > 0) {
+      for (const mEntry of capture.variantMatrix.slice(0, 120)) {
+        if (!isRecord(mEntry) || !isRecord(mEntry.attributes)) continue;
+        const mUrl = text(mEntry.variantUrl);
+        const mPrice = mEntry.priceFrom === true ? '' : text(mEntry.price);
+        const mTarget = out.find((existing) => matchesSelection(existing.attributes, mEntry.attributes as Record<string, string>));
+        if (mTarget) {
+          if (!mTarget.variantUrl && /^https?:\/\//i.test(mUrl)) mTarget.variantUrl = mUrl.slice(0, 600);
+          if (!mTarget.cardPrice && mPrice) { mTarget.cardPrice = mPrice; mTarget.priceFrom = false; }
+          if (mTarget.availability === 'UNKNOWN' && (mEntry.available === true || mEntry.available === false)) {
+            mTarget.availability = mEntry.available ? 'AVAILABLE' : 'OUT_OF_STOCK';
+          }
+        }
+      }
+    } else {
+      for (const mEntry of capture.variantMatrix.slice(0, 120)) {
+        if (!isRecord(mEntry) || !isRecord(mEntry.attributes)) continue;
+        const attributes: Record<string, string> = {};
+        for (const [rawKey, rawVal] of Object.entries(mEntry.attributes)) {
+          const cleanKey = text(rawKey);
+          const cleanVal = text(rawVal);
+          if (cleanKey && cleanVal && isRealChoiceValue(cleanKey, cleanVal)) {
+            attributes[cleanKey] = cleanVal;
+          }
+        }
+        const attrEntries = Object.entries(attributes);
+        if (!attrEntries.length) continue;
+        const comboKey = attrEntries.map(([k, v]) => `${k.toLowerCase()}=${v.toLowerCase()}`).sort().join('|');
+        if (seen.has(comboKey)) continue;
+        seen.add(comboKey);
+        const rawVarId = text(mEntry.variantId);
+        const rawUrl = text(mEntry.variantUrl);
+        const cleanUrl = /^https?:\/\//i.test(rawUrl) ? rawUrl.slice(0, 600) : '';
+        const rawImg = text(mEntry.image);
+        const cleanImg = /^https?:\/\//i.test(rawImg) ? rawImg.slice(0, 600) : '';
+        const stockNum = Math.floor(Number(mEntry.stock));
+        const avail: LocalVariant['availability'] = mEntry.available === false
+          ? 'OUT_OF_STOCK'
+          : mEntry.available === true ? 'AVAILABLE' : 'UNKNOWN';
+        out.push({
+          asin: rawVarId || `matrix:${comboKey.slice(0, 60)}`,
+          ...(cleanUrl ? { variantUrl: cleanUrl } : {}),
+          attributes,
+          availability: avail,
+          cardPrice: avail === 'OUT_OF_STOCK' ? '' : text(mEntry.price),
+          priceFrom: mEntry.priceFrom === true,
+          stock: avail === 'OUT_OF_STOCK' ? null : (Number.isFinite(stockNum) && stockNum > 0 && stockNum <= 999 ? stockNum : null),
+          ...(cleanImg ? { image: cleanImg } : {}),
+        });
+      }
+    }
+  }
+
+  /* AliExpress v2 (rétrocompatibilité directe quand `variantMatrix` n'est pas fourni) :
      Chaque combinaison (Couleur × Prise × Expédié depuis…) porte son propre
      `skuId`, son prix ferme et son stock exact. */
   const aliexpress = isRecord(capture.aliexpress) ? capture.aliexpress : null;
@@ -270,6 +329,35 @@ export function localVariantsFromCapture(capture: Json): LocalVariant[] {
         });
       }
     }
+  } else if (Array.isArray(capture.variantGroups)) {
+    /* Quand `variantMatrix` couvre la couleur courante mais qu'une couleur sœur SHEIN
+       (`goodsId`) n'avait pas ses SKUs embarqués, on ajoute son pointeur 1-attribut
+       pour permettre la lecture delta ciblée au clic sans perdre son image ni son `goodsId`. */
+    for (const group of capture.variantGroups) {
+      if (!isRecord(group) || !Array.isArray(group.options)) continue;
+      const published = text(group.name);
+      if (!published) continue;
+      for (const option of group.options) {
+        if (!isRecord(option)) continue;
+        const val = text(option.value);
+        const rawGoodsId = text(option.goodsId);
+        if (!val || !/^\d{5,16}$/.test(rawGoodsId)) continue;
+        const alreadyCovered = out.some((entry) =>
+          Object.entries(entry.attributes).some(([k, v]) => k.toLowerCase() === published.toLowerCase() && v.toLowerCase() === val.toLowerCase()),
+        );
+        if (alreadyCovered) continue;
+        const rawImg = text(option.image);
+        out.push({
+          asin: `shein:${rawGoodsId}`,
+          attributes: { [published]: val },
+          availability: option.available === false ? 'OUT_OF_STOCK' : option.available === true ? 'AVAILABLE' : 'UNKNOWN',
+          cardPrice: text(option.price),
+          priceFrom: option.priceFrom === true,
+          stock: null,
+          ...(/^https?:\/\//i.test(rawImg) ? { image: rawImg.slice(0, 600) } : {}),
+        });
+      }
+    }
   }
   return out;
 }
@@ -341,9 +429,10 @@ export function valueStatesFromCapture(capture: Json): LocalValueStates {
  */
 export function groupsFromCapture(capture: Json, variants = localVariantsFromCapture(capture)): AyWebsVariantGroup[] {
   const fromVariants = groupsFromVariants(variants);
-  if (fromVariants.length) return fromVariants;
-  if (!capture || typeof capture !== 'object' || !Array.isArray(capture.variantGroups)) return [];
-  const groups: AyWebsVariantGroup[] = [];
+  if (!capture || typeof capture !== 'object' || !Array.isArray(capture.variantGroups)) {
+    return fromVariants;
+  }
+  const groups: AyWebsVariantGroup[] = fromVariants.map((g) => ({ attribute: g.attribute, values: [...g.values] }));
   for (const group of capture.variantGroups) {
     if (!isRecord(group)) continue;
     const attribute = text(group.name);
@@ -352,8 +441,16 @@ export function groupsFromCapture(capture: Json, variants = localVariantsFromCap
     const values = (Array.isArray(group.values) ? group.values.map(text) : [])
       .filter((value) => Boolean(value) && isRealChoiceValue(attribute, value));
     if (!attribute || !values.length) continue;
-    if (groups.some((known) => known.attribute.toLowerCase() === attribute.toLowerCase())) continue;
-    groups.push({ attribute, values });
+    const existing = groups.find((known) => known.attribute.toLowerCase() === attribute.toLowerCase());
+    if (existing) {
+      for (const val of values) {
+        if (!existing.values.some((v) => v.toLowerCase() === val.toLowerCase())) {
+          existing.values.push(val);
+        }
+      }
+    } else {
+      groups.push({ attribute, values });
+    }
   }
   return groups;
 }
@@ -654,10 +751,11 @@ export function groupsFromVariants(variants: LocalVariant[]): AyWebsVariantGroup
   return [...groups.entries()].map(([attribute, values]) => ({ attribute, values }));
 }
 
-/** Options pour la feuille : l'ASIN est le `sourceVariantId` (même convention que le serveur). */
+/** Options pour la feuille : l'ASIN / identifiant de matrice est le `sourceVariantId`. */
 export function optionsFromVariants(variants: LocalVariant[]): AyWebsVariantOption[] {
   return variants.map((variant) => ({
     sourceVariantId: variant.asin,
+    variantUrl: variant.variantUrl || null,
     attributes: variant.attributes,
     label: Object.values(variant.attributes).join(' / '),
     price: null,
@@ -667,6 +765,7 @@ export function optionsFromVariants(variants: LocalVariant[]): AyWebsVariantOpti
     priceSource: 'UNKNOWN',
     availability: variant.availability,
     availabilityReason: '',
+    stock: variant.stock,
     image: variant.image || '',
     totalTnd: null,
   }));
@@ -749,14 +848,19 @@ export function localAddReadiness(input: {
   const chosenValues = Object.entries(input.selection)
     .map(([name, value]) => input.valueStates?.[name.trim().toLowerCase()]?.[String(value).trim().toLowerCase()])
     .filter((state): state is LocalValueState => Boolean(state));
-  /* Une valeur publiée INDISPONIBLE bloque, même si la table des combinaisons ne
-     la connaît pas : c'est la page qui le dit, pas nous. */
-  if (chosenValues.some((state) => state.state === 'OUT_OF_STOCK')) {
-    return { ready: false, code: 'VARIANT_UNAVAILABLE', missingAttributes: [], availability: 'OUT_OF_STOCK' };
-  }
   const chosen = Object.entries(input.selection).map(([k, v]) => `${k.trim().toLowerCase()}=${v.toLowerCase()}`).sort().join('|');
   const match = input.variants.find((variant) => Object.entries(variant.attributes)
     .map(([k, v]) => `${k.trim().toLowerCase()}=${v.toLowerCase()}`).sort().join('|') === chosen);
+  if (match?.availability === 'OUT_OF_STOCK') {
+    return { ready: false, code: 'VARIANT_UNAVAILABLE', missingAttributes: [], availability: 'OUT_OF_STOCK' };
+  }
+  if (match?.availability === 'AVAILABLE') {
+    return { ready: true, code: '', missingAttributes: [], availability: match.stock != null ? 'LOW_STOCK' : 'AVAILABLE' };
+  }
+  /* Une valeur publiée INDISPONIBLE bloque lorsque la matrice n'a pas prouvé la combinaison exacte en stock. */
+  if (chosenValues.some((state) => state.state === 'OUT_OF_STOCK')) {
+    return { ready: false, code: 'VARIANT_UNAVAILABLE', missingAttributes: [], availability: 'OUT_OF_STOCK' };
+  }
   if (!match) {
     /* Toutes les valeurs choisies sont publiées DISPONIBLES ⇒ le marchand a dit,
        valeur par valeur, que ce choix est achetable. Aucune combinaison n'est
@@ -787,13 +891,6 @@ export function localAddReadiness(input: {
       return { ready: true, code: '', missingAttributes: [], availability: stock != null ? 'LOW_STOCK' : 'AVAILABLE' };
     }
     return { ready: false, code: 'VARIANT_UNKNOWN', missingAttributes: [], availability: 'UNKNOWN' };
-  }
-  if (match.availability === 'OUT_OF_STOCK') {
-    return { ready: false, code: 'VARIANT_UNAVAILABLE', missingAttributes: [], availability: 'OUT_OF_STOCK' };
-  }
-  if (match.availability === 'AVAILABLE') {
-    /* Stock annoncé pour la carte : « LOW_STOCK » quand un nombre est publié. */
-    return { ready: true, code: '', missingAttributes: [], availability: match.stock != null ? 'LOW_STOCK' : 'AVAILABLE' };
   }
   /* Le choix EST la combinaison affichée : le bandeau de disponibilité de la
      page porte sur elle. C'est une preuve publiée par le marchand, pas une

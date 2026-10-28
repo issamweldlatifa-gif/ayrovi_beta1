@@ -46,6 +46,8 @@ export const AYWEBS_CAPTURE_LIMITS = {
   maxVariantGroupValues: 20,
   /** Prix publiés par valeur : texte borné, même règle que les prix de page. */
   maxVariantValuePriceLength: 60,
+  /** Matrice de prix des combinaisons de variantes (extraction unique, toutes boutiques). */
+  maxMatrixEntries: 120,
   maxImages: 4,
   /** Au-delà, la capture est refusée : une page ouverte il y a une heure n'est pas une preuve. */
   maxAgeMs: 10 * 60_000,
@@ -177,6 +179,48 @@ export interface AyWebsAliExpressEvidence {
   skus?: AyWebsAliExpressSkuEvidence[];
 }
 
+export type AyWebsMatrixEvidenceSource =
+  | 'embedded_json'
+  | 'json_ld'
+  | 'preloaded_state'
+  | 'network_cache'
+  | 'dom';
+
+/** Palier de remise sur quantité publié par le marchand pour une variante (ex. 2+ pièces → $15.90/u). */
+export interface AyWebsQuantityTierEvidence {
+  minQuantity: number;
+  unitPrice: string;
+}
+
+/**
+ * Entrée de la MATRICE DE PRIX DES VARIANTES (`variantMatrix`) extraite en une
+ * seule lecture initiale depuis la page, l'état préchargé ou les réponses réseau
+ * du navigateur — sans jamais supposer que le prix de base vaut pour les autres
+ * variantes.
+ */
+export interface AyWebsCapturedMatrixEntry {
+  /** Identifiant marchand de cette combinaison précise (SKU, ASIN, goods_id…). */
+  variantId?: string | null;
+  /** URL directe de la variante si elle possède sa propre adresse (ASIN Amazon, goods_id SHEIN, couleur Zalando). */
+  variantUrl?: string | null;
+  /** Attributs exacts de cette combinaison (« Couleur » → « Noir », « Taille » → « 4 ans », « Type » → « Type A »). */
+  attributes: Record<string, string>;
+  /** Prix unitaire FERME publié pour CETTE combinaison (« $17.70 », « 139.99 EUR ») ; `null` si inconnu. */
+  price?: string | null;
+  /** `true` si le montant n'est qu'un « à partir de » (jamais traité comme un prix ferme). */
+  priceFrom?: boolean;
+  /** Disponibilité explicite de cette combinaison (`true` = en stock, `false` = épuisé, `null` = inconnu). */
+  available?: boolean | null;
+  /** Stock annoncé pour cette combinaison (1..999), sinon `null`. */
+  stock?: number | null;
+  /** Vignette HTTP(S) propre à cette combinaison. */
+  image?: string | null;
+  /** Source de preuve de cette entrée. */
+  evidenceSource?: AyWebsMatrixEvidenceSource | null;
+  /** Paliers de prix par quantité publiés par le marchand pour ce SKU. */
+  quantityTiers?: AyWebsQuantityTierEvidence[];
+}
+
 export interface AyWebsCapturedPage {
   /** Version du contrat : un serveur ancien refuse une capture future. */
   v: number;
@@ -228,6 +272,13 @@ export interface AyWebsCapturedPage {
    * `name` du champ nomme le groupe. Bornes : 4 groupes, 20 valeurs, 60 car.
    */
   variantGroups?: AyWebsCapturedVariantGroup[];
+  /**
+   * Matrice complète des combinaisons de variantes lues lors de l'extraction
+   * initiale (SHEIN, Zalando, Amazon, AliExpress, JSON-LD `hasVariant`, état
+   * préchargé ou cache réseau de la page). Permet le changement instantané en
+   * mémoire sans ré-extraire toute la fiche à chaque clic.
+   */
+  variantMatrix?: AyWebsCapturedMatrixEntry[] | null;
   /** Images trouvées (URLs http/https seulement). */
   images?: string[];
   /** Horodatage ISO de la lecture, dans le navigateur du client. */

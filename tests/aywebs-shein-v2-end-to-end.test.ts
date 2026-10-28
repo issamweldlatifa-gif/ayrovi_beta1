@@ -268,7 +268,7 @@ describe('AYWEBs — SHEIN v2 : activation, capture avancée, options et convers
       expect(detectAyWebsStore(url)?.id).toBe('shein');
     }
 
-    const adapter = new SheinAdapter();
+    const adapter = new SheinAdapter(h.scraper as any);
     expect(adapter.canonicalUrl('https://fr.shein.com/Robe-fleurie-p-382460229-cat-2030.html'))
       .toBe('https://www.shein.com/-p-382460229.html');
     expect(adapter.canonicalUrl('https://www.shein.fr/Robe-fleurie-p-382460229.html'))
@@ -345,6 +345,7 @@ describe('AYWEBs — SHEIN v2 : activation, capture avancée, options et convers
 
     const added = await addAyWebsCartItem(h.resolver, {
       sessionId: SESSION_ID,
+      accountId: null,
       sourceUrl: url,
       storeId: 'shein',
       variantAttributes: { couleur: 'Noir', taille: 'XL' },
@@ -387,6 +388,7 @@ describe('AYWEBs — SHEIN v2 : activation, capture avancée, options et convers
     /* Sans taille choisie, un ajout direct est refusé avec VARIANT_REQUIRED */
     await expect(addAyWebsCartItem(h.resolver, {
       sessionId: SESSION_ID,
+      accountId: null,
       sourceUrl: noirUrl,
       storeId: 'shein',
       variantAttributes: { couleur: 'Noir' },
@@ -398,6 +400,7 @@ describe('AYWEBs — SHEIN v2 : activation, capture avancée, options et convers
     /* Sélection de la taille épuisée L dans la feuille ⇒ refusée avec VARIANT_UNAVAILABLE */
     await expect(addAyWebsCartItem(h.resolver, {
       sessionId: SESSION_ID,
+      accountId: null,
       sourceUrl: noirUrl,
       storeId: 'shein',
       variantAttributes: { couleur: 'Noir', taille: 'L' },
@@ -460,6 +463,7 @@ describe('AYWEBs — SHEIN v2 : activation, capture avancée, options et convers
 
     const addedRouge = await addAyWebsCartItem(h.resolver, {
       sessionId: SESSION_ID,
+      accountId: null,
       sourceUrl: rougeUrl,
       storeId: 'shein',
       variantAttributes: { couleur: 'Rouge', taille: 'M' },

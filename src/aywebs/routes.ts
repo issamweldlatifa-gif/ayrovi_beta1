@@ -51,7 +51,7 @@ import {
   updateAyWebsCartItem,
   verifyAyWebsCart,
 } from './cart';
-import { ayWebsVariantQuotes } from './variantQuotes';
+import { ayWebsVariantQuotes, computeQuantityTotalsTnd } from './variantQuotes';
 import { ayWebsCheckoutPreviewPayload, computeAyWebsCheckoutPreview } from './checkoutFees';
 import {
   acceptedAyWebsPaymentMethods,
@@ -1419,8 +1419,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
  * ------------------------------------------------------------------ */
 
 /**
- * Price only the exact source variant when the merchant published its price;
- * otherwise use the product's server-stored price, never a client amount.
+ * Price ONLY the exact source variant when the merchant published its price;
+ * NEVER assume the base product price applies to unpriced sibling variants.
  */
 function ayWebsVariantPricingPayload(
   variants: AyWebsSourceProduct['variants'],
@@ -1429,30 +1429,37 @@ function ayWebsVariantPricingPayload(
   quoteVerified: boolean,
 ) {
   return variants.map((variant) => {
-    const isCapturedSkuMatrix = typeof variant.sourceVariantId === 'string' && variant.sourceVariantId.startsWith('ae:');
     const isOutOfStock = variant.availability === 'OUT_OF_STOCK';
     const hasVariantPrice = !isOutOfStock && Number.isFinite(Number(variant.price)) && Number(variant.price) > 0;
-    const quotedPrice = hasVariantPrice ? Number(variant.price) : (isCapturedSkuMatrix || isOutOfStock ? 0 : Number(product.price));
+    const quotedPrice = hasVariantPrice ? Number(variant.price) : 0;
     const quotedCurrency = (hasVariantPrice ? variant.currency || product.currency : product.currency).trim().toUpperCase();
     const quote = quoteVerified && quotedPrice > 0 && quotedCurrency
       ? calculatePrice(rules, quotedPrice, quotedCurrency, { title: product.title })
       : null;
     const usableQuote = quote && !quote.restricted && quote.totalTND > 0 ? quote : null;
+    const quantityTotalsTnd = usableQuote
+      ? computeQuantityTotalsTnd(rules, quotedPrice, quotedCurrency, product.title, variant.quantityTiers)
+      : null;
     return {
       source_variant_id: variant.sourceVariantId,
+      variant_url: variant.variantUrl ?? null,
       attributes: variant.attributes,
       label: variant.label,
       price: variant.price,
       currency: variant.currency,
       quoted_price: quoteVerified && quotedPrice > 0 ? quotedPrice : null,
       quoted_currency: quoteVerified ? quotedCurrency || null : null,
-      price_source: !quoteVerified ? 'UNKNOWN' : hasVariantPrice ? 'VARIANT' : quotedPrice > 0 ? 'PRODUCT' : 'UNKNOWN',
+      price_source: !quoteVerified ? 'UNKNOWN' : hasVariantPrice ? 'VARIANT' : 'UNKNOWN',
       availability: variant.availability,
       availability_reason: variant.availabilityReason,
+      stock: variant.stock ?? null,
+      evidence_source: variant.evidenceSource ?? null,
+      quantity_tiers: variant.quantityTiers ?? [],
       image: variant.image,
       ayrovi_pricing: usableQuote ? {
         total_tnd: usableQuote.totalTND,
         pricing_version: usableQuote.pricingVersion,
+        quantity_totals_tnd: quantityTotalsTnd,
       } : null,
     };
   });
@@ -1535,6 +1542,9 @@ function productPayload(
     ayrovi_pricing: product.ayroviPricing ? {
       total_tnd: product.ayroviPricing.totalTnd,
       pricing_version: product.ayroviPricing.pricingVersion,
+      quantity_totals_tnd: pricingRules && quoteEvidence.priceVerified && quoteEvidence.currencyVerified
+        ? computeQuantityTotalsTnd(pricingRules, product.price, product.currency, product.title)
+        : null,
       breakdown: {
         converted_source_price: product.ayroviPricing.breakdown.convertedSourcePrice,
         shipping: product.ayroviPricing.breakdown.shipping,

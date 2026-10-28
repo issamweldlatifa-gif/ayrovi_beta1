@@ -40,6 +40,7 @@ import {
   type AyWebsCart, type AyWebsCartItem, type AyWebsPageAnalysis, type AyWebsResolveOutcome, type AyWebsResolvedProduct, type AyWebsVariantOption,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
+import { AYWEBS_NETWORK_OBSERVER_SCRIPT } from '@/features/aywebs/networkObserverScript';
 import {
   groupsFromCapture, localVariantsFromCapture, optionsFromVariants, productFromCapture,
 } from '@/features/aywebs/localProduct';
@@ -701,6 +702,7 @@ export default function AyWebsBrowserScreen() {
           return false;
         }}
         javaScriptEnabled
+        injectedJavaScriptBeforeContentLoaded={AYWEBS_NETWORK_OBSERVER_SCRIPT}
         setSupportMultipleWindows={false}
         onNavigationStateChange={(state) => {
           pageLoadingRef.current = state.loading === true;

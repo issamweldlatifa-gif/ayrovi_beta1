@@ -23,6 +23,8 @@ export type AvailabilityState = 'AVAILABLE' | 'LOW_STOCK' | 'OUT_OF_STOCK' | 'UN
 export interface SelectionQuote {
   /** Devis unitaire en dinars, `null` quand aucun prix ferme n'est publié. */
   unitTnd: number | null;
+  /** Totaux exacts en dinars pour les quantités 1..10 (calculés par le serveur, incluant paliers et frais non linéaires). */
+  quantityTotalsTnd?: number[] | null;
   /** Montant marchand de cette combinaison (devise de la fiche), s'il est publié. */
   sourcePrice: number | null;
   sourceCurrency: string;
@@ -33,6 +35,10 @@ export interface SelectionQuote {
   stock: number | null;
   /** `true` quand le prix vient de la valeur choisie et non de la page. */
   fromValue: boolean;
+  /** Vignette propre à la combinaison, si publiée par la matrice. */
+  image?: string | null;
+  /** URL directe de la variante pour une lecture delta si son prix manque dans la matrice initiale. */
+  missingVariantUrl?: string | null;
 }
 
 const normalize = (value: unknown): string =>
@@ -53,10 +59,14 @@ const sameSelection = (a: Record<string, string>, b: Record<string, string>): bo
 export interface QuoteCombination {
   attributes: Record<string, string>;
   totalTnd: number | null;
+  quantityTotalsTnd?: number[] | null;
   quotedPrice?: number | null;
   quotedCurrency?: string;
   availability?: string;
   availabilityReason?: string;
+  stock?: number | null;
+  image?: string;
+  variantUrl?: string | null;
 }
 
 export interface SelectionQuoteInput {
@@ -64,6 +74,7 @@ export interface SelectionQuoteInput {
   page: {
     selection: Record<string, string>;
     unitTnd: number | null;
+    quantityTotalsTnd?: number[] | null;
     availability: AvailabilityState;
     stock: number | null;
     sourcePrice: number | null;
@@ -127,42 +138,74 @@ export function selectionQuote(input: SelectionQuoteInput): SelectionQuote {
       fromValue: false,
     };
   }
-  /* 1. Le choix EST la combinaison affichée : le devis de la fiche la décrit. */
+  const combination = exactCombination(input.combinations, selection);
+  const combinationState: AvailabilityState = combination ? stateOf(combination.availability) : 'UNKNOWN';
+  const comboStockMatch = combination?.availabilityReason?.match(/:(\d{1,3})$/);
+  const combinationStock = combination?.stock ?? (comboStockMatch ? Number(comboStockMatch[1]) : null);
+  const combinationProvenInStock = combinationState === 'AVAILABLE' || combinationState === 'LOW_STOCK';
+
+  /* 1. Si la MATRICE DE VARIANTES (`combinations` / `variant_details`) possède la
+     combinaison exacte avec un prix ferme (ou un épuisement explicite), elle prime
+     immédiatement (0 ms, sans jamais hériter du prix de base ni trébucher sur un
+     conflit 1D entre axes Couleur et Taille). */
+  if (combination && (combination.totalTnd != null || combinationState === 'OUT_OF_STOCK')) {
+    const outOfStock = combinationState === 'OUT_OF_STOCK';
+    const effAvail: AvailabilityState = outOfStock
+      ? 'OUT_OF_STOCK'
+      : combinationProvenInStock
+        ? (combinationStock != null && combinationStock <= 5 ? 'LOW_STOCK' : combinationState)
+        : (input.page && sameSelection(input.page.selection, selection) ? input.page.availability : 'AVAILABLE');
+    return {
+      unitTnd: outOfStock ? null : combination.totalTnd,
+      ...(!outOfStock && combination.quantityTotalsTnd ? { quantityTotalsTnd: combination.quantityTotalsTnd } : {}),
+      sourcePrice: outOfStock ? null : (combination.quotedPrice ?? null),
+      sourceCurrency: !outOfStock && combination.quotedPrice != null ? (combination.quotedCurrency || '') : '',
+      priceFrom: false,
+      availability: effAvail,
+      stock: outOfStock ? null : (combinationStock ?? (input.page && sameSelection(input.page.selection, selection) ? input.page.stock : null)),
+      fromValue: false,
+      ...(combination.image ? { image: combination.image } : {}),
+    };
+  }
+
+  /* 2. Le choix EST la combinaison affichée : le devis de la fiche la décrit. */
   if (input.page && sameSelection(input.page.selection, selection)) {
     return {
       unitTnd: input.page.unitTnd,
+      ...(input.page.quantityTotalsTnd ? { quantityTotalsTnd: input.page.quantityTotalsTnd } : {}),
       sourcePrice: input.page.sourcePrice,
       sourceCurrency: input.page.sourceCurrency,
       priceFrom: false,
       availability: input.page.availability,
       stock: input.page.stock,
       fromValue: false,
+      ...(combination?.image ? { image: combination.image } : {}),
     };
   }
-  /* 2. Sinon : uniquement ce que la page publie pour CHAQUE valeur choisie.
-     Le NOM du groupe peut différer d'un côté à l'autre (« Taille » publié par la
-     capture, « size » publié par la lecture serveur) : c'est la MÊME dimension,
-     et sans cette reconnaissance le devis par taille restait invisible dans la
-     feuille alors que le serveur l'avait calculé (26/10/2026). */
+  /* 3. Sinon : uniquement ce que la page publie pour CHAQUE valeur choisie. */
   const entries = chosen.map(([group, value]) => input.quotes.find((quote) =>
     sameAttribute(quote.group, group) && normalize(quote.value) === normalize(value)) ?? null);
   const known = entries.filter((entry): entry is AyWebsVariantQuote => entry != null);
-  /* 3. Aucun devis par valeur : la combinaison exacte publiée par le SERVEUR
-     (`variant_details`) — c'est ce que le web affiche sur ses cartes. */
-  const combination = exactCombination(input.combinations, selection);
-  const combinationState: AvailabilityState = combination ? stateOf(combination.availability) : 'UNKNOWN';
-  const comboStockMatch = combination?.availabilityReason?.match(/:(\d{1,3})$/);
-  const combinationStock = comboStockMatch ? Number(comboStockMatch[1]) : null;
   if (!known.length) {
-    if (!combination || (combination.totalTnd == null && combinationState === 'UNKNOWN')) return empty;
+    if (!combination || combinationState === 'UNKNOWN') {
+      return combination?.variantUrl
+        ? {
+          ...empty,
+          missingVariantUrl: combination.variantUrl,
+          ...(combination.image ? { image: combination.image } : {}),
+        }
+        : empty;
+    }
     return {
-      unitTnd: combinationState === 'OUT_OF_STOCK' ? null : combination.totalTnd,
-      sourcePrice: combinationState === 'OUT_OF_STOCK' ? null : (combination.quotedPrice ?? null),
-      sourceCurrency: combinationState !== 'OUT_OF_STOCK' && combination.quotedPrice != null ? (combination.quotedCurrency || '') : '',
+      unitTnd: null,
+      sourcePrice: null,
+      sourceCurrency: '',
       priceFrom: false,
       availability: combinationState,
       stock: combinationState === 'OUT_OF_STOCK' ? null : combinationStock,
       fromValue: false,
+      ...(combination.image ? { image: combination.image } : {}),
+      ...(combination.variantUrl ? { missingVariantUrl: combination.variantUrl } : {}),
     };
   }
 
@@ -175,6 +218,9 @@ export function selectionQuote(input: SelectionQuoteInput): SelectionQuote {
   const rawUnitTnd = fromMarginalValue
     ? prices[0]!.totalTnd
     : (combination?.totalTnd ?? (completeValueEvidence && amounts.size === 1 ? prices[0]!.totalTnd : null));
+  const rawQtyTotalsTnd = fromMarginalValue
+    ? (prices[0]!.quantityTotalsTnd ?? null)
+    : (combination?.quantityTotalsTnd ?? null);
 
   const merchant = known.filter((entry) => entry.sourcePrice != null && !entry.priceFrom);
   const currency = merchant[0]?.currency || '';
@@ -192,9 +238,9 @@ export function selectionQuote(input: SelectionQuoteInput): SelectionQuote {
   const marginalStock = stocks.length ? Math.min(...stocks) : null;
 
   let availability: AvailabilityState;
-  if (known.some((entry) => entry.availability === 'OUT_OF_STOCK') || combinationState === 'OUT_OF_STOCK') {
+  if (combinationState === 'OUT_OF_STOCK' || (!combinationProvenInStock && known.some((entry) => entry.availability === 'OUT_OF_STOCK'))) {
     availability = 'OUT_OF_STOCK';
-  } else if (combinationState === 'AVAILABLE' || combinationState === 'LOW_STOCK') {
+  } else if (combinationProvenInStock) {
     availability = combinationStock != null && combinationStock <= 5 ? 'LOW_STOCK' : combinationState;
   } else if (known.length < chosen.length) {
     availability = 'UNKNOWN';
@@ -209,14 +255,20 @@ export function selectionQuote(input: SelectionQuoteInput): SelectionQuote {
   const effectiveStock = availability === 'OUT_OF_STOCK' ? null : (combinationStock ?? marginalStock);
   const usedExactCombination = combination != null && (combination.totalTnd != null || combinationState !== 'UNKNOWN');
 
+  const effectiveQtyTotals = availability === 'OUT_OF_STOCK' || rawUnitTnd == null ? null : rawQtyTotalsTnd;
+  const missingUrl = rawUnitTnd == null ? (combination?.variantUrl ?? null) : null;
+
   return {
     unitTnd: availability === 'OUT_OF_STOCK' ? null : rawUnitTnd,
+    ...(effectiveQtyTotals ? { quantityTotalsTnd: effectiveQtyTotals } : {}),
     sourcePrice: availability === 'OUT_OF_STOCK' ? null : rawSourcePrice,
     sourceCurrency: availability === 'OUT_OF_STOCK' || rawSourcePrice == null ? '' : rawSourceCurrency,
     priceFrom: usedExactCombination ? false : known.some((entry) => entry.priceFrom),
     availability,
     stock: effectiveStock,
     fromValue: !usedExactCombination || fromMarginalValue,
+    ...(combination?.image ? { image: combination.image } : {}),
+    ...(missingUrl ? { missingVariantUrl: missingUrl } : {}),
   };
 }
 

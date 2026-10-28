@@ -13,12 +13,12 @@
 export type ChoiceGroupKind = 'size' | 'color' | 'volume' | 'type' | 'material' | 'model' | 'other';
 
 const KINDS: Array<{ kind: ChoiceGroupKind; pattern: RegExp }> = [
-  { kind: 'size', pattern: /(^|[^a-z])(size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس|حجم المقاس)/i },
+  { kind: 'size', pattern: /(^|[^a-z])(size|taille|age|âge|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس|عمر|العمر|حجم المقاس)/i },
   { kind: 'color', pattern: /(colour|color|couleur|farbe|colore|kleur|لون|اللون)/i },
   { kind: 'volume', pattern: /(volume|capacity|contenance|inhalt|ml|liter|litre|litre|cl|oz|كمية السائل|سعة|حجم)/i },
   { kind: 'material', pattern: /(material|mati(è|e)re|stoff|materiale|خامة|الخامة|قماش)/i },
   { kind: 'model', pattern: /(model|mod(è|e)le|modell|موديل|الطراز)/i },
-  { kind: 'type', pattern: /(type|kind|variant|version|style|shape|نوع|النوع|شكل)/i },
+  { kind: 'type', pattern: /(type|kind|variant|version|style|shape|pack|lot|bundle|set|pi(è|e)ce|نوع|النوع|شكل|باقة|مجموعة|طقم)/i },
 ];
 
 /** نوع المجموعة من اسمه المنشور — `other` لمّا ما نعرفوهش. */

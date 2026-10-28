@@ -37,7 +37,44 @@ export interface AyWebsVariantQuote {
   price_from: boolean;
   /** Devis ZAYROVI pour cette valeur (unité), calculé par le serveur. */
   total_tnd: number | null;
+  /** Totaux ZAYROVI exacts pour quantités 1..10 (intègre paliers + livraison unique + planchers). */
+  quantity_totals_tnd?: number[] | null;
   pricing_version: number | null;
+}
+
+/**
+ * Calcule les totaux ZAYROVI exacts en TND pour `quantity = 1..maxQty` afin que
+ * l'application cliente n'ait JAMAIS à supposer que `total(q) = total(1) * q`
+ * (livraison locale unique, planchers RPD/commission non linéaires, et paliers
+ * de remise sur quantité éventuels du marchand).
+ */
+export function computeQuantityTotalsTnd(
+  rules: PricingRules,
+  baseUnitPrice: number,
+  currency: string,
+  title: string,
+  quantityTiers?: ReadonlyArray<{ minQuantity: number; unitPrice: number }> | null,
+  maxQty = 10,
+): number[] | null {
+  const iso = String(currency || '').trim().toUpperCase();
+  if (!(baseUnitPrice > 0) || !iso) return null;
+  const totals: number[] = [];
+  for (let q = 1; q <= maxQty; q++) {
+    let effectiveUnit = baseUnitPrice;
+    if (quantityTiers && quantityTiers.length > 0 && q >= 2) {
+      let bestMin = 0;
+      for (const tier of quantityTiers) {
+        if (tier.minQuantity <= q && tier.minQuantity >= bestMin && tier.unitPrice > 0) {
+          bestMin = tier.minQuantity;
+          effectiveUnit = tier.unitPrice;
+        }
+      }
+    }
+    const res = calculatePrice(rules, effectiveUnit, iso, { title, quantity: q });
+    if (!res || res.restricted || !(res.totalTND > 0)) return null;
+    totals.push(res.totalTND);
+  }
+  return totals;
 }
 
 export interface AyWebsVariantQuoteInput {
@@ -75,6 +112,7 @@ export function ayWebsVariantQuotes(input: AyWebsVariantQuoteInput): AyWebsVaria
         currency: evidence.price != null ? currency : '',
         price_from: evidence.priceFrom,
         total_tnd: usable ? usable.totalTND : null,
+        quantity_totals_tnd: usable ? computeQuantityTotalsTnd(input.rules, evidence.price!, currency, input.product.title) : null,
         pricing_version: usable ? usable.pricingVersion : null,
       });
     }

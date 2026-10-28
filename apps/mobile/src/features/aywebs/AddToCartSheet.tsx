@@ -52,6 +52,14 @@ import { lacksServerQuote, preferServerQuote, quoteReadPlan } from '@/features/a
 import { ayWebsSameAttribute as sameAttribute } from '@/features/aywebs/attributeKeys';
 import { alignSelection, mergeVariantGroups, missingAttributes } from '@/features/aywebs/groupMerge';
 import { realChoiceGroups } from '@/features/aywebs/variantLabels';
+import {
+  buildVariantMatrixKey,
+  readCachedSelectionProof,
+  readVariantMatrixCache,
+  resolveQuantityTotalTnd,
+  selectionMatrixSignature,
+  upsertVariantMatrixCache,
+} from '@/features/aywebs/variantMatrixCache';
 import { formatAmount, formatMoney } from '@/format/money';
 
 export interface AddToCartSheetProps {
@@ -98,6 +106,7 @@ function selectionKeyOf(selection: Record<string, string>): string {
 interface PageQuote {
   selection: Record<string, string>;
   unitTnd: number | null;
+  quantityTotalsTnd?: number[] | null;
   availability: AvailabilityState;
   stock: number | null;
   sourcePrice: number | null;
@@ -130,6 +139,11 @@ export function AddToCartSheet({
   const [activeUrl, setActiveUrl] = useState<string>(product.sourceUrl);
   const [pageQuote, setPageQuote] = useState<PageQuote | null>(null);
   const [quoting, setQuoting] = useState(false);
+  /** Clé stable de la matrice en mémoire pour ce produit (survit aux bascules vers une URL sœur). */
+  const matrixKey = useMemo(
+    () => buildVariantMatrixKey({ storeId: product.storeId, sourceUrl: product.sourceUrl, productId: product.productId }),
+    [product.productId, product.sourceUrl, product.storeId],
+  );
   /** الحقل المفتوح — واحد برك في كل وقت (الورقة تبقى قصيرة). */
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const requestId = useRef('');
@@ -278,15 +292,24 @@ export function AddToCartSheet({
       if (pickedQuote.unitTnd == null) diagnostics.push('quote:unavailable');
       setDiagnostic(diagnostics.filter(Boolean).filter((value, index, all) => all.indexOf(value) === index).join(' · '));
       setServerGroups(productForQuote.variantGroups || []);
+      const mergedMatrix = upsertVariantMatrixCache({
+        matrixKey,
+        product: productForQuote,
+        selection: pageSelection,
+        capture: (captureToUse && typeof captureToUse === 'object') ? (captureToUse as Record<string, unknown>) : null,
+        quoteToken: quoteTokenForQuote,
+        sourceUrl: product.sourceUrl,
+      });
       setPageQuote({
         selection: pageSelection,
         unitTnd: productForQuote.ayroviPricing?.totalTnd ?? null,
+        quantityTotalsTnd: productForQuote.ayroviPricing?.quantityTotalsTnd ?? null,
         availability: stateOf(productForQuote.availability.state),
         stock: productForQuote.availability.quantityHint ?? null,
         sourcePrice: productForQuote.price,
         sourceCurrency: productForQuote.currency,
-        quotes: productForQuote.variantQuotes,
-        details: productForQuote.variantDetails,
+        quotes: mergedMatrix.variantQuotes,
+        details: mergedMatrix.variantDetails,
         quoteToken: quoteTokenForQuote,
       });
     } catch {
@@ -295,7 +318,7 @@ export function AddToCartSheet({
     } finally {
       if (alive.current) setQuoting(false);
     }
-  }, [product.sourceUrl, product.storeId, sessionId]);
+  }, [matrixKey, product.sourceUrl, product.storeId, sessionId]);
 
   /**
    * كل فتح للورقة = نيّة إضافة جديدة: مفتاح جديد، كمية 1، واختيار = **اللي
@@ -317,7 +340,43 @@ export function AddToCartSheet({
     setServerGroups([]);
     setActiveCapture(capture);
     setActiveUrl(product.sourceUrl);
-    setPageQuote(null);
+    const cachedSnapshot = readVariantMatrixCache(matrixKey);
+    if (!local && (product.ayroviPricing?.totalTnd != null || product.variantDetails.length > 0 || product.variantQuotes.length > 0)) {
+      const seeded = upsertVariantMatrixCache({
+        matrixKey,
+        product,
+        selection: initial,
+        quoteToken: quoteToken || null,
+        sourceUrl: product.sourceUrl,
+      });
+      setPageQuote({
+        selection: initial,
+        unitTnd: product.ayroviPricing?.totalTnd ?? null,
+        quantityTotalsTnd: product.ayroviPricing?.quantityTotalsTnd ?? null,
+        availability: stateOf(product.availability.state),
+        stock: product.availability.quantityHint ?? null,
+        sourcePrice: product.price,
+        sourceCurrency: product.currency,
+        quotes: seeded.variantQuotes,
+        details: seeded.variantDetails,
+        quoteToken: quoteToken || '',
+      });
+    } else if (cachedSnapshot && cachedSnapshot.variantDetails.length > 0) {
+      setPageQuote({
+        selection: initial,
+        unitTnd: null,
+        quantityTotalsTnd: null,
+        availability: 'UNKNOWN',
+        stock: null,
+        sourcePrice: null,
+        sourceCurrency: product.currency,
+        quotes: cachedSnapshot.variantQuotes,
+        details: cachedSnapshot.variantDetails,
+        quoteToken: quoteToken || '',
+      });
+    } else {
+      setPageQuote(null);
+    }
     setQuoting(false);
     lastSelectionQuoteKey.current = '';
     selectionQuoteRequest.current += 1;
@@ -371,6 +430,7 @@ export function AddToCartSheet({
       ? {
         selection: pageQuote.selection,
         unitTnd: pageQuote.unitTnd,
+        quantityTotalsTnd: pageQuote.quantityTotalsTnd ?? null,
         availability: pageQuote.availability,
         stock: pageQuote.stock,
         sourcePrice: pageQuote.sourcePrice,
@@ -378,14 +438,18 @@ export function AddToCartSheet({
       }
       : null,
     quotes: pageQuote?.quotes ?? [],
-    /* la table des combinaisons du serveur — celle que le web affiche */
+    /* Matrice complète des combinaisons en mémoire (fusionne l'extraction initiale et les lectures delta) */
     combinations: (pageQuote?.details?.length ? pageQuote.details : variantOptions).map((option) => ({
       attributes: option.attributes,
       totalTnd: option.totalTnd,
+      quantityTotalsTnd: option.quantityTotalsTnd ?? null,
       quotedPrice: option.quotedPrice,
       quotedCurrency: option.quotedCurrency,
       availability: option.availability,
       availabilityReason: option.availabilityReason,
+      stock: option.stock ?? null,
+      image: option.image,
+      variantUrl: option.variantUrl ?? null,
     })),
     selection,
   }), [pageQuote, selection, variantOptions]);
@@ -411,7 +475,7 @@ export function AddToCartSheet({
       setQuoting(false);
       return;
     }
-    if (quote.unitTnd != null) {
+    if (quote.unitTnd != null || quote.availability === 'OUT_OF_STOCK') {
       lastSelectionQuoteKey.current = '';
       setQuoting(false);
       return;
@@ -423,14 +487,15 @@ export function AddToCartSheet({
     setQuoting(true);
     const timer = setTimeout(() => {
       void (async () => {
-        let targetUrl = effectiveUrl;
+        let targetUrl = quote.missingVariantUrl || effectiveUrl;
         let captureForResolve: unknown = local ? effectiveCapture : undefined;
+        let siblingCaptureRead: unknown = null;
         if (local && readVariant) {
           const currentLocalOptions = optionsFromVariants(localVariantsFromCapture(
             (effectiveCapture && typeof effectiveCapture === 'object' ? effectiveCapture : {}) as Record<string, unknown>,
           ));
           const mergedForUrl = currentLocalOptions.length ? currentLocalOptions : variantOptions;
-          const siblingUrl = variantPageUrlFor({
+          const siblingUrl = quote.missingVariantUrl || variantPageUrlFor({
             sourceUrl: effectiveUrl,
             storeId: product.storeId,
             selection: picked,
@@ -443,8 +508,7 @@ export function AddToCartSheet({
               if (freshSibling && typeof freshSibling === 'object') {
                 targetUrl = siblingUrl;
                 captureForResolve = freshSibling;
-                setActiveUrl(siblingUrl);
-                setActiveCapture(freshSibling);
+                siblingCaptureRead = freshSibling;
               }
             } catch {
               /* Si la lecture masquée échoue, on laisse le serveur trancher. */
@@ -461,18 +525,35 @@ export function AddToCartSheet({
           refresh: false,
         });
         if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
+        if (siblingCaptureRead) {
+          setActiveUrl(targetUrl);
+          setActiveCapture(siblingCaptureRead);
+        }
         const totalTnd = read.product.ayroviPricing?.totalTnd ?? null;
-        if (totalTnd != null && Number.isFinite(totalTnd) && totalTnd > 0) {
+        const deltaAvail = stateOf(read.product.availability.state);
+        if ((totalTnd != null && Number.isFinite(totalTnd) && totalTnd > 0) || deltaAvail === 'OUT_OF_STOCK') {
           setServerGroups(read.product.variantGroups || []);
+          /* Fusionner dans le cache mémoire SANS effacer les autres variantes déjà lues ! */
+          const mergedMatrix = upsertVariantMatrixCache({
+            matrixKey,
+            product: read.product,
+            selection: picked,
+            capture: (captureForResolve && typeof captureForResolve === 'object')
+              ? (captureForResolve as Record<string, unknown>)
+              : null,
+            quoteToken: read.quoteToken,
+            sourceUrl: targetUrl,
+          });
           setPageQuote({
             selection: picked,
-            unitTnd: totalTnd,
-            availability: stateOf(read.product.availability.state),
+            unitTnd: deltaAvail === 'OUT_OF_STOCK' ? null : totalTnd,
+            quantityTotalsTnd: deltaAvail === 'OUT_OF_STOCK' ? null : (read.product.ayroviPricing?.quantityTotalsTnd ?? null),
+            availability: deltaAvail,
             stock: read.product.availability.quantityHint ?? null,
-            sourcePrice: read.product.price,
+            sourcePrice: deltaAvail === 'OUT_OF_STOCK' ? null : read.product.price,
             sourceCurrency: read.product.currency,
-            quotes: read.product.variantQuotes,
-            details: read.product.variantDetails,
+            quotes: mergedMatrix.variantQuotes,
+            details: mergedMatrix.variantDetails,
             quoteToken: read.quoteToken,
           });
           setDiagnostic('');
@@ -493,7 +574,7 @@ export function AddToCartSheet({
       clearTimeout(timer);
       if (selectionQuoteRequest.current === requestNumber) selectionQuoteRequest.current += 1;
     };
-  }, [effectiveCapture, effectiveUrl, groups.length, local, pageQuote, product.storeId, quote.unitTnd,
+  }, [effectiveCapture, effectiveUrl, groups.length, local, matrixKey, pageQuote, product.storeId, quote.availability, quote.missingVariantUrl, quote.unitTnd,
     readVariant, selection, selectionComplete, sessionId, variantOptions, visible]);
 
   /**
@@ -519,6 +600,8 @@ export function AddToCartSheet({
   /**
    * سطر المتجر: المبلغ المنشور على الصفحة (دولار/أورو…) — دليل على الثمن، موش
    * الثمن اللي يخلّصو المستعمل. « à partir de » تتكتب كيف ما هي.
+   * RÈGLE STRICTE : si la variante choisie n'a pas de prix vérifié, on n'affiche
+   * JAMAIS le prix marchand d'une autre variante (`product.price`) comme prix actuel.
    */
   const merchantLine = useMemo(() => {
     const fromQuote = moneyText(quote.sourcePrice, quote.sourceCurrency);
@@ -530,8 +613,10 @@ export function AddToCartSheet({
         ? `${t('aywebs.priceFrom')} ${merchantPrice.amount}`
         : merchantPrice.amount;
     }
-    return moneyText(product.price, product.currency);
-  }, [merchantPrice.amount, merchantShown?.priceFrom, product.currency, product.price, quote.priceFrom, quote.sourceCurrency, quote.sourcePrice, t]);
+    const matchesInitialPage = !groups.length
+      || (pageQuote != null && selectionMatrixSignature(pageQuote.selection) !== '' && selectionMatrixSignature(pageQuote.selection) === selectionMatrixSignature(selection));
+    return matchesInitialPage ? moneyText(product.price, product.currency) : '';
+  }, [groups.length, merchantPrice.amount, merchantShown?.priceFrom, pageQuote, product.currency, product.price, quote.priceFrom, quote.sourceCurrency, quote.sourcePrice, selection, t]);
 
   const availabilityLabel = useCallback((state: AvailabilityState): string => {
     if (state === 'AVAILABLE') return t('aywebs.avail.AVAILABLE');
@@ -638,6 +723,15 @@ export function AddToCartSheet({
         return;
       }
 
+      /* 0. Si le cache de la matrice possède déjà la capture vérifiée de CETTE sélection
+         (initiale ou issue d'une lecture delta précédente), on l'utilise directement sans
+         rouvrir de WebView masqué. */
+      const cachedProof = readCachedSelectionProof(matrixKey, selection);
+      if (cachedProof) {
+        captureToUse = cachedProof.capture;
+        if (cachedProof.sourceUrl) target = cachedProof.sourceUrl;
+      }
+
       /* 1. الحكم الأوّل: الكابتشر الحالية + هذا الاختيار (بلا قراءة تاجر).
          إذا الكابتشر ترفضت أو النداء فشل، ما نوقفوش هنا: نكمّلو بقراية
          الخادم (كيما الويب) — وهذا هو الفرق اللي كان يخلّي لون يخدم ولون لا. */
@@ -648,6 +742,7 @@ export function AddToCartSheet({
           sessionId,
           storeId: product.storeId || undefined,
           capture: captureToUse,
+          quantity,
           refresh: false,
           variant,
         });
@@ -683,6 +778,7 @@ export function AddToCartSheet({
             sessionId,
             storeId: product.storeId || undefined,
             capture: fresh,
+            quantity,
             refresh: false,
             variant,
           });
@@ -770,13 +866,14 @@ export function AddToCartSheet({
     } finally {
       if (alive.current) setBusy(false);
     }
-  }, [busy, chosenUnavailable, effectiveCapture, effectiveUrl, groups.length, local, locale, missing.length, onAdded, product.productId,
+  }, [busy, chosenUnavailable, effectiveCapture, effectiveUrl, groups.length, local, locale, matrixKey, missing.length, onAdded, product.productId,
     product.sourceUrl, product.storeId, quantity, quoteToken, readVariant, selection, selectionComplete, sessionId, t]);
 
   const sourceLine = tndText(quote.unitTnd);
-  const totalLine = quote.unitTnd != null ? tndText(quote.unitTnd * quantity) : '';
+  const resolvedTotalTnd = useMemo(() => resolveQuantityTotalTnd(quote, quantity), [quantity, quote]);
+  const totalLine = resolvedTotalTnd != null ? tndText(resolvedTotalTnd) : '';
   const title = added?.item.title || product.title;
-  const selectedColorImage = imageForSelectedColor(fields, selection);
+  const selectedColorImage = imageForSelectedColor(fields, selection) || quote.image || '';
   /* الصورة الرئيسية تتبع لون المنتج المختار داخل نفس الورقة؛ fallback للصورة
      الأصلية فقط إذا التاجر ما نشرش صورة مرتبطة باللون. */
   const imageUri = selectedColorImage || added?.item.images[0] || product.images[0] || '';
@@ -952,10 +1049,10 @@ export function AddToCartSheet({
         </>
       ) : (
         <>
-          {fields.map((field) => field.kind === 'color' || field.kind === 'size' ? (
+          {fields.map((field) => field.kind === 'color' || field.kind === 'size' || (field.kind === 'type' && field.values.length <= 12) ? (
             <VariantOptionChips
               key={field.key}
-              kind={field.kind}
+              kind={field.kind === 'color' ? 'color' : 'size'}
               label={field.label}
               value={selection[field.key] ?? ''}
               options={field.values}

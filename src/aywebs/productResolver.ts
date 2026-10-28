@@ -561,12 +561,14 @@ export async function resolveAyWebsProduct(
       ) || null;
     })();
     const skuStockMatch = matchedSkuCombination?.availabilityReason?.match(/:(\d+)$/);
-    const skuStockHint = skuStockMatch ? Number(skuStockMatch[1]) : null;
+    const skuStockHint = matchedSkuCombination?.stock ?? (skuStockMatch ? Number(skuStockMatch[1]) : null);
     const effectiveQuantityHint = skuStockHint !== null
       ? skuStockHint
       : (publishedStock.length ? Math.min(...publishedStock) : null);
+    const matchedSkuProvenAvailable = matchedSkuCombination != null
+      && (matchedSkuCombination.availability === 'AVAILABLE' || matchedSkuCombination.availability === 'LOW_STOCK');
 
-    if (variantEvidence.blocked || matchedSkuCombination?.availability === 'OUT_OF_STOCK') {
+    if (matchedSkuCombination?.availability === 'OUT_OF_STOCK' || (!matchedSkuProvenAvailable && variantEvidence.blocked)) {
       /* Le négatif gagne : une valeur ou combinaison SKU explicitement indisponible ne
          devient jamais disponible parce que la page, elle, est achetable pour une autre. */
       availability = {
@@ -582,11 +584,14 @@ export async function resolveAyWebsProduct(
       if (matchedSkuCombination?.availability === 'OUT_OF_STOCK') {
         captureValidation!.notes.push('selection_sku_out_of_stock');
       }
-    } else if (matchedSkuCombination && (matchedSkuCombination.availability === 'AVAILABLE' || matchedSkuCombination.availability === 'LOW_STOCK')) {
-      /* Matrice SKU multi-axes vérifiée : disponibilité exacte de cette combinaison. */
+    } else if (matchedSkuProvenAvailable) {
+      /* Matrice SKU vérifiée : disponibilité exacte de cette combinaison
+         (`LOW_STOCK` sur les matrices multi-axes 2D+, `AVAILABLE` + `quantityHint`
+         sur les pastilles mono-axe historiques). */
+      const multiAxisCount = captureValidation!.variantGroups.filter((grp) => grp.values && grp.values.length >= 2).length;
       availability = {
         ...ayWebsAvailabilityRecord(
-          matchedSkuCombination.availability,
+          multiAxisCount >= 2 ? matchedSkuCombination.availability : 'AVAILABLE',
           `selection_sku_available:${selectionKey}`.slice(0, 200),
           'webview_client',
           checkedAt,
@@ -644,7 +649,7 @@ export async function resolveAyWebsProduct(
           page ⇒ le prix de la page s'applique (comportement historique) ;
        3. sinon, le prix de la page appartient à une AUTRE combinaison : on
           refuse de coter plutôt que d'annoncer le prix d'une autre couleur. */
-    const skuPriceProven = !variantEvidence.blocked
+    const skuPriceProven = (matchedSkuProvenAvailable || !variantEvidence.blocked)
       && matchedSkuCombination != null
       && matchedSkuCombination.availability !== 'OUT_OF_STOCK'
       && matchedSkuCombination.price != null
@@ -656,7 +661,19 @@ export async function resolveAyWebsProduct(
       && !variantEvidence.priceFrom
       && !variantEvidence.currencyMismatch;
     if (skuPriceProven) {
-      merchantPrice = matchedSkuCombination!.price as number;
+      let resolvedSkuUnitPrice = matchedSkuCombination!.price as number;
+      const reqQty = Math.max(1, Math.floor(Number(input.quantity) || 1));
+      if (reqQty >= 2 && Array.isArray(matchedSkuCombination!.quantityTiers) && matchedSkuCombination!.quantityTiers.length > 0) {
+        let bestMin = 0;
+        for (const tier of matchedSkuCombination!.quantityTiers) {
+          if (tier.minQuantity <= reqQty && tier.minQuantity >= bestMin && tier.unitPrice > 0) {
+            bestMin = tier.minQuantity;
+            resolvedSkuUnitPrice = tier.unitPrice;
+          }
+        }
+        if (bestMin >= 2) captureValidation!.notes.push('selection_priced_from_sku_quantity_tier');
+      }
+      merchantPrice = resolvedSkuUnitPrice;
       merchantPriceFromValue = true;
       captureValidation!.notes.push('selection_priced_from_sku_matrix');
       if (matchedSkuCombination!.image) {
@@ -1291,6 +1308,10 @@ export interface AyWebsStoredProduct {
     availability: AyWebsAvailability['state'];
     availabilityReason: string;
     image: string | null;
+    variantUrl?: string | null;
+    stock?: number | null;
+    evidenceSource?: string;
+    quantityTiers?: Array<{ minQuantity: number; unitPrice: number }>;
   }>;
   /** État publié par la source (neuf / occasion / reconditionné) ou `null`. */
   condition: 'new' | 'used' | 'refurbished' | null;

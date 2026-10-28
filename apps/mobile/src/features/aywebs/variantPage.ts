@@ -21,11 +21,11 @@ export interface VariantPageInput {
   sourceUrl: string;
   storeId: string | null | undefined;
   selection: Record<string, string>;
-  options: ReadonlyArray<{ attributes: Record<string, string>; sourceVariantId: string }>;
+  options: ReadonlyArray<{ attributes: Record<string, string>; sourceVariantId: string; variantUrl?: string | null }>;
 }
 
-const ASIN_SHAPE = /^[A-Z0-9]{10}$/i;
-const SHEIN_VARIANT_ID_SHAPE = /^(?:shein:|SHEIN-)(\d{5,16})$/i;
+const ASIN_SHAPE = /^(?:asin:)?([A-Z0-9]{10})$/i;
+const SHEIN_VARIANT_ID_SHAPE = /^(?:shein:|SHEIN-)(\d{5,16})(?::.*)?$/i;
 const SHEIN_HOST_SHAPE = /(?:^|\.)shein\.(?:com|co\.uk|fr|de|es|it|ca|com\.mx|com\.br)$/i;
 const AE_VARIANT_ID_SHAPE = /^(?:ae:|AE-)(\d{5,24})$/i;
 const AE_HOST_SHAPE = /(?:^|\.)aliexpress\.(?:com|us|ru)$/i;
@@ -49,9 +49,46 @@ function extractAliExpressItemIdFromUrl(rawUrl: string): string | null {
   return qMatch ? qMatch[1] : null;
 }
 
+function normalizeComparableUrl(rawUrl: string): string {
+  try {
+    const parsed = new URL(rawUrl);
+    return `${parsed.host.toLowerCase().replace(/^www\./, '')}${parsed.pathname.replace(/\/+$/, '').toLowerCase()}`;
+  } catch {
+    return '';
+  }
+}
+
 export function variantPageUrlFor(input: VariantPageInput): string | null {
   const chosen = Object.keys(input.selection);
   if (!chosen.length) return null;
+
+  /* 0. Si une option de la matrice porte une `variantUrl` directe différente de la page courante
+     SANS contredire un attribut choisi (ex. jamais l'URL de Bleu Marine quand Beige est choisi !),
+     on privilégie celle qui couvre le plus de dimensions choisies (SHEIN, Zalando, Amazon…). */
+  const scoreOption = (attributes: Record<string, string>) => {
+    let hits = 0;
+    let contradicts = false;
+    for (const [optKey, optVal] of Object.entries(attributes || {})) {
+      const pickedKey = chosen.find((name) => lower(name) === lower(optKey));
+      if (!pickedKey) continue;
+      if (lower(input.selection[pickedKey]) === lower(optVal)) hits += 1;
+      else contradicts = true;
+    }
+    return { hits, contradicts };
+  };
+
+  const currentNorm = normalizeComparableUrl(input.sourceUrl);
+  const directCandidates = input.options.map((option) => {
+    const { hits, contradicts } = scoreOption(option.attributes || {});
+    const candidateUrl = typeof option.variantUrl === 'string' && /^https?:\/\//i.test(option.variantUrl)
+      ? option.variantUrl.trim()
+      : '';
+    return { hits, contradicts, candidateUrl };
+  }).filter((entry) => entry.hits > 0 && !entry.contradicts && entry.candidateUrl && normalizeComparableUrl(entry.candidateUrl) !== currentNorm);
+  if (directCandidates.length > 0) {
+    directCandidates.sort((a, b) => b.hits - a.hits);
+    return directCandidates[0].candidateUrl;
+  }
 
   if (input.storeId === 'shein') {
     let parsedUrl: URL;
@@ -63,15 +100,10 @@ export function variantPageUrlFor(input: VariantPageInput): string | null {
     if (!SHEIN_HOST_SHAPE.test(parsedUrl.hostname)) return null;
     const pageGoodsId = extractSheinGoodsIdFromUrl(input.sourceUrl);
     const coveredShein = input.options.map((option) => {
-      let hits = 0;
-      for (const name of chosen) {
-        const published = Object.entries(option.attributes || {})
-          .find(([key]) => lower(key) === lower(name));
-        if (published && lower(published[1]) === lower(input.selection[name])) hits += 1;
-      }
+      const { hits, contradicts } = scoreOption(option.attributes || {});
       const goodsId = SHEIN_VARIANT_ID_SHAPE.exec(String(option.sourceVariantId || '').trim())?.[1] ?? '';
-      return { hits, goodsId };
-    }).filter((entry) => entry.hits > 0 && entry.goodsId && entry.goodsId !== pageGoodsId);
+      return { hits, contradicts, goodsId };
+    }).filter((entry) => entry.hits > 0 && !entry.contradicts && entry.goodsId && entry.goodsId !== pageGoodsId);
     coveredShein.sort((a, b) => b.hits - a.hits);
     const bestShein = coveredShein[0];
     if (!bestShein) return null;
@@ -121,7 +153,8 @@ export function variantPageUrlFor(input: VariantPageInput): string | null {
         .find(([key]) => lower(key) === lower(name));
       if (published && lower(published[1]) === lower(input.selection[name])) hits += 1;
     }
-    const asin = ASIN_SHAPE.test(option.sourceVariantId) ? option.sourceVariantId.toUpperCase() : '';
+    const asinMatch = ASIN_SHAPE.exec(String(option.sourceVariantId || '').trim());
+    const asin = asinMatch ? asinMatch[1].toUpperCase() : '';
     return { option, hits, asin };
   }).filter((entry) => entry.hits > 0 && entry.asin && entry.asin !== pageAsin);
   covered.sort((a, b) => b.hits - a.hits);
