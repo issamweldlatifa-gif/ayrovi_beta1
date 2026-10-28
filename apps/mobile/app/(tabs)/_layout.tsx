@@ -37,15 +37,12 @@ const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
 };
 
 /**
- * Onglet AYWEBs — c'est le MOT-SYMBOLE qui tient lieu d'icône (28/10/2026 :
- * « الأيقونة الحالية بش تولي شعار — هو أيقونة، بطريقة متناسقة »).
- *
- * Même fichier officiel que l'en-tête, même traitement : violet de marque en
- * thème clair, blanc en thème sombre (le violet #571EF6 sur #0A0A0A ne se lit
- * pas). 75 × 20, soit exactement le ratio du fichier (551 × 147 ≈ 3.75) :
- * aucune déformation, et une hauteur qui tient dans la barre à côté du libellé.
+ * Onglet AYWEBs — nouvelle icône circulaire officielle (empreinte ajourée) :
+ * violet officiel #571EF6 en thème clair, inversée en blanc #FFFFFF en thème
+ * sombre (l'empreinte transparente laisse transparaître le fond sombre #0A0A0A).
+ * 32 × 32 (ratio exact 1:1 du fichier 256 × 256), sans libellé dessous.
  */
-const AYWEB_TAB_LOGO = { width: 75, height: 20 };
+const AYWEB_TAB_LOGO = { width: 32, height: 32 };
 
 /**
  * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
@@ -120,8 +117,8 @@ export default function TabsLayout() {
               <AppImage
                 localSource={
                   theme.mode === 'dark'
-                    ? require('../../assets/aywebs/aywebs-wordmark-white.png')
-                    : require('../../assets/aywebs/aywebs-wordmark-violet.png')
+                    ? require('../../assets/aywebs/aywebs-icon-white.png')
+                    : require('../../assets/aywebs/aywebs-icon-violet.png')
                 }
                 contentFit="contain"
                 tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}

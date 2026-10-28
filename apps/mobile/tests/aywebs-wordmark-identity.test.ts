@@ -101,70 +101,79 @@ function officialViolet(): string {
   return accent[1].toUpperCase();
 }
 
-describe('mot-symbole AYWEBs — couleur et taille', () => {
+describe('identité visuelle AYWEBs — nouveau mot-symbole et nouvelle icône de barre', () => {
   const violet = decodePng(path.join(ROOT, 'assets/aywebs/aywebs-wordmark-violet.png'));
+  const iconViolet = decodePng(path.join(ROOT, 'assets/aywebs/aywebs-icon-violet.png'));
+  const iconWhite = decodePng(path.join(ROOT, 'assets/aywebs/aywebs-icon-white.png'));
 
-  it('le violet du fichier est EXACTEMENT le violet officiel de l’identité', () => {
+  it('le violet du mot-symbole et de l’icône est EXACTEMENT le violet officiel (#571EF6)', () => {
     expect(officialViolet()).toBe('#571EF6');
 
-    const counts = new Map<string, number>();
-    for (const pixel of violet.pixels) {
-      if (pixel[3] < 40) continue; // contour antialiasé : il ne porte pas la couleur
-      const key = hex(pixel);
-      counts.set(key, (counts.get(key) ?? 0) + 1);
-    }
-    const [dominant] = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-    /* « ماخذاش لون البنفسجي الرسمي » : la couleur dominante, pas une teinte
-       approchante. Le fichier d'origine (#6A3B89) est resté dans le dépôt
-       comme référence historique ; celui-ci est celui de l'application. */
-    expect(dominant[0]).toBe(officialViolet());
+    for (const asset of [violet, iconViolet]) {
+      const counts = new Map<string, number>();
+      for (const pixel of asset.pixels) {
+        if (pixel[3] < 40) continue; // contour antialiasé : il ne porte pas la couleur
+        const key = hex(pixel);
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      const [dominant] = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+      expect(dominant[0]).toBe(officialViolet());
 
-    /* Zéro halo délavé : au moins 85 % des pixels du tracé sont pleinement
-       opaques (alpha = 255) afin que la réduction en 150×40 ou 75×20 garde le
-       violet #571EF6 franc sur fond clair, avec chunk sRGB explicite. */
-    const nonZero = violet.pixels.filter((pixel) => pixel[3] > 0);
-    const opaque = nonZero.filter((pixel) => pixel[3] === 255);
-    expect(opaque.length / nonZero.length).toBeGreaterThanOrEqual(0.85);
-    const rawPng = readFileSync(path.join(ROOT, 'assets/aywebs/aywebs-wordmark-violet.png'));
-    expect(rawPng.includes(Buffer.from('sRGB', 'ascii'))).toBe(true);
+      /* Zéro halo délavé : au moins 85 % des pixels du tracé sont pleinement
+         opaques (alpha = 255) afin que la réduction garde le violet #571EF6 franc. */
+      const nonZero = asset.pixels.filter((pixel) => pixel[3] > 0);
+      const opaque = nonZero.filter((pixel) => pixel[3] === 255);
+      expect(opaque.length / nonZero.length).toBeGreaterThanOrEqual(0.85);
+    }
+
+    /* L’empreinte interne de l’icône circulaire doit être transparente (alpha = 0)
+       pour laisser apparaître le blanc en mode clair et le fond sombre #0A0A0A
+       lorsqu’elle bascule en blanc (#FFFFFF) en mode sombre. */
+    expect(iconViolet.width).toBe(iconViolet.height);
+    expect(iconWhite.width).toBe(iconViolet.width);
+    const padCenter = iconViolet.pixels[Math.floor(iconViolet.height * 0.65) * iconViolet.width + Math.floor(iconViolet.width * 0.45)];
+    expect(padCenter[3]).toBe(0);
+    expect(iconViolet.pixels[0][3]).toBe(0);
+
+    const rawWordmark = readFileSync(path.join(ROOT, 'assets/aywebs/aywebs-wordmark-violet.png'));
+    const rawIcon = readFileSync(path.join(ROOT, 'assets/aywebs/aywebs-icon-violet.png'));
+    expect(rawWordmark.includes(Buffer.from('sRGB', 'ascii'))).toBe(true);
+    expect(rawIcon.includes(Buffer.from('sRGB', 'ascii'))).toBe(true);
   });
 
-  it('le ratio du fichier est respecté là où il est affiché', () => {
+  it('les ratios du mot-symbole et de l’icône sont respectés partout où ils sont affichés', () => {
     const ratio = violet.width / violet.height;
-    expect(ratio).toBeCloseTo(3.75, 1);
+    expect(ratio).toBeCloseTo(2.89, 1);
 
     const header = readFileSync(path.join(ROOT, 'src/features/shell/AppHeader.tsx'), 'utf8');
     const headerSize = /aywebsWordmark:\s*\{\s*width:\s*(\d+),\s*height:\s*(\d+)\s*\}/.exec(header);
     expect(headerSize, 'taille du mot-symbole introuvable dans AppHeader').not.toBeNull();
     const [, headerWidth, headerHeight] = headerSize as RegExpExecArray;
     expect(Number(headerWidth) / Number(headerHeight)).toBeCloseTo(ratio, 1);
-
-    /* « وحجمو متوسط » : à 36 pt de haut le mot-symbole se lisait à peine.
-       Le nouveau gabarit ne descend plus sous 40. */
     expect(Number(headerHeight)).toBeGreaterThanOrEqual(40);
 
     const sheet = readFileSync(path.join(ROOT, 'src/features/aywebs/AddToCartSheet.tsx'), 'utf8');
-    expect(sheet).toContain('aywebs-wordmark-violet.png');
-    /* Le fichier violet est le même partout : deux appels, une seule source. */
-    expect(header).toContain("theme.mode === 'dark'");
+    expect(header).toContain('aywebs-wordmark-violet.png');
     expect(header).toContain('aywebs-wordmark-white.png');
+    expect(header).toContain("theme.mode === 'dark'");
+    expect(sheet).toContain('aywebs-wordmark-violet.png');
     expect(sheet).toContain('aywebs-wordmark-white.png');
-
-    /* Onglet AYWEBs (28/10/2026) : le mot-symbole remplace l'icône générique
-       dans la barre du bas — même fichier, même ratio, même traitement. */
-    const tabs = readFileSync(path.join(ROOT, 'app/(tabs)/_layout.tsx'), 'utf8');
-    expect(tabs).toContain('aywebs-wordmark-violet.png');
-    expect(tabs).toContain('aywebs-wordmark-white.png');
-    expect(tabs.includes('pricetags'), 'la puce générique doit avoir disparu').toBe(false);
-    const tabSize = /AYWEB_TAB_LOGO = \{\s*width:\s*(\d+),\s*height:\s*(\d+)\s*\}/.exec(tabs);
-    expect(tabSize, 'taille du mot-symbole introuvable dans la barre du bas').not.toBeNull();
-    const [, tabWidth, tabHeight] = tabSize as RegExpExecArray;
-    expect(Number(tabWidth) / Number(tabHeight)).toBeCloseTo(ratio, 1);
 
     const sheetSize = /headerWordmark:\s*\{\s*width:\s*(\d+),\s*height:\s*(\d+)\s*\}/.exec(sheet);
     expect(sheetSize, 'taille du mot-symbole introuvable dans la feuille d’ajout').not.toBeNull();
     const [, sheetWidth, sheetHeight] = sheetSize as RegExpExecArray;
     expect(Number(sheetWidth) / Number(sheetHeight)).toBeCloseTo(ratio, 1);
+
+    /* Barre du bas : nouvelle icône circulaire officielle (violet #571EF6 en clair,
+       blanc #FFFFFF en sombre), ratio carré 1:1, sans texte « AYWEBs » dessous. */
+    const tabs = readFileSync(path.join(ROOT, 'app/(tabs)/_layout.tsx'), 'utf8');
+    expect(tabs).toContain('aywebs-icon-violet.png');
+    expect(tabs).toContain('aywebs-icon-white.png');
+    expect(tabs.includes('pricetags'), 'la puce générique doit avoir disparu').toBe(false);
+    const tabSize = /AYWEB_TAB_LOGO = \{\s*width:\s*(\d+),\s*height:\s*(\d+)\s*\}/.exec(tabs);
+    expect(tabSize, 'taille de l’icône introuvable dans la barre du bas').not.toBeNull();
+    const [, tabWidth, tabHeight] = tabSize as RegExpExecArray;
+    expect(Number(tabWidth) / Number(tabHeight)).toBeCloseTo(iconViolet.width / iconViolet.height, 2);
 
     /* Teinte native exacte (#571EF6 en clair, #FFFFFF en sombre) appliquée par
        expo-image sur les trois emplacements pour éliminer tout écart Display-P3. */
@@ -172,7 +181,7 @@ describe('mot-symbole AYWEBs — couleur et taille', () => {
     expect(tabs).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
     expect(sheet).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
 
-    /* Barre du bas : uniquement le logo AYWEBs, aucun texte « AYWEBs » dessous. */
+    /* Barre du bas : uniquement l’icône AYWEBs, aucun texte « AYWEBs » dessous. */
     expect(tabs).toContain('tabBarShowLabel: false');
     expect(tabs).toContain('tabBarLabel: () => null');
   });

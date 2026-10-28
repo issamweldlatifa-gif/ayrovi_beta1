@@ -241,7 +241,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
     justifyContent: 'center',
   },
-  aywebsWordmark: { width: 150, height: 40 },
+  /* 121 × 42 : ratio exact du nouveau mot-symbole officiel (508 × 176 ≈ 2.89). */
+  aywebsWordmark: { width: 121, height: 42 },
   actions: {
     alignItems: 'center',
     gap: 2,

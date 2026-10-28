@@ -1024,9 +1024,9 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 4 },
   headerSide: { width: 44, alignItems: 'flex-end' },
   headerCenter: { flex: 1, alignItems: 'center', gap: 2 },
-  /* 90 × 24 : le ratio exact du fichier (551 × 147 ≈ 3.75), donc aucune
-     déformation. « حجمو متوسط » (28/10) : 40 pt de large était illisible. */
-  headerWordmark: { width: 90, height: 24 },
+  /* 75 × 26 : ratio exact du nouveau mot-symbole officiel (508 × 176 ≈ 2.89),
+     donc aucune déformation dans l’en-tête de la feuille d’ajout. */
+  headerWordmark: { width: 75, height: 26 },
   headerTitle: { textAlign: 'center' },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   productCard: { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12, borderWidth: StyleSheet.hairlineWidth },
