@@ -19,7 +19,7 @@ const externalSearchInFlight = new Map<string, Promise<AyrovixCandidate[]>>();
 
 function searchBudgetMs(): number {
   const configured = Number(process.env.AYROVIX_SEARCH_TIMEOUT_MS);
-  return Number.isFinite(configured) ? Math.min(8_000, Math.max(1_200, configured)) : 4_200;
+  return Number.isFinite(configured) ? Math.min(20_000, Math.max(1_200, configured)) : 14_000;
 }
 
 function serpApiKey(): string | null {
@@ -27,7 +27,7 @@ function serpApiKey(): string | null {
   return process.env.SERPAPI_KEY?.trim() || process.env.SERPAPI_API_KEY?.trim() || null;
 }
 
-function serpApiShoppingEnabled(): boolean {
+export function serpApiShoppingEnabled(): boolean {
   return Boolean(serpApiKey());
 }
 
@@ -191,10 +191,123 @@ function shoppingCurrency(row: any): string | null {
   return null;
 }
 
+const SEARCH_ENGINE_HOSTS = /(^|\.)(google\.[a-z.]+|googleusercontent\.com|gstatic\.com|goo\.gl|bing\.com|duckduckgo\.com|yahoo\.com)$/i;
+const NON_MERCHANT_HOSTS = /(^|\.)(instagram\.com|tiktok\.com|facebook\.com|fb\.com|pinterest\.[a-z.]+|youtube\.com|youtu\.be|reddit\.com|x\.com|twitter\.com|linkedin\.com|wikipedia\.org|bit\.ly|tinyurl\.com|t\.co)$/i;
+const TRACKING_PARAMS = new Set([
+  'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
+  'fbclid', 'gclid', 'dclid', 'msclkid', 'mc_cid', 'mc_eid', 'srsltid', 'igshid',
+]);
+
+/**
+ * Extrait uniquement une vraie URL de fiche produit marchande exploitable dans
+ * le navigateur AYWEBs (jamais `google.com/shopping/product/...` ni une page de
+ * recherche ou un réseau social). Déplie une seule fois les redirections de
+ * suivi (`google.{tld}/url?q=...`).
+ */
+export function extractSerpApiMerchantProductUrl(raw: unknown, allowUnwrap = true): string | null {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return null;
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    return null;
+  }
+  if ((parsed.protocol !== 'https:' && parsed.protocol !== 'http:') || parsed.username || parsed.password) {
+    return null;
+  }
+  const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+  if (SEARCH_ENGINE_HOSTS.test(host)) {
+    if (allowUnwrap && (parsed.pathname === '/url' || parsed.pathname === '/aclk')) {
+      const inner = parsed.searchParams.get('q') || parsed.searchParams.get('url') || parsed.searchParams.get('adurl');
+      return inner ? extractSerpApiMerchantProductUrl(inner, false) : null;
+    }
+    return null;
+  }
+  if (NON_MERCHANT_HOSTS.test(host)) return null;
+  if (parsed.pathname === '/' && !parsed.search) return null;
+  if (/^\/(s|search|recherche|suche|buscar)(\/|$)/i.test(parsed.pathname)) return null;
+
+  if (parsed.protocol === 'http:') parsed.protocol = 'https:';
+  parsed.hash = '';
+  for (const key of [...parsed.searchParams.keys()]) {
+    if (TRACKING_PARAMS.has(key.toLowerCase()) || /^utm_/i.test(key)) {
+      parsed.searchParams.delete(key);
+    }
+  }
+  const cleaned = parsed.toString();
+  return hasValidProductUrl(cleaned) ? cleaned : null;
+}
+
+function parseLoosePriceNumber(raw: unknown): number | null {
+  if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) return raw;
+  const text = String(raw || '').trim();
+  if (!text) return null;
+  const cleaned = text.replace(/[^\d.,]/g, '');
+  if (!cleaned) return null;
+  const normalized = cleaned.includes(',') && !cleaned.includes('.')
+    ? cleaned.replace(',', '.')
+    : cleaned.replace(/,/g, '');
+  const num = Number.parseFloat(normalized);
+  return Number.isFinite(num) && num > 0 ? num : null;
+}
+
 function shoppingPrice(row: any): number | null {
-  const direct = Number(row?.extracted_price ?? row?.price?.extracted_value ?? row?.price?.value);
+  const direct = Number(
+    row?.extracted_price
+    ?? row?.base_price?.extracted_value
+    ?? row?.price?.extracted_value
+    ?? row?.price?.value,
+  );
   if (Number.isFinite(direct) && direct > 0) return direct;
-  return null;
+  return parseLoosePriceNumber(row?.base_price ?? row?.price);
+}
+
+function buildShoppingCandidate(input: {
+  sourceUrl: string;
+  title: string;
+  price: number;
+  currency: string;
+  source?: unknown;
+  image?: unknown;
+  snippet?: unknown;
+  brand?: unknown;
+  inStock?: unknown;
+  condition?: unknown;
+  rating?: unknown;
+  ratingCount?: unknown;
+  index: number;
+}): AyrovixCandidate {
+  const image = String(input.image || '').trim();
+  const rating = Number(input.rating);
+  const ratingCount = Number(input.ratingCount);
+  return {
+    id: `shopping_${input.index}_${Buffer.from(input.sourceUrl).toString('base64url').slice(0, 10)}`,
+    kind: 'external',
+    title: input.title.slice(0, 180),
+    description: typeof input.snippet === 'string' ? input.snippet.trim().slice(0, 500) || null : null,
+    brand: typeof input.brand === 'string' ? input.brand.trim().slice(0, 100) || null : null,
+    model: null,
+    colors: [],
+    sizes: [],
+    source: String(input.source || merchantLabel(input.sourceUrl)).trim().slice(0, 80) || merchantLabel(input.sourceUrl),
+    sourceUrl: input.sourceUrl,
+    image: /^https?:\/\//i.test(image) ? image : '',
+    images: /^https?:\/\//i.test(image) ? [image] : [],
+    price: input.price,
+    currency: input.currency,
+    priceTnd: null,
+    priceOrigin: 'search',
+    priceVerificationStatus: 'PENDING_MANUAL',
+    availability: input.inStock === true ? 'in_stock'
+      : input.inStock === false ? 'out_of_stock'
+        : 'unknown',
+    sourceCondition: typeof input.condition === 'string' ? input.condition.trim().slice(0, 60) || null : null,
+    rating: Number.isFinite(rating) && rating > 0 && rating <= 5 ? rating : null,
+    ratingCount: Number.isFinite(ratingCount) && ratingCount >= 0 ? ratingCount : null,
+    ratingKind: Number.isFinite(rating) && rating > 0 && rating <= 5 ? 'merchant' : 'match',
+    match: clampMatch(94 - input.index * 2),
+  };
 }
 
 function shoppingCandidates(payload: any, limit: number): AyrovixCandidate[] {
@@ -202,51 +315,125 @@ function shoppingCandidates(payload: any, limit: number): AyrovixCandidate[] {
   const candidates: AyrovixCandidate[] = [];
   const seen = new Set<string>();
   for (const row of rows) {
-    const sourceUrl = [row?.link, row?.merchant?.link, row?.product_link]
-      .map((value) => String(value || '').trim())
-      .find((value) => hasValidProductUrl(value));
+    const sourceUrl = [row?.link, row?.direct_link, row?.merchant?.link, row?.merchant?.url, row?.seller_link, row?.product_link]
+      .map((value) => extractSerpApiMerchantProductUrl(value))
+      .find((value): value is string => Boolean(value));
     const title = String(row?.title || '').replace(/\s+/g, ' ').trim();
     const price = shoppingPrice(row);
     const currency = shoppingCurrency(row);
     if (!sourceUrl || title.length < 4 || !price || !currency || seen.has(sourceUrl)) continue;
     seen.add(sourceUrl);
-    const index = candidates.length;
-    const image = String(row?.thumbnail || row?.image || '').trim();
-    const rating = Number(row?.rating ?? row?.product_rating);
-    const ratingCount = Number(row?.reviews ?? row?.reviews_count);
-    candidates.push({
-      id: `shopping_${index}_${Buffer.from(sourceUrl).toString('base64url').slice(0, 10)}`,
-      kind: 'external',
-      title: title.slice(0, 180),
-      description: typeof row?.snippet === 'string' ? row.snippet.trim().slice(0, 500) || null : null,
-      brand: typeof row?.brand === 'string' ? row.brand.trim().slice(0, 100) || null : null,
-      model: null,
-      colors: [],
-      sizes: [],
-      source: String(row?.source || row?.merchant?.name || merchantLabel(sourceUrl)).trim().slice(0, 80),
+    candidates.push(buildShoppingCandidate({
       sourceUrl,
-      image: /^https?:\/\//i.test(image) ? image : '',
-      images: /^https?:\/\//i.test(image) ? [image] : [],
+      title,
       price,
       currency,
-      priceTnd: null,
-      priceOrigin: 'search',
-      priceVerificationStatus: 'PENDING_MANUAL',
-      availability: row?.in_stock === true ? 'in_stock'
-        : row?.in_stock === false ? 'out_of_stock'
-          : 'unknown',
-      sourceCondition: typeof row?.condition === 'string' ? row.condition.trim().slice(0, 60) || null : null,
-      rating: Number.isFinite(rating) && rating > 0 && rating <= 5 ? rating : null,
-      ratingCount: Number.isFinite(ratingCount) && ratingCount >= 0 ? ratingCount : null,
-      ratingKind: Number.isFinite(rating) && rating > 0 && rating <= 5 ? 'merchant' : 'match',
-      match: clampMatch(94 - index * 2),
-    });
+      source: row?.source || row?.merchant?.name,
+      image: row?.thumbnail || row?.image,
+      snippet: row?.snippet,
+      brand: row?.brand,
+      inStock: row?.in_stock,
+      condition: row?.condition,
+      rating: row?.rating ?? row?.product_rating,
+      ratingCount: row?.reviews ?? row?.reviews_count,
+      index: candidates.length,
+    }));
     if (candidates.length >= limit) break;
   }
   return candidates;
 }
 
-/** One paid Google Shopping request at most per product query. */
+/**
+ * Lorsque Google Shopping renvoie uniquement des cartes de comparaison sans lien
+ * marchand direct (`immersive_product_page_token` ou `product_id`), résout les
+ * offres marchandes réelles via SerpApi (`google_immersive_product` / `google_product`)
+ * afin que chaque carte porte un vrai lien produit ouvrable dans AYWEBs.
+ */
+async function resolveComparisonShoppingOffers(
+  payload: any,
+  key: string,
+  country: string,
+  limit: number,
+  deadline: number,
+): Promise<AyrovixCandidate[]> {
+  const rows = Array.isArray(payload?.shopping_results) ? payload.shopping_results : [];
+  const targets = rows
+    .filter((row: any) => String(row?.immersive_product_page_token || row?.product_id || '').trim().length > 0)
+    .slice(0, 3);
+  if (!targets.length || !searchHasTime(deadline, 1_500)) return [];
+
+  const resolvedLists = await Promise.all(targets.map(async (parentRow: any): Promise<AyrovixCandidate[]> => {
+    const immersiveToken = String(parentRow?.immersive_product_page_token || '').trim();
+    const productId = String(parentRow?.product_id || '').trim();
+    const params = immersiveToken
+      ? new URLSearchParams({ engine: 'google_immersive_product', page_token: immersiveToken, api_key: key })
+      : new URLSearchParams({ engine: 'google_product', product_id: productId, gl: country, hl: 'fr', api_key: key });
+    try {
+      const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
+        signal: AbortSignal.timeout(remainingSearchMs(deadline, 8_000)),
+      });
+      if (!response.ok) return [];
+      const text = await readLimitedText(response, 1_500_000);
+      const detail = JSON.parse(text);
+      if (detail?.error) return [];
+
+      const parentTitle = String(parentRow?.title || detail?.product_results?.title || '').replace(/\s+/g, ' ').trim();
+      const parentThumb = detail?.product_results?.thumbnails?.[0]
+        || detail?.product_results?.media?.[0]?.link
+        || parentRow?.thumbnail
+        || parentRow?.image;
+      const parentPrice = shoppingPrice(parentRow);
+      const parentCurrency = shoppingCurrency(parentRow) || 'EUR';
+
+      const stores = Array.isArray(detail?.product_results?.stores)
+        ? detail.product_results.stores
+        : Array.isArray(detail?.sellers_results?.online_sellers)
+          ? detail.sellers_results.online_sellers
+          : [];
+
+      const items: AyrovixCandidate[] = [];
+      for (const store of stores) {
+        const sourceUrl = [store?.link, store?.direct_link, store?.seller_link]
+          .map((value) => extractSerpApiMerchantProductUrl(value))
+          .find((value): value is string => Boolean(value));
+        const title = String(store?.title || parentTitle).replace(/\s+/g, ' ').trim();
+        const price = shoppingPrice(store) ?? parentPrice;
+        const currency = shoppingCurrency(store) || parentCurrency;
+        if (!sourceUrl || title.length < 4 || !price || !currency) continue;
+        items.push(buildShoppingCandidate({
+          sourceUrl,
+          title,
+          price,
+          currency,
+          source: store?.name || store?.source,
+          image: store?.thumbnail || parentThumb,
+          brand: detail?.product_results?.brand || parentRow?.brand,
+          rating: store?.rating ?? detail?.product_results?.rating ?? parentRow?.rating,
+          ratingCount: store?.reviews ?? detail?.product_results?.reviews ?? parentRow?.reviews,
+          index: items.length,
+        }));
+        if (items.length >= limit) break;
+      }
+      return items;
+    } catch {
+      return [];
+    }
+  }));
+
+  const merged: AyrovixCandidate[] = [];
+  const seen = new Set<string>();
+  for (const list of resolvedLists) {
+    for (const item of list) {
+      if (seen.has(item.sourceUrl)) continue;
+      seen.add(item.sourceUrl);
+      merged.push({ ...item, id: `shopping_${merged.length}_${Buffer.from(item.sourceUrl).toString('base64url').slice(0, 10)}`, match: clampMatch(94 - merged.length * 2) });
+      if (merged.length >= limit) return merged;
+    }
+  }
+  return merged;
+}
+
+/** Direct merchant product discovery via SerpApi Google Shopping (`direct_link=true`). */
 export async function serpApiShoppingSearch(
   query: string,
   limit = 6,
@@ -257,17 +444,19 @@ export async function serpApiShoppingSearch(
   if (!key || normalizedQuery.length < 2 || !searchHasTime(deadline, 500)) return [];
   const configuredCountry = (process.env.AYROVIX_SHOPPING_COUNTRY || process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
   const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
+  const safeLimit = Math.max(1, Math.min(24, Math.floor(limit)));
   const params = new URLSearchParams({
     engine: 'google_shopping',
     q: normalizedQuery,
     hl: 'fr',
     gl: country,
+    direct_link: 'true',
     api_key: key,
-    num: String(Math.max(1, Math.min(20, Math.floor(limit)))),
+    num: String(Math.min(40, Math.max(20, safeLimit * 3))),
   });
   try {
     const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
-      signal: AbortSignal.timeout(remainingSearchMs(deadline, 3_500)),
+      signal: AbortSignal.timeout(remainingSearchMs(deadline, 11_000)),
     });
     if (!response.ok) {
       console.warn(`[AYROVIX serpapi-shopping] HTTP ${response.status}`);
@@ -283,7 +472,10 @@ export async function serpApiShoppingSearch(
       console.warn('[AYROVIX serpapi-shopping] API error');
       return [];
     }
-    const candidates = shoppingCandidates(payload, limit);
+    let candidates = shoppingCandidates(payload, safeLimit);
+    if (candidates.length === 0) {
+      candidates = await resolveComparisonShoppingOffers(payload, key, country, safeLimit, deadline);
+    }
     console.log(`[AYROVIX serpapi-shopping] ${candidates.length} priced candidates`);
     return candidates;
   } catch (error: any) {
@@ -315,9 +507,9 @@ async function aiCoreWebSearch(
 
     const candidates: AyrovixCandidate[] = [];
     for (const item of result.webResults) {
-      const sourceUrl = String(item.url || '').trim();
+      const sourceUrl = extractSerpApiMerchantProductUrl(item.url);
       const title = String(item.title || '').replace(/\s+/g, ' ').trim();
-      if (!hasValidProductUrl(sourceUrl) || title.length < 5) continue;
+      if (!sourceUrl || title.length < 5) continue;
       const index = candidates.length;
       candidates.push({
         id: `web_${index}_${Buffer.from(sourceUrl).toString('base64url').slice(0, 10)}`,

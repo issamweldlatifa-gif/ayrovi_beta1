@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BrandMark } from '@/design/BrandMark';
 import { AppImage } from '@/design/appImage';
+import { AYWEBS_WORDMARK_TINT } from '@/design/tokens.mobile';
 import { AppText, Drawer, DrawerItem, Segmented } from '@/design/ui';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { usePrefs, type Locale, type ThemeMode } from '@/state/prefs';
@@ -140,6 +141,7 @@ export function AppHeader({
                     : require('../../../assets/aywebs/aywebs-wordmark-violet.png')
                 }
                 contentFit="contain"
+                tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}
                 decorative
                 background={null}
                 style={styles.aywebsWordmark}

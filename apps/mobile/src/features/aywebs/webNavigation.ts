@@ -23,6 +23,11 @@ export function decideWebNavigation(url: string): WebNavigationDecision {
   return isWebPageUrl(url) ? 'allow' : 'block';
 }
 
+const TRACKING_DOCUMENT_PARAMS = new Set([
+  'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
+  'fbclid', 'gclid', 'dclid', 'msclkid', 'mc_cid', 'mc_eid', 'srsltid', 'igshid',
+]);
+
 function documentIdentity(raw: string): string | null {
   try {
     const url = new URL(String(raw || '').trim());
@@ -30,6 +35,11 @@ function documentIdentity(raw: string): string | null {
     url.hash = '';
     url.hostname = url.hostname.toLowerCase();
     url.pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
+    for (const key of [...url.searchParams.keys()]) {
+      if (TRACKING_DOCUMENT_PARAMS.has(key.toLowerCase()) || /^utm_/i.test(key)) {
+        url.searchParams.delete(key);
+      }
+    }
     url.searchParams.sort();
     return url.toString();
   } catch {

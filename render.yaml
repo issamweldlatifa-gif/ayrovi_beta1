@@ -145,13 +145,13 @@ services:
       - key: SERPAPI_KEY
         sync: false
       - key: AYROVIX_VISUAL_SEARCH_TIMEOUT_MS
-        value: 10000
+        value: 22000
       - key: AYROVIX_LENS_COUNTRY
         value: fr
       - key: AYROVIX_AI_WEB_SEARCH
         value: true
       - key: AYROVIX_PROVIDER_TIMEOUT_MS
-        value: 12000
+        value: 15000
       - key: AYROVIX_QUOTE_SECRET
         sync: false
       - key: AYROVI_ISOLATION_PROVIDER
@@ -161,4 +161,4 @@ services:
       - key: AYROVIX_OCR_TIMEOUT_MS
         value: 7000
       - key: AYROVIX_SEARCH_TIMEOUT_MS
-        value: 7000
+        value: 15000

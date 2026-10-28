@@ -69,6 +69,17 @@ describe('lensOpenDecision — une carte, une destination : AYWEBs', () => {
     expect(lensOpenDecision({ sourceUrl: 'market://details?id=com.amazon', source: 'Boutique' }).screen).toBe('blocked');
   });
 
+  it('déplie une redirection Google vers la vraie fiche marchande et bloque Google Shopping', () => {
+    const wrapped = 'https://www.google.com/url?q=https%3A%2F%2Fwww.zalando.fr%2Fbaskets-123.html&sa=U';
+    const unwrapped = lensOpenDecision({ sourceUrl: wrapped, source: 'Zalando' });
+    expect(unwrapped.screen).toBe('browser');
+    if (unwrapped.screen === 'browser') {
+      expect(unwrapped.target.params.url).toBe('https://www.zalando.fr/baskets-123.html');
+    }
+    expect(lensOpenDecision({ sourceUrl: 'https://www.google.com/shopping/product/12345?gl=fr', source: 'Google' }).screen)
+      .toBe('blocked');
+  });
+
   it('le type de décision ne connaît plus d’écran « fiche »', () => {
     const source = read('src/features/lens/lensOpen.ts');
     expect(source.includes("screen: 'product'")).toBe(false);

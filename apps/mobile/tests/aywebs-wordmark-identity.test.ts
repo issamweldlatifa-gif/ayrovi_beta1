@@ -118,6 +118,15 @@ describe('mot-symbole AYWEBs — couleur et taille', () => {
        approchante. Le fichier d'origine (#6A3B89) est resté dans le dépôt
        comme référence historique ; celui-ci est celui de l'application. */
     expect(dominant[0]).toBe(officialViolet());
+
+    /* Zéro halo délavé : au moins 85 % des pixels du tracé sont pleinement
+       opaques (alpha = 255) afin que la réduction en 150×40 ou 75×20 garde le
+       violet #571EF6 franc sur fond clair, avec chunk sRGB explicite. */
+    const nonZero = violet.pixels.filter((pixel) => pixel[3] > 0);
+    const opaque = nonZero.filter((pixel) => pixel[3] === 255);
+    expect(opaque.length / nonZero.length).toBeGreaterThanOrEqual(0.85);
+    const rawPng = readFileSync(path.join(ROOT, 'assets/aywebs/aywebs-wordmark-violet.png'));
+    expect(rawPng.includes(Buffer.from('sRGB', 'ascii'))).toBe(true);
   });
 
   it('le ratio du fichier est respecté là où il est affiché', () => {
@@ -156,5 +165,15 @@ describe('mot-symbole AYWEBs — couleur et taille', () => {
     expect(sheetSize, 'taille du mot-symbole introuvable dans la feuille d’ajout').not.toBeNull();
     const [, sheetWidth, sheetHeight] = sheetSize as RegExpExecArray;
     expect(Number(sheetWidth) / Number(sheetHeight)).toBeCloseTo(ratio, 1);
+
+    /* Teinte native exacte (#571EF6 en clair, #FFFFFF en sombre) appliquée par
+       expo-image sur les trois emplacements pour éliminer tout écart Display-P3. */
+    expect(header).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
+    expect(tabs).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
+    expect(sheet).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
+
+    /* Barre du bas : uniquement le logo AYWEBs, aucun texte « AYWEBs » dessous. */
+    expect(tabs).toContain('tabBarShowLabel: false');
+    expect(tabs).toContain('tabBarLabel: () => null');
   });
 });

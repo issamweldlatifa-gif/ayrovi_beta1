@@ -4,7 +4,7 @@ import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { buildSearchQuery, AyrovixUnavailableError, fallbackIdentification } from './services/ai';
-import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
+import { catalogSearch, externalProductSearch, scoreCandidate, searchCandidates } from './services/search';
 import { LENS_LIVE_SEARCH_COUNTRIES, SerpApiVisualError, serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
 import { refreshLiveStock } from './services/lensLiveStock';
@@ -194,21 +194,40 @@ function rememberAuthenticatedHistory(
   }
 }
 
-/** GLOBAL DISCOVERY — les doublons multi-sources deviennent un produit avec
- *  plusieurs offres AVANT la coupe finale, pour que la limite serve des produits
- *  distincts et non quatre fois le même. */
-function mergeCandidates(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
-  return filterWithFallback(groupOffers(items), limit);
+/**
+ * Lens — chaque fiche marchande issue de SerpApi garde sa propre carte (et son
+ * propre lien produit ouvrable dans le navigateur AYWEBs). Seuls les doublons
+ * exacts d'URL sont fusionnés.
+ */
+function mergeCandidates(items: AyrovixCandidate[], limit = 16): AyrovixCandidate[] {
+  const byUrl = new Map<string, AyrovixCandidate>();
+  for (const item of items) {
+    const key = String(item.sourceUrl || '').trim();
+    if (!key) continue;
+    const prev = byUrl.get(key);
+    if (!prev || (item.match ?? 0) > (prev.match ?? 0)) {
+      byUrl.set(key, item);
+    }
+  }
+  return filterWithFallback([...byUrl.values()], limit);
 }
 
 async function searchByCodeOrText(db: QatafoDatabase, value: string): Promise<AyrovixCandidate[]> {
   const local = catalogSearch(db, null, value, 4)
     .map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) }));
-  const external = await externalProductSearch(value, 8).catch(() => []);
+  const external = await externalProductSearch(value, 16).catch(() => []);
   return mergeCandidates([
     ...local,
-    ...external.map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) })),
-  ]);
+    ...external.map((candidate) => {
+      const estimated = candidate.price != null ? estimateWithDb(db, candidate.price, candidate.currency || 'EUR') : null;
+      return {
+        ...candidate,
+        priceTnd: estimated?.promo ? estimated.priceTnd : (candidate.priceTnd ?? estimated?.priceTnd ?? null),
+        promo: estimated?.promo ?? candidate.promo ?? null,
+        match: scoreCandidate(null, value, candidate),
+      };
+    }),
+  ], 16);
 }
 
 export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScraper): Router {

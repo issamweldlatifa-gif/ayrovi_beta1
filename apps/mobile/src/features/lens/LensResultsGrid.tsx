@@ -8,6 +8,7 @@ import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { LensResultCard } from './LensResultCard';
 import { LensTitleFilter } from './LensTitleFilter';
+import { lensOpenDecision } from './lensOpen';
 import { LENS_COLORS } from './lensPalette';
 import { applyLensFilters } from './lensRanking';
 import { useLensSheetScroll } from './lensSheetScroll';
@@ -45,10 +46,15 @@ export function LensResultsGrid({
    */
   const [query, setQuery] = useState('');
 
-  const shown = useMemo(() => applyLensFilters(candidates, query), [candidates, query]);
-  const filteredOut = shown.length !== candidates.length;
+  /* Seules les cartes portant un vrai lien marchand ouvrable dans AYWEBs sont affichées. */
+  const openable = useMemo(
+    () => candidates.filter((candidate) => lensOpenDecision(candidate).screen === 'browser'),
+    [candidates],
+  );
+  const shown = useMemo(() => applyLensFilters(openable, query), [openable, query]);
+  const filteredOut = shown.length !== openable.length;
 
-  if (candidates.length === 0) {
+  if (openable.length === 0) {
     return (
       <View style={styles.empty} testID="lens-empty-results">
         <View style={styles.emptyIcon}>
@@ -106,7 +112,7 @@ export function LensResultsGrid({
           <AppText variant="caption" color={theme.colors.muted} testID="lens-open-hint">
             {t('lens.openInAywebs')}
           </AppText>
-          <LensTitleFilter value={query} onChange={setQuery} shown={shown.length} total={candidates.length} />
+          <LensTitleFilter value={query} onChange={setQuery} shown={shown.length} total={openable.length} />
           {shown.length === 0 ? (
             <View style={styles.filteredEmpty} testID="lens-filters-empty">
               <AppText color={theme.colors.muted} align="center">{t('lens.filters.empty')}</AppText>
@@ -127,7 +133,7 @@ export function LensResultsGrid({
       )}
       ListFooterComponent={filteredOut && shown.length > 0 ? (
         <AppText variant="caption" color={theme.colors.muted} align="center" style={styles.footer} testID="lens-filters-active">
-          {t('lens.resultsCountMany', { count: shown.length })} / {candidates.length}
+          {t('lens.resultsCountMany', { count: shown.length })} / {openable.length}
         </AppText>
       ) : null}
     />

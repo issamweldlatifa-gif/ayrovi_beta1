@@ -65,26 +65,41 @@ export interface ProductEntryTarget {
   params: { url: string; storeName: string; capture: '0' };
 }
 
-export function productEntryTarget(rawUrl: string, storeName = ''): ProductEntryTarget | null {
+const SEARCH_ENGINE_HOSTS = /(^|\.)(google\.[a-z.]+|googleusercontent\.com|gstatic\.com|goo\.gl|bing\.com|duckduckgo\.com|yahoo\.com)$/i;
+const REDIRECT_WRAPPER_HOSTS = /(^|\.)(google\.[a-z.]+|bing\.com|duckduckgo\.com|l\.facebook\.com|lm\.facebook\.com)$/i;
+
+function unwrapMerchantUrl(rawUrl: string, allowUnwrap = true): string | null {
   const raw = String(rawUrl ?? '').trim();
   if (!isWebPageUrl(raw)) return null;
-  let url = raw;
   try {
     const parsed = new URL(raw);
-    /* Le navigateur intégré ne charge que HTTPS (ATS iOS, politique de
-       navigation). Une fiche annoncée en `http:` n'est donc pas refusée : son
-       adresse est promue en `https:`, ce que font déjà tous les marchands qui
-       ont un certificat. Une carte Lens ne doit JAMAIS rouvrir autre chose que
-       AYWEBs — c'était l'ancien repli sur la fiche interne (28/10/2026). */
-    if (parsed.protocol === 'http:') {
-      parsed.protocol = 'https:';
-      url = parsed.toString();
-    } else if (parsed.protocol !== 'https:') {
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+    if (REDIRECT_WRAPPER_HOSTS.test(host)) {
+      if (allowUnwrap && (parsed.pathname === '/url' || parsed.pathname === '/aclk' || parsed.pathname === '/l.php')) {
+        const inner = parsed.searchParams.get('q')
+          || parsed.searchParams.get('url')
+          || parsed.searchParams.get('adurl')
+          || parsed.searchParams.get('u');
+        return inner ? unwrapMerchantUrl(inner, false) : null;
+      }
+    }
+    if (SEARCH_ENGINE_HOSTS.test(host)) {
       return null;
     }
+    if (parsed.protocol === 'http:') {
+      parsed.protocol = 'https:';
+      return parsed.toString();
+    }
+    return raw;
   } catch {
     return null;
   }
+}
+
+export function productEntryTarget(rawUrl: string, storeName = ''): ProductEntryTarget | null {
+  const url = unwrapMerchantUrl(rawUrl);
+  if (!url) return null;
   return {
     pathname: '/aywebs/browser',
     params: { url, storeName: String(storeName ?? '').trim().slice(0, 80), capture: '0' },

@@ -23,7 +23,7 @@ import { router } from 'expo-router';
 
 import { AppText, Button, KeyValue } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { COMMERCE, RADIUS } from '@/design/tokens.mobile';
+import { AYWEBS_WORDMARK_TINT, COMMERCE, RADIUS } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { AppImage } from '@/design/appImage';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
@@ -788,6 +788,7 @@ export function AddToCartSheet({
                   : require('../../../assets/aywebs/aywebs-wordmark-violet.png')
               }
               contentFit="contain"
+              tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}
               decorative
               background={null}
               style={styles.headerWordmark}

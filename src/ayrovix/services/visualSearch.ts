@@ -36,7 +36,7 @@ function visualFailure(code: string): SerpApiVisualError {
 }
 
 function boundedLimit(value: number): number {
-  return Number.isFinite(value) ? Math.max(8, Math.min(40, Math.floor(value))) : 24;
+  return Number.isFinite(value) ? Math.max(8, Math.min(80, Math.floor(value))) : 24;
 }
 
 function normalizeCountries(countries: readonly string[]): string[] {
@@ -188,11 +188,27 @@ function mergeCountryCandidates(groups: AyrovixCandidate[][], limit: number): Ay
   return [...byUrl.values()];
 }
 
+function unwrapVisualRedirectUrl(raw: unknown): string {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return '';
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, '');
+    if (/^(google\.[a-z.]+|bing\.com|duckduckgo\.com)$/i.test(host) && (parsed.pathname === '/url' || parsed.pathname === '/aclk')) {
+      const target = parsed.searchParams.get('q') || parsed.searchParams.get('url') || parsed.searchParams.get('adurl');
+      if (target && /^https?:\/\//i.test(target.trim())) return target.trim();
+    }
+  } catch {
+    return trimmed;
+  }
+  return trimmed;
+}
+
 function collectCandidates(rows: any[], limit: number): AyrovixCandidate[] {
   const seen = new Set<string>();
   const results: AyrovixCandidate[] = [];
   for (const row of rows) {
-    const sourceUrl = String(row?.link || '').trim();
+    const sourceUrl = unwrapVisualRedirectUrl(row?.link);
     const title = String(row?.title || '').replace(/\s+/g, ' ').trim();
     if (!/^https?:\/\//i.test(sourceUrl) || title.length < 4 || seen.has(sourceUrl)) continue;
     seen.add(sourceUrl);

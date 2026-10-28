@@ -219,6 +219,17 @@ export const REEL_TILE = {
   widthFraction: 0.66,
 } as const;
 
+/**
+ * Mot-symbole AYWEBs (en-tête, barre du bas, feuille d'ajout) : teinte
+ * appliquée nativement par `expo-image` (`tintColor`) en plus des pixels sRGB
+ * du PNG afin d'éliminer tout écart d'espace colorimétrique (Display-P3 / OLED)
+ * et de garantir le violet officiel `#571EF6` exact.
+ */
+export const AYWEBS_WORDMARK_TINT = {
+  light: BRAND.violet,
+  dark: BRAND.white,
+} as const;
+
 /* ── Rayons (§2 — Radius Tokens) ──────────────────────────────────────────── */
 
 /**

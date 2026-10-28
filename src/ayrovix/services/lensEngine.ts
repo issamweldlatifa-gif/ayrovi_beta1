@@ -111,7 +111,7 @@ export async function recognizeImage(
   mime: string,
   options: RecognizeOptions = {},
 ): Promise<LensRecognition> {
-  const { matchLimit = 24, withSignals = true, useCache = true, withVision = true, withMatches = true } = options;
+  const { matchLimit = 60, withSignals = true, useCache = true, withVision = true, withMatches = true } = options;
 
   const key = lensImageKey(image);
   const cached = useCache

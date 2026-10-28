@@ -36,6 +36,10 @@ describe('AYWEBs WebView navigation', () => {
       'https://www.amazon.com/dp/B0ABC12345/',
       'https://www.amazon.com/dp/B0ABC12345',
     )).toBe(true);
+    expect(captureMatchesPageUrl(
+      'https://www.zalando.fr/baskets-AB1234.html',
+      'https://www.zalando.fr/baskets-AB1234.html?srsltid=AfmBOoq123&utm_source=google',
+    )).toBe(true);
   });
 
   it('une capture venant d’un autre produit ou d’une autre variante est refusée', () => {

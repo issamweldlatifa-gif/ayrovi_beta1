@@ -816,7 +816,10 @@ export default function LensScreen() {
     const job: SearchJob = async (signal) => {
       if (isQr && isOpenableSourceUrl(value)) {
         const result = await analyzeUrl(value, 'qr', true, signal);
-        if (!signal.aborted) showSearch({ candidates: [result.product, ...result.alternates], eventId: result.eventId });
+        const ordered = result.fallback && result.alternates.length > 0
+          ? [...result.alternates, result.product]
+          : [result.product, ...result.alternates];
+        if (!signal.aborted) showSearch({ candidates: ordered, eventId: result.eventId });
         return;
       }
       const result = isQr ? await analyzeCode(value, signal) : await analyzeBarcode(value, signal);
@@ -846,7 +849,10 @@ export default function LensScreen() {
     Keyboard.dismiss();
     const job: SearchJob = async (signal) => {
       const result = await analyzeUrl(url, 'url', recordHistory, signal);
-      if (!signal.aborted) showSearch({ candidates: [result.product, ...result.alternates], eventId: result.eventId });
+      const ordered = result.fallback && result.alternates.length > 0
+        ? [...result.alternates, result.product]
+        : [result.product, ...result.alternates];
+      if (!signal.aborted) showSearch({ candidates: ordered, eventId: result.eventId });
     };
     void run(job);
   }, [run, showSearch]);

@@ -53,6 +53,8 @@ export interface AppImageProps {
    * sinon le gris du cadre se voit autour du logo (constaté le 27/10/2026).
    */
   background?: string | null;
+  /** Teinte native (`expo-image`) pour les pictogrammes/mots-symboles monochromes. */
+  tintColor?: string | null;
   blurRadius?: number;
   /**
    * Appelé UNE fois quand l'image a définitivement échoué (après tous les
@@ -65,7 +67,7 @@ export interface AppImageProps {
 
 export function AppImage({
   uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', style,
-  accessibilityLabel, decorative = false, background, blurRadius = 0, onSettled, onError, testID,
+  accessibilityLabel, decorative = false, background, tintColor, blurRadius = 0, onSettled, onError, testID,
 }: AppImageProps) {
   const theme = useTheme();
   const t = useT();
@@ -120,6 +122,7 @@ export function AppImage({
       testID={testID}
       source={localSource ?? { uri: activeUri as string }}
       contentFit={contentFit}
+      tintColor={tintColor ?? undefined}
       transition={theme.duration.fast}
       blurRadius={blurRadius}
       onError={onLoadError}

@@ -24,6 +24,7 @@ import { Tabs, usePathname } from 'expo-router';
 import { useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppImage } from '@/design/appImage';
+import { AYWEBS_WORDMARK_TINT } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
 import { useTheme } from '@/design/theme';
 import { revealChrome, useChromeHidden } from '@/design/chrome';
@@ -123,6 +124,7 @@ export default function TabsLayout() {
                     : require('../../assets/aywebs/aywebs-wordmark-violet.png')
                 }
                 contentFit="contain"
+                tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}
                 decorative
                 background={null}
                 style={AYWEB_TAB_LOGO}
@@ -135,8 +137,16 @@ export default function TabsLayout() {
         },
       })}
     >
-      {/* Barre : AYWEBs (وكيل الشراء) puis Profil. */}
-      <Tabs.Screen name="aywebs" options={{ title: t('tabs.aywebs') }} />
+      {/* Barre : AYWEBs (وكيل الشراء — icône du mot-symbole seule, sans libellé dessous) puis Profil. */}
+      <Tabs.Screen
+        name="aywebs"
+        options={{
+          title: t('tabs.aywebs'),
+          tabBarShowLabel: false,
+          tabBarLabel: () => null,
+          tabBarAccessibilityLabel: t('tabs.aywebs'),
+        }}
+      />
       <Tabs.Screen name="account" options={{ title: t('tabs.account') }} />
 
       {/* Route conservée, retirée de la barre : l’accueil s’atteint par le logo. */}

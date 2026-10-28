@@ -97,12 +97,20 @@ export default function AyWebsBrowserScreen() {
     staleTime: 20_000,
   });
 
-  const params = useLocalSearchParams<{ url?: string; storeId?: string; storeName?: string; capture?: string }>();
-  const url = String(params.url ?? '');
-  const storeId = String(params.storeId ?? '');
+  const params = useLocalSearchParams<{ url?: string | string[]; storeId?: string | string[]; storeName?: string | string[]; capture?: string | string[] }>();
+  const rawUrlParam = Array.isArray(params.url) ? params.url[0] : params.url;
+  const url = (() => {
+    const trimmed = String(rawUrlParam ?? '').trim();
+    if (/^https?%3A%2F%2F/i.test(trimmed)) {
+      try { return decodeURIComponent(trimmed).trim(); } catch { return trimmed; }
+    }
+    return trimmed;
+  })();
+  const storeId = String((Array.isArray(params.storeId) ? params.storeId[0] : params.storeId) ?? '');
   /** السماح الأوّلي من شاشة المتجر؛ يتحدّث حسب الصفحة الحالية بعد التصنيف. */
-  const captureAllowedParam = params.capture === '1';
-  const storeName = String(params.storeName ?? '');
+  const captureParam = Array.isArray(params.capture) ? params.capture[0] : params.capture;
+  const captureAllowedParam = captureParam === '1';
+  const storeName = String((Array.isArray(params.storeName) ? params.storeName[0] : params.storeName) ?? '');
   /** رابط غير صالح (مخطط غريب أو فارغ) لا يُحمَّل أبداً في الـWebView. */
   const pageOk = isWebPageUrl(url);
 
@@ -139,10 +147,15 @@ export default function AyWebsBrowserScreen() {
   const [cartOpen, setCartOpen] = useState(false);
   const [note, setNote] = useState('');
   const [outcome, setOutcome] = useState<AyWebsResolveOutcome | null>(null);
-  /* العنوان المحمَّل في الـWebView: ثابت — شريط العنوان ما بقاش فوق. */
-  const [loadUrl] = useState(url);
+  /* العنوان المحمَّل في الـWebView: ثابت لكل فتح، ويتحدّث إذا تبدّل الرابط الممرَّر للشاشة. */
+  const [loadUrl, setLoadUrl] = useState(url);
   /* الصفحة الحالية كما يصرّح بها التنقّل داخل الـWebView (تتبع الروابط). */
   const [pageUrl, setPageUrl] = useState(url);
+  useEffect(() => {
+    if (!url || url === loadUrl) return;
+    setLoadUrl(url);
+    setPageUrl(url);
+  }, [url, loadUrl]);
   /** Page courante, lisible depuis `requestCapture` (qui ne dépend d'aucun état React). */
   const pageUrlRef = useRef(pageUrl);
   const lastRecordedVisit = useRef('');
