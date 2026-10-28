@@ -51,6 +51,7 @@ import { quantityLimit, selectionQuote, type AvailabilityState } from '@/feature
 import { lacksServerQuote, preferServerQuote, quoteReadPlan } from '@/features/aywebs/priceFallback';
 import { ayWebsSameAttribute as sameAttribute } from '@/features/aywebs/attributeKeys';
 import { alignSelection, mergeVariantGroups, missingAttributes } from '@/features/aywebs/groupMerge';
+import { realChoiceGroups } from '@/features/aywebs/variantLabels';
 import { formatAmount, formatMoney } from '@/format/money';
 
 export interface AddToCartSheetProps {
@@ -141,7 +142,11 @@ export function AddToCartSheet({
      la page publie aussi la couleur) était refusée (26/10/2026). */
   const groups = useMemo<AyWebsVariantGroup[]>(() => {
     const local = product.variantGroups.length ? product.variantGroups : (fetchedGroups ?? []);
-    return mergeVariantGroups(local, serverGroups);
+    /* `mergeVariantGroups` unit les deux lectures ; `realChoiceGroups` est la
+       dernière barrière contre les libellés d'interface (« Votre taille »,
+       « Taille & coupe »…) quelle que soit leur provenance — fiche en cache,
+       serveur ou capture (28/10/2026). */
+    return realChoiceGroups(mergeVariantGroups(local, serverGroups));
   }, [fetchedGroups, product.variantGroups, serverGroups]);
   const groupsRef = useRef(groups);
   groupsRef.current = groups;

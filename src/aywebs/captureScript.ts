@@ -1551,6 +1551,30 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
      pas comme choix, et le serveur refuserait l'ajout (« sélection non prouvée »)
      pour une raison qui n'a rien à voir avec le produit. */
   var NOT_A_VARIANT_GROUP = /^(sort|sort by|sortby|trier|tri|order by|orderby|quantit\w*|quantity|qty|nombre|view|view by|affichage|filter|filtre|page|pages|lang|langue|language|devise|currency|pays|country|region|région|per page|items per page|afficher)\b/i;
+  /* ── Libellés d'INTERFACE : jamais des valeurs (28/10/2026) ──────────────
+     Fiche Zalando mesurée dans l'application : la feuille d'ajout n'offrait que
+     « Taille » et « Votre taille », sans aucune pointure ni couleur. Le
+     sélecteur de taille de la page contient deux boutons d'interface — le nom
+     du groupe répété (« Taille ») et la recommandation (« Votre taille ») — et
+     ces deux textes étaient publiés comme les deux VALEURS du groupe. Comme ce
+     groupe portait déjà la dimension TAILLE, il masquait les vraies pointures
+     du ProductGroup (ldGroupAlreadyCovered) : le client perdait tailles ET
+     couleurs, et l'ajout échouait (« le marchand ne publie pas le stock »).
+
+     Deux règles, aucune invention :
+       • une valeur identique au NOM du groupe n'est pas une valeur ;
+       • les libellés d'aide/recommandation connus (guide des tailles,
+         « votre taille », « sélectionnez… », « toutes les couleurs ») non plus.
+     Après ce crible, un groupe de moins de deux valeurs n'est pas un choix. */
+  var UI_NOT_A_VALUE = /^(?:(?:ma|votre|your|my|deine|tu|su|la\s+mia|il\s+mio)\s+(?:taille|size|taglia|talla|gr(?:ö|oe)(?:ß|ss)e|misura|maat|размер|مقاس)|(?:taille|size|taglia|talla|gr(?:ö|oe)(?:ß|ss)e)\s*(?:&|et|\+)\s*(?:coupe|fit)|(?:size|taille|talla)\s*guide|guide\s+des\s+tailles|guía\s+de\s+tallas|gr(?:ö|oe)(?:ß|ss)entabelle|(?:toutes?\s+les\s+)?couleurs?|(?:all\s+)?colou?rs?|(?:todas\s+las\s+)?colores|s(?:é|e)lectionn\w*|choisiss\w*|please\s+(?:select|choose)|pick\s+(?:a|your))\b/i;
+  /** Clé de comparaison d'un libellé : casse, espaces, ponctuation de fin. */
+  function ciKey(value) {
+    return text(String(value === null || value === undefined ? '' : value))
+      .toLowerCase()
+      .replace(/[\u2018\u2019\u02bc\u0060]/g, "'")
+      .replace(/\s*[:*·•-]+\s*$/, '')
+      .replace(/\s+/g, ' ');
+  }
   /**
    * Prix écrit SUR une valeur (« 88,00 € », « 12,95 € TVA incluse »).
    *
@@ -1610,6 +1634,30 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (!name || !values.length) return;
     var label = cut(name, LIMITS.label);
     if (!label || NOT_A_CHOICE.test(label) || NOT_A_VARIANT_GROUP.test(label)) return;
+    /* Le NOM du groupe n'est pas une de ses valeurs, et les libellés
+       d'interface n'en sont pas non plus (voir UI_NOT_A_VALUE). Sans ce
+       crible, « Taille » et « Votre taille » devenaient les deux tailles du
+       produit et masquaient les vraies pointures lues dans le ProductGroup. */
+    var groupKey = ciKey(label);
+    var keptValues = [];
+    for (var kv = 0; kv < values.length; kv++) {
+      var candidateValue = text(values[kv]);
+      if (!candidateValue) continue;
+      if (ciKey(candidateValue) === groupKey) continue;
+      if (UI_NOT_A_VALUE.test(candidateValue)) continue;
+      if (ciExactContains(keptValues, candidateValue)) continue;
+      keptValues.push(candidateValue);
+    }
+    /* Moins de deux valeurs distinctes = pas un choix (un groupe d'une seule
+       valeur forcerait une sélection que la page n'offre pas). */
+    if (keptValues.length < 2) return;
+    values = keptValues;
+    /* La sélection publiée ne peut porter que des valeurs retenues. */
+    var keptSelected = [];
+    for (var ks = 0; ks < (selected || []).length; ks++) {
+      if (ciExactContains(values, selected[ks])) keptSelected.push(selected[ks]);
+    }
+    selected = keptSelected;
     /* Options TELLES QUE LUES, avant tout crible : la fusion avec le JSON-LD se
        fait après la boucle DOM et a besoin des valeurs que le DOM a nommées sans
        rien publier (une pointure désactivée n'a ni prix ni état). */

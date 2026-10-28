@@ -11,6 +11,7 @@
 import type {
   AyWebsAddBlockCode, AyWebsAvailability, AyWebsResolvedProduct, AyWebsVariantGroup, AyWebsVariantOption,
 } from '@/api/aywebs';
+import { isRealChoiceValue } from '@/features/aywebs/variantLabels';
 
 type Json = Record<string, unknown>;
 const isRecord = (value: unknown): value is Json => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -286,7 +287,10 @@ export function groupsFromCapture(capture: Json, variants = localVariantsFromCap
   for (const group of capture.variantGroups) {
     if (!isRecord(group)) continue;
     const attribute = text(group.name);
-    const values = Array.isArray(group.values) ? group.values.map(text).filter(Boolean) : [];
+    /* Même crible qu'à la source (28/10/2026) : « Taille » et « Votre taille »
+       sont des boutons d'interface, pas des tailles. */
+    const values = (Array.isArray(group.values) ? group.values.map(text) : [])
+      .filter((value) => Boolean(value) && isRealChoiceValue(attribute, value));
     if (!attribute || !values.length) continue;
     if (groups.some((known) => known.attribute.toLowerCase() === attribute.toLowerCase())) continue;
     groups.push({ attribute, values });

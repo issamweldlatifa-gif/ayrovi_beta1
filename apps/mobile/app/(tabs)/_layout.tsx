@@ -41,10 +41,10 @@ const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
  *
  * Même fichier officiel que l'en-tête, même traitement : violet de marque en
  * thème clair, blanc en thème sombre (le violet #571EF6 sur #0A0A0A ne se lit
- * pas). 60 × 16, soit exactement le ratio du fichier (551 × 147 ≈ 3.75) :
- * aucune déformation, et une largeur qui reste dans la moitié de la barre.
+ * pas). 75 × 20, soit exactement le ratio du fichier (551 × 147 ≈ 3.75) :
+ * aucune déformation, et une hauteur qui tient dans la barre à côté du libellé.
  */
-const AYWEB_TAB_LOGO = { width: 60, height: 16 };
+const AYWEB_TAB_LOGO = { width: 75, height: 20 };
 
 /**
  * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli

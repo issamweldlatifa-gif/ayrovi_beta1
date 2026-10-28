@@ -23,6 +23,7 @@
  */
 import type { AyWebsVariantGroup } from '@/api/aywebs';
 import { ayWebsAttributeKey, ayWebsSameAttribute } from '@/features/aywebs/attributeKeys';
+import { isRealChoiceValue } from '@/features/aywebs/variantLabels';
 
 const clean = (value: unknown): string => String(value ?? '').trim();
 
@@ -43,7 +44,11 @@ export function mergeVariantGroups(
     /* Même dimension (et pas seulement même orthographe) : `Taille` rejoint
        `size` au lieu de créer un second champ. */
     const existing = out.find((group) => ayWebsSameAttribute(group.attribute, name));
-    const cleaned = values.map(clean).filter(Boolean);
+    /* Les libellés d'interface ne sont pas des valeurs (28/10/2026) : une page
+       Zalando publiait « Taille : Taille, Votre taille », ce qui masquait les
+       vraies pointures et les couleurs. Le crible est fait à la source aussi ;
+       ici, il protège les fiches déjà lues et les réponses du serveur. */
+    const cleaned = values.map(clean).filter((value) => Boolean(value) && isRealChoiceValue(name, value));
     if (existing) {
       for (const value of cleaned) {
         if (!existing.values.some((known) => known.toLowerCase() === value.toLowerCase())) {
