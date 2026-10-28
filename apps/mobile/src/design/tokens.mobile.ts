@@ -230,6 +230,21 @@ export const AYWEBS_WORDMARK_TINT = {
   dark: BRAND.white,
 } as const;
 
+/**
+ * Barre d'onglets flottante transparente à angles arrondis : verre dépoli
+ * translucide + filet discret dérivés des couleurs officielles de la marque.
+ */
+export const TAB_BAR_GLASS = {
+  light: {
+    background: alpha(BRAND.white, 0.84),
+    border: alpha(BRAND.black, 0.1),
+  },
+  dark: {
+    background: alpha(BRAND.black, 0.8),
+    border: alpha(BRAND.white, 0.14),
+  },
+} as const;
+
 /* ── Rayons (§2 — Radius Tokens) ──────────────────────────────────────────── */
 
 /**

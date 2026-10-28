@@ -179,6 +179,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/design/layout.tsx', // `AppScreen.overlayHeader` — la superposition de référence
       'src/design/ui.tsx', // le tiroir : panneau au-dessus du contenu
       'src/features/shell/AppHeader.tsx', // en-tête transparent sous lequel défile la page
+      'app/(tabs)/_layout.tsx', // barre d'onglets flottante transparente à angles arrondis sous laquelle défile la page
       'app/aywebs/browser.tsx', // AYWEBs : voile de chargement posé au-dessus de la page du magasin (WebView)
       'src/features/sections/PromotionCard.tsx', // badge de réduction posé sur la vignette
       'src/features/social/ReelCard.tsx', // durée posée sur la vignette vidéo

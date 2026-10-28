@@ -1,163 +1,165 @@
 /**
- * Barre du bas — AYWEBs (وكيل الشراء) et Profil.
+ * Barre d'onglets principale — capsule flottante transparente à angles arrondis.
  *
- * L’accueil se atteint par le LOGO de l’en-tête, le panier par son icône, les
- * notifications par la cloche. `index` (l’accueil) et `cart` restent des routes
- * — le tiroir et l’en-tête pointent dessus — mais sont retirées de la barre
- * avec `href: null`. Un onglet masqué n’est pas un onglet supprimé : les
- * liens existants continuent de fonctionner, ce qui évite de casser l’existant
- * pour un changement de navigation.
+ * Ordre imposé par le propriétaire :
+ *   `Accueil` · `Lens` · `AYWEBs` · `Sonim` · `Profil`
  *
- * ── Transparence ───────────────────────────────────────────────────────────
- * Consigne : « شريط شفاف ». Le fond est transparent et la barre reste dans le
- * flux (elle ne recouvre pas le contenu) : une barre `absolute` laisserait le
- * bas de chaque écran caché dessous — une régression déguisée en effet de
- * style.
- *
- * ── Repli au défilement ────────────────────────────────────────────────────
- * Réactivé sur demande (« يختفي عند تمرير الي اسفل ويضهر ») après avoir été
- * neutralisé pour cause de saccade. La décision est pilotée par
- * `design/chrome` : une seule fonction testée (14 tests), un seul seuil.
- * L’en-tête, lui, reste FIXE — c’est l’autre moitié de la consigne.
+ *   • `AYWEBs` occupe le médaillon central avec son icône circulaire officielle
+ *     (`#571EF6` en clair, `#FFFFFF` en sombre) sans libellé texte dessous ;
+ *   • `Lens` et `Sonim` portent leurs pictogrammes dédiés teintés selon l'état
+ *     actif/inactif du thème ;
+ *   • `cart` reste une route valide (`href: null`) pour l'icône panier de `AppHeader`.
  */
-import { Tabs, usePathname } from 'expo-router';
-import { useEffect } from 'react';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { AppImage } from '@/design/appImage';
-import { AYWEBS_WORDMARK_TINT } from '@/design/tokens.mobile';
-import { useT } from '@/i18n';
-import { useTheme } from '@/design/theme';
-import { revealChrome, useChromeHidden } from '@/design/chrome';
+import { Tabs, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
-type IoniconName = keyof typeof Ionicons.glyphMap;
+import { AppImage } from '@/design/appImage';
+import { revealChrome, useChromeHidden } from '@/design/chrome';
+import { useTheme } from '@/design/theme';
+import { AYWEBS_WORDMARK_TINT, TAB_BAR_GLASS } from '@/design/tokens.mobile';
+import { useI18n } from '@/i18n';
 
-const ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
-  account: { active: 'person', inactive: 'person-outline' },
-};
-
-/**
- * Onglet AYWEBs — nouvelle icône circulaire officielle (empreinte ajourée) :
- * violet officiel #571EF6 en thème clair, inversée en blanc #FFFFFF en thème
- * sombre (l'empreinte transparente laisse transparaître le fond sombre #0A0A0A).
- * 32 × 32 (ratio exact 1:1 du fichier 256 × 256), sans libellé dessous.
- */
-const AYWEB_TAB_LOGO = { width: 32, height: 32 };
-
-/**
- * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
- * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
- * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
- * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
- * vérifié par `tests/error-boundary-coverage.test.ts`.
- */
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
+const AYWEB_LOGO_LIGHT = require('../../assets/aywebs/aywebs-icon-violet.png');
+const AYWEB_LOGO_DARK = require('../../assets/aywebs/aywebs-icon-white.png');
+const LENS_TAB_ICON = require('../../assets/tab-lens-icon.png');
+const SONIM_TAB_ICON = require('../../assets/tab-sonim-icon.png');
+
+/** Ratio 1:1 exact de l'icône circulaire AYWEBs (`256×256`), sans texte dessous. */
+const AYWEB_TAB_LOGO = { width: 32, height: 32 } as const;
+const CUSTOM_TAB_ICON = { width: 24, height: 24 } as const;
 
 export default function TabsLayout() {
   const theme = useTheme();
-  const t = useT();
-  const pathname = usePathname();
-  const chromeHidden = useChromeHidden();
+  const { t } = useI18n();
   const insets = useSafeAreaInsets();
-
-  /**
-   * Changer d’onglet RÉAFFICHE la barre : la retrouver masquée en arrivant sur
-   * un écran est désorientant — on n’a encore rien fait pour la cacher.
-   */
-  useEffect(() => { revealChrome(); }, [pathname]);
+  const chromeHidden = useChromeHidden();
+  const glass = TAB_BAR_GLASS[theme.mode];
 
   return (
     <Tabs
-      /**
-       * Accueil = racine de toutes les barres. Le retour (bouton Android ou
-       * flèche) depuis un onglet ramène à l'accueil, pas au dernier onglet
-       * visité : sans cela, le retour pouvait ramener à un onglet précédent.
-       */
-      initialRouteName="index"
-      backBehavior="initialRoute"
-      screenOptions={({ route }) => ({
+      screenListeners={{
+        tabPress: () => revealChrome(),
+      }}
+      screenOptions={{
         headerShown: false,
-        // Onglet actif : le violet de marque, dans sa version lisible du mode.
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: theme.colors.accentText,
         tabBarInactiveTintColor: theme.colors.muted,
-        tabBarStyle: {
-          // شريط شفاف — la consigne. Aucun fond, aucune bordure.
-          backgroundColor: 'transparent',
-          borderTopWidth: 0,
-          elevation: 0,
-          paddingTop: 6,
-          /**
-           * §4.3-3 : « la barre du bas ajoute `insets.bottom` POUR ELLE-MÊME ».
-           *
-           * Sans ces deux lignes, la barre passait SOUS le bec (« home
-           * indicator ») et sous la barre de gestes Android : les libellés
-           * devenaient partiellement inaccessibles, et sur Android les trois
-           * boutons système les recouvraient. C'était le défaut n° 1 relevé
-           * par l'audit.
-           *
-           * La hauteur suit : `tabBar` (56) + la zone sûre, sinon le contenu
-           * de la barre se retrouve comprimé dans 56 points alors qu'elle en
-           * occupe davantage.
-           */
-          paddingBottom: insets.bottom,
-          height: theme.chrome.tabBar + insets.bottom,
-          ...(theme.isRTL ? { direction: 'rtl' as const } : null),
-          // Masquée : hauteur à zéro, PAS un simple `translateY` — glisser la
-          // barre hors de l’écran laisserait une bande vide en bas, et le
-          // contenu ne profiterait pas de la place rendue.
-          ...(chromeHidden ? {
-            height: 0, opacity: 0, paddingTop: 0, paddingBottom: 0,
-            borderTopWidth: 0, overflow: 'hidden',
-          } : null),
+        tabBarLabelStyle: {
+          ...theme.text('caption', 'semibold'),
+          marginTop: 0,
         },
-        tabBarLabelStyle: { ...theme.text('caption', 'bold') },
-        tabBarIcon: ({ focused, color, size }) => {
-          if (route.name === 'aywebs') {
-            return (
-              <AppImage
-                localSource={
-                  theme.mode === 'dark'
-                    ? require('../../assets/aywebs/aywebs-icon-white.png')
-                    : require('../../assets/aywebs/aywebs-icon-violet.png')
-                }
-                contentFit="contain"
-                tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}
-                decorative
-                background={null}
-                style={AYWEB_TAB_LOGO}
-                testID="aywebs-tab-logo"
-              />
-            );
-          }
-          const pair = ICONS[route.name] ?? ICONS.account;
-          return <Ionicons name={focused ? pair.active : pair.inactive} size={size ?? theme.iconSize.md} color={color} />;
+        tabBarItemStyle: {
+          paddingVertical: 4,
         },
-      })}
+        tabBarStyle: chromeHidden
+          ? { display: 'none' }
+          : {
+              position: 'absolute',
+              left: theme.space[2],
+              right: theme.space[2],
+              bottom: Math.max(insets.bottom, theme.space[1]),
+              height: theme.chrome.tabBar + theme.space[0],
+              paddingHorizontal: theme.space[1],
+              paddingTop: 2,
+              paddingBottom: 4,
+              borderRadius: theme.radius.xl,
+              backgroundColor: glass.background,
+              borderTopWidth: 1,
+              borderWidth: 1,
+              borderTopColor: glass.border,
+              borderColor: glass.border,
+              ...theme.elevation.medium,
+            },
+      }}
     >
-      {/* Barre : AYWEBs (وكيل الشراء — icône du mot-symbole seule, sans libellé dessous) puis Profil. */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: t('tabs.home'),
+          tabBarIcon: ({ color }) => (
+            <Ionicons
+              name="home-outline"
+              size={theme.iconSize.md}
+              color={color}
+              accessibilityElementsHidden
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="lens"
+        listeners={{
+          tabPress: (event) => {
+            event.preventDefault();
+            revealChrome();
+            router.push('/lens');
+          },
+        }}
+        options={{
+          title: t('tabs.lens'),
+          lazy: true,
+          tabBarStyle: { display: 'none' },
+          tabBarIcon: ({ color }) => (
+          <AppImage
+            localSource={LENS_TAB_ICON}
+            style={CUSTOM_TAB_ICON}
+            contentFit="contain"
+            tintColor={typeof color === 'string' ? color : undefined}
+            decorative
+          />
+        ),
+      }}
+    />
       <Tabs.Screen
         name="aywebs"
         options={{
           title: t('tabs.aywebs'),
           tabBarShowLabel: false,
           tabBarLabel: () => null,
-          tabBarAccessibilityLabel: t('tabs.aywebs'),
+          tabBarIcon: () => (
+            <AppImage
+              localSource={theme.mode === 'dark' ? AYWEB_LOGO_DARK : AYWEB_LOGO_LIGHT}
+              style={AYWEB_TAB_LOGO}
+              contentFit="contain"
+              tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}
+              decorative
+            />
+          ),
         }}
       />
-      <Tabs.Screen name="account" options={{ title: t('tabs.account') }} />
-
-      {/* Route conservée, retirée de la barre : l’accueil s’atteint par le logo. */}
-      <Tabs.Screen name="index" options={{ href: null }} />
-      {/**
-       * Onglet MASQUÉ (`href: null`) mais DÉCLARÉ : la route existe, l'en-tête
-       * et le tiroir pointent dessus. Le test de copie l'exige avec raison —
-       * « un onglet masqué n'est pas un onglet supprimé ».
-       *
-       * Le titre est donc fourni, alors même qu'aucune barre ne l'affiche :
-       * sans cette référence, la clé `tabs.cart` devient un texte mort et le
-       * contrat de copie échoue. On ne retire pas un libellé pour le plaisir
-       * de faire passer un test — on garde la route vivante.
-       */}
+      <Tabs.Screen
+        name="sonim"
+        options={{
+          title: t('tabs.sonim'),
+          tabBarIcon: ({ color }) => (
+            <AppImage
+              localSource={SONIM_TAB_ICON}
+              style={CUSTOM_TAB_ICON}
+              contentFit="contain"
+              tintColor={typeof color === 'string' ? color : undefined}
+              decorative
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{
+          title: t('tabs.account'),
+          tabBarIcon: ({ color }) => (
+            <Ionicons
+              name="person-outline"
+              size={theme.iconSize.md}
+              color={color}
+              accessibilityElementsHidden
+            />
+          ),
+        }}
+      />
       <Tabs.Screen name="cart" options={{ href: null, title: t('tabs.cart') }} />
     </Tabs>
   );

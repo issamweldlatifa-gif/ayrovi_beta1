@@ -141,7 +141,8 @@ export function AppScreen({
   }, [chrome, onChromeScroll, overlayHeader]);
 
   const topInset = insets.top + (overlayHeader ? theme.chrome.header : 0);
-  const bottomInset = hasBottomBar ? 0 : insets.bottom;
+  const floatingTabClearance = theme.chrome.tabBar + theme.space[0] + Math.max(insets.bottom, theme.space[1]) + theme.space[2];
+  const bottomInset = hasBottomBar ? floatingTabClearance : insets.bottom;
   const contentGap = screenContentGap(theme.space);
 
   const padding = padded
