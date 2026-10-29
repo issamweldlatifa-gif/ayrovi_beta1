@@ -10,6 +10,7 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
+import ts from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-live-fixes-')), 'cache');
@@ -25,7 +26,20 @@ import { validateAyWebsCapturedPage } from '../src/aywebs/webviewCapture';
 import { clearAyWebsResolveCache, clearAyWebsResolveFailureCache } from '../src/aywebs/resolveCache';
 import { resetAyWebsReadGate } from '../src/aywebs/readGate';
 import { resetProbeState } from '../src/scraper/hostCircuit';
-import { captureIsProductCard } from '../apps/mobile/src/features/aywebs/pageKind';
+
+function loadMobilePageKind() {
+  const file = join(__dirname, '..', 'apps', 'mobile', 'src', 'features', 'aywebs', 'pageKind.ts');
+  const source = readFileSync(file, 'utf8');
+  const { outputText } = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    fileName: file,
+  });
+  const loaded = { exports: {} as Record<string, unknown> };
+  new Function('exports', 'module', outputText)(loaded.exports, loaded);
+  return loaded.exports as { captureIsProductCard: (capture: unknown) => boolean };
+}
+
+const { captureIsProductCard } = loadMobilePageKind();
 
 const SESSION_ID = 'live-device-fixes-20261029';
 

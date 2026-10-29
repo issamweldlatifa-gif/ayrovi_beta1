@@ -3,10 +3,11 @@
  * Temu Mobile (`#goods_price`, `rawData`, `<div role="button">`, URL `_x_*`),
  * Amazon Fashion (exclusion bannière `/images/G/`) et SHEIN (exclusion logo PWA « S » + `data-before-crop-src`).
  */
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
+import ts from 'typescript';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-ae-temu-')), 'cache');
@@ -17,12 +18,31 @@ import { createAyWebsContext } from '../src/aywebs/context';
 import { resolveAyWebsProduct } from '../src/aywebs/productResolver';
 import { addAyWebsCartItem } from '../src/aywebs/cart';
 import { AYWEBS_CAPTURE_SCRIPT, AYWEBS_NETWORK_OBSERVER_SCRIPT, buildAyWebsCaptureScript } from '../src/aywebs/captureScript';
-import { AYWEBS_NETWORK_OBSERVER_SCRIPT as MOBILE_NETWORK_OBSERVER_SCRIPT } from '../apps/mobile/src/features/aywebs/networkObserverScript';
 import { validateAyWebsCapturedPage } from '../src/aywebs/webviewCapture';
 import { clearAyWebsResolveCache, clearAyWebsResolveFailureCache } from '../src/aywebs/resolveCache';
 import { resetAyWebsReadGate } from '../src/aywebs/readGate';
 import { resetProbeState } from '../src/scraper/hostCircuit';
-import { captureMatchesPageUrl, isSpaInPageProductSwitch } from '../apps/mobile/src/features/aywebs/webNavigation';
+
+function loadMobileModule<T>(relPath: string): T {
+  const file = join(__dirname, '..', relPath);
+  const source = readFileSync(file, 'utf8');
+  const { outputText } = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    fileName: file,
+  });
+  const loaded = { exports: {} as Record<string, unknown> };
+  new Function('exports', 'module', outputText)(loaded.exports, loaded);
+  return loaded.exports as T;
+}
+
+const { AYWEBS_NETWORK_OBSERVER_SCRIPT: MOBILE_NETWORK_OBSERVER_SCRIPT } = loadMobileModule<{
+  AYWEBS_NETWORK_OBSERVER_SCRIPT: string;
+}>('apps/mobile/src/features/aywebs/networkObserverScript.ts');
+
+const { captureMatchesPageUrl, isSpaInPageProductSwitch } = loadMobileModule<{
+  captureMatchesPageUrl: (capturedUrl: string | undefined | null, currentPageUrl: string | undefined | null) => boolean;
+  isSpaInPageProductSwitch: (previousUrl: string | undefined | null, nextUrl: string | undefined | null) => boolean;
+}>('apps/mobile/src/features/aywebs/webNavigation.ts');
 
 const SESSION_ID = 'ae-temu-luxury-20261029';
 
