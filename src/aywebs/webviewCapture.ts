@@ -30,9 +30,10 @@ import { createHash } from 'node:crypto';
 import type { ScrapedProduct } from '../types';
 import type { AyWebsSourceProduct } from './adapters/contract';
 import { checkPriceText } from '../scraper/priceIntegrity';
-import { detectAyWebsStore } from '../../shared/aywebsStores';
+import { ayWebsComparableHost, detectAyWebsStore } from '../../shared/aywebsStores';
 import { aliexpressItemId } from './adapters/aliexpress';
 import { sheinGoodsId } from './adapters/shein';
+import { temuGoodsId } from './adapters/temu';
 import { ayWebsSameAttribute } from '../../shared/aywebsAttributes';
 import {
   AYWEBS_CAPTURE_LIMITS,
@@ -412,7 +413,8 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
 
 function hostOf(raw: string): string | null {
   try {
-    const clean = new URL(raw).hostname.toLowerCase().replace(/^www\./, '');
+    const clean = ayWebsComparableHost(new URL(raw).hostname);
+    if (!clean) return null;
     /* AliExpress redirige librement entre sous-domaines régionaux/mobiles
        (`www.`, `fr.`, `m.`, `ar.`, `a.aliexpress.com`) pour la même fiche. */
     const aeRoot = /(?:^|\.)(aliexpress\.(?:com|us|ru))$/.exec(clean);
@@ -421,6 +423,23 @@ function hostOf(raw: string): string | null {
   } catch {
     return null;
   }
+}
+
+function sameCaptureHost(hostA: string | null, hostB: string | null): boolean {
+  if (!hostA || !hostB) return false;
+  if (hostA === hostB) return true;
+  /* SHEIN et TEMU redirigent librement entre sous-domaines régionaux et mobiles
+     (`fr.shein.com` <-> `m.shein.com/fr/…` <-> `www.shein.com`, `m.temu.com` <->
+     `www.temu.com`), tout en gardant `requestHost` intact pour le contrôle de devise. */
+  if ((hostA === 'shein.com' || hostA.endsWith('.shein.com'))
+    && (hostB === 'shein.com' || hostB.endsWith('.shein.com'))) {
+    return true;
+  }
+  if ((hostA === 'temu.com' || hostA.endsWith('.temu.com'))
+    && (hostB === 'temu.com' || hostB.endsWith('.temu.com'))) {
+    return true;
+  }
+  return false;
 }
 
 export interface AyWebsCaptureValidation {
@@ -731,12 +750,12 @@ export function validateAyWebsCapturedPage(
   const pageUrl = collapse(payload.url, 600);
   const requestHost = hostOf(requestUrl);
   const pageHost = hostOf(pageUrl);
-  if (!pageHost || !requestHost || pageHost !== requestHost) return rejected('URL_HOST_MISMATCH');
+  if (!pageHost || !requestHost || !sameCaptureHost(pageHost, requestHost)) return rejected('URL_HOST_MISMATCH');
 
   const canonicalUrl = collapse(payload.canonicalUrl, 600);
   if (canonicalUrl) {
     const canonicalHost = hostOf(canonicalUrl);
-    if (!canonicalHost || canonicalHost !== requestHost) return rejected('CANONICAL_HOST_MISMATCH');
+    if (!canonicalHost || !sameCaptureHost(canonicalHost, requestHost)) return rejected('CANONICAL_HOST_MISMATCH');
   }
 
   const capturedAtMs = Date.parse(String(payload.capturedAt || ''));
@@ -885,12 +904,16 @@ export function validateAyWebsCapturedPage(
   let symbolIso = '';
   if (!contradiction && !publishedIso) {
     const store = detectAyWebsStore(requestUrl);
+    let effectivePath = '';
+    try { effectivePath = new URL(pageUrl || requestUrl).pathname.toLowerCase(); } catch { effectivePath = ''; }
+    const sheinMobileNonUsdLocale = store?.id === 'shein' && /^\/(?:ca|au|sg|mx|br)(?:\/|$)/.test(effectivePath);
     if (store) {
       for (const entry of AYWEBS_SYMBOL_CURRENCIES) {
         if (!entry.stores.includes(store.id)) continue;
         if (!entry.pattern.test(currencyTexts)) continue;
         if (entry.hostsOnly && !hostMatchesAny(requestHost, entry.hostsOnly)) continue;
-        if (hostMatchesAny(requestHost, entry.hostsExcluded)) {
+        if (hostMatchesAny(requestHost, entry.hostsExcluded)
+          || (sheinMobileNonUsdLocale && entry.iso === 'USD' && entry.pattern.source === '\\$')) {
           notes.push(`currency_symbol_host_ambiguous:${entry.iso}`);
           continue;
         }
@@ -993,6 +1016,10 @@ export function validateAyWebsCapturedPage(
     try { urlAeId = aliexpressItemId(new URL(pageUrl || requestUrl)); } catch { urlAeId = null; }
     const resolvedAeId = /^\d{6,20}$/.test(rawAeId) ? rawAeId : urlAeId;
     if (resolvedAeId) externalId = `AE-${resolvedAeId}`;
+  } else if (storeForPrice?.id === 'temu') {
+    let urlTemuId: string | null = null;
+    try { urlTemuId = temuGoodsId(new URL(pageUrl || requestUrl)); } catch { urlTemuId = null; }
+    if (urlTemuId) externalId = `TEMU-${urlTemuId}`;
   }
 
   /* Validation serveur de la MATRICE DE VARIANTES universelle (`variantMatrix` + `aliexpress.skus`) :

@@ -4,10 +4,11 @@ import { BaseStoreAdapter } from './base';
 import type { AyWebsPageClassification, AyWebsSourceProduct } from './contract';
 
 /**
- * Motif de fiche produit Amazon : `/dp/`, `/gp/product/`, `/gp/aw/d/`, `/product/` et
- * l'ancien `/exec/obidos/ASIN/`, suivi d'un ASIN de 10 caractères.
+ * Motif de fiche produit Amazon : `/dp/`, `/gp/product/`, `/gp/aw/d/`, `/product/`,
+ * le lien court mobile `/d/<slug>/<ASIN>` ou `/d/<ASIN>`, et l'ancien
+ * `/exec/obidos/ASIN/`, suivi d'un ASIN de 10 caractères.
  */
-const ASIN_PATH = /\/(?:dp|gp\/(?:product|aw\/d)|product|exec\/obidos\/ASIN)\/([A-Z0-9]{10})(?:[/?]|$)/i;
+const ASIN_PATH = /\/(?:dp|gp\/(?:product|aw\/d)|product|exec\/obidos\/ASIN|d(?:\/[^/]+)?)\/([A-Z0-9]{10})(?:[/?]|$)/i;
 
 /**
  * ASIN d'une URL Amazon, ou `null`. Lu sur le CHEMIN seul : le slug (titre du
@@ -34,7 +35,8 @@ export function amazonCanonicalProductUrl(url: string | URL): string | null {
   const asin = amazonAsinFromUrl(url);
   if (!asin) return null;
   const parsed = typeof url === 'string' ? new URL(url) : url;
-  return `https://${parsed.hostname.toLowerCase()}/dp/${asin}`;
+  const canonicalHost = parsed.hostname.toLowerCase().replace(/^(?:m\d*|mobile|wap|touch|smile)\./, 'www.');
+  return `https://${canonicalHost}/dp/${asin}`;
 }
 
 /**

@@ -478,26 +478,52 @@ export function defaultSelectionFromCapture(
       const key = group.attribute.trim().toLowerCase();
       const match = dimensions.find((dimension) => text(dimension.name).toLowerCase() === key);
       const value = match ? text(match.value) : '';
-      if (value && group.values.some((candidate) => candidate.toLowerCase() === value.toLowerCase())) {
-        selection[key] = value;
-      }
+      const canonical = value
+        ? group.values.find((candidate) => candidate.toLowerCase() === value.toLowerCase())
+        : undefined;
+      if (canonical) selection[key] = canonical;
     }
     return selection;
   }
-  /* Boutique catalogue (Zalando, …) : la page publie elle-même la valeur
+  /* Boutique catalogue / SHEIN / AliExpress / mobile : la page publie elle-même la valeur
      affichée de chaque groupe (`variantGroups[].selected`). On ouvre donc la
      feuille SUR la combinaison affichée, comme le client la voit. Sans cela,
      prix et disponibilité de la page ne s'appliquaient à aucune sélection et
      la feuille semblait vide alors que la fiche était complète (23/10/2026). */
-  if (!Array.isArray(capture.variantGroups)) return selection;
-  for (const group of groups) {
-    const key = group.attribute.trim().toLowerCase();
-    const entry = capture.variantGroups.find((candidate) => isRecord(candidate)
-      && text(candidate.name).toLowerCase() === key);
-    if (!entry || !isRecord(entry) || !Array.isArray(entry.selected)) continue;
-    const value = entry.selected.map(text)
-      .find((shown) => shown && group.values.some((candidate) => candidate.toLowerCase() === shown.toLowerCase()));
-    if (value) selection[key] = value;
+  if (Array.isArray(capture.variantGroups)) {
+    for (const group of groups) {
+      const key = group.attribute.trim().toLowerCase();
+      if (selection[key]) continue;
+      const entry = capture.variantGroups.find((candidate) => isRecord(candidate)
+        && text(candidate.name).toLowerCase() === key);
+      if (!entry || !isRecord(entry) || !Array.isArray(entry.selected)) continue;
+      for (const rawShown of entry.selected) {
+        const shown = text(rawShown);
+        if (!shown) continue;
+        const canonical = group.values.find((candidate) => candidate.toLowerCase() === shown.toLowerCase());
+        if (canonical) {
+          selection[key] = canonical;
+          break;
+        }
+      }
+    }
+  }
+  const shein = isRecord(capture.shein) ? capture.shein : null;
+  if (shein) {
+    const sheinColor = text(shein.selectedColor);
+    const sheinSize = text(shein.selectedSize);
+    for (const group of groups) {
+      const key = group.attribute.trim().toLowerCase();
+      if (selection[key]) continue;
+      const wanted = /(color|colour|couleur|farbe|colore|cor|لون)/i.test(key)
+        ? sheinColor
+        : /(size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|age|âge|مقاس)/i.test(key)
+          ? sheinSize
+          : '';
+      if (!wanted) continue;
+      const canonical = group.values.find((candidate) => candidate.toLowerCase() === wanted.toLowerCase());
+      if (canonical) selection[key] = canonical;
+    }
   }
   return selection;
 }

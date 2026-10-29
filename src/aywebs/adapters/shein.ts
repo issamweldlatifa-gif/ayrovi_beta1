@@ -126,16 +126,24 @@ export function sheinGoodsId(url: URL): string | null {
 
 /**
  * URL d'une autre couleur SHEIN (`goods_id`) sur le MÊME hôte que `sourceUrl`
- * (ex. `fr.shein.com`, `m.shein.com`, `www.shein.co.uk`) afin que la relecture
- * WebView conserve l'hôte, la langue et la devise de la session cliente.
+ * (ex. `fr.shein.com`, `m.shein.com/us/...`, `m.shein.com/fr/...`, `www.shein.co.uk`)
+ * afin que la relecture WebView conserve l'hôte mobile, le préfixe de langue/pays
+ * (`/us/`, `/fr/`, `/ar/`…) et la devise de la session cliente.
  */
+const SHEIN_LOCALE_PATH_PREFIX = /^\/([a-z]{2,3}(?:-[a-z]{2})?)\/(?=.+)/i;
+
 export function sheinVariantPageUrl(sourceUrl: string, goodsId: string): string | null {
   const cleanId = String(goodsId || '').trim().replace(/^SHEIN-/i, '');
   if (!/^\d{5,16}$/.test(cleanId)) return null;
   try {
     const parsed = new URL(sourceUrl);
     if (sheinGoodsId(parsed) === cleanId) return null;
-    return `${parsed.protocol}//${parsed.host}/-p-${cleanId}.html`;
+    const localeMatch = parsed.pathname.match(SHEIN_LOCALE_PATH_PREFIX);
+    const seg = localeMatch ? localeMatch[1].toLowerCase() : '';
+    const keepLocalePrefix = seg && !/^(?:p|ark|h5|pdsearch|recommend|user|cart)$/i.test(seg)
+      ? `/${seg}`
+      : '';
+    return `${parsed.protocol}//${parsed.host}${keepLocalePrefix}/-p-${cleanId}.html`;
   } catch {
     return null;
   }

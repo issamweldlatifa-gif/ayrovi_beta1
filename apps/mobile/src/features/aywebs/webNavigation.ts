@@ -32,6 +32,8 @@ const TRACKING_DOCUMENT_PARAMS = new Set([
   'ws_ab_test', '_t', 'aff_fcid', 'aff_fsk', 'aff_platform', 'sk', 'aff_trace_key',
   'terminal_id', 'afsmartredirect', 'sourcetype', 'channel', '_randl_shipto', '_evo_buckets',
   'mallcode', 'imgratio', 'src_module', 'src_identifier', 'src_tab_page_id', 'pagelisttype',
+  '_bg_fs', 'page_kw', 'ici', 'refer_page_el_sn', 'refer_page_id', 'refer_page_name',
+  '_x_sessn_id', '_x_ads_channel', '_x_ads_sub_channel',
 ]);
 
 const SILENT_APP_SCHEMES = /^(?:aliexpress|ae|alipays|tbopen|taobao|tmall|shein|sheinlink|temu|intent|market):/i;
@@ -128,8 +130,8 @@ export function isFatalMainPageLoadError(
   if (!currentPageUrl || !isWebPageUrl(currentPageUrl)) return true;
   if (captureMatchesPageUrl(failingUrl, currentPageUrl)) return true;
   try {
-    const failHost = new URL(failingUrl).hostname.toLowerCase().replace(/^(?:www|m)\./, '');
-    const pageHost = new URL(currentPageUrl).hostname.toLowerCase().replace(/^(?:www|m)\./, '');
+    const failHost = new URL(failingUrl).hostname.toLowerCase().replace(/^(?:www\d*|m\d*|mobile|wap|touch|smile)\./, '');
+    const pageHost = new URL(currentPageUrl).hostname.toLowerCase().replace(/^(?:www\d*|m\d*|mobile|wap|touch|smile)\./, '');
     return failHost === pageHost;
   } catch {
     return false;

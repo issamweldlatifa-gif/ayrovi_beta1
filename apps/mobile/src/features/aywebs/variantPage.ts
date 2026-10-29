@@ -25,10 +25,12 @@ export interface VariantPageInput {
 }
 
 const ASIN_SHAPE = /^(?:asin:)?([A-Z0-9]{10})$/i;
+const AMAZON_URL_ASIN_SHAPE = /(?:\/dp\/|\/gp\/(?:product|aw\/d)\/|\/product\/|\/d\/[^/]+\/)([A-Z0-9]{10})(?=[/?&#]|$)/i;
 const SHEIN_VARIANT_ID_SHAPE = /^(?:shein:|SHEIN-)(\d{5,16})(?::.*)?$/i;
 const SHEIN_HOST_SHAPE = /(?:^|\.)shein\.(?:com|co\.uk|fr|de|es|it|ca|com\.mx|com\.br)$/i;
 const AE_VARIANT_ID_SHAPE = /^(?:ae:|AE-)(\d{5,24})$/i;
 const AE_HOST_SHAPE = /(?:^|\.)aliexpress\.(?:com|us|ru)$/i;
+const MOBILE_HOST_PREFIX = /^(?:www\d*|m\d*|mobile|wap|touch|smile)\./i;
 
 const lower = (value: unknown): string => String(value ?? '').trim().toLowerCase();
 
@@ -52,7 +54,7 @@ function extractAliExpressItemIdFromUrl(rawUrl: string): string | null {
 function normalizeComparableUrl(rawUrl: string): string {
   try {
     const parsed = new URL(rawUrl);
-    return `${parsed.host.toLowerCase().replace(/^www\./, '')}${parsed.pathname.replace(/\/+$/, '').toLowerCase()}`;
+    return `${parsed.host.toLowerCase().replace(MOBILE_HOST_PREFIX, '')}${parsed.pathname.replace(/\/+$/, '').toLowerCase()}`;
   } catch {
     return '';
   }
@@ -108,7 +110,11 @@ export function variantPageUrlFor(input: VariantPageInput): string | null {
     const bestShein = coveredShein[0];
     if (!bestShein) return null;
     const protocol = parsedUrl.protocol === 'http:' ? 'http:' : 'https:';
-    return `${protocol}//${parsedUrl.host}/-p-${bestShein.goodsId}.html`;
+    const localeMatch = /^\/([a-z]{2}(?:-[a-z]{2})?)\//i.exec(parsedUrl.pathname);
+    const localePrefix = localeMatch && localeMatch[1].toLowerCase() !== 'product'
+      ? `/${localeMatch[1].toLowerCase()}`
+      : '';
+    return `${protocol}//${parsedUrl.host}${localePrefix}/-p-${bestShein.goodsId}.html`;
   }
 
   if (input.storeId === 'aliexpress') {
@@ -141,7 +147,7 @@ export function variantPageUrlFor(input: VariantPageInput): string | null {
 
   if (input.storeId !== 'amazon') return null;
 
-  const pageAsin = /\/dp\/([A-Z0-9]{10})/i.exec(input.sourceUrl)?.[1]?.toUpperCase() ?? null;
+  const pageAsin = AMAZON_URL_ASIN_SHAPE.exec(input.sourceUrl)?.[1]?.toUpperCase() ?? null;
 
   /* Nombre de dimensions choisies que cette option couvre, avec la MÊME valeur.
      La page COURANTE est écartée des candidates : la relire ne prouverait rien

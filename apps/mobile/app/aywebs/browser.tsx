@@ -194,12 +194,19 @@ export default function AyWebsBrowserScreen() {
   const currentStoreName = currentPageAnalysis?.storeName || storeName;
   /* Toute interaction tactile du client avec la fiche marchande (clic sur une
      taille ou une couleur dans la SPA SHEIN/Amazon sans changement d'URL)
-     invalide la pré-lecture déjà terminée : l'appui suivant sur « Choisir les
-     options » relira l'état réel de la page, avec le choix et le prix à jour. */
+     invalide immédiatement la pré-lecture terminée OU encore en cours de lecture :
+     l'appui suivant sur « Choisir les options » relira l'état réel de la page. */
   const invalidatePrefetchOnTouch = useCallback(() => {
-    if (prefetch.current?.status === 'ok') {
-      prefetch.current = null;
+    const activePrefetch = prefetch.current;
+    if (!activePrefetch) return;
+    if (prefetchBudget.current) {
+      clearTimeout(prefetchBudget.current);
+      prefetchBudget.current = null;
     }
+    if (activePrefetch.status === 'reading') {
+      activePrefetch.controller.abort();
+    }
+    prefetch.current = null;
   }, []);
   const cartUnits = useMemo(() => (storeCart.data?.items ?? [])
     .filter((item) => item.storeId === currentStoreId)
@@ -686,7 +693,11 @@ export default function AyWebsBrowserScreen() {
       ) : null}
 
       {pageOk ? (
-      <View style={styles.web} onTouchEnd={invalidatePrefetchOnTouch}>
+      <View
+        style={styles.web}
+        onTouchStart={invalidatePrefetchOnTouch}
+        onTouchEnd={invalidatePrefetchOnTouch}
+      >
         <WebView
           ref={webRef}
           source={{ uri: loadUrl }}

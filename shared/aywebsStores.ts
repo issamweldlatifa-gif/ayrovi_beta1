@@ -263,15 +263,15 @@ const CAPTURE_WAVE_1: readonly CaptureStoreRow[] = [
   /* Marchés anglo-saxons — motifs d'URL publics et stables. */
   { id: 'walmart', displayName: 'Walmart', country: 'US', currency: 'USD', homeUrl: 'https://www.walmart.com', categories: ['marketplace'], productUrlPattern: '^/ip/(?:[^/]+/)?\\d+' },
   { id: 'target', displayName: 'Target', country: 'US', currency: 'USD', homeUrl: 'https://www.target.com', categories: ['marketplace'], productUrlPattern: '^/p/(?:[^/]+/)?-/A-\\d+' },
-  { id: 'etsy', displayName: 'Etsy', country: 'US', currency: 'USD', homeUrl: 'https://www.etsy.com', categories: ['marketplace', 'arts'], productUrlPattern: '^/listing/\\d+' },
+  { id: 'etsy', displayName: 'Etsy', country: 'US', currency: 'USD', homeUrl: 'https://www.etsy.com', categories: ['marketplace', 'arts'], productUrlPattern: '^/(?:[a-z]{2}(?:-[a-z]{2})?/)?listing/\\d+' },
   { id: 'best-buy', displayName: 'Best Buy', country: 'US', currency: 'USD', homeUrl: 'https://www.bestbuy.com', categories: ['electronics'], productUrlPattern: '^/site/[^?]*/\\d+\\.p' },
   { id: 'newegg', displayName: 'Newegg', country: 'US', currency: 'USD', homeUrl: 'https://www.newegg.com', categories: ['electronics'], productUrlPattern: '^/p/[A-Za-z0-9-]+' },
   /* Allemagne / Europe — même règle : motif vérifié ou rien. */
   { id: 'otto', displayName: 'OTTO', country: 'DE', currency: 'EUR', homeUrl: 'https://www.otto.de', categories: ['marketplace'], productUrlPattern: '^/p/[^/]+-\\d+' },
   { id: 'kaufland', displayName: 'Kaufland', country: 'DE', currency: 'EUR', homeUrl: 'https://www.kaufland.de', categories: ['marketplace'], productUrlPattern: '^/product/\\d+' },
-  { id: 'zalando', displayName: 'Zalando', country: 'DE', currency: 'EUR', homeUrl: 'https://www.zalando.com', categories: ['fashion'], productUrlPattern: '^/[^/]*-[A-Z0-9]{6,}(?:-[A-Z0-9]{2,})?\\.html$', domains: ['zalando.de', 'zalando.fr', 'zalando.it', 'zalando.es', 'zalando.nl', 'zalando.be', 'zalando.at'], adapter: 'zalando' },
+  { id: 'zalando', displayName: 'Zalando', country: 'DE', currency: 'EUR', homeUrl: 'https://www.zalando.com', categories: ['fashion'], productUrlPattern: '^/(?:[a-z]{2}/)?[^/]*-[A-Z0-9]{6,}(?:-[A-Z0-9]{2,})?\\.html$', domains: ['zalando.de', 'zalando.fr', 'zalando.it', 'zalando.es', 'zalando.nl', 'zalando.be', 'zalando.at'], adapter: 'zalando' },
   { id: 'mediamarkt', displayName: 'MediaMarkt', country: 'DE', currency: 'EUR', homeUrl: 'https://www.mediamarkt.com', categories: ['electronics'], domains: ['mediamarkt.de', 'mediamarkt.at', 'mediamarkt.es', 'mediamarkt.it', 'mediamarkt.nl', 'mediamarkt.be', 'mediamarkt.pt', 'mediamarkt.fr'] },
-  { id: 'asos', displayName: 'ASOS', country: 'GB', currency: 'GBP', homeUrl: 'https://www.asos.com', categories: ['fashion'], productUrlPattern: '^/[^/]*/prd/\\d+' },
+  { id: 'asos', displayName: 'ASOS', country: 'GB', currency: 'GBP', homeUrl: 'https://www.asos.com', categories: ['fashion'], productUrlPattern: '^/(?:[a-z]{2}(?:-[a-z]{2})?/)?(?:[^/]+/)?[^/]+/prd/\\d+' },
   { id: 'h-m', displayName: 'H&M', country: 'SE', currency: 'EUR', homeUrl: 'https://www.hm.com', categories: ['fashion', 'kids'], productUrlPattern: '^/[a-z]{2}_[a-z]{2}/productpage\\.\\d+\\.html' },
   /* Deux nouveaux lecteurs versionnés séparément. Sephora est limité au domaine
      US en USD ; Primark reste région/currency-neutral tant que la page n'a pas
@@ -494,11 +494,24 @@ export function ayWebsStoreCan(store: AyWebsStoreDefinition | null, capability: 
   return Boolean(store?.enabled) && Boolean(store?.capabilities.includes(capability));
 }
 
+/**
+ * Normalise un nom d'hôte en retirant uniquement les préfixes techniques de
+ * surface web/mobile (`www.`, `www2.`, `m.`, `m2.`, `mobile.`, `wap.`, `touch.`,
+ * `smile.`), SANS jamais fusionner deux domaines pays ou devises distincts
+ * (`amazon.fr` ≠ `amazon.com`, `ca.shein.com` ≠ `shein.com`).
+ */
+export function ayWebsComparableHost(hostname: unknown): string {
+  return String(hostname || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\.+$/, '')
+    .replace(/^(?:www\d*|m\d*|mobile|wap|touch|smile)\./, '');
+}
+
 /** Domaine registrable extrait d'une URL (preuve, §28) — sans sous-domaine applicatif. */
 export function ayWebsSourceDomain(rawUrl: unknown): string {
   try {
-    const hostname = new URL(String(rawUrl)).hostname.toLowerCase().replace(/^www\./, '');
-    return hostname;
+    return ayWebsComparableHost(new URL(String(rawUrl)).hostname);
   } catch {
     return '';
   }
