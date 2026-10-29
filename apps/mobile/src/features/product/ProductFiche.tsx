@@ -20,7 +20,7 @@
  *  • aucun libellé écrit en dur : le nom des blocs vient du CRM quand il en
  *    donne un (`ficheLabels`), sinon de la traduction de l'application.
  */
-import { type ComponentProps, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ComponentProps, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   FlatList,
@@ -35,13 +35,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
-import { AppText } from '@/design/ui';
+import { AppText, Button } from '@/design/ui';
+import { AppSheet } from '@/design/sheet/AppSheet';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
-import { FICHE_COLORS } from '@/design/tokens.mobile';
+import { FICHE_COLORS, RADIUS } from '@/design/tokens.mobile';
 import { FICHE, type ColorTile, type GalleryItem, type SizeRow } from './fiche';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -52,7 +54,14 @@ const ICON_BOX = FICHE.rowIcon;
 /* ── 1. En-tête : transparent sur la photo, plein dès qu'elle est sortie ───── */
 
 export function FicheHeader({
-  title, onBack, onCart, scrollY, topInset,
+  title,
+  onBack,
+  onCart,
+  scrollY,
+  topInset,
+  cartCount = 0,
+  justAdded = false,
+  reservationCountdown = null,
 }: {
   title: string;
   onBack: () => void;
@@ -60,15 +69,38 @@ export function FicheHeader({
   /** Position de défilement : le fond s'opacifie sans re-render de la page. */
   scrollY: Animated.Value;
   topInset: number;
+  /** Nombre total d'articles dans le panier pour le badge violet. */
+  cartCount?: number;
+  /** Déclenche l'extension verte « Article ajouté » pendant ~2,4 s après l'ajout. */
+  justAdded?: boolean;
+  /** Compte à rebours `MM:SS` de la réservation de 20 minutes. */
+  reservationCountdown?: string | null;
 }) {
   const theme = useTheme();
   const t = useT();
+  const expandAnim = useRef(new Animated.Value(justAdded ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(expandAnim, {
+      toValue: justAdded ? 1 : 0,
+      useNativeDriver: true,
+      ...theme.spring.firm,
+    }).start();
+  }, [expandAnim, justAdded, theme.spring.firm]);
 
   const solid = scrollY.interpolate({
     inputRange: [FICHE.imageHeight - FICHE.headerHeight - 40, FICHE.imageHeight - FICHE.headerHeight],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   });
+
+  const pillShiftX = expandAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [theme.isRTL ? -6 : 6, 0],
+  });
+
+  const showPill = justAdded || cartCount > 0;
+  const badgeText = cartCount > 99 ? '99+' : String(Math.max(1, cartCount));
 
   return (
     <View pointerEvents="box-none" style={[styles.header, { paddingTop: topInset, height: FICHE.headerHeight + topInset }]}>
@@ -84,7 +116,7 @@ export function FicheHeader({
           },
         ]}
       />
-      <View style={styles.headerRow}>
+      <View style={[styles.headerRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('common.back')}
@@ -102,20 +134,73 @@ export function FicheHeader({
 
         <Animated.Text
           numberOfLines={1}
-          style={[styles.headerTitle, { color: theme.colors.ink, opacity: solid, fontFamily: theme.font('regular') }]}
+          style={[styles.headerTitle, { color: theme.colors.ink, opacity: solid, fontFamily: theme.font('semibold') }]}
         >
           {title}
         </Animated.Text>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('tabs.cart')}
-          onPress={onCart}
-          hitSlop={8}
-          style={styles.headerButton}
-        >
-          <Ionicons name="bag-handle-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-        </Pressable>
+        {showPill ? (
+          <Animated.View style={{ transform: [{ translateX: pillShiftX }] }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('tabs.cart')}
+              onPress={onCart}
+              hitSlop={8}
+              testID="product-header-cart-pill"
+              style={({ pressed }) => [
+                styles.cartPill,
+                theme.elevation.low,
+                {
+                  flexDirection: rowDirectionFor(theme.isRTL),
+                  backgroundColor: justAdded ? FICHE_COLORS.success : FICHE_COLORS.pillSurface,
+                  borderColor: justAdded ? FICHE_COLORS.success : FICHE_COLORS.hair,
+                  opacity: pressed ? theme.opacity.subtle : 1,
+                },
+              ]}
+            >
+              {justAdded ? (
+                <AppText variant="label" weight="bold" color={FICHE_COLORS.onAccent} numberOfLines={1}>
+                  {t('product.addedPill')}
+                </AppText>
+              ) : reservationCountdown ? (
+                <AppText variant="label" weight="semibold" color={FICHE_COLORS.ink} numberOfLines={1}>
+                  {reservationCountdown}
+                </AppText>
+              ) : null}
+              <View style={styles.cartPillBagWrap}>
+                <Ionicons
+                  name="bag-outline"
+                  size={theme.iconSize.sm}
+                  color={justAdded ? FICHE_COLORS.onAccent : FICHE_COLORS.ink}
+                  accessibilityElementsHidden
+                />
+                <View
+                  testID="product-header-cart-badge"
+                  style={[
+                    styles.cartPillBadge,
+                    { backgroundColor: FICHE_COLORS.accent },
+                    theme.isRTL ? styles.cartPillBadgeRTL : styles.cartPillBadgeLTR,
+                  ]}
+                >
+                  <AppText variant="caption" weight="bold" color={FICHE_COLORS.onAccent}>
+                    {badgeText}
+                  </AppText>
+                </View>
+              </View>
+            </Pressable>
+          </Animated.View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('tabs.cart')}
+            onPress={onCart}
+            hitSlop={8}
+            testID="product-header-cart"
+            style={styles.headerButton}
+          >
+            <Ionicons name="bag-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -555,14 +640,25 @@ export function SizeSheet({
         />
         <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
           <View style={[styles.sheetGrab, { backgroundColor: FICHE_COLORS.sheetGrab }]} />
-          <AppText style={[styles.sheetTitle, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
-            {t('product.sizeSheetTitle')}
-          </AppText>
+          <View style={[styles.sheetHeaderRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+            <AppText style={[styles.sheetTitle, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>
+              {t('product.sizeSheetTitle')}
+            </AppText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('common.close')}
+              onPress={onClose}
+              hitSlop={8}
+              style={styles.headerButton}
+            >
+              <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+            </Pressable>
+          </View>
 
           {/* Recommandation : la dalle lavande de la maquette. */}
           <View style={[styles.sheetPanel, { backgroundColor: FICHE_COLORS.recommendation }]}>
             <View style={styles.sheetPanelIcon}>
-              <Ionicons name="resize-outline" size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
+              <Ionicons name="pricetag-outline" size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
             </View>
             <AppText style={[styles.sheetPanelText, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
               {t('product.sizeRecommendation')}
@@ -593,18 +689,23 @@ export function SizeSheet({
                     <AppText
                       style={[styles.sheetRowValue, {
                         color,
-                        fontFamily: theme.font('regular'),
+                        fontFamily: active ? theme.font('bold') : theme.font('regular'),
                         textDecorationLine: row.available ? 'none' : 'line-through',
                         textDecorationColor: FICHE_COLORS.struck,
                       }]}
                     >
                       {row.value}
                     </AppText>
-                    {row.state === 'last' ? (
-                      <AppText style={[styles.sheetRowState, { color: FICHE_COLORS.accent, fontFamily: theme.font('regular') }]}>
-                        {t('product.sizeLast')}
-                      </AppText>
-                    ) : null}
+                    <View style={[styles.sheetRowEnd, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                      {row.state === 'last' ? (
+                        <AppText style={[styles.sheetRowState, { color: FICHE_COLORS.accent, fontFamily: theme.font('regular') }]}>
+                          {t('product.sizeLast')}
+                        </AppText>
+                      ) : null}
+                      {active ? (
+                        <Ionicons name="checkmark" size={theme.iconSize.sm} color={FICHE_COLORS.accent} accessibilityElementsHidden />
+                      ) : null}
+                    </View>
                   </Pressable>
                 );
               })}
@@ -615,6 +716,64 @@ export function SizeSheet({
         </View>
       </View>
     </Modal>
+  );
+}
+
+/* ── 9 bis. Tiroir « Panier réservé » (compte à rebours 20 minutes) ─────────── */
+
+export function CartReservedSheet({
+  visible,
+  countdown,
+  onClose,
+  onViewCart,
+}: {
+  visible: boolean;
+  countdown: string;
+  onClose: () => void;
+  onViewCart: () => void;
+}) {
+  const theme = useTheme();
+  const t = useT();
+
+  return (
+    <AppSheet
+      open={visible}
+      onDismiss={onClose}
+      presentation="bottom"
+      header={(
+        <View style={[styles.reservedHeader, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          <AppText variant="lead" weight="bold">{t('product.reservedTitle')}</AppText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            onPress={onClose}
+            hitSlop={8}
+            style={styles.headerButton}
+          >
+            <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+          </Pressable>
+        </View>
+      )}
+    >
+      <View style={styles.reservedBody} testID="product-reserved-sheet">
+        <View style={[styles.reservedTimerRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          <Ionicons name="bag-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+          <AppText variant="lead" weight="bold" color={FICHE_COLORS.accent}>
+            {countdown}
+          </AppText>
+        </View>
+        <AppText variant="body" align="center" color={theme.colors.ink}>
+          {t('product.reservedBody')}
+        </AppText>
+        <Button
+          label={t('product.viewCart')}
+          tone="solid"
+          block
+          onPress={onViewCart}
+          testID="product-reserved-view-cart"
+        />
+      </View>
+    </AppSheet>
   );
 }
 
@@ -716,9 +875,31 @@ const styles = StyleSheet.create({
   header: { position: 'absolute', top: 0, start: 0, end: 0 },
   /* La couche épinglée : la photo ne bouge pas, la feuille glisse dessus. */
   pinnedPhoto: { position: 'absolute', top: 0, start: 0, end: 0, height: FICHE.imageHeight },
-  headerRow: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 2 },
+  headerRow: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 4 },
   headerButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { flex: 1, textAlign: 'center', fontSize: FICHE.headerTitle },
+  cartPill: {
+    height: 36,
+    borderRadius: RADIUS.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  cartPillBagWrap: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
+  cartPillBadge: {
+    position: 'absolute',
+    top: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cartPillBadgeLTR: { right: -6 },
+  cartPillBadgeRTL: { left: -6 },
 
   photo: { height: FICHE.imageHeight },
   photoEmpty: { alignItems: 'center', justifyContent: 'center' },
@@ -803,9 +984,16 @@ const styles = StyleSheet.create({
     alignSelf: 'center', width: FICHE.grabWidth, height: FICHE.grabHeight,
     borderRadius: FICHE.grabHeight / 2, marginTop: FICHE.grabTop,
   },
+  sheetHeaderRow: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingStart: FICHE.gutter,
+    paddingEnd: 8,
+    marginTop: 8,
+  },
   sheetTitle: {
+    flex: 1,
     fontSize: FICHE.sheetTitle, lineHeight: FICHE.sheetTitleLine,
-    paddingHorizontal: FICHE.gutter, marginTop: FICHE.sheetTitleTop,
   },
   sheetPanel: {
     marginHorizontal: FICHE.panelGutter,
@@ -830,17 +1018,34 @@ const styles = StyleSheet.create({
   sheetRows: { paddingTop: FICHE.rowsTop },
   sheetRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     height: FICHE.sizeRowHeight,
     paddingStart: FICHE.rowStateEnd,
     paddingEnd: FICHE.rowStateEnd,
-    paddingTop: 2,
     borderBottomWidth: FICHE.hairline,
   },
+  sheetRowEnd: { alignItems: 'center', gap: 8 },
   sheetRowValue: { fontSize: FICHE.rowSize },
-  sheetRowState: { fontSize: FICHE.rowState, marginTop: FICHE.rowStateTop },
+  sheetRowState: { fontSize: FICHE.rowState },
   sheetEmpty: { fontSize: FICHE.panelText, paddingHorizontal: FICHE.gutter, marginTop: FICHE.panelTop },
+  reservedHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingStart: 16,
+    paddingEnd: 8,
+  },
+  reservedBody: {
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 16,
+  },
+  reservedTimerRow: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
 
   viewer: { flex: 1 },
   viewerStage: { flex: 1 },

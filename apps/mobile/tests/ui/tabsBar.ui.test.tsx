@@ -1,9 +1,9 @@
 /**
- * Barre de navigation principale (style Zalando) :
- * - Coins arrondis réduits (`theme.radius.md` = 12pt) et haute transparence (`TAB_BAR_GLASS`, alpha 0.58)
- * - Zéro élévation Android (`elevation: 0`) pour supprimer l'ombre rectangulaire interne
- * - Icônes vectorielles officielles intégrées (`TabHomeIcon`, `TabLensIcon`, `TabSonimIcon`, `TabProfileIcon`)
- *   de dimensions strictement égales (`24 × 24` pt) + médaillon central `AYWEBs` `24 × 24` sans fond gris
+ * Barre de navigation principale — correction officielle (29/10/2026) :
+ * - Surface pleine opaque (`TAB_BAR_SURFACE`), zéro translucidité
+ * - Posée bord à bord tout en bas de l'écran (`bottom: 0`, aucun espace sous la barre)
+ * - 5 icônes vectorielles à trait fin de la même famille (`TabHomeIcon`, `TabLensIcon`,
+ *   `TabAyWebsIcon` patte violette `#571EF6`, `TabSonimIcon`, `TabProfileIcon`) `24 × 24` pt
  */
 import React from 'react';
 import { render } from '@testing-library/react-native';
@@ -12,13 +12,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import TabsLayout from '../../app/(tabs)/_layout';
 import {
+  TabAyWebsIcon,
   TabHomeIcon,
   TabLensIcon,
   TabProfileIcon,
   TabSonimIcon,
 } from '@/design/TabNavIcons';
 import { ThemeProvider } from '@/design/theme';
-import { TAB_BAR_GLASS } from '@/design/tokens.mobile';
+import { AYWEBS_WORDMARK_TINT, TAB_BAR_SURFACE } from '@/design/tokens.mobile';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
 
@@ -37,11 +38,9 @@ jest.mock('expo-router', () => {
   }) {
     mockCapturedScreenOptions = screenOptions;
     mockCapturedScreens.length = 0;
-    const bgRenderer = screenOptions?.tabBarBackground as (() => React.ReactNode) | undefined;
     return ReactActual.createElement(
       RNView,
       { testID: 'mock-tabs-root' },
-      bgRenderer ? bgRenderer() : null,
       children,
     );
   }
@@ -87,27 +86,19 @@ function renderTabsBar() {
   );
 }
 
-describe('TabsLayout — barre flottante transparente style Zalando & icônes vectorielles égales', () => {
-  it('applique un rayon réduit (12pt), une transparence élevée sans élévation Android et 5 icônes 24×24 sans fond gris', () => {
+describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille d’icônes unifiée', () => {
+  it('applique une surface pleine opaque collée tout en bas (zéro espace dessous) et 5 icônes 24×24 de la même famille', () => {
     const tree = renderTabsBar();
     expect(mockCapturedScreenOptions).not.toBeNull();
 
     const tabBarStyle = mockCapturedScreenOptions?.tabBarStyle as Record<string, unknown>;
-    expect(tabBarStyle.position).toBe('absolute');
-    expect(tabBarStyle.borderRadius).toBe(12);
+    expect(tabBarStyle.position).toBeUndefined();
+    expect(tabBarStyle.backgroundColor).toBe(TAB_BAR_SURFACE.light.background);
+    expect(tabBarStyle.borderTopColor).toBe(TAB_BAR_SURFACE.light.border);
+    expect(tabBarStyle.borderTopWidth).toBe(StyleSheet.hairlineWidth);
     expect(tabBarStyle.elevation).toBe(0);
-    expect(tabBarStyle.backgroundColor).toBe('transparent');
-    expect(tabBarStyle.paddingBottom).toBe(0);
+    expect(tabBarStyle.paddingBottom).toBe(16);
 
-    const bgRenderer = mockCapturedScreenOptions?.tabBarBackground as () => React.ReactElement<{
-      style: import('react-native').StyleProp<import('react-native').ViewStyle>;
-    }>;
-    const bgElement = bgRenderer();
-    const flatBg = StyleSheet.flatten(bgElement.props.style);
-    expect(flatBg.backgroundColor).toBe(TAB_BAR_GLASS.light.background);
-    expect(flatBg.borderRadius).toBe(12);
-
-    // Ordre des onglets et tailles d'emplacements 24×24 sur les 5 onglets visibles
     expect(mockCapturedScreens.map((s) => s.name)).toEqual([
       'index',
       'lens',
@@ -123,25 +114,39 @@ describe('TabsLayout — barre flottante transparente style Zalando & icônes ve
       expect(iconSlot.height).toBe(24);
     }
 
-    // L'icône centrale AYWEBs ne peint aucune plaque grise derrière le cercle violet
+    const aywebsEntry = mockCapturedScreens.find((s) => s.name === 'aywebs');
+    expect(aywebsEntry?.options.tabBarShowLabel).toBe(false);
+    const aywebsIconFn = aywebsEntry?.options.tabBarIcon as (p: {
+      color: string;
+      focused: boolean;
+      size: number;
+    }) => React.ReactElement<{ color?: string }>;
+    const aywebsIconEl = aywebsIconFn({ color: '#0A0A0A', focused: false, size: 24 });
+    expect(aywebsIconEl.props.color).toBe(AYWEBS_WORDMARK_TINT.light);
+
     const json = JSON.stringify(tree.toJSON());
     expect(json).not.toContain('#E5E5E5');
   });
 
-  it('rend les 4 icônes vectorielles intégrées sur une boîte 24×24 identique', () => {
+  it('rend les 5 icônes vectorielles à trait fin sur une boîte 24×24 identique', () => {
     const { toJSON } = render(
-      <View>
-        <TabHomeIcon color="#0A0A0A" size={24} />
-        <TabLensIcon color="#0A0A0A" size={24} />
-        <TabSonimIcon color="#0A0A0A" size={24} focused />
-        <TabProfileIcon color="#0A0A0A" size={24} />
-      </View>,
+      <PrefsProvider>
+        <ThemeProvider>
+          <View>
+            <TabHomeIcon color="#0A0A0A" size={24} />
+            <TabLensIcon color="#0A0A0A" size={24} />
+            <TabAyWebsIcon color={AYWEBS_WORDMARK_TINT.light} size={24} />
+            <TabSonimIcon color="#0A0A0A" size={24} focused />
+            <TabProfileIcon color="#0A0A0A" size={24} />
+          </View>
+        </ThemeProvider>
+      </PrefsProvider>,
     );
-    const root = toJSON() as { children?: Array<{ props?: Record<string, unknown> }> };
-    expect(root.children).toHaveLength(4);
-    for (const svgNode of root.children ?? []) {
-      expect(svgNode.props?.width).toBe(24);
-      expect(svgNode.props?.height).toBe(24);
+    const root = toJSON() as { children?: Array<{ props?: { style?: { width?: number; height?: number } } }> };
+    expect(root.children).toHaveLength(5);
+    for (const slot of root.children ?? []) {
+      expect(slot.props?.style?.width).toBe(24);
+      expect(slot.props?.style?.height).toBe(24);
     }
   });
 });

@@ -34,13 +34,15 @@ import { SubScreen } from '@/design/subScreen';
 import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
-import { addCatalogToCart } from '@/api/cart';
+import { addCatalogToCart, fetchAyroviCart } from '@/api/cart';
 import { isApiError } from '@/api/errors';
 import { fetchCommercePolicy } from '@/api/checkout';
 import { fetchCatalogProduct, fetchCatalogProducts, normalizeStockStatus } from '@/api/catalog';
+import { touchCartReservation, useCartReservation } from '@/features/shopping/cartReservation';
 import { variantChoiceState } from '@/features/shopping/variantChoice';
 import {
   BuyBar,
+  CartReservedSheet,
   ChoiceRow,
   ColorStrip,
   FicheHeader,
@@ -97,9 +99,44 @@ export default function ProductScreen() {
   const [photo, setPhoto] = useState(0);
   const [viewer, setViewer] = useState<number | null>(null);
   const [sizeSheet, setSizeSheet] = useState(false);
+  const [pendingAddOnSize, setPendingAddOnSize] = useState(false);
+  const [reservedSheetOpen, setReservedSheetOpen] = useState(false);
+  const [justAddedAt, setJustAddedAt] = useState(0);
+  const [addedUnits, setAddedUnits] = useState<number | null>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => { setSize(''); setColor(''); setPhoto(0); }, [id]);
+  useEffect(() => {
+    setSize('');
+    setColor('');
+    setPhoto(0);
+    setPendingAddOnSize(false);
+  }, [id]);
+
+  useEffect(() => {
+    if (!justAddedAt) return undefined;
+    const timer = setTimeout(() => setJustAddedAt(0), 2400);
+    return () => clearTimeout(timer);
+  }, [justAddedAt]);
+
+  const cartSummary = useQuery({
+    queryKey: ['cart', 'ayrovi', sessionId],
+    enabled: Boolean(sessionId) && typeof fetchAyroviCart === 'function',
+    queryFn: ({ signal }) => fetchAyroviCart({ sessionId, signal }),
+    staleTime: 15_000,
+    retry: false,
+  });
+
+  const liveCartUnits = cartSummary.data ? cartSummary.data.units : (addedUnits ?? 0);
+  const effectiveCartUnits = addedUnits != null ? Math.max(addedUnits, liveCartUnits) : liveCartUnits;
+  const hasCartItems = effectiveCartUnits > 0;
+
+  useEffect(() => {
+    if (hasCartItems) {
+      touchCartReservation();
+    }
+  }, [hasCartItems]);
+
+  const reservation = useCartReservation(effectiveCartUnits);
 
   const products = useQuery({
     queryKey: ['catalog', 'products', 'all'],
@@ -157,10 +194,24 @@ export default function ProductScreen() {
       requestedSize: selection.size || undefined,
       requestedColor: selection.color || undefined,
     }),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      const nextCount = typeof result?.totalItemsCount === 'number' && result.totalItemsCount > 0
+        ? result.totalItemsCount
+        : effectiveCartUnits + 1;
+      setAddedUnits(nextCount);
+      touchCartReservation();
+      setJustAddedAt(Date.now());
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
   });
+
+  const handleHeaderCartPress = useCallback(() => {
+    if (effectiveCartUnits > 0 && reservation.active) {
+      setReservedSheetOpen(true);
+      return;
+    }
+    router.push('/cart');
+  }, [effectiveCartUnits, reservation.active]);
 
   if (!product && products.isPending && byId.isPending) {
     return (
@@ -217,8 +268,9 @@ export default function ProductScreen() {
     || sheet?.stock.status === 'OUT_OF_STOCK';
   /** الخادم يحسم `purchasable` (سعر + حالة + مخزون)؛ بلا ورقة، القاعدة القديمة. */
   const purchasable = sheet ? sheet.purchasable : product.finalPrice > 0 && !outOfStock;
-  /** واختيار ناقص = طلب ناقص: الزر ما يخدمش حتى يكمل الاختيار. */
-  const canOrder = purchasable && choice.ready;
+  /** إذا فمّة مقاسات وما اختارش بعد، الضغط يفتح ورقة المقاسات مباشرة (كيما Privé / Zalando). */
+  const needsSizePickFirst = chooseSize && !chosenSize;
+  const canOrder = purchasable && (needsSizePickFirst || choice.ready);
   const hasPrice = product.finalPrice > 0;
   const priceLabel = hasPrice ? `${formatMoney(product.finalPrice)}` : '';
 
@@ -282,11 +334,11 @@ export default function ProductScreen() {
         <View style={styles.rule} />
         <Hairline />
         <ChoiceRow
-          icon="resize-outline"
+          icon="pricetag-outline"
           label={sizeLabel}
           value={onlySize || chosenSize || undefined}
           chevron={chooseSize}
-          onPress={chooseSize ? () => setSizeSheet(true) : undefined}
+          onPress={chooseSize ? () => { setPendingAddOnSize(false); setSizeSheet(true); } : undefined}
           testID="product-size-row"
         />
         <GrayBand />
@@ -339,18 +391,28 @@ export default function ProductScreen() {
       <FicheHeader
         title={product.name}
         onBack={() => goBack('/')}
-        onCart={() => router.push('/cart')}
+        onCart={handleHeaderCartPress}
         scrollY={scrollY}
         topInset={insets.top}
+        cartCount={effectiveCartUnits}
+        justAdded={justAddedAt > 0}
+        reservationCountdown={reservation.active ? reservation.countdown : null}
       />
 
       {purchasable && hasPrice ? (
         <BuyBar
           price={priceLabel}
-          label={addToCart.isSuccess ? t('catalog.added') : t('catalog.addToCart')}
+          label={justAddedAt > 0 ? t('catalog.added') : t('catalog.addToCart')}
           busy={addToCart.isPending}
-          disabled={addToCart.isSuccess || !sessionId || !canOrder}
-          onPress={() => addToCart.mutate({ size: chosenSize, color: chosenColor })}
+          disabled={!sessionId || !canOrder}
+          onPress={() => {
+            if (needsSizePickFirst) {
+              setPendingAddOnSize(true);
+              setSizeSheet(true);
+              return;
+            }
+            addToCart.mutate({ size: chosenSize, color: chosenColor });
+          }}
           error={addToCart.isError
             ? (isApiError(addToCart.error) && addToCart.error.code ? addToCart.error.code : t('catalog.retry'))
             : null}
@@ -361,10 +423,29 @@ export default function ProductScreen() {
       <GalleryViewer items={items} index={viewer} onClose={() => setViewer(null)} />
       <SizeSheet
         visible={sizeSheet}
-        onClose={() => setSizeSheet(false)}
+        onClose={() => {
+          setPendingAddOnSize(false);
+          setSizeSheet(false);
+        }}
         rows={rows}
         selected={chosenSize}
-        onSelect={(value) => { setSize(value); setSizeSheet(false); }}
+        onSelect={(value) => {
+          setSize(value);
+          setSizeSheet(false);
+          if (pendingAddOnSize) {
+            setPendingAddOnSize(false);
+            addToCart.mutate({ size: value, color: chosenColor });
+          }
+        }}
+      />
+      <CartReservedSheet
+        visible={reservedSheetOpen}
+        countdown={reservation.countdown}
+        onClose={() => setReservedSheetOpen(false)}
+        onViewCart={() => {
+          setReservedSheetOpen(false);
+          router.push('/cart');
+        }}
       />
     </View>
   );

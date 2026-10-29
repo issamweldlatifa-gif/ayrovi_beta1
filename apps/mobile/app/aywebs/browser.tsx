@@ -638,7 +638,7 @@ export default function AyWebsBrowserScreen() {
           />
         </Pressable>
         <View style={styles.titleBox}>
-          <AppText variant="title" numberOfLines={1}>{storeName || t('aywebs.browserTitle')}</AppText>
+          <AppText variant="lead" weight="semibold" numberOfLines={1}>{storeName || t('aywebs.browserTitle')}</AppText>
         </View>
         <Pressable
           accessibilityRole="button"
@@ -648,7 +648,7 @@ export default function AyWebsBrowserScreen() {
           style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center', alignItems: 'center' }}
         >
           <View style={styles.cartIconWrap}>
-            <Ionicons name="cart-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+            <Ionicons name="bag-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
             {cartUnits > 0 ? (
               <View
                 testID="aywebs-store-header-cart-count"

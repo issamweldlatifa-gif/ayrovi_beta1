@@ -41,6 +41,8 @@ export const CHROME = {
   header: 64,
   tabBar: 56,
   tabStrip: 40,
+  /** Hauteur compacte et élégante des boutons d'action (inspirée Privé / Zalando). */
+  button: 40,
 } as const;
 
 /* ── Espacements manquants (§24.2) ────────────────────────────────────────── */
@@ -197,7 +199,11 @@ export const FICHE_COLORS = {
   recommendation: mix(BRAND.white, BRAND.violet, 0.07),
   /** Violet de la maquette : accent des libellés d'état et du soulignement de vignette. */
   accent: BRAND.violet,
-  /** Vert « Livraison rapide » (#008735), mesuré sur la maquette. */
+  /** Texte blanc lisible posé sur les pastilles `accent` ou `success` de la fiche. */
+  onAccent: BRAND.white,
+  /** Surface blanche fixe de la pastille compte à rebours posée sur la photo. */
+  pillSurface: BRAND.white,
+  /** Vert « Livraison rapide » et pastille « Article ajouté » (#008735), mesuré sur la maquette. */
   success: '#008735',
   /** Filet gris (#E8E8E8) : séparateurs fins, bandes, lignes d'accordéon. */
   hair: '#E8E8E8',
@@ -231,18 +237,17 @@ export const AYWEBS_WORDMARK_TINT = {
 } as const;
 
 /**
- * Barre d'onglets flottante à coins arrondis compacts (inspiration Zalando) :
- * verre translucide haute clarté + filet discret dérivés des couleurs de marque,
- * sans élévation Android pour éviter tout cône d'ombre interne dans le verre.
+ * Barre d'onglets principale pleine largeur, opaque et posée bord à bord en bas
+ * de l'écran (aucune transparence, aucun écart sous la barre).
  */
-export const TAB_BAR_GLASS = {
+export const TAB_BAR_SURFACE = {
   light: {
-    background: alpha(BRAND.white, 0.58),
-    border: alpha(BRAND.black, 0.08),
+    background: BRAND.white,
+    border: NEUTRALS.border,
   },
   dark: {
-    background: alpha(BRAND.black, 0.58),
-    border: alpha(BRAND.white, 0.12),
+    background: BRAND.black,
+    border: COLORS.dark.line,
   },
 } as const;
 

@@ -310,8 +310,8 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
         block ? { alignSelf: 'stretch' } : null,
         style,
         {
-          minHeight: theme.geometry.controlHeight,
-          // Système de boutons : pastille (CTA), contour encre épais en mode « quiet ».
+          minHeight: theme.chrome.button,
+          // Système de boutons : pastille compacte (CTA), contour encre épais en mode « quiet ».
           borderRadius: theme.radius.cta,
           borderWidth: quiet ? BUTTON_OUTLINE_WIDTH : StyleSheet.hairlineWidth,
           backgroundColor: quiet
@@ -519,7 +519,7 @@ export function Field(props: TextInputProps & { label?: string }) {
 }
 
 const styles = StyleSheet.create({
-  leadingRow: { alignItems: 'center', justifyContent: 'center', gap: 10 },
+  leadingRow: { alignItems: 'center', justifyContent: 'center', gap: 8 },
   drawerScrim: { flex: 1, backgroundColor: veil(0.45) },
   drawerPanel: {
     position: 'absolute', top: 0, bottom: 0,
@@ -537,6 +537,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
+    paddingVertical: 8,
     overflow: 'hidden',
   },
   actionGroup: { alignItems: 'stretch' },

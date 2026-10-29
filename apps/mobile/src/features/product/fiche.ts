@@ -93,13 +93,13 @@ export const FICHE = {
   infoLine: 18,            // 36 px de rythme entre deux lignes
   shareHeight: 51,         // 1352 → 1454 = 102 px
 
-  /* Barre d'achat (écrans 1 et 2) */
-  barHeight: 71,           // 1458 → 1600 = 142 px
+  /* Barre d'achat compacte (écrans 1 et 2, proportions épurées Privé / Zalando) */
+  barHeight: 60,           // barre compacte : 10 dp haut + pastille 40 dp + 10 dp bas
   barPrice: 15,            // 30 px gras
-  barButtonWidth: 207,     // 290 → 703 px = 413 px
-  barButtonHeight: 48,     // 1480 → 1575 = 95 px
-  barButtonRadius: 24,     // rayon 47 px
-  barButtonTop: 11,        // 1480 − 1458 = 22 px
+  barButtonWidth: 184,     // pastille compacte « Ajouter au panier »
+  barButtonHeight: 40,     // hauteur compacte alignée sur `CHROME.button`
+  barButtonRadius: 20,     // rayon plein (40 ÷ 2)
+  barButtonTop: 10,        // centrage vertical dans la barre de 60 dp
 
   /* Feuille de taille (écran 3) */
   sheetTop: 22,            // 45 px : le voile au-dessus de la feuille
@@ -137,8 +137,8 @@ export const FICHE = {
   viewerCloseStart: 5,     // 37 px
   // La croix de la visionneuse ne porte plus de cote : elle suit `theme.iconSize.md`.
 
-  /** La barre d'achat, zone sûre comprise — la page réserve cette hauteur. */
-  ctaHeight: 71,
+  /** La barre d'achat compacte, zone sûre comprise — la page réserve cette hauteur. */
+  ctaHeight: 60,
 } as const;
 
 /* ── En-tête : transparent sur la photo, plein dès qu'elle est sortie ─────── */

@@ -36,47 +36,46 @@ describe('barre du bas transparente à coins arrondis compacts (5 onglets — st
     expect(layout).toMatch(/name="cart"\s+options=\{\{\s*href:\s*null/);
   });
 
-  it('applique des coins arrondis réduits (radius.md = 12pt) et une haute transparence type Zalando sans élévation Android', () => {
-    expect(layout).toContain('TAB_BAR_GLASS[theme.mode]');
-    expect(layout).toContain("position: 'absolute'");
-    expect(layout).toContain('borderRadius: theme.radius.md');
-    expect(layout).not.toContain('borderRadius: theme.radius.xl');
-    expect(layout).toContain('tabBarBackground:');
-    expect(layout).toContain('backgroundColor: glass.background');
-    expect(layout).toContain("backgroundColor: 'transparent'");
+  it('applique une surface pleine opaque collée tout en bas (zéro transparence, zéro vide sous la barre)', () => {
+    expect(layout).toContain('TAB_BAR_SURFACE[theme.mode]');
+    expect(layout).not.toContain('TAB_BAR_GLASS');
+    expect(layout).not.toContain("position: 'absolute'");
+    expect(layout).not.toContain("backgroundColor: 'transparent'");
+    expect(layout).toContain('paddingBottom: insets.bottom');
+    expect(layout).toContain('backgroundColor: surface.background');
+    expect(layout).toContain('borderTopColor: surface.border');
     expect(layout).toContain('...theme.elevation.none');
     expect(layout).not.toContain('...theme.elevation.medium');
 
-    // Transparence accrue (alpha <= 0.65 en clair et en sombre, style Zalando)
-    const block = /export const TAB_BAR_GLASS = \{([\s\S]*?)\} as const;/.exec(tokensMobile)?.[1] ?? '';
-    const bgAlphas = Array.from(block.matchAll(/background:\s*alpha\(BRAND\.\w+,\s*([\d.]+)\)/g), (m) =>
-      Number(m[1]),
-    );
-    expect(bgAlphas).toHaveLength(2);
-    for (const a of bgAlphas) {
-      expect(a).toBeLessThanOrEqual(0.65);
-    }
+    const block = /export const TAB_BAR_SURFACE = \{([\s\S]*?)\} as const;/.exec(tokensMobile)?.[1] ?? '';
+    expect(block).toContain('BRAND.white');
+    expect(block).toContain('BRAND.black');
+    expect(block).not.toContain('alpha(');
   });
 
-  it('utilise uniquement des icônes vectorielles intégrées de taille égale (24×24) et supprime toute plaque grise', () => {
-    expect(navIcons).toContain("from 'react-native-svg'");
+  it('utilise une seule famille d’icônes vectorielles à trait fin (Ionicons -outline, 24×24) avec patte violette AYWEBs', () => {
+    expect(navIcons).toContain("from '@expo/vector-icons/Ionicons'");
     expect(navIcons).toContain('export function TabHomeIcon');
     expect(navIcons).toContain('export function TabLensIcon');
+    expect(navIcons).toContain('export function TabAyWebsIcon');
     expect(navIcons).toContain('export function TabSonimIcon');
     expect(navIcons).toContain('export function TabProfileIcon');
 
-    // Toutes les icônes vectorielles <Svg> partagent exactement viewBox="0 0 24 24"
-    const viewBoxes = Array.from(navIcons.matchAll(/<Svg[\s\S]*?viewBox="([^"]+)"/g), (m) => m[1]);
-    expect(viewBoxes).toEqual(['0 0 24 24', '0 0 24 24', '0 0 24 24', '0 0 24 24']);
+    const outlineNames = Array.from(navIcons.matchAll(/name="([a-z-]+)"/g), (m) => m[1]);
+    expect(outlineNames).toEqual([
+      'home-outline',
+      'camera-outline',
+      'paw-outline',
+      'sparkles-outline',
+      'person-outline',
+    ]);
 
-    expect(layout).toContain('<TabHomeIcon size={theme.iconSize.md}');
-    expect(layout).toContain('<TabLensIcon size={theme.iconSize.md}');
-    expect(layout).toContain('<TabSonimIcon size={theme.iconSize.md}');
-    expect(layout).toContain('<TabProfileIcon size={theme.iconSize.md}');
-    expect(layout).toContain('const AYWEB_TAB_LOGO = { width: 24, height: 24 }');
-    expect(layout).toContain('background={null}');
+    expect(layout).toContain('<TabHomeIcon color={color}');
+    expect(layout).toContain('<TabLensIcon color={color}');
+    expect(layout).toContain('<TabAywebsPawIcon color={AYWEBS_WORDMARK_TINT[theme.mode]}');
+    expect(layout).toContain('<TabSonimIcon color={color}');
+    expect(layout).toContain('<TabProfileIcon color={color}');
 
-    // Les anciens PNG matriciels d'onglets ne doivent plus exister.
     expect(existsSync(path.join(ROOT, 'assets/tab-lens-icon.png'))).toBe(false);
     expect(existsSync(path.join(ROOT, 'assets/tab-sonim-icon.png'))).toBe(false);
   });

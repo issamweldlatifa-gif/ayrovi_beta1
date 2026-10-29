@@ -164,21 +164,20 @@ describe('identité visuelle AYWEBs — nouveau mot-symbole et nouvelle icône d
     const [, sheetWidth, sheetHeight] = sheetSize as RegExpExecArray;
     expect(Number(sheetWidth) / Number(sheetHeight)).toBeCloseTo(ratio, 1);
 
-    /* Barre du bas : nouvelle icône circulaire officielle (violet #571EF6 en clair,
-       blanc #FFFFFF en sombre), ratio carré 1:1, sans texte « AYWEBs » dessous. */
+    /* Barre du bas : icône patte de chat officielle à trait fin (`paw-outline` via
+       `TabAywebsPawIcon`) teintée en `AYWEBS_WORDMARK_TINT[theme.mode]` (#571EF6 en
+       clair, #FFFFFF en sombre), grille 24 × 24, sans texte « AYWEBs » dessous. */
     const tabs = readFileSync(path.join(ROOT, 'app/(tabs)/_layout.tsx'), 'utf8');
-    expect(tabs).toContain('aywebs-icon-violet.png');
-    expect(tabs).toContain('aywebs-icon-white.png');
+    const navIcons = readFileSync(path.join(ROOT, 'src/design/TabNavIcons.tsx'), 'utf8');
+    expect(tabs).toContain('TabAywebsPawIcon');
+    expect(navIcons).toContain('name="paw-outline"');
     expect(tabs.includes('pricetags'), 'la puce générique doit avoir disparu').toBe(false);
-    const tabSize = /AYWEB_TAB_LOGO = \{\s*width:\s*(\d+),\s*height:\s*(\d+)\s*\}/.exec(tabs);
-    expect(tabSize, 'taille de l’icône introuvable dans la barre du bas').not.toBeNull();
-    const [, tabWidth, tabHeight] = tabSize as RegExpExecArray;
-    expect(Number(tabWidth) / Number(tabHeight)).toBeCloseTo(iconViolet.width / iconViolet.height, 2);
+    expect(iconViolet.width).toBe(iconViolet.height);
 
-    /* Teinte native exacte (#571EF6 en clair, #FFFFFF en sombre) appliquée par
-       expo-image sur les trois emplacements pour éliminer tout écart Display-P3. */
+    /* Teinte native exacte (#571EF6 en clair, #FFFFFF en sombre) appliquée sur
+       les trois emplacements. */
     expect(header).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
-    expect(tabs).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
+    expect(tabs).toContain('color={AYWEBS_WORDMARK_TINT[theme.mode]}');
     expect(sheet).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
 
     /* Barre du bas : uniquement l’icône AYWEBs, aucun texte « AYWEBs » dessous. */

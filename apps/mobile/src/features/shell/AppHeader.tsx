@@ -173,7 +173,7 @@ export function AppHeader({
             />
           ) : null}
           <HeaderIcon
-            name={brand === 'aywebs' ? 'cart-outline' : 'bag-outline'}
+            name="bag-outline"
             label={t('cart.title')}
             onPress={() => go('/(tabs)/cart')}
             color={iconColor}

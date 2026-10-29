@@ -442,14 +442,12 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
       if (n) counts[rel] = n;
     }
     expect(counts).toEqual({
-      'app/(tabs)/cart.tsx': 1,            // passer à la caisse
       'app/checkout.tsx': 1,               // valider la commande
       'app/forgot.tsx': 1,                 // envoyer le lien de réinitialisation
-      // `app/product/[id].tsx` a QUITTÉ la liste le 24/10/2026 : le propriétaire
-      // a choisi un CTA **noir** sur la grande fiche (tone="solid"). Le violet
-      // reste réservé au panier, au paiement et à la connexion ; AYWEBs a son CTA jaune.
+      // `app/product/[id].tsx` et `app/(tabs)/cart.tsx` portent un CTA **noir**
+      // compact (tone="solid") selon le gabarit officiel Zalando / Bag.
       'app/sign-in.tsx': 6,                // une validation par étape de connexion
-      'src/features/lens/LensProductView.tsx': 2, // ajouter au panier · voir le panier
+      'src/features/lens/LensProductView.tsx': 1, // ajouter au panier (voir le panier -> tone="solid" dans la feuille compacte)
       'src/features/lens/ocerex/OcerexFlow.tsx': 1, // confirmer la commande OCEREX
     });
   });

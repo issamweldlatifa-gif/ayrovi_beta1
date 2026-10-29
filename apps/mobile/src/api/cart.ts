@@ -38,6 +38,8 @@ export interface AyroviCartLine {
   quantity: number;
   /** الاختيار المعروض (مقاس/لون) — كما بعثناه، بلا إعادة صياغة. */
   variant: string;
+  requestedSize?: string;
+  requestedColor?: string;
   customerNote: string;
   priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
   /** `''` = الخادم ما قالش (نسخة قديمة من السطر) — ما نخمّنوش. */
@@ -81,6 +83,8 @@ export function parseAyroviCartLine(payload: unknown): AyroviCartLine {
     sourceCurrency: str(payload.sourceCurrency).toUpperCase(),
     quantity: num(payload.quantity) ?? 1,
     variant: str(payload.requestedSize) || str(payload.requestedColor) || str(payload.variant),
+    requestedSize: str(payload.requestedSize),
+    requestedColor: str(payload.requestedColor),
     customerNote: str(payload.customerNote),
     priceVerificationStatus: payload.priceVerificationStatus === 'VERIFIED' ? 'VERIFIED' : 'PENDING_MANUAL',
     priceTrust: trust === 'FRESH' || trust === 'MANUAL' || trust === 'STALE' ? trust : '',

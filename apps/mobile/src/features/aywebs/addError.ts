@@ -43,6 +43,7 @@ export function ayWebsErrorTranslationKey(code: string): TranslationKey | null {
       return 'aywebs.captureFailed';
     /* الفيش مفتوح لكن طبيعته غير مثبتة (صفحة قائمة، استقبال…): نوجّه إلى
        بطاقة المنتوج الحقيقية. */
+    case 'NOT_A_PRODUCT_PAGE':
     case 'PRODUCT_PAGE_REQUIRED':
       return 'aywebs.notAProductPage';
     case 'STORE_UNAVAILABLE':

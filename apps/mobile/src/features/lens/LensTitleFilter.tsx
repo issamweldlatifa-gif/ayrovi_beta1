@@ -58,7 +58,7 @@ export function LensTitleFilter({
           returnKeyType="search"
           autoCorrect={false}
           autoCapitalize="none"
-          style={[styles.input, { color: theme.colors.ink }]}
+          style={[styles.input, theme.text('label'), { color: theme.colors.ink }]}
         />
         {active ? (
           <Pressable

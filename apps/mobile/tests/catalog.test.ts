@@ -113,7 +113,7 @@ describe('صفحة المنتوج — قرار موثّق', () => {
     expect(source).toContain('addCatalogToCart({');
     expect(source).toContain('productId: String(id)');
     expect(source).toContain('sessionId,');
-    expect(source).toContain('disabled={addToCart.isSuccess || !sessionId || !canOrder}');
+    expect(source).toContain('disabled={!sessionId || !canOrder}');
   });
 
   it('الاختيار (مقاس/لون) يتبعث مع السلّة — الطلب يوصف الحاجة اللي تORDERات', async () => {

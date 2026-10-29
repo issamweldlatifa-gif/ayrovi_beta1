@@ -3156,6 +3156,28 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
        un prix de publicité ou d'un article recommandé — c'est précisément le
        piège mesuré le 06/10 (deux candidats « dom » à 6,99 et 263,86 sur la
        même page Amazon). Les sélecteurs génériques viennent après. */
+    function isInPostAddModal(node) {
+      var cur = node;
+      var depth = 0;
+      while (cur && cur.nodeType === 1 && depth < 14) {
+        var role = text(cur.getAttribute && cur.getAttribute('role')).toLowerCase();
+        var ariaModal = text(cur.getAttribute && cur.getAttribute('aria-modal')).toLowerCase();
+        var tag = (cur.tagName || '').toUpperCase();
+        var cls = ((typeof cur.className === 'string' ? cur.className : '') + ' ' + ((cur.getAttribute && cur.getAttribute('data-testid')) || '')).toLowerCase();
+        var isDialog = tag === 'DIALOG' || role === 'dialog' || role === 'alertdialog' || ariaModal === 'true'
+          || /(?:minicart|mini-cart|cart-drawer|bag-drawer|added-to-bag|added-to-cart|add-to-bag-modal|atc-modal|post-add)/i.test(cls);
+        if (isDialog) {
+          var bodyTxt = cut(text(cur.textContent), 900);
+          if (/(?:added\s+(?:to|for)\s+(?:bag|cart|basket|ship|pickup)|item\s+added\s+to\s+(?:bag|cart)|view\s+(?:bag|cart|basket)\b|ajout[eé]\s+au\s+panier|voir\s+(?:le\s+|mon\s+)?panier|تمت\s+إضافة|عرض\s+السلة)/i.test(bodyTxt)) {
+            return true;
+          }
+        }
+        cur = cur.parentElement;
+        depth++;
+      }
+      return false;
+    }
+
     var selectors = [
       '#corePriceDisplay_desktop_feature_div .a-offscreen',
       '#corePrice_feature_div .a-offscreen',
@@ -3173,6 +3195,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       try { nodes = document.querySelectorAll(selectors[s]); } catch (e) { continue; }
       for (var n = 0; n < nodes.length && taken < 2; n++) {
         var el = nodes[n];
+        if (isInPostAddModal(el)) continue;
         var value = text(el.getAttribute && el.getAttribute('data-price')) || text(el.textContent);
         if (!value || !HAS_DIGIT.test(value) || !CURRENCY_HINT.test(value)) continue;
         if (value.length > LIMITS.text) continue;
@@ -3197,7 +3220,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
        tout court peut être « Add to wishlist », et un bouton de liste d'envies
        ne prouve aucun stock. */
     var ADD_TEXT = /add\s*to\s*(cart|basket|bag|my\s*picks|picks|bundle)|buy\s*now|in\s*(?:den\s*warenkorb|die\s*einkaufstasche)|zu\s*meiner\s*auswahl|ajouter(?:\s+(?:au\s+)?(?:panier|sac|lot)|\s+à\s+(?:ma\s+s[ée]lection|mes\s+choix)|\s+le\s+produit)?|acheter|aggiungi(?:\s+(?:al\s+carrello|alla\s+borsa|alla\s+mia\s+selezione))?|a(?:ñ|n)adir(?:\s+(?:a\s+la\s+|al\s+)?(?:cesta|carrito|bolsa)|\s+a\s+mi\s+selecci[óo]n)?|adicionar\s+(?:ao\s+carrinho|às?\s+minhas?\s+escolhas?)|أضف\s*إلى\s*(?:السلة|العربة|الحقيبة|حقيبة\s*التسوق|مختاراتي)|إضافة\s*إلى\s*(?:السلة|العربة|الحقيبة|مختاراتي)|أضف\s*(?:للسلة|لمختاراتي)|اشترِ?\s*(?:الآن)?/i;
-    var NOT_ADD_TEXT = /wish\s*list|wishlist|favoris|favorites|liste\s+d'envies|merkliste|envies/i;
+    var NOT_ADD_TEXT = /wish\s*list|wishlist|favoris|favorites|liste\s+d'envies|merkliste|envies|add\s+to\s+routine/i;
     var SHEIN_SOLD_OUT_TEXT = /\b(sold\s*out|out\s*of\s*stock|épuisé|epuise|rupture(?:\s*de\s*stock)?|indisponible|ausverkauft|nicht\s*auf\s*lager|agotado|sin\s*existencias|esaurito|non\s*disponibile)\b|نفدت\s*الكمية|غير\s*متوفر/i;
     if (AMAZON_STRICT) {
       /* Correction du 07/10/2026 : un contrôle d'achat DÉSACTIVÉ ne publie RIEN.
@@ -3280,6 +3303,26 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     var controls = document.querySelectorAll('button, input[type="submit"], input[type="button"], a[role="button"], [data-testid*="add-to-cart" i], [id*="add-to-cart" i]');
     for (var i2 = 0; i2 < controls.length && !out.addToCartText; i2++) {
       var control = controls[i2];
+      var ctrlDialog = control;
+      var ctrlDepth = 0;
+      var skipPostAddCtrl = false;
+      while (ctrlDialog && ctrlDialog.nodeType === 1 && ctrlDepth < 14) {
+        var cRole = text(ctrlDialog.getAttribute && ctrlDialog.getAttribute('role')).toLowerCase();
+        var cAria = text(ctrlDialog.getAttribute && ctrlDialog.getAttribute('aria-modal')).toLowerCase();
+        var cTag = (ctrlDialog.tagName || '').toUpperCase();
+        var cCls = ((typeof ctrlDialog.className === 'string' ? ctrlDialog.className : '') + ' ' + ((ctrlDialog.getAttribute && ctrlDialog.getAttribute('data-testid')) || '')).toLowerCase();
+        if (cTag === 'DIALOG' || cRole === 'dialog' || cRole === 'alertdialog' || cAria === 'true'
+          || /(?:minicart|mini-cart|cart-drawer|bag-drawer|added-to-bag|added-to-cart|add-to-bag-modal|atc-modal|post-add)/i.test(cCls)) {
+          var cTxt = cut(text(ctrlDialog.textContent), 900);
+          if (/(?:added\s+(?:to|for)\s+(?:bag|cart|basket|ship|pickup)|item\s+added\s+to\s+(?:bag|cart)|view\s+(?:bag|cart|basket)\b|ajout[eé]\s+au\s+panier|voir\s+(?:le\s+|mon\s+)?panier|تمت\s+إضافة|عرض\s+السلة)/i.test(cTxt)) {
+            skipPostAddCtrl = true;
+            break;
+          }
+        }
+        ctrlDialog = ctrlDialog.parentElement;
+        ctrlDepth++;
+      }
+      if (skipPostAddCtrl) continue;
       var label = text(control.value) || text(control.textContent) || text(control.getAttribute && control.getAttribute('aria-label'));
       if (!label || !ADD_TEXT.test(label) || NOT_ADD_TEXT.test(label)) continue;
       /* « Add to basket shift + ALT + K » est un libellé d'accessibilité, pas un

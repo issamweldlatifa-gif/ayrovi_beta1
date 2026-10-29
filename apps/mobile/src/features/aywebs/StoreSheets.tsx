@@ -11,13 +11,13 @@
  *    Le serveur reçoit l'adresse et le titre ; le prix n'est pas envoyé d'ici.
  */
 import { RADIUS } from '@/design/tokens.mobile';
-import { useState, type ComponentProps } from 'react';
+import { useMemo, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { AppText, Button, Card } from '@/design/ui';
+import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { AppSheet } from '@/design/sheet/AppSheet';
@@ -29,6 +29,12 @@ import { fetchAyroviCart } from '@/api/cart';
 import { addExternalFavorite } from '@/api/account';
 import { addErrorMessage } from '@/features/aywebs/addError';
 import { useSession } from '@/state/session';
+import {
+  OfficialCartRow,
+  OfficialCartStickySummary,
+  splitCartVariantLabels,
+  type OfficialCartItemModel,
+} from '@/features/shopping/OfficialCartView';
 import {
   STORE_CART_SEGMENTS, storeCartSections, type StoreCartSegment,
 } from './storeShopping';
@@ -49,7 +55,7 @@ export interface StoreCartSheetProps {
 export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCartSheetProps) {
   const theme = useTheme();
   const { t, locale } = useI18n();
-  const [segment, setSegment] = useState<StoreCartSegment>('thisStore');
+  const [segment, setSegment] = useState<StoreCartSegment>('allStores');
 
   const aywebs = useQuery({
     queryKey: ['store-sheet', 'aywebs-cart', sessionId],
@@ -71,13 +77,78 @@ export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCa
     storeId,
   });
 
+  const unifiedRows = useMemo<OfficialCartItemModel[]>(() => {
+    if (segment === 'ayrovi') {
+      return (ayrovi.data?.items ?? []).map((line) => {
+        const parsed = splitCartVariantLabels({
+          requestedColor: line.requestedColor,
+          requestedSize: line.requestedSize,
+          variant: line.variant,
+        });
+        return {
+          id: line.id,
+          brandOrStore: line.store || 'ZAYROVI',
+          title: line.title,
+          imageUrl: line.imageUrl,
+          quantity: line.quantity,
+          lineTotalTnd: line.lineTotalTND,
+          originalLineTotalTnd: line.originalLineTotalTND,
+          color: parsed.color,
+          size: parsed.size,
+          rawVariant: parsed.extra || (!parsed.color && !parsed.size ? line.variant : ''),
+        };
+      });
+    }
+    const items = (aywebs.data?.items ?? []).filter(
+      (item) => segment !== 'thisStore' || !storeId || item.storeId === storeId,
+    );
+    return items.map((item) => {
+      const parsed = splitCartVariantLabels({ variant: item.variantLabel });
+      return {
+        id: item.id,
+        brandOrStore: item.storeName || item.storeId || 'AYWEBs',
+        title: item.title,
+        imageUrl: item.images[0] || '',
+        quantity: item.quantity,
+        lineTotalTnd: item.lineTotalTnd,
+        color: parsed.color,
+        size: parsed.size,
+        rawVariant: parsed.extra || (!parsed.color && !parsed.size ? item.variantLabel : ''),
+      };
+    });
+  }, [ayrovi.data?.items, aywebs.data?.items, segment, storeId]);
+
+  const totalUnits = unifiedRows.reduce((sum, item) => sum + item.quantity, 0);
+  const summaryTotalTnd = segment === 'ayrovi'
+    ? (ayrovi.data?.totalTND ?? null)
+    : (aywebs.data?.totals?.productSubtotalTnd ?? ayrovi.data?.totalTND ?? null);
+  const summaryDeliveryTnd = segment === 'ayrovi' ? (ayrovi.data?.deliveryTND ?? null) : null;
+
   return (
     <AppSheet
       open={visible}
       onDismiss={onClose}
-      header={<SheetHeader title={t('aywebs.cart.title')} onClose={onClose} />}
+      header={(
+        <SheetHeader
+          title={totalUnits > 0 ? `${t('tabs.cart')} (${totalUnits})` : t('aywebs.cart.title')}
+          onClose={onClose}
+        />
+      )}
+      footer={(
+        <OfficialCartStickySummary
+          deliveryTnd={summaryDeliveryTnd}
+          totalTnd={summaryTotalTnd}
+          checkoutLabel={t('aywebs.cart.openFull')}
+          onCheckout={() => {
+            onClose();
+            router.push('/(tabs)/cart');
+          }}
+          checkoutTestID="aywebs-store-cart-open-full"
+          bottomPadding={4}
+        />
+      )}
     >
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         <View style={[styles.segments, { flexDirection: rowDirectionFor(theme.isRTL) }]} accessibilityRole="tablist">
           {STORE_CART_SEGMENTS.map((candidate) => {
             const selected = candidate === segment;
@@ -90,13 +161,13 @@ export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCa
                 style={[
                   styles.segment,
                   {
-                    borderColor: selected ? theme.colors.action : theme.colors.line,
-                    backgroundColor: selected ? theme.colors.action : 'transparent',
-                    minHeight: theme.geometry.minTarget,
+                    borderColor: selected ? theme.colors.ink : theme.colors.line,
+                    backgroundColor: selected ? theme.colors.ink : 'transparent',
+                    minHeight: theme.chrome.button,
                   },
                 ]}
               >
-                <AppText variant="label" weight="bold" color={selected ? theme.colors.onAction : theme.colors.ink}>
+                <AppText variant="caption" weight="bold" color={selected ? theme.colors.canvas : theme.colors.ink}>
                   {t(SEGMENT_LABEL[candidate])}
                 </AppText>
               </Pressable>
@@ -104,39 +175,19 @@ export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCa
           })}
         </View>
 
-        {active.isLoading ? <ActivityIndicator color={theme.colors.action} /> : null}
+        {active.isLoading ? <ActivityIndicator color={theme.colors.ink} /> : null}
         {active.isError ? (
           <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>
             {addErrorMessage(active.error, locale, t)}
           </AppText>
         ) : null}
-        {!active.isLoading && !active.isError && sections.length === 0 ? (
+        {!active.isLoading && !active.isError && sections.length === 0 && unifiedRows.length === 0 ? (
           <AppText variant="body" color={theme.colors.muted}>{t('aywebs.cart.empty')}</AppText>
         ) : null}
 
-        {sections.map((section) => (
-          <Card key={section.storeKey} title={section.storeName}>
-            {section.rows.map((row) => (
-              <View key={row.id} style={[styles.cartRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                <View style={styles.rowText}>
-                  <AppText variant="label" weight="bold" numberOfLines={2}>{row.title}</AppText>
-                  {row.variant ? (
-                    <AppText variant="caption" color={theme.colors.muted}>{row.variant}</AppText>
-                  ) : null}
-                  <AppText variant="caption" color={theme.colors.muted}>× {row.quantity}</AppText>
-                </View>
-                {row.priceText ? <AppText variant="label" weight="bold">{row.priceText}</AppText> : null}
-              </View>
-            ))}
-          </Card>
+        {unifiedRows.map((row) => (
+          <OfficialCartRow key={row.id} item={row} />
         ))}
-
-        <Button
-          label={t('aywebs.cart.openFull')}
-          tone="quiet"
-          block
-          onPress={() => { onClose(); router.push('/(tabs)/cart'); }}
-        />
       </ScrollView>
     </AppSheet>
   );

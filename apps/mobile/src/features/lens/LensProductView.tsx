@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText, Button } from '@/design/ui';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { AppImage } from '@/design/appImage';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { RADIUS, frost, veil } from '@/design/tokens.mobile';
@@ -24,6 +25,7 @@ import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { ApiError } from '@/api/errors';
 import { addExternalToCart, fetchAyroviCart } from '@/api/cart';
+import { touchCartReservation } from '@/features/shopping/cartReservation';
 import { useSessionId } from '@/session/session';
 import type { LensCandidate, LensProductFact } from '@/api/lens';
 import { lensGallery, lensMediaChain } from './lensMedia';
@@ -865,6 +867,7 @@ export function LensProductView({
       setAddedUnitsAt(receivedAt);
       setAddedDeadline(result.quoteExpiresAt);
       setAddedClockOffset(serverClockOffset(result.serverNow, receivedAt));
+      touchCartReservation();
       setOrderAdded(true);
       setConfirmationOpen(true);
       Vibration.vibrate(28);
@@ -1274,35 +1277,88 @@ export function LensProductView({
           <View style={[
             styles.confirmationSheet,
             {
-              paddingBottom: Math.max(insets.bottom, 18),
+              paddingBottom: Math.max(insets.bottom, 16),
               borderTopLeftRadius: theme.radius.sheet,
               borderTopRightRadius: theme.radius.sheet,
               backgroundColor: theme.colors.surface,
             },
           ]}>
-            <View style={[styles.confirmationIcon, { borderColor: theme.colors.line }]}>
-              <Ionicons name="checkmark" size={theme.iconSize.lg} color={theme.status.success.fg} accessibilityElementsHidden />
+            <View style={[styles.confirmationHeaderRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+              <View style={[styles.confirmationTitleInline, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                <Ionicons name="checkmark" size={theme.iconSize.sm} color={theme.status.success.fg} accessibilityElementsHidden />
+                <AppText variant="body" weight="bold" accessibilityRole="header">
+                  {t('lens.cart.addedTitle')}
+                </AppText>
+              </View>
+              <Pressable
+                onPress={() => setConfirmationOpen(false)}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.close')}
+                hitSlop={8}
+                style={styles.confirmationCloseHit}
+              >
+                <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} />
+              </Pressable>
             </View>
-            <AppText variant="title" weight="bold" align="center" accessibilityRole="header">
-              {t('lens.cart.addedTitle')}
-            </AppText>
-            <AppText color={theme.colors.muted} align="center">{t('lens.cart.addedBody')}</AppText>
+
+            <View style={[styles.confirmationProductRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+              {gallery[0] ? (
+                <AppImage
+                  uri={gallery[0].uris[0] || gallery[0].original}
+                  fallbackUris={gallery[0].uris.slice(1)}
+                  style={[styles.confirmationThumb, { backgroundColor: theme.colors.skeleton }]}
+                  contentFit="cover"
+                  decorative
+                />
+              ) : null}
+              <View style={styles.confirmationProductBody}>
+                <AppText variant="label" weight="bold" numberOfLines={1}>
+                  {candidate.brand || candidate.source || 'ZAYROVI'}
+                </AppText>
+                <AppText variant="label" color={theme.colors.ink} numberOfLines={1}>
+                  {candidate.title}
+                </AppText>
+                <LensPriceBlock candidate={displayCandidate} />
+                {resolvedColor ? (
+                  <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
+                    {`${t('catalog.color')} : `}
+                    <AppText variant="caption" color={theme.colors.ink}>{resolvedColor}</AppText>
+                  </AppText>
+                ) : null}
+                {resolvedSize ? (
+                  <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
+                    {`${t('catalog.size')} : `}
+                    <AppText variant="caption" color={theme.colors.ink}>{resolvedSize}</AppText>
+                  </AppText>
+                ) : null}
+              </View>
+            </View>
+
+            <AppText variant="caption" color={theme.colors.muted}>{t('lens.cart.addedBody')}</AppText>
             {deadline ? (
               <View style={[styles.confirmationTimer, { borderColor: theme.colors.line }]}>
                 <Ionicons name="time-outline" size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
-                <AppText weight="bold" style={{ color: theme.colors.ink }}>
+                <AppText variant="caption" weight="bold" style={{ color: theme.colors.ink }}>
                   {countdownExpired ? t('lens.cart.expired') : t('lens.cart.validFor', { time: countdown })}
                 </AppText>
               </View>
             ) : null}
             <Button
               label={t('lens.cart.view')}
-              tone="main"
+              tone="solid"
+              leading={<Ionicons name="bag-outline" size={theme.iconSize.sm} color={theme.colors.canvas} />}
               onPress={() => { setConfirmationOpen(false); router.push('/cart'); }}
               block
             />
+            <View style={[styles.confirmationBagCountStrip, { backgroundColor: theme.colors.skeleton }]}>
+              <AppText variant="caption" align="center" color={theme.colors.ink}>
+                {t('aywebs.bagItemsCount', { count: Math.max(1, cartUnits) })}
+              </AppText>
+            </View>
             <Pressable onPress={() => setConfirmationOpen(false)} accessibilityRole="button" style={styles.continueShopping}>
-              <AppText weight="semibold" align="center">{t('lens.cart.continue')}</AppText>
+              <AppText variant="caption" weight="semibold" align="center" color={theme.colors.muted}>
+                {t('lens.cart.continue')}
+              </AppText>
             </Pressable>
           </View>
         </View>
@@ -1410,10 +1466,22 @@ const styles = StyleSheet.create({
     shadowColor: LENS_COLORS.black, shadowOpacity: 0.1, shadowRadius: 12, shadowOffset: { width: 0, height: -3 }, elevation: 12,
   },
   confirmationBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: veil(0.46) },
-  confirmationSheet: { paddingHorizontal: 24, paddingTop: 24, gap: 12, alignItems: 'center' },
-  confirmationIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: StyleSheet.hairlineWidth },
-  confirmationTimer: { minHeight: 44, alignSelf: 'stretch', borderRadius: RADIUS.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12, borderWidth: StyleSheet.hairlineWidth },
-  continueShopping: { minHeight: 44, alignSelf: 'stretch', justifyContent: 'center' },
+  confirmationSheet: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
+  confirmationHeaderRow: { alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  confirmationTitleInline: { flex: 1, alignItems: 'center', gap: 8 },
+  confirmationCloseHit: { minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
+  confirmationProductRow: { alignItems: 'flex-start', gap: 12 },
+  confirmationThumb: { width: 76, height: 100, borderRadius: RADIUS.xs },
+  confirmationProductBody: { flex: 1, gap: 2 },
+  confirmationBagCountStrip: {
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmationTimer: { minHeight: 40, alignSelf: 'stretch', borderRadius: RADIUS.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12, borderWidth: StyleSheet.hairlineWidth },
+  continueShopping: { minHeight: 40, alignSelf: 'stretch', justifyContent: 'center' },
   zoomViewport: { overflow: 'hidden' },
   zoomContent: { flex: 1 },
   fullscreenImage: { width: '100%', height: '100%' },
