@@ -19,7 +19,7 @@
 
 export const FICHE_GEOMETRY = {
   /* Écran 1 — photo, nom, prix, description, ligne Taille (px ÷ 2) */
-  imageHeight: 581,
+  imageHeight: 476,
   photoDotsBottom: 28,
   dot: 6,
   dotIdle: 5,

@@ -261,7 +261,7 @@ export default function AyroviCartScreen() {
                 <Button
                   label={t('cart.reverifyLens')}
                   tone="quiet"
-                  onPress={() => router.push('/lens')}
+                  onPress={() => router.push('/z-lens')}
                   testID="cart-reverify-lens"
                 />
               </View>

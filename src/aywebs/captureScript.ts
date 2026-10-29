@@ -351,6 +351,9 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     return false;
   }
   var AE_OPEN_MODAL_CACHE = undefined;
+  var AE_MODAL_CTA_RE = /(?:ajouter\s+(?:au\s+panier|[àa]\s+(?:ma|mes)\s+s[ée]lections?)|add\s+to\s+(?:cart|bag|my\s+picks|picks)|أضف\s*إلى(?:\s*(?:السلة|اختياراتي))?)/i;
+  var AE_MODAL_CTA_EXACT_RE = /^(?:ajouter\s+(?:au\s+panier|[àa]\s+(?:ma|mes)\s+s[ée]lections?)|add\s+to\s+(?:cart|bag|my\s+picks|picks)|أضف\s*إلى(?:\s*(?:السلة|اختياراتي))?)$/i;
+  var AE_MODAL_PROP_RE = /(?:couleur|color|colour|taille|size|mat[ée]riau|mati[èe]re|material|sp[ée]cification|mod[èe]le|لون|مقاس)\s*[:：]/i;
   function aeFindOpenSkuModal() {
     if (AE_OPEN_MODAL_CACHE !== undefined) return AE_OPEN_MODAL_CACHE;
     AE_OPEN_MODAL_CACHE = null;
@@ -359,21 +362,72 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       var modalNodes = document.querySelectorAll(
         '[class*="msku-modal" i], [class*="msku-panel" i], [class*="msku-popup" i], [class*="msku-drawer" i], '
         + '[class*="sku-modal" i], [class*="sku-panel" i], [class*="sku-popup" i], [class*="sku-drawer" i], '
-        + '[class*="comet-v2-modal" i], [class*="comet-v2-drawer" i], [role="dialog"], [aria-modal="true"]'
+        + '[class*="comet-v2-modal" i], [class*="comet-v2-drawer" i], '
+        + '[class*="drawer-content" i], [class*="drawer--wrap" i], [class*="popup--container" i], [class*="popup-content" i], [class*="bottom-sheet" i], '
+        + '[role="dialog"], [aria-modal="true"]'
       );
       var best = null;
-      for (var mi = 0; mi < modalNodes.length && mi < 12; mi++) {
+      for (var mi = 0; mi < modalNodes.length && mi < 16; mi++) {
         var mn = modalNodes[mi];
         if (!mn || aeNodeHidden(mn) || aeBlocked(mn)) continue;
-        var mTxt = cut(text(mn.textContent), 1200);
+        var mTxt = cut(text(mn.textContent), 1400);
         if (!mTxt) continue;
         if (/(?:added\s+to\s+(?:cart|bag)|ajout[eé]\s+au\s+panier|voir\s+le\s+panier|view\s+cart|تمت\s+إضافة)/i.test(mTxt)) continue;
         var hasSkuSignal = Boolean(
           mn.querySelector('[data-sku-col], [class*="sku-item" i], [class*="msku" i], [class*="sku-prop" i], [role="radio"]')
-          || /(?:couleur|color|colour|taille|size|sp[ée]cification|mod[èe]le|لون|مقاس)\s*[:：]/i.test(mTxt)
-          || /(?:ajouter\s+(?:au\s+panier|[àa]\s+(?:ma|mes)\s+s[ée]lections?)|add\s+to\s+(?:cart|bag|my\s+picks|picks)|أضف\s*إلى)/i.test(mTxt)
+          || AE_MODAL_PROP_RE.test(mTxt)
+          || AE_MODAL_CTA_RE.test(mTxt)
         );
         if (hasSkuSignal) best = mn;
+      }
+      /* Repli Rax / BundleDeals2 aux classes obfusquées sans role="dialog" :
+         remonter depuis le bouton visible « Ajouter à mes sélections » jusqu'au tiroir ouvert. */
+      if (!best && document.body) {
+        var actionEls = document.body.querySelectorAll('button, [role="button"], div, span, a');
+        var ctaEl = null;
+        for (var ai = 0; ai < actionEls.length && ai < 900; ai++) {
+          var ael = actionEls[ai];
+          if (!ael || aeNodeHidden(ael) || aeBlocked(ael)) continue;
+          if (ael.children && ael.children.length > 3) continue;
+          var aTxt = text(ael.textContent);
+          if (aTxt && aTxt.length <= 64 && AE_MODAL_CTA_EXACT_RE.test(aTxt)) {
+            ctaEl = ael;
+            break;
+          }
+        }
+        if (ctaEl) {
+          var cur = ctaEl.parentElement;
+          var fallbackSheet = null;
+          var fallbackIsFixed = false;
+          for (var depth = 0; cur && cur !== document.body && cur !== document.documentElement && depth < 12; depth++) {
+            var curTag = String(cur.tagName || '').toUpperCase();
+            if (curTag === 'MAIN' || curTag === 'ARTICLE' || cur.querySelector('h1, [data-pl="product-title"]')) {
+              break;
+            }
+            var curPos = '';
+            try {
+              var winRef = document.defaultView || window;
+              var cs = winRef && winRef.getComputedStyle ? winRef.getComputedStyle(cur) : null;
+              curPos = cs ? String(cs.position || '') : '';
+            } catch (ePos) {}
+            var cTxt = cut(text(cur.textContent), 1600);
+            var hasPriceAndSignal = Boolean(
+              cTxt
+              && HAS_DIGIT.test(cTxt)
+              && CURRENCY_HINT.test(cTxt)
+              && (AE_MODAL_PROP_RE.test(cTxt) || cur.querySelector('img'))
+            );
+            if (hasPriceAndSignal) {
+              fallbackSheet = cur;
+              if (curPos === 'fixed') fallbackIsFixed = true;
+              if (curPos === 'fixed' || curPos === 'absolute' || cur.parentElement === document.body) {
+                break;
+              }
+            }
+            cur = cur.parentElement;
+          }
+          if (fallbackSheet && (fallbackIsFixed || !ALIEXPRESS_ITEM_ID)) best = fallbackSheet;
+        }
       }
       AE_OPEN_MODAL_CACHE = best;
     } catch (e) { AE_OPEN_MODAL_CACHE = null; }
@@ -428,6 +482,42 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         ];
         var modalReadings = collectScopedReadingsInRoot(aeOpenModal, modalPriceScopes);
         if (modalReadings.length === 1) return modalReadings;
+        /* Repli Rax / BundleDeals2 aux classes obfusquées sans « price » dans className :
+           lecture bornée dans le tiroir ouvert uniquement (jamais la grille derrière). */
+        var rawModalEls = aeOpenModal.querySelectorAll('div, span, p, strong, b');
+        var obfReadings = [];
+        var obfSeen = {};
+        for (var rmi = 0; rmi < rawModalEls.length && obfReadings.length < 4; rmi++) {
+          var rmEl = rawModalEls[rmi];
+          if (!rmEl || aeBlocked(rmEl) || struckNode(rmEl) || aeNodeHidden(rmEl)) continue;
+          if (rmEl.children && rmEl.children.length > 5) continue;
+          var rmVal = aeNormalizeSplitPrice(scopeText(rmEl));
+          if (!rmVal || rmVal.length > 36) continue;
+          if (!HAS_DIGIT.test(rmVal) || !CURRENCY_HINT.test(rmVal)) continue;
+          if (/(?:livraison|shipping|delivery|frais|total|économis|economis|coupon|pick\s+\d|articles?\s+pour)/i.test(rmVal)) continue;
+          if (amountCount(rmVal) !== 1) continue;
+          /* Ignorer un parent englobant si un enfant porte déjà ce montant */
+          var childHasPrice = false;
+          if (rmEl.children) {
+            for (var rmc = 0; rmc < rmEl.children.length; rmc++) {
+              var chPrice = aeNormalizeSplitPrice(scopeText(rmEl.children[rmc]));
+              if (chPrice && HAS_DIGIT.test(chPrice) && CURRENCY_HINT.test(chPrice) && amountCount(chPrice) === 1) {
+                childHasPrice = true;
+                break;
+              }
+            }
+          }
+          if (childHasPrice) continue;
+          var obfKey = rmVal.replace(/\s+/g, '').toLowerCase();
+          if (!obfSeen[obfKey]) {
+            obfSeen[obfKey] = true;
+            obfReadings.push(rmVal);
+          }
+        }
+        if (obfReadings.length === 1) return obfReadings;
+        if (modalReadings.length > 0) return [modalReadings[0]];
+        if (obfReadings.length > 0) return [obfReadings[0]];
+        return [];
       }
       /* Sur AliExpress mobile/desktop, le bloc principal « data-pl="product-price" »
          coexiste parfois avec une bannière secondaire (« Offre de bienvenue » /
@@ -1771,7 +1861,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (/^(?:size|taille|talla|taglia|gr(?:ö|oe)(?:ß|ss)e|tamanho|مقاس|المقاس|قياس|размер)\b/i.test(k)) return 'dim:size';
     return k;
   }
-  var AE_COLON_DIM_HEAD = /^(Couleur|Color|Colour|Farbe|Colore|Cor|Kleur|اللون|لون|Taille|Size|Talla|Taglia|Gr(?:ö|oe)(?:ß|ss)e|Tamanho|المقاس|مقاس|الحجم|قياس|Sp[ée]cifications?|Mod[èe]le|Model|Style|Type|Prise|Plug\s*Type|Longueur|Length|Capacit[ée]|Capacity|Bundle|Lot)\s*[:：]\s*([^\n]{1,60})$/i;
+  var AE_COLON_DIM_HEAD = /^(Couleur|Color|Colour|Farbe|Colore|Cor|Kleur|اللون|لون|Taille|Size|Talla|Taglia|Gr(?:ö|oe)(?:ß|ss)e|Tamanho|المقاس|مقاس|الحجم|قياس|Mat[ée]riau|Mati[èe]re|Material|Sp[ée]cifications?|Mod[èe]le|Model|Style|Type|Prise|Plug\s*Type|Longueur|Length|Capacit[ée]|Capacity|Poids|Weight|Quantit[ée]|Dimensions?|Pointure|Puissance|Voltage|Bundle|Lot)\s*[:：]\s*([^\n]{1,60})$/i;
   function aeCollectPropRows(rootEl) {
     var rows = [];
     if (!rootEl || !rootEl.querySelectorAll) return rows;
@@ -3802,6 +3892,18 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           }
           if (!ADD_TEXT.test(aeLabel) || aeDisabled) continue;
           out.addToCartText = cut(aeLabel, LIMITS.text);
+        }
+      }
+      if (!out.addToCartText && aeModalCtrlRoot) {
+        var raxBtnNodes = aeModalCtrlRoot.querySelectorAll('div, span, a');
+        for (var rbi = 0; rbi < raxBtnNodes.length && rbi < 300 && !out.addToCartText; rbi++) {
+          var rbEl = raxBtnNodes[rbi];
+          if (!rbEl || aeBlocked(rbEl) || aeNodeHidden(rbEl)) continue;
+          if (rbEl.children && rbEl.children.length > 2) continue;
+          var rbTxt = text(rbEl.textContent);
+          if (rbTxt && rbTxt.length <= 64 && AE_MODAL_CTA_EXACT_RE.test(rbTxt) && !NOT_ADD_TEXT.test(rbTxt)) {
+            out.addToCartText = cut(rbTxt, LIMITS.text);
+          }
         }
       }
       if (!out.availabilityText) {
@@ -5889,14 +5991,14 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   if (IS_ALIEXPRESS) {
     try {
       aeEnsureState();
-      var AE_GENERIC_TITLE = /^(?:aliexpress(?:\s*[-|·].*)?|bundle\s*deals?|offres?\s*group[ée]es?|choice)$/i;
+      var AE_GENERIC_TITLE = /^(?:aliexpress(?:\s*[-|·:].*)?|bundle\s*deals?(?:\s*[-|·:].*)?|offres?\s*group[ée]es?(?:\s*[-|·:].*)?|choice(?:\s*[-|·:].*)?|super\s*deals?(?:\s*[-|·:].*)?)$/i;
       if (out.title && AE_GENERIC_TITLE.test(out.title)) out.title = null;
       var aeModalHero = aeFindOpenSkuModal();
       var aeTitleEl = null;
       if (aeModalHero) {
         aeTitleEl = aeModalHero.querySelector('[class*="title--wrap" i], [class*="pdp-title" i], [class*="product-title" i], [class*="goods-title" i], [class*="item-title" i], a[href*="/item/"]');
       }
-      if (!aeTitleEl) {
+      if (!aeTitleEl && !aeModalHero) {
         aeTitleEl = document.querySelector(
           '[data-pl="product-title"], h1[data-pl="product-title"], .product-title-text, '
           + '[class*="title--wrap" i] h1, [class*="title--wrap" i], [class*="pdp-title" i], '
@@ -5910,11 +6012,32 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         out.brand = cut(ALIEXPRESS_STATE.brand, LIMITS.label);
       }
       var aeRealImages = [];
+      var aeModalAltTitle = '';
       if (aeModalHero) {
         var modalImgs = aeModalHero.querySelectorAll('img[src*="alicdn.com"], img[data-src*="alicdn.com"], img');
         for (var ami = 0; ami < modalImgs.length && aeRealImages.length < LIMITS.images; ami++) {
           var amUrl = aeCleanImageUrl(extractElementImageUrl(modalImgs[ami]));
           if (amUrl) pushUnique(aeRealImages, amUrl, LIMITS.images, 600);
+          if (!aeModalAltTitle) {
+            var rawAlt = cut(modalImgs[ami].getAttribute('alt') || '', LIMITS.text);
+            if (rawAlt && rawAlt.length >= 8 && !/^https?:/i.test(rawAlt) && !AE_GENERIC_TITLE.test(rawAlt)) {
+              aeModalAltTitle = rawAlt;
+            }
+          }
+        }
+      }
+      if (!out.title && aeModalHero) {
+        if (aeModalAltTitle) {
+          out.title = aeModalAltTitle;
+        } else if (Boolean(out.addToCartText) || (out.variantGroups && out.variantGroups.length > 0)) {
+          var aeVarSummary = [];
+          for (var avgi = 0; out.variantGroups && avgi < out.variantGroups.length && aeVarSummary.length < 3; avgi++) {
+            var avg = out.variantGroups[avgi];
+            if (avg && avg.selectedValue) aeVarSummary.push(avg.selectedValue);
+          }
+          out.title = aeVarSummary.length > 0
+            ? cut('AliExpress · ' + aeVarSummary.join(' · '), LIMITS.text)
+            : (ALIEXPRESS_ITEM_ID ? ('AliExpress #' + ALIEXPRESS_ITEM_ID) : 'Article AliExpress');
         }
       }
       if (ALIEXPRESS_STATE && ALIEXPRESS_STATE.images && ALIEXPRESS_STATE.images.length) {
@@ -5978,7 +6101,12 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   if (!out.title) {
     try {
       var docTitle = cut(document.title, LIMITS.text);
-      if (docTitle && !(IS_SHEIN && SHEIN_GENERIC_TITLE.test(docTitle))) out.title = docTitle;
+      if (docTitle
+        && !(IS_SHEIN && SHEIN_GENERIC_TITLE.test(docTitle))
+        && !(IS_ALIEXPRESS && /^(?:aliexpress(?:\s*[-|·:].*)?|bundle\s*deals?(?:\s*[-|·:].*)?|offres?\s*group[ée]es?(?:\s*[-|·:].*)?|choice(?:\s*[-|·:].*)?|super\s*deals?(?:\s*[-|·:].*)?)$/i.test(docTitle))
+      ) {
+        out.title = docTitle;
+      }
       if (!out.title && IS_ALIEXPRESS && ALIEXPRESS_ITEM_ID) out.title = 'AliExpress #' + ALIEXPRESS_ITEM_ID;
     } catch (e) {}
   }

@@ -22,6 +22,7 @@ import { useT, type Translate } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { normalizeStockStatus, type CatalogProduct } from '@/api/catalog';
 import { addCatalogToCart } from '@/api/cart';
+import { touchCartReservation } from '@/features/shopping/cartReservation';
 import { useSessionId } from '@/session/session';
 import { formatMoney } from '@/format/money';
 
@@ -67,7 +68,10 @@ export function ProductCard({ product, onOpen, style, hasCombinations = false, p
    */
   const cart = useMutation({
     mutationFn: () => addCatalogToCart({ productId: product.id, sessionId }),
-    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['cart'] }); },
+    onSuccess: () => {
+      touchCartReservation();
+      void queryClient.invalidateQueries({ queryKey: ['cart'] });
+    },
   });
   const stock = stockLabel(product.stockStatus, t);
   const hasPrice = product.finalPrice > 0;

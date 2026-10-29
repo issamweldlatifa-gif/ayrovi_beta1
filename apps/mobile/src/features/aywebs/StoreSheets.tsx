@@ -141,7 +141,7 @@ export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCa
           checkoutLabel={t('aywebs.cart.openFull')}
           onCheckout={() => {
             onClose();
-            router.push('/(tabs)/cart');
+            router.push('/panier');
           }}
           checkoutTestID="aywebs-store-cart-open-full"
           bottomPadding={4}

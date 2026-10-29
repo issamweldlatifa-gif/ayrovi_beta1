@@ -44,6 +44,10 @@ const { captureMatchesPageUrl, isSpaInPageProductSwitch } = loadMobileModule<{
   isSpaInPageProductSwitch: (previousUrl: string | undefined | null, nextUrl: string | undefined | null) => boolean;
 }>('apps/mobile/src/features/aywebs/webNavigation.ts');
 
+const { captureIsProductCard } = loadMobileModule<{
+  captureIsProductCard: (capture: unknown) => boolean;
+}>('apps/mobile/src/features/aywebs/pageKind.ts');
+
 const SESSION_ID = 'ae-temu-luxury-20261029';
 
 function pricingRules(): PricingRules {
@@ -215,6 +219,88 @@ describe('AYWEBs — AliExpress modale SKU mobile CSR & Bundle Deals', () => {
         'https://www.aliexpress.com/ssr/300000512/BundleDeals2?disableNav=YES',
       ),
     ).toBe(true);
+  });
+
+  it('résout et ajoute au panier une modale Rax BundleDeals2 sans ?productIds=, sans og:title et sans role="dialog" (2,26€, Couleur : 4Pcs, Matériau : as pic)', async () => {
+    const { db, resolver } = createHarness();
+    try {
+      const url = 'https://www.aliexpress.com/ssr/300000512/BundleDeals2?disableNav=YES&pha_manifest=ssr';
+      const html = `<!doctype html>
+        <html lang="fr">
+          <head>
+            <title>Bundle Deals</title>
+          </head>
+          <body>
+            <div class="rax-grid--bg">
+              <div class="rax-card"><span>1,73€</span></div>
+              <div class="rax-card"><span>1,99€</span></div>
+              <div class="rax-card"><span>2,06€</span></div>
+            </div>
+            <div style="position: fixed; bottom: 0; left: 0; right: 0;" class="rax-view-v2 _obf_sheet_99">
+              <div class="rax-hero">
+                <img src="https://ae01.alicdn.com/kf/S444444444444444444444444D.jpg" />
+              </div>
+              <div class="rax-row">
+                <span>2,26€</span>
+                <del>2,60€</del>
+                <span>-13%</span>
+              </div>
+              <div class="rax-prop">
+                <div>Couleur : 4Pcs</div>
+                <div class="_obf_chip"><img src="https://ae01.alicdn.com/kf/S444444444444444444444444D.jpg" /></div>
+              </div>
+              <div class="rax-prop">
+                <div>Matériau : as pic</div>
+                <div class="_obf_chip">as pic</div>
+              </div>
+              <div class="rax-cta-wrap">
+                <div>Ajouter à mes sélections</div>
+              </div>
+            </div>
+          </body>
+        </html>`;
+
+      const capture = runCapture(html, url, 'aliexpress');
+      expect(captureIsProductCard(capture)).toBe(true);
+      expect(capture.selectedVariantTexts).toEqual(
+        expect.arrayContaining(['Couleur : 4Pcs', 'Matériau : as pic']),
+      );
+
+      const validated = validateAyWebsCapturedPage(capture, url);
+      expect(validated.ok).toBe(true);
+      if (validated.ok) {
+        expect(validated.corroborated).toBe(true);
+        expect(validated.price).toBeCloseTo(2.26, 2);
+        expect(validated.currency).toBe('EUR');
+      }
+
+      const resolved = await resolveAyWebsProduct(resolver, {
+        sessionId: SESSION_ID,
+        url,
+        storeId: 'aliexpress',
+        capture,
+      });
+      expect(resolved.capture?.used).toBe(true);
+      expect(resolved.product.price).toBeCloseTo(2.26, 2);
+      expect(resolved.product.currency).toBe('EUR');
+      expect(resolved.product.title.length).toBeGreaterThan(0);
+
+      const added = await addAyWebsCartItem(resolver, {
+        sessionId: SESSION_ID,
+        accountId: null,
+        productId: resolved.product.productId,
+        sourceUrl: url,
+        storeId: 'aliexpress',
+        variantAttributes: {},
+        quantity: 1,
+        quoteToken: resolved.quoteToken ?? null,
+        capture,
+      });
+      expect(added.item.unitPrice).toBeCloseTo(2.26, 2);
+      expect(added.item.quantity).toBe(1);
+    } finally {
+      db.close();
+    }
   });
 });
 

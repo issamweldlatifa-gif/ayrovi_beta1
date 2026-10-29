@@ -953,7 +953,7 @@ export function LensProductView({
           <AppText weight="bold" numberOfLines={1}>{candidate.title}</AppText>
         </Animated.View>
         <Pressable
-          onPress={() => router.push('/cart')}
+          onPress={() => router.push('/panier')}
           accessibilityRole="button"
           accessibilityLabel={[
             `${t('tabs.cart')}: ${cartUnits}`,
@@ -1354,7 +1354,7 @@ export function LensProductView({
               label={t('lens.cart.view')}
               tone="solid"
               leading={<Ionicons name="bag-outline" size={theme.iconSize.sm} color={theme.colors.canvas} />}
-              onPress={() => { setConfirmationOpen(false); router.push('/cart'); }}
+              onPress={() => { setConfirmationOpen(false); router.push('/panier'); }}
               block
             />
             <View style={[styles.confirmationBagCountStrip, { backgroundColor: theme.colors.skeleton }]}>

@@ -189,7 +189,6 @@ export const ar = {
   'product.section.pratique': 'الضمان والتوصيل',
   'product.sizeSheetTitle': 'اختر مقاسك',
   'product.sizeSheetEmpty': 'لا توجد مقاسات معلنة لهذا المنتج.',
-  'product.sizeRecommendation': 'ننصحك باختيار مقاسك المعتاد.',
   'product.sizeLast': 'آخر قطعة',
   'product.fastDelivery': 'توصيل سريع',
   'product.freeReturns': 'إرجاع مجاني',

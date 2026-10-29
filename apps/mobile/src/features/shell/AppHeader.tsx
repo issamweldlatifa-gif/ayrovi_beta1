@@ -175,7 +175,7 @@ export function AppHeader({
           <HeaderIcon
             name="bag-outline"
             label={t('cart.title')}
-            onPress={() => go('/(tabs)/cart')}
+            onPress={() => go('/panier')}
             color={iconColor}
           />
         </View>

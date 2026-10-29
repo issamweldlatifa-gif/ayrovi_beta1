@@ -33,19 +33,29 @@ const text = (value: unknown): string => (typeof value === 'string' ? value.trim
 export function pageSignalsOf(capture: unknown): PageSignals {
   const page = isRecord(capture) ? capture : {};
   const amazon = isRecord(page.amazon) ? page.amazon : null;
+  const shein = isRecord(page.shein) ? page.shein : null;
+  const aliexpress = isRecord(page.aliexpress) ? page.aliexpress : null;
+  const temu = isRecord(page.temu) ? page.temu : null;
   const candidates = Array.isArray(page.priceCandidates) ? page.priceCandidates : [];
   const groups = Array.isArray(page.variantGroups) ? page.variantGroups : [];
   const variants = amazon && Array.isArray(amazon.variants) ? amazon.variants : [];
   const options = amazon && Array.isArray(amazon.options) ? amazon.options : [];
+  const aeSkus = aliexpress && Array.isArray(aliexpress.skus) ? aliexpress.skus : [];
   const images = Array.isArray(page.images) ? page.images : [];
   const pageAsin = amazon ? text(amazon.pageAsin).toUpperCase() : '';
+  const sheinGoodsId = shein ? text(shein.pageGoodsId) : '';
+  const aeItemId = aliexpress ? text(aliexpress.pageItemId) : '';
+  const temuGoodsId = temu ? text(temu.pageGoodsId) : '';
   return {
     hasTitle: Boolean(text(page.title).slice(0, 300)),
     hasPrice: candidates.some((candidate) => Boolean(text(isRecord(candidate) ? candidate.text : candidate))),
     hasPurchaseControl: Boolean(text(page.addToCartText)),
-    hasVariants: groups.length > 0 || variants.length > 0 || options.length > 0,
+    hasVariants: groups.length > 0 || variants.length > 0 || options.length > 0 || aeSkus.length > 0,
     hasImages: images.length > 0,
-    hasProductShell: /^[A-Z0-9]{10}$/.test(pageAsin),
+    hasProductShell: /^[A-Z0-9]{10}$/.test(pageAsin)
+      || /^\d{5,16}$/.test(sheinGoodsId)
+      || /^\d{6,20}$/.test(aeItemId)
+      || /^\d{8,24}$/.test(temuGoodsId),
   };
 }
 

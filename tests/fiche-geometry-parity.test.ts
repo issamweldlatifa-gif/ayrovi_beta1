@@ -52,8 +52,8 @@ describe('géométrie de la fiche — l’aperçu du CRM suit l’application', 
   });
 
   test('les cotes sont celles de la maquette et de la barre compacte : 720 × 1600 px, donc 360 dp de large', () => {
-    // 1162 px ÷ 2 = 581 dp : la photo de l'écran 1.
-    expect(FICHE_GEOMETRY.imageHeight).toBe(581);
+    // 476 dp : la photo de l'écran 1 ajustée afin que la ligne Taille soit visible au-dessus de la barre fixe.
+    expect(FICHE_GEOMETRY.imageHeight).toBe(476);
     // 1440 → 1458 px : la bande grise du séparateur.
     expect(FICHE_GEOMETRY.band).toBe(9);
     // Barre compacte : pastille 184 × 40 dp, rayon 20 dp.
@@ -92,14 +92,14 @@ describe('écran 1 — l’empilement tombe sur les positions mesurées', () => 
   })();
 
   test('photo, nom, filet, description, règle, ligne Taille, bande, barre', () => {
-    expect(stack.photoBottom).toBe(581);        // 1162 px
-    expect(stack.nameTop).toBe(593);            // 1186 px
-    expect(Math.round(stack.underline)).toBe(624);  // 1249 px → 624,5 dp
-    expect(stack.descriptionTop).toBe(628);     // 1256 px
-    expect(stack.rule).toBe(671);               // 1342 px
-    expect(stack.rowBottom).toBe(720);          // 1440 px
-    expect(stack.bandBottom).toBe(729);         // 1458 px
-    expect(stack.screenBottom).toBe(789);       // 729 + 60 dp (barre compacte)
+    expect(stack.photoBottom).toBe(476);
+    expect(stack.nameTop).toBe(488);
+    expect(Math.round(stack.underline)).toBe(519);
+    expect(stack.descriptionTop).toBe(523);
+    expect(stack.rule).toBe(566);
+    expect(stack.rowBottom).toBe(615);
+    expect(stack.bandBottom).toBe(624);
+    expect(stack.screenBottom).toBe(684);
   });
 
   test('le bouton noir de la barre est centré dans ses 60 dp', () => {

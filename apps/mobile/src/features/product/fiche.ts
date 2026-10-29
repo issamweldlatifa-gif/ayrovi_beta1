@@ -31,7 +31,7 @@ import type { CatalogAttribute, ProductSheet, SheetDimension, SheetVariant } fro
 
 export const FICHE = {
   /* Écran 1 — photo, nom, prix, description, ligne Taille */
-  imageHeight: 581,        // 1162 px : bas de la photo
+  imageHeight: 476,        // hauteur ajustée afin que Nom + Prix + Description + Taille tiennent au-dessus de la barre fixe
   photoDotsBottom: 28,     // 1162 − 1106 = 56 px sous les points
   dot: 6,                  // 12 px (point actif)
   dotIdle: 5,              // 10 px

@@ -193,7 +193,6 @@ export const fr = {
   'product.section.pratique': 'Garantie et livraison',
   'product.sizeSheetTitle': 'Sélectionnez votre taille',
   'product.sizeSheetEmpty': 'Aucune taille déclarée pour ce produit.',
-  'product.sizeRecommendation': 'Nous vous recommandons de choisir la taille habituelle.',
   'product.sizeLast': 'Dernier article',
   'product.fastDelivery': 'Livraison rapide',
   'product.freeReturns': 'Retours gratuits',

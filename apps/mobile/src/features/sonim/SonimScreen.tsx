@@ -39,6 +39,7 @@ import { useResponsive } from '@/design/layout';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { TabSonimIcon } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
+import { FONTS } from '@/design/tokens.generated';
 import { SONIM_SUBTITLE_STYLE, SONIM_TITLE_STYLE } from '@/design/tokens.mobile';
 import { AppText, Drawer, DrawerItem } from '@/design/ui';
 import { useKeyboardInset } from '@/design/useKeyboardInset';
@@ -412,10 +413,10 @@ export function SonimScreen() {
         </Pressable>
 
         <View style={styles.headerCenter}>
-          <AppText style={[SONIM_TITLE_STYLE, { color: theme.colors.ink }]}>
+          <AppText style={[SONIM_TITLE_STYLE, { color: theme.colors.ink, fontFamily: FONTS.latin.bold }]}>
             SONIM
           </AppText>
-          <AppText style={[SONIM_SUBTITLE_STYLE, { color: theme.colors.muted }]}>
+          <AppText style={[SONIM_SUBTITLE_STYLE, { color: theme.colors.muted, fontFamily: FONTS.latin.semibold }]}>
             ZAYROVI
           </AppText>
         </View>
@@ -848,7 +849,7 @@ export function SonimScreen() {
             },
           ]}
         >
-          <AppText style={[SONIM_TITLE_STYLE, { color: theme.colors.ink }]}>
+          <AppText style={[SONIM_TITLE_STYLE, { color: theme.colors.ink, fontFamily: FONTS.latin.bold }]}>
             SONIM
           </AppText>
           <Pressable

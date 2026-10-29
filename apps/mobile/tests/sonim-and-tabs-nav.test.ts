@@ -30,10 +30,31 @@ describe('barre du bas transparente à coins arrondis compacts (5 onglets — st
   const navIcons = readFileSync(path.join(ROOT, 'src/design/TabNavIcons.tsx'), 'utf8');
   const tokensMobile = readFileSync(path.join(ROOT, 'src/design/tokens.mobile.ts'), 'utf8');
 
-  it('respecte l’ordre exact Accueil · Lens · AYWEBs · Sonim · Profil (+ cart masqué)', () => {
+  it('respecte l’ordre exact Accueil · Lens · AYWEBs · Sonim · Profil (+ cart masqué) et masque la barre sur Lens, Sonim et Panier', () => {
     const names = Array.from(layout.matchAll(/<Tabs\.Screen[\s\S]*?\bname="([^"]+)"/g), (m) => m[1]);
     expect(names).toEqual(['index', 'lens', 'aywebs', 'sonim', 'account', 'cart']);
-    expect(layout).toMatch(/name="cart"\s+options=\{\{\s*href:\s*null/);
+    expect(layout).toMatch(/name="cart"\s+options=\{\{\s*href:\s*null,\s*tabBarStyle:\s*\{\s*display:\s*'none'\s*\}/);
+    expect(layout).toContain('backBehavior="history"');
+    const lensBlock = /<Tabs\.Screen\s+name="lens"[\s\S]*?\/>/.exec(layout)?.[0] ?? '';
+    expect(lensBlock).toContain("tabBarStyle: { display: 'none' }");
+    expect(lensBlock).toContain("router.push('/z-lens')");
+
+    const rootLayout = readFileSync(path.join(ROOT, 'app/_layout.tsx'), 'utf8');
+    expect(rootLayout).toContain('<Stack.Screen name="panier" />');
+    expect(rootLayout).toContain('<Stack.Screen name="z-lens" />');
+    expect(existsSync(path.join(ROOT, 'app/panier.tsx'))).toBe(true);
+    expect(existsSync(path.join(ROOT, 'app/z-lens.tsx'))).toBe(true);
+
+    const appJson = JSON.parse(readFileSync(path.join(ROOT, 'app.json'), 'utf8'));
+    const fontPlugin = appJson.expo.plugins.find((entry: unknown) => Array.isArray(entry) && entry[0] === 'expo-font');
+    expect(fontPlugin).toBeTruthy();
+    expect(fontPlugin[1].fonts).toEqual([
+      './assets/fonts/ZalandoSans-Regular.ttf',
+      './assets/fonts/ZalandoSans-SemiBold.ttf',
+      './assets/fonts/ZalandoSans-Bold.ttf',
+      './assets/fonts/NotoSansArabic-Regular.ttf',
+      './assets/fonts/NotoSansArabic-Bold.ttf',
+    ]);
   });
 
   it('applique une surface pleine opaque collée tout en bas (zéro transparence, zéro vide sous la barre)', () => {
@@ -168,3 +189,49 @@ describe('Sonim — modèle et outils serveur', () => {
     expect(deltas).toEqual(['Bonjour']);
   });
 });
+
+describe('parité des polices officielles Zalando Sans et feuilles compactes', () => {
+  function readTtfMetrics(relPath: string): { numGlyphs: number; usWeightClass: number } {
+    const buf = readFileSync(path.join(ROOT, relPath));
+    const numTables = buf.readUInt16BE(4);
+    let numGlyphs = 0;
+    let usWeightClass = 0;
+    for (let i = 0; i < numTables; i++) {
+      const rec = 12 + i * 16;
+      const tag = buf.toString('ascii', rec, rec + 4);
+      const offset = buf.readUInt32BE(rec + 8);
+      if (tag === 'maxp') numGlyphs = buf.readUInt16BE(offset + 4);
+      if (tag === 'OS/2') usWeightClass = buf.readUInt16BE(offset + 4);
+    }
+    return { numGlyphs, usWeightClass };
+  }
+
+  it('embarque les 3 graisses officielles Zalando Sans (400, 600, 700 — 606 glyphes chacune) et Noto Sans Arabic', () => {
+    expect(readTtfMetrics('assets/fonts/ZalandoSans-Regular.ttf')).toEqual({ numGlyphs: 606, usWeightClass: 400 });
+    expect(readTtfMetrics('assets/fonts/ZalandoSans-SemiBold.ttf')).toEqual({ numGlyphs: 606, usWeightClass: 600 });
+    expect(readTtfMetrics('assets/fonts/ZalandoSans-Bold.ttf')).toEqual({ numGlyphs: 606, usWeightClass: 700 });
+    expect(existsSync(path.join(ROOT, 'assets/fonts/NotoSansArabic-Regular.ttf'))).toBe(true);
+    expect(existsSync(path.join(ROOT, 'assets/fonts/NotoSansArabic-Bold.ttf'))).toBe(true);
+  });
+
+  it('place la photo seule en haut de AddToCartSheet et empile prix, titre et options en dessous', () => {
+    const src = readFileSync(path.join(ROOT, 'src/features/aywebs/AddToCartSheet.tsx'), 'utf8');
+    expect(src).toContain('productStack:');
+    expect(src).toContain('productHeroWrap:');
+    expect(src).not.toContain('productRow:');
+    expect(src).toMatch(/productHero:\s*\{\s*width:\s*164,\s*height:\s*196/);
+    expect(src).toContain("router.push('/panier')");
+  });
+
+  it('affiche SizeSheet en feuille compacte du bas (AppSheet presentation="bottom") sans boîte lavande', () => {
+    const ficheSrc = readFileSync(path.join(ROOT, 'src/features/product/ProductFiche.tsx'), 'utf8');
+    const startIdx = ficheSrc.indexOf('function SizeSheet(');
+    const endIdx = ficheSrc.indexOf('function CartReservedSheet(', startIdx);
+    const sizeSheetBlock = ficheSrc.slice(startIdx, endIdx);
+    expect(sizeSheetBlock).toContain('<AppSheet');
+    expect(sizeSheetBlock).toContain('presentation="bottom"');
+    expect(sizeSheetBlock).not.toContain('sheetTop');
+    expect(sizeSheetBlock).not.toContain('recommendBanner');
+  });
+});
+

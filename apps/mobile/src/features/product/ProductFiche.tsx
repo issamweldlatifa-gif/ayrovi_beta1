@@ -26,7 +26,6 @@ import {
   FlatList,
   Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   View,
   useWindowDimensions,
@@ -43,7 +42,7 @@ import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
-import { FICHE_COLORS, ficheColorsFor, RADIUS, SHEET_CORNER_RADIUS, VIDEO_BACKDROP } from '@/design/tokens.mobile';
+import { ficheColorsFor, RADIUS, VIDEO_BACKDROP } from '@/design/tokens.mobile';
 import { FICHE, type ColorTile, type GalleryItem, type SizeRow } from './fiche';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -644,103 +643,87 @@ export function SizeSheet({
   const theme = useTheme();
   const fc = ficheColorsFor(theme.mode);
   const t = useT();
-  if (!visible) return null;
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <View style={styles.sheetRoot}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.close')}
-          onPress={onClose}
-          style={[styles.sheetScrim, { height: FICHE.sheetTop, backgroundColor: fc.scrim }]}
-        />
+    <AppSheet
+      open={visible}
+      onDismiss={onClose}
+      presentation="bottom"
+      header={(
         <View
           style={[
-            styles.sheet,
+            styles.sheetHeaderRow,
             {
-              backgroundColor: theme.colors.canvas,
-              borderTopLeftRadius: SHEET_CORNER_RADIUS,
-              borderTopRightRadius: SHEET_CORNER_RADIUS,
+              flexDirection: rowDirectionFor(theme.isRTL),
+              borderBottomColor: fc.hair,
             },
           ]}
         >
-          <View style={[styles.sheetHeaderRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <AppText style={[styles.sheetTitle, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>
+          <View style={styles.sheetHeaderTitles}>
+            <AppText variant="caption" color={fc.muted}>
               {t('product.sizeSheetTitle')}
             </AppText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('common.close')}
-              onPress={onClose}
-              hitSlop={8}
-              style={styles.headerButton}
-            >
-              <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-            </Pressable>
-          </View>
-
-          {/* Recommandation : la dalle lavande de la maquette. */}
-          <View style={[styles.sheetPanel, { backgroundColor: fc.recommendation }]}>
-            <View style={styles.sheetPanelIcon}>
-              <Ionicons name="pricetag-outline" size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
-            </View>
-            <AppText style={[styles.sheetPanelText, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
-              {t('product.sizeRecommendation')}
+            <AppText style={[styles.sheetTitle, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>
+              {t('catalog.size')}
             </AppText>
           </View>
-
-          <AppText style={[styles.sheetColumn, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>
-            {t('catalog.size').toUpperCase()}
-          </AppText>
-
-          {rows.length > 0 ? (
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetRows}>
-              {rows.map((row) => {
-                const active = selected === row.value;
-                const color = row.available ? theme.colors.ink : fc.struck;
-                return (
-                  <Pressable
-                    key={row.value}
-                    accessibilityRole="button"
-                    accessibilityLabel={row.available
-                      ? (row.state === 'last' ? `${row.value} — ${t('product.sizeLast')}` : row.value)
-                      : `${row.value} — ${t('catalog.variant.unavailable')}`}
-                    accessibilityState={{ selected: active, disabled: !row.available }}
-                    disabled={!row.available}
-                    onPress={() => onSelect(row.value)}
-                    style={[styles.sheetRow, { borderBottomColor: fc.hair }]}
-                  >
-                    <AppText
-                      style={[styles.sheetRowValue, {
-                        color,
-                        fontFamily: active ? theme.font('bold') : theme.font('regular'),
-                        textDecorationLine: row.available ? 'none' : 'line-through',
-                        textDecorationColor: fc.struck,
-                      }]}
-                    >
-                      {row.value}
-                    </AppText>
-                    <View style={[styles.sheetRowEnd, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                      {row.state === 'last' ? (
-                        <AppText style={[styles.sheetRowState, { color: fc.accent, fontFamily: theme.font('regular') }]}>
-                          {t('product.sizeLast')}
-                        </AppText>
-                      ) : null}
-                      {active ? (
-                        <Ionicons name="checkmark-outline" size={theme.iconSize.sm} color={fc.accent} accessibilityElementsHidden />
-                      ) : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          ) : (
-            <AppText style={[styles.sheetEmpty, { color: fc.muted }]}>{t('product.sizeSheetEmpty')}</AppText>
-          )}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            onPress={onClose}
+            hitSlop={8}
+            style={styles.headerButton}
+          >
+            <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+          </Pressable>
         </View>
-      </View>
-    </Modal>
+      )}
+    >
+      {rows.length > 0 ? (
+        <View style={styles.sheetRows} testID="product-size-sheet">
+          {rows.map((row) => {
+            const active = selected === row.value;
+            const color = row.available ? theme.colors.ink : fc.struck;
+            return (
+              <Pressable
+                key={row.value}
+                accessibilityRole="button"
+                accessibilityLabel={row.available
+                  ? (row.state === 'last' ? `${row.value} — ${t('product.sizeLast')}` : row.value)
+                  : `${row.value} — ${t('catalog.variant.unavailable')}`}
+                accessibilityState={{ selected: active, disabled: !row.available }}
+                disabled={!row.available}
+                onPress={() => onSelect(row.value)}
+                style={[styles.sheetRow, { flexDirection: rowDirectionFor(theme.isRTL), borderBottomColor: fc.hair }]}
+              >
+                <AppText
+                  style={[styles.sheetRowValue, {
+                    color,
+                    fontFamily: active ? theme.font('bold') : theme.font('regular'),
+                    textDecorationLine: row.available ? 'none' : 'line-through',
+                    textDecorationColor: fc.struck,
+                  }]}
+                >
+                  {row.value}
+                </AppText>
+                <View style={[styles.sheetRowEnd, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                  {row.state === 'last' ? (
+                    <AppText style={[styles.sheetRowState, { color: fc.accent, fontFamily: theme.font('regular') }]}>
+                      {t('product.sizeLast')}
+                    </AppText>
+                  ) : null}
+                  {active ? (
+                    <Ionicons name="checkmark-outline" size={theme.iconSize.sm} color={fc.accent} accessibilityElementsHidden />
+                  ) : null}
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : (
+        <AppText style={[styles.sheetEmpty, { color: fc.muted }]}>{t('product.sizeSheetEmpty')}</AppText>
+      )}
+    </AppSheet>
   );
 }
 
@@ -767,8 +750,15 @@ export function CartReservedSheet({
       onDismiss={onClose}
       presentation="bottom"
       header={(
-        <View style={[styles.reservedHeader, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <AppText variant="lead" weight="bold">{t('product.reservedTitle')}</AppText>
+        <View
+          style={[
+            styles.reservedHeader,
+            {
+              flexDirection: rowDirectionFor(theme.isRTL),
+              borderBottomColor: fc.hair,
+            },
+          ]}
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('common.close')}
@@ -782,13 +772,16 @@ export function CartReservedSheet({
       )}
     >
       <View style={styles.reservedBody} testID="product-reserved-sheet">
-        <View style={[styles.reservedTimerRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <Ionicons name="bag-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-          <AppText variant="lead" weight="bold" color={fc.accent}>
+        <View style={styles.reservedTimerStack}>
+          <Ionicons name="bag-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
+          <AppText variant="lead" weight="semibold" color={fc.accent}>
             {countdown}
           </AppText>
         </View>
-        <AppText variant="body" align="center" color={theme.colors.ink}>
+        <AppText variant="title" weight="semibold" align="center">
+          {t('product.reservedTitle')}
+        </AppText>
+        <AppText variant="body" align="center" color={theme.colors.secondary}>
           {t('product.reservedBody')}
         </AppText>
         <Button
@@ -1004,70 +997,55 @@ const styles = StyleSheet.create({
   },
   buyButtonLabel: { fontSize: FICHE.barPrice },
 
-  sheetRoot: { flex: 1 },
-  sheetScrim: { backgroundColor: FICHE_COLORS.scrim },
-  sheet: { flex: 1, overflow: 'hidden' },
   sheetHeaderRow: {
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingStart: FICHE.gutter,
     paddingEnd: 8,
-    marginTop: 12,
+    paddingBottom: 10,
+    borderBottomWidth: FICHE.hairline,
+  },
+  sheetHeaderTitles: {
+    flex: 1,
+    gap: 2,
   },
   sheetTitle: {
-    flex: 1,
-    fontSize: FICHE.sheetTitle, lineHeight: FICHE.sheetTitleLine,
+    fontSize: FICHE.sheetTitle,
+    lineHeight: FICHE.sheetTitleLine,
   },
-  sheetPanel: {
-    marginHorizontal: FICHE.panelGutter,
-    marginTop: FICHE.panelTop,
-    height: FICHE.panelHeight,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingStart: FICHE.panelIconStart,
-    paddingEnd: FICHE.panelGutter,
-  },
-  sheetPanelIcon: { width: ICON_BOX, alignItems: 'flex-start' },
-  sheetPanelText: {
-    flex: 1,
-    fontSize: FICHE.panelText,
-    lineHeight: FICHE.panelLine,
-    marginStart: FICHE.panelTextStart - FICHE.panelIconStart - ICON_BOX,
-  },
-  sheetColumn: {
-    fontSize: FICHE.columnHeader,
-    paddingStart: FICHE.rowStateEnd, paddingTop: FICHE.columnsTop,
-  },
-  sheetRows: { paddingTop: FICHE.rowsTop },
+  sheetRows: { paddingTop: 0 },
   sheetRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     height: FICHE.sizeRowHeight,
-    paddingStart: FICHE.rowStateEnd,
-    paddingEnd: FICHE.rowStateEnd,
+    paddingStart: 4,
+    paddingEnd: 4,
     borderBottomWidth: FICHE.hairline,
   },
   sheetRowEnd: { alignItems: 'center', gap: 8 },
-  sheetRowValue: { fontSize: FICHE.rowSize },
+  sheetRowValue: { fontSize: FICHE.sheetTitle },
   sheetRowState: { fontSize: FICHE.rowState },
-  sheetEmpty: { fontSize: FICHE.panelText, paddingHorizontal: FICHE.gutter, marginTop: FICHE.panelTop },
+  sheetEmpty: { fontSize: FICHE.panelText, paddingVertical: 12 },
   reservedHeader: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingStart: 16,
+    justifyContent: 'flex-start',
+    paddingStart: 8,
     paddingEnd: 8,
+    paddingBottom: 4,
+    borderBottomWidth: FICHE.hairline,
   },
   reservedBody: {
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 16,
+    paddingHorizontal: 8,
+    paddingTop: 12,
+    paddingBottom: 8,
+    gap: 12,
   },
-  reservedTimerRow: {
+  reservedTimerStack: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 4,
   },
 
   viewer: { flex: 1 },

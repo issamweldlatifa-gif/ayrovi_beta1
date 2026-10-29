@@ -201,6 +201,7 @@ export default function ProductScreen() {
       setAddedUnits(nextCount);
       touchCartReservation();
       setJustAddedAt(Date.now());
+      setReservedSheetOpen(true);
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
   });
@@ -210,7 +211,7 @@ export default function ProductScreen() {
       setReservedSheetOpen(true);
       return;
     }
-    router.push('/cart');
+    router.push('/panier');
   }, [effectiveCartUnits, reservation.active]);
 
   if (!product && products.isPending && byId.isPending) {
@@ -444,7 +445,7 @@ export default function ProductScreen() {
         onClose={() => setReservedSheetOpen(false)}
         onViewCart={() => {
           setReservedSheetOpen(false);
-          router.push('/cart');
+          router.push('/panier');
         }}
       />
     </View>

@@ -702,6 +702,7 @@ export function ayWebsPageSignalsOf(payload: AyWebsCapturedPage): AyWebsPageSign
   const amazon = payload?.amazon;
   const shein = payload?.shein;
   const aliexpress = payload?.aliexpress;
+  const temu = payload?.temu;
   return {
     hasTitle: Boolean(title),
     hasPrice: Array.isArray(payload?.priceCandidates)
@@ -716,7 +717,8 @@ export function ayWebsPageSignalsOf(payload: AyWebsCapturedPage): AyWebsPageSign
     hasProductShell: Boolean(
       (amazon && typeof amazon.pageAsin === 'string' && AMAZON_ASIN_SHAPE.test(amazon.pageAsin))
       || (shein && typeof shein.pageGoodsId === 'string' && /^\d{5,16}$/.test(shein.pageGoodsId))
-      || (aliexpress && typeof aliexpress.pageItemId === 'string' && /^\d{6,20}$/.test(aliexpress.pageItemId)),
+      || (aliexpress && typeof aliexpress.pageItemId === 'string' && /^\d{6,20}$/.test(aliexpress.pageItemId))
+      || (temu && typeof temu.pageGoodsId === 'string' && /^\d{8,24}$/.test(temu.pageGoodsId)),
     ),
   };
 }

@@ -69,7 +69,7 @@ describe('icône compte et menu', () => {
     expect(screen.queryByText('AYWEBs')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Notifications' })).toBeNull();
     fireEvent.press(screen.getByRole('button', { name: 'Panier ZAYROVI' }));
-    expect(router.push).toHaveBeenCalledWith('/(tabs)/cart');
+    expect(router.push).toHaveBeenCalledWith('/panier');
   });
 
   it('le menu contient la langue et le thème, avec leurs choix', async () => {

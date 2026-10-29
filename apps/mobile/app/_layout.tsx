@@ -107,6 +107,8 @@ function Navigation() {
           }}
         >
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="panier" />
+          <Stack.Screen name="z-lens" />
           {/* Connexion : présentée par-dessus l'onglet courant, refermée au succès. */}
           <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
           <Stack.Screen name="forgot" options={{ presentation: 'modal' }} />

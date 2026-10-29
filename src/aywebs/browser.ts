@@ -126,6 +126,11 @@ export function captureInjectionFor(input: {
  * C'est l'appel rapide qui permet à l'écran de réagir immédiatement (§52),
  * la résolution produit lourde venant ensuite en arrière-plan.
  */
+function isAliExpressModalLandingUrl(url: URL): boolean {
+  return /(?:^|\.)aliexpress\.(?:com|us|ru)$/i.test(url.hostname)
+    && /(?:BundleDeals|aye-bundle-deals|tesla-landing|bundle-deals|superdeals|choice)/i.test(url.pathname);
+}
+
 export function analyzeAyWebsUrl(
   rawUrl: unknown,
   scraper: SmartLinkScraper,
@@ -185,13 +190,15 @@ export function analyzeAyWebsUrl(
     pageType: classification.pageType,
     isProductPage: classification.isProductPage,
     productRecognition: store ? ayWebsStoreRecognition(store) : 'none',
-    captureInjection: captureInjectionFor({
-      registered,
-      recognition: store ? ayWebsStoreRecognition(store) : 'none',
-      isProductPage: classification.isProductPage,
-      captureAllowed,
-      externalCaptureAllowed,
-    }),
+    captureInjection: (store?.id === 'aliexpress' && !classification.isProductPage && captureAllowed && isAliExpressModalLandingUrl(url))
+      ? 'on_demand'
+      : captureInjectionFor({
+        registered,
+        recognition: store ? ayWebsStoreRecognition(store) : 'none',
+        isProductPage: classification.isProductPage,
+        captureAllowed,
+        externalCaptureAllowed,
+      }),
     customerActionRequired: classification.customerActionRequired,
     reason: classification.reason,
     browserMode: store?.browserMode || 'external',
@@ -286,7 +293,11 @@ export function assertAyWebsProductPage(
   const proof = options.captureProof;
   const recognition = ayWebsStoreRecognition(store);
   let captureProvesPage = false;
-  if (!classification.isProductPage && (recognition === 'capture' || recognition === 'pattern')) {
+  if (!classification.isProductPage && (
+    recognition === 'capture'
+    || recognition === 'pattern'
+    || (store.id === 'aliexpress' && isAliExpressModalLandingUrl(url))
+  )) {
     captureProvesPage = proof?.accepted === true
       && proof?.corroborated === true
       && Boolean(String(proof?.title || '').trim());

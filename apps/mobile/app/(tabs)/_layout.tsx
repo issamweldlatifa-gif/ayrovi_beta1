@@ -48,6 +48,7 @@ export default function TabsLayout() {
 
   return (
     <Tabs
+      backBehavior="history"
       screenListeners={{
         tabPress: () => revealChrome(),
       }}
@@ -89,11 +90,12 @@ export default function TabsLayout() {
         listeners={{
           tabPress: (event) => {
             event.preventDefault();
-            router.push('/lens');
+            router.push('/z-lens');
           },
         }}
         options={{
           title: t('tabs.lens'),
+          tabBarStyle: { display: 'none' },
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
             <TabLensIcon color={color} focused={focused} />
@@ -134,8 +136,8 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* Panier conservé comme route valide pour l'en-tête et les feuilles, hors de la barre. */}
-      <Tabs.Screen name="cart" options={{ href: null, title: t('tabs.cart') }} />
+      {/* Panier conservé comme route valide pour les liens directs, sans barre d'onglets. */}
+      <Tabs.Screen name="cart" options={{ href: null, tabBarStyle: { display: 'none' }, title: t('tabs.cart') }} />
     </Tabs>
   );
 }

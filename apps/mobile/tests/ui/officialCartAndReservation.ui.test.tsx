@@ -272,17 +272,14 @@ describe('Refonte du 29/10/2026 — Panier officiel, Fiche réservation 20 min e
     expect(screen.getByTestId('product-header-cart-pill')).toBeTruthy();
     expect(screen.getByText('Article ajouté')).toBeTruthy();
 
-    // Un appui sur la pastille réservée ouvre la feuille « Panier réservé »
-    await act(async () => {
-      fireEvent.press(screen.getByTestId('product-header-cart-pill'));
-    });
+    // La feuille « Panier réservé » s'ouvre dès l'ajout au panier (et reste accessible via la pastille)
     expect(screen.getByTestId('product-reserved-sheet')).toBeTruthy();
     expect(screen.getByText('Panier réservé')).toBeTruthy();
     expect(screen.getByText('20:00')).toBeTruthy();
     expect(screen.getByText('Les articles de votre panier sont réservés pendant 20 minutes.')).toBeTruthy();
 
     fireEvent.press(screen.getByTestId('product-reserved-view-cart'));
-    expect(mockPush).toHaveBeenCalledWith('/cart');
+    expect(mockPush).toHaveBeenCalledWith('/panier');
   });
 
   it('affiche le prix remisé et la feuille compacte « Ajouté au panier » avec le compteur d’articles', async () => {
@@ -342,6 +339,6 @@ describe('Refonte du 29/10/2026 — Panier officiel, Fiche réservation 20 min e
     expect(screen.getByText('Vous avez maintenant 3 article(s) dans votre panier.')).toBeTruthy();
 
     fireEvent.press(screen.getByTestId('aywebs-sheet-go-to-bag'));
-    expect(mockPush).toHaveBeenCalledWith('/cart');
+    expect(mockPush).toHaveBeenCalledWith('/panier');
   });
 });

@@ -250,7 +250,7 @@ export default function AyWebsCartScreen() {
                     </>
                   ) : null}
                   <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.cartBridgeLater')}</AppText>
-                  <Button label={t('aywebs.cartBridgeOpen')} tone="quiet" onPress={() => router.push('/cart')} />
+                  <Button label={t('aywebs.cartBridgeOpen')} tone="quiet" onPress={() => router.push('/panier')} />
                 </Card>
               ) : null}
             </View>
@@ -268,7 +268,7 @@ export default function AyWebsCartScreen() {
                   linkToAyrovi.mutate();
                   return;
                 }
-                router.push('/cart');
+                router.push('/panier');
               }}
               bottomPadding={Math.max(insets.bottom, 12)}
             />

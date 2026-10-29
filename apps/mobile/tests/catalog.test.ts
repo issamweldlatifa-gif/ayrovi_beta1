@@ -168,7 +168,7 @@ describe('صفحة المنتوج — قرار موثّق', () => {
     // الهيدر، والزرّ الأسود في البارّة.
     const source = screen();
     expect(source).toContain("t('product.share')");
-    expect(source).toContain("router.push('/cart')");
+    expect(source).toContain("router.push('/panier')");
     expect(source).not.toContain('addCatalogFavorite');
   });
 });

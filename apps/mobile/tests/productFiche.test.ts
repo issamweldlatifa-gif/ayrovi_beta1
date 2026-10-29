@@ -52,8 +52,8 @@ const code = (rel: string) => readFileSync(resolve(__dirname, '..', rel), 'utf8'
 const src = (rel: string) => readFileSync(resolve(__dirname, '..', rel), 'utf8');
 
 describe('fiche — cotes de la maquette (720 × 1600 px ⇒ ÷ 2 en dp)', () => {
-  it('la photo mesure 581 dp (1162 px) et la barre d’achat compacte 60 dp (bouton 40 dp)', () => {
-    expect(FICHE.imageHeight).toBe(581);
+  it('la photo mesure 476 dp (proportion Privé : ligne Taille visible d’emblée) et la barre d’achat compacte 60 dp', () => {
+    expect(FICHE.imageHeight).toBe(476);
     expect(FICHE.barHeight).toBe(60);
     expect(FICHE.barButtonHeight).toBe(40);
     expect(FICHE.rowHeight).toBe(49);

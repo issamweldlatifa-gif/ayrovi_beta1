@@ -1133,45 +1133,44 @@ export function AddToCartSheet({
         </View>
       )}
     >
-      <View style={[styles.productRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        {imageUri ? (
-          <AppImage
-            uri={mediaUrl(imageUri)}
-            fallbackUris={[mediaUrl(product.images[0] || '')]}
-            style={[styles.productHero, { backgroundColor: theme.colors.skeleton }]}
-            contentFit="cover"
-            accessibilityLabel={title}
-            testID="aywebs-sheet-product-image"
-          />
-        ) : (
-          <View
-            style={[
-              styles.productHero,
-              {
-                borderColor: theme.colors.line,
-                borderWidth: StyleSheet.hairlineWidth,
-                backgroundColor: theme.colors.skeleton,
-                alignItems: 'center',
-                justifyContent: 'center',
-              },
-            ]}
-          >
-            <Ionicons name="image-outline" size={theme.iconSize.lg} color={theme.colors.muted} />
-          </View>
-        )}
+      <View style={styles.productStack}>
+        <View style={styles.productHeroWrap}>
+          {imageUri ? (
+            <AppImage
+              uri={mediaUrl(imageUri)}
+              fallbackUris={[mediaUrl(product.images[0] || '')]}
+              highRes
+              style={[styles.productHero, { backgroundColor: theme.colors.skeleton }]}
+              contentFit="cover"
+              accessibilityLabel={title}
+              testID="aywebs-sheet-product-image"
+            />
+          ) : (
+            <View
+              style={[
+                styles.productHero,
+                {
+                  borderColor: theme.colors.line,
+                  borderWidth: StyleSheet.hairlineWidth,
+                  backgroundColor: theme.colors.skeleton,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                },
+              ]}
+            >
+              <Ionicons name="image-outline" size={theme.iconSize.lg} color={theme.colors.muted} />
+            </View>
+          )}
+        </View>
 
         <View style={styles.productText}>
-          <AppText variant="caption" color={theme.colors.ink} numberOfLines={2}>
-            {title}
-          </AppText>
-
           {added ? (
             <>
               {addedUnitOrLineTnd ? (
                 <View style={styles.discountPriceBlock}>
                   <View style={[styles.priceInlineRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
                     <AppText
-                      variant="body"
+                      variant="lead"
                       weight="bold"
                       color={discountMeta ? theme.status.danger.fg : theme.colors.ink}
                     >
@@ -1193,10 +1192,14 @@ export function AddToCartSheet({
                   ) : null}
                 </View>
               ) : added.item.unitPrice != null ? (
-                <AppText variant="body" weight="bold" color={theme.colors.ink}>
+                <AppText variant="lead" weight="bold" color={theme.colors.ink}>
                   {`${added.item.unitPrice} ${added.item.currency}`.trim()}
                 </AppText>
               ) : null}
+
+              <AppText variant="label" color={theme.colors.ink} numberOfLines={2}>
+                {title}
+              </AppText>
 
               <View style={styles.addedVariantStack}>
                 {addedSplitVariants.color ? (
@@ -1257,6 +1260,10 @@ export function AddToCartSheet({
                   {t('aywebs.priceAtAddShort')}
                 </AppText>
               )}
+
+              <AppText variant="label" color={theme.colors.ink} numberOfLines={2}>
+                {title}
+              </AppText>
             </>
           )}
         </View>
@@ -1275,7 +1282,7 @@ export function AddToCartSheet({
             block
             style={styles.slimAddButton}
             leading={<Ionicons name="bag-outline" size={theme.iconSize.sm} color={theme.colors.canvas} />}
-            onPress={() => { onClose(); router.push('/cart'); }}
+            onPress={() => { onClose(); router.push('/panier'); }}
             testID="aywebs-sheet-go-to-bag"
           />
           <View testID="aywebs-sheet-bag-count-banner" style={styles.bagCountBanner}>
@@ -1482,9 +1489,10 @@ const styles = StyleSheet.create({
   headerWordmark: { width: 69, height: 24 },
   close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   addedHeaderRow: { alignItems: 'center', justifyContent: 'center', gap: 6 },
-  productRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  productHero: { width: 80, height: 100, borderRadius: RADIUS.xs },
-  productText: { flex: 1, gap: 6 },
+  productStack: { gap: 12 },
+  productHeroWrap: { alignItems: 'center', paddingVertical: 4 },
+  productHero: { width: 164, height: 196, borderRadius: RADIUS.xs },
+  productText: { gap: 8 },
   discountPriceBlock: { gap: 2 },
   priceInlineRow: { alignItems: 'baseline', gap: 6, flexWrap: 'wrap' },
   regularPriceRow: { alignItems: 'center', gap: 6, flexWrap: 'wrap' },

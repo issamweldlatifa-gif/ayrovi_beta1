@@ -213,7 +213,7 @@ export default function CheckoutScreen() {
   /* ── شاشة التأكيد: كل رقم من الخادم ───────────────────────────────────── */
   if (result) {
     return (
-      <SubScreen title={t('checkout.doneTitle')} subtitle={t('checkout.doneHint')} fallback="/cart">
+      <SubScreen title={t('checkout.doneTitle')} subtitle={t('checkout.doneHint')} fallback="/panier">
         <Card>
           <KeyValue label={t('checkout.orderNumber')} value={result.orderNumber} />
           <KeyValue label={t('checkout.total')} value={`${formatMoney(result.totalTND)}`} />
@@ -231,7 +231,7 @@ export default function CheckoutScreen() {
             <AppText variant="caption" color={theme.colors.muted}>{result.message}</AppText>
           ) : null}
           <Button label={t('checkout.openOrder')} onPress={() => router.replace(`/orders/${result.orderId}`)} />
-          <Button label={t('checkout.backToCart')} tone="quiet" onPress={() => router.replace('/cart')} />
+          <Button label={t('checkout.backToCart')} tone="quiet" onPress={() => router.replace('/panier')} />
         </Card>
       </SubScreen>
     );
@@ -240,7 +240,7 @@ export default function CheckoutScreen() {
   /* ── بوّابات حقيقية قبل الفورم ─────────────────────────────────────────── */
   if (!authenticated) {
     return (
-      <SubScreen title={t('checkout.title')} subtitle={t('checkout.hint')} fallback="/cart">
+      <SubScreen title={t('checkout.title')} subtitle={t('checkout.hint')} fallback="/panier">
         <Card>
           <AppText variant="body">{t('checkout.authRequired')}</AppText>
           <Button label={t('checkout.signIn')} onPress={() => router.push('/sign-in')} />
@@ -251,7 +251,7 @@ export default function CheckoutScreen() {
 
   if (session.status !== 'loading' && !identityReady) {
     return (
-      <SubScreen title={t('checkout.title')} subtitle={t('checkout.hint')} fallback="/cart">
+      <SubScreen title={t('checkout.title')} subtitle={t('checkout.hint')} fallback="/panier">
         <Card>
           <AppText variant="body">{t('checkout.contactRequired')}</AppText>
           <Button label={t('checkout.verifyNow')} onPress={() => router.push('/account/security')} />
@@ -264,7 +264,7 @@ export default function CheckoutScreen() {
     <SubScreen
       title={t('checkout.title')}
       subtitle={t('checkout.hint')}
-      fallback="/cart"
+      fallback="/panier"
       scrollRef={scrollRef}
       onScroll={handleScroll}
       sticky={(
