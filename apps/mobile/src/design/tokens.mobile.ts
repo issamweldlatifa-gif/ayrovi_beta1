@@ -221,6 +221,35 @@ export const FICHE_COLORS = {
   scrim: veil(0.35),
 } as const;
 
+/** Adaptation mode clair / sombre de la grande fiche produit sans perte de contraste. */
+export function ficheColorsFor(mode: 'light' | 'dark') {
+  if (mode === 'light') return FICHE_COLORS;
+  return {
+    ink: BRAND.white,
+    muted: COLORS.dark.muted,
+    recommendation: COLORS.dark.surface,
+    accent: COLORS.dark.accentText,
+    onAccent: BRAND.white,
+    pillSurface: COLORS.dark.surface,
+    success: '#23C16B',
+    hair: COLORS.dark.line,
+    dotIdle: alpha(BRAND.white, 0.36),
+    nameUnderline: COLORS.dark.lineControl,
+    sheetGrab: COLORS.dark.lineControl,
+    viewerStage: BRAND.black,
+    struck: COLORS.dark.muted,
+    scrim: veil(0.64),
+  } as const;
+}
+
+/** Rayon supérieur fin et luxueux pour toutes les feuilles basses de l'application. */
+export const SHEET_CORNER_RADIUS = 8;
+
+/** Interlettrage du mot-symbole officiel ZAYROVI et de l'extension SONIM. */
+export const WORDMARK_STYLE = { fontSize: 18, letterSpacing: 2.2 } as const;
+export const SONIM_TITLE_STYLE = { fontSize: 15, letterSpacing: 1.8 } as const;
+export const SONIM_SUBTITLE_STYLE = { fontSize: 10, letterSpacing: 1.6 } as const;
+
 export const REEL_TILE = {
   widthFraction: 0.66,
 } as const;

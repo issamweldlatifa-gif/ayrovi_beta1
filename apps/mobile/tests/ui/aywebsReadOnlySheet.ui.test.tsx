@@ -195,12 +195,13 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
 
     await waitFor(() => expect(screen.getAllByText(/79[.,]40/).length).toBeGreaterThan(0));
 
-    expect(screen.getByText('Confirmation de votre article')).toBeTruthy();
+    expect(screen.getByLabelText('Confirmation de votre article')).toBeTruthy();
     expect(screen.getByTestId('aywebs-captured-selection-box')).toBeTruthy();
-    expect(screen.getByText('Sélection capturée depuis la boutique')).toBeTruthy();
+    expect(screen.getByText('Douane et livraison incluses')).toBeTruthy();
+    expect(screen.queryByText(/Sélection capturée depuis la boutique/)).toBeNull();
+    expect(screen.queryByText(/Prix boutique/)).toBeNull();
     expect(screen.getByText('Couleur : Jean clair')).toBeTruthy();
     expect(screen.getByText('Taille : 4Y (98-104 cm)')).toBeTruthy();
-    expect(screen.getByText(/SHEIN · Prix boutique : 18[.,]71 USD/)).toBeTruthy();
     expect(screen.getByText('Ajouter au panier')).toBeTruthy();
 
     /* Aucun sélecteur interactif de taille/couleur n'est rendu dans le Modèle #2 */

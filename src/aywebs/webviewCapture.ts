@@ -278,9 +278,10 @@ const AVAILABILITY_VOCABULARY: Array<{ state: AyWebsAvailabilityState; reason: s
     state: 'AVAILABLE', reason: 'merchant_in_stock',
     patterns: [
       /instock|in\s*stock|available|add\s*to\s*(?:cart|basket|bag|my\s*picks|picks|bundle)|buy\s*now/i,
-      /en\s+stock|ajouter\s+(?:au\s+)?(?:panier|sac|lot)|ajouter\s+à\s+(?:ma\s+s[ée]lection|mes\s+choix)|acheter/i,
+      /en\s+stock|ajouter\s+(?:au\s+)?(?:panier|sac|lot)|ajouter\s+[àa]\s+(?:(?:ma|mes)\s+s[ée]lections?|mes\s+choix)|acheter/i,
       /in\s+den\s+warenkorb|in\s+die\s+einkaufstasche|zu\s+meiner\s+auswahl|auf\s+lager|lieferbar/i,
       /a(?:ñ|n)adir\s+(?:a\s+la\s+(?:bolsa|cesta)|al\s+carrito|a\s+mi\s+selecci[óo]n)|aggiungi\s+(?:al\s+carrello|alla\s+borsa|alla\s+mia\s+selezione)|adicionar\s+(?:ao\s+carrinho|às?\s+minhas?\s+escolhas?)|comprar\s+agora/i,
+      /أضف\s*(?:إلى\s*)?(?:السلة|العربة|الحقيبة|حقيبة\s*التسوق|مختاراتي|اختياراتي)|إضافة\s*إلى\s*(?:السلة|العربة|الحقيبة|مختاراتي|اختياراتي)|أضف\s*(?:للسلة|لمختاراتي|لاختياراتي)|اشترِ?\s*(?:الآن)?/i,
       /\b\d+\s*(?:pieces?|pcs|pi[eè]ces?|unidades?|pe[cç]as?|stück|قطعة|قطع|حبة)(?:\s*(?:available|disponibles?|dispon[ií]ve(?:l|is)|verfügbar|متوفرة?))?/i,
       /(?:أضف|إضافة)\s*(?:إلى\s*|لـ?\s*)?(?:السلة|العربة|الحقيبة|حقيبة\s*التسوق|مختاراتي)|اشترِ?(?:\s*الآن)?|متوفر/i,
     ],
@@ -355,9 +356,9 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
        un indice. Mesuré le 26/10/2026 : toutes les pointures entières étaient
        écartées, la feuille Zalando ne proposait que « 35.5 », « 51.5 »… et le
        client ne pouvait pas choisir sa taille. */
-    const sizeGroup = /(size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس|length|longueur|voltage|watt|capacity|capacit|pieces|pcs|pack|lot|pin|port|gauge|calibre)/i.test(name);
+    const numericChoiceGroup = /(size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس|colour|color|couleur|farbe|colore|cor|kleur|لون|shade|teinte|nuance|style|model|modèle|modele|type|pattern|motif|length|longueur|voltage|watt|capacity|capacit|pieces|pcs|pack|lot|pin|port|gauge|calibre)/i.test(name);
     const values = cleanTextArray((entry as { values?: unknown }).values, AYWEBS_CAPTURE_LIMITS.maxVariantGroupValues, 60)
-      .filter((value) => sizeGroup || !/^\d{1,3}$/.test(value));
+      .filter((value) => numericChoiceGroup || /^0\d+$/.test(value) || !/^\d{1,3}$/.test(value));
     if (values.length < 1) continue;
     const selected = cleanTextArray((entry as { selected?: unknown }).selected, AYWEBS_CAPTURE_LIMITS.maxVariantGroupValues, 60)
       .filter((value) => values.some((known) => known.toLowerCase() === value.toLowerCase()));
@@ -1017,9 +1018,11 @@ export function validateAyWebsCapturedPage(
     const resolvedAeId = /^\d{6,20}$/.test(rawAeId) ? rawAeId : urlAeId;
     if (resolvedAeId) externalId = `AE-${resolvedAeId}`;
   } else if (storeForPrice?.id === 'temu') {
+    const rawTemuId = collapse(payload.temu?.pageGoodsId, 32).replace(/^TEMU-/i, '');
     let urlTemuId: string | null = null;
     try { urlTemuId = temuGoodsId(new URL(pageUrl || requestUrl)); } catch { urlTemuId = null; }
-    if (urlTemuId) externalId = `TEMU-${urlTemuId}`;
+    const resolvedTemuId = /^\d{8,24}$/.test(rawTemuId) ? rawTemuId : urlTemuId;
+    if (resolvedTemuId) externalId = `TEMU-${resolvedTemuId}`;
   }
 
   /* Validation serveur de la MATRICE DE VARIANTES universelle (`variantMatrix` + `aliexpress.skus`) :

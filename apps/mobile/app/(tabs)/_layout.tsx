@@ -117,6 +117,7 @@ export default function TabsLayout() {
         name="sonim"
         options={{
           title: t('tabs.sonim'),
+          tabBarStyle: { display: 'none' },
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
             <TabSonimIcon color={color} focused={focused} />

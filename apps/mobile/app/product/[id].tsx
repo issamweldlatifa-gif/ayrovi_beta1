@@ -322,7 +322,7 @@ export default function ProductScreen() {
           accessibilityRole="button"
           accessibilityLabel={t('product.openGallery')}
           onPress={() => setViewer(photo)}
-          style={styles.photoWindow}
+          style={[styles.photoWindow, { height: FICHE.imageHeight + insets.top }]}
         />
 
         {/* 2. الورقة: fond opaque, angles droits (cotes de la maquette) */}

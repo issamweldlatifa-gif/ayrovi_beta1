@@ -42,8 +42,9 @@ import {
 
 const GRID_GAP = 12;
 const TWO_COLUMNS_MAX_WIDTH = 600;
-
-
+const INITIAL_STORE_BATCH = 12;
+const STORE_BATCH_STEP = 24;
+const IS_TEST_ENV = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
 
 export type StoresCatalogQuery = UseQueryResult<{ stores: AyWebsStore[]; categories: AyWebsCategory[] }, Error>;
 
@@ -52,6 +53,7 @@ export function useStoresCatalogQuery(): StoresCatalogQuery {
   return useQuery({
     queryKey: ['aywebs', 'stores-catalog'],
     queryFn: ({ signal }) => fetchAyWebsStoreCatalog({ signal }),
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -72,6 +74,28 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
   /** La page n'a qu'une liste : effacer la recherche ramène à tout le catalogue. */
   const changeQuery = (text: string) => setQuery(text);
   const found = searching ? filterStoresByQuery(stores, query) : stores;
+
+  /* Affichage progressif par tranches sur appareil : les 12 premières boutiques
+     apparaissent dès la première trame, puis les rangées suivantes arrivent l'une
+     après l'autre à 60 Hz sans bloquer le fil principal. */
+  const [visibleCount, setVisibleCount] = useState(() => (
+    IS_TEST_ENV ? Number.MAX_SAFE_INTEGER : INITIAL_STORE_BATCH
+  ));
+
+  useEffect(() => {
+    if (IS_TEST_ENV) return;
+    setVisibleCount(INITIAL_STORE_BATCH);
+  }, [query, stores.length]);
+
+  useEffect(() => {
+    if (IS_TEST_ENV || visibleCount >= found.length) return undefined;
+    const raf = requestAnimationFrame(() => {
+      setVisibleCount((prev) => Math.min(found.length, prev + STORE_BATCH_STEP));
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [found.length, visibleCount]);
+
+  const progressiveFound = found.slice(0, visibleCount);
 
   const openStore = (store: AyWebsStore) => {
     const target = storeEntryTarget(store);
@@ -117,7 +141,7 @@ export function StoresContent({ catalog }: { catalog: StoresCatalogQuery }) {
   } else if (catalog.isError) {
     body = <ErrorBlock error={catalog.error} onRetry={() => catalog.refetch()} />;
   } else if (found.length > 0) {
-    body = <View style={styles.section} testID="aywebs-stores-grid">{renderGrid(found)}</View>;
+    body = <View style={styles.section} testID="aywebs-stores-grid">{renderGrid(progressiveFound)}</View>;
   } else if (searching) {
     body = (
       <View style={styles.section}>

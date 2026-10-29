@@ -13,7 +13,6 @@
  * Les couches de fond (une par carte, empilées) et le voile du titre sont les
  * seules superpositions `absolute` de ce fichier.
  */
-import { RADIUS } from '@/design/tokens.mobile';
 import {
   memo, useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
@@ -127,15 +126,19 @@ function HeroCarouselView({
   // Marge de page (gutter) : la première carte s'aligne sur les titres et le header.
   const { cardWidth, stride, sideInset } = carouselGeometry(viewportWidth, gutter);
 
-  // Fond de chaque carte = les bords EXACTS de sa photo (haut → bas), sans retouche.
-  // Repli : fond manuel / ancienne palette (`background`), puis surface du thème.
+  // Fond de chaque carte = les bords EXACTS de sa photo en mode clair ;
+  // en mode sombre, toile sombre unifiée pour éviter toute rupture chromatique.
   const edges = useMemo(
-    () => slides.map((card) => heroEdgeColors(card, theme.colors.surface)),
-    [slides, theme.colors.surface],
+    () => slides.map((card) => (
+      theme.mode === 'dark'
+        ? { top: theme.colors.canvas, bottom: theme.colors.canvas }
+        : heroEdgeColors(card, theme.colors.surface)
+    )),
+    [slides, theme.colors.canvas, theme.colors.surface, theme.mode],
   );
 
-  // Le header reprend le bord HAUT de la photo active ; remise à zéro au démontage.
-  const activeTop = edges[activeIndex]?.top ?? null;
+  // Le header reprend le bord HAUT de la photo active en mode clair ; en mode sombre il garde sa toile sombre.
+  const activeTop = theme.mode === 'dark' ? null : (edges[activeIndex]?.top ?? null);
   useEffect(() => {
     onActiveBackgroundChange?.(activeTop);
   }, [activeTop, onActiveBackgroundChange]);
@@ -350,12 +353,15 @@ const HeroCard = memo(function HeroCard({ card, width, backdrop, onPress }: Hero
           accessibilityLabel={cta}
           style={({ pressed }) => [
             styles.cardCta,
-            // Lien éditorial de la carte : pastille encre (le violet plein est réservé
-            // à l'action d'achat — ajout au panier, caisse, paiement).
-            { backgroundColor: ctaFill, opacity: pressed ? theme.opacity.subtle : 1 },
+            {
+              minHeight: theme.chrome.button,
+              borderRadius: theme.radius.sm,
+              backgroundColor: ctaFill,
+              opacity: pressed ? theme.opacity.subtle : 1,
+            },
           ]}
         >
-          <AppText variant="label" weight="bold" color={ctaText} numberOfLines={1}>
+          <AppText variant="label" weight="semibold" color={ctaText} numberOfLines={1}>
             {cta}
           </AppText>
         </Pressable>
@@ -381,11 +387,12 @@ const styles = StyleSheet.create({
   cardSubtitle: { marginTop: 4 },
   cardCta: {
     alignSelf: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 12,
     marginHorizontal: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: RADIUS.full,
     overflow: 'hidden',
   },
 });

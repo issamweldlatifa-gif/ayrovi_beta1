@@ -269,9 +269,7 @@ function SearchSheet({ children, geometry }: { children: ReactNode; geometry: Le
         onAccessibilityAction={(event) => snapTo(event.nativeEvent.actionName === 'increment' ? 0 : live.current.rest)}
         style={styles.sheetGrabArea}
         testID="lens-search-sheet-handle"
-      >
-        <View style={[styles.sheetHandle, styles.sheetDragHandle, { backgroundColor: theme.colors.lineControl }]} />
-      </Pressable>
+      />
       <LensSheetScrollContext.Provider value={onListScroll}>
         {children}
       </LensSheetScrollContext.Provider>

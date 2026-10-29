@@ -91,10 +91,10 @@ export function ErrorFallback({ error, onRetry }: { error: unknown; onRetry?: ()
   return (
     <View style={styles.screen} accessibilityRole="alert">
       <Ionicons name="alert-circle-outline" size={ICON_SIZE.lg} color={SAFE.muted} />
-      <Text style={styles.title}>صار خطأ في العرض</Text>
+      <Text style={styles.title}>حدث خطأ في العرض</Text>
       <Text style={styles.titleFr}>Une erreur d’affichage</Text>
       <Text style={styles.body}>
-        التطبيق باقي يخدم. اضغط « عاود » باش تعاود تجرّب، ولا ارجع للوراء.
+        التطبيق لا يزال يعمل. اضغط على « إعادة المحاولة » أو ارجع إلى الخلف.
       </Text>
       <Text style={styles.bodyFr}>
         L’application reste ouverte. Réessayez, ou revenez en arrière.
@@ -111,7 +111,7 @@ export function ErrorFallback({ error, onRetry }: { error: unknown; onRetry?: ()
           onPress={onRetry}
           style={styles.button}
         >
-          <Text style={styles.buttonLabel}>عاود · Réessayer</Text>
+          <Text style={styles.buttonLabel}>إعادة المحاولة · Réessayer</Text>
         </Pressable>
       ) : null}
     </View>

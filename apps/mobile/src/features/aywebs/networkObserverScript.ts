@@ -15,10 +15,9 @@ export const AYWEBS_NETWORK_OBSERVER_SCRIPT = `(function () {
     window.__aywebsLastTouchAt = window.__aywebsLastTouchAt || 0;
     try {
       var markTouch = function () { window.__aywebsLastTouchAt = Date.now(); };
-      document.addEventListener('touchstart', markTouch, true);
       document.addEventListener('click', markTouch, true);
     } catch (e) {}
-    var RELEVANT_URL = /product|goods|detail|sku|variant|twister|graphql|item|offer|price|pdp|realtime|mall|bff|mtop|bundle/i;
+    var RELEVANT_URL = /product|goods|detail|sku|variant|twister|graphql|item|offer|price|pdp|realtime|mall|bff|mtop|bundle|oak|poppy/i;
     var MAX_TEXT_LEN = 650000;
     var parseJsonOrJsonp = function (rawTxt) {
       if (!rawTxt || typeof rawTxt !== 'string') return null;
@@ -37,8 +36,10 @@ export const AYWEBS_NETWORK_OBSERVER_SCRIPT = `(function () {
       try {
         if (!bodyObj || typeof bodyObj !== 'object') return;
         var list = window.__aywebsNetPayloads;
-        if (!list) return;
-        if (list.length >= 25) list.shift();
+        if (!list || list.length >= 25) {
+          if (list && list.length >= 25) list.shift();
+          else return;
+        }
         list.push({ url: String(reqUrl || '').slice(0, 300), body: bodyObj, ts: Date.now() });
       } catch (e) {}
     };

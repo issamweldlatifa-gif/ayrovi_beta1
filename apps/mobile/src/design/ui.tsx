@@ -202,10 +202,10 @@ export function Segmented<T extends string>({
                 styles.segment,
                 {
                   minHeight: theme.geometry.minTarget,
-                  // Segment choisi : fond violet clair (#C5B2F4) + filet violet en bas
-                  // (indicateur d'onglet actif). Le violet plein reste réservé à
-                  // l'action principale de l'écran.
-                  backgroundColor: active ? theme.colors.accentSoft : 'transparent',
+                  // Segment choisi : violet clair en mode clair ; surface sombre nette en mode sombre.
+                  backgroundColor: active
+                    ? (theme.mode === 'dark' ? theme.colors.surface : theme.colors.accentSoft)
+                    : 'transparent',
                   // Le séparateur suit le côté de la lecture, pas la gauche.
                   [theme.isRTL ? 'borderRightWidth' : 'borderLeftWidth']:
                     index === 0 ? 0 : StyleSheet.hairlineWidth,
@@ -216,7 +216,7 @@ export function Segmented<T extends string>({
               <AppText
                 variant="label"
                 weight={active ? 'bold' : 'regular'}
-                color={active ? theme.colors.onAccentSoft : theme.colors.ink}
+                color={active ? (theme.mode === 'dark' ? theme.colors.ink : theme.colors.onAccentSoft) : theme.colors.ink}
                 align="center"
               >
                 {option.label}
@@ -225,7 +225,10 @@ export function Segmented<T extends string>({
                 <View
                   pointerEvents="none"
                   testID={`segment-indicator-${option.value}`}
-                  style={[styles.segmentIndicator, { backgroundColor: theme.colors.action }]}
+                  style={[
+                    styles.segmentIndicator,
+                    { backgroundColor: theme.mode === 'dark' ? theme.colors.ink : theme.colors.action },
+                  ]}
                 />
               ) : null}
             </Pressable>
@@ -308,7 +311,6 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
       style={({ pressed }) => [
         styles.button,
         block ? { alignSelf: 'stretch' } : null,
-        style,
         {
           minHeight: theme.chrome.button,
           // Système de boutons : pastille compacte (CTA), contour encre épais en mode « quiet ».
@@ -324,18 +326,19 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
           borderColor: quiet ? theme.colors.ink : commerce ? commerceYellow : main ? theme.colors.action : theme.colors.ink,
           opacity: disabled && !busy ? theme.opacity.disabled : pressed && quiet ? theme.opacity.dimmed : 1,
         },
+        style,
       ]}
     >
       {lead ? (
         // Pictogramme (ex. logo Google) posé avant le libellé, dans le sens de lecture.
         <View style={[styles.leadingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           {lead}
-          <AppText variant="label" weight="bold" color={labelColor}>
+          <AppText variant="label" weight="semibold" color={labelColor}>
             {label}
           </AppText>
         </View>
       ) : (
-        <AppText variant="label" weight="bold" color={labelColor}>
+        <AppText variant="label" weight="semibold" color={labelColor}>
           {label}
         </AppText>
       )}

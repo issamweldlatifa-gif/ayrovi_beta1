@@ -26,7 +26,7 @@ describe('AppErrorBoundary — un écran qui plante ne ferme plus l’applicatio
       </AppErrorBoundary>,
     );
 
-    expect(view.getByText('صار خطأ في العرض')).toBeTruthy();
+    expect(view.getByText('حدث خطأ في العرض')).toBeTruthy();
     expect(view.getByText('Une erreur d’affichage')).toBeTruthy();
     expect(view.getByText('boum')).toBeTruthy();
     expect(view.getByTestId('error-boundary-retry')).toBeTruthy();

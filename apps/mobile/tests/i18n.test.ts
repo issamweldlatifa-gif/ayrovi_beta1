@@ -49,7 +49,7 @@ describe('dictionnaires fr / ar', () => {
       .map(([key]) => key);
     expect(anonymous).toEqual([]);
     expect(translate('fr', 'sections.discountPercent', { value: '20' })).toBe('-20 %');
-    expect(translate('ar', 'sections.until', { value: '12/11' })).toBe('لين 12/11');
+    expect(translate('ar', 'sections.until', { value: '12/11' })).toBe('حتى 12/11');
     expect(translate('fr', 'social.views', { value: '8' })).toBe('8 vues');
   });
 });

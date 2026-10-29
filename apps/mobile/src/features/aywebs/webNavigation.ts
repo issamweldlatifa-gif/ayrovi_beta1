@@ -32,8 +32,8 @@ const TRACKING_DOCUMENT_PARAMS = new Set([
   'ws_ab_test', '_t', 'aff_fcid', 'aff_fsk', 'aff_platform', 'sk', 'aff_trace_key',
   'terminal_id', 'afsmartredirect', 'sourcetype', 'channel', '_randl_shipto', '_evo_buckets',
   'mallcode', 'imgratio', 'src_module', 'src_identifier', 'src_tab_page_id', 'pagelisttype',
-  '_bg_fs', 'page_kw', 'ici', 'refer_page_el_sn', 'refer_page_id', 'refer_page_name',
-  '_x_sessn_id', '_x_ads_channel', '_x_ads_sub_channel',
+  '_bg_fs', '_p_rfs', 'top_gallery_url', 'page_kw', 'ici', 'refer_page_el_sn', 'refer_page_id',
+  'refer_page_name', 'refer_page_sn', '_x_sessn_id', '_x_ads_channel', '_x_ads_sub_channel',
 ]);
 
 const SILENT_APP_SCHEMES = /^(?:aliexpress|ae|alipays|tbopen|taobao|tmall|shein|sheinlink|temu|intent|market):/i;
@@ -85,6 +85,15 @@ function sheinDocumentIdentity(url: URL): string | null {
   return `https://${rootHost}/-p-${goodsId}.html`;
 }
 
+function temuDocumentIdentity(url: URL): string | null {
+  if (!/(?:^|\.)temu\.com$/i.test(url.hostname)) return null;
+  const qMatch = url.searchParams.get('goods_id') || url.searchParams.get('goodsId') || '';
+  const pMatch = /(?:^|[-/])g-(\d{6,})(?=[-./]|$)/i.exec(url.pathname);
+  const goodsId = (/^\d{6,}$/.test(qMatch.trim()) ? qMatch.trim() : '') || pMatch?.[1] || '';
+  if (!goodsId) return null;
+  return `https://temu.com/-g-${goodsId}.html`;
+}
+
 function documentIdentity(raw: string): string | null {
   try {
     const url = new URL(String(raw || '').trim());
@@ -93,11 +102,13 @@ function documentIdentity(raw: string): string | null {
     if (aeId) return aeId;
     const sheinId = sheinDocumentIdentity(url);
     if (sheinId) return sheinId;
+    const temuId = temuDocumentIdentity(url);
+    if (temuId) return temuId;
     url.hash = '';
     url.hostname = url.hostname.toLowerCase();
     url.pathname = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
     for (const key of [...url.searchParams.keys()]) {
-      if (TRACKING_DOCUMENT_PARAMS.has(key.toLowerCase()) || /^utm_/i.test(key)) {
+      if (TRACKING_DOCUMENT_PARAMS.has(key.toLowerCase()) || /^(?:utm_|_x_|refer_page_)/i.test(key)) {
         url.searchParams.delete(key);
       }
     }
@@ -105,6 +116,25 @@ function documentIdentity(raw: string): string | null {
     return url.toString();
   } catch {
     return null;
+  }
+}
+
+export function isSpaInPageProductSwitch(captureUrl: unknown, pageUrl: unknown): boolean {
+  if (typeof captureUrl !== 'string' || typeof pageUrl !== 'string') return false;
+  try {
+    const capParsed = new URL(captureUrl.trim());
+    const pageParsed = new URL(pageUrl.trim());
+    const capAe = /(?:^|\.)(aliexpress\.(?:com|us|ru))$/i.exec(capParsed.hostname);
+    const pageAe = /(?:^|\.)(aliexpress\.(?:com|us|ru))$/i.exec(pageParsed.hostname);
+    if (capAe && pageAe && capAe[1].toLowerCase() === pageAe[1].toLowerCase()) {
+      if (/(?:BundleDeals|aye-bundle-deals|tesla-landing|bundle-deals)/i.test(pageParsed.pathname)
+        && aliexpressDocumentIdentity(capParsed) !== null) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
   }
 }
 

@@ -51,15 +51,15 @@ describe('géométrie de la fiche — l’aperçu du CRM suit l’application', 
     expect(missing, 'une cote de la maquette n’est pas reprise par l’aperçu du CRM').toEqual([]);
   });
 
-  test('les cotes sont celles de la maquette : 720 × 1600 px, donc 360 dp de large', () => {
+  test('les cotes sont celles de la maquette et de la barre compacte : 720 × 1600 px, donc 360 dp de large', () => {
     // 1162 px ÷ 2 = 581 dp : la photo de l'écran 1.
     expect(FICHE_GEOMETRY.imageHeight).toBe(581);
     // 1440 → 1458 px : la bande grise du séparateur.
     expect(FICHE_GEOMETRY.band).toBe(9);
-    // 1480 → 1575 px : le bouton noir, rayon 47 px.
-    expect(FICHE_GEOMETRY.barButtonWidth).toBe(207);
-    expect(FICHE_GEOMETRY.barButtonHeight).toBe(48);
-    expect(FICHE_GEOMETRY.barButtonRadius).toBe(24);
+    // Barre compacte : pastille 184 × 40 dp, rayon 20 dp.
+    expect(FICHE_GEOMETRY.barButtonWidth).toBe(184);
+    expect(FICHE_GEOMETRY.barButtonHeight).toBe(40);
+    expect(FICHE_GEOMETRY.barButtonRadius).toBe(20);
     expect(FICHE_WIDTH).toBe(360);
   });
 
@@ -99,13 +99,12 @@ describe('écran 1 — l’empilement tombe sur les positions mesurées', () => 
     expect(stack.rule).toBe(671);               // 1342 px
     expect(stack.rowBottom).toBe(720);          // 1440 px
     expect(stack.bandBottom).toBe(729);         // 1458 px
-    expect(stack.screenBottom).toBe(800);       // 1600 px : la hauteur de l'écran de référence
+    expect(stack.screenBottom).toBe(789);       // 729 + 60 dp (barre compacte)
   });
 
-  test('le bouton noir de la barre est centré dans ses 71 dp', () => {
-    // 1480 − 1458 = 22 px sous le haut de la barre, 1575 px de bas : 95 px de haut.
-    expect(G.barButtonTop).toBe(11);
-    expect(G.barButtonHeight).toBe(48);
+  test('le bouton noir de la barre est centré dans ses 60 dp', () => {
+    expect(G.barButtonTop).toBe(10);
+    expect(G.barButtonHeight).toBe(40);
     expect(G.barButtonTop * 2 + G.barButtonHeight).toBeLessThanOrEqual(G.barHeight);
   });
 

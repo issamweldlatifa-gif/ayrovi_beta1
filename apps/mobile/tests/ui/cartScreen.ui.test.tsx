@@ -142,7 +142,7 @@ describe('panier — aucun plantage au montage', () => {
     expect(screen.getByTestId('cart-line-line_poor-remove')).toBeTruthy();
     // Aucun montant inventé pour la ligne : le total absent s'écrit avec la
     // phrase du serveur (« il n'est pas deviné »), jamais « 0.00 TND ».
-    expect(screen.getByText(/pas deviné|ما نخمّنوش/i)).toBeTruthy();
+    expect(screen.getByText(/pas deviné|لا يتمّ تقديره/i)).toBeTruthy();
     view.unmount();
   });
 

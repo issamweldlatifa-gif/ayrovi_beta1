@@ -183,7 +183,26 @@ export function AppHeader({
 
       {/* Le bord suit la langue : en arabe le tiroir sort à droite. */}
       <Drawer visible={menuOpen} onClose={() => { setMenuOpen(false); }} side={theme.isRTL ? 'end' : 'start'}>
-        <View style={{ paddingTop: theme.space[2] }}>
+        <View style={[styles.drawerHead, { flexDirection: rowDirectionFor(theme.isRTL), borderBottomColor: theme.colors.line }]}>
+          <BrandMark color={theme.colors.ink} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            onPress={() => { setMenuOpen(false); }}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.drawerClose,
+              {
+                minWidth: theme.geometry.minTarget,
+                minHeight: theme.geometry.minTarget,
+                opacity: pressed ? theme.opacity.subtle : 1,
+              },
+            ]}
+          >
+            <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} />
+          </Pressable>
+        </View>
+        <View style={styles.drawerNav}>
           <DrawerItem icon="home-outline" label={t('tabs.home')} onPress={() => go('/')} />
           <DrawerItem icon="compass-outline" label={t('catalog.title')} onPress={() => go('/catalog')} />
           <DrawerItem icon="receipt-outline" label={t('orders.title')} onPress={() => go('/orders')} />
@@ -193,8 +212,8 @@ export function AppHeader({
         {/* Réglages d'affichage : langue et thème, dans le menu (plus sur la page compte). */}
         <View style={[styles.prefs, { borderTopColor: theme.colors.line }]}>
           <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <Ionicons name="language-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-            <AppText variant="label" weight="bold">{t('common.language')}</AppText>
+            <Ionicons name="language-outline" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
+            <AppText variant="caption" weight="bold" color={theme.colors.muted}>{t('common.language')}</AppText>
           </View>
           <Segmented<Locale>
             value={locale as Locale}
@@ -205,8 +224,8 @@ export function AppHeader({
             ]}
           />
           <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <Ionicons name="contrast-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-            <AppText variant="label" weight="bold">{t('common.theme')}</AppText>
+            <Ionicons name="contrast-outline" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
+            <AppText variant="caption" weight="bold" color={theme.colors.muted}>{t('common.theme')}</AppText>
           </View>
           <Segmented<ThemeMode>
             value={themeMode}
@@ -224,7 +243,18 @@ export function AppHeader({
 }
 
 const styles = StyleSheet.create({
-  prefs: { marginTop: 12, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 10, paddingHorizontal: 4 },
+  drawerHead: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  drawerClose: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  drawerNav: { paddingTop: 8, gap: 2 },
+  prefs: { marginTop: 12, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 10 },
   prefHead: { alignItems: 'center', gap: 8, marginTop: 4 },
   bar: {
     position: 'absolute',

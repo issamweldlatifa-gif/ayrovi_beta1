@@ -30,6 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/design/theme';
 import { useReduceMotion } from '@/design/motion';
 import { MOTION } from '@/design/tokens.generated';
+import { SHEET_CORNER_RADIUS } from '@/design/tokens.mobile';
 import { SheetBackdrop } from '@/design/sheet/SheetBackdrop';
 import {
   SHEET_SPRING, nextTranslate, panMovesSheet, shouldDismiss,
@@ -180,23 +181,23 @@ export function AppSheet({
         style={[
           presentation === 'bottom' ? styles.bottomPanel : styles.panel,
           {
-            height: presentation === 'bottom' ? sheetHeight : undefined,
+            height: presentation === 'bottom' ? undefined : sheetHeight,
+            maxHeight: presentation === 'bottom' ? sheetHeight : undefined,
             paddingTop: topInset,
             backgroundColor: theme.colors.canvas,
-            borderTopLeftRadius: presentation === 'bottom' ? 24 : 0,
-            borderTopRightRadius: presentation === 'bottom' ? 24 : 0,
+            borderTopLeftRadius: presentation === 'bottom' ? SHEET_CORNER_RADIUS : 0,
+            borderTopRightRadius: presentation === 'bottom' ? SHEET_CORNER_RADIUS : 0,
             transform: [{ translateY: translate }],
           },
         ]}
       >
-        <View style={[styles.handle, { backgroundColor: theme.colors.line }]} />
         {header}
         <ScrollView
-          style={styles.scroll}
+          style={presentation === 'bottom' ? styles.bottomScroll : styles.scroll}
           onScroll={onScroll}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[styles.body, { paddingBottom: footer ? 16 : insets.bottom + 24 }]}
+          contentContainerStyle={[styles.body, { paddingBottom: footer ? 12 : insets.bottom + 20 }]}
         >
           {children}
         </ScrollView>
@@ -215,8 +216,8 @@ const styles = StyleSheet.create({
     position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
   },
   bottomPanel: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden' },
-  handle: { alignSelf: 'center', width: 44, height: 4, borderRadius: 2, marginBottom: 6 },
   scroll: { flex: 1 },
-  body: { padding: 16, gap: 12 },
+  bottomScroll: { flexGrow: 0 },
+  body: { paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
   footer: { paddingHorizontal: 16, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
 });

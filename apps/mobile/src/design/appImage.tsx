@@ -64,6 +64,8 @@ export interface AppImageProps {
    */
   recyclingKey?: string | null;
   blurRadius?: number;
+  /** Désactive le sous-échantillonnage bitmap natif pour les photos plein cadre. */
+  highRes?: boolean;
   /**
    * Appelé UNE fois quand l'image a définitivement échoué (après tous les
    * replis). Sert aux pastilles de variante : plutôt qu'un cadre cassé, elles
@@ -100,7 +102,7 @@ export function useImageCacheGuard(): void {
 
 export function AppImage({
   uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', style,
-  accessibilityLabel, decorative = false, background, tintColor, recyclingKey, blurRadius = 0, onSettled, onError, testID,
+  accessibilityLabel, decorative = false, background, tintColor, recyclingKey, blurRadius = 0, highRes = false, onSettled, onError, testID,
 }: AppImageProps) {
   const theme = useTheme();
   const t = useT();
@@ -168,6 +170,8 @@ export function AppImage({
          `versionCode`. `'memory'` active `DiskCacheStrategy.NONE` tout en gardant
          le bitmap décodé en RAM pour le défilement. */
       cachePolicy={localSource != null ? 'memory' : 'memory-disk'}
+      allowDownscaling={highRes ? false : undefined}
+      priority={highRes ? 'high' : undefined}
       recyclingKey={effectiveRecyclingKey}
       tintColor={tintColor ?? undefined}
       transition={localSource != null ? 0 : theme.duration.fast}

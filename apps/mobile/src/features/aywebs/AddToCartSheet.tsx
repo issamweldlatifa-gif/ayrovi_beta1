@@ -58,7 +58,6 @@ import {
   readCachedSelectionProof,
   readVariantMatrixCache,
   resolveQuantityTotalTnd,
-  selectionMatrixSignature,
   upsertVariantMatrixCache,
 } from '@/features/aywebs/variantMatrixCache';
 import { splitCartVariantLabels } from '@/features/shopping/OfficialCartView';
@@ -137,8 +136,7 @@ export function AddToCartSheet({
   const [quantity, setQuantity] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  /** رموز تشخيص قصيرة (رفض الكابتشر، رفض الثمن) — تظهر كان كي فمّة رفض. */
-  const [diagnostic, setDiagnostic] = useState('');
+  const [, setDiagnostic] = useState('');
   const [added, setAdded] = useState<{ item: AyWebsCartItem; totalUnits: number; linked: boolean; reason: string } | null>(null);
   const [fetched, setFetched] = useState<AyWebsVariantOption[]>([]);
   const [fetchedGroups, setFetchedGroups] = useState<AyWebsVariantGroup[] | null>(null);
@@ -612,21 +610,6 @@ export function AddToCartSheet({
    * RÈGLE STRICTE : si la variante choisie n'a pas de prix vérifié, on n'affiche
    * JAMAIS le prix marchand d'une autre variante (`product.price`) comme prix actuel.
    */
-  const merchantLine = useMemo(() => {
-    const fromQuote = moneyText(quote.sourcePrice, quote.sourceCurrency);
-    if (fromQuote) return merchantShown?.priceFrom || quote.priceFrom
-      ? `${t('aywebs.priceFrom')} ${fromQuote}`
-      : fromQuote;
-    if (merchantPrice.amount) {
-      return merchantShown?.priceFrom
-        ? `${t('aywebs.priceFrom')} ${merchantPrice.amount}`
-        : merchantPrice.amount;
-    }
-    const matchesInitialPage = !groups.length
-      || (pageQuote != null && selectionMatrixSignature(pageQuote.selection) !== '' && selectionMatrixSignature(pageQuote.selection) === selectionMatrixSignature(selection));
-    return matchesInitialPage ? moneyText(product.price, product.currency) : '';
-  }, [groups.length, merchantPrice.amount, merchantShown?.priceFrom, pageQuote, product.currency, product.price, quote.priceFrom, quote.sourceCurrency, quote.sourcePrice, selection, t]);
-
   const availabilityLabel = useCallback((state: AvailabilityState): string => {
     if (state === 'AVAILABLE') return t('aywebs.avail.AVAILABLE');
     if (state === 'LOW_STOCK') return t('aywebs.avail.LOW_STOCK');
@@ -865,6 +848,40 @@ export function AddToCartSheet({
         if (cachedProof.sourceUrl) target = cachedProof.sourceUrl;
       }
 
+      /* 0 bis. Devis déjà signé pour la sélection exacte affichée (ex. mode confirmation
+         WebView m.shein / AliExpress / Temu) : ajout direct en un seul appel sans
+         relancer une lecture serveur susceptible d'être bloquée par le marchand. */
+      const readyToken = pageQuote
+        && pageQuote.quoteToken
+        && pageQuote.unitTnd != null
+        && pageQuote.availability !== 'UNKNOWN'
+        && pageQuote.availability !== 'OUT_OF_STOCK'
+        && selectionKeyOf(pageQuote.selection) === selectionKeyOf(selection)
+        ? pageQuote.quoteToken
+        : '';
+      if (readyToken && !missing.length) {
+        const direct = await addAyWebsCartItem({
+          productId: product.productId,
+          sourceUrl: target,
+          storeId: product.storeId || undefined,
+          variant,
+          quantity,
+          capture: captureToUse,
+          quoteToken: readyToken,
+          requestId: requestId.current,
+        }, { sessionId });
+        if (!alive.current) return;
+        touchCartReservation();
+        setAdded({
+          item: direct.item,
+          totalUnits: direct.cart.totals.units || direct.item.quantity,
+          linked: direct.ayrovi?.linked === true,
+          reason: direct.ayrovi?.reason || '',
+        });
+        onAdded?.(direct.item, direct.cart);
+        return;
+      }
+
       /* 1. الحكم الأوّل: الكابتشر الحالية + هذا الاختيار (بلا قراءة تاجر).
          إذا الكابتشر ترفضت أو النداء فشل، ما نوقفوش هنا: نكمّلو بقراية
          الخادم (كيما الويب) — وهذا هو الفرق اللي كان يخلّي لون يخدم ولون لا. */
@@ -885,10 +902,7 @@ export function AddToCartSheet({
       }
 
       /* 2. الخادم ما قدرش يثبّت التوفّر لهذا الاختيار ⇒ نقراو صفحات الاختيار،
-         وحدة بعد الأخرى (زوز كحدّ أقصى)، وكل مرّة الخادم يعاود يحكم.
-         علاش: على Amazon، ASIN اللون هو «هذا اللون بالمقاس المعروض»، وASIN
-         المقاس هو «هذا المقاس باللون المعروض». تبديل اللون برك ⇒ قراية وحدة.
-         تبديل اللون والمقاس ⇒ قراية اللون، ومن صفحتها عنوان المقاس. */
+         وحدة بعد الأخرى (زوز كحدّ أقصى)، وكل مرّة الخادم يعاود يحكم. */
       let reads = 0;
       let seenUrl = target;
       while (reads < 2 && local && readVariant && resolved
@@ -916,28 +930,25 @@ export function AddToCartSheet({
             variant,
           });
         } catch {
-          /* القراءة فشلت: نكمّل بالحكم الأخير — والخادم يقول كلمتو. */
           break;
         }
       }
 
-      /* تشخيص: علاش الخادم ما قدرش ينشر الثمن؟ الرموز تجي منو (رفض الكابتشر،
-         رفض الثمن) — تتكتب في الورقة باش المشكل يتشخّص من التيليفون. */
       setDiagnostic([
         failedCode,
         resolved?.capture?.rejection ? `capture:${resolved.capture.rejection}` : '',
         resolved?.priceRejection ? `price:${resolved.priceRejection}` : '',
       ].filter(Boolean).join(' · '));
 
-      /* 2 bis. بلا دفي بالدينار من الكابتشر ⇒ الخادم يعاود يقرا الصفحة (كيما
-         الويب). هذا هو الفرق اللي كان يخلّي لون يخدم ولون لا: نفس الفيشة،
-         كابتشر ما فيهاش ثمن مُثبَّت. الكابتشر تبقى مرسلة مع الإضافة: الخادم
-         يشوف نفس الأسماء اللي شافها العميل (وإلا يرفض بالـVARIANT_REQUIRED). */
+      /* 2 bis. Relecture de secours en conservant la capture client : évite un échec
+         sur les boutiques qui bloquent les lectures serveur sans preuve navigateur. */
       if (!resolved || lacksServerQuote(resolved.product)) {
         try {
           const reread = await resolveAyWebsProductWithCapture(target, {
             sessionId,
             storeId: product.storeId || undefined,
+            capture: captureToUse,
+            quantity,
             refresh: true,
             variant,
           });
@@ -946,13 +957,6 @@ export function AddToCartSheet({
             ? { ...resolved, product: preferServerQuote(resolved.product, reread.product) }
             : reread;
           if (lacksServerQuote(reread.product)) {
-            /* لا دفي حتى من القراية: نوقف هنا بجواب صريح بدل ما نبعتو إضافة
-               يعرفو الخادم أنّه باش يرفضها. */
-            setDiagnostic([
-              failedCode,
-              reread.capture?.rejection ? `capture:${reread.capture.rejection}` : '',
-              reread.priceRejection ? `price:${reread.priceRejection}` : '',
-            ].filter(Boolean).join(' · '));
             setError(t('aywebs.block.PRICE_UNAVAILABLE'));
             return;
           }
@@ -1001,12 +1005,13 @@ export function AddToCartSheet({
     } finally {
       if (alive.current) setBusy(false);
     }
-  }, [busy, chosenUnavailable, effectiveCapture, effectiveUrl, groups.length, local, locale, matrixKey, missing.length, onAdded, product.productId,
+  }, [busy, chosenUnavailable, effectiveCapture, effectiveUrl, groups.length, local, locale, matrixKey, missing.length, onAdded, pageQuote, product.productId,
     product.sourceUrl, product.storeId, quantity, quoteToken, readVariant, selection, selectionComplete, sessionId, t]);
 
   const sourceLine = tndText(quote.unitTnd);
   const resolvedTotalTnd = useMemo(() => resolveQuantityTotalTnd(quote, quantity), [quantity, quote]);
   const totalLine = resolvedTotalTnd != null ? tndText(resolvedTotalTnd) : '';
+  const displayedTndLine = quantity > 1 && totalLine ? totalLine : sourceLine;
   const title = added?.item.title || product.title;
   const selectedColorImage = imageForSelectedColor(fields, selection) || quote.image || '';
   /* الصورة الرئيسية تتبع لون المنتج المختار داخل نفس الورقة؛ fallback للصورة
@@ -1030,8 +1035,17 @@ export function AddToCartSheet({
     const ae = typeof captureRecord.aliexpress === 'object' && captureRecord.aliexpress !== null
       ? (captureRecord.aliexpress as Record<string, unknown>)
       : null;
-    const orig = parseNum(shein?.retailPrice) ?? parseNum(ae?.originalPrice) ?? parseNum(captureRecord.compareAtPrice);
-    const sale = parseNum(merchantPrice.amount) ?? parseNum(shein?.salePrice) ?? parseNum(ae?.salePrice);
+    const temu = typeof captureRecord.temu === 'object' && captureRecord.temu !== null
+      ? (captureRecord.temu as Record<string, unknown>)
+      : null;
+    const orig = parseNum(shein?.retailPrice)
+      ?? parseNum(ae?.originalPrice)
+      ?? parseNum(temu?.retailPrice)
+      ?? parseNum(captureRecord.compareAtPrice);
+    const sale = parseNum(merchantPrice.amount)
+      ?? parseNum(shein?.salePrice)
+      ?? parseNum(ae?.salePrice)
+      ?? parseNum(temu?.salePrice);
     if (orig == null || sale == null || orig <= sale * 1.01) return null;
     const pct = Math.round(((orig - sale) / orig) * 100);
     if (pct <= 0 || pct >= 98) return null;
@@ -1039,8 +1053,9 @@ export function AddToCartSheet({
     return { pct, ratio, origMerchant: moneyText(orig, product.currency) };
   }, [captureRecord, merchantPrice.amount, product.currency]);
 
-  const regularUnitTnd = discountMeta && quote.unitTnd != null
-    ? tndText(Math.round(quote.unitTnd * discountMeta.ratio * 100) / 100)
+  const regularBaseTnd = resolvedTotalTnd != null && quantity > 1 ? resolvedTotalTnd : quote.unitTnd;
+  const regularUnitTnd = discountMeta && regularBaseTnd != null
+    ? tndText(Math.round(regularBaseTnd * discountMeta.ratio * 100) / 100)
     : '';
   const addedUnitOrLineTnd = added?.item.lineTotalTnd != null ? tndText(added.item.lineTotalTnd) : sourceLine;
   const addedRegularTnd = discountMeta && added?.item.lineTotalTnd != null
@@ -1050,7 +1065,6 @@ export function AddToCartSheet({
     () => splitCartVariantLabels({ variant: added?.item.variantLabel }),
     [added?.item.variantLabel],
   );
-  const brandHeadline = product.brand || added?.item.storeName || product.storeName || 'AYWEBs';
 
   const closeButton = (
     <Pressable
@@ -1060,7 +1074,7 @@ export function AddToCartSheet({
       hitSlop={8}
       style={styles.close}
     >
-      <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} />
+      <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} />
     </Pressable>
   );
 
@@ -1070,44 +1084,26 @@ export function AddToCartSheet({
       onDismiss={onClose}
       presentation="bottom"
       footer={added ? undefined : (
-        <View style={styles.stickyFooter}>
-          <View style={[styles.stickyPrice, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <AppText variant="caption" color={theme.colors.muted}>
-              {readOnlySelection
-                ? t('aywebs.estimatedTotal')
-                : `${quantity} × ${sourceLine || t('aywebs.priceAtAddShort')}`}
-            </AppText>
-            {quote.unitTnd != null ? (
-              <AppText variant="lead" weight="bold">{quantity > 1 ? totalLine : sourceLine}</AppText>
-            ) : (
-              <AppText variant="caption" color={theme.colors.muted}>
-                {quoting ? t('aywebs.pricePending') : t('aywebs.priceAtAddShort')}
-              </AppText>
-            )}
-          </View>
-          <Button
-            label={busy ? t('aywebs.adding') : (readOnlySelection ? t('aywebs.confirmAddCta') : t('aywebs.addToCart'))}
-            tone="commerce"
-            leading={<Ionicons name="bag-add-outline" size={theme.iconSize.sm} color={COMMERCE.onAction} />}
-            onPress={confirm}
-            busy={busy}
-            disabled={Boolean(blockedCode) || !sessionId}
-            block
-            testID="aywebs-sheet-add"
-          />
-        </View>
+        <Button
+          label={busy ? t('aywebs.adding') : (readOnlySelection ? t('aywebs.confirmAddCta') : t('aywebs.addToCart'))}
+          tone="commerce"
+          leading={<Ionicons name="bag-add-outline" size={theme.iconSize.sm} color={COMMERCE.onAction} />}
+          onPress={confirm}
+          busy={busy}
+          disabled={Boolean(blockedCode) || !sessionId}
+          block
+          style={styles.slimAddButton}
+          testID="aywebs-sheet-add"
+        />
       )}
       header={(
-        <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+        <View
+          accessibilityLabel={added ? t('aywebs.addedBanner') : (readOnlySelection ? t('aywebs.confirmTitle') : t('aywebs.pickTitle'))}
+          style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}
+        >
           <View style={styles.headerSide} />
-          {/* Signature AYWEBs (28/10/2026) : le mot-symbole OFFICIEL, en violet
-              de marque, au-dessus du titre. C'est lui qui dit au client qu'il
-              est dans AYWEBs et pas sur la page du marchand — la feuille
-              s'ouvre PAR-DESSUS la boutique, sans autre repère. */}
           <View style={styles.headerCenter}>
             <AppImage
-              /* Violet de marque en clair ; blanc en sombre, sinon #571EF6 sur
-                 la surface #0A0A0A de la feuille ne se lit pas. */
               localSource={
                 theme.mode === 'dark'
                   ? require('../../../assets/aywebs/aywebs-wordmark-white.png')
@@ -1126,32 +1122,18 @@ export function AddToCartSheet({
                 accessibilityLiveRegion="polite"
                 style={[styles.addedHeaderRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}
               >
-                <Ionicons name="checkmark" size={theme.iconSize.sm} color={theme.status.success.fg} />
-                <AppText variant="body" weight="bold" numberOfLines={1}>
+                <Ionicons name="checkmark-outline" size={theme.iconSize.sm} color={theme.status.success.fg} />
+                <AppText variant="label" weight="semibold" numberOfLines={1}>
                   {t('aywebs.addedBanner')}
                 </AppText>
               </View>
-            ) : (
-              <AppText variant="label" weight="bold" align="center" style={styles.headerTitle} numberOfLines={1}>
-                {readOnlySelection ? t('aywebs.confirmTitle') : t('aywebs.pickTitle')}
-              </AppText>
-            )}
+            ) : null}
           </View>
           <View style={styles.headerSide}>{closeButton}</View>
         </View>
       )}
     >
-      <View
-        style={[
-          styles.productCard,
-          {
-            backgroundColor: added ? theme.colors.canvas : theme.colors.surface,
-            borderColor: added ? 'transparent' : theme.colors.line,
-            borderRadius: theme.radius.card,
-            flexDirection: rowDirectionFor(theme.isRTL),
-          },
-        ]}
-      >
+      <View style={[styles.productRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         {imageUri ? (
           <AppImage
             uri={mediaUrl(imageUri)}
@@ -1177,41 +1159,39 @@ export function AddToCartSheet({
             <Ionicons name="image-outline" size={theme.iconSize.lg} color={theme.colors.muted} />
           </View>
         )}
+
         <View style={styles.productText}>
-          <AppText variant="label" weight="bold" numberOfLines={1}>
-            {brandHeadline}
-          </AppText>
-          <AppText variant="label" color={theme.colors.ink} numberOfLines={added ? 1 : 2}>
+          <AppText variant="caption" color={theme.colors.ink} numberOfLines={2}>
             {title}
           </AppText>
 
           {added ? (
             <>
               {addedUnitOrLineTnd ? (
-                discountMeta ? (
-                  <View style={styles.discountPriceBlock}>
-                    <AppText variant="body" weight="bold" color={theme.status.danger.fg}>
+                <View style={styles.discountPriceBlock}>
+                  <View style={[styles.priceInlineRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                    <AppText
+                      variant="body"
+                      weight="bold"
+                      color={discountMeta ? theme.status.danger.fg : theme.colors.ink}
+                    >
                       {addedUnitOrLineTnd}
                     </AppText>
-                    {addedRegularTnd ? (
-                      <View style={[styles.regularPriceRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                        <AppText variant="caption" color={theme.colors.muted}>
-                          {t('cart.originally')}
-                        </AppText>
-                        <AppText variant="caption" color={theme.colors.muted} style={styles.strikethrough}>
-                          {addedRegularTnd}
-                        </AppText>
-                        <AppText variant="caption" weight="semibold" color={theme.status.danger.fg}>
-                          {`-${discountMeta.pct}%`}
-                        </AppText>
-                      </View>
-                    ) : null}
+                    <AppText variant="caption" color={theme.colors.muted}>
+                      {t('aywebs.customsShippingIncluded')}
+                    </AppText>
                   </View>
-                ) : (
-                  <AppText variant="body" weight="bold" color={theme.colors.ink}>
-                    {addedUnitOrLineTnd}
-                  </AppText>
-                )
+                  {discountMeta && addedRegularTnd ? (
+                    <View style={[styles.regularPriceRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                      <AppText variant="caption" color={theme.colors.muted} style={styles.strikethrough}>
+                        {addedRegularTnd}
+                      </AppText>
+                      <AppText variant="caption" weight="semibold" color={theme.status.danger.fg}>
+                        {`-${discountMeta.pct}%`}
+                      </AppText>
+                    </View>
+                  ) : null}
+                </View>
               ) : added.item.unitPrice != null ? (
                 <AppText variant="body" weight="bold" color={theme.colors.ink}>
                   {`${added.item.unitPrice} ${added.item.currency}`.trim()}
@@ -1239,36 +1219,34 @@ export function AddToCartSheet({
             </>
           ) : (
             <>
-              {readOnlySelection && merchantLine ? (
-                <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
-                  {product.storeName
-                    ? `${product.storeName} · ${t('aywebs.merchantPriceLine', { price: merchantLine })}`
-                    : t('aywebs.merchantPriceLine', { price: merchantLine })}
-                </AppText>
-              ) : null}
-              {sourceLine ? (
-                discountMeta ? (
-                  <View style={styles.discountPriceBlock}>
-                    <AppText variant="lead" weight="bold" color={theme.status.danger.fg}>
-                      {sourceLine}
+              {displayedTndLine ? (
+                <View style={styles.discountPriceBlock}>
+                  <View style={[styles.priceInlineRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                    <AppText
+                      variant="lead"
+                      weight="bold"
+                      color={discountMeta ? theme.status.danger.fg : theme.colors.ink}
+                    >
+                      {displayedTndLine}
                     </AppText>
-                    {regularUnitTnd ? (
-                      <View style={[styles.regularPriceRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                        <AppText variant="caption" color={theme.colors.muted}>
-                          {t('cart.originally')}
-                        </AppText>
-                        <AppText variant="caption" color={theme.colors.muted} style={styles.strikethrough}>
-                          {regularUnitTnd}
-                        </AppText>
-                        <AppText variant="caption" weight="semibold" color={theme.status.danger.fg}>
-                          {`-${discountMeta.pct}%`}
-                        </AppText>
-                      </View>
-                    ) : null}
+                    <AppText variant="caption" color={theme.colors.muted}>
+                      {t('aywebs.customsShippingIncluded')}
+                    </AppText>
                   </View>
-                ) : (
-                  <AppText variant="lead" weight="bold" color={theme.colors.ink}>{sourceLine}</AppText>
-                )
+                  {discountMeta && regularUnitTnd ? (
+                    <View style={[styles.regularPriceRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                      <AppText variant="caption" color={theme.colors.muted}>
+                        {t('cart.originally')}
+                      </AppText>
+                      <AppText variant="caption" color={theme.colors.muted} style={styles.strikethrough}>
+                        {regularUnitTnd}
+                      </AppText>
+                      <AppText variant="caption" weight="semibold" color={theme.status.danger.fg}>
+                        {`-${discountMeta.pct}%`}
+                      </AppText>
+                    </View>
+                  ) : null}
+                </View>
               ) : quoting ? (
                 <View style={[styles.pendingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
                   <LoadingSpinner size="sm" color={theme.colors.muted} testID="aywebs-sheet-price-pending" />
@@ -1279,14 +1257,6 @@ export function AddToCartSheet({
                   {t('aywebs.priceAtAddShort')}
                 </AppText>
               )}
-              {!readOnlySelection && merchantLine ? (
-                <AppText variant="caption" color={theme.colors.muted}>
-                  {t('aywebs.merchantPriceLine', { price: merchantLine })}
-                </AppText>
-              ) : null}
-              {!sourceLine && !merchantLine && merchantPrice.note ? (
-                <AppText variant="caption" color={theme.colors.muted}>{merchantPrice.note}</AppText>
-              ) : null}
             </>
           )}
         </View>
@@ -1303,122 +1273,73 @@ export function AddToCartSheet({
             label={t('aywebs.goToCart')}
             tone="solid"
             block
+            style={styles.slimAddButton}
             leading={<Ionicons name="bag-outline" size={theme.iconSize.sm} color={theme.colors.canvas} />}
-            /* Un seul panier visible pour le client : le panier officiel. */
             onPress={() => { onClose(); router.push('/cart'); }}
             testID="aywebs-sheet-go-to-bag"
           />
-          <View
-            testID="aywebs-sheet-bag-count-banner"
-            style={[styles.bagCountBanner, { backgroundColor: theme.colors.skeleton }]}
-          >
-            <AppText variant="caption" align="center" color={theme.colors.ink}>
+          <View testID="aywebs-sheet-bag-count-banner" style={styles.bagCountBanner}>
+            <AppText variant="caption" align="center" color={theme.colors.muted}>
               {t('aywebs.bagItemsCount', { count: added.totalUnits })}
             </AppText>
           </View>
         </View>
       ) : (
-        <>
+        <View style={[styles.optionsDivider, { borderTopColor: theme.colors.divider }]}>
           {readOnlySelection ? (
-            <View
-              testID="aywebs-captured-selection-box"
-              style={[
-                styles.capturedBox,
-                {
-                  backgroundColor: theme.colors.skeleton,
-                  borderColor: missing.length > 0 ? theme.status.warning.border : theme.colors.line,
-                  borderRadius: theme.radius.card,
-                },
-              ]}
-            >
-              <View style={[styles.capturedHeaderRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                <Ionicons
-                  name={missing.length > 0 ? 'alert-circle-outline' : 'shield-checkmark-outline'}
-                  size={theme.iconSize.sm}
-                  color={missing.length > 0 ? theme.status.warning.fg : theme.status.success.fg}
-                />
-                <AppText variant="caption" weight="semibold" style={styles.capturedHeadingText}>
-                  {missing.length > 0 ? t('aywebs.capturedMissingHeading') : t('aywebs.capturedHeading')}
-                </AppText>
-              </View>
-
-              {capturedBadges.length > 0 ? (
-                <View style={[styles.capturedBadgesWrap, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                  {capturedBadges.map((badge, index) => (
+            <View testID="aywebs-captured-selection-box" style={styles.capturedCleanStack}>
+              {capturedBadges.map((badge, index) => (
+                <View
+                  key={badge.key}
+                  testID={`aywebs-captured-pill-${index}`}
+                  style={[styles.capturedAttributeRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}
+                >
+                  {badge.swatchImage ? (
+                    <AppImage
+                      uri={mediaUrl(badge.swatchImage)}
+                      style={styles.capturedSwatch}
+                      contentFit="cover"
+                      decorative
+                    />
+                  ) : badge.swatchHex ? (
                     <View
-                      key={badge.key}
-                      testID={`aywebs-captured-pill-${index}`}
                       style={[
-                        styles.capturedPill,
+                        styles.capturedSwatch,
                         {
-                          flexDirection: rowDirectionFor(theme.isRTL),
-                          backgroundColor: theme.colors.canvas,
-                          borderColor: theme.colors.line,
+                          backgroundColor: badge.swatchHex,
+                          borderWidth: badge.swatchOutline ? 1 : 0,
+                          borderColor: theme.colors.lineControl,
                         },
                       ]}
-                    >
-                      {badge.swatchImage ? (
-                        <AppImage
-                          uri={mediaUrl(badge.swatchImage)}
-                          style={styles.capturedSwatch}
-                          contentFit="cover"
-                          decorative
-                        />
-                      ) : badge.swatchHex ? (
-                        <View
-                          style={[
-                            styles.capturedSwatch,
-                            {
-                              backgroundColor: badge.swatchHex,
-                              borderWidth: badge.swatchOutline ? 1 : 0,
-                              borderColor: theme.colors.lineControl,
-                            },
-                          ]}
-                        />
-                      ) : null}
-                      <AppText variant="caption" weight="semibold">
-                        {`${badge.label} : ${badge.value}`}
-                      </AppText>
-                    </View>
-                  ))}
+                    />
+                  ) : null}
+                  <AppText variant="caption" color={theme.colors.ink}>
+                    {`${badge.label} : ${badge.value}`}
+                  </AppText>
                 </View>
-              ) : missing.length === 0 ? (
-                <View style={[styles.capturedBadgesWrap, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                  <View
-                    testID="aywebs-captured-pill-standard"
-                    style={[
-                      styles.capturedPill,
-                      {
-                        flexDirection: rowDirectionFor(theme.isRTL),
-                        backgroundColor: theme.colors.canvas,
-                        borderColor: theme.colors.line,
-                      },
-                    ]}
-                  >
-                    <AppText variant="caption" weight="semibold">
-                      {t('aywebs.capturedStandardItem')}
-                    </AppText>
-                  </View>
-                </View>
-              ) : null}
+              ))}
 
               {missing.length > 0 ? (
-                <AppText variant="caption" color={theme.status.danger.fg}>
-                  {t('aywebs.capturedMissingBody', { fields: missingFieldLabels })}
-                </AppText>
+                <View style={styles.missingNotice}>
+                  <AppText variant="caption" weight="semibold" color={theme.status.danger.fg}>
+                    {t('aywebs.capturedMissingHeading')}
+                  </AppText>
+                  <AppText variant="caption" color={theme.status.danger.fg}>
+                    {t('aywebs.capturedMissingBody', { fields: missingFieldLabels })}
+                  </AppText>
+                </View>
               ) : null}
-
-              <View style={[styles.capturedDivider, { backgroundColor: theme.colors.line }]} />
 
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('aywebs.changeOnStore')}
                 onPress={onClose}
+                hitSlop={6}
                 testID="aywebs-change-on-store"
                 style={[styles.changeOnStoreBtn, { flexDirection: rowDirectionFor(theme.isRTL) }]}
               >
-                <Ionicons name="return-up-back-outline" size={theme.iconSize.sm} color={theme.colors.ink} />
-                <AppText variant="caption" weight="semibold" style={styles.changeOnStoreLabel}>
+                <Ionicons name="return-up-back-outline" size={theme.iconSize.xs} color={theme.colors.muted} />
+                <AppText variant="caption" color={theme.colors.muted} style={styles.changeOnStoreLabel}>
                   {t('aywebs.changeOnStore')}
                 </AppText>
               </Pressable>
@@ -1456,47 +1377,56 @@ export function AddToCartSheet({
           )}
 
           <View style={[styles.quantityRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <AppText variant="body" weight="semibold">{t('aywebs.quantity')}</AppText>
-            <View style={styles.stepper}>
+            <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.quantity')}</AppText>
+            <View style={[styles.stepper, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('aywebs.quantityLess')}
                 disabled={quantity <= 1 || busy}
                 onPress={() => setQuantity((value) => Math.max(1, value - 1))}
-                style={[styles.stepperButton, { borderColor: theme.colors.line, backgroundColor: theme.colors.surface, borderRadius: theme.radius.control, borderWidth: 1, minWidth: theme.geometry.minTarget, minHeight: theme.geometry.minTarget }]}
+                hitSlop={6}
+                style={[
+                  styles.stepperButton,
+                  {
+                    borderColor: theme.colors.line,
+                    borderRadius: theme.radius.xs,
+                  },
+                ]}
                 testID="aywebs-quantity-less"
               >
-                <Ionicons name="remove-outline" size={theme.iconSize.md} color={quantity <= 1 ? theme.colors.muted : theme.colors.ink} />
+                <Ionicons name="remove-outline" size={theme.iconSize.sm} color={quantity <= 1 ? theme.colors.muted : theme.colors.ink} />
               </Pressable>
-              <AppText variant="lead" weight="bold">{String(quantity)}</AppText>
+              <AppText variant="label" weight="semibold">{String(quantity)}</AppText>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t('aywebs.quantityMore')}
                 disabled={quantity >= maxQuantity || busy}
                 onPress={() => setQuantity((value) => Math.min(maxQuantity, value + 1))}
-                style={[styles.stepperButton, { borderColor: theme.colors.line, backgroundColor: theme.colors.surface, borderRadius: theme.radius.control, borderWidth: 1, minWidth: theme.geometry.minTarget, minHeight: theme.geometry.minTarget }]}
+                hitSlop={6}
+                style={[
+                  styles.stepperButton,
+                  {
+                    borderColor: theme.colors.line,
+                    borderRadius: theme.radius.xs,
+                  },
+                ]}
                 testID="aywebs-quantity-more"
               >
-                <Ionicons name="add-outline" size={theme.iconSize.md} color={quantity >= maxQuantity ? theme.colors.muted : theme.colors.ink} />
+                <Ionicons name="add-outline" size={theme.iconSize.sm} color={quantity >= maxQuantity ? theme.colors.muted : theme.colors.ink} />
               </Pressable>
             </View>
           </View>
 
-          {!readOnlySelection && quote.unitTnd != null && quantity > 1 ? (
-            <View style={[styles.totalRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-              <AppText variant="body" weight="semibold">{t('aywebs.estimatedTotal')}</AppText>
-              <AppText variant="body" weight="bold">{totalLine}</AppText>
-            </View>
-          ) : null}
-
-          {!readOnlySelection || quote.availability === 'OUT_OF_STOCK' || quote.stock != null ? (
+          {quote.availability === 'OUT_OF_STOCK' || quote.stock != null ? (
             <AppText
               variant="caption"
               color={quote.availability === 'OUT_OF_STOCK' ? theme.status.danger.fg : theme.colors.muted}
             >
-              {quote.availability === 'UNKNOWN'
-                ? t('aywebs.availUnknown')
-                : `${availabilityLabel(quote.availability)}${quote.stock != null ? ` · ${t('aywebs.stockLeft', { count: quote.stock })}` : ''}`}
+              {`${availabilityLabel(quote.availability)}${quote.stock != null ? ` · ${t('aywebs.stockLeft', { count: quote.stock })}` : ''}`}
+            </AppText>
+          ) : !readOnlySelection && quote.availability === 'UNKNOWN' ? (
+            <AppText variant="caption" color={theme.colors.muted}>
+              {t('aywebs.availUnknown')}
             </AppText>
           ) : null}
 
@@ -1508,12 +1438,7 @@ export function AddToCartSheet({
           {error ? (
             <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{error}</AppText>
           ) : null}
-          {/* Le diagnostic technique reste masqué dans le mode client en lecture seule (Modèle #2) */}
-          {!readOnlySelection && diagnostic && (error || !sourceLine || quote.unitTnd == null) && !quoting ? (
-            <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.diagnosticLine', { code: diagnostic })}</AppText>
-          ) : null}
-
-        </>
+        </View>
       )}
     </AppSheet>
   );
@@ -1551,45 +1476,36 @@ function variantAvailability(
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 4 },
-  headerSide: { width: 44, alignItems: 'flex-end' },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 2 },
+  headerSide: { width: 40, alignItems: 'flex-end' },
   headerCenter: { flex: 1, alignItems: 'center', gap: 2 },
-  /* 75 × 26 : ratio exact du nouveau mot-symbole officiel (508 × 176 ≈ 2.89),
-     donc aucune déformation dans l’en-tête de la feuille d’ajout. */
-  headerWordmark: { width: 75, height: 26 },
-  headerTitle: { textAlign: 'center' },
-  close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  headerWordmark: { width: 69, height: 24 },
+  close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   addedHeaderRow: { alignItems: 'center', justifyContent: 'center', gap: 6 },
-  productCard: { flexDirection: 'row', alignItems: 'flex-start', padding: 12, gap: 12, borderWidth: StyleSheet.hairlineWidth },
-  productHero: { width: 80, height: 104, borderRadius: RADIUS.xs },
-  productText: { flex: 1, gap: 4 },
+  productRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  productHero: { width: 80, height: 100, borderRadius: RADIUS.xs },
+  productText: { flex: 1, gap: 6 },
   discountPriceBlock: { gap: 2 },
+  priceInlineRow: { alignItems: 'baseline', gap: 6, flexWrap: 'wrap' },
   regularPriceRow: { alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   strikethrough: { textDecorationLine: 'line-through' },
-  addedVariantStack: { marginTop: 4, gap: 2 },
-  addedActionsStack: { gap: 12, paddingTop: 4 },
+  addedVariantStack: { marginTop: 2, gap: 2 },
+  addedActionsStack: { gap: 10, paddingTop: 4 },
   bagCountBanner: {
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
   pendingRow: { alignItems: 'center', gap: 8 },
-  capturedBox: { borderWidth: 1, padding: 12, gap: 10 },
-  capturedHeaderRow: { alignItems: 'center', gap: 6 },
-  capturedHeadingText: { flex: 1 },
-  capturedBadgesWrap: { flexWrap: 'wrap', gap: 8 },
-  capturedPill: { alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderWidth: 1, borderRadius: RADIUS.full },
+  optionsDivider: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10, gap: 8 },
+  capturedCleanStack: { gap: 6 },
+  capturedAttributeRow: { alignItems: 'center', gap: 8 },
   capturedSwatch: { width: 16, height: 16, borderRadius: RADIUS.full },
-  capturedDivider: { height: 1 },
-  changeOnStoreBtn: { alignItems: 'center', gap: 6, paddingVertical: 4 },
+  missingNotice: { gap: 2 },
+  changeOnStoreBtn: { alignItems: 'center', gap: 6, paddingVertical: 2 },
   changeOnStoreLabel: { textDecorationLine: 'underline' },
   quantityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  stepperButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  totalRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  stickyFooter: { gap: 8 },
-  stickyPrice: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  actions: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  stepperButton: { width: 32, height: 32, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  slimAddButton: { minHeight: 40, borderRadius: RADIUS.xs, paddingVertical: 6 },
 });

@@ -81,13 +81,13 @@ export const FICHE_GEOMETRY = {
   infoLine: 18,
   shareHeight: 51,
 
-  /* Barre d'achat */
-  barHeight: 71,
+  /* Barre d'achat compacte */
+  barHeight: 60,
   barPrice: 15,
-  barButtonWidth: 207,
-  barButtonHeight: 48,
-  barButtonRadius: 24,
-  barButtonTop: 11,
+  barButtonWidth: 184,
+  barButtonHeight: 40,
+  barButtonRadius: 20,
+  barButtonTop: 10,
 
   /* Feuille de taille */
   sheetTop: 22,
@@ -123,10 +123,9 @@ export const FICHE_GEOMETRY = {
   viewerDotPitch: 12,
   viewerCloseTop: 27,
   viewerCloseStart: 5,
-  viewerCloseSize: 32,
 
-  /** La barre d'achat, zone sûre comprise — la page réserve cette hauteur. */
-  ctaHeight: 71,
+  /** La barre d'achat compacte, zone sûre comprise — la page réserve cette hauteur. */
+  ctaHeight: 60,
 } as const;
 
 /** Largeur de la maquette : 720 px ÷ 2. L'aperçu se rend à cette largeur, en dp. */

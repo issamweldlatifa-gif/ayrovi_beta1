@@ -22,10 +22,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
 import {
-  captureMatchesPageUrl, decideWebNavigation, isFatalMainPageLoadError, isSilentAppDeepLink, isWebPageUrl,
+  captureMatchesPageUrl, decideWebNavigation, isFatalMainPageLoadError, isSilentAppDeepLink, isSpaInPageProductSwitch, isWebPageUrl,
 } from '@/features/aywebs/webNavigation';
 
-import { AppText, Button, Card, KeyValue } from '@/design/ui';
+import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { COMMERCE } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
@@ -37,7 +37,7 @@ import { rememberAyWebsVisit } from '@/features/aywebs/lastVisitedStore';
 import {
   analyzeAyWebsPage, buildAyWebsCaptureInjection, fetchAyWebsCart, fetchAyWebsCaptureScript,
   isAyWebsBridgeMessage, parseAyWebsCaptureMessage, resolveAyWebsProductWithCapture,
-  type AyWebsCart, type AyWebsCartItem, type AyWebsPageAnalysis, type AyWebsResolveOutcome, type AyWebsResolvedProduct, type AyWebsVariantOption,
+  type AyWebsCart, type AyWebsCartItem, type AyWebsPageAnalysis, type AyWebsResolvedProduct, type AyWebsVariantOption,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
 import { AYWEBS_NETWORK_OBSERVER_SCRIPT } from '@/features/aywebs/networkObserverScript';
@@ -48,11 +48,10 @@ import { captureIsProductCard } from '@/features/aywebs/pageKind';
 import { VariantReader, type VariantReaderHandle } from '@/features/aywebs/VariantReader';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
-  AYWEBS_CAPTURE_WATCHDOG_MS, AYWEBS_PREFETCH_BUDGET_MS, canReusePrefetch, priceCandidatesOf, priceRetryDelayMs, readDecision, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
+  AYWEBS_CAPTURE_WATCHDOG_MS, canReusePrefetch, priceCandidatesOf, priceRetryDelayMs, readDecision, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
   type ReadIntent,
 } from '@/features/aywebs/captureFlow';
 import { useSessionId } from '@/session/session';
-import { formatMoney } from '@/format/money';
 
 /** كي الصفحة ما تبعثش شي: مانبقاوش نستنّوا بلا نهاية. */
 
@@ -132,7 +131,7 @@ export default function AyWebsBrowserScreen() {
   const pageLoadingRef = useRef(false);
   /** Page pour laquelle on a déjà attendu la fin du chargement (une seule fois par page). */
   const idleWaitedUrl = useRef<string | null>(null);
-  /* Lecture faite À L'OUVERTURE de la page (20/10/2026) : « Add to Cart » la trouve prête. */
+  /* Lecture mise en cache si déjà présente. */
   const prefetch = useRef<{
     url: string;
     at: number;
@@ -140,11 +139,8 @@ export default function AyWebsBrowserScreen() {
     promise: Promise<Record<string, unknown>>;
     controller: AbortController;
   } | null>(null);
-  const [pageReady, setPageReady] = useState(false);
   /** Nombre de relances de capture faute de prix, et dernier script chargé. */
   const captureRetries = useRef(0);
-  /** Minuteur du budget de pré-lecture (voir AYWEBS_PREFETCH_BUDGET_MS). */
-  const prefetchBudget = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Contrôleur de l'appui « Add » en cours : un nouvel appui, ou la sortie de l'écran, l'annule. */
   const addController = useRef<AbortController | null>(null);
   const lastScript = useRef<string | null>(null);
@@ -154,7 +150,6 @@ export default function AyWebsBrowserScreen() {
   const [webCanGoBack, setWebCanGoBack] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [note, setNote] = useState('');
-  const [outcome, setOutcome] = useState<AyWebsResolveOutcome | null>(null);
   /* العنوان المحمَّل في الـWebView: ثابت لكل فتح، ويتحدّث إذا تبدّل الرابط الممرَّر للشاشة. */
   const [loadUrl, setLoadUrl] = useState(url);
   /* الصفحة الحالية كما يصرّح بها التنقّل داخل الـWebView (تتبع الروابط). */
@@ -192,22 +187,6 @@ export default function AyWebsBrowserScreen() {
     : null;
   const currentStoreId = currentPageAnalysis?.storeId || (pageUrl === url ? storeId : '');
   const currentStoreName = currentPageAnalysis?.storeName || storeName;
-  /* Toute interaction tactile du client avec la fiche marchande (clic sur une
-     taille ou une couleur dans la SPA SHEIN/Amazon sans changement d'URL)
-     invalide immédiatement la pré-lecture terminée OU encore en cours de lecture :
-     l'appui suivant sur « Choisir les options » relira l'état réel de la page. */
-  const invalidatePrefetchOnTouch = useCallback(() => {
-    const activePrefetch = prefetch.current;
-    if (!activePrefetch) return;
-    if (prefetchBudget.current) {
-      clearTimeout(prefetchBudget.current);
-      prefetchBudget.current = null;
-    }
-    if (activePrefetch.status === 'reading') {
-      activePrefetch.controller.abort();
-    }
-    prefetch.current = null;
-  }, []);
   const cartUnits = useMemo(() => (storeCart.data?.items ?? [])
     .filter((item) => item.storeId === currentStoreId)
     .reduce((total, item) => total + item.quantity, 0), [currentStoreId, storeCart.data?.items]);
@@ -242,7 +221,6 @@ export default function AyWebsBrowserScreen() {
    */
   const injection = currentPageAnalysis?.captureInjection;
   const capturePage = injection ? injection !== 'never' : false;
-  const autoPrefetchAllowed = currentPageAnalysis?.captureInjection === 'product_page';
   /** الورقة: المنتوج + الكابتشر اللي بعثناه (باش الإضافة ما تعاودش تقرا التاجر). */
   const [sheet, setSheet] = useState<{
     product: AyWebsResolvedProduct; options: AyWebsVariantOption[]; capture?: unknown; quoteToken?: string; local: boolean;
@@ -270,7 +248,6 @@ export default function AyWebsBrowserScreen() {
     inFlightRead.current = null;
     setBusy(false);
     setSheet(null);
-    setOutcome(null);
     setPageAnalysis(null);
     setNote('');
   }, [pageUrl]);
@@ -299,6 +276,15 @@ export default function AyWebsBrowserScreen() {
   const stopTimer = () => {
     if (timer.current) { clearTimeout(timer.current); timer.current = null; }
   };
+
+  const invalidatePrefetchOnTouch = useCallback(() => {
+    const activePrefetch = prefetch.current;
+    if (!activePrefetch) return;
+    prefetch.current = null;
+    if (activePrefetch.status === 'reading') {
+      activePrefetch.controller.abort();
+    }
+  }, []);
 
   /** تصنيف الصفحة — شرط تفعيل «Add to Cart» (لا تخمين من الرابط). */
   useEffect(() => {
@@ -427,43 +413,6 @@ export default function AyWebsBrowserScreen() {
     return promise;
   }, []);
 
-  /** Lit la page en silence, dès qu'elle est chargée et reconnue comme fiche produit. */
-  const startPrefetch = useCallback((url: string) => {
-    const current = prefetch.current;
-    if (current && (current.url === url || captureMatchesPageUrl(current.url, url)) && current.status !== 'failed') return;
-    current?.controller.abort();
-    const controller = new AbortController();
-    const entry: NonNullable<typeof prefetch.current> = {
-      url, at: 0, status: 'reading', controller,
-      promise: Promise.resolve({}),
-    };
-    entry.promise = requestCapture(controller.signal, true).then(
-      (capture) => {
-        entry.status = 'ok'; entry.at = Date.now();
-        return capture;
-      },
-      (error: unknown) => {
-        entry.status = 'failed';
-        throw error;
-      },
-    );
-    entry.promise.catch(() => undefined);
-    prefetch.current = entry;
-    /* سقف زمني: القراءة الصامتة ما تقعدش تحبس الشاشة. بعد الميزانية تتسجّل
-       "فاشلة"، يعني الضغط على «Add» يعاود يقرا الصفحة بدل ما يستنّى وعد قديم. */
-    if (prefetchBudget.current) clearTimeout(prefetchBudget.current);
-    prefetchBudget.current = setTimeout(() => {
-      prefetchBudget.current = null;
-      if (prefetch.current !== entry || entry.status !== 'reading') return;
-      entry.status = 'failed';
-    }, AYWEBS_PREFETCH_BUDGET_MS);
-  }, [requestCapture]);
-
-  useEffect(() => {
-    if (!captureAllowed || !autoPrefetchAllowed || !pageReady || !pageUrl) return;
-    startPrefetch(pageUrl);
-  }, [autoPrefetchAllowed, captureAllowed, pageReady, pageUrl, startPrefetch]);
-
   const fail = useCallback((error: unknown) => {
     endWaiting('failed');
     setBusy(false);
@@ -539,9 +488,31 @@ export default function AyWebsBrowserScreen() {
         readCapture: captureAllowed ? readPageCapture : undefined,
         waitForCapture: true,
         // refresh : une intention Add ne sert jamais une lecture mémorisée (19/10/2026).
-        resolve: (captured) => resolveAyWebsProductWithCapture(pageUrlRef.current || activePageUrl, {
-          sessionId, storeId: currentStoreId || undefined, capture: captured, refresh: true, signal: controller.signal,
-        }),
+        resolve: (captured) => {
+          const capObj = captured && typeof captured === 'object' ? (captured as Record<string, unknown>) : null;
+          const capUrl = typeof capObj?.url === 'string' && isWebPageUrl(capObj.url) ? capObj.url : '';
+          let targetResolveUrl = pageUrlRef.current || activePageUrl;
+          if (capUrl && isSpaInPageProductSwitch(capUrl, targetResolveUrl)) {
+            targetResolveUrl = capUrl;
+          }
+          const aeObj = capObj?.aliexpress && typeof capObj.aliexpress === 'object'
+            ? (capObj.aliexpress as { pageItemId?: unknown })
+            : null;
+          const modalItemId = String(aeObj?.pageItemId ?? '').trim().replace(/^AE-/i, '');
+          if (/^\d{6,20}$/.test(modalItemId)) {
+            try {
+              const parsedResolve = new URL(targetResolveUrl);
+              if (/(?:^|\.)aliexpress\.(?:com|us|ru)$/i.test(parsedResolve.hostname)
+                && /(?:BundleDeals|aye-bundle-deals|tesla-landing|bundle-deals)/i.test(parsedResolve.pathname)
+                && !parsedResolve.searchParams.get('productIds')) {
+                targetResolveUrl = `${parsedResolve.protocol}//${parsedResolve.host}/item/${modalItemId}.html`;
+              }
+            } catch { /* ignore */ }
+          }
+          return resolveAyWebsProductWithCapture(targetResolveUrl, {
+            sessionId, storeId: currentStoreId || undefined, capture: captured, refresh: true, signal: controller.signal,
+          });
+        },
         signal: controller.signal,
         onPhase: (phase) => { if (phase !== 'reading') startWaiting('resolving'); },
       });
@@ -557,7 +528,6 @@ export default function AyWebsBrowserScreen() {
         endWaiting('failed');
         return;
       }
-      setOutcome(result);
       setNote('');
       setSheet({ product: result.product, options: result.product.variantDetails, capture, quoteToken: result.quoteToken, local: false });
       endWaiting('done');
@@ -584,7 +554,7 @@ export default function AyWebsBrowserScreen() {
       stopTimer();
       waiter.current = null;
       setBusy(false);
-      if (!pending?.quiet) setNote(`${t('aywebs.captureFailed')} — ${parsed.reason}`);
+      if (!pending?.quiet) setNote(t('aywebs.captureFailed'));
       pending?.reject(new ApiError('malformed', `Capture refusée : ${parsed.reason}`));
       return;
     }
@@ -593,18 +563,23 @@ export default function AyWebsBrowserScreen() {
        message tardif de l'ancien document sans tuer la lecture en cours. */
     const captureUrl = (parsed.capture as { url?: unknown }).url;
     if (!captureMatchesPageUrl(captureUrl, pageUrlRef.current)) {
-      if (pending && captureMatchesPageUrl(pending.requestedUrl, pageUrlRef.current)
-        && !captureMatchesPageUrl(captureUrl, pending.requestedUrl)) {
+      if (isSpaInPageProductSwitch(captureUrl, pageUrlRef.current) && typeof captureUrl === 'string') {
+        pageUrlRef.current = captureUrl;
+        setPageUrl(captureUrl);
+      } else {
+        if (pending && captureMatchesPageUrl(pending.requestedUrl, pageUrlRef.current)
+          && !captureMatchesPageUrl(captureUrl, pending.requestedUrl)) {
+          return;
+        }
+        stopTimer();
+        waiter.current = null;
+        setBusy(false);
+        pending?.reject(new ApiError('http', 'Capture périmée : la page affichée a changé.', {
+          status: 422,
+          code: 'CAPTURE_INCOMPLETE',
+        }));
         return;
       }
-      stopTimer();
-      waiter.current = null;
-      setBusy(false);
-      pending?.reject(new ApiError('http', 'Capture périmée : la page affichée a changé.', {
-        status: 422,
-        code: 'CAPTURE_INCOMPLETE',
-      }));
-      return;
     }
     stopTimer();
     waiter.current = null;
@@ -612,12 +587,6 @@ export default function AyWebsBrowserScreen() {
     pending?.resolve(parsed.capture);
   }, [t]);
 
-  const verdict = outcome?.capture ?? null;
-  /* La pré-lecture silencieuse est un ACCÉLÉRATEUR : elle ne désactive jamais
-     « Add to Cart ». La garder dans `addEnabled` laissait le bouton en
-     « Chargement… » et inerte pendant toute la lecture — sur une fiche SHEIN /
-     TEMU (application mono-page) c'était l'écran entier qui semblait planté.
-     Un appui pendant la pré-lecture la remplace (voir `readDecision`). */
   const addEnabled = capturePage && !busy && Boolean(sessionId);
 
   return (
@@ -667,49 +636,16 @@ export default function AyWebsBrowserScreen() {
         </Pressable>
       </View>
 
-      {outcome ? (
-        <Card title={t('aywebs.serverVerdict')} hint={outcome.product.storeName || undefined}>
-          <KeyValue label={t('aywebs.productTitle')} value={outcome.product.title} />
-          {outcome.product.ayroviPricing?.totalTnd != null ? (
-            <KeyValue label={t('aywebs.totalTnd')} value={`${formatMoney(outcome.product.ayroviPricing.totalTnd)}`} />
-          ) : null}
-          <KeyValue
-            label={t('aywebs.sourcePrice')}
-            value={outcome.product.price != null
-              ? `${outcome.product.price} ${outcome.product.currency}`.trim()
-              : t('aywebs.noPrice')}
-          />
-          <KeyValue
-            label={t('aywebs.capture')}
-            value={verdict?.used ? t('aywebs.captureUsed') : t('aywebs.captureRefused')}
-          />
-          {verdict && !verdict.used && verdict.rejection ? (
-            <KeyValue label={t('aywebs.captureRejection')} value={verdict.rejection} />
-          ) : null}
-          {outcome.priceRejection ? (
-            <KeyValue label={t('aywebs.priceRejection')} value={outcome.priceRejection} />
-          ) : null}
-        </Card>
-      ) : null}
-
       {pageOk ? (
       <View
         style={styles.web}
         onTouchStart={invalidatePrefetchOnTouch}
         onTouchEnd={invalidatePrefetchOnTouch}
-        onStartShouldSetResponderCapture={() => {
-          invalidatePrefetchOnTouch();
-          return false;
-        }}
       >
         <WebView
           ref={webRef}
           source={{ uri: loadUrl }}
           style={styles.webFill}
-        /**
-         * `'*'` عمداً: لو بقيت القائمة `https://*`، المكتبة تفتح كل عنوان خارجها
-         * في تطبيق آخر قبل أن تسألنا. القرار كله هنا: الصفحات تبقى، والباقي يُمنع.
-         */
         originWhitelist={['*']}
         onShouldStartLoadWithRequest={(request: { url: string }) => {
           if (decideWebNavigation(request.url) === 'allow') return true;
@@ -717,20 +653,22 @@ export default function AyWebsBrowserScreen() {
           return false;
         }}
         javaScriptEnabled
+        domStorageEnabled
+        cacheEnabled
+        androidLayerType="hardware"
+        textZoom={100}
+        overScrollMode="never"
+        allowsBackForwardNavigationGestures
         injectedJavaScriptBeforeContentLoaded={AYWEBS_NETWORK_OBSERVER_SCRIPT}
         setSupportMultipleWindows={false}
         onNavigationStateChange={(state) => {
           pageLoadingRef.current = state.loading === true;
-          setPageReady(state.loading !== true);
-          setWebCanGoBack(state.canGoBack);
-          if (!state.url) return;
-          /* N'accepter dans l'état de page que les vraies adresses HTTP(S) : une
-             tentative avortée vers `aliexpress://` ne doit jamais écraser `pageUrl`. */
-          if (!isWebPageUrl(state.url)) return;
-          /* Référence synchrone : une capture déjà dans le pont ne peut plus
-             être rattachée à l'ancien document pendant le prochain rendu. */
-          pageUrlRef.current = state.url;
-          setPageUrl(state.url);
+          setWebCanGoBack((prev) => (prev === state.canGoBack ? prev : state.canGoBack));
+          if (!state.url || !isWebPageUrl(state.url)) return;
+          if (pageUrlRef.current !== state.url) {
+            pageUrlRef.current = state.url;
+            setPageUrl(state.url);
+          }
         }}
         onLoadEnd={() => {
           const failedLabel = t('aywebs.captureFailed');

@@ -268,6 +268,7 @@ export function StoreFavoriteSheet({ visible, onClose, sourceUrl, title, saved }
     <AppSheet
       open={visible}
       onDismiss={onClose}
+      presentation="bottom"
       header={<SheetHeader title={t('aywebs.fav.title')} subtitle={title || undefined} onClose={onClose} />}
     >
       <View style={styles.body}>

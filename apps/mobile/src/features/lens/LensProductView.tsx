@@ -113,8 +113,17 @@ function OptionSelector({
               },
             ]}
           >
-            <View style={[styles.sheetHandle, { backgroundColor: theme.colors.lineControl }]} />
-            <AppText variant="title" weight="bold">{label}</AppText>
+            <View style={[styles.optionHeaderRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+              <AppText variant="title" weight="bold">{label}</AppText>
+              <Pressable
+                onPress={() => setOpen(false)}
+                accessibilityRole="button"
+                accessibilityLabel={t('common.close')}
+                hitSlop={8}
+              >
+                <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+              </Pressable>
+            </View>
             <ScrollView style={styles.optionList} showsVerticalScrollIndicator={false}>
               {values.map((option, index) => {
                 const selected = option === effective;
@@ -1072,7 +1081,7 @@ export function LensProductView({
         <View
           style={[
             styles.detailsSheet,
-            { borderTopLeftRadius: 24, borderTopRightRadius: 24, backgroundColor: theme.colors.surface },
+            { borderTopLeftRadius: theme.radius.sheet, borderTopRightRadius: theme.radius.sheet, backgroundColor: theme.colors.surface },
           ]}
           testID="lens-product-sheet"
         >
@@ -1082,9 +1091,7 @@ export function LensProductView({
             accessibilityLabel={t('lens.sheet.expand')}
             style={styles.productSheetHandle}
             testID="lens-product-sheet-handle"
-          >
-            <View style={[styles.sheetHandle, { backgroundColor: theme.colors.lineControl }]} />
-          </Pressable>
+          />
           {/* Zalando place la mention du mannequin juste AU-DESSUS de la marque :
               c'est l'information qui aide à choisir, on la garde à cet endroit.
               Rien n'est affiché quand le marchand ne l'a pas publiée. */}
@@ -1419,7 +1426,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24, gap: 8,
   },
   productSheetHandle: { height: 34, marginHorizontal: -SPACE[3], alignItems: 'center', justifyContent: 'center' },
-  sheetHandle: { width: 44, height: 5, borderRadius: 3, alignSelf: 'center' },
+  optionHeaderRow: { alignItems: 'center', justifyContent: 'space-between' },
   // Pas de couleur fixe : la fiche suit le thème (`ink`), lisible en clair comme en sombre.
   brand: { marginTop: 2 },
   productTitle: { marginBottom: 4 },

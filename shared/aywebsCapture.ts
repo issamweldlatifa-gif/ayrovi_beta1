@@ -179,6 +179,13 @@ export interface AyWebsAliExpressEvidence {
   skus?: AyWebsAliExpressSkuEvidence[];
 }
 
+export interface AyWebsTemuEvidence {
+  readerVersion?: number;
+  pageGoodsId?: string | null;
+  salePrice?: string | null;
+  retailPrice?: string | null;
+}
+
 export type AyWebsMatrixEvidenceSource =
   | 'embedded_json'
   | 'json_ld'
@@ -244,6 +251,10 @@ export interface AyWebsCapturedPage {
    * publiées par la fiche (`runParams` / `_dida_config_` / Comet).
    */
   aliexpress?: AyWebsAliExpressEvidence | null;
+  /**
+   * Temu : identité fiche (`goods_id`) et prix embarqués (`rawData` / `oak` / `poppy`).
+   */
+  temu?: AyWebsTemuEvidence | null;
   /** URL de la page réellement affichée dans le WebView. */
   url: string;
   /** `<link rel="canonical">` ou `og:url`, quand la page les publie. */

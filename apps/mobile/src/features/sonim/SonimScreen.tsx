@@ -35,14 +35,13 @@ import {
   type StreamFetch,
 } from '@/api/assistant';
 import { AppImage } from '@/design/appImage';
-import { headerSolidFor } from '@/design/chromeLogic';
 import { useResponsive } from '@/design/layout';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { TabSonimIcon } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
-import { AppText } from '@/design/ui';
+import { SONIM_SUBTITLE_STYLE, SONIM_TITLE_STYLE } from '@/design/tokens.mobile';
+import { AppText, Drawer, DrawerItem } from '@/design/ui';
 import { useKeyboardInset } from '@/design/useKeyboardInset';
-import { AppHeader } from '@/features/shell/AppHeader';
 import { useI18n } from '@/i18n';
 import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
@@ -139,7 +138,7 @@ export function SonimScreen() {
   const keyboardInset = useKeyboardInset(true);
   const keyboardOpen = keyboardInset > 0;
 
-  const [headerScrolled, setHeaderScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [conversationId, setConversationId] = useState(() => newAssistantConversationId());
   const [messages, setMessages] = useState<SonimChatMessage[]>([]);
   const [draft, setDraft] = useState('');
@@ -170,9 +169,16 @@ export function SonimScreen() {
   }, [account?.displayName]);
 
   const rowDir = rowDirectionFor(theme.isRTL);
-  const topInset = insets.top + theme.chrome.header;
-  const floatingTabClearance =
-    theme.chrome.tabBar - theme.space[0] + Math.max(insets.bottom, theme.space[1]) + theme.space[1];
+  const bottomComposerClearance = Math.max(insets.bottom, theme.space[2]);
+
+  const closeSonim = useCallback(() => {
+    const maybeCanGoBack = (router as unknown as { canGoBack?: () => boolean }).canGoBack;
+    if (typeof maybeCanGoBack === 'function' && maybeCanGoBack()) {
+      router.back();
+      return;
+    }
+    router.replace('/');
+  }, []);
 
   const scrollToEnd = useCallback((animated = true) => {
     requestAnimationFrame(() => {
@@ -378,20 +384,65 @@ export function SonimScreen() {
 
   const content = (
     <View style={styles.body}>
+      <View
+        style={[
+          styles.sonimHeader,
+          {
+            flexDirection: rowDir,
+            paddingTop: insets.top + theme.space[1],
+            paddingBottom: theme.space[2],
+            paddingHorizontal: gutter,
+            backgroundColor: theme.colors.canvas,
+            borderBottomColor: theme.colors.line,
+          },
+        ]}
+        testID="sonim-standalone-header"
+      >
+        <Pressable
+          onPress={() => setMenuOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t('nav.menu')}
+          style={({ pressed }) => [
+            styles.headerBtn,
+            { opacity: pressed ? theme.opacity.subtle : 1 },
+          ]}
+          testID="sonim-menu-open"
+        >
+          <Ionicons name="menu-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+        </Pressable>
+
+        <View style={styles.headerCenter}>
+          <AppText style={[SONIM_TITLE_STYLE, { color: theme.colors.ink }]}>
+            SONIM
+          </AppText>
+          <AppText style={[SONIM_SUBTITLE_STYLE, { color: theme.colors.muted }]}>
+            ZAYROVI
+          </AppText>
+        </View>
+
+        <Pressable
+          onPress={closeSonim}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.close')}
+          style={({ pressed }) => [
+            styles.headerBtn,
+            { opacity: pressed ? theme.opacity.subtle : 1 },
+          ]}
+          testID="sonim-close"
+        >
+          <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+        </Pressable>
+      </View>
+
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: topInset + theme.space[2], paddingHorizontal: gutter },
+          { paddingTop: theme.space[3], paddingHorizontal: gutter },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={(event) => {
-          const next = headerSolidFor(event.nativeEvent.contentOffset.y);
-          setHeaderScrolled((current) => (current === next ? current : next));
-        }}
         testID="sonim-scroll"
       >
         {messages.length > 0 ? (
@@ -623,7 +674,7 @@ export function SonimScreen() {
                           ]}
                         >
                           <Ionicons
-                            name={copiedId === message.id ? 'checkmark' : 'copy-outline'}
+                            name={copiedId === message.id ? 'checkmark-outline' : 'copy-outline'}
                             size={theme.iconSize.xs}
                             color={theme.colors.muted}
                             accessibilityElementsHidden
@@ -649,7 +700,7 @@ export function SonimScreen() {
             backgroundColor: theme.colors.canvas,
             borderTopColor: theme.colors.line,
             paddingHorizontal: gutter,
-            paddingBottom: keyboardOpen ? theme.space[1] : floatingTabClearance,
+            paddingBottom: keyboardOpen ? theme.space[2] : bottomComposerClearance,
           },
         ]}
       >
@@ -674,7 +725,7 @@ export function SonimScreen() {
                   accessibilityLabel={t('sonim.removeAttachment')}
                   hitSlop={8}
                 >
-                  <Ionicons name="close-circle" size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
+                  <Ionicons name="close-circle-outline" size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
                 </Pressable>
               </View>
             ))}
@@ -746,7 +797,7 @@ export function SonimScreen() {
               ]}
               testID="sonim-stop"
             >
-              <Ionicons name="close" size={theme.iconSize.sm} color={theme.colors.canvas} accessibilityElementsHidden />
+              <Ionicons name="stop-outline" size={theme.iconSize.sm} color={theme.colors.canvas} accessibilityElementsHidden />
             </Pressable>
           ) : (
             <Pressable
@@ -786,7 +837,54 @@ export function SonimScreen() {
       ) : (
         content
       )}
-      <AppHeader scrolled={headerScrolled} showNotifications={false} />
+
+      <Drawer visible={menuOpen} onClose={() => setMenuOpen(false)}>
+        <View
+          style={[
+            styles.drawerHeader,
+            {
+              flexDirection: rowDir,
+              borderBottomColor: theme.colors.line,
+            },
+          ]}
+        >
+          <AppText style={[SONIM_TITLE_STYLE, { color: theme.colors.ink }]}>
+            SONIM
+          </AppText>
+          <Pressable
+            onPress={() => setMenuOpen(false)}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            style={({ pressed }) => [
+              styles.headerBtn,
+              { opacity: pressed ? theme.opacity.subtle : 1 },
+            ]}
+          >
+            <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+          </Pressable>
+        </View>
+
+        <DrawerItem
+          icon="add-outline"
+          label={t('sonim.newChat')}
+          onPress={() => {
+            setMenuOpen(false);
+            startNewChat();
+          }}
+        />
+        {quickActions.map((action) => (
+          <DrawerItem
+            key={action.id}
+            icon={action.icon}
+            label={action.title}
+            hint={action.subtitle}
+            onPress={() => {
+              setMenuOpen(false);
+              action.onPress();
+            }}
+          />
+        ))}
+      </Drawer>
     </View>
   );
 }
@@ -794,6 +892,31 @@ export function SonimScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   body: { flex: 1 },
+  sonimHeader: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  headerBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  drawerHeader: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    marginBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 16, gap: 16 },
   topBar: { alignItems: 'center', justifyContent: 'space-between', gap: 12 },

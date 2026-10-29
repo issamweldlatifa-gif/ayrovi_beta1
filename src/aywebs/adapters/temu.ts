@@ -104,6 +104,6 @@ export class TemuAdapter extends BaseStoreAdapter {
 export function temuGoodsId(url: URL): string | null {
   const fromQuery = String(url.searchParams.get('goods_id') || url.searchParams.get('goodsId') || '').trim();
   if (/^\d{6,}$/.test(fromQuery)) return fromQuery;
-  const fromPath = url.pathname.match(/(?:^|[-/])g-(\d{6,})\.html$/i);
+  const fromPath = url.pathname.match(/(?:^|[-/])g-(\d{6,})(?=[-./]|$)/i);
   return fromPath ? fromPath[1] : null;
 }

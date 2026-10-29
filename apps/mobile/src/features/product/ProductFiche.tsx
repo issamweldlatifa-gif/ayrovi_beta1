@@ -43,7 +43,7 @@ import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
-import { FICHE_COLORS, RADIUS } from '@/design/tokens.mobile';
+import { FICHE_COLORS, ficheColorsFor, RADIUS, SHEET_CORNER_RADIUS, VIDEO_BACKDROP } from '@/design/tokens.mobile';
 import { FICHE, type ColorTile, type GalleryItem, type SizeRow } from './fiche';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
@@ -77,6 +77,7 @@ export function FicheHeader({
   reservationCountdown?: string | null;
 }) {
   const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
   const t = useT();
   const expandAnim = useRef(new Animated.Value(justAdded ? 1 : 0)).current;
 
@@ -112,7 +113,7 @@ export function FicheHeader({
             backgroundColor: theme.colors.canvas,
             opacity: solid,
             borderBottomWidth: FICHE.headerRule,
-            borderBottomColor: FICHE_COLORS.hair,
+            borderBottomColor: fc.hair,
           },
         ]}
       />
@@ -125,7 +126,7 @@ export function FicheHeader({
           style={styles.headerButton}
         >
           <Ionicons
-            name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
+            name={theme.isRTL ? 'chevron-forward-outline' : 'chevron-back-outline'}
             size={theme.iconSize.md}
             color={theme.colors.ink}
             accessibilityElementsHidden
@@ -152,18 +153,18 @@ export function FicheHeader({
                 theme.elevation.low,
                 {
                   flexDirection: rowDirectionFor(theme.isRTL),
-                  backgroundColor: justAdded ? FICHE_COLORS.success : FICHE_COLORS.pillSurface,
-                  borderColor: justAdded ? FICHE_COLORS.success : FICHE_COLORS.hair,
+                  backgroundColor: justAdded ? fc.success : fc.pillSurface,
+                  borderColor: justAdded ? fc.success : fc.hair,
                   opacity: pressed ? theme.opacity.subtle : 1,
                 },
               ]}
             >
               {justAdded ? (
-                <AppText variant="label" weight="bold" color={FICHE_COLORS.onAccent} numberOfLines={1}>
+                <AppText variant="label" weight="bold" color={fc.onAccent} numberOfLines={1}>
                   {t('product.addedPill')}
                 </AppText>
               ) : reservationCountdown ? (
-                <AppText variant="label" weight="semibold" color={FICHE_COLORS.ink} numberOfLines={1}>
+                <AppText variant="label" weight="semibold" color={fc.ink} numberOfLines={1}>
                   {reservationCountdown}
                 </AppText>
               ) : null}
@@ -171,18 +172,18 @@ export function FicheHeader({
                 <Ionicons
                   name="bag-outline"
                   size={theme.iconSize.sm}
-                  color={justAdded ? FICHE_COLORS.onAccent : FICHE_COLORS.ink}
+                  color={justAdded ? fc.onAccent : fc.ink}
                   accessibilityElementsHidden
                 />
                 <View
                   testID="product-header-cart-badge"
                   style={[
                     styles.cartPillBadge,
-                    { backgroundColor: FICHE_COLORS.accent },
+                    { backgroundColor: fc.accent },
                     theme.isRTL ? styles.cartPillBadgeRTL : styles.cartPillBadgeLTR,
                   ]}
                 >
-                  <AppText variant="caption" weight="bold" color={FICHE_COLORS.onAccent}>
+                  <AppText variant="caption" weight="bold" color={fc.onAccent}>
                     {badgeText}
                   </AppText>
                 </View>
@@ -220,15 +221,17 @@ export function FicheHeader({
  *    feuille en même temps qu'elle, comme sur la planche.
  */
 export function FichePhotoLayer({ items, index }: { items: GalleryItem[]; index: number }) {
+  const insets = useSafeAreaInsets();
+  const totalHeight = FICHE.imageHeight + insets.top;
   return (
     <View
-      style={styles.pinnedPhoto}
+      style={[styles.pinnedPhoto, { height: totalHeight }]}
       pointerEvents="none"
       accessible={false}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <FichePhoto items={items} index={index} onOpen={() => {}} />
+      <FichePhoto items={items} index={index} height={totalHeight} onOpen={() => {}} />
     </View>
   );
 }
@@ -236,21 +239,23 @@ export function FichePhotoLayer({ items, index }: { items: GalleryItem[]; index:
 /* ── 2. Photo (écran 1) : une photo, des points, un appui = plein écran ────── */
 
 export function FichePhoto({
-  items, index, onOpen,
+  items, index, height, onOpen,
 }: {
   items: GalleryItem[];
   /** Photo affichée (change quand on choisit une couleur). */
   index: number;
+  height?: number;
   onOpen: (index: number) => void;
 }) {
   const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
   const t = useT();
   const current = items[index] ?? items[0];
   const count = items.length;
   const active = Math.max(0, Math.min(index, count - 1));
 
   return (
-    <View style={[styles.photo, { backgroundColor: theme.colors.surface }]}>
+    <View style={[styles.photo, { height: height ?? FICHE.imageHeight, backgroundColor: theme.colors.surface }]}>
       {current ? (
         <Pressable
           accessibilityRole="button"
@@ -260,11 +265,13 @@ export function FichePhoto({
         >
           {current.kind === 'video' ? (
             <View style={[StyleSheet.absoluteFill, styles.photoEmpty]}>
-              <Ionicons name="play" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
+              <Ionicons name="play-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
             </View>
           ) : (
             <AppImage
               uri={mediaUrl(current.url)}
+              highRes
+              background={theme.colors.surface}
               style={StyleSheet.absoluteFill}
               contentFit="cover"
               accessibilityLabel={t('product.photo', { index: String(active + 1), total: String(count) })}
@@ -289,7 +296,7 @@ export function FichePhoto({
                     width: size,
                     height: size,
                     borderRadius: size / 2,
-                    backgroundColor: position === active ? theme.colors.ink : FICHE_COLORS.dotIdle,
+                    backgroundColor: position === active ? theme.colors.ink : fc.dotIdle,
                   }}
                 />
               </View>
@@ -311,11 +318,12 @@ export function FicheIdentity({
   description: string;
 }) {
   const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
   return (
     <View style={styles.identity}>
       <View style={styles.identityTop}>
         {/* Le filet fait exactement la largeur du mot : la boîte se rétrécit au texte. */}
-        <View style={[styles.nameBox, { borderBottomColor: FICHE_COLORS.nameUnderline }]}>
+        <View style={[styles.nameBox, { borderBottomColor: fc.nameUnderline }]}>
           <AppText numberOfLines={2} style={[styles.name, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
             {name}
           </AppText>
@@ -327,7 +335,7 @@ export function FicheIdentity({
       {description ? (
         <AppText
           numberOfLines={2}
-          style={[styles.description, { color: FICHE_COLORS.muted, fontFamily: theme.font('regular') }]}
+          style={[styles.description, { color: fc.muted, fontFamily: theme.font('regular') }]}
         >
           {description}
         </AppText>
@@ -368,7 +376,7 @@ export function ChoiceRow({
       </View>
       {chevron ? (
         <View style={styles.chevron}>
-          <Ionicons name="chevron-down" size={FICHE.chevronSize} color={theme.colors.ink} accessibilityElementsHidden />
+          <Ionicons name="chevron-down-outline" size={FICHE.chevronSize} color={theme.colors.ink} accessibilityElementsHidden />
         </View>
       ) : null}
     </>
@@ -398,6 +406,7 @@ export function ColorStrip({
   onSelect: (tile: ColorTile) => void;
 }) {
   const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
   return (
     <View style={styles.tiles}>
       {tiles.map((tile) => {
@@ -420,11 +429,11 @@ export function ColorStrip({
                 decorative
               />
             ) : (
-              <View style={[styles.tilePlain, { borderColor: FICHE_COLORS.hair }]}>
+              <View style={[styles.tilePlain, { borderColor: fc.hair }]}>
                 <AppText numberOfLines={2} style={[styles.tilePlainText, { color: theme.colors.ink }]}>{tile.color}</AppText>
               </View>
             )}
-            <View style={[styles.tileRule, { backgroundColor: active ? FICHE_COLORS.accent : theme.colors.canvas }]} />
+            <View style={[styles.tileRule, { backgroundColor: active ? fc.accent : theme.colors.canvas }]} />
             <AppText
               numberOfLines={1}
               style={[styles.tileLabel, { color: theme.colors.ink, fontFamily: active ? theme.font('bold') : theme.font('regular') }]}
@@ -449,6 +458,7 @@ export function SectionRow({
   defaultOpen?: boolean;
 }) {
   const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
   const [open, setOpen] = useState(defaultOpen);
   return (
     <View>
@@ -468,11 +478,11 @@ export function SectionRow({
           </AppText>
         </View>
         <View style={styles.chevron}>
-          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={FICHE.chevronSize} color={theme.colors.ink} accessibilityElementsHidden />
+          <Ionicons name={open ? 'chevron-up-outline' : 'chevron-down-outline'} size={FICHE.chevronSize} color={theme.colors.ink} accessibilityElementsHidden />
         </View>
       </Pressable>
       {open ? <View style={styles.sectionBody}>{children}</View> : null}
-      <View style={[styles.hairline, { backgroundColor: FICHE_COLORS.hair }]} />
+      <View style={[styles.hairline, { backgroundColor: fc.hair }]} />
     </View>
   );
 }
@@ -490,6 +500,7 @@ export function InfoRow({
   testID?: string;
 }) {
   const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
   const content = (
     <>
       <View style={[styles.rowIcon, styles.infoIcon]}>
@@ -502,7 +513,7 @@ export function InfoRow({
         {(lines ?? []).map((line, position) => (
           <AppText
             key={`${line}-${position}`}
-            style={[styles.infoLine, { color: FICHE_COLORS.muted, fontFamily: theme.font('regular') }]}
+            style={[styles.infoLine, { color: fc.muted, fontFamily: theme.font('regular') }]}
           >
             {line}
           </AppText>
@@ -522,9 +533,10 @@ export function InfoRow({
 /** Ligne « libellé — valeur » d'un accordéon (Caractéristiques, Matière…). */
 export function SpecLine({ label, value }: { label: string; value: string }) {
   const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
   return (
     <View style={[styles.specLine, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-      <AppText numberOfLines={1} style={[styles.specLabel, { color: FICHE_COLORS.muted, fontFamily: theme.font('regular') }]}>
+      <AppText numberOfLines={1} style={[styles.specLabel, { color: fc.muted, fontFamily: theme.font('regular') }]}>
         {label}
       </AppText>
       <AppText style={[styles.specValue, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
@@ -536,12 +548,16 @@ export function SpecLine({ label, value }: { label: string; value: string }) {
 
 /** Bande grise pleine largeur — le séparateur « plus gros que les autres lignes ». */
 export function GrayBand() {
-  return <View style={[styles.band, { backgroundColor: FICHE_COLORS.hair }]} />;
+  const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
+  return <View style={[styles.band, { backgroundColor: fc.hair }]} />;
 }
 
 /** Filet fin pleine largeur. */
 export function Hairline() {
-  return <View style={[styles.hairline, { backgroundColor: FICHE_COLORS.hair }]} />;
+  const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
+  return <View style={[styles.hairline, { backgroundColor: fc.hair }]} />;
 }
 
 /* ── 8. Barre d'achat FIXE (prix à gauche, bouton noir à droite) ───────────── */
@@ -626,6 +642,7 @@ export function SizeSheet({
   onSelect: (value: string) => void;
 }) {
   const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
   const t = useT();
   if (!visible) return null;
 
@@ -636,10 +653,18 @@ export function SizeSheet({
           accessibilityRole="button"
           accessibilityLabel={t('common.close')}
           onPress={onClose}
-          style={[styles.sheetScrim, { height: FICHE.sheetTop }]}
+          style={[styles.sheetScrim, { height: FICHE.sheetTop, backgroundColor: fc.scrim }]}
         />
-        <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
-          <View style={[styles.sheetGrab, { backgroundColor: FICHE_COLORS.sheetGrab }]} />
+        <View
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: theme.colors.canvas,
+              borderTopLeftRadius: SHEET_CORNER_RADIUS,
+              borderTopRightRadius: SHEET_CORNER_RADIUS,
+            },
+          ]}
+        >
           <View style={[styles.sheetHeaderRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             <AppText style={[styles.sheetTitle, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>
               {t('product.sizeSheetTitle')}
@@ -651,12 +676,12 @@ export function SizeSheet({
               hitSlop={8}
               style={styles.headerButton}
             >
-              <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+              <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
             </Pressable>
           </View>
 
           {/* Recommandation : la dalle lavande de la maquette. */}
-          <View style={[styles.sheetPanel, { backgroundColor: FICHE_COLORS.recommendation }]}>
+          <View style={[styles.sheetPanel, { backgroundColor: fc.recommendation }]}>
             <View style={styles.sheetPanelIcon}>
               <Ionicons name="pricetag-outline" size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
             </View>
@@ -673,7 +698,7 @@ export function SizeSheet({
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetRows}>
               {rows.map((row) => {
                 const active = selected === row.value;
-                const color = row.available ? theme.colors.ink : FICHE_COLORS.struck;
+                const color = row.available ? theme.colors.ink : fc.struck;
                 return (
                   <Pressable
                     key={row.value}
@@ -684,26 +709,26 @@ export function SizeSheet({
                     accessibilityState={{ selected: active, disabled: !row.available }}
                     disabled={!row.available}
                     onPress={() => onSelect(row.value)}
-                    style={[styles.sheetRow, { borderBottomColor: FICHE_COLORS.hair }]}
+                    style={[styles.sheetRow, { borderBottomColor: fc.hair }]}
                   >
                     <AppText
                       style={[styles.sheetRowValue, {
                         color,
                         fontFamily: active ? theme.font('bold') : theme.font('regular'),
                         textDecorationLine: row.available ? 'none' : 'line-through',
-                        textDecorationColor: FICHE_COLORS.struck,
+                        textDecorationColor: fc.struck,
                       }]}
                     >
                       {row.value}
                     </AppText>
                     <View style={[styles.sheetRowEnd, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
                       {row.state === 'last' ? (
-                        <AppText style={[styles.sheetRowState, { color: FICHE_COLORS.accent, fontFamily: theme.font('regular') }]}>
+                        <AppText style={[styles.sheetRowState, { color: fc.accent, fontFamily: theme.font('regular') }]}>
                           {t('product.sizeLast')}
                         </AppText>
                       ) : null}
                       {active ? (
-                        <Ionicons name="checkmark" size={theme.iconSize.sm} color={FICHE_COLORS.accent} accessibilityElementsHidden />
+                        <Ionicons name="checkmark-outline" size={theme.iconSize.sm} color={fc.accent} accessibilityElementsHidden />
                       ) : null}
                     </View>
                   </Pressable>
@@ -711,7 +736,7 @@ export function SizeSheet({
               })}
             </ScrollView>
           ) : (
-            <AppText style={[styles.sheetEmpty, { color: FICHE_COLORS.muted }]}>{t('product.sizeSheetEmpty')}</AppText>
+            <AppText style={[styles.sheetEmpty, { color: fc.muted }]}>{t('product.sizeSheetEmpty')}</AppText>
           )}
         </View>
       </View>
@@ -733,6 +758,7 @@ export function CartReservedSheet({
   onViewCart: () => void;
 }) {
   const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
   const t = useT();
 
   return (
@@ -750,7 +776,7 @@ export function CartReservedSheet({
             hitSlop={8}
             style={styles.headerButton}
           >
-            <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+            <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
           </Pressable>
         </View>
       )}
@@ -758,7 +784,7 @@ export function CartReservedSheet({
       <View style={styles.reservedBody} testID="product-reserved-sheet">
         <View style={[styles.reservedTimerRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           <Ionicons name="bag-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-          <AppText variant="lead" weight="bold" color={FICHE_COLORS.accent}>
+          <AppText variant="lead" weight="bold" color={fc.accent}>
             {countdown}
           </AppText>
         </View>
@@ -777,7 +803,7 @@ export function CartReservedSheet({
   );
 }
 
-/* ── 10. Visionneuse plein écran (écran 4) : blanc, croix, points ──────────── */
+/* ── 10. Visionneuse plein écran (écran 4) : bord à bord sans marge blanche ── */
 
 function VideoPage({ url }: { url: string }) {
   const player = useVideoPlayer({ uri: mediaUrl(url) }, (instance) => {
@@ -797,9 +823,10 @@ export function GalleryViewer({
   onClose: () => void;
 }) {
   const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
   const t = useT();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const [current, setCurrent] = useState(index ?? 0);
 
   useEffect(() => { if (index !== null) setCurrent(index); }, [index]);
@@ -809,51 +836,51 @@ export function GalleryViewer({
 
   return (
     <Modal visible={index !== null} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <View style={[styles.viewer, { backgroundColor: theme.colors.canvas }]}>
-        <View style={[styles.viewerStage, { backgroundColor: FICHE_COLORS.viewerStage, marginTop: FICHE.viewerTop + insets.top }]}>
-          <FlatList
-            data={items}
-            keyExtractor={(item) => item.url}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            initialScrollIndex={index ?? 0}
-            getItemLayout={(_, position) => ({ length: width, offset: width * position, index: position })}
-            onMomentumScrollEnd={(event) => setCurrent(Math.round(event.nativeEvent.contentOffset.x / width))}
-            renderItem={({ item, index: position }) => (
-              <View style={{ width }}>
-                {item.kind === 'video' ? (
-                  <VideoPage url={item.url} />
-                ) : (
-                  <AppImage
-                    uri={mediaUrl(item.url)}
-                    style={[StyleSheet.absoluteFill, styles.viewerImage]}
-                    contentFit="contain"
-                    accessibilityLabel={t('product.photo', { index: String(position + 1), total: String(items.length) })}
-                    decorative={false}
-                  />
-                )}
-              </View>
-            )}
-          />
-        </View>
-
-        <View style={styles.viewerDotsSpacer} />
-
-        <View pointerEvents="none" style={[styles.viewerDots, { marginBottom: FICHE.viewerDotsBottom + insets.bottom }]}>
-          {dots.map((item, position) => (
-            <View key={`${item.url}-${position}`} style={styles.viewerDotSlot}>
-              <View
-                style={{
-                  width: FICHE.viewerDot,
-                  height: FICHE.viewerDot,
-                  borderRadius: FICHE.viewerDot / 2,
-                  backgroundColor: position === current ? theme.colors.ink : FICHE_COLORS.dotIdle,
-                }}
-              />
+      <View style={[styles.viewer, { backgroundColor: VIDEO_BACKDROP }]} testID="product-gallery-viewer">
+        <FlatList
+          data={items}
+          keyExtractor={(item) => item.url}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          initialScrollIndex={index ?? 0}
+          getItemLayout={(_, position) => ({ length: width, offset: width * position, index: position })}
+          onMomentumScrollEnd={(event) => setCurrent(Math.round(event.nativeEvent.contentOffset.x / width))}
+          renderItem={({ item, index: position }) => (
+            <View style={{ width, height }}>
+              {item.kind === 'video' ? (
+                <VideoPage url={item.url} />
+              ) : (
+                <AppImage
+                  uri={mediaUrl(item.url)}
+                  highRes
+                  background={VIDEO_BACKDROP}
+                  style={StyleSheet.absoluteFill}
+                  contentFit="cover"
+                  accessibilityLabel={t('product.photo', { index: String(position + 1), total: String(items.length) })}
+                  decorative={false}
+                />
+              )}
             </View>
-          ))}
-        </View>
+          )}
+        />
+
+        {dots.length > 1 ? (
+          <View pointerEvents="none" style={[styles.viewerDotsOverlay, { bottom: FICHE.viewerDotsBottom + insets.bottom }]}>
+            {dots.map((item, position) => (
+              <View key={`${item.url}-${position}`} style={styles.viewerDotSlot}>
+                <View
+                  style={{
+                    width: FICHE.viewerDot,
+                    height: FICHE.viewerDot,
+                    borderRadius: FICHE.viewerDot / 2,
+                    backgroundColor: position === current ? fc.onAccent : fc.dotIdle,
+                  }}
+                />
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         <Pressable
           accessibilityRole="button"
@@ -862,7 +889,7 @@ export function GalleryViewer({
           hitSlop={8}
           style={[styles.viewerClose, { top: insets.top + FICHE.viewerCloseTop }]}
         >
-          <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+          <Ionicons name="close-outline" size={theme.iconSize.md} color={fc.onAccent} accessibilityElementsHidden />
         </Pressable>
       </View>
     </Modal>
@@ -979,17 +1006,13 @@ const styles = StyleSheet.create({
 
   sheetRoot: { flex: 1 },
   sheetScrim: { backgroundColor: FICHE_COLORS.scrim },
-  sheet: { flex: 1 },
-  sheetGrab: {
-    alignSelf: 'center', width: FICHE.grabWidth, height: FICHE.grabHeight,
-    borderRadius: FICHE.grabHeight / 2, marginTop: FICHE.grabTop,
-  },
+  sheet: { flex: 1, overflow: 'hidden' },
   sheetHeaderRow: {
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingStart: FICHE.gutter,
     paddingEnd: 8,
-    marginTop: 8,
+    marginTop: 12,
   },
   sheetTitle: {
     flex: 1,
@@ -1048,10 +1071,13 @@ const styles = StyleSheet.create({
   },
 
   viewer: { flex: 1 },
-  viewerStage: { flex: 1 },
-  viewerImage: { margin: 12 },
-  viewerDotsSpacer: { height: FICHE.viewerStageBottom },
-  viewerDots: { flexDirection: 'row', justifyContent: 'center' },
+  viewerDotsOverlay: {
+    position: 'absolute',
+    start: 0,
+    end: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
   viewerDotSlot: { width: FICHE.viewerDotPitch, alignItems: 'center' },
   viewerClose: {
     position: 'absolute', start: FICHE.viewerCloseStart,

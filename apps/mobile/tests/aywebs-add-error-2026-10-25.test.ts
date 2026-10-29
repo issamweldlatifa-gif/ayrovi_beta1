@@ -85,7 +85,7 @@ describe('addErrorMessage — لا احتياطي صمّاء على الرفوض
   it('كود غير مغطّى يسقط على رسالة userMessage المُترجَمة (لا انهيار)', () => {
     const error = httpError('RATE_LIMITED', 429);
     expect(addErrorMessage(error, 'fr', tFr)).toBe('Trop de requêtes — patientez un instant.');
-    expect(addErrorMessage(error, 'ar', tAr)).toBe('طلبات برشة — استنّى شوية.');
+    expect(addErrorMessage(error, 'ar', tAr)).toBe('طلبات كثيرة جداً — يرجى الانتظار لحظة.');
   });
 
   it('خطأ غير ApiError (شبكة/استثناء محلي) → رسالة فشل القراءة', () => {
