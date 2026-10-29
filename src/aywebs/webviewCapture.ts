@@ -277,12 +277,12 @@ const AVAILABILITY_VOCABULARY: Array<{ state: AyWebsAvailabilityState; reason: s
   {
     state: 'AVAILABLE', reason: 'merchant_in_stock',
     patterns: [
-      /instock|in\s*stock|available|add\s*to\s*(?:cart|basket|bag)|buy\s*now/i,
-      /en\s+stock|ajouter\s+(?:au\s+)?(?:panier|sac)|acheter/i,
-      /in\s+den\s+warenkorb|in\s+die\s+einkaufstasche|auf\s+lager|lieferbar/i,
-      /a(?:ñ|n)adir\s+(?:a\s+la\s+(?:bolsa|cesta)|al\s+carrito)|aggiungi\s+(?:al\s+carrello|alla\s+borsa)|adicionar\s+ao\s+carrinho|comprar\s+agora/i,
-      /\b\d+\s*(?:pieces?|pcs|pi[eè]ces?|unidades?|pe[cç]as?|stück|قطعة|قطع|حبة)\s*(?:available|disponibles?|dispon[ií]ve(?:l|is)|verfügbar|متوفرة?)?\b/i,
-      /(?:أضف|إضافة)\s*(?:إلى\s*|لـ?\s*)?(?:السلة|العربة|الحقيبة|حقيبة\s*التسوق)|اشترِ?(?:\s*الآن)?|متوفر/i,
+      /instock|in\s*stock|available|add\s*to\s*(?:cart|basket|bag|my\s*picks|picks|bundle)|buy\s*now/i,
+      /en\s+stock|ajouter\s+(?:au\s+)?(?:panier|sac|lot)|ajouter\s+à\s+(?:ma\s+s[ée]lection|mes\s+choix)|acheter/i,
+      /in\s+den\s+warenkorb|in\s+die\s+einkaufstasche|zu\s+meiner\s+auswahl|auf\s+lager|lieferbar/i,
+      /a(?:ñ|n)adir\s+(?:a\s+la\s+(?:bolsa|cesta)|al\s+carrito|a\s+mi\s+selecci[óo]n)|aggiungi\s+(?:al\s+carrello|alla\s+borsa|alla\s+mia\s+selezione)|adicionar\s+(?:ao\s+carrinho|às?\s+minhas?\s+escolhas?)|comprar\s+agora/i,
+      /\b\d+\s*(?:pieces?|pcs|pi[eè]ces?|unidades?|pe[cç]as?|stück|قطعة|قطع|حبة)(?:\s*(?:available|disponibles?|dispon[ií]ve(?:l|is)|verfügbar|متوفرة?))?/i,
+      /(?:أضف|إضافة)\s*(?:إلى\s*|لـ?\s*)?(?:السلة|العربة|الحقيبة|حقيبة\s*التسوق|مختاراتي)|اشترِ?(?:\s*الآن)?|متوفر/i,
     ],
   },
 ];

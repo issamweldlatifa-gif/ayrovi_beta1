@@ -37,4 +37,15 @@ describe('pastille de couleur d’une variante', () => {
     expect(needsOutline('Black')).toBe(false);
     expect(needsOutline('Default')).toBe(true);
   });
+
+  it('reconnaît les teintes denim françaises et les couleurs arabes courantes (SHEIN / AliExpress)', () => {
+    expect(colourForOption('Jean clair')).toBe('#8FB8DE');
+    expect(colourForOption('Bleu jean')).toBe('#4B749F');
+    expect(colourForOption('Bleu marine')).toBe('#1B2440');
+    expect(colourForOption('أسود')).toBe('#0A0A0A');
+    expect(colourForOption('أبيض')).toBe('#FFFFFF');
+    expect(colourForOption('كحلي')).toBe('#1B2440');
+    expect(needsOutline('أبيض')).toBe(true);
+    expect(needsOutline('أسود')).toBe(false);
+  });
 });

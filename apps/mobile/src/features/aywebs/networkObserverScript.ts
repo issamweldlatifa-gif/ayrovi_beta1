@@ -3,16 +3,36 @@
  * document WebView (`injectedJavaScriptBeforeContentLoaded`).
  *
  * Il mémorise dans un anneau borné (`window.__aywebsNetPayloads`, max 25 entrées
- * JSON ≤ 180 Ko) les réponses produit / SKU / variantes déjà demandées par la
- * boutique lors de l'ouverture initiale (Source #3 : `network_cache` pour
- * `AYWEBS_CAPTURE_SCRIPT`). Ne modifie aucun en-tête, cookie, jeton ni réponse.
+ * JSON/JSONP ≤ 650 Ko) les réponses produit / SKU / variantes / MTOP / BFF déjà
+ * demandées par la boutique lors de l'ouverture initiale (Source #3 : `network_cache`
+ * pour `AYWEBS_CAPTURE_SCRIPT`). Ne modifie aucun en-tête, cookie, jeton ni réponse.
  */
 export const AYWEBS_NETWORK_OBSERVER_SCRIPT = `(function () {
   try {
     if (window.__aywebsNetObserverInstalled) return;
     window.__aywebsNetObserverInstalled = true;
     window.__aywebsNetPayloads = window.__aywebsNetPayloads || [];
-    var RELEVANT_URL = /product|goods|detail|sku|variant|twister|graphql|item|offer|price|pdp/i;
+    window.__aywebsLastTouchAt = window.__aywebsLastTouchAt || 0;
+    try {
+      var markTouch = function () { window.__aywebsLastTouchAt = Date.now(); };
+      document.addEventListener('touchstart', markTouch, true);
+      document.addEventListener('click', markTouch, true);
+    } catch (e) {}
+    var RELEVANT_URL = /product|goods|detail|sku|variant|twister|graphql|item|offer|price|pdp|realtime|mall|bff|mtop|bundle/i;
+    var MAX_TEXT_LEN = 650000;
+    var parseJsonOrJsonp = function (rawTxt) {
+      if (!rawTxt || typeof rawTxt !== 'string') return null;
+      var trimmed = rawTxt.replace(/^\\s+|\\s+$/g, '');
+      if (!trimmed) return null;
+      if (trimmed.charAt(0) === '{' || trimmed.charAt(0) === '[') {
+        try { return JSON.parse(trimmed); } catch (e) { return null; }
+      }
+      var m = trimmed.match(/^[a-zA-Z0-9_$.]+\\s*\\(\\s*(\\{[\\s\\S]*\\})\\s*\\)\\s*;?$/);
+      if (m && m[1]) {
+        try { return JSON.parse(m[1]); } catch (e2) { return null; }
+      }
+      return null;
+    };
     var pushPayload = function (reqUrl, bodyObj) {
       try {
         if (!bodyObj || typeof bodyObj !== 'object') return;
@@ -34,10 +54,11 @@ export const AYWEBS_NETWORK_OBSERVER_SCRIPT = `(function () {
             try {
               if (!res || !res.clone) return;
               var ct = String((res.headers && res.headers.get && res.headers.get('content-type')) || '');
-              if (ct && ct.indexOf('json') < 0 && ct.indexOf('javascript') < 0) return;
+              if (ct && ct.indexOf('json') < 0 && ct.indexOf('javascript') < 0 && ct.indexOf('text/plain') < 0) return;
               res.clone().text().then(function (txt) {
-                if (!txt || txt.length > 180000) return;
-                try { pushPayload(reqUrl, JSON.parse(txt)); } catch (e) {}
+                if (!txt || txt.length > MAX_TEXT_LEN) return;
+                var parsed = parseJsonOrJsonp(txt);
+                if (parsed) pushPayload(reqUrl, parsed);
               })['catch'](function () {});
             } catch (e) {}
           })['catch'](function () {});
@@ -64,8 +85,9 @@ export const AYWEBS_NETWORK_OBSERVER_SCRIPT = `(function () {
                   return;
                 }
                 var txt = typeof xhr.responseText === 'string' ? xhr.responseText : '';
-                if (!txt || txt.length > 180000) return;
-                pushPayload(xhr.__aywebsUrl, JSON.parse(txt));
+                if (!txt || txt.length > MAX_TEXT_LEN) return;
+                var parsed = parseJsonOrJsonp(txt);
+                if (parsed) pushPayload(xhr.__aywebsUrl, parsed);
               } catch (e) {}
             });
           }

@@ -94,16 +94,25 @@ export class AliExpressAdapter extends BaseStoreAdapter {
 
 /** Identifiant d'article AliExpress (`6..20` chiffres), ou `null` hors fiche. */
 export function aliexpressItemId(url: URL): string | null {
-  const fromPath = url.pathname.match(/\/(?:item|i)\/(\d{6,20})\.html(?:[/?]|$)/i)
-    || url.pathname.match(/\/store\/product\/[^/]+\/(?:\d+_)?(\d{6,20})\.html(?:[/?]|$)/i);
+  const fromPath = url.pathname.match(/\/(?:item|i)\/(\d{6,20})(?:\.html)?(?:[/?]|$)/i)
+    || url.pathname.match(/\/store\/product\/[^/]+\/(?:\d+_)?(\d{6,20})(?:\.html)?(?:[/?]|$)/i);
   if (fromPath) return fromPath[1];
   const fromQuery = String(
     url.searchParams.get('productId')
     || url.searchParams.get('itemId')
     || url.searchParams.get('item_id')
+    || url.searchParams.get('_p_prod')
+    || url.searchParams.get('_itemid')
+    || url.searchParams.get('prodId')
     || '',
   ).trim();
   if (/^\d{6,20}$/.test(fromQuery)) return fromQuery;
+  /* Offres groupées / Choice (« BundleDeals2 », « tesla-landing ») : `productIds=<itemId>:<skuId>` */
+  if (!/^\/(?:p\/order|cart|shoppingcart)\b/i.test(url.pathname)) {
+    const rawProductIds = String(url.searchParams.get('productIds') || '').trim();
+    const bundleMatch = /^(\d{6,20})(?:[:,|]|$)/.exec(rawProductIds);
+    if (bundleMatch) return bundleMatch[1];
+  }
   return null;
 }
 

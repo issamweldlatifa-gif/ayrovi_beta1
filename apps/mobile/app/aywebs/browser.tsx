@@ -697,6 +697,10 @@ export default function AyWebsBrowserScreen() {
         style={styles.web}
         onTouchStart={invalidatePrefetchOnTouch}
         onTouchEnd={invalidatePrefetchOnTouch}
+        onStartShouldSetResponderCapture={() => {
+          invalidatePrefetchOnTouch();
+          return false;
+        }}
       >
         <WebView
           ref={webRef}
@@ -785,10 +789,14 @@ export default function AyWebsBrowserScreen() {
           capture={sheet.capture}
           quoteToken={sheet.quoteToken}
           local={sheet.local}
+          readOnlySelection
           readVariant={(url: string) => (variantReader.current
             ? variantReader.current.read(url)
             : Promise.reject(new ApiError('device', 'Lecteur de variante indisponible.')))}
-          onClose={() => setSheet(null)}
+          onClose={() => {
+            invalidatePrefetchOnTouch();
+            setSheet(null);
+          }}
           onAdded={handleCartAdded}
         />
       ) : null}

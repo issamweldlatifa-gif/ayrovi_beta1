@@ -159,17 +159,21 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   if (IS_ALIEXPRESS) {
     try {
       var aePath = String(location.pathname || '');
-      var aePathMatch = aePath.match(/\/(?:item|i)\/(\d{6,20})\.html(?:[/?]|$)/i)
-        || aePath.match(/\/store\/product\/[^/]+\/(?:\d+_)?(\d{6,20})\.html(?:[/?]|$)/i);
+      var aePathMatch = aePath.match(/\/(?:item|i)\/(\d{6,20})(?:\.html)?(?:[/?]|$)/i)
+        || aePath.match(/\/store\/product\/[^/]+\/(?:\d+_)?(\d{6,20})(?:\.html)?(?:[/?]|$)/i);
       if (aePathMatch) ALIEXPRESS_ITEM_ID = aePathMatch[1];
       if (!ALIEXPRESS_ITEM_ID) {
-        var aeQueryMatch = String(location.search || '').match(/[?&](?:productId|itemId|item_id)=(\d{6,20})(?:&|$)/i);
+        var aeQueryMatch = String(location.search || '').match(/[?&](?:productId|itemId|item_id|_p_prod|_itemid|prodId)=(\d{6,20})(?:&|$)/i);
         if (aeQueryMatch) ALIEXPRESS_ITEM_ID = aeQueryMatch[1];
+      }
+      if (!ALIEXPRESS_ITEM_ID && !/^\/(?:p\/order|cart|shoppingcart)\b/i.test(aePath)) {
+        var aeBundleMatch = String(location.search || '').match(/[?&]productIds=(\d{6,20})(?:%3A|:|%2C|,|%7C|\||&|$)/i);
+        if (aeBundleMatch) ALIEXPRESS_ITEM_ID = aeBundleMatch[1];
       }
       if (!ALIEXPRESS_ITEM_ID) {
         var aeCanonEl = document.querySelector('link[rel="canonical"]');
         var aeCanonHref = aeCanonEl ? String(aeCanonEl.getAttribute('href') || '') : '';
-        var aeCanonMatch = aeCanonHref.match(/\/(?:item|i)\/(\d{6,20})\.html/i);
+        var aeCanonMatch = aeCanonHref.match(/\/(?:item|i)\/(\d{6,20})(?:\.html)?/i);
         if (aeCanonMatch) ALIEXPRESS_ITEM_ID = aeCanonMatch[1];
       }
       var aeSkuQueryMatch = String(location.search || '').match(/[?&](?:sku_id|skuId)=(\d{5,24})(?:&|$)/i);
@@ -206,6 +210,10 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     '.uniform-banner-box-price',
     '[class*="pdp-info" i] [class*="price--current" i]',
     '[class*="price-default--current" i]',
+    '[class*="price--currentPrice" i]',
+    '[class*="bundle" i] [class*="currentPrice" i]',
+    '[class*="pdp-price" i] [class*="current" i]',
+    '[class*="H5Price" i]',
     '[class*="snow-price_SnowPrice__main" i]',
     '[class*="msku" i] [class*="price" i]',
     '[data-testid="product-price-current"]'
@@ -220,8 +228,8 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     '[data-testid*="product-price" i]',
     '[data-testid*="price" i]'
   ];
-  var SHEIN_BLOCKED_CONTEXT = /recommend|similar|also[-_ ]?like|related|carousel|review|comment|outfit|shop[-_ ]?the[-_ ]?look|match[-_ ]?with|often[-_ ]?bought|recently[-_ ]?viewed|header|footer/i;
-  var AE_BLOCKED_CONTEXT = /recommend|more[-_ ]?to[-_ ]?love|similar|related|also[-_ ]?like|bundle[-_ ]?deal|combo|shipping|delivery|freight|installment|klarna|afterpay|choice[-_ ]?banner|review|comment|seller[-_ ]?rec|store[-_ ]?rec|header|footer/i;
+  var SHEIN_BLOCKED_CONTEXT = /recommend|similar|also[-_ ]?like|related|carousel|review|comment|outfit|shop[-_ ]?the[-_ ]?look|match[-_ ]?with|often[-_ ]?bought|recently[-_ ]?viewed|(?:site|global|page)[-_ ]?(?:header|footer)/i;
+  var AE_BLOCKED_CONTEXT = /recommend|more[-_ ]?to[-_ ]?love|similar|related|also[-_ ]?like|(?:bundle|combo)[-_ ]?(?:recommend|more|list|carousel|slider)|shipping|delivery|freight|installment|klarna|afterpay|choice[-_ ]?banner|review|comment|seller[-_ ]?rec|store[-_ ]?rec|(?:site|global|page)[-_ ]?(?:header|footer)/i;
   function sheinBlocked(node) {
     var cur = node;
     for (var hop = 0; cur && cur.nodeType === 1 && hop < 8; hop++) {
@@ -353,6 +361,29 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   var SHEIN_LOW_STOCK_HINT = /(?:only\s*(\d{1,2})\s*left(?:\s*in\s*stock)?|(\d{1,2})\s*left\b|plus\s*que\s*(\d{1,2})(?:\s*en\s*stock)?|nur\s*noch\s*(\d{1,2})|solo\s*quedan\s*(\d{1,2})|ultimi\s*(\d{1,2})|بقي\s*(\d{1,2})\s*فقط|متبقي\s*(\d{1,2}))/i;
   var SHEIN_GENERIC_TITLE = /^(?:v[êe]tements\s+homme\s*(?:&|et)\s*femme|women'?s\s+clothing|mode\s+en\s+ligne|shop\s+online\s+fashion|shein\s*(?:[-|·]|official\b|$))/i;
   var SHEIN_GENERIC_LOGO_IMAGE = /(?:shein[-_]?logo|logo[-_]?shein|default[-_]?share|share[-_]?logo|site[-_]?logo|favicon|apple[-_]?touch[-_]?icon|placeholder|blank\.gif|1x1)/i;
+  var SHEIN_BADGE_OR_ICON_URL = /(?:\/images3_acp\/|\/images3_ccc\/|\/she_dist\/|(?:^|[/_-])(?:badge|icon|label[-_]?img|brand[-_]?tag|brand[-_]?logo|banner[-_]?icon|quick[-_]?ship|truck|shipping[-_]?icon|service[-_]?icon|arrow|star|sprite)(?:[/_.-]|$))/i;
+  var SHEIN_NON_GALLERY_ANCESTOR = /(?:product-intro__head|goods-name|goods-title|brand[-_]?name|title[-_]?tag|title[-_]?label|badge|quick[-_]?ship|shipping|delivery|freight|service|promise|coupon|promo|activity[-_]?bar|flash[-_]?sale|rank|comment|review|color-radio|goods-color|swatch)/i;
+  function sheinIsProductGalleryImg(imgNode, url) {
+    if (!url || SHEIN_GENERIC_LOGO_IMAGE.test(url) || SHEIN_BADGE_OR_ICON_URL.test(url)) return false;
+    if (!imgNode || imgNode.nodeType !== 1) return true;
+    try {
+      var wAttr = parseInt((imgNode.getAttribute && imgNode.getAttribute('width')) || '0', 10);
+      var hAttr = parseInt((imgNode.getAttribute && imgNode.getAttribute('height')) || '0', 10);
+      if ((wAttr > 0 && wAttr < 80) || (hAttr > 0 && hAttr < 80)) return false;
+      var natW = typeof imgNode.naturalWidth === 'number' ? imgNode.naturalWidth : 0;
+      var natH = typeof imgNode.naturalHeight === 'number' ? imgNode.naturalHeight : 0;
+      if ((natW > 0 && natW < 80) || (natH > 0 && natH < 80)) return false;
+      var anc = imgNode;
+      for (var hop = 0; anc && anc.nodeType === 1 && hop < 6; hop++) {
+        var tag = String(anc.tagName || '').toLowerCase();
+        if (tag === 'h1' || tag === 'h2' || tag === 'button') return false;
+        var cls = String(anc.className || '') + ' ' + String((anc.getAttribute && anc.getAttribute('data-testid')) || '');
+        if (SHEIN_NON_GALLERY_ANCESTOR.test(cls)) return false;
+        anc = anc.parentNode;
+      }
+    } catch (e) {}
+    return true;
+  }
   /* Déclencheur de liste déroulante de tailles groupées sur m.shein.com (ex. « 6-9M- 2-3Y ▼ ») :
      ce n'est PAS une taille atomique achetable, mais un groupe pliant plusieurs âges. */
   var SHEIN_GROUPED_RANGE_TRIGGER = /^\d{1,2}(?:\s*-\s*\d{1,2})?\s*(?:m|y|ans|mois|months?|years?)\s*-\s*\d{1,2}(?:\s*-\s*\d{1,2})?\s*(?:m|y|ans|mois|months?|years?)\b/i;
@@ -889,6 +920,10 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       || root.sizeList || detail.sizeList
       || root.skuList || detail.skuList
       || root.sku_price_list || detail.sku_price_list;
+    var hasProvenUniformPrice = Boolean(
+      (minRangeStr && maxRangeStr && minRangeStr === maxRangeStr)
+      || (Object.prototype.toString.call(rawSizes) === '[object Array]' && rawSizes.length === 1)
+    );
     var lookupExternalSku = function (entry) {
       if (!entry || typeof entry !== 'object') return null;
       var cands = [entry.sku_code, entry.skuCode, entry.sku_id, entry.attr_value_id, entry.attr_value_name, entry.size_name];
@@ -925,7 +960,16 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           distinctExplicitPrices[explicitSkuPrice] = true;
           distinctExplicitCount++;
         }
-        var sPrice = explicitSkuPrice || (!hasAnyExplicitSkuPrice && !hasRangePrice && sAvail === true && salePrice ? salePrice : '');
+        /* Ne jamais étamper aveuglément salePrice sur toutes les tailles quand le
+           marchand omet les prix par SKU ET omet min_price/max_price (m.shein.com SSR) :
+           seule une uniformité prouvée (1 taille ou min === max) ou l'option marquée
+           selected hérite du prix courant. */
+        var sPrice = explicitSkuPrice || (
+          !hasAnyExplicitSkuPrice && !hasRangePrice && sAvail === true && salePrice
+          && (hasProvenUniformPrice || Boolean(sEntry.selected))
+            ? salePrice
+            : ''
+        );
         var skuAttrs = {};
         if (currentColor) skuAttrs['Couleur'] = cut(currentColor, LIMITS.label);
         var sVal = text(sEntry.attr_value_name || sEntry.attr_value || sEntry.size_name || sEntry.sizeName || sEntry.name || '');
@@ -1613,6 +1657,15 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           }
         }
       }
+      var aeNetList = (GLOBAL_WIN && GLOBAL_WIN.__aywebsNetPayloads) || (typeof window !== 'undefined' && window.__aywebsNetPayloads) || null;
+      if (aeNetList && Object.prototype.toString.call(aeNetList) === '[object Array]') {
+        for (var anp = aeNetList.length - 1; anp >= 0; anp--) {
+          var anEntry = aeNetList[anp];
+          if (!anEntry || !anEntry.body || typeof anEntry.body !== 'object') continue;
+          var parsedNetAe = aeParseRawObject(anEntry.body);
+          if (parsedNetAe) { ALIEXPRESS_STATE = parsedNetAe; return ALIEXPRESS_STATE; }
+        }
+      }
     } catch (e) {}
     return ALIEXPRESS_STATE;
   }
@@ -1625,7 +1678,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   function aeReadDomSelectionMap() {
     var map = {};
     try {
-      var propContainers = document.querySelectorAll('[data-pl="product-sku"] [class*="sku-item--property" i], [data-pl="product-sku"] [class*="sku--property" i], .sku-property, .product-sku [class*="property" i], [data-testid*="sku-property" i]');
+      var propContainers = document.querySelectorAll('[data-pl="product-sku"] [class*="sku-item--property" i], [data-pl="product-sku"] [class*="sku--property" i], .sku-property, .product-sku [class*="property" i], [class*="msku-prop" i], [class*="msku__prop" i], [class*="sku-prop" i], [class*="sku-panel" i] [class*="prop" i], [class*="sku" i] [class*="property" i], [data-testid*="sku-property" i]');
       for (var pc = 0; pc < propContainers.length && pc < 8; pc++) {
         var cont = propContainers[pc];
         if (aeBlocked(cont) || isInNavigation(cont)) continue;
@@ -3008,7 +3061,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
               if (!snEl || sheinBlocked(snEl) || isInNavigation(snEl)) continue;
               if (snEl.hasAttribute && (snEl.hasAttribute('data-price') || snEl.hasAttribute('data-sale-price')) && /size/i.test(String(snEl.className || '')) && !sheinNodeSelected(snEl)) continue;
               var snRaw = text(snEl.getAttribute && (snEl.getAttribute('data-price') || snEl.getAttribute('data-sale-price') || snEl.getAttribute('aria-label')))
-                || aeNormalizeSplitPrice(snEl);
+                || aeNormalizeSplitPrice(scopeText(snEl));
               if (!snRaw || !HAS_DIGIT.test(snRaw)) continue;
               var snWithCur = CURRENCY_HINT.test(snRaw) ? snRaw : (out.currencyText ? (snRaw + ' ' + out.currencyText) : '');
               if (!snWithCur || amountCount(snWithCur) !== 1) continue;
@@ -3018,7 +3071,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
                 hasSecondSource = true;
               }
             }
-            if (!hasSecondSource && purgedStaleStatic && sheinDomSelSize && SHEIN_GOODS_ID) {
+            if (!hasSecondSource && (purgedStaleStatic || sheinDomSelSize || SHEIN_STATE) && scoped.length === 1 && SHEIN_GOODS_ID) {
               var activeCorroborated = CURRENCY_HINT.test(scoped[0])
                 ? scoped[0]
                 : (out.currencyText ? (scoped[0] + ' ' + out.currencyText) : scoped[0]);
@@ -3075,6 +3128,21 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
             out.priceCandidates.push({ text: cut(aeActiveEmbPrice, LIMITS.text), source: 'embedded_json' });
           }
         }
+        /* Fiches H5 / Choice / BundleDeals AliExpress sans JSON-LD ni runParams SSR :
+           lorsqu'un prix principal unique non ambigu est lu sur une fiche identifiée
+           (ALIEXPRESS_ITEM_ID), on corrobore la lecture unique du bloc prix. */
+        if (scoped.length === 1 && ALIEXPRESS_ITEM_ID && sheinNumericAmount(scoped[0]) !== null) {
+          var hasAeSecond = false;
+          for (var aecs = 0; aecs < out.priceCandidates.length; aecs++) {
+            if (out.priceCandidates[aecs] && out.priceCandidates[aecs].source !== 'dom') { hasAeSecond = true; break; }
+          }
+          if (!hasAeSecond) {
+            var aeCorroborated = CURRENCY_HINT.test(scoped[0])
+              ? scoped[0]
+              : (out.currencyText ? (scoped[0] + ' ' + out.currencyText) : scoped[0]);
+            out.priceCandidates.push({ text: cut(aeCorroborated, LIMITS.text), source: 'a11y_label' });
+          }
+        }
       } catch (e) {}
     }
     } else if (READER_PROFILE && READER_PROFILE.priceMode === 'structured_only') {
@@ -3128,7 +3196,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     /* Libellés d'achat, plusieurs langues. Le panier doit être nommé : « Add »
        tout court peut être « Add to wishlist », et un bouton de liste d'envies
        ne prouve aucun stock. */
-    var ADD_TEXT = /add\s*to\s*(cart|basket|bag)|buy\s*now|in\s*(?:den\s*warenkorb|die\s*einkaufstasche)|ajouter(?:\s+(?:au\s+)?(?:panier|sac)|\s+le\s+produit)?|acheter|aggiungi(?:\s+(?:al\s+carrello|alla\s+borsa))?|a(?:ñ|n)adir(?:\s+(?:a\s+la\s+|al\s+)?(?:cesta|carrito|bolsa))?|أضف\s*إلى\s*(?:السلة|العربة|الحقيبة|حقيبة\s*التسوق)|إضافة\s*إلى\s*(?:السلة|العربة|الحقيبة)|أضف\s*للسلة|اشترِ?\s*(?:الآن)?/i;
+    var ADD_TEXT = /add\s*to\s*(cart|basket|bag|my\s*picks|picks|bundle)|buy\s*now|in\s*(?:den\s*warenkorb|die\s*einkaufstasche)|zu\s*meiner\s*auswahl|ajouter(?:\s+(?:au\s+)?(?:panier|sac|lot)|\s+à\s+(?:ma\s+s[ée]lection|mes\s+choix)|\s+le\s+produit)?|acheter|aggiungi(?:\s+(?:al\s+carrello|alla\s+borsa|alla\s+mia\s+selezione))?|a(?:ñ|n)adir(?:\s+(?:a\s+la\s+|al\s+)?(?:cesta|carrito|bolsa)|\s+a\s+mi\s+selecci[óo]n)?|adicionar\s+(?:ao\s+carrinho|às?\s+minhas?\s+escolhas?)|أضف\s*إلى\s*(?:السلة|العربة|الحقيبة|حقيبة\s*التسوق|مختاراتي)|إضافة\s*إلى\s*(?:السلة|العربة|الحقيبة|مختاراتي)|أضف\s*(?:للسلة|لمختاراتي)|اشترِ?\s*(?:الآن)?/i;
     var NOT_ADD_TEXT = /wish\s*list|wishlist|favoris|favorites|liste\s+d'envies|merkliste|envies/i;
     var SHEIN_SOLD_OUT_TEXT = /\b(sold\s*out|out\s*of\s*stock|épuisé|epuise|rupture(?:\s*de\s*stock)?|indisponible|ausverkauft|nicht\s*auf\s*lager|agotado|sin\s*existencias|esaurito|non\s*disponibile)\b|نفدت\s*الكمية|غير\s*متوفر/i;
     if (AMAZON_STRICT) {
@@ -3237,12 +3305,15 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
      « Ajouter au panier » se retrouvaient dans la liste des TAILLES, et la
      feuille du client affichait « Taille : Taille & coupe ». */
   var ACTION_NOT_A_VALUE = /^(?:add|ajouter|acheter|buy|commander|checkout|panier|cart|sac|bag|wishlist|favoris|partager|share|guide|voir|see|learn|en\s+savoir\s+plus|taille\s*(?:&|et|\+)\s*coupe|size\s*(?:&|and|\+)\s*fit|size\s*guide|guide\s*des\s*tailles)\b/i;
+  var BARE_DIMENSION_PLACEHOLDER = /^(?:taille|size|talla|taglia|gr(?:ö|oe)(?:ß|ss)e|misura|maat|مقاس|المقاس|قياس|couleur|colou?r|farbe|colore|لون|اللون)$/i;
+  var UI_PLACEHOLDER_INLINE = /^(?:(?:ma|votre|your|my|deine|tu|su|la\s+mia|il\s+mio)\s+(?:taille|size|taglia|talla|gr(?:ö|oe)(?:ß|ss)e|misura|maat|مقاس)|(?:toutes?\s+les\s+)?couleurs?|(?:all\s+)?colou?rs?|s(?:é|e)lectionn\w*|choisiss\w*|please\s+(?:select|choose)|pick\s+(?:a|your))\b/i;
 
   try {
     var selected = document.querySelectorAll('select option:checked, [role="option"][aria-selected="true"], [aria-checked="true"]');
     for (var v = 0; v < selected.length && out.selectedVariantTexts.length < LIMITS.selectedTexts; v++) {
       var option = selected[v];
       if (isInNavigation(option)) continue;
+      if (String(option.tagName || '').toUpperCase() === 'OPTION' && option.disabled === true && text(option.getAttribute && option.getAttribute('value')) === '') continue;
       /* Une CARTE de variante (li aria-checked) contient son prix et son stock :
          son texte entier n'est pas un libellé. L'image porte le nom. */
       var optionImg = option.querySelector && option.querySelector('img[alt]');
@@ -3251,7 +3322,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         || text(optionImg && optionImg.getAttribute('alt'))
         || text(option.textContent);
       if (!optionText || optionText.length > LIMITS.label) continue;
-      if (NOT_A_CHOICE.test(optionText)) continue;
+      if (NOT_A_CHOICE.test(optionText) || BARE_DIMENSION_PLACEHOLDER.test(optionText) || UI_PLACEHOLDER_INLINE.test(optionText) || ACTION_NOT_A_VALUE.test(optionText)) continue;
       pushUnique(out.selectedVariantTexts, optionText, LIMITS.selectedTexts, LIMITS.label);
     }
     /* Les pastilles de variante « déjà choisies » (couleur/taille) ne portent pas
@@ -4395,11 +4466,12 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
 
       /* 2. Pastilles DOM (sélection active en direct, états désactivés, vignettes) */
       try {
-        var domProps = document.querySelectorAll('[data-pl="product-sku"] [class*="sku-item--property" i], [data-pl="product-sku"] [class*="sku--property" i], .sku-property, .product-sku [class*="property" i], [data-testid*="sku-property" i]');
+        var domProps = document.querySelectorAll('[data-pl="product-sku"] [class*="sku-item--property" i], [data-pl="product-sku"] [class*="sku--property" i], .sku-property, .product-sku [class*="property" i], [class*="msku-prop" i], [class*="msku__prop" i], [class*="sku-prop" i], [class*="sku-panel" i] [class*="prop" i], [class*="sku" i] [class*="property" i], [data-testid*="sku-property" i]');
         for (var dp = 0; dp < domProps.length && dp < 8; dp++) {
           var dCont = domProps[dp];
+          if (/title|label/i.test(String(dCont.className || ''))) continue;
           if (aeBlocked(dCont) || isInNavigation(dCont)) continue;
-          var dTitleEl = dCont.querySelector('[class*="sku-item--title" i], [class*="sku--title" i], .sku-title, [class*="property-title" i]');
+          var dTitleEl = dCont.querySelector('[class*="sku-item--title" i], [class*="sku--title" i], .sku-title, [class*="property-title" i], [class*="prop-title" i]');
           var dRawTitle = dTitleEl ? text(dTitleEl.textContent) : '';
           var dName = dRawTitle;
           var dHeaderVal = '';
@@ -4413,7 +4485,8 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           if (!gFromDom) continue;
           /* Si le DOM affiche le nom dans la langue du client (« Couleur »), il devient le libellé affiché */
           gFromDom.name = cut(dName, LIMITS.label);
-          var dPills = dCont.querySelectorAll('[data-sku-col], [class*="sku-item--box" i], [class*="sku-item--image" i], [class*="sku-item--text" i], .sku-property-item, [role="radio"]');
+          var dPills = dCont.querySelectorAll('[data-sku-col], [class*="sku-item--box" i], [class*="sku-item--image" i], [class*="sku-item--text" i], .sku-property-item, [class*="msku" i] [class*="item" i], [role="radio"]');
+          var activePillImgUrl = '';
           for (var dpl = 0; dpl < dPills.length && dpl < 30; dpl++) {
             var dPill = dPills[dpl];
             var dCls = String(dPill.className || '');
@@ -4424,6 +4497,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
               || (dPill.getAttribute && (dPill.getAttribute('aria-disabled') === 'true' || dPill.getAttribute('disabled') !== null));
             var dImgEl = dPill.querySelector && dPill.querySelector('img');
             var dImgUrl = dImgEl ? aeCleanImageUrl(dImgEl.getAttribute('src') || dImgEl.getAttribute('data-src')) : '';
+            if (dSel && dImgUrl && !activePillImgUrl) activePillImgUrl = dImgUrl;
             var dVal = cut(
               (dPill.getAttribute && (dPill.getAttribute('title') || dPill.getAttribute('aria-label')))
               || (dImgEl && (dImgEl.getAttribute('alt') || dImgEl.getAttribute('title')))
@@ -4433,9 +4507,16 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
             if (!dVal) continue;
             upsertAeValue(gFromDom, dVal, { selected: dSel, disabled: dDis, image: dImgUrl || null });
           }
-          if (!gFromDom.selected && dHeaderVal && gFromDom.valuesMap[dHeaderVal.toLowerCase()]) {
-            gFromDom.selected = gFromDom.valuesMap[dHeaderVal.toLowerCase()].value;
-            gFromDom.valuesMap[dHeaderVal.toLowerCase()].selected = true;
+          if (!gFromDom.selected && dHeaderVal && !AE_GUIDE_NOISE.test(dHeaderVal)) {
+            if (gFromDom.valuesMap[dHeaderVal.toLowerCase()]) {
+              gFromDom.selected = gFromDom.valuesMap[dHeaderVal.toLowerCase()].value;
+              gFromDom.valuesMap[dHeaderVal.toLowerCase()].selected = true;
+            } else {
+              upsertAeValue(gFromDom, dHeaderVal, { selected: true, disabled: false, image: activePillImgUrl || null });
+            }
+            if (gFromDom.valuesOrder.length < 2) {
+              pushUnique(out.selectedVariantTexts, cut(dName + ' : ' + dHeaderVal, LIMITS.label), LIMITS.selectedTexts, LIMITS.label);
+            }
           }
         }
       } catch (e) {}
@@ -4657,10 +4738,13 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         for (var oi = 0; oi < selectNode.options.length && values.length < LIMITS.variantValues; oi++) {
           var opt = selectNode.options[oi];
           var optLabel = text(opt.textContent);
-          if (!optLabel || optLabel.length > LIMITS.label || NOT_A_CHOICE.test(optLabel)) continue;
+          if (!optLabel || optLabel.length > LIMITS.label || NOT_A_CHOICE.test(optLabel) || BARE_DIMENSION_PLACEHOLDER.test(optLabel) || UI_NOT_A_VALUE.test(optLabel)) continue;
           if (ACTION_NOT_A_VALUE.test(optLabel)) continue;
           if (!selectIsSize && isIndexValue(optLabel)) continue;
           if (ciExactContains(values, optLabel)) continue;
+          var optRawVal = text(opt.getAttribute && opt.getAttribute('value'));
+          var isPlaceholderOpt = opt.disabled === true && optRawVal === '';
+          if (isPlaceholderOpt) continue;
           values.push(optLabel);
           if (opt.selected) chosen.push(optLabel);
           valueOptions.push({
@@ -4940,7 +5024,9 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       var sheinRealImages = [];
       if (SHEIN_STATE && SHEIN_STATE.images && SHEIN_STATE.images.length) {
         for (var shi = 0; shi < SHEIN_STATE.images.length && sheinRealImages.length < LIMITS.images; shi++) {
-          pushUnique(sheinRealImages, SHEIN_STATE.images[shi], LIMITS.images, 600);
+          if (sheinIsProductGalleryImg(null, SHEIN_STATE.images[shi])) {
+            pushUnique(sheinRealImages, SHEIN_STATE.images[shi], LIMITS.images, 600);
+          }
         }
       }
       var sheinGallerySelectors = [
@@ -4948,7 +5034,15 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         '.goods-gallery img',
         '.goods-img-swiper img',
         '[class*="goods-banner" i] img',
+        '[class*="goods-img" i] img',
+        '[class*="main-picture" i] img',
+        '[class*="product-image" i] img',
         '.product-intro__thumbs img',
+        'img[src*="/images3_pi/"]',
+        'img[data-src*="/images3_pi/"]',
+        'img[data-lazy*="/images3_pi/"]',
+        'img[src*="/images3_spmp/"]',
+        'img[data-src*="/images3_spmp/"]',
         'img[src*="ltwebstatic.com"]',
         'img[data-src*="ltwebstatic.com"]',
         'img[data-lazy*="ltwebstatic.com"]'
@@ -4959,23 +5053,36 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         for (var sgn = 0; sgn < sgNodes.length && sheinRealImages.length < LIMITS.images; sgn++) {
           if (sheinBlocked(sgNodes[sgn]) || isInNavigation(sgNodes[sgn])) continue;
           var sgUrl = extractElementImageUrl(sgNodes[sgn]);
-          if (sgUrl) pushUnique(sheinRealImages, sgUrl, LIMITS.images, 600);
+          if (sgUrl && sheinIsProductGalleryImg(sgNodes[sgn], sgUrl)) {
+            pushUnique(sheinRealImages, sgUrl, LIMITS.images, 600);
+          }
+        }
+      }
+      /* Purger tout badge (images3_acp/, images3_ccc/, icône camion) déjà lu dans og:image ou JSON-LD */
+      var filteredExistingSheinImgs = [];
+      for (var eoi = 0; eoi < out.images.length; eoi++) {
+        if (sheinIsProductGalleryImg(null, out.images[eoi])) {
+          pushUnique(filteredExistingSheinImgs, out.images[eoi], LIMITS.images, 600);
         }
       }
       if (sheinRealImages.length) {
-        for (var eoi = 0; eoi < out.images.length && sheinRealImages.length < LIMITS.images; eoi++) {
-          if (!SHEIN_GENERIC_LOGO_IMAGE.test(out.images[eoi])) {
-            pushUnique(sheinRealImages, out.images[eoi], LIMITS.images, 600);
-          }
+        for (var fei = 0; fei < filteredExistingSheinImgs.length && sheinRealImages.length < LIMITS.images; fei++) {
+          pushUnique(sheinRealImages, filteredExistingSheinImgs[fei], LIMITS.images, 600);
         }
         out.images = sheinRealImages;
+      } else {
+        out.images = filteredExistingSheinImgs;
       }
     } catch (e) {}
   }
   if (IS_ALIEXPRESS) {
     try {
       aeEnsureState();
-      var aeTitleEl = document.querySelector('[data-pl="product-title"], h1[data-pl="product-title"], .product-title-text, [class*="title--wrap" i] h1, [class*="pdp-title" i], h1');
+      var aeTitleEl = document.querySelector(
+        '[data-pl="product-title"], h1[data-pl="product-title"], .product-title-text, '
+        + '[class*="title--wrap" i] h1, [class*="title--wrap" i], [class*="pdp-title" i], '
+        + '[class*="product-title" i], [class*="goods-title" i], [class*="item-title" i], h1'
+      );
       var aeDomTitle = (aeTitleEl && !aeBlocked(aeTitleEl)) ? cut(aeTitleEl.textContent, LIMITS.text) : '';
       if (aeDomTitle) out.title = aeDomTitle;
       else if (!out.title && ALIEXPRESS_STATE && ALIEXPRESS_STATE.title) out.title = cut(ALIEXPRESS_STATE.title, LIMITS.text);
@@ -5063,6 +5170,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     for (var g = 0; g < images.length && out.images.length < LIMITS.images; g++) {
       var width = parseInt(images[g].getAttribute('width') || '0', 10);
       if (width && width < 200) continue;
+      if (IS_SHEIN && !sheinIsProductGalleryImg(images[g], images[g].getAttribute('src'))) continue;
       pushUnique(out.images, images[g].getAttribute('src'), LIMITS.images, 600);
     }
   } catch (e) {}
@@ -5642,8 +5750,21 @@ export const AYWEBS_NETWORK_OBSERVER_SCRIPT = String.raw`(function () {
       document.addEventListener('touchstart', markTouch, true);
       document.addEventListener('click', markTouch, true);
     } catch (e) {}
-    var RELEVANT_URL = /product|goods|detail|sku|variant|twister|graphql|item|offer|price|pdp|realtime|mall|bff/i;
+    var RELEVANT_URL = /product|goods|detail|sku|variant|twister|graphql|item|offer|price|pdp|realtime|mall|bff|mtop|bundle/i;
     var MAX_TEXT_LEN = 650000;
+    var parseJsonOrJsonp = function (rawTxt) {
+      if (!rawTxt || typeof rawTxt !== 'string') return null;
+      var trimmed = rawTxt.replace(/^\s+|\s+$/g, '');
+      if (!trimmed) return null;
+      if (trimmed.charAt(0) === '{' || trimmed.charAt(0) === '[') {
+        try { return JSON.parse(trimmed); } catch (e) { return null; }
+      }
+      var m = trimmed.match(/^[a-zA-Z0-9_$.]+\s*\(\s*(\{[\s\S]*\})\s*\)\s*;?$/);
+      if (m && m[1]) {
+        try { return JSON.parse(m[1]); } catch (e2) { return null; }
+      }
+      return null;
+    };
     var pushPayload = function (reqUrl, bodyObj) {
       try {
         if (!bodyObj || typeof bodyObj !== 'object') return;
@@ -5667,10 +5788,11 @@ export const AYWEBS_NETWORK_OBSERVER_SCRIPT = String.raw`(function () {
             try {
               if (!res || !res.clone) return;
               var ct = String((res.headers && res.headers.get && res.headers.get('content-type')) || '');
-              if (ct && ct.indexOf('json') < 0 && ct.indexOf('javascript') < 0) return;
+              if (ct && ct.indexOf('json') < 0 && ct.indexOf('javascript') < 0 && ct.indexOf('text/plain') < 0) return;
               res.clone().text().then(function (txt) {
                 if (!txt || txt.length > MAX_TEXT_LEN) return;
-                try { pushPayload(reqUrl, JSON.parse(txt)); } catch (e) {}
+                var parsed = parseJsonOrJsonp(txt);
+                if (parsed) pushPayload(reqUrl, parsed);
               })['catch'](function () {});
             } catch (e) {}
           })['catch'](function () {});
@@ -5698,7 +5820,8 @@ export const AYWEBS_NETWORK_OBSERVER_SCRIPT = String.raw`(function () {
                 }
                 var txt = typeof xhr.responseText === 'string' ? xhr.responseText : '';
                 if (!txt || txt.length > MAX_TEXT_LEN) return;
-                pushPayload(xhr.__aywebsUrl, JSON.parse(txt));
+                var parsed = parseJsonOrJsonp(txt);
+                if (parsed) pushPayload(xhr.__aywebsUrl, parsed);
               } catch (e) {}
             });
           }

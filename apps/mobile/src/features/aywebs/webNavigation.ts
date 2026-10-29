@@ -52,13 +52,22 @@ function aliexpressDocumentIdentity(url: URL): string | null {
   const hostMatch = /(?:^|\.)(aliexpress\.(?:com|us|ru))$/i.exec(url.hostname);
   if (!hostMatch) return null;
   const rootHost = hostMatch[1].toLowerCase();
-  const pathMatch = /\/(?:item|i)\/(\d{6,20})\.html(?:[/?]|$)/i.exec(url.pathname)
-    || /\/store\/product\/[^/]+\/(?:\d+_)?(\d{6,20})\.html(?:[/?]|$)/i.exec(url.pathname);
+  const pathMatch = /\/(?:item|i)\/(\d{6,20})(?:\.html)?(?:[/?]|$)/i.exec(url.pathname)
+    || /\/store\/product\/[^/]+\/(?:\d+_)?(\d{6,20})(?:\.html)?(?:[/?]|$)/i.exec(url.pathname);
   const queryId = url.searchParams.get('productId')
     || url.searchParams.get('itemId')
     || url.searchParams.get('item_id')
+    || url.searchParams.get('_p_prod')
+    || url.searchParams.get('_itemid')
+    || url.searchParams.get('prodId')
     || '';
-  const itemId = pathMatch?.[1] || (/^\d{6,20}$/.test(queryId.trim()) ? queryId.trim() : '');
+  let bundleId = '';
+  if (!/^\/(?:p\/order|cart|shoppingcart)\b/i.test(url.pathname)) {
+    const rawProductIds = String(url.searchParams.get('productIds') || '').trim();
+    const bundleMatch = /^(\d{6,20})(?:[:,|]|$)/.exec(rawProductIds);
+    if (bundleMatch) bundleId = bundleMatch[1];
+  }
+  const itemId = pathMatch?.[1] || (/^\d{6,20}$/.test(queryId.trim()) ? queryId.trim() : '') || bundleId;
   if (!itemId) return null;
   return `https://${rootHost}/item/${itemId}.html`;
 }
