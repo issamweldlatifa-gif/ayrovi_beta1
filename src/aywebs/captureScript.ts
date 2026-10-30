@@ -27,6 +27,7 @@
 
 import { findAyWebsStore } from '../../shared/aywebsStores';
 import { AMAZON_MOBILE_CAPTURE_SCRIPT } from './storeScripts/amazon';
+import { ZALANDO_MOBILE_CAPTURE_SCRIPT } from './storeScripts/zalando';
 import { ayWebsCaptureReader } from './captureReaders/registry';
 
 /** Chemin de service du script (le client le récupère une fois puis le rejoue). */
@@ -6855,7 +6856,7 @@ export const AYWEBS_NETWORK_OBSERVER_SCRIPT = String.raw`(function () {
 
 /**
  * Build the independently versioned script served for a registered store.
- * Amazon uses its own standalone reader; remaining stores still use the legacy
+ * Amazon and Zalando use standalone readers; remaining stores still use the legacy
  * shared core until their independent readers have been migrated and tested.
  * Calling without a store keeps the legacy bundle for old app builds.
  */
@@ -6863,6 +6864,7 @@ export function buildAyWebsCaptureScript(storeId?: string | null): string {
   const reader = ayWebsCaptureReader(storeId);
   if (!reader) return AYWEBS_CAPTURE_SCRIPT;
   if (reader.storeId === 'amazon') return AMAZON_MOBILE_CAPTURE_SCRIPT;
+  if (reader.storeId === 'zalando') return ZALANDO_MOBILE_CAPTURE_SCRIPT;
   const store = findAyWebsStore(reader.storeId);
   if (!store) return AYWEBS_CAPTURE_SCRIPT;
   const profile = JSON.stringify({

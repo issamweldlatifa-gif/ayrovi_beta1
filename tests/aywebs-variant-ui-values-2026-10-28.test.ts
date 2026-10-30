@@ -30,13 +30,13 @@
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 
-import { AYWEBS_CAPTURE_SCRIPT } from '../src/aywebs/captureScript';
+import { buildAyWebsCaptureScript } from '../src/aywebs/captureScript';
 
 const PAGE_URL = 'https://www.zalando.fr/pantalon-carpenter-a11.html';
 
 function run(html: string): Record<string, unknown> {
   const dom = new JSDOM(html, { url: PAGE_URL });
-  const evaluate = new Function('document', 'location', 'URL', `return ${AYWEBS_CAPTURE_SCRIPT}`);
+  const evaluate = new Function('document', 'location', 'URL', `return ${buildAyWebsCaptureScript('zalando')}`);
   return JSON.parse(String(evaluate(dom.window.document, dom.window.location, PAGE_URL)));
 }
 

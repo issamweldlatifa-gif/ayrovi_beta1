@@ -4,12 +4,12 @@
  * This module owns the executable reader and does not import other stores.
  */
 export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
-    var LIMITS = { priceCandidates: 4, variantTexts: 30, selectedTexts: 5, images: 4, label: 60, text: 300, variantGroups: 4, variantValues: 20 };
+    var LIMITS = { priceCandidates: 4, variantTexts: 30, selectedTexts: 5, images: 4, label: 60, text: 300, variantGroups: 4, variantValues: 20, matrixEntries: 120 };
     var out = {
         v: 1, url: '', canonicalUrl: null, title: null, brand: null,
         priceCandidates: [], currencyText: null, availabilityText: null,
-        addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [], variantGroups: [],
-        images: [], capturedAt: null, pageLang: null, amazon: null, reader: { id: 'amazon', version: 3 }, diagnostics: []
+        addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [], variantGroups: [], variantMatrix: [],
+        images: [], capturedAt: null, pageLang: null, amazon: null, reader: { id: 'amazon', version: 4 }, diagnostics: []
     };
     /* Diagnostic BORNÉ : code court (ex. « price:buybox_asin_mismatch »), jamais de texte de page. */
     function diag(code) { if (out.diagnostics.length < 16)
@@ -2479,6 +2479,214 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
             }
         }
     }
+    // Ignore known Amazon site banners/logos even if open-graph metadata published them.
+    if (AMAZON_STRICT) {
+        var productImageOnly = [];
+        var amazonBannerImage = /\/images\/G\/|nav-sprite|transparent-pixel|grey-pixel|amazon[-_]?logo|prime[-_]?logo|play-button-overlay/i;
+        for (var imageIndex = 0; imageIndex < out.images.length; imageIndex++) {
+            if (!amazonBannerImage.test(String(out.images[imageIndex] || ''))) productImageOnly.push(out.images[imageIndex]);
+        }
+        out.images = productImageOnly;
+    }
+    /* Amazon-only per-ASIN matrix: facts remain scoped to their exact ASIN.
+       Conflicting prices and unknown variants never inherit the active price. */
+    try {
+      var matrixSeen = {};
+      var ambiguousMatrix = {};
+    var pushMatrixEntry = function (entry) {
+      if (!entry || !entry.attributes || out.variantMatrix.length >= LIMITS.matrixEntries) return;
+      var keys = [];
+      for (var k in entry.attributes) {
+        if (Object.prototype.hasOwnProperty.call(entry.attributes, k) && entry.attributes[k]) keys.push(k);
+      }
+      if (!keys.length) return;
+      keys.sort();
+      var sigParts = [];
+      for (var si = 0; si < keys.length; si++) {
+        sigParts.push(keys[si].toLowerCase() + '=' + String(entry.attributes[keys[si]]).toLowerCase());
+      }
+      var sig = sigParts.join('|');
+      var existingIdx = matrixSeen[sig];
+      if (existingIdx !== undefined) {
+        var prev = out.variantMatrix[existingIdx];
+        // The same displayed combination tied to different ASINs is ambiguous.
+        // Never attach either product's price, availability, identity or image.
+        if (ambiguousMatrix[sig] || (prev.variantId && entry.variantId && prev.variantId !== entry.variantId)) {
+          ambiguousMatrix[sig] = true;
+          prev.price = null; prev.available = null; prev.stock = null;
+          prev.variantId = null; prev.variantUrl = null; prev.image = null;
+          prev.evidenceSource = null;
+          return;
+        }
+        if (!prev.price && entry.price && !entry.priceFrom) {
+          prev.price = cut(entry.price, 60);
+          prev.priceFrom = false;
+          if (entry.evidenceSource) prev.evidenceSource = entry.evidenceSource;
+        }
+        if (prev.available === null && entry.available !== null && entry.available !== undefined) prev.available = entry.available;
+        if (!prev.stock && typeof entry.stock === 'number' && entry.stock > 0) prev.stock = entry.stock;
+        if (!prev.image && entry.image) prev.image = entry.image;
+        if (!prev.variantUrl && entry.variantUrl) prev.variantUrl = entry.variantUrl;
+        if (!prev.variantId && entry.variantId) prev.variantId = entry.variantId;
+        if ((!prev.quantityTiers || !prev.quantityTiers.length) && entry.quantityTiers && entry.quantityTiers.length) {
+          prev.quantityTiers = entry.quantityTiers;
+        }
+        return;
+      }
+      matrixSeen[sig] = out.variantMatrix.length;
+      out.variantMatrix.push({
+        variantId: entry.variantId ? cut(entry.variantId, 80) : null,
+        variantUrl: entry.variantUrl && /^https?:\/\//i.test(String(entry.variantUrl)) ? String(entry.variantUrl).slice(0, 600) : null,
+        attributes: entry.attributes,
+        price: entry.price && !entry.priceFrom ? cut(entry.price, 60) : null,
+        priceFrom: Boolean(entry.priceFrom),
+        available: entry.available === true ? true : (entry.available === false ? false : null),
+        stock: typeof entry.stock === 'number' && entry.stock > 0 && entry.stock <= 999 ? Math.floor(entry.stock) : null,
+        image: entry.image && /^https?:\/\//i.test(String(entry.image)) ? String(entry.image).slice(0, 600) : null,
+        evidenceSource: entry.evidenceSource || null,
+        quantityTiers: entry.quantityTiers && entry.quantityTiers.length ? entry.quantityTiers : undefined
+      });
+    };
+
+    /* ── D. Amazon : jointure dimensionValuesDisplayData x prix ASIN prouvés (buybox / cartes [data-asin] / réseau) ── */
+    if (AMAZON_STRICT && out.amazon) {
+      var pageAsinForPrice = out.amazon.pageAsin || AMAZON_ASIN || '';
+      var activeAsin = (!out.amazon.selectedAsin || out.amazon.selectedAsin === pageAsinForPrice) ? pageAsinForPrice : '';
+      var activeBuyboxPrice = null;
+      if (out.priceCandidates && out.priceCandidates.length > 0) {
+        for (var apci = 0; apci < out.priceCandidates.length; apci++) {
+          var apCand = out.priceCandidates[apci];
+          if (apCand && apCand.text && (apCand.source === 'a11y_label' || apCand.source === 'amazon_buybox' || apCand.source === 'dom_price' || out.priceCandidates.length === 1)) {
+            activeBuyboxPrice = apCand.text;
+            break;
+          }
+        }
+      }
+      var asinFacts = {};
+      var recordAsinFact = function (asinCode, info) {
+        if (!asinCode) return;
+        var aKey = String(asinCode).toUpperCase();
+        if (!asinFacts[aKey]) {
+          asinFacts[aKey] = { price: null, conflict: false, available: null, stock: null, image: null, source: info.source || 'dom' };
+        }
+        var slot = asinFacts[aKey];
+        if (info.price && !info.priceFrom) {
+          if (!slot.price && !slot.conflict) {
+            slot.price = info.price;
+            if (info.source) slot.source = info.source;
+          } else if (slot.price && slot.price !== info.price) {
+            slot.price = null;
+            slot.conflict = true;
+          }
+        }
+        if (info.available === false) slot.available = false;
+        else if (info.available === true && slot.available !== false) slot.available = true;
+        if (!slot.stock && typeof info.stock === 'number' && info.stock > 0) slot.stock = info.stock;
+        if (!slot.image && info.image) slot.image = info.image;
+      };
+      var joinedStockText = [out.availabilityText || ''].concat(out.stockTexts || []).join(' | ');
+      var activeAvail = null;
+      if (/currently unavailable|out of stock|temporarily out of stock|actuellement indisponible|derzeit nicht verfügbar|nicht auf lager/i.test(joinedStockText)) {
+        activeAvail = false;
+      } else if ((out.purchaseAction && out.purchaseAction.present && !out.purchaseAction.disabled)
+        || /\bin stock\b|en stock|auf lager|disponible|disponibilità immediata/i.test(joinedStockText)) {
+        activeAvail = true;
+      }
+      if (activeAsin && (activeBuyboxPrice || activeAvail !== null)) {
+        recordAsinFact(activeAsin, {
+          price: activeBuyboxPrice,
+          priceFrom: false,
+          available: activeAvail,
+          stock: null,
+          image: (out.images && out.images[0]) || null,
+          source: 'dom'
+        });
+      }
+      if (out.amazon.options && out.amazon.options.length) {
+        for (var aoi = 0; aoi < out.amazon.options.length; aoi++) {
+          var aOpt = out.amazon.options[aoi];
+          if (!aOpt || !aOpt.asin) continue;
+          var aOptEv = String(aOpt.availabilityEvidence || aOpt.availability || '').toUpperCase();
+          var aOptAvail = aOptEv === 'UNAVAILABLE' ? false : (aOptEv === 'AVAILABLE' ? true : (aOptEv === 'SELECTED' ? activeAvail : null));
+          recordAsinFact(aOpt.asin, {
+            price: aOpt.price || null,
+            priceFrom: Boolean(aOpt.priceFrom),
+            available: aOptAvail,
+            stock: aOpt.stock || null,
+            image: aOpt.image || null,
+            source: 'dom'
+          });
+        }
+      }
+      /* Réponses réseau twister / ajax déjà reçues par la page Amazon (Source #3) */
+      try {
+        var amzWin = (typeof document !== 'undefined' && document.defaultView) || (typeof window !== 'undefined' ? window : null);
+        var amzNet = amzWin && amzWin.__aywebsNetPayloads;
+        if (Object.prototype.toString.call(amzNet) === '[object Array]') {
+          for (var ani = 0; ani < amzNet.length && ani < 25; ani++) {
+            var aBody = amzNet[ani] && amzNet[ani].body;
+            if (!aBody || typeof aBody !== 'object') continue;
+            var priceMap = aBody.asinToPrice || aBody.priceMap || (aBody.Value && aBody.Value.content && aBody.Value.content.twisterSlotJson) || null;
+            if (priceMap && typeof priceMap === 'object') {
+              for (var pmAsin in priceMap) {
+                if (!Object.prototype.hasOwnProperty.call(priceMap, pmAsin) || !/^[A-Z0-9]{10}$/i.test(pmAsin)) continue;
+                var pmVal = priceMap[pmAsin];
+                var pmStr = typeof pmVal === 'string' ? text(pmVal) : text(pmVal && (pmVal.displayPrice || pmVal.price || pmVal.priceAmount) || '');
+                if (pmStr && HAS_DIGIT.test(pmStr) && CURRENCY_HINT.test(pmStr)) {
+                  recordAsinFact(pmAsin, { price: pmStr, priceFrom: false, available: true, stock: null, image: null, source: 'network_cache' });
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {}
+      var amzOrigin = '';
+      try { amzOrigin = String(location.origin || ''); } catch (e) { amzOrigin = ''; }
+      if (out.amazon.variants && out.amazon.variants.length) {
+        for (var avi = 0; avi < out.amazon.variants.length; avi++) {
+          var aVar = out.amazon.variants[avi];
+          if (!aVar || !aVar.asin) continue;
+          var aAttrs = {};
+          var aAttrCount = 0;
+          if (Object.prototype.toString.call(aVar.dimensions) === '[object Array]') {
+            for (var adi = 0; adi < aVar.dimensions.length; adi++) {
+              var aDim = aVar.dimensions[adi];
+              if (!aDim || !aDim.name || !aDim.value) continue;
+              var matchedGroup = aDim.name;
+              for (var agm = 0; agm < out.variantGroups.length; agm++) {
+                if (out.variantGroups[agm].name.toLowerCase() === String(aDim.name).toLowerCase()) {
+                  matchedGroup = out.variantGroups[agm].name;
+                  break;
+                }
+              }
+              aAttrs[matchedGroup] = aDim.value;
+              aAttrCount++;
+            }
+          } else if (aVar.values && typeof aVar.values === 'object') {
+            for (var adim in aVar.values) {
+              if (!Object.prototype.hasOwnProperty.call(aVar.values, adim)) continue;
+              aAttrs[adim] = aVar.values[adim];
+              aAttrCount++;
+            }
+          }
+          if (!aAttrCount) continue;
+          var aFact = asinFacts[String(aVar.asin).toUpperCase()] || null;
+          pushMatrixEntry({
+            variantId: 'asin:' + String(aVar.asin).toUpperCase(),
+            variantUrl: amzOrigin ? (amzOrigin + '/dp/' + String(aVar.asin).toUpperCase()) : null,
+            attributes: aAttrs,
+            price: aFact ? aFact.price : null,
+            priceFrom: false,
+            available: aFact ? aFact.available : null,
+            stock: aFact ? aFact.stock : null,
+            image: aFact ? aFact.image : null,
+            evidenceSource: aFact ? aFact.source : 'embedded_json'
+          });
+        }
+      }
+    }
+
+    } catch (e) { out.variantMatrix = []; }
     /* ── 9. Bornes finales + sortie JSON ────────────────────────────────────── */
     if (out.priceCandidates.length > LIMITS.priceCandidates)
         out.priceCandidates = out.priceCandidates.slice(0, LIMITS.priceCandidates);
@@ -2487,7 +2695,12 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
     if (!out.capturedAt)
         out.capturedAt = new Date().toISOString();
     try {
-        return JSON.stringify(out);
+        var serialized = JSON.stringify(out);
+        while (serialized.length > 56000 && out.variantMatrix.length) {
+            out.variantMatrix.pop();
+            serialized = JSON.stringify(out);
+        }
+        return serialized;
     }
     catch (e) {
         return '{}';

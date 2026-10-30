@@ -80,6 +80,21 @@ describe('isolated Amazon mobile reader', () => {
     expect(black.selected).toBe(true);
   });
 
+  it('does not attach a price or stock to two ASINs with the same dimensions', () => {
+    const html = `<!doctype html><html><body><div id="dp-container">
+      <div id="corePrice_feature_div"><span class="a-price"><span class="a-offscreen">$109.00</span></span></div>
+      <script>var twister = {"variationDisplayLabels":{"size_name":"Size"},
+      "dimensionValuesDisplayData":{"${asin}":["XL"],"B0GYM3TFH2":["XL"]}};</script>
+      </div></body></html>`;
+    const result = capture(html, `https://www.amazon.com/dp/${asin}`);
+    expect(result.amazon.variants).toHaveLength(2);
+    const row = result.variantMatrix.find((value: any) => Object.values(value.attributes).includes('XL'));
+    expect(row.price).toBeNull();
+    expect(row.available).toBeNull();
+    expect(row.variantId).toBeNull();
+    expect(row.variantUrl).toBeNull();
+  });
+
   it('does not read another merchant or a deceptive hostname', () => {
     for (const url of ['https://www.zalando.fr/product', 'https://amazon.com.example.org/dp/B0GYM3V9H5']) {
       expect(capture(product, url)).toEqual({});

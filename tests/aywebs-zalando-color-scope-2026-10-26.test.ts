@@ -28,7 +28,7 @@
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 
-import { AYWEBS_CAPTURE_SCRIPT } from '../src/aywebs/captureScript';
+import { buildAyWebsCaptureScript } from '../src/aywebs/captureScript';
 import { validateAyWebsCapturedPage } from '../src/aywebs/webviewCapture';
 import { ayWebsSelectionEvidence } from '../src/aywebs/variantEvidence';
 
@@ -36,7 +36,7 @@ const PAGE_URL = 'https://www.zalando.fr/nike-hybrid-women-dk-raisin-ni111a0b3-c
 
 function run(html: string): Record<string, unknown> {
   const dom = new JSDOM(html, { url: PAGE_URL });
-  const evaluate = new Function('document', 'location', 'URL', `return ${AYWEBS_CAPTURE_SCRIPT}`);
+  const evaluate = new Function('document', 'location', 'URL', `return ${buildAyWebsCaptureScript('zalando')}`);
   return JSON.parse(String(evaluate(dom.window.document, dom.window.location, PAGE_URL)));
 }
 

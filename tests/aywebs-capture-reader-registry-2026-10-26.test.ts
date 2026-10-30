@@ -28,6 +28,7 @@ describe('capture readers : versions et bundles distincts', () => {
       expect(reader?.version).toBeGreaterThan(0);
       expect(buildAyWebsCaptureScript(id)).not.toBe(AYWEBS_CAPTURE_SCRIPT);
       if (id === 'amazon') expect(buildAyWebsCaptureScript(id)).toContain("reader: { id: 'amazon'");
+      else if (id === 'zalando') expect(buildAyWebsCaptureScript(id)).toMatch(/storeId:\s*["']zalando["']/);
       else expect(buildAyWebsCaptureScript(id)).toContain(`"storeId":"${id}"`);
     }
   });
@@ -61,7 +62,7 @@ describe('capture readers : versions et bundles distincts', () => {
     };
     const html = `<!doctype html><html><head><title>Running shoe</title><script type="application/ld+json">${JSON.stringify(group)}</script></head><body><h1>Running shoe</h1><div class="product-price">$1.00</div></body></html>`;
     const result = run(buildAyWebsCaptureScript('zalando'), 'https://www.zalando.fr/shoe-ni121d0a2-q11.html', html);
-    expect(result.reader).toEqual({ id: 'zalando', version: 1 });
+    expect(result.reader).toEqual({ id: 'zalando', version: 2 });
     expect(result.priceCandidates).toContainEqual(expect.objectContaining({ source: 'json_ld', text: expect.stringContaining('64.95 EUR') }));
     expect(result.priceCandidates).not.toContainEqual(expect.objectContaining({ text: '$1.00', source: 'dom' }));
   });
