@@ -8,7 +8,7 @@
  *     escalade support) ;
  *   • respect intégral des jetons éditoriaux (clair/sombre, FR/AR RTL).
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -42,6 +42,9 @@ import { useTheme } from '@/design/theme';
 import { FONTS } from '@/design/tokens.generated';
 import { SONIM_SUBTITLE_STYLE, SONIM_TITLE_STYLE } from '@/design/tokens.mobile';
 import { AppText, Drawer, DrawerItem } from '@/design/ui';
+import { AppSheet } from '@/design/sheet/AppSheet';
+import { SheetHeader } from '@/design/sheet/SheetHeader';
+import { useSonimSession, type SonimAttachment } from './sonimSession';
 import { useKeyboardInset } from '@/design/useKeyboardInset';
 import { useI18n } from '@/i18n';
 import { useSessionId } from '@/session/session';
@@ -135,22 +138,39 @@ export function SonimScreen() {
   const insets = useSafeAreaInsets();
   const { gutter } = useResponsive();
   const sessionId = useSessionId();
-  const { account } = useSession();
+  const { account, status } = useSession();
   const keyboardInset = useKeyboardInset(true);
   const keyboardOpen = keyboardInset > 0;
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const [conversationId, setConversationId] = useState(() => newAssistantConversationId());
-  const [messages, setMessages] = useState<SonimChatMessage[]>([]);
-  const [draft, setDraft] = useState('');
-  const [attachments, setAttachments] = useState<PickedAttachment[]>([]);
-  const [streamingState, setStreamingState] = useState<AssistantState | null>(null);
-  const [isStreaming, setIsStreaming] = useState(false);
+  // Conversation is scoped to this signed-in account or guest session, held
+  // in memory only. It survives route changes, never account changes/restarts.
+  const identity = status === 'signedIn' && account?.id ? `account:${account.id}` : status === 'signedOut' ? 'guest' : '';
+  const owner = sessionId && identity ? `${sessionId}:${identity}` : '';
+  const session = useSonimSession();
+  const owned = Boolean(owner) && session.owner === owner;
+  useEffect(() => { if (owner) useSonimSession.getState().open(owner); }, [owner]);
+  const conversationId = owned ? session.conversationId : '';
+  const messages = owned ? session.messages : [];
+  const draft = owned ? session.draft : '';
+  const attachments = owned ? session.attachments : [];
+  const streamingState = owned ? session.streamingState : null;
+  const isStreaming = owned && session.isStreaming;
+  const setConversationId = useCallback((value: SetStateAction<string>) => useSonimSession.getState().update(owner, 'conversationId', value), [owner]);
+  const setMessages = useCallback((value: SetStateAction<SonimChatMessage[]>) => useSonimSession.getState().update(owner, 'messages', value), [owner]);
+  const setDraft = useCallback((value: SetStateAction<string>) => useSonimSession.getState().update(owner, 'draft', value), [owner]);
+  const setAttachments = useCallback((value: SetStateAction<SonimAttachment[]>) => useSonimSession.getState().update(owner, 'attachments', value), [owner]);
+  const setStreamingState = useCallback((value: SetStateAction<AssistantState | null>) => useSonimSession.getState().update(owner, 'streamingState', value), [owner]);
+  const setIsStreaming = useCallback((value: SetStateAction<boolean>) => useSonimSession.getState().update(owner, 'isStreaming', value), [owner]);
+  const [attachmentOpen, setAttachmentOpen] = useState(false);
+  const [attachmentError, setAttachmentError] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const scrollRef = useRef<ScrollView>(null);
   const abortRef = useRef<(() => void) | null>(null);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const generationRef = useRef(0);
+  const activeAssistantRef = useRef<string | null>(null);
 
   const statusQuery = useQuery({
     queryKey: ['assistant-status'],
@@ -160,9 +180,17 @@ export function SonimScreen() {
   });
 
   useEffect(() => () => {
+    generationRef.current += 1;
     abortRef.current?.();
+    const assistantId = activeAssistantRef.current;
+    if (owner && assistantId) useSonimSession.getState().update(owner, 'messages', (messages) => messages.map((msg) => msg.id === assistantId ? { ...msg, errorText: t('sonim.error.stream') } : msg));
+    activeAssistantRef.current = null;
+    if (owner) {
+      useSonimSession.getState().update(owner, 'isStreaming', false);
+      useSonimSession.getState().update(owner, 'streamingState', null);
+    }
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
-  }, []);
+  }, [owner]);
 
   const firstName = useMemo(() => {
     const raw = account?.displayName?.trim() ?? '';
@@ -188,11 +216,15 @@ export function SonimScreen() {
   }, []);
 
   const stopGeneration = useCallback(() => {
+    generationRef.current += 1;
     abortRef.current?.();
     abortRef.current = null;
+    const assistantId = activeAssistantRef.current;
+    if (assistantId) setMessages((messages) => messages.map((msg) => msg.id === assistantId ? { ...msg, errorText: t('sonim.error.stream') } : msg));
+    activeAssistantRef.current = null;
     setIsStreaming(false);
     setStreamingState(null);
-  }, []);
+  }, [setIsStreaming, setStreamingState, setMessages, t]);
 
   const startNewChat = useCallback(() => {
     stopGeneration();
@@ -200,11 +232,12 @@ export function SonimScreen() {
     setAttachments([]);
     setDraft('');
     setConversationId(newAssistantConversationId());
-  }, [stopGeneration]);
+  }, [stopGeneration, setMessages, setAttachments, setDraft, setConversationId]);
 
   const sendPrompt = useCallback(
     async (explicitPrompt?: string) => {
-      if (isStreaming || !sessionId) return;
+      if (isStreaming || !sessionId || !conversationId || !owned) return;
+      const generation = ++generationRef.current;
       const rawText = (explicitPrompt ?? draft).trim();
       const outgoingAttachments = explicitPrompt ? [] : attachments;
       if (!rawText && outgoingAttachments.length === 0) return;
@@ -217,6 +250,7 @@ export function SonimScreen() {
         attachments: outgoingAttachments.length > 0 ? outgoingAttachments : undefined,
       };
       const assistantId = `a_${Date.now() + 1}`;
+      activeAssistantRef.current = assistantId;
       const placeholderAssistant: SonimChatMessage = {
         id: assistantId,
         role: 'assistant',
@@ -233,61 +267,62 @@ export function SonimScreen() {
       setStreamingState('thinking');
       scrollToEnd(true);
 
-      const fetchImpl = await resolveNativeStreamFetch();
       let receivedError = false;
-
-      const stream = streamAssistantChat(
-        {
-          conversationId,
-          sessionId,
-          state: { surface: 'mobile', tab: 'sonim', locale },
-          messages: historyForRequest.map((item) => ({
-            role: item.role,
-            text: item.text,
-            attachments: item.attachments?.map(({ id, dataUrl, type }) => ({ id, dataUrl, type })),
-          })),
-        },
-        (event) => {
-          if (event.type === 'state') {
-            setStreamingState(event.state);
-            return;
-          }
-          if (event.type === 'delta') {
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === assistantId ? { ...msg, text: msg.text + event.text } : msg,
-              ),
-            );
-            scrollToEnd(false);
-            return;
-          }
-          if (event.type === 'tool') {
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === assistantId ? applySonimToolEvent(msg, event.name, event.data) : msg,
-              ),
-            );
-            scrollToEnd(true);
-            return;
-          }
-          if (event.type === 'error') {
-            receivedError = true;
-            setMessages((prev) =>
-              prev.map((msg) =>
-                msg.id === assistantId
-                  ? { ...msg, errorText: event.message || t('sonim.error.stream') }
-                  : msg,
-              ),
-            );
-          }
-        },
-        fetchImpl ? { fetchImpl } : {},
-      );
-
-      abortRef.current = stream.abort;
       try {
+        const fetchImpl = await resolveNativeStreamFetch();
+        if (generationRef.current !== generation) return;
+        const stream = streamAssistantChat(
+          {
+            conversationId,
+            sessionId,
+            state: { surface: 'mobile', tab: 'sonim', locale },
+            messages: historyForRequest.map((item) => ({
+              role: item.role,
+              text: item.text,
+              attachments: item.attachments?.map(({ id, dataUrl, type }) => ({ id, dataUrl, type })),
+            })),
+          },
+          (event) => {
+            if (generationRef.current !== generation) return;
+            if (event.type === 'state') {
+              setStreamingState(event.state);
+              return;
+            }
+            if (event.type === 'delta') {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantId ? { ...msg, text: msg.text + event.text } : msg,
+                ),
+              );
+              scrollToEnd(false);
+              return;
+            }
+            if (event.type === 'tool') {
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantId ? applySonimToolEvent(msg, event.name, event.data) : msg,
+                ),
+              );
+              scrollToEnd(true);
+              return;
+            }
+            if (event.type === 'error') {
+              receivedError = true;
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantId
+                    ? { ...msg, errorText: event.message || t('sonim.error.stream') }
+                    : msg,
+                ),
+              );
+            }
+          },
+          fetchImpl ? { fetchImpl } : {},
+        );
+
+        abortRef.current = stream.abort;
         const outcome = await stream.finished;
-        if (outcome === 'error' && !receivedError) {
+        if (generationRef.current === generation && outcome === 'error' && !receivedError) {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === assistantId && !msg.errorText
@@ -297,6 +332,7 @@ export function SonimScreen() {
           );
         }
       } catch {
+        if (generationRef.current !== generation) return;
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === assistantId && !msg.errorText
@@ -305,32 +341,37 @@ export function SonimScreen() {
           ),
         );
       } finally {
-        abortRef.current = null;
-        setIsStreaming(false);
-        setStreamingState(null);
+        if (generationRef.current === generation) {
+          abortRef.current = null;
+          activeAssistantRef.current = null;
+          setIsStreaming(false);
+          setStreamingState(null);
+        }
       }
     },
-    [attachments, conversationId, draft, isStreaming, locale, messages, scrollToEnd, sessionId, t],
+    [attachments, conversationId, draft, isStreaming, locale, messages, owned, scrollToEnd, sessionId, t, setMessages, setDraft, setAttachments, setIsStreaming, setStreamingState],
   );
 
-  const pickImage = useCallback(async () => {
+  const pickImage = useCallback(async (source: 'camera' | 'gallery') => {
     if (attachments.length >= ASSISTANT_MAX_ATTACHMENTS || isStreaming) return;
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        allowsMultipleSelection: false,
-        quality: 0.78,
-        base64: true,
-      });
+      if (source === 'camera') {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permission.granted) { setAttachmentError(true); return; }
+      }
+      const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.78, base64: true, exif: false };
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync(options)
+        : await ImagePicker.launchImageLibraryAsync(options);
       if (result.canceled || !result.assets?.[0]) return;
       const prepared = await prepareAttachment(result.assets[0]);
       if (prepared) {
         setAttachments((prev) => [...prev.slice(0, ASSISTANT_MAX_ATTACHMENTS - 1), prepared]);
       }
     } catch {
-      // Galerie refusée ou fermée : aucun blocage.
+      setAttachmentError(true);
     }
-  }, [attachments.length, isStreaming]);
+  }, [attachments.length, isStreaming, setAttachments]);
 
   const copyMessage = useCallback(async (message: SonimChatMessage) => {
     const cleaned = cleanSonimText(message.text);
@@ -705,6 +746,7 @@ export function SonimScreen() {
           },
         ]}
       >
+        {attachmentError ? <AppText accessibilityRole="alert" variant="caption">{t('sonim.attachmentError')}</AppText> : null}
         {attachments.length > 0 ? (
           <View style={[styles.pendingAttachments, { flexDirection: rowDir }]}>
             {attachments.map((item) => (
@@ -745,7 +787,7 @@ export function SonimScreen() {
           ]}
         >
           <Pressable
-            onPress={() => { void pickImage(); }}
+            onPress={() => { setAttachmentError(false); setAttachmentOpen(true); }}
             disabled={isStreaming || attachments.length >= ASSISTANT_MAX_ATTACHMENTS}
             accessibilityRole="button"
             accessibilityLabel={t('sonim.attach')}
@@ -762,7 +804,7 @@ export function SonimScreen() {
             ]}
             testID="sonim-attach"
           >
-            <Ionicons name="image-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+            <Ionicons name="add-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
           </Pressable>
 
           <TextInput
@@ -886,6 +928,17 @@ export function SonimScreen() {
           />
         ))}
       </Drawer>
+      <AppSheet open={attachmentOpen} onDismiss={() => setAttachmentOpen(false)} presentation="bottom"
+        header={<SheetHeader title={t('sonim.attach')} onClose={() => setAttachmentOpen(false)} />}>
+        <Pressable testID="sonim-attach-camera" accessibilityRole="button" onPress={() => { setAttachmentOpen(false); void pickImage('camera'); }} style={styles.attachmentAction}>
+          <Ionicons name="camera-outline" size={theme.iconSize.md} color={theme.colors.ink} />
+          <AppText variant="body">{t('sonim.camera')}</AppText>
+        </Pressable>
+        <Pressable testID="sonim-attach-gallery" accessibilityRole="button" onPress={() => { setAttachmentOpen(false); void pickImage('gallery'); }} style={styles.attachmentAction}>
+          <Ionicons name="image-outline" size={theme.iconSize.md} color={theme.colors.ink} />
+          <AppText variant="body">{t('sonim.gallery')}</AppText>
+        </Pressable>
+      </AppSheet>
     </View>
   );
 }
@@ -979,9 +1032,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 8,
   },
+  attachmentAction: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
   composerIconBtn: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },

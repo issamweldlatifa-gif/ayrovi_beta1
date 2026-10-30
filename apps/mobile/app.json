@@ -103,6 +103,14 @@
           "cameraPermission": "ZAYROVI utilise la caméra pour photographier ou scanner un produit avec Lens.",
           "recordAudioAndroid": false
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ZAYROVI utilise les photos que vous choisissez pour les envoyer à Sonim.",
+          "cameraPermission": "ZAYROVI utilise la caméra pour photographier ou scanner un produit avec Lens ou Sonim.",
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {
