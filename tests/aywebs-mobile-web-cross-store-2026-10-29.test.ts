@@ -422,7 +422,7 @@ describe('AYWEBs Mobile Web (`m.<store>.com` + H5) â€” Cross-Store & Appareil RÃ
     </body></html>`;
 
     const amzCaptured = runCapture(amzMobileHtml, amzMobileUrl, 'amazon');
-    expect(amzCaptured.reader).toEqual({ id: 'amazon', version: 1 });
+    expect(amzCaptured.reader).toEqual({ id: 'amazon', version: 2 });
     expect(amzCaptured.amazon?.readerVersion).toBe(2);
     expect(amzCaptured.canonicalUrl).toBe('https://www.amazon.fr/dp/B09V3KXJPB');
     expect(amzCaptured.amazon?.pageAsin).toBe('B09V3KXJPB');
@@ -435,6 +435,8 @@ describe('AYWEBs Mobile Web (`m.<store>.com` + H5) â€” Cross-Store & Appareil RÃ
       selectedVariant: { color: 'Noir' },
     });
     expect(amzResolved.capture?.used).toBe(true);
+    expect(amzResolved.missing).toEqual([]);
+    expect(amzResolved.product.title).toBe('Ã‰couteurs Bluetooth Sans Fil Noir');
     expect(amzResolved.product.price).toBe(49.99);
     expect(amzResolved.product.currency).toBe('EUR');
     expect(amzResolved.product.ayroviPricing!.totalTnd).toBeGreaterThan(150);

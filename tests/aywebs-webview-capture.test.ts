@@ -43,7 +43,7 @@ import { createAyWebsContext } from '../src/aywebs/context';
 import { resolveAyWebsProduct } from '../src/aywebs/productResolver';
 import { addAyWebsCartItem } from '../src/aywebs/cart';
 import { createAyWebsRouter } from '../src/aywebs/routes';
-import { AYWEBS_CAPTURE_SCRIPT, AYWEBS_CAPTURE_SCRIPT_PATH } from '../src/aywebs/captureScript';
+import { AYWEBS_CAPTURE_SCRIPT, AYWEBS_CAPTURE_SCRIPT_PATH, buildAyWebsCaptureScript } from '../src/aywebs/captureScript';
 import { validateAyWebsCapturedPage, shouldVerifyWebviewCaptureInBackground } from '../src/aywebs/webviewCapture';
 import { clearAyWebsResolveCache } from '../src/aywebs/resolveCache';
 import { clearAyWebsResolveFailureCache } from '../src/aywebs/resolveCache';
@@ -718,6 +718,16 @@ describe('AYWEBs 2.1 — le script est servi par le serveur (pas de version d’
     app.use(express.json());
     app.use((req, _res, next) => { (req as any).requestId = 'capture-reader-request'; next(); });
     app.use('/api/v1/aywebs', createAyWebsRouter(h.db, h.scraper as any));
+
+    const amazon = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=amazon');
+    expect(amazon.status).toBe(200);
+    expect(amazon.headers['x-aywebs-capture-reader']).toBe('amazon');
+    expect(amazon.headers['x-aywebs-capture-reader-version']).toBe('2');
+    expect(amazon.text).toBe(buildAyWebsCaptureScript('amazon'));
+    expect(amazon.text).not.toBe(AYWEBS_CAPTURE_SCRIPT);
+    const oldClient = await request(app).get('/api/v1/aywebs/capture/script.js');
+    expect(oldClient.text).toBe(AYWEBS_CAPTURE_SCRIPT);
+    expect(oldClient.headers['x-aywebs-capture-reader']).toBe('legacy');
 
     const sephora = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=sephora');
     expect(sephora.status).toBe(200);

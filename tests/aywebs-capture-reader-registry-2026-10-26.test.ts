@@ -27,7 +27,8 @@ describe('capture readers : versions et bundles distincts', () => {
       expect(reader?.storeId).toBe(id);
       expect(reader?.version).toBeGreaterThan(0);
       expect(buildAyWebsCaptureScript(id)).not.toBe(AYWEBS_CAPTURE_SCRIPT);
-      expect(buildAyWebsCaptureScript(id)).toContain(`"storeId":"${id}"`);
+      if (id === 'amazon') expect(buildAyWebsCaptureScript(id)).toContain("reader: { id: 'amazon'");
+      else expect(buildAyWebsCaptureScript(id)).toContain(`"storeId":"${id}"`);
     }
   });
 

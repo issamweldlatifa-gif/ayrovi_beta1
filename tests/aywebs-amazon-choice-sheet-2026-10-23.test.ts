@@ -25,7 +25,8 @@ import { describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 
-import { AYWEBS_CAPTURE_SCRIPT } from '../src/aywebs/captureScript';
+import { buildAyWebsCaptureScript } from '../src/aywebs/captureScript';
+const AYWEBS_CAPTURE_SCRIPT = buildAyWebsCaptureScript('amazon');
 import { validateAyWebsCapturedPage } from '../src/aywebs/webviewCapture';
 import { QatafoDatabase } from '../src/db/database';
 import { createAyWebsRouter } from '../src/aywebs/routes';

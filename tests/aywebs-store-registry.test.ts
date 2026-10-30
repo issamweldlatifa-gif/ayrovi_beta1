@@ -95,7 +95,14 @@ describe('catalogue des boutiques (liste de référence, non ouvertes)', () => {
 
   it('les boutiques existantes gardent leur identifiant et leur adresse', () => {
     const byId = Object.fromEntries(AYWEBS_STORES.map((s) => [s.id, s.homeUrl]));
-    expect(byId.amazon).toBe('https://www.amazon.com/');
+    expect(byId.amazon).toBe('https://www.amazon.fr/');
+    expect(findAyWebsStore('amazon')).toMatchObject({
+      homeUrl: 'https://www.amazon.fr/',
+      searchUrlTemplate: 'https://www.amazon.fr/s?k={query}',
+      country: 'FR', currency: 'EUR',
+    });
+    expect(detectAyWebsStore('https://www.amazon.com/dp/B000000000')?.id).toBe('amazon');
+    expect(detectAyWebsStore('https://www.amazon.fr/dp/B000000000')?.id).toBe('amazon');
     expect(byId.shein).toBeTruthy();
     expect(byId.temu).toBeTruthy();
     expect(byId.aliexpress).toBeTruthy();
