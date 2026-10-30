@@ -1,0 +1,22 @@
+# Security operations — 2026-10-30
+
+## Scope and current status
+
+Node 22.23.4 addresses the October 2026 Node security release. `render.yaml`, `.nvmrc`, and explicit CI Node versions are checked for drift by `node scripts/check-node-security.cjs`. This validates repository configuration and the current process, **not** the actual version of a deployed Render instance. Check the active Render environment settings, rebuild/redeploy, and verify `node -v` in the running environment. Other images, workers and laptops need separate updates. Pinning prevents surprise regressions, but requires maintenance whenever a newer Node security release appears.
+
+On this date `npm audit` reports no server advisories and no high/critical mobile advisories. The mobile report still flags 12 low-severity package entries from one deepmerge advisory, GHSA-gcqx-w48m-w2h4. These are affected dependency-chain entries, not 12 unique flaws. Registry audit cannot see our applied source backport and continues to report it; do not dismiss this as a published upstream fix. npm audit is one source of evidence, not a guarantee of security or an assessment of actual exploitability.
+
+## SDK 57 emergency compatibility bridges
+
+- `query-string` 7 expects a CommonJS function. Its vulnerable decoder is overridden to the official `decode-uri-component` 0.5.1, which is ESM. `apps/mobile/scripts/patch-router-decoder.cjs` adjusts that one import to use the default export. This temporarily crosses the dependency's declared version range; successful packaging and regression tests do not replace device and release testing. Remove the override and bridge after migrating to an SDK/router that no longer needs query-string 7. Do not override the decoder without this bridge.
+- `@expo/cli` is scoped to Zod 4.6.7 because no fixed Zod 3 was available. This crosses a major version for a development-tool dependency; CLI schemas are tested, but other CLI paths may differ. Remove the override when Expo supports a patched version, and exercise CLI/native builds after updates.
+- No fixed deepmerge release was available at this review. The same postinstall script rejects `__proto__` before reading keys in each resolved Expo/Jest deepmerge 4.3.1 copy and in all three distributed entry points. This is an application-maintained mitigation, not an official deepmerge release. The tests verify actual resolved dependencies and malicious getters. Replace the backport with an upstream fix when available.
+- The postinstall script checks exact expected versions and source patterns, is idempotent, and fails installation on unexpected changes. **Do not install this app with `--ignore-scripts`**: both compatibility and backport would be missing. `tests/security-dependency-bridge.test.ts` checks them and runs in the normal test gates. Review every dependency update and test all routes/native builds before removing or changing these bridges.
+
+## Monitoring and incident response
+
+The security workflow audits both lockfiles on relevant pushes and PRs, and daily on the repository's default branch. High or critical findings fail the gate; low/moderate findings remain visible and need triage. GitHub scheduled workflows can be disabled or delayed, so configure and verify GitHub failure notifications and inspect Actions regularly. No automatic dependency updates or autonomous deployment/rollback are enabled; doing so could deploy untested breaking changes during an incident.
+
+For an alert: record the advisory, affected versions and actual exposure; review official fixed releases; use a maintained patched runtime and compatible dependency update; run clean `npm ci`, typechecks, tests, builds, and mobile-device smoke tests; inspect production logs and readiness after deploy. If a release breaks, stop rollout and redeploy the last known-good build **only if its security posture is acceptable**, otherwise use a tested forward fix. Restore data only from verified backups using the existing backup/restore procedure; do not overwrite a live database blindly. Rotate credentials only if exposure or compromise warrants it, and follow the incident process. Never put secrets in logs or scripts.
+
+These checks do not verify infrastructure access controls, other software, merchant capture behavior, production runtime state, or all possible vulnerabilities. Android APK generation, signing, delivery, and device verification remain separate release gates.

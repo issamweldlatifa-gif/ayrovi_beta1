@@ -43,6 +43,9 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Block high-severity dependency advisories
+        run: npm audit --audit-level=high
+
       # Les jetons de conception sont générés depuis l'identité du site : s'ils
       # sont périmés, l'application affiche une palette qui n'est plus celle du
       # produit. C'est le seul contrôle qui relie les deux dépôts.
