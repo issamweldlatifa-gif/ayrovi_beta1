@@ -13,6 +13,8 @@ import { View } from 'react-native';
 import StoreBrowserScreen from '../../app/aywebs/browser';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
+import { router } from 'expo-router';
+import { clearSonimSession, useSonimSession } from '@/features/sonim/sonimSession';
 import { PrefsProvider } from '@/state/prefs';
 
 const mockInitialAeUrl =
@@ -86,6 +88,7 @@ jest.mock('@/features/aywebs/AddToCartSheet', () => {
 });
 
 jest.mock('@/session/session', () => ({ useSessionId: () => 'mob_aliexpress_live_test' }));
+jest.mock('@/state/session', () => ({ useSession: () => ({ status: 'signedOut', account: null }) }));
 
 jest.mock('@/api/aywebs', () => {
   const actual = jest.requireActual('@/api/aywebs');
@@ -137,6 +140,20 @@ describe('AYWEBs AliExpress WebView — zéro « Lecture impossible » et zéro 
   beforeEach(() => {
     mockLatestWebViewProps = {};
     mockInjectedCount = 0;
+  });
+
+  it('prépare le lien de la page actuelle sans paramètres ni envoi automatique', async () => {
+    clearSonimSession();
+    renderAliExpressBrowser();
+    act(() => mockLatestWebViewProps.onNavigationStateChange?.({
+      url: 'https://fr.aliexpress.com/item/99.html?token=secret#tracking', loading: false, canGoBack: true,
+    }));
+    fireEvent.press(screen.getByTestId('aywebs-ask-sonim'));
+    expect(router.push).toHaveBeenCalledWith('/sonim-assistant');
+    expect(useSonimSession.getState().draft).toContain('https://fr.aliexpress.com/item/99.html');
+    expect(useSonimSession.getState().draft).not.toContain('secret');
+    expect(useSonimSession.getState().messages).toEqual([]);
+    clearSonimSession();
   });
 
   it('résiste aux deep-links aliexpress://, aux messages WindVane/Aplus, aux redirections m./fr. et ouvre la feuille', async () => {

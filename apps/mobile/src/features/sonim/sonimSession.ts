@@ -24,16 +24,38 @@ const empty = (owner = ''): Data => ({
   attachments: [], streamingState: null, isStreaming: false,
 });
 
+// One active generation across the tab and any root-stack Sonim screen.
+let activeGeneration: { owner: string; cancel: () => void } | null = null;
+export function claimSonimGeneration(owner: string, cancel: () => void): boolean {
+  if (!owner || activeGeneration) return false;
+  activeGeneration = { owner, cancel };
+  return true;
+}
+export function cancelSonimGeneration(owner: string): void {
+  if (activeGeneration?.owner !== owner) return;
+  const cancel = activeGeneration.cancel;
+  activeGeneration = null;
+  cancel();
+}
+export function releaseSonimGeneration(owner: string, cancel: () => void): void {
+  if (activeGeneration?.owner === owner && activeGeneration.cancel === cancel) activeGeneration = null;
+}
+
 /** Memory only, one identity at a time. Never persisted to device storage. */
-export const useSonimSession = create<State>((set) => ({
+export const useSonimSession = create<State>((set, get) => ({
   ...empty(),
-  open: (owner) => set((state) => state.owner === owner ? state : empty(owner)),
+  open: (owner) => {
+    const previous = get().owner;
+    if (previous === owner) return;
+    cancelSonimGeneration(previous);
+    set(empty(owner));
+  },
   update: (owner, key, value) => set((state) => {
     if (!owner || state.owner !== owner) return state;
     const next = typeof value === 'function' ? (value as (current: Data[typeof key]) => Data[typeof key])(state[key]) : value;
     return { [key]: next } as Pick<Data, typeof key>;
   }),
-  clear: () => set(empty()),
+  clear: () => { cancelSonimGeneration(get().owner); set(empty()); },
 }));
 
 /** Clears private conversation data when the account signs out. */

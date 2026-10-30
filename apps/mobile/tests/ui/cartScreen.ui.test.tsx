@@ -18,11 +18,13 @@
  * qui décide si le bouton de commande apparaît.
  */
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
+import { useSonimSession, clearSonimSession } from '../../src/features/sonim/sonimSession';
+import { router } from 'expo-router';
 import { PrefsProvider } from '../../src/state/prefs';
 
 jest.mock('expo-router', () => ({
@@ -37,6 +39,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 jest.mock('../../src/session/session', () => ({ useSessionId: () => 'sess_test' }));
+jest.mock('../../src/state/session', () => ({ useSession: () => ({ status: 'signedOut', account: null }) }));
 
 // La coque (en-tête + menu) est testée ailleurs ; ici on isole le panier.
 jest.mock('../../src/features/shell/AppHeader', () => ({ AppHeader: () => null }));
@@ -120,6 +123,19 @@ function mount() {
 }
 
 describe('panier — aucun plantage au montage', () => {
+  it('prépare une revue modifiable du panier sans envoi automatique', async () => {
+    clearSonimSession();
+    require('./cartFixture').setCart(poorCart);
+    const view = mount();
+    const button = await screen.findByTestId('cart-ask-sonim');
+    fireEvent.press(button);
+    expect(router.push).toHaveBeenCalledWith('/sonim-assistant');
+    expect(useSonimSession.getState().draft).toContain('Article sans photo');
+    expect(useSonimSession.getState().messages).toEqual([]);
+    view.unmount();
+    clearSonimSession();
+  });
+
   it('panier vide : l’écran monte et ne propose pas de commander', async () => {
     require('./cartFixture').setCart(emptyCart);
     const view = mount();

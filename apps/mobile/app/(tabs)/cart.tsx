@@ -10,7 +10,7 @@
  *     moyens de paiement acceptés.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -42,6 +42,8 @@ import {
 } from '@/features/shopping/OfficialCartView';
 import { earliestCartDeadline, formatCartCountdown, remainingMs, serverClockOffset } from '@/features/lens/lensCartStatus';
 import { useSessionId } from '@/session/session';
+import { useSession } from '@/state/session';
+import { cartContext, sonimOwner, stageSonimDraft } from '@/features/sonim/sonimContext';
 import { formatMoney } from '@/format/money';
 
 const MAX_QUANTITY = 99;
@@ -54,12 +56,13 @@ export default function AyroviCartScreen() {
   const insets = useSafeAreaInsets();
   const { locale } = useI18n();
   const sessionId = useSessionId();
+  const { account, status } = useSession();
   const queryClient = useQueryClient();
   const [note, setNote] = useState('');
   const [now, setNow] = useState(Date.now());
 
   const cartQuery = useQuery({
-    queryKey: ['cart', 'ayrovi'],
+    queryKey: ['cart', 'ayrovi', sessionId, status, account?.id ?? ''],
     enabled: Boolean(sessionId),
     queryFn: ({ signal }) => fetchAyroviCart({ sessionId, signal }),
     staleTime: 0,
@@ -227,6 +230,17 @@ export default function AyroviCartScreen() {
         refreshing={cartQuery.isFetching && !cartQuery.isPending}
         topNotice={(
           <View style={styles.notices}>
+            {hasItems && cart && !cartQuery.isError && !cartQuery.isFetching ? (
+              <Button label={t('sonim.shareCart')} tone="quiet" testID="cart-ask-sonim"
+                disabled={!sonimOwner(sessionId, status, account?.id)}
+                onPress={() => {
+                  if (!stageSonimDraft(sonimOwner(sessionId, status, account?.id), cartContext(cart, locale))) {
+                    Alert.alert(t('sonim.shareUnavailable'));
+                    return;
+                  }
+                  router.push('/sonim-assistant');
+                }} />
+            ) : null}
             {quoteDeadline && hasItems ? (
               <View
                 style={[

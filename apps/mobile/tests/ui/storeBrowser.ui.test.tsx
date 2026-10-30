@@ -1,3 +1,4 @@
+jest.mock('@/state/session', () => ({ useSession: () => ({ status: 'signedOut', account: null }) }));
 // AYWEBs merchant browser: fixed option-selection action, with a live store cart count.
 // The native WebView and server-backed sheets are mocked for deterministic UI tests.
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';

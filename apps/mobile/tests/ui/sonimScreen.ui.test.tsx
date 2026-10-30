@@ -6,7 +6,7 @@
  *   2. l'envoi d'un message, le flux SSE et le rendu d'une carte outil (`calculate_price`).
  */
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
@@ -147,6 +147,27 @@ describe('SonimScreen UI', () => {
     await renderSonim();
     expect(screen.queryByText('Tardif')).toBeNull();
     expect(screen.getByText('La réponse a été interrompue. Réessayez.')).toBeTruthy();
+  });
+
+  it('permet à une seconde vue Sonim d’arrêter le flux partagé', async () => {
+    const api = jest.requireMock('../../src/api/assistant');
+    let emit: (event: unknown) => void = () => {};
+    let finish: (outcome: string) => void = () => {};
+    const abort = jest.fn();
+    api.streamAssistantChat.mockImplementationOnce((_input: unknown, onEvent: (event: unknown) => void) => {
+      emit = onEvent;
+      return { abort, finished: new Promise((resolve) => { finish = resolve; }) };
+    });
+    const first = await renderSonim();
+    fireEvent.changeText(within(first.UNSAFE_root).getByTestId('sonim-input'), 'Question');
+    await act(async () => { fireEvent.press(within(first.UNSAFE_root).getByTestId('sonim-send')); });
+    const second = await renderSonim();
+    await act(async () => { fireEvent.press(within(second.UNSAFE_root).getByTestId('sonim-stop')); });
+    expect(abort).toHaveBeenCalled();
+    await act(async () => { emit({ type: 'delta', text: 'Tardif' }); finish('done'); });
+    expect(within(second.UNSAFE_root).queryByText('Tardif')).toBeNull();
+    first.unmount();
+    second.unmount();
   });
 
   it('envoie un message et affiche la réponse SSE ainsi que la carte d’estimation TND', async () => {

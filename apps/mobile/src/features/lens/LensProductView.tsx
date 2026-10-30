@@ -7,7 +7,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Vibration, View, useWindowDimensions,
+  Alert, Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Vibration, View, useWindowDimensions,
   type NativeScrollEvent, type NativeSyntheticEvent,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -22,11 +22,13 @@ import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { RADIUS, frost, veil } from '@/design/tokens.mobile';
 import { SPACE } from '@/design/tokens.generated';
 import { useTheme } from '@/design/theme';
-import { useT, type TranslationKey } from '@/i18n';
+import { useI18n, useT, type TranslationKey } from '@/i18n';
 import { ApiError } from '@/api/errors';
 import { addExternalToCart, fetchAyroviCart } from '@/api/cart';
 import { touchCartReservation } from '@/features/shopping/cartReservation';
 import { useSessionId } from '@/session/session';
+import { useSession } from '@/state/session';
+import { lensProductContext, sonimOwner, stageSonimDraft } from '@/features/sonim/sonimContext';
 import type { LensCandidate, LensProductFact } from '@/api/lens';
 import { lensGallery, lensMediaChain } from './lensMedia';
 import { LENS_COLORS } from './lensPalette';
@@ -585,11 +587,13 @@ export function LensProductView({
   onFavorite?: (candidate: LensCandidate) => void;
 }) {
   const t = useT();
+  const { locale } = useI18n();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const queryClient = useQueryClient();
   const sessionId = useSessionId();
+  const { account, status } = useSession();
   const productKey = `${candidate.id}|${candidate.sourceUrl}`;
   const [selectedSize, setSelectedSize] = useState(() => candidate.sizes.length === 1 ? candidate.sizes[0] : '');
   const [selectedColor, setSelectedColor] = useState(() => candidate.colors.length === 1 ? candidate.colors[0] : '');
@@ -1180,6 +1184,17 @@ export function LensProductView({
               attention={colorAttention}
             />
           </View>
+
+          <Button label={t('sonim.shareProduct')} tone="quiet" testID="lens-ask-sonim"
+            disabled={!sonimOwner(sessionId, status, account?.id)}
+            onPress={() => {
+              const context = lensProductContext(displayCandidate, resolvedSize, resolvedColor, locale);
+              if (!stageSonimDraft(sonimOwner(sessionId, status, account?.id), context)) {
+                Alert.alert(t('sonim.shareUnavailable'));
+                return;
+              }
+              router.push('/sonim-assistant');
+            }} />
 
           {enriching ? (
             <View style={[styles.enrichingRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>

@@ -21,10 +21,10 @@ export interface SonimOrderCard {
 export interface SonimPriceBreakdown {
   totalTND: number;
   convertedPriceTND: number;
-  customsFeeTND: number;
-  shippingFeeTND: number;
-  serviceFeeTND: number;
-  expressFeeTND: number;
+  customsFeeTND: number | null;
+  shippingFeeTND: number | null;
+  serviceFeeTND: number | null;
+  expressFeeTND: number | null;
 }
 
 export interface SonimProductCard {
@@ -60,6 +60,7 @@ const isObj = (value: unknown): value is Record<string, unknown> =>
 const asText = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
 const asFinite = (value: unknown): number | null => {
+  if (value === null || value === undefined || (typeof value === 'string' && !value.trim())) return null;
   const num = typeof value === 'number' ? value : Number(value);
   return Number.isFinite(num) ? num : null;
 };
@@ -105,10 +106,10 @@ function parseBreakdown(raw: unknown): SonimPriceBreakdown | null {
   return {
     totalTND,
     convertedPriceTND,
-    customsFeeTND: asFinite(raw.customsFeeTND) ?? 0,
-    shippingFeeTND: asFinite(raw.shippingFeeTND) ?? 0,
-    serviceFeeTND: asFinite(raw.serviceFeeTND) ?? 0,
-    expressFeeTND: asFinite(raw.expressFeeTND) ?? 0,
+    customsFeeTND: asFinite(raw.customsFeeTND),
+    shippingFeeTND: asFinite(raw.shippingFeeTND),
+    serviceFeeTND: asFinite(raw.serviceFeeTND),
+    expressFeeTND: asFinite(raw.expressFeeTND),
   };
 }
 

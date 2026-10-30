@@ -27,6 +27,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import {
   ASSISTANT_MAX_ATTACHMENTS,
+  ASSISTANT_MAX_CHARS,
   fetchAssistantStatus,
   newAssistantConversationId,
   streamAssistantChat,
@@ -44,7 +45,8 @@ import { SONIM_SUBTITLE_STYLE, SONIM_TITLE_STYLE } from '@/design/tokens.mobile'
 import { AppText, Drawer, DrawerItem } from '@/design/ui';
 import { AppSheet } from '@/design/sheet/AppSheet';
 import { SheetHeader } from '@/design/sheet/SheetHeader';
-import { useSonimSession, type SonimAttachment } from './sonimSession';
+import { cancelSonimGeneration, claimSonimGeneration, releaseSonimGeneration, useSonimSession, type SonimAttachment } from './sonimSession';
+import { sonimOwner } from './sonimContext';
 import { useKeyboardInset } from '@/design/useKeyboardInset';
 import { useI18n } from '@/i18n';
 import { useSessionId } from '@/session/session';
@@ -145,8 +147,7 @@ export function SonimScreen() {
   const [menuOpen, setMenuOpen] = useState(false);
   // Conversation is scoped to this signed-in account or guest session, held
   // in memory only. It survives route changes, never account changes/restarts.
-  const identity = status === 'signedIn' && account?.id ? `account:${account.id}` : status === 'signedOut' ? 'guest' : '';
-  const owner = sessionId && identity ? `${sessionId}:${identity}` : '';
+  const owner = sonimOwner(sessionId, status, account?.id);
   const session = useSonimSession();
   const owned = Boolean(owner) && session.owner === owner;
   useEffect(() => { if (owner) useSonimSession.getState().open(owner); }, [owner]);
@@ -180,15 +181,7 @@ export function SonimScreen() {
   });
 
   useEffect(() => () => {
-    generationRef.current += 1;
-    abortRef.current?.();
-    const assistantId = activeAssistantRef.current;
-    if (owner && assistantId) useSonimSession.getState().update(owner, 'messages', (messages) => messages.map((msg) => msg.id === assistantId ? { ...msg, errorText: t('sonim.error.stream') } : msg));
-    activeAssistantRef.current = null;
-    if (owner) {
-      useSonimSession.getState().update(owner, 'isStreaming', false);
-      useSonimSession.getState().update(owner, 'streamingState', null);
-    }
+    if (activeAssistantRef.current) cancelSonimGeneration(owner);
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
   }, [owner]);
 
@@ -216,15 +209,8 @@ export function SonimScreen() {
   }, []);
 
   const stopGeneration = useCallback(() => {
-    generationRef.current += 1;
-    abortRef.current?.();
-    abortRef.current = null;
-    const assistantId = activeAssistantRef.current;
-    if (assistantId) setMessages((messages) => messages.map((msg) => msg.id === assistantId ? { ...msg, errorText: t('sonim.error.stream') } : msg));
-    activeAssistantRef.current = null;
-    setIsStreaming(false);
-    setStreamingState(null);
-  }, [setIsStreaming, setStreamingState, setMessages, t]);
+    cancelSonimGeneration(owner);
+  }, [owner]);
 
   const startNewChat = useCallback(() => {
     stopGeneration();
@@ -237,7 +223,6 @@ export function SonimScreen() {
   const sendPrompt = useCallback(
     async (explicitPrompt?: string) => {
       if (isStreaming || !sessionId || !conversationId || !owned) return;
-      const generation = ++generationRef.current;
       const rawText = (explicitPrompt ?? draft).trim();
       const outgoingAttachments = explicitPrompt ? [] : attachments;
       if (!rawText && outgoingAttachments.length === 0) return;
@@ -250,6 +235,17 @@ export function SonimScreen() {
         attachments: outgoingAttachments.length > 0 ? outgoingAttachments : undefined,
       };
       const assistantId = `a_${Date.now() + 1}`;
+      const cancel = () => {
+        generationRef.current += 1;
+        abortRef.current?.();
+        abortRef.current = null;
+        activeAssistantRef.current = null;
+        setMessages((current) => current.map((msg) => msg.id === assistantId ? { ...msg, errorText: t('sonim.error.stream') } : msg));
+        setIsStreaming(false);
+        setStreamingState(null);
+      };
+      if (!claimSonimGeneration(owner, cancel)) return;
+      const generation = ++generationRef.current;
       activeAssistantRef.current = assistantId;
       const placeholderAssistant: SonimChatMessage = {
         id: assistantId,
@@ -341,6 +337,7 @@ export function SonimScreen() {
           ),
         );
       } finally {
+        releaseSonimGeneration(owner, cancel);
         if (generationRef.current === generation) {
           abortRef.current = null;
           activeAssistantRef.current = null;
@@ -349,7 +346,7 @@ export function SonimScreen() {
         }
       }
     },
-    [attachments, conversationId, draft, isStreaming, locale, messages, owned, scrollToEnd, sessionId, t, setMessages, setDraft, setAttachments, setIsStreaming, setStreamingState],
+    [attachments, conversationId, draft, isStreaming, locale, messages, owned, owner, scrollToEnd, sessionId, t, setMessages, setDraft, setAttachments, setIsStreaming, setStreamingState],
   );
 
   const pickImage = useCallback(async (source: 'camera' | 'gallery') => {
@@ -397,6 +394,20 @@ export function SonimScreen() {
         onPress: () => router.push('/lens'),
       },
       {
+        id: 'stores',
+        icon: 'storefront-outline' as const,
+        title: t('sonim.action.stores.title'),
+        subtitle: t('sonim.action.stores.subtitle'),
+        onPress: () => router.push('/(tabs)/aywebs'),
+      },
+      {
+        id: 'cart',
+        icon: 'bag-outline' as const,
+        title: t('sonim.action.cart.title'),
+        subtitle: t('sonim.action.cart.subtitle'),
+        onPress: () => router.push('/panier'),
+      },
+      {
         id: 'price',
         icon: 'calculator-outline' as const,
         title: t('sonim.action.price.title'),
@@ -421,7 +432,7 @@ export function SonimScreen() {
     [sendPrompt, t],
   );
 
-  const canSend = (draft.trim().length > 0 || attachments.length > 0) && Boolean(sessionId);
+  const canSend = (draft.trim().length > 0 || attachments.length > 0) && Boolean(sessionId && owned && conversationId);
   const assistantOffline = statusQuery.data?.ready === false;
 
   const content = (
@@ -698,6 +709,16 @@ export function SonimScreen() {
                         <AppText variant="caption" weight="semibold" color={theme.status.danger.fg}>
                           {message.errorText}
                         </AppText>
+                        {isLastAssistant && !isStreaming && messages[index - 1]?.role === 'user' && !draft && attachments.length === 0 ? (
+                          <Pressable testID="sonim-retry-edit" accessibilityRole="button" onPress={() => {
+                            const previous = messages[index - 1];
+                            if (!previous) return;
+                            setDraft(previous.text);
+                            setAttachments(previous.attachments ?? []);
+                          }} style={styles.retryAction}>
+                            <AppText variant="caption" weight="bold" color={theme.status.danger.fg}>{t('sonim.retryEdit')}</AppText>
+                          </Pressable>
+                        ) : null}
                       </View>
                     ) : null}
 
@@ -814,7 +835,7 @@ export function SonimScreen() {
             placeholderTextColor={theme.colors.muted}
             selectionColor={theme.colors.selection}
             multiline
-            maxLength={4000}
+            maxLength={ASSISTANT_MAX_CHARS}
             textAlign={theme.isRTL ? 'right' : 'left'}
             style={[
               theme.text('body'),
@@ -1032,6 +1053,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 8,
   },
+  retryAction: { minHeight: 40, justifyContent: 'center', alignSelf: 'flex-start' },
   attachmentAction: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
   composerIconBtn: {
     width: 40,

@@ -86,15 +86,17 @@ function PriceBreakdownView({ breakdown }: { breakdown: SonimPriceBreakdown }) {
   const { t } = useI18n();
   const rowDir = rowDirectionFor(theme.isRTL);
 
-  const lines: Array<{ label: string; amount: number }> = [
+  const possibleLines: Array<{ label: string; amount: number | null }> = [
     { label: t('sonim.tool.converted'), amount: breakdown.convertedPriceTND },
     { label: t('sonim.tool.customs'), amount: breakdown.customsFeeTND },
     { label: t('sonim.tool.shipping'), amount: breakdown.shippingFeeTND },
     { label: t('sonim.tool.service'), amount: breakdown.serviceFeeTND },
   ];
-  if (breakdown.expressFeeTND > 0) {
-    lines.push({ label: t('sonim.tool.express'), amount: breakdown.expressFeeTND });
+  if (breakdown.expressFeeTND !== null && breakdown.expressFeeTND > 0) {
+    possibleLines.push({ label: t('sonim.tool.express'), amount: breakdown.expressFeeTND });
   }
+
+  const lines = possibleLines.filter((line): line is { label: string; amount: number } => line.amount !== null);
 
   return (
     <View

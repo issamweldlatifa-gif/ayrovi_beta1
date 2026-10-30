@@ -15,8 +15,8 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type Ref } from 'react';
 import { goBack } from '@/design/navigation';
-import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Alert, BackHandler, Pressable, StyleSheet, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -52,6 +52,8 @@ import {
   type ReadIntent,
 } from '@/features/aywebs/captureFlow';
 import { useSessionId } from '@/session/session';
+import { useSession } from '@/state/session';
+import { shareableStoreUrl, sonimOwner, stageSonimDraft } from '@/features/sonim/sonimContext';
 
 /** كي الصفحة ما تبعثش شي: مانبقاوش نستنّوا بلا نهاية. */
 
@@ -81,6 +83,7 @@ export default function AyWebsBrowserScreen() {
   const insets = useSafeAreaInsets();
   const { t, locale } = useI18n();
   const sessionId = useSessionId();
+  const { account, status } = useSession();
   const queryClient = useQueryClient();
   const cartQueryKey = useMemo(() => ['store-sheet', 'aywebs-cart', sessionId] as const, [sessionId]);
   const [cartAddedAt, setCartAddedAt] = useState(0);
@@ -609,6 +612,23 @@ export default function AyWebsBrowserScreen() {
         <View style={styles.titleBox}>
           <AppText variant="lead" weight="semibold" numberOfLines={1}>{storeName || t('aywebs.browserTitle')}</AppText>
         </View>
+        <Pressable
+          testID="aywebs-ask-sonim"
+          accessibilityRole="button"
+          accessibilityLabel={t('sonim.sharePage')}
+          disabled={!sonimOwner(sessionId, status, account?.id)}
+          onPress={() => {
+            const cleanUrl = shareableStoreUrl(pageUrlRef.current);
+            if (!cleanUrl || !stageSonimDraft(sonimOwner(sessionId, status, account?.id), `${t('sonim.sharePagePrompt')}\n${cleanUrl}`)) {
+              Alert.alert(t('sonim.shareUnavailable'));
+              return;
+            }
+            router.push('/sonim-assistant');
+          }}
+          style={{ minHeight: 40, minWidth: 40, justifyContent: 'center', alignItems: 'center' }}
+        >
+          <Ionicons name="chatbubble-ellipses-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={cartAccessibilityLabel}
