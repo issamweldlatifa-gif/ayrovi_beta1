@@ -40,6 +40,7 @@ import {
   type AyWebsCart, type AyWebsCartItem, type AyWebsPageAnalysis, type AyWebsResolvedProduct, type AyWebsVariantOption,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
+import { readOnlyStoreSelection } from '@/features/aywebs/storeSheetMode';
 import { AYWEBS_NETWORK_OBSERVER_SCRIPT } from '@/features/aywebs/networkObserverScript';
 import {
   groupsFromCapture, localVariantsFromCapture, optionsFromVariants, productFromCapture,
@@ -747,7 +748,7 @@ export default function AyWebsBrowserScreen() {
           capture={sheet.capture}
           quoteToken={sheet.quoteToken}
           local={sheet.local}
-          readOnlySelection
+          readOnlySelection={readOnlyStoreSelection(sheet.product.storeId)}
           readVariant={(url: string) => (variantReader.current
             ? variantReader.current.read(url)
             : Promise.reject(new ApiError('device', 'Lecteur de variante indisponible.')))}

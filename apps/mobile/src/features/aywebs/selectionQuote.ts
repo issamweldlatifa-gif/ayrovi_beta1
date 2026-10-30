@@ -48,7 +48,18 @@ const sameSelection = (a: Record<string, string>, b: Record<string, string>): bo
   const left = Object.entries(a || {}).filter(([, value]) => String(value).trim());
   const right = Object.entries(b || {}).filter(([, value]) => String(value).trim());
   if (left.length !== right.length) return false;
-  return left.every(([key, value]) => normalize(b[key]) === normalize(value));
+  // Names can be translated (couleur/color, taille/size), but ambiguity must
+  // never let a quote for one combination apply to another.
+  const used = new Set<number>();
+  for (const [key, value] of left) {
+    const candidates = right.map(([otherKey], index) => sameAttribute(key, otherKey) ? index : -1)
+      .filter((index) => index >= 0);
+    if (candidates.length !== 1 || used.has(candidates[0])) return false;
+    const index = candidates[0];
+    if (normalize(right[index][1]) !== normalize(value)) return false;
+    used.add(index);
+  }
+  return used.size === right.length;
 };
 
 /**

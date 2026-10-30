@@ -16,7 +16,8 @@ import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 
-import { AYWEBS_CAPTURE_SCRIPT } from '../src/aywebs/captureScript';
+import { buildAyWebsCaptureScript } from '../src/aywebs/captureScript';
+const AYWEBS_CAPTURE_SCRIPT = buildAyWebsCaptureScript('amazon');
 
 const FIXTURE = readFileSync(join(__dirname, 'fixtures', 'amazon-product-page.html'), 'utf8');
 const PAGE_URL = 'https://www.amazon.com/dp/B0GYM3V9H5';

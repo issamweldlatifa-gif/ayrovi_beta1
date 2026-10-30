@@ -9,7 +9,7 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
         v: 1, url: '', canonicalUrl: null, title: null, brand: null,
         priceCandidates: [], currencyText: null, availabilityText: null,
         addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [], variantGroups: [],
-        images: [], capturedAt: null, pageLang: null, amazon: null, reader: { id: 'amazon', version: 2 }, diagnostics: []
+        images: [], capturedAt: null, pageLang: null, amazon: null, reader: { id: 'amazon', version: 3 }, diagnostics: []
     };
     /* Diagnostic BORNÉ : code court (ex. « price:buybox_asin_mismatch »), jamais de texte de page. */
     function diag(code) { if (out.diagnostics.length < 16)
@@ -608,7 +608,12 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
                 if (selected && !optionAsin && AMAZON_ASIN && item.hasAttribute && item.hasAttribute('data-dp-url'))
                     optionAsin = AMAZON_ASIN;
                 var state = amazonNodeAvailability(item);
-                var addedOption = amazonAddOption(result, dimension, label, optionAsin, selected, state, 'twister_dom');
+                var optionImage = '';
+                try {
+                    var optionImageNode = item.querySelector('img');
+                    if (optionImageNode) optionImage = String(optionImageNode.getAttribute('data-old-hires') || optionImageNode.getAttribute('data-a-hires') || optionImageNode.currentSrc || optionImageNode.getAttribute('src') || optionImageNode.getAttribute('data-src') || '');
+                } catch (e) {}
+                var addedOption = amazonAddOption(result, dimension, label, optionAsin, selected, state, 'twister_dom', optionImage);
                 /* Prix et stock AFFICHÉS SUR LA CARTE de ce choix. Ce sont des faits de
                    la page, pas un devis : le serveur recalcule (et le prix d'une carte
                    n'est jamais présenté comme le total en dinars). */
@@ -639,6 +644,22 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
                 if (selected && optionAsin)
                     pushUnique(selectedAsins, optionAsin, 10, 10);
             }
+        }
+        // A unique rendered choice supersedes stale initial twister data for that dimension.
+        var liveByDimension = {};
+        for (var lo = 0; lo < result.options.length; lo++) {
+            var liveOption = result.options[lo];
+            if (liveOption.source !== 'twister_dom' || !liveOption.selected) continue;
+            var liveKey = String(liveOption.dimension).toLowerCase();
+            if (!liveByDimension[liveKey]) liveByDimension[liveKey] = [];
+            if (!ciExactContains(liveByDimension[liveKey], liveOption.value)) liveByDimension[liveKey].push(liveOption.value);
+        }
+        result.selectedValues = [];
+        for (var lr = 0; lr < result.options.length; lr++) {
+            var row = result.options[lr];
+            var liveValues = liveByDimension[String(row.dimension).toLowerCase()];
+            if (liveValues && liveValues.length === 1) row.selected = row.value.toLowerCase() === liveValues[0].toLowerCase();
+            if (row.selected) pushUnique(result.selectedValues, row.value, 6, AMAZON_EVIDENCE_LIMITS.label);
         }
         var selectedField = null;
         try {
@@ -793,21 +814,23 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
     /* Retourne l'option (nouvelle, ou déjà connue) : l'appelant peut y attacher le
        prix et le stock lus sur la carte, même si la valeur venait des données du
        twister. NULL quand la borne d'options est atteinte. */
-    function amazonAddOption(result, dimension, value, asin, selected, state, source) {
+    function amazonAddOption(result, dimension, value, asin, selected, state, source, image) {
+        var imageUrl = typeof image === 'string' && /^https?:\/\//i.test(image) ? cut(image, 600) : null;
         var key = dimension + '|' + value.toLowerCase() + '|' + (asin || '');
         for (var i = 0; i < result.options.length; i++) {
             var existing = result.options[i];
             if ((existing.dimension + '|' + existing.value.toLowerCase() + '|' + (existing.asin || '')) === key) {
-                if (selected && !existing.selected)
-                    existing.selected = true;
-                if (state !== 'unknown' && existing.availabilityEvidence === 'unknown')
-                    existing.availabilityEvidence = state;
+                if (source === 'twister_dom') { existing.selected = !!selected; existing.source = source; }
+                else if (selected && !existing.selected) existing.selected = true;
+                if (state !== 'unknown' && existing.availabilityEvidence === 'unknown') existing.availabilityEvidence = state;
+                if (!existing.image && imageUrl) existing.image = imageUrl;
                 return existing;
             }
         }
         var added = null;
         if (result.options.length < AMAZON_EVIDENCE_LIMITS.options) {
             added = { dimension: cut(dimension, 40), value: cut(value, AMAZON_EVIDENCE_LIMITS.label), asin: asin || null, selected: !!selected, availabilityEvidence: state, source: source };
+            if (imageUrl) added.image = imageUrl;
             result.options.push(added);
         }
         if (asin)
@@ -1672,11 +1695,21 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
        « Ajouter au panier » se retrouvaient dans la liste des TAILLES, et la
        feuille du client affichait « Taille : Taille & coupe ». */
     var ACTION_NOT_A_VALUE = /^(?:add|ajouter|acheter|buy|commander|checkout|panier|cart|sac|bag|wishlist|favoris|partager|share|guide|voir|see|learn|en\s+savoir\s+plus|taille\s*(?:&|et|\+)\s*coupe|size\s*(?:&|and|\+)\s*fit|size\s*guide|guide\s*des\s*tailles)\b/i;
+    // Quantity is a purchase control, not a product variant. Preserve numeric sizes.
+    function amazonQuantityOption(node) {
+        var control = node;
+        for (var depth = 0; control && depth < 3; depth++, control = control.parentNode) {
+            if (String(control.tagName || '').toLowerCase() !== 'select') continue;
+            var descriptor = String(control.id || '') + ' ' + String(control.name || '') + ' ' + String(control.getAttribute('aria-label') || '');
+            return /(?:quantity|quantit[ée]|qty|aantal|menge)/i.test(descriptor);
+        }
+        return false;
+    }
     try {
         var selected = document.querySelectorAll('select option:checked, [role="option"][aria-selected="true"], [aria-checked="true"]');
         for (var v = 0; v < selected.length && out.selectedVariantTexts.length < LIMITS.selectedTexts; v++) {
             var option = selected[v];
-            if (isInNavigation(option))
+            if (isInNavigation(option) || amazonQuantityOption(option))
                 continue;
             /* Une CARTE de variante (li aria-checked) contient son prix et son stock :
                son texte entier n'est pas un libellé. L'image porte le nom. */
@@ -1721,7 +1754,7 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
     try {
         var options = document.querySelectorAll('select option, [role="option"], [role="radio"]');
         for (var o = 0; o < options.length && out.variantTexts.length < LIMITS.variantTexts; o++) {
-            if (isInNavigation(options[o]))
+            if (isInNavigation(options[o]) || amazonQuantityOption(options[o]))
                 continue;
             var candidate = text(options[o].textContent) || text(options[o].getAttribute && options[o].getAttribute('aria-label'));
             if (!candidate || candidate.length > LIMITS.label)
@@ -2364,67 +2397,60 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
         }
         catch (e) { }
     }
+    var amazonHasProductImages = false;
     if (AMAZON_STRICT) {
-        /* Images PRODUIT d'abord. Mesuré le 06/10/2026 : la lecture générique
-           («img[src^=http]») rapportait les sprites de la barre de navigation — donc
-           une vignette d'interface à la place de la photo de l'article. L'ordre de la
-           galerie est celui publié par «data-a-dynamic-image» (JSON ordonné). */
         try {
+            // Only the current product gallery can outrank metadata thumbnails.
+            // Never synthesize an Amazon image URL or read unrelated dynamic ads.
+            var amazonImages = [];
             var gallerySelectors = ['#landingImage', '[data-a-image-name="landingImage"]', '#main-image-container img', '#mobile-image-block img', '#immersive-main img', '#imgTagWrapperId img', '#imageBlock img', '#altImages img'];
-            for (var gs = 0; gs < gallerySelectors.length && out.images.length < LIMITS.images; gs++) {
+            for (var gs = 0; gs < gallerySelectors.length && amazonImages.length < LIMITS.images; gs++) {
                 var galleryNodes = [];
-                try {
-                    galleryNodes = document.querySelectorAll(gallerySelectors[gs]);
-                }
-                catch (e) {
-                    continue;
-                }
-                for (var gn = 0; gn < galleryNodes.length && out.images.length < LIMITS.images; gn++) {
+                try { galleryNodes = document.querySelectorAll(gallerySelectors[gs]); } catch (e) { continue; }
+                for (var gn = 0; gn < galleryNodes.length && amazonImages.length < LIMITS.images; gn++) {
                     var galleryImage = galleryNodes[gn];
+                    if (amazonBlocked(galleryImage)) continue;
+                    var best = '';
+                    var bestArea = 0;
+                    var dynamicRaw = galleryImage.getAttribute && galleryImage.getAttribute('data-a-dynamic-image');
+                    if (dynamicRaw && dynamicRaw.length <= 50000) {
+                        try {
+                            var dynamicMap = JSON.parse(dynamicRaw);
+                            var visited = 0;
+                            for (var dynamicKey in dynamicMap) {
+                                if (!Object.prototype.hasOwnProperty.call(dynamicMap, dynamicKey) || ++visited > 100) continue;
+                                var dims = dynamicMap[dynamicKey];
+                                var area = dims && Number(dims[0]) * Number(dims[1]);
+                                if (/^https?:\/\//i.test(dynamicKey) && isFinite(area) && area > bestArea) {
+                                    best = dynamicKey; bestArea = area;
+                                }
+                            }
+                        } catch (e) {}
+                    }
                     var hires = galleryImage.getAttribute && galleryImage.getAttribute('data-old-hires');
-                    var src = hires || (galleryImage.getAttribute && galleryImage.getAttribute('src'));
-                    if (src && /^https?:\/\//i.test(String(src)))
-                        pushUnique(out.images, src, LIMITS.images, 600);
+                    var src = best || hires || (galleryImage.getAttribute && galleryImage.getAttribute('src'));
+                    if (src && /^https?:\/\//i.test(String(src))) pushUnique(amazonImages, src, LIMITS.images, 600);
                 }
             }
-            var dynamicNodes = [];
-            try {
-                dynamicNodes = document.querySelectorAll('[data-a-dynamic-image]');
+            if (amazonImages.length) {
+                amazonHasProductImages = true;
+                for (var ai = 0; ai < out.images.length && amazonImages.length < LIMITS.images; ai++) {
+                    pushUnique(amazonImages, out.images[ai], LIMITS.images, 600);
+                }
+                out.images = amazonImages;
             }
-            catch (e) { }
-            for (var dn = 0; dn < dynamicNodes.length && out.images.length < LIMITS.images; dn++) {
-                var dynamicRaw = dynamicNodes[dn].getAttribute && dynamicNodes[dn].getAttribute('data-a-dynamic-image');
-                if (!dynamicRaw)
-                    continue;
-                var dynamicMap = null;
-                try {
-                    dynamicMap = JSON.parse(dynamicRaw);
-                }
-                catch (e) {
-                    continue;
-                }
-                for (var dynamicKey in dynamicMap) {
-                    if (!Object.prototype.hasOwnProperty.call(dynamicMap, dynamicKey))
-                        continue;
-                    if (/^https?:\/\//i.test(dynamicKey))
-                        pushUnique(out.images, dynamicKey, LIMITS.images, 600);
-                    if (out.images.length >= LIMITS.images)
-                        break;
-                }
-            }
-        }
-        catch (e) { }
+        } catch (e) {}
     }
-    try {
-        var images = document.querySelectorAll('img[src^="http"]');
-        for (var g = 0; g < images.length && out.images.length < LIMITS.images; g++) {
-            var width = parseInt(images[g].getAttribute('width') || '0', 10);
-            if (width && width < 200)
-                continue;
-            pushUnique(out.images, images[g].getAttribute('src'), LIMITS.images, 600);
-        }
+    if (!amazonHasProductImages) {
+        try {
+            var images = document.querySelectorAll('img[src^="http"]');
+            for (var g = 0; g < images.length && out.images.length < LIMITS.images; g++) {
+                var width = parseInt(images[g].getAttribute('width') || '0', 10);
+                if (width && width < 200) continue;
+                pushUnique(out.images, images[g].getAttribute('src'), LIMITS.images, 600);
+            }
+        } catch (e) {}
     }
-    catch (e) { }
     if (AMAZON_STRICT) {
         try {
             out.amazon = collectAmazonEvidence();

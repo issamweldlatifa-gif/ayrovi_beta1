@@ -137,3 +137,18 @@ describe('quantityLimit — la quantité ne dépasse jamais le stock publié', (
     expect(quantityLimit({ stock: -4 })).toBe(99);
   });
 });
+
+describe('équivalence des noms de dimensions pour le devis de page', () => {
+  const page = {
+    selection: { couleur: 'Noir', taille: '40' }, unitTnd: 128.5,
+    availability: 'AVAILABLE' as const, stock: null, sourcePrice: 19.99, sourceCurrency: 'EUR',
+  };
+  it('reconnaît le même choix malgré les noms merchant/serveur différents', () => {
+    expect(selectionQuote({ page, quotes: [], selection: { color: 'Noir', size: '40' } }).unitTnd).toBe(128.5);
+  });
+  it('ne reporte jamais le prix sur une autre valeur ou une dimension manquante', () => {
+    expect(selectionQuote({ page, quotes: [], selection: { color: 'Blanc', size: '40' } }).unitTnd).toBeNull();
+    expect(selectionQuote({ page, quotes: [], selection: { color: 'Noir' } }).unitTnd).toBeNull();
+    expect(selectionQuote({ page, quotes: [], selection: { color: 'Noir', couleur: 'Noir' } }).unitTnd).toBeNull();
+  });
+});

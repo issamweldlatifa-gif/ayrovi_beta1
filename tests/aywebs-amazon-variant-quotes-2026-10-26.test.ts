@@ -27,7 +27,8 @@
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 
-import { AYWEBS_CAPTURE_SCRIPT } from '../src/aywebs/captureScript';
+import { buildAyWebsCaptureScript } from '../src/aywebs/captureScript';
+const AYWEBS_CAPTURE_SCRIPT = buildAyWebsCaptureScript('amazon');
 import { validateAyWebsCapturedPage } from '../src/aywebs/webviewCapture';
 import { ayWebsSelectionEvidence } from '../src/aywebs/variantEvidence';
 import { ayWebsVariantQuotes } from '../src/aywebs/variantQuotes';
