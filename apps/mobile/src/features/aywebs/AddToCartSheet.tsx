@@ -187,8 +187,10 @@ export function AddToCartSheet({
        dernière barrière contre les libellés d'interface (« Votre taille »,
        « Taille & coupe »…) quelle que soit leur provenance — fiche en cache,
        serveur ou capture (28/10/2026). */
-    return realChoiceGroups(mergeVariantGroups(mergedLocal, serverGroups));
-  }, [activeCaptureVariants, captureRecord, fetchedGroups, product.variantGroups, serverGroups]);
+    // In read-only mode only the current merchant capture may define choices;
+    // a server fallback can contain unrelated or stale product dimensions.
+    return realChoiceGroups(readOnlySelection && local ? mergedLocal : mergeVariantGroups(mergedLocal, serverGroups));
+  }, [activeCaptureVariants, captureRecord, fetchedGroups, local, product.variantGroups, readOnlySelection, serverGroups]);
   const groupsRef = useRef(groups);
   groupsRef.current = groups;
   const variantOptions = useMemo<AyWebsVariantOption[]>(() => {
@@ -842,7 +844,7 @@ export function AddToCartSheet({
       /* 0. Si le cache de la matrice possède déjà la capture vérifiée de CETTE sélection
          (initiale ou issue d'une lecture delta précédente), on l'utilise directement sans
          rouvrir de WebView masqué. */
-      const cachedProof = readCachedSelectionProof(matrixKey, selection);
+      const cachedProof = readOnlySelection ? null : readCachedSelectionProof(matrixKey, selection);
       if (cachedProof) {
         captureToUse = cachedProof.capture;
         if (cachedProof.sourceUrl) target = cachedProof.sourceUrl;
@@ -1005,7 +1007,7 @@ export function AddToCartSheet({
     } finally {
       if (alive.current) setBusy(false);
     }
-  }, [busy, chosenUnavailable, effectiveCapture, effectiveUrl, groups.length, local, locale, matrixKey, missing.length, onAdded, pageQuote, product.productId,
+  }, [busy, chosenUnavailable, effectiveCapture, effectiveUrl, groups.length, local, locale, matrixKey, missing.length, onAdded, pageQuote, product.productId, readOnlySelection,
     product.sourceUrl, product.storeId, quantity, quoteToken, readVariant, selection, selectionComplete, sessionId, t]);
 
   const sourceLine = tndText(quote.unitTnd);
@@ -1016,7 +1018,9 @@ export function AddToCartSheet({
   const selectedColorImage = imageForSelectedColor(fields, selection) || quote.image || '';
   /* الصورة الرئيسية تتبع لون المنتج المختار داخل نفس الورقة؛ fallback للصورة
      الأصلية فقط إذا التاجر ما نشرش صورة مرتبطة باللون. */
-  const imageUri = selectedColorImage || added?.item.images[0] || product.images[0] || '';
+  const imageUri = readOnlySelection
+    ? added?.item.images[0] || product.images[0] || selectedColorImage
+    : selectedColorImage || added?.item.images[0] || product.images[0] || '';
 
   const discountMeta = useMemo(() => {
     if (!captureRecord) return null;
@@ -1490,8 +1494,8 @@ const styles = StyleSheet.create({
   close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   addedHeaderRow: { alignItems: 'center', justifyContent: 'center', gap: 6 },
   productStack: { gap: 12 },
-  productHeroWrap: { alignItems: 'center', paddingVertical: 4 },
-  productHero: { width: 164, height: 196, borderRadius: RADIUS.xs },
+  productHeroWrap: { alignItems: 'center', alignSelf: 'stretch', paddingVertical: 4 },
+  productHero: { width: '100%', height: 240, borderRadius: RADIUS.xs },
   productText: { gap: 8 },
   discountPriceBlock: { gap: 2 },
   priceInlineRow: { alignItems: 'baseline', gap: 6, flexWrap: 'wrap' },

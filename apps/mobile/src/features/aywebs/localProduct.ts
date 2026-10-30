@@ -483,6 +483,17 @@ export function defaultSelectionFromCapture(
         : undefined;
       if (canonical) selection[key] = canonical;
     }
+    /* Live DOM group selections override the often stale embedded ASIN table. */
+    if (Array.isArray(capture.variantGroups)) {
+      for (const group of groups) {
+        const entry = capture.variantGroups.find((candidate) => isRecord(candidate)
+          && text(candidate.name).toLowerCase() === group.attribute.trim().toLowerCase());
+        if (!isRecord(entry) || !Array.isArray(entry.selected) || entry.selected.length !== 1) continue;
+        const value = text(entry.selected[0]);
+        const canonical = group.values.find((candidate) => candidate.toLowerCase() === value.toLowerCase());
+        if (canonical) selection[group.attribute.trim().toLowerCase()] = canonical;
+      }
+    }
     return selection;
   }
   /* Boutique catalogue / SHEIN / AliExpress / mobile : la page publie elle-même la valeur

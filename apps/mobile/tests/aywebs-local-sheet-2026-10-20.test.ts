@@ -226,3 +226,13 @@ describe('المخزون المعلن', () => {
     expect(stockForSelection(capture, { size: 'Large', color: 'Emerald Leaf' })).toBeNull();
   });
 });
+
+describe('sélection Amazon actuelle', () => {
+  it('préfère la sélection visible aux dimensions ASIN initiales', () => {
+    const capture = {
+      amazon: { selectedAsin: 'B000000001', variants: [{ asin: 'B000000001', dimensions: [{ name: 'size', value: 'S' }] }] },
+      variantGroups: [{ name: 'size', values: ['S', 'M'], selected: ['M'] }],
+    };
+    expect(defaultSelectionFromCapture(capture, [{ attribute: 'size', values: ['S', 'M'] }])).toEqual({ size: 'M' });
+  });
+});

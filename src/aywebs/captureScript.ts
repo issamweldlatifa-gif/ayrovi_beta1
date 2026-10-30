@@ -2708,6 +2708,23 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         if (selected && optionAsin) pushUnique(selectedAsins, optionAsin, 10, 10);
       }
     }
+    /* A rendered selection is newer than the initial twister data. Only
+       override a dimension when its DOM identifies exactly one chosen value. */
+    var liveByDimension = {};
+    for (var lo = 0; lo < result.options.length; lo++) {
+      var liveOption = result.options[lo];
+      if (liveOption.source !== 'twister_dom' || !liveOption.selected) continue;
+      var liveKey = String(liveOption.dimension).toLowerCase();
+      if (!liveByDimension[liveKey]) liveByDimension[liveKey] = [];
+      if (!ciExactContains(liveByDimension[liveKey], liveOption.value)) liveByDimension[liveKey].push(liveOption.value);
+    }
+    result.selectedValues = [];
+    for (var lr = 0; lr < result.options.length; lr++) {
+      var row = result.options[lr];
+      var liveValues = liveByDimension[String(row.dimension).toLowerCase()];
+      if (liveValues && liveValues.length === 1) row.selected = row.value.toLowerCase() === liveValues[0].toLowerCase();
+      if (row.selected) pushUnique(result.selectedValues, row.value, 6, AMAZON_EVIDENCE_LIMITS.label);
+    }
     var selectedField = null;
     try { selectedField = document.querySelector('#ASIN, input[name="ASIN"]'); } catch (e) {}
     var fieldAsin = amazonValidAsin(selectedField && (selectedField.value || selectedField.getAttribute('value')));
@@ -2822,7 +2839,8 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     for (var i = 0; i < result.options.length; i++) {
       var existing = result.options[i];
       if ((existing.dimension + '|' + existing.value.toLowerCase() + '|' + (existing.asin || '')) === key) {
-        if (selected && !existing.selected) existing.selected = true;
+        if (source === 'twister_dom') { existing.selected = !!selected; existing.source = source; }
+        else if (selected && !existing.selected) existing.selected = true;
         if (state !== 'unknown' && existing.availabilityEvidence === 'unknown') existing.availabilityEvidence = state;
         if (!existing.image && imageUrl) existing.image = imageUrl;
         return existing;
@@ -4787,7 +4805,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       var sheinActiveColor = sheinHeaderColor || (SHEIN_STATE && SHEIN_STATE.currentColor) || '';
       for (var co = 0; co < sheinColorOrder.length; co++) {
         var cEntry = sheinColorMap[sheinColorOrder[co].toLowerCase()];
-        if (cEntry.selected) { sheinActiveColor = cEntry.value; break; }
+        if (cEntry.selected && (!sheinHeaderColor || cEntry.value.toLowerCase() === sheinHeaderColor.toLowerCase() || cEntry.value.toLowerCase().indexOf(sheinHeaderColor.toLowerCase() + ' · ') === 0)) { sheinActiveColor = cEntry.value; break; }
       }
       if (sheinActiveColor && !sheinColorMap[sheinActiveColor.toLowerCase()]) {
         addSheinColor(sheinActiveColor, {
@@ -4918,6 +4936,13 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         }
       } catch (e) {}
 
+      /* A live header is preferred to stale embedded or responsive selections. */
+      if (domHeaderFullSize) {
+        for (var shs = 0; shs < sheinSizeOrder.length; shs++) {
+          var headerSizeEntry = sheinSizeMap[sheinSizeOrder[shs].toLowerCase()];
+          headerSizeEntry.selected = sheinBaseSizeKey(headerSizeEntry.value) === sheinBaseSizeKey(domHeaderFullSize);
+        }
+      }
       var sheinActiveSize = '';
       var sheinSelectedSizeDisabled = false;
       for (var so = 0; so < sheinSizeOrder.length; so++) {
@@ -4954,7 +4979,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         for (var cPub = 0; cPub < sheinColorOrder.length; cPub++) {
           var cObj = sheinColorMap[sheinColorOrder[cPub].toLowerCase()];
           cValues.push(cObj.value);
-          var isCurrentColor = cObj.selected || (sheinActiveColor && cObj.value.toLowerCase() === sheinActiveColor.toLowerCase());
+          var isCurrentColor = sheinActiveColor && cObj.value.toLowerCase() === sheinActiveColor.toLowerCase();
           if (isCurrentColor && !cChosen.length) cChosen.push(cObj.value);
           var cAvail = cObj.disabled || cObj.available === false
             ? false
@@ -5512,7 +5537,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
             var tNorm = {
               variantId: trSku.skuId ? ('temu:' + trSku.skuId) : null,
               attributes: tAligned,
-              price: trSku.available === false ? null : (trSku.price || TEMU_STATE.salePrice || null),
+              price: trSku.available === false ? null : (trSku.price || null),
               priceFrom: false,
               available: trSku.available,
               stock: trSku.available === false ? null : trSku.stock,
