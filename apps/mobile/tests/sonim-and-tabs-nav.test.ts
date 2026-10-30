@@ -219,7 +219,7 @@ describe('parité des polices officielles Zalando Sans et feuilles compactes', (
     expect(src).toContain('productStack:');
     expect(src).toContain('productHeroWrap:');
     expect(src).not.toContain('productRow:');
-    expect(src).toMatch(/productHero:\s*\{\s*width:\s*164,\s*height:\s*196/);
+    expect(src).toMatch(/productHero:\s*\{\s*width:\s*'100%',\s*height:\s*240/);
     expect(src).toContain("router.push('/panier')");
   });
 
