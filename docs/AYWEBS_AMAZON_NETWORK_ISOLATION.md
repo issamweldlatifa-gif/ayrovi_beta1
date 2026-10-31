@@ -1,0 +1,9 @@
+# Amazon network observer: experimental isolation
+
+Status: **not integrated into the app, not strict isolation in production.** The browser and VariantReader still inject the legacy network observer. The files introduced here are inert experimental groundwork, not a new deployed capture path.
+
+`networkObservers/amazon.ts` is a standalone Amazon observer with an explicit store-domain allowlist. `select.ts` selects exactly one script for a known URL; JSDOM tests check registered Amazon domains, deceptive hosts, and simulated changes of document. `androidEnvelope.ts` contains a transport encoding two independently selected scripts as data, never as a combined executable script.
+
+`patch-android-observer.cjs` is a manual experiment for an isolated copy of react-native-webview 13.17.0; it is not in postinstall, and the app does not invoke it. It modifies Android's existing onPageStarted callback to select a single script using the callback URL. Static tests exercise version checks, changed-source rejection and idempotency. These do not compile or run Java and do not demonstrate early injection, redirects, browser history or device behavior. Android's existing callback does not prove interception before merchant requests. iOS has no corresponding implementation yet. The observer buffers existing requests only, bounded after reading; without a reliable size header an oversized response may still be cloned before its length is checked.
+
+Before any integration: build and test the native Android implementation and iOS equivalent on real WebViews, including server redirects and back navigation, early network traffic, isolation of injected bytes, capture/price/cart correctness, and before/after latency. Do not substitute a React state-based script choice for the current path: asynchronous navigation can make its URL stale. Do not present this commit as fixing strict isolation or as deployed product behavior.
