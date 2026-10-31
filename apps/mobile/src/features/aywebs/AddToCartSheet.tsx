@@ -17,13 +17,13 @@
  *     والزرّ يقول شنوّة لازم يصير — موش «La demande n'a pas abouti».
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { AYWEBS_WORDMARK_TINT, COMMERCE, RADIUS } from '@/design/tokens.mobile';
+import { AYWEBS_WORDMARK_TINT, RADIUS, veil } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { AppImage } from '@/design/appImage';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
@@ -48,6 +48,7 @@ import { ChoiceField, type ChoiceOption } from '@/features/aywebs/ChoiceField';
 import { VariantOptionChips } from '@/features/aywebs/VariantOptionChips';
 import { colourForOption, needsOutline } from '@/features/aywebs/optionColour';
 import { preferredVariantImage } from '@/features/aywebs/variantImage';
+import { amazonCaptureHasPricedSelection } from '@/features/aywebs/amazonFastQuote';
 import { quantityLimit, selectionQuote, type AvailabilityState } from '@/features/aywebs/selectionQuote';
 import { lacksServerQuote, preferServerQuote, quoteReadPlan } from '@/features/aywebs/priceFallback';
 import { ayWebsSameAttribute as sameAttribute } from '@/features/aywebs/attributeKeys';
@@ -134,6 +135,7 @@ export function AddToCartSheet({
 
   const [selection, setSelection] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
+  const [quantityOpen, setQuantityOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [, setDiagnostic] = useState('');
@@ -340,6 +342,7 @@ export function AddToCartSheet({
     const initial = local && capture ? defaultSelectionFromCapture(capture as Record<string, unknown>, groupsRef.current) : {};
     setSelection(initial);
     setQuantity(1);
+    setQuantityOpen(false);
     setError('');
     setDiagnostic('');
     setAdded(null);
@@ -499,6 +502,37 @@ export function AddToCartSheet({
         let targetUrl = quote.missingVariantUrl || effectiveUrl;
         let captureForResolve: unknown = local ? effectiveCapture : undefined;
         let siblingCaptureRead: unknown = null;
+        // If the current Amazon capture already contains this exact priced,
+        // available combination, let the server verify it before opening a
+        // second WebView. Any inconclusive response falls back to the old path.
+        if (local && product.storeId === 'amazon' && amazonCaptureHasPricedSelection(effectiveCapture, picked)) {
+          try {
+            const fast = await resolveAyWebsProductWithCapture(effectiveUrl, {
+              sessionId, storeId: product.storeId, capture: effectiveCapture, variant: picked, refresh: false,
+            });
+            if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
+            const amount = fast.product.ayroviPricing?.totalTnd ?? null;
+            const availability = stateOf(fast.product.availability.state);
+            if (fast.capture?.used && !fast.priceRejection && !fast.missing.length && fast.quoteToken
+              && fast.product.priceVerified && fast.product.currencyVerified
+              && amount != null && Number.isFinite(amount) && amount > 0
+              && (availability === 'AVAILABLE' || availability === 'LOW_STOCK')) {
+              setServerGroups(fast.product.variantGroups || []);
+              const cached = upsertVariantMatrixCache({ matrixKey, product: fast.product, selection: picked,
+                capture: effectiveCapture as Record<string, unknown>, quoteToken: fast.quoteToken, sourceUrl: effectiveUrl });
+              setPageQuote({ selection: picked, unitTnd: amount,
+                quantityTotalsTnd: fast.product.ayroviPricing?.quantityTotalsTnd ?? null,
+                availability, stock: fast.product.availability.quantityHint ?? null,
+                sourcePrice: fast.product.price, sourceCurrency: fast.product.currency,
+                quotes: cached.variantQuotes, details: cached.variantDetails, quoteToken: fast.quoteToken });
+              setDiagnostic('');
+              return;
+            }
+          } catch {
+            // Preserve the existing sibling-reading fallback when verification fails.
+          }
+          if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
+        }
         if (local && readVariant) {
           const currentLocalOptions = optionsFromVariants(localVariantsFromCapture(
             (effectiveCapture && typeof effectiveCapture === 'object' ? effectiveCapture : {}) as Record<string, unknown>,
@@ -1093,7 +1127,6 @@ export function AddToCartSheet({
         <Button
           label={busy ? t('aywebs.adding') : (readOnlySelection ? t('aywebs.confirmAddCta') : t('aywebs.addToCart'))}
           tone="commerce"
-          leading={<Ionicons name="bag-add-outline" size={theme.iconSize.sm} color={COMMERCE.onAction} />}
           onPress={confirm}
           busy={busy}
           disabled={Boolean(blockedCode) || !sessionId}
@@ -1389,46 +1422,42 @@ export function AddToCartSheet({
             ))
           )}
 
-          <View style={[styles.quantityRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.quantity')}</AppText>
-            <View style={[styles.stepper, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('aywebs.quantityLess')}
-                disabled={quantity <= 1 || busy}
-                onPress={() => setQuantity((value) => Math.max(1, value - 1))}
-                hitSlop={6}
-                style={[
-                  styles.stepperButton,
-                  {
-                    borderColor: theme.colors.line,
-                    borderRadius: theme.radius.xs,
-                  },
-                ]}
-                testID="aywebs-quantity-less"
-              >
-                <Ionicons name="remove-outline" size={theme.iconSize.sm} color={quantity <= 1 ? theme.colors.muted : theme.colors.ink} />
-              </Pressable>
-              <AppText variant="label" weight="semibold">{String(quantity)}</AppText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('aywebs.quantityMore')}
-                disabled={quantity >= maxQuantity || busy}
-                onPress={() => setQuantity((value) => Math.min(maxQuantity, value + 1))}
-                hitSlop={6}
-                style={[
-                  styles.stepperButton,
-                  {
-                    borderColor: theme.colors.line,
-                    borderRadius: theme.radius.xs,
-                  },
-                ]}
-                testID="aywebs-quantity-more"
-              >
-                <Ionicons name="add-outline" size={theme.iconSize.sm} color={quantity >= maxQuantity ? theme.colors.muted : theme.colors.ink} />
-              </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${t('aywebs.quantity')} : ${quantity}`}
+            accessibilityState={{ expanded: quantityOpen, disabled: busy }}
+            disabled={busy}
+            onPress={() => setQuantityOpen(true)}
+            testID="aywebs-quantity-control"
+            style={[styles.quantityControl, { borderColor: theme.colors.line, flexDirection: rowDirectionFor(theme.isRTL) }]}
+          >
+            <AppText variant="body">{`${t('aywebs.quantity')} : ${quantity}`}</AppText>
+            <Ionicons name="chevron-down" size={theme.iconSize.md} color={theme.colors.ink} />
+          </Pressable>
+          {quantityOpen ? <Modal visible transparent animationType="fade" onRequestClose={() => setQuantityOpen(false)} statusBarTranslucent>
+            <View style={styles.quantityOverlay} accessibilityViewIsModal>
+              <Pressable style={styles.quantityBackdrop} onPress={() => setQuantityOpen(false)} accessibilityLabel={t('sheet.close')} />
+              <View style={[styles.quantityDialog, { backgroundColor: theme.colors.surface }]}>
+                <View style={[styles.quantityHeader, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                  <AppText variant="label" weight="bold">{`${t('aywebs.quantity')} :`}</AppText>
+                  <Pressable accessibilityRole="button" accessibilityLabel={t('sheet.close')} onPress={() => setQuantityOpen(false)} hitSlop={8}>
+                    <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} />
+                  </Pressable>
+                </View>
+                <ScrollView keyboardShouldPersistTaps="handled" testID="aywebs-quantity-list">
+                  {Array.from({ length: maxQuantity }, (_, index) => index + 1).map((value) => (
+                    <Pressable key={value} accessibilityRole="radio" accessibilityState={{ selected: value === quantity }}
+                      onPress={() => { setQuantity(Math.min(value, maxQuantity)); setQuantityOpen(false); }}
+                      testID={`aywebs-quantity-${value}`}
+                      style={[styles.quantityOption, { borderTopColor: theme.colors.line, backgroundColor: value === quantity ? theme.status.warning.soft : theme.colors.surface }]}>
+                      <AppText variant="body">{String(value)}</AppText>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+              <Pressable style={styles.quantityBackdrop} onPress={() => setQuantityOpen(false)} accessibilityLabel={t('sheet.close')} />
             </View>
-          </View>
+          </Modal> : null}
 
           {quote.availability === 'OUT_OF_STOCK' || quote.stock != null ? (
             <AppText
@@ -1518,8 +1547,11 @@ const styles = StyleSheet.create({
   missingNotice: { gap: 2 },
   changeOnStoreBtn: { alignItems: 'center', gap: 6, paddingVertical: 2 },
   changeOnStoreLabel: { textDecorationLine: 'underline' },
-  quantityRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  stepperButton: { width: 32, height: 32, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  quantityControl: { minHeight: 48, borderWidth: 1, borderRadius: RADIUS.xs, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'space-between' },
+  quantityOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: veil(0.35) },
+  quantityBackdrop: { flex: 1, alignSelf: 'stretch' },
+  quantityDialog: { width: '72%', maxWidth: 360, maxHeight: '70%', borderRadius: RADIUS.xs, overflow: 'hidden' },
+  quantityHeader: { minHeight: 56, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'space-between' },
+  quantityOption: { minHeight: 48, borderTopWidth: StyleSheet.hairlineWidth, justifyContent: 'center', paddingHorizontal: 20 },
   slimAddButton: { minHeight: 40, borderRadius: RADIUS.xs, paddingVertical: 6 },
 });

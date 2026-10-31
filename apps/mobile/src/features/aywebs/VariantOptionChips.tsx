@@ -20,7 +20,7 @@
  * sauf la teinte de l'article, qui est une donnée.
  */
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { mediaUrl } from '@/api/client';
@@ -47,7 +47,7 @@ export function VariantOptionChips({
   return (
     <View style={styles.group}>
       <AppText variant="label" weight="bold">{label}</AppText>
-      <View style={[styles.options, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+      <ScrollView horizontal={kind === 'color'} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.options, kind === 'color' && styles.colorOptions, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} testID="aywebs-variant-options-scroll">
         {options.map((option, index) => (
           <Option
             key={option.value}
@@ -59,7 +59,7 @@ export function VariantOptionChips({
             onSelect={onSelect}
           />
         ))}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -213,6 +213,7 @@ function SelectedBadge({ index }: { index: number }) {
 const styles = StyleSheet.create({
   group: { gap: 8 },
   options: { flexWrap: 'wrap', alignItems: 'flex-start', columnGap: 12, rowGap: 12 },
+  colorOptions: { flexWrap: 'nowrap', paddingBottom: 4 },
   // Largeur fixe = largeur de l'anneau : les libellés restent alignés en colonnes.
   colorOption: { width: RING + 16, alignItems: 'center', gap: 6 },
   ringWrap: { width: RING, height: RING, alignItems: 'center', justifyContent: 'center' },

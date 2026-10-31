@@ -22,6 +22,7 @@ describe('AYWEBs product variant controls', () => {
         onSelect={onSelect}
       />,
     ));
+    expect(screen.getByTestId('aywebs-variant-options-scroll').props.horizontal).toBe(true);
     expect(screen.getByRole('button', { name: 'Couleur: Noir' }).props.accessibilityState.selected).toBe(true);
     expect(screen.getByTestId('aywebs-variant-selected-0')).toBeTruthy();
     expect(screen.UNSAFE_getByType(require('expo-image').Image).props.testID).toBe('aywebs-color-image-0');

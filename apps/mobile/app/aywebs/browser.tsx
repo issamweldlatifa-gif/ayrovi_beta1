@@ -27,7 +27,6 @@ import {
 
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { COMMERCE } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { ApiError } from '@/api/errors';
@@ -723,13 +722,6 @@ export default function AyWebsBrowserScreen() {
         <Button
           label={busy ? t('aywebs.loading') : cartAddedAt ? t('aywebs.added') : t('aywebs.selectOptions')}
           tone="commerce"
-          leading={(
-            <Ionicons
-              name={cartAddedAt ? 'checkmark-circle' : 'options-outline'}
-              size={theme.iconSize.sm}
-              color={cartAddedAt ? theme.status.success.fg : COMMERCE.onAction}
-            />
-          )}
           block
           onPress={addToCart}
           busy={busy}

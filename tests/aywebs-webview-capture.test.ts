@@ -722,7 +722,7 @@ describe('AYWEBs 2.1 — le script est servi par le serveur (pas de version d’
     const amazon = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=amazon');
     expect(amazon.status).toBe(200);
     expect(amazon.headers['x-aywebs-capture-reader']).toBe('amazon');
-    expect(amazon.headers['x-aywebs-capture-reader-version']).toBe('4');
+    expect(amazon.headers['x-aywebs-capture-reader-version']).toBe('5');
     expect(amazon.text).toBe(buildAyWebsCaptureScript('amazon'));
     expect(amazon.text).not.toBe(AYWEBS_CAPTURE_SCRIPT);
     const zalando = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=zalando');

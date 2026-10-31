@@ -369,7 +369,8 @@ describe('AddToCartSheet — Matrice de Prix des Variantes en mémoire', () => {
     expect(mockResolveWithCapture.mock.calls.length).toBe(2);
 
     /* 6. Quantité = 2 => total palier non linéaire 206.50 TND (et non 118.90 × 2 = 237.80 TND) ! */
-    fireEvent.press(screen.getByTestId('aywebs-quantity-more'));
+    fireEvent.press(screen.getByTestId('aywebs-quantity-control'));
+    fireEvent.press(screen.getByTestId('aywebs-quantity-2'));
     expect(screen.getAllByText(/206[.,]50/).length).toBeGreaterThan(0);
 
     /* 7. Ajout au panier ZAYROVI : lie exactement Noir + 8-9Y + Doublé Polaire + quantity=2 */

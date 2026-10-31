@@ -422,7 +422,7 @@ describe('AYWEBs Mobile Web (`m.<store>.com` + H5) â€” Cross-Store & Appareil RÃ
     </body></html>`;
 
     const amzCaptured = runCapture(amzMobileHtml, amzMobileUrl, 'amazon');
-    expect(amzCaptured.reader).toEqual({ id: 'amazon', version: 4 });
+    expect(amzCaptured.reader).toEqual({ id: 'amazon', version: 5 });
     expect(amzCaptured.amazon?.readerVersion).toBe(2);
     expect(amzCaptured.canonicalUrl).toBe('https://www.amazon.fr/dp/B09V3KXJPB');
     expect(amzCaptured.amazon?.pageAsin).toBe('B09V3KXJPB');

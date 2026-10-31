@@ -214,7 +214,8 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
     expect(onClose).toHaveBeenCalledTimes(1);
 
     /* Quantité = 2 -> total estimé mis à jour + ajout au panier avec les options capturées */
-    fireEvent.press(screen.getByTestId('aywebs-quantity-more'));
+    fireEvent.press(screen.getByTestId('aywebs-quantity-control'));
+    fireEvent.press(screen.getByTestId('aywebs-quantity-2'));
     expect(screen.getAllByText(/158[.,]80/).length).toBeGreaterThan(0);
 
     await act(async () => {

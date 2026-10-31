@@ -833,8 +833,6 @@ export const fr = {
   'aywebs.selectionUnverified': "Le marchand ne publie pas le stock de ce choix. Choisissez cette couleur ou cette taille dans la page du magasin, puis réessayez.",
   'aywebs.priceChanged': "Le prix a changé chez le marchand. Vérifiez le nouveau prix avant d’ajouter.",
   'aywebs.choose': "Choisir",
-  'aywebs.quantityLess': "Diminuer la quantité",
-  'aywebs.quantityMore': "Augmenter la quantité",
   'aywebs.choice.size': "Taille",
   'aywebs.choice.color': "Couleur",
   'aywebs.choice.volume': "Volume",

@@ -51,6 +51,14 @@ describe('isolated Amazon mobile reader', () => {
     expect(result.images).not.toContain('https://img.example/ad.jpg');
   });
 
+  it('prefers the published high-resolution image when the dynamic gallery only contains a thumbnail', () => {
+    const html = `<!doctype html><html><body><div id="dp-container"><img id="landingImage"
+      data-old-hires="https://img.example/full.jpg" src="https://img.example/thumb.jpg"
+      data-a-dynamic-image='{ "https://img.example/thumb.jpg": [100, 100] }'></div></body></html>`;
+    const result = capture(html, `https://m.amazon.fr/dp/${asin}`);
+    expect(result.images[0]).toBe('https://img.example/full.jpg');
+  });
+
   it('does not mistake the purchase quantity for a selected variant', () => {
     const html = `<!doctype html><html><body><div id="dp-container">
       <select id="quantity" name="quantity"><option selected>1</option><option>2</option></select>

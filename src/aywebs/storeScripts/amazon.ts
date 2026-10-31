@@ -9,7 +9,7 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
         v: 1, url: '', canonicalUrl: null, title: null, brand: null,
         priceCandidates: [], currencyText: null, availabilityText: null,
         addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [], variantGroups: [], variantMatrix: [],
-        images: [], capturedAt: null, pageLang: null, amazon: null, reader: { id: 'amazon', version: 4 }, diagnostics: []
+        images: [], capturedAt: null, pageLang: null, amazon: null, reader: { id: 'amazon', version: 5 }, diagnostics: []
     };
     /* Diagnostic BORNÉ : code court (ex. « price:buybox_asin_mismatch »), jamais de texte de page. */
     function diag(code) { if (out.diagnostics.length < 16)
@@ -2428,7 +2428,11 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
                         } catch (e) {}
                     }
                     var hires = galleryImage.getAttribute && galleryImage.getAttribute('data-old-hires');
-                    var src = best || hires || (galleryImage.getAttribute && galleryImage.getAttribute('src'));
+                    // The dynamic list sometimes contains only a tiny thumbnail.
+                    // Prefer the merchant's explicit high-resolution URL in that case;
+                    // keep a large dynamic image when its dimensions are known.
+                    var validHires = hires && /^https?:\/\//i.test(String(hires)) ? hires : '';
+                    var src = (bestArea >= 250000 ? best : validHires || best) || (galleryImage.getAttribute && galleryImage.getAttribute('src'));
                     if (src && /^https?:\/\//i.test(String(src))) pushUnique(amazonImages, src, LIMITS.images, 600);
                 }
             }

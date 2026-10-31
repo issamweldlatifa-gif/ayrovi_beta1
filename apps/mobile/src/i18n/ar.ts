@@ -831,8 +831,6 @@ export const ar = {
   'aywebs.selectionUnverified': 'لم يؤكّد المتجر توفّر هذا الخيار بعد. يرجى تحديد اللون والمقاس مباشرة في صفحة المتجر ثم إعادة المحاولة.',
   'aywebs.priceChanged': 'تغيّر السعر لدى المتجر. يرجى مراجعة السعر المحدّث قبل الإضافة.',
   'aywebs.choose': 'اختيار',
-  'aywebs.quantityLess': 'تقليل الكمية',
-  'aywebs.quantityMore': 'زيادة الكمية',
   'aywebs.choice.size': 'المقاس',
   'aywebs.choice.color': 'اللون',
   'aywebs.choice.volume': 'السعة / الحجم',
