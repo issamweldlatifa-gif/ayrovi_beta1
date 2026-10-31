@@ -53,10 +53,12 @@ describe.each(['amazon', 'zalando'] as const)('%s interactive sheet', (storeId) 
   beforeEach(() => { mockResolve.mockReset(); mockAdd.mockReset(); clearVariantMatrixCache(); });
   it('shows published sizes, disables sold out, sends the chosen size to server', async () => {
     setup(storeId);
-    await waitFor(() => expect(screen.getByTestId('aywebs-variant-size-1')).toBeTruthy());
-    expect(screen.getByTestId('aywebs-variant-size-2').props.accessibilityState.disabled).toBe(true);
+    await waitFor(() => expect(screen.getByTestId('aywebs-choice-size')).toBeTruthy());
+    fireEvent.press(screen.getByTestId('aywebs-choice-size'));
+    expect(screen.getByTestId('aywebs-choice-size-40').props.accessibilityState.disabled).toBe(true);
     expect(screen.queryByTestId('aywebs-captured-selection-box')).toBeNull();
-    fireEvent.press(screen.getByTestId('aywebs-variant-size-1'));
+    fireEvent.press(screen.getByTestId('aywebs-choice-size-39'));
+    expect(screen.getByTestId('aywebs-choice-size')).toBeTruthy();
     await act(async () => { fireEvent.press(screen.getByTestId('aywebs-sheet-add')); });
     await waitFor(() => expect(mockAdd).toHaveBeenCalled());
     expect(mockAdd.mock.calls[0][0].variant).toMatchObject({ size: '39' });

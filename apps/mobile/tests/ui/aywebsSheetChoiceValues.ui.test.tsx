@@ -12,7 +12,7 @@
  *   • les tailles publiées par le marchand sont là ;
  *   • la couleur est là aussi, et reste un vrai groupe.
  */
-import { render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { AyWebsResolvedProduct } from '@/api/aywebs';
@@ -86,8 +86,9 @@ describe('feuille d’ajout — valeurs de la page, pas boutons d’interface', 
 
   it('les tailles publiées restent affichées comme pastilles', async () => {
     renderSheet(product({ variantGroups: [{ attribute: 'Taille', values: ['Taille', 'Votre taille', 'S', 'M', 'L'] }] }));
-    await waitFor(() => expect(screen.getByTestId('aywebs-variant-size-0')).toBeTruthy(), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('aywebs-choice-taille')).toBeTruthy(), { timeout: 5000 });
 
+    fireEvent.press(screen.getByTestId('aywebs-choice-taille'));
     expect(screen.getByText('S')).toBeTruthy();
     expect(screen.getByText('M')).toBeTruthy();
     expect(screen.getByText('L')).toBeTruthy();
@@ -101,7 +102,7 @@ describe('feuille d’ajout — valeurs de la page, pas boutons d’interface', 
         { attribute: 'Couleur', values: ['Couleur', 'Noir', 'Kaki'] },
       ],
     }));
-    await waitFor(() => expect(screen.getByTestId('aywebs-variant-size-0')).toBeTruthy(), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('aywebs-choice-taille')).toBeTruthy(), { timeout: 5000 });
 
     /* La couleur est rendue en pastilles (pas de photo publiée dans ce test). */
     expect(screen.getAllByTestId('aywebs-color-swatch-0').length).toBeGreaterThan(0);

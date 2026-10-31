@@ -7,13 +7,14 @@
  *
  * ما فيه حتى طلب شبكة هنا: هذا عرض فقط. الخادم هو من يقرأ ويحكم وقت الإضافة.
  */
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useMemo } from 'react';
+import { Modal, PanResponder, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
-import { COMMERCE } from '@/design/tokens.mobile';
+import { COMMERCE, veil } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
 
 export interface ChoiceOption {
@@ -26,6 +27,7 @@ export interface ChoiceOption {
   priceFrom?: boolean;
   unavailable?: boolean;
   available?: boolean;
+  stock?: number | null;
 }
 
 export interface ChoiceFieldProps {
@@ -45,12 +47,19 @@ export function ChoiceField({
 }: ChoiceFieldProps) {
   const theme = useTheme();
   const { t } = useI18n();
-  const chosen = options.find((option) => option.value === value);
+  const swipe = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_event, gesture) => gesture.dy > 10 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
+    onPanResponderRelease: (_event, gesture) => { if (gesture.dy > 60) onToggle(); },
+  }), [onToggle]);
+  const standard = options.length === 1 && options[0].value === value
+    && /^(?:one\s*size|taille\s*unique|unique\s*size|standard|unique)$/i.test(value.trim());
   return (
     <View style={styles.field}>
+      <AppText variant="caption" color={theme.colors.muted}>{label}</AppText>
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
+        accessibilityState={{ expanded: open, disabled: standard }}
+        disabled={standard}
         accessibilityLabel={`${label}${value ? ` : ${value}` : ''}`}
         onPress={onToggle}
         testID={testID}
@@ -61,11 +70,11 @@ export function ChoiceField({
             borderColor: open ? COMMERCE.action : theme.colors.line,
             borderRadius: theme.radius.control,
             minHeight: theme.geometry.minTarget + 8,
+            opacity: standard ? theme.opacity.disabled : 1,
           },
         ]}
       >
         <View style={styles.controlText}>
-          <AppText variant="caption" color={theme.colors.muted}>{label}</AppText>
           <AppText
             variant="body"
             weight="semibold"
@@ -75,11 +84,6 @@ export function ChoiceField({
             {value || placeholder}
           </AppText>
         </View>
-        {chosen?.price ? (
-          <AppText variant="label" color={theme.colors.ink}>
-            {chosen.priceFrom ? `${t('aywebs.priceFrom')} ${chosen.price}` : chosen.price}
-          </AppText>
-        ) : null}
         <Ionicons
           name={open ? 'chevron-up' : 'chevron-down'}
           size={theme.iconSize.md}
@@ -87,63 +91,50 @@ export function ChoiceField({
         />
       </Pressable>
 
-      {open ? (
-        <View
-          style={[
-            styles.options,
-            { borderColor: theme.colors.line, borderRadius: theme.radius.control, marginTop: 4, backgroundColor: theme.colors.surface },
-          ]}
-        >
-          {options.map((option, index) => {
-            const active = option.value === value;
-            const unavailable = option.unavailable === true;
-            return (
-              <Pressable
-                key={option.value}
-                disabled={unavailable}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active, disabled: unavailable }}
-                onPress={() => onSelect(option.value)}
-                testID={testID ? `${testID}-${option.value}` : undefined}
-                style={[
-                  styles.option,
-                  index > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.colors.line } : null,
-                  {
-                    minHeight: theme.geometry.minTarget,
-                    flexDirection: rowDirectionFor(theme.isRTL),
-                    backgroundColor: active ? theme.status.warning.soft : theme.colors.surface,
-                  },
-                ]}
-              >
-                <AppText
-                  variant="body"
-                  weight={active ? 'semibold' : 'regular'}
-                  color={unavailable ? theme.colors.muted : theme.colors.ink}
-                  style={styles.optionLabel}
-                >
-                  {option.value}
-                </AppText>
-                {option.price ? (
-                  <AppText variant="label" color={unavailable ? theme.colors.muted : theme.colors.ink}>
-                    {option.priceFrom ? `${t('aywebs.priceFrom')} ${option.price}` : option.price}
-                  </AppText>
-                ) : null}
-                {unavailable ? (
-                  <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.notAvailable')}</AppText>
-                ) : active ? (
-                  <Ionicons name="checkmark-circle" size={theme.iconSize.md} color={theme.status.success.fg} />
-                ) : null}
+      <Modal visible={open} transparent animationType="slide" onRequestClose={onToggle} statusBarTranslucent>
+        <View style={styles.overlay} accessibilityViewIsModal>
+          <Pressable style={styles.backdrop} accessibilityRole="button" accessibilityLabel={t('sheet.close')} onPress={onToggle} />
+          <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
+            <View {...swipe.panHandlers} style={[styles.sheetHeader, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+              <AppText variant="label" weight="bold" style={styles.optionLabel}>{label}</AppText>
+              <Pressable accessibilityRole="button" accessibilityLabel={t('sheet.close')} onPress={onToggle} hitSlop={8} style={styles.close}>
+                <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} />
               </Pressable>
-            );
-          })}
+            </View>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              {options.map((option) => {
+                const active = option.value === value;
+                const unavailable = option.unavailable === true;
+                return (
+                  <Pressable key={option.value} disabled={unavailable} accessibilityRole="button"
+                    accessibilityState={{ selected: active, disabled: unavailable }} onPress={() => onSelect(option.value)}
+                    testID={testID ? `${testID}-${option.value}` : undefined}
+                    style={[styles.option, { flexDirection: rowDirectionFor(theme.isRTL), borderTopColor: theme.colors.line }]}>
+                    <AppText variant="body" weight="semibold" color={unavailable ? theme.colors.muted : theme.colors.ink} style={styles.optionLabel}>{option.value}</AppText>
+                    {option.price ? <AppText variant="label" color={unavailable ? theme.colors.muted : theme.status.danger.fg}>
+                      {option.priceFrom ? `${t('aywebs.priceFrom')} ${option.price}` : option.price}
+                    </AppText> : null}
+                    {unavailable ? <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.notAvailable')}</AppText>
+                      : option.stock != null ? <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.stockLeft', { count: option.stock })}</AppText> : null}
+                    {active ? <Ionicons name="checkmark" size={theme.iconSize.sm} color={theme.colors.ink} /> : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
         </View>
-      ) : null}
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  field: { gap: 0 },
+  field: { gap: 4 },
+  overlay: { flex: 1, justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: veil(0.35) },
+  sheet: { maxHeight: '70%', borderTopLeftRadius: 8, borderTopRightRadius: 8, overflow: 'hidden', paddingBottom: 16 },
+  sheetHeader: { alignItems: 'center', paddingLeft: 16, paddingRight: 8 },
+  close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   control: {
     borderWidth: 1,
     flexDirection: 'row',
@@ -153,7 +144,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   controlText: { flex: 1, gap: 0 },
-  options: { borderWidth: 1, overflow: 'hidden' },
-  option: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8 },
+  option: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, minHeight: 56, borderTopWidth: StyleSheet.hairlineWidth },
   optionLabel: { flex: 1 },
 });

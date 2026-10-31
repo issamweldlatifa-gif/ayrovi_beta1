@@ -47,7 +47,7 @@ import { choiceGroupKind, choiceGroupKey } from '@/features/aywebs/choiceGroup';
 import { ChoiceField, type ChoiceOption } from '@/features/aywebs/ChoiceField';
 import { VariantOptionChips } from '@/features/aywebs/VariantOptionChips';
 import { colourForOption, needsOutline } from '@/features/aywebs/optionColour';
-import { imageForSelectedColor } from '@/features/aywebs/variantImage';
+import { preferredVariantImage } from '@/features/aywebs/variantImage';
 import { quantityLimit, selectionQuote, type AvailabilityState } from '@/features/aywebs/selectionQuote';
 import { lacksServerQuote, preferServerQuote, quoteReadPlan } from '@/features/aywebs/priceFallback';
 import { ayWebsSameAttribute as sameAttribute } from '@/features/aywebs/attributeKeys';
@@ -647,6 +647,7 @@ export function AddToCartSheet({
         priceFrom: published?.priceFrom === true || serverQuote?.priceFrom === true,
         unavailable,
         available: published?.state === 'AVAILABLE' || serverQuote?.availability === 'AVAILABLE' || availability === 'AVAILABLE',
+        stock: published?.stock ?? null,
       };
     });
     return { key, groupName, label, kind: choiceGroupKind(groupName), values };
@@ -1015,7 +1016,8 @@ export function AddToCartSheet({
   const totalLine = resolvedTotalTnd != null ? tndText(resolvedTotalTnd) : '';
   const displayedTndLine = quantity > 1 && totalLine ? totalLine : sourceLine;
   const title = added?.item.title || product.title;
-  const selectedColorImage = imageForSelectedColor(fields, selection) || quote.image || '';
+  // Prefer the exact combination's published image over a color swatch thumbnail.
+  const selectedColorImage = preferredVariantImage(quote.image, fields, selection) || '';
   /* الصورة الرئيسية تتبع لون المنتج المختار داخل نفس الورقة؛ fallback للصورة
      الأصلية فقط إذا التاجر ما نشرش صورة مرتبطة باللون. */
   const imageUri = readOnlySelection
@@ -1356,10 +1358,10 @@ export function AddToCartSheet({
               </Pressable>
             </View>
           ) : (
-            fields.map((field) => field.kind === 'color' || field.kind === 'size' || (field.kind === 'type' && field.values.length <= 12) ? (
+            fields.map((field) => field.kind === 'color' ? (
               <VariantOptionChips
                 key={field.key}
-                kind={field.kind === 'color' ? 'color' : 'size'}
+                kind="color"
                 label={field.label}
                 value={selection[field.key] ?? ''}
                 options={field.values}

@@ -16,3 +16,13 @@ export function imageForSelectedColor(
   const image = color.values.find((option) => option.value.trim().toLowerCase() === selected.toLowerCase())?.image;
   return typeof image === 'string' && image.trim() ? image.trim() : null;
 }
+
+/** Prefer an exact-combination image over a potentially tiny color swatch. */
+export function preferredVariantImage(
+  exactImage: string | null | undefined,
+  groups: readonly VariantImageGroup[],
+  selection: Readonly<Record<string, string>>,
+): string | null {
+  const exact = typeof exactImage === 'string' ? exactImage.trim() : '';
+  return exact || imageForSelectedColor(groups, selection);
+}

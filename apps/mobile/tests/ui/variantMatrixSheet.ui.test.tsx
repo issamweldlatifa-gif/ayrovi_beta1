@@ -334,8 +334,10 @@ describe('AddToCartSheet — Matrice de Prix des Variantes en mémoire', () => {
     expect(mockResolveWithCapture.mock.calls.length).toBe(1);
 
     /* 2. Bascule Âge -> 8-9Y puis Type -> Doublé Polaire : mise à jour 0 ms vers 118.90 TND et ZÉRO requête réseau ! */
-    fireEvent.press(screen.getByRole('button', { name: /8-9Y/i }));
-    fireEvent.press(screen.getByRole('button', { name: /Doublé Polaire/i }));
+    fireEvent.press(screen.getByTestId('aywebs-choice-âge'));
+    fireEvent.press(screen.getByTestId('aywebs-choice-âge-8-9Y'));
+    fireEvent.press(screen.getByTestId('aywebs-choice-type'));
+    fireEvent.press(screen.getByTestId('aywebs-choice-type-Doublé Polaire'));
     expect(screen.getAllByText(/118[.,]90/).length).toBeGreaterThan(0);
     expect(mockResolveWithCapture.mock.calls.length).toBe(1);
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { imageForSelectedColor } from '@/features/aywebs/variantImage';
+import { imageForSelectedColor, preferredVariantImage } from '@/features/aywebs/variantImage';
 
 describe('AYWEBs image follows selected color', () => {
   const groups = [{
@@ -23,4 +23,10 @@ describe('AYWEBs image follows selected color', () => {
     expect(imageForSelectedColor(groups, {})).toBeNull();
     expect(imageForSelectedColor([{ key: 'size', kind: 'size', values: [{ value: 'M', image: 'https://images.example/m.jpg' }] }], { size: 'M' })).toBeNull();
   });
+  it('prefers the exact combination image to a color thumbnail without fabricating URLs', () => {
+    expect(preferredVariantImage('https://images.example/full.jpg', groups, { color: 'Ruby Red' })).toBe('https://images.example/full.jpg');
+    expect(preferredVariantImage(null, groups, { color: 'Ruby Red' })).toBe('https://images.example/ruby.jpg');
+    expect(preferredVariantImage(null, groups, { color: 'Camel' })).toBeNull();
+  });
+
 });
