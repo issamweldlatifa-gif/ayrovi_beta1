@@ -10,7 +10,7 @@
  * `["CARD","FLOUCI","BANK_TRANSFER","POSTE"]`. Conséquence : l'Admin recevait
  * « Les paiements autorisés sont COD, D17 et FLOUCI » en enregistrant la valeur
  * que le produit affiche lui-même, et la SEULE alternative acceptée retirait le
- * paiement par carte — donc la passerelle Konnect configurée.
+ * paiement par carte — donc la passerelle Stripe configurée.
  *
  * Le paiement à la livraison manquait aussi à la valeur semée, alors que le
  * journal des changements l'annonçait comme ajouté : une boutique neuve
