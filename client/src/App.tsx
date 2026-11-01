@@ -237,7 +237,10 @@ export const App: React.FC = () => {
         }
         if (customerAuthResult || cardPaymentReturn) {
           const url = new URL(window.location.href);
-          ['customerAuth','cardPayment','orderId','transaction'].forEach((key) => url.searchParams.delete(key));
+          // `session_id` est ajouté par Stripe au retour Checkout : il ne sert qu'à
+          // la vérification serveur (qui lit la transaction en base), il ne doit
+          // pas rester dans l'URL que le client peut copier ou partager.
+          ['customerAuth','cardPayment','orderId','transaction','session_id'].forEach((key) => url.searchParams.delete(key));
           replaceUrlPreservingNavigation(`${url.pathname}${url.search}${url.hash}`);
         }
         setIsCustomerSessionLoading(false);
