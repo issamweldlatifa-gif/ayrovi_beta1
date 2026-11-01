@@ -50,7 +50,8 @@
     "verify:setup": "npx playwright install --with-deps chromium firefox",
     "android:check": "node scripts/check-android-shell.mjs",
     "android:apk": "cd android && ./gradlew :app:assembleDebug",
-    "verify:aywebs-latency": "node scripts/aywebs-latency-probe.mjs"
+    "verify:aywebs-latency": "node scripts/aywebs-latency-probe.mjs",
+    "check:stripe": "node scripts/check-stripe.mjs"
   },
   "keywords": [
     "ayrovi",

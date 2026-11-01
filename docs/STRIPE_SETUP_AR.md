@@ -25,7 +25,7 @@
 | `STRIPE_SECRET_KEY` | Dashboard → Developers → API keys → Secret key | `sk_test_51...` / `sk_live_51...` |
 | `STRIPE_WEBHOOK_SECRET` | Dashboard → Developers → Webhooks → (endpoint) → Signing secret | `whsec_...` |
 | `STRIPE_CURRENCY` | اختياري، افتراضي `eur` | `eur` / `usd` |
-| `PUBLIC_BASE_URL` | أصل الموقع النهائي https | `https://ayrovi.tn` |
+| `PUBLIC_BASE_URL` | أصل الموقع النهائي https (نفس الدومين اللي في Render) | `https://ayrovi-beta1-moo8.onrender.com` |
 
 ⚠️ **عمرك** تحطّ `STRIPE_SECRET_KEY` في متغيّر يبدا بـ`VITE_`: كل `VITE_*` يوصل للمتصفّح.
 
@@ -34,9 +34,9 @@
 ## 3) إنشاء Webhook
 
 1. Dashboard → **Developers → Webhooks → Add endpoint**
-2. Endpoint URL:
+2. Endpoint URL (الدومين الحالي):
    ```
-   https://<DOMAIN>/api/customer/payments/stripe/webhook
+   https://ayrovi-beta1-moo8.onrender.com/api/customer/payments/stripe/webhook
    ```
 3. Events (زوز برك):
    - `checkout.session.completed`
@@ -67,7 +67,24 @@ return Math.round((amountTnd / Number(process.env.STRIPE_FX_TND_PER_EUR || 3.4))
 
 ---
 
-## 5) التحقّق من التركيب
+## 5) تحقّق قبل ما تنشر — `npm run check:stripe`
+
+```bash
+npm run check:stripe                 # يقرا .env، ويسأل Stripe على المفتاح
+npm run check:stripe -- --no-network # بلا شبكة (CI)
+```
+
+يعطيك:
+- ✔/✘ لكل متغيّر (بلا ما يوري المفتاح — غير بصمة قصيرة)
+- كان `STRIPE_SECRET_KEY` صحيحة فعلاً (نداء حقيقي لـ`/v1/balance`)
+- **الـURL الجاهز** اللي تكتبو في Dashboard → Webhooks
+- كان الدومين في `PUBLIC_BASE_URL` يطابق اللي غادي تركّب فيه الويب-هوك
+
+> مثال للدومين الحالي: `https://ayrovi-beta1-moo8.onrender.com/api/customer/payments/stripe/webhook`
+
+---
+
+## 6) التحقّق من التركيب
 
 ```bash
 # 1. هل البوّابة "جاهزة" عند الخادم؟
@@ -87,7 +104,7 @@ sqlite3 data/qatafo.sqlite "SELECT transaction_number,provider,status,provider_r
 
 ---
 
-## 6) نقاط النهاية المتوفّرة
+## 7) نقاط النهاية المتوفّرة
 
 | الطريقة | المسار | الدور |
 |---|---|---|
@@ -99,7 +116,7 @@ sqlite3 data/qatafo.sqlite "SELECT transaction_number,provider,status,provider_r
 
 ---
 
-## 7) ترحيل تلقائي من Konnect
+## 8) ترحيل تلقائي من Konnect
 
 في أول إقلاع بعد التحديث، الخادم يصلّح وحدو أي معاملة Konnect بقيت `PENDING`:
 
@@ -114,7 +131,7 @@ payment_transactions.provider='KONNECT' AND status='PENDING'
 
 ---
 
-## 8) الأخطاء المتوقّعة
+## 9) الأخطاء المتوقّعة
 
 | الرمز/الرسالة | المعنى | الحل |
 |---|---|---|
