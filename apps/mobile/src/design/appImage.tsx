@@ -15,9 +15,12 @@
  * `resizeMode` de React Native devient `contentFit` (même vocabulaire qu'Expo).
  */
 import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { Image as ExpoImage, type ImageStyle } from 'expo-image';
 import { StyleSheet, View, type StyleProp } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { computeImageCacheStamp, reconcileImageCacheStamp } from './imageCacheGuard';
 import { useTheme } from './theme';
 import { useT } from '@/i18n';
 
@@ -47,13 +50,59 @@ export interface AppImageProps {
    * voile » quand la fiche produit monte dessus (référence Zalando, 17/10/2026).
    * 0 = nette. La valeur est choisie par l'appelant, jamais devinée ici.
    */
+  /**
+   * Teinte de la plaque sous l'image, pendant le chargement. `null` = aucune
+   * plaque : indispensable pour une image à FOND TRANSPARENT (le mot-symbole),
+   * sinon le gris du cadre se voit autour du logo (constaté le 27/10/2026).
+   */
+  background?: string | null;
+  /** Teinte native (`expo-image`) pour les pictogrammes/mots-symboles monochromes. */
+  tintColor?: string | null;
+  /**
+   * Clé de recyclage native (`expo-image`) : vide immédiatement l'ancien bitmap
+   * lorsqu'une cellule recyclée change d'élément (boutique, produit, catégorie).
+   */
+  recyclingKey?: string | null;
   blurRadius?: number;
+  /** Désactive le sous-échantillonnage bitmap natif pour les photos plein cadre. */
+  highRes?: boolean;
+  /**
+   * Appelé UNE fois quand l'image a définitivement échoué (après tous les
+   * replis). Sert aux pastilles de variante : plutôt qu'un cadre cassé, elles
+   * affichent la couleur de l'article.
+   */
+  onError?: () => void;
   testID?: string;
+}
+
+let bootCacheCheckStarted = false;
+
+/**
+ * Purge une seule fois par lancement le cache disque `expo-image` lorsque la
+ * binaire APK/IPA a changé (évite toute collision d'anciens `R.drawable`).
+ */
+export function useImageCacheGuard(): void {
+  useEffect(() => {
+    if (bootCacheCheckStarted) return;
+    bootCacheCheckStarted = true;
+    const stamp = computeImageCacheStamp({
+      version: Constants.expoConfig?.version ?? null,
+      androidVersionCode: Constants.expoConfig?.android?.versionCode ?? null,
+      iosBuildNumber: Constants.expoConfig?.ios?.buildNumber ?? null,
+      buildStamp: process.env.EXPO_PUBLIC_BUILD_STAMP ?? null,
+    });
+    void reconcileImageCacheStamp({
+      stamp,
+      storage: AsyncStorage,
+      clearDiskCache: typeof ExpoImage.clearDiskCache === 'function' ? () => ExpoImage.clearDiskCache() : null,
+      clearMemoryCache: typeof ExpoImage.clearMemoryCache === 'function' ? () => ExpoImage.clearMemoryCache() : null,
+    });
+  }, []);
 }
 
 export function AppImage({
   uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', style,
-  accessibilityLabel, decorative = false, blurRadius = 0, onSettled, testID,
+  accessibilityLabel, decorative = false, background, tintColor, recyclingKey, blurRadius = 0, highRes = false, onSettled, onError, testID,
 }: AppImageProps) {
   const theme = useTheme();
   const t = useT();
@@ -78,6 +127,7 @@ export function AppImage({
       return;
     }
     setFailed(true);
+    onError?.();
     onSettled?.();
   };
 
@@ -102,18 +152,35 @@ export function AppImage({
     );
   }
 
+  const effectiveRecyclingKey =
+    recyclingKey !== undefined
+      ? (recyclingKey ?? undefined)
+      : localSource != null
+        ? `local:${String(localSource)}`
+        : (activeUri ?? undefined);
+
   return (
     <ExpoImage
       testID={testID}
       source={localSource ?? { uri: activeUri as string }}
       contentFit={contentFit}
-      transition={theme.duration.fast}
+      /* Un `localSource` (`require(...)`) est déjà embarqué dans l'APK : le mettre
+         sur disque dans Glide (`CachePolicy.DISK` par défaut) est inutile et crée
+         des collisions d'entiers `R.drawable` entre deux builds de même
+         `versionCode`. `'memory'` active `DiskCacheStrategy.NONE` tout en gardant
+         le bitmap décodé en RAM pour le défilement. */
+      cachePolicy={localSource != null ? 'memory' : 'memory-disk'}
+      allowDownscaling={highRes ? false : undefined}
+      priority={highRes ? 'high' : undefined}
+      recyclingKey={effectiveRecyclingKey}
+      tintColor={tintColor ?? undefined}
+      transition={localSource != null ? 0 : theme.duration.fast}
       blurRadius={blurRadius}
       onError={onLoadError}
       onLoad={() => onSettled?.()}
       accessibilityElementsHidden={decorative}
       accessibilityLabel={decorative ? undefined : accessibilityLabel}
-      style={[{ backgroundColor: theme.colors.line }, style]}
+      style={[{ backgroundColor: background === null ? 'transparent' : (background ?? theme.colors.line) }, style]}
     />
   );
 }

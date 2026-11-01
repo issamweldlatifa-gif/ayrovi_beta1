@@ -34,7 +34,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.23.4
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
 
@@ -42,6 +42,9 @@ jobs:
       # stricte d'npm 10 échoue sur le graphe de pairs Expo + vitest.
       - name: Install
         run: npm ci
+
+      - name: Block high-severity dependency advisories
+        run: npm audit --audit-level=high
 
       # Les jetons de conception sont générés depuis l'identité du site : s'ils
       # sont périmés, l'application affiche une palette qui n'est plus celle du

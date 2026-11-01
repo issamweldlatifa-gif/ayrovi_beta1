@@ -215,11 +215,14 @@ describe('AYWEBs — le cache ne sert jamais une vérification', () => {
     expect(initial.product.price).toBe(39.99);
 
     // Le prix change entre l'affichage de la fiche et le nouvel Add.
+    // Réutiliser l'URL canonique renvoyée par le serveur : l'API refuse les
+    // URLs fournies par le client qui ne correspondent pas à l'identité résolue.
+    const resolvedSourceUrl = initial.product.sourceUrl;
     const currentSource = fakeScraper({ price: 59.99 });
-    h.scrapeProduct.mockResolvedValue(await currentSource.scrapeProduct(SHEIN_URL));
+    h.scrapeProduct.mockResolvedValue(await currentSource.scrapeProduct(resolvedSourceUrl));
     const added = await addAyWebsCartItem(h.resolver, {
       sessionId: SESSION_ID, accountId: null,
-      productId: initial.productId, sourceUrl: SHEIN_URL, storeId: 'shein', quantity: 1,
+      productId: initial.productId, sourceUrl: resolvedSourceUrl, storeId: 'shein', quantity: 1,
     });
 
     expect(h.scrapeProduct).toHaveBeenCalledTimes(2);

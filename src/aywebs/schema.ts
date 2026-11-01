@@ -604,6 +604,13 @@ export function ensureAyWebsSchema(db: QatafoDatabase): void {
     if (!columns.includes('shipping_address')) {
       db.run("ALTER TABLE ayweb_orders ADD COLUMN shipping_address TEXT NOT NULL DEFAULT '{}'");
     }
+    // Politique ما بعد الدفع : échéance du procurement (carte = immédiat, virement = +24 h après le justificatif).
+    if (!columns.includes('purchase_due_at')) {
+      db.run("ALTER TABLE ayweb_orders ADD COLUMN purchase_due_at TEXT NOT NULL DEFAULT ''");
+    }
+    if (!columns.includes('proof_submitted_at')) {
+      db.run("ALTER TABLE ayweb_orders ADD COLUMN proof_submitted_at TEXT NOT NULL DEFAULT ''");
+    }
     // 03/10/2026 — état produit (neuf/occasion) publié par la source.
     const productColumns = db.all<{ name: string }>("PRAGMA table_info(ayweb_products)").map((row) => row.name);
     if (!productColumns.includes('condition')) {

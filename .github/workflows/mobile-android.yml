@@ -56,8 +56,53 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ── PORTE ──────────────────────────────────────────────────────────────────
+  # Pourquoi ce job existe (leçon du 25/10/2026) : l'APK était construit sans
+  # qu'aucun test ne garde la sortie. Une erreur d'ordre des hooks dans la fiche
+  # produit a donc été EMBARQUÉE dans une version livrée — l'application se
+  # fermait à chaque ouverture d'un produit, et rien dans la CI ne l'avait vu.
+  #
+  # Cette porte est un job SÉPARÉ et `apk` en dépend : un test rouge arrête la
+  # chaîne AVANT les 26 minutes de Gradle, et aucun APK n'est publié. Les
+  # contrôles sont exactement ceux de `mobile.yml` (typecheck, jetons, tests) —
+  # dupliqués ici parce que GitHub ne permet pas de dépendre d'un autre
+  # workflow ; la duplication est assumée et minime (quatre commandes).
+  gates:
+    name: Porte — typecheck · jetons · tests (aucun APK si rouge)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+          cache: npm
+          cache-dependency-path: apps/mobile/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Block high-severity dependency advisories
+        run: npm audit --audit-level=high
+
+      - name: Design tokens à jour
+        run: npm run tokens:check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests (logique, design system, ordre des hooks, montants)
+        run: npm test
+
+      - name: Tests composants (écrans réels, données pauvres incluses)
+        run: npm run test:ui
+
   apk:
     name: APK démo (release, signé debug)
+    needs: gates
     runs-on: ubuntu-latest
     permissions:
       # `contents: write` : le job réécrit la mesure (APK_SIZES.md) dans le
@@ -75,7 +120,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22.23.4
           cache: npm
           cache-dependency-path: apps/mobile/package-lock.json
 
@@ -178,15 +223,28 @@ jobs:
 
       - name: Identifiant + libellé de la démo (dans la CI uniquement)
         working-directory: apps/mobile/android
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           set -euo pipefail
+          # `versionCode` strictement croissant pour `app.ayrovi.mobile.demo` :
+          # sur Android, Glide signe son cache disque de `R.drawable.*` avec
+          # `PackageInfo.versionCode` uniquement (`ApplicationVersionSignature`).
+          # Si deux APK démo gardent le même `versionCode` alors qu'un visuel a
+          # été ajouté/retiré sous `assets/`, les entiers `R.drawable` se
+          # décalent et Glide sert les anciens logos inversés. Ce code monotone
+          # (> 15, distinct à chaque run/tentative) invalide nativement le cache.
+          DEMO_VERSION_CODE=$(( (100000 + ${RUN_NUMBER:-1}) * 10 + ${RUN_ATTEMPT:-1} ))
           sed -i "s/applicationId 'app.ayrovi.mobile'/applicationId 'app.ayrovi.mobile.demo'/" app/build.gradle
+          sed -i -E "s/versionCode[[:space:]]+[0-9]+/versionCode ${DEMO_VERSION_CODE}/" app/build.gradle
           sed -i 's|<string name="app_name">ZAYROVI</string>|<string name="app_name">ZAYROVI Démo</string>|' app/src/main/res/values/strings.xml
           # Vérification réelle : si le motif avait changé, on échoue AU LIEU de
           # produire un APK qui écraserait l'application installée.
           grep -q "applicationId 'app.ayrovi.mobile.demo'" app/build.gradle
+          grep -q "versionCode ${DEMO_VERSION_CODE}" app/build.gradle
           grep -q '<string name="app_name">ZAYROVI Démo</string>' app/src/main/res/values/strings.xml
-          grep -n "applicationId" app/build.gradle
+          grep -n "applicationId\|versionCode" app/build.gradle
           grep -n "app_name" app/src/main/res/values/strings.xml
 
       # `assembleRelease` produit un APK AUTONOME (bundle JS embarqué), signé
@@ -261,6 +319,46 @@ jobs:
           # CI se perdent, les artefacts expirent au bout de 30 jours. La
           # publier la rend vérifiable par un simple `git pull` — pour nous
           # comme pour la personne qui relit.
+          # PROFIL DU POIDS — d'où viennent les ~125 Mo ?
+          #
+          # Décider d'alléger un APK sans mesurer ce qu'il contient, c'est
+          # supprimer au hasard (une police ici, une image là) en espérant
+          # tomber juste. On publie donc la RÉPARTITION par famille de
+          # fichiers, calculée depuis l'APK lui-même : `lib/<abi>/` (deux
+          # architectures = deux fois les bibliothèques natives), `assets/`
+          # (bundle JS, polices, images embarquées), `classes*.dex`, `res/`.
+          #
+          # `unzip -l` ne demande aucune signature : lecture seule, à froid.
+          profile_apk() {
+            local apk="$1"
+            # PIÈGE MESURÉ (26/10/2026) : `unzip -l` termine par une ligne de
+            # synthèse (« 12345678   143 files ») dont la PREMIÈRE colonne est un
+            # nombre. Filtrer sur `$1` la comptait donc comme une entrée : elle
+            # s'ajoutait à « autre » et le TOTAL doublait (278,4 Mo annoncés pour
+            # un APK de 125 M). Le seul discriminant sûr est la colonne heure
+            # (`HH:MM`) — une entrée en a toujours une, la synthèse jamais.
+            # Les ABI sont nommées d'après le chemin (`lib/<abi>/…`) au lieu
+            # d'une liste écrite à la main : `lib/x86_64` existait sans qu'on le
+            # voie, caché dans « lib/autre ».
+            unzip -l "$apk" | awk '
+              NR > 3 && NF >= 4 && $3 ~ /^[0-9][0-9]:[0-9][0-9]$/ {
+                path = $4
+                bytes = $1
+                family = "autre"
+                if (path ~ /^lib\/[^/]+\//) { split(path, parts, "/"); family = "lib/" parts[2] }
+                else if (path ~ /^assets\//) family = "assets/"
+                else if (path ~ /^res\//) family = "res/"
+                else if (path ~ /^classes[0-9]*\.dex$/) family = "classes.dex"
+                else if (path ~ /^META-INF\//) family = "META-INF/"
+                total[family] += bytes
+                sum += bytes
+              }
+              END {
+                for (f in total) printf "%s\t%d\n", f, total[f]
+                printf "TOTAL\t%d\n", sum
+              }' | sort -t "$(printf '\t')" -k2 -rn
+          }
+
           REPORT="${{ github.workspace }}/apps/mobile/APK_SIZES.md"
           {
             echo "# Tailles d'APK — mesurées"
@@ -275,6 +373,22 @@ jobs:
             echo "|---|---|"
             for apk in "${APKS[@]}"; do
               echo "| $(basename "$apk") | $(du -h "$apk" | cut -f1) |"
+            done
+            for apk in "${APKS[@]}"; do
+              echo
+              echo "## Profil du poids — $(basename "$apk")"
+              echo
+              echo "> Somme des entrées **décompressées**. La ligne « fichier » ci-dessus"
+              echo "> donne le poids du ZIP : c'est lui qu'on télécharge, l'autre dit où partir"
+              echo "> pour l'alléger."
+              echo
+              echo "| famille | poids |"
+              echo "|---|---|"
+              profile_apk "$apk" | while IFS=$'\t' read -r family bytes; do
+                [ -z "$family" ] && continue
+                human=$(awk -v b="$bytes" 'BEGIN { printf "%.1f Mo", b/1048576 }')
+                echo "| $family | $human |"
+              done
             done
           } > "$REPORT"
           echo "--- rapport écrit : $REPORT ---"

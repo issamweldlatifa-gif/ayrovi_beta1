@@ -44,6 +44,15 @@ type Mode = 'start' | 'phone' | 'password' | 'register';
 /** Forme minimale d'une adresse : le serveur fait foi, ceci évite un aller-retour inutile. */
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
+/**
+ * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
+ * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
+ * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
+ * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
+ * vérifié par `tests/error-boundary-coverage.test.ts`.
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
 export default function SignInScreen() {
   const theme = useTheme();
   const { gutter } = useResponsive();
@@ -354,7 +363,7 @@ export default function SignInScreen() {
           onPress={() => goBack('/')}
           style={[styles.close, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
         >
-          <Ionicons name="close" size={26} color={theme.colors.ink} accessibilityElementsHidden />
+          <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
 
         <AppText variant="title">{heading.title}</AppText>
@@ -601,7 +610,7 @@ export default function SignInScreen() {
             >
               <Ionicons
                 name={marketing ? 'checkbox' : 'square-outline'}
-                size={22}
+                size={theme.iconSize.sm}
                 color={marketing ? theme.colors.accentText : theme.colors.muted}
                 accessibilityElementsHidden
               />
@@ -698,7 +707,7 @@ function RememberedAccountButton({ account, label, busy, disabled, onPress }: {
           // Même rôle que le bouton principal : violet plein, plus profond à l'appui.
           backgroundColor: pressed ? theme.colors.actionHover : theme.colors.action,
           flexDirection: rowDirectionFor(theme.isRTL),
-          opacity: disabled && !busy ? 0.5 : 1,
+          opacity: disabled && !busy ? theme.opacity.disabled : 1,
         },
       ]}
     >

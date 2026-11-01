@@ -26,7 +26,7 @@ vi.mock('react-native', () => ({ Platform: { OS: 'android' } }));
 
 import { BRAND, BRAND_SHARE, COLORS, NEUTRALS } from '../src/design/tokens.generated';
 import {
-  GOOGLE_BRAND, LENS_COLORS, STATUS, derivedColors, frost, veil,
+  COMMERCE, GOOGLE_BRAND, LENS_COLORS, STATUS, derivedColors, frost, veil,
 } from '../src/design/tokens.mobile';
 
 const ROOT = path.resolve(__dirname, '..');
@@ -340,7 +340,7 @@ describe('plus d’orange dans l’application', () => {
   it('aucune couleur orangée dans les jetons (palette, statuts, Lens, attente, dérivées)', () => {
     const palette = JSON.parse(fs.readFileSync(path.join(ROOT, 'src/design/brand.json'), 'utf8'));
     const all = [
-      ...hexesIn(palette), ...hexesIn(COLORS), ...hexesIn(STATUS), ...hexesIn(LENS_COLORS),
+      ...hexesIn(palette), ...hexesIn(COLORS), ...hexesIn(STATUS), ...hexesIn(LENS_COLORS), ...hexesIn(COMMERCE),
       ...hexesIn(derivedColors(COLORS.light)), ...hexesIn(derivedColors(COLORS.dark)),
     ];
     expect(all.length).toBeGreaterThan(40);
@@ -349,8 +349,18 @@ describe('plus d’orange dans l’application', () => {
 
   it('aucune couleur orangée écrite dans le code (seule exception : le logo Google, imposé par Google)', () => {
     const allowed = new Set(Object.values(GOOGLE_BRAND).map(upper));
+    /**
+     * DONNÉES, pas palette : `optionColour.ts` traduit le nom de couleur d'un
+     * article publié par le marchand (« Brown », « Orange », « Gold ») en
+     * pastille, quand aucune photo n'existe. Un jean marron reste marron ; ces
+     * teintes ne peignent jamais un bouton, un fond, un statut ou un texte —
+     * l'orange de MARQUE reste banni, et ce fichier n'est importé que par les
+     * pastilles de variante.
+     */
+    const dataColourModules = new Set(['src/features/aywebs/optionColour.ts']);
     const offenders: string[] = [];
     for (const rel of [...sources('app'), ...sources('src')]) {
+      if (dataColourModules.has(rel)) continue;
       const text = code(rel);
       for (const match of text.matchAll(HEX)) {
         const value = upper(match[0]);
@@ -422,7 +432,7 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
   it('le bouton par défaut n’est plus violet : `main` est une décision explicite', () => {
     const ui = read('src/design/ui.tsx');
     expect(ui).toMatch(/tone = 'solid'/);
-    expect(ui).toMatch(/tone\?: 'main' \| 'solid' \| 'quiet'/);
+    expect(ui).toMatch(/tone\?: 'main' \| 'commerce' \| 'solid' \| 'quiet'/);
   });
 
   it('seules les actions d’achat et de connexion portent tone="main"', () => {
@@ -432,14 +442,24 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
       if (n) counts[rel] = n;
     }
     expect(counts).toEqual({
-      'app/(tabs)/cart.tsx': 1,            // passer à la caisse
       'app/checkout.tsx': 1,               // valider la commande
       'app/forgot.tsx': 1,                 // envoyer le lien de réinitialisation
-      'app/product/[id].tsx': 1,           // ajouter au panier
+      // `app/product/[id].tsx` et `app/(tabs)/cart.tsx` portent un CTA **noir**
+      // compact (tone="solid") selon le gabarit officiel Zalando / Bag.
       'app/sign-in.tsx': 6,                // une validation par étape de connexion
-      'src/features/lens/LensProductView.tsx': 2, // ajouter au panier · voir le panier
+      'src/features/lens/LensProductView.tsx': 1, // ajouter au panier (voir le panier -> tone="solid" dans la feuille compacte)
       'src/features/lens/ocerex/OcerexFlow.tsx': 1, // confirmer la commande OCEREX
     });
+  });
+
+  it('AYWEBs uses its approved yellow purchase CTA and selection accents only', () => {
+    const browser = read('app/aywebs/browser.tsx');
+    const sheet = read('src/features/aywebs/AddToCartSheet.tsx');
+    const choices = read('src/features/aywebs/ChoiceField.tsx');
+    expect(browser).toContain('tone="commerce"');
+    expect(sheet).toContain('tone="commerce"');
+    expect(choices).toContain('COMMERCE.action');
+    expect(COMMERCE.action).toBe('#FFD60A');
   });
 
   it('choix sélectionnés : violet clair + contour violet + texte noir (plus de pastille violette pleine)', () => {

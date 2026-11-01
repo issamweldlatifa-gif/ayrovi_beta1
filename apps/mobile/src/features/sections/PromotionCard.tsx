@@ -15,6 +15,7 @@ import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import type { Promotion } from '@/api/sections';
+import { formatAmount } from '@/format/money';
 
 /**
  * النصّ فوق البنفسجي ZAYROVI (نفس قرار `StoryCard`): أبيض (`onAccent`) — تباين
@@ -40,7 +41,7 @@ export function PromotionCard({ promotion, onOpen }: PromotionCardProps) {
 
   const discount =
     promotion.discountType === 'FIXED'
-      ? t('sections.discountAmount', { value: promotion.value.toFixed(2) })
+      ? t('sections.discountAmount', { value: formatAmount(promotion.value) })
       : t('sections.discountPercent', { value: String(Math.round(promotion.value)) });
 
   const ends = shortDate(promotion.endsAt);

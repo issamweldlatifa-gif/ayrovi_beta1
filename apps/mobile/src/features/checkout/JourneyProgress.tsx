@@ -16,6 +16,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { RADIUS } from '@/design/tokens.mobile';
 
 export interface JourneyStep {
   id: string;
@@ -62,9 +63,9 @@ export function JourneyProgress({
                 {done ? (
                   // Coche posée sur le VERT de succès : `canvas` (blanc en clair, noir en
                   // sombre) garde ≥ 4,5:1 dans les deux modes — `onAccent` est réservé au violet.
-                  <Ionicons name="checkmark" size={14} color={theme.colors.canvas} />
+                  <Ionicons name="checkmark" size={theme.iconSize.xs} color={theme.colors.canvas} />
                 ) : (
-                  <Ionicons name={step.icon} size={14} color={current ? theme.status.info.fg : theme.colors.muted} />
+                  <Ionicons name={step.icon} size={theme.iconSize.xs} color={current ? theme.status.info.fg : theme.colors.muted} />
                 )}
               </View>
               <AppText variant="caption" weight={current ? 'bold' : 'regular'} color={labelColor} numberOfLines={1}>
@@ -89,7 +90,7 @@ const styles = StyleSheet.create({
   dot: {
     width: 26,
     height: 26,
-    borderRadius: 999,
+    borderRadius: RADIUS.full,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',

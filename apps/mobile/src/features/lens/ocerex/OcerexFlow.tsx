@@ -29,6 +29,8 @@ import { ApiError } from '@/api/errors';
 import {
   afterAnalyze, errorCopy, isHttpUrl, type OcerexStep,
 } from './ocerexFlow';
+import { formatAmount, formatMoney } from '@/format/money';
+import { RADIUS } from '@/design/tokens.mobile';
 
 const HIT_SLOP = { top: 12, bottom: 12, left: 12, right: 12 } as const;
 
@@ -203,7 +205,7 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
   return (
     <View style={styles.wrap}>
       <View style={styles.header}>
-        <Ionicons name="camera-outline" size={24} color={theme.colors.ink} />
+        <Ionicons name="camera-outline" size={theme.iconSize.md} color={theme.colors.ink} />
         <AppText>{t('ocerex.title')}</AppText>
         <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel={t('sheet.close')} hitSlop={HIT_SLOP} testID="ocerex-close">
           <AppText variant="caption" color={theme.colors.muted}>{t('sheet.close')}</AppText>
@@ -286,7 +288,7 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
           <KeyRow label={t('ocerex.summary.source')} value={extraction.resolved?.platform || extraction.platform || '—'} />
           <KeyRow label={t('ocerex.summary.link')} value={extraction.resolved?.url || extraction.sourceUrl || '—'} />
           <KeyRow label={t('ocerex.summary.referencePrice')} value={formatReference(extraction)} />
-          <KeyRow label={t('ocerex.summary.ayroviPrice')} value={formatTnd(extraction.ayroviPrice)} />
+          <KeyRow label={t('ocerex.summary.ayroviPrice')} value={formatMoney(extraction.ayroviPrice)} />
           <AppText variant="caption" color={theme.colors.muted}>{t('ocerex.summary.payNote')}</AppText>
           <Button label={t('ocerex.summary.confirm')} tone="main" onPress={onConfirmOrder} block disabled={busy} testID="ocerex-confirm" />
         </Card>
@@ -325,7 +327,7 @@ function ResultView({
     <Card>
       <AppText>{t('ocerex.result.title')}</AppText>
       <KeyRow label={t('ocerex.result.referencePrice')} value={formatReference(extraction)} />
-      <KeyRow label={t('ocerex.result.ayroviPrice')} value={formatTnd(extraction.ayroviPrice)} />
+      <KeyRow label={t('ocerex.result.ayroviPrice')} value={formatMoney(extraction.ayroviPrice)} />
       {extraction.productTitle ? <KeyRow label={t('ocerex.result.product')} value={extraction.productTitle} /> : null}
       <AppText variant="caption" color={theme.colors.muted}>{t('ocerex.result.linkPrompt')}</AppText>
       <Field
@@ -395,12 +397,11 @@ function KeyRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const formatTnd = (amount: number | null): string => (amount == null ? '—' : `${amount.toFixed(2)} TND`);
 
 function formatReference(extraction: OcerexExtraction): string {
-  if (extraction.referenceTnd != null) return `${extraction.referenceTnd.toFixed(2)} TND`;
+  if (extraction.referenceTnd != null) return `${formatMoney(extraction.referenceTnd)}`;
   if (extraction.referencePrice != null && extraction.currency) {
-    return `${extraction.referencePrice.toFixed(2)} ${extraction.currency}`;
+    return `${formatAmount(extraction.referencePrice)} ${extraction.currency}`;
   }
   return '—';
 }
@@ -408,6 +409,6 @@ function formatReference(extraction: OcerexExtraction): string {
 const styles = StyleSheet.create({
   wrap: { gap: 12 },
   header: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
-  camera: { width: '100%', aspectRatio: 3 / 4, borderRadius: 12, overflow: 'hidden' },
+  camera: { width: '100%', aspectRatio: 3 / 4, borderRadius: RADIUS.md, overflow: 'hidden' },
   keyRow: { gap: 2 },
 });

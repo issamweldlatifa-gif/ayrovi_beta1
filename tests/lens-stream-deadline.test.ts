@@ -23,12 +23,12 @@ describe('délai global de /analyze-image', () => {
   it('n’écrit plus rien après un délai dépassé', () => {
     expect(block.match(/if \(timedOut\) return;/g)?.length).toBeGreaterThanOrEqual(2);
   });
-  it('émet la progression : image lue, recherche, lecture des fiches', () => {
-    // L'identification voyage avec la première étape : la réponse en clair
-    // s'affiche avant la première fiche marchande.
+  it('émet image lue puis recherche, sans lecture groupée des fiches', () => {
     expect(block).toContain("emit('progress', { step: 'identified', identification })");
     expect(block).toContain("emit('progress', { step: 'searching' })");
-    expect(block).toContain("emit('progress', { step: 'reading', done: readyCount, total: candidates.length })");
+    expect(block).not.toContain("step: 'reading'");
+    expect(block).toContain('admitLensProductCandidates(rawCandidates, scraper, 24)');
+    expect(block).not.toContain('enrichCandidatesLiveStock');
   });
 });
 

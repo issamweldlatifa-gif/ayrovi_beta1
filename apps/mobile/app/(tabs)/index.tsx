@@ -53,6 +53,15 @@ function HeroStatusBar({ background }: { background: string | null }) {
  * La réserve haute est `insets.top + theme.chrome.header`, appliquée par la
  * primitive : l'en-tête transparent se superpose sans rien décaler.
  */
+/**
+ * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
+ * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
+ * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
+ * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
+ * vérifié par `tests/error-boundary-coverage.test.ts`.
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   // Couleur de la carte Hero active : le header la reprend (en haut de page).

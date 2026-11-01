@@ -1,0 +1,45 @@
+name: Security — dependency monitoring
+
+on:
+  push:
+    branches: [main, 'arena/**']
+    paths:
+      - 'package*.json'
+      - 'apps/mobile/package*.json'
+      - 'apps/mobile/scripts/patch-router-decoder.cjs'
+      - 'apps/mobile/tests/security-dependency-bridge.test.ts'
+      - '.nvmrc'
+      - 'render.yaml'
+      - 'scripts/check-node-security.cjs'
+      - '.github/workflows/**'
+  pull_request:
+  schedule:
+    - cron: '23 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  advisory-check:
+    name: Runtime, advisories and compatibility bridge
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Verify Node pin against Render and workflows
+        run: node scripts/check-node-security.cjs
+      - name: Audit server dependencies
+        run: npm audit --audit-level=high
+      - name: Install mobile dependencies and security backports
+        working-directory: apps/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Audit mobile dependencies
+        working-directory: apps/mobile
+        run: npm audit --audit-level=high
+      - name: Verify mobile security patches and compatibility
+        working-directory: apps/mobile
+        run: npx vitest run tests/security-dependency-bridge.test.ts

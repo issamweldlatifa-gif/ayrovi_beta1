@@ -24,6 +24,8 @@ export const STOREFRONT_CURRENCY = 'TND';
 export interface ProductSnapshot {
   id: string;
   name: string;
+  /** Marque du catalogue (`products.brand_name`). Absente ⇒ chaîne vide. */
+  brand?: string | null;
   image: string | null;
   status: string;
   final_price: number | null;
@@ -74,6 +76,8 @@ export function decideShoppable(
 export interface PublicLinkedProduct {
   id: string;
   name: string;
+  /** Marque : la carte l'affiche au-dessus du titre (vide = ligne absente). */
+  brand: string;
   image: string;
   price: number;
   currency: string;
@@ -95,6 +99,7 @@ export function publicLinkedProduct(
   return {
     id: product.id,
     name: product.name,
+    brand: typeof product.brand === 'string' ? product.brand.trim() : '',
     image: product.image || '',
     price: Number(product.final_price),
     currency: STOREFRONT_CURRENCY,
@@ -108,7 +113,8 @@ export function publicLinkedProduct(
  * (alias `lp_*`), puis sérialisé par `linkedProductFromJoin`.
  */
 export const LINKED_PRODUCT_JOIN_SELECT = `
-  p.id AS lp_id, p.name AS lp_name, p.image AS lp_image, p.status AS lp_status,
+  p.id AS lp_id, p.name AS lp_name, p.brand_name AS lp_brand_name,
+  p.image AS lp_image, p.status AS lp_status,
   p.final_price AS lp_final_price, p.stock_status AS lp_stock_status`;
 
 export function linkedProductFromJoin(row: Record<string, any>): PublicLinkedProduct | null {
@@ -116,6 +122,7 @@ export function linkedProductFromJoin(row: Record<string, any>): PublicLinkedPro
   return publicLinkedProduct(row.content_mode, {
     id: row.lp_id,
     name: row.lp_name,
+    brand: row.lp_brand_name,
     image: row.lp_image,
     status: row.lp_status,
     final_price: row.lp_final_price,

@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { ayWebsAlignAttributes } from '../../shared/aywebsAttributes';
 import type { QatafoDatabase } from '../db/database';
 import { calculatePrice, type PricingRules } from '../services/pricing';
 import { nextSequenceNumber } from '../erp-core/sequences';
@@ -379,8 +380,25 @@ export async function addAyWebsCartItem(
   const preliminaryPricing = priorProduct && preliminaryPrice > 0 && preliminaryCurrency
     ? calculatePrice(db.getPricingRules(), preliminaryPrice, preliminaryCurrency, { title: priorProduct.title })
     : null;
+  const rawCaptureGroups: Array<{ name: string; values: string[]; selected?: string[] }> =
+    Array.isArray((input.capture as any)?.variantGroups) ? (input.capture as any).variantGroups : [];
+  const captureGroupsForSplit = rawCaptureGroups
+    .filter((g) => g && g.name && Array.isArray(g.values) && g.values.length > 0)
+    .map((g) => ({
+      attribute: String(g.name).trim(),
+      label: String(g.name).trim(),
+      values: g.values.map((v) => String(v)),
+      required: g.values.length >= 2,
+    }));
+  const splitFromCapture = captureGroupsForSplit.length > 0
+    ? ayWebsSplitVariantSelection({ variantGroups: captureGroupsForSplit, variants: [] }, variantAttributes)
+    : null;
   const requestedVariantKey = priorProduct
-    ? ayWebsVariantKey(ayWebsSplitVariantSelection(priorProduct, variantAttributes).matching)
+    ? ayWebsVariantKey(
+        priorProduct.variantGroups.length > 0
+          ? ayWebsSplitVariantSelection(priorProduct, variantAttributes).matching
+          : (splitFromCapture?.matching || ayWebsSplitVariantSelection(priorProduct, variantAttributes).matching),
+      )
     : '';
   const quoteMatches = Boolean(
     quote && priorProduct && preliminaryDecision && preliminaryPricing
@@ -434,6 +452,8 @@ export async function addAyWebsCartItem(
 
   let product = priorProduct;
   let sourceReread = false;
+  let capturedSelection: AyWebsVariantSelection | null = null;
+  let capturedVariantGroups: Array<{ name: string; values: string[]; selected?: string[] }> = [];
   if (!quoteUsed) {
     const resolved = await resolveAyWebsProduct(deps, {
       url: sourceUrl,
@@ -445,8 +465,22 @@ export async function addAyWebsCartItem(
       refresh: true,
       capture: input.capture,
     });
+    capturedSelection = resolved.product.selectedVariant || null;
+    if (resolved.capture?.used && rawCaptureGroups.length > 0) {
+      capturedVariantGroups = rawCaptureGroups;
+    }
     product = readAyWebsProduct(db, resolved.productId);
     sourceReread = true;
+  } else if (priorProduct && priorProduct.variantGroups.length === 0 && rawCaptureGroups.length > 0) {
+    capturedVariantGroups = rawCaptureGroups;
+    if (splitFromCapture?.matching && Object.keys(splitFromCapture.matching).length > 0) {
+      capturedSelection = {
+        variantId: ayWebsVariantKey(splitFromCapture.matching),
+        attributes: splitFromCapture.matching,
+        quantity,
+        ...(splitFromCapture.metadata ? { metadata: splitFromCapture.metadata } : {}),
+      };
+    }
   }
   if (!product) throw new AyWebsDomainError('PRODUCT_NOT_FOUND');
 
@@ -460,13 +494,37 @@ export async function addAyWebsCartItem(
   }
 
   // 2. Variante : si le marchand publie des attributs, la sélection est exigée (§13).
+  //    Pour une fiche résolue par capture WebView (où `product.variantGroups` reste vide
+  //    en base afin de ne pas promettre le stock des combinaisons non lues), on vérifie
+  //    aussi que chaque groupe à choix multiples sans sélection sur la page a été choisi.
+  if (capturedVariantGroups.length > 0) {
+    const selectedAttrs = capturedSelection?.attributes || variantAttributes || {};
+    const missingCapturedGroup = capturedVariantGroups.find((grp) => {
+      if (!grp || !Array.isArray(grp.values) || grp.values.length < 2) return false;
+      const gName = String(grp.name || '').trim();
+      if (!gName) return false;
+      const { aligned } = ayWebsAlignAttributes([gName], selectedAttrs);
+      const chosenInSel = Object.keys(aligned).length > 0;
+      const chosenOnPage = (!variantAttributes || Object.keys(variantAttributes).length === 0)
+        && Array.isArray(grp.selected) && grp.selected.length > 0;
+      return !chosenInSel && !chosenOnPage;
+    });
+    if (missingCapturedGroup) {
+      throw new AyWebsDomainError('VARIANT_REQUIRED', {
+        technicalMessage: `missing_captured_variant_attribute:${String(missingCapturedGroup.name || '')}`.slice(0, 200),
+      });
+    }
+  }
   const decision = selectVariant(product, variantAttributes, quantity);
-  const selection = decision.selection;
+  const selection = decision.selection ?? (capturedSelection ? { ...capturedSelection, quantity } : null);
 
   // 3. Aucune ligne ne peut être ajoutée comme disponible sans preuve de stock.
   //    Seuls AVAILABLE/LOW_STOCK passent ; UNKNOWN et OUT_OF_STOCK sont bloqués.
   const availability = decision.availability;
   if (availability === 'OUT_OF_STOCK') {
+    const outCode = selection && String(decision.reason || '').startsWith('selection_option_out_of_stock')
+      ? 'VARIANT_UNAVAILABLE'
+      : 'OUT_OF_STOCK';
     emitAyWebsEvent(db, {
       event: 'AYWEB_VARIANT_UNAVAILABLE',
       resourceType: 'product',
@@ -474,7 +532,7 @@ export async function addAyWebsCartItem(
       accountId: input.accountId,
       payload: { storeId: store.id, variant: selection?.attributes || null, reason: decision.reason },
     });
-    throw new AyWebsDomainError('OUT_OF_STOCK', {
+    throw new AyWebsDomainError(outCode, {
       technicalMessage: `availability=OUT_OF_STOCK (${decision.reason})`,
     });
   }
@@ -891,6 +949,17 @@ export function selectVariant(
     });
   }
 
+  let unitPrice = Number.isFinite(Number(match.price)) && Number(match.price) > 0 ? Number(match.price) : null;
+  if (unitPrice !== null && quantity >= 2 && Array.isArray(match.quantityTiers) && match.quantityTiers.length > 0) {
+    let bestMin = 0;
+    for (const tier of match.quantityTiers) {
+      if (tier.minQuantity <= quantity && tier.minQuantity >= bestMin && Number(tier.unitPrice) > 0) {
+        bestMin = tier.minQuantity;
+        unitPrice = Number(tier.unitPrice);
+      }
+    }
+  }
+
   return {
     selection: {
       variantId: match.sourceVariantId || key,
@@ -900,7 +969,7 @@ export function selectVariant(
     },
     availability: match.availability,
     reason: match.availabilityReason || product.availability.reason,
-    price: Number.isFinite(Number(match.price)) && Number(match.price) > 0 ? Number(match.price) : null,
+    price: unitPrice,
     currency: match.currency ? String(match.currency).trim().toUpperCase() || null : null,
   };
 }
@@ -915,16 +984,27 @@ interface AyWebsStoredSourceQuote {
 /** Resolve the server-stored exact variant price first, then the product price. */
 function storedSourceQuote(
   product: AyWebsStoredProduct,
-  item: Pick<AyWebsCartItem, 'variantSnapshot'>,
+  item: Pick<AyWebsCartItem, 'variantSnapshot' | 'quantity'>,
 ): AyWebsStoredSourceQuote {
   const variantKey = ayWebsVariantKey(item.variantSnapshot?.attributes || null);
   const variant = variantKey
     ? (product.variants || []).find((candidate) => ayWebsVariantKey(candidate.attributes) === variantKey) || null
     : null;
   const hasVariantPrice = Boolean(variant && Number.isFinite(Number(variant.price)) && Number(variant.price) > 0);
+  let resolvedVariantPrice = hasVariantPrice ? Number(variant!.price) : product.price;
+  const qty = Math.max(1, Math.floor(Number(item.quantity) || 1));
+  if (hasVariantPrice && qty >= 2 && Array.isArray(variant!.quantityTiers) && variant!.quantityTiers.length > 0) {
+    let bestMin = 0;
+    for (const tier of variant!.quantityTiers) {
+      if (tier.minQuantity <= qty && tier.minQuantity >= bestMin && Number(tier.unitPrice) > 0) {
+        bestMin = tier.minQuantity;
+        resolvedVariantPrice = Number(tier.unitPrice);
+      }
+    }
+  }
   return {
     variant,
-    price: hasVariantPrice ? Number(variant!.price) : product.price,
+    price: resolvedVariantPrice,
     currency: (hasVariantPrice ? variant!.currency || product.currency : product.currency).trim().toUpperCase(),
     availability: variant?.availability || product.availability.state,
   };
@@ -1587,7 +1667,14 @@ export function normalizeAttributes(value: unknown): Record<string, string> | nu
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const out: Record<string, string> = {};
   for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
-    const name = String(key).trim().toLowerCase().replace(/[^a-z0-9_\-]/g, '').slice(0, 40);
+    const name = String(key)
+      .replace(/[\u0000-\u001f\u007f]/g, ' ')
+      .trim()
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s_\-]/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 60);
     const text = String(raw ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 120);
     if (name && text) out[name] = text;
   }

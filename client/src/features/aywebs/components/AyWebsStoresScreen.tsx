@@ -40,6 +40,7 @@ export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({
   const [query, setQuery] = useState('');
   const [chosen, setChosen] = useState<AyWebsStore | null>(null);
   const [offline, setOffline] = useState(false);
+  const [brokenLogos, setBrokenLogos] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const controller = new AbortController();
@@ -150,8 +151,14 @@ export const AyWebsStoresScreen: React.FC<AyWebsStoresScreenProps> = ({
               className="ayw-storelogo"
               onClick={() => { trackAyWebsEvent('aywebs_open', { store: store.id }); onOpenStore(store); }}
             >
-              {store.logo ? (
-                <img src={store.logo} alt="" loading="lazy" />
+              {store.logo && !brokenLogos[`${store.id}:${store.logo}`] ? (
+                <img
+                  key={`${store.id}:${store.logo}`}
+                  src={store.logo}
+                  alt=""
+                  loading="lazy"
+                  onError={() => setBrokenLogos((prev) => ({ ...prev, [`${store.id}:${store.logo}`]: true }))}
+                />
               ) : (
                 <ShoppingBag size={34} aria-hidden="true" />
               )}

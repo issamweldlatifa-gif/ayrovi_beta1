@@ -13,7 +13,7 @@ import { apiGetData, apiSendData } from './client';
 import { apiUploadFileData } from './nativeUpload';
 
 export const LENS_BASE = '/api/ayrovix';
-/** الخادم يزور صفحات المتاجر لكل نتيجة، فالقراءة الباردة تطول. */
+/** SerpApi multi-marché peut être lent ; aucun scraping de toutes les fiches. */
 export const LENS_TIMEOUT_MS = 60_000;
 
 export type LensAvailability = 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
@@ -80,6 +80,10 @@ export interface LensCandidate {
   sizes: string[];
   source: string;
   sourceUrl: string;
+  productPageType?: 'PRODUCT' | null;
+  productLinkStatus?: 'VERIFIED' | null;
+  productLinkVerification?: 'PROVIDER_PRODUCT_EVIDENCE_AND_REGISTERED_PRODUCT_URL' | null;
+  discoveryDataStatus?: 'TITLE_IMAGE_PRICE' | 'TITLE_IMAGE' | 'TITLE_PRICE' | 'TITLE_ONLY' | null;
   image: string;
   images: string[];
   colorImages: Record<string, string[]> | null;
@@ -340,6 +344,17 @@ function parseCandidateRecord(value: unknown, allowProductShape: boolean): LensC
     sizes: strList(value.sizes),
     source: str(value.source),
     sourceUrl,
+    productPageType: value.productPageType === 'PRODUCT' ? 'PRODUCT' : null,
+    productLinkStatus: value.productLinkStatus === 'VERIFIED' ? 'VERIFIED' : null,
+    productLinkVerification: value.productLinkVerification === 'PROVIDER_PRODUCT_EVIDENCE_AND_REGISTERED_PRODUCT_URL'
+      ? 'PROVIDER_PRODUCT_EVIDENCE_AND_REGISTERED_PRODUCT_URL'
+      : null,
+    discoveryDataStatus: value.discoveryDataStatus === 'TITLE_IMAGE_PRICE'
+      || value.discoveryDataStatus === 'TITLE_IMAGE'
+      || value.discoveryDataStatus === 'TITLE_PRICE'
+      || value.discoveryDataStatus === 'TITLE_ONLY'
+      ? value.discoveryDataStatus
+      : null,
     image: str(value.image),
     images: strList(value.images),
     colorImages,

@@ -30,7 +30,9 @@ jest.mock('../../src/api/public', () => {
 
 const INTERVAL_MS = 1000;
 const SCREEN_WIDTH = 390; // jest-expo : largeur d'écran par défaut proche d'un téléphone
-const { stride } = carouselGeometry(SCREEN_WIDTH);
+// Marge de page des téléphones compacts (même valeur que le header dans jest-expo).
+const GUTTER = 16;
+const { stride } = carouselGeometry(SCREEN_WIDTH, GUTTER);
 
 function slide(id: string, index: number): HeroSlide {
   return {
@@ -153,7 +155,7 @@ describe('autoplay', () => {
 });
 
 describe('défilement manuel', () => {
-  it('l’index suit l’offset à la fin de l’élan (carte centrée)', async () => {
+  it('l’index suit l’offset à la fin de l’élan (carte alignée sur la marge)', async () => {
     await renderCarousel({ ...SETTINGS, autoplay: false });
     fireEvent(list(), 'momentumScrollEnd', {
       nativeEvent: { contentOffset: { x: stride, y: 0 } },
@@ -187,10 +189,11 @@ describe('CTA', () => {
 });
 
 describe('géométrie et fond', () => {
-  it('la carte active est centrée : le retrait vient de la largeur MESURÉE, pas de la fenêtre', async () => {
+  it('la 1re carte commence à la marge de page (gutter, comme le header) : retrait issu de la largeur MESURÉE', async () => {
     await renderCarousel();
     measureSection(360);
-    const { sideInset } = carouselGeometry(360);
+    const { sideInset } = carouselGeometry(360, GUTTER);
+    expect(sideInset).toBe(GUTTER);
     const padding = StyleSheet.flatten(list().props.contentContainerStyle).paddingHorizontal;
     expect(padding).toBe(sideInset);
   });
@@ -198,7 +201,7 @@ describe('géométrie et fond', () => {
   it('getItemLayout inclut le retrait : scrollToIndex vise la carte, pas un décalage', async () => {
     await renderCarousel();
     measureSection(360);
-    const { sideInset, stride: measuredStride } = carouselGeometry(360);
+    const { sideInset, stride: measuredStride } = carouselGeometry(360, GUTTER);
     const layout = list().props.getItemLayout(null, 1);
     expect(layout.offset).toBe(sideInset + measuredStride);
   });

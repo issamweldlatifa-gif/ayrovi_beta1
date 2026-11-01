@@ -23,6 +23,7 @@ import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { fetchOverview, type AccountOverview, type RecentOrder } from '@/api/account';
 import { useSession } from '@/state/session';
+import { formatAmount, formatMoney } from '@/format/money';
 
 /** Ligne compacte d'une commande récente (les détails vivent dans /orders). */
 function OrderRow({ order }: { order: RecentOrder }) {
@@ -35,7 +36,7 @@ function OrderRow({ order }: { order: RecentOrder }) {
         <AppText variant="caption" color={theme.status.info.fg}>{order.status}</AppText>
       </View>
       <AppText variant="caption" color={theme.colors.muted}>
-        {t('orders.items', { count: order.itemCount })} · {t('orders.total')} {order.totalTnd.toFixed(2)} DT
+        {t('orders.items', { count: order.itemCount })} · {t('orders.total')} {formatMoney(order.totalTnd)}
       </AppText>
       {order.createdAt ? (
         <AppText variant="caption" color={theme.colors.muted}>{order.createdAt.slice(0, 10)}</AppText>
@@ -59,7 +60,7 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
         hint={verified ? undefined : t('account.unverified')}
       >
         <View style={[styles.identity, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <Ionicons name="person-circle-outline" size={44} color={theme.colors.muted} accessibilityElementsHidden />
+          <Ionicons name="person-circle-outline" size={theme.iconSize.xl} color={theme.colors.muted} accessibilityElementsHidden />
           <View style={styles.identityText}>
             <AppText variant="lead" weight="bold">{shown?.displayName || '—'}</AppText>
             <AppText variant="caption" color={theme.colors.muted}>{shown?.email || shown?.phone || ''}</AppText>
@@ -102,7 +103,7 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
           <KeyValue label={t('account.stats.favorites')} value={String(overview.counts.favorites)} />
           <KeyValue label={t('account.stats.addresses')} value={String(overview.counts.addresses)} />
           <KeyValue label={t('account.stats.cart')} value={String(overview.counts.cartItems)} />
-          <KeyValue label={t('account.stats.spent')} value={overview.totalSpent.toFixed(2)} />
+          <KeyValue label={t('account.stats.spent')} value={formatAmount(overview.totalSpent)} />
         </Card>
       ) : null}
 
@@ -115,6 +116,14 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
     </>
   );
 }
+
+/**
+ * Filet de sécurité de l'écran : si le rendu de le compte lève, expo-router
+ * affiche le repli (arabe + français, bouton « عاود ») à la place de l'écran —
+ * l'application reste ouverte, l'utilisateur peut revenir. Voir
+ * `src/design/AppErrorBoundary.tsx` et la cause du 25/10/2026 (ordre des hooks).
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function AccountScreen() {
   const t = useI18n().t;

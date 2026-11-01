@@ -22,6 +22,15 @@ import { fetchOrders } from '@/api/account';
 import { statusText } from '@/api/labels';
 import { mediaUrl } from '@/api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { formatMoney } from '@/format/money';
+
+/**
+ * Filet de sécurité de l'écran : si le rendu de la liste des commandes lève, expo-router
+ * affiche le repli (arabe + français, bouton « عاود ») à la place de l'écran —
+ * l'application reste ouverte, l'utilisateur peut revenir. Voir
+ * `src/design/AppErrorBoundary.tsx` et la cause du 25/10/2026 (ordre des hooks).
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function OrdersScreen() {
   const theme = useTheme();
@@ -47,7 +56,7 @@ export default function OrdersScreen() {
         >
           <Ionicons
             name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-            size={26}
+            size={theme.iconSize.md}
             color={theme.colors.ink}
             accessibilityElementsHidden
           />
@@ -100,7 +109,7 @@ export default function OrdersScreen() {
                 </AppText>
               </View>
               <AppText variant="caption" color={theme.colors.muted}>
-                {t('orders.items', { count: order.itemCount })} · {order.totalTnd.toFixed(2)} DT
+                {t('orders.items', { count: order.itemCount })} · {formatMoney(order.totalTnd)}
               </AppText>
               <AppText variant="caption" color={theme.colors.muted}>
                 {t('orders.payment')} : {statusText('payment', order.paymentStatus, t)}

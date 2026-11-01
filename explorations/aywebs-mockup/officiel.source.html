@@ -1,0 +1,874 @@
+<!doctype html>
+<html lang="fr" data-active-lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AYWEBs — accueil officiel : 3 variantes (maquette)</title>
+<!--
+  ============================================================================
+  AYWEBs · accueil — laboratoire « OFFICIEL » (27/10/2026)
+  ============================================================================
+  Cette maquette n'invente AUCUNE valeur. Elle est construite uniquement avec
+  les fondations déjà présentes dans le dépôt :
+
+    couleurs   brand.json          violet #571EF6 · encre #0A0A0A
+                                   encre douce #333 · discret #666
+                                   ligne #E5E5E5 · surface #FFFFFF · shimmer #F2F2F2
+    typographie tokens.generated  display 40 · title 28 · lead 18 · body 16
+                                   label 14 · caption 12
+    espacement  identity.json + SPACE_EXTENDED
+                                   4 · 8 · 12 · 16 · 24 · 32 (+ 2 · 6 · 10 · 20 · 40)
+    rayons      RADIUS            4 · 8 · 12 · 16 · 24 · 999
+    icônes      ICON_SIZE         14 · 18 · 24 · 32 · 40
+    polices     assets/fonts      Zalando Sans (latin) · Noto Sans Arabic
+    logo        assets/aywebs     wordmark officiel, recadré, en violet de marque
+    CTA achat   COMMERCE.action   #FFD60A — le jaune réservé à l'action AYWEBs
+
+  La maquette suit la commande, section par section :
+
+    1. wordmark AYWEBs (violet officiel) + icône panier interactive
+    2. barre de recherche — elle cherche des BOUTIQUES
+    3. section « Catégories »      : titre + accès, cartes alignées, aucun texte coupé
+    4. section « Historique »      : la dernière recherche, son image devant
+    5. section « Explorer »        : rail de 7 enseignes, puis accès à la liste
+    6. écran « Boutiques »         : retour, recherche, favoris, mêmes cartes
+
+  Trois variantes, et elles ne diffèrent QUE sur le bloc « Catégories » —
+  c'est le seul point que la commande laissait ouvert. L'historique, le rail
+  et la liste sont identiques dans les trois.
+-->
+<style>
+@font-face{font-family:'ZS';src:url('../../apps/mobile/assets/fonts/ZalandoSans-Regular.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'ZS';src:url('../../apps/mobile/assets/fonts/ZalandoSans-SemiBold.ttf') format('truetype');font-weight:600;font-display:swap}
+@font-face{font-family:'ZS';src:url('../../apps/mobile/assets/fonts/ZalandoSans-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
+@font-face{font-family:'NSA';src:url('../../apps/mobile/assets/fonts/NotoSansArabic-Regular.ttf') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:'NSA';src:url('../../apps/mobile/assets/fonts/NotoSansArabic-Bold.ttf') format('truetype');font-weight:700;font-display:swap}
+
+/* ═══ JETONS — recopiés, jamais réinventés ═══════════════════════════════ */
+:root{
+  /* Couleurs de marque (brand.json) */
+  --violet:#571EF6; --violet-press:#491ACC;
+  --ink:#0A0A0A; --ink-2:#333333; --muted:#666666;
+  --line:#E5E5E5; --surface:#FFFFFF; --shimmer:#F2F2F2;
+  /* Dérivés DÉJÀ définis dans tokens.mobile.ts */
+  --violet-7:color-mix(in srgb, var(--violet) 7%, #fff);   /* recommendation */
+  --violet-16:color-mix(in srgb, var(--violet) 16%, #fff); /* info.soft          */
+  --violet-30:color-mix(in srgb, var(--violet) 30%, #fff); /* info.border        */
+  --commerce:#FFD60A;                                      /* COMMERCE.action    */
+  /* Rayons (RADIUS) */
+  --r-xs:4px; --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:24px; --r-full:999px;
+  /* Échelle d'espacement officielle */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px;
+  /* Chrome */
+  --header:64px;  /* CHROME.header  */
+  --tabbar:56px;  /* CHROME.tabBar  */
+  --font:'ZS',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --elev-1:0 1px 2px rgba(10,10,10,.06);
+  --elev-2:0 18px 44px rgba(10,10,10,.14), 0 4px 12px rgba(10,10,10,.06);
+}
+html[dir="rtl"]{ --font:'NSA','ZS',system-ui,sans-serif; }
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#EDEDF1;color:var(--ink);font:16px/1.4 var(--font);-webkit-font-smoothing:antialiased}
+
+/* ═══ CHROME DU LABORATOIRE ═════════════════════════════════════════════ */
+.lab{max-width:1840px;margin:0 auto;padding:26px 22px 8px}
+.lab h1{margin:0;font-size:24px;letter-spacing:-.02em;font-weight:700}
+.lab h1 span{color:var(--violet)}
+.lab .sub{margin:8px 0 0;max-width:88ch;color:var(--ink-2);font-size:13.5px;line-height:1.6}
+.lab .sub b{color:var(--ink)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:16px}
+.seg{display:inline-flex;padding:3px;background:#fff;border:1px solid var(--line);border-radius:var(--r-full);box-shadow:var(--elev-1)}
+.seg button{border:0;background:none;color:var(--muted);font:600 12.5px var(--font);padding:7px 14px;border-radius:var(--r-full);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--violet);color:#fff}
+.hint{color:var(--muted);font-size:12px}
+.rules{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.rules span{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:var(--r-full);padding:6px 12px;font-size:12px;color:var(--ink-2)}
+.rules b{color:var(--violet);font-weight:700}
+
+/* ═══ PLATEAU ═══════════════════════════════════════════════════════════ */
+.board{max-width:1840px;margin:0 auto;padding:22px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px}
+@media (max-width:1560px){.board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){.board{grid-template-columns:minmax(0,1fr)}}
+.dir-head{min-height:150px;margin-bottom:12px}
+.dir-head .tag{display:inline-block;font:700 11px var(--font);letter-spacing:.1em;text-transform:uppercase;color:var(--violet);
+  background:var(--violet-7);border-radius:var(--r-full);padding:4px 10px}
+.dir-head h2{margin:8px 0 6px;font-size:16px;font-weight:700;letter-spacing:-.01em}
+.dir-head p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.55}
+.dir-head ul{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:4px}
+.dir-head li{position:relative;padding-inline-start:14px;font-size:12px;color:var(--ink-2)}
+.dir-head li::before{content:"";position:absolute;inset-inline-start:0;top:.5em;width:5px;height:5px;border-radius:50%;background:var(--violet);opacity:.5}
+
+/* ═══ CADRE TÉLÉPHONE ═══════════════════════════════════════════════════ */
+.phone{width:414px;max-width:100%;margin-inline:auto;padding:9px;border-radius:54px;
+  background:linear-gradient(180deg,#1A1A1A,#0A0A0A);box-shadow:var(--elev-2)}
+.screen{position:relative;width:100%;height:844px;background:var(--surface);border-radius:46px;overflow:hidden;
+  display:flex;flex-direction:column;transform:translateZ(0)}
+.statusbar{flex:none;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;
+  font:600 12.5px var(--font);color:var(--ink)}
+.statusbar .right{display:flex;align-items:center;gap:5px}
+.statusbar .bars{display:flex;align-items:flex-end;gap:2px}
+.statusbar .bars i{display:block;width:3px;background:currentColor;border-radius:1px}
+.statusbar .bars i:nth-child(1){height:4px;opacity:.45}
+.statusbar .bars i:nth-child(2){height:6px;opacity:.7}
+.statusbar .bars i:nth-child(3){height:8px}
+.statusbar .batt{width:22px;height:11px;border:1.4px solid currentColor;border-radius:3px;position:relative;opacity:.9}
+.statusbar .batt::after{content:"";position:absolute;inset:1.6px;background:currentColor;border-radius:1px}
+
+/* En-tête : 64 pt (CHROME.header) — wordmark à gauche, panier à droite */
+.appbar{flex:none;height:var(--header);display:flex;align-items:center;justify-content:space-between;padding:0 var(--s4)}
+.wm{display:block;height:28px;width:auto}
+.iconbtn{position:relative;width:44px;height:44px;display:grid;place-items:center;border:0;background:none;
+  border-radius:var(--r-full);color:var(--ink);cursor:pointer}
+.iconbtn:active{background:var(--shimmer)}
+.badge{position:absolute;top:2px;inset-inline-end:2px;min-width:18px;height:18px;padding:0 4px;border-radius:var(--r-full);
+  background:var(--violet);color:#fff;font:700 11px/18px var(--font);text-align:center}
+
+/* Corps : 16 pt de marge, 24 pt entre sections */
+.page{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:0 var(--s4) 24px;display:flex;flex-direction:column;gap:var(--s5);scrollbar-width:none}
+.page::-webkit-scrollbar{display:none}
+section.block{display:flex;flex-direction:column;gap:var(--s3);min-width:0}
+
+/* Icônes : trait 1.9, taille par jeton */
+.ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic-14{width:14px;height:14px;stroke-width:2}
+.ic-18{width:18px;height:18px;stroke-width:2}
+.ic-20{width:20px;height:20px}
+.ic-32{width:32px;height:32px;stroke-width:1.7}
+html[dir="rtl"] .flip{transform:scaleX(-1)}
+
+/* ─── 2. Recherche BOUTIQUES ────────────────────────────────────────────── */
+.search{display:flex;align-items:center;gap:var(--s2);height:48px;padding:0 var(--s3);
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:var(--elev-1)}
+.search .ic{color:var(--violet)}
+.search input{flex:1;min-width:0;border:0;outline:none;background:none;font:400 16px var(--font);color:var(--ink)}
+.search input::placeholder{color:var(--muted);opacity:1}
+.search .clear{width:28px;height:28px;display:grid;place-items:center;border:0;background:var(--shimmer);
+  border-radius:var(--r-full);color:var(--ink-2);cursor:pointer}
+
+/* ─── En-tête de section (idiome du dépôt : SectionHeader) ──────────────── */
+.sechead{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);padding-bottom:var(--s1)}
+.sechead h3{margin:0;font:700 18px/1.2 var(--font);letter-spacing:-.01em}
+.sechead .hint2{font:400 12px var(--font);color:var(--muted);margin-top:2px}
+.link{display:inline-flex;align-items:center;gap:2px;border:0;background:none;padding:0;cursor:pointer;
+  color:var(--muted);font:600 12px var(--font);min-height:32px}
+.link .ic{width:14px;height:14px}
+
+/* ─── 3. Catégories — grille 3 × 116 pt (écran 414), gouttière 8 pt ─────── */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2)}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--s3)}
+.tile{border:0;background:none;padding:0;cursor:pointer;font:inherit;text-align:center;display:flex;flex-direction:column;gap:var(--s2)}
+.tile .media{position:relative;width:100%;aspect-ratio:4/3;border-radius:var(--r-lg);overflow:hidden;
+  background:var(--shimmer);display:grid;place-items:center;color:var(--muted)}
+.tile .media--icon{background:var(--violet-7);color:var(--violet)}
+.tile .lbl{font:600 12px/1.25 var(--font);color:var(--ink);margin:0;padding:0 2px}
+.tile.is-on .media{outline:2px solid var(--violet);outline-offset:2px}
+.tile.is-on .lbl{color:var(--violet)}
+/* Couche photo : le build remplace @@PHOTOS@@ (une copie par visuel) */
+.photo{position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat}
+/* @@PHOTOS@@ */
+
+/* Variante C — deux colonnes éditoriales (185 pt) */
+.tile--wide .media{aspect-ratio:16/10}
+.tile--wide{text-align:start}
+.tile--wide .lbl{font-size:14px;padding:0}
+
+/* Rail horizontal (variante B + boutiques) */
+.rail{display:flex;gap:var(--s2);overflow-x:auto;margin-inline:calc(-1 * var(--s4));padding:2px var(--s4) 6px;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+
+/* ─── 4. Historique — barre avec la dernière recherche devant ──────────── */
+.histBar{display:flex;align-items:center;gap:var(--s3);width:100%;height:56px;padding:0 var(--s3);
+  border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);cursor:pointer;text-align:start;font:inherit}
+.histBar .thumb{width:40px;height:40px;border-radius:var(--r-sm);background:var(--shimmer);display:grid;place-items:center;
+  overflow:hidden;flex:none;padding:4px}
+.histBar .txt{flex:1;min-width:0}
+.histBar b{display:block;font:600 14px var(--font);color:var(--ink)}
+.histBar small{display:block;font:400 12px var(--font);color:var(--muted);margin-top:2px}
+.chipsRow{display:flex;gap:var(--s2);flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:var(--r-full);
+  border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font:600 12px var(--font);cursor:pointer}
+.chip .mark{font-size:9px;color:var(--ink)}
+.chip--empty{border-style:dashed;color:var(--muted);cursor:default}
+
+/* ─── 5. Cartes boutique — 100 pt : la largeur d'une petite fiche ───────── */
+.card{position:relative;flex:none;width:var(--card-w,100px);border:1px solid var(--line);border-radius:var(--r-lg);
+  background:var(--surface);overflow:hidden;cursor:pointer;text-align:start;padding:0;font:inherit}
+.card .media{position:relative;height:84px;background:var(--shimmer);display:grid;place-items:center;padding:10px}
+.card .body{padding:var(--s2)}
+.card .name{display:block;font:700 12px/1.2 var(--font);color:var(--ink)}
+.card .cat{display:block;font:400 12px/1.2 var(--font);color:var(--muted);margin-top:2px}
+.heart{position:absolute;top:6px;inset-inline-end:6px;width:28px;height:28px;border-radius:var(--r-full);
+  background:var(--surface);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);cursor:pointer;padding:0}
+.heart .ic{width:15px;height:15px}
+.heart.is-on{color:var(--violet);border-color:var(--violet-30);background:var(--violet-7)}
+.heart.is-on .ic{fill:var(--violet);fill-opacity:.14}
+
+/* Logos de démonstration : PLACEHOLDERS typographiques.
+   Dans l'app : mediaUrl(store.logo) → AppImage contentFit="contain". */
+.mark{font-family:var(--font);color:var(--ink);line-height:1;white-space:nowrap}
+.mk-amazon{font-weight:700;font-size:14px;letter-spacing:-.03em}
+.mk-shein{font-weight:700;font-size:14px}
+.mk-temu{font-weight:700;font-size:12.5px;letter-spacing:.12em}
+.mk-zalando{font-weight:600;font-size:9.5px;letter-spacing:.22em}
+.mk-stradi{font-weight:600;font-size:7.5px;letter-spacing:.12em}
+.mk-ali{font-weight:700;font-size:11.5px}
+.mk-sephora{font-weight:700;font-size:10px;letter-spacing:.14em}
+.mk-nike{font-weight:700;font-size:15px;letter-spacing:-.02em;font-style:italic}
+
+/* Accès à la liste — « ligne d'entrée » demandée */
+.enter{display:flex;align-items:center;gap:var(--s2);width:100%;height:48px;padding:0 var(--s3);
+  border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);cursor:pointer;
+  font:700 14px var(--font);color:var(--ink);text-align:start}
+.enter .ic{color:var(--violet)}
+.enter .count{margin-inline-start:auto;font:400 12px var(--font);color:var(--muted)}
+.enter .chev{color:var(--muted);width:18px;height:18px}
+
+/* La liste réutilise LA MÊME carte, en largeur de colonne. */
+.grid3 .card, .grid2 .card{width:100%}
+
+/* ─── 6. Écran « Boutiques » ───────────────────────────────────────────── */
+.topbar{flex:none;height:52px;display:flex;align-items:center;gap:var(--s2);padding:0 var(--s2) 0 var(--s1)}
+.topbar h2{margin:0;font:700 18px var(--font);letter-spacing:-.01em}
+.topbar .spacer{flex:1}
+.screenHead{flex:none;padding:0 var(--s4) var(--s3);display:flex;flex-direction:column;gap:var(--s3)}
+
+/* ─── Feuille panier (preuve d'interactivité) ─────────────────────────── */
+.scrim{position:absolute;inset:0;background:rgba(10,10,10,.35);display:none}
+.scrim.is-open{display:block}
+.sheet{position:absolute;inset-inline:0;bottom:0;background:var(--surface);border-radius:var(--r-xl) var(--r-xl) 0 0;
+  padding:var(--s2) var(--s4) var(--s5);display:none;box-shadow:0 -12px 40px rgba(10,10,10,.18)}
+.sheet.is-open{display:block}
+.sheet .grab{width:36px;height:4px;border-radius:var(--r-full);background:var(--line);margin:0 auto var(--s3)}
+.sheet h4{margin:0 0 var(--s3);font:700 18px var(--font)}
+.sheet .row{display:flex;align-items:center;gap:var(--s3);padding:var(--s2) 0;border-top:1px solid var(--line)}
+.sheet .row .thumb{width:48px;height:48px;border-radius:var(--r-sm);background:var(--shimmer);flex:none;display:grid;place-items:center;padding:4px}
+.sheet .row b{font:600 14px var(--font);display:block}
+.sheet .row small{font:400 12px var(--font);color:var(--muted)}
+.sheet .row .amt{margin-inline-start:auto;font:700 14px var(--font)}
+.sheet .total{display:flex;align-items:center;justify-content:space-between;padding:var(--s3) 0;border-top:1px solid var(--line)}
+.sheet .total span{font:400 12px var(--font);color:var(--muted)}
+.sheet .total b{font:700 18px var(--font)}
+.sheet .cta{width:100%;height:52px;border:0;border-radius:var(--r-full);background:var(--commerce);color:var(--ink);
+  font:700 16px var(--font);cursor:pointer}
+.sheet .cta:active{background:#E6C200}
+
+/* ─── Barre d'onglets (56 pt) ──────────────────────────────────────────── */
+.tabbar{flex:none;height:var(--tabbar);display:flex;align-items:center;justify-content:space-around;
+  border-top:1px solid var(--line);background:var(--surface)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font:700 10.5px var(--font)}
+.tab.is-on{color:var(--violet)}
+
+/* ─── Toast (retour d'action) ──────────────────────────────────────────── */
+.toast{position:absolute;inset-inline:16px;bottom:76px;background:var(--ink);color:#fff;border-radius:var(--r-md);
+  padding:12px 14px;font:600 12.5px var(--font);display:none;box-shadow:var(--elev-2)}
+.toast.is-open{display:block}
+
+/* ═══ FICHE TECHNIQUE ═══════════════════════════════════════════════════ */
+.specs{max-width:1840px;margin:6px auto 40px;padding:0 22px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+@media (max-width:1100px){.specs{grid-template-columns:1fr}}
+.note{background:#fff;border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 18px}
+.note h4{margin:0 0 10px;font:700 11px var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.note p{margin:0 0 8px;font-size:12.5px;line-height:1.6;color:var(--ink-2)}
+.note p:last-child{margin:0}
+.note code{background:var(--shimmer);border-radius:4px;padding:1px 4px;font-size:11.5px}
+.note table{width:100%;border-collapse:collapse;font-size:12px}
+.note td{padding:4px 0;border-bottom:1px solid var(--line);color:var(--ink-2)}
+.note td:last-child{text-align:end;font-weight:600;color:var(--ink)}
+.note .sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-inline-end:6px;border:1px solid rgba(10,10,10,.08)}
+</style>
+</head>
+<body>
+
+<header class="lab">
+  <h1>AYWEBs · accueil <span>officiel</span> — trois variantes, une seule fondation</h1>
+  <p class="sub">
+    Tout est construit avec les jetons du dépôt : <b>Zalando Sans</b> + <b>Noto Sans Arabic</b>, violet de marque
+    <b>#571EF6</b>, encre <b>#0A0A0A</b>, ligne <b>#E5E5E5</b>, échelle <b>4·8·12·16·24·32</b>, rayons <b>8·12·16·24·999</b>,
+    icônes <b>14·18·24·32</b>. Aucune valeur hors échelle, aucun libellé coupé, aucun texte inventé.<br>
+    L'ordre suit la commande : <b>logo + panier</b> → <b>recherche de boutiques</b> → <b>Catégories</b> → <b>Historique</b> →
+    <b>Explorer les boutiques</b> → <b>écran Boutiques</b>. Les trois variantes ne diffèrent que sur le bloc Catégories.
+  </p>
+  <div class="controls">
+    <div class="seg" role="group" aria-label="Langue">
+      <button type="button" data-lang="fr" aria-pressed="true">Français</button>
+      <button type="button" data-lang="ar" aria-pressed="false">العربية</button>
+    </div>
+    <span class="hint">Clique : panier (feuille), cœur (favoris), catégorie (filtre), historique (relance), « Toutes les boutiques ».</span>
+  </div>
+  <div class="rules">
+    <span><b>1</b> wordmark violet officiel, fond net</span>
+    <span><b>2</b> panier + pastille de compte</span>
+    <span><b>3</b> recherche de boutiques</span>
+    <span><b>4</b> catégories 3 × 116 pt, texte entier</span>
+    <span><b>5</b> historique avec la dernière recherche</span>
+    <span><b>6</b> rail de 7 enseignes + accès liste</span>
+  </div>
+</header>
+
+<main class="board">
+
+  <!-- ─────────────── VARIANTE 1 ─────────────── -->
+  <section>
+    <div class="dir-head">
+      <span class="tag">Variante 1</span>
+      <h2>Grille calme — 3 × 2, tout visible</h2>
+      <p>Six familles, deux rangées, aucune coupure : les libellés passent sur deux lignes, la photo occupe une tuile 4/3.</p>
+      <ul>
+        <li>Tuile 116 pt (écran 414) · gouttière 8 pt</li>
+        <li>Titre de section 18 / 700 + accès « Tout voir »</li>
+        <li>Icône officielle quand aucune photo n'existe</li>
+      </ul>
+    </div>
+    <div class="phone"><div class="screen" data-screen="V1"><!--SCREEN:V1--></div></div>
+  </section>
+
+  <!-- ─────────────── VARIANTE 2 ─────────────── -->
+  <section>
+    <div class="dir-head">
+      <span class="tag">Variante 2</span>
+      <h2>Rail de catégories — même tuile, défilement</h2>
+      <p>On garde la tuile de la variante 1, mais dans un rail : la page descend plus vite vers les boutiques, et le nombre de familles n'est plus limité à six.</p>
+      <ul>
+        <li>Même tuile 116 pt, défilement horizontal</li>
+        <li>Indice de scroll : la tuile suivante dépasse</li>
+        <li>Compatible avec les 30 familles du registre</li>
+      </ul>
+    </div>
+    <div class="phone"><div class="screen" data-screen="V2"><!--SCREEN:V2--></div></div>
+  </section>
+
+  <!-- ─────────────── VARIANTE 3 ─────────────── -->
+  <section>
+    <div class="dir-head">
+      <span class="tag">Variante 3</span>
+      <h2>Deux colonnes — cartes plus larges</h2>
+      <p>Deux colonnes de 174 pt : la photo prend toute la largeur de la carte et le libellé passe dessous, en 14 pt. C'est la variante qui « respire » le plus.</p>
+      <ul>
+        <li>2 × 174 pt · photo 16/10 · libellé 14 pt</li>
+        <li>Six familles = trois rangées</li>
+        <li>Lecture plus lente, impact visuel plus fort</li>
+      </ul>
+    </div>
+    <div class="phone"><div class="screen" data-screen="V3"><!--SCREEN:V3--></div></div>
+  </section>
+
+  <!-- ─────────────── ÉCRAN 4 (commun) ─────────────── -->
+  <section>
+    <div class="dir-head">
+      <span class="tag">Écran 4 · commun</span>
+      <h2>Boutiques — la liste</h2>
+      <p>On y entre par la ligne « Toutes les boutiques ». Retour, recherche, favoris en tête, puis toutes les enseignes dans des cartes <b>de la même taille</b> que celles du rail.</p>
+      <ul>
+        <li>Retour + titre + panier</li>
+        <li>Recherche identique à l'accueil</li>
+        <li>Favoris puis grille de cartes 100 pt</li>
+      </ul>
+    </div>
+    <div class="phone"><div class="screen" data-screen="LIST"><!--SCREEN:LIST--></div></div>
+  </section>
+</main>
+
+<section class="specs">
+  <div class="note">
+    <h4>Fondations utilisées (aucune valeur inventée)</h4>
+    <table>
+      <tr><td><span class="sw" style="background:#571EF6"></span>Violet de marque</td><td>#571EF6 · 7,19:1</td></tr>
+      <tr><td><span class="sw" style="background:#0A0A0A"></span>Encre</td><td>#0A0A0A</td></tr>
+      <tr><td><span class="sw" style="background:#666"></span>Discret</td><td>#666 · 5,74:1</td></tr>
+      <tr><td><span class="sw" style="background:#E5E5E5"></span>Ligne</td><td>#E5E5E5</td></tr>
+      <tr><td><span class="sw" style="background:#F2F2F2"></span>Shimmer</td><td>#F2F2F2</td></tr>
+      <tr><td><span class="sw" style="background:#FFD60A"></span>CTA d'achat AYWEBs</td><td>#FFD60A</td></tr>
+      <tr><td>Types</td><td>40 · 28 · 18 · 16 · 14 · 12</td></tr>
+      <tr><td>Espacement</td><td>4 · 8 · 12 · 16 · 24 · 32</td></tr>
+      <tr><td>Rayons</td><td>8 · 12 · 16 · 24 · 999</td></tr>
+      <tr><td>Icônes</td><td>14 · 18 · 24 · 32</td></tr>
+    </table>
+  </div>
+
+  <div class="note">
+    <h4>Pourquoi aucune texte n'est coupé</h4>
+    <p>La tuile fait <b>116 pt</b> de large sur un écran de 414 (114 sur un 390), le libellé est en <b>12 pt / 1,25</b> et il a droit à <b>deux lignes</b> : « Smartphones &amp; accessoires » ou « Cuisine &amp; électroménager » tiennent en entier. Aucun <code>text-overflow</code>, aucun <code>-webkit-line-clamp</code> sur les libellés de la maquette.</p>
+    <p>Dans l'app, la même règle s'écrit avec <code>numberOfLines={2}</code> et <b>jamais</b> <code>1</code> sur un libellé de catégorie — c'est exactement le défaut de la capture du 27/10 (« Chaussures &amp; s… »).</p>
+    <p>La sous-ligne d'une carte boutique n'affiche qu'<b>une</b> famille (la principale) : une ligne courte ne se coupe pas, et « Marketplace +2 » dit le reste.</p>
+  </div>
+
+  <div class="note">
+    <h4>Ce qui bouge quand on clique</h4>
+    <p>• <b>Panier</b> → feuille avec 2 articles, sous-total, CTA jaune AYWEBs (<code>COMMERCE.action</code>).</p>
+    <p>• <b>Cœur</b> → favori réel : la pastille passe en violet et l'article remonte dans « Favoris » de l'écran Boutiques.</p>
+    <p>• <b>Catégorie</b> → filtre le rail et la liste ; le titre devient « Résultats ».</p>
+    <p>• <b>Historique</b> → relance la recherche ; « Effacer » vide le journal.</p>
+    <p>• <b>Recherche</b> → filtre en direct, sans recharger l'écran (le champ garde le focus).</p>
+  </div>
+</section>
+
+<!-- ─── Bibliothèque d'icônes (trait 1,9 · 24 × 24) ─────────────────────── -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.6"/><path d="M15.7 15.7 20 20"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24"><path d="M2.6 4h2.3l2.3 11h10.2l2.3-8H6"/><circle cx="9.4" cy="19" r="1.3"/><circle cx="16.9" cy="19" r="1.3"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.2s-7.6-4.7-7.6-9.8A4.4 4.4 0 0 1 12 7.2a4.4 4.4 0 0 1 7.6 3.2c0 5.1-7.6 9.8-7.6 9.8z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M9.2 9.2l5.6 5.6M14.8 9.2l-5.6 5.6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3 2"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.4" r="3.6"/><path d="M5.4 20a6.6 6.6 0 0 1 13.2 0"/></symbol>
+  <symbol id="i-pricetags" viewBox="0 0 24 24"><path d="M3.4 11.2V5.6c0-.8.6-1.5 1.5-1.5h5.6c.4 0 .8.2 1 .4l6.6 6.6c.6.6.6 1.5 0 2.1l-4.9 4.9c-.6.6-1.5.6-2.1 0L4.5 11.8a1.5 1.5 0 0 1-.4-1z"/><circle cx="7.9" cy="8.1" r="1.1"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.8" width="10" height="18.4" rx="2.6"/><path d="M10.8 18.2h2.4"/></symbol>
+  <symbol id="i-shirt" viewBox="0 0 24 24"><path d="M9.4 3.4 12 5.6l2.6-2.2 4.4 2.2-1.7 4-2.1-.7V20H8.8V8.9l-2.1.7-1.7-4 4.4-2.2z"/></symbol>
+  <symbol id="i-shoe" viewBox="0 0 24 24"><path d="M3.4 15.6c0-2 .9-3.1 2.2-3.9l3-1.8 1 2.2 4.6 1.2 5.4 1.6c.8.3 1.4 1 1.4 1.9v1.1H3.4v-2.3z"/><path d="M3.4 17.9h17.6"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.4l1.9 4.9 4.9 1.9-4.9 1.9-1.9 4.9-1.9-4.9L5.2 10.2l4.9-1.9L12 3.4z"/><path d="M18.2 16.2l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.4 12 3.6l8 6.8V20H4v-9.6z"/><path d="M9.8 20v-5.4h4.4V20"/></symbol>
+  <symbol id="i-kitchen" viewBox="0 0 24 24"><path d="M4.6 10.8h11.2v5.4a3.4 3.4 0 0 1-3.4 3.4H8a3.4 3.4 0 0 1-3.4-3.4v-5.4z"/><path d="M4.6 10.8 5.8 4.6h8.8l1.2 6.2"/><path d="M15.8 12.6h2.4a1.9 1.9 0 0 1 0 3.8h-2.4"/></symbol>
+</svg>
+
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   ÉTAT — tout ce qui peut changer à l'écran. Les valeurs par défaut sont
+   celles du rendu statique : la maquette reste lisible sans JavaScript.
+   ════════════════════════════════════════════════════════════════════════ */
+const STATE = {
+  lang: 'fr',
+  query: '',
+  cat: null,
+  cartOpen: false,
+  toast: '',
+  favs: ['zalando', 'shein', 'amazon'],
+  history: ['stradivarius', 'zalando', 'sephora'],
+};
+
+/*
+  Le wordmark est fourni par l'app en couleur « aubergine » (#764699) d'origine.
+  Le violet officiel de la marque est #571EF6 : ce fichier est la MÊME forme,
+  teintée avec le violet officiel (1,7 Ko, palette + transparence).
+*/
+const WORDMARK = 'aywebs-wordmark-violet.png';
+
+/* Les six familles les plus fournies du registre (comptage sur 364 boutiques) :
+   electronics 21 · fashion 20 · home 20 · shoes 19 · beauty 19 · kitchen 15. */
+const CATS = [
+  { id: 'electronics', icon: 'phone', photo: 'category-electronics.jpg' },
+  { id: 'fashion', icon: 'shirt', photo: 'category-fashion.jpg' },
+  { id: 'home', icon: 'home', photo: 'category-home.jpg' },
+  { id: 'shoes', icon: 'shoe', photo: 'category-shoes.jpg' },
+  { id: 'beauty', icon: 'spark', photo: 'category-beauty.jpg' },
+  { id: 'kitchen', icon: 'kitchen' },
+];
+
+/*
+  Douze enseignes RÉELLEMENT présentes dans `shared/aywebsStoreCatalog.ts`
+  (registre de 364 boutiques), au moins une par famille affichée : le filtre
+  d'une catégorie ne tombe donc jamais dans une liste vide par accident.
+  Les logos sont des placeholders typographiques — dans l'app ils viennent de
+  l'API (`mediaUrl(store.logo)`) et passent par `AppImage contentFit="contain"`.
+*/
+const STORES = [
+  { id: 'amazon', name: 'Amazon', mark: 'amazon', cls: 'mk-amazon', cats: ['marketplace'] },
+  { id: 'shein', name: 'SHEIN', mark: 'SHEIN', cls: 'mk-shein', cats: ['fashion'] },
+  { id: 'temu', name: 'TEMU', mark: 'TEMU', cls: 'mk-temu', cats: ['marketplace'] },
+  { id: 'zalando', name: 'Zalando', mark: 'ZALANDO', cls: 'mk-zalando', cats: ['fashion'] },
+  { id: 'stradivarius', name: 'Stradivarius', mark: 'STRADIVARIUS', cls: 'mk-stradi', cats: ['fashion'] },
+  { id: 'nike', name: 'Nike', mark: 'NIKE', cls: 'mk-nike', cats: ['shoes'] },
+  { id: 'footlocker', name: 'Foot Locker', mark: 'FOOT LOCKER', cls: 'mk-stradi', cats: ['shoes'] },
+  { id: 'ikea', name: 'IKEA', mark: 'IKEA', cls: 'mk-temu', cats: ['home'] },
+  { id: 'kitchenaid', name: 'KitchenAid', mark: 'KitchenAid', cls: 'mk-ali', cats: ['kitchen'] },
+  { id: 'fnac', name: 'Fnac', mark: 'fnac', cls: 'mk-ali', cats: ['electronics'] },
+  { id: 'sephora', name: 'Sephora', mark: 'SEPHORA', cls: 'mk-sephora', cats: ['beauty'] },
+  { id: 'douglas', name: 'Douglas', mark: 'DOUGLAS', cls: 'mk-zalando', cats: ['beauty'] },
+];
+
+/** Le rail de l'accueil s'arrête à sept enseignes ; la liste les montre toutes. */
+const RAIL_LIMIT = 7;
+
+const TOTAL_STORES = 364;
+
+const I18N = {
+  fr: {
+    search: 'Rechercher une boutique',
+    cats: 'Catégories',
+    catsHint: '6 familles, 364 boutiques',
+    viewAll: 'Tout voir',
+    history: 'Historique',
+    historySub: 'Ta dernière recherche de boutique',
+    clear: 'Effacer',
+    emptyHistory: 'Aucune recherche pour le moment.',
+    explore: 'Explorer les boutiques',
+    exploreHint: '7 enseignes vérifiées',
+    results: 'Résultats',
+    allStores: 'Toutes les boutiques',
+    favorites: 'Favoris',
+    cart: 'Panier',
+    items: '2 articles',
+    subtotal: 'Sous-total estimé',
+    openCart: 'Voir le panier',
+    tabAccount: 'Compte',
+    justNow: 'il y a 2 h',
+    noMatch: 'Aucune boutique ne correspond.',
+    'cat.electronics': 'High-tech',
+    'cat.fashion': 'Mode',
+    'cat.home': 'Maison & mobilier',
+    'cat.shoes': 'Chaussures & sneakers',
+    'cat.beauty': 'Beauté & cosmétiques',
+    'cat.kitchen': 'Cuisine & électroménager',
+    'cat.marketplace': 'Marketplace',
+  },
+  ar: {
+    search: 'ابحث عن متجر',
+    cats: 'الفئات',
+    catsHint: '6 فئات، 364 متجر',
+    viewAll: 'شوف الكل',
+    history: 'سجل البحث',
+    historySub: 'آخر متجر قلّبت عليه',
+    clear: 'امسح',
+    emptyHistory: 'ما زال ما قلّبتش على متجر.',
+    explore: 'استكشف المتاجر',
+    exploreHint: '7 متاجر متأكدة',
+    results: 'النتائج',
+    allStores: 'كل المتاجر',
+    favorites: 'المفضلة',
+    cart: 'السلّة',
+    items: 'زوز منتجات',
+    subtotal: 'المجموع التقديري',
+    openCart: 'شوف السلّة',
+    tabAccount: 'حسابي',
+    justNow: 'من ساعتين',
+    noMatch: 'ما لقيناش متجر.',
+    'cat.electronics': 'الإلكترونيات',
+    'cat.fashion': 'الملابس والأزياء',
+    'cat.home': 'المنزل والأثاث',
+    'cat.shoes': 'الأحذية',
+    'cat.beauty': 'الجمال والتجميل',
+    'cat.kitchen': 'المطبخ والأجهزة المنزلية',
+    'cat.marketplace': 'متاجر متنوعة',
+  },
+};
+
+const t = (key) => I18N[STATE.lang][key] ?? I18N.fr[key] ?? key;
+const esc = (value) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const icon = (name, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
+const storeById = (id) => STORES.find((store) => store.id === id);
+const markOf = (store) => `<span class="mark ${store.cls}">${esc(store.mark)}</span>`;
+const catLabel = (cat) => t(`cat.${cat.id}`);
+
+/* ─── Sélection courante (recherche + catégorie) ────────────────────────── */
+function visibleStores() {
+  const needle = STATE.query.trim().toLowerCase();
+  return STORES.filter((store) => {
+    if (STATE.cat && !store.cats.includes(STATE.cat)) return false;
+    if (!needle) return true;
+    const haystack = `${store.name} ${store.cats.map((id) => t(`cat.${id}`)).join(' ')}`.toLowerCase();
+    return haystack.includes(needle);
+  });
+}
+const isFiltering = () => Boolean(STATE.query.trim() || STATE.cat);
+
+/** Ce que le rail affiche : 7 enseignes par défaut, tout ce qui correspond en filtre. */
+const railStores = () => (isFiltering() ? visibleStores() : visibleStores().slice(0, RAIL_LIMIT));
+
+/* ═══ FRAGMENTS ═════════════════════════════════════════════════════════ */
+
+/* 1 · En-tête : wordmark officiel + panier (pastille = nombre d'articles) */
+function header() {
+  return `<header class="appbar">
+    <img class="wm" src="${WORDMARK}" alt="AYWEBs">
+    <button type="button" class="iconbtn" data-act="cart" aria-label="${esc(t('cart'))}">
+      ${icon('cart')}<span class="badge">2</span>
+    </button>
+  </header>`;
+}
+
+/* Écran 4 : retour + titre + panier */
+function listHeader() {
+  return `<header class="topbar">
+    <button type="button" class="iconbtn" data-act="back" aria-label="Retour">${icon('back', 'flip')}</button>
+    <h2>${esc(t('allStores'))}</h2>
+    <span class="spacer"></span>
+    <button type="button" class="iconbtn" data-act="cart" aria-label="${esc(t('cart'))}">
+      ${icon('cart')}<span class="badge">2</span>
+    </button>
+  </header>`;
+}
+
+/* 2 · Recherche de boutiques */
+const searchBar = () => `
+  <div class="search">
+    ${icon('search')}
+    <input type="search" data-act="search" value="${esc(STATE.query)}"
+      placeholder="${esc(t('search'))}" aria-label="${esc(t('search'))}" autocomplete="off">
+    ${STATE.query ? `<button type="button" class="clear" data-act="clearQuery" aria-label="${esc(t('clear'))}">${icon('close', 'ic-18')}</button>` : ''}
+  </div>`;
+
+/* 3 · Catégories — trois variantes, même données */
+function tile(cat, wide) {
+  const on = STATE.cat === cat.id ? ' is-on' : '';
+  return `<button type="button" class="tile${wide ? ' tile--wide' : ''}${on}" data-cat="${cat.id}">
+    <span class="media ${cat.photo ? '' : 'media--icon'}">
+      ${cat.photo ? `<span class="photo ph-${cat.id}"></span>` : icon(cat.icon, 'ic-32')}
+    </span>
+    <span class="lbl">${esc(catLabel(cat))}</span>
+  </button>`;
+}
+
+const sectionHead = (title, hint, action) => `
+  <div class="sechead">
+    <div>
+      <h3>${esc(title)}</h3>
+      ${hint ? `<div class="hint2">${esc(hint)}</div>` : ''}
+    </div>
+    ${action || ''}
+  </div>`;
+
+const categoriesBlock = (variant) => {
+  const head = sectionHead(t('cats'), t('catsHint'),
+    `<button type="button" class="link" data-act="allCats">${esc(t('viewAll'))}${icon('chev', 'ic-14 flip')}</button>`);
+  const body = variant === 'V2'
+    ? `<div class="rail">${CATS.map((cat) => tile(cat, false)).join('')}</div>`
+    : variant === 'V3'
+      ? `<div class="grid2">${CATS.map((cat) => tile(cat, true)).join('')}</div>`
+      : `<div class="grid3">${CATS.map((cat) => tile(cat, false)).join('')}</div>`;
+  return `<section class="block" data-list="cats">${head}${body}</section>`;
+};
+
+/* 4 · Historique : la dernière recherche, son image devant */
+function historyBlock() {
+  const recent = STATE.history.map(storeById).filter(Boolean);
+  const last = recent[0];
+  const older = recent.slice(1, 4);
+  const body = recent.length
+    ? `<button type="button" class="histBar" data-act="rerun" data-store="${last.id}">
+         <span class="thumb">${markOf(last)}</span>
+         <span class="txt">
+           <b>${esc(last.name)}</b>
+           <small>${esc(t('historySub'))} · ${esc(t('justNow'))}</small>
+         </span>
+         ${icon('chev', 'ic-18 flip')}
+       </button>
+       <div class="chipsRow">
+         ${older.map((store) => `<button type="button" class="chip" data-act="rerun" data-store="${store.id}">
+            <span class="mark ${store.cls}">${esc(store.mark)}</span>${esc(store.name)}
+         </button>`).join('')}
+       </div>`
+    : `<div class="chip chip--empty">${esc(t('emptyHistory'))}</div>`;
+  return `<section class="block" data-list="history">
+    ${sectionHead(t('history'), null, `<button type="button" class="link" data-act="clearHistory">${esc(t('clear'))}</button>`)}
+    ${body}
+  </section>`;
+}
+
+/* 5 · Carte boutique — 100 pt, identique au rail ET à la liste */
+function storeCard(store) {
+  const on = STATE.favs.includes(store.id) ? ' is-on' : '';
+  return `<button type="button" class="card" data-act="openStore" data-store="${store.id}">
+    <span class="media">${markOf(store)}
+      <span class="heart${on}" data-act="fav" data-store="${store.id}" role="button" aria-label="${esc(t('favorites'))}">
+        ${icon('heart', 'ic-14')}
+      </span>
+    </span>
+    <span class="body">
+      <span class="name">${esc(store.name)}</span>
+      <span class="cat">${esc(catLabel({ id: store.cats[0] }))}</span>
+    </span>
+  </button>`;
+}
+
+function exploreBlock() {
+  const stores = visibleStores();
+  return `<section class="block">
+    <div class="sechead">
+      <div>
+        <h3 data-title="explore">${esc(isFiltering() ? t('results') : t('explore'))}</h3>
+        <div class="hint2" data-hint="explore">${esc(isFiltering() ? '' : t('exploreHint'))}</div>
+      </div>
+      <button type="button" class="link" data-act="openList">${esc(t('viewAll'))}${icon('chev', 'ic-14 flip')}</button>
+    </div>
+    <div class="rail" data-list="stores">${railStores().map(storeCard).join('')}</div>
+    <button type="button" class="enter" data-act="openList">
+      ${icon('grid', 'ic-20')}
+      ${esc(t('allStores'))}
+      <span class="count">${TOTAL_STORES}</span>
+      ${icon('chev', 'ic-18 chev flip')}
+    </button>
+  </section>`;
+}
+
+/* Feuille panier */
+function cartSheet() {
+  const open = STATE.cartOpen ? ' is-open' : '';
+  return `<div class="scrim${open}" data-act="closeCart"></div>
+  <div class="sheet${open}">
+    <div class="grab"></div>
+    <h4>${esc(t('cart'))}</h4>
+    <div class="row">
+      <span class="thumb"><span class="mark mk-amazon">AMZ</span></span>
+      <span><b>Sneakers cuir blanc</b><small>Taille 42 · Amazon</small></span>
+      <span class="amt">289,400</span>
+    </div>
+    <div class="row">
+      <span class="thumb"><span class="mark mk-shein">SHE</span></span>
+      <span><b>Robe midi plissée</b><small>M · SHEIN</small></span>
+      <span class="amt">97,800</span>
+    </div>
+    <div class="total"><span>${esc(t('subtotal'))}</span><b>387,200 TND</b></div>
+    <button type="button" class="cta" data-act="openCart">${esc(t('openCart'))}</button>
+  </div>`;
+}
+
+const toast = () => `<div class="toast${STATE.toast ? ' is-open' : ''}">${esc(STATE.toast)}</div>`;
+const tabbar = () => `<nav class="tabbar">
+  <span class="tab is-on">${icon('pricetags')}<span>AYWEBs</span></span>
+  <span class="tab">${icon('user')}<span>${esc(t('tabAccount'))}</span></span>
+</nav>`;
+const statusbar = () => `<div class="statusbar">
+  <span>2:41</span>
+  <span class="right"><span class="bars"><i></i><i></i><i></i></span><span class="batt"></span></span>
+</div>`;
+
+/* ═══ ÉCRANS ════════════════════════════════════════════════════════════ */
+const screens = {
+  V1: () => `${statusbar()}${header()}<div class="page">${searchBar()}${categoriesBlock('V1')}${historyBlock()}${exploreBlock()}</div>${toast()}${tabbar()}${cartSheet()}`,
+  V2: () => `${statusbar()}${header()}<div class="page">${searchBar()}${categoriesBlock('V2')}${historyBlock()}${exploreBlock()}</div>${toast()}${tabbar()}${cartSheet()}`,
+  V3: () => `${statusbar()}${header()}<div class="page">${searchBar()}${categoriesBlock('V3')}${historyBlock()}${exploreBlock()}</div>${toast()}${tabbar()}${cartSheet()}`,
+  LIST: () => {
+    const favs = STORES.filter((store) => STATE.favs.includes(store.id));
+    const all = visibleStores();
+    return `${statusbar()}${listHeader()}
+      <div class="screenHead">${searchBar()}</div>
+      <div class="page" style="padding-top:0">
+        <section class="block" data-list="favs">
+          ${sectionHead(t('favorites'), null, '')}
+          <div class="grid3">${favs.slice(0, 3).map(storeCard).join('')}</div>
+        </section>
+        <section class="block">
+          <div class="sechead">
+            <div><h3>${esc(t('allStores'))}</h3>
+              <div class="hint2" data-count="all">${all.length} / ${TOTAL_STORES}</div></div>
+          </div>
+          <div class="grid3" data-list="all">${all.map(storeCard).join('')}</div>
+        </section>
+      </div>${toast()}${tabbar()}${cartSheet()}`;
+  },
+};
+
+/* ═══ RENDU ═════════════════════════════════════════════════════════════ */
+function render() {
+  document.documentElement.lang = STATE.lang;
+  document.documentElement.dir = STATE.lang === 'ar' ? 'rtl' : 'ltr';
+  document.documentElement.dataset.activeLang = STATE.lang;
+  document.querySelectorAll('.screen').forEach((node) => {
+    const build = screens[node.dataset.screen];
+    if (build) node.innerHTML = build();
+  });
+}
+
+/** Recherche : on ne reconstruit QUE les listes — le champ garde le focus. */
+function patchSearch() {
+  document.querySelectorAll('.screen').forEach((screen) => {
+    const stores = visibleStores();
+    const rail = screen.querySelector('[data-list="stores"]');
+    if (rail) {
+      const shown = railStores();
+      rail.innerHTML = shown.length
+        ? shown.map(storeCard).join('')
+        : `<div class="chip chip--empty">${esc(t('noMatch'))}</div>`;
+    }
+    const title = screen.querySelector('[data-title="explore"]');
+    if (title) title.textContent = isFiltering() ? t('results') : t('explore');
+    const hint = screen.querySelector('[data-hint="explore"]');
+    if (hint) hint.textContent = isFiltering() ? '' : t('exploreHint');
+    const all = screen.querySelector('[data-list="all"]');
+    if (all) all.innerHTML = stores.map(storeCard).join('');
+    const count = screen.querySelector('[data-count="all"]');
+    if (count) count.textContent = `${stores.length} / ${TOTAL_STORES}`;
+  });
+}
+
+function notify(message) {
+  STATE.toast = message;
+  render();
+  if (typeof setTimeout === 'function') {
+    setTimeout(() => { STATE.toast = ''; render(); }, 2200);
+  }
+}
+
+/* ═══ INTERACTIONS (délégation : un seul écouteur) ══════════════════════ */
+function onClick(event) {
+  const langButton = event.target.closest('.controls [data-lang]');
+  if (langButton) {
+    STATE.lang = langButton.dataset.lang;
+    document.querySelectorAll('.controls [data-lang]').forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.lang === STATE.lang));
+    });
+    render();
+    return;
+  }
+
+  const actionNode = event.target.closest('[data-act], [data-cat]');
+  if (!actionNode) return;
+
+  /* Une catégorie est sélectionnable / désélectionnable. */
+  if (actionNode.dataset.cat) {
+    const id = actionNode.dataset.cat;
+    STATE.cat = STATE.cat === id ? null : id;
+    render();
+    return;
+  }
+
+  const act = actionNode.dataset.act;
+  const store = actionNode.dataset.store;
+  switch (act) {
+    case 'cart':
+      STATE.cartOpen = true; render(); break;
+    case 'closeCart':
+      STATE.cartOpen = false; render(); break;
+    case 'openCart':
+      STATE.cartOpen = false; notify(STATE.lang === 'ar' ? 'السلّة تحلّت — هذه ماكيت.' : 'Panier ouvert — ceci est une maquette.'); break;
+    case 'fav':
+      event.stopPropagation();
+      STATE.favs = STATE.favs.includes(store)
+        ? STATE.favs.filter((id) => id !== store)
+        : [...STATE.favs, store];
+      render(); break;
+    case 'rerun':
+      STATE.query = storeById(store)?.name ?? '';
+      STATE.cat = null;
+      render();
+      notify(STATE.lang === 'ar' ? `عاودنا البحث على ${STATE.query}` : `Recherche relancée : ${STATE.query}`);
+      break;
+    case 'clearHistory':
+      STATE.history = []; render(); break;
+    case 'clearQuery':
+      STATE.query = ''; render(); break;
+    case 'allCats':
+      STATE.cat = null; STATE.query = ''; render(); break;
+    case 'openList':
+      notify(STATE.lang === 'ar' ? 'هذه هي الشاشة الرابعة — المتاجر.' : 'Écran 4 — la liste des boutiques est à droite.');
+      break;
+    case 'openStore': {
+      const target = storeById(store);
+      if (target) notify(STATE.lang === 'ar' ? `نحلّو ${target.name}…` : `Ouverture de ${target.name}…`);
+      break;
+    }
+    case 'back':
+      notify(STATE.lang === 'ar' ? 'الرجوع للرئيسية.' : 'Retour à l’accueil.');
+      break;
+    default: break;
+  }
+}
+
+function onInput(event) {
+  const field = event.target.closest('[data-act="search"]');
+  if (!field) return;
+  STATE.query = field.value;
+  patchSearch();
+}
+
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+  document.addEventListener('click', onClick);
+  document.addEventListener('input', onInput);
+}
+
+render();
+</script>
+</body>
+</html>

@@ -194,6 +194,19 @@ export function mediaUrlOf(value: unknown, field = 'url'): Check<string > {
     }
     return { ok: true, value: raw };
   }
+  /**
+   * Médias LIVRÉS AVEC LE DÉPÔT (`assets/media`, servis sur `/media`) : les
+   * photos du produit de test, versionnées, donc présentes sur toute
+   * installation — contrairement à `data/uploads`, qui ne voyage pas avec le
+   * code. Même garde que `/uploads/` : ni remontée de chemin, ni lien externe.
+   */
+  if (raw.startsWith('/media/')) {
+    const relative = raw.slice('/media/'.length).split('?')[0].split('#')[0];
+    if (!relative || relative.includes('..') || relative.includes('\\')) {
+      return fail(CATALOGUE_ERRORS.MEDIA_URL_INVALID, 'Chemin de média non autorisé.', [{ field, reason: 'TRAVERSAL' }]);
+    }
+    return { ok: true, value: raw };
+  }
   if (/^https?:\/\//i.test(raw)) return { ok: true, value: raw };
   return fail(CATALOGUE_ERRORS.MEDIA_URL_INVALID, 'Le média doit être une URL http(s) ou un chemin /uploads/….', [{ field, reason: 'FORMAT' }]);
 }

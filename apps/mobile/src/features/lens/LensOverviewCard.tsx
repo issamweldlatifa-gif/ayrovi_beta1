@@ -17,6 +17,7 @@ import { useTheme } from '@/design/theme';
 import { AppText } from '@/design/ui';
 import { useT } from '@/i18n';
 import type { LensIdentification } from '@/api/lens';
+import { RADIUS } from '@/design/tokens.mobile';
 
 export function LensOverviewCard({ identification }: { identification: LensIdentification }) {
   const theme = useTheme();
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: RADIUS.lg,
     borderWidth: StyleSheet.hairlineWidth,
     gap: 4,
   },

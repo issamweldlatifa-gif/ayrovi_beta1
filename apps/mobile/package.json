@@ -16,7 +16,8 @@
     "release:set-api-base": "node scripts/set-api-base.mjs",
     "device:acceptance": "node scripts/device-acceptance.mjs",
     "tokens:build": "node scripts/gen-tokens.mjs",
-    "tokens:check": "node scripts/gen-tokens.mjs --check"
+    "tokens:check": "node scripts/gen-tokens.mjs --check",
+    "postinstall": "node scripts/patch-router-decoder.cjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
@@ -61,6 +62,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@babel/parser": "^7.29.9",
     "@react-native/jest-preset": "^0.86.3",
     "@testing-library/react-native": "^13.3.3",
     "@types/jest": "^29.5.14",
@@ -71,5 +73,13 @@
     "react-test-renderer": "^19.2.3",
     "typescript": "~6.0.3",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "@expo/cli": {
+      "zod": "4.6.7"
+    },
+    "query-string": {
+      "decode-uri-component": "0.5.1"
+    }
   }
 }

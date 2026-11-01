@@ -39,7 +39,7 @@ import { adaptiveInk, heroEdgeColors, pickHeroText, withAlpha } from './heroPale
 import { isDemoSlide } from './heroDemo';
 import {
   backdropLayerRange, CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
-  shouldAutoplayAdvance,
+  scrollOffsetForIndex, shouldAutoplayAdvance,
 } from './heroCarouselLogic';
 
 /** Espace entre le bas du héros et les tabs : petit, pas un vide de 120 pts. */
@@ -123,18 +123,22 @@ function HeroCarouselView({
     return () => subscription.remove();
   }, []);
 
-  // Géométrie : carte active centrée, voisines visibles à égale distance des deux côtés.
-  const { cardWidth, stride, sideInset } = carouselGeometry(viewportWidth);
+  // Marge de page (gutter) : la première carte s'aligne sur les titres et le header.
+  const { cardWidth, stride, sideInset } = carouselGeometry(viewportWidth, gutter);
 
-  // Fond de chaque carte = les bords EXACTS de sa photo (haut → bas), sans retouche.
-  // Repli : fond manuel / ancienne palette (`background`), puis surface du thème.
+  // Fond de chaque carte = les bords EXACTS de sa photo en mode clair ;
+  // en mode sombre, toile sombre unifiée pour éviter toute rupture chromatique.
   const edges = useMemo(
-    () => slides.map((card) => heroEdgeColors(card, theme.colors.surface)),
-    [slides, theme.colors.surface],
+    () => slides.map((card) => (
+      theme.mode === 'dark'
+        ? { top: theme.colors.canvas, bottom: theme.colors.canvas }
+        : heroEdgeColors(card, theme.colors.surface)
+    )),
+    [slides, theme.colors.canvas, theme.colors.surface, theme.mode],
   );
 
-  // Le header reprend le bord HAUT de la photo active ; remise à zéro au démontage.
-  const activeTop = edges[activeIndex]?.top ?? null;
+  // Le header reprend le bord HAUT de la photo active en mode clair ; en mode sombre il garde sa toile sombre.
+  const activeTop = theme.mode === 'dark' ? null : (edges[activeIndex]?.top ?? null);
   useEffect(() => {
     onActiveBackgroundChange?.(activeTop);
   }, [activeTop, onActiveBackgroundChange]);
@@ -173,11 +177,12 @@ function HeroCarouselView({
       if (!shouldAutoplayAdvance(current, slides.length)) return;
       const next = nextIndex(current, slides.length);
       indexRef.current = next; // sans attendre le rendu : deux ticks successifs restent cohérents
-      listRef.current?.scrollToIndex({ index: next, animated: true, viewPosition: 0.5 });
+      // Décalage exact (un pas = une carte) : la carte arrive sur la marge, pas au centre.
+      listRef.current?.scrollToOffset({ offset: scrollOffsetForIndex(next, stride, theme.isRTL), animated: true });
       setActiveIndex(next);
     }, settings.autoplayIntervalMs);
     return () => clearInterval(timer);
-  }, [settings.autoplay, settings.autoplayIntervalMs, slides.length, paused, reduceMotion]);
+  }, [settings.autoplay, settings.autoplayIntervalMs, slides.length, paused, reduceMotion, stride, theme.isRTL]);
 
   const onScrollBeginDrag = useCallback(() => setInteracting(true), []);
   // Glissement relâché SANS élan : RN ne déclenche pas `onMomentumScrollEnd`,
@@ -244,9 +249,7 @@ function HeroCarouselView({
         inverted={theme.isRTL}
         showsHorizontalScrollIndicator={false}
         snapToInterval={stride}
-        // « start » et PAS « center » : avec snapToInterval = stride (carte + espace),
-        // « center » centre un bloc de largeur stride et décale la carte de l'espace / 2.
-        // Le décalage `i × stride` calculé plus haut est déjà le bon point de centrage.
+        // « start » : la carte s'aligne sur sa marge de départ (le gutter), comme le header.
         snapToAlignment="start"
         decelerationRate="fast"
         contentContainerStyle={{ paddingHorizontal: sideInset, gap: CARD_GAP }}
@@ -350,12 +353,15 @@ const HeroCard = memo(function HeroCard({ card, width, backdrop, onPress }: Hero
           accessibilityLabel={cta}
           style={({ pressed }) => [
             styles.cardCta,
-            // Lien éditorial de la carte : pastille encre (le violet plein est réservé
-            // à l'action d'achat — ajout au panier, caisse, paiement).
-            { backgroundColor: ctaFill, opacity: pressed ? theme.opacity.subtle : 1 },
+            {
+              minHeight: theme.chrome.button,
+              borderRadius: theme.radius.sm,
+              backgroundColor: ctaFill,
+              opacity: pressed ? theme.opacity.subtle : 1,
+            },
           ]}
         >
-          <AppText variant="label" weight="bold" color={ctaText} numberOfLines={1}>
+          <AppText variant="label" weight="semibold" color={ctaText} numberOfLines={1}>
             {cta}
           </AppText>
         </Pressable>
@@ -381,11 +387,12 @@ const styles = StyleSheet.create({
   cardSubtitle: { marginTop: 4 },
   cardCta: {
     alignSelf: 'flex-start',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 12,
     marginHorizontal: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 8,
-    borderRadius: 999,
     overflow: 'hidden',
   },
 });

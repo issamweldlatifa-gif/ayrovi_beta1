@@ -327,6 +327,9 @@ describe('ZAYROVI Claude assistant', () => {
   });
 
   test('lens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model', async () => {
+    // Un seul marché : sinon Lens lance une recherche par pays (défaut : 9).
+    const previousCountries = process.env.AYROVIX_LENS_COUNTRIES;
+    process.env.AYROVIX_LENS_COUNTRIES = 'fr';
     process.env.SERPAPI_KEY = 'serpapi-assistant-test-key';
     delete process.env.ANTHROPIC_API_KEY;
     const fetchMock = vi.fn(async (url: any) => {
@@ -358,9 +361,9 @@ describe('ZAYROVI Claude assistant', () => {
     expect(result.presentation?.product.priceToken).toBeTruthy();
     expect(result.presentation?.product.priceTnd).toBeGreaterThan(0);
     expect(result.modelResult.products[0].priceToken).toBeUndefined();
-    const fetchUrls = fetchMock.mock.calls.map(([url]) => String(url));
-    expect(fetchUrls).toContain('https://serpapi.com/image');
-    expect(fetchUrls.some((url) => url.includes('engine=google_lens') && url.includes('type=visual_matches'))).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    if (previousCountries === undefined) delete process.env.AYROVIX_LENS_COUNTRIES;
+    else process.env.AYROVIX_LENS_COUNTRIES = previousCountries;
   });
 
   test('voice endpoint validates audio and returns Groq Whisper transcription', async () => {

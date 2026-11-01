@@ -140,7 +140,10 @@ describe('AYWEBs Phase 1 — SWR (stale-while-revalidate)', () => {
     expect(second.cacheKind).toBe('read');
     expect(second.product.price).toBe(39.99);    // …avec la dernière lecture connue
 
-    await until(() => h.scrapeProduct.mock.calls.length >= 2); // …et relu derrière
+    // …et relu derrière. On attend la FIN de la relecture (entrée en vol retirée,
+    // donc cache écrit) — pas seulement l'appel : sinon la lecture suivante peut
+    // partir avant l'écriture et voir l'ancienne entrée (course, 60 ms de TTL).
+    await until(() => h.scrapeProduct.mock.calls.length >= 2 && ayWebsResolveCacheStats().in_flight === 0);
     expect(h.scrapeProduct).toHaveBeenCalledTimes(2);
 
     const third = await resolveAyWebsProduct(h.resolver, { url: OK_URL, sessionId: SESSION_ID });
@@ -181,6 +184,27 @@ describe('AYWEBs Phase 1 — coupe-circuit par hôte', () => {
     expect(failure.contract.retryAllowed).toBe(true);
     expect(h.scrapeProduct).toHaveBeenCalledTimes(3); // ← plus aucune sonde payée (3 = l'ouverture)
     expect(elapsedMs).toBeLessThan(1_000);
+  });
+
+  it('trois liens que la boutique ne sert pas (erreur de SAISIE) ne coupent PAS l’hôte', async () => {
+    /* Régression (18/10/2026) : la décision « STORE_MISMATCH » comptait contre
+       l'hôte entier. Trois mauvais liens mettaient toute la boutique au repos
+       10 min : les vrais produits répondaient « refuse temporairement ». */
+    const WRONG_URL = 'https://www.amazon.com/dp/B0WRONGLNK';
+    const h = harness();
+    const base = h.scrapeProduct.getMockImplementation()!;
+    h.scrapeProduct.mockImplementation(async (url: string) => {
+      if (url.includes('B0WRONGLNK')) return { ...(await base(OK_URL)), store: 'autre_boutique' } as any;
+      return base(url);
+    });
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      await resolveAyWebsProduct(h.resolver, { url: WRONG_URL, sessionId: SESSION_ID }).catch(() => null);
+    }
+    expect(probeCooldowns()).toEqual([]);
+
+    const good = await resolveAyWebsProduct(h.resolver, { url: OK_URL, sessionId: SESSION_ID });
+    expect(good.product.price).toBe(39.99);
   });
 
   it('le coupe-circuit se désactive par configuration (AYWEBS_HOST_CIRCUIT=off)', async () => {

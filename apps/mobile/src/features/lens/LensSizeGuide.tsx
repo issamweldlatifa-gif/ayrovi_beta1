@@ -48,7 +48,7 @@ export function LensSizeGuide({
         testID="lens-size-guide-backdrop"
       >
         <Pressable
-          style={[styles.sheet, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.lg }]}
+          style={[styles.sheet, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.sheet }]}
           accessibilityRole="button"
           onPress={() => undefined}
           testID="lens-size-guide-sheet"
