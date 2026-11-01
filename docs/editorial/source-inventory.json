@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 265,
-    "customerAndSharedFiles": 204,
+    "files": 266,
+    "customerAndSharedFiles": 205,
     "controls": 486,
     "iconAliases": 102,
     "uniqueGlyphs": 99
@@ -422,7 +422,7 @@
     {
       "file": "client/src/admin/admin.css",
       "domain": "admin",
-      "sha256": "447fb53ddc68a33441724834e042bba044d9ad46cae343a81718fd553c007f73",
+      "sha256": "b4aaa23f0594c811aae2931514a62b9449eb7bf143748ddc301ab7b0376b4fa1",
       "lines": 1489,
       "imports": [],
       "exports": [],
@@ -443,7 +443,7 @@
     {
       "file": "client/src/admin/AdminApp.tsx",
       "domain": "admin",
-      "sha256": "6236f6bba11f289255b67be6c29a7361eee459999fe580fcc6a64a45c62fc77c",
+      "sha256": "f2ccda695794d81051c9c391b79681ffa09750d7629093fd8badb40112ac76fa",
       "lines": 1042,
       "imports": [
         "../../../shared/brand.generated",
@@ -8700,7 +8700,7 @@
     {
       "file": "client/src/admin/LensSectionPage.tsx",
       "domain": "admin",
-      "sha256": "88836accf00ce37216701fa4842b6345528c3dcc3a4dce910a6b327b0a8c853c",
+      "sha256": "61d1179c9f3147966560e85daba51f93a98c3bd785e898834975d2f4265e65d6",
       "lines": 436,
       "imports": [
         "react",
@@ -10265,7 +10265,7 @@
     {
       "file": "client/src/admin/ProductIntegration.tsx",
       "domain": "admin",
-      "sha256": "add6aa4177ecd39ce568e84ec038baf74b518644f988145a76cc1254d40da3f4",
+      "sha256": "4a978de8c9443f3b73f3035fc3b33c32ce43adce53242a18b64e97701ea19036",
       "lines": 489,
       "imports": [
         "react",
@@ -11398,7 +11398,7 @@
     {
       "file": "client/src/admin/StoriesStudio.tsx",
       "domain": "admin",
-      "sha256": "cd127ca2dc9267c8e78be3d19ee9abad4577bdb493ed4f167570de6c0047f873",
+      "sha256": "cba365da127626f18f0c1e11ead6da1bbf073700abb788f746eef3d46edc1082",
       "lines": 386,
       "imports": [
         "react",
@@ -11959,8 +11959,8 @@
     {
       "file": "client/src/App.tsx",
       "domain": "shell-content",
-      "sha256": "79cae5b6e9ffc748a68c334d4c09235aac30135e570dc8ede069475390f1d44f",
-      "lines": 740,
+      "sha256": "efed19c3f746531b04125a188b083ac9f31741008aaac9ffac72c0918d33c341",
+      "lines": 743,
       "imports": [
         "./design/editorial/customerTheme",
         "react",
@@ -11997,7 +11997,7 @@
       "controls": [
         {
           "tag": "MenuDrawer",
-          "line": 521,
+          "line": 524,
           "className": null,
           "type": null,
           "role": null,
@@ -12007,7 +12007,7 @@
         },
         {
           "tag": "ProductDrawer",
-          "line": 592,
+          "line": 595,
           "className": null,
           "type": null,
           "role": null,
@@ -12017,7 +12017,7 @@
         },
         {
           "tag": "AiAssistantDrawer",
-          "line": 607,
+          "line": 610,
           "className": null,
           "type": null,
           "role": null,
@@ -12027,7 +12027,7 @@
         },
         {
           "tag": "OcerexScreen",
-          "line": 633,
+          "line": 636,
           "className": null,
           "type": null,
           "role": null,
@@ -12037,7 +12037,7 @@
         },
         {
           "tag": "ShopBagScreen",
-          "line": 665,
+          "line": 668,
           "className": null,
           "type": null,
           "role": null,
@@ -12047,7 +12047,7 @@
         },
         {
           "tag": "ShopCheckoutScreen",
-          "line": 685,
+          "line": 688,
           "className": null,
           "type": null,
           "role": null,
@@ -12057,7 +12057,7 @@
         },
         {
           "tag": "OrderSuccessModal",
-          "line": 728,
+          "line": 731,
           "className": null,
           "type": null,
           "role": null,
@@ -12191,7 +12191,7 @@
     {
       "file": "client/src/ayrovix/components/lens-camera.css",
       "domain": "lens",
-      "sha256": "7d50069432fec75202052549461f8d31b59cfb84291ff6e7bec6d7d6e3d4d50f",
+      "sha256": "23a54501cf17526888fb626a4409a4ae81f2ab2739a8a30ddcb351fb0e9415d7",
       "lines": 70,
       "imports": [],
       "exports": [],
@@ -12214,7 +12214,7 @@
     {
       "file": "client/src/ayrovix/components/lens-results.css",
       "domain": "lens",
-      "sha256": "8c6de883ed5ad9b2c20dfef2b999410f352984192d6d39bd13e2539ca28de585",
+      "sha256": "b932d515079dda16c798d31276350583dbb933eeedf842ede31dd5ee35a0ae23",
       "lines": 50,
       "imports": [],
       "exports": [],
@@ -13245,7 +13245,7 @@
     {
       "file": "client/src/ayrovix/components/quiet-card.css",
       "domain": "lens",
-      "sha256": "dfc2315980de5a81ce6440bc8ddb202256d1c87844e875ef48d9203d015c47a0",
+      "sha256": "c4fb4757589cbed630728c31530031c535470580080442ceef89189aef7f7250",
       "lines": 215,
       "imports": [],
       "exports": [],
@@ -14161,7 +14161,7 @@
     {
       "file": "client/src/components/AnnouncementSection.tsx",
       "domain": "shell-content",
-      "sha256": "3f6536ed12d8ff3a5f202a6eae37826ea844b5975c907fdb656fa6b6fcf60477",
+      "sha256": "4c37c2542dd1e88d7b14d8515a6230df349173dfc98bb863732d79f2d81aa058",
       "lines": 93,
       "imports": [
         "react",
@@ -19047,7 +19047,7 @@
     {
       "file": "client/src/design/editorial/customer.css",
       "domain": "account-auth",
-      "sha256": "cdfda67144d78432985789ff2f38cb674ae23b30e9b89f4ba9e01c8e6ebfef83",
+      "sha256": "15423f26d042ca5429691dfea2ad487e3ddb1f8e095f730ad84191853791985a",
       "lines": 62,
       "imports": [],
       "exports": [],
@@ -19168,8 +19168,8 @@
     {
       "file": "client/src/design/editorial/primitives.css",
       "domain": "shared-design",
-      "sha256": "78cbbc815d5e9b20d16f631e95bc5df0fc5d4dfc4430557dcfe598012293fced",
-      "lines": 58,
+      "sha256": "dacf2b41823e9f88dbeeac30d75302baba8229750847301e682b2b26508c16b7",
+      "lines": 59,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -19184,7 +19184,7 @@
     {
       "file": "client/src/design/editorial/tokens.generated.css",
       "domain": "shared-design",
-      "sha256": "3b64c976e10bed6ae1fc6ad4745c69b19fbd68c92508ae4d1a0b2c5433162835",
+      "sha256": "4b45d0219cb25279d68d89b750c05d7ca9b0d408688e8a00358180a174ea9d8f",
       "lines": 78,
       "imports": [],
       "exports": [],
@@ -19220,13 +19220,13 @@
         "--ayrovi-font-body: var(--ay-font-stack)",
         "--ayrovi-font-display: var(--ay-font-stack)",
         "--ay-font-heading-width: 100%",
-        "--ay-font-heading-weight: 650",
-        "--ay-font-label-weight: 700",
-        "--ay-font-price-weight: 600",
-        "--ay-font-body-weight: 500",
-        "--ay-font-body-line-height: 1.4",
+        "--ay-font-heading-weight: 520",
+        "--ay-font-label-weight: 650",
+        "--ay-font-price-weight: 520",
+        "--ay-font-body-weight: 400",
+        "--ay-font-body-line-height: 1.5",
         "--ay-font-arabic-line-height: 1.55",
-        "--ay-font-heading-line-height: 1.18",
+        "--ay-font-heading-line-height: 1.16",
         "--ay-font-arabic-heading-line-height: 1.42",
         "font-family: var(--ay-font-stack)",
         "font-family: var(--ay-font-stack)",
@@ -19239,7 +19239,7 @@
     {
       "file": "client/src/design/tokens.css",
       "domain": "shared-design",
-      "sha256": "d39a29edd57f100bd6e3c75a35fe867549db1a51738374231d68c89c7128802b",
+      "sha256": "44452d85df37c1ce2ea1331b720235aa63e8053ee24b0e9e5c2f577200f4dc08",
       "lines": 637,
       "imports": [],
       "exports": [],
@@ -19475,15 +19475,15 @@
         "--font-mono: var(--font-primary)",
         "--font-serif: var(--font-primary)",
         "--font-weight-normal: 400",
-        "--font-weight-medium: 500",
-        "--font-weight-semibold: 600",
+        "--font-weight-medium: 520",
+        "--font-weight-semibold: 650",
         "--font-weight-bold: 700",
         "--font-weight-extrabold: 700",
         "--font-weight-black: 700",
         "--font-primary: var(--ay-font-stack)",
         "--font-weight-regular: 400",
-        "--font-weight-medium: 500",
-        "--font-weight-semibold: 600",
+        "--font-weight-medium: 520",
+        "--font-weight-semibold: 650",
         "--font-weight-bold: 700",
         "--ayrovi-font-display: var(--font-primary)",
         "--ayrovi-font-body: var(--font-primary)",
@@ -19922,7 +19922,7 @@
     {
       "file": "client/src/features/aywebs/aywebs.css",
       "domain": "shell-content",
-      "sha256": "3254ab3278436cdfc42d53116ccbb541c80983ae43d4ad5fd5338a304983346c",
+      "sha256": "fb889565addf3a19cc97cc9db57b5bc9b12e415400e4e85380ce3b3f1429a1d7",
       "lines": 559,
       "imports": [],
       "exports": [],
@@ -21134,8 +21134,8 @@
     {
       "file": "client/src/index.css",
       "domain": "shell-content",
-      "sha256": "13db728f6fefa7b8b4a3a032628c2bbbaa8cfe3ee39048c70c71866ce3c26096",
-      "lines": 1244,
+      "sha256": "885037325e02c29ce95aac196ab7b14b03b51dcd5483e0fe1c55584cb432978e",
+      "lines": 1245,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -21999,7 +21999,7 @@
     {
       "file": "client/src/shop/shop.css",
       "domain": "shell-content",
-      "sha256": "99afa92c530dd7c4265f436620da52ebdc69b83b1189a13e1e15620ca93cf2d0",
+      "sha256": "1e3b05380fabafa81e16094169ed693325486dcd12041dc7a65df80e4a6b8229",
       "lines": 731,
       "imports": [],
       "exports": [],
@@ -22798,7 +22798,7 @@
     {
       "file": "client/src/styles/admin-console.css",
       "domain": "shell-content",
-      "sha256": "2d055a0e84b3793a35a2fb6746ab1cc1a572005d8a3a6ec07e3f6f7cbbaae6e4",
+      "sha256": "037f2dacd913275bbb9d00dd4eb04bc6767a2992c312c864dcfe55a8f75ace75",
       "lines": 622,
       "imports": [],
       "exports": [],
@@ -22876,7 +22876,7 @@
     {
       "file": "client/src/styles/customer-account.css",
       "domain": "account-auth",
-      "sha256": "23062317cfd2c233f5ee2f7ccf6685afce39255ce8827e27f9c16d914a5a96a2",
+      "sha256": "d5f26eb442484ab7cf0bb501d13b3ab1b2817999dd1b7a1665cc45aeb9f6c671",
       "lines": 38,
       "imports": [],
       "exports": [],
@@ -22913,7 +22913,7 @@
     {
       "file": "client/src/styles/customer-auth.css",
       "domain": "account-auth",
-      "sha256": "45617c65a26f4c9cb428a72c393c7d3f1433e300ba839db816c9e69484d74a05",
+      "sha256": "8848367547b67bd461f95f5cc304238b965d984715e5346dbc478daff2d2f16f",
       "lines": 171,
       "imports": [],
       "exports": [],
@@ -22949,7 +22949,7 @@
     {
       "file": "client/src/styles/editorial-voice.css",
       "domain": "shell-content",
-      "sha256": "48fc1795e88a201614992ea7c38bfef36c9ef74f1fe0cc822f569eef6dc69593",
+      "sha256": "4d9eab293688174b703360e2002801161cb2a52831c4dbe5cdcb4d492e2b58e0",
       "lines": 60,
       "imports": [],
       "exports": [],
@@ -22982,7 +22982,7 @@
     {
       "file": "client/src/styles/journey.css",
       "domain": "shell-content",
-      "sha256": "b7e5a1010d6263e3601bd7cda3ff604b46fe22e1141c50e0aca6c8303e071e17",
+      "sha256": "cba9bc28c3e1d23309e0bae389d3e16c2fd5315212bceb81732c2f9a098ddc0b",
       "lines": 3,
       "imports": [],
       "exports": [],
@@ -23010,7 +23010,7 @@
     {
       "file": "client/src/styles/public-discovery.css",
       "domain": "discovery-social",
-      "sha256": "9450fa76ad933512bcb6c9df7ff13562bcb8c84d7f4ff87013ba8f509ebc1a5b",
+      "sha256": "fdc24a1389c0c81207a35689ca68a4e003be3ac29bb71cec00e2ec7e30503531",
       "lines": 106,
       "imports": [],
       "exports": [],
@@ -23034,8 +23034,8 @@
     {
       "file": "client/src/styles/typography.css",
       "domain": "shell-content",
-      "sha256": "8676f1b852c3fd813f98e8706bb69ce78cd6b7c5682efe23c7e073aee5333a76",
-      "lines": 95,
+      "sha256": "e6e0d42a7ab8e2f8b04e5d329b9370a0f7654770883beab11177c59f2fdc23f0",
+      "lines": 100,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -23047,6 +23047,30 @@
         "font-family: var(--font-primary)",
         "font-family: var(--font-primary)",
         "font-family: var(--font-primary)",
+        "font-family: var(--font-primary)",
+        "font-family: var(--font-primary)",
+        "font-family: var(--font-primary)",
+        "font-family: var(--font-primary)"
+      ],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/styles/zalando-typography.css",
+      "domain": "shell-content",
+      "sha256": "7ffb4067907e296943c209ee0f8ce7e7f1cb42c0dcf1c0fca4f0251a6e5fe517",
+      "lines": 97,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [
+        "--font-weight-regular: 400",
+        "--font-weight-medium: 520",
+        "--font-weight-semibold: 650",
+        "--font-weight-bold: 700",
+        "--font-weight-light: 400",
         "font-family: var(--font-primary)",
         "font-family: var(--font-primary)",
         "font-family: var(--font-primary)",

@@ -56,6 +56,6 @@
 .ay-customer-root .lens-drop__icon { border: 0; border-radius: 50%; background: transparent; }
 .ay-customer-root .ay-btn-primary { box-shadow: none; }
 .ay-customer-root .ay-journey-progress li small { font-size: 12px; line-height: 1.5; white-space: normal; overflow: visible; }
-.ay-customer-root .ay-journey-progress li > span { font-size: 12px; font-weight: 600; }
+.ay-customer-root .ay-journey-progress li > span { font-size: 12px; font-weight: 650; }
 
 .ay-customer-root:lang(ar) :is(.editorial-hero__title,.lens-feature__title,.lens-home__title) { font-stretch: 100%; }

@@ -470,7 +470,7 @@ export function ProductCardPreview({ kind, product }: { kind: ShoppableKind; pro
               }}>{product.name}</span>
             </span>
             <span style={{ display: 'grid', gap: 2 }}>
-              {price ? <span style={{ fontSize: ARTICLE_CARD.priceSize, fontWeight: 600 }}>{price}</span> : null}
+              {price ? <span style={{ fontSize: ARTICLE_CARD.priceSize, fontWeight: 650 }}>{price}</span> : null}
               {unavailable ? <span style={{ fontSize: 12, opacity: 0.7 }}>Actuellement indisponible</span> : null}
             </span>
           </span>

@@ -60,7 +60,7 @@ export const AnnouncementSection: React.FC<{
 
         <div style={{ position: 'relative', maxWidth: 560 }}>
           {section.title && (
-            <h2 style={{ margin: 0, fontSize: 'clamp(1.6rem, 4vw, 2.6rem)', fontWeight: 800, lineHeight: 1.15 }}>{section.title}</h2>
+            <h2 className="ay-text-h2" style={{ margin: 0 }}>{section.title}</h2>
           )}
           {section.subtitle && (
             <p style={{ margin: '12px 0 0', fontSize: '1rem', lineHeight: 1.6, opacity: 0.92 }}>{section.subtitle}</p>

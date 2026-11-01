@@ -1,6 +1,7 @@
-/* ZAYROVI typography system — Official A: Zalando Sans + Noto Sans Arabic. Weights 400–700 only. */
+/* ZAYROVI typography system — Zalando Sans + Noto Sans Arabic. Approved UI weights: 400, 520, 650, 700. */
 html {
   font-family: var(--font-primary);
+  font-synthesis: none;
 }
 
 body {
@@ -17,7 +18,8 @@ h1, .ay-text-h1 {
   font-weight: var(--ay-font-heading-weight);
   font-stretch: var(--ay-font-heading-width);
   line-height: var(--text-h1--line-height);
-  letter-spacing: 0;
+  letter-spacing: -.2px;
+  font-synthesis: none;
 }
 
 h2, .ay-text-h2 {
@@ -26,7 +28,8 @@ h2, .ay-text-h2 {
   font-weight: var(--ay-font-heading-weight);
   font-stretch: var(--ay-font-heading-width);
   line-height: var(--text-h2--line-height);
-  letter-spacing: 0;
+  letter-spacing: -.08px;
+  font-synthesis: none;
 }
 
 h3, .ay-text-h3 {
@@ -36,14 +39,16 @@ h3, .ay-text-h3 {
   font-stretch: var(--ay-font-heading-width);
   line-height: var(--text-h3--line-height);
   letter-spacing: 0;
+  font-synthesis: none;
 }
 
 .ay-text-display {
   font-family: var(--font-primary);
   font-size: var(--text-display);
-  font-weight: var(--font-weight-regular);
+  font-weight: var(--ay-font-heading-weight);
   line-height: var(--text-display--line-height);
-  letter-spacing: 0;
+  letter-spacing: -.2px;
+  font-synthesis: none;
 }
 
 .ay-text-body-lg { font-size: var(--text-body-lg); line-height: var(--text-body-lg--line-height); font-weight: var(--font-weight-regular); }
@@ -52,7 +57,7 @@ h3, .ay-text-h3 {
 .ay-text-small { font-size: var(--text-small); line-height: var(--text-small--line-height); font-weight: var(--font-weight-regular); }
 .ay-text-caption { font-size: var(--text-caption); line-height: var(--text-caption--line-height); font-weight: var(--font-weight-regular); }
 .ay-text-button { font-size: var(--text-button); line-height: var(--text-button--line-height); font-weight: var(--font-weight-semibold); }
-.ay-text-nav { font-size: var(--text-nav); line-height: var(--text-nav--line-height); font-weight: var(--font-weight-medium); }
+.ay-text-nav { font-size: var(--text-nav); line-height: var(--text-nav--line-height); font-weight: var(--font-weight-regular); }
 .ay-text-price { font-size: var(--text-small); line-height: var(--text-small--line-height); font-weight: var(--ay-font-price-weight); font-variant-numeric: normal; unicode-bidi: isolate; }
 
 .font-black,
@@ -73,7 +78,7 @@ h3, .ay-text-h3 {
 
 .ayrovi-glass-bottom-nav {
   font-family: var(--font-primary);
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-regular);
 }
 
 .admin-shell,
@@ -85,10 +90,10 @@ h3, .ay-text-h3 {
 .admin-page-header h1,
 .admin-login-box h2,
 .admin-login-brand h1 {
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--ay-font-heading-weight);
 }
 
-/* Arabic is a supported member of the official stack, never a system fallback. */
+/* Arabic remains supplied by Noto Sans Arabic, not by Zalando Sans. */
 :where(h1,h2,h3,.ay-text-h1,.ay-text-h2,.ay-text-h3):lang(ar) { font-stretch: 100%; line-height: 1.6; letter-spacing: 0; }
 .ay-text-secondary { color: var(--ay-e-secondary); }
 .ay-text-muted { color: var(--ay-e-muted); }

@@ -7,13 +7,13 @@
   --ayrovi-font-body: var(--ay-font-stack);
   --ayrovi-font-display: var(--ay-font-stack);
   --ay-font-heading-width: 100%;
-  --ay-font-heading-weight: 650;
-  --ay-font-label-weight: 700;
-  --ay-font-price-weight: 600;
-  --ay-font-body-weight: 500;
-  --ay-font-body-line-height: 1.4;
+  --ay-font-heading-weight: 520;
+  --ay-font-label-weight: 650;
+  --ay-font-price-weight: 520;
+  --ay-font-body-weight: 400;
+  --ay-font-body-line-height: 1.5;
   --ay-font-arabic-line-height: 1.55;
-  --ay-font-heading-line-height: 1.18;
+  --ay-font-heading-line-height: 1.16;
   --ay-font-arabic-heading-line-height: 1.42;
 }
 :root, [data-ay-design="editorial"] {

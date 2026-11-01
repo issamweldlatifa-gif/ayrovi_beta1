@@ -115,7 +115,7 @@
   gap: .5rem;
 }
 
-.ayw-storename { font-weight: 600; color: var(--ayrovi-ink, #101828); }
+.ayw-storename { font-weight: 650; color: var(--ayrovi-ink, #101828); }
 
 .ayw-fav {
   border: 0;
@@ -234,7 +234,7 @@
 
 .ayw-sheet-product { display: flex; align-items: center; gap: .8rem; }
 .ayw-sheet-thumb { width: 4.6rem; height: 4.6rem; object-fit: contain; background: #f2f4f7; border-radius: .35rem; }
-.ayw-sheet-name { font-weight: 600; color: var(--ayrovi-ink, #101828); }
+.ayw-sheet-name { font-weight: 650; color: var(--ayrovi-ink, #101828); }
 
 .ayw-cond { border: 0; padding: 0; margin: 0; }
 .ayw-radio { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; color: var(--ayrovi-ink, #101828); }
@@ -254,8 +254,8 @@
   appearance: auto;
 }
 
-.ayw-price { text-align: center; font-weight: 600; color: var(--ayrovi-ink, #101828); }
-.ayw-price-tnd { color: var(--ayrovi-ink-secondary, #475467); font-weight: 500; }
+.ayw-price { text-align: center; font-weight: 650; color: var(--ayrovi-ink, #101828); }
+.ayw-price-tnd { color: var(--ayrovi-ink-secondary, #475467); font-weight: 520; }
 
 .ayw-cta {
   width: 100%;
@@ -316,7 +316,7 @@
 .ayw-cartline-meta { display: grid; gap: .3rem; margin: 0; }
 .ayw-cartline-meta div { display: flex; gap: .5rem; font-size: .85rem; }
 .ayw-cartline-meta dt { color: var(--ayrovi-ink-secondary, #475467); min-width: 6.5rem; }
-.ayw-cartline-meta dd { margin: 0; color: var(--ayrovi-ink, #101828); font-weight: 600; }
+.ayw-cartline-meta dd { margin: 0; color: var(--ayrovi-ink, #101828); font-weight: 650; }
 
 .ayw-cartline-row { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; }
 
@@ -348,7 +348,7 @@
   color: var(--ayrovi-ink-secondary, #344054);
   font: inherit;
   font-size: .85rem;
-  font-weight: 600;
+  font-weight: 650;
   text-decoration: underline;
   cursor: pointer;
 }
@@ -380,8 +380,8 @@
 }
 
 .ayw-carttotal-label { display: flex; flex-direction: column; gap: .2rem; color: var(--ayrovi-ink-secondary, #475467); font-size: .9rem; }
-.ayw-carttotal-value { font-size: 1.7rem; font-weight: 800; color: var(--ayrovi-ink, #101828); text-align: center; }
-.ayw-carttotal-value span { font-size: 1rem; font-weight: 600; }
+.ayw-carttotal-value { font-size: 1.7rem; font-weight: 700; color: var(--ayrovi-ink, #101828); text-align: center; }
+.ayw-carttotal-value span { font-size: 1rem; font-weight: 650; }
 .ayw-carttotal-note { font-size: .82rem; color: var(--ayrovi-ink-secondary, #475467); text-align: center; }
 
 .ayw-notice { color: var(--ayrovi-ink-secondary, #475467); font-size: .88rem; }
@@ -390,7 +390,7 @@
 
 /* --- cartes de variantes façon fiche marchand (captures 1-2, 04/10/2026) --- */
 .ayw-cardgroup { display: flex; flex-direction: column; gap: .5rem; }
-.ayw-cardgroup-label { font-size: .9rem; color: var(--ayrovi-ink-secondary, #475467); font-weight: 600; }
+.ayw-cardgroup-label { font-size: .9rem; color: var(--ayrovi-ink-secondary, #475467); font-weight: 650; }
 .ayw-cardrow { display: flex; gap: .7rem; overflow-x: auto; padding-bottom: .3rem; }
 .ayw-variantcard {
   flex: 0 0 8.2rem;
@@ -439,7 +439,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   font-size: .85rem;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 /* --- bandeau compte du panier (capture Buyee 6, 04/10/2026) --- */
@@ -450,7 +450,7 @@
   background: var(--ayrovi-surface-alt, #fdf6ec);
   color: var(--ayrovi-ink, #101828);
   font-size: .92rem;
-  font-weight: 600;
+  font-weight: 650;
 }
 
 /* ==========================================================================
@@ -532,7 +532,7 @@
   padding: 0;
   font: inherit;
   font-size: .85rem;
-  font-weight: 600;
+  font-weight: 650;
   color: var(--ayrovi-ink-secondary, #344054);
   text-decoration: underline;
   cursor: pointer;
@@ -542,7 +542,7 @@
 .ayw-support-form { display: flex; flex-direction: column; gap: .8rem; text-align: start; }
 .ayw-support-form p,
 .ayw-support-panel p { margin: 0; color: var(--ayrovi-ink-secondary, #475467); font-size: .9rem; }
-.ayw-support-field { display: flex; flex-direction: column; gap: .35rem; font-size: .88rem; font-weight: 600; }
+.ayw-support-field { display: flex; flex-direction: column; gap: .35rem; font-size: .88rem; font-weight: 650; }
 .ayw-support-field input,
 .ayw-support-field textarea,
 .ayw-support-field select {

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Laboratoire typographique local — échantillons de la typographie observée sur Zalando.fr.">
+  <title>Laboratoire typographique — Zalando Sans</title>
+  <link rel="stylesheet" href="/identity.css">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #111;
+      --muted: #686868;
+      --line: #dedede;
+      --paper: #fff;
+      --soft: #f5f5f5;
+      --orange: #f36b24;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--paper); color: var(--ink); font-family: var(--ay-font-stack); font-synthesis: none; }
+    body { margin: 0; min-width: 320px; font-family: var(--ay-font-stack); }
+    a { color: inherit; text-decoration: none; }
+    button { font: inherit; }
+    .wrap { width: min(1120px, calc(100% - 48px)); margin-inline: auto; }
+
+    /* Values below mirror representative computed styles captured from Zalando.fr's homepage. */
+    .service-bar { min-height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 18px; border-bottom: 1px solid var(--line); white-space: nowrap; overflow: hidden; }
+    .service-bar a { font-size: 12px; font-weight: 650; line-height: 16px; letter-spacing: normal; }
+    .service-bar a:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
+
+    .topnav { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line); }
+    .wordmark { font-size: 24px; line-height: 30px; font-weight: 700; letter-spacing: -.08px; }
+    .navlinks { display: flex; flex-wrap: wrap; gap: 28px; align-items: center; }
+    .navlinks a { font-size: 16px; font-weight: 400; line-height: normal; letter-spacing: normal; }
+
+    main { padding-block: 64px 88px; }
+    .eyebrow { margin: 0 0 16px; color: var(--muted); font-size: 12px; font-weight: 400; line-height: 16px; letter-spacing: normal; }
+    h1 { max-width: 760px; margin: 0; font-size: clamp(32px, 4vw, 38px); font-weight: 520; line-height: 44px; letter-spacing: -.2px; }
+    .intro { max-width: 660px; margin: 20px 0 0; font-size: 16px; font-weight: 400; line-height: 24px; letter-spacing: normal; }
+    .section { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line); }
+    h2 { margin: 0; font-size: 24px; font-weight: 520; line-height: 30px; letter-spacing: -.08px; }
+    .section-copy { max-width: 620px; margin: 14px 0 0; color: #333; font-size: 16px; font-weight: 400; line-height: 24px; letter-spacing: normal; }
+    .specimens { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 28px; }
+    .specimen { min-width: 0; padding: 20px; border: 1px solid var(--line); }
+    .specimen-label { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; line-height: 16px; }
+    .sample { margin: 20px 0 0; font-size: 28px; line-height: 36px; }
+    .w400 { font-weight: 400; }
+    .w520 { font-weight: 520; }
+    .w650 { font-weight: 650; }
+    .body-sample { font-size: 16px; line-height: 24px; }
+    .glyph-run { overflow-wrap: anywhere; font-size: 22px; line-height: 1.6; letter-spacing: normal; }
+    .digits { margin-top: 10px; font-size: 24px; line-height: 32px; font-weight: 520; font-variant-numeric: tabular-nums; }
+    .weights { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 24px; }
+    .weight-chip { min-width: 0; padding: 14px; background: var(--soft); }
+    .weight-chip b { display: block; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
+    .weight-chip span { font-size: 28px; line-height: 34px; }
+    .note { margin-top: 32px; padding: 18px 20px; border-inline-start: 3px solid var(--orange); background: #fff8f3; font-size: 14px; line-height: 22px; }
+    .note strong { font-weight: 650; }
+    footer { border-top: 1px solid var(--line); padding-block: 18px 30px; color: var(--muted); font-size: 12px; line-height: 18px; }
+    .meta { margin-top: 8px; font-family: var(--ay-font-stack); font-size: 11px; overflow-wrap: anywhere; }
+
+    @media (max-width: 700px) {
+      .wrap { width: min(100% - 32px, 1120px); }
+      .service-bar a:nth-child(2), .navlinks a:nth-child(n+3) { display: none; }
+      .topnav { min-height: 58px; }
+      .navlinks { gap: 16px; }
+      main { padding-block: 42px 60px; }
+      h1 { line-height: 1.16; }
+      .specimens { grid-template-columns: 1fr; }
+      .weights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+  <div class="service-bar wrap" aria-label="Informations de service">
+    <a href="#specimens">Essayez d’abord, payez après</a>
+    <a href="#specimens">Livraison standard offerte à partir de 34,00 € et retours gratuits</a>
+    <a href="#specimens">Retour sous 30 jours</a>
+  </div>
+
+  <header class="topnav wrap">
+    <a class="wordmark" href="#top" aria-label="Zalando Sans test">Zalando</a>
+    <nav class="navlinks" aria-label="Navigation de démonstration">
+      <a href="#specimens">Femme</a>
+      <a href="#specimens">Homme</a>
+      <a href="#specimens">Enfant</a>
+    </nav>
+  </header>
+
+  <main id="top" class="wrap">
+    <p class="eyebrow">LABORATOIRE TYPOGRAPHIQUE · ÉCHANTILLONS FRANÇAIS</p>
+    <h1>Au-delà de vos attentes<br>Mode, beauté, luxe et plus</h1>
+    <p class="intro">Cette page de contrôle charge le fichier Zalando Sans local du projet et reproduit plusieurs tailles, graisses, interlignages et espacements observés sur la page d’accueil de Zalando.fr.</p>
+
+    <section id="specimens" class="section" aria-labelledby="headline-section">
+      <h2 id="headline-section">Plus de marques</h2>
+      <p class="section-copy">Le texte courant sert de référence en 16 px, graisse 400 et interligne 24 px. L’espacement reste normal, comme sur les liens de navigation observés.</p>
+
+      <div class="specimens">
+        <article class="specimen">
+          <div class="specimen-label"><span>Corps / lien</span><span>16 · 400 · 24</span></div>
+          <p class="sample w400 body-sample">Chaussures et vêtements</p>
+        </article>
+        <article class="specimen">
+          <div class="specimen-label"><span>Titre de section</span><span>24 · 520 · 30 · −0,08</span></div>
+          <p class="sample w520" style="font-size:24px;line-height:30px;letter-spacing:-.08px">Promos, nouveautés et tendances</p>
+        </article>
+        <article class="specimen">
+          <div class="specimen-label"><span>Accent d’interface</span><span>12 · 650 · 16</span></div>
+          <p class="sample w650" style="font-size:12px;line-height:16px">Retour sous 30 jours</p>
+        </article>
+      </div>
+
+      <div class="section" style="margin-top:40px;padding-top:24px">
+        <h2>Formes des lettres et des chiffres</h2>
+        <p class="section-copy glyph-run">ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>abcdefghijklmnopqrstuvwxyz<br>À Â Æ Ç É È Ê Ë Î Ï Ô Œ Ù Û Ü Ÿ</p>
+        <p class="digits">0123456789 · 1 250,00 € · 38,50</p>
+      </div>
+
+      <div class="section" style="margin-top:40px;padding-top:24px">
+        <h2>Échelle des graisses variables</h2>
+        <p class="section-copy">Même fichier de police, poids CSS distincts, taille identique.</p>
+        <div class="weights" aria-label="Poids CSS">
+          <div class="weight-chip"><b>400 · Regular</b><span style="font-weight:400">Zalando</span></div>
+          <div class="weight-chip"><b>520 · titre observé</b><span style="font-weight:520">Zalando</span></div>
+          <div class="weight-chip"><b>650 · interface</b><span style="font-weight:650">Zalando</span></div>
+          <div class="weight-chip"><b>700 · Bold</b><span style="font-weight:700">Zalando</span></div>
+        </div>
+      </div>
+
+      <aside class="note">
+        <strong>Contrôle du chargement :</strong> <span id="font-status">vérification du fichier local…</span>
+        <div class="meta">Font stack: "Zalando Sans", Helvetica, sans-serif · WOFF2 local · fvar wght 200–900, wdth 75–125 · les métriques restent pilotées par les styles CSS ci-dessus.</div>
+      </aside>
+    </section>
+  </main>
+
+  <footer>
+    Page de test interne. Le fichier WOFF2 est servi depuis les actifs locaux du projet ; cette page ne charge aucune ressource typographique distante.
+  </footer>
+
+  <script>
+    (async () => {
+      const status = document.getElementById('font-status');
+      try {
+        await document.fonts.load('520 24px "Zalando Sans"', 'Promos, nouveautés et tendances');
+        const loaded = document.fonts.check('520 24px "Zalando Sans"');
+        status.textContent = loaded
+          ? 'Zalando Sans chargé depuis /fonts/editorial/zalando-sans.woff2.'
+          : 'le navigateur a utilisé une police de remplacement.';
+      } catch (error) {
+        status.textContent = `échec du chargement : ${String(error.message || error)}`;
+      }
+    })();
+  </script>
+</body>
+</html>

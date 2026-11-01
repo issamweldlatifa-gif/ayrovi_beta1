@@ -106,8 +106,8 @@
     "label": 14,
     "body": 16,
     "lead": 18,
-    "title": 28,
-    "display": 40
+    "title": 24,
+    "display": 38
   },
   "motion": {
     "fast": 120,
@@ -118,13 +118,13 @@
     "preset": "ayrovi-a",
     "stack": "'Zalando Sans', 'Noto Sans Arabic', sans-serif",
     "headingWidth": "100%",
-    "bodyWeight": 500,
-    "headingWeight": 650,
-    "labelWeight": 700,
-    "priceWeight": 600,
-    "bodyLineHeight": 1.4,
+    "bodyWeight": 400,
+    "headingWeight": 520,
+    "labelWeight": 650,
+    "priceWeight": 520,
+    "bodyLineHeight": 1.5,
     "arabicLineHeight": 1.55,
-    "headingLineHeight": 1.18,
+    "headingLineHeight": 1.16,
     "arabicHeadingLineHeight": 1.42,
     "letterSpacing": "0em"
   }

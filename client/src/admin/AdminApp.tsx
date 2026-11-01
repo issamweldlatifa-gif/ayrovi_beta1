@@ -231,7 +231,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
               Première connexion ou mot de passe perdu ? La console n’expose <b>aucune</b> réinitialisation publique.
               {' '}
               <details style={{ display: 'inline' }}>
-                <summary style={{ display: 'inline', cursor: 'pointer', fontWeight: 750 }}>Voir la procédure serveur</summary>
+                <summary style={{ display: 'inline', cursor: 'pointer', fontWeight: 700 }}>Voir la procédure serveur</summary>
                 <span style={{ display: 'block', marginTop: 6 }}>
                   Sur la machine du serveur, définissez <code>ADMIN_EMAIL</code> et <code>ADMIN_PASSWORD</code> (12 caractères minimum) puis redémarrez :
                   le compte est créé au premier démarrage. Si un administrateur existe déjà et que son mot de passe est inconnu,
