@@ -37,6 +37,7 @@ import { pruneCanonicalLensCache } from './ayrovix/services/lensCache';
 import { dispatchPushNotifications } from './services/pushDispatch';
 import { pushConfigured } from './services/push';
 import { clientRateLimitKey } from './services/rateKey';
+import { stripeDiagnostics } from './services/paymentGateway';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -198,7 +199,8 @@ app.use('/api/checkout', rateLimit('checkout', process.env.NODE_ENV === 'test' ?
 app.use('/api/customer/account/orders', (req, res, next) => req.path.includes('/payments/card/')
   ? rateLimit('card-payment', process.env.NODE_ENV === 'test' ? 1_000 : 20, 5 * 60_000)(req, res, next)
   : next());
-app.use('/api/customer/payments/konnect/webhook', rateLimit('konnect-webhook', process.env.NODE_ENV === 'test' ? 1_000 : 120, 5 * 60_000));
+app.use('/api/customer/payments/konnect/webhook', rateLimit('stripe-webhook', process.env.NODE_ENV === 'test' ? 1_000 : 120, 5 * 60_000));
+app.use('/api/customer/payments/stripe/webhook', rateLimit('stripe-webhook', process.env.NODE_ENV === 'test' ? 1_000 : 120, 5 * 60_000));
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/ocerex', rateLimit('ocerex', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
@@ -284,7 +286,10 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-requested-with', 'x-csrf-token', 'x-ayrovi-native'],
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: any, _res, buf) => { req.rawBody = buf; },
+}));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // Phone target is in the parsed body: enforce this second factor only after parsing,
 // while the independent IP ceiling above still runs before the request body is read.
@@ -468,6 +473,18 @@ app.use('/api/voice', createAssistantRouter(db, scraper));
 app.use('/api/public', createPublicRouter(db));
 app.use('/api/v1/aywebs', createAyWebsRouter(db, scraper));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
+
+/*
+ * Diagnostic passerelle carte — LECTURE SEULE, SANS SECRET.
+ *
+ * Une clé Stripe manquante ne casse rien bruyamment : le bouton « carte » se
+ * grise et la commande part en virement. Ce point d'entrée dit donc exactement
+ * quelle variable manque et quelle URL enregistrer dans le Dashboard Stripe.
+ * Aucun appel sortant, aucune clé renvoyée (même tronquée).
+ */
+app.get('/api/payments/gateway-status', (_req, res) => {
+  res.json({ success: true, data: stripeDiagnostics() });
+});
 
 // Liveness: le processus HTTP répond. Readiness: SQLite est réellement lisible;
 // les fournisseurs externes restent des capacités optionnelles clairement signalées.

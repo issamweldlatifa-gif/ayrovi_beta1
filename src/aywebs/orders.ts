@@ -2,7 +2,7 @@ import { purchaseDueAt, settlePostPaymentPrice } from './postPaymentPolicy';
 import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import { nextSequenceNumber } from '../erp-core/sequences';
-import { cardGatewayAvailable, initiateKonnectCardPayment, verifyKonnectCardPayment } from '../services/paymentGateway';
+import { cardGatewayAvailable, initiateStripeCardPayment, verifyStripeCardPayment } from '../services/paymentGateway';
 import { resolveAcceptedPaymentMethods, type SelectablePaymentMethodCode } from '../db/database';
 import type {
   AyWebsExceptionState,
@@ -37,7 +37,7 @@ import { computeAyWebsCheckoutPreview, type AyWebsCheckoutPreview } from './chec
  * Paiement (§20) : AYWEBs n'installe AUCUN écosystème de paiement parallèle.
  * Les moyens viennent de la configuration commerciale ZAYROVI existante
  * (`resolveAcceptedPaymentMethods`) et la passerelle carte est celle déjà en
- * place (`services/paymentGateway.ts` → Konnect). La table `ayweb_payments`
+ * place (`services/paymentGateway.ts` → Stripe). La table `ayweb_payments`
  * n'est que la relation commande ↔ paiement, avec la référence passerelle.
  *
  * Honnêteté (§48) : aucune intégration d'achat marchand automatisé n'existe
@@ -445,7 +445,7 @@ export async function createAyWebsPaymentIntent(
        pay_url,initiated_at,created_at,updated_at)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     paymentId, paymentNumber, order.id, input.accountId, method, 'PENDING', order.totals.payableTnd, 'TND',
-    method === 'CARD' ? 'KONNECT' : 'AYROVI_MANUAL', '', '', now, now, now,
+    method === 'CARD' ? 'STRIPE' : 'AYROVI_MANUAL', '', '', now, now, now,
   );
 
   if (order.status === 'CHECKOUT') {
@@ -463,7 +463,7 @@ export async function createAyWebsPaymentIntent(
       db.run(`UPDATE ayweb_payments SET status='FAILED', failure_reason='CARD_GATEWAY_UNAVAILABLE', updated_at=? WHERE id=?`, now, paymentId);
       throw new AyWebsDomainError('PAYMENT_FAILED', {
         userMessage: 'La passerelle carte n’est pas configurée. Aucun débit n’a été tenté.',
-        technicalMessage: 'cardGatewayAvailable()=false : Konnect non configuré sur cet environnement',
+        technicalMessage: 'cardGatewayAvailable()=false : Stripe non configuré sur cet environnement',
         requiredAction: 'CHOOSE_PAYMENT',
       });
     }
@@ -472,7 +472,7 @@ export async function createAyWebsPaymentIntent(
         ? db.get<any>(`SELECT display_name,email,phone FROM customer_accounts WHERE id=?`, input.accountId)
         : null;
       const names = String(account?.display_name || 'Client AYROVI').trim().split(/\s+/);
-      const gateway = await initiateKonnectCardPayment({
+      const gateway = await initiateStripeCardPayment({
         orderId: order.id,
         orderNumber: order.orderNumber,
         transactionNumber: paymentNumber,
@@ -487,7 +487,7 @@ export async function createAyWebsPaymentIntent(
       writeAyWebsAudit(db, {
         actorType: 'customer', actorId: input.accountId, action: 'payment.initiate',
         resourceType: 'payment', resourceId: paymentId, afterState: 'PENDING',
-        detail: { method, provider: 'KONNECT', amountTnd: order.totals.payableTnd }, requestId: input.requestId || null,
+        detail: { method, provider: 'STRIPE', amountTnd: order.totals.payableTnd }, requestId: input.requestId || null,
       });
       logAyWebsOperation({ operation: 'payment_intent', orderId: order.id, customerId: input.accountId, result: 'success' });
     } catch (error) {
@@ -590,7 +590,7 @@ export async function confirmAyWebsPayment(
         requiredAction: 'CHOOSE_PAYMENT',
       });
     }
-    const verification = await verifyKonnectCardPayment({
+    const verification = await verifyStripeCardPayment({
       paymentRef: String(payment.provider_reference),
       expectedAmountTnd: Number(payment.amount_tnd),
       expectedOrderNumber: order.orderNumber,
@@ -612,7 +612,7 @@ export async function confirmAyWebsPayment(
       });
       throw new AyWebsDomainError('PAYMENT_FAILED', {
         userMessage: 'Le paiement carte a été refusé ou a expiré.',
-        technicalMessage: 'verifyKonnectCardPayment → FAILED',
+        technicalMessage: 'verifyStripeCardPayment → FAILED',
         requiredAction: 'CHOOSE_PAYMENT',
       });
     }

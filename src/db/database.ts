@@ -26,7 +26,7 @@ import { ensureCrmSchema } from '../crm/bootstrap';
  * "BANK_TRANSFER","POSTE"]` — c'est-à-dire exactement la valeur que la
  * plateforme sème elle-même — parce que son validateur ne connaissait que
  * `COD`/`D17`/`FLOUCI` : le seul enregistrement possible retirait donc le
- * paiement par carte, dont la passerelle Konnect est configurée.
+ * paiement par carte, dont la passerelle Stripe est configurée.
  *
  * Une liste unique rend la divergence impossible : ajouter un moyen ici l'ajoute
  * au checkout, au formulaire Admin et à la valeur par défaut en même temps.
@@ -2190,6 +2190,27 @@ export class QatafoDatabase {
     this.rebuildTableIfLegacy('deliveries', "'IN_TRANSIT'", DELIVERIES_TABLE_SQL, []);
     this.migratePaymentsToAccountLifecycle();
     this.ensureAccountCommerceSchema();
+    /*
+     * Konnect → Stripe (01/11/2026).
+     *
+     * Une session Konnect laissée PENDING ne peut plus être vérifiée : la
+     * passerelle a été remplacée, et son URL n'est plus interrogeable. La laisser
+     * « en attente » bloquerait la commande indéfiniment. On la solde donc en
+     * échec — une seule fois — pour rendre le dépôt payable à nouveau par carte.
+     * Aucune ligne PAID/FAILED n'est touchée : l'historique financier reste intact.
+     */
+    this.runOnceDataMigration('card_gateway_konnect_to_stripe_v1', () => {
+      const now = new Date().toISOString();
+      const stale = this.all<any>(`SELECT id,payment_id,order_id FROM payment_transactions
+        WHERE provider='KONNECT' AND status='PENDING'`);
+      for (const row of stale) {
+        this.run(`UPDATE payment_transactions SET status='FAILED',failure_reason=?,updated_at=? WHERE id=?`,
+          'Passerelle Konnect remplacée par Stripe — session non vérifiable.', now, row.id);
+        this.run(`UPDATE payments SET status='FAILED',updated_at=? WHERE id=? AND status='PENDING'`, now, row.payment_id);
+        this.run(`UPDATE orders SET payment_status='FAILED',updated_at=? WHERE id=? AND status='AWAITING_DEPOSIT'`, now, row.order_id);
+      }
+      if (stale.length) console.info(`[database] ${stale.length} transaction(s) Konnect soldée(s) après bascule Stripe.`);
+    });
     this.rebuildTableIfLegacy('customer_notifications', "'INVOICE'", CUSTOMER_NOTIFICATIONS_TABLE_SQL, []);
     // ترقية جدول الإعدادات لفئات CHANNELS/DESIGN/INTERFACE (القواعد القديمة كانت ترفضها بصمت)
     this.db.exec(SETTINGS_TABLE_SQL);
@@ -3802,7 +3823,7 @@ export class QatafoDatabase {
       this.run(`UPDATE orders SET payment_method=?,payment_status='PENDING',deposit_status='PENDING',deposit_amount_tnd=?,
         deposit_discount_tnd=?,deposit_review_note='',updated_at=? WHERE id=?`, method, amount, discount, now, orderId);
       this.run(`UPDATE payments SET method=?,status='PENDING',amount_tnd=?,provider=?,reference=NULL,gateway_payment_ref=NULL,
-        confirmed_by=NULL,confirmed_at=NULL,updated_at=? WHERE id=?`, method, amount, method === 'CARD' ? 'KONNECT' : 'MANUAL_TRANSFER', now, payment.id);
+        confirmed_by=NULL,confirmed_at=NULL,updated_at=? WHERE id=?`, method, amount, method === 'CARD' ? 'STRIPE' : 'MANUAL_TRANSFER', now, payment.id);
       return {
         order: this.get<any>('SELECT * FROM orders WHERE id=?', orderId),
         payment: this.get<any>('SELECT * FROM payments WHERE id=?', payment.id),
@@ -3822,7 +3843,7 @@ export class QatafoDatabase {
 
       // Reuse the live checkout instead of creating multiple chargeable links for one deposit.
       const pending = this.get<any>(`SELECT * FROM payment_transactions
-        WHERE order_id=? AND provider='KONNECT' AND status='PENDING' ORDER BY created_at DESC LIMIT 1`, orderId);
+        WHERE order_id=? AND provider='STRIPE' AND status='PENDING' ORDER BY created_at DESC LIMIT 1`, orderId);
       if (pending) {
         const ageMs = Date.now() - new Date(String(pending.created_at)).getTime();
         if (pending.checkout_url && ageMs < 25 * 60_000) {
@@ -3839,20 +3860,20 @@ export class QatafoDatabase {
       const transactionNumber = this.generateTransactionNumber();
       this.run(`INSERT INTO payment_transactions
         (id,transaction_number,payment_id,order_id,account_id,provider,amount_tnd,currency,status,created_at,updated_at)
-        VALUES (?,?,?,?,?,'KONNECT',?,'TND','PENDING',?,?)`, id, transactionNumber, selected.payment.id, orderId, accountId,
+        VALUES (?,?,?,?,?,'STRIPE',?,'TND','PENDING',?,?)`, id, transactionNumber, selected.payment.id, orderId, accountId,
       selected.quote.amountTnd, now, now);
       return { ...selected, transaction: this.get<any>('SELECT * FROM payment_transactions WHERE id=?', id), reused: false };
     });
   }
 
   public bindCardGatewayReference(transactionId: string, providerReference: string, checkoutUrl: string) {
-    const transaction = this.get<any>("SELECT * FROM payment_transactions WHERE id=? AND provider='KONNECT'", transactionId);
+    const transaction = this.get<any>("SELECT * FROM payment_transactions WHERE id=? AND provider='STRIPE'", transactionId);
     if (!transaction) throw new Error('TRANSACTION_NOT_FOUND');
     if (!/^https:\/\//i.test(checkoutUrl)) throw new Error('CARD_CHECKOUT_URL_INVALID');
     const now = new Date().toISOString();
     this.transaction(() => {
       this.run('UPDATE payment_transactions SET provider_reference=?,checkout_url=?,updated_at=? WHERE id=?', providerReference, checkoutUrl, now, transaction.id);
-      this.run("UPDATE payments SET provider='KONNECT',gateway_payment_ref=?,updated_at=? WHERE id=?", providerReference, now, transaction.payment_id);
+      this.run("UPDATE payments SET provider='STRIPE',gateway_payment_ref=?,updated_at=? WHERE id=?", providerReference, now, transaction.payment_id);
     });
     return this.get<any>('SELECT * FROM payment_transactions WHERE id=?', transaction.id);
   }
@@ -3881,13 +3902,13 @@ export class QatafoDatabase {
       const now = new Date().toISOString();
       this.run(`UPDATE payment_transactions SET status='PAID',failure_reason='',provider_payload=?,confirmed_at=?,updated_at=? WHERE id=?`,
         JSON.stringify(providerPayload ?? {}).slice(0, 10_000), now, now, transaction.id);
-      this.run(`UPDATE payments SET status='PAID',reference=?,confirmed_by='KONNECT',confirmed_at=?,updated_at=? WHERE id=?`,
+      this.run(`UPDATE payments SET status='PAID',reference=?,confirmed_by='STRIPE',confirmed_at=?,updated_at=? WHERE id=?`,
         transaction.provider_reference, now, now, transaction.payment_id);
       this.run(`UPDATE orders SET status='CONFIRMED',payment_status='PAID',deposit_status='PAID',deposit_paid_at=?,
-        deposit_reviewed_by='KONNECT',deposit_review_note='',updated_at=? WHERE id=?`, now, now, transaction.order_id);
+        deposit_reviewed_by='STRIPE',deposit_review_note='',updated_at=? WHERE id=?`, now, now, transaction.order_id);
       this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
-        VALUES (?,?,?,'CONFIRMED',?,'KONNECT',?)`, `history_${randomUUID()}`, transaction.order_id, transaction.order_status,
-        `Acompte carte ${Number(transaction.amount_tnd).toFixed(3)} DT vérifié par la passerelle. Transaction ${transaction.transaction_number}.`, now);
+        VALUES (?,?,?,'CONFIRMED',?,'STRIPE',?)`, `history_${randomUUID()}`, transaction.order_id, transaction.order_status,
+        `Acompte carte ${Number(transaction.amount_tnd).toFixed(3)} DT vérifié par Stripe. Transaction ${transaction.transaction_number}.`, now);
       if (transaction.account_id) this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
         VALUES (?,?,'PAYMENT','Paiement carte confirmé',?,?,?)`, `notification_${randomUUID()}`, transaction.account_id,
       `L’acompte de la commande ${transaction.order_number} est payé. Transaction ${transaction.transaction_number}.`, `/compte/commandes/${transaction.order_id}`, now);

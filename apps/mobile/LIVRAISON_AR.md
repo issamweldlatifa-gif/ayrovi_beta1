@@ -41,7 +41,7 @@
 |---|---|---|---|
 | **تسجيل الدخول بـGoogle** | مبني (Q6a): ورقة مخصّصة داخل التطبيق + كود تسليم | `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` · `GOOGLE_CALLBACK_URL` | `GET /api/customer/auth/config` ⇒ `google.enabled` |
 | **الإشعارات (FCM)** | مبني (Q6d): تسجيل + جدول + موزّع + إرسال v1 | `FIREBASE_PROJECT_ID` · `FIREBASE_CLIENT_EMAIL` · `FIREBASE_PRIVATE_KEY` | `POST /api/customer/account/devices` ⇒ `data.pushEnabled` |
-| **الخلاص بالكارطة** | مبني (Q5): `initiateCardPayment` + متصفح | `KONNECT_API_KEY` · `KONNECT_WALLET_ID` · `KONNECT_ENVIRONMENT` | `cardGatewayAvailable()` |
+| **الخلاص بالكارطة** | مبني (Q5): `initiateCardPayment` + متصفح | `STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_CURRENCY` | `cardGatewayAvailable()` |
 | **OTP بالرسائل** | مبني | `CUSTOMER_OTP_WEBHOOK_URL` · `CUSTOMER_OTP_WEBHOOK_TOKEN` | `phoneOtpAvailable()` |
 | **SONIM (المساعد)** | مبني (Q6b) | **والو** | دايماً جاهز: عندو محرّك احتياطي مدمج (`src/assistant/service.ts`)؛ مفتاح مزوّد ذكاء يحسّن الجودة، وما يفعّلوش من عدم |
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, test } from 'vitest';
 import { JSDOM } from 'jsdom';
 import { selectNetworkObserver } from '../apps/mobile/src/features/aywebs/networkObservers/select';
 import { AMAZON_NETWORK_OBSERVER_SCRIPT } from '../apps/mobile/src/features/aywebs/networkObservers/amazon';

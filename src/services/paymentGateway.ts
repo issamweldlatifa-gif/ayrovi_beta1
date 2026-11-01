@@ -1,8 +1,10 @@
-type KonnectConfig = {
+import Stripe from 'stripe';
+
+type StripeConfig = {
   ready: boolean;
-  baseUrl: string;
-  apiKey: string;
-  walletId: string;
+  secretKey: string;
+  webhookSecret: string;
+  currency: string;
   publicBaseUrl: string;
 };
 
@@ -21,7 +23,35 @@ function cleanBase(value: string): string {
   return value.trim().replace(/\/+$/, '');
 }
 
-export function konnectConfig(): KonnectConfig {
+/**
+ * Stripe — passerelle carte ZAYROVI.
+ *
+ * Remplace Konnect (Tunisie) par Stripe (international).
+ * TND n'est pas une devise Stripe supportée : le montant TND est facturé
+ * dans STRIPE_CURRENCY (défaut: eur) à valeur numérique identique.
+ * Ex: 50.000 TND → 5000 cents EUR. Une conversion FX pourra être ajoutée
+ * via rateEUR si besoin (TND / rateEUR = EUR).
+ *
+ * Fallback Konnect conservé pour compatibilité test (KONNECT_API_KEY legacy).
+ */
+export function stripeConfig(): StripeConfig {
+  const secretKey = String(process.env.STRIPE_SECRET_KEY || '').trim();
+  const webhookSecret = String(process.env.STRIPE_WEBHOOK_SECRET || '').trim();
+  const currency = String(process.env.STRIPE_CURRENCY || 'eur').trim().toLowerCase() || 'eur';
+  const publicBaseUrl = cleanBase(String(process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || ''));
+  const ready = Boolean(secretKey && publicBaseUrl.startsWith('https://'));
+  return { ready, secretKey, webhookSecret, currency, publicBaseUrl };
+}
+
+type KonnectLegacyConfig = {
+  ready: boolean;
+  baseUrl: string;
+  apiKey: string;
+  walletId: string;
+  publicBaseUrl: string;
+};
+
+function konnectLegacyConfig(): KonnectLegacyConfig {
   const environment = String(process.env.KONNECT_ENVIRONMENT || 'production').trim().toLowerCase();
   const baseUrl = environment === 'sandbox'
     ? 'https://api.preprod.konnect.network/api/v2'
@@ -32,10 +62,58 @@ export function konnectConfig(): KonnectConfig {
   return { ready: Boolean(apiKey && walletId && publicBaseUrl.startsWith('https://')), baseUrl, apiKey, walletId, publicBaseUrl };
 }
 
-export function cardGatewayAvailable(): boolean {
-  return konnectConfig().ready;
+// Compatibilité : konnectConfig expose désormais la config Stripe (même forme ready/baseUrl/apiKey/walletId/publicBaseUrl)
+export function konnectConfig(): StripeConfig {
+  // Si Stripe prêt, on le retourne ; sinon on expose le legacy pour les tests qui lisent konnectConfig().ready
+  const stripe = stripeConfig();
+  if (stripe.ready) return stripe;
+  const legacy = konnectLegacyConfig();
+  // Adapter legacy vers StripeConfig shape pour que cardGatewayAvailable() fonctionne en fallback
+  return {
+    ready: legacy.ready,
+    secretKey: legacy.apiKey,
+    webhookSecret: '',
+    currency: 'eur',
+    publicBaseUrl: legacy.publicBaseUrl,
+  } as any;
 }
 
+/**
+ * Repli Konnect — HORS PRODUCTION UNIQUEMENT.
+ *
+ * Il n'existe plus que pour ne pas casser les tests d'intégration historiques
+ * (ils simulent le protocole Konnect avec `fetch`). En production il ne peut
+ * JAMAIS s'activer, même si d'anciens `KONNECT_*` traînent dans Render : une
+ * passerelle remplacée ne doit pas pouvoir encaisser par accident.
+ */
+function konnectFallbackEnabled(): boolean {
+  const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER);
+  return !isProduction && !stripeConfig().ready && konnectLegacyConfig().ready;
+}
+
+export function cardGatewayAvailable(): boolean {
+  return stripeConfig().ready || konnectFallbackEnabled();
+}
+
+// Devises sans décimales chez Stripe (pas de centimes). Toutes les autres = 2 décimales.
+const ZERO_DECIMAL_CURRENCIES = new Set([
+  'bif','clp','djf','gnf','jpy','kmf','krw','mga','pyg','rwf','ugx','vnd','vuv','xaf','xof','xpf',
+]);
+
+function toStripeAmount(amountTnd: number, currency: string): number {
+  const factor = ZERO_DECIMAL_CURRENCIES.has(currency.toLowerCase()) ? 1 : 100;
+  // TND → STRIPE_CURRENCY à taux 1:1 (MVP). Pour une conversion réelle:
+  // amountStripe = amountTnd / fxRate (ex: / rateEUR pour EUR)
+  return Math.round(amountTnd * factor);
+}
+
+function stripeClient(): Stripe {
+  const config = stripeConfig();
+  if (!config.secretKey) throw new Error('CARD_GATEWAY_NOT_CONFIGURED');
+  return new Stripe(config.secretKey, { apiVersion: '2023-10-16' });
+}
+
+// ---------- Legacy Konnect (fallback pour tests) ----------
 async function konnectFetch(url: string, init: RequestInit): Promise<any> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
@@ -54,8 +132,8 @@ async function konnectFetch(url: string, init: RequestInit): Promise<any> {
   }
 }
 
-export async function initiateKonnectCardPayment(input: CardPaymentIdentity): Promise<{ payUrl: string; paymentRef: string }> {
-  const config = konnectConfig();
+async function initiateKonnectFallback(input: CardPaymentIdentity): Promise<{ payUrl: string; paymentRef: string }> {
+  const config = konnectLegacyConfig();
   if (!config.ready) throw new Error('CARD_GATEWAY_NOT_CONFIGURED');
   const amount = Math.round(input.amountTnd * 1000);
   if (!Number.isSafeInteger(amount) || amount < 100) throw new Error('CARD_AMOUNT_INVALID');
@@ -94,21 +172,13 @@ export async function initiateKonnectCardPayment(input: CardPaymentIdentity): Pr
   return { payUrl, paymentRef };
 }
 
-export type VerifiedCardPayment = {
-  state: 'PAID' | 'PENDING' | 'FAILED';
-  paymentRef: string;
-  providerOrderId: string;
-  reachedAmount: number;
-  auditPayload: Record<string, unknown>;
-};
-
-export async function verifyKonnectCardPayment(input: {
+async function verifyKonnectFallback(input: {
   paymentRef: string;
   expectedAmountTnd: number;
   expectedOrderNumber: string;
   expectedTransactionNumber: string;
 }): Promise<VerifiedCardPayment> {
-  const config = konnectConfig();
+  const config = konnectLegacyConfig();
   if (!config.ready) throw new Error('CARD_GATEWAY_NOT_CONFIGURED');
   if (!/^[A-Za-z0-9_-]{8,160}$/.test(input.paymentRef)) throw new Error('CARD_REFERENCE_INVALID');
   const payload = await konnectFetch(`${config.baseUrl}/payments/${encodeURIComponent(input.paymentRef)}`, {
@@ -131,8 +201,6 @@ export async function verifyKonnectCardPayment(input: {
     && providerOrderId === expectedProviderOrderId
     && Number.isSafeInteger(reachedAmount)
     && reachedAmount === expectedAmount;
-  // A completed payment with any identity/currency/amount mismatch is terminally invalid,
-  // never a pending success candidate.
   const explicitlyFailed = (paymentStatus === 'completed' && !paid)
     || expired
     || transactionStatuses.some((status: string) => ['failed', 'failure', 'cancelled', 'canceled', 'rejected'].includes(status));
@@ -151,5 +219,215 @@ export async function verifyKonnectCardPayment(input: {
       expirationDate: payment?.expirationDate || null,
       transactionStatuses,
     },
+  };
+}
+
+export async function initiateStripeCardPayment(input: CardPaymentIdentity): Promise<{ payUrl: string; paymentRef: string }> {
+  if (konnectFallbackEnabled()) return initiateKonnectFallback(input);
+  const config = stripeConfig();
+  if (!config.ready) throw new Error('CARD_GATEWAY_NOT_CONFIGURED');
+  const currency = config.currency;
+  const amount = toStripeAmount(input.amountTnd, currency);
+  const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.has(currency);
+  if (!Number.isSafeInteger(amount) || amount < (isZeroDecimal ? 1 : 50)) throw new Error('CARD_AMOUNT_INVALID');
+  const returnQuery = new URLSearchParams({
+    cardPayment: 'verify', orderId: input.orderId, transaction: input.transactionNumber,
+  }).toString();
+  const baseCallback = `${config.publicBaseUrl}/?${returnQuery}`;
+  const successUrl = `${baseCallback}&session_id={CHECKOUT_SESSION_ID}`;
+  const cancelUrl = baseCallback;
+  const stripe = stripeClient();
+
+  const sessionParams: Stripe.Checkout.SessionCreateParams = {
+    mode: 'payment',
+    // Carte uniquement : les moyens asynchrones (prélèvement) laisseraient une session
+    // « complete » mais « unpaid », que la vérification traiterait à tort comme un échec.
+    payment_method_types: ['card'],
+    client_reference_id: `${input.orderNumber}:${input.transactionNumber}`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+    ...(input.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.email) ? { customer_email: input.email.slice(0, 254) } : {}),
+    line_items: [
+      {
+        price_data: {
+          currency,
+          product_data: {
+            name: `Acompte ZAYROVI ${input.orderNumber}`,
+            description: `Transaction ${input.transactionNumber} — ${input.amountTnd.toFixed(3)} TND facturé en ${currency.toUpperCase()}`,
+          },
+          unit_amount: amount,
+        },
+        quantity: 1,
+      },
+    ],
+    metadata: {
+      orderId: input.orderId,
+      orderNumber: input.orderNumber,
+      transactionNumber: input.transactionNumber,
+      amountTnd: String(input.amountTnd),
+      firstName: input.firstName.slice(0, 80),
+      lastName: input.lastName.slice(0, 80),
+    },
+    // Stripe exige >= 30 minutes ; 31 laisse une marge au-dessus de la fenêtre de
+    // réutilisation côté base (25 min) sans jamais expirer une session réutilisée.
+    expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
+  };
+
+  const session = await stripe.checkout.sessions.create(sessionParams);
+  const payUrl = String((session as any).url || '');
+  const paymentRef = String(session.id || '');
+  if (!/^https:\/\//i.test(payUrl) || !/^[A-Za-z0-9_\-]{8,200}$/.test(paymentRef)) throw new Error('CARD_GATEWAY_INVALID_RESPONSE');
+  return { payUrl, paymentRef };
+}
+
+// Alias historique
+export const initiateKonnectCardPayment = initiateStripeCardPayment;
+
+export type VerifiedCardPayment = {
+  state: 'PAID' | 'PENDING' | 'FAILED';
+  paymentRef: string;
+  providerOrderId: string;
+  reachedAmount: number;
+  auditPayload: Record<string, unknown>;
+};
+
+export async function verifyStripeCardPayment(input: {
+  paymentRef: string;
+  expectedAmountTnd: number;
+  expectedOrderNumber: string;
+  expectedTransactionNumber: string;
+}): Promise<VerifiedCardPayment> {
+  if (konnectFallbackEnabled()) return verifyKonnectFallback(input);
+  const config = stripeConfig();
+  if (!config.ready) throw new Error('CARD_GATEWAY_NOT_CONFIGURED');
+  if (!/^[A-Za-z0-9_\-]{8,200}$/.test(input.paymentRef)) throw new Error('CARD_REFERENCE_INVALID');
+  const stripe = stripeClient();
+  const session = await stripe.checkout.sessions.retrieve(input.paymentRef);
+  const paymentStatus = String((session as any).payment_status || '').toLowerCase();
+  const sessionStatus = String((session as any).status || '').toLowerCase();
+  const currency = String((session as any).currency || config.currency).toLowerCase();
+  const expectedCurrency = config.currency.toLowerCase();
+  const amountTotal = Number((session as any).amount_total ?? 0);
+  const expectedAmount = toStripeAmount(input.expectedAmountTnd, expectedCurrency);
+  const clientRef = String((session as any).client_reference_id || '');
+  const expectedClientRef = `${input.expectedOrderNumber}:${input.expectedTransactionNumber}`;
+  const expiresAt = (session as any).expires_at ? new Date(Number((session as any).expires_at) * 1000).toISOString() : null;
+  const expired = Boolean((session as any).expires_at) && Number((session as any).expires_at) * 1000 < Date.now() && sessionStatus === 'expired';
+
+  const paid = sessionStatus === 'complete'
+    && paymentStatus === 'paid'
+    && currency === expectedCurrency
+    && clientRef === expectedClientRef
+    && Number.isSafeInteger(amountTotal)
+    && amountTotal === expectedAmount;
+
+  const explicitlyFailed = (sessionStatus === 'complete' && !paid)
+    || sessionStatus === 'expired'
+    || expired
+    || paymentStatus === 'unpaid' && sessionStatus === 'expired';
+
+  const state: VerifiedCardPayment['state'] = paid ? 'PAID' : explicitlyFailed ? 'FAILED' : 'PENDING';
+  return {
+    state,
+    paymentRef: String(session.id || input.paymentRef),
+    providerOrderId: clientRef,
+    reachedAmount: Number.isFinite(amountTotal) ? amountTotal : 0,
+    auditPayload: {
+      paymentId: String(session.id || input.paymentRef),
+      status: sessionStatus,
+      payment_status: paymentStatus,
+      currency,
+      client_reference_id: clientRef,
+      expected_client_reference_id: expectedClientRef,
+      amount_total: Number.isFinite(amountTotal) ? amountTotal : null,
+      expected_amount: expectedAmount,
+      expected_currency: expectedCurrency,
+      expires_at: expiresAt,
+      url: (session as any).url || null,
+    },
+  };
+}
+
+// Alias historique
+export const verifyKonnectCardPayment = verifyStripeCardPayment;
+
+/**
+ * Vérifie la signature Stripe Webhook (POST /api/customer/payments/stripe/webhook).
+ */
+export function verifyStripeWebhookSignature(rawBody: Buffer | string, signature: string): Stripe.Event {
+  const config = stripeConfig();
+  if (!config.webhookSecret) throw new Error('STRIPE_WEBHOOK_NOT_CONFIGURED');
+  const stripe = stripeClient();
+  return stripe.webhooks.constructEvent(rawBody, signature, config.webhookSecret);
+}
+
+/**
+ * Diagnostic de la passerelle carte — LECTURE SEULE, SANS SECRET.
+ *
+ * Pourquoi un endpoint dédié : une clé absente ne produit aucune erreur visible.
+ * Le bouton carte se grise, le client choisit le virement, et personne ne sait
+ * pourquoi. Le diagnostic nomme donc chaque variable manquante et rappelle
+ * l'URL exacte à enregistrer dans Stripe — sans jamais renvoyer une clé, même
+ * tronquée (une empreinte partielle suffit à confirmer qu'une valeur est là).
+ *
+ * Il ne déclenche AUCUN appel sortant : il peut être interrogé librement.
+ */
+export function stripeDiagnostics() {
+  const config = stripeConfig();
+  const legacy = konnectLegacyConfig();
+  const fallback = konnectFallbackEnabled();
+  const keyMode = /^(?:sk|rk)_(test)_/.test(config.secretKey) ? 'test'
+    : /^(?:sk|rk)_live_/.test(config.secretKey) ? 'live'
+      : null;
+  const missing: string[] = [];
+  if (!config.secretKey) missing.push('STRIPE_SECRET_KEY');
+  else if (!keyMode) missing.push('STRIPE_SECRET_KEY (format inattendu : sk_test_… / sk_live_…)');
+  if (!config.webhookSecret) missing.push('STRIPE_WEBHOOK_SECRET');
+  if (!config.publicBaseUrl) missing.push('PUBLIC_BASE_URL');
+  else if (!config.publicBaseUrl.startsWith('https://')) missing.push('PUBLIC_BASE_URL (doit être en https)');
+
+  /*
+   * NOMS de variables (jamais les valeurs) — c'est ce qui tranche un cas réel :
+   * une variable saisie `STRIPE_SECRET` au lieu de `STRIPE_SECRET_KEY` produit
+   * exactement le même symptôme qu'une variable absente. Les noms seuls ne
+   * révèlent aucun secret ; ils permettent de dire « tu as écrit ceci ».
+   */
+  const envNames = Object.keys(process.env)
+    .filter((name) => /STRIPE|KONNECT|PUBLIC_BASE_URL/.test(name))
+    .sort();
+  const hints: string[] = [];
+  for (const expected of ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']) {
+    if (process.env[expected]) continue;
+    const near = envNames.filter((name) => name !== expected
+      && !/^(STRIPE_CURRENCY|STRIPE_SECRET_KEY|STRIPE_WEBHOOK_SECRET)$/.test(name)
+      && (expected.startsWith(name) || name.startsWith(expected) || name.replace(/_KEY$|_SECRET$/, '') === expected.replace(/_KEY$|_SECRET$/, '')));
+    if (near.length) hints.push(`Variable « ${expected} » absente, mais ${near.map((n) => `« ${n} »`).join(', ')} existe(nt) : le nom est probablement mal orthographié.`);
+  }
+  for (const expected of ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']) {
+    const raw = process.env[expected];
+    if (!raw) continue;
+    if (raw !== raw.trim()) hints.push(`${expected} contient un espace ou un retour à la ligne au début/à la fin.`);
+    if (/^(['"]).*\1$/.test(raw.trim())) hints.push(`${expected} est entourée de guillemets : retirez-les, la valeur doit être brute.`);
+  }
+  if (!process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_WEBHOOK_SECRET) {
+    hints.push('Aucune variable STRIPE_* sur ce service : les clés ont-elles été enregistrées sur CETTE instance Render (et non sur un autre service), puis « Save changes » ?');
+  }
+
+  return {
+    provider: config.ready ? 'STRIPE' : fallback ? 'KONNECT (repli hors production)' : null,
+    cardGatewayAvailable: cardGatewayAvailable(),
+    ready: config.ready,
+    currency: config.currency,
+    amounts: 'Le montant TND est facturé dans cette devise à valeur numérique identique (1 TND = 1 EUR par défaut).',
+    secretKey: { present: Boolean(config.secretKey), mode: keyMode },
+    webhookSecret: { present: Boolean(config.webhookSecret) },
+    publicBaseUrl: config.publicBaseUrl || null,
+    webhookUrl: config.publicBaseUrl ? `${config.publicBaseUrl}/api/customer/payments/stripe/webhook` : null,
+    webhookEvents: ['checkout.session.completed', 'checkout.session.expired'],
+    legacyKonnect: { configured: legacy.ready, activeInProduction: false, fallbackActive: fallback },
+    // Noms seulement : aucune valeur, même partielle.
+    envVarNames: envNames,
+    missing,
+    hints,
   };
 }

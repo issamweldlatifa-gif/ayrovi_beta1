@@ -1861,7 +1861,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     audit(db, req, 'ACCESS_DENIED', 'PAYMENTS', payment.id, null, {
       reason: 'MANUAL_PAYMENT_STATUS_FORBIDDEN', requestedStatus: String(req.body?.status || '').slice(0, 40),
     });
-    return res.status(409).json({ success: false, error: 'Le statut est géré uniquement par la vérification Konnect ou la révision du justificatif; aucun paiement/remboursement manuel n’est enregistré ici.' });
+    return res.status(409).json({ success: false, error: 'Le statut est géré uniquement par la vérification Stripe ou la révision du justificatif; aucun paiement/remboursement manuel n’est enregistré ici.' });
   });
 
   // ===== Manual-transfer proof files (admin only, path never exposed) =====
