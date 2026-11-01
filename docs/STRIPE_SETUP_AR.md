@@ -99,7 +99,22 @@ sqlite3 data/qatafo.sqlite "SELECT transaction_number,provider,status,provider_r
 
 ---
 
-## 7) الأخطاء المتوقّعة
+## 7) ترحيل تلقائي من Konnect
+
+في أول إقلاع بعد التحديث، الخادم يصلّح وحدو أي معاملة Konnect بقيت `PENDING`:
+
+```
+payment_transactions.provider='KONNECT' AND status='PENDING'
+   → status='FAILED', failure_reason='Passerelle Konnect remplacée par Stripe — session non vérifiable.'
+```
+
+والأمر `payments.status` و `orders.payment_status` يولّيو `FAILED` **كان** الطلب مازال
+`AWAITING_DEPOSIT`. هذا يخلّي العميل ينجّم يعاود يدفع بالكارطة بلا ما ينتظر تدخّل يدوي.
+الترحيل يتنفّذ مرة وحدة (`applied_data_migrations`) وما يلمسش لا `PAID` لا `FAILED` القديمة.
+
+---
+
+## 8) الأخطاء المتوقّعة
 
 | الرمز/الرسالة | المعنى | الحل |
 |---|---|---|

@@ -2109,6 +2109,27 @@ export class QatafoDatabase {
     this.rebuildTableIfLegacy('deliveries', "'IN_TRANSIT'", DELIVERIES_TABLE_SQL, []);
     this.migratePaymentsToAccountLifecycle();
     this.ensureAccountCommerceSchema();
+    /*
+     * Konnect → Stripe (01/11/2026).
+     *
+     * Une session Konnect laissée PENDING ne peut plus être vérifiée : la
+     * passerelle a été remplacée, et son URL n'est plus interrogeable. La laisser
+     * « en attente » bloquerait la commande indéfiniment. On la solde donc en
+     * échec — une seule fois — pour rendre le dépôt payable à nouveau par carte.
+     * Aucune ligne PAID/FAILED n'est touchée : l'historique financier reste intact.
+     */
+    this.runOnceDataMigration('card_gateway_konnect_to_stripe_v1', () => {
+      const now = new Date().toISOString();
+      const stale = this.all<any>(`SELECT id,payment_id,order_id FROM payment_transactions
+        WHERE provider='KONNECT' AND status='PENDING'`);
+      for (const row of stale) {
+        this.run(`UPDATE payment_transactions SET status='FAILED',failure_reason=?,updated_at=? WHERE id=?`,
+          'Passerelle Konnect remplacée par Stripe — session non vérifiable.', now, row.id);
+        this.run(`UPDATE payments SET status='FAILED',updated_at=? WHERE id=? AND status='PENDING'`, now, row.payment_id);
+        this.run(`UPDATE orders SET payment_status='FAILED',updated_at=? WHERE id=? AND status='AWAITING_DEPOSIT'`, now, row.order_id);
+      }
+      if (stale.length) console.info(`[database] ${stale.length} transaction(s) Konnect soldée(s) après bascule Stripe.`);
+    });
     this.rebuildTableIfLegacy('customer_notifications', "'INVOICE'", CUSTOMER_NOTIFICATIONS_TABLE_SQL, []);
     // ترقية جدول الإعدادات لفئات CHANNELS/DESIGN/INTERFACE (القواعد القديمة كانت ترفضها بصمت)
     this.db.exec(SETTINGS_TABLE_SQL);
