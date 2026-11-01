@@ -1,0 +1,2916 @@
+[
+ {
+  "screenshot": "Screenshot_20261101_051554_com.gbox.android.jpg",
+  "text": "Azzaro Parfums",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 28,
+  "tracking_em": 0.0,
+  "score": 0.8346,
+  "pos_fullres": [
+   24,
+   577
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.8346
+   ],
+   [
+    800,
+    0.8257
+   ],
+   [
+    700,
+    0.7773
+   ],
+   [
+    600,
+    0.7422
+   ],
+   [
+    500,
+    0.3932
+   ],
+   [
+    400,
+    0.3067
+   ],
+   [
+    300,
+    0.2376
+   ],
+   [
+    200,
+    0.218
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051554_com.gbox.android.jpg",
+  "text": "THE MOST WANTED - Eau de",
+  "polarity": "dark",
+  "best_weight": 800,
+  "size_px": 36,
+  "tracking_em": 0.0,
+  "score": 0.1728,
+  "pos_fullres": [
+   145,
+   506
+  ],
+  "weight_ranking": [
+   [
+    800,
+    0.1728
+   ],
+   [
+    900,
+    0.1694
+   ],
+   [
+    700,
+    0.1654
+   ],
+   [
+    600,
+    0.1477
+   ],
+   [
+    500,
+    0.1237
+   ],
+   [
+    400,
+    0.1098
+   ],
+   [
+    300,
+    0.0932
+   ],
+   [
+    200,
+    0.0843
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051554_com.gbox.android.jpg",
+  "text": "From €66.45",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 29,
+  "tracking_em": 0.0,
+  "score": 0.7468,
+  "pos_fullres": [
+   332,
+   713
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.7468
+   ],
+   [
+    500,
+    0.6442
+   ],
+   [
+    700,
+    0.6187
+   ],
+   [
+    400,
+    0.6055
+   ],
+   [
+    800,
+    0.5837
+   ],
+   [
+    900,
+    0.573
+   ],
+   [
+    300,
+    0.5187
+   ],
+   [
+    200,
+    0.3692
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051554_com.gbox.android.jpg",
+  "text": "Regular price:",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 30,
+  "tracking_em": 0.0,
+  "score": 0.4265,
+  "pos_fullres": [
+   25,
+   576
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.4265
+   ],
+   [
+    700,
+    0.3743
+   ],
+   [
+    800,
+    0.3663
+   ],
+   [
+    600,
+    0.3512
+   ],
+   [
+    500,
+    0.3332
+   ],
+   [
+    300,
+    0.2769
+   ],
+   [
+    400,
+    0.2686
+   ],
+   [
+    200,
+    0.2162
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051554_com.gbox.android.jpg",
+  "text": "up to -26%",
+  "polarity": "dark",
+  "best_weight": 300,
+  "size_px": 24,
+  "tracking_em": 0.03,
+  "score": 0.4954,
+  "pos_fullres": [
+   331,
+   782
+  ],
+  "weight_ranking": [
+   [
+    300,
+    0.4954
+   ],
+   [
+    200,
+    0.4458
+   ],
+   [
+    400,
+    0.357
+   ],
+   [
+    600,
+    0.2586
+   ],
+   [
+    700,
+    0.2527
+   ],
+   [
+    500,
+    0.2366
+   ],
+   [
+    800,
+    0.2228
+   ],
+   [
+    900,
+    0.2196
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051554_com.gbox.android.jpg",
+  "text": "Most repurchased",
+  "polarity": "light",
+  "best_weight": 900,
+  "size_px": 24,
+  "tracking_em": -0.03,
+  "score": 0.3528,
+  "pos_fullres": [
+   278,
+   453
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.3528
+   ],
+   [
+    800,
+    0.3323
+   ],
+   [
+    700,
+    0.325
+   ],
+   [
+    600,
+    0.3028
+   ],
+   [
+    500,
+    0.277
+   ],
+   [
+    400,
+    0.2475
+   ],
+   [
+    300,
+    0.2341
+   ],
+   [
+    200,
+    0.1864
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051554_com.gbox.android.jpg",
+  "text": "Deal",
+  "polarity": "light",
+  "best_weight": 800,
+  "size_px": 24,
+  "tracking_em": 0.0,
+  "score": 0.8323,
+  "pos_fullres": [
+   58,
+   494
+  ],
+  "weight_ranking": [
+   [
+    800,
+    0.8323
+   ],
+   [
+    700,
+    0.7979
+   ],
+   [
+    900,
+    0.7725
+   ],
+   [
+    600,
+    0.7412
+   ],
+   [
+    500,
+    0.6798
+   ],
+   [
+    300,
+    0.544
+   ],
+   [
+    400,
+    0.537
+   ],
+   [
+    200,
+    0.3508
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051554_com.gbox.android.jpg",
+  "text": "67 Points",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 22,
+  "tracking_em": -0.015,
+  "score": 0.4205,
+  "pos_fullres": [
+   68,
+   831
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.4205
+   ],
+   [
+    700,
+    0.3928
+   ],
+   [
+    500,
+    0.3572
+   ],
+   [
+    800,
+    0.3243
+   ],
+   [
+    900,
+    0.3214
+   ],
+   [
+    400,
+    0.3001
+   ],
+   [
+    300,
+    0.25
+   ],
+   [
+    200,
+    0.2257
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051554_com.gbox.android.jpg",
+  "text": "Choose size",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 24,
+  "tracking_em": -0.03,
+  "score": 0.4003,
+  "pos_fullres": [
+   362,
+   466
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.4003
+   ],
+   [
+    800,
+    0.3918
+   ],
+   [
+    600,
+    0.3812
+   ],
+   [
+    700,
+    0.3782
+   ],
+   [
+    500,
+    0.3523
+   ],
+   [
+    400,
+    0.3225
+   ],
+   [
+    300,
+    0.3018
+   ],
+   [
+    200,
+    0.2493
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051526_com.gbox.android.jpg",
+  "text": "FOREVER WANTED",
+  "polarity": "dark",
+  "best_weight": 200,
+  "size_px": 33,
+  "tracking_em": 0.015,
+  "score": 0.333,
+  "pos_fullres": [
+   20,
+   969
+  ],
+  "weight_ranking": [
+   [
+    200,
+    0.333
+   ],
+   [
+    300,
+    0.2751
+   ],
+   [
+    600,
+    0.205
+   ],
+   [
+    400,
+    0.1609
+   ],
+   [
+    500,
+    0.1558
+   ],
+   [
+    700,
+    0.1292
+   ],
+   [
+    800,
+    0.0958
+   ],
+   [
+    900,
+    0.094
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051526_com.gbox.android.jpg",
+  "text": "From €82.95",
+  "polarity": "dark",
+  "best_weight": 700,
+  "size_px": 33,
+  "tracking_em": 0.03,
+  "score": 0.3353,
+  "pos_fullres": [
+   409,
+   1573
+  ],
+  "weight_ranking": [
+   [
+    700,
+    0.3353
+   ],
+   [
+    800,
+    0.3217
+   ],
+   [
+    900,
+    0.3114
+   ],
+   [
+    600,
+    0.302
+   ],
+   [
+    500,
+    0.2708
+   ],
+   [
+    400,
+    0.2323
+   ],
+   [
+    200,
+    0.1837
+   ],
+   [
+    300,
+    0.1828
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051526_com.gbox.android.jpg",
+  "text": "Premium delivery",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 32,
+  "tracking_em": 0.015,
+  "score": 0.529,
+  "pos_fullres": [
+   57,
+   345
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.529
+   ],
+   [
+    700,
+    0.4333
+   ],
+   [
+    800,
+    0.4265
+   ],
+   [
+    600,
+    0.3968
+   ],
+   [
+    400,
+    0.3469
+   ],
+   [
+    500,
+    0.346
+   ],
+   [
+    300,
+    0.3412
+   ],
+   [
+    200,
+    0.3017
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051526_com.gbox.android.jpg",
+  "text": "Top rated",
+  "polarity": "dark",
+  "best_weight": 800,
+  "size_px": 29,
+  "tracking_em": 0.015,
+  "score": 0.5971,
+  "pos_fullres": [
+   53,
+   547
+  ],
+  "weight_ranking": [
+   [
+    800,
+    0.5971
+   ],
+   [
+    900,
+    0.5637
+   ],
+   [
+    700,
+    0.5436
+   ],
+   [
+    600,
+    0.4891
+   ],
+   [
+    500,
+    0.4307
+   ],
+   [
+    300,
+    0.4054
+   ],
+   [
+    400,
+    0.3928
+   ],
+   [
+    200,
+    0.3565
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051526_com.gbox.android.jpg",
+  "text": "Recommendations",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 47,
+  "tracking_em": 0.015,
+  "score": 0.383,
+  "pos_fullres": [
+   82,
+   485
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.383
+   ],
+   [
+    700,
+    0.3788
+   ],
+   [
+    800,
+    0.37
+   ],
+   [
+    900,
+    0.3622
+   ],
+   [
+    500,
+    0.3581
+   ],
+   [
+    400,
+    0.2576
+   ],
+   [
+    300,
+    0.2345
+   ],
+   [
+    200,
+    0.2151
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051526_com.gbox.android.jpg",
+  "text": "THE MOST WANT",
+  "polarity": "dark",
+  "best_weight": 200,
+  "size_px": 33,
+  "tracking_em": 0.0,
+  "score": 0.3097,
+  "pos_fullres": [
+   5,
+   969
+  ],
+  "weight_ranking": [
+   [
+    200,
+    0.3097
+   ],
+   [
+    300,
+    0.2644
+   ],
+   [
+    600,
+    0.1872
+   ],
+   [
+    500,
+    0.1357
+   ],
+   [
+    700,
+    0.133
+   ],
+   [
+    800,
+    0.1312
+   ],
+   [
+    900,
+    0.1303
+   ],
+   [
+    400,
+    0.1268
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051545_com.gbox.android.jpg",
+  "text": "More beauty picks",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 50,
+  "tracking_em": -0.03,
+  "score": 0.4597,
+  "pos_fullres": [
+   162,
+   762
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.4597
+   ],
+   [
+    800,
+    0.4443
+   ],
+   [
+    700,
+    0.4234
+   ],
+   [
+    600,
+    0.39
+   ],
+   [
+    500,
+    0.3643
+   ],
+   [
+    400,
+    0.3267
+   ],
+   [
+    300,
+    0.2963
+   ],
+   [
+    200,
+    0.2603
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051545_com.gbox.android.jpg",
+  "text": "How about these?",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 44,
+  "tracking_em": -0.03,
+  "score": 0.3636,
+  "pos_fullres": [
+   356,
+   717
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.3636
+   ],
+   [
+    800,
+    0.3506
+   ],
+   [
+    700,
+    0.3393
+   ],
+   [
+    600,
+    0.3163
+   ],
+   [
+    500,
+    0.2867
+   ],
+   [
+    400,
+    0.256
+   ],
+   [
+    300,
+    0.2334
+   ],
+   [
+    200,
+    0.2095
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051545_com.gbox.android.jpg",
+  "text": "See more",
+  "polarity": "dark",
+  "best_weight": 400,
+  "size_px": 28,
+  "tracking_em": 0.015,
+  "score": 0.5943,
+  "pos_fullres": [
+   21,
+   1413
+  ],
+  "weight_ranking": [
+   [
+    400,
+    0.5943
+   ],
+   [
+    500,
+    0.5161
+   ],
+   [
+    300,
+    0.4848
+   ],
+   [
+    200,
+    0.4284
+   ],
+   [
+    600,
+    0.4131
+   ],
+   [
+    800,
+    0.3971
+   ],
+   [
+    900,
+    0.3937
+   ],
+   [
+    700,
+    0.3698
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051545_com.gbox.android.jpg",
+  "text": "Armani Beauty",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 41,
+  "tracking_em": -0.03,
+  "score": 0.4481,
+  "pos_fullres": [
+   248,
+   769
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.4481
+   ],
+   [
+    800,
+    0.4214
+   ],
+   [
+    700,
+    0.4182
+   ],
+   [
+    600,
+    0.3798
+   ],
+   [
+    500,
+    0.3412
+   ],
+   [
+    400,
+    0.3042
+   ],
+   [
+    300,
+    0.2741
+   ],
+   [
+    200,
+    0.2585
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051545_com.gbox.android.jpg",
+  "text": "STRONGER WITH",
+  "polarity": "dark",
+  "best_weight": 800,
+  "size_px": 24,
+  "tracking_em": 0.015,
+  "score": 0.298,
+  "pos_fullres": [
+   118,
+   880
+  ],
+  "weight_ranking": [
+   [
+    800,
+    0.298
+   ],
+   [
+    600,
+    0.2681
+   ],
+   [
+    500,
+    0.2639
+   ],
+   [
+    700,
+    0.2367
+   ],
+   [
+    900,
+    0.2038
+   ],
+   [
+    400,
+    0.1741
+   ],
+   [
+    300,
+    0.1663
+   ],
+   [
+    200,
+    0.1616
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051545_com.gbox.android.jpg",
+  "text": "From €56.45",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 40,
+  "tracking_em": 0.015,
+  "score": 0.6427,
+  "pos_fullres": [
+   49,
+   1066
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.6427
+   ],
+   [
+    700,
+    0.5583
+   ],
+   [
+    800,
+    0.556
+   ],
+   [
+    500,
+    0.5411
+   ],
+   [
+    900,
+    0.4607
+   ],
+   [
+    400,
+    0.4145
+   ],
+   [
+    300,
+    0.3595
+   ],
+   [
+    200,
+    0.2908
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051545_com.gbox.android.jpg",
+  "text": "Perfect pairings",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 29,
+  "tracking_em": 0.0,
+  "score": 0.4472,
+  "pos_fullres": [
+   316,
+   1333
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.4472
+   ],
+   [
+    700,
+    0.3701
+   ],
+   [
+    900,
+    0.3463
+   ],
+   [
+    500,
+    0.3303
+   ],
+   [
+    800,
+    0.3291
+   ],
+   [
+    400,
+    0.3183
+   ],
+   [
+    300,
+    0.2827
+   ],
+   [
+    200,
+    0.2263
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051545_com.gbox.android.jpg",
+  "text": "Luxury",
+  "polarity": "light",
+  "best_weight": 900,
+  "size_px": 30,
+  "tracking_em": 0.0,
+  "score": 0.4927,
+  "pos_fullres": [
+   299,
+   752
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.4927
+   ],
+   [
+    800,
+    0.4708
+   ],
+   [
+    500,
+    0.4417
+   ],
+   [
+    600,
+    0.4416
+   ],
+   [
+    700,
+    0.4369
+   ],
+   [
+    400,
+    0.3805
+   ],
+   [
+    300,
+    0.311
+   ],
+   [
+    200,
+    0.2736
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051549_com.gbox.android.jpg",
+  "text": "Perfect pairings",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 46,
+  "tracking_em": 0.0,
+  "score": 0.824,
+  "pos_fullres": [
+   51,
+   169
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.824
+   ],
+   [
+    800,
+    0.7381
+   ],
+   [
+    700,
+    0.7249
+   ],
+   [
+    900,
+    0.6231
+   ],
+   [
+    500,
+    0.6131
+   ],
+   [
+    400,
+    0.386
+   ],
+   [
+    300,
+    0.3112
+   ],
+   [
+    200,
+    0.2534
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051549_com.gbox.android.jpg",
+  "text": "Get the full set",
+  "polarity": "dark",
+  "best_weight": 500,
+  "size_px": 47,
+  "tracking_em": 0.0,
+  "score": 0.8081,
+  "pos_fullres": [
+   52,
+   219
+  ],
+  "weight_ranking": [
+   [
+    500,
+    0.8081
+   ],
+   [
+    800,
+    0.6193
+   ],
+   [
+    600,
+    0.5864
+   ],
+   [
+    700,
+    0.5634
+   ],
+   [
+    900,
+    0.4652
+   ],
+   [
+    400,
+    0.4283
+   ],
+   [
+    300,
+    0.4152
+   ],
+   [
+    200,
+    0.3611
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051549_com.gbox.android.jpg",
+  "text": "FOREVER WANTED ELIXI",
+  "polarity": "dark",
+  "best_weight": 500,
+  "size_px": 25,
+  "tracking_em": -0.03,
+  "score": 0.688,
+  "pos_fullres": [
+   253,
+   374
+  ],
+  "weight_ranking": [
+   [
+    500,
+    0.688
+   ],
+   [
+    900,
+    0.5277
+   ],
+   [
+    800,
+    0.5103
+   ],
+   [
+    400,
+    0.5076
+   ],
+   [
+    600,
+    0.3227
+   ],
+   [
+    300,
+    0.2974
+   ],
+   [
+    700,
+    0.2038
+   ],
+   [
+    200,
+    0.1213
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051549_com.gbox.android.jpg",
+  "text": "From €69.95",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 29,
+  "tracking_em": 0.0,
+  "score": 0.845,
+  "pos_fullres": [
+   253,
+   425
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.845
+   ],
+   [
+    500,
+    0.7153
+   ],
+   [
+    800,
+    0.7125
+   ],
+   [
+    900,
+    0.7053
+   ],
+   [
+    400,
+    0.6931
+   ],
+   [
+    700,
+    0.6426
+   ],
+   [
+    300,
+    0.605
+   ],
+   [
+    200,
+    0.4394
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051549_com.gbox.android.jpg",
+  "text": "How to apply",
+  "polarity": "dark",
+  "best_weight": 500,
+  "size_px": 34,
+  "tracking_em": 0.0,
+  "score": 0.8433,
+  "pos_fullres": [
+   34,
+   1062
+  ],
+  "weight_ranking": [
+   [
+    500,
+    0.8433
+   ],
+   [
+    400,
+    0.7603
+   ],
+   [
+    300,
+    0.6879
+   ],
+   [
+    200,
+    0.5645
+   ],
+   [
+    600,
+    0.557
+   ],
+   [
+    700,
+    0.4821
+   ],
+   [
+    900,
+    0.3983
+   ],
+   [
+    800,
+    0.3748
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051549_com.gbox.android.jpg",
+  "text": "Follow",
+  "polarity": "dark",
+  "best_weight": 400,
+  "size_px": 32,
+  "tracking_em": 0.015,
+  "score": 0.8747,
+  "pos_fullres": [
+   555,
+   1282
+  ],
+  "weight_ranking": [
+   [
+    400,
+    0.8747
+   ],
+   [
+    300,
+    0.7726
+   ],
+   [
+    500,
+    0.5889
+   ],
+   [
+    200,
+    0.5055
+   ],
+   [
+    900,
+    0.3096
+   ],
+   [
+    800,
+    0.2663
+   ],
+   [
+    700,
+    0.2576
+   ],
+   [
+    600,
+    0.2495
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051549_com.gbox.android.jpg",
+  "text": "View all reviews",
+  "polarity": "light",
+  "best_weight": 900,
+  "size_px": 24,
+  "tracking_em": -0.03,
+  "score": 0.3829,
+  "pos_fullres": [
+   80,
+   1534
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.3829
+   ],
+   [
+    800,
+    0.3638
+   ],
+   [
+    700,
+    0.3586
+   ],
+   [
+    600,
+    0.3418
+   ],
+   [
+    500,
+    0.3121
+   ],
+   [
+    400,
+    0.2748
+   ],
+   [
+    300,
+    0.2574
+   ],
+   [
+    200,
+    0.2035
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051538_com.gbox.android.jpg",
+  "text": "New for you",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 44,
+  "tracking_em": -0.015,
+  "score": 0.8441,
+  "pos_fullres": [
+   27,
+   70
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.8441
+   ],
+   [
+    700,
+    0.7291
+   ],
+   [
+    500,
+    0.695
+   ],
+   [
+    800,
+    0.6209
+   ],
+   [
+    900,
+    0.6185
+   ],
+   [
+    400,
+    0.4541
+   ],
+   [
+    300,
+    0.4347
+   ],
+   [
+    200,
+    0.3503
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051538_com.gbox.android.jpg",
+  "text": "20% off various styles",
+  "polarity": "light",
+  "best_weight": 600,
+  "size_px": 40,
+  "tracking_em": -0.015,
+  "score": 0.8061,
+  "pos_fullres": [
+   44,
+   272
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.8061
+   ],
+   [
+    500,
+    0.6934
+   ],
+   [
+    700,
+    0.603
+   ],
+   [
+    800,
+    0.5048
+   ],
+   [
+    900,
+    0.4462
+   ],
+   [
+    400,
+    0.3533
+   ],
+   [
+    300,
+    0.3109
+   ],
+   [
+    200,
+    0.2458
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051538_com.gbox.android.jpg",
+  "text": "20MEMBER",
+  "polarity": "light",
+  "best_weight": 700,
+  "size_px": 38,
+  "tracking_em": 0.03,
+  "score": 0.7555,
+  "pos_fullres": [
+   42,
+   470
+  ],
+  "weight_ranking": [
+   [
+    700,
+    0.7555
+   ],
+   [
+    500,
+    0.7032
+   ],
+   [
+    800,
+    0.694
+   ],
+   [
+    600,
+    0.6744
+   ],
+   [
+    900,
+    0.6721
+   ],
+   [
+    400,
+    0.6585
+   ],
+   [
+    300,
+    0.4216
+   ],
+   [
+    200,
+    0.3159
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051538_com.gbox.android.jpg",
+  "text": "Our best offers",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 33,
+  "tracking_em": -0.015,
+  "score": 0.786,
+  "pos_fullres": [
+   43,
+   699
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.786
+   ],
+   [
+    700,
+    0.7589
+   ],
+   [
+    900,
+    0.5564
+   ],
+   [
+    800,
+    0.5457
+   ],
+   [
+    500,
+    0.4179
+   ],
+   [
+    200,
+    0.2935
+   ],
+   [
+    400,
+    0.2584
+   ],
+   [
+    300,
+    0.2051
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051538_com.gbox.android.jpg",
+  "text": "COOL WATER EAU DE",
+  "polarity": "dark",
+  "best_weight": 300,
+  "size_px": 24,
+  "tracking_em": 0.015,
+  "score": 0.628,
+  "pos_fullres": [
+   42,
+   1246
+  ],
+  "weight_ranking": [
+   [
+    300,
+    0.628
+   ],
+   [
+    200,
+    0.4284
+   ],
+   [
+    400,
+    0.3208
+   ],
+   [
+    600,
+    0.2803
+   ],
+   [
+    500,
+    0.2595
+   ],
+   [
+    700,
+    0.2489
+   ],
+   [
+    800,
+    0.2083
+   ],
+   [
+    900,
+    0.1964
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051538_com.gbox.android.jpg",
+  "text": "From €59.95",
+  "polarity": "dark",
+  "best_weight": 400,
+  "size_px": 28,
+  "tracking_em": 0.015,
+  "score": 0.8102,
+  "pos_fullres": [
+   43,
+   1289
+  ],
+  "weight_ranking": [
+   [
+    400,
+    0.8102
+   ],
+   [
+    500,
+    0.6973
+   ],
+   [
+    600,
+    0.6468
+   ],
+   [
+    300,
+    0.6304
+   ],
+   [
+    700,
+    0.555
+   ],
+   [
+    800,
+    0.5336
+   ],
+   [
+    200,
+    0.4404
+   ],
+   [
+    900,
+    0.4071
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051538_com.gbox.android.jpg",
+  "text": "€89.95",
+  "polarity": "dark",
+  "best_weight": 400,
+  "size_px": 29,
+  "tracking_em": -0.015,
+  "score": 0.776,
+  "pos_fullres": [
+   389,
+   1289
+  ],
+  "weight_ranking": [
+   [
+    400,
+    0.776
+   ],
+   [
+    500,
+    0.735
+   ],
+   [
+    600,
+    0.6859
+   ],
+   [
+    300,
+    0.6845
+   ],
+   [
+    700,
+    0.6249
+   ],
+   [
+    800,
+    0.6
+   ],
+   [
+    200,
+    0.5959
+   ],
+   [
+    900,
+    0.5568
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051538_com.gbox.android.jpg",
+  "text": "Clothing",
+  "polarity": "light",
+  "best_weight": 900,
+  "size_px": 28,
+  "tracking_em": 0.0,
+  "score": 0.8872,
+  "pos_fullres": [
+   41,
+   604
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.8872
+   ],
+   [
+    700,
+    0.84
+   ],
+   [
+    600,
+    0.8397
+   ],
+   [
+    800,
+    0.6873
+   ],
+   [
+    400,
+    0.5163
+   ],
+   [
+    500,
+    0.4613
+   ],
+   [
+    300,
+    0.3102
+   ],
+   [
+    200,
+    0.278
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051534_com.gbox.android.jpg",
+  "text": "Your Account",
+  "polarity": "dark",
+  "best_weight": 500,
+  "size_px": 55,
+  "tracking_em": 0.015,
+  "score": 0.7556,
+  "pos_fullres": [
+   42,
+   254
+  ],
+  "weight_ranking": [
+   [
+    500,
+    0.7556
+   ],
+   [
+    600,
+    0.6315
+   ],
+   [
+    400,
+    0.6256
+   ],
+   [
+    300,
+    0.5264
+   ],
+   [
+    200,
+    0.4678
+   ],
+   [
+    800,
+    0.4655
+   ],
+   [
+    900,
+    0.4589
+   ],
+   [
+    700,
+    0.4341
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051534_com.gbox.android.jpg",
+  "text": "Men",
+  "polarity": "dark",
+  "best_weight": 400,
+  "size_px": 32,
+  "tracking_em": 0.0,
+  "score": 0.8813,
+  "pos_fullres": [
+   285,
+   398
+  ],
+  "weight_ranking": [
+   [
+    400,
+    0.8813
+   ],
+   [
+    500,
+    0.8022
+   ],
+   [
+    300,
+    0.7615
+   ],
+   [
+    600,
+    0.7143
+   ],
+   [
+    700,
+    0.6919
+   ],
+   [
+    200,
+    0.6437
+   ],
+   [
+    800,
+    0.6129
+   ],
+   [
+    900,
+    0.5474
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051534_com.gbox.android.jpg",
+  "text": "Overview",
+  "polarity": "dark",
+  "best_weight": 500,
+  "size_px": 43,
+  "tracking_em": 0.0,
+  "score": 0.8226,
+  "pos_fullres": [
+   51,
+   522
+  ],
+  "weight_ranking": [
+   [
+    500,
+    0.8226
+   ],
+   [
+    600,
+    0.7765
+   ],
+   [
+    700,
+    0.6869
+   ],
+   [
+    800,
+    0.4699
+   ],
+   [
+    400,
+    0.4297
+   ],
+   [
+    900,
+    0.4062
+   ],
+   [
+    300,
+    0.331
+   ],
+   [
+    200,
+    0.2932
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051534_com.gbox.android.jpg",
+  "text": "Zalando Plus",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 34,
+  "tracking_em": -0.015,
+  "score": 0.7975,
+  "pos_fullres": [
+   129,
+   620
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.7975
+   ],
+   [
+    700,
+    0.7494
+   ],
+   [
+    800,
+    0.5978
+   ],
+   [
+    500,
+    0.571
+   ],
+   [
+    200,
+    0.5208
+   ],
+   [
+    900,
+    0.4815
+   ],
+   [
+    300,
+    0.4022
+   ],
+   [
+    400,
+    0.3875
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051534_com.gbox.android.jpg",
+  "text": "Sell back items",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 34,
+  "tracking_em": -0.015,
+  "score": 0.8212,
+  "pos_fullres": [
+   129,
+   956
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.8212
+   ],
+   [
+    700,
+    0.7463
+   ],
+   [
+    500,
+    0.6418
+   ],
+   [
+    300,
+    0.5179
+   ],
+   [
+    400,
+    0.5046
+   ],
+   [
+    200,
+    0.4203
+   ],
+   [
+    800,
+    0.3423
+   ],
+   [
+    900,
+    0.3299
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051534_com.gbox.android.jpg",
+  "text": "App settings",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 34,
+  "tracking_em": -0.015,
+  "score": 0.8247,
+  "pos_fullres": [
+   128,
+   1292
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.8247
+   ],
+   [
+    700,
+    0.7764
+   ],
+   [
+    500,
+    0.6095
+   ],
+   [
+    800,
+    0.5415
+   ],
+   [
+    900,
+    0.493
+   ],
+   [
+    300,
+    0.442
+   ],
+   [
+    400,
+    0.4344
+   ],
+   [
+    200,
+    0.3529
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051551_com.gbox.android.jpg",
+  "text": "Return an item",
+  "polarity": "light",
+  "best_weight": 900,
+  "size_px": 30,
+  "tracking_em": -0.03,
+  "score": 0.5014,
+  "pos_fullres": [
+   26,
+   874
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.5014
+   ],
+   [
+    800,
+    0.4492
+   ],
+   [
+    700,
+    0.4402
+   ],
+   [
+    600,
+    0.3976
+   ],
+   [
+    500,
+    0.3768
+   ],
+   [
+    400,
+    0.3229
+   ],
+   [
+    300,
+    0.2864
+   ],
+   [
+    200,
+    0.2697
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051551_com.gbox.android.jpg",
+  "text": "Return Policy and Conditions",
+  "polarity": "dark",
+  "best_weight": 800,
+  "size_px": 31,
+  "tracking_em": 0.0,
+  "score": 0.3418,
+  "pos_fullres": [
+   70,
+   143
+  ],
+  "weight_ranking": [
+   [
+    800,
+    0.3418
+   ],
+   [
+    900,
+    0.2921
+   ],
+   [
+    700,
+    0.2907
+   ],
+   [
+    400,
+    0.271
+   ],
+   [
+    600,
+    0.2598
+   ],
+   [
+    500,
+    0.2529
+   ],
+   [
+    300,
+    0.2383
+   ],
+   [
+    200,
+    0.229
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051551_com.gbox.android.jpg",
+  "text": "From the last 6 months",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 24,
+  "tracking_em": 0.0,
+  "score": 0.3591,
+  "pos_fullres": [
+   292,
+   847
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.3591
+   ],
+   [
+    800,
+    0.3537
+   ],
+   [
+    700,
+    0.3258
+   ],
+   [
+    600,
+    0.2592
+   ],
+   [
+    500,
+    0.2213
+   ],
+   [
+    400,
+    0.2073
+   ],
+   [
+    300,
+    0.1921
+   ],
+   [
+    200,
+    0.1081
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051551_com.gbox.android.jpg",
+  "text": "November 2026",
+  "polarity": "dark",
+  "best_weight": 700,
+  "size_px": 45,
+  "tracking_em": 0.015,
+  "score": 0.3267,
+  "pos_fullres": [
+   28,
+   307
+  ],
+  "weight_ranking": [
+   [
+    700,
+    0.3267
+   ],
+   [
+    800,
+    0.3182
+   ],
+   [
+    900,
+    0.3179
+   ],
+   [
+    600,
+    0.3041
+   ],
+   [
+    500,
+    0.263
+   ],
+   [
+    400,
+    0.2228
+   ],
+   [
+    300,
+    0.1782
+   ],
+   [
+    200,
+    0.1749
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051551_com.gbox.android.jpg",
+  "text": "Order number:",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 30,
+  "tracking_em": -0.03,
+  "score": 0.5134,
+  "pos_fullres": [
+   44,
+   826
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.5134
+   ],
+   [
+    800,
+    0.4551
+   ],
+   [
+    700,
+    0.4422
+   ],
+   [
+    600,
+    0.4015
+   ],
+   [
+    500,
+    0.3706
+   ],
+   [
+    400,
+    0.3255
+   ],
+   [
+    300,
+    0.2874
+   ],
+   [
+    200,
+    0.2681
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051551_com.gbox.android.jpg",
+  "text": "1010374350506512",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 40,
+  "tracking_em": 0.0,
+  "score": 0.2531,
+  "pos_fullres": [
+   47,
+   1344
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.2531
+   ],
+   [
+    800,
+    0.2213
+   ],
+   [
+    200,
+    0.1339
+   ],
+   [
+    700,
+    0.1245
+   ],
+   [
+    500,
+    0.1165
+   ],
+   [
+    400,
+    0.1108
+   ],
+   [
+    300,
+    0.1105
+   ],
+   [
+    600,
+    0.0947
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051551_com.gbox.android.jpg",
+  "text": "Payment status",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 47,
+  "tracking_em": 0.0,
+  "score": 0.4557,
+  "pos_fullres": [
+   83,
+   255
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.4557
+   ],
+   [
+    800,
+    0.4344
+   ],
+   [
+    700,
+    0.4319
+   ],
+   [
+    500,
+    0.3912
+   ],
+   [
+    900,
+    0.388
+   ],
+   [
+    400,
+    0.3355
+   ],
+   [
+    300,
+    0.3085
+   ],
+   [
+    200,
+    0.237
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051551_com.gbox.android.jpg",
+  "text": "Cancelled",
+  "polarity": "dark",
+  "best_weight": 500,
+  "size_px": 32,
+  "tracking_em": 0.03,
+  "score": 0.4969,
+  "pos_fullres": [
+   101,
+   143
+  ],
+  "weight_ranking": [
+   [
+    500,
+    0.4969
+   ],
+   [
+    600,
+    0.4398
+   ],
+   [
+    800,
+    0.3786
+   ],
+   [
+    700,
+    0.3773
+   ],
+   [
+    400,
+    0.2498
+   ],
+   [
+    300,
+    0.2319
+   ],
+   [
+    200,
+    0.2317
+   ],
+   [
+    900,
+    0.2028
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051532_com.gbox.android.jpg",
+  "text": "Order details",
+  "polarity": "dark",
+  "best_weight": 700,
+  "size_px": 32,
+  "tracking_em": 0.0,
+  "score": 0.7412,
+  "pos_fullres": [
+   49,
+   1106
+  ],
+  "weight_ranking": [
+   [
+    700,
+    0.7412
+   ],
+   [
+    800,
+    0.7188
+   ],
+   [
+    600,
+    0.6008
+   ],
+   [
+    900,
+    0.5282
+   ],
+   [
+    500,
+    0.3233
+   ],
+   [
+    400,
+    0.2577
+   ],
+   [
+    300,
+    0.2428
+   ],
+   [
+    200,
+    0.1983
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051532_com.gbox.android.jpg",
+  "text": "We got your order.",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 72,
+  "tracking_em": -0.03,
+  "score": 0.3917,
+  "pos_fullres": [
+   65,
+   234
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.3917
+   ],
+   [
+    800,
+    0.3812
+   ],
+   [
+    700,
+    0.3634
+   ],
+   [
+    600,
+    0.3354
+   ],
+   [
+    500,
+    0.2997
+   ],
+   [
+    400,
+    0.2694
+   ],
+   [
+    300,
+    0.2468
+   ],
+   [
+    200,
+    0.2143
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051532_com.gbox.android.jpg",
+  "text": "Tue, 03/11/2026 - Wed,",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 30,
+  "tracking_em": -0.03,
+  "score": 0.3612,
+  "pos_fullres": [
+   81,
+   263
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.3612
+   ],
+   [
+    800,
+    0.3432
+   ],
+   [
+    700,
+    0.3293
+   ],
+   [
+    600,
+    0.2941
+   ],
+   [
+    500,
+    0.2758
+   ],
+   [
+    400,
+    0.2404
+   ],
+   [
+    300,
+    0.2135
+   ],
+   [
+    200,
+    0.2001
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051532_com.gbox.android.jpg",
+  "text": "Got your order!",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 38,
+  "tracking_em": -0.015,
+  "score": 0.4469,
+  "pos_fullres": [
+   52,
+   865
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.4469
+   ],
+   [
+    500,
+    0.4161
+   ],
+   [
+    700,
+    0.4121
+   ],
+   [
+    400,
+    0.3497
+   ],
+   [
+    300,
+    0.3365
+   ],
+   [
+    800,
+    0.3321
+   ],
+   [
+    900,
+    0.3281
+   ],
+   [
+    200,
+    0.2287
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051532_com.gbox.android.jpg",
+  "text": "EA STRONGER WITH YOU",
+  "polarity": "dark",
+  "best_weight": 700,
+  "size_px": 37,
+  "tracking_em": -0.03,
+  "score": 0.2415,
+  "pos_fullres": [
+   83,
+   912
+  ],
+  "weight_ranking": [
+   [
+    700,
+    0.2415
+   ],
+   [
+    800,
+    0.223
+   ],
+   [
+    500,
+    0.218
+   ],
+   [
+    900,
+    0.198
+   ],
+   [
+    600,
+    0.1869
+   ],
+   [
+    400,
+    0.1826
+   ],
+   [
+    200,
+    0.1761
+   ],
+   [
+    300,
+    0.154
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051532_com.gbox.android.jpg",
+  "text": "INTENSELY - Eau de Parfum",
+  "polarity": "dark",
+  "best_weight": 500,
+  "size_px": 30,
+  "tracking_em": 0.015,
+  "score": 0.2771,
+  "pos_fullres": [
+   49,
+   345
+  ],
+  "weight_ranking": [
+   [
+    500,
+    0.2771
+   ],
+   [
+    600,
+    0.2293
+   ],
+   [
+    400,
+    0.2129
+   ],
+   [
+    800,
+    0.166
+   ],
+   [
+    900,
+    0.1559
+   ],
+   [
+    700,
+    0.1514
+   ],
+   [
+    300,
+    0.1332
+   ],
+   [
+    200,
+    0.1282
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051532_com.gbox.android.jpg",
+  "text": "118,95 €",
+  "polarity": "dark",
+  "best_weight": 400,
+  "size_px": 29,
+  "tracking_em": -0.015,
+  "score": 0.8997,
+  "pos_fullres": [
+   361,
+   1152
+  ],
+  "weight_ranking": [
+   [
+    400,
+    0.8997
+   ],
+   [
+    500,
+    0.8003
+   ],
+   [
+    300,
+    0.7624
+   ],
+   [
+    600,
+    0.7489
+   ],
+   [
+    700,
+    0.7276
+   ],
+   [
+    200,
+    0.6527
+   ],
+   [
+    800,
+    0.6506
+   ],
+   [
+    900,
+    0.5089
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051532_com.gbox.android.jpg",
+  "text": "Article number: A4U32I011-S11",
+  "polarity": "dark",
+  "best_weight": 900,
+  "size_px": 23,
+  "tracking_em": -0.03,
+  "score": 0.3092,
+  "pos_fullres": [
+   82,
+   184
+  ],
+  "weight_ranking": [
+   [
+    900,
+    0.3092
+   ],
+   [
+    800,
+    0.2184
+   ],
+   [
+    700,
+    0.2148
+   ],
+   [
+    600,
+    0.1864
+   ],
+   [
+    500,
+    0.1554
+   ],
+   [
+    400,
+    0.1308
+   ],
+   [
+    300,
+    0.1047
+   ],
+   [
+    200,
+    0.0767
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051532_com.gbox.android.jpg",
+  "text": "Cancellation in progress",
+  "polarity": "dark",
+  "best_weight": 700,
+  "size_px": 32,
+  "tracking_em": 0.0,
+  "score": 0.4776,
+  "pos_fullres": [
+   50,
+   1330
+  ],
+  "weight_ranking": [
+   [
+    700,
+    0.4776
+   ],
+   [
+    800,
+    0.4627
+   ],
+   [
+    600,
+    0.429
+   ],
+   [
+    900,
+    0.3655
+   ],
+   [
+    500,
+    0.3643
+   ],
+   [
+    400,
+    0.2634
+   ],
+   [
+    300,
+    0.2347
+   ],
+   [
+    200,
+    0.2022
+   ]
+  ]
+ },
+ {
+  "screenshot": "Screenshot_20261101_051532_com.gbox.android.jpg",
+  "text": "Subtotal:",
+  "polarity": "dark",
+  "best_weight": 600,
+  "size_px": 27,
+  "tracking_em": 0.0,
+  "score": 0.4815,
+  "pos_fullres": [
+   300,
+   440
+  ],
+  "weight_ranking": [
+   [
+    600,
+    0.4815
+   ],
+   [
+    700,
+    0.4739
+   ],
+   [
+    800,
+    0.371
+   ],
+   [
+    900,
+    0.3612
+   ],
+   [
+    500,
+    0.3119
+   ],
+   [
+    400,
+    0.2864
+   ],
+   [
+    300,
+    0.237
+   ],
+   [
+    200,
+    0.187
+   ]
+  ]
+ }
+]
