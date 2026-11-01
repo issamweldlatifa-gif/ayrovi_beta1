@@ -87,6 +87,12 @@ npm run check:stripe -- --no-network # بلا شبكة (CI)
 ## 6) التحقّق من التركيب
 
 ```bash
+# 0. تشخيص كامل — يقولك شنوّة ناقص بالضبط (بلا ما يوري أي مفتاح)
+curl -s https://<DOMAIN>/api/payments/gateway-status | jq
+#   .data.missing          ⇒ [] يعني كل شيء موجود
+#   .data.secretKey.mode   ⇒ "test" ولا "live"
+#   .data.webhookUrl       ⇒ الـURL اللي لازم يكون في Stripe
+
 # 1. هل البوّابة "جاهزة" عند الخادم؟
 curl -s https://<DOMAIN>/api/v1/aywebs/payments/methods | jq '.data.card_gateway_available'
 # ⇒ true

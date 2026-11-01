@@ -37,6 +37,7 @@ import { pruneCanonicalLensCache } from './ayrovix/services/lensCache';
 import { dispatchPushNotifications } from './services/pushDispatch';
 import { pushConfigured } from './services/push';
 import { clientRateLimitKey } from './services/rateKey';
+import { stripeDiagnostics } from './services/paymentGateway';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -453,6 +454,18 @@ app.use('/api/voice', createAssistantRouter(db, scraper));
 app.use('/api/public', createPublicRouter(db));
 app.use('/api/v1/aywebs', createAyWebsRouter(db, scraper));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
+
+/*
+ * Diagnostic passerelle carte — LECTURE SEULE, SANS SECRET.
+ *
+ * Une clé Stripe manquante ne casse rien bruyamment : le bouton « carte » se
+ * grise et la commande part en virement. Ce point d'entrée dit donc exactement
+ * quelle variable manque et quelle URL enregistrer dans le Dashboard Stripe.
+ * Aucun appel sortant, aucune clé renvoyée (même tronquée).
+ */
+app.get('/api/payments/gateway-status', (_req, res) => {
+  res.json({ success: true, data: stripeDiagnostics() });
+});
 
 // Liveness: le processus HTTP répond. Readiness: SQLite est réellement lisible;
 // les fournisseurs externes restent des capacités optionnelles clairement signalées.

@@ -360,3 +360,44 @@ export function verifyStripeWebhookSignature(rawBody: Buffer | string, signature
   const stripe = stripeClient();
   return stripe.webhooks.constructEvent(rawBody, signature, config.webhookSecret);
 }
+
+/**
+ * Diagnostic de la passerelle carte — LECTURE SEULE, SANS SECRET.
+ *
+ * Pourquoi un endpoint dédié : une clé absente ne produit aucune erreur visible.
+ * Le bouton carte se grise, le client choisit le virement, et personne ne sait
+ * pourquoi. Le diagnostic nomme donc chaque variable manquante et rappelle
+ * l'URL exacte à enregistrer dans Stripe — sans jamais renvoyer une clé, même
+ * tronquée (une empreinte partielle suffit à confirmer qu'une valeur est là).
+ *
+ * Il ne déclenche AUCUN appel sortant : il peut être interrogé librement.
+ */
+export function stripeDiagnostics() {
+  const config = stripeConfig();
+  const legacy = konnectLegacyConfig();
+  const fallback = konnectFallbackEnabled();
+  const keyMode = /^(?:sk|rk)_(test)_/.test(config.secretKey) ? 'test'
+    : /^(?:sk|rk)_live_/.test(config.secretKey) ? 'live'
+      : null;
+  const missing: string[] = [];
+  if (!config.secretKey) missing.push('STRIPE_SECRET_KEY');
+  else if (!keyMode) missing.push('STRIPE_SECRET_KEY (format inattendu : sk_test_… / sk_live_…)');
+  if (!config.webhookSecret) missing.push('STRIPE_WEBHOOK_SECRET');
+  if (!config.publicBaseUrl) missing.push('PUBLIC_BASE_URL');
+  else if (!config.publicBaseUrl.startsWith('https://')) missing.push('PUBLIC_BASE_URL (doit être en https)');
+
+  return {
+    provider: config.ready ? 'STRIPE' : fallback ? 'KONNECT (repli hors production)' : null,
+    cardGatewayAvailable: cardGatewayAvailable(),
+    ready: config.ready,
+    currency: config.currency,
+    amounts: 'Le montant TND est facturé dans cette devise à valeur numérique identique (1 TND = 1 EUR par défaut).',
+    secretKey: { present: Boolean(config.secretKey), mode: keyMode },
+    webhookSecret: { present: Boolean(config.webhookSecret) },
+    publicBaseUrl: config.publicBaseUrl || null,
+    webhookUrl: config.publicBaseUrl ? `${config.publicBaseUrl}/api/customer/payments/stripe/webhook` : null,
+    webhookEvents: ['checkout.session.completed', 'checkout.session.expired'],
+    legacyKonnect: { configured: legacy.ready, activeInProduction: false, fallbackActive: fallback },
+    missing,
+  };
+}
