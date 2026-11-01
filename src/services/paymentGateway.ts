@@ -386,6 +386,33 @@ export function stripeDiagnostics() {
   if (!config.publicBaseUrl) missing.push('PUBLIC_BASE_URL');
   else if (!config.publicBaseUrl.startsWith('https://')) missing.push('PUBLIC_BASE_URL (doit être en https)');
 
+  /*
+   * NOMS de variables (jamais les valeurs) — c'est ce qui tranche un cas réel :
+   * une variable saisie `STRIPE_SECRET` au lieu de `STRIPE_SECRET_KEY` produit
+   * exactement le même symptôme qu'une variable absente. Les noms seuls ne
+   * révèlent aucun secret ; ils permettent de dire « tu as écrit ceci ».
+   */
+  const envNames = Object.keys(process.env)
+    .filter((name) => /STRIPE|KONNECT|PUBLIC_BASE_URL/.test(name))
+    .sort();
+  const hints: string[] = [];
+  for (const expected of ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']) {
+    if (process.env[expected]) continue;
+    const near = envNames.filter((name) => name !== expected
+      && !/^(STRIPE_CURRENCY|STRIPE_SECRET_KEY|STRIPE_WEBHOOK_SECRET)$/.test(name)
+      && (expected.startsWith(name) || name.startsWith(expected) || name.replace(/_KEY$|_SECRET$/, '') === expected.replace(/_KEY$|_SECRET$/, '')));
+    if (near.length) hints.push(`Variable « ${expected} » absente, mais ${near.map((n) => `« ${n} »`).join(', ')} existe(nt) : le nom est probablement mal orthographié.`);
+  }
+  for (const expected of ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET']) {
+    const raw = process.env[expected];
+    if (!raw) continue;
+    if (raw !== raw.trim()) hints.push(`${expected} contient un espace ou un retour à la ligne au début/à la fin.`);
+    if (/^(['"]).*\1$/.test(raw.trim())) hints.push(`${expected} est entourée de guillemets : retirez-les, la valeur doit être brute.`);
+  }
+  if (!process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_WEBHOOK_SECRET) {
+    hints.push('Aucune variable STRIPE_* sur ce service : les clés ont-elles été enregistrées sur CETTE instance Render (et non sur un autre service), puis « Save changes » ?');
+  }
+
   return {
     provider: config.ready ? 'STRIPE' : fallback ? 'KONNECT (repli hors production)' : null,
     cardGatewayAvailable: cardGatewayAvailable(),
@@ -398,6 +425,9 @@ export function stripeDiagnostics() {
     webhookUrl: config.publicBaseUrl ? `${config.publicBaseUrl}/api/customer/payments/stripe/webhook` : null,
     webhookEvents: ['checkout.session.completed', 'checkout.session.expired'],
     legacyKonnect: { configured: legacy.ready, activeInProduction: false, fallbackActive: fallback },
+    // Noms seulement : aucune valeur, même partielle.
+    envVarNames: envNames,
     missing,
+    hints,
   };
 }
