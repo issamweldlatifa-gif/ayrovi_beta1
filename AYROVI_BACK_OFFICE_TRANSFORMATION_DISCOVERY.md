@@ -451,7 +451,7 @@ dette que l'audit reproche (3 writers, 2 séquences, inline notifications).
 | Intégration | Fichier | Sens | Auth | Reprise | Risque pour la transformation |
 |---|---|---|---|---|---|
 | Warehouse Core | `arrival-ingestion/warehouseDispatchService.ts` | sortant | `x-api-key` statique + `idempotency-key` | `attempts`, `SEND_FAILED` | clé sans rotation (S6) ; **ne rien changer côté contrat** |
-| Konnect (paiement) | `services/paymentGateway.ts`, `customer/routes.ts` | sortant + callback `GET` (?) | `KONNECT_*` | idempotence par `payment_transactions` | statut `PARTIALLY_PAID` jamais posé |
+| Stripe (paiement) | `services/paymentGateway.ts`, `customer/routes.ts` | sortant + webhook `POST` signé | `STRIPE_*` | idempotence par `payment_transactions` | statut `PARTIALLY_PAID` jamais posé |
 | SMTP | `services/mailer.ts` (105 l.) | sortant **synchrone** | `MAIL_*` | **aucune** (l'envoi bloque la requête de facture) | à passer dans l'outbox `erp_notification_deliveries` |
 | Twilio OTP / webhook | `customer/otp.ts` | sortant | `TWILIO_*` | console provider en test | – |
 | IA (4 fournisseurs) | `ai-core/adapters/*` | sortant | par adapter | circuit breaker + shadow | frontière protégée par test : à **conserver telle quelle** |

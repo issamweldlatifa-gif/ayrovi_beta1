@@ -445,25 +445,33 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     }
   });
 
+  /*
+   * Webhook Stripe (POST, signé).
+   *
+   * Deux garanties, indépendantes l'une de l'autre :
+   *  1. la signature `stripe-signature` prouve que l'appel vient de Stripe ;
+   *  2. même signé, l'événement n'est jamais cru sur parole : on relit la session
+   *     chez Stripe et on compare montant/devise/référence (handleStripeWebhookByRef).
+   * Si STRIPE_WEBHOOK_SECRET est configuré, la signature devient OBLIGATOIRE :
+   * un POST non signé ne peut donc pas provoquer d'appels sortants en boucle.
+   */
   router.post('/payments/stripe/webhook', async (req: any, res) => {
-    const signature = String(req.headers['stripe-signature'] || req.headers['Stripe-Signature'] || '').trim();
-    // Si le secret webhook est configuré, on vérifie la signature sur le rawBody capturé par le serveur.
-    if (process.env.STRIPE_WEBHOOK_SECRET && signature && req.rawBody) {
+    const signature = String(req.headers['stripe-signature'] || '').trim();
+    const webhookSecret = String(process.env.STRIPE_WEBHOOK_SECRET || '').trim();
+    if (webhookSecret && (!signature || !req.rawBody)) {
+      return res.status(400).json({ success: false, error: 'Signature webhook manquante.' });
+    }
+    if (webhookSecret && signature && req.rawBody) {
       try {
         const event = verifyStripeWebhookSignature(req.rawBody, signature);
-        const sessionId: string | null = (() => {
-          const obj: any = (event as any).data?.object;
-          if (obj?.id && String(obj.id).startsWith('cs_')) return String(obj.id);
-          if (obj?.object === 'checkout.session' && obj.id) return String(obj.id);
-          // PaymentIntent → retrouver la Checkout Session via metadata ou recherche
-          if (obj?.object === 'payment_intent' && obj.id) {
-            // Fallback : le PaymentIntent porte metadata.transactionNumber
-            return String(obj.metadata?.stripeSessionId || '');
+        const object: any = (event as any).data?.object || {};
+        const sessionId = String(object.object === 'checkout.session' || String(object.id || '').startsWith('cs_') ? object.id || '' : '');
+        if (sessionId && /^[A-Za-z0-9_\-]{8,200}$/.test(sessionId)) {
+          try { await handleStripeWebhookByRef(sessionId); } catch (error: any) {
+            // On répond 200 à Stripe pour éviter des rejeux infinis ; l'état reste
+            // récupérable par le client via /payments/card/verify.
+            console.error('[Stripe webhook] vérification différée :', error?.message || error);
           }
-          return null;
-        })();
-        if (sessionId) {
-          try { await handleStripeWebhookByRef(sessionId); } catch {}
         }
         return res.json({ received: true, id: (event as any).id || null });
       } catch (error: any) {
@@ -471,27 +479,18 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         return res.status(400).json({ success: false, error: 'Signature webhook invalide.' });
       }
     }
-    // Fallback sans signature (dev / ancien mode) : le corps contient session_id / payment_ref
+    // Développement uniquement (aucun STRIPE_WEBHOOK_SECRET) : référence explicite.
     const body = req.body || {};
     const paymentRef = String(body.payment_ref || body.paymentRef || body.session_id || body.sessionId || body.id || '').trim();
-    if (paymentRef && /^[A-Za-z0-9_\-]{8,200}$/.test(paymentRef)) {
-      try {
-        await handleStripeWebhookByRef(paymentRef);
-        return res.json({ success: true });
-      } catch (error: any) {
-        if (error?.message === 'TRANSACTION_NOT_FOUND') return res.status(404).json({ success: false, error: 'Transaction introuvable.' });
-        console.error('[Stripe webhook POST fallback]', error);
-        return res.status(502).json({ success: false, error: 'Vérification indisponible.' });
-      }
+    if (!paymentRef || !/^[A-Za-z0-9_\-]{8,200}$/.test(paymentRef)) return res.json({ received: true });
+    try {
+      await handleStripeWebhookByRef(paymentRef);
+      return res.json({ success: true });
+    } catch (error: any) {
+      if (error?.message === 'TRANSACTION_NOT_FOUND') return res.status(404).json({ success: false, error: 'Transaction introuvable.' });
+      console.error('[Stripe webhook POST non signé]', error);
+      return res.status(502).json({ success: false, error: 'Vérification indisponible.' });
     }
-    // Event brut Stripe complet (checkout.session.completed)
-    if (body.type && body.data?.object?.id) {
-      const sessionId = String(body.data.object.id);
-      if (/^[A-Za-z0-9_\-]{8,200}$/.test(sessionId)) {
-        try { await handleStripeWebhookByRef(sessionId); return res.json({ success: true }); } catch {}
-      }
-    }
-    return res.json({ received: true });
   });
 
   router.get('/auth/config', (_req, res) => {

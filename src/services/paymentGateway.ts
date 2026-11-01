@@ -78,8 +78,21 @@ export function konnectConfig(): StripeConfig {
   } as any;
 }
 
+/**
+ * Repli Konnect — HORS PRODUCTION UNIQUEMENT.
+ *
+ * Il n'existe plus que pour ne pas casser les tests d'intégration historiques
+ * (ils simulent le protocole Konnect avec `fetch`). En production il ne peut
+ * JAMAIS s'activer, même si d'anciens `KONNECT_*` traînent dans Render : une
+ * passerelle remplacée ne doit pas pouvoir encaisser par accident.
+ */
+function konnectFallbackEnabled(): boolean {
+  const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.RENDER);
+  return !isProduction && !stripeConfig().ready && konnectLegacyConfig().ready;
+}
+
 export function cardGatewayAvailable(): boolean {
-  return stripeConfig().ready || konnectLegacyConfig().ready;
+  return stripeConfig().ready || konnectFallbackEnabled();
 }
 
 // Devises sans décimales chez Stripe (pas de centimes). Toutes les autres = 2 décimales.
@@ -97,7 +110,7 @@ function toStripeAmount(amountTnd: number, currency: string): number {
 function stripeClient(): Stripe {
   const config = stripeConfig();
   if (!config.secretKey) throw new Error('CARD_GATEWAY_NOT_CONFIGURED');
-  return new Stripe(config.secretKey, { apiVersion: '2024-06-20' as any });
+  return new Stripe(config.secretKey, { apiVersion: '2023-10-16' });
 }
 
 // ---------- Legacy Konnect (fallback pour tests) ----------
@@ -210,10 +223,7 @@ async function verifyKonnectFallback(input: {
 }
 
 export async function initiateStripeCardPayment(input: CardPaymentIdentity): Promise<{ payUrl: string; paymentRef: string }> {
-  const stripeReady = stripeConfig().ready;
-  if (!stripeReady && konnectLegacyConfig().ready) {
-    return initiateKonnectFallback(input);
-  }
+  if (konnectFallbackEnabled()) return initiateKonnectFallback(input);
   const config = stripeConfig();
   if (!config.ready) throw new Error('CARD_GATEWAY_NOT_CONFIGURED');
   const currency = config.currency;
@@ -230,6 +240,9 @@ export async function initiateStripeCardPayment(input: CardPaymentIdentity): Pro
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: 'payment',
+    // Carte uniquement : les moyens asynchrones (prélèvement) laisseraient une session
+    // « complete » mais « unpaid », que la vérification traiterait à tort comme un échec.
+    payment_method_types: ['card'],
     client_reference_id: `${input.orderNumber}:${input.transactionNumber}`,
     success_url: successUrl,
     cancel_url: cancelUrl,
@@ -255,7 +268,9 @@ export async function initiateStripeCardPayment(input: CardPaymentIdentity): Pro
       firstName: input.firstName.slice(0, 80),
       lastName: input.lastName.slice(0, 80),
     },
-    expires_at: Math.floor(Date.now() / 1000) + 20 * 60,
+    // Stripe exige >= 30 minutes ; 31 laisse une marge au-dessus de la fenêtre de
+    // réutilisation côté base (25 min) sans jamais expirer une session réutilisée.
+    expires_at: Math.floor(Date.now() / 1000) + 31 * 60,
   };
 
   const session = await stripe.checkout.sessions.create(sessionParams);
@@ -282,10 +297,7 @@ export async function verifyStripeCardPayment(input: {
   expectedOrderNumber: string;
   expectedTransactionNumber: string;
 }): Promise<VerifiedCardPayment> {
-  const stripeReady = stripeConfig().ready;
-  if (!stripeReady && konnectLegacyConfig().ready) {
-    return verifyKonnectFallback(input);
-  }
+  if (konnectFallbackEnabled()) return verifyKonnectFallback(input);
   const config = stripeConfig();
   if (!config.ready) throw new Error('CARD_GATEWAY_NOT_CONFIGURED');
   if (!/^[A-Za-z0-9_\-]{8,200}$/.test(input.paymentRef)) throw new Error('CARD_REFERENCE_INVALID');
