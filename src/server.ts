@@ -198,7 +198,8 @@ app.use('/api/checkout', rateLimit('checkout', process.env.NODE_ENV === 'test' ?
 app.use('/api/customer/account/orders', (req, res, next) => req.path.includes('/payments/card/')
   ? rateLimit('card-payment', process.env.NODE_ENV === 'test' ? 1_000 : 20, 5 * 60_000)(req, res, next)
   : next());
-app.use('/api/customer/payments/konnect/webhook', rateLimit('konnect-webhook', process.env.NODE_ENV === 'test' ? 1_000 : 120, 5 * 60_000));
+app.use('/api/customer/payments/konnect/webhook', rateLimit('stripe-webhook', process.env.NODE_ENV === 'test' ? 1_000 : 120, 5 * 60_000));
+app.use('/api/customer/payments/stripe/webhook', rateLimit('stripe-webhook', process.env.NODE_ENV === 'test' ? 1_000 : 120, 5 * 60_000));
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/ocerex', rateLimit('ocerex', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
@@ -284,7 +285,10 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-requested-with', 'x-csrf-token', 'x-ayrovi-native'],
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: any, _res, buf) => { req.rawBody = buf; },
+}));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // Phone target is in the parsed body: enforce this second factor only after parsing,
 // while the independent IP ceiling above still runs before the request body is read.

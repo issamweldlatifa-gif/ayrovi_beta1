@@ -26,7 +26,14 @@ services:
         sync: false
       - key: PUBLIC_BASE_URL
         sync: false
-      # Konnect Tunisia card gateway (server-side; never expose these values to Vite).
+      # Stripe card gateway (server-side; never expose these values to Vite).
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_CURRENCY
+        value: eur
+      # Legacy Konnect (deprecated — kept for backward compatibility).
       - key: KONNECT_ENVIRONMENT
         value: production
       - key: KONNECT_API_KEY

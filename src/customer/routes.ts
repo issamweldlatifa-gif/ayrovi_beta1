@@ -12,7 +12,7 @@ import { createAccountSettingsRouter } from './accountSettings';
 import { hashPassword, verifyPassword } from './passwords';
 import { enqueueWelcomeMail, passwordRecoveryReady } from './accountMail';
 import { createPasswordRecoveryRouter, customerAuthRateAllowed } from './passwordRecovery';
-import { cardGatewayAvailable, initiateKonnectCardPayment, verifyKonnectCardPayment } from '../services/paymentGateway';
+import { cardGatewayAvailable, initiateStripeCardPayment, verifyStripeCardPayment, verifyStripeWebhookSignature } from '../services/paymentGateway';
 import { normalizeTunisianPhone } from './phone';
 import {
   cleanupCustomerAuth,
@@ -397,29 +397,101 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
   router.use(createAccountSettingsRouter(db, publicAccount));
   cleanupCustomerAuth(db);
 
-  // Konnect sends only a payment reference. ZAYROVI always fetches the payment
-  // server-to-server and validates amount, currency and merchant order identity.
-  router.get('/payments/konnect/webhook', async (req, res) => {
-    const paymentRef = String(req.query.payment_ref || '').trim();
-    if (!/^[A-Za-z0-9_-]{8,160}$/.test(paymentRef)) return res.status(400).json({ success: false, error: 'Référence de paiement invalide.' });
+  // Stripe Checkout — la passerelle envoie un event signé. ZAYROVI refait toujours
+  // une vérification server-to-server (montant, devise, identité commande).
+  // GET /payments/konnect/webhook conservé pour compatibilité (query payment_ref).
+  const handleStripeWebhookByRef = async (paymentRef: string) => {
+    if (!/^[A-Za-z0-9_\-]{8,200}$/.test(paymentRef)) throw new Error('CARD_REFERENCE_INVALID');
     const transaction = db.get<any>(`SELECT t.*,o.order_number FROM payment_transactions t
-      JOIN orders o ON o.id=t.order_id WHERE t.provider='KONNECT' AND t.provider_reference=?`, paymentRef);
-    if (!transaction) return res.status(404).json({ success: false, error: 'Transaction introuvable.' });
-    if (['PAID','FAILED'].includes(String(transaction.status))) return res.json({ success: true });
+      JOIN orders o ON o.id=t.order_id WHERE t.provider='STRIPE' AND t.provider_reference=?`, paymentRef);
+    if (!transaction) throw new Error('TRANSACTION_NOT_FOUND');
+    if (['PAID','FAILED'].includes(String(transaction.status))) return { already: true };
+    const verification = await verifyStripeCardPayment({
+      paymentRef,
+      expectedAmountTnd: Number(transaction.amount_tnd),
+      expectedOrderNumber: String(transaction.order_number),
+      expectedTransactionNumber: String(transaction.transaction_number),
+    });
+    if (verification.state === 'PAID') db.confirmCardTransaction(transaction.id, verification.auditPayload);
+    else if (verification.state === 'FAILED') db.markCardTransactionFailed(transaction.id, 'Paiement refusé ou expiré par la passerelle.', verification.auditPayload);
+    return { already: false, state: verification.state };
+  };
+
+  router.get('/payments/konnect/webhook', async (req, res) => {
+    const paymentRef = String(req.query.payment_ref || req.query.paymentRef || '').trim();
+    if (!/^[A-Za-z0-9_\-]{8,200}$/.test(paymentRef)) return res.status(400).json({ success: false, error: 'Référence de paiement invalide.' });
     try {
-      const verification = await verifyKonnectCardPayment({
-        paymentRef,
-        expectedAmountTnd: Number(transaction.amount_tnd),
-        expectedOrderNumber: String(transaction.order_number),
-        expectedTransactionNumber: String(transaction.transaction_number),
-      });
-      if (verification.state === 'PAID') db.confirmCardTransaction(transaction.id, verification.auditPayload);
-      else if (verification.state === 'FAILED') db.markCardTransactionFailed(transaction.id, 'Paiement refusé ou expiré par la passerelle.', verification.auditPayload);
+      await handleStripeWebhookByRef(paymentRef);
       return res.json({ success: true });
-    } catch (error) {
-      console.error('[Konnect webhook]', error);
+    } catch (error: any) {
+      if (error?.message === 'TRANSACTION_NOT_FOUND') return res.status(404).json({ success: false, error: 'Transaction introuvable.' });
+      if (error?.message === 'CARD_REFERENCE_INVALID') return res.status(400).json({ success: false, error: 'Référence de paiement invalide.' });
+      console.error('[Stripe webhook GET]', error);
       return res.status(502).json({ success: false, error: 'Vérification de la passerelle indisponible.' });
     }
+  });
+
+  // Legacy alias — ancien callback Konnect (GET) désormais porté par Stripe
+  router.get('/payments/stripe/webhook', async (req, res) => {
+    const paymentRef = String(req.query.payment_ref || req.query.session_id || req.query.sessionId || '').trim();
+    if (!paymentRef) return res.status(400).json({ success: false, error: 'Référence de paiement invalide.' });
+    try {
+      await handleStripeWebhookByRef(paymentRef);
+      return res.json({ success: true });
+    } catch (error: any) {
+      if (error?.message === 'TRANSACTION_NOT_FOUND') return res.status(404).json({ success: false, error: 'Transaction introuvable.' });
+      console.error('[Stripe webhook GET alias]', error);
+      return res.status(502).json({ success: false, error: 'Vérification de la passerelle indisponible.' });
+    }
+  });
+
+  router.post('/payments/stripe/webhook', async (req: any, res) => {
+    const signature = String(req.headers['stripe-signature'] || req.headers['Stripe-Signature'] || '').trim();
+    // Si le secret webhook est configuré, on vérifie la signature sur le rawBody capturé par le serveur.
+    if (process.env.STRIPE_WEBHOOK_SECRET && signature && req.rawBody) {
+      try {
+        const event = verifyStripeWebhookSignature(req.rawBody, signature);
+        const sessionId: string | null = (() => {
+          const obj: any = (event as any).data?.object;
+          if (obj?.id && String(obj.id).startsWith('cs_')) return String(obj.id);
+          if (obj?.object === 'checkout.session' && obj.id) return String(obj.id);
+          // PaymentIntent → retrouver la Checkout Session via metadata ou recherche
+          if (obj?.object === 'payment_intent' && obj.id) {
+            // Fallback : le PaymentIntent porte metadata.transactionNumber
+            return String(obj.metadata?.stripeSessionId || '');
+          }
+          return null;
+        })();
+        if (sessionId) {
+          try { await handleStripeWebhookByRef(sessionId); } catch {}
+        }
+        return res.json({ received: true, id: (event as any).id || null });
+      } catch (error: any) {
+        console.error('[Stripe webhook signature]', error?.message || error);
+        return res.status(400).json({ success: false, error: 'Signature webhook invalide.' });
+      }
+    }
+    // Fallback sans signature (dev / ancien mode) : le corps contient session_id / payment_ref
+    const body = req.body || {};
+    const paymentRef = String(body.payment_ref || body.paymentRef || body.session_id || body.sessionId || body.id || '').trim();
+    if (paymentRef && /^[A-Za-z0-9_\-]{8,200}$/.test(paymentRef)) {
+      try {
+        await handleStripeWebhookByRef(paymentRef);
+        return res.json({ success: true });
+      } catch (error: any) {
+        if (error?.message === 'TRANSACTION_NOT_FOUND') return res.status(404).json({ success: false, error: 'Transaction introuvable.' });
+        console.error('[Stripe webhook POST fallback]', error);
+        return res.status(502).json({ success: false, error: 'Vérification indisponible.' });
+      }
+    }
+    // Event brut Stripe complet (checkout.session.completed)
+    if (body.type && body.data?.object?.id) {
+      const sessionId = String(body.data.object.id);
+      if (/^[A-Za-z0-9_\-]{8,200}$/.test(sessionId)) {
+        try { await handleStripeWebhookByRef(sessionId); return res.json({ success: true }); } catch {}
+      }
+    }
+    return res.json({ received: true });
   });
 
   router.get('/auth/config', (_req, res) => {
@@ -1424,7 +1496,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
         status: 'PENDING',
       } });
       const names = String(account.displayName || 'Client AYROVI').trim().split(/\s+/);
-      const gateway = await initiateKonnectCardPayment({
+      const gateway = await initiateStripeCardPayment({
         orderId: String(created.order.id),
         orderNumber: String(created.order.order_number),
         transactionNumber: String(created.transaction.transaction_number),
@@ -1455,14 +1527,14 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
     const account = customerFromRequest(req);
     const transactionNumber = String(req.query.transaction || '').trim();
     const transaction = db.get<any>(`SELECT t.*,o.order_number FROM payment_transactions t
-      JOIN orders o ON o.id=t.order_id WHERE t.order_id=? AND t.account_id=? AND t.transaction_number=? AND t.provider='KONNECT'`,
+      JOIN orders o ON o.id=t.order_id WHERE t.order_id=? AND t.account_id=? AND t.transaction_number=? AND t.provider='STRIPE'`,
     req.params.id, account.id, transactionNumber);
     if (!transaction) return res.status(404).json({ success: false, error: 'Transaction carte introuvable.' });
     if (transaction.status === 'PAID') return res.json({ success: true, data: { status: 'PAID', transactionNumber } });
     if (transaction.status === 'FAILED') return res.json({ success: true, data: { status: 'FAILED', transactionNumber } });
     if (!transaction.provider_reference) return res.status(409).json({ success: false, error: 'La passerelle n’a pas encore fourni de référence.' });
     try {
-      const verification = await verifyKonnectCardPayment({
+      const verification = await verifyStripeCardPayment({
         paymentRef: String(transaction.provider_reference),
         expectedAmountTnd: Number(transaction.amount_tnd),
         expectedOrderNumber: String(transaction.order_number),
