@@ -405,7 +405,7 @@ describe('messages d’erreur', () => {
 
     const message = translate('ar', 'auth.error.noSession');
     expect(message).toContain('الخادم');
-    expect(message).toContain('يتحدّث');
+    expect(message).toContain('تحديث');
   });
 
   it('parle de réseau quand le serveur n’a rien répondu', () => {

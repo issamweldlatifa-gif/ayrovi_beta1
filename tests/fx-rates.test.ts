@@ -55,10 +55,15 @@ describe('FX live rates service', () => {
       VALUES ('fx_prod_1','Sneakers marque X',50,'EUR',0,0,0,0,0,'2026-09-23T00:00:00.000Z','2026-09-23T00:00:00.000Z')`);
     const outcome = await refreshFxRates(db, { fetcher: async () => sampleApiPayload() });
     expect(outcome.applied).toBe(true);
-    // La base fraîche embarque une fiche démo + la nôtre : tout est re-tarifié.
-    const productCount = db.all<any>('SELECT id FROM products').length;
-    expect(outcome.repriced).toBe(productCount);
-    expect(outcome.repriced).toBeGreaterThanOrEqual(1);
+    // Règle de re-tarification : TOUT produit à prix source est recalculé ; un
+    // produit dont le prix est saisi en dinars (`original_price = 0` — le produit
+    // de test du catalogue) est SAUTÉ : jamais re-tarifé à 0, jamais fatal.
+    const sourced = db.all<any>('SELECT id FROM products WHERE original_price > 0').length;
+    const nativeTnd = db.all<any>('SELECT id FROM products WHERE original_price IS NULL OR original_price = 0').length;
+    expect(sourced).toBeGreaterThanOrEqual(1);
+    expect(outcome.repriced).toBe(sourced);
+    expect(outcome.skipped).toBe(nativeTnd);
+    expect(db.get<any>('SELECT final_price FROM products WHERE id=?', 'product_test_baskets').final_price).toBe(89);
     const after = db.getPricingRules();
     expect(after.version).toBe(before.version + 1);
     expect(after.fxSource).toBe('live');

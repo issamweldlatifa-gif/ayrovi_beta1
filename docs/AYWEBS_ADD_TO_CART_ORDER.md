@@ -50,6 +50,53 @@ Product images · Current price · Currency · Availability · Quantity · Varia
   variantes requises ; pas de substitution silencieuse (§30).
 - Actions : **Done / Confirm** → ajout réel au panier.
 
+## Feuille de choix — langage du client (2026-10-23)
+
+La feuille est un **sélecteur d'article**, pas un rapport de lecture. Ordre imposé :
+
+1. Image du produit (92 × 112) + titre + prix **tel que la page l'écrit** (le montant
+   et sa note séparément : « 12,95 € » / « TVA incluse »).
+2. Un champ **replié** par groupe publié — Taille, Couleur, Volume, Matière, Modèle,
+   Type (libellé traduit) sinon le nom publié — qui s'ouvre sur ses valeurs ; chaque
+   valeur affiche son prix publié, et « indisponible » quand la page le dit (la valeur
+   n'est alors jamais sélectionnable). Un seul champ ouvert à la fois.
+3. Quantité − 1 + (1…99).
+4. **Un** bouton « Add to Cart » pleine largeur, avec état de chargement.
+5. Vue « Article ajouté » : quantité, prix source, total TND, rattachement, puis
+   **Cart** ou **Continue Shopping**.
+
+La feuille s'ouvre **sur la combinaison que la page affiche** (ASIN Amazon, ou
+`variantGroups[].selected` pour une boutique du catalogue : Zalando présélectionne sa
+taille). Aucun appel serveur à l'ouverture, aucun au changement de couleur : **la
+lecture est celle du bouton Add**. Elle réutilise la capture qui a ouvert la feuille
+quand elle porte le prix ferme et l'état de cette combinaison ; sinon elle lit **une
+seule fois** la page du choix, puis `product/resolve` reçoit cette capture. Le serveur
+reste le seul juge du prix, du stock et de l'ajout.
+
+Aucune ligne technique n'est visible : ni journal de lecture, ni phases, ni compte à
+rebours, ni « lecture serveur », ni classification de page. Une erreur réelle s'écrit
+en clair, une seule fois.
+
+## Prix affiché dans la feuille (2026-10-23)
+
+Le prix qui compte est **en dinars, calculé par le serveur** — jamais en devise
+marchande seule, jamais calculé par l'application.
+
+- `POST /product/resolve` publie `variant_quotes` : pour chaque valeur publiée
+  (couleur, taille, volume…), le montant marchand lu sur la page **et** son devis
+  en dinars (`calculatePrice`). Un « à partir de » n'obtient aucun montant ferme,
+  une valeur sans prix n'en reçoit aucun, et sans preuve de prix + devise aucun
+  devis n'est publié.
+- La feuille ouvre avec **une seule** lecture (la capture) qui rapporte le devis
+  de la combinaison affichée et tous les devis par valeur. Changer de couleur, de
+  taille ou de quantité ne déclenche **aucun** appel : le prix en dinars et le
+  total estimé suivent le choix. Le montant marchand reste visible en second.
+- Deux valeurs en désaccord sur le montant ⇒ aucun prix. Le silence du marchand
+  sur le stock reste « inconnu » et s'écrit « Stock vérifié au moment de l'ajout ».
+- Ajout : jugement sur la page décrite par la capture ; si le choix n'est pas
+  prouvé, lecture des pages des valeurs choisies (deux au plus, ASIN du twister)
+  puis ajout. Sinon, refus **expliqué** avec le code du serveur traduit.
+
 ## Cart Item (après Done/Confirm)
 
 Store · Product · Product URL · Product ID · Image · Product Name ·

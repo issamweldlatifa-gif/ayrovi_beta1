@@ -13,7 +13,7 @@ import {
   COLORS, FONTS, GEOMETRY, IDENTITY, MOTION, SPACE, TYPE_SCALE, TYPOGRAPHY,
 } from './tokens.generated';
 import {
-  CHROME, EASING, ICON_SIZE, OPACITY, RADIUS, SPRING, Z_INDEX,
+  CHROME, EASING, ICON_SIZE, OPACITY, RADIUS, SHEET_CORNER_RADIUS, SPRING, Z_INDEX,
   derivedColors, duration, elevation, statusFor,
   type DerivedColors, type ElevationName, type StatusSet,
 } from './tokens.mobile';
@@ -129,7 +129,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         full: RADIUS.full,
         control: GEOMETRY.controlRadius,
         card: GEOMETRY.cardRadius,
-        sheet: GEOMETRY.sheetRadius,
+        sheet: SHEET_CORNER_RADIUS,
         cta: GEOMETRY.ctaRadius,
       },
       elevation,

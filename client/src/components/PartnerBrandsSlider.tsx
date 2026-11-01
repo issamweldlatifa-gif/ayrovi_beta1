@@ -20,9 +20,13 @@ import { getPublicHome } from '../services/publicApi';
 interface BrandItem { id: string; name: string; category: string; logo: string; surface: 'dark' | 'light'; fallback: string; }
 const localLogos: Record<string, string> = {
   jordan: jordanLogo, ellesse: ellesseLogo, 'the north face': theNorthFaceLogo, adidas: adidasLogo, nike: nikeLogo, shein: sheinLogo,
-  'saint laurent': yslLogo, prada: pradaLogo, hermès: hermesLogo, hermes: hermesLogo, burberry: burberryLogo,
-  'dolce & gabbana': dolceGabbanaLogo, versace: versaceLogo, chanel: chanelLogo, dior: diorLogo, zara: zaraLogo,
+  'saint laurent': yslLogo, ysl: yslLogo, prada: pradaLogo, hermès: hermesLogo, hermes: hermesLogo, burberry: burberryLogo,
+  'dolce & gabbana': dolceGabbanaLogo, 'dolce-gabbana': dolceGabbanaLogo, versace: versaceLogo, chanel: chanelLogo, dior: diorLogo, zara: zaraLogo,
 };
+const lightSurfaceBrands = new Set<string>(['saint laurent', 'ysl', 'prada', 'hermès', 'hermes', 'burberry', 'dolce & gabbana', 'dolce-gabbana']);
+function normalizeBrandKey(raw: unknown): string {
+  return String(raw ?? '').trim().toLowerCase();
+}
 const fallbackBrands: BrandItem[] = [
   ['Jordan','Sport & Sneakers',jordanLogo,'dark'], ['Ellesse','Sportswear italien',ellesseLogo,'dark'], ['The North Face','Outdoor & Exploration',theNorthFaceLogo,'dark'],
   ['adidas','Sport & Lifestyle',adidasLogo,'dark'], ['Nike','Sport & Sneakers',nikeLogo,'dark'], ['SHEIN','Mode & Tendances',sheinLogo,'dark'],
@@ -34,7 +38,7 @@ const categoryLabels: Record<string, string> = { FASHION: 'Mode internationale',
 
 export const PartnerBrandsSlider: React.FC<{ title?: string; subtitle?: string; coverImage?: string }> = ({ title, subtitle, coverImage }) => {
   const [managed, setManaged] = useState<any[]>([]);
-  const [failed, setFailed] = useState<Record<string, boolean>>({});
+  const [failed, setFailed] = useState<Record<string, 'primary' | 'all'>>({});
   useEffect(() => {
     let cancelled = false;
     getPublicHome().then((payload) => {
@@ -42,9 +46,21 @@ export const PartnerBrandsSlider: React.FC<{ title?: string; subtitle?: string; 
     }).catch(() => undefined);
     return () => { cancelled = true; };
   }, []);
-  const brands = useMemo<BrandItem[]>(() => managed.length ? managed.map((brand, index) => {
-    const fallback = localLogos[String(brand.name).toLowerCase()] || fallbackBrands[index % fallbackBrands.length].fallback;
-    return { id: brand.id, name: brand.name, category: categoryLabels[brand.category] || brand.category, logo: brand.logo || fallback, fallback, surface: index % 4 === 2 ? 'light' : 'dark' };
+  const brands = useMemo<BrandItem[]>(() => managed.length ? managed.map((brand) => {
+    const key = normalizeBrandKey(brand.name);
+    /* Ne JAMAIS retomber sur `fallbackBrands[index % ...]` : afficher le logo
+       de SHEIN ou Nike sous le nom d'une autre enseigne inverse les marques. */
+    const fallback = localLogos[key] || '';
+    const primaryLogo = String(brand.logo ?? '').trim();
+    const surface: 'dark' | 'light' = lightSurfaceBrands.has(key) ? 'light' : 'dark';
+    return {
+      id: String(brand.id),
+      name: String(brand.name ?? ''),
+      category: categoryLabels[brand.category] || brand.category || 'Marque partenaire',
+      logo: primaryLogo || fallback,
+      fallback,
+      surface,
+    };
   }) : fallbackBrands, [managed]);
   const allBrands = [...brands, ...brands];
   return (
@@ -60,8 +76,25 @@ export const PartnerBrandsSlider: React.FC<{ title?: string; subtitle?: string; 
         <div className="relative mb-8 flex items-center justify-between gap-4 px-6 sm:px-12"><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/55">Explorez les marques</p><span className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-bold text-white/65">Défilement automatique</span></div>
         <div className="relative w-full overflow-hidden"><div className="brands-marquee-track px-5 sm:px-8">{allBrands.map((brand, index) => {
           const isDark = brand.surface === 'dark';
+          const failState = failed[brand.id];
+          const activeSrc = failState === 'all' ? '' : (failState === 'primary' ? brand.fallback : brand.logo);
           return <motion.article key={`${brand.id}-${index}`} aria-hidden={index >= brands.length} whileHover={{ y: -6, scale: 1.015 }} transition={{ type: 'spring', stiffness: 330, damping: 24 }} className={`group relative h-[250px] w-[200px] flex-shrink-0 overflow-hidden rounded-[24px] border shadow-xl sm:h-[290px] sm:w-[240px] sm:rounded-[28px] ${isDark ? 'border-white/15 bg-ink hover:border-white/35' : 'border-black/10 bg-surface hover:border-line/40'}`}>
-            <div className="absolute inset-x-0 bottom-[76px] top-0 flex items-center justify-center overflow-hidden p-4 sm:bottom-[86px] sm:p-5"><img src={failed[brand.id] ? brand.fallback : brand.logo} onError={() => setFailed((current) => ({ ...current, [brand.id]: true }))} alt={`${brand.name} logo`} className="h-full w-full select-none object-contain transition duration-700 ease-out group-hover:scale-[1.04]" draggable={false} /></div>
+            <div className="absolute inset-x-0 bottom-[76px] top-0 flex items-center justify-center overflow-hidden p-4 sm:bottom-[86px] sm:p-5">
+              {activeSrc ? (
+                <img
+                  src={activeSrc}
+                  onError={() => setFailed((current) => ({
+                    ...current,
+                    [brand.id]: current[brand.id] !== 'primary' && brand.fallback && brand.fallback !== brand.logo ? 'primary' : 'all',
+                  }))}
+                  alt={`${brand.name} logo`}
+                  className="h-full w-full select-none object-contain transition duration-700 ease-out group-hover:scale-[1.04]"
+                  draggable={false}
+                />
+              ) : (
+                <span className={`select-none text-center text-2xl font-black uppercase tracking-[0.14em] ${isDark ? 'text-white' : 'text-ink'}`}>{brand.name}</span>
+              )}
+            </div>
             <div className={`absolute inset-x-0 bottom-0 min-h-[76px] border-t px-4 py-4 sm:min-h-[86px] sm:px-5 ${isDark ? 'border-white/10 bg-ink text-white' : 'border-black/10 bg-white text-ink'}`}><span className="block truncate text-xs font-extrabold uppercase tracking-[0.14em] text-ink">{brand.category}</span><h3 className="mt-1.5 truncate text-lg font-black tracking-[-0.035em] sm:text-xl">{brand.name}</h3></div>
           </motion.article>;
         })}</div></div>

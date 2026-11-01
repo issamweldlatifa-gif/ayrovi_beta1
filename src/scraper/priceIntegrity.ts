@@ -76,7 +76,7 @@ const ISO_CODES = new Set([
   'JOD', 'EGP', 'MAD', 'DZD', 'LYD', 'TWD', 'THB', 'MYR', 'IDR', 'PHP', 'VND', 'NGN', 'KES',
 ]);
 
-const ISO_PATTERN = new RegExp(`\\b(${[...ISO_CODES].join('|')})\\b`, 'g');
+const ISO_PATTERN = new RegExp(`(?:^|[^A-Za-z])(${[...ISO_CODES].join('|')})(?=$|[^A-Za-z])`, 'g');
 
 /** Même symbole deux fois : signature d'une concaténation hors-écran + visible. */
 function repeatedSymbol(text: string): boolean {

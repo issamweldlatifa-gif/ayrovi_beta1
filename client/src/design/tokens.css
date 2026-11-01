@@ -610,3 +610,27 @@ html[data-theme='dark'] {
   --admin-tone-rgba-47-124-246-10:rgba(47,124,246,.10);
   --admin-tone-rgba-47-124-246-28:rgba(47,124,246,.28);
 }
+
+/*
+  APERÇU DE LA FICHE PRODUIT — couleurs MESURÉES sur la maquette du propriétaire
+  (`docs/design/cardproduit/mockup-complet-25-10.png`), 25/10/2026.
+
+  Elles ne suivent volontairement PAS le thème du back-office : cet aperçu montre
+  l'écran de l'application, qui est blanc. Un aperçu qui changerait de couleur
+  avec le thème mentirait sur ce que l'acheteur verra.
+*/
+:root {
+  --fiche-paper: #ffffff;
+  --fiche-ink: #0a0a0a;
+  --fiche-muted: #808080;
+  --fiche-hair: #e8e8e8;
+  --fiche-lavender: #eeecf7;
+  /* Alias, jamais un second porteur : le violet n'a qu'un propriétaire. */
+  --fiche-violet: var(--ayrovi-color-brand-accent);
+  --fiche-green: #008735;
+  --fiche-struck: #969696;
+  --fiche-dot: #b2b2b2;
+  --fiche-underline: #aaaaaa;
+  --fiche-grab: #d1d1d1;
+  --fiche-stage: #efefef;
+}

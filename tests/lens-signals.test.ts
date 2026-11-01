@@ -32,13 +32,12 @@ describe('l’OCR ne touche jamais au prix (règle client du 25/09/2026)', () =>
     expect(contract).not.toContain('price');
   });
 
-  it('le prix garde son origine unique : la page marchande, puis notre formule', () => {
+  it('aucun prix ne naît dans Lens avant l’ouverture AYWEBS', () => {
     const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
-    // 02/10/2026 : plus de calcul sur un montant lu dans l'image ; le prix de la
-    // page marchande repasse par le calculateur ZAYROVI (`reprice`).
     expect(block).not.toContain('calculatePrice(');
-    expect(block).toContain('estimateWithDb(db, price, currency)');
+    expect(block).not.toContain('estimateWithDb(db, price, currency)');
     expect(block).toContain('detectedPrice: null');
+    expect(block).toContain('merchantPagesRead: 0');
   });
 });
 

@@ -3,7 +3,10 @@
  *
  * • Une vidéo par page, défilement vertical « page par page » (style Facebook).
  * • En-tête TRANSPARENT et FIXE, au-dessus de la liste : il ne défile pas avec les
- *   Reels. Il porte le logo « ▶ Reels • Shop » et un grand bouton retour.
+ *   Reels. Il ne porte plus que le grand bouton retour — le libellé
+ *   « ▶ Reels • Shop » a été retiré de la visionneuse (demande du propriétaire,
+ *   24/10/2026) : sur une vidéo plein écran, le titre de section ne fait que
+ *   manger l'image ; la marque reste sur l'accueil, au-dessus de la section.
  * • Un seul lecteur vivant : la page réellement visible (`viewabilityConfig`), comme
  *   la page Reels. Les autres pages attendent (règle de `ReelCard`).
  */
@@ -21,11 +24,19 @@ import { rowDirectionFor } from '@/design/layoutLogic';
 import { useT } from '@/i18n';
 import { ReelCard } from '@/features/social/ReelCard';
 import { ReelCommentsModal } from '@/features/social/ReelCommentsModal';
-import { ReelsShopMark } from '@/features/reels/ReelsShopMark';
 import { VIDEO_BACKDROP, veil } from '@/design/tokens.mobile';
 import type { Reel } from '@/api/social';
 
 const BACK_HIT = 48;
+
+/**
+ * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
+ * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
+ * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
+ * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
+ * vérifié par `tests/error-boundary-coverage.test.ts`.
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function ReelsViewerScreen() {
   const theme = useTheme();
@@ -95,9 +106,8 @@ export default function ReelsViewerScreen() {
           hitSlop={8}
           style={styles.back}
         >
-          <Ionicons name={theme.isRTL ? 'chevron-forward' : 'chevron-back'} size={30} color={theme.colors.onMedia} accessibilityElementsHidden />
+          <Ionicons name={theme.isRTL ? 'chevron-forward' : 'chevron-back'} size={theme.iconSize.md} color={theme.colors.onMedia} accessibilityElementsHidden />
         </Pressable>
-        <ReelsShopMark tone="onMedia" />
       </View>
 
       {commentsFor ? <ReelCommentsModal reel={commentsFor} onClose={closeComments} /> : null}

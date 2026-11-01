@@ -28,6 +28,8 @@ import { usePushNotifications } from '@/features/notifications/usePush';
 import { useSessionId } from '@/session/session';
 import { LoadingScreen } from '@/design/LoadingScreen';
 import { NetworkBanner } from '@/design/NetworkBanner';
+import { AppErrorBoundary, RouteErrorBoundary } from '@/design/AppErrorBoundary';
+import { useImageCacheGuard } from '@/design/appImage';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Déjà masqué (rechargement à chaud) : sans effet, ne bloque pas le rendu.
@@ -45,6 +47,12 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * Filet de sécurité d'expo-router : si une route lève pendant son rendu, elle
+ * est remplacée par ce repli au lieu de fermer l'application.
+ */
+export { RouteErrorBoundary as ErrorBoundary };
+
 function Navigation() {
   const theme = useTheme();
   const { ready, locale } = usePrefs();
@@ -58,6 +66,9 @@ function Navigation() {
   // une raison de rester sur l'écran de démarrage — on rend avec la police
   // système plutôt que de bloquer l'utilisateur sur un écran figé.
   const readyToPaint = ready && (fontsLoaded || Boolean(fontError));
+
+  // Purge le cache disque d'images si l'empreinte de build de l'APK a changé.
+  useImageCacheGuard();
 
   // Liens profonds : branchés une fois que la navigation existe, pas avant.
   useDeepLinkRouting(readyToPaint);
@@ -96,6 +107,9 @@ function Navigation() {
           }}
         >
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="panier" />
+          <Stack.Screen name="sonim-assistant" />
+          <Stack.Screen name="z-lens" />
           {/* Connexion : présentée par-dessus l'onglet courant, refermée au succès. */}
           <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
           <Stack.Screen name="forgot" options={{ presentation: 'modal' }} />
@@ -115,7 +129,9 @@ export default function RootLayout() {
             <ThemeProvider>
               <QueryClientProvider client={queryClient}>
                 <SessionProvider>
-                  <Navigation />
+                  <AppErrorBoundary resetKey="root">
+                    <Navigation />
+                  </AppErrorBoundary>
                 </SessionProvider>
               </QueryClientProvider>
             </ThemeProvider>

@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { LensCandidate, LensVariantOption } from '@/api/lens';
 import { addExternalToCart } from '@/api/cart';
+import { useSonimSession, clearSonimSession } from '@/features/sonim/sonimSession';
 import { LensProductView } from '@/features/lens/LensProductView';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
@@ -14,6 +15,7 @@ const mockPush = jest.fn();
 
 jest.mock('expo-router', () => ({ router: { push: (...args: unknown[]) => mockPush(...args) } }));
 jest.mock('@/session/session', () => ({ useSessionId: () => 'mob_1234567890123456' }));
+jest.mock('@/state/session', () => ({ useSession: () => ({ status: 'signedOut', account: null }) }));
 jest.mock('@/api/cart', () => ({
   addExternalToCart: jest.fn(async () => ({
     cartItemId: 'line-1', totalItemsCount: 1, totalTND: 85, deliveryTND: 0,
@@ -115,6 +117,21 @@ describe('fiche produit Lens native', () => {
   beforeEach(() => {
     mockPush.mockClear();
     (addExternalToCart as jest.Mock).mockClear();
+  });
+
+  it('prépare le produit et les choix pour Sonim sans envoyer de jeton', async () => {
+    clearSonimSession();
+    render(wrap(<LensProductView candidate={candidate({ sourceUrl: 'https://merchant.example/product/1?token=secret' })} onBack={() => {}} />));
+    fireEvent.press(screen.getByTestId('lens-ask-sonim'));
+    expect(mockPush).toHaveBeenCalledWith('/sonim-assistant');
+    const draft = useSonimSession.getState().draft;
+    expect(draft).toContain('Sac de voyage');
+    expect(draft).toContain('Standard');
+    expect(draft).toContain('Noir');
+    expect(draft).not.toContain('secret');
+    expect(draft).not.toContain('signed-general');
+    expect(useSonimSession.getState().messages).toEqual([]);
+    clearSonimSession();
   });
 
   it('auto-sélectionne Standard et masque les contrôles à choix unique', async () => {

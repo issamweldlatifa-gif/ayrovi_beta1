@@ -41,6 +41,8 @@ export const CHROME = {
   header: 64,
   tabBar: 56,
   tabStrip: 40,
+  /** Hauteur compacte et élégante des boutons d'action (inspirée Privé / Zalando). */
+  button: 40,
 } as const;
 
 /* ── Espacements manquants (§24.2) ────────────────────────────────────────── */
@@ -65,6 +67,13 @@ export const SPACE_EXTENDED = [2, 6, 10, 20, 40] as const;
 /** Échelle complète : identité + compléments, triée. */
 export const SPACE_ALL: readonly number[] = [...SPACE, ...SPACE_EXTENDED].sort((a, b) => a - b);
 
+/** CTA d'achat propre à AYWEBs — jaune fixe, isolé des actions de marque globales. */
+export const COMMERCE = {
+  action: '#FFD60A',
+  actionPressed: '#E6C200',
+  onAction: BRAND.black,
+} as const;
+
 /* ── Ratios des médias (un seul endroit : pas de nombre en dur dans les écrans) ─ */
 
 /**
@@ -77,6 +86,20 @@ export const MEDIA_RATIO = {
   square: 1,
   /** Reels verticaux : 9:16 (comme la vidéo plein écran). */
   reel: 9 / 16,
+  /**
+   * Carte de CATÉGORIE : paysage 2,72:1 — la forme de la référence fournie le
+   * 27/10/2026 (tuile 324 × 119 px sur une capture de 720 px de large, soit
+   * 176 × 65 pt sur un écran de 390). La photo occupe toute la tuile, le
+   * libellé vit SOUS la tuile.
+   */
+  categoryCard: 324 / 119,
+  /**
+   * Carte de boutique : 3:4, le gabarit des grandes cartes d'un annuaire
+   * (référence : la grille de chèques cadeaux de Zalando, 27/10/2026).
+   * Le visuel garde cette forme sur l'accueil ET sur la page Boutiques : une
+   * même boutique ne change pas de silhouette d'un écran à l'autre.
+   */
+  storeCard: 3 / 4,
 } as const;
 
 /**
@@ -143,8 +166,118 @@ export function frost(opacity: number): string {
   return alpha(BRAND.white, opacity);
 }
 
+/**
+ * Plaque derrière les logos de boutiques — 27/10/2026.
+ *
+ * Les logos officiels envoyés par le client sont des JPEG : la version claire a
+ * un fond BLANC, la version sombre un fond NOIR (même dessin, inversé). La
+ * plaque doit donc être exactement cette couleur, sinon une bande de cadre
+ * apparaît autour d'un logo en `contain`. Ce sont des couleurs d'identité, donc
+ * des jetons — jamais des littéraux dans un écran.
+ */
+export const LOGO_PLATE = {
+  light: BRAND.white,
+  dark: BRAND.black,
+} as const;
+
+/**
+ * Palette de la GRANDE FICHE (maquette `mockup-complet-25-10.png`, 25/10/2026).
+ *
+ * Ces cinq valeurs sont mesurées sur la maquette du propriétaire. Elles vivent
+ * ici — et pas dans l'écran — parce que ce sont des COULEURS : la règle du Design
+ * System est qu'aucune couleur ne s'écrit en dur dans un composant.
+ *
+ * `recommendation` n'est pas une sixième couleur de marque : c'est le violet de
+ * l'identité posé à 7 % sur le blanc. Le jour où la marque change, la dalle suit.
+ */
+export const FICHE_COLORS = {
+  /** Encre de la fiche : le noir de marque, rien d'autre. */
+  ink: BRAND.black,
+  /** Texte secondaire (description, dates de livraison) — #808080 sur la maquette. */
+  muted: '#808080',
+  /** Dalle lavande de la recommandation de taille (#EEECF7 sur la maquette). */
+  recommendation: mix(BRAND.white, BRAND.violet, 0.07),
+  /** Violet de la maquette : accent des libellés d'état et du soulignement de vignette. */
+  accent: BRAND.violet,
+  /** Texte blanc lisible posé sur les pastilles `accent` ou `success` de la fiche. */
+  onAccent: BRAND.white,
+  /** Surface blanche fixe de la pastille compte à rebours posée sur la photo. */
+  pillSurface: BRAND.white,
+  /** Vert « Livraison rapide » et pastille « Article ajouté » (#008735), mesuré sur la maquette. */
+  success: '#008735',
+  /** Filet gris (#E8E8E8) : séparateurs fins, bandes, lignes d'accordéon. */
+  hair: '#E8E8E8',
+  /** Points de galerie inactifs (#B2B2B2). */
+  dotIdle: '#B2B2B2',
+  /** Filet sous le nom du produit (#AAAAAA) — plus présent qu'un filet de section. */
+  nameUnderline: '#AAAAAA',
+  /** Poignée de la feuille de taille (#D1D1D1). */
+  sheetGrab: '#D1D1D1',
+  /** Fond de la bande photo du plein écran (#EFEFEF) : la photo est en `contain`. */
+  viewerStage: '#EFEFEF',
+  /** Texte d'une taille épuisée (barré) : gris moyen, lisible sans crier. */
+  struck: '#969696',
+  /** Voile au-dessus de la feuille de taille (noir 35 %). */
+  scrim: veil(0.35),
+} as const;
+
+/** Adaptation mode clair / sombre de la grande fiche produit sans perte de contraste. */
+export function ficheColorsFor(mode: 'light' | 'dark') {
+  if (mode === 'light') return FICHE_COLORS;
+  return {
+    ink: BRAND.white,
+    muted: COLORS.dark.muted,
+    recommendation: COLORS.dark.surface,
+    accent: COLORS.dark.accentText,
+    onAccent: BRAND.white,
+    pillSurface: COLORS.dark.surface,
+    success: '#23C16B',
+    hair: COLORS.dark.line,
+    dotIdle: alpha(BRAND.white, 0.36),
+    nameUnderline: COLORS.dark.lineControl,
+    sheetGrab: COLORS.dark.lineControl,
+    viewerStage: BRAND.black,
+    struck: COLORS.dark.muted,
+    scrim: veil(0.64),
+  } as const;
+}
+
+/** Rayon supérieur fin et luxueux pour toutes les feuilles basses de l'application. */
+export const SHEET_CORNER_RADIUS = 8;
+
+/** Interlettrage du mot-symbole officiel ZAYROVI et de l'extension SONIM. */
+export const WORDMARK_STYLE = { fontSize: 18, letterSpacing: 2.2 } as const;
+export const SONIM_TITLE_STYLE = { fontSize: 15, letterSpacing: 1.8 } as const;
+export const SONIM_SUBTITLE_STYLE = { fontSize: 10, letterSpacing: 1.6 } as const;
+
 export const REEL_TILE = {
   widthFraction: 0.66,
+} as const;
+
+/**
+ * Mot-symbole AYWEBs (en-tête, barre du bas, feuille d'ajout) : teinte
+ * appliquée nativement par `expo-image` (`tintColor`) en plus des pixels sRGB
+ * du PNG afin d'éliminer tout écart d'espace colorimétrique (Display-P3 / OLED)
+ * et de garantir le violet officiel `#571EF6` exact.
+ */
+export const AYWEBS_WORDMARK_TINT = {
+  light: BRAND.violet,
+  dark: BRAND.white,
+} as const;
+
+/**
+ * Barre d'onglets principale pleine largeur, opaque et posée bord à bord en bas
+ * de l'écran (aucune transparence, aucun écart sous la barre).
+ */
+export const TAB_BAR_SURFACE = {
+  light: {
+    background: BRAND.white,
+    border: NEUTRALS.border,
+  },
+  dark: {
+    background: BRAND.black,
+    border: COLORS.dark.line,
+  },
 } as const;
 
 /* ── Rayons (§2 — Radius Tokens) ──────────────────────────────────────────── */
@@ -295,8 +428,9 @@ export const duration = {
  *
  * Règle qui tranche la plupart des hésitations : « est-ce que je SIGNALE un
  * succès, une erreur ou un avertissement ? » — oui ⇒ palette de statut ; non ⇒
- * structure (noir/gris) ou marque (violet). Un bouton « Ajouter au panier »
- * n'est pas un statut : il est violet. « التوفّر غير مؤكّد » est un statut : jaune.
+ * structure (noir/gris) ou marque (violet). Les CTA sont normalement de marque ;
+ * AYWEBs possède une exception de commerce à jaune, isolée à son navigateur et à
+ * sa feuille d'options. « التوفّر غير مؤكّد » reste un statut : jaune.
  *
  * ── Valeurs MESURÉES, pas choisies au goût ───────────────────────────────────
  * Chaque `fg` a été vérifié au ratio WCAG sur les deux fonds qu'il rencontre
@@ -502,6 +636,20 @@ export type DerivedColors = ReturnType<typeof derivedColors>;
 /**
  * `GEOMETRY.iconGrid` (24) est la grille de dessin, pas la taille de rendu.
  * Une échelle de rendu nommée évite les `size={17}` qu'on retrouve éparpillés.
+ *
+ * ── Rôles (audit du 27/10/2026) ─────────────────────────────────────────────
+ * L'inventaire complet de l'application (121 icônes) n'utilisait que 19 valeurs
+ * distinctes, dont 11 hors échelle : 11, 12, 13, 16, 17, 19, 20, 21, 22, 23, 26,
+ * 30, 36, 44, 64. Chaque cran a désormais UN rôle, et un seul :
+ *   • `xs` 14 — l'icône vit DANS une ligne de texte (étoile de note, infobulle,
+ *              coche de puce) ; elle suit le corps `caption`/`label` ;
+ *   • `sm` 18 — l'icône vit DANS un contrôle (champ de recherche, chevron de
+ *              ligne, croix de champ, icône de bouton) ;
+ *   • `md` 24 — l'icône EST l'action (retour, croix d'en-tête, panier, cœur,
+ *              menu, onglet) : la grille de dessin de l'identité ;
+ *   • `lg` 32 — l'icône porte un état vide ou une action forte dans une pastille ;
+ *   • `xl` 40 — l'icône remplace une image (vignette, avatar) ;
+ *   • `xxl` 64 — giciel de substitution plein écran (viseur caméra indisponible).
  */
 export const ICON_SIZE = {
   xs: 14,
@@ -509,15 +657,31 @@ export const ICON_SIZE = {
   md: GEOMETRY.iconGrid, // 24
   lg: 32,
   xl: 40,
+  xxl: 64,
 } as const;
 
 /* ── Opacité (§2) ─────────────────────────────────────────────────────────── */
 
 export const OPACITY = {
-  /** Élément désactivé. */
+  /** Élément désactivé (bouton, ligne, action indisponible). */
   disabled: 0.4,
-  /** Texte secondaire sur fond contrasté. */
+  /**
+   * Retour tactile d'un élément pressé — bouton, ligne, icône, tuile.
+   *
+   * Audit du 27/10/2026 : le MÊME geste s'affichait avec SEPT valeurs
+   * différentes (0.55, 0.6, 0.64, 0.7, 0.85, 0.86, 0.92). Un appui est un
+   * appui : une seule valeur, celle-ci.
+   */
   subtle: 0.64,
+  /**
+   * Atténuation d'une GRANDE surface : photo pressée, carte média, anneau de
+   * détection réduit. Le 0.64 d'un bouton y paraîtrait un trou noir.
+   */
+  dimmed: 0.86,
+  /** Option proposée mais indisponible (barrée) — plus discrète que `disabled`. */
+  unavailable: 0.36,
+  /** État « favori » posé sur une image : la couleur porte seule le signal. */
+  favorite: 0.75,
   /** Squelette de chargement. */
   skeleton: 0.12,
   /** Voile sur image (légende, dégradé). */

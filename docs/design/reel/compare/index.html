@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>الريل — فروقات المرجع مقابل اللي عندنا (24/10/2026)</title>
+<style>
+  :root{
+    --ink:#0A0A0A; --muted:#666666; --line:#E5E5E5; --surface:#FFFFFF; --desk:#F2F2F2;
+    --action:#571EF6; --bad:#B00020; --warn:#8A5A00; --ok:#0B6B3A;
+    --font:"Zalando Sans","Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:32px 20px 80px;background:var(--desk);color:var(--ink);font-family:var(--font);line-height:1.6}
+  .wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+  header.top{display:flex;flex-direction:column;gap:8px}
+  h1{font-size:26px;letter-spacing:-.01em;margin:0}
+  h2{font-size:18px;margin:0 0 4px}
+  p.lead{margin:0;color:var(--muted);font-size:14px;max-width:70ch}
+  section{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px}
+  .screens{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  figure{margin:0;display:flex;flex-direction:column;gap:8px}
+  figure img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);background:#111}
+  figcaption{font-size:12.5px;color:var(--muted)}
+  .tag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;letter-spacing:.02em;
+       text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+  .tag.ref{color:var(--action);border-color:#D9CCFF;background:#F6F2FF}
+  .tag.our{color:var(--ink)}
+  .zoom{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+  .zoom h3{font-size:14px;margin:0 0 6px}
+  .zoom img{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;display:block;background:var(--surface)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:right;vertical-align:top;padding:10px 8px;border-bottom:1px solid var(--line)}
+  th{font-size:12px;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  td.num{font-variant-numeric:tabular-nums;color:var(--muted);width:34px}
+  tr:last-child td{border-bottom:0}
+  .verdict{font-weight:700;font-size:12px;padding:2px 8px;border-radius:999px;display:inline-block;white-space:nowrap}
+  .v-bad{color:var(--bad);background:#FDECEE}
+  .v-warn{color:var(--warn);background:#FFF6E5}
+  .v-ok{color:var(--ok);background:#EAF6EF}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:#F5F5F5;padding:1px 5px;border-radius:5px;direction:ltr;display:inline-block}
+  ul{margin:8px 0 0;padding-inline-start:20px}
+  li{margin:4px 0}
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .option{border:1px solid var(--line);border-radius:14px;padding:14px}
+  .option h3{margin:0 0 6px;font-size:15px}
+  .option.best{border-color:#D9CCFF;box-shadow:0 0 0 3px #F6F2FF}
+  .option small{color:var(--muted);display:block;margin-top:8px}
+  .note{font-size:12.5px;color:var(--muted)}
+  @media (max-width:820px){.screens,.zoom,.options{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <span class="tag">مراجعة · 24/10/2026</span>
+    <h1>الريل: فروقات بين المرجع واللي عندنا</h1>
+    <p class="lead">
+      مقارنة بين صورتين لنفس الشاشة: <b>المرجع</b> (TikTok Shop، حساب tinasomnia — التيري محلول)
+      و<b>عندنا</b> (تطبيق ZAYROVI التجريبي، 24/10 الساعة 19:34). القياسات محسوبة على 720×1600
+      بكثافة 2 بكسل/نقطة ⇒ كل رقم تحت بالنقاط (dp).
+    </p>
+  </header>
+
+  <section>
+    <h2>1) الشاشتان كاملتين</h2>
+    <div class="screens">
+      <figure>
+        <span class="tag ref">المرجع</span>
+        <img src="reference-ouvert.jpg" alt="المرجع: TikTok Shop، التيري محلول مع بطاقة Stradivarius" />
+        <figcaption>الزرّ «Hide items» أسود والنصّ أبيض، والبطاقة: صورة كبيرة على اليسار، الماركة، العنوان، السعر، والقلب.</figcaption>
+      </figure>
+      <figure>
+        <span class="tag our">عندنا</span>
+        <img src="notre-app-24-10.jpg" alt="تطبيقنا: زر Masquer les articles وتيري ببطاقة واحدة" />
+        <figcaption>نفس الميكانيكا (زر واحد + تيري + كاروسيل)، لكن جوّة البطاقة مختلف: فراغ كبير في الوسط، بلا ماركة، بلا قلب.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>2) زوم — الزرّ</h2>
+    <div class="zoom">
+      <div>
+        <h3>المرجع · مفتوح</h3>
+        <img src="zoom-pastille-reference.png" alt="زر المرجع مفتوح" />
+        <p class="note">أسود · 160×52 · نصف قطر كامل · 16 من الحاشية</p>
+      </div>
+      <div>
+        <h3>عندنا · مفتوح</h3>
+        <img src="zoom-pastille-notre.png" alt="زرنا مفتوح" />
+        <p class="note">أسود · 196×44 · نصف قطر كامل · 16 من الحاشية</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>3) زوم — البطاقة (هنا الخطأ الحقيقي)</h2>
+    <div class="zoom">
+      <div>
+        <h3>المرجع</h3>
+        <img src="zoom-carte-reference.png" alt="بطاقة المرجع" />
+        <p class="note">الماركة 17/700 ← العنوان 15/400 ← السعر 15/700، فارق 6 بينهم. الصورة 99×141 ملتصقة بالحدّ الأيسر على خلفية <code>#F6F6F6</code>. القلب 28 فوق يمين.</p>
+      </div>
+      <div>
+        <h3>عندنا</h3>
+        <img src="zoom-carte-notre.png" alt="بطاقتنا" />
+        <p class="note">عنوان 15/700 فوق ← فراغ ≈ 80 ← سعر 14/700 تحت. الصورة 118×118 مربّعة داخلة 10 على خلفية <code>#E5E5E5</code>. بلا ماركة، بلا قلب.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4) جدول الفروقات (14)</h2>
+    <table>
+      <thead>
+        <tr><th class="num">#</th><th>العنصر</th><th>المرجع</th><th>عندنا</th><th>الحكم</th><th>الإصلاح المقترح</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="num">1</td><td>الزرّ في الحالة المسكّرة</td><td>أبيض، نصّ أسود، سهم لتحت</td><td>أسود، نصّ أبيض</td><td><span class="verdict v-bad">خطأ</span></td><td>أبيض كي يكون مسكّر (أوضح فوق الفيديو)، أسود كي يكون محلول</td></tr>
+        <tr><td class="num">2</td><td>ارتفاع الزرّ</td><td>52</td><td>44</td><td><span class="verdict v-bad">خطأ</span></td><td><code>pillHeight</code> 44 → 52</td></tr>
+        <tr><td class="num">3</td><td>نصّ الزرّ</td><td>كلمتين: «Hide items»</td><td>3 كلمات: «Masquer les articles»</td><td><span class="verdict v-warn">قرار</span></td><td>«Masquer» / «Voir les articles» — الزرّ يولّي 160 موش 196</td></tr>
+        <tr><td class="num">4</td><td>الفارق بين الزرّ والبطاقة</td><td>67</td><td>107</td><td><span class="verdict v-bad">خطأ</span></td><td>نقصّ الفارق: البطاقة تصعد أكثر</td></tr>
+        <tr><td class="num">5</td><td>مقبض السحب</td><td>ما فمّاش</td><td>موجود 36×4</td><td><span class="verdict v-warn">قرار</span></td><td>نتخلّصو منّو، ولا نخلّيوه ونعترفو بيه كفارق</td></tr>
+        <tr><td class="num">6</td><td>عرض البطاقة</td><td>331 (حاشية 12)</td><td>336 (حاشية 16، 22 كشف)</td><td><span class="verdict v-warn">قرار</span></td><td>حاشية 12 وكشف أكبر للبطاقة اللي بعدها</td></tr>
+        <tr><td class="num">7</td><td>ارتفاع البطاقة</td><td>151</td><td>133 (والكود يقول 158)</td><td><span class="verdict v-bad">خطأ</span></td><td>نوحّدو: 151 في الثلاثة (RN + CSS + الموكاب)</td></tr>
+        <tr><td class="num">8</td><td>منطقة الصورة</td><td>99×141 بكامل الارتفاع، ملتصقة بالحدّ، خلفية <code>#F6F6F6</code></td><td>118×118 مربّعة داخلة 10، خلفية <code>#E5E5E5</code></td><td><span class="verdict v-bad">خطأ</span></td><td>الصورة تاخذ كامل ارتفاع البطاقة على اليسار</td></tr>
+        <tr><td class="num">9</td><td>الماركة</td><td>«Stradivarius» 17/700</td><td>ما فمّاش — الحقل ما يوصلش من الخادم</td><td><span class="verdict v-bad">خطأ</span></td><td>نزيدو <code>brand</code> في <code>publicLinkedProduct</code> + الكارطة</td></tr>
+        <tr><td class="num">10</td><td>العنوان</td><td>15/400 تحت الماركة</td><td>15/700 فوق (هو العنوان الرئيسي)</td><td><span class="verdict v-bad">خطأ</span></td><td>الوزن 400 والحجم 13–15، الترتيب: ماركة ← عنوان ← سعر</td></tr>
+        <tr><td class="num">11</td><td>موضع السعر</td><td>تحت العنوان بـ6</td><td>ملزوق تحت البطاقة، فراغ ≈80 في الوسط</td><td><span class="verdict v-bad">خطأ</span></td><td>نحيّد <code>justifyContent:'space-between'</code> ونستعمل <code>gap:3</code></td></tr>
+        <tr><td class="num">12</td><td>القلب</td><td>موجود 28 فوق يمين</td><td>ما فمّاش (ما بعثناش <code>onToggleFavorite</code>)</td><td><span class="verdict v-bad">خطأ</span></td><td>نربطو بالمفضّلة (نفس الـAPI تاع catalogue)</td></tr>
+        <tr><td class="num">13</td><td>الحدود والزاوية</td><td>بلا حدود · نصف قطر ≈18 · ظل خفيف</td><td>حدّ <code>#E5E5E5</code> · نصف قطر 16</td><td><span class="verdict v-warn">قرار</span></td><td>نصف قطر 18 وبلا حدود</td></tr>
+        <tr><td class="num">14</td><td>كروم الشاشة</td><td>زر رجوع دائري · أفاتار + اسم + Follow · شريط أيمن (مشاركة/كتم/…)</td><td>هيدر «Reels · Shop» · عنوان ووصف وعدّادات · «سجّل للتفاعل»</td><td><span class="verdict v-warn">قرار</span></td><td>شاشة مختلفة: إمّا نقربو للـpattern، وإمّا نخلّيو المحتوى تاعنا</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>5) السبب في الكود — 3 سطور فقط</h2>
+    <ul>
+      <li><b>الماركة ناقصة من العقد:</b> <code>publicLinkedProduct()</code> في <code>src/services/shoppableContent.ts</code> ما يبعثش <code>brand</code> ⇒ حتى كان الكارطة عندها البلاصة، ما فمّاش شنوّة يتكتب.</li>
+      <li><b>السعر ملزوق تحت:</b> <code>styles.body</code> في <code>apps/mobile/src/features/shopping/LinkedProductCard.tsx</code> فيه <code>justifyContent:'space-between'</code> على ارتفاع 158 ⇒ العنوان فوق والسعر تحت والفراغ في الوسط.</li>
+      <li><b>القلب ما يتنحاش:</b> <code>ReelShopTray</code> ما يعطيش <code>onToggleFavorite</code> ⇒ القلب ما يترسمش (وهذا مقصود في الكود: «بلا معالج = بلا قلب»).</li>
+    </ul>
+    <p class="note" style="margin-top:12px">
+      ملاحظة صريحة: في الجواب اللي قبل قلت «الـAPK قديم» — هذا صحيح في جزء (القياسات 336×118 وحدها
+      راكبة)، لكن <b>موش هو سبب المشكل</b>: البطاقة اللي في الصورة راهي تجري الكود الجديد،
+      والخطأ في <b>جوّة</b> البطاقة (الماركة/الترتيب/القلب) وفي <b>ارتفاع الزرّ</b>.
+    </p>
+  </section>
+
+  <section>
+    <h2>6) القرار: نصلّحو ولا نعاودو من الصفر؟</h2>
+    <div class="options">
+      <div class="option best">
+        <h3>A · نصلّحو في بلاصة <span class="tag" style="margin-inline-start:6px">موصّى بيه</span></h3>
+        <p>9 خطوات صغيرة على نفس المودول: حقل <code>brand</code> في الـAPI، ترتيب نصّي جديد، منطقة صورة بكامل الارتفاع، القلب، زرّ 52/أبيض، فارق 67.</p>
+        <small>الملفات: <code>shoppableContent.ts</code> · <code>LinkedProductCard.tsx</code> · <code>articleCard.ts</code> (×3) · <code>ReelShopTray.tsx</code> + تستات العقد.</small>
+      </div>
+      <div class="option">
+        <h3>B · نعاودو من الصفر</h3>
+        <p>مودول جديد بالبكسل على المرجع، والمودول القديم يتنحّى. نفس النتيجة تقريباً، لكن 3 مصادر (RN + CSS + الموكاب) لازم تتعاود وتتّختبر من جديد.</p>
+        <small>ما نضيّعوش الميكانيكا الصحيحة (زر واحد، تيري ما يفكّكش المشغّل، كاروسيل، 336).</small>
+      </div>
+    </div>
+    <p class="note" style="margin-top:12px">
+      في الحالتين: <b>ما فمّاش</b> حاجة تتصلّح في السيرفر خارج حقل <code>brand</code> — الربط متعدّد المنتوجات
+      (lot F1) والورقة الكبيرة (images/variants/stock) راهم منفّذين ومختبَرين.
+    </p>
+  </section>
+
+</div>
+</body>
+</html>

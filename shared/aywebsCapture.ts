@@ -41,6 +41,13 @@ export const AYWEBS_CAPTURE_LIMITS = {
   maxTitleLength: 300,
   maxVariantTexts: 30,
   maxSelectedVariantTexts: 5,
+  /** Groupes de variantes nommés (23/10/2026) : mêmes bornes que le script client. */
+  maxVariantGroups: 4,
+  maxVariantGroupValues: 20,
+  /** Prix publiés par valeur : texte borné, même règle que les prix de page. */
+  maxVariantValuePriceLength: 60,
+  /** Matrice de prix des combinaisons de variantes (extraction unique, toutes boutiques). */
+  maxMatrixEntries: 120,
   maxImages: 4,
   /** Au-delà, la capture est refusée : une page ouverte il y a une heure n'est pas une preuve. */
   maxAgeMs: 10 * 60_000,
@@ -48,8 +55,63 @@ export const AYWEBS_CAPTURE_LIMITS = {
   maxClockSkewMs: 60_000,
 } as const;
 
-/** D'où vient un texte de prix — conservé pour l'audit et la corroboration. */
-export type AyWebsCaptureSource = 'json_ld' | 'microdata' | 'meta' | 'dom';
+/**
+ * Ce que la page publie pour UNE valeur d'un groupe (« Rouge », « 42 », « 150 ml »).
+ *
+ * Constat du 23/10/2026 (capture d'écran du client, Amazon) : la feuille de choix
+ * demandait au client de RÉINJECTER le lecteur à chaque changement de couleur, et
+ * ne savait pas dire si l'autre couleur était disponible. Or la page publiait déjà,
+ * sur la carte de chaque valeur : un prix (« $88.00 », « 5 options from $56.32 »)
+ * et, quand il existe, l'état de stock (« In Stock »). Ces faits sont lus UNE fois,
+ * dans la même capture, et la feuille les affiche.
+ *
+ * Aucun champ n'est deviné : `available` vaut `false` seulement quand la page
+ * désactive explicitement la valeur (`disabled`, `aria-disabled="true"`, classe
+ * « out-of-stock ») ; il reste `null` quand la page ne dit rien.
+ */
+export interface AyWebsCapturedVariantValue {
+  value: string;
+  available?: boolean | null;
+  /** Prix affiché SUR CETTE VALEUR, tel qu'écrit (« $88.00 », « 12,95 € »). */
+  price?: string | null;
+  /** `true` quand le prix est une entrée de gamme (« à partir de », « from »). */
+  priceFrom?: boolean;
+  /** Stock annoncé sur la valeur (« Only 6 left ») — jamais déduit. */
+  stock?: number | null;
+  /** Photo HTTP(S) de cette valeur (pastille couleur SHEIN/AliExpress/catalogue), telle que publiée. */
+  image?: string | null;
+  /** Identifiant fiche marchande associé à cette valeur (ex. `goods_id` d'une autre couleur SHEIN). */
+  goodsId?: string | null;
+  /** Identifiant SKU marchand associé à cette valeur/combinaison (ex. `sku_id` AliExpress). */
+  skuId?: string | null;
+}
+
+/** Groupe de variantes nommé, tel que lu par le script du client. */
+export interface AyWebsCapturedVariantGroup {
+  name: string;
+  values: string[];
+  /** Valeur affichée sur la page — une seule, ou vide. */
+  selected?: string[];
+  /**
+   * États et prix PUBLIÉS pour chaque valeur (23/10/2026). Le même ordre n'est
+   * pas garanti : `value` fait foi. Absent = la page ne publie rien de plus que
+   * le libellé — la feuille le dit au lieu de bloquer sans explication.
+   */
+  options?: AyWebsCapturedVariantValue[];
+}
+
+/**
+ * D'où vient un texte de prix — conservé pour l'audit et la corroboration.
+ *
+ * `a11y_label` : étiquette d'accessibilité de la zone d'achat (Amazon), c'est-à-dire
+ * une CHAÎNE COMPLÈTE écrite par la page — par opposition à `dom`, où le montant est
+ * reconstruit par nous depuis ses fragments (symbole + entier + décimale). Les deux
+ * familles d'accord corroborent ; deux lectures d'une même famille ne le font pas.
+ *
+ * `embedded_json` : prix publié dans un script de la page (« "displayPrice":"$109.00" »),
+ * lu tel quel, jamais recomposé.
+ */
+export type AyWebsCaptureSource = 'json_ld' | 'microdata' | 'embedded_json' | 'meta' | 'a11y_label' | 'dom';
 
 export interface AyWebsCapturedPriceCandidate {
   /** Texte de prix TEL QU'AFFICHÉ par la page (« 1 299,00 € », « $6.99 »). */
@@ -57,31 +119,142 @@ export interface AyWebsCapturedPriceCandidate {
   source: AyWebsCaptureSource;
 }
 
-/** Evidence produced by the Amazon-only WebView reader; never a server verdict. */
-export interface AyWebsAmazonCaptureEvidence {
-  readerVersion: 2;
-  pageAsin: string | null;
-  selectedAsin: string | null;
-  selectedPriceEvidence: AyWebsCapturedPriceCandidate[];
-  options: Array<{
+export interface AyWebsAmazonEvidence {
+  readerVersion?: number;
+  pageAsin?: string | null;
+  selectedAsin?: string | null;
+  /** Valeurs AFFICHÉES comme choisies (lues dans les données du twister). */
+  selectedValues?: string[];
+  options?: Array<{
     dimension: string;
     value: string;
-    asin: string | null;
-    selected: boolean;
-    availabilityEvidence: 'available' | 'unavailable' | 'unknown';
-    source: 'twister_dom';
+    asin?: string | null;
+    selected?: boolean;
+    availabilityEvidence?: 'available' | 'unavailable' | 'unknown';
+    /** Prix affiché SUR LA CARTE de ce choix, tel qu'écrit ; jamais un devis. */
+    price?: string | null;
+    /**
+     * Le prix de la carte est un « à partir de » (« 5 options from $56.32 ») :
+     * une entrée de gamme, jamais le prix de cette valeur (23/10/2026).
+     */
+    priceFrom?: boolean;
+    /** Stock annoncé sur la carte (« Only 6 left in stock »). */
+    stock?: number | null;
+    /** Photo HTTP(S) de cette option, si la page la publie sur sa carte. */
+    image?: string | null;
+    source?: string;
   }>;
-  variants: Array<{
+  variants?: Array<{
     asin: string;
-    dimensions: Array<{ name: string; value: string }>;
-    source: 'dimensionValuesDisplayData' | 'asinVariationValues' | 'twister_dom';
-    selected: boolean;
+    selected?: boolean;
+    dimensions?: Array<{ name: string; value: string }>;
+    source?: string;
   }>;
+}
+
+export interface AyWebsSheinEvidence {
+  readerVersion?: number;
+  pageGoodsId?: string | null;
+  selectedColor?: string | null;
+  selectedSize?: string | null;
+  skuId?: string | null;
+}
+
+export interface AyWebsAliExpressSkuEvidence {
+  skuId?: string | null;
+  /** Attributs exacts de cette combinaison (« Color » → « Red », « Plug Type » → « EU Plug »). */
+  attributes: Record<string, string>;
+  /** Prix publié pour CE SKU (« 20.99 USD », « 24,90 € ») — texte brut vérifié par le serveur. */
+  price?: string | null;
+  available?: boolean | null;
+  stock?: number | null;
+  image?: string | null;
+}
+
+export interface AyWebsAliExpressEvidence {
+  readerVersion?: number;
+  pageItemId?: string | null;
+  selectedSkuId?: string | null;
+  /** Matrice bornée des SKUs publiés sur la fiche (max 60 combinaisons). */
+  skus?: AyWebsAliExpressSkuEvidence[];
+}
+
+export interface AyWebsTemuEvidence {
+  readerVersion?: number;
+  pageGoodsId?: string | null;
+  salePrice?: string | null;
+  retailPrice?: string | null;
+}
+
+export type AyWebsMatrixEvidenceSource =
+  | 'embedded_json'
+  | 'json_ld'
+  | 'preloaded_state'
+  | 'network_cache'
+  | 'dom';
+
+/** Palier de remise sur quantité publié par le marchand pour une variante (ex. 2+ pièces → $15.90/u). */
+export interface AyWebsQuantityTierEvidence {
+  minQuantity: number;
+  unitPrice: string;
+}
+
+/**
+ * Entrée de la MATRICE DE PRIX DES VARIANTES (`variantMatrix`) extraite en une
+ * seule lecture initiale depuis la page, l'état préchargé ou les réponses réseau
+ * du navigateur — sans jamais supposer que le prix de base vaut pour les autres
+ * variantes.
+ */
+export interface AyWebsCapturedMatrixEntry {
+  /** Identifiant marchand de cette combinaison précise (SKU, ASIN, goods_id…). */
+  variantId?: string | null;
+  /** URL directe de la variante si elle possède sa propre adresse (ASIN Amazon, goods_id SHEIN, couleur Zalando). */
+  variantUrl?: string | null;
+  /** Attributs exacts de cette combinaison (« Couleur » → « Noir », « Taille » → « 4 ans », « Type » → « Type A »). */
+  attributes: Record<string, string>;
+  /** Prix unitaire FERME publié pour CETTE combinaison (« $17.70 », « 139.99 EUR ») ; `null` si inconnu. */
+  price?: string | null;
+  /** `true` si le montant n'est qu'un « à partir de » (jamais traité comme un prix ferme). */
+  priceFrom?: boolean;
+  /** Disponibilité explicite de cette combinaison (`true` = en stock, `false` = épuisé, `null` = inconnu). */
+  available?: boolean | null;
+  /** Stock annoncé pour cette combinaison (1..999), sinon `null`. */
+  stock?: number | null;
+  /** Vignette HTTP(S) propre à cette combinaison. */
+  image?: string | null;
+  /** Source de preuve de cette entrée. */
+  evidenceSource?: AyWebsMatrixEvidenceSource | null;
+  /** Paliers de prix par quantité publiés par le marchand pour ce SKU. */
+  quantityTiers?: AyWebsQuantityTierEvidence[];
 }
 
 export interface AyWebsCapturedPage {
   /** Version du contrat : un serveur ancien refuse une capture future. */
   v: number;
+  /** Codes courts du lecteur (ex. « price:buybox », « title:visible ») — jamais de texte de page. */
+  diagnostics?: string[];
+  /** Identité/version du lecteur livré par le serveur — diagnostic seulement, jamais une preuve métier. */
+  reader?: { id: string | null; version: number } | null;
+  /**
+   * Amazon : variantes et option choisie (évidence structurée, sans texte libre).
+   * Les index numériques ne deviennent jamais des noms d'option : le lecteur les résout
+   * via variationValues, ou les écarte.
+   */
+  amazon?: AyWebsAmazonEvidence | null;
+  /**
+   * SHEIN : identité fiche (`goods_id`), SKU et sélection active (couleur / taille)
+   * lues depuis le DOM produit et l'état machine embarqué (`gbRawData` / `productIntroData`).
+   */
+  shein?: AyWebsSheinEvidence | null;
+  /**
+   * AliExpress : identité fiche (`item_id`), SKU actif et matrice des combinaisons
+   * publiées par la fiche (`runParams` / `_dida_config_` / Comet).
+   */
+  aliexpress?: AyWebsAliExpressEvidence | null;
+  /**
+   * Temu : identité fiche (`goods_id`) et prix embarqués (`rawData` / `oak` / `poppy`).
+   */
+  temu?: AyWebsTemuEvidence | null;
   /** URL de la page réellement affichée dans le WebView. */
   url: string;
   /** `<link rel="canonical">` ou `og:url`, quand la page les publie. */
@@ -103,14 +276,26 @@ export interface AyWebsCapturedPage {
   selectedVariantTexts?: string[];
   /** Options publiées par la page (libellés bruts, bornés). */
   variantTexts?: string[];
+  /**
+   * Groupes de variantes NOMMÉS (« Taille », « Couleur ») avec leurs valeurs et
+   * celle qui est affichée. Lus uniquement sur les boutiques sans adaptateur
+   * d'URL (23/10/2026) : un `<label for>`, un `<legend>`, un `aria-label` ou le
+   * `name` du champ nomme le groupe. Bornes : 4 groupes, 20 valeurs, 60 car.
+   */
+  variantGroups?: AyWebsCapturedVariantGroup[];
+  /**
+   * Matrice complète des combinaisons de variantes lues lors de l'extraction
+   * initiale (SHEIN, Zalando, Amazon, AliExpress, JSON-LD `hasVariant`, état
+   * préchargé ou cache réseau de la page). Permet le changement instantané en
+   * mémoire sans ré-extraire toute la fiche à chaque clic.
+   */
+  variantMatrix?: AyWebsCapturedMatrixEntry[] | null;
   /** Images trouvées (URLs http/https seulement). */
   images?: string[];
   /** Horodatage ISO de la lecture, dans le navigateur du client. */
   capturedAt: string;
   /** Langue de la page, si disponible (diagnostic de la lecture de prix). */
   pageLang?: string | null;
-  /** Amazon evidence only; server must validate before using it. */
-  amazon?: AyWebsAmazonCaptureEvidence | null;
 }
 
 /** Résumé de ce qui a été retenu — renvoyé au client et journalisé. */
@@ -145,7 +330,54 @@ export const AYWEBS_CAPTURE_REJECTIONS = [
    * indépendantes d'accord — sinon le montant n'est pas exploitable.
    */
   'PRICE_NOT_CORROBORATED',
+  /** Zone d'achat Amazon désignant un AUTRE article que l'URL (ASIN différent). */
+  'BUYBOX_ASIN_MISMATCH',
   'NO_AVAILABILITY_EVIDENCE',
+  /**
+   * Amazon, fiche à plusieurs variantes (couleur, taille…) : l'option CHOISIE n'est pas
+   * prouvée (absente, non confirmée, indisponible, ou pas la fiche ouverte). Le prix de
+   * la zone d'achat ne vaut que pour l'option choisie : on refuse plutôt que de deviner.
+   * Actif seulement avec AYWEBS_AMAZON_VARIANT_CONTRACT=1.
+   */
+  'VARIANT_NOT_PROVEN',
+  /**
+   * Fiche en rupture : aucun prix publié ET l'élément de disponibilité dit « Currently unavailable »
+   * (ou équivalent). Refusée comme toute capture sans prix ; c'est la cause, pas « NO_PRICE_TEXT ».
+   */
+  'OUT_OF_STOCK',
+  /**
+   * La capture ne décrit PAS une fiche produit : aucun prix, aucune commande
+   * d'achat, aucune variante, aucun repère de fiche (23/10/2026). C'est la page
+   * d'accueil, un rayon, une page de recherche ou une bannière — le lecteur a
+   * été injecté au mauvais endroit, ou la boutique a servi une page de
+   * redirection pays. Refus explicite : ce n'est pas « un prix illisible ».
+   */
+  'NOT_A_PRODUCT_PAGE',
 ] as const;
+
+/**
+ * Nature de la PAGE lue — décidée par le SERVEUR à partir de la capture, jamais
+ * par le client (23/10/2026 : « le script ne s'injecte que sur une fiche »).
+ *
+ *   • `PRODUCT_CARD` — une fiche : un article identifié (titre) ET au moins un
+ *     repère de vente (prix publié, commande d'achat, variantes, ou la coquille
+ *     produit Amazon avec son ASIN) ;
+ *   • `STOREFRONT`   — une page de magasin : aucun repère de vente (accueil,
+ *     rayon, recherche, redirection pays) ;
+ *   • `AD`           — un prix SANS identité d'article : bannière, encart
+ *     sponsorisé, page promotionnelle. Un prix seul n'est jamais une fiche.
+ */
+export type AyWebsPageKind = 'PRODUCT_CARD' | 'STOREFRONT' | 'AD';
+
+/** Ce que la page PUBLIE, réduit à des booléens — aucune donnée personnelle. */
+export interface AyWebsPageSignals {
+  hasTitle: boolean;
+  hasPrice: boolean;
+  hasPurchaseControl: boolean;
+  hasVariants: boolean;
+  hasImages: boolean;
+  /** Coquille produit Amazon (`#dp`, ASIN) : une fiche même sans prix lisible. */
+  hasProductShell: boolean;
+}
 
 export type AyWebsCaptureRejection = (typeof AYWEBS_CAPTURE_REJECTIONS)[number];

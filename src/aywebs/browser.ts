@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import { parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
-import { AYWEBS_EXTERNAL_STORE, AYWEBS_STORES, detectAyWebsStore, findAyWebsStore, type AyWebsStoreDefinition } from '../../shared/aywebsStores';
+import { AYWEBS_EXTERNAL_STORE, AYWEBS_STORES, ayWebsStoreRecognition, detectAyWebsStore, findAyWebsStore, type AyWebsStoreDefinition, type AyWebsStoreRecognition } from '../../shared/aywebsStores';
 import type { AyWebsPageType } from '../../shared/aywebsTypes';
 import { createAyWebsAdapter, resolveAyWebsAdapter } from './adapters/registry';
 import { AyWebsCaptureError, type AyWebsPageClassification } from './adapters/contract';
@@ -47,6 +47,31 @@ export interface AyWebsPageAnalysis {
   externalCaptureAllowed: boolean;
   pageType: AyWebsPageType;
   isProductPage: boolean;
+  /**
+   * Qui peut prouver qu'une page est une fiche produit (23/10/2026) :
+   *   • `url`     — l'adaptateur de la boutique reconnaît le motif d'URL ;
+   *   • `capture` — pas d'adaptateur dédié : seule la capture structurée du
+   *     client peut le prouver (prix corroboré + titre) ;
+   *   • `none`    — domaine hors registre (chemin « Add-to-Buyee »).
+   * L'application s'en sert pour n'activer « Ajouter » que là où une lecture a
+   * une chance réelle d'aboutir.
+   */
+  productRecognition: AyWebsStoreRecognition | 'none';
+  /**
+   * Le serveur décide si le client a le droit d'INJECTER le lecteur sur cette
+   * page — et pas seulement « la capture est autorisée pour cette boutique »
+   * (23/10/2026, constat Zalando : le script partait sur une page d'accueil
+   * « Zalando is available in Austria », sans qu'aucun bouton ne soit pressé).
+   *
+   *   • `product_page` — le motif de fiche de la boutique répond à CETTE URL :
+   *     lecture silencieuse permise, c'est une fiche ;
+   *   • `on_demand`    — aucun motif d'URL ne peut trancher (boutique
+   *     `capture`, domaine inconnu) : le lecteur ne part JAMAIS tout seul, le
+   *     client ne l'injecte qu'à la demande explicite (« Ajouter au panier ») ;
+   *   • `never`        — une boutique à motif reconnaît son site mais PAS cette
+   *     page (accueil, rayon, recherche) : aucune injection, et l'écran le dit.
+   */
+  captureInjection: 'product_page' | 'on_demand' | 'never';
   customerActionRequired: AyWebsPageClassification['customerActionRequired'];
   reason: string;
   /** Mode de navigation décidé par le registre, jamais par l'écran. */
@@ -60,6 +85,40 @@ export interface AyWebsPageAnalysisOptions {
   captureEnabled?: boolean;
   /** `null` = domaine absent du Store Registry : la garde répond « non » (§7). */
   storeCaptureEnabled?: (store: AyWebsStoreDefinition | null | undefined) => boolean;
+  /**
+   * Preuve apportée par la capture du client, quand la boutique n'a pas
+   * d'adaptateur d'URL (`recognition: 'capture'`). Sans cette preuve, une page
+   * non reconnue reste non reconnue : la garde refuse, elle ne devine pas.
+   */
+  captureProof?: {
+    accepted: boolean;
+    corroborated: boolean;
+    title: string;
+  };
+}
+
+/**
+ * Faut-il laisser le client injecter le lecteur sur cette page ?
+ *
+ * Règle : une boutique qui déclare un motif de fiche sait reconnaître son propre
+ * site ; si le motif ne répond pas, la page n'est pas une fiche et le lecteur
+ * n'a rien à y faire. Une boutique sans motif (`capture`) ou un domaine inconnu
+ * ne peuvent pas trancher avant d'avoir lu : la lecture reste possible, mais
+ * SEULEMENT à la demande — jamais en pré-lecture silencieuse.
+ */
+export function captureInjectionFor(input: {
+  registered: boolean;
+  recognition: AyWebsStoreRecognition | 'none';
+  isProductPage: boolean;
+  captureAllowed: boolean;
+  externalCaptureAllowed: boolean;
+}): AyWebsPageAnalysis['captureInjection'] {
+  if (input.registered) {
+    if (!input.captureAllowed) return 'never';
+    if (input.recognition === 'capture') return 'on_demand';
+    return input.isProductPage ? 'product_page' : 'never';
+  }
+  return input.externalCaptureAllowed ? 'on_demand' : 'never';
 }
 
 /**
@@ -67,6 +126,11 @@ export interface AyWebsPageAnalysisOptions {
  * C'est l'appel rapide qui permet à l'écran de réagir immédiatement (§52),
  * la résolution produit lourde venant ensuite en arrière-plan.
  */
+function isAliExpressModalLandingUrl(url: URL): boolean {
+  return /(?:^|\.)aliexpress\.(?:com|us|ru)$/i.test(url.hostname)
+    && /(?:BundleDeals|aye-bundle-deals|tesla-landing|bundle-deals|superdeals|choice)/i.test(url.pathname);
+}
+
 export function analyzeAyWebsUrl(
   rawUrl: unknown,
   scraper: SmartLinkScraper,
@@ -125,6 +189,16 @@ export function analyzeAyWebsUrl(
     externalCaptureAllowed,
     pageType: classification.pageType,
     isProductPage: classification.isProductPage,
+    productRecognition: store ? ayWebsStoreRecognition(store) : 'none',
+    captureInjection: (store?.id === 'aliexpress' && !classification.isProductPage && captureAllowed && isAliExpressModalLandingUrl(url))
+      ? 'on_demand'
+      : captureInjectionFor({
+        registered,
+        recognition: store ? ayWebsStoreRecognition(store) : 'none',
+        isProductPage: classification.isProductPage,
+        captureAllowed,
+        externalCaptureAllowed,
+      }),
     customerActionRequired: classification.customerActionRequired,
     reason: classification.reason,
     browserMode: store?.browserMode || 'external',
@@ -208,13 +282,47 @@ export function assertAyWebsProductPage(
     });
   }
 
-  if (!classification.isProductPage) {
+  /* ── CATALOGUE : quand l'URL ne suffit pas, la CAPTURE STRUCTURÉE fait preuve ──
+     Vague 1 du catalogue (23/10/2026), deux cas :
+       • `pattern` — le motif déclaré n'a pas matché (page inattendue), mais la
+         capture est concluante : on l'accepte, à preuve égale ;
+       • `capture` — aucun motif n'existe : la capture est le SEUL chemin.
+     Le seuil est celui d'un domaine hors registre — capture acceptée ET prix
+     corroboré ET titre publié — sinon la page reste non reconnue et l'écran dit
+     pourquoi. Rien n'est deviné : un `/ip/…` ou un `/p/…` ne prouve rien en soi. */
+  const proof = options.captureProof;
+  const recognition = ayWebsStoreRecognition(store);
+  let captureProvesPage = false;
+  if (!classification.isProductPage && (
+    recognition === 'capture'
+    || recognition === 'pattern'
+    || (store.id === 'aliexpress' && isAliExpressModalLandingUrl(url))
+  )) {
+    captureProvesPage = proof?.accepted === true
+      && proof?.corroborated === true
+      && Boolean(String(proof?.title || '').trim());
+  }
+
+  if (!classification.isProductPage && !captureProvesPage) {
     throw new AyWebsDomainError('PRODUCT_PAGE_REQUIRED', {
-      technicalMessage: `pageType=${classification.pageType} — aucune identité produit exploitable`,
+      technicalMessage: `pageType=${classification.pageType} — aucune identité produit exploitable`
+        + (recognition === 'capture' || recognition === 'pattern' ? ' (capture cliente absente ou non concluante)' : ''),
     });
   }
 
-  return { analysis, store, url };
+  return {
+    analysis: captureProvesPage
+      ? {
+        ...analysis,
+        pageType: 'PRODUCT',
+        isProductPage: true,
+        reason: 'capture_client_corroboree',
+        productRecognition: recognition === 'pattern' ? 'pattern' : 'capture',
+      }
+      : analysis,
+    store,
+    url,
+  };
 }
 
 /**

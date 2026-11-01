@@ -107,12 +107,24 @@ const PRODUCT_COLUMN_ADDITIONS: Array<[string, string]> = [
   ['product_code', 'TEXT'],
   ['slug', 'TEXT'],
   ['category_id', 'TEXT'],
+  // Prix barré : une DONNÉE saisie par le propriétaire. Absent = aucun prix
+  // barré sur la fiche (on n'invente jamais une remise).
+  ['compare_at_price', 'REAL'],
   ['product_type', "TEXT NOT NULL DEFAULT 'STANDARD'"],
   ['created_by', 'TEXT'],
   ['updated_by', 'TEXT'],
   // CATALOG = produit du catalogue (défaut, toutes les lignes existantes) ;
   // CONTENT = produit temporaire créé depuis un Reel, une Story ou une Publication.
   ['visibility', "TEXT NOT NULL DEFAULT 'CATALOG'"],
+  /**
+   * LIBELLÉS DE LA FICHE (25/10/2026) — ce que l'écran produit écrit au-dessus
+   * des blocs : « Taille » peut devenir « Pointure », « Capacité », « Volume »…
+   * et une section du CRM peut porter son propre nom. JSON :
+   *   { "size": "Pointure", "color": "Couleur", "sections": { "matiere": "Matière" } }
+   * Colonne additive : les lignes existantes gardent `{}` et l'écran retombe sur
+   * ses libellés par défaut. Aucune valeur n'est inventée.
+   */
+  ['fiche_labels', "TEXT NOT NULL DEFAULT '{}'"],
 ];
 
 /** `brands` is already the canonical brand entity; it only lacked a URL identity. */
@@ -132,6 +144,17 @@ export function ensureCatalogueSchema(db: QatafoDatabase): CatalogueIndexReport 
   for (const [column, ddl] of PRODUCT_COLUMN_ADDITIONS) {
     if (hasColumn(db, 'products', column)) continue;
     db.run(`ALTER TABLE products ADD COLUMN ${column} ${ddl}`);
+  }
+  // Portée d'un attribut : les slugs des familles (racines d'arbre) où il a du
+  // sens. `[]` = partout (rétrocompatible : aucun attribut existant ne change).
+  if (!hasColumn(db, 'catalogue_attributes', 'families')) {
+    db.run("ALTER TABLE catalogue_attributes ADD COLUMN families TEXT NOT NULL DEFAULT '[]'");
+  }
+  // Section d'affichage (« matiere », « mesures », « technique »…) : c'est la
+  // DONNÉE qui décide dans quel accordéon la fiche classe un attribut. `''` =
+  // section fourre-tout, comme avant — aucune ligne existante n'est déplacée.
+  if (!hasColumn(db, 'catalogue_attributes', 'section')) {
+    db.run("ALTER TABLE catalogue_attributes ADD COLUMN section TEXT NOT NULL DEFAULT ''");
   }
   for (const [column, ddl] of BRAND_COLUMN_ADDITIONS) {
     if (hasColumn(db, 'brands', column)) continue;

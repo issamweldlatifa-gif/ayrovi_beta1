@@ -35,7 +35,7 @@ export function ReelsShopMark({ tone = 'ink' }: ReelsShopMarkProps) {
       accessibilityLabel={t('home.reelsShop.label')}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
     >
-      <Ionicons name="play" size={18} color={main} accessibilityElementsHidden />
+      <Ionicons name="play" size={theme.iconSize.sm} color={main} accessibilityElementsHidden />
       <AppText variant="title" weight="semibold" color={main}>Reels</AppText>
       <AppText variant="title" color={secondary}>•</AppText>
       <AppText variant="title" color={secondary}>Shop</AppText>

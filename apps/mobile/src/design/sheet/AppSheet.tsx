@@ -30,6 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/design/theme';
 import { useReduceMotion } from '@/design/motion';
 import { MOTION } from '@/design/tokens.generated';
+import { SHEET_CORNER_RADIUS } from '@/design/tokens.mobile';
 import { SheetBackdrop } from '@/design/sheet/SheetBackdrop';
 import {
   SHEET_SPRING, nextTranslate, panMovesSheet, shouldDismiss,
@@ -43,10 +44,16 @@ export interface AppSheetProps {
   onDismiss: () => void;
   onClosed?: () => void;
   header?: ReactNode;
+  /** Optional pinned action area below the scrollable content. */
+  footer?: ReactNode;
+  /** Product-purchase sheets may sit over the page instead of covering it fully. */
+  presentation?: 'full' | 'bottom';
   children: ReactNode;
 }
 
-export function AppSheet({ open, onDismiss, onClosed, header, children }: AppSheetProps) {
+export function AppSheet({
+  open, onDismiss, onClosed, header, footer, presentation = 'full', children,
+}: AppSheetProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -58,7 +65,10 @@ export function AppSheet({ open, onDismiss, onClosed, header, children }: AppShe
    * نافذة الجهاز، حتى لا يُترك فراغ أو يُقطع جزء.
    */
   const [measuredHeight, setMeasuredHeight] = useState(windowHeight);
-  const sheetHeight = Math.max(1, measuredHeight);
+  const sheetHeight = Math.max(1, presentation === 'bottom'
+    ? Math.min(measuredHeight, Math.round(windowHeight * 0.9))
+    : measuredHeight);
+  const topInset = presentation === 'bottom' ? 8 : insets.top + 8;
 
   /** الموضع: 0 مفتوح، sheetHeight مغلق. يبدأ مغلقاً ثم يُفتح عند الظهور. */
   const translate = useRef(new Animated.Value(sheetHeight)).current;
@@ -157,31 +167,45 @@ export function AppSheet({ open, onDismiss, onClosed, header, children }: AppShe
   return (
     <View
       style={StyleSheet.absoluteFill}
-      pointerEvents="box-none"
+      /**
+       * Fermé : le tiroir ne reçoit plus aucun toucher. Sans cela, le voile transparent
+       * (opacité 0) couvre tout l'écran et bloque les boutons de la page dessous
+       * (retour, fermer, barre du bas) — c'était le cas de la page boutique.
+       */
+      pointerEvents={open ? 'box-none' : 'none'}
       onLayout={(event) => setMeasuredHeight(event.nativeEvent.layout.height)}
     >
       <SheetBackdrop opacity={backdrop} onPress={onDismiss} />
       <Animated.View
         {...panResponder.panHandlers}
         style={[
-          styles.panel,
+          presentation === 'bottom' ? styles.bottomPanel : styles.panel,
           {
-            paddingTop: insets.top + 8,
+            height: presentation === 'bottom' ? undefined : sheetHeight,
+            maxHeight: presentation === 'bottom' ? sheetHeight : undefined,
+            paddingTop: topInset,
             backgroundColor: theme.colors.canvas,
+            borderTopLeftRadius: presentation === 'bottom' ? SHEET_CORNER_RADIUS : 0,
+            borderTopRightRadius: presentation === 'bottom' ? SHEET_CORNER_RADIUS : 0,
             transform: [{ translateY: translate }],
           },
         ]}
       >
-        <View style={[styles.handle, { backgroundColor: theme.colors.line }]} />
         {header}
         <ScrollView
+          style={presentation === 'bottom' ? styles.bottomScroll : styles.scroll}
           onScroll={onScroll}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + 24 }]}
+          contentContainerStyle={[styles.body, { paddingBottom: footer ? 12 : insets.bottom + 20 }]}
         >
           {children}
         </ScrollView>
+        {footer ? (
+          <View style={[styles.footer, { backgroundColor: theme.colors.canvas, borderTopColor: theme.colors.line, paddingBottom: insets.bottom + 12 }]}>
+            {footer}
+          </View>
+        ) : null}
       </Animated.View>
     </View>
   );
@@ -191,6 +215,9 @@ const styles = StyleSheet.create({
   panel: {
     position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
   },
-  handle: { alignSelf: 'center', width: 44, height: 4, borderRadius: 2, marginBottom: 6 },
-  body: { padding: 16, gap: 12 },
+  bottomPanel: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden' },
+  scroll: { flex: 1 },
+  bottomScroll: { flexGrow: 0 },
+  body: { paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
+  footer: { paddingHorizontal: 16, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
 });

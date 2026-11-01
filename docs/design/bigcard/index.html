@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ZAYROVI — Wireframe « grande fiche » par famille · 24/10/2026</title>
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   WIREFRAME — la GRANDE FICHE, une mécanique, quatre familles.
+   Ce fichier ne décide pas des couleurs (l'identité est déjà fixée) : il décide
+   de la STRUCTURE et des RÈGLES. Les blocs gris sont des emplacements assumés,
+   pas des images d'attente déguisées.
+
+   Mécanique reprise des 7 captures analysées (Marc O'Polo) :
+     1. la photo ne bouge pas (position: sticky) ;
+     2. la feuille blanche monte par-dessus en défilant ;
+     3. l'en-tête passe de transparent à blanc quand la feuille l'atteint ;
+     4. le bandeau d'achat est fixe, toujours visible ;
+     5. les choix (taille, tissu, stockage…) s'ouvrent dans une feuille séparée.
+   ───────────────────────────────────────────────────────────────────────────── */
+@font-face{font-family:"Zalando Sans";src:url("../../../client/public/fonts/editorial/zalando-sans.woff2") format("woff2");font-weight:200 900;font-display:swap}
+@font-face{font-family:"Noto Sans Arabic";src:url("../../../client/public/fonts/editorial/noto-sans-arabic.woff2") format("woff2");font-weight:100 900;font-display:swap}
+
+:root{
+  --canvas:#FFFFFF; --ink:#0A0A0A; --muted:#666666; --line:#E5E5E5; --line-strong:#888888;
+  --studio:#F2F2F2; --studio-2:#FAFAFA; --wire:#E8E8E8; --wire-line:#CFCFCF;
+  --action:#571EF6; --on-action:#FFFFFF; --danger:#A52D2D; --success:#236044;
+  --note:#F7F4FF;
+  --phone-w:390px; --phone-h:844px; --img-h:330px; --cta-h:64px; --head-h:54px;
+  --font:"Zalando Sans","Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:26px 22px 70px;background:#EFEFEF;color:var(--ink);font-family:var(--font);font-size:14px}
+.head{max-width:1220px;margin:0 auto 18px}
+.head .tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--action);margin-bottom:6px}
+.head h1{margin:0 0 6px;font-size:21px;letter-spacing:-.01em}
+.head p{margin:0;color:#555;font-size:13px;line-height:1.55;max-width:86ch}
+
+.bar{max-width:1220px;margin:0 auto 18px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font:inherit;font-size:12px;font-weight:700;padding:8px 12px;border-radius:999px;border:1px solid #D6D6D6;background:#fff;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+.sep{width:1px;height:22px;background:#D6D6D6;margin:2px 6px}
+
+.layout{max-width:1220px;margin:0 auto;display:grid;grid-template-columns:392px minmax(380px,1fr);gap:26px;align-items:start}
+@media (max-width:1080px){.layout{grid-template-columns:1fr}}
+
+/* ── le téléphone ── */
+.device{position:relative;width:var(--phone-w);height:var(--phone-h);background:#fff;border-radius:34px;overflow:hidden;
+  box-shadow:0 22px 56px rgba(0,0,0,.22),0 0 0 9px #111,0 0 0 10px #2b2b2b;isolation:isolate}
+
+.scroller{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.scroller::-webkit-scrollbar{display:none}
+
+/* 1) photo FIXE : sticky, elle ne défile pas — c'est la feuille qui monte */
+.media{position:sticky;top:0;height:var(--img-h);z-index:0;background:var(--wire);
+  display:flex;align-items:center;justify-content:center;overflow:hidden}
+.media .ph{position:absolute;inset:14px;border:1px dashed var(--wire-line);border-radius:6px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#8a8a8a;text-align:center;padding:10px}
+.media .ph b{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#6f6f6f}
+.media .ph span{font-family:var(--mono);font-size:10px;line-height:1.5}
+.media .dotrail{position:absolute;bottom:12px;left:0;right:0;display:flex;gap:5px;justify-content:center}
+.media .dotrail i{width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,.22)}
+.media .dotrail i[data-on]{background:rgba(0,0,0,.72)}
+.media .badge{position:absolute;top:calc(var(--head-h) + 10px);left:12px;background:var(--danger);color:#fff;
+  font-size:11px;font-weight:700;padding:4px 8px;border-radius:3px}
+.media .mannequin{position:absolute;bottom:44px;left:12px;right:12px;background:#fff;font-size:11px;padding:6px 8px;border:1px solid var(--line)}
+
+/* 3) en-tête : transparent, puis blanc */
+.topbar{position:absolute;top:0;left:0;right:0;height:var(--head-h);z-index:6;display:flex;align-items:center;
+  gap:10px;padding:0 10px;background:transparent;transition:background .18s ease,border-color .18s ease;border-bottom:1px solid transparent}
+.topbar[data-solid="true"]{background:var(--canvas);border-bottom-color:var(--line)}
+.topbar .ttl{flex:1;font-size:14px;font-weight:700;opacity:0;transition:opacity .18s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar[data-solid="true"] .ttl{opacity:1}
+.iconbtn{width:40px;height:40px;border:0;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink);border-radius:50%}
+.topbar:not([data-solid="true"]) .iconbtn{background:rgba(255,255,255,.86);color:var(--ink)}
+.cartbtn{position:relative}
+.cartbtn .n{position:absolute;top:4px;right:3px;min-width:15px;height:15px;border-radius:999px;background:var(--action);color:#fff;
+  font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px}
+
+/* 2) la feuille : blanche, monte par-dessus la photo */
+.sheet{position:relative;z-index:2;background:var(--canvas);border-radius:16px 16px 0 0;margin-top:-16px;
+  padding:16px 16px calc(var(--cta-h) + 28px);min-height:calc(var(--phone-h) - 60px);box-shadow:0 -8px 22px rgba(0,0,0,.08)}
+
+.row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.brand{font-size:15px;font-weight:700}
+.sub{font-size:13px;color:var(--muted);margin-top:2px}
+.price{font-size:17px;font-weight:700;white-space:nowrap;text-align:right}
+.price s{display:block;font-size:11px;color:var(--muted);font-weight:400}
+h2.title{font-size:16px;line-height:1.32;margin:10px 0 0;font-weight:600}
+
+.assist{margin-top:14px;background:var(--note);border-radius:10px;padding:12px;display:flex;gap:10px;align-items:flex-start}
+.assist .ico{width:26px;height:26px;flex:none;border:1px dashed var(--wire-line);border-radius:6px;background:#fff}
+.assist p{margin:0;font-size:13px;line-height:1.35}
+.assist a{display:inline-block;margin-top:6px;font-size:13px;font-weight:700;color:var(--ink);text-decoration:underline}
+
+.field{margin-top:8px;border-top:1px solid var(--line);padding-top:12px}
+.field .fh{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;padding:0;cursor:pointer;font:inherit;text-align:start}
+.field .fh .ic{width:22px;height:22px;border:1px dashed var(--wire-line);border-radius:5px;flex:none}
+.field .fh .lbl{flex:1;font-size:15px;font-weight:700}
+.field .fh .val{font-size:13px;color:var(--muted)}
+.field .fh .chev{width:18px;color:var(--muted)}
+.field .body{padding-top:12px}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.opt{font:inherit;font-size:12.5px;padding:8px 12px;border:1px solid var(--line-strong);border-radius:8px;background:#fff;cursor:pointer;position:relative}
+.opt[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.opt[disabled]{color:#B5B5B5;border-color:var(--line);cursor:not-allowed;text-decoration:line-through}
+.opt .st{display:block;font-size:10px;color:var(--muted);text-decoration:none}
+
+.swatches{display:flex;gap:10px;flex-wrap:wrap}
+.swatch{width:56px;text-align:center;font:inherit;font-size:11px;border:0;background:transparent;cursor:pointer;color:var(--ink)}
+.swatch i{display:block;width:56px;height:64px;border:1px dashed var(--wire-line);border-radius:6px;background:var(--studio-2);margin-bottom:4px}
+.swatch[aria-pressed="true"] i{border:2px solid var(--action)}
+.swatch small{display:block;color:var(--muted);font-size:10px}
+
+.specs{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.specs div{font-size:12px;line-height:1.35}
+.specs b{display:block;font-weight:700;font-size:11.5px}
+.specs span{color:var(--muted)}
+
+.acc{border-top:1px solid var(--line)}
+.acc > button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;background:transparent;
+  padding:14px 0;font:inherit;font-size:14px;font-weight:700;cursor:pointer;text-align:start}
+.acc > div{padding:0 0 14px;font-size:12.5px;color:var(--muted);line-height:1.5}
+.acc[data-open="false"] > div{display:none}
+
+.greyline{height:8px;background:var(--wire);border-radius:4px;margin:8px 0}
+.footer-links{display:flex;gap:14px;flex-wrap:wrap;margin-top:16px;font-size:12px;color:var(--muted)}
+
+/* 4) bandeau d'achat FIXE */
+.cta{position:absolute;left:0;right:0;bottom:0;height:var(--cta-h);z-index:7;display:flex;align-items:center;gap:10px;
+  padding:8px 12px;background:var(--canvas);border-top:1px solid var(--line)}
+.timer{font-size:11px;line-height:1.25;color:var(--muted);flex:none;width:86px}
+.timer b{display:block;font-size:12px;color:var(--ink);font-variant-numeric:tabular-nums}
+.buy{flex:1;height:48px;border:0;border-radius:999px;background:var(--action);color:var(--on-action);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.buy[disabled]{background:#E2E2E2;color:#9A9A9A;cursor:not-allowed}
+.buy[data-state="oos"]{background:#EFEFEF;color:var(--muted)}
+
+/* 5) feuille de choix (par-dessus tout) */
+.backdrop{position:absolute;inset:0;background:rgba(10,10,10,.42);z-index:8;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.backdrop[data-on="true"]{opacity:1;pointer-events:auto}
+.sizesheet{position:absolute;left:0;right:0;bottom:0;z-index:9;background:var(--canvas);border-radius:16px 16px 0 0;
+  padding:8px 16px calc(var(--cta-h) + 20px);transform:translateY(102%);transition:transform .28s cubic-bezier(.22,.61,.36,1);max-height:80%;overflow:auto}
+.sizesheet[data-on="true"]{transform:translateY(0)}
+.sizesheet .grab{width:36px;height:4px;border-radius:999px;background:#D6D6D6;margin:0 auto 10px}
+.sizesheet h3{margin:0 0 10px;font-size:15px}
+.sizesheet .assist{margin:0 0 10px}
+.sizegrid{display:grid;grid-template-columns:1fr;gap:0}
+.sizegrid button{display:flex;align-items:center;justify-content:space-between;gap:12px;border:0;border-top:1px solid var(--line);
+  background:transparent;padding:14px 2px;font:inherit;font-size:14px;cursor:pointer;text-align:start}
+.sizegrid button span.note{font-size:12px;color:var(--action)}
+.sizegrid button[disabled]{color:#B5B5B5;cursor:not-allowed}
+.sizegrid button[disabled] span.note{color:#B5B5B5}
+
+/* ── panneau de spécification ── */
+.panel{display:flex;flex-direction:column;gap:16px}
+.card{background:#fff;border:1px solid #DCDCDC;border-radius:12px;overflow:hidden}
+.card > header{padding:11px 14px;border-bottom:1px solid #E8E8E8;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.card > header h3{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#333}
+.card > header span{font-size:11px;color:#888}
+.card .in{padding:12px 14px}
+.card table{width:100%;border-collapse:collapse;font-size:12px}
+.card th,.card td{text-align:left;padding:6px 4px;border-bottom:1px solid #F0F0F0;vertical-align:top}
+.card th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:#888}
+.card code{font-family:var(--mono);font-size:11px;background:#F6F6F6;padding:1px 4px;border-radius:3px}
+.card ol,.card ul{margin:0;padding-inline-start:18px;font-size:12.5px;line-height:1.6}
+.layers{display:grid;gap:6px;font-size:12px}
+.layer{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:start;padding:6px 0;border-bottom:1px solid #F2F2F2}
+.layer b{display:inline-block;width:22px;height:22px;border-radius:6px;background:#0A0A0A;color:#fff;font-size:11px;text-align:center;line-height:22px}
+.hint{font-size:12px;color:#666;line-height:1.55}
+.badge-ok{color:var(--success);font-weight:700}
+.badge-no{color:var(--danger);font-weight:700}
+
+/* annotations (cotes) */
+.annot{position:absolute;inset:0;z-index:20;pointer-events:none;display:none}
+.annot[data-on="true"]{display:block}
+.annot .hl{position:absolute;border:1px dashed rgba(87,30,246,.9)}
+.annot .lbl{position:absolute;font-family:var(--mono);font-size:10px;background:#241046;color:#fff;padding:2px 5px;border-radius:3px;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <span class="tag">Wireframe · grande fiche · 24/10/2026</span>
+  <h1>Une mécanique, quatre familles de produit</h1>
+  <p>
+    Ce n'est pas un mockup coloré : c'est la <b>structure</b>. Ce qui change d'une famille à l'autre,
+    c'est la <b>liste des champs obligatoires</b> et le <b>sélecteur</b> — jamais la mécanique :
+    photo fixe, feuille qui monte, en-tête qui blanchit, bandeau d'achat fixe, choix dans une feuille
+    séparée. Le panneau de droite documente ce que le CRM doit fournir pour que chaque bloc existe.
+  </p>
+</div>
+
+<div class="bar" role="group" aria-label="Famille et options">
+  <button class="chip" data-family="vetement" aria-pressed="true">Vêtement</button>
+  <button class="chip" data-family="chaussure" aria-pressed="false">Chaussure</button>
+  <button class="chip" data-family="canape" aria-pressed="false">Canapé</button>
+  <button class="chip" data-family="telephone" aria-pressed="false">Téléphone</button>
+  <span class="sep"></span>
+  <button class="chip" id="t-states" aria-pressed="false">États (rupture, campagne finie)</button>
+  <button class="chip" id="t-annot" aria-pressed="false">Cotes</button>
+  <button class="chip" id="t-rtl" aria-pressed="false">Arabe (RTL)</button>
+</div>
+
+<div class="layout">
+
+  <!-- ══════════════ le téléphone ══════════════ -->
+  <div class="device" id="device" data-family="vetement" data-rtl="false">
+    <div class="scroller" id="scroller">
+      <!-- 1. photo fixe -->
+      <div class="media" id="media">
+        <div class="ph" id="ph">
+          <b>Photo produit</b>
+          <span id="ph-spec">4:5 · 6 images · alt obligatoire</span>
+        </div>
+        <div class="dotrail" id="dots"></div>
+        <div class="badge" id="badge">Dernières pièces</div>
+        <div class="mannequin" id="mannequin">Notre mannequin (186 cm) porte une taille M</div>
+      </div>
+
+      <!-- 2. la feuille -->
+      <div class="sheet" id="sheet">
+        <div class="row">
+          <div>
+            <div class="brand" id="brand">Marque</div>
+            <div class="sub" id="sub">Catégorie — couleur</div>
+          </div>
+          <div class="price" id="price">
+            149,00 TND
+            <s id="oldprice">Prix conseillé 199,00 TND</s>
+          </div>
+        </div>
+
+        <h2 class="title" id="ptitle">Nom du produit</h2>
+
+        <div class="assist" id="assist">
+          <div class="ico" aria-hidden="true"></div>
+          <div>
+            <p>Vous n'êtes pas sûr·e de votre choix ?</p>
+            <a href="#" id="assist-link">Obtenir une recommandation</a>
+          </div>
+        </div>
+
+        <!-- champs par famille (générés) -->
+        <div id="fields"></div>
+
+        <!-- caractéristiques -->
+        <div class="field">
+          <button class="fh" data-toggle="specs" aria-expanded="true">
+            <span class="ic" aria-hidden="true"></span>
+            <span class="lbl">Caractéristiques</span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 15l6-6 6 6"/></svg>
+          </button>
+          <div class="body" id="specs-body">
+            <div class="specs" id="specs"></div>
+          </div>
+        </div>
+
+        <!-- sections repliables -->
+        <div class="acc" data-open="false"><button data-acc="1">Matière et entretien <span>+</span></button><div id="acc-matiere">Champs CRM : matière principale, composition, entretien. Masqués si vides.</div></div>
+        <div class="acc" data-open="false"><button data-acc="2">Livraison et retours <span>+</span></button><div id="acc-livraison">Délais et frais lus au serveur ; politique de retour depuis le CRM. Aucun délai inventé.</div></div>
+        <div class="acc" data-open="false"><button data-acc="3">Articles similaires <span>+</span></button><div id="acc-similaires">Liste manuelle (CRM) ou même catégorie. Si aucune règle : la section disparaît.</div></div>
+
+        <div class="greyline"></div>
+        <div class="footer-links">
+          <span>Partager</span><span>Voir la marque</span><span>Signaler</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. en-tête -->
+    <div class="topbar" id="topbar" data-solid="false">
+      <button class="iconbtn" aria-label="Retour">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span class="ttl" id="topbar-title">Marque</span>
+      <button class="iconbtn cartbtn" aria-label="Panier">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 11H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+        <span class="n">2</span>
+      </button>
+    </div>
+
+    <!-- 4. bandeau d'achat fixe -->
+    <div class="cta">
+      <div class="timer" id="timer">
+        Se termine dans
+        <b id="timer-value">1j 20h 56m</b>
+      </div>
+      <button class="buy" id="buy">Ajouter au panier</button>
+    </div>
+
+    <!-- 5. feuille de choix -->
+    <div class="backdrop" id="backdrop" data-on="false"></div>
+    <div class="sizesheet" id="sizesheet" data-on="false" role="dialog" aria-label="Choisir">
+      <div class="grab" aria-hidden="true"></div>
+      <h3 id="ss-title">Sélectionnez votre taille</h3>
+      <div class="assist" id="ss-assist">
+        <div class="ico" aria-hidden="true"></div>
+        <div><p>Vous n'êtes pas sûr·e ?</p><a href="#">Guide des tailles</a></div>
+      </div>
+      <div class="sizegrid" id="ss-grid"></div>
+    </div>
+
+    <!-- annotations -->
+    <div class="annot" id="annot">
+      <div class="hl" style="top:0;left:0;right:0;height:54px"></div><div class="lbl" style="top:2px;left:6px">en-tête 54 · transparent → blanc</div>
+      <div class="hl" style="top:54px;left:0;right:0;height:276px"></div><div class="lbl" style="top:56px;left:6px">photo STICKY 330 · ne défile pas</div>
+      <div class="hl" style="top:314px;left:0;right:0;height:60px"></div><div class="lbl" style="top:316px;left:6px">feuille à +16 · chevauche la photo</div>
+      <div class="hl" style="bottom:0;left:0;right:0;height:64px"></div><div class="lbl" style="bottom:66px;left:6px">bandeau fixe 64 · 48 de cible</div>
+    </div>
+  </div>
+
+  <!-- ══════════════ panneau ══════════════ -->
+  <div class="panel">
+
+    <section class="card">
+      <header><h3 id="family-name">Vêtement</h3><span id="family-code">product_type = CLOTHING</span></header>
+      <div class="in">
+        <div id="family-desc" class="hint"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h3>Les 5 couches</h3><span>une seule mécanique</span></header>
+      <div class="in layers">
+        <div class="layer"><b>1</b><div><b>Photo fixe</b> — <code>position: sticky</code>, 330 px. Elle ne défile pas : c'est elle qui « reste » pendant que la feuille monte.</div></div>
+        <div class="layer"><b>2</b><div><b>Feuille</b> — blanche, rayon 16, marge haute −16 : elle chevauche la photo dès le premier pixel.</div></div>
+        <div class="layer"><b>3</b><div><b>En-tête</b> — transparent sur la photo ; il passe au blanc (avec le nom) quand la feuille l'atteint. Retour au transparent en remontant.</div></div>
+        <div class="layer"><b>4</b><div><b>Bandeau d'achat</b> — fixe en bas : minuteur à gauche (date du serveur), un seul bouton principal.</div></div>
+        <div class="layer"><b>5</b><div><b>Feuille de choix</b> — par-dessus tout : voile, poignée, liste. Tailles indisponibles barrées, jamais cliquables.</div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h3>Matrice des actions</h3><span>ce que chaque état fait</span></header>
+      <div class="in">
+        <table>
+          <thead><tr><th>Situation</th><th>Bandeau d'achat</th><th>Choix</th></tr></thead>
+          <tbody>
+            <tr><td>Produit sans variante</td><td>« Ajouter au panier » actif</td><td>Aucun sélecteur — rien à choisir</td></tr>
+            <tr><td>Variante obligatoire, non choisie</td><td>actif mais au clic : ouvre la feuille de choix</td><td>feuille ouverte avant tout ajout</td></tr>
+            <tr><td>Combinaison indisponible</td><td>« Indisponible » désactivé + raison</td><td>valeur barrée, non sélectionnable</td></tr>
+            <tr><td>Épuisé (tout)</td><td>désactivé, texte « Épuisé »</td><td>reste consultable, aucun ajout</td></tr>
+            <tr><td>Campagne terminée</td><td>minuteur → « Campagne terminée », bouton désactivé</td><td>inchangé</td></tr>
+            <tr><td>Prix absent / non vérifié</td><td>aucun montant, bouton désactivé + motif</td><td>inchangé</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h3>Ce que le CRM doit fournir</h3><span>sinon le bloc disparaît</span></header>
+      <div class="in">
+        <table>
+          <thead><tr><th>Bloc</th><th>Source</th><th>Si absent</th></tr></thead>
+          <tbody>
+            <tr><td>Photo + galerie</td><td><code>catalogue_media</code></td><td>fond studio, pas d'image d'attente</td></tr>
+            <tr><td>Prix TND</td><td>moteur de prix</td><td>aucun montant, ajout bloqué</td></tr>
+            <tr><td>Variantes</td><td><code>catalogue_variants</code></td><td>produit sans choix</td></tr>
+            <tr><td>Stock par variante</td><td><code>inventory_stock_items</code></td><td>« stock non vérifié », jamais « en stock »</td></tr>
+            <tr><td>« Dernières pièces »</td><td>stock réel ≤ seuil</td><td>badge masqué</td></tr>
+            <tr><td>Minuteur</td><td>campagne (date serveur)</td><td>bloc minuteur masqué</td></tr>
+            <tr><td>Recommandation de taille</td><td>guide + règles</td><td>encart entier masqué</td></tr>
+            <tr><td>Fiche mannequin</td><td>CRM (taille portée)</td><td>ligne masquée</td></tr>
+            <tr><td>Livraison / retours</td><td>logistique + CRM</td><td>section masquée</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h3>Entrées</h3><span>la fiche ne change pas selon la porte</span></header>
+      <div class="in hint">
+        <b>Reel · Story · Popup · Hero</b> ouvrent <b>cette</b> fiche, à l'identique. Seul l'attribution
+        change (<code>channel</code>, <code>contentId</code>, <code>campaignId</code>) : il est conservé pour
+        les mesures, il ne modifie ni le prix, ni le stock, ni le bouton. Un produit <i>temporaire</i>
+        (lié à un seul contenu) emprunte exactement le même chemin.
+      </div>
+    </section>
+
+    <section class="card">
+      <header><h3>Ce que ce wireframe ne montre pas</h3><span>assumé</span></header>
+      <div class="in hint">
+        Aucune image réelle, aucune couleur de produit, aucun prix contractuel : les blocs gris sont des
+        emplacements. Le rendu final (photos, palette, typographie de marque) vient après validation de
+        cette structure — sinon on maquille une décision qu'on n'a pas prise.
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────────────────────────────────
+   Une seule source pour les 4 familles : champs, sélecteur, caractéristiques.
+   Le panneau de droite en dérive les obligations — pas de tableau écrit à la main.
+   ───────────────────────────────────────────────────────────────────────────── */
+const FAMILIES = {
+  vetement: {
+    label: 'Vêtement', code: 'product_type = CLOTHING',
+    desc: "Le choix porte sur la taille et la couleur. Le guide et la recommandation existent parce qu'un vêtement se choisit sur des mesures, pas sur une photo.",
+    photo: '4:5 · 6 images · alt obligatoire',
+    brand: 'Marque', sub: 'Pull — gris', title: 'Pull col rond en maille mélangée',
+    price: '149,00 TND', old: 'Prix conseillé 199,00 TND',
+    assist: { text: "Vous n'êtes pas sûr·e de votre taille ?", link: 'Obtenir une recommandation' },
+    mannequin: 'Notre mannequin (186 cm) porte une taille M',
+    badge: 'Dernières pièces',
+    selector: { key: 'size', label: 'Taille', title: 'Sélectionnez votre taille',
+      values: [['S','Plus que 2 disponibles',false],['M','Dernier article',false],['L','Dernier article',false],['XL','Indisponible',true],['3XL','Indisponible',true]] },
+    color: { label: 'Couleur', value: 'Gris', values: ['blanc','bleu marine','bleu-gris','gris'] },
+    specs: [['Occasion','loisirs'],['Poignets','côtelés'],['Longueur','standard'],['Coupe','regular'],['Forme du col','col rond'],['Réf. modèle','5000010525']],
+  },
+  chaussure: {
+    label: 'Chaussure', code: 'product_type = SHOES',
+    desc: "La pointure n'est pas la taille d'un vêtement : on demande la pointure EU, on affiche US/UK en second, et on peut demander la longueur du pied. Le stock est par pointure, pas par couleur seule.",
+    photo: '1:1 · 5 images · vue de dessus + semelle',
+    brand: 'Marque', sub: 'Baskets basses — kaki', title: 'Baskets en cuir, semelle crantée',
+    price: '189,00 TND', old: 'Prix conseillé 239,00 TND',
+    assist: { text: 'Entre deux pointures ?', link: 'Mesurer mon pied (cm)' },
+    mannequin: '',
+    badge: 'Dernières pièces',
+    selector: { key: 'size', label: 'Pointure', title: 'Sélectionnez votre pointure',
+      values: [['40','En stock',false],['41','En stock',false],['42','Plus que 1',false],['43','Indisponible',true],['44','Indisponible',true],['45','Indisponible',true]] },
+    color: { label: 'Couleur', value: 'Kaki', values: ['noir','blanc','kaki'] },
+    specs: [['Correspondance','EU 42 · US 9 · UK 8'],['Longueur du pied','26,5 cm'],['Largeur','standard (D)'],['Semelle','caoutchouc cranté'],['Tige','cuir pleine fleur'],['Réf. modèle','AJ1-LOW-42']],
+  },
+  canape: {
+    label: 'Canapé', code: 'product_type = FURNITURE',
+    desc: "Un canapé ne se choisit pas par « taille » : il se choisit par configuration (places, angle), tissu et dimensions. Le champ le plus important est celui qui coûte le plus cher à se tromper — ici : l'angle et la largeur.",
+    photo: '4:3 · 8 images · plan + mesures cotées',
+    brand: 'Marque', sub: 'Canapé d’angle — tissu chiné', title: 'Canapé 4 places avec méridienne',
+    price: '2 490,00 TND', old: '',
+    assist: { text: 'Vérifiez que ça passe chez vous', link: 'Vérifier largeur / hauteur de porte' },
+    mannequin: '',
+    badge: '',
+    selector: { key: 'config', label: 'Configuration', title: 'Choisissez la configuration',
+      values: [['3 places','2 190 TND',false],['4 places + méridienne','2 490 TND',false],['Angle gauche','Indisponible',true],['Angle droit','Indisponible',true]] },
+    color: { label: 'Tissu', value: 'Chiné beige', values: ['chiné beige','velours vert','lin écru'] },
+    specs: [['Dimensions','L 280 × P 95 × H 84 cm'],['Assise','H 44 cm'],['Matière','chiné 100 % polyester'],['Structure','bois massif'],['Livraison','sur rendez-vous · 2 personnes'],['Réf. modèle','SOFA-ANG-280']],
+  },
+  telephone: {
+    label: 'Téléphone', code: 'product_type = ELECTRONICS',
+    desc: "Le choix porte sur le stockage (qui change le prix), puis la couleur. L'état — neuf ou reconditionné — et la garantie ne sont pas des options décoratives : ils changent ce que le client achète.",
+    photo: '1:1 · 6 images · face, dos, tranche',
+    brand: 'Marque', sub: 'Smartphone — 128 Go', title: 'Smartphone 6,1" — double SIM',
+    price: '2 890,00 TND', old: '',
+    assist: { text: 'Besoin d’aide pour choisir la capacité ?', link: 'Comparer les stockages' },
+    mannequin: '',
+    badge: '',
+    selector: { key: 'storage', label: 'Stockage', title: 'Choisissez le stockage',
+      values: [['128 Go','2 890 TND',false],['256 Go','3 190 TND',false],['512 Go','Indisponible',true]] },
+    color: { label: 'Couleur', value: 'Gris sidéral', values: ['gris sidéral','argent','bleu'] },
+    specs: [['RAM','8 Go'],['SIM','double nano-SIM'],['État','neuf'],['Garantie','12 mois'],['Écran','6,1" OLED'],['Réf. modèle','PHN-128-GR']],
+  },
+};
+
+const el = (id) => document.getElementById(id);
+const device = el('device');
+let family = 'vetement';
+let campaignEnded = false;
+let annotated = false;
+
+/* ── champs par famille ── */
+function renderFamily() {
+  const f = FAMILIES[family];
+  device.dataset.family = family;
+  el('family-name').textContent = f.label;
+  el('family-code').textContent = f.code;
+  el('family-desc').textContent = f.desc;
+  el('ph-spec').textContent = f.photo;
+  el('brand').textContent = f.brand;
+  el('sub').textContent = f.sub;
+  el('ptitle').textContent = f.title;
+  el('topbar-title').textContent = f.brand;
+  el('price').firstChild.textContent = ` ${f.price} `;
+  el('oldprice').textContent = f.old;
+  el('oldprice').style.display = f.old ? 'block' : 'none';
+  el('mannequin').textContent = f.mannequin;
+  el('mannequin').style.display = f.mannequin ? 'block' : 'none';
+  el('badge').textContent = f.badge;
+  el('badge').style.display = f.badge ? 'block' : 'none';
+  el('assist').querySelector('p').textContent = f.assist.text;
+  el('assist-link').textContent = f.assist.link;
+
+  /* sélecteur + couleur : deux champs, jamais trois lignes de diagnostic */
+  const fields = el('fields');
+  fields.innerHTML = `
+    <div class="field">
+      <button class="fh" id="open-selector" aria-expanded="false">
+        <span class="ic" aria-hidden="true"></span>
+        <span class="lbl">${f.selector.label}</span>
+        <span class="val" id="selector-value">Choisir</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+    <div class="field">
+      <button class="fh" aria-expanded="true">
+        <span class="ic" aria-hidden="true"></span>
+        <span class="lbl">${f.color.label}</span>
+        <span class="val">${f.color.value}</span>
+      </button>
+      <div class="body">
+        <div class="swatches">
+          ${f.color.values.map((v) => `
+            <button class="swatch" aria-pressed="${v === f.color.value}" data-swatch="${v}">
+              <i aria-hidden="true"></i>${v}
+            </button>`).join('')}
+        </div>
+      </div>
+    </div>`;
+
+  el('specs').innerHTML = f.specs.map(([k, v]) => `<div><b>${k}</b><span>${v}</span></div>`).join('');
+
+  /* feuille de choix */
+  el('ss-title').textContent = f.selector.title;
+  el('ss-grid').innerHTML = f.selector.values.map(([value, note, disabled]) => `
+    <button ${disabled ? 'disabled' : ''} data-size="${value}">
+      <span>${value}</span><span class="note">${note}</span>
+    </button>`).join('');
+
+  /* état du bandeau : rupture / campagne */
+  renderBuyState();
+  el('open-selector').addEventListener('click', () => openSheet(true));
+}
+
+function renderBuyState() {
+  const buy = el('buy');
+  const timer = el('timer-value');
+  if (campaignEnded) {
+    timer.textContent = 'Campagne terminée';
+    buy.textContent = 'Offre terminée';
+    buy.disabled = true;
+    buy.dataset.state = 'ended';
+    return;
+  }
+  buy.disabled = false;
+  buy.textContent = 'Ajouter au panier';
+  delete buy.dataset.state;
+  timer.textContent = '1j 20h 56m';
+}
+
+/* ── feuille de choix ── */
+function openSheet(on) {
+  el('sizesheet').dataset.on = String(on);
+  el('backdrop').dataset.on = String(on);
+  const trigger = el('open-selector');
+  if (trigger) trigger.setAttribute('aria-expanded', String(on));
+}
+el('backdrop').addEventListener('click', () => openSheet(false));
+el('ss-grid').addEventListener('click', (e) => {
+  const button = e.target.closest('button[data-size]');
+  if (!button || button.disabled) return;
+  const value = button.dataset.size;
+  const f = FAMILIES[family];
+  el('selector-value').textContent = value;
+  /* le prix suit le choix — c'est le serveur qui le donne, pas la fiche */
+  const entry = f.selector.values.find(([v]) => v === value);
+  if (entry && /\d/.test(entry[1]) && /TND/.test(entry[1])) {
+    el('price').firstChild.textContent = ` ${entry[1]} `;
+  }
+  openSheet(false);
+});
+
+/* ── en-tête : transparent → blanc quand la feuille l'atteint ── */
+const scroller = el('scroller');
+const topbar = el('topbar');
+scroller.addEventListener('scroll', () => {
+  const solid = scroller.scrollTop >= 22;
+  if (topbar.dataset.solid !== String(solid)) topbar.dataset.solid = String(solid);
+}, { passive: true });
+
+/* ── panneau d'état : rupture / campagne ── */
+el('t-states').addEventListener('click', (e) => {
+  campaignEnded = !campaignEnded;
+  e.currentTarget.setAttribute('aria-pressed', String(campaignEnded));
+  renderBuyState();
+});
+
+/* ── cotes ── */
+el('t-annot').addEventListener('click', (e) => {
+  annotated = !annotated;
+  e.currentTarget.setAttribute('aria-pressed', String(annotated));
+  el('annot').dataset.on = String(annotated);
+});
+
+/* ── RTL ── */
+el('t-rtl').addEventListener('click', (e) => {
+  const rtl = device.dataset.rtl !== 'true';
+  device.dataset.rtl = String(rtl);
+  device.setAttribute('dir', rtl ? 'rtl' : 'ltr');
+  e.currentTarget.setAttribute('aria-pressed', String(rtl));
+});
+
+/* ── familles ── */
+document.querySelectorAll('[data-family]').forEach((button) => {
+  if (button.id === 'device') return;
+  button.addEventListener('click', () => {
+    family = button.dataset.family;
+    document.querySelectorAll('.bar [data-family]').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
+    scroller.scrollTop = 0;
+    renderFamily();
+  });
+});
+
+/* ── pastilles de galerie (6 images : la première active) ── */
+el('dots').innerHTML = Array.from({ length: 6 }, (_, i) => `<i ${i === 0 ? 'data-on' : ''}></i>`).join('');
+
+/* ── sections repliables ── */
+document.querySelectorAll('.acc > button').forEach((button) => {
+  button.addEventListener('click', () => {
+    const section = button.parentElement;
+    const open = section.dataset.open !== 'true';
+    section.dataset.open = String(open);
+    button.lastElementChild.textContent = open ? '−' : '+';
+  });
+});
+
+renderFamily();
+</script>
+</body>
+</html>

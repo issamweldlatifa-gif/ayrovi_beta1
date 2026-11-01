@@ -17,12 +17,22 @@ import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { newsCategoryText } from '@/api/labels';
 import { useNews } from '@/api/hooks';
+import { RADIUS } from '@/design/tokens.mobile';
 
 function longDate(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
 }
+
+/**
+ * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
+ * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
+ * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
+ * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
+ * vérifié par `tests/error-boundary-coverage.test.ts`.
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function NewsDetailScreen() {
   const theme = useTheme();
@@ -98,7 +108,7 @@ export default function NewsDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: { width: '100%', aspectRatio: 16 / 9, marginBottom: 12, borderRadius: 12 },
+  hero: { width: '100%', aspectRatio: 16 / 9, marginBottom: 12, borderRadius: RADIUS.md },
   actions: { gap: 10, marginTop: 12 },
   spacer: { height: 24 },
 });

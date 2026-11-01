@@ -32,6 +32,12 @@ export interface CommercePolicy {
   /** الوسائل المقبولة في الخادم (قائمة مغلقة). */
   paymentMethods: string[];
   deliveryDelay: string;
+  /**
+   * Fenêtre de retour publiée par le CRM (jours après la livraison). `null` =
+   * réglage absent ou illisible ⇒ la fiche n'affiche pas la ligne « retours »
+   * au lieu d'annoncer une durée qu'elle aurait inventée.
+   */
+  returnsDays: number | null;
   cardGateway: boolean;
   localDeliveryTND: number | null;
   expressFeeTND: number | null;
@@ -59,10 +65,13 @@ export function parseCommercePolicy(payload: unknown): CommercePolicy {
   }
   const pricing = isRecord(payload.pricing) ? payload.pricing : {};
   const capabilities = isRecord(payload.capabilities) ? payload.capabilities : {};
+  const returns = isRecord(payload.returns) ? payload.returns : {};
+  const returnsDays = num(returns.days);
   return {
     governorates: strList(payload.governorates).filter((value) => value.trim().length > 0),
     paymentMethods: strList(payload.paymentMethods).map((value) => value.toUpperCase()),
     deliveryDelay: str(payload.deliveryDelay),
+    returnsDays: returnsDays !== null && returnsDays > 0 ? Math.floor(returnsDays) : null,
     cardGateway: capabilities.cardGateway === true,
     localDeliveryTND: num(pricing.localDeliveryTND),
     expressFeeTND: num(pricing.expressFeeTND),

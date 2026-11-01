@@ -6,8 +6,8 @@ import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { LENS_COLORS } from './lensPalette';
 import { pricePresentation } from './lensView';
+import { formatAmount, formatMoney } from '@/format/money';
 
-const money = (amount: number): string => `${amount.toFixed(2)} TND`;
 
 /** Prix client : montant courant, référence barrée et réduction, rien de plus. */
 export function LensPriceBlock({
@@ -24,9 +24,9 @@ export function LensPriceBlock({
   const t = useT();
   const view = pricePresentation(candidate);
   const currentText = view.current.kind === 'tnd'
-    ? money(view.current.amount)
+    ? formatMoney(view.current.amount)
     : view.current.kind === 'original'
-      ? `${view.current.amount.toFixed(2)} ${view.current.currency}`
+      ? `${formatAmount(view.current.amount)} ${view.current.currency}`
       : t('lens.priceUnpublished');
   const discounted = view.referenceTnd != null && view.discountPercent != null && view.discountPercent > 0;
   // Rouge de baisse de prix : fixe sur une carte blanche ; sur la fiche, il suit le
@@ -42,7 +42,7 @@ export function LensPriceBlock({
           style={styles.struck}
           numberOfLines={1}
         >
-          {money(view.referenceTnd)}
+          {formatMoney(view.referenceTnd)}
         </AppText>
       ) : null}
       <View style={[styles.priceRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
@@ -56,7 +56,7 @@ export function LensPriceBlock({
         </AppText>
         {!compact && view.referenceTnd != null ? (
           <AppText variant="body" color={onWhite ? LENS_COLORS.resultMuted : theme.colors.muted} style={styles.struck} numberOfLines={1}>
-            {money(view.referenceTnd)}
+            {formatMoney(view.referenceTnd)}
           </AppText>
         ) : null}
         {discounted ? (

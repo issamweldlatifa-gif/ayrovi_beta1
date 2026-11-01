@@ -15,6 +15,7 @@ import { Animated, Easing } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { useTheme } from './theme';
+import { useReduceMotion } from './motion';
 import { SPINNER_SIZES, SPINNER_TURN_MS, spinnerDashes, type SpinnerSize } from './spinnerGeometry';
 
 export function LoadingSpinner({
@@ -28,7 +29,9 @@ export function LoadingSpinner({
   testID?: string;
 }) {
   const theme = useTheme();
-  const reduced = theme.motion.reduced === 0;
+  // Préférence système « réduire les animations » — PAS `theme.motion.reduced` : ce jeton
+  // vaut 0 (durée), donc `=== 0` était toujours vrai et le cercle ne tournait jamais.
+  const reduced = useReduceMotion();
   const turn = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {

@@ -43,7 +43,7 @@ import { createAyWebsContext } from '../src/aywebs/context';
 import { resolveAyWebsProduct } from '../src/aywebs/productResolver';
 import { addAyWebsCartItem } from '../src/aywebs/cart';
 import { createAyWebsRouter } from '../src/aywebs/routes';
-import { AYWEBS_CAPTURE_SCRIPT, AYWEBS_CAPTURE_SCRIPT_PATH } from '../src/aywebs/captureScript';
+import { AYWEBS_CAPTURE_SCRIPT, AYWEBS_CAPTURE_SCRIPT_PATH, buildAyWebsCaptureScript } from '../src/aywebs/captureScript';
 import { validateAyWebsCapturedPage, shouldVerifyWebviewCaptureInBackground } from '../src/aywebs/webviewCapture';
 import { clearAyWebsResolveCache } from '../src/aywebs/resolveCache';
 import { clearAyWebsResolveFailureCache } from '../src/aywebs/resolveCache';
@@ -372,14 +372,16 @@ describe('AYWEBs 2.1 — boutique du REGISTRE : la capture remplace la lecture s
     const page = `<!doctype html><html><head><title>Ambigu</title></head><body>
       <div class="product-price">19,99 €</div><div class="product-price">24,99 €</div></body></html>`;
     const { payload, validation } = captureFrom(page, REGISTERED_URL);
-    expect(validation.rejection).toBe('AMBIGUOUS_PRICE');
+    /* Règle Amazon (20/10/2026) : sans zone d'achat, AUCUN prix DOM n'est lu sur amazon.* — les
+       prix hors zone d'achat sont souvent des publicités. Le motif est donc « aucun texte de prix ». */
+    expect(validation.rejection).toBe('NO_PRICE_TEXT');
 
     const resolved = await resolveAyWebsProduct(h.resolver, {
       url: REGISTERED_URL, sessionId: SESSION_ID, capture: payload,
     });
     expect(h.scrapeProduct).toHaveBeenCalledTimes(1);    // la lecture serveur a repris
     expect(resolved.capture?.used).toBe(false);
-    expect(resolved.capture?.rejection).toBe('AMBIGUOUS_PRICE');
+    expect(resolved.capture?.rejection).toBe('NO_PRICE_TEXT');
     expect(resolved.product.price).toBe(129.99);         // prix du serveur, pas du client
     expect(resolved.quoteToken).toBeTruthy();            // la fiche reste utilisable
   });
@@ -610,6 +612,30 @@ describe('AYWEBs 2.1 — contrat HTTP : la boutique externe passe par le même g
     expect(registered.body.data.external_capture_allowed).toBe(false);
   });
 
+  it('/page/analyze : Zalando.com ET zalando.de — fiche ⇒ product_page, accueil ⇒ never', async () => {
+    /* Le 23/10, `zalando.de` n'était reconnu par aucune boutique : le serveur
+       répondait `on_demand` même sur l'accueil, et le client pouvait injecter
+       le lecteur sur une page de magasin. Le contrat est maintenant explicite
+       au niveau HTTP, pour la vitrine comme pour la fiche. */
+    const h = harness();
+    const analyze = async (url: string) => (await request(app(h))
+      .post('/api/v1/aywebs/page/analyze').set(SESSION).send({ url })).body.data;
+    for (const home of ['https://www.zalando.com/', 'https://www.zalando.de/']) {
+      const page = await analyze(home);
+      expect(page.registered, home).toBe(true);
+      expect(page.capture_injection, home).toBe('never');
+    }
+    for (const product of [
+      'https://www.zalando.com/nike-air-force-1-weiss-ni111a0s2-a0011.html',
+      'https://www.zalando.de/nike-air-force-1-weiss-ni111a0s2-a0011.html',
+    ]) {
+      const page = await analyze(product);
+      expect(page.registered, product).toBe(true);
+      expect(page.capture_injection, product).toBe('product_page');
+    }
+    expect(h.scrapeProduct).not.toHaveBeenCalled();
+  });
+
   it('POST /product/resolve : capture corroborée acceptée, zéro requête marchande', async () => {
     const h = harness();
     const { payload } = captureFrom(JSON_LD_PAGE);
@@ -684,5 +710,41 @@ describe('AYWEBs 2.1 — le script est servi par le serveur (pas de version d’
     expect(response.headers['content-type']).toContain('javascript');
     expect(response.text).toContain('priceCandidates');
     expect(response.text).not.toMatch(/token|secret|password/i);
+  });
+
+  it('GET /capture/script.js?store_id=... sert le bundle/version du marchand', async () => {
+    const h = harness();
+    const app = express();
+    app.use(express.json());
+    app.use((req, _res, next) => { (req as any).requestId = 'capture-reader-request'; next(); });
+    app.use('/api/v1/aywebs', createAyWebsRouter(h.db, h.scraper as any));
+
+    const amazon = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=amazon');
+    expect(amazon.status).toBe(200);
+    expect(amazon.headers['x-aywebs-capture-reader']).toBe('amazon');
+    expect(amazon.headers['x-aywebs-capture-reader-version']).toBe('5');
+    expect(amazon.text).toBe(buildAyWebsCaptureScript('amazon'));
+    expect(amazon.text).not.toBe(AYWEBS_CAPTURE_SCRIPT);
+    const zalando = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=zalando');
+    expect(zalando.status).toBe(200);
+    expect(zalando.headers['x-aywebs-capture-reader']).toBe('zalando');
+    expect(zalando.headers['x-aywebs-capture-reader-version']).toBe('2');
+    expect(zalando.text).toBe(buildAyWebsCaptureScript('zalando'));
+    expect(zalando.text).not.toBe(amazon.text);
+    expect(zalando.text).not.toBe(AYWEBS_CAPTURE_SCRIPT);
+    const oldClient = await request(app).get('/api/v1/aywebs/capture/script.js');
+    expect(oldClient.text).toBe(AYWEBS_CAPTURE_SCRIPT);
+    expect(oldClient.headers['x-aywebs-capture-reader']).toBe('legacy');
+
+    const sephora = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=sephora');
+    expect(sephora.status).toBe(200);
+    expect(sephora.headers['x-aywebs-capture-reader']).toBe('sephora');
+    expect(sephora.headers['x-aywebs-capture-reader-version']).toBe('1');
+    expect(sephora.text).toContain('"priceMode":"structured_only"');
+
+    const primark = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=primark');
+    expect(primark.headers['x-aywebs-capture-reader']).toBe('primark');
+    expect(primark.text).toContain('"priceMode":"structured_only"');
+    expect(primark.text).not.toBe(sephora.text);
   });
 });

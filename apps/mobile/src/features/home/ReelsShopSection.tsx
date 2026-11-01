@@ -85,7 +85,7 @@ export function ReelsShopSection() {
                     {item.posterUrl ? (
                       <AppImage uri={mediaUrl(item.posterUrl)} style={StyleSheet.absoluteFill} contentFit="cover" decorative />
                     ) : (
-                      <Ionicons name="play-circle-outline" size={44} color={theme.colors.muted} accessibilityElementsHidden />
+                      <Ionicons name="play-circle-outline" size={theme.iconSize.xl} color={theme.colors.muted} accessibilityElementsHidden />
                     )}
                   </View>
                   {item.title ? (

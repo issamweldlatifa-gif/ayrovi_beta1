@@ -29,6 +29,7 @@ import { sendInteraction } from '@/api/social';
 import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 import type { StoryItem } from '@/api/sections';
 import { useSessionId } from '@/session/session';
+import { RADIUS } from '@/design/tokens.mobile';
 
 /** مدّة الستوري الواحد: صورة 6 ثوانٍ، فيديو مدّته من الخادم. */
 const IMAGE_DURATION_MS = 6_000;
@@ -134,7 +135,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
               <Animated.View
                 style={{
                   height: '100%',
-                  borderRadius: 999,
+                  borderRadius: RADIUS.full,
                   backgroundColor: theme.colors.accent,
                   width: position === index
                     ? progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] })
@@ -153,7 +154,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
             onPress={onClose}
             style={styles.close}
           >
-            <Ionicons name="close" size={26} color={theme.colors.onMedia} />
+            <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.onMedia} />
           </Pressable>
         </View>
 
@@ -214,7 +215,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
               onPress={toggleLike}
               style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
             >
-              <Ionicons name={liked ? 'heart' : 'heart-outline'} size={26} color={liked ? theme.colors.accentOnMedia : theme.colors.onMedia} />
+              <Ionicons name={liked ? 'heart' : 'heart-outline'} size={theme.iconSize.md} color={liked ? theme.colors.accentOnMedia : theme.colors.onMedia} />
             </Pressable>
 
             {signedIn ? null : (
@@ -242,7 +243,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
 const styles = StyleSheet.create({
   root: { flex: 1 },
   bars: { flexDirection: 'row', gap: 4, paddingHorizontal: 10, paddingTop: 8 },
-  barTrack: { flex: 1, height: 3, borderRadius: 999, overflow: 'hidden' },
+  barTrack: { flex: 1, height: 3, borderRadius: RADIUS.full, overflow: 'hidden' },
   topRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 10, paddingTop: 8 },
   close: { padding: 4 },
   tapZone: { position: 'absolute', top: 0, bottom: 0, width: '33%', zIndex: 2 },

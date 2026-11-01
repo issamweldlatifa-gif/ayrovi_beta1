@@ -1,73 +1,187 @@
 /**
- * Carte « produit lié » d'un contenu (Reel, Publication, Story).
+ * Carte « article » d'un contenu (Reel, Publication, Story).
  *
- * • variante `row`     : bandeau horizontal (publications, stories) ;
- * • variante `overlay` : bloc posé sur la vidéo (Reels plein écran).
+ * ── Refonte du 24/10/2026 — planche `docs/design/reel/compare/mockup-v4-24-10.png`
+ * Réécrite **de zéro** d'après le modèle mesuré au pixel (663×303 px sur un écran
+ * de 720 : photo en bande de 30 % pleine hauteur, marque au-dessus du titre, prix
+ * juste dessous, cœur en haut à droite). Ce qui a changé :
+ *   • **plus de bordure ni d'ombre** : la carte est un aplat blanc qui flotte ;
+ *   • la photo n'est plus un carré en retrait mais une **bande rectangulaire
+ *     collée aux bords**, seul le rayon extérieur arrondit les angles ;
+ *   • **la marque est revenue** (elle manquait : le serveur public ne la
+ *     transmettait pas) ;
+ *   • les cotes sont celles du modèle : 362×165 à 390 dp, rayon 11 ;
+ *   • **la carte prend la largeur de l'écran** moins 28 (12 de marge, 7 d'écart,
+ *     9 d'amorce) : 332 dp sur un écran de 360, comme le modèle mesuré.
  *
- * « Découvrir » ouvre la page produit DE L'APPLICATION (`/product/[id]`), jamais un site.
- * Un produit indisponible reste cliquable : la page produit affiche son état réel.
+ * **La carte entière est pressable.** Il n'y a pas de bouton « Découvrir » : dans
+ * une barre posée sur la vidéo, un bouton à côté d'une photo volait la place du
+ * titre et promettait une action que la carte fait déjà.
+ *
+ * Cotes : `@/design/articleCard` (contrôlées par `tests/article-card-contract.test.ts`
+ * contre `shared/articleCard.ts` et la maquette `docs/design/reel/assets/card.css`).
+ *
+ * ── Ce qui n'est jamais fabriqué ─────────────────────────────────────────────
+ * • pas de photo → fond studio, pas d'image d'attente déguisée en produit ;
+ * • photo en `contain` : on ne rogne pas le produit pour remplir la bande ;
+ * • pas de prix → aucun montant (jamais « — » ni un prix recalculé ici) ;
+ * • pas de marque → la ligne disparaît, le titre remonte (aucun trou) ;
+ * • disponibilité : seul un `false` explicite s'écrit « indisponible ».
+ *
+ * La navigation reste interne : `/product/[id]`, jamais un site marchand.
  */
-import { View, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppImage } from '@/design/appImage';
-import { AppText, Button } from '@/design/ui';
+import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
+import { ARTICLE_CARD, articleCardSize } from '@/design/articleCard';
 import type { LinkedProduct } from '@/api/linkedProduct';
+import { formatAmount } from '@/format/money';
 
 export interface LinkedProductCardProps {
   product: LinkedProduct;
+  /** `overlay` = posée sur la vidéo d'un Reel (même cotes, aucun fond autour). */
   variant?: 'row' | 'overlay';
   onOpen?: (product: LinkedProduct) => void;
+  /** Fourni seulement si l'écran sait gérer les favoris ; sinon aucun cœur. */
+  onToggleFavorite?: (product: LinkedProduct) => void;
+  favourite?: boolean;
   testID?: string;
 }
 
-export function LinkedProductCard({ product, variant = 'row', onOpen, testID }: LinkedProductCardProps) {
+export function LinkedProductCard({
+  product, variant = 'row', onOpen, onToggleFavorite, favourite = false, testID,
+}: LinkedProductCardProps) {
   const theme = useTheme();
   const t = useT();
+  const { width: viewport } = useWindowDimensions();
+  // Cotes du modèle pour CET écran : 332×151 sur 360 dp, 362×165 sur 390 dp.
+  const size = articleCardSize(viewport);
   const overlay = variant === 'overlay';
+  const id = product.id;
 
   const open = () => {
     if (onOpen) onOpen(product);
-    else router.push({ pathname: '/product/[id]', params: { id: product.id } });
+    else router.push({ pathname: '/product/[id]', params: { id } });
   };
 
+  const price = `${formatAmount(product.price)} ${product.currency}`;
+  const brand = (product.brand || '').trim();
+  const label = [brand, product.name, price].filter(Boolean).join(' — ');
+
   return (
-    <View
-      testID={testID ?? `linked-product-${product.id}`}
-      style={[
+    <Pressable
+      testID={testID ?? `linked-product-${id}`}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint={t('shopping.discover')}
+      onPress={open}
+      style={({ pressed }) => [
         styles.card,
         overlay ? styles.overlay : null,
-        // Carte produit : fond BLANC (identité — « بطاقات المنتجات »), filet gris léger.
-        { backgroundColor: theme.colors.canvas, borderRadius: theme.radius.card, borderColor: theme.colors.line },
+        {
+          backgroundColor: theme.colors.canvas,
+          borderRadius: ARTICLE_CARD.radius,
+          width: size.width,
+          height: size.height,
+          opacity: pressed ? theme.opacity.dimmed : 1,
+        },
       ]}
     >
-      <AppImage
-        uri={product.image ? mediaUrl(product.image) : null}
-        style={[styles.thumb, { borderRadius: theme.radius.control }]}
-        contentFit="cover"
-        accessibilityLabel={product.name}
-        decorative={!product.name}
-      />
-      <View style={styles.body}>
-        <AppText variant="label" weight="bold" numberOfLines={2}>{product.name}</AppText>
-        <AppText variant="caption" color={theme.colors.secondary}>
-          {`${product.price.toFixed(2)} ${product.currency}`}
-        </AppText>
-        {!product.available ? (
-          <AppText variant="caption" color={theme.colors.muted}>{t('shopping.unavailable')}</AppText>
+      {/* Bande photo : rectangle franc, pleine hauteur, découpé par le rayon de la carte. */}
+      <View style={[styles.shot, { width: size.thumb, backgroundColor: theme.colors.shimmer }]}>
+        {product.image ? (
+          <AppImage
+            uri={mediaUrl(product.image)}
+            style={StyleSheet.absoluteFill}
+            contentFit="contain"
+            accessibilityLabel={product.name}
+            decorative={false}
+          />
         ) : null}
       </View>
-      <Button label={t('shopping.discover')} onPress={open} testID={`linked-product-cta-${product.id}`} />
-    </View>
+
+      <View style={styles.body}>
+        {brand ? (
+          <AppText variant="label" weight="bold" numberOfLines={1} style={styles.brand}>
+            {brand}
+          </AppText>
+        ) : null}
+        <AppText variant="caption" numberOfLines={ARTICLE_CARD.titleLines} style={styles.title}>
+          {product.name}
+        </AppText>
+        <AppText variant="caption" weight="bold" color={theme.colors.ink} style={styles.price}>
+          {price}
+        </AppText>
+        {product.available === false ? (
+          <AppText variant="caption" color={theme.colors.muted} numberOfLines={1} style={styles.note}>
+            {t('shopping.unavailable')}
+          </AppText>
+        ) : null}
+      </View>
+
+      {onToggleFavorite ? (
+        <Pressable
+          testID={`linked-product-fav-${id}`}
+          accessibilityRole="button"
+          accessibilityState={{ selected: favourite }}
+          accessibilityLabel={favourite ? t('shopping.favouriteRemove') : t('shopping.favouriteAdd')}
+          onPress={() => onToggleFavorite(product)}
+          hitSlop={8}
+          style={styles.fav}
+        >
+          <Ionicons
+            name={favourite ? 'heart' : 'heart-outline'}
+            size={ARTICLE_CARD.favourite}
+            color={favourite ? theme.colors.accentText : theme.colors.ink}
+          />
+        </Pressable>
+      ) : null}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderWidth: StyleSheet.hairlineWidth },
-  overlay: { marginBottom: 12 },
-  thumb: { width: 56, height: 56 },
-  body: { flex: 1, gap: 2 },
+  card: {
+    // La largeur et la hauteur viennent de `articleCardSize(écran)` : aucune cote
+    // figée ne peut plus faire flotter la carte au milieu d'une bande vide.
+    maxWidth: '100%',
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    // `overflow:hidden` EST l'arrondi de la photo : aucun rembourrage, aucun trait.
+    overflow: 'hidden',
+  },
+  overlay: { marginBottom: 0 },
+  shot: {
+    alignSelf: 'stretch',
+    overflow: 'hidden',
+    flexShrink: 0,
+  },
+  // Cotes du modèle (capture 720 px) : marque à 13 du haut, puis 17, puis 14.
+  body: {
+    flex: 1,
+    minWidth: 0,
+    paddingTop: 12,
+    paddingStart: ARTICLE_CARD.gap,
+    paddingEnd: 32,
+    gap: 4,
+  },
+  brand: { fontSize: ARTICLE_CARD.brandSize, lineHeight: 18 },
+  title: { fontSize: ARTICLE_CARD.titleSize, lineHeight: 18 },
+  price: { fontSize: ARTICLE_CARD.priceSize, lineHeight: 19, marginTop: 2, fontVariant: ['tabular-nums'] },
+  note: { fontSize: ARTICLE_CARD.priceSize },
+  fav: {
+    position: 'absolute',
+    top: 6,
+    end: 4,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
