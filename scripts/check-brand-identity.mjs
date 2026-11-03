@@ -74,8 +74,8 @@ export function inspectBrandSource(file, text) {
 export function auditBrand(root=process.cwd()) {
   const errors=[];
   const identity=JSON.parse(fs.readFileSync(path.join(root,'client/src/design/editorial/identity.json'),'utf8'));
-  if (identity.typography.stack !== "'Zalando Sans', 'Noto Sans Arabic', sans-serif") errors.push('official stack changed');
-  if (identity.fonts.length!==2 || identity.fonts.map(f=>f.family).join('|')!=='Zalando Sans|Noto Sans Arabic') errors.push('official family allowlist changed');
+  if (identity.typography.stack !== "'Ayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif") errors.push('official stack changed');
+  if (identity.fonts.length!==2 || identity.fonts.map(f=>f.family).join('|')!=='Ayrovi Extracted Sans|Noto Sans Arabic') errors.push('official family allowlist changed');
   // Palette officielle (2026-10-15) : noir #0A0A0A · blanc #FFFFFF · violet électrique #571EF6 · gris clair #F2F2F2.
   // v4.2.0 : violet clair #C5B2F4 (secondaire, texte #0A0A0A) ; repère global ≈ 3 % (2 % + 1 %), pas un quota par écran.
   // Décision client n° 1 (17/10/2026) : la SURFACE devient BLANCHE — plus aucun

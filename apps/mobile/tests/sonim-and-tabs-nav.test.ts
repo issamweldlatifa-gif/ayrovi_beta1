@@ -10,6 +10,7 @@
  *   4. la normalisation des outils Sonim (`get_order_status`, `calculate_price`,
  *      `search_products`, `escalate_to_human`) et des pièces jointes multimodales.
  */
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -49,9 +50,9 @@ describe('barre du bas transparente à coins arrondis compacts (5 onglets — st
     const fontPlugin = appJson.expo.plugins.find((entry: unknown) => Array.isArray(entry) && entry[0] === 'expo-font');
     expect(fontPlugin).toBeTruthy();
     expect(fontPlugin[1].fonts).toEqual([
-      './assets/fonts/ZalandoSans-Regular.ttf',
-      './assets/fonts/ZalandoSans-SemiBold.ttf',
-      './assets/fonts/ZalandoSans-Bold.ttf',
+      './assets/fonts/AyroviExtracted-Regular.ttf',
+      './assets/fonts/AyroviExtracted-SemiBold.ttf',
+      './assets/fonts/AyroviExtracted-Bold.ttf',
       './assets/fonts/NotoSansArabic-Regular.ttf',
       './assets/fonts/NotoSansArabic-Bold.ttf',
     ]);
@@ -190,26 +191,80 @@ describe('Sonim — modèle et outils serveur', () => {
   });
 });
 
-describe('parité des polices officielles Zalando Sans et feuilles compactes', () => {
-  function readTtfMetrics(relPath: string): { numGlyphs: number; usWeightClass: number } {
+describe('Ayrovi Extracted Sans — parité de la source web et du mobile', () => {
+  function readFontMetrics(relPath: string): {
+    numGlyphs: number; usWeightClass: number; version: string; family: string;
+    unitsPerEm: number; ascender: number; descender: number; lineGap: number;
+    gposSha256: string; cff: boolean; variable: boolean;
+  } {
     const buf = readFileSync(path.join(ROOT, relPath));
     const numTables = buf.readUInt16BE(4);
     let numGlyphs = 0;
     let usWeightClass = 0;
+    let headOffset = 0;
+    let hheaOffset = 0;
+    let nameTableOffset = 0;
+    let nameTableStorageOffset = 0;
+    let cff = false;
+    let variable = false;
+    let gposSha256 = '';
     for (let i = 0; i < numTables; i++) {
       const rec = 12 + i * 16;
       const tag = buf.toString('ascii', rec, rec + 4);
       const offset = buf.readUInt32BE(rec + 8);
       if (tag === 'maxp') numGlyphs = buf.readUInt16BE(offset + 4);
       if (tag === 'OS/2') usWeightClass = buf.readUInt16BE(offset + 4);
+      if (tag === 'head') headOffset = offset;
+      if (tag === 'hhea') hheaOffset = offset;
+      if (tag === 'name') {
+        nameTableOffset = offset;
+        nameTableStorageOffset = buf.readUInt16BE(offset + 4);
+      }
+      if (tag === 'CFF ') cff = true;
+      if (tag === 'fvar') variable = true;
+      if (tag === 'GPOS') {
+        const length = buf.readUInt32BE(rec + 12);
+        gposSha256 = createHash('sha256').update(buf.subarray(offset, offset + length)).digest('hex');
+      }
     }
-    return { numGlyphs, usWeightClass };
+    const names = new Map<number, string>();
+    const nameCount = buf.readUInt16BE(nameTableOffset + 2);
+    for (let i = 0; i < nameCount; i++) {
+      const rec = nameTableOffset + 6 + i * 12;
+      const platformId = buf.readUInt16BE(rec);
+      const nameId = buf.readUInt16BE(rec + 6);
+      if (![1, 2, 5, 16].includes(nameId)) continue;
+      const length = buf.readUInt16BE(rec + 8);
+      const stringOffset = buf.readUInt16BE(rec + 10);
+      const value = Buffer.from(buf.subarray(nameTableOffset + nameTableStorageOffset + stringOffset, nameTableOffset + nameTableStorageOffset + stringOffset + length));
+      const decoded = platformId === 0 || platformId === 3
+        ? value.swap16().toString('utf16le').replace(/\0/g, '')
+        : value.toString('ascii').replace(/\0/g, '');
+      if (!names.has(nameId) || platformId === 0 || platformId === 3) names.set(nameId, decoded);
+    }
+    return {
+      numGlyphs, usWeightClass, version: names.get(5) ?? '', family: names.get(16) ?? names.get(1) ?? '',
+      unitsPerEm: buf.readUInt16BE(headOffset + 18),
+      ascender: buf.readInt16BE(hheaOffset + 4), descender: buf.readInt16BE(hheaOffset + 6), lineGap: buf.readInt16BE(hheaOffset + 8),
+      gposSha256, cff, variable,
+    };
   }
 
-  it('embarque les 3 graisses officielles Zalando Sans (400, 600, 700 — 606 glyphes chacune) et Noto Sans Arabic', () => {
-    expect(readTtfMetrics('assets/fonts/ZalandoSans-Regular.ttf')).toEqual({ numGlyphs: 606, usWeightClass: 400 });
-    expect(readTtfMetrics('assets/fonts/ZalandoSans-SemiBold.ttf')).toEqual({ numGlyphs: 606, usWeightClass: 600 });
-    expect(readTtfMetrics('assets/fonts/ZalandoSans-Bold.ttf')).toEqual({ numGlyphs: 606, usWeightClass: 700 });
+  it('embarque les instances 400/600/700 issues du WOFF2 extrait, avec métriques verticales et GPOS conservés', () => {
+    const build = JSON.parse(readFileSync(path.resolve(ROOT, '../../assets/fonts/ayrovi-extracted-fonts.json'), 'utf8'));
+    for (const [weight, subfamily] of [[400, 'Regular'], [600, 'SemiBold'], [700, 'Bold']] as const) {
+      const relative = `assets/fonts/AyroviExtracted-${subfamily}.ttf`;
+      const bytes = readFileSync(path.join(ROOT, relative));
+      const record = build.static_instances.find((entry: { file: string }) => entry.file === `apps/mobile/${relative}`);
+      expect(record).toBeTruthy();
+      expect(createHash('sha256').update(bytes).digest('hex')).toBe(record.sha256);
+      expect(bytes.equals(readFileSync(path.resolve(ROOT, `../../assets/fonts/AyroviExtracted-${subfamily}.ttf`)))).toBe(true);
+      expect(readFontMetrics(relative)).toMatchObject({
+        numGlyphs: 438, usWeightClass: weight, version: 'Version 1.700', family: 'Ayrovi Extracted Sans',
+        unitsPerEm: 1000, ascender: 964, descender: -250, lineGap: 0,
+        gposSha256: record.gpos.sha256, cff: false, variable: false,
+      });
+    }
     expect(existsSync(path.join(ROOT, 'assets/fonts/NotoSansArabic-Regular.ttf'))).toBe(true);
     expect(existsSync(path.join(ROOT, 'assets/fonts/NotoSansArabic-Bold.ttf'))).toBe(true);
   });
@@ -234,4 +289,3 @@ describe('parité des polices officielles Zalando Sans et feuilles compactes', (
     expect(sizeSheetBlock).not.toContain('recommendBanner');
   });
 });
-

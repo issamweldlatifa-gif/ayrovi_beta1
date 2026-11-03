@@ -340,7 +340,7 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
 /**
  * Titre de section : échelle `title` (28) en gras — la taille mesurée sur la
  * référence du client (titre 561 px pour une tuile de 324 px ⇒ 310 pt à
- * l'échelle de l'application, soit exactement 28 dans Zalando Sans Bold).
+ * l'échelle de l'application, soit exactement 28 dans Ayrovi Extracted Sans Bold).
  *
  * Le chevron n'apparaît QUE si la section mène quelque part (`onPress`).
  * « Explorer les catégories » n'a pas encore d'écran dédié : elle s'affiche

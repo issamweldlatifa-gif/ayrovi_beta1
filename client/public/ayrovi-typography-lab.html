@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Laboratoire typographique local — échantillons de la typographie observée sur Zalando.fr.">
-  <title>Laboratoire typographique — Zalando Sans</title>
+  <title>Laboratoire typographique — Ayrovi Extracted Sans</title>
   <link rel="stylesheet" href="/identity.css">
   <style>
     :root {
@@ -80,7 +80,7 @@
   </div>
 
   <header class="topnav wrap">
-    <a class="wordmark" href="#top" aria-label="Zalando Sans test">Zalando</a>
+    <a class="wordmark" href="#top" aria-label="Ayrovi Extracted Sans test">Ayrovi</a>
     <nav class="navlinks" aria-label="Navigation de démonstration">
       <a href="#specimens">Femme</a>
       <a href="#specimens">Homme</a>
@@ -91,7 +91,7 @@
   <main id="top" class="wrap">
     <p class="eyebrow">LABORATOIRE TYPOGRAPHIQUE · ÉCHANTILLONS FRANÇAIS</p>
     <h1>Au-delà de vos attentes<br>Mode, beauté, luxe et plus</h1>
-    <p class="intro">Cette page de contrôle charge le fichier Zalando Sans local du projet et reproduit plusieurs tailles, graisses, interlignages et espacements observés sur la page d’accueil de Zalando.fr.</p>
+    <p class="intro">Cette page de contrôle charge le fichier Ayrovi Extracted Sans local du projet et reproduit plusieurs tailles, graisses, interlignages et espacements observés sur la page d’accueil de Zalando.fr.</p>
 
     <section id="specimens" class="section" aria-labelledby="headline-section">
       <h2 id="headline-section">Plus de marques</h2>
@@ -122,16 +122,16 @@
         <h2>Échelle des graisses variables</h2>
         <p class="section-copy">Même fichier de police, poids CSS distincts, taille identique.</p>
         <div class="weights" aria-label="Poids CSS">
-          <div class="weight-chip"><b>400 · Regular</b><span style="font-weight:400">Zalando</span></div>
-          <div class="weight-chip"><b>520 · titre observé</b><span style="font-weight:520">Zalando</span></div>
-          <div class="weight-chip"><b>650 · interface</b><span style="font-weight:650">Zalando</span></div>
-          <div class="weight-chip"><b>700 · Bold</b><span style="font-weight:700">Zalando</span></div>
+          <div class="weight-chip"><b>400 · Regular</b><span style="font-weight:400">Ayrovi</span></div>
+          <div class="weight-chip"><b>520 · titre observé</b><span style="font-weight:520">Ayrovi</span></div>
+          <div class="weight-chip"><b>650 · interface</b><span style="font-weight:650">Ayrovi</span></div>
+          <div class="weight-chip"><b>700 · Bold</b><span style="font-weight:700">Ayrovi</span></div>
         </div>
       </div>
 
       <aside class="note">
         <strong>Contrôle du chargement :</strong> <span id="font-status">vérification du fichier local…</span>
-        <div class="meta">Font stack: "Zalando Sans", Helvetica, sans-serif · WOFF2 local · fvar wght 200–900, wdth 75–125 · les métriques restent pilotées par les styles CSS ci-dessus.</div>
+        <div class="meta">Font stack: "Ayrovi Extracted Sans", Helvetica, sans-serif · WOFF2 local · fvar wght 200–900, wdth 75–125 · les métriques restent pilotées par les styles CSS ci-dessus.</div>
       </aside>
     </section>
   </main>
@@ -144,10 +144,10 @@
     (async () => {
       const status = document.getElementById('font-status');
       try {
-        await document.fonts.load('520 24px "Zalando Sans"', 'Promos, nouveautés et tendances');
-        const loaded = document.fonts.check('520 24px "Zalando Sans"');
+        await document.fonts.load('520 24px "Ayrovi Extracted Sans"', 'Promos, nouveautés et tendances');
+        const loaded = document.fonts.check('520 24px "Ayrovi Extracted Sans"');
         status.textContent = loaded
-          ? 'Zalando Sans chargé depuis /fonts/editorial/zalando-sans.woff2.'
+          ? 'Ayrovi Extracted Sans chargé depuis /fonts/editorial/ayrovi-extracted-sans.woff2.'
           : 'le navigateur a utilisé une police de remplacement.';
       } catch (error) {
         status.textContent = `échec du chargement : ${String(error.message || error)}`;

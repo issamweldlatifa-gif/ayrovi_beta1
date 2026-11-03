@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Browser audit for the app's Zalando typography profile.
- * Usage: node scripts/check-zalando-typography.mjs [base-url]
+ * Browser audit for the app's Ayrovi Extracted Sans typography profile.
+ * Usage: node scripts/check-ayrovi-typography.mjs [base-url]
  * Optional: AYROVI_ADMIN_EMAIL, AYROVI_ADMIN_PASSWORD, TYPOGRAPHY_ROUTES, TYPOGRAPHY_MAX_PAGES.
  */
 import fs from 'node:fs';
@@ -61,7 +61,7 @@ async function inspectPage(page, route, viewportName, expectedTitleSize) {
     await page.waitForTimeout(200);
     await page.evaluate(async () => {
       await Promise.race([document.fonts.ready, new Promise((resolve) => setTimeout(resolve, 4000))]);
-      await document.fonts.load('400 16px "Zalando Sans"', 'Zalando 0123456789');
+      await document.fonts.load('400 16px "Ayrovi Extracted Sans"', 'Ayrovi 0123456789');
     });
   } catch (error) {
     fail(route, viewportName, 'navigation/settling failed', String(error?.message || error));
@@ -103,7 +103,7 @@ async function inspectPage(page, route, viewportName, expectedTitleSize) {
       appRoot: Boolean(document.querySelector('#root')),
       rootHasText: Boolean(document.querySelector('#root')?.innerText?.trim()),
       body: describe(document.body),
-      fontLoaded: document.fonts.check('400 16px "Zalando Sans"'),
+      fontLoaded: document.fonts.check('400 16px "Ayrovi Extracted Sans"'),
       text,
       h1: roles('h1,.ay-text-h1'),
       h2: roles('h2,.ay-text-h2'),
@@ -113,15 +113,15 @@ async function inspectPage(page, route, viewportName, expectedTitleSize) {
     };
   });
 
-  if (!result.body.family.includes('Zalando Sans')) {
-    fail(route, viewportName, 'body font stack does not include Zalando Sans', result.body.family);
+  if (!result.body.family.includes('Ayrovi Extracted Sans')) {
+    fail(route, viewportName, 'body font stack does not include Ayrovi Extracted Sans', result.body.family);
   }
   if (result.appRoot && !result.rootHasText) fail(route, viewportName, 'React root rendered no visible content');
-  if (!result.fontLoaded) fail(route, viewportName, 'local Zalando Sans face did not load');
+  if (!result.fontLoaded) fail(route, viewportName, 'local Ayrovi Extracted Sans face did not load');
   else stats.fontLoads += 1;
 
-  const badFontNodes = result.text.filter((item) => !item.family.includes('Zalando Sans'));
-  if (badFontNodes.length) fail(route, viewportName, 'visible text falls outside the Zalando font stack', JSON.stringify(badFontNodes.slice(0, 8)));
+  const badFontNodes = result.text.filter((item) => !item.family.includes('Ayrovi Extracted Sans'));
+  if (badFontNodes.length) fail(route, viewportName, 'visible text falls outside the Ayrovi Extracted Sans stack', JSON.stringify(badFontNodes.slice(0, 8)));
   const badWeightNodes = result.text.filter((item) => !allowedWeights.has(item.weight));
   if (badWeightNodes.length) fail(route, viewportName, 'visible text uses a non-standard weight (allowed: 400, 520, 650, 700)', JSON.stringify(badWeightNodes.slice(0, 10)));
   stats.textNodes += result.text.length;
@@ -129,7 +129,7 @@ async function inspectPage(page, route, viewportName, expectedTitleSize) {
   const checkRole = (items, role, expected) => {
     for (const item of items) {
       const checks = [
-        ['font-family', item.family.includes('Zalando Sans')],
+        ['font-family', item.family.includes('Ayrovi Extracted Sans')],
         ['font-weight', item.weight === expected.weight],
         ['font-size', metricClose(item.size, expected.size)],
       ];
@@ -205,7 +205,7 @@ try {
   await browser.close();
 }
 
-console.log(`Zalando typography audit: ${stats.pages} routes; ${stats.desktop} desktop + ${stats.mobile} mobile views; ${stats.textNodes} visible text elements; ${stats.fontLoads} font loads.`);
+console.log(`Ayrovi typography audit: ${stats.pages} routes; ${stats.desktop} desktop + ${stats.mobile} mobile views; ${stats.textNodes} visible text elements; ${stats.fontLoads} font loads.`);
 console.log(`Discovered ${routes.length} same-origin route(s); visited ${visited.size} (limit ${MAX_PAGES}).`);
 console.log(`Visited routes: ${[...visited].join(', ')}`);
 if (failures.length) {
@@ -214,5 +214,5 @@ if (failures.length) {
   if (failures.length > 100) console.error(`... ${failures.length - 100} additional issue(s) omitted.`);
   process.exitCode = 1;
 } else {
-  console.log('PASS: all discovered routes use the local Zalando Sans stack, approved weights and matching role metrics.');
+  console.log('PASS: all discovered routes use the local Ayrovi Extracted Sans stack, approved weights and matching role metrics.');
 }

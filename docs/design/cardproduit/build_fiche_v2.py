@@ -3,7 +3,7 @@
 
 القواعد:
   • 2px = 1dp، الشاشة 360×800dp ⇒ 720×1600px.
-  • خط التطبيق: ZalandoSans (لاتيني) و NotoSansArabic (عربي).
+  • خط التطبيق: AyroviExtracted (لاتيني) و NotoSansArabic (عربي).
   • ما نزيدش حتى بلوك: صورة، اسم، سطر وصف، ثمن + ثمن مشطوب،
     فاصل رمادي، سطر «Taille» مسكّر، فاصل رمادي، وشريط سفلي فيه
     الثمن + زر أسود + فاصل رمادي فوقو.
@@ -23,7 +23,7 @@ PAGE = (245, 245, 245)
 
 FONT_DIR = "apps/mobile/assets/fonts"
 def latin(size, weight="Regular"):
-    return ImageFont.truetype(f"{FONT_DIR}/ZalandoSans-{weight}.ttf", size)
+    return ImageFont.truetype(f"{FONT_DIR}/AyroviExtracted-{weight}.ttf", size)
 
 def arabic(size, bold=False):
     return ImageFont.truetype(f"{FONT_DIR}/NotoSansArabic-{'Bold' if bold else 'Regular'}.ttf", size)

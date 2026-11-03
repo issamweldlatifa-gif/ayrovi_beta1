@@ -36,7 +36,7 @@ try{
     await p.setViewportSize({width,height:844});await settle(p);
     const geometry=await p.evaluate(()=>{const r=document.querySelector('.lens-results');const img=document.querySelector('.lens-results-image img');return {overflow:document.documentElement.scrollWidth>innerWidth,fit:getComputedStyle(img).objectFit,font:getComputedStyle(r).fontFamily,targets:[...r.querySelectorAll('.lens-product-dot,.lens-sheet-handle,.lens-results-chrome button')].map(n=>({w:n.getBoundingClientRect().width,h:n.getBoundingClientRect().height}))};});
     check(`${width}: image contained and page fits`,!geometry.overflow&&geometry.fit==='contain',geometry);
-    check('official font stack',geometry.font.includes('Zalando Sans')&&geometry.font.includes('Noto Sans Arabic'),geometry);
+    check('official font stack',geometry.font.includes('Ayrovi Extracted Sans')&&geometry.font.includes('Noto Sans Arabic'),geometry);
     check('44px targets',geometry.targets.every(x=>x.w>=44&&x.h>=44),geometry);
    }
    await p.setViewportSize({width:390,height:844});await settle(p);

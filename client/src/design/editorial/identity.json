@@ -59,14 +59,16 @@
   },
   "fonts": [
     {
-      "family": "Zalando Sans",
-      "file": "/fonts/editorial/zalando-sans.woff2",
+      "family": "Ayrovi Extracted Sans",
+      "file": "/fonts/editorial/ayrovi-extracted-sans.woff2",
       "weight": "200 900",
       "stretch": "75% 125%",
       "style": "normal",
       "role": "latin-ui-and-numbers",
-      "license": "/fonts/editorial/zalando-sans-OFL.txt",
-      "sha256": "ba6fc11db691debbd271564b194e37d96fab6d3d58c96574c58ce15696196a8f"
+      "license": "/fonts/editorial/ayrovi-extracted-OFL.txt",
+      "notice": "/fonts/editorial/ayrovi-extracted-NOTICE.txt",
+      "derivedFrom": "verified public-site WOFF2 v1.700; exact source SHA-256 is recorded in assets/fonts/ayrovi-extracted-fonts.json",
+      "sha256": "e7c9439f66d7b9e50bbabc350341d86cf02a4a45032fd42b4dbcfca13e35e25f"
     },
     {
       "family": "Noto Sans Arabic",
@@ -116,7 +118,7 @@
   },
   "typography": {
     "preset": "ayrovi-a",
-    "stack": "'Zalando Sans', 'Noto Sans Arabic', sans-serif",
+    "stack": "'Ayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif",
     "headingWidth": "100%",
     "bodyWeight": 400,
     "headingWeight": 520,

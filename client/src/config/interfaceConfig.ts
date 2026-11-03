@@ -8,7 +8,7 @@ export const AYROVI_FONT_STACK = FONT_STACK;
 
 export const INTERFACE_FONT_PRESETS = [{
   id: 'ayrovi-a', label: 'ZAYROVI A — identité officielle',
-  description: 'Zalando Sans + Noto Sans Arabic. Charte verrouillée, fontes locales.',
+  description: 'Ayrovi Extracted Sans + Noto Sans Arabic. Charte verrouillée, fontes locales.',
   display: AYROVI_FONT_STACK, body: AYROVI_FONT_STACK,
 }] as const;
 export type InterfaceFontPresetId = (typeof INTERFACE_FONT_PRESETS)[number]['id'];

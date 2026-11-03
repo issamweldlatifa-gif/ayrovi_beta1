@@ -1,13 +1,27 @@
 [
   {
-    "file": "assets/fonts/ZalandoSans-Regular.ttf",
-    "source": "https://raw.githubusercontent.com/zalando/sans/4e44d0864c4e37ab67fa549cd188aec8776dc948/fonts/ttf/ZalandoSans-Regular.ttf",
-    "sha256": "bb5ddbccfee73b0c1a98a50cded231363abeacb54a105cab24c8c41dd277ffb1"
+    "file": "assets/fonts/source/extracted-site-variable-v1.7.woff2",
+    "source": "verified variable font resource observed on the public site",
+    "version": "1.700 source",
+    "sha256": "ba6fc11db691debbd271564b194e37d96fab6d3d58c96574c58ce15696196a8f"
   },
   {
-    "file": "assets/fonts/ZalandoSans-Bold.ttf",
-    "source": "https://raw.githubusercontent.com/zalando/sans/4e44d0864c4e37ab67fa549cd188aec8776dc948/fonts/ttf/ZalandoSans-Bold.ttf",
-    "sha256": "d890ebbcce8e0a699ac52fa4d31531ad93ce5ffa85c463516163940443a8686d"
+    "file": "assets/fonts/AyroviExtracted-Regular.ttf",
+    "source": "scripts/build-ayrovi-extracted-fonts.py; wdth=100, wght=400",
+    "version": "1.700 derived",
+    "sha256": "1ef8892bb1f2ac963d0a3e13e78dbab56271e4d052f7e387746ab229690a42e2"
+  },
+  {
+    "file": "assets/fonts/AyroviExtracted-SemiBold.ttf",
+    "source": "scripts/build-ayrovi-extracted-fonts.py; wdth=100, wght=600",
+    "version": "1.700 derived",
+    "sha256": "0f3403b4db148bc5dc959980666a4e2120880fee11651332fbbbfb68b7397e7b"
+  },
+  {
+    "file": "assets/fonts/AyroviExtracted-Bold.ttf",
+    "source": "scripts/build-ayrovi-extracted-fonts.py; wdth=100, wght=700",
+    "version": "1.700 derived",
+    "sha256": "4c4db486b980d510b14f4203bc337b8056911fe440422d79af783239a35cff5f"
   },
   {
     "file": "assets/fonts/NotoSansArabic-Regular.ttf",

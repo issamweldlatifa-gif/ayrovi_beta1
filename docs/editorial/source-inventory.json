@@ -443,7 +443,7 @@
     {
       "file": "client/src/admin/AdminApp.tsx",
       "domain": "admin",
-      "sha256": "f2ccda695794d81051c9c391b79681ffa09750d7629093fd8badb40112ac76fa",
+      "sha256": "102be924065fd0d61976ccc236e59e3d7cf37b789019b231c6d6bb42b59febc6",
       "lines": 1042,
       "imports": [
         "../../../shared/brand.generated",
@@ -7425,7 +7425,7 @@
     {
       "file": "client/src/admin/InterfaceStudio.tsx",
       "domain": "admin",
-      "sha256": "b3c90e5a46ca7ed9d2875c20e8a75259d9f0c26bd0f1b5cca69cffd9a4d78d9e",
+      "sha256": "a1f7e439345dfa420bd8dde1b82535638cbd4a94e7e680735f6fc2f6d2d77506",
       "lines": 307,
       "imports": [
         "react",
@@ -18110,7 +18110,7 @@
     {
       "file": "client/src/config/interfaceConfig.ts",
       "domain": "shell-content",
-      "sha256": "9013ae005ed49699bcf26d084bff6ea5c78011e0f5adafe2ed9587c591ba8f5a",
+      "sha256": "eb014ae804117f190d6d9f17323d466a999a33e7b5d16cdc222a9c1bebe02fb6",
       "lines": 332,
       "imports": [
         "../../../shared/brand.generated",
@@ -19184,7 +19184,7 @@
     {
       "file": "client/src/design/editorial/tokens.generated.css",
       "domain": "shared-design",
-      "sha256": "4b45d0219cb25279d68d89b750c05d7ca9b0d408688e8a00358180a174ea9d8f",
+      "sha256": "69c44121f1500d5b7f4173a923c8762962c49621dca9f1aaa8a5c4fe544b6801",
       "lines": 78,
       "imports": [],
       "exports": [],
@@ -19213,9 +19213,9 @@
         "#FFFFFF"
       ],
       "fontDeclarations": [
-        "font-family: \"Zalando Sans\"",
+        "font-family: \"Ayrovi Extracted Sans\"",
         "font-family: \"Noto Sans Arabic\"",
-        "--ay-font-stack: 'Zalando Sans', 'Noto Sans Arabic', sans-serif",
+        "--ay-font-stack: 'Ayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif",
         "--font-primary: var(--ay-font-stack)",
         "--ayrovi-font-body: var(--ay-font-stack)",
         "--ayrovi-font-display: var(--ay-font-stack)",
@@ -23034,7 +23034,7 @@
     {
       "file": "client/src/styles/typography.css",
       "domain": "shell-content",
-      "sha256": "e6e0d42a7ab8e2f8b04e5d329b9370a0f7654770883beab11177c59f2fdc23f0",
+      "sha256": "0aa15a57fe2a18b8ce67c6a4811370f77b24ef8bbe4f8a7ff8ebdf1442da6473",
       "lines": 100,
       "imports": [],
       "exports": [],

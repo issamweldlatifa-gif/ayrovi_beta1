@@ -27,8 +27,8 @@ export async function writeSimplePdf(lines: PdfLine[], filePath: string): Promis
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
   doc.setProducer('ZAYROVI A — embedded official fonts');
-  const regular = await doc.embedFont(localFont('assets/fonts/ZalandoSans-Regular.ttf'), { subset: true });
-  const bold = await doc.embedFont(localFont('assets/fonts/ZalandoSans-Bold.ttf'), { subset: true });
+  const regular = await doc.embedFont(localFont('assets/fonts/AyroviExtracted-Regular.ttf'), { subset: true });
+  const bold = await doc.embedFont(localFont('assets/fonts/AyroviExtracted-Bold.ttf'), { subset: true });
   // Do not ship an Arabic font in Latin-only invoices unnecessarily.
   const ar = lines.some(line => arabic.test(line.text))
     ? await doc.embedFont(localFont('assets/fonts/NotoSansArabic-Regular.ttf'), { subset: true }) : null;

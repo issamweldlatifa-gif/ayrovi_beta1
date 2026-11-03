@@ -377,7 +377,7 @@ ZAYROVI ليس متجراً ولا مساعداً فقط — هو **وكيل ش�
 
 | | عادي | عريض |
 |---|---|---|
-| لاتيني | `ZalandoSans-Regular` | `ZalandoSans-Bold` |
+| لاتيني | `AyroviExtracted-Regular` | `AyroviExtracted-Bold` |
 | عربي | `NotoSansArabic-Regular` | `NotoSansArabic-Bold` |
 
 **قاعدة تقنية حاكمة** (من `theme.tsx`): الأوزان لا تُدمج على Android مع ملفّات

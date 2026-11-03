@@ -231,7 +231,7 @@ export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
 
   return <>
     <div className="admin-page-header">
-      <div><span className="admin-eyebrow">ZAYROVI ADMIN · FULL INTERFACE CONTROL</span><h1>واجهتي</h1><p>Studio des contenus et de la mise en page. La typographie officielle A est verrouillée : Zalando Sans et Noto Sans Arabic.</p></div>
+      <div><span className="admin-eyebrow">ZAYROVI ADMIN · FULL INTERFACE CONTROL</span><h1>واجهتي</h1><p>Studio des contenus et de la mise en page. La typographie officielle A est verrouillée : Ayrovi Extracted Sans et Noto Sans Arabic.</p></div>
       {canWrite && <div className="interface-header-actions"><Button variant="secondary" onClick={() => setConfig(structuredClone(DEFAULT_INTERFACE_CONFIG))}><RotateCcw size={16} />Réinitialiser</Button><Button busy={busy} onClick={save}><Save size={17} />Publier واجهتي</Button></div>}
     </div>
 
@@ -270,7 +270,7 @@ export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
         </>}
 
         {panel === 'typography' && <>
-          <section className="admin-card interface-card"><header><div><Type size={19} /><div><h2>Identité officielle ZAYROVI A</h2><p>Zalando Sans + Noto Sans Arabic : les deux seules familles autorisées. Les contenus et la mise en page restent modifiables.</p></div></div></header><div className="interface-font-presets">{INTERFACE_FONT_PRESETS.map((preset) => <button key={preset.id} type="button" disabled aria-pressed={config.typography.preset === preset.id} className={config.typography.preset === preset.id ? 'is-active' : ''} onClick={() => applyFontPreset(preset.id)} style={{ fontFamily: preset.body }}><span style={{ fontFamily: preset.display }}>Aa أب</span><strong>{preset.label}</strong><small>{preset.description}</small></button>)}</div></section>
+          <section className="admin-card interface-card"><header><div><Type size={19} /><div><h2>Identité officielle ZAYROVI A</h2><p>Ayrovi Extracted Sans + Noto Sans Arabic : les deux seules familles autorisées. Les contenus et la mise en page restent modifiables.</p></div></div></header><div className="interface-font-presets">{INTERFACE_FONT_PRESETS.map((preset) => <button key={preset.id} type="button" disabled aria-pressed={config.typography.preset === preset.id} className={config.typography.preset === preset.id ? 'is-active' : ''} onClick={() => applyFontPreset(preset.id)} style={{ fontFamily: preset.body }}><span style={{ fontFamily: preset.display }}>Aa أب</span><strong>{preset.label}</strong><small>{preset.description}</small></button>)}</div></section>
           <section className="admin-card interface-card"><header><div><Type size={19} /><div><h2>Réglages typographiques détaillés</h2><p>Polices, couleurs, échelle, rythme, alignement et espacement.</p></div></div></header><div className="admin-form">
             <Field label="Police des titres"><Select disabled value={config.typography.display} onChange={(event) => patch('typography', { display: event.target.value })} options={INTERFACE_FONT_PRESETS.map((preset) => ({ value: preset.display, label: preset.label }))} /></Field>
             <Field label="Police du contenu"><Select disabled value={config.typography.body} onChange={(event) => patch('typography', { body: event.target.value })} options={INTERFACE_FONT_PRESETS.map((preset) => ({ value: preset.body, label: preset.label }))} /></Field>

@@ -13,7 +13,7 @@ l'écran natif Android y est une maquette du fichier, pas une capture d'appareil
   vectoriel** : `client/src/design/zMark.ts` ≡ `apps/mobile/src/design/zMark.ts`
   (un test vérifie qu'ils restent identiques, et identiques au chargeur de `client/index.html`).
 - Monochrome : noir `#0A0A0A` ou blanc. Aucun violet — il reste réservé à l'action principale.
-- Logotype « Z + ZAYROVI » en Zalando Sans Bold, aux proportions de l'ancien (5,31 : 1) :
+- Logotype « Z + ZAYROVI » en Ayrovi Extracted Sans Bold, aux proportions de l'ancien (5,31 : 1) :
   à hauteur égale, même largeur — en-tête, pied de page, console et pages de connexion
   gardent exactement leur gabarit.
 - Les fichiers gardent leur nom (`client/public/media/logo-ayrovi-*`) ; leurs URL passent à

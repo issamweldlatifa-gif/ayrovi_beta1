@@ -23,7 +23,7 @@ const esc = (value) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;'
 /** Primitives SVG nommées : chaque `id` devient le nom du calque dans Figma. */
 const rect = (id, x, y, w, h, { fill = 'none', stroke = 'none', r = 0, sw = 1, opacity = 1 } = {}) =>
   `<rect id="${id}" x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" opacity="${opacity}"/>`;
-const text = (id, x, y, value, { size = 13, weight = 400, fill = '#111', anchor = 'start', spacing = 0, family = 'Zalando Sans' } = {}) =>
+const text = (id, x, y, value, { size = 13, weight = 400, fill = '#111', anchor = 'start', spacing = 0, family = 'Ayrovi Extracted Sans' } = {}) =>
   `<text id="${id}" x="${x}" y="${y}" font-family="${family}" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}" letter-spacing="${spacing}">${esc(value)}</text>`;
 const line = (id, x1, y1, x2, y2, { stroke = '#E6E6E6', sw = 1 } = {}) =>
   `<line id="${id}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${stroke}" stroke-width="${sw}"/>`;

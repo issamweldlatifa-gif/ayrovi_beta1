@@ -17,7 +17,7 @@ try{
   const ctx=await browser.newContext({locale,viewport:{width,height},reducedMotion:width===320?'reduce':'no-preference'});
   await ctx.addInitScript(locale=>localStorage.setItem('ayrovi.locale.v1',locale),locale);
   const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(base+'/__verify/states');
-  await page.locator('.editorial-voice').waitFor();await page.evaluate(async()=>{await document.fonts.load('16px "Noto Sans Arabic"');await document.fonts.load('16px "Zalando Sans"');await document.fonts.ready;});
+  await page.locator('.editorial-voice').waitFor();await page.evaluate(async()=>{await document.fonts.load('16px "Noto Sans Arabic"');await document.fonts.load('16px "Ayrovi Extracted Sans"');await document.fonts.ready;});
   for(const state of ['idle','starting','listening','user_speaking','transcribing','thinking','speaking','muted','error']){
    await page.evaluate(({state,dark})=>window.setEditorialFixture({voice:state,dark,muted:state==='muted'}),{state,dark});
    await page.locator(`[data-voice-state="${state}"][data-tone="${dark?'dark':'light'}"]`).waitFor();

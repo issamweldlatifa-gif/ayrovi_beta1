@@ -44,7 +44,7 @@ Use the semantic information tokens (`--ayrovi-info`, `--ayrovi-info-soft`) for 
 
 ## Typography
 
-The shared Zalando Sans / Noto Sans Arabic stack remains local to the project. Body defaults are weight `500`, Latin line-height `1.4`, and Arabic line-height `1.55`; headings use weight `650`, line-height `1.18` / Arabic `1.42`; prices use weight `600`. Keep important labels readable and do not increase line-height to create visual weight—use the weight token instead.
+The shared Ayrovi Extracted Sans / Noto Sans Arabic stack remains local to the project. Body defaults are weight `500`, Latin line-height `1.4`, and Arabic line-height `1.55`; headings use weight `650`, line-height `1.18` / Arabic `1.42`; prices use weight `600`. Keep important labels readable and do not increase line-height to create visual weight—use the weight token instead.
 
 ## Component contract
 

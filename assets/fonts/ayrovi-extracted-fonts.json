@@ -1,0 +1,246 @@
+{
+  "family": "Ayrovi Extracted Sans",
+  "source": "assets/fonts/source/extracted-site-variable-v1.7.woff2",
+  "source_sha256": "ba6fc11db691debbd271564b194e37d96fab6d3d58c96574c58ce15696196a8f",
+  "source_original_name_is_not_used_for_family_selection": true,
+  "source_axes": {
+    "wdth": {
+      "min": 75.0,
+      "default": 100.0,
+      "max": 125.0
+    },
+    "wght": {
+      "min": 200.0,
+      "default": 400.0,
+      "max": 900.0
+    }
+  },
+  "glyph_count": 438,
+  "unicode_mapping_count": 368,
+  "default_vertical_metrics": {
+    "units_per_em": 1000,
+    "hhea": {
+      "ascender": 964,
+      "descender": -250,
+      "line_gap": 0
+    },
+    "typo": {
+      "ascender": 964,
+      "descender": -250,
+      "line_gap": 0
+    },
+    "win": {
+      "ascent": 964,
+      "descent": 255
+    },
+    "cap_height": 714,
+    "x_height": 514
+  },
+  "web_variable": {
+    "file": "client/public/fonts/editorial/ayrovi-extracted-sans.woff2",
+    "sha256": "e7c9439f66d7b9e50bbabc350341d86cf02a4a45032fd42b4dbcfca13e35e25f"
+  },
+  "static_instances": [
+    {
+      "file": "apps/mobile/assets/fonts/AyroviExtracted-Regular.ttf",
+      "sha256": "1ef8892bb1f2ac963d0a3e13e78dbab56271e4d052f7e387746ab229690a42e2",
+      "weight": 400,
+      "subfamily": "Regular",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "888273d6a2bb8c4469d07d54b2b828ced805f5b1672331b53fa3692518c0e814",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/AyroviExtracted-Regular.ttf",
+      "sha256": "1ef8892bb1f2ac963d0a3e13e78dbab56271e4d052f7e387746ab229690a42e2",
+      "weight": 400,
+      "subfamily": "Regular",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "888273d6a2bb8c4469d07d54b2b828ced805f5b1672331b53fa3692518c0e814",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "apps/mobile/assets/fonts/AyroviExtracted-SemiBold.ttf",
+      "sha256": "0f3403b4db148bc5dc959980666a4e2120880fee11651332fbbbfb68b7397e7b",
+      "weight": 600,
+      "subfamily": "SemiBold",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "a09c08ff50e3cc9ae287462d718de768b05e5398925c7b25fad9af1995c35821",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/AyroviExtracted-SemiBold.ttf",
+      "sha256": "0f3403b4db148bc5dc959980666a4e2120880fee11651332fbbbfb68b7397e7b",
+      "weight": 600,
+      "subfamily": "SemiBold",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "a09c08ff50e3cc9ae287462d718de768b05e5398925c7b25fad9af1995c35821",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "apps/mobile/assets/fonts/AyroviExtracted-Bold.ttf",
+      "sha256": "4c4db486b980d510b14f4203bc337b8056911fe440422d79af783239a35cff5f",
+      "weight": 700,
+      "subfamily": "Bold",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "89a10b6baab2c212086abf076b3537cadb43161c294356fdb90f394ab0df49a0",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/AyroviExtracted-Bold.ttf",
+      "sha256": "4c4db486b980d510b14f4203bc337b8056911fe440422d79af783239a35cff5f",
+      "weight": 700,
+      "subfamily": "Bold",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "89a10b6baab2c212086abf076b3537cadb43161c294356fdb90f394ab0df49a0",
+        "features": 1,
+        "lookups": 2
+      }
+    }
+  ],
+  "max_coordinate_rounding_units": {
+    "static": {
+      "Regular": 0.0,
+      "SemiBold": 0.95361328125,
+      "Bold": 0.99072265625
+    },
+    "web_samples": {
+      "wdth=100,wght=400": 0.0,
+      "wdth=100,wght=520": 0.0,
+      "wdth=112.5,wght=650": 0.0,
+      "wdth=75,wght=200": 0.0,
+      "wdth=125,wght=900": 0.0
+    }
+  },
+  "validation": "Contour commands, mapped glyphs, advances, vertical metrics and GPOS positioning/anchors match; static coordinate rounding is <=1 font unit (0.1% em at 1000 UPM)."
+}

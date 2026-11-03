@@ -6,7 +6,7 @@
  *              sha256 : 69e920a38d630e8fb75f48c49ce56df6e964f69da700341995893235d7417e19
  * Structure  : client/src/design/editorial/identity.json
  *              ZAYROVI A — Official Identity · version 4.2.0
- *              sha256 : 049c7f0b569425c1d3b0a21931b1c4f50238514298176a249497c3fbb1116812
+ *              sha256 : 2e666d49dcae4cb4a9276ced11c7b604874bc7cc978da47a835be1531c476035
  *
  * Régénérer : npm run tokens:build   ·   vérifier : npm run tokens:check
  */
@@ -17,7 +17,7 @@ export const IDENTITY = {
   source: "apps/mobile/src/design/brand.json",
   structure: {
     name: "ZAYROVI A — Official Identity",
-    sha256: "049c7f0b569425c1d3b0a21931b1c4f50238514298176a249497c3fbb1116812",
+    sha256: "2e666d49dcae4cb4a9276ced11c7b604874bc7cc978da47a835be1531c476035",
     source: "client/src/design/editorial/identity.json",
     version: "4.2.0",
   },
@@ -107,10 +107,10 @@ export const SPACE = [4, 8, 12, 16, 24, 32, 48, 64, 96] as const;
 export const TYPE_SCALE = {
   body: 16,
   caption: 12,
-  display: 40,
+  display: 38,
   label: 14,
   lead: 18,
-  title: 28,
+  title: 24,
 } as const;
 
 /** Durées d’animation (ms). */
@@ -138,19 +138,19 @@ export const GEOMETRY = {
 export const TYPOGRAPHY = {
   arabicHeadingLineHeight: 1.42,
   arabicLineHeight: 1.55,
-  bodyLineHeight: 1.4,
-  bodyWeight: 500,
-  headingLineHeight: 1.18,
-  headingWeight: 650,
+  bodyLineHeight: 1.5,
+  bodyWeight: 400,
+  headingLineHeight: 1.16,
+  headingWeight: 520,
   headingWidth: "100%",
-  labelWeight: 700,
+  labelWeight: 650,
   letterSpacing: "0em",
   preset: "ayrovi-a",
-  priceWeight: 600,
-  stack: "'Zalando Sans', 'Noto Sans Arabic', sans-serif",
+  priceWeight: 520,
+  stack: "'Ayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif",
 } as const;
 
-/** Noms de familles telles que chargées par expo-font (fichiers .ttf embarqués). */
+/** Noms chargés par expo-font depuis les TTF Ayrovi Extracted Sans générés à partir du WOFF2 source. */
 export const FONTS = {
   arabic: {
     bold: "NotoSansArabic-Bold",
@@ -158,9 +158,9 @@ export const FONTS = {
     semibold: "NotoSansArabic-Bold",
   },
   latin: {
-    bold: "ZalandoSans-Bold",
-    regular: "ZalandoSans-Regular",
-    semibold: "ZalandoSans-SemiBold",
+    bold: "AyroviExtracted-Bold",
+    regular: "AyroviExtracted-Regular",
+    semibold: "AyroviExtracted-SemiBold",
   },
 } as const;
 

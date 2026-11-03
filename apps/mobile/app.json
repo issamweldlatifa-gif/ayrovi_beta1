@@ -89,9 +89,9 @@
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/ZalandoSans-Regular.ttf",
-            "./assets/fonts/ZalandoSans-SemiBold.ttf",
-            "./assets/fonts/ZalandoSans-Bold.ttf",
+            "./assets/fonts/AyroviExtracted-Regular.ttf",
+            "./assets/fonts/AyroviExtracted-SemiBold.ttf",
+            "./assets/fonts/AyroviExtracted-Bold.ttf",
             "./assets/fonts/NotoSansArabic-Regular.ttf",
             "./assets/fonts/NotoSansArabic-Bold.ttf"
           ]

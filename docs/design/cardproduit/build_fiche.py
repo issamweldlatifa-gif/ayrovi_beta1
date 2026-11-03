@@ -2,7 +2,7 @@
 
 Repères : capture du 25/10/2026 (fiche marchande) + fiche actuelle de l'app.
 Échelle : 2 px = 1 dp, écran 360 × 800 dp → 720 × 1600 px.
-Police : ZalandoSans (celle de l'application).
+Police : AyroviExtracted (celle de l'application).
 """
 from PIL import Image, ImageDraw, ImageFont
 
@@ -18,7 +18,7 @@ OK_BG = (232, 246, 236)
 
 FONT_DIR = "apps/mobile/assets/fonts"
 def font(size, weight="Regular"):
-    return ImageFont.truetype(f"{FONT_DIR}/ZalandoSans-{weight}.ttf", size)
+    return ImageFont.truetype(f"{FONT_DIR}/AyroviExtracted-{weight}.ttf", size)
 
 img = Image.new("RGB", (W, H), BG)
 d = ImageDraw.Draw(img)

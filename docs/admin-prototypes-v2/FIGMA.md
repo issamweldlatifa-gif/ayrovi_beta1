@@ -73,8 +73,8 @@ Couleurs de marque, communes aux quatre : encre `#111110`, papier `#FFFFFF`, acc
 
 ## 3. Polices
 
-- **Zalando Sans** (police de marque) : fichier dans `client/public/fonts/editorial/zalando-sans.woff2`.
-  L'installer sur le poste, ou utiliser `Zalando Sans` si le compte Figma y a accès (police Google Fonts).
+- **Ayrovi Extracted Sans** (police de marque) : fichier dans `client/public/fonts/editorial/ayrovi-extracted-sans.woff2`.
+  L'installer sur le poste, ou utiliser `Ayrovi Extracted Sans` si le compte Figma y a accès (police Google Fonts).
 - **Noto Sans Arabic** : nécessaire pour les libellés arabes (`وصلات جديدة`, `هدايا وبطاقات`, `مجلة ZAYROVI`).
 - Les maquettes HTML embarquent la police en base64 : elles s'affichent correctement sans rien installer.
 
@@ -141,5 +141,5 @@ variables du thème côté application.
 - كل موديل عندو نسختين: ملف HTML مستقل (باش تجرّب الشاشة بالحق)، وملف SVG (`figma/cadres/`) تدخّلو
   لـ Figma مباشرة وتلقى الطبقات مسمّاة والنص قابل للتعديل.
 - الألوان والمسافات والخطوط يولّي فيهم ملف `figma/tokens.json` عبر plugin **Tokens Studio**.
-- الخط: Zalando Sans موجود في الريبو، وزيد **Noto Sans Arabic** للنصوص العربية.
+- الخط: Ayrovi Extracted Sans موجود في الريبو، وزيد **Noto Sans Arabic** للنصوص العربية.
 - نستنى كلمة منك (A / B / C / D) وبعدها نحول admin ZAYROVI على الموديل اللي تختارو.

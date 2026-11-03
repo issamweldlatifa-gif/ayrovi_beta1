@@ -13,12 +13,12 @@ async function inspect(page: Page, label: string) {
   await page.evaluate(() => document.fonts.ready);
   const state = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth > innerWidth,
-    bad: [...document.querySelectorAll<HTMLElement>('h1,h2,h3,p,button,input,select,textarea,strong,small,code')].filter(e => e.getBoundingClientRect().height > 0).map(e => ({ tag: e.tagName, family: getComputedStyle(e).fontFamily })).filter(e => !e.family.includes('Zalando Sans') || !e.family.includes('Noto Sans Arabic')),
+    bad: [...document.querySelectorAll<HTMLElement>('h1,h2,h3,p,button,input,select,textarea,strong,small,code')].filter(e => e.getBoundingClientRect().height > 0).map(e => ({ tag: e.tagName, family: getComputedStyle(e).fontFamily })).filter(e => !e.family.includes('Ayrovi Extracted Sans') || !e.family.includes('Noto Sans Arabic')),
     loaded: [...document.fonts].filter(f => f.status === 'loaded').map(f => f.family),
   }));
   check(label + ': responsive', !state.overflow);
   check(label + ': all visible text and controls use the official stack', !state.bad.length, state);
-  check(label + ': actual local Latin font loaded', state.loaded.some(f => f.includes('Zalando Sans')));
+  check(label + ': actual local Latin font loaded', state.loaded.some(f => f.includes('Ayrovi Extracted Sans')));
   return state;
 }
 async function main() {

@@ -1,4 +1,4 @@
-/* ZAYROVI typography system — Zalando Sans + Noto Sans Arabic. Approved UI weights: 400, 520, 650, 700. */
+/* ZAYROVI typography system — Ayrovi Extracted Sans + Noto Sans Arabic. Approved UI weights: 400, 520, 650, 700. */
 html {
   font-family: var(--font-primary);
   font-synthesis: none;
@@ -93,7 +93,7 @@ h3, .ay-text-h3 {
   font-weight: var(--ay-font-heading-weight);
 }
 
-/* Arabic remains supplied by Noto Sans Arabic, not by Zalando Sans. */
+/* Arabic remains supplied by Noto Sans Arabic, not by Ayrovi Extracted Sans. */
 :where(h1,h2,h3,.ay-text-h1,.ay-text-h2,.ay-text-h3):lang(ar) { font-stretch: 100%; line-height: 1.6; letter-spacing: 0; }
 .ay-text-secondary { color: var(--ay-e-secondary); }
 .ay-text-muted { color: var(--ay-e-muted); }

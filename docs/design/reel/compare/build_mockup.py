@@ -45,9 +45,9 @@ DEJAVU_B = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 LATIN = lambda s, b=False: ImageFont.truetype(DEJAVU_B if b else DEJAVU, int(s))
 ar = lambda text: get_display(arabic_reshaper.reshape(text))
 
-BRAND_B = ROOT / "assets/fonts/ZalandoSans-Bold.ttf"
-BRAND_SB = ROOT / "apps/mobile/assets/fonts/ZalandoSans-SemiBold.ttf"
-BRAND_R = ROOT / "assets/fonts/ZalandoSans-Regular.ttf"
+BRAND_B = ROOT / "assets/fonts/AyroviExtracted-Bold.ttf"
+BRAND_SB = ROOT / "apps/mobile/assets/fonts/AyroviExtracted-SemiBold.ttf"
+BRAND_R = ROOT / "assets/fonts/AyroviExtracted-Regular.ttf"
 
 
 def brand_font(size: float, weight: str = "r"):

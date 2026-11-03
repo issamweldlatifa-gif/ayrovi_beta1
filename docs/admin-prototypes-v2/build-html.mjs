@@ -61,13 +61,13 @@ const stripHtml = (p) => `
         <div class="navrow"><b>Magazine · مجلة AYROVI</b><span class="state off">hidden</span><small>/magazine · order 30</small></div>`;
 
 const baseCss = (p) => `
-  @font-face{font-family:'Zalando Sans';src:url(/*AYROVI_FONT_PLACEHOLDER*/) format('woff2');font-weight:100 900;font-display:swap}
+  @font-face{font-family:'Ayrovi Extracted Sans';src:url(/*AYROVI_FONT_PLACEHOLDER*/) format('woff2');font-weight:100 900;font-display:swap}
   :root{--accent:${p.accent};--canvas:${p.canvas};--card:${p.card};--line:${p.line};--text:${p.text};--muted:${p.muted};
         --ok:${p.ok};--warn:${p.warn};--info:${p.info};--bad:${p.bad};--alt:${p.alt};--radius:${p.radius}}
   *{box-sizing:border-box}
-  html,body{margin:0;background:var(--canvas);color:var(--text);font-family:'Zalando Sans','Noto Sans Arabic',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:13px;-webkit-font-smoothing:antialiased}
+  html,body{margin:0;background:var(--canvas);color:var(--text);font-family:'Ayrovi Extracted Sans','Noto Sans Arabic',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:13px;-webkit-font-smoothing:antialiased}
   a{color:inherit;text-decoration:none}
-  .ar,[dir="rtl"]{font-family:'Zalando Sans','Noto Sans Arabic','Segoe UI',Tahoma,sans-serif}
+  .ar,[dir="rtl"]{font-family:'Ayrovi Extracted Sans','Noto Sans Arabic','Segoe UI',Tahoma,sans-serif}
   .num{font-variant-numeric:tabular-nums}
   .mono{font-weight:700}
   button{font:inherit;cursor:pointer}

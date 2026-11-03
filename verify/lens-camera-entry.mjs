@@ -22,13 +22,13 @@ for(const [engine,type] of [['chromium',chromium],['firefox',firefox]]){
    const geometry=await p.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,controls:[...document.querySelectorAll('.lens-camera-header button,.lens-camera-controls button,.lens-camera-tab')].filter(e=>!e.disabled).map(e=>({w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height})),font:getComputedStyle(document.querySelector('.lens-camera-brand')).fontFamily,weight:getComputedStyle(document.querySelector('.lens-camera-brand')).fontWeight}));
    check(`${engine}/${locale}/${width}: no overflow`,!geometry.overflow,geometry);
    check('44px targets',geometry.controls.every(x=>x.w>=44&&x.h>=44),geometry);
-   check('official stack and medium title',geometry.font.includes('Zalando Sans')&&geometry.font.includes('Noto Sans Arabic')&&geometry.weight==='500',geometry);
+   check('official stack and medium title',geometry.font.includes('Ayrovi Extracted Sans')&&geometry.font.includes('Noto Sans Arabic')&&geometry.weight==='500',geometry);
   }
   await p.setViewportSize({width:390,height:844});await p.screenshot({path:`${output}/${engine}-${locale}-camera.png`});
   if(engine==='chromium'){
    const cdp=await context.newCDPSession(p);await cdp.send('DOM.enable');await cdp.send('CSS.enable');const {root}=await cdp.send('DOM.getDocument');
    const {nodeId}=await cdp.send('DOM.querySelector',{nodeId:root.nodeId,selector:'.lens-camera-brand'});const actual=await cdp.send('CSS.getPlatformFontsForNode',{nodeId});fonts.push({locale,...actual});
-   check('title glyphs really rendered with official local Zalando Sans',actual.fonts.length>0&&actual.fonts.every(f=>f.isCustomFont&&f.familyName.includes('Zalando')),actual);
+   check('title glyphs really rendered with official local Ayrovi Extracted Sans',actual.fonts.length>0&&actual.fonts.every(f=>f.isCustomFont&&f.familyName.includes('Zalando')),actual);
   }
 
   const help=p.getByRole('button',{name:ar?'مساعدة Lens وقواعد الاستخدام':'Aide et règles de Lens',exact:true});

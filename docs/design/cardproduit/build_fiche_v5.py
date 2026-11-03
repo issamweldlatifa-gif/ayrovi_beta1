@@ -32,7 +32,7 @@ GUIDE = (255, 92, 92)
 
 FONT_DIR = "apps/mobile/assets/fonts"
 def latin(size, weight="Regular"):
-    return ImageFont.truetype(f"{FONT_DIR}/ZalandoSans-{weight}.ttf", size)
+    return ImageFont.truetype(f"{FONT_DIR}/AyroviExtracted-{weight}.ttf", size)
 
 def arabic(size, bold=False):
     return ImageFont.truetype(f"{FONT_DIR}/NotoSansArabic-{'Bold' if bold else 'Regular'}.ttf", size)
