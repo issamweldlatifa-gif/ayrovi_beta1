@@ -1,0 +1,137 @@
+/* Shared application typography profile for Ayrovi Extracted Sans. */
+:root {
+  --font-weight-regular: 400;
+  --font-weight-medium: 520;
+  --font-weight-semibold: 650;
+  --font-weight-bold: 700;
+  --font-weight-light: 400;
+}
+
+html,
+body,
+#root {
+  font-family: var(--font-primary);
+  font-stretch: var(--ay-font-body-width);
+  font-synthesis: none;
+}
+
+#root * {
+  font-family: var(--font-primary);
+  font-synthesis: none;
+}
+
+body {
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-regular);
+  font-stretch: var(--ay-font-body-width);
+  line-height: var(--text-body--line-height);
+  letter-spacing: 0;
+}
+
+:where(#root) h1,
+#root .ay-text-h1 {
+  font-family: var(--font-primary);
+  font-size: var(--text-h1);
+  font-weight: var(--ay-font-heading-weight);
+  font-stretch: var(--ay-font-heading-width);
+  line-height: var(--text-h1--line-height);
+  letter-spacing: -0.2px;
+  font-synthesis: none;
+}
+
+#root .ay-text-display {
+  font-family: var(--font-primary);
+  font-size: var(--text-display);
+  font-weight: var(--ay-font-heading-weight);
+  font-stretch: var(--ay-font-heading-width);
+  line-height: var(--text-display--line-height);
+  letter-spacing: 0;
+  font-synthesis: none;
+}
+
+:where(#root) h2,
+#root .ay-text-h2 {
+  font-family: var(--font-primary);
+  font-size: var(--text-h2);
+  font-weight: var(--ay-font-heading-weight);
+  font-stretch: var(--ay-font-heading-width);
+  line-height: var(--text-h2--line-height);
+  letter-spacing: 0;
+  font-synthesis: none;
+}
+
+/* LENS is a feature headline rather than a standard section heading. */
+#root .lens-feature__title {
+  font-family: var(--font-primary);
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: var(--ay-font-heading-weight);
+  font-stretch: var(--ay-font-heading-width);
+  line-height: 1.25;
+  letter-spacing: 0;
+  font-synthesis: none;
+}
+
+#root .stories-showcase__title {
+  font-family: var(--font-primary);
+  font-size: var(--text-h2);
+  font-weight: var(--ay-font-heading-weight);
+  font-stretch: var(--ay-font-heading-width);
+  line-height: var(--text-h2--line-height);
+  letter-spacing: 0;
+  font-synthesis: none;
+}
+
+:where(#root) h3,
+#root .ay-text-h3 {
+  font-family: var(--font-primary);
+  font-size: var(--text-h3);
+  font-weight: var(--ay-font-heading-weight);
+  font-stretch: var(--ay-font-heading-width);
+  line-height: var(--text-h3--line-height);
+  letter-spacing: 0;
+  font-synthesis: none;
+}
+
+#root nav a,
+#root .ay-text-nav {
+  font-family: var(--font-primary);
+  font-size: var(--text-nav);
+  font-weight: var(--font-weight-semibold);
+  font-stretch: var(--ay-font-body-width);
+  line-height: var(--text-nav--line-height);
+  letter-spacing: 0;
+}
+
+#root .ay-e-label,
+#root .ay-text-button,
+#root .ay-e-button,
+#root .ay-btn-primary,
+#root .ay-btn-secondary,
+#root .ay-btn-cta {
+  font-weight: var(--font-weight-semibold);
+  font-stretch: var(--ay-font-body-width);
+}
+
+#root .ay-text-button,
+#root .ay-e-button,
+#root .ay-btn-primary,
+#root .ay-btn-secondary,
+#root .ay-btn-cta {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+#root .ay-text-price {
+  font-size: var(--text-small);
+  font-weight: var(--ay-font-price-weight);
+  font-stretch: var(--ay-font-body-width);
+  line-height: var(--text-small--line-height);
+  font-variant-numeric: normal;
+  unicode-bidi: isolate;
+}
+
+#root .ay-number,
+#root .ay-e-number {
+  font-variant-numeric: normal;
+  unicode-bidi: isolate;
+}

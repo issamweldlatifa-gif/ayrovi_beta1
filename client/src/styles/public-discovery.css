@@ -29,7 +29,7 @@
 .public-page-back{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-bottom:20px;font-size:14px;font-weight:700}
 .public-page-content{padding-top:28px}
 .public-content-state{padding:36px 20px;border:1px solid #D9D9D9;text-align:center;background:#FFFFFF;color:#000000}
-.public-content-state h2{font-size:24px;line-height:1.5;font-weight:500}
+.public-content-state h2{font-size:16px;line-height:24px;font-weight:650;font-stretch:var(--ay-font-body-width);letter-spacing:0}
 .public-content-state p{margin-top:12px;line-height:1.8;color:#595959}
 .public-content-state button{margin-top:18px;min-height:44px;border:0;padding:10px 22px;background:var(--ayrovi-text-primary);color:var(--ayrovi-white);font-weight:700}
 /* Specificity keeps the admin-compatible footer adapter from repainting this black footer. */

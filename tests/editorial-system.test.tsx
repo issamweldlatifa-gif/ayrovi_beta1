@@ -43,8 +43,12 @@ describe('editorial identity, generated from one versioned source', () => {
     expect(identity.geometry.mediaRadius).toBe(0);
     expect(identity.geometry.minTarget).toBeGreaterThanOrEqual(44);
     expect(identity.geometry.iconStroke).toBe(1.5);
-    expect(identity.typography.bodyWeight).toBeGreaterThanOrEqual(500);
-    expect(identity.typography.headingWeight).toBeGreaterThan(600);
+    expect(identity.typography.bodyWeight).toBe(400);
+    expect(identity.typography.headingWeight).toBe(520);
+    expect(identity.typography.labelWeight).toBe(650);
+    expect(identity.typography.priceWeight).toBe(650);
+    expect(identity.typography.bodyWidth).toBe('102.5%');
+    expect(identity.typography.headingWidth).toBe('112.5%');
     expect(identity.typography.arabicLineHeight).toBeLessThan(1.8);
   });
   for (const tone of ['colors', 'darkColors'] as const) {

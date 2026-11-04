@@ -1,6 +1,7 @@
 /* ZAYROVI typography system — Ayrovi Extracted Sans + Noto Sans Arabic. Approved UI weights: 400, 520, 650, 700. */
 html {
   font-family: var(--font-primary);
+  font-stretch: var(--ay-font-body-width);
   font-synthesis: none;
 }
 
@@ -8,6 +9,7 @@ body {
   font-family: var(--font-primary);
   font-size: var(--text-body);
   font-weight: var(--font-weight-regular);
+  font-stretch: var(--ay-font-body-width);
   line-height: var(--text-body--line-height);
   letter-spacing: 0;
 }
@@ -18,7 +20,7 @@ h1, .ay-text-h1 {
   font-weight: var(--ay-font-heading-weight);
   font-stretch: var(--ay-font-heading-width);
   line-height: var(--text-h1--line-height);
-  letter-spacing: -.2px;
+  letter-spacing: 0;
   font-synthesis: none;
 }
 
@@ -28,7 +30,7 @@ h2, .ay-text-h2 {
   font-weight: var(--ay-font-heading-weight);
   font-stretch: var(--ay-font-heading-width);
   line-height: var(--text-h2--line-height);
-  letter-spacing: -.08px;
+  letter-spacing: 0;
   font-synthesis: none;
 }
 
@@ -46,8 +48,9 @@ h3, .ay-text-h3 {
   font-family: var(--font-primary);
   font-size: var(--text-display);
   font-weight: var(--ay-font-heading-weight);
+  font-stretch: var(--ay-font-heading-width);
   line-height: var(--text-display--line-height);
-  letter-spacing: -.2px;
+  letter-spacing: 0;
   font-synthesis: none;
 }
 
@@ -57,7 +60,7 @@ h3, .ay-text-h3 {
 .ay-text-small { font-size: var(--text-small); line-height: var(--text-small--line-height); font-weight: var(--font-weight-regular); }
 .ay-text-caption { font-size: var(--text-caption); line-height: var(--text-caption--line-height); font-weight: var(--font-weight-regular); }
 .ay-text-button { font-size: var(--text-button); line-height: var(--text-button--line-height); font-weight: var(--font-weight-semibold); }
-.ay-text-nav { font-size: var(--text-nav); line-height: var(--text-nav--line-height); font-weight: var(--font-weight-regular); }
+.ay-text-nav { font-size: var(--text-nav); line-height: var(--text-nav--line-height); font-weight: var(--font-weight-semibold); }
 .ay-text-price { font-size: var(--text-small); line-height: var(--text-small--line-height); font-weight: var(--ay-font-price-weight); font-variant-numeric: normal; unicode-bidi: isolate; }
 
 .font-black,

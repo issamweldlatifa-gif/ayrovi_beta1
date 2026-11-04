@@ -21,7 +21,17 @@ SOURCE_SHA256 = "ba6fc11db691debbd271564b194e37d96fab6d3d58c96574c58ce15696196a8
 WEB_OUT = ROOT / "client/public/fonts/editorial/ayrovi-extracted-sans.woff2"
 APP_DIR = ROOT / "apps/mobile/assets/fonts"
 PDF_DIR = ROOT / "assets/fonts"
-WEIGHTS = ((400, "Regular"), (600, "SemiBold"), (700, "Bold"))
+IDENTITY_PATH = ROOT / "client/src/design/editorial/identity.json"
+TYPOGRAPHY = json.loads(IDENTITY_PATH.read_text(encoding="utf-8"))["typography"]
+MOBILE_WIDTH = float(TYPOGRAPHY["bodyWidth"].rstrip("%"))
+HEADING_WIDTH = float(TYPOGRAPHY["headingWidth"].rstrip("%"))
+STATIC_INSTANCES = (
+    (int(TYPOGRAPHY["bodyWeight"]), "Regular", MOBILE_WIDTH),
+    (int(TYPOGRAPHY["headingWeight"]), "Medium", MOBILE_WIDTH),
+    (int(TYPOGRAPHY["labelWeight"]), "SemiBold", MOBILE_WIDTH),
+    (700, "Bold", MOBILE_WIDTH),
+    (int(TYPOGRAPHY["headingWeight"]), "Heading", HEADING_WIDTH),
+)
 FAMILY = "Ayrovi Extracted Sans"
 PS_PREFIX = "AyroviExtractedSans"
 
@@ -150,14 +160,14 @@ def main() -> None:
 
     generated = []
     static_max_deltas = {}
-    for weight, subfamily in WEIGHTS:
+    for weight, subfamily, width in STATIC_INSTANCES:
         variable_instance = TTFont(SOURCE)
-        instance = instantiateVariableFont(variable_instance, {"wdth": 100, "wght": weight}, inplace=False)
+        instance = instantiateVariableFont(variable_instance, {"wdth": width, "wght": weight}, inplace=False)
         rebrand(instance, subfamily)
         for output_dir in (APP_DIR, PDF_DIR):
             target = output_dir / f"AyroviExtracted-{subfamily}.ttf"
             data = write_font(instance, target)
-            generated.append({"file": str(target.relative_to(ROOT)), "sha256": sha256(data), "weight": weight, "subfamily": subfamily})
+            generated.append({"file": str(target.relative_to(ROOT)), "sha256": sha256(data), "weight": weight, "width": width, "subfamily": subfamily})
 
         # TTF coordinates are integer font units. Verify unchanged contours and
         # advances, allowing at most one unit for rounding the WOFF2 decimals.
@@ -185,8 +195,10 @@ def main() -> None:
             raise SystemExit("Variable axes were lost from the web font")
     web_max_deltas = {}
     for coordinates in (
-        {"wdth": 100, "wght": 400},
-        {"wdth": 100, "wght": 520},
+        {"wdth": MOBILE_WIDTH, "wght": TYPOGRAPHY["bodyWeight"]},
+        {"wdth": MOBILE_WIDTH, "wght": TYPOGRAPHY["headingWeight"]},
+        {"wdth": MOBILE_WIDTH, "wght": TYPOGRAPHY["labelWeight"]},
+        {"wdth": HEADING_WIDTH, "wght": TYPOGRAPHY["headingWeight"]},
         {"wdth": 112.5, "wght": 650},
         {"wdth": 75, "wght": 200},
         {"wdth": 125, "wght": 900},
@@ -233,7 +245,7 @@ def main() -> None:
             continue
         derived_manifest.append({
             "file": record["file"],
-            "source": f"scripts/build-ayrovi-extracted-fonts.py; wdth=100, wght={record['weight']}",
+            "source": f"scripts/build-ayrovi-extracted-fonts.py; wdth={record['width']}, wght={record['weight']}",
             "version": "1.700 derived",
             "sha256": record["sha256"],
         })

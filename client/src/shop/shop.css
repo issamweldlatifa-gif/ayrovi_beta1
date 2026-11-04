@@ -123,7 +123,7 @@
   text-overflow: ellipsis;
 }
 
-.s-card__price { margin-top: 3px; font-size: 1rem; font-weight: 700; }
+.s-card__price { margin-top: 3px; font-size: 14px; line-height: 20px; font-weight: 650; font-stretch: var(--ay-font-body-width); }
 .s-card__price[data-deal="true"] { color: var(--s-danger); }
 .s-card__off { font-size: 0.75rem; line-height: 1rem; font-weight: 700; color: var(--s-danger); }
 .s-card__stock { justify-self: start; align-self: flex-start; margin-top: 4px; min-height: 36px; padding: 0 12px; border: 1px solid currentColor; border-radius: 999px; background: transparent; font: inherit; font-size: 0.8125rem; font-weight: 700; cursor: pointer; }
@@ -421,6 +421,7 @@
 .s-loading { display: grid; place-items: center; gap: 12px; padding: 64px 16px; text-align: center; }
 .s-loading__spin { animation: s-spin 900ms linear infinite; }
 .s-loading p { margin: 0; font-size: 0.8125rem; color: var(--s-muted); }
+.s-loading .s-bag-empty-title { margin: 0; font-size: 16px; line-height: 24px; font-weight: 650; font-stretch: var(--ay-font-body-width); letter-spacing: 0; }
 
 @keyframes s-spin { to { transform: rotate(360deg); } }
 

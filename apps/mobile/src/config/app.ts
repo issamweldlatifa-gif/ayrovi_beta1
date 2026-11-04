@@ -7,8 +7,10 @@ export const APP_VERSION = Constants.expoConfig?.version ?? '0.0.0';
 /** Ayrovi Extracted Sans: poids statiques construits depuis la source WOFF2 vérifiée. */
 export const FONT_SOURCES = {
   'AyroviExtracted-Regular': require('../../assets/fonts/AyroviExtracted-Regular.ttf'),
+  'AyroviExtracted-Medium': require('../../assets/fonts/AyroviExtracted-Medium.ttf'),
   'AyroviExtracted-SemiBold': require('../../assets/fonts/AyroviExtracted-SemiBold.ttf'),
   'AyroviExtracted-Bold': require('../../assets/fonts/AyroviExtracted-Bold.ttf'),
+  'AyroviExtracted-Heading': require('../../assets/fonts/AyroviExtracted-Heading.ttf'),
   'NotoSansArabic-Regular': require('../../assets/fonts/NotoSansArabic-Regular.ttf'),
   'NotoSansArabic-Bold': require('../../assets/fonts/NotoSansArabic-Bold.ttf'),
 } as const;

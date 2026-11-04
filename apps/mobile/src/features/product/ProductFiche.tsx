@@ -328,7 +328,7 @@ export function FicheIdentity({
           </AppText>
         </View>
         {price ? (
-          <AppText style={[styles.price, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>{price}</AppText>
+          <AppText style={[styles.price, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>{price}</AppText>
         ) : null}
       </View>
       {description ? (
@@ -364,7 +364,7 @@ export function ChoiceRow({
         <Ionicons name={icon} size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
       </View>
       <View style={styles.rowText}>
-        <AppText numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>
+        <AppText numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>
           {label}
         </AppText>
         {value ? (
@@ -435,7 +435,7 @@ export function ColorStrip({
             <View style={[styles.tileRule, { backgroundColor: active ? fc.accent : theme.colors.canvas }]} />
             <AppText
               numberOfLines={1}
-              style={[styles.tileLabel, { color: theme.colors.ink, fontFamily: active ? theme.font('bold') : theme.font('regular') }]}
+              style={[styles.tileLabel, { color: theme.colors.ink, fontFamily: active ? theme.font('semibold') : theme.font('regular') }]}
             >
               {tile.color}
             </AppText>
@@ -472,7 +472,7 @@ export function SectionRow({
           <Ionicons name={icon} size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
         </View>
         <View style={styles.rowText}>
-          <AppText numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>
+          <AppText numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>
             {title}
           </AppText>
         </View>
@@ -506,7 +506,7 @@ export function InfoRow({
         <Ionicons name={icon} size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
       </View>
       <View style={styles.infoText}>
-        <AppText style={[styles.infoTitle, { color: titleColor ?? theme.colors.ink, fontFamily: theme.font('bold') }]}>
+        <AppText style={[styles.infoTitle, { color: titleColor ?? theme.colors.ink, fontFamily: theme.font('semibold') }]}>
           {title}
         </AppText>
         {(lines ?? []).map((line, position) => (
@@ -594,7 +594,7 @@ export function BuyBar({
       ) : null}
       <View style={styles.buyRow}>
         <View style={styles.buyPrice}>
-          <AppText style={[styles.buyPriceText, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>{price}</AppText>
+          <AppText style={[styles.buyPriceText, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>{price}</AppText>
         </View>
         {/*
           Bouton du CTA : 207 × 48 dp, rayon 24 dp, **noir** (maquette). Ce n'est pas
@@ -619,7 +619,7 @@ export function BuyBar({
           {busy
             ? <LoadingSpinner size="sm" color={theme.colors.canvas} testID={testID ? `${testID}-busy` : undefined} />
             : (
-              <AppText style={[styles.buyButtonLabel, { color: theme.colors.canvas, fontFamily: theme.font('bold') }]}>
+              <AppText style={[styles.buyButtonLabel, { color: theme.colors.canvas, fontFamily: theme.font('semibold') }]}>
                 {label}
               </AppText>
             )}
@@ -699,7 +699,7 @@ export function SizeSheet({
                 <AppText
                   style={[styles.sheetRowValue, {
                     color,
-                    fontFamily: active ? theme.font('bold') : theme.font('regular'),
+                    fontFamily: active ? theme.font('semibold') : theme.font('regular'),
                     textDecorationLine: row.available ? 'none' : 'line-through',
                     textDecorationColor: fc.struck,
                   }]}

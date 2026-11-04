@@ -51,8 +51,10 @@ describe('barre du bas transparente à coins arrondis compacts (5 onglets — st
     expect(fontPlugin).toBeTruthy();
     expect(fontPlugin[1].fonts).toEqual([
       './assets/fonts/AyroviExtracted-Regular.ttf',
+      './assets/fonts/AyroviExtracted-Medium.ttf',
       './assets/fonts/AyroviExtracted-SemiBold.ttf',
       './assets/fonts/AyroviExtracted-Bold.ttf',
+      './assets/fonts/AyroviExtracted-Heading.ttf',
       './assets/fonts/NotoSansArabic-Regular.ttf',
       './assets/fonts/NotoSansArabic-Bold.ttf',
     ]);
@@ -250,13 +252,18 @@ describe('Ayrovi Extracted Sans — parité de la source web et du mobile', () =
     };
   }
 
-  it('embarque les instances 400/600/700 issues du WOFF2 extrait, avec métriques verticales et GPOS conservés', () => {
+  it('embarque les poids et largeurs observés issus du WOFF2 extrait, avec métriques verticales et GPOS conservés', () => {
     const build = JSON.parse(readFileSync(path.resolve(ROOT, '../../assets/fonts/ayrovi-extracted-fonts.json'), 'utf8'));
-    for (const [weight, subfamily] of [[400, 'Regular'], [600, 'SemiBold'], [700, 'Bold']] as const) {
+    const instances = [
+      [400, 'Regular', 102.5], [520, 'Medium', 102.5], [650, 'SemiBold', 102.5],
+      [700, 'Bold', 102.5], [520, 'Heading', 112.5],
+    ] as const;
+    for (const [weight, subfamily, width] of instances) {
       const relative = `assets/fonts/AyroviExtracted-${subfamily}.ttf`;
       const bytes = readFileSync(path.join(ROOT, relative));
       const record = build.static_instances.find((entry: { file: string }) => entry.file === `apps/mobile/${relative}`);
       expect(record).toBeTruthy();
+      expect(record.width).toBe(width);
       expect(createHash('sha256').update(bytes).digest('hex')).toBe(record.sha256);
       expect(bytes.equals(readFileSync(path.resolve(ROOT, `../../assets/fonts/AyroviExtracted-${subfamily}.ttf`)))).toBe(true);
       expect(readFontMetrics(relative)).toMatchObject({

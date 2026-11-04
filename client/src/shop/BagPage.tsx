@@ -86,7 +86,7 @@ export const BagPage: React.FC<BagPageProps> = ({
         )}
 
         {lines.length === 0 && !loadError && (
-          <div className="s-loading"><EditorialIcon name="Bag" size={40} /><p>{tr('Votre panier est vide.', 'سلّتك فارغة.')}</p></div>
+          <div className="s-loading"><EditorialIcon name="Bag" size={40} /><p className="s-bag-empty-title">{tr('Votre panier est vide.', 'سلّتك فارغة.')}</p></div>
         )}
 
         {lines.map((line) => {

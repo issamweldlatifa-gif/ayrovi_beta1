@@ -1210,7 +1210,7 @@ export function AddToCartSheet({
                   <View style={[styles.priceInlineRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
                     <AppText
                       variant="lead"
-                      weight="bold"
+                      weight="semibold"
                       color={discountMeta ? theme.status.danger.fg : theme.colors.ink}
                     >
                       {addedUnitOrLineTnd}
@@ -1266,7 +1266,7 @@ export function AddToCartSheet({
                   <View style={[styles.priceInlineRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
                     <AppText
                       variant="lead"
-                      weight="bold"
+                      weight="semibold"
                       color={discountMeta ? theme.status.danger.fg : theme.colors.ink}
                     >
                       {displayedTndLine}

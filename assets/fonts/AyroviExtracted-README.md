@@ -11,7 +11,7 @@ python3 -m pip install -r scripts/requirements-fonts.txt
 npm run fonts:build
 ```
 
-سكربت [`scripts/build-ayrovi-extracted-fonts.py`](../../scripts/build-ayrovi-extracted-fonts.py) يصدّر متغير الويب إلى `client/public/fonts/editorial/ayrovi-extracted-sans.woff2` ويولّد أوزان الهاتف/PDF 400 و600 و700 من المحور نفسه عند `wdth=100`. لإضافة وزن ثابت لاحقًا، تُضاف قيمة الوزن إلى `WEIGHTS` في السكربت ثم يُعاد البناء من الملف المخزّن؛ لا حاجة لإعادة الاستخراج. لا تغيّر عائلة الاسم إلى اسم المصدر upstream.
+سكربت [`scripts/build-ayrovi-extracted-fonts.py`](../../scripts/build-ayrovi-extracted-fonts.py) يصدّر متغير الويب إلى `client/public/fonts/editorial/ayrovi-extracted-sans.woff2`، ويولّد ملفات الهاتف/PDF الثابتة من المصدر نفسه: 400 و520 و650 و700 عند `wdth=102.5`، ونسخة عناوين 520 عند `wdth=112.5`. قيم المحاور تُقرأ من `client/src/design/editorial/identity.json`؛ تعديلها وإعادة البناء لا يتطلبان إعادة استخراج الحروف. لا تغيّر اسم الأسرة إلى اسم المصدر upstream.
 
 ## تحقق القياسات والارتكاز
 
@@ -22,3 +22,18 @@ npm run fonts:build
 ## الترخيص
 
 مشتقّات الملفات مرخّصة وفق SIL Open Font License 1.1؛ راجع [`AyroviExtracted-OFL.txt`](AyroviExtracted-OFL.txt) و[`AyroviExtracted-NOTICE.txt`](AyroviExtracted-NOTICE.txt). يحتفظ ملف المصدر والترخيص بحقوق ونسبة المؤلف upstream المطلوبة.
+
+## قياسات الواجهة الحية (محاكاة الهاتف)
+
+هذه القيم مقاسة من الأنماط المحسوبة في المتصفح وليست تقديرات بصرية. تم الالتقاط في 2026-11-03 على نافذة CSS ‏390×844، بمحاكاة Android 15 / Pixel 9 Pro / Chrome 130، ومقياس جهاز 2.75. صفحات المصدر: [الصفحة الرئيسية](https://www.zalando.fr/)، [تصنيف الأحذية](https://www.zalando.fr/chaussures-femme/)، و[السلة](https://www.zalando.fr/cart/). ملف الخط الحي الذي طابق ملف المصدر بايتًا ببايت: [WOFF2 المتغير](https://mosaic02.ztat.net/zds/assets/fonts/ZalandoSans%5Bwdth%2Cwght%5D.ba6fc11d.woff2)؛ وملف CSS المرجعي: [stylesheet](https://mosaic01.ztat.net/base-assets/9-1-0/assets/style.css).
+
+| الدور | الحجم | الوزن | ارتفاع السطر | `wdth` | تباعد الحروف |
+|---|---:|---:|---:|---:|---|
+| نص الجسم | 16px | 400 | 24px | 102.5% | عادي |
+| رابط التنقل | 16px | 650 | 24px | 102.5% | عادي |
+| عنوان قسم، مثال «Plus de marques» | 20px | 520 | 24px | 112.5% | عادي |
+| عنوان حالة فارغة | 16px | 650 | 24px | 102.5% | عادي |
+| السعر الحالي | 14px | 650 | 20px | 102.5% | عادي |
+| السعر المرجعي المشطوب | 12px | 400 | 16px | 102.5% | عادي |
+
+لذلك لا تُفرض قاعدة واحدة على كل `h2`: العنوان الكبير، عنوان القسم، وحالة السلة أدوار منفصلة. ملف `client/src/styles/ayrovi-extracted-typography.css` والتوكنات الدلالية يحددان الأساس، فيما تحافظ المكونات على الاستثناءات المسمّاة. الأمر `npm run typography:check` يفحص الأسرة والأوزان والمحاور لهذه الأدوار عبر المسارات المكتشفة للهاتف وسطح المكتب.

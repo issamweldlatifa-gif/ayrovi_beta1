@@ -89,6 +89,7 @@ async function inspectPage(page, route, viewportName, expectedTitleSize) {
         weight: Number.parseInt(style.fontWeight, 10),
         size: style.fontSize,
         lineHeight: style.lineHeight,
+        stretch: style.fontStretch,
         letterSpacing: style.letterSpacing,
       };
     };
@@ -105,11 +106,15 @@ async function inspectPage(page, route, viewportName, expectedTitleSize) {
       body: describe(document.body),
       fontLoaded: document.fonts.check('400 16px "Ayrovi Extracted Sans"'),
       text,
-      h1: roles('h1,.ay-text-h1'),
-      h2: roles('h2,.ay-text-h2'),
+      h1: roles('.ay-text-h1'),
+      h2: roles('.ay-text-h2,.stories-showcase__title'),
+      featureH2: roles('.lens-feature__title'),
       navLinks: roles('nav a,.ay-text-nav'),
       labels: roles('.ay-e-label'),
-      buttons: roles('.ay-e-button,.ay-text-button,.ay-btn-primary,.ay-btn-secondary,.ay-btn-cta'),
+      buttons: roles('.ay-e-button,.ay-text-button,.ay-btn-primary,.ay-btn-secondary,.ay-btn-cta,.lens-feature__cta,.stories-showcase__cta'),
+      prices: roles('.ay-text-price,.s-card__price,.ay-quiet-price--grid .ay-quiet-price__current'),
+      referencePrices: roles('.ay-quiet-price--grid .ay-quiet-price__original,.s-was'),
+      emptyTitles: roles('.s-bag-empty-title,.ac-empty h2,.public-content-state h2'),
     };
   });
 
@@ -133,19 +138,27 @@ async function inspectPage(page, route, viewportName, expectedTitleSize) {
         ['font-weight', item.weight === expected.weight],
         ['font-size', metricClose(item.size, expected.size)],
       ];
+      if (expected.stretch !== undefined) checks.push(['font-stretch', metricClose(item.stretch, expected.stretch, 0.05)]);
       if (expected.lineHeight !== undefined) checks.push(['line-height', metricClose(item.lineHeight, expected.lineHeight, 0.2)]);
       if (expected.letterSpacing !== undefined) checks.push(['letter-spacing', (expected.letterSpacing === 0 && item.letterSpacing === 'normal') || metricClose(item.letterSpacing, expected.letterSpacing, 0.03)]);
-      for (const [name, pass] of checks) if (!pass) fail(route, viewportName, `${role} ${name} differs from reference`, `${item.tag}${item.className ? `.${item.className}` : ''} «${item.text}»: ${name}=${name === 'font-family' ? item.family : item[name === 'font-weight' ? 'weight' : name === 'font-size' ? 'size' : name === 'line-height' ? 'lineHeight' : 'letterSpacing']}`);
+      for (const [name, pass] of checks) if (!pass) fail(route, viewportName, `${role} ${name} differs from reference`, `${item.tag}${item.className ? `.${item.className}` : ''} «${item.text}»: ${name}=${name === 'font-family' ? item.family : name === 'font-weight' ? item.weight : name === 'font-size' ? item.size : name === 'line-height' ? item.lineHeight : name === 'font-stretch' ? item.stretch : item.letterSpacing}`);
     }
   };
 
   if (result.appRoot) {
-    checkRole([result.body], 'body', { size: 16, weight: 400, lineHeight: 24, letterSpacing: 0 });
-    checkRole(result.h1, 'h1', { size: expectedTitleSize, weight: 520, lineHeight: expectedTitleSize * (viewportName === 'mobile' ? 1.16 : 1.158), letterSpacing: -0.2 });
-    checkRole(result.h2, 'h2', { size: 24, weight: 520, lineHeight: 30, letterSpacing: -0.08 });
-    checkRole(result.navLinks, 'navigation link', { size: 16, weight: 400 });
-    checkRole(result.labels, 'editorial label', { size: 14, weight: 650, lineHeight: 20 });
-    checkRole(result.buttons, 'editorial button', { size: 14, weight: 650, lineHeight: 20 });
+    checkRole([result.body], 'body', { size: 16, weight: 400, lineHeight: 24, letterSpacing: 0, stretch: 102.5 });
+    checkRole(result.h1, 'h1', { size: expectedTitleSize, weight: 520, lineHeight: expectedTitleSize * 1.158, letterSpacing: -0.2, stretch: 112.5 });
+    const sectionSize = viewportName === 'mobile' ? 20 : 28;
+    const sectionLineHeight = viewportName === 'mobile' ? 24 : 34;
+    const featureSize = viewportName === 'mobile' ? 24 : 38;
+    checkRole(result.h2, 'section h2', { size: sectionSize, weight: 520, lineHeight: sectionLineHeight, letterSpacing: 0, stretch: 112.5 });
+    checkRole(result.featureH2, 'feature h2', { size: featureSize, weight: 520, lineHeight: featureSize * 1.25, letterSpacing: 0, stretch: 112.5 });
+    checkRole(result.navLinks, 'navigation link', { size: 16, weight: 650, lineHeight: 24, stretch: 102.5 });
+    checkRole(result.labels, 'editorial label', { size: 14, weight: 650, lineHeight: 20, stretch: 102.5 });
+    checkRole(result.buttons, 'editorial button', { size: 14, weight: 650, lineHeight: 20, stretch: 102.5 });
+    checkRole(result.prices, 'current price', { size: 14, weight: 650, lineHeight: 20, letterSpacing: 0, stretch: 102.5 });
+    checkRole(result.referencePrices, 'reference price', { size: 12, weight: 400, lineHeight: 16, letterSpacing: 0, stretch: 102.5 });
+    checkRole(result.emptyTitles, 'empty-state title', { size: 16, weight: 650, lineHeight: 24, letterSpacing: 0, stretch: 102.5 });
   }
 
   return await page.evaluate((origin) => [...document.querySelectorAll('a[href]')]

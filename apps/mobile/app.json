@@ -90,8 +90,10 @@
         {
           "fonts": [
             "./assets/fonts/AyroviExtracted-Regular.ttf",
+            "./assets/fonts/AyroviExtracted-Medium.ttf",
             "./assets/fonts/AyroviExtracted-SemiBold.ttf",
             "./assets/fonts/AyroviExtracted-Bold.ttf",
+            "./assets/fonts/AyroviExtracted-Heading.ttf",
             "./assets/fonts/NotoSansArabic-Regular.ttf",
             "./assets/fonts/NotoSansArabic-Bold.ttf"
           ]

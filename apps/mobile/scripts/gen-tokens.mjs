@@ -106,8 +106,8 @@ ${block('TYPOGRAPHY', identity.typography, 'Graisses et interlignes ; `stack` es
 ${block('FONTS', {
   // semibold = titres (plus légers que le gras). L'arabe n'a pas encore de graisse
   // intermédiaire embarquée : ses titres gardent la graisse grasse.
-  latin: { regular: 'AyroviExtracted-Regular', semibold: 'AyroviExtracted-SemiBold', bold: 'AyroviExtracted-Bold' },
-  arabic: { regular: 'NotoSansArabic-Regular', semibold: 'NotoSansArabic-Bold', bold: 'NotoSansArabic-Bold' },
+  latin: { regular: 'AyroviExtracted-Regular', medium: 'AyroviExtracted-Medium', semibold: 'AyroviExtracted-SemiBold', bold: 'AyroviExtracted-Bold', heading: 'AyroviExtracted-Heading' },
+  arabic: { regular: 'NotoSansArabic-Regular', medium: 'NotoSansArabic-Regular', semibold: 'NotoSansArabic-Bold', bold: 'NotoSansArabic-Bold', heading: 'NotoSansArabic-Bold' },
 }, 'Noms chargés par expo-font depuis les TTF Ayrovi Extracted Sans générés à partir du WOFF2 source.')}
 
 export type ColorName = keyof typeof COLORS.light;

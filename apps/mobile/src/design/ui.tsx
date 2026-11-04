@@ -85,7 +85,7 @@ export function Card({ children, title, hint, onLayout }: {
         },
       ]}
     >
-      {title ? <AppText variant="label" weight="bold">{title}</AppText> : null}
+      {title ? <AppText variant="label" weight="semibold">{title}</AppText> : null}
       {hint ? (
         <AppText variant="caption" color={theme.colors.muted} style={styles.cardHint}>{hint}</AppText>
       ) : null}
@@ -137,7 +137,7 @@ export function SectionHeader({
       ]}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <AppText variant="label" weight="bold" color={theme.colors.ink}>
+        <AppText variant="label" weight="semibold" color={theme.colors.ink}>
           {title}
         </AppText>
         {hint ? (
@@ -169,7 +169,7 @@ export function KeyValue({ label, value }: { label: string; value: string }) {
       <AppText variant="caption" color={theme.colors.muted}>{label}</AppText>
       <AppText
         variant="caption"
-        weight="bold"
+        weight="semibold"
         style={[styles.kvValue, { textAlign: theme.isRTL ? 'left' : 'right' }]}
       >
         {value}

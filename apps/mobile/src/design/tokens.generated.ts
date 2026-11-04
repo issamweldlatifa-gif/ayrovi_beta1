@@ -6,7 +6,7 @@
  *              sha256 : 69e920a38d630e8fb75f48c49ce56df6e964f69da700341995893235d7417e19
  * Structure  : client/src/design/editorial/identity.json
  *              ZAYROVI A — Official Identity · version 4.2.0
- *              sha256 : 2e666d49dcae4cb4a9276ced11c7b604874bc7cc978da47a835be1531c476035
+ *              sha256 : aba724f085b2e2218cbb65bf3de4c42678f4d51149798c99db7a1117d2df4a1d
  *
  * Régénérer : npm run tokens:build   ·   vérifier : npm run tokens:check
  */
@@ -17,7 +17,7 @@ export const IDENTITY = {
   source: "apps/mobile/src/design/brand.json",
   structure: {
     name: "ZAYROVI A — Official Identity",
-    sha256: "2e666d49dcae4cb4a9276ced11c7b604874bc7cc978da47a835be1531c476035",
+    sha256: "aba724f085b2e2218cbb65bf3de4c42678f4d51149798c99db7a1117d2df4a1d",
     source: "client/src/design/editorial/identity.json",
     version: "4.2.0",
   },
@@ -110,7 +110,7 @@ export const TYPE_SCALE = {
   display: 38,
   label: 14,
   lead: 18,
-  title: 24,
+  title: 20,
 } as const;
 
 /** Durées d’animation (ms). */
@@ -140,13 +140,16 @@ export const TYPOGRAPHY = {
   arabicLineHeight: 1.55,
   bodyLineHeight: 1.5,
   bodyWeight: 400,
-  headingLineHeight: 1.16,
+  bodyWidth: "102.5%",
+  captionLineHeight: 1.3333,
+  headingLineHeight: 1.2,
   headingWeight: 520,
-  headingWidth: "100%",
+  headingWidth: "112.5%",
+  labelLineHeight: 1.4286,
   labelWeight: 650,
   letterSpacing: "0em",
   preset: "ayrovi-a",
-  priceWeight: 520,
+  priceWeight: 650,
   stack: "'Ayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif",
 } as const;
 
@@ -154,11 +157,15 @@ export const TYPOGRAPHY = {
 export const FONTS = {
   arabic: {
     bold: "NotoSansArabic-Bold",
+    heading: "NotoSansArabic-Bold",
+    medium: "NotoSansArabic-Regular",
     regular: "NotoSansArabic-Regular",
     semibold: "NotoSansArabic-Bold",
   },
   latin: {
     bold: "AyroviExtracted-Bold",
+    heading: "AyroviExtracted-Heading",
+    medium: "AyroviExtracted-Medium",
     regular: "AyroviExtracted-Regular",
     semibold: "AyroviExtracted-SemiBold",
   },

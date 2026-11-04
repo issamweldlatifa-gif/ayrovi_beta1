@@ -118,7 +118,7 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
     expect(shopCss).toMatch(/\.s-desc\s*\{[^}]*color: var\(--s-muted\)/);
     expect(shopCss).toMatch(/\.s-was\s*\{[^}]*color: var\(--s-muted\)/);
     const shared = read('client/src/ayrovix/components/quiet-card.css');
-    expect(shared).toMatch(/\.ay-quiet-price__original\s*\{[^}]*font-weight:\s*500/);
+    expect(shared).toMatch(/\.ay-quiet-price__original\s*\{[^}]*font-weight:\s*400/);
   });
 
   it('isolation d’arrière-plan : TOUTE la galerie est proxyfiée, jamais les images locales', () => {

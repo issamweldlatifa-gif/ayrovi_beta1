@@ -4,6 +4,7 @@
   color: var(--ay-e-ink);
   background: var(--ay-e-canvas);
   font: var(--ay-font-body-weight) 16px/var(--ay-font-body-line-height) var(--ay-font-stack);
+  font-stretch: var(--ay-font-body-width);
   letter-spacing: 0;
   color-scheme: light;
 }
@@ -12,13 +13,13 @@
 [data-ay-design="editorial"] .ay-e-display {
   font: var(--ay-font-heading-weight) clamp(32px, 4vw, 38px)/var(--ay-font-heading-line-height) var(--ay-font-stack);
   font-stretch: var(--ay-font-heading-width);
-  letter-spacing: -.2px;
+  letter-spacing: 0;
   text-wrap: balance;
   font-synthesis: none;
 }
 [data-ay-design="editorial"]:lang(ar) .ay-e-display { font-stretch: 100%; line-height: var(--ay-font-arabic-heading-line-height); }
 [data-ay-design="editorial"] .ay-e-label { font-size: 14px; font-weight: var(--ay-font-label-weight); line-height: 20px; }
-[data-ay-design="editorial"] .ay-e-caption { font-size: 12px; color: var(--ay-e-muted); }
+[data-ay-design="editorial"] .ay-e-caption { font-size: 12px; line-height: 16px; color: var(--ay-e-muted); }
 [data-ay-design="editorial"] .ay-e-number { font-family: var(--ay-font-stack); font-weight: var(--ay-font-price-weight); font-variant-numeric: tabular-nums; unicode-bidi: isolate; }
 [data-ay-design="editorial"] .ay-e-button {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;

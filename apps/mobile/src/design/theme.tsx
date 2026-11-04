@@ -23,7 +23,7 @@ export type ColorScheme = 'light' | 'dark';
 export type TextRole = 'caption' | 'label' | 'body' | 'lead' | 'title' | 'display';
 
 /** Graisses disponibles : chacune est une famille embarquée (voir FONTS). */
-export type FontWeightName = 'regular' | 'semibold' | 'bold';
+export type FontWeightName = 'regular' | 'medium' | 'semibold' | 'bold';
 
 export interface Theme {
   mode: ColorScheme;
@@ -39,6 +39,7 @@ export interface Theme {
     fontSize: number;
     lineHeight: number;
     fontWeight: 'normal';
+    includeFontPadding: false;
   };
   direction: { writingDirection: 'rtl' | 'ltr' };
   /** Échelle de rayons COMPLÈTE (xs → full), pas seulement les 4 jetons
@@ -98,9 +99,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const lineHeightRatio = isRTL ? TYPOGRAPHY.arabicLineHeight : TYPOGRAPHY.bodyLineHeight;
     const headingRatio = isRTL ? TYPOGRAPHY.arabicHeadingLineHeight : TYPOGRAPHY.headingLineHeight;
     const boldVariants: TextRole[] = ['label', 'title', 'display'];
-    // Titres : graisse « semibold » (un cran plus légère que le gras). Libellés : gras.
+    // Latin: titres 520, labels 650. L'arabe conserve ses fichiers de poids existants.
     const defaultWeight = (variant: TextRole): FontWeightName =>
-      variant === 'label' ? 'bold' : (variant === 'title' || variant === 'display') ? 'semibold' : 'regular';
+      variant === 'label' ? (isRTL ? 'bold' : 'semibold')
+        : (variant === 'title' || variant === 'display') ? (isRTL ? 'semibold' : 'medium')
+        : 'regular';
 
     const palette = mode === 'dark' ? COLORS.dark : COLORS.light;
 
@@ -111,12 +114,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       font,
       text: (variant = 'body', weight = defaultWeight(variant)) => {
         const size = TYPE_SCALE[variant];
-        const ratio = boldVariants.includes(variant) ? headingRatio : lineHeightRatio;
+        const ratio = isRTL
+          ? (boldVariants.includes(variant) ? headingRatio : lineHeightRatio)
+          : variant === 'title' || variant === 'display' ? headingRatio
+            : variant === 'label' ? TYPOGRAPHY.labelLineHeight
+              : variant === 'caption' ? TYPOGRAPHY.captionLineHeight
+                : lineHeightRatio;
+        const fontFamily = !isRTL && weight === 'medium' && (variant === 'title' || variant === 'display')
+          ? FONTS.latin.heading
+          : font(weight);
         return {
-          fontFamily: font(weight),
+          fontFamily,
           fontSize: size,
           lineHeight: Math.round(size * ratio),
           fontWeight: 'normal' as const,
+          includeFontPadding: false as const,
         };
       },
       direction: { writingDirection: isRTL ? 'rtl' : 'ltr' },

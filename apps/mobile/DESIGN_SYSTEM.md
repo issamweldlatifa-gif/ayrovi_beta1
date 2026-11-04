@@ -375,14 +375,15 @@ ZAYROVI ليس متجراً ولا مساعداً فقط — هو **وكيل ش�
 
 ## 3.1 العائلات ✅
 
-| | عادي | عريض |
-|---|---|---|
-| لاتيني | `AyroviExtracted-Regular` | `AyroviExtracted-Bold` |
-| عربي | `NotoSansArabic-Regular` | `NotoSansArabic-Bold` |
+| المجموعة | ملفات الوزن والمحور |
+|---|---|
+| لاتيني | `Regular` 400 و`Medium` 520 و`SemiBold` 650 و`Bold` 700 عند `wdth=102.5`؛ عنوان `Heading` 520 عند `wdth=112.5` |
+| عربي | `NotoSansArabic-Regular` و`NotoSansArabic-Bold`؛ لا تتغير إعداداتهما |
 
-**قاعدة تقنية حاكمة** (من `theme.tsx`): الأوزان لا تُدمج على Android مع ملفّات
-`.ttf` منفصلة. لذا الوزن = **اختيار عائلة**، لا `fontWeight` رقمي.
-`theme.text()` تُرجع دائماً `fontWeight: 'normal'` وتبدّل العائلة.
+**قاعدة تقنية حاكمة** (من `theme.tsx`): الأوزان ومحور العرض مضمّنة في ملفات
+`.ttf` ثابتة لأن إصدار Expo الحالي لا يضبط محور `wdth` مباشرة. لذلك الوزن
+والعرض = **اختيار عائلة**، لا `fontWeight` رقمي. `theme.text()` تُرجع دائماً
+`fontWeight: 'normal'`، وتستخدم نسخة العنوان العريضة للدورين `title` و`display`.
 
 ## 3.2 السلم
 

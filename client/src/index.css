@@ -29,7 +29,7 @@
 @import "./design/editorial/primitives.css";
 @import "./design/editorial/customer.css";
 @import "./design/editorial/content.css";
-@import "./styles/zalando-typography.css";
+@import "./styles/ayrovi-extracted-typography.css";
 
 @layer base {
   html,
@@ -1024,8 +1024,11 @@
   border-bottom: 1px solid var(--ayrovi-text-primary);
   background: none;
   cursor: pointer;
-  font-size: clamp(15px, 3.7vw, 17px);
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 650;
+  font-stretch: var(--ay-font-body-width);
+  line-height: 20px;
+  letter-spacing: 0;
   color: var(--ayrovi-text-primary);
 }
 
@@ -1112,8 +1115,11 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.55);
   background: none;
   cursor: pointer;
-  font-size: clamp(15px, 3.6vw, 17px);
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 650;
+  font-stretch: var(--ay-font-body-width);
+  line-height: 20px;
+  letter-spacing: 0;
   color: var(--ayrovi-bg-main);
 }
 

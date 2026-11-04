@@ -6,14 +6,17 @@
   --font-primary: var(--ay-font-stack);
   --ayrovi-font-body: var(--ay-font-stack);
   --ayrovi-font-display: var(--ay-font-stack);
-  --ay-font-heading-width: 100%;
+  --ay-font-body-width: 102.5%;
+  --ay-font-heading-width: 112.5%;
   --ay-font-heading-weight: 520;
   --ay-font-label-weight: 650;
-  --ay-font-price-weight: 520;
+  --ay-font-price-weight: 650;
   --ay-font-body-weight: 400;
   --ay-font-body-line-height: 1.5;
+  --ay-font-label-line-height: 1.4286;
+  --ay-font-caption-line-height: 1.3333;
   --ay-font-arabic-line-height: 1.55;
-  --ay-font-heading-line-height: 1.16;
+  --ay-font-heading-line-height: 1.2;
   --ay-font-arabic-heading-line-height: 1.42;
 }
 :root, [data-ay-design="editorial"] {
@@ -70,8 +73,8 @@
   --ay-e-secondary: #E5E5E5;
   --ay-e-shimmer: #171717;
 }
-html { font-family: var(--ay-font-stack); font-synthesis: none; }
-body { margin: 0; font-family: var(--ay-font-stack); color: var(--ay-e-ink); background: var(--ay-e-canvas); }
+html { font-family: var(--ay-font-stack); font-stretch: var(--ay-font-body-width); font-synthesis: none; }
+body { margin: 0; font-family: var(--ay-font-stack); font-stretch: var(--ay-font-body-width); color: var(--ay-e-ink); background: var(--ay-e-canvas); }
 button, input, select, textarea, optgroup, pre, code, kbd, samp { font-family: inherit; }
 ::placeholder { font-family: inherit; }
 .ay-number { font-family: var(--ay-font-stack); font-variant-numeric: tabular-nums; unicode-bidi: isolate; }
