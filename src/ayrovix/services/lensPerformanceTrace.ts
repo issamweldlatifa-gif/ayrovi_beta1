@@ -32,16 +32,9 @@ export interface LensTrace {
   anthropicOptimizeMs?: number;
   searchCandidatesMs?: number;
   anthropicRelevanceMs?: number;
-  dedupMs?: number;
-  /** Lecture des pages produit derrière les liens SerpApi (stock/tailles). */
-  liveStockMs?: number;
-  liveStockFetched?: number;
-  liveStockCacheHits?: number;
-  liveStockApplied?: number;
-  purchasableKept?: number;
-  /** Blocked from purchase, not necessarily hidden from visual discovery. */
-  purchasableBlocked?: number;
-  visualFallbackKept?: number;
+  /** Validation locale des liens Lens ; aucune lecture de page marchande. */
+  linkAdmissionMs?: number;
+  productLinksAccepted?: number;
   excludedCount?: number;
   excludedReasons?: Record<string, number>;
   pricingMs?: number;

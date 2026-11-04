@@ -47,9 +47,9 @@ export function NewsCard({ item, onOpen }: NewsCardProps) {
 
       <View style={styles.body}>
         {category ? (
-          <AppText variant="caption" weight="bold" color={theme.status.info.fg}>{category}</AppText>
+          <AppText variant="captionStrong" color={theme.status.info.fg}>{category}</AppText>
         ) : null}
-        <AppText variant="label" weight="bold" numberOfLines={2}>{item.title}</AppText>
+        <AppText variant="label" numberOfLines={2}>{item.title}</AppText>
         {item.summary ? (
           <AppText variant="caption" color={theme.colors.muted} numberOfLines={2} style={styles.summary}>
             {item.summary}

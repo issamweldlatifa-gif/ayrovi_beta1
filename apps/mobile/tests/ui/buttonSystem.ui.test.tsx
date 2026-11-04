@@ -1,8 +1,8 @@
 /**
  * Système de boutons, champs et filets de section.
  * - Les boutons sont en pastille (radius.cta) ; le mode « quiet » a un contour encre épais.
- * - Identité 15/10/2026, v4.2.0 (violet au minimum) : seule l'ACTION PRINCIPALE (`tone="main"` :
- *   ajouter au panier, caisse, paiement, connexion) est VIOLETTE (#571EF6) + libellé blanc ; le
+ * - Marque : `tone="main"` garde le CTA violet hors AYWEBs ; `tone="commerce"` est la variante
+ *   jaune, limitée aux actions d'achat AYWEBs ; le bouton par défaut reste plein ENCRE ; le
  *   bouton par défaut est plein ENCRE ; le secondaire est blanc + noir ; champ blanc, contour
  *   gris, contour violet au focus. Le sélecteur segmenté choisi : violet clair + filet violet.
  * - Le filet entre sections est présent sur l'accueil et utilise la couleur de trait du thème.
@@ -13,6 +13,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Button, BUTTON_OUTLINE_WIDTH, Field, FIELD_FOCUS_WIDTH, Segmented } from '@/design/ui';
 import { SectionRule, SECTION_RULE_WIDTH } from '@/design/SectionRule';
 import { ThemeProvider, useTheme } from '@/design/theme';
+import { OPACITY } from '@/design/tokens.mobile';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
 
@@ -26,6 +27,23 @@ function ThemeProbe({ onTheme }: { onTheme: (t: ReturnType<typeof useTheme>) => 
 }
 
 describe('système de boutons', () => {
+  it('uses the shared heading scale and locks heading/button weights to their roles', () => {
+    let theme: ReturnType<typeof useTheme> | null = null;
+    render(wrap(<ThemeProbe onTheme={(t) => { theme = t; }} />));
+    expect(theme!.text('display').fontSize).toBe(38);
+    expect(theme!.text('h1').fontSize).toBe(32);
+    expect(theme!.text('h2').fontSize).toBe(28);
+    expect(theme!.text('h3').fontSize).toBe(22);
+    expect(theme!.text('h1').fontFamily).toBe(theme!.text('h2').fontFamily);
+    expect(theme!.text('h2').fontFamily).toBe(theme!.text('h3').fontFamily);
+    expect(theme!.text('button').fontSize).toBe(14);
+    expect(theme!.text('button').fontFamily).toBe(theme!.font('semibold'));
+    expect(theme!.text('bodyStrong').fontSize).toBe(16);
+    expect(theme!.text('captionStrong').fontSize).toBe(12);
+    expect(theme!.text('bodyStrong').fontFamily).toBe(theme!.font('semibold'));
+    expect(theme!.text('price').fontVariant).toContain('tabular-nums');
+  });
+
   it('le bouton principal et le contour sont en pastille (radius.cta)', () => {
     let theme: ReturnType<typeof useTheme> | null = null;
     render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Button label="Découvrir" onPress={() => {}} tone="quiet" /></>));
@@ -35,6 +53,18 @@ describe('système de boutons', () => {
     expect(style.borderRadius).toBe(theme!.radius.cta);
     expect(style.borderWidth).toBe(BUTTON_OUTLINE_WIDTH);
     expect(style.borderColor).toBe(theme!.colors.ink);
+    const label = StyleSheet.flatten(screen.getByText('Découvrir').props.style);
+    expect(label.fontSize).toBe(theme!.text('button').fontSize);
+    expect(label.fontFamily).toBe(theme!.text('button').fontFamily);
+    expect(label.fontWeight).toBe('normal');
+  });
+
+  it('le CTA commerce est jaune, avec un libellé encre lisible', () => {
+    render(wrap(<Button label="Ajouter au panier" onPress={() => {}} tone="commerce" />));
+    const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Ajouter au panier' }).props.style);
+    expect(btn.backgroundColor).toBe('#FFD60A');
+    expect(btn.borderColor).toBe('#FFD60A');
+    expect(StyleSheet.flatten(screen.getByText('Ajouter au panier').props.style).color).toBe('#0A0A0A');
   });
 
   it('le bouton plein reste sans contour visible', () => {
@@ -79,7 +109,10 @@ describe('couleurs de l’identité (violet · blanc · noir)', () => {
     render(wrap(<Button label="Payer" tone="main" onPress={() => {}} disabled />));
     const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Payer' }).props.style);
     expect(btn.backgroundColor).toBe('#571EF6');
-    expect(btn.opacity).toBe(0.5);
+    // 27/10/2026 : l'opacité d'un élément désactivé vient de `OPACITY.disabled`
+    // (0.4) et non plus d'un 0.5 posé dans le bouton — le stepper du panier,
+    // l'option de variante et le bouton disaient trois choses différentes.
+    expect(btn.opacity).toBe(OPACITY.disabled);
   });
 
   it('le champ est blanc, contour gris au repos, contour violet épaissi au focus', () => {

@@ -21,6 +21,7 @@
     "design:build": "node scripts/build-editorial-design.mjs",
     "design:check": "node scripts/build-editorial-design.mjs --check && node scripts/inventory-customer-design.mjs --check && npm run icons:check && npm run identity:check",
     "design:browser": "node verify/editorial-system.mjs",
+    "typography:check": "node scripts/check-ayrovi-typography.mjs",
     "verify:editorial-customer": "esbuild verify/editorial-customer-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-customer-runner.cjs && node .cache/editorial-customer-runner.cjs",
     "icons:check": "node scripts/check-icon-contract.mjs",
     "verify:editorial-states": "esbuild verify/editorial-states-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-states-runner.cjs && node .cache/editorial-states-runner.cjs",
@@ -37,6 +38,7 @@
     "verify:image-composition": "esbuild verify/image-composition.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/image-composition.cjs --log-level=error && node .cache/image-composition.cjs",
     "identity:check": "node scripts/build-editorial-design.mjs --check && node scripts/check-brand-identity.mjs",
     "identity:test": "vitest run tests/brand-identity.test.ts",
+    "fonts:build": "python3 scripts/build-ayrovi-extracted-fonts.py",
     "prebuild:client": "npm run identity:check",
     "verify:identity": "esbuild verify/identity-runtime.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/identity-runtime.cjs && node .cache/identity-runtime.cjs",
     "verify:lens-camera": "node verify/sonim-actions-runner.mjs verify/lens-camera-entry.mjs verify/lens-camera-fixture.tsx",
@@ -50,7 +52,8 @@
     "verify:setup": "npx playwright install --with-deps chromium firefox",
     "android:check": "node scripts/check-android-shell.mjs",
     "android:apk": "cd android && ./gradlew :app:assembleDebug",
-    "verify:aywebs-latency": "node scripts/aywebs-latency-probe.mjs"
+    "verify:aywebs-latency": "node scripts/aywebs-latency-probe.mjs",
+    "check:stripe": "node scripts/check-stripe.mjs"
   },
   "keywords": [
     "ayrovi",
@@ -86,7 +89,7 @@
     "jsdom": "^24.1.3",
     "mailparser": "^3.9.31",
     "motion": "^13.1.0",
-    "multer": "^2.4.0",
+    "multer": "^2.5.0",
     "onnxruntime-web": "^1.30.0",
     "pdf-lib": "^1.17.1",
     "pdf-to-img": "^5.0.0",
@@ -95,11 +98,12 @@
     "react-dom": "^19.2.8",
     "react-icons": "^5.7.0",
     "sharp": "^0.35.5",
+    "stripe": "^14.25.0",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
     "tesseract.js": "^5.1.1",
     "typescript": "^5.9.3",
-    "vite": "^8.2.1"
+    "vite": "^8.2.4"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
@@ -121,6 +125,7 @@
   },
   "overrides": {
     "qs": "^6.16.0",
+    "body-parser": "^1.20.9",
     "mailparser": {
       "nodemailer": "^10.0.12"
     },

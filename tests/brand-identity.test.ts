@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import { describe, expect, test } from 'vitest';
 import { PDFDocument, PDFName, PDFDict } from 'pdf-lib';
 import { FONT_STACK, BRAND } from '../shared/brand.generated';
@@ -15,7 +16,7 @@ import { authMailTemplate } from '../src/customer/accountMail';
 
 describe('ZAYROVI A — enforceable identity', () => {
   test('has only the two approved local families and the official palette', () => {
-    expect(BRAND.fonts.map(f => f.family)).toEqual(['Zalando Sans', 'Noto Sans Arabic']);
+    expect(BRAND.fonts.map(f => f.family)).toEqual(['Ayrovi Extracted Sans', 'Noto Sans Arabic']);
     // Palette officielle du 2026-10-15 : noir #0A0A0A · blanc · violet électrique #571EF6 · gris clair #F2F2F2.
     // Décision client n° 1 du 17/10/2026 : la SURFACE passe au blanc — plus aucun
     // fond gris, les sections se séparent par un filet (`line`). Le gris clair
@@ -28,6 +29,21 @@ describe('ZAYROVI A — enforceable identity', () => {
     expect(BRAND.colors.action).toBe('#571EF6');
     expect(BRAND.colors.onAction).toBe('#FFFFFF');
     expect(auditBrand()).toEqual([]);
+  });
+  test('pins the website to the variable font rebuilt from the verified extracted WOFF2 source', () => {
+    const identity = JSON.parse(fs.readFileSync('client/src/design/editorial/identity.json', 'utf8'));
+    const font = identity.fonts.find((entry: { family: string }) => entry.family === 'Ayrovi Extracted Sans');
+    expect(font).toMatchObject({
+      file: '/fonts/editorial/ayrovi-extracted-sans.woff2',
+      weight: '200 900',
+      stretch: '75% 125%',
+      sha256: 'e7c9439f66d7b9e50bbabc350341d86cf02a4a45032fd42b4dbcfca13e35e25f',
+    });
+    const bytes = fs.readFileSync(path.join('client/public', font.file));
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(font.sha256);
+    const build = JSON.parse(fs.readFileSync('assets/fonts/ayrovi-extracted-fonts.json', 'utf8'));
+    expect(build.source_sha256).toBe('ba6fc11db691debbd271564b194e37d96fab6d3d58c96574c58ce15696196a8f');
+    expect(build.family).toBe('Ayrovi Extracted Sans');
   });
   test('normalizes legacy/malicious CMS data without mutating content or price data', () => {
     const source = { typography: { body: 'Arial; background:url(https://evil.test)', display: 'Georgia', preset: 'friendly' }, colors: { pageBackground: '#f6f5f3' }, sections: [{ id: 'hero', title: 'Actual content' }], price: { amount: 189.9 } };
@@ -116,9 +132,9 @@ describe('ZAYROVI A — enforceable identity', () => {
           expect(font.has(PDFName.of('ToUnicode'))).toBe(true);
         }
       }
-      expect(names.some(n => n.includes('Zalando'))).toBe(true);
+      expect(names.some(n => n.includes('AyroviExtracted'))).toBe(true);
       expect(names.some(n => n.includes('Noto'))).toBe(true);
-      expect(names.every(n => /Zalando|Noto/.test(n))).toBe(true);
+      expect(names.every(n => /AyroviExtracted|Noto/.test(n))).toBe(true);
     } finally { fs.rmSync(dir, { recursive: true, force: true }); }
   });
 });

@@ -1,4 +1,5 @@
 import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
+import { readFicheLabels } from '../catalogue/products';
 import { brandAccentColor, enforceBrandIdentity, enforceLegacyTheme } from '../../shared/identityPolicy';
 import { publicNavDestination } from '../../shared/publicNavigation';
 import { createHash, randomUUID } from 'node:crypto';
@@ -21,6 +22,11 @@ import { DEFAULT_FEATURED_SETTINGS, resolveFeaturedPublication, type FeaturedSet
 import { UnsafeUrlError } from '../services/safeUrl';
 import { pruneDiskCache } from '../services/diskCache';
 import { LINKED_PRODUCT_JOIN_SELECT, linkedProductFromJoin } from '../services/shoppableContent';
+import { publicProductsByContent, type ContentKind } from '../services/contentProducts';
+import { buildProductSheet, MAX_SHEET_IMAGES } from '../services/productSheet';
+import { listVariants } from '../catalogue/variants';
+import { listMedia } from '../catalogue/media';
+import { getCategory } from '../catalogue/categories';
 
 function parseJson(value: string, fallback: any = []) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -52,11 +58,53 @@ function withLinkedProduct(row: Record<string, any>) {
     if (!key.startsWith('lp_')) out[key] = value;
   }
   out.product = linkedProductFromJoin(row);
+  /* Liste (0..n) : remplie plus bas par `attachContentProducts`, qui lit la table
+     de liaison. Un contenu sans ligne retombe sur son `product_id` historique. */
+  out.products = out.product ? [out.product] : [];
   return out;
+}
+
+/**
+ * Attache la liste complète des articles d'un lot de contenus (lot F1).
+ * Une seule requête pour tout le lot. Le `product` singulier reste renvoyé pour
+ * les clients déjà déployés : aucune rupture, on ajoute.
+ */
+function attachContentProducts(db: QatafoDatabase, kind: ContentKind, rows: Array<Record<string, any>>) {
+  const map = publicProductsByContent(db, kind, rows as any);
+  for (const row of rows) {
+    const list = map.get(String(row.id)) ?? [];
+    row.products = list;
+    if (list.length === 0) row.product = null;
+    else if (!row.product) row.product = list[0];
+  }
+  return rows;
+}
+
+/**
+ * Racine de l'arbre : la famille d'un produit, lue dans la donnée.
+ * Boucle bornée (10 niveaux) : un cycle en base ne peut pas figer la requête.
+ */
+function rootCategoryOf(db: QatafoDatabase, categoryId: string | null): { id: string; name: string; slug: string } | null {
+  let current = categoryId;
+  let last: { id: string; name: string; slug: string } | null = null;
+  for (let depth = 0; current && depth < 10; depth += 1) {
+    const category = getCategory(db, current);
+    if (!category) break;
+    last = { id: category.id, name: category.name, slug: category.slug };
+    if (!category.parent_id) break;
+    current = category.parent_id;
+  }
+  return last;
 }
 
 function mapProduct(row: any) {
   return {
+    /**
+     * LIBELLÉS DE LA FICHE (25/10/2026) : les noms que le CRM a donnés aux blocs
+     * (« Taille » → « Pointure », sections propres au produit). Un libellé absent
+     * n'est pas publié : l'application retombe sur le sien, elle n'invente rien.
+     */
+    ficheLabels: readFicheLabels(row.fiche_labels),
     id: row.id,
     name: row.name,
     description: row.description,
@@ -68,6 +116,9 @@ function mapProduct(row: any) {
     sourceUrl: row.source_url,
     sourcePlatform: row.source_platform,
     originalPrice: Number(row.original_price),
+    // Prix barré : `null` quand le propriétaire n'en a pas saisi — l'app n'affiche
+    // alors rien, elle ne fabrique pas de remise.
+    compareAtPrice: row.compare_at_price === null || row.compare_at_price === undefined ? null : Number(row.compare_at_price),
     currency: row.currency,
     convertedPrice: Number(row.converted_price),
     customsFee: Number(row.customs_fee),
@@ -88,7 +139,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   const commerceConfig = () => {
     const pricing = db.getPricingRules();
     const settings = db.all<any>(`SELECT setting_key,setting_value,value_type FROM settings WHERE setting_key IN
-      ('delivery_delay','governorates','payment_methods','deposit_percent','deposit_review_delay','unavailable_refund_policy','company_legal_name','company_name','bank_rib','poste_account','flouci_number','card_discount_percent','facebook_url','instagram_url','tiktok_url','whatsapp_url','site_theme','interface_config','footer_about')`);
+      ('delivery_delay','return_window_days','governorates','payment_methods','deposit_percent','deposit_review_delay','unavailable_refund_policy','company_legal_name','company_name','bank_rib','poste_account','flouci_number','card_discount_percent','facebook_url','instagram_url','tiktok_url','whatsapp_url','site_theme','interface_config','footer_about')`);
     const facts: Record<string, any> = {};
     for (const row of settings) facts[row.setting_key] = row.value_type === 'JSON' ? parseJson(row.setting_value) : row.setting_value;
     return {
@@ -117,6 +168,17 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       // que le serveur refusait ensuite — une commande perdue à la dernière étape.
       paymentMethods: resolveAcceptedPaymentMethods(facts.payment_methods),
       deliveryDelay: String(facts.delivery_delay || ''),
+      /**
+       * Fenêtre de RETOUR, en jours après la livraison, réglée dans le CRM
+       * (`Paramètres → delivery → return_window_days`). La fiche du produit ne
+       * doit pas l'écrire en dur : elle affiche ce que le serveur publie, et la
+       * ligne disparaît si le réglage est absent ou illisible.
+       */
+      returns: {
+        days: Number.isFinite(Number(facts.return_window_days)) && Number(facts.return_window_days) > 0
+          ? Math.floor(Number(facts.return_window_days))
+          : null,
+      },
       capabilities: { cardGateway: cardGatewayAvailable() },
       // Feature flags — LIVE multi-product vision. مفعّل افتراضيًا؛ عطّله بـ AYROVIX_LENS_LIVE_ENABLED=false
       features: {
@@ -504,13 +566,80 @@ export function createPublicRouter(db: QatafoDatabase): Router {
    * Catalogue : produit ACTIVE. Temporaire : ACTIVE ET lié à un contenu publié et daté.
    * Le reste (brouillon, archivé, contenu non publié) répond 404, comme un id inconnu.
    */
+  /**
+   * La grande fiche lit **une seule** réponse : galerie, choix (taille/couleur),
+   * disponibilité par choix et état du stock, calculés par `productSheet.ts`.
+   * Sans ça, l'écran devrait enchaîner trois appels (produit, variantes, stock)
+   * et composer lui-même une disponibilité — donc la décider.
+   */
   router.get('/products/:id', (req, res) => {
     const now = new Date().toISOString();
     const row = db.get<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p
       LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.id=? AND ${availableProductSql('p')} GROUP BY p.id`,
     req.params.id, ...availableProductParams(now));
     if (!row) return res.status(404).json({ success: false, error: 'Produit introuvable.' });
-    res.json({ success: true, data: mapProduct(row) });
+    /**
+     * Les médias sont lus AVANT la feuille : chaque variante (couleur) porte ses
+     * propres photos (`catalogue_media.variant_id`). Sans ça, l'écran ne pouvait
+     * pas montrer « la photo du gris » et « la photo du rouge » sans les deviner.
+     */
+    const media = listMedia(db, row.id);
+    const sheet = buildProductSheet(
+      row,
+      listVariants(db, row.id),
+      db.all<any>(`SELECT variant_id, quantity, reorder_point FROM inventory_stock_items
+        WHERE product_id=? AND status='ACTIVE'`, row.id),
+      media,
+    );
+
+    /**
+     * ── Media du catalogue (24/10/2026) ─────────────────────────────────────
+     * Avant : la fiche ne recevait que `products.image` (le miroir de la photo
+     * principale) et `additional_images`. Les autres photos et **la vidéo**
+     * vivaient dans `catalogue_media` et n'arrivaient jamais jusqu'à
+     * l'application : on pouvait téléverser dix images et une vidéo depuis le
+     * CRM, la fiche n'en montrait qu'une. Les médias passent maintenant en
+     * premier (la principale d'abord, `listMedia` trie), puis les colonnes
+     * historiques complètent sans doublon.
+     */
+    const images = [...new Set([
+      ...media.filter((item) => item.media_type === 'IMAGE').map((item) => item.url),
+      ...sheet.images,
+    ])].slice(0, MAX_SHEET_IMAGES);
+    /** Vidéos de la fiche : une liste, même vide. Le client n'invente rien. */
+    const videos = media.filter((item) => item.media_type === 'VIDEO').map((item) => item.url);
+
+    /**
+     * Attributs déclarés du produit (libellé + type + valeur), dans l'ordre du
+     * CRM. Seuls les attributs **actifs** sortent, et seuls ceux qui ont une
+     * valeur : un attribut vide n'a rien à dire à l'écran (règle : la donnée
+     * absente disparaît).
+     */
+    const attributes = db.all<any>(
+      `SELECT a.attribute_key AS key, a.label, a.data_type AS type, a.section, a.sort_order AS sortOrder, v.value_text AS value
+         FROM catalogue_attribute_values v
+         JOIN catalogue_attributes a ON a.attribute_key = v.attribute_key
+        WHERE v.product_id=? AND v.variant_id IS NULL AND a.status='ACTIVE'
+        ORDER BY a.sort_order, a.label`,
+      row.id,
+    )
+      .map((item) => ({
+        key: String(item.key),
+        label: String(item.label ?? item.key),
+        type: String(item.type ?? 'TEXT'),
+        section: String(item.section ?? ''),
+        value: String(item.value ?? '').trim(),
+      }))
+      .filter((item) => item.value.length > 0);
+
+    /**
+     * Famille = **racine de l'arbre des catégories**, pas une liste en dur :
+     * « جاكيتات ← ملابس نساء » donne `ملابس نساء`. C'est la donnée du CRM qui
+     * décide, jamais un nom écrit dans le code (exigence du propriétaire).
+     */
+    const family = rootCategoryOf(db, row.category_id ? String(row.category_id) : null);
+
+    res.json({ success: true, data: { ...mapProduct(row), family, attributes, sheet: { ...sheet, images, videos } } });
   });
 
   router.get('/promotions', (_req, res) => {
@@ -531,6 +660,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       // Story shoppable dont le produit n'est plus vendable : on coupe le lien, pour que le CTA
       // existant (qui suit product_id) n'ouvre jamais une page produit morte.
       .map((story) => (story.content_mode === 'shoppable' && !story.product ? { ...story, product_id: null } : story));
+    attachContentProducts(db, 'story', rows);
     res.json({ success: true, data: rows, serverTime: now });
   });
 
@@ -612,6 +742,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const rows = db.all<any>(`SELECT pub.id,pub.title,pub.subtitle,pub.channel_id,pub.image_url,pub.publish_at,pub.content_mode,${LINKED_PRODUCT_JOIN_SELECT}
       FROM publications pub LEFT JOIN products p ON p.id=pub.product_id
       WHERE pub.status='publie' AND pub.publish_at<=? ORDER BY pub.publish_at DESC`, now).map(withLinkedProduct);
+    attachContentProducts(db, 'publication', rows);
     res.json({ success: true, data: rows });
   });
 
@@ -622,6 +753,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='like') likes,${LINKED_PRODUCT_JOIN_SELECT}
       FROM reels r LEFT JOIN products p ON p.id=r.product_id
       WHERE r.status='publie' AND r.publish_at<=? ORDER BY r.publish_at DESC`, now).map(withLinkedProduct);
+    attachContentProducts(db, 'reel', rows);
     res.json({ success: true, data: rows });
   });
 

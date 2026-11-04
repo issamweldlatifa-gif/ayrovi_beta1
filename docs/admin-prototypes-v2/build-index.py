@@ -2,7 +2,7 @@
 """
 Assemble docs/admin-prototypes-v2/index.html : page de comparaison autonome.
 
-Tout est embarqué (captures en base64 + police Zalando Sans en base64) : la page ne fait
+Tout est embarqué (captures en base64 + police Ayrovi Extracted Sans en base64) : la page ne fait
 aucune requête réseau, elle s'ouvre aussi bien depuis le dépôt que depuis une pièce jointe.
 
 Usage : python3 docs/admin-prototypes-v2/build-index.py
@@ -14,7 +14,7 @@ import re
 HERE = pathlib.Path(__file__).parent
 REPO = HERE.parent.parent
 
-FONT = (REPO / "client/public/fonts/editorial/zalando-sans.woff2").read_bytes()
+FONT = (REPO / "client/public/fonts/editorial/ayrovi-extracted-sans.woff2").read_bytes()
 FONT_B64 = base64.b64encode(FONT).decode()
 
 MODELS = [
@@ -142,9 +142,9 @@ HTML = f"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>AYROVI — 4 modèles d'administration niveau entreprise (à choisir)</title>
 <style>
-  @font-face{{font-family:'Zalando Sans';src:url(data:font/woff2;base64,{FONT_B64}) format('woff2');font-weight:100 900;font-display:swap}}
+  @font-face{{font-family:'Ayrovi Extracted Sans';src:url(data:font/woff2;base64,{FONT_B64}) format('woff2');font-weight:100 900;font-display:swap}}
   *{{box-sizing:border-box}}
-  html,body{{margin:0;background:#F4F5F6;color:#111110;font-family:'Zalando Sans','Noto Sans Arabic',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.55}}
+  html,body{{margin:0;background:#F4F5F6;color:#111110;font-family:'Ayrovi Extracted Sans','Noto Sans Arabic',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.55}}
   a{{color:#B85500}}
   .wrap{{max-width:1240px;margin:0 auto;padding:28px 20px 60px}}
   .top{{background:#111110;color:#fff;border-radius:14px;padding:26px 28px}}
@@ -206,7 +206,7 @@ HTML = f"""<!DOCTYPE html>
       <li>Le texte reste du texte : double-clic pour réécrire un libellé, la barre sous l'en-tête ou un montant. Les formes restent vectorielles (rectangles, filets, étiquettes).</li>
       <li>Pour les couleurs et les typographies, installer le plugin <b>Tokens Studio</b> et importer <code>figma/tokens.json</code> : 4 jeux de jetons (un par modèle) plus le jeu de marque AYROVI.</li>
       <li>Dupliquer un cadre pour dessiner une variante (mobile, état vide, erreur) : la grille et les espacements du modèle restent en place.</li>
-      <li>Fonts : <b>Zalando Sans</b> est la police de marque (fichier dans le dépôt, <code>client/public/fonts/editorial/</code>) ; installer aussi <b>Noto Sans Arabic</b> pour les libellés arabes.</li>
+      <li>Fonts : <b>Ayrovi Extracted Sans</b> est la police de marque (fichier dans le dépôt, <code>client/public/fonts/editorial/</code>) ; installer aussi <b>Noto Sans Arabic</b> pour les libellés arabes.</li>
     </ol>
     <table>
       <thead><tr><th>Fichier</th><th>Contenu</th><th>Import</th></tr></thead>

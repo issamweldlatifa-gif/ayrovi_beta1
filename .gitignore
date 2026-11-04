@@ -39,3 +39,7 @@ apk/
 build-out/
 # Preuves régénérées à chaque exécution de verify:image-composition (artefact CI).
 screenshots/image-composition/
+
+# Caches Python (rendu des maquettes) — jamais versionnés
+__pycache__/
+*.pyc

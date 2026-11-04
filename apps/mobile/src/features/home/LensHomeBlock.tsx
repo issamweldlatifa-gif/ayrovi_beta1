@@ -39,7 +39,7 @@ export function LensHomeBlock() {
       {content.eyebrow ? (
         <AppText variant="caption" color={theme.colors.muted}>{content.eyebrow}</AppText>
       ) : null}
-      <AppText variant="title" weight="semibold">{content.title}</AppText>
+      <AppText variant="h3" >{content.title}</AppText>
       {content.description ? (
         <AppText variant="body" color={theme.colors.secondary}>{content.description}</AppText>
       ) : null}

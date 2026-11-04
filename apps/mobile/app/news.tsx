@@ -16,6 +16,15 @@ import { useNews } from '@/api/hooks';
 import { NewsCard } from '@/features/sections/NewsCard';
 import type { NewsItem } from '@/api/sections';
 
+/**
+ * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
+ * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
+ * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
+ * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
+ * vérifié par `tests/error-boundary-coverage.test.ts`.
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
 export default function NewsScreen() {
   const theme = useTheme();
   const t = useT();

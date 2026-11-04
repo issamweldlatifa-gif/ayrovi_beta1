@@ -86,7 +86,9 @@ export function parseAssistantEvents(buffer: string): AssistantDecodeResult {
 }
 
 /** جلسة محادثة: معرّف جديد لكل محادثة (نفس قيد الخادم `^[A-Za-z0-9:_-]{1,120}$`). */
-export function newAssistantConversationId(random: () => string): string {
+export function newAssistantConversationId(
+  random: () => string = () => `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+): string {
   const value = String(random()).replace(/[^A-Za-z0-9:_-]/g, '').slice(0, 120);
   return value || 'conv-fallback';
 }
@@ -119,9 +121,16 @@ export async function fetchAssistantStatus(options: RequestOptions = {}): Promis
   };
 }
 
+export interface AssistantAttachment {
+  id: string;
+  dataUrl: string;
+  type?: string;
+}
+
 export interface AssistantMessage {
   role: 'user' | 'assistant';
   text: string;
+  attachments?: AssistantAttachment[];
 }
 
 /**
@@ -131,23 +140,44 @@ export interface AssistantMessage {
 export type StreamFetch = (
   url: string,
   init: { method: string; headers: Record<string, string>; body: string; signal: AbortSignal },
-) => Promise<{ status: number; ok: boolean; body: ReadableStream<Uint8Array> | null }>;
+) => Promise<{
+  status: number;
+  ok: boolean;
+  body: ReadableStream<Uint8Array> | null;
+  text?: () => Promise<string>;
+}>;
 
 export interface AssistantStreamInput {
   conversationId: string;
   sessionId: string;
   messages: AssistantMessage[];
+  state?: Record<string, unknown>;
 }
 
 /** رسائل الخادم تُقصّ 30 سطراً و8000 رمز للسطر — نبعثو اللي يلزم وحدو. */
 export const ASSISTANT_MAX_MESSAGES = 30;
 export const ASSISTANT_MAX_CHARS = 8000;
+export const ASSISTANT_MAX_ATTACHMENTS = 2;
 
 export function assistantOutgoingMessages(messages: AssistantMessage[]): AssistantMessage[] {
   return messages
-    .filter((message) => (message.role === 'user' || message.role === 'assistant') && message.text.trim().length > 0)
+    .filter((message) => {
+      if (message.role !== 'user' && message.role !== 'assistant') return false;
+      const hasText = message.text.trim().length > 0;
+      const hasAttachment = message.role === 'user' && Boolean(message.attachments?.some((item) => item.dataUrl.startsWith('data:image/')));
+      return hasText || hasAttachment;
+    })
     .slice(-ASSISTANT_MAX_MESSAGES)
-    .map((message) => ({ role: message.role, text: message.text.trim().slice(0, ASSISTANT_MAX_CHARS) }));
+    .map((message) => {
+      const text = message.text.trim().slice(0, ASSISTANT_MAX_CHARS);
+      const attachments = message.role === 'user'
+        ? (message.attachments ?? [])
+            .filter((item) => item.dataUrl.startsWith('data:image/'))
+            .slice(0, ASSISTANT_MAX_ATTACHMENTS)
+            .map((item) => ({ id: item.id, dataUrl: item.dataUrl, ...(item.type ? { type: item.type } : {}) }))
+        : [];
+      return attachments.length > 0 ? { role: message.role, text, attachments } : { role: message.role, text };
+    });
 }
 
 /**
@@ -180,7 +210,7 @@ export function streamAssistantChat(
       },
       body: JSON.stringify({
         conversationId: input.conversationId,
-        state: 'mobile',
+        state: input.state ?? { surface: 'mobile', tab: 'sonim' },
         messages: assistantOutgoingMessages(input.messages),
       }),
       signal: controller.signal,
@@ -190,7 +220,30 @@ export function streamAssistantChat(
       onEvent({ type: 'error', code: 'ASSISTANT_UNAVAILABLE', message: 'L’assistant ZAYROVI n’est pas encore disponible.' });
       return 'error';
     }
-    if (!response.ok || !response.body) {
+    if (!response.ok) {
+      onEvent({
+        type: 'error',
+        code: 'ASSISTANT_HTTP',
+        message: `HTTP ${response.status}`,
+      });
+      return 'error';
+    }
+    if (!response.body) {
+      if (typeof response.text === 'function') {
+        try {
+          const fullText = await response.text();
+          const decoded = parseAssistantEvents(`${fullText}\n\n`);
+          let sawBufferedDone = false;
+          for (const event of decoded.events) {
+            onEvent(event);
+            if (event.type === 'done') sawBufferedDone = true;
+            if (event.type === 'error') return 'error';
+          }
+          return sawBufferedDone ? 'done' : 'error';
+        } catch {
+          if (controller.signal.aborted) return 'aborted';
+        }
+      }
       onEvent({
         type: 'error',
         code: 'ASSISTANT_HTTP',

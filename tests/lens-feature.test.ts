@@ -140,7 +140,7 @@ describe('LENS editorial block — rythme et charte', () => {
     const title = /\.lens-feature__title\s*\{[^}]*\}/.exec(indexCss)?.[0] ?? '';
     const desc = /\.lens-feature__desc\s*\{[^}]*\}/.exec(indexCss)?.[0] ?? '';
     expect(title).toMatch(/font-size:\s*clamp\(40px/);
-    expect(title).toMatch(/font-weight:\s*800/);
+    expect(title).toMatch(/font-weight:\s*700/);
     expect(desc).toMatch(/font-size:\s*clamp\(16px/);
     // le média vient après le texte, largement
     expect(indexCss).toMatch(/\.lens-feature__media\s*\{[^}]*margin-top:\s*clamp\(26px/);

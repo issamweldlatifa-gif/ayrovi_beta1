@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BrandMark } from '@/design/BrandMark';
+import { AppImage } from '@/design/appImage';
+import { AYWEBS_WORDMARK_TINT } from '@/design/tokens.mobile';
 import { AppText, Drawer, DrawerItem, Segmented } from '@/design/ui';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { usePrefs, type Locale, type ThemeMode } from '@/state/prefs';
@@ -42,22 +44,25 @@ function HeaderIcon({
         {
           width: theme.geometry.minTarget,
           height: theme.geometry.minTarget,
-          opacity: pressed ? 0.55 : 1,
+          opacity: pressed ? theme.opacity.subtle : 1,
         },
       ]}
       hitSlop={8}
     >
-      <Ionicons name={name} size={22} color={color} />
+      <Ionicons name={name} size={theme.iconSize.md} color={color} />
     </Pressable>
   );
 }
 
 export function AppHeader({
-  scrolled, heroBackground = null,
+  scrolled, heroBackground = null, brand = 'zayrovi', showNotifications = true,
 }: {
   scrolled: boolean;
   /** Fond de la carte Hero active : repris par le header tant qu'il est au sommet. */
   heroBackground?: string | null;
+  /** Identité du contexte : AYWEBs garde son propre libellé sans dupliquer le chrome. */
+  brand?: 'zayrovi' | 'aywebs';
+  showNotifications?: boolean;
 }) {
   const theme = useTheme();
   const t = useT();
@@ -107,36 +112,70 @@ export function AppHeader({
         // défilement du contenu qui passe en dessous.
         pointerEvents="box-none"
       >
-        {/* Groupe de gauche : menu, puis logo (le logo ramène à l’accueil). */}
+        {/* ZAYROVI keeps its menu beside the brand; AYWEBs uses the supplied standalone wordmark. */}
         <View style={[styles.actions, { flexDirection: row }]}>
-          <HeaderIcon
-            name="menu-outline"
-            label={t('nav.menu')}
-            onPress={() => { setMenuOpen(true); }}
-            color={iconColor}
-          />
+          {brand === 'aywebs' ? null : (
+            <HeaderIcon
+              name="menu-outline"
+              label={t('nav.menu')}
+              onPress={() => { setMenuOpen(true); }}
+              color={iconColor}
+            />
+          )}
           <Pressable
             onPress={() => go('/')}
             accessibilityRole="button"
             accessibilityLabel={t('nav.home')}
-            style={({ pressed }) => [styles.logo, { opacity: pressed ? 0.6 : 1 }]}
+            testID={brand === 'aywebs' ? 'aywebs-header-wordmark' : undefined}
+            style={({ pressed }) => [styles.logo, { opacity: pressed ? theme.opacity.subtle : 1 }]}
           >
-            <BrandMark size={30} nameColor={onHero ? iconColor : undefined} />
+            {brand === 'aywebs' ? (
+              /* Mot-symbole OFFICIEL, reteinté aux couleurs de la marque et posé
+                 sur fond transparent : aucune plaque grise autour du logo.
+                 • thème clair : violet #571EF6 (la marque) ;
+                 • thème sombre : blanc — le violet sur #0A0A0A ne se lit pas. */
+              <AppImage
+                localSource={
+                  theme.mode === 'dark'
+                    ? require('../../../assets/aywebs/aywebs-wordmark-white.png')
+                    : require('../../../assets/aywebs/aywebs-wordmark-violet.png')
+                }
+                contentFit="contain"
+                tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}
+                decorative
+                background={null}
+                style={styles.aywebsWordmark}
+              />
+            ) : (
+              <BrandMark size={30} nameColor={onHero ? iconColor : undefined} />
+            )}
           </Pressable>
         </View>
 
         {/* Groupe de droite : notifications (ouvre directement la liste), panier. */}
         <View style={[styles.actions, { flexDirection: row }]}>
-          <HeaderIcon
-            name="notifications-outline"
-            label={t('account.menu.notifications')}
-            onPress={() => go(notificationsHref)}
-            color={iconColor}
-          />
+          {showNotifications ? (
+            <HeaderIcon
+              name="notifications-outline"
+              label={t('account.menu.notifications')}
+              onPress={() => go(notificationsHref)}
+              color={iconColor}
+            />
+          ) : null}
+          {/* AYWEBs : le cœur ouvre les favoris — l'en-tête ne porte que
+              ces deux actions avec le panier (ni cloche, ni menu). */}
+          {brand === 'aywebs' ? (
+            <HeaderIcon
+              name="heart-outline"
+              label={t('account.menu.favorites')}
+              onPress={() => go('/account/favorites')}
+              color={iconColor}
+            />
+          ) : null}
           <HeaderIcon
             name="bag-outline"
             label={t('cart.title')}
-            onPress={() => go('/(tabs)/cart')}
+            onPress={() => go('/panier')}
             color={iconColor}
           />
         </View>
@@ -144,7 +183,26 @@ export function AppHeader({
 
       {/* Le bord suit la langue : en arabe le tiroir sort à droite. */}
       <Drawer visible={menuOpen} onClose={() => { setMenuOpen(false); }} side={theme.isRTL ? 'end' : 'start'}>
-        <View style={{ paddingTop: theme.space[2] }}>
+        <View style={[styles.drawerHead, { flexDirection: rowDirectionFor(theme.isRTL), borderBottomColor: theme.colors.line }]}>
+          <BrandMark color={theme.colors.ink} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            onPress={() => { setMenuOpen(false); }}
+            hitSlop={8}
+            style={({ pressed }) => [
+              styles.drawerClose,
+              {
+                minWidth: theme.geometry.minTarget,
+                minHeight: theme.geometry.minTarget,
+                opacity: pressed ? theme.opacity.subtle : 1,
+              },
+            ]}
+          >
+            <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} />
+          </Pressable>
+        </View>
+        <View style={styles.drawerNav}>
           <DrawerItem icon="home-outline" label={t('tabs.home')} onPress={() => go('/')} />
           <DrawerItem icon="compass-outline" label={t('catalog.title')} onPress={() => go('/catalog')} />
           <DrawerItem icon="receipt-outline" label={t('orders.title')} onPress={() => go('/orders')} />
@@ -154,8 +212,8 @@ export function AppHeader({
         {/* Réglages d'affichage : langue et thème, dans le menu (plus sur la page compte). */}
         <View style={[styles.prefs, { borderTopColor: theme.colors.line }]}>
           <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <Ionicons name="language-outline" size={20} color={theme.colors.ink} accessibilityElementsHidden />
-            <AppText variant="label" weight="bold">{t('common.language')}</AppText>
+            <Ionicons name="language-outline" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
+            <AppText variant="captionStrong" color={theme.colors.muted}>{t('common.language')}</AppText>
           </View>
           <Segmented<Locale>
             value={locale as Locale}
@@ -166,8 +224,8 @@ export function AppHeader({
             ]}
           />
           <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <Ionicons name="contrast-outline" size={20} color={theme.colors.ink} accessibilityElementsHidden />
-            <AppText variant="label" weight="bold">{t('common.theme')}</AppText>
+            <Ionicons name="contrast-outline" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
+            <AppText variant="captionStrong" color={theme.colors.muted}>{t('common.theme')}</AppText>
           </View>
           <Segmented<ThemeMode>
             value={themeMode}
@@ -185,7 +243,18 @@ export function AppHeader({
 }
 
 const styles = StyleSheet.create({
-  prefs: { marginTop: 12, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 10, paddingHorizontal: 4 },
+  drawerHead: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  drawerClose: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  drawerNav: { paddingTop: 8, gap: 2 },
+  prefs: { marginTop: 12, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 10 },
   prefHead: { alignItems: 'center', gap: 8, marginTop: 4 },
   bar: {
     position: 'absolute',
@@ -202,6 +271,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
     justifyContent: 'center',
   },
+  /* 121 × 42 : ratio exact du nouveau mot-symbole officiel (508 × 176 ≈ 2.89). */
+  aywebsWordmark: { width: 121, height: 42 },
   actions: {
     alignItems: 'center',
     gap: 2,

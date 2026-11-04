@@ -28,7 +28,7 @@ describe('customer identity integration, not a reference-only kit', () => {
     expect(style['--ayrovi-radius-sheet']).toBe('32px');
     expect(style['--ayrovi-info']).toBe(identity.colors.info);
     expect(style['--ayrovi-info-soft']).toBe(identity.colors.infoSoft);
-    expect(style['--ayrovi-body-weight']).toBe('500');
+    expect(style['--ayrovi-body-weight']).toBe('400');
     expect(style['--ayrovi-body-line-height']).toBe('1.55');
     expect(style['--font-primary']).toBe(CUSTOMER_FONTS.ar);
     expect(style['--ayrovi-content-max']).toBe('1100px');

@@ -29,6 +29,15 @@ const GOVERNORATES = [
   'Siliana', 'Sousse', 'Tataouine', 'Tozeur', 'Tunis', 'Zaghouan',
 ];
 
+/**
+ * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
+ * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
+ * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
+ * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
+ * vérifié par `tests/error-boundary-coverage.test.ts`.
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
 export default function AddressesScreen() {
   const theme = useTheme();
   const t = useI18n().t;
@@ -77,7 +86,7 @@ export default function AddressesScreen() {
       refreshing={addresses.isRefetching}
     >
       {failure ? (
-        <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
+        <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
       ) : null}
       {addresses.isLoading ? <LoadingBlock /> : null}
       {addresses.isError ? <ErrorBlock error={addresses.error} onRetry={() => addresses.refetch()} /> : null}
@@ -121,10 +130,10 @@ function AddressCard({ address, onDelete, busy }: { address: Address; onDelete: 
     <Card title={address.label || t('addresses.label')}>
       <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         {address.isDefault ? (
-          <AppText variant="caption" weight="bold" color={theme.status.info.fg}>{t('addresses.default')}</AppText>
+          <AppText variant="captionStrong" color={theme.status.info.fg}>{t('addresses.default')}</AppText>
         ) : null}
       </View>
-      <AppText variant="body" weight="bold">{address.recipientName}</AppText>
+      <AppText variant="bodyStrong" >{address.recipientName}</AppText>
       <AppText variant="caption">{address.phone}</AppText>
       <AppText variant="caption">{address.addressLine}</AppText>
       <AppText variant="caption" color={theme.colors.muted}>

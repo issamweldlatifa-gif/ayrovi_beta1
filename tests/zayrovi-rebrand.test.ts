@@ -59,6 +59,7 @@ describe('1. le Z officiel : un seul tracé partout', () => {
 describe('2. plus aucun « AYROVI » visible dans les sources produit', () => {
   /** Les seules occurrences autorisées : des identifiants, jamais du texte affiché. */
   const ALLOWED: Array<[RegExp, string]> = [
+    [/Ayrovi Extracted Sans|AYROVI EXTRACTED SANS/, 'nom technique de la famille de police OFL exigé par le système typographique'],
     [/'AYROVI'(?=,'INFORMATION'|,\s*'INFORMATION')/, 'valeur d’énumération de la catégorie de news (CHECK en base)'],
     [/category(?:: | TEXT NOT NULL DEFAULT )'AYROVI'/, 'catégorie de news par défaut (valeur stockée)'],
     [/value: 'AYROVI'/, 'valeur de la catégorie de news (libellé affiché : ZAYROVI)'],

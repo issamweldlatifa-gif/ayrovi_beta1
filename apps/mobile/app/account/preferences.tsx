@@ -25,6 +25,15 @@ const CHANNELS: Array<{ key: keyof Preferences; label: string }> = [
   { key: 'invoiceUpdates', label: 'preferences.invoice' },
 ];
 
+/**
+ * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
+ * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
+ * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
+ * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
+ * vérifié par `tests/error-boundary-coverage.test.ts`.
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
 export default function PreferencesScreen() {
   const theme = useTheme();
   const t = useI18n().t;
@@ -48,7 +57,7 @@ export default function PreferencesScreen() {
       refreshing={preferences.isRefetching}
     >
       {failure ? (
-        <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
+        <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
       ) : null}
       {preferences.isLoading ? <LoadingBlock /> : null}
       {preferences.isError ? <ErrorBlock error={preferences.error} onRetry={() => preferences.refetch()} /> : null}

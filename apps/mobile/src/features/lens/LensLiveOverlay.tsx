@@ -137,7 +137,7 @@ export function LensLiveOverlay({
             accessibilityLiveRegion="polite"
           >
             <View style={styles.chipDot} />
-            <AppText variant="caption" weight="bold" color={LENS_COLORS.white} numberOfLines={1}>{active.name}</AppText>
+            <AppText variant="captionStrong" color={LENS_COLORS.white} numberOfLines={1}>{active.name}</AppText>
           </View>
         ) : null}
       </Animated.View>

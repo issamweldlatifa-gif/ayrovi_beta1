@@ -285,7 +285,7 @@ apps/mobile/
 | 5 تابات | ✅ | `app/(tabs)/{index,lens,aywebs,cart,account}.tsx` |
 | فرنسي/عربي فوري | ✅ | `src/i18n/`, `src/state/prefs.tsx` |
 | ثيم فاتح/غامق/تلقائي | ✅ | `src/design/theme.tsx` |
-| خطوط الهوية مدمجة | ✅ | `assets/fonts/` (Zalando Sans + Noto Sans Arabic، رخصة OFL) |
+| خطوط الهوية مدمجة | ✅ | `assets/fonts/` (Ayrovi Extracted Sans + Noto Sans Arabic، رخصة OFL) |
 | توكنات من الهوية | ✅ | `scripts/gen-tokens.mjs` → `src/design/tokens.generated.ts` (sha256 مربوط) |
 | ختم البناء | ✅ | `EXPO_PUBLIC_BUILD_STAMP` + بطاقة تشخيص في الرئيسية |
 | اختبارات | ✅ | 8 اختبارات: تطابق مفاتيح fr/ar، صلاحية التوكنات، وجود ملفات الخطوط |

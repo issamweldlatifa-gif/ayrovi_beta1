@@ -30,6 +30,15 @@ import { useSession } from '@/state/session';
 /** Le serveur annonce ce délai dans sa réponse 202 (`retryAfterSeconds`). */
 const DEFAULT_RETRY_SECONDS = 60;
 
+/**
+ * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
+ * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
+ * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
+ * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
+ * vérifié par `tests/error-boundary-coverage.test.ts`.
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
 export default function ForgotPasswordScreen() {
   const theme = useTheme();
   const { gutter } = useResponsive();
@@ -94,10 +103,10 @@ export default function ForgotPasswordScreen() {
           onPress={() => goBack('/(tabs)/account')}
           style={[styles.close, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
         >
-          <Ionicons name={locale === 'ar' ? 'arrow-forward' : 'arrow-back'} size={26} color={theme.colors.ink} />
+          <Ionicons name={locale === 'ar' ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={theme.colors.ink} />
         </Pressable>
 
-        <AppText variant="title">{t('auth.forgot.title')}</AppText>
+        <AppText variant="h1">{t('auth.forgot.title')}</AppText>
         {/* Le sous-titre promet un envoi : il disparaît quand aucun envoi n'est possible. */}
         {enabled ? (
           <AppText variant="body" color={theme.colors.secondary} style={styles.intro}>{t('auth.forgot.subtitle')}</AppText>
@@ -108,7 +117,7 @@ export default function ForgotPasswordScreen() {
               un champ qui ne peut pas aboutir est un piège, pas une option. */}
           {!enabled ? (
             <>
-              <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>
+              <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>
                 {t('auth.forgot.unavailable')}
               </AppText>
               <Button
@@ -130,7 +139,7 @@ export default function ForgotPasswordScreen() {
                 editable={!busy}
               />
               {failure ? (
-                <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
+                <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
               ) : null}
               <Button label={t('auth.forgot.submit')} tone="main" onPress={submit} busy={busy} testID="auth-forgot-submit" />
               <AppText variant="caption" color={theme.colors.muted}>{t('auth.forgot.socialOnly')}</AppText>

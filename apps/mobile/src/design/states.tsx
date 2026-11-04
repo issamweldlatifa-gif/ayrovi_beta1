@@ -41,11 +41,20 @@ export function LoadingBlock({ labelKey }: { labelKey?: TranslationKey }) {
 }
 
 export function ErrorBlock({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
+  /**
+   * ⚠️ Règle des hooks : les deux hooks sont appelés AVANT le branchement.
+   *
+   * Ils étaient sous le `return` hors-ligne : une erreur qui passait de
+   * « pas de réseau » à « erreur serveur » (ou l'inverse, après un « réessayer »)
+   * changeait le nombre de hooks d'un rendu à l'autre → React lève, et en
+   * production l'application se ferme. Voir `tests/hooks-order.test.ts`.
+   */
+  const theme = useTheme();
+  const { locale } = useI18n();
+
   // Une erreur réseau N'EST PAS une erreur serveur : elle a son propre état,
   // avec son propre libellé, au lieu d'un message générique trompeur.
   if (isOfflineError(error)) return <OfflineBlock onRetry={onRetry} />;
-  const theme = useTheme();
-  const { locale } = useI18n();
   const message = userMessage(error);
   return (
     <View
@@ -59,7 +68,7 @@ export function ErrorBlock({ error, onRetry }: { error: unknown; onRetry?: () =>
         },
       ]}
     >
-      <AppText variant="label" weight="bold" color={theme.status.danger.fg} align="center">
+      <AppText variant="label" color={theme.status.danger.fg} align="center">
         {message[locale]}
       </AppText>
       {onRetry ? <RetryButton onPress={onRetry} /> : null}
@@ -93,7 +102,7 @@ export function OfflineBlock({ onRetry }: { onRetry?: () => void }) {
         color={theme.status.warning.fg}
         accessibilityElementsHidden
       />
-      <AppText variant="label" weight="bold" color={theme.status.warning.fg} align="center">
+      <AppText variant="label" color={theme.status.warning.fg} align="center">
         {t('offline.title')}
       </AppText>
       <AppText variant="caption" color={theme.colors.muted} align="center">

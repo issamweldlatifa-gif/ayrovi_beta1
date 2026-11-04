@@ -48,16 +48,16 @@ export function LensSizeGuide({
         testID="lens-size-guide-backdrop"
       >
         <Pressable
-          style={[styles.sheet, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.lg }]}
+          style={[styles.sheet, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.sheet }]}
           accessibilityRole="button"
           onPress={() => undefined}
           testID="lens-size-guide-sheet"
         >
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-            <AppText variant="title" weight="bold">{t('lens.sizeGuide.title')}</AppText>
+            <AppText variant="h3" >{t('lens.sizeGuide.title')}</AppText>
 
             <View style={styles.block}>
-              <AppText weight="bold">{t('lens.sizeGuide.available')}</AppText>
+              <AppText variant="bodyStrong" >{t('lens.sizeGuide.available')}</AppText>
               {sizes.length ? (
                 <View style={[styles.sizes, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} testID="lens-size-guide-sizes">
                   {sizes.map((size) => {
@@ -73,8 +73,7 @@ export function LensSizeGuide({
                           },
                         ]}
                       >
-                        <AppText
-                          weight="semibold"
+                        <AppText variant="bodyStrong"
                           style={unavailable ? styles.sizeOff : undefined}
                           color={unavailable ? theme.colors.muted : undefined}
                         >
@@ -90,7 +89,7 @@ export function LensSizeGuide({
             </View>
 
             <View style={styles.block}>
-              <AppText weight="bold">{t('lens.sizeGuide.howTo')}</AppText>
+              <AppText variant="bodyStrong" >{t('lens.sizeGuide.howTo')}</AppText>
               <AppText color={theme.colors.muted}>{t('lens.sizeGuide.howToBody')}</AppText>
             </View>
 

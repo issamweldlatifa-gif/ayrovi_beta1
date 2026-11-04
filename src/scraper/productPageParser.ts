@@ -429,6 +429,36 @@ function collectJsonLdOffers(nodes: any[]): any[] {
   return offers;
 }
 
+/**
+ * MARCHANDS À FICHE NATIVE (25/10/2026) — leur JSON-LD n'est pas plat.
+ *
+ * Zalando publie un `ProductGroup` dont le PRIX et le STOCK vivent sur les
+ * variantes (`hasVariant[].offers`), jamais sur le groupe. Ne lire que
+ * `productLd.offers` revenait à déclarer « aucun prix » sur une fiche qui en
+ * affiche un : c'est exactement le symptôme « la capture ne marche pas » sur
+ * cette enseigne. Les trois autres marchands de la liste publient, eux aussi,
+ * des offres sous les variantes.
+ */
+const AYWEBS_NATIVE_STORES = new Set(['shein', 'temu', 'aliexpress', 'zalando']);
+
+/**
+ * Toutes les offres d'un produit, y compris celles de ses VARIANTES.
+ * Descente bornée (profondeur 5, 300 offres) : une page ne peut pas faire
+ * exploser la mémoire avec un JSON-LD récursif.
+ */
+function collectProductOffers(product: any, output: any[] = [], seen = new Set<any>(), depth = 0): any[] {
+  if (!product || typeof product !== 'object' || seen.has(product) || depth > 5 || output.length >= 300) return output;
+  seen.add(product);
+  const offers = Array.isArray(product.offers) ? product.offers : product.offers ? [product.offers] : [];
+  for (const offer of offers.slice(0, 30)) {
+    if (offer && typeof offer === 'object') output.push(offer);
+    if (output.length >= 300) break;
+  }
+  const variants = Array.isArray(product.hasVariant) ? product.hasVariant : product.hasVariant ? [product.hasVariant] : [];
+  for (const variant of variants.slice(0, 120)) collectProductOffers(variant, output, seen, depth + 1);
+  return output;
+}
+
 function saleFromOffers(offers: any[]): { price: number; currency: string } {
   const priced = offers.map((offer) => ({
     price: parsePrice(offer?.price ?? offer?.lowPrice),
@@ -606,6 +636,77 @@ function variantsFromProduct(product: any): ProductVariantDetail[] {
   }).slice(0, 120);
 }
 
+/**
+ * Variantes décrites par le JSON-LD lui-même (`hasVariant[]` : `size`, `color`,
+ * `sku`, `offers`). Zalando, SHEIN et TEMU publient leur sélection ici et non
+ * dans un état embarqué : sans cette lecture, la feuille n'avait ni taille ni
+ * couleur alors que la page les déclare.
+ *
+ * Rien n'est déduit : un attribut absent reste absent, un stock contradictoire
+ * reste `null`, un prix multiple (plusieurs offres différentes) reste `null`.
+ */
+function variantsFromJsonLd(nodes: any[]): ProductVariantDetail[] {
+  const products = nodes.filter(isProductNode);
+  const withVariants = products.filter((node) => Array.isArray(node?.hasVariant));
+  const variants = products.filter((node) => node?.isVariantOf || node?.productGroupID || node?.size || node?.color
+    || node?.additionalProperty || (node?.sku && withVariants.length));
+  const details: ProductVariantDetail[] = [];
+  for (const product of variants.slice(0, 120)) {
+    const attributes: Record<string, string> = {};
+    const readValue = (raw: any): string => cleanLabel(
+      raw && typeof raw === 'object' ? raw.name ?? raw.value ?? raw['@value'] ?? '' : raw,
+    );
+    const directAttributes: Array<[string, unknown]> = [
+      ['size', product.size], ['color', product.color], ['model', product.model],
+      ['style', product.style], ['material', product.material], ['pattern', product.pattern],
+      ['capacity', product.capacity], ['format', product.format], ['width', product.width],
+    ];
+    for (const [key, raw] of directAttributes) {
+      const value = readValue(raw);
+      if (value) attributes[key] = value;
+    }
+    const properties = Array.isArray(product.additionalProperty) ? product.additionalProperty
+      : product.additionalProperty ? [product.additionalProperty] : [];
+    for (const property of properties.slice(0, 20)) {
+      const key = variantAttributeKey(property?.name || property?.propertyID);
+      const value = readValue(property?.value);
+      if (key && value && !['__proto__', 'prototype', 'constructor'].includes(key)) attributes[key] = value;
+    }
+    if (!Object.keys(attributes).length) continue;
+
+    const rawOffers = Array.isArray(product.offers) ? product.offers : product.offers ? [product.offers] : [];
+    const offerRows = rawOffers.flatMap((offer: any) => {
+      if (String(offer?.['@type'] || '').toLowerCase().includes('aggregateoffer')) return [];
+      const availability = String(offer?.availability || '').toLowerCase();
+      const stock = /(?:^|\/)instock$/.test(availability) ? true
+        : /(?:^|\/)outofstock$/.test(availability) ? false : null;
+      return [{ price: parsePrice(offer?.price), stock }];
+    });
+    const prices = [...new Set<number>(offerRows.map((offer) => Number(offer.price)).filter((price) => price > 0))];
+    const stocks = [...new Set<boolean>(
+      offerRows.map((offer) => offer.stock).filter((stock): stock is boolean => stock !== null),
+    )];
+    const label = readValue(product.name) || Object.values(attributes).join(' · ');
+    details.push({
+      id: cleanLabel(product.sku || product.productID || product.mpn) || null,
+      label,
+      size: attributes.size || null,
+      color: attributes.color || null,
+      attributes,
+      available: true,
+      stock: stocks.length === 1 && offerRows.length > 0 && offerRows.every((offer) => offer.stock !== null) ? stocks[0] : null,
+      price: prices.length === 1 ? prices[0] : null,
+    });
+  }
+  const seen = new Set<string>();
+  return details.filter((detail) => {
+    const key = `${JSON.stringify(detail.attributes)}|${detail.price || ''}`.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function collectNamedStrings(root: any, matcher: RegExp, output: string[], depth = 0, seen = new Set<any>()): void {
   if (!root || typeof root !== 'object' || depth > 5 || seen.has(root) || output.length >= 40) return;
   seen.add(root);
@@ -693,6 +794,89 @@ function availabilityFrom(productLd: any, embeddedProduct: any): ParsedProductPa
   return schemaStock; // In particular, keep an explicit limited-stock report.
 }
 
+/**
+ * État de stock ÉCRIT sur la page marchande (« Nur wenige verfügbar »,
+ * « Plus que 2 en stock », « Sold out »), pour les marchands dont la fiche est
+ * lue nativement. Le texte est la donnée ; on ne le traduit pas en promesse :
+ * plusieurs états contradictoires ⇒ `unknown`.
+ */
+/**
+ * Les offres structurées se CONTREDISENT-elles ? (« S en stock, M épuisé »).
+ * Une fiche qui publie deux états différents ne permet aucune promesse : on ne
+ * remplace pas ce doute par le message du DOM, qui ne décrit qu'une variante.
+ */
+function hasConflictingPublishedAvailability(offers: any[]): boolean {
+  const known = new Set<string>();
+  let unreported = false;
+  for (const offer of offers) {
+    const raw = typeof offer?.availability === 'string' ? offer.availability.trim() : '';
+    const match = /^(?:https?:\/\/schema\.org\/)?(InStock|OutOfStock|LimitedAvailability)$/i.exec(raw);
+    if (!match) unreported = true;
+    else known.add(match[1].toLowerCase());
+  }
+  return known.size > 1 || (known.size > 0 && unreported);
+}
+
+const STORE_AVAILABILITY_SELECTORS: Partial<Record<string, readonly string[]>> = {
+  shein: ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="product-intro__stock" i]', '[class*="product-intro__soldout" i]', '[class*="goods-soldout" i]', '[class*="stock-status" i]', '[class*="sold-out" i]', '.product-intro__add-btn button', '.product-intro__add-btn', '.goods-btn__add'],
+  temu: ['[data-testid*="availability" i]', '[data-testid*="sold-out" i]', '[class*="goods-status" i]', '[class*="stock-status" i]', '[class*="sold-out" i]'],
+  aliexpress: ['[data-testid*="availability" i]', '[data-pl*="quantity" i]', '[class*="product-quantity" i]', '[class*="quantity--info" i]', '[class*="stock-status" i]', '[class*="sold-out" i]', '[data-pl="product-action"] button', '.product-action button'],
+  zalando: ['[data-testid*="availability" i]', '[data-testid*="stock" i]', '[class*="availability-message" i]', '[class*="product-status" i]', '[class*="sold-out" i]'],
+};
+
+function availabilityFromMerchantDom(document: Document, storeType: string): ParsedProductPage['availability'] {
+  const selectors = STORE_AVAILABILITY_SELECTORS[storeType] || [];
+  const statuses = new Set<ParsedProductPage['availability']>();
+  for (const selector of selectors) {
+    let nodes: Element[] = [];
+    try { nodes = Array.from(document.querySelectorAll(selector)).slice(0, 12); } catch { continue; }
+    for (const node of nodes) {
+      let excluded = false;
+      let parent: Element | null = node;
+      for (let depth = 0; parent && depth < 7; depth += 1, parent = parent.parentElement) {
+        const descriptor = `${parent.id || ''} ${typeof parent.className === 'string' ? parent.className : ''}`;
+        if (/sponsor|advert|recommend|related|carousel|cross.?sell|upsell/i.test(descriptor)
+          || parent.hasAttribute('hidden') || parent.getAttribute('aria-hidden') === 'true') {
+          excluded = true;
+          break;
+        }
+      }
+      if (excluded) continue;
+      const isDisabledControl = (node as HTMLButtonElement).disabled === true
+        || node.hasAttribute('disabled')
+        || node.getAttribute('aria-disabled') === 'true'
+        || /(?:^|[\s_-])(?:disabled|soldout|sold-out|is-disabled)(?:$|[\s_-])/i.test(typeof node.className === 'string' ? node.className : '');
+      const raw = [
+        node.getAttribute('data-availability'), node.getAttribute('data-stock-status'),
+        node.getAttribute('aria-label'), node.getAttribute('title'), node.textContent,
+      ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+      if (!raw) continue;
+      if (/outofstock|out\s*of\s*stock|sold\s*out|unavailable|currently\s+unavailable|ausverkauft|nicht\s+verfügbar|rupture|épuis|epuise|indisponible|agotado|esaurito|can'?t\s+ship\s+to|cannot\s+be\s+shipped|livraison\s+indisponible|نفدت\s*الكمية|غير\s*متوفر|لا\s*يمكن\s*الشحن/i.test(raw)) statuses.add('out_of_stock');
+      else if (/limitedavailability|limited\s*stock|low\s*stock|only\s+\d+\s+left|nur\s+noch\s+\d+|nur\s+wenige\s+verfügbar|plus\s+que\s*\d+/i.test(raw)) statuses.add('limited');
+      else if (/instock|in\s*stock|available|lieferbar|verfügbar|en\s+stock|disponible|\b\d+\s*(?:pieces?|pcs|pi[eè]ces?|unidades?|pe[cç]as?)\b/i.test(raw)) statuses.add('in_stock');
+      else if (!isDisabledControl && (storeType === 'shein' || storeType === 'aliexpress') && /\b(?:add\s*to\s*(?:bag|cart|basket)|buy\s*now|ajouter\s*au\s*(?:panier|sac)|acheter\s*maintenant|in\s*(?:den\s*warenkorb|die\s*einkaufstasche)|a(?:ñ|n)adir\s*(?:a\s*la\s*(?:bolsa|cesta)|al\s*carrito)|aggiungi\s*(?:al\s*carrello|alla\s*borsa))\b|أضف\s*إلى\s*(?:السلة|العربة|الحقيبة)|إضافة\s*إلى\s*(?:السلة|العربة|الحقيبة)/i.test(raw)) {
+        statuses.add('in_stock');
+      }
+    }
+    if (statuses.size > 1) return 'unknown';
+  }
+  return statuses.size === 1 ? [...statuses][0] : 'unknown';
+}
+
+/** Deux sources d'état de stock : elles doivent être d'accord, sinon `unknown`. */
+function combineMerchantAvailability(
+  structured: ParsedProductPage['availability'],
+  dom: ParsedProductPage['availability'],
+): ParsedProductPage['availability'] {
+  if (structured === 'unknown') return dom;
+  if (dom === 'unknown' || structured === dom) return structured;
+  /* « LimitedAvailability » n'est pas un désaccord avec « InStock » : c'est la
+     même chose, dite plus précisément. On garde la version la plus prudente
+     (jamais une promesse plus large que ce que la page publie). */
+  if ((structured === 'limited' && dom === 'in_stock') || (dom === 'limited' && structured === 'in_stock')) return 'limited';
+  return 'unknown';
+}
+
 function amazonAvailability(
   parsed: ParsedProductPage['availability'],
   bodyText: string,
@@ -771,13 +955,174 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     // Shopify and several storefront themes embed the current product in an
     // inline JavaScript object instead of application/json.
     const inlineMarkers = ['productData:', 'var meta =', 'window.meta =', 'window.__PRODUCT__ ='];
+    const sheinInlineMarkers = ['gbRawData =', 'window.gbRawData =', '"gbRawData":', 'productIntroData =', 'window.productIntroData =', '"productIntroData":', 'gbProductIntroData =', 'window.gbProductIntroData =', '__SSR_DATA__ =', 'window.__SSR_DATA__ ='];
+    const aeInlineMarkers = ['window.runParams =', 'runParams =', 'data:', '_dida_config_._init_data_ =', 'window._dida_config_ =', '__INIT_DATA__ =', 'window.__INIT_DATA__ ='];
+    let sheinRawState: any = null;
+    let aeRawState: any = null;
+    const urlSheinGoodsId = storeType === 'shein'
+      ? (String(baseUrl || '').match(/(?:[?&](?:goods_id|goodsId|productId)=|(?:^|[-/])p-|\/p\/|\/product-item-v\d+-)(\d{5,16})(?=[-./?&#]|$)/i)?.[1] || '')
+      : '';
+    const urlAeItemId = storeType === 'aliexpress'
+      ? (String(baseUrl || '').match(/(?:\/(?:item|i)\/|\/store\/product\/[^/]+\/(?:\d+_)?|[?&](?:productId|itemId|item_id)=)(\d{6,20})(?=\.html|[/?&#]|$)/i)?.[1] || '')
+      : '';
     for (const node of Array.from(document.querySelectorAll('script:not([type="application/ld+json"]):not([type="application/json"])')).slice(0, 100)) {
       const raw = node.textContent || '';
-      if (!raw || raw.length > 1_800_000 || !/(?:productData:|var meta\s*=|window\.(?:meta|__PRODUCT__)\s*=)/.test(raw)) continue;
-      for (const marker of inlineMarkers) {
-        const parsed = parseBalancedJsonObject(raw, marker);
-        if (parsed) collectEmbeddedProducts(parsed, embeddedProducts, new Set(), { value: 20_000 });
+      if (!raw || raw.length > 1_800_000) continue;
+      if (/(?:productData:|var meta\s*=|window\.(?:meta|__PRODUCT__)\s*=)/.test(raw)) {
+        for (const marker of inlineMarkers) {
+          const parsed = parseBalancedJsonObject(raw, marker);
+          if (parsed) collectEmbeddedProducts(parsed, embeddedProducts, new Set(), { value: 20_000 });
+        }
       }
+      if (storeType === 'shein' && !sheinRawState && /(?:gbRawData|productIntroData|gbProductIntroData|__SSR_DATA__)/.test(raw)) {
+        for (const marker of sheinInlineMarkers) {
+          const parsed = parseBalancedJsonObject(raw, marker);
+          if (!parsed || typeof parsed !== 'object') continue;
+          const unwrapped = parsed.productIntroData && typeof parsed.productIntroData === 'object' ? parsed.productIntroData
+            : parsed.gbRawData && typeof parsed.gbRawData === 'object' ? parsed.gbRawData
+              : parsed.goodsDetail && typeof parsed.goodsDetail === 'object' ? parsed.goodsDetail : parsed;
+          const detail = unwrapped?.detail && typeof unwrapped.detail === 'object' ? unwrapped.detail
+            : unwrapped?.goodsInfo && typeof unwrapped.goodsInfo === 'object' ? unwrapped.goodsInfo : unwrapped;
+          const candidateGid = String(detail?.goods_id || unwrapped?.goods_id || '').trim();
+          if (urlSheinGoodsId && candidateGid && candidateGid !== urlSheinGoodsId) continue;
+          if (detail?.goods_id || detail?.goods_name || detail?.salePrice || unwrapped?.attrSizeList) {
+            sheinRawState = { root: unwrapped, detail };
+            break;
+          }
+        }
+      }
+      if (storeType === 'aliexpress' && !aeRawState && /(?:runParams|_dida_config_|__INIT_DATA__|productInfoComponent|skuPriceList)/.test(raw)) {
+        for (const marker of aeInlineMarkers) {
+          const parsed = parseBalancedJsonObject(raw, marker);
+          if (!parsed || typeof parsed !== 'object') continue;
+          let aeRoot = parsed._init_data_?.data || parsed.data?.data || parsed.data || parsed.result || parsed;
+          if (aeRoot?.fields && typeof aeRoot.fields === 'object') aeRoot = aeRoot.fields;
+          const info = aeRoot?.productInfoComponent || aeRoot?.pageModule || aeRoot?.titleModule || {};
+          const candItemId = String(info?.id || info?.productId || aeRoot?.productId || aeRoot?.itemId || '').trim();
+          if (urlAeItemId && candItemId && /^\d{6,20}$/.test(candItemId) && candItemId !== urlAeItemId) continue;
+          if (info?.subject || aeRoot?.priceComponent || aeRoot?.priceModule || aeRoot?.skuComponent || aeRoot?.skuModule) {
+            aeRawState = aeRoot;
+            break;
+          }
+        }
+      }
+    }
+    if (sheinRawState && !embeddedProducts.length) {
+      const sRoot = sheinRawState.root;
+      const sDetail = sheinRawState.detail;
+      const sCurrency = String(sRoot?.currency || sRoot?.currencyInfo?.code || sDetail?.salePrice?.currency || '').trim().toUpperCase();
+      const sMainColor = Array.isArray(sDetail?.mainSaleAttribute)
+        ? cleanLabel(sDetail.mainSaleAttribute[0]?.attr_value_name || sDetail.mainSaleAttribute[0]?.attr_value)
+        : cleanLabel(sDetail?.mainSaleAttribute?.attr_value_name || sDetail?.color_name || '');
+      const sRawSizes = Array.isArray(sRoot?.attrSizeList) ? sRoot.attrSizeList
+        : Array.isArray(sDetail?.attrSizeList) ? sDetail.attrSizeList
+          : Array.isArray(sRoot?.saleAttr?.sizeList) ? sRoot.saleAttr.sizeList : [];
+      const sSaleAmount = parsePrice(sDetail?.salePrice?.amount ?? sDetail?.salePrice?.amountWithSymbol ?? sDetail?.salePrice);
+      const sImgs = [
+        sDetail?.original_img,
+        sRoot?.goods_imgs?.main_image?.origin_image,
+        ...(Array.isArray(sRoot?.goods_imgs?.detail_image) ? sRoot.goods_imgs.detail_image.map((d: any) => d?.origin_image || d) : []),
+      ].map((u) => (typeof u === 'string' && u.startsWith('//') ? `https:${u}` : u)).filter(Boolean);
+      const sVariants = sRawSizes.map((entry: any) => {
+        const szName = cleanLabel(entry?.attr_value_name || entry?.attr_value || entry?.size_name || entry?.name);
+        if (!szName) return null;
+        const stockNum = entry?.stock !== undefined ? Number(entry.stock) : NaN;
+        const avail = !(entry?.is_sold_out === true || entry?.sold_out === 1 || (!Number.isNaN(stockNum) && stockNum <= 0));
+        const vPrice = parsePrice(entry?.price?.salePrice?.amount ?? entry?.salePrice?.amount ?? entry?.price?.amount) || sSaleAmount || 0;
+        return {
+          id: String(entry?.attr_value_id || entry?.sku_code || szName),
+          title: sMainColor ? `${sMainColor} / ${szName}` : szName,
+          option1: sMainColor || szName,
+          ...(sMainColor ? { option2: szName } : {}),
+          available: avail,
+          price: vPrice > 0 ? String(vPrice) : undefined,
+          featured_image: sImgs[0],
+        };
+      }).filter(Boolean);
+      embeddedProducts.push({
+        id: sDetail?.goods_id ? `SHEIN-${sDetail.goods_id}` : undefined,
+        sku: sDetail?.goods_sn || undefined,
+        title: sDetail?.goods_name || undefined,
+        vendor: typeof sDetail?.brand === 'object' ? sDetail.brand?.brand_name : sDetail?.brand,
+        currency: /^[A-Z]{3}$/.test(sCurrency) ? sCurrency : undefined,
+        price: sSaleAmount || undefined,
+        images: sImgs,
+        featured_image: sImgs[0],
+        options: sMainColor && sVariants.length ? ['Color', 'Size'] : (sVariants.length ? ['Size'] : (sMainColor ? ['Color'] : [])),
+        variants: sVariants,
+      });
+    }
+    if (aeRawState && !embeddedProducts.length) {
+      const aeInfo = aeRawState.productInfoComponent || aeRawState.pageModule || aeRawState.titleModule || {};
+      const aePrice = aeRawState.priceComponent || aeRawState.priceModule || {};
+      const aeSku = aeRawState.skuComponent || aeRawState.skuModule || {};
+      const aeImg = aeRawState.imageComponent || aeRawState.imageModule || {};
+      const aeCurrency = String(
+        aePrice?.currencyCode || aePrice?.currency
+        || aeRawState?.currencyComponent?.currencyCode
+        || aePrice?.discountPrice?.minActivityAmount?.currency
+        || aePrice?.origPrice?.minAmount?.currency || '',
+      ).trim().toUpperCase();
+      const minAct = parsePrice(aePrice?.discountPrice?.minActivityAmount?.value ?? aePrice?.actMinPrice ?? aePrice?.formatedActivityPrice);
+      const maxAct = parsePrice(aePrice?.discountPrice?.maxActivityAmount?.value ?? aePrice?.actMaxPrice);
+      const minOrig = parsePrice(aePrice?.origPrice?.minAmount?.value ?? aePrice?.minPrice ?? aePrice?.formatedPrice);
+      const maxOrig = parsePrice(aePrice?.origPrice?.maxAmount?.value ?? aePrice?.maxPrice);
+      const aeSinglePrice = minAct > 0 && (!maxAct || Math.abs(maxAct - minAct) < 0.005)
+        ? minAct
+        : (!minAct && minOrig > 0 && (!maxOrig || Math.abs(maxOrig - minOrig) < 0.005) ? minOrig : 0);
+      const aeImgs = (Array.isArray(aeImg?.imagePathList) ? aeImg.imagePathList : [])
+        .map((u: any) => (typeof u === 'string' && u.startsWith('//') ? `https:${u}` : u))
+        .filter((u: any) => typeof u === 'string' && /^https?:\/\//i.test(u));
+      const aeProps = Array.isArray(aeSku?.productSKUPropertyList) ? aeSku.productSKUPropertyList : [];
+      const aeOptNames = aeProps.slice(0, 3).map((p: any) => cleanLabel(p?.skuPropertyName || p?.name)).filter(Boolean);
+      const valLookup = new Map<string, { label: string; img?: string }>();
+      for (const prop of aeProps) {
+        const pid = String(prop?.skuPropertyId ?? prop?.id ?? '');
+        for (const v of (Array.isArray(prop?.skuPropertyValues) ? prop.skuPropertyValues : [])) {
+          const vid = String(v?.propertyValueIdLong ?? v?.propertyValueId ?? '');
+          const label = cleanLabel(v?.propertyValueDisplayName || v?.propertyValueName || v?.name);
+          const rawVImg = v?.skuPropertyImagePath || v?.skuPropertyImageSummPath;
+          const img = typeof rawVImg === 'string' && rawVImg.startsWith('//') ? `https:${rawVImg}` : rawVImg;
+          if (pid && vid && label) valLookup.set(`${pid}:${vid}`, { label, img });
+        }
+      }
+      const aeSkus = Array.isArray(aeSku?.skuPriceList) ? aeSku.skuPriceList : [];
+      const aeVariants = aeSkus.slice(0, 60).map((s: any) => {
+        const sVal = s?.skuVal || s || {};
+        const propStr = String(s?.skuAttr || s?.skuPropIds || '');
+        const chosen = propStr.split(/[;,]/).map((seg) => {
+          const pair = seg.split('#')[0]?.trim() || '';
+          const fallback = cleanLabel(seg.split('#')[1] || '');
+          return valLookup.get(pair)?.label || fallback;
+        }).filter(Boolean);
+        const vPrice = parsePrice(
+          sVal?.skuActivityAmount?.value ?? sVal?.actSkuMultiCurrencyCalPrice ?? sVal?.actSkuCalPrice
+          ?? sVal?.skuAmount?.value ?? sVal?.skuMultiCurrencyCalPrice ?? sVal?.skuCalPrice,
+        );
+        const qty = sVal?.availQuantity !== undefined ? Number(sVal.availQuantity) : NaN;
+        const avail = !(!Number.isNaN(qty) && qty <= 0) && s?.salable !== false;
+        return {
+          id: String(s?.skuIdStr || s?.skuId || chosen.join('/')),
+          title: chosen.join(' / ') || 'Default',
+          option1: chosen[0],
+          option2: chosen[1],
+          option3: chosen[2],
+          available: avail,
+          price: vPrice > 0 ? String(vPrice) : undefined,
+          featured_image: aeImgs[0],
+        };
+      }).filter((v: any) => v.option1 || aeSkus.length === 1);
+      const aeId = String(aeInfo?.id || aeInfo?.productId || urlAeItemId || '').trim();
+      embeddedProducts.push({
+        id: aeId ? `AE-${aeId}` : undefined,
+        title: aeInfo?.subject || aeInfo?.title || undefined,
+        currency: /^[A-Z]{3}$/.test(aeCurrency) ? aeCurrency : undefined,
+        price: aeSinglePrice || (aeVariants.length === 1 ? parsePrice(aeVariants[0].price) : undefined) || undefined,
+        images: aeImgs,
+        featured_image: aeImgs[0],
+        options: aeOptNames,
+        variants: aeOptNames.length ? aeVariants : [],
+      });
     }
     const embeddedProduct = embeddedProducts.sort((a, b) => {
       const score = (item: any) => (item?.title || item?.name ? 10 : 0) + Math.min(20, item?.variants?.length || 0) + (item?.options ? 5 : 0);
@@ -798,6 +1143,12 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       || String(productLd?.name || embeddedProduct?.title || embeddedProduct?.name || document.title || '');
     title = title.replace(/\s*\|\s*(SHEIN|Amazon|TEMU|AliExpress).*$/i, '')
       .replace(/\s*:\s*Amazon\.[a-z.]+/i, '').trim();
+    if (storeType === 'amazon') {
+      // document.title d'Amazon : « Amazon.com: <produit> ». Le préfixe n'est pas le nom du
+      // produit, et « Amazon.com » seul (page coquille) n'est pas un titre.
+      title = title.replace(/^\s*Amazon\.[a-z.]{2,6}\s*:\s*/i, '').trim();
+      if (/^amazon(\.[a-z.]{2,6})?$/i.test(title)) title = '';
+    }
 
     const ldBrand = productLd?.brand?.name || (typeof productLd?.brand === 'string' ? productLd.brand : '') || embeddedProduct?.vendor || embeddedProduct?.brand || '';
     const metaBrand = meta('meta[property="product:brand"]') || meta('meta[name="brand"]') || meta('meta[property="og:brand"]');
@@ -913,17 +1264,74 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     const reviewCountFinal = reviewCount ?? normalizeReviewCount(markerReview);
 
     const ldOffers = collectJsonLdOffers(jsonLd);
-    const offers = ldOffers[0] || (Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers);
-    const ldSale = saleFromOffers(ldOffers);
+    /* Marchands à fiche native : le prix et le stock vivent sur les VARIANTES
+       (`hasVariant[].offers`). On descend l'arbre, et c'est cette liste qui fait
+       foi pour le prix, la devise et la disponibilité. */
+    const nestedOffers = AYWEBS_NATIVE_STORES.has(String(storeType)) ? collectProductOffers(productLd) : [];
+    const offerPool = nestedOffers.length ? nestedOffers : ldOffers;
+    const offers = offerPool[0] || (Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers);
+    const ldSale = saleFromOffers(offerPool);
+    const cleanSheinDomPrice = (): string => {
+      for (const sel of ['.product-intro__head-mainprice', '.goods-price__main', '[data-testid="product-price-sale"]', '.product-intro__head-price']) {
+        const el = document.querySelector(sel);
+        if (!el) continue;
+        const clone = el.cloneNode(true) as Element;
+        for (const bad of Array.from(clone.querySelectorAll('del, s, strike, [class*="retail" i], [class*="original" i], [class*="delprice" i], [class*="del-price" i], [class*="club-price" i], [class*="member-price" i], [class*="discount-label" i], [class*="price-discount" i]'))) {
+          bad.remove();
+        }
+        for (const child of Array.from(clone.querySelectorAll('span, div, em, small'))) {
+          if (/^[-+]?\s*\d{1,2}\s*%(?:\s*off)?$/i.test((child.textContent || '').trim())) child.remove();
+        }
+        const cleaned = (clone.textContent || '').replace(/\s+/g, ' ').trim();
+        if (cleaned && parsePrice(cleaned) > 0) return cleaned;
+      }
+      return text('[class*="price"]:not([style*="line-through"])');
+    };
+    const cleanAliExpressDomPrice = (): string => {
+      for (const sel of [
+        '[data-pl="product-price"] [class*="price--currentPriceText" i]',
+        '[data-pl="product-price"] [class*="price--current" i]',
+        '.product-price-current',
+        '.uniform-banner-box-price',
+        '[class*="price-default--current" i]',
+      ]) {
+        const el = document.querySelector(sel);
+        if (!el) continue;
+        const clone = el.cloneNode(true) as Element;
+        for (const bad of Array.from(clone.querySelectorAll('del, s, strike, [class*="original" i], [class*="discount" i]'))) {
+          bad.remove();
+        }
+        const normalized = (clone.textContent || '')
+          .replace(/\s+/g, ' ')
+          .replace(/\s*\/\s*(?:pc|pcs|piece|pi[eè]ce|lot|set|pair|paire|pack|unit|item)s?\b.*$/i, '')
+          .replace(/(\d)\s*([.,])\s*(\d{1,2})(?!\d)/g, '$1$2$3')
+          .trim();
+        if (normalized && parsePrice(normalized) > 0) return normalized;
+      }
+      return text('[itemprop="price"], [data-price]');
+    };
     const selectorPrice = storeType === 'amazon'
       ? text('.apexPriceToPay .a-offscreen, #corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen, #priceblock_dealprice, #newBuyBoxPrice')
       : storeType === 'shein'
-        ? text('[class*="price"]:not([style*="line-through"])')
-        : text('[itemprop="price"], [data-price], [class*="price"]');
+        ? cleanSheinDomPrice()
+        : storeType === 'aliexpress'
+          ? cleanAliExpressDomPrice()
+          : text('[itemprop="price"], [data-price], [class*="price"]');
     // Amazon : la lecture dédiée remplace le sélecteur historique, qui ne pouvait
     // pas voir un prix éclaté en spans `a-price-whole`/`a-price-fraction`.
     const amazonPriceText = amazon?.price.current || '';
     const details = variantsFromProduct(embeddedProduct);
+    /* Variantes déclarées par le JSON-LD (`hasVariant[]`) — la seule source de
+       taille/couleur chez Zalando. Une variante déjà connue n'est pas dupliquée. */
+    if (AYWEBS_NATIVE_STORES.has(String(storeType))) {
+      const seenJsonLd = new Set(details.map((detail) => `${detail.size || ''}|${detail.color || ''}|${detail.price || ''}`));
+      for (const detail of variantsFromJsonLd(jsonLd)) {
+        const key = `${detail.size || ''}|${detail.color || ''}|${detail.price || ''}`;
+        if (seenJsonLd.has(key)) continue;
+        seenJsonLd.add(key);
+        details.push(detail);
+      }
+    }
     if (amazon?.variants.details.length) {
       const seen = new Set(details.map((detail) => `${detail.size || ''}|${detail.color || ''}|${detail.label}`));
       for (const detail of amazon.variants.details) {
@@ -1155,7 +1563,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       originalPrice,
       images,
       colorImages,
-      externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
+      externalId: String(productLd?.sku || productLd?.productID || productLd?.productGroupID || embeddedProduct?.id || embeddedProduct?.sku || ''),
       /* Phase 2.5 — les champs étendus sortent TELLS QUELS (ou absents). */
       gtin: gtin || undefined,
       sku: skuFinal || undefined,
@@ -1169,7 +1577,12 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       // Quand la page ne dit RIEN, on garde la valeur calculée ailleurs : `null`
       // n'écrase jamais une information, il signifie « non publié ».
       amazon?.availability
-        || availabilityFrom({ ...productLd, offers: (ldOffers.length ? ldOffers : productLd?.offers) }, embeddedProduct),
+        || combineMerchantAvailability(
+          availabilityFrom({ ...productLd, offers: (offerPool.length ? offerPool : productLd?.offers) }, embeddedProduct),
+          AYWEBS_NATIVE_STORES.has(String(storeType)) && !hasConflictingPublishedAvailability(offerPool)
+            ? availabilityFromMerchantDom(document, String(storeType))
+            : 'unknown',
+        ),
       document.body?.textContent || '',
       storeType,
     ),

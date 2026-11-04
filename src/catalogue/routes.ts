@@ -29,6 +29,8 @@ import { archiveCategory, categoryTree, createCategory, getCategory, listCategor
 import { BRAND_CATEGORIES, createBrand, getBrand, listBrands, updateBrand } from './brands';
 import { addMedia, listMedia, makeMediaPrimary, removeMedia } from './media';
 import { createAttribute, listAttributes, readAttributes } from './attributes';
+import { seedInternationalCategories } from './seedCategories';
+import { seedAttributeMatrix } from './seedAttributes';
 import { catalogueContext } from './audit';
 import {
   CATALOGUE_ERRORS, CATALOGUE_RESOURCES, MEDIA_TYPES, PRODUCT_STATUSES, VARIANT_STATUSES, CATALOGUE_STATUSES,
@@ -275,6 +277,15 @@ export function createCatalogueRouter(db: QatafoDatabase): Router {
     res.status(201).json({ success: true, data: result.value });
   });
 
+  /**
+   * Installe l'arbre international (données) — action EXPLICITE du back-office,
+   * jamais au démarrage. Idempotent : ce qui existe n'est ni renommé ni déplacé.
+   */
+  router.post('/categories/seed', ...requireCatalogue(db, 'create', 'category'), (req: CatalogueRequest, res) => {
+    const report = seedInternationalCategories(db, { actor: actorOf(req), context: catalogueContext(db, req) });
+    res.status(201).json({ success: true, data: report });
+  });
+
   router.put('/categories/:id', ...requireCatalogue(db, 'update', 'category'), (req: CatalogueRequest, res) => {
     return answer(res, updateCategory(db, req.params.id, req.body, { actor: actorOf(req), context: catalogueContext(db, req) }));
   });
@@ -309,6 +320,12 @@ export function createCatalogueRouter(db: QatafoDatabase): Router {
   router.get('/attributes', ...requireCatalogue(db, 'read', 'product_attribute'), (req, res) => {
     const appliesTo = String(req.query.applies_to ?? '');
     res.json({ success: true, data: listAttributes(db, appliesTo === 'product' || appliesTo === 'variant' ? appliesTo : undefined) });
+  });
+
+  /** Installe la matrice d'attributs (données) — explicite, idempotent. */
+  router.post('/attributes/seed', ...requireCatalogue(db, 'create', 'product_attribute'), (req: CatalogueRequest, res) => {
+    const report = seedAttributeMatrix(db, { actor: actorOf(req), context: catalogueContext(db, req) });
+    res.status(201).json({ success: true, data: report });
   });
 
   router.post('/attributes', ...requireCatalogue(db, 'create', 'product_attribute'), (req: CatalogueRequest, res) => {

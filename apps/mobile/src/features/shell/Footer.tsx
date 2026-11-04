@@ -23,6 +23,7 @@ import { useT } from '@/i18n';
 import { APP_VERSION } from '@/config/app';
 import { useFooterInfo } from '@/api/hooks';
 import type { FooterChannelId } from '@/api/footer';
+import { RADIUS } from '@/design/tokens.mobile';
 
 /** أيقونة العلامة لكل قناة — من مجموعة الأيقونات الرسمية للتطبيق. */
 const CHANNEL_ICON: Record<FooterChannelId, keyof typeof Ionicons.glyphMap> = {
@@ -71,7 +72,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
       ]}
     >
       {/* 1) الهوية */}
-      <AppText variant="display" weight="semibold" color={FOOTER_COLORS.ink} style={styles.wordmark}>
+      <AppText variant="display" color={FOOTER_COLORS.ink} style={styles.wordmark}>
         ZAYROVI
       </AppText>
       <AppText variant="caption" color={FOOTER_COLORS.muted}>
@@ -81,7 +82,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
       {/* 2) «من نحن» — محرَّر من الإدارة؛ فارغ ⇒ القسم ما يبانش */}
       {about ? (
         <View style={styles.block}>
-          <AppText variant="caption" weight="bold" color={FOOTER_COLORS.ink}>{t('footer.about')}</AppText>
+          <AppText variant="captionStrong" color={FOOTER_COLORS.ink}>{t('footer.about')}</AppText>
           <AppText variant="caption" color={FOOTER_COLORS.muted}>{about}</AppText>
         </View>
       ) : null}
@@ -89,7 +90,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
       {/* 3) القنوات الرسمية — الصالحة فقط */}
       {channels.length > 0 ? (
         <View style={styles.block}>
-          <AppText variant="caption" weight="bold" color={FOOTER_COLORS.ink}>{t('footer.channels')}</AppText>
+          <AppText variant="captionStrong" color={FOOTER_COLORS.ink}>{t('footer.channels')}</AppText>
           <View style={styles.channels}>
             {channels.map((channel) => (
               <Pressable
@@ -104,11 +105,11 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
                     backgroundColor: FOOTER_COLORS.surface,
                     minWidth: theme.geometry.minTarget,
                     minHeight: theme.geometry.minTarget,
-                    opacity: pressed ? 0.7 : 1,
+                    opacity: pressed ? theme.opacity.subtle : 1,
                   },
                 ]}
               >
-                <Ionicons name={CHANNEL_ICON[channel.id]} size={20} color={FOOTER_COLORS.ink} accessibilityElementsHidden />
+                <Ionicons name={CHANNEL_ICON[channel.id]} size={theme.iconSize.sm} color={FOOTER_COLORS.ink} accessibilityElementsHidden />
               </Pressable>
             ))}
           </View>
@@ -117,12 +118,12 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
 
       {/* 4) وسائل الخلاص: ما تقبله الخزينة؛ وما فمّاش ⇒ يُقال */}
       <View style={styles.block}>
-        <AppText variant="caption" weight="bold" color={FOOTER_COLORS.ink}>{t('footer.payment')}</AppText>
+        <AppText variant="captionStrong" color={FOOTER_COLORS.ink}>{t('footer.payment')}</AppText>
         {methods.length > 0 ? (
           <View style={styles.methods}>
             {methods.map((method) => (
               <View key={method} style={[styles.method, { borderColor: FOOTER_COLORS.line }]}>
-                <Ionicons name="card-outline" size={12} color={FOOTER_COLORS.muted} accessibilityElementsHidden />
+                <Ionicons name="card-outline" size={theme.iconSize.xs} color={FOOTER_COLORS.muted} accessibilityElementsHidden />
                 <AppText variant="caption" color={FOOTER_COLORS.muted}>{method}</AppText>
               </View>
             ))}
@@ -134,7 +135,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
 
       {/* 5) وصولات نافعة — كلها شاشات موجودة فعلاً */}
       <View style={styles.block}>
-        <AppText variant="caption" weight="bold" color={FOOTER_COLORS.ink}>{t('footer.useful')}</AppText>
+        <AppText variant="captionStrong" color={FOOTER_COLORS.ink}>{t('footer.useful')}</AppText>
         <View style={styles.links}>
           <FooterLink icon="person-outline" label={t('footer.account')} onPress={() => router.push('/(tabs)/account')} />
           <FooterLink icon="bag-outline" label={t('footer.orders')} onPress={() => router.push('/orders')} />
@@ -156,10 +157,10 @@ function FooterLink({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyp
       onPress={onPress}
       style={({ pressed }) => [
         styles.footerLink,
-        { flexDirection: rowDirectionFor(theme.isRTL), minHeight: theme.geometry.minTarget, opacity: pressed ? 0.7 : 1 },
+        { flexDirection: rowDirectionFor(theme.isRTL), minHeight: theme.geometry.minTarget, opacity: pressed ? theme.opacity.subtle : 1 },
       ]}
     >
-      <Ionicons name={icon} size={16} color={FOOTER_COLORS.ink} accessibilityElementsHidden />
+      <Ionicons name={icon} size={theme.iconSize.xs} color={FOOTER_COLORS.ink} accessibilityElementsHidden />
       <AppText variant="caption" color={FOOTER_COLORS.ink}>{label}</AppText>
     </Pressable>
   );
@@ -167,12 +168,12 @@ function FooterLink({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyp
 
 const styles = StyleSheet.create({
   wrap: { borderTopWidth: 1, gap: 2 },
-  wordmark: { letterSpacing: 2, marginBottom: 2 },
+  wordmark: { marginBottom: 2 },
   block: { marginTop: 16, gap: 6 },
   channels: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   channel: {
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
@@ -183,7 +184,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: RADIUS.full,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },

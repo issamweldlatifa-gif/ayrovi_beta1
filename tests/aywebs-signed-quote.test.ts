@@ -16,7 +16,9 @@
  *      repaie pas 13–17 s de sondes, et le résultat reste marqué comme tel ;
  *   6. la porte de lecture borne les lectures simultanées sans jamais refuser.
  */
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
+import { JSDOM } from 'jsdom';
+import { AMAZON_MOBILE_CAPTURE_SCRIPT } from '../src/aywebs/storeScripts/amazon';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -43,7 +45,7 @@ const AMAZON_URL = 'https://www.amazon.com/dp/B0ABCDEFGH';
 const TOUCHED_ENV = [
   'AYWEBS_QUOTE_TTL_MS', 'AYWEBS_QUOTE_FRESH_MS', 'AYWEBS_QUOTE_REVERIFY_TND',
   'AYWEBS_QUOTE_REVERIFY_SAMPLE', 'AYWEBS_RESOLVE_FAILURE_TTL_MS',
-  'AYWEBS_READ_CONCURRENCY', 'AYWEBS_READ_GATE_MAX_WAIT_MS',
+  'AYWEBS_READ_CONCURRENCY', 'AYWEBS_READ_GATE_MAX_WAIT_MS', 'AYWEBS_WEBVIEW_VERIFY_SAMPLE',
 ];
 
 /* L'échantillon d'audit (5 % par défaut) est DÉSACTIVÉ par défaut dans cette
@@ -313,6 +315,27 @@ describe('AYWEBs Phase 1 — l’ajout au panier ne relit plus le marchand (int�
 });
 
 describe('AYWEBs Phase 1 — mémo « fiche illisible »', () => {
+  it('lecture incomplète : product_resolve_total journalise missing_fields et le diagnostic (sans page)', async () => {
+    const h = harness({ price: 0 });
+    const logs: string[] = [];
+    const spy = vi.spyOn(console, 'log').mockImplementation((line: unknown) => { logs.push(String(line)); });
+    try {
+      const result = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
+      expect(result.missing).toContain('price');
+      expect(result.missingFields).toEqual(expect.arrayContaining(['price', 'verified_price']));
+    } finally {
+      spy.mockRestore();
+    }
+    const total = logs.map((line) => JSON.parse(line)).find((entry) => entry.operation === 'product_resolve_total');
+    expect(total).toBeDefined();
+    expect(total.errorCode).toBe('CAPTURE_INCOMPLETE');
+    expect(total.missing_fields).toEqual(expect.arrayContaining(['price', 'verified_price']));
+    expect(total.details.price_read).toBe(false);
+    expect(total.details.capture_used).toBe(false);
+    // Aucun contenu de page ni donnée privée dans le journal.
+    expect(JSON.stringify(total)).not.toMatch(/<html|cookie|token|password/i);
+  });
+
   it('un réessai sur une fiche illisible ne repaie pas les sondes (et reste marqué)', async () => {
     const h = harness({ price: 0 });
     const first = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
@@ -333,6 +356,15 @@ describe('AYWEBs Phase 1 — mémo « fiche illisible »', () => {
     await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
     await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
     expect(h.scrapeProduct).toHaveBeenCalledTimes(2);
+  });
+
+  it('une demande refresh (Add au clic) ne sert jamais le mémo d’échec (19/10/2026)', async () => {
+    const h = harness({ price: 0 });
+    await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
+    expect(h.scrapeProduct).toHaveBeenCalledTimes(1);
+    const refreshed = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID, refresh: true });
+    expect(h.scrapeProduct).toHaveBeenCalledTimes(2);
+    expect(refreshed.cacheKind).toBeNull();
   });
 
   it('un succès n’entre jamais dans le mémo d’échec', async () => {
@@ -370,5 +402,42 @@ describe('AYWEBs Phase 1 — porte de lecture', () => {
     expect(fast).toBe('fast');
     expect(ayWebsReadGateStats().bypassed).toBeGreaterThan(0);
     await slow;
+  });
+});
+
+
+describe('Amazon fast quote — exact captured combination on the real server', () => {
+  it('prices and signs the chosen matrix row, not the price currently on the page', async () => {
+    process.env.AYWEBS_WEBVIEW_VERIFY_SAMPLE = '0';
+    const h = harness();
+    const html = readFileSync(join(__dirname, 'fixtures', 'amazon-product-page.html'), 'utf8');
+    const dom = new JSDOM(html, { url: AMAZON_URL });
+    const evaluate = new Function('document', 'location', 'URL', `return ${AMAZON_MOBILE_CAPTURE_SCRIPT}`);
+    const capture = JSON.parse(evaluate(dom.window.document, dom.window.location, URL));
+    dom.window.close();
+    capture.variantGroups = [{ name: 'size', values: ['Small', 'Medium'], selected: ['Small'], options: [
+      { value: 'Small', available: true, price: '$109.00' },
+      { value: 'Medium', available: true, price: '$119.00' },
+    ] }];
+    capture.selectedVariantTexts = ['Small'];
+    capture.variantMatrix = [
+      { variantId: 'asin:B0ABCDEFGH', attributes: { size: 'Small', color: 'Emerald Leaf' }, price: '$109.00', available: true },
+      { variantId: 'asin:B0ABCDEFGJ', attributes: { size: 'Medium', color: 'Emerald Leaf' }, price: '$119.00', available: true },
+    ];
+    const result = await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID, capture, selectedVariant: { size: 'Medium', color: 'Emerald Leaf' } });
+    expect(result.capture?.used).toBe(true);
+    expect(h.scrapeProduct).not.toHaveBeenCalled();
+    expect(result.product.price).toBe(119);
+    expect(result.quoteToken).toBeTruthy();
+    const claims = inspectAyWebsQuoteToken(result.quoteToken!)!;
+    expect(claims.price).toBe(119);
+    expect(claims.variantKey.toLowerCase()).toContain('medium');
+    const added = await addAyWebsCartItem(h.resolver, {
+      sessionId: SESSION_ID, accountId: null, productId: result.productId,
+      variantAttributes: { size: 'Medium', color: 'Emerald Leaf' }, quantity: 1, quoteToken: result.quoteToken,
+    });
+    expect(added.quoteUsed).toBe(true);
+    expect(added.item.unitPrice).toBe(119);
+    expect(h.scrapeProduct).not.toHaveBeenCalled();
   });
 });

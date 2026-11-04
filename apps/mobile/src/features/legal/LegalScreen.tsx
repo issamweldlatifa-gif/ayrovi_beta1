@@ -21,7 +21,7 @@ function Block({ block }: { block: LegalBlock }) {
   const theme = useTheme();
   if (block.kind === 'h2') {
     return (
-      <AppText variant="lead" weight="bold" style={styles.heading}>{block.text}</AppText>
+      <AppText variant="h3" style={styles.heading}>{block.text}</AppText>
     );
   }
   if (block.kind === 'notice') {
@@ -87,17 +87,17 @@ export function LegalScreen({ docId }: { docId: LegalDocId }) {
           hitSlop={8}
           style={({ pressed }) => [
             styles.back,
-            { width: theme.geometry.minTarget, height: theme.geometry.minTarget, opacity: pressed ? 0.6 : 1 },
+            { width: theme.geometry.minTarget, height: theme.geometry.minTarget, opacity: pressed ? theme.opacity.subtle : 1 },
           ]}
         >
           <Ionicons
             name={theme.isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={24}
+            size={theme.iconSize.md}
             color={theme.colors.ink}
             accessibilityElementsHidden
           />
         </Pressable>
-        <AppText variant="lead" weight="bold" numberOfLines={1} style={styles.barTitle}>
+        <AppText variant="h3" numberOfLines={1} style={styles.barTitle}>
           {t(titleKey)}
         </AppText>
       </View>
@@ -108,7 +108,7 @@ export function LegalScreen({ docId }: { docId: LegalDocId }) {
           { paddingBottom: insets.bottom + theme.space[6], paddingHorizontal: theme.space[4] },
         ]}
       >
-        <AppText variant="title" weight="semibold" style={styles.docTitle}>{version.title}</AppText>
+        <AppText variant="h3" style={styles.docTitle}>{version.title}</AppText>
         {version.meta ? (
           <AppText variant="caption" color={theme.colors.muted}>{version.meta}</AppText>
         ) : null}

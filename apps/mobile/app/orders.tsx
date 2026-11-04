@@ -22,6 +22,15 @@ import { fetchOrders } from '@/api/account';
 import { statusText } from '@/api/labels';
 import { mediaUrl } from '@/api/client';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { formatMoney } from '@/format/money';
+
+/**
+ * Filet de sécurité de l'écran : si le rendu de la liste des commandes lève, expo-router
+ * affiche le repli (arabe + français, bouton « عاود ») à la place de l'écran —
+ * l'application reste ouverte, l'utilisateur peut revenir. Voir
+ * `src/design/AppErrorBoundary.tsx` et la cause du 25/10/2026 (ordre des hooks).
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function OrdersScreen() {
   const theme = useTheme();
@@ -47,13 +56,13 @@ export default function OrdersScreen() {
         >
           <Ionicons
             name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-            size={26}
+            size={theme.iconSize.md}
             color={theme.colors.ink}
             accessibilityElementsHidden
           />
         </Pressable>
         <View style={styles.headerText}>
-          <AppText variant="title">{t('orders.title')}</AppText>
+          <AppText variant="h2">{t('orders.title')}</AppText>
           <AppText variant="caption" color={theme.colors.muted}>{t('orders.subtitle')}</AppText>
         </View>
       </View>
@@ -92,7 +101,7 @@ export default function OrdersScreen() {
           >
             <Card>
               <View style={styles.row}>
-                <AppText variant="label" weight="bold" style={styles.orderNumber}>
+                <AppText variant="label" style={styles.orderNumber}>
                   {order.orderNumber || order.id}
                 </AppText>
                 <AppText variant="caption" color={theme.colors.ink}>
@@ -100,7 +109,7 @@ export default function OrdersScreen() {
                 </AppText>
               </View>
               <AppText variant="caption" color={theme.colors.muted}>
-                {t('orders.items', { count: order.itemCount })} · {order.totalTnd.toFixed(2)} DT
+                {t('orders.items', { count: order.itemCount })} · {formatMoney(order.totalTnd)}
               </AppText>
               <AppText variant="caption" color={theme.colors.muted}>
                 {t('orders.payment')} : {statusText('payment', order.paymentStatus, t)}

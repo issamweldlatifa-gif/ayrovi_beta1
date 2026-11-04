@@ -17,6 +17,16 @@ import { fetchFavorites, removeFavorite } from '@/api/account';
 import { mediaUrl } from '@/api/client';
 import { userMessage } from '@/api/errors';
 import { SubScreen } from '@/design/subScreen';
+import { formatMoney } from '@/format/money';
+
+/**
+ * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
+ * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
+ * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
+ * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
+ * vérifié par `tests/error-boundary-coverage.test.ts`.
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function FavoritesScreen() {
   const theme = useTheme();
@@ -41,7 +51,7 @@ export default function FavoritesScreen() {
       refreshing={favorites.isRefetching}
     >
       {failure ? (
-        <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
+        <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
       ) : null}
       {favorites.isLoading ? <LoadingBlock /> : null}
       {favorites.isError ? <ErrorBlock error={favorites.error} onRetry={() => favorites.refetch()} /> : null}
@@ -61,10 +71,10 @@ export default function FavoritesScreen() {
               />
             ) : null}
             <View style={styles.text}>
-              <AppText variant="label" weight="bold">{favorite.title}</AppText>
+              <AppText variant="label" >{favorite.title}</AppText>
               {favorite.priceTnd !== null ? (
                 <AppText variant="caption" color={theme.colors.muted}>
-                  {t('favorites.price')} {favorite.priceTnd.toFixed(2)} DT
+                  {t('favorites.price')} {formatMoney(favorite.priceTnd)}
                 </AppText>
               ) : null}
               {favorite.sourceUrl ? (

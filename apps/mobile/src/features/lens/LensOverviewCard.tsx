@@ -17,6 +17,7 @@ import { useTheme } from '@/design/theme';
 import { AppText } from '@/design/ui';
 import { useT } from '@/i18n';
 import type { LensIdentification } from '@/api/lens';
+import { RADIUS } from '@/design/tokens.mobile';
 
 export function LensOverviewCard({ identification }: { identification: LensIdentification }) {
   const theme = useTheme();
@@ -36,9 +37,9 @@ export function LensOverviewCard({ identification }: { identification: LensIdent
       style={[styles.wrap, { backgroundColor: theme.colors.surface, borderColor: theme.colors.divider }]}
       testID="lens-overview-card"
     >
-      <AppText variant="label" weight="bold" color={theme.colors.muted}>{t('lens.overview.title')}</AppText>
+      <AppText variant="label" color={theme.colors.muted}>{t('lens.overview.title')}</AppText>
       {description ? (
-        <AppText variant="body" weight="semibold" numberOfLines={3}>{description}</AppText>
+        <AppText variant="bodyStrong" numberOfLines={3}>{description}</AppText>
       ) : null}
       {facts || category ? (
         <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
@@ -56,7 +57,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: RADIUS.lg,
     borderWidth: StyleSheet.hairlineWidth,
     gap: 4,
   },

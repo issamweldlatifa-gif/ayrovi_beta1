@@ -5,9 +5,9 @@
  *  • l'autoplay reprend après un glissement relâché SANS élan ;
  *  • l'autoplay s'arrête à la dernière carte (pas de retour brusque) ;
  *  • l'index suit le défilement (onMomentumScrollEnd) ;
- *  • le CTA est un bouton réel, distinct de la carte.
+ *  • la carte est le seul lien d'action, sans bouton CTA sous l'image.
  */
-import { AppState, StyleSheet } from 'react-native';
+import { AppState, processColor, StyleSheet } from 'react-native';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -16,6 +16,7 @@ import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
 import { carouselGeometry } from '../../src/features/home/heroCarouselLogic';
+import { COLORS } from '../../src/design/tokens.generated';
 import type { HeroSlide } from '../../src/api/public';
 
 jest.mock('expo-router', () => ({
@@ -30,7 +31,9 @@ jest.mock('../../src/api/public', () => {
 
 const INTERVAL_MS = 1000;
 const SCREEN_WIDTH = 390; // jest-expo : largeur d'écran par défaut proche d'un téléphone
-const { stride } = carouselGeometry(SCREEN_WIDTH);
+// Marge de page des téléphones compacts (même valeur que le header dans jest-expo).
+const GUTTER = 16;
+const { stride } = carouselGeometry(SCREEN_WIDTH, GUTTER);
 
 function slide(id: string, index: number): HeroSlide {
   return {
@@ -153,7 +156,7 @@ describe('autoplay', () => {
 });
 
 describe('défilement manuel', () => {
-  it('l’index suit l’offset à la fin de l’élan (carte centrée)', async () => {
+  it('l’index suit l’offset à la fin de l’élan (carte alignée sur la marge)', async () => {
     await renderCarousel({ ...SETTINGS, autoplay: false });
     fireEvent(list(), 'momentumScrollEnd', {
       nativeEvent: { contentOffset: { x: stride, y: 0 } },
@@ -170,27 +173,21 @@ describe('défilement manuel', () => {
   });
 });
 
-describe('CTA', () => {
-  it('le CTA est un bouton réel et ouvre la destination', async () => {
+describe('action de la carte Hero', () => {
+  it('supprime le bouton CTA séparé et garde toute la carte cliquable', async () => {
     await renderCarousel({ ...SETTINGS, autoplay: false });
-    const cta = screen.getByTestId('hero-card-a-cta');
-    expect(cta.props.accessibilityRole).toBe('button');
-    fireEvent.press(cta);
-    expect(router.push).toHaveBeenCalledWith('/shop/a');
-  });
-
-  it('la carte reste cliquable indépendamment du CTA', async () => {
-    await renderCarousel({ ...SETTINGS, autoplay: false });
+    expect(screen.queryByTestId('hero-card-a-cta')).toBeNull();
     fireEvent.press(screen.getByTestId('hero-card-a'));
     expect(router.push).toHaveBeenCalledWith('/shop/a');
   });
 });
 
 describe('géométrie et fond', () => {
-  it('la carte active est centrée : le retrait vient de la largeur MESURÉE, pas de la fenêtre', async () => {
+  it('la 1re carte commence à la marge de page (gutter, comme le header) : retrait issu de la largeur MESURÉE', async () => {
     await renderCarousel();
     measureSection(360);
-    const { sideInset } = carouselGeometry(360);
+    const { sideInset } = carouselGeometry(360, GUTTER);
+    expect(sideInset).toBe(GUTTER);
     const padding = StyleSheet.flatten(list().props.contentContainerStyle).paddingHorizontal;
     expect(padding).toBe(sideInset);
   });
@@ -198,7 +195,7 @@ describe('géométrie et fond', () => {
   it('getItemLayout inclut le retrait : scrollToIndex vise la carte, pas un décalage', async () => {
     await renderCarousel();
     measureSection(360);
-    const { sideInset, stride: measuredStride } = carouselGeometry(360);
+    const { sideInset, stride: measuredStride } = carouselGeometry(360, GUTTER);
     const layout = list().props.getItemLayout(null, 1);
     expect(layout.offset).toBe(sideInset + measuredStride);
   });
@@ -223,8 +220,8 @@ describe('géométrie et fond', () => {
   });
 });
 
-describe('fond = la photo', () => {
-  it('chaque carte pose sa couche de fond ; la section commence au bord haut de la 1re photo', async () => {
+describe('fondu du fond Hero vers la page', () => {
+  it('chaque carte pose sa couche ; le dégradé se termine exactement sur le canevas de page', async () => {
     const withEdges = SLIDES.map((card, index) => ({
       ...card,
       edgeTop: ['#433F39', '#274546', '#E0C3A0'][index],
@@ -236,6 +233,10 @@ describe('fond = la photo', () => {
     for (const index of [0, 1, 2]) {
       expect(screen.getByTestId(`hero-carousel-backdrop-${index}`, { includeHiddenElements: true })).toBeTruthy();
     }
+    const gradient = screen.getByTestId('hero-carousel-backdrop-0', { includeHiddenElements: true });
+    expect(gradient.props.locations).toEqual([0, 0.18, 0.55, 0.82, 1]);
+    expect(gradient.props.colors).toHaveLength(5);
+    expect([COLORS.light.canvas, COLORS.dark.canvas].map(processColor)).toContain(gradient.props.colors.at(-1));
   });
 });
 

@@ -21,6 +21,7 @@
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
+import { clearSonimSession, useSonimSession } from '@/features/sonim/sonimSession';
 import { CLIENT_HEADER } from '@/api/config';
 import { resetAuthContext, setAuthContext, setCsrfRefresher } from '@/api/client';
 import {
@@ -104,6 +105,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [verified, setVerified] = useState(false);
   const [notice, setNotice] = useState('');
   const backendRef = useRef<SecureBackend | null>(null);
+
+  useEffect(() => {
+    if (status === 'loading') return;
+    const owner = useSonimSession.getState().owner;
+    const identity = status === 'signedIn' && account?.id ? `account:${account.id}` : status === 'signedOut' ? 'guest' : '';
+    if (owner && (!identity || !owner.endsWith(`:${identity}`))) clearSonimSession();
+  }, [status, account?.id]);
 
   /** Rejoue une révocation qui avait échoué faute de réseau. */
   const replayPendingRevocation = useCallback(async (backend: SecureBackend) => {
@@ -322,6 +330,7 @@ const noSessionIssued = () => new ApiError(
   }, []);
 
   const signOut = useCallback(async () => {
+    clearSonimSession();
     const store = backend();
     const { session } = await loadSession(store);
     setChallenge(null);

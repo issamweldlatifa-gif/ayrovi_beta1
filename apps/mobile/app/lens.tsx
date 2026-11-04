@@ -18,7 +18,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Animated, AppState, Keyboard, Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, View, useWindowDimensions,
+  Animated, AppState, Keyboard, Linking, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions,
   type NativeScrollEvent, type NativeSyntheticEvent, type PanResponderGestureState,
 } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
@@ -33,12 +33,12 @@ import { AppText, Button, Field } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
 import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
-import { frost, veil } from '@/design/tokens.mobile';
+import { RADIUS, frost, veil } from '@/design/tokens.mobile';
 import { useT, type TranslationKey } from '@/i18n';
 import { ApiError, isApiError } from '@/api/errors';
 import { addExternalFavorite } from '@/api/account';
 import {
-  analyzeBarcode, analyzeCode, analyzeText, analyzeUrl, searchVisualMatches, markChosen, parseCandidate,
+  analyzeBarcode, analyzeCode, analyzeText, analyzeUrl, searchVisualMatches, markChosen,
   type LensBox, type LensCandidate, type LensDetectedProduct, type LensHistoryItem, type LensIdentification,
   type LensVisualMatch,
   type LensSearchResult,
@@ -51,7 +51,8 @@ import { LensProgressLine, lensProgressLabel } from '@/features/lens/LensProgres
 import { LensOverviewCard } from '@/features/lens/LensOverviewCard';
 import { LensSearchBar } from '@/features/lens/LensSearchBar';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
-import { LensProductView } from '@/features/lens/LensProductView';
+import { lensOpenDecision } from '@/features/lens/lensOpen';
+import { useKeyboardInset } from '@/design/useKeyboardInset';
 import { LensHelpView } from '@/features/lens/LensHelpView';
 import { LensHistoryView } from '@/features/lens/LensHistoryView';
 import { LensRulesView } from '@/features/lens/LensRulesView';
@@ -59,7 +60,6 @@ import { LensMenu, type LensMenuItem } from '@/features/lens/LensMenu';
 import { LensLiveOverlay } from '@/features/lens/LensLiveOverlay';
 import { LensSelectionView, type SelectionCommit } from '@/features/lens/LensSelectionView';
 import { LENS_COLORS } from '@/features/lens/lensPalette';
-import { mergeLensProduct } from '@/features/lens/productEnrichment';
 import { shrinkImage } from '@/features/lens/lensImage';
 import { FULL_BOX, isFullFrame, padBox, selectionKey, toRoi } from '@/features/lens/lensSelection';
 import { initialMotion, isSteady, nextMotion, shouldDetect, type MotionState } from '@/features/lens/lensLive';
@@ -86,7 +86,6 @@ type Stage =
   | { kind: 'idle' }
   | BusyStage
   | ResultsStage
-  | { kind: 'product'; candidate: LensCandidate; back: ResultsStage; enriching: boolean }
   | { kind: 'error'; error: unknown };
 type SearchJob = (signal: AbortSignal) => Promise<void>;
 type InfoPanel = 'help' | 'history' | 'rules';
@@ -270,9 +269,7 @@ function SearchSheet({ children, geometry }: { children: ReactNode; geometry: Le
         onAccessibilityAction={(event) => snapTo(event.nativeEvent.actionName === 'increment' ? 0 : live.current.rest)}
         style={styles.sheetGrabArea}
         testID="lens-search-sheet-handle"
-      >
-        <View style={[styles.sheetHandle, styles.sheetDragHandle, { backgroundColor: theme.colors.lineControl }]} />
-      </Pressable>
+      />
       <LensSheetScrollContext.Provider value={onListScroll}>
         {children}
       </LensSheetScrollContext.Provider>
@@ -299,10 +296,27 @@ function errorCopyKey(error: unknown): { title: TranslationKey; body: Translatio
 
 const IDLE_LIVE: LiveView = { status: 'scanning', products: [], matches: [], selected: -1, photo: null };
 
+/**
+ * Filet de sécurité de l'écran : si le rendu de Z Lens (caméra) lève, expo-router
+ * affiche le repli (arabe + français, bouton « عاود ») à la place de l'écran —
+ * l'application reste ouverte, l'utilisateur peut revenir. Voir
+ * `src/design/AppErrorBoundary.tsx` et la cause du 25/10/2026 (ordre des hooks).
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
 export default function LensScreen() {
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
+  /**
+   * Clavier (28/10/2026) : en mode « mots-clés » ou « adresse », le champ vit
+   * dans le panneau du bas — sans ce décalage, le clavier le recouvrait et on
+   * tapait à l'aveugle. Déclaré ICI, avec les autres hooks : les deux vues
+   * (résultats / viseur) sont rendues par le même composant, un hook après un
+   * `return` changerait le nombre de hooks entre deux rendus.
+   * iOS seulement — Android réduit déjà la fenêtre (voir `useKeyboardInset`).
+   */
+  const keyboardInset = useKeyboardInset(Platform.OS === 'ios');
   const { width, height } = useWindowDimensions();
   const focused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
@@ -329,7 +343,6 @@ export default function LensScreen() {
   const photoLock = useRef(false);
   const favoriteLocks = useRef(new Set<string>());
   const requestRef = useRef<AbortController | null>(null);
-  const enrichmentRef = useRef<AbortController | null>(null);
   const lastJobRef = useRef<SearchJob | null>(null);
   const ownedPreviewRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
@@ -369,8 +382,7 @@ export default function LensScreen() {
       mountedRef.current = false;
       subscription.remove();
       requestRef.current?.abort();
-      enrichmentRef.current?.abort();
-      if (searchTimer.current) clearTimeout(searchTimer.current);
+        if (searchTimer.current) clearTimeout(searchTimer.current);
       if (tipTimer.current) clearTimeout(tipTimer.current);
       discardOwnedPreview();
       sessionRef.current?.photos.forEach((photo) => photo.cleanup.forEach(removePrivateCapture));
@@ -802,7 +814,10 @@ export default function LensScreen() {
     const job: SearchJob = async (signal) => {
       if (isQr && isOpenableSourceUrl(value)) {
         const result = await analyzeUrl(value, 'qr', true, signal);
-        if (!signal.aborted) showSearch({ candidates: [result.product, ...result.alternates], eventId: result.eventId });
+        const ordered = result.fallback && result.alternates.length > 0
+          ? [...result.alternates, result.product]
+          : [result.product, ...result.alternates];
+        if (!signal.aborted) showSearch({ candidates: ordered, eventId: result.eventId });
         return;
       }
       const result = isQr ? await analyzeCode(value, signal) : await analyzeBarcode(value, signal);
@@ -832,7 +847,10 @@ export default function LensScreen() {
     Keyboard.dismiss();
     const job: SearchJob = async (signal) => {
       const result = await analyzeUrl(url, 'url', recordHistory, signal);
-      if (!signal.aborted) showSearch({ candidates: [result.product, ...result.alternates], eventId: result.eventId });
+      const ordered = result.fallback && result.alternates.length > 0
+        ? [...result.alternates, result.product]
+        : [result.product, ...result.alternates];
+      if (!signal.aborted) showSearch({ candidates: ordered, eventId: result.eventId });
     };
     void run(job);
   }, [run, showSearch]);
@@ -878,76 +896,37 @@ export default function LensScreen() {
   }, [mode, resetLive]);
 
   /**
-   * Ouvrir une fiche : la carte s'affiche tout de suite, puis la PAGE
-   * marchande est lue (prix, stock, tailles). Un retour ou un autre produit
-   * annule la lecture.
+   * APPUI SUR UNE CARTE → AYWEBs, toujours (28/10/2026).
+   *
+   * Lien collé, mots-clés, photo, QR : le chemin d'entrée ne change RIEN à la
+   * destination. La carte porte l'adresse de la fiche ; l'appui ouvre CETTE
+   * page dans le navigateur AYWEBs, où le client choisit couleur/taille sur le
+   * site, et où « Add to Cart » relit la page (capture) avant d'ajouter.
+   *
+   * L'ancienne grande fiche Lens — destination de repli du catalogue et des
+   * adresses refusées — est supprimée : plus aucun appui ne peut sortir du
+   * parcours AYWEBs (voir `lensOpen.ts`).
    */
-  const openProduct = useCallback((candidate: LensCandidate, source: ResultsStage) => {
-    void markChosen(source.eventId);
-    enrichmentRef.current?.abort();
-    const controller = new AbortController();
-    enrichmentRef.current = controller;
-    setStage({ kind: 'product', candidate, back: source, enriching: true });
-
-    void analyzeUrl(candidate.sourceUrl, 'url', false, controller.signal)
-      .then((result) => {
-        if (controller.signal.aborted || !mountedRef.current) return;
-        setStage((current) => current.kind === 'product' && current.candidate.sourceUrl === candidate.sourceUrl
-          ? {
-              ...current,
-              candidate: result.fallback ? current.candidate : mergeLensProduct(current.candidate, result.product),
-              enriching: false,
-            }
-          : current);
-      })
-      .catch(() => {
-        if (controller.signal.aborted || !mountedRef.current) return;
-        setStage((current) => current.kind === 'product' && current.candidate.sourceUrl === candidate.sourceUrl
-          ? { ...current, enriching: false }
-          : current);
-      })
-      .finally(() => {
-        if (enrichmentRef.current === controller) enrichmentRef.current = null;
-      });
-  }, []);
-
   const onOpen = useCallback((candidate: LensCandidate) => {
-    // Pendant la recherche, une fiche déjà lue est COMPLÈTE (prix lu sur la
-    // page marchande) : elle s'ouvre. Le retour ramène la grille partielle.
-    const source: ResultsStage | null = stage.kind === 'results'
-      ? stage
-      : stage.kind === 'busy'
-        ? { kind: 'results', candidates: stage.cards, eventId: '', excluded: 0 }
-        : null;
-    if (!source || !isOpenableSourceUrl(candidate.sourceUrl)) return;
-    openProduct(candidate, source);
-  }, [openProduct, stage]);
+    const decision = lensOpenDecision(candidate);
+    if (decision.screen !== 'browser') return;
+    if (stage.kind === 'results' && stage.eventId) void markChosen(stage.eventId);
+    router.push(decision.target);
+  }, [markChosen, stage]);
 
   /**
    * Live : ouvrir la page d'une CORRESPONDANCE visuelle. SerpApi a trouvé des
-   * pages qui ressemblent à la photo ; on lit la page pour le prix — jamais
-   * de prix deviné à partir de la photo.
+   * pages qui ressemblent à la photo ; l'appui suit la MÊME règle que les
+   * cartes — la page du marchand s'ouvre dans AYWEBs, jamais ailleurs.
    */
   const onOpenLiveMatch = useCallback((match: LensVisualMatch) => {
     if (!isOpenableSourceUrl(match.url)) return;
-    let candidate: LensCandidate;
-    try {
-      candidate = parseCandidate({
-        id: `live-${match.url}`,
-        kind: 'external',
-        title: match.name,
-        sourceUrl: match.url,
-        source: match.source,
-        image: match.image,
-        price: null,
-        currency: null,
-        availability: 'unknown',
-      });
-    } catch {
-      return;
-    }
-    openProduct(candidate, { kind: 'results', candidates: [candidate], eventId: '', excluded: 0 });
-  }, [openProduct]);
+    const decision = lensOpenDecision({
+      sourceUrl: match.url,
+      source: match.source,
+    });
+    if (decision.screen === 'browser') router.push(decision.target);
+  }, []);
 
   const onFavorite = useCallback(async (candidate: LensCandidate) => {
     const key = candidate.sourceUrl;
@@ -971,9 +950,7 @@ export default function LensScreen() {
 
   const reset = useCallback(() => {
     requestRef.current?.abort();
-    enrichmentRef.current?.abort();
     requestRef.current = null;
-    enrichmentRef.current = null;
     lastJobRef.current = null;
     scanLock.current = false;
     photoLock.current = false;
@@ -987,9 +964,7 @@ export default function LensScreen() {
 
   const cancelSearch = useCallback(() => {
     requestRef.current?.abort();
-    enrichmentRef.current?.abort();
     requestRef.current = null;
-    enrichmentRef.current = null;
     lastJobRef.current = null;
     scanLock.current = false;
     discardOwnedPreview();
@@ -1036,23 +1011,6 @@ export default function LensScreen() {
       </View>
     </Modal>
   );
-
-  if (stage.kind === 'product') {
-    return (
-      <LensProductView
-        candidate={stage.candidate}
-        enriching={stage.enriching}
-        onBack={() => {
-          enrichmentRef.current?.abort();
-          enrichmentRef.current = null;
-          setStage(stage.back);
-        }}
-        favorite={favorited[stage.candidate.sourceUrl] === true}
-        favoriteNote={favoriteNote}
-        onFavorite={onFavorite}
-      />
-    );
-  }
 
   if (ocerexOpen) {
     return (
@@ -1103,7 +1061,7 @@ export default function LensScreen() {
           // Fond de « viseur » toujours sombre : l'en-tête et les contrôles posés dessus sont
           // blancs. `ink` devenait BLANC en mode sombre (titre blanc sur blanc).
           <View style={[styles.preview, styles.previewFallback, { backgroundColor: LENS_COLORS.black }]}>
-            <Ionicons name="scan-outline" size={64} color={LENS_COLORS.white} accessibilityElementsHidden />
+            <Ionicons name="scan-outline" size={theme.iconSize.xxl} color={LENS_COLORS.white} accessibilityElementsHidden />
           </View>
         )}
         {session && multi ? (
@@ -1122,7 +1080,7 @@ export default function LensScreen() {
               </Pressable>
             ))}
             <View style={[styles.thumbCount, { backgroundColor: veil(0.65) }]}>
-              <AppText variant="caption" weight="bold" color={LENS_COLORS.white}>{`${session.index + 1}/${session.photos.length}`}</AppText>
+              <AppText variant="captionStrong" color={LENS_COLORS.white}>{`${session.index + 1}/${session.photos.length}`}</AppText>
             </View>
           </View>
         ) : null}
@@ -1133,14 +1091,14 @@ export default function LensScreen() {
         ) : null}
         <View style={[styles.resultTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
           <Pressable onPress={reset} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
-            <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.lg} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
+            <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
           </Pressable>
           {/* Barre flottante : elle remplace le titre quand une photo est
               analysée — la photo, son cadre et l'étape restent visibles. */}
           {sessionPhoto ? (
             <LensSearchBar uri={sessionPhoto.uri} label={barLabel} onCancel={cancelSearch} busy={stage.kind === 'busy'} />
           ) : (
-            <AppText variant="title" weight="semibold" color={LENS_COLORS.white} align="center" style={styles.resultTitle}>{t('lens.title')}</AppText>
+            <AppText variant="h3" color={LENS_COLORS.white} align="center" style={styles.resultTitle}>{t('lens.title')}</AppText>
           )}
           <View style={styles.headerSpacer} />
         </View>
@@ -1188,7 +1146,7 @@ export default function LensScreen() {
               <View style={styles.errorIcon}>
                 <Ionicons name="camera-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
               </View>
-              <AppText variant="title" weight="bold" align="center">{t(errorCopy.title)}</AppText>
+              <AppText variant="h3" align="center">{t(errorCopy.title)}</AppText>
               <AppText color={theme.colors.muted} align="center">{t(errorCopy.body)}</AppText>
               {lastJobRef.current ? <Button label={t('common.retry')} onPress={retry} block /> : null}
               {deviceError ? <Button label={t('lens.pickGallery')} onPress={onGallery} block /> : null}
@@ -1260,7 +1218,7 @@ export default function LensScreen() {
         <View style={[styles.cameraTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
           <View style={[styles.headerSide, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
             <Pressable onPress={() => goBack('/')} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
-              <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.lg} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
+              <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
             </Pressable>
             {cameraMode && cameraAllowed ? (
               <Pressable onPress={() => setTorch((value) => !value)} accessibilityRole="button" accessibilityLabel={t('lens.flash')} style={styles.overlayButton} hitSlop={HIT_SLOP} testID="lens-torch">
@@ -1269,10 +1227,10 @@ export default function LensScreen() {
             ) : null}
           </View>
           {/* « Z Lens » écrit en texte (pas le logo) — spécification du client. */}
-          <AppText variant="title" weight="semibold" color={LENS_COLORS.white} align="center" style={styles.cameraTitle}>{t('lens.title')}</AppText>
+          <AppText variant="h3" color={LENS_COLORS.white} align="center" style={styles.cameraTitle}>{t('lens.title')}</AppText>
           <View style={[styles.headerSide, { flexDirection: theme.isRTL ? 'row' : 'row-reverse' }]}>
             <Pressable onPress={() => setMenuOpen(true)} accessibilityRole="button" accessibilityLabel={t('lens.menu.open')} style={styles.overlayButton} hitSlop={HIT_SLOP} testID="lens-open-menu">
-              <Ionicons name="ellipsis-vertical" size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
+              <Ionicons name="ellipsis-vertical-outline" size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
             </Pressable>
           </View>
         </View>
@@ -1281,7 +1239,7 @@ export default function LensScreen() {
           <View style={styles.permissionCenter}>
             <View style={[styles.permissionCard, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
               <Ionicons name="camera-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
-              <AppText variant="title" weight="bold" align="center">{t('lens.permissionTitle')}</AppText>
+              <AppText variant="h3" align="center">{t('lens.permissionTitle')}</AppText>
               <AppText color={theme.colors.muted} align="center">{t('lens.permissionText')}</AppText>
               {permission?.canAskAgain !== false ? (
                 <Button label={t('lens.permissionButton')} onPress={() => { void requestPermission().catch(() => {}); }} block />
@@ -1298,7 +1256,7 @@ export default function LensScreen() {
             <View style={[styles.offlineIcon, { backgroundColor: frost(0.1) }]}>
               <Ionicons name={mode === 'link' ? 'link-outline' : 'search-outline'} size={theme.iconSize.lg} color={LENS_COLORS.white} accessibilityElementsHidden />
             </View>
-            <AppText variant="title" weight="bold" color={LENS_COLORS.white} align="center">
+            <AppText variant="h3" color={LENS_COLORS.white} align="center">
               {mode === 'link' ? t('lens.link.title') : t('lens.text.title')}
             </AppText>
             <AppText color={frost(0.75)} align="center">{mode === 'link' ? t('lens.link.text') : t('lens.text.text')}</AppText>
@@ -1308,7 +1266,7 @@ export default function LensScreen() {
         {mode === 'live' && showCamera ? (
           <View style={[styles.livePill, { bottom: panelHeight + 12, backgroundColor: veil(0.62) }]} pointerEvents="none" accessibilityLiveRegion="polite" testID="lens-live-status">
             <View style={[styles.livePillDot, { backgroundColor: live.status === 'detected' ? LENS_COLORS.activeSoft : frost(0.6) }]} />
-            <AppText variant="caption" weight="semibold" color={LENS_COLORS.white} numberOfLines={1}>{livePill}</AppText>
+            <AppText variant="captionStrong" color={LENS_COLORS.white} numberOfLines={1}>{livePill}</AppText>
           </View>
         ) : null}
 
@@ -1316,7 +1274,7 @@ export default function LensScreen() {
             TRANSPARENT : la caméra plein écran reste visible derrière les boutons, comme
             Google Lens ; seuls les boutons et la barre portent un voile translucide. */}
         <View
-          style={[styles.panel, { paddingBottom: insets.bottom + 12 }]}
+          style={[styles.panel, { paddingBottom: insets.bottom + 12, bottom: keyboardInset }]}
           onLayout={(event) => setPanelHeight(Math.round(event.nativeEvent.layout.height))}
           testID="lens-panel"
         >
@@ -1326,7 +1284,7 @@ export default function LensScreen() {
                 <View style={styles.sideCircle}>
                   <Ionicons name="images-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
                 </View>
-                <AppText variant="caption" weight="semibold" color={LENS_COLORS.white} style={styles.overCamera}>{t('lens.gallery')}</AppText>
+                <AppText variant="captionStrong" color={LENS_COLORS.white} style={styles.overCamera}>{t('lens.gallery')}</AppText>
               </Pressable>
               <Pressable
                 onPress={() => { void onPhoto(); }}
@@ -1338,14 +1296,14 @@ export default function LensScreen() {
                 style={[styles.shutterOuter, { opacity: cameraReady ? 1 : 0.5 }]}
               >
                 <View style={styles.shutterInner}>
-                  <Ionicons name="search" size={theme.iconSize.lg} color={LENS_COLORS.black} accessibilityElementsHidden />
+                  <Ionicons name="search-outline" size={theme.iconSize.lg} color={LENS_COLORS.black} accessibilityElementsHidden />
                 </View>
               </Pressable>
               <Pressable onPress={() => setOcerexOpen(true)} accessibilityRole="button" accessibilityLabel={t('ocerex.open')} style={styles.side} testID="lens-open-ocerex">
                 <View style={styles.sideCircle}>
                   <Ionicons name="pricetag-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
                 </View>
-                <AppText variant="caption" weight="semibold" color={LENS_COLORS.white} style={styles.overCamera}>OCEREX</AppText>
+                <AppText variant="captionStrong" color={LENS_COLORS.white} style={styles.overCamera}>OCEREX</AppText>
               </Pressable>
             </View>
           ) : null}
@@ -1354,7 +1312,7 @@ export default function LensScreen() {
             <View style={[styles.codeHint, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="qr-code-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
               <View style={styles.codeHintCopy}>
-                <AppText weight="bold" color={LENS_COLORS.white}>{t('lens.codeHint')}</AppText>
+                <AppText variant="bodyStrong" color={LENS_COLORS.white}>{t('lens.codeHint')}</AppText>
                 <AppText variant="caption" color={frost(0.75)}>{t('lens.codeAuto')}</AppText>
               </View>
             </View>
@@ -1412,7 +1370,7 @@ export default function LensScreen() {
                   testID={`lens-mode-${value}`}
                 >
                   <Ionicons name={icon} size={theme.iconSize.sm} color={active ? LENS_COLORS.black : LENS_COLORS.white} accessibilityElementsHidden />
-                  <AppText variant="caption" weight="semibold" color={active ? LENS_COLORS.black : LENS_COLORS.white} align="center" numberOfLines={1}>{t(label)}</AppText>
+                  <AppText variant="captionStrong" color={active ? LENS_COLORS.black : LENS_COLORS.white} align="center" numberOfLines={1}>{t(label)}</AppText>
                 </Pressable>
               );
             })}
@@ -1452,7 +1410,7 @@ const styles = StyleSheet.create({
   cornerBL: { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3, borderBottomLeftRadius: 52 },
   cornerBR: { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3, borderBottomRightRadius: 52 },
   livePill: {
-    position: 'absolute', alignSelf: 'center', maxWidth: '92%', minHeight: 32, borderRadius: 16,
+    position: 'absolute', alignSelf: 'center', maxWidth: '92%', minHeight: 32, borderRadius: RADIUS.lg,
     paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 8,
   },
   livePillDot: { width: 8, height: 8, borderRadius: 4 },
@@ -1480,13 +1438,13 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   codeHint: {
-    alignItems: 'flex-start', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 18,
+    alignItems: 'flex-start', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderRadius: RADIUS.lg,
     backgroundColor: LENS_COLORS.cameraControl,
   },
   codeHintCopy: { flex: 1, gap: 4 },
   // Barre posée sur la caméra : voile sombre translucide (la caméra se devine derrière).
-  modePicker: { minHeight: 64, borderRadius: 28, padding: 4, backgroundColor: LENS_COLORS.cameraControl },
-  mode: { flex: 1, minHeight: 56, borderRadius: 24, alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 4 },
+  modePicker: { minHeight: 64, borderRadius: RADIUS.full, padding: 4, backgroundColor: LENS_COLORS.cameraControl },
+  mode: { flex: 1, minHeight: 56, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 4 },
   // Mode choisi = état actif : pastille violet clair, libellé noir (10,4:1).
   modeActive: { backgroundColor: LENS_COLORS.activeSoft },
   permissionCenter: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
@@ -1498,8 +1456,8 @@ const styles = StyleSheet.create({
   previewFallback: { alignItems: 'center', justifyContent: 'center' },
   thumbs: { position: 'absolute', left: 12, right: 12, alignItems: 'center', gap: 8, zIndex: 2 },
   thumb: { width: 48, height: 48, borderWidth: 2, overflow: 'hidden' },
-  thumbCount: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  tip: { position: 'absolute', alignSelf: 'center', maxWidth: '88%', borderRadius: 18, paddingHorizontal: 16, paddingVertical: 8, zIndex: 3 },
+  thumbCount: { borderRadius: RADIUS.md, paddingHorizontal: 10, paddingVertical: 4 },
+  tip: { position: 'absolute', alignSelf: 'center', maxWidth: '88%', borderRadius: RADIUS.lg, paddingHorizontal: 16, paddingVertical: 8, zIndex: 3 },
   resultTop: { position: 'absolute', top: 0, left: 8, right: 8, alignItems: 'center', zIndex: 3 },
   resultTitle: { flex: 1, textShadowColor: veil(0.5), textShadowRadius: 2, textShadowOffset: { width: 0, height: 1 } },
   // Au-dessus de tout le reste (en-tête, aide, vignettes) : plein écran, elle les couvre.

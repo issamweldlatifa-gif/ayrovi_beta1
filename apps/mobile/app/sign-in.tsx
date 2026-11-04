@@ -44,6 +44,15 @@ type Mode = 'start' | 'phone' | 'password' | 'register';
 /** Forme minimale d'une adresse : le serveur fait foi, ceci évite un aller-retour inutile. */
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
 
+/**
+ * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
+ * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
+ * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
+ * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
+ * vérifié par `tests/error-boundary-coverage.test.ts`.
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
 export default function SignInScreen() {
   const theme = useTheme();
   const { gutter } = useResponsive();
@@ -310,7 +319,7 @@ export default function SignInScreen() {
           Google natif affiche son propre sélecteur : pas de texte d'attente ici. */}
       {waiting && waiting !== 'google' ? (
         <>
-          <AppText variant="label" weight="bold" color={theme.status.info.fg}>{t('auth.providers.waiting')}</AppText>
+          <AppText variant="label" color={theme.status.info.fg}>{t('auth.providers.waiting')}</AppText>
           <Button
             label={t('auth.providers.cancel')}
             tone="quiet"
@@ -354,10 +363,10 @@ export default function SignInScreen() {
           onPress={() => goBack('/')}
           style={[styles.close, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
         >
-          <Ionicons name="close" size={26} color={theme.colors.ink} accessibilityElementsHidden />
+          <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
 
-        <AppText variant="title">{heading.title}</AppText>
+        <AppText variant="h1">{heading.title}</AppText>
         <AppText variant="body" color={theme.colors.secondary} style={styles.intro}>{heading.subtitle}</AppText>
 
         {legacyServer ? (
@@ -369,7 +378,7 @@ export default function SignInScreen() {
               borderRadius: theme.radius.card,
             }]}
           >
-            <AppText variant="label" weight="bold" color={theme.status.danger.fg}>
+            <AppText variant="label" color={theme.status.danger.fg}>
               {t('signin.serverLegacy.title')}
             </AppText>
             <AppText variant="caption" color={theme.colors.secondary}>
@@ -390,7 +399,7 @@ export default function SignInScreen() {
               borderRadius: theme.radius.card,
             }]}
           >
-            <AppText variant="label" weight="bold" color={theme.status.danger.fg}>{failure.message}</AppText>
+            <AppText variant="label" color={theme.status.danger.fg}>{failure.message}</AppText>
           </View>
         ) : null}
 
@@ -555,7 +564,7 @@ export default function SignInScreen() {
               onPress={() => router.push('/forgot')}
               style={[styles.link, { minHeight: theme.geometry.minTarget }]}
             >
-              <AppText variant="label" weight="bold" color={theme.colors.accentText}>
+              <AppText variant="label" color={theme.colors.accentText}>
                 {t('auth.forgot.link')}
               </AppText>
             </Pressable>
@@ -564,7 +573,7 @@ export default function SignInScreen() {
               onPress={() => changeMode('register')}
               style={[styles.link, { minHeight: theme.geometry.minTarget }]}
             >
-              <AppText variant="label" weight="bold" color={theme.colors.accentText}>
+              <AppText variant="label" color={theme.colors.accentText}>
                 {t('auth.start.createAccount')}
               </AppText>
             </Pressable>
@@ -601,7 +610,7 @@ export default function SignInScreen() {
             >
               <Ionicons
                 name={marketing ? 'checkbox' : 'square-outline'}
-                size={22}
+                size={theme.iconSize.sm}
                 color={marketing ? theme.colors.accentText : theme.colors.muted}
                 accessibilityElementsHidden
               />
@@ -698,15 +707,15 @@ function RememberedAccountButton({ account, label, busy, disabled, onPress }: {
           // Même rôle que le bouton principal : violet plein, plus profond à l'appui.
           backgroundColor: pressed ? theme.colors.actionHover : theme.colors.action,
           flexDirection: rowDirectionFor(theme.isRTL),
-          opacity: disabled && !busy ? 0.5 : 1,
+          opacity: disabled && !busy ? theme.opacity.disabled : 1,
         },
       ]}
     >
       <View style={[styles.avatar, { backgroundColor: theme.colors.surface }]}>
-        <AppText variant="label" weight="bold" color={theme.colors.ink}>{initial}</AppText>
+        <AppText variant="label" color={theme.colors.ink}>{initial}</AppText>
       </View>
       <View style={styles.rememberedText}>
-        <AppText variant="label" weight="bold" color={theme.colors.onAction}>{label}</AppText>
+        <AppText variant="label" color={theme.colors.onAction}>{label}</AppText>
         <View style={[styles.emailRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           {account.provider === 'google' ? <GoogleLogo size={14} /> : null}
           <AppText variant="caption" color={theme.colors.onAction}>{account.email}</AppText>

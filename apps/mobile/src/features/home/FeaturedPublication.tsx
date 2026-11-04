@@ -51,7 +51,7 @@ export function FeaturedPublication() {
       ) : null}
 
       {publication.title ? (
-        <AppText variant="title" weight="semibold">{publication.title}</AppText>
+        <AppText variant="h3" >{publication.title}</AppText>
       ) : null}
       {publication.subtitle ? (
         <AppText variant="body" color={theme.colors.secondary}>{publication.subtitle}</AppText>

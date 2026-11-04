@@ -10,6 +10,7 @@ import { quoteCartLine } from '../services/cartQuote';
 import { DEFAULT_DAY_LADDER, dayLabelFr, type PromoRule, type PromoScope } from '../services/promotions';
 import { seedArrivalStores } from '../arrival-ingestion/storeProfiles';
 import { PUBLIC_NAV_DESTINATIONS } from '../../shared/publicNavigation';
+import { seedTestProduct } from '../catalogue/seedTestProduct';
 import { ensureErpCoreSchema } from '../erp-core/bootstrap';
 import { ensureCatalogueSchema } from '../catalogue/bootstrap';
 import { ensureInventorySchema } from '../inventory/bootstrap';
@@ -25,7 +26,7 @@ import { ensureCrmSchema } from '../crm/bootstrap';
  * "BANK_TRANSFER","POSTE"]` — c'est-à-dire exactement la valeur que la
  * plateforme sème elle-même — parce que son validateur ne connaissait que
  * `COD`/`D17`/`FLOUCI` : le seul enregistrement possible retirait donc le
- * paiement par carte, dont la passerelle Konnect est configurée.
+ * paiement par carte, dont la passerelle Stripe est configurée.
  *
  * Une liste unique rend la divergence impossible : ajouter un moyen ici l'ajoute
  * au checkout, au formulaire Admin et à la valeur par défaut en même temps.
@@ -347,6 +348,72 @@ export class QatafoDatabase {
     this.initCrmSchema();
     this.seedCoreData();
     this.rebrandZayroviV1();
+    this.purgeDemoProductsV1();
+    this.seedTestProductV1();
+  }
+
+  /**
+   * PRODUIT DE TEST FIXE (25/10/2026) — une seule fois, et seulement si la ligne
+   * n'existe pas : cent pièces, deux couleurs, cinq tailles, trois photos, les
+   * noms de blocs de la maquette. Détail et garde-fous : `catalogue/seedTestProduct.ts`.
+   */
+  private seedTestProductV1(): void {
+    this.runOnceDataMigration('seed_test_product_v1', () => {
+      try {
+        seedTestProduct(this);
+      } catch (error: any) {
+        // Un produit de test ne doit jamais empêcher l'application de démarrer.
+        console.warn(`[database] produit de test non créé : ${String(error?.message || error)}`);
+      }
+    });
+  }
+
+  /**
+   * Le produit de démonstration (`product_demo_01`, « Ensemble tendance ») n'existe
+   * plus : ni dans les graines (un catalogue vide reste vide), ni sur une base déjà
+   * créée. Cette migration one-shot retire la ligne et TOUTES ses attaches —
+   * arrivages, promotions, stories, news, paniers, favoris — sans toucher aux
+   * produits réels. Elle ne journalise que le nombre de lignes retirées.
+   */
+  private purgeDemoProductsV1(): void {
+    this.runOnceDataMigration('purge_demo_products_v1', () => {
+      const demoId = 'product_demo_01';
+      const exists = this.get<any>('SELECT 1 AS present FROM products WHERE id=?', demoId);
+      if (!exists) return; // rien à purger : jamais créer de ligne pour la supprimer
+      // 1. Les tables qui portent une CLÉ ÉTRANGÈRE en cascade : la ligne doit partir d'abord.
+      for (const table of [
+        'product_arrivals',
+        'promotion_products',
+        'content_products',
+        'catalogue_variants',
+        'catalogue_media',
+        'catalogue_attribute_values',
+      ]) {
+        try {
+          this.run(`DELETE FROM ${table} WHERE product_id=?`, demoId);
+        } catch {
+          /* table absente sur une base ancienne : rien à purger */
+        }
+      }
+      // 2. Les liens facultatifs : on les neutralise au lieu de supprimer le contenu.
+      try {
+        this.run("UPDATE cart_items SET external_id=NULL WHERE store='catalog' AND external_id=?", demoId);
+      } catch { /* pas de colonne externe : rien à faire */ }
+      for (const table of ['customer_favorites', 'stories', 'news_items', 'reels', 'publications', 'magazine_drafts']) {
+        try {
+          this.run(`UPDATE ${table} SET product_id=NULL WHERE product_id=?`, demoId);
+        } catch {
+          /* idem */
+        }
+      }
+      // 3. La ligne elle-même. Un échec inattendu ne doit jamais empêcher le démarrage :
+      //    on le signale, la migration reste rejouable au prochain lancement.
+      try {
+        this.run('DELETE FROM products WHERE id=?', demoId);
+      } catch (error: any) {
+        console.warn(`[database] purge du produit de démonstration impossible : ${String(error?.message || error)}`);
+      }
+    });
   }
 
   /**
@@ -378,7 +445,6 @@ export class QatafoDatabase {
         ['news_items', 'content', "id='news_arrival_08'",
           'Préparez vos liens et captures avec Lens. AYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
           'Préparez vos liens et captures avec Lens. ZAYROVI centralise le calcul, l’achat et la livraison en Tunisie.'],
-        ['products', 'name', "id='product_demo_01'", 'Ensemble tendance AYROVI', 'Ensemble tendance ZAYROVI'],
         ['lens_hero_settings', 'phone_status_label', '1=1', 'AYROVI LENS', 'ZAYROVI LENS'],
         ['stories_showcase_settings', 'title', "id='global'", 'Social AYROVI', 'Social ZAYROVI'],
         ['story_publishers', 'name', "id='pub_ayrovi'", 'Ayrovi', 'Zayrovi'],
@@ -1467,6 +1533,21 @@ export class QatafoDatabase {
         updated_at TEXT NOT NULL
       );
 
+      -- Articles d'un Reel / Publication / Story (lot F1, 24/10/2026).
+      -- ADDITIF : la colonne product_id reste la verite de l'existant ; cette table porte la
+      -- LISTE ordonnée des articles d'un même contenu (tiroir à plusieurs cartes).
+      -- Aucune copie de nom/prix/image : seulement l'identifiant du produit.
+      CREATE TABLE IF NOT EXISTS content_products (
+        content_kind TEXT NOT NULL CHECK(content_kind IN ('reel','publication','story')),
+        content_id TEXT NOT NULL,
+        product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (content_kind, content_id, product_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_content_products_content ON content_products(content_kind, content_id, sort_order);
+      CREATE INDEX IF NOT EXISTS idx_content_products_product ON content_products(product_id);
+
       CREATE TABLE IF NOT EXISTS story_interactions(
         id TEXT PRIMARY KEY,
         target_id TEXT NOT NULL,
@@ -2109,6 +2190,27 @@ export class QatafoDatabase {
     this.rebuildTableIfLegacy('deliveries', "'IN_TRANSIT'", DELIVERIES_TABLE_SQL, []);
     this.migratePaymentsToAccountLifecycle();
     this.ensureAccountCommerceSchema();
+    /*
+     * Konnect → Stripe (01/11/2026).
+     *
+     * Une session Konnect laissée PENDING ne peut plus être vérifiée : la
+     * passerelle a été remplacée, et son URL n'est plus interrogeable. La laisser
+     * « en attente » bloquerait la commande indéfiniment. On la solde donc en
+     * échec — une seule fois — pour rendre le dépôt payable à nouveau par carte.
+     * Aucune ligne PAID/FAILED n'est touchée : l'historique financier reste intact.
+     */
+    this.runOnceDataMigration('card_gateway_konnect_to_stripe_v1', () => {
+      const now = new Date().toISOString();
+      const stale = this.all<any>(`SELECT id,payment_id,order_id FROM payment_transactions
+        WHERE provider='KONNECT' AND status='PENDING'`);
+      for (const row of stale) {
+        this.run(`UPDATE payment_transactions SET status='FAILED',failure_reason=?,updated_at=? WHERE id=?`,
+          'Passerelle Konnect remplacée par Stripe — session non vérifiable.', now, row.id);
+        this.run(`UPDATE payments SET status='FAILED',updated_at=? WHERE id=? AND status='PENDING'`, now, row.payment_id);
+        this.run(`UPDATE orders SET payment_status='FAILED',updated_at=? WHERE id=? AND status='AWAITING_DEPOSIT'`, now, row.order_id);
+      }
+      if (stale.length) console.info(`[database] ${stale.length} transaction(s) Konnect soldée(s) après bascule Stripe.`);
+    });
     this.rebuildTableIfLegacy('customer_notifications', "'INVOICE'", CUSTOMER_NOTIFICATIONS_TABLE_SQL, []);
     // ترقية جدول الإعدادات لفئات CHANNELS/DESIGN/INTERFACE (القواعد القديمة كانت ترفضها بصمت)
     this.db.exec(SETTINGS_TABLE_SQL);
@@ -2963,6 +3065,7 @@ export class QatafoDatabase {
         'Ariana','Béja','Ben Arous','Bizerte','Gabès','Gafsa','Jendouba','Kairouan','Kasserine','Kébili','Le Kef','Mahdia','La Manouba','Médenine','Monastir','Nabeul','Sfax','Sidi Bouzid','Siliana','Sousse','Tataouine','Tozeur','Tunis','Zaghouan',
       ]), 'JSON', 'Gouvernorats desservis'],
       ['setting_delivery_delay', 'DELIVERY', 'delivery_delay', '5 à 8 jours ouvrés', 'STRING', 'Délai indicatif'],
+      ['setting_return_window_days', 'DELIVERY', 'return_window_days', '31', 'NUMBER', 'Fenêtre de retour (jours après livraison)'],
       ['setting_payment_methods', 'PAYMENT', 'payment_methods', JSON.stringify(DEFAULT_PAYMENT_METHODS), 'JSON', 'Méthodes de paiement de l’acompte'],
       ['setting_deposit_percent', 'PAYMENT', 'deposit_percent', '20', 'NUMBER', 'Pourcentage de l’acompte de confirmation (%)'],
       ['setting_deposit_review_delay', 'PAYMENT', 'deposit_review_delay', 'Sous 1 jour ouvré après réception du justificatif', 'STRING', 'Délai indicatif de vérification de l’acompte'],
@@ -3067,21 +3170,9 @@ export class QatafoDatabase {
         'Arrivage prioritaire pour les commandes éligibles Express.','/media/hero-femme.jpg','[]','Express','ACTIVE',now,now,now);
     }
 
-    if ((this.db.prepare('SELECT COUNT(*) AS count FROM products').get() as any).count === 0) {
-      const rules = this.getPricingRules();
-      const breakdown = calculatePrice(rules, 21.99, 'EUR')!;
-      this.db.prepare(`INSERT INTO products
-        (id,name,description,image,additional_images,brand_id,brand_name,category,source_url,source_platform,
-         original_price,currency,converted_price,customs_fee,shipping_fee,service_fee,final_price,express_available,stock_status,status,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-          'product_demo_01','Ensemble tendance ZAYROVI','Produit de démonstration relié à l’arrivage actif.',
-          '/media/hero-femme.jpg','[]','brand_shein','SHEIN','Mode','https://www.shein.com/','SHEIN',21.99,'EUR',
-          breakdown.convertedPriceTND,breakdown.customsFeeTND,breakdown.shippingFeeTND,breakdown.serviceFeeTND,breakdown.totalTND,
-          1,'AVAILABLE','ACTIVE',now,now,
-        );
-      this.db.prepare('INSERT OR IGNORE INTO product_arrivals (product_id,arrival_id) VALUES (?,?)').run('product_demo_01','arrival_08');
-      this.db.prepare('INSERT OR IGNORE INTO product_arrivals (product_id,arrival_id) VALUES (?,?)').run('product_demo_01','arrival_express_04');
-    }
+    // Aucun produit de démonstration n'est fabriqué : un catalogue vide reste vide.
+    // Le premier produit vient du CRM (ou du seed explicite « arbre international »).
+    // `purgeDemoProductsV1()` supprime, lui, la ligne de démonstration des bases existantes.
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM promotions').get() as any).count === 0) {
       this.db.prepare(`INSERT INTO promotions
@@ -3091,7 +3182,6 @@ export class QatafoDatabase {
           '/media/hero-enfants.jpg','PERCENTAGE',20,'2026-08-12T00:00:00.000Z','2026-08-21T23:59:59.000Z','ARRIVAGE20',500,0,'ACTIVE',now,now,
         );
       this.db.prepare('INSERT OR IGNORE INTO promotion_arrivals (promotion_id,arrival_id) VALUES (?,?)').run('promo_arrival_08','arrival_08');
-      this.db.prepare('INSERT OR IGNORE INTO promotion_products (promotion_id,product_id) VALUES (?,?)').run('promo_arrival_08','product_demo_01');
     }
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM stories').get() as any).count === 0) {
@@ -3099,7 +3189,7 @@ export class QatafoDatabase {
         (id,media_type,media_url,title,description,cta,target_url,product_id,arrival_id,promotion_id,publish_at,expires_at,priority,status,created_at,updated_at)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
           'story_arrival_08','IMAGE','/media/hero-femme.jpg','Arrivage #08 ouvert','Découvrez la sélection et préparez votre commande.','Découvrir','#arrivages',
-          'product_demo_01','arrival_08','promo_arrival_08','2026-08-12T00:00:00.000Z','2026-08-21T23:59:59.000Z',100,'PUBLISHED',now,now,
+          null,'arrival_08','promo_arrival_08','2026-08-12T00:00:00.000Z','2026-08-21T23:59:59.000Z',100,'PUBLISHED',now,now,
         );
     }
 
@@ -3109,7 +3199,7 @@ export class QatafoDatabase {
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
           'news_arrival_08','Le nouvel arrivage ZAYROVI est ouvert','Les commandes pour l’arrivage #08 sont maintenant disponibles.',
           'Préparez vos liens et captures avec Lens. ZAYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
-          '/media/hero-homme.jpg','NEW_ARRIVAL','arrival_08','product_demo_01','Équipe ZAYROVI','2026-08-12T00:00:00.000Z','PUBLISHED',now,now,
+          '/media/hero-homme.jpg','NEW_ARRIVAL','arrival_08',null,'Équipe ZAYROVI','2026-08-12T00:00:00.000Z','PUBLISHED',now,now,
         );
     }
 
@@ -3733,7 +3823,7 @@ export class QatafoDatabase {
       this.run(`UPDATE orders SET payment_method=?,payment_status='PENDING',deposit_status='PENDING',deposit_amount_tnd=?,
         deposit_discount_tnd=?,deposit_review_note='',updated_at=? WHERE id=?`, method, amount, discount, now, orderId);
       this.run(`UPDATE payments SET method=?,status='PENDING',amount_tnd=?,provider=?,reference=NULL,gateway_payment_ref=NULL,
-        confirmed_by=NULL,confirmed_at=NULL,updated_at=? WHERE id=?`, method, amount, method === 'CARD' ? 'KONNECT' : 'MANUAL_TRANSFER', now, payment.id);
+        confirmed_by=NULL,confirmed_at=NULL,updated_at=? WHERE id=?`, method, amount, method === 'CARD' ? 'STRIPE' : 'MANUAL_TRANSFER', now, payment.id);
       return {
         order: this.get<any>('SELECT * FROM orders WHERE id=?', orderId),
         payment: this.get<any>('SELECT * FROM payments WHERE id=?', payment.id),
@@ -3753,7 +3843,7 @@ export class QatafoDatabase {
 
       // Reuse the live checkout instead of creating multiple chargeable links for one deposit.
       const pending = this.get<any>(`SELECT * FROM payment_transactions
-        WHERE order_id=? AND provider='KONNECT' AND status='PENDING' ORDER BY created_at DESC LIMIT 1`, orderId);
+        WHERE order_id=? AND provider='STRIPE' AND status='PENDING' ORDER BY created_at DESC LIMIT 1`, orderId);
       if (pending) {
         const ageMs = Date.now() - new Date(String(pending.created_at)).getTime();
         if (pending.checkout_url && ageMs < 25 * 60_000) {
@@ -3770,20 +3860,20 @@ export class QatafoDatabase {
       const transactionNumber = this.generateTransactionNumber();
       this.run(`INSERT INTO payment_transactions
         (id,transaction_number,payment_id,order_id,account_id,provider,amount_tnd,currency,status,created_at,updated_at)
-        VALUES (?,?,?,?,?,'KONNECT',?,'TND','PENDING',?,?)`, id, transactionNumber, selected.payment.id, orderId, accountId,
+        VALUES (?,?,?,?,?,'STRIPE',?,'TND','PENDING',?,?)`, id, transactionNumber, selected.payment.id, orderId, accountId,
       selected.quote.amountTnd, now, now);
       return { ...selected, transaction: this.get<any>('SELECT * FROM payment_transactions WHERE id=?', id), reused: false };
     });
   }
 
   public bindCardGatewayReference(transactionId: string, providerReference: string, checkoutUrl: string) {
-    const transaction = this.get<any>("SELECT * FROM payment_transactions WHERE id=? AND provider='KONNECT'", transactionId);
+    const transaction = this.get<any>("SELECT * FROM payment_transactions WHERE id=? AND provider='STRIPE'", transactionId);
     if (!transaction) throw new Error('TRANSACTION_NOT_FOUND');
     if (!/^https:\/\//i.test(checkoutUrl)) throw new Error('CARD_CHECKOUT_URL_INVALID');
     const now = new Date().toISOString();
     this.transaction(() => {
       this.run('UPDATE payment_transactions SET provider_reference=?,checkout_url=?,updated_at=? WHERE id=?', providerReference, checkoutUrl, now, transaction.id);
-      this.run("UPDATE payments SET provider='KONNECT',gateway_payment_ref=?,updated_at=? WHERE id=?", providerReference, now, transaction.payment_id);
+      this.run("UPDATE payments SET provider='STRIPE',gateway_payment_ref=?,updated_at=? WHERE id=?", providerReference, now, transaction.payment_id);
     });
     return this.get<any>('SELECT * FROM payment_transactions WHERE id=?', transaction.id);
   }
@@ -3812,13 +3902,13 @@ export class QatafoDatabase {
       const now = new Date().toISOString();
       this.run(`UPDATE payment_transactions SET status='PAID',failure_reason='',provider_payload=?,confirmed_at=?,updated_at=? WHERE id=?`,
         JSON.stringify(providerPayload ?? {}).slice(0, 10_000), now, now, transaction.id);
-      this.run(`UPDATE payments SET status='PAID',reference=?,confirmed_by='KONNECT',confirmed_at=?,updated_at=? WHERE id=?`,
+      this.run(`UPDATE payments SET status='PAID',reference=?,confirmed_by='STRIPE',confirmed_at=?,updated_at=? WHERE id=?`,
         transaction.provider_reference, now, now, transaction.payment_id);
       this.run(`UPDATE orders SET status='CONFIRMED',payment_status='PAID',deposit_status='PAID',deposit_paid_at=?,
-        deposit_reviewed_by='KONNECT',deposit_review_note='',updated_at=? WHERE id=?`, now, now, transaction.order_id);
+        deposit_reviewed_by='STRIPE',deposit_review_note='',updated_at=? WHERE id=?`, now, now, transaction.order_id);
       this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
-        VALUES (?,?,?,'CONFIRMED',?,'KONNECT',?)`, `history_${randomUUID()}`, transaction.order_id, transaction.order_status,
-        `Acompte carte ${Number(transaction.amount_tnd).toFixed(3)} DT vérifié par la passerelle. Transaction ${transaction.transaction_number}.`, now);
+        VALUES (?,?,?,'CONFIRMED',?,'STRIPE',?)`, `history_${randomUUID()}`, transaction.order_id, transaction.order_status,
+        `Acompte carte ${Number(transaction.amount_tnd).toFixed(3)} DT vérifié par Stripe. Transaction ${transaction.transaction_number}.`, now);
       if (transaction.account_id) this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
         VALUES (?,?,'PAYMENT','Paiement carte confirmé',?,?,?)`, `notification_${randomUUID()}`, transaction.account_id,
       `L’acompte de la commande ${transaction.order_number} est payé. Transaction ${transaction.transaction_number}.`, `/compte/commandes/${transaction.order_id}`, now);

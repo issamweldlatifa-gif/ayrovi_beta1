@@ -11,9 +11,9 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme, webDirection, type FontWeightName, type TextRole } from './theme';
+import { useTheme, webDirection, type TextRole } from './theme';
 import { actionDirectionFor, responsiveMetricsFor, rowDirectionFor } from './layoutLogic';
-import { veil } from './tokens.mobile';
+import { COMMERCE, veil } from './tokens.mobile';
 import { LoadingSpinner } from './LoadingSpinner';
 import { useT } from '@/i18n';
 
@@ -21,26 +21,32 @@ import { useT } from '@/i18n';
 
 export interface AppTextProps {
   children: ReactNode;
+  /** Rôle sémantique depuis identity.json : aucune graisse libre à l'appel. */
   variant?: TextRole;
-  weight?: FontWeightName;
   color?: string;
   align?: 'auto' | 'center';
   numberOfLines?: number;
   style?: StyleProp<RNTextStyle>;
   /** Rôle lu par les lecteurs d'écran — `alert` pour un message d'échec. */
   accessibilityRole?: TextProps['accessibilityRole'];
+  /** Lu automatiquement quand le texte change (compteur de résultats filtrés). */
+  accessibilityLiveRegion?: TextProps['accessibilityLiveRegion'];
+  testID?: string;
 }
 
 export function AppText({
-  children, variant = 'body', weight, color, align = 'auto', numberOfLines, style, accessibilityRole,
+  children, variant = 'body', color, align = 'auto', numberOfLines, style, accessibilityRole,
+  testID, accessibilityLiveRegion,
 }: AppTextProps) {
   const theme = useTheme();
   return (
     <Text
       accessibilityRole={accessibilityRole}
+      accessibilityLiveRegion={accessibilityLiveRegion}
+      testID={testID}
       numberOfLines={numberOfLines}
       style={[
-        theme.text(variant, weight),
+        theme.text(variant),
         { color: color ?? theme.colors.ink },
         theme.isRTL ? { textAlign: 'right' } : null,
         align === 'center' ? { textAlign: 'center' } : null,
@@ -79,7 +85,7 @@ export function Card({ children, title, hint, onLayout }: {
         },
       ]}
     >
-      {title ? <AppText variant="label" weight="bold">{title}</AppText> : null}
+      {title ? <AppText variant="label" >{title}</AppText> : null}
       {hint ? (
         <AppText variant="caption" color={theme.colors.muted} style={styles.cardHint}>{hint}</AppText>
       ) : null}
@@ -131,7 +137,7 @@ export function SectionHeader({
       ]}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <AppText variant="label" weight="bold" color={theme.colors.ink}>
+        <AppText variant="label" color={theme.colors.ink}>
           {title}
         </AppText>
         {hint ? (
@@ -162,8 +168,7 @@ export function KeyValue({ label, value }: { label: string; value: string }) {
     >
       <AppText variant="caption" color={theme.colors.muted}>{label}</AppText>
       <AppText
-        variant="caption"
-        weight="bold"
+        variant="captionStrong"
         style={[styles.kvValue, { textAlign: theme.isRTL ? 'left' : 'right' }]}
       >
         {value}
@@ -196,10 +201,10 @@ export function Segmented<T extends string>({
                 styles.segment,
                 {
                   minHeight: theme.geometry.minTarget,
-                  // Segment choisi : fond violet clair (#C5B2F4) + filet violet en bas
-                  // (indicateur d'onglet actif). Le violet plein reste réservé à
-                  // l'action principale de l'écran.
-                  backgroundColor: active ? theme.colors.accentSoft : 'transparent',
+                  // Segment choisi : violet clair en mode clair ; surface sombre nette en mode sombre.
+                  backgroundColor: active
+                    ? (theme.mode === 'dark' ? theme.colors.surface : theme.colors.accentSoft)
+                    : 'transparent',
                   // Le séparateur suit le côté de la lecture, pas la gauche.
                   [theme.isRTL ? 'borderRightWidth' : 'borderLeftWidth']:
                     index === 0 ? 0 : StyleSheet.hairlineWidth,
@@ -209,8 +214,7 @@ export function Segmented<T extends string>({
             >
               <AppText
                 variant="label"
-                weight={active ? 'bold' : 'regular'}
-                color={active ? theme.colors.onAccentSoft : theme.colors.ink}
+                color={active ? (theme.mode === 'dark' ? theme.colors.ink : theme.colors.onAccentSoft) : theme.colors.ink}
                 align="center"
               >
                 {option.label}
@@ -219,7 +223,10 @@ export function Segmented<T extends string>({
                 <View
                   pointerEvents="none"
                   testID={`segment-indicator-${option.value}`}
-                  style={[styles.segmentIndicator, { backgroundColor: theme.colors.action }]}
+                  style={[
+                    styles.segmentIndicator,
+                    { backgroundColor: theme.mode === 'dark' ? theme.colors.ink : theme.colors.action },
+                  ]}
                 />
               ) : null}
             </Pressable>
@@ -241,12 +248,13 @@ export interface ButtonProps {
   busy?: boolean;
   disabled?: boolean;
   /**
-   * `main`  : l'action principale de l'écran (ajout au panier, caisse,
-   *           paiement, connexion) — la SEULE en violet plein.
-   * `solid` : bouton plein encre (défaut) — toutes les autres actions.
-   * `quiet` : bouton secondaire à contour.
+   * `main`     : action principale de marque (violet).
+   * `commerce` : CTA d'achat AYWEBs (jaune, texte encre), uniquement dans
+   *              l'expérience boutique demandée.
+   * `solid`    : bouton plein encre (défaut).
+   * `quiet`    : bouton secondaire à contour.
    */
-  tone?: 'main' | 'solid' | 'quiet';
+  tone?: 'main' | 'commerce' | 'solid' | 'quiet';
   /**
    * Pleine largeur du conteneur (Q8). Sans cette option, un bouton ne se
    * dimensionnait qu'à son texte : deux boutons côte à côte sortaient avec
@@ -265,13 +273,13 @@ export interface ButtonProps {
 export const BUTTON_OUTLINE_WIDTH = 2;
 
 /**
- * Trois rôles — le violet est RARE (charte v4.2.0, repère global ≈ 3 %) :
- *   • `main`  : VIOLET plein (`action`, #571EF6), libellé blanc (7,19:1),
- *     violet plus profond quand on appuie (`actionHover`). Réservé à l'action
- *     principale : ajouter au panier, passer à la caisse, payer, se connecter.
- *   • `solid` : défaut — fond encre (`ink`), libellé `canvas` (noir/blanc,
- *     inversés en mode sombre), `secondary` quand on appuie.
- *   • `quiet` : bouton secondaire — fond `canvas`, contour et libellé `ink`.
+ * Quatre rôles — le violet reste rare hors exception AYWEBs :
+ *   • `main`     : VIOLET plein (`action`, #571EF6), réservé aux actions principales
+ *                  de marque hors expérience boutique AYWEBs.
+ *   • `commerce` : jaune #FFD60A, texte encre, CTA d'achat isolé à AYWEBs.
+ *   • `solid`    : défaut — fond encre (`ink`), libellé `canvas` (noir/blanc,
+ *                  inversés en mode sombre), `secondary` quand on appuie.
+ *   • `quiet`    : bouton secondaire — fond `canvas`, contour et libellé `ink`.
  * Désactivé : même forme, opacité réduite. Occupé : le cercle d'attente prend
  * la place du pictogramme de tête, dans la couleur du libellé.
  */
@@ -280,7 +288,10 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
   const blocked = busy || disabled;
   const quiet = tone === 'quiet';
   const main = tone === 'main';
-  const labelColor = quiet ? theme.colors.ink : main ? theme.colors.onAction : theme.colors.canvas;
+  const commerce = tone === 'commerce';
+  const commerceYellow = COMMERCE.action;
+  const commercePressed = COMMERCE.actionPressed;
+  const labelColor = commerce ? COMMERCE.onAction : quiet ? theme.colors.ink : main ? theme.colors.onAction : theme.colors.canvas;
   // Attente visible DANS le bouton : le cercle en pointillés remplace le
   // pictogramme de tête (ex. le logo Google), jamais posé à côté du libellé.
   const lead = busy
@@ -298,32 +309,34 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
       style={({ pressed }) => [
         styles.button,
         block ? { alignSelf: 'stretch' } : null,
-        style,
         {
-          minHeight: theme.geometry.controlHeight,
-          // Système de boutons : pastille (CTA), contour encre épais en mode « quiet ».
+          minHeight: theme.chrome.button,
+          // Système de boutons : pastille compacte (CTA), contour encre épais en mode « quiet ».
           borderRadius: theme.radius.cta,
           borderWidth: quiet ? BUTTON_OUTLINE_WIDTH : StyleSheet.hairlineWidth,
           backgroundColor: quiet
             ? theme.colors.canvas
-            : main
-              ? (pressed ? theme.colors.actionHover : theme.colors.action)
-              : (pressed ? theme.colors.secondary : theme.colors.ink),
-          borderColor: quiet ? theme.colors.ink : main ? theme.colors.action : theme.colors.ink,
-          opacity: disabled && !busy ? 0.5 : pressed && quiet ? 0.85 : 1,
+            : commerce
+              ? (pressed ? commercePressed : commerceYellow)
+              : main
+                ? (pressed ? theme.colors.actionHover : theme.colors.action)
+                : (pressed ? theme.colors.secondary : theme.colors.ink),
+          borderColor: quiet ? theme.colors.ink : commerce ? commerceYellow : main ? theme.colors.action : theme.colors.ink,
+          opacity: disabled && !busy ? theme.opacity.disabled : pressed && quiet ? theme.opacity.dimmed : 1,
         },
+        style,
       ]}
     >
       {lead ? (
         // Pictogramme (ex. logo Google) posé avant le libellé, dans le sens de lecture.
         <View style={[styles.leadingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           {lead}
-          <AppText variant="label" weight="bold" color={labelColor}>
+          <AppText variant="button" color={labelColor}>
             {label}
           </AppText>
         </View>
       ) : (
-        <AppText variant="label" weight="bold" color={labelColor}>
+        <AppText variant="button" color={labelColor}>
           {label}
         </AppText>
       )}
@@ -386,14 +399,14 @@ export function LinkRow({ label, value, onPress, icon, tone = 'default', testID 
           flexDirection: rowDirectionFor(theme.isRTL),
           minHeight: theme.geometry.minTarget,
           borderTopColor: theme.colors.line,
-          opacity: pressed ? 0.7 : 1,
+          opacity: pressed ? theme.opacity.subtle : 1,
         },
       ]}
     >
       {icon ? (
         <Ionicons
           name={icon as keyof typeof Ionicons.glyphMap}
-          size={20}
+          size={theme.iconSize.sm}
           color={tone === 'danger' ? theme.status.danger.fg : theme.colors.ink}
           accessibilityElementsHidden
         />
@@ -404,7 +417,7 @@ export function LinkRow({ label, value, onPress, icon, tone = 'default', testID 
       {value ? <AppText variant="caption" color={theme.colors.muted}>{value}</AppText> : null}
       <Ionicons
         name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-        size={18}
+        size={theme.iconSize.sm}
         color={theme.colors.muted}
         accessibilityElementsHidden
       />
@@ -507,7 +520,7 @@ export function Field(props: TextInputProps & { label?: string }) {
 }
 
 const styles = StyleSheet.create({
-  leadingRow: { alignItems: 'center', justifyContent: 'center', gap: 10 },
+  leadingRow: { alignItems: 'center', justifyContent: 'center', gap: 8 },
   drawerScrim: { flex: 1, backgroundColor: veil(0.45) },
   drawerPanel: {
     position: 'absolute', top: 0, bottom: 0,
@@ -525,6 +538,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 16,
+    paddingVertical: 8,
     overflow: 'hidden',
   },
   actionGroup: { alignItems: 'stretch' },
@@ -657,23 +671,23 @@ export function DrawerItem({
           minHeight: theme.geometry.minTarget,
           backgroundColor: active ? theme.colors.surface : 'transparent',
           borderRadius: theme.radius.control,
-          opacity: pressed ? 0.7 : 1,
+          opacity: pressed ? theme.opacity.subtle : 1,
         },
       ]}
     >
       <Ionicons
         name={icon}
-        size={22}
+        size={theme.iconSize.md}
         color={active ? theme.colors.accentText : theme.colors.ink}
         accessibilityElementsHidden
       />
       <View style={{ flex: 1, gap: 2 }}>
-        <AppText variant="label" weight={active ? 'bold' : 'regular'} color={theme.colors.ink}>{label}</AppText>
+        <AppText variant="label" color={theme.colors.ink}>{label}</AppText>
         {hint ? <AppText variant="caption" color={theme.colors.muted}>{hint}</AppText> : null}
       </View>
       <Ionicons
         name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
-        size={18}
+        size={theme.iconSize.sm}
         color={theme.colors.muted}
         accessibilityElementsHidden
       />

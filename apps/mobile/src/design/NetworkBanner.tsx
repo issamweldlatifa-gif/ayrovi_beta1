@@ -37,7 +37,7 @@ export function NetworkBanner() {
         color={theme.status.warning.fg}
         accessibilityElementsHidden
       />
-      <AppText variant="caption" weight="bold" color={theme.status.warning.fg}>
+      <AppText variant="captionStrong" color={theme.status.warning.fg}>
         {t('offline.banner')}
       </AppText>
     </View>

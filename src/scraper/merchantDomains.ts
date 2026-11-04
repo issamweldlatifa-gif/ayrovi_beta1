@@ -10,9 +10,18 @@ const MERCHANT_DOMAINS: ReadonlyArray<{ store: StoreType; roots: readonly string
       'amazon.com.br', 'amazon.eg', 'amazon.be',
     ],
   },
-  { store: 'shein', roots: ['shein.com', 'shein.co.uk'] },
+  {
+    store: 'shein',
+    roots: [
+      'shein.com', 'shein.co.uk', 'shein.fr', 'shein.de', 'shein.es',
+      'shein.it', 'shein.ca', 'shein.com.mx', 'shein.com.br',
+    ],
+  },
   { store: 'temu', roots: ['temu.com'] },
-  { store: 'aliexpress', roots: ['aliexpress.com'] },
+  { store: 'aliexpress', roots: ['aliexpress.com', 'aliexpress.us', 'aliexpress.ru'] },
+  /* Zalando : uniquement les miroirs en EUR (le registre publie les autres pays
+     dans leur devise, ils ne sont pas réclamés par l'adaptateur). */
+  { store: 'zalando', roots: ['zalando.de', 'zalando.fr', 'zalando.it', 'zalando.es', 'zalando.nl', 'zalando.be', 'zalando.at'] },
 ];
 
 function hostnameOf(input: string): string | null {

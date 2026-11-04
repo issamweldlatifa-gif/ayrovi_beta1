@@ -41,6 +41,14 @@ export interface AyWebsSourceProduct {
     availability: AyWebsAvailabilityState;
     availabilityReason: string;
     image: string | null;
+    /** URL directe de cette variante (ASIN Amazon, goods_id SHEIN, couleur Zalando) pour lecture delta ciblée si son prix manque. */
+    variantUrl?: string | null;
+    /** Stock restant annoncé pour cette combinaison (1..999). */
+    stock?: number | null;
+    /** Source de preuve de la matrice (`embedded_json`, `json_ld`, `preloaded_state`, `network_cache`, `dom`). */
+    evidenceSource?: string | null;
+    /** Paliers de remise par quantité publiés par le marchand pour ce SKU. */
+    quantityTiers?: Array<{ minQuantity: number; unitPrice: number }>;
   }>;
   availability: AyWebsAvailabilityState;
   availabilityReason: string;
@@ -92,6 +100,12 @@ export interface AyWebsPurchasePreparation {
 
 export interface AyWebsStoreAdapter {
   readonly id: AyWebsAdapterId;
+  /**
+   * Définition du registre servie par cet adaptateur (`null` si aucune entrée
+   * nommée). Un adaptateur COLLECTIF (« catalogue ») sert N boutiques : c'est
+   * cette définition qui porte le motif d'URL et la devise de la ligne.
+   */
+  readonly store: AyWebsStoreDefinition | null;
   readonly integrationType: AyWebsIntegrationType;
   readonly purchaseMode: AyWebsPurchaseMode;
 
@@ -99,6 +113,12 @@ export interface AyWebsStoreAdapter {
   canHandle(url: string | URL): boolean;
   /** Type de page : PRODUCT, SEARCH, CATEGORY, HOME, LOGIN, CHECKOUT, CAPTCHA… (§10) */
   classifyPage(url: string | URL): AyWebsPageClassification;
+  /**
+   * Forme canonique de la fiche, utilisée comme clé de cache : deux liens vers
+   * le même produit (suivi, slug, entités) ne doivent pas payer deux lectures.
+   * `null` ou absent : la clé reste l'URL normalisée par défaut.
+   */
+  canonicalUrl?(url: string): string | null;
   /** Lecture et normalisation du produit source (§11). */
   resolveProduct(url: string, options?: ScrapeOptions): Promise<AyWebsSourceProduct>;
   /** Variantes d'un produit déjà résolu (§13). */
@@ -145,7 +165,7 @@ export const AYWEBS_ADAPTER_CONTRACT_VERSION = 2;
 
 /** Type de page déductible de l'URL seule, partagé par tous les adaptateurs. */
 export const AYWEBS_URL_PAGE_HINTS: ReadonlyArray<{ pattern: RegExp; pageType: AyWebsPageType; action: AyWebsPageClassification['customerActionRequired'] }> = [
-  { pattern: /(captcha|recaptcha|hcaptcha|challenge|robot|areyouhuman|verify\/human)/i, pageType: 'CAPTCHA', action: 'CAPTCHA' },
+  { pattern: /(captcha|recaptcha|hcaptcha|challenge|robot|areyouhuman|verify\/human|\/checkpoint\/)/i, pageType: 'CAPTCHA', action: 'CAPTCHA' },
   { pattern: /(signin|sign-in|login|log-in|auth|ap\/signin|account\/login|sso)/i, pageType: 'LOGIN', action: 'LOGIN' },
   { pattern: /(checkout|basket|cart|panier|order\/complete|payment|gc\/checkout)/i, pageType: 'CHECKOUT', action: 'NONE' },
 ];

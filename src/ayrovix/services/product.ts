@@ -7,7 +7,7 @@ import type { SmartLinkScraper } from '../../scraper/scraper';
 import type { ScrapedProduct } from '../../types';
 import type { AyrovixCandidate, AyrovixProduct } from '../types';
 import { estimateWithDb } from './currency';
-import { catalogSearch, scoreCandidate, externalProductSearch } from './search';
+import { catalogSearch, scoreCandidate, externalProductSearch, serpApiShoppingEnabled } from './search';
 import { isUnsafeHostname, UnsafeUrlError } from '../../services/safeUrl';
 import { filterDisplayableCandidates, registerTrustedMerchantHost } from './candidatePolicy';
 
@@ -242,6 +242,47 @@ function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
   }
 }
 
+function cleanUrlSearchQuery(rawUrl: string, preferredTitle?: string | null): string {
+  const cleanTitle = String(preferredTitle || '').replace(/\s+/g, ' ').trim();
+  if (cleanTitle.length >= 3) return cleanTitle.slice(0, 180);
+  try {
+    const parsed = new URL(rawUrl);
+    const cleanedPath = decodeURIComponent(parsed.pathname)
+      .replace(/\.(?:html?|php|aspx?|jsp)$/i, ' ')
+      .replace(/(?:^|\/)(?:dp|gp|product|products|item|items|ip|p|t|fr|en|de|es|it|us|uk)(?=\/|$)/gi, ' ')
+      .replace(/-p-\d+\b/gi, ' ')
+      .replace(/[\/\-_]+/g, ' ')
+      .split(/\s+/)
+      .filter((token) => token.length >= 2 && !/^\d{6,}$/.test(token))
+      .join(' ')
+      .trim();
+    if (cleanedPath.length >= 3) return cleanedPath.slice(0, 180);
+    return parsed.hostname.replace(/^www\./i, '').split('.')[0] || rawUrl.slice(0, 120);
+  } catch {
+    return rawUrl.slice(0, 120);
+  }
+}
+
+function buildUrlAlternates(
+  db: QatafoDatabase,
+  primaryUrl: string,
+  query: string,
+  candidates: AyrovixCandidate[],
+): AyrovixCandidate[] {
+  const withEstimates = candidates
+    .filter((candidate) => candidate.sourceUrl !== primaryUrl)
+    .map((candidate) => {
+      const estimated = candidate.price != null ? estimateWithDb(db, candidate.price, candidate.currency || 'EUR') : null;
+      return {
+        ...candidate,
+        priceTnd: estimated?.promo ? estimated.priceTnd : (candidate.priceTnd ?? estimated?.priceTnd ?? null),
+        promo: estimated?.promo ?? candidate.promo ?? null,
+        match: scoreCandidate(null, query, candidate),
+      };
+    });
+  return filterDisplayableCandidates(withEstimates, 12);
+}
+
 export interface UrlExtractionResult {
   product: AyrovixProduct;
   alternates: AyrovixCandidate[];
@@ -266,10 +307,12 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
         try {
           db.run('UPDATE product_profiles SET payload=?,images_count=?,has_description=? WHERE url_hash=?', JSON.stringify(product), product.images.length, (product.description || '').trim().length >= 40 ? 1 : 0, urlHash);
         } catch { /* a stale profile remains usable for this response */ }
-        const catalog = catalogSearch(db, null, product.title, 4);
-        const alternates = filterDisplayableCandidates(
-          catalog.map((candidate) => ({ ...candidate, match: scoreCandidate(null, product.title, candidate) })), 8,
-        );
+        const query = cleanUrlSearchQuery(url, product.title);
+        const catalog = catalogSearch(db, null, query, 4);
+        const external = serpApiShoppingEnabled()
+          ? await externalProductSearch(query, 12).catch(() => [])
+          : [];
+        const alternates = buildUrlAlternates(db, url, query, [...catalog, ...external]);
         return { product, alternates };
       }
     }
@@ -292,11 +335,12 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
         );
       } catch { /* best-effort profile persistence */ }
       if (product.images.length >= 2 && (product.description || '').trim().length >= 40) registerTrustedMerchantHost(url);
-      const catalog = catalogSearch(db, null, scraped.title, 4);
-      const external = scraped.sourcePrice > 0 ? [] : await externalProductSearch(scraped.title, 6).catch(() => []);
-      const alternates = filterDisplayableCandidates(
-        [...catalog, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, scraped.title, candidate) })), 8,
-      );
+      const query = cleanUrlSearchQuery(url, scraped.title);
+      const catalog = catalogSearch(db, null, query, 4);
+      const external = (serpApiShoppingEnabled() || scraped.sourcePrice <= 0)
+        ? await externalProductSearch(query, 12).catch(() => [])
+        : [];
+      const alternates = buildUrlAlternates(db, url, query, [...catalog, ...external]);
       return { product, alternates };
     }
   } catch (error) {
@@ -308,18 +352,10 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
 
   console.log(`[AYROVIX] Using catalog + provider search fallback for URL: ${url}`);
   const fallbackProduct = toFallbackProductFromUrl(url);
-  let query = '';
-  try {
-    const parsed = new URL(url);
-    query = decodeURIComponent(parsed.pathname.replace(/[\/\-_]/g, ' ')).replace(/\s+/g, ' ').trim();
-    if (!query || query.length < 3) query = parsed.hostname.replace('www.', '').replace(/\./g, ' ');
-  } catch { query = url; }
+  const query = cleanUrlSearchQuery(url);
 
   const catalog = catalogSearch(db, null, query, 4);
-  const external = await externalProductSearch(query, 6).catch(() => []);
-  const alternates = filterDisplayableCandidates(
-    [...catalog, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) })),
-    8,
-  );
+  const external = await externalProductSearch(query, 12).catch(() => []);
+  const alternates = buildUrlAlternates(db, url, query, [...catalog, ...external]);
   return { product: fallbackProduct, alternates };
 }

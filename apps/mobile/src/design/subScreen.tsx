@@ -89,13 +89,13 @@ export function SubScreen({
         >
           <Ionicons
             name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-            size={26}
+            size={theme.iconSize.md}
             color={theme.colors.ink}
             accessibilityElementsHidden
           />
         </Pressable>
         <View style={styles.headerText}>
-          <AppText variant="title">{title}</AppText>
+          <AppText variant="h2">{title}</AppText>
           {subtitle ? <AppText variant="caption" color={theme.colors.muted}>{subtitle}</AppText> : null}
         </View>
       </View>

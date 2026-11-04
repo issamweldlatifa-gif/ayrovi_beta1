@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -6,7 +7,10 @@ import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { LensResultCard } from './LensResultCard';
+import { LensTitleFilter } from './LensTitleFilter';
+import { lensOpenDecision } from './lensOpen';
 import { LENS_COLORS } from './lensPalette';
+import { applyLensFilters } from './lensRanking';
 import { useLensSheetScroll } from './lensSheetScroll';
 
 export function LensResultsGrid({
@@ -33,14 +37,30 @@ export function LensResultsGrid({
   // Position de défilement remontée à la feuille : tout en haut, un glissement
   // vers le bas baisse la feuille au lieu de faire défiler la liste.
   const onSheetScroll = useLensSheetScroll();
+  /**
+   * Le filtre (28/10/2026) : UN champ, sur le TITRE du produit. L'état vit
+   * ICI, pas dans l'écran — une nouvelle recherche remonte une grille neuve
+   * (clé différente en amont), donc le filtre repart de zéro avec les nouveaux
+   * résultats, c'est voulu. L'ordre, lui, n'est pas un réglage : il applique
+   * toujours la confiance marchande (`lensRanking.ts`).
+   */
+  const [query, setQuery] = useState('');
 
-  if (candidates.length === 0) {
+  /* Seules les cartes portant un vrai lien marchand ouvrable dans AYWEBs sont affichées. */
+  const openable = useMemo(
+    () => candidates.filter((candidate) => lensOpenDecision(candidate).screen === 'browser'),
+    [candidates],
+  );
+  const shown = useMemo(() => applyLensFilters(openable, query), [openable, query]);
+  const filteredOut = shown.length !== openable.length;
+
+  if (openable.length === 0) {
     return (
       <View style={styles.empty} testID="lens-empty-results">
         <View style={styles.emptyIcon}>
           <Ionicons name="search-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
         </View>
-        <AppText variant="title" align="center">{t('lens.emptyTitle')}</AppText>
+        <AppText variant="h3" align="center">{t('lens.emptyTitle')}</AppText>
         <AppText color={theme.colors.muted} align="center">{t('lens.empty')}</AppText>
         <Button label={t('lens.retake')} onPress={onNewSearch} block />
       </View>
@@ -50,7 +70,7 @@ export function LensResultsGrid({
   return (
     <FlatList
       testID="lens-results-grid"
-      data={candidates}
+      data={shown}
       style={styles.list}
       numColumns={2}
       keyExtractor={(candidate) => candidate.sourceUrl || candidate.id}
@@ -68,7 +88,7 @@ export function LensResultsGrid({
         <View style={styles.header}>
           <View style={[styles.headerRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
             <View style={styles.headerCopy}>
-              <AppText variant="title" weight="bold" numberOfLines={2}>{title || t('lens.resultsTitle')}</AppText>
+              <AppText variant="h3" numberOfLines={2}>{title || t('lens.resultsTitle')}</AppText>
               <AppText variant="caption" color={theme.colors.muted}>
                 {t(candidates.length === 1 ? 'lens.resultsCountOne' : 'lens.resultsCountMany', { count: candidates.length })}
               </AppText>
@@ -86,6 +106,19 @@ export function LensResultsGrid({
           {favoriteNote ? (
             <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{t(favoriteNote)}</AppText>
           ) : null}
+          {/* Ce que fait l'appui : la page du marchand s'ouvre dans AYWEBs —
+              pour TOUTES les cartes, y compris le catalogue (28/10/2026).
+              Dit UNE fois, en haut — pas une étiquette sur chaque carte. */}
+          <AppText variant="caption" color={theme.colors.muted} testID="lens-open-hint">
+            {t('lens.openInAywebs')}
+          </AppText>
+          <LensTitleFilter value={query} onChange={setQuery} shown={shown.length} total={openable.length} />
+          {shown.length === 0 ? (
+            <View style={styles.filteredEmpty} testID="lens-filters-empty">
+              <AppText color={theme.colors.muted} align="center">{t('lens.filters.empty')}</AppText>
+              <Button label={t('lens.filters.clear')} tone="quiet" onPress={() => setQuery('')} block />
+            </View>
+          ) : null}
         </View>
       )}
       renderItem={({ item }) => (
@@ -98,6 +131,11 @@ export function LensResultsGrid({
           />
         </View>
       )}
+      ListFooterComponent={filteredOut && shown.length > 0 ? (
+        <AppText variant="caption" color={theme.colors.muted} align="center" style={styles.footer} testID="lens-filters-active">
+          {t('lens.resultsCountMany', { count: shown.length })} / {openable.length}
+        </AppText>
+      ) : null}
     />
   );
 }
@@ -111,6 +149,8 @@ const styles = StyleSheet.create({
   headerRow: { alignItems: 'center', gap: 12 },
   headerCopy: { flex: 1, gap: 2 },
   newSearch: { width: 48, height: 48, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  filteredEmpty: { gap: 8, paddingVertical: 24, paddingHorizontal: 16 },
+  footer: { paddingVertical: 8 },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, paddingHorizontal: 24, paddingVertical: 48 },
   emptyIcon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
 });

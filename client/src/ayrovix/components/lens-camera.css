@@ -3,7 +3,7 @@
 .lens-camera-stage { position:relative; display:flex; flex-direction:column; flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
 .lens-camera-header { position:relative; z-index:20; display:grid; grid-template-columns:88px minmax(0,1fr) 88px; align-items:center; gap:4px; padding:max(8px,env(safe-area-inset-top)) 12px 8px; flex:none; background:linear-gradient(#0009,transparent); }
 .lens-camera-header > .lens-camera-icon { justify-self:start; }
-.lens-camera-brand { overflow-wrap:anywhere; margin:0; font-size:1.125rem; font-weight:500; letter-spacing:0; line-height:1.25; text-align:center; }
+.lens-camera-brand { overflow-wrap:anywhere; margin:0; font-size:1.125rem; font-weight:520; letter-spacing:0; line-height:1.25; text-align:center; }
 .lens-camera-brand span { display:block; font-size:0.6875rem; font-weight:400; margin-top:3px; }
 .lens-camera-tools { display:flex; }
 .lens-camera-icon { display:grid; place-items:center; min-width:44px; min-height:44px; padding:0; color:#fff; background:transparent; border:0; border-radius:50%; cursor:pointer; }
@@ -16,7 +16,7 @@
 .lens-camera-tab:disabled { opacity:.4; }
 .lens-live-unavailable { position:relative; z-index:10; margin:0 16px 12px; color:#fff; font-size:0.75rem; text-align:center; }
 .lens-camera-controls { display:grid; grid-template-columns:minmax(0,1fr) 84px minmax(0,1fr); align-items:center; gap:12px; padding:0 16px 10px; flex:none; }
-.lens-camera-action { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:76px; gap:2px; background:transparent; color:#fff; border:0; font-family:inherit; font-size:0.8125rem; font-weight:500; line-height:1.4; cursor:pointer; }
+.lens-camera-action { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:76px; gap:2px; background:transparent; color:#fff; border:0; font-family:inherit; font-size:0.8125rem; font-weight:520; line-height:1.4; cursor:pointer; }
 .lens-camera-action > span { height:44px; width:44px; }
 .lens-camera-shutter { justify-self:center; }
 .lens-camera-shutter:disabled { opacity:.45; cursor:not-allowed; }
@@ -28,7 +28,7 @@
 .lens-panel { width:100%; max-width:540px; max-height:calc(100dvh - max(12px,env(safe-area-inset-top))); display:flex; flex-direction:column; overflow:hidden; background:#fff; color:#000; font-family:var(--ay-font-stack); font-size:0.9375rem; line-height:1.65; text-align:start; border:1px solid var(--ay-e-line); }
 .lens-panel:lang(ar) { line-height:1.85; }
 .lens-panel-header { display:flex; align-items:center; gap:12px; flex:none; padding:12px 16px; border-bottom:1px solid var(--ay-e-line); }
-.lens-panel-header h2 { flex:1; margin:0; font-size:1.25rem; font-weight:500; line-height:1.4; }
+.lens-panel-header h2 { flex:1; margin:0; font-size:1.25rem; font-weight:520; line-height:1.4; }
 .lens-panel-icon { display:grid; place-items:center; flex:none; min-width:44px; min-height:44px; padding:0; border:1px solid var(--ay-e-line-control); color:#000; background:#fff; cursor:pointer; }
 .lens-panel-body { overflow-y:auto; overscroll-behavior:contain; padding:20px 20px max(20px,env(safe-area-inset-bottom)); min-height:0; }
 .lens-panel-lead { margin:0 0 20px; font-size:1.0625rem; font-weight:400; }
@@ -64,6 +64,6 @@
 
 /* Maquette caméra approuvée : vignette galerie, bouton OCEREX rond translucide. */
 .lens-gallery-button { display:grid; place-items:center; justify-self:start; width:56px; height:56px; border-radius:16px; background:rgba(255,255,255,.18); border:2px solid rgba(255,255,255,.75); color:#fff; cursor:pointer; }
-.lens-ocerex-button { display:grid; place-items:center; justify-self:end; width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,.28); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:0; color:#fff; font-size:12px; font-weight:800; letter-spacing:.02em; cursor:pointer; }
+.lens-ocerex-button { display:grid; place-items:center; justify-self:end; width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,.28); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:0; color:#fff; font-size:12px; font-weight:700; letter-spacing:.02em; cursor:pointer; }
 .lens-ocerex-button:focus-visible, .lens-gallery-button:focus-visible { outline:2px solid #fff; outline-offset:3px; }
 .lens-mode-pill .lens-camera-tab.is-selected { box-shadow:0 1px 4px rgba(0,0,0,.25); }

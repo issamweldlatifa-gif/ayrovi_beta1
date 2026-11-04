@@ -31,6 +31,15 @@ import { initiateCardPayment } from '@/api/checkout';
 import { depositActionable, selectDepositMethod, uploadDepositProof, type DepositMethod } from '@/api/payments';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScrollView } from 'react-native';
+import { formatAmount, formatMoney } from '@/format/money';
+
+/**
+ * Filet de sécurité de l'écran : si le rendu de le détail d’une commande lève, expo-router
+ * affiche le repli (arabe + français, bouton « عاود ») à la place de l'écran —
+ * l'application reste ouverte, l'utilisateur peut revenir. Voir
+ * `src/design/AppErrorBoundary.tsx` et la cause du 25/10/2026 (ordre des hooks).
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function OrderDetailScreen() {
   const theme = useTheme();
@@ -63,7 +72,7 @@ export default function OrderDetailScreen() {
       setPayNote('');
       // الخادم رجّع القسط الجديد: نعرضوه كما هو، وما نحسبوش عربوناً هنا.
       if (selection.quote.amountTND != null) {
-        setPayNote(`${t('order.depositDue')}: ${selection.quote.amountTND.toFixed(2)} TND`);
+        setPayNote(`${t('order.depositDue')}: ${formatMoney(selection.quote.amountTND)}`);
       }
       reload();
     },
@@ -119,12 +128,12 @@ export default function OrderDetailScreen() {
         >
           <Ionicons
             name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-            size={26}
+            size={theme.iconSize.md}
             color={theme.colors.ink}
             accessibilityElementsHidden
           />
         </Pressable>
-        <AppText variant="title" style={styles.headerTitle}>
+        <AppText variant="h3" style={styles.headerTitle}>
           {order.data?.orderNumber || t('order.title')}
         </AppText>
       </View>
@@ -153,21 +162,21 @@ export default function OrderDetailScreen() {
                   />
                 ) : null}
                 <View style={styles.itemText}>
-                  <AppText variant="label" weight="bold">{item.title || '—'}</AppText>
+                  <AppText variant="label" >{item.title || '—'}</AppText>
                   <AppText variant="caption" color={theme.colors.muted}>
-                    {item.quantity} × {item.unitPriceTnd.toFixed(2)} DT
+                    {item.quantity} × {formatMoney(item.unitPriceTnd)}
                   </AppText>
                   {item.variant ? <AppText variant="caption" color={theme.colors.muted}>{item.variant}</AppText> : null}
                 </View>
-                <AppText variant="label" weight="bold">{item.totalTnd.toFixed(2)}</AppText>
+                <AppText variant="label" >{formatAmount(item.totalTnd)}</AppText>
               </View>
             ))}
           </Card>
 
           <Card title={t('order.totals')}>
-            <KeyValue label={t('orders.total')} value={`${order.data.totalTnd.toFixed(2)} DT`} />
-            <KeyValue label={t('order.paid')} value={`${order.data.paidTnd.toFixed(2)} DT`} />
-            <KeyValue label={t('order.remainder')} value={`${order.data.remainderTnd.toFixed(2)} DT`} />
+            <KeyValue label={t('orders.total')} value={`${formatMoney(order.data.totalTnd)}`} />
+            <KeyValue label={t('order.paid')} value={`${formatMoney(order.data.paidTnd)}`} />
+            <KeyValue label={t('order.remainder')} value={`${formatMoney(order.data.remainderTnd)}`} />
             {order.data.invoiceNumber ? (
               <KeyValue label={t('order.invoice')} value={order.data.invoiceNumber} />
             ) : null}
@@ -214,7 +223,7 @@ export default function OrderDetailScreen() {
               <Card title={t('order.payment')} hint={t('order.paymentHint')}>
                 <KeyValue label={t('order.paymentStatus')} value={order.data.paymentStatus || '—'} />
                 {order.data.remainderTnd > 0 ? (
-                  <KeyValue label={t('order.remainder')} value={`${order.data.remainderTnd.toFixed(2)} DT`} />
+                  <KeyValue label={t('order.remainder')} value={`${formatMoney(order.data.remainderTnd)}`} />
                 ) : null}
 
                 {gate.canSelectMethod ? (

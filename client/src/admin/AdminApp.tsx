@@ -21,6 +21,7 @@ import { LensLabPage, AiDiscoveryPage } from './AiLabPages';
 import { SocialAdminPage } from './SocialAdminPage';
 import { InventoryMovementsPage, InventoryStockPage, InventoryStocktakesPage } from './InventoryPage';
 import { PurchasingOrdersPage, PurchasingReceiptsPage, PurchasingSuppliersPage } from './PurchasingPage';
+import { AyWebsPurchaseQueuePage } from './AyWebsPurchaseQueuePage';
 import { CrmActivitiesPage, CrmContactsPage, CrmDashboardPage, CrmIssuesPage, CrmPartiesPage, CrmTasksPage } from './CrmPages';
 import { MagazineAgentPage } from './MagazineAgentPage';
 import { HeroSlidesManagePage } from './HeroSlidesManagePage';
@@ -230,7 +231,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
               Première connexion ou mot de passe perdu ? La console n’expose <b>aucune</b> réinitialisation publique.
               {' '}
               <details style={{ display: 'inline' }}>
-                <summary style={{ display: 'inline', cursor: 'pointer', fontWeight: 750 }}>Voir la procédure serveur</summary>
+                <summary style={{ display: 'inline', cursor: 'pointer', fontWeight: 700 }}>Voir la procédure serveur</summary>
                 <span style={{ display: 'block', marginTop: 6 }}>
                   Sur la machine du serveur, définissez <code>ADMIN_EMAIL</code> et <code>ADMIN_PASSWORD</code> (12 caractères minimum) puis redémarrez :
                   le compte est créé au premier démarrage. Si un administrateur existe déjà et que son mot de passe est inconnu,
@@ -968,7 +969,7 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const saveRow=(key:string,value:any)=>{const row=rows.find((r:any)=>r.setting_key===key);if(!row)return Promise.resolve();return adminApi(`/settings/${row.id}`,{method:'PUT',body:JSON.stringify({value})});};
   const save=async()=>{setBusy(true);try{await Promise.all([saveRow('site_theme',theme),saveRow('footer_about',footerAbout),saveRow('facebook_url',channels.facebook),saveRow('instagram_url',channels.instagram),saveRow('tiktok_url',channels.tiktok),saveRow('whatsapp_url',channels.whatsapp)]);await load();setToast({message:'Design publié — la boutique adopte le nouveau thème (rechargement des pages).',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
   const applyPreset=(preset:any)=>setTheme({...theme,...preset,preset:preset.id});
-  return <><PageHeader title="Développement & design" description="Palette officielle ZAYROVI : 50 % blanc · 35 % noir · 5 % gris clair · violet ≈ 3 % (2 % violet électrique + 1 % violet clair), réservé à l’action. Zalando Sans + Noto Sans Arabic unifient latin et arabe." action={canWrite?<Button busy={busy} onClick={save}>Publier le design</Button>:undefined}/>
+  return <><PageHeader title="Développement & design" description="Palette officielle ZAYROVI : 50 % blanc · 35 % noir · 5 % gris clair · violet ≈ 3 % (2 % violet électrique + 1 % violet clair), réservé à l’action. Ayrovi Extracted Sans + Noto Sans Arabic unifient latin et arabe." action={canWrite?<Button busy={busy} onClick={save}>Publier le design</Button>:undefined}/>
   <div className="admin-report-grid">
     <section className="admin-card"><CardTitle title="Modèles prêts" subtitle="Choisissez un modèle, personnalisez ensuite ses couleurs"/><div className="admin-theme-grid">{THEME_PRESETS.map(preset=><button key={preset.id} type="button" disabled={!canWrite} className={`admin-theme-card ${theme.preset===preset.id?'is-active':''}`} onClick={()=>applyPreset(preset)}><i style={{background:preset.gradient}}/><span>{preset.label}</span><small>{preset.primary} · {preset.accent}</small></button>)}</div>
     <div className="admin-form-row" style={{marginTop:16}}><Field label="Couleur principale" full><input type="color" value={theme.primary} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',primary:e.target.value})}/></Field><Field label="Accent (promos)" full><input type="color" value={theme.accent} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',accent:e.target.value})}/></Field><Field label="Police" full><Select disabled value={FONT_STACK} onChange={e=>setTheme({...theme,preset:'custom',font:FONT_STACK})} options={FONT_OPTIONS}/></Field></div>
@@ -1002,6 +1003,7 @@ const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout
     else if(section==='purchasing')page=<PurchasingSuppliersPage/>;
     else if(section==='purchasing-orders')page=<PurchasingOrdersPage/>;
     else if(section==='purchasing-receipts')page=<PurchasingReceiptsPage/>;
+    else if(section==='aywebs-purchases')page=<AyWebsPurchaseQueuePage canWrite={has('orders:write')}/>;
     // E5 — CRM 360 : tableau de bord + cinq écrans métier. La navigation reste `commerce:read`,
     // chaque action d'écriture est décidée par l'écran lui-même via `/crm/meta` (grants `crm360:*`).
     else if(section==='crm-dashboard')page=<CrmDashboardPage/>;

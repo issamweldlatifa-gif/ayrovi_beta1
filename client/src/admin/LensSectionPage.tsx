@@ -394,8 +394,8 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
               {draft.bgType === 'IMAGE' && bgImage && <img src={bgImage} alt="" style={{ width: '100%', height: 180, objectFit: 'cover', opacity: 1 - draft.overlayStrength * 0.6 }} />}
               <div style={{ padding: '28px 24px' }}>
                 {keys.map((key) => {
-                  if (key === 'eyebrow') return draft.eyebrow ? <p key={key} style={{ margin: 0, fontSize: 11, fontWeight: 900, letterSpacing: '0.24em', textTransform: 'uppercase', color: draft.accentColor }}>{draft.eyebrow}</p> : null;
-                  if (key === 'title') return <h4 key={key} style={{ margin: '10px 0 0', fontSize: 30, lineHeight: 1.06, fontWeight: 800, letterSpacing: '-0.025em' }}>{titleLines.map((line, index) => <span key={index}>{line}{index < titleLines.length - 1 && <br />}</span>)}</h4>;
+                  if (key === 'eyebrow') return draft.eyebrow ? <p key={key} style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: '0.24em', textTransform: 'uppercase', color: draft.accentColor }}>{draft.eyebrow}</p> : null;
+                  if (key === 'title') return <h4 key={key} style={{ margin: '10px 0 0', fontSize: 30, lineHeight: 1.06, fontWeight: 700, letterSpacing: '-0.025em' }}>{titleLines.map((line, index) => <span key={index}>{line}{index < titleLines.length - 1 && <br />}</span>)}</h4>;
                   if (key === 'description') return draft.description ? <p key={key} style={{ margin: '14px 0 0', fontSize: 14.5, lineHeight: 1.65, opacity: 0.72 }}>{draft.description}</p> : null;
                   if (key === 'cta') return draft.ctaLabel ? <span key={key} style={{ display: 'inline-block', marginTop: 24, borderRadius: 999, background: '#111217', color: '#fff', padding: '12px 24px', fontSize: 15, fontWeight: 700 }}>{draft.ctaLabel}</span> : null;
                   if (key === 'proof') return draft.proofLine ? <p key={key} style={{ margin: '14px 0 0', fontSize: 12.5, fontWeight: 700, opacity: 0.7 }}>{draft.proofLine}</p> : null;
@@ -404,7 +404,7 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
                 {draft.phoneEnabled && (
                   <div style={{ marginTop: 28, width: 'calc(100% - 40px)', marginInline: 'auto', borderRadius: 30, background: '#111217', padding: 10 }}>
                     <div style={{ borderRadius: 24, overflow: 'hidden', background: '#fff', aspectRatio: '9 / 17.2' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px 4px', fontSize: 10, fontWeight: 800 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 16px 4px', fontSize: 10, fontWeight: 700 }}>
                         <span>9:41</span><span>{draft.phone.statusLabel}</span>
                       </div>
                       <div style={{ position: 'relative', height: '46%', margin: '8px 12px', borderRadius: 16, overflow: 'hidden', background: '#23242c' }}>
@@ -412,13 +412,13 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
                       </div>
                       <div style={{ padding: '8px 14px 14px' }}>
                         <strong style={{ display: 'block', fontSize: 9.5, textTransform: 'uppercase', letterSpacing: '0.1em', color: draft.accentColor }}>{draft.phone.resultLabel}</strong>
-                        <span style={{ display: 'block', marginTop: 3, fontSize: 13, fontWeight: 800 }}>{draft.phone.productName}</span>
+                        <span style={{ display: 'block', marginTop: 3, fontSize: 13, fontWeight: 700 }}>{draft.phone.productName}</span>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
                           {[draft.phone.priceChip, draft.phone.metaChip, draft.phone.stockChip].filter(Boolean).map((chip, index) => (
                             <span key={index} style={{ fontSize: 10, fontWeight: 700, borderRadius: 999, padding: '4px 9px', background: index === 0 ? draft.accentColor : '#f3f4f6', color: index === 0 ? '#fff' : '#374151' }}>{chip}</span>
                           ))}
                         </div>
-                        <span style={{ display: 'block', textAlign: 'center', marginTop: 10, borderRadius: 999, background: '#111318', color: '#fff', fontSize: 11.5, fontWeight: 800, padding: '9px 12px' }}>{draft.phone.ctaLabel}</span>
+                        <span style={{ display: 'block', textAlign: 'center', marginTop: 10, borderRadius: 999, background: '#111318', color: '#fff', fontSize: 11.5, fontWeight: 700, padding: '9px 12px' }}>{draft.phone.ctaLabel}</span>
                       </div>
                     </div>
                   </div>

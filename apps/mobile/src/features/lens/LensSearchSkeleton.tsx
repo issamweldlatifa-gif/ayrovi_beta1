@@ -48,7 +48,7 @@ export function LensSearchSkeleton({
   return (
     <View style={styles.wrap} testID="lens-search-skeleton">
       <View style={[styles.header, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-        <AppText variant="title" weight="bold" numberOfLines={2} style={styles.title}>{title || t('lens.resultsTitle')}</AppText>
+        <AppText variant="h3" numberOfLines={2} style={styles.title}>{title || t('lens.resultsTitle')}</AppText>
         <Pressable
           onPress={onCancel}
           accessibilityRole="button"
@@ -56,7 +56,7 @@ export function LensSearchSkeleton({
           testID="lens-search-cancel"
           style={({ pressed }) => [styles.cancel, { opacity: pressed ? theme.opacity.subtle : 1 }]}
         >
-          <AppText variant="label" weight="bold" align="center" color={theme.colors.ink} style={styles.cancelText}>
+          <AppText variant="label" align="center" color={theme.colors.ink} style={styles.cancelText}>
             {t('common.cancel')}
           </AppText>
         </Pressable>

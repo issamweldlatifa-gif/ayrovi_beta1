@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { ayWebsAlignAttributes } from '../../shared/aywebsAttributes';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import type { ScrapedProduct } from '../types';
@@ -7,6 +8,7 @@ import type { AyWebsStoreDefinition } from '../../shared/aywebsStores';
 import {
   AYWEBS_EXTERNAL_STORE,
   AYWEBS_STORES,
+  ayWebsStoreRecognition,
   detectAyWebsStore,
   findAyWebsStore,
   isAyWebsExternalStoreId,
@@ -49,8 +51,10 @@ import {
   shouldVerifyWebviewCaptureInBackground,
   validateAyWebsCapturedPage,
   webviewCaptureDivergence,
+  ayWebsCaptureRejectionErrorCode,
 } from './webviewCapture';
-import type { AyWebsCaptureOutcome } from '../../shared/aywebsCapture';
+import type { AyWebsCaptureOutcome, AyWebsCapturedVariantGroup } from '../../shared/aywebsCapture';
+import { ayWebsSelectionEvidence } from './variantEvidence';
 import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 import { ayWebsEvidenceHash, canonicalVariant, recordAyWebsEvidence } from './evidence';
 import { emitAyWebsEvent, logAyWebsOperation, measureAyWebsOperation } from './events';
@@ -127,7 +131,10 @@ export interface AyWebsResolveResult {
   analysis: AyWebsPageAnalysis;
   pricing: PriceBreakdown | null;
   evidenceHash: string;
+  /** Champs BLOQUANTS (titre, prix, devise, vérifications). La photo n'en fait pas partie. */
   missing: string[];
+  /** Tous les champs non lus, photo incluse — pour le journal et le diagnostic. */
+  missingFields: string[];
   resolvedAt: string;
   /** Lecture servie depuis le cache de résolution (âge réel fourni). */
   fromCache: boolean;
@@ -163,6 +170,13 @@ export interface AyWebsResolveResult {
    * motif (`rejection`) explique pourquoi la capture n'a pas servi.
    */
   capture: AyWebsCaptureOutcome | null;
+  /**
+   * Groupes publiés par la capture CLIENTE, avec ce que la page dit de chaque
+   * valeur (prix, état, stock). Servent au devis PAR VALEUR (23/10/2026) : la
+   * feuille affiche le prix en dinars de chaque couleur sans relire la page.
+   * Absent quand la capture n'a pas servi.
+   */
+  capturedVariantGroups: AyWebsCapturedVariantGroup[];
 }
 
 /** Coupe-circuit AYWEBs : actif par défaut, désactivable (AYWEBS_HOST_CIRCUIT=off). */
@@ -206,10 +220,23 @@ export async function resolveAyWebsProduct(
     storeCaptureEnabled: deps.flags.storeCaptureEnabled,
   });
   const captureProvided = input.capture !== undefined && input.capture !== null;
+  /* Boutique SANS motif d'URL (vague « catalogue », 23/10/2026) : sa fiche n'est
+     prouvée que par la capture du client, donc le seuil est celui d'un domaine
+     hors registre — corroboration obligatoire, jamais un prix d'une seule source. */
+  const preliminaryStore = preliminary.storeId ? findAyWebsStore(preliminary.storeId) : null;
+  /* Tout le catalogue (motif déclaré OU capture seule) exige la corroboration :
+     aucun de ces marchands n'a d'adaptateur écrit à la main pour rattraper une
+     lecture solitaire. */
+  const captureRecognition = ayWebsStoreRecognition(preliminaryStore) !== 'url';
   const captureValidation = captureProvided
     ? validateAyWebsCapturedPage(input.capture, preliminary.normalizedUrl, {
-        // Domaine hors registre : seuil plus haut (corroboration obligatoire).
-        requireCorroboration: !preliminary.registered,
+        requireCorroboration: !preliminary.registered || captureRecognition,
+        /* L'URL ne prouve pas la fiche (boutique `capture`, ou domaine inconnu) :
+           la capture doit alors PROUVER qu'elle décrit un article, pas une page
+           de magasin (Zalando « available in Austria », 23/10/2026). Demander la
+           nature de la page seulement là où l'URL ne dit rien évite de refuser
+           une fiche Amazon dont le prix est momentanément illisible. */
+        requireProductPage: !preliminary.registered || captureRecognition,
       })
     : null;
   const captureUsed = captureValidation?.ok === true;
@@ -230,6 +257,15 @@ export async function resolveAyWebsProduct(
     : assertAyWebsProductPage(input.url, deps.scraper, {
       captureEnabled: deps.flags.captureEnabled,
       storeCaptureEnabled: deps.flags.storeCaptureEnabled,
+      /* Preuve de fiche produit apportée par la capture : elle ne sert QUE si
+         l'adaptateur n'a aucun motif d'URL (la garde le vérifie elle-même). */
+      captureProof: captureUsed
+        ? {
+          accepted: true,
+          corroborated: captureValidation?.corroborated === true,
+          title: captureValidation?.scraped?.title || '',
+        }
+        : undefined,
     });
 
   if (input.storeId) {
@@ -277,16 +313,27 @@ export async function resolveAyWebsProduct(
       sessionId: input.sessionId || null,
       result: 'failure',
       errorCode: captureValidation.rejection,
+      details: {
+        client_codes: (captureValidation.notes || [])
+          .filter((note) => note.startsWith('client:'))
+          .map((note) => note.slice('client:'.length))
+          .join(',') || null,
+      },
     });
   }
 
-  const cacheKey = ayWebsResolveCacheKey(store.id, url.toString());
+  /* Clé de cache sur la forme canonique de la boutique (ex. Amazon : /dp/<ASIN>),
+     pour qu'un même produit collé sous deux liens n'ait qu'une seule entrée. */
+  const cacheKey = ayWebsResolveCacheKey(store.id, adapter.canonicalUrl?.(url.toString()) ?? url.toString());
   const cacheAllowed = !input.refresh && !input.pageHtml && !captureUsed;
   const cached = cacheAllowed ? readAyWebsResolveCache(deps.scraper, cacheKey, { allowStale: true }) : null;
   /* Mémo « fiche illisible » : une lecture SANS prix échoue en 13–17 s (sondes
      vouées à l'échec). Le mémo, séparé et à TTL court (90 s), évite de repayer
      ce coût à chaque réessai — sans jamais se faire passer pour un succès. */
-  const failedCached = cached ? null : readAyWebsResolveFailureCache(deps.scraper, cacheKey);
+  /* Ancienne mémoire d'échec : jamais servie à une demande `refresh` (Add au
+     clic) ni à une lecture avec page fournie (19/10/2026). Sinon une lecture
+     sans prix, mémorisée pendant 90 s, revenait en 0.00 malgré la relecture. */
+  const failedCached = cached || !cacheAllowed ? null : readAyWebsResolveFailureCache(deps.scraper, cacheKey);
 
   let sourceProduct: AyWebsSourceProduct;
   let fromCache = false;
@@ -337,6 +384,15 @@ export async function resolveAyWebsProduct(
       captureValidation!.scraped!,
       store.displayName || store.name || store.id,
     );
+    if (captureValidation!.skuCombinations.length > 0) {
+      sourceProduct = {
+        ...sourceProduct,
+        variants: captureValidation!.skuCombinations,
+        variantGroups: captureValidation!.variantGroups
+          .filter((grp) => grp.values && grp.values.length >= 2)
+          .map((grp) => ({ attribute: grp.name, values: [...grp.values] })),
+      };
+    }
   } else if (cached) {
     sourceProduct = cached.sourceProduct;
     fromCache = true;
@@ -377,8 +433,25 @@ export async function resolveAyWebsProduct(
           recordProbeSuccess(url.toString());
           return read;
         } catch (error) {
-          recordProbeFailure(url.toString());
+          /* Un lien que la boutique ne sert pas (autre boutique, page non produit)
+             est une erreur de SAISIE, pas une panne de l'hôte. Elle ne compte donc
+             PAS contre l'hôte : sinon trois mauvais liens mettaient TOUTE la boutique
+             au repos 10 min, et les vrais produits répondaient « refuse temporairement ». */
+          if (!(error instanceof AyWebsCaptureError)) recordProbeFailure(url.toString());
           if (error instanceof AyWebsCaptureError) {
+            /* Boutique « catalogue » : aucune lecture serveur n'existe pour elle
+               (CatalogueStoreAdapter.resolveProduct refuse toujours). Quand le
+               client a joint une capture REFUSÉE, le vrai motif de refus est la
+               seule réponse honnête — un générique PRODUCT_PAGE_REQUIRED ferait
+               croire à tort que l'URL n'est pas une fiche, alors que le client se
+               trouve déjà dessus. On nomme la cause (prix non corroboré, capture
+               périmée, rupture…), avec le code métier correspondant. */
+            if (error.code === 'PRODUCT_PAGE_REQUIRED' && captureProvided && !captureUsed) {
+              const preciseCode = ayWebsCaptureRejectionErrorCode(captureValidation?.rejection);
+              throw new AyWebsDomainError(preciseCode, {
+                technicalMessage: `capture_rejected:${captureValidation?.rejection || 'UNKNOWN'} (${adapter.id})`,
+              });
+            }
             throw new AyWebsDomainError(error.code === 'PRODUCT_PAGE_REQUIRED' ? 'PRODUCT_PAGE_REQUIRED' : 'STORE_MISMATCH', {
               userMessage: error.message,
               technicalMessage: `${adapter.id}: ${error.message}`,
@@ -392,7 +465,8 @@ export async function resolveAyWebsProduct(
     writeAyWebsResolveCache(deps.scraper, cacheKey, sourceProduct);
   }
 
-  const missing = missingProductFields(sourceProduct);
+  const missingFields = missingProductFields(sourceProduct);
+  const missing = blockingMissingFields(missingFields);
   /* Une lecture fraîche qui n'a pas su lire de prix est mémorisée 90 s : les
      réessais suivants répondent « prix non lu » en quelques ms au lieu de
      relancer 13–17 s de sondes. Le succès, lui, passe par le cache normal. */
@@ -402,53 +476,240 @@ export async function resolveAyWebsProduct(
   }
   // Le client peut joindre des métadonnées de contexte (ex. `condition`) : elles
   // n'identifient pas la variante et ne doivent jamais la faire « disparaître ».
+  /* Une capture WebView peut publier des groupes sans les incorporer au
+     `ScrapedProduct` (le lecteur n'invente pas de variantes serveur). Il faut
+     néanmoins utiliser leurs NOMS pour aligner le choix envoyé par le client :
+     sinon `variant` tombe en métadonnée, le devis et le jeton restent attachés
+     au produit générique au lieu de la couleur/taille choisie. */
+  const capturedSelectionGroups = captureUsed
+    ? ayWebsGroupsFromCapture(captureValidation!.variantGroups)
+    : [];
+  const groupsForSelection = sourceProduct.variantGroups.length
+    ? sourceProduct.variantGroups
+    : capturedSelectionGroups;
+  const pageCompleteSelection: Record<string, string> | null = (() => {
+    if (input.selectedVariant && Object.keys(input.selectedVariant).length > 0) return null;
+    if (!captureUsed || !captureValidation!.variantGroups.length) return null;
+    const derived: Record<string, string> = {};
+    for (const grp of captureValidation!.variantGroups) {
+      if (!grp.values || grp.values.length < 2) continue;
+      if (!grp.selected || grp.selected.length !== 1) return null;
+      derived[grp.name] = grp.selected[0];
+    }
+    return Object.keys(derived).length > 0 ? derived : null;
+  })();
   const { matching: matchingAttributes, metadata: variantMetadata } = ayWebsSplitVariantSelection(
-    { variantGroups: sourceProduct.variantGroups, variants: sourceProduct.variants },
-    input.selectedVariant || null,
+    { variantGroups: groupsForSelection, variants: sourceProduct.variants },
+    input.selectedVariant || pageCompleteSelection || null,
   );
   let availability = await adapter.checkAvailability(sourceProduct, matchingAttributes);
 
+  /* Prix marchand qui s'applique à la RÉSOLUTION : celui de la page tant que la
+     combinaison demandée est celle qui est affichée ; celui de la VALEUR quand la
+     capture publie un prix pour elle (23/10/2026). Jamais celui d'une autre
+     couleur. */
+  let merchantPrice = sourceProduct.price;
+  let merchantPriceFromValue = false;
+
   if (captureUsed) {
-    /* La capture prouve l'état du bouton d'achat POUR LA COMBINAISON AFFICHÉE
-       chez le client. Si l'écran demande une AUTRE combinaison, cette preuve ne
-       dit rien d'elle : on répond UNKNOWN (et le panier refusera) au lieu
-       d'étendre la preuve à une variante qu'on n'a pas vue. */
-    /* Toute valeur demandée doit avoir été VUE sur la page — y compris celles
-       que le produit ne publie pas comme options (métadonnées de contexte).
-       Pourquoi si large : une capture ne publie AUCUN stock par option, donc
-       rien ne permet de dire si une valeur demandée est un attribut de variante
-       ou une simple annotation. Le risque est asymétrique — un faux UNKNOWN
-       coûte un refus honnête (« impossible de confirmer »), un faux AVAILABLE
-       coûte une commande invendable sur un produit jamais affiché. */
+    /* La capture prouve, pour CHAQUE valeur publiée, son état et parfois son
+       prix. La combinaison demandée est résolue valeur par valeur : on ne
+       transporte jamais l'état du bouton d'achat d'une couleur vers une autre. */
     const requestedSelection = { ...(matchingAttributes || {}), ...(variantMetadata || {}) };
+    const variantEvidence = ayWebsSelectionEvidence(
+      captureValidation!.variantGroups,
+      requestedSelection,
+      { currency: captureValidation!.currency },
+    );
+    variantEvidence.notes.forEach((note) => captureValidation!.notes.push(note));
+    /* Repli historique : les libellés que le client avait VUS sélectionnés sur la
+       page prouvent la combinaison affichée (utile quand la page ne nomme pas ses
+       groupes). Si la page publie des groupes à choix multiples dont au moins un
+       n'a ni sélection de page ni choix demandé, la sélection est partielle et ne
+       saurait bénéficier de la preuve de page complète. */
+    const hasUnchosenCapturedGroup = captureValidation!.variantGroups.some((grp) => {
+      if (!grp.values || grp.values.length < 2) return false;
+      const gName = String(grp.name || '').trim();
+      if (!gName) return false;
+      const { aligned } = ayWebsAlignAttributes([gName], requestedSelection);
+      const chosenInRequest = Object.keys(aligned).length > 0;
+      const chosenOnPage = Array.isArray(grp.selected) && grp.selected.length > 0;
+      return !chosenInRequest && !chosenOnPage;
+    });
     const requestedValues = Object.values(requestedSelection).map((value) => String(value).trim().toLowerCase());
     const observed = captureValidation!.selectedVariantTexts.map((value) => value.toLowerCase());
-    const selectionBacked = !requestedValues.length
-      || requestedValues.every((value) => observed.some((label) => label.includes(value)));
+    const textBacked = !hasUnchosenCapturedGroup && (!requestedValues.length
+      || requestedValues.every((value) => observed.some((label) => label.includes(value))));
+    const pageProof = textBacked || variantEvidence.shownCombination;
     const checkedAt = new Date().toISOString();
-    if (selectionBacked) {
+    const selectionKey = ayWebsVariantKey(requestedSelection);
+    const publishedStock = variantEvidence.attributes
+      .map((attribute) => attribute.stock)
+      .filter((stock): stock is number => typeof stock === 'number' && stock > 0);
+    const matchedSkuCombination = (() => {
+      if (!captureValidation!.skuCombinations.length) return null;
+      const multiGroupNames = captureValidation!.variantGroups
+        .filter((grp) => grp.values && grp.values.length >= 2)
+        .map((grp) => grp.name);
+      if (!multiGroupNames.length) return null;
+      const { aligned } = ayWebsAlignAttributes(multiGroupNames, requestedSelection);
+      if (Object.keys(aligned).length !== multiGroupNames.length) return null;
+      return captureValidation!.skuCombinations.find((combo) =>
+        multiGroupNames.every((gName) =>
+          String(combo.attributes[gName] || '').toLowerCase() === String(aligned[gName] || '').toLowerCase(),
+        ),
+      ) || null;
+    })();
+    const skuStockMatch = matchedSkuCombination?.availabilityReason?.match(/:(\d+)$/);
+    const skuStockHint = matchedSkuCombination?.stock ?? (skuStockMatch ? Number(skuStockMatch[1]) : null);
+    const effectiveQuantityHint = skuStockHint !== null
+      ? skuStockHint
+      : (publishedStock.length ? Math.min(...publishedStock) : null);
+    const matchedSkuProvenAvailable = matchedSkuCombination != null
+      && (matchedSkuCombination.availability === 'AVAILABLE' || matchedSkuCombination.availability === 'LOW_STOCK');
+
+    if (matchedSkuCombination?.availability === 'OUT_OF_STOCK' || (!matchedSkuProvenAvailable && variantEvidence.blocked)) {
+      /* Le négatif gagne : une valeur ou combinaison SKU explicitement indisponible ne
+         devient jamais disponible parce que la page, elle, est achetable pour une autre. */
+      availability = {
+        ...ayWebsAvailabilityRecord(
+          'OUT_OF_STOCK',
+          `selection_option_out_of_stock:${selectionKey}`.slice(0, 200),
+          'webview_client',
+          checkedAt,
+          null,
+        ),
+        variantAvailable: false,
+      };
+      if (matchedSkuCombination?.availability === 'OUT_OF_STOCK') {
+        captureValidation!.notes.push('selection_sku_out_of_stock');
+      }
+    } else if (matchedSkuProvenAvailable) {
+      /* Matrice SKU vérifiée : disponibilité exacte de cette combinaison
+         (`LOW_STOCK` sur les matrices multi-axes 2D+, `AVAILABLE` + `quantityHint`
+         sur les pastilles mono-axe historiques). */
+      const multiAxisCount = captureValidation!.variantGroups.filter((grp) => grp.values && grp.values.length >= 2).length;
+      availability = {
+        ...ayWebsAvailabilityRecord(
+          multiAxisCount >= 2 ? matchedSkuCombination.availability : 'AVAILABLE',
+          `selection_sku_available:${selectionKey}`.slice(0, 200),
+          'webview_client',
+          checkedAt,
+          effectiveQuantityHint,
+        ),
+        variantAvailable: true,
+      };
+      captureValidation!.notes.push('selection_available_by_sku');
+    } else if (pageProof) {
+      /* Combinaison AFFICHÉE : c'est le constat de la page qui fait foi. */
       availability = {
         ...ayWebsAvailabilityRecord(
           captureValidation!.availability,
           captureValidation!.availabilityReason,
           'webview_client',
           checkedAt,
+          effectiveQuantityHint,
         ),
         variantAvailable: availability.variantAvailable ?? null,
       };
       if (requestedValues.length) captureValidation!.notes.push('selection_matches_captured_page');
+    } else if (variantEvidence.available) {
+      /* Autre combinaison, MAIS chaque valeur publiée dit « disponible » : la
+         capture le prouve valeur par valeur, sans étendre la preuve de la page. */
+      availability = {
+        ...ayWebsAvailabilityRecord(
+          'AVAILABLE',
+          `selection_option_available:${selectionKey}`.slice(0, 200),
+          'webview_client',
+          checkedAt,
+          effectiveQuantityHint,
+        ),
+        variantAvailable: true,
+      };
+      captureValidation!.notes.push('selection_available_by_value');
     } else {
       availability = {
         ...ayWebsAvailabilityRecord(
           'UNKNOWN',
-          `selection_not_verified_by_capture:${ayWebsVariantKey(requestedSelection)}`,
+          `selection_not_verified_by_capture:${selectionKey}`.slice(0, 200),
           'webview_client',
           checkedAt,
+          effectiveQuantityHint,
         ),
         variantAvailable: null,
       };
       captureValidation!.notes.push('selection_not_in_capture');
     }
+
+    /* ── PRIX DE LA COMBINAISON ─────────────────────────────────────────────
+       Trois cas, et aucun autre :
+       1. la capture publie un prix FERME (par combinaison SKU exacte ou par
+          valeur sans conflit) dans la devise prouvée ⇒ c'est le prix marchand ;
+       2. le prix ferme manque mais la combinaison est celle AFFICHÉE sur la
+          page ⇒ le prix de la page s'applique (comportement historique) ;
+       3. sinon, le prix de la page appartient à une AUTRE combinaison : on
+          refuse de coter plutôt que d'annoncer le prix d'une autre couleur. */
+    const skuPriceProven = (matchedSkuProvenAvailable || !variantEvidence.blocked)
+      && matchedSkuCombination != null
+      && matchedSkuCombination.availability !== 'OUT_OF_STOCK'
+      && matchedSkuCombination.price != null
+      && matchedSkuCombination.price > 0
+      && (!matchedSkuCombination.currency || matchedSkuCombination.currency === captureValidation!.currency);
+    const optionPriceProven = !variantEvidence.blocked
+      && variantEvidence.price != null
+      && !variantEvidence.priceConflict
+      && !variantEvidence.priceFrom
+      && !variantEvidence.currencyMismatch;
+    if (skuPriceProven) {
+      let resolvedSkuUnitPrice = matchedSkuCombination!.price as number;
+      const reqQty = Math.max(1, Math.floor(Number(input.quantity) || 1));
+      if (reqQty >= 2 && Array.isArray(matchedSkuCombination!.quantityTiers) && matchedSkuCombination!.quantityTiers.length > 0) {
+        let bestMin = 0;
+        for (const tier of matchedSkuCombination!.quantityTiers) {
+          if (tier.minQuantity <= reqQty && tier.minQuantity >= bestMin && tier.unitPrice > 0) {
+            bestMin = tier.minQuantity;
+            resolvedSkuUnitPrice = tier.unitPrice;
+          }
+        }
+        if (bestMin >= 2) captureValidation!.notes.push('selection_priced_from_sku_quantity_tier');
+      }
+      merchantPrice = resolvedSkuUnitPrice;
+      merchantPriceFromValue = true;
+      captureValidation!.notes.push('selection_priced_from_sku_matrix');
+      if (matchedSkuCombination!.image) {
+        const nextImages = [matchedSkuCombination!.image, ...sourceProduct.images.filter((img) => img !== matchedSkuCombination!.image)];
+        sourceProduct = {
+          ...sourceProduct,
+          images: nextImages,
+          scrapedProduct: { ...sourceProduct.scrapedProduct, images: nextImages, mainImage: nextImages[0] },
+        };
+      }
+    } else if (optionPriceProven) {
+      merchantPrice = variantEvidence.price as number;
+      merchantPriceFromValue = true;
+      captureValidation!.notes.push('selection_priced_from_value');
+    } else if (!pageProof && !variantEvidence.blocked && matchedSkuCombination?.availability !== 'OUT_OF_STOCK' && variantEvidence.groupsMatched > 0) {
+      const unpublished = variantEvidence.attributes.find((attribute) => attribute.groupFound && !attribute.found);
+      if (unpublished) {
+        throw new AyWebsDomainError('VARIANT_UNKNOWN', {
+          technicalMessage: `variant_value_not_published:${ayWebsVariantKey(requestedSelection)}`.slice(0, 200),
+        });
+      }
+      throw new AyWebsDomainError('PRICE_UNAVAILABLE', {
+        technicalMessage: `variant_price_not_published:${ayWebsVariantKey(requestedSelection)}`.slice(0, 200),
+      });
+    }
+  }
+
+  /* Le prix marchand retenu pour CETTE résolution remplace celui de la page :
+     devis, moteur tarifaire, panier et empreinte doivent tous désigner le même
+     montant. `sourceProduct` reste la lecture brute de la page. */
+  if (merchantPriceFromValue && Math.abs(merchantPrice - sourceProduct.price) >= 0.005) {
+    sourceProduct = {
+      ...sourceProduct,
+      price: merchantPrice,
+      scrapedProduct: { ...sourceProduct.scrapedProduct, sourcePrice: merchantPrice },
+    };
   }
 
   // Le prix ZAYROVI est recalculé côté serveur, uniquement si le marchand a
@@ -537,6 +798,7 @@ export async function resolveAyWebsProduct(
     evidenceHash,
     captureId,
     selection,
+    capturedVariantGroups: captureUsed ? captureValidation!.variantGroups : undefined,
   });
 
   emitAyWebsEvent(deps.db, {
@@ -553,9 +815,16 @@ export async function resolveAyWebsProduct(
       availability: availability.state,
       purchaseMode: product.purchaseMode,
       missing,
+      missing_fields: missingFields,
     },
   });
 
+  /* Diagnostic de lecture (19/10/2026) : quels champs manquent et pourquoi. Codes et
+     nombres seulement — la capture refusée et ses codes client, jamais la page. */
+  const clientCodes = (captureValidation?.notes || [])
+    .filter((note) => note.startsWith('client:'))
+    .map((note) => note.slice('client:'.length))
+    .join(',');
   logAyWebsOperation({
     operation: 'product_resolve_total',
     storeId: store.id,
@@ -564,6 +833,22 @@ export async function resolveAyWebsProduct(
     durationMs: Date.now() - startedAt,
     result: missing.length ? 'failure' : 'success',
     errorCode: missing.length ? 'CAPTURE_INCOMPLETE' : null,
+    missingFields,
+    details: {
+      blocking_missing: missing.join(',') || null,
+      capture_used: captureUsed,
+      capture_rejection: captureValidation?.rejection ?? null,
+      capture_price_source: captureValidation?.priceSource ?? null,
+      capture_corroborated: captureValidation?.corroborated ?? null,
+      capture_client_codes: clientCodes || null,
+      title_read: Boolean(sourceProduct.title?.trim()),
+      price_read: Number(sourceProduct.price) > 0,
+      currency_read: /^[A-Z]{3}$/.test(String(sourceProduct.currency || '')),
+      price_verified: sourceProduct.scrapedProduct?.priceVerified === true,
+      currency_verified: sourceProduct.scrapedProduct?.currencyVerified === true,
+      image_read: Boolean(sourceProduct.images?.length),
+      cache_kind: cacheKind,
+    },
   });
 
   /* Devis signé — émis ici, au seul endroit où le serveur connaît à la fois le
@@ -623,6 +908,7 @@ export async function resolveAyWebsProduct(
     pricing,
     evidenceHash,
     missing,
+    missingFields,
     resolvedAt: sourceProduct.capturedAt,
     fromCache,
     cacheAgeMs,
@@ -633,6 +919,7 @@ export async function resolveAyWebsProduct(
     capture: captureValidation
       ? { ...captureValidation.outcome, used: captureUsed }
       : null,
+    capturedVariantGroups: captureUsed ? (captureValidation!.variantGroups || []) : [],
   };
 }
 
@@ -712,6 +999,13 @@ async function verifyWebviewCaptureInBackground(input: {
 }
 
 /** Champs normalisés manquants : la liste est renvoyée au client, jamais devinée. */
+/** La photo ne bloque jamais l'ajout : elle n'est pas une preuve de prix (19/10/2026). */
+export const AYWEBS_OPTIONAL_FIELDS: readonly string[] = ['image'];
+
+export function blockingMissingFields(fields: readonly string[]): string[] {
+  return fields.filter((field) => !AYWEBS_OPTIONAL_FIELDS.includes(field));
+}
+
 export function missingProductFields(product: AyWebsSourceProduct): string[] {
   return [
     !product.title?.trim() ? 'title' : '',
@@ -735,6 +1029,36 @@ function pricedScrapedProduct(product: ScrapedProduct, pricing: PriceBreakdown |
   };
 }
 
+/**
+ * GROUPES DE LA CAPTURE → GROUPES DU PRODUIT (23/10/2026).
+ *
+ * On ne publie QUE la valeur affichée sur la page (et la première si la page
+ * n'en déclare aucune) : la capture prouve un prix et un état d'achat pour la
+ * combinaison VISIBLE, pas le stock des autres. Publier les 20 tailles ferait
+ * choisir une combinaison que le serveur serait incapable de vérifier ensuite —
+ * exactement le faux choix qu'AYWEBs s'interdit.
+ *
+ * Le client garde donc la main pour changer de variante : il le fait SUR la page
+ * de la boutique, puis relit — chemin normal, vérifiable, sans devinette.
+ */
+function ayWebsGroupsFromCapture(
+  captured: Array<{ name: string; values: string[]; selected?: string[] }> | undefined,
+): Array<{ attribute: string; values: string[] }> {
+  if (!captured?.length) return [];
+  const groups: Array<{ attribute: string; values: string[] }> = [];
+  const seen = new Set<string>();
+  for (const group of captured) {
+    const attribute = String(group.name || '').trim().slice(0, 60);
+    const shown = String(group.selected?.[0] || group.values?.[0] || '').trim().slice(0, 60);
+    if (!attribute || !shown) continue;
+    const key = attribute.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    groups.push({ attribute, values: [shown] });
+  }
+  return groups;
+}
+
 function toResolvedProduct(input: {
   productId: string;
   store: AyWebsStoreDefinition;
@@ -744,11 +1068,14 @@ function toResolvedProduct(input: {
   evidenceHash: string;
   captureId: string;
   selection: AyWebsVariantSelection | null;
+  /** Groupes lus par la capture cliente (boutiques sans adaptateur d'URL). */
+  capturedVariantGroups?: Array<{ name: string; values: string[]; selected?: string[] }>;
 }): AyWebsResolvedProduct {
   const { store, sourceProduct, availability, pricing, selection } = input;
   const groups = sourceProduct.variantGroups.length
     ? sourceProduct.variantGroups
-    : ayWebsVariantGroupsFromScraped(sourceProduct.scrapedProduct?.variants);
+    : ayWebsVariantGroupsFromScraped(sourceProduct.scrapedProduct?.variants)
+      .concat(ayWebsGroupsFromCapture(input.capturedVariantGroups));
   const options: AyWebsVariantOption[] = groups.length
     ? ayWebsVariantOptions(groups, sourceProduct.scrapedProduct?.colorImages || {})
     : [];
@@ -981,6 +1308,10 @@ export interface AyWebsStoredProduct {
     availability: AyWebsAvailability['state'];
     availabilityReason: string;
     image: string | null;
+    variantUrl?: string | null;
+    stock?: number | null;
+    evidenceSource?: string;
+    quantityTiers?: Array<{ minQuantity: number; unitPrice: number }>;
   }>;
   /** État publié par la source (neuf / occasion / reconditionné) ou `null`. */
   condition: 'new' | 'used' | 'refurbished' | null;

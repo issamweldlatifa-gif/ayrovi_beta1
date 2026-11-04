@@ -46,7 +46,7 @@ export function LensHistoryView({ onOpen }: { onOpen: (item: LensHistoryItem) =>
 
   return (
     <View style={styles.wrap} testID="lens-history">
-      <AppText variant="title" align="center">{t('lens.menu.history')}</AppText>
+      <AppText variant="h3" align="center">{t('lens.menu.history')}</AppText>
       {state.kind === 'loading' ? (
         <AppText color={theme.colors.muted} align="center">{t('lens.history.loading')}</AppText>
       ) : null}
@@ -81,7 +81,7 @@ export function LensHistoryView({ onOpen }: { onOpen: (item: LensHistoryItem) =>
                 </View>
               )}
               <View style={styles.copy}>
-                <AppText weight="bold" numberOfLines={2}>{item.title || item.queryLabel}</AppText>
+                <AppText variant="bodyStrong" numberOfLines={2}>{item.title || item.queryLabel}</AppText>
                 <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
                   {[item.queryLabel && item.queryLabel !== item.title ? item.queryLabel : '', shortDate(item.createdAt)].filter(Boolean).join(' · ')}
                 </AppText>

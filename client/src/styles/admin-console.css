@@ -136,7 +136,7 @@ html[data-theme='dark'] .admin-boot {
 .bo-topbar-brand { display: flex; align-items: center; gap: 10px; flex: none; }
 .bo-topbar-brand img { width: 26px; height: 26px; object-fit: contain; }
 .bo-topbar-brand div { display: flex; flex-direction: column; line-height: 1.15; }
-.bo-topbar-brand strong { font-size: 14px; font-weight: 800; letter-spacing: .16em; }
+.bo-topbar-brand strong { font-size: 14px; font-weight: 700; letter-spacing: .16em; }
 .bo-topbar-brand span { font-size: 8.5px; letter-spacing: .18em; color: var(--bo-bar-muted); }
 .bo-topbar-search { flex: 1 1 320px; max-width: 620px; min-width: 0; display: flex; }
 .bo-topbar-actions { margin-inline-start: auto; display: flex; align-items: center; gap: 4px; flex: none; }
@@ -164,11 +164,11 @@ html[data-theme='dark'] .admin-boot {
   height: var(--bo-service-h); padding: 0 14px;
   border: 0; border-bottom: 3px solid transparent;
   background: transparent; color: var(--bo-bar-ink);
-  font: inherit; font-size: 12.5px; font-weight: 600; white-space: nowrap; cursor: pointer;
+  font: inherit; font-size: 12.5px; font-weight: 650; white-space: nowrap; cursor: pointer;
 }
 .bo-service:hover { background: rgba(255, 255, 255, .10); }
 .bo-service small { font-size: 10px; font-weight: 700; color: var(--bo-bar-muted); }
-.bo-service.is-active { color: #FFFFFF; font-weight: 800; border-bottom-color: var(--bo-accent); background: rgba(255, 255, 255, .06); }
+.bo-service.is-active { color: #FFFFFF; font-weight: 700; border-bottom-color: var(--bo-accent); background: rgba(255, 255, 255, .06); }
 .bo-service.is-active small { color: #FFFFFF; }
 
 /* ── 3. Rail : le service actif, et rien d'autre ────────────────────────────────────────────── */
@@ -186,7 +186,7 @@ html[data-theme='dark'] .admin-boot {
   padding: 12px 14px; border-bottom: 1px solid var(--bo-line);
 }
 .bo-rail-head > div { display: flex; flex-direction: column; min-width: 0; }
-.bo-rail-head strong { font-size: 13px; font-weight: 800; letter-spacing: -.01em; }
+.bo-rail-head strong { font-size: 13px; font-weight: 700; letter-spacing: -.01em; }
 .bo-rail-head span { font-size: 10.5px; color: var(--bo-muted); }
 .bo-rail-head button {
   display: none; margin-inline-start: auto; border: 0; background: none; color: var(--bo-muted); cursor: pointer;
@@ -214,12 +214,12 @@ html[data-theme='dark'] .admin-boot {
 .bo-shell .admin-sidebar nav { padding: 10px 8px 18px; }
 .bo-shell .admin-sidebar nav > div { margin-bottom: 14px; }
 .bo-shell .admin-sidebar nav > div > span {
-  padding: 0 10px 6px; color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .14em;
+  padding: 0 10px 6px; color: var(--bo-soft); font-size: 9.5px; font-weight: 700; letter-spacing: .14em;
 }
 .bo-shell .admin-sidebar nav button {
   height: 32px; gap: 10px; padding: 0 10px;
   border-radius: var(--bo-radius-sm);
-  color: #3B4148; font-size: 12.5px; font-weight: 550;
+  color: #3B4148; font-size: 12.5px; font-weight: 520;
 }
 html[data-theme='dark'] .bo-shell .admin-sidebar nav button { color: #D6D6D6; }
 .bo-shell .admin-sidebar nav button svg { width: 16px; height: 16px; flex: none; }
@@ -243,17 +243,17 @@ html[data-theme='dark'] .bo-shell .admin-table tr.is-drag-over td { box-shadow: 
 .bo-shell .admin-sidebar nav .bo-tag { display: none; }
 .bo-shell .bo-nav-advanced { margin-bottom: 14px; }
 .bo-shell .bo-nav-advanced summary {
-  padding: 0 10px 6px; color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .14em;
+  padding: 0 10px 6px; color: var(--bo-soft); font-size: 9.5px; font-weight: 700; letter-spacing: .14em;
 }
 .bo-shell .bo-nav-advanced summary em {
   background: var(--bo-hover); color: var(--bo-muted); border-radius: 999px; padding: 0 6px; font-size: 9.5px;
 }
 .bo-shell .bo-roadmap { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--bo-line-soft); }
 .bo-shell .bo-roadmap > span {
-  display: block; padding: 0 10px 6px; color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .14em;
+  display: block; padding: 0 10px 6px; color: var(--bo-soft); font-size: 9.5px; font-weight: 700; letter-spacing: .14em;
 }
 .bo-shell .bo-roadmap-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; color: var(--bo-muted); font-size: 12px; }
-.bo-shell .bo-roadmap-item strong { font-weight: 600; }
+.bo-shell .bo-roadmap-item strong { font-weight: 650; }
 .bo-shell .bo-roadmap-item em {
   margin-inline-start: auto; font-style: normal; font-size: 9.5px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .08em; color: var(--bo-soft);
@@ -266,12 +266,12 @@ html[data-theme='dark'] .bo-shell .admin-table tr.is-drag-over td { box-shadow: 
    Même payload serveur — aucune entrée nouvelle, aucun doublon d'écran. */
 .bo-shell .bo-rail-services { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--bo-line-soft); }
 .bo-shell .bo-rail-services > span {
-  display: block; padding: 0 10px 6px; color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .14em;
+  display: block; padding: 0 10px 6px; color: var(--bo-soft); font-size: 9.5px; font-weight: 700; letter-spacing: .14em;
 }
 .bo-shell .bo-rail-service {
   width: 100%; height: 30px; display: flex; align-items: center; gap: 8px;
   padding: 0 10px; border: 0; border-radius: var(--bo-radius-sm);
-  background: transparent; color: var(--bo-muted); font: inherit; font-size: 12.5px; font-weight: 600;
+  background: transparent; color: var(--bo-muted); font: inherit; font-size: 12.5px; font-weight: 650;
   text-align: start; cursor: pointer;
 }
 .bo-shell .bo-rail-service:hover { background: var(--bo-hover); color: var(--bo-ink); }
@@ -279,7 +279,7 @@ html[data-theme='dark'] .bo-shell .admin-table tr.is-drag-over td { box-shadow: 
 .bo-service-placeholder { flex: 1 1 auto; }
 
 .bo-shell .admin-sidebar-foot { padding: 12px 14px; border-top: 1px solid var(--bo-line); }
-.bo-shell .admin-sidebar-foot a { color: var(--bo-ink); font-size: 12px; font-weight: 600; }
+.bo-shell .admin-sidebar-foot a { color: var(--bo-ink); font-size: 12px; font-weight: 650; }
 .bo-shell .admin-sidebar-foot a:hover { color: var(--bo-ink); text-decoration: underline; }
 .bo-shell .admin-sidebar-foot > span { margin-top: 6px; color: var(--bo-soft); font-size: 9.5px; letter-spacing: .04em; }
 
@@ -291,11 +291,11 @@ html[data-theme='dark'] .bo-shell .admin-table tr.is-drag-over td { box-shadow: 
   color: var(--bo-muted); font-size: 11.5px;
 }
 .bo-screenbar nav { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.bo-screenbar b { font-weight: 600; color: var(--bo-soft); }
+.bo-screenbar b { font-weight: 650; color: var(--bo-soft); }
 .bo-screenbar strong { color: var(--bo-ink); font-weight: 700; }
 .bo-screenbar .bo-screenbar-end { margin-inline-start: auto; display: flex; align-items: center; gap: 10px; }
 .bo-screenbar code { font-size: 10.5px; color: var(--bo-muted); background: var(--bo-sunken); border-radius: 3px; padding: 1px 6px; }
-.bo-screenbar a { color: var(--bo-ink); font-weight: 600; text-decoration: none; }
+.bo-screenbar a { color: var(--bo-ink); font-weight: 650; text-decoration: none; }
 .bo-screenbar a:hover { color: var(--bo-ink); text-decoration: underline; }
 
 .bo-shell .admin-main { max-width: 1680px; padding: 18px 24px 64px; }
@@ -312,13 +312,13 @@ html[data-theme='dark'] .bo-shell .admin-table tr.is-drag-over td { box-shadow: 
   box-shadow: none;
 }
 .bo-shell .admin-card { padding: 16px; }
-.bo-shell .admin-card-title h3, .bo-shell .admin-card-title h2 { font-size: 14px; font-weight: 800; }
+.bo-shell .admin-card-title h3, .bo-shell .admin-card-title h2 { font-size: 14px; font-weight: 700; }
 .bo-shell .admin-card-title p, .bo-shell .admin-card-title span { color: var(--bo-muted); font-size: 11.5px; }
 
 .bo-shell .admin-page-header { align-items: flex-end; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--bo-line); }
-.bo-shell .admin-page-header h1 { font-size: 23px; font-weight: 800; letter-spacing: -.015em; }
+.bo-shell .admin-page-header h1 { font-size: 23px; font-weight: 700; letter-spacing: -.015em; }
 .bo-shell .admin-page-header p { color: var(--bo-muted); font-size: 12.5px; }
-:is(.bo-shell, .admin-login) .admin-eyebrow { color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .15em; }
+:is(.bo-shell, .admin-login) .admin-eyebrow { color: var(--bo-soft); font-size: 9.5px; font-weight: 700; letter-spacing: .15em; }
 
 /* Boutons : une action forte, le reste sobre. Rayon 3 px, pas d'ombre, pas de dégradé.
    Portée étendue à `.admin-login` : la connexion doit montrer l'action forte en violet, comme
@@ -345,9 +345,9 @@ html[data-theme='dark'] .bo-shell .admin-table tr.is-drag-over td { box-shadow: 
 /* Légende du tableau : une ligne d'information, pas un bandeau. */
 .bo-shell .admin-table-caption {
   caption-side: top; text-align: start; padding: 6px 12px;
-  background: transparent; color: var(--bo-muted); font-size: 11px; font-weight: 500;
+  background: transparent; color: var(--bo-muted); font-size: 11px; font-weight: 520;
 }
-.bo-shell .bo-workspace-count { margin-inline-start: auto; color: var(--bo-muted); font-size: 11.5px; font-weight: 600; }
+.bo-shell .bo-workspace-count { margin-inline-start: auto; color: var(--bo-muted); font-size: 11.5px; font-weight: 650; }
 
 .bo-shell .admin-list-toolbar,
 .bo-shell .bo-workspace-header,
@@ -356,7 +356,7 @@ html[data-theme='dark'] .bo-shell .admin-table tr.is-drag-over td { box-shadow: 
   border-bottom: 1px solid var(--bo-line); background: var(--bo-sunken);
 }
 .bo-shell .bo-workspace-header { align-items: center; }
-.bo-shell .bo-workspace-header h2 { font-size: 16px; font-weight: 800; }
+.bo-shell .bo-workspace-header h2 { font-size: 16px; font-weight: 700; }
 .bo-shell .bo-workspace-header p { color: var(--bo-muted); font-size: 12px; }
 .bo-shell .bo-workspace-header .admin-eyebrow { color: var(--bo-soft); }
 
@@ -376,7 +376,7 @@ html[data-theme='dark'] .bo-shell .admin-table tr.is-drag-over td { box-shadow: 
   height: 32px; padding: 0 12px;
   background: var(--bo-sunken); color: var(--bo-muted);
   border-bottom: 1px solid var(--bo-line-firm);
-  font-size: 9.5px; font-weight: 800; letter-spacing: .1em;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .1em;
 }
 .bo-shell .admin-table td { height: var(--bo-row); padding: 6px 12px; border-bottom: 1px solid var(--bo-line-soft); }
 .bo-shell .admin-table tbody tr:hover td { background: var(--bo-hover); }
@@ -424,7 +424,7 @@ html[data-theme='dark'] .bo-shell .admin-table-bulkbar { background: var(--bo-ca
    chiffre blanc illisible (1,09:1). En sombre, il prend l'encre des barres, comme le second. */
 html[data-theme='dark'] .bo-shell .admin-arrival-summary article:first-child { background: var(--bo-bar); }
 
-.bo-shell .admin-queues > header strong { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+.bo-shell .admin-queues > header strong { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
 .bo-shell .admin-queues > header span { color: var(--bo-muted); font-size: 11.5px; }
 .bo-shell .admin-queue-card { border-inline-start: 3px solid var(--bo-ink); } /* file en attente : encre ; vide : gris (ci-dessous) */
 .bo-shell .admin-queue-card > div > span { font-size: 12.5px; font-weight: 700; }
@@ -550,7 +550,7 @@ html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8
   font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--bo-bar-muted);
 }
 .admin-login-foot > div { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
-.admin-login-foot b { font-weight: 800; color: #FFFFFF; letter-spacing: .14em; }
+.admin-login-foot b { font-weight: 700; color: #FFFFFF; letter-spacing: .14em; }
 .admin-login-foot i { font-style: normal; opacity: .4; }
 
 .admin-login-panel { background: var(--bo-canvas); padding: clamp(24px, 4vw, 60px); }
@@ -580,7 +580,7 @@ html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8
   background: var(--bo-sunken);
   font-size: 11.5px; letter-spacing: .02em; color: var(--bo-muted);
 }
-.admin-login-status b { font-weight: 750; color: var(--bo-ink); }
+.admin-login-status b { font-weight: 700; color: var(--bo-ink); }
 .admin-login-status i {
   width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--bo-soft);
   box-shadow: 0 0 0 3px rgba(0, 0, 0, .04);
@@ -592,7 +592,7 @@ html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8
 .admin-login-status button {
   margin-inline-start: auto; padding: 3px 9px; cursor: pointer;
   border: 1px solid currentColor; border-radius: var(--bo-radius-sm);
-  background: transparent; color: inherit; font: inherit; font-weight: 750;
+  background: transparent; color: inherit; font: inherit; font-weight: 700;
 }
 .admin-login-status button:hover { background: rgba(0, 0, 0, .05); }
 

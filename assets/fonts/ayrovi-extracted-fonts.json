@@ -1,0 +1,384 @@
+{
+  "family": "Ayrovi Extracted Sans",
+  "source": "assets/fonts/source/extracted-site-variable-v1.7.woff2",
+  "source_sha256": "ba6fc11db691debbd271564b194e37d96fab6d3d58c96574c58ce15696196a8f",
+  "source_original_name_is_not_used_for_family_selection": true,
+  "source_axes": {
+    "wdth": {
+      "min": 75.0,
+      "default": 100.0,
+      "max": 125.0
+    },
+    "wght": {
+      "min": 200.0,
+      "default": 400.0,
+      "max": 900.0
+    }
+  },
+  "glyph_count": 438,
+  "unicode_mapping_count": 368,
+  "default_vertical_metrics": {
+    "units_per_em": 1000,
+    "hhea": {
+      "ascender": 964,
+      "descender": -250,
+      "line_gap": 0
+    },
+    "typo": {
+      "ascender": 964,
+      "descender": -250,
+      "line_gap": 0
+    },
+    "win": {
+      "ascent": 964,
+      "descent": 255
+    },
+    "cap_height": 714,
+    "x_height": 514
+  },
+  "web_variable": {
+    "file": "client/public/fonts/editorial/ayrovi-extracted-sans.woff2",
+    "sha256": "e7c9439f66d7b9e50bbabc350341d86cf02a4a45032fd42b4dbcfca13e35e25f"
+  },
+  "static_instances": [
+    {
+      "file": "apps/mobile/assets/fonts/AyroviExtracted-Regular.ttf",
+      "sha256": "f5383082fd9f1f7c0e6b9bd1f82fbe462b9e8561cd82567bdcad81084e0d673c",
+      "weight": 400,
+      "width": 102.5,
+      "subfamily": "Regular",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "69d6c6ce8faf93ddb99b41fea3dc735bf90da4f2da4b7718339aa5a71393398d",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/AyroviExtracted-Regular.ttf",
+      "sha256": "f5383082fd9f1f7c0e6b9bd1f82fbe462b9e8561cd82567bdcad81084e0d673c",
+      "weight": 400,
+      "width": 102.5,
+      "subfamily": "Regular",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "69d6c6ce8faf93ddb99b41fea3dc735bf90da4f2da4b7718339aa5a71393398d",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "apps/mobile/assets/fonts/AyroviExtracted-Medium.ttf",
+      "sha256": "6cea37613d89cc17287e7b44ebabdf35e05929c81dfe016a42044ef2868df3a9",
+      "weight": 520,
+      "width": 102.5,
+      "subfamily": "Medium",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "34a6bc12877094251c3c5ef5cdce7e32363a26abeae75b75529da67a89ab6cde",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/AyroviExtracted-Medium.ttf",
+      "sha256": "6cea37613d89cc17287e7b44ebabdf35e05929c81dfe016a42044ef2868df3a9",
+      "weight": 520,
+      "width": 102.5,
+      "subfamily": "Medium",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "34a6bc12877094251c3c5ef5cdce7e32363a26abeae75b75529da67a89ab6cde",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "apps/mobile/assets/fonts/AyroviExtracted-SemiBold.ttf",
+      "sha256": "c547c977d5679cf7dfa0e53e38037d22e87d7f3dbde7c4e9d4b2098bc9d38014",
+      "weight": 650,
+      "width": 102.5,
+      "subfamily": "SemiBold",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "d42c35ab6213f68ea27e61acb4d72a9c63f63b3c1313fad54fbe072ac426b1b9",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/AyroviExtracted-SemiBold.ttf",
+      "sha256": "c547c977d5679cf7dfa0e53e38037d22e87d7f3dbde7c4e9d4b2098bc9d38014",
+      "weight": 650,
+      "width": 102.5,
+      "subfamily": "SemiBold",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "d42c35ab6213f68ea27e61acb4d72a9c63f63b3c1313fad54fbe072ac426b1b9",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "apps/mobile/assets/fonts/AyroviExtracted-Bold.ttf",
+      "sha256": "1740982faa9e267bd12a78b9fd03cfc59ab60aac526fa747e67b9c69ba531872",
+      "weight": 700,
+      "width": 102.5,
+      "subfamily": "Bold",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "19b33e438eb46705dae2ff6e3eff4f6cb700b13bf4c40df1fce04a108157d423",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/AyroviExtracted-Bold.ttf",
+      "sha256": "1740982faa9e267bd12a78b9fd03cfc59ab60aac526fa747e67b9c69ba531872",
+      "weight": 700,
+      "width": 102.5,
+      "subfamily": "Bold",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "19b33e438eb46705dae2ff6e3eff4f6cb700b13bf4c40df1fce04a108157d423",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "apps/mobile/assets/fonts/AyroviExtracted-Heading.ttf",
+      "sha256": "52a06d5bada986e37a67706708c61dc030e69f7e1610bc66c3cb093833aae20f",
+      "weight": 520,
+      "width": 112.5,
+      "subfamily": "Heading",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "7a07ac94a42ed067b9bc25633a5bf1a280c228b631f9c060b2b4b52f9460f6c2",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/AyroviExtracted-Heading.ttf",
+      "sha256": "52a06d5bada986e37a67706708c61dc030e69f7e1610bc66c3cb093833aae20f",
+      "weight": 520,
+      "width": 112.5,
+      "subfamily": "Heading",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "7a07ac94a42ed067b9bc25633a5bf1a280c228b631f9c060b2b4b52f9460f6c2",
+        "features": 1,
+        "lookups": 2
+      }
+    }
+  ],
+  "max_coordinate_rounding_units": {
+    "static": {
+      "Regular": 0.96295166015625,
+      "Medium": 0.9652055650949478,
+      "SemiBold": 0.9749526083469391,
+      "Bold": 0.9661806002259254,
+      "Heading": 0.997459203004837
+    },
+    "web_samples": {
+      "wdth=102.5,wght=400": 0.0,
+      "wdth=102.5,wght=520": 0.0,
+      "wdth=102.5,wght=650": 0.0,
+      "wdth=112.5,wght=520": 0.0,
+      "wdth=112.5,wght=650": 0.0,
+      "wdth=75,wght=200": 0.0,
+      "wdth=125,wght=900": 0.0
+    }
+  },
+  "validation": "Contour commands, mapped glyphs, advances, vertical metrics and GPOS positioning/anchors match; static coordinate rounding is <=1 font unit (0.1% em at 1000 UPM)."
+}

@@ -18,6 +18,8 @@ import {
   Button, ConfirmDialog, DataTable, Field, Filters, Form, ImageUploader, Modal,
   PageHeader, Pagination, Search, Select, StatusBadge, Toast,
 } from './components';
+import { ProductCardPreview } from './ProductIntegration';
+import { ProductFicheEditor } from './ProductFicheEditor';
 
 
 type ToastValue = { message: string; tone: 'success' | 'error' } | null;
@@ -89,18 +91,6 @@ function useCatalogueMeta() {
 
 /* ============================ Produits ============================ */
 
-interface Draft {
-  name: string; slug: string; description: string; brand_id: string; category_id: string;
-  status: string; product_type: string; image: string; source_url: string; source_platform: string;
-  currency: string; stock_status: string; express_available: string;
-  original_price: string;
-}
-const emptyDraft: Draft = {
-  name: '', slug: '', description: '', brand_id: '', category_id: '', status: 'DRAFT',
-  product_type: 'STANDARD', image: '', source_url: '', source_platform: 'OTHER', currency: 'TND',
-  stock_status: '', express_available: 'false', original_price: '',
-};
-
 /** Usage d'un produit temporaire : où il est utilisé, et s'il est visible aujourd'hui. */
 const CONTENT_KIND_LABEL: Record<string, string> = { reel: 'Reel', publication: 'Publication', story: 'Story' };
 
@@ -138,14 +128,18 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
   const [page, setPage] = useState(1);
   const [toast, setToast] = useState<ToastValue>(null);
   const [editor, setEditor] = useState<{ mode: 'create' | 'edit'; id?: string } | null>(null);
-  const [draft, setDraft] = useState<Draft>(emptyDraft);
-  const [attributes, setAttributes] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState('');
-  const [byField, setByField] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [detail, setDetail] = useState<any | null>(null);
   const [archiveFor, setArchiveFor] = useState<any | null>(null);
   const [reason, setReason] = useState('');
+  /**
+   * Gestion des attributs DANS l'écran produit : c'est la même donnée que la
+   * fiche lit, donc c'est ici qu'on la déclare (une seule porte d'entrée CRM).
+   */
+  const [attributesOpen, setAttributesOpen] = useState(false);
+  const [attributeDraft, setAttributeDraft] = useState({ attribute_key: '', label: '', data_type: 'TEXT', options: '', families: [] as string[], section: 'matiere', sort_order: '100' });
+  const [attributeError, setAttributeError] = useState('');
+  const [attributeBusy, setAttributeBusy] = useState(false);
 
   const categories = useCatalogue<any[]>(() => adminApi<any>('/catalogue/categories').then((r) => rowsOf(r)), []);
   const brands = useCatalogue<any[]>(() => adminApi<any>('/catalogue/brands?pageSize=100').then((r) => rowsOf(r)), []);
@@ -158,49 +152,9 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
   const rows = rowsOf(list.data);
   const pagination = list.data?.pagination || { page: 1, total: rows.length, totalPages: 1 };
   const writable = can('product', 'create') || can('product', 'update');
-  const productAttributes = useMemo(() => rows0(declared.data).filter((entry) => entry.applies_to === 'product'), [declared.data]);
+  const openCreate = () => setEditor({ mode: 'create' });
+  const openEdit = (row: any) => setEditor({ mode: 'edit', id: row.id });
 
-  const openCreate = () => {
-    setDraft(emptyDraft); setAttributes({}); setFormError(''); setByField({}); setEditor({ mode: 'create' });
-  };
-  const openEdit = async (row: any) => {
-    setBusy(true);
-    try {
-      const full = (await adminApi<any>(`${base}/${row.id}`)).data;
-      setDraft({
-        name: full.name || '', slug: full.slug || '', description: full.description || '',
-        brand_id: full.brand_id || '', category_id: full.category_id || '', status: full.status || 'DRAFT',
-        product_type: full.product_type || 'STANDARD', image: full.image || '', source_url: full.source_url || '',
-        source_platform: full.source_platform || 'OTHER', currency: full.currency || 'TND',
-        stock_status: full.stock_status || '', express_available: Number(full.express_available) === 1 ? 'true' : 'false',
-        original_price: full.original_price === null || full.original_price === undefined ? '' : String(full.original_price),
-      });
-      setAttributes(full.attributes || {});
-      setFormError(''); setByField({}); setEditor({ mode: 'edit', id: full.id });
-    } catch (e: any) { setToast({ message: e?.message || 'Lecture impossible.', tone: 'error' }); } finally { setBusy(false); }
-  };
-  // Called by the form (Enter key) and by the modal footer button alike.
-  const save = async (event?: { preventDefault: () => void }) => {
-    event?.preventDefault();
-    setBusy(true); setFormError('');
-    const body: Record<string, unknown> = {
-      name: draft.name, description: emptyToNull(draft.description), slug: emptyToNull(draft.slug),
-      brand_id: emptyToNull(draft.brand_id), category_id: emptyToNull(draft.category_id),
-      status: draft.status, product_type: draft.product_type, image: emptyToNull(draft.image),
-      source_url: emptyToNull(draft.source_url), source_platform: draft.source_platform,
-      currency: draft.currency, stock_status: emptyToNull(draft.stock_status),
-      express_available: draft.express_available === 'true',
-      attributes,
-      ...(isContent ? { original_price: draft.original_price.trim() === '' ? null : Number(draft.original_price) } : {}),
-    };
-    try {
-      if (editor?.mode === 'edit' && editor.id) await adminApi(`${base}/${editor.id}`, { method: 'PUT', body: JSON.stringify(body) });
-      else await adminApi(base, { method: 'POST', body: JSON.stringify(body) });
-      setEditor(null);
-      list.reload(); categories.reload();
-      setToast({ message: editor?.mode === 'edit' ? 'Produit enregistré (différentiel champ par champ).' : 'Produit créé en DRAFT — publier demande catalog:approve.', tone: 'success' });
-    } catch (e: any) { const parsed = fieldErrors(e); setFormError(parsed.message); setByField(parsed.byField); } finally { setBusy(false); }
-  };
   const archive = async () => {
     if (!archiveFor) return;
     setBusy(true);
@@ -215,6 +169,32 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
     try { setDetail((await adminApi<any>(`${base}/${row.id}`)).data); }
     catch (e: any) { setToast({ message: e?.message || 'Fiche introuvable.', tone: 'error' }); } finally { setBusy(false); }
   };
+
+  /**
+   * L'ÉDITEUR EST UNE PAGE, PAS UNE FENÊTRE — c'est le lieu unique où l'on crée
+   * un produit : saisie à gauche, aperçu à droite, publication en haut.
+   */
+  if (editor) {
+    return (
+      <>
+        <ProductFicheEditor
+          scope={isContent ? 'content' : 'catalogue'}
+          productId={editor.mode === 'edit' ? editor.id ?? null : null}
+          can={can}
+          categories={rows0(categories.data)}
+          brands={rows0(brands.data)}
+          declared={rows0(declared.data)}
+          reloadDeclared={declared.reload}
+          onClose={(changed) => {
+            setEditor(null);
+            if (changed) { list.reload(); categories.reload(); declared.reload(); }
+          }}
+          onToast={setToast}
+        />
+        {toast ? <Toast message={toast.message} tone={toast.tone} /> : null}
+      </>
+    );
+  }
 
   if (metaDenied || list.denied) return <>
     <CatalogueHeader title="Produits" description="Le produit canonique: une ligne, un code, un slug, ses variantes et ses médias." />
@@ -236,7 +216,12 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
       description={isContent
         ? 'Produits créés pour un Reel, une Story ou une Publication. Ils n’apparaissent ni dans le catalogue, ni dans la recherche. Ils ne sont visibles qu’à travers un contenu publié.'
         : 'Le produit canonique du catalogue: une ligne, un code PRD-, un slug, ses variantes/SKU, ses médias et ses attributs. Rien n’est dupliqué pour le site ni pour le CRM.'}
-      action={can('product', 'create') ? <Button onClick={openCreate}>{isContent ? 'Nouveau produit temporaire' : 'Nouveau produit'}</Button> : null}
+      action={(
+        <div className="admin-row-actions">
+          <Button variant="secondary" onClick={() => setAttributesOpen(true)}>Champs & attributs</Button>
+          {can('product', 'create') ? <Button onClick={openCreate}>{isContent ? 'Nouveau produit temporaire' : 'Nouveau produit'}</Button> : null}
+        </div>
+      )}
     />
     <section className="admin-list-card">
       <div className="admin-list-toolbar">
@@ -272,67 +257,101 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
     </section>
     {list.error && !list.denied && <p className="admin-block-small">{list.error}</p>}
 
-    <Modal
-      wide open={Boolean(editor)} title={editor?.mode === 'edit' ? 'Modifier le produit' : (isContent ? 'Nouveau produit temporaire' : 'Nouveau produit')} onClose={() => setEditor(null)}
-      footer={<><Button variant="secondary" onClick={() => setEditor(null)}>Annuler</Button><Button busy={busy} onClick={() => void save()}>{editor?.mode === 'edit' ? 'Enregistrer' : 'Créer en brouillon'}</Button></>}
-    >
-      <Form onSubmit={save}>
-        <p className="admin-block-small">Le statut pilote la visibilité: <strong>DRAFT</strong> reste interne, <strong>ACTIVE</strong> est une publication
-          (droit <code>catalog:approve</code>), <strong>ARCHIVED</strong> retire des listes sans rien effacer. Les prix ne se saisissent pas ici: ils restent
-          dans « Prix & taux ».</p>
-        {formError && <p className="admin-field-error">{formError}</p>}
-        <div className="admin-form-row">
-          <Field label="Nom" required full error={byField.name}><input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} required /></Field>
-          <Field label="Slug" hint={editor?.mode === 'edit' ? 'Vide = inchangé. Un slug pris est refusé (409), jamais volé.' : 'Vide = généré depuis le nom; en cas de collision, un suffixe est ajouté.'} full error={byField.slug}>
-            <input value={draft.slug} onChange={(event) => setDraft({ ...draft, slug: event.target.value })} placeholder="baskets-route-homme" />
-          </Field>
-        </div>
-        <Field label="Description" full error={byField.description}><textarea rows={3} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></Field>
-        <div className="admin-form-row">
-          <Field label="Marque" full error={byField.brand_id}><Select value={draft.brand_id} onChange={(event) => setDraft({ ...draft, brand_id: event.target.value })} options={[{ value: '', label: '— sans marque —' }, ...rows0(brands.data).map((row) => ({ value: row.id, label: row.name }))]} /></Field>
-          <Field label="Catégorie" full error={byField.category_id}><Select value={draft.category_id} onChange={(event) => setDraft({ ...draft, category_id: event.target.value })} options={[{ value: '', label: '— non classé —' }, ...rows0(categories.data).map((row) => ({ value: row.id, label: `${'— '.repeat(Number(row.depth || 0))}${row.name}` }))]} /></Field>
-        </div>
-        <div className="admin-form-row">
-          <Field label="Statut" full hint={!canPublish ? 'Publier (ACTIVE) demande catalog:approve — sans ce droit, le serveur refusera ce statut.' : undefined} error={byField.status}>
-            <Select value={draft.status} onChange={(event) => setDraft({ ...draft, status: event.target.value })} options={options(statuses)} />
-          </Field>
-          <Field label="Type de produit" hint="STANDARD ou Bundle — la mécanique de lot vient plus tard" full error={byField.product_type}>
-            <Select value={draft.product_type} onChange={(event) => setDraft({ ...draft, product_type: event.target.value })} options={options(['STANDARD', 'BUNDLE'])} />
-          </Field>
-        </div>
-        <div className="admin-form-row">
-          {isContent ? (
-            <Field label="Prix d’origine" full required hint="Prix d’achat dans la devise ci-dessous. Le prix de vente est calculé par le moteur de prix." error={byField.original_price}>
-              <input type="number" min="0" step="0.01" value={draft.original_price} onChange={(event) => setDraft({ ...draft, original_price: event.target.value })} />
-            </Field>
-          ) : null}
-          <Field label="Plateforme source" full error={byField.source_platform}><Select value={draft.source_platform} onChange={(event) => setDraft({ ...draft, source_platform: event.target.value })} options={options(['SHEIN', 'AMAZON', 'TEMU', 'ALIEXPRESS', 'OTHER'])} /></Field>
-          <Field label="Devise" full error={byField.currency}><input value={draft.currency} maxLength={3} onChange={(event) => setDraft({ ...draft, currency: event.target.value.toUpperCase() })} /></Field>
-        </div>
-        <div className="admin-form-row">
-          <Field label="URL source" full error={byField.source_url}><input value={draft.source_url} onChange={(event) => setDraft({ ...draft, source_url: event.target.value })} placeholder="https://…" /></Field>
-          <Field label="Disponibilité (vitrine)" hint="état, pas quantité — le stock vient dans P6" full error={byField.stock_status}>
-            <Select value={draft.stock_status} onChange={(event) => setDraft({ ...draft, stock_status: event.target.value })} options={[{ value: '', label: '— non précisé —' }, ...options(['AVAILABLE', 'LIMITED', 'OUT_OF_STOCK'])]} />
-          </Field>
-          <Field label="Express" full error={byField.express_available}><Select value={draft.express_available} onChange={(event) => setDraft({ ...draft, express_available: event.target.value })} options={options([{ value: 'true', label: 'Oui' }, { value: 'false', label: 'Non' }])} /></Field>
-        </div>
-        <Field label="Image principale" full hint="Publique uniquement: un document privé est refusé par la politique média.">
-          <ImageUploader value={draft.image} onChange={(value) => setDraft({ ...draft, image: value })} />
-        </Field>
-        {productAttributes.length > 0 && (
-          <div className="admin-form-row">
-            {productAttributes.map((attribute: any) => (
-              <Field key={attribute.id} label={attribute.label || attribute.attribute_key} full={attribute.data_type === 'TEXTAREA'} error={byField[`attribute:${attribute.attribute_key}`]}>
-                {attribute.data_type === 'SELECT'
-                  ? <Select value={attributes[attribute.attribute_key] || ''} onChange={(event) => setAttributes({ ...attributes, [attribute.attribute_key]: event.target.value })} options={[{ value: '', label: '—' }, ...options((attribute.options || []).map(String))]} />
-                  : <input value={attributes[attribute.attribute_key] || ''} onChange={(event) => setAttributes({ ...attributes, [attribute.attribute_key]: event.target.value })} />}
-              </Field>
-            ))}
-          </div>
-        )}
-      </Form>
-    </Modal>
 
+    {/* ── Champs & attributs : ce que la fiche affichera, déclaré une fois ── */}
+    <Modal wide open={attributesOpen} title="Champs & attributs" onClose={() => setAttributesOpen(false)}
+      footer={<Button variant="secondary" onClick={() => setAttributesOpen(false)}>Fermer</Button>}
+    >
+      <p className="admin-block-small">
+        Un attribut n’apparaît que sur les familles qu’il vise. Famille = racine de l’arbre des catégories,
+        donc une famille ajoutée dans « Catégories » fonctionne ici sans code.
+      </p>
+      <div className="admin-row-actions" style={{ marginBottom: 10 }}>
+        <Button
+          variant="secondary"
+          busy={attributeBusy}
+          onClick={async () => {
+            setAttributeBusy(true); setAttributeError('');
+            try {
+              const report = await adminApi<any>('/catalogue/attributes/seed', { method: 'POST', body: JSON.stringify({}) });
+              const data = report?.data ?? {};
+              setToast({ message: `Matrice installée : ${Number(data.inserted ?? 0)} ajoutée(s), ${Number(data.skipped ?? 0)} déjà présente(s).`, tone: 'success' });
+              declared.reload();
+            } catch (e: any) { setAttributeError(e?.message || 'Installation refusée.'); } finally { setAttributeBusy(false); }
+          }}
+        >
+          Installer la matrice (21 attributs)
+        </Button>
+      </div>
+      <DataTable
+        rows={rows0(declared.data)}
+        columns={[
+          { key: 'label', label: 'Champ', render: (row: any) => <strong>{row.label}<small className="admin-block-small"><code>{row.attribute_key}</code></small></strong> },
+          { key: 'data_type', label: 'Type' },
+          { key: 'section', label: 'Section', render: (row: any) => row.section || '—' },
+          { key: 'families', label: 'Familles', render: (row: any) => (Array.isArray(row.families) && row.families.length > 0 ? row.families.join(' · ') : <em>toutes</em>) },
+          { key: 'options', label: 'Options', render: (row: any) => (Array.isArray(row.options) && row.options.length > 0 ? row.options.join(' / ') : '—') },
+        ]}
+      />
+      {can('product_attribute', 'create') && (
+        <Form onSubmit={async (event) => {
+          event.preventDefault(); setAttributeBusy(true); setAttributeError('');
+          try {
+            await adminApi('/catalogue/attributes', {
+              method: 'POST',
+              body: JSON.stringify({
+                attribute_key: attributeDraft.attribute_key,
+                label: attributeDraft.label,
+                data_type: attributeDraft.data_type,
+                target: 'product',
+                section: attributeDraft.section,
+                options: attributeDraft.options.split(',').map((value) => value.trim()).filter(Boolean),
+                families: attributeDraft.families,
+                sort_order: Number(attributeDraft.sort_order || 100),
+              }),
+            });
+            setAttributeDraft({ attribute_key: '', label: '', data_type: 'TEXT', options: '', families: [], section: 'matiere', sort_order: '100' });
+            declared.reload();
+            setToast({ message: 'Attribut déclaré.', tone: 'success' });
+          } catch (e: any) { setAttributeError(e?.message || 'Déclaration refusée.'); } finally { setAttributeBusy(false); }
+        }}>
+          {attributeError && <p className="admin-field-error">{attributeError}</p>}
+          <div className="admin-form-row">
+            <Field label="Clé" required hint="minuscules, chiffres et _"><input value={attributeDraft.attribute_key} onChange={(event) => setAttributeDraft({ ...attributeDraft, attribute_key: event.target.value })} required /></Field>
+            <Field label="Libellé" required><input value={attributeDraft.label} onChange={(event) => setAttributeDraft({ ...attributeDraft, label: event.target.value })} required /></Field>
+            <Field label="Type"><Select value={attributeDraft.data_type} onChange={(event) => setAttributeDraft({ ...attributeDraft, data_type: event.target.value })} options={options(['TEXT', 'NUMBER', 'BOOLEAN', 'SELECT'])} /></Field>
+          </div>
+          <div className="admin-form-row">
+            <Field label="Section" hint="décide de l’accordéon dans la fiche">
+              <Select value={attributeDraft.section} onChange={(event) => setAttributeDraft({ ...attributeDraft, section: event.target.value })} options={options(['identite', 'matiere', 'mesures', 'technique', 'beaute', 'pratique'])} />
+            </Field>
+            <Field label="Options (SELECT)" hint="séparées par des virgules"><input value={attributeDraft.options} onChange={(event) => setAttributeDraft({ ...attributeDraft, options: event.target.value })} /></Field>
+            <Field label="Ordre"><input type="number" min={0} max={9999} value={attributeDraft.sort_order} onChange={(event) => setAttributeDraft({ ...attributeDraft, sort_order: event.target.value })} /></Field>
+          </div>
+          <Field label="Familles" full hint="Aucune cochée = toutes les familles. Les familles sont les racines de l’arbre des catégories.">
+            <div className="admin-row-actions">
+              {rows0(categories.data).filter((row: any) => !row.parent_id).map((row: any) => (
+                <label key={row.id} className="admin-check">
+                  <input
+                    type="checkbox"
+                    checked={attributeDraft.families.includes(row.slug)}
+                    onChange={(event) => setAttributeDraft({
+                      ...attributeDraft,
+                      families: event.target.checked
+                        ? [...attributeDraft.families, row.slug]
+                        : attributeDraft.families.filter((slug) => slug !== row.slug),
+                    })}
+                  /> {row.name}
+                </label>
+              ))}
+            </div>
+          </Field>
+          <div className="admin-modal-actions">
+            <Button type="submit" busy={attributeBusy}>Déclarer l’attribut</Button>
+          </div>
+        </Form>
+      )}
+    </Modal>
     <Modal wide open={Boolean(detail)} title={detail ? `Fiche — ${detail.name}` : 'Fiche'} onClose={() => setDetail(null)}>
       {detail && <ProductDetail product={detail} can={can} onChanged={() => { openDetail({ id: detail.id }); list.reload(); }} onToast={setToast} />}
     </Modal>
@@ -352,7 +371,7 @@ export const CatalogueProductsPage: React.FC<{ scope?: 'catalogue' | 'content' }
 const rows0 = (value: any): any[] => (Array.isArray(value) ? value : []);
 
 const ProductDetail: React.FC<{ product: any; can: (resource: string, action: string) => boolean; onChanged: () => void; onToast: (value: ToastValue) => void }> = ({ product, can, onChanged, onToast }) => {
-  const [tab, setTab] = useState<'variants' | 'media'>('variants');
+  const [tab, setTab] = useState<'variants' | 'media' | 'apercu'>('variants');
   const [variantDraft, setVariantDraft] = useState({ sku: '', barcode: '', size: '', color: '', status: 'ACTIVE', position: '100' });
   const [mediaDraft, setMediaDraft] = useState({ media_type: 'IMAGE', url: '', alt_text: '', sort_order: '0', variant_id: '' });
   const [busy, setBusy] = useState(false);
@@ -388,6 +407,7 @@ const ProductDetail: React.FC<{ product: any; can: (resource: string, action: st
     <div className="admin-tabs">
       <button type="button" className={tab === 'variants' ? 'is-active' : ''} onClick={() => setTab('variants')}>Variantes & SKU ({rows0(product.variants).length})</button>
       <button type="button" className={tab === 'media' ? 'is-active' : ''} onClick={() => setTab('media')}>Médias ({rows0(product.media).length})</button>
+      <button type="button" className={tab === 'apercu' ? 'is-active' : ''} onClick={() => setTab('apercu')}>Aperçu</button>
     </div>
     {error && <p className="admin-field-error">{error}</p>}
 
@@ -422,6 +442,24 @@ const ProductDetail: React.FC<{ product: any; can: (resource: string, action: st
         l’éditeur d’attributs par variante arrive avec l’écran de saisie de stock, pour ne pas saisir deux fois la même chose.</p>
     </>}
 
+    {/* Aperçu : la carte telle que l'application la dessine (mêmes cotes que
+        `shared/articleCard.ts`, contrôlées par un test). Aucune donnée inventée :
+        sans image ou sans prix, la carte le montre. */}
+    {tab === 'apercu' && (
+      <ProductCardPreview
+        kind="publication"
+        product={{
+          id: product.id,
+          name: product.name || '',
+          image: rows0(product.media).find((row: any) => row.media_type === 'IMAGE')?.url || product.image || '',
+          brand: product.brand?.name || product.brand_name || '',
+          price: Number(product.final_price || 0),
+          currency: product.currency || 'TND',
+          stock_status: product.stock_status,
+        } as any}
+      />
+    )}
+
     {tab === 'media' && <>
       <DataTable
         rows={rows0(product.media)}
@@ -446,7 +484,14 @@ const ProductDetail: React.FC<{ product: any; can: (resource: string, action: st
           <Field label="Texte alternatif" error={byField.alt_text}><input value={mediaDraft.alt_text} onChange={(event) => setMediaDraft({ ...mediaDraft, alt_text: event.target.value })} /></Field>
           <Field label="Variante liée" error={byField.variant_id}><Select value={mediaDraft.variant_id} onChange={(event) => setMediaDraft({ ...mediaDraft, variant_id: event.target.value })} options={[{ value: '', label: 'produit entier' }, ...rows0(product.variants).map((row: any) => ({ value: row.id, label: row.sku }))]} /></Field>
           <Field label="Ordre" error={byField.sort_order}><input type="number" min={0} max={999} value={mediaDraft.sort_order} onChange={(event) => setMediaDraft({ ...mediaDraft, sort_order: event.target.value })} /></Field>
-          <Field label="Image" full><ImageUploader value={mediaDraft.url} onChange={(value) => setMediaDraft({ ...mediaDraft, url: value })} label="Téléverser (publié)" /></Field>
+          <Field label={mediaDraft.media_type === 'VIDEO' ? 'Vidéo' : 'Image'} full>
+            <ImageUploader
+              value={mediaDraft.url}
+              onChange={(value) => setMediaDraft({ ...mediaDraft, url: value })}
+              media={mediaDraft.media_type === 'VIDEO' ? 'video' : 'image'}
+              label={mediaDraft.media_type === 'VIDEO' ? 'Téléverser une vidéo (10 Mo max)' : 'Téléverser une image (4 Mo max)'}
+            />
+          </Field>
           <Button type="submit" busy={busy}>Attacher le média</Button>
         </Form>
       )}
@@ -493,6 +538,26 @@ export const CatalogueCategoriesPage: React.FC = () => {
       setToast({ message: 'Catégorie enregistrée.', tone: 'success' });
     } catch (e: any) { const parsed = fieldErrors(e); setFormError(parsed.message); setByField(parsed.byField); } finally { setBusy(false); }
   };
+  /**
+   * Installe l'arbre international (données) : 9 familles et leurs rayons.
+   * Idempotent — les catégories déjà présentes ne sont ni renommées ni déplacées.
+   * Action EXPLICITE : rien n'est créé au démarrage.
+   */
+  const seedInternational = async () => {
+    setBusy(true);
+    try {
+      const report = await adminApi<any>('/catalogue/categories/seed', { method: 'POST', body: JSON.stringify({}) });
+      const data = report?.data ?? {};
+      tree.reload();
+      setToast({
+        message: `Arbre international installé : ${Number(data.inserted ?? 0)} ajoutée(s), ${Number(data.skipped ?? 0)} déjà présente(s)${Number((data.failed || []).length) ? `, ${Number((data.failed || []).length)} refus` : ''}.`,
+        tone: 'success',
+      });
+    } catch (e: any) {
+      setToast({ message: e?.message || 'Installation refusée.', tone: 'error' });
+    } finally { setBusy(false); }
+  };
+
   const archive = async () => {
     if (!archiveFor) return;
     setBusy(true);
@@ -509,7 +574,12 @@ export const CatalogueCategoriesPage: React.FC = () => {
     <CatalogueHeader
       title="Catégories"
       description="Hiérarchie libre: « Homme », « Femme », « Enfant » sont des lignes de cette table, pas du code. Profondeur, ordre et statut sont des données."
-      action={can('category', 'create') ? <Button onClick={() => openCreate()}>Nouvelle catégorie</Button> : null}
+      action={can('category', 'create') ? (
+        <div className="admin-row-actions">
+          <Button variant="secondary" busy={busy} onClick={() => void seedInternational()}>Installer l’arbre international</Button>
+          <Button onClick={() => openCreate()}>Nouvelle catégorie</Button>
+        </div>
+      ) : null}
     />
     <section className="admin-list-card">
       <div className="admin-list-toolbar">

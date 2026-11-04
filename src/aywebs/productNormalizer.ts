@@ -6,6 +6,7 @@ import type {
   AyWebsVariant,
   AyWebsVariantOption,
 } from '../../shared/aywebsTypes';
+import { ayWebsAlignAttributes } from '../../shared/aywebsAttributes';
 import type { AyWebsSourceProduct } from './adapters/contract';
 
 /**
@@ -274,20 +275,29 @@ export function ayWebsSplitVariantSelection(
   attributes: Record<string, string> | null | undefined,
 ): { matching: Record<string, string> | null; metadata: Record<string, string> | null } {
   if (!attributes || !Object.keys(attributes).length) return { matching: null, metadata: null };
-  const published = new Set<string>();
-  for (const group of product.variantGroups || []) published.add(String(group.attribute || '').trim().toLowerCase());
+  /* Noms PUBLIÉS, dans l'ordre, avec leur casse d'origine : la sélection alignée
+     doit porter le nom que le serveur a publié, sinon `ayWebsVariantKey` ne
+     retrouve aucune variante. `Taille` (capture) et `size` (lecture serveur)
+     sont la même dimension — voir `shared/aywebsAttributes.ts` (26/10/2026 :
+     l'application recevait VARIANT_REQUIRED sur une fiche qui marchait sur le
+     web, uniquement parce que les deux côtés ne nommaient pas pareil). */
+  const publishedNames: string[] = [];
+  const seenNames = new Set<string>();
+  const remember = (name: string): void => {
+    const trimmed = String(name || '').trim();
+    if (!trimmed) return;
+    const key = trimmed.toLowerCase();
+    if (seenNames.has(key)) return;
+    seenNames.add(key);
+    publishedNames.push(trimmed);
+  };
+  for (const group of product.variantGroups || []) remember(group.attribute);
   for (const variant of product.variants || []) {
-    for (const key of Object.keys(variant.attributes || {})) published.add(String(key || '').trim().toLowerCase());
+    for (const key of Object.keys(variant.attributes || {})) remember(key);
   }
-  const matching: Record<string, string> = {};
-  const metadata: Record<string, string> = {};
-  for (const [rawKey, rawValue] of Object.entries(attributes)) {
-    const key = String(rawKey || '').trim().toLowerCase();
-    const value = String(rawValue ?? '').trim();
-    if (!key || !value) continue;
-    if (published.has(key)) matching[key] = value;
-    else metadata[key] = value;
-  }
+  const { aligned, unmatched } = ayWebsAlignAttributes(publishedNames, attributes);
+  const matching: Record<string, string> = { ...aligned };
+  const metadata: Record<string, string> = { ...unmatched };
   return {
     matching: Object.keys(matching).length ? matching : null,
     metadata: Object.keys(metadata).length ? metadata : null,

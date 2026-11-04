@@ -1,0 +1,223 @@
+/* Shared application typography profile for Ayrovi Extracted Sans. */
+:root {
+  --font-weight-regular: 400;
+  --font-weight-medium: 520;
+  --font-weight-semibold: 650;
+  --font-weight-bold: 700;
+  --font-weight-light: 400;
+}
+
+html,
+body,
+#root {
+  font-family: var(--font-primary);
+  font-stretch: var(--ay-font-body-width);
+  font-synthesis: none;
+}
+
+#root * {
+  font-family: var(--font-primary);
+  font-synthesis: none;
+}
+
+body {
+  font-size: var(--ay-type-body-size);
+  font-weight: var(--ay-type-body-weight);
+  font-stretch: var(--ay-font-body-width);
+  line-height: var(--ay-type-body-line-height);
+  letter-spacing: 0;
+}
+
+:where(#root) h1,
+#root .ay-text-h1 {
+  font-family: var(--font-primary);
+  font-size: var(--ay-type-h1-size);
+  font-weight: var(--ay-type-h1-weight);
+  font-stretch: var(--ay-font-heading-width);
+  line-height: var(--ay-type-h1-line-height);
+  letter-spacing: -0.2px;
+  font-synthesis: none;
+}
+
+#root .ay-text-display {
+  font-family: var(--font-primary);
+  font-size: var(--ay-type-display-size);
+  font-weight: var(--ay-type-display-weight);
+  font-stretch: var(--ay-font-heading-width);
+  line-height: var(--ay-type-display-line-height);
+  letter-spacing: 0;
+  font-synthesis: none;
+}
+
+:where(#root) h2,
+#root .ay-text-h2 {
+  font-family: var(--font-primary);
+  font-size: var(--ay-type-h2-size);
+  font-weight: var(--ay-type-h2-weight);
+  font-stretch: var(--ay-font-heading-width);
+  line-height: var(--ay-type-h2-line-height);
+  letter-spacing: 0;
+  font-synthesis: none;
+}
+
+/* LENS is a feature headline rather than a standard section heading. */
+#root .lens-feature__title {
+  font-family: var(--font-primary);
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: var(--ay-type-h1-weight);
+  font-stretch: var(--ay-font-heading-width);
+  line-height: 1.25;
+  letter-spacing: 0;
+  font-synthesis: none;
+}
+
+#root .stories-showcase__title {
+  font-family: var(--font-primary);
+  font-size: var(--ay-type-h2-size);
+  font-weight: var(--ay-type-h1-weight);
+  font-stretch: var(--ay-font-heading-width);
+  line-height: var(--ay-type-h2-line-height);
+  letter-spacing: 0;
+  font-synthesis: none;
+}
+
+:where(#root) h3,
+#root .ay-text-h3 {
+  font-family: var(--font-primary);
+  font-size: var(--ay-type-h3-size);
+  font-weight: var(--ay-type-h3-weight);
+  font-stretch: var(--ay-font-heading-width);
+  line-height: var(--ay-type-h3-line-height);
+  letter-spacing: 0;
+  font-synthesis: none;
+}
+
+#root nav a,
+#root .ay-text-nav {
+  font-family: var(--font-primary);
+  font-size: var(--ay-type-label-size);
+  font-weight: var(--ay-type-label-weight);
+  font-stretch: var(--ay-font-body-width);
+  line-height: var(--ay-type-label-line-height);
+  letter-spacing: 0;
+}
+
+#root .ay-e-label,
+#root .ay-text-button,
+#root .ay-e-button,
+#root .ay-btn-primary,
+#root .ay-btn-secondary,
+#root .ay-btn-cta {
+  font-weight: var(--ay-type-label-weight);
+  font-stretch: var(--ay-font-body-width);
+}
+
+#root .ay-text-button,
+#root .ay-e-button,
+#root .ay-btn-primary,
+#root .ay-btn-secondary,
+#root .ay-btn-cta {
+  font-size: var(--ay-type-button-size);
+  line-height: var(--ay-type-button-line-height);
+}
+
+#root .ay-text-price {
+  font-size: var(--ay-type-price-size);
+  font-weight: var(--ay-type-price-weight);
+  font-stretch: var(--ay-font-body-width);
+  line-height: var(--ay-type-price-line-height);
+  font-variant-numeric: tabular-nums;
+  unicode-bidi: isolate;
+}
+
+#root .ay-number,
+#root .ay-e-number {
+  font-variant-numeric: tabular-nums;
+  unicode-bidi: isolate;
+}
+
+/* Final semantic lock: HTML heading/button roles share the same source tokens
+   on every French/English route, regardless of page-specific legacy selectors. */
+#root h1:not(:lang(ar)), #root .ay-text-h1:not(:lang(ar)) {
+  font-family: var(--ay-font-stack) !important;
+  font-size: var(--ay-type-h1-size) !important;
+  font-weight: var(--ay-type-h1-weight) !important;
+  font-stretch: var(--ay-type-h1-width) !important;
+  line-height: var(--ay-type-h1-line-height) !important;
+  letter-spacing: 0 !important;
+  font-synthesis: none !important;
+}
+#root h2:not(:lang(ar)), #root .ay-text-h2:not(:lang(ar)) {
+  font-family: var(--ay-font-stack) !important;
+  font-size: var(--ay-type-h2-size) !important;
+  font-weight: var(--ay-type-h2-weight) !important;
+  font-stretch: var(--ay-type-h2-width) !important;
+  line-height: var(--ay-type-h2-line-height) !important;
+  letter-spacing: 0 !important;
+  font-synthesis: none !important;
+}
+#root h3:not(:lang(ar)), #root .ay-text-h3:not(:lang(ar)) {
+  font-family: var(--ay-font-stack) !important;
+  font-size: var(--ay-type-h3-size) !important;
+  font-weight: var(--ay-type-h3-weight) !important;
+  font-stretch: var(--ay-type-h3-width) !important;
+  line-height: var(--ay-type-h3-line-height) !important;
+  letter-spacing: 0 !important;
+  font-synthesis: none !important;
+}
+#root .ay-text-display:not(:lang(ar)), #root .ay-e-display:not(:lang(ar)) {
+  font-family: var(--ay-font-stack) !important;
+  font-size: var(--ay-type-display-size) !important;
+  font-weight: var(--ay-type-display-weight) !important;
+  font-stretch: var(--ay-type-display-width) !important;
+  line-height: var(--ay-type-display-line-height) !important;
+  letter-spacing: 0 !important;
+  font-synthesis: none !important;
+}
+#root .s-card__price:not(:lang(ar)), #root .ay-text-price:not(:lang(ar)),
+#root .ay-quiet-price--grid .ay-quiet-price__current:not(:lang(ar)) {
+  font-family: var(--ay-font-stack) !important;
+  font-size: var(--ay-type-price-size) !important;
+  font-weight: var(--ay-type-price-weight) !important;
+  font-stretch: var(--ay-type-price-width) !important;
+  line-height: var(--ay-type-price-line-height) !important;
+  font-variant-numeric: tabular-nums !important;
+  font-synthesis: none !important;
+}
+#root .s-was:not(:lang(ar)), #root .ay-quiet-price--grid .ay-quiet-price__original:not(:lang(ar)) {
+  font-size: var(--ay-type-caption-size) !important;
+  font-weight: var(--ay-type-caption-weight) !important;
+  line-height: var(--ay-type-caption-line-height) !important;
+}
+#root .s-bag-empty-title:not(:lang(ar)) {
+  font-size: var(--ay-type-h2-size) !important;
+  font-weight: var(--ay-type-h2-weight) !important;
+  line-height: var(--ay-type-h2-line-height) !important;
+  font-stretch: var(--ay-type-h2-width) !important;
+}
+#root label:not(:lang(ar)) {
+  font-family: var(--ay-font-stack) !important;
+  font-size: var(--ay-type-label-size) !important;
+  font-weight: var(--ay-type-label-weight) !important;
+  font-stretch: var(--ay-type-label-width) !important;
+  line-height: var(--ay-type-label-line-height) !important;
+}
+#root .lens-feature__title:not(:lang(ar)) {
+  font-family: var(--ay-font-stack) !important;
+  font-size: var(--ay-type-display-size) !important;
+  font-weight: var(--ay-type-display-weight) !important;
+  font-stretch: var(--ay-type-display-width) !important;
+  line-height: var(--ay-type-display-line-height) !important;
+  letter-spacing: 0 !important;
+  font-synthesis: none !important;
+}
+#root button:not(:lang(ar)), #root input[type="button"]:not(:lang(ar)), #root input[type="submit"]:not(:lang(ar)), #root input[type="reset"]:not(:lang(ar)),
+#root .ay-e-button:not(:lang(ar)), #root .ay-btn-primary:not(:lang(ar)), #root .ay-btn-secondary:not(:lang(ar)), #root .ay-btn-cta:not(:lang(ar)),
+#root .ay-runtime-button--primary:not(:lang(ar)), #root .ay-runtime-button--secondary:not(:lang(ar)), #root .ay-runtime-button--ghost:not(:lang(ar)) {
+  font-family: var(--ay-font-stack) !important;
+  font-size: var(--ay-type-button-size) !important;
+  font-weight: var(--ay-type-button-weight) !important;
+  font-stretch: var(--ay-type-button-width) !important;
+  line-height: var(--ay-type-button-line-height) !important;
+  font-synthesis: none !important;
+}

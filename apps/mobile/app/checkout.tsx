@@ -41,6 +41,15 @@ import {
 } from '@/api/checkout';
 import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
+import { formatMoney } from '@/format/money';
+
+/**
+ * Filet de sécurité de l'écran : si le rendu de la commande lève, expo-router
+ * affiche le repli (arabe + français, bouton « عاود ») à la place de l'écran —
+ * l'application reste ouverte, l'utilisateur peut revenir. Voir
+ * `src/design/AppErrorBoundary.tsx` et la cause du 25/10/2026 (ordre des hooks).
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function CheckoutScreen() {
   const theme = useTheme();
@@ -204,25 +213,25 @@ export default function CheckoutScreen() {
   /* ── شاشة التأكيد: كل رقم من الخادم ───────────────────────────────────── */
   if (result) {
     return (
-      <SubScreen title={t('checkout.doneTitle')} subtitle={t('checkout.doneHint')} fallback="/cart">
+      <SubScreen title={t('checkout.doneTitle')} subtitle={t('checkout.doneHint')} fallback="/panier">
         <Card>
           <KeyValue label={t('checkout.orderNumber')} value={result.orderNumber} />
-          <KeyValue label={t('checkout.total')} value={`${result.totalTND.toFixed(2)} TND`} />
+          <KeyValue label={t('checkout.total')} value={`${formatMoney(result.totalTND)}`} />
           <KeyValue label={t('checkout.items')} value={String(result.itemCount)} />
           {result.deposit.amountTND != null ? (
             <KeyValue
               label={t('checkout.deposit', { percent: String(result.deposit.percent ?? '') })}
-              value={`${result.deposit.amountTND.toFixed(2)} TND`}
+              value={`${formatMoney(result.deposit.amountTND)}`}
             />
           ) : null}
           {result.deposit.balanceTND != null ? (
-            <KeyValue label={t('checkout.balance')} value={`${result.deposit.balanceTND.toFixed(2)} TND`} />
+            <KeyValue label={t('checkout.balance')} value={`${formatMoney(result.deposit.balanceTND)}`} />
           ) : null}
           {result.message ? (
             <AppText variant="caption" color={theme.colors.muted}>{result.message}</AppText>
           ) : null}
           <Button label={t('checkout.openOrder')} onPress={() => router.replace(`/orders/${result.orderId}`)} />
-          <Button label={t('checkout.backToCart')} tone="quiet" onPress={() => router.replace('/cart')} />
+          <Button label={t('checkout.backToCart')} tone="quiet" onPress={() => router.replace('/panier')} />
         </Card>
       </SubScreen>
     );
@@ -231,7 +240,7 @@ export default function CheckoutScreen() {
   /* ── بوّابات حقيقية قبل الفورم ─────────────────────────────────────────── */
   if (!authenticated) {
     return (
-      <SubScreen title={t('checkout.title')} subtitle={t('checkout.hint')} fallback="/cart">
+      <SubScreen title={t('checkout.title')} subtitle={t('checkout.hint')} fallback="/panier">
         <Card>
           <AppText variant="body">{t('checkout.authRequired')}</AppText>
           <Button label={t('checkout.signIn')} onPress={() => router.push('/sign-in')} />
@@ -242,7 +251,7 @@ export default function CheckoutScreen() {
 
   if (session.status !== 'loading' && !identityReady) {
     return (
-      <SubScreen title={t('checkout.title')} subtitle={t('checkout.hint')} fallback="/cart">
+      <SubScreen title={t('checkout.title')} subtitle={t('checkout.hint')} fallback="/panier">
         <Card>
           <AppText variant="body">{t('checkout.contactRequired')}</AppText>
           <Button label={t('checkout.verifyNow')} onPress={() => router.push('/account/security')} />
@@ -255,7 +264,7 @@ export default function CheckoutScreen() {
     <SubScreen
       title={t('checkout.title')}
       subtitle={t('checkout.hint')}
-      fallback="/cart"
+      fallback="/panier"
       scrollRef={scrollRef}
       onScroll={handleScroll}
       sticky={(
@@ -274,9 +283,9 @@ export default function CheckoutScreen() {
       {cart ? (
         <Card title={t('checkout.summary')}>
           <KeyValue label={t('checkout.items')} value={String(cart.units)} />
-          <KeyValue label={t('checkout.subtotalProducts')} value={`${cart.productSubtotalTND.toFixed(2)} TND`} />
-          <KeyValue label={t('checkout.delivery')} value={`${cart.deliveryTND.toFixed(2)} TND`} />
-          <KeyValue label={t('checkout.total')} value={`${cart.totalTND.toFixed(2)} TND`} />
+          <KeyValue label={t('checkout.subtotalProducts')} value={`${formatMoney(cart.productSubtotalTND)}`} />
+          <KeyValue label={t('checkout.delivery')} value={`${formatMoney(cart.deliveryTND)}`} />
+          <KeyValue label={t('checkout.total')} value={`${formatMoney(cart.totalTND)}`} />
           {!cartGate.canCheckout ? (
             <AppText variant="caption" color={theme.status.danger.fg}>
               {cartGate.blockReason === 'EMPTY' ? t('checkout.cartEmpty') : t('cart.blockedBody', { count: cartGate.staleLines.length })}
@@ -301,7 +310,7 @@ export default function CheckoutScreen() {
                   minHeight: theme.geometry.minTarget,
                 }]}
               >
-                <AppText variant="label" weight="bold">{address.label || address.recipientName}</AppText>
+                <AppText variant="label" >{address.label || address.recipientName}</AppText>
                 <AppText variant="caption" color={theme.colors.muted}>
                   {[address.addressLine, address.city, address.governorate].filter(Boolean).join(' · ')}
                 </AppText>
@@ -399,7 +408,7 @@ export default function CheckoutScreen() {
                   opacity: choice.available ? 1 : 0.6,
                 }]}
               >
-                <AppText variant="label" weight="bold">{t(choice.labelKey as never)}</AppText>
+                <AppText variant="label" >{t(choice.labelKey as never)}</AppText>
                 <AppText variant="caption" color={choice.available ? theme.colors.muted : theme.status.danger.fg}>
                   {choice.available ? t(choice.hintKey as never) : t(choice.blockedKey as never)}
                 </AppText>

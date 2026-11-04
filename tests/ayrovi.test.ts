@@ -1199,7 +1199,7 @@ describe('ZAYROVI platform', () => {
     expect(saved.status).toBe(200);
     const pub = await request(app).get('/api/public/commerce-config');
     expect(pub.body.data.interfaceConfig.sections[0].title).toBe(next.sections[0].title);
-    expect(pub.body.data.interfaceConfig.typography.body).toContain('Zalando Sans');
+    expect(pub.body.data.interfaceConfig.typography.body).toContain('Ayrovi Extracted Sans');
     expect(pub.body.data.interfaceConfig.typography.body).not.toContain('Arial');
     await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({ value: original });
     const legacy = (await superAdmin.get('/api/admin/settings')).body.data.find((item: any) => item.setting_key === 'site_theme');

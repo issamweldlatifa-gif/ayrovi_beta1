@@ -348,7 +348,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
                   {form.secondary_images.map((url: string, i: number) => (
                     <span key={i} style={{ position: 'relative' }}>
                       <img src={url} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover' }} />
-                      <button type="button" aria-label="Retirer" onClick={() => setForm({ ...form, secondary_images: form.secondary_images.filter((_: any, j: number) => j !== i) })} style={{ position: 'absolute', top: -6, insetInlineEnd: -6, background: 'var(--admin-danger-strong)', color: 'var(--admin-on-dark)', borderRadius: '50%', width: 18, height: 18, fontSize: 10, fontWeight: 800 }}><X size={16}/></button>
+                      <button type="button" aria-label="Retirer" onClick={() => setForm({ ...form, secondary_images: form.secondary_images.filter((_: any, j: number) => j !== i) })} style={{ position: 'absolute', top: -6, insetInlineEnd: -6, background: 'var(--admin-danger-strong)', color: 'var(--admin-on-dark)', borderRadius: '50%', width: 18, height: 18, fontSize: 10, fontWeight: 700 }}><X size={16}/></button>
                     </span>
                   ))}
                 </div>

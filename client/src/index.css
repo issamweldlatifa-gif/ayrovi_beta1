@@ -29,6 +29,7 @@
 @import "./design/editorial/primitives.css";
 @import "./design/editorial/customer.css";
 @import "./design/editorial/content.css";
+@import "./styles/ayrovi-extracted-typography.css";
 
 @layer base {
   html,
@@ -593,7 +594,7 @@
   font-size: clamp(42px, 2.4vw + 34px, 72px) !important;
   line-height: 1.06 !important;
   letter-spacing: -0.03em !important;
-  font-weight: 900 !important;
+  font-weight: 700 !important;
 }
 
 /* وصف 16–18px بارتفاع سطر 1.5–1.65 */
@@ -695,7 +696,7 @@
   margin: 0;
   max-width: 90%;
   font-size: 34px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.08;
   letter-spacing: -0.025em;
   color: var(--ayrovi-ink-deep);
@@ -784,10 +785,10 @@
 
 .brand-tile__logo { display: grid; place-items: center; width: 100%; height: 34px; }
 .brand-tile__logo img { max-height: 34px; max-width: 84px; object-fit: contain; }
-.brand-tile__letter { font-size: 18px; font-weight: 900; color: var(--ayrovi-bg-main)fff; }
+.brand-tile__letter { font-size: 18px; font-weight: 700; color: var(--ayrovi-bg-main)fff; }
 
 .brand-tile__name { font-size: 12.5px; font-weight: 700; color: var(--ayrovi-bg-main)fff; text-align: center; }
-.brand-tile__cat { font-size: 10.5px; font-weight: 500; color: rgba(255, 255, 255, 0.55); }
+.brand-tile__cat { font-size: 10.5px; font-weight: 520; color: rgba(255, 255, 255, 0.55); }
 
 @media (prefers-reduced-motion: reduce) {
   .brands-marquee__track { animation: none; }
@@ -796,10 +797,10 @@
 }
 
 /* ============ العناوين التحريرية للأقسام — تتغلب على قواعد h2 العامة ============ */
-.ay-edit-26 { font-size: var(--text-2xl); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
-.ay-edit-30 { font-size: var(--text-3xl); font-weight: 800; line-height: 1.12; letter-spacing: -0.022em; }
-.ay-edit-32 { font-size: var(--text-3xl); font-weight: 800; line-height: 1.12; letter-spacing: -0.022em; }
-.ay-edit-36 { font-size: var(--text-4xl); font-weight: 800; line-height: 1.1; letter-spacing: -0.025em; }
+.ay-edit-26 { font-size: var(--text-2xl); font-weight: 700; line-height: 1.1; letter-spacing: -0.02em; }
+.ay-edit-30 { font-size: var(--text-3xl); font-weight: 700; line-height: 1.12; letter-spacing: -0.022em; }
+.ay-edit-32 { font-size: var(--text-3xl); font-weight: 700; line-height: 1.12; letter-spacing: -0.022em; }
+.ay-edit-36 { font-size: var(--text-4xl); font-weight: 700; line-height: 1.1; letter-spacing: -0.025em; }
 @media (min-width: 640px) {
   .ay-edit-26 { font-size: var(--text-3xl); }
 }
@@ -821,8 +822,8 @@
 .lens2__grid { display: grid; grid-template-columns: 1fr; gap: 28px; align-items: center; }
 @media (min-width: 1024px) { .lens2 { padding-block: 64px; } .lens2__grid { grid-template-columns: 1.05fr 0.95fr; gap: 48px; } }
 
-.lens2__eyebrow { margin: 0 0 10px; font-size: 12px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ayrovi-text-secondary); }
-.lens2__title { margin: 0; font-size: 34px; line-height: 1.12; font-weight: 800; letter-spacing: -0.02em; color: var(--ayrovi-text-primary); }
+.lens2__eyebrow { margin: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ayrovi-text-secondary); }
+.lens2__title { margin: 0; font-size: 34px; line-height: 1.12; font-weight: 700; letter-spacing: -0.02em; color: var(--ayrovi-text-primary); }
 @media (min-width: 640px) { .lens2__title { font-size: 42px; } }
 @media (min-width: 1024px) { .lens2__title { font-size: 46px; } }
 .lens2__desc { margin: 12px 0 0; max-width: 46ch; font-size: 15px; line-height: 1.6; color: color-mix(in srgb, var(--ayrovi-text-primary) 62%, transparent); }
@@ -836,7 +837,7 @@
 
 .lens2__ai { display: flex; gap: 12px; margin-top: 18px; padding: 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.6); border: 1px solid color-mix(in srgb, var(--ayrovi-text-primary) 6%, transparent); }
 .lens2__ai svg { color: var(--ayrovi-text-primary); flex-shrink: 0; margin-top: 2px; }
-.lens2__ai strong { display: block; font-size: 14.5px; font-weight: 800; color: var(--ayrovi-text-primary); }
+.lens2__ai strong { display: block; font-size: 14.5px; font-weight: 700; color: var(--ayrovi-text-primary); }
 .lens2__ai p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.6; color: color-mix(in srgb, var(--ayrovi-text-primary) 60%, transparent); }
 
 /* Règle « flèches des prix marchands » : plus de pastille orange à côté de chaque prix.
@@ -845,16 +846,16 @@
 
 /* Comment ça marche */
 .lens2__steps { margin-top: 28px; background: var(--ayrovi-bg-main); border-radius: 20px; padding: 22px 18px; box-shadow: 0 16px 40px -30px color-mix(in srgb, var(--ayrovi-text-primary) 30%, transparent); }
-.lens2__steps-title { margin: 0 0 18px; text-align: center; font-size: 19px; font-weight: 800; color: var(--ayrovi-text-primary); }
+.lens2__steps-title { margin: 0 0 18px; text-align: center; font-size: 19px; font-weight: 700; color: var(--ayrovi-text-primary); }
 .lens2__steps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 12px; }
 @media (min-width: 900px) { .lens2__steps-grid { grid-template-columns: repeat(4, 1fr); } }
 .lens2__step { position: relative; text-align: center; }
 /* Tracker : seule l'étape active est violette, les suivantes restent gris pâle. */
-.lens2__step-num { position: absolute; top: -8px; left: 50%; transform: translateX(-34px); width: 20px; height: 20px; border-radius: 999px; background: var(--ayrovi-border-soft); color: var(--ayrovi-text-secondary); font-size: 11px; font-weight: 800; display: grid; place-items: center; z-index: 2; }
+.lens2__step-num { position: absolute; top: -8px; left: 50%; transform: translateX(-34px); width: 20px; height: 20px; border-radius: 999px; background: var(--ayrovi-border-soft); color: var(--ayrovi-text-secondary); font-size: 11px; font-weight: 700; display: grid; place-items: center; z-index: 2; }
 .lens2__step.is-active .lens2__step-num { background: var(--ayrovi-color-brand-accent); color: var(--ayrovi-bg-main); }
 .lens2__step-icon { width: 52px; height: 52px; border-radius: 14px; margin-inline: auto; display: grid; place-items: center; background: var(--ayrovi-bg-surface); color: var(--ayrovi-text-primary); }
 .lens2__step.is-active .lens2__step-icon { color: var(--ayrovi-color-brand-accent); }
-.lens2__step strong { display: block; margin-top: 12px; font-size: 13.5px; font-weight: 800; color: var(--ayrovi-text-primary); }
+.lens2__step strong { display: block; margin-top: 12px; font-size: 13.5px; font-weight: 700; color: var(--ayrovi-text-primary); }
 .lens2__step p { margin: 6px 0 0; font-size: 11.5px; line-height: 1.5; color: color-mix(in srgb, var(--ayrovi-text-primary) 60%, transparent); }
 
 /* banner */
@@ -865,17 +866,17 @@
 @media (min-width: 768px) { .lens2__banner { flex-direction: row; align-items: center; justify-content: space-between; } }
 .lens2__banner-text { display: flex; gap: 12px; }
 .lens2__banner-text svg { flex-shrink: 0; margin-top: 2px; }
-.lens2__banner-text strong { display: block; font-size: 15.5px; font-weight: 800; color: var(--ayrovi-text-primary); }
+.lens2__banner-text strong { display: block; font-size: 15.5px; font-weight: 700; color: var(--ayrovi-text-primary); }
 .lens2__banner-text p { margin: 5px 0 0; font-size: 12.5px; line-height: 1.5; color: var(--ayrovi-text-secondary); }
 /* Un seul bouton violet plein par écran : le CTA de la bannière est rétrogradé en
    secondaire (fond blanc, filet fin, encre noire) au profit du CTA principal. */
-.lens2__banner-cta { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--ayrovi-border-soft); border-radius: 999px; background: var(--ayrovi-bg-main); color: var(--ayrovi-text-primary); font-size: 14px; font-weight: 800; padding: 12px 22px; cursor: pointer; flex-shrink: 0; }
+.lens2__banner-cta { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--ayrovi-border-soft); border-radius: 999px; background: var(--ayrovi-bg-main); color: var(--ayrovi-text-primary); font-size: 14px; font-weight: 700; padding: 12px 22px; cursor: pointer; flex-shrink: 0; }
 .lens2__banner-cta:hover { border-color: var(--ayrovi-text-primary); }
 
 /* ============ AYROVIX LENS — الصفحة الأولى (home) + حالة التحليل ============ */
 .lens-home { display: flex; flex-direction: column; gap: 18px; }
 .lens-home__intro { text-align: center; padding: 8px 4px 0; }
-.lens-home__title { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; }
+.lens-home__title { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; }
 .lens-home__accent { color: var(--ayrovi-text-primary); }
 .lens-home__desc { margin: 12px auto 0; max-width: 34ch; font-size: 13.5px; line-height: 1.6; color: color-mix(in srgb, currentColor 62%, transparent); }
 .lens-home__benefits { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 14px; margin-top: 16px; }
@@ -885,7 +886,7 @@
 .lens-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; padding: 26px 16px; border-radius: 22px; border: 1.5px dashed var(--ayrovi-border-soft); background: var(--ayrovi-bg-surface); color: inherit; cursor: pointer; }
 .lens-drop:hover { border-color: var(--ayrovi-text-primary); }
 .lens-drop__icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: var(--ayrovi-bg-main); border: 1px solid var(--ayrovi-border-soft); color: var(--ayrovi-text-primary); }
-.lens-drop strong { font-size: 14px; font-weight: 800; }
+.lens-drop strong { font-size: 14px; font-weight: 700; }
 .lens-drop small { font-size: 11px; color: color-mix(in srgb, currentColor 60%, transparent); }
 .lens-home__actions { display: flex; flex-direction: column; gap: 10px; }
 
@@ -907,7 +908,7 @@
 .lens-analyzing { display: flex; flex-direction: column; gap: 14px; }
 .lens-analyzing__head { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .lens-analyzing__head svg { color: var(--ayrovi-text-primary); }
-.lens-analyzing__head strong { font-size: 16px; font-weight: 800; }
+.lens-analyzing__head strong { font-size: 16px; font-weight: 700; }
 .lens-analyzing__sub { margin: -6px auto 0; max-width: 36ch; text-align: center; font-size: 12.5px; line-height: 1.55; color: color-mix(in srgb, currentColor 62%, transparent); }
 
 /* Stepper 4 مراحل: Analyse → Recherche → Vérification → Prix */
@@ -925,7 +926,7 @@
 
 .lens-analyzing__card { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 16px; border: 1px solid color-mix(in srgb, currentColor 10%, transparent); background: color-mix(in srgb, currentColor 4%, transparent); }
 .lens-analyzing__cardicon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; background: var(--ayrovi-bg-surface); border: 1px solid var(--ayrovi-border-soft); color: var(--ayrovi-text-primary); }
-.lens-analyzing__card strong { display: block; font-size: 13.5px; font-weight: 800; }
+.lens-analyzing__card strong { display: block; font-size: 13.5px; font-weight: 700; }
 .lens-analyzing__card p { margin: 4px 0 0; font-size: 11.5px; line-height: 1.5; color: color-mix(in srgb, currentColor 62%, transparent); }
 
 @media (prefers-reduced-motion: reduce) { .lens-frame__beam, .lens-spinner { animation: none; } }
@@ -972,7 +973,7 @@
   font-size: clamp(40px, 12vw, 76px);
   line-height: 1.02;
   letter-spacing: -0.022em;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--ayrovi-text-primary);
   max-width: 18ch;
   text-wrap: balance;
@@ -1023,8 +1024,11 @@
   border-bottom: 1px solid var(--ayrovi-text-primary);
   background: none;
   cursor: pointer;
-  font-size: clamp(15px, 3.7vw, 17px);
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 650;
+  font-stretch: var(--ay-font-body-width);
+  line-height: 20px;
+  letter-spacing: 0;
   color: var(--ayrovi-text-primary);
 }
 
@@ -1090,7 +1094,7 @@
   font-size: clamp(26px, 7vw, 40px);
   line-height: 1.1;
   letter-spacing: -0.018em;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--ayrovi-bg-main);
 }
 
@@ -1111,8 +1115,11 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.55);
   background: none;
   cursor: pointer;
-  font-size: clamp(15px, 3.6vw, 17px);
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 650;
+  font-stretch: var(--ay-font-body-width);
+  line-height: 20px;
+  letter-spacing: 0;
   color: var(--ayrovi-bg-main);
 }
 
@@ -1193,7 +1200,7 @@
 
 .stories-showcase__cardtitle {
   font-size: clamp(18px, 5vw, 24px);
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.015em;
 }

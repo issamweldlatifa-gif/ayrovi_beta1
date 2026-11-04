@@ -105,11 +105,11 @@ export function LensGalleryViewer({
             style={({ pressed }) => [styles.closeButton, { opacity: pressed ? theme.opacity.subtle : 1 }]}
             testID="lens-gallery-viewer-close"
           >
-            <Ionicons name="close" size={26} color={LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
+            <Ionicons name="close" size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
           </Pressable>
           {media.length > 1 ? (
             <View style={styles.counter}>
-              <AppText variant="caption" weight="bold" style={styles.counterText}>{`${page + 1}/${media.length}`}</AppText>
+              <AppText variant="captionStrong" style={styles.counterText}>{`${page + 1}/${media.length}`}</AppText>
             </View>
           ) : null}
         </View>

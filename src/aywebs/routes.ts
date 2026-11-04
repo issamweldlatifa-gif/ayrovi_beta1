@@ -6,9 +6,10 @@ import { calculatePrice, type PricingRules } from '../services/pricing';
 import { cardGatewayAvailable } from '../services/paymentGateway';
 import { ayWebsReadGateStats } from './readGate';
 import { readerFingerprintReport } from '../scraper/readerFingerprint';
-import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION } from '../../shared/aywebsCapture';
-import { AYWEBS_CAPTURE_SCRIPT } from './captureScript';
-import { ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
+import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION, type AyWebsCapturedVariantGroup } from '../../shared/aywebsCapture';
+import { buildAyWebsCaptureScript } from './captureScript';
+import { ayWebsCaptureReader } from './captureReaders/registry';
+import { AYWEBS_CAPTURE_TRACKED_STORES, ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
 import { getAyroviAiCore } from '../ai-core/core';
 import { ayWebsResolveCacheStats, ayWebsResolveFailureCacheStats } from './resolveCache';
 import {
@@ -16,10 +17,12 @@ import {
   AYWEBS_EXTERNAL_STORE,
   AYWEBS_STORES,
   ayWebsStoreCan,
+  ayWebsStoreRecognition,
   findAyWebsStore,
   type AyWebsStoreDefinition,
 } from '../../shared/aywebsStores';
 import { AYWEBS_FUNNEL_EVENTS } from '../../shared/aywebsTypes';
+import { AYWEBS_CATALOG_STORES } from '../../shared/aywebsStoreCatalog';
 import { AYWEBS_ADAPTER_DESCRIPTORS } from './adapters/registry';
 import { AyWebsCaptureError, type AyWebsSourceProduct } from './adapters/contract';
 import { AyWebsDomainError } from './errors';
@@ -48,6 +51,7 @@ import {
   updateAyWebsCartItem,
   verifyAyWebsCart,
 } from './cart';
+import { ayWebsVariantQuotes, computeQuantityTotalsTnd } from './variantQuotes';
 import { ayWebsCheckoutPreviewPayload, computeAyWebsCheckoutPreview } from './checkoutFees';
 import {
   acceptedAyWebsPaymentMethods,
@@ -197,7 +201,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
    * prix ne peut être lu. L'API le dit désormais au lieu de laisser le client
    * découvrir un panier vide.
    */
-  const renderDependentStores = new Set(['shein', 'temu', 'aliexpress']);
+  const renderDependentStores = new Set(['temu']);
   const operationalOf = (store: AyWebsStoreDefinition): { operational: boolean; operational_reason: string | null } => {
     if (!store.enabled || !ctx.storeCaptureEnabled(store)) {
       return { operational: false, operational_reason: 'CAPTURE_DISABLED_FOR_STORE' };
@@ -221,6 +225,13 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     /** Opérationnel = la lecture produit fonctionne VRAIMENT aujourd'hui. */
     ...operationalOf(store),
     adapter: store.adapter,
+    /**
+     * Qui prouve la fiche produit : `url` (adaptateur dédié), `capture` (boutique
+     * du catalogue : capture cliente exigée), `none` (hors registre, jamais ici).
+     * L'écran de boutique s'en sert pour expliquer ce qui marche AVANT d'ouvrir
+     * le navigateur (23/10/2026).
+     */
+    product_recognition: ayWebsStoreRecognition(store),
     status: store.status,
     integration_type: store.integrationType,
     capabilities: [...store.capabilities],
@@ -230,6 +241,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     home_url: store.homeUrl,
     search_url_template: store.searchUrlTemplate,
     categories: [...store.categories],
+    description: store.description ?? '',
     popular: store.popular,
     phase: store.phase,
     /** Mode d'achat réel — jamais « supported » par simple présence au registre. */
@@ -244,7 +256,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
 
   router.get('/stores', handle((req, res) => {
     const flags = ctx.flags;
-    const stores = AYWEBS_STORES.filter((store) => store.enabled).map(publicStore);
+    /* Le catalogue (boutiques non ouvertes) s'affiche aussi : enabled=false côté client. */
+    const stores = [...AYWEBS_STORES.filter((store) => store.enabled), ...AYWEBS_CATALOG_STORES].map(publicStore);
     res.json({
       success: true,
       data: stores,
@@ -424,6 +437,20 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
               la devise a été prouvée (code publié, symbole de boutique, ou rien). */
           stats: ayWebsWebviewCaptureStats(),
           /**
+           * MESURE PAR BOUTIQUE (23/10/2026) — la donnée qui tranche entre
+           * « adaptateur dédié » et « adaptateur collectif ». `stats.by_store`
+           * donne, pour chaque domaine réellement capturé : captures jugées,
+           * acceptées, taux, motifs de refus (bornés), sources uniques, et si la
+           * page publiait des groupes de variantes.
+           *   `registre:*`  = boutique OUVERTE (adaptateur dédié ou collectif)
+           *   `catalogue:*` = boutique PRÉVUE mais fermée → demande réelle
+           *   `external`    = domaine hors catalogue
+           */
+          store_tracking: {
+            max: AYWEBS_CAPTURE_TRACKED_STORES,
+            over_limit_bucket: 'autres',
+          },
+          /**
            * Boutique externe (hors registre) : quel identifiant est écrit sur un
            * produit capturé, et combien de domaines elle revendique. Zéro domaine,
            * toujours : le serveur ne la devine jamais depuis une URL.
@@ -534,6 +561,20 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         is_product_page: analysis.isProductPage,
         /** §11 : le pont de détection répond franchement « produit détecté ? ». */
         product_detected: analysis.isProductPage && Boolean(analysis.storeId),
+        /**
+         * Qui peut prouver la fiche : `url` (motif de l'adaptateur), `capture`
+         * (boutique du catalogue : capture structurée exigée) ou `none` (hors
+         * registre). L'application n'active « Ajouter » que si une lecture a une
+         * chance réelle d'aboutir (23/10/2026).
+         */
+        product_recognition: analysis.productRecognition,
+        /**
+         * Autorisation d'INJECTION pour CETTE page (23/10/2026) : une boutique
+         * dont le motif de fiche ne répond pas à l'URL n'est pas une fiche —
+         * accueil, rayon, recherche. Le client ne lit que sur `product_page`
+         * (pré-lecture) ou `on_demand` (appui du client).
+         */
+        capture_injection: analysis.captureInjection,
         customer_action_required: analysis.customerActionRequired,
         browser_mode: analysis.browserMode,
         /** Piste explicite quand la boutique n'est pas intégrée (§23). */
@@ -551,9 +592,18 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
    * d'application. Aucun secret, aucune donnée, aucun en-tête d'autorisation.
    */
   router.get('/capture/script.js', (req, res) => {
+    const storeId = String(req.query.store_id || '').trim().toLowerCase();
+    const script = buildAyWebsCaptureScript(storeId || null);
+    const reader = ayWebsCaptureReader(storeId);
     res.type('application/javascript');
     res.setHeader('Cache-Control', 'public, max-age=300');
-    res.status(200).send(AYWEBS_CAPTURE_SCRIPT);
+    if (reader) {
+      res.setHeader('X-AyWebs-Capture-Reader', reader.storeId);
+      res.setHeader('X-AyWebs-Capture-Reader-Version', String(reader.version));
+    } else {
+      res.setHeader('X-AyWebs-Capture-Reader', 'legacy');
+    }
+    res.status(200).send(script);
   });
 
   router.post('/product/resolve', handle(async (req, res) => {
@@ -607,6 +657,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
           result.sourceProduct.variants,
           db.getPricingRules(),
           { priceVerified: result.scrapedProduct.priceVerified === true, currencyVerified: result.scrapedProduct.currencyVerified === true },
+          result.capturedVariantGroups,
         ),
         // Honnêteté (§51) : le client sait si la fiche vient d'être relue ou
         // servie depuis la lecture mémorisée, et depuis combien de temps.
@@ -617,6 +668,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         /** SWR : fiche servie périmée (une relecture est relancée derrière). */
         served_stale: result.servedStale,
         missing: result.missing,
+        missing_fields: result.missingFields,
         /**
          * Phase 2.1 — issue de la capture WebView : `used`, `fingerprint`,
          * `price_source`, `corroborated`, et `rejection` quand la capture a été
@@ -767,6 +819,9 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
           code: failureCode,
           price_rejection: priceRejection,
           missing: result.missing,
+          missing_fields: result.missingFields,
+          /* Motif de refus de la capture WebView (null si aucune capture n'a été envoyée). */
+          capture_rejection: result.capture?.rejection ?? null,
           product: result.scrapedProduct,
           error: 'Nous n’avons pas pu lire toutes les informations du produit.',
           fallback: ['retry', 'product_link', 'screenshot'],
@@ -1364,8 +1419,8 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
  * ------------------------------------------------------------------ */
 
 /**
- * Price only the exact source variant when the merchant published its price;
- * otherwise use the product's server-stored price, never a client amount.
+ * Price ONLY the exact source variant when the merchant published its price;
+ * NEVER assume the base product price applies to unpriced sibling variants.
  */
 function ayWebsVariantPricingPayload(
   variants: AyWebsSourceProduct['variants'],
@@ -1374,28 +1429,37 @@ function ayWebsVariantPricingPayload(
   quoteVerified: boolean,
 ) {
   return variants.map((variant) => {
-    const hasVariantPrice = Number.isFinite(Number(variant.price)) && Number(variant.price) > 0;
-    const quotedPrice = hasVariantPrice ? Number(variant.price) : Number(product.price);
+    const isOutOfStock = variant.availability === 'OUT_OF_STOCK';
+    const hasVariantPrice = !isOutOfStock && Number.isFinite(Number(variant.price)) && Number(variant.price) > 0;
+    const quotedPrice = hasVariantPrice ? Number(variant.price) : 0;
     const quotedCurrency = (hasVariantPrice ? variant.currency || product.currency : product.currency).trim().toUpperCase();
     const quote = quoteVerified && quotedPrice > 0 && quotedCurrency
       ? calculatePrice(rules, quotedPrice, quotedCurrency, { title: product.title })
       : null;
     const usableQuote = quote && !quote.restricted && quote.totalTND > 0 ? quote : null;
+    const quantityTotalsTnd = usableQuote
+      ? computeQuantityTotalsTnd(rules, quotedPrice, quotedCurrency, product.title, variant.quantityTiers)
+      : null;
     return {
       source_variant_id: variant.sourceVariantId,
+      variant_url: variant.variantUrl ?? null,
       attributes: variant.attributes,
       label: variant.label,
       price: variant.price,
       currency: variant.currency,
       quoted_price: quoteVerified && quotedPrice > 0 ? quotedPrice : null,
       quoted_currency: quoteVerified ? quotedCurrency || null : null,
-      price_source: !quoteVerified ? 'UNKNOWN' : hasVariantPrice ? 'VARIANT' : quotedPrice > 0 ? 'PRODUCT' : 'UNKNOWN',
+      price_source: !quoteVerified ? 'UNKNOWN' : hasVariantPrice ? 'VARIANT' : 'UNKNOWN',
       availability: variant.availability,
       availability_reason: variant.availabilityReason,
+      stock: variant.stock ?? null,
+      evidence_source: variant.evidenceSource ?? null,
+      quantity_tiers: variant.quantityTiers ?? [],
       image: variant.image,
       ayrovi_pricing: usableQuote ? {
         total_tnd: usableQuote.totalTND,
         pricing_version: usableQuote.pricingVersion,
+        quantity_totals_tnd: quantityTotalsTnd,
       } : null,
     };
   });
@@ -1407,6 +1471,8 @@ function productPayload(
   sourceVariants: AyWebsSourceProduct['variants'] = [],
   pricingRules?: PricingRules,
   quoteEvidence: { priceVerified: boolean; currencyVerified: boolean } = { priceVerified: false, currencyVerified: false },
+  /** Groupes publiés par la capture CLIENTE — devis par valeur (23/10/2026). */
+  capturedVariantGroups: AyWebsCapturedVariantGroup[] = [],
 ) {
   return {
     product_id: product.productId,
@@ -1436,6 +1502,21 @@ function productPayload(
         )
       : [],
     variant_groups: product.variantGroups,
+    /**
+     * DEVIS PAR VALEUR : pour chaque couleur / taille / volume publié, ce que la
+     * page dit de lui (état, stock) et son prix en DINARS calculé ICI. La feuille
+     * affiche ce nombre quand le client change de valeur — sans relire la page,
+     * et sans jamais calculer un prix elle-même. Une valeur sans prix ferme
+     * publié garde `total_tnd: null` : on ne devine pas.
+     */
+    variant_quotes: pricingRules
+      ? ayWebsVariantQuotes({
+          groups: capturedVariantGroups,
+          rules: pricingRules,
+          product: { title: product.title, price: product.price, currency: product.currency },
+          quoteVerified: quoteEvidence.priceVerified && quoteEvidence.currencyVerified,
+        })
+      : [],
     // État publié par la source ('' → null) : la coque ne doit jamais écrire
     // « New » par défaut, seulement recopier une donnée vérifiable.
     condition: product.condition || null,
@@ -1461,6 +1542,9 @@ function productPayload(
     ayrovi_pricing: product.ayroviPricing ? {
       total_tnd: product.ayroviPricing.totalTnd,
       pricing_version: product.ayroviPricing.pricingVersion,
+      quantity_totals_tnd: pricingRules && quoteEvidence.priceVerified && quoteEvidence.currencyVerified
+        ? computeQuantityTotalsTnd(pricingRules, product.price, product.currency, product.title)
+        : null,
       breakdown: {
         converted_source_price: product.ayroviPricing.breakdown.convertedSourcePrice,
         shipping: product.ayroviPricing.breakdown.shipping,

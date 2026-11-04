@@ -20,8 +20,8 @@ describe('واجهتي full interface configuration', () => {
     expect(DEFAULT_INTERFACE_CONFIG.buttons.background).toBe('#000000');
   });
 
-  test('uses a single Zalando Sans / Noto Sans Arabic stack on the default preset', () => {
-    expect(DEFAULT_INTERFACE_CONFIG.typography.display).toContain('Zalando Sans');
+  test('uses a single Ayrovi Extracted Sans / Noto Sans Arabic stack on the default preset', () => {
+    expect(DEFAULT_INTERFACE_CONFIG.typography.display).toContain('Ayrovi Extracted Sans');
     expect(DEFAULT_INTERFACE_CONFIG.typography.body).toContain('Noto Sans Arabic');
     expect(DEFAULT_INTERFACE_CONFIG.typography.display).toBe(DEFAULT_INTERFACE_CONFIG.typography.body);
     expect(INTERFACE_FONT_PRESETS[0].display).not.toContain('Plus Jakarta');

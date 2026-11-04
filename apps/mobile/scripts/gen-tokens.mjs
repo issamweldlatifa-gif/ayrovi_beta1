@@ -99,20 +99,22 @@ ${block('BRAND_SHARE', brand.share, 'Part visuelle visée par couleur (objectif 
 ${block('NEUTRALS', brand.neutrals, 'Gris d’appui : bordure légère, texte secondaire, texte appuyé, contour de champ.')}
 ${block('COLORS', { light: brand.colors, dark: brand.darkColors }, 'Palette sémantique, mode clair et mode sombre.')}
 ${block('SPACE', identity.space, 'Échelle d’espacement (px).')}
-${block('TYPE_SCALE', identity.type, 'Échelle typographique (px).')}
+${block('TYPE_SCALE', identity.type, 'Échelle typographique (px), partagée entre le site et l’application.')}
+${block('TYPOGRAPHY_ROLES', identity.typeRoles, 'Rôles typographiques sémantiques : taille, graisse, largeur et interligne.')}
 ${block('MOTION', identity.motion, 'Durées d’animation (ms).')}
 ${block('GEOMETRY', identity.geometry, 'Rayons, cibles tactiles, grille d’icônes.')}
 ${block('TYPOGRAPHY', identity.typography, 'Graisses et interlignes ; `stack` est la pile CSS du site, non utilisable en React Native.')}
 ${block('FONTS', {
   // semibold = titres (plus légers que le gras). L'arabe n'a pas encore de graisse
   // intermédiaire embarquée : ses titres gardent la graisse grasse.
-  latin: { regular: 'ZalandoSans-Regular', semibold: 'ZalandoSans-SemiBold', bold: 'ZalandoSans-Bold' },
-  arabic: { regular: 'NotoSansArabic-Regular', semibold: 'NotoSansArabic-Bold', bold: 'NotoSansArabic-Bold' },
-}, 'Noms de familles telles que chargées par expo-font (fichiers .ttf embarqués).')}
+  latin: { regular: 'AyroviExtracted-Regular', medium: 'AyroviExtracted-Medium', semibold: 'AyroviExtracted-SemiBold', bold: 'AyroviExtracted-Bold', heading: 'AyroviExtracted-Heading' },
+  arabic: { regular: 'NotoSansArabic-Regular', medium: 'NotoSansArabic-Regular', semibold: 'NotoSansArabic-Bold', bold: 'NotoSansArabic-Bold', heading: 'NotoSansArabic-Bold' },
+}, 'Noms chargés par expo-font depuis les TTF Ayrovi Extracted Sans générés à partir du WOFF2 source.')}
 
 export type ColorName = keyof typeof COLORS.light;
 export type ColorSchemeName = keyof typeof COLORS;
 export type FontSet = typeof FONTS.latin | typeof FONTS.arabic;
+export type TypographyRoleName = keyof typeof TYPOGRAPHY_ROLES;
 `;
 
 if (process.argv.includes('--check')) {

@@ -49,28 +49,144 @@ export const BRAND = {
   },
   "typography": {
     "preset": "ayrovi-a",
-    "stack": "'Zalando Sans', 'Noto Sans Arabic', sans-serif",
-    "headingWidth": "100%",
-    "bodyWeight": 500,
-    "headingWeight": 650,
-    "labelWeight": 700,
-    "priceWeight": 600,
-    "bodyLineHeight": 1.4,
+    "stack": "'Ayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif",
+    "bodyWidth": "102.5%",
+    "headingWidth": "112.5%",
+    "bodyWeight": 400,
+    "headingWeight": 520,
+    "labelWeight": 650,
+    "priceWeight": 650,
+    "bodyLineHeight": 1.5,
+    "labelLineHeight": 1.4286,
+    "captionLineHeight": 1.3333,
     "arabicLineHeight": 1.55,
-    "headingLineHeight": 1.18,
+    "headingLineHeight": 1.2,
     "arabicHeadingLineHeight": 1.42,
     "letterSpacing": "0em"
   },
+  "type": {
+    "display": 38,
+    "h1": 32,
+    "h2": 28,
+    "h3": 22,
+    "subtitle": 18,
+    "body": 16,
+    "bodyStrong": 16,
+    "bodySmall": 14,
+    "caption": 12,
+    "captionStrong": 12,
+    "overline": 11,
+    "label": 14,
+    "button": 14,
+    "price": 18,
+    "numeric": 16
+  },
+  "typeRoles": {
+    "display": {
+      "size": "display",
+      "weight": "heading",
+      "width": "heading",
+      "lineHeight": "heading"
+    },
+    "h1": {
+      "size": "h1",
+      "weight": "heading",
+      "width": "heading",
+      "lineHeight": "heading"
+    },
+    "h2": {
+      "size": "h2",
+      "weight": "heading",
+      "width": "heading",
+      "lineHeight": "heading"
+    },
+    "h3": {
+      "size": "h3",
+      "weight": "heading",
+      "width": "heading",
+      "lineHeight": "heading"
+    },
+    "subtitle": {
+      "size": "subtitle",
+      "weight": "body",
+      "width": "body",
+      "lineHeight": "body"
+    },
+    "body": {
+      "size": "body",
+      "weight": "body",
+      "width": "body",
+      "lineHeight": "body"
+    },
+    "bodyStrong": {
+      "size": "bodyStrong",
+      "weight": "label",
+      "width": "body",
+      "lineHeight": "body"
+    },
+    "bodySmall": {
+      "size": "bodySmall",
+      "weight": "body",
+      "width": "body",
+      "lineHeight": "body"
+    },
+    "caption": {
+      "size": "caption",
+      "weight": "body",
+      "width": "body",
+      "lineHeight": "caption"
+    },
+    "captionStrong": {
+      "size": "captionStrong",
+      "weight": "label",
+      "width": "body",
+      "lineHeight": "caption"
+    },
+    "overline": {
+      "size": "overline",
+      "weight": "label",
+      "width": "body",
+      "lineHeight": "label"
+    },
+    "label": {
+      "size": "label",
+      "weight": "label",
+      "width": "body",
+      "lineHeight": "label"
+    },
+    "button": {
+      "size": "button",
+      "weight": "label",
+      "width": "body",
+      "lineHeight": "label"
+    },
+    "price": {
+      "size": "price",
+      "weight": "price",
+      "width": "body",
+      "lineHeight": "body",
+      "numeric": "tabular"
+    },
+    "numeric": {
+      "size": "numeric",
+      "weight": "body",
+      "width": "body",
+      "lineHeight": "body",
+      "numeric": "tabular"
+    }
+  },
   "fonts": [
     {
-      "family": "Zalando Sans",
-      "file": "/fonts/editorial/zalando-sans.woff2",
+      "family": "Ayrovi Extracted Sans",
+      "file": "/fonts/editorial/ayrovi-extracted-sans.woff2",
       "weight": "200 900",
       "stretch": "75% 125%",
       "style": "normal",
       "role": "latin-ui-and-numbers",
-      "license": "/fonts/editorial/zalando-sans-OFL.txt",
-      "sha256": "ba6fc11db691debbd271564b194e37d96fab6d3d58c96574c58ce15696196a8f"
+      "license": "/fonts/editorial/ayrovi-extracted-OFL.txt",
+      "notice": "/fonts/editorial/ayrovi-extracted-NOTICE.txt",
+      "derivedFrom": "verified public-site WOFF2 v1.700; exact source SHA-256 is recorded in assets/fonts/ayrovi-extracted-fonts.json",
+      "sha256": "e7c9439f66d7b9e50bbabc350341d86cf02a4a45032fd42b4dbcfca13e35e25f"
     },
     {
       "family": "Noto Sans Arabic",

@@ -1,7 +1,8 @@
+import { purchaseDueAt, settlePostPaymentPrice } from './postPaymentPolicy';
 import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import { nextSequenceNumber } from '../erp-core/sequences';
-import { cardGatewayAvailable, initiateKonnectCardPayment, verifyKonnectCardPayment } from '../services/paymentGateway';
+import { cardGatewayAvailable, initiateStripeCardPayment, verifyStripeCardPayment } from '../services/paymentGateway';
 import { resolveAcceptedPaymentMethods, type SelectablePaymentMethodCode } from '../db/database';
 import type {
   AyWebsExceptionState,
@@ -36,7 +37,7 @@ import { computeAyWebsCheckoutPreview, type AyWebsCheckoutPreview } from './chec
  * Paiement (§20) : AYWEBs n'installe AUCUN écosystème de paiement parallèle.
  * Les moyens viennent de la configuration commerciale ZAYROVI existante
  * (`resolveAcceptedPaymentMethods`) et la passerelle carte est celle déjà en
- * place (`services/paymentGateway.ts` → Konnect). La table `ayweb_payments`
+ * place (`services/paymentGateway.ts` → Stripe). La table `ayweb_payments`
  * n'est que la relation commande ↔ paiement, avec la référence passerelle.
  *
  * Honnêteté (§48) : aucune intégration d'achat marchand automatisé n'existe
@@ -93,6 +94,8 @@ export interface AyWebsOrder {
   paymentMethod: string;
   paymentReference: string;
   paidAt: string | null;
+  /** Échéance interne d'achat (carte = paiement ; virement = justificatif + 24 h). Jamais affichée au client. */
+  purchaseDueAt: string | null;
   submittedAt: string | null;
   notes: string;
   shippingAddress: Record<string, unknown>;
@@ -442,7 +445,7 @@ export async function createAyWebsPaymentIntent(
        pay_url,initiated_at,created_at,updated_at)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     paymentId, paymentNumber, order.id, input.accountId, method, 'PENDING', order.totals.payableTnd, 'TND',
-    method === 'CARD' ? 'KONNECT' : 'AYROVI_MANUAL', '', '', now, now, now,
+    method === 'CARD' ? 'STRIPE' : 'AYROVI_MANUAL', '', '', now, now, now,
   );
 
   if (order.status === 'CHECKOUT') {
@@ -460,7 +463,7 @@ export async function createAyWebsPaymentIntent(
       db.run(`UPDATE ayweb_payments SET status='FAILED', failure_reason='CARD_GATEWAY_UNAVAILABLE', updated_at=? WHERE id=?`, now, paymentId);
       throw new AyWebsDomainError('PAYMENT_FAILED', {
         userMessage: 'La passerelle carte n’est pas configurée. Aucun débit n’a été tenté.',
-        technicalMessage: 'cardGatewayAvailable()=false : Konnect non configuré sur cet environnement',
+        technicalMessage: 'cardGatewayAvailable()=false : Stripe non configuré sur cet environnement',
         requiredAction: 'CHOOSE_PAYMENT',
       });
     }
@@ -469,7 +472,7 @@ export async function createAyWebsPaymentIntent(
         ? db.get<any>(`SELECT display_name,email,phone FROM customer_accounts WHERE id=?`, input.accountId)
         : null;
       const names = String(account?.display_name || 'Client AYROVI').trim().split(/\s+/);
-      const gateway = await initiateKonnectCardPayment({
+      const gateway = await initiateStripeCardPayment({
         orderId: order.id,
         orderNumber: order.orderNumber,
         transactionNumber: paymentNumber,
@@ -484,7 +487,7 @@ export async function createAyWebsPaymentIntent(
       writeAyWebsAudit(db, {
         actorType: 'customer', actorId: input.accountId, action: 'payment.initiate',
         resourceType: 'payment', resourceId: paymentId, afterState: 'PENDING',
-        detail: { method, provider: 'KONNECT', amountTnd: order.totals.payableTnd }, requestId: input.requestId || null,
+        detail: { method, provider: 'STRIPE', amountTnd: order.totals.payableTnd }, requestId: input.requestId || null,
       });
       logAyWebsOperation({ operation: 'payment_intent', orderId: order.id, customerId: input.accountId, result: 'success' });
     } catch (error) {
@@ -587,7 +590,7 @@ export async function confirmAyWebsPayment(
         requiredAction: 'CHOOSE_PAYMENT',
       });
     }
-    const verification = await verifyKonnectCardPayment({
+    const verification = await verifyStripeCardPayment({
       paymentRef: String(payment.provider_reference),
       expectedAmountTnd: Number(payment.amount_tnd),
       expectedOrderNumber: order.orderNumber,
@@ -609,7 +612,7 @@ export async function confirmAyWebsPayment(
       });
       throw new AyWebsDomainError('PAYMENT_FAILED', {
         userMessage: 'Le paiement carte a été refusé ou a expiré.',
-        technicalMessage: 'verifyKonnectCardPayment → FAILED',
+        technicalMessage: 'verifyStripeCardPayment → FAILED',
         requiredAction: 'CHOOSE_PAYMENT',
       });
     }
@@ -643,6 +646,14 @@ function markOrderPaid(db: QatafoDatabase, order: AyWebsOrder, payment: any, now
   });
   // Après paiement, l'achat part en procurement. Sans intégration marchand
   // automatisée, les lignes sont en PENDING_INTEGRATION : revue humaine (§48).
+  // Échéance d'achat : carte = maintenant ; virement/poste = 24 h après le justificatif.
+  const proofRow = db.get<any>('SELECT proof_submitted_at FROM ayweb_orders WHERE id=?', order.id);
+  const dueAt = purchaseDueAt({
+    method: String(payment.method),
+    paidAt: now,
+    proofSubmittedAt: proofRow?.proof_submitted_at || null,
+  });
+  db.run('UPDATE ayweb_orders SET purchase_due_at=?, updated_at=? WHERE id=?', dueAt, now, order.id);
   const purchaseReady = transitionAyWebsOrder(db, {
     orderId: order.id, to: 'PURCHASE_PENDING', actorType: 'system', actorId: null, requestId: input.requestId || null,
   });
@@ -683,6 +694,8 @@ export function recordAyWebsTransferProof(
     String(input.transferReference).slice(0, 120), input.proofPath, String(input.originalName).slice(0, 200), now, payment.id,
   );
   db.run(`UPDATE ayweb_orders SET payment_status='PENDING_VERIFICATION', updated_at=? WHERE id=?`, now, order.id);
+  // Le justificatif est la date de départ de l'échéance (24 h), même si la validation tarde.
+  db.run('UPDATE ayweb_orders SET proof_submitted_at=?, purchase_due_at=? WHERE id=?', now, purchaseDueAt({ method: String(payment.method), paidAt: now, proofSubmittedAt: now }), order.id);
   writeAyWebsAudit(db, {
     actorType: 'customer', actorId: input.accountId, action: 'payment.proof_submitted',
     resourceType: 'payment', resourceId: payment.id, beforeState: String(payment.status), afterState: 'PENDING_VERIFICATION',
@@ -848,12 +861,29 @@ export function failAyWebsPurchase(
 /** Confirmation d'achat (après exécution réelle ou revue humaine validée). */
 export function confirmAyWebsPurchase(
   db: QatafoDatabase,
-  input: { orderId: string; actorType?: 'admin' | 'system'; actorId?: string | null; note?: string; requestId?: string | null },
+  input: {
+    orderId: string; actorType?: 'admin' | 'system'; actorId?: string | null; note?: string; requestId?: string | null;
+    /** Prix réel constaté chez le marchand au moment de l'achat (TND). Optionnel. */
+    merchantPriceTnd?: number;
+  },
 ): AyWebsOrder {
   const order = readAyWebsOrderById(db, input.orderId);
   if (!order) throw new AyWebsDomainError('ORDER_NOT_FOUND');
   if (!['PURCHASE_PENDING', 'PURCHASING'].includes(order.status)) {
     throw new AyWebsDomainError('ORDER_STATE_INVALID', { technicalMessage: `status=${order.status}` });
+  }
+  // Politique ما بعد الدفع : تغيّر السعر عند التاجر يُقبل دائماً.
+  // زيادة = نتحمّلوها، نقص = نحتفظو بيها. نسجّلو الفرق باش يبان في الحسابات.
+  const priceSettlement = input.merchantPriceTnd === undefined
+    ? null
+    : settlePostPaymentPrice({ paidTnd: order.totals.productSubtotalTnd, currentTnd: input.merchantPriceTnd });
+  if (priceSettlement) {
+    writeAyWebsAudit(db, {
+      actorType: input.actorType || 'admin', actorId: input.actorId || null,
+      action: 'purchase.price_settled', resourceType: 'order', resourceId: order.id,
+      beforeState: String(order.totals.productSubtotalTnd), afterState: String(input.merchantPriceTnd),
+      detail: { ...priceSettlement }, requestId: input.requestId || null,
+    });
   }
   setOrderItemsPurchaseStatus(db, order.id, 'PURCHASED', input.note || 'achat_confirmé_par_opérateur', {
     actorId: input.actorId, requestId: input.requestId,
@@ -865,7 +895,7 @@ export function confirmAyWebsPurchase(
   emitAyWebsEvent(db, {
     event: 'AYWEB_PURCHASE_CONFIRMED',
     resourceType: 'order', resourceId: order.id, accountId: order.accountId, orderId: order.id, orderNumber: order.orderNumber,
-    payload: { note: input.note || '' },
+    payload: { note: input.note || '', ...(priceSettlement ? { priceSettlement } : {}) },
   });
   return updated;
 }
@@ -965,6 +995,7 @@ function hydrateOrder(db: QatafoDatabase, row: any): AyWebsOrder {
     paymentMethod: payment ? String(payment.method) : 'PENDING_SELECTION',
     paymentReference: String(row.payment_reference || ''),
     paidAt: row.paid_at ? String(row.paid_at) : null,
+    purchaseDueAt: row.purchase_due_at ? String(row.purchase_due_at) : null,
     submittedAt: row.submitted_at ? String(row.submitted_at) : null,
     notes: String(row.notes || ''),
     shippingAddress: parseJsonObject(row.shipping_address),

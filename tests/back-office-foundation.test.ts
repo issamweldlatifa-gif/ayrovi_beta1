@@ -157,7 +157,7 @@ describe('back office shell (P2.0)', () => {
       expect(sections.has('hero-visuals'), 'section hero-visuals doit être supprimée').toBe(false);
       // 2026-10-10 : + la section « à la une » (accueil mobile).
       expect(sections.has('home-featured'), 'section home-featured absente').toBe(true);
-      expect(sections.size).toBe(54);
+      expect(sections.size).toBe(55); // + « Achats AYWEBs » (2026-10-19)
     });
 
     test('la navigation serveur couvre exactement les entrées de la barre latérale legacy', () => {
@@ -196,12 +196,14 @@ describe('back office shell (P2.0)', () => {
       const heroSlidesAdditions = ['hero'];
       // 2026-10-10 : la section « à la une » de l'accueil mobile (réglages admin) devient une entrée.
       const homeFeaturedAdditions = ['home-featured'];
+      // 2026-10-19 : la file « Achats AYWEBs » (commandes payées à acheter chez le marchand).
+      const aywebsPurchaseAdditions = ['aywebs-purchases'];
       const navigable = backOfficeSections();
       const sections = resourceDescriptors()
         .filter((descriptor) => descriptor.nav && navigable.includes(descriptor.section))
         .map((descriptor) => descriptor.section)
         .sort();
-      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions, ...globalDiscoveryAdditions, ...promoEngineAdditions, ...heroSlidesAdditions, ...homeFeaturedAdditions].sort()]);
+      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions, ...globalDiscoveryAdditions, ...promoEngineAdditions, ...heroSlidesAdditions, ...homeFeaturedAdditions, ...aywebsPurchaseAdditions].sort()]);
       // 3) et le client ne réintroduit aucune copie de cette liste.
       const adminApp = fs.readFileSync(path.resolve(process.cwd(), 'client/src/admin/AdminApp.tsx'), 'utf8');
       expect(adminApp, 'le client ne doit plus porter de liste de navigation').not.toContain('const navGroups');
@@ -222,8 +224,8 @@ describe('back office shell (P2.0)', () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       expect(result.status).toBe(200);
       const items = result.body.data.groups.flatMap((group: any) => group.items);
-      expect(items.length).toBe(52);
-      expect(result.body.data.counts).toMatchObject({ sections: 52, visible: 52 });
+      expect(items.length).toBe(53);
+      expect(result.body.data.counts).toMatchObject({ sections: 53, visible: 53 });
       expect(result.body.data.groups.map((group: any) => group.label)).toEqual(
         ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'CRM', 'ERP', 'Système']);
     });
@@ -475,7 +477,7 @@ describe('back office shell (P2.0)', () => {
       // 2026-10-10 : le Hero unique est l’entrée « Hero » (icône LayoutGrid) ; les entrées
       // « Visuels d’accueil » et « Carrousel Hero » sont supprimées.
       // 2026-10-10 : la section « à la une » (icône Sparkles) ajoute son entrée.
-      expect(declared.length).toBe(52);
+      expect(declared.length).toBe(53); // 2026-10-19 : « Achats AYWEBs » (icône Package)
       const missing = [...new Set(declared)].filter((name) => !card.has(name));
       expect(missing, 'noms d\u2019icône sans clé dans ICONS').toEqual([]);
     });

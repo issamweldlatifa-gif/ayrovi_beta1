@@ -18,7 +18,7 @@ import { AppImage } from '@/design/appImage';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
-import { frost, veil } from '@/design/tokens.mobile';
+import { RADIUS, frost, veil } from '@/design/tokens.mobile';
 
 const THUMB = 30;
 
@@ -54,7 +54,7 @@ export function LensSearchBar({
         </View>
       ) : null}
       <View style={styles.label} testID="lens-search-bar-label">
-        <AppText variant="caption" weight="semibold" color={theme.colors.ink} numberOfLines={1}>
+        <AppText variant="captionStrong" color={theme.colors.ink} numberOfLines={1}>
           {label}
         </AppText>
       </View>
@@ -65,9 +65,9 @@ export function LensSearchBar({
           accessibilityLabel={t('common.cancel')}
           testID="lens-search-bar-cancel"
           hitSlop={10}
-          style={({ pressed }) => [styles.cancel, { opacity: pressed ? 0.6 : 1 }]}
+          style={({ pressed }) => [styles.cancel, { opacity: pressed ? theme.opacity.subtle : 1 }]}
         >
-          <Ionicons name="close" size={16} color={theme.colors.ink} accessibilityElementsHidden />
+          <Ionicons name="close" size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
       ) : null}
     </View>
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 999,
+    borderRadius: RADIUS.full,
   },
   thumb: {
     width: THUMB,

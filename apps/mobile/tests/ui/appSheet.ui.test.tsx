@@ -43,6 +43,23 @@ describe('AppSheet', () => {
     expect(screen.getByText('محتوى الدرج')).toBeTruthy();
   });
 
+  it('bottom presentation keeps its pinned footer visible beside scrollable content', () => {
+    render(
+      <Providers>
+        <AppSheet
+          open
+          presentation="bottom"
+          onDismiss={() => undefined}
+          footer={<Text>إضافة للسلة</Text>}
+        >
+          <Text>خيارات المنتج</Text>
+        </AppSheet>
+      </Providers>,
+    );
+    expect(screen.getByText('خيارات المنتج')).toBeTruthy();
+    expect(screen.getByText('إضافة للسلة')).toBeTruthy();
+  });
+
   it('زر الإغلاق في الرأس يطلب الإغلاق', () => {
     const onDismiss = jest.fn();
     render(
@@ -58,3 +75,37 @@ describe('AppSheet', () => {
   });
 });
 
+
+/** Premier `pointerEvents` rencontré dans l'arbre rendu (la racine du tiroir). */
+function firstPointerEvents(node: unknown): string | undefined {
+  if (!node || typeof node !== 'object') return undefined;
+  const n = node as { props?: { pointerEvents?: string }; children?: unknown[] };
+  if (n.props?.pointerEvents) return n.props.pointerEvents;
+  for (const child of n.children ?? []) {
+    const found = firstPointerEvents(child);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+describe('AppSheet fermé ne bloque pas la page dessous', () => {
+  it('fermé : la racine ne reçoit plus de toucher (sinon le voile couvre la page)', () => {
+    const { toJSON, rerender } = render(
+      <Providers>
+        <AppSheet open={false} onDismiss={() => undefined}>
+          <Text>contenu</Text>
+        </AppSheet>
+      </Providers>,
+    );
+    expect(firstPointerEvents(toJSON())).toBe('none');
+
+    rerender(
+      <Providers>
+        <AppSheet open onDismiss={() => undefined}>
+          <Text>contenu</Text>
+        </AppSheet>
+      </Providers>,
+    );
+    expect(firstPointerEvents(toJSON())).toBe('box-none');
+  });
+});

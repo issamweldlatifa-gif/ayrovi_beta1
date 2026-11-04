@@ -27,7 +27,7 @@ try {
       check(`${locale}/${width}: no horizontal page overflow`, geometry.scroll<=width && geometry.body<=width,geometry);
       check(`${locale}/${width}: controls have at least 44px targets`, geometry.targets.every(t=>t.h>=44&&t.w>=44));
       const font=await page.locator('h1').evaluate(e=>getComputedStyle(e).fontFamily);
-      check(`${locale}/${width}: language-specific editorial face`,font.includes('Zalando Sans') && font.includes('Noto Sans Arabic'),font);
+      check(`${locale}/${width}: language-specific editorial face`,font.includes('Ayrovi Extracted Sans') && font.includes('Noto Sans Arabic'),font);
     }
   }
   await page.setViewportSize({width:390,height:844});

@@ -1,6 +1,6 @@
 # ZAYROVI A — developer contract
 
-Official interface identity: **Zalando Sans** for Latin text/numbers and **Noto Sans Arabic** for Arabic. These are licensed third-party OFL fonts, not proprietary ZAYROVI font designs. This change does not redesign the logo or change pricing/business rules.
+Official interface identity: **Ayrovi Extracted Sans** for Latin text/numbers and **Noto Sans Arabic** for Arabic. These are licensed third-party OFL fonts, not proprietary ZAYROVI font designs. This change does not redesign the logo or change pricing/business rules.
 
 ## Single source and usage
 
@@ -10,7 +10,7 @@ Official interface identity: **Zalando Sans** for Latin text/numbers and **Noto 
 - Use semantic colors (`--ay-e-ink`, `--ay-e-muted`, `--ay-e-secondary`, `--ay-e-canvas`, `--ay-e-surface`, `--ay-e-action`, `--ay-e-on-action`). Base ink/canvas are pure black/white; dark mode reverses them. Secondary surfaces and separators remain deliberate neutral grays, not a beige canvas.
 - Use existing semantic heading/body/label classes. Normal body/price weight is 400; headings 500; labels 700. Latin display width uses the approved 112.5% axis, Arabic uses normal width and a more generous line height.
 - Financial identifiers/tables may use tabular numerals and bidi isolation through `.ay-number`/`.ay-e-number`. Never introduce `font-mono` or a third font for numbers. Keep arithmetic, currency formatting and original data separate from presentation.
-- English text is covered by Zalando Sans. The application's existing locale switch remains French/Arabic; this migration does **not** add an English translation.
+- English text is covered by Ayrovi Extracted Sans. The application's existing locale switch remains French/Arabic; this migration does **not** add an English translation.
 
 ## Configuration and API
 

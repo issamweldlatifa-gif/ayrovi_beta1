@@ -90,7 +90,7 @@ export function Comments({ targetId }: CommentsProps) {
         scrollEnabled={false}
         renderItem={({ item }) => (
           <View style={[styles.row, { borderBottomColor: theme.colors.divider }]}>
-            <AppText variant="caption" weight="bold">{item.author}</AppText>
+            <AppText variant="captionStrong" >{item.author}</AppText>
             <AppText variant="body">{item.text}</AppText>
           </View>
         )}
@@ -107,6 +107,7 @@ export function Comments({ targetId }: CommentsProps) {
             multiline
             style={[
               styles.input,
+              theme.text('body'),
               {
                 ...field.style,
                 borderRadius: theme.radius.control,
@@ -121,9 +122,9 @@ export function Comments({ targetId }: CommentsProps) {
             accessibilityState={{ disabled: tooShort || post.isPending }}
             disabled={tooShort || post.isPending}
             onPress={() => post.mutate()}
-            style={[styles.send, { backgroundColor: theme.colors.ink, borderRadius: theme.radius.cta, opacity: tooShort ? 0.45 : 1 }]}
+            style={[styles.send, { backgroundColor: theme.colors.ink, borderRadius: theme.radius.cta, opacity: tooShort ? theme.opacity.disabled : 1 }]}
           >
-            <AppText variant="label" weight="bold" color={theme.colors.canvas}>{t('social.send')}</AppText>
+            <AppText variant="label" color={theme.colors.canvas}>{t('social.send')}</AppText>
           </Pressable>
         </View>
       ) : (

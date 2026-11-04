@@ -26,6 +26,15 @@ import { Comments } from '@/features/social/Comments';
 import { useSessionId } from '@/session/session';
 import type { Publication } from '@/api/social';
 
+/**
+ * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
+ * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
+ * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
+ * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
+ * vérifié par `tests/error-boundary-coverage.test.ts`.
+ */
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
 export default function PublicationsScreen() {
   const theme = useTheme();
   const t = useT();
@@ -84,7 +93,7 @@ export default function PublicationsScreen() {
                 <AppImage uri={mediaUrl(item.imageUrl)} style={styles.image} contentFit="cover" accessibilityLabel={item.title ?? undefined} decorative={!item.title} />
               ) : null}
               <View style={styles.body}>
-                {item.title ? <AppText variant="label" weight="bold">{item.title}</AppText> : null}
+                {item.title ? <AppText variant="label" >{item.title}</AppText> : null}
                 {item.subtitle ? (
                   <AppText variant="caption" color={theme.colors.muted}>{item.subtitle}</AppText>
                 ) : null}
@@ -102,7 +111,7 @@ export default function PublicationsScreen() {
                   >
                     <Ionicons
                       name={liked[item.id] ? 'heart' : 'heart-outline'}
-                      size={20}
+                      size={theme.iconSize.sm}
                       color={liked[item.id] ? theme.colors.accentText : theme.colors.muted}
                     />
                     <AppText variant="caption" color={theme.colors.muted}>{String(countsFor?.likes ?? 0)}</AppText>
@@ -114,7 +123,7 @@ export default function PublicationsScreen() {
                     onPress={() => setCommentsFor(item)}
                     style={styles.action}
                   >
-                    <Ionicons name="chatbubble-outline" size={20} color={theme.colors.muted} />
+                    <Ionicons name="chatbubble-outline" size={theme.iconSize.sm} color={theme.colors.muted} />
                     <AppText variant="caption" color={theme.colors.muted}>{String(countsFor?.comments ?? 0)}</AppText>
                   </Pressable>
                 </View>
@@ -132,10 +141,10 @@ export default function PublicationsScreen() {
 
       <Modal visible={commentsFor !== null} animationType="slide" onRequestClose={closeComments}>
         <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
-          <AppText variant="title" weight="semibold">{t('social.comments')}</AppText>
+          <AppText variant="h3" >{t('social.comments')}</AppText>
           {commentsFor ? <Comments targetId={commentsFor.id} /> : null}
           <Pressable accessibilityRole="button" onPress={closeComments} style={styles.closeBtn}>
-            <AppText variant="label" weight="bold" color={theme.colors.ink}>{t('social.close')}</AppText>
+            <AppText variant="label" color={theme.colors.ink}>{t('social.close')}</AppText>
           </Pressable>
         </View>
       </Modal>
