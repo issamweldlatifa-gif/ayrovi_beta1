@@ -137,8 +137,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: FONTS.arabic.bold,
-    fontSize: TYPE_SCALE.title,
-    lineHeight: Math.round(TYPE_SCALE.title * 1.42),
+    fontSize: TYPE_SCALE.h2,
+    lineHeight: Math.round(TYPE_SCALE.h2 * 1.42),
     color: SAFE.ink,
     textAlign: 'center',
   },

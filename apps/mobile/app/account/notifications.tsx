@@ -52,7 +52,7 @@ export default function NotificationsScreen() {
       refreshing={notifications.isRefetching}
     >
       {failure ? (
-        <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
+        <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
       ) : null}
       {notifications.isLoading ? <LoadingBlock /> : null}
       {notifications.isError ? <ErrorBlock error={notifications.error} onRetry={() => notifications.refetch()} /> : null}

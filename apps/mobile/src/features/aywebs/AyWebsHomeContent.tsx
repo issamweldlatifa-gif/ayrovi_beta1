@@ -285,7 +285,7 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
             style={[styles.sponsorArt, { borderRadius: theme.radius.card }]}
             testID="aywebs-home-sponsor-art"
           />
-          <AppText variant="title" weight="bold" style={styles.sponsorTitle}>
+          <AppText variant="h3" style={styles.sponsorTitle}>
             {t('aywebs.home.sponsorTitle')}
           </AppText>
           <AppText variant="body" color={theme.colors.muted}>
@@ -356,7 +356,7 @@ function SectionTitle({ title, accessibilityLabel, onPress }: {
   const theme = useTheme();
   const content = (
     <>
-      <AppText variant="title" weight="bold" style={styles.sectionTitleText}>{title}</AppText>
+      <AppText variant="h3" style={styles.sectionTitleText}>{title}</AppText>
       {onPress ? (
         <Ionicons
           name={theme.isRTL ? 'chevron-back' : 'chevron-forward'}
@@ -493,7 +493,7 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
             testID={`aywebs-home-store-logo-${store.id}`}
           />
         ) : (
-          <AppText variant="display" weight="bold" color={theme.colors.muted}>{name.slice(0, 1)}</AppText>
+          <AppText variant="display" color={theme.colors.muted}>{name.slice(0, 1)}</AppText>
         )}
 
         <Pressable
@@ -528,7 +528,7 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
         testID={`aywebs-home-store-${store.id}`}
         style={({ pressed }) => ({ opacity: pressed ? theme.opacity.dimmed : 1 })}
       >
-        <AppText variant="label" weight="bold">{name}</AppText>
+        <AppText variant="label" >{name}</AppText>
         {tagline ? <AppText variant="caption" color={theme.colors.muted}>{tagline}</AppText> : null}
       </Pressable>
     </View>

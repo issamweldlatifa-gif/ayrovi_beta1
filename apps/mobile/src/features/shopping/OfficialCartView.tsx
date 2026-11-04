@@ -72,7 +72,7 @@ export function PaymentMethodsBadgeStrip() {
           ]}
         >
           <Ionicons name={badge.icon} size={theme.iconSize.xs} color={theme.colors.ink} accessibilityElementsHidden />
-          <AppText variant="caption" weight="semibold" color={theme.colors.ink}>
+          <AppText variant="captionStrong" color={theme.colors.ink}>
             {badge.label}
           </AppText>
         </View>
@@ -145,7 +145,7 @@ export function OfficialCartRow({
 
         <View style={styles.itemMeta}>
           <View style={[styles.itemTopLine, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <AppText variant="label" weight="bold" numberOfLines={1} style={styles.brandName}>
+            <AppText variant="label" numberOfLines={1} style={styles.brandName}>
               {item.brandOrStore || 'ZAYROVI'}
             </AppText>
             <Pressable
@@ -170,7 +170,7 @@ export function OfficialCartRow({
             </AppText>
           ) : hasDiscount ? (
             <View style={styles.priceGroup}>
-              <AppText variant="body" weight="bold" color={theme.status.danger.fg}>
+              <AppText variant="bodyStrong" color={theme.status.danger.fg}>
                 {formatMoney(item.lineTotalTnd)}
               </AppText>
               <View style={[styles.originalPriceRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
@@ -181,14 +181,14 @@ export function OfficialCartRow({
                   {formatMoney(item.originalLineTotalTnd as number)}
                 </AppText>
                 {computedPct && computedPct > 0 ? (
-                  <AppText variant="caption" weight="semibold" color={theme.status.danger.fg}>
+                  <AppText variant="captionStrong" color={theme.status.danger.fg}>
                     {`-${computedPct}%`}
                   </AppText>
                 ) : null}
               </View>
             </View>
           ) : (
-            <AppText variant="body" weight="bold" color={theme.colors.ink} style={styles.regularPrice}>
+            <AppText variant="bodyStrong" color={theme.colors.ink} style={styles.regularPrice}>
               {formatMoney(item.lineTotalTnd)}
             </AppText>
           )}
@@ -223,7 +223,7 @@ export function OfficialCartRow({
           <View style={[styles.qtyControlBar, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             <AppText variant="caption" color={theme.colors.muted}>
               {`${t('aywebs.quantity')} : `}
-              <AppText variant="caption" weight="semibold" color={theme.colors.ink}>
+              <AppText variant="captionStrong" color={theme.colors.ink}>
                 {String(item.quantity)}
               </AppText>
             </AppText>
@@ -395,10 +395,10 @@ export function OfficialCartStickySummary({
       {totalTnd != null ? (
         <View style={[styles.summaryRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           <View style={[styles.totalTitleGroup, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <AppText variant="body" weight="bold" color={theme.colors.ink}>{t('cart.total')}</AppText>
+            <AppText variant="bodyStrong" color={theme.colors.ink}>{t('cart.total')}</AppText>
             <AppText variant="caption" color={theme.colors.muted}>{t('cart.vatIncluded')}</AppText>
           </View>
-          <AppText variant="body" weight="bold" color={theme.colors.ink}>{formatMoney(totalTnd)}</AppText>
+          <AppText variant="bodyStrong" color={theme.colors.ink}>{formatMoney(totalTnd)}</AppText>
         </View>
       ) : null}
 
@@ -472,7 +472,7 @@ export function OfficialCartScaffold({
             />
           </Pressable>
         ) : null}
-        <AppText variant="lead" weight="bold" numberOfLines={1} style={styles.topBarTitle}>
+        <AppText variant="h3" numberOfLines={1} style={styles.topBarTitle}>
           {headerLabel}
         </AppText>
       </View>

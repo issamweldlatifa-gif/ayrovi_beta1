@@ -87,7 +87,7 @@ export default function NewsDetailScreen() {
       ) : null}
 
       {item.summary ? (
-        <AppText variant="label" weight="bold" color={theme.colors.ink}>{item.summary}</AppText>
+        <AppText variant="label" color={theme.colors.ink}>{item.summary}</AppText>
       ) : null}
 
       {item.content ? <AppText variant="body">{item.content}</AppText> : null}

@@ -6,7 +6,7 @@
  *              sha256 : 69e920a38d630e8fb75f48c49ce56df6e964f69da700341995893235d7417e19
  * Structure  : client/src/design/editorial/identity.json
  *              ZAYROVI A — Official Identity · version 4.2.0
- *              sha256 : aba724f085b2e2218cbb65bf3de4c42678f4d51149798c99db7a1117d2df4a1d
+ *              sha256 : c0badc9b51428c99ed72ee17b32b167637a4e507b4e2cf552fa3564b39b3e4e3
  *
  * Régénérer : npm run tokens:build   ·   vérifier : npm run tokens:check
  */
@@ -17,7 +17,7 @@ export const IDENTITY = {
   source: "apps/mobile/src/design/brand.json",
   structure: {
     name: "ZAYROVI A — Official Identity",
-    sha256: "aba724f085b2e2218cbb65bf3de4c42678f4d51149798c99db7a1117d2df4a1d",
+    sha256: "c0badc9b51428c99ed72ee17b32b167637a4e507b4e2cf552fa3564b39b3e4e3",
     source: "client/src/design/editorial/identity.json",
     version: "4.2.0",
   },
@@ -103,14 +103,119 @@ export const COLORS = {
 /** Échelle d’espacement (px). */
 export const SPACE = [4, 8, 12, 16, 24, 32, 48, 64, 96] as const;
 
-/** Échelle typographique (px). */
+/** Échelle typographique (px), partagée entre le site et l’application. */
 export const TYPE_SCALE = {
   body: 16,
+  bodySmall: 14,
+  bodyStrong: 16,
+  button: 14,
   caption: 12,
+  captionStrong: 12,
   display: 38,
+  h1: 32,
+  h2: 28,
+  h3: 22,
   label: 14,
-  lead: 18,
-  title: 20,
+  numeric: 16,
+  overline: 11,
+  price: 18,
+  subtitle: 18,
+} as const;
+
+/** Rôles typographiques sémantiques : taille, graisse, largeur et interligne. */
+export const TYPOGRAPHY_ROLES = {
+  body: {
+    lineHeight: "body",
+    size: "body",
+    weight: "body",
+    width: "body",
+  },
+  bodySmall: {
+    lineHeight: "body",
+    size: "bodySmall",
+    weight: "body",
+    width: "body",
+  },
+  bodyStrong: {
+    lineHeight: "body",
+    size: "bodyStrong",
+    weight: "label",
+    width: "body",
+  },
+  button: {
+    lineHeight: "label",
+    size: "button",
+    weight: "label",
+    width: "body",
+  },
+  caption: {
+    lineHeight: "caption",
+    size: "caption",
+    weight: "body",
+    width: "body",
+  },
+  captionStrong: {
+    lineHeight: "caption",
+    size: "captionStrong",
+    weight: "label",
+    width: "body",
+  },
+  display: {
+    lineHeight: "heading",
+    size: "display",
+    weight: "heading",
+    width: "heading",
+  },
+  h1: {
+    lineHeight: "heading",
+    size: "h1",
+    weight: "heading",
+    width: "heading",
+  },
+  h2: {
+    lineHeight: "heading",
+    size: "h2",
+    weight: "heading",
+    width: "heading",
+  },
+  h3: {
+    lineHeight: "heading",
+    size: "h3",
+    weight: "heading",
+    width: "heading",
+  },
+  label: {
+    lineHeight: "label",
+    size: "label",
+    weight: "label",
+    width: "body",
+  },
+  numeric: {
+    lineHeight: "body",
+    numeric: "tabular",
+    size: "numeric",
+    weight: "body",
+    width: "body",
+  },
+  overline: {
+    lineHeight: "label",
+    size: "overline",
+    weight: "label",
+    width: "body",
+  },
+  price: {
+    lineHeight: "body",
+    numeric: "tabular",
+    size: "price",
+    weight: "price",
+    width: "body",
+  },
+  subtitle: {
+    lineHeight: "body",
+    size: "subtitle",
+    weight: "body",
+    width: "body",
+  },
 } as const;
 
 /** Durées d’animation (ms). */
@@ -175,3 +280,4 @@ export const FONTS = {
 export type ColorName = keyof typeof COLORS.light;
 export type ColorSchemeName = keyof typeof COLORS;
 export type FontSet = typeof FONTS.latin | typeof FONTS.arabic;
+export type TypographyRoleName = keyof typeof TYPOGRAPHY_ROLES;

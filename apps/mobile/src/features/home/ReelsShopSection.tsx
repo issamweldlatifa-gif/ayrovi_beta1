@@ -90,7 +90,7 @@ export function ReelsShopSection() {
                   </View>
                   {item.title ? (
                     <View style={styles.caption}>
-                      <AppText variant="label" weight="bold" color={theme.colors.onMedia} numberOfLines={2}>
+                      <AppText variant="label" color={theme.colors.onMedia} numberOfLines={2}>
                         {item.title}
                       </AppText>
                     </View>

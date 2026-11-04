@@ -106,7 +106,7 @@ export default function ForgotPasswordScreen() {
           <Ionicons name={locale === 'ar' ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={theme.colors.ink} />
         </Pressable>
 
-        <AppText variant="title">{t('auth.forgot.title')}</AppText>
+        <AppText variant="h1">{t('auth.forgot.title')}</AppText>
         {/* Le sous-titre promet un envoi : il disparaît quand aucun envoi n'est possible. */}
         {enabled ? (
           <AppText variant="body" color={theme.colors.secondary} style={styles.intro}>{t('auth.forgot.subtitle')}</AppText>
@@ -117,7 +117,7 @@ export default function ForgotPasswordScreen() {
               un champ qui ne peut pas aboutir est un piège, pas une option. */}
           {!enabled ? (
             <>
-              <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>
+              <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>
                 {t('auth.forgot.unavailable')}
               </AppText>
               <Button
@@ -139,7 +139,7 @@ export default function ForgotPasswordScreen() {
                 editable={!busy}
               />
               {failure ? (
-                <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
+                <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
               ) : null}
               <Button label={t('auth.forgot.submit')} tone="main" onPress={submit} busy={busy} testID="auth-forgot-submit" />
               <AppText variant="caption" color={theme.colors.muted}>{t('auth.forgot.socialOnly')}</AppText>

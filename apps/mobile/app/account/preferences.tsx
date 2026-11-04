@@ -57,7 +57,7 @@ export default function PreferencesScreen() {
       refreshing={preferences.isRefetching}
     >
       {failure ? (
-        <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
+        <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
       ) : null}
       {preferences.isLoading ? <LoadingBlock /> : null}
       {preferences.isError ? <ErrorBlock error={preferences.error} onRetry={() => preferences.refetch()} /> : null}

@@ -37,9 +37,9 @@ export function LensOverviewCard({ identification }: { identification: LensIdent
       style={[styles.wrap, { backgroundColor: theme.colors.surface, borderColor: theme.colors.divider }]}
       testID="lens-overview-card"
     >
-      <AppText variant="label" weight="bold" color={theme.colors.muted}>{t('lens.overview.title')}</AppText>
+      <AppText variant="label" color={theme.colors.muted}>{t('lens.overview.title')}</AppText>
       {description ? (
-        <AppText variant="body" weight="semibold" numberOfLines={3}>{description}</AppText>
+        <AppText variant="bodyStrong" numberOfLines={3}>{description}</AppText>
       ) : null}
       {facts || category ? (
         <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>

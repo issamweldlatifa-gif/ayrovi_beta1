@@ -7,7 +7,7 @@
  *  • l'index suit le défilement (onMomentumScrollEnd) ;
  *  • la carte est le seul lien d'action, sans bouton CTA sous l'image.
  */
-import { AppState, StyleSheet } from 'react-native';
+import { AppState, processColor, StyleSheet } from 'react-native';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
@@ -16,6 +16,7 @@ import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
 import { carouselGeometry } from '../../src/features/home/heroCarouselLogic';
+import { COLORS } from '../../src/design/tokens.generated';
 import type { HeroSlide } from '../../src/api/public';
 
 jest.mock('expo-router', () => ({
@@ -219,8 +220,8 @@ describe('géométrie et fond', () => {
   });
 });
 
-describe('fond = la photo', () => {
-  it('chaque carte pose sa couche de fond ; la section commence au bord haut de la 1re photo', async () => {
+describe('fondu du fond Hero vers la page', () => {
+  it('chaque carte pose sa couche ; le dégradé se termine exactement sur le canevas de page', async () => {
     const withEdges = SLIDES.map((card, index) => ({
       ...card,
       edgeTop: ['#433F39', '#274546', '#E0C3A0'][index],
@@ -232,6 +233,10 @@ describe('fond = la photo', () => {
     for (const index of [0, 1, 2]) {
       expect(screen.getByTestId(`hero-carousel-backdrop-${index}`, { includeHiddenElements: true })).toBeTruthy();
     }
+    const gradient = screen.getByTestId('hero-carousel-backdrop-0', { includeHiddenElements: true });
+    expect(gradient.props.locations).toEqual([0, 0.18, 0.55, 0.82, 1]);
+    expect(gradient.props.colors).toHaveLength(5);
+    expect([COLORS.light.canvas, COLORS.dark.canvas].map(processColor)).toContain(gradient.props.colors.at(-1));
   });
 });
 

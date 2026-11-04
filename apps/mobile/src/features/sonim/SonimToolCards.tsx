@@ -50,7 +50,7 @@ function OrderCardView({ order }: { order: SonimOrderCard }) {
           <AppText variant="caption" color={theme.colors.muted}>
             {t('sonim.tool.orderPrefix', { id: order.orderId })}
           </AppText>
-          <AppText variant="label" weight="bold">
+          <AppText variant="label" >
             {order.statusLabel}
           </AppText>
           <AppText variant="caption" color={theme.colors.muted}>
@@ -119,10 +119,10 @@ function PriceBreakdownView({ breakdown }: { breakdown: SonimPriceBreakdown }) {
           <Ionicons name="calculator-outline" size={theme.iconSize.sm} color={theme.colors.onMedia} accessibilityElementsHidden />
         </View>
         <View style={styles.cardTitleBlock}>
-          <AppText variant="caption" weight="bold" color={theme.status.success.fg}>
+          <AppText variant="captionStrong" color={theme.status.success.fg}>
             {t('sonim.tool.priceTitle')}
           </AppText>
-          <AppText variant="lead" weight="bold">
+          <AppText variant="price" >
             {formatMoney(breakdown.totalTND)}
           </AppText>
         </View>
@@ -134,7 +134,7 @@ function PriceBreakdownView({ breakdown }: { breakdown: SonimPriceBreakdown }) {
             <AppText variant="caption" color={theme.colors.muted} style={styles.kvLabel}>
               {line.label}
             </AppText>
-            <AppText variant="caption" weight="semibold">
+            <AppText variant="captionStrong" >
               {formatMoney(line.amount)}
             </AppText>
           </View>
@@ -183,15 +183,15 @@ function ProductCardView({ product }: { product: SonimProductCard }) {
         </View>
 
         <View style={styles.productMeta}>
-          <AppText variant="caption" weight="bold" color={theme.colors.muted} numberOfLines={1}>
+          <AppText variant="captionStrong" color={theme.colors.muted} numberOfLines={1}>
             {product.source}
           </AppText>
-          <AppText variant="label" weight="semibold" numberOfLines={2}>
+          <AppText variant="label" numberOfLines={2}>
             {product.title}
           </AppText>
           <View style={[styles.priceRow, { flexDirection: rowDir }]}>
             {product.priceTnd !== null ? (
-              <AppText variant="label" weight="bold">
+              <AppText variant="label" >
                 {formatMoney(product.priceTnd)}
               </AppText>
             ) : null}
@@ -211,7 +211,7 @@ function ProductCardView({ product }: { product: SonimProductCard }) {
           },
         ]}
       >
-        <AppText variant="caption" weight="bold">
+        <AppText variant="captionStrong" >
           {t('sonim.tool.openStore')}
         </AppText>
         <Ionicons
@@ -251,7 +251,7 @@ function SupportTicketView({ ticket }: { ticket: SonimSupportTicket }) {
           <Ionicons name="chatbubble-ellipses-outline" size={theme.iconSize.sm} color={theme.colors.canvas} accessibilityElementsHidden />
         </View>
         <View style={styles.cardTitleBlock}>
-          <AppText variant="label" weight="bold">
+          <AppText variant="label" >
             {t('sonim.tool.ticketTitle')}
           </AppText>
           <AppText variant="caption" color={theme.colors.muted}>

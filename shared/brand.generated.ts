@@ -64,6 +64,117 @@ export const BRAND = {
     "arabicHeadingLineHeight": 1.42,
     "letterSpacing": "0em"
   },
+  "type": {
+    "display": 38,
+    "h1": 32,
+    "h2": 28,
+    "h3": 22,
+    "subtitle": 18,
+    "body": 16,
+    "bodyStrong": 16,
+    "bodySmall": 14,
+    "caption": 12,
+    "captionStrong": 12,
+    "overline": 11,
+    "label": 14,
+    "button": 14,
+    "price": 18,
+    "numeric": 16
+  },
+  "typeRoles": {
+    "display": {
+      "size": "display",
+      "weight": "heading",
+      "width": "heading",
+      "lineHeight": "heading"
+    },
+    "h1": {
+      "size": "h1",
+      "weight": "heading",
+      "width": "heading",
+      "lineHeight": "heading"
+    },
+    "h2": {
+      "size": "h2",
+      "weight": "heading",
+      "width": "heading",
+      "lineHeight": "heading"
+    },
+    "h3": {
+      "size": "h3",
+      "weight": "heading",
+      "width": "heading",
+      "lineHeight": "heading"
+    },
+    "subtitle": {
+      "size": "subtitle",
+      "weight": "body",
+      "width": "body",
+      "lineHeight": "body"
+    },
+    "body": {
+      "size": "body",
+      "weight": "body",
+      "width": "body",
+      "lineHeight": "body"
+    },
+    "bodyStrong": {
+      "size": "bodyStrong",
+      "weight": "label",
+      "width": "body",
+      "lineHeight": "body"
+    },
+    "bodySmall": {
+      "size": "bodySmall",
+      "weight": "body",
+      "width": "body",
+      "lineHeight": "body"
+    },
+    "caption": {
+      "size": "caption",
+      "weight": "body",
+      "width": "body",
+      "lineHeight": "caption"
+    },
+    "captionStrong": {
+      "size": "captionStrong",
+      "weight": "label",
+      "width": "body",
+      "lineHeight": "caption"
+    },
+    "overline": {
+      "size": "overline",
+      "weight": "label",
+      "width": "body",
+      "lineHeight": "label"
+    },
+    "label": {
+      "size": "label",
+      "weight": "label",
+      "width": "body",
+      "lineHeight": "label"
+    },
+    "button": {
+      "size": "button",
+      "weight": "label",
+      "width": "body",
+      "lineHeight": "label"
+    },
+    "price": {
+      "size": "price",
+      "weight": "price",
+      "width": "body",
+      "lineHeight": "body",
+      "numeric": "tabular"
+    },
+    "numeric": {
+      "size": "numeric",
+      "weight": "body",
+      "width": "body",
+      "lineHeight": "body",
+      "numeric": "tabular"
+    }
+  },
   "fonts": [
     {
       "family": "Ayrovi Extracted Sans",

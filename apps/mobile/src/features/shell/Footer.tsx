@@ -72,7 +72,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
       ]}
     >
       {/* 1) الهوية */}
-      <AppText variant="display" weight="semibold" color={FOOTER_COLORS.ink} style={styles.wordmark}>
+      <AppText variant="display" color={FOOTER_COLORS.ink} style={styles.wordmark}>
         ZAYROVI
       </AppText>
       <AppText variant="caption" color={FOOTER_COLORS.muted}>
@@ -82,7 +82,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
       {/* 2) «من نحن» — محرَّر من الإدارة؛ فارغ ⇒ القسم ما يبانش */}
       {about ? (
         <View style={styles.block}>
-          <AppText variant="caption" weight="bold" color={FOOTER_COLORS.ink}>{t('footer.about')}</AppText>
+          <AppText variant="captionStrong" color={FOOTER_COLORS.ink}>{t('footer.about')}</AppText>
           <AppText variant="caption" color={FOOTER_COLORS.muted}>{about}</AppText>
         </View>
       ) : null}
@@ -90,7 +90,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
       {/* 3) القنوات الرسمية — الصالحة فقط */}
       {channels.length > 0 ? (
         <View style={styles.block}>
-          <AppText variant="caption" weight="bold" color={FOOTER_COLORS.ink}>{t('footer.channels')}</AppText>
+          <AppText variant="captionStrong" color={FOOTER_COLORS.ink}>{t('footer.channels')}</AppText>
           <View style={styles.channels}>
             {channels.map((channel) => (
               <Pressable
@@ -118,7 +118,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
 
       {/* 4) وسائل الخلاص: ما تقبله الخزينة؛ وما فمّاش ⇒ يُقال */}
       <View style={styles.block}>
-        <AppText variant="caption" weight="bold" color={FOOTER_COLORS.ink}>{t('footer.payment')}</AppText>
+        <AppText variant="captionStrong" color={FOOTER_COLORS.ink}>{t('footer.payment')}</AppText>
         {methods.length > 0 ? (
           <View style={styles.methods}>
             {methods.map((method) => (
@@ -135,7 +135,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
 
       {/* 5) وصولات نافعة — كلها شاشات موجودة فعلاً */}
       <View style={styles.block}>
-        <AppText variant="caption" weight="bold" color={FOOTER_COLORS.ink}>{t('footer.useful')}</AppText>
+        <AppText variant="captionStrong" color={FOOTER_COLORS.ink}>{t('footer.useful')}</AppText>
         <View style={styles.links}>
           <FooterLink icon="person-outline" label={t('footer.account')} onPress={() => router.push('/(tabs)/account')} />
           <FooterLink icon="bag-outline" label={t('footer.orders')} onPress={() => router.push('/orders')} />

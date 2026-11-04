@@ -49,7 +49,7 @@ export function LensVisualMatches({
           ) : (
             <View style={styles.image} />
           )}
-          <AppText variant="caption" weight="semibold" color={LENS_COLORS.white} numberOfLines={1}>
+          <AppText variant="captionStrong" color={LENS_COLORS.white} numberOfLines={1}>
             {match.name}
           </AppText>
         </Pressable>

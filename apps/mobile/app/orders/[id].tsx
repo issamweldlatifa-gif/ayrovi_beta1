@@ -133,7 +133,7 @@ export default function OrderDetailScreen() {
             accessibilityElementsHidden
           />
         </Pressable>
-        <AppText variant="title" style={styles.headerTitle}>
+        <AppText variant="h3" style={styles.headerTitle}>
           {order.data?.orderNumber || t('order.title')}
         </AppText>
       </View>
@@ -162,13 +162,13 @@ export default function OrderDetailScreen() {
                   />
                 ) : null}
                 <View style={styles.itemText}>
-                  <AppText variant="label" weight="bold">{item.title || '—'}</AppText>
+                  <AppText variant="label" >{item.title || '—'}</AppText>
                   <AppText variant="caption" color={theme.colors.muted}>
                     {item.quantity} × {formatMoney(item.unitPriceTnd)}
                   </AppText>
                   {item.variant ? <AppText variant="caption" color={theme.colors.muted}>{item.variant}</AppText> : null}
                 </View>
-                <AppText variant="label" weight="bold">{formatAmount(item.totalTnd)}</AppText>
+                <AppText variant="label" >{formatAmount(item.totalTnd)}</AppText>
               </View>
             ))}
           </Card>

@@ -73,7 +73,7 @@ function OptionSelector({
 
   return (
     <View style={styles.optionBlock}>
-      <AppText variant="caption" weight="bold">{label}</AppText>
+      <AppText variant="captionStrong" >{label}</AppText>
       <Pressable
         onPress={() => { if (values.length > 1) setOpen(true); }}
         accessibilityRole="button"
@@ -116,7 +116,7 @@ function OptionSelector({
             ]}
           >
             <View style={[styles.optionHeaderRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-              <AppText variant="title" weight="bold">{label}</AppText>
+              <AppText variant="h3" >{label}</AppText>
               <Pressable
                 onPress={() => setOpen(false)}
                 accessibilityRole="button"
@@ -151,9 +151,8 @@ function OptionSelector({
                       },
                     ]}
                   >
-                    <AppText
+                    <AppText variant="bodyStrong"
                       style={[styles.selectorValue, unavailable ? styles.unavailableOption : null]}
-                      weight={selected ? 'bold' : 'regular'}
                     >
                       {option}
                     </AppText>
@@ -199,7 +198,7 @@ function ColorSelector({
     >
       <AppText variant="caption">
         {`${t('lens.product.color')}: `}
-        <AppText variant="caption" weight="bold">{effective || t('lens.product.chooseColorShort')}</AppText>
+        <AppText variant="captionStrong" >{effective || t('lens.product.chooseColorShort')}</AppText>
       </AppText>
       <ScrollView
         horizontal
@@ -239,7 +238,7 @@ function ColorSelector({
               {media.length > 0 ? (
                 <AppImage uri={media[0]} fallbackUris={media.slice(1)} contentFit="contain" style={styles.colorImage} decorative />
               ) : null}
-              <AppText variant="caption" weight={selected ? 'bold' : 'regular'} align="center" numberOfLines={1}>
+              <AppText variant="captionStrong" align="center" numberOfLines={1}>
                 {color}
               </AppText>
             </Pressable>
@@ -495,7 +494,7 @@ function FactAccordion({
       >
         <View style={[styles.accordionHeading, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
           <Ionicons name={icon} size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
-          <AppText variant="body" weight="semibold">{title}</AppText>
+          <AppText variant="bodyStrong" >{title}</AppText>
         </View>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
       </Pressable>
@@ -522,7 +521,7 @@ function FactAccordion({
                   {row.map((fact, column) => (
                     <View key={`${fact.label}-${fact.value}`} style={styles.factCell} testID={`lens-fact-cell-${rowIndex}-${column}`}>
                       <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{fact.label}</AppText>
-                      <AppText weight="semibold">{fact.value}</AppText>
+                      <AppText variant="bodyStrong" >{fact.value}</AppText>
                     </View>
                   ))}
                   {row.length === 1 ? <View style={styles.factCell} /> : null}
@@ -954,7 +953,7 @@ export function LensProductView({
           </Animated.View>
         </Pressable>
         <Animated.View pointerEvents="none" style={[styles.collapsedTitle, { opacity: chromeOpacity }]}>
-          <AppText weight="bold" numberOfLines={1}>{candidate.title}</AppText>
+          <AppText variant="bodyStrong" numberOfLines={1}>{candidate.title}</AppText>
         </Animated.View>
         <Pressable
           onPress={() => router.push('/panier')}
@@ -971,9 +970,9 @@ export function LensProductView({
           testID="lens-header-cart"
         >
           <Ionicons name="bag-handle-outline" size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
-          <AppText weight="bold" style={styles.cartCountWhite}>{cartUnits}</AppText>
+          <AppText variant="bodyStrong" style={styles.cartCountWhite}>{cartUnits}</AppText>
           {deadline ? (
-            <AppText variant="caption" weight="bold" style={styles.cartCountdownWhite}>
+            <AppText variant="captionStrong" style={styles.cartCountdownWhite}>
               {countdownExpired ? t('lens.cart.expiredShort') : countdown}
             </AppText>
           ) : null}
@@ -984,9 +983,9 @@ export function LensProductView({
             testID="lens-header-cart-ink"
           >
             <Ionicons name="bag-handle-outline" size={theme.iconSize.md} color={LENS_COLORS.black} accessibilityElementsHidden />
-            <AppText weight="bold" style={styles.cartCount}>{cartUnits}</AppText>
+            <AppText variant="bodyStrong" style={styles.cartCount}>{cartUnits}</AppText>
             {deadline ? (
-              <AppText variant="caption" weight="bold" style={{ color: countdownExpired ? LENS_COLORS.sale : LENS_COLORS.black }}>
+              <AppText variant="captionStrong" style={{ color: countdownExpired ? LENS_COLORS.sale : LENS_COLORS.black }}>
                 {countdownExpired ? t('lens.cart.expiredShort') : countdown}
               </AppText>
             ) : null}
@@ -1070,7 +1069,7 @@ export function LensProductView({
               theme.isRTL ? styles.promoBadgeRTL : styles.promoBadgeLTR,
               { borderRadius: theme.radius.full },
             ]}>
-              <AppText variant="caption" weight="bold" style={styles.promoText}>{candidate.promo.label || t('lens.promo')}</AppText>
+              <AppText variant="captionStrong" style={styles.promoText}>{candidate.promo.label || t('lens.promo')}</AppText>
             </View>
           ) : null}
           <View style={[
@@ -1078,7 +1077,7 @@ export function LensProductView({
             theme.isRTL ? styles.counterRTL : styles.counterLTR,
             { borderRadius: theme.radius.full },
           ]}>
-            <AppText variant="caption" weight="bold" style={styles.counterText}>{`${page + 1}/${gallery.length}`}</AppText>
+            <AppText variant="captionStrong" style={styles.counterText}>{`${page + 1}/${gallery.length}`}</AppText>
           </View>
         </View>
 
@@ -1104,12 +1103,12 @@ export function LensProductView({
               <AppText variant="caption" color={theme.colors.muted}>{candidate.modelInfo}</AppText>
             </View>
           ) : null}
-          {candidate.brand ? <AppText variant="label" weight="bold" style={styles.brand}>{candidate.brand}</AppText> : null}
-          <AppText variant="lead" weight={candidate.brand ? 'regular' : 'bold'} style={styles.productTitle}>{candidate.title}</AppText>
+          {candidate.brand ? <AppText variant="label" style={styles.brand}>{candidate.brand}</AppText> : null}
+          <AppText variant="h3" style={styles.productTitle}>{candidate.title}</AppText>
           {candidate.ratingKind === 'merchant' && candidate.rating != null ? (
             <View style={[styles.ratingRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="star" size={theme.iconSize.xs} color={theme.colors.ink} accessibilityElementsHidden />
-              <AppText weight="bold">{candidate.rating.toFixed(1)}</AppText>
+              <AppText variant="bodyStrong" >{candidate.rating.toFixed(1)}</AppText>
               {candidate.ratingCount ? <AppText variant="caption" color={theme.colors.muted}>{`(${candidate.ratingCount})`}</AppText> : null}
             </View>
           ) : null}
@@ -1126,21 +1125,21 @@ export function LensProductView({
               propre compte à rebours d'attache de prix (qui reste en en-tête). */}
           {candidate.promoCountdown ? (
             <View style={[styles.merchantLine, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} testID="lens-merchant-countdown">
-              <AppText variant="caption" weight="bold">{t('lens.product.offerEnds')}</AppText>
-              <AppText variant="caption" weight="bold">{candidate.promoCountdown}</AppText>
+              <AppText variant="captionStrong" >{t('lens.product.offerEnds')}</AppText>
+              <AppText variant="captionStrong" >{candidate.promoCountdown}</AppText>
               <AppText variant="caption" color={theme.colors.muted}>{t('lens.product.merchantSays')}</AppText>
             </View>
           ) : null}
           {candidate.deliveryEstimate ? (
             <View style={[styles.merchantLine, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} testID="lens-merchant-delivery">
-              <AppText variant="caption" weight="bold">{t('lens.product.merchantDelivery')}</AppText>
-              <AppText variant="caption" weight="semibold">{candidate.deliveryEstimate}</AppText>
+              <AppText variant="captionStrong" >{t('lens.product.merchantDelivery')}</AppText>
+              <AppText variant="captionStrong" >{candidate.deliveryEstimate}</AppText>
             </View>
           ) : null}
           {candidate.returnsPolicy ? (
             <View style={[styles.merchantLine, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} testID="lens-merchant-returns">
-              <AppText variant="caption" weight="bold">{t('lens.product.merchantReturns')}</AppText>
-              <AppText variant="caption" weight="semibold">{candidate.returnsPolicy}</AppText>
+              <AppText variant="captionStrong" >{t('lens.product.merchantReturns')}</AppText>
+              <AppText variant="captionStrong" >{candidate.returnsPolicy}</AppText>
             </View>
           ) : null}
           {favoriteNote ? (
@@ -1172,7 +1171,7 @@ export function LensProductView({
                   testID="lens-open-size-guide"
                 >
                   <Ionicons name="help-circle-outline" size={theme.iconSize.xs} color={theme.colors.ink} style={styles.sizeGuideIcon} accessibilityElementsHidden />
-                  <AppText variant="caption" weight="bold" style={styles.sizeGuideText}>{t('lens.product.sizeGuide')}</AppText>
+                  <AppText variant="captionStrong" style={styles.sizeGuideText}>{t('lens.product.sizeGuide')}</AppText>
                 </Pressable>
               ) : null}
             />
@@ -1308,7 +1307,7 @@ export function LensProductView({
             <View style={[styles.confirmationHeaderRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
               <View style={[styles.confirmationTitleInline, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
                 <Ionicons name="checkmark" size={theme.iconSize.sm} color={theme.status.success.fg} accessibilityElementsHidden />
-                <AppText variant="body" weight="bold" accessibilityRole="header">
+                <AppText variant="bodyStrong" accessibilityRole="header">
                   {t('lens.cart.addedTitle')}
                 </AppText>
               </View>
@@ -1334,7 +1333,7 @@ export function LensProductView({
                 />
               ) : null}
               <View style={styles.confirmationProductBody}>
-                <AppText variant="label" weight="bold" numberOfLines={1}>
+                <AppText variant="label" numberOfLines={1}>
                   {candidate.brand || candidate.source || 'ZAYROVI'}
                 </AppText>
                 <AppText variant="label" color={theme.colors.ink} numberOfLines={1}>
@@ -1360,7 +1359,7 @@ export function LensProductView({
             {deadline ? (
               <View style={[styles.confirmationTimer, { borderColor: theme.colors.line }]}>
                 <Ionicons name="time-outline" size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
-                <AppText variant="caption" weight="bold" style={{ color: theme.colors.ink }}>
+                <AppText variant="captionStrong" style={{ color: theme.colors.ink }}>
                   {countdownExpired ? t('lens.cart.expired') : t('lens.cart.validFor', { time: countdown })}
                 </AppText>
               </View>
@@ -1378,7 +1377,7 @@ export function LensProductView({
               </AppText>
             </View>
             <Pressable onPress={() => setConfirmationOpen(false)} accessibilityRole="button" style={styles.continueShopping}>
-              <AppText variant="caption" weight="semibold" align="center" color={theme.colors.muted}>
+              <AppText variant="captionStrong" align="center" color={theme.colors.muted}>
                 {t('lens.cart.continue')}
               </AppText>
             </Pressable>

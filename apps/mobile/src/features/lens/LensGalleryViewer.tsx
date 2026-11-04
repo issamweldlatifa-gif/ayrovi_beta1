@@ -109,7 +109,7 @@ export function LensGalleryViewer({
           </Pressable>
           {media.length > 1 ? (
             <View style={styles.counter}>
-              <AppText variant="caption" weight="bold" style={styles.counterText}>{`${page + 1}/${media.length}`}</AppText>
+              <AppText variant="captionStrong" style={styles.counterText}>{`${page + 1}/${media.length}`}</AppText>
             </View>
           ) : null}
         </View>

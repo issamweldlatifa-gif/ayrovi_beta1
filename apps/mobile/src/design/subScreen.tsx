@@ -95,7 +95,7 @@ export function SubScreen({
           />
         </Pressable>
         <View style={styles.headerText}>
-          <AppText variant="title">{title}</AppText>
+          <AppText variant="h2">{title}</AppText>
           {subtitle ? <AppText variant="caption" color={theme.colors.muted}>{subtitle}</AppText> : null}
         </View>
       </View>

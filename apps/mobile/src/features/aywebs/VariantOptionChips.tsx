@@ -46,7 +46,7 @@ export function VariantOptionChips({
   const theme = useTheme();
   return (
     <View style={styles.group}>
-      <AppText variant="label" weight="bold">{label}</AppText>
+      <AppText variant="label" >{label}</AppText>
       <ScrollView horizontal={kind === 'color'} showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.options, kind === 'color' && styles.colorOptions, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} testID="aywebs-variant-options-scroll">
         {options.map((option, index) => (
           <Option
@@ -126,7 +126,7 @@ function Option({ kind, label, option, index, active, onSelect }: {
             },
           ]}
         >
-          <AppText variant="label" weight={active ? 'bold' : 'regular'}>{option.value}</AppText>
+          <AppText variant="label" >{option.value}</AppText>
           {active ? (
             <Ionicons
               testID={`aywebs-variant-selected-${index}`}
@@ -190,7 +190,7 @@ function Swatch({ option, index, failed, onFailed }: {
       testID={`aywebs-color-swatch-${index}`}
       style={[styles.swatch, styles.neutralSwatch, { backgroundColor: theme.colors.shimmer }]}
     >
-      <AppText variant="caption" weight="bold" color={theme.colors.muted}>
+      <AppText variant="captionStrong" color={theme.colors.muted}>
         {option.value.trim().slice(0, 1).toUpperCase()}
       </AppText>
     </View>

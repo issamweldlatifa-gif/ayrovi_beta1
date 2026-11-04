@@ -175,10 +175,10 @@ export default function ProfileScreen() {
         <AppText variant="caption" color={theme.colors.muted}>{t('profile.emailHint')}</AppText>
         <ToggleRow label={t('auth.marketing')} value={shownMarketing} onChange={setMarketing} disabled={busy} />
         {failure ? (
-          <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
+          <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
         ) : null}
         {saved ? (
-          <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.success.fg}>
+          <AppText accessibilityRole="alert" variant="label" color={theme.status.success.fg}>
             {t('profile.saved')}
           </AppText>
         ) : null}

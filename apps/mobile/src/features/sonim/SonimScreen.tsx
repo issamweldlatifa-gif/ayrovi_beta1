@@ -502,7 +502,7 @@ export function SonimScreen() {
           <View style={[styles.topBar, { flexDirection: rowDir }]}>
             <View style={[styles.brandBadge, { flexDirection: rowDir }]}>
               <TabSonimIcon size={theme.iconSize.sm} color={theme.colors.ink} focused />
-              <AppText variant="label" weight="bold">
+              <AppText variant="label" >
                 {t('tabs.sonim')}
               </AppText>
             </View>
@@ -522,7 +522,7 @@ export function SonimScreen() {
               testID="sonim-new-chat"
             >
               <Ionicons name="refresh-outline" size={theme.iconSize.xs} color={theme.colors.ink} accessibilityElementsHidden />
-              <AppText variant="caption" weight="semibold">
+              <AppText variant="captionStrong" >
                 {t('sonim.newChat')}
               </AppText>
             </Pressable>
@@ -541,7 +541,7 @@ export function SonimScreen() {
               },
             ]}
           >
-            <AppText variant="caption" weight="semibold" color={theme.status.warning.fg}>
+            <AppText variant="captionStrong" color={theme.status.warning.fg}>
               {t('sonim.unavailable')}
             </AppText>
           </View>
@@ -562,10 +562,10 @@ export function SonimScreen() {
               <TabSonimIcon size={theme.iconSize.lg} color={theme.colors.ink} focused />
             </View>
 
-            <AppText variant="title" weight="semibold" align="center">
+            <AppText variant="h3" align="center">
               {firstName ? t('sonim.greetingNamed', { name: firstName }) : t('sonim.greeting')}
             </AppText>
-            <AppText variant="lead" weight="bold" align="center">
+            <AppText variant="subtitle" align="center">
               {t('sonim.subtitle')}
             </AppText>
             <AppText variant="body" color={theme.colors.muted} align="center" style={styles.welcomeBody}>
@@ -602,7 +602,7 @@ export function SonimScreen() {
                   >
                     <Ionicons name={action.icon} size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
                   </View>
-                  <AppText variant="label" weight="bold">
+                  <AppText variant="label" >
                     {action.title}
                   </AppText>
                   <AppText variant="caption" color={theme.colors.muted}>
@@ -674,7 +674,7 @@ export function SonimScreen() {
                   >
                     <View style={[styles.assistantHead, { flexDirection: rowDir }]}>
                       <TabSonimIcon size={theme.iconSize.xs} color={theme.colors.ink} focused />
-                      <AppText variant="caption" weight="bold">
+                      <AppText variant="captionStrong" >
                         {t('tabs.sonim')}
                       </AppText>
                     </View>
@@ -706,7 +706,7 @@ export function SonimScreen() {
                           },
                         ]}
                       >
-                        <AppText variant="caption" weight="semibold" color={theme.status.danger.fg}>
+                        <AppText variant="captionStrong" color={theme.status.danger.fg}>
                           {message.errorText}
                         </AppText>
                         {isLastAssistant && !isStreaming && messages[index - 1]?.role === 'user' && !draft && attachments.length === 0 ? (
@@ -716,7 +716,7 @@ export function SonimScreen() {
                             setDraft(previous.text);
                             setAttachments(previous.attachments ?? []);
                           }} style={styles.retryAction}>
-                            <AppText variant="caption" weight="bold" color={theme.status.danger.fg}>{t('sonim.retryEdit')}</AppText>
+                            <AppText variant="captionStrong" color={theme.status.danger.fg}>{t('sonim.retryEdit')}</AppText>
                           </Pressable>
                         ) : null}
                       </View>

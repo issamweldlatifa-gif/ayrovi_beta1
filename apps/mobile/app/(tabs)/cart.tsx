@@ -252,8 +252,7 @@ export default function AyroviCartScreen() {
                 ]}
               >
                 <AppText
-                  variant="caption"
-                  weight="semibold"
+                  variant="captionStrong"
                   color={quoteExpired ? theme.status.danger.fg : theme.colors.ink}
                 >
                   {quoteExpired ? t('cart.quoteExpired') : t('cart.quoteCountdown', { time: quoteCountdown })}

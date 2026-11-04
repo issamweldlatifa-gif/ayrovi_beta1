@@ -76,8 +76,7 @@ export function ChoiceField({
       >
         <View style={styles.controlText}>
           <AppText
-            variant="body"
-            weight="semibold"
+            variant="bodyStrong"
             color={value ? theme.colors.ink : theme.colors.muted}
             numberOfLines={1}
           >
@@ -96,7 +95,7 @@ export function ChoiceField({
           <Pressable style={styles.backdrop} accessibilityRole="button" accessibilityLabel={t('sheet.close')} onPress={onToggle} />
           <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
             <View {...swipe.panHandlers} style={[styles.sheetHeader, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-              <AppText variant="label" weight="bold" style={styles.optionLabel}>{label}</AppText>
+              <AppText variant="label" style={styles.optionLabel}>{label}</AppText>
               <Pressable accessibilityRole="button" accessibilityLabel={t('sheet.close')} onPress={onToggle} hitSlop={8} style={styles.close}>
                 <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} />
               </Pressable>
@@ -110,7 +109,7 @@ export function ChoiceField({
                     accessibilityState={{ selected: active, disabled: unavailable }} onPress={() => onSelect(option.value)}
                     testID={testID ? `${testID}-${option.value}` : undefined}
                     style={[styles.option, { flexDirection: rowDirectionFor(theme.isRTL), borderTopColor: theme.colors.line }]}>
-                    <AppText variant="body" weight="semibold" color={unavailable ? theme.colors.muted : theme.colors.ink} style={styles.optionLabel}>{option.value}</AppText>
+                    <AppText variant="bodyStrong" color={unavailable ? theme.colors.muted : theme.colors.ink} style={styles.optionLabel}>{option.value}</AppText>
                     {option.price ? <AppText variant="label" color={unavailable ? theme.colors.muted : theme.status.danger.fg}>
                       {option.priceFrom ? `${t('aywebs.priceFrom')} ${option.price}` : option.price}
                     </AppText> : null}

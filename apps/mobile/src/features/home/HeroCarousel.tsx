@@ -35,7 +35,7 @@ import {
   parseHeroCarouselSettings, trackHeroEvent,
   type HeroCarouselSettings, type HeroSlide,
 } from '@/api/public';
-import { heroEdgeColors, pickHeroText, withAlpha } from './heroPalette';
+import { heroEdgeColors, mixHex, pickHeroText, withAlpha } from './heroPalette';
 import { isDemoSlide } from './heroDemo';
 import {
   backdropLayerRange, CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
@@ -43,7 +43,7 @@ import {
 } from './heroCarouselLogic';
 
 /** Zone de fondu sous les cartes : relie le fond du héros au fond blanc de la page. */
-const SECTION_BOTTOM_GAP = 48;
+const SECTION_BOTTOM_GAP = 64;
 /** Marge au-dessus du bas de l'image pour les pastilles (posées SUR la photo). */
 
 /* ── États du composant parent ───────────────────────────────────────────── */
@@ -229,7 +229,15 @@ function HeroCarouselView({
             ]}
           >
             <LinearGradient
-              colors={[edge.top, edge.top, edge.bottom, theme.colors.canvas]}
+              // Plusieurs étapes et un fondu long : la teinte de la photo
+              // s'éclaircit progressivement, sans bande colorée avant le blanc.
+              colors={[
+                edge.top,
+                edge.top,
+                mixHex(edge.bottom, theme.colors.canvas, 0.32),
+                mixHex(edge.bottom, theme.colors.canvas, 0.74),
+                theme.colors.canvas,
+              ]}
               locations={EDGE_LOCATIONS}
               style={StyleSheet.absoluteFill}
               testID={`hero-carousel-backdrop-${index}`}
@@ -325,7 +333,7 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
         {title || subtitle ? (
           <View style={styles.cardCopy} pointerEvents="none">
             {title ? (
-              <AppText variant="title" weight="semibold" color={theme.colors.onMedia} numberOfLines={2}>
+              <AppText variant="h3" color={theme.colors.onMedia} numberOfLines={2}>
                 {title}
               </AppText>
             ) : null}
@@ -362,5 +370,5 @@ const styles = StyleSheet.create({
  * Bandes de la couche de fond : le haut reprend le bord haut de la photo,
  * puis son bord bas, avant un fondu vers le fond de page en bas de la section.
  */
-const EDGE_LOCATIONS = [0, 0.18, 0.82, 1] as const;
+const EDGE_LOCATIONS = [0, 0.18, 0.55, 0.82, 1] as const;
 

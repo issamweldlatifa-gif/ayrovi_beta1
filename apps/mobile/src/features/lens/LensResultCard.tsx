@@ -81,7 +81,7 @@ function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Pr
           )}
           {promo ? (
             <View style={styles.promoBadge}>
-              <AppText variant="caption" weight="bold" numberOfLines={1} style={styles.promoText}>{promo}</AppText>
+              <AppText variant="captionStrong" numberOfLines={1} style={styles.promoText}>{promo}</AppText>
             </View>
           ) : null}
           <Pressable
@@ -107,14 +107,14 @@ function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Pr
 
         <View style={styles.copy}>
           {brand ? (
-            <AppText variant="caption" weight="bold" numberOfLines={1} style={styles.brand}>{brand}</AppText>
+            <AppText variant="captionStrong" numberOfLines={1} style={styles.brand}>{brand}</AppText>
           ) : null}
           <AppText variant="label" numberOfLines={2} style={styles.title}>{title}</AppText>
           <LensPriceBlock candidate={candidate} compact onWhite />
           {candidate.ratingKind === 'merchant' && candidate.rating != null ? (
             <View style={[styles.rating, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="star" size={theme.iconSize.xs} color={LENS_COLORS.star} accessibilityElementsHidden />
-              <AppText variant="caption" weight="semibold" style={styles.ratingText}>{candidate.rating.toFixed(1)}</AppText>
+              <AppText variant="captionStrong" style={styles.ratingText}>{candidate.rating.toFixed(1)}</AppText>
               {candidate.ratingCount ? <AppText variant="caption" color={LENS_COLORS.resultMuted}>{`(${candidate.ratingCount})`}</AppText> : null}
             </View>
           ) : null}

@@ -21,7 +21,7 @@ export function SheetHeader({ title, subtitle, onClose }: SheetHeaderProps) {
   return (
     <View style={[styles.header, { borderBottomColor: theme.colors.divider }]}>
       <View style={styles.titles}>
-        <AppText variant="lead" weight="bold">{title}</AppText>
+        <AppText variant="h3" >{title}</AppText>
         {subtitle ? <AppText variant="caption" color={theme.colors.muted}>{subtitle}</AppText> : null}
       </View>
       <Pressable

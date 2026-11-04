@@ -18,7 +18,7 @@ export function LensHelpView() {
 
   return (
     <View style={styles.wrap} testID="lens-help">
-      <AppText variant="title" align="center">{t('lens.help.title')}</AppText>
+      <AppText variant="h3" align="center">{t('lens.help.title')}</AppText>
       <AppText color={theme.colors.muted} align="center">{t('lens.help.subtitle')}</AppText>
       <View style={styles.tips}>
         {TIPS.map(({ key, icon }) => (

@@ -54,7 +54,7 @@ export function LensSearchBar({
         </View>
       ) : null}
       <View style={styles.label} testID="lens-search-bar-label">
-        <AppText variant="caption" weight="semibold" color={theme.colors.ink} numberOfLines={1}>
+        <AppText variant="captionStrong" color={theme.colors.ink} numberOfLines={1}>
           {label}
         </AppText>
       </View>

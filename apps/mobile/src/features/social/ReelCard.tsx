@@ -130,7 +130,7 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
    */
   const body = (bottom?: number) => (
     <View style={[fill ? styles.fillBody : styles.body, fill && bottom !== undefined ? { bottom } : null]}>
-      {reel.title ? <AppText variant="label" weight="bold" color={ink} numberOfLines={1}>{reel.title}</AppText> : null}
+      {reel.title ? <AppText variant="label" color={ink} numberOfLines={1}>{reel.title}</AppText> : null}
       {reel.description ? (
         <AppText variant="caption" color={muted} numberOfLines={2}>{reel.description}</AppText>
       ) : null}

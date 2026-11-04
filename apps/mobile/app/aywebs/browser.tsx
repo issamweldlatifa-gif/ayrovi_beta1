@@ -610,7 +610,7 @@ export default function AyWebsBrowserScreen() {
           />
         </Pressable>
         <View style={styles.titleBox}>
-          <AppText variant="lead" weight="semibold" numberOfLines={1}>{storeName || t('aywebs.browserTitle')}</AppText>
+          <AppText variant="label" numberOfLines={1}>{storeName || t('aywebs.browserTitle')}</AppText>
         </View>
         <Pressable
           testID="aywebs-ask-sonim"
@@ -647,7 +647,7 @@ export default function AyWebsBrowserScreen() {
                   theme.isRTL ? styles.cartBadgeRTL : styles.cartBadgeLTR,
                 ]}
               >
-                <AppText variant="caption" weight="bold" color={theme.colors.canvas}>
+                <AppText variant="captionStrong" color={theme.colors.canvas}>
                   {cartUnits > 99 ? '99+' : String(cartUnits)}
                 </AppText>
               </View>

@@ -19,7 +19,7 @@ export function LensRulesView() {
   const t = useT();
   return (
     <View style={styles.wrap} testID="lens-rules">
-      <AppText variant="title" align="center">{t('lens.menu.rules')}</AppText>
+      <AppText variant="h3" align="center">{t('lens.menu.rules')}</AppText>
       <AppText color={theme.colors.muted} align="center">{t('lens.rules.intro')}</AppText>
       <View style={styles.list}>
         {RULES.map((key) => (

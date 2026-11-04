@@ -1080,7 +1080,7 @@ export default function LensScreen() {
               </Pressable>
             ))}
             <View style={[styles.thumbCount, { backgroundColor: veil(0.65) }]}>
-              <AppText variant="caption" weight="bold" color={LENS_COLORS.white}>{`${session.index + 1}/${session.photos.length}`}</AppText>
+              <AppText variant="captionStrong" color={LENS_COLORS.white}>{`${session.index + 1}/${session.photos.length}`}</AppText>
             </View>
           </View>
         ) : null}
@@ -1098,7 +1098,7 @@ export default function LensScreen() {
           {sessionPhoto ? (
             <LensSearchBar uri={sessionPhoto.uri} label={barLabel} onCancel={cancelSearch} busy={stage.kind === 'busy'} />
           ) : (
-            <AppText variant="title" weight="semibold" color={LENS_COLORS.white} align="center" style={styles.resultTitle}>{t('lens.title')}</AppText>
+            <AppText variant="h3" color={LENS_COLORS.white} align="center" style={styles.resultTitle}>{t('lens.title')}</AppText>
           )}
           <View style={styles.headerSpacer} />
         </View>
@@ -1146,7 +1146,7 @@ export default function LensScreen() {
               <View style={styles.errorIcon}>
                 <Ionicons name="camera-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
               </View>
-              <AppText variant="title" weight="bold" align="center">{t(errorCopy.title)}</AppText>
+              <AppText variant="h3" align="center">{t(errorCopy.title)}</AppText>
               <AppText color={theme.colors.muted} align="center">{t(errorCopy.body)}</AppText>
               {lastJobRef.current ? <Button label={t('common.retry')} onPress={retry} block /> : null}
               {deviceError ? <Button label={t('lens.pickGallery')} onPress={onGallery} block /> : null}
@@ -1227,7 +1227,7 @@ export default function LensScreen() {
             ) : null}
           </View>
           {/* « Z Lens » écrit en texte (pas le logo) — spécification du client. */}
-          <AppText variant="title" weight="semibold" color={LENS_COLORS.white} align="center" style={styles.cameraTitle}>{t('lens.title')}</AppText>
+          <AppText variant="h3" color={LENS_COLORS.white} align="center" style={styles.cameraTitle}>{t('lens.title')}</AppText>
           <View style={[styles.headerSide, { flexDirection: theme.isRTL ? 'row' : 'row-reverse' }]}>
             <Pressable onPress={() => setMenuOpen(true)} accessibilityRole="button" accessibilityLabel={t('lens.menu.open')} style={styles.overlayButton} hitSlop={HIT_SLOP} testID="lens-open-menu">
               <Ionicons name="ellipsis-vertical-outline" size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
@@ -1239,7 +1239,7 @@ export default function LensScreen() {
           <View style={styles.permissionCenter}>
             <View style={[styles.permissionCard, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
               <Ionicons name="camera-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
-              <AppText variant="title" weight="bold" align="center">{t('lens.permissionTitle')}</AppText>
+              <AppText variant="h3" align="center">{t('lens.permissionTitle')}</AppText>
               <AppText color={theme.colors.muted} align="center">{t('lens.permissionText')}</AppText>
               {permission?.canAskAgain !== false ? (
                 <Button label={t('lens.permissionButton')} onPress={() => { void requestPermission().catch(() => {}); }} block />
@@ -1256,7 +1256,7 @@ export default function LensScreen() {
             <View style={[styles.offlineIcon, { backgroundColor: frost(0.1) }]}>
               <Ionicons name={mode === 'link' ? 'link-outline' : 'search-outline'} size={theme.iconSize.lg} color={LENS_COLORS.white} accessibilityElementsHidden />
             </View>
-            <AppText variant="title" weight="bold" color={LENS_COLORS.white} align="center">
+            <AppText variant="h3" color={LENS_COLORS.white} align="center">
               {mode === 'link' ? t('lens.link.title') : t('lens.text.title')}
             </AppText>
             <AppText color={frost(0.75)} align="center">{mode === 'link' ? t('lens.link.text') : t('lens.text.text')}</AppText>
@@ -1266,7 +1266,7 @@ export default function LensScreen() {
         {mode === 'live' && showCamera ? (
           <View style={[styles.livePill, { bottom: panelHeight + 12, backgroundColor: veil(0.62) }]} pointerEvents="none" accessibilityLiveRegion="polite" testID="lens-live-status">
             <View style={[styles.livePillDot, { backgroundColor: live.status === 'detected' ? LENS_COLORS.activeSoft : frost(0.6) }]} />
-            <AppText variant="caption" weight="semibold" color={LENS_COLORS.white} numberOfLines={1}>{livePill}</AppText>
+            <AppText variant="captionStrong" color={LENS_COLORS.white} numberOfLines={1}>{livePill}</AppText>
           </View>
         ) : null}
 
@@ -1284,7 +1284,7 @@ export default function LensScreen() {
                 <View style={styles.sideCircle}>
                   <Ionicons name="images-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
                 </View>
-                <AppText variant="caption" weight="semibold" color={LENS_COLORS.white} style={styles.overCamera}>{t('lens.gallery')}</AppText>
+                <AppText variant="captionStrong" color={LENS_COLORS.white} style={styles.overCamera}>{t('lens.gallery')}</AppText>
               </Pressable>
               <Pressable
                 onPress={() => { void onPhoto(); }}
@@ -1303,7 +1303,7 @@ export default function LensScreen() {
                 <View style={styles.sideCircle}>
                   <Ionicons name="pricetag-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
                 </View>
-                <AppText variant="caption" weight="semibold" color={LENS_COLORS.white} style={styles.overCamera}>OCEREX</AppText>
+                <AppText variant="captionStrong" color={LENS_COLORS.white} style={styles.overCamera}>OCEREX</AppText>
               </Pressable>
             </View>
           ) : null}
@@ -1312,7 +1312,7 @@ export default function LensScreen() {
             <View style={[styles.codeHint, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
               <Ionicons name="qr-code-outline" size={theme.iconSize.md} color={LENS_COLORS.white} accessibilityElementsHidden />
               <View style={styles.codeHintCopy}>
-                <AppText weight="bold" color={LENS_COLORS.white}>{t('lens.codeHint')}</AppText>
+                <AppText variant="bodyStrong" color={LENS_COLORS.white}>{t('lens.codeHint')}</AppText>
                 <AppText variant="caption" color={frost(0.75)}>{t('lens.codeAuto')}</AppText>
               </View>
             </View>
@@ -1370,7 +1370,7 @@ export default function LensScreen() {
                   testID={`lens-mode-${value}`}
                 >
                   <Ionicons name={icon} size={theme.iconSize.sm} color={active ? LENS_COLORS.black : LENS_COLORS.white} accessibilityElementsHidden />
-                  <AppText variant="caption" weight="semibold" color={active ? LENS_COLORS.black : LENS_COLORS.white} align="center" numberOfLines={1}>{t(label)}</AppText>
+                  <AppText variant="captionStrong" color={active ? LENS_COLORS.black : LENS_COLORS.white} align="center" numberOfLines={1}>{t(label)}</AppText>
                 </Pressable>
               );
             })}

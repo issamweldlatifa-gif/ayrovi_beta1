@@ -123,7 +123,7 @@
   text-overflow: ellipsis;
 }
 
-.s-card__price { margin-top: 3px; font-size: 14px; line-height: 20px; font-weight: 650; font-stretch: var(--ay-font-body-width); }
+.s-card__price { margin-top: 3px; font-size: var(--ay-type-price-size); line-height: var(--ay-type-price-line-height); font-weight: var(--ay-type-price-weight); font-stretch: var(--ay-type-price-width); font-variant-numeric: tabular-nums; }
 .s-card__price[data-deal="true"] { color: var(--s-danger); }
 .s-card__off { font-size: 0.75rem; line-height: 1rem; font-weight: 700; color: var(--s-danger); }
 .s-card__stock { justify-self: start; align-self: flex-start; margin-top: 4px; min-height: 36px; padding: 0 12px; border: 1px solid currentColor; border-radius: 999px; background: transparent; font: inherit; font-size: 0.8125rem; font-weight: 700; cursor: pointer; }

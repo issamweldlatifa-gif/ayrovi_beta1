@@ -310,7 +310,7 @@ export default function CheckoutScreen() {
                   minHeight: theme.geometry.minTarget,
                 }]}
               >
-                <AppText variant="label" weight="bold">{address.label || address.recipientName}</AppText>
+                <AppText variant="label" >{address.label || address.recipientName}</AppText>
                 <AppText variant="caption" color={theme.colors.muted}>
                   {[address.addressLine, address.city, address.governorate].filter(Boolean).join(' · ')}
                 </AppText>
@@ -408,7 +408,7 @@ export default function CheckoutScreen() {
                   opacity: choice.available ? 1 : 0.6,
                 }]}
               >
-                <AppText variant="label" weight="bold">{t(choice.labelKey as never)}</AppText>
+                <AppText variant="label" >{t(choice.labelKey as never)}</AppText>
                 <AppText variant="caption" color={choice.available ? theme.colors.muted : theme.status.danger.fg}>
                   {choice.available ? t(choice.hintKey as never) : t(choice.blockedKey as never)}
                 </AppText>

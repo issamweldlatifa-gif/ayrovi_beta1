@@ -32,7 +32,7 @@ function OrderRow({ order }: { order: RecentOrder }) {
   return (
     <View style={[styles.order, { borderTopColor: theme.colors.line }]}>
       <View style={styles.orderHead}>
-        <AppText variant="label" weight="bold">{order.orderNumber || order.id}</AppText>
+        <AppText variant="label" >{order.orderNumber || order.id}</AppText>
         <AppText variant="caption" color={theme.status.info.fg}>{order.status}</AppText>
       </View>
       <AppText variant="caption" color={theme.colors.muted}>
@@ -62,7 +62,7 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
         <View style={[styles.identity, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           <Ionicons name="person-circle-outline" size={theme.iconSize.xl} color={theme.colors.muted} accessibilityElementsHidden />
           <View style={styles.identityText}>
-            <AppText variant="lead" weight="bold">{shown?.displayName || '—'}</AppText>
+            <AppText variant="h3" >{shown?.displayName || '—'}</AppText>
             <AppText variant="caption" color={theme.colors.muted}>{shown?.email || shown?.phone || ''}</AppText>
             <AppText variant="caption" color={shown?.phoneVerified ? theme.status.success.fg : theme.colors.muted}>
               {shown?.phoneVerified ? t('account.phone.verified') : t('account.phone.unverified')}

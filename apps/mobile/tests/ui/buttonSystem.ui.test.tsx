@@ -27,6 +27,23 @@ function ThemeProbe({ onTheme }: { onTheme: (t: ReturnType<typeof useTheme>) => 
 }
 
 describe('système de boutons', () => {
+  it('uses the shared heading scale and locks heading/button weights to their roles', () => {
+    let theme: ReturnType<typeof useTheme> | null = null;
+    render(wrap(<ThemeProbe onTheme={(t) => { theme = t; }} />));
+    expect(theme!.text('display').fontSize).toBe(38);
+    expect(theme!.text('h1').fontSize).toBe(32);
+    expect(theme!.text('h2').fontSize).toBe(28);
+    expect(theme!.text('h3').fontSize).toBe(22);
+    expect(theme!.text('h1').fontFamily).toBe(theme!.text('h2').fontFamily);
+    expect(theme!.text('h2').fontFamily).toBe(theme!.text('h3').fontFamily);
+    expect(theme!.text('button').fontSize).toBe(14);
+    expect(theme!.text('button').fontFamily).toBe(theme!.font('semibold'));
+    expect(theme!.text('bodyStrong').fontSize).toBe(16);
+    expect(theme!.text('captionStrong').fontSize).toBe(12);
+    expect(theme!.text('bodyStrong').fontFamily).toBe(theme!.font('semibold'));
+    expect(theme!.text('price').fontVariant).toContain('tabular-nums');
+  });
+
   it('le bouton principal et le contour sont en pastille (radius.cta)', () => {
     let theme: ReturnType<typeof useTheme> | null = null;
     render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Button label="Découvrir" onPress={() => {}} tone="quiet" /></>));
@@ -36,6 +53,10 @@ describe('système de boutons', () => {
     expect(style.borderRadius).toBe(theme!.radius.cta);
     expect(style.borderWidth).toBe(BUTTON_OUTLINE_WIDTH);
     expect(style.borderColor).toBe(theme!.colors.ink);
+    const label = StyleSheet.flatten(screen.getByText('Découvrir').props.style);
+    expect(label.fontSize).toBe(theme!.text('button').fontSize);
+    expect(label.fontFamily).toBe(theme!.text('button').fontFamily);
+    expect(label.fontWeight).toBe('normal');
   });
 
   it('le CTA commerce est jaune, avec un libellé encre lisible', () => {

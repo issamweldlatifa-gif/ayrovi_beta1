@@ -68,7 +68,7 @@ export function ErrorBlock({ error, onRetry }: { error: unknown; onRetry?: () =>
         },
       ]}
     >
-      <AppText variant="label" weight="bold" color={theme.status.danger.fg} align="center">
+      <AppText variant="label" color={theme.status.danger.fg} align="center">
         {message[locale]}
       </AppText>
       {onRetry ? <RetryButton onPress={onRetry} /> : null}
@@ -102,7 +102,7 @@ export function OfflineBlock({ onRetry }: { onRetry?: () => void }) {
         color={theme.status.warning.fg}
         accessibilityElementsHidden
       />
-      <AppText variant="label" weight="bold" color={theme.status.warning.fg} align="center">
+      <AppText variant="label" color={theme.status.warning.fg} align="center">
         {t('offline.title')}
       </AppText>
       <AppText variant="caption" color={theme.colors.muted} align="center">

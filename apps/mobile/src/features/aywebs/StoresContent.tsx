@@ -272,7 +272,7 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
             testID={`aywebs-store-logo-${store.id}`}
           />
         ) : (
-          <AppText variant="display" weight="bold" color={theme.colors.muted}>{name.slice(0, 1)}</AppText>
+          <AppText variant="display" color={theme.colors.muted}>{name.slice(0, 1)}</AppText>
         )}
         <Pressable
           accessibilityRole="button"
@@ -297,7 +297,7 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
       </View>
 
       <View style={styles.cardBody}>
-        <AppText variant="label" weight="bold" numberOfLines={2}>{name}</AppText>
+        <AppText variant="label" numberOfLines={2}>{name}</AppText>
         {subtitle ? (
           <AppText variant="body" numberOfLines={3}>{subtitle}</AppText>
         ) : null}
@@ -314,7 +314,7 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
             style={[styles.visit, { flexDirection: rowDirectionFor(theme.isRTL) }]}
           >
             <Ionicons name="open-outline" size={theme.iconSize.xs} color={theme.colors.accentText} accessibilityElementsHidden />
-            <AppText variant="caption" weight="bold" color={theme.colors.accentText}>{t('aywebs.stores.visit')}</AppText>
+            <AppText variant="captionStrong" color={theme.colors.accentText}>{t('aywebs.stores.visit')}</AppText>
           </Pressable>
         ) : null}
       </View>

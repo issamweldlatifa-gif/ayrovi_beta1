@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme, webDirection, type FontWeightName, type TextRole } from './theme';
+import { useTheme, webDirection, type TextRole } from './theme';
 import { actionDirectionFor, responsiveMetricsFor, rowDirectionFor } from './layoutLogic';
 import { COMMERCE, veil } from './tokens.mobile';
 import { LoadingSpinner } from './LoadingSpinner';
@@ -21,8 +21,8 @@ import { useT } from '@/i18n';
 
 export interface AppTextProps {
   children: ReactNode;
+  /** Rôle sémantique depuis identity.json : aucune graisse libre à l'appel. */
   variant?: TextRole;
-  weight?: FontWeightName;
   color?: string;
   align?: 'auto' | 'center';
   numberOfLines?: number;
@@ -35,7 +35,7 @@ export interface AppTextProps {
 }
 
 export function AppText({
-  children, variant = 'body', weight, color, align = 'auto', numberOfLines, style, accessibilityRole,
+  children, variant = 'body', color, align = 'auto', numberOfLines, style, accessibilityRole,
   testID, accessibilityLiveRegion,
 }: AppTextProps) {
   const theme = useTheme();
@@ -46,7 +46,7 @@ export function AppText({
       testID={testID}
       numberOfLines={numberOfLines}
       style={[
-        theme.text(variant, weight),
+        theme.text(variant),
         { color: color ?? theme.colors.ink },
         theme.isRTL ? { textAlign: 'right' } : null,
         align === 'center' ? { textAlign: 'center' } : null,
@@ -85,7 +85,7 @@ export function Card({ children, title, hint, onLayout }: {
         },
       ]}
     >
-      {title ? <AppText variant="label" weight="semibold">{title}</AppText> : null}
+      {title ? <AppText variant="label" >{title}</AppText> : null}
       {hint ? (
         <AppText variant="caption" color={theme.colors.muted} style={styles.cardHint}>{hint}</AppText>
       ) : null}
@@ -137,7 +137,7 @@ export function SectionHeader({
       ]}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <AppText variant="label" weight="semibold" color={theme.colors.ink}>
+        <AppText variant="label" color={theme.colors.ink}>
           {title}
         </AppText>
         {hint ? (
@@ -168,8 +168,7 @@ export function KeyValue({ label, value }: { label: string; value: string }) {
     >
       <AppText variant="caption" color={theme.colors.muted}>{label}</AppText>
       <AppText
-        variant="caption"
-        weight="semibold"
+        variant="captionStrong"
         style={[styles.kvValue, { textAlign: theme.isRTL ? 'left' : 'right' }]}
       >
         {value}
@@ -215,7 +214,6 @@ export function Segmented<T extends string>({
             >
               <AppText
                 variant="label"
-                weight={active ? 'bold' : 'regular'}
                 color={active ? (theme.mode === 'dark' ? theme.colors.ink : theme.colors.onAccentSoft) : theme.colors.ink}
                 align="center"
               >
@@ -333,12 +331,12 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
         // Pictogramme (ex. logo Google) posé avant le libellé, dans le sens de lecture.
         <View style={[styles.leadingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           {lead}
-          <AppText variant="label" weight="semibold" color={labelColor}>
+          <AppText variant="button" color={labelColor}>
             {label}
           </AppText>
         </View>
       ) : (
-        <AppText variant="label" weight="semibold" color={labelColor}>
+        <AppText variant="button" color={labelColor}>
           {label}
         </AppText>
       )}
@@ -684,7 +682,7 @@ export function DrawerItem({
         accessibilityElementsHidden
       />
       <View style={{ flex: 1, gap: 2 }}>
-        <AppText variant="label" weight={active ? 'bold' : 'regular'} color={theme.colors.ink}>{label}</AppText>
+        <AppText variant="label" color={theme.colors.ink}>{label}</AppText>
         {hint ? <AppText variant="caption" color={theme.colors.muted}>{hint}</AppText> : null}
       </View>
       <Ionicons

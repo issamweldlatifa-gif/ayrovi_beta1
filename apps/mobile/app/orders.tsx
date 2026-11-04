@@ -62,7 +62,7 @@ export default function OrdersScreen() {
           />
         </Pressable>
         <View style={styles.headerText}>
-          <AppText variant="title">{t('orders.title')}</AppText>
+          <AppText variant="h2">{t('orders.title')}</AppText>
           <AppText variant="caption" color={theme.colors.muted}>{t('orders.subtitle')}</AppText>
         </View>
       </View>
@@ -101,7 +101,7 @@ export default function OrdersScreen() {
           >
             <Card>
               <View style={styles.row}>
-                <AppText variant="label" weight="bold" style={styles.orderNumber}>
+                <AppText variant="label" style={styles.orderNumber}>
                   {order.orderNumber || order.id}
                 </AppText>
                 <AppText variant="caption" color={theme.colors.ink}>

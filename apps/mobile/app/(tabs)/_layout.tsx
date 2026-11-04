@@ -57,7 +57,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: theme.colors.ink,
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarLabelStyle: {
-          ...theme.text('caption', 'semibold'),
+          ...theme.text('captionStrong'),
           marginTop: 0,
         },
         tabBarItemStyle: styles.tabItem,

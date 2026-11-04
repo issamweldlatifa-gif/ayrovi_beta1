@@ -134,7 +134,7 @@ export function FicheHeader({
 
         <Animated.Text
           numberOfLines={1}
-          style={[styles.headerTitle, { color: theme.colors.ink, opacity: solid, fontFamily: theme.font('semibold') }]}
+          style={[styles.headerTitle, { color: theme.colors.ink, opacity: solid, fontFamily: theme.font('medium') }]}
         >
           {title}
         </Animated.Text>
@@ -159,11 +159,11 @@ export function FicheHeader({
               ]}
             >
               {justAdded ? (
-                <AppText variant="label" weight="bold" color={fc.onAccent} numberOfLines={1}>
+                <AppText variant="label" color={fc.onAccent} numberOfLines={1}>
                   {t('product.addedPill')}
                 </AppText>
               ) : reservationCountdown ? (
-                <AppText variant="label" weight="semibold" color={fc.ink} numberOfLines={1}>
+                <AppText variant="label" color={fc.ink} numberOfLines={1}>
                   {reservationCountdown}
                 </AppText>
               ) : null}
@@ -182,7 +182,7 @@ export function FicheHeader({
                     theme.isRTL ? styles.cartPillBadgeRTL : styles.cartPillBadgeLTR,
                   ]}
                 >
-                  <AppText variant="caption" weight="bold" color={fc.onAccent}>
+                  <AppText variant="captionStrong" color={fc.onAccent}>
                     {badgeText}
                   </AppText>
                 </View>
@@ -323,12 +323,12 @@ export function FicheIdentity({
       <View style={styles.identityTop}>
         {/* Le filet fait exactement la largeur du mot : la boîte se rétrécit au texte. */}
         <View style={[styles.nameBox, { borderBottomColor: fc.nameUnderline }]}>
-          <AppText numberOfLines={2} style={[styles.name, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
+          <AppText variant="h3" numberOfLines={2} style={[styles.name, { color: theme.colors.ink }]}>
             {name}
           </AppText>
         </View>
         {price ? (
-          <AppText style={[styles.price, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>{price}</AppText>
+          <AppText variant="price" style={[styles.price, { color: theme.colors.ink }]}>{price}</AppText>
         ) : null}
       </View>
       {description ? (
@@ -364,7 +364,7 @@ export function ChoiceRow({
         <Ionicons name={icon} size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
       </View>
       <View style={styles.rowText}>
-        <AppText numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>
+        <AppText variant="label" numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink }]}>
           {label}
         </AppText>
         {value ? (
@@ -435,7 +435,8 @@ export function ColorStrip({
             <View style={[styles.tileRule, { backgroundColor: active ? fc.accent : theme.colors.canvas }]} />
             <AppText
               numberOfLines={1}
-              style={[styles.tileLabel, { color: theme.colors.ink, fontFamily: active ? theme.font('semibold') : theme.font('regular') }]}
+              style={[styles.tileLabel, { color: theme.colors.ink }]}
+              variant="label"
             >
               {tile.color}
             </AppText>
@@ -472,7 +473,7 @@ export function SectionRow({
           <Ionicons name={icon} size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
         </View>
         <View style={styles.rowText}>
-          <AppText numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>
+          <AppText variant="label" numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink }]}>
             {title}
           </AppText>
         </View>
@@ -506,7 +507,7 @@ export function InfoRow({
         <Ionicons name={icon} size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
       </View>
       <View style={styles.infoText}>
-        <AppText style={[styles.infoTitle, { color: titleColor ?? theme.colors.ink, fontFamily: theme.font('semibold') }]}>
+        <AppText variant="h3" style={[styles.infoTitle, { color: titleColor ?? theme.colors.ink }]}>
           {title}
         </AppText>
         {(lines ?? []).map((line, position) => (
@@ -594,7 +595,7 @@ export function BuyBar({
       ) : null}
       <View style={styles.buyRow}>
         <View style={styles.buyPrice}>
-          <AppText style={[styles.buyPriceText, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>{price}</AppText>
+          <AppText variant="price" style={[styles.buyPriceText, { color: theme.colors.ink }]}>{price}</AppText>
         </View>
         {/*
           Bouton du CTA : 207 × 48 dp, rayon 24 dp, **noir** (maquette). Ce n'est pas
@@ -619,7 +620,7 @@ export function BuyBar({
           {busy
             ? <LoadingSpinner size="sm" color={theme.colors.canvas} testID={testID ? `${testID}-busy` : undefined} />
             : (
-              <AppText style={[styles.buyButtonLabel, { color: theme.colors.canvas, fontFamily: theme.font('semibold') }]}>
+              <AppText variant="button" style={[styles.buyButtonLabel, { color: theme.colors.canvas }]}>
                 {label}
               </AppText>
             )}
@@ -663,7 +664,7 @@ export function SizeSheet({
             <AppText variant="caption" color={fc.muted}>
               {t('product.sizeSheetTitle')}
             </AppText>
-            <AppText style={[styles.sheetTitle, { color: theme.colors.ink, fontFamily: theme.font('semibold') }]}>
+            <AppText variant="h3" style={[styles.sheetTitle, { color: theme.colors.ink }]}>
               {t('catalog.size')}
             </AppText>
           </View>
@@ -697,9 +698,9 @@ export function SizeSheet({
                 style={[styles.sheetRow, { flexDirection: rowDirectionFor(theme.isRTL), borderBottomColor: fc.hair }]}
               >
                 <AppText
+                  variant="label"
                   style={[styles.sheetRowValue, {
                     color,
-                    fontFamily: active ? theme.font('semibold') : theme.font('regular'),
                     textDecorationLine: row.available ? 'none' : 'line-through',
                     textDecorationColor: fc.struck,
                   }]}
@@ -708,7 +709,7 @@ export function SizeSheet({
                 </AppText>
                 <View style={[styles.sheetRowEnd, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
                   {row.state === 'last' ? (
-                    <AppText style={[styles.sheetRowState, { color: fc.accent, fontFamily: theme.font('regular') }]}>
+                    <AppText variant="bodySmall" style={[styles.sheetRowState, { color: fc.accent }]}>
                       {t('product.sizeLast')}
                     </AppText>
                   ) : null}
@@ -774,11 +775,11 @@ export function CartReservedSheet({
       <View style={styles.reservedBody} testID="product-reserved-sheet">
         <View style={styles.reservedTimerStack}>
           <Ionicons name="bag-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
-          <AppText variant="lead" weight="semibold" color={fc.accent}>
+          <AppText variant="numeric" color={fc.accent}>
             {countdown}
           </AppText>
         </View>
-        <AppText variant="title" weight="semibold" align="center">
+        <AppText variant="h3" align="center">
           {t('product.reservedTitle')}
         </AppText>
         <AppText variant="body" align="center" color={theme.colors.secondary}>

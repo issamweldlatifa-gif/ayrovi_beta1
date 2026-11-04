@@ -60,7 +60,7 @@ export function LensResultsGrid({
         <View style={styles.emptyIcon}>
           <Ionicons name="search-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
         </View>
-        <AppText variant="title" align="center">{t('lens.emptyTitle')}</AppText>
+        <AppText variant="h3" align="center">{t('lens.emptyTitle')}</AppText>
         <AppText color={theme.colors.muted} align="center">{t('lens.empty')}</AppText>
         <Button label={t('lens.retake')} onPress={onNewSearch} block />
       </View>
@@ -88,7 +88,7 @@ export function LensResultsGrid({
         <View style={styles.header}>
           <View style={[styles.headerRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
             <View style={styles.headerCopy}>
-              <AppText variant="title" weight="bold" numberOfLines={2}>{title || t('lens.resultsTitle')}</AppText>
+              <AppText variant="h3" numberOfLines={2}>{title || t('lens.resultsTitle')}</AppText>
               <AppText variant="caption" color={theme.colors.muted}>
                 {t(candidates.length === 1 ? 'lens.resultsCountOne' : 'lens.resultsCountMany', { count: candidates.length })}
               </AppText>

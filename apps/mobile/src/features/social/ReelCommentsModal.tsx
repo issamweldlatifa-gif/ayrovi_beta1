@@ -16,10 +16,10 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
       <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
-        <AppText variant="title" weight="semibold">{t('social.comments')}</AppText>
+        <AppText variant="h3" >{t('social.comments')}</AppText>
         <Comments targetId={reel.id} />
         <Pressable accessibilityRole="button" onPress={onClose} style={styles.closeBtn}>
-          <AppText variant="label" weight="bold" color={theme.colors.ink}>{t('social.close')}</AppText>
+          <AppText variant="label" color={theme.colors.ink}>{t('social.close')}</AppText>
         </Pressable>
       </View>
     </Modal>

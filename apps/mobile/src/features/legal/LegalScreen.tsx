@@ -21,7 +21,7 @@ function Block({ block }: { block: LegalBlock }) {
   const theme = useTheme();
   if (block.kind === 'h2') {
     return (
-      <AppText variant="lead" weight="bold" style={styles.heading}>{block.text}</AppText>
+      <AppText variant="h3" style={styles.heading}>{block.text}</AppText>
     );
   }
   if (block.kind === 'notice') {
@@ -97,7 +97,7 @@ export function LegalScreen({ docId }: { docId: LegalDocId }) {
             accessibilityElementsHidden
           />
         </Pressable>
-        <AppText variant="lead" weight="bold" numberOfLines={1} style={styles.barTitle}>
+        <AppText variant="h3" numberOfLines={1} style={styles.barTitle}>
           {t(titleKey)}
         </AppText>
       </View>
@@ -108,7 +108,7 @@ export function LegalScreen({ docId }: { docId: LegalDocId }) {
           { paddingBottom: insets.bottom + theme.space[6], paddingHorizontal: theme.space[4] },
         ]}
       >
-        <AppText variant="title" weight="semibold" style={styles.docTitle}>{version.title}</AppText>
+        <AppText variant="h3" style={styles.docTitle}>{version.title}</AppText>
         {version.meta ? (
           <AppText variant="caption" color={theme.colors.muted}>{version.meta}</AppText>
         ) : null}

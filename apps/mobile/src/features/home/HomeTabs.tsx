@@ -55,7 +55,7 @@ export function HomeTabs() {
           hitSlop={8}
           style={({ pressed }) => [styles.tab, { opacity: pressed ? theme.opacity.subtle : 1 }]}
         >
-          <AppText variant="lead" weight="bold" color={theme.colors.ink} style={styles.label}>
+          <AppText variant="label" color={theme.colors.ink} style={styles.label}>
             {t(tab.labelKey)}
           </AppText>
         </Pressable>

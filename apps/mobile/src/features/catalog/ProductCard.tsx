@@ -100,7 +100,7 @@ export function ProductCard({ product, onOpen, style, hasCombinations = false, p
           ) : null}
           {promo ? (
             <View style={[styles.chip, { backgroundColor: theme.status.danger.fg, borderColor: theme.status.danger.fg, borderRadius: theme.radius.control }]}>
-              <AppText variant="caption" weight="bold" color={theme.colors.canvas} numberOfLines={1}>{t('product.promoBadge')}</AppText>
+              <AppText variant="captionStrong" color={theme.colors.canvas} numberOfLines={1}>{t('product.promoBadge')}</AppText>
             </View>
           ) : null}
         </View>
@@ -110,11 +110,11 @@ export function ProductCard({ product, onOpen, style, hasCombinations = false, p
         <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{product.brandName}</AppText>
       ) : null}
 
-      <AppText variant="label" weight="bold" numberOfLines={2} style={styles.name}>{product.name}</AppText>
+      <AppText variant="label" numberOfLines={2} style={styles.name}>{product.name}</AppText>
 
       <View style={styles.footer}>
         {hasPrice ? (
-          <AppText variant="label" weight="bold" color={theme.colors.ink}>
+          <AppText variant="label" color={theme.colors.ink}>
             {formatMoney(product.finalPrice)}
           </AppText>
         ) : (
@@ -139,7 +139,7 @@ export function ProductCard({ product, onOpen, style, hasCombinations = false, p
           style={[styles.cartButton, { backgroundColor: theme.colors.ink, borderRadius: theme.radius.control }]}
         >
           <Ionicons name={cart.isSuccess ? 'checkmark' : 'bag-add-outline'} size={theme.iconSize.sm} color={theme.colors.canvas} accessibilityElementsHidden />
-          <AppText variant="caption" weight="bold" color={theme.colors.canvas} numberOfLines={1}>
+          <AppText variant="captionStrong" color={theme.colors.canvas} numberOfLines={1}>
             {cart.isSuccess ? t('catalog.added') : t('catalog.addToCart')}
           </AppText>
         </Pressable>

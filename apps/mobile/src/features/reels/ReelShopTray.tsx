@@ -120,7 +120,7 @@ export function ReelShopTray({
         { opacity: pressed ? theme.opacity.dimmed : 1 },
       ]}
     >
-      <AppText variant="label" weight="bold" color={!overlay || open ? onMedia : theme.colors.ink}>
+      <AppText variant="label" color={!overlay || open ? onMedia : theme.colors.ink}>
         {t(reelTrayLabelKey(open))}
       </AppText>
       <Ionicons

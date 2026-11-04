@@ -1162,7 +1162,7 @@ export function AddToCartSheet({
                 style={[styles.addedHeaderRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}
               >
                 <Ionicons name="checkmark-outline" size={theme.iconSize.sm} color={theme.status.success.fg} />
-                <AppText variant="label" weight="semibold" numberOfLines={1}>
+                <AppText variant="label" numberOfLines={1}>
                   {t('aywebs.addedBanner')}
                 </AppText>
               </View>
@@ -1209,8 +1209,7 @@ export function AddToCartSheet({
                 <View style={styles.discountPriceBlock}>
                   <View style={[styles.priceInlineRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
                     <AppText
-                      variant="lead"
-                      weight="semibold"
+                      variant="price"
                       color={discountMeta ? theme.status.danger.fg : theme.colors.ink}
                     >
                       {addedUnitOrLineTnd}
@@ -1224,14 +1223,14 @@ export function AddToCartSheet({
                       <AppText variant="caption" color={theme.colors.muted} style={styles.strikethrough}>
                         {addedRegularTnd}
                       </AppText>
-                      <AppText variant="caption" weight="semibold" color={theme.status.danger.fg}>
+                      <AppText variant="captionStrong" color={theme.status.danger.fg}>
                         {`-${discountMeta.pct}%`}
                       </AppText>
                     </View>
                   ) : null}
                 </View>
               ) : added.item.unitPrice != null ? (
-                <AppText variant="lead" weight="bold" color={theme.colors.ink}>
+                <AppText variant="price" color={theme.colors.ink}>
                   {`${added.item.unitPrice} ${added.item.currency}`.trim()}
                 </AppText>
               ) : null}
@@ -1265,8 +1264,7 @@ export function AddToCartSheet({
                 <View style={styles.discountPriceBlock}>
                   <View style={[styles.priceInlineRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
                     <AppText
-                      variant="lead"
-                      weight="semibold"
+                      variant="price"
                       color={discountMeta ? theme.status.danger.fg : theme.colors.ink}
                     >
                       {displayedTndLine}
@@ -1283,7 +1281,7 @@ export function AddToCartSheet({
                       <AppText variant="caption" color={theme.colors.muted} style={styles.strikethrough}>
                         {regularUnitTnd}
                       </AppText>
-                      <AppText variant="caption" weight="semibold" color={theme.status.danger.fg}>
+                      <AppText variant="captionStrong" color={theme.status.danger.fg}>
                         {`-${discountMeta.pct}%`}
                       </AppText>
                     </View>
@@ -1367,7 +1365,7 @@ export function AddToCartSheet({
 
               {missing.length > 0 ? (
                 <View style={styles.missingNotice}>
-                  <AppText variant="caption" weight="semibold" color={theme.status.danger.fg}>
+                  <AppText variant="captionStrong" color={theme.status.danger.fg}>
                     {t('aywebs.capturedMissingHeading')}
                   </AppText>
                   <AppText variant="caption" color={theme.status.danger.fg}>
@@ -1439,7 +1437,7 @@ export function AddToCartSheet({
               <Pressable style={styles.quantityBackdrop} onPress={() => setQuantityOpen(false)} accessibilityLabel={t('sheet.close')} />
               <View style={[styles.quantityDialog, { backgroundColor: theme.colors.surface }]}>
                 <View style={[styles.quantityHeader, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                  <AppText variant="label" weight="bold">{`${t('aywebs.quantity')} :`}</AppText>
+                  <AppText variant="label" >{`${t('aywebs.quantity')} :`}</AppText>
                   <Pressable accessibilityRole="button" accessibilityLabel={t('sheet.close')} onPress={() => setQuantityOpen(false)} hitSlop={8}>
                     <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} />
                   </Pressable>

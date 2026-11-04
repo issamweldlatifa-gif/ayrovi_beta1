@@ -49,7 +49,7 @@ function metricClose(actual, expected, tolerance = 0.15) {
   return Number.isFinite(value) && Math.abs(value - expected) <= tolerance;
 }
 
-async function inspectPage(page, route, viewportName, expectedTitleSize) {
+async function inspectPage(page, route, viewportName) {
   const errors = [];
   let response;
   try {
@@ -106,8 +106,8 @@ async function inspectPage(page, route, viewportName, expectedTitleSize) {
       body: describe(document.body),
       fontLoaded: document.fonts.check('400 16px "Ayrovi Extracted Sans"'),
       text,
-      h1: roles('.ay-text-h1'),
-      h2: roles('.ay-text-h2,.stories-showcase__title'),
+      h1: roles('h1:not(.lens-feature__title),.ay-text-h1:not(.lens-feature__title)'),
+      h2: roles('h2:not(.lens-feature__title),.ay-text-h2:not(.lens-feature__title),.stories-showcase__title'),
       featureH2: roles('.lens-feature__title'),
       navLinks: roles('nav a,.ay-text-nav'),
       labels: roles('.ay-e-label'),
@@ -147,18 +147,18 @@ async function inspectPage(page, route, viewportName, expectedTitleSize) {
 
   if (result.appRoot) {
     checkRole([result.body], 'body', { size: 16, weight: 400, lineHeight: 24, letterSpacing: 0, stretch: 102.5 });
-    checkRole(result.h1, 'h1', { size: expectedTitleSize, weight: 520, lineHeight: expectedTitleSize * 1.158, letterSpacing: -0.2, stretch: 112.5 });
-    const sectionSize = viewportName === 'mobile' ? 20 : 28;
-    const sectionLineHeight = viewportName === 'mobile' ? 24 : 34;
-    const featureSize = viewportName === 'mobile' ? 24 : 38;
+    checkRole(result.h1, 'h1', { size: 32, weight: 520, lineHeight: 38.4, letterSpacing: 0, stretch: 112.5 });
+    const sectionSize = 28;
+    const sectionLineHeight = 33.6;
+    const featureSize = 38;
     checkRole(result.h2, 'section h2', { size: sectionSize, weight: 520, lineHeight: sectionLineHeight, letterSpacing: 0, stretch: 112.5 });
-    checkRole(result.featureH2, 'feature h2', { size: featureSize, weight: 520, lineHeight: featureSize * 1.25, letterSpacing: 0, stretch: 112.5 });
-    checkRole(result.navLinks, 'navigation link', { size: 16, weight: 650, lineHeight: 24, stretch: 102.5 });
+    checkRole(result.featureH2, 'feature display', { size: featureSize, weight: 520, lineHeight: 45.6, letterSpacing: 0, stretch: 112.5 });
+    checkRole(result.navLinks, 'navigation link', { size: 14, weight: 650, lineHeight: 20, stretch: 102.5 });
     checkRole(result.labels, 'editorial label', { size: 14, weight: 650, lineHeight: 20, stretch: 102.5 });
     checkRole(result.buttons, 'editorial button', { size: 14, weight: 650, lineHeight: 20, stretch: 102.5 });
-    checkRole(result.prices, 'current price', { size: 14, weight: 650, lineHeight: 20, letterSpacing: 0, stretch: 102.5 });
+    checkRole(result.prices, 'current price', { size: 18, weight: 650, lineHeight: 27, letterSpacing: 0, stretch: 102.5 });
     checkRole(result.referencePrices, 'reference price', { size: 12, weight: 400, lineHeight: 16, letterSpacing: 0, stretch: 102.5 });
-    checkRole(result.emptyTitles, 'empty-state title', { size: 16, weight: 650, lineHeight: 24, letterSpacing: 0, stretch: 102.5 });
+    checkRole(result.emptyTitles, 'empty-state title', { size: 28, weight: 520, lineHeight: 33.6, letterSpacing: 0, stretch: 112.5 });
   }
 
   return await page.evaluate((origin) => [...document.querySelectorAll('a[href]')]
@@ -185,7 +185,7 @@ try {
     const route = routes[cursor];
     if (visited.has(route)) continue;
     visited.add(route);
-    const desktopLinks = await inspectPage(page, route, 'desktop', 38);
+    const desktopLinks = await inspectPage(page, route, 'desktop');
 
     if (route.startsWith('/admin') && adminEmail && adminPassword) {
       try {
@@ -208,7 +208,7 @@ try {
     }
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await inspectPage(page, route, 'mobile', 32);
+    await inspectPage(page, route, 'mobile');
     await page.setViewportSize({ width: 1440, height: 900 });
     stats.pages += 1;
     stats.desktop += 1;

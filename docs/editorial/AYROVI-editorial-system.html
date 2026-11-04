@@ -18,6 +18,66 @@
   --ay-font-arabic-line-height: 1.55;
   --ay-font-heading-line-height: 1.2;
   --ay-font-arabic-heading-line-height: 1.42;
+  --ay-type-display-size: 38px;
+  --ay-type-display-weight: 520;
+  --ay-type-display-width: 112.5%;
+  --ay-type-display-line-height: 1.2;
+  --ay-type-h1-size: 32px;
+  --ay-type-h1-weight: 520;
+  --ay-type-h1-width: 112.5%;
+  --ay-type-h1-line-height: 1.2;
+  --ay-type-h2-size: 28px;
+  --ay-type-h2-weight: 520;
+  --ay-type-h2-width: 112.5%;
+  --ay-type-h2-line-height: 1.2;
+  --ay-type-h3-size: 22px;
+  --ay-type-h3-weight: 520;
+  --ay-type-h3-width: 112.5%;
+  --ay-type-h3-line-height: 1.2;
+  --ay-type-subtitle-size: 18px;
+  --ay-type-subtitle-weight: 400;
+  --ay-type-subtitle-width: 102.5%;
+  --ay-type-subtitle-line-height: 1.5;
+  --ay-type-body-size: 16px;
+  --ay-type-body-weight: 400;
+  --ay-type-body-width: 102.5%;
+  --ay-type-body-line-height: 1.5;
+  --ay-type-body-strong-size: 16px;
+  --ay-type-body-strong-weight: 650;
+  --ay-type-body-strong-width: 102.5%;
+  --ay-type-body-strong-line-height: 1.5;
+  --ay-type-body-small-size: 14px;
+  --ay-type-body-small-weight: 400;
+  --ay-type-body-small-width: 102.5%;
+  --ay-type-body-small-line-height: 1.5;
+  --ay-type-caption-size: 12px;
+  --ay-type-caption-weight: 400;
+  --ay-type-caption-width: 102.5%;
+  --ay-type-caption-line-height: 1.3333;
+  --ay-type-caption-strong-size: 12px;
+  --ay-type-caption-strong-weight: 650;
+  --ay-type-caption-strong-width: 102.5%;
+  --ay-type-caption-strong-line-height: 1.3333;
+  --ay-type-overline-size: 11px;
+  --ay-type-overline-weight: 650;
+  --ay-type-overline-width: 102.5%;
+  --ay-type-overline-line-height: 1.4286;
+  --ay-type-label-size: 14px;
+  --ay-type-label-weight: 650;
+  --ay-type-label-width: 102.5%;
+  --ay-type-label-line-height: 1.4286;
+  --ay-type-button-size: 14px;
+  --ay-type-button-weight: 650;
+  --ay-type-button-width: 102.5%;
+  --ay-type-button-line-height: 1.4286;
+  --ay-type-price-size: 18px;
+  --ay-type-price-weight: 650;
+  --ay-type-price-width: 102.5%;
+  --ay-type-price-line-height: 1.5;
+  --ay-type-numeric-size: 16px;
+  --ay-type-numeric-weight: 400;
+  --ay-type-numeric-width: 102.5%;
+  --ay-type-numeric-line-height: 1.5;
 }
 :root, [data-ay-design="editorial"] {
   --ay-e-canvas: #FFFFFF;
@@ -78,6 +138,21 @@ body { margin: 0; font-family: var(--ay-font-stack); font-stretch: var(--ay-font
 button, input, select, textarea, optgroup, pre, code, kbd, samp { font-family: inherit; }
 ::placeholder { font-family: inherit; }
 .ay-number { font-family: var(--ay-font-stack); font-variant-numeric: tabular-nums; unicode-bidi: isolate; }
+.ay-type-display { font-family: var(--ay-font-stack); font-size: var(--ay-type-display-size); font-weight: var(--ay-type-display-weight); font-stretch: var(--ay-type-display-width); line-height: var(--ay-type-display-line-height); font-synthesis: none; }
+.ay-type-h1 { font-family: var(--ay-font-stack); font-size: var(--ay-type-h1-size); font-weight: var(--ay-type-h1-weight); font-stretch: var(--ay-type-h1-width); line-height: var(--ay-type-h1-line-height); font-synthesis: none; }
+.ay-type-h2 { font-family: var(--ay-font-stack); font-size: var(--ay-type-h2-size); font-weight: var(--ay-type-h2-weight); font-stretch: var(--ay-type-h2-width); line-height: var(--ay-type-h2-line-height); font-synthesis: none; }
+.ay-type-h3 { font-family: var(--ay-font-stack); font-size: var(--ay-type-h3-size); font-weight: var(--ay-type-h3-weight); font-stretch: var(--ay-type-h3-width); line-height: var(--ay-type-h3-line-height); font-synthesis: none; }
+.ay-type-subtitle { font-family: var(--ay-font-stack); font-size: var(--ay-type-subtitle-size); font-weight: var(--ay-type-subtitle-weight); font-stretch: var(--ay-type-subtitle-width); line-height: var(--ay-type-subtitle-line-height); font-synthesis: none; }
+.ay-type-body { font-family: var(--ay-font-stack); font-size: var(--ay-type-body-size); font-weight: var(--ay-type-body-weight); font-stretch: var(--ay-type-body-width); line-height: var(--ay-type-body-line-height); font-synthesis: none; }
+.ay-type-body-strong { font-family: var(--ay-font-stack); font-size: var(--ay-type-body-strong-size); font-weight: var(--ay-type-body-strong-weight); font-stretch: var(--ay-type-body-strong-width); line-height: var(--ay-type-body-strong-line-height); font-synthesis: none; }
+.ay-type-body-small { font-family: var(--ay-font-stack); font-size: var(--ay-type-body-small-size); font-weight: var(--ay-type-body-small-weight); font-stretch: var(--ay-type-body-small-width); line-height: var(--ay-type-body-small-line-height); font-synthesis: none; }
+.ay-type-caption { font-family: var(--ay-font-stack); font-size: var(--ay-type-caption-size); font-weight: var(--ay-type-caption-weight); font-stretch: var(--ay-type-caption-width); line-height: var(--ay-type-caption-line-height); font-synthesis: none; }
+.ay-type-caption-strong { font-family: var(--ay-font-stack); font-size: var(--ay-type-caption-strong-size); font-weight: var(--ay-type-caption-strong-weight); font-stretch: var(--ay-type-caption-strong-width); line-height: var(--ay-type-caption-strong-line-height); font-synthesis: none; }
+.ay-type-overline { font-family: var(--ay-font-stack); font-size: var(--ay-type-overline-size); font-weight: var(--ay-type-overline-weight); font-stretch: var(--ay-type-overline-width); line-height: var(--ay-type-overline-line-height); font-synthesis: none; }
+.ay-type-label { font-family: var(--ay-font-stack); font-size: var(--ay-type-label-size); font-weight: var(--ay-type-label-weight); font-stretch: var(--ay-type-label-width); line-height: var(--ay-type-label-line-height); font-synthesis: none; }
+.ay-type-button { font-family: var(--ay-font-stack); font-size: var(--ay-type-button-size); font-weight: var(--ay-type-button-weight); font-stretch: var(--ay-type-button-width); line-height: var(--ay-type-button-line-height); font-synthesis: none; }
+.ay-type-price { font-family: var(--ay-font-stack); font-size: var(--ay-type-price-size); font-weight: var(--ay-type-price-weight); font-stretch: var(--ay-type-price-width); line-height: var(--ay-type-price-line-height); font-synthesis: none; font-variant-numeric: tabular-nums; }
+.ay-type-numeric { font-family: var(--ay-font-stack); font-size: var(--ay-type-numeric-size); font-weight: var(--ay-type-numeric-weight); font-stretch: var(--ay-type-numeric-width); line-height: var(--ay-type-numeric-line-height); font-synthesis: none; font-variant-numeric: tabular-nums; }
 
 /* Component skin for explicit editorial surfaces only. No global reset or !important.
    Attach these classes to the existing shared primitives during screen migration. */
@@ -92,22 +167,25 @@ button, input, select, textarea, optgroup, pre, code, kbd, samp { font-family: i
 [data-ay-design="editorial"]:lang(ar) { line-height: var(--ay-font-arabic-line-height); }
 [data-ay-design="editorial"][data-tone="dark"] { color-scheme: dark; }
 [data-ay-design="editorial"] .ay-e-display {
-  font: var(--ay-font-heading-weight) clamp(32px, 4vw, 38px)/var(--ay-font-heading-line-height) var(--ay-font-stack);
-  font-stretch: var(--ay-font-heading-width);
+  font-family: var(--ay-font-stack);
+  font-size: var(--ay-type-display-size);
+  font-weight: var(--ay-type-display-weight);
+  line-height: var(--ay-type-display-line-height);
+  font-stretch: var(--ay-type-display-width);
   letter-spacing: 0;
   text-wrap: balance;
   font-synthesis: none;
 }
 [data-ay-design="editorial"]:lang(ar) .ay-e-display { font-stretch: 100%; line-height: var(--ay-font-arabic-heading-line-height); }
-[data-ay-design="editorial"] .ay-e-label { font-size: 14px; font-weight: var(--ay-font-label-weight); line-height: 20px; }
-[data-ay-design="editorial"] .ay-e-caption { font-size: 12px; line-height: 16px; color: var(--ay-e-muted); }
+[data-ay-design="editorial"] .ay-e-label { font-size: var(--ay-type-label-size); font-weight: var(--ay-type-label-weight); line-height: var(--ay-type-label-line-height); }
+[data-ay-design="editorial"] .ay-e-caption { font-size: var(--ay-type-caption-size); line-height: var(--ay-type-caption-line-height); font-weight: var(--ay-type-caption-weight); color: var(--ay-e-muted); }
 [data-ay-design="editorial"] .ay-e-number { font-family: var(--ay-font-stack); font-weight: var(--ay-font-price-weight); font-variant-numeric: tabular-nums; unicode-bidi: isolate; }
 [data-ay-design="editorial"] .ay-e-button {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: var(--ay-e-control-height); min-width: var(--ay-e-min-target);
   max-width: 100%; padding: 10px 20px; border: 1px solid var(--ay-e-action);
   border-radius: var(--ay-e-cta-radius); background: var(--ay-e-action);
-  color: var(--ay-e-on-action); font: inherit; font-size: 14px; font-weight: var(--ay-font-label-weight); line-height: 20px;
+  color: var(--ay-e-on-action); font: inherit; font-size: var(--ay-type-button-size); font-weight: var(--ay-type-button-weight); line-height: var(--ay-type-button-line-height);
   cursor: pointer; text-decoration: none;
   transition: background-color 120ms ease, border-color 120ms ease;
 }

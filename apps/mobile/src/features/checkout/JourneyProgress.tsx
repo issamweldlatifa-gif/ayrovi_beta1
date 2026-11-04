@@ -68,7 +68,7 @@ export function JourneyProgress({
                   <Ionicons name={step.icon} size={theme.iconSize.xs} color={current ? theme.status.info.fg : theme.colors.muted} />
                 )}
               </View>
-              <AppText variant="caption" weight={current ? 'bold' : 'regular'} color={labelColor} numberOfLines={1}>
+              <AppText variant="captionStrong" color={labelColor} numberOfLines={1}>
                 {step.label}
               </AppText>
             </Pressable>

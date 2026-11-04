@@ -108,14 +108,14 @@ export function LinkedProductCard({
 
       <View style={styles.body}>
         {brand ? (
-          <AppText variant="label" weight="bold" numberOfLines={1} style={styles.brand}>
+          <AppText variant="label" numberOfLines={1} style={styles.brand}>
             {brand}
           </AppText>
         ) : null}
         <AppText variant="caption" numberOfLines={ARTICLE_CARD.titleLines} style={styles.title}>
           {product.name}
         </AppText>
-        <AppText variant="caption" weight="bold" color={theme.colors.ink} style={styles.price}>
+        <AppText variant="captionStrong" color={theme.colors.ink} style={styles.price}>
           {price}
         </AppText>
         {product.available === false ? (

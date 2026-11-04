@@ -93,7 +93,7 @@ export default function PublicationsScreen() {
                 <AppImage uri={mediaUrl(item.imageUrl)} style={styles.image} contentFit="cover" accessibilityLabel={item.title ?? undefined} decorative={!item.title} />
               ) : null}
               <View style={styles.body}>
-                {item.title ? <AppText variant="label" weight="bold">{item.title}</AppText> : null}
+                {item.title ? <AppText variant="label" >{item.title}</AppText> : null}
                 {item.subtitle ? (
                   <AppText variant="caption" color={theme.colors.muted}>{item.subtitle}</AppText>
                 ) : null}
@@ -141,10 +141,10 @@ export default function PublicationsScreen() {
 
       <Modal visible={commentsFor !== null} animationType="slide" onRequestClose={closeComments}>
         <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
-          <AppText variant="title" weight="semibold">{t('social.comments')}</AppText>
+          <AppText variant="h3" >{t('social.comments')}</AppText>
           {commentsFor ? <Comments targetId={commentsFor.id} /> : null}
           <Pressable accessibilityRole="button" onPress={closeComments} style={styles.closeBtn}>
-            <AppText variant="label" weight="bold" color={theme.colors.ink}>{t('social.close')}</AppText>
+            <AppText variant="label" color={theme.colors.ink}>{t('social.close')}</AppText>
           </Pressable>
         </View>
       </Modal>

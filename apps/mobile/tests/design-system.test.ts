@@ -23,6 +23,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import * as ts from 'typescript';
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -523,6 +524,51 @@ describe('Design System — typographie, rayons, icônes (audit 27/10/2026)', ()
     expect(offenders, 'Utiliser `theme.text(variant, weight)` : la graisse choisit la famille (§3).').toEqual([]);
   });
 
+  it('source typographique partagée: hiérarchie approuvée et rôles à graisse déterministe', () => {
+    const identityPath = path.resolve(ROOT, '../../client/src/design/editorial/identity.json');
+    const identity = JSON.parse(fs.readFileSync(identityPath, 'utf8')) as {
+      type: Record<string, number>;
+      typeRoles: Record<string, { size: string; weight: string; width: string; lineHeight: string; numeric?: string }>;
+      typography: { headingWeight: number; bodyWeight: number; labelWeight: number; priceWeight: number };
+    };
+    expect([identity.type.display, identity.type.h1, identity.type.h2, identity.type.h3]).toEqual([38, 32, 28, 22]);
+    expect(identity.typeRoles.display).toMatchObject({ size: 'display', weight: 'heading' });
+    expect(identity.typeRoles.h1).toMatchObject({ size: 'h1', weight: 'heading' });
+    expect(identity.typeRoles.h2).toMatchObject({ size: 'h2', weight: 'heading' });
+    expect(identity.typeRoles.h3).toMatchObject({ size: 'h3', weight: 'heading' });
+    expect(identity.typeRoles.subtitle).toMatchObject({ size: 'subtitle', weight: 'body' });
+    expect(identity.typeRoles.bodyStrong).toMatchObject({ size: 'bodyStrong', weight: 'label' });
+    expect(identity.typeRoles.captionStrong).toMatchObject({ size: 'captionStrong', weight: 'label' });
+    expect(identity.typeRoles.button).toMatchObject({ size: 'button', weight: 'label' });
+    expect(identity.typeRoles.price).toMatchObject({ size: 'price', weight: 'price', numeric: 'tabular' });
+    expect(identity.typography).toMatchObject({ headingWeight: 520, bodyWeight: 400, labelWeight: 650, priceWeight: 650 });
+    expect(identity.type.title).toBeUndefined();
+    expect(identity.type.lead).toBeUndefined();
+  });
+
+  it('AppText n’accepte ni graisse libre ni anciens rôles title/lead', () => {
+    const offenders: string[] = [];
+    for (const rel of FILES.filter((file) => file.endsWith('.tsx'))) {
+      const source = fs.readFileSync(path.join(ROOT, rel), 'utf8');
+      const file = ts.createSourceFile(rel, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+      const visit = (node: ts.Node): void => {
+        if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(file) === 'AppText') {
+          for (const attribute of node.attributes.properties) {
+            if (!ts.isJsxAttribute(attribute)) continue;
+            const name = attribute.name.getText(file);
+            if (name === 'weight') offenders.push(`${rel}:${file.getLineAndCharacterOfPosition(attribute.getStart(file)).line + 1} free weight`);
+            if (name === 'variant' && attribute.initializer && ts.isStringLiteral(attribute.initializer) && ['title', 'lead'].includes(attribute.initializer.text)) {
+              offenders.push(`${rel}:${file.getLineAndCharacterOfPosition(attribute.getStart(file)).line + 1} legacy role ${attribute.initializer.text}`);
+            }
+          }
+        }
+        ts.forEachChild(node, visit);
+      };
+      visit(file);
+    }
+    expect(offenders).toEqual([]);
+  });
+
   /** Toute taille de texte vient de `TYPE_SCALE` via `theme.text()` / `<AppText variant>`. */
   it('aucune taille de texte littérale', () => {
     const offenders: string[] = [];
@@ -536,7 +582,8 @@ describe('Design System — typographie, rayons, icônes (audit 27/10/2026)', ()
     }
     expect(
       offenders,
-      'Échelle admise : 12 caption · 14 label · 16 body · 18 lead · 28 title · 40 display. ' +
+      'Échelle admise : 11 overline · 12 caption · 14 label/bodySmall/button · 16 body/numeric · ' +
+        '18 subtitle/price · 22 h3 · 28 h2 · 32 h1 · 38 display. ' +
         'Passer par `<AppText variant>` (ou `theme.text(variant)`).',
     ).toEqual([]);
   });

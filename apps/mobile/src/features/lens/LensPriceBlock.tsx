@@ -47,8 +47,7 @@ export function LensPriceBlock({
       ) : null}
       <View style={[styles.priceRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
         <AppText
-          variant={compact ? 'label' : 'title'}
-          weight="semibold"
+          variant={compact ? 'label' : 'price'}
           color={discounted ? dropRed : onWhite ? LENS_COLORS.black : theme.colors.ink}
           numberOfLines={1}
         >
@@ -60,7 +59,7 @@ export function LensPriceBlock({
           </AppText>
         ) : null}
         {discounted ? (
-          <AppText variant={compact ? 'caption' : 'body'} weight="semibold" color={dropRed} numberOfLines={1}>
+          <AppText variant={compact ? 'captionStrong' : 'bodyStrong'} color={dropRed} numberOfLines={1}>
             {`−${view.discountPercent}%`}
           </AppText>
         ) : null}

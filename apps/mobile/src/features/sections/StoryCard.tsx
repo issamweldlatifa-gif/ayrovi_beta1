@@ -65,11 +65,11 @@ export function StoryCard({ story, onOpen, viewed = false }: StoryCardProps) {
 
       <View style={styles.footer}>
         {story.title ? (
-          <AppText variant="caption" weight="bold" numberOfLines={2}>{story.title}</AppText>
+          <AppText variant="captionStrong" numberOfLines={2}>{story.title}</AppText>
         ) : null}
         {story.cta ? (
           <View style={[styles.cta, { backgroundColor: theme.colors.ink, borderRadius: theme.radius.cta }]}>
-            <AppText variant="caption" weight="bold" color={theme.colors.canvas} numberOfLines={1}>{story.cta}</AppText>
+            <AppText variant="captionStrong" color={theme.colors.canvas} numberOfLines={1}>{story.cta}</AppText>
           </View>
         ) : null}
       </View>

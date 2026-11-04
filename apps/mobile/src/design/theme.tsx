@@ -7,10 +7,11 @@
  * bascule instantanée ; le miroir complet de la navigation est planifié en P6.
  */
 import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
-import { Platform, StyleSheet, useColorScheme } from 'react-native';
+import { Platform, StyleSheet, useColorScheme, type TextStyle as RNTextStyle } from 'react-native';
 import * as SystemUI from 'expo-system-ui';
 import {
-  COLORS, FONTS, GEOMETRY, IDENTITY, MOTION, SPACE, TYPE_SCALE, TYPOGRAPHY,
+  COLORS, FONTS, GEOMETRY, IDENTITY, MOTION, SPACE, TYPE_SCALE, TYPOGRAPHY, TYPOGRAPHY_ROLES,
+  type TypographyRoleName,
 } from './tokens.generated';
 import {
   CHROME, EASING, ICON_SIZE, OPACITY, RADIUS, SHEET_CORNER_RADIUS, SPRING, Z_INDEX,
@@ -20,7 +21,8 @@ import {
 import { usePrefs } from '@/state/prefs';
 
 export type ColorScheme = 'light' | 'dark';
-export type TextRole = 'caption' | 'label' | 'body' | 'lead' | 'title' | 'display';
+/** Rôles typographiques canoniques générés depuis l’identité partagée. */
+export type TextRole = TypographyRoleName;
 
 /** Graisses disponibles : chacune est une famille embarquée (voir FONTS). */
 export type FontWeightName = 'regular' | 'medium' | 'semibold' | 'bold';
@@ -34,12 +36,13 @@ export interface Theme {
   /** Famille de police à utiliser, choisie selon la langue et la graisse. */
   font: (weight?: FontWeightName) => string;
   /** Style Text prêt à l'emploi pour un niveau typographique donné. */
-  text: (variant?: TextRole, weight?: FontWeightName) => {
+  text: (variant?: TextRole) => {
     fontFamily: string;
     fontSize: number;
     lineHeight: number;
     fontWeight: 'normal';
     includeFontPadding: false;
+    fontVariant?: RNTextStyle['fontVariant'];
   };
   direction: { writingDirection: 'rtl' | 'ltr' };
   /** Échelle de rayons COMPLÈTE (xs → full), pas seulement les 4 jetons
@@ -73,6 +76,7 @@ export interface Theme {
   geometry: typeof GEOMETRY;
   motion: typeof MOTION;
   typography: typeof TYPOGRAPHY;
+  typographyRoles: typeof TYPOGRAPHY_ROLES;
   identity: typeof IDENTITY;
 }
 
@@ -91,20 +95,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     /**
      * Les graisses ne s'interpolent pas sur Android avec des .ttf séparés :
-     * chaque graisse est une famille, on choisit donc la famille — jamais un
-     * `fontWeight` numérique qui serait ignoré en silence.
+     * chaque graisse est une famille. Les rôles utilisent la table générée
+     * depuis identity.json ; aucun poids numérique n'est synthétisé ici.
      */
     const font: Theme['font'] = (weight = 'regular') => families[weight];
-
-    const lineHeightRatio = isRTL ? TYPOGRAPHY.arabicLineHeight : TYPOGRAPHY.bodyLineHeight;
-    const headingRatio = isRTL ? TYPOGRAPHY.arabicHeadingLineHeight : TYPOGRAPHY.headingLineHeight;
-    const boldVariants: TextRole[] = ['label', 'title', 'display'];
-    // Latin: titres 520, labels 650. L'arabe conserve ses fichiers de poids existants.
-    const defaultWeight = (variant: TextRole): FontWeightName =>
-      variant === 'label' ? (isRTL ? 'bold' : 'semibold')
-        : (variant === 'title' || variant === 'display') ? (isRTL ? 'semibold' : 'medium')
-        : 'regular';
-
+    const lineHeightTokens = {
+      heading: TYPOGRAPHY.headingLineHeight,
+      body: TYPOGRAPHY.bodyLineHeight,
+      label: TYPOGRAPHY.labelLineHeight,
+      caption: TYPOGRAPHY.captionLineHeight,
+    } as const;
     const palette = mode === 'dark' ? COLORS.dark : COLORS.light;
 
     return {
@@ -112,23 +112,27 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       isRTL,
       colors: { ...palette, ...derivedColors(palette) },
       font,
-      text: (variant = 'body', weight = defaultWeight(variant)) => {
-        const size = TYPE_SCALE[variant];
-        const ratio = isRTL
-          ? (boldVariants.includes(variant) ? headingRatio : lineHeightRatio)
-          : variant === 'title' || variant === 'display' ? headingRatio
-            : variant === 'label' ? TYPOGRAPHY.labelLineHeight
-              : variant === 'caption' ? TYPOGRAPHY.captionLineHeight
-                : lineHeightRatio;
-        const fontFamily = !isRTL && weight === 'medium' && (variant === 'title' || variant === 'display')
+      text: (variant = 'body') => {
+        const role = TYPOGRAPHY_ROLES[variant];
+        const size = TYPE_SCALE[role.size];
+        const roleFace = role.weight === 'heading'
+          ? isRTL ? 'bold' : 'medium'
+          : role.weight === 'body' ? 'regular' : 'semibold';
+        const fontFamily = !isRTL && role.weight === 'heading'
           ? FONTS.latin.heading
-          : font(weight);
+          : font(roleFace);
+        const ratio = isRTL && role.weight === 'heading'
+          ? TYPOGRAPHY.arabicHeadingLineHeight
+          : isRTL && role.weight !== 'heading'
+            ? role.lineHeight === 'caption' ? TYPOGRAPHY.captionLineHeight : TYPOGRAPHY.arabicLineHeight
+            : lineHeightTokens[role.lineHeight];
         return {
           fontFamily,
           fontSize: size,
           lineHeight: Math.round(size * ratio),
           fontWeight: 'normal' as const,
           includeFontPadding: false as const,
+          ...('numeric' in role && role.numeric === 'tabular' ? { fontVariant: ['tabular-nums'] as const } : {}),
         };
       },
       direction: { writingDirection: isRTL ? 'rtl' : 'ltr' },
@@ -157,6 +161,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       geometry: GEOMETRY,
       motion: MOTION,
       typography: TYPOGRAPHY,
+      typographyRoles: TYPOGRAPHY_ROLES,
       identity: IDENTITY,
     };
   }, [locale, themeMode, systemScheme]);

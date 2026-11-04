@@ -192,7 +192,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
 
         {/* التذييل: العنوان + الإجراءات */}
         <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-          {current.title ? <AppText variant="title" weight="semibold" color={theme.colors.onMedia}>{current.title}</AppText> : null}
+          {current.title ? <AppText variant="h3" color={theme.colors.onMedia}>{current.title}</AppText> : null}
           {current.description ? (
             <AppText variant="caption" color={theme.colors.onMedia} numberOfLines={3}>{current.description}</AppText>
           ) : null}
@@ -230,7 +230,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
                 style={[styles.cta, { backgroundColor: theme.colors.onMedia, borderRadius: theme.radius.cta }]}
               >
                 {/* Sur le média : pastille blanche, libellé noir — lisible sur toute photo. */}
-                <AppText variant="label" weight="bold" color={theme.colors.onAdaptiveLight}>{current.cta}</AppText>
+                <AppText variant="label" color={theme.colors.onAdaptiveLight}>{current.cta}</AppText>
               </Pressable>
             ) : null}
           </View>

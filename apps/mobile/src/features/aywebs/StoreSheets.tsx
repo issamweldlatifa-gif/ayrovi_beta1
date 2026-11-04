@@ -167,7 +167,7 @@ export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCa
                   },
                 ]}
               >
-                <AppText variant="caption" weight="bold" color={selected ? theme.colors.canvas : theme.colors.ink}>
+                <AppText variant="captionStrong" color={selected ? theme.colors.canvas : theme.colors.ink}>
                   {t(SEGMENT_LABEL[candidate])}
                 </AppText>
               </Pressable>
@@ -230,7 +230,7 @@ function SheetRow({ label, icon, onPress, disabled = false, busy = false, active
         },
       ]}
     >
-      <AppText variant="body" weight="bold" style={styles.rowLabel}>{label}</AppText>
+      <AppText variant="bodyStrong" style={styles.rowLabel}>{label}</AppText>
       {busy ? (
         <ActivityIndicator color={theme.colors.action} />
       ) : (

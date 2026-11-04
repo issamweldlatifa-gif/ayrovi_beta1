@@ -213,7 +213,7 @@ export function AppHeader({
         <View style={[styles.prefs, { borderTopColor: theme.colors.line }]}>
           <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             <Ionicons name="language-outline" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
-            <AppText variant="caption" weight="bold" color={theme.colors.muted}>{t('common.language')}</AppText>
+            <AppText variant="captionStrong" color={theme.colors.muted}>{t('common.language')}</AppText>
           </View>
           <Segmented<Locale>
             value={locale as Locale}
@@ -225,7 +225,7 @@ export function AppHeader({
           />
           <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             <Ionicons name="contrast-outline" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
-            <AppText variant="caption" weight="bold" color={theme.colors.muted}>{t('common.theme')}</AppText>
+            <AppText variant="captionStrong" color={theme.colors.muted}>{t('common.theme')}</AppText>
           </View>
           <Segmented<ThemeMode>
             value={themeMode}

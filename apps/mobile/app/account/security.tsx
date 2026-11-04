@@ -114,10 +114,10 @@ export default function SecurityScreen() {
             <AppText variant="caption" color={theme.status.danger.fg}>{t('security.same')}</AppText>
           ) : null}
           {failure ? (
-            <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.danger.fg}>{failure}</AppText>
+            <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
           ) : null}
           {done ? (
-            <AppText accessibilityRole="alert" variant="label" weight="bold" color={theme.status.success.fg}>
+            <AppText accessibilityRole="alert" variant="label" color={theme.status.success.fg}>
               {t('security.changed')}
             </AppText>
           ) : null}
