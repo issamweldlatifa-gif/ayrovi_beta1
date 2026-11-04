@@ -3,11 +3,16 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  backdropLayerRange, CARD_GAP, CARD_MAX_WIDTH, CARD_MIN_WIDTH, carouselGeometry, indexForOffset,
+  backdropLayerRange, CARD_ASPECT, CARD_GAP, CARD_MAX_WIDTH, CARD_MIN_WIDTH, carouselGeometry, indexForOffset,
   isStillAfterDrag, nextIndex, scrollOffsetForIndex, shouldAutoplayAdvance,
 } from '../src/features/home/heroCarouselLogic';
 
 describe('carouselGeometry — dimensions selon l’écran', () => {
+  it('utilise un ratio vertical proche de la carte Amazon de référence (5:8)', () => {
+    expect(CARD_ASPECT).toBe(5 / 8);
+    expect(1 / CARD_ASPECT).toBe(1.6);
+  });
+
   it.each([360, 390, 412, 430])('téléphone %i px : carte = 76 %, alignée sur la marge', (screen) => {
     const g = carouselGeometry(screen, 16);
     expect(g.cardWidth).toBe(Math.round(screen * 0.76));

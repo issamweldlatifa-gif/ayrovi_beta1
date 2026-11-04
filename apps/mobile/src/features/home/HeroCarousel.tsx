@@ -5,9 +5,9 @@
  * Contrat d'affichage :
  *  • chargement ⇒ squelette de la forme attendue, JAMAIS un trou blanc ;
  *  • module désactivé / erreur API / aucune carte ⇒ rien (il n'existe plus d'ancien hero) ;
- *  • carte = titre + visuel 5:8 + CTA optionnel ;
- *  • le fond de la section EST celui de la photo active : ses bords exacts, du
- *    haut jusqu'en bas (plus de voile blanc sous les photos), en fondu enchaîné ;
+ *  • carte = titre + visuel 5:8 ; toute la carte ouvre sa destination ;
+ *  • le fond de la section reprend la palette de la photo active puis se fond
+ *    progressivement dans le fond de page, en fondu enchaîné ;
  *  • impression/clic tracés en fire-and-forget — mesurer ne casse jamais rien.
  *
  * Les couches de fond (une par carte, empilées) et le voile du titre sont les
@@ -35,15 +35,15 @@ import {
   parseHeroCarouselSettings, trackHeroEvent,
   type HeroCarouselSettings, type HeroSlide,
 } from '@/api/public';
-import { adaptiveInk, heroEdgeColors, pickHeroText, withAlpha } from './heroPalette';
+import { heroEdgeColors, pickHeroText, withAlpha } from './heroPalette';
 import { isDemoSlide } from './heroDemo';
 import {
   backdropLayerRange, CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
   scrollOffsetForIndex, shouldAutoplayAdvance,
 } from './heroCarouselLogic';
 
-/** Espace entre le bas du héros et les tabs : petit, pas un vide de 120 pts. */
-const SECTION_BOTTOM_GAP = 12;
+/** Zone de fondu sous les cartes : relie le fond du héros au fond blanc de la page. */
+const SECTION_BOTTOM_GAP = 48;
 /** Marge au-dessus du bas de l'image pour les pastilles (posées SUR la photo). */
 
 /* ── États du composant parent ───────────────────────────────────────────── */
@@ -229,7 +229,7 @@ function HeroCarouselView({
             ]}
           >
             <LinearGradient
-              colors={[edge.top, edge.top, edge.bottom, edge.bottom]}
+              colors={[edge.top, edge.top, edge.bottom, theme.colors.canvas]}
               locations={EDGE_LOCATIONS}
               style={StyleSheet.absoluteFill}
               testID={`hero-carousel-backdrop-${index}`}
@@ -261,11 +261,10 @@ function HeroCarouselView({
         onMomentumScrollEnd={onScrollEnd}
         onScrollBeginDrag={onScrollBeginDrag}
         onScrollEndDrag={onScrollEndDrag}
-        renderItem={({ item, index }) => (
+        renderItem={({ item }) => (
           <HeroCard
             card={item}
             width={cardWidth}
-            backdrop={edges[index]?.bottom ?? theme.colors.surface}
             onPress={onPressCard}
           />
         )}
@@ -279,28 +278,21 @@ function HeroCarouselView({
 interface HeroCardProps {
   card: HeroSlide;
   width: number;
-  /** Fond réel sous le CTA (bord bas de la photo) : la pastille s'y adapte. */
-  backdrop: string;
   onPress: (card: HeroSlide) => void;
 }
 
 /**
  * Carte « façon Amazon » : le titre et le sous-titre sont POSÉS SUR le visuel,
- * sur un voile sombre en bas. Le visuel occupe toute la largeur de la carte.
+ * sur un voile sombre en haut. Le visuel occupe toute la largeur de la carte.
  */
-const HeroCard = memo(function HeroCard({ card, width, backdrop, onPress }: HeroCardProps) {
+const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps) {
   const theme = useTheme();
   const { locale } = useI18n();
   const isArabic = locale === 'ar';
   const title = pickHeroText(card.title, card.titleAr, isArabic);
   const subtitle = pickHeroText(card.subtitle, card.subtitleAr, isArabic);
-  const cta = pickHeroText(card.cta, card.ctaAr, isArabic);
-  // Libellé composé des données serveur — jamais de chaîne écrite en dur.
-  const label = [title, subtitle, cta].filter(Boolean).join(' · ');
-  // Le CTA est posé sur le fond de la photo (parfois sombre) : pastille d'encre
-  // contrastée avec CE fond, libellé de la couleur opposée.
-  const ctaFill = adaptiveInk(backdrop, theme.colors);
-  const ctaText = ctaFill === theme.colors.onAdaptiveLight ? theme.colors.onAdaptiveDark : theme.colors.onAdaptiveLight;
+  // La carte entière est le lien : aucun bouton CTA séparé sous le visuel.
+  const label = [title, subtitle].filter(Boolean).join(' · ');
 
   return (
     <Pressable
@@ -345,27 +337,6 @@ const HeroCard = memo(function HeroCard({ card, width, backdrop, onPress }: Hero
           </View>
         ) : null}
       </View>
-      {cta ? (
-        <Pressable
-          testID={`hero-card-${card.id}-cta`}
-          onPress={() => onPress(card)}
-          accessibilityRole="button"
-          accessibilityLabel={cta}
-          style={({ pressed }) => [
-            styles.cardCta,
-            {
-              minHeight: theme.chrome.button,
-              borderRadius: theme.radius.sm,
-              backgroundColor: ctaFill,
-              opacity: pressed ? theme.opacity.subtle : 1,
-            },
-          ]}
-        >
-          <AppText variant="label" weight="semibold" color={ctaText} numberOfLines={1}>
-            {cta}
-          </AppText>
-        </Pressable>
-      ) : null}
     </Pressable>
   );
 });
@@ -373,8 +344,8 @@ const HeroCard = memo(function HeroCard({ card, width, backdrop, onPress }: Hero
 /* ── Styles ───────────────────────────────────────────────────────────────── */
 
 const styles = StyleSheet.create({
-  // Pas de fond propre à la carte : le fond continu du carrousel (celui de la
-  // photo) passe derrière les voisines et jusqu'au bas de la section.
+  // Pas de fond propre à la carte : le fond du carrousel passe derrière les
+  // voisines et finit en fondu dans le fond de page.
   section: { paddingTop: 16, paddingBottom: SECTION_BOTTOM_GAP, overflow: 'hidden' },
   // Pas de marge interne : le visuel occupe toute la largeur de la carte (plus grand).
   card: {},
@@ -385,22 +356,11 @@ const styles = StyleSheet.create({
   /** Titre et sous-titre posés sur le visuel, en haut (début de ligne), marges intérieures. */
   cardCopy: { position: 'absolute', start: 16, end: 16, top: 16 },
   cardSubtitle: { marginTop: 4 },
-  cardCta: {
-    alignSelf: 'flex-start',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-    marginHorizontal: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    overflow: 'hidden',
-  },
 });
 
 /**
- * Bandes de la couche de fond : le haut de la section garde EXACTEMENT le bord
- * haut de la photo, le bas EXACTEMENT son bord bas ; le passage se fait le long
- * des cartes, là où seuls les interstices le laissent voir.
+ * Bandes de la couche de fond : le haut reprend le bord haut de la photo,
+ * puis son bord bas, avant un fondu vers le fond de page en bas de la section.
  */
 const EDGE_LOCATIONS = [0, 0.18, 0.82, 1] as const;
 

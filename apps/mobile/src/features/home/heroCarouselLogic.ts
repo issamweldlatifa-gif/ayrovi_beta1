@@ -16,8 +16,8 @@
  *   Revenir à la première créerait un saut visible à travers toutes les cartes.
  */
 
-/** Ratio d'affichage des cartes (5:9 : hauteur = largeur × 1,8). Rallongé de ~12 % (retour utilisateur : plus court qu'Amazon). */
-export const CARD_ASPECT = 5 / 9;
+/** Ratio d'affichage des cartes (5:8 : hauteur = largeur × 1,6), proche de la carte Amazon de référence. */
+export const CARD_ASPECT = 5 / 8;
 /** Espace entre deux cartes (proportions Amazon : serrées). */
 export const CARD_GAP = 8;
 /** Part de l'écran occupée par la carte active. Les voisines se devinent sur les côtés. */

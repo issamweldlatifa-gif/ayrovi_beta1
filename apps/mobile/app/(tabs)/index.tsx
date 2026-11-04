@@ -101,8 +101,7 @@ export default function HomeScreen() {
         onActiveBackgroundChange={setHeroBackground}
       />
 
-      <SectionRule />
-
+      {/* التبويبات تظهر على نفس لون نهاية تدرّج الهيرو لانتقال بصري متصل. */}
       {/* التبويبات الثلاث — يفتحو جوّا التطبيق */}
       <HomeTabs />
 

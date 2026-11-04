@@ -5,7 +5,7 @@
  *  • l'autoplay reprend après un glissement relâché SANS élan ;
  *  • l'autoplay s'arrête à la dernière carte (pas de retour brusque) ;
  *  • l'index suit le défilement (onMomentumScrollEnd) ;
- *  • le CTA est un bouton réel, distinct de la carte.
+ *  • la carte est le seul lien d'action, sans bouton CTA sous l'image.
  */
 import { AppState, StyleSheet } from 'react-native';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
@@ -172,17 +172,10 @@ describe('défilement manuel', () => {
   });
 });
 
-describe('CTA', () => {
-  it('le CTA est un bouton réel et ouvre la destination', async () => {
+describe('action de la carte Hero', () => {
+  it('supprime le bouton CTA séparé et garde toute la carte cliquable', async () => {
     await renderCarousel({ ...SETTINGS, autoplay: false });
-    const cta = screen.getByTestId('hero-card-a-cta');
-    expect(cta.props.accessibilityRole).toBe('button');
-    fireEvent.press(cta);
-    expect(router.push).toHaveBeenCalledWith('/shop/a');
-  });
-
-  it('la carte reste cliquable indépendamment du CTA', async () => {
-    await renderCarousel({ ...SETTINGS, autoplay: false });
+    expect(screen.queryByTestId('hero-card-a-cta')).toBeNull();
     fireEvent.press(screen.getByTestId('hero-card-a'));
     expect(router.push).toHaveBeenCalledWith('/shop/a');
   });
