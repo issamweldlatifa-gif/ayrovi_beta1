@@ -30,6 +30,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Root Vitest includes a contract test importing apps/mobile source; its
+      # OXC transform follows apps/mobile/tsconfig.json -> expo/tsconfig.base.
+      - name: Install mobile TypeScript config dependencies
+        run: npm ci --prefix apps/mobile --ignore-scripts --no-audit --no-fund
+
       - name: Audit dependency advisories
         run: npm audit --audit-level=high
 
