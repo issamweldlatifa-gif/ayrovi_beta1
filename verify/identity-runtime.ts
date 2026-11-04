@@ -68,7 +68,7 @@ async function main() {
           for (const selector of ['.ac-cart-description strong', '.ac-cart-description h2']) {
             const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector });
             const actual = await cdp.send('CSS.getPlatformFontsForNode', { nodeId }); fonts.push({ selector, ...actual });
-            check('actual rendered glyphs use only downloaded approved fonts: ' + selector, actual.fonts.length && actual.fonts.every(f => f.isCustomFont && /Zalando|Noto Sans Arabic/.test(f.familyName)), actual);
+            check('actual rendered glyphs use only downloaded approved fonts: ' + selector, actual.fonts.length && actual.fonts.every(f => f.isCustomFont && /Ayrovi Extracted Sans|Noto Sans Arabic/.test(f.familyName)), actual);
           }
         }
         await page.screenshot({ path: `${output}/${name.toLowerCase()}-cart.png` });
