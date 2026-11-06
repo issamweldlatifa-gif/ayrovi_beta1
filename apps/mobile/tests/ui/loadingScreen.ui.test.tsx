@@ -45,7 +45,7 @@ describe('marque ZAYROVI', () => {
   it('affiche le nom à côté du Z', async () => {
     wrap(<BrandMark size={30} />);
     await act(async () => {});
-    expect(screen.getByText('ZAYROVI')).toBeTruthy();
+    expect(screen.getByLabelText('ZAYROVI')).toBeTruthy();
     expect(screen.queryByText('AYROVI')).toBeNull();
   });
 });

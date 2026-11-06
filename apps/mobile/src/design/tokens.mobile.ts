@@ -736,3 +736,9 @@ export const GOOGLE_BRAND = {
   yellow: '#FBBC05',
   green: '#34A853',
 } as const;
+
+/** Approved native footer: a white payment strip and black help/identity panel. */
+export const FOOTER_THEME = {
+  paper: '#FFFFFF', ink: '#111111', mutedOnPaper: '#666666', line: '#DDDDDD',
+  muted: '#B7B7B7', separator: '#9C9C9C', link: '#B598FF', scrim: '#00000088',
+} as const;

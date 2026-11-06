@@ -41,7 +41,8 @@ import { rowDirectionFor } from '@/design/layoutLogic';
 import { TabSonimIcon } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
 import { FONTS } from '@/design/tokens.generated';
-import { SONIM_SUBTITLE_STYLE, SONIM_TITLE_STYLE } from '@/design/tokens.mobile';
+import { SONIM_TITLE_STYLE } from '@/design/tokens.mobile';
+import { BrandMark } from '@/design/BrandMark';
 import { AppText, Drawer, DrawerItem } from '@/design/ui';
 import { AppSheet } from '@/design/sheet/AppSheet';
 import { SheetHeader } from '@/design/sheet/SheetHeader';
@@ -468,9 +469,7 @@ export function SonimScreen() {
           <AppText style={[SONIM_TITLE_STYLE, { color: theme.colors.ink, fontFamily: FONTS.latin.bold }]}>
             SONIM
           </AppText>
-          <AppText style={[SONIM_SUBTITLE_STYLE, { color: theme.colors.muted, fontFamily: FONTS.latin.semibold }]}>
-            ZAYROVI
-          </AppText>
+          <BrandMark nameSize={10} color={theme.colors.muted} />
         </View>
 
         <Pressable
