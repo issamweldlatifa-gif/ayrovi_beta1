@@ -508,9 +508,6 @@ export const ar = {
   'cart.originally': 'السعر الأصلي:',
   'cart.vatIncluded': 'شامل الأداءات والرسوم',
   'cart.itemActions': 'خيارات المنتج',
-  'cart.payBadgePoste': 'البريد',
-  'cart.payBadgeTransfer': 'تحويل بنكي',
-  'cart.payBadgeCod': 'عند الاستلام',
 
   'sheet.close': 'إغلاق',
   'product.promoBadge': 'عرض',

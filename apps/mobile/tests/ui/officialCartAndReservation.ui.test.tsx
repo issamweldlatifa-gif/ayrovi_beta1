@@ -240,8 +240,9 @@ describe('Refonte du 29/10/2026 — Panier officiel, Fiche réservation 20 min e
     expect(screen.getByTestId('cart-sticky-summary')).toBeTruthy();
     expect(screen.getByText('TVA incluse')).toBeTruthy();
     expect(screen.getByTestId('cart-payment-badges')).toBeTruthy();
-    expect(screen.getByText('VISA')).toBeTruthy();
-    expect(screen.getByText('Mastercard')).toBeTruthy();
+    expect(screen.getByLabelText('Visa')).toBeTruthy();
+    expect(screen.getByLabelText('Mastercard')).toBeTruthy();
+    for (const name of ['D17', 'Virement bancaire', 'Flouci']) expect(screen.getByLabelText(name)).toBeTruthy();
 
     fireEvent.press(screen.getByTestId('cart-checkout'));
     expect(onCheckout).toHaveBeenCalledTimes(1);

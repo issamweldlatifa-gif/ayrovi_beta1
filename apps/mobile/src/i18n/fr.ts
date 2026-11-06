@@ -508,9 +508,6 @@ export const fr = {
   'cart.originally': 'Prix d’origine :',
   'cart.vatIncluded': 'TVA incluse',
   'cart.itemActions': 'Options de l’article',
-  'cart.payBadgePoste': 'La Poste',
-  'cart.payBadgeTransfer': 'Virement',
-  'cart.payBadgeCod': 'Livraison',
   /* ── P3.4 : demande d'achat par procuration + demande de boutique (§37/§38). ─ */
   /* ── P4.1 : Lens — photo / texte → fiches marchandes réelles. ─────────────── */
   'sheet.close': 'Fermer',

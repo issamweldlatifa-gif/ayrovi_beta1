@@ -1,6 +1,7 @@
 /** Native footer: white payment gallery, black help panel, shared brand identity.
  * Logos are informational, not checkout switches. Checkout availability stays server-owned.
  */
+import { PAYMENT_LOGOS } from '@/config/paymentLogos';
 import { useState } from 'react';
 import { Image, Linking, Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
@@ -12,13 +13,7 @@ import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { useFooterInfo } from '@/api/hooks';
 
-const PAYMENTS = [
-  { name: 'Mastercard', source: require('../../../assets/payments/mastercard.png') },
-  { name: 'Visa', source: require('../../../assets/payments/visa.png') },
-  { name: 'D17', source: require('../../../assets/payments/d17.png') },
-  { name: 'Virement bancaire', source: require('../../../assets/payments/transfer.png') },
-  { name: 'Flouci', source: require('../../../assets/payments/flouci.png') },
-] as const;
+
 
 export interface FooterProps { testID?: string }
 
@@ -36,7 +31,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
     <View style={[styles.payments, { paddingHorizontal: gutter }]}>
       <AppText color={PALETTE.ink} variant="h3">{t('footer.paymentTitle')}</AppText>
       <View style={[styles.badges, { flexDirection: direction }]}>
-        {PAYMENTS.map(({ name, source }) => <View key={name} style={styles.badge}>
+        {PAYMENT_LOGOS.map(({ name, source }) => <View key={name} style={styles.badge}>
           <Image source={source} resizeMode="contain" accessibilityLabel={name} style={styles.logo} />
         </View>)}
       </View>

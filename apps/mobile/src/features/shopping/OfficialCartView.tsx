@@ -9,9 +9,11 @@
  *     compact `Commander`, et rangée des moyens de paiement acceptés.
  */
 import { type ReactNode, useMemo, useState } from 'react';
-import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { PAYMENT_LOGOS } from '@/config/paymentLogos';
+import { FOOTER_THEME } from '@/design/tokens.mobile';
 import { AppImage } from '@/design/appImage';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { SheetHeader } from '@/design/sheet/SheetHeader';
@@ -45,36 +47,25 @@ export { splitCartVariantLabels };
 
 export function PaymentMethodsBadgeStrip() {
   const theme = useTheme();
-  const { t } = useI18n();
-  const badges = [
-    { key: 'visa', label: 'VISA', icon: 'card-outline' as const },
-    { key: 'mastercard', label: 'Mastercard', icon: 'card-outline' as const },
-    { key: 'edinar', label: t('cart.payBadgePoste'), icon: 'wallet-outline' as const },
-    { key: 'transfer', label: t('cart.payBadgeTransfer'), icon: 'swap-horizontal-outline' as const },
-    { key: 'cod', label: t('cart.payBadgeCod'), icon: 'cash-outline' as const },
-  ];
 
   return (
     <View
       testID="cart-payment-badges"
       style={[styles.badgesRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}
     >
-      {badges.map((badge) => (
+      {PAYMENT_LOGOS.map((badge) => (
         <View
-          key={badge.key}
+          key={badge.name}
           style={[
             styles.paymentBadge,
             {
               flexDirection: rowDirectionFor(theme.isRTL),
-              backgroundColor: theme.colors.surface,
+              backgroundColor: FOOTER_THEME.paper,
               borderColor: theme.colors.line,
             },
           ]}
         >
-          <Ionicons name={badge.icon} size={theme.iconSize.xs} color={theme.colors.ink} accessibilityElementsHidden />
-          <AppText variant="captionStrong" color={theme.colors.ink}>
-            {badge.label}
-          </AppText>
+          <Image source={badge.source} accessibilityLabel={badge.name} resizeMode="contain" style={styles.paymentLogo} />
         </View>
       ))}
     </View>
@@ -387,18 +378,18 @@ export function OfficialCartStickySummary({
     >
       {deliveryTnd != null ? (
         <View style={[styles.summaryRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <AppText variant="label" color={theme.colors.ink}>{t('cart.delivery')}</AppText>
-          <AppText variant="label" color={theme.colors.ink}>{formatMoney(deliveryTnd)}</AppText>
+          <AppText variant="body" color={theme.colors.ink}>{t('cart.delivery')}</AppText>
+          <AppText variant="body" color={theme.colors.ink}>{formatMoney(deliveryTnd)}</AppText>
         </View>
       ) : null}
 
       {totalTnd != null ? (
         <View style={[styles.summaryRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           <View style={[styles.totalTitleGroup, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <AppText variant="bodyStrong" color={theme.colors.ink}>{t('cart.total')}</AppText>
+            <AppText variant="h3" color={theme.colors.ink}>{t('cart.total')}</AppText>
             <AppText variant="caption" color={theme.colors.muted}>{t('cart.vatIncluded')}</AppText>
           </View>
-          <AppText variant="bodyStrong" color={theme.colors.ink}>{formatMoney(totalTnd)}</AppText>
+          <AppText variant="h3" color={theme.colors.ink}>{formatMoney(totalTnd)}</AppText>
         </View>
       ) : null}
 
@@ -622,14 +613,19 @@ const styles = StyleSheet.create({
   badgesRow: {
     alignItems: 'center',
     justifyContent: 'center',
-    flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
     paddingTop: 2,
   },
+  paymentLogo: { width: '100%', height: '100%' },
   paymentBadge: {
+    flex: 1,
+    minWidth: 0,
+    maxWidth: 80,
+    height: 38,
+    justifyContent: 'center',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
+    paddingHorizontal: 4,
     paddingVertical: 4,
     borderRadius: RADIUS.xs,
     borderWidth: StyleSheet.hairlineWidth,
