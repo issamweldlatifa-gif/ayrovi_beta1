@@ -1,3 +1,4 @@
+import { installPublicationShowcase } from '../services/publicationShowcase';
 import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../shared/publicationFeed';
 import { resolveFeaturedPublication } from '../services/homeFeatured';
 import { seedOfficialStories } from '../services/officialStories';
@@ -381,6 +382,7 @@ export class QatafoDatabase {
     this.installOfficialStories();
     this.installFeaturedPortrait();
     this.installPublicationEditorialLaunch();
+    this.runOnceDataMigration('publication_visible_showcase_v1', () => { installPublicationShowcase(this); });
     this.rebrandBlueV1();
   }
 
