@@ -1,3 +1,4 @@
+import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../shared/publicationFeed';
 import { resolveFeaturedPublication } from '../services/homeFeatured';
 import { seedOfficialStories } from '../services/officialStories';
 import { FONT_STACK } from '../../shared/brand.generated';
@@ -346,6 +347,11 @@ export class QatafoDatabase {
     this.ensureColumn('publications', 'category', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('publications', 'media_origin', "TEXT NOT NULL DEFAULT 'uploaded'");
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_publications_feed ON publications(status,publish_at DESC,id DESC); CREATE INDEX IF NOT EXISTS idx_publications_feed_category ON publications(status,category,publish_at DESC,id DESC)');
+    this.db.exec(`CREATE TABLE IF NOT EXISTS publication_feed_settings (
+      id TEXT PRIMARY KEY CHECK(id='global'), config_json TEXT NOT NULL, updated_at TEXT NOT NULL
+    )`);
+    this.run("INSERT OR IGNORE INTO publication_feed_settings (id,config_json,updated_at) VALUES ('global',?,?)",
+      JSON.stringify(DEFAULT_PUBLICATION_FEED_SETTINGS), new Date().toISOString());
     this.initErpCoreSchema();
     this.initCatalogueSchema();
     this.initInventorySchema();

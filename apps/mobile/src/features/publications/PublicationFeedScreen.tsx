@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { useInfiniteQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { setStatusBarStyle } from 'expo-status-bar';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { fetchFeedPage, type FeedPost, type FeedPage } from '@/api/publicationFeed';
+import { fetchFeedPage, fetchFeedSettings, type FeedPost, type FeedPage } from '@/api/publicationFeed';
 import { BrandMark } from '@/design/BrandMark';
 import { AppText } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
@@ -18,11 +18,13 @@ import { useSession } from '@/state/session';
 import { Comments } from '@/features/social/Comments';
 import { PublicationSparkIcon } from './PublicationReactionIcon';
 import { PublicationCard } from './PublicationCard';
-import { CATEGORY_LABELS, readFeedView, saveFeedView, uniqueFeedPosts } from './publicationFeedLogic';
+import { readFeedView, saveFeedView, uniqueFeedPosts } from './publicationFeedLogic';
 
 export function PublicationFeedScreen() {
   const theme = useTheme();
   const queryClient = useQueryClient();
+  const configuration = useQuery({ queryKey: ['publication-feed-settings'], queryFn: ({ signal }) => fetchFeedSettings({ signal }), staleTime: 0, refetchInterval: 30000 });
+  const settings = configuration.data;
   useFocusEffect(useCallback(() => {
     setStatusBarStyle('dark');
     return () => setStatusBarStyle(theme.mode === 'dark' ? 'light' : 'dark');
@@ -51,9 +53,12 @@ export function PublicationFeedScreen() {
     initialPageParam: null as string | null,
     queryFn: ({ pageParam, signal }) => fetchFeedPage({ category: post ? '' : category, q: post ? '' : q, post, cursor: pageParam }, { signal }),
     getNextPageParam: page => page.nextCursor ?? undefined,
-    enabled: session.status !== 'loading', staleTime: 30000,
+    enabled: session.status !== 'loading' && !!settings?.enabled, staleTime: 30000,
   });
-  const rows = uniqueFeedPosts(feed.data?.pages ?? []);
+  const rows = settings?.enabled ? uniqueFeedPosts(feed.data?.pages ?? []) : [];
+  useEffect(() => {
+    if (settings && !settings.categories.some(c => c.key === category && c.enabled)) setCategory('');
+  }, [settings, category]);
   const reset = () => { offset.current = 0; restored.current = true; list.current?.scrollToOffset({ offset: 0, animated: false }); };
   const closeComments = () => { setComments(null); void feed.refetch(); };
   return <View testID="publication-feed" style={[styles.screen, { paddingTop: insets.top }]}>
@@ -62,7 +67,7 @@ export function PublicationFeedScreen() {
         <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.sm} color={P.ink} />
       </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'الرئيسية ZAYROVI' : 'Accueil ZAYROVI'} onPress={() => router.push('/(tabs)')}><BrandMark nameSize={12} color={P.ink} /></Pressable>
-      <View style={styles.title}><AppText variant="label" color={P.ink}>{t('social.publications')}</AppText></View>
+      <View style={styles.title}><AppText numberOfLines={1} variant="label" color={P.ink}>{settings ? (ar ? settings.titleAr : settings.titleFr) : t('social.publications')}</AppText></View>
       <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'البحث في المنشورات' : 'Rechercher des publications'} accessibilityState={{ expanded: searchOpen }} onPress={() => setSearchOpen(!searchOpen)} style={styles.icon}>
         <Ionicons name="search-outline" size={theme.iconSize.sm} color={P.ink} />
       </Pressable>
@@ -77,10 +82,10 @@ export function PublicationFeedScreen() {
       <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'مسح البحث' : 'Effacer la recherche'} onPress={() => { reset(); setSearch(''); }} style={styles.icon}><Ionicons name="close" size={theme.iconSize.sm} color={P.ink} /></Pressable>
     </View> : null}
     <View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.categories, { paddingHorizontal: gutter, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-      {Object.entries(CATEGORY_LABELS).map(([key, labels]) => <Pressable key={key} testID={`publication-category-${key || 'all'}`}
-        accessibilityRole="button" accessibilityLabel={labels[ar ? 1 : 0]} accessibilityState={{ selected: category === key }}
+      {(settings?.categories ?? []).filter(c => c.enabled).map(({ key, labelFr, labelAr }) => <Pressable key={key} testID={`publication-category-${key || 'all'}`}
+        accessibilityRole="button" accessibilityLabel={(ar ? labelAr : labelFr)} accessibilityState={{ selected: category === key }}
         onPress={() => { reset(); if (post) router.setParams({ post: undefined }); setCategory(key); }} style={[styles.chip, { backgroundColor: category === key ? P.accent : P.neutral }]}>
-        <AppText variant="captionStrong" color={category === key ? P.paper : P.ink}>{labels[ar ? 1 : 0]}</AppText>
+        <AppText variant="captionStrong" color={category === key ? P.paper : P.ink}>{(ar ? labelAr : labelFr)}</AppText>
       </Pressable>)}
     </ScrollView></View>
     {post ? <Pressable accessibilityRole="button" style={[styles.all, { paddingHorizontal: gutter }]} onPress={() => { reset(); setCategory(''); setSearch(''); router.setParams({ post: undefined }); }}>
@@ -89,12 +94,12 @@ export function PublicationFeedScreen() {
     <FlatList ref={list} testID="publication-feed-list" data={rows} keyExtractor={item => item.id}
       contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: insets.bottom + 24, paddingTop: 12 }}
       keyboardShouldPersistTaps="handled" initialNumToRender={4} maxToRenderPerBatch={4} windowSize={5}
-      refreshing={feed.isRefetching && !feed.isFetchingNextPage} onRefresh={() => { reset(); void feed.refetch(); }}
+      refreshing={feed.isRefetching && !feed.isFetchingNextPage} onRefresh={() => { reset(); void configuration.refetch(); if (settings?.enabled) void feed.refetch(); }}
       onScroll={event => { offset.current = event.nativeEvent.contentOffset.y; saveFeedView(owner, { category, q, offset: offset.current }); }} scrollEventThrottle={100}
       onContentSizeChange={() => { if (!restored.current && rows.length) { restored.current = true; list.current?.scrollToOffset({ offset: initial.current.offset, animated: false }); } }}
       onEndReachedThreshold={0.5} onEndReached={() => { if (feed.hasNextPage && !feed.isFetching && !feed.isFetchNextPageError) void feed.fetchNextPage(); }}
-      renderItem={({ item, index }) => <PublicationCard key={`${owner}:${item.id}`} post={item} compact={index % 3 === 1} onReaction={(id, liked, likes) => queryClient.setQueriesData<InfiniteData<FeedPage>>({ queryKey: ['publication-feed', owner] }, old => old ? { ...old, pages: old.pages.map(page => ({ ...page, items: page.items.map(row => row.id === id ? { ...row, liked, likes } : row) })) } : old)} onComments={() => setComments(item)} />}
-      ListEmptyComponent={feed.isPending ? <LoadingBlock /> : feed.isError ? <ErrorBlock error={feed.error} onRetry={() => void feed.refetch()} /> : <EmptyBlock><PublicationSparkIcon /><AppText color={P.muted}>{ar ? 'ما فماش منشورات مطابقة حاليًا.' : 'Aucune publication pour cette sélection.'}</AppText></EmptyBlock>}
+      renderItem={({ item, index }) => <PublicationCard key={`${owner}:${item.id}`} post={item} compact={settings?.layout === 'compact' || (settings?.layout === 'mixed' && index % 3 === 1)} onReaction={(id, liked, likes) => queryClient.setQueriesData<InfiniteData<FeedPage>>({ queryKey: ['publication-feed', owner] }, old => old ? { ...old, pages: old.pages.map(page => ({ ...page, items: page.items.map(row => row.id === id ? { ...row, liked, likes } : row) })) } : old)} onComments={() => setComments(item)} />}
+      ListEmptyComponent={configuration.isError ? <ErrorBlock error={configuration.error} onRetry={() => void configuration.refetch()} /> : configuration.isPending ? <LoadingBlock /> : !settings?.enabled ? <EmptyBlock><AppText color={P.muted}>{ar ? 'المنشورات غير متاحة حاليًا.' : 'Les publications sont temporairement indisponibles.'}</AppText></EmptyBlock> : feed.isPending ? <LoadingBlock /> : feed.isError ? <ErrorBlock error={feed.error} onRetry={() => void feed.refetch()} /> : <EmptyBlock><PublicationSparkIcon /><AppText color={P.muted}>{ar ? 'ما فماش منشورات مطابقة حاليًا.' : 'Aucune publication pour cette sélection.'}</AppText></EmptyBlock>}
       ListFooterComponent={feed.isFetchingNextPage ? <LoadingBlock /> : feed.isError && rows.length > 0 ? <ErrorBlock error={feed.error} onRetry={() => { if (feed.isFetchNextPageError) void feed.fetchNextPage(); else void feed.refetch(); }} /> : rows.length > 0 && !feed.hasNextPage ? <AppText variant="caption" color={P.muted} align="center">{ar ? 'وصلت لآخر المنشورات' : 'Vous avez tout découvert'}</AppText> : null}
     />
     <Modal visible={comments !== null} transparent animationType="slide" onRequestClose={closeComments}>

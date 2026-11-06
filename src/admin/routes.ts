@@ -1,3 +1,5 @@
+import { normalizePublicationFeedSettings } from '../../shared/publicationFeed';
+import { readPublicationFeedSettings } from '../services/publicationFeedSettings';
 import { PUBLICATION_CATEGORIES } from '../../shared/publicationFeed';
 import { FONT_STACK } from '../../shared/brand.generated';
 import { brandAccentColor, enforceBrandIdentity, enforceLegacyTheme, hasForbiddenFontSelection } from '../../shared/identityPolicy';
@@ -1359,6 +1361,19 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   const socialList = (table: string, res: Response) => {
     res.json({ success: true, data: db.all<any>(`SELECT * FROM ${table} ORDER BY publish_at DESC`) });
   };
+
+  router.get('/publication-feed-settings', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ success: true, data: readPublicationFeedSettings(db) });
+  });
+  router.put('/publication-feed-settings', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = readPublicationFeedSettings(db);
+    const next = normalizePublicationFeedSettings(req.body, existing);
+    if (!next) return res.status(400).json({ success: false, error: 'Réglages Feed invalides. Vérifiez les titres, catégories et leur visibilité.' });
+    db.run("UPDATE publication_feed_settings SET config_json=?,updated_at=? WHERE id='global'", JSON.stringify(next), new Date().toISOString());
+    audit(db, req, 'UPDATE', 'PUBLICATION_FEED', 'global', existing, next);
+    res.json({ success: true, data: next });
+  });
 
   router.get('/publications', requireAdmin(db, 'content:read'), (_req, res) => socialList('publications', res));
   router.post('/publications', requireAdmin(db, 'content:write'), (req, res) => {

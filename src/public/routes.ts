@@ -1,3 +1,4 @@
+import { readPublicationFeedSettings } from '../services/publicationFeedSettings';
 import { PUBLICATION_CATEGORIES } from '../../shared/publicationFeed';
 import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { readFicheLabels } from '../catalogue/products';
@@ -738,6 +739,11 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     } });
   });
 
+  router.get('/social/publication-feed-settings', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: readPublicationFeedSettings(db) });
+  });
+
   // Additive Phase 1 endpoint; personal state must never enter a shared cache.
   router.get('/social/publication-feed', optionalCustomer(db), (req, res) => {
     res.setHeader('Cache-Control', 'private, no-store');
@@ -748,6 +754,11 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     if ((category && !PUBLICATION_CATEGORIES.includes(category as any)) || q.length > 100
         || (post && !/^[A-Za-z0-9_-]{1,120}$/.test(post)) || !Number.isInteger(limit) || limit < 1 || limit > 30) {
       return res.status(400).json({ success: false, error: 'Filtre Publication invalide.' });
+    }
+    const settings = readPublicationFeedSettings(db);
+    if (!settings.enabled) return res.json({ success: true, data: { items: [], nextCursor: null } });
+    if (category && !settings.categories.some(c => c.key === category && c.enabled)) {
+      return res.status(400).json({ success: false, error: 'Catégorie masquée.' });
     }
     const where = ["pub.status='publie'", 'pub.publish_at<=?'];
     const args: any[] = [new Date().toISOString()];

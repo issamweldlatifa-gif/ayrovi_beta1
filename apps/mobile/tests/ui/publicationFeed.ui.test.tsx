@@ -1,3 +1,4 @@
+import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../../../shared/publicationFeed';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
@@ -9,13 +10,14 @@ import type { FeedPost } from '@/api/publicationFeed';
 const mockSession = { status: 'signedIn', account: { id: 'ui-owner' } };
 const mockSend = jest.fn();
 const mockQuery = jest.fn();
+const mockSettingsQuery = jest.fn();
 const mockSetQueries = jest.fn();
 const mockRefetch = jest.fn();
 const mockFetchNext = jest.fn();
 const mockRouter = { push: jest.fn(), setParams: jest.fn(), canGoBack: jest.fn(), replace: jest.fn(), back: jest.fn() };
 jest.mock('expo-router', () => ({ router: { push: (...args: unknown[]) => mockRouter.push(...args), setParams: (...args: unknown[]) => mockRouter.setParams(...args), canGoBack: () => mockRouter.canGoBack(), replace: (...args: unknown[]) => mockRouter.replace(...args), back: () => mockRouter.back() }, useFocusEffect: jest.fn(), useLocalSearchParams: () => ({}) }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
-jest.mock('@tanstack/react-query', () => ({ useInfiniteQuery: (...args: unknown[]) => mockQuery(...args), useQueryClient: () => ({ setQueriesData: mockSetQueries }) }));
+jest.mock('@tanstack/react-query', () => ({ useQuery: () => mockSettingsQuery(), useInfiniteQuery: (...args: unknown[]) => mockQuery(...args), useQueryClient: () => ({ setQueriesData: mockSetQueries }) }));
 jest.mock('@/state/session', () => ({ useSession: () => mockSession }));
 jest.mock('@/session/session', () => ({ useSessionId: () => 'ui-guest-session' }));
 jest.mock('@/api/social', () => ({ sendInteraction: (...args: unknown[]) => mockSend(...args) }));
@@ -28,7 +30,7 @@ async function mount(child = <PublicationFeedScreen />) {
   const result = render(<PrefsProvider><I18nProvider><ThemeProvider>{child}</ThemeProvider></I18nProvider></PrefsProvider>);
   await act(async () => {}); return result;
 }
-beforeEach(() => { jest.clearAllMocks(); mockSession.status = 'signedIn'; mockSession.account.id = `owner-${Math.random()}`; mockQuery.mockReturnValue(feed); });
+beforeEach(() => { jest.clearAllMocks(); mockSession.status = 'signedIn'; mockSession.account.id = `owner-${Math.random()}`; mockQuery.mockReturnValue(feed); mockSettingsQuery.mockReturnValue({ data: DEFAULT_PUBLICATION_FEED_SETTINGS, isPending: false, isError: false, refetch: jest.fn() }); });
 
 describe('Publication Phase 1 UI', () => {
   it('renders actual content, custom reaction and explicit AI label without fake products', async () => {
@@ -38,6 +40,20 @@ describe('Publication Phase 1 UI', () => {
     expect(screen.getByText('Création visuelle IA')).toBeTruthy();
     expect(screen.queryByText('Voir les produits')).toBeNull();
     expect(screen.getByRole('button', { name: 'Enregistrer — prochaine phase' })).toBeDisabled();
+  });
+  it('renders CRM title and ordered visible categories and applies the compact layout', async () => {
+    mockSettingsQuery.mockReturnValue({ data: { ...DEFAULT_PUBLICATION_FEED_SETTINGS, titleFr: 'Découvrir ZAYROVI', layout: 'compact', categories: [...DEFAULT_PUBLICATION_FEED_SETTINGS.categories].reverse().map(c => ({ ...c, enabled: c.key !== 'beauty' })) }, isPending: false, isError: false });
+    await mount();
+    expect(screen.getByText('Découvrir ZAYROVI')).toBeTruthy();
+    expect(screen.queryByTestId('publication-category-beauty')).toBeNull();
+    expect(screen.getByTestId('publication-media-ui-post')).toHaveStyle({ width: '52%' });
+  });
+  it('shows a clear CMS-disabled state instead of cached posts', async () => {
+    mockSettingsQuery.mockReturnValue({ data: { ...DEFAULT_PUBLICATION_FEED_SETTINGS, enabled: false }, isPending: false, isError: false });
+    await mount();
+    expect(screen.queryByText('Inspiration réelle')).toBeNull();
+    expect(screen.getByText('Les publications sont temporairement indisponibles.')).toBeTruthy();
+    expect(mockQuery.mock.calls.at(-1)?.[0].enabled).toBe(false);
   });
   it('changes the actual query category and opens the comments sheet', async () => {
     await mount(); fireEvent.press(screen.getByTestId('publication-category-beauty'));

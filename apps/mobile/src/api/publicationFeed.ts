@@ -1,3 +1,4 @@
+import { normalizePublicationFeedSettings } from '../../../../shared/publicationFeed';
 import { apiGetData, type RequestOptions } from './client';
 import { ApiError } from './errors';
 import { parseLinkedProduct, type LinkedProduct } from './linkedProduct';
@@ -27,4 +28,11 @@ export async function fetchFeedPage(filters: { category: string; q: string; post
   const query = new URLSearchParams({ category: filters.category, q: filters.q, post: filters.post, limit: '12' });
   if (filters.cursor) query.set('cursor', filters.cursor);
   return parseFeedPage(await apiGetData<unknown>(`/api/public/social/publication-feed?${query}`, options));
+}
+
+export async function fetchFeedSettings(options?: RequestOptions) {
+  const value = await apiGetData<unknown>('/api/public/social/publication-feed-settings', options);
+  const settings = normalizePublicationFeedSettings(value);
+  if (!settings) throw new ApiError('malformed', 'Invalid Publication feed settings');
+  return settings;
 }

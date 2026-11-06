@@ -55,3 +55,21 @@ L'ancienne implémentation de l'écran a été retirée et remplacée par des co
 - Chromium réel : chargement des publications, Fashion, recherche, absence de résultats, Sheet commentaires, lien natif filtré, aperçu web du post, **zéro erreur de page**. Retour depuis notifications du compte : offset avant/après **400 → 400**.
 
 Les dernières corrections de focus/status bar, sticker d'absence et RTL compact ont également été contrôlées par typecheck et tests ciblés avant livraison. Le push d'un commit n'est pas une preuve de déploiement en production.
+
+
+## Complément CRM — configuration du Feed
+
+L’éditeur **Contenu → Social → Réglages Feed** contrôle désormais, en plus des publications elles-mêmes :
+
+- visibilité du Feed (sans supprimer ni dépublier les contenus) ;
+- titre de l’écran en français/arabe ;
+- mode éditorial mixte, grandes images portrait ou cartes compactes ;
+- ordre, libellés FR/AR et visibilité des catégories.
+
+For You reste toujours disponible. Masquer un chip ne supprime pas ses publications du filtre général. Le singleton SQLite `publication_feed_settings` conserve les réglages au redémarrage. Les API `/api/admin/publication-feed-settings` et `/api/public/social/publication-feed-settings` utilisent un contrat partagé strict ; écriture protégée par session, permission content:write, CSRF et audit. Le nouveau Feed respecte sa visibilité côté serveur aussi.
+
+Le téléphone lit les réglages au chargement/rafraîchissement et les relit toutes les 30 secondes pendant l’utilisation. Ce n’est pas une promesse de synchronisation WebSocket instantanée. L’interface Social désactive ses commandes d’édition sans droit d’écriture ; les vérifications serveur restent la barrière de sécurité.
+
+Validation du complément : **3284 tests racine réussis (261 fichiers, 17 ignorés)**, **1133 tests de logique mobile**, **195 tests UI mobile**, typechecks et build réussis. Un test de scraper sans rapport a dépassé les 5 secondes pendant le premier passage parallèle ; le passage complet de contrôle a réussi avec `--testTimeout=15000` sans changement de son code.
+
+Chromium réel : modification depuis les contrôles CRM du titre, du mode compact, de l’ordre (Technology premier) et du masquage Beauty ; vérification de leur effet dans Expo Web (largeur compacte 190,31 px à 390 px de viewport). Masquage global vérifié dans l’application. Réglages originaux restaurés après le test ; aucune erreur de page. Partage et anciennes API inchangés. Cela ne remplace toujours pas une validation sur téléphone Android/iOS ni une preuve de déploiement.

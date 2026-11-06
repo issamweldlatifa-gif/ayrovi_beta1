@@ -1,3 +1,4 @@
+import { PublicationFeedSettingsPage } from './PublicationFeedSettingsPage';
 import { PUBLICATION_CATEGORIES } from '../../../shared/publicationFeed';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowUp, Pencil, Plus, Trash2 } from '../components/QatafoIcons';
@@ -8,7 +9,7 @@ import { CatalogueProductsPage } from './CataloguePages';
 import { uploadMediaFile } from './mediaUpload';
 import { normalizeMediaLink, type MediaLinkKind } from '../../../shared/mediaLinks';
 
-const TABS = ['Publication', 'Reel', 'Produits temporaires'] as const;
+const TABS = ['Publication', 'Reel', 'Produits temporaires', 'Réglages Feed'] as const;
 type Tab = typeof TABS[number];
 
 const st = (s: string) => s === 'publie' ? 'PUBLISHED' : s === 'archive' ? 'ARCHIVED' : 'DRAFT';
@@ -211,7 +212,7 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
 };
 
 /* ---------------- Page Social (3 tabs) ---------------- */
-export const SocialAdminPage: React.FC = () => {
+export const SocialAdminPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
   const [tab, setTab] = useState<Tab>('Publication');
   const [channels, setChannels] = useState<any[]>([]);
   useEffect(() => { adminApi<any>('/story-publishers').then((r) => setChannels(r.data || [])).catch(() => undefined); }, []);
@@ -230,9 +231,12 @@ export const SocialAdminPage: React.FC = () => {
           <Button key={t} variant="secondary" aria-pressed={tab === t} onClick={() => setTab(t)}>{t}</Button>
         ))}
       </div>
+      {tab === 'Réglages Feed' && <PublicationFeedSettingsPage canWrite={canWrite} />}
+      <fieldset disabled={!canWrite} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       {tab === 'Publication' && <PublicationsTab channels={channels} />}
       {tab === 'Reel' && <ReelsTab channels={channels} />}
       {tab === 'Produits temporaires' && <CatalogueProductsPage scope="content" />}
+      </fieldset>
     </div>
   );
 };

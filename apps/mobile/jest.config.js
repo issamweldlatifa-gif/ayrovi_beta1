@@ -7,6 +7,7 @@ module.exports = {
   testMatch: ['<rootDir>/tests/ui/**/*.test.tsx'],
   setupFilesAfterEnv: ['<rootDir>/tests/ui/jest.setup.ts'],
   moduleNameMapper: {
+    '^@babel/runtime/(.*)$': '<rootDir>/node_modules/@babel/runtime/$1',
     '^@/(.*)$': '<rootDir>/src/$1',
   },
 };
