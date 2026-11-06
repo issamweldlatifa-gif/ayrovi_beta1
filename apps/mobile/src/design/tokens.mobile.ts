@@ -747,6 +747,8 @@ export const FOOTER_THEME = {
 
 /** Publication is deliberately a white editorial space, even in system dark mode. */
 export const PUBLICATION_THEME = {
+  /** Publisher verification seal, deliberately distinct from active purple. */
+  verified: '#1877F2',
   paper: BRAND.white, ink: BRAND.black, muted: NEUTRALS.textSecondary,
   line: NEUTRALS.border, neutral: BRAND.lightGray, accent: BRAND.violet,
 } as const;

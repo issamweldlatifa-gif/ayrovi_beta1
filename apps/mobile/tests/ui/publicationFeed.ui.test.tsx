@@ -1,3 +1,6 @@
+import { AppState, FlatList } from 'react-native';
+import { PublicationProductPreview } from '@/features/publications/PublicationProductPreview';
+import { PublicationMedia } from '@/features/publications/PublicationMedia';
 import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../../../shared/publicationFeed';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { ThemeProvider } from '@/design/theme';
@@ -8,7 +11,14 @@ import { PublicationCard } from '@/features/publications/PublicationCard';
 import type { FeedPost } from '@/api/publicationFeed';
 
 const mockSession = { status: 'signedIn', account: { id: 'ui-owner' } };
+const mockCartAdd = jest.fn();
+jest.mock('@/api/cart', () => ({ ...jest.requireActual('@/api/cart'), addCatalogToCart: (...args: unknown[]) => mockCartAdd(...args) }));
+const mockPlayer = { play: jest.fn(), pause: jest.fn(), muted: true, addListener: jest.fn(() => ({ remove: jest.fn() })) };
+const mockPreference = jest.fn(); const mockFollow = jest.fn();
+const mockInvalidate = jest.fn();
 const mockSend = jest.fn();
+jest.mock('@/api/publicationFeed', () => ({ ...jest.requireActual('@/api/publicationFeed'), writePublicationPreference: (...args: unknown[]) => mockPreference(...args), followPublisher: (...args: unknown[]) => mockFollow(...args) }));
+jest.mock('expo-video', () => ({ useVideoPlayer: () => mockPlayer, VideoView: 'VideoView' }));
 const mockQuery = jest.fn();
 const mockSettingsQuery = jest.fn();
 const mockSetQueries = jest.fn();
@@ -17,7 +27,7 @@ const mockFetchNext = jest.fn();
 const mockRouter = { push: jest.fn(), setParams: jest.fn(), canGoBack: jest.fn(), replace: jest.fn(), back: jest.fn() };
 jest.mock('expo-router', () => ({ router: { push: (...args: unknown[]) => mockRouter.push(...args), setParams: (...args: unknown[]) => mockRouter.setParams(...args), canGoBack: () => mockRouter.canGoBack(), replace: (...args: unknown[]) => mockRouter.replace(...args), back: () => mockRouter.back() }, useFocusEffect: jest.fn(), useLocalSearchParams: () => ({}) }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }) }));
-jest.mock('@tanstack/react-query', () => ({ useQuery: () => mockSettingsQuery(), useInfiniteQuery: (...args: unknown[]) => mockQuery(...args), useQueryClient: () => ({ setQueriesData: mockSetQueries }) }));
+jest.mock('@tanstack/react-query', () => ({ useQuery: () => mockSettingsQuery(), useInfiniteQuery: (...args: unknown[]) => mockQuery(...args), useQueryClient: () => ({ setQueriesData: mockSetQueries, invalidateQueries: mockInvalidate }) }));
 jest.mock('@/state/session', () => ({ useSession: () => mockSession }));
 jest.mock('@/session/session', () => ({ useSessionId: () => 'ui-guest-session' }));
 jest.mock('@/api/social', () => ({ sendInteraction: (...args: unknown[]) => mockSend(...args) }));
@@ -30,23 +40,23 @@ async function mount(child = <PublicationFeedScreen />) {
   const result = render(<PrefsProvider><I18nProvider><ThemeProvider>{child}</ThemeProvider></I18nProvider></PrefsProvider>);
   await act(async () => {}); return result;
 }
-beforeEach(() => { jest.clearAllMocks(); mockSession.status = 'signedIn'; mockSession.account.id = `owner-${Math.random()}`; mockQuery.mockReturnValue(feed); mockSettingsQuery.mockReturnValue({ data: DEFAULT_PUBLICATION_FEED_SETTINGS, isPending: false, isError: false, refetch: jest.fn() }); });
+beforeEach(() => { jest.clearAllMocks(); mockPreference.mockResolvedValue({}); mockFollow.mockResolvedValue({}); mockSession.status = 'signedIn'; mockSession.account.id = `owner-${Math.random()}`; mockQuery.mockReturnValue(feed); mockSettingsQuery.mockReturnValue({ data: DEFAULT_PUBLICATION_FEED_SETTINGS, isPending: false, isError: false, refetch: jest.fn() }); });
 
 describe('Publication Phase 1 UI', () => {
-  it('renders actual content, custom reaction and explicit AI label without fake products', async () => {
+  it('renders actual content and save without exposing internal provenance or fake products', async () => {
     await mount();
     expect(screen.getByTestId('publication-feed-list')).toBeTruthy();
     expect(screen.getByText('Inspiration réelle')).toBeTruthy();
-    expect(screen.getByText('Création visuelle IA')).toBeTruthy();
+    expect(screen.queryByText('Création visuelle IA')).toBeNull();
     expect(screen.queryByText('Voir les produits')).toBeNull();
-    expect(screen.getByRole('button', { name: 'Enregistrer — prochaine phase' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Enregistrer' })).not.toBeDisabled();
   });
   it('renders CRM title and ordered visible categories and applies the compact layout', async () => {
     mockSettingsQuery.mockReturnValue({ data: { ...DEFAULT_PUBLICATION_FEED_SETTINGS, titleFr: 'Découvrir ZAYROVI', layout: 'compact', categories: [...DEFAULT_PUBLICATION_FEED_SETTINGS.categories].reverse().map(c => ({ ...c, enabled: c.key !== 'beauty' })) }, isPending: false, isError: false });
     await mount();
     expect(screen.getByText('Découvrir ZAYROVI')).toBeTruthy();
     expect(screen.queryByTestId('publication-category-beauty')).toBeNull();
-    expect(screen.getByTestId('publication-media-ui-post')).toHaveStyle({ width: '52%' });
+    expect(screen.getByTestId('publication-media-ui-post')).toHaveStyle({ aspectRatio: 4 / 5 });
   });
   it('shows a clear CMS-disabled state instead of cached posts', async () => {
     mockSettingsQuery.mockReturnValue({ data: { ...DEFAULT_PUBLICATION_FEED_SETTINGS, enabled: false }, isPending: false, isError: false });
@@ -88,4 +98,71 @@ describe('Publication Phase 1 UI', () => {
     await waitFor(() => expect(screen.getByText('9')).toBeTruthy());
     expect(reaction).toHaveBeenCalledWith('ui-post', true, 9);
   });
+  it('persists save and follow through the authenticated API rather than cosmetic toggles', async () => {
+    await mount();
+    fireEvent.press(screen.getByRole('button', { name: 'Enregistrer' }));
+    await waitFor(() => expect(mockPreference).toHaveBeenCalledWith('ui-post', { saved: true }));
+    expect(screen.getByRole('button', { name: 'Retirer des enregistrements' })).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Options de la publication' }));
+    fireEvent.press(screen.getByText('Suivre cet éditeur'));
+    await waitFor(() => expect(mockFollow).toHaveBeenCalledWith('official', true));
+  });
+  it('opens and closes the existing-publication viewer', async () => {
+    await mount(); fireEvent.press(screen.getByText('Inspiration réelle'));
+    expect(screen.getByRole('button', { name: 'Fermer la publication' })).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Fermer la publication' }));
+    expect(screen.queryByRole('button', { name: 'Fermer la publication' })).toBeNull();
+  });
+  it('expands real long description and renders genuine sponsored and verified metadata', async () => {
+    const content = { type: 'editorial' as const, media: [], description: 'Long description '.repeat(30), descriptionPosition: 'above' as const, sponsored: true, sponsorName: 'ZAYROVI', audience: '', topic: '' };
+    await mount(<PublicationCard post={{ ...post, content, publisherOfficial: true }} compact={false} onComments={() => undefined} onReaction={() => undefined} />);
+    expect(screen.getByText('Sponsorisé · ZAYROVI')).toBeTruthy();
+    expect(screen.getByLabelText('Éditeur officiel vérifié')).toBeTruthy();
+    fireEvent.press(screen.getByText('Voir plus'));
+    expect(screen.getByText('Voir moins')).toBeTruthy();
+  });
+
+  it('gives media a measured nonzero height and updates the actual swipe counter', async () => {
+    const media = [{ type: 'image' as const, url: '/a.jpg', poster: '', alt: 'Photo A' }, { type: 'image' as const, url: '/b.jpg', poster: '', alt: 'Photo B' }];
+    const content = { type: 'carousel' as const, media, description: '', descriptionPosition: 'below' as const, sponsored: false, sponsorName: '', audience: '', topic: '' };
+    await mount(<PublicationMedia post={{ ...post, content }} />);
+    fireEvent(screen.getByTestId('publication-media-ui-post'), 'layout', { nativeEvent: { layout: { width: 360, height: 450 } } });
+    expect(screen.getByText('1/2')).toBeTruthy();
+    expect(screen.UNSAFE_getByType(FlatList).props.renderItem({ item: media[0], index: 0 }).props.style).toEqual({ width: 360, height: 450 });
+    fireEvent(screen.UNSAFE_getByType(FlatList), 'momentumScrollEnd', { nativeEvent: { contentOffset: { x: 360 } } });
+    expect(screen.getByText('2/2')).toBeTruthy();
+  });
+  it('starts muted and pauses the actual player when the video becomes inactive', async () => {
+    AppState.currentState = 'active';
+    const content = { type: 'video' as const, media: [{ type: 'video' as const, url: '/clip.mp4', poster: '/poster.jpg', alt: 'Clip' }], description: '', descriptionPosition: 'below' as const, sponsored: false, sponsorName: '', audience: '', topic: '' };
+    const element = (active: boolean) => <PrefsProvider><I18nProvider><ThemeProvider><PublicationMedia post={{ ...post, content }} active={active} /></ThemeProvider></I18nProvider></PrefsProvider>;
+    const result = render(element(true));
+    fireEvent(screen.getByTestId('publication-media-ui-post'), 'layout', { nativeEvent: { layout: { width: 360, height: 450 } } });
+    await waitFor(() => expect(mockPlayer.play).toHaveBeenCalled());
+    expect(mockPlayer.muted).toBe(true);
+    fireEvent.press(screen.getByRole('button', { name: 'Activer le son' }));
+    expect(mockPlayer.muted).toBe(false);
+    result.rerender(element(false));
+    await waitFor(() => expect(mockPlayer.pause).toHaveBeenCalled());
+  });
+
+  it('chooses catalogue variants and adds through the existing Cart Core exactly once', async () => {
+    let finish!: (result: object) => void;
+    mockCartAdd.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    const sheet = { purchasable: true, dimensions: [{ key: 'size', label: 'Taille', values: [{ value: 'M', available: true }, { value: 'L', available: false }] }, { key: 'color', label: 'Couleur', values: [{ value: 'Bleu', available: true }, { value: 'Rouge', available: false }] }], variants: [{ id: 'variant-1', size: 'M', color: 'Bleu', available: true }] };
+    mockSettingsQuery.mockReturnValue({ data: { name: 'Produit actuel', image: '', brandName: 'Marque', finalPrice: 42, description: 'Catalogue', sheet }, isPending: false, isError: false, refetch: mockRefetch });
+    await mount(<PublicationProductPreview id="product-1" onContinue={() => undefined} onBack={() => undefined} />);
+    expect(screen.getByRole('button', { name: 'Ajouter au panier' })).toBeDisabled();
+    fireEvent.press(screen.getByRole('button', { name: 'Taille M' }));
+    fireEvent.press(screen.getByRole('button', { name: 'Couleur Bleu' }));
+    expect(screen.getByRole('button', { name: 'Taille L' })).toBeDisabled();
+    fireEvent.press(screen.getByRole('button', { name: 'Ajouter au panier' }));
+    expect(mockCartAdd).toHaveBeenCalledTimes(1);
+    expect(mockCartAdd).toHaveBeenCalledWith({ productId: 'product-1', sessionId: 'ui-guest-session', quantity: 1, requestedSize: 'M', requestedColor: 'Bleu' });
+    expect(screen.getByRole('button', { name: 'Ajout en cours…' })).toBeDisabled();
+    await act(async () => finish({ totalItemsCount: 1 }));
+    expect(screen.getByText('Article ajouté au panier')).toBeTruthy();
+    expect(mockInvalidate).toHaveBeenCalledWith({ queryKey: ['cart'] });
+  });
+
 });

@@ -346,6 +346,21 @@ export class QatafoDatabase {
     });
     this.ensureColumn('publications', 'category', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('publications', 'media_origin', "TEXT NOT NULL DEFAULT 'uploaded'");
+    for (const [name, definition] of Object.entries({
+      post_type: "TEXT NOT NULL DEFAULT 'image'", media_json: "TEXT NOT NULL DEFAULT '[]'", description: "TEXT NOT NULL DEFAULT ''",
+      description_position: "TEXT NOT NULL DEFAULT 'below'", sponsored: 'INTEGER NOT NULL DEFAULT 0', sponsor_name: "TEXT NOT NULL DEFAULT ''",
+      audience: "TEXT NOT NULL DEFAULT ''", topic: "TEXT NOT NULL DEFAULT ''",
+    })) this.ensureColumn('publications', name, definition);
+    this.db.exec(`CREATE TABLE IF NOT EXISTS publication_follows (
+      account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+      publisher_id TEXT NOT NULL REFERENCES story_publishers(id) ON DELETE CASCADE,
+      created_at TEXT NOT NULL, PRIMARY KEY(account_id,publisher_id));
+      CREATE TABLE IF NOT EXISTS publication_preferences (
+      account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+      publication_id TEXT NOT NULL REFERENCES publications(id) ON DELETE CASCADE,
+      saved INTEGER NOT NULL DEFAULT 0, feedback TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL,
+      PRIMARY KEY(account_id,publication_id));`);
+
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_publications_feed ON publications(status,publish_at DESC,id DESC); CREATE INDEX IF NOT EXISTS idx_publications_feed_category ON publications(status,category,publish_at DESC,id DESC)');
     this.db.exec(`CREATE TABLE IF NOT EXISTS publication_feed_settings (
       id TEXT PRIMARY KEY CHECK(id='global'), config_json TEXT NOT NULL, updated_at TEXT NOT NULL

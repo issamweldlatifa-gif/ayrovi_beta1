@@ -1,3 +1,4 @@
+import { PUBLICATION_TYPES } from '../../../shared/publicationContent';
 import { PublicationFeedSettingsPage } from './PublicationFeedSettingsPage';
 import { PUBLICATION_CATEGORIES } from '../../../shared/publicationFeed';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -9,7 +10,7 @@ import { CatalogueProductsPage } from './CataloguePages';
 import { uploadMediaFile } from './mediaUpload';
 import { normalizeMediaLink, type MediaLinkKind } from '../../../shared/mediaLinks';
 
-const TABS = ['Publication', 'Reel', 'Produits temporaires', 'Réglages Feed'] as const;
+const TABS = ['Publication', 'Reel', 'Produits temporaires', 'Réglages Feed', 'Statistiques'] as const;
 type Tab = typeof TABS[number];
 
 const st = (s: string) => s === 'publie' ? 'PUBLISHED' : s === 'archive' ? 'ARCHIVED' : 'DRAFT';
@@ -44,6 +45,16 @@ const ChannelSelect: React.FC<{ value: string; onChange: (v: string) => void; ch
     {channels.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
   </select>
 );
+
+function PublicationInsights() {
+  const [rows, setRows] = useState<any[]>([]); const [error, setError] = useState('');
+  const load = () => { setError(''); adminApi<any>('/publication-insights').then(result => setRows(result.data || [])).catch(() => setError('Statistiques indisponibles. Réessayez.')); };
+  useEffect(load, []);
+  return <section className="admin-card"><h2>Engagement des publications</h2><p>Vues et partages uniques observés, pas des impressions publicitaires facturables. Aucun budget ou revenu estimé.</p><Button onClick={load}>Actualiser</Button>{error ? <div className="admin-error">{error}</div> : null}<DataTable rows={rows} emptyText="Aucune publication." columns={[
+    { key: 'title', label: 'Publication' }, { key: 'sponsored', label: 'Annonceur', render: (row: any) => row.sponsored ? row.sponsor_name || 'Sponsorisé' : 'Éditorial' },
+    ...['views', 'likes', 'comments', 'shares', 'saves'].map(key => ({ key, label: ({ views: 'Vues uniques', likes: 'J’aime', comments: 'Commentaires', shares: 'Partages uniques', saves: 'Enregistrements' } as Record<string,string>)[key] })),
+  ]} /></section>;
+}
 
 /* ---------------- Publications ---------------- */
 const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
@@ -86,7 +97,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={st(row.status)} /> },
         ]}
         rowActions={[
-          { key: 'edit', label: 'Éditer', icon: <Pencil size={14} />, hideLabel: true, onRun: (row: any) => { setError(''); setForm({ ...row }); } },
+          { key: 'edit', label: 'Éditer', icon: <Pencil size={14} />, hideLabel: true, onRun: (row: any) => { setError(''); setForm({ ...row, media: JSON.parse(row.media_json || '[]') }); } },
           { key: 'delete', label: 'Supprimer', tone: 'danger', icon: <Trash2 size={14} />, hideLabel: true, onRun: (row: any) => void removeWithConfirm(`/publications/${row.id}`, 'Supprimer cette publication ?', load) },
         ]}
       />
@@ -104,6 +115,29 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
                 <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; try { const url = await uploadMediaFile(f); setForm((cur: any) => ({ ...cur, image_url: url })); } catch (err: any) { setError(err?.message || 'Upload impossible.'); } finally { e.target.value = ''; } }} />
               </label>
             </div>
+          </Field>
+          <Field label="Type de publication"><select aria-label="Type de publication" value={form.post_type || 'image'} onChange={e => setForm({ ...form, post_type: e.target.value })}>
+            {PUBLICATION_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
+          </select></Field>
+          <Field label="Description" full><textarea rows={4} maxLength={10000} value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} /></Field>
+          <Field label="Position de la description"><select value={form.description_position || 'below'} onChange={e => setForm({ ...form, description_position: e.target.value })}><option value="above">Au-dessus du média</option><option value="below">Sous le média</option></select></Field>
+          <Field label="Sponsorisé"><input type="checkbox" checked={!!form.sponsored} onChange={e => setForm({ ...form, sponsored: e.target.checked })} /></Field>
+          {form.sponsored ? <Field label="Annonceur"><input value={form.sponsor_name || 'ZAYROVI'} maxLength={80} onChange={e => setForm({ ...form, sponsor_name: e.target.value })} /></Field> : null}
+          <Field label="Audience"><select value={form.audience || ''} onChange={e => setForm({ ...form, audience: e.target.value })}>{['','men','women','unisex'].map(value => <option key={value} value={value}>{value || 'Toutes'}</option>)}</select></Field>
+          <Field label="Sujet"><select value={form.topic || ''} onChange={e => setForm({ ...form, topic: e.target.value })}>{['','shoes','accessories','new-trends'].map(value => <option key={value} value={value}>{value || 'Tous'}</option>)}</select></Field>
+          <Field label="Médias ordonnés" full>
+            <p>Carousel : 2 à 10 images. Vidéo : un fichier vidéo et l’image principale comme couverture. Le type de publication doit correspondre aux médias.</p>
+            {(form.media || []).map((item: any, index: number) => <div className="admin-actions" key={index}>
+              <span>{index + 1}. {item.type}</span><input aria-label={`Média ${index + 1}`} value={item.url} onChange={e => setForm({ ...form, media: form.media.map((m: any, i: number) => i === index ? { ...m, url: e.target.value } : m) })} />
+              <Button variant="secondary" disabled={!index} onClick={() => { const media = [...form.media]; [media[index - 1], media[index]] = [media[index], media[index - 1]]; setForm({ ...form, media }); }}>Monter</Button>
+              <Button variant="ghost" onClick={() => setForm({ ...form, media: form.media.filter((_: any, i: number) => i !== index) })}>Retirer le média</Button>
+            </div>)}
+            <Button variant="secondary" onClick={() => setForm({ ...form, media: [...(form.media || []), { type: form.post_type === 'video' ? 'video' : 'image', url: '', poster: '', alt: '' }] })}>Ajouter un lien média</Button>
+            <input aria-label="Uploader les médias Publication" type="file" multiple accept="image/*,video/mp4,video/webm" onChange={async e => {
+              const files = Array.from(e.target.files || []); setBusy('save'); setError('');
+              try { const media: any[] = []; for (const file of files) media.push({ type: file.type.startsWith('video/') ? 'video' : 'image', url: await uploadMediaFile(file), poster: '', alt: '' }); setForm((current: any) => ({ ...current, media: [...(current.media || []), ...media] })); }
+              catch (error: any) { setError(error.message); } finally { setBusy(''); e.target.value = ''; }
+            }} />
           </Field>
           <Field label="Catégorie Publication"><select value={form.category || ''} onChange={e => setForm({ ...form, category: e.target.value })}>
             <option value="">For You — non classée</option>
@@ -231,6 +265,7 @@ export const SocialAdminPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
           <Button key={t} variant="secondary" aria-pressed={tab === t} onClick={() => setTab(t)}>{t}</Button>
         ))}
       </div>
+      {tab === 'Statistiques' && <PublicationInsights />}
       {tab === 'Réglages Feed' && <PublicationFeedSettingsPage canWrite={canWrite} />}
       <fieldset disabled={!canWrite} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       {tab === 'Publication' && <PublicationsTab channels={channels} />}

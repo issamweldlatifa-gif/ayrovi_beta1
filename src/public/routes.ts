@@ -17,7 +17,7 @@ import { getNativeCard, readNativeCard } from '../services/cardNative';
 import path from 'node:path';
 import fs from 'node:fs';
 import sharp from 'sharp';
-import { customerFromRequest, keyedHash, optionalCustomer } from '../customer/auth';
+import { customerFromRequest, keyedHash, optionalCustomer, requireCustomer } from '../customer/auth';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { liveValues, publishedRows, toPublicCards } from '../services/heroSlideDrafts';
 import { DEFAULT_FEATURED_SETTINGS, resolveFeaturedPublication, type FeaturedSettings } from '../services/homeFeatured';
@@ -760,8 +760,18 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     if (category && !settings.categories.some(c => c.key === category && c.enabled)) {
       return res.status(400).json({ success: false, error: 'Catégorie masquée.' });
     }
+    const filters = { type: String(req.query.type || ''), audience: String(req.query.audience || ''), topic: String(req.query.topic || '') };
+    if ((filters.type && !['image','carousel','video','product','collection','editorial'].includes(filters.type))
+      || !['','men','women','unisex'].includes(filters.audience) || !['','shoes','accessories','new-trends'].includes(filters.topic)) return res.status(400).json({ success: false, error: 'Filtres invalides.' });
     const where = ["pub.status='publie'", 'pub.publish_at<=?'];
     const args: any[] = [new Date().toISOString()];
+    const account = (req as any).customer?.id || '';
+    where.push("NOT EXISTS(SELECT 1 FROM publication_preferences pref WHERE pref.account_id=? AND pref.publication_id=pub.id AND pref.feedback!='')"); args.push(account);
+    if (req.query.saved === '1') { where.push('EXISTS(SELECT 1 FROM publication_preferences pref WHERE pref.account_id=? AND pref.publication_id=pub.id AND pref.saved=1)'); args.push(account); }
+    if (req.query.following === '1') { where.push('EXISTS(SELECT 1 FROM publication_follows f WHERE f.account_id=? AND f.publisher_id=pub.channel_id)'); args.push(account); }
+    if (req.query.hasProducts === '1') where.push("EXISTS(SELECT 1 FROM content_products cp WHERE cp.content_kind='publication' AND cp.content_id=pub.id)");
+    for (const [key, value] of Object.entries(filters)) if (value) { where.push(`pub.${key === 'type' ? 'post_type' : key}=?`); args.push(value); }
+
     if (category) { where.push('pub.category=?'); args.push(category); }
     if (post) { where.push('pub.id=?'); args.push(post); }
     if (q) { where.push('(instr(lower(pub.title),lower(?))>0 OR instr(lower(pub.subtitle),lower(?))>0)'); args.push(q, q); }
@@ -778,14 +788,19 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     }
     const accountId = (req as any).customer?.id || '';
     const rows = db.all<any>(`SELECT pub.id,pub.title,pub.subtitle,pub.image_url,pub.channel_id,pub.category,pub.media_origin,pub.publish_at,pub.content_mode,
-      channel.name channel_name,
+      channel.name channel_name,channel.avatar channel_avatar,channel.official channel_official,
+      pub.post_type,pub.media_json,pub.description,pub.description_position,pub.sponsored,pub.sponsor_name,pub.audience,pub.topic,
+      EXISTS(SELECT 1 FROM publication_follows f WHERE f.publisher_id=pub.channel_id AND f.account_id=?) following,
+      EXISTS(SELECT 1 FROM publication_preferences pref WHERE pref.publication_id=pub.id AND pref.account_id=? AND pref.saved=1) saved,
+      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='view') views,
+      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='share') shares,
       EXISTS(SELECT 1 FROM story_interactions i WHERE i.target_id=pub.id AND i.type='like' AND i.account_id=?) liked,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='like') likes,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='comment') comments,
       ${LINKED_PRODUCT_JOIN_SELECT}
       FROM publications pub LEFT JOIN products p ON p.id=pub.product_id
       LEFT JOIN story_publishers channel ON channel.id=pub.channel_id
-      WHERE ${where.join(' AND ')} ORDER BY pub.publish_at DESC,pub.id DESC LIMIT ?`, accountId, ...args, limit + 1);
+      WHERE ${where.join(' AND ')} ORDER BY pub.publish_at DESC,pub.id DESC LIMIT ?`, accountId, accountId, accountId, ...args, limit + 1);
     const hasMore = rows.length > limit;
     const items = rows.slice(0, limit).map(withLinkedProduct);
     attachContentProducts(db, 'publication', items);
@@ -794,6 +809,24 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       ? Buffer.from(JSON.stringify([last.publish_at, last.id])).toString('base64url') : null } });
   });
 
+  router.put('/social/publishers/:id/follow', requireCustomer(db), (req, res) => {
+    if (!db.get('SELECT id FROM story_publishers WHERE id=?', req.params.id)) return res.status(404).json({ success: false, error: 'Éditeur introuvable.' });
+    if (typeof req.body?.following !== 'boolean') return res.status(400).json({ success: false, error: 'État invalide.' });
+    const account = (req as any).customer.id;
+    if (req.body.following) db.run('INSERT OR IGNORE INTO publication_follows VALUES (?,?,?)', account, req.params.id, new Date().toISOString());
+    else db.run('DELETE FROM publication_follows WHERE account_id=? AND publisher_id=?', account, req.params.id);
+    res.json({ success: true, data: { following: req.body.following } });
+  });
+  router.put('/social/publications/:id/preferences', requireCustomer(db), (req, res) => {
+    if (!db.get("SELECT id FROM publications WHERE id=? AND status='publie' AND publish_at<=?", req.params.id, new Date().toISOString())) return res.status(404).json({ success: false, error: 'Publication introuvable.' });
+    const account = (req as any).customer.id;
+    const old = db.get<any>('SELECT * FROM publication_preferences WHERE account_id=? AND publication_id=?', account, req.params.id);
+    const saved = req.body?.saved ?? !!old?.saved;
+    const feedback = req.body?.feedback ?? old?.feedback ?? '';
+    if (typeof saved !== 'boolean' || !['','hidden','not_interested'].includes(feedback)) return res.status(400).json({ success: false, error: 'Préférence invalide.' });
+    db.run(`INSERT INTO publication_preferences VALUES (?,?,?,?,?) ON CONFLICT(account_id,publication_id) DO UPDATE SET saved=excluded.saved,feedback=excluded.feedback,updated_at=excluded.updated_at`, account, req.params.id, saved ? 1 : 0, feedback, new Date().toISOString());
+    res.json({ success: true, data: { saved, feedback } });
+  });
   router.get('/social/publications', (_req, res) => {
     const now = new Date().toISOString();
     // Liste blanche stricte : les notes éditoriales et champs Admin ne quittent jamais l'API publique.

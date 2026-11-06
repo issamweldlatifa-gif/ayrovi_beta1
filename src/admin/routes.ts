@@ -1,3 +1,4 @@
+import { normalizePublicationContent } from '../../shared/publicationContent';
 import { normalizePublicationFeedSettings } from '../../shared/publicationFeed';
 import { readPublicationFeedSettings } from '../services/publicationFeedSettings';
 import { PUBLICATION_CATEGORIES } from '../../shared/publicationFeed';
@@ -1359,7 +1360,9 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
 
   /* ===== Social : Publications & Reels (cahier des charges) ===== */
   const socialList = (table: string, res: Response) => {
-    res.json({ success: true, data: db.all<any>(`SELECT * FROM ${table} ORDER BY publish_at DESC`) });
+    const rows = db.all<any>(`SELECT * FROM ${table} ORDER BY publish_at DESC`);
+    if (table === 'publications') for (const row of rows) row.product_ids = db.all<any>("SELECT product_id FROM content_products WHERE content_kind='publication' AND content_id=? ORDER BY sort_order", row.id).map(link => link.product_id);
+    res.json({ success: true, data: rows });
   };
 
   router.get('/publication-feed-settings', requireAdmin(db, 'content:read'), (_req, res) => {
@@ -1375,6 +1378,18 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     res.json({ success: true, data: next });
   });
 
+  // Editorial engagement only: deduplicated observed views/shares, not billable advertising impressions.
+  router.get('/publication-insights', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ success: true, data: db.all<any>(`SELECT p.id,p.title,p.sponsored,p.sponsor_name,p.status,
+      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=p.id AND i.type='view') views,
+      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=p.id AND i.type='like') likes,
+      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=p.id AND i.type='comment') comments,
+      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=p.id AND i.type='share') shares,
+      (SELECT COUNT(*) FROM publication_preferences pref WHERE pref.publication_id=p.id AND pref.saved=1) saves
+      FROM publications p ORDER BY p.publish_at DESC`) });
+  });
+
   router.get('/publications', requireAdmin(db, 'content:read'), (_req, res) => socialList('publications', res));
   router.post('/publications', requireAdmin(db, 'content:write'), (req, res) => {
     const title = String(req.body?.title || '').trim().slice(0, 150);
@@ -1386,6 +1401,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (!title || !imageUrl || !db.get('SELECT id FROM story_publishers WHERE id=?', channelId)) {
       return res.status(400).json({ success: false, error: 'Titre, image et canal obligatoires.' });
     }
+    const content = normalizePublicationContent(req.body, undefined);
+    if (!content) return res.status(400).json({ success: false, error: 'Type, médias ou options de publication invalides.' });
     const extraProducts = productIdsOrReject(res, db, req.body?.product_ids);
     if (extraProducts === null) return;
     // Tiroir à plusieurs articles : pas de « produit principal » à choisir en plus.
@@ -1393,12 +1410,15 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const primaryProductId = String(req.body?.product_id ?? '').trim() || extraProducts[0] || '';
     const shoppable = decideShoppable(req.body?.content_mode, primaryProductId, (pid) => catalogueProductSnapshot(db, pid));
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
+    if ((content.type === 'product' && !shoppable.productId && !extraProducts.length) || (content.type === 'collection' && !shoppable.productId && !extraProducts.length && content.media.length < 2)) return res.status(400).json({ success: false, error: 'Produit ou collection de médias obligatoire.' });
     const now = new Date().toISOString();
     const id = `publication_${randomUUID()}`;
     db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,content_mode,product_id,created_at,updated_at,category) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       id, title, String(req.body?.subtitle || '').slice(0, 150), channelId, imageUrl, String(req.body?.remark || ''),
       req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon',
       shoppable.mode, shoppable.productId, now, now, category);
+    db.run(`UPDATE publications SET post_type=?,media_json=?,description=?,description_position=?,sponsored=?,sponsor_name=?,audience=?,topic=? WHERE id=?`,
+      content.type, JSON.stringify(content.media), content.description, content.descriptionPosition, content.sponsored ? 1 : 0, content.sponsorName, content.audience, content.topic, id);
     if (extraProducts.length > 0) setContentProducts(db, 'publication', id, extraProducts, now);
     else syncContentProductsFromLegacy(db, 'publication', id, shoppable.mode, shoppable.productId);
     audit(db, req, 'CREATE', 'SOCIAL_PUBLICATIONS', id, null, db.get<any>('SELECT * FROM publications WHERE id=?', id));
@@ -1411,6 +1431,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (category && !PUBLICATION_CATEGORIES.includes(category as any)) return res.status(400).json({ success: false, error: 'Catégorie Publication invalide.' });
     const imageUrl = req.body?.image_url !== undefined ? linkOrReject(res, req.body.image_url, 'image') : row.image_url;
     if (imageUrl === null) return;
+    const content = normalizePublicationContent(req.body, row);
+    if (!content) return res.status(400).json({ success: false, error: 'Type, médias ou options de publication invalides.' });
     const extraProducts = productIdsOrReject(res, db, req.body?.product_ids);
     if (extraProducts === null) return;
     const primaryProductId = String(req.body?.product_id ?? '').trim()
@@ -1419,14 +1441,18 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const shoppable = decideShoppable(req.body?.content_mode ?? row.content_mode, primaryProductId,
       (pid) => catalogueProductSnapshot(db, pid));
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
+    const linkedCount = req.body?.product_ids !== undefined ? extraProducts.length : Number(db.get<any>("SELECT COUNT(*) n FROM content_products WHERE content_kind='publication' AND content_id=?", row.id)?.n || 0);
+    if ((content.type === 'product' && !shoppable.productId && !linkedCount) || (content.type === 'collection' && !shoppable.productId && !linkedCount && content.media.length < 2)) return res.status(400).json({ success: false, error: 'Produit ou collection de médias obligatoire.' });
     db.run(`UPDATE publications SET title=?, subtitle=?, image_url=?, remark=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=?, category=?, media_origin=? WHERE id=?`,
       String(req.body?.title ?? row.title).slice(0, 150), String(req.body?.subtitle ?? row.subtitle).slice(0, 150),
       String(imageUrl).slice(0, 500), String(req.body?.remark ?? row.remark),
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
       shoppable.mode, shoppable.productId, new Date().toISOString(), category, imageUrl !== row.image_url ? 'uploaded' : row.media_origin, req.params.id);
+    db.run(`UPDATE publications SET post_type=?,media_json=?,description=?,description_position=?,sponsored=?,sponsor_name=?,audience=?,topic=? WHERE id=?`,
+      content.type, JSON.stringify(content.media), content.description, content.descriptionPosition, content.sponsored ? 1 : 0, content.sponsorName, content.audience, content.topic, req.params.id);
     if (req.body?.product_ids !== undefined) setContentProducts(db, 'publication', req.params.id, extraProducts);
-    else syncContentProductsFromLegacy(db, 'publication', req.params.id, shoppable.mode, shoppable.productId);
+    else if (req.body?.product_id !== undefined || req.body?.content_mode !== undefined) syncContentProductsFromLegacy(db, 'publication', req.params.id, shoppable.mode, shoppable.productId);
     audit(db, req, 'UPDATE', 'SOCIAL_PUBLICATIONS', req.params.id, row, db.get<any>('SELECT * FROM publications WHERE id=?', req.params.id));
     res.json({ success: true });
   });
