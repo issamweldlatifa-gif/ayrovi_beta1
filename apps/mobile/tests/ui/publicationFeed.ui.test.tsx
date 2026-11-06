@@ -53,7 +53,7 @@ describe('Publication Phase 1 UI', () => {
     expect(screen.queryByText('Voir les produits')).toBeNull();
     expect(screen.getByRole('button', { name: 'Enregistrer' })).not.toBeDisabled();
   });
-  it('renders CRM title and ordered visible categories and applies the compact layout', async () => {
+  it('renders CRM title without strips and chooses editorial copy without cropping a legacy beauty photo', async () => {
     mockSettingsQuery.mockReturnValue({ data: { ...DEFAULT_PUBLICATION_FEED_SETTINGS, titleFr: 'Découvrir ZAYROVI', layout: 'compact', categories: [...DEFAULT_PUBLICATION_FEED_SETTINGS.categories].reverse().map(c => ({ ...c, enabled: c.key !== 'beauty' })) }, isPending: false, isError: false });
     await mount();
     expect(screen.getByText('Découvrir ZAYROVI')).toBeTruthy();
@@ -274,4 +274,15 @@ describe('Reference additions, not replacements',()=>{
   expect(screen.getByTestId('publication-product-grid-ui-post')).toBeTruthy();fireEvent.press(screen.getByTestId('publication-product-real-shoe'));expect(open).toHaveBeenCalledWith('real-shoe');
   fireEvent.press(screen.getByRole('button',{name:'Enregistrer le produit Chaussure catalogue'}));expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();expect(mockCartAdd).not.toHaveBeenCalled();
  });
+});
+
+it('renders the publisher name as app-family text, never a wordmark pasted beside the avatar',async()=>{
+ await mount();const name=screen.getByTestId('publication-publisher-name');expect(name.props.children).toBe('ZAYROVI');expect(name).toHaveStyle({fontFamily:'AyroviExtracted-Bold'});
+});
+it('gives editorial and carousel their distinct landscape composition and headline hierarchy',async()=>{
+ const {unmount}=await mount(<PublicationCard post={{...referencePost('campaign',1),category:'beauty'}} compact={false} onComments={jest.fn()} onReaction={jest.fn()} onOpen={jest.fn()} />);
+ expect(screen.getByText('BEAUTÉ')).toBeTruthy();expect(screen.getByTestId('publication-media-ui-post')).toHaveStyle({aspectRatio:3/2});expect(screen.getByTestId('publication-headline-ui-post')).toHaveStyle({fontSize:32});unmount();
+ await mount(<PublicationCard post={referencePost('carousel',3)} compact={false} onComments={jest.fn()} onReaction={jest.fn()} />);
+ expect(screen.getByTestId('publication-media-ui-post')).toHaveStyle({aspectRatio:3/2});expect(screen.getByTestId('publication-headline-ui-post')).toHaveStyle({fontSize:22});
+ fireEvent(screen.getByTestId('publication-media-ui-post'),'layout',{nativeEvent:{layout:{width:366,height:244}}});expect(screen.getByTestId('publication-thumbnail-ui-post-0')).toHaveStyle({aspectRatio:4/3});
 });

@@ -10652,8 +10652,8 @@
     {
       "file": "client/src/admin/PublicationReferenceImages.tsx",
       "domain": "admin",
-      "sha256": "9f819b5da1c94921d47880086657d56781a6c7de8e83030111f7a621c31a883b",
-      "lines": 78,
+      "sha256": "28b758d5d5771c9d8334b10b588eebf31325838724c4bfb344fcd5ba1b28c76e",
+      "lines": 153,
       "imports": [],
       "exports": [
         "PublicationReferenceImages"
@@ -10661,12 +10661,32 @@
       "controls": [
         {
           "tag": "button",
-          "line": 36,
+          "line": 85,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => preset('campaign')}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 88,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => preset('carousel')}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 108,
           "className": null,
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{`Ajouter la référence : ${label}`}",
-          "onClick": "{() =>\n                onChange({\n                  ...form,\n                  image_url: form.image_url || url,\n                  media: [\n                    ...(form.media || []),\n                    { type: 'image', url, poster: '', alt: label },\n                  ],\n                })\n              }",
+          "onClick": "{() =>\n                onChange({\n                  ...form,\n                  ...(origin === 'generated'\n                    ? { media_origin: 'generated' }\n                    : {}),\n                  image_url: form.image_url || url,\n                  media: [\n                    ...(form.media || []),\n                    { type: 'image', url, poster: '', alt: label },\n                  ],\n                })\n              }",
           "disabled": "{(form.media?.length || 0) >= max}"
         }
       ],
@@ -10679,8 +10699,8 @@
     {
       "file": "client/src/admin/PublicationTemplatePreview.tsx",
       "domain": "admin",
-      "sha256": "9c7864a73d2307b778cd2d54297156ec87a3376f210d8c6a02e4efd0742b270d",
-      "lines": 221,
+      "sha256": "3fecb1cb84a15b9e65b82beed3175512db714d300aba2b00a1bae95bd8933d71",
+      "lines": 309,
       "imports": [
         "../../../shared/publicationLayouts"
       ],
@@ -11221,7 +11241,7 @@
     {
       "file": "client/src/admin/SocialAdminPage.tsx",
       "domain": "admin",
-      "sha256": "a67bade022b3778df8dc7ad5828d1e79c4b517706ccaf7c0fcf6937d5ef48244",
+      "sha256": "9b973701e11bfacef4e707329967d2e59675099ccfc058f894a4810b40016958",
       "lines": 301,
       "imports": [
         "../../../shared/publicationLayouts",

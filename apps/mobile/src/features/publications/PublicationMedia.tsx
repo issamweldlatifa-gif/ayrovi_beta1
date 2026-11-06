@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import {
+  AppState,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect } from 'expo-router';
@@ -15,6 +22,8 @@ import {
   veil,
 } from '@/design/tokens.mobile';
 import {
+  resolvePublicationTemplate,
+  PUBLICATION_EDITORIAL_RATIO,
   publicationTiles,
   SOCIAL_TEMPLATES,
 } from '../../../../../shared/publicationLayouts';
@@ -160,9 +169,17 @@ export function PublicationMedia({
     ? [{ type: 'image', url: post.imageUrl, poster: '', alt: post.title }]
     : [];
   if (!items.length) return null;
-  const template = post.content?.template || 'auto';
+  const template = resolvePublicationTemplate(
+    post.content?.template,
+    post.content?.type,
+    post.content?.media.length,
+    post.category
+  );
   const natural =
-    !immersive && ['caption_photo', 'shoppable'].includes(template);
+    !immersive &&
+    (['caption_photo', 'shoppable'].includes(template) ||
+      ((post.content?.template || 'auto') === 'auto' &&
+        template === 'campaign'));
   if (!immersive && (SOCIAL_TEMPLATES as readonly string[]).includes(template))
     return (
       <View testID={`publication-media-${post.id}`} style={{ gap: 2 }}>
@@ -249,6 +266,12 @@ export function PublicationMedia({
         }}
         style={[
           styles.frame,
+          !immersive && ['campaign', 'carousel'].includes(template)
+            ? {
+                aspectRatio: PUBLICATION_EDITORIAL_RATIO,
+                borderRadius: template === 'campaign' ? 0 : RADIUS.md,
+              }
+            : undefined,
           natural
             ? { aspectRatio: photoAspect, backgroundColor: P.paper }
             : undefined,
@@ -332,7 +355,9 @@ export function PublicationMedia({
           />
         ) : null}
         {items.length > 1 && !immersive ? (
-          <View style={styles.counter}>
+          <View
+            style={[styles.counter, thumbnails ? { bottom: 8 } : { top: 12 }]}
+          >
             <AppText variant="captionStrong" color={P.paper}>
               {index + 1}/{items.length}
             </AppText>
@@ -340,7 +365,11 @@ export function PublicationMedia({
         ) : null}
       </View>
       {thumbnails && !immersive && items.length > 1 ? (
-        <View style={styles.thumbnails}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.thumbnails}
+        >
           {items.map((item, i) => (
             <Pressable
               key={i}
@@ -359,6 +388,7 @@ export function PublicationMedia({
               }}
               style={[
                 styles.thumbnail,
+                { width: Math.max(48, (width - 16) / 3), aspectRatio: 4 / 3 },
                 { borderColor: index === i ? P.accent : 'transparent' },
               ]}
             >
@@ -370,7 +400,7 @@ export function PublicationMedia({
               />
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
       ) : null}
     </View>
   );
@@ -387,10 +417,9 @@ const styles = StyleSheet.create({
   },
   immersive: { flex: 1, aspectRatio: undefined, borderRadius: 0 },
   fill: { ...StyleSheet.absoluteFill },
-  thumbnails: { flexDirection: 'row', gap: 6, paddingTop: 8, flexWrap: 'wrap' },
+  thumbnails: { flexDirection: 'row', gap: 8, paddingTop: 12 },
   thumbnail: {
     width: 48,
-    height: 48,
     padding: 2,
     borderRadius: RADIUS.md,
     borderWidth: 2,
@@ -413,7 +442,6 @@ const styles = StyleSheet.create({
   },
   counter: {
     position: 'absolute',
-    top: 12,
     right: 12,
     borderRadius: RADIUS.full,
     paddingHorizontal: 12,

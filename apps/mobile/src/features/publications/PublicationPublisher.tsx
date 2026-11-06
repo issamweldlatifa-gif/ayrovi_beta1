@@ -2,7 +2,7 @@ import { Pressable, View, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
-import { BrandMark, ZMark } from '@/design/BrandMark';
+import { ZMark } from '@/design/BrandMark';
 import { AppImage } from '@/design/appImage';
 import { AppText } from '@/design/ui';
 import { mediaUrl } from '@/api/client';
@@ -51,7 +51,7 @@ export function PublicationPublisher({
 }) {
   const { locale } = useI18n();
   const ink = dark ? P.paper : P.ink;
-  // The official outlined wordmark is exempt from body typography. Other publishers keep their own name.
+  // Publisher names are ordinary text in the app family; the logo belongs only in the avatar.
   const ownBrand = /^zayrovi(?:\s+official)?$/i.test(post.channelName.trim());
   return (
     <View
@@ -87,18 +87,19 @@ export function PublicationPublisher({
             { flexDirection: locale === 'ar' ? 'row-reverse' : 'row' },
           ]}
         >
-          {ownBrand ? (
-            <BrandMark nameSize={18} color={ink} />
-          ) : (
-            <AppText
-              variant="captionStrong"
-              numberOfLines={1}
-              color={ink}
-              style={{ flexShrink: 1 }}
-            >
-              {post.channelName || 'ZAYROVI'}
-            </AppText>
-          )}
+          <AppText
+            testID="publication-publisher-name"
+            variant="bodyStrong"
+            numberOfLines={1}
+            color={ink}
+            style={{
+              flexShrink: 1,
+              fontFamily:
+                locale === 'ar' ? FONTS.arabic.bold : FONTS.latin.bold,
+            }}
+          >
+            {ownBrand ? 'ZAYROVI' : post.channelName || 'ZAYROVI'}
+          </AppText>
           {post.publisherOfficial ? <PublicationVerifiedBadge /> : null}
         </View>
         <AppText variant="caption" color={dark ? P.paper : P.muted}>

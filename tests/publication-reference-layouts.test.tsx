@@ -1,7 +1,7 @@
 import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe,it,expect} from 'vitest';
-import {publicationTiles} from '../shared/publicationLayouts';
+import {publicationTiles,resolvePublicationTemplate,isGeneratedPublicationEditorialAsset} from '../shared/publicationLayouts';
 import {normalizePublicationContent,publicationTypeForTemplate,PUBLICATION_TEMPLATES} from '../shared/publicationContent';
 import {PublicationTemplatePreview} from '../client/src/admin/PublicationTemplatePreview';
 const images=Array.from({length:8},(_,i)=>({type:'image',url:`/media/reference-${i}.jpg`,poster:'',alt:`Photo ${i+1}`}));
@@ -30,3 +30,7 @@ describe('five additive reference templates',()=>{
  });
  it('retains the six previous template identifiers',()=>expect(PUBLICATION_TEMPLATES.slice(0,6)).toEqual(['auto','photo','split','campaign','carousel','video']));
 });
+
+it('resolves automatic per-post compositions without changing explicit templates or legacy collections',()=>{expect(resolvePublicationTemplate('auto','image',1,'beauty')).toBe('campaign');expect(resolvePublicationTemplate('auto','image',1,'fashion')).toBe('photo');expect(resolvePublicationTemplate('auto','image',3,'fashion')).toBe('carousel');expect(resolvePublicationTemplate('auto','collection',3,'fashion')).toBe('auto');expect(resolvePublicationTemplate('social_pair','image',2,'beauty')).toBe('social_pair');});
+
+it('recognizes bundled generated editorial media without trusting arbitrary URLs or client flags',()=>{expect(isGeneratedPublicationEditorialAsset('/media/publications/editorial-beauty-mirror.jpg')).toBe(true);expect(isGeneratedPublicationEditorialAsset('/media/publications/bag-editorial-caramel.jpg')).toBe(true);expect(isGeneratedPublicationEditorialAsset('/media/publications/style-references/look-denim.jpg')).toBe(false);expect(isGeneratedPublicationEditorialAsset('https://other.example/media/publications/editorial-beauty-mirror.jpg')).toBe(false);});

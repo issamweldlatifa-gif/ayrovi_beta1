@@ -1,14 +1,25 @@
 import {
+  resolvePublicationTemplate,
+  PUBLICATION_EDITORIAL_RATIO,
+  PUBLICATION_EDITORIAL_PAPER,
   CAPTION_FIRST_TEMPLATES,
   SOCIAL_TEMPLATES,
   publicationTiles,
 } from '../../../shared/publicationLayouts';
 /** Preview uses actual authored media/copy; interactions remain disabled in the CRM preview. */
 export function PublicationTemplatePreview({ form }: { form: any }) {
-  const template = form.template_id || 'auto';
+  const template = resolvePublicationTemplate(
+    form.template_id,
+    form.post_type,
+    form.media?.length,
+    form.category
+  );
   const captionFirst = (CAPTION_FIRST_TEMPLATES as readonly string[]).includes(
     template
   );
+  const naturalHero =
+    captionFirst ||
+    ((form.template_id || 'auto') === 'auto' && template === 'campaign');
   const social = (SOCIAL_TEMPLATES as readonly string[]).includes(template);
   const split = template === 'split';
   const campaign = template === 'campaign';
@@ -20,15 +31,38 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
   const caption = (
     <div
       style={{
-        padding: split || campaign ? 12 : 0,
+        padding: campaign ? 24 : split ? 12 : 0,
         minWidth: 0,
         ...(campaign
-          ? { background: 'rgba(255,255,255,.94)', borderRadius: 4 }
+          ? { background: PUBLICATION_EDITORIAL_PAPER, borderRadius: 4 }
           : {}),
       }}
     >
+      {campaign && form.category ? (
+        <small>
+          {(
+            { beauty: 'BEAUTÉ', fashion: 'STYLE', home: 'MAISON' } as Record<
+              string,
+              string
+            >
+          )[form.category] || form.category}
+        </small>
+      ) : null}
       {!captionFirst || !(form.description || form.subtitle) ? (
-        <strong style={{ fontSize: 16, lineHeight: 1.4, display: 'block' }}>
+        <strong
+          style={{
+            fontSize: campaign
+              ? 32
+              : split
+              ? 28
+              : template === 'carousel'
+              ? 22
+              : 16,
+            fontFamily: 'var(--ay-font-stack)',
+            lineHeight: campaign ? 1.2 : 1.4,
+            display: 'block',
+          }}
+        >
           {form.title || 'Titre de la publication'}
         </strong>
       ) : null}
@@ -126,8 +160,12 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
             style={{
               display: 'block',
               width: '100%',
-              aspectRatio: captionFirst ? undefined : '4/5',
-              height: captionFirst ? 'auto' : undefined,
+              aspectRatio: naturalHero
+                ? undefined
+                : campaign || template === 'carousel'
+                ? String(PUBLICATION_EDITORIAL_RATIO)
+                : '4/5',
+              height: naturalHero ? 'auto' : undefined,
               objectFit: 'cover',
             }}
           />
@@ -142,24 +180,29 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
           </div>
         )}
         {campaign ? (
-          <div style={{ background: 'var(--admin-surface-sunken)' }}>
+          <div style={{ background: PUBLICATION_EDITORIAL_PAPER }}>
             {caption}
           </div>
         ) : split ||
-          (!captionFirst && form.description_position !== 'above') ? (
+          (!captionFirst &&
+            template !== 'carousel' &&
+            form.description_position !== 'above') ? (
           caption
         ) : null}
       </div>
       {template === 'carousel' && media.length > 1 ? (
-        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+        <div
+          style={{ display: 'flex', gap: 8, marginTop: 12, overflowX: 'auto' }}
+        >
           {media.map((m: any, i: number) => (
             <img
               key={i}
               src={m.url}
               alt={`Image ${i + 1}`}
               style={{
-                width: 48,
-                height: 48,
+                width: 'calc((100% - 16px) / 3)',
+                flexShrink: 0,
+                aspectRatio: '4/3',
                 borderRadius: 8,
                 objectFit: 'cover',
                 border:
@@ -171,6 +214,51 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
             />
           ))}
         </div>
+      ) : null}
+      {template === 'carousel' ? (
+        <>
+          {caption}
+          {(form.products || []).map((p: any) => (
+            <div
+              key={p.id}
+              style={{
+                display: 'flex',
+                gap: 8,
+                alignItems: 'center',
+                padding: '12px 0',
+                borderTop: '1px solid var(--admin-line)',
+              }}
+            >
+              <img
+                src={p.image}
+                alt=""
+                style={{ width: 56, height: 56, objectFit: 'contain' }}
+              />
+              <div style={{ flex: 1 }}>
+                <strong>{p.name}</strong>
+                <div>{p.brand}</div>
+                <small>
+                  {p.price} {p.currency}
+                </small>
+              </div>
+              <span
+                style={{
+                  border: '1px solid var(--admin-line)',
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                }}
+              >
+                Voir le produit
+              </span>
+            </div>
+          ))}
+          {!form.products?.length ? (
+            <small>
+              La fiche compacte apparaît pour les produits catalogue réellement
+              associés.
+            </small>
+          ) : null}
+        </>
       ) : null}
       {template === 'shoppable' ? (
         <div

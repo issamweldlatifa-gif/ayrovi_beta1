@@ -25,7 +25,10 @@ import { useI18n } from '@/i18n';
 import { useSession } from '@/state/session';
 import { useSessionId } from '@/session/session';
 import type { ProductFavorites } from '@/features/reels/useProductFavorites';
-import { CAPTION_FIRST_TEMPLATES } from '../../../../../shared/publicationLayouts';
+import {
+  CAPTION_FIRST_TEMPLATES,
+  resolvePublicationTemplate,
+} from '../../../../../shared/publicationLayouts';
 import { PublicationProductLink } from './PublicationProductLink';
 
 export function PublicationCard({
@@ -73,8 +76,14 @@ export function PublicationCard({
   const [productsOpen, setProductsOpen] = useState(
     post.content?.type === 'product' ||
       post.content?.type === 'collection' ||
-      post.content?.template === 'carousel' ||
-      post.content?.template === 'shoppable'
+      ['carousel', 'shoppable'].includes(
+        resolvePublicationTemplate(
+          post.content?.template,
+          post.content?.type,
+          post.content?.media.length,
+          post.category
+        )
+      )
   );
   const [expanded, setExpanded] = useState(false);
   const [saved, setSaved] = useState(!!post.saved);
@@ -185,13 +194,16 @@ export function PublicationCard({
       );
     }
   };
-  const template = post.content?.template || 'auto';
+  const template = resolvePublicationTemplate(
+    post.content?.template,
+    post.content?.type,
+    post.content?.media.length,
+    post.category
+  );
   const captionFirst = (CAPTION_FIRST_TEMPLATES as readonly string[]).includes(
     template
   );
-  const split =
-    template === 'split' ||
-    (template === 'auto' && (compact || post.content?.type === 'editorial'));
+  const split = template === 'split';
   const campaign = template === 'campaign';
   const action = () => {
     if (post.content?.actionTarget === 'products') {
@@ -207,14 +219,47 @@ export function PublicationCard({
       ? !!post.products.length
       : !!onOpen;
   const description = post.content?.description || post.subtitle;
+  const editorialLabel = (
+    {
+      beauty: ar ? 'جمال' : 'BEAUTÉ',
+      fashion: ar ? 'أناقة' : 'STYLE',
+      style: ar ? 'أناقة' : 'STYLE',
+      home: ar ? 'المنزل' : 'MAISON',
+    } as Record<string, string>
+  )[post.category];
+  const linkedRows = post.products.map((product) => (
+    <PublicationProductLink
+      key={product.id}
+      product={product}
+      outlined={template === 'carousel'}
+      onOpen={onProductOpen ? () => onProductOpen(product.id) : undefined}
+    />
+  ));
   const text = (
     <View style={[styles.copy, split ? styles.editorialCopy : undefined]}>
+      {campaign && editorialLabel ? (
+        <AppText variant="overline" color={P.ink}>
+          {editorialLabel}
+        </AppText>
+      ) : null}
       {!captionFirst || !description ? (
         <Pressable
           accessibilityRole={onOpen ? 'button' : undefined}
           onPress={onOpen}
         >
-          <AppText variant="bodyStrong" color={P.ink}>
+          <AppText
+            testID={`publication-headline-${post.id}`}
+            variant={
+              campaign
+                ? 'h1'
+                : split
+                ? 'h2'
+                : template === 'carousel'
+                ? 'h3'
+                : 'bodyStrong'
+            }
+            color={P.ink}
+          >
             {post.title}
           </AppText>
         </Pressable>
@@ -224,7 +269,9 @@ export function PublicationCard({
           <AppText
             variant="body"
             color={captionFirst ? P.ink : P.muted}
-            numberOfLines={expanded || description.length <= 140 ? undefined : 3}
+            numberOfLines={
+              expanded || description.length <= 140 ? undefined : 3
+            }
           >
             {description}
           </AppText>
@@ -256,15 +303,15 @@ export function PublicationCard({
           style={styles.cta}
         >
           <AppText
-            variant="captionStrong"
+            variant={campaign ? 'bodyStrong' : 'captionStrong'}
             color={P.accent}
             style={{ flexShrink: 1 }}
           >
             {post.content.actionLabel}
           </AppText>
           <Ionicons
-            name="chevron-forward"
-            size={ICON_SIZE.sm}
+            name={campaign ? 'arrow-forward' : 'chevron-forward'}
+            size={campaign ? ICON_SIZE.md : ICON_SIZE.sm}
             color={P.accent}
           />
         </Pressable>
@@ -272,7 +319,13 @@ export function PublicationCard({
     </View>
   );
   return (
-    <View testID={`publication-${post.id}`} style={styles.card}>
+    <View
+      testID={`publication-${post.id}`}
+      style={[
+        styles.card,
+        compact ? { paddingBottom: 12, marginBottom: 12 } : undefined,
+      ]}
+    >
       <View
         style={[
           styles.publisher,
@@ -295,7 +348,11 @@ export function PublicationCard({
         : null}
       <View
         style={
-          split ? styles.editorial : campaign ? styles.campaign : undefined
+          split
+            ? styles.editorial
+            : campaign
+            ? [styles.campaign, { marginHorizontal: -mediaInset }]
+            : undefined
         }
       >
         <View
@@ -354,6 +411,11 @@ export function PublicationCard({
               />
             </View>
           ))}
+        </View>
+      ) : null}
+      {template === 'carousel' && productsOpen ? (
+        <View testID={`publication-carousel-products-${post.id}`}>
+          {linkedRows}
         </View>
       ) : null}
       <View
@@ -459,16 +521,8 @@ export function PublicationCard({
           />
         </Pressable>
       ) : null}
-      {template !== 'shoppable' && productsOpen
-        ? post.products.map((product) => (
-            <PublicationProductLink
-              key={product.id}
-              product={product}
-              onOpen={
-                onProductOpen ? () => onProductOpen(product.id) : undefined
-              }
-            />
-          ))
+      {template !== 'shoppable' && template !== 'carousel' && productsOpen
+        ? linkedRows
         : null}
       <PublicationAuthSheet
         visible={authOpen && !signedIn}
@@ -500,8 +554,8 @@ const styles = StyleSheet.create({
   editorial: { gap: 8, backgroundColor: P.splitPaper },
   editorialCopy: { padding: 12 },
   splitMedia: { width: '100%' },
-  campaign: { gap: 8 },
-  campaignCopy: { padding: 12, backgroundColor: P.campaignPaper },
+  campaign: { gap: 0 },
+  campaignCopy: { padding: 24, backgroundColor: P.campaignPaper },
   cta: {
     flexDirection: 'row',
     alignItems: 'center',

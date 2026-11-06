@@ -16,12 +16,14 @@ import { useI18n } from '@/i18n';
 export function PublicationProductLink({
   product,
   onOpen,
+  outlined = false,
   tile = false,
   favorite = false,
   onFavorite,
 }: {
   product: LinkedProduct;
   onOpen?: () => void;
+  outlined?: boolean;
   tile?: boolean;
   favorite?: boolean;
   onFavorite?: () => void;
@@ -68,7 +70,7 @@ export function PublicationProductLink({
           ) : null}
         </View>
         <View style={tile ? styles.tileCopy : styles.copy}>
-          {product.brand ? (
+          {product.brand && !outlined ? (
             <AppText variant="caption" color={P.muted} numberOfLines={1}>
               {product.brand}
             </AppText>
@@ -76,6 +78,11 @@ export function PublicationProductLink({
           <AppText variant="captionStrong" color={P.ink} numberOfLines={2}>
             {product.name}
           </AppText>
+          {outlined && product.brand ? (
+            <AppText variant="caption" color={P.muted} numberOfLines={1}>
+              {product.brand}
+            </AppText>
+          ) : null}
           {Number.isFinite(product.price) && product.price > 0 ? (
             <AppText variant="caption" color={P.ink}>
               {formatAmount(product.price)} {product.currency}
@@ -83,16 +90,33 @@ export function PublicationProductLink({
           ) : null}
         </View>
         {!tile ? (
-          <>
-            <AppText variant="captionStrong" color={P.accent}>
-              {ar ? 'عرض' : 'Voir'}
-            </AppText>
-            <Ionicons
-              name={ar ? 'chevron-back' : 'chevron-forward'}
-              size={ICON_SIZE.sm}
-              color={P.accent}
-            />
-          </>
+          outlined ? (
+            <View
+              style={{
+                minHeight: 36,
+                borderWidth: 1,
+                borderColor: P.line,
+                borderRadius: RADIUS.md,
+                paddingHorizontal: 12,
+                justifyContent: 'center',
+              }}
+            >
+              <AppText variant="captionStrong" color={P.ink}>
+                {ar ? 'عرض المنتج' : 'Voir le produit'}
+              </AppText>
+            </View>
+          ) : (
+            <>
+              <AppText variant="captionStrong" color={P.accent}>
+                {ar ? 'عرض' : 'Voir'}
+              </AppText>
+              <Ionicons
+                name={ar ? 'chevron-back' : 'chevron-forward'}
+                size={ICON_SIZE.sm}
+                color={P.accent}
+              />
+            </>
+          )
         ) : null}
       </Pressable>
       {tile && onFavorite ? (

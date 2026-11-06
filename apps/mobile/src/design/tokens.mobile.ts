@@ -27,6 +27,7 @@
  * L'orange (#FF7900 et ses dérivés) a quitté l'application le 15/10/2026 : ni
  * marque, ni action, ni statut. `tests/brand-colors.test.ts` l'interdit.
  */
+import { PUBLICATION_EDITORIAL_PAPER } from '../../../../shared/publicationLayouts';
 import { Platform } from 'react-native';
 import { BRAND, COLORS, GEOMETRY, MOTION, NEUTRALS, SPACE } from './tokens.generated';
 
@@ -757,5 +758,5 @@ export const PUBLICATION_THEME = {
   canvas: mix(BRAND.white, BRAND.violet, .018),
   cardLine: alpha(BRAND.violet, .05), pill: alpha(BRAND.violet, .08), pillLine: alpha(BRAND.violet, .06),
   splitPaper: alpha(BRAND.violet, .025), glass: alpha(BRAND.violet, .035),
-  glassLine: frost(.6), campaignPaper: frost(.94),
+  glassLine: frost(.6), campaignPaper: PUBLICATION_EDITORIAL_PAPER,
 } as const;

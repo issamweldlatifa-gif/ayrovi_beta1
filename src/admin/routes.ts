@@ -1,3 +1,4 @@
+import { isGeneratedPublicationEditorialAsset } from '../../shared/publicationLayouts';
 import { normalizePublicationContent } from '../../shared/publicationContent';
 import { normalizePublicationFeedSettings } from '../../shared/publicationFeed';
 import { readPublicationFeedSettings } from '../services/publicationFeedSettings';
@@ -1414,10 +1415,10 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if ((content.type === 'product' && !shoppable.productId && !extraProducts.length) || (content.type === 'collection' && !shoppable.productId && !extraProducts.length && content.media.length < 2)) return res.status(400).json({ success: false, error: 'Produit ou collection de médias obligatoire.' });
     const now = new Date().toISOString();
     const id = `publication_${randomUUID()}`;
-    db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,content_mode,product_id,created_at,updated_at,category) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,content_mode,product_id,created_at,updated_at,category,media_origin) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       id, title, String(req.body?.subtitle || '').slice(0, 150), channelId, imageUrl, String(req.body?.remark || ''),
       req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon',
-      shoppable.mode, shoppable.productId, now, now, category);
+      shoppable.mode, shoppable.productId, now, now, category, (isGeneratedPublicationEditorialAsset(imageUrl) || content.media.some(item => isGeneratedPublicationEditorialAsset(item.url))) ? 'generated' : 'uploaded');
     db.run(`UPDATE publications SET post_type=?,media_json=?,description=?,description_position=?,sponsored=?,sponsor_name=?,audience=?,topic=?,template_id=?,action_label=?,action_target=? WHERE id=?`,
       content.type, JSON.stringify(content.media), content.description, content.descriptionPosition, content.sponsored ? 1 : 0, content.sponsorName, content.audience, content.topic, content.template, content.actionLabel, content.actionTarget, id);
     if (extraProducts.length > 0) setContentProducts(db, 'publication', id, extraProducts, now);
@@ -1450,7 +1451,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       String(imageUrl).slice(0, 500), String(req.body?.remark ?? row.remark),
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
-      shoppable.mode, shoppable.productId, new Date().toISOString(), category, imageUrl !== row.image_url ? 'uploaded' : row.media_origin, req.params.id);
+      shoppable.mode, shoppable.productId, new Date().toISOString(), category, (isGeneratedPublicationEditorialAsset(imageUrl) || content.media.some(item => isGeneratedPublicationEditorialAsset(item.url))) ? 'generated' : imageUrl !== row.image_url ? 'uploaded' : row.media_origin, req.params.id);
     db.run(`UPDATE publications SET post_type=?,media_json=?,description=?,description_position=?,sponsored=?,sponsor_name=?,audience=?,topic=?,template_id=?,action_label=?,action_target=? WHERE id=?`,
       content.type, JSON.stringify(content.media), content.description, content.descriptionPosition, content.sponsored ? 1 : 0, content.sponsorName, content.audience, content.topic, content.template, content.actionLabel, content.actionTarget, req.params.id);
     if (req.body?.product_ids !== undefined) setContentProducts(db, 'publication', req.params.id, extraProducts);
