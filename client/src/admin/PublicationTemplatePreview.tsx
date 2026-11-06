@@ -69,7 +69,7 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
       <p style={{ whiteSpace: 'pre-wrap', color: 'var(--admin-ink-muted)' }}>
         {form.description || form.subtitle || 'Description'}
       </p>
-      {form.action_label ? (
+      {form.action_label && !captionFirst ? (
         <span
           style={{
             display: 'inline-block',
@@ -128,7 +128,7 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover',
+                        objectFit: media[tile.index].fit || 'cover',
                         display: 'block',
                       }}
                     />
@@ -166,7 +166,7 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
                 ? String(PUBLICATION_EDITORIAL_RATIO)
                 : '4/5',
               height: naturalHero ? 'auto' : undefined,
-              objectFit: 'cover',
+              objectFit: media[0]?.fit || 'cover',
             }}
           />
         ) : (
@@ -204,7 +204,7 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
                 flexShrink: 0,
                 aspectRatio: '4/3',
                 borderRadius: 8,
-                objectFit: 'cover',
+                objectFit: m.fit || 'cover',
                 border:
                   i === 0
                     ? '2px solid var(--ay-e-action)'
@@ -260,29 +260,58 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
           ) : null}
         </>
       ) : null}
+      {captionFirst &&
+      form.action_label &&
+      !(template === 'shoppable' && form.products?.length === 1) ? (
+        <div style={{ color: 'var(--ay-e-action)', padding: '10px 0' }}>
+          {form.action_label} →
+        </div>
+      ) : null}
       {template === 'shoppable' ? (
         <div
           data-publication-layout="shoppable"
           style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}
         >
           {(form.products || []).map((p: any) => (
-            <div key={p.id} style={{ width: '48%' }}>
+            <div
+              key={p.id}
+              style={{
+                width: form.products.length === 1 ? '100%' : '48%',
+                display: form.products.length === 1 ? 'flex' : 'block',
+                gap: 8,
+                alignItems: 'center',
+              }}
+            >
               <img
                 src={p.image}
                 alt={p.name}
                 style={{
-                  width: '100%',
-                  aspectRatio: '3/4',
+                  width: form.products.length === 1 ? 56 : '100%',
+                  height: form.products.length === 1 ? 56 : undefined,
+                  aspectRatio: form.products.length === 1 ? undefined : '3/4',
                   objectFit: 'contain',
                   background: 'var(--admin-surface-sunken)',
                   borderRadius: 8,
                 }}
               />
-              <strong>{p.brand}</strong>
-              <div>{p.name}</div>
-              <div>
-                {p.price} {p.currency}
+              <div style={{ flex: 1 }}>
+                <strong>{p.brand}</strong>
+                <div>{p.name}</div>
+                <div>
+                  {p.price} {p.currency}
+                </div>
               </div>
+              {form.products.length === 1 ? (
+                <span
+                  style={{
+                    border: '1px solid var(--admin-line)',
+                    padding: 8,
+                    borderRadius: 8,
+                  }}
+                >
+                  Voir le produit
+                </span>
+              ) : null}
             </div>
           ))}
           {!form.products?.length ? (

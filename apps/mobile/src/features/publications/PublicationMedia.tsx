@@ -203,7 +203,7 @@ export function PublicationMedia({
                   <AppImage
                     uri={mediaUrl(item.url)}
                     style={styles.fill}
-                    contentFit="cover"
+                    contentFit={item.fit || 'cover'}
                     accessibilityLabel={item.alt || post.title}
                   />
                   {tile.remaining > 0 ? (
@@ -345,7 +345,9 @@ export function PublicationMedia({
                             }
                           : undefined
                       }
-                      contentFit={immersive || natural ? 'contain' : 'cover'}
+                      contentFit={
+                        immersive || natural ? 'contain' : item.fit || 'cover'
+                      }
                       accessibilityLabel={item.alt || post.title}
                     />
                   </Pressable>
@@ -394,7 +396,7 @@ export function PublicationMedia({
             >
               <AppImage
                 uri={mediaUrl(item.poster || item.url)}
-                contentFit="cover"
+                contentFit={item.fit || 'cover'}
                 style={styles.thumbnailImage}
                 decorative
               />

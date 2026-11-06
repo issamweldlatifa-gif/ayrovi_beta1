@@ -5,7 +5,8 @@ import {
   installPublicationShowcase,
   PUBLICATION_SHOWCASE_PREFIX,
 } from '../src/services/publicationShowcase';
-import { TEST_PRODUCT_ID } from '../src/catalogue/seedTestProduct';
+import { selectionId } from '../src/catalogue/installPublicationSelection';
+const TEST_PRODUCT_ID = selectionId('mk-bri-ruched');
 
 describe('Code-installed publication examples visible without CRM creation', () => {
   test('installs all five additional layouts and both corrected compositions as real published posts', async () => {
@@ -44,7 +45,7 @@ describe('Code-installed publication examples visible without CRM creation', () 
     expect(shop.products[0].price).toBe(product.final_price);
     expect(
       rows.find((row: any) => row.template_id === 'carousel').products
-    ).toEqual([]);
+    ).toHaveLength(3);
     const featured = (await request(app).get('/api/public/home-featured')).body
       .data.publication;
     expect(featured?.id.startsWith(PUBLICATION_SHOWCASE_PREFIX)).not.toBe(true);

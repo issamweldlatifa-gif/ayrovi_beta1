@@ -1,3 +1,4 @@
+import { PublicationViewer } from '@/features/publications/PublicationViewer';
 import { AppState, FlatList, Modal } from 'react-native';
 import { PublicationProductPreview } from '@/features/publications/PublicationProductPreview';
 import { PublicationMedia } from '@/features/publications/PublicationMedia';
@@ -269,8 +270,8 @@ describe('Reference additions, not replacements',()=>{
  it('uses real product navigation/favorites and gates guest product hearts without cart writes',async()=>{
   mockSession.status='signedOut';const open=jest.fn();
   await mount(<PublicationCard post={{...referencePost('shoppable',1),products:[{id:'real-shoe',name:'Chaussure catalogue',image:'/shoe.jpg',price:180,currency:'EUR',available:true,stockStatus:'AVAILABLE'}]}} compact={false} onComments={jest.fn()} onReaction={jest.fn()} onProductOpen={open} />);
-  expect(screen.getByTestId('publication-product-image-real-shoe')).toHaveStyle({aspectRatio:3/4});
-  expect(screen.getByTestId('publication-product-image-real-shoe').props.style.height).toBeUndefined();
+  expect(screen.getByTestId('publication-product-image-real-shoe')).toHaveStyle({width:56,height:56});
+  expect(screen.getByText('Voir le produit')).toBeTruthy();
   expect(screen.getByTestId('publication-product-grid-ui-post')).toBeTruthy();fireEvent.press(screen.getByTestId('publication-product-real-shoe'));expect(open).toHaveBeenCalledWith('real-shoe');
   fireEvent.press(screen.getByRole('button',{name:'Enregistrer le produit Chaussure catalogue'}));expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();expect(mockCartAdd).not.toHaveBeenCalled();
  });
@@ -285,4 +286,19 @@ it('gives editorial and carousel their distinct landscape composition and headli
  await mount(<PublicationCard post={referencePost('carousel',3)} compact={false} onComments={jest.fn()} onReaction={jest.fn()} />);
  expect(screen.getByTestId('publication-media-ui-post')).toHaveStyle({aspectRatio:3/2});expect(screen.getByTestId('publication-headline-ui-post')).toHaveStyle({fontSize:22});
  fireEvent(screen.getByTestId('publication-media-ui-post'),'layout',{nativeEvent:{layout:{width:366,height:244}}});expect(screen.getByTestId('publication-thumbnail-ui-post-0')).toHaveStyle({aspectRatio:4/3});
+});
+
+it('asks expired sessions to sign in again without faking a successful save',async()=>{
+ const {ApiError}=jest.requireActual('@/api/errors');mockPreference.mockRejectedValueOnce(new ApiError('http','Expired',{status:401,code:'AUTH_REQUIRED'}));await mount();fireEvent.press(screen.getByRole('button',{name:'Enregistrer'}));await waitFor(()=>expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy());expect(screen.getByRole('button',{name:'Enregistrer'}).props.accessibilityState.selected).toBe(false);
+});
+it('clears the previous preference error after a genuine successful retry',async()=>{
+ mockPreference.mockRejectedValueOnce(new Error('temporary'));await mount();fireEvent.press(screen.getByRole('button',{name:'Enregistrer'}));await screen.findByText('Modification non enregistrée. Réessayez.');fireEvent.press(screen.getByRole('button',{name:'Enregistrer'}));await waitFor(()=>expect(screen.queryByText('Modification non enregistrée. Réessayez.')).toBeNull());expect(mockPreference).toHaveBeenCalledTimes(2);
+});
+
+it('closes the discovery reader before opening its real catalogue product', async () => {
+  const close = jest.fn();
+  await mount(<PublicationViewer post={{...post,products:[{id:'selection-real',name:'Sélection',image:'/product.jpg',price:168.377,currency:'TND',available:true,stockStatus:'AVAILABLE'}]}} owner="guest" onClose={close} onPreference={jest.fn()} />);
+  fireEvent.press(screen.getByTestId('publication-product-selection-real'));
+  expect(close).toHaveBeenCalledTimes(1);
+  expect(mockRouter.push).toHaveBeenCalledWith({pathname:'/product/[id]',params:{id:'selection-real'}});
 });

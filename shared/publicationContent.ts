@@ -4,7 +4,7 @@ export const PUBLICATION_TYPES = ['image', 'carousel', 'video', 'product', 'coll
 export const PUBLICATION_TEMPLATES = ['auto', 'photo', 'split', 'campaign', 'carousel', 'video', 'social_mosaic', 'shoppable', 'caption_photo', 'social_strip', 'social_pair'] as const;
 export type PublicationTemplate = typeof PUBLICATION_TEMPLATES[number];
 export type PublicationType = typeof PUBLICATION_TYPES[number];
-export interface PublicationMedia { type: 'image' | 'video'; url: string; poster: string; alt: string }
+export interface PublicationMedia { type: 'image' | 'video'; url: string; poster: string; alt: string; fit?: 'contain' | 'cover' }
 export interface PublicationContent { template?: PublicationTemplate; actionLabel?: string; actionTarget?: 'detail' | 'products'; type: PublicationType; media: PublicationMedia[]; description: string; descriptionPosition: 'above' | 'below'; sponsored: boolean; sponsorName: string; audience: string; topic: string }
 export function normalizePublicationContent(body: any, previous?: any): PublicationContent | null {
   const type = body.post_type ?? previous?.post_type ?? 'image';
@@ -18,7 +18,8 @@ export function normalizePublicationContent(body: any, previous?: any): Publicat
     const link = normalizeMediaLink(item.url, item.type);
     const poster = normalizeMediaLink(item.poster || (item.type === 'video' ? body.image_url || previous?.image_url || '' : ''), 'image');
     if (!link.ok || !link.url || !poster.ok) return null;
-    media.push({ type: item.type, url: link.url, poster: poster.url, alt: String(item.alt || '').slice(0, 160) });
+    if (item.fit !== undefined && !['contain','cover'].includes(item.fit)) return null;
+    media.push({ ...(item.fit ? { fit: item.fit } : {}), type: item.type, url: link.url, poster: poster.url, alt: String(item.alt || '').slice(0, 160) });
   }
   const template = body.template_id ?? previous?.template_id ?? 'auto';
   const actionTarget = body.action_target ?? previous?.action_target ?? 'detail';

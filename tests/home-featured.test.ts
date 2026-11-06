@@ -115,7 +115,7 @@ describe('route admin + publique /home-featured', () => {
   test('par défaut, la plus récente publiée sort ; le brouillon n’apparaît jamais', async () => {
     // Attendu = la plus récente publiée EN BASE (la base de démo contient d'autres publications).
     const expected = db.get<any>(
-      "SELECT id FROM publications WHERE status='publie' AND publish_at<=? ORDER BY publish_at DESC LIMIT 1",
+      "SELECT id FROM publications WHERE status='publie' AND publish_at<=? ORDER BY publish_at DESC,id DESC LIMIT 1",
       new Date().toISOString(),
     );
     const res = await request(app).get('/api/public/home-featured');

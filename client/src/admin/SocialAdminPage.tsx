@@ -146,6 +146,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
             {(form.media || []).map((item: any, index: number) => <div className="admin-actions" key={index}>
               <span>{index + 1}. {item.type}</span><input aria-label={`Média ${index + 1}`} value={item.url} onChange={e => setForm({ ...form, media: form.media.map((m: any, i: number) => i === index ? { ...m, url: e.target.value } : m) })} />
               <Button variant="secondary" disabled={!index} onClick={() => { const media = [...form.media]; [media[index - 1], media[index]] = [media[index], media[index - 1]]; setForm({ ...form, media }); }}>Monter</Button>
+              {item.type === 'image' ? <select aria-label={`Ajustement du média ${index + 1}`} value={item.fit || 'cover'} onChange={e => setForm({ ...form, media: form.media.map((m: any, i: number) => i === index ? { ...m, fit: e.target.value } : m) })}><option value="cover">Remplir le cadre</option><option value="contain">Afficher le produit entier</option></select> : null}
               <Button variant="ghost" onClick={() => setForm({ ...form, media: form.media.filter((_: any, i: number) => i !== index) })}>Retirer le média</Button>
             </div>)}
             <Button variant="secondary" onClick={() => setForm({ ...form, media: [...(form.media || []), { type: form.post_type === 'video' ? 'video' : 'image', url: '', poster: '', alt: '' }] })}>Ajouter un lien média</Button>

@@ -1,5 +1,9 @@
+import { catalogId } from '../catalogue/localSale';
 import type { QatafoDatabase } from '../db/database';
-import { inspectAyrovixPriceToken, verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
+import {
+  inspectAyrovixPriceToken,
+  verifyAyrovixPriceToken,
+} from '../ayrovix/priceQuote';
 import type { CartItem } from '../types';
 
 /**
@@ -48,42 +52,105 @@ export interface CartPriceTrustReport {
   byId: Record<string, CartLinePriceTrust>;
 }
 
-function lineTrust(db: QatafoDatabase, item: CartItem, proofs: Record<string, string>, now: number): CartLinePriceTrust {
+function lineTrust(
+  db: QatafoDatabase,
+  item: CartItem,
+  proofs: Record<string, string>,
+  now: number
+): CartLinePriceTrust {
   const itemId = String(item.id);
+  const localId = catalogId(item.externalId);
+  if (localId) {
+    const product = db.get<any>(
+      'SELECT final_price,original_price,currency,status FROM products WHERE id=?',
+      localId
+    );
+    const expectedSource =
+      Number(product?.original_price) > 0
+        ? Number(product.original_price)
+        : Number(product?.final_price);
+    const expectedCurrency = String(product?.currency || 'TND').toUpperCase();
+    const valid =
+      product?.status === 'ACTIVE' &&
+      product.final_price > 0 &&
+      item.sourceCurrency === expectedCurrency &&
+      Math.abs(expectedSource - item.sourcePrice) < 0.0005 &&
+      Math.abs(product.final_price - item.priceTND) < 0.0005;
+    return {
+      itemId,
+      status: valid ? 'FRESH' : 'STALE',
+      reason: valid
+        ? 'CATALOGUE_CURRENT_PRICE'
+        : 'CATALOGUE_PRICE_CHANGED_OR_UNAVAILABLE',
+      expiresAt: null,
+    };
+  }
   if (item.priceVerificationStatus === 'PENDING_MANUAL') {
-    return { itemId, status: 'MANUAL', reason: 'MANUAL_REVIEW_PATH', expiresAt: null };
+    return {
+      itemId,
+      status: 'MANUAL',
+      reason: 'MANUAL_REVIEW_PATH',
+      expiresAt: null,
+    };
   }
   const token = proofs[itemId] || '';
   if (token) {
     const claims = inspectAyrovixPriceToken(token);
     const expiresAt = claims ? new Date(claims.expiresAt).toISOString() : null;
-    const valid = verifyAyrovixPriceToken(token, {
-      price: Number(item.sourcePrice),
-      currency: String(item.sourceCurrency || ''),
-      title: String(item.title || ''),
-      referenceUrl: String(item.referenceUrl || ''),
-      status: 'VERIFIED',
-    }, now);
+    const valid = verifyAyrovixPriceToken(
+      token,
+      {
+        price: Number(item.sourcePrice),
+        currency: String(item.sourceCurrency || ''),
+        title: String(item.title || ''),
+        referenceUrl: String(item.referenceUrl || ''),
+        status: 'VERIFIED',
+      },
+      now
+    );
     return valid
       ? { itemId, status: 'FRESH', reason: 'TOKEN_VALID', expiresAt }
-      : { itemId, status: 'STALE', reason: 'TOKEN_EXPIRED_OR_ALTERED', expiresAt };
+      : {
+          itemId,
+          status: 'STALE',
+          reason: 'TOKEN_EXPIRED_OR_ALTERED',
+          expiresAt,
+        };
   }
   // Ligne antérieure à la persistance des jetons : seule la fraîcheur de la
   // ligne elle-même peut attester d'un ajout récent.
   const addedAt = Date.parse(String(item.updatedAt || ''));
-  const recent = Number.isFinite(addedAt) && now - addedAt >= -60_000 && now - addedAt <= CART_QUOTE_LEGACY_GRACE_MS;
+  const recent =
+    Number.isFinite(addedAt) &&
+    now - addedAt >= -60_000 &&
+    now - addedAt <= CART_QUOTE_LEGACY_GRACE_MS;
   return recent
-    ? { itemId, status: 'FRESH', reason: 'LEGACY_RECENT', expiresAt: new Date(addedAt + CART_QUOTE_LEGACY_GRACE_MS).toISOString() }
+    ? {
+        itemId,
+        status: 'FRESH',
+        reason: 'LEGACY_RECENT',
+        expiresAt: new Date(addedAt + CART_QUOTE_LEGACY_GRACE_MS).toISOString(),
+      }
     : { itemId, status: 'STALE', reason: 'TOKEN_MISSING', expiresAt: null };
 }
 
 /** One decision shared by the cart read (display) and the checkout gate. */
-export function verifyCartPriceTrust(db: QatafoDatabase, items: CartItem[], now = Date.now()): CartPriceTrustReport {
-  const proofs = db.getCartLinePriceTokens(items.map((item) => String(item.id)));
+export function verifyCartPriceTrust(
+  db: QatafoDatabase,
+  items: CartItem[],
+  now = Date.now()
+): CartPriceTrustReport {
+  const proofs = db.getCartLinePriceTokens(
+    items.map((item) => String(item.id))
+  );
   const lines = items.map((item) => lineTrust(db, item, proofs, now));
   const byId: Record<string, CartLinePriceTrust> = {};
   for (const line of lines) byId[line.itemId] = line;
-  return { lines, blocking: lines.filter((line) => line.status === 'STALE'), byId };
+  return {
+    lines,
+    blocking: lines.filter((line) => line.status === 'STALE'),
+    byId,
+  };
 }
 
 /** Message porté au client : la raison exacte, jamais un refus anonyme. */

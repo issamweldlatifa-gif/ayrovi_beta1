@@ -20,9 +20,12 @@
  */
 export const CURRENCY = 'TND';
 
-/** Nombre à deux décimales, sans devise : « 89.00 ». */
+/** Nombre sans devise : « 89.00 », ou « 165.006 » si les millimes sont significatifs. */
 export function formatAmount(amount: number): string {
-  return amount.toFixed(2);
+  const rounded = Math.round(amount * 1000) / 1000;
+  const hasMillimes =
+    Math.abs(rounded * 100 - Math.round(rounded * 100)) > 0.000001;
+  return rounded.toFixed(hasMillimes ? 3 : 2);
 }
 
 /**

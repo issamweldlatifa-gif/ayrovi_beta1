@@ -63,6 +63,7 @@ export function resetAuthContext(): void {
  * au milieu d'une commande. On recharge donc une fois, silencieusement.
  */
 let csrfRefresher: (() => Promise<boolean>) | null = null;
+let csrfRefreshFlight: Promise<boolean> | null = null;
 
 export function setCsrfRefresher(refresher: (() => Promise<boolean>) | null): void {
   csrfRefresher = refresher;
@@ -172,10 +173,19 @@ export interface SendOptions extends RequestOptions {
  * كل الدوال العمومية تمرّ من هنا — مسار واحد يعني معالجة أخطاء واحدة.
  */
 async function perform<T>(method: string, path: string, options: SendOptions = {}): Promise<RequestResult<T>> {
+  const sentCsrf = authContext.csrfToken;
+  const sentToken = authContext.token;
   const first = await attempt<T>(method, path, options);
   if (first.kind !== 'csrf') return first.result;
   // Jeton CSRF périmé : on le renouvelle depuis `/auth/me` et on rejoue UNE fois.
-  const refreshed = await csrfRefresher?.().catch(() => false);
+  let refreshed = sentToken === authContext.token && sentCsrf !== authContext.csrfToken;
+  if (!refreshed) {
+    if (!csrfRefreshFlight) {
+      csrfRefreshFlight = Promise.resolve().then(() => csrfRefresher?.() ?? false).catch(() => false).finally(() => { csrfRefreshFlight = null; });
+    }
+    refreshed = await csrfRefreshFlight;
+  }
+  if (sentToken !== authContext.token) throw first.error;
   if (!refreshed) throw first.error;
   const second = await attempt<T>(method, path, options);
   if (second.kind === 'csrf') throw second.error;

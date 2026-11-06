@@ -1,3 +1,4 @@
+import { CatalogueSaleError, inspectCatalogueSale, catalogId } from '../catalogue/localSale';
 import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
@@ -331,6 +332,7 @@ export function createApiRouter(
         deliveryTND: summary.deliveryTND,
       });
     } catch (err: any) {
+      if (err instanceof CatalogueSaleError) return res.status(409).json({ success: false, code: err.code, error: err.message });
       if (err instanceof RangeError && err.message === 'CART_QUANTITY_LIMIT') {
         return res.status(400).json({ success: false, error: 'La quantité maximale par article est de 99.' });
       }
@@ -413,6 +415,14 @@ export function createApiRouter(
 
     try {
       const accountId = cartAccountId(req, sessionId);
+      const choice = inspectCatalogueSale(db, productId, requestedSize, requestedColor, quantity);
+      const existing = db.getItems(sessionId, accountId).filter(line => catalogId(line.externalId) === productId);
+      let totalQuantity = quantity;
+      for (const line of existing) {
+        const previous = inspectCatalogueSale(db, productId, line.requestedSize, line.requestedColor, 0);
+        if (previous.variant?.id === choice.variant?.id) totalQuantity += line.quantity;
+      }
+      inspectCatalogueSale(db, productId, requestedSize, requestedColor, totalQuantity);
       const cartItem = db.addItem(sessionId, item, accountId);
       recordFunnelEvent(db, 'cart_item_added', { locale: null, visitorKey: funnelVisitorKey(sessionId) });
       const summary = cartSummary()(db.getItems(sessionId, accountId));
@@ -425,6 +435,7 @@ export function createApiRouter(
         deliveryTND: summary.deliveryTND,
       });
     } catch (err: any) {
+      if (err instanceof CatalogueSaleError) return res.status(409).json({ success: false, code: err.code, error: err.message });
       if (err instanceof RangeError && err.message === 'CART_QUANTITY_LIMIT') {
         return res.status(400).json({ success: false, error: 'La quantité maximale par article est de 99.' });
       }
@@ -457,7 +468,17 @@ export function createApiRouter(
         deliveryTND: summary.deliveryTND,
         priceVerification: priceTrust.lines,
         items: summary.items.map((item) => {
-          const availability = inspectVariantOrder(item.sourceUrl, item.requestedSize || item.variant, item.requestedColor);
+          const localId = catalogId(item.externalId);
+          let availability = inspectVariantOrder(item.sourceUrl, item.requestedSize || item.variant, item.requestedColor);
+          if (localId) {
+            try {
+              const sale = inspectCatalogueSale(db, localId, item.requestedSize, item.requestedColor, item.quantity);
+              availability = { allowed: true, code: 'ALLOWED', message: 'Disponibilité vérifiée dans le stock du catalogue.', availability: sale.available === null ? 'unknown' : 'available', checkedAt: new Date().toISOString(), source: 'CATALOGUE_INVENTORY' };
+            } catch (error) {
+              if (!(error instanceof CatalogueSaleError)) throw error;
+              availability = { allowed: false, code: 'VARIANT_UNAVAILABLE', message: error.message, availability: 'unavailable', checkedAt: new Date().toISOString(), source: 'CATALOGUE_INVENTORY' };
+            }
+          }
           const trust = priceTrust.byId[item.id] || null;
           return {
             ...item,
@@ -510,9 +531,21 @@ export function createApiRouter(
       const accountId = cartAccountId(req, sessionId);
       const existing = db.getItemById(id, sessionId, accountId);
       if (!existing) return res.status(404).json({ success: false, error: 'Article introuvable.' });
+      const productId = catalogId(existing.externalId);
+      if (productId && quantity > 0) {
+        const choice = inspectCatalogueSale(db, productId, existing.requestedSize, existing.requestedColor, quantity);
+        let total = quantity;
+        for (const line of db.getItems(sessionId, accountId)) {
+          if (line.id === id || catalogId(line.externalId) !== productId) continue;
+          const other = inspectCatalogueSale(db, productId, line.requestedSize, line.requestedColor, 0);
+          if (other.variant?.id === choice.variant?.id) total += line.quantity;
+        }
+        inspectCatalogueSale(db, productId, existing.requestedSize, existing.requestedColor, total);
+      }
       const updated = db.updateQuantity(id, quantity, sessionId, accountId);
       return res.json({ success: true, cartItem: updated });
-    } catch {
+    } catch (error) {
+      if (error instanceof CatalogueSaleError) return res.status(409).json({ success: false, code: error.code, error: error.message });
       return res.status(500).json({ success: false, error: 'Erreur de mise à jour.' });
     }
   });
@@ -647,7 +680,7 @@ export function createApiRouter(
       return res.status(409).json({
         success: false,
         code: 'PRICE_VERIFICATION_REQUIRED',
-        error: CART_PRICE_TRUST_MESSAGE,
+        error: priceTrust.blocking.some(line => line.reason.startsWith('CATALOGUE_')) ? 'Un produit du catalogue a changé de prix ou n’est plus disponible. Retirez-le du panier ou ouvrez à nouveau sa fiche avant de commander.' : CART_PRICE_TRUST_MESSAGE,
         items: priceTrust.blocking.map((line) => ({ itemId: line.itemId, reason: line.reason, expiresAt: line.expiresAt })),
       });
     }
@@ -724,6 +757,10 @@ export function createApiRouter(
     // l'absence de preuve. NO_CONTRACT reste toléré uniquement au dépôt manuel
     // dans le panier ; une vraie commande exige une disponibilité confirmée.
     for (const item of items) {
+      if (catalogId(item.externalId)) {
+        try { const sale = inspectCatalogueSale(db, catalogId(item.externalId)!, item.requestedSize, item.requestedColor, item.quantity); if (sale.available !== null) continue; }
+        catch(error) { if(error instanceof CatalogueSaleError) return res.status(409).json({success:false,code:error.code,error:error.message,itemId:item.id}); throw error; }
+      }
       const requestedVariant = Boolean(item.requestedSize?.trim() || item.requestedColor?.trim() || item.variant?.trim());
       const availability = inspectVariantOrder(item.sourceUrl, item.requestedSize || item.variant, item.requestedColor);
       // Preserve the historical manual request path only when no size/color
@@ -797,6 +834,7 @@ export function createApiRouter(
         message: 'Votre commande a été enregistrée avec succès chez ZAYROVI !'
       });
     } catch (error: any) {
+      if (error instanceof CatalogueSaleError) return res.status(409).json({success:false,code:error.code,error:error.message});
       if (error?.message === 'EMPTY_CART') return res.status(400).json({ success: false, error: 'Votre panier est vide.' });
       if (error?.message === 'ORDER_TOTAL_CAP') return res.status(400).json({ success: false, code: 'ORDER_TOTAL_CAP', error: 'Le montant total dépasse la limite des commandes en ligne. Contactez le support ZAYROVI : nous accompagnons les gros volumes personnellement.' });
       if (error?.message === 'ACCOUNT_UNAVAILABLE') return res.status(403).json({ success: false, code: 'ACCOUNT_UNAVAILABLE', error: 'Votre compte n’est plus actif. Contactez le support ZAYROVI.' });

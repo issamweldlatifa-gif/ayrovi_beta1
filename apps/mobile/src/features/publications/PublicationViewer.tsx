@@ -1,3 +1,5 @@
+import { router } from 'expo-router';
+import { PublicationProductLink } from './PublicationProductLink';
 import { StatusBar } from 'expo-status-bar';
 import { useRef, useState } from 'react';
 import {
@@ -158,6 +160,24 @@ export function PublicationViewer({
                 <AppText color={P.muted}>{description}</AppText>
               ) : null}
             </View>
+            {post.products.length ? (
+              <View testID="publication-reader-products" style={styles.copy}>
+                {post.products.map((product) => (
+                  <PublicationProductLink
+                    key={product.id}
+                    product={product}
+                    outlined
+                    onOpen={() => {
+                      onClose();
+                      router.push({
+                        pathname: '/product/[id]',
+                        params: { id: product.id },
+                      });
+                    }}
+                  />
+                ))}
+              </View>
+            ) : null}
           </ScrollView>
         </Animated.View>
         <Modal

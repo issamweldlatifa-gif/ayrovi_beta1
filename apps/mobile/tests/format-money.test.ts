@@ -20,7 +20,9 @@ describe('formatMoney — un montant, une écriture', () => {
     expect(formatAmount(89.5)).toBe('89.50');
     expect(formatAmount(0)).toBe('0.00');
     expect(formatMoney(89)).toBe('89.00 TND');
-    expect(formatMoney(1234.567)).toBe('1234.57 TND');
+    expect(formatMoney(1234.567)).toBe('1234.567 TND');
+    expect(formatMoney(165.006)).toBe('165.006 TND');
+    expect(formatMoney(454.904)).toBe('454.904 TND');
   });
 
   it('n’invente pas un prix quand la valeur manque', () => {

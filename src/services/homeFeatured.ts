@@ -114,7 +114,7 @@ export function resolveFeaturedPublication(
   } else {
     // La plus récente d'abord ; une date illisible compte pour la plus ancienne.
     const rank = (row: FeaturedCandidate) => publishedTime(row.publish_at) ?? Number.NEGATIVE_INFINITY;
-    chosen = [...live].sort((a, b) => (rank(a) === rank(b) ? 0 : rank(a) < rank(b) ? 1 : -1))[0];
+    chosen = [...live].sort((a, b) => (rank(a) === rank(b) ? b.id.localeCompare(a.id) : rank(a) < rank(b) ? 1 : -1))[0];
   }
   if (!chosen) return null;
 

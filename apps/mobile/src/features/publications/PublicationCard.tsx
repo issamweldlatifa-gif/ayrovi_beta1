@@ -1,3 +1,4 @@
+import { isApiError, userMessage } from '@/api/errors';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Share, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -99,6 +100,7 @@ export function PublicationCard({
     if (requireAccount()) return;
     if (preferenceBusy) return;
     setPreferenceBusy(true);
+    setMessage('');
     try {
       if (action === 'follow') {
         await followPublisher(post.channelId, !following);
@@ -119,9 +121,15 @@ export function PublicationCard({
         );
       }
       onPreference?.(action, post.id);
-    } catch {
+    } catch (error) {
+      if (isApiError(error) && error.status === 401) {
+        setAuthOpen(true);
+        return;
+      }
       setMessage(
-        ar
+        isApiError(error)
+          ? userMessage(error)[ar ? 'ar' : 'fr']
+          : ar
           ? 'تعذّر الحفظ. أعد المحاولة.'
           : 'Modification non enregistrée. Réessayez.'
       );
@@ -235,6 +243,30 @@ export function PublicationCard({
       onOpen={onProductOpen ? () => onProductOpen(product.id) : undefined}
     />
   ));
+  const cta =
+    post.content?.actionLabel &&
+    canAct &&
+    !(template === 'shoppable' && post.products.length === 1) ? (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={post.content.actionLabel}
+        onPress={action}
+        style={styles.cta}
+      >
+        <AppText
+          variant={campaign ? 'bodyStrong' : 'captionStrong'}
+          color={P.accent}
+          style={{ flexShrink: 1 }}
+        >
+          {post.content.actionLabel}
+        </AppText>
+        <Ionicons
+          name={campaign ? 'arrow-forward' : 'chevron-forward'}
+          size={campaign ? ICON_SIZE.md : ICON_SIZE.sm}
+          color={P.accent}
+        />
+      </Pressable>
+    ) : null;
   const text = (
     <View style={[styles.copy, split ? styles.editorialCopy : undefined]}>
       {campaign && editorialLabel ? (
@@ -295,27 +327,7 @@ export function PublicationCard({
           ) : null}
         </>
       ) : null}
-      {post.content?.actionLabel && canAct ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={post.content.actionLabel}
-          onPress={action}
-          style={styles.cta}
-        >
-          <AppText
-            variant={campaign ? 'bodyStrong' : 'captionStrong'}
-            color={P.accent}
-            style={{ flexShrink: 1 }}
-          >
-            {post.content.actionLabel}
-          </AppText>
-          <Ionicons
-            name={campaign ? 'arrow-forward' : 'chevron-forward'}
-            size={campaign ? ICON_SIZE.md : ICON_SIZE.sm}
-            color={P.accent}
-          />
-        </Pressable>
-      ) : null}
+      {!captionFirst ? cta : null}
     </View>
   );
   return (
@@ -378,6 +390,7 @@ export function PublicationCard({
           text
         ) : null}
       </View>
+      {captionFirst ? cta : null}
       {template === 'shoppable' ? (
         <View
           testID={`publication-product-grid-${post.id}`}
@@ -391,11 +404,15 @@ export function PublicationCard({
           {post.products.map((product) => (
             <View
               key={product.id}
-              style={{ width: '50%', paddingHorizontal: PM.productGap / 2 }}
+              style={{
+                width: post.products.length === 1 ? '100%' : '50%',
+                paddingHorizontal: PM.productGap / 2,
+              }}
             >
               <PublicationProductLink
                 product={product}
-                tile
+                tile={post.products.length > 1}
+                outlined={post.products.length === 1}
                 favorite={productFavorites?.isFavorite(product.id)}
                 onFavorite={
                   !signedIn || productFavorites
@@ -525,7 +542,7 @@ export function PublicationCard({
         ? linkedRows
         : null}
       <PublicationAuthSheet
-        visible={authOpen && !signedIn}
+        visible={authOpen}
         onClose={() => setAuthOpen(false)}
       />
       {message ? (

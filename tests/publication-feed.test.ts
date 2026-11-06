@@ -53,10 +53,11 @@ describe('Publication Phase 1 feed contract', () => {
     expect((await request(app).get('/publications').query({ post: prefix + 'draft' })).status).toBe(404);
     expect((await request(app).get('/publications').query({ post: prefix + 'future' })).status).toBe(404);
   });
-  test('authored AI editorial photos exist without made-up products, and do not replace À la une', async () => {
-    const response = await feed().query({ q: 'Le temps d’une pause' });
+  test('owner-supplied product imagery replaces launch photos with genuine catalogue links', async () => {
+    const response = await feed().query({ post: 'publication_editorial_lifestyle' });
     const item = response.body.data.items.find((row: any) => row.id === 'publication_editorial_lifestyle');
-    expect(item).toMatchObject({ category: 'lifestyle', media_origin: 'generated', products: [] });
+    expect(item).toMatchObject({ category: 'home', media_origin: 'uploaded' });
+    expect(item.products).toHaveLength(1); expect(item.products[0].id).toBe('product_selection_swarovski-tasse');
     expect((await request(app).get(item.image_url)).status).toBe(200);
     const featured = (await request(app).get('/api/public/home-featured')).body.data.publication;
     expect(featured?.id).not.toContain('publication_editorial_');

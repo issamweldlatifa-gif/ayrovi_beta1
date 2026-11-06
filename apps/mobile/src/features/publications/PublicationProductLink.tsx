@@ -31,7 +31,13 @@ export function PublicationProductLink({
   const { locale } = useI18n();
   const ar = locale === 'ar';
   return (
-    <View>
+    <View
+      style={
+        !tile && onFavorite
+          ? { flexDirection: ar ? 'row-reverse' : 'row', alignItems: 'center' }
+          : undefined
+      }
+    >
       <Pressable
         testID={`publication-product-${product.id}`}
         accessibilityRole="button"
@@ -48,6 +54,7 @@ export function PublicationProductLink({
         }
         style={[
           tile ? styles.tile : styles.row,
+          !tile && onFavorite ? { flex: 1 } : undefined,
           {
             flexDirection: tile ? 'column' : ar ? 'row-reverse' : 'row',
             alignItems: tile ? 'stretch' : 'center',
@@ -119,13 +126,17 @@ export function PublicationProductLink({
           )
         ) : null}
       </Pressable>
-      {tile && onFavorite ? (
+      {onFavorite ? (
         <View
           pointerEvents="box-none"
-          style={[
-            StyleSheet.absoluteFill,
-            { alignItems: 'flex-end', padding: 4 },
-          ]}
+          style={
+            tile
+              ? [
+                  StyleSheet.absoluteFill,
+                  { alignItems: 'flex-end', padding: 4 },
+                ]
+              : { width: 44, alignItems: 'center' }
+          }
         >
           <Pressable
             accessibilityRole="button"

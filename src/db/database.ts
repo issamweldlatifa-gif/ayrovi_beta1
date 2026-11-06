@@ -1,3 +1,5 @@
+import { reserveCatalogueSale, catalogId } from '../catalogue/localSale';
+import { installPublicationSelection } from '../catalogue/installPublicationSelection';
 import { installPublicationShowcase } from '../services/publicationShowcase';
 import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../shared/publicationFeed';
 import { resolveFeaturedPublication } from '../services/homeFeatured';
@@ -384,6 +386,7 @@ export class QatafoDatabase {
     this.installPublicationEditorialLaunch();
     this.runOnceDataMigration('publication_visible_showcase_v1', () => { installPublicationShowcase(this); });
     this.rebrandBlueV1();
+    this.runOnceDataMigration('publication_owner_products_v1', () => { installPublicationSelection(this); });
   }
 
   /** One-shot migration of persisted brand configuration, not merchandise/media or arbitrary copy. */
@@ -3672,13 +3675,14 @@ export class QatafoDatabase {
       input.termsAcceptedAt, input.locale, '', now, now);
 
       for (const { item, price } of breakdowns) {
+        reserveCatalogueSale(this, item, orderId);
         this.run(`INSERT INTO order_items (
           id,order_id,product_id,arrival_id,product_name,source_platform,source_url,image_url,variant,
           requested_size,requested_color,customer_note,reference_url,price_verification_status,quantity,
           original_price,currency,exchange_rate,converted_price_tnd,customs_tnd,shipping_tnd,service_tnd,express_tnd,
           discount_tnd,total_tnd,pricing_snapshot,created_at
         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-        `order_item_${randomUUID()}`, orderId, null, null, item.title, item.store.toUpperCase(), item.sourceUrl,
+        `order_item_${randomUUID()}`, orderId, catalogId(item.externalId), null, item.title, item.store.toUpperCase(), item.sourceUrl,
         item.imageUrl, item.variant, item.requestedSize, item.requestedColor, item.customerNote, item.referenceUrl,
         item.priceVerificationStatus, item.quantity, item.sourcePrice, item.sourceCurrency, price.exchangeRate,
         price.convertedPriceTND, price.customsFeeTND, price.shippingFeeTND, price.serviceFeeTND, price.expressFeeTND,
@@ -3704,7 +3708,7 @@ export class QatafoDatabase {
       return {
         orderId,
         orderNumber,
-        totalTND: Math.round(totals.total * 100) / 100,
+        totalTND: Math.round(totals.total * 1000) / 1000,
         itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
         customer: {
           name: input.name, email: input.email, phone: normalizedPhone, city: input.governorate, address: input.address,

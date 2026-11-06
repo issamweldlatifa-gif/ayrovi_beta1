@@ -1,3 +1,4 @@
+import { releaseCatalogueReservations } from '../catalogue/localSale';
 import { isGeneratedPublicationEditorialAsset } from '../../shared/publicationLayouts';
 import { normalizePublicationContent } from '../../shared/publicationContent';
 import { normalizePublicationFeedSettings } from '../../shared/publicationFeed';
@@ -1896,6 +1897,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       if (status === 'IN_TRANSIT') db.run("UPDATE deliveries SET status='IN_TRANSIT',updated_at=? WHERE order_id=?", now, existing.id);
       if (status === 'OUT_FOR_DELIVERY') db.run("UPDATE deliveries SET status='OUT_FOR_DELIVERY',updated_at=? WHERE order_id=?", now, existing.id);
       if (status === 'DELIVERED') db.run("UPDATE deliveries SET status='DELIVERED',delivered_at=?,updated_at=? WHERE order_id=?", now, now, existing.id);
+      if (status === 'CANCELLED') releaseCatalogueReservations(db, existing.id);
       // Cancellation never fabricates a refund or payment failure: payment state remains independent.
       if (existing.account_id) db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
         VALUES (?,?,'ORDER','Mise à jour de commande',?,?,?)`, `notification_${randomUUID()}`, existing.account_id,

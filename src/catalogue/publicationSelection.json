@@ -1,0 +1,152 @@
+{
+  "eurToTnd": 3.370911,
+  "priceBasis": "Owner approved direct conversion without import/service surcharges; configured platform rate snapshot, not live FX.",
+  "products": [
+    {
+      "key": "kerastase-volumifique",
+      "brand": "Kérastase",
+      "name": "Volumifique Bain Volume",
+      "description": "Shampooing pour cheveux fins.",
+      "image": "/media/catalogue/publication-selection/kerastase-volumifique.jpg",
+      "sourcePriceEUR": 29.95,
+      "salePriceTND": 100.959,
+      "category": "beauty",
+      "color": "",
+      "stock": {
+        "250 ml": 10
+      }
+    },
+    {
+      "key": "kerastase-chronologiste",
+      "brand": "Kérastase",
+      "name": "Chronologiste Overnight Youth Serum",
+      "description": "Sérum capillaire de nuit.",
+      "image": "/media/catalogue/publication-selection/kerastase-chronologiste.jpg",
+      "sourcePriceEUR": 49.95,
+      "salePriceTND": 168.377,
+      "category": "beauty",
+      "color": "",
+      "stock": {
+        "30 ml": 10
+      }
+    },
+    {
+      "key": "ordinary-hair-density",
+      "brand": "The Ordinary",
+      "name": "Multi-Peptide Serum for Hair Density",
+      "description": "Sérum capillaire densifiant.",
+      "image": "/media/catalogue/publication-selection/ordinary-hair-density.jpg",
+      "sourcePriceEUR": 23.95,
+      "salePriceTND": 80.733,
+      "category": "beauty",
+      "color": "",
+      "stock": {
+        "60 ml": 10
+      }
+    },
+    {
+      "key": "armani-traditional",
+      "brand": "Emporio Armani",
+      "name": "Traditional — montre silver",
+      "description": "Montre argentée, cadran bleu visible sur la photo.",
+      "image": "/media/catalogue/publication-selection/armani-traditional.jpg",
+      "sourcePriceEUR": 181,
+      "salePriceTND": 610.135,
+      "category": "fashion",
+      "color": "Argenté",
+      "stock": {
+        "Unique": 10
+      }
+    },
+    {
+      "key": "furla-easy-shape",
+      "brand": "Furla",
+      "name": "Easy Shape — montre Silver Tone",
+      "description": "Montre bicolore visible sur la photo.",
+      "image": "/media/catalogue/publication-selection/furla-easy-shape.jpg",
+      "sourcePriceEUR": 156.75,
+      "salePriceTND": 528.39,
+      "category": "fashion",
+      "color": "Silver Tone",
+      "stock": {
+        "Unique": 10
+      }
+    },
+    {
+      "key": "swarovski-tasse",
+      "brand": "Swarovski",
+      "name": "Tasse — multi-colored",
+      "description": "Tasse avec soucoupe illustrée sur la photo.",
+      "image": "/media/catalogue/publication-selection/swarovski-tasse.jpg",
+      "sourcePriceEUR": 125,
+      "salePriceTND": 421.364,
+      "category": "home",
+      "color": "Multicolore",
+      "stock": {
+        "Unique": 10
+      }
+    },
+    {
+      "key": "mk-charms-braided",
+      "brand": "MICHAEL Michael Kors",
+      "name": "Charms Novelty Braided — porte-clefs dark red",
+      "description": "Porte-clés bordeaux tressé.",
+      "image": "/media/catalogue/publication-selection/mk-charms-braided.jpg",
+      "sourcePriceEUR": 49.95,
+      "salePriceTND": 168.377,
+      "category": "fashion",
+      "color": "Bordeaux",
+      "stock": {
+        "Unique": 10
+      }
+    },
+    {
+      "key": "mk-bri-ruched",
+      "brand": "MICHAEL Michael Kors",
+      "name": "Bri Ruched — ballerines deep red",
+      "description": "Ballerines bordeaux ; pointures disponibles non visibles.",
+      "image": "/media/catalogue/publication-selection/mk-bri-ruched.jpg",
+      "sourcePriceEUR": 134.95,
+      "salePriceTND": 454.904,
+      "category": "fashion",
+      "color": "Bordeaux",
+      "stock": {
+        "40": 3,
+        "41": 3,
+        "43": 2,
+        "42.5": 2
+      }
+    },
+    {
+      "key": "mk-laila-pochette",
+      "brand": "MICHAEL Michael Kors",
+      "name": "Laila Pochette — sac à main dark red",
+      "description": "Pochette bordeaux avec bandoulière.",
+      "image": "/media/catalogue/publication-selection/mk-laila-pochette.jpg",
+      "sourcePriceEUR": 124.95,
+      "salePriceTND": 421.195,
+      "category": "fashion",
+      "color": "Bordeaux",
+      "stock": {
+        "Unique": 10
+      }
+    },
+    {
+      "key": "ck-henley-white",
+      "brand": "Calvin Klein Jeans",
+      "name": "Exclusive Henley Neck Long Sleeve T-Shirt — white",
+      "description": "T-shirt blanc à manches longues et col Henley.",
+      "image": "/media/catalogue/publication-selection/ck-henley-white.jpg",
+      "sourcePriceEUR": 48.95,
+      "salePriceTND": 165.006,
+      "category": "fashion",
+      "color": "Blanc",
+      "stock": {
+        "S": 3,
+        "M": 3,
+        "XL": 2,
+        "XXL": 2
+      }
+    }
+  ]
+}

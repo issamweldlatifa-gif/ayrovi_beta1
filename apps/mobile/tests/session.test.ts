@@ -118,6 +118,15 @@ describe('en-têtes d’authentification', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it('shares one CSRF renewal between simultaneous follow and save writes', async () => {
+    setAuthContext({ token: 'same-account', csrfToken: 'old' });
+    const renew = vi.fn(async () => { await new Promise(resolve => setTimeout(resolve, 10)); setAuthContext({ csrfToken: 'new' }); return true; });
+    setCsrfRefresher(renew);
+    vi.stubGlobal('fetch', respond((_url, init) => ((init.headers as Record<string,string>)['x-csrf-token'] === 'new') ? json({success:true,data:{ok:true}}) : json({success:false,code:'INVALID_CSRF'},403)));
+    await Promise.all([apiSend('PUT','/api/public/social/publishers/official/follow',{body:{following:true}}), apiSend('PUT','/api/public/social/publications/post/preferences',{body:{saved:true}})]);
+    expect(renew).toHaveBeenCalledTimes(1);
+  });
+
   it('ne rejoue pas une écriture quand le CSRF ne peut pas être renouvelé', async () => {
     setAuthContext({ token: 'jeton-1', csrfToken: 'vieux-csrf' });
     setCsrfRefresher(async () => false);
