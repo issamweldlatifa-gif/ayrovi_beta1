@@ -1,43 +1,52 @@
-import { router } from 'expo-router';
-import { PublicationMedia } from './PublicationMedia';
-import { PublicationPublisher } from './PublicationPublisher';
-import { PublicationProductPreview } from './PublicationProductPreview';
-import { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Animated, Modal, PanResponder, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { fetchFeedPage, type FeedPost } from '@/api/publicationFeed';
+import type { FeedPost } from '@/api/publicationFeed';
 import { AppText } from '@/design/ui';
-import { VIDEO_BACKDROP, ICON_SIZE, PUBLICATION_THEME as P } from '@/design/tokens.mobile';
-import { useI18n } from '@/i18n';
-import { Comments } from '@/features/social/Comments';
-import { PublicationCard } from './PublicationCard';
+import { VIDEO_BACKDROP, PUBLICATION_THEME as P } from '@/design/tokens.mobile';
+import { PublicationMedia } from './PublicationMedia';
+import { finishesPublicationDismiss, startsPublicationDismiss } from './publicationGestures';
 
-/** Full-screen detail of the existing Publication, not a second social entry point. */
-export function PublicationViewer({ post: initial, owner, onClose, onPreference }: { post: FeedPost; owner: string; onClose: () => void; onPreference: (action: string, id: string) => void }) {
-  const [gallery, setGallery] = useState(false);
-  const [productId, setProductId] = useState('');
-  const [post, setPost] = useState(initial); const [comments, setComments] = useState(false);
-  const insets = useSafeAreaInsets(); const { locale } = useI18n();
-  const related = useQuery({ queryKey: ['publication-related', owner, post.id, post.category], queryFn: ({ signal }) => fetchFeedPage({ category: post.category, q: '', post: '', cursor: null }, { signal }) });
+function useDismissGesture(onClose: () => void, atTop: () => boolean) {
+  const offset = useRef(new Animated.Value(0)).current;
+  const close = useRef(onClose); close.current = onClose;
+  const top = useRef(atTop); top.current = atTop;
+  const responder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponderCapture: (_, g) => startsPublicationDismiss(g.dx, g.dy, top.current()),
+    onMoveShouldSetPanResponder: (_, g) => startsPublicationDismiss(g.dx, g.dy, top.current()),
+    onPanResponderMove: (_, g) => offset.setValue(Math.max(0, g.dy)),
+    onPanResponderRelease: (_, g) => {
+      if (finishesPublicationDismiss(g.dy, g.vy)) { offset.setValue(0); close.current(); }
+      else Animated.spring(offset, { toValue: 0, useNativeDriver: true }).start();
+    },
+    onPanResponderTerminate: () => Animated.spring(offset, { toValue: 0, useNativeDriver: true }).start(),
+    onPanResponderTerminationRequest: () => false,
+  })).current;
+  return { ...responder.panHandlers, style: { flex: 1, transform: [{ translateY: offset }] } };
+}
+/** Separate reading and media-only modes. Hardware back / accessibility escape remain available. */
+export function PublicationViewer({ post, onClose }: { post: FeedPost; owner: string; onClose: () => void; onPreference: (action: string, id: string) => void }) {
+  const [gallery, setGallery] = useState(false); const [index, setIndex] = useState(0);
+  const scrollY = useRef(0); const insets = useSafeAreaInsets();
+  const detailGesture = useDismissGesture(onClose, () => scrollY.current <= 0);
+  const galleryGesture = useDismissGesture(() => setGallery(false), () => true);
+  const description = post.content?.description || post.subtitle;
   return <Modal visible animationType="slide" onRequestClose={onClose}>
-    <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel={locale === 'ar' ? 'إغلاق المنشور' : 'Fermer la publication'} onPress={onClose} style={styles.button}><Ionicons name="close" size={ICON_SIZE.md} color={P.ink} /></Pressable><AppText variant="label" color={P.ink}>Publication</AppText></View>
-      <ScrollView key={post.id} contentContainerStyle={styles.content}>
-        {productId ? <PublicationProductPreview key={productId} id={productId} onBack={() => setProductId('')} onContinue={() => { onClose(); router.push({ pathname: '/product/[id]', params: { id: productId } }); }} /> : <PublicationCard key={post.id} onOpen={() => setGallery(true)} onProductOpen={setProductId} post={post} active={!gallery} compact={false} onComments={() => setComments(!comments)} onPreference={onPreference} onReaction={(_, liked, likes) => setPost(old => ({ ...old, liked, likes }))} />}
-        {comments && !productId ? <Comments targetId={post.id} /> : null}
-        {(related.data?.items ?? []).filter(item => item.id !== post.id).length ? <AppText variant="h3" color={P.ink}>{locale === 'ar' ? 'من نفس الفئة' : 'Dans la même catégorie'}</AppText> : null}
-        {(related.data?.items ?? []).filter(item => item.id !== post.id).slice(0, 4).map(item => <Pressable key={item.id} accessibilityRole="button" onPress={() => { setPost(item); setComments(false); setProductId(''); }} style={styles.related}><AppText color={P.ink}>{item.title}</AppText><Ionicons name="chevron-forward" size={ICON_SIZE.md} color={P.ink} /></Pressable>)}
-      </ScrollView>
+    <View testID="publication-reader" style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <Animated.View testID="publication-reader-gesture" {...detailGesture} onAccessibilityEscape={onClose} accessibilityActions={[{ name: 'escape', label: 'Fermer la publication' }]} onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'escape') onClose(); }}>
+        <ScrollView contentContainerStyle={styles.content} onScroll={event => { scrollY.current = event.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
+          <PublicationMedia post={post} active={!gallery} onOpen={i => { setIndex(i); setGallery(true); }} />
+          <View style={styles.copy}><AppText variant="h3" color={P.ink}>{post.title}</AppText>{description ? <AppText color={P.muted}>{description}</AppText> : null}</View>
+        </ScrollView>
+      </Animated.View>
       <Modal visible={gallery} animationType="fade" onRequestClose={() => setGallery(false)}>
-        <View style={[styles.gallery, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-          <View style={styles.header}><Pressable accessibilityRole="button" accessibilityLabel={locale === 'ar' ? 'إغلاق الوسائط' : 'Fermer le média'} style={styles.button} onPress={() => setGallery(false)}><Ionicons name="close" size={ICON_SIZE.md} color={P.paper} /></Pressable><PublicationPublisher post={post} dark /></View>
-          <PublicationMedia key={post.id} post={post} active={gallery} immersive />
-          {post.products.length ? <Pressable accessibilityRole="button" style={styles.button} onPress={() => { setGallery(false); setProductId(post.products[0].id); }}><AppText color={P.paper}>{locale === 'ar' ? 'عرض المنتجات' : 'Voir les produits'} · {post.products.length}</AppText></Pressable> : null}
+        <View testID="publication-lightbox" style={[styles.gallery, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+          <Animated.View testID="publication-lightbox-gesture" {...galleryGesture} onAccessibilityEscape={() => setGallery(false)} accessibilityActions={[{ name: 'escape', label: 'Fermer le média' }]} onAccessibilityAction={event => { if (event.nativeEvent.actionName === 'escape') setGallery(false); }}>
+            <PublicationMedia key={`${post.id}-${index}`} post={post} active={gallery} immersive initialIndex={index} />
+          </Animated.View>
         </View>
       </Modal>
     </View>
   </Modal>;
 }
-const styles = StyleSheet.create({ gallery: { flex: 1, backgroundColor: VIDEO_BACKDROP }, screen: { flex: 1, backgroundColor: P.paper }, header: { flexDirection: 'row', alignItems: 'center', borderBottomColor: P.line, borderBottomWidth: StyleSheet.hairlineWidth }, button: { minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }, content: { padding: 12, width: '100%', maxWidth: 720, alignSelf: 'center' }, related: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, gap: 8 } });
+const styles = StyleSheet.create({ gallery: { flex: 1, backgroundColor: VIDEO_BACKDROP }, screen: { flex: 1, backgroundColor: P.paper }, content: { padding: 12, gap: 16, width: '100%', maxWidth: 720, alignSelf: 'center' }, copy: { paddingHorizontal: 8, paddingBottom: 24, gap: 8 } });

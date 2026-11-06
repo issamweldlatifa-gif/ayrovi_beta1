@@ -2,7 +2,7 @@ import { AppState, FlatList } from 'react-native';
 import { PublicationProductPreview } from '@/features/publications/PublicationProductPreview';
 import { PublicationMedia } from '@/features/publications/PublicationMedia';
 import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../../../shared/publicationFeed';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
@@ -75,9 +75,33 @@ describe('Publication Phase 1 UI', () => {
   });
   it('does not permit guest likes and offers the existing sign-in route', async () => {
     mockSession.status = 'signedOut'; await mount();
-    expect(screen.getByTestId('publication-like-ui-post')).toBeDisabled();
-    fireEvent.press(screen.getByText('Connectez-vous pour aimer et commenter'));
+    expect(screen.getByTestId('publication-like-ui-post')).not.toBeDisabled();
+    fireEvent.press(screen.getByTestId('publication-like-ui-post'));
+    expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
+    expect(mockRouter.push).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByRole('button', { name: 'Se connecter' }));
     expect(mockRouter.push).toHaveBeenCalledWith('/sign-in'); expect(mockSend).not.toHaveBeenCalled();
+  });
+  it('gates guest comments, save, follow and share with the branded sheet, without writes', async () => {
+    mockSession.status = 'signedOut'; await mount();
+    for (const name of ['Commentaires', 'Enregistrer', 'Suivre cet éditeur', 'Partager']) {
+      fireEvent.press(screen.getByRole('button', { name }));
+      expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
+      fireEvent.press(screen.getByRole('button', { name: 'Continuer à découvrir' }));
+    }
+    expect(mockSend).not.toHaveBeenCalled(); expect(mockPreference).not.toHaveBeenCalled(); expect(mockFollow).not.toHaveBeenCalled();
+  });
+  it('opens media-only black gallery without a visible header and closes via accessibility escape', async () => {
+    await mount(); fireEvent.press(screen.getByText('Inspiration réelle'));
+    const frame = within(screen.getByTestId('publication-reader')).getByTestId('publication-media-ui-post');
+    fireEvent(frame, 'layout', { nativeEvent: { layout: { width: 360, height: 450 } } });
+    fireEvent.press(within(screen.getByTestId('publication-reader')).getByRole('button', { name: 'Inspiration réelle' }));
+    expect(screen.getByTestId('publication-lightbox')).toBeTruthy();
+    expect(within(screen.getByTestId('publication-reader')).queryByText('Publication')).toBeNull();
+    expect(within(screen.getByTestId('publication-lightbox')).queryByText('Texte éditorial')).toBeNull();
+    act(() => screen.getByTestId('publication-lightbox-gesture').props.onAccessibilityEscape());
+    expect(screen.queryByTestId('publication-lightbox')).toBeNull();
+    expect(screen.getByTestId('publication-reader')).toBeTruthy();
   });
   it('optimistically likes, blocks duplicate taps, and rolls back a failed write', async () => {
     let reject!: (error: Error) => void;
@@ -109,9 +133,11 @@ describe('Publication Phase 1 UI', () => {
   });
   it('opens and closes the existing-publication viewer', async () => {
     await mount(); fireEvent.press(screen.getByText('Inspiration réelle'));
-    expect(screen.getByRole('button', { name: 'Fermer la publication' })).toBeTruthy();
-    fireEvent.press(screen.getByRole('button', { name: 'Fermer la publication' }));
+    expect(screen.getByTestId('publication-reader')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Fermer la publication' })).toBeNull();
+    expect(within(screen.getByTestId('publication-reader')).queryByText('Publication')).toBeNull();
+    act(() => screen.getByTestId('publication-reader-gesture').props.onAccessibilityEscape());
+    expect(screen.queryByTestId('publication-reader')).toBeNull();
   });
   it('expands real long description and renders genuine sponsored and verified metadata', async () => {
     const content = { type: 'editorial' as const, media: [], description: 'Long description '.repeat(30), descriptionPosition: 'above' as const, sponsored: true, sponsorName: 'ZAYROVI', audience: '', topic: '' };
@@ -131,6 +157,21 @@ describe('Publication Phase 1 UI', () => {
     expect(screen.UNSAFE_getByType(FlatList).props.renderItem({ item: media[0], index: 0 }).props.style).toEqual({ width: 360, height: 450 });
     fireEvent(screen.UNSAFE_getByType(FlatList), 'momentumScrollEnd', { nativeEvent: { contentOffset: { x: 360 } } });
     expect(screen.getByText('2/2')).toBeTruthy();
+  });
+  it('lets carousel thumbnails select the real slide and preserves its counter', async () => {
+    const media = [{ type: 'image' as const, url: '/a.jpg', poster: '', alt: 'Photo A' }, { type: 'image' as const, url: '/b.jpg', poster: '', alt: 'Photo B' }];
+    const content = { type: 'carousel' as const, template: 'carousel' as const, media, description: '', descriptionPosition: 'below' as const, sponsored: false, sponsorName: '', audience: '', topic: '' };
+    await mount(<PublicationMedia post={{ ...post, content }} thumbnails />);
+    fireEvent(screen.getByTestId('publication-media-ui-post'), 'layout', { nativeEvent: { layout: { width: 360, height: 450 } } });
+    fireEvent.press(screen.getByTestId('publication-thumbnail-ui-post-1'));
+    expect(screen.getByText('2/2')).toBeTruthy();
+    expect(screen.getByTestId('publication-thumbnail-ui-post-1').props.accessibilityState).toMatchObject({ selected: true });
+  });
+  it('keeps authored CTA interactive in the split template instead of baking it into an image', async () => {
+    const open = jest.fn();
+    const content = { type: 'image' as const, template: 'split' as const, actionLabel: 'Découvrir', actionTarget: 'detail' as const, media: [], description: 'Design du quotidien', descriptionPosition: 'below' as const, sponsored: false, sponsorName: '', audience: '', topic: '' };
+    await mount(<PublicationCard post={{ ...post, content }} compact={false} onOpen={open} onComments={() => undefined} onReaction={() => undefined} />);
+    fireEvent.press(screen.getByRole('button', { name: 'Découvrir' })); expect(open).toHaveBeenCalledTimes(1);
   });
   it('starts muted and pauses the actual player when the video becomes inactive', async () => {
     AppState.currentState = 'active';

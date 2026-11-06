@@ -747,8 +747,12 @@ export const FOOTER_THEME = {
 
 /** Publication is deliberately a white editorial space, even in system dark mode. */
 export const PUBLICATION_THEME = {
-  /** Publisher verification seal, deliberately distinct from active purple. */
+  /** Publisher verification seal, distinct from the primary action blue. */
   verified: '#1877F2',
   paper: BRAND.white, ink: BRAND.black, muted: NEUTRALS.textSecondary,
   line: NEUTRALS.border, neutral: BRAND.lightGray, accent: BRAND.violet,
+  canvas: mix(BRAND.white, BRAND.violet, .018),
+  cardLine: alpha(BRAND.violet, .05), pill: alpha(BRAND.violet, .08), pillLine: alpha(BRAND.violet, .06),
+  splitPaper: alpha(BRAND.violet, .025), glass: alpha(BRAND.violet, .035),
+  glassLine: frost(.6), campaignPaper: frost(.94),
 } as const;

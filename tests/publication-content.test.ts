@@ -24,6 +24,11 @@ describe('Publication media and preferences', () => {
     expect(normalizePublicationContent({ post_type: 'video', image_url: '/media/poster.jpg', media: [{ type: 'video', url: 'https://example.com/clip.mp4' }] })?.media[0].poster).toBe('/media/poster.jpg');
     for (const body of [{ post_type: 'unknown' }, { sponsored: 'yes' }, { description_position: 'middle' }, { audience: 'unknown' }, { media: [null] }, { media: [{ type: 'image', url: 'javascript:alert(1)' }] }, { post_type: 'video', media: [{ type: 'video', url: 'https://youtube.com/watch?v=x' }] }]) expect(normalizePublicationContent(body)).toBeNull();
   });
+  test('visual template validation is independent from media type and never accepts broken video/carousel combinations', () => {
+    for (const template of ['auto','photo','split','campaign']) expect(normalizePublicationContent({ template_id: template })).toMatchObject({ template });
+    for (const body of [{ template_id: 'unknown' }, { template_id: 'video' }, { template_id: 'carousel' }, { action_target: 'javascript:bad' }]) expect(normalizePublicationContent(body)).toBeNull();
+    expect(normalizePublicationContent({ template_id: 'split', action_label: 'Découvrir', action_target: 'products' })).toMatchObject({ template: 'split', actionLabel: 'Découvrir', actionTarget: 'products' });
+  });
   test('filters are real intersections and expose authored sponsorship', async () => {
     expect((await feed({ type: 'carousel', audience: 'women', topic: 'accessories' })).body.data.items[0]).toMatchObject({ sponsored: 1, description: 'Long content' });
     for (const filter of [{ type: 'video' }, { audience: 'men' }, { topic: 'shoes' }, { saved: 1 }, { following: 1 }, { hasProducts: 1 }]) expect((await feed(filter)).body.data.items).toEqual([]);
@@ -63,6 +68,10 @@ describe('Publication media and preferences', () => {
     expect((await admin.put(`/api/admin/publications/${id}`).set(headers).send({ post_type: 'product', media: [] })).status).toBe(400);
     const media = [{ type: 'image', url: '/a.jpg' }, { type: 'image', url: '/b.jpg' }];
     expect((await admin.put(`/api/admin/publications/${id}`).set(headers).send({ post_type: 'carousel', media, description_position: 'above' })).status).toBe(200);
+    expect((await admin.put(`/api/admin/publications/${id}`).set(headers).send({ template_id: 'split', action_label: 'Découvrir', action_target: 'products' })).status).toBe(400);
+    expect((await admin.put(`/api/admin/publications/${id}`).set(headers).send({ template_id: 'split', action_label: 'Découvrir', action_target: 'detail' })).status).toBe(200);
+    expect((await feed()).body.data.items[0]).toMatchObject({ template_id: 'split', action_label: 'Découvrir', action_target: 'detail' });
+    expect((await admin.put(`/api/admin/publications/${id}`).set(headers).send({ template_id: 'invalid' })).status).toBe(400);
     const row = (await feed()).body.data.items[0];
     expect(row.description_position).toBe('above'); expect(JSON.parse(row.media_json)).toHaveLength(2);
     for (let i = 0; i < 2; i++) expect((await request(app).post('/api/public/social/interact').set('x-session-id', 'content_qa_session').send({ type: 'view', targetId: id })).status).toBe(200);

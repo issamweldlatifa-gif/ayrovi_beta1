@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { setStatusBarStyle } from 'expo-status-bar';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { fetchFeedPage, fetchFeedSettings, type FeedPost, type FeedPage, writePublicationPreference } from '@/api/publicationFeed';
-import { BrandMark } from '@/design/BrandMark';
 import { AppText } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { PUBLICATION_THEME as P, RADIUS, veil } from '@/design/tokens.mobile';
@@ -95,13 +94,12 @@ export function PublicationFeedScreen() {
       <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'رجوع' : 'Retour'} onPress={() => goBack('/(tabs)')} style={styles.icon}>
         <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={P.ink} />
       </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'الرئيسية ZAYROVI' : 'Accueil ZAYROVI'} onPress={() => router.push('/(tabs)')}><BrandMark nameSize={12} color={P.ink} /></Pressable>
-      <View style={styles.title}><AppText numberOfLines={1} variant="label" color={P.ink}>{settings ? (ar ? settings.titleAr : settings.titleFr) : t('social.publications')}</AppText></View>
+      <View style={styles.title}><View style={styles.titlePill}><AppText numberOfLines={1} variant="label" color={P.accent}>{settings ? (ar ? settings.titleAr : settings.titleFr === 'Publications' ? 'Publication' : settings.titleFr) : t('social.publications')}</AppText></View></View>
       <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'البحث في المنشورات' : 'Rechercher des publications'} accessibilityState={{ expanded: searchOpen }} onPress={() => setSearchOpen(!searchOpen)} style={styles.icon}>
         <Ionicons name="search-outline" size={theme.iconSize.md} color={P.ink} />
       </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'إشعارات الحساب' : 'Notifications du compte'} onPress={() => router.push('/account/notifications')} style={styles.icon}>
-        <Ionicons name="notifications-outline" size={theme.iconSize.md} color={P.ink} />
+      <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'حسابي' : 'Mon compte'} onPress={() => router.push('/(tabs)/account')} style={styles.icon}>
+        <Ionicons name="person-outline" size={theme.iconSize.md} color={P.ink} />
       </Pressable>
     </View>
     {searchOpen ? <View style={[styles.search, { marginHorizontal: gutter }]}>
@@ -148,8 +146,8 @@ export function PublicationFeedScreen() {
   </View>;
 }
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: P.paper }, header: { minHeight: 44, alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.line },
-  title: { flex: 1, alignItems: 'center' }, icon: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  screen: { flex: 1, backgroundColor: P.canvas }, header: { minHeight: 44, alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.line },
+  title: { flex: 1, alignItems: 'center' }, titlePill: { backgroundColor: P.pill, borderColor: P.pillLine, borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 24, paddingVertical: 10, maxWidth: '100%' }, icon: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   search: { flexDirection: 'row', alignItems: 'center', backgroundColor: P.neutral, borderRadius: RADIUS.md }, input: { flex: 1, color: P.ink, padding: 12, minHeight: 44 },
   categories: { paddingVertical: 4, gap: 8 }, chip: { minHeight: 44, paddingHorizontal: 16, borderRadius: RADIUS.xl, justifyContent: 'center' },
   all: { minHeight: 44, justifyContent: 'center' }, modal: { flex: 1, justifyContent: 'flex-end' }, backdrop: { ...StyleSheet.absoluteFill, backgroundColor: veil(0.5) },

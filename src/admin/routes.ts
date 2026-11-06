@@ -1410,6 +1410,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const primaryProductId = String(req.body?.product_id ?? '').trim() || extraProducts[0] || '';
     const shoppable = decideShoppable(req.body?.content_mode, primaryProductId, (pid) => catalogueProductSnapshot(db, pid));
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
+    if (content.actionLabel && content.actionTarget === 'products' && !shoppable.productId && !extraProducts.length) return res.status(400).json({ success: false, error: 'Associez un produit avant d’activer ce bouton.' });
     if ((content.type === 'product' && !shoppable.productId && !extraProducts.length) || (content.type === 'collection' && !shoppable.productId && !extraProducts.length && content.media.length < 2)) return res.status(400).json({ success: false, error: 'Produit ou collection de médias obligatoire.' });
     const now = new Date().toISOString();
     const id = `publication_${randomUUID()}`;
@@ -1417,8 +1418,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       id, title, String(req.body?.subtitle || '').slice(0, 150), channelId, imageUrl, String(req.body?.remark || ''),
       req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon',
       shoppable.mode, shoppable.productId, now, now, category);
-    db.run(`UPDATE publications SET post_type=?,media_json=?,description=?,description_position=?,sponsored=?,sponsor_name=?,audience=?,topic=? WHERE id=?`,
-      content.type, JSON.stringify(content.media), content.description, content.descriptionPosition, content.sponsored ? 1 : 0, content.sponsorName, content.audience, content.topic, id);
+    db.run(`UPDATE publications SET post_type=?,media_json=?,description=?,description_position=?,sponsored=?,sponsor_name=?,audience=?,topic=?,template_id=?,action_label=?,action_target=? WHERE id=?`,
+      content.type, JSON.stringify(content.media), content.description, content.descriptionPosition, content.sponsored ? 1 : 0, content.sponsorName, content.audience, content.topic, content.template, content.actionLabel, content.actionTarget, id);
     if (extraProducts.length > 0) setContentProducts(db, 'publication', id, extraProducts, now);
     else syncContentProductsFromLegacy(db, 'publication', id, shoppable.mode, shoppable.productId);
     audit(db, req, 'CREATE', 'SOCIAL_PUBLICATIONS', id, null, db.get<any>('SELECT * FROM publications WHERE id=?', id));
@@ -1442,6 +1443,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       (pid) => catalogueProductSnapshot(db, pid));
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
     const linkedCount = req.body?.product_ids !== undefined ? extraProducts.length : Number(db.get<any>("SELECT COUNT(*) n FROM content_products WHERE content_kind='publication' AND content_id=?", row.id)?.n || 0);
+    if (content.actionLabel && content.actionTarget === 'products' && !shoppable.productId && !linkedCount) return res.status(400).json({ success: false, error: 'Associez un produit avant d’activer ce bouton.' });
     if ((content.type === 'product' && !shoppable.productId && !linkedCount) || (content.type === 'collection' && !shoppable.productId && !linkedCount && content.media.length < 2)) return res.status(400).json({ success: false, error: 'Produit ou collection de médias obligatoire.' });
     db.run(`UPDATE publications SET title=?, subtitle=?, image_url=?, remark=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=?, category=?, media_origin=? WHERE id=?`,
       String(req.body?.title ?? row.title).slice(0, 150), String(req.body?.subtitle ?? row.subtitle).slice(0, 150),
@@ -1449,8 +1451,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
       shoppable.mode, shoppable.productId, new Date().toISOString(), category, imageUrl !== row.image_url ? 'uploaded' : row.media_origin, req.params.id);
-    db.run(`UPDATE publications SET post_type=?,media_json=?,description=?,description_position=?,sponsored=?,sponsor_name=?,audience=?,topic=? WHERE id=?`,
-      content.type, JSON.stringify(content.media), content.description, content.descriptionPosition, content.sponsored ? 1 : 0, content.sponsorName, content.audience, content.topic, req.params.id);
+    db.run(`UPDATE publications SET post_type=?,media_json=?,description=?,description_position=?,sponsored=?,sponsor_name=?,audience=?,topic=?,template_id=?,action_label=?,action_target=? WHERE id=?`,
+      content.type, JSON.stringify(content.media), content.description, content.descriptionPosition, content.sponsored ? 1 : 0, content.sponsorName, content.audience, content.topic, content.template, content.actionLabel, content.actionTarget, req.params.id);
     if (req.body?.product_ids !== undefined) setContentProducts(db, 'publication', req.params.id, extraProducts);
     else if (req.body?.product_id !== undefined || req.body?.content_mode !== undefined) syncContentProductsFromLegacy(db, 'publication', req.params.id, shoppable.mode, shoppable.productId);
     audit(db, req, 'UPDATE', 'SOCIAL_PUBLICATIONS', req.params.id, row, db.get<any>('SELECT * FROM publications WHERE id=?', req.params.id));

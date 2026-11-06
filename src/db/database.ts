@@ -350,6 +350,7 @@ export class QatafoDatabase {
     for (const [name, definition] of Object.entries({
       post_type: "TEXT NOT NULL DEFAULT 'image'", media_json: "TEXT NOT NULL DEFAULT '[]'", description: "TEXT NOT NULL DEFAULT ''",
       description_position: "TEXT NOT NULL DEFAULT 'below'", sponsored: 'INTEGER NOT NULL DEFAULT 0', sponsor_name: "TEXT NOT NULL DEFAULT ''",
+      template_id: "TEXT NOT NULL DEFAULT 'auto'", action_label: "TEXT NOT NULL DEFAULT ''", action_target: "TEXT NOT NULL DEFAULT 'detail'",
       audience: "TEXT NOT NULL DEFAULT ''", topic: "TEXT NOT NULL DEFAULT ''",
     })) this.ensureColumn('publications', name, definition);
     this.db.exec(`CREATE TABLE IF NOT EXISTS publication_follows (

@@ -1,4 +1,5 @@
-import { PUBLICATION_TYPES } from '../../../shared/publicationContent';
+import { PUBLICATION_TYPES, PUBLICATION_TEMPLATES } from '../../../shared/publicationContent';
+import { PublicationTemplatePreview } from './PublicationTemplatePreview';
 import { PublicationFeedSettingsPage } from './PublicationFeedSettingsPage';
 import { PUBLICATION_CATEGORIES } from '../../../shared/publicationFeed';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -60,6 +61,7 @@ function PublicationInsights() {
 const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
   const [rows, setRows] = useState<any[]>([]);
   const [form, setForm] = useState<any | null>(null);
+  const [reelChoices, setReelChoices] = useState<any[] | null>(null);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const load = useCallback(() => { adminApi<any>('/publications').then((r) => setRows(r.data || [])).catch(() => setError('Impossible de charger les publications.')); }, []);
@@ -104,6 +106,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
       <Modal open={Boolean(form)} title={form?.id ? 'Éditer' : 'Nouvelle publication'} onClose={() => setForm(null)} wide
         footer={<><Button variant="ghost" onClick={() => setForm(null)}>Annuler</Button><Button busy={busy === 'save'} onClick={() => void save()}>Enregistrer</Button></>}>
         {form && <div className="admin-grid-2">
+          {error ? <div role="alert" className="admin-error" style={{ gridColumn: '1 / -1' }}>{error}</div> : null}
           <Field label="Titre" required><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
           <Field label="Sous-titre"><input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} /></Field>
           <Field label="Canal" required><ChannelSelect value={form.channel_id} onChange={(v) => setForm({ ...form, channel_id: v })} channels={channels} /></Field>
@@ -119,12 +122,23 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           <Field label="Type de publication"><select aria-label="Type de publication" value={form.post_type || 'image'} onChange={e => setForm({ ...form, post_type: e.target.value })}>
             {PUBLICATION_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
           </select></Field>
+          <Field label="Modèle visuel"><select aria-label="Modèle visuel" value={form.template_id || 'auto'} onChange={e => setForm({ ...form, template_id: e.target.value, post_type: e.target.value === 'video' ? 'video' : e.target.value === 'carousel' ? 'carousel' : ['photo','split','campaign'].includes(e.target.value) && form.post_type === 'video' ? 'image' : form.post_type })}>
+            {PUBLICATION_TEMPLATES.map(value => <option key={value} value={value}>{({ auto: 'Automatique (compatibilité)', photo: 'Photo éditoriale', split: 'Duo — image & texte', campaign: 'Campagne — texte superposé', carousel: 'Carousel & miniatures', video: 'Vidéo immersive' })[value]}</option>)}
+          </select></Field>
+          <Field label="Libellé du bouton (facultatif)"><input maxLength={40} value={form.action_label || ''} placeholder="Découvrir" onChange={e => setForm({ ...form, action_label: e.target.value })} /></Field>
+          <Field label="Action du bouton"><select value={form.action_target || 'detail'} onChange={e => setForm({ ...form, action_target: e.target.value })}><option value="detail">Ouvrir la publication</option><option value="products">Ouvrir le premier produit associé</option></select></Field>
+          <Field label="Aperçu de composition" full><PublicationTemplatePreview form={form} /></Field>
           <Field label="Description" full><textarea rows={4} maxLength={10000} value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} /></Field>
           <Field label="Position de la description"><select value={form.description_position || 'below'} onChange={e => setForm({ ...form, description_position: e.target.value })}><option value="above">Au-dessus du média</option><option value="below">Sous le média</option></select></Field>
           <Field label="Sponsorisé"><input type="checkbox" checked={!!form.sponsored} onChange={e => setForm({ ...form, sponsored: e.target.checked })} /></Field>
           {form.sponsored ? <Field label="Annonceur"><input value={form.sponsor_name || 'ZAYROVI'} maxLength={80} onChange={e => setForm({ ...form, sponsor_name: e.target.value })} /></Field> : null}
           <Field label="Audience"><select value={form.audience || ''} onChange={e => setForm({ ...form, audience: e.target.value })}>{['','men','women','unisex'].map(value => <option key={value} value={value}>{value || 'Toutes'}</option>)}</select></Field>
           <Field label="Sujet"><select value={form.topic || ''} onChange={e => setForm({ ...form, topic: e.target.value })}>{['','shoes','accessories','new-trends'].map(value => <option key={value} value={value}>{value || 'Tous'}</option>)}</select></Field>
+          {form.post_type === 'video' ? <Field label="Réutiliser une vidéo existante" full>
+            <Button variant="secondary" onClick={async () => { try { const response = await adminApi<{ data: any[] }>('/reels'); setReelChoices(response.data || []); } catch { setError('Impossible de charger les vidéos existantes.'); } }}>Choisir dans les Reels</Button>
+            {reelChoices ? <select aria-label="Vidéo existante" value="" onChange={e => { const reel = reelChoices.find(item => item.id === e.target.value); if (reel) setForm({ ...form, template_id: 'video', post_type: 'video', title: form.title || reel.title, image_url: form.image_url || reel.poster_url || '', media: [{ type: 'video', url: reel.video_url, poster: reel.poster_url || form.image_url || '', alt: reel.title }] }); }}><option value="">{reelChoices.length ? 'Sélectionnez une vidéo' : 'Aucune vidéo disponible'}</option>{reelChoices.map(reel => <option key={reel.id} value={reel.id}>{reel.title}</option>)}</select> : null}
+            <small>Réutilise le fichier existant sans modifier le Reel. Ajoutez une couverture si nécessaire.</small>
+          </Field> : null}
           <Field label="Médias ordonnés" full>
             <p>Carousel : 2 à 10 images. Vidéo : un fichier vidéo et l’image principale comme couverture. Le type de publication doit correspondre aux médias.</p>
             {(form.media || []).map((item: any, index: number) => <div className="admin-actions" key={index}>
@@ -236,6 +250,12 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
             </div>
             {form.poster_url && <img src={form.poster_url} alt="" style={{ width: 120, aspectRatio: '9 / 16', objectFit: 'cover', borderRadius: 12, marginTop: 8 }} />}
           </Field>
+          <Field label="Modèle visuel"><select aria-label="Modèle visuel" value={form.template_id || 'auto'} onChange={e => setForm({ ...form, template_id: e.target.value, post_type: e.target.value === 'video' ? 'video' : e.target.value === 'carousel' ? 'carousel' : ['photo','split','campaign'].includes(e.target.value) && form.post_type === 'video' ? 'image' : form.post_type })}>
+            {PUBLICATION_TEMPLATES.map(value => <option key={value} value={value}>{({ auto: 'Automatique (compatibilité)', photo: 'Photo éditoriale', split: 'Duo — image & texte', campaign: 'Campagne — texte superposé', carousel: 'Carousel & miniatures', video: 'Vidéo immersive' })[value]}</option>)}
+          </select></Field>
+          <Field label="Libellé du bouton (facultatif)"><input maxLength={40} value={form.action_label || ''} placeholder="Découvrir" onChange={e => setForm({ ...form, action_label: e.target.value })} /></Field>
+          <Field label="Action du bouton"><select value={form.action_target || 'detail'} onChange={e => setForm({ ...form, action_target: e.target.value })}><option value="detail">Ouvrir la publication</option><option value="products">Ouvrir le premier produit associé</option></select></Field>
+          <Field label="Aperçu de composition" full><PublicationTemplatePreview form={form} /></Field>
           <Field label="Description" full><textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
           <ProductIntegration kind="reel" value={form} onChange={(v) => setForm({ ...form, ...v })} />
           <Field label="Statut"><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="brouillon">Brouillon</option><option value="publie">Publié</option><option value="archive">Archivé</option></select></Field>
