@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { FlatList, StyleSheet, View, type ViewToken } from 'react-native';
-import { AppText } from '@/design/ui';
 import { RADIUS } from '@/design/tokens.mobile';
 import { LensResultMedia } from './LensResultMedia';
 import { lensMediaChain } from './lensMedia';
@@ -21,11 +20,14 @@ export function LensCardGallery({
 }) {
   const [{ width, height }, setSize] = useState({ width: 0, height: 0 });
   const [page, setPage] = useState(0);
+  const firstDot = Math.max(0, Math.min(page - 3, images.length - 7));
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 51 }).current;
-  const onVisible = useRef(({ viewableItems }: { viewableItems: ViewToken<string>[] }) => {
-    const index = viewableItems.find(item => item.isViewable)?.index;
-    if (index != null) setPage(index);
-  }).current;
+  const onVisible = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken<string>[] }) => {
+      const index = viewableItems.find((item) => item.isViewable)?.index;
+      if (index != null) setPage(index);
+    }
+  ).current;
   return (
     <View
       testID={`${testID}-gallery`}
@@ -48,7 +50,11 @@ export function LensCardGallery({
           keyExtractor={(uri, i) => `${i}-${uri}`}
           viewabilityConfig={viewabilityConfig}
           onViewableItemsChanged={onVisible}
-          getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+          getItemLayout={(_, index) => ({
+            length: width,
+            offset: width * index,
+            index,
+          })}
           scrollEventThrottle={32}
           renderItem={({ item, index }) => (
             <View style={{ width, height }}>
@@ -67,11 +73,21 @@ export function LensCardGallery({
         <View
           pointerEvents="none"
           style={styles.counter}
-          testID={`${testID}-counter`}
+          testID={`${testID}-pagination`}
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel={`${page + 1}/${images.length}`}
         >
-          <AppText variant="captionStrong" color={LENS_COLORS.black}>
-            {page + 1}/{images.length}
-          </AppText>
+          {images.slice(firstDot, firstDot + 7).map((_, offset) => {
+            const index = firstDot + offset;
+            return (
+              <View
+                key={index}
+                testID={`${testID}-dot-${index}`}
+                style={[styles.dot, index === page && styles.activeDot]}
+              />
+            );
+          })}
         </View>
       ) : null}
     </View>
@@ -82,9 +98,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 8,
     alignSelf: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderRadius: RADIUS.full,
     backgroundColor: LENS_COLORS.resultLine,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: RADIUS.full,
+    backgroundColor: LENS_COLORS.resultMuted,
+  },
+  activeDot: { width: 14, backgroundColor: LENS_COLORS.black },
 });

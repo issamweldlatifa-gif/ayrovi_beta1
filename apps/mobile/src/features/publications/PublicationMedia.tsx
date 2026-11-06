@@ -55,8 +55,8 @@ export function PublicationMedia({ post, active = false, immersive = false, onOp
 }
 const styles = StyleSheet.create({
   collection: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 }, tile: { width: '49%', aspectRatio: 1 },
-  frame: { width: '100%', aspectRatio: 4 / 5, backgroundColor: VIDEO_BACKDROP, overflow: 'hidden', borderRadius: RADIUS.xl }, immersive: { flex: 1, aspectRatio: undefined, borderRadius: 0 }, fill: { ...StyleSheet.absoluteFill },
-  thumbnails: { flexDirection: 'row', gap: 6, paddingTop: 8, flexWrap: 'wrap' }, thumbnail: { width: 60, height: 60, padding: 2, borderRadius: RADIUS.md, borderWidth: 2 }, thumbnailImage: { width: '100%', height: '100%', borderRadius: RADIUS.sm },
+  frame: { width: '100%', aspectRatio: 4 / 5, backgroundColor: VIDEO_BACKDROP, overflow: 'hidden', borderRadius: RADIUS.sm }, immersive: { flex: 1, aspectRatio: undefined, borderRadius: 0 }, fill: { ...StyleSheet.absoluteFill },
+  thumbnails: { flexDirection: 'row', gap: 6, paddingTop: 8, flexWrap: 'wrap' }, thumbnail: { width: 48, height: 48, padding: 2, borderRadius: RADIUS.md, borderWidth: 2 }, thumbnailImage: { width: '100%', height: '100%', borderRadius: RADIUS.sm },
   videoActions: { position: 'absolute', bottom: 12, right: 12, flexDirection: 'row', gap: 8 }, control: { minWidth: 48, minHeight: 48, borderRadius: RADIUS.full, backgroundColor: VIDEO_BACKDROP, alignItems: 'center', justifyContent: 'center' },
   counter: { position: 'absolute', top: 12, right: 12, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: VIDEO_BACKDROP }, failure: { padding: 16 },
 });

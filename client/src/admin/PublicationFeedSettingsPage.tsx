@@ -29,7 +29,7 @@ export function PublicationFeedSettingsPage({ canWrite }: { canWrite: boolean })
   };
   return <section className="admin-card">
     <h3>Réglages Publication Feed</h3>
-    <p>Écran existant /publications. Les contenus se gèrent dans l’onglet Publication. Les catégories masquées restent dans For You ; elles ne sont pas supprimées.</p>
+    <p>Écran existant /publications. Les contenus se gèrent dans l’onglet Publication. Le fil public ne comporte plus de barres de catégories ni de modes.</p>
     <Button variant="secondary" disabled={busy} onClick={() => void load()}>Recharger les réglages</Button>
     {message ? <p role="status">{message}</p> : null}
     {!settings ? <p>{busy ? 'Chargement…' : 'Réessayez la lecture.'}</p> : <>
@@ -40,8 +40,8 @@ export function PublicationFeedSettingsPage({ canWrite }: { canWrite: boolean })
         <Field label="Présentation des cartes"><select aria-label="Présentation des cartes" value={settings.layout} onChange={e => setSettings({ ...settings, layout: e.target.value as PublicationFeedSettings['layout'] })}>
           <option value="mixed">Éditoriale mixte</option><option value="portrait">Grandes images portrait</option><option value="compact">Cartes compactes</option>
         </select></Field>
-        <h4>Catégories — ordre, visibilité et libellés</h4>
-        <p>For You reste toujours disponible comme filtre général. Les clés techniques ne changent pas.</p>
+        <h4>Taxonomie interne — compatibilité</h4>
+        <p>Ces réglages historiques sont conservés sans afficher de filtres dans Publication. Les clés techniques ne changent pas.</p>
         {settings.categories.map((category, index) => <div key={category.key} className="admin-card" role="group" aria-label={`Catégorie ${category.key || 'For You'}`}>
           <strong>{category.key || 'For You'}</strong>
           <Field label={`Libellé FR ${category.key || 'all'}`}><input maxLength={40} value={category.labelFr} onChange={e => setSettings({ ...settings, categories: settings.categories.map(c => c.key === category.key ? { ...c, labelFr: e.target.value } : c) })} /></Field>

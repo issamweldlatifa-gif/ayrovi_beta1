@@ -131,9 +131,9 @@ const styles = StyleSheet.create({
   },
   favoriteLTR: { right: 8 },
   favoriteRTL: { left: 8 },
-  copy: { minHeight: 104, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 12, gap: 4 },
+  copy: { paddingHorizontal: 10, paddingTop: 8, paddingBottom: 12, gap: 4 },
   brand: { color: LENS_COLORS.black },
-  title: { color: LENS_COLORS.black, minHeight: 42 },
+  title: { color: LENS_COLORS.black },
   rating: { alignItems: 'center', gap: 4, marginTop: 2 },
   ratingText: { color: LENS_COLORS.black },
 });

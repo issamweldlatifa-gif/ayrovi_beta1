@@ -653,6 +653,9 @@ export type DerivedColors = ReturnType<typeof derivedColors>;
  *   • `xl` 40 — l'icône remplace une image (vignette, avatar) ;
  *   • `xxl` 64 — giciel de substitution plein écran (viseur caméra indisponible).
  */
+/** Optical sizing for the compact Publication feed; touch targets remain >= 44 pt. */
+export const PUBLICATION_METRICS = { icon: 22, verified: 16, avatar: 36 } as const;
+
 export const ICON_SIZE = {
   xs: 14,
   sm: 18,

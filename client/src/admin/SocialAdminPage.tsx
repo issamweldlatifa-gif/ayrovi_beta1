@@ -123,7 +123,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
             {PUBLICATION_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
           </select></Field>
           <Field label="Modèle visuel"><select aria-label="Modèle visuel" value={form.template_id || 'auto'} onChange={e => setForm({ ...form, template_id: e.target.value, post_type: e.target.value === 'video' ? 'video' : e.target.value === 'carousel' ? 'carousel' : ['photo','split','campaign'].includes(e.target.value) && form.post_type === 'video' ? 'image' : form.post_type })}>
-            {PUBLICATION_TEMPLATES.map(value => <option key={value} value={value}>{({ auto: 'Automatique (compatibilité)', photo: 'Photo éditoriale', split: 'Duo — image & texte', campaign: 'Campagne — texte superposé', carousel: 'Carousel & miniatures', video: 'Vidéo immersive' })[value]}</option>)}
+            {PUBLICATION_TEMPLATES.map(value => <option key={value} value={value}>{({ auto: 'Automatique (compatibilité)', photo: 'Photo éditoriale', split: 'Éditorial — image puis texte', campaign: 'Campagne — encart sous l’image', carousel: 'Carousel — miniatures & produits', video: 'Vidéo immersive' })[value]}</option>)}
           </select></Field>
           <Field label="Libellé du bouton (facultatif)"><input maxLength={40} value={form.action_label || ''} placeholder="Découvrir" onChange={e => setForm({ ...form, action_label: e.target.value })} /></Field>
           <Field label="Action du bouton"><select value={form.action_target || 'detail'} onChange={e => setForm({ ...form, action_target: e.target.value })}><option value="detail">Ouvrir la publication</option><option value="products">Ouvrir le premier produit associé</option></select></Field>
@@ -251,7 +251,7 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
             {form.poster_url && <img src={form.poster_url} alt="" style={{ width: 120, aspectRatio: '9 / 16', objectFit: 'cover', borderRadius: 12, marginTop: 8 }} />}
           </Field>
           <Field label="Modèle visuel"><select aria-label="Modèle visuel" value={form.template_id || 'auto'} onChange={e => setForm({ ...form, template_id: e.target.value, post_type: e.target.value === 'video' ? 'video' : e.target.value === 'carousel' ? 'carousel' : ['photo','split','campaign'].includes(e.target.value) && form.post_type === 'video' ? 'image' : form.post_type })}>
-            {PUBLICATION_TEMPLATES.map(value => <option key={value} value={value}>{({ auto: 'Automatique (compatibilité)', photo: 'Photo éditoriale', split: 'Duo — image & texte', campaign: 'Campagne — texte superposé', carousel: 'Carousel & miniatures', video: 'Vidéo immersive' })[value]}</option>)}
+            {PUBLICATION_TEMPLATES.map(value => <option key={value} value={value}>{({ auto: 'Automatique (compatibilité)', photo: 'Photo éditoriale', split: 'Éditorial — image puis texte', campaign: 'Campagne — encart sous l’image', carousel: 'Carousel — miniatures & produits', video: 'Vidéo immersive' })[value]}</option>)}
           </select></Field>
           <Field label="Libellé du bouton (facultatif)"><input maxLength={40} value={form.action_label || ''} placeholder="Découvrir" onChange={e => setForm({ ...form, action_label: e.target.value })} /></Field>
           <Field label="Action du bouton"><select value={form.action_target || 'detail'} onChange={e => setForm({ ...form, action_target: e.target.value })}><option value="detail">Ouvrir la publication</option><option value="products">Ouvrir le premier produit associé</option></select></Field>

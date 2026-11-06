@@ -6,6 +6,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
+import { saveFeedView } from '@/features/publications/publicationFeedLogic';
 import { PublicationFeedScreen } from '@/features/publications/PublicationFeedScreen';
 import { PublicationCard } from '@/features/publications/PublicationCard';
 import type { FeedPost } from '@/api/publicationFeed';
@@ -14,10 +15,11 @@ const mockSession = { status: 'signedIn', account: { id: 'ui-owner' } };
 const mockCartAdd = jest.fn();
 jest.mock('@/api/cart', () => ({ ...jest.requireActual('@/api/cart'), addCatalogToCart: (...args: unknown[]) => mockCartAdd(...args) }));
 const mockPlayer = { play: jest.fn(), pause: jest.fn(), muted: true, addListener: jest.fn(() => ({ remove: jest.fn() })) };
+const mockFetchPage = jest.fn();
 const mockPreference = jest.fn(); const mockFollow = jest.fn();
 const mockInvalidate = jest.fn();
 const mockSend = jest.fn();
-jest.mock('@/api/publicationFeed', () => ({ ...jest.requireActual('@/api/publicationFeed'), writePublicationPreference: (...args: unknown[]) => mockPreference(...args), followPublisher: (...args: unknown[]) => mockFollow(...args) }));
+jest.mock('@/api/publicationFeed', () => ({ ...jest.requireActual('@/api/publicationFeed'), fetchFeedPage: (...args: unknown[]) => mockFetchPage(...args), writePublicationPreference: (...args: unknown[]) => mockPreference(...args), followPublisher: (...args: unknown[]) => mockFollow(...args) }));
 jest.mock('expo-video', () => ({ useVideoPlayer: () => mockPlayer, VideoView: 'VideoView' }));
 const mockQuery = jest.fn();
 const mockSettingsQuery = jest.fn();
@@ -65,9 +67,11 @@ describe('Publication Phase 1 UI', () => {
     expect(screen.getByText('Les publications sont temporairement indisponibles.')).toBeTruthy();
     expect(mockQuery.mock.calls.at(-1)?.[0].enabled).toBe(false);
   });
-  it('changes the actual query category and opens the comments sheet', async () => {
-    await mount(); fireEvent.press(screen.getByTestId('publication-category-beauty'));
-    expect(mockQuery.mock.calls.at(-1)?.[0].queryKey).toContain('beauty');
+  it('removes both filter strips without replacement and keeps comments working', async () => {
+    await mount();
+    for (const label of ['For You', 'Fashion', 'Beauty', 'Tout', 'Abonnements', 'Enregistrés', 'Vidéos']) expect(screen.queryByText(label)).toBeNull();
+    expect(screen.queryByTestId('publication-category-beauty')).toBeNull();
+    expect(mockQuery.mock.calls.at(-1)?.[0].queryKey).not.toContain('beauty');
     fireEvent.press(screen.getByRole('button', { name: 'Commentaires' }));
     expect(screen.getByText('Real Comments component slot')).toBeTruthy();
     fireEvent.press(screen.getByRole('button', { name: 'Fermer' }));
@@ -206,4 +210,31 @@ describe('Publication Phase 1 UI', () => {
     expect(mockInvalidate).toHaveBeenCalledWith({ queryKey: ['cart'] });
   });
 
+});
+
+
+it('never shows a verification icon for an unofficial publisher or exposes unique-view noise', async () => {
+  await mount(<PublicationCard post={{ ...post, publisherOfficial: false, channelName: 'Style', views: 1, shares: 1 }} compact={false} onComments={() => undefined} onReaction={() => undefined} />);
+  expect(screen.queryByTestId('publication-verified-badge')).toBeNull();
+  expect(screen.getByTestId('publication-publisher-initial').props.children).toBe('S');
+  expect(screen.queryByText(/vues uniques|partages uniques/)).toBeNull();
+});
+
+
+it('does not retain a hidden category filter from the removed old strips', async () => {
+  saveFeedView(mockSession.account.id, {category:'beauty',q:'',offset:400});
+  await mount();
+  await mockQuery.mock.calls.at(-1)[0].queryFn({pageParam:null,signal:new AbortController().signal});
+  expect(mockFetchPage).toHaveBeenLastCalledWith(expect.objectContaining({category:'',q:''}),expect.anything());
+  expect(mockFetchPage.mock.calls.at(-1)[0]).not.toHaveProperty('following');
+  expect(mockFetchPage.mock.calls.at(-1)[0]).not.toHaveProperty('saved');
+});
+it('renders an authored shoppable carousel with a genuine compact product link and opens the existing product flow', async () => {
+  const open=jest.fn();
+  await mount(<PublicationCard post={{...post,content:{type:'carousel',template:'carousel',media:[{type:'image',url:'/a.jpg',alt:'Sac',poster:''},{type:'image',url:'/b.jpg',alt:'Sac porté',poster:''}],description:'Collection',descriptionPosition:'below',sponsored:false,sponsorName:'',audience:'',topic:''},products:[{id:'real-catalogue-id',name:'Sac Alba',brand:'Atelier',image:'/sac.jpg',price:42,currency:'TND',stockStatus:'AVAILABLE',available:true}]}} compact={false} onProductOpen={open} onComments={()=>{}} onReaction={()=>{}} />);
+  expect(screen.getByTestId('publication-product-real-catalogue-id')).toBeTruthy();
+  expect(screen.getByTestId('publication-thumbnail-ui-post-1')).toBeTruthy();
+  fireEvent.press(screen.getByTestId('publication-product-real-catalogue-id'));
+  expect(open).toHaveBeenCalledWith('real-catalogue-id');
+  expect(mockCartAdd).not.toHaveBeenCalled();
 });

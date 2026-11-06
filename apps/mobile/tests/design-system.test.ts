@@ -737,7 +737,7 @@ describe('Design System — typographie, rayons, icônes (audit 27/10/2026)', ()
       // États sélectionné / validé / coché
       'checkmark', 'checkmark-circle', 'checkbox', 'square-outline',
       // États de lecture / favori / torche
-      'play', 'play-circle', 'heart', 'flash', 'flash-off',
+      'play', 'play-circle', 'heart', 'bookmark', 'flash', 'flash-off', // bookmark filled = saved state
       // Notes
       'star',
       // Glyphes directionnels : le dessin est identique quelle que soit la variante
