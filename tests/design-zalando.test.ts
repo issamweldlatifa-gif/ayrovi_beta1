@@ -4,11 +4,11 @@
  * Ce fichier ne teste pas des pixels : il teste la RÈGLE que la refonte était chargée
  * d'installer, et rend le retour en arrière impossible par inadvertance.
  *
- *   Palette officielle du 2026-10-15 : noir #0A0A0A, blanc, violet électrique #571EF6,
+ *   Palette officielle du 2026-10-15 : noir #0A0A0A, blanc, violet électrique #0113B5,
  *   gris clair #F2F2F2. L'orange des chartes précédentes (#FF6900, #FF7900…) est retiré.
  *
  *   1. les six jetons canoniques existent, avec les valeurs exactes de la charte ;
- *   2. une seule couleur de marque dans tout le client : `#571ef6`, portée par un seul
+ *   2. une seule couleur de marque dans tout le client : `#0113b5`, portée par un seul
  *      jeton ; `--ayrovi-cta` et `--ayrovi-accent` ne sont que des alias ;
  *   3. aucun littéral orange hérité ne survit dans `client/src` (ni CSS, ni TSX, ni TS) ;
  *   4. les surfaces LENS et les cartes éditoriales ne sont pas des aplats de couleur :
@@ -69,7 +69,7 @@ describe('jetons canoniques — la charte tient en six variables', () => {
       '--ayrovi-border-soft': '#e5e5e5',
       '--ayrovi-text-primary': '#0a0a0a',
       '--ayrovi-text-secondary': '#666666',
-      '--ayrovi-color-brand-accent': '#571ef6',
+      '--ayrovi-color-brand-accent': '#0113b5',
     };
     for (const [name, value] of Object.entries(canonical)) {
       expect(declared.get(name), `${name} doit être déclaré dans tokens.css`).toBe(value);
@@ -83,29 +83,29 @@ describe('jetons canoniques — la charte tient en six variables', () => {
       const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
       return alias && depth < 6 ? resolve(alias[1], depth + 1) : raw;
     };
-    expect(resolve('--ayrovi-color-brand-accent')).toBe('#571ef6');
+    expect(resolve('--ayrovi-color-brand-accent')).toBe('#0113b5');
     for (const alias of ['--ayrovi-cta', '--ayrovi-accent']) {
-      expect(resolve(alias), `${alias} doit résoudre le violet canonique`).toBe('#571ef6');
+      expect(resolve(alias), `${alias} doit résoudre le violet canonique`).toBe('#0113b5');
     }
     // l'ancien nom « orange » ne survit pas, même comme alias : il mentirait sur la couleur
     expect(declared.has('--ayrovi-color-brand-orange')).toBe(false);
     expect(declared.has('--ayrovi-orange')).toBe(false);
     // et un seul jeton porte réellement la valeur : deux porteurs = deux vérités
-    const bearers = [...declared.entries()].filter(([, v]) => v === '#571ef6').map(([n]) => n);
+    const bearers = [...declared.entries()].filter(([, v]) => v === '#0113b5').map(([n]) => n);
     expect(bearers).toEqual(['--ayrovi-color-brand-accent']);
     // texte sur violet : blanc (l'ancien orange portait du noir)
     expect(resolve('--ayrovi-cta-ink')).toBe('#ffffff');
   });
 
-  test('l’accent « soft » est le violet clair officiel (#C5B2F4), porté par un seul jeton, texte noir dessus', () => {
+  test('l’accent « soft » est le violet clair officiel (#CCD0F0), porté par un seul jeton, texte noir dessus', () => {
     const declared = new Map(declarations(read(TOKENS)).map(([, n, v]) => [n, v.trim().toLowerCase()]));
     const resolve = (name: string, depth = 0): string => {
       const raw = declared.get(name) ?? '';
       const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
       return alias && depth < 6 ? resolve(alias[1], depth + 1) : raw;
     };
-    expect(resolve('--ayrovi-accent-soft')).toBe('#c5b2f4');
-    const bearers = [...declared.entries()].filter(([, v]) => v === '#c5b2f4').map(([n]) => n);
+    expect(resolve('--ayrovi-accent-soft')).toBe('#ccd0f0');
+    const bearers = [...declared.entries()].filter(([, v]) => v === '#ccd0f0').map(([n]) => n);
     expect(bearers).toEqual(['--ayrovi-color-brand-accent-soft']);
     expect(resolve('--ayrovi-on-accent-soft')).toBe('#0a0a0a');
   });
@@ -181,8 +181,8 @@ describe('purge — plus aucun littéral orange hérité', () => {
     expect(seededAccent).toBeTruthy();
     expect(seededActive).toBeTruthy();
     const read1 = enforceBrandIdentity({ colors: { accent: seededAccent }, icons: { activeColor: seededActive } }) as { colors: { accent: string }; icons: { activeColor: string } };
-    expect(read1.colors.accent).toBe('#571ef6');
-    expect(read1.icons.activeColor).toBe('#571ef6');
+    expect(read1.colors.accent).toBe('#0113b5');
+    expect(read1.icons.activeColor).toBe('#0113b5');
     // Le défaut `accent_color` du contenu Hero (table hero_content_settings) a été supprimé avec l’ancien Hero (2026-10-10).
   });
 });

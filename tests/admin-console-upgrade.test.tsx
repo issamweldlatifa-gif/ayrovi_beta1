@@ -290,7 +290,7 @@ describe('6. Chaque état de la coquille reste lisible', () => {
     const fixed = rule("html[data-theme='dark'] .bo-shell .admin-arrival-summary article:first-child");
     expect(fixed).not.toBeNull();
     const background = resolve(fixed!.background, roles.dark);
-    const label = read('client/src/design/tokens.css').match(/--admin-tone-c4c0ca:\s*(#[0-9a-f]{6})/i)![1];
+    const label = read('client/src/design/tokens.css').match(/--admin-tone-c0c1ca:\s*(#[0-9a-f]{6})/i)![1];
     expect(background).toMatch(/^#[0-9A-F]{6}$/i);
     expect(contrast(background, white), `chiffre ${white} sur ${background}`).toBeGreaterThanOrEqual(4.5);
     expect(contrast(background, label), `libellé ${label} sur ${background}`).toBeGreaterThanOrEqual(4.5);

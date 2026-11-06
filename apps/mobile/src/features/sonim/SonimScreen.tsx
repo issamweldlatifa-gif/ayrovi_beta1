@@ -40,7 +40,7 @@ import { useResponsive } from '@/design/layout';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { TabSonimIcon } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
-import { FONTS } from '@/design/tokens.generated';
+import { BRAND, FONTS } from '@/design/tokens.generated';
 import { SONIM_TITLE_STYLE } from '@/design/tokens.mobile';
 import { BrandMark } from '@/design/BrandMark';
 import { AppText, Drawer, DrawerItem } from '@/design/ui';
@@ -800,7 +800,7 @@ export function SonimScreen() {
             styles.composerBox,
             {
               backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.lineControl,
+              borderColor: BRAND.secondaryBlue,
               borderRadius: theme.radius.xl,
               flexDirection: rowDir,
             },

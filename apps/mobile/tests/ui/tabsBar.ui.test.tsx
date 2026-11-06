@@ -3,7 +3,7 @@
  * - Surface pleine opaque (`TAB_BAR_SURFACE`), zéro translucidité
  * - Posée bord à bord tout en bas de l'écran (`bottom: 0`, aucun espace sous la barre)
  * - 5 icônes vectorielles à trait fin de la même famille (`TabHomeIcon`, `TabLensIcon`,
- *   `TabAyWebsIcon` patte violette `#571EF6`, `TabSonimIcon`, `TabProfileIcon`) `24 × 24` pt
+ *   `TabAyWebsIcon` patte violette `#0113B5`, `TabSonimIcon`, `TabProfileIcon`) `24 × 24` pt
  */
 import React from 'react';
 import { render } from '@testing-library/react-native';

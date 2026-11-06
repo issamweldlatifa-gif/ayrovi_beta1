@@ -572,7 +572,7 @@ describe('E8/E9 — thème sombre & direction RTL', () => {
     // RTL par propriétés logiques (aucune règle dupliquée, aucun ton ajouté) :
     expect(sheet).toContain('.admin-workspace { min-height: 100dvh; margin-inline-start: 260px; }');
     expect(sheet).toContain('.admin-profile > div { position: absolute; top: calc(100% + 14px); inset-inline-end: 0;');
-    expect(sheet).toContain('.admin-timeline { border-inline-start: 1px solid var(--admin-tone-d9d3df);');
+    expect(sheet).toContain('.admin-timeline { border-inline-start: 1px solid var(--admin-tone-d3d4df);');
     expect(sheet).toContain('.admin-toggle input:checked::after { inset-inline-start: 18px; }');
     // seul le tiroir mobile reste un déplacement physique, miroiré par direction
     expect(sheet).toContain("[dir='rtl'] .admin-sidebar { transform: translateX(100%); }");

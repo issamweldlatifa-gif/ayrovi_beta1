@@ -2,6 +2,7 @@ import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../shared/publicationFeed'
 import { resolveFeaturedPublication } from '../services/homeFeatured';
 import { seedOfficialStories } from '../services/officialStories';
 import { FONT_STACK } from '../../shared/brand.generated';
+import { RETIRED_BRAND_PURPLES } from '../../shared/identityPolicy';
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
@@ -379,6 +380,32 @@ export class QatafoDatabase {
     this.installOfficialStories();
     this.installFeaturedPortrait();
     this.installPublicationEditorialLaunch();
+    this.rebrandBlueV1();
+  }
+
+  /** One-shot migration of persisted brand configuration, not merchandise/media or arbitrary copy. */
+  private rebrandBlueV1(): void {
+    this.runOnceDataMigration('rebrand_blue_v1', () => {
+      const replacements = RETIRED_BRAND_PURPLES;
+      const migrate = (value: any): any => {
+        if (Array.isArray(value)) return value.map(migrate);
+        if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, migrate(item)]));
+        return typeof value === 'string' ? replacements[value.toLowerCase()] ?? value : value;
+      };
+      const now = new Date().toISOString();
+      for (const row of this.all<any>('SELECT id,setting_value FROM settings')) {
+        const raw = String(row.setting_value ?? '');
+        if (!/#(?:571ef6|c5b2f4|491acc|926df9)\b/i.test(raw)) continue;
+        let next = replacements[raw.toLowerCase()] ?? raw;
+        try { next = JSON.stringify(migrate(JSON.parse(raw))); } catch { /* Plain configuration value, not JSON. */ }
+        if (next !== raw) this.run('UPDATE settings SET setting_value=?,updated_at=? WHERE id=?', next, now, row.id);
+      }
+      for (const [table, column] of [['lens_hero_settings', 'accent_color'], ['lens_hero_settings', 'bg_color'], ['hero_slides', 'bg_color']]) {
+        for (const [retired, blue] of Object.entries(replacements)) {
+          this.run(`UPDATE ${table} SET ${column}=?,updated_at=? WHERE lower(${column})=?`, blue, now, retired);
+        }
+      }
+    });
   }
 
   /** New authored content, additive and one-shot. Never deletes CRM content or seeds again. */

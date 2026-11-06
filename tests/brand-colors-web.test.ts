@@ -3,7 +3,7 @@
  * et à la coquille Android Capacitor.
  *
  *   noir #0A0A0A (≈ 35 %) · blanc #FFFFFF (≈ 50 %) · gris clair #F2F2F2 (≈ 5 %) · violet
- *   électrique #571EF6 + violet clair #C5B2F4 : repère global ≈ 3 % (2 % + 1 %) depuis la
+ *   électrique #0113B5 + violet clair #CCD0F0 : repère global ≈ 3 % (2 % + 1 %) depuis la
  *   v4.2.0 (il était de 10 %). L'orange des chartes précédentes disparaît partout.
  *
  * Ce fichier verrouille quatre choses que les autres tests ne voient pas ensemble :
@@ -30,7 +30,7 @@ const read = (rel: string) => fs.readFileSync(path.resolve(ROOT, rel), 'utf8');
 const identity = JSON.parse(read('client/src/design/editorial/identity.json'));
 const brand = JSON.parse(read('apps/mobile/src/design/brand.json'));
 
-const OFFICIAL = { black: '#0A0A0A', white: '#FFFFFF', violet: '#571EF6', lightGray: '#F2F2F2' };
+const OFFICIAL = { black: '#0A0A0A', white: '#FFFFFF', violet: '#0113B5', lightGray: '#F2F2F2' };
 
 /** Oranges retirés : #FF6900 (« Zalando »), #FF7900 / #A74700 / #FFAE69 (ZAYROVI A v3), #F18902
  *  (AyWebs), #F97316 / #9A3412 / #FFF7ED (coquille Android), #FFB070 / #FFB173 / #E85F00 / #FFF3EA
@@ -80,7 +80,7 @@ describe('1. une seule palette pour le site et l’application', () => {
     expect(hex(c.onAction)).toBe(OFFICIAL.white);
     expect(hex(identity.darkColors.canvas)).toBe(OFFICIAL.black);
     expect(hex(identity.darkColors.action)).toBe(OFFICIAL.violet);
-    expect(hex(identity.darkColors.accentText)).toBe('#926DF9');
+    expect(hex(identity.darkColors.accentText)).toBe('#737DD6');
     // le vocabulaire « orange » a quitté l'identité
     expect(JSON.stringify(identity)).not.toMatch(/orange/i);
   });
@@ -88,7 +88,7 @@ describe('1. une seule palette pour le site et l’application', () => {
   test('les fichiers générés suivent la source (pas de copie à la main)', () => {
     for (const rel of ['client/src/design/editorial/tokens.generated.css', 'client/public/identity.css']) {
       const css = read(rel);
-      expect(css).toContain('--ay-e-action: #571EF6;');
+      expect(css).toContain('--ay-e-action: #0113B5;');
       expect(css).toContain('--ay-e-ink: #0A0A0A;');
       expect(css).not.toMatch(RETIRED);
     }
@@ -111,8 +111,8 @@ describe('2. réglages persistés en orange : relus en violet, jamais réécrits
   test('accent, icône active et bandeau orange deviennent violet / noir', () => {
     const snapshot = structuredClone(persisted);
     const result = enforceBrandIdentity(persisted) as typeof persisted;
-    expect(result.colors.accent).toBe('#571ef6');
-    expect(result.icons.activeColor).toBe('#571ef6');
+    expect(result.colors.accent).toBe('#0113b5');
+    expect(result.icons.activeColor).toBe('#0113b5');
     expect(result.sections[1].backgroundColor).toBe('#0a0a0a'); // jamais une grande surface violette
     expect(result.sections[0]).toEqual(persisted.sections[0]); // contenu intact
     expect(result.price).toEqual(persisted.price);
@@ -122,7 +122,7 @@ describe('2. réglages persistés en orange : relus en violet, jamais réécrits
 
   test('les quatre oranges retirés sont reconnus, quelle que soit la casse ; le reste est conservé', () => {
     for (const orange of ['#ff6900', '#FF7900', ' #fe7003 ', '#FF7A00']) expect(isLegacyBrandOrange(orange)).toBe(true);
-    for (const other of ['#571ef6', '#123456', '', null, undefined, '#ff6901']) expect(isLegacyBrandOrange(other)).toBe(false);
+    for (const other of ['#0113b5', '#123456', '', null, undefined, '#ff6901']) expect(isLegacyBrandOrange(other)).toBe(false);
     const custom = enforceBrandIdentity({ colors: { accent: '#2e7d32' }, icons: { activeColor: '#123456' } }) as any;
     expect(custom.colors.accent).toBe('#2e7d32');
     expect(custom.icons.activeColor).toBe('#123456');
@@ -134,14 +134,14 @@ describe('2. réglages persistés en orange : relus en violet, jamais réécrits
     expect(brandAccentColor('')).toBe(OFFICIAL.violet);
     expect(brandAccentColor(null)).toBe(OFFICIAL.violet);
     expect(brandAccentColor('#2e7d32')).toBe('#2e7d32');
-    expect(enforceLegacyTheme({ preset: 'noir', accent: '#ff6900' })).toMatchObject({ accent: '#571ef6' });
+    expect(enforceLegacyTheme({ preset: 'noir', accent: '#ff6900' })).toMatchObject({ accent: '#0113b5' });
     expect(enforceLegacyTheme({ preset: 'custom', accent: '#db2777' })).toMatchObject({ accent: '#db2777' });
   });
 
   test('le client normalise de la même façon (même adaptateur partagé)', () => {
     const normalized = normalizeInterfaceConfig(persisted);
-    expect(normalized.colors.accent).toBe('#571ef6');
-    expect(normalized.icons.activeColor).toBe('#571ef6');
+    expect(normalized.colors.accent).toBe('#0113b5');
+    expect(normalized.icons.activeColor).toBe('#0113b5');
     expect(normalized.sections.find((section) => section.id === 'announcement')?.backgroundColor).toBe('#0a0a0a');
   });
 
@@ -352,7 +352,7 @@ describe('5. violet au minimum (v4.2.0) : seule l’action principale est violet
     expect(hex(theme['--ayrovi-button-bg'])).toBe(OFFICIAL.black);
     expect(hex(theme['--ayrovi-button-color'])).toBe(OFFICIAL.white);
     expect(hex(theme['--ayrovi-cta'])).toBe(OFFICIAL.violet);
-    expect(hex(theme['--ayrovi-accent-soft'])).toBe('#C5B2F4');
+    expect(hex(theme['--ayrovi-accent-soft'])).toBe('#CCD0F0');
     expect(hex(theme['--ayrovi-on-accent-soft'])).toBe(OFFICIAL.black);
     const runtime = withoutComments(read('client/src/styles/interface-runtime.css'));
     expect(runtime).toMatch(/\.ay-runtime-button--primary,\.ay-btn-primary\{[^}]*background:var\(--ayrovi-button-bg,var\(--ayrovi-primary\)\)/);
@@ -407,7 +407,7 @@ describe('6. console d’administration — violet au minimum (v4.2.0)', () => {
     expect(consoleCss).toMatch(/--bo-on-accent:\s*var\(--ay-e-on-action\)/);
     expect(consoleCss).toMatch(/--bo-accent-soft:\s*var\(--ay-e-accent-soft\)/);
     // l'ancienne teinte de sélection (#EEE9FE), sa variante sombre (#1C1239) et le survol recopié ont disparu
-    expect(consoleCss).not.toMatch(/#eee9fe|#1c1239|#491acc/i);
+    expect(consoleCss).not.toMatch(/#eee9fe|#1c1239|#031196/i);
   });
 
   test('le violet clair n’est plus qu’un halo de focus, jamais un fond', () => {

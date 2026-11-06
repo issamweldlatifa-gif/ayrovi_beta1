@@ -3,7 +3,7 @@
    in editorial/identity.json and injected by customerTheme.ts. The legacy aliases
    below must not override that customer-scoped identity.
    Charte : palette officielle du 2026-10-15 — noir #0A0A0A, blanc #FFFFFF, violet électrique
-   #571EF6, gris clair #F2F2F2 (« Monochrome Premium × Violet d'action »).
+   #0113B5, gris clair #F2F2F2 (« Monochrome Premium × Violet d'action »).
 
    1. UNE SEULE ÉCHELLE NEUTRE (P0 de P4/T2, exécuté) :
       #FFFFFF canvas · #F8F9FA surface · #EAEAEA filet · #111111 encre ·
@@ -11,11 +11,11 @@
       élément doux sur sombre. Toute l'échelle slate héritée
       (#111318/#1d2130/#6b7280/#f8f9fe/#e2e8f0/#5b6472/#050505) est absorbée ;
       les anciens noms survivent UNIQUEMENT comme alias sans valeur propre.
-   2. Le VIOLET ÉLECTRIQUE (#571EF6, point du logo) n'est jamais décoratif : il est
+   2. Le VIOLET ÉLECTRIQUE (#0113B5, point du logo) n'est jamais décoratif : il est
       réservé à l'action principale (ajout au panier, caisse, paiement, connexion),
       aux liens importants, à l'onglet / l'élément de navigation actif, au contour
       d'une option choisie et au focus. Texte sur violet : #FFFFFF (7,19:1, AAA).
-      Le VIOLET CLAIR (#C5B2F4) est secondaire : fond d'une option choisie ou d'un
+      Le VIOLET CLAIR (#CCD0F0) est secondaire : fond d'une option choisie ou d'un
       état actif, toujours avec un texte #0A0A0A (10,4:1) et jamais seul pour
       signaler l'état. Jamais de grande surface violette.
       Repère global (v4.2.0) : ≈ 3 % de l'application (2 % violet + 1 % violet
@@ -124,10 +124,10 @@ html[data-theme='dark'] {
   --admin-surface-sunken:var(--admin-surface-card);
   --admin-surface-tint:var(--admin-surface-card);
   --admin-surface-soft:var(--admin-surface-card);
-  --admin-line:#2a2735;
+  --admin-line:#272835;
   --admin-line-control:var(--ay-e-line-control); /* frontière des contrôles — voir la note du thème clair */
-  --admin-line-soft:#221f2c;
-  --admin-line-firm:#322e40;
+  --admin-line-soft:#1f202c;
+  --admin-line-firm:#2e3040;
   --admin-danger-strong:#f0716b;
   --admin-danger-text:#f08a84;
   --admin-danger-ink:#ff8a80;
@@ -146,8 +146,8 @@ html[data-theme='dark'] {
     --ayrovi-border-soft: #e5e5e5;          /* Filets 1px, séparateurs fins */
     --ayrovi-text-primary: #0a0a0a;         /* Noir officiel : titres, marques, prix, texte */
     --ayrovi-text-secondary: #666666;       /* Encre secondaire : légendes, méta */
-    --ayrovi-color-brand-accent: #571ef6;   /* Violet électrique officiel (point du logo) — déclencheur d'action UNIQUE */
-    --ayrovi-color-brand-accent-soft: #c5b2f4; /* Violet clair (secondaire) : fond d'une option choisie, jamais une grande surface */
+    --ayrovi-color-brand-accent: #0113b5;   /* Violet électrique officiel (point du logo) — déclencheur d'action UNIQUE */
+    --ayrovi-color-brand-accent-soft: #ccd0f0; /* Violet clair (secondaire) : fond d'une option choisie, jamais une grande surface */
 
     /* — surfaces sombres premium : la SEULE famille de noir — */
     --ayrovi-ink-deep: #0a0a0a;             /* Hero, announcement, coquille Lens, rails */
@@ -159,7 +159,7 @@ html[data-theme='dark'] {
     --ayrovi-accent-soft: var(--ayrovi-color-brand-accent-soft);
     --ayrovi-on-accent-soft: #0a0a0a;                  /* texte SUR violet clair : 10,4:1 ; le blanc y est interdit (1,9:1) */
     --ayrovi-on-accent: #ffffff;                       /* texte SUR violet : 7,19:1, AAA */
-    --ayrovi-accent-on-dark: #926df9;                  /* violet SUR noir (panneaux sombres) : 5,45:1 */
+    --ayrovi-accent-on-dark: #737dd6;                  /* violet SUR noir (panneaux sombres) : 5,45:1 */
     --ayrovi-cta-ink: var(--ayrovi-on-accent);
     --ayrovi-cta-hover: color-mix(in srgb, var(--ayrovi-color-brand-accent) 87%, var(--ayrovi-text-primary));
     --ayrovi-cta-active: color-mix(in srgb, var(--ayrovi-color-brand-accent) 72%, var(--ayrovi-text-primary));
@@ -404,56 +404,56 @@ html[data-theme='dark'] {
   --admin-tone-145f40:#145f40;
   --admin-tone-14734b:#14734b;
   --admin-tone-168253:#168253;
-  --admin-tone-21172e:#21172e;
-  --admin-tone-23183a:#23183a;
-  --admin-tone-241735:#241735;
-  --admin-tone-25104f:#25104f;
-  --admin-tone-2a1358:#2a1358;
+  --admin-tone-17192e:#17192e;
+  --admin-tone-181b3a:#181b3a;
+  --admin-tone-171a35:#171a35;
+  --admin-tone-10164f:#10164f;
+  --admin-tone-131a58:#131a58;
   --admin-tone-2c2100:#2c2100;
   --admin-tone-34d399:#34d399;
   --admin-tone-3730a3:#3730a3;
   --admin-tone-374151:#374151;
-  --admin-tone-39285a:#39285a;
+  --admin-tone-282d5a:#282d5a;
   --admin-tone-392a00:#392a00;
   --admin-tone-473a10:#473a10;
   --admin-tone-475569:#475569;
   --admin-tone-4b5563:#4b5563;
-  --admin-tone-4c2bb1:#4c2bb1;
-  --admin-tone-4e27a6:#4e27a6;
-  --admin-tone-5230a4:#5230a4;
-  --admin-tone-534961:#534961;
-  --admin-tone-5a477b:#5a477b;
-  --admin-tone-5b4b70:#5b4b70;
+  --admin-tone-2b38b1:#2b38b1;
+  --admin-tone-2734a6:#2734a6;
+  --admin-tone-303ca4:#303ca4;
+  --admin-tone-494b61:#494b61;
+  --admin-tone-474c7b:#474c7b;
+  --admin-tone-4b4f70:#4b4f70;
   --admin-tone-5d4100:#5d4100;
-  --admin-tone-5f39bf:#5f39bf;
-  --admin-tone-5f586b:#5f586b;
+  --admin-tone-3946bf:#3946bf;
+  --admin-tone-585a6b:#585a6b;
   --admin-tone-5f5b66:#5f5b66;
   --admin-tone-604700:#604700;
-  --admin-tone-685f72:#685f72;
-  --admin-tone-6c6779:#6c6779;
-  --admin-tone-6d6476:#6d6476;
+  --admin-tone-5f6172:#5f6172;
+  --admin-tone-676979:#676979;
+  --admin-tone-646676:#646676;
   --admin-tone-6f3a10:#6f3a10;
-  --admin-tone-6f647b:#6f647b;
-  --admin-tone-71677c:#71677c;
-  --admin-tone-746a7d:#746a7d;
-  --admin-tone-756b80:#756b80;
-  --admin-tone-756b83:#756b83;
-  --admin-tone-7650db:#7650db;
-  --admin-tone-7951df:#7951df;
+  --admin-tone-64667b:#64667b;
+  --admin-tone-67697c:#67697c;
+  --admin-tone-6a6c7d:#6a6c7d;
+  --admin-tone-6b6d80:#6b6d80;
+  --admin-tone-6b6d83:#6b6d83;
+  --admin-tone-505edb:#505edb;
+  --admin-tone-515fdf:#515fdf;
   --admin-tone-795400:#795400;
-  --admin-tone-7b7288:#7b7288;
-  --admin-tone-7d7889:#7d7889;
-  --admin-tone-7f7588:#7f7588;
+  --admin-tone-727488:#727488;
+  --admin-tone-787a89:#787a89;
+  --admin-tone-757788:#757788;
   --admin-tone-805700:#805700;
-  --admin-tone-8069bc:#8069bc;
-  --admin-tone-81778b:#81778b;
-  --admin-tone-867d91:#867d91;
+  --admin-tone-6971bc:#6971bc;
+  --admin-tone-77798b:#77798b;
+  --admin-tone-7d7f91:#7d7f91;
   --admin-tone-898491:#898491;
   --admin-tone-8a4a17:#8a4a17;
   --admin-tone-8b352b:#8b352b;
-  --admin-tone-8b88a0:#8b88a0;
+  --admin-tone-888aa0:#888aa0;
   --admin-tone-8c5b00:#8c5b00;
-  --admin-tone-8c8395:#8c8395;
+  --admin-tone-838595:#838595;
   --admin-tone-8f8c98:#8f8c98;
   --admin-tone-918c9d:#918c9d;
   --admin-tone-9994a0:#9994a0;
@@ -465,62 +465,62 @@ html[data-theme='dark'] {
   --admin-tone-9ca3af:#9ca3af;
   --admin-tone-a12a21:#a12a21;
   --admin-tone-a1392f:#a1392f;
-  --admin-tone-a19daf:#a19daf;
+  --admin-tone-9d9faf:#9d9faf;
   --admin-tone-a1a1aa:#a1a1aa;
-  --admin-tone-a3a0b4:#a3a0b4;
+  --admin-tone-a0a2b4:#a0a2b4;
   --admin-tone-a53128:#a53128;
   --admin-tone-a5a1ae:#a5a1ae;
   --admin-tone-aaa6b1:#aaa6b1;
   --admin-tone-b0adb8:#b0adb8;
   --admin-tone-b3261e:#b3261e;
   --admin-tone-b45309:#b45309;
-  --admin-tone-b6b2bf:#b6b2bf;
+  --admin-tone-b2b3bf:#b2b3bf;
   --admin-tone-b8dfcd:#b8dfcd;
   --admin-tone-b91c1c:#b91c1c;
-  --admin-tone-b9acd8:#b9acd8;
+  --admin-tone-acb0d8:#acb0d8;
   --admin-tone-b9b7c0:#b9b7c0;
   --admin-tone-bbf7d0:#bbf7d0;
-  --admin-tone-bcb0dc:#bcb0dc;
-  --admin-tone-c4c0ca:#c4c0ca;
+  --admin-tone-b0b4dc:#b0b4dc;
+  --admin-tone-c0c1ca:#c0c1ca;
   --admin-tone-c7d2fe:#c7d2fe;
-  --admin-tone-ccc8d1:#ccc8d1;
+  --admin-tone-c8c9d1:#c8c9d1;
   --admin-tone-d1d5db:#d1d5db;
-  --admin-tone-d7cff0:#d7cff0;
-  --admin-tone-d9cef3:#d9cef3;
-  --admin-tone-d9d1e7:#d9d1e7;
-  --admin-tone-d9d3df:#d9d3df;
-  --admin-tone-d9d3e3:#d9d3e3;
-  --admin-tone-dad2ec:#dad2ec;
-  --admin-tone-dcd7e3:#dcd7e3;
-  --admin-tone-ddd5ee:#ddd5ee;
-  --admin-tone-ddd6e9:#ddd6e9;
-  --admin-tone-ddd8e6:#ddd8e6;
-  --admin-tone-ddd8ec:#ddd8ec;
-  --admin-tone-dfdbe4:#dfdbe4;
-  --admin-tone-e1ddea:#e1ddea;
-  --admin-tone-e3dfe7:#e3dfe7;
+  --admin-tone-cfd2f0:#cfd2f0;
+  --admin-tone-ced2f3:#ced2f3;
+  --admin-tone-d1d3e7:#d1d3e7;
+  --admin-tone-d3d4df:#d3d4df;
+  --admin-tone-d3d5e3:#d3d5e3;
+  --admin-tone-d2d5ec:#d2d5ec;
+  --admin-tone-d7d8e3:#d7d8e3;
+  --admin-tone-d5d8ee:#d5d8ee;
+  --admin-tone-d6d8e9:#d6d8e9;
+  --admin-tone-d8d9e6:#d8d9e6;
+  --admin-tone-d8daec:#d8daec;
+  --admin-tone-dbdce4:#dbdce4;
+  --admin-tone-dddeea:#dddeea;
+  --admin-tone-dfe0e7:#dfe0e7;
   --admin-tone-e4f7ec:#e4f7ec;
-  --admin-tone-e5e2ee:#e5e2ee;
+  --admin-tone-e2e3ee:#e2e3ee;
   --admin-tone-e5e7ef:#e5e7ef;
-  --admin-tone-e6e2ea:#e6e2ea;
+  --admin-tone-e2e3ea:#e2e3ea;
   --admin-tone-e6f7ef:#e6f7ef;
   --admin-tone-e9c3a3:#e9c3a3;
-  --admin-tone-e9e6f2:#e9e6f2;
+  --admin-tone-e6e7f2:#e6e7f2;
   --admin-tone-eadc9b:#eadc9b;
   --admin-tone-ecfdf5:#ecfdf5;
-  --admin-tone-eeeaf3:#eeeaf3;
+  --admin-tone-eaebf3:#eaebf3;
   --admin-tone-eeeeee:#eeeeee;
   --admin-tone-eef2ff:#eef2ff;
-  --admin-tone-efedf2:#efedf2;
-  --admin-tone-f0ebfb:#f0ebfb;
-  --admin-tone-f0ebff:#f0ebff;
+  --admin-tone-edeef2:#edeef2;
+  --admin-tone-ebedfb:#ebedfb;
+  --admin-tone-ebedff:#ebedff;
   --admin-tone-f1f5f9:#f1f5f9;
   --admin-tone-f3d9c4:#f3d9c4;
-  --admin-tone-f4f2fa:#f4f2fa;
+  --admin-tone-f2f3fa:#f2f3fa;
   --admin-tone-f4f4f5:#f4f4f5;
-  --admin-tone-f5f1ff:#f5f1ff;
+  --admin-tone-f1f2ff:#f1f2ff;
   --admin-tone-f7c948:#f7c948;
-  --admin-tone-f7f4ff:#f7f4ff;
+  --admin-tone-f4f5ff:#f4f5ff;
   --admin-tone-fca5a5:#fca5a5;
   --admin-tone-fde68a:#fde68a;
   --admin-tone-fed7aa:#fed7aa;
@@ -541,15 +541,15 @@ html[data-theme='dark'] {
   --admin-tone-rgba-0-0-0-45:rgba(0,0,0,.45);
   --admin-tone-rgba-0-0-0-55:rgba(0,0,0,.55);
   --admin-tone-rgba-0-0-0-7:rgba(0,0,0,.7);
-  --admin-tone-rgba-103-61-230-08:rgba(103,61,230,.08);
+  --admin-tone-rgba-61-78-230-08:rgba(61, 78, 230,.08);
   --admin-tone-rgba-17-18-23-45:rgba(17,18,23,.45);
   --admin-tone-rgba-17-18-23-88:rgba(17,18,23,.88);
   --admin-tone-rgba-17-19-24-18:rgba(17,19,24,.18);
   --admin-tone-rgba-17-19-24-34:rgba(17,19,24,.34);
   --admin-tone-rgba-17-19-24-42:rgba(17,19,24,.42);
   --admin-tone-rgba-17-19-24-55:rgba(17,19,24,.55);
-  --admin-tone-rgba-18-15-24-65:rgba(18,15,24,.65);
-  --admin-tone-rgba-20-18-24-85:rgba(20,18,24,.85);
+  --admin-tone-rgba-15-16-24-65:rgba(15, 16, 24,.65);
+  --admin-tone-rgba-18-19-24-85:rgba(18, 19, 24,.85);
   --admin-tone-rgba-247-201-72-22:rgba(247,201,72,.22);
   --admin-tone-rgba-254-112-3-12:rgba(254,112,3,.12);
   --admin-tone-rgba-254-112-3-2:rgba(254,112,3,.2);
@@ -564,11 +564,11 @@ html[data-theme='dark'] {
   --admin-tone-rgba-255-255-255-75:rgba(255,255,255,.75);
   --admin-tone-rgba-255-255-255-85:rgba(255,255,255,.85);
   --admin-tone-rgba-255-255-255-92:rgba(255,255,255,.92);
-  --admin-tone-rgba-28-16-64-35:rgba(28,16,64,.35);
-  --admin-tone-rgba-30-20-50-15:rgba(30,20,50,.15);
-  --admin-tone-rgba-48-22-103-8:rgba(48,22,103,.8);
+  --admin-tone-rgba-16-21-64-35:rgba(16, 21, 64,.35);
+  --admin-tone-rgba-20-23-50-15:rgba(20, 23, 50,.15);
+  --admin-tone-rgba-22-30-103-8:rgba(22, 30, 103,.8);
   --admin-tone-rgba-5-5-5-35:rgba(5,5,5,.35);
-  --admin-tone-rgba-57-25-118-65:rgba(57,25,118,.65);
+  --admin-tone-rgba-25-34-118-65:rgba(25, 34, 118,.65);
 
   /* — ajout T2c (47 tons portés par arrival-ingestion.css) — */
   --admin-tone-166534:#166534;
@@ -579,16 +579,16 @@ html[data-theme='dark'] {
   --admin-tone-7c2d12:#7c2d12;
   --admin-tone-991b1b:#991b1b;
   --admin-tone-9f1239:#9f1239;
-  --admin-tone-bbb7c3:#bbb7c3;
+  --admin-tone-b7b8c3:#b7b8c3;
   --admin-tone-bfdbfe:#bfdbfe;
   --admin-tone-c05621:#c05621;
   --admin-tone-c2410c:#c2410c;
   --admin-tone-c9c6cc:#c9c6cc;
-  --admin-tone-cecbd3:#cecbd3;
+  --admin-tone-cbccd3:#cbccd3;
   --admin-tone-d4d4d8:#d4d4d8;
   --admin-tone-d97706:#d97706;
   --admin-tone-d9d6dc:#d9d6dc;
-  --admin-tone-e2dfe4:#e2dfe4;
+  --admin-tone-dfe0e4:#dfe0e4;
   --admin-tone-eff6ff:#eff6ff;
   --admin-tone-f0fdf4:#f0fdf4;
   --admin-tone-f1f1f3:#f1f1f3;
@@ -599,7 +599,7 @@ html[data-theme='dark'] {
   --admin-tone-rgba-148-163-184-15:rgba(148,163,184,.15);
   --admin-tone-rgba-148-163-184-4:rgba(148,163,184,.4);
   --admin-tone-rgba-17-19-24-08:rgba(17,19,24,.08);
-  --admin-tone-rgba-20-18-28-1:rgba(20,18,28,.1);
+  --admin-tone-rgba-18-19-28-1:rgba(18, 19, 28,.1);
   --admin-tone-rgba-239-68-68-12:rgba(239,68,68,.12);
   --admin-tone-rgba-239-68-68-4:rgba(239,68,68,.4);
   --admin-tone-rgba-255-255-255-18:rgba(255,255,255,.18);
@@ -624,7 +624,7 @@ html[data-theme='dark'] {
   --fiche-ink: #0a0a0a;
   --fiche-muted: #808080;
   --fiche-hair: #e8e8e8;
-  --fiche-lavender: #eeecf7;
+  --fiche-lavender: #ecedf7;
   /* Alias, jamais un second porteur : le violet n'a qu'un propriétaire. */
   --fiche-violet: var(--ayrovi-color-brand-accent);
   --fiche-green: #008735;

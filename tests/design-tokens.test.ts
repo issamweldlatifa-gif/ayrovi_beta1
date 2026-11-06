@@ -19,7 +19,7 @@
  *     admin (`client/src/admin/**`), ne reste non résolu — à une seule exception allowlistée :
  *     `--bo-icon`, règle CSS morte de `back-office.css` (voir rapport P3/T1 §7, F-2) ;
  *  6. la couche admin ne connaît qu'une seule couleur d'action : la valeur de `--ayrovi-cta`
- *     (violet électrique #571EF6 depuis la palette officielle du 2026-10-15 ; l'orange est retiré).
+ *     (violet électrique #0113B5 depuis la palette officielle du 2026-10-15 ; l'orange est retiré).
  *
  * Les nombres de ce fichier sont MESURÉS (scripts/design-token-sweep.cjs --check), pas déduits.
  */
@@ -133,7 +133,7 @@ describe('couche back-office — plus aucune valeur de couleur en dur', () => {
       '--admin-line': '#d9d9d9',
       '--admin-ink-strong': '#0a0a0a',
       '--admin-ink-black': '#0a0a0a',
-      '--admin-warm-accent': '#926df9',
+      '--admin-warm-accent': '#737dd6',
       '--admin-ink-muted': '#595959',
       '--admin-surface-page': '#ffffff',
       '--admin-surface-card': '#ffffff',
@@ -328,7 +328,7 @@ describe('accent — une seule source', () => {
     const cta = declarations(tokens).find(([, n]) => n === '--ayrovi-cta');
     expect(cta).toBeTruthy();
     /* P4/T1 « Zalando Strategy » : la couleur de marque n'est plus un littéral local — elle
-       alias le jeton canonique, qui est le seul porteur de la valeur (violet #571EF6 depuis
+       alias le jeton canonique, qui est le seul porteur de la valeur (violet #0113B5 depuis
        la palette officielle du 2026-10-15). On résout la chaîne pour verrouiller la couleur. */
     const declared = new Map(declarations(tokens).map(([, n, v]) => [n, v.trim().toLowerCase()]));
     const resolve = (name: string, depth = 0): string => {
@@ -337,8 +337,8 @@ describe('accent — une seule source', () => {
       return alias && depth < 4 ? resolve(alias[1], depth + 1) : raw;
     };
     expect(cta![2].trim().toLowerCase()).toBe('var(--ayrovi-color-brand-accent)');
-    expect(resolve('--ayrovi-cta')).toBe('#571ef6');
-    expect(resolve('--ayrovi-color-brand-accent')).toBe('#571ef6');
+    expect(resolve('--ayrovi-cta')).toBe('#0113b5');
+    expect(resolve('--ayrovi-color-brand-accent')).toBe('#0113b5');
     // texte posé sur l'action : blanc (7,19:1), jamais l'encre noire de l'ancien orange
     expect(resolve('--ayrovi-cta-ink')).toBe('#ffffff');
     for (const file of SYSTEM_SHEETS) {

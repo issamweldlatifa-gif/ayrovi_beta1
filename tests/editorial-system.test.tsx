@@ -62,7 +62,7 @@ describe('editorial identity, generated from one versioned source', () => {
     });
   }
   it('lets the violet accent carry text both ways: violet on white and white on violet', () => {
-    // L'ancien orange (2,6:1) exigeait un jeton de texte distinct ; le violet #571EF6 tient 7,19:1.
+    // L'ancien orange (2,6:1) exigeait un jeton de texte distinct ; le violet #0113B5 tient 7,19:1.
     expect(contrast(identity.colors.accent, '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
     expect(contrast(identity.colors.accentText, '#FFFFFF')).toBeGreaterThan(4.5);
     expect(contrast(identity.colors.onAccent, identity.colors.accent)).toBeGreaterThan(7);

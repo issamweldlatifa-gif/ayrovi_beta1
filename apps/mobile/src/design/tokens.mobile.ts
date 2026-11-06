@@ -5,7 +5,7 @@
  * `tokens.generated.ts` est GÉNÉRÉ (voir `scripts/gen-tokens.mjs`) :
  *   • ses COULEURS viennent de `src/design/brand.json` — l'identité couleur
  *     officielle de l'application (noir #0A0A0A, blanc #FFFFFF, violet
- *     électrique #571EF6, gris clair #F2F2F2) ;
+ *     électrique #0113B5, gris clair #F2F2F2) ;
  *   • sa STRUCTURE (espaces, typo, géométrie, durées) vient de
  *     `client/src/design/editorial/identity.json`, partagé avec le site.
  * L'éditer à la main serait une violation (écrasé au build, `tokens:check`
@@ -260,7 +260,7 @@ export const REEL_TILE = {
  * Mot-symbole AYWEBs (en-tête, barre du bas, feuille d'ajout) : teinte
  * appliquée nativement par `expo-image` (`tintColor`) en plus des pixels sRGB
  * du PNG afin d'éliminer tout écart d'espace colorimétrique (Display-P3 / OLED)
- * et de garantir le violet officiel `#571EF6` exact.
+ * et de garantir le violet officiel `#0113B5` exact.
  */
 export const AYWEBS_WORDMARK_TINT = {
   light: BRAND.violet,
@@ -443,8 +443,8 @@ export const duration = {
  *            #CF1322  5,57 sur blanc   · 5,0  sur #F2F2F2   (clair)
  *   warning  #FFD60A 14,02 sur #0A0A0A · 12,70 sur #171717
  *            #6B5A00  6,80 sur blanc   · 6,08 sur #F2F2F2
- *   info     #926DF9  5,45 sur #0A0A0A · 4,93 sur #171717   (violet éclairci)
- *            #571EF6  7,19 sur blanc   · 6,42 sur #F2F2F2   (violet de marque)
+ *   info     #737DD6  5,45 sur #0A0A0A · 4,93 sur #171717   (violet éclairci)
+ *            #0113B5  7,19 sur blanc   · 6,42 sur #F2F2F2   (violet de marque)
  *   success  #52C41A  8,74 sur #0A0A0A · 7,91 sur #171717
  *            #237804  5,59 sur blanc   · 4,99 sur #F2F2F2
  *
@@ -523,7 +523,7 @@ function alpha(hex: string, opacity: number): string {
 /**
  * Seules les clés RÉELLEMENT nécessaires au calcul. Typer ce paramètre avec
  * la palette entière du mode clair la rendait inutilisable avec le mode sombre
- * (les littéraux diffèrent : `#926DF9` contre `#571EF6`) — l'union des deux
+ * (les littéraux diffèrent : `#737DD6` contre `#0113B5`) — l'union des deux
  * palettes n'est pas assignable à l'une d'elles.
  *
  * Décrire le BESOIN plutôt que la SOURCE rend la fonction utilisable par les
@@ -742,7 +742,7 @@ export const GOOGLE_BRAND = {
 /** Approved native footer: a white payment strip and black help/identity panel. */
 export const FOOTER_THEME = {
   paper: '#FFFFFF', ink: '#111111', mutedOnPaper: '#666666', line: '#DDDDDD',
-  muted: '#B7B7B7', separator: '#9C9C9C', link: '#B598FF', scrim: '#00000088',
+  muted: '#B7B7B7', separator: '#9C9C9C', link: '#9DA5E5', scrim: '#00000088',
 } as const;
 
 /** Publication is deliberately a white editorial space, even in system dark mode. */

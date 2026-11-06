@@ -936,12 +936,12 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
 
 // ===== قسم التطوير: ثيم المنصة بالكامل + القنوات + نص الفوتر =====
 const THEME_PRESETS=[
-  {id:'noir',label:'Noir ZAYROVI',primary:'#111318',primaryDark:'#050505',primaryLight:'#3f3f46',accent:'#571ef6',gradient:'linear-gradient(135deg,#050505 0%,#111318 100%)',font:FONT_STACK},
-  {id:'nuit',label:'Bleu nuit',primary:'#2563eb',primaryDark:'#1d4ed8',primaryLight:'#60a5fa',accent:'#571ef6',gradient:'linear-gradient(135deg,#0b1e4b 0%,#2563eb 100%)',font:FONT_STACK},
-  {id:'emeraude',label:'Émeraude',primary:'#059669',primaryDark:'#047857',primaryLight:'#34d399',accent:'#571ef6',gradient:'linear-gradient(135deg,#064e3b 0%,#059669 100%)',font:FONT_STACK},
-  {id:'framboise',label:'Framboise',primary:'#db2777',primaryDark:'#be185d',primaryLight:'#f472b6',accent:'#571ef6',gradient:'linear-gradient(135deg,#500724 0%,#db2777 100%)',font:FONT_STACK},
-  {id:'sable',label:'Sable doré',primary:'#b45309',primaryDark:'#92400e',primaryLight:'#d97706',accent:'#571ef6',gradient:'linear-gradient(135deg,#431407 0%,#b45309 100%)',font:FONT_STACK},
-  {id:'charbon',label:'Charbon chic',primary:'#334155',primaryDark:'#1e293b',primaryLight:'#64748b',accent:'#571ef6',gradient:'linear-gradient(135deg,#0f172a 0%,#334155 100%)',font:FONT_STACK},
+  {id:'noir',label:'Noir ZAYROVI',primary:'#111318',primaryDark:'#050505',primaryLight:'#3f3f46',accent:'#0113b5',gradient:'linear-gradient(135deg,#050505 0%,#111318 100%)',font:FONT_STACK},
+  {id:'nuit',label:'Bleu nuit',primary:'#2563eb',primaryDark:'#1d4ed8',primaryLight:'#60a5fa',accent:'#0113b5',gradient:'linear-gradient(135deg,#0b1e4b 0%,#2563eb 100%)',font:FONT_STACK},
+  {id:'emeraude',label:'Émeraude',primary:'#059669',primaryDark:'#047857',primaryLight:'#34d399',accent:'#0113b5',gradient:'linear-gradient(135deg,#064e3b 0%,#059669 100%)',font:FONT_STACK},
+  {id:'framboise',label:'Framboise',primary:'#db2777',primaryDark:'#be185d',primaryLight:'#f472b6',accent:'#0113b5',gradient:'linear-gradient(135deg,#500724 0%,#db2777 100%)',font:FONT_STACK},
+  {id:'sable',label:'Sable doré',primary:'#b45309',primaryDark:'#92400e',primaryLight:'#d97706',accent:'#0113b5',gradient:'linear-gradient(135deg,#431407 0%,#b45309 100%)',font:FONT_STACK},
+  {id:'charbon',label:'Charbon chic',primary:'#334155',primaryDark:'#1e293b',primaryLight:'#64748b',accent:'#0113b5',gradient:'linear-gradient(135deg,#0f172a 0%,#334155 100%)',font:FONT_STACK},
 ];
 const FONT_OPTIONS=[{value:FONT_STACK,label:'ZAYROVI A — identité verrouillée'}];
 const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{

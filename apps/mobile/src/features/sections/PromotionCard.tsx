@@ -19,7 +19,7 @@ import { formatAmount } from '@/format/money';
 
 /**
  * النصّ فوق البنفسجي ZAYROVI (نفس قرار `StoryCard`): أبيض (`onAccent`) — تباين
- * 7.19:1 على `#571EF6`.
+ * 7.19:1 على `#0113B5`.
  */
 
 

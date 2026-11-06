@@ -102,7 +102,7 @@ describe('chargement et résultats Lens', () => {
     expect(nativeTokens).toContain('star: BRAND.black');
     expect(nativeTokens).toContain('skeleton: BRAND.lightGray');
     expect(contrastWithWhite('#CF1322')).toBeGreaterThanOrEqual(4.5);
-    expect(contrastWithWhite('#571EF6')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastWithWhite('#0113B5')).toBeGreaterThanOrEqual(4.5);
     // Plus aucun dégradé d'attente : l'attente est le cercle en pointillés (LoadingSpinner).
     expect(nativeTokens).not.toContain('ACTION_GRADIENT');
     expect(nativeTokens).not.toContain('WAITING_GRADIENTS');

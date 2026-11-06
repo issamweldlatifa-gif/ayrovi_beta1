@@ -5,28 +5,42 @@ const record = (value: unknown): Record<string, unknown> =>
 
 /** Oranges de marque des chartes retirées : #FF6900 (« Zalando », P4/T1), #FF7900 (ZAYROVI A v3),
  * #FE7003 et #FF7A00 (avant P4/T1). Ils restent écrits dans des réglages CMS déjà persistés et dans
- * les graines de la base ; ils ne sont plus l'identité depuis la palette officielle du 2026-10-15
- * (noir #0A0A0A · blanc #FFFFFF · violet électrique #571EF6 · gris clair #F2F2F2). */
+ * les graines de la base ; ils ne sont plus l'identité depuis la palette officielle du 2026-11-06
+ * (noir #0A0A0A · blanc #FFFFFF · bleu principal #0113B5 · gris clair #F2F2F2). */
 const LEGACY_BRAND_ORANGES = new Set(['#ff6900', '#ff7900', '#fe7003', '#ff7a00']);
+
+/** Retired brand palette only; never applied to merchandise colour options or photographs. */
+export const RETIRED_BRAND_PURPLES: Record<string, string> = {
+  '#571ef6': '#0113B5', '#c5b2f4': '#CCD0F0', '#491acc': '#031196', '#926df9': '#737DD6',
+};
+export function migrateBrandColor(value: unknown): string {
+  const text = String(value ?? '').trim();
+  return RETIRED_BRAND_PURPLES[text.toLowerCase()] ?? text;
+}
+function migrateBrandConfig(value: unknown): any {
+  if (Array.isArray(value)) return value.map(migrateBrandConfig);
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, migrateBrandConfig(item)]));
+  return typeof value === 'string' ? (RETIRED_BRAND_PURPLES[value.toLowerCase()] ?? value) : value;
+}
 
 export const isLegacyBrandOrange = (value: unknown): boolean =>
   LEGACY_BRAND_ORANGES.has(String(value ?? '').trim().toLowerCase());
 
-/** Accent configurable (ex. section LENS de l'accueil) : vide ou ancien orange de marque ⇒ violet
+/** Accent configurable (ex. section LENS de l'accueil) : vide ou ancien orange de marque ⇒ bleu
  * officiel ; toute autre couleur choisie par l'administration est conservée telle quelle. */
 export function brandAccentColor(value: unknown): string {
   const text = String(value ?? '').trim();
-  return !text || isLegacyBrandOrange(text) ? BRAND.colors.accent : text;
+  return !text || isLegacyBrandOrange(text) ? BRAND.colors.accent : migrateBrandColor(text);
 }
 
 /** Brand-owned fields cannot be replaced by legacy CMS data, imported data or an API response.
  * Read adapter only: preserves business content/layout and does not rewrite stored rows.
  * The retired brand oranges are read as their official successors: accent and active icons
- * become the violet accent; a full-bleed section painted in the old orange becomes the brand
- * black (the identity forbids large violet surfaces). Any other admin colour is kept. */
+ * become the blue accent; a full-bleed section painted in the old orange becomes the brand
+ * black (the identity forbids large blue surfaces). Any other admin colour is kept. */
 export function enforceBrandIdentity<T>(input: T): T {
   if (input === null || typeof input !== 'object' || Array.isArray(input)) return input;
-  const value = record(input);
+  const value = record(migrateBrandConfig(input));
   const c = Object.fromEntries(Object.entries(BRAND.colors).map(([key,value]) => [key, value.toLowerCase()]));
   const colors = record(value.colors);
   const next: Record<string, unknown> = {
@@ -61,7 +75,7 @@ export function enforceLegacyTheme<T>(input: T): T {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return input;
   const value = record(input);
   return {
-    ...input,
+    ...migrateBrandConfig(input),
     font: FONT_STACK,
     ...(isLegacyBrandOrange(value.accent) ? { accent: BRAND.colors.accent.toLowerCase() } : {}),
   } as T;

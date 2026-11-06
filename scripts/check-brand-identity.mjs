@@ -76,15 +76,15 @@ export function auditBrand(root=process.cwd()) {
   const identity=JSON.parse(fs.readFileSync(path.join(root,'client/src/design/editorial/identity.json'),'utf8'));
   if (identity.typography.stack !== "'Ayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif") errors.push('official stack changed');
   if (identity.fonts.length!==2 || identity.fonts.map(f=>f.family).join('|')!=='Ayrovi Extracted Sans|Noto Sans Arabic') errors.push('official family allowlist changed');
-  // Palette officielle (2026-10-15) : noir #0A0A0A · blanc #FFFFFF · violet électrique #571EF6 · gris clair #F2F2F2.
-  // v4.2.0 : violet clair #C5B2F4 (secondaire, texte #0A0A0A) ; repère global ≈ 3 % (2 % + 1 %), pas un quota par écran.
+  // Palette officielle (2026-10-15) : noir #0A0A0A · blanc #FFFFFF · violet électrique #0113B5 · gris clair #F2F2F2.
+  // v4.2.0 : violet clair #CCD0F0 (secondaire, texte #0A0A0A) ; repère global ≈ 3 % (2 % + 1 %), pas un quota par écran.
   // Décision client n° 1 (17/10/2026) : la SURFACE devient BLANCHE — plus aucun
   // fond gris, les sections se séparent par un filet (`line`). Le gris clair
   // garde un seul rôle, `shimmer` : le squelette de chargement, qui n'existerait
   // pas sur fond blanc.
-  const official={canvas:'#FFFFFF',ink:'#0A0A0A',surface:'#FFFFFF',shimmer:'#F2F2F2',action:'#571EF6',accent:'#571EF6',onAction:'#FFFFFF',accentSoft:'#C5B2F4',onAccentSoft:'#0A0A0A'};
+  const official={canvas:'#FFFFFF',ink:'#0A0A0A',surface:'#FFFFFF',shimmer:'#F2F2F2',action:'#0113B5',accent:'#0113B5',onAction:'#FFFFFF',accentSoft:'#CCD0F0',onAccentSoft:'#0A0A0A',secondaryAction:'#0B57CF',onSecondaryAction:'#FFFFFF'};
   for(const [role,value] of Object.entries(official)) if(identity.colors[role]!==value) errors.push(`official palette changed: ${role}`);
-  for(const role of ['accentSoft','onAccentSoft']) if(identity.darkColors[role]!==official[role]) errors.push(`official palette changed: dark ${role}`);
+  for(const role of ['accentSoft','onAccentSoft','secondaryAction','onSecondaryAction']) if(identity.darkColors[role]!==official[role]) errors.push(`official palette changed: dark ${role}`);
   const share=identity.accentShare||{};
   if(share.scope!=='app'||share.violet!==0.02||share.violetLight!==0.01||Math.abs(share.total-(share.violet+share.violetLight))>1e-9) errors.push('violet share changed (app-level guide: 2 % + 1 % = 3 %)');
   const walk=relative=>{

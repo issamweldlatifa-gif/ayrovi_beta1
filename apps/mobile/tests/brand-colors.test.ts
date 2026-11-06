@@ -2,7 +2,7 @@
  * Identité couleur officielle de l'application (décision produit du 15/10/2026).
  *
  *   NOIR  #0A0A0A (≈ 35 %) · BLANC #FFFFFF (≈ 50 %) · GRIS CLAIR #F2F2F2 (≈ 5 %)
- *   VIOLET ÉLECTRIQUE #571EF6 + VIOLET CLAIR #C5B2F4 : repère global ≈ 3 % (2 % + 1 %)
+ *   VIOLET ÉLECTRIQUE #0113B5 + VIOLET CLAIR #CCD0F0 : repère global ≈ 3 % (2 % + 1 %)
  *   depuis la v4.2.0 — il était de 10 %. Repère d'ensemble, jamais un quota par écran.
  *
  * Ce fichier verrouille trois choses vérifiables :
@@ -174,7 +174,7 @@ function decodePng(file: string): { width: number; height: number; pixels: Uint8
 
 describe('identité couleur officielle', () => {
   it('les couleurs officielles sont exactement celles de la charte (v4.2.0 : + violet clair)', () => {
-    expect(BRAND).toEqual({ black: '#0A0A0A', white: '#FFFFFF', violet: '#571EF6', violetLight: '#C5B2F4', lightGray: '#F2F2F2' });
+    expect(BRAND).toEqual({ black: '#0A0A0A', white: '#FFFFFF', violet: '#0113B5', violetLight: '#CCD0F0', lightGray: '#F2F2F2', secondaryBlue: '#0B57CF' });
   });
 
   it('le violet est ramené de 10 % à un repère global de 3 % (2 % + 1 % clair), les autres parts sont inchangées', () => {
@@ -231,9 +231,18 @@ describe('identité couleur officielle', () => {
   it('les teintes dérivées sont CALCULÉES depuis le violet, jamais choisies au goût', () => {
     expect(COLORS.light.actionHover).toBe(mix(BRAND.violet, BRAND.black, 0.18));
     expect(COLORS.dark.actionHover).toBe(COLORS.light.actionHover);
-    expect(COLORS.dark.accentText).toBe(mix(BRAND.violet, BRAND.white, 0.35));
+    expect(COLORS.dark.accentText).toBe(mix(BRAND.violet, BRAND.white, 0.45));
     expect(veil(0.5)).toBe('#0A0A0A80');
     expect(frost(0.9)).toBe('#FFFFFFe6');
+  });
+
+  it('le bleu secondaire SONIM reste distinct et lisible, sans remplacer l’action principale', () => {
+    expect(BRAND.secondaryBlue).toBe('#0B57CF');
+    for (const c of [COLORS.light, COLORS.dark]) {
+      expect(c.secondaryAction).toBe(BRAND.secondaryBlue);
+      expect(c.secondaryAction).not.toBe(c.action);
+      expect(contrast(c.onSecondaryAction, c.secondaryAction)).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
   it('les deux modes portent exactement les mêmes jetons', () => {
@@ -267,7 +276,7 @@ describe('contraste (WCAG)', () => {
       expect(contrast(c.onAction, c.actionHover)).toBeGreaterThanOrEqual(4.5);
       expect(contrast(c.onAccent, c.accent)).toBeGreaterThanOrEqual(4.5);
     }
-    expect(contrast(BRAND.white, BRAND.violet)).toBeCloseTo(7.19, 1);
+    expect(contrast(BRAND.white, BRAND.violet)).toBeCloseTo(11.92, 1);
   });
 
   it('le focus et le contour des champs restent visibles (≥ 3:1)', () => {

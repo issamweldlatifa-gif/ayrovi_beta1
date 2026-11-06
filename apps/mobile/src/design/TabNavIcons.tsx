@@ -3,7 +3,7 @@
  * fin (`Ionicons` `-outline`) partagée par toute l'application et ses extensions :
  *   1. Accueil (`home-outline`)
  *   2. Lens (`camera-outline`)
- *   3. AYWEBs (`paw-outline` — patte de chat officielle en violet `#571EF6`,
+ *   3. AYWEBs (`paw-outline` — patte de chat officielle en violet `#0113B5`,
  *      remplaçant les badges matriciels `assets/aywebs/aywebs-icon-violet.png`
  *      et `assets/aywebs/aywebs-icon-white.png` dans la barre d'onglets pour
  *      garantir une seule famille vectorielle à trait fin)

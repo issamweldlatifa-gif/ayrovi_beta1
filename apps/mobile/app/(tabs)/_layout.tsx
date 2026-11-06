@@ -8,7 +8,7 @@
  *   • Toutes les icônes appartiennent à la famille unique officielle (`Ionicons`
  *     `-outline` via `TabNavIcons`, grille `24 × 24` pt).
  *   • `AYWEBs` occupe l'emplacement central avec l'icône patte de chat officielle
- *     en violet de marque (`#571EF6` en clair, `#FFFFFF` en sombre), sans libellé.
+ *     en violet de marque (`#0113B5` en clair, `#FFFFFF` en sombre), sans libellé.
  *   • `cart` reste une route valide (`href: null`) pour l'icône panier.
  */
 import { StyleSheet } from 'react-native';

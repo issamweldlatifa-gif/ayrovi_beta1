@@ -29,7 +29,7 @@
   --s-control-radius: var(--ay-e-control-radius, 12px);
   --s-card-radius: var(--ay-e-card-radius, 16px);
   --s-sheet-radius: var(--ay-e-sheet-radius, 32px);
-  --s-action: var(--ay-e-action, #571ef6);
+  --s-action: var(--ay-e-action, #0113b5);
   --s-on-action: var(--ay-e-on-action, #fff);
   --s-danger: var(--ay-e-danger, #a52d2d);
   --s-success: var(--ay-e-success, #236044);

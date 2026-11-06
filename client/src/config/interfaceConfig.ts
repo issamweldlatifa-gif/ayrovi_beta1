@@ -169,7 +169,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     primary: '#000000',
     primaryDark: '#000000',
     primaryLight: '#3f3f46',
-    accent: '#571ef6',
+    accent: '#0113b5',
     headerBackground: '#ffffff',
     headerText: '#000000',
     announcementBackground: '#000000',
@@ -186,7 +186,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     background: '#000000', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#000000',
     borderColor: '#000000', borderWidth: 1, radius: 12, height: 44, shape: 'soft',
   },
-  icons: { library: 'ayrovi', color: '#000000', activeColor: '#571ef6', size: 28, style: 'outline' },
+  icons: { library: 'ayrovi', color: '#000000', activeColor: '#0113b5', size: 28, style: 'outline' },
   navigation: {
     background: '#ffffff', color: '#000000', activeBackground: '#000000', showLabels: true, height: 56,
     homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'SONIM', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision', aywebsLabel: 'AyWebs', ocerexLabel: 'OCEREX',

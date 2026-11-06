@@ -94,7 +94,7 @@ describe('contraste — les valeurs de l\'identité tiennent les seuils', () => 
 
   test('le violet porte du texte dans les deux sens ; sur fond sombre, sa version éclaircie', () => {
     // L'ancien orange (2,63:1 sur blanc) ne pouvait pas porter de texte. Le violet électrique
-    // #571EF6 tient 7,19:1 : texte violet sur blanc ET texte blanc sur violet (boutons primaires).
+    // #0113B5 tient 7,19:1 : texte violet sur blanc ET texte blanc sur violet (boutons primaires).
     expect(contrast(plain(light.accent), '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
     expect(contrast(plain(light.accentText), '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
     expect(contrast(plain(light.onAccent), plain(light.accent))).toBeGreaterThanOrEqual(4.5);

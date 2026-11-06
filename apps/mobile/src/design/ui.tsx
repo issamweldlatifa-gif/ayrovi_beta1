@@ -274,7 +274,7 @@ export const BUTTON_OUTLINE_WIDTH = 2;
 
 /**
  * Quatre rôles — le violet reste rare hors exception AYWEBs :
- *   • `main`     : VIOLET plein (`action`, #571EF6), réservé aux actions principales
+ *   • `main`     : VIOLET plein (`action`, #0113B5), réservé aux actions principales
  *                  de marque hors expérience boutique AYWEBs.
  *   • `commerce` : jaune #FFD60A, texte encre, CTA d'achat isolé à AYWEBs.
  *   • `solid`    : défaut — fond encre (`ink`), libellé `canvas` (noir/blanc,
