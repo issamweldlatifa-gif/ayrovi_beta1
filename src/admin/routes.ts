@@ -1,3 +1,4 @@
+import { PUBLICATION_CATEGORIES } from '../../shared/publicationFeed';
 import { FONT_STACK } from '../../shared/brand.generated';
 import { brandAccentColor, enforceBrandIdentity, enforceLegacyTheme, hasForbiddenFontSelection } from '../../shared/identityPolicy';
 import { Router, Request, Response } from 'express';
@@ -1363,6 +1364,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   router.post('/publications', requireAdmin(db, 'content:write'), (req, res) => {
     const title = String(req.body?.title || '').trim().slice(0, 150);
     const channelId = String(req.body?.channel_id || '');
+    const category = String(req.body?.category ?? '');
+    if (category && !PUBLICATION_CATEGORIES.includes(category as any)) return res.status(400).json({ success: false, error: 'Catégorie Publication invalide.' });
     const imageUrl = linkOrReject(res, req.body?.image_url, 'image');
     if (imageUrl === null) return;
     if (!title || !imageUrl || !db.get('SELECT id FROM story_publishers WHERE id=?', channelId)) {
@@ -1377,10 +1380,10 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
     const now = new Date().toISOString();
     const id = `publication_${randomUUID()}`;
-    db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,content_mode,product_id,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+    db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,content_mode,product_id,created_at,updated_at,category) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       id, title, String(req.body?.subtitle || '').slice(0, 150), channelId, imageUrl, String(req.body?.remark || ''),
       req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon',
-      shoppable.mode, shoppable.productId, now, now);
+      shoppable.mode, shoppable.productId, now, now, category);
     if (extraProducts.length > 0) setContentProducts(db, 'publication', id, extraProducts, now);
     else syncContentProductsFromLegacy(db, 'publication', id, shoppable.mode, shoppable.productId);
     audit(db, req, 'CREATE', 'SOCIAL_PUBLICATIONS', id, null, db.get<any>('SELECT * FROM publications WHERE id=?', id));
@@ -1389,6 +1392,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   router.put('/publications/:id', requireAdmin(db, 'content:write'), (req, res) => {
     const row = db.get<any>(`SELECT * FROM publications WHERE id=?`, req.params.id);
     if (!row) return res.status(404).json({ success: false, error: 'Publication introuvable.' });
+    const category = String(req.body?.category ?? row.category ?? '');
+    if (category && !PUBLICATION_CATEGORIES.includes(category as any)) return res.status(400).json({ success: false, error: 'Catégorie Publication invalide.' });
     const imageUrl = req.body?.image_url !== undefined ? linkOrReject(res, req.body.image_url, 'image') : row.image_url;
     if (imageUrl === null) return;
     const extraProducts = productIdsOrReject(res, db, req.body?.product_ids);
@@ -1399,12 +1404,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const shoppable = decideShoppable(req.body?.content_mode ?? row.content_mode, primaryProductId,
       (pid) => catalogueProductSnapshot(db, pid));
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
-    db.run(`UPDATE publications SET title=?, subtitle=?, image_url=?, remark=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=? WHERE id=?`,
+    db.run(`UPDATE publications SET title=?, subtitle=?, image_url=?, remark=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=?, category=?, media_origin=? WHERE id=?`,
       String(req.body?.title ?? row.title).slice(0, 150), String(req.body?.subtitle ?? row.subtitle).slice(0, 150),
       String(imageUrl).slice(0, 500), String(req.body?.remark ?? row.remark),
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
-      shoppable.mode, shoppable.productId, new Date().toISOString(), req.params.id);
+      shoppable.mode, shoppable.productId, new Date().toISOString(), category, imageUrl !== row.image_url ? 'uploaded' : row.media_origin, req.params.id);
     if (req.body?.product_ids !== undefined) setContentProducts(db, 'publication', req.params.id, extraProducts);
     else syncContentProductsFromLegacy(db, 'publication', req.params.id, shoppable.mode, shoppable.productId);
     audit(db, req, 'UPDATE', 'SOCIAL_PUBLICATIONS', req.params.id, row, db.get<any>('SELECT * FROM publications WHERE id=?', req.params.id));

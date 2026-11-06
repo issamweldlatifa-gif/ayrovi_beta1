@@ -1,3 +1,4 @@
+import { publicationShareHtml } from './services/publicationShare';
 import 'dotenv/config';
 import { validateQuoteSecret } from './ayrovix/priceQuote';
 validateQuoteSecret();
@@ -558,6 +559,14 @@ app.use('/api', (req, res) => {
  */
 const looksLikeAssetRequest = (pathname: string): boolean =>
   pathname.startsWith('/uploads/') || path.extname(pathname) !== '';
+
+// Share fallback only; the native route and its existing home entry remain unchanged.
+app.get('/publications', (req, res) => {
+  const html = publicationShareHtml(db, String(req.query.post || ''));
+  res.setHeader('Cache-Control', 'no-store');
+  if (!html) { res.status(404).type('html').send('<!doctype html><html lang="fr"><title>Publication introuvable</title><h1>Publication introuvable</h1><a href="/">Accueil ZAYROVI</a></html>'); return; }
+  res.type('html').send(html);
+});
 
 app.get('*', (req, res) => {
   const indexPath = path.join(publicDir, 'index.html');

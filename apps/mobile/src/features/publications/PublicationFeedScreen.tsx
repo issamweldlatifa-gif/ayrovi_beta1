@@ -1,0 +1,118 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { FlatList, Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useInfiniteQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { setStatusBarStyle } from 'expo-status-bar';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { fetchFeedPage, type FeedPost, type FeedPage } from '@/api/publicationFeed';
+import { BrandMark } from '@/design/BrandMark';
+import { AppText } from '@/design/ui';
+import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
+import { PUBLICATION_THEME as P, RADIUS, veil } from '@/design/tokens.mobile';
+import { useResponsive } from '@/design/layout';
+import { goBack } from '@/design/navigation';
+import { useTheme } from '@/design/theme';
+import { useI18n } from '@/i18n';
+import { useSession } from '@/state/session';
+import { Comments } from '@/features/social/Comments';
+import { PublicationSparkIcon } from './PublicationReactionIcon';
+import { PublicationCard } from './PublicationCard';
+import { CATEGORY_LABELS, readFeedView, saveFeedView, uniqueFeedPosts } from './publicationFeedLogic';
+
+export function PublicationFeedScreen() {
+  const theme = useTheme();
+  const queryClient = useQueryClient();
+  useFocusEffect(useCallback(() => {
+    setStatusBarStyle('dark');
+    return () => setStatusBarStyle(theme.mode === 'dark' ? 'light' : 'dark');
+  }, [theme.mode]));
+  const { locale, t } = useI18n();
+  const ar = locale === 'ar';
+  const session = useSession();
+  const owner = session.account?.id || 'guest';
+  const params = useLocalSearchParams<{ post?: string }>();
+  const post = typeof params.post === 'string' ? params.post : '';
+  const initial = useRef(post ? { category: '', q: '', offset: 0 } : readFeedView(owner));
+  const [category, setCategory] = useState(initial.current.category);
+  const [searchOpen, setSearchOpen] = useState(!!initial.current.q);
+  const [search, setSearch] = useState(initial.current.q);
+  const [q, setQ] = useState(initial.current.q);
+  const [comments, setComments] = useState<FeedPost | null>(null);
+  const list = useRef<FlatList<FeedPost>>(null);
+  const offset = useRef(initial.current.offset);
+  const restored = useRef(false);
+  const insets = useSafeAreaInsets();
+  const { gutter } = useResponsive();
+  useEffect(() => { const timer = setTimeout(() => setQ(search.trim()), 300); return () => clearTimeout(timer); }, [search]);
+  useEffect(() => { saveFeedView(owner, { category, q, offset: offset.current }); }, [owner, category, q]);
+  const feed = useInfiniteQuery({
+    queryKey: ['publication-feed', owner, category, q, post],
+    initialPageParam: null as string | null,
+    queryFn: ({ pageParam, signal }) => fetchFeedPage({ category: post ? '' : category, q: post ? '' : q, post, cursor: pageParam }, { signal }),
+    getNextPageParam: page => page.nextCursor ?? undefined,
+    enabled: session.status !== 'loading', staleTime: 30000,
+  });
+  const rows = uniqueFeedPosts(feed.data?.pages ?? []);
+  const reset = () => { offset.current = 0; restored.current = true; list.current?.scrollToOffset({ offset: 0, animated: false }); };
+  const closeComments = () => { setComments(null); void feed.refetch(); };
+  return <View testID="publication-feed" style={[styles.screen, { paddingTop: insets.top }]}>
+    <View style={[styles.header, { paddingHorizontal: gutter, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'رجوع' : 'Retour'} onPress={() => goBack('/(tabs)')} style={styles.icon}>
+        <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.sm} color={P.ink} />
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'الرئيسية ZAYROVI' : 'Accueil ZAYROVI'} onPress={() => router.push('/(tabs)')}><BrandMark nameSize={12} color={P.ink} /></Pressable>
+      <View style={styles.title}><AppText variant="label" color={P.ink}>{t('social.publications')}</AppText></View>
+      <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'البحث في المنشورات' : 'Rechercher des publications'} accessibilityState={{ expanded: searchOpen }} onPress={() => setSearchOpen(!searchOpen)} style={styles.icon}>
+        <Ionicons name="search-outline" size={theme.iconSize.sm} color={P.ink} />
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'إشعارات الحساب' : 'Notifications du compte'} onPress={() => router.push('/account/notifications')} style={styles.icon}>
+        <Ionicons name="notifications-outline" size={theme.iconSize.sm} color={P.ink} />
+      </Pressable>
+    </View>
+    {searchOpen ? <View style={[styles.search, { marginHorizontal: gutter }]}>
+      <TextInput testID="publication-search" accessibilityLabel={ar ? 'البحث في المنشورات' : 'Recherche Publication'} maxLength={100}
+        placeholder={ar ? 'ابحث عن إلهام…' : 'Rechercher une inspiration…'} placeholderTextColor={P.muted} value={search}
+        onChangeText={value => { reset(); if (post) router.setParams({ post: undefined }); setSearch(value); }} style={[styles.input, theme.text('body')]} />
+      <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'مسح البحث' : 'Effacer la recherche'} onPress={() => { reset(); setSearch(''); }} style={styles.icon}><Ionicons name="close" size={theme.iconSize.sm} color={P.ink} /></Pressable>
+    </View> : null}
+    <View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.categories, { paddingHorizontal: gutter, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+      {Object.entries(CATEGORY_LABELS).map(([key, labels]) => <Pressable key={key} testID={`publication-category-${key || 'all'}`}
+        accessibilityRole="button" accessibilityLabel={labels[ar ? 1 : 0]} accessibilityState={{ selected: category === key }}
+        onPress={() => { reset(); if (post) router.setParams({ post: undefined }); setCategory(key); }} style={[styles.chip, { backgroundColor: category === key ? P.accent : P.neutral }]}>
+        <AppText variant="captionStrong" color={category === key ? P.paper : P.ink}>{labels[ar ? 1 : 0]}</AppText>
+      </Pressable>)}
+    </ScrollView></View>
+    {post ? <Pressable accessibilityRole="button" style={[styles.all, { paddingHorizontal: gutter }]} onPress={() => { reset(); setCategory(''); setSearch(''); router.setParams({ post: undefined }); }}>
+      <AppText variant="label" color={P.accent}>{ar ? 'كل المنشورات' : 'Toutes les publications'}</AppText>
+    </Pressable> : null}
+    <FlatList ref={list} testID="publication-feed-list" data={rows} keyExtractor={item => item.id}
+      contentContainerStyle={{ paddingHorizontal: gutter, paddingBottom: insets.bottom + 24, paddingTop: 12 }}
+      keyboardShouldPersistTaps="handled" initialNumToRender={4} maxToRenderPerBatch={4} windowSize={5}
+      refreshing={feed.isRefetching && !feed.isFetchingNextPage} onRefresh={() => { reset(); void feed.refetch(); }}
+      onScroll={event => { offset.current = event.nativeEvent.contentOffset.y; saveFeedView(owner, { category, q, offset: offset.current }); }} scrollEventThrottle={100}
+      onContentSizeChange={() => { if (!restored.current && rows.length) { restored.current = true; list.current?.scrollToOffset({ offset: initial.current.offset, animated: false }); } }}
+      onEndReachedThreshold={0.5} onEndReached={() => { if (feed.hasNextPage && !feed.isFetching && !feed.isFetchNextPageError) void feed.fetchNextPage(); }}
+      renderItem={({ item, index }) => <PublicationCard key={`${owner}:${item.id}`} post={item} compact={index % 3 === 1} onReaction={(id, liked, likes) => queryClient.setQueriesData<InfiniteData<FeedPage>>({ queryKey: ['publication-feed', owner] }, old => old ? { ...old, pages: old.pages.map(page => ({ ...page, items: page.items.map(row => row.id === id ? { ...row, liked, likes } : row) })) } : old)} onComments={() => setComments(item)} />}
+      ListEmptyComponent={feed.isPending ? <LoadingBlock /> : feed.isError ? <ErrorBlock error={feed.error} onRetry={() => void feed.refetch()} /> : <EmptyBlock><PublicationSparkIcon /><AppText color={P.muted}>{ar ? 'ما فماش منشورات مطابقة حاليًا.' : 'Aucune publication pour cette sélection.'}</AppText></EmptyBlock>}
+      ListFooterComponent={feed.isFetchingNextPage ? <LoadingBlock /> : feed.isError && rows.length > 0 ? <ErrorBlock error={feed.error} onRetry={() => { if (feed.isFetchNextPageError) void feed.fetchNextPage(); else void feed.refetch(); }} /> : rows.length > 0 && !feed.hasNextPage ? <AppText variant="caption" color={P.muted} align="center">{ar ? 'وصلت لآخر المنشورات' : 'Vous avez tout découvert'}</AppText> : null}
+    />
+    <Modal visible={comments !== null} transparent animationType="slide" onRequestClose={closeComments}>
+      <View style={[styles.modal, { paddingTop: insets.top + 48 }]}>
+        <Pressable accessibilityRole="button" accessibilityLabel={ar ? 'إغلاق التعليقات' : 'Fermer les commentaires'} onPress={closeComments} style={styles.backdrop} />
+        <View style={[styles.sheet, { backgroundColor: theme.colors.canvas, paddingBottom: insets.bottom + 12 }]}>
+          <View style={styles.sheetHeader}><AppText variant="h3" color={theme.colors.ink}>{ar ? 'التعليقات' : 'Commentaires'}</AppText><Pressable accessibilityRole="button" accessibilityLabel={ar ? 'إغلاق' : 'Fermer'} onPress={closeComments} style={styles.icon}><Ionicons name="close" size={theme.iconSize.sm} color={theme.colors.ink} /></Pressable></View>
+          <ScrollView keyboardShouldPersistTaps="handled">{comments ? <Comments targetId={comments.id} /> : null}</ScrollView>
+        </View>
+      </View>
+    </Modal>
+  </View>;
+}
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: P.paper }, header: { minHeight: 56, alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.line },
+  title: { flex: 1, alignItems: 'center' }, icon: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  search: { flexDirection: 'row', alignItems: 'center', backgroundColor: P.neutral, borderRadius: RADIUS.md }, input: { flex: 1, color: P.ink, padding: 12, minHeight: 44 },
+  categories: { paddingVertical: 12, gap: 8 }, chip: { minHeight: 44, paddingHorizontal: 16, borderRadius: RADIUS.xl, justifyContent: 'center' },
+  all: { minHeight: 44, justifyContent: 'center' }, modal: { flex: 1, justifyContent: 'flex-end' }, backdrop: { ...StyleSheet.absoluteFill, backgroundColor: veil(0.5) },
+  sheet: { maxHeight: '85%', backgroundColor: P.paper, padding: 16, borderTopLeftRadius: RADIUS.xl, borderTopRightRadius: RADIUS.xl }, sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+});

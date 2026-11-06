@@ -77,7 +77,7 @@ export function Comments({ targetId }: CommentsProps) {
         </View>
       ) : null}
       {comments.isError ? (
-        <AppText variant="caption" color={theme.status.danger.fg}>{t('social.retry')}</AppText>
+        <Pressable accessibilityRole="button" onPress={() => void comments.refetch()} style={styles.retry}><AppText variant="caption" color={theme.status.danger.fg}>{t('social.retry')}</AppText></Pressable>
       ) : null}
 
       {!comments.isPending && rows.length === 0 ? (
@@ -139,6 +139,7 @@ export function Comments({ targetId }: CommentsProps) {
 }
 
 const styles = StyleSheet.create({
+  retry: { minHeight: 44, justifyContent: 'center' },
   wrap: { gap: 8, paddingVertical: 8 },
   row: { gap: 2, paddingVertical: 6, borderBottomWidth: StyleSheet.hairlineWidth },
   form: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginTop: 8 },

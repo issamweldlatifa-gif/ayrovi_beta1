@@ -744,3 +744,9 @@ export const FOOTER_THEME = {
   paper: '#FFFFFF', ink: '#111111', mutedOnPaper: '#666666', line: '#DDDDDD',
   muted: '#B7B7B7', separator: '#9C9C9C', link: '#B598FF', scrim: '#00000088',
 } as const;
+
+/** Publication is deliberately a white editorial space, even in system dark mode. */
+export const PUBLICATION_THEME = {
+  paper: BRAND.white, ink: BRAND.black, muted: NEUTRALS.textSecondary,
+  line: NEUTRALS.border, neutral: BRAND.lightGray, accent: BRAND.violet,
+} as const;

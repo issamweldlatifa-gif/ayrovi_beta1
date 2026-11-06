@@ -1,3 +1,4 @@
+import { PUBLICATION_CATEGORIES } from '../../../shared/publicationFeed';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowUp, Pencil, Plus, Trash2 } from '../components/QatafoIcons';
 import { adminApi } from './api';
@@ -70,7 +71,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
     <section className="admin-card">
       {error && <div className="admin-error">{error}</div>}
       <div className="admin-actions" style={{ marginTop: 0 }}>
-        <Button onClick={() => { setError(''); setForm({ title: '', subtitle: '', channel_id: channels[0]?.id || '', image_url: '', remark: '', status: 'publie', ...EMPTY_PRODUCT_LINK }); }}><Plus size={15} />Ajouter</Button>
+        <Button onClick={() => { setError(''); setForm({ category: '', title: '', subtitle: '', channel_id: channels[0]?.id || '', image_url: '', remark: '', status: 'publie', ...EMPTY_PRODUCT_LINK }); }}><Plus size={15} />Ajouter</Button>
         <span className="admin-block-small">Format conseillé : image verticale 4:5, titre court et canal actif.</span>
       </div>
       <DataTable
@@ -103,6 +104,10 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
               </label>
             </div>
           </Field>
+          <Field label="Catégorie Publication"><select value={form.category || ''} onChange={e => setForm({ ...form, category: e.target.value })}>
+            <option value="">For You — non classée</option>
+            {PUBLICATION_CATEGORIES.map(category => <option key={category} value={category}>{category}</option>)}
+          </select></Field>
           <Field label="Remarque (interne, invisible sur le site)" full><textarea rows={2} value={form.remark} onChange={(e) => setForm({ ...form, remark: e.target.value })} /></Field>
           <ProductIntegration kind="publication" value={form} onChange={(v) => setForm({ ...form, ...v })} />
           <Field label="Statut"><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="brouillon">Brouillon</option><option value="publie">Publié</option><option value="archive">Archivé</option></select></Field>

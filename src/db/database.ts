@@ -343,6 +343,9 @@ export class QatafoDatabase {
       },
       loadRecent: (limit) => this.db.prepare('SELECT trace FROM ayrovix_lens_traces ORDER BY created_at DESC LIMIT ?').all(limit) as Array<{ trace: string }>,
     });
+    this.ensureColumn('publications', 'category', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('publications', 'media_origin', "TEXT NOT NULL DEFAULT 'uploaded'");
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_publications_feed ON publications(status,publish_at DESC,id DESC); CREATE INDEX IF NOT EXISTS idx_publications_feed_category ON publications(status,category,publish_at DESC,id DESC)');
     this.initErpCoreSchema();
     this.initCatalogueSchema();
     this.initInventorySchema();
@@ -354,6 +357,31 @@ export class QatafoDatabase {
     this.seedTestProductV1();
     this.installOfficialStories();
     this.installFeaturedPortrait();
+    this.installPublicationEditorialLaunch();
+  }
+
+  /** New authored content, additive and one-shot. Never deletes CRM content or seeds again. */
+  private installPublicationEditorialLaunch(): void {
+    this.runOnceDataMigration('publication_editorial_launch_v1', () => {
+      const channel = this.get<any>("SELECT id FROM story_publishers WHERE official=1 ORDER BY id LIMIT 1");
+      if (!channel) return;
+      const items = [
+        ['style', 'fashion', 'Le style, dans les détails', 'Matières, lignes et contrastes : une inspiration pour composer votre silhouette.'],
+        ['home', 'home', 'Un intérieur qui respire', 'Lumière douce, textures naturelles et petits rituels du quotidien.'],
+        ['tech', 'technology', 'Le son, autrement', 'Une exploration visuelle du design et des objets qui nous accompagnent.'],
+        ['lifestyle', 'lifestyle', 'Le temps d’une pause', 'Quelques instants pour ralentir et retrouver l’inspiration.'],
+      ];
+      // Keep the existing featured publication the latest; do not silently change À la une.
+      const latest = this.get<any>("SELECT MIN(publish_at) at FROM publications WHERE status='publie' AND publish_at<=?", new Date().toISOString());
+      const base = latest?.at && Number.isFinite(Date.parse(latest.at)) ? Date.parse(latest.at) : Date.now();
+      for (const [index, [slug, category, title, subtitle]] of items.entries()) {
+        const now = new Date().toISOString();
+        const published = new Date(base - (index + 1) * 60000).toISOString();
+        this.run(`INSERT OR IGNORE INTO publications (id,title,subtitle,channel_id,image_url,publish_at,status,created_at,updated_at,category,media_origin)
+          VALUES (?,?,?,?,?,?,'publie',?,?,?,'generated')`,
+          `publication_editorial_${slug}`, title, subtitle, channel.id, `/media/publications/editorial-${slug}.jpg`, published, now, now, category);
+      }
+    });
   }
 
   /** Replace only the configured featured publication's photo; preserve its identity and routing. */

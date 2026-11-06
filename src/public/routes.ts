@@ -1,3 +1,4 @@
+import { PUBLICATION_CATEGORIES } from '../../shared/publicationFeed';
 import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { readFicheLabels } from '../catalogue/products';
 import { brandAccentColor, enforceBrandIdentity, enforceLegacyTheme } from '../../shared/identityPolicy';
@@ -735,6 +736,51 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       promo: (() => { const day = resolvePromoForQuote(db); return day ? { percent: day.percent, label: day.label, day: tunisIsoDay() } : null; })(),
       facts, arrivals, promotions, brands, knowledge,
     } });
+  });
+
+  // Additive Phase 1 endpoint; personal state must never enter a shared cache.
+  router.get('/social/publication-feed', optionalCustomer(db), (req, res) => {
+    res.setHeader('Cache-Control', 'private, no-store');
+    const category = String(req.query.category || '');
+    const q = String(req.query.q || '').trim();
+    const post = String(req.query.post || '').trim();
+    const limit = Number(req.query.limit || 12);
+    if ((category && !PUBLICATION_CATEGORIES.includes(category as any)) || q.length > 100
+        || (post && !/^[A-Za-z0-9_-]{1,120}$/.test(post)) || !Number.isInteger(limit) || limit < 1 || limit > 30) {
+      return res.status(400).json({ success: false, error: 'Filtre Publication invalide.' });
+    }
+    const where = ["pub.status='publie'", 'pub.publish_at<=?'];
+    const args: any[] = [new Date().toISOString()];
+    if (category) { where.push('pub.category=?'); args.push(category); }
+    if (post) { where.push('pub.id=?'); args.push(post); }
+    if (q) { where.push('(instr(lower(pub.title),lower(?))>0 OR instr(lower(pub.subtitle),lower(?))>0)'); args.push(q, q); }
+    if (req.query.cursor) {
+      try {
+        const raw = String(req.query.cursor);
+        if (raw.length > 600 || !/^[A-Za-z0-9_-]+$/.test(raw)) throw new Error('cursor');
+        const cursor = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'));
+        if (!Array.isArray(cursor) || cursor.length !== 2) throw new Error('cursor');
+        const [date, id] = cursor;
+        if (typeof date !== 'string' || !Number.isFinite(Date.parse(date)) || typeof id !== 'string' || !/^[A-Za-z0-9_-]{1,120}$/.test(id)) throw new Error('cursor');
+        where.push('(pub.publish_at<? OR (pub.publish_at=? AND pub.id<?))'); args.push(date, date, id);
+      } catch { return res.status(400).json({ success: false, error: 'Curseur Publication invalide.' }); }
+    }
+    const accountId = (req as any).customer?.id || '';
+    const rows = db.all<any>(`SELECT pub.id,pub.title,pub.subtitle,pub.image_url,pub.channel_id,pub.category,pub.media_origin,pub.publish_at,pub.content_mode,
+      channel.name channel_name,
+      EXISTS(SELECT 1 FROM story_interactions i WHERE i.target_id=pub.id AND i.type='like' AND i.account_id=?) liked,
+      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='like') likes,
+      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='comment') comments,
+      ${LINKED_PRODUCT_JOIN_SELECT}
+      FROM publications pub LEFT JOIN products p ON p.id=pub.product_id
+      LEFT JOIN story_publishers channel ON channel.id=pub.channel_id
+      WHERE ${where.join(' AND ')} ORDER BY pub.publish_at DESC,pub.id DESC LIMIT ?`, accountId, ...args, limit + 1);
+    const hasMore = rows.length > limit;
+    const items = rows.slice(0, limit).map(withLinkedProduct);
+    attachContentProducts(db, 'publication', items);
+    const last = items[items.length - 1];
+    res.json({ success: true, data: { items, nextCursor: hasMore && last
+      ? Buffer.from(JSON.stringify([last.publish_at, last.id])).toString('base64url') : null } });
   });
 
   router.get('/social/publications', (_req, res) => {
