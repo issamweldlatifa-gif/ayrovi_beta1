@@ -11,7 +11,8 @@
  *     en violet de marque (`#0113B5` en clair, `#FFFFFF` en sombre), sans libellé.
  *   • `cart` reste une route valide (`href: null`) pour l'icône panier.
  */
-import { StyleSheet } from 'react-native';
+import { AppText } from '@/design/ui';
+import { StyleSheet, View } from 'react-native';
 import { Tabs, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -35,6 +36,28 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const chromeHidden = useChromeHidden();
   const surface = TAB_BAR_SURFACE[theme.mode];
+
+  const label =
+    (text: string) =>
+    ({ focused }: { focused: boolean }) =>
+      (
+        <View style={{ alignItems: 'center', gap: 4 }}>
+          <AppText
+            variant="captionStrong"
+            color={focused ? theme.colors.ink : theme.colors.muted}
+          >
+            {text}
+          </AppText>
+          <View
+            style={{
+              height: 4,
+              width: 40,
+              borderRadius: 2,
+              backgroundColor: focused ? theme.colors.focus : 'transparent',
+            }}
+          />
+        </View>
+      );
 
   const standardIconSlot = {
     width: theme.iconSize.md,
@@ -79,6 +102,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: t('tabs.home'),
+          tabBarLabel: label(t('tabs.home')),
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
             <TabHomeIcon color={color} focused={focused} />
@@ -95,6 +119,7 @@ export default function TabsLayout() {
         }}
         options={{
           title: t('tabs.lens'),
+          tabBarLabel: label(t('tabs.lens')),
           tabBarStyle: { display: 'none' },
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
@@ -119,6 +144,7 @@ export default function TabsLayout() {
         name="sonim"
         options={{
           title: t('tabs.sonim'),
+          tabBarLabel: label(t('tabs.sonim')),
           tabBarStyle: { display: 'none' },
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
@@ -130,6 +156,7 @@ export default function TabsLayout() {
         name="account"
         options={{
           title: t('tabs.account'),
+          tabBarLabel: label(t('tabs.account')),
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
             <TabProfileIcon color={color} focused={focused} />

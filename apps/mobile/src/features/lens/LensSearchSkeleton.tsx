@@ -10,8 +10,8 @@ import { LENS_COLORS } from './lensPalette';
 import { LensProgressLine } from './LensProgressLine';
 import { useLensSheetScroll } from './lensSheetScroll';
 
-const GRID_PADDING = 4;
-const GRID_GAP = 4;
+
+const GRID_GAP = 2;
 
 export function ProductSkeleton({ index }: { index: number }) {
   const { width } = useWindowDimensions();
@@ -84,7 +84,7 @@ export function LensSearchSkeleton({
 }
 
 const styles = StyleSheet.create({
-  wrap: { flex: 1, gap: 8, paddingHorizontal: GRID_PADDING, paddingBottom: 24 },
+  wrap: { flex: 1, gap: 8, paddingHorizontal: 0, paddingBottom: 24 },
   header: { minHeight: 48, alignItems: 'center', gap: 8 },
   title: { flex: 1 },
   scroll: { flex: 1 },

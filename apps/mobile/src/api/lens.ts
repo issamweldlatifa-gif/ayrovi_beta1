@@ -153,7 +153,7 @@ export interface LensBox {
   h: number;
 }
 
-/** Boîte de détection héritée (le fournisseur visuel actuel ne renvoie pas de boîtes). */
+/** Produit repéré par /localize, indépendant des pages marchandes SerpApi. */
 export interface LensDetectedProduct {
   name: string;
   category: string;
@@ -742,4 +742,11 @@ export function parseHistory(value: unknown): LensHistoryItem[] {
 export async function fetchLensHistory(limit = 30): Promise<LensHistoryItem[]> {
   const data = await apiGetData<unknown>(`${LENS_BASE}/history?limit=${Math.min(Math.max(1, limit), 100)}`);
   return parseHistory(data);
+}
+
+/** Image grounding is separate from merchant discovery: it never invents offers or prices. */
+export async function localizeImage(file: { uri: string; name: string; type: string }, options: { signal: AbortSignal; point?: { x: number; y: number } }): Promise<LensDetectedProduct[]> {
+  const data = await apiUploadFileData<{ products: LensDetectedProduct[] }>(`${LENS_BASE}/localize`, 'image', file, { signal: options.signal, timeoutMs: 22000, parameters: options.point ? { point: JSON.stringify(options.point) } : {} });
+  if (!Array.isArray(data.products)) throw new ApiError('malformed', 'Invalid localization');
+  return data.products.filter(p => p && typeof p.name === 'string' && p.box && [p.box.x,p.box.y,p.box.w,p.box.h].every(Number.isFinite) && p.box.x >= 0 && p.box.y >= 0 && p.box.w > 0 && p.box.h > 0 && p.box.x+p.box.w <= 1.001 && p.box.y+p.box.h <= 1.001);
 }

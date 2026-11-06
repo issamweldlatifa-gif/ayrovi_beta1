@@ -10,6 +10,7 @@ import { PrefsProvider } from '@/state/prefs';
 const mockTakePicture = jest.fn(async (_options?: Record<string, unknown>) => ({ uri: 'file:///lens-capture.jpg', width: 1200, height: 1600 }));
 const mockAnalyzeImage = jest.fn();
 const mockDetect = jest.fn();
+const mockLocalize = jest.fn();
 const mockRequestPermission = jest.fn(async () => ({ granted: true }));
 const mockPush = jest.fn();
 
@@ -39,6 +40,7 @@ jest.mock('expo-sensors', () => ({ Accelerometer: { isAvailableAsync: async () =
 
 jest.mock('@/api/lens', () => ({
   analyzeImage: (...args: unknown[]) => mockAnalyzeImage(...args),
+  localizeImage: (...args: unknown[]) => mockLocalize(...args),
   searchVisualMatches: (...args: unknown[]) => mockDetect(...args),
   analyzeUrl: jest.fn(),
   analyzeCode: jest.fn(),
@@ -98,6 +100,7 @@ describe('caméra Lens directe', () => {
     mockTakePicture.mockClear();
     mockAnalyzeImage.mockReset();
     mockDetect.mockReset();
+    mockLocalize.mockReset().mockResolvedValue([{ name: 'Veste', category: 'jacket', box: { x: .1, y: .2, w: .5, h: .4 } }]);
     mockRequestPermission.mockClear();
     mockPush.mockClear();
   });
@@ -116,10 +119,11 @@ describe('caméra Lens directe', () => {
     expect(await screen.findByTestId('lens-search-skeleton')).toBeTruthy();
     expect(screen.getByTestId('lens-captured-preview')).toBeTruthy();
     expect(shutterCalls()).toHaveLength(1);
-    // Cadre manuel, cadre = toute la photo → recherche sur toute la photo, sans `roi`.
+    // The grounded item, not the entire scene, is sent to merchant search.
     await waitFor(() => expect(mockAnalyzeImage).toHaveBeenCalledTimes(1));
-    expect(mockAnalyzeImage.mock.calls[0][1].roi).toBeUndefined();
-    // Une seule requête de reconnaissance visuelle : pas de détection séparée.
+    expect(mockAnalyzeImage.mock.calls[0][1].roi).toEqual({x:10,y:20,w:50,h:40});
+    expect(mockLocalize).toHaveBeenCalledTimes(1);
+    // Merchant matches are never mistaken for item coordinates.
     expect(mockDetect).not.toHaveBeenCalled();
 
     const signal = mockAnalyzeImage.mock.calls[0][1].signal as AbortSignal;
@@ -132,7 +136,7 @@ describe('caméra Lens directe', () => {
     expect(mockAnalyzeImage).toHaveBeenCalledTimes(1);
   });
 
-  it('cherche sur toute la photo : le cadre reste manuel, à l’utilisateur', async () => {
+  it('sélectionne automatiquement le vrai produit repéré, sans points ni poignées', async () => {
     mockDetect.mockResolvedValue(MATCHES);
     mockAnalyzeImage.mockResolvedValue(EMPTY_RESULT);
 
@@ -141,10 +145,10 @@ describe('caméra Lens directe', () => {
     await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
     fireEvent.press(capture);
 
-    // SerpApi ne rend pas de boîtes : le cadre part sur TOUTE la photo.
+    // Grounding happens separately from SerpApi merchant search.
     await waitFor(() => expect(mockAnalyzeImage).toHaveBeenCalledTimes(1));
-    expect(mockAnalyzeImage.mock.calls[0][1].roi).toBeUndefined();
-    expect(await screen.findByTestId('lens-selection-frame')).toBeTruthy();
+    expect(mockAnalyzeImage.mock.calls[0][1].roi).toEqual({x:10,y:20,w:50,h:40});
+    expect(await screen.findByTestId('lens-selected-product')).toBeTruthy();
     // Aucun point de produit : ce sont les pages, pas des zones, qu'on montre.
     expect(screen.queryByTestId('lens-product-dot-0')).toBeNull();
   });
@@ -170,6 +174,34 @@ describe('caméra Lens directe', () => {
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 50)); });
     await waitFor(() => expect(screen.queryByTestId('lens-search-ring')).toBeNull());
     expect(screen.queryByTestId('lens-search-scan')).toBeNull();
+  });
+
+  it('annonce honnêtement la panne du repérage et cherche la photo entière, sans cadre inventé', async () => {
+    mockLocalize.mockRejectedValue(new Error('unavailable'));
+    mockAnalyzeImage.mockResolvedValue(EMPTY_RESULT);
+    render(wrap(<LensScreen />));
+    const capture = await screen.findByTestId('lens-capture');
+    await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
+    fireEvent.press(capture);
+    await waitFor(() => expect(mockAnalyzeImage).toHaveBeenCalledTimes(1));
+    expect(mockAnalyzeImage.mock.calls[0][1].roi).toBeUndefined();
+    expect(screen.queryByTestId('lens-selected-product')).toBeNull();
+    expect(screen.getByText('Sélection automatique indisponible. La recherche sur la photo entière reste disponible.')).toBeTruthy();
+  });
+
+  it('annule le repérage si on ferme avant sa réponse et ignore sa sélection périmée', async () => {
+    let resolveGround!: (value: unknown) => void;
+    mockLocalize.mockReturnValue(new Promise(resolve=>{resolveGround=resolve;}));
+    render(wrap(<LensScreen />));
+    const capture = await screen.findByTestId('lens-capture');
+    await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
+    fireEvent.press(capture);
+    await waitFor(() => expect(mockLocalize).toHaveBeenCalledTimes(1));
+    const signal=mockLocalize.mock.calls[0][1].signal;
+    fireEvent.press(screen.getByTestId('lens-search-cancel'));
+    expect(signal.aborted).toBe(true);
+    await act(async()=>resolveGround([{name:'Sac',box:{x:.1,y:.1,w:.3,h:.3}}]));
+    expect(mockAnalyzeImage).not.toHaveBeenCalled();
   });
 
   it('barre des modes sous les boutons, menu ⋮ et Produits interdits', async () => {

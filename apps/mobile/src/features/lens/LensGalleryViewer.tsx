@@ -22,7 +22,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AppText } from '@/design/ui';
 import { SPACE } from '@/design/tokens.generated';
 import { useTheme } from '@/design/theme';
-import { veil } from '@/design/tokens.mobile';
+import { RADIUS, veil } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
 import { LENS_COLORS } from './lensPalette';
 
@@ -105,7 +105,7 @@ export function LensGalleryViewer({
             style={({ pressed }) => [styles.closeButton, { opacity: pressed ? theme.opacity.subtle : 1 }]}
             testID="lens-gallery-viewer-close"
           >
-            <Ionicons name="close" size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
+            <Ionicons name="arrow-back" size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
           </Pressable>
           {media.length > 1 ? (
             <View style={styles.counter}>
@@ -179,9 +179,8 @@ const styles = StyleSheet.create({
   chrome: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 12, alignItems: 'center' },
   closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   crispIcon: { textShadowColor: veil(0.55), textShadowRadius: 3, textShadowOffset: { width: 0, height: 1 } },
-  counter: { marginStart: 'auto', paddingHorizontal: 6, paddingVertical: 4 },
+  counter: { marginStart: 'auto', paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADIUS.full, backgroundColor: LENS_COLORS.resultLine },
   counterText: {
-    color: LENS_COLORS.white,
-    textShadowColor: veil(0.55), textShadowRadius: 3, textShadowOffset: { width: 0, height: 1 },
+    color: LENS_COLORS.black,
   },
 });

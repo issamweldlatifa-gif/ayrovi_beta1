@@ -38,7 +38,7 @@ import { useT, type TranslationKey } from '@/i18n';
 import { ApiError, isApiError } from '@/api/errors';
 import { addExternalFavorite } from '@/api/account';
 import {
-  analyzeBarcode, analyzeCode, analyzeText, analyzeUrl, searchVisualMatches, markChosen,
+  localizeImage, analyzeBarcode, analyzeCode, analyzeText, analyzeUrl, searchVisualMatches, markChosen,
   type LensBox, type LensCandidate, type LensDetectedProduct, type LensHistoryItem, type LensIdentification,
   type LensVisualMatch,
   type LensSearchResult,
@@ -60,7 +60,7 @@ import { LensLiveOverlay } from '@/features/lens/LensLiveOverlay';
 import { LensSelectionView, type SelectionCommit } from '@/features/lens/LensSelectionView';
 import { LENS_COLORS } from '@/features/lens/lensPalette';
 import { shrinkImage } from '@/features/lens/lensImage';
-import { FULL_BOX, isFullFrame, padBox, selectionKey, toRoi } from '@/features/lens/lensSelection';
+import { FULL_BOX, biggestProductIndex, isFullFrame, padBox, selectionKey, toRoi } from '@/features/lens/lensSelection';
 import { initialMotion, isSteady, nextMotion, shouldDetect, type MotionState } from '@/features/lens/lensLive';
 import {
   clampLensSheet, lensSheetGeometry, lensSheetOwnsPan, snapLensSheet, toggleLensSheet, type LensSheetGeometry,
@@ -111,7 +111,7 @@ interface SessionPhoto {
   cleanup: string[];
   detection: 'pending' | 'done' | 'failed';
   products: LensDetectedProduct[];
-  /** Produit sélectionné (index), ou -1 pour une zone tracée à la main. */
+  /** Produit repéré sélectionné, ou -1 pour la photo entière sans repérage fiable. */
   selected: number;
   selection: LensBox;
 }
@@ -342,6 +342,7 @@ export default function LensScreen() {
   const photoLock = useRef(false);
   const favoriteLocks = useRef(new Set<string>());
   const requestRef = useRef<AbortController | null>(null);
+  const localizationRef = useRef<AbortController | null>(null);
   const lastJobRef = useRef<SearchJob | null>(null);
   const ownedPreviewRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
@@ -368,6 +369,7 @@ export default function LensScreen() {
     const current = sessionRef.current;
     sessionRef.current = null;
     resultsCache.current.clear();
+    localizationRef.current?.abort();
     if (searchTimer.current) clearTimeout(searchTimer.current);
     current?.photos.forEach((photo) => photo.cleanup.forEach(removePrivateCapture));
     setSession(null);
@@ -381,7 +383,8 @@ export default function LensScreen() {
       mountedRef.current = false;
       subscription.remove();
       requestRef.current?.abort();
-        if (searchTimer.current) clearTimeout(searchTimer.current);
+      localizationRef.current?.abort();
+      if (searchTimer.current) clearTimeout(searchTimer.current);
       if (tipTimer.current) clearTimeout(tipTimer.current);
       discardOwnedPreview();
       sessionRef.current?.photos.forEach((photo) => photo.cleanup.forEach(removePrivateCapture));
@@ -511,33 +514,82 @@ export default function LensScreen() {
     void run(job);
   }, [run, showSearch]);
 
-  /** Garde le cadre manuel de la photo, puis lance la recherche SerpApi. */
-  /*
-   * PAS DE DÉTECTION SÉPARÉE (17/10/2026) : SerpApi EST l'entrée de la
-   * recherche visuelle, et la recherche le fait UNE seule fois. Un appel de
-   * détection en plus, c'est une requête SerpApi de plus pour la même photo.
-   * SerpApi ne rend pas de boîtes de toute façon : le cadre reste MANUEL
-   * (toute la photo), et ce sont les résultats qui disent ce qu'on a trouvé.
-   */
-  const preparePhoto = useCallback(async (photoKey: string) => {
-    const photo = sessionRef.current?.photos.find((item) => item.key === photoKey);
-    if (!photo) return;
-    if (photo.detection !== 'pending') {
-      searchSelection(photo);
-      return;
-    }
-    requestRef.current?.abort();
-    setStage({ kind: 'busy', progress: null, identification: null, cards: [] });
-    const updated = patchPhoto(photoKey, {
-      detection: 'done',
-      products: [],
-      selected: -1,
-      selection: FULL_BOX,
-    });
-    if (!updated) return;
-    showTip('lens.select.frame');
-    if (sessionRef.current?.photos[sessionRef.current.index]?.key === photoKey) searchSelection(updated);
-  }, [patchPhoto, searchSelection, showTip]);
+  /** Ground shopping objects independently of merchant search. No synthetic boxes on failure. */
+  const groundPhoto = useCallback(
+    async (photoKey: string, point?: { x: number; y: number }) => {
+      const photo = sessionRef.current?.photos.find(
+        (item) => item.key === photoKey
+      );
+      if (!photo) return;
+      requestRef.current?.abort();
+      localizationRef.current?.abort();
+      const controller = new AbortController();
+      localizationRef.current = controller;
+      patchPhoto(photoKey, { detection: 'pending' });
+      setStage({ kind: 'busy', progress: null, identification: null, cards: [] });
+      try {
+        const products = await localizeImage(
+          { uri: photo.uri, name: 'capture.jpg', type: 'image/jpeg' },
+          { signal: controller.signal, point }
+        );
+        if (
+          controller.signal.aborted ||
+          sessionRef.current?.photos[sessionRef.current.index]?.key !== photoKey
+        )
+          return;
+        if (point && !products.length) {
+          patchPhoto(photoKey, {
+            detection: 'done',
+            selected: -1,
+            selection: FULL_BOX,
+          });
+          setStage({ kind: 'idle' });
+          showTip('lens.select.noObject');
+          return;
+        }
+        const selected = point ? 0 : biggestProductIndex(products);
+        const updated = patchPhoto(photoKey, {
+          detection: 'done',
+          products,
+          selected,
+          selection: selected >= 0 ? products[selected].box : FULL_BOX,
+        });
+        if (updated) {
+          if (!products.length) showTip('lens.select.noObject');
+          searchSelection(updated);
+        }
+      } catch {
+        if (
+          controller.signal.aborted ||
+          sessionRef.current?.photos[sessionRef.current.index]?.key !== photoKey
+        )
+          return;
+        const updated = patchPhoto(photoKey, {
+          detection: 'failed',
+          products: [],
+          selected: -1,
+          selection: FULL_BOX,
+        });
+        if (updated) {
+          showTip('lens.select.unavailable');
+          if (!point) searchSelection(updated);
+          else setStage({ kind: 'idle' });
+        }
+      }
+    },
+    [patchPhoto, searchSelection, showTip]
+  );
+  const preparePhoto = useCallback(
+    async (photoKey: string) => {
+      const photo = sessionRef.current?.photos.find(
+        (item) => item.key === photoKey
+      );
+      if (!photo) return;
+      if (photo.detection === 'done') searchSelection(photo);
+      else await groundPhoto(photoKey);
+    },
+    [groundPhoto, searchSelection]
+  );
 
   const openSession = useCallback((photos: SessionPhoto[]) => {
     const previous = sessionRef.current;
@@ -547,25 +599,37 @@ export default function LensScreen() {
     void preparePhoto(photos[0].key);
   }, [preparePhoto, writeSession]);
 
-  const onSelectionCommit = useCallback((commit: SelectionCommit) => {
-    const current = sessionRef.current;
-    const photo = current?.photos[current.index];
-    if (!photo) return;
-    // Cancel the previous ROI immediately, not after the gesture debounce.
-    requestRef.current?.abort();
-    const patch: Partial<SessionPhoto> = commit.kind === 'product'
-      ? { selected: commit.index, selection: padBox(photo.products[commit.index]?.box ?? FULL_BOX) }
-      : { selected: -1, selection: commit.box };
-    const updated = patchPhoto(photo.key, patch);
-    if (!updated) return;
-    setTip(null);
-    // Petit délai : enchaîner deux gestes ne lance qu'une recherche.
-    if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => {
-      const latest = sessionRef.current?.photos.find((item) => item.key === updated.key);
-      if (latest) searchSelection(latest);
-    }, commit.kind === 'product' ? 120 : 350);
-  }, [patchPhoto, searchSelection]);
+  const onSelectionCommit = useCallback(
+    (commit: SelectionCommit) => {
+      const current = sessionRef.current;
+      const photo = current?.photos[current.index];
+      if (!photo) return;
+      requestRef.current?.abort();
+      localizationRef.current?.abort();
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+      if (commit.kind === 'point') {
+        void groundPhoto(photo.key, commit.point);
+        return;
+      }
+      const product = photo.products[commit.index];
+      if (!product) return;
+      const updated = patchPhoto(photo.key, {
+        detection: 'done',
+        selected: commit.index,
+        selection: product.box,
+      });
+      if (!updated) return;
+      setTip(null);
+      searchTimer.current = setTimeout(() => {
+        if (
+          sessionRef.current?.photos[sessionRef.current.index]?.key ===
+          updated.key
+        )
+          searchSelection(updated);
+      }, 120);
+    },
+    [groundPhoto, patchPhoto, searchSelection]
+  );
 
   const showPhotoAt = useCallback((index: number) => {
     const current = sessionRef.current;
@@ -760,7 +824,7 @@ export default function LensScreen() {
         width: working.width || picture.width,
         height: working.height || picture.height,
         cleanup: working.created ? [working.uri] : [],
-        detection: reuse ? 'done' : 'pending',
+        detection: 'pending',
         products: reuse ? view.products : [],
         selected: reuse ? view.selected : -1,
         selection: reuse && view.products[view.selected] ? padBox(view.products[view.selected].box) : FULL_BOX,

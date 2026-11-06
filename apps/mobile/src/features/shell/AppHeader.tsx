@@ -9,8 +9,9 @@
  * Le tiroir regroupe des destinations réellement câblées (Accueil, Catalogue,
  * Commandes et Compte). Aucun élément décoratif n’est rendu cliquable.
  */
+import Svg, { Path } from 'react-native-svg';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -49,7 +50,7 @@ function HeaderIcon({
       ]}
       hitSlop={8}
     >
-      <Ionicons name={name} size={theme.iconSize.md} color={color} />
+      <>{name === 'menu-outline' ? <Svg width={theme.iconSize.md} height={theme.iconSize.md} viewBox="0 0 24 24" {...(Platform.OS === 'web' ? { 'aria-hidden': true as const } : { accessibilityElementsHidden: true })}><Path d="M4 8h16M4 16h10" stroke={color} strokeWidth={1.5} strokeLinecap="round" /></Svg> : <Ionicons name={name} size={theme.iconSize.md} color={color} />}</>
     </Pressable>
   );
 }
@@ -100,7 +101,7 @@ export function AppHeader({
           styles.bar,
           {
             height: insets.top + theme.chrome.header,
-            paddingTop: insets.top + theme.space[2],
+            paddingTop: insets.top + theme.space[1],
             paddingBottom: theme.space[1],
             paddingHorizontal: theme.space[2],
             flexDirection: row,

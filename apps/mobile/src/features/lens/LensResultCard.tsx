@@ -3,6 +3,7 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import type { LensCandidate } from '@/api/lens';
+import { LensCardGallery } from './LensCardGallery';
 import { LensResultMedia } from './LensResultMedia';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -34,6 +35,7 @@ function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Pr
   const t = useT();
   const intro = useRef(new Animated.Value(theme.motion.reduced === 0 ? 1 : 0)).current;
   const media = lensMediaChain(candidate.image || candidate.images[0] || '', 'card');
+  const images = [...new Set([candidate.image, ...candidate.images].filter((uri): uri is string => !!uri))];
   const brand = candidate.brand?.trim() || candidate.source.trim();
   /* Titre PRODUIT, pas titre de page (28/10/2026) : la boutique est déjà écrite
      en gras juste au-dessus, inutile de la répéter dans le titre. */
@@ -59,7 +61,7 @@ function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Pr
       ]}
     >
         <View style={styles.mediaWrap}>
-          {media.length ? (
+          {images.length > 1 ? <LensCardGallery images={images} title={title} onOpen={() => onOpen(candidate)} testID={`lens-result-${candidate.id}`} accessibilityLabel={t('lens.viewProduct', { title })} /> : media.length ? (
             <LensResultMedia key={media.join('|')} sources={media} title={title} onOpen={() => onOpen(candidate)} testID={`lens-result-${candidate.id}`} accessibilityLabel={t('lens.viewProduct', { title })} />
           ) : (
             <Pressable onPress={() => onOpen(candidate)} accessibilityRole="button" accessibilityLabel={t('lens.viewProduct', { title })} testID={`lens-result-${candidate.id}`} style={styles.mediaFallback}>

@@ -9,7 +9,7 @@
  * JavaScript, sans charger l'image en base64 dans Hermes. Authentification,
  * délai et enveloppe API restent identiques au client partagé.
  */
-import { apiUrl, authHeaders } from './client';
+import { apiUrl, authHeaders, apiSendData } from './client';
 import { failureFrom, parseRetryAfter, unwrap } from './envelope';
 import { ApiError, isApiError } from './errors';
 
@@ -60,6 +60,18 @@ export async function apiUploadFileData<T>(
   }, options.timeoutMs ?? 60_000);
 
   try {
+    // Web has no expo-file-system File.upload bridge. Upload an actual Blob,
+    // never React Native's {uri,name,type} object serialized as text.
+    if (typeof document !== 'undefined') {
+      const response = await fetch(uri, { signal: controller.signal });
+      if (!response.ok) throw new ApiError('device', 'La photo locale est illisible.');
+      const blob = await response.blob();
+      if (!blob.size) throw new ApiError('device', 'La photo locale est vide.');
+      const form = new FormData();
+      form.append(fieldName, blob, input.name);
+      for (const [key, value] of Object.entries(options.parameters || {})) form.append(key, value);
+      return await apiSendData<T>('POST', path, { form, signal: controller.signal, timeoutMs: options.timeoutMs, headers: options.headers });
+    }
     // Import dynamique : les tests Node peuvent valider les parseurs sans
     // initialiser un module natif Android/iOS.
     const { File, UploadType } = await import('expo-file-system');

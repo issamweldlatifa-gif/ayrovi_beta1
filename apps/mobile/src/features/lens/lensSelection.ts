@@ -1,19 +1,8 @@
 /**
- * Z Lens — géométrie du cadre de sélection (sans React, testable directement).
- *
- * Règles voulues par le client (16/10/2026), pour Live, la photo prise et la
- * photo importée :
- *  • un seul produit dans l'image → le cadre aux coins arrondis le sélectionne ;
- *  • plusieurs produits → le PLUS GRAND est sélectionné d'office ;
- *  • toucher un autre produit le sélectionne : le cadre prend sa forme
- *    (rectangle ou carré selon le produit) et la recherche se relance ;
- *  • le cadre s'agrandit par ses coins et se déplace au doigt.
- *
- * Même logique que le Lens du site (`client/src/ayrovix/services/lensSelectionGeometry.ts`) :
- * toucher = la plus PETITE boîte qui contient le doigt (un produit posé sur un
- * autre reste atteignable), sinon une zone de 30 % autour du doigt.
- *
- * Toutes les boîtes sont normalisées 0..1 sur l'image redressée.
+ * Normalized image geometry shared by Lens overlays and ROI search.
+ * Current photo selection uses grounded product boxes only (6 November 2026):
+ * largest item initially, smallest containing item on a tap. Legacy manual
+ * geometry helpers below remain pure utilities, not an active selection UI.
  */
 import type { LensBox, LensDetectedProduct } from '@/api/lens';
 

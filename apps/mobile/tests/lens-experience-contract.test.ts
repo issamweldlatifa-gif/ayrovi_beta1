@@ -68,7 +68,7 @@ describe('chargement et résultats Lens', () => {
     expect(skeleton).toContain('[0, 1, 2, 3]');
     expect(skeleton).toContain('lens-skeleton-card-');
     expect(skeleton).toContain('flexWrap: \'wrap\'');
-    expect(skeleton).toContain('const GRID_GAP = 4');
+    expect(skeleton).toContain('const GRID_GAP = 2');
     expect(skeleton).toContain("width: '49.3%'");
     expect(skeleton).toContain('minOpacity={0.48}');
     expect(skeleton).toContain("t('common.cancel')");
@@ -247,20 +247,15 @@ describe('Z Lens — option 3 voulue par le client (16/10/2026)', () => {
     expect(liveOverlay).toContain('productIndexAt(');
   });
 
-  it('le cadre reste MANUEL : SerpApi ne rend pas de boîtes', () => {
-    // 17/10/2026 : la détection passe par SerpApi, qui rend des PAGES
-    // ressemblantes, pas des itinéraires. Le cadre est donc celui de
-    // l'utilisateur (toute la photo au départ), jamais une boîte devinée.
-    expect(lens).toContain('selection: FULL_BOX');
-    expect(lens).not.toContain('biggestProductIndex(');
+  it('repère les produits avant la recherche puis permet de toucher un autre article sans cadre manuel', () => {
+    expect(lens).toContain('localizeImage(');
+    expect(lens).toContain('biggestProductIndex(products)');
     expect(lens).toContain('const roi = toRoi(photo.selection)');
-    // L'analyse reçoit la zone cliquée ET le signal d'annulation — désormais
-    // en flux (SSE) : l'identification et les fiches arrivent au fil de l'eau.
     expect(lens).toContain('analyzeImageStream(');
-    expect(lens).toMatch(/roi,\s*\n\s*signal,/);
-    expect(selectionView).toContain('resizeSelection(');
-    expect(selectionView).toContain('moveSelection(');
-    expect(selectionView).toContain('productIndexAt(found, point)');
+    expect(selectionView).not.toMatch(/resizeSelection\(|moveSelection\(|zoneAround\(|PanResponder/);
+    expect(selectionView).toContain('productIndexAt(products, point)');
+    expect(selectionView).toContain('blurRadius={selected ? 18 : 0}');
+    expect(selectionView).toContain("{ kind: 'point', point }");
   });
 
   it('la galerie ouvre la galerie du client, plusieurs photos à la fois', () => {

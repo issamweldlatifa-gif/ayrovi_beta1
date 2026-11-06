@@ -199,6 +199,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/lens/LensProductView.tsx', // galerie : en-tête fixe, badges et aide zoom au-dessus des images
       'src/features/publications/PublicationCard.tsx', // authored campaign caption plate overlays its own media, not page layout
       'src/features/lens/LensResultCard.tsx', // badge promo et favori posés sur la vignette produit
+      'src/features/lens/LensCardGallery.tsx', // page-count overlay on retail images
       'src/features/lens/LensSelectionView.tsx', // Z Lens : photo, voile, cadre de sélection et points posés les uns sur les autres
       'src/features/lens/LensLiveOverlay.tsx', // Z Lens Live : cadre et points posés sur l'aperçu caméra plein écran
       'src/features/lens/LensMenu.tsx', // menu ⋮ flottant au-dessus de la caméra, sous son bouton

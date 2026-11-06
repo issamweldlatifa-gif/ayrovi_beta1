@@ -77,6 +77,7 @@ export function LensResultsGrid({
       data={shown}
       style={styles.list}
       numColumns={2}
+      stickyHeaderIndices={[0]}
       keyExtractor={(candidate) => candidate.sourceUrl || candidate.id}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
@@ -142,10 +143,10 @@ export function LensResultsGrid({
 const styles = StyleSheet.create({
   pending: { flexDirection: 'row', gap: 4 },
   list: { flex: 1 },
-  content: { paddingHorizontal: 4, paddingTop: 4, paddingBottom: 32, gap: 4 },
-  row: { gap: 4, alignItems: 'stretch', backgroundColor: LENS_COLORS.white },
+  content: { paddingHorizontal: 0, paddingTop: 0, paddingBottom: 32, gap: 4 },
+  row: { gap: 2, alignItems: 'stretch', backgroundColor: LENS_COLORS.white },
   cell: { flex: 0.5, minWidth: 0, marginBottom: 4 },
-  header: { gap: 8, paddingHorizontal: 8, paddingTop: 2, paddingBottom: 12 },
+  header: { backgroundColor: LENS_COLORS.white, gap: 8, paddingHorizontal: 8, paddingTop: 2, paddingBottom: 12 },
   headerRow: { alignItems: 'center', gap: 12 },
   headerCopy: { flex: 1, gap: 2 },
   newSearch: { width: 48, height: 48, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },

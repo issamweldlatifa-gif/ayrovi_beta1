@@ -1,3 +1,4 @@
+import { localizeProducts } from './services/productLocalization';
 import { Router } from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
@@ -233,6 +234,28 @@ async function searchByCodeOrText(db: QatafoDatabase, value: string): Promise<Ay
 export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScraper): Router {
   const router = Router();
 
+  router.post('/localize', upload.single('image'), async (req, res) => {
+    if (!req.file) return res.status(400).json({ success: false, code: 'IMAGE_REQUIRED' });
+    let point: { x: number; y: number } | undefined;
+    if (req.body?.point) {
+      try { point = JSON.parse(req.body.point); } catch { return res.status(400).json({ success: false, code: 'INVALID_POINT' }); }
+      if (!point || ![point.x,point.y].every(v => typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= 1)) return res.status(400).json({ success: false, code: 'INVALID_POINT' });
+    }
+    const controller = new AbortController();
+    const onClose = () => { if (!res.writableEnded) controller.abort(); };
+    res.on('close', onClose);
+    try {
+      const image = await normalizeUploadedImage(req.file.buffer, req.file.mimetype);
+      const products = await localizeProducts(image.buffer, image.mimeType, point, controller.signal);
+      if (controller.signal.aborted || res.destroyed) return;
+      return res.json({success:true,data:{products}});
+    } catch (error) {
+      if (controller.signal.aborted || res.destroyed) return;
+      if (error instanceof InvalidImageError) return res.status(400).json({success:false,code:'INVALID_IMAGE'});
+      return res.status(503).json({success:false,code:'LOCALIZATION_UNAVAILABLE',error:'Sélection automatique indisponible. Réessayez ou recherchez la photo entière.'});
+    } finally { res.off('close', onClose); }
+  });
+
   router.get('/history', (req: Request, res: Response) => {
     const customer = resolveCustomer(db, req);
     if (!customer) return res.json({ success: true, data: [] });
@@ -313,7 +336,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
       mark(trace, 'normalizeMs', Date.now() - tNorm);
       // D2-8: backend ROI crop — if frontend sends roi (x,y,w,h % 0..100), crop server-side and avoid second upload
-      // keeps 18% pad like canvas, uses sharp extract on normalized buffer
+      // Grounded item boxes stay tight; use Sharp on the same upright normalized image.
       let effectiveBuffer = normalized.buffer;
       let effectiveMime: typeof normalized.mimeType = normalized.mimeType;
       const roiRaw = String((req.body as any)?.roi || (req.body as any)?.box || '').trim();
@@ -321,13 +344,13 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         try {
           const roi = JSON.parse(roiRaw);
           let x = Number(roi.x), y = Number(roi.y), w = Number(roi.w), h = Number(roi.h);
-          if ([x, y, w, h].every((n) => Number.isFinite(n)) && w > 2 && h > 2 && w <= 100 && h <= 100) {
+          if ([x, y, w, h].every((n) => Number.isFinite(n)) && w >= 2 && h >= 2 && w <= 100 && h <= 100) {
             x = Math.max(0, Math.min(100, x)); y = Math.max(0, Math.min(100, y));
             w = Math.max(2, Math.min(100 - x, w)); h = Math.max(2, Math.min(100 - y, h));
             const nx = normalized.width, ny = normalized.height;
             let px = Math.round((x / 100) * nx), py = Math.round((y / 100) * ny);
             let pw = Math.round((w / 100) * nx), ph = Math.round((h / 100) * ny);
-            const pad = Math.max(24, Math.max(pw, ph) * 0.18);
+            const pad = 0; // Grounded ROI: do not reintroduce neighbouring products.
             let padX = Math.round(px - pad), padY = Math.round(py - pad);
             let padW = Math.round(pw + pad * 2), padH = Math.round(ph + pad * 2);
             if (padX < 0) { padW += padX; padX = 0; }

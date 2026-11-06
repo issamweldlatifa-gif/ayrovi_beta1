@@ -228,7 +228,7 @@ const configuredLensDailyLimit = Number(process.env.AYROVIX_LENS_IP_DAILY_LIMIT)
 const lensDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredLensDailyLimit) ? Math.max(5, Math.min(200, configuredLensDailyLimit)) : 40;
 const ayrovixDailyCostLimit = rateLimit('ayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000, clientRateLimitKey);
-const costlyAyrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
+const costlyAyrovixPaths = new Set(['/localize', '/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
 // Z Lens mobile : la détection seule (cadre de sélection + Live) a son PROPRE
 // compteur. Live interroge la caméra quand le téléphone se stabilise : sur le
 // compteur général (12 / 10 min, partagé avec les recherches), quelques visées

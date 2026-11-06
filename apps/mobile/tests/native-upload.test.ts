@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiUploadFileData } from '../src/api/nativeUpload';
 import { API_BASE_URL } from '../src/api/config';
 
@@ -73,5 +73,21 @@ describe('upload natif des photos', () => {
       'image',
       { uri: 'file:///cache/photo.jpg', name: 'capture.jpg', type: 'image/jpeg' },
     )).rejects.toMatchObject({ kind: 'http', status: 429, code: 'RATE_LIMITED', retryAfterMs: 3_000 });
+  });
+});
+
+
+describe('upload web réel, sans pont de fichiers natif', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it('transmet un Blob multipart et les coordonnées, jamais [object Object]', async () => {
+    vi.stubGlobal('document', {});
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(new Blob(['image-bytes'], {type:'image/jpeg'}))).mockResolvedValueOnce(new Response(JSON.stringify({success:true,data:{products:[]}}), {status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch', fetchMock);
+    const result=await apiUploadFileData('/api/ayrovix/localize','image',{uri:'blob:photo',name:'capture.jpg',type:'image/jpeg'},{parameters:{point:'{"x":0.5,"y":0.4}'}});
+    expect(result).toEqual({products:[]});
+    const form=fetchMock.mock.calls[1][1].body as FormData;
+    expect(form.get('image')).toBeInstanceOf(Blob);
+    expect(await (form.get('image') as Blob).text()).toBe('image-bytes');
+    expect(form.get('point')).toBe('{"x":0.5,"y":0.4}');
   });
 });

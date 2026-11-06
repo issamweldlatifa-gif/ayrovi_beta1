@@ -26,9 +26,10 @@ describe('Z Lens — la reconnaissance visuelle parle, la recherche progresse', 
     expect(lens).not.toContain('DETECTION_FAILED');
   });
 
-  it('le cadre reste manuel : pas de boîtes, pas de cible devinée', () => {
+  it('sépare le repérage réel des produits des pages similaires SerpApi', () => {
     expect(lens).toContain('selection: FULL_BOX');
-    expect(lens).not.toContain('biggestProductIndex(');
+    expect(lens).toContain('localizeImage(');
+    expect(lens).toContain('biggestProductIndex(products)');
     expect(lens).toContain('const roi = toRoi(photo.selection)');
   });
 

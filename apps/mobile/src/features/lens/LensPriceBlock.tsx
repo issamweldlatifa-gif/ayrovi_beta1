@@ -23,6 +23,7 @@ export function LensPriceBlock({
   const theme = useTheme();
   const t = useT();
   const view = pricePresentation(candidate);
+  if (view.current.kind === 'none') return null;
   const currentText = view.current.kind === 'tnd'
     ? formatMoney(view.current.amount)
     : view.current.kind === 'original'

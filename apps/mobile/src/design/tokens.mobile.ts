@@ -37,8 +37,8 @@ import { BRAND, COLORS, GEOMETRY, MOTION, NEUTRALS, SPACE } from './tokens.gener
  * « devinaient » leur marge haute chacun à leur façon.
  */
 export const CHROME = {
-  // Safe-area–externe Höhe: 12 top + 44 cible tactile + 8 bottom.
-  header: 64,
+  // Hors safe area : 8 top + 44 cible tactile + 4 bottom.
+  header: 56,
   tabBar: 56,
   tabStrip: 40,
   /** Hauteur compacte et élégante des boutons d'action (inspirée Privé / Zalando). */

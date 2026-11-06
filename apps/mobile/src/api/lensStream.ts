@@ -344,11 +344,20 @@ export function analyzeImageStream(
 
     try {
       const form = new FormData();
-      // Le fichier est lu par la couche native (file://) : pas de base64, pas
-      // de copie en mémoire JavaScript.
-      form.append('image', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
       if (options.roi) form.append('roi', JSON.stringify(options.roi));
-      xhr.send(form);
+      if (typeof document !== 'undefined') {
+        void fetch(file.uri, { signal: options.signal }).then(async response => {
+          if (!response.ok) throw new Error('IMAGE_FILE_UNREADABLE');
+          const blob = await response.blob();
+          if (settled) return;
+          form.append('image', blob, file.name);
+          xhr.send(form);
+        }).catch(error => fail(new ApiError('device', "La photo n'a pas pu être envoyée.", { code: 'IMAGE_UPLOAD_FAILED', cause: error })));
+      } else {
+        // Native multipart reads file:// without loading base64 into Hermes.
+        form.append('image', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
+        xhr.send(form);
+      }
     } catch (error) {
       fail(new ApiError('device', "La photo n'a pas pu être envoyée.", { code: 'IMAGE_UPLOAD_FAILED', cause: error }));
     }

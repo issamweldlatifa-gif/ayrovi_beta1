@@ -1428,13 +1428,10 @@ const styles = StyleSheet.create({
   promoBadgeLTR: { left: 14 },
   promoBadgeRTL: { right: 14 },
   promoText: { color: LENS_COLORS.white },
-  counter: { position: 'absolute', bottom: 16, paddingHorizontal: 4, paddingVertical: 4 },
+  counter: { position: 'absolute', bottom: 16, paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADIUS.full, backgroundColor: LENS_COLORS.resultLine },
   counterLTR: { right: 14 },
   counterRTL: { left: 14 },
-  counterText: {
-    color: LENS_COLORS.white,
-    textShadowColor: veil(0.55), textShadowRadius: 3, textShadowOffset: { width: 0, height: 1 },
-  },
+  counterText: { color: LENS_COLORS.black },
   detailsSheet: {
     marginTop: -SPACE[4], minHeight: 500,
     paddingHorizontal: 16, paddingTop: 4, paddingBottom: 24, gap: 8,
