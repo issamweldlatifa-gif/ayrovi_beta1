@@ -17,6 +17,7 @@
  * ما يتلزّقش بتقدير من الجهاز.
  */
 import { useCallback, useState } from 'react';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useIsFocused } from 'expo-router';
 
@@ -95,17 +96,17 @@ export default function HomeScreen() {
       testID="home"
     >
       {/* الهيرو الوحيد والديناميكي : يُدار كله من Admin → Hero (بطاقات + إعدادات). */}
-      <HeroCarousel
-        settings={heroCarouselSettings}
-        slides={heroSlides}
-        onActiveBackgroundChange={setHeroBackground}
-      />
+      <View testID="home-hero-tabs">
+        <HeroCarousel
+          settings={heroCarouselSettings}
+          slides={heroSlides}
+          onActiveBackgroundChange={setHeroBackground}
+        />
 
-      {/* التبويبات تظهر على نفس لون نهاية تدرّج الهيرو لانتقال بصري متصل. */}
-      {/* التبويبات الثلاث — يفتحو جوّا التطبيق */}
-      <HomeTabs />
-
-      <SectionRule />
+        {/* التبويبات تظهر على نفس لون نهاية تدرّج الهيرو لانتقال بصري متصل. */}
+        {/* التبويبات الثلاث — يفتحو جوّا التطبيق */}
+        <HomeTabs />
+      </View>
 
       {/* Dernière publication du magazine — « Découvrir » ouvre la page Publications. */}
       <FeaturedPublication />

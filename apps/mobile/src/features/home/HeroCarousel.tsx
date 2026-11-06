@@ -43,7 +43,7 @@ import {
 } from './heroCarouselLogic';
 
 /** Zone de fondu sous les cartes : relie le fond du héros au fond blanc de la page. */
-const SECTION_BOTTOM_GAP = 64;
+const SECTION_BOTTOM_GAP = 12;
 /** Marge au-dessus du bas de l'image pour les pastilles (posées SUR la photo). */
 
 /* ── États du composant parent ───────────────────────────────────────────── */

@@ -5,6 +5,7 @@
  * principale. Chaque libellé ouvre un écran NATIF de l’application.
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { HomeTabs } from '../../src/features/home/HomeTabs';
 import { ThemeProvider } from '../../src/design/theme';
@@ -39,6 +40,17 @@ describe('HomeTabs', () => {
     expect(tabs).toHaveLength(3);
     // Texte seul : aucune icône Ionicons rendue dans la rangée.
     expect(screen.UNSAFE_queryAllByType(require('@expo/vector-icons/Ionicons').default)).toHaveLength(0);
+  });
+
+  it('garde une bande compacte, bordée et un soulignement fin', async () => {
+    await renderTabs();
+    const strip = StyleSheet.flatten(screen.getByTestId('home-tabs').props.style);
+    expect(strip.borderTopWidth).toBe(1);
+    expect(strip.borderBottomWidth).toBe(1);
+    expect(StyleSheet.flatten(screen.getByTestId('home-tab-underline').props.style).height).toBe(1);
+    for (const tab of screen.getAllByRole('tab')) {
+      expect(StyleSheet.flatten(tab.props.style).minHeight).toBeGreaterThanOrEqual(44);
+    }
   });
 
   it('chaque onglet ouvre une route de l’application (pas une URL de site)', async () => {
