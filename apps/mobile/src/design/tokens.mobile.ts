@@ -654,7 +654,7 @@ export type DerivedColors = ReturnType<typeof derivedColors>;
  *   • `xxl` 64 — giciel de substitution plein écran (viseur caméra indisponible).
  */
 /** Optical sizing for the compact Publication feed; touch targets remain >= 44 pt. */
-export const PUBLICATION_METRICS = { icon: 22, verified: 16, avatar: 36 } as const;
+export const PUBLICATION_METRICS = { icon: 22, verified: 16, avatar: 36, productGap: 8 } as const;
 
 export const ICON_SIZE = {
   xs: 14,

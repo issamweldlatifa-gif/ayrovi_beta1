@@ -7,56 +7,418 @@ import { AppImage } from '@/design/appImage';
 import { AppText } from '@/design/ui';
 import { mediaUrl } from '@/api/client';
 import { useI18n } from '@/i18n';
-import { ICON_SIZE, PUBLICATION_THEME as P, RADIUS, VIDEO_BACKDROP } from '@/design/tokens.mobile';
+import {
+  ICON_SIZE,
+  PUBLICATION_THEME as P,
+  RADIUS,
+  VIDEO_BACKDROP,
+  veil,
+} from '@/design/tokens.mobile';
+import {
+  publicationTiles,
+  SOCIAL_TEMPLATES,
+} from '../../../../../shared/publicationLayouts';
 import type { FeedPost } from '@/api/publicationFeed';
 import type { PublicationMedia as Media } from '../../../../../shared/publicationContent';
 
 function InlineVideo({ item, active }: { item: Media; active: boolean }) {
-  const { locale } = useI18n(); const ar = locale === 'ar';
+  const { locale } = useI18n();
+  const ar = locale === 'ar';
   const [focused, setFocused] = useState(true);
-  useFocusEffect(useCallback(() => { setFocused(true); return () => setFocused(false); }, []));
-  const [foreground, setForeground] = useState(AppState.currentState === 'active');
-  const [muted, setMuted] = useState(true); const [paused, setPaused] = useState(false); const [failed, setFailed] = useState(false);
-  const player = useVideoPlayer(active ? { uri: mediaUrl(item.url) } : null, instance => { instance.loop = true; instance.muted = true; });
-  useEffect(() => { const subscription = AppState.addEventListener('change', state => setForeground(state === 'active')); return () => subscription.remove(); }, []);
-  useEffect(() => { if (active && focused && foreground && !paused) player.play(); else player.pause(); }, [active, focused, foreground, paused, player]);
-  useEffect(() => { player.muted = muted; }, [muted, player]);
-  useEffect(() => { const listener = player.addListener('statusChange', event => setFailed(event.status === 'error')); return () => listener.remove(); }, [player]);
-  return <View style={styles.fill}>
-    {item.poster ? <AppImage uri={mediaUrl(item.poster)} style={styles.fill} contentFit="contain" decorative /> : null}
-    {active ? <VideoView player={player} style={styles.fill} nativeControls={false} contentFit="contain" /> : null}
-    <View style={styles.videoActions}>
-      <Pressable accessibilityRole="button" accessibilityLabel={paused ? (ar ? 'تشغيل الفيديو' : 'Lire la vidéo') : (ar ? 'إيقاف مؤقت' : 'Mettre en pause')} onPress={() => setPaused(!paused)} style={styles.control}><Ionicons name={paused ? 'play-outline' : 'pause-outline'} size={ICON_SIZE.md} color={P.paper} /></Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={muted ? (ar ? 'تشغيل الصوت' : 'Activer le son') : (ar ? 'كتم الصوت' : 'Couper le son')} accessibilityState={{ selected: !muted }} onPress={() => setMuted(!muted)} style={styles.control}><Ionicons name={muted ? 'volume-mute-outline' : 'volume-high-outline'} size={ICON_SIZE.md} color={P.paper} /></Pressable>
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, [])
+  );
+  const [foreground, setForeground] = useState(
+    AppState.currentState === 'active'
+  );
+  const [muted, setMuted] = useState(true);
+  const [paused, setPaused] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const player = useVideoPlayer(
+    active ? { uri: mediaUrl(item.url) } : null,
+    (instance) => {
+      instance.loop = true;
+      instance.muted = true;
+    }
+  );
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) =>
+      setForeground(state === 'active')
+    );
+    return () => subscription.remove();
+  }, []);
+  useEffect(() => {
+    if (active && focused && foreground && !paused) player.play();
+    else player.pause();
+  }, [active, focused, foreground, paused, player]);
+  useEffect(() => {
+    player.muted = muted;
+  }, [muted, player]);
+  useEffect(() => {
+    const listener = player.addListener('statusChange', (event) =>
+      setFailed(event.status === 'error')
+    );
+    return () => listener.remove();
+  }, [player]);
+  return (
+    <View style={styles.fill}>
+      {item.poster ? (
+        <AppImage
+          uri={mediaUrl(item.poster)}
+          style={styles.fill}
+          contentFit="contain"
+          decorative
+        />
+      ) : null}
+      {active ? (
+        <VideoView
+          player={player}
+          style={styles.fill}
+          nativeControls={false}
+          contentFit="contain"
+        />
+      ) : null}
+      <View style={styles.videoActions}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            paused
+              ? ar
+                ? 'تشغيل الفيديو'
+                : 'Lire la vidéo'
+              : ar
+              ? 'إيقاف مؤقت'
+              : 'Mettre en pause'
+          }
+          onPress={() => setPaused(!paused)}
+          style={styles.control}
+        >
+          <Ionicons
+            name={paused ? 'play-outline' : 'pause-outline'}
+            size={ICON_SIZE.md}
+            color={P.paper}
+          />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            muted
+              ? ar
+                ? 'تشغيل الصوت'
+                : 'Activer le son'
+              : ar
+              ? 'كتم الصوت'
+              : 'Couper le son'
+          }
+          accessibilityState={{ selected: !muted }}
+          onPress={() => setMuted(!muted)}
+          style={styles.control}
+        >
+          <Ionicons
+            name={muted ? 'volume-mute-outline' : 'volume-high-outline'}
+            size={ICON_SIZE.md}
+            color={P.paper}
+          />
+        </Pressable>
+      </View>
+      {failed ? (
+        <AppText color={P.paper} style={styles.failure}>
+          {ar
+            ? 'تعذّر تحميل الفيديو. أعد فتح المنشور للمحاولة.'
+            : 'Vidéo indisponible. Rouvrez la publication pour réessayer.'}
+        </AppText>
+      ) : null}
     </View>
-    {failed ? <AppText color={P.paper} style={styles.failure}>{ar ? 'تعذّر تحميل الفيديو. أعد فتح المنشور للمحاولة.' : 'Vidéo indisponible. Rouvrez la publication pour réessayer.'}</AppText> : null}
-  </View>;
+  );
 }
-export function PublicationMedia({ post, active = false, immersive = false, onOpen, thumbnails = false, initialIndex = 0 }: { post: FeedPost; active?: boolean; immersive?: boolean; onOpen?: (index: number) => void; thumbnails?: boolean; initialIndex?: number }) {
-  const [size, setSize] = useState({ width: 0, height: 0 }); const { width, height } = size; const [index, setIndex] = useState(initialIndex);
+export function PublicationMedia({
+  post,
+  active = false,
+  immersive = false,
+  onOpen,
+  thumbnails = false,
+  initialIndex = 0,
+}: {
+  post: FeedPost;
+  active?: boolean;
+  immersive?: boolean;
+  onOpen?: (index: number) => void;
+  thumbnails?: boolean;
+  initialIndex?: number;
+}) {
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  const { width, height } = size;
+  const [index, setIndex] = useState(initialIndex);
+  const [photoAspect, setPhotoAspect] = useState(4 / 5);
   const list = useRef<FlatList<Media>>(null);
-  const items: Media[] = post.content?.media.length ? post.content.media : post.imageUrl ? [{ type: 'image', url: post.imageUrl, poster: '', alt: post.title }] : [];
+  const items: Media[] = post.content?.media.length
+    ? post.content.media
+    : post.imageUrl
+    ? [{ type: 'image', url: post.imageUrl, poster: '', alt: post.title }]
+    : [];
   if (!items.length) return null;
-  if (post.content?.type === 'collection' && items.length > 1 && !immersive) return <View testID={`publication-media-${post.id}`} style={styles.collection}>
-    {items.slice(0, 4).map((item, i) => <Pressable key={i} accessibilityRole="button" accessibilityLabel={item.alt || post.title} onPress={() => onOpen?.(i)} style={styles.tile}><AppImage uri={mediaUrl(item.url)} style={styles.fill} contentFit="cover" accessibilityLabel={item.alt || post.title} /></Pressable>)}
-    <AppText variant="captionStrong" color={P.ink}>{items.length} images</AppText>
-  </View>;
-  return <View style={immersive ? { flex: 1 } : undefined}><View testID={`publication-media-${post.id}`} onLayout={event => { const { width: w, height: h } = event.nativeEvent.layout; setSize(old => old.width === w && old.height === h ? old : { width: w, height: h }); }} style={[styles.frame, immersive ? styles.immersive : undefined]}>
-    {width > 0 ? <FlatList ref={list} horizontal pagingEnabled initialScrollIndex={Math.max(0, Math.min(initialIndex, items.length - 1))} getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })} extraData={index} scrollEventThrottle={16}
-      onScroll={event => setIndex(Math.max(0, Math.min(items.length - 1, Math.round(event.nativeEvent.contentOffset.x / width))))} data={items} keyExtractor={(_, i) => String(i)} showsHorizontalScrollIndicator={false}
-      onMomentumScrollEnd={event => setIndex(Math.max(0, Math.min(items.length - 1, Math.round(event.nativeEvent.contentOffset.x / width))))}
-      renderItem={({ item, index: mediaIndex }) => <View style={{ width, height }}>
-        {item.type === 'video' ? <InlineVideo item={item} active={active && index === mediaIndex} /> : <Pressable accessibilityRole={onOpen ? 'button' : undefined} accessibilityLabel={item.alt || post.title} onPress={() => onOpen?.(mediaIndex)} style={styles.fill}><AppImage uri={mediaUrl(item.url)} style={styles.fill} contentFit={immersive ? 'contain' : 'cover'} accessibilityLabel={item.alt || post.title} /></Pressable>}
-      </View>} /> : null}
-    {items.length > 1 && !immersive ? <View style={styles.counter}><AppText variant="captionStrong" color={P.paper}>{index + 1}/{items.length}</AppText></View> : null}
-  </View>
-    {thumbnails && !immersive && items.length > 1 ? <View style={styles.thumbnails}>{items.map((item, i) => <Pressable key={i} testID={`publication-thumbnail-${post.id}-${i}`} accessibilityRole="button" accessibilityLabel={`${item.alt || post.title} · ${i + 1}/${items.length}`} accessibilityState={{ selected: index === i }} onPress={() => { setIndex(i); list.current?.scrollToOffset({ offset: width * i, animated: true }); }} style={[styles.thumbnail, { borderColor: index === i ? P.accent : 'transparent' }]}><AppImage uri={mediaUrl(item.poster || item.url)} contentFit="cover" style={styles.thumbnailImage} decorative /></Pressable>)}</View> : null}
-  </View>;
+  const template = post.content?.template || 'auto';
+  const natural =
+    !immersive && ['caption_photo', 'shoppable'].includes(template);
+  if (!immersive && (SOCIAL_TEMPLATES as readonly string[]).includes(template))
+    return (
+      <View testID={`publication-media-${post.id}`} style={{ gap: 2 }}>
+        {publicationTiles(template, items.length).map((row, r) => (
+          <View key={r} style={{ flexDirection: 'row', gap: 2 }}>
+            {row.map((tile) => {
+              const item = items[tile.index];
+              return (
+                <Pressable
+                  key={tile.index}
+                  testID={`publication-tile-${post.id}-${tile.index}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.alt || post.title} · ${
+                    tile.index + 1
+                  }/${items.length}${
+                    tile.remaining ? ` · +${tile.remaining}` : ''
+                  }`}
+                  onPress={() => onOpen?.(tile.index)}
+                  style={{ flex: 1, aspectRatio: 1, overflow: 'hidden' }}
+                >
+                  <AppImage
+                    uri={mediaUrl(item.url)}
+                    style={styles.fill}
+                    contentFit="cover"
+                    accessibilityLabel={item.alt || post.title}
+                  />
+                  {tile.remaining > 0 ? (
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.fill,
+                        {
+                          backgroundColor: veil(0.4),
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        },
+                      ]}
+                    >
+                      <AppText variant="h2" color={P.paper}>
+                        +{tile.remaining}
+                      </AppText>
+                    </View>
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    );
+  if (post.content?.type === 'collection' && items.length > 1 && !immersive)
+    return (
+      <View testID={`publication-media-${post.id}`} style={styles.collection}>
+        {items.slice(0, 4).map((item, i) => (
+          <Pressable
+            key={i}
+            accessibilityRole="button"
+            accessibilityLabel={item.alt || post.title}
+            onPress={() => onOpen?.(i)}
+            style={styles.tile}
+          >
+            <AppImage
+              uri={mediaUrl(item.url)}
+              style={styles.fill}
+              contentFit="cover"
+              accessibilityLabel={item.alt || post.title}
+            />
+          </Pressable>
+        ))}
+        <AppText variant="captionStrong" color={P.ink}>
+          {items.length} images
+        </AppText>
+      </View>
+    );
+  return (
+    <View style={immersive ? { flex: 1 } : undefined}>
+      <View
+        testID={`publication-media-${post.id}`}
+        onLayout={(event) => {
+          const { width: w, height: h } = event.nativeEvent.layout;
+          setSize((old) =>
+            old.width === w && old.height === h ? old : { width: w, height: h }
+          );
+        }}
+        style={[
+          styles.frame,
+          natural
+            ? { aspectRatio: photoAspect, backgroundColor: P.paper }
+            : undefined,
+          immersive ? styles.immersive : undefined,
+        ]}
+      >
+        {width > 0 ? (
+          <FlatList
+            ref={list}
+            horizontal
+            pagingEnabled
+            initialScrollIndex={Math.max(
+              0,
+              Math.min(initialIndex, items.length - 1)
+            )}
+            getItemLayout={(_, i) => ({
+              length: width,
+              offset: width * i,
+              index: i,
+            })}
+            extraData={index}
+            scrollEventThrottle={16}
+            onScroll={(event) =>
+              setIndex(
+                Math.max(
+                  0,
+                  Math.min(
+                    items.length - 1,
+                    Math.round(event.nativeEvent.contentOffset.x / width)
+                  )
+                )
+              )
+            }
+            data={items}
+            keyExtractor={(_, i) => String(i)}
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(event) =>
+              setIndex(
+                Math.max(
+                  0,
+                  Math.min(
+                    items.length - 1,
+                    Math.round(event.nativeEvent.contentOffset.x / width)
+                  )
+                )
+              )
+            }
+            renderItem={({ item, index: mediaIndex }) => (
+              <View style={{ width, height }}>
+                {item.type === 'video' ? (
+                  <InlineVideo
+                    item={item}
+                    active={active && index === mediaIndex}
+                  />
+                ) : (
+                  <Pressable
+                    accessibilityRole={onOpen ? 'button' : undefined}
+                    accessibilityLabel={item.alt || post.title}
+                    onPress={() => onOpen?.(mediaIndex)}
+                    style={styles.fill}
+                  >
+                    <AppImage
+                      background={immersive ? null : undefined}
+                      testID={`publication-image-${post.id}-${mediaIndex}`}
+                      uri={mediaUrl(item.url)}
+                      style={styles.fill}
+                      onDimensions={
+                        natural && mediaIndex === 0
+                          ? ({ width: w, height: h }) => {
+                              if (w > 0 && h > 0) setPhotoAspect(w / h);
+                            }
+                          : undefined
+                      }
+                      contentFit={immersive || natural ? 'contain' : 'cover'}
+                      accessibilityLabel={item.alt || post.title}
+                    />
+                  </Pressable>
+                )}
+              </View>
+            )}
+          />
+        ) : null}
+        {items.length > 1 && !immersive ? (
+          <View style={styles.counter}>
+            <AppText variant="captionStrong" color={P.paper}>
+              {index + 1}/{items.length}
+            </AppText>
+          </View>
+        ) : null}
+      </View>
+      {thumbnails && !immersive && items.length > 1 ? (
+        <View style={styles.thumbnails}>
+          {items.map((item, i) => (
+            <Pressable
+              key={i}
+              testID={`publication-thumbnail-${post.id}-${i}`}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.alt || post.title} · ${i + 1}/${
+                items.length
+              }`}
+              accessibilityState={{ selected: index === i }}
+              onPress={() => {
+                setIndex(i);
+                list.current?.scrollToOffset({
+                  offset: width * i,
+                  animated: true,
+                });
+              }}
+              style={[
+                styles.thumbnail,
+                { borderColor: index === i ? P.accent : 'transparent' },
+              ]}
+            >
+              <AppImage
+                uri={mediaUrl(item.poster || item.url)}
+                contentFit="cover"
+                style={styles.thumbnailImage}
+                decorative
+              />
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
 }
 const styles = StyleSheet.create({
-  collection: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 }, tile: { width: '49%', aspectRatio: 1 },
-  frame: { width: '100%', aspectRatio: 4 / 5, backgroundColor: VIDEO_BACKDROP, overflow: 'hidden', borderRadius: RADIUS.sm }, immersive: { flex: 1, aspectRatio: undefined, borderRadius: 0 }, fill: { ...StyleSheet.absoluteFill },
-  thumbnails: { flexDirection: 'row', gap: 6, paddingTop: 8, flexWrap: 'wrap' }, thumbnail: { width: 48, height: 48, padding: 2, borderRadius: RADIUS.md, borderWidth: 2 }, thumbnailImage: { width: '100%', height: '100%', borderRadius: RADIUS.sm },
-  videoActions: { position: 'absolute', bottom: 12, right: 12, flexDirection: 'row', gap: 8 }, control: { minWidth: 48, minHeight: 48, borderRadius: RADIUS.full, backgroundColor: VIDEO_BACKDROP, alignItems: 'center', justifyContent: 'center' },
-  counter: { position: 'absolute', top: 12, right: 12, borderRadius: RADIUS.full, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: VIDEO_BACKDROP }, failure: { padding: 16 },
+  collection: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  tile: { width: '49%', aspectRatio: 1 },
+  frame: {
+    width: '100%',
+    aspectRatio: 4 / 5,
+    backgroundColor: VIDEO_BACKDROP,
+    overflow: 'hidden',
+    borderRadius: RADIUS.sm,
+  },
+  immersive: { flex: 1, aspectRatio: undefined, borderRadius: 0 },
+  fill: { ...StyleSheet.absoluteFill },
+  thumbnails: { flexDirection: 'row', gap: 6, paddingTop: 8, flexWrap: 'wrap' },
+  thumbnail: {
+    width: 48,
+    height: 48,
+    padding: 2,
+    borderRadius: RADIUS.md,
+    borderWidth: 2,
+  },
+  thumbnailImage: { width: '100%', height: '100%', borderRadius: RADIUS.sm },
+  videoActions: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  control: {
+    minWidth: 48,
+    minHeight: 48,
+    borderRadius: RADIUS.full,
+    backgroundColor: VIDEO_BACKDROP,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  counter: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    borderRadius: RADIUS.full,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    backgroundColor: VIDEO_BACKDROP,
+  },
+  failure: { padding: 16 },
 });

@@ -44,6 +44,7 @@ import { sendInteraction } from '@/api/social';
 import { Comments } from '@/features/social/Comments';
 import { PublicationSparkIcon } from './PublicationReactionIcon';
 import { PublicationViewer } from './PublicationViewer';
+import { useProductFavorites } from '@/features/reels/useProductFavorites';
 import { PublicationCard } from './PublicationCard';
 import {
   readFeedView,
@@ -81,6 +82,7 @@ export function PublicationFeedScreen() {
   const [searchOpen, setSearchOpen] = useState(!!initial.current.q);
   const [search, setSearch] = useState(initial.current.q);
   const [q, setQ] = useState(initial.current.q);
+  const [viewerMedia, setViewerMedia] = useState<number | null>(null);
   const [viewer, setViewer] = useState<FeedPost | null>(null);
   const [activeId, setActiveId] = useState('');
   const [visibleIds, setVisibleIds] = useState<string[]>([]);
@@ -131,6 +133,11 @@ export function PublicationFeedScreen() {
     staleTime: 30000,
   });
   const rows = settings?.enabled ? uniqueFeedPosts(feed.data?.pages ?? []) : [];
+  const productFavorites = useProductFavorites(
+    session.status === 'signedIn' &&
+      rows.some((row) => row.content?.template === 'shoppable'),
+    owner
+  );
   const reset = () => {
     offset.current = 0;
     restored.current = true;
@@ -366,7 +373,16 @@ export function PublicationFeedScreen() {
             key={`${owner}:${item.id}`}
             post={item}
             active={focused && !viewer && !comments && activeId === item.id}
-            onOpen={() => setViewer(item)}
+            onOpen={() => {
+              setViewerMedia(null);
+              setViewer(item);
+            }}
+            mediaInset={gutter}
+            productFavorites={productFavorites}
+            onMediaOpen={(index) => {
+              setViewerMedia(index);
+              setViewer(item);
+            }}
             onPreference={preferenceChanged}
             compact={
               settings?.layout === 'compact' ||
@@ -447,6 +463,7 @@ export function PublicationFeedScreen() {
       {viewer ? (
         <PublicationViewer
           post={viewer}
+          initialMediaIndex={viewerMedia}
           owner={owner}
           onClose={() => {
             setViewer(null);

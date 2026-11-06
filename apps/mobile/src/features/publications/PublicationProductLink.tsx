@@ -16,63 +16,127 @@ import { useI18n } from '@/i18n';
 export function PublicationProductLink({
   product,
   onOpen,
+  tile = false,
+  favorite = false,
+  onFavorite,
 }: {
   product: LinkedProduct;
   onOpen?: () => void;
+  tile?: boolean;
+  favorite?: boolean;
+  onFavorite?: () => void;
 }) {
   const { locale } = useI18n();
   const ar = locale === 'ar';
   return (
-    <Pressable
-      testID={`publication-product-${product.id}`}
-      accessibilityRole="button"
-      accessibilityLabel={`${ar ? 'عرض المنتج' : 'Voir le produit'} ${
-        product.name
-      }`}
-      onPress={
-        onOpen ||
-        (() =>
-          router.push({
-            pathname: '/product/[id]',
-            params: { id: product.id },
-          }))
-      }
-      style={[styles.row, { flexDirection: ar ? 'row-reverse' : 'row' }]}
-    >
-      <View style={styles.image}>
-        {product.image ? (
-          <AppImage
-            uri={mediaUrl(product.image)}
-            style={styles.fill}
-            contentFit="contain"
-            decorative
-          />
-        ) : null}
-      </View>
-      <View style={styles.copy}>
-        {product.brand ? (
-          <AppText variant="caption" color={P.muted} numberOfLines={1}>
-            {product.brand}
+    <View>
+      <Pressable
+        testID={`publication-product-${product.id}`}
+        accessibilityRole="button"
+        accessibilityLabel={`${ar ? 'عرض المنتج' : 'Voir le produit'} ${
+          product.name
+        }`}
+        onPress={
+          onOpen ||
+          (() =>
+            router.push({
+              pathname: '/product/[id]',
+              params: { id: product.id },
+            }))
+        }
+        style={[
+          tile ? styles.tile : styles.row,
+          {
+            flexDirection: tile ? 'column' : ar ? 'row-reverse' : 'row',
+            alignItems: tile ? 'stretch' : 'center',
+            borderTopWidth: tile ? 0 : StyleSheet.hairlineWidth,
+          },
+        ]}
+      >
+        <View
+          testID={`publication-product-image-${product.id}`}
+          style={tile ? styles.tileImage : styles.image}
+        >
+          {product.image ? (
+            <AppImage
+              background={tile ? null : undefined}
+              uri={mediaUrl(product.image)}
+              style={styles.fill}
+              contentFit="contain"
+              decorative
+            />
+          ) : null}
+        </View>
+        <View style={tile ? styles.tileCopy : styles.copy}>
+          {product.brand ? (
+            <AppText variant="caption" color={P.muted} numberOfLines={1}>
+              {product.brand}
+            </AppText>
+          ) : null}
+          <AppText variant="captionStrong" color={P.ink} numberOfLines={2}>
+            {product.name}
           </AppText>
+          {Number.isFinite(product.price) && product.price > 0 ? (
+            <AppText variant="caption" color={P.ink}>
+              {formatAmount(product.price)} {product.currency}
+            </AppText>
+          ) : null}
+        </View>
+        {!tile ? (
+          <>
+            <AppText variant="captionStrong" color={P.accent}>
+              {ar ? 'عرض' : 'Voir'}
+            </AppText>
+            <Ionicons
+              name={ar ? 'chevron-back' : 'chevron-forward'}
+              size={ICON_SIZE.sm}
+              color={P.accent}
+            />
+          </>
         ) : null}
-        <AppText variant="captionStrong" color={P.ink} numberOfLines={2}>
-          {product.name}
-        </AppText>
-        {Number.isFinite(product.price) && product.price > 0 ? (
-          <AppText variant="caption" color={P.ink}>
-            {formatAmount(product.price)} {product.currency}
-          </AppText>
-        ) : null}
-      </View>
-      <AppText variant="captionStrong" color={P.accent}>
-        {ar ? 'عرض' : 'Voir'}
-      </AppText>
-      <Ionicons
-        name={ar ? 'chevron-back' : 'chevron-forward'}
-        size={ICON_SIZE.sm}
-        color={P.accent}
-      />
-    </Pressable>
+      </Pressable>
+      {tile && onFavorite ? (
+        <View
+          pointerEvents="box-none"
+          style={[
+            StyleSheet.absoluteFill,
+            { alignItems: 'flex-end', padding: 4 },
+          ]}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${
+              favorite
+                ? ar
+                  ? 'إلغاء حفظ المنتج'
+                  : 'Retirer le produit des favoris'
+                : ar
+                ? 'حفظ المنتج'
+                : 'Enregistrer le produit'
+            } ${product.name}`}
+            accessibilityState={{ selected: favorite }}
+            onPress={(event) => {
+              event?.stopPropagation();
+              onFavorite();
+            }}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: RADIUS.full,
+              backgroundColor: P.paper,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons
+              name={favorite ? 'heart' : 'heart-outline'}
+              size={ICON_SIZE.md}
+              color={P.ink}
+            />
+          </Pressable>
+        </View>
+      ) : null}
+    </View>
   );
 }
 const styles = StyleSheet.create({
@@ -92,6 +156,15 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: P.neutral,
   },
+  tile: { paddingVertical: 8, gap: 8, alignItems: 'stretch' },
+  tileImage: {
+    width: '100%',
+    aspectRatio: 3 / 4,
+    borderRadius: RADIUS.md,
+    overflow: 'hidden',
+    backgroundColor: P.neutral,
+  },
+  tileCopy: { gap: 2 },
   fill: { width: '100%', height: '100%' },
   copy: { flex: 1, gap: 2 },
 });

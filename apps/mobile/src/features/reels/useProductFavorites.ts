@@ -20,10 +20,12 @@ export interface ProductFavorites {
 
 const NO_FAVOURITES: ProductFavorites = { isFavorite: () => false, toggle: () => {} };
 
-export function useProductFavorites(enabled: boolean): ProductFavorites {
+export function useProductFavorites(enabled: boolean, owner = ''): ProductFavorites {
   /** productId → identifiant du favori (nécessaire pour le supprimer). */
   const [byProduct, setByProduct] = useState<Record<string, string>>({});
   const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => { setByProduct({}); setLoaded(false); }, [owner]);
 
   useEffect(() => {
     if (!enabled || loaded) return;
@@ -44,7 +46,7 @@ export function useProductFavorites(enabled: boolean): ProductFavorites {
     return () => {
       alive = false;
     };
-  }, [enabled, loaded]);
+  }, [enabled, loaded, owner]);
 
   const isFavorite = useCallback((productId: string) => Boolean(byProduct[productId]), [byProduct]);
 

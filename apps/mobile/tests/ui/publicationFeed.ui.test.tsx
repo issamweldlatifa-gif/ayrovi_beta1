@@ -1,4 +1,4 @@
-import { AppState, FlatList } from 'react-native';
+import { AppState, FlatList, Modal } from 'react-native';
 import { PublicationProductPreview } from '@/features/publications/PublicationProductPreview';
 import { PublicationMedia } from '@/features/publications/PublicationMedia';
 import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../../../shared/publicationFeed';
@@ -131,8 +131,8 @@ describe('Publication Phase 1 UI', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Enregistrer' }));
     await waitFor(() => expect(mockPreference).toHaveBeenCalledWith('ui-post', { saved: true }));
     expect(screen.getByRole('button', { name: 'Retirer des enregistrements' })).toBeTruthy();
-    fireEvent.press(screen.getByRole('button', { name: 'Options de la publication' }));
-    fireEvent.press(screen.getByText('Suivre cet éditeur'));
+    expect(screen.queryByRole('button', { name: 'Options de la publication' })).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Suivre cet éditeur' }));
     await waitFor(() => expect(mockFollow).toHaveBeenCalledWith('official', true));
   });
   it('opens and closes the existing-publication viewer', async () => {
@@ -237,4 +237,41 @@ it('renders an authored shoppable carousel with a genuine compact product link a
   fireEvent.press(screen.getByTestId('publication-product-real-catalogue-id'));
   expect(open).toHaveBeenCalledWith('real-catalogue-id');
   expect(mockCartAdd).not.toHaveBeenCalled();
+});
+
+const referencePost = (template: NonNullable<FeedPost['content']>['template'], count = 8): FeedPost => ({...post, subtitle:'', content:{template,type:'image',media:Array.from({length:count},(_,i)=>({type:'image',url:`/image-${i}.jpg`,poster:'',alt:`Photo ${i+1}`})), description:'Description au-dessus des photos',descriptionPosition:'below',sponsored:false,sponsorName:'',audience:'',topic:''}});
+describe('Reference additions, not replacements',()=>{
+ it.each(['social_mosaic','social_strip','social_pair','caption_photo','shoppable'] as const)('%s has caption-first content, no internal headline duplication or ellipsis menu',async template=>{
+  await mount(<PublicationCard post={referencePost(template,template==='social_pair'?2:['caption_photo','shoppable'].includes(template)?1:8)} compact={false} onComments={jest.fn()} onReaction={jest.fn()} />);
+  expect(screen.getByText('Description au-dessus des photos')).toBeTruthy();
+  expect(screen.queryByText(post.title)).toBeNull();
+  expect(screen.queryByRole('button',{name:'Options de la publication'})).toBeNull();
+  expect(screen.getByRole('button',{name:'Suivre cet éditeur'})).toHaveStyle({backgroundColor:'transparent',borderWidth:1});
+ });
+ it('opens the clicked mosaic tile directly on black and closes back to the feed',async()=>{
+  mockSession.status='signedOut';mockQuery.mockReturnValue({...feed,data:{pages:[{items:[referencePost('social_mosaic')],nextCursor:null}]}});
+  await mount();expect(screen.getByText('+3')).toBeTruthy();
+  fireEvent.press(screen.getByTestId('publication-tile-ui-post-4'));
+  const lightbox=screen.getByTestId('publication-lightbox');expect(lightbox).toHaveStyle({backgroundColor:'#0A0A0A'});
+  fireEvent(within(lightbox).getByTestId('publication-media-ui-post'),'layout',{nativeEvent:{layout:{width:390,height:800}}});
+  expect(screen.UNSAFE_getAllByType(FlatList).some(list=>list.props.initialScrollIndex===4)).toBe(true);
+  expect(within(lightbox).getByTestId('publication-image-ui-post-4').props.background).toBeNull();
+  expect(screen.UNSAFE_getAllByType(Modal).filter(modal=>modal.props.visible)).toHaveLength(1);
+  act(()=>screen.getByTestId('publication-lightbox-gesture').props.onAccessibilityEscape());
+  expect(screen.queryByTestId('publication-lightbox')).toBeNull();
+ });
+ it('uses actual source dimensions for the caption-photo format rather than forcing portrait cropping',async()=>{
+  await mount(<PublicationMedia post={referencePost('caption_photo',1)} />);
+  fireEvent(screen.getByTestId('publication-media-ui-post'),'layout',{nativeEvent:{layout:{width:366,height:457.5}}});
+  fireEvent(screen.getByTestId('publication-image-ui-post-0'),'dimensions',{width:600,height:577});
+  expect(screen.getByTestId('publication-media-ui-post')).toHaveStyle({aspectRatio:600/577});
+ });
+ it('uses real product navigation/favorites and gates guest product hearts without cart writes',async()=>{
+  mockSession.status='signedOut';const open=jest.fn();
+  await mount(<PublicationCard post={{...referencePost('shoppable',1),products:[{id:'real-shoe',name:'Chaussure catalogue',image:'/shoe.jpg',price:180,currency:'EUR',available:true,stockStatus:'AVAILABLE'}]}} compact={false} onComments={jest.fn()} onReaction={jest.fn()} onProductOpen={open} />);
+  expect(screen.getByTestId('publication-product-image-real-shoe')).toHaveStyle({aspectRatio:3/4});
+  expect(screen.getByTestId('publication-product-image-real-shoe').props.style.height).toBeUndefined();
+  expect(screen.getByTestId('publication-product-grid-ui-post')).toBeTruthy();fireEvent.press(screen.getByTestId('publication-product-real-shoe'));expect(open).toHaveBeenCalledWith('real-shoe');
+  fireEvent.press(screen.getByRole('button',{name:'Enregistrer le produit Chaussure catalogue'}));expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();expect(mockCartAdd).not.toHaveBeenCalled();
+ });
 });

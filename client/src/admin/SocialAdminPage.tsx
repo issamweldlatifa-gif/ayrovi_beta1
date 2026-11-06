@@ -1,4 +1,6 @@
-import { PUBLICATION_TYPES, PUBLICATION_TEMPLATES } from '../../../shared/publicationContent';
+import { CAPTION_FIRST_TEMPLATES } from '../../../shared/publicationLayouts';
+import { PUBLICATION_TYPES, PUBLICATION_TEMPLATES, publicationTypeForTemplate } from '../../../shared/publicationContent';
+import { PublicationReferenceImages } from './PublicationReferenceImages';
 import { PublicationTemplatePreview } from './PublicationTemplatePreview';
 import { PublicationFeedSettingsPage } from './PublicationFeedSettingsPage';
 import { PUBLICATION_CATEGORIES } from '../../../shared/publicationFeed';
@@ -122,14 +124,14 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           <Field label="Type de publication"><select aria-label="Type de publication" value={form.post_type || 'image'} onChange={e => setForm({ ...form, post_type: e.target.value })}>
             {PUBLICATION_TYPES.map(type => <option key={type} value={type}>{type}</option>)}
           </select></Field>
-          <Field label="Modèle visuel"><select aria-label="Modèle visuel" value={form.template_id || 'auto'} onChange={e => setForm({ ...form, template_id: e.target.value, post_type: e.target.value === 'video' ? 'video' : e.target.value === 'carousel' ? 'carousel' : ['photo','split','campaign'].includes(e.target.value) && form.post_type === 'video' ? 'image' : form.post_type })}>
-            {PUBLICATION_TEMPLATES.map(value => <option key={value} value={value}>{({ auto: 'Automatique (compatibilité)', photo: 'Photo éditoriale', split: 'Éditorial — image puis texte', campaign: 'Campagne — encart sous l’image', carousel: 'Carousel — miniatures & produits', video: 'Vidéo immersive' })[value]}</option>)}
+          <Field label="Modèle visuel"><select aria-label="Modèle visuel" value={form.template_id || 'auto'} onChange={e => setForm({ ...form, template_id: e.target.value, post_type: publicationTypeForTemplate(e.target.value, form.post_type) })}>
+            {PUBLICATION_TEMPLATES.map(value => <option key={value} value={value}>{({ auto: 'Automatique (compatibilité)', photo: 'Photo éditoriale', split: 'Éditorial — image puis texte', campaign: 'Campagne — encart sous l’image', carousel: 'Carousel — miniatures & produits', video: 'Vidéo immersive', social_mosaic: 'Album — mosaïque 2 + 3', shoppable: 'Shopping — photo & cartes produits', caption_photo: 'Social — description puis grande photo', social_strip: 'Album — rangée de 3 photos', social_pair: 'Album — duo de photos' })[value]}</option>)}
           </select></Field>
           <Field label="Libellé du bouton (facultatif)"><input maxLength={40} value={form.action_label || ''} placeholder="Découvrir" onChange={e => setForm({ ...form, action_label: e.target.value })} /></Field>
           <Field label="Action du bouton"><select value={form.action_target || 'detail'} onChange={e => setForm({ ...form, action_target: e.target.value })}><option value="detail">Ouvrir la publication</option><option value="products">Ouvrir le premier produit associé</option></select></Field>
           <Field label="Aperçu de composition" full><PublicationTemplatePreview form={form} /></Field>
           <Field label="Description" full><textarea rows={4} maxLength={10000} value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} /></Field>
-          <Field label="Position de la description"><select value={form.description_position || 'below'} onChange={e => setForm({ ...form, description_position: e.target.value })}><option value="above">Au-dessus du média</option><option value="below">Sous le média</option></select></Field>
+          <Field label="Position de la description"><select disabled={(CAPTION_FIRST_TEMPLATES as readonly string[]).includes(form.template_id)} value={(CAPTION_FIRST_TEMPLATES as readonly string[]).includes(form.template_id) ? 'above' : form.description_position || 'below'} onChange={e => setForm({ ...form, description_position: e.target.value })}><option value="above">Au-dessus du média</option><option value="below">Sous le média</option></select></Field>
           <Field label="Sponsorisé"><input type="checkbox" checked={!!form.sponsored} onChange={e => setForm({ ...form, sponsored: e.target.checked })} /></Field>
           {form.sponsored ? <Field label="Annonceur"><input value={form.sponsor_name || 'ZAYROVI'} maxLength={80} onChange={e => setForm({ ...form, sponsor_name: e.target.value })} /></Field> : null}
           <Field label="Audience"><select value={form.audience || ''} onChange={e => setForm({ ...form, audience: e.target.value })}>{['','men','women','unisex'].map(value => <option key={value} value={value}>{value || 'Toutes'}</option>)}</select></Field>
@@ -140,7 +142,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
             <small>Réutilise le fichier existant sans modifier le Reel. Ajoutez une couverture si nécessaire.</small>
           </Field> : null}
           <Field label="Médias ordonnés" full>
-            <p>Carousel : 2 à 10 images. Vidéo : un fichier vidéo et l’image principale comme couverture. Le type de publication doit correspondre aux médias.</p>
+            <p>Albums mosaïque/rangée : 2 à 10 images ; duo : exactement 2 ; grande photo/shopping : 1 image. La description précède les images dans les cinq nouveaux modèles. Carousel : 2 à 10 images. Vidéo : un fichier vidéo et l’image principale comme couverture. Le type de publication doit correspondre aux médias.</p>
             {(form.media || []).map((item: any, index: number) => <div className="admin-actions" key={index}>
               <span>{index + 1}. {item.type}</span><input aria-label={`Média ${index + 1}`} value={item.url} onChange={e => setForm({ ...form, media: form.media.map((m: any, i: number) => i === index ? { ...m, url: e.target.value } : m) })} />
               <Button variant="secondary" disabled={!index} onClick={() => { const media = [...form.media]; [media[index - 1], media[index]] = [media[index], media[index - 1]]; setForm({ ...form, media }); }}>Monter</Button>
@@ -149,10 +151,11 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
             <Button variant="secondary" onClick={() => setForm({ ...form, media: [...(form.media || []), { type: form.post_type === 'video' ? 'video' : 'image', url: '', poster: '', alt: '' }] })}>Ajouter un lien média</Button>
             <input aria-label="Uploader les médias Publication" type="file" multiple accept="image/*,video/mp4,video/webm" onChange={async e => {
               const files = Array.from(e.target.files || []); setBusy('save'); setError('');
-              try { const media: any[] = []; for (const file of files) media.push({ type: file.type.startsWith('video/') ? 'video' : 'image', url: await uploadMediaFile(file), poster: '', alt: '' }); setForm((current: any) => ({ ...current, media: [...(current.media || []), ...media] })); }
+              try { const media: any[] = []; for (const file of files) media.push({ type: file.type.startsWith('video/') ? 'video' : 'image', url: await uploadMediaFile(file), poster: '', alt: '' }); setForm((current: any) => ({ ...current, image_url: current.image_url || media.find(m => m.type === 'image')?.url || '', media: [...(current.media || []), ...media] })); }
               catch (error: any) { setError(error.message); } finally { setBusy(''); e.target.value = ''; }
             }} />
           </Field>
+          <div className="admin-field-full"><PublicationReferenceImages form={form} onChange={setForm} /></div>
           <Field label="Catégorie Publication"><select value={form.category || ''} onChange={e => setForm({ ...form, category: e.target.value })}>
             <option value="">For You — non classée</option>
             {PUBLICATION_CATEGORIES.map(category => <option key={category} value={category}>{category}</option>)}
@@ -250,8 +253,8 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
             </div>
             {form.poster_url && <img src={form.poster_url} alt="" style={{ width: 120, aspectRatio: '9 / 16', objectFit: 'cover', borderRadius: 12, marginTop: 8 }} />}
           </Field>
-          <Field label="Modèle visuel"><select aria-label="Modèle visuel" value={form.template_id || 'auto'} onChange={e => setForm({ ...form, template_id: e.target.value, post_type: e.target.value === 'video' ? 'video' : e.target.value === 'carousel' ? 'carousel' : ['photo','split','campaign'].includes(e.target.value) && form.post_type === 'video' ? 'image' : form.post_type })}>
-            {PUBLICATION_TEMPLATES.map(value => <option key={value} value={value}>{({ auto: 'Automatique (compatibilité)', photo: 'Photo éditoriale', split: 'Éditorial — image puis texte', campaign: 'Campagne — encart sous l’image', carousel: 'Carousel — miniatures & produits', video: 'Vidéo immersive' })[value]}</option>)}
+          <Field label="Modèle visuel"><select aria-label="Modèle visuel" value={form.template_id || 'auto'} onChange={e => setForm({ ...form, template_id: e.target.value, post_type: publicationTypeForTemplate(e.target.value, form.post_type) })}>
+            {PUBLICATION_TEMPLATES.slice(0, 6).map(value => <option key={value} value={value}>{({ auto: 'Automatique (compatibilité)', photo: 'Photo éditoriale', split: 'Éditorial — image puis texte', campaign: 'Campagne — encart sous l’image', carousel: 'Carousel — miniatures & produits', video: 'Vidéo immersive', social_mosaic: 'Album — mosaïque 2 + 3', shoppable: 'Shopping — photo & cartes produits', caption_photo: 'Social — description puis grande photo', social_strip: 'Album — rangée de 3 photos', social_pair: 'Album — duo de photos' })[value]}</option>)}
           </select></Field>
           <Field label="Libellé du bouton (facultatif)"><input maxLength={40} value={form.action_label || ''} placeholder="Découvrir" onChange={e => setForm({ ...form, action_label: e.target.value })} /></Field>
           <Field label="Action du bouton"><select value={form.action_target || 'detail'} onChange={e => setForm({ ...form, action_target: e.target.value })}><option value="detail">Ouvrir la publication</option><option value="products">Ouvrir le premier produit associé</option></select></Field>

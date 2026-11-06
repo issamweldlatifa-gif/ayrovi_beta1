@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Share, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import {
   followPublisher,
@@ -25,6 +24,8 @@ import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { useSession } from '@/state/session';
 import { useSessionId } from '@/session/session';
+import type { ProductFavorites } from '@/features/reels/useProductFavorites';
+import { CAPTION_FIRST_TEMPLATES } from '../../../../../shared/publicationLayouts';
 import { PublicationProductLink } from './PublicationProductLink';
 
 export function PublicationCard({
@@ -36,7 +37,13 @@ export function PublicationCard({
   onOpen,
   onPreference,
   onProductOpen,
+  onMediaOpen,
+  productFavorites,
+  mediaInset = 12,
 }: {
+  mediaInset?: number;
+  productFavorites?: ProductFavorites;
+  onMediaOpen?: (index: number) => void;
   onProductOpen?: (id: string) => void;
   active?: boolean;
   onOpen?: () => void;
@@ -66,10 +73,10 @@ export function PublicationCard({
   const [productsOpen, setProductsOpen] = useState(
     post.content?.type === 'product' ||
       post.content?.type === 'collection' ||
-      post.content?.template === 'carousel'
+      post.content?.template === 'carousel' ||
+      post.content?.template === 'shoppable'
   );
   const [expanded, setExpanded] = useState(false);
-  const [options, setOptions] = useState(false);
   const [saved, setSaved] = useState(!!post.saved);
   const [following, setFollowing] = useState(!!post.following);
   const [preferenceBusy, setPreferenceBusy] = useState(false);
@@ -178,16 +185,10 @@ export function PublicationCard({
       );
     }
   };
-  const copy = async () => {
-    if (requireAccount()) return;
-    try {
-      await Clipboard.setStringAsync(sharedUrl());
-      setMessage(ar ? 'تم نسخ الرابط.' : 'Lien copié.');
-    } catch {
-      setMessage(ar ? 'تعذّر نسخ الرابط.' : 'Copie impossible.');
-    }
-  };
   const template = post.content?.template || 'auto';
+  const captionFirst = (CAPTION_FIRST_TEMPLATES as readonly string[]).includes(
+    template
+  );
   const split =
     template === 'split' ||
     (template === 'auto' && (compact || post.content?.type === 'editorial'));
@@ -208,20 +209,22 @@ export function PublicationCard({
   const description = post.content?.description || post.subtitle;
   const text = (
     <View style={[styles.copy, split ? styles.editorialCopy : undefined]}>
-      <Pressable
-        accessibilityRole={onOpen ? 'button' : undefined}
-        onPress={onOpen}
-      >
-        <AppText variant="bodyStrong" color={P.ink}>
-          {post.title}
-        </AppText>
-      </Pressable>
+      {!captionFirst || !description ? (
+        <Pressable
+          accessibilityRole={onOpen ? 'button' : undefined}
+          onPress={onOpen}
+        >
+          <AppText variant="bodyStrong" color={P.ink}>
+            {post.title}
+          </AppText>
+        </Pressable>
+      ) : null}
       {description ? (
         <>
           <AppText
             variant="body"
-            color={P.muted}
-            numberOfLines={expanded ? undefined : 3}
+            color={captionFirst ? P.ink : P.muted}
+            numberOfLines={expanded || description.length <= 140 ? undefined : 3}
           >
             {description}
           </AppText>
@@ -284,70 +287,10 @@ export function PublicationCard({
             busy={preferenceBusy}
           />
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            ar ? 'خيارات المنشور' : 'Options de la publication'
-          }
-          accessibilityState={{ expanded: options }}
-          onPress={() => setOptions(!options)}
-          style={styles.icon}
-        >
-          <Ionicons
-            name="ellipsis-horizontal-outline"
-            size={theme.iconSize.md}
-            color={P.ink}
-          />
-        </Pressable>
       </View>
-      {options ? (
-        <View style={styles.copy}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={ar ? 'نسخ رابط المنشور' : 'Copier le lien'}
-            onPress={() => void copy()}
-            style={styles.signIn}
-          >
-            <AppText color={P.ink}>
-              {ar ? 'نسخ الرابط' : 'Copier le lien'}
-            </AppText>
-          </Pressable>
-          {(['follow', 'hidden', 'not_interested', 'undo'] as const).map(
-            (action) => (
-              <Pressable
-                key={action}
-                disabled={preferenceBusy}
-                accessibilityRole="button"
-                onPress={() => void preference(action)}
-                style={styles.signIn}
-              >
-                <AppText color={P.ink}>
-                  {action === 'follow'
-                    ? following
-                      ? ar
-                        ? 'إلغاء المتابعة'
-                        : 'Ne plus suivre'
-                      : ar
-                      ? 'متابعة الناشر'
-                      : 'Suivre cet éditeur'
-                    : action === 'hidden'
-                    ? ar
-                      ? 'إخفاء'
-                      : 'Masquer'
-                    : action === 'not_interested'
-                    ? ar
-                      ? 'غير مهتم'
-                      : 'Pas intéressé'
-                    : ar
-                    ? 'إلغاء الإخفاء'
-                    : 'Annuler le masquage'}
-                </AppText>
-              </Pressable>
-            )
-          )}
-        </View>
-      ) : null}
-      {!split && !campaign && post.content?.descriptionPosition === 'above'
+      {!split &&
+      !campaign &&
+      (captionFirst || post.content?.descriptionPosition === 'above')
         ? text
         : null}
       <View
@@ -355,20 +298,64 @@ export function PublicationCard({
           split ? styles.editorial : campaign ? styles.campaign : undefined
         }
       >
-        <View style={split ? styles.splitMedia : undefined}>
+        <View
+          style={
+            split
+              ? styles.splitMedia
+              : captionFirst && template !== 'shoppable'
+              ? { marginHorizontal: -mediaInset }
+              : undefined
+          }
+        >
           <PublicationMedia
             post={post}
             active={active}
-            onOpen={onOpen}
+            onOpen={(index) => (onMediaOpen ? onMediaOpen(index) : onOpen?.())}
             thumbnails={template === 'carousel'}
           />
         </View>
         {campaign ? (
           <View style={styles.campaignCopy}>{text}</View>
-        ) : split || post.content?.descriptionPosition !== 'above' ? (
+        ) : split ||
+          (!captionFirst && post.content?.descriptionPosition !== 'above') ? (
           text
         ) : null}
       </View>
+      {template === 'shoppable' ? (
+        <View
+          testID={`publication-product-grid-${post.id}`}
+          style={{
+            flexDirection: theme.isRTL ? 'row-reverse' : 'row',
+            flexWrap: 'wrap',
+            marginHorizontal: -(PM.productGap / 2),
+            paddingTop: 12,
+          }}
+        >
+          {post.products.map((product) => (
+            <View
+              key={product.id}
+              style={{ width: '50%', paddingHorizontal: PM.productGap / 2 }}
+            >
+              <PublicationProductLink
+                product={product}
+                tile
+                favorite={productFavorites?.isFavorite(product.id)}
+                onFavorite={
+                  !signedIn || productFavorites
+                    ? () => {
+                        if (!requireAccount())
+                          productFavorites?.toggle(product.id);
+                      }
+                    : undefined
+                }
+                onOpen={
+                  onProductOpen ? () => onProductOpen(product.id) : undefined
+                }
+              />
+            </View>
+          ))}
+        </View>
+      ) : null}
       <View
         style={[
           styles.actions,
@@ -453,7 +440,9 @@ export function PublicationCard({
           />
         </Pressable>
       </View>
-      {post.products.length > 0 && template !== 'carousel' ? (
+      {post.products.length > 0 &&
+      template !== 'carousel' &&
+      template !== 'shoppable' ? (
         <Pressable
           accessibilityRole="button"
           onPress={() => setProductsOpen(!productsOpen)}
@@ -470,7 +459,7 @@ export function PublicationCard({
           />
         </Pressable>
       ) : null}
-      {productsOpen
+      {template !== 'shoppable' && productsOpen
         ? post.products.map((product) => (
             <PublicationProductLink
               key={product.id}

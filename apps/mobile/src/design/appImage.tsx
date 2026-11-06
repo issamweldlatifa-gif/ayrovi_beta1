@@ -45,6 +45,8 @@ export interface AppImageProps {
    * jamais « au cas où », on attend le résultat réel du chargement.
    */
   onSettled?: () => void;
+  /** Source dimensions, for editorial images that must preserve their authored ratio. */
+  onDimensions?: (size: { width: number; height: number }) => void;
   /**
    * Flou (en points) appliqué par `expo-image` — sert l'effet « photo qui se
    * voile » quand la fiche produit monte dessus (référence Zalando, 17/10/2026).
@@ -102,7 +104,7 @@ export function useImageCacheGuard(): void {
 
 export function AppImage({
   uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', style,
-  accessibilityLabel, decorative = false, background, tintColor, recyclingKey, blurRadius = 0, highRes = false, onSettled, onError, testID,
+  accessibilityLabel, decorative = false, background, tintColor, recyclingKey, blurRadius = 0, highRes = false, onSettled, onDimensions, onError, testID,
 }: AppImageProps) {
   const theme = useTheme();
   const t = useT();
@@ -138,7 +140,7 @@ export function AppImage({
         testID={testID ? `${testID}-fallback` : undefined}
         accessibilityElementsHidden={decorative}
         accessibilityLabel={decorative ? undefined : (accessibilityLabel ?? t('image.unavailable'))}
-        style={[styles.fallback, { backgroundColor: theme.colors.disabled }, style]}
+        style={[styles.fallback, { backgroundColor: background === null ? 'transparent' : (background ?? theme.colors.disabled) }, style]}
       >
         {decorative ? null : (
           <Ionicons
@@ -177,7 +179,7 @@ export function AppImage({
       transition={localSource != null ? 0 : theme.duration.fast}
       blurRadius={blurRadius}
       onError={onLoadError}
-      onLoad={() => onSettled?.()}
+      onLoad={event => { onDimensions?.({ width: event.source.width, height: event.source.height }); onSettled?.(); }}
       accessibilityElementsHidden={decorative}
       accessibilityLabel={decorative ? undefined : accessibilityLabel}
       style={[{ backgroundColor: background === null ? 'transparent' : (background ?? theme.colors.line) }, style]}

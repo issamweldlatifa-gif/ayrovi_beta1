@@ -1,4 +1,5 @@
 import { Pressable, View, StyleSheet } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { BrandMark, ZMark } from '@/design/BrandMark';
@@ -10,6 +11,7 @@ import {
   PUBLICATION_THEME as P,
   PUBLICATION_METRICS as PM,
   RADIUS,
+  OPACITY,
 } from '@/design/tokens.mobile';
 import type { FeedPost } from '@/api/publicationFeed';
 
@@ -79,7 +81,12 @@ export function PublicationPublisher({
         )}
       </View>
       <View style={styles.name}>
-        <View style={[styles.identity, { flexDirection: locale === 'ar' ? 'row-reverse' : 'row' }]}>
+        <View
+          style={[
+            styles.identity,
+            { flexDirection: locale === 'ar' ? 'row-reverse' : 'row' },
+          ]}
+        >
           {ownBrand ? (
             <BrandMark nameSize={18} color={ink} />
           ) : (
@@ -121,11 +128,21 @@ export function PublicationPublisher({
           disabled={busy}
           accessibilityState={{ selected: !!following, disabled: !!busy }}
           onPress={onFollow}
-          style={styles.follow}
+          style={[
+            styles.follow,
+            {
+              borderColor: ink,
+              opacity: busy ? OPACITY.disabled : 1,
+              flexDirection: locale === 'ar' ? 'row-reverse' : 'row',
+            },
+          ]}
         >
+          {following ? (
+            <Ionicons name="checkmark-outline" size={PM.verified} color={ink} />
+          ) : null}
           <AppText
             variant="captionStrong"
-            color={P.accent}
+            color={ink}
             style={
               locale === 'ar' ? undefined : { fontFamily: FONTS.latin.bold }
             }
@@ -133,7 +150,7 @@ export function PublicationPublisher({
             {following
               ? locale === 'ar'
                 ? 'متابَع'
-                : 'Abonné'
+                : 'Suivi'
               : locale === 'ar'
               ? 'متابعة'
               : 'Suivre'}
@@ -162,5 +179,15 @@ const styles = StyleSheet.create({
   },
   image: { width: '100%', height: '100%' },
   name: { flex: 1, gap: 1 },
-  follow: { minWidth: 44, minHeight: 44, justifyContent: 'center' },
+  follow: {
+    minWidth: 88,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: RADIUS.full,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
