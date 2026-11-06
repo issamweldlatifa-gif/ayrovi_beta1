@@ -20,9 +20,9 @@ jest.mock('expo-router', () => ({
 
 // Image native simulée : le contrôle testé ici est la présence de l'image, pas son rendu.
 jest.mock('../../src/design/appImage', () => ({
-  AppImage: ({ accessibilityLabel }: { accessibilityLabel?: string }) => {
+  AppImage: ({ accessibilityLabel, ...props }: { accessibilityLabel?: string }) => {
     const { Text } = jest.requireActual('react-native');
-    return <Text>{`image:${accessibilityLabel ?? ''}`}</Text>;
+    return <Text {...props}>{`image:${accessibilityLabel ?? ''}`}</Text>;
   },
 }));
 
@@ -69,6 +69,11 @@ describe('FeaturedPublication', () => {
     expect(screen.getByText('Prêt pour la finale')).toBeTruthy();
     expect(screen.getByText('La tradition sportive rencontre un style moderne.')).toBeTruthy();
     expect(screen.getByText('Découvrir')).toBeTruthy();
+  });
+
+  it('image éditoriale portrait 2:3, pleine largeur sans changer les marges', async () => {
+    await renderSection();
+    expect(screen.getByTestId('home-featured-image')).toHaveStyle({ width: '100%', aspectRatio: 2 / 3 });
   });
 
   it('« Découvrir » ouvre la page Publications de l’application', async () => {

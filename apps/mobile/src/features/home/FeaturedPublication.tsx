@@ -42,6 +42,7 @@ export function FeaturedPublication() {
 
       {publication.imageUrl ? (
         <AppImage
+          testID="home-featured-image"
           uri={mediaUrl(publication.imageUrl)}
           style={[styles.image, { borderRadius: theme.radius.card }]}
           contentFit="cover"
@@ -72,5 +73,5 @@ const styles = StyleSheet.create({
   // Marge horizontale = celle de l'écran (AppScreen) : pas de double marge.
   section: { paddingVertical: 16, gap: 12 },
   // Pleine largeur de la colonne (même marge que le reste de l'accueil), hauteur = ratio du système.
-  image: { width: '100%', aspectRatio: MEDIA_RATIO.square, overflow: 'hidden' },
+  image: { width: '100%', aspectRatio: MEDIA_RATIO.editorialPortrait, overflow: 'hidden' },
 });

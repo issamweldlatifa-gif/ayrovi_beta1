@@ -84,6 +84,8 @@ export const COMMERCE = {
  */
 export const MEDIA_RATIO = {
   square: 1,
+  /** Grandes images éditoriales, référence À la une / Ralph’s Coffee : portrait 2:3. */
+  editorialPortrait: 2 / 3,
   /** Reels verticaux : 9:16 (comme la vidéo plein écran). */
   reel: 9 / 16,
   /**

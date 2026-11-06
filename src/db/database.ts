@@ -1,3 +1,4 @@
+import { resolveFeaturedPublication } from '../services/homeFeatured';
 import { seedOfficialStories } from '../services/officialStories';
 import { FONT_STACK } from '../../shared/brand.generated';
 import Database from 'better-sqlite3';
@@ -352,6 +353,21 @@ export class QatafoDatabase {
     this.purgeDemoProductsV1();
     this.seedTestProductV1();
     this.installOfficialStories();
+    this.installFeaturedPortrait();
+  }
+
+  /** Replace only the configured featured publication's photo; preserve its identity and routing. */
+  private installFeaturedPortrait(): void {
+    this.runOnceDataMigration('home_featured_editorial_portrait_v1', () => {
+      const settings = this.get<any>("SELECT * FROM home_featured_settings WHERE id='global'");
+      const featured = resolveFeaturedPublication({
+        // Resolve the chosen content even when the section is hidden, without enabling it.
+        enabled: true, source: settings?.source === 'pinned' ? 'pinned' : 'latest',
+        publicationId: settings?.publication_id || '', ctaLabel: settings?.cta_label || '',
+      }, this.all('SELECT id,title,subtitle,image_url,publish_at,status FROM publications'), Date.now());
+      if (featured) this.run('UPDATE publications SET image_url=?,updated_at=? WHERE id=?',
+        '/media/editorial/featured-beauty.jpg', new Date().toISOString(), featured.id);
+    });
   }
 
   /** One-shot, transactional replacement requested by the product owner. */
