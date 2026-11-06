@@ -16,6 +16,7 @@ import {
   fetchNews, fetchPromotions, fetchStories,
   type NewsItem, type Promotion, type StoryItem,
 } from './sections';
+import { fetchStoriesShowcase } from './storiesShowcase';
 import { fetchFooterInfo, type FooterInfo } from './footer';
 import { HERO_DEMO_ENABLED } from '@/features/home/heroDemo';
 import { demoHeroSlides } from '@/features/home/heroDemoSlides';
@@ -119,3 +120,5 @@ export const useStoryPublishers = (): UseQueryResult<StoryPublisher[]> =>
 export const useSocialCounts = (ids: string[]): UseQueryResult<Record<string, SocialCounts>> =>
   useQuery({ queryKey: queryKeys.socialCounts(ids), queryFn: ({ signal }) => fetchSocialCounts(ids, { signal }), ...CONTENT });
 
+
+export const useStoriesShowcase = () => useQuery({ queryKey: ['home', 'stories-showcase'], queryFn: ({ signal }) => fetchStoriesShowcase({ signal }), ...CONTENT });

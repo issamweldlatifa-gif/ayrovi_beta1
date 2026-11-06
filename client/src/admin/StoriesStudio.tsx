@@ -1,385 +1,135 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { X, Box, Eye, Heart, MessageSquare, Pencil, Plus, Share2, Trash2, ArrowUp } from '../components/QatafoIcons';
-import { adminApi } from './api';
-import { Button, DataTable, Field, Modal, StatusBadge, Switch } from './components';
-import { ProductIntegration } from './ProductIntegration';
-import { uploadMediaFile } from './mediaUpload';
-import { normalizeMediaLink } from '../../../shared/mediaLinks';
-
-const KNOWN_CATEGORIES = ['ARRIVAGE', 'NEW', 'STYLE', 'INFO', 'PROMO'];
-const CHANNELS = [
-  ['ARRIVAGE', 'Zayrovi Official'], ['NEW', 'Nouveautés'], ['STYLE', 'Style'], ['INFO', 'Actus'], ['PROMO', 'Promos'],
-] as const;
-
-const emptyForm = {
-  id: '', title: '', category: 'ARRIVAGE', media_type: 'IMAGE', media_url: '', description: '',
-  cta: '', arrival_id: '', promotion_id: '', content_mode: 'normal', product_id: '', publish_at: '', expires_at: '', priority: 0, status: 'PUBLISHED',
-  secondary_images: [] as string[],
-};
-
-const safeJson = (raw: any): string[] => { try { const v = JSON.parse(raw || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };
-const toLocal = (iso: string) => {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-};
-
-const PublisherRow: React.FC<{ pub: any; onChanged: () => void }> = ({ pub, onChanged }) => {
-  const [name, setName] = useState(pub.name);
-  const [busy, setBusy] = useState(false);
-  const saveRow = async (avatar?: string) => {
-    setBusy(true);
-    try {
-      await adminApi(`/story-publishers/${pub.id}`, { method: 'PUT', body: JSON.stringify({ name, avatar: avatar ?? pub.avatar }) });
-      onChanged();
-    } finally { setBusy(false); }
-  };
-  const uploadAvatar = async (file: File) => {
-    const url = await uploadMediaFile(file);
-    await saveRow(url);
-  };
-  return (
-    <div style={{ border: '1px solid var(--admin-line)', borderRadius: 14, padding: 12, display: 'flex', gap: 12, alignItems: 'center', background: 'var(--admin-surface-card)' }}>
-      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-gradient-to-tr from-brand to-brand-light text-white">
-        {pub.avatar ? <img src={pub.avatar} alt="" className="h-14 w-14 rounded-full object-cover" /> : <span className="text-sm font-black">{pub.name.slice(0, 2).toUpperCase()}</span>}
-      </span>
-      <div style={{ flex: 1 }}>
-        <input value={name} onChange={(e) => setName(e.target.value)} disabled={Boolean(pub.official)} style={{ width: '100%', fontWeight: 700 }} />
-        <div className="admin-block-small">{pub.slug}{pub.official ? ' · officiel' : ''}</div>
-      </div>
-      <label style={{ cursor: 'pointer', border: '1px solid var(--admin-line)', borderRadius: 10, padding: '7px 10px', fontSize: 11, fontWeight: 700 }}>
-        {busy ? '…' : 'Couverture'}
-        <input type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadAvatar(f); }} />
-      </label>
-      {!pub.official && <Button variant="danger" busy={busy} onClick={async () => { if (window.confirm('Supprimer ce canal ?')) { await adminApi(`/story-publishers/${pub.id}`, { method: 'DELETE' }); onChanged(); } }}><Trash2 size={14} /></Button>}
-    </div>
-  );
-};
-
-const NewPublisherRow: React.FC<{ onChanged: () => void }> = ({ onChanged }) => {
-  const [name, setName] = useState('');
-  const create = async () => {
-    if (name.trim().length < 2) return;
-    await adminApi('/story-publishers', { method: 'POST', body: JSON.stringify({ name: name.trim() }) });
-    setName('');
-    onChanged();
-  };
-  return (
-    <>
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nouveau canal (Sneakers, Beauty, Tech…)" style={{ flex: 1 }} />
-      <Button onClick={() => void create()}>Créer le canal</Button>
-    </>
-  );
-};
-
-/** Gestion complète des Stories : création, édition, upload média, publication, stats. */
-/**
- * BLOC D'ACCUEIL STORIES — le conteneur affiché sur la page d'accueil
- * (référence Zalando : titre + sous-titre → 4-5 cartes de mêmes dimensions →
- * lien d'action centré). Tout se règle ici ; le site ne contient aucun texte figé.
+/** Official editorial Stories. Reuses the authenticated, audited Stories resource.
+ * No legacy channels/viewer/shoppable editor in this screen.
  */
-const ShowcaseBlock: React.FC = () => {
-  const [draft, setDraft] = useState<any>(null);
+import React, { useCallback, useEffect, useState } from 'react';
+import { adminApi } from './api';
+import { Button, Field, Modal, Switch } from './components';
+import { uploadMediaFile } from './mediaUpload';
+
+type Card = { id: string; title: string; description: string; title_ar: string; description_ar: string;
+  media_url: string; priority: number; status: string; publish_at: string; expires_at: string | null };
+type Settings = { title: string; subtitle: string; titleAr: string; subtitleAr: string; ctaLabel: string; ctaLabelAr: string; cardCount: number; enabled: boolean };
+
+export const StoriesStudioPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
+  const [settings, setSettings] = useState<Settings | null>(null);
+  const [rows, setRows] = useState<Card[]>([]);
+  const [form, setForm] = useState<Card | null>(null);
+  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-
-  const load = useCallback(() => {
-    adminApi<any>('/stories-showcase')
-      .then((result) => setDraft(result.data || null))
-      .catch(() => setMessage('Impossible de charger les réglages du bloc.'));
-  }, []);
-  useEffect(() => { load(); }, [load]);
-
-  const patch = (changes: Record<string, unknown>) => setDraft((current: any) => ({ ...current, ...changes }));
-
-  const save = async () => {
-    if (!draft) return;
-    setBusy(true); setMessage('');
+  const load = useCallback(async () => {
     try {
-      const result = await adminApi<any>('/stories-showcase', {
-        method: 'PUT',
-        body: JSON.stringify({
-          title: draft.title, subtitle: draft.subtitle, ctaLabel: draft.ctaLabel,
-          ctaUrl: draft.ctaUrl, cardCount: Number(draft.cardCount) || 4, enabled: Boolean(draft.enabled),
-          sortOrder: Number(draft.sortOrder ?? 1),
-        }),
-      });
-      setDraft(result.data || draft);
-      setMessage('Bloc Stories enregistré — visible immédiatement sur la page d’accueil.');
-    } catch (e: any) { setMessage(e?.message || 'Enregistrement impossible.'); }
+      const [block, cards] = await Promise.all([
+        adminApi<{ data: Settings }>('/stories-showcase'),
+        adminApi<{ data: Card[]; pagination: { totalPages: number } }>(`/stories?pageSize=100&page=${page}&sort=priority&direction=desc`),
+      ]);
+      setSettings(block.data); setRows(cards.data); setPages(cards.pagination.totalPages); setError('');
+    } catch (e: any) { setError(e.message || 'Chargement impossible.'); }
+  }, [page]);
+  useEffect(() => { void load(); }, [load]);
+  const saveSettings = async () => {
+    setBusy(true); setError(''); setMessage('');
+    try {
+      await adminApi('/stories-showcase', { method: 'PUT', body: JSON.stringify({ ...settings, ctaUrl: '', sortOrder: 0 }) });
+      setMessage('Conteneur enregistré.');
+    } catch (e: any) { setError(e.message || 'Enregistrement impossible.'); }
     finally { setBusy(false); }
   };
-
-  if (!draft) return null;
-
-  return (
-    <section className="admin-card">
-      <h3>Bloc d’accueil — le conteneur Stories</h3>
-      <p className="admin-block-small">
-        C’est le conteneur affiché sur la page d’accueil : le titre, une ligne de cartes
-        <strong> toutes de la même taille</strong>, puis le lien d’action centré au milieu.
-        Les cartes affichent les stories publiées, groupées par canal (les plus prioritaires d’abord).
-      </p>
-      <div className="admin-form" style={{ marginTop: 10 }}>
-        <Field label="Titre du conteneur"><input value={draft.title || ''} onChange={(e) => patch({ title: e.target.value })} maxLength={80} /></Field>
-        <Field label="Sous-titre"><input value={draft.subtitle || ''} onChange={(e) => patch({ subtitle: e.target.value })} maxLength={160} /></Field>
-        <Field label="Nombre de cartes" hint="Toutes les cartes gardent strictement les mêmes dimensions." >
-          <select value={String(draft.cardCount || 4)} onChange={(e) => patch({ cardCount: Number(e.target.value) })}>
-            <option value="4">4 stories</option>
-            <option value="5">5 stories</option>
-          </select>
-        </Field>
-        <Field label="Libellé du lien central"><input value={draft.ctaLabel || ''} onChange={(e) => patch({ ctaLabel: e.target.value })} maxLength={60} /></Field>
-        <Field label="Destination du lien central" hint="Vide = ouvre l’onglet Stories. Sinon : /stories, /promotions, ou une URL https://…">
-          <input value={draft.ctaUrl || ''} onChange={(e) => patch({ ctaUrl: e.target.value })} placeholder="/stories" />
-        </Field>
-        <Field label="Position du bloc" hint="Par défaut : la section Stories se place SOUS le bloc LENS.">
-          <select value={String(Number(draft.sortOrder ?? 1) >= 1 ? 1 : 0)} onChange={(e) => patch({ sortOrder: Number(e.target.value) })}>
-            <option value="1">Sous le bloc LENS</option>
-            <option value="0">Au-dessus du bloc LENS</option>
-          </select>
-        </Field>
-        <Field label="Afficher le bloc" full>
-          <Switch checked={Boolean(draft.enabled)} onLabel="Bloc visible" offLabel="Bloc masqué" onChange={() => patch({ enabled: !draft.enabled })} />
-        </Field>
-      </div>
-      <div className="admin-actions">
-        <Button busy={busy} onClick={() => void save()}>Enregistrer le bloc</Button>
-        {message ? <span className="admin-block-small">{message}</span> : null}
-      </div>
-    </section>
-  );
-};
-
-export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onEditContent }) => {
-  const [rows, setRows] = useState<any[]>([]);
-  const [stats, setStats] = useState<Record<string, any>>({});
-  const [arrivals, setArrivals] = useState<any[]>([]);
-  const [promotions, setPromotions] = useState<any[]>([]);
-  const [busy, setBusy] = useState('');
-  const [error, setError] = useState('');
-  const [form, setForm] = useState<any | null>(null);
-  const [publishers, setPublishers] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
-
-  const load = useCallback(() => {
-    Promise.all([
-      adminApi<any>('/stories?pageSize=100'),
-      adminApi<any>('/stories-stats').catch(() => ({ data: {} })),
-      adminApi<any>('/arrivals?pageSize=50').catch(() => ({ data: [] })),
-      adminApi<any>('/promotions?pageSize=50').catch(() => ({ data: [] })),
-      adminApi<any>('/story-publishers').catch(() => ({ data: [] })),
-    ]).then(([list, stat, arr, pro, pubs]) => {
-      setRows(Array.isArray(list.data) ? list.data : []);
-      setStats(stat.data || {});
-      setArrivals(Array.isArray(arr.data) ? arr.data : []);
-      setPromotions(Array.isArray(pro.data) ? pro.data : []);
-      setPublishers(Array.isArray(pubs.data) ? pubs.data : []);
-    }).catch(() => setError('Impossible de charger les stories.'));
-  }, []);
-  useEffect(() => { load(); }, [load]);
-
-  const save = async () => {
-    if (!form) return;
-    if (form.title.trim().length < 3 || !form.media_url) { setError('Titre et média obligatoires.'); return; }
-    setBusy('save');
-    if (form.category && !publishers.some((pub) => pub.slug === form.category.toUpperCase())) {
-      try { await adminApi('/story-publishers', { method: 'POST', body: JSON.stringify({ name: form.category }) }); } catch { /* existe déjà */ }
-    }
-    const payload = {
-      title: form.title, category: form.category, media_type: form.media_type, media_url: form.media_url,
-      description: form.description, cta: form.cta, priority: Number(form.priority) || 0, status: form.status,
-      secondary_images: form.secondary_images || [],
-      arrival_id: form.arrival_id || null, promotion_id: form.promotion_id || null,
-      content_mode: form.content_mode === 'shoppable' ? 'shoppable' : 'normal', product_id: form.product_id || null,
-      publish_at: form.publish_at ? new Date(form.publish_at).toISOString() : new Date().toISOString(),
-      expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
-    };
+  const saveCard = async () => {
+    if (!form || !form.media_url || form.title.trim().length < 3) { setError('Image et titre (3 caractères minimum) requis.'); return; }
+    setBusy(true); setError(''); setMessage('');
     try {
-      if (form.id) await adminApi(`/stories/${form.id}`, { method: 'PUT', body: JSON.stringify(payload) });
-      else await adminApi('/stories', { method: 'POST', body: JSON.stringify(payload) });
-      setForm(null);
-      load();
-    } catch (e: any) { setError(e?.message || 'Enregistrement impossible.'); }
-    finally { setBusy(''); }
+      const { id, ...card } = form;
+      await adminApi(id ? `/stories/${encodeURIComponent(id)}` : '/stories', {
+        method: id ? 'PUT' : 'POST', body: JSON.stringify({ ...card, media_type: 'IMAGE', category: 'STYLE',
+          content_mode: 'normal', product_id: null, cta: '', target_url: '', secondary_images: [],
+          expires_at: form.expires_at || null }),
+      });
+      setForm(null); await load(); setMessage('Carte enregistrée.');
+    } catch (e: any) { setError(e.message || 'Enregistrement impossible.'); }
+    finally { setBusy(false); }
   };
-
-  const uploadMany = async (files: FileList) => {
-    setUploading(true);
-    try {
-      const urls: string[] = [];
-      for (const file of Array.from(files).slice(0, 10)) {
-        urls.push(await uploadMediaFile(file));
-      }
-      setForm((f: any) => ({ ...f, secondary_images: [...(f.secondary_images || []), ...urls] }));
-    } catch (e: any) { setError(e?.message || 'Upload impossible.'); }
-    finally { setUploading(false); }
+  const remove = async (card: Card) => {
+    if (!window.confirm(`Retirer « ${card.title} » du carrousel ?`)) return;
+    setBusy(true); setError('');
+    try { await adminApi(`/stories/${encodeURIComponent(card.id)}`, { method: 'DELETE' }); await load(); }
+    catch (e: any) { setError(e.message || 'Suppression impossible.'); }
+    finally { setBusy(false); }
   };
-
-  const uploadMedia = async (file: File) => {
-    setUploading(true);
+  const upload = async (file: File) => {
+    setUploading(true); setError('');
     try {
       const url = await uploadMediaFile(file);
-      setForm((f: any) => ({ ...f, media_url: url, media_type: file.type.startsWith('video/') ? 'VIDEO' : f.media_type }));
-    } catch (e: any) { setError(e?.message || 'Upload impossible.'); }
+      setForm(current => current ? { ...current, media_url: url } : current);
+    } catch (e: any) { setError(e.message || 'Envoi impossible.'); }
     finally { setUploading(false); }
   };
 
-  const setStatus = async (id: string, status: string) => {
-    setBusy(id);
-    try { await adminApi(`/stories/${id}`, { method: 'PUT', body: JSON.stringify({ status }) }); load(); }
-    catch (e: any) { setError(e?.message || 'Action impossible.'); }
-    finally { setBusy(''); }
-  };
-
-  const remove = async (id: string) => {
-    if (!window.confirm('Archiver définitivement cette story ?')) return;
-    setBusy(id);
-    try { await adminApi(`/stories/${id}`, { method: 'DELETE' }); load(); }
-    catch (e: any) { setError(e?.message || 'Suppression impossible.'); }
-    finally { setBusy(''); }
-  };
-
-  return (
-    <div className="admin-page">
-      <header className="admin-page-head">
-        <div>
-          <span className="admin-eyebrow">Contenu → Stories Studio</span>
-          <h2>Stories : contrôle total</h2>
-          <p>Créez, éditez, publiez et mesurez les stories du tab social — canaux, médias, CTA et statistiques persistantes.</p>
-        </div>
-        <div className="admin-actions" style={{ marginTop: 0 }}>
-          <Button onClick={() => { setError(''); setForm({ ...emptyForm, publish_at: toLocal(new Date().toISOString()) }); }}><Plus size={15} />Nouvelle story</Button>
-        </div>
-      </header>
-      {error && <div className="admin-error">{error}</div>}
-
-      <ShowcaseBlock />
-
-      <section className="admin-card" style={{ marginTop: 14 }}>
-        <DataTable
-          minWidth={860}
-          emptyText="Aucune story — créez la première avec « Nouvelle story »."
-          rows={rows}
-          columns={[
-            { key: 'title', label: 'Story', render: (row: any) => (
-              <div className="admin-entity">
-                {row.media_url ? <span><img src={row.media_url} alt="" /></span> : null}
-                <div><strong>{row.title}</strong><small>{new Date(row.publish_at).toLocaleDateString('fr-FR')}</small></div>
-              </div>
-            ) },
-            { key: 'category', label: 'Canal', render: (row: any) => (CHANNELS.find(([key]) => key === row.category) || [row.category, row.category])[1] },
-            { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={row.status} /> },
-            { key: 'views', label: <><Eye size={14} /> Vues</>, align: 'end', render: (row: any) => <span className="admin-cell-num">{(stats[row.id] || { views: 0 }).views}</span> },
-            { key: 'likes', label: <><Heart size={14} /> Likes</>, align: 'end', render: (row: any) => <span className="admin-cell-num">{(stats[row.id] || { likes: 0 }).likes}</span> },
-            { key: 'comments', label: <><MessageSquare size={14} /> Comm.</>, align: 'end', render: (row: any) => <span className="admin-cell-num">{(stats[row.id] || { comments: 0 }).comments}</span> },
-            { key: 'shares', label: <><Share2 size={14} /> Part.</>, align: 'end', render: (row: any) => <span className="admin-cell-num">{(stats[row.id] || { shares: 0 }).shares}</span> },
-          ]}
-          rowActions={[
-            { key: 'edit', label: 'Éditer', icon: <Pencil size={14} />, hideLabel: true, onRun: (row: any) => {
-              setError('');
-              setForm({ ...emptyForm, ...row, secondary_images: safeJson(row.secondary_images), publish_at: toLocal(row.publish_at), expires_at: toLocal(row.expires_at || '') });
-            } },
-            { key: 'publish', label: 'Publier', show: (row: any) => row.status !== 'PUBLISHED', disabled: (row: any) => busy === row.id, onRun: (row: any) => void setStatus(row.id, 'PUBLISHED') },
-            { key: 'unpublish', label: 'Dépublier', icon: <Box size={14} />, tone: 'danger', hideLabel: true, show: (row: any) => row.status === 'PUBLISHED', disabled: (row: any) => busy === row.id, onRun: (row: any) => void setStatus(row.id, 'EXPIRED') },
-            { key: 'delete', label: 'Supprimer', icon: <Trash2 size={14} />, tone: 'danger', hideLabel: true, disabled: (row: any) => busy === row.id, onRun: (row: any) => void remove(row.id) },
-          ]}
-        />
-      </section>
-
-      <section className="admin-card" style={{ marginTop: 14 }}>
-        <h3>Canaux & couvertures des cercles (Highlights)</h3>
-        <p className="admin-block-small">L'image choisie ici est celle affichée dans la circle du tab Stories — comme les Highlights Instagram.</p>
-        <div className="admin-grid-2" style={{ marginTop: 10 }}>
-          {publishers.map((pub) => (
-            <PublisherRow key={pub.id} pub={pub} onChanged={load} />
-          ))}
-        </div>
-        <div className="admin-actions"><NewPublisherRow onChanged={load} /></div>
-      </section>
-
-      <Modal open={Boolean(form)} title={form?.id ? 'Éditer la story' : 'Nouvelle story'} onClose={() => setForm(null)} wide
-        footer={<>
-          <Button variant="ghost" onClick={() => setForm(null)}>Annuler</Button>
-          <Button busy={busy === 'save'} onClick={() => void save()}>Enregistrer</Button>
-        </>}>
-        {form && (
-          <div className="admin-grid-2">
-            <Field label="Titre" required><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
-            <Field label="Canal (publisher)">
-              <select value={publishers.some((pub) => pub.slug === form.category) || form.category === '__custom' ? form.category : '__custom'} onChange={(e) => {
-                if (e.target.value === '__custom') setForm({ ...form, category: '' });
-                else setForm({ ...form, category: e.target.value });
-              }}>
-                {publishers.map((pub) => <option key={pub.id} value={pub.slug}>{pub.name}{pub.official ? ' (officiel)' : ''}</option>)}
-                <option value="__custom">+ Canal personnalisé…</option>
-              </select>
-            </Field>
-            {!KNOWN_CATEGORIES.includes(form.category) && (
-              <Field label="Nom du nouveau canal" full><input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Ex : Sneakers, Beauty, Tech…" /></Field>
-            )}
-            <Field label="Type de média">
-              <select value={form.media_type} onChange={(e) => setForm({ ...form, media_type: e.target.value })}>
-                <option value="IMAGE">Image</option><option value="VIDEO">Vidéo</option>
-              </select>
-            </Field>
-            <Field label="Média (upload ou URL)">
-              <div className="admin-actions" style={{ marginTop: 0 }}>
-                <input value={form.media_url} onChange={(e) => setForm({ ...form, media_url: e.target.value })} onBlur={() => {
-                  const link = normalizeMediaLink(form.media_url || '', form.media_type === 'VIDEO' ? 'video' : 'image');
-                  if (link.ok === false) setError(link.error); else setForm((cur: any) => ({ ...cur, media_url: link.url }));
-                }} placeholder="/media/… ou https://…" style={{ flex: 1 }} />
-                <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700, background: 'var(--admin-surface-card)' }}>
-                  <ArrowUp size={14} />{uploading ? '…' : 'Uploader'}
-                  <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/ogg,video/quicktime" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMedia(f); }} />
-                </label>
-              </div>
-            </Field>
-            <Field label="Images supplémentaires (carousel, comme Instagram)" full>
-              <div className="admin-actions" style={{ marginTop: 0 }}>
-                <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700, background: 'var(--admin-surface-card)' }}>
-                  <ArrowUp size={14} />{uploading ? '…' : 'Ajouter des images'}
-                  <input type="file" multiple accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { if (e.target.files?.length) void uploadMany(e.target.files); e.target.value = ''; }} />
-                </label>
-              </div>
-              {form.secondary_images?.length > 0 && (
-                <div className="no-scrollbar flex gap-2 overflow-x-auto" style={{ marginTop: 8 }}>
-                  {form.secondary_images.map((url: string, i: number) => (
-                    <span key={i} style={{ position: 'relative' }}>
-                      <img src={url} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover' }} />
-                      <button type="button" aria-label="Retirer" onClick={() => setForm({ ...form, secondary_images: form.secondary_images.filter((_: any, j: number) => j !== i) })} style={{ position: 'absolute', top: -6, insetInlineEnd: -6, background: 'var(--admin-danger-strong)', color: 'var(--admin-on-dark)', borderRadius: '50%', width: 18, height: 18, fontSize: 10, fontWeight: 700 }}><X size={16}/></button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </Field>
-            <Field label="Caption" full><textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
-            <Field label="CTA (label, optionnel)"><input value={form.cta} onChange={(e) => setForm({ ...form, cta: e.target.value })} placeholder="Découvrir / Voir le produit" /></Field>
-            <Field label="Priorité"><input type="number" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} /></Field>
-            <ProductIntegration kind="story" value={form} onChange={(v) => setForm({ ...form, ...v })} />
-            <Field label="Lien arrivage (optionnel)">
-              <select value={form.arrival_id || ''} onChange={(e) => setForm({ ...form, arrival_id: e.target.value })}>
-                <option value="">—</option>
-                {arrivals.map((a: any) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            </Field>
-            <Field label="Lien promotion (optionnel)">
-              <select value={form.promotion_id || ''} onChange={(e) => setForm({ ...form, promotion_id: e.target.value })}>
-                <option value="">—</option>
-                {promotions.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </Field>
-            <Field label="Publication"><input type="datetime-local" value={form.publish_at} onChange={(e) => setForm({ ...form, publish_at: e.target.value })} /></Field>
-            <Field label="Expiration (optionnel)"><input type="datetime-local" value={form.expires_at} onChange={(e) => setForm({ ...form, expires_at: e.target.value })} /></Field>
-            <Field label="Statut">
-              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-                {['DRAFT', 'SCHEDULED', 'PUBLISHED', 'EXPIRED'].map((s) => <option key={s}>{s}</option>)}
-              </select>
-            </Field>
+  return <div className="admin-grid">
+    <section className="admin-card">
+      <h3>Stories officielles — conteneur d’accueil</h3>
+      <p>Entre À la une et LENS. Cartes éditoriales de mêmes dimensions. Le CTA reste sans destination en attendant son évolution.</p>
+      {error ? <p role="alert">{error}</p> : null}
+      {message ? <p role="status">{message}</p> : null}
+      {settings ? <>
+        <fieldset className="admin-form admin-stories-fields" disabled={!canWrite || busy}>
+          {(['title', 'subtitle', 'titleAr', 'subtitleAr', 'ctaLabel', 'ctaLabelAr'] as const).map((key, index) => <Field key={key}
+            label={['Titre FR', 'Sous-titre FR', 'Titre AR', 'Sous-titre AR', 'Libellé CTA FR', 'Libellé CTA AR'][index]}>
+            <input value={settings[key] || ''} dir={key.endsWith('Ar') ? 'rtl' : undefined}
+              maxLength={key.startsWith('subtitle') ? 160 : key.startsWith('cta') ? 60 : 80}
+              onChange={e => setSettings({ ...settings, [key]: e.target.value })} />
+          </Field>)}
+          <Field label="Nombre de cartes affichées" hint="7 au lancement ; augmentez ce nombre pour afficher vos nouvelles cartes (jusqu’à 1000).">
+            <input type="number" min={1} max={1000} step={1} value={settings.cardCount} onChange={e => setSettings({ ...settings, cardCount: Number(e.target.value) })} />
+          </Field>
+          <Field label="Visibilité"><Switch disabled={!canWrite || busy} onLabel="Visible" offLabel="Masqué" checked={settings.enabled} onChange={() => setSettings({ ...settings, enabled: !settings.enabled })} /></Field>
+        </fieldset>
+        <Button disabled={!canWrite} busy={busy} onClick={() => void saveSettings()}>Enregistrer le conteneur</Button>
+      </> : <Button onClick={() => void load()}>Recharger</Button>}
+    </section>
+    <section className="admin-card">
+      <h3>Cartes Stories</h3>
+      <p>Priorité décroissante : la plus élevée apparaît en premier. Les cartes expirées restent ici pour permettre leur suppression ou leur réactivation.</p>
+      <Button disabled={busy || !canWrite} onClick={() => { setError(''); setForm({ id: '', title: '', description: '', title_ar: '', description_ar: '', media_url: '',
+        priority: Math.max(0, ...rows.map(row => row.priority)) + 1, status: 'PUBLISHED', publish_at: new Date().toISOString(), expires_at: null }); }}>Ajouter une carte</Button>
+      <div className="admin-stories-grid">
+        {rows.map(card => <article className="admin-story-editor-card" key={card.id}>
+          <img src={card.media_url} alt={card.title} loading="lazy" />
+          <h4>{card.title}</h4><p>{card.description}</p><p>{card.status} · Priorité {card.priority}</p>
+          <div className="admin-actions">
+            <Button disabled={busy || !canWrite} onClick={() => { setError(''); setForm(card); }}>Modifier</Button>
+            <Button disabled={busy || !canWrite} variant="danger" onClick={() => void remove(card)}>Retirer</Button>
           </div>
-        )}
-      </Modal>
-    </div>
-  );
+        </article>)}
+      </div>
+      <div className="admin-actions">
+        <Button disabled={page <= 1 || busy} onClick={() => setPage(page - 1)}>Précédent</Button>
+        <span>{page} / {pages}</span>
+        <Button disabled={page >= pages || busy} onClick={() => setPage(page + 1)}>Suivant</Button>
+      </div>
+    </section>
+    {form ? <Modal open title={form.id ? 'Modifier la carte' : 'Nouvelle carte'} onClose={() => { if (!busy && !uploading) setForm(null); }}>
+      {error ? <p role="alert">{error}</p> : null}
+      <fieldset className="admin-form admin-stories-fields" disabled={!canWrite || busy}>
+        <Field label="Photo" full>
+          {form.media_url ? <img src={form.media_url} alt="Aperçu" className="admin-story-editor-preview" /> : null}
+          <input type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading || busy}
+            onChange={e => { const file = e.target.files?.[0]; if (file) void upload(file); }} />
+          {uploading ? <p role="status">Envoi en cours…</p> : null}
+        </Field>
+        {(['title','description','title_ar','description_ar'] as const).map((key, index) => <Field key={key} label={['Titre FR','Description FR','Titre AR','Description AR'][index]}>
+          <input value={form[key] || ''} dir={key.endsWith('_ar') ? 'rtl' : undefined} maxLength={key.startsWith('title') ? 120 : 300}
+            onChange={e => setForm({ ...form, [key]: e.target.value })} />
+        </Field>)}
+        <Field label="Priorité"><input type="number" step={1} value={form.priority} onChange={e => setForm({ ...form, priority: Number(e.target.value) })} /></Field>
+        <Field label="Statut"><select value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+          <option value="PUBLISHED">Publié</option><option value="DRAFT">Brouillon</option><option value="EXPIRED">Retiré</option>
+        </select></Field>
+      </fieldset>
+      <Button busy={busy} disabled={uploading || !canWrite} onClick={() => void saveCard()}>Enregistrer la carte</Button>
+    </Modal> : null}
+  </div>;
 };

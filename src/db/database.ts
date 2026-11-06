@@ -1,3 +1,4 @@
+import { seedOfficialStories } from '../services/officialStories';
 import { FONT_STACK } from '../../shared/brand.generated';
 import Database from 'better-sqlite3';
 import path from 'path';
@@ -350,6 +351,34 @@ export class QatafoDatabase {
     this.rebrandZayroviV1();
     this.purgeDemoProductsV1();
     this.seedTestProductV1();
+    this.installOfficialStories();
+  }
+
+  /** One-shot, transactional replacement requested by the product owner. */
+  private installOfficialStories(): void {
+    if (!this.get('SELECT 1 FROM applied_data_migrations WHERE key=?', 'official_stories_editorial_v1')
+        && this.databasePath !== ':memory:' && this.get<any>('SELECT COUNT(*) count FROM stories')?.count > 0) {
+      const backupDir = path.join(path.dirname(this.databasePath), 'backups');
+      fs.mkdirSync(backupDir, { recursive: true });
+      const backup = path.join(backupDir, `before-official-stories-${Date.now()}-${randomUUID().slice(0, 8)}.sqlite`);
+      // Fail closed: no content replacement if a durable pre-migration copy cannot be made.
+      this.db.prepare('VACUUM INTO ?').run(backup);
+    }
+    this.runOnceDataMigration('official_stories_editorial_v1', () => {
+      // Rebuild the settings table to lift the historical SQLite CHECK (4,5).
+      this.db.exec(`ALTER TABLE stories_showcase_settings RENAME TO stories_showcase_legacy;
+        CREATE TABLE stories_showcase_settings (
+          id TEXT PRIMARY KEY CHECK(id='global'), title TEXT NOT NULL, subtitle TEXT NOT NULL,
+          cta_label TEXT NOT NULL, cta_url TEXT NOT NULL DEFAULT '',
+          card_count INTEGER NOT NULL DEFAULT 7 CHECK(card_count BETWEEN 1 AND 1000),
+          enabled INTEGER NOT NULL DEFAULT 1, sort_order INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL,
+          title_ar TEXT NOT NULL DEFAULT '', subtitle_ar TEXT NOT NULL DEFAULT '', cta_label_ar TEXT NOT NULL DEFAULT ''
+        );
+        INSERT INTO stories_showcase_settings (id,title,subtitle,cta_label,cta_url,card_count,enabled,sort_order,updated_at)
+          SELECT id,title,subtitle,cta_label,cta_url,7,enabled,0,updated_at FROM stories_showcase_legacy;
+        DROP TABLE stories_showcase_legacy;`);
+      seedOfficialStories(this);
+    });
   }
 
   /**
@@ -1916,10 +1945,10 @@ export class QatafoDatabase {
       subtitle TEXT NOT NULL DEFAULT 'Le meilleur de la semaine',
       cta_label TEXT NOT NULL DEFAULT 'Explorer toutes les stories',
       cta_url TEXT NOT NULL DEFAULT '',
-      card_count INTEGER NOT NULL DEFAULT 4 CHECK(card_count IN (4,5)),
+      card_count INTEGER NOT NULL DEFAULT 7 CHECK(card_count BETWEEN 1 AND 1000),
       enabled INTEGER NOT NULL DEFAULT 1,
-      /* 1 = la section Stories se place SOUS le bloc LENS (valeur par defaut),
-         0 = au-dessus. Voir la migration stories_showcase_position_v1. */
+      /* Legacy compatibility only. The official home gallery is always before LENS;
+         official_stories_editorial_v1 resets this value to 0. */
       sort_order INTEGER NOT NULL DEFAULT 1,
       updated_at TEXT NOT NULL
     );`);
@@ -2143,6 +2172,8 @@ export class QatafoDatabase {
     // دفتر الشروط Stories : قنوات الناشرين (Zayrovi Official / Style / Promos / Actus).
     this.ensureColumn('stories', 'category', "TEXT NOT NULL DEFAULT 'ARRIVAGE'");
     this.ensureColumn('stories', 'secondary_images', "TEXT NOT NULL DEFAULT '[]'");
+    this.ensureColumn('stories', 'title_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('stories', 'description_ar', "TEXT NOT NULL DEFAULT ''");
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM story_publishers').get() as any).count === 0) {
       const ins = this.db.prepare(`INSERT INTO story_publishers (id,slug,name,subtitle,avatar,official,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`);
       const nowP = new Date().toISOString();
@@ -2685,7 +2716,6 @@ export class QatafoDatabase {
     this.rebrandZalandoOrange();
     this.rebrandNeutralScaleV1();
     this.seedStoriesShowcasePosition();
-    this.seedStoriesDemoContent();
     this.seedLensFeatureMedia();
   }
 
@@ -2699,72 +2729,6 @@ export class QatafoDatabase {
     this.runOnceDataMigration('stories_showcase_position_v1', () => {
       const now = new Date().toISOString();
       this.run("UPDATE stories_showcase_settings SET sort_order=1, updated_at=? WHERE id='global' AND sort_order=0", now);
-    });
-  }
-
-  /**
-   * Contenu de démonstration du bloc Stories.
-   *
-   * Pourquoi ce seed vit dans le code et non dans la base livrée : la base
-   * SQLite (data/*.sqlite) et les fichiers envoyés (data/uploads) sont exclus
-   * du dépôt, donc une installation neuve — ou le site déployé — démarre avec
-   * une table `stories` vide. La section Stories se masque alors d'elle-même,
-   * et l'accueil ne montre rien du tout.
-   *
-   * Les visuels, eux, sont bien versionnés : ils vivent dans client/public/media
-   * et sont donc servis partout. On insère uniquement si aucune story publiée
-   * n'existe, pour ne jamais écraser le travail fait depuis le Dashboard.
-   */
-  private seedStoriesDemoContent(): void {
-    this.runOnceDataMigration('stories_demo_seed_v1', () => {
-      const already = this.get<{ count: number }>(
-        "SELECT COUNT(*) AS count FROM stories WHERE status='PUBLISHED'"
-      );
-      if (already && already.count > 0) return;
-
-      const now = new Date();
-      const day = 24 * 60 * 60 * 1000;
-      const at = (offsetDays: number) => new Date(now.getTime() + offsetDays * day).toISOString();
-      const insert = `
-        INSERT INTO stories (
-          id, media_type, media_url, title, description, cta, target_url,
-          publish_at, expires_at, priority, status, created_at, updated_at,
-          category, secondary_images
-        ) VALUES (@id,'IMAGE',@media_url,@title,@description,@cta,@target_url,
-                  @publish_at,NULL,@priority,'PUBLISHED',@created_at,@updated_at,
-                  @category,'[]')
-      `;
-      const demo = [
-        { id: 'story_demo_01', media_url: '/media/hero-femme.jpg',
-          title: 'Nouvel arrivage — Sneakers',
-          description: 'Les paires de la saison viennent d’arriver. Quantités limitées.',
-          cta: 'Voir l’arrivage', category: 'ARRIVAGE', priority: 95 },
-        { id: 'story_demo_02', media_url: '/media/hero-homme.jpg',
-          title: 'Nouveautés de la semaine',
-          description: 'Ce que l’équipe ZAYROVI a sélectionné pour vous.',
-          cta: 'Découvrir', category: 'NEW', priority: 90 },
-        { id: 'story_demo_03', media_url: '/media/hero-enfants.jpg',
-          title: 'Le dressing minimaliste',
-          description: 'Trois pièces, dix tenues. Notre guide.',
-          cta: 'Lire le guide', category: 'STYLE', priority: 85 },
-        { id: 'story_demo_04', media_url: '/media/lens-sneakers.jpg',
-          title: 'Dédouanement inclus',
-          description: 'Vos commandes sont dédouanées avant expédition.',
-          cta: 'En savoir plus', category: 'INFO', priority: 80 },
-        { id: 'story_demo_05', media_url: '/media/hero-default.jpg',
-          title: '-20 % sur la sélection',
-          description: 'Offre valable jusqu’à épuisement du stock.',
-          cta: 'Voir l’offre', category: 'PROMO', priority: 75 },
-      ];
-      for (const [index, story] of demo.entries()) {
-        this.run(insert, {
-          ...story,
-          target_url: '',
-          publish_at: at(-index),
-          created_at: at(-index),
-          updated_at: at(-index),
-        });
-      }
     });
   }
 
@@ -3182,15 +3146,6 @@ export class QatafoDatabase {
           '/media/hero-enfants.jpg','PERCENTAGE',20,'2026-08-12T00:00:00.000Z','2026-08-21T23:59:59.000Z','ARRIVAGE20',500,0,'ACTIVE',now,now,
         );
       this.db.prepare('INSERT OR IGNORE INTO promotion_arrivals (promotion_id,arrival_id) VALUES (?,?)').run('promo_arrival_08','arrival_08');
-    }
-
-    if ((this.db.prepare('SELECT COUNT(*) AS count FROM stories').get() as any).count === 0) {
-      this.db.prepare(`INSERT INTO stories
-        (id,media_type,media_url,title,description,cta,target_url,product_id,arrival_id,promotion_id,publish_at,expires_at,priority,status,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-          'story_arrival_08','IMAGE','/media/hero-femme.jpg','Arrivage #08 ouvert','Découvrez la sélection et préparez votre commande.','Découvrir','#arrivages',
-          null,'arrival_08','promo_arrival_08','2026-08-12T00:00:00.000Z','2026-08-21T23:59:59.000Z',100,'PUBLISHED',now,now,
-        );
     }
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM news_items').get() as any).count === 0) {

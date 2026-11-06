@@ -671,9 +671,10 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: row ? {
       title: row.title,
       subtitle: row.subtitle,
+      titleAr: row.title_ar, subtitleAr: row.subtitle_ar, ctaLabelAr: row.cta_label_ar,
       ctaLabel: row.cta_label,
       ctaUrl: row.cta_url || '',
-      cardCount: Math.min(5, Math.max(4, Number(row.card_count ?? 4))),
+      cardCount: Number(row.card_count ?? 7),
       enabled: Boolean(row.enabled),
       sortOrder: Number(row.sort_order ?? 0),
     } : null });

@@ -1486,3 +1486,11 @@ html[data-theme='dark'] .admin-table th { color: var(--admin-text-soft); }
 .fiche-hints em {
   font-style: normal; font-size: 11px; color: var(--admin-ink-muted);
 }
+
+/* Official Stories editorial workspace; shared admin theme only. */
+.admin-stories-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(210px,1fr)); gap: 16px; margin-block: 16px; }
+.admin-story-editor-card { border: 1px solid var(--admin-line); border-radius: 12px; padding: 12px; background: var(--admin-surface-card); }
+.admin-story-editor-card > img { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; }
+.admin-story-editor-preview { display: block; width: 160px; max-width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; margin-bottom: 12px; }
+
+.admin-stories-fields { border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }

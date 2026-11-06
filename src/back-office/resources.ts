@@ -242,10 +242,9 @@ const LEGACY_RESOURCE_META: Record<string, {
     nav: { group: 'Contenu', order: 30, icon: 'Gift' },
   },
   stories: {
-    key: 'cms.stories', module: 'cms', domain: 'CONTENT', label: 'Stories (données)', singular: 'story',
-    description: 'Lignes `stories` servies par le moteur générique ; l’écran de planification est « Social ».',
-    section: 'stories', nav: null,
-    navlessReason: 'Surface de données du moteur générique ; l’écran de planification des stories est « Social » (content.social). Deep link `?section=stories` conservé.',
+    key: 'cms.stories', module: 'cms', domain: 'CONTENT', label: 'Stories officielles', singular: 'story',
+    description: 'Conteneur éditorial entre À la une et LENS : photos, textes FR/AR, ordre et visibilité.',
+    section: 'stories', nav: { group: 'Contenu', order: 92, icon: 'Image' },
   },
   news: {
     key: 'cms.news', module: 'cms', domain: 'CONTENT', label: 'مجلتي', singular: 'article',
@@ -297,9 +296,10 @@ function descriptorFromLegacyConfig(name: string, config: FrameworkResourceConfi
     },
     section: meta.section,
     nav: meta.nav,
-    surface: 'framework',
+    surface: name === 'stories' ? 'custom' : 'framework',
+    ...(name === 'stories' ? { component: 'StoriesStudioPage' } : {}),
     ...(meta.navlessReason ? { navlessReason: meta.navlessReason } : {}),
-    api: { prefix: `/${name}`, kind: 'generic' },
+    api: { prefix: name === 'stories' ? '/stories-showcase' : `/${name}`, kind: 'generic' },
     columns: config.fields.map((field) => columnFor(field, config)),
     fields: config.fields.map((field) => ({
       key: field,
@@ -761,7 +761,7 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
   },
   {
     key: 'content.social', label: 'Social', singular: 'publication', module: 'cms', domain: 'CONTENT',
-    description: 'Publications, reels et éditeurs de stories.',
+    description: 'Publications et reels. Les Stories officielles ont leur propre espace.',
     navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
     section: 'social', nav: { group: 'Contenu', order: 40, icon: 'ChartLine' },
     surface: 'custom', component: 'SocialAdminPage', api: { prefix: '/publications', kind: 'generic' },

@@ -140,7 +140,7 @@ export const resources: Record<string, ResourceConfig> = {
   },
   stories: {
     table: 'stories', module: 'STORIES', prefix: 'story', permission: 'content:write',
-    fields: ['category','media_type','media_url','secondary_images','title','description','cta','target_url','content_mode','product_id','arrival_id','promotion_id','publish_at','expires_at','priority','status'],
+    fields: ['category','media_type','media_url','secondary_images','title','description','title_ar','description_ar','cta','target_url','content_mode','product_id','arrival_id','promotion_id','publish_at','expires_at','priority','status'],
     required: ['media_type','media_url','title','publish_at','status'], searchable: ['title','description','cta'],
     sortable: ['title','media_type','publish_at','expires_at','priority','status','created_at'], defaultSort: 'priority',
     jsonFields: ['secondary_images'],
@@ -797,8 +797,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const row = db.get<any>("SELECT * FROM stories_showcase_settings WHERE id='global'");
     if (!row) return res.status(404).json({ success: false, error: 'Réglages du bloc Stories introuvables.' });
     res.json({ success: true, data: {
-      title: row.title, subtitle: row.subtitle, ctaLabel: row.cta_label, ctaUrl: row.cta_url || '',
-      cardCount: Math.min(5, Math.max(4, Number(row.card_count ?? 4))),
+      title: row.title, subtitle: row.subtitle, titleAr: row.title_ar, subtitleAr: row.subtitle_ar, ctaLabelAr: row.cta_label_ar, ctaLabel: row.cta_label, ctaUrl: row.cta_url || '',
+      cardCount: Number(row.card_count ?? 7),
       enabled: Boolean(row.enabled), sortOrder: Number(row.sort_order ?? 0), updatedAt: row.updated_at,
     } });
   });
@@ -818,7 +818,10 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     }
 
     const text = (value: unknown, fallback: string, max: number) => String(value ?? fallback).slice(0, max);
-    const cardCount = Math.min(5, Math.max(4, Number(req.body.cardCount ?? existing.card_count ?? 4) || 4));
+    const cardCount = Number(req.body.cardCount ?? existing.card_count ?? 7);
+    if (!Number.isInteger(cardCount) || cardCount < 1 || cardCount > 1000) {
+      return res.status(400).json({ success: false, error: 'Nombre de cartes : entier entre 1 et 1000.' });
+    }
 
     db.run(`UPDATE stories_showcase_settings SET title=?,subtitle=?,cta_label=?,cta_url=?,card_count=?,enabled=?,sort_order=?,updated_at=? WHERE id='global'`,
       text(req.body.title, existing.title, 80) || existing.title,
@@ -829,11 +832,13 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       req.body.enabled === undefined ? existing.enabled : (req.body.enabled ? 1 : 0),
       Math.min(999, Math.max(0, Number(req.body.sortOrder ?? existing.sort_order) || 0)),
       new Date().toISOString());
+    db.run("UPDATE stories_showcase_settings SET title_ar=?,subtitle_ar=?,cta_label_ar=? WHERE id='global'",
+      text(req.body.titleAr, existing.title_ar, 80), text(req.body.subtitleAr, existing.subtitle_ar, 160), text(req.body.ctaLabelAr, existing.cta_label_ar, 60));
     audit(db, req, 'UPDATE', 'STORIES_SHOWCASE', 'global', null, null);
 
     const row = db.get<any>("SELECT * FROM stories_showcase_settings WHERE id='global'");
     res.json({ success: true, data: {
-      title: row.title, subtitle: row.subtitle, ctaLabel: row.cta_label, ctaUrl: row.cta_url || '',
+      title: row.title, subtitle: row.subtitle, titleAr: row.title_ar, subtitleAr: row.subtitle_ar, ctaLabelAr: row.cta_label_ar, ctaLabel: row.cta_label, ctaUrl: row.cta_url || '',
       cardCount: Number(row.card_count), enabled: Boolean(row.enabled),
       sortOrder: Number(row.sort_order ?? 0), updatedAt: row.updated_at,
     } });

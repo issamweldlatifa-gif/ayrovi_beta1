@@ -1248,3 +1248,8 @@
 @media (prefers-reduced-motion: reduce) {
   .ay-cart-loading { animation-duration: 1.5s; }
 }
+
+/* Official editorial Stories cards are images, not links to the retired social viewer. */
+.stories-showcase__card { cursor: default; }
+.stories-showcase__cta:disabled { opacity: 1; cursor: default; }
+.stories-showcase__cardtitle, .stories-showcase__carddesc { margin: 0; }

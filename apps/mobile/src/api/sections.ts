@@ -30,6 +30,8 @@ export interface Promotion {
 
 /** ستوري كما يقدّمه `GET /api/public/stories`. */
 export interface StoryItem {
+  titleAr?: string;
+  descriptionAr?: string;
   id: string;
   /** Carte produit (null = story normale, ou produit plus vendable). */
   product: LinkedProduct | null;
@@ -122,6 +124,8 @@ export async function fetchStories(options: RequestOptions = {}): Promise<StoryI
     return [
       {
         id,
+        ...(typeof entry.title_ar === 'string' ? { titleAr: entry.title_ar } : {}),
+        ...(typeof entry.description_ar === 'string' ? { descriptionAr: entry.description_ar } : {}),
         mediaType: str(entry.media_type, 'IMAGE'),
         mediaUrl: str(entry.media_url || entry.mediaUrl),
         title: str(entry.title),

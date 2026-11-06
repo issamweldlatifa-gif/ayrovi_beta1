@@ -26,6 +26,8 @@ import { AppHeader } from '@/features/shell/AppHeader';
 import { HeroCarousel } from '@/features/home/HeroCarousel';
 import { HomeTabs } from '@/features/home/HomeTabs';
 import { FeaturedPublication } from '@/features/home/FeaturedPublication';
+import { StoriesSection } from '@/features/home/StoriesSection';
+import { useStories, useStoriesShowcase } from '@/api/hooks';
 import { LensHomeBlock } from '@/features/home/LensHomeBlock';
 import { ReelsShopSection } from '@/features/home/ReelsShopSection';
 import { SectionRule } from '@/design/SectionRule';
@@ -68,15 +70,17 @@ export default function HomeScreen() {
   // Couleur de la carte Hero active : le header la reprend (en haut de page).
   const [heroBackground, setHeroBackground] = useState<string | null>(null);
 
+  const stories = useStories();
+  const storiesShowcase = useStoriesShowcase();
   const heroSlides = useHeroSlides();
   const heroCarouselSettings = useHeroCarouselSettings();
 
   const reload = useCallback(() => {
     setRefreshing(true);
     Promise.allSettled([
-      heroSlides.refetch(), heroCarouselSettings.refetch(),
+      heroSlides.refetch(), heroCarouselSettings.refetch(), stories.refetch(), storiesShowcase.refetch(),
     ]).finally(() => setRefreshing(false));
-  }, [heroSlides, heroCarouselSettings]);
+  }, [heroSlides, heroCarouselSettings, stories, storiesShowcase]);
 
   return (
     <AppScreen
@@ -110,6 +114,10 @@ export default function HomeScreen() {
 
       {/* Dernière publication du magazine — « Découvrir » ouvre la page Publications. */}
       <FeaturedPublication />
+
+      <SectionRule />
+
+      <StoriesSection />
 
       <SectionRule />
 

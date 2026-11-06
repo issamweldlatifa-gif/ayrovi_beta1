@@ -7,12 +7,12 @@ import { app } from '../src/server';
  * Conteneur « Stories » de la page d'accueil (référence Zalando « Stories sur … »)
  *
  * Verrous :
- *   1. le titre, le sous-titre, le lien central, le nombre de cartes et la
+ *   1. le titre, le sous-titre, le libellé Explore, le nombre de cartes et la
  *      visibilité viennent de la base — jamais du code ;
- *   2. le nombre de cartes est borné à 4 ou 5 (pas de valeur arbitraire) ;
+ *   2. 7 cartes au lancement, extensibles de 1 à 1000 ;
  *   3. la destination du lien est validée (pas de javascript: ni d'origine ouverte) ;
  *   4. le Trust Bar a bien disparu du site ;
- *   5. charte : cartes de dimensions identiques, lien centré, violet limité à la flèche.
+ *   5. charte : fond noir, cartes portrait et CTA sans action.
  */
 
 const admin = request.agent(app);
@@ -26,24 +26,12 @@ const appSource = readFileSync('client/src/App.tsx', 'utf8');
 const code = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 describe('Stories showcase — settings come from the dashboard', () => {
-  test('the demonstration stories are seeded from the code, not from the database', () => {
+  test('seven official source photos replace the legacy demo seed', () => {
     const src = code(readFileSync('src/db/database.ts', 'utf8'));
-
-    // La base SQLite et les envois sont exclus du dépôt : sans ce seed, une
-    // installation neuve (ou le site déployé) démarre avec une table vide et la
-    // section ne s'affiche pas du tout.
-    expect(src).toMatch(/seedStoriesDemoContent/);
-    expect(src).toMatch(/runOnceDataMigration\('stories_demo_seed_v1'/);
-
-    // On n'insère que si aucune story publiée n'existe : le contenu du
-    // Dashboard n'est jamais écrasé.
-    expect(src).toMatch(/SELECT COUNT\(\*\) AS count FROM stories WHERE status='PUBLISHED'/);
-    expect(src).toMatch(/already\.count > 0\) return;/);
-
-    // Les visuels doivent être versionnés, sinon ils manqueraient en production.
-    for (const url of ['hero-femme', 'hero-homme', 'hero-enfants', 'lens-sneakers', 'hero-default']) {
-      expect(src).toContain(`/media/${url}.jpg`);
-      expect(existsSync(`client/public/media/${url}.jpg`)).toBe(true);
+    expect(src).toContain("runOnceDataMigration('official_stories_editorial_v1'");
+    expect(src).not.toContain('seedStoriesDemoContent');
+    for (const slug of ['everyday','wellbeing','trench','coffee','winter','skincare','beauty']) {
+      expect(existsSync(`assets/media/stories/${slug}.jpg`)).toBe(true);
     }
   });
 
@@ -61,28 +49,21 @@ describe('Stories showcase — settings come from the dashboard', () => {
     expect(typeof data.subtitle).toBe('string');
     expect(typeof data.ctaLabel).toBe('string');
     expect(typeof data.ctaUrl).toBe('string');
-    expect([4, 5]).toContain(data.cardCount);
+    expect(data.cardCount).toBe(7);
     expect(typeof data.enabled).toBe('boolean');
   });
 
-  test('the card count is bounded to 4 or 5 — no arbitrary value passes', async () => {
-    const tooMany = await admin.put('/api/admin/stories-showcase').set('x-csrf-token', csrf)
-      .send({ cardCount: 99, title: 'Social ZAYROVI' });
-    expect(tooMany.status).toBe(200);
-    expect(tooMany.body.data.cardCount).toBe(5);
-
-    const tooFew = await admin.put('/api/admin/stories-showcase').set('x-csrf-token', csrf)
-      .send({ cardCount: 1, title: 'Social ZAYROVI' });
-    expect(tooFew.status).toBe(200);
-    expect(tooFew.body.data.cardCount).toBe(4);
-
-    const five = await admin.put('/api/admin/stories-showcase').set('x-csrf-token', csrf)
-      .send({ cardCount: 5, title: 'Social ZAYROVI' });
-    expect(five.body.data.cardCount).toBe(5);
-
-    // remise dans l'état livré
-    await admin.put('/api/admin/stories-showcase').set('x-csrf-token', csrf)
-      .send({ cardCount: 4, title: 'Social ZAYROVI', subtitle: 'Le meilleur de la semaine', ctaLabel: 'Explorer toutes les stories', ctaUrl: '', enabled: true });
+  test('the rail supports more than seven cards and rejects invalid limits', async () => {
+    for (const invalid of [0, -1, 1001, 1.5, 'oops']) {
+      const response = await admin.put('/api/admin/stories-showcase').set('x-csrf-token', csrf).send({ cardCount: invalid });
+      expect(response.status).toBe(400);
+    }
+    for (const count of [1, 7, 12, 1000]) {
+      const response = await admin.put('/api/admin/stories-showcase').set('x-csrf-token', csrf).send({ cardCount: count });
+      expect(response.status).toBe(200);
+      expect(response.body.data.cardCount).toBe(count);
+    }
+    await admin.put('/api/admin/stories-showcase').set('x-csrf-token', csrf).send({ cardCount: 7 });
   });
 
   test('an unsafe link destination is rejected instead of being published', async () => {
@@ -104,7 +85,7 @@ describe('Stories showcase — settings come from the dashboard', () => {
   });
 
   test('the frontend hardcodes no copy — title, subtitle and link are fetched', () => {
-    expect(code(component)).toContain("fetch('/api/public/stories-showcase')");
+    expect(code(component)).toContain("read('/api/public/stories-showcase')");
     for (const frozen of ['Social ZAYROVI', 'Le meilleur de la semaine', 'Explorer toutes les stories']) {
       expect(code(component), `« ${frozen} » ne doit pas être figé dans le composant`).not.toContain(frozen);
     }
@@ -209,10 +190,10 @@ describe('Stories showcase — settings come from the dashboard', () => {
     expect(block).toMatch(/\.stories-showcase__carddesc/);
   });
 
-  test('opening a card opens the story viewer, not a new page', () => {
-    expect(code(component)).toContain('StoryViewer');
-    expect(code(component)).toMatch(/setViewerIndex\(/);
-    // une carte = une story : le viewer reçoit un groupe par carte
-    expect(code(component)).toMatch(/stories:\s*\[story\]/);
+  test('official cards never open the retired viewer; Explore has no fallback destination', () => {
+    expect(code(component)).not.toContain('StoryViewer');
+    expect(code(component)).not.toContain('setViewerIndex');
+    expect(code(component)).toContain('disabled aria-disabled="true"');
+    expect(code(component)).not.toContain('onClick=');
   });
 });
