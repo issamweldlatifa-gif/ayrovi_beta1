@@ -40,11 +40,11 @@ export function lensSheetGeometry(input: {
   withPhoto: boolean;
   busy: boolean;
 }): LensSheetGeometry {
-  const { screenHeight, topInset, bottomInset, withPhoto, busy } = input;
+  const { screenHeight, topInset, bottomInset, withPhoto } = input;
   const expandedTop = Math.max(0, Math.round(topInset));
   const restTop = withPhoto
     ? Math.round(screenHeight * LENS_SHEET_REST_RATIO)
-    : Math.round(busy ? Math.max(210, screenHeight * 0.34) : Math.max(150, screenHeight * 0.24));
+    : expandedTop + 58; // No photograph to preserve: start immediately below the header, without a blank preview.
   const rest = Math.max(0, restTop - expandedTop);
   const stops = [0, rest];
   if (withPhoto) {

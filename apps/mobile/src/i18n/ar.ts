@@ -632,7 +632,6 @@ export const ar = {
   'lens.filters.title': 'تصفية حسب عنوان المنتج',
   'lens.filters.clear': 'مسح التصفية',
   'lens.filters.empty': 'لا توجد نتائج تطابق هذه التصفية.',
-  'lens.openInAywebs': 'اضغط على البطاقة لفتح صفحة المتجر داخل AYWEBs.',
   'lens.emptyTitle': 'لم يتم العثور على نتائج مطابقة بدقّة كافية',
   'lens.empty': 'جرّب صورة أوضح أو اقترب من المنتج أو غيّر زاوية التصوير.',
   'lens.retake': 'التقاط صورة جديدة',

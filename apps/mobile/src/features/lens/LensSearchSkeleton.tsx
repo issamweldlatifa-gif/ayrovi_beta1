@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 
-import { Skeleton } from '@/design/skeleton';
+import { LensShimmer as Skeleton } from './LensShimmer';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
@@ -13,7 +13,7 @@ import { useLensSheetScroll } from './lensSheetScroll';
 const GRID_PADDING = 4;
 const GRID_GAP = 4;
 
-function ProductSkeleton({ index }: { index: number }) {
+export function ProductSkeleton({ index }: { index: number }) {
   const { width } = useWindowDimensions();
   // Même vignette que la carte réelle (2/3) : le squelette ne rétrécit pas.
   const mediaHeight = lensCardMediaHeight(width);

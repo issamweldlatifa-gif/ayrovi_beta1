@@ -48,7 +48,6 @@ import { isOpenableSourceUrl, uniqueCandidates } from '@/features/lens/lensView'
 import { LensResultsGrid } from '@/features/lens/LensResultsGrid';
 import { LensSearchSkeleton } from '@/features/lens/LensSearchSkeleton';
 import { LensProgressLine, lensProgressLabel } from '@/features/lens/LensProgressLine';
-import { LensOverviewCard } from '@/features/lens/LensOverviewCard';
 import { LensSearchBar } from '@/features/lens/LensSearchBar';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
 import { lensOpenDecision } from '@/features/lens/lensOpen';
@@ -552,6 +551,8 @@ export default function LensScreen() {
     const current = sessionRef.current;
     const photo = current?.photos[current.index];
     if (!photo) return;
+    // Cancel the previous ROI immediately, not after the gesture debounce.
+    requestRef.current?.abort();
     const patch: Partial<SessionPhoto> = commit.kind === 'product'
       ? { selected: commit.index, selection: padBox(photo.products[commit.index]?.box ?? FULL_BOX) }
       : { selected: -1, selection: commit.box };
@@ -1104,34 +1105,13 @@ export default function LensScreen() {
         </View>
 
         <SearchSheet geometry={sheet}>
-          {stage.kind === 'busy' ? (
-            <>
-              {/* L'identification arrive dès la première étape : la réponse en
-                  clair s'affiche avant la première fiche marchande. */}
-              {stage.identification ? <LensOverviewCard identification={stage.identification} /> : null}
-              {stage.cards.length > 0 ? (
-                <>
-                  <LensProgressLine progress={stage.progress} />
-                  <LensResultsGrid
-                    candidates={stage.cards}
-                    excluded={0}
-                    favorited={favorited}
-                    favoriteNote={favoriteNote}
-                    onOpen={onOpen}
-                    onFavorite={onFavorite}
-                    onNewSearch={reset}
-                    title={resultTitle}
-                  />
-                </>
-              ) : (
-                <LensSearchSkeleton onCancel={cancelSearch} title={resultTitle} progress={stage.progress} />
-              )}
-            </>
-          ) : null}
-          {stage.kind === 'results' ? (
+          {stage.kind === 'busy' && stage.cards.length === 0 ? <LensSearchSkeleton onCancel={cancelSearch} title={resultTitle} progress={stage.progress} /> : null}
+          {stage.kind === 'busy' && stage.cards.length > 0 ? <LensProgressLine progress={stage.progress} /> : null}
+          {stage.kind === 'results' || (stage.kind === 'busy' && stage.cards.length > 0) ? (
             <LensResultsGrid
-              candidates={stage.candidates}
-              excluded={stage.excluded}
+              candidates={stage.kind === 'busy' ? stage.cards : stage.candidates}
+              loading={stage.kind === 'busy'}
+              excluded={stage.kind === 'results' ? stage.excluded : 0}
               favorited={favorited}
               favoriteNote={favoriteNote}
               onOpen={onOpen}

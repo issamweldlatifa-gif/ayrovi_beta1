@@ -188,4 +188,21 @@ describe('caméra Lens directe', () => {
     expect(await screen.findByTestId('lens-link-search')).toBeTruthy();
     expect(screen.queryByTestId('lens-capture')).toBeNull();
   });
+  it('renders streamed cards before done, with remaining loading slots', async () => {
+    let finish!: (value: any) => void;
+    mockAnalyzeImage.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    render(wrap(<LensScreen />));
+    const capture = await screen.findByTestId('lens-capture');
+    await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
+    fireEvent.press(capture);
+    await waitFor(() => expect(mockAnalyzeImage).toHaveBeenCalledTimes(1));
+    const candidate = { id: 'streamed', kind: 'external', title: 'Veste bleue', brand: 'Marque', source: 'Boutique', sourceUrl: 'https://www.zalando.fr/product.html', image: '', images: [], sizes: [], colors: [], offers: [], variantOptions: [] };
+    await act(async () => mockAnalyzeImage.mock.calls[0][1].onCard(candidate));
+    expect(screen.getByTestId('lens-result-streamed')).toBeTruthy();
+    expect(screen.getByTestId('lens-stream-pending')).toBeTruthy();
+    await act(async () => finish({ ...EMPTY_RESULT, candidates: [candidate] }));
+    await waitFor(() => expect(screen.queryByTestId('lens-stream-pending')).toBeNull());
+    expect(screen.getByTestId('lens-result-streamed')).toBeTruthy();
+  });
+
 });

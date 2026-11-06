@@ -3,7 +3,7 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import type { LensCandidate } from '@/api/lens';
-import { AppImage } from '@/design/appImage';
+import { LensResultMedia } from './LensResultMedia';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
@@ -58,26 +58,13 @@ function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Pr
         { opacity: intro, transform: [{ translateY: rise }, { scale }] },
       ]}
     >
-      <Pressable
-        onPress={() => onOpen(candidate)}
-        accessibilityRole="button"
-        accessibilityLabel={t('lens.viewProduct', { title })}
-        testID={`lens-result-${candidate.id}`}
-        style={({ pressed }) => [styles.pressable, { opacity: pressed ? theme.opacity.subtle : 1 }]}
-      >
         <View style={styles.mediaWrap}>
           {media.length ? (
-            <AppImage
-              uri={media[0]}
-              fallbackUris={media.slice(1)}
-              contentFit="cover"
-              style={styles.media}
-              accessibilityLabel={title}
-            />
+            <LensResultMedia key={media.join('|')} sources={media} title={title} onOpen={() => onOpen(candidate)} testID={`lens-result-${candidate.id}`} accessibilityLabel={t('lens.viewProduct', { title })} />
           ) : (
-            <View style={styles.mediaFallback}>
+            <Pressable onPress={() => onOpen(candidate)} accessibilityRole="button" accessibilityLabel={t('lens.viewProduct', { title })} testID={`lens-result-${candidate.id}`} style={styles.mediaFallback}>
               <Ionicons name="image-outline" size={theme.iconSize.lg} color={LENS_COLORS.resultMuted} accessibilityElementsHidden />
-            </View>
+            </Pressable>
           )}
           {promo ? (
             <View style={styles.promoBadge}>
@@ -105,11 +92,11 @@ function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Pr
           </Pressable>
         </View>
 
-        <View style={styles.copy}>
+<Pressable onPress={() => onOpen(candidate)} accessibilityRole="button" accessibilityLabel={t('lens.viewProduct', { title })} style={styles.copy}>
           {brand ? (
-            <AppText variant="captionStrong" numberOfLines={1} style={styles.brand}>{brand}</AppText>
+            <AppText variant="label" numberOfLines={1} style={styles.brand}>{brand}</AppText>
           ) : null}
-          <AppText variant="label" numberOfLines={2} style={styles.title}>{title}</AppText>
+          <AppText variant="body" numberOfLines={2} style={styles.title}>{title}</AppText>
           <LensPriceBlock candidate={candidate} compact onWhite />
           {candidate.ratingKind === 'merchant' && candidate.rating != null ? (
             <View style={[styles.rating, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
@@ -118,7 +105,6 @@ function LensResultCardComponent({ candidate, favorite, onOpen, onFavorite }: Pr
               {candidate.ratingCount ? <AppText variant="caption" color={LENS_COLORS.resultMuted}>{`(${candidate.ratingCount})`}</AppText> : null}
             </View>
           ) : null}
-        </View>
       </Pressable>
     </Animated.View>
   );
@@ -143,7 +129,7 @@ const styles = StyleSheet.create({
   },
   favoriteLTR: { right: 8 },
   favoriteRTL: { left: 8 },
-  copy: { minHeight: 116, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 12, gap: 4 },
+  copy: { minHeight: 104, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 12, gap: 4 },
   brand: { color: LENS_COLORS.black },
   title: { color: LENS_COLORS.black, minHeight: 42 },
   rating: { alignItems: 'center', gap: 4, marginTop: 2 },

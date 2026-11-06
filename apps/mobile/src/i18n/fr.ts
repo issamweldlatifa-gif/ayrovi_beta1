@@ -635,7 +635,6 @@ export const fr = {
   'lens.filters.title': 'Filtrer par titre de produit',
   'lens.filters.clear': 'Effacer le filtre',
   'lens.filters.empty': 'Aucun titre ne correspond à ce filtre.',
-  'lens.openInAywebs': 'Touchez une carte : la page du marchand s’ouvre dans AYWEBs.',
   'lens.emptyTitle': 'Aucun résultat assez proche',
   'lens.empty': 'Essayez une photo plus nette, rapprochez le produit ou changez d’angle.',
   'lens.retake': 'Reprendre une photo',

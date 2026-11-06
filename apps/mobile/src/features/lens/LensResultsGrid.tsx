@@ -7,6 +7,7 @@ import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
 import { LensResultCard } from './LensResultCard';
+import { ProductSkeleton } from './LensSearchSkeleton';
 import { LensTitleFilter } from './LensTitleFilter';
 import { lensOpenDecision } from './lensOpen';
 import { LENS_COLORS } from './lensPalette';
@@ -21,8 +22,10 @@ export function LensResultsGrid({
   onFavorite,
   onNewSearch,
   title,
+  loading = false,
 }: {
   candidates: LensCandidate[];
+  loading?: boolean;
   excluded?: number;
   favorited: Record<string, true>;
   favoriteNote: TranslationKey | null;
@@ -45,6 +48,7 @@ export function LensResultsGrid({
    * toujours la confiance marchande (`lensRanking.ts`).
    */
   const [query, setQuery] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
 
   /* Seules les cartes portant un vrai lien marchand ouvrable dans AYWEBs sont affichées. */
   const openable = useMemo(
@@ -54,7 +58,7 @@ export function LensResultsGrid({
   const shown = useMemo(() => applyLensFilters(openable, query), [openable, query]);
   const filteredOut = shown.length !== openable.length;
 
-  if (openable.length === 0) {
+  if (openable.length === 0 && !loading) {
     return (
       <View style={styles.empty} testID="lens-empty-results">
         <View style={styles.emptyIcon}>
@@ -90,9 +94,10 @@ export function LensResultsGrid({
             <View style={styles.headerCopy}>
               <AppText variant="h3" numberOfLines={2}>{title || t('lens.resultsTitle')}</AppText>
               <AppText variant="caption" color={theme.colors.muted}>
-                {t(candidates.length === 1 ? 'lens.resultsCountOne' : 'lens.resultsCountMany', { count: candidates.length })}
+                {t(candidates.length === 1 ? 'lens.resultsCountOne' : 'lens.resultsCountMany', { count: openable.length })}
               </AppText>
             </View>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('lens.filters.title')} accessibilityState={{ expanded: filterOpen }} testID="lens-toggle-filter" onPress={() => setFilterOpen(value => !value)} style={styles.newSearch}><Ionicons name="options-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden /></Pressable>
             <Pressable
               onPress={onNewSearch}
               accessibilityRole="button"
@@ -106,13 +111,7 @@ export function LensResultsGrid({
           {favoriteNote ? (
             <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{t(favoriteNote)}</AppText>
           ) : null}
-          {/* Ce que fait l'appui : la page du marchand s'ouvre dans AYWEBs —
-              pour TOUTES les cartes, y compris le catalogue (28/10/2026).
-              Dit UNE fois, en haut — pas une étiquette sur chaque carte. */}
-          <AppText variant="caption" color={theme.colors.muted} testID="lens-open-hint">
-            {t('lens.openInAywebs')}
-          </AppText>
-          <LensTitleFilter value={query} onChange={setQuery} shown={shown.length} total={openable.length} />
+          {filterOpen ? <LensTitleFilter value={query} onChange={setQuery} shown={shown.length} total={openable.length} /> : null}
           {shown.length === 0 ? (
             <View style={styles.filteredEmpty} testID="lens-filters-empty">
               <AppText color={theme.colors.muted} align="center">{t('lens.filters.empty')}</AppText>
@@ -131,7 +130,7 @@ export function LensResultsGrid({
           />
         </View>
       )}
-      ListFooterComponent={filteredOut && shown.length > 0 ? (
+      ListFooterComponent={loading ? <View style={styles.pending} testID="lens-stream-pending"><ProductSkeleton index={4} /><ProductSkeleton index={5} /></View> : filteredOut && shown.length > 0 ? (
         <AppText variant="caption" color={theme.colors.muted} align="center" style={styles.footer} testID="lens-filters-active">
           {t('lens.resultsCountMany', { count: shown.length })} / {openable.length}
         </AppText>
@@ -141,10 +140,11 @@ export function LensResultsGrid({
 }
 
 const styles = StyleSheet.create({
+  pending: { flexDirection: 'row', gap: 4 },
   list: { flex: 1 },
   content: { paddingHorizontal: 4, paddingTop: 4, paddingBottom: 32, gap: 4 },
   row: { gap: 4, alignItems: 'stretch', backgroundColor: LENS_COLORS.white },
-  cell: { flex: 1, minWidth: 0, marginBottom: 4 },
+  cell: { flex: 0.5, minWidth: 0, marginBottom: 4 },
   header: { gap: 8, paddingHorizontal: 8, paddingTop: 2, paddingBottom: 12 },
   headerRow: { alignItems: 'center', gap: 12 },
   headerCopy: { flex: 1, gap: 2 },

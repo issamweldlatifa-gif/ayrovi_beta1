@@ -132,7 +132,7 @@ export function LensSelectionView({
   // Pendant le repérage, le cadre « respire » : la photo est en cours de lecture.
   const pulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    if (!detecting || theme.motion.reduced === 0) {
+    if ((!detecting && !searching) || draft || theme.motion.reduced === 0) {
       pulse.setValue(1);
       return undefined;
     }
@@ -142,7 +142,7 @@ export function LensSelectionView({
     ]));
     loop.start();
     return () => loop.stop();
-  }, [detecting, pulse, theme.motion.reduced]);
+  }, [detecting, searching, draft, pulse, theme.motion.reduced]);
 
   // Voile hors cadre : il s'épaissit pendant la recherche pour isoler la zone lue.
   const dimLevel = useRef(new Animated.Value(DIM_REST)).current;
@@ -183,6 +183,7 @@ export function LensSelectionView({
           accessibilityLabel={t('lens.select.frame')}
           testID="lens-selection-frame"
         >
+          {draft ? <View style={styles.dragGuide} testID="lens-selection-drag-guide" /> : null}
           <View style={[styles.corner, styles.cornerTL]} />
           <View style={[styles.corner, styles.cornerTR]} />
           <View style={[styles.corner, styles.cornerBL]} />
@@ -224,6 +225,7 @@ const styles = StyleSheet.create({
   area: { position: 'absolute', left: 0, right: 0 },
   image: { position: 'absolute', overflow: 'hidden' },
   dim: { position: 'absolute', backgroundColor: veil(1) },
+  dragGuide: { ...StyleSheet.absoluteFill, borderWidth: StyleSheet.hairlineWidth, borderColor: LENS_COLORS.white, backgroundColor: frost(0.08) },
   frame: { position: 'absolute' },
   corner: { position: 'absolute', width: CORNER, height: CORNER, borderColor: LENS_COLORS.white },
   cornerTL: { top: 0, left: 0, borderTopWidth: STROKE, borderLeftWidth: STROKE, borderTopLeftRadius: 16 },

@@ -35,12 +35,12 @@ describe('lensSheetGeometry — trois crans avec une photo', () => {
     expect(peek + withPhoto.expandedTop).toBe(672);
   });
 
-  it('sans photo : deux crans (plein écran, repos), comme avant', () => {
+  it('sans photo : résultats sous le header, sans trou ni saut à la fin de la recherche', () => {
     const busy = lensSheetGeometry({ ...PHONE, withPhoto: false, busy: true });
-    expect(busy.restTop).toBe(Math.round(Math.max(210, 800 * 0.34)));
+    expect(busy.restTop).toBe(PHONE.topInset + 58);
     expect(busy.stops).toEqual([0, busy.rest]);
     const results = lensSheetGeometry({ ...PHONE, withPhoto: false, busy: false });
-    expect(results.restTop).toBe(Math.round(Math.max(150, 800 * 0.24)));
+    expect(results.restTop).toBe(busy.restTop);
   });
 });
 
