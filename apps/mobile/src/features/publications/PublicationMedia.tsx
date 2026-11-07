@@ -1,3 +1,4 @@
+import { PUBLICATION_PALETTE as P } from './publicationDesign';
 import {
   mediaFit,
   mediaRatio,
@@ -14,15 +15,14 @@ import {
   View,
 } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { PublicationIcon as Ionicons } from './publicationDesign';
 import { useFocusEffect } from 'expo-router';
 import { AppImage } from '@/design/appImage';
-import { AppText } from '@/design/ui';
+import { PublicationText as AppText } from './publicationDesign';
 import { mediaUrl } from '@/api/client';
 import { useI18n } from '@/i18n';
 import {
   ICON_SIZE,
-  PUBLICATION_THEME as P,
   RADIUS,
   VIDEO_BACKDROP,
   veil,

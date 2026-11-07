@@ -5,12 +5,18 @@ import {
   OPACITY,
 } from '@/design/tokens.mobile';
 /** One persisted conversation per target, shared by feed and fullscreen viewer. */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { FlatList, Pressable, TextInput, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import BrandIcon from '@expo/vector-icons/Ionicons';
+import {
+  PublicationText,
+  PublicationIcon,
+  PUBLICATION_PALETTE as SP,
+  publicationTextStyle,
+} from '@/features/publications/publicationDesign';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AppText, useFieldChrome } from '@/design/ui';
+import { AppText as BrandText, useFieldChrome } from '@/design/ui';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { useTheme } from '@/design/theme';
 import { useI18n, useT } from '@/i18n';
@@ -29,12 +35,25 @@ const attempts = new Map<string, string>();
 const draftReplies = new Map<string, SocialComment | null>();
 export interface CommentsProps {
   targetId: string;
+  publication?: boolean;
+  focusRequest?: number;
+  header?: ReactNode;
+  onScroll?: (offset: number) => void;
 }
-export function Comments({ targetId }: CommentsProps) {
+export function Comments({
+  targetId,
+  publication = false,
+  header,
+  onScroll,
+  focusRequest = 0,
+}: CommentsProps) {
   const theme = useTheme();
   const field = useFieldChrome();
   const t = useT();
   const { locale } = useI18n();
+  const AppText = publication ? PublicationText : BrandText;
+  const Ionicons = publication ? PublicationIcon : BrandIcon;
+  const muted = publication ? SP.muted : theme.colors.muted;
   const ar = locale === 'ar';
   const session = useSession();
   const guest = useSessionId();
@@ -51,6 +70,11 @@ export function Comments({ targetId }: CommentsProps) {
   const edited = useRef(false);
   const input = useRef<TextInput>(null);
   const lock = useRef(false);
+  useEffect(() => {
+    if (!focusRequest) return;
+    if (session.status === 'signedIn') input.current?.focus();
+    else setAuth(true);
+  }, [focusRequest]);
   useEffect(() => {
     let live = true;
     edited.current = false;
@@ -166,10 +190,14 @@ export function Comments({ targetId }: CommentsProps) {
   });
   const rows = comments.data || [];
   const signed = session.status === 'signedIn';
-  return (
-    <View style={{ flex: 1, minHeight: 120, gap: 8 }}>
+  const feedback = (
+    <>
       {comments.isPending ? (
-        <LoadingSpinner size="sm" testID="comments-loading-spinner" />
+        <LoadingSpinner
+          size="sm"
+          color={publication ? SP.icon : undefined}
+          testID="comments-loading-spinner"
+        />
       ) : null}
       {comments.isError ? (
         <Pressable
@@ -181,13 +209,31 @@ export function Comments({ targetId }: CommentsProps) {
         </Pressable>
       ) : null}
       {!comments.isPending && !comments.isError && !rows.length ? (
-        <AppText variant="caption" color={theme.colors.muted}>
+        <AppText variant="caption" color={muted}>
           {t('social.noComments')}
         </AppText>
       ) : null}
+    </>
+  );
+  return (
+    <View style={{ flex: 1, minHeight: 120, gap: 8 }}>
+      {header ? null : feedback}
       <FlatList
         style={{ flex: 1 }}
+        onScroll={(e) => onScroll?.(e.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={16}
         data={rows}
+        ItemSeparatorComponent={
+          publication
+            ? () => <View style={{ height: 1, backgroundColor: SP.line }} />
+            : undefined
+        }
+        ListHeaderComponent={header ? <View>{header}</View> : null}
+        ListFooterComponent={
+          header ? (
+            <View style={{ paddingHorizontal: 12 }}>{feedback}</View>
+          ) : null
+        }
         keyExtractor={(v) => v.id}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ gap: 12, paddingVertical: 8 }}
@@ -197,6 +243,9 @@ export function Comments({ targetId }: CommentsProps) {
               flexDirection: ar ? 'row-reverse' : 'row',
               gap: 8,
               marginLeft: item.parentId ? 20 : 0,
+              ...(publication
+                ? { paddingHorizontal: 12, paddingBottom: 12 }
+                : {}),
             }}
           >
             <View
@@ -204,7 +253,9 @@ export function Comments({ targetId }: CommentsProps) {
                 width: 32,
                 height: 32,
                 borderRadius: RADIUS.lg,
-                backgroundColor: PUBLICATION_SOCIAL_SURFACE,
+                backgroundColor: publication
+                  ? SP.neutral
+                  : PUBLICATION_SOCIAL_SURFACE,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
@@ -216,15 +267,17 @@ export function Comments({ targetId }: CommentsProps) {
             <View style={{ flex: 1, gap: 4 }}>
               <View
                 style={{
-                  backgroundColor: P.commentPaper,
-                  borderRadius: RADIUS.lg,
-                  padding: 10,
+                  backgroundColor: publication ? SP.paper : P.commentPaper,
+                  borderRadius: publication ? 0 : RADIUS.lg,
+                  padding: publication ? 0 : 10,
                   gap: 4,
                 }}
               >
-                <AppText variant="captionStrong">{item.author}</AppText>
+                <AppText variant={publication ? 'bodyStrong' : 'captionStrong'}>
+                  {item.author}
+                </AppText>
                 {item.parentId ? (
-                  <AppText variant="caption" color={theme.colors.muted}>
+                  <AppText variant="caption" color={muted}>
                     {ar ? 'رد على' : 'En réponse à'}{' '}
                     {rows.find((v) => v.id === item.parentId)?.author ||
                       (ar ? 'تعليق' : 'un commentaire')}
@@ -239,7 +292,7 @@ export function Comments({ targetId }: CommentsProps) {
                   gap: 12,
                 }}
               >
-                <AppText variant="caption" color={theme.colors.muted}>
+                <AppText variant="caption" color={muted}>
                   {Number.isFinite(Date.parse(item.createdAt))
                     ? new Date(item.createdAt).toLocaleString(
                         ar ? 'ar-TN' : 'fr-TN',
@@ -331,10 +384,18 @@ export function Comments({ targetId }: CommentsProps) {
             multiline
             editable={!post.isPending}
             style={[
-              theme.text('body'),
+              publication ? publicationTextStyle(locale) : theme.text('body'),
               field.style,
               {
                 flex: 1,
+                ...(publication
+                  ? {
+                      ...publicationTextStyle(locale),
+                      backgroundColor: SP.input,
+                      color: SP.ink,
+                      borderWidth: 0,
+                    }
+                  : {}),
                 minHeight: 44,
                 maxHeight: 120,
                 padding: 12,
@@ -363,7 +424,7 @@ export function Comments({ targetId }: CommentsProps) {
             style={{
               minWidth: 44,
               minHeight: 44,
-              backgroundColor: theme.colors.accentText,
+              backgroundColor: publication ? SP.ink : theme.colors.accentText,
               borderRadius: 22,
               alignItems: 'center',
               justifyContent: 'center',
@@ -371,7 +432,10 @@ export function Comments({ targetId }: CommentsProps) {
             }}
           >
             {post.isPending ? (
-              <LoadingSpinner size="sm" />
+              <LoadingSpinner
+                size="sm"
+                color={publication ? SP.paper : undefined}
+              />
             ) : (
               <Ionicons
                 name="send-outline"
@@ -389,7 +453,9 @@ export function Comments({ targetId }: CommentsProps) {
             minHeight: 48,
             borderRadius: RADIUS.full,
             padding: 12,
-            backgroundColor: PUBLICATION_SOCIAL_SURFACE,
+            backgroundColor: publication
+              ? SP.neutral
+              : PUBLICATION_SOCIAL_SURFACE,
           }}
         >
           <AppText>{t('social.needAccount')}</AppText>

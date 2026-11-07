@@ -1,11 +1,7 @@
+import { PUBLICATION_PALETTE as P } from './publicationDesign';
 import { PublicationAuthHost } from './PublicationAuthSheet';
 import { useRef, useState } from 'react';
-import {
-  PUBLICATION_THEME as P,
-  RADIUS,
-  ICON_SIZE,
-  veil,
-} from '@/design/tokens.mobile';
+import { RADIUS, ICON_SIZE, veil } from '@/design/tokens.mobile';
 import {
   KeyboardAvoidingView,
   PanResponder,
@@ -14,9 +10,9 @@ import {
   Pressable,
   View,
 } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { PublicationIcon as Ionicons } from './publicationDesign';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AppText } from '@/design/ui';
+import { PublicationText as AppText } from './publicationDesign';
 import { useI18n } from '@/i18n';
 import { Comments } from '@/features/social/Comments';
 export function PublicationCommentsSheet({
@@ -128,7 +124,7 @@ export function PublicationCommentsSheet({
                 <Ionicons name="close" size={ICON_SIZE.md} />
               </Pressable>
             </View>
-            <Comments targetId={targetId} />
+            <Comments targetId={targetId} publication />
           </View>
         </KeyboardAvoidingView>
       </PublicationAuthHost>

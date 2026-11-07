@@ -1,14 +1,14 @@
-import {
-  PUBLICATION_THEME as P,
-  RADIUS,
-  ICON_SIZE,
-  PUBLICATION_METRICS as PM,
-} from '@/design/tokens.mobile';
+import { publicationCount } from './publicationFormat';
+import { PUBLICATION_PALETTE as P } from './publicationDesign';
+import { RADIUS } from '@/design/tokens.mobile';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { PublicationIcon as Ionicons } from './publicationDesign';
 import { useQueryClient } from '@tanstack/react-query';
-import { AppText } from '@/design/ui';
+import {
+  PUBLICATION_TYPE,
+  PublicationText as AppText,
+} from './publicationDesign';
 import { useI18n } from '@/i18n';
 import { useSession } from '@/state/session';
 import { useSessionId } from '@/session/session';
@@ -21,11 +21,7 @@ import {
 } from '@/api/publicationFeed';
 import { isApiError, userMessage } from '@/api/errors';
 import { PublicationAuthSheet } from './PublicationAuthSheet';
-import {
-  PUBLICATION_SOCIAL_SURFACE,
-  PUBLICATION_LIKE,
-  PUBLICATION_DISLIKE,
-} from '../../../../../shared/publicationPresentation';
+import { PUBLICATION_DISLIKE } from '../../../../../shared/publicationPresentation';
 
 export function PublicationActions({
   post,
@@ -164,7 +160,7 @@ export function PublicationActions({
         });
     });
   const immersive = presentation === 'viewer';
-  const ink = immersive && backdrop === 'dark' ? P.paper : P.ink;
+  const ink = immersive && backdrop === 'dark' ? P.paper : P.icon;
   const floatingSurface =
     backdrop === 'dark' ? P.viewerDarkSurface : P.viewerLightSurface;
   const button = {
@@ -184,9 +180,7 @@ export function PublicationActions({
         <View
           accessibilityLabel={ar ? 'اختيار التفاعل' : 'Choisir une réaction'}
           style={{
-            backgroundColor: immersive
-              ? floatingSurface
-              : PUBLICATION_SOCIAL_SURFACE,
+            backgroundColor: immersive ? floatingSurface : P.socialSurface,
             borderRadius: RADIUS.full,
             padding: 8,
             flexDirection: ar ? 'row-reverse' : 'row',
@@ -213,8 +207,8 @@ export function PublicationActions({
             >
               <Ionicons
                 name={v === 'like' ? 'heart' : 'thumbs-down-outline'}
-                size={PM.actionIcon}
-                color={v === 'like' ? PUBLICATION_LIKE : PUBLICATION_DISLIKE}
+                size={PUBLICATION_TYPE.icon}
+                color={v === 'like' ? P.like : PUBLICATION_DISLIKE}
               />
               <AppText variant="captionStrong" color={ink}>
                 {v === 'like'
@@ -233,7 +227,7 @@ export function PublicationActions({
             onPress={() => setPicker(false)}
             style={button}
           >
-            <Ionicons name="close" size={PM.actionIcon} color={ink} />
+            <Ionicons name="close" size={PUBLICATION_TYPE.icon} color={ink} />
           </Pressable>
         </View>
       ) : null}
@@ -268,8 +262,19 @@ export function PublicationActions({
               ? 'اضغط مطوّلا لاختيار التفاعل'
               : 'Appui long pour choisir une réaction'
           }
+          accessibilityValue={{ text: String(likes) }}
           accessibilityState={{ selected: !!reaction, disabled: busy }}
           disabled={busy}
+          accessibilityActions={[
+            {
+              name: 'longpress',
+              label: ar ? 'اختيار التفاعل' : 'Choisir une réaction',
+            },
+          ]}
+          onAccessibilityAction={(e) => {
+            if (e.nativeEvent.actionName === 'longpress' && account())
+              setPicker(true);
+          }}
           onLongPress={() => {
             if (account()) setPicker(true);
           }}
@@ -286,33 +291,29 @@ export function PublicationActions({
                 ? 'heart'
                 : 'heart-outline'
             }
-            size={PM.actionIcon}
+            size={PUBLICATION_TYPE.icon}
             color={
               reaction === 'like'
-                ? PUBLICATION_LIKE
+                ? P.like
                 : reaction === 'dislike'
                 ? PUBLICATION_DISLIKE
                 : ink
             }
           />
           {likes > 0 ? (
-            <AppText variant="caption" color={ink}>
-              {likes}
+            <AppText
+              variant="caption"
+              color={ink}
+              style={{
+                fontSize: PUBLICATION_TYPE.countSize,
+                lineHeight: PUBLICATION_TYPE.countLine,
+              }}
+            >
+              {publicationCount(likes, locale)}
             </AppText>
           ) : null}
         </Pressable>
-        {!immersive ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={ar ? 'خيارات التفاعل' : 'Options de réaction'}
-            onPress={() => {
-              if (account()) setPicker(!picker);
-            }}
-            style={button}
-          >
-            <Ionicons name="chevron-down" size={ICON_SIZE.sm} color={ink} />
-          </Pressable>
-        ) : null}
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={ar ? 'التعليقات' : 'Commentaires'}
@@ -321,12 +322,19 @@ export function PublicationActions({
         >
           <Ionicons
             name="chatbubble-outline"
-            size={PM.actionIcon}
+            size={PUBLICATION_TYPE.icon}
             color={ink}
           />
           {post.comments > 0 ? (
-            <AppText variant="caption" color={ink}>
-              {post.comments}
+            <AppText
+              variant="caption"
+              color={ink}
+              style={{
+                fontSize: PUBLICATION_TYPE.countSize,
+                lineHeight: PUBLICATION_TYPE.countLine,
+              }}
+            >
+              {publicationCount(post.comments, locale)}
             </AppText>
           ) : null}
         </Pressable>
@@ -336,7 +344,11 @@ export function PublicationActions({
           onPress={share}
           style={button}
         >
-          <Ionicons name="share-outline" size={PM.actionIcon} color={ink} />
+          <Ionicons
+            name="share-outline"
+            size={PUBLICATION_TYPE.icon}
+            color={ink}
+          />
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -362,7 +374,7 @@ export function PublicationActions({
         >
           <Ionicons
             name={saved ? 'bookmark' : 'bookmark-outline'}
-            size={PM.actionIcon}
+            size={PUBLICATION_TYPE.icon}
             color={ink}
           />
         </Pressable>

@@ -1,19 +1,18 @@
+import {
+  PUBLICATION_PALETTE as P,
+  PUBLICATION_TYPE,
+} from './publicationDesign';
 import { PublicationActions } from './PublicationActions';
 import { PublicationDescription } from './PublicationDescription';
 import { showsPublicationTitle } from '../../../../../shared/publicationPresentation';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
+import { PublicationIcon as Ionicons } from './publicationDesign';
 import { router } from 'expo-router';
 import type { FeedPost } from '@/api/publicationFeed';
 import { PublicationMedia } from './PublicationMedia';
 import { PublicationPublisher } from './PublicationPublisher';
-import { AppText } from '@/design/ui';
-import {
-  PUBLICATION_THEME as P,
-  PUBLICATION_SPACING as S,
-  ICON_SIZE,
-  PUBLICATION_PUBLISHER as H,
-} from '@/design/tokens.mobile';
+import { PublicationText as AppText } from './publicationDesign';
+import { PUBLICATION_SPACING as S, ICON_SIZE } from '@/design/tokens.mobile';
 import { useI18n } from '@/i18n';
 import { resolvePublicationTemplate } from '../../../../../shared/publicationLayouts';
 
@@ -27,9 +26,11 @@ export function PublicationCard({
   onPreference,
   onProductOpen,
   onMediaOpen,
+  onOptions,
   mediaInset = 12,
 }: {
   mediaInset?: number;
+  onOptions?: () => void;
   onMediaOpen?: (index: number) => void;
   onProductOpen?: (id: string) => void;
   active?: boolean;
@@ -53,6 +54,7 @@ export function PublicationCard({
     post.content?.media.length,
     post.category
   );
+  const columnMedia = template !== 'split' && template !== 'campaign';
   const split = template === 'split';
   const campaign = template === 'campaign';
   const action = () => {
@@ -164,32 +166,23 @@ export function PublicationCard({
         testID={`publication-editorial-header-${post.id}`}
         style={styles.headerBlock}
       >
-        <PublicationPublisher post={post}>{text}</PublicationPublisher>
+        <PublicationPublisher post={post} onOptions={onOptions}>
+          {text}
+        </PublicationPublisher>
       </View>
       <View
         testID={`publication-content-${post.id}`}
         style={
-          split
+          columnMedia
+            ? { marginLeft: PUBLICATION_TYPE.column }
+            : split
             ? styles.editorial
             : campaign
             ? [styles.campaign, { marginHorizontal: -mediaInset }]
             : styles.content
         }
       >
-        <View
-          style={
-            split
-              ? styles.splitMedia
-              : [
-                  'social_mosaic',
-                  'social_pair',
-                  'social_strip',
-                  'caption_photo',
-                ].includes(template)
-              ? { marginHorizontal: -mediaInset }
-              : undefined
-          }
-        >
+        <View style={split ? styles.splitMedia : undefined}>
           <PublicationMedia
             post={post}
             active={active}
@@ -198,13 +191,25 @@ export function PublicationCard({
           />
         </View>
       </View>
-      {cta}
-      <PublicationActions
-        post={post}
-        onComments={onComments}
-        onReaction={onReaction}
-        onPreference={onPreference}
-      />
+      <View
+        style={
+          columnMedia ? { marginLeft: PUBLICATION_TYPE.column } : undefined
+        }
+      >
+        {cta}
+      </View>
+      <View
+        style={
+          columnMedia ? { marginLeft: PUBLICATION_TYPE.column } : undefined
+        }
+      >
+        <PublicationActions
+          post={post}
+          onComments={onComments}
+          onReaction={onReaction}
+          onPreference={onPreference}
+        />
+      </View>
       <View
         pointerEvents="none"
         testID={`publication-separator-${post.id}`}
@@ -227,7 +232,7 @@ const styles = StyleSheet.create({
     gap: S.section,
     backgroundColor: P.paper,
   },
-  headerBlock: { gap: S.group, minHeight: H.avatar + 12 },
+  headerBlock: { gap: S.group, minHeight: PUBLICATION_TYPE.column },
   content: { gap: S.section },
   editorial: { gap: 0, backgroundColor: P.splitPaper },
   editorialCopy: { backgroundColor: P.splitPaper },

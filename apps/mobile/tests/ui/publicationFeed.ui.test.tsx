@@ -1,3 +1,4 @@
+import { PublicationPostOptions } from '@/features/publications/PublicationPostOptions';
 import {
   PublicationDescription,
   publicationDescriptionGraphemes,
@@ -95,9 +96,14 @@ jest.mock('@/api/social', () => ({
 }));
 jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn() }));
 jest.mock('@/features/social/Comments', () => ({
-  Comments: () => {
+  Comments: ({ header }: any) => {
     const { Text } = require('react-native');
-    return <Text>Real Comments component slot</Text>;
+    return (
+      <>
+        {header}
+        <Text>Real Comments component slot</Text>
+      </>
+    );
   },
 }));
 jest.mock('@/design/appImage', () => ({
@@ -222,7 +228,7 @@ describe('Publication Phase 1 UI', () => {
     expect(mockQuery.mock.calls.at(-1)?.[0].queryKey).not.toContain('beauty');
     fireEvent.press(screen.getByRole('button', { name: 'Commentaires' }));
     expect(screen.getByText('Real Comments component slot')).toBeTruthy();
-    fireEvent.press(screen.getByRole('button', { name: 'Fermer' }));
+    fireEvent.press(screen.getAllByRole('button', { name: 'Retour' }).at(-1)!);
     expect(mockRefetch).toHaveBeenCalled();
   });
   it('does not permit guest likes and offers the existing sign-in route', async () => {
@@ -332,7 +338,7 @@ describe('Publication Phase 1 UI', () => {
     ).toBeTruthy();
     expect(
       screen.queryByRole('button', { name: 'Options de la publication' })
-    ).toBeNull();
+    ).toBeTruthy();
     fireEvent.press(screen.getByRole('button', { name: 'Suivre cet éditeur' }));
     await waitFor(() =>
       expect(mockFollow).toHaveBeenCalledWith('official', true)
@@ -352,7 +358,7 @@ describe('Publication Phase 1 UI', () => {
       within(screen.getByTestId('publication-reader')).queryByText(
         'Publication'
       )
-    ).toBeNull();
+    ).toBeTruthy();
     act(() =>
       screen
         .getByTestId('publication-reader-gesture')
@@ -762,7 +768,7 @@ describe('Reference additions, not replacements', () => {
     expect(screen.getByText('+3')).toBeTruthy();
     fireEvent.press(screen.getByTestId('publication-tile-ui-post-4'));
     const lightbox = screen.getByTestId('publication-lightbox');
-    expect(lightbox).toHaveStyle({ backgroundColor: '#0A0A0A' });
+    expect(lightbox).toHaveStyle({ backgroundColor: '#000000' });
     fireEvent(
       within(lightbox).getByTestId('publication-media-ui-post'),
       'layout',
@@ -843,9 +849,9 @@ it('renders the publisher name as app-family text, never a wordmark pasted besid
   const name = screen.getByTestId('publication-publisher-name');
   expect(name.props.children).toBe('Zayrovi Team');
   expect(name).toHaveStyle({
-    fontFamily: 'PublicationPublisher-Bold',
-    fontSize: 18,
-    lineHeight: 24,
+    fontFamily: 'Publication-SemiBold',
+    fontSize: 16,
+    lineHeight: 22,
   });
 });
 it('gives editorial and carousel their distinct landscape composition and headline hierarchy', async () => {
@@ -863,7 +869,7 @@ it('gives editorial and carousel their distinct landscape composition and headli
     aspectRatio: 3 / 2,
   });
   expect(screen.getByTestId('publication-headline-ui-post')).toHaveStyle({
-    fontSize: 32,
+    fontSize: 20,
   });
   unmount();
   await mount(
@@ -878,7 +884,7 @@ it('gives editorial and carousel their distinct landscape composition and headli
     aspectRatio: 3 / 2,
   });
   expect(screen.getByTestId('publication-headline-ui-post')).toHaveStyle({
-    fontSize: 22,
+    fontSize: 18,
   });
   fireEvent(screen.getByTestId('publication-media-ui-post'), 'layout', {
     nativeEvent: { layout: { width: 366, height: 244 } },
@@ -958,9 +964,7 @@ describe('Integrated reaction and viewer contracts', () => {
         onReaction={changed}
       />
     );
-    fireEvent.press(
-      screen.getByRole('button', { name: 'Options de réaction' })
-    );
+    fireEvent(screen.getByTestId('publication-like-ui-post'), 'longPress');
     fireEvent.press(screen.getByRole('button', { name: 'Je n’aime pas' }));
     await waitFor(() =>
       expect(changed).toHaveBeenCalledWith(post.id, false, 2, true)
@@ -1097,7 +1101,7 @@ it('supports dark ink on a light viewer backdrop', async () => {
 it('uses the official heading face for Publication without enlarging its label', async () => {
   await mount();
   expect(screen.getByTestId('publication-header-title')).toHaveStyle({
-    fontFamily: 'AyroviExtracted-Heading',
+    fontFamily: 'Publication-SemiBold',
   });
 });
 
@@ -1138,7 +1142,7 @@ it.each([false, true])(
     );
     expect(screen.getByTestId('publication-separator-ui-post')).toHaveStyle({
       height: 1,
-      backgroundColor: '#E5E5E5',
+      backgroundColor: '#E8E8E8',
       position: 'absolute',
     });
     expect(screen.getByTestId('publication-ui-post')).toHaveStyle({
@@ -1161,7 +1165,7 @@ it.each([false, true])(
       />
     );
     expect(screen.getByTestId('publication-publisher-avatar-slot')).toHaveStyle(
-      { position: 'absolute', left: 0, top: 0, width: 56, height: 56 }
+      { position: 'absolute', left: 0, top: 0, width: 52, height: 52 }
     );
     expect(screen.getByTestId('publication-publisher-avatar')).toHaveStyle({
       width: 44,
@@ -1313,7 +1317,19 @@ it.each([
     expect(copyIndex).toBeGreaterThanOrEqual(0);
     expect(copyIndex).toBeLessThan(mediaIndex);
     expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle({
-      gap: template === 'split' || template === 'campaign' ? 0 : 8,
+      ...(template === 'split' || template === 'campaign'
+        ? { gap: 0 }
+        : [
+            'photo',
+            'carousel',
+            'social_mosaic',
+            'social_strip',
+            'social_pair',
+            'caption_photo',
+            'shoppable',
+          ].includes(template)
+        ? { marginLeft: 52 }
+        : { gap: 8 }),
     });
   }
 );
@@ -1377,7 +1393,7 @@ it('confirms follow before switching to a check, prevents duplicate writes and c
   expect(screen.getByTestId('publication-follow-disc')).toHaveStyle({
     width: 24,
     height: 24,
-    backgroundColor: '#0A0A0A',
+    backgroundColor: '#101010',
   });
   fireEvent.press(plus);
   fireEvent.press(plus);
@@ -1442,8 +1458,8 @@ it('restores a persisted follow and uses the publisher-only typography exception
       .accessibilityState.selected
   ).toBe(true);
   expect(screen.getByTestId('publication-publisher-name')).toHaveStyle({
-    fontFamily: 'PublicationPublisher-Bold',
-    fontSize: 18,
+    fontFamily: 'Publication-SemiBold',
+    fontSize: 16,
   });
   expect(screen.getByTestId('publication-publisher-name').props.children).toBe(
     'Zayrovi Team'
@@ -1462,9 +1478,9 @@ it('aligns the copy column with the publisher name and keeps media independent',
   );
   expect(
     screen.getByTestId('publication-editorial-header-ui-post')
-  ).toHaveStyle({ gap: 4, minHeight: 56 });
+  ).toHaveStyle({ gap: 4, minHeight: 52 });
   expect(screen.getByTestId('publication-publisher-column')).toHaveStyle({
-    marginLeft: 56,
+    marginLeft: 52,
   });
   expect(screen.getByTestId('publication-publisher-column')).toContainElement(
     screen.getByTestId('publication-copy-ui-post')
@@ -1479,7 +1495,7 @@ it('aligns the copy column with the publisher name and keeps media independent',
   ).toContainElement(screen.getByTestId('publication-follow-ui-post'));
 });
 
-it('opens real reaction options from the viewer toolbar and retains the original core', async () => {
+it('opens supported post options from the viewer toolbar and retains the original core', async () => {
   await mount(
     <PublicationViewer
       post={post}
@@ -1489,13 +1505,19 @@ it('opens real reaction options from the viewer toolbar and retains the original
       onPreference={jest.fn()}
     />
   );
-  fireEvent.press(screen.getByRole('button', { name: 'Options de réaction' }));
-  expect(screen.getByLabelText('Choisir une réaction')).toBeTruthy();
-  expect(screen.getByRole('button', { name: 'Je n’aime pas' })).toBeTruthy();
-  expect(screen.getByRole('button', { name: 'Partager' })).toBeTruthy();
-  expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeTruthy();
+  fireEvent.press(
+    screen.getByRole('button', { name: 'Options de la publication' })
+  );
+  expect(screen.getByTestId('publication-post-options')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Copier le lien' })).toBeTruthy();
+  expect(
+    within(screen.getByTestId('publication-post-options')).getByRole('button', {
+      name: 'Enregistrer',
+    })
+  ).toBeTruthy();
+  fireEvent.press(screen.getByRole('button', { name: 'Fermer les options' }));
   expect(screen.getByTestId('publication-viewer-actions')).toHaveStyle({
-    backgroundColor: '#0A0A0A',
+    backgroundColor: '#000000',
   });
 });
 
@@ -1525,7 +1547,14 @@ it('gates viewer toolbar reaction options behind the existing guest authenticati
       onPreference={jest.fn()}
     />
   );
-  fireEvent.press(screen.getByRole('button', { name: 'Options de réaction' }));
+  fireEvent.press(
+    screen.getByRole('button', { name: 'Options de la publication' })
+  );
+  fireEvent.press(
+    within(screen.getByTestId('publication-post-options')).getByRole('button', {
+      name: 'Enregistrer',
+    })
+  );
   expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
   expect(
     screen.UNSAFE_getAllByType(Modal).filter((node) => node.props.visible)
@@ -1549,4 +1578,103 @@ it('exits the fullscreen image with its close control even when comments are ope
   ).toBeTruthy();
   fireEvent.press(screen.getByRole('button', { name: 'Fermer l’image' }));
   expect(close).toHaveBeenCalledTimes(1);
+});
+
+it('uses the Publication SVG family with one stroke and four real actions', async () => {
+  await mount(<PublicationActions post={post} onComments={jest.fn()} />);
+  for (const glyph of [
+    'heart-outline',
+    'chatbubble-outline',
+    'share-outline',
+    'bookmark-outline',
+  ]) {
+    const icon = screen.getByTestId(`publication-icon-${glyph}`, {
+      includeHiddenElements: true,
+    });
+    expect(icon.props.width).toBe(24);
+    expect(icon.findAllByProps({ strokeWidth: 1.8 }).length).toBeGreaterThan(0);
+  }
+  expect(
+    within(screen.getByTestId('publication-actions-feed-ui-post')).getAllByRole(
+      'button'
+    )
+  ).toHaveLength(4);
+  fireEvent(
+    screen.getByTestId('publication-like-ui-post'),
+    'accessibilityAction',
+    { nativeEvent: { actionName: 'longpress' } }
+  );
+  expect(screen.getByLabelText('Choisir une réaction')).toBeTruthy();
+});
+
+it('opens the complete post conversation from the feed comment action', async () => {
+  await mount();
+  fireEvent.press(screen.getByRole('button', { name: 'Commentaires' }));
+  expect(screen.getByTestId('publication-reader')).toBeTruthy();
+  expect(screen.getByTestId('publication-detail-post')).toBeTruthy();
+  expect(screen.getByText('Real Comments component slot')).toBeTruthy();
+  expect(
+    within(screen.getByTestId('publication-reader')).getByText('Suivre')
+  ).toBeTruthy();
+});
+
+it('shows the full description above the detail media without changing product navigation', async () => {
+  await mount(
+    <PublicationViewer
+      post={referencePost('social_pair', 2)}
+      owner="ui-owner"
+      onClose={jest.fn()}
+      onPreference={jest.fn()}
+    />
+  );
+  const detail = screen.getByTestId('publication-detail-post');
+  expect(
+    within(detail).getByText('Description au-dessus des photos')
+  ).toHaveStyle({ fontFamily: 'Publication-Regular', fontSize: 16 });
+  expect(within(detail).queryByText(post.title)).toBeNull();
+});
+
+it('saves from the sheet through the same preference API and owner cache', async () => {
+  const close = jest.fn();
+  await mount(<PublicationPostOptions post={post} onClose={close} />);
+  fireEvent.press(screen.getByRole('button', { name: 'Enregistrer' }));
+  await waitFor(() => expect(close).toHaveBeenCalledTimes(1));
+  expect(mockPreference).toHaveBeenCalledWith(post.id, { saved: true });
+  expect(mockInvalidate).toHaveBeenCalledWith({
+    queryKey: ['publication-feed', mockSession.account.id],
+  });
+});
+
+it('keeps a failed sheet preference open and permits a genuine retry', async () => {
+  const close = jest.fn();
+  mockPreference.mockRejectedValueOnce(new Error('offline'));
+  await mount(<PublicationPostOptions post={post} onClose={close} />);
+  fireEvent.press(screen.getByRole('button', { name: 'Enregistrer' }));
+  await screen.findByText('Action non enregistrée. Réessayez.');
+  expect(close).not.toHaveBeenCalled();
+  fireEvent.press(screen.getByRole('button', { name: 'Enregistrer' }));
+  await waitFor(() => expect(close).toHaveBeenCalledTimes(1));
+  expect(mockPreference).toHaveBeenCalledTimes(2);
+});
+
+it('only offers preference actions actually supported by the server', async () => {
+  const changed = jest.fn();
+  await mount(
+    <PublicationPostOptions
+      post={post}
+      onClose={jest.fn()}
+      onPreference={changed}
+    />
+  );
+  expect(screen.queryByText('Traduire')).toBeNull();
+  expect(screen.queryByText('Bloquer')).toBeNull();
+  fireEvent.press(
+    screen.getByRole('button', { name: 'Ça ne m’intéresse pas' })
+  );
+  await waitFor(() =>
+    expect(changed).toHaveBeenCalledWith('not_interested', post.id)
+  );
+  expect(mockPreference).toHaveBeenCalledWith(post.id, {
+    feedback: 'not_interested',
+  });
 });

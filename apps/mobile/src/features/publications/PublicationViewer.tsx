@@ -1,6 +1,8 @@
+import { PUBLICATION_PALETTE as P } from './publicationDesign';
+import { PublicationPostOptions } from './PublicationPostOptions';
 import { PublicationAuthHost } from './PublicationAuthSheet';
 import { useI18n } from '@/i18n';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { PublicationIcon as Ionicons } from './publicationDesign';
 import { NavigationIcon } from '@/design/NavigationIcon';
 import { Comments } from '@/features/social/Comments';
 import { PublicationActions } from './PublicationActions';
@@ -15,19 +17,16 @@ import {
   Platform,
   Pressable,
   PanResponder,
-  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { FeedPost } from '@/api/publicationFeed';
-import { AppText } from '@/design/ui';
-import {
-  VIDEO_BACKDROP,
-  PUBLICATION_THEME as P,
-  RADIUS,
-  ICON_SIZE,
-} from '@/design/tokens.mobile';
+import { PublicationText as AppText } from './publicationDesign';
+import { RADIUS, ICON_SIZE } from '@/design/tokens.mobile';
+import { PublicationPublisher } from './PublicationPublisher';
+import { showsPublicationTitle } from '../../../../../shared/publicationPresentation';
+import { resolvePublicationTemplate } from '../../../../../shared/publicationLayouts';
 import { PublicationMedia } from './PublicationMedia';
 import {
   finishesPublicationDismiss,
@@ -83,7 +82,8 @@ export function PublicationViewer({
   const [gallery, setGallery] = useState(initialMediaIndex != null);
   const [index, setIndex] = useState(initialMediaIndex ?? 0);
   const [controls, setControls] = useState(true);
-  const [optionsRequest, setOptionsRequest] = useState(0);
+  const [postOptions, setPostOptions] = useState(false);
+  const [composeRequest, setComposeRequest] = useState(0);
   const [comments, setComments] = useState(false);
   const scrollY = useRef(0);
   const insets = useSafeAreaInsets();
@@ -108,7 +108,13 @@ export function PublicationViewer({
     <Modal
       visible
       animationType={gallery ? 'fade' : 'slide'}
-      onRequestClose={gallery ? closeGallery : onClose}
+      onRequestClose={
+        postOptions
+          ? () => setPostOptions(false)
+          : gallery
+          ? closeGallery
+          : onClose
+      }
       statusBarTranslucent={gallery}
     >
       <StatusBar style={gallery ? 'light' : 'dark'} />
@@ -118,7 +124,7 @@ export function PublicationViewer({
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{
             flex: 1,
-            backgroundColor: gallery ? VIDEO_BACKDROP : P.paper,
+            backgroundColor: gallery ? P.backdrop : P.paper,
             paddingTop: insets.top,
             paddingBottom: insets.bottom,
           }}
@@ -146,9 +152,9 @@ export function PublicationViewer({
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={
-                        ar ? 'خيارات التفاعل' : 'Options de réaction'
+                        ar ? 'خيارات المنشور' : 'Options de la publication'
                       }
-                      onPress={() => setOptionsRequest((n) => n + 1)}
+                      onPress={() => setPostOptions(true)}
                       style={styles.viewerButton}
                     >
                       <Ionicons
@@ -171,7 +177,7 @@ export function PublicationViewer({
                 >
                   <View
                     testID="publication-lightbox"
-                    style={{ flex: 1, backgroundColor: VIDEO_BACKDROP }}
+                    style={{ flex: 1, backgroundColor: P.backdrop }}
                   >
                     <PublicationMedia
                       key={post.id}
@@ -183,7 +189,7 @@ export function PublicationViewer({
                       indicatorBottom={12}
                       onOpen={() => {
                         setControls(!controls);
-                        setOptionsRequest(0);
+                        setPostOptions(false);
                       }}
                     />
                   </View>
@@ -197,7 +203,6 @@ export function PublicationViewer({
                   <PublicationActions
                     presentation="viewer"
                     backdrop="dark"
-                    optionsRequest={optionsRequest}
                     post={post}
                     onComments={() => setComments(!comments)}
                     onPreference={onPreference}
@@ -250,7 +255,7 @@ export function PublicationViewer({
                       <Ionicons name="close" size={ICON_SIZE.md} />
                     </Pressable>
                   </View>
-                  <Comments targetId={post.id} />
+                  <Comments targetId={post.id} publication />
                 </View>
               ) : null}
             </>
@@ -261,68 +266,138 @@ export function PublicationViewer({
               onAccessibilityEscape={onClose}
             >
               <View testID="publication-reader" style={{ flex: 1 }}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={ar ? 'رجوع' : 'Retour'}
-                  onPress={onClose}
+                <View
                   style={{
-                    minWidth: 44,
-                    minHeight: 44,
-                    marginHorizontal: 8,
-                    alignSelf: ar ? 'flex-end' : 'flex-start',
-                    justifyContent: 'center',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    minHeight: 52,
                   }}
                 >
-                  <NavigationIcon
-                    name={ar ? 'arrow-forward' : 'arrow-back'}
-                    color={P.ink}
-                  />
-                </Pressable>
-                <ScrollView
-                  contentContainerStyle={styles.content}
-                  onScroll={(e) => {
-                    scrollY.current = e.nativeEvent.contentOffset.y;
-                  }}
-                  scrollEventThrottle={16}
-                >
-                  <PublicationMedia
-                    post={post}
-                    active={!gallery}
-                    onOpen={(i) => {
-                      setIndex(i);
-                      setGallery(true);
-                      setControls(true);
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={ar ? 'رجوع' : 'Retour'}
+                    onPress={onClose}
+                    style={{
+                      minWidth: 44,
+                      minHeight: 44,
+                      marginHorizontal: 8,
+                      alignSelf: ar ? 'flex-end' : 'flex-start',
+                      justifyContent: 'center',
                     }}
-                  />
-                  <View style={styles.copy}>
-                    {post.title && post.content?.showTitle !== false ? (
-                      <AppText variant="h3">{post.title}</AppText>
-                    ) : null}
-                    {post.content?.description || post.subtitle ? (
-                      <AppText color={P.muted}>
-                        {post.content?.description || post.subtitle}
-                      </AppText>
-                    ) : null}
-                  </View>
-                  {post.products.length ? (
+                  >
+                    <NavigationIcon
+                      name={ar ? 'arrow-forward' : 'arrow-back'}
+                      color={P.ink}
+                    />
+                  </Pressable>
+                  <AppText variant="h3" style={{ flex: 1 }}>
+                    {ar ? 'منشور' : 'Publication'}
+                  </AppText>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      ar ? 'خيارات المنشور' : 'Options de la publication'
+                    }
+                    onPress={() => setPostOptions(true)}
+                    style={{
+                      minWidth: 44,
+                      minHeight: 44,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Ionicons
+                      name="ellipsis-horizontal-outline"
+                      size={ICON_SIZE.md}
+                      color={P.ink}
+                    />
+                  </Pressable>
+                </View>
+                <Comments
+                  targetId={post.id}
+                  publication
+                  focusRequest={composeRequest}
+                  onScroll={(y) => {
+                    scrollY.current = y;
+                  }}
+                  header={
                     <View
-                      testID="publication-reader-products"
-                      style={styles.copy}
+                      testID="publication-detail-post"
+                      style={styles.detailPost}
                     >
-                      {post.products.map((product) => (
-                        <PublicationProductLink
-                          key={product.id}
-                          product={product}
-                          outlined
-                          onOpen={() => openProduct(product.id)}
-                        />
-                      ))}
+                      <PublicationPublisher post={post} detail />
+                      <View style={{ gap: 4 }}>
+                        {post.title &&
+                        post.content?.showTitle !== false &&
+                        showsPublicationTitle(
+                          resolvePublicationTemplate(
+                            post.content?.template,
+                            post.content?.type,
+                            post.content?.media.length,
+                            post.category
+                          )
+                        ) ? (
+                          <AppText variant="h3">{post.title}</AppText>
+                        ) : null}
+                        {post.content?.description || post.subtitle ? (
+                          <AppText>
+                            {post.content?.description || post.subtitle}
+                          </AppText>
+                        ) : null}
+                      </View>
+                      <PublicationMedia
+                        post={post}
+                        active={!gallery}
+                        onOpen={(i) => {
+                          setIndex(i);
+                          setGallery(true);
+                          setControls(true);
+                        }}
+                      />
+                      <PublicationActions
+                        post={post}
+                        onComments={() => setComposeRequest((n) => n + 1)}
+                        onPreference={onPreference}
+                      />
+                      {post.products.length ? (
+                        <View
+                          testID="publication-reader-products"
+                          style={{ gap: 8 }}
+                        >
+                          {post.products.map((product) => (
+                            <PublicationProductLink
+                              key={product.id}
+                              product={product}
+                              outlined
+                              onOpen={() => openProduct(product.id)}
+                            />
+                          ))}
+                        </View>
+                      ) : null}
+                      <View
+                        style={{
+                          borderTopWidth: 1,
+                          borderTopColor: P.line,
+                          paddingTop: 12,
+                        }}
+                      >
+                        <AppText variant="bodyStrong">
+                          {ar ? 'التعليقات' : 'Commentaires'}
+                        </AppText>
+                      </View>
                     </View>
-                  ) : null}
-                </ScrollView>
+                  }
+                />
               </View>
             </Animated.View>
           )}
+          {postOptions ? (
+            <PublicationPostOptions
+              post={post}
+              onClose={() => setPostOptions(false)}
+              onPreference={onPreference}
+            />
+          ) : null}
         </KeyboardAvoidingView>
       </PublicationAuthHost>
     </Modal>
@@ -335,7 +410,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: VIDEO_BACKDROP,
+    backgroundColor: P.backdrop,
   },
   viewerButton: {
     minWidth: 44,
@@ -349,8 +424,9 @@ const styles = StyleSheet.create({
     minHeight: 76,
     paddingHorizontal: 12,
     paddingVertical: 16,
-    backgroundColor: VIDEO_BACKDROP,
+    backgroundColor: P.backdrop,
   },
+  detailPost: { paddingHorizontal: 12, paddingBottom: 12, gap: 12 },
   content: {
     padding: 12,
     gap: 16,

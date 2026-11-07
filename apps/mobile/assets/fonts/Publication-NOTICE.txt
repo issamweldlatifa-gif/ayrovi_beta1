@@ -1,0 +1,5 @@
+Zayrovi Publication Sans Regular and SemiBold are renamed static derivatives of Inter, weights 400 and 600, optical size 18.
+Source: https://github.com/google/fonts/tree/main/ofl/inter
+Copyright and license: see Publication-OFL.txt (SIL Open Font License 1.1).
+These are licensed approximations for Publication, not Meta/Threads proprietary assets.
+Other application features retain their existing ZAYROVI fonts.

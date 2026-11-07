@@ -1,8 +1,9 @@
+import { PUBLICATION_PALETTE as P } from './publicationDesign';
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
-import { AppText } from '@/design/ui';
-import { useTheme } from '@/design/theme';
-import { PUBLICATION_THEME as P } from '@/design/tokens.mobile';
+import { PublicationText as AppText } from './publicationDesign';
+import { publicationTextStyle, PUBLICATION_TYPE } from './publicationDesign';
+
 import { useI18n } from '@/i18n';
 
 /** Keep combining marks/emoji intact when the platform supplies grapheme segmentation. */
@@ -53,7 +54,6 @@ export function PublicationDescription({
   color: string;
 }) {
   const { locale } = useI18n();
-  const theme = useTheme();
   const { fontScale } = useWindowDimensions();
   const [width, setWidth] = useState(0);
   const [expandedText, setExpandedText] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export function PublicationDescription({
     width,
     fontScale,
     locale,
-    theme.text('body'),
+    publicationTextStyle(locale),
   ]);
   const search = fit?.key === key ? fit : null;
   const token = `${key}:${search?.mid ?? 'full'}:${search?.done ?? false}`;
@@ -78,7 +78,8 @@ export function PublicationDescription({
     <Text
       style={{
         color: P.muted,
-        fontFamily: theme.font('regular'),
+        fontFamily:
+          locale === 'ar' ? 'NotoSansArabic-Regular' : PUBLICATION_TYPE.regular,
       }}
     >
       {label}
@@ -86,7 +87,7 @@ export function PublicationDescription({
   );
   const measured = (height: number) => {
     if (latest.current !== token || !width) return;
-    const fits = height <= theme.text('body').lineHeight * fontScale * 3 + 1;
+    const fits = height <= PUBLICATION_TYPE.bodyLine * fontScale * 3 + 1;
     if (!search) {
       setFit(
         fits

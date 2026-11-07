@@ -1,5 +1,10 @@
+import {
+  PUBLICATION_PALETTE as P,
+  PUBLICATION_TYPE,
+  publicationTextStyle,
+} from './publicationDesign';
+import { PublicationPostOptions } from './PublicationPostOptions';
 import { BackButton } from '@/design/BackButton';
-import { PublicationCommentsSheet } from './PublicationCommentsSheet';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
@@ -18,7 +23,7 @@ import {
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { setStatusBarStyle } from 'expo-status-bar';
-import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
+import { PublicationIcon as Ionicons } from './publicationDesign';
 import {
   fetchFeedPage,
   fetchFeedSettings,
@@ -26,22 +31,20 @@ import {
   type FeedPage,
   writePublicationPreference,
 } from '@/api/publicationFeed';
-import { AppText } from '@/design/ui';
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
+import { PublicationText as AppText } from './publicationDesign';
+import { EmptyBlock, ErrorBlock, LoadingBlock } from './PublicationFeedback';
 import {
-  PUBLICATION_THEME as P,
   PUBLICATION_METRICS as PM,
   RADIUS,
+  ICON_SIZE,
   veil,
 } from '@/design/tokens.mobile';
-import { useResponsive } from '@/design/layout';
 import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { useSession } from '@/state/session';
 import { useSessionId } from '@/session/session';
 import { sendInteraction } from '@/api/social';
-import { PublicationSparkIcon } from './PublicationReactionIcon';
 import { PublicationViewer } from './PublicationViewer';
 import { PublicationCard } from './PublicationCard';
 import {
@@ -106,14 +109,14 @@ export function PublicationFeedScreen() {
       setVisibleIds(viewableItems.map((row) => row.item.id));
     }
   ).current;
+  const [optionsPost, setOptionsPost] = useState<FeedPost | null>(null);
   const [lastHidden, setLastHidden] = useState('');
   const [undoError, setUndoError] = useState(false);
-  const [comments, setComments] = useState<FeedPost | null>(null);
   const list = useRef<FlatList<FeedPost>>(null);
   const offset = useRef(initial.current.offset);
   const restored = useRef(false);
   const insets = useSafeAreaInsets();
-  const { gutter } = useResponsive();
+  const gutter = PUBLICATION_TYPE.inset;
   useEffect(() => {
     const timer = setTimeout(() => setQ(search.trim()), 300);
     return () => clearTimeout(timer);
@@ -144,8 +147,7 @@ export function PublicationFeedScreen() {
     setLastHidden('');
   }, [owner]);
   useEffect(() => {
-    if (!focused || comments || viewer || (!sessionId && owner === 'guest'))
-      return;
+    if (!focused || viewer || (!sessionId && owner === 'guest')) return;
     const timer = setTimeout(() => {
       if (AppState.currentState !== 'active') return;
       for (const id of visibleIds) {
@@ -160,13 +162,13 @@ export function PublicationFeedScreen() {
       }
     }, 1200);
     return () => clearTimeout(timer);
-  }, [visibleIds, focused, comments, viewer, owner, sessionId]);
-  const closeComments = () => {
-    setComments(null);
-    void feed.refetch();
-  };
+  }, [visibleIds, focused, viewer, owner, sessionId]);
+
   const preferenceChanged = (action: string, id: string) => {
-    if (action === 'hidden' || action === 'not_interested') setLastHidden(id);
+    if (action === 'hidden' || action === 'not_interested') {
+      setLastHidden(id);
+      setViewer(null);
+    }
     void queryClient.invalidateQueries({
       queryKey: ['publication-feed', owner],
     });
@@ -203,7 +205,6 @@ export function PublicationFeedScreen() {
             numberOfLines={1}
             variant="label"
             color={P.ink}
-            style={{ fontFamily: theme.text('h3').fontFamily }}
           >
             {settings
               ? ar
@@ -257,7 +258,7 @@ export function PublicationFeedScreen() {
               if (post) router.setParams({ post: undefined });
               setSearch(value);
             }}
-            style={[styles.input, theme.text('body')]}
+            style={[styles.input, publicationTextStyle(locale)]}
           />
           <Pressable
             accessibilityRole="button"
@@ -367,12 +368,13 @@ export function PublicationFeedScreen() {
           <PublicationCard
             key={`${owner}:${item.id}`}
             post={item}
-            active={focused && !viewer && !comments && activeId === item.id}
+            active={focused && !viewer && !optionsPost && activeId === item.id}
             onOpen={() => {
               setViewerMedia(null);
               setViewer(item);
             }}
             mediaInset={gutter}
+            onOptions={() => setOptionsPost(item)}
             onMediaOpen={(index) => {
               setViewerMedia(index);
               setViewer(item);
@@ -401,7 +403,10 @@ export function PublicationFeedScreen() {
                     : old
               )
             }
-            onComments={() => setComments(item)}
+            onComments={() => {
+              setViewerMedia(null);
+              setViewer(item);
+            }}
           />
         )}
         ListEmptyComponent={
@@ -429,7 +434,7 @@ export function PublicationFeedScreen() {
             />
           ) : (
             <EmptyBlock>
-              <PublicationSparkIcon />
+              <Ionicons name="search-outline" size={ICON_SIZE.lg} color={P.muted} />
               <AppText color={P.muted}>
                 {ar
                   ? 'ما فماش منشورات مطابقة حاليًا.'
@@ -456,6 +461,13 @@ export function PublicationFeedScreen() {
           ) : null
         }
       />
+      {optionsPost ? (
+        <PublicationPostOptions
+          post={optionsPost}
+          onClose={() => setOptionsPost(null)}
+          onPreference={preferenceChanged}
+        />
+      ) : null}
       {viewer ? (
         <PublicationViewer
           post={
@@ -470,12 +482,6 @@ export function PublicationFeedScreen() {
             void feed.refetch();
           }}
           onPreference={preferenceChanged}
-        />
-      ) : null}
-      {comments ? (
-        <PublicationCommentsSheet
-          targetId={comments.id}
-          onClose={closeComments}
         />
       ) : null}
     </View>

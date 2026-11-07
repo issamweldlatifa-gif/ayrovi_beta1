@@ -1,6 +1,10 @@
+import {
+  PUBLICATION_PALETTE as P,
+  PUBLICATION_TYPE,
+} from './publicationDesign';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { PublicationIcon as Ionicons } from './publicationDesign';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { useI18n } from '@/i18n';
@@ -9,13 +13,11 @@ import { isApiError, userMessage } from '@/api/errors';
 import { PublicationAuthSheet } from './PublicationAuthSheet';
 import { ZMark } from '@/design/BrandMark';
 import { AppImage } from '@/design/appImage';
-import { AppText } from '@/design/ui';
+import { PublicationText as AppText } from './publicationDesign';
 import { mediaUrl } from '@/api/client';
-import { FONTS } from '@/design/tokens.generated';
+import { PUBLICATION_PUBLISHER as H } from './publicationDesign';
 import {
-  PUBLICATION_THEME as P,
   PUBLICATION_METRICS as PM,
-  PUBLICATION_PUBLISHER as H,
   RADIUS,
   OPACITY,
   ICON_SIZE,
@@ -52,10 +54,14 @@ export function PublicationPublisher({
   post,
   dark = false,
   children,
+  onOptions,
+  detail = false,
 }: {
   post: FeedPost;
   dark?: boolean;
   children?: ReactNode;
+  onOptions?: () => void;
+  detail?: boolean;
 }) {
   const { locale } = useI18n();
   const ar = locale === 'ar';
@@ -133,11 +139,76 @@ export function PublicationPublisher({
   const name =
     ownBrand || !post.channelName.trim() ? 'Zayrovi Team' : post.channelName;
   const ink = dark ? P.paper : P.ink;
+  const followControl = (
+    <Pressable
+      testID={`publication-follow-${post.id}`}
+      accessibilityRole="button"
+      accessibilityLabel={
+        following
+          ? ar
+            ? 'إلغاء متابعة الناشر'
+            : 'Ne plus suivre cet éditeur'
+          : ar
+          ? 'متابعة الناشر'
+          : 'Suivre cet éditeur'
+      }
+      accessibilityState={{
+        selected: following,
+        disabled: busy || session.status === 'loading',
+        busy,
+      }}
+      disabled={busy || session.status === 'loading'}
+      onPress={() => void follow()}
+      style={({ pressed }) => [
+        detail ? styles.detailFollow : styles.followTarget,
+        {
+          opacity: busy ? OPACITY.disabled : pressed ? OPACITY.subtle : 1,
+        },
+      ]}
+    >
+      {detail ? (
+        <View
+          style={{
+            borderRadius: RADIUS.full,
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            backgroundColor: following ? P.neutral : P.ink,
+          }}
+        >
+          <AppText variant="label" color={following ? P.ink : P.paper}>
+            {following ? (ar ? 'متابَع' : 'Suivi') : ar ? 'متابعة' : 'Suivre'}
+          </AppText>
+        </View>
+      ) : (
+        <View testID="publication-follow-disc" style={styles.followDisc}>
+          <Ionicons
+            name={following ? 'checkmark-outline' : 'add-outline'}
+            size={ICON_SIZE.sm}
+            color={P.paper}
+            accessibilityElementsHidden
+          />
+        </View>
+      )}
+    </Pressable>
+  );
   return (
     <View style={{ gap: 4 }}>
       <View testID="publication-publisher-header" style={styles.row}>
-        <View testID="publication-publisher-column" style={styles.name}>
-          <View style={styles.identity}>
+        <View
+          testID="publication-publisher-column"
+          style={[
+            styles.name,
+            detail
+              ? { marginRight: 96, minHeight: 44, justifyContent: 'center' }
+              : undefined,
+          ]}
+        >
+          <View
+            style={[
+              styles.identity,
+              onOptions ? { paddingRight: PUBLICATION_TYPE.touch } : undefined,
+            ]}
+          >
             <AppText
               testID="publication-publisher-name"
               variant="bodyStrong"
@@ -146,7 +217,7 @@ export function PublicationPublisher({
               style={{
                 flexShrink: 1,
                 fontFamily: /[\u0600-\u06FF]/.test(name)
-                  ? FONTS.arabic.bold
+                  ? 'NotoSansArabic-Bold'
                   : H.font,
                 fontSize: H.nameSize,
                 lineHeight: H.lineHeight,
@@ -189,42 +260,33 @@ export function PublicationPublisher({
               </AppText>
             )}
           </View>
+          {!detail ? followControl : null}
+        </View>
+        {detail ? followControl : null}
+        {onOptions ? (
           <Pressable
-            testID={`publication-follow-${post.id}`}
             accessibilityRole="button"
             accessibilityLabel={
-              following
-                ? ar
-                  ? 'إلغاء متابعة الناشر'
-                  : 'Ne plus suivre cet éditeur'
-                : ar
-                ? 'متابعة الناشر'
-                : 'Suivre cet éditeur'
+              ar ? 'خيارات المنشور' : 'Options de la publication'
             }
-            accessibilityState={{
-              selected: following,
-              disabled: busy || session.status === 'loading',
-              busy,
+            onPress={onOptions}
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              minWidth: 44,
+              minHeight: 44,
+              alignItems: 'center',
+              justifyContent: 'flex-start',
             }}
-            disabled={busy || session.status === 'loading'}
-            onPress={() => void follow()}
-            style={({ pressed }) => [
-              styles.followTarget,
-              {
-                opacity: busy ? OPACITY.disabled : pressed ? OPACITY.subtle : 1,
-              },
-            ]}
           >
-            <View testID="publication-follow-disc" style={styles.followDisc}>
-              <Ionicons
-                name={following ? 'checkmark-outline' : 'add-outline'}
-                size={ICON_SIZE.sm}
-                color={P.paper}
-                accessibilityElementsHidden
-              />
-            </View>
+            <Ionicons
+              name="ellipsis-horizontal-outline"
+              size={ICON_SIZE.md}
+              color={P.muted}
+            />
           </Pressable>
-        </View>
+        ) : null}
       </View>
       {error ? (
         <AppText
@@ -240,9 +302,18 @@ export function PublicationPublisher({
   );
 }
 const styles = StyleSheet.create({
-  row: { minHeight: H.avatar + 12, minWidth: 0 },
-  name: { marginLeft: H.avatar + 12, minWidth: 0, gap: 4 },
+  row: { minHeight: PUBLICATION_TYPE.column, minWidth: 0 },
+  name: { marginLeft: PUBLICATION_TYPE.column, minWidth: 0, gap: 4 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0 },
+  detailFollow: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    minHeight: 44,
+    minWidth: 88,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   followTarget: {
     position: 'absolute',
     right: 0,
@@ -258,6 +329,7 @@ const styles = StyleSheet.create({
     height: H.follow,
     borderRadius: RADIUS.full,
     backgroundColor: P.ink,
+    transform: [{ translateX: 4 }, { translateY: 4 }],
     borderWidth: 2,
     borderColor: P.paper,
     alignItems: 'center',
@@ -267,8 +339,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     top: 0,
-    width: H.avatar + 12,
-    height: H.avatar + 12,
+    width: PUBLICATION_TYPE.column,
+    height: PUBLICATION_TYPE.column,
     flexShrink: 0,
   },
   avatar: {
