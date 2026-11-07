@@ -49,3 +49,7 @@ Le propriétaire a choisi la nouvelle direction puis demandé son implémentatio
 Le libellé Sponsorisé et son sponsor réel sont conservés lorsqu’applicables ; ils ne sont pas remplacés par une date. Les dates des commentaires ne sont pas concernées. Les préférences de suivi existantes et leur API restent intactes ; aucun nouveau profil d’éditeur n’a été inventé ni présenté comme livré. Le code de suivi et d’authentification devenu inactif dans la carte a été retiré, sans toucher à l’authentification des interactions.
 
 Validation : 114 fichiers mobile / **1139 tests réussis**, 39 suites UI / **246 tests réussis**, TypeScript mobile, contrôles design/identité/icônes réussis ; export Expo Android et iOS réussi. Parcours navigateur réel sur sept modèles à 360/390/430 px : positions nom/avatar, absence de bouton et date dans le header, lecteur et commentaires conservés, aucune erreur `pageerror`. Logs et captures authentiques : `.cache/publisher-*`, hors Git. Aucun essai sur téléphone physique revendiqué.
+
+## Espacement resserré sous les interactions
+
+Après comparaison sur téléphone avec le rythme du fil Facebook, le propriétaire a demandé de rapprocher le filet des boutons. Le padding inférieur passe de 12 à **4 unités logiques**, en mode normal et compact ; la marge après le filet reste 12. La barre et ses cibles tactiles ne sont pas réduites, le trait conserve son épaisseur de 1 et son gris neutre. Validation : 39 suites UI / 246 tests réussis, TypeScript mobile et contrôles design/identité réussis. Aucun nouveau test physique revendiqué.

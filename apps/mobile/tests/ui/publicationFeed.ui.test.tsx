@@ -1110,7 +1110,7 @@ it.each([false, true])(
     expect(screen.getByTestId('publication-ui-post')).toHaveStyle({
       borderBottomWidth: 1,
       borderBottomColor: '#E5E5E5',
-      paddingBottom: 12,
+      paddingBottom: 4,
       marginBottom: 12,
     });
   }

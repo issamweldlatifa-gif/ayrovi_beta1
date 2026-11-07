@@ -147,7 +147,7 @@ export function PublicationCard({
       testID={`publication-${post.id}`}
       style={[
         styles.card,
-        compact ? { paddingBottom: 12, marginBottom: 12 } : undefined,
+        compact ? { paddingBottom: 4, marginBottom: 12 } : undefined,
       ]}
     >
       <View
@@ -209,7 +209,7 @@ export function PublicationCard({
 }
 const styles = StyleSheet.create({
   card: {
-    paddingBottom: 12,
+    paddingBottom: 4,
     marginBottom: 12,
     gap: 8,
     backgroundColor: P.paper,
