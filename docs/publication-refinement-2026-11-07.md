@@ -41,3 +41,11 @@ L’APK de cette révision est construit par le workflow Android après le push 
 ## Finition autorisée : séparation des publications
 
 Le propriétaire a ensuite approuvé un filet gris clair unique après chaque carte du fil, et non une bande grise épaisse ni un cadre. Le bord inférieur préexistant, trop fin sur les écrans à forte densité (`hairlineWidth`), est porté à **1 unité logique** avec le gris neutre existant `#E5E5E5`. Espacement blanc : 12 unités avant et après le filet, cohérent en mode compact et normal. Aucun séparateur supplémentaire ne double ce bord. Les 39 suites UI passent désormais avec **243 tests** ; TypeScript mobile et les contrôles de design/identité passent également.
+
+## Header éditorial autorisé après validation des concepts
+
+Le propriétaire a choisi la nouvelle direction puis demandé son implémentation et son push : nom dans la colonne gauche, avatar circulaire de 48 unités à droite, véritable sceau de vérification en bas à gauche de l’avatar, sans bouton Suivre/Suivi ni date. La disposition de ces deux colonnes reste identique en RTL ; la typographie du nom suit toujours la famille de l’application. Les noms longs restent limités à une ligne avec une colonne flexible. Un éditeur non officiel n’obtient aucun sceau ; avatar fourni et initiale de repli restent pris en charge.
+
+Le libellé Sponsorisé et son sponsor réel sont conservés lorsqu’applicables ; ils ne sont pas remplacés par une date. Les dates des commentaires ne sont pas concernées. Les préférences de suivi existantes et leur API restent intactes ; aucun nouveau profil d’éditeur n’a été inventé ni présenté comme livré. Le code de suivi et d’authentification devenu inactif dans la carte a été retiré, sans toucher à l’authentification des interactions.
+
+Validation : 114 fichiers mobile / **1139 tests réussis**, 39 suites UI / **246 tests réussis**, TypeScript mobile, contrôles design/identité/icônes réussis ; export Expo Android et iOS réussi. Parcours navigateur réel sur sept modèles à 360/390/430 px : positions nom/avatar, absence de bouton et date dans le header, lecteur et commentaires conservés, aucune erreur `pageerror`. Logs et captures authentiques : `.cache/publisher-*`, hors Git. Aucun essai sur téléphone physique revendiqué.

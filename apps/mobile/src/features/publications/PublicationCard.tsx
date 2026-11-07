@@ -1,24 +1,16 @@
 import { PublicationActions } from './PublicationActions';
 import { PublicationDescription } from './PublicationDescription';
 import { showsPublicationTitle } from '../../../../../shared/publicationPresentation';
-import { isApiError, userMessage } from '@/api/errors';
-import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { router } from 'expo-router';
-import {
-  followPublisher,
-  writePublicationPreference,
-  type FeedPost,
-} from '@/api/publicationFeed';
-import { PublicationAuthSheet } from './PublicationAuthSheet';
+import type { FeedPost } from '@/api/publicationFeed';
 import { PublicationMedia } from './PublicationMedia';
 import { PublicationPublisher } from './PublicationPublisher';
 import { AppText } from '@/design/ui';
 import { PUBLICATION_THEME as P, ICON_SIZE } from '@/design/tokens.mobile';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
-import { useSession } from '@/state/session';
 import {
   CAPTION_FIRST_TEMPLATES,
   resolvePublicationTemplate,
@@ -55,65 +47,6 @@ export function PublicationCard({
   const { locale } = useI18n();
   const theme = useTheme();
   const ar = locale === 'ar';
-  const session = useSession();
-  const signedIn = session.status === 'signedIn';
-  const [authOpen, setAuthOpen] = useState(false);
-  const requireAccount = () => {
-    if (signedIn) return false;
-    setAuthOpen(true);
-    return true;
-  };
-  const [message, setMessage] = useState('');
-  const [saved, setSaved] = useState(!!post.saved);
-  const [following, setFollowing] = useState(!!post.following);
-  const [preferenceBusy, setPreferenceBusy] = useState(false);
-  useEffect(() => {
-    setSaved(!!post.saved);
-    setFollowing(!!post.following);
-  }, [post.saved, post.following]);
-  const preference = async (
-    action: 'save' | 'follow' | 'hidden' | 'not_interested' | 'undo'
-  ) => {
-    if (requireAccount()) return;
-    if (preferenceBusy) return;
-    setPreferenceBusy(true);
-    setMessage('');
-    try {
-      if (action === 'follow') {
-        await followPublisher(post.channelId, !following);
-        setFollowing(!following);
-      } else if (action === 'save') {
-        await writePublicationPreference(post.id, { saved: !saved });
-        setSaved(!saved);
-      } else {
-        await writePublicationPreference(post.id, {
-          feedback: action === 'undo' ? '' : action,
-        });
-        setMessage(
-          action === 'undo'
-            ? ''
-            : ar
-            ? 'تم إخفاء المنشور'
-            : 'Publication masquée'
-        );
-      }
-      onPreference?.(action, post.id);
-    } catch (error) {
-      if (isApiError(error) && error.status === 401) {
-        setAuthOpen(true);
-        return;
-      }
-      setMessage(
-        isApiError(error)
-          ? userMessage(error)[ar ? 'ar' : 'fr']
-          : ar
-          ? 'تعذّر الحفظ. أعد المحاولة.'
-          : 'Modification non enregistrée. Réessayez.'
-      );
-    } finally {
-      setPreferenceBusy(false);
-    }
-  };
   const template = resolvePublicationTemplate(
     post.content?.template,
     post.content?.type,
@@ -224,12 +157,7 @@ export function PublicationCard({
         ]}
       >
         <View style={styles.publisherName}>
-          <PublicationPublisher
-            post={post}
-            onFollow={() => void preference('follow')}
-            following={following}
-            busy={preferenceBusy}
-          />
+          <PublicationPublisher post={post} />
         </View>
       </View>
       {!split &&
@@ -276,19 +204,6 @@ export function PublicationCard({
         onReaction={onReaction}
         onPreference={onPreference}
       />
-      <PublicationAuthSheet
-        visible={authOpen}
-        onClose={() => setAuthOpen(false)}
-      />
-      {message ? (
-        <AppText
-          variant="caption"
-          color={P.muted}
-          accessibilityLiveRegion="polite"
-        >
-          {message}
-        </AppText>
-      ) : null}
     </View>
   );
 }

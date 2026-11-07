@@ -1,3 +1,4 @@
+import { PublicationPublisher } from '@/features/publications/PublicationPublisher';
 import { PublicationActions } from '@/features/publications/PublicationActions';
 import { PublicationViewer } from '@/features/publications/PublicationViewer';
 import { AppState, FlatList, Modal } from 'react-native';
@@ -229,10 +230,10 @@ describe('Publication Phase 1 UI', () => {
     expect(mockRouter.push).toHaveBeenCalledWith('/sign-in');
     expect(mockSend).not.toHaveBeenCalled();
   });
-  it('gates guest comments, save, follow and share with the branded sheet, without writes', async () => {
+  it('gates guest comments, save and share with the branded sheet, without writes', async () => {
     mockSession.status = 'signedOut';
     await mount();
-    for (const name of ['Enregistrer', 'Suivre cet éditeur', 'Partager']) {
+    for (const name of ['Enregistrer', 'Partager']) {
       fireEvent.press(screen.getByRole('button', { name }));
       expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
       fireEvent.press(
@@ -314,7 +315,7 @@ describe('Publication Phase 1 UI', () => {
     await waitFor(() => expect(screen.getByText('9')).toBeTruthy());
     expect(reaction).toHaveBeenCalledWith('ui-post', true, 9, false);
   });
-  it('persists save and follow through the authenticated API rather than cosmetic toggles', async () => {
+  it('persists save through the authenticated API without a follow button', async () => {
     await mount();
     fireEvent.press(screen.getByRole('button', { name: 'Enregistrer' }));
     await waitFor(() =>
@@ -326,10 +327,10 @@ describe('Publication Phase 1 UI', () => {
     expect(
       screen.queryByRole('button', { name: 'Options de la publication' })
     ).toBeNull();
-    fireEvent.press(screen.getByRole('button', { name: 'Suivre cet éditeur' }));
-    await waitFor(() =>
-      expect(mockFollow).toHaveBeenCalledWith('official', true)
-    );
+    expect(
+      screen.queryByRole('button', { name: 'Suivre cet éditeur' })
+    ).toBeNull();
+    expect(mockFollow).not.toHaveBeenCalled();
   });
   it('opens and closes the existing-publication viewer', async () => {
     await mount();
@@ -722,8 +723,8 @@ describe('Reference additions, not replacements', () => {
         screen.queryByRole('button', { name: 'Options de la publication' })
       ).toBeNull();
       expect(
-        screen.getByRole('button', { name: 'Suivre cet éditeur' })
-      ).toHaveStyle({ backgroundColor: '#F0F1FC', borderWidth: 0 });
+        screen.queryByRole('button', { name: 'Suivre cet éditeur' })
+      ).toBeNull();
     }
   );
   it('opens the clicked mosaic tile directly on black and closes back to the feed', async () => {
@@ -1114,3 +1115,54 @@ it.each([false, true])(
     });
   }
 );
+
+it.each([false, true])(
+  'uses right avatar with attached real verification, no date or follow (official=%s)',
+  async (official) => {
+    await mount(
+      <PublicationPublisher
+        post={{
+          ...post,
+          publisherOfficial: official,
+          publishAt: '2026-11-07T10:00:00Z',
+        }}
+      />
+    );
+    expect(screen.getByTestId('publication-publisher-header')).toHaveStyle({
+      flexDirection: 'row',
+    });
+    const row = screen.getByTestId('publication-publisher-header');
+    expect(
+      (row.children[0] as any).findAllByProps({
+        testID: 'publication-publisher-name',
+      }).length
+    ).toBeGreaterThan(0);
+    expect(
+      (row.children[1] as any).findAllByProps({
+        testID: 'publication-publisher-avatar',
+      }).length
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText(/07.*11.*2026/)).toBeNull();
+    expect(screen.queryByText(/Suiv/)).toBeNull();
+    if (official)
+      expect(
+        screen.getByTestId('publication-publisher-avatar')
+      ).toContainElement(screen.getByTestId('publication-verified-badge'));
+    else expect(screen.queryByTestId('publication-verified-badge')).toBeNull();
+  }
+);
+it('retains truthful sponsored disclosure in the compact publisher header', async () => {
+  await mount(
+    <PublicationPublisher
+      post={{
+        ...post,
+        content: {
+          ...referencePost('photo', 1).content!,
+          sponsored: true,
+          sponsorName: 'Partenaire',
+        },
+      }}
+    />
+  );
+  expect(screen.getByText('Sponsorisé · Partenaire')).toBeTruthy();
+});

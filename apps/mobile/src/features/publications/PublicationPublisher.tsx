@@ -1,6 +1,4 @@
-import { PUBLICATION_SOCIAL_SURFACE } from '../../../../../shared/publicationPresentation';
-import { Pressable, View, StyleSheet } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { View, StyleSheet } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useI18n } from '@/i18n';
 import { ZMark } from '@/design/BrandMark';
@@ -12,7 +10,6 @@ import {
   PUBLICATION_THEME as P,
   PUBLICATION_METRICS as PM,
   RADIUS,
-  OPACITY,
 } from '@/design/tokens.mobile';
 import type { FeedPost } from '@/api/publicationFeed';
 
@@ -40,143 +37,72 @@ export function PublicationVerifiedBadge() {
 export function PublicationPublisher({
   post,
   dark = false,
-  onFollow,
-  following,
-  busy,
 }: {
   post: FeedPost;
   dark?: boolean;
-  onFollow?: () => void;
-  following?: boolean;
-  busy?: boolean;
 }) {
   const { locale } = useI18n();
   const ink = dark ? P.paper : P.ink;
-  // Publisher names are ordinary text in the app family; the logo belongs only in the avatar.
   const ownBrand = /^zayrovi(?:\s+official)?$/i.test(post.channelName.trim());
   return (
-    <View
-      style={[
-        styles.row,
-        { flexDirection: locale === 'ar' ? 'row-reverse' : 'row' },
-      ]}
-    >
-      <View style={styles.avatar}>
-        {post.publisherAvatar ? (
-          <AppImage
-            uri={mediaUrl(post.publisherAvatar)}
-            style={styles.image}
-            contentFit="cover"
-            accessibilityLabel={post.channelName}
-          />
-        ) : ownBrand ? (
-          <ZMark width={20} color={P.ink} />
-        ) : (
-          <AppText
-            testID="publication-publisher-initial"
-            variant="captionStrong"
-            color={P.ink}
-          >
-            {post.channelName.trim().slice(0, 1).toUpperCase() || '?'}
-          </AppText>
-        )}
-      </View>
+    <View testID="publication-publisher-header" style={styles.row}>
       <View style={styles.name}>
-        <View
-          style={[
-            styles.identity,
-            { flexDirection: locale === 'ar' ? 'row-reverse' : 'row' },
-          ]}
+        <AppText
+          testID="publication-publisher-name"
+          variant="bodyStrong"
+          numberOfLines={1}
+          color={ink}
+          style={{
+            fontFamily: locale === 'ar' ? FONTS.arabic.bold : FONTS.latin.bold,
+          }}
         >
-          <AppText
-            testID="publication-publisher-name"
-            variant="bodyStrong"
-            numberOfLines={1}
-            color={ink}
-            style={{
-              flexShrink: 1,
-              fontFamily:
-                locale === 'ar' ? FONTS.arabic.bold : FONTS.latin.bold,
-            }}
-          >
-            {ownBrand ? 'ZAYROVI' : post.channelName || 'ZAYROVI'}
-          </AppText>
-          {post.publisherOfficial ? <PublicationVerifiedBadge /> : null}
-        </View>
-        <AppText variant="caption" color={dark ? P.paper : P.muted}>
-          {post.content?.sponsored
-            ? `Sponsorisé${
-                post.content.sponsorName ? ` · ${post.content.sponsorName}` : ''
-              }`
-            : post.publishAt && Number.isFinite(Date.parse(post.publishAt))
-            ? new Date(post.publishAt).toLocaleDateString(
-                locale === 'ar' ? 'ar-TN' : 'fr-TN'
-              )
-            : ''}
+          {ownBrand ? 'ZAYROVI' : post.channelName || 'ZAYROVI'}
         </AppText>
+        {post.content?.sponsored ? (
+          <AppText variant="caption" color={dark ? P.paper : P.muted}>{`${
+            locale === 'ar' ? 'إعلان' : 'Sponsorisé'
+          }${
+            post.content.sponsorName ? ` · ${post.content.sponsorName}` : ''
+          }`}</AppText>
+        ) : null}
       </View>
-      {onFollow ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            following
-              ? locale === 'ar'
-                ? 'إلغاء متابعة الناشر'
-                : 'Ne plus suivre cet éditeur'
-              : locale === 'ar'
-              ? 'متابعة الناشر'
-              : 'Suivre cet éditeur'
-          }
-          disabled={busy}
-          accessibilityState={{ selected: !!following, disabled: !!busy }}
-          onPress={onFollow}
-          style={[
-            styles.follow,
-            {
-              borderColor: PUBLICATION_SOCIAL_SURFACE,
-              opacity: busy ? OPACITY.disabled : 1,
-              flexDirection: locale === 'ar' ? 'row-reverse' : 'row',
-            },
-          ]}
-        >
-          {following ? (
-            <Ionicons
-              name="checkmark-outline"
-              size={PM.verified}
-              color={P.ink}
+      <View testID="publication-publisher-avatar" style={styles.avatarWrap}>
+        <View style={styles.avatar}>
+          {post.publisherAvatar ? (
+            <AppImage
+              uri={mediaUrl(post.publisherAvatar)}
+              style={styles.image}
+              contentFit="cover"
+              accessibilityLabel={post.channelName}
             />
-          ) : null}
-          <AppText
-            variant="captionStrong"
-            color={P.ink}
-            style={
-              locale === 'ar' ? undefined : { fontFamily: FONTS.latin.bold }
-            }
-          >
-            {following
-              ? locale === 'ar'
-                ? 'متابَع'
-                : 'Suivi'
-              : locale === 'ar'
-              ? 'متابعة'
-              : 'Suivre'}
-          </AppText>
-        </Pressable>
-      ) : null}
+          ) : ownBrand ? (
+            <ZMark width={24} color={P.ink} />
+          ) : (
+            <AppText
+              testID="publication-publisher-initial"
+              variant="captionStrong"
+              color={P.ink}
+            >
+              {post.channelName.trim().slice(0, 1).toUpperCase() || '?'}
+            </AppText>
+          )}
+        </View>
+        {post.publisherOfficial ? (
+          <View testID="publication-publisher-seal" style={styles.seal}>
+            <PublicationVerifiedBadge />
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0 },
-  identity: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    columnGap: 4,
-    minHeight: 20,
-  },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minWidth: 0 },
+  name: { flex: 1, minWidth: 0, gap: 2 },
+  avatarWrap: { width: 48, height: 48, flexShrink: 0 },
   avatar: {
-    width: PM.avatar,
-    height: PM.avatar,
+    width: 48,
+    height: 48,
     borderRadius: RADIUS.full,
     backgroundColor: P.neutral,
     alignItems: 'center',
@@ -184,16 +110,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   image: { width: '100%', height: '100%' },
-  name: { flex: 1, gap: 1 },
-  follow: {
-    minWidth: 88,
-    minHeight: 44,
-    paddingHorizontal: 12,
-    gap: 4,
-    borderWidth: 0,
+  seal: {
+    position: 'absolute',
+    left: -2,
+    bottom: -2,
     borderRadius: RADIUS.full,
-    backgroundColor: PUBLICATION_SOCIAL_SURFACE,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 2,
+    backgroundColor: P.paper,
   },
 });
