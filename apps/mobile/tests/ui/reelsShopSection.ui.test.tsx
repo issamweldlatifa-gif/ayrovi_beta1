@@ -1,3 +1,6 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SessionProvider } from '../../src/state/session';
 /**
  * Section « Reels • Shop » de l'accueil et logo de la marque.
  *  • rien ne s'affiche sans Reel publié (pas de bloc vide) ;
@@ -18,7 +21,21 @@ import { ReelsShopMark } from '../../src/features/reels/ReelsShopMark';
 import { MEDIA_RATIO } from '../../src/design/tokens.mobile';
 
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true), replace: jest.fn() },
+  useIsFocused: () => true,
+  router: {
+    push: jest.fn(),
+    back: jest.fn(),
+    canGoBack: jest.fn(() => true),
+    replace: jest.fn(),
+  },
+}));
+
+jest.mock('expo-video', () => ({
+  VideoView: () => null,
+  useVideoPlayer: () => null,
+}));
+jest.mock('../../src/features/reels/useReelPreviewActivity', () => ({
+  useReelPreviewActivity: () => ({ visible: true, autoplay: true }),
 }));
 
 const mockReels: { data: unknown } = { data: undefined };
@@ -28,17 +45,39 @@ jest.mock('../../src/api/hooks', () => ({
 
 function wrap(node: React.ReactNode) {
   return (
-    <PrefsProvider>
-      <I18nProvider>
-        <ThemeProvider>{node}</ThemeProvider>
-      </I18nProvider>
-    </PrefsProvider>
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 390, height: 844 },
+        insets: { top: 0, bottom: 0, left: 0, right: 0 },
+      }}
+    >
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
+        <SessionProvider>
+          <PrefsProvider>
+            <I18nProvider>
+              <ThemeProvider>{node}</ThemeProvider>
+            </I18nProvider>
+          </PrefsProvider>
+        </SessionProvider>
+      </QueryClientProvider>
+    </SafeAreaProvider>
   );
 }
 
 const reel = (id: string, title = '') => ({
-  id, title, channelId: 'c', description: '', videoUrl: `/v/${id}.mp4`,
-  durationSeconds: 12, publishAt: '2026-10-01T00:00:00Z', views: 0, likes: 0,
+  id,
+  title,
+  channelId: 'c',
+  description: '',
+  videoUrl: `/v/${id}.mp4`,
+  durationSeconds: 12,
+  publishAt: '2026-10-01T00:00:00Z',
+  views: 0,
+  likes: 0,
 });
 
 beforeEach(() => {
@@ -63,20 +102,32 @@ describe('section Reels • Shop (accueil)', () => {
     expect(screen.getByTestId('home-reel-tile-r2')).toBeTruthy();
   });
 
-  it('affiche la couverture du Reel sur la vignette quand elle existe', () => {
-    mockReels.data = [{ ...reel('r1'), posterUrl: '/uploads/cover-r1.jpg' }, reel('r2')];
+  it('conserve une couverture uniquement en repli derrière la vraie vidéo', () => {
+    mockReels.data = [
+      { ...reel('r1'), posterUrl: '/uploads/cover-r1.jpg' },
+      reel('r2'),
+    ];
     render(wrap(<ReelsShopSection />));
     const withPoster = screen.getByTestId('home-reel-tile-r1');
     const without = screen.getByTestId('home-reel-tile-r2');
-    expect(withPoster.findAll((n: any) => n.props?.source?.uri?.includes('cover-r1.jpg')).length).toBeGreaterThan(0);
-    expect(without.findAll((n: any) => n.props?.source?.uri?.includes('cover-'))).toHaveLength(0);
+    expect(
+      withPoster.findAll((n: any) =>
+        n.props?.source?.uri?.includes('cover-r1.jpg')
+      ).length
+    ).toBeGreaterThan(0);
+    expect(
+      without.findAll((n: any) => n.props?.source?.uri?.includes('cover-'))
+    ).toHaveLength(0);
   });
 
   it('toucher une vignette ouvre la visionneuse à ce Reel', () => {
     mockReels.data = [reel('r1'), reel('r2')];
     render(wrap(<ReelsShopSection />));
     fireEvent.press(screen.getByTestId('home-reel-tile-r2'));
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/reels-viewer', params: { id: 'r2' } });
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/reels-viewer',
+      params: { id: 'r2' },
+    });
   });
 });
 
@@ -87,4 +138,16 @@ describe('logo Reels • Shop', () => {
     expect(screen.getByText('Shop')).toBeTruthy();
     expect(screen.getByLabelText('Reels, Shop')).toBeTruthy();
   });
+});
+
+it('renders official publisher outside the video, a small media mark and a working options sheet', () => {
+  mockReels.data = [reel('r1', 'Do not overlay this title')];
+  render(wrap(<ReelsShopSection />));
+  expect(screen.getByText('Zayrovi Team')).toBeTruthy();
+  expect(screen.queryByText('Do not overlay this title')).toBeNull();
+  fireEvent.press(screen.getByTestId('home-reel-options-r1'));
+  expect(screen.getByTestId('reel-options')).toBeTruthy();
+  expect(screen.getByText('Masquer sur cet appareil')).toBeTruthy();
+  fireEvent.press(screen.getByText('+ Suivre'));
+  expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
 });

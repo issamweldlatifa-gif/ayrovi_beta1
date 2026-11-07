@@ -52,10 +52,12 @@ export interface LinkedProductCardProps {
   onToggleFavorite?: (product: LinkedProduct) => void;
   favourite?: boolean;
   testID?: string;
+  /** Compact Reel-only presentation; other commerce consumers retain their typography. */
+  reelPresentation?: boolean;
 }
 
 export function LinkedProductCard({
-  product, variant = 'row', onOpen, onToggleFavorite, favourite = false, testID,
+  product, variant = 'row', onOpen, onToggleFavorite, favourite = false, testID, reelPresentation = false,
 }: LinkedProductCardProps) {
   const theme = useTheme();
   const t = useT();
@@ -77,7 +79,7 @@ export function LinkedProductCard({
   return (
     <Pressable
       testID={testID ?? `linked-product-${id}`}
-      accessibilityRole="button"
+      accessibilityRole={reelPresentation ? "link" : "button"}
       accessibilityLabel={label}
       accessibilityHint={t('shopping.discover')}
       onPress={open}
@@ -94,11 +96,11 @@ export function LinkedProductCard({
       ]}
     >
       {/* Bande photo : rectangle franc, pleine hauteur, découpé par le rayon de la carte. */}
-      <View style={[styles.shot, { width: size.thumb, backgroundColor: theme.colors.shimmer }]}>
+      <View style={[styles.shot, { width: size.thumb, backgroundColor: reelPresentation ? theme.colors.surface : theme.colors.shimmer }]}>
         {product.image ? (
           <AppImage
             uri={mediaUrl(product.image)}
-            style={StyleSheet.absoluteFill}
+            style={reelPresentation ? [StyleSheet.absoluteFill, { margin: 8 }] : StyleSheet.absoluteFill}
             contentFit="contain"
             accessibilityLabel={product.name}
             decorative={false}
@@ -112,10 +114,10 @@ export function LinkedProductCard({
             {brand}
           </AppText>
         ) : null}
-        <AppText variant="caption" numberOfLines={ARTICLE_CARD.titleLines} style={styles.title}>
+        <AppText variant="caption" numberOfLines={reelPresentation ? 1 : ARTICLE_CARD.titleLines} style={styles.title}>
           {product.name}
         </AppText>
-        <AppText variant="captionStrong" color={theme.colors.ink} style={styles.price}>
+        <AppText variant={reelPresentation ? "caption" : "captionStrong"} color={theme.colors.ink} style={styles.price}>
           {price}
         </AppText>
         {product.available === false ? (
@@ -131,7 +133,7 @@ export function LinkedProductCard({
           accessibilityRole="button"
           accessibilityState={{ selected: favourite }}
           accessibilityLabel={favourite ? t('shopping.favouriteRemove') : t('shopping.favouriteAdd')}
-          onPress={() => onToggleFavorite(product)}
+          onPress={(event) => { event.stopPropagation(); onToggleFavorite(product); }}
           hitSlop={8}
           style={styles.fav}
         >

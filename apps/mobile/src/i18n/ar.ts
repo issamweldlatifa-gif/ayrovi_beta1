@@ -254,6 +254,7 @@ export const ar = {
   'social.mute': 'كتم الصوت',
   'social.unmute': 'تشغيل الصوت',
   'reel.viewItems': 'عرض المنتجات',
+  'reel.options': 'خيارات الفيديو',
   'reel.hideItems': 'إخفاء المنتجات',
 
   'checkout.step.address': 'العنوان',

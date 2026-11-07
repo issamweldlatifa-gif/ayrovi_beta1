@@ -1,3 +1,7 @@
+import { PublicationAuthSheet } from '@/features/publications/PublicationAuthSheet';
+import { ReelPublisher } from '@/features/reels/ReelPublisher';
+import { ReelOptions } from '@/features/reels/ReelOptions';
+import { shareReel } from '@/features/reels/shareReel';
 /**
  * بطاقة ريلز (Q3، 08/10/2026).
  *
@@ -9,8 +13,8 @@
  *
  * وقاعدة الصدق: **الإعجاب يحتاج حساباً** ⇒ الزر معطّل بسبب مكتوب.
  */
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, Share, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, Pressable, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { VideoView, useVideoPlayer } from 'expo-video';
 
@@ -50,11 +54,17 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
   const muted = fill ? theme.colors.onMedia : theme.colors.muted;
 
   const [liked, setLiked] = useState(false);
+  const [options, setOptions] = useState(false);
+  const [auth, setAuth] = useState(false);
+  const [error, setError] = useState('');
+  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const likeLock = useRef(false);
+  useEffect(() => { const sub = AppState.addEventListener('change', state => setForeground(state === 'active')); return () => sub.remove(); }, []);
   const [paused, setPaused] = useState(false);
   // الصوت مطفي افتراضياً (قاعدة البطاقة) — والزرّ يقلبها.
   const [soundOn, setSoundOn] = useState(false);
   // مفضّلة المنتوج: القلب على الكارطة، بلا حساب ما فمّاش قلب.
-  const favourites = useProductFavorites(fill ? signedIn : false);
+  const favourites = useProductFavorites(fill ? signedIn : false, session.account?.id || '');
 
   // `null` ⇒ لا مشغّل: البطاقة البعيدة ما تكلّفش الجهاز ولا الشبكة.
   const player = useVideoPlayer(active ? { uri: mediaUrl(reel.videoUrl) } : null, (instance) => {
@@ -65,9 +75,9 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
 
   useEffect(() => {
     if (!player) return;
-    if (paused || !active) player.pause();
+    if (paused || !active || !foreground || options || auth) player.pause();
     else player.play();
-  }, [player, paused, active]);
+  }, [player, paused, active, foreground, options, auth]);
 
   useEffect(() => {
     if (!player) return;
@@ -76,20 +86,15 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
 
   const toggleLike = useCallback(async () => {
     if (!signedIn) return;
-    const result = await sendInteraction({ type: 'like', targetId: reel.id, sessionId: guestSession || undefined });
-    setLiked(result.liked ?? !liked);
-  }, [signedIn, reel.id, guestSession, liked]);
-
-  /**
-   * المشاركة: نفتح ورقة النظام **ونسجّلها عند الخادم**.
-   *
-   * التسجيل يسبق الورقة: كان الخادم رفض، المستعمل يعرف قبل ما يشارك رابطاً
-   * ما تنجمش تتفتح. والمشاركة تُسجَّل **مرّة وحدة** لكل مالك (عدّاد صادق).
-   */
-  const share = useCallback(async () => {
-    await sendInteraction({ type: 'share', targetId: reel.id, sessionId: guestSession || undefined }).catch(() => null);
-    await Share.share({ message: reel.title || reel.description || 'ZAYROVI' }).catch(() => null);
-  }, [reel.id, reel.title, reel.description, guestSession]);
+    if (likeLock.current) return;
+    likeLock.current = true; setError('');
+    try {
+      const result = await sendInteraction({ type: 'like', targetId: reel.id, sessionId: guestSession || undefined });
+      if (typeof result.liked === 'boolean') setLiked(result.liked);
+    } catch { setError(t('common.retry')); } finally { likeLock.current = false; }
+  }, [signedIn, reel.id, guestSession, t]);
+  const share = useCallback(() => shareReel(reel), [reel]);
+  const shareWithFeedback = () => { setError(''); share().catch(() => setError(t('common.retry'))); };
 
   /** Média : couverture, lecteur (un seul vivant), bouton pause. */
   const media = (
@@ -99,7 +104,7 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
         <AppImage uri={mediaUrl(reel.posterUrl)} style={StyleSheet.absoluteFill} contentFit="cover" decorative />
       ) : null}
       {active && player ? (
-        <VideoView player={player} style={StyleSheet.absoluteFill} contentFit="cover" nativeControls={false} />
+        <VideoView player={player} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} contentFit="cover" nativeControls={false} />
       ) : reel.posterUrl ? null : (
         <View style={[StyleSheet.absoluteFill, styles.poster]}>
           <Ionicons name="play-circle-outline" size={theme.iconSize.xl} color={muted} accessibilityElementsHidden />
@@ -130,11 +135,13 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
    */
   const body = (bottom?: number) => (
     <View style={[fill ? styles.fillBody : styles.body, fill && bottom !== undefined ? { bottom } : null]}>
-      {reel.title ? <AppText variant="label" color={ink} numberOfLines={1}>{reel.title}</AppText> : null}
-      {reel.description ? (
+      {fill ? <ReelPublisher onMedia /> : null}
+      {!fill && reel.title ? <AppText variant="label" color={ink} numberOfLines={1}>{reel.title}</AppText> : null}
+      {!fill && reel.description ? (
         <AppText variant="caption" color={muted} numberOfLines={2}>{reel.description}</AppText>
       ) : null}
 
+      {error ? <AppText accessibilityRole="alert" variant="caption" color={muted}>{error}</AppText> : null}
       {/* En plein écran, partage/son/commentaire vivent dans le rail posé sur la
           vidéo (accroché à la pastille) : pas de doublon ici. */}
       {!fill ? (
@@ -164,7 +171,7 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('social.share')}
-          onPress={share}
+          onPress={shareWithFeedback}
           style={styles.action}
         >
           <Ionicons name="share-social-outline" size={theme.iconSize.md} color={muted} accessibilityElementsHidden />
@@ -177,7 +184,7 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
       </View>
       ) : null}
 
-      {!signedIn ? (
+      {!fill && !signedIn ? (
         <AppText variant="caption" color={muted}>{t('social.needAccount')}</AppText>
       ) : null}
     </View>
@@ -188,6 +195,8 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
       ? [styles.card, styles.fillCard, { width: fill.width, height: fill.height }]
       : [styles.card, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
       {media}
+      {auth ? <PublicationAuthSheet visible onClose={() => setAuth(false)} /> : null}
+      {options ? <ReelOptions reel={reel} onClose={() => setOptions(false)} onShare={share} onLike={toggleLike} onComment={() => onOpenComments(reel)} liked={liked} canLike={signedIn} interactionError={error} /> : null}
       {fill ? (
         // Plein écran : tiroir par-dessus la vidéo. Le lecteur n'est pas démonté,
         // donc ouvrir les articles ne met PAS le Reel en pause.
@@ -199,13 +208,11 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
           rail={{
             muted: !soundOn,
             onToggleMute: () => setSoundOn((value) => !value),
-            onShare: share,
+            onShare: shareWithFeedback,
             onComment: () => onOpenComments(reel),
-            liked,
-            canLike: signedIn,
-            onLike: toggleLike,
+            onOptions: () => setOptions(true),
           }}
-          favourites={favourites}
+          favourites={signedIn ? favourites : { isFavorite: () => false, toggle: () => setAuth(true) }}
         >
           {({ bottom }) => body(bottom)}
         </ReelShopTray>

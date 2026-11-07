@@ -28,24 +28,26 @@ describe('rail du Reel — toujours visible en plein écran', () => {
     expect(tray).toMatch(/const pill = products\.length > 0 \?/);
   });
 
-  it('les quatre actions sont posées sur la vidéo : commentaire, son, partage, cœur', () => {
-    for (const key of ['comment', 'sound', 'share', 'like']) {
+  it('trois actions restent sur la vidéo : options, son, partage', () => {
+    for (const key of ['options', 'sound', 'share']) {
       expect(tray).toContain(`key: '${key}'`);
       expect(tray).toContain('reel-rail-${action.key}-${reel.id}');
     }
   });
 
-  it('le cœur suit l’état et ne ment pas pour un invité', () => {
-    expect(tray).toMatch(/rail\.liked \? 'heart' : 'heart-outline'/);
-    expect(tray).toMatch(/dim: !rail\.canLike/);
-    expect(tray).toMatch(/disabled=\{action\.dim\}/);
+  it('les interactions supplémentaires restent réellement disponibles dans les options', () => {
+    const menu = src('src/features/reels/ReelOptions.tsx');
+    expect(menu).toContain('onLike');
+    expect(menu).toContain('onComment');
+    expect(menu).toContain('PublicationAuthSheet');
+    expect(menu).toContain('hideReelOnDevice');
   });
 
   it('l’écran plein écran branche le cœur sur le vrai état de session', () => {
     const card = src('src/features/social/ReelCard.tsx');
-    expect(card).toMatch(/canLike: signedIn/);
-    expect(card).toMatch(/onLike: toggleLike/);
-    expect(card).toMatch(/liked,/);
+    expect(card).toMatch(/canLike=\{signedIn\}/);
+    expect(card).toMatch(/onLike=\{toggleLike\}/);
+    expect(card).toMatch(/liked=\{liked\}/);
   });
 
   it('la légende réserve la colonne du rail (pas de texte sous les icônes)', () => {

@@ -174,3 +174,8 @@ export async function followPublisher(id: string, following: boolean) {
   );
   return result.data;
 }
+
+/** Shared persisted publisher relation, also read by the Reel options sheet. */
+export async function fetchPublisherFollow(id: string, options?: RequestOptions) {
+  return apiGetData<{ following: boolean }>(`/api/public/social/publishers/${encodeURIComponent(id)}/follow`, options);
+}

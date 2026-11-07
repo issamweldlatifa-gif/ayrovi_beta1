@@ -10,7 +10,7 @@
  *  • **Plus de poignée de tiroir** ni de coins arrondis de feuille : il n'y a
  *    plus de feuille.
  *  • **Le rail d'actions est ici**, parce qu'il est accroché à la pastille :
- *    partage · son · commentaire (Ionicons, la famille du projet). Fermer les
+ *    partage · son · options (Ionicons, la famille du projet). Fermer les
  *    articles fait descendre la pastille **et les icônes avec elle**.
  *  • **La pastille suit l'état** : noire quand les articles sont sortis, blanche
  *    quand ils sont rangés — comme le modèle.
@@ -21,10 +21,10 @@
  *
  * Un seul bouton : « Voir les articles » ⇄ « Masquer les articles » (voir
  * `reelTray.ts`). Aucun article ⇒ aucune pastille — mais le **rail d'actions**
- * (commentaire · son · partage · cœur) reste affiché : un Reel sans article est
- * toujours un Reel qu'on aime, qu'on commente et qu'on partage.
+ * (options · son · partage) reste affiché ; commentaires et cœur restent
+ * disponibles dans les options, même sans article.
  */
-import { RADIUS } from '@/design/tokens.mobile';
+import { RADIUS, VIDEO_BACKDROP } from '@/design/tokens.mobile';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -55,11 +55,7 @@ export interface ReelTrayRail {
   onToggleMute: () => void;
   onShare: () => void;
   onComment: () => void;
-  /** Cœur du Reel — visible même sans article (avant le 24/10 il n'existait pas en plein écran). */
-  liked: boolean;
-  /** Faux pour un invité : le cœur reste affiché mais inerte (règle « l'aimé exige un compte »). */
-  canLike: boolean;
-  onLike: () => void;
+  onOptions?: () => void;
 }
 
 /** Favoris : fournis seulement si l'écran sait les gérer ; sinon aucun cœur. */
@@ -114,33 +110,33 @@ export function ReelShopTray({
           ? [
               styles.pillOnMedia,
               // Ouvert : encre de la marque. Fermé : la surface de l'écran.
-              { bottom: pillBottom, backgroundColor: open ? theme.colors.ink : surface },
+              { bottom: pillBottom, backgroundColor: open ? VIDEO_BACKDROP : onMedia },
             ]
-          : [styles.pillInline, { borderColor: theme.colors.line }],
+          : [styles.pillInline, { borderColor: theme.colors.line, backgroundColor: theme.colors.ink }],
         { opacity: pressed ? theme.opacity.dimmed : 1 },
       ]}
     >
-      <AppText variant="label" color={!overlay || open ? onMedia : theme.colors.ink}>
+      <AppText variant="label" color={!overlay ? surface : open ? onMedia : VIDEO_BACKDROP}>
         {t(reelTrayLabelKey(open))}
       </AppText>
       <Ionicons
         name={open ? 'chevron-up' : 'chevron-down'}
         size={theme.iconSize.sm}
-        color={!overlay || open ? onMedia : theme.colors.ink}
+        color={!overlay ? surface : open ? onMedia : VIDEO_BACKDROP}
         accessibilityElementsHidden
       />
     </Pressable>
   ) : null;
 
   /**
-   * Rail d'actions : commentaire (aligné sur le centre de la pastille), son,
+   * Rail d'actions : options (alignées sur le centre de la pastille), son,
    * partage — de bas en haut, comme le modèle. Chaque icône est accrochée à la
    * pastille : elle descend avec elle quand on range les articles.
    */
   const railView = overlay && rail ? (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
       {[
-        { key: 'comment', icon: 'chatbubble-outline', label: t('social.comments'), onPress: rail.onComment, dim: false },
+        { key: 'options', icon: 'ellipsis-horizontal', label: t('reel.options'), onPress: rail.onOptions ?? rail.onComment, dim: false },
         {
           key: 'sound',
           icon: rail.muted ? 'volume-mute' : 'volume-high',
@@ -149,20 +145,13 @@ export function ReelShopTray({
           dim: false,
         },
         { key: 'share', icon: 'share-social-outline', label: t('social.share'), onPress: rail.onShare, dim: false },
-        {
-          key: 'like',
-          icon: rail.liked ? 'heart' : 'heart-outline',
-          label: rail.liked ? t('social.liked') : t('social.like'),
-          onPress: rail.onLike,
-          dim: !rail.canLike,
-        },
       ].map((action, index) => (
         <Pressable
           key={action.key}
           testID={`reel-rail-${action.key}-${reel.id}`}
           accessibilityRole="button"
           accessibilityLabel={action.label}
-          accessibilityState={{ disabled: action.dim, selected: action.key === 'like' ? rail.liked : undefined }}
+          accessibilityState={{ disabled: action.dim }}
           disabled={action.dim}
           onPress={action.onPress}
           hitSlop={4}
@@ -177,7 +166,7 @@ export function ReelShopTray({
           <Ionicons
             name={action.icon as keyof typeof Ionicons.glyphMap}
             size={theme.iconSize.md}
-            color={action.key === 'like' && rail.liked ? theme.colors.accentOnMedia : onMedia}
+            color={onMedia}
             accessibilityElementsHidden
           />
         </Pressable>
@@ -214,6 +203,7 @@ export function ReelShopTray({
             key={product.id}
             product={product}
             variant={overlay ? 'overlay' : 'row'}
+            reelPresentation={overlay}
             testID={`reel-product-${reel.id}-${product.id}`}
             onToggleFavorite={favourites ? () => favourites.toggle(product.id) : undefined}
             favourite={favourites ? favourites.isFavorite(product.id) : false}

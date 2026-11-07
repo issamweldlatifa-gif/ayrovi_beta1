@@ -1,113 +1,207 @@
-/**
- * Section « Reels • Shop » de l'accueil, sous « À la une ».
- *
- * Présentation (d'après la référence Facebook) : en-tête « ▶ Reels • Shop », puis une
- * rangée horizontale de vignettes verticales 9:16. La première vignette occupe
- * `REEL_TILE.widthFraction` de la colonne et la suivante dépasse à droite (indice de
- * défilement). Les marges viennent de l'écran (`gutter`), la hauteur du ratio partagé.
- *
- * Données : les Reels publiés (même source que la page Reels). Rien à afficher ⇒
- * rien ne s'affiche (pas de bloc vide, pas de bloc de chargement sur l'accueil).
- *
- * Toucher une vignette ouvre la visionneuse plein écran à ce Reel.
- */
-import { useWindowDimensions, FlatList, Pressable, StyleSheet, View } from 'react-native';
+/** Real, muted Reel previews with a first-party publisher row outside the media. */
+import { useRef, useState } from 'react';
+import {
+  useWindowDimensions,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-
 import { useReels } from '@/api/hooks';
 import { AppText } from '@/design/ui';
 import { AppImage } from '@/design/appImage';
 import { mediaUrl } from '@/api/client';
 import { FullBleed, useResponsive } from '@/design/layout';
 import { useTheme } from '@/design/theme';
-import { MEDIA_RATIO, REEL_TILE, veil } from '@/design/tokens.mobile';
-import { FadeIn, PressScale } from '@/design/motion';
-import { useT } from '@/i18n';
+import { MEDIA_RATIO, REEL_TILE, RADIUS } from '@/design/tokens.mobile';
+import { FadeIn } from '@/design/motion';
+import { useT, useI18n } from '@/i18n';
 import { ReelsShopMark } from '@/features/reels/ReelsShopMark';
+import { ReelPublisher } from '@/features/reels/ReelPublisher';
+import { ReelPreview } from '@/features/reels/ReelPreview';
+import { ReelOptions } from '@/features/reels/ReelOptions';
+import { useReelPreviewActivity } from '@/features/reels/useReelPreviewActivity';
+import {
+  useHiddenReels,
+  restoreHiddenReels,
+} from '@/features/reels/reelVisibility';
+import { shareReel } from '@/features/reels/shareReel';
 import type { Reel } from '@/api/social';
 
 export function ReelsShopSection() {
-  const theme = useTheme();
-  const t = useT();
-  const { gutter } = useResponsive();
-  const { width } = useWindowDimensions();
-  const reels = useReels();
-
-  const rows = reels.data ?? [];
-  if (rows.length === 0) return null;
-
+  const theme = useTheme(),
+    t = useT(),
+    { locale } = useI18n();
+  const { gutter } = useResponsive(),
+    { width } = useWindowDimensions();
+  const reels = useReels(),
+    hidden = useHiddenReels();
+  const rows = (reels.data ?? []).filter((row) => !hidden.includes(row.id));
+  const section = useRef<View>(null);
+  const autoplay = useReelPreviewActivity(section);
+  const [visibleId, setVisibleId] = useState<string | null>(null);
+  const [options, setOptions] = useState<Reel | null>(null);
+  const [error, setError] = useState('');
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: Array<{ item?: Reel }> }) =>
+      setVisibleId(viewableItems[0]?.item?.id ?? null)
+  ).current;
+  if (!rows.length && !hidden.length) return null;
   const tileWidth = Math.round((width - gutter * 2) * REEL_TILE.widthFraction);
   const tileHeight = Math.round(tileWidth / MEDIA_RATIO.reel);
-
-  const open = (reel: Reel) => {
+  const open = (reel: Reel) =>
     router.push({ pathname: '/reels-viewer', params: { id: reel.id } });
-  };
-
   return (
     <FadeIn testID="home-reels-shop">
-      {/* Espace entre l'en-tête et les vignettes : l'en-tête ne doit pas toucher la carte. */}
-      <View style={[styles.section, { paddingBottom: theme.space[4] }]}>
-        <ReelsShopMark />
-      </View>
-
-      <FullBleed>
-        <FlatList
-          horizontal
-          data={rows}
-          keyExtractor={(item) => item.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: gutter, gap: theme.space[1], paddingBottom: theme.space[4] }}
-          renderItem={({ item }) => (
-            <Pressable
-              testID={`home-reel-tile-${item.id}`}
-              accessibilityRole="button"
-              accessibilityLabel={item.title || t('home.reelsShop.open')}
-              onPress={() => open(item)}
-              style={{ width: tileWidth, height: tileHeight }}
-            >
-              {({ pressed }) => (
-                <PressScale
-                  pressed={pressed}
+      <View ref={section} collapsable={false}>
+        <View style={[styles.section, { paddingBottom: theme.space[4] }]}>
+          <ReelsShopMark />
+        </View>
+        <FullBleed>
+          <FlatList
+            horizontal
+            data={rows}
+            keyExtractor={(item) => item.id}
+            showsHorizontalScrollIndicator={false}
+            viewabilityConfig={viewabilityConfig}
+            onViewableItemsChanged={onViewableItemsChanged}
+            contentContainerStyle={{
+              paddingHorizontal: gutter,
+              gap: theme.space[2],
+              paddingBottom: theme.space[4],
+            }}
+            renderItem={({ item }) => (
+              <View style={{ width: tileWidth }}>
+                <Pressable
+                  testID={`home-reel-tile-${item.id}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.title || t('home.reelsShop.open')}
+                  onPress={() => open(item)}
                   style={[
                     styles.tile,
                     {
                       width: tileWidth,
                       height: tileHeight,
                       borderRadius: theme.radius.card,
-                      backgroundColor: theme.colors.surface,
-                      borderWidth: StyleSheet.hairlineWidth,
-                      borderColor: theme.colors.line,
+                      backgroundColor: theme.colors.shimmer,
                     },
                   ]}
                 >
-                  <View style={styles.poster}>
-                    {item.posterUrl ? (
-                      <AppImage uri={mediaUrl(item.posterUrl)} style={StyleSheet.absoluteFill} contentFit="cover" decorative />
-                    ) : (
-                      <Ionicons name="play-circle-outline" size={theme.iconSize.xl} color={theme.colors.muted} accessibilityElementsHidden />
-                    )}
-                  </View>
-                  {item.title ? (
-                    <View style={styles.caption}>
-                      <AppText variant="label" color={theme.colors.onMedia} numberOfLines={2}>
-                        {item.title}
-                      </AppText>
-                    </View>
+                  {item.posterUrl ? (
+                    <AppImage
+                      uri={mediaUrl(item.posterUrl)}
+                      style={StyleSheet.absoluteFill}
+                      contentFit="cover"
+                      decorative
+                    />
                   ) : null}
-                </PressScale>
-              )}
-            </Pressable>
-          )}
+                  {autoplay.visible &&
+                  !options &&
+                  item.id === (visibleId ?? rows[0]?.id) ? (
+                    <ReelPreview
+                      uri={item.videoUrl}
+                      playing={autoplay.autoplay}
+                    />
+                  ) : null}
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.videoMark,
+                      { backgroundColor: theme.colors.onMedia },
+                    ]}
+                  >
+                    <Ionicons
+                      name="play"
+                      size={theme.iconSize.xs}
+                      color={theme.colors.muted}
+                      accessibilityElementsHidden
+                    />
+                  </View>
+                </Pressable>
+                <View style={styles.publisherRow}>
+                  <ReelPublisher />
+                  <Pressable
+                    testID={`home-reel-options-${item.id}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      locale === 'ar' ? 'خيارات الفيديو' : 'Options de la vidéo'
+                    }
+                    onPress={() => setOptions(item)}
+                    style={styles.options}
+                  >
+                    <Ionicons
+                      name="ellipsis-horizontal-outline"
+                      size={theme.iconSize.md}
+                      color={theme.colors.ink}
+                    />
+                  </Pressable>
+                </View>
+              </View>
+            )}
+          />
+        </FullBleed>
+        {hidden.length ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setError('');
+              restoreHiddenReels().catch(() =>
+                setError(
+                  locale === 'ar'
+                    ? 'تعذّرت الاستعادة. حاول مجددًا.'
+                    : 'Restauration impossible. Réessayez.'
+                )
+              );
+            }}
+            style={styles.restore}
+          >
+            <AppText variant="caption">
+              {locale === 'ar'
+                ? 'إظهار الفيديوهات المخفية على هذا الجهاز'
+                : 'Réafficher les Reels masqués sur cet appareil'}
+            </AppText>
+          </Pressable>
+        ) : null}
+        {error ? <AppText accessibilityRole="alert">{error}</AppText> : null}
+      </View>
+      {options ? (
+        <ReelOptions
+          reel={options}
+          onClose={() => setOptions(null)}
+          onShare={() => shareReel(options)}
         />
-      </FullBleed>
+      ) : null}
     </FadeIn>
   );
 }
-
 const styles = StyleSheet.create({
   section: { paddingTop: 24 },
-  tile: { overflow: 'hidden', justifyContent: 'flex-end' },
-  poster: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  caption: { padding: 10, backgroundColor: veil(0.35) },
+  tile: { overflow: 'hidden' },
+  videoMark: {
+    position: 'absolute',
+    top: 10,
+    start: 10,
+    width: 20,
+    height: 16,
+    borderRadius: RADIUS.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  publisherRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 4,
+    paddingVertical: 4,
+  },
+  options: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  restore: { minHeight: 44, justifyContent: 'center' },
 });

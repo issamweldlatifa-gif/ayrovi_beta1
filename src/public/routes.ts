@@ -810,6 +810,14 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       ? Buffer.from(JSON.stringify([last.publish_at, last.id])).toString('base64url') : null } });
   });
 
+  // Read the same persisted follow relation used by Publication; never guess from a local toggle.
+  router.get('/social/publishers/:id/follow', optionalCustomer(db), (req, res) => {
+    res.setHeader('Cache-Control', 'private, no-store');
+    if (!db.get('SELECT id FROM story_publishers WHERE id=?', req.params.id)) return res.status(404).json({ success: false, error: 'Éditeur introuvable.' });
+    const account = (req as any).customer?.id || '';
+    res.json({ success: true, data: { following: !!db.get('SELECT 1 FROM publication_follows WHERE account_id=? AND publisher_id=?', account, req.params.id) } });
+  });
+
   router.put('/social/publishers/:id/follow', requireCustomer(db), (req, res) => {
     if (!db.get('SELECT id FROM story_publishers WHERE id=?', req.params.id)) return res.status(404).json({ success: false, error: 'Éditeur introuvable.' });
     if (typeof req.body?.following !== 'boolean') return res.status(400).json({ success: false, error: 'État invalide.' });

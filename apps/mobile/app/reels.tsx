@@ -1,3 +1,5 @@
+import { useIsFocused } from 'expo-router';
+import { useHiddenReels } from '@/features/reels/reelVisibility';
 /**
  * شاشة الريلز (Q3، 08/10/2026).
  *
@@ -31,6 +33,7 @@ import type { Reel } from '@/api/social';
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function ReelsScreen() {
+  const focused = useIsFocused();
   const theme = useTheme();
   const t = useT();
   const reels = useReels();
@@ -38,7 +41,8 @@ export default function ReelsScreen() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [commentsFor, setCommentsFor] = useState<Reel | null>(null);
 
-  const rows = reels.data ?? [];
+  const hidden = useHiddenReels();
+  const rows = (reels.data ?? []).filter(reel => !hidden.includes(reel.id));
   const counts = useSocialCounts(rows.map((reel) => reel.id));
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 70 }).current;
@@ -70,7 +74,7 @@ export default function ReelsScreen() {
         renderItem={({ item }) => (
           <ReelCard
             reel={item}
-            active={activeId === null ? rows[0]?.id === item.id : activeId === item.id}
+            active={focused && !commentsFor && (activeId === null ? rows[0]?.id === item.id : activeId === item.id)}
             counts={counts.data?.[item.id]}
             onOpenComments={setCommentsFor}
           />

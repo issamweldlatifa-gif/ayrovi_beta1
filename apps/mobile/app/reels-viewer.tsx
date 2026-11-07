@@ -1,3 +1,4 @@
+import { useHiddenReels } from '@/features/reels/reelVisibility';
 import { BackButton } from '@/design/BackButton';
 /**
  * Visionneuse Reels plein écran (ouverte depuis l'accueil).
@@ -11,10 +12,10 @@ import { BackButton } from '@/design/BackButton';
  * • Un seul lecteur vivant : la page réellement visible (`viewabilityConfig`), comme
  *   la page Reels. Les autres pages attendent (règle de `ReelCard`).
  */
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { goBack } from '@/design/navigation';
 import { FlatList, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useIsFocused } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -39,6 +40,7 @@ const BACK_HIT = 48;
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function ReelsViewerScreen() {
+  const focused = useIsFocused();
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
@@ -46,12 +48,17 @@ export default function ReelsViewerScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
 
   const reels = useReels();
-  const rows = reels.data ?? [];
+  const hidden = useHiddenReels();
+  const rows = (reels.data ?? []).filter(reel => !hidden.includes(reel.id));
   const counts = useSocialCounts(rows.map((reel) => reel.id));
 
   const initialIndex = Math.max(0, rows.findIndex((reel) => reel.id === id));
   const [activeId, setActiveId] = useState<string | null>(id ?? null);
   const [commentsFor, setCommentsFor] = useState<Reel | null>(null);
+
+  useEffect(() => {
+    if (activeId && hidden.includes(activeId) && rows.length === 0) goBack('/');
+  }, [activeId, hidden, rows.length]);
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: Array<{ item?: unknown }> }) => {
@@ -64,7 +71,7 @@ export default function ReelsViewerScreen() {
   const closeComments = useCallback(() => setCommentsFor(null), []);
 
   return (
-    <View style={styles.root}>
+    <View testID="reels-viewer" style={styles.root}>
       <FlatList
         data={rows}
         keyExtractor={(item) => item.id}
@@ -76,7 +83,7 @@ export default function ReelsViewerScreen() {
         renderItem={({ item }) => (
           <ReelCard
             reel={item}
-            active={activeId === item.id}
+            active={focused && !commentsFor && activeId === item.id}
             counts={counts.data?.[item.id]}
             onOpenComments={setCommentsFor}
             fill={{ width, height }}

@@ -255,6 +255,7 @@ export const fr = {
   'social.mute': 'Couper le son',
   'social.unmute': 'Activer le son',
   'reel.viewItems': 'Voir les articles',
+  'reel.options': 'Options de la vidéo',
   'reel.hideItems': 'Masquer les articles',
   'checkout.step.address': 'Adresse',
   'checkout.step.payment': 'Paiement',
