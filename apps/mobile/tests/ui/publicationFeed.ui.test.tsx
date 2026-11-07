@@ -148,7 +148,9 @@ async function mount(child = <PublicationFeedScreen />) {
 beforeEach(() => {
   jest.clearAllMocks();
   mockPreference.mockResolvedValue({});
-  mockFollow.mockResolvedValue({});
+  mockFollow.mockImplementation((_id: string, following: boolean) =>
+    Promise.resolve({ following })
+  );
   mockSession.status = 'signedIn';
   mockSession.account.id = `owner-${Math.random()}`;
   mockQuery.mockReturnValue(feed);
@@ -237,7 +239,7 @@ describe('Publication Phase 1 UI', () => {
   it('gates guest comments, save and share with the branded sheet, without writes', async () => {
     mockSession.status = 'signedOut';
     await mount();
-    for (const name of ['Enregistrer', 'Partager']) {
+    for (const name of ['Enregistrer', 'Suivre cet éditeur', 'Partager']) {
       fireEvent.press(screen.getByRole('button', { name }));
       expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
       fireEvent.press(
@@ -331,10 +333,13 @@ describe('Publication Phase 1 UI', () => {
     expect(
       screen.queryByRole('button', { name: 'Options de la publication' })
     ).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Suivre cet éditeur' }));
+    await waitFor(() =>
+      expect(mockFollow).toHaveBeenCalledWith('official', true)
+    );
     expect(
-      screen.queryByRole('button', { name: 'Suivre cet éditeur' })
-    ).toBeNull();
-    expect(mockFollow).not.toHaveBeenCalled();
+      screen.getByRole('button', { name: 'Ne plus suivre cet éditeur' })
+    ).toBeTruthy();
   });
   it('opens and closes the existing-publication viewer', async () => {
     await mount();
@@ -741,8 +746,8 @@ describe('Reference additions, not replacements', () => {
         screen.queryByRole('button', { name: 'Options de la publication' })
       ).toBeNull();
       expect(
-        screen.queryByRole('button', { name: 'Suivre cet éditeur' })
-      ).toBeNull();
+        screen.getByRole('button', { name: 'Suivre cet éditeur' })
+      ).toHaveStyle({ minWidth: 44, minHeight: 44 });
     }
   );
   it('opens the clicked mosaic tile directly on black and closes back to the feed', async () => {
@@ -836,8 +841,12 @@ describe('Reference additions, not replacements', () => {
 it('renders the publisher name as app-family text, never a wordmark pasted beside the avatar', async () => {
   await mount();
   const name = screen.getByTestId('publication-publisher-name');
-  expect(name.props.children).toBe('ZAYROVI');
-  expect(name).toHaveStyle({ fontFamily: 'AyroviExtracted-Bold' });
+  expect(name.props.children).toBe('Zayrovi Team');
+  expect(name).toHaveStyle({
+    fontFamily: 'PublicationPublisher-Bold',
+    fontSize: 24,
+    lineHeight: 30,
+  });
 });
 it('gives editorial and carousel their distinct landscape composition and headline hierarchy', async () => {
   const { unmount } = await mount(
@@ -1135,7 +1144,7 @@ it.each([false, true])(
 );
 
 it.each([false, true])(
-  'uses right avatar with attached real verification, no date or follow (official=%s)',
+  'uses right avatar with attached real verification, no date or follow text (official=%s)',
   async (official) => {
     await mount(
       <PublicationPublisher
@@ -1288,6 +1297,16 @@ it.each([
     expect(screen.getByTestId('publication-copy-ui-post')).toHaveStyle({
       gap: 4,
     });
+    const siblings = screen.getByTestId('publication-ui-post')
+      .children as any[];
+    const copyIndex = siblings.findIndex(
+      (child) => child.props?.testID === 'publication-copy-ui-post'
+    );
+    const mediaIndex = siblings.findIndex(
+      (child) => child.props?.testID === 'publication-content-ui-post'
+    );
+    expect(copyIndex).toBeGreaterThanOrEqual(0);
+    expect(copyIndex).toBeLessThan(mediaIndex);
     expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle({
       gap: template === 'split' || template === 'campaign' ? 0 : 8,
     });
@@ -1334,4 +1353,94 @@ it('does not insert an empty copy section when title and description are absent'
   expect(
     screen.getByTestId('publication-content-ui-post').children
   ).toHaveLength(1);
+});
+
+it('confirms follow before switching to a check, prevents duplicate writes and can unfollow', async () => {
+  let finish!: (value: { following: boolean }) => void;
+  mockFollow.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+  );
+  await mount(<PublicationPublisher post={post} />);
+  const plus = screen.getByRole('button', { name: 'Suivre cet éditeur' });
+  expect(screen.getByTestId('publication-publisher-avatar')).toHaveStyle({
+    width: 64,
+    height: 64,
+  });
+  expect(screen.getByTestId('publication-follow-disc')).toHaveStyle({
+    width: 24,
+    height: 24,
+    backgroundColor: '#0A0A0A',
+  });
+  fireEvent.press(plus);
+  fireEvent.press(plus);
+  expect(mockFollow).toHaveBeenCalledTimes(1);
+  expect(plus).toBeDisabled();
+  expect(
+    screen.queryByRole('button', { name: 'Ne plus suivre cet éditeur' })
+  ).toBeNull();
+  await act(async () => finish({ following: true }));
+  const checked = screen.getByRole('button', {
+    name: 'Ne plus suivre cet éditeur',
+  });
+  expect(checked.props.accessibilityState.selected).toBe(true);
+  const patch = mockSetQueries.mock.calls[0][1];
+  const data = patch({
+    pages: [
+      {
+        items: [
+          post,
+          { ...post, id: 'other-post' },
+          { ...post, id: 'other-publisher', channelId: 'different' },
+        ],
+        nextCursor: null,
+      },
+    ],
+    pageParams: [null],
+  });
+  expect(data.pages[0].items.map((item: any) => !!item.following)).toEqual([
+    true,
+    true,
+    false,
+  ]);
+  fireEvent.press(checked);
+  await waitFor(() =>
+    expect(mockFollow).toHaveBeenLastCalledWith('official', false)
+  );
+  await waitFor(() =>
+    expect(
+      screen.getByRole('button', { name: 'Suivre cet éditeur' })
+    ).toBeTruthy()
+  );
+});
+it('does not fake follow success after a failed write and permits retry', async () => {
+  mockFollow.mockRejectedValueOnce(new Error('offline'));
+  await mount(<PublicationPublisher post={post} />);
+  fireEvent.press(screen.getByRole('button', { name: 'Suivre cet éditeur' }));
+  await screen.findByText('Suivi non enregistré. Réessayez.');
+  expect(
+    screen.queryByRole('button', { name: 'Ne plus suivre cet éditeur' })
+  ).toBeNull();
+  fireEvent.press(screen.getByRole('button', { name: 'Suivre cet éditeur' }));
+  await screen.findByRole('button', { name: 'Ne plus suivre cet éditeur' });
+});
+it('restores a persisted follow and uses the publisher-only typography exception', async () => {
+  await mount(
+    <PublicationPublisher
+      post={{ ...post, following: true, channelName: 'Zayrovi Team' }}
+    />
+  );
+  expect(
+    screen.getByRole('button', { name: 'Ne plus suivre cet éditeur' }).props
+      .accessibilityState.selected
+  ).toBe(true);
+  expect(screen.getByTestId('publication-publisher-name')).toHaveStyle({
+    fontFamily: 'PublicationPublisher-Bold',
+    fontSize: 24,
+  });
+  expect(screen.getByTestId('publication-publisher-name').props.children).toBe(
+    'Zayrovi Team'
+  );
 });

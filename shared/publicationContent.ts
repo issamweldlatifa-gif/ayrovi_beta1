@@ -1,5 +1,4 @@
 import type { MediaPresentation } from './publicationPresentation';
-import { CAPTION_FIRST_TEMPLATES } from './publicationLayouts';
 import { normalizeMediaLink } from './mediaLinks';
 export const PUBLICATION_TYPES = [
   'image',
@@ -164,11 +163,7 @@ export function normalizePublicationContent(
       0,
       10000
     ),
-    descriptionPosition: (
-      CAPTION_FIRST_TEMPLATES as readonly string[]
-    ).includes(template)
-      ? 'above'
-      : position,
+    descriptionPosition: 'above',
     sponsored: !!sponsored,
     sponsorName: String(
       body.sponsor_name ?? previous?.sponsor_name ?? 'ZAYROVI'

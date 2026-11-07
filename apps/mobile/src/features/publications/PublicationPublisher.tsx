@@ -1,6 +1,12 @@
-import { View, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, View, StyleSheet } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import { useI18n } from '@/i18n';
+import { useSession } from '@/state/session';
+import { isApiError, userMessage } from '@/api/errors';
+import { PublicationAuthSheet } from './PublicationAuthSheet';
 import { ZMark } from '@/design/BrandMark';
 import { AppImage } from '@/design/appImage';
 import { AppText } from '@/design/ui';
@@ -9,11 +15,19 @@ import { FONTS } from '@/design/tokens.generated';
 import {
   PUBLICATION_THEME as P,
   PUBLICATION_METRICS as PM,
+  PUBLICATION_PUBLISHER as H,
   RADIUS,
+  OPACITY,
+  ICON_SIZE,
 } from '@/design/tokens.mobile';
-import type { FeedPost } from '@/api/publicationFeed';
+import {
+  followPublisher,
+  type FeedPost,
+  type FeedPage,
+} from '@/api/publicationFeed';
 
-/** Standard Material verified icon, gated exclusively by actual publisher metadata. */
+/** One write per account/publisher, even when several cards of that publisher are visible. */
+const writes = new Set<string>();
 export function PublicationVerifiedBadge() {
   const { locale } = useI18n();
   return (
@@ -42,67 +56,214 @@ export function PublicationPublisher({
   dark?: boolean;
 }) {
   const { locale } = useI18n();
+  const ar = locale === 'ar';
+  const session = useSession();
+  const client = useQueryClient();
+  const owner =
+    session.status === 'signedIn' ? session.account?.id || 'guest' : 'guest';
+  const identity = `${owner}:${post.channelId}`;
+  const latest = useRef(identity);
+  latest.current = identity;
+  const [following, setFollowing] = useState(!!post.following);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [auth, setAuth] = useState(false);
+  useEffect(() => {
+    if (!writes.has(identity)) setFollowing(!!post.following);
+  }, [post.following, identity]);
+  useEffect(() => {
+    setBusy(false);
+    setError('');
+    setAuth(false);
+  }, [identity]);
+  const follow = async () => {
+    if (session.status !== 'signedIn') {
+      setAuth(true);
+      return;
+    }
+    if (writes.has(identity)) return;
+    writes.add(identity);
+    setBusy(true);
+    setError('');
+    try {
+      const result = await followPublisher(post.channelId, !following);
+      if (typeof result.following !== 'boolean')
+        throw new Error('Unconfirmed follow response');
+      if (latest.current === identity) setFollowing(result.following);
+      client.setQueriesData<InfiniteData<FeedPage>>(
+        { queryKey: ['publication-feed', owner] },
+        (old) =>
+          old
+            ? {
+                ...old,
+                pages: old.pages.map((page) => ({
+                  ...page,
+                  items: page.items.map((item) =>
+                    item.channelId === post.channelId
+                      ? { ...item, following: result.following }
+                      : item
+                  ),
+                })),
+              }
+            : old
+      );
+      void client.invalidateQueries({ queryKey: ['publication-feed', owner] });
+    } catch (e) {
+      if (latest.current === identity) {
+        if (isApiError(e) && e.status === 401) setAuth(true);
+        else
+          setError(
+            isApiError(e)
+              ? userMessage(e)[ar ? 'ar' : 'fr']
+              : ar
+              ? 'تعذّرت المتابعة. أعد المحاولة.'
+              : 'Suivi non enregistré. Réessayez.'
+          );
+      }
+    } finally {
+      writes.delete(identity);
+      if (latest.current === identity) setBusy(false);
+    }
+  };
+  const ownBrand = /^zayrovi(?:\s+(?:official|team))?$/i.test(
+    post.channelName.trim()
+  );
+  const name =
+    ownBrand || !post.channelName.trim() ? 'Zayrovi Team' : post.channelName;
   const ink = dark ? P.paper : P.ink;
-  const ownBrand = /^zayrovi(?:\s+official)?$/i.test(post.channelName.trim());
   return (
-    <View testID="publication-publisher-header" style={styles.row}>
-      <View style={styles.name}>
-        <AppText
-          testID="publication-publisher-name"
-          variant="bodyStrong"
-          numberOfLines={1}
-          color={ink}
-          style={{
-            fontFamily: locale === 'ar' ? FONTS.arabic.bold : FONTS.latin.bold,
-          }}
-        >
-          {ownBrand ? 'ZAYROVI' : post.channelName || 'ZAYROVI'}
-        </AppText>
-        {post.content?.sponsored ? (
-          <AppText variant="caption" color={dark ? P.paper : P.muted}>{`${
-            locale === 'ar' ? 'إعلان' : 'Sponsorisé'
-          }${
-            post.content.sponsorName ? ` · ${post.content.sponsorName}` : ''
-          }`}</AppText>
-        ) : null}
-      </View>
-      <View testID="publication-publisher-avatar" style={styles.avatarWrap}>
-        <View style={styles.avatar}>
-          {post.publisherAvatar ? (
-            <AppImage
-              uri={mediaUrl(post.publisherAvatar)}
-              style={styles.image}
-              contentFit="cover"
-              accessibilityLabel={post.channelName}
-            />
-          ) : ownBrand ? (
-            <ZMark width={24} color={P.ink} />
-          ) : (
+    <View style={{ gap: 4 }}>
+      <View testID="publication-publisher-header" style={styles.row}>
+        <View style={styles.name}>
+          <View style={styles.identity}>
             <AppText
-              testID="publication-publisher-initial"
-              variant="captionStrong"
-              color={P.ink}
+              testID="publication-publisher-name"
+              variant="bodyStrong"
+              numberOfLines={1}
+              color={ink}
+              style={{
+                flexShrink: 1,
+                fontFamily: /[\u0600-\u06FF]/.test(name)
+                  ? FONTS.arabic.bold
+                  : H.font,
+                fontSize: H.nameSize,
+                lineHeight: H.lineHeight,
+              }}
             >
-              {post.channelName.trim().slice(0, 1).toUpperCase() || '?'}
+              {name}
             </AppText>
-          )}
-        </View>
-        {post.publisherOfficial ? (
-          <View testID="publication-publisher-seal" style={styles.seal}>
-            <PublicationVerifiedBadge />
+            <Pressable
+              testID={`publication-follow-${post.id}`}
+              accessibilityRole="button"
+              accessibilityLabel={
+                following
+                  ? ar
+                    ? 'إلغاء متابعة الناشر'
+                    : 'Ne plus suivre cet éditeur'
+                  : ar
+                  ? 'متابعة الناشر'
+                  : 'Suivre cet éditeur'
+              }
+              accessibilityState={{
+                selected: following,
+                disabled: busy || session.status === 'loading',
+                busy,
+              }}
+              disabled={busy || session.status === 'loading'}
+              onPress={() => void follow()}
+              style={({ pressed }) => [
+                styles.followTarget,
+                {
+                  opacity: busy
+                    ? OPACITY.disabled
+                    : pressed
+                    ? OPACITY.subtle
+                    : 1,
+                },
+              ]}
+            >
+              <View testID="publication-follow-disc" style={styles.followDisc}>
+                <Ionicons
+                  name={following ? 'checkmark-outline' : 'add-outline'}
+                  size={ICON_SIZE.sm}
+                  color={P.paper}
+                  accessibilityElementsHidden
+                />
+              </View>
+            </Pressable>
           </View>
-        ) : null}
+          {post.content?.sponsored ? (
+            <AppText variant="caption" color={dark ? P.paper : P.muted}>{`${
+              ar ? 'إعلان' : 'Sponsorisé'
+            }${
+              post.content.sponsorName ? ` · ${post.content.sponsorName}` : ''
+            }`}</AppText>
+          ) : null}
+        </View>
+        <View testID="publication-publisher-avatar" style={styles.avatarWrap}>
+          <View style={styles.avatar}>
+            {post.publisherAvatar ? (
+              <AppImage
+                uri={mediaUrl(post.publisherAvatar)}
+                style={styles.image}
+                contentFit="cover"
+                accessibilityLabel={name}
+              />
+            ) : ownBrand ? (
+              <ZMark width={H.mark} color={P.ink} />
+            ) : (
+              <AppText
+                testID="publication-publisher-initial"
+                variant="captionStrong"
+                color={P.ink}
+              >
+                {name.trim().slice(0, 1).toUpperCase() || '?'}
+              </AppText>
+            )}
+          </View>
+          {post.publisherOfficial ? (
+            <View testID="publication-publisher-seal" style={styles.seal}>
+              <PublicationVerifiedBadge />
+            </View>
+          ) : null}
+        </View>
       </View>
+      {error ? (
+        <AppText
+          accessibilityLiveRegion="polite"
+          variant="caption"
+          color={P.reactionError}
+        >
+          {error}
+        </AppText>
+      ) : null}
+      <PublicationAuthSheet visible={auth} onClose={() => setAuth(false)} />
     </View>
   );
 }
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, minWidth: 0 },
   name: { flex: 1, minWidth: 0, gap: 2 },
-  avatarWrap: { width: 48, height: 48, flexShrink: 0 },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0 },
+  followTarget: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  followDisc: {
+    width: H.follow,
+    height: H.follow,
+    borderRadius: RADIUS.full,
+    backgroundColor: P.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarWrap: { width: H.avatar, height: H.avatar, flexShrink: 0 },
   avatar: {
-    width: 48,
-    height: 48,
+    width: H.avatar,
+    height: H.avatar,
     borderRadius: RADIUS.full,
     backgroundColor: P.neutral,
     alignItems: 'center',
@@ -112,10 +273,10 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: '100%' },
   seal: {
     position: 'absolute',
-    left: -2,
-    bottom: -2,
+    left: 0,
+    bottom: 0,
     borderRadius: RADIUS.full,
-    padding: 2,
+    padding: H.sealEdge,
     backgroundColor: P.paper,
   },
 });

@@ -1,4 +1,4 @@
-import { PUBLICATION_SOCIAL_SURFACE, PUBLICATION_LIKE, PUBLICATION_DISLIKE } from '../../../../shared/publicationPresentation';
+import { PUBLICATION_SOCIAL_SURFACE, PUBLICATION_LIKE, PUBLICATION_DISLIKE, PUBLICATION_DISCOVERY_BLUE } from '../../../../shared/publicationPresentation';
 /**
  * Jetons propres à React Native — écrits à la main, et c'est volontaire.
  *
@@ -658,6 +658,8 @@ export type DerivedColors = ReturnType<typeof derivedColors>;
 /** Optical sizing for the compact Publication feed; touch targets remain >= 44 pt. */
 /** Shared publication rhythm: one owner per boundary; touch targets retain their own geometry. */
 export const PUBLICATION_SPACING = { group: 4, section: 8, inset: 12, post: 12, rule: 4 } as const;
+/** Authorized publisher-only visual exception; global type and primary stay unchanged. */
+export const PUBLICATION_PUBLISHER = { font: 'PublicationPublisher-Bold', nameSize: 24, lineHeight: 30, avatar: 64, mark: 32, sealEdge: 1, follow: 24 } as const;
 export const PUBLICATION_METRICS = { icon: 22, verified: 16, avatar: 36, productGap: 8 } as const;
 
 export const ICON_SIZE = {
@@ -761,7 +763,7 @@ export const PUBLICATION_THEME = {
   socialSurface: PUBLICATION_SOCIAL_SURFACE, like: PUBLICATION_LIKE, dislike: PUBLICATION_DISLIKE,
   commentPaper: '#F4F5F8', reactionError: '#A61B36', dotInactive: '#747474', dotSurface: '#F0F0F0',
   /** Publisher verification seal, distinct from the primary action blue. */
-  verified: '#1877F2',
+  verified: PUBLICATION_DISCOVERY_BLUE, discovery: PUBLICATION_DISCOVERY_BLUE,
   paper: BRAND.white, ink: BRAND.black, muted: NEUTRALS.textSecondary,
   line: NEUTRALS.border, neutral: BRAND.lightGray, accent: BRAND.violet,
   canvas: mix(BRAND.white, BRAND.violet, .018),

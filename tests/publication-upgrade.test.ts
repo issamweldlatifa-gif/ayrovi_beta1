@@ -266,3 +266,41 @@ describe('Publication integrated upgrade', () => {
     );
   });
 });
+
+test('every template normalizes legacy below placement to above while still rejecting invalid placement', () => {
+  for (const template_id of [
+    'photo',
+    'split',
+    'campaign',
+    'carousel',
+    'social_mosaic',
+    'social_pair',
+    'social_strip',
+    'caption_photo',
+    'shoppable',
+  ]) {
+    const count =
+      template_id === 'social_pair'
+        ? 2
+        : ['photo', 'caption_photo', 'shoppable', 'split', 'campaign'].includes(
+            template_id
+          )
+        ? 1
+        : 3;
+    const media = Array.from({ length: count }, () => ({
+      type: 'image',
+      url: '/media/real.jpg',
+    }));
+    expect(
+      normalizePublicationContent({
+        template_id,
+        post_type: template_id === 'carousel' ? 'carousel' : 'image',
+        description_position: 'below',
+        media,
+      })?.descriptionPosition
+    ).toBe('above');
+  }
+  expect(
+    normalizePublicationContent({ description_position: 'middle' })
+  ).toBeNull();
+});

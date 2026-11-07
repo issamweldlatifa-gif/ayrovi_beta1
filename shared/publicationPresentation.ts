@@ -39,6 +39,8 @@ export function showsPublicationTitle(template: string) {
     'shoppable',
   ].includes(template);
 }
+/** Reference-inspired cyan blue, darkened to 4.626:1 on white for discovery text. */
+export const PUBLICATION_DISCOVERY_BLUE = '#0078CA';
 export const PUBLICATION_SOCIAL_SURFACE = '#F0F1FC';
 export const PUBLICATION_LIKE = '#D92148';
 export const PUBLICATION_DISLIKE = '#E8B323';

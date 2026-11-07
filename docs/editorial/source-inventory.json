@@ -10879,8 +10879,8 @@
     {
       "file": "client/src/admin/PublicationTemplatePreview.tsx",
       "domain": "admin",
-      "sha256": "7efc687ae4a8e6338e6ecd0060f62e4e14cba374ca04472697a2ce7d0dccc873",
-      "lines": 382,
+      "sha256": "f8a38ef6a4d75a05e9fc1ceb2990ecd62afedf9db3140551e494e07dfbf72ea8",
+      "lines": 245,
       "imports": [
         "../components/QatafoIcons",
         "../../../shared/publicationPresentation",
@@ -11429,7 +11429,7 @@
     {
       "file": "client/src/admin/SocialAdminPage.tsx",
       "domain": "admin",
-      "sha256": "dbdb1b5ba720a3cbd38d3263867f1d2469faf57ed11a5843c9362e91eebb26e6",
+      "sha256": "2375be6b9edb3c97d771362a529c802d71b93db9f552673d4ff4b5d03d4ab129",
       "lines": 291,
       "imports": [
         "./PublicationMediaEditor",
@@ -11731,16 +11731,6 @@
           "ariaLabel": null,
           "onClick": null,
           "disabled": null
-        },
-        {
-          "tag": "select",
-          "line": 137,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{(CAPTION_FIRST_TEMPLATES as readonly string[]).includes(form.template_id)}"
         },
         {
           "tag": "Field",

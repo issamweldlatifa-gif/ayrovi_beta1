@@ -5,7 +5,7 @@ import {
   mediaRatio,
   tileRatio,
   showsPublicationTitle,
-  PUBLICATION_SOCIAL_SURFACE,
+  PUBLICATION_DISCOVERY_BLUE,
 } from '../../../shared/publicationPresentation';
 import {
   resolvePublicationTemplate,
@@ -37,7 +37,10 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
   const caption = (
     <div
       style={{
-        padding: campaign ? 24 : split ? 12 : 0,
+        padding: campaign ? '12px 24px' : split ? 12 : 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
         minWidth: 0,
         ...(campaign
           ? { background: PUBLICATION_EDITORIAL_PAPER, borderRadius: 4 }
@@ -75,20 +78,11 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
           {form.title || 'Titre de la publication'}
         </strong>
       ) : null}
-      <p style={{ whiteSpace: 'pre-wrap', color: 'var(--admin-ink-muted)' }}>
+      <p
+        style={{ margin: 0, whiteSpace: 'pre-wrap', color: 'var(--admin-ink)' }}
+      >
         {form.description || form.subtitle || 'Description'}
       </p>
-      {form.action_label && !captionFirst ? (
-        <span
-          style={{
-            display: 'inline-block',
-            color: 'var(--ay-e-action)',
-            padding: '10px 0',
-          }}
-        >
-          {form.action_label} →
-        </span>
-      ) : null}
     </div>
   );
   return (
@@ -102,17 +96,16 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
         padding: 12,
         background: 'var(--admin-surface-card)',
         overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
       }}
     >
       <figcaption style={{ padding: '4px 4px 12px', fontWeight: 700 }}>
         ZAYROVI · {template}
       </figcaption>
+      {caption}
       <div style={{ display: 'block', overflow: 'hidden', borderRadius: 4 }}>
-        {(captionFirst || form.description_position === 'above') &&
-        !split &&
-        !campaign
-          ? caption
-          : null}
         {social ? (
           <div
             data-publication-layout={template}
@@ -216,165 +209,35 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
             Choisissez un média
           </div>
         )}
-        {campaign ? (
-          <div style={{ background: PUBLICATION_EDITORIAL_PAPER }}>
-            {caption}
-          </div>
-        ) : split ||
-          (!captionFirst &&
-            template !== 'carousel' &&
-            form.description_position !== 'above') ? (
-          caption
-        ) : null}
       </div>
-      {template === 'carousel' && media.length > 1 ? (
+      {form.action_label ? (
         <div
-          style={{ display: 'flex', gap: 8, marginTop: 12, overflowX: 'auto' }}
+          style={{
+            color: PUBLICATION_DISCOVERY_BLUE,
+            minHeight: 44,
+            display: 'flex',
+            alignItems: 'center',
+          }}
         >
-          {media.map((m: any, i: number) => (
-            <img
-              key={i}
-              src={m.url}
-              alt={`Image ${i + 1}`}
-              style={{
-                width: 'calc((100% - 16px) / 3)',
-                flexShrink: 0,
-                aspectRatio: '4/3',
-                borderRadius: 8,
-                objectFit: m.fit || 'cover',
-                border:
-                  i === 0
-                    ? '2px solid var(--ay-e-action)'
-                    : '2px solid transparent',
-                boxSizing: 'border-box',
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
-      {template === 'carousel' ? (
-        <>
-          {caption}
-          {(form.products || []).map((p: any) => (
-            <div
-              key={p.id}
-              style={{
-                display: 'flex',
-                gap: 8,
-                alignItems: 'center',
-                padding: '12px 0',
-                borderTop: '1px solid var(--admin-line)',
-              }}
-            >
-              <img
-                src={p.image}
-                alt=""
-                style={{ width: 56, height: 56, objectFit: 'contain' }}
-              />
-              <div style={{ flex: 1 }}>
-                <strong>{p.name}</strong>
-                <div>{p.brand}</div>
-                <small>
-                  {p.price} {p.currency}
-                </small>
-              </div>
-              <span
-                style={{
-                  border: '1px solid var(--admin-line)',
-                  borderRadius: 8,
-                  padding: '10px 12px',
-                }}
-              >
-                Voir le produit
-              </span>
-            </div>
-          ))}
-          {!form.products?.length ? (
-            <small>
-              La fiche compacte apparaît pour les produits catalogue réellement
-              associés.
-            </small>
-          ) : null}
-        </>
-      ) : null}
-      {captionFirst &&
-      form.action_label &&
-      !(template === 'shoppable' && form.products?.length === 1) ? (
-        <div style={{ color: 'var(--ay-e-action)', padding: '10px 0' }}>
           {form.action_label} →
-        </div>
-      ) : null}
-      {template === 'shoppable' ? (
-        <div
-          data-publication-layout="shoppable"
-          style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}
-        >
-          {(form.products || []).map((p: any) => (
-            <div
-              key={p.id}
-              style={{
-                width: form.products.length === 1 ? '100%' : '48%',
-                display: form.products.length === 1 ? 'flex' : 'block',
-                gap: 8,
-                alignItems: 'center',
-              }}
-            >
-              <img
-                src={p.image}
-                alt={p.name}
-                style={{
-                  width: form.products.length === 1 ? 56 : '100%',
-                  height: form.products.length === 1 ? 56 : undefined,
-                  aspectRatio: form.products.length === 1 ? undefined : '3/4',
-                  objectFit: 'contain',
-                  background: 'var(--admin-surface-sunken)',
-                  borderRadius: 8,
-                }}
-              />
-              <div style={{ flex: 1 }}>
-                <strong>{p.brand}</strong>
-                <div>{p.name}</div>
-                <div>
-                  {p.price} {p.currency}
-                </div>
-              </div>
-              {form.products.length === 1 ? (
-                <span
-                  style={{
-                    border: '1px solid var(--admin-line)',
-                    padding: 8,
-                    borderRadius: 8,
-                  }}
-                >
-                  Voir le produit
-                </span>
-              ) : null}
-            </div>
-          ))}
-          {!form.products?.length ? (
-            <small>
-              Cartes des produits catalogue associés affichées ici dans
-              l’application. Utilisez « Produits liés » ci-dessous ; aucune
-              carte fictive n’est créée.
-            </small>
-          ) : null}
         </div>
       ) : null}
       <div
         aria-hidden
         style={{
-          marginTop: 12,
-          padding: 12,
-          borderRadius: 30,
-          background: PUBLICATION_SOCIAL_SURFACE,
+          minHeight: 44,
+          display: 'flex',
+          alignItems: 'center',
+          borderBottom: '1px solid var(--admin-line)',
         }}
       >
         ♡ · Commentaires · Partager · Enregistrer
       </div>
       <small>
-        Prévisualisation de composition. Les compteurs réels sont affichés dans
-        l’application. Albums et carousel : médias mixtes, maximum 10 ; duo : 2
-        ; photo sociale/shopping : 1. Chaque vidéo exige une couverture.
+        Prévisualisation de composition (premier média pour les albums). Les
+        compteurs réels sont affichés dans l’application. Albums et carousel :
+        médias mixtes, maximum 10 ; duo : 2 ; photo sociale/shopping : 1. Chaque
+        vidéo exige une couverture.
       </small>
     </figure>
   );

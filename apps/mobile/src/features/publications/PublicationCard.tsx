@@ -15,10 +15,7 @@ import {
 } from '@/design/tokens.mobile';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
-import {
-  CAPTION_FIRST_TEMPLATES,
-  resolvePublicationTemplate,
-} from '../../../../../shared/publicationLayouts';
+import { resolvePublicationTemplate } from '../../../../../shared/publicationLayouts';
 
 export function PublicationCard({
   post,
@@ -57,9 +54,6 @@ export function PublicationCard({
     post.content?.media.length,
     post.category
   );
-  const captionFirst = (CAPTION_FIRST_TEMPLATES as readonly string[]).includes(
-    template
-  );
   const split = template === 'split';
   const campaign = template === 'campaign';
   const action = () => {
@@ -94,7 +88,7 @@ export function PublicationCard({
       >
         <AppText
           variant={campaign ? 'bodyStrong' : 'captionStrong'}
-          color={P.accent}
+          color={P.discovery}
           style={{ flexShrink: 1 }}
         >
           {post.content.actionLabel}
@@ -102,7 +96,7 @@ export function PublicationCard({
         <Ionicons
           name={ar ? 'arrow-back' : 'arrow-forward'}
           size={ICON_SIZE.sm}
-          color={P.accent}
+          color={P.discovery}
         />
       </Pressable>
     ) : null;
@@ -111,13 +105,19 @@ export function PublicationCard({
     (showsPublicationTitle(template) &&
       post.content?.showTitle !== false &&
       post.title) ||
-    description ||
-    (!captionFirst && cta)
+    description
   );
   const text = hasCopy ? (
     <View
       testID={`publication-copy-${post.id}`}
-      style={[styles.copy, split ? styles.editorialCopy : undefined]}
+      style={[
+        styles.copy,
+        split
+          ? styles.editorialCopy
+          : campaign
+          ? [styles.campaignCopy, { marginHorizontal: -mediaInset }]
+          : undefined,
+      ]}
     >
       {campaign && editorialLabel ? (
         <AppText variant="overline" color={P.ink}>
@@ -149,12 +149,8 @@ export function PublicationCard({
         </Pressable>
       ) : null}
       {description ? (
-        <PublicationDescription
-          text={description}
-          color={captionFirst ? P.ink : P.muted}
-        />
+        <PublicationDescription text={description} color={P.ink} />
       ) : null}
-      {!captionFirst ? cta : null}
     </View>
   ) : null;
   return (
@@ -175,11 +171,7 @@ export function PublicationCard({
           <PublicationPublisher post={post} />
         </View>
       </View>
-      {!split &&
-      !campaign &&
-      (captionFirst || post.content?.descriptionPosition === 'above')
-        ? text
-        : null}
+      {text}
       <View
         testID={`publication-content-${post.id}`}
         style={
@@ -194,7 +186,12 @@ export function PublicationCard({
           style={
             split
               ? styles.splitMedia
-              : captionFirst && template !== 'shoppable'
+              : [
+                  'social_mosaic',
+                  'social_pair',
+                  'social_strip',
+                  'caption_photo',
+                ].includes(template)
               ? { marginHorizontal: -mediaInset }
               : undefined
           }
@@ -206,14 +203,8 @@ export function PublicationCard({
             thumbnails={false}
           />
         </View>
-        {campaign ? (
-          <View style={styles.campaignCopy}>{text}</View>
-        ) : split ||
-          (!captionFirst && post.content?.descriptionPosition !== 'above') ? (
-          text
-        ) : null}
       </View>
-      {captionFirst ? cta : null}
+      {cta}
       <PublicationActions
         post={post}
         onComments={onComments}
@@ -236,7 +227,7 @@ const styles = StyleSheet.create({
   publisherName: { flex: 1, gap: 2 },
   content: { gap: S.section },
   editorial: { gap: 0, backgroundColor: P.splitPaper },
-  editorialCopy: { padding: S.inset },
+  editorialCopy: { padding: S.inset, backgroundColor: P.splitPaper },
   splitMedia: { width: '100%' },
   campaign: { gap: 0 },
   campaignCopy: {

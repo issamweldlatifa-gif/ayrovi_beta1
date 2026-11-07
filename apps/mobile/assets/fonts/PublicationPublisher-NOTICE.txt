@@ -1,0 +1,5 @@
+Zayrovi Publisher Sans Bold is a static instance of Inter, weight 700, optical size 24.
+Source: https://github.com/google/fonts/tree/main/ofl/inter
+Copyright: the Inter project authors; see PublicationPublisher-OFL.txt (SIL OFL 1.1).
+The static derivative has been renamed; it is not Meta/Instagram/Threads' proprietary font.
+Authorized solely for Publication publisher-name styling. Other app typography is unchanged.

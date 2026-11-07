@@ -390,6 +390,9 @@ export class QatafoDatabase {
     this.rebrandBlueV1();
     this.runOnceDataMigration('publication_owner_products_v1', () => { installPublicationSelection(this); });
     this.runOnceDataMigration('publication_media_presentation_v1', () => { upgradePublicationMediaPresentation(this); });
+    this.runOnceDataMigration('publication_publisher_team_v1', () => {
+      this.run("UPDATE story_publishers SET name='Zayrovi Team' WHERE id='pub_ayrovi' AND official=1 AND lower(trim(name)) IN ('zayrovi','zayrovi official')");
+    });
   }
 
   /** One-shot migration of persisted brand configuration, not merchandise/media or arbitrary copy. */
@@ -2286,7 +2289,7 @@ export class QatafoDatabase {
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM story_publishers').get() as any).count === 0) {
       const ins = this.db.prepare(`INSERT INTO story_publishers (id,slug,name,subtitle,avatar,official,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`);
       const nowP = new Date().toISOString();
-      ins.run('pub_ayrovi', 'ARRIVAGE', 'Zayrovi', 'Official', '', 1, nowP, nowP);
+      ins.run('pub_ayrovi', 'ARRIVAGE', 'Zayrovi Team', 'Official', '', 1, nowP, nowP);
       ins.run('pub_new', 'NEW', 'Nouveautés', 'Channel', '', 0, nowP, nowP);
       ins.run('pub_style', 'STYLE', 'Style', 'Channel', '', 0, nowP, nowP);
       ins.run('pub_actus', 'INFO', 'Actus', 'Channel', '', 0, nowP, nowP);
