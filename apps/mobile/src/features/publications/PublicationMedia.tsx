@@ -161,6 +161,7 @@ export function PublicationMedia({
   thumbnails = false,
   initialIndex = 0,
   showIndicators = true,
+  indicatorBottom = 0,
 }: {
   post: FeedPost;
   active?: boolean;
@@ -169,6 +170,7 @@ export function PublicationMedia({
   thumbnails?: boolean;
   initialIndex?: number;
   showIndicators?: boolean;
+  indicatorBottom?: number;
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const { width, height } = size;
@@ -418,7 +420,7 @@ export function PublicationMedia({
             pointerEvents="box-none"
             style={{
               position: 'absolute',
-              bottom: 0,
+              bottom: indicatorBottom,
               left: 0,
               right: 0,
               alignItems: 'center',

@@ -141,6 +141,7 @@ export function PublicationViewer({
                       immersive
                       initialIndex={index}
                       showIndicators={controls && !comments}
+                      indicatorBottom={72}
                       onOpen={() => setControls(!controls)}
                     />
                   </View>
@@ -171,8 +172,23 @@ export function PublicationViewer({
                 ) : null}
               </View>
               {controls || comments ? (
-                <View style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
+                <View
+                  testID="publication-viewer-actions"
+                  style={[
+                    { paddingHorizontal: 12, paddingVertical: 8 },
+                    !comments
+                      ? {
+                          position: 'absolute',
+                          bottom: insets.bottom + 8,
+                          left: 0,
+                          right: 0,
+                        }
+                      : undefined,
+                  ]}
+                >
                   <PublicationActions
+                    presentation="viewer"
+                    backdrop="dark"
                     post={post}
                     onComments={() => setComments(!comments)}
                     onPreference={onPreference}

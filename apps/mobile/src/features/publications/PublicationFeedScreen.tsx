@@ -43,7 +43,6 @@ import { useSessionId } from '@/session/session';
 import { sendInteraction } from '@/api/social';
 import { PublicationSparkIcon } from './PublicationReactionIcon';
 import { PublicationViewer } from './PublicationViewer';
-import { useProductFavorites } from '@/features/reels/useProductFavorites';
 import { PublicationCard } from './PublicationCard';
 import {
   readFeedView,
@@ -98,8 +97,11 @@ export function PublicationFeedScreen() {
   const visibleChanged = useRef(
     ({ viewableItems }: { viewableItems: Array<{ item: FeedPost }> }) => {
       setActiveId(
-        viewableItems.find((row) => row.item.content?.type === 'video' || row.item.content?.media.some(media => media.type === 'video'))?.item
-          .id || ''
+        viewableItems.find(
+          (row) =>
+            row.item.content?.type === 'video' ||
+            row.item.content?.media.some((media) => media.type === 'video')
+        )?.item.id || ''
       );
       setVisibleIds(viewableItems.map((row) => row.item.id));
     }
@@ -132,11 +134,6 @@ export function PublicationFeedScreen() {
     staleTime: 30000,
   });
   const rows = settings?.enabled ? uniqueFeedPosts(feed.data?.pages ?? []) : [];
-  const productFavorites = useProductFavorites(
-    session.status === 'signedIn' &&
-      rows.some((row) => row.content?.template === 'shoppable'),
-    owner
-  );
   const reset = () => {
     offset.current = 0;
     restored.current = true;
@@ -194,10 +191,20 @@ export function PublicationFeedScreen() {
             { flexDirection: theme.isRTL ? 'row-reverse' : 'row' },
           ]}
         >
-          <BackButton onPress={() => goBack('/(tabs)')} label={ar ? 'رجوع' : 'Retour'} color={P.ink} />
+          <BackButton
+            onPress={() => goBack('/(tabs)')}
+            label={ar ? 'رجوع' : 'Retour'}
+            color={P.ink}
+          />
         </View>
         <View style={styles.title}>
-          <AppText numberOfLines={1} variant="label" color={P.ink}>
+          <AppText
+            testID="publication-header-title"
+            numberOfLines={1}
+            variant="label"
+            color={P.ink}
+            style={{ fontFamily: theme.text('h3').fontFamily }}
+          >
             {settings
               ? ar
                 ? settings.titleAr
@@ -366,7 +373,6 @@ export function PublicationFeedScreen() {
               setViewer(item);
             }}
             mediaInset={gutter}
-            productFavorites={productFavorites}
             onMediaOpen={(index) => {
               setViewerMedia(index);
               setViewer(item);
@@ -386,7 +392,9 @@ export function PublicationFeedScreen() {
                         pages: old.pages.map((page) => ({
                           ...page,
                           items: page.items.map((row) =>
-                            row.id === id ? { ...row, liked, likes, disliked } : row
+                            row.id === id
+                              ? { ...row, liked, likes, disliked }
+                              : row
                           ),
                         })),
                       }
@@ -450,7 +458,11 @@ export function PublicationFeedScreen() {
       />
       {viewer ? (
         <PublicationViewer
-          post={feed.data?.pages.flatMap(page => page.items).find(row => row.id === viewer.id) || viewer}
+          post={
+            feed.data?.pages
+              .flatMap((page) => page.items)
+              .find((row) => row.id === viewer.id) || viewer
+          }
           initialMediaIndex={viewerMedia}
           owner={owner}
           onClose={() => {
@@ -460,7 +472,12 @@ export function PublicationFeedScreen() {
           onPreference={preferenceChanged}
         />
       ) : null}
-      {comments ? <PublicationCommentsSheet targetId={comments.id} onClose={closeComments} /> : null}
+      {comments ? (
+        <PublicationCommentsSheet
+          targetId={comments.id}
+          onClose={closeComments}
+        />
+      ) : null}
     </View>
   );
 }

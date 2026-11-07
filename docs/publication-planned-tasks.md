@@ -4,6 +4,8 @@ Le propriétaire a explicitement autorisé l’exécution des neuf points, les d
 
 ## État
 
+**Révision après captures du propriétaire :** les trois [ajustements du 7 novembre](publication-refinement-2026-11-07.md) remplacent la capsule commune du fil, les blocs commerciaux additionnels et la présentation identique fil/lecteur décrits dans la première livraison.
+
 Implémentation terminée et vérifiée localement. Détails, décisions, preuves et limites : [rapport de livraison](publication-upgrade-delivery-2026-11-07.md). Aucun essai sur appareil physique n’est revendiqué.
 
 1. **Adaptation des médias aux modèles** : orientation, nature produit/scène, cadrage non destructif, ajustement, point focal, taille visuelle et prévisualisation CRM. Originaux conservés.

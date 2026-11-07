@@ -1,3 +1,4 @@
+import { PublicationActions } from '@/features/publications/PublicationActions';
 import { PublicationViewer } from '@/features/publications/PublicationViewer';
 import { AppState, FlatList, Modal } from 'react-native';
 import { PublicationProductPreview } from '@/features/publications/PublicationProductPreview';
@@ -659,11 +660,11 @@ it('renders an authored shoppable carousel with a genuine compact product link a
     />
   );
   expect(
-    screen.getByTestId('publication-product-real-catalogue-id')
-  ).toBeTruthy();
-  expect(screen.getByTestId('publication-thumbnail-ui-post-1')).toBeTruthy();
-  fireEvent.press(screen.getByTestId('publication-product-real-catalogue-id'));
-  expect(open).toHaveBeenCalledWith('real-catalogue-id');
+    screen.queryByTestId('publication-product-real-catalogue-id')
+  ).toBeNull();
+  expect(screen.queryByTestId('publication-thumbnail-ui-post-1')).toBeNull();
+  expect(screen.getByTestId('publication-media-ui-post')).toBeTruthy();
+  expect(open).not.toHaveBeenCalled();
   expect(mockCartAdd).not.toHaveBeenCalled();
 });
 
@@ -775,13 +776,17 @@ describe('Reference additions, not replacements', () => {
       aspectRatio: 600 / 577,
     });
   });
-  it('uses real product navigation/favorites and gates guest product hearts without cart writes', async () => {
-    mockSession.status = 'signedOut';
+  it('keeps shoppable media and the primary CTA without extra product cards or commerce toggles', async () => {
     const open = jest.fn();
     await mount(
       <PublicationCard
         post={{
           ...referencePost('shoppable', 1),
+          content: {
+            ...referencePost('shoppable', 1).content!,
+            actionLabel: 'Découvrir la pièce',
+            actionTarget: 'products',
+          },
           products: [
             {
               id: 'real-shoe',
@@ -800,19 +805,11 @@ describe('Reference additions, not replacements', () => {
         onProductOpen={open}
       />
     );
-    expect(
-      screen.getByTestId('publication-product-image-real-shoe')
-    ).toHaveStyle({ width: 56, height: 56 });
-    expect(screen.getByText('Voir le produit')).toBeTruthy();
-    expect(screen.getByTestId('publication-product-grid-ui-post')).toBeTruthy();
-    fireEvent.press(screen.getByTestId('publication-product-real-shoe'));
+    expect(screen.queryByTestId('publication-product-grid-ui-post')).toBeNull();
+    expect(screen.queryByText(/Voir les produits/)).toBeNull();
+    expect(screen.queryByText('Chaussure catalogue')).toBeNull();
+    fireEvent.press(screen.getByRole('button', { name: 'Découvrir la pièce' }));
     expect(open).toHaveBeenCalledWith('real-shoe');
-    fireEvent.press(
-      screen.getByRole('button', {
-        name: 'Enregistrer le produit Chaussure catalogue',
-      })
-    );
-    expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
     expect(mockCartAdd).not.toHaveBeenCalled();
   });
 });
@@ -858,9 +855,7 @@ it('gives editorial and carousel their distinct landscape composition and headli
   fireEvent(screen.getByTestId('publication-media-ui-post'), 'layout', {
     nativeEvent: { layout: { width: 366, height: 244 } },
   });
-  expect(screen.getByTestId('publication-thumbnail-ui-post-0')).toHaveStyle({
-    aspectRatio: 4 / 3,
-  });
+  expect(screen.queryByTestId('publication-thumbnail-ui-post-0')).toBeNull();
 });
 
 it('asks expired sessions to sign in again without faking a successful save', async () => {
@@ -1036,5 +1031,66 @@ describe('Mixed-video activation and modal ownership', () => {
     expect(
       screen.UNSAFE_getAllByType(Modal).filter((node) => node.props.visible)
     ).toHaveLength(1);
+  });
+});
+
+it.each(['feed', 'viewer'] as const)(
+  'uses a frameless row and %s-specific control surfaces',
+  async (presentation) => {
+    await mount(
+      <PublicationActions
+        post={post}
+        presentation={presentation}
+        onComments={jest.fn()}
+      />
+    );
+    const row = screen.getByTestId(
+      `publication-actions-${presentation}-${post.id}`
+    );
+    const heart = within(row).getByRole('button', { name: 'J’aime' });
+    expect(heart).toHaveStyle({ minWidth: 44, minHeight: 44 });
+    if (presentation === 'viewer')
+      expect(heart).toHaveStyle({
+        backgroundColor: '#272727eb',
+      });
+    else expect(heart.props.style.backgroundColor).toBeUndefined();
+  }
+);
+it('supports dark ink on a light viewer backdrop', async () => {
+  await mount(
+    <PublicationActions
+      post={post}
+      presentation="viewer"
+      backdrop="light"
+      onComments={jest.fn()}
+    />
+  );
+  expect(screen.getByRole('button', { name: 'J’aime' })).toHaveStyle({
+    backgroundColor: '#FFFFFFe6',
+  });
+});
+
+it('uses the official heading face for Publication without enlarging its label', async () => {
+  await mount();
+  expect(screen.getByTestId('publication-header-title')).toHaveStyle({
+    fontFamily: 'AyroviExtracted-Heading',
+  });
+});
+
+it('reserves indicator clearance above the floating immersive actions', async () => {
+  await mount(
+    <PublicationViewer
+      post={referencePost('carousel', 3)}
+      owner="ui-owner"
+      onPreference={jest.fn()}
+      initialMediaIndex={0}
+      onClose={jest.fn()}
+    />
+  );
+  expect(screen.UNSAFE_getByType(PublicationMedia).props.indicatorBottom).toBe(
+    72
+  );
+  expect(screen.getByTestId('publication-viewer-actions')).toHaveStyle({
+    position: 'absolute',
   });
 });

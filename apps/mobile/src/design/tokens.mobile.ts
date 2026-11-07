@@ -751,8 +751,11 @@ export const FOOTER_THEME = {
 } as const;
 
 /** Publication is deliberately a white editorial space, even in system dark mode. */
-export const NAVIGATION_ARROW_SIZE = 32;
+export const NAVIGATION_ARROW_SIZE = 28;
 export const PUBLICATION_THEME = {
+  /** Floating media controls stay readable even over a white photograph. */
+  viewerDarkSurface: alpha(mix(BRAND.black, BRAND.white, .12), .92),
+  viewerLightSurface: frost(.9),
   socialSurface: PUBLICATION_SOCIAL_SURFACE, like: PUBLICATION_LIKE, dislike: PUBLICATION_DISLIKE,
   commentPaper: '#F4F5F8', reactionError: '#A61B36', dotInactive: '#747474', dotSurface: '#F0F0F0',
   /** Publisher verification seal, distinct from the primary action blue. */

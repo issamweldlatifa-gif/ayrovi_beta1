@@ -15,7 +15,7 @@ export function NavigationIcon(props: ComponentProps<typeof Ionicons>) {
       : { accessibilityElementsHidden: true };
   const size =
     typeof props.size === 'number' && props.size < 24
-      ? 24
+      ? 22
       : NAVIGATION_ARROW_SIZE;
   return (
     <Svg

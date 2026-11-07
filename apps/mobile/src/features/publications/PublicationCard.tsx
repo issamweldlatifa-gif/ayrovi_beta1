@@ -15,21 +15,14 @@ import { PublicationAuthSheet } from './PublicationAuthSheet';
 import { PublicationMedia } from './PublicationMedia';
 import { PublicationPublisher } from './PublicationPublisher';
 import { AppText } from '@/design/ui';
-import {
-  PUBLICATION_THEME as P,
-  PUBLICATION_METRICS as PM,
-  RADIUS,
-  ICON_SIZE,
-} from '@/design/tokens.mobile';
+import { PUBLICATION_THEME as P, ICON_SIZE } from '@/design/tokens.mobile';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { useSession } from '@/state/session';
-import type { ProductFavorites } from '@/features/reels/useProductFavorites';
 import {
   CAPTION_FIRST_TEMPLATES,
   resolvePublicationTemplate,
 } from '../../../../../shared/publicationLayouts';
-import { PublicationProductLink } from './PublicationProductLink';
 
 export function PublicationCard({
   post,
@@ -41,11 +34,9 @@ export function PublicationCard({
   onPreference,
   onProductOpen,
   onMediaOpen,
-  productFavorites,
   mediaInset = 12,
 }: {
   mediaInset?: number;
-  productFavorites?: ProductFavorites;
   onMediaOpen?: (index: number) => void;
   onProductOpen?: (id: string) => void;
   active?: boolean;
@@ -73,18 +64,6 @@ export function PublicationCard({
     return true;
   };
   const [message, setMessage] = useState('');
-  const [productsOpen, setProductsOpen] = useState(
-    post.content?.type === 'product' ||
-      post.content?.type === 'collection' ||
-      ['carousel', 'shoppable'].includes(
-        resolvePublicationTemplate(
-          post.content?.template,
-          post.content?.type,
-          post.content?.media.length,
-          post.category
-        )
-      )
-  );
   const [saved, setSaved] = useState(!!post.saved);
   const [following, setFollowing] = useState(!!post.following);
   const [preferenceBusy, setPreferenceBusy] = useState(false);
@@ -168,18 +147,8 @@ export function PublicationCard({
       home: ar ? 'المنزل' : 'MAISON',
     } as Record<string, string>
   )[post.category];
-  const linkedRows = post.products.map((product) => (
-    <PublicationProductLink
-      key={product.id}
-      product={product}
-      outlined={template === 'carousel'}
-      onOpen={onProductOpen ? () => onProductOpen(product.id) : undefined}
-    />
-  ));
   const cta =
-    post.content?.actionLabel &&
-    canAct &&
-    !(template === 'shoppable' && post.products.length === 1) ? (
+    post.content?.actionLabel && canAct ? (
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={post.content.actionLabel}
@@ -290,7 +259,7 @@ export function PublicationCard({
             post={post}
             active={active}
             onOpen={(index) => (onMediaOpen ? onMediaOpen(index) : onOpen?.())}
-            thumbnails={template === 'carousel'}
+            thumbnails={false}
           />
         </View>
         {campaign ? (
@@ -301,78 +270,12 @@ export function PublicationCard({
         ) : null}
       </View>
       {captionFirst ? cta : null}
-      {template === 'shoppable' ? (
-        <View
-          testID={`publication-product-grid-${post.id}`}
-          style={{
-            flexDirection: theme.isRTL ? 'row-reverse' : 'row',
-            flexWrap: 'wrap',
-            marginHorizontal: -(PM.productGap / 2),
-            paddingTop: 12,
-          }}
-        >
-          {post.products.map((product) => (
-            <View
-              key={product.id}
-              style={{
-                width: post.products.length === 1 ? '100%' : '50%',
-                paddingHorizontal: PM.productGap / 2,
-              }}
-            >
-              <PublicationProductLink
-                product={product}
-                tile={post.products.length > 1}
-                outlined={post.products.length === 1}
-                favorite={productFavorites?.isFavorite(product.id)}
-                onFavorite={
-                  !signedIn || productFavorites
-                    ? () => {
-                        if (!requireAccount())
-                          productFavorites?.toggle(product.id);
-                      }
-                    : undefined
-                }
-                onOpen={
-                  onProductOpen ? () => onProductOpen(product.id) : undefined
-                }
-              />
-            </View>
-          ))}
-        </View>
-      ) : null}
-      {template === 'carousel' && productsOpen ? (
-        <View testID={`publication-carousel-products-${post.id}`}>
-          {linkedRows}
-        </View>
-      ) : null}
       <PublicationActions
         post={post}
         onComments={onComments}
         onReaction={onReaction}
         onPreference={onPreference}
       />
-      {post.products.length > 0 &&
-      template !== 'carousel' &&
-      template !== 'shoppable' ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setProductsOpen(!productsOpen)}
-          style={[styles.productToggle, { borderColor: P.line }]}
-        >
-          <AppText variant="label" color={P.ink}>
-            {ar ? 'المنتجات المرتبطة' : 'Voir les produits'} ·{' '}
-            {post.products.length}
-          </AppText>
-          <Ionicons
-            name={productsOpen ? 'chevron-up' : 'chevron-down'}
-            size={theme.iconSize.md}
-            color={P.ink}
-          />
-        </Pressable>
-      ) : null}
-      {template !== 'shoppable' && template !== 'carousel' && productsOpen
-        ? linkedRows
-        : null}
       <PublicationAuthSheet
         visible={authOpen}
         onClose={() => setAuthOpen(false)}
@@ -436,13 +339,4 @@ const styles = StyleSheet.create({
   },
   grow: { flex: 1 },
   signIn: { minHeight: 44, justifyContent: 'center' },
-  productToggle: {
-    minHeight: 44,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderRadius: RADIUS.xl,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
 });
