@@ -1,7 +1,7 @@
 # Tailles d'APK — mesurées
 
-Dernière mesure : 2026-11-07 05:55 UTC
-Commit mesuré : `b91ccb226da4eac7899f8d74c6bc5316614341ae`
+Dernière mesure : 2026-11-07 06:29 UTC
+Commit mesuré : `b10cc38763b9929135b37a84aff720b0b72381bf`
 
 Écrit automatiquement par `Mobile — APK Android (démo)`.
 Ne pas éditer à la main : réécrit à chaque build.
@@ -18,7 +18,7 @@ Ne pas éditer à la main : réécrit à chaque build.
 
 | famille | poids |
 |---|---|
-| TOTAL | 140.9 Mo |
+| TOTAL | 141.0 Mo |
 | lib/x86 | 29.3 Mo |
 | lib/x86_64 | 29.3 Mo |
 | lib/arm64-v8a | 26.8 Mo |
