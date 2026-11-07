@@ -56,7 +56,8 @@ describe('LoadingSpinner — un cercle fin en pointillés qui tourne', () => {
       'src/features/lens/LensProductView.tsx', 'src/features/social/Comments.tsx']) {
       const source = read(rel);
       expect(source).not.toContain('WaitingBars');
-      expect(source).toContain('LoadingSpinner');
+      // Page loading now carries the grey brand; compact action spinners stay unchanged.
+      expect(source).toContain(rel === 'src/design/states.tsx' ? 'BrandLoadingIndicator' : 'LoadingSpinner');
     }
   });
 });

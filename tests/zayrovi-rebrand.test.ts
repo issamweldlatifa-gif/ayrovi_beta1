@@ -16,7 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { QatafoDatabase } from '../src/db/database';
-import { Z_MARK } from '../client/src/design/zMark';
+import { BRAND_SYMBOL } from '../client/src/design/brandSymbol';
 
 const ROOT = process.cwd();
 const read = (rel: string) => fs.readFileSync(path.resolve(ROOT, rel), 'utf8');
@@ -30,21 +30,21 @@ function walk(rel: string, pattern: RegExp): string[] {
   return out;
 }
 
-describe('1. le Z officiel : un seul tracé partout', () => {
+describe('1. cœur-poignée de main : un seul tracé partout', () => {
   test('site, application et écran de chargement statique partagent exactement le même tracé', () => {
-    const mobile = read('apps/mobile/src/design/zMark.ts');
-    expect(mobile).toContain(`d: '${Z_MARK.d}'`);
-    expect(mobile).toContain(`viewBox: '${Z_MARK.viewBox}'`);
-    expect(read('client/index.html')).toContain(`d="${Z_MARK.d}"`);
+    const mobile = read('apps/mobile/src/design/brandSymbol.ts');
+    expect(mobile).toContain(JSON.stringify(BRAND_SYMBOL.d));
+    expect(mobile).toContain(JSON.stringify(BRAND_SYMBOL.viewBox));
+    expect(read('client/index.html')).toContain(`d="${BRAND_SYMBOL.d}"`);
     // tracé normalisé : une hauteur de 1000, un seul chemin fermé par sous-tracé
-    expect(Z_MARK.height).toBe(1000);
-    expect(Z_MARK.width).toBeGreaterThan(1600);
-    expect(Z_MARK.d.startsWith('M ')).toBe(true);
+    expect(BRAND_SYMBOL.height).toBe(1000);
+    expect(BRAND_SYMBOL.width).toBeGreaterThan(1100);
+    expect(BRAND_SYMBOL.d.startsWith('M')).toBe(true);
   });
 
-  test('l’application dessine le Z (BrandMark) et l’anneau de chargement avec les jetons du thème', () => {
+  test('l’application dessine le nouveau symbole (BrandMark) et l’anneau de chargement avec les jetons du thème', () => {
     const mark = read('apps/mobile/src/design/BrandMark.tsx');
-    expect(mark).toContain('<Path d={Z_MARK.d} fill={color} />');
+    expect(mark).toContain('<Path d={BRAND_SYMBOL.d} fill={color} />');
     expect(mark).toContain('ZAYROVI');
     const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     expect(code(mark)).not.toMatch(/#[0-9a-f]{3,8}\b/i); // aucune couleur en dur : encre du thème

@@ -53,7 +53,8 @@
     "android:check": "node scripts/check-android-shell.mjs",
     "android:apk": "cd android && ./gradlew :app:assembleDebug",
     "verify:aywebs-latency": "node scripts/aywebs-latency-probe.mjs",
-    "check:stripe": "node scripts/check-stripe.mjs"
+    "check:stripe": "node scripts/check-stripe.mjs",
+    "brand:build": "node scripts/build-brand-assets.mjs"
   },
   "keywords": [
     "ayrovi",

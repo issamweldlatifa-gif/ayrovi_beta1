@@ -16,7 +16,7 @@
       "count": 1,
       "attribute": "data-brand",
       "value": "zayrovi-loader",
-      "reason": "ZAYROVI loading screen: the official Z brand mark inside its ring (same drawing as the static loader of client/index.html), not an interface icon."
+      "reason": "ZAYROVI loading screen: the heart-handshake brand mark inside its ring (same drawing as the static loader of client/index.html), not an interface icon."
     }
   },
   "brandModule": "client/src/design/BrandIcon.tsx",

@@ -719,7 +719,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
                   elle se lisait comme un bouton de plus. Centrée, elle
                   redevient ce qu'elle est — une signature. */}
               <div className="ay-auth__brand ay-auth__brand--centered" dir="ltr">
-                <img src="/media/logo-ayrovi-lockup-black-violet.svg?v=5.0" alt="ZAYROVI" className="ay-auth__logo ay-auth__logo--wordmark" />
+                <img src="/media/logo-ayrovi-lockup-black-violet.svg?v=6.0" alt="ZAYROVI" className="ay-auth__logo ay-auth__logo--wordmark" />
               </div>
               <div className="ay-auth__intro">
                 <h1 id="auth-title" tabIndex={-1}>

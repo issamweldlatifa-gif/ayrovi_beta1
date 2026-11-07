@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
-import { LoadingSpinner } from '@/design/LoadingSpinner';
-import { userMessage } from '@/api/errors';
-import { useI18n } from '@/i18n';
-import { PublicationText, PUBLICATION_PALETTE as P } from './publicationDesign';
+import type { ReactNode } from "react";
+import { Pressable, View } from "react-native";
+import { BrandLoadingIndicator } from "@/design/LoadingScreen";
+import { userMessage } from "@/api/errors";
+import { useI18n } from "@/i18n";
+import { PublicationText, PUBLICATION_PALETTE as P } from "./publicationDesign";
 
 export function EmptyBlock({ children }: { children: ReactNode }) {
   return (
@@ -11,7 +11,7 @@ export function EmptyBlock({ children }: { children: ReactNode }) {
       style={{
         padding: 20,
         gap: 12,
-        alignItems: 'center',
+        alignItems: "center",
         backgroundColor: P.paper,
       }}
     >
@@ -23,9 +23,13 @@ export function LoadingBlock() {
   return (
     <View
       accessibilityRole="progressbar"
-      style={{ padding: 20, alignItems: 'center', backgroundColor: P.paper }}
+      style={{ padding: 20, alignItems: "center", backgroundColor: P.paper }}
     >
-      <LoadingSpinner color={P.icon} testID="loading-spinner" />
+      <BrandLoadingIndicator
+        size={64}
+        color={P.muted}
+        testID="loading-spinner"
+      />
     </View>
   );
 }
@@ -43,7 +47,7 @@ export function ErrorBlock({
       style={{
         padding: 20,
         gap: 12,
-        alignItems: 'center',
+        alignItems: "center",
         backgroundColor: P.paper,
       }}
     >
@@ -54,10 +58,10 @@ export function ErrorBlock({
         <Pressable
           accessibilityRole="button"
           onPress={onRetry}
-          style={{ minHeight: 44, justifyContent: 'center' }}
+          style={{ minHeight: 44, justifyContent: "center" }}
         >
           <PublicationText variant="label">
-            {locale === 'ar' ? 'أعد المحاولة' : 'Réessayer'}
+            {locale === "ar" ? "أعد المحاولة" : "Réessayer"}
           </PublicationText>
         </Pressable>
       ) : null}

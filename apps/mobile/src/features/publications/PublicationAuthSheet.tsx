@@ -7,14 +7,14 @@ import {
   useRef,
   useState,
   type ReactNode,
-} from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BrandMark, ZMark } from '@/design/BrandMark';
-import { AppText } from '@/design/ui';
-import { PUBLICATION_THEME as P, RADIUS, veil } from '@/design/tokens.mobile';
-import { useI18n } from '@/i18n';
+} from "react";
+import { Modal, Pressable, StyleSheet, View } from "react-native";
+import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BrandMark } from "@/design/BrandMark";
+import { AppText } from "@/design/ui";
+import { PUBLICATION_THEME as P, RADIUS, veil } from "@/design/tokens.mobile";
+import { useI18n } from "@/i18n";
 
 const AuthHostContext = createContext<null | {
   show: (close: () => void) => void;
@@ -48,7 +48,7 @@ export function PublicationAuthHost({
               onSignIn={() => {
                 dismiss();
                 onNavigate();
-                router.push('/sign-in');
+                router.push("/sign-in");
               }}
             />
           </View>
@@ -65,14 +65,14 @@ function AuthContent({
   onSignIn: () => void;
 }) {
   const { locale } = useI18n();
-  const ar = locale === 'ar';
+  const ar = locale === "ar";
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.overlay}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
-          ar ? 'إغلاق طلب الدخول' : 'Fermer la demande de connexion'
+          ar ? "إغلاق طلب الدخول" : "Fermer la demande de connexion"
         }
         onPress={onClose}
         style={styles.backdrop}
@@ -83,17 +83,14 @@ function AuthContent({
         style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}
       >
         <View style={styles.handle} />
-        <View style={styles.logo}>
-          <ZMark width={48} color={P.ink} />
-        </View>
         <BrandMark nameSize={24} color={P.ink} />
         <AppText variant="h3" color={P.ink} align="center">
-          {ar ? 'كون جزء من الحكاية' : 'Faites partie de l’inspiration'}
+          {ar ? "كون جزء من الحكاية" : "Faites partie de l’inspiration"}
         </AppText>
         <AppText color={P.muted} align="center">
           {ar
-            ? 'سجّل الدخول باش تتفاعل، تعلّق، تتابع الناشرين وتحفظ إلهامك.'
-            : 'Connectez-vous pour réagir, commenter, suivre les éditeurs et retrouver vos inspirations.'}
+            ? "سجّل الدخول باش تتفاعل، تعلّق، تتابع الناشرين وتحفظ إلهامك."
+            : "Connectez-vous pour réagir, commenter, suivre les éditeurs et retrouver vos inspirations."}
         </AppText>
         <Pressable
           accessibilityRole="button"
@@ -101,7 +98,7 @@ function AuthContent({
           style={styles.primary}
         >
           <AppText variant="label" color={P.paper}>
-            {ar ? 'تسجيل الدخول' : 'Se connecter'}
+            {ar ? "تسجيل الدخول" : "Se connecter"}
           </AppText>
         </Pressable>
         <Pressable
@@ -110,7 +107,7 @@ function AuthContent({
           style={styles.later}
         >
           <AppText color={P.muted}>
-            {ar ? 'موش توّا' : 'Continuer à découvrir'}
+            {ar ? "موش توّا" : "Continuer à découvrir"}
           </AppText>
         </Pressable>
       </View>
@@ -143,20 +140,20 @@ export function PublicationAuthSheet({
         onClose={onClose}
         onSignIn={() => {
           onClose();
-          router.push('/sign-in');
+          router.push("/sign-in");
         }}
       />
     </Modal>
   );
 }
 const styles = StyleSheet.create({
-  overlay: { flex: 1, justifyContent: 'flex-end' },
+  overlay: { flex: 1, justifyContent: "flex-end" },
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: veil(0.45) },
   sheet: {
-    width: '100%',
+    width: "100%",
     maxWidth: 560,
-    alignSelf: 'center',
-    alignItems: 'center',
+    alignSelf: "center",
+    alignItems: "center",
     gap: 16,
     padding: 24,
     borderTopLeftRadius: 32,
@@ -172,18 +169,18 @@ const styles = StyleSheet.create({
   logo: {
     width: 76,
     height: 76,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 38,
     backgroundColor: P.neutral,
   },
   primary: {
     minHeight: 52,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignSelf: "stretch",
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: RADIUS.full,
     backgroundColor: P.accent,
   },
-  later: { minHeight: 44, justifyContent: 'center' },
+  later: { minHeight: 44, justifyContent: "center" },
 });

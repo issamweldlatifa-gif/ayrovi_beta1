@@ -1,8 +1,8 @@
 /**
- * Écran de chargement ZAYROVI et marque (logo du 2026-10-16) :
+ * Écran de chargement ZAYROVI et marque (logo du 2026-11-08) :
  *  • l'écran de chargement est une barre de progression qui masque l'image native une fois peint ;
- *  • le Z est au centre de l'anneau, l'arc tourne (ou reste fixe si le système le demande) ;
- *  • la marque affiche le nom ZAYROVI à côté du Z.
+ *  • le cœur-poignée de main est au centre de l'anneau, l'arc tourne (ou reste fixe si le système le demande) ;
+ *  • la marque affiche le nom ZAYROVI à côté du symbole.
  */
 import { act, render, screen } from '@testing-library/react-native';
 import { BrandMark } from '../../src/design/BrandMark';
@@ -42,7 +42,7 @@ describe('écran de chargement ZAYROVI', () => {
 });
 
 describe('marque ZAYROVI', () => {
-  it('affiche le nom à côté du Z', async () => {
+  it('affiche le nom à côté du symbole', async () => {
     wrap(<BrandMark size={30} />);
     await act(async () => {});
     expect(screen.getByLabelText('ZAYROVI')).toBeTruthy();

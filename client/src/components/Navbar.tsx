@@ -80,18 +80,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           </Button>
         </div>
         <button type="button" onClick={onGoHome} className="flex items-center bg-transparent" aria-label="ZAYROVI">
-          {logoUrl && logoUrl !== '/media/logo-ayrovi.png' ? (
+          {logoUrl && !/^\/media\/logo-ayrovi[a-z0-9-]*\.(?:svg|png)(?:[?#].*)?$/.test(logoUrl) ? (
             <>
               <img
-                src={overHero ? '/media/logo-ayrovi-light.png?v=5.0' : logoUrl}
+                src={overHero ? '/media/logo-ayrovi-light.png?v=6.0' : logoUrl}
                 alt=""
                 className={`h-11 w-11 bg-transparent object-contain transition-opacity duration-300 sm:h-11 sm:w-11 ${overHero ? '' : 'brightness-0'}`}
               />
-              <strong className={`font-display text-lg font-black tracking-tight transition-colors duration-300 sm:text-xl ${overHero ? 'text-white' : 'text-ink'}`}>ZAYROVI</strong>
+              <strong className={`font-display text-lg font-black tracking-tight transition-colors duration-300 sm:text-xl ${overHero ? 'text-white' : 'text-ink'}`}>zayrovi</strong>
             </>
           ) : (
             <img
-              src={overHero ? '/media/logo-ayrovi-lockup-white-violet.svg?v=5.0' : '/media/logo-ayrovi-lockup-black-violet.svg?v=5.0'}
+              src={overHero ? '/media/logo-ayrovi-lockup-white-violet.svg?v=6.0' : '/media/logo-ayrovi-lockup-black-violet.svg?v=6.0'}
               alt="ZAYROVI"
               className="h-7 w-auto bg-transparent object-contain transition-opacity duration-300 sm:h-8"
             />

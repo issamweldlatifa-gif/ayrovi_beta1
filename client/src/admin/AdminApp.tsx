@@ -165,7 +165,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
       {/* Identité : le verrou A.ROVI porte le nom une seule fois (emblème + « YROVI »), ici en
           version blanche puisque le panneau est en encre. La ligne de service dit ce qu'on ouvre. */}
       <section className="admin-login-brand">
-        <img src="/media/logo-ayrovi-lockup-white-violet.svg?v=5.0" alt="ZAYROVI" className="admin-login-brand__lockup" />
+        <img src="/media/logo-ayrovi-lockup-white-violet.svg?v=6.0" alt="ZAYROVI" className="admin-login-brand__lockup" />
         <span>CONSOLE D’EXPLOITATION</span>
         <h1>Le commerce mondial,<br />piloté depuis Tunis.</h1>
         <p>Contenu, arrivages, commandes, tarification et assistance — une seule source de vérité, la même que le site public.</p>
@@ -181,7 +181,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
       </section>
       <section className="admin-login-panel">
         <div className="admin-login-box">
-          <div className="admin-login-mobile-logo"><img src="/media/logo-ayrovi-lockup-black-violet.svg?v=5.0" alt="ZAYROVI" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /></div>
+          <div className="admin-login-mobile-logo"><img src="/media/logo-ayrovi-lockup-black-violet.svg?v=6.0" alt="ZAYROVI" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /></div>
           {/* Cartouche d'état : la sonde est réelle, donc le chiffre affiché est celui du serveur en face. */}
           <div className="admin-login-status" data-state={health.state} role="status" aria-live="polite">
             <i aria-hidden="true" />
@@ -1024,7 +1024,7 @@ export const AdminApp:React.FC=()=>{
     loadIdentity().then((identity)=>{if(active)setUser(identity);}).catch((e)=>{if(!(e instanceof ApiError&&e.status===401))console.warn(e);}).finally(()=>{if(active)setLoading(false);});
     return()=>{active=false;window.removeEventListener(ADMIN_SESSION_EXPIRED_EVENT,resetExpiredSession);};
   },[]);
-  if(loading)return <div className="admin-boot"><img src="/media/logo-ayrovi.png?v=5.0" alt="" className="ay-boot-mark" style={{width:52,height:52,objectFit:'contain'}} /><span/></div>;
+  if(loading)return <div className="admin-boot"><img src="/media/logo-ayrovi-loading.svg?v=6.0" alt="" className="ay-boot-mark" style={{width:52,height:52,objectFit:'contain'}} /><span/></div>;
   if(!user)return <LoginPage onAuthenticated={setUser}/>;
   // Un seul provider pour tout le back office : contexte, navigation et descripteurs partagés.
   return <BackOfficeProvider><AdminShell user={user} onLogout={async()=>{await logout();setUser(null);}}/></BackOfficeProvider>;

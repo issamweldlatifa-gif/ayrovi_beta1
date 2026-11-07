@@ -1,7 +1,7 @@
-import { View, StyleSheet } from 'react-native';
-import { AppText } from '@/design/ui';
-import { ZMark } from '@/design/BrandMark';
-import { useTheme } from '@/design/theme';
+import { View, StyleSheet } from "react-native";
+import { AppText } from "@/design/ui";
+import { BrandSymbol } from "@/design/BrandMark";
+import { useTheme } from "@/design/theme";
 
 /** Publishing is currently first-party only. Never borrow a reference creator's identity. */
 export function ReelPublisher({ onMedia = false }: { onMedia?: boolean }) {
@@ -9,7 +9,7 @@ export function ReelPublisher({ onMedia = false }: { onMedia?: boolean }) {
   return (
     <View testID="reel-publisher" style={styles.row}>
       <View style={[styles.avatar, { backgroundColor: theme.colors.surface }]}>
-        <ZMark width={18} color={theme.colors.ink} />
+        <BrandSymbol width={18} color={theme.colors.ink} />
       </View>
       <AppText
         variant="body"
@@ -23,14 +23,14 @@ export function ReelPublisher({ onMedia = false }: { onMedia?: boolean }) {
   );
 }
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
+  row: { flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 },
   avatar: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
   name: { flexShrink: 1 },
 });

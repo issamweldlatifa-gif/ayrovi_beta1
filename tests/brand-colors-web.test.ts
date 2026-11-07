@@ -23,7 +23,7 @@ import { normalizeInterfaceConfig } from '../client/src/config/interfaceConfig';
 import { authMailTemplate } from '../src/customer/accountMail';
 import { invoiceEmailHtml } from '../src/services/invoice';
 import { customerTheme } from '../client/src/design/editorial/customerTheme';
-import { BOOT_Z_TRANSFORM, Z_MARK } from '../client/src/design/zMark';
+import { BOOT_SYMBOL_TRANSFORM, BRAND_SYMBOL } from '../client/src/design/brandSymbol';
 
 const ROOT = process.cwd();
 const read = (rel: string) => fs.readFileSync(path.resolve(ROOT, rel), 'utf8');
@@ -204,7 +204,7 @@ describe('3. aucun orange retiré dans les sources produit', () => {
     expect(uses.every((line) => /\.bo-nav-state\.is-error|\.bo-tag--warn/.test(line))).toBe(true);
   });
 
-  test('les logos vectoriels sont le Z ZAYROVI monochrome, sans violet ; les anciens noms « -orange » ont disparu', () => {
+  test('les logos vectoriels sont le cœur-poignée de main monochrome, sans violet ; les anciens noms « -orange » ont disparu', () => {
     // Logo officiel du 2026-10-16 : un Z blanc sur noir (ou noir sur blanc). Le violet reste réservé à l'action principale.
     for (const [rel, ink] of [
       ['logo-ayrovi-mark.svg', OFFICIAL.black],
@@ -214,14 +214,14 @@ describe('3. aucun orange retiré dans les sources produit', () => {
       ['logo-ayrovi-lockup-white.svg', OFFICIAL.white],
     ] as const) {
       const svg = read(`client/public/media/${rel}`);
-      expect(svg, rel).toContain(`d="${Z_MARK.d}"`);
+      expect(svg, rel).toContain(`d="${BRAND_SYMBOL.d}"`);
       expect(svg, rel).toContain(`fill="${ink}"`);
       expect(svg, rel).toContain('aria-label="ZAYROVI"');
       expect(svg.toUpperCase(), rel).not.toContain(OFFICIAL.violet);
     }
     const icon = read('client/public/media/logo-ayrovi-icon.svg');
     expect(icon).toContain(`fill="${OFFICIAL.black}"`); // carré noir
-    expect(icon).toContain(`fill="${OFFICIAL.white}" d="${Z_MARK.d}"`); // Z blanc
+    expect(icon).toContain(`fill="${OFFICIAL.white}" d="${BRAND_SYMBOL.d}"`); // Z blanc
     for (const gone of ['black', 'white']) {
       for (const ext of ['svg', 'png']) {
         expect(fs.existsSync(path.resolve(ROOT, `client/public/media/logo-ayrovi-lockup-${gone}-orange.${ext}`))).toBe(false);
@@ -234,13 +234,13 @@ describe('3. aucun orange retiré dans les sources produit', () => {
 
   test('les logos retouchés changent d’URL (les fichiers publics sont en cache « immutable » un an)', () => {
     const html = read('client/index.html');
-    expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/media/logo-ayrovi-icon.svg?v=5.0" />');
-    expect(html).toContain('/media/logo-ayrovi-192.png?v=5.0');
-    expect(html).toContain('/media/logo-ayrovi.png?v=5.0');
-    expect(html).toContain('/media/logo-ayrovi-apple-touch.png?v=5.0');
+    expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/media/logo-ayrovi-icon.svg?v=6.0" />');
+    expect(html).toContain('/media/logo-ayrovi-192.png?v=6.0');
+    expect(html).toContain('/media/logo-ayrovi.png?v=6.0');
+    expect(html).toContain('/media/logo-ayrovi-apple-touch.png?v=6.0');
     expect(html).not.toContain('?v=4.1');
     const manifest = JSON.parse(read('client/public/manifest.webmanifest'));
-    expect(manifest.icons.map((icon: { src: string }) => icon.src)).toEqual(['/media/logo-ayrovi-192.png?v=5.0', '/media/logo-ayrovi-512.png?v=5.0']);
+    expect(manifest.icons.map((icon: { src: string }) => icon.src)).toEqual(['/media/logo-ayrovi-192.png?v=6.0', '/media/logo-ayrovi-512.png?v=6.0']);
     expect(manifest.short_name).toBe('ZAYROVI');
     // la barre du navigateur est noire (pas une grande surface violette), plus l'ancien violet #673DE6
     expect(manifest.theme_color.toUpperCase()).toBe(OFFICIAL.black);
@@ -249,25 +249,25 @@ describe('3. aucun orange retiré dans les sources produit', () => {
     // « pas de logo personnalisé », '/media/logo-ayrovi.png', comparée telle quelle et jamais affichée)
     const stale = [...walk('client/src', /\.(tsx?)$/), ...walk('client/public', /\.(html|webmanifest)$/)]
       .flatMap((rel) => [...read(rel).matchAll(/\/media\/logo-ayrovi[a-z0-9-]*\.(?:svg|png)(\?v=[0-9.]+)?/g)]
-        .filter((m) => m[1] !== '?v=5.0' && m[0] !== '/media/logo-ayrovi.png')
+        .filter((m) => m[1] !== '?v=6.0' && m[0] !== '/media/logo-ayrovi.png')
         .map((m) => `${rel}: ${m[0]}`));
     expect(stale).toEqual([]);
   });
 
-  test('écran de chargement du site : le Z gris dans son anneau, aucun violet (maquette du 2026-10-16)', () => {
+  test('écran de chargement du site : le nouveau symbole gris dans son anneau, aucun violet (maquette du 2026-10-16)', () => {
     const html = read('client/index.html');
     const main = read('client/src/main.tsx');
     expect(html).toContain('data-brand="zayrovi-loader"');
-    expect(html).toContain(`d="${Z_MARK.d}"`);
-    expect(html).toContain(`transform="${BOOT_Z_TRANSFORM}"`);
+    expect(html).toContain(`d="${BRAND_SYMBOL.d}"`);
+    expect(html).toContain(`transform="${BOOT_SYMBOL_TRANSFORM}"`);
     expect(html).toMatch(/\.ay-boot \{[^}]*background: #FFFFFF/);
     expect(html).toMatch(/\.ay-boot-track \{[^}]*stroke: #E5E5E5/);
     expect(html).toMatch(/\.ay-boot-arc \{[^}]*stroke: #666666[^}]*stroke-linecap: round[^}]*animation: ay-boot-turn/);
-    expect(html).toMatch(/\.ay-boot-z \{ fill: #666666; \}/);
+    expect(html).toMatch(/\.ay-boot-symbol \{ fill: #666666; \}/);
     expect(html).toMatch(/prefers-reduced-motion: reduce\) \{\s*\.ay-boot-arc \{ animation: none; \}/);
     // même dessin dans le fallback React (classes, cercle, arc et tracé partagés)
     for (const piece of ['className="ay-boot-svg"', 'data-brand="zayrovi-loader"', '<circle className="ay-boot-track" cx="68" cy="68" r="65" />',
-      '<path className="ay-boot-arc" d="M 68 3 A 65 65 0 0 1 129.08 45.77" />', 'transform={BOOT_Z_TRANSFORM} d={Z_MARK.d}']) {
+      '<path className="ay-boot-arc" d="M 68 3 A 65 65 0 0 1 129.08 45.77" />', 'transform={BOOT_SYMBOL_TRANSFORM} d={BRAND_SYMBOL.d}']) {
       expect(main).toContain(piece);
     }
     expect(html).toContain('<path class="ay-boot-arc" d="M 68 3 A 65 65 0 0 1 129.08 45.77" />');

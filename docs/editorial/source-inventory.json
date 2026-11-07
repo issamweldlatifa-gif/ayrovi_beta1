@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 271,
-    "customerAndSharedFiles": 205,
+    "files": 272,
+    "customerAndSharedFiles": 206,
     "controls": 476,
     "iconAliases": 102,
     "uniqueGlyphs": 99
@@ -443,7 +443,7 @@
     {
       "file": "client/src/admin/AdminApp.tsx",
       "domain": "admin",
-      "sha256": "de993f75d806a6ecbd3a37165889dcee02b97a5a5e7cb64e52f9caf50ec79a3b",
+      "sha256": "48dfc5d9a4da96293f4bd1c008487992b22129f1168288ed1c0bbd97122dd606",
       "lines": 1032,
       "imports": [
         "../../../shared/brand.generated",
@@ -3901,7 +3901,7 @@
     {
       "file": "client/src/admin/back-office/BackOfficeShell.tsx",
       "domain": "admin",
-      "sha256": "2bf91eca62dcee5091e2fc4569fd43872f625bb5dffadf61e9d3bf0d21b35df9",
+      "sha256": "ce08a356f4aedc1a7e69e3118b66e516febd491f3a4e7d5d1551e1f03e1f1332",
       "lines": 405,
       "imports": [
         "react",
@@ -7426,7 +7426,7 @@
     {
       "file": "client/src/admin/InterfaceStudio.tsx",
       "domain": "admin",
-      "sha256": "39f51f8c13094b21b2bf4e122b95b83f01c47c5a8a7157983f0c903503766506",
+      "sha256": "acfa63580fc336d8053a93d33892fbb5ba1122322b396a37aed4803726e04036",
       "lines": 307,
       "imports": [
         "react",
@@ -14353,7 +14353,7 @@
     {
       "file": "client/src/components/account/AccountHome.tsx",
       "domain": "account-auth",
-      "sha256": "3113f5408183cd91958a9523aaf09ff98d66cf48cde22fe1fd3fde8b17a3addf",
+      "sha256": "857ab8ce51e56d3ba936d9000ffb1a6a2c88d6baf9bcae686ab147d1b3d47cbe",
       "lines": 50,
       "imports": [
         "react",
@@ -15401,7 +15401,7 @@
     {
       "file": "client/src/components/assistant/AssistantSideMenu.tsx",
       "domain": "sonim",
-      "sha256": "8db577e3fef6996e23c2a028b7da1f6039a52513e7d48551cddaf01611421f56",
+      "sha256": "2d3eeea93c89893478b0d8fdf125988d07701cee75552c419fa5a202caa5db79",
       "lines": 110,
       "imports": [
         "./AssistantHistoryNotice",
@@ -16177,7 +16177,7 @@
     {
       "file": "client/src/components/CustomerAccountPage.tsx",
       "domain": "account-auth",
-      "sha256": "d8ca2d01deb60062bcdafc9edda0130f0bb63a43783b5a11e9294f0d72e7ab19",
+      "sha256": "8e0640e86eea871bbec3e08d2416a9b70bdfb66afba9d52c9de5aa54002baf54",
       "lines": 976,
       "imports": [
         "react",
@@ -17095,7 +17095,7 @@
     {
       "file": "client/src/components/CustomerPasswordRecovery.tsx",
       "domain": "account-auth",
-      "sha256": "6a6e7e32287de8e75177f55d67b2f2aa7851b432452f36ad5d93d2ddef972e44",
+      "sha256": "dcdca55a09426658851573206ffe505986814fc6d0439bc3b5475954bd79cf47",
       "lines": 122,
       "imports": [
         "react",
@@ -17260,7 +17260,7 @@
     {
       "file": "client/src/components/Footer.tsx",
       "domain": "shell-content",
-      "sha256": "d68876ed533bf17e5dc3e8050f500938ea0b3a91f2f95a20c186e4c4311c5c75",
+      "sha256": "5f6b277e41dd5d3aaa87acb978e4efb99f2cba051b1c7b93583c1f7e8c56d52d",
       "lines": 110,
       "imports": [
         "react",
@@ -17784,7 +17784,7 @@
     {
       "file": "client/src/components/Navbar.tsx",
       "domain": "shell-content",
-      "sha256": "e609a6fdcb0f3198394a60a504f5359bda9650f9cf29af944650295a4481e400",
+      "sha256": "b873e1ba58f69430459b68cde199e5d78a07020ff756873f8b5576980ebd57c4",
       "lines": 130,
       "imports": [
         "react",
@@ -19330,7 +19330,7 @@
     {
       "file": "client/src/design/AppHeader.tsx",
       "domain": "shared-design",
-      "sha256": "b80350697bcfacffc1adb9dfb1f527963bd6b5d8009110af3556f2c597f89fa5",
+      "sha256": "8d3ebe64d3d657121bf711d1c4a59b89321ae98c8bd41c28502db20dea1bc661",
       "lines": 76,
       "imports": [
         "react",
@@ -19413,6 +19413,41 @@
           "line": 4
         }
       ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/design/BrandLoadingIndicator.tsx",
+      "domain": "shared-design",
+      "sha256": "534d5764ef811760385a27c4c719ebe9d98c1202b1502623c58fc6e7ced48ace",
+      "lines": 17,
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "BrandLoadingIndicator"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/design/brandSymbol.ts",
+      "domain": "shared-design",
+      "sha256": "51052c7f7dedc842c29a893dc4e44e4706059b60899b34940bd90276d91f460c",
+      "lines": 9,
+      "imports": [],
+      "exports": [
+        "BRAND_SYMBOL",
+        "BOOT_SYMBOL_TRANSFORM"
+      ],
+      "controls": [],
+      "icons": [],
       "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
@@ -20231,23 +20266,6 @@
       ],
       "exports": [
         "Toast"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/design/zMark.ts",
-      "domain": "shared-design",
-      "sha256": "416717672e508beae9bb1e0d006bd5b3860e31c6034b6259baa9e7e7ddf0843b",
-      "lines": 22,
-      "imports": [],
-      "exports": [
-        "Z_MARK",
-        "BOOT_Z_TRANSFORM"
       ],
       "controls": [],
       "icons": [],
@@ -21590,7 +21608,7 @@
     {
       "file": "client/src/main.tsx",
       "domain": "shell-content",
-      "sha256": "d4187b012cb72788a0ef4b13857ff00764fbe7595f440523db34adfe15e406cd",
+      "sha256": "d617093e03fe573efa2ff18611ab5914c420c908f7e32949bf6ea698e00e131d",
       "lines": 51,
       "imports": [
         "react",
@@ -21602,7 +21620,7 @@
         "./design/editorial/CustomerIdentity",
         "./i18n/LocaleContext",
         "./navigation/RouteMeta",
-        "./design/zMark"
+        "./design/brandSymbol"
       ],
       "exports": [],
       "controls": [],
@@ -22083,11 +22101,11 @@
     {
       "file": "client/src/shop/LoadingView.tsx",
       "domain": "shell-content",
-      "sha256": "b3c1881a9c41fe1d74544892d115e7bcb631c20b7ee0ce37c77fc2bcabb5536c",
+      "sha256": "3f6b5350841083f72ae8fd22b0662d21bea634d6958bed21d5c94e76be39c56f",
       "lines": 26,
       "imports": [
         "react",
-        "../design/editorial/Icon"
+        "../design/BrandLoadingIndicator"
       ],
       "exports": [
         "LoadingView"
@@ -22769,7 +22787,7 @@
     {
       "file": "client/src/social/components/FullscreenMediaHeader.tsx",
       "domain": "discovery-social",
-      "sha256": "80b1752aa024542bfb9dc8ebcbaaeea9362d95c1f851391012d5f48952959928",
+      "sha256": "b38ec47a4011707aae15863eda25f857c6484dcedee0d38522c8442ec67335ce",
       "lines": 33,
       "imports": [
         "react",
@@ -22816,7 +22834,7 @@
     {
       "file": "client/src/social/components/ReelsViewer.tsx",
       "domain": "discovery-social",
-      "sha256": "a4ad6a0e0dbac6a0b1f0ca0723f544487aaca89e3898237a04e1285d5d1dbaab",
+      "sha256": "620fe80ab61c492865d9248bfd29ceda97875d828e2c1699924dd51f66916113",
       "lines": 165,
       "imports": [
         "../../components/QatafoIcons",
@@ -22848,7 +22866,7 @@
     {
       "file": "client/src/social/components/StoryCircles.tsx",
       "domain": "discovery-social",
-      "sha256": "fbe830a8dfe48ba5d590eaa2989d4a078972918817ef199b89fbcf6d8971ffab",
+      "sha256": "ae2c55c7bd4bffcd908518d123a2e2a0b92948d0af3c28bc218cc067b0d0baeb",
       "lines": 58,
       "imports": [
         "react",
@@ -22881,7 +22899,7 @@
     {
       "file": "client/src/social/components/StoryFeed.tsx",
       "domain": "discovery-social",
-      "sha256": "4f1116704d9da4a637f0b204ec57f456a1e3e3efb4a72ac51832acca6062ef14",
+      "sha256": "7966130719104d66833cc2b6f7779971bd16563d45ec29f1231c84141c5b8983",
       "lines": 188,
       "imports": [
         "react",

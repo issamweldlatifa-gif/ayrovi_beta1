@@ -4,15 +4,15 @@ import { mkdirSync } from 'node:fs';
 /**
  * ZAYROVI — génère assets/icon.png + assets/splash.png (+ splash-dark.png) depuis le logo
  * source, puis l'appelant lance `capacitor-assets generate --android` (voir « android:assets »).
- * Le logo officiel est un Z blanc sur noir : fond #0A0A0A (noir de la palette), Z blanc centré,
+ * Le logo officiel est le cœur-poignée de main blanc sur noir : fond #0A0A0A (noir de la palette), symbole blanc centré,
  * dans les deux thèmes — c'est aussi l'écran d'ouverture de l'application.
  */
-const LOGO = 'client/public/media/logo-ayrovi-light.png'; // Z blanc, 86 % de la largeur du carré
+const LOGO = 'client/public/media/logo-ayrovi-light.png'; // symbole blanc, 86 % de la largeur du carré
 const LOGO_SHARE = 0.86;
 const INK = '#0A0A0A';
 mkdirSync('assets', { recursive: true });
 
-/** Carré `size` px, fond noir, Z occupant `share` de la largeur. */
+/** Carré `size` px, fond noir, symbole occupant `share` de la largeur. */
 const compose = async (size, share) => {
   const box = Math.round((size * share) / LOGO_SHARE);
   const logo = await sharp(LOGO).resize(box, box, { fit: 'contain', background: '#00000000' }).png().toBuffer();

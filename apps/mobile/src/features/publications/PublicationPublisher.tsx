@@ -1,32 +1,32 @@
 import {
   PUBLICATION_PALETTE as P,
   PUBLICATION_TYPE,
-} from './publicationDesign';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Pressable, View, StyleSheet } from 'react-native';
-import { PublicationIcon as Ionicons } from './publicationDesign';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
-import { useI18n } from '@/i18n';
-import { useSession } from '@/state/session';
-import { isApiError, userMessage } from '@/api/errors';
-import { PublicationAuthSheet } from './PublicationAuthSheet';
-import { ZMark } from '@/design/BrandMark';
-import { AppImage } from '@/design/appImage';
-import { PublicationText as AppText } from './publicationDesign';
-import { mediaUrl } from '@/api/client';
-import { PUBLICATION_PUBLISHER as H } from './publicationDesign';
+} from "./publicationDesign";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Pressable, View, StyleSheet } from "react-native";
+import { PublicationIcon as Ionicons } from "./publicationDesign";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import { useI18n } from "@/i18n";
+import { useSession } from "@/state/session";
+import { isApiError, userMessage } from "@/api/errors";
+import { PublicationAuthSheet } from "./PublicationAuthSheet";
+import { BrandSymbol } from "@/design/BrandMark";
+import { AppImage } from "@/design/appImage";
+import { PublicationText as AppText } from "./publicationDesign";
+import { mediaUrl } from "@/api/client";
+import { PUBLICATION_PUBLISHER as H } from "./publicationDesign";
 import {
   PUBLICATION_METRICS as PM,
   RADIUS,
   OPACITY,
   ICON_SIZE,
-} from '@/design/tokens.mobile';
+} from "@/design/tokens.mobile";
 import {
   followPublisher,
   type FeedPost,
   type FeedPage,
-} from '@/api/publicationFeed';
+} from "@/api/publicationFeed";
 
 /** One write per account/publisher, even when several cards of that publisher are visible. */
 const writes = new Set<string>();
@@ -38,7 +38,7 @@ export function PublicationVerifiedBadge() {
       accessible
       accessibilityRole="image"
       accessibilityLabel={
-        locale === 'ar' ? 'ناشر رسمي موثّق' : 'Éditeur officiel vérifié'
+        locale === "ar" ? "ناشر رسمي موثّق" : "Éditeur officiel vérifié"
       }
     >
       <MaterialIcons
@@ -64,42 +64,42 @@ export function PublicationPublisher({
   detail?: boolean;
 }) {
   const { locale } = useI18n();
-  const ar = locale === 'ar';
+  const ar = locale === "ar";
   const session = useSession();
   const client = useQueryClient();
   const owner =
-    session.status === 'signedIn' ? session.account?.id || 'guest' : 'guest';
+    session.status === "signedIn" ? session.account?.id || "guest" : "guest";
   const identity = `${owner}:${post.channelId}`;
   const latest = useRef(identity);
   latest.current = identity;
   const [following, setFollowing] = useState(!!post.following);
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [auth, setAuth] = useState(false);
   useEffect(() => {
     if (!writes.has(identity)) setFollowing(!!post.following);
   }, [post.following, identity]);
   useEffect(() => {
     setBusy(false);
-    setError('');
+    setError("");
     setAuth(false);
   }, [identity]);
   const follow = async () => {
-    if (session.status !== 'signedIn') {
+    if (session.status !== "signedIn") {
       setAuth(true);
       return;
     }
     if (writes.has(identity)) return;
     writes.add(identity);
     setBusy(true);
-    setError('');
+    setError("");
     try {
       const result = await followPublisher(post.channelId, !following);
-      if (typeof result.following !== 'boolean')
-        throw new Error('Unconfirmed follow response');
+      if (typeof result.following !== "boolean")
+        throw new Error("Unconfirmed follow response");
       if (latest.current === identity) setFollowing(result.following);
       client.setQueriesData<InfiniteData<FeedPage>>(
-        { queryKey: ['publication-feed', owner] },
+        { queryKey: ["publication-feed", owner] },
         (old) =>
           old
             ? {
@@ -115,17 +115,17 @@ export function PublicationPublisher({
               }
             : old
       );
-      void client.invalidateQueries({ queryKey: ['publication-feed', owner] });
+      void client.invalidateQueries({ queryKey: ["publication-feed", owner] });
     } catch (e) {
       if (latest.current === identity) {
         if (isApiError(e) && e.status === 401) setAuth(true);
         else
           setError(
             isApiError(e)
-              ? userMessage(e)[ar ? 'ar' : 'fr']
+              ? userMessage(e)[ar ? "ar" : "fr"]
               : ar
-              ? 'تعذّرت المتابعة. أعد المحاولة.'
-              : 'Suivi non enregistré. Réessayez.'
+              ? "تعذّرت المتابعة. أعد المحاولة."
+              : "Suivi non enregistré. Réessayez."
           );
       }
     } finally {
@@ -137,7 +137,7 @@ export function PublicationPublisher({
     post.channelName.trim()
   );
   const name =
-    ownBrand || !post.channelName.trim() ? 'Zayrovi Team' : post.channelName;
+    ownBrand || !post.channelName.trim() ? "Zayrovi Team" : post.channelName;
   const ink = dark ? P.paper : P.ink;
   const followControl = (
     <Pressable
@@ -146,18 +146,18 @@ export function PublicationPublisher({
       accessibilityLabel={
         following
           ? ar
-            ? 'إلغاء متابعة الناشر'
-            : 'Ne plus suivre cet éditeur'
+            ? "إلغاء متابعة الناشر"
+            : "Ne plus suivre cet éditeur"
           : ar
-          ? 'متابعة الناشر'
-          : 'Suivre cet éditeur'
+          ? "متابعة الناشر"
+          : "Suivre cet éditeur"
       }
       accessibilityState={{
         selected: following,
-        disabled: busy || session.status === 'loading',
+        disabled: busy || session.status === "loading",
         busy,
       }}
-      disabled={busy || session.status === 'loading'}
+      disabled={busy || session.status === "loading"}
       onPress={() => void follow()}
       style={({ pressed }) => [
         detail ? styles.detailFollow : styles.followTarget,
@@ -176,13 +176,13 @@ export function PublicationPublisher({
           }}
         >
           <AppText variant="label" color={following ? P.ink : P.paper}>
-            {following ? (ar ? 'متابَع' : 'Suivi') : ar ? 'متابعة' : 'Suivre'}
+            {following ? (ar ? "متابَع" : "Suivi") : ar ? "متابعة" : "Suivre"}
           </AppText>
         </View>
       ) : (
         <View testID="publication-follow-disc" style={styles.followDisc}>
           <Ionicons
-            name={following ? 'checkmark-outline' : 'add-outline'}
+            name={following ? "checkmark-outline" : "add-outline"}
             size={ICON_SIZE.sm}
             color={P.paper}
             accessibilityElementsHidden
@@ -199,7 +199,7 @@ export function PublicationPublisher({
           style={[
             styles.name,
             detail
-              ? { marginRight: 96, minHeight: 44, justifyContent: 'center' }
+              ? { marginRight: 96, minHeight: 44, justifyContent: "center" }
               : undefined,
           ]}
         >
@@ -217,7 +217,7 @@ export function PublicationPublisher({
               style={{
                 flexShrink: 1,
                 fontFamily: /[\u0600-\u06FF]/.test(name)
-                  ? 'NotoSansArabic-Bold'
+                  ? "NotoSansArabic-Bold"
                   : H.font,
                 fontSize: H.nameSize,
                 lineHeight: H.lineHeight,
@@ -229,9 +229,9 @@ export function PublicationPublisher({
           </View>
           {post.content?.sponsored ? (
             <AppText variant="caption" color={dark ? P.paper : P.muted}>{`${
-              ar ? 'إعلان' : 'Sponsorisé'
+              ar ? "إعلان" : "Sponsorisé"
             }${
-              post.content.sponsorName ? ` · ${post.content.sponsorName}` : ''
+              post.content.sponsorName ? ` · ${post.content.sponsorName}` : ""
             }`}</AppText>
           ) : null}
           {children}
@@ -249,14 +249,14 @@ export function PublicationPublisher({
                 accessibilityLabel={name}
               />
             ) : ownBrand ? (
-              <ZMark width={H.mark} color={P.ink} />
+              <BrandSymbol width={H.mark} color={P.ink} />
             ) : (
               <AppText
                 testID="publication-publisher-initial"
                 variant="captionStrong"
                 color={P.ink}
               >
-                {name.trim().slice(0, 1).toUpperCase() || '?'}
+                {name.trim().slice(0, 1).toUpperCase() || "?"}
               </AppText>
             )}
           </View>
@@ -267,17 +267,17 @@ export function PublicationPublisher({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={
-              ar ? 'خيارات المنشور' : 'Options de la publication'
+              ar ? "خيارات المنشور" : "Options de la publication"
             }
             onPress={onOptions}
             style={{
-              position: 'absolute',
+              position: "absolute",
               right: 0,
               top: 0,
               minWidth: 44,
               minHeight: 44,
-              alignItems: 'center',
-              justifyContent: 'flex-start',
+              alignItems: "center",
+              justifyContent: "flex-start",
             }}
           >
             <Ionicons
@@ -304,24 +304,24 @@ export function PublicationPublisher({
 const styles = StyleSheet.create({
   row: { minHeight: PUBLICATION_TYPE.column, minWidth: 0 },
   name: { marginLeft: PUBLICATION_TYPE.column, minWidth: 0, gap: 4 },
-  identity: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0 },
+  identity: { flexDirection: "row", alignItems: "center", gap: 4, minWidth: 0 },
   detailFollow: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     right: 0,
     minHeight: 44,
     minWidth: 88,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   followTarget: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     bottom: 0,
     minWidth: 44,
     minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     flexShrink: 0,
   },
   followDisc: {
@@ -332,11 +332,11 @@ const styles = StyleSheet.create({
     transform: [{ translateX: 4 }, { translateY: 4 }],
     borderWidth: 2,
     borderColor: P.paper,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   avatarWrap: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     top: 0,
     width: PUBLICATION_TYPE.column,
@@ -348,9 +348,9 @@ const styles = StyleSheet.create({
     height: H.avatar,
     borderRadius: RADIUS.full,
     backgroundColor: P.neutral,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
-  image: { width: '100%', height: '100%' },
+  image: { width: "100%", height: "100%" },
 });

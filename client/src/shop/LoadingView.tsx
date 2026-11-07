@@ -1,5 +1,5 @@
 import React from 'react';
-import { EditorialIcon } from '../design/editorial/Icon';
+import { BrandLoadingIndicator } from '../design/BrandLoadingIndicator';
 
 /**
  * ÉCRAN DE CHARGEMENT (boutique v2).
@@ -18,7 +18,7 @@ export const LoadingView: React.FC<{
       <span style={{ width: 44 }} />
     </header>
     <div className="s-loading" role="status" aria-live="polite">
-      <span className="s-loading__spin"><EditorialIcon name="Loader" size={40} /></span>
+      <BrandLoadingIndicator size={64} />
       {message ? <p>{message}</p> : null}
     </div>
   </div>
