@@ -238,7 +238,7 @@ export function PublicationActions({
       <View
         style={{
           paddingHorizontal: 0,
-          minHeight: 48,
+          minHeight: 44,
           flexDirection: ar ? 'row-reverse' : 'row',
           alignItems: 'center',
           justifyContent: 'space-between',

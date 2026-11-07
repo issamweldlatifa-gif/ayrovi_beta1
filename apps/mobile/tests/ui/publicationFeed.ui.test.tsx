@@ -1,3 +1,7 @@
+import {
+  PublicationDescription,
+  publicationDescriptionGraphemes,
+} from '@/features/publications/PublicationDescription';
 import { PublicationPublisher } from '@/features/publications/PublicationPublisher';
 import { PublicationActions } from '@/features/publications/PublicationActions';
 import { PublicationViewer } from '@/features/publications/PublicationViewer';
@@ -372,14 +376,28 @@ describe('Publication Phase 1 UI', () => {
     );
     expect(screen.getByText('Sponsorisé · ZAYROVI')).toBeTruthy();
     expect(screen.getByLabelText('Éditeur officiel vérifié')).toBeTruthy();
-    const measured = screen.getAllByText(content.description, {
-      includeHiddenElements: true,
+    fireEvent(screen.getByTestId('publication-description'), 'layout', {
+      nativeEvent: { layout: { width: 320, height: 72 } },
     });
-    fireEvent(measured[1], 'textLayout', {
-      nativeEvent: { lines: [{}, {}, {}, {}] },
-    });
-    fireEvent.press(screen.getByText('Voir plus'));
-    expect(screen.getByText('Voir moins')).toBeTruthy();
+    for (let i = 0; i < 20; i++) {
+      const measured = screen.queryByTestId('publication-description-measure', {
+        includeHiddenElements: true,
+      });
+      if (!measured) break;
+      const source = Array.isArray(measured.props.children)
+        ? measured.props.children[0]
+        : measured.props.children;
+      fireEvent(measured, 'layout', {
+        nativeEvent: {
+          layout: { height: String(source).length > 160 ? 10000 : 1 },
+        },
+      });
+    }
+    fireEvent.press(screen.getByRole('button', { name: /Voir plus$/ }));
+    expect(screen.getByRole('button', { name: /Voir moins$/ })).toBeTruthy();
+    expect(
+      screen.getByTestId('publication-description-visible').props.children[0]
+    ).toBe(content.description);
   });
 
   it('gives media a measured nonzero height and updates the actual swipe counter', async () => {
@@ -1165,4 +1183,155 @@ it('retains truthful sponsored disclosure in the compact publisher header', asyn
     />
   );
   expect(screen.getByText('Sponsorisé · Partenaire')).toBeTruthy();
+});
+
+it('does not add an expansion control or extra row to a fitting description', async () => {
+  await mount(<PublicationDescription text="Texte court." color="#0A0A0A" />);
+  fireEvent(screen.getByTestId('publication-description'), 'layout', {
+    nativeEvent: { layout: { width: 320 } },
+  });
+  fireEvent(
+    screen.getByTestId('publication-description-measure', {
+      includeHiddenElements: true,
+    }),
+    'layout',
+    { nativeEvent: { layout: { height: 1 } } }
+  );
+  expect(screen.queryByRole('button', { name: /Voir plus$/ })).toBeNull();
+  expect(
+    screen.getByTestId('publication-description-visible').props.children[0]
+  ).toBe('Texte court.');
+  expect(
+    screen.queryByTestId('publication-description-measure', {
+      includeHiddenElements: true,
+    })
+  ).toBeNull();
+});
+it('recalculates the inline prefix after width changes without discarding the original Unicode text', async () => {
+  const text = 'Été 👩‍🔬 نصّ للتجربة فقط. '.repeat(40);
+  await mount(<PublicationDescription text={text} color="#0A0A0A" />);
+  const layout = (width: number) =>
+    fireEvent(screen.getByTestId('publication-description'), 'layout', {
+      nativeEvent: { layout: { width } },
+    });
+  const measure = (limit: number) => {
+    for (let i = 0; i < 30; i++) {
+      const probe = screen.queryByTestId('publication-description-measure', {
+        includeHiddenElements: true,
+      });
+      if (!probe) break;
+      const source = Array.isArray(probe.props.children)
+        ? probe.props.children[0]
+        : probe.props.children;
+      fireEvent(probe, 'layout', {
+        nativeEvent: {
+          layout: { height: String(source).length > limit ? 10000 : 1 },
+        },
+      });
+    }
+  };
+  layout(320);
+  measure(160);
+  const first = screen.getByTestId('publication-description-visible').props
+    .children[0];
+  expect(first.length).toBeLessThanOrEqual(160);
+  layout(180);
+  measure(80);
+  const second = screen.getByTestId('publication-description-visible').props
+    .children[0];
+  expect(second.length).toBeLessThan(first.length);
+  expect(second.endsWith('\u200D')).toBe(false);
+  fireEvent.press(screen.getByRole('button', { name: /Voir plus$/ }));
+  expect(
+    screen.getByTestId('publication-description-visible').props.children[0]
+  ).toBe(text);
+  fireEvent.press(screen.getByRole('button', { name: /Voir moins$/ }));
+  expect(
+    screen.getByTestId('publication-description-visible').props.children[0]
+  ).toBe(second);
+});
+
+it.each([
+  'photo',
+  'split',
+  'campaign',
+  'carousel',
+  'social_mosaic',
+  'social_pair',
+  'social_strip',
+  'caption_photo',
+  'shoppable',
+] as const)(
+  'uses a shared rhythm without stacked copy padding in %s',
+  async (template) => {
+    const count =
+      template === 'social_pair'
+        ? 2
+        : template === 'social_mosaic'
+        ? 5
+        : template === 'social_strip' || template === 'carousel'
+        ? 3
+        : 1;
+    await mount(
+      <PublicationCard
+        post={referencePost(template, count)}
+        compact={false}
+        onComments={jest.fn()}
+        onReaction={jest.fn()}
+      />
+    );
+    expect(screen.getByTestId('publication-ui-post')).toHaveStyle({
+      gap: 8,
+      paddingBottom: 4,
+      marginBottom: 12,
+    });
+    expect(screen.getByTestId('publication-copy-ui-post')).toHaveStyle({
+      gap: 4,
+    });
+    expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle({
+      gap: template === 'split' || template === 'campaign' ? 0 : 8,
+    });
+  }
+);
+
+it('keeps flags, skin tones, ZWJ emoji and Arabic combining marks together without Intl.Segmenter', () => {
+  const descriptor = Object.getOwnPropertyDescriptor(Intl, 'Segmenter');
+  try {
+    Object.defineProperty(Intl, 'Segmenter', {
+      value: undefined,
+      configurable: true,
+    });
+    expect(publicationDescriptionGraphemes('🇹🇳👩🏽‍🔬a\u0301ن\u0651')).toEqual([
+      '🇹🇳',
+      '👩🏽‍🔬',
+      'a\u0301',
+      'ن\u0651',
+    ]);
+  } finally {
+    if (descriptor) Object.defineProperty(Intl, 'Segmenter', descriptor);
+    else Reflect.deleteProperty(Intl, 'Segmenter');
+  }
+});
+
+it('does not insert an empty copy section when title and description are absent', async () => {
+  await mount(
+    <PublicationCard
+      post={{
+        ...referencePost('photo', 1),
+        subtitle: '',
+        content: {
+          ...referencePost('photo', 1).content!,
+          description: '',
+          showTitle: false,
+        },
+      }}
+      compact={false}
+      onComments={jest.fn()}
+      onReaction={jest.fn()}
+    />
+  );
+  expect(screen.queryByTestId('publication-copy-ui-post')).toBeNull();
+  expect(
+    screen.getByTestId('publication-content-ui-post').children
+  ).toHaveLength(1);
 });

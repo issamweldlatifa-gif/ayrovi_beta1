@@ -8,7 +8,11 @@ import type { FeedPost } from '@/api/publicationFeed';
 import { PublicationMedia } from './PublicationMedia';
 import { PublicationPublisher } from './PublicationPublisher';
 import { AppText } from '@/design/ui';
-import { PUBLICATION_THEME as P, ICON_SIZE } from '@/design/tokens.mobile';
+import {
+  PUBLICATION_THEME as P,
+  PUBLICATION_SPACING as S,
+  ICON_SIZE,
+} from '@/design/tokens.mobile';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import {
@@ -102,8 +106,19 @@ export function PublicationCard({
         />
       </Pressable>
     ) : null;
-  const text = (
-    <View style={[styles.copy, split ? styles.editorialCopy : undefined]}>
+  const hasCopy = !!(
+    (campaign && editorialLabel) ||
+    (showsPublicationTitle(template) &&
+      post.content?.showTitle !== false &&
+      post.title) ||
+    description ||
+    (!captionFirst && cta)
+  );
+  const text = hasCopy ? (
+    <View
+      testID={`publication-copy-${post.id}`}
+      style={[styles.copy, split ? styles.editorialCopy : undefined]}
+    >
       {campaign && editorialLabel ? (
         <AppText variant="overline" color={P.ink}>
           {editorialLabel}
@@ -141,13 +156,13 @@ export function PublicationCard({
       ) : null}
       {!captionFirst ? cta : null}
     </View>
-  );
+  ) : null;
   return (
     <View
       testID={`publication-${post.id}`}
       style={[
         styles.card,
-        compact ? { paddingBottom: 4, marginBottom: 12 } : undefined,
+        compact ? { paddingBottom: S.rule, marginBottom: S.post } : undefined,
       ]}
     >
       <View
@@ -166,12 +181,13 @@ export function PublicationCard({
         ? text
         : null}
       <View
+        testID={`publication-content-${post.id}`}
         style={
           split
             ? styles.editorial
             : campaign
             ? [styles.campaign, { marginHorizontal: -mediaInset }]
-            : undefined
+            : styles.content
         }
       >
         <View
@@ -209,20 +225,25 @@ export function PublicationCard({
 }
 const styles = StyleSheet.create({
   card: {
-    paddingBottom: 4,
-    marginBottom: 12,
-    gap: 8,
+    paddingBottom: S.rule,
+    marginBottom: S.post,
+    gap: S.section,
     backgroundColor: P.paper,
     borderBottomWidth: 1,
     borderBottomColor: P.line,
   },
   publisher: { alignItems: 'center', gap: 8 },
   publisherName: { flex: 1, gap: 2 },
-  editorial: { gap: 8, backgroundColor: P.splitPaper },
-  editorialCopy: { padding: 12 },
+  content: { gap: S.section },
+  editorial: { gap: 0, backgroundColor: P.splitPaper },
+  editorialCopy: { padding: S.inset },
   splitMedia: { width: '100%' },
   campaign: { gap: 0 },
-  campaignCopy: { padding: 24, backgroundColor: P.campaignPaper },
+  campaignCopy: {
+    paddingHorizontal: 24,
+    paddingVertical: S.inset,
+    backgroundColor: P.campaignPaper,
+  },
   cta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -230,28 +251,6 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 0,
     minHeight: 44,
-    marginTop: 4,
   },
-  copy: { gap: 4, paddingTop: 4 },
-  actions: {
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 0,
-    minHeight: 44,
-  },
-  action: {
-    minHeight: 44,
-    minWidth: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  icon: {
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  grow: { flex: 1 },
-  signIn: { minHeight: 44, justifyContent: 'center' },
+  copy: { gap: S.group },
 });
