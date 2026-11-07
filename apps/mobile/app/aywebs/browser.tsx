@@ -1,3 +1,4 @@
+import { BackButton } from '@/design/BackButton';
 /**
  * AYWEBs — P3، الشريحتان 2 و3: صفحة المتجر داخل WebView + الكابتشر + «Add to Cart».
  *
@@ -19,7 +20,7 @@ import { Alert, BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { WebView as RNWebView, type WebViewMessageEvent, type WebViewProps } from 'react-native-webview';
 import {
   captureMatchesPageUrl, decideWebNavigation, isFatalMainPageLoadError, isSilentAppDeepLink, isSpaInPageProductSwitch, isWebPageUrl,
@@ -595,20 +596,7 @@ export default function AyWebsBrowserScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingTop: insets.top + theme.space[2] }]}>
       <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          onPress={() => goBack('/(tabs)/aywebs')}
-          testID="aywebs-store-header-back"
-          style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
-        >
-          <Ionicons
-            name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-            size={theme.iconSize.md}
-            color={theme.colors.ink}
-            accessibilityElementsHidden
-          />
-        </Pressable>
+        <BackButton onPress={() => goBack('/(tabs)/aywebs')} testID="aywebs-store-header-back" label={t('common.back')} color={theme.colors.ink} />
         <View style={styles.titleBox}>
           <AppText variant="label" numberOfLines={1}>{storeName || t('aywebs.browserTitle')}</AppText>
         </View>

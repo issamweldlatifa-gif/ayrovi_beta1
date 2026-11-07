@@ -54,12 +54,15 @@ async function shrinkImage(file: File): Promise<string> {
 }
 
 /** Envoie un fichier au stockage admin et renvoie son URL publique. Lève une erreur lisible sinon. */
-export async function uploadMediaFile(file: File): Promise<string> {
+export async function uploadMediaFile(file: File, options: { preserveOriginal?: boolean; onUploaded?: (result: {url:string;originalUrl?:string}) => void } = {}): Promise<string> {
   let dataUrl: string;
   if (file.type.startsWith('video/')) {
     if (file.size > MAX_VIDEO_BYTES) {
       throw new Error(`Vidéo trop lourde (${megabytes(file.size)}) : la limite est de 10 Mo. Hébergez la vidéo et collez son lien https direct.`);
     }
+    dataUrl = await readDataUrl(file);
+  } else if (options.preserveOriginal) {
+    if (file.size > MAX_VIDEO_BYTES) throw new Error('Image originale trop lourde : limite 10 Mo.');
     dataUrl = await readDataUrl(file);
   } else if (file.type === 'image/gif') {
     dataUrl = await readDataUrl(file);
@@ -69,8 +72,9 @@ export async function uploadMediaFile(file: File): Promise<string> {
     const bytes = Math.ceil((dataUrl.length - dataUrl.indexOf(',') - 1) * 3 / 4);
     if (bytes > MAX_IMAGE_BYTES) throw new Error('Image trop lourde même après réduction : choisissez une photo plus petite.');
   }
-  const result = await adminApi<any>('/uploads', { method: 'POST', body: JSON.stringify({ dataUrl }) });
+  const result = await adminApi<any>('/uploads', { method: 'POST', body: JSON.stringify({ dataUrl, preserveOriginal: !!options.preserveOriginal }) });
   const url = result.data?.url as string | undefined;
   if (!url) throw new Error('Le téléversement a échoué : aucune adresse reçue.');
+  options.onUploaded?.({url,originalUrl:result.data?.originalUrl});
   return url;
 }

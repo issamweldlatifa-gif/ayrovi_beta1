@@ -13,7 +13,7 @@ import {
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 
 import { AppText, Button } from '@/design/ui';
 import { rowDirectionFor } from '@/design/layoutLogic';

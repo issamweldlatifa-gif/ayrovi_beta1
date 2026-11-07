@@ -183,6 +183,8 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'app/(tabs)/_layout.tsx', // barre d'onglets flottante transparente à angles arrondis sous laquelle défile la page
       'app/aywebs/browser.tsx', // AYWEBs : voile de chargement posé au-dessus de la page du magasin (WebView)
       'src/features/sections/PromotionCard.tsx', // badge de réduction posé sur la vignette
+      'src/features/publications/PublicationDescription.tsx', // invisible same-width measurement layer, never positioned content
+      'src/features/publications/PublicationViewer.tsx', // official back control overlays fullscreen media
       'src/features/publications/PublicationMedia.tsx', // Compteur et commandes audio superposés au média défilant, pas de positionnement du contenu.
       'src/features/social/ReelCard.tsx', // durée posée sur la vignette vidéo
       'src/features/shopping/LinkedProductCard.tsx', // pastille favori posée dans l'angle de la carte article

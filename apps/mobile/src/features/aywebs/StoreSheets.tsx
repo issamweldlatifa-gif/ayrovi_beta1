@@ -13,7 +13,7 @@
 import { RADIUS } from '@/design/tokens.mobile';
 import { useMemo, useState, type ComponentProps } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 

@@ -43,3 +43,8 @@ screenshots/image-composition/
 # Caches Python (rendu des maquettes) — jamais versionnés
 __pycache__/
 *.pyc
+
+# Original authored media is private runtime storage, served only to authorized CRM editors.
+data/media-originals/
+# AI design discussion mockups are not app assets or implementation proof.
+docs/concepts/

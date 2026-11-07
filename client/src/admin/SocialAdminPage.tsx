@@ -1,3 +1,4 @@
+import { PublicationMediaEditor } from './PublicationMediaEditor';
 import { CAPTION_FIRST_TEMPLATES } from '../../../shared/publicationLayouts';
 import { PUBLICATION_TYPES, PUBLICATION_TEMPLATES, publicationTypeForTemplate } from '../../../shared/publicationContent';
 import { PublicationReferenceImages } from './PublicationReferenceImages';
@@ -70,6 +71,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
   useEffect(() => { load(); }, [load]);
 
   const save = async () => {
+    if (busy) return;
     if (!form || String(form.title || '').trim().length < 2 || !form.channel_id || !String(form.image_url || '').trim()) {
       setError('Titre, canal et image sont obligatoires.');
       return;
@@ -105,11 +107,11 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           { key: 'delete', label: 'Supprimer', tone: 'danger', icon: <Trash2 size={14} />, hideLabel: true, onRun: (row: any) => void removeWithConfirm(`/publications/${row.id}`, 'Supprimer cette publication ?', load) },
         ]}
       />
-      <Modal open={Boolean(form)} title={form?.id ? 'Éditer' : 'Nouvelle publication'} onClose={() => setForm(null)} wide
-        footer={<><Button variant="ghost" onClick={() => setForm(null)}>Annuler</Button><Button busy={busy === 'save'} onClick={() => void save()}>Enregistrer</Button></>}>
+      <Modal open={Boolean(form)} title={form?.id ? 'Éditer' : 'Nouvelle publication'} onClose={() => {if(!busy)setForm(null);}} wide
+        footer={<><Button variant="ghost" disabled={!!busy} onClick={() => setForm(null)}>Annuler</Button><Button disabled={!!busy} busy={busy === 'save'} onClick={() => void save()}>Enregistrer</Button></>}>
         {form && <div className="admin-grid-2">
           {error ? <div role="alert" className="admin-error" style={{ gridColumn: '1 / -1' }}>{error}</div> : null}
-          <Field label="Titre" required><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
+          <Field label="Titre éditorial / repère interne" required><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
           <Field label="Sous-titre"><input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} /></Field>
           <Field label="Canal" required><ChannelSelect value={form.channel_id} onChange={(v) => setForm({ ...form, channel_id: v })} channels={channels} /></Field>
           <Field label="Image" required>
@@ -127,6 +129,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           <Field label="Modèle visuel"><select aria-label="Modèle visuel" value={form.template_id || 'auto'} onChange={e => setForm({ ...form, template_id: e.target.value, post_type: publicationTypeForTemplate(e.target.value, form.post_type) })}>
             {PUBLICATION_TEMPLATES.map(value => <option key={value} value={value}>{({ auto: 'Automatique (compatibilité)', photo: 'Photo éditoriale', split: 'Éditorial — image puis texte', campaign: 'Éditorial — grand titre & encart crème', carousel: 'Carousel — grande galerie & fiche produit', video: 'Vidéo immersive', social_mosaic: 'Album — mosaïque 2 + 3', shoppable: 'Shopping — photo & cartes produits', caption_photo: 'Social — description puis grande photo', social_strip: 'Album — rangée de 3 photos', social_pair: 'Album — duo de photos' })[value]}</option>)}
           </select></Field>
+          <Field label="Afficher le titre dans le modèle"><input type="checkbox" disabled={(CAPTION_FIRST_TEMPLATES as readonly string[]).includes(form.template_id)} checked={!(CAPTION_FIRST_TEMPLATES as readonly string[]).includes(form.template_id) && form.show_title !== false && form.show_title !== 0} onChange={e=>setForm({...form,show_title:e.target.checked})}/><small>Les modèles sociaux privilégient la description. Le titre reste disponible comme repère interne.</small></Field>
           <Field label="Libellé du bouton (facultatif)"><input maxLength={40} value={form.action_label || ''} placeholder="Découvrir" onChange={e => setForm({ ...form, action_label: e.target.value })} /></Field>
           <Field label="Action du bouton"><select value={form.action_target || 'detail'} onChange={e => setForm({ ...form, action_target: e.target.value })}><option value="detail">Ouvrir la publication</option><option value="products">Ouvrir le premier produit associé</option></select></Field>
           <Field label="Aperçu de composition" full><PublicationTemplatePreview form={form} /></Field>
@@ -141,21 +144,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
             {reelChoices ? <select aria-label="Vidéo existante" value="" onChange={e => { const reel = reelChoices.find(item => item.id === e.target.value); if (reel) setForm({ ...form, template_id: 'video', post_type: 'video', title: form.title || reel.title, image_url: form.image_url || reel.poster_url || '', media: [{ type: 'video', url: reel.video_url, poster: reel.poster_url || form.image_url || '', alt: reel.title }] }); }}><option value="">{reelChoices.length ? 'Sélectionnez une vidéo' : 'Aucune vidéo disponible'}</option>{reelChoices.map(reel => <option key={reel.id} value={reel.id}>{reel.title}</option>)}</select> : null}
             <small>Réutilise le fichier existant sans modifier le Reel. Ajoutez une couverture si nécessaire.</small>
           </Field> : null}
-          <Field label="Médias ordonnés" full>
-            <p>Albums mosaïque/rangée : 2 à 10 images ; duo : exactement 2 ; grande photo/shopping : 1 image. La description précède les images dans les cinq nouveaux modèles. Carousel : 2 à 10 images. Vidéo : un fichier vidéo et l’image principale comme couverture. Le type de publication doit correspondre aux médias.</p>
-            {(form.media || []).map((item: any, index: number) => <div className="admin-actions" key={index}>
-              <span>{index + 1}. {item.type}</span><input aria-label={`Média ${index + 1}`} value={item.url} onChange={e => setForm({ ...form, media: form.media.map((m: any, i: number) => i === index ? { ...m, url: e.target.value } : m) })} />
-              <Button variant="secondary" disabled={!index} onClick={() => { const media = [...form.media]; [media[index - 1], media[index]] = [media[index], media[index - 1]]; setForm({ ...form, media }); }}>Monter</Button>
-              {item.type === 'image' ? <select aria-label={`Ajustement du média ${index + 1}`} value={item.fit || 'cover'} onChange={e => setForm({ ...form, media: form.media.map((m: any, i: number) => i === index ? { ...m, fit: e.target.value } : m) })}><option value="cover">Remplir le cadre</option><option value="contain">Afficher le produit entier</option></select> : null}
-              <Button variant="ghost" onClick={() => setForm({ ...form, media: form.media.filter((_: any, i: number) => i !== index) })}>Retirer le média</Button>
-            </div>)}
-            <Button variant="secondary" onClick={() => setForm({ ...form, media: [...(form.media || []), { type: form.post_type === 'video' ? 'video' : 'image', url: '', poster: '', alt: '' }] })}>Ajouter un lien média</Button>
-            <input aria-label="Uploader les médias Publication" type="file" multiple accept="image/*,video/mp4,video/webm" onChange={async e => {
-              const files = Array.from(e.target.files || []); setBusy('save'); setError('');
-              try { const media: any[] = []; for (const file of files) media.push({ type: file.type.startsWith('video/') ? 'video' : 'image', url: await uploadMediaFile(file), poster: '', alt: '' }); setForm((current: any) => ({ ...current, image_url: current.image_url || media.find(m => m.type === 'image')?.url || '', media: [...(current.media || []), ...media] })); }
-              catch (error: any) { setError(error.message); } finally { setBusy(''); e.target.value = ''; }
-            }} />
-          </Field>
+          <div className="admin-field-full"><h3>Médias ordonnés</h3><PublicationMediaEditor form={form} setForm={setForm} onError={setError} onUploading={v=>setBusy(v?'upload':'')}/></div>
           <div className="admin-field-full"><PublicationReferenceImages form={form} onChange={setForm} /></div>
           <Field label="Catégorie Publication"><select value={form.category || ''} onChange={e => setForm({ ...form, category: e.target.value })}>
             <option value="">For You — non classée</option>
@@ -222,7 +211,7 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
       <Modal open={Boolean(form)} title={form?.id ? 'Éditer' : 'Nouveau reel'} onClose={() => setForm(null)} wide
         footer={<><Button variant="ghost" onClick={() => setForm(null)}>Annuler</Button><Button busy={busy === 'save'} onClick={() => void save()}>Enregistrer</Button></>}>
         {form && <div className="admin-grid-2">
-          <Field label="Titre" required><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
+          <Field label="Titre éditorial / repère interne" required><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
           <Field label="Canal" required><ChannelSelect value={form.channel_id} onChange={(v) => setForm({ ...form, channel_id: v })} channels={channels} /></Field>
           <Field label="Vidéo (mp4, mov, webm…)" required full>
             <div className="admin-actions" style={{ marginTop: 0 }}>

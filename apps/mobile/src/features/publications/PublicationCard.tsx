@@ -1,7 +1,10 @@
+import { PublicationActions } from './PublicationActions';
+import { PublicationDescription } from './PublicationDescription';
+import { showsPublicationTitle } from '../../../../../shared/publicationPresentation';
 import { isApiError, userMessage } from '@/api/errors';
-import { useEffect, useRef, useState } from 'react';
-import { Pressable, Share, StyleSheet, View } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { router } from 'expo-router';
 import {
   followPublisher,
@@ -11,9 +14,6 @@ import {
 import { PublicationAuthSheet } from './PublicationAuthSheet';
 import { PublicationMedia } from './PublicationMedia';
 import { PublicationPublisher } from './PublicationPublisher';
-import { apiUrl } from '@/api/client';
-import { DEFAULT_API_BASE_URL } from '@/api/config';
-import { sendInteraction } from '@/api/social';
 import { AppText } from '@/design/ui';
 import {
   PUBLICATION_THEME as P,
@@ -24,7 +24,6 @@ import {
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { useSession } from '@/state/session';
-import { useSessionId } from '@/session/session';
 import type { ProductFavorites } from '@/features/reels/useProductFavorites';
 import {
   CAPTION_FIRST_TEMPLATES,
@@ -55,18 +54,18 @@ export function PublicationCard({
   post: FeedPost;
   compact: boolean;
   onComments: () => void;
-  onReaction: (id: string, liked: boolean, likes: number) => void;
+  onReaction: (
+    id: string,
+    liked: boolean,
+    likes: number,
+    disliked?: boolean
+  ) => void;
 }) {
   const { locale } = useI18n();
   const theme = useTheme();
   const ar = locale === 'ar';
   const session = useSession();
-  const sessionId = useSessionId();
   const signedIn = session.status === 'signedIn';
-  const [liked, setLiked] = useState(post.liked);
-  const [likes, setLikes] = useState(post.likes);
-  const [busy, setBusy] = useState(false);
-  const locked = useRef(false);
   const [authOpen, setAuthOpen] = useState(false);
   const requireAccount = () => {
     if (signedIn) return false;
@@ -86,7 +85,6 @@ export function PublicationCard({
         )
       )
   );
-  const [expanded, setExpanded] = useState(false);
   const [saved, setSaved] = useState(!!post.saved);
   const [following, setFollowing] = useState(!!post.following);
   const [preferenceBusy, setPreferenceBusy] = useState(false);
@@ -135,71 +133,6 @@ export function PublicationCard({
       );
     } finally {
       setPreferenceBusy(false);
-    }
-  };
-  useEffect(() => {
-    if (!locked.current) {
-      setLiked(post.liked);
-      setLikes(post.likes);
-    }
-  }, [post.liked, post.likes]);
-  const like = async () => {
-    if (requireAccount() || locked.current) return;
-    locked.current = true;
-    setBusy(true);
-    setMessage('');
-    const before = { liked, likes };
-    setLiked(!liked);
-    setLikes(Math.max(0, likes + (liked ? -1 : 1)));
-    try {
-      const result = await sendInteraction({
-        type: 'like',
-        targetId: post.id,
-        sessionId: sessionId || undefined,
-      });
-      setLiked(result.liked ?? !before.liked);
-      setLikes(result.likesCount);
-      onReaction(post.id, result.liked ?? !before.liked, result.likesCount);
-    } catch {
-      setLiked(before.liked);
-      setLikes(before.likes);
-      setMessage(
-        ar
-          ? 'تعذّر حفظ الإعجاب. أعد المحاولة.'
-          : 'J’aime non enregistré. Réessayez.'
-      );
-    } finally {
-      locked.current = false;
-      setBusy(false);
-    }
-  };
-  const sharedUrl = () =>
-    new URL(
-      apiUrl(`/publications?post=${encodeURIComponent(post.id)}`),
-      typeof location !== 'undefined' ? location.origin : DEFAULT_API_BASE_URL
-    ).toString();
-  const share = async () => {
-    if (requireAccount()) return;
-    // Links resolve to this exact published post via the existing web route and native route.
-    const url = sharedUrl();
-    try {
-      const result = await Share.share({
-        title: post.title,
-        message: `${post.title}\n${url}`,
-        url,
-      });
-      if (result.action === Share.sharedAction)
-        await sendInteraction({
-          type: 'share',
-          targetId: post.id,
-          sessionId: sessionId || undefined,
-        });
-    } catch {
-      setMessage(
-        ar
-          ? 'المشاركة غير متاحة. انسخ الرابط.'
-          : 'Partage indisponible. Copiez le lien.'
-      );
     }
   };
   const template = resolvePublicationTemplate(
@@ -261,8 +194,8 @@ export function PublicationCard({
           {post.content.actionLabel}
         </AppText>
         <Ionicons
-          name={campaign ? 'arrow-forward' : 'chevron-forward'}
-          size={campaign ? ICON_SIZE.md : ICON_SIZE.sm}
+          name={ar ? 'arrow-back' : 'arrow-forward'}
+          size={ICON_SIZE.sm}
           color={P.accent}
         />
       </Pressable>
@@ -274,7 +207,9 @@ export function PublicationCard({
           {editorialLabel}
         </AppText>
       ) : null}
-      {!captionFirst || !description ? (
+      {showsPublicationTitle(template) &&
+      post.content?.showTitle !== false &&
+      post.title ? (
         <Pressable
           accessibilityRole={onOpen ? 'button' : undefined}
           onPress={onOpen}
@@ -297,35 +232,10 @@ export function PublicationCard({
         </Pressable>
       ) : null}
       {description ? (
-        <>
-          <AppText
-            variant="body"
-            color={captionFirst ? P.ink : P.muted}
-            numberOfLines={
-              expanded || description.length <= 140 ? undefined : 3
-            }
-          >
-            {description}
-          </AppText>
-          {description.length > 140 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ expanded }}
-              onPress={() => setExpanded(!expanded)}
-              style={styles.signIn}
-            >
-              <AppText variant="captionStrong" color={P.ink}>
-                {expanded
-                  ? ar
-                    ? 'عرض أقل'
-                    : 'Voir moins'
-                  : ar
-                  ? 'عرض المزيد'
-                  : 'Voir plus'}
-              </AppText>
-            </Pressable>
-          ) : null}
-        </>
+        <PublicationDescription
+          text={description}
+          color={captionFirst ? P.ink : P.muted}
+        />
       ) : null}
       {!captionFirst ? cta : null}
     </View>
@@ -435,90 +345,12 @@ export function PublicationCard({
           {linkedRows}
         </View>
       ) : null}
-      <View
-        style={[
-          styles.actions,
-          { flexDirection: theme.isRTL ? 'row-reverse' : 'row' },
-        ]}
-      >
-        <Pressable
-          testID={`publication-like-${post.id}`}
-          accessibilityRole="button"
-          accessibilityLabel={
-            liked
-              ? ar
-                ? 'إلغاء الإعجاب'
-                : 'Ne plus aimer'
-              : ar
-              ? 'أعجبني'
-              : 'J’aime'
-          }
-          accessibilityHint={
-            !signedIn
-              ? ar
-                ? 'سجّل الدخول للإعجاب'
-                : 'Connectez-vous pour aimer'
-              : undefined
-          }
-          accessibilityState={{ selected: liked, disabled: busy }}
-          disabled={busy}
-          onPress={() => void like()}
-          style={styles.action}
-        >
-          <Ionicons
-            name={liked ? 'heart' : 'heart-outline'}
-            size={PM.icon}
-            color={liked ? P.accent : P.ink}
-          />
-          <AppText variant="caption" color={P.ink}>
-            {String(likes)}
-          </AppText>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={ar ? 'التعليقات' : 'Commentaires'}
-          onPress={() => {
-            if (!requireAccount()) onComments();
-          }}
-          style={styles.action}
-        >
-          <Ionicons name="chatbubble-outline" size={PM.icon} color={P.ink} />
-          <AppText variant="caption" color={P.ink}>
-            {String(post.comments)}
-          </AppText>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={ar ? 'مشاركة' : 'Partager'}
-          onPress={() => void share()}
-          style={styles.icon}
-        >
-          <Ionicons name="share-outline" size={PM.icon} color={P.ink} />
-        </Pressable>
-        <View style={styles.grow} />
-        <Pressable
-          accessibilityRole="button"
-          disabled={preferenceBusy}
-          accessibilityLabel={
-            saved
-              ? ar
-                ? 'إلغاء الحفظ'
-                : 'Retirer des enregistrements'
-              : ar
-              ? 'حفظ المنشور'
-              : 'Enregistrer'
-          }
-          accessibilityState={{ selected: saved, disabled: preferenceBusy }}
-          onPress={() => void preference('save')}
-          style={styles.icon}
-        >
-          <Ionicons
-            name={saved ? 'bookmark' : 'bookmark-outline'}
-            size={PM.icon}
-            color={saved ? P.accent : P.ink}
-          />
-        </Pressable>
-      </View>
+      <PublicationActions
+        post={post}
+        onComments={onComments}
+        onReaction={onReaction}
+        onPreference={onPreference}
+      />
       {post.products.length > 0 &&
       template !== 'carousel' &&
       template !== 'shoppable' ? (

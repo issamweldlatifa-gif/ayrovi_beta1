@@ -9,7 +9,7 @@ import {
   type StyleProp, type TextInputProps, type TextProps, type TextStyle as RNTextStyle,
   type LayoutChangeEvent, type ViewStyle,
 } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, webDirection, type TextRole } from './theme';
 import { actionDirectionFor, responsiveMetricsFor, rowDirectionFor } from './layoutLogic';
@@ -31,12 +31,14 @@ export interface AppTextProps {
   accessibilityRole?: TextProps['accessibilityRole'];
   /** Lu automatiquement quand le texte change (compteur de résultats filtrés). */
   accessibilityLiveRegion?: TextProps['accessibilityLiveRegion'];
+  onTextLayout?: TextProps['onTextLayout'];
+  onLayout?: TextProps['onLayout'];
   testID?: string;
 }
 
 export function AppText({
   children, variant = 'body', color, align = 'auto', numberOfLines, style, accessibilityRole,
-  testID, accessibilityLiveRegion,
+  testID, accessibilityLiveRegion, onTextLayout, onLayout,
 }: AppTextProps) {
   const theme = useTheme();
   return (
@@ -45,6 +47,8 @@ export function AppText({
       accessibilityLiveRegion={accessibilityLiveRegion}
       testID={testID}
       numberOfLines={numberOfLines}
+      onTextLayout={onTextLayout}
+      onLayout={onLayout}
       style={[
         theme.text(variant),
         { color: color ?? theme.colors.ink },

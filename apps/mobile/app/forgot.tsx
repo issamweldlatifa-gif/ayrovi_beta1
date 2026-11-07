@@ -1,3 +1,4 @@
+import { BackButton } from '@/design/BackButton';
 /**
  * Mot de passe oublié — demande de lien, et rien d'autre.
  *
@@ -16,9 +17,8 @@
  */
 import { useEffect, useState } from 'react';
 import { goBack } from '@/design/navigation';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button, Card, Field } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useResponsive } from '@/design/layout';
@@ -97,14 +97,7 @@ export default function ForgotPasswordScreen() {
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          onPress={() => goBack('/(tabs)/account')}
-          style={[styles.close, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
-        >
-          <Ionicons name={locale === 'ar' ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={theme.colors.ink} />
-        </Pressable>
+        <BackButton onPress={() => goBack('/(tabs)/account')} label={t('common.back')} color={theme.colors.ink} />
 
         <AppText variant="h1">{t('auth.forgot.title')}</AppText>
         {/* Le sous-titre promet un envoi : il disparaît quand aucun envoi n'est possible. */}

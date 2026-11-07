@@ -1,3 +1,4 @@
+import { BackButton } from '@/design/BackButton';
 /**
  * Z Lens — parcours caméra natif (option 3 choisie par le client, 16/10/2026).
  *
@@ -24,7 +25,7 @@ import {
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { StatusBar } from 'expo-status-bar';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { router, useIsFocused } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -1155,9 +1156,7 @@ export default function LensScreen() {
           </View>
         ) : null}
         <View style={[styles.resultTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-          <Pressable onPress={reset} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
-            <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
-          </Pressable>
+          <BackButton onPress={reset} label={t('common.back')} color={LENS_COLORS.white} />
           {/* Barre flottante : elle remplace le titre quand une photo est
               analysée — la photo, son cadre et l'étape restent visibles. */}
           {sessionPhoto ? (
@@ -1261,9 +1260,7 @@ export default function LensScreen() {
 
         <View style={[styles.cameraTop, { paddingTop: insets.top + 6, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
           <View style={[styles.headerSide, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-            <Pressable onPress={() => goBack('/')} accessibilityRole="button" accessibilityLabel={t('common.back')} style={styles.overlayButton} hitSlop={HIT_SLOP}>
-              <Ionicons name={theme.isRTL ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />
-            </Pressable>
+            <BackButton onPress={() => goBack('/')} label={t('common.back')} color={LENS_COLORS.white} />
             {cameraMode && cameraAllowed ? (
               <Pressable onPress={() => setTorch((value) => !value)} accessibilityRole="button" accessibilityLabel={t('lens.flash')} style={styles.overlayButton} hitSlop={HIT_SLOP} testID="lens-torch">
                 <Ionicons name={torch ? 'flash' : 'flash-off'} size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crisp} accessibilityElementsHidden />

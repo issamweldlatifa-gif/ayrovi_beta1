@@ -1,3 +1,4 @@
+import { BackButton } from '@/design/BackButton';
 /**
  * Z Lens — visionneuse PLEIN ÉCRAN de la galerie produit (référence Zalando).
  *
@@ -17,7 +18,6 @@ import {
 } from 'react-native';
 
 import type { LensMediaItem } from './lensMedia';
-import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { AppText } from '@/design/ui';
 import { SPACE } from '@/design/tokens.generated';
@@ -97,16 +97,7 @@ export function LensGalleryViewer({
         </Animated.View>
 
         <View style={[styles.chrome, { paddingTop: SPACE[3], flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} pointerEvents="box-none">
-          <Pressable
-            onPress={onClose}
-            accessibilityRole="button"
-            accessibilityLabel={t('common.close')}
-            hitSlop={10}
-            style={({ pressed }) => [styles.closeButton, { opacity: pressed ? theme.opacity.subtle : 1 }]}
-            testID="lens-gallery-viewer-close"
-          >
-            <Ionicons name="arrow-back" size={theme.iconSize.md} color={LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
-          </Pressable>
+          <BackButton onPress={onClose} testID="lens-gallery-viewer-close" label={t('common.close')} color={LENS_COLORS.white} />
           {media.length > 1 ? (
             <View style={styles.counter}>
               <AppText variant="captionStrong" style={styles.counterText}>{`${page + 1}/${media.length}`}</AppText>

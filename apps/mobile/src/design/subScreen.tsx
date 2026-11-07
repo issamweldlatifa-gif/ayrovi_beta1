@@ -1,3 +1,4 @@
+import { BackButton } from '@/design/BackButton';
 /**
  * Ossature commune des écrans empilés (compte, commandes, favoris…).
  *
@@ -9,9 +10,8 @@
  * et qu'il n'y a rien derrière. Un écran empilé ne doit pas renvoyer au compte.
  */
 import type { ReactNode, RefObject } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
@@ -81,19 +81,7 @@ export function SubScreen({
           fil dès qu'il remplit un champ. */}
       {sticky ? <View style={{ backgroundColor: theme.colors.canvas }}>{sticky}</View> : null}
       <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          onPress={() => goBack(fallback)}
-          style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
-        >
-          <Ionicons
-            name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-            size={theme.iconSize.md}
-            color={theme.colors.ink}
-            accessibilityElementsHidden
-          />
-        </Pressable>
+        <BackButton onPress={() => goBack(fallback)} label={t('common.back')} color={theme.colors.ink} />
         <View style={styles.headerText}>
           <AppText variant="h2">{title}</AppText>
           {subtitle ? <AppText variant="caption" color={theme.colors.muted}>{subtitle}</AppText> : null}

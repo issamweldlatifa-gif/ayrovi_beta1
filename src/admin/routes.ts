@@ -1420,8 +1420,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       id, title, String(req.body?.subtitle || '').slice(0, 150), channelId, imageUrl, String(req.body?.remark || ''),
       req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon',
       shoppable.mode, shoppable.productId, now, now, category, (isGeneratedPublicationEditorialAsset(imageUrl) || content.media.some(item => isGeneratedPublicationEditorialAsset(item.url))) ? 'generated' : 'uploaded');
-    db.run(`UPDATE publications SET post_type=?,media_json=?,description=?,description_position=?,sponsored=?,sponsor_name=?,audience=?,topic=?,template_id=?,action_label=?,action_target=? WHERE id=?`,
-      content.type, JSON.stringify(content.media), content.description, content.descriptionPosition, content.sponsored ? 1 : 0, content.sponsorName, content.audience, content.topic, content.template, content.actionLabel, content.actionTarget, id);
+    db.run(`UPDATE publications SET post_type=?,media_json=?,description=?,description_position=?,sponsored=?,sponsor_name=?,audience=?,topic=?,template_id=?,action_label=?,action_target=?,show_title=? WHERE id=?`,
+      content.type, JSON.stringify(content.media), content.description, content.descriptionPosition, content.sponsored ? 1 : 0, content.sponsorName, content.audience, content.topic, content.template, content.actionLabel, content.actionTarget, content.showTitle ? 1 : 0, id);
     if (extraProducts.length > 0) setContentProducts(db, 'publication', id, extraProducts, now);
     else syncContentProductsFromLegacy(db, 'publication', id, shoppable.mode, shoppable.productId);
     audit(db, req, 'CREATE', 'SOCIAL_PUBLICATIONS', id, null, db.get<any>('SELECT * FROM publications WHERE id=?', id));
@@ -1453,8 +1453,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
       shoppable.mode, shoppable.productId, new Date().toISOString(), category, (isGeneratedPublicationEditorialAsset(imageUrl) || content.media.some(item => isGeneratedPublicationEditorialAsset(item.url))) ? 'generated' : imageUrl !== row.image_url ? 'uploaded' : row.media_origin, req.params.id);
-    db.run(`UPDATE publications SET post_type=?,media_json=?,description=?,description_position=?,sponsored=?,sponsor_name=?,audience=?,topic=?,template_id=?,action_label=?,action_target=? WHERE id=?`,
-      content.type, JSON.stringify(content.media), content.description, content.descriptionPosition, content.sponsored ? 1 : 0, content.sponsorName, content.audience, content.topic, content.template, content.actionLabel, content.actionTarget, req.params.id);
+    db.run(`UPDATE publications SET post_type=?,media_json=?,description=?,description_position=?,sponsored=?,sponsor_name=?,audience=?,topic=?,template_id=?,action_label=?,action_target=?,show_title=? WHERE id=?`,
+      content.type, JSON.stringify(content.media), content.description, content.descriptionPosition, content.sponsored ? 1 : 0, content.sponsorName, content.audience, content.topic, content.template, content.actionLabel, content.actionTarget, content.showTitle ? 1 : 0, req.params.id);
     if (req.body?.product_ids !== undefined) setContentProducts(db, 'publication', req.params.id, extraProducts);
     else if (req.body?.product_id !== undefined || req.body?.content_mode !== undefined) syncContentProductsFromLegacy(db, 'publication', req.params.id, shoppable.mode, shoppable.productId);
     audit(db, req, 'UPDATE', 'SOCIAL_PUBLICATIONS', req.params.id, row, db.get<any>('SELECT * FROM publications WHERE id=?', req.params.id));
@@ -2516,6 +2516,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     res.json({ success: true, data: rows, pagination: { page, pageSize, total: Number(count), totalPages: Math.max(1, Math.ceil(Number(count) / pageSize)) } });
   });
 
+  router.get('/media-originals/:filename', requireAdmin(db, 'content:write'), (req,res) => {
+    const filename=String(req.params.filename);
+    if(!/^[0-9]+-[0-9a-f-]+-original\.(jpg|png|webp|gif)$/.test(filename)) return res.status(404).end();
+    res.setHeader('Cache-Control','private, no-store');
+    return res.sendFile(path.resolve(process.cwd(),'data','media-originals',filename));
+  });
   router.post('/uploads', requireAdmin(db, 'content:write'), async (req, res) => {
     const dataUrl = String(req.body?.dataUrl || '');
     const img = /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
@@ -2524,8 +2530,9 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (!match) return res.status(400).json({ success: false, error: 'Format non supporté. Images : PNG/JPEG/WEBP/GIF · Vidéos : MP4/WEBM/OGG/M4V.' });
     const input = Buffer.from(match[2], 'base64');
     const isVideo = Boolean(vid);
-    const maxBytes = isVideo ? 10 * 1024 * 1024 : 4 * 1024 * 1024;
-    if (!input.length || input.length > maxBytes) return res.status(400).json({ success: false, error: isVideo ? 'La vidéo doit peser moins de 10 Mo.' : 'L’image doit peser moins de 4 Mo.' });
+    const preserveOriginal = req.body?.preserveOriginal === true;
+    const maxBytes = isVideo || preserveOriginal ? 10 * 1024 * 1024 : 4 * 1024 * 1024;
+    if (!input.length || input.length > maxBytes) return res.status(400).json({ success: false, error: isVideo || preserveOriginal ? 'Le média doit peser moins de 10 Mo.' : 'L’image doit peser moins de 4 Mo.' });
 
     let output: Buffer<ArrayBufferLike> = input;
     let extension = match[1] === 'jpeg' ? 'jpg' : match[1] === 'x-m4v' ? 'm4v' : match[1] === 'quicktime' ? 'mov' : match[1];
@@ -2556,8 +2563,16 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       const filename = `${Date.now()}-${randomUUID()}.${extension}`;
       fs.writeFileSync(path.join(directory, filename), output, { flag: 'wx' });
       const url = `/uploads/${filename}`;
+      let originalUrl = url;
+      if (preserveOriginal && img && output !== input) {
+        const originalName = `${Date.now()}-${randomUUID()}-original.${match[1] === 'jpeg' ? 'jpg' : match[1]}`;
+        const originalDirectory=path.resolve(process.cwd(),'data','media-originals');
+        fs.mkdirSync(originalDirectory,{recursive:true});
+        fs.writeFileSync(path.join(originalDirectory, originalName), input, { flag: 'wx' });
+        originalUrl = `/api/admin/media-originals/${originalName}`;
+      }
       audit(db, req, 'UPLOAD', 'MEDIA', filename, null, { url, bytes: output.length });
-      res.status(201).json({ success: true, data: { url, filename, size: output.length } });
+      res.status(201).json({ success: true, data: { url, originalUrl, filename, size: output.length } });
     } catch (error: any) {
       console.error('[Admin media upload]', error?.message || error);
       res.status(500).json({ success: false, code: 'MEDIA_WRITE_FAILED', error: 'Le média n’a pas pu être enregistré.' });

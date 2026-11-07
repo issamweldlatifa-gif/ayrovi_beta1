@@ -1,3 +1,9 @@
+import {
+  mediaFit,
+  mediaRatio,
+  nativeMediaPosition,
+  tileRatio,
+} from '../../../../../shared/publicationPresentation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
@@ -46,8 +52,12 @@ function InlineVideo({ item, active }: { item: Media; active: boolean }) {
   const [muted, setMuted] = useState(true);
   const [paused, setPaused] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(active);
+  useEffect(() => {
+    if (active) setLoaded(true);
+  }, [active]);
   const player = useVideoPlayer(
-    active ? { uri: mediaUrl(item.url) } : null,
+    loaded ? { uri: mediaUrl(item.url) } : null,
     (instance) => {
       instance.loop = true;
       instance.muted = true;
@@ -82,7 +92,7 @@ function InlineVideo({ item, active }: { item: Media; active: boolean }) {
           decorative
         />
       ) : null}
-      {active ? (
+      {loaded ? (
         <VideoView
           player={player}
           style={styles.fill}
@@ -150,6 +160,7 @@ export function PublicationMedia({
   onOpen,
   thumbnails = false,
   initialIndex = 0,
+  showIndicators = true,
 }: {
   post: FeedPost;
   active?: boolean;
@@ -157,6 +168,7 @@ export function PublicationMedia({
   onOpen?: (index: number) => void;
   thumbnails?: boolean;
   initialIndex?: number;
+  showIndicators?: boolean;
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const { width, height } = size;
@@ -198,14 +210,44 @@ export function PublicationMedia({
                     tile.remaining ? ` · +${tile.remaining}` : ''
                   }`}
                   onPress={() => onOpen?.(tile.index)}
-                  style={{ flex: 1, aspectRatio: 1, overflow: 'hidden' }}
+                  style={{
+                    flex: 1,
+                    aspectRatio: tileRatio(row.map((t) => items[t.index])),
+                    overflow: 'hidden',
+                  }}
                 >
                   <AppImage
-                    uri={mediaUrl(item.url)}
-                    style={styles.fill}
-                    contentFit={item.fit || 'cover'}
+                    uri={mediaUrl(
+                      item.type === 'video' ? item.poster : item.url
+                    )}
+                    background={P.paper}
+                    style={[
+                      styles.fill,
+                      { transform: [{ scale: item.scale || 1 }] },
+                    ]}
+                    contentFit={mediaFit(item)}
+                    contentPosition={nativeMediaPosition(item)}
                     accessibilityLabel={item.alt || post.title}
                   />
+                  {item.type === 'video' ? (
+                    <View
+                      pointerEvents="none"
+                      style={{
+                        position: 'absolute',
+                        right: 8,
+                        bottom: 8,
+                        backgroundColor: VIDEO_BACKDROP,
+                        borderRadius: RADIUS.full,
+                        padding: 6,
+                      }}
+                    >
+                      <Ionicons
+                        name="play"
+                        size={ICON_SIZE.md}
+                        color={P.paper}
+                      />
+                    </View>
+                  ) : null}
                   {tile.remaining > 0 ? (
                     <View
                       pointerEvents="none"
@@ -266,14 +308,23 @@ export function PublicationMedia({
         }}
         style={[
           styles.frame,
-          !immersive && ['campaign', 'carousel'].includes(template)
+          !immersive
             ? {
-                aspectRatio: PUBLICATION_EDITORIAL_RATIO,
+                aspectRatio: mediaRatio(
+                  items[0],
+                  ['campaign', 'carousel'].includes(template)
+                    ? PUBLICATION_EDITORIAL_RATIO
+                    : photoAspect
+                ),
+                backgroundColor: P.paper,
                 borderRadius: template === 'campaign' ? 0 : RADIUS.md,
               }
             : undefined,
           natural
-            ? { aspectRatio: photoAspect, backgroundColor: P.paper }
+            ? {
+                aspectRatio: mediaRatio(items[0], photoAspect),
+                backgroundColor: P.paper,
+              }
             : undefined,
           immersive ? styles.immersive : undefined,
         ]}
@@ -337,17 +388,23 @@ export function PublicationMedia({
                       background={immersive ? null : undefined}
                       testID={`publication-image-${post.id}-${mediaIndex}`}
                       uri={mediaUrl(item.url)}
-                      style={styles.fill}
+                      style={[
+                        styles.fill,
+                        !immersive
+                          ? { transform: [{ scale: item.scale || 1 }] }
+                          : {},
+                      ]}
+                      contentPosition={
+                        immersive ? 'center' : nativeMediaPosition(item)
+                      }
                       onDimensions={
-                        natural && mediaIndex === 0
+                        mediaIndex === 0
                           ? ({ width: w, height: h }) => {
                               if (w > 0 && h > 0) setPhotoAspect(w / h);
                             }
                           : undefined
                       }
-                      contentFit={
-                        immersive || natural ? 'contain' : item.fit || 'cover'
-                      }
+                      contentFit={immersive ? 'contain' : mediaFit(item)}
                       accessibilityLabel={item.alt || post.title}
                     />
                   </Pressable>
@@ -356,13 +413,68 @@ export function PublicationMedia({
             )}
           />
         ) : null}
-        {items.length > 1 && !immersive ? (
+        {items.length > 1 && showIndicators ? (
           <View
-            style={[styles.counter, thumbnails ? { bottom: 8 } : { top: 12 }]}
+            pointerEvents="box-none"
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              alignItems: 'center',
+            }}
           >
-            <AppText variant="captionStrong" color={P.paper}>
-              {index + 1}/{items.length}
-            </AppText>
+            <View
+              accessibilityLabel={`${index + 1}/${items.length}`}
+              style={{
+                flexDirection: 'row',
+                paddingHorizontal: 8,
+                alignItems: 'center',
+              }}
+            >
+              <View
+                pointerEvents="none"
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    top: 12,
+                    bottom: 12,
+                    backgroundColor: P.dotSurface,
+                    borderRadius: RADIUS.full,
+                  },
+                ]}
+              />
+              {items.map((_, i) => (
+                <Pressable
+                  key={i}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${i + 1}/${items.length}`}
+                  accessibilityState={{ selected: index === i }}
+                  onPress={() => {
+                    setIndex(i);
+                    list.current?.scrollToOffset({
+                      offset: width * i,
+                      animated: true,
+                    });
+                  }}
+                  style={{
+                    minHeight: 44,
+                    minWidth: Math.min(28, 240 / items.length),
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <View
+                    style={{
+                      width: i === index ? 18 : 5,
+                      height: 5,
+                      borderRadius: RADIUS.xs,
+                      backgroundColor: i === index ? P.ink : P.dotInactive,
+                    }}
+                  />
+                </Pressable>
+              ))}
+            </View>
           </View>
         ) : null}
       </View>
@@ -429,7 +541,7 @@ const styles = StyleSheet.create({
   thumbnailImage: { width: '100%', height: '100%', borderRadius: RADIUS.sm },
   videoActions: {
     position: 'absolute',
-    bottom: 12,
+    top: 12,
     right: 12,
     flexDirection: 'row',
     gap: 8,

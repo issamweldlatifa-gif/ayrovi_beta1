@@ -287,6 +287,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-requested-with', 'x-csrf-token', 'x-ayrovi-native'],
 }));
+app.use('/api/admin/uploads', express.json({ limit: '15mb' }));
 app.use(express.json({
   limit: '10mb',
   verify: (req: any, _res, buf) => { req.rawBody = buf; },

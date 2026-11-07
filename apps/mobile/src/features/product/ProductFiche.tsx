@@ -1,3 +1,4 @@
+import { BackButton } from '@/design/BackButton';
 /**
  * GRANDE FICHE — les 4 écrans de la maquette (25/10/2026).
  *
@@ -31,7 +32,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { AppText, Button } from '@/design/ui';
@@ -117,20 +118,7 @@ export function FicheHeader({
         ]}
       />
       <View style={[styles.headerRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          onPress={onBack}
-          hitSlop={8}
-          style={styles.headerButton}
-        >
-          <Ionicons
-            name={theme.isRTL ? 'chevron-forward-outline' : 'chevron-back-outline'}
-            size={theme.iconSize.md}
-            color={theme.colors.ink}
-            accessibilityElementsHidden
-          />
-        </Pressable>
+        <BackButton onPress={onBack} label={t('common.back')} color={theme.colors.ink} />
 
         <Animated.Text
           numberOfLines={1}

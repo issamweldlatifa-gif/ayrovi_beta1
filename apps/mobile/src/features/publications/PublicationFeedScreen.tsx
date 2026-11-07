@@ -1,10 +1,10 @@
+import { BackButton } from '@/design/BackButton';
+import { PublicationCommentsSheet } from './PublicationCommentsSheet';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
   FlatList,
-  Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   TextInput,
   View,
@@ -18,7 +18,7 @@ import {
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { setStatusBarStyle } from 'expo-status-bar';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import {
   fetchFeedPage,
   fetchFeedSettings,
@@ -41,7 +41,6 @@ import { useI18n } from '@/i18n';
 import { useSession } from '@/state/session';
 import { useSessionId } from '@/session/session';
 import { sendInteraction } from '@/api/social';
-import { Comments } from '@/features/social/Comments';
 import { PublicationSparkIcon } from './PublicationReactionIcon';
 import { PublicationViewer } from './PublicationViewer';
 import { useProductFavorites } from '@/features/reels/useProductFavorites';
@@ -99,7 +98,7 @@ export function PublicationFeedScreen() {
   const visibleChanged = useRef(
     ({ viewableItems }: { viewableItems: Array<{ item: FeedPost }> }) => {
       setActiveId(
-        viewableItems.find((row) => row.item.content?.type === 'video')?.item
+        viewableItems.find((row) => row.item.content?.type === 'video' || row.item.content?.media.some(media => media.type === 'video'))?.item
           .id || ''
       );
       setVisibleIds(viewableItems.map((row) => row.item.id));
@@ -195,18 +194,7 @@ export function PublicationFeedScreen() {
             { flexDirection: theme.isRTL ? 'row-reverse' : 'row' },
           ]}
         >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={ar ? 'رجوع' : 'Retour'}
-            onPress={() => goBack('/(tabs)')}
-            style={styles.icon}
-          >
-            <Ionicons
-              name={theme.isRTL ? 'arrow-forward' : 'arrow-back'}
-              size={PM.icon}
-              color={P.ink}
-            />
-          </Pressable>
+          <BackButton onPress={() => goBack('/(tabs)')} label={ar ? 'رجوع' : 'Retour'} color={P.ink} />
         </View>
         <View style={styles.title}>
           <AppText numberOfLines={1} variant="label" color={P.ink}>
@@ -388,7 +376,7 @@ export function PublicationFeedScreen() {
               settings?.layout === 'compact' ||
               (settings?.layout === 'mixed' && index % 3 === 1)
             }
-            onReaction={(id, liked, likes) =>
+            onReaction={(id, liked, likes, disliked) =>
               queryClient.setQueriesData<InfiniteData<FeedPage>>(
                 { queryKey: ['publication-feed', owner] },
                 (old) =>
@@ -398,7 +386,7 @@ export function PublicationFeedScreen() {
                         pages: old.pages.map((page) => ({
                           ...page,
                           items: page.items.map((row) =>
-                            row.id === id ? { ...row, liked, likes } : row
+                            row.id === id ? { ...row, liked, likes, disliked } : row
                           ),
                         })),
                       }
@@ -462,7 +450,7 @@ export function PublicationFeedScreen() {
       />
       {viewer ? (
         <PublicationViewer
-          post={viewer}
+          post={feed.data?.pages.flatMap(page => page.items).find(row => row.id === viewer.id) || viewer}
           initialMediaIndex={viewerMedia}
           owner={owner}
           onClose={() => {
@@ -472,53 +460,7 @@ export function PublicationFeedScreen() {
           onPreference={preferenceChanged}
         />
       ) : null}
-      <Modal
-        visible={comments !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={closeComments}
-      >
-        <View style={[styles.modal, { paddingTop: insets.top + 48 }]}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={
-              ar ? 'إغلاق التعليقات' : 'Fermer les commentaires'
-            }
-            onPress={closeComments}
-            style={styles.backdrop}
-          />
-          <View
-            style={[
-              styles.sheet,
-              {
-                backgroundColor: theme.colors.canvas,
-                paddingBottom: insets.bottom + 12,
-              },
-            ]}
-          >
-            <View style={styles.sheetHeader}>
-              <AppText variant="h3" color={theme.colors.ink}>
-                {ar ? 'التعليقات' : 'Commentaires'}
-              </AppText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={ar ? 'إغلاق' : 'Fermer'}
-                onPress={closeComments}
-                style={styles.icon}
-              >
-                <Ionicons
-                  name="close"
-                  size={theme.iconSize.md}
-                  color={theme.colors.ink}
-                />
-              </Pressable>
-            </View>
-            <ScrollView keyboardShouldPersistTaps="handled">
-              {comments ? <Comments targetId={comments.id} /> : null}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      {comments ? <PublicationCommentsSheet targetId={comments.id} onClose={closeComments} /> : null}
     </View>
   );
 }

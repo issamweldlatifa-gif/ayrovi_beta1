@@ -1,3 +1,4 @@
+import { BackButton } from '@/design/BackButton';
 /**
  * Visionneuse Reels plein écran (ouverte depuis l'accueil).
  *
@@ -12,11 +13,10 @@
  */
 import { useCallback, useRef, useState } from 'react';
 import { goBack } from '@/design/navigation';
-import { FlatList, Pressable, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { FlatList, StatusBar, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useReels, useSocialCounts } from '@/api/hooks';
 import { useTheme } from '@/design/theme';
@@ -99,15 +99,7 @@ export default function ReelsViewerScreen() {
         pointerEvents="box-none"
         style={[styles.header, { paddingTop: insets.top, flexDirection: rowDirectionFor(theme.isRTL) }]}
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          onPress={back}
-          hitSlop={8}
-          style={styles.back}
-        >
-          <Ionicons name={theme.isRTL ? 'chevron-forward' : 'chevron-back'} size={theme.iconSize.md} color={theme.colors.onMedia} accessibilityElementsHidden />
-        </Pressable>
+        <BackButton onPress={back} label={t('common.back')} color={theme.colors.onMedia} />
       </View>
 
       {commentsFor ? <ReelCommentsModal reel={commentsFor} onClose={closeComments} /> : null}

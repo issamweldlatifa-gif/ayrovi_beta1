@@ -1,0 +1,62 @@
+{
+  "/media/catalogue/publication-selection/armani-traditional.jpg": {
+    "width": 589,
+    "height": 871,
+    "purpose": "product",
+    "originalUrl": "/media/catalogue/publication-selection/originals/armani-traditional.jpg"
+  },
+  "/media/catalogue/publication-selection/ck-henley-white.jpg": {
+    "width": 800,
+    "height": 1155,
+    "purpose": "scene",
+    "originalUrl": "/media/catalogue/publication-selection/originals/ck-henley-white.jpg"
+  },
+  "/media/catalogue/publication-selection/furla-easy-shape.jpg": {
+    "width": 487,
+    "height": 972,
+    "purpose": "product",
+    "originalUrl": "/media/catalogue/publication-selection/originals/furla-easy-shape.jpg"
+  },
+  "/media/catalogue/publication-selection/kerastase-chronologiste.jpg": {
+    "width": 390,
+    "height": 1073,
+    "purpose": "product",
+    "originalUrl": "/media/catalogue/publication-selection/originals/kerastase-chronologiste.jpg"
+  },
+  "/media/catalogue/publication-selection/kerastase-volumifique.jpg": {
+    "width": 542,
+    "height": 1026,
+    "purpose": "product",
+    "originalUrl": "/media/catalogue/publication-selection/originals/kerastase-volumifique.jpg"
+  },
+  "/media/catalogue/publication-selection/mk-bri-ruched.jpg": {
+    "width": 684,
+    "height": 305,
+    "purpose": "product",
+    "originalUrl": "/media/catalogue/publication-selection/originals/mk-bri-ruched.jpg"
+  },
+  "/media/catalogue/publication-selection/mk-charms-braided.jpg": {
+    "width": 372,
+    "height": 771,
+    "purpose": "product",
+    "originalUrl": "/media/catalogue/publication-selection/originals/mk-charms-braided.jpg"
+  },
+  "/media/catalogue/publication-selection/mk-laila-pochette.jpg": {
+    "width": 678,
+    "height": 832,
+    "purpose": "product",
+    "originalUrl": "/media/catalogue/publication-selection/originals/mk-laila-pochette.jpg"
+  },
+  "/media/catalogue/publication-selection/ordinary-hair-density.jpg": {
+    "width": 402,
+    "height": 1074,
+    "purpose": "product",
+    "originalUrl": "/media/catalogue/publication-selection/originals/ordinary-hair-density.jpg"
+  },
+  "/media/catalogue/publication-selection/swarovski-tasse.jpg": {
+    "width": 606,
+    "height": 349,
+    "purpose": "product",
+    "originalUrl": "/media/catalogue/publication-selection/originals/swarovski-tasse.jpg"
+  }
+}

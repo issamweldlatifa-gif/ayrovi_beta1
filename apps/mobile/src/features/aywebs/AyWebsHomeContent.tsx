@@ -29,7 +29,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';

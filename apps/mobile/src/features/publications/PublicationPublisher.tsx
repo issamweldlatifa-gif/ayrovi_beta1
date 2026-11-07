@@ -1,3 +1,4 @@
+import { PUBLICATION_SOCIAL_SURFACE } from '../../../../../shared/publicationPresentation';
 import { Pressable, View, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -132,18 +133,22 @@ export function PublicationPublisher({
           style={[
             styles.follow,
             {
-              borderColor: ink,
+              borderColor: PUBLICATION_SOCIAL_SURFACE,
               opacity: busy ? OPACITY.disabled : 1,
               flexDirection: locale === 'ar' ? 'row-reverse' : 'row',
             },
           ]}
         >
           {following ? (
-            <Ionicons name="checkmark-outline" size={PM.verified} color={ink} />
+            <Ionicons
+              name="checkmark-outline"
+              size={PM.verified}
+              color={P.ink}
+            />
           ) : null}
           <AppText
             variant="captionStrong"
-            color={ink}
+            color={P.ink}
             style={
               locale === 'ar' ? undefined : { fontFamily: FONTS.latin.bold }
             }
@@ -185,9 +190,9 @@ const styles = StyleSheet.create({
     minHeight: 44,
     paddingHorizontal: 12,
     gap: 4,
-    borderWidth: 1,
+    borderWidth: 0,
     borderRadius: RADIUS.full,
-    backgroundColor: 'transparent',
+    backgroundColor: PUBLICATION_SOCIAL_SURFACE,
     alignItems: 'center',
     justifyContent: 'center',
   },

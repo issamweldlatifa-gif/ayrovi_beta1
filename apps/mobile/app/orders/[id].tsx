@@ -1,3 +1,4 @@
+import { BackButton } from '@/design/BackButton';
 /**
  * Détail d'une commande — l'état vu par le serveur, sans rien inventer.
  *
@@ -15,7 +16,6 @@ import { useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import * as WebBrowser from 'expo-web-browser';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button, Card, Field, KeyValue } from '@/design/ui';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
@@ -120,19 +120,7 @@ export default function OrderDetailScreen() {
       ]}
     >
       <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          onPress={() => goBack('/orders')}
-          style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
-        >
-          <Ionicons
-            name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-            size={theme.iconSize.md}
-            color={theme.colors.ink}
-            accessibilityElementsHidden
-          />
-        </Pressable>
+        <BackButton onPress={() => goBack('/orders')} label={t('common.back')} color={theme.colors.ink} />
         <AppText variant="h3" style={styles.headerTitle}>
           {order.data?.orderNumber || t('order.title')}
         </AppText>

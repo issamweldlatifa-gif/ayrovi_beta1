@@ -1,3 +1,4 @@
+import { BackButton } from '@/design/BackButton';
 /**
  * Page légale DANS l’application (conditions, confidentialité).
  *
@@ -6,10 +7,9 @@
  * l’écran précédent (la connexion, par exemple). Police et couleurs = celles de
  * l’application, sens de lecture selon la langue.
  */
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { goBack } from '@/design/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
@@ -80,23 +80,7 @@ export function LegalScreen({ docId }: { docId: LegalDocId }) {
           },
         ]}
       >
-        <Pressable
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          hitSlop={8}
-          style={({ pressed }) => [
-            styles.back,
-            { width: theme.geometry.minTarget, height: theme.geometry.minTarget, opacity: pressed ? theme.opacity.subtle : 1 },
-          ]}
-        >
-          <Ionicons
-            name={theme.isRTL ? 'arrow-forward' : 'arrow-back'}
-            size={theme.iconSize.md}
-            color={theme.colors.ink}
-            accessibilityElementsHidden
-          />
-        </Pressable>
+        <BackButton onPress={onBack} label={t('common.back')} color={theme.colors.ink} />
         <AppText variant="h3" numberOfLines={1} style={styles.barTitle}>
           {t(titleKey)}
         </AppText>

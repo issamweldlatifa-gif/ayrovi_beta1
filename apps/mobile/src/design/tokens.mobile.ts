@@ -1,3 +1,4 @@
+import { PUBLICATION_SOCIAL_SURFACE, PUBLICATION_LIKE, PUBLICATION_DISLIKE } from '../../../../shared/publicationPresentation';
 /**
  * Jetons propres à React Native — écrits à la main, et c'est volontaire.
  *
@@ -750,7 +751,10 @@ export const FOOTER_THEME = {
 } as const;
 
 /** Publication is deliberately a white editorial space, even in system dark mode. */
+export const NAVIGATION_ARROW_SIZE = 32;
 export const PUBLICATION_THEME = {
+  socialSurface: PUBLICATION_SOCIAL_SURFACE, like: PUBLICATION_LIKE, dislike: PUBLICATION_DISLIKE,
+  commentPaper: '#F4F5F8', reactionError: '#A61B36', dotInactive: '#747474', dotSurface: '#F0F0F0',
   /** Publisher verification seal, distinct from the primary action blue. */
   verified: '#1877F2',
   paper: BRAND.white, ink: BRAND.black, muted: NEUTRALS.textSecondary,

@@ -1,6 +1,6 @@
 /** Compact presentation of a genuine linked catalogue product. No parallel cart or pricing logic. */
 import { Pressable, StyleSheet, View } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { router } from 'expo-router';
 import type { LinkedProduct } from '@/api/linkedProduct';
 import { mediaUrl } from '@/api/client';

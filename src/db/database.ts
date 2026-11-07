@@ -1,3 +1,4 @@
+import { upgradePublicationMediaPresentation } from '../catalogue/upgradePublicationMediaPresentation';
 import { reserveCatalogueSale, catalogId } from '../catalogue/localSale';
 import { installPublicationSelection } from '../catalogue/installPublicationSelection';
 import { installPublicationShowcase } from '../services/publicationShowcase';
@@ -352,6 +353,7 @@ export class QatafoDatabase {
     this.ensureColumn('publications', 'media_origin', "TEXT NOT NULL DEFAULT 'uploaded'");
     for (const [name, definition] of Object.entries({
       post_type: "TEXT NOT NULL DEFAULT 'image'", media_json: "TEXT NOT NULL DEFAULT '[]'", description: "TEXT NOT NULL DEFAULT ''",
+      show_title: 'INTEGER NOT NULL DEFAULT 1',
       description_position: "TEXT NOT NULL DEFAULT 'below'", sponsored: 'INTEGER NOT NULL DEFAULT 0', sponsor_name: "TEXT NOT NULL DEFAULT ''",
       template_id: "TEXT NOT NULL DEFAULT 'auto'", action_label: "TEXT NOT NULL DEFAULT ''", action_target: "TEXT NOT NULL DEFAULT 'detail'",
       audience: "TEXT NOT NULL DEFAULT ''", topic: "TEXT NOT NULL DEFAULT ''",
@@ -387,6 +389,7 @@ export class QatafoDatabase {
     this.runOnceDataMigration('publication_visible_showcase_v1', () => { installPublicationShowcase(this); });
     this.rebrandBlueV1();
     this.runOnceDataMigration('publication_owner_products_v1', () => { installPublicationSelection(this); });
+    this.runOnceDataMigration('publication_media_presentation_v1', () => { upgradePublicationMediaPresentation(this); });
   }
 
   /** One-shot migration of persisted brand configuration, not merchandise/media or arbitrary copy. */
@@ -1675,6 +1678,14 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_content_products_content ON content_products(content_kind, content_id, sort_order);
       CREATE INDEX IF NOT EXISTS idx_content_products_product ON content_products(product_id);
 
+      CREATE TABLE IF NOT EXISTS publication_dislikes (
+        target_id TEXT NOT NULL, account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        created_at TEXT NOT NULL, PRIMARY KEY(target_id,account_id)
+      );
+      CREATE TABLE IF NOT EXISTS social_comment_replies (
+        comment_id TEXT PRIMARY KEY REFERENCES story_interactions(id) ON DELETE CASCADE,
+        parent_id TEXT NOT NULL REFERENCES story_interactions(id) ON DELETE CASCADE
+      );
       CREATE TABLE IF NOT EXISTS story_interactions(
         id TEXT PRIMARY KEY,
         target_id TEXT NOT NULL,

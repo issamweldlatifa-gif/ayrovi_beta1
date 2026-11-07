@@ -7,7 +7,7 @@ import type { Publication } from './social';
 
 export interface FeedPost extends Publication {
   content?: PublicationContent; publisherAvatar?: string; publisherOfficial?: boolean; following?: boolean; saved?: boolean; views?: number; shares?: number;
-  generated: boolean; category: string; channelName: string; liked: boolean; likes: number; comments: number; products: LinkedProduct[];
+  disliked?: boolean; generated: boolean; category: string; channelName: string; liked: boolean; likes: number; comments: number; products: LinkedProduct[];
 }
 export interface FeedPage { items: FeedPost[]; nextCursor: string | null }
 export function parseFeedPage(value: unknown): FeedPage {
@@ -21,13 +21,13 @@ export function parseFeedPage(value: unknown): FeedPage {
     const product = parseLinkedProduct(row.product);
     let media: PublicationMedia[] = [];
     try { const raw = typeof row.media_json === 'string' ? JSON.parse(row.media_json) : []; if (Array.isArray(raw)) media = raw.filter(m => m && ['image','video'].includes(m.type) && typeof m.url === 'string'); } catch { /* legacy cover remains available */ }
-    const content: PublicationContent = { template: PUBLICATION_TEMPLATES.includes(row.template_id as any) ? row.template_id as PublicationContent['template'] : 'auto', actionLabel: text(row.action_label), actionTarget: row.action_target === 'products' ? 'products' : 'detail', type: (row.post_type || 'image') as PublicationContent['type'], media,
+    const content: PublicationContent = { showTitle: row.show_title !== 0 && row.show_title !== false, template: PUBLICATION_TEMPLATES.includes(row.template_id as any) ? row.template_id as PublicationContent['template'] : 'auto', actionLabel: text(row.action_label), actionTarget: row.action_target === 'products' ? 'products' : 'detail', type: (row.post_type || 'image') as PublicationContent['type'], media,
       description: text(row.description), descriptionPosition: row.description_position === 'above' ? 'above' : 'below', sponsored: row.sponsored === 1 || row.sponsored === true, sponsorName: text(row.sponsor_name), audience: text(row.audience), topic: text(row.topic) };
 
     return { content, publisherAvatar: text(row.channel_avatar), publisherOfficial: row.channel_official === 1, following: row.following === 1, saved: row.saved === 1,
       views: count(row.views), shares: count(row.shares), id: text(row.id), title: text(row.title), subtitle: text(row.subtitle), channelId: text(row.channel_id),
       imageUrl: text(row.image_url), publishAt: text(row.publish_at), category: text(row.category), channelName: text(row.channel_name),
-      generated: row.media_origin === 'generated', liked: row.liked === true || row.liked === 1, likes: count(row.likes), comments: count(row.comments), product,
+      disliked: row.disliked === true || row.disliked === 1, generated: row.media_origin === 'generated', liked: row.liked === true || row.liked === 1, likes: count(row.likes), comments: count(row.comments), product,
       products: Array.isArray(row.products) ? row.products.map(parseLinkedProduct).filter((p): p is LinkedProduct => !!p) : product ? [product] : [] };
   });
   return { items, nextCursor: data.nextCursor as string | null };

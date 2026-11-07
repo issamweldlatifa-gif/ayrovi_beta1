@@ -33,6 +33,7 @@ export interface AppImageProps {
   fallbackUris?: readonly (string | null | undefined)[];
   /** Visuel embarqué dans l'application (`require('…/x.jpg')`) — prioritaire sur `uri`. */
   localSource?: number;
+  contentPosition?: { left: `${number}%`; top: `${number}%` } | 'center';
   contentFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
   style?: StyleProp<ImageStyle>;
   /** Texte lu par le lecteur d'écran — le nom du produit, par exemple. */
@@ -103,7 +104,7 @@ export function useImageCacheGuard(): void {
 }
 
 export function AppImage({
-  uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', style,
+  uri, fallbackUri, fallbackUris = [], localSource, contentFit = 'cover', contentPosition, style,
   accessibilityLabel, decorative = false, background, tintColor, recyclingKey, blurRadius = 0, highRes = false, onSettled, onDimensions, onError, testID,
 }: AppImageProps) {
   const theme = useTheme();
@@ -166,6 +167,7 @@ export function AppImage({
       testID={testID}
       source={localSource ?? { uri: activeUri as string }}
       contentFit={contentFit}
+      contentPosition={contentPosition}
       /* Un `localSource` (`require(...)`) est déjà embarqué dans l'APK : le mettre
          sur disque dans Glide (`CachePolicy.DISK` par défaut) est inutile et crée
          des collisions d'entiers `R.drawable` entre deux builds de même

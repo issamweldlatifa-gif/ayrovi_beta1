@@ -1,3 +1,4 @@
+import { BackButton } from '@/design/BackButton';
 /**
  * Mes commandes — la liste complète, telle que le serveur la connaît.
  *
@@ -10,7 +11,6 @@ import { goBack } from '@/design/navigation';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Card } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
@@ -48,19 +48,7 @@ export default function OrdersScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingTop: insets.top + theme.space[2] }]}>
       <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.back')}
-          onPress={() => goBack('/')}
-          style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center' }}
-        >
-          <Ionicons
-            name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-            size={theme.iconSize.md}
-            color={theme.colors.ink}
-            accessibilityElementsHidden
-          />
-        </Pressable>
+        <BackButton onPress={() => goBack('/')} label={t('common.back')} color={theme.colors.ink} />
         <View style={styles.headerText}>
           <AppText variant="h2">{t('orders.title')}</AppText>
           <AppText variant="caption" color={theme.colors.muted}>{t('orders.subtitle')}</AppText>

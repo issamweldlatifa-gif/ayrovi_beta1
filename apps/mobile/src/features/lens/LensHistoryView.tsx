@@ -7,7 +7,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 
 import { fetchLensHistory, type LensHistoryItem } from '@/api/lens';
 import { AppImage } from '@/design/appImage';

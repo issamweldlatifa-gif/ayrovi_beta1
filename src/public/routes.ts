@@ -789,18 +789,19 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const accountId = (req as any).customer?.id || '';
     const rows = db.all<any>(`SELECT pub.id,pub.title,pub.subtitle,pub.image_url,pub.channel_id,pub.category,pub.media_origin,pub.publish_at,pub.content_mode,
       channel.name channel_name,channel.avatar channel_avatar,channel.official channel_official,
-      pub.template_id,pub.action_label,pub.action_target,pub.post_type,pub.media_json,pub.description,pub.description_position,pub.sponsored,pub.sponsor_name,pub.audience,pub.topic,
+      pub.show_title,pub.template_id,pub.action_label,pub.action_target,pub.post_type,pub.media_json,pub.description,pub.description_position,pub.sponsored,pub.sponsor_name,pub.audience,pub.topic,
       EXISTS(SELECT 1 FROM publication_follows f WHERE f.publisher_id=pub.channel_id AND f.account_id=?) following,
       EXISTS(SELECT 1 FROM publication_preferences pref WHERE pref.publication_id=pub.id AND pref.account_id=? AND pref.saved=1) saved,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='view') views,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='share') shares,
       EXISTS(SELECT 1 FROM story_interactions i WHERE i.target_id=pub.id AND i.type='like' AND i.account_id=?) liked,
+      EXISTS(SELECT 1 FROM publication_dislikes d WHERE d.target_id=pub.id AND d.account_id=?) disliked,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='like') likes,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='comment') comments,
       ${LINKED_PRODUCT_JOIN_SELECT}
       FROM publications pub LEFT JOIN products p ON p.id=pub.product_id
       LEFT JOIN story_publishers channel ON channel.id=pub.channel_id
-      WHERE ${where.join(' AND ')} ORDER BY pub.publish_at DESC,pub.id DESC LIMIT ?`, accountId, accountId, accountId, ...args, limit + 1);
+      WHERE ${where.join(' AND ')} ORDER BY pub.publish_at DESC,pub.id DESC LIMIT ?`, accountId, accountId, accountId, accountId, ...args, limit + 1);
     const hasMore = rows.length > limit;
     const items = rows.slice(0, limit).map(withLinkedProduct);
     attachContentProducts(db, 'publication', items);
@@ -913,23 +914,23 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const id = String(req.query.targetId || '').trim();
     if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) return res.status(400).json({ success: false, error: 'Cible invalide.' });
     if (!publishedTarget(id)) return res.status(404).json({ success: false, error: 'Contenu introuvable.' });
-    const rows = db.all<any>(`SELECT i.id,i.text,i.created_at,c.display_name author
+    const rows = db.all<any>(`SELECT i.id,i.text,i.created_at,c.display_name author,(SELECT parent_id FROM social_comment_replies r WHERE r.comment_id=i.id) parent_id
       FROM story_interactions i LEFT JOIN customer_accounts c ON c.id=i.account_id
       WHERE i.target_id=? AND i.type='comment' ORDER BY i.created_at DESC LIMIT 100`, id).reverse();
-    res.json({ success: true, data: rows.map((row) => ({ id: row.id, author: row.author || 'Membre ZAYROVI', text: row.text, createdAt: row.created_at })) });
+    res.json({ success: true, data: rows.map((row) => ({ id: row.id, author: row.author || 'Membre ZAYROVI', text: row.text, createdAt: row.created_at, parentId: row.parent_id || null })) });
   });
 
   router.post('/social/interact', optionalCustomer(db), (req, res) => {
     const type = String(req.body?.type || '');
     const targetId = String(req.body?.targetId || '').trim();
-    if (!['like', 'comment', 'view', 'share'].includes(type) || !/^[A-Za-z0-9_-]{1,120}$/.test(targetId)) {
+    if (!['like', 'reaction', 'comment', 'view', 'share'].includes(type) || !/^[A-Za-z0-9_-]{1,120}$/.test(targetId)) {
       return res.status(400).json({ success: false, code: 'INVALID_SOCIAL_INTERACTION', error: 'Interaction invalide.' });
     }
     const target = publishedTarget(targetId);
     if (!target) return res.status(404).json({ success: false, code: 'SOCIAL_TARGET_NOT_FOUND', error: 'Contenu introuvable.' });
 
     const customer = (req as any).customer || null;
-    if ((type === 'like' || type === 'comment') && !customer) {
+    if ((type === 'like' || type === 'reaction' || type === 'comment') && !customer) {
       return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', error: 'Créez un compte ou connectez-vous pour interagir.' });
     }
     const guestSession = String(req.headers['x-session-id'] || '').trim();
@@ -943,27 +944,42 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const guestHash = accountId ? null : owner;
     const now = new Date().toISOString();
 
-    if (type === 'like') {
-      const liked = db.transaction(() => {
+    if (type === 'like' || type === 'reaction') {
+      const requested = req.body?.reaction;
+      if (type === 'reaction' && !['like','dislike',null].includes(requested)) return res.status(400).json({ success:false, error:'Réaction invalide.' });
+      if (type === 'reaction' && target.source !== 'publication') return res.status(400).json({ success:false, error:'Réaction réservée aux publications.' });
+      const reaction = db.transaction(() => {
         const existing = db.get<any>(`SELECT id FROM story_interactions WHERE target_id=? AND type='like' AND account_id=?`, targetId, accountId);
-        if (existing) db.run('DELETE FROM story_interactions WHERE id=?', existing.id);
-        else db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at)
-          VALUES (?,?,?,?,?,NULL,NULL,?)`,
-        `int_${createHash('sha256').update(`${owner}:${targetId}:like`).digest('hex').slice(0, 32)}`, targetId, target.kind, 'like', accountId, now);
-        syncReelCounters(targetId, target, now);
-        return !existing;
+        const next = type === 'like' ? (existing ? null : 'like') : requested;
+        db.run("DELETE FROM story_interactions WHERE target_id=? AND type='like' AND account_id=?",targetId,accountId);
+        db.run('DELETE FROM publication_dislikes WHERE target_id=? AND account_id=?',targetId,accountId);
+        if (next === 'like') db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,created_at) VALUES (?,?,?,?,?,?)`,
+          `int_${createHash('sha256').update(`${owner}:${targetId}:like`).digest('hex').slice(0,32)}`,targetId,target.kind,'like',accountId,now);
+        if (next === 'dislike') db.run('INSERT INTO publication_dislikes VALUES (?,?,?)',targetId,accountId,now);
+        syncReelCounters(targetId,target,now);
+        return next;
       });
       const counts = interactionCounts(targetId);
-      return res.json({ success: true, data: { liked, likesCount: counts.likes, counts } });
+      return res.json({ success:true, data:{ liked:reaction === 'like', disliked:reaction === 'dislike', reaction, likesCount:counts.likes, counts } });
     }
 
     if (type === 'comment') {
       const text = String(req.body?.text || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500);
       if (text.length < 2) return res.status(400).json({ success: false, error: 'Commentaire trop court.' });
-      const id = `int_${randomUUID()}`;
-      db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at)
+      const parentId = req.body?.parentId || null;
+      if (parentId && (typeof parentId !== 'string' || !db.get("SELECT id FROM story_interactions WHERE id=? AND target_id=? AND type='comment'", parentId,targetId))) return res.status(400).json({success:false,error:'Commentaire parent introuvable.'});
+      const requestId=req.body?.clientRequestId;
+      if(requestId !== undefined && (typeof requestId !== 'string' || !/^[A-Za-z0-9_-]{8,120}$/.test(requestId))) return res.status(400).json({success:false,error:'Identifiant de commentaire invalide.'});
+      const id = requestId ? `int_${createHash('sha256').update(`${owner}:${targetId}:comment:${requestId}`).digest('hex').slice(0,32)}` : `int_${randomUUID()}`;
+      const existing=db.get<any>("SELECT text,(SELECT parent_id FROM social_comment_replies WHERE comment_id=story_interactions.id) parent_id,created_at FROM story_interactions WHERE id=?",id);
+      if(existing) {
+        if(existing.text !== text || (existing.parent_id || null) !== parentId) return res.status(409).json({success:false,error:'Ce commentaire a déjà été envoyé avec un contenu différent.'});
+        return res.json({success:true,data:{id,author:customer.displayName || 'Membre ZAYROVI',text:existing.text,createdAt:existing.created_at,parentId}});
+      }
+      db.transaction(() => { db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at)
         VALUES (?,?,?,?,?,NULL,?,?)`, id, targetId, target.kind, 'comment', accountId, text, now);
-      return res.status(201).json({ success: true, data: { id, author: customer.displayName || 'Membre ZAYROVI', text, createdAt: now } });
+      if (parentId) db.run('INSERT INTO social_comment_replies VALUES (?,?)',id,parentId); });
+      return res.status(201).json({ success: true, data: { id, author: customer.displayName || 'Membre ZAYROVI', text, createdAt: now, parentId } });
     }
 
     // Les vues et partages sont comptés par propriétaire unique afin d'éviter le gonflement artificiel.

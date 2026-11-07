@@ -1,3 +1,4 @@
+import { BackButton } from '@/design/BackButton';
 /**
  * Panier officiel unifié ZAYROVI (style Bag / Zalando) :
  *   • Zone centrale défilante (`ScrollView flex: 1`) pour la liste des articles :
@@ -10,7 +11,7 @@
  */
 import { type ReactNode, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 
 import { PAYMENT_LOGOS } from '@/config/paymentLogos';
 import { FOOTER_THEME } from '@/design/tokens.mobile';
@@ -448,20 +449,7 @@ export function OfficialCartScaffold({
         ]}
       >
         {onBack ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('common.back')}
-            onPress={onBack}
-            hitSlop={8}
-            style={styles.backBtn}
-          >
-            <Ionicons
-              name={theme.isRTL ? 'chevron-forward' : 'chevron-back'}
-              size={theme.iconSize.md}
-              color={theme.colors.ink}
-              accessibilityElementsHidden
-            />
-          </Pressable>
+          <BackButton onPress={onBack} label={t('common.back')} color={theme.colors.ink} />
         ) : null}
         <AppText variant="h3" numberOfLines={1} style={styles.topBarTitle}>
           {headerLabel}

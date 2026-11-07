@@ -1,3 +1,12 @@
+import { Play } from '../components/QatafoIcons';
+import {
+  mediaFit,
+  mediaPosition,
+  mediaRatio,
+  tileRatio,
+  showsPublicationTitle,
+  PUBLICATION_SOCIAL_SURFACE,
+} from '../../../shared/publicationPresentation';
 import {
   resolvePublicationTemplate,
   PUBLICATION_EDITORIAL_RATIO,
@@ -17,9 +26,6 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
   const captionFirst = (CAPTION_FIRST_TEMPLATES as readonly string[]).includes(
     template
   );
-  const naturalHero =
-    captionFirst ||
-    ((form.template_id || 'auto') === 'auto' && template === 'campaign');
   const social = (SOCIAL_TEMPLATES as readonly string[]).includes(template);
   const split = template === 'split';
   const campaign = template === 'campaign';
@@ -48,7 +54,10 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
           )[form.category] || form.category}
         </small>
       ) : null}
-      {!captionFirst || !(form.description || form.subtitle) ? (
+      {showsPublicationTitle(template) &&
+      form.show_title !== false &&
+      form.show_title !== 0 &&
+      form.title ? (
         <strong
           style={{
             fontSize: campaign
@@ -118,20 +127,44 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
                       position: 'relative',
                       flex: 1,
                       minWidth: 0,
-                      aspectRatio: '1',
+                      aspectRatio: String(
+                        tileRatio(row.map((t) => media[t.index]))
+                      ),
+                      background: 'white',
                       overflow: 'hidden',
                     }}
                   >
                     <img
-                      src={media[tile.index].url}
+                      src={
+                        media[tile.index].type === 'video'
+                          ? media[tile.index].poster
+                          : media[tile.index].url
+                      }
                       alt={media[tile.index].alt || `Image ${tile.index + 1}`}
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: media[tile.index].fit || 'cover',
+                        objectFit: mediaFit(media[tile.index]),
+                        objectPosition: mediaPosition(media[tile.index]),
+                        transform: `scale(${media[tile.index].scale || 1})`,
                         display: 'block',
                       }}
                     />
+                    {media[tile.index].type === 'video' ? (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          right: 8,
+                          bottom: 8,
+                          background: 'black',
+                          color: 'white',
+                          padding: 6,
+                          borderRadius: 16,
+                        }}
+                      >
+                        <Play size={20} />
+                      </span>
+                    ) : null}
                     {tile.remaining ? (
                       <span
                         style={{
@@ -160,13 +193,17 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
             style={{
               display: 'block',
               width: '100%',
-              aspectRatio: naturalHero
-                ? undefined
-                : campaign || template === 'carousel'
-                ? String(PUBLICATION_EDITORIAL_RATIO)
-                : '4/5',
-              height: naturalHero ? 'auto' : undefined,
-              objectFit: media[0]?.fit || 'cover',
+              aspectRatio: String(
+                mediaRatio(
+                  media[0] || {},
+                  campaign ? PUBLICATION_EDITORIAL_RATIO : 4 / 5
+                )
+              ),
+              height: 'auto',
+              background: 'white',
+              objectFit: mediaFit(media[0] || {}),
+              objectPosition: mediaPosition(media[0] || {}),
+              transform: `scale(${media[0]?.scale || 1})`,
             }}
           />
         ) : (
@@ -323,14 +360,21 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
           ) : null}
         </div>
       ) : null}
-      <div aria-hidden style={{ marginTop: 12, padding: 12, opacity: 0.7 }}>
+      <div
+        aria-hidden
+        style={{
+          marginTop: 12,
+          padding: 12,
+          borderRadius: 30,
+          background: PUBLICATION_SOCIAL_SURFACE,
+        }}
+      >
         ♡ · Commentaires · Partager · Enregistrer
       </div>
       <small>
         Prévisualisation de composition. Les compteurs réels sont affichés dans
-        l’application. Albums : 2–10 images, duo : exactement 2, photo/shopping
-        : 1 image. Carousel : 2–10 images ; modèle vidéo : fichier vidéo et
-        couverture requis.
+        l’application. Albums et carousel : médias mixtes, maximum 10 ; duo : 2
+        ; photo sociale/shopping : 1. Chaque vidéo exige une couverture.
       </small>
     </figure>
   );

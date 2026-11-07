@@ -18,7 +18,7 @@ import { apiGet, apiSend } from './client';
 import type { RequestOptions } from './client';
 import { parseLinkedProduct, type LinkedProduct } from './linkedProduct';
 
-export type SocialInteractionType = 'like' | 'comment' | 'view' | 'share';
+export type SocialInteractionType = 'reaction' | 'like' | 'comment' | 'view' | 'share';
 
 export interface SocialCounts {
   likes: number;
@@ -77,9 +77,11 @@ export interface SocialComment {
   author: string;
   text: string;
   createdAt: string;
+  parentId?: string | null;
 }
 
 export interface InteractionResult {
+  disliked?: boolean;
   /** للإعجاب: هل صار «معجباً» بعد الضغطة (الخادم يبدّل). */
   liked: boolean | null;
   likesCount: number;
@@ -210,7 +212,7 @@ export async function fetchComments(targetId: string, options: RequestOptions = 
         id,
         author: str(entry.author) || 'Membre ZAYROVI',
         text: str(entry.text),
-        createdAt: str(entry.createdAt),
+        createdAt: str(entry.createdAt), parentId: str(entry.parentId) || null,
       }];
     });
 }
@@ -226,12 +228,18 @@ export async function sendInteraction(input: {
   type: SocialInteractionType;
   targetId: string;
   text?: string;
+  reaction?: 'like' | 'dislike' | null;
+  parentId?: string;
+  clientRequestId?: string;
   sessionId?: string;
 }, options: RequestOptions = {}): Promise<InteractionResult> {
   const headers: Record<string, string> = { ...(options.headers ?? {}) };
   if (input.sessionId) headers['x-session-id'] = input.sessionId;
 
   const body: Record<string, unknown> = { type: input.type, targetId: input.targetId };
+  if (input.type === 'reaction') body.reaction = input.reaction;
+  if (input.clientRequestId) body.clientRequestId = input.clientRequestId;
+  if (input.parentId) body.parentId = input.parentId;
   if (input.type === 'comment') body.text = String(input.text ?? '').slice(0, 500);
 
   const { data } = await apiSend<unknown>('POST', '/api/public/social/interact', {
@@ -245,6 +253,7 @@ export async function sendInteraction(input: {
   const comment = record(payload.comment ?? (payload.id ? payload : undefined));
 
   return {
+    disliked: payload.disliked === true,
     liked: typeof payload.liked === 'boolean' ? payload.liked : null,
     likesCount: num(payload.likesCount),
     counts: Object.keys(counts).length > 0 ? {
@@ -254,7 +263,7 @@ export async function sendInteraction(input: {
       shares: num(counts.shares),
     } : null,
     comment: str(comment.id)
-      ? { id: str(comment.id), author: str(comment.author) || 'Membre ZAYROVI', text: str(comment.text), createdAt: str(comment.createdAt) }
+      ? { id: str(comment.id), author: str(comment.author) || 'Membre ZAYROVI', text: str(comment.text), createdAt: str(comment.createdAt), parentId: str(comment.parentId) || null }
       : null,
     recorded: typeof payload.recorded === 'boolean' ? payload.recorded : null,
   };

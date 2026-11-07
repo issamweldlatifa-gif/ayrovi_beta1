@@ -4,7 +4,7 @@
  */
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 
 import { AppImage } from '@/design/appImage';
 import { rowDirectionFor } from '@/design/layoutLogic';
