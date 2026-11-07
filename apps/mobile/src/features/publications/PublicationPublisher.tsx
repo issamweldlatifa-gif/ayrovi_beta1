@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, View, StyleSheet } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -51,9 +51,11 @@ export function PublicationVerifiedBadge() {
 export function PublicationPublisher({
   post,
   dark = false,
+  children,
 }: {
   post: FeedPost;
   dark?: boolean;
+  children?: ReactNode;
 }) {
   const { locale } = useI18n();
   const ar = locale === 'ar';
@@ -134,7 +136,7 @@ export function PublicationPublisher({
   return (
     <View style={{ gap: 4 }}>
       <View testID="publication-publisher-header" style={styles.row}>
-        <View style={styles.name}>
+        <View testID="publication-publisher-column" style={styles.name}>
           <View style={styles.identity}>
             <AppText
               testID="publication-publisher-name"
@@ -152,45 +154,7 @@ export function PublicationPublisher({
             >
               {name}
             </AppText>
-            <Pressable
-              testID={`publication-follow-${post.id}`}
-              accessibilityRole="button"
-              accessibilityLabel={
-                following
-                  ? ar
-                    ? 'إلغاء متابعة الناشر'
-                    : 'Ne plus suivre cet éditeur'
-                  : ar
-                  ? 'متابعة الناشر'
-                  : 'Suivre cet éditeur'
-              }
-              accessibilityState={{
-                selected: following,
-                disabled: busy || session.status === 'loading',
-                busy,
-              }}
-              disabled={busy || session.status === 'loading'}
-              onPress={() => void follow()}
-              style={({ pressed }) => [
-                styles.followTarget,
-                {
-                  opacity: busy
-                    ? OPACITY.disabled
-                    : pressed
-                    ? OPACITY.subtle
-                    : 1,
-                },
-              ]}
-            >
-              <View testID="publication-follow-disc" style={styles.followDisc}>
-                <Ionicons
-                  name={following ? 'checkmark-outline' : 'add-outline'}
-                  size={ICON_SIZE.sm}
-                  color={P.paper}
-                  accessibilityElementsHidden
-                />
-              </View>
-            </Pressable>
+            {post.publisherOfficial ? <PublicationVerifiedBadge /> : null}
           </View>
           {post.content?.sponsored ? (
             <AppText variant="caption" color={dark ? P.paper : P.muted}>{`${
@@ -199,9 +163,13 @@ export function PublicationPublisher({
               post.content.sponsorName ? ` · ${post.content.sponsorName}` : ''
             }`}</AppText>
           ) : null}
+          {children}
         </View>
-        <View testID="publication-publisher-avatar" style={styles.avatarWrap}>
-          <View style={styles.avatar}>
+        <View
+          testID="publication-publisher-avatar-slot"
+          style={styles.avatarWrap}
+        >
+          <View testID="publication-publisher-avatar" style={styles.avatar}>
             {post.publisherAvatar ? (
               <AppImage
                 uri={mediaUrl(post.publisherAvatar)}
@@ -221,11 +189,41 @@ export function PublicationPublisher({
               </AppText>
             )}
           </View>
-          {post.publisherOfficial ? (
-            <View testID="publication-publisher-seal" style={styles.seal}>
-              <PublicationVerifiedBadge />
+          <Pressable
+            testID={`publication-follow-${post.id}`}
+            accessibilityRole="button"
+            accessibilityLabel={
+              following
+                ? ar
+                  ? 'إلغاء متابعة الناشر'
+                  : 'Ne plus suivre cet éditeur'
+                : ar
+                ? 'متابعة الناشر'
+                : 'Suivre cet éditeur'
+            }
+            accessibilityState={{
+              selected: following,
+              disabled: busy || session.status === 'loading',
+              busy,
+            }}
+            disabled={busy || session.status === 'loading'}
+            onPress={() => void follow()}
+            style={({ pressed }) => [
+              styles.followTarget,
+              {
+                opacity: busy ? OPACITY.disabled : pressed ? OPACITY.subtle : 1,
+              },
+            ]}
+          >
+            <View testID="publication-follow-disc" style={styles.followDisc}>
+              <Ionicons
+                name={following ? 'checkmark-outline' : 'add-outline'}
+                size={ICON_SIZE.sm}
+                color={P.paper}
+                accessibilityElementsHidden
+              />
             </View>
-          ) : null}
+          </Pressable>
         </View>
       </View>
       {error ? (
@@ -242,10 +240,13 @@ export function PublicationPublisher({
   );
 }
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12, minWidth: 0 },
-  name: { flex: 1, minWidth: 0, gap: 2 },
+  row: { minHeight: H.avatar + 12, minWidth: 0 },
+  name: { marginLeft: H.avatar + 12, minWidth: 0, gap: 4 },
   identity: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 0 },
   followTarget: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
     minWidth: 44,
     minHeight: 44,
     alignItems: 'center',
@@ -257,10 +258,19 @@ const styles = StyleSheet.create({
     height: H.follow,
     borderRadius: RADIUS.full,
     backgroundColor: P.ink,
+    borderWidth: 2,
+    borderColor: P.paper,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarWrap: { width: H.avatar, height: H.avatar, flexShrink: 0 },
+  avatarWrap: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: H.avatar + 12,
+    height: H.avatar + 12,
+    flexShrink: 0,
+  },
   avatar: {
     width: H.avatar,
     height: H.avatar,
@@ -271,12 +281,4 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   image: { width: '100%', height: '100%' },
-  seal: {
-    position: 'absolute',
-    left: 0,
-    bottom: 0,
-    borderRadius: RADIUS.full,
-    padding: H.sealEdge,
-    backgroundColor: P.paper,
-  },
 });

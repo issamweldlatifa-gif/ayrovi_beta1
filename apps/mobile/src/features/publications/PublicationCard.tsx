@@ -12,8 +12,8 @@ import {
   PUBLICATION_THEME as P,
   PUBLICATION_SPACING as S,
   ICON_SIZE,
+  PUBLICATION_PUBLISHER as H,
 } from '@/design/tokens.mobile';
-import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { resolvePublicationTemplate } from '../../../../../shared/publicationLayouts';
 
@@ -46,7 +46,6 @@ export function PublicationCard({
   ) => void;
 }) {
   const { locale } = useI18n();
-  const theme = useTheme();
   const ar = locale === 'ar';
   const template = resolvePublicationTemplate(
     post.content?.template,
@@ -115,7 +114,7 @@ export function PublicationCard({
         split
           ? styles.editorialCopy
           : campaign
-          ? [styles.campaignCopy, { marginHorizontal: -mediaInset }]
+          ? styles.campaignCopy
           : undefined,
       ]}
     >
@@ -162,16 +161,11 @@ export function PublicationCard({
       ]}
     >
       <View
-        style={[
-          styles.publisher,
-          { flexDirection: theme.isRTL ? 'row-reverse' : 'row' },
-        ]}
+        testID={`publication-editorial-header-${post.id}`}
+        style={styles.headerBlock}
       >
-        <View style={styles.publisherName}>
-          <PublicationPublisher post={post} />
-        </View>
+        <PublicationPublisher post={post}>{text}</PublicationPublisher>
       </View>
-      {text}
       <View
         testID={`publication-content-${post.id}`}
         style={
@@ -211,6 +205,18 @@ export function PublicationCard({
         onReaction={onReaction}
         onPreference={onPreference}
       />
+      <View
+        pointerEvents="none"
+        testID={`publication-separator-${post.id}`}
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: -mediaInset,
+          right: -mediaInset,
+          height: 1,
+          backgroundColor: P.line,
+        }}
+      />
     </View>
   );
 }
@@ -220,19 +226,15 @@ const styles = StyleSheet.create({
     marginBottom: S.post,
     gap: S.section,
     backgroundColor: P.paper,
-    borderBottomWidth: 1,
-    borderBottomColor: P.line,
   },
-  publisher: { alignItems: 'center', gap: 8 },
-  publisherName: { flex: 1, gap: 2 },
+  headerBlock: { gap: S.group, minHeight: H.avatar + 12 },
   content: { gap: S.section },
   editorial: { gap: 0, backgroundColor: P.splitPaper },
-  editorialCopy: { padding: S.inset, backgroundColor: P.splitPaper },
+  editorialCopy: { backgroundColor: P.splitPaper },
   splitMedia: { width: '100%' },
   campaign: { gap: 0 },
   campaignCopy: {
-    paddingHorizontal: 24,
-    paddingVertical: S.inset,
+    paddingVertical: S.group,
     backgroundColor: P.campaignPaper,
   },
   cta: {

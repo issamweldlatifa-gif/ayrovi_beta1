@@ -844,8 +844,8 @@ it('renders the publisher name as app-family text, never a wordmark pasted besid
   expect(name.props.children).toBe('Zayrovi Team');
   expect(name).toHaveStyle({
     fontFamily: 'PublicationPublisher-Bold',
-    fontSize: 24,
-    lineHeight: 30,
+    fontSize: 18,
+    lineHeight: 24,
   });
 });
 it('gives editorial and carousel their distinct landscape composition and headline hierarchy', async () => {
@@ -1077,11 +1077,7 @@ it.each(['feed', 'viewer'] as const)(
     );
     const heart = within(row).getByRole('button', { name: 'J’aime' });
     expect(heart).toHaveStyle({ minWidth: 44, minHeight: 44 });
-    if (presentation === 'viewer')
-      expect(heart).toHaveStyle({
-        backgroundColor: '#272727eb',
-      });
-    else expect(heart.props.style.backgroundColor).toBeUndefined();
+    expect(heart.props.style.backgroundColor).toBeUndefined();
   }
 );
 it('supports dark ink on a light viewer backdrop', async () => {
@@ -1093,9 +1089,9 @@ it('supports dark ink on a light viewer backdrop', async () => {
       onComments={jest.fn()}
     />
   );
-  expect(screen.getByRole('button', { name: 'J’aime' })).toHaveStyle({
-    backgroundColor: '#FFFFFFe6',
-  });
+  expect(
+    screen.getByRole('button', { name: 'J’aime' }).props.style.backgroundColor
+  ).toBeUndefined();
 });
 
 it('uses the official heading face for Publication without enlarging its label', async () => {
@@ -1105,7 +1101,7 @@ it('uses the official heading face for Publication without enlarging its label',
   });
 });
 
-it('reserves indicator clearance above the floating immersive actions', async () => {
+it('reserves separate toolbar, media and action slots in the immersive viewer', async () => {
   await mount(
     <PublicationViewer
       post={referencePost('carousel', 3)}
@@ -1116,10 +1112,16 @@ it('reserves indicator clearance above the floating immersive actions', async ()
     />
   );
   expect(screen.UNSAFE_getByType(PublicationMedia).props.indicatorBottom).toBe(
-    72
+    12
   );
   expect(screen.getByTestId('publication-viewer-actions')).toHaveStyle({
-    position: 'absolute',
+    minHeight: 76,
+  });
+  expect(
+    screen.getByTestId('publication-viewer-actions').props.style.position
+  ).toBeUndefined();
+  expect(screen.getByTestId('publication-viewer-toolbar')).toHaveStyle({
+    height: 60,
   });
 });
 
@@ -1134,9 +1136,12 @@ it.each([false, true])(
         onReaction={jest.fn()}
       />
     );
+    expect(screen.getByTestId('publication-separator-ui-post')).toHaveStyle({
+      height: 1,
+      backgroundColor: '#E5E5E5',
+      position: 'absolute',
+    });
     expect(screen.getByTestId('publication-ui-post')).toHaveStyle({
-      borderBottomWidth: 1,
-      borderBottomColor: '#E5E5E5',
       paddingBottom: 4,
       marginBottom: 12,
     });
@@ -1144,7 +1149,7 @@ it.each([false, true])(
 );
 
 it.each([false, true])(
-  'uses right avatar with attached real verification, no date or follow text (official=%s)',
+  'uses a left avatar with follow overlay and verification next to the name (official=%s)',
   async (official) => {
     await mount(
       <PublicationPublisher
@@ -1155,27 +1160,27 @@ it.each([false, true])(
         }}
       />
     );
-    expect(screen.getByTestId('publication-publisher-header')).toHaveStyle({
-      flexDirection: 'row',
+    expect(screen.getByTestId('publication-publisher-avatar-slot')).toHaveStyle(
+      { position: 'absolute', left: 0, top: 0, width: 56, height: 56 }
+    );
+    expect(screen.getByTestId('publication-publisher-avatar')).toHaveStyle({
+      width: 44,
+      height: 44,
     });
-    const row = screen.getByTestId('publication-publisher-header');
     expect(
-      (row.children[0] as any).findAllByProps({
-        testID: 'publication-publisher-name',
-      }).length
-    ).toBeGreaterThan(0);
-    expect(
-      (row.children[1] as any).findAllByProps({
-        testID: 'publication-publisher-avatar',
-      }).length
-    ).toBeGreaterThan(0);
+      screen.getByTestId('publication-publisher-avatar-slot')
+    ).toContainElement(
+      screen.getByRole('button', { name: 'Suivre cet éditeur' })
+    );
     expect(screen.queryByText(/07.*11.*2026/)).toBeNull();
     expect(screen.queryByText(/Suiv/)).toBeNull();
-    if (official)
+    if (official) {
       expect(
         screen.getByTestId('publication-publisher-avatar')
-      ).toContainElement(screen.getByTestId('publication-verified-badge'));
-    else expect(screen.queryByTestId('publication-verified-badge')).toBeNull();
+      ).not.toContainElement(screen.getByTestId('publication-verified-badge'));
+      expect(screen.getByTestId('publication-verified-badge')).toBeTruthy();
+    } else
+      expect(screen.queryByTestId('publication-verified-badge')).toBeNull();
   }
 );
 it('retains truthful sponsored disclosure in the compact publisher header', async () => {
@@ -1300,7 +1305,7 @@ it.each([
     const siblings = screen.getByTestId('publication-ui-post')
       .children as any[];
     const copyIndex = siblings.findIndex(
-      (child) => child.props?.testID === 'publication-copy-ui-post'
+      (child) => child.props?.testID === 'publication-editorial-header-ui-post'
     );
     const mediaIndex = siblings.findIndex(
       (child) => child.props?.testID === 'publication-content-ui-post'
@@ -1366,8 +1371,8 @@ it('confirms follow before switching to a check, prevents duplicate writes and c
   await mount(<PublicationPublisher post={post} />);
   const plus = screen.getByRole('button', { name: 'Suivre cet éditeur' });
   expect(screen.getByTestId('publication-publisher-avatar')).toHaveStyle({
-    width: 64,
-    height: 64,
+    width: 44,
+    height: 44,
   });
   expect(screen.getByTestId('publication-follow-disc')).toHaveStyle({
     width: 24,
@@ -1438,9 +1443,110 @@ it('restores a persisted follow and uses the publisher-only typography exception
   ).toBe(true);
   expect(screen.getByTestId('publication-publisher-name')).toHaveStyle({
     fontFamily: 'PublicationPublisher-Bold',
-    fontSize: 24,
+    fontSize: 18,
   });
   expect(screen.getByTestId('publication-publisher-name').props.children).toBe(
     'Zayrovi Team'
   );
+});
+
+it('aligns the copy column with the publisher name and keeps media independent', async () => {
+  await mount(
+    <PublicationCard
+      post={referencePost('caption_photo', 1)}
+      compact={false}
+      onComments={jest.fn()}
+      onReaction={jest.fn()}
+      mediaInset={16}
+    />
+  );
+  expect(
+    screen.getByTestId('publication-editorial-header-ui-post')
+  ).toHaveStyle({ gap: 4, minHeight: 56 });
+  expect(screen.getByTestId('publication-publisher-column')).toHaveStyle({
+    marginLeft: 56,
+  });
+  expect(screen.getByTestId('publication-publisher-column')).toContainElement(
+    screen.getByTestId('publication-copy-ui-post')
+  );
+  expect(screen.getByTestId('publication-separator-ui-post')).toHaveStyle({
+    left: -16,
+    right: -16,
+    height: 1,
+  });
+  expect(
+    screen.getByTestId('publication-publisher-avatar-slot')
+  ).toContainElement(screen.getByTestId('publication-follow-ui-post'));
+});
+
+it('opens real reaction options from the viewer toolbar and retains the original core', async () => {
+  await mount(
+    <PublicationViewer
+      post={post}
+      initialMediaIndex={0}
+      owner="ui-owner"
+      onClose={jest.fn()}
+      onPreference={jest.fn()}
+    />
+  );
+  fireEvent.press(screen.getByRole('button', { name: 'Options de réaction' }));
+  expect(screen.getByLabelText('Choisir une réaction')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Je n’aime pas' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Partager' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeTruthy();
+  expect(screen.getByTestId('publication-viewer-actions')).toHaveStyle({
+    backgroundColor: '#0A0A0A',
+  });
+});
+
+it('closes the fullscreen image through its accessible top-left close control', async () => {
+  const close = jest.fn();
+  await mount(
+    <PublicationViewer
+      post={post}
+      initialMediaIndex={0}
+      owner="ui-owner"
+      onClose={close}
+      onPreference={jest.fn()}
+    />
+  );
+  fireEvent.press(screen.getByRole('button', { name: 'Fermer l’image' }));
+  expect(close).toHaveBeenCalledTimes(1);
+});
+
+it('gates viewer toolbar reaction options behind the existing guest authentication sheet', async () => {
+  mockSession.status = 'signedOut';
+  await mount(
+    <PublicationViewer
+      post={post}
+      initialMediaIndex={0}
+      owner="guest"
+      onClose={jest.fn()}
+      onPreference={jest.fn()}
+    />
+  );
+  fireEvent.press(screen.getByRole('button', { name: 'Options de réaction' }));
+  expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
+  expect(
+    screen.UNSAFE_getAllByType(Modal).filter((node) => node.props.visible)
+  ).toHaveLength(1);
+});
+
+it('exits the fullscreen image with its close control even when comments are open', async () => {
+  const close = jest.fn();
+  await mount(
+    <PublicationViewer
+      post={post}
+      initialMediaIndex={0}
+      owner="ui-owner"
+      onClose={close}
+      onPreference={jest.fn()}
+    />
+  );
+  fireEvent.press(screen.getByRole('button', { name: 'Commentaires' }));
+  expect(
+    screen.getByRole('button', { name: 'Fermer les commentaires' })
+  ).toBeTruthy();
+  fireEvent.press(screen.getByRole('button', { name: 'Fermer l’image' }));
+  expect(close).toHaveBeenCalledTimes(1);
 });

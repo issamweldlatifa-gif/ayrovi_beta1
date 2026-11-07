@@ -2,6 +2,7 @@ import {
   PUBLICATION_THEME as P,
   RADIUS,
   ICON_SIZE,
+  PUBLICATION_METRICS as PM,
 } from '@/design/tokens.mobile';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
@@ -33,8 +34,11 @@ export function PublicationActions({
   onPreference,
   presentation = 'feed',
   backdrop = 'dark',
+  optionsRequest = 0,
 }: {
   presentation?: 'feed' | 'viewer';
+  /** Toolbar request to open the existing reaction picker, not a second action core. */
+  optionsRequest?: number;
   backdrop?: 'dark' | 'light';
   post: FeedPost;
   onComments: () => void;
@@ -53,6 +57,11 @@ export function PublicationActions({
   const client = useQueryClient();
   const [auth, setAuth] = useState(false);
   const [picker, setPicker] = useState(false);
+  useEffect(() => {
+    if (!optionsRequest) return;
+    if (session.status === 'signedIn') setPicker((open) => !open);
+    else setAuth(true);
+  }, [optionsRequest]);
   const [reaction, setReaction] = useState<'like' | 'dislike' | null>(
     post.disliked ? 'dislike' : post.liked ? 'like' : null
   );
@@ -165,13 +174,6 @@ export function PublicationActions({
     alignItems: 'center' as const,
     flexDirection: 'row' as const,
     gap: 4,
-    ...(immersive
-      ? {
-          backgroundColor: floatingSurface,
-          borderRadius: RADIUS.full,
-          paddingHorizontal: 8,
-        }
-      : {}),
   };
   return (
     <View
@@ -211,7 +213,7 @@ export function PublicationActions({
             >
               <Ionicons
                 name={v === 'like' ? 'heart' : 'thumbs-down-outline'}
-                size={ICON_SIZE.md}
+                size={PM.actionIcon}
                 color={v === 'like' ? PUBLICATION_LIKE : PUBLICATION_DISLIKE}
               />
               <AppText variant="captionStrong" color={ink}>
@@ -231,7 +233,7 @@ export function PublicationActions({
             onPress={() => setPicker(false)}
             style={button}
           >
-            <Ionicons name="close" size={ICON_SIZE.md} color={ink} />
+            <Ionicons name="close" size={PM.actionIcon} color={ink} />
           </Pressable>
         </View>
       ) : null}
@@ -284,7 +286,7 @@ export function PublicationActions({
                 ? 'heart'
                 : 'heart-outline'
             }
-            size={ICON_SIZE.md}
+            size={PM.actionIcon}
             color={
               reaction === 'like'
                 ? PUBLICATION_LIKE
@@ -299,23 +301,29 @@ export function PublicationActions({
             </AppText>
           ) : null}
         </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={ar ? 'خيارات التفاعل' : 'Options de réaction'}
-          onPress={() => {
-            if (account()) setPicker(!picker);
-          }}
-          style={button}
-        >
-          <Ionicons name="chevron-down" size={ICON_SIZE.sm} color={ink} />
-        </Pressable>
+        {!immersive ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={ar ? 'خيارات التفاعل' : 'Options de réaction'}
+            onPress={() => {
+              if (account()) setPicker(!picker);
+            }}
+            style={button}
+          >
+            <Ionicons name="chevron-down" size={ICON_SIZE.sm} color={ink} />
+          </Pressable>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={ar ? 'التعليقات' : 'Commentaires'}
           onPress={onComments}
           style={button}
         >
-          <Ionicons name="chatbubble-outline" size={ICON_SIZE.md} color={ink} />
+          <Ionicons
+            name="chatbubble-outline"
+            size={PM.actionIcon}
+            color={ink}
+          />
           {post.comments > 0 ? (
             <AppText variant="caption" color={ink}>
               {post.comments}
@@ -328,7 +336,7 @@ export function PublicationActions({
           onPress={share}
           style={button}
         >
-          <Ionicons name="share-outline" size={ICON_SIZE.md} color={ink} />
+          <Ionicons name="share-outline" size={PM.actionIcon} color={ink} />
         </Pressable>
         <Pressable
           accessibilityRole="button"
@@ -354,7 +362,7 @@ export function PublicationActions({
         >
           <Ionicons
             name={saved ? 'bookmark' : 'bookmark-outline'}
-            size={ICON_SIZE.md}
+            size={PM.actionIcon}
             color={ink}
           />
         </Pressable>

@@ -27,7 +27,6 @@ import {
   PUBLICATION_THEME as P,
   RADIUS,
   ICON_SIZE,
-  veil,
 } from '@/design/tokens.mobile';
 import { PublicationMedia } from './PublicationMedia';
 import {
@@ -84,18 +83,20 @@ export function PublicationViewer({
   const [gallery, setGallery] = useState(initialMediaIndex != null);
   const [index, setIndex] = useState(initialMediaIndex ?? 0);
   const [controls, setControls] = useState(true);
+  const [optionsRequest, setOptionsRequest] = useState(0);
   const [comments, setComments] = useState(false);
   const scrollY = useRef(0);
   const insets = useSafeAreaInsets();
   const { locale } = useI18n();
   const ar = locale === 'ar';
-  const closeGallery = () => {
-    if (comments) {
-      setComments(false);
-      return;
-    }
+  const exitGallery = () => {
+    setComments(false);
     if (initialMediaIndex != null) onClose();
     else setGallery(false);
+  };
+  const closeGallery = () => {
+    if (comments) setComments(false);
+    else exitGallery();
   };
   const detailGesture = useDismissGesture(onClose, () => scrollY.current <= 0);
   const galleryGesture = useDismissGesture(closeGallery, () => !comments);
@@ -124,7 +125,45 @@ export function PublicationViewer({
         >
           {gallery ? (
             <>
-              <View style={{ flex: comments ? 0.45 : 1, minHeight: 140 }}>
+              <View testID="publication-viewer-toolbar" style={styles.toolbar}>
+                {controls || comments ? (
+                  <>
+                    <Pressable
+                      testID="publication-viewer-close"
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        ar ? 'إغلاق الصورة' : 'Fermer l’image'
+                      }
+                      onPress={exitGallery}
+                      style={styles.viewerButton}
+                    >
+                      <Ionicons
+                        name="close"
+                        size={ICON_SIZE.md}
+                        color={P.paper}
+                      />
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        ar ? 'خيارات التفاعل' : 'Options de réaction'
+                      }
+                      onPress={() => setOptionsRequest((n) => n + 1)}
+                      style={styles.viewerButton}
+                    >
+                      <Ionicons
+                        name="ellipsis-horizontal-outline"
+                        size={ICON_SIZE.md}
+                        color={P.paper}
+                      />
+                    </Pressable>
+                  </>
+                ) : null}
+              </View>
+              <View
+                testID="publication-viewer-media-slot"
+                style={{ flex: comments ? 0.45 : 1, minHeight: 0 }}
+              >
                 <Animated.View
                   testID="publication-lightbox-gesture"
                   {...galleryGesture}
@@ -141,60 +180,30 @@ export function PublicationViewer({
                       immersive
                       initialIndex={index}
                       showIndicators={controls && !comments}
-                      indicatorBottom={72}
-                      onOpen={() => setControls(!controls)}
+                      indicatorBottom={12}
+                      onOpen={() => {
+                        setControls(!controls);
+                        setOptionsRequest(0);
+                      }}
                     />
                   </View>
                 </Animated.View>
-                {controls || comments ? (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={ar ? 'رجوع' : 'Retour'}
-                    onPress={closeGallery}
-                    style={{
-                      position: 'absolute',
-                      top: 4,
-                      left: ar ? undefined : 8,
-                      right: ar ? 8 : undefined,
-                      minWidth: 44,
-                      minHeight: 44,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      backgroundColor: veil(0.35),
-                      borderRadius: RADIUS.xs,
-                    }}
-                  >
-                    <NavigationIcon
-                      name={ar ? 'arrow-forward' : 'arrow-back'}
-                      color={P.paper}
-                    />
-                  </Pressable>
-                ) : null}
               </View>
-              {controls || comments ? (
-                <View
-                  testID="publication-viewer-actions"
-                  style={[
-                    { paddingHorizontal: 12, paddingVertical: 8 },
-                    !comments
-                      ? {
-                          position: 'absolute',
-                          bottom: insets.bottom + 8,
-                          left: 0,
-                          right: 0,
-                        }
-                      : undefined,
-                  ]}
-                >
+              <View
+                testID="publication-viewer-actions"
+                style={styles.viewerActions}
+              >
+                {controls || comments ? (
                   <PublicationActions
                     presentation="viewer"
                     backdrop="dark"
+                    optionsRequest={optionsRequest}
                     post={post}
                     onComments={() => setComments(!comments)}
                     onPreference={onPreference}
                   />
-                </View>
-              ) : null}
+                ) : null}
+              </View>
               {comments ? (
                 <View
                   style={{
@@ -320,6 +329,28 @@ export function PublicationViewer({
   );
 }
 const styles = StyleSheet.create({
+  toolbar: {
+    height: 60,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: VIDEO_BACKDROP,
+  },
+  viewerButton: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: RADIUS.full,
+    backgroundColor: P.viewerDarkSurface,
+  },
+  viewerActions: {
+    minHeight: 76,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
+    backgroundColor: VIDEO_BACKDROP,
+  },
   content: {
     padding: 12,
     gap: 16,

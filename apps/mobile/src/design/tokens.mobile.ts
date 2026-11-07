@@ -659,8 +659,8 @@ export type DerivedColors = ReturnType<typeof derivedColors>;
 /** Shared publication rhythm: one owner per boundary; touch targets retain their own geometry. */
 export const PUBLICATION_SPACING = { group: 4, section: 8, inset: 12, post: 12, rule: 4 } as const;
 /** Authorized publisher-only visual exception; global type and primary stay unchanged. */
-export const PUBLICATION_PUBLISHER = { font: 'PublicationPublisher-Bold', nameSize: 24, lineHeight: 30, avatar: 64, mark: 32, sealEdge: 1, follow: 24 } as const;
-export const PUBLICATION_METRICS = { icon: 22, verified: 16, avatar: 36, productGap: 8 } as const;
+export const PUBLICATION_PUBLISHER = { font: 'PublicationPublisher-Bold', nameSize: 18, lineHeight: 24, avatar: 44, mark: 24, sealEdge: 1, follow: 24 } as const;
+export const PUBLICATION_METRICS = { icon: 22, actionIcon: 26, verified: 16, avatar: 36, productGap: 8 } as const;
 
 export const ICON_SIZE = {
   xs: 14,
