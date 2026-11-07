@@ -294,11 +294,11 @@ export function PublicationCard({
 }
 const styles = StyleSheet.create({
   card: {
-    paddingBottom: 20,
-    marginBottom: 20,
+    paddingBottom: 12,
+    marginBottom: 12,
     gap: 8,
     backgroundColor: P.paper,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: 1,
     borderBottomColor: P.line,
   },
   publisher: { alignItems: 'center', gap: 8 },

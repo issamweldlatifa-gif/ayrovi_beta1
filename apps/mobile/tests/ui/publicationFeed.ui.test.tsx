@@ -1094,3 +1094,23 @@ it('reserves indicator clearance above the floating immersive actions', async ()
     position: 'absolute',
   });
 });
+
+it.each([false, true])(
+  'separates posts with one light gray bottom rule and breathing space (compact=%s)',
+  async (compact) => {
+    await mount(
+      <PublicationCard
+        post={referencePost('photo', 1)}
+        compact={compact}
+        onComments={jest.fn()}
+        onReaction={jest.fn()}
+      />
+    );
+    expect(screen.getByTestId('publication-ui-post')).toHaveStyle({
+      borderBottomWidth: 1,
+      borderBottomColor: '#E5E5E5',
+      paddingBottom: 12,
+      marginBottom: 12,
+    });
+  }
+);

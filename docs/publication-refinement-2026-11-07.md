@@ -37,3 +37,7 @@
 - Captures authentiques et logs : `.cache/three-*`, hors Git. Aucune nouvelle image de campagne ni donnée de client fictif créée.
 
 L’APK de cette révision est construit par le workflow Android après le push ; l’APK `8f3c6ce` de la livraison précédente ne contient pas ces trois ajustements. Aucun essai physique Android/iOS n’est revendiqué.
+
+## Finition autorisée : séparation des publications
+
+Le propriétaire a ensuite approuvé un filet gris clair unique après chaque carte du fil, et non une bande grise épaisse ni un cadre. Le bord inférieur préexistant, trop fin sur les écrans à forte densité (`hairlineWidth`), est porté à **1 unité logique** avec le gris neutre existant `#E5E5E5`. Espacement blanc : 12 unités avant et après le filet, cohérent en mode compact et normal. Aucun séparateur supplémentaire ne double ce bord. Les 39 suites UI passent désormais avec **243 tests** ; TypeScript mobile et les contrôles de design/identité passent également.
