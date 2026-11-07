@@ -54,6 +54,7 @@ export function PublicationCard({
     post.content?.media.length,
     post.category
   );
+  const wideMedia = template === 'social_pair' || template === 'social_mosaic';
   const columnMedia = template !== 'split' && template !== 'campaign';
   const split = template === 'split';
   const campaign = template === 'campaign';
@@ -173,7 +174,9 @@ export function PublicationCard({
       <View
         testID={`publication-content-${post.id}`}
         style={
-          columnMedia
+          wideMedia
+            ? { marginHorizontal: 4 }
+            : columnMedia
             ? { marginLeft: PUBLICATION_TYPE.column }
             : split
             ? styles.editorial

@@ -166,10 +166,11 @@ export function PublicationActions({
   const button = {
     minHeight: 44,
     minWidth: 44,
-    justifyContent: 'center' as const,
+    justifyContent: immersive ? ('center' as const) : ('flex-start' as const),
     alignItems: 'center' as const,
     flexDirection: 'row' as const,
     gap: 4,
+    flexShrink: 1,
   };
   return (
     <View
@@ -232,13 +233,14 @@ export function PublicationActions({
         </View>
       ) : null}
       <View
+        testID={`publication-action-row-${presentation}-${post.id}`}
         style={{
           paddingHorizontal: 0,
           minHeight: 44,
           flexDirection: ar ? 'row-reverse' : 'row',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 4,
+          justifyContent: immersive ? 'center' : 'flex-start',
+          gap: immersive ? 8 : 12,
         }}
       >
         <Pressable
@@ -303,6 +305,7 @@ export function PublicationActions({
           {likes > 0 ? (
             <AppText
               variant="caption"
+              numberOfLines={1}
               color={ink}
               style={{
                 fontSize: PUBLICATION_TYPE.countSize,
@@ -317,6 +320,7 @@ export function PublicationActions({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={ar ? 'التعليقات' : 'Commentaires'}
+          accessibilityValue={{ text: String(post.comments) }}
           onPress={onComments}
           style={button}
         >
@@ -328,6 +332,7 @@ export function PublicationActions({
           {post.comments > 0 ? (
             <AppText
               variant="caption"
+              numberOfLines={1}
               color={ink}
               style={{
                 fontSize: PUBLICATION_TYPE.countSize,

@@ -36,6 +36,8 @@ const draftReplies = new Map<string, SocialComment | null>();
 export interface CommentsProps {
   targetId: string;
   publication?: boolean;
+  /** Presentation visibility only: restore the shared draft after returning from media. */
+  active?: boolean;
   focusRequest?: number;
   header?: ReactNode;
   onScroll?: (offset: number) => void;
@@ -43,6 +45,7 @@ export interface CommentsProps {
 export function Comments({
   targetId,
   publication = false,
+  active = true,
   header,
   onScroll,
   focusRequest = 0,
@@ -71,11 +74,15 @@ export function Comments({
   const input = useRef<TextInput>(null);
   const lock = useRef(false);
   useEffect(() => {
-    if (!focusRequest) return;
+    if (!focusRequest || !active) return;
     if (session.status === 'signedIn') input.current?.focus();
     else setAuth(true);
   }, [focusRequest]);
   useEffect(() => {
+    if (!active) {
+      input.current?.blur();
+      return;
+    }
     let live = true;
     edited.current = false;
     setDraft(drafts.get(key) || '');
@@ -115,7 +122,7 @@ export function Comments({
     return () => {
       live = false;
     };
-  }, [key]);
+  }, [key, active]);
   const change = (value: string, targetReply: SocialComment | null = reply) => {
     attempts.delete(key);
     edited.current = true;

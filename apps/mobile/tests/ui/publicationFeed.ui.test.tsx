@@ -229,7 +229,7 @@ describe('Publication Phase 1 UI', () => {
     fireEvent.press(screen.getByRole('button', { name: 'Commentaires' }));
     expect(screen.getByText('Real Comments component slot')).toBeTruthy();
     fireEvent.press(screen.getAllByRole('button', { name: 'Retour' }).at(-1)!);
-    expect(mockRefetch).toHaveBeenCalled();
+    await waitFor(() => expect(mockRefetch).toHaveBeenCalled());
   });
   it('does not permit guest likes and offers the existing sign-in route', async () => {
     mockSession.status = 'signedOut';
@@ -271,18 +271,23 @@ describe('Publication Phase 1 UI', () => {
       })
     );
     expect(screen.getByTestId('publication-lightbox')).toBeTruthy();
-    expect(screen.queryByTestId('publication-reader')).toBeNull();
+    await waitFor(() =>
+      expect(screen.queryByTestId('publication-reader')).toBeNull()
+    );
     expect(
       within(screen.getByTestId('publication-lightbox')).queryByText(
         'Texte éditorial'
       )
     ).toBeNull();
-    act(() =>
+    await act(async () => {
       screen
         .getByTestId('publication-lightbox-gesture')
-        .props.onAccessibilityEscape()
+        .props.onAccessibilityEscape();
+      await new Promise((resolve) => setTimeout(resolve, 240));
+    });
+    await waitFor(() =>
+      expect(screen.queryByTestId('publication-lightbox')).toBeNull()
     );
-    expect(screen.queryByTestId('publication-lightbox')).toBeNull();
     expect(screen.getByTestId('publication-reader')).toBeTruthy();
   });
   it('optimistically likes, blocks duplicate taps, and rolls back a failed write', async () => {
@@ -359,12 +364,15 @@ describe('Publication Phase 1 UI', () => {
         'Publication'
       )
     ).toBeTruthy();
-    act(() =>
+    await act(async () => {
       screen
         .getByTestId('publication-reader-gesture')
-        .props.onAccessibilityEscape()
+        .props.onAccessibilityEscape();
+      await new Promise((resolve) => setTimeout(resolve, 240));
+    });
+    await waitFor(() =>
+      expect(screen.queryByTestId('publication-reader')).toBeNull()
     );
-    expect(screen.queryByTestId('publication-reader')).toBeNull();
   });
   it('expands real long description and renders genuine sponsored and verified metadata', async () => {
     const content = {
@@ -786,12 +794,15 @@ describe('Reference additions, not replacements', () => {
     expect(
       screen.UNSAFE_getAllByType(Modal).filter((modal) => modal.props.visible)
     ).toHaveLength(1);
-    act(() =>
+    await act(async () => {
       screen
         .getByTestId('publication-lightbox-gesture')
-        .props.onAccessibilityEscape()
+        .props.onAccessibilityEscape();
+      await new Promise((resolve) => setTimeout(resolve, 240));
+    });
+    await waitFor(() =>
+      expect(screen.queryByTestId('publication-lightbox')).toBeNull()
     );
-    expect(screen.queryByTestId('publication-lightbox')).toBeNull();
   });
   it('uses actual source dimensions for the caption-photo format rather than forcing portrait cropping', async () => {
     await mount(<PublicationMedia post={referencePost('caption_photo', 1)} />);
@@ -945,7 +956,7 @@ it('closes the discovery reader before opening its real catalogue product', asyn
     />
   );
   fireEvent.press(screen.getByTestId('publication-product-selection-real'));
-  expect(close).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(close).toHaveBeenCalledTimes(1));
   expect(mockRouter.push).toHaveBeenCalledWith({
     pathname: '/product/[id]',
     params: { id: 'selection-real' },
@@ -1319,6 +1330,8 @@ it.each([
     expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle({
       ...(template === 'split' || template === 'campaign'
         ? { gap: 0 }
+        : template === 'social_pair' || template === 'social_mosaic'
+        ? { marginHorizontal: 4 }
         : [
             'photo',
             'carousel',
@@ -1533,7 +1546,7 @@ it('closes the fullscreen image through its accessible top-left close control', 
     />
   );
   fireEvent.press(screen.getByRole('button', { name: 'Fermer l’image' }));
-  expect(close).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(close).toHaveBeenCalledTimes(1));
 });
 
 it('gates viewer toolbar reaction options behind the existing guest authentication sheet', async () => {
@@ -1577,7 +1590,7 @@ it('exits the fullscreen image with its close control even when comments are ope
     screen.getByRole('button', { name: 'Fermer les commentaires' })
   ).toBeTruthy();
   fireEvent.press(screen.getByRole('button', { name: 'Fermer l’image' }));
-  expect(close).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(close).toHaveBeenCalledTimes(1));
 });
 
 it('uses the Publication SVG family with one stroke and four real actions', async () => {
@@ -1591,8 +1604,8 @@ it('uses the Publication SVG family with one stroke and four real actions', asyn
     const icon = screen.getByTestId(`publication-icon-${glyph}`, {
       includeHiddenElements: true,
     });
-    expect(icon.props.width).toBe(24);
-    expect(icon.findAllByProps({ strokeWidth: 1.8 }).length).toBeGreaterThan(0);
+    expect(icon.props.width).toBe(22);
+    expect(icon.findAllByProps({ strokeWidth: 1.7 }).length).toBeGreaterThan(0);
   }
   expect(
     within(screen.getByTestId('publication-actions-feed-ui-post')).getAllByRole(
@@ -1677,4 +1690,30 @@ it('only offers preference actions actually supported by the server', async () =
   expect(mockPreference).toHaveBeenCalledWith(post.id, {
     feedback: 'not_interested',
   });
+});
+
+it('groups feed actions at the copy edge but centers the immersive group', async () => {
+  const result = await mount(
+    <PublicationActions post={post} onComments={jest.fn()} />
+  );
+  expect(screen.getByTestId('publication-like-ui-post')).toHaveStyle({
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'flex-start',
+  });
+  expect(screen.getByTestId('publication-action-row-feed-ui-post')).toHaveStyle(
+    { justifyContent: 'flex-start', gap: 12 }
+  );
+  result.unmount();
+  await mount(
+    <PublicationActions
+      post={post}
+      presentation="viewer"
+      backdrop="dark"
+      onComments={jest.fn()}
+    />
+  );
+  expect(
+    screen.getByTestId('publication-action-row-viewer-ui-post')
+  ).toHaveStyle({ justifyContent: 'center', gap: 8 });
 });

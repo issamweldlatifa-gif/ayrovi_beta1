@@ -30,13 +30,13 @@ export const PUBLICATION_TYPE = {
   bodyLine: 24,
   nameSize: 16,
   nameLine: 22,
-  icon: 24,
-  stroke: 1.8,
+  icon: 22,
+  stroke: 1.7,
   column: 52,
   inset: 8,
   avatar: 44,
   touch: 44,
-  countSize: 14,
+  countSize: 15,
   countLine: 20,
 } as const;
 export const PUBLICATION_PUBLISHER = {
@@ -47,4 +47,14 @@ export const PUBLICATION_PUBLISHER = {
   mark: 24,
   follow: 24,
   sealEdge: 1,
+} as const;
+
+/** Local, deliberately short motion; not inferred Threads timings. */
+export const PUBLICATION_MOTION = {
+  enter: 200,
+  exit: 140,
+  dismiss: 180,
+  travel: 12,
+  stiffness: 280,
+  damping: 32,
 } as const;
