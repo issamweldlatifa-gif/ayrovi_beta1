@@ -54,7 +54,8 @@
     "android:apk": "cd android && ./gradlew :app:assembleDebug",
     "verify:aywebs-latency": "node scripts/aywebs-latency-probe.mjs",
     "check:stripe": "node scripts/check-stripe.mjs",
-    "brand:build": "node scripts/build-brand-assets.mjs"
+    "brand:build": "node scripts/build-brand-assets.mjs",
+    "audit:performance": "esbuild verify/performance-audit.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/performance-audit.cjs --log-level=error && node .cache/performance-audit.cjs"
   },
   "keywords": [
     "ayrovi",
