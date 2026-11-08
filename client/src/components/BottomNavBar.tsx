@@ -81,9 +81,9 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
       >
         <nav className="mx-auto grid max-w-lg grid-cols-5 gap-1" style={{ minHeight: Math.min(config.height, 56) }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
           <button type="button" onClick={() => navigation.goHome()} className={NAV_ITEM} aria-label={tr('Accueil', 'الرئيسية')}>{monochrome('/media/clean/nav-home-v1.svg')}</button>
-          <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>{monochrome('/media/clean/nav-lens-v1.svg')}</button>
+          <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>{monochrome('/media/clean/nav-lens-v2.svg')}</button>
           <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr('Clean', 'Clean')} aria-pressed={isAiDrawerOpen}><img src="/media/clean-message.svg" alt="" aria-hidden="true" style={iconStyle()} /></button>
-          <button type="button" onClick={onOpenAyWebs} disabled={!ayWebsEnabled} className={NAV_ITEM} aria-label={tr('AYWEBs', 'AYWEBs')} aria-current={isAyWebsOpen ? 'page' : undefined}>{monochrome('/media/clean/nav-aywebs-v1.svg')}</button>
+          <button type="button" onClick={onOpenAyWebs} disabled={!ayWebsEnabled} className={NAV_ITEM} aria-label={tr('AYWEBs', 'AYWEBs')} aria-current={isAyWebsOpen ? 'page' : undefined}>{monochrome('/media/clean/nav-aywebs-v2.svg')}</button>
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:account' }])} className={NAV_ITEM} aria-label={tr('Profil', 'حسابي')}>{monochrome('/media/clean/nav-profile-v1.svg')}</button>
         </nav>
       </div>

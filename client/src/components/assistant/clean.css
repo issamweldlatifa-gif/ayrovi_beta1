@@ -7,7 +7,7 @@
 .clean-suggestion { min-height:44px; padding:10px 16px; border-radius:999px; font-weight:400; text-align:start; max-width:100%; }
 .clean-composer-action { display:grid; place-items:center; width:44px; height:44px; padding:0; border:0; background:transparent; flex-shrink:0; }
 .clean-composer-action:disabled { opacity:.45; }
-[data-clean-composer] { background:#fff; }
+#root [data-clean-composer] { background:#fff; border-top:0; }
 [data-clean-composer] > div { border-radius:24px; }
 .clean-assistant-envelope { background:#fff; border:0; box-shadow:none; color:#000; }
 .clean-user-envelope { background:transparent; box-shadow:none; }

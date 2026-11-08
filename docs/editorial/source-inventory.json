@@ -14769,7 +14769,7 @@
     {
       "file": "client/src/components/assistant/AssistantAttachmentSheet.tsx",
       "domain": "sonim",
-      "sha256": "b48c94593ad6a0c8c819d5c653af16d9e7bee2517199de1a750593ef4e02e5f8",
+      "sha256": "6d06afedcad9c00d15f2dbcf06d3f4347d79bba98dc1c886676dd5bcbe4ecab8",
       "lines": 41,
       "imports": [
         "./AssistantMediaPending",
@@ -15709,7 +15709,7 @@
     {
       "file": "client/src/components/assistant/clean.css",
       "domain": "sonim",
-      "sha256": "71039d0517b340254e9a61c6adc23e1df1ea3ca248b71f9c8fc9f28395c36cd6",
+      "sha256": "5f56264c6fa8e18f99b35cf4c8bd9c8d08bb650ea9508a276f5f1ca702999ba9",
       "lines": 41,
       "imports": [],
       "exports": [],
@@ -15825,7 +15825,7 @@
     {
       "file": "client/src/components/assistant/CleanVisuals.tsx",
       "domain": "sonim",
-      "sha256": "13a1e53a9257341a60bef71e72804966321c7fd617deec60ac69642cbd326e97",
+      "sha256": "ab253ba2d6a1992d61a087ee83e47128c781d248b78fd20dbed10f453dae5b73",
       "lines": 17,
       "imports": [
         "../../../../shared/cleanAppearance.json"
@@ -16208,7 +16208,7 @@
     {
       "file": "client/src/components/BottomNavBar.tsx",
       "domain": "shell-content",
-      "sha256": "81ce4e7c2bf7bed31a619c9aa3a16a184f3a51bd20307fec8347c3c38eea72a2",
+      "sha256": "1c1aa220e20976627d06f2743ee3f4077d73b0a8f6864926b21213460c5ecae0",
       "lines": 93,
       "imports": [
         "react",

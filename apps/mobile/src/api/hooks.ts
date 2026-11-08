@@ -51,11 +51,11 @@ export const queryKeys = {
 
 /**
  * Le contenu éditorial est piloté depuis l'Admin : il change sans déploiement,
- * donc on le rafraîchit à chaque ouverture d'écran plutôt que de le garder une
+ * donc on le rafraîchit après expiration du cache plutôt que de le garder une
  * heure. `staleTime` court + refetch au montage = contenu frais sans marteler
  * le serveur à chaque rendu.
  */
-const CONTENT = { staleTime: 60_000, refetchOnMount: 'always' } as const;
+const CONTENT = { staleTime: 60_000, refetchOnMount: true } as const;
 
 export const useHomeFeatured = (): UseQueryResult<HomeFeatured> =>
   useQuery({ queryKey: ['home', 'featured'] as const, queryFn: ({ signal }) => fetchHomeFeatured({ signal }), ...CONTENT });
@@ -87,7 +87,7 @@ export const useNavigation = (): UseQueryResult<NavLink[]> =>
   useQuery({ queryKey: queryKeys.navigation, queryFn: ({ signal }) => fetchNavigation({ signal }), ...CONTENT });
 
 /** الكتالوج (Q1) — الماركات. */
-const CATALOG = { staleTime: 120_000, refetchOnMount: 'always' } as const;
+const CATALOG = { staleTime: 120_000, refetchOnMount: true } as const;
 
 export const useCatalogBrands = (): UseQueryResult<string[]> =>
   useQuery({ queryKey: queryKeys.catalogBrands, queryFn: ({ signal }) => fetchCatalogBrands({ signal }), ...CATALOG });
@@ -108,8 +108,8 @@ export const useNews = (): UseQueryResult<NewsItem[]> =>
 export const useFooterInfo = (): UseQueryResult<FooterInfo> =>
   useQuery({ queryKey: queryKeys.footer, queryFn: ({ signal }) => fetchFooterInfo({ signal }), ...CONTENT });
 
-export const useReels = (): UseQueryResult<Reel[]> =>
-  useQuery({ queryKey: queryKeys.reels, queryFn: ({ signal }) => fetchReels({ signal }), ...CONTENT });
+export const useReels = (enabled = true): UseQueryResult<Reel[]> =>
+  useQuery({ enabled, queryKey: queryKeys.reels, queryFn: ({ signal }) => fetchReels({ signal }), ...CONTENT });
 
 export const usePublications = (): UseQueryResult<Publication[]> =>
   useQuery({ queryKey: queryKeys.publications, queryFn: ({ signal }) => fetchPublications({ signal }), ...CONTENT });
@@ -118,7 +118,7 @@ export const useStoryPublishers = (): UseQueryResult<StoryPublisher[]> =>
   useQuery({ queryKey: queryKeys.publishers, queryFn: ({ signal }) => fetchStoryPublishers({ signal }), ...CONTENT });
 
 export const useSocialCounts = (ids: string[]): UseQueryResult<Record<string, SocialCounts>> =>
-  useQuery({ queryKey: queryKeys.socialCounts(ids), queryFn: ({ signal }) => fetchSocialCounts(ids, { signal }), ...CONTENT });
+  useQuery({ queryKey: queryKeys.socialCounts(ids), queryFn: ({ signal }) => fetchSocialCounts(ids, { signal }), ...CONTENT, enabled: ids.length > 0 });
 
 
 export const useStoriesShowcase = () => useQuery({ queryKey: ['home', 'stories-showcase'], queryFn: ({ signal }) => fetchStoriesShowcase({ signal }), ...CONTENT });

@@ -53,7 +53,8 @@ export default function ReelsViewerScreen() {
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  const window = useWindowDimensions();
+  const [{ width, height }, setViewport] = useState({ width: window.width, height: window.height });
   const { id } = useLocalSearchParams<{ id?: string }>();
 
   const reels = useReels();
@@ -89,10 +90,20 @@ export default function ReelsViewerScreen() {
   const closeComments = useCallback(() => setCommentsFor(null), []);
 
   return (
-    <View testID="reels-viewer" style={styles.root}>
-      <FlatList
+    <View testID="reels-viewer" style={styles.root} onLayout={({ nativeEvent: { layout } }) => {
+      if (layout.width > 0 && layout.height > 0)
+        setViewport(current => current.width === layout.width && current.height === layout.height
+          ? current : { width: layout.width, height: layout.height });
+    }}>
+      {/* Wait for rows before mounting: initialScrollIndex is only honored at mount. */}
+      {rows.length > 0 ? <FlatList
+        testID="reels-viewer-list"
         data={rows}
         keyExtractor={(item) => item.id}
+        initialNumToRender={1}
+        maxToRenderPerBatch={2}
+        windowSize={3}
+        extraData={{ playingId, focused, commentsFor }}
         pagingEnabled
         initialScrollIndex={initialIndex}
         getItemLayout={(_, index) => ({
@@ -111,7 +122,7 @@ export default function ReelsViewerScreen() {
             fill={{ width, height }}
           />
         )}
-      />
+      /> : null}
 
       {reels.isPending ? (
         <View testID="reels-viewer-loading" style={styles.feedback}>

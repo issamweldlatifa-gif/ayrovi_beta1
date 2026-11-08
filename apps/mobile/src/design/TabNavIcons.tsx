@@ -1,13 +1,14 @@
-/** Five icon-only destinations. Reference-derived camera/search and matching profile;
+/** Five icon-only destinations. Source-traced official camera/search and matching profile;
  * Approved thin-outline Home contour; master brand assets untouched. Clean is the sole approved multicolor exception.
  * Legacy export names are compatibility APIs, not visible product names/routes.
  */
 import { View, type ColorValue } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, G, Path } from 'react-native-svg';
 import { BrandSymbol } from './BrandMark';
 import { BRAND } from './tokens.generated';
 import { BRAND_ACCENT } from './brandAppearance';
 import { useTheme } from './theme';
+import officialGlyphs from '../../../../shared/officialNavigationGlyphs.json';
 import cleanPalette from '../../../../assets/brand/navigation-palette.json';
 
 export type TabNavIconProps = { color: ColorValue; size?: number; focused?: boolean };
@@ -26,12 +27,9 @@ function StrokeGlyph({ kind, size }: TabNavIconProps & { kind: 'lens' | 'search'
 export function ReferenceNavigationGlyph({ kind, size: dim, color: ink }: { kind: 'lens' | 'search' | 'profile'; size: number; color: string }) {
   return <View style={{ width: dim, height: dim, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
     <Svg width={dim} height={dim} viewBox="0 0 24 24" fill="none" stroke={ink} strokeWidth={TAB_ICON_STROKE} strokeLinecap="round" strokeLinejoin="round">
-      {kind === 'lens' ? <>
-        <Path d="M14 5H8L6.5 7H5Q3 7 3 10V18Q3 21 6 21H18Q21 21 21 18V11" />
-        <Circle cx={11} cy={14} r={3.5} /><Path d="M18 2L19 5L22 6L19 7L18 10L17 7L14 6L17 5Z" />
-      </> : kind === 'search' ? <>
-        <Path d="M11 3A8 8 0 1 0 19 11M16.7 16.7L22 22M17 2L18.4 5.6L22 7L18.4 8.4L17 12L15.6 8.4L12 7L15.6 5.6Z" />
-      </> : <><Circle cx={12} cy={6} r={3.5} /><Path d="M3 21V19A9 9 0 0 1 21 19V21Z" /></>}
+      {kind !== 'profile' ? <G fill={ink} stroke="none" transform={officialGlyphs[kind === 'lens' ? 'lens' : 'aywebs'].transform}>
+        {officialGlyphs[kind === 'lens' ? 'lens' : 'aywebs'].paths.map((path, index) => <Path key={index} d={path.d} transform={path.transform} />)}
+      </G> : <><Circle cx={12} cy={6} r={3.5} /><Path d="M3 21V19A9 9 0 0 1 21 19V21Z" /></>}
     </Svg>
   </View>;
 }

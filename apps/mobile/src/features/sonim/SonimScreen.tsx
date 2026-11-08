@@ -744,7 +744,6 @@ export function SonimScreen() {
           styles.composerOuter,
           {
             backgroundColor: CLEAN.paper,
-            borderTopColor: theme.colors.line,
             paddingHorizontal: gutter,
             paddingBottom: keyboardOpen ? theme.space[2] : bottomComposerClearance,
           },
@@ -922,7 +921,7 @@ const styles = StyleSheet.create({
   errorBox: { borderWidth: 1, padding: 10 },
   messageActions: { paddingTop: 4 },
   copyBtn: { alignItems: 'center', gap: 4, paddingVertical: 2 },
-  composerOuter: { borderTopWidth: 1, paddingTop: 8, gap: 8 },
+  composerOuter: { paddingTop: 8, gap: 8 },
   pendingAttachments: { gap: 8, flexWrap: 'wrap' },
   pendingThumbCard: {
     borderWidth: 1,

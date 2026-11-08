@@ -35,12 +35,14 @@ jest.mock('expo-video', () => ({
   useVideoPlayer: () => null,
 }));
 jest.mock('../../src/features/reels/useReelPreviewActivity', () => ({
-  useReelPreviewActivity: () => ({ visible: true, autoplay: true }),
+  useReelPreviewActivity: () => ({ visible: mockVisible, autoplay: true }),
 }));
 
+let mockVisible = true;
+const mockUseReels = jest.fn();
 const mockReels: { data: unknown } = { data: undefined };
 jest.mock('../../src/api/hooks', () => ({
-  useReels: () => mockReels,
+  useReels: (enabled: boolean) => { mockUseReels(enabled); return mockReels; },
 }));
 
 function wrap(node: React.ReactNode) {
@@ -83,6 +85,8 @@ const reel = (id: string, title = '') => ({
 beforeEach(() => {
   (router.push as jest.Mock).mockClear();
   mockReels.data = undefined;
+  mockVisible = true;
+  mockUseReels.mockClear();
 });
 
 describe('section Reels • Shop (accueil)', () => {
@@ -150,4 +154,15 @@ it('renders official publisher outside the video, a small media mark and a worki
   expect(screen.getByText('Masquer sur cet appareil')).toBeTruthy();
   fireEvent.press(screen.getByText('+ Suivre'));
   expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
+});
+
+
+it('defers the below-fold Reel request, but keeps a measurable anchor for scrolling', () => {
+  mockVisible = false;
+  const section = render(wrap(<ReelsShopSection />));
+  expect(mockUseReels).toHaveBeenLastCalledWith(false);
+  expect(section.toJSON()).not.toBeNull();
+  mockVisible = true;
+  section.rerender(wrap(<ReelsShopSection />));
+  expect(mockUseReels).toHaveBeenLastCalledWith(true);
 });

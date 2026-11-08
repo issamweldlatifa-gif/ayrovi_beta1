@@ -34,7 +34,7 @@ export function CleanCameraPanel({ onClose, onPhoto }: { onClose: () => void; on
     finally { captureLock.current = false; if (mounted.current) setBusy(false); }
   };
   const button = (name: keyof typeof Ionicons.glyphMap, label: string, action: () => void, disabled = false) => <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={action} disabled={disabled} style={[styles.control, { opacity: disabled ? theme.opacity.disabled : 1 }]}><Ionicons name={name} size={theme.iconSize.md} color={CLEAN.paper} /></Pressable>;
-  return <AppSheet surfaceColor={CLEAN.paper} open onDismiss={onClose} presentation="bottom">
+  return <AppSheet surfaceColor="transparent" open onDismiss={onClose} presentation="bottom">
     <View style={[styles.panel, { height: Math.min(460, height * 0.65) }]} testID="clean-camera-panel">
       {foreground && <CameraView ref={camera} style={StyleSheet.absoluteFill} facing={facing} flash={flash && facing === 'back' ? 'on' : 'off'} mode="picture" onCameraReady={() => setReady(true)} onMountError={() => { setReady(false); setError(true); }} />}
       <View style={styles.spacer} />

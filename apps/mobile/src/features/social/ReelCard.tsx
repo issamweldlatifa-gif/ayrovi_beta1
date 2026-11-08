@@ -13,17 +13,14 @@ import { shareReel } from "@/features/reels/shareReel";
  *
  * وقاعدة الصدق: **الإعجاب يحتاج حساباً** ⇒ الزر معطّل بسبب مكتوب.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Pressable, StyleSheet, View } from "react-native";
+import { useCallback, useRef, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { VideoView, useVideoPlayer } from "expo-video";
+import { ReelPlayback } from "@/features/reels/ReelPlayback";
 
 import { AppText } from "@/design/ui";
 import { useTheme } from "@/design/theme";
-import { useT, useI18n } from "@/i18n";
-import { BrandLoadingIndicator } from "@/design/LoadingScreen";
-import { playReelVideo } from "@/features/reels/playReelVideo";
-import { useReelPlaybackStatus } from "@/features/reels/useReelPlaybackStatus";
+import { useT } from "@/i18n";
 import {
   MEDIA_RATIO,
   RADIUS,
@@ -60,7 +57,6 @@ export function ReelCard({
 }: ReelCardProps) {
   const theme = useTheme();
   const t = useT();
-  const { locale } = useI18n();
   const session = useSession();
   const guestSession = useSessionId();
   const signedIn = session.status === "signedIn";
@@ -72,69 +68,13 @@ export function ReelCard({
   const [options, setOptions] = useState(false);
   const [auth, setAuth] = useState(false);
   const [error, setError] = useState("");
-  const [foreground, setForeground] = useState(
-    AppState.currentState === "active"
-  );
-  const videoView = useRef<VideoView>(null);
   const likeLock = useRef(false);
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", (state) =>
-      setForeground(state === "active")
-    );
-    return () => sub.remove();
-  }, []);
   const [paused, setPaused] = useState(false);
-  // الصوت مطفي افتراضياً (قاعدة البطاقة) — والزرّ يقلبها.
   const [soundOn, setSoundOn] = useState(false);
-  // مفضّلة المنتوج: القلب على الكارطة، بلا حساب ما فمّاش قلب.
   const favourites = useProductFavorites(
     fill ? signedIn : false,
     session.account?.id || ""
   );
-
-  // `null` ⇒ لا مشغّل: البطاقة البعيدة ما تكلّفش الجهاز ولا الشبكة.
-  const player = useVideoPlayer(
-    active ? { uri: mediaUrl(reel.videoUrl) } : null,
-    (instance) => {
-      instance.loop = true;
-      instance.muted = true;
-    }
-  );
-
-  const playback = useReelPlaybackStatus(
-    player,
-    active,
-    mediaUrl(reel.videoUrl),
-    videoView
-  );
-
-  useEffect(() => {
-    if (!player) return;
-    if (
-      playback.status !== "readyToPlay" ||
-      paused ||
-      !active ||
-      !foreground ||
-      options ||
-      auth
-    )
-      player.pause();
-    else playReelVideo(player, videoView.current, playback.reportError);
-  }, [
-    player,
-    playback.status,
-    playback.reportError,
-    paused,
-    active,
-    foreground,
-    options,
-    auth,
-  ]);
-
-  useEffect(() => {
-    if (!player) return;
-    player.muted = !soundOn;
-  }, [player, soundOn]);
 
   const toggleLike = useCallback(async () => {
     if (!signedIn) return;
@@ -178,77 +118,19 @@ export function ReelCard({
           decorative
         />
       ) : null}
-      {active && player ? (
-        <VideoView
-          ref={videoView}
-          player={player}
-          style={[StyleSheet.absoluteFill, { width: "100%", height: "100%" }]}
-          contentFit="cover"
-          nativeControls={false}
+      {active ? (
+        <ReelPlayback
+          key={reel.id}
+          id={reel.id}
+          uri={mediaUrl(reel.videoUrl)}
+          paused={paused}
+          onPausedChange={setPaused}
+          soundOn={soundOn}
+          blocked={options || auth}
         />
-      ) : reel.posterUrl ? null : (
+      ) : !reel.posterUrl ? (
         <View style={[StyleSheet.absoluteFill, styles.poster]}>
-          <Ionicons
-            name="play-circle-outline"
-            size={theme.iconSize.xl}
-            color={muted}
-            accessibilityElementsHidden
-          />
-        </View>
-      )}
-
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={paused ? t("social.play") : t("social.pause")}
-        onPress={() => setPaused((value) => !value)}
-        style={StyleSheet.absoluteFill}
-      />
-
-      {active &&
-      player &&
-      (playback.status === "loading" || playback.status === "idle") ? (
-        <View
-          pointerEvents="none"
-          testID={`reel-loading-${reel.id}`}
-          style={[StyleSheet.absoluteFill, styles.poster]}
-          accessibilityRole="progressbar"
-        >
-          <BrandLoadingIndicator size={64} />
-        </View>
-      ) : null}
-      {active && playback.status === "error" ? (
-        <View
-          testID={`reel-playback-error-${reel.id}`}
-          style={[
-            StyleSheet.absoluteFill,
-            styles.poster,
-            { padding: 24, gap: 16, backgroundColor: veil(0.75) },
-          ]}
-        >
-          <AppText color={theme.colors.onMedia} align="center">
-            {locale === "ar"
-              ? "تعذّر تشغيل الفيديو. ثبّت في الاتصال وعاود جرّب."
-              : "Impossible de lire la vidéo. Vérifiez votre connexion et réessayez."}
-          </AppText>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t("common.retry")}
-            onPress={() => {
-              setPaused(false);
-              void playback.retry();
-            }}
-            style={{
-              minHeight: 44,
-              minWidth: 120,
-              padding: 12,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: theme.colors.canvas,
-              borderRadius: theme.radius.card,
-            }}
-          >
-            <AppText color={theme.colors.ink}>{t("common.retry")}</AppText>
-          </Pressable>
+          <Ionicons name="play-circle-outline" size={theme.iconSize.xl} color={muted} accessibilityElementsHidden />
         </View>
       ) : null}
 

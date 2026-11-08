@@ -36,11 +36,12 @@ export function ReelsShopSection() {
     { locale } = useI18n();
   const { gutter } = useResponsive(),
     { width } = useWindowDimensions();
-  const reels = useReels(),
-    hidden = useHiddenReels();
-  const rows = (reels.data ?? []).filter((row) => !hidden.includes(row.id));
   const section = useRef<View>(null);
   const autoplay = useReelPreviewActivity(section);
+  // Below-fold media must not compete with the first visible homepage content.
+  const reels = useReels(autoplay.visible);
+  const hidden = useHiddenReels();
+  const rows = (reels.data ?? []).filter((row) => !hidden.includes(row.id));
   const [visibleId, setVisibleId] = useState<string | null>(null);
   const [options, setOptions] = useState<Reel | null>(null);
   const [error, setError] = useState('');
@@ -49,7 +50,7 @@ export function ReelsShopSection() {
     ({ viewableItems }: { viewableItems: Array<{ item?: Reel }> }) =>
       setVisibleId(viewableItems[0]?.item?.id ?? null)
   ).current;
-  if (!rows.length && !hidden.length) return null;
+  if (!rows.length && !hidden.length) return <View ref={section} collapsable={false} style={{ minHeight: 1 }} />;
   const tileWidth = Math.round((width - gutter * 2) * REEL_TILE.widthFraction);
   const tileHeight = Math.round(tileWidth / MEDIA_RATIO.reel);
   const open = (reel: Reel) =>

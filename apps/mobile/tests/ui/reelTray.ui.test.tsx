@@ -16,6 +16,7 @@ import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
 import { SessionProvider } from '../../src/state/session';
+import { useVideoPlayer } from 'expo-video';
 import { ReelCard } from '../../src/features/social/ReelCard';
 import type { LinkedProduct } from '../../src/api/linkedProduct';
 import type { Reel } from '../../src/api/social';
@@ -27,7 +28,7 @@ jest.mock('expo-router', () => ({
 // Le lecteur vidéo n'existe pas en test : on vérifie la mécanique, pas le décodage.
 jest.mock('expo-video', () => ({
   VideoView: () => null,
-  useVideoPlayer: () => null,
+  useVideoPlayer: jest.fn(() => null),
 }));
 
 const product = (id: string, name: string): LinkedProduct => ({
@@ -117,4 +118,20 @@ describe('Reel — tiroir des articles', () => {
     expect(screen.queryByTestId('reel-tray-toggle-r1')).toBeNull();
     expect(screen.queryByTestId('reel-tray-r1')).toBeNull();
   });
+});
+
+
+it('allocates no video player for offscreen cards; mounts playback only when active', () => {
+  const usePlayer = useVideoPlayer as jest.Mock;
+  usePlayer.mockClear();
+  const props = { reel: reel(), onOpenComments: jest.fn() };
+  const card = render(wrap(<ReelCard {...props} active={false} />));
+  expect(usePlayer).not.toHaveBeenCalled();
+  card.rerender(wrap(<ReelCard {...props} active />));
+  expect(usePlayer).toHaveBeenCalled();
+  const calls = usePlayer.mock.calls.length;
+  // A stable null-source player is created by the active child, then loaded asynchronously.
+  expect(usePlayer.mock.calls[0][0]).toBeNull();
+  card.rerender(wrap(<ReelCard {...props} active={false} />));
+  expect(usePlayer).toHaveBeenCalledTimes(calls);
 });

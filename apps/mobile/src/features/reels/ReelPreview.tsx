@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { StyleSheet } from "react-native";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { mediaUrl } from "@/api/client";
-import { playReelVideo } from "./playReelVideo";
+import { playReelVideo, reloadReelVideo } from "./playReelVideo";
 import { useReelPlaybackStatus } from "./useReelPlaybackStatus";
 
 /** Mounted only for the visible preview. No sound and no fake impression mutation. */
@@ -14,7 +14,7 @@ export function ReelPreview({
   playing: boolean;
 }) {
   const videoView = useRef<VideoView>(null);
-  const player = useVideoPlayer({ uri: mediaUrl(uri) }, (instance) => {
+  const player = useVideoPlayer(null, (instance) => {
     instance.muted = true;
     instance.loop = true;
   });
@@ -26,6 +26,10 @@ export function ReelPreview({
   );
   useEffect(() => {
     if (!player) return;
+    void reloadReelVideo(player, videoView.current, mediaUrl(uri)).catch(playback.reportError);
+  }, [player, uri, playback.reportError]);
+  useEffect(() => {
+    if (!player) return;
     if (playing && playback.status === "readyToPlay")
       playReelVideo(player, videoView.current, playback.reportError);
     else player.pause();
@@ -33,6 +37,8 @@ export function ReelPreview({
   return player ? (
     <VideoView
       ref={videoView}
+      pointerEvents="none"
+      surfaceType="textureView"
       testID="reel-preview-video"
       player={player}
       nativeControls={false}

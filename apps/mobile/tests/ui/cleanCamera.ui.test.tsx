@@ -15,7 +15,7 @@ jest.mock('expo-camera', () => {
 });
 jest.mock('@/design/sheet/AppSheet', () => {
   const React = require('react'), { View } = require('react-native');
-  return { AppSheet: ({ children }: { children: React.ReactNode }) => React.createElement(View, null, children) };
+  return { AppSheet: ({ children, surfaceColor }: { children: React.ReactNode; surfaceColor: string }) => React.createElement(View, { testID: 'camera-container', style: { backgroundColor: surfaceColor } }, children) };
 });
 function mount(onPhoto = jest.fn(async () => {}), onClose = jest.fn()) {
   const view = render(<PrefsProvider><ThemeProvider><I18nProvider><CleanCameraPanel onPhoto={onPhoto} onClose={onClose} /></I18nProvider></ThemeProvider></PrefsProvider>);
@@ -46,4 +46,10 @@ it('does not deliver a capture that completes after the camera was closed', asyn
   fireEvent.press(screen.getByTestId('clean-camera-capture')); unmount();
   await act(async () => { resolve({ uri: 'file:///stale.jpg', width: 1, height: 1, base64: 'abc' }); });
   expect(onPhoto).not.toHaveBeenCalled();
+});
+
+it('keeps the outer camera container transparent, not a white sheet', () => {
+  mount();
+  expect(screen.getByTestId('camera-container')).toHaveStyle({ backgroundColor: 'transparent' });
+  expect(screen.getByTestId('clean-camera-panel')).toHaveStyle({ borderRadius: 28, overflow: 'hidden' });
 });

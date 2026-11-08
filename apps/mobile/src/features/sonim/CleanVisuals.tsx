@@ -23,7 +23,7 @@ export function CleanWordmark() {
 export function CleanActionGlyph({ state }: { state: 'wave' | 'send' | 'busy' | 'recording' }) {
   return <Svg width={44} height={44} viewBox="0 0 24 24">
     <Path fill={CLEAN.orange} d={CLEAN.actionShape} />
-    {state === 'wave' ? <Path d="M7 10V13M9.5 8V15M12 6V17M14.5 8V15M17 10V13" fill="none" stroke={CLEAN.paper} strokeWidth={1.3} strokeLinecap="round" /> : state === 'send' ? <Path d="M12 17V7M8 11L12 7L16 11" stroke={CLEAN.paper} strokeWidth={1.7} fill="none" strokeLinecap="round" strokeLinejoin="round" /> : state === 'busy' ? <Circle cx={12} cy={11} r={2.7} fill={CLEAN.paper} /> : <Rect x={8} y={7} width={8} height={8} fill={CLEAN.paper} />}
+    {state === 'wave' ? <Path d="M7 10.5V13.5M9.5 8.5V15.5M12 6.5V17.5M14.5 8.5V15.5M17 10.5V13.5" fill="none" stroke={CLEAN.paper} strokeWidth={1.3} strokeLinecap="round" /> : state === 'send' ? <Path d="M12 17V7M8 11L12 7L16 11" stroke={CLEAN.paper} strokeWidth={1.7} fill="none" strokeLinecap="round" strokeLinejoin="round" /> : state === 'busy' ? <Circle cx={12} cy={12} r={2.7} fill={CLEAN.paper} /> : <Rect x={8} y={8} width={8} height={8} fill={CLEAN.paper} />}
   </Svg>;
 }
 const styles = StyleSheet.create({ wordmark: { height: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }, star: { position: 'absolute', right: -4, top: 4 } });

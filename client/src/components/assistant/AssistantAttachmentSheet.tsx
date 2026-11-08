@@ -20,8 +20,8 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
   };
   const rows = [
     { label: tr('Appareil photo', 'الكاميرا'), Icon: Camera, action: () => onOpenCamera ? onOpenCamera() : camera.current?.click() },
-    { label: 'AYWEBs', Icon: Search, asset: '/media/clean/nav-aywebs-v1.svg', action: onOpenAyWebs },
-    { label: 'Lens', Icon: LensBox, asset: '/media/clean/nav-lens-v1.svg', action: onOpenLens },
+    { label: 'AYWEBs', Icon: Search, asset: '/media/clean/nav-aywebs-v2.svg', action: onOpenAyWebs },
+    { label: 'Lens', Icon: LensBox, asset: '/media/clean/nav-lens-v2.svg', action: onOpenLens },
     { label: tr('Photos', 'الصور'), Icon: Image, action: () => images.current?.click() },
     { label: tr('Fichiers', 'الملفات'), Icon: Paperclip, action: () => files.current?.click() },
   ];

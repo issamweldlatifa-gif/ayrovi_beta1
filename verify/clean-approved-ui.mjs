@@ -28,6 +28,12 @@ try {
   assert(styles.every(s => s.font.startsWith('Arial') && s.weight === '400' && s.color === 'rgb(0, 0, 0)' && s.background === 'rgb(192, 249, 255)'));
   assert.equal(await page.locator('.clean-wordmark').evaluate(e => getComputedStyle(e).fontFamily.startsWith('Arial')), true);
   assert.equal(await page.locator('[data-clean-composer] > div').evaluate(e => getComputedStyle(e).borderTopWidth), '1px');
+  assert.deepEqual(await page.locator('[data-clean-composer]').evaluate(e => {
+    const style = getComputedStyle(e); return [style.backgroundColor, style.borderTopWidth];
+  }), ['rgb(255, 255, 255)', '0px']);
+  // Shared circle geometry, not the previously rejected malformed silhouette.
+  assert.equal(await page.locator('[data-brand="clean-composer-state"] > path').first().getAttribute('d'), 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20Z');
+
   await page.screenshot({ path: '.cache/clean-review/welcome-approved.png' });
   // Reduced viewport checks layout only, not an actual OS keyboard.
   await page.setViewportSize({ width: 390, height: 480 });
