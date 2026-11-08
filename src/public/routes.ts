@@ -1,3 +1,5 @@
+import { readPublisherFollow, writePublisherFollow, writePublicationPreference } from '../magazine/publicationPreferences';
+import { preferenceTiming } from '../analytics/preferenceTiming';
 import { readPublicProducts } from '../catalogue/publicProducts';
 import { socialPage } from './socialPaging';
 import { readPublishedSocial } from '../magazine/publicSocialReads';
@@ -821,28 +823,22 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   // Read the same persisted follow relation used by Publication; never guess from a local toggle.
   router.get('/social/publishers/:id/follow', optionalCustomer(db), (req, res) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    if (!db.get('SELECT id FROM story_publishers WHERE id=?', req.params.id)) return res.status(404).json({ success: false, error: 'Éditeur introuvable.' });
-    const account = (req as any).customer?.id || '';
-    res.json({ success: true, data: { following: !!db.get('SELECT 1 FROM publication_follows WHERE account_id=? AND publisher_id=?', account, req.params.id) } });
+    const result = readPublisherFollow(db, (req as any).customer?.id || '', req.params.id);
+    if (result.status === 'not_found') return res.status(404).json({ success: false, error: 'Éditeur introuvable.' });
+    res.json({ success: true, data: result.data });
   });
 
-  router.put('/social/publishers/:id/follow', requireCustomer(db), (req, res) => {
-    if (!db.get('SELECT id FROM story_publishers WHERE id=?', req.params.id)) return res.status(404).json({ success: false, error: 'Éditeur introuvable.' });
-    if (typeof req.body?.following !== 'boolean') return res.status(400).json({ success: false, error: 'État invalide.' });
-    const account = (req as any).customer.id;
-    if (req.body.following) db.run('INSERT OR IGNORE INTO publication_follows VALUES (?,?,?)', account, req.params.id, new Date().toISOString());
-    else db.run('DELETE FROM publication_follows WHERE account_id=? AND publisher_id=?', account, req.params.id);
-    res.json({ success: true, data: { following: req.body.following } });
+  router.put('/social/publishers/:id/follow', preferenceTiming.observe('publisher_follow_write'), requireCustomer(db), (req, res) => {
+    const result = writePublisherFollow(db, (req as any).customer.id, req.params.id, req.body, new Date().toISOString());
+    if (result.status === 'not_found') return res.status(404).json({ success: false, error: 'Éditeur introuvable.' });
+    if (result.status === 'invalid') return res.status(400).json({ success: false, error: 'État invalide.' });
+    res.json({ success: true, data: result.data });
   });
-  router.put('/social/publications/:id/preferences', requireCustomer(db), (req, res) => {
-    if (!db.get("SELECT id FROM publications WHERE id=? AND status='publie' AND publish_at<=?", req.params.id, new Date().toISOString())) return res.status(404).json({ success: false, error: 'Publication introuvable.' });
-    const account = (req as any).customer.id;
-    const old = db.get<any>('SELECT * FROM publication_preferences WHERE account_id=? AND publication_id=?', account, req.params.id);
-    const saved = req.body?.saved ?? !!old?.saved;
-    const feedback = req.body?.feedback ?? old?.feedback ?? '';
-    if (typeof saved !== 'boolean' || !['','hidden','not_interested'].includes(feedback)) return res.status(400).json({ success: false, error: 'Préférence invalide.' });
-    db.run(`INSERT INTO publication_preferences VALUES (?,?,?,?,?) ON CONFLICT(account_id,publication_id) DO UPDATE SET saved=excluded.saved,feedback=excluded.feedback,updated_at=excluded.updated_at`, account, req.params.id, saved ? 1 : 0, feedback, new Date().toISOString());
-    res.json({ success: true, data: { saved, feedback } });
+  router.put('/social/publications/:id/preferences', preferenceTiming.observe('publication_preference_write'), requireCustomer(db), (req, res) => {
+    const result = writePublicationPreference(db, (req as any).customer.id, req.params.id, req.body, new Date().toISOString());
+    if (result.status === 'not_found') return res.status(404).json({ success: false, error: 'Publication introuvable.' });
+    if (result.status === 'invalid') return res.status(400).json({ success: false, error: 'Préférence invalide.' });
+    res.json({ success: true, data: result.data });
   });
   router.get('/social/publications', (req, res) => {
     let page: ReturnType<typeof socialPage>;
