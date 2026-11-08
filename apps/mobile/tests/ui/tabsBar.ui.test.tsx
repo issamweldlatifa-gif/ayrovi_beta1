@@ -87,7 +87,7 @@ function renderTabsBar() {
 }
 
 describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille d’icônes unifiée', () => {
-  it('applique une surface pleine opaque collée tout en bas (zéro espace dessous) et 6 icônes 24×24 de la même famille', () => {
+  it('applique une surface pleine opaque collée tout en bas (zéro espace dessous) et 5 icônes 24×24 de la même famille', () => {
     const tree = renderTabsBar();
     expect(mockCapturedScreenOptions).not.toBeNull();
 
@@ -103,18 +103,24 @@ describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille
       'index',
       'lens',
       'aywebs',
-      'social',
       'sonim',
       'account',
+      'social',
       'cart',
     ]);
-    for (const tabName of ['index', 'lens', 'aywebs', 'social', 'sonim', 'account']) {
+    for (const tabName of ['index', 'lens', 'aywebs', 'sonim', 'account']) {
       const entry = mockCapturedScreens.find((s) => s.name === tabName);
       const iconSlot = entry?.options.tabBarIconStyle as { width: number; height: number };
       expect(iconSlot.width).toBe(24);
       expect(iconSlot.height).toBe(24);
     }
 
+    expect(mockCapturedScreenOptions?.tabBarShowLabel).toBe(false);
+    expect(mockCapturedScreens.find(s => s.name === 'social')?.options.href).toBeNull();
+    expect(mockCapturedScreens.filter(s => s.options.href !== null)).toHaveLength(5);
+    for (const name of ['index', 'lens', 'aywebs', 'sonim', 'account']) {
+      expect(mockCapturedScreens.find(s => s.name === name)?.options.tabBarAccessibilityLabel).toBeTruthy();
+    }
     const aywebsEntry = mockCapturedScreens.find((s) => s.name === 'aywebs');
     expect(aywebsEntry?.options.tabBarShowLabel).toBe(false);
     const aywebsIconFn = aywebsEntry?.options.tabBarIcon as (p: {

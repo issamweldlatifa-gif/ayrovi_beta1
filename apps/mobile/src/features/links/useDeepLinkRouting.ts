@@ -1,49 +1,40 @@
-/**
- * Branchement des liens profonds sur le routeur.
- *
- * Pourquoi un crochet séparé : la traduction (le raisonnement) est une fonction
- * pure testable sans appareil ; ce fichier ne fait que brancher le système
- * d'exploitation. Le garder mince est ce qui permet de tester l'essentiel.
- *
- * Deux moments, et ils ne se confondent pas :
- *   • **ouverture froide** — l'application a été lancée PAR le lien
- *     (`getInitialURL`) ;
- *   • **ouverture chaude** — elle tournait déjà (`addEventListener('url')`).
- *
- * Dans les deux cas on attend que la navigation soit prête : pousser une route
- * avant que le navigateur existe est sans effet, et le lien serait perdu sans
- * que rien ne l'indique.
- */
-import { useCallback, useEffect, useRef } from 'react';
+/** Subscribe before readiness so links arriving during startup are not lost. */
+import { useEffect, useRef } from 'react';
 import { Linking } from 'react-native';
 import { router } from 'expo-router';
 import { resolveDeepLink } from './resolve';
 
 export function useDeepLinkRouting(enabled: boolean): void {
-  // Un lien reçu trop tôt n'est pas jeté : il est rejoué dès que c'est prêt.
   const pending = useRef<string | null>(null);
-
-  const open = useCallback((raw: string | null) => {
-    if (!raw) return;
-    const route = resolveDeepLink(raw);
-    // Rien à ouvrir n'est pas une erreur : resolveDeepLink écarte déjà les
-    // hôtes étrangers et les chemins inconnus. On n'affiche donc rien.
-    if (!route) return;
-    router.push(route as never);
-  }, []);
+  const ready = useRef(enabled);
 
   useEffect(() => {
-    if (!enabled) return;
-    if (pending.current) {
-      const held = pending.current;
+    ready.current = enabled;
+    if (enabled && pending.current) {
+      const route = pending.current;
       pending.current = null;
-      open(held);
+      router.push(route as never);
     }
-    void Linking.getInitialURL().then((url) => open(url)).catch(() => null);
-    const subscription = Linking.addEventListener('url', (event) => {
-      if (enabled) open(event.url);
-      else pending.current = event.url;
+  }, [enabled]);
+
+  useEffect(() => {
+    let alive = true;
+    let receivedWarmLink = false;
+    const deliver = (raw: string | null) => {
+      if (!alive || !raw) return false;
+      const route = resolveDeepLink(raw);
+      if (!route) return false; // Keep the existing host/path allowlist, even while queued.
+      if (ready.current) router.push(route as never);
+      else pending.current = route;
+      return true;
+    };
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      receivedWarmLink = deliver(url) || receivedWarmLink;
     });
-    return () => subscription.remove();
-  }, [enabled, open]);
+    void Linking.getInitialURL().then(url => {
+      // A slow OS response must not overwrite a more recent user intent.
+      if (!receivedWarmLink) deliver(url);
+    }).catch(() => undefined);
+    return () => { alive = false; subscription.remove(); };
+  }, []);
 }

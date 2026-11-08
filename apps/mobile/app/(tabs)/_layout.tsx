@@ -5,14 +5,14 @@
  *
  *   `Accueil` · `Lens` · `AYWEBs` · `Sonim` · `Profil`
  *
- *   • Toutes les icônes appartiennent à la famille unique officielle (`Ionicons`
+ *   • Aucun libellé visuel; les noms accessibles sont conservés.
+ *   • Accueil utilise notre symbole (bleu Verified quand actif). Les autres icônes appartiennent à la famille unique officielle (`Ionicons`
  *     `-outline` via `TabNavIcons`, grille `24 × 24` pt).
  *   • `AYWEBs` occupe l'emplacement central avec l'icône patte de chat officielle
  *     en violet de marque (`#0113B5` en clair, `#FFFFFF` en sombre), sans libellé.
  *   • `cart` reste une route valide (`href: null`) pour l'icône panier.
  */
-import { AppText } from '@/design/ui';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { Tabs, router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -23,7 +23,6 @@ import {
   TabLensIcon,
   TabProfileIcon,
   TabSonimIcon,
-  TabSocialIcon,
 } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
 import { AYWEBS_WORDMARK_TINT, TAB_BAR_SURFACE } from '@/design/tokens.mobile';
@@ -37,28 +36,6 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const chromeHidden = useChromeHidden();
   const surface = TAB_BAR_SURFACE[theme.mode];
-
-  const label =
-    (text: string) =>
-    ({ focused }: { focused: boolean }) =>
-      (
-        <View style={{ alignItems: 'center', gap: 4 }}>
-          <AppText
-            variant="captionStrong"
-            color={focused ? theme.colors.ink : theme.colors.muted}
-          >
-            {text}
-          </AppText>
-          <View
-            style={{
-              height: 4,
-              width: 40,
-              borderRadius: 2,
-              backgroundColor: focused ? theme.colors.focus : 'transparent',
-            }}
-          />
-        </View>
-      );
 
   const standardIconSlot = {
     width: theme.iconSize.md,
@@ -80,10 +57,7 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: theme.colors.ink,
         tabBarInactiveTintColor: theme.colors.muted,
-        tabBarLabelStyle: {
-          ...theme.text('captionStrong'),
-          marginTop: 0,
-        },
+        tabBarShowLabel: false,
         tabBarItemStyle: styles.tabItem,
         tabBarStyle: chromeHidden
           ? { display: 'none' }
@@ -103,7 +77,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: t('tabs.home'),
-          tabBarLabel: label(t('tabs.home')),
+          tabBarAccessibilityLabel: t('tabs.home'),
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
             <TabHomeIcon color={color} focused={focused} />
@@ -120,7 +94,7 @@ export default function TabsLayout() {
         }}
         options={{
           title: t('tabs.lens'),
-          tabBarLabel: label(t('tabs.lens')),
+          tabBarAccessibilityLabel: t('tabs.lens'),
           tabBarStyle: { display: 'none' },
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
@@ -141,13 +115,11 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="social" options={{ title: t('tabs.social'), tabBarLabel: label(t('tabs.social')),
-        tabBarIconStyle: standardIconSlot, tabBarIcon: ({ focused, color }) => <TabSocialIcon focused={focused} color={color} /> }} />
       <Tabs.Screen
         name="sonim"
         options={{
           title: t('tabs.sonim'),
-          tabBarLabel: label(t('tabs.sonim')),
+          tabBarAccessibilityLabel: t('tabs.sonim'),
           tabBarStyle: { display: 'none' },
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
@@ -159,13 +131,15 @@ export default function TabsLayout() {
         name="account"
         options={{
           title: t('tabs.account'),
-          tabBarLabel: label(t('tabs.account')),
+          tabBarAccessibilityLabel: t('tabs.account'),
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
             <TabProfileIcon color={color} focused={focused} />
           ),
         }}
       />
+      {/* Social entry hidden only; existing Publication and deep links remain valid. */}
+      <Tabs.Screen name="social" options={{ href: null, title: t('tabs.social') }} />
       {/* Panier conservé comme route valide pour les liens directs, sans barre d'onglets. */}
       <Tabs.Screen name="cart" options={{ href: null, tabBarStyle: { display: 'none' }, title: t('tabs.cart') }} />
     </Tabs>

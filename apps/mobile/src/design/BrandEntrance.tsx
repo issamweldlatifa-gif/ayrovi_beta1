@@ -1,6 +1,6 @@
 /** One startup presentation only. Never delays the app behind an unbounded animation callback. */
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, useWindowDimensions } from 'react-native';
+import { Animated, Easing, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import { BrandSymbol } from './BrandMark';
 import { BrandLoadingIndicator } from './LoadingScreen';
 import { BRAND_ACCENT } from './brandAppearance';
@@ -8,14 +8,21 @@ import { useReduceMotion } from './motion';
 
 export function BrandEntrance({ ready, onShown, onDone }: { ready: boolean; onShown: () => void; onDone: () => void }) {
   const reduce = useReduceMotion();
-  const { width, height } = useWindowDimensions();
   const [waiting, setWaiting] = useState(false);
   const grow = useRef(new Animated.Value(0)).current;
   const cover = useRef(new Animated.Value(1)).current;
   const fade = useRef(new Animated.Value(1)).current;
   const callbacks = useRef({ onShown, onDone }); callbacks.current = { onShown, onDone };
-  useEffect(() => { callbacks.current.onShown(); }, []);
+  const [viewport, setViewport] = useState<{ width: number; height: number } | null>(null);
+  const shown = useRef(false);
+  const hasLayout = viewport !== null;
+  const onLayout = ({ nativeEvent: { layout } }: LayoutChangeEvent) => {
+    if (layout.width <= 0 || layout.height <= 0) return;
+    setViewport(previous => previous?.width === layout.width && previous.height === layout.height ? previous : { width: layout.width, height: layout.height });
+    if (!shown.current) { shown.current = true; callbacks.current.onShown(); }
+  };
   useEffect(() => {
+    if (!hasLayout) return;
     if (reduce) { cover.setValue(0); setWaiting(true); return; }
     let live = true;
     const complete = () => { if (live) { cover.setValue(0); setWaiting(true); } };
@@ -28,7 +35,7 @@ export function BrandEntrance({ ready, onShown, onDone }: { ready: boolean; onSh
     const deadline = setTimeout(complete, 1000);
     sequence.start(complete);
     return () => { live = false; clearTimeout(deadline); sequence.stop(); };
-  }, [reduce, grow, cover]);
+  }, [hasLayout, reduce, grow, cover]);
   useEffect(() => {
     if (!ready || !waiting) return;
     let finished = false;
@@ -38,11 +45,12 @@ export function BrandEntrance({ ready, onShown, onDone }: { ready: boolean; onSh
     const deadline = setTimeout(done, 260); exit.start(done);
     return () => { finished = true; clearTimeout(deadline); exit.stop(); };
   }, [ready, waiting, reduce, fade]);
-  const maxScale = Math.ceil(Math.hypot(width, height) / 48) + 2;
-  return <Animated.View testID="brand-entrance" accessibilityRole="progressbar" style={[StyleSheet.absoluteFill, { zIndex: 1000, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', opacity: fade }]}>
+  const maxScale = Math.ceil(Math.hypot(viewport?.width ?? 0, viewport?.height ?? 0) / 96) + 1;
+  const half = 48;
+  return <Animated.View onLayout={onLayout} testID="brand-entrance" accessibilityRole="progressbar" style={[StyleSheet.absoluteFill, { zIndex: 1000, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', opacity: fade }]}>
     {waiting ? <BrandLoadingIndicator /> : null}
     <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', opacity: cover }]}>
-      <Animated.View testID="brand-blue-fill" style={{ position: 'absolute', width: 96, height: 96, borderRadius: 48, backgroundColor: BRAND_ACCENT, transform: [{ scale: grow.interpolate({ inputRange: [0, 1], outputRange: [0, maxScale] }) }] }} />
+      <Animated.View testID="brand-blue-fill" style={{ position: 'absolute', left: '50%', top: '50%', marginLeft: -half, marginTop: -half, width: 96, height: 96, borderRadius: 48, backgroundColor: BRAND_ACCENT, transform: [{ scale: grow.interpolate({ inputRange: [0, 1], outputRange: [0, maxScale] }) }] }} />
       <BrandSymbol width={96} color={BRAND_ACCENT} />
     </Animated.View>
   </Animated.View>;

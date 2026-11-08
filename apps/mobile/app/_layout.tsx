@@ -71,7 +71,7 @@ function Navigation() {
   // Purge le cache disque d'images si l'empreinte de build de l'APK a changé.
   useImageCacheGuard();
 
-  // Liens profonds : branchés une fois que la navigation existe, pas avant.
+  // Subscribe immediately; queue links until the navigator is ready.
   useDeepLinkRouting(readyToPaint);
 
   // Notifications : l'appareil s'annonce au serveur, qui dit s'il peut

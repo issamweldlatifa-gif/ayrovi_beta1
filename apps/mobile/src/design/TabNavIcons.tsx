@@ -1,7 +1,7 @@
 /**
  * Icônes officielles de la barre de navigation principale — famille unique à trait
  * fin (`Ionicons` `-outline`) partagée par toute l'application et ses extensions :
- *   1. Accueil (`home-outline`)
+ *   1. Accueil (approved heart-handshake brand symbol)
  *   2. Lens (`camera-outline`)
  *   3. AYWEBs (`paw-outline` — patte de chat officielle en violet `#0113B5`,
  *      remplaçant les badges matriciels `assets/aywebs/aywebs-icon-violet.png`
@@ -43,8 +43,8 @@ function TabStrokeGlyph({
   );
 }
 
-export function TabHomeIcon({ color, size }: TabNavIconProps) {
-  return <TabStrokeGlyph name="home-outline" color={color} size={size} />;
+export function TabHomeIcon(props: TabNavIconProps) {
+  return <TabBrandIcon {...props} />;
 }
 
 export function TabLensIcon({ color, size }: TabNavIconProps) {
@@ -66,9 +66,12 @@ export function TabProfileIcon({ color, size }: TabNavIconProps) {
 }
 
 /** A brand navigation exception, not a second interface icon family. */
-export function TabSocialIcon({ focused = false, size = 24 }: TabNavIconProps) {
+export function TabBrandIcon({ focused = false, size = 24 }: TabNavIconProps) {
   const theme = useTheme();
   return <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
     <BrandSymbol width={size} color={focused ? BRAND_ACCENT : theme.mode === 'dark' ? BRAND.white : BRAND.black} />
   </View>;
 }
+
+/** Compatibility renderer retained; no Social entry is shown in navigation. */
+export const TabSocialIcon = TabBrandIcon;

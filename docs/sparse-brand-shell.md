@@ -4,8 +4,8 @@
 
 - Mobile main header: lowercase vector wordmark only, disabled `Plus ★ Light`, notification bell, cart. No invented Plus destination. AYWEBs keeps its supplied wordmark and existing favorites/cart actions.
 - The main Menu entry is not rendered. Its previous complete native implementation is retained, unmounted, as `LegacyMainMenu.tsx`; web `MenuDrawer`, routing, settings, pages and data remain intact. SONIM's own conversation menu is not the main Menu and is unchanged.
-- Existing Accueil remains a house. Social is a **sixth native tab**, between AYWEBs and Sonim, re-exporting the existing Publication screen/error boundary. No destination was removed and no Publication business core was copied. `/publications` remains valid.
-- Social's inactive symbol uses black in light mode, white in dark mode; selected uses **#0095F6**, exactly Publication Verified. `assets/brand/appearance.json` is their shared accent source; commerce primary colors stay unchanged.
+- Latest revision: Accueil uses the brand symbol; only five native destinations are visible (Accueil, Lens, AYWEBs, Sonim, Profil), without visual labels. The Social tab entry is hidden with `href: null`, retaining the Publication screen/error boundary. No destination was removed and no Publication business core was copied. `/publications` remains valid.
+- Home's inactive symbol uses black in light mode, white in dark mode; selected uses **#0095F6**, exactly Publication Verified. `assets/brand/appearance.json` is their shared accent source; commerce primary colors stay unchanged.
 - Footer brand graphic removed on native/web; payment strip, legal/help links and commerce preserved. SONIM's decorative secondary logo removed; Publication auth uses the wordmark only.
 - Web main header likewise hides Menu, uses wordmark/Plus/bell/cart, and opens the existing account Notifications section. CRM custom logo data/rendering remains supported, without the former extra repeated wordmark.
 

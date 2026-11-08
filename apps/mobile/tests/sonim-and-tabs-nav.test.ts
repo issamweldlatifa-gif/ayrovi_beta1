@@ -1,5 +1,5 @@
 /**
- * Verrou de la barre de navigation transparente à 6 onglets (style Zalando) et de Sonim.
+ * Verrou de la barre de navigation transparente à 5 onglets (style Zalando) et de Sonim.
  *
  * Garantit :
  *   1. l'ordre exact `index` · `lens` · `aywebs` · `social` · `sonim` · `account` (+ `cart` masqué) ;
@@ -26,14 +26,14 @@ import {
 
 const ROOT = path.resolve(__dirname, '..');
 
-describe('barre du bas transparente à coins arrondis compacts (6 onglets — style Zalando)', () => {
+describe('barre du bas transparente à coins arrondis compacts (5 onglets — style Zalando)', () => {
   const layout = readFileSync(path.join(ROOT, 'app/(tabs)/_layout.tsx'), 'utf8');
   const navIcons = readFileSync(path.join(ROOT, 'src/design/TabNavIcons.tsx'), 'utf8');
   const tokensMobile = readFileSync(path.join(ROOT, 'src/design/tokens.mobile.ts'), 'utf8');
 
-  it('respecte l’ordre exact Accueil · Lens · AYWEBs · Social · Sonim · Profil (+ cart masqué) et masque la barre sur Lens, Sonim et Panier', () => {
+  it('respecte l’ordre exact Accueil · Lens · AYWEBs · Sonim · Profil (+ cart masqué) et masque la barre sur Lens, Sonim et Panier', () => {
     const names = Array.from(layout.matchAll(/<Tabs\.Screen[\s\S]*?\bname="([^"]+)"/g), (m) => m[1]);
-    expect(names).toEqual(['index', 'lens', 'aywebs', 'social', 'sonim', 'account', 'cart']);
+    expect(names).toEqual(['index', 'lens', 'aywebs', 'sonim', 'account', 'social', 'cart']);
     expect(layout).toMatch(/name="cart"\s+options=\{\{\s*href:\s*null,\s*tabBarStyle:\s*\{\s*display:\s*'none'\s*\}/);
     expect(layout).toContain('backBehavior="history"');
     const lensBlock = /<Tabs\.Screen\s+name="lens"[\s\S]*?\/>/.exec(layout)?.[0] ?? '';
@@ -85,9 +85,9 @@ describe('barre du bas transparente à coins arrondis compacts (6 onglets — st
     expect(navIcons).toContain('export function TabSonimIcon');
     expect(navIcons).toContain('export function TabProfileIcon');
 
+    expect(navIcons).toContain('return <TabBrandIcon {...props} />');
     const outlineNames = Array.from(navIcons.matchAll(/name="([a-z-]+)"/g), (m) => m[1]);
     expect(outlineNames).toEqual([
-      'home-outline',
       'camera-outline',
       'paw-outline',
       'sparkles-outline',
