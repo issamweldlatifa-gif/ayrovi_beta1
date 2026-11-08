@@ -1,3 +1,4 @@
+import { schemaStatements } from './schemaStatements';
 import { upgradePublicationMediaPresentation } from '../catalogue/upgradePublicationMediaPresentation';
 import { reserveCatalogueSale, catalogId } from '../catalogue/localSale';
 import { installPublicationSelection } from '../catalogue/installPublicationSelection';
@@ -3313,35 +3314,16 @@ export class QatafoDatabase {
    * Multi-statement DDL helper. `run()` prepares a single statement, so a schema
    * block written as `CREATE TABLE …; CREATE TABLE …;` would silently execute only
    * its first statement. Additive foundations (ERP Core) use this instead.
-   * Every statement is expected to be idempotent (IF NOT EXISTS / ALTER on a
-   * missing column); a statement that fails is skipped, never thrown.
+   * Callers must use IF NOT EXISTS or check columns before ALTER. Unexpected
+   * failures propagate to the caller; the whole batch rolls back (savepoint when
+   * nested). This helper accepts simple DDL blocks, not trigger bodies. Quoted/comment semicolons are supported.
    */
   public runSchema(sql: string): number {
-    const statements = sql
-      .split(';')
-      .map((statement) => statement.trim())
-      // Un segment qui COMMENCE par des lignes de commentaire n'est pas un commentaire :
-      // `-- ... \n CREATE UNIQUE INDEX ...` est une contrainte documentée. Les ignorer tels
-      // quels faisait disparaître silencieusement des index (mesuré en P2.3 sur
-      // `idx_inventory_item_identity`, `idx_inventory_movement_idempotency`,
-      // `idx_po_line_product_unique`). On ne retire que les lignes de tête, jamais le texte
-      // d'une instruction, et un segment entièrement commenté reste écarté.
-      .map((statement) => {
-        const lines = statement.split('\n');
-        while (lines.length && lines[0].trim().startsWith('--')) lines.shift();
-        return lines.join('\n').trim();
-      })
-      .filter((statement) => statement.length > 0 && !statement.startsWith('--'));
-    let applied = 0;
-    for (const statement of statements) {
-      try {
-        this.db.exec(`${statement};`);
-        applied += 1;
-      } catch {
-        // already applied (e.g. ALTER TABLE ADD COLUMN on an existing column) — idempotent by design
-      }
-    }
-    return applied;
+    const statements = schemaStatements(sql);
+    return this.db.transaction(() => {
+      for (const statement of statements) this.db.exec(`${statement};`);
+      return statements.length;
+    })();
   }
 
   public transaction<T>(work: () => T): T {

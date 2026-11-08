@@ -170,3 +170,7 @@ Les appels du site et de l’Admin utilisent le même domaine. Aucun `CORS_ORIGI
 - Changez immédiatement tout secret qui aurait été exposé.
 
 Consultez `README.md` pour l’installation générale et `ADMIN_CMS.md` pour les routes, permissions et invariants de données.
+
+### Vérifier une sauvegarde sans écraser la base
+
+`npm run backup:verify -- /chemin/vers/sauvegarde.sqlite` crée une copie temporaire isolée via l'API SQLite, vérifie `integrity_check` et `foreign_key_check`, puis supprime uniquement cette copie temporaire. Le script de sauvegarde vérifie désormais aussi les clés étrangères avant l'upload et la rétention. La commande de vérification ne démarre pas l'application et ne vérifie pas les uploads. Aucune restauration en place ni activation de stockage externe n'est effectuée. Voir [les preuves et limites de restauration](architecture/SQLITE_SCHEMA_AND_RESTORE_SAFETY_AR.md) avant toute opération réelle.

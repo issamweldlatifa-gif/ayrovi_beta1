@@ -30,6 +30,7 @@ try {
 
 const copy = new Database(destination, { fileMustExist: true });
 let integrity = '';
+let foreignKeyViolations = 0;
 try {
   // Lens result cache is disposable and can contain OCR-derived text. Keep it
   // out of longer-lived backups; it is recomputed on demand after restoration.
@@ -41,13 +42,15 @@ try {
   if (String(copy.pragma('journal_mode', { simple: true }) || '').toLowerCase() === 'wal') {
     copy.pragma('wal_checkpoint(TRUNCATE)');
   }
-  integrity = String(copy.pragma('quick_check', { simple: true }) || '');
+  const checks = copy.pragma('quick_check');
+  integrity = checks.length === 1 && checks[0].quick_check === 'ok' ? 'ok' : 'failed';
+  foreignKeyViolations = copy.pragma('foreign_key_check').length;
 } finally {
   copy.close();
 }
-if (integrity.toLowerCase() !== 'ok') {
+if (integrity !== 'ok' || foreignKeyViolations > 0) {
   fs.rmSync(destination, { force: true });
-  console.error(`[backup] فشل فحص النسخة: ${integrity || 'unknown'}`);
+  console.error(`[backup] فشل فحص النسخة: ${integrity || 'unknown'}; foreign_key_violations=${foreignKeyViolations}`);
   process.exit(1);
 }
 
@@ -147,6 +150,7 @@ console.log(JSON.stringify({
   backup: destination,
   bytes: fs.statSync(destination).size,
   integrity,
+  foreignKeyViolations,
   external,
   retentionDays,
   removed,
