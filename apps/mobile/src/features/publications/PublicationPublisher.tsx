@@ -249,7 +249,7 @@ export function PublicationPublisher({
                 accessibilityLabel={name}
               />
             ) : ownBrand ? (
-              <BrandSymbol width={H.mark} color={P.ink} />
+              <BrandSymbol width={H.mark} color={P.verified} />
             ) : (
               <AppText
                 testID="publication-publisher-initial"

@@ -150,7 +150,7 @@ export const ReelsViewer: React.FC<{
               {'views' in (post as ReelItem) && <p className="mb-1 text-xs font-bold text-white/70"><Play size={14} /> {(post as ReelItem).views.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN')} {tr('vues', 'مشاهدة')}</p>}
               <div className="flex items-center gap-2.5">
                 <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
-                  {post.publisher.official ? <img src="/media/logo-ayrovi.png?v=6.0" alt="" className="h-11 w-11 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-11 w-11 object-cover" /> : <span className="text-xs font-black text-ink">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
+                  {post.publisher.official ? <img src="/media/logo-ayrovi-symbol-blue.svg?v=6.0" alt="" className="h-11 w-11 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-11 w-11 object-cover" /> : <span className="text-xs font-black text-ink">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
                 </span>
                 <p className="text-sm font-extrabold text-white drop-shadow">{post.publisher.name}</p>
               </div>

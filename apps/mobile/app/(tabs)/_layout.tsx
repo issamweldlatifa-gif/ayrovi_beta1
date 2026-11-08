@@ -3,13 +3,13 @@
  * pleine largeur posée bord à bord en bas de l'écran (aucune transparence,
  * aucun vide sous la barre) :
  *
- *   `Accueil` · `Lens` · `AYWEBs` · `Sonim` · `Profil`
+ *   `Accueil` · `Lens` · `AYWEBs` · `Clean` · `Profil`
  *
  *   • Aucun libellé visuel; les noms accessibles sont conservés.
- *   • Accueil utilise notre symbole (bleu Verified quand actif). Les autres icônes appartiennent à la famille unique officielle (`Ionicons`
+ *   • Accueil utilise notre symbole (noir/blanc même actif). Les autres icônes appartiennent à la famille unique officielle (`Ionicons`
  *     `-outline` via `TabNavIcons`, grille `24 × 24` pt).
- *   • `AYWEBs` occupe l'emplacement central avec l'icône patte de chat officielle
- *     en violet de marque (`#0113B5` en clair, `#FFFFFF` en sombre), sans libellé.
+ *   • `AYWEBs` occupe l'emplacement central avec l'icône recherche avec étoile
+ *     en noir/blanc, comme les autres icônes monochromes, sans libellé.
  *   • `cart` reste une route valide (`href: null`) pour l'icône panier.
  */
 import { StyleSheet } from 'react-native';
@@ -25,7 +25,7 @@ import {
   TabSonimIcon,
 } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
-import { AYWEBS_WORDMARK_TINT, TAB_BAR_SURFACE } from '@/design/tokens.mobile';
+import { TAB_BAR_SURFACE } from '@/design/tokens.mobile';
 import { useI18n } from '@/i18n';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
@@ -111,7 +111,7 @@ export default function TabsLayout() {
           tabBarAccessibilityLabel: t('tabs.aywebs'),
           tabBarIconStyle: centerIconSlot,
           tabBarIcon: ({ focused }) => (
-            <TabAywebsPawIcon color={AYWEBS_WORDMARK_TINT[theme.mode]} focused={focused} />
+            <TabAywebsPawIcon color={theme.colors.ink} focused={focused} />
           ),
         }}
       />

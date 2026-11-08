@@ -1,5 +1,6 @@
 import { View, StyleSheet } from "react-native";
 import { AppText } from "@/design/ui";
+import { BRAND_ACCENT } from "@/design/brandAppearance";
 import { BrandSymbol } from "@/design/BrandMark";
 import { useTheme } from "@/design/theme";
 
@@ -9,7 +10,7 @@ export function ReelPublisher({ onMedia = false }: { onMedia?: boolean }) {
   return (
     <View testID="reel-publisher" style={styles.row}>
       <View style={[styles.avatar, { backgroundColor: theme.colors.surface }]}>
-        <BrandSymbol width={18} color={theme.colors.ink} />
+        <BrandSymbol width={18} color={BRAND_ACCENT} />
       </View>
       <AppText
         variant="body"

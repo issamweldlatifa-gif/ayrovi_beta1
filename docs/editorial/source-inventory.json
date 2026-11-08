@@ -14644,7 +14644,7 @@
     {
       "file": "client/src/components/assistant/AiAssistantDrawer.tsx",
       "domain": "sonim",
-      "sha256": "f9e3686fc8bdf5ebb1c76ee930f1741ef44a95e16616d0e0d431f53df743656c",
+      "sha256": "57e9c45c19d0f739c0ba31156fcf49507f321124e2ea52dae80db00ad02cd79e",
       "lines": 1030,
       "imports": [
         "../../ayrovix/services/productSelection",
@@ -15077,7 +15077,7 @@
     {
       "file": "client/src/components/assistant/AssistantHeader.tsx",
       "domain": "sonim",
-      "sha256": "ab1c006914011c85ded5b2d301a72c9687cd86932f8d3066eeed7a4b31874519",
+      "sha256": "05d5a25036967f9476c47c4ba2fab19262862fb18cb59ffb9c04494d290f1713",
       "lines": 19,
       "imports": [
         "react",
@@ -15104,7 +15104,7 @@
           "className": "{iconButton}",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Fermer SONIM', 'إغلاق SONIM')}",
+          "ariaLabel": "{tr('Fermer Clean', 'إغلاق Clean')}",
           "onClick": "{onClose}",
           "disabled": null
         }
@@ -15401,7 +15401,7 @@
     {
       "file": "client/src/components/assistant/AssistantSideMenu.tsx",
       "domain": "sonim",
-      "sha256": "2d3eeea93c89893478b0d8fdf125988d07701cee75552c419fa5a202caa5db79",
+      "sha256": "d82d6174ffb6d08fc4519724cb813e0a3ba5477ef05339bf9c845f41d41301e5",
       "lines": 110,
       "imports": [
         "./AssistantHistoryNotice",
@@ -16084,7 +16084,7 @@
     {
       "file": "client/src/components/BottomNavBar.tsx",
       "domain": "shell-content",
-      "sha256": "8ba8c52aede4767083e5bbb1f41d20b0e5d0c1c53a16cb0f669f7cfd4289068a",
+      "sha256": "ba86a10827020155061d53457f60b213d3b6f78161df690b9c9accbee897af77",
       "lines": 116,
       "imports": [
         "react",
@@ -16125,7 +16125,7 @@
           "className": "{NAV_ITEM}",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr(\"SONIM — l'assistant IA de ZAYROVI\", 'SONIM — المساعد الذكي لـ ZAYROVI')}",
+          "ariaLabel": "{tr(\"Clean — l'assistant IA de ZAYROVI\", 'Clean — المساعد الذكي لـ ZAYROVI')}",
           "onClick": "{onToggleAiDrawer}",
           "disabled": null
         },
@@ -16163,7 +16163,7 @@
       "icons": [
         {
           "module": "./QatafoIcons",
-          "bindings": "{ AyWebs, Vision, LensBox, Sonim, ScanSearch }",
+          "bindings": "{ AyWebs, Vision, LensBox, ScanSearch }",
           "line": 2
         }
       ],
@@ -18530,7 +18530,7 @@
     {
       "file": "client/src/config/interfaceConfig.ts",
       "domain": "shell-content",
-      "sha256": "c2b720b003d78d10af9280b5e82132e54c185c3764b6da0769d714c6effae8ae",
+      "sha256": "834c046695f5e35d46f5d93f34058aafd5528261d31e747249f7f731600d33c7",
       "lines": 332,
       "imports": [
         "../../../shared/brand.generated",
@@ -22787,7 +22787,7 @@
     {
       "file": "client/src/social/components/FullscreenMediaHeader.tsx",
       "domain": "discovery-social",
-      "sha256": "b38ec47a4011707aae15863eda25f857c6484dcedee0d38522c8442ec67335ce",
+      "sha256": "06a42bf6eedac3b07f812d4ce024868f50164d21274264bd94245b24f207ba5a",
       "lines": 33,
       "imports": [
         "react",
@@ -22834,7 +22834,7 @@
     {
       "file": "client/src/social/components/ReelsViewer.tsx",
       "domain": "discovery-social",
-      "sha256": "620fe80ab61c492865d9248bfd29ceda97875d828e2c1699924dd51f66916113",
+      "sha256": "b1f0fc45a23969da2f180542ef1e7d5c329ae326abe6c4caa6982cf61e133a96",
       "lines": 165,
       "imports": [
         "../../components/QatafoIcons",
@@ -22899,7 +22899,7 @@
     {
       "file": "client/src/social/components/StoryFeed.tsx",
       "domain": "discovery-social",
-      "sha256": "7966130719104d66833cc2b6f7779971bd16563d45ec29f1231c84141c5b8983",
+      "sha256": "f2eb2ff6eb17505b60a265020e312119032ac1180c451384959e90bd09103a19",
       "lines": 188,
       "imports": [
         "react",

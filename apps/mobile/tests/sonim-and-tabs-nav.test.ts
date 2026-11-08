@@ -77,33 +77,15 @@ describe('barre du bas transparente à coins arrondis compacts (5 onglets — st
     expect(block).not.toContain('alpha(');
   });
 
-  it('utilise une seule famille d’icônes vectorielles à trait fin (Ionicons -outline, 24×24) avec patte violette AYWEBs', () => {
-    expect(navIcons).toContain("from '@expo/vector-icons/Ionicons'");
-    expect(navIcons).toContain('export function TabHomeIcon');
-    expect(navIcons).toContain('export function TabLensIcon');
-    expect(navIcons).toContain('export function TabAyWebsIcon');
-    expect(navIcons).toContain('export function TabSonimIcon');
-    expect(navIcons).toContain('export function TabProfileIcon');
-
-    expect(navIcons).toContain('return <TabBrandIcon {...props} />');
-    const outlineNames = Array.from(navIcons.matchAll(/name="([a-z-]+)"/g), (m) => m[1]);
-    expect(outlineNames).toEqual([
-      'camera-outline',
-      'paw-outline',
-      'sparkles-outline',
-      'person-outline',
-    ]);
-
-    expect(layout).toContain('<TabHomeIcon color={color}');
-    expect(layout).toContain('<TabLensIcon color={color}');
-    expect(layout).toContain('<TabAywebsPawIcon color={AYWEBS_WORDMARK_TINT[theme.mode]}');
-    expect(layout).toContain('<TabSonimIcon color={color}');
-    expect(layout).toContain('<TabProfileIcon color={color}');
-
-    expect(existsSync(path.join(ROOT, 'assets/tab-lens-icon.png'))).toBe(false);
-    expect(existsSync(path.join(ROOT, 'assets/tab-sonim-icon.png'))).toBe(false);
-  });
-});
+  it('uses the approved reference glyphs with a shared monochrome stroke and a local Clean color exception', () => {
+    expect(navIcons).toContain("from 'react-native-svg'");
+    expect(navIcons).toContain('TAB_ICON_STROKE = 2.2');
+    expect(navIcons).toContain('strokeWidth={TAB_ICON_STROKE}');
+    expect(navIcons).toContain('export const TabSonimIcon = TabCleanIcon');
+    expect(navIcons).toContain('export const TabAywebsPawIcon = TabAyWebsIcon');
+    expect(layout).not.toContain('AYWEBS_WORDMARK_TINT');
+    expect(layout).toContain('tabBarShowLabel: false');
+  });});
 
 describe('Sonim — modèle et outils serveur', () => {
   const baseMessage: SonimChatMessage = { id: 'a1', role: 'assistant', text: '' };

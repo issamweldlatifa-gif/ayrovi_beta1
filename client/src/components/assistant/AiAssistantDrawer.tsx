@@ -859,7 +859,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       dir={direction}
       role="dialog"
       aria-modal="true"
-      aria-label={tr('SONIM', 'SONIM')}
+      aria-label={tr('Clean', 'Clean')}
     >
       <section ref={pageRef} tabIndex={-1} className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden font-sans outline-none ${isDark ? 'bg-ink' : 'bg-surface'}`}>
         <div className="contents" inert={Boolean(isMenuOpen || isAttachmentSheetOpen || (feedbackLayer && feedbackMessage))}>
@@ -908,7 +908,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
               onClose={handleCloseAssistant}
             />
             {isBooting ? (
-              <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 pb-8 pt-8" aria-busy="true" aria-label={tr('Chargement de SONIM', 'جارٍ تحميل SONIM')}>
+              <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 pb-8 pt-8" aria-busy="true" aria-label={tr('Chargement de Clean', 'جارٍ تحميل Clean')}>
                 <div className="mx-auto h-5 w-44 animate-pulse rounded-control bg-line" />
                 <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-3">
                   {[0, 1, 2, 3].map((item) => <div key={item} className="h-28 animate-pulse rounded-card bg-line" />)}

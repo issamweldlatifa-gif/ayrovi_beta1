@@ -26,6 +26,7 @@ const writePng = async (file, input, width, height = width) => {
   await sharp(Buffer.from(input)).resize(width, height, { fit: 'contain' }).png({ compressionLevel: 9 }).toFile(file);
 };
 const media = 'client/public/media';
+fs.writeFileSync(`${media}/logo-ayrovi-symbol-blue.svg`, svg(symbol.width, symbol.height, path(symbol, BLUE)));
 for (const [tone, ink] of [['black', INK], ['white', WHITE]]) fs.writeFileSync(`${media}/logo-ayrovi-wordmark-${tone}.svg`, svg(wordmark.width, wordmark.height, path(wordmark, ink)));
 fs.writeFileSync(`${media}/logo-ayrovi-mark.svg`, mark(INK));
 fs.writeFileSync(`${media}/logo-ayrovi-icon.svg`, square(512));

@@ -466,7 +466,7 @@ export function SonimScreen() {
 
         <View style={styles.headerCenter}>
           <AppText style={[SONIM_TITLE_STYLE, { color: theme.colors.ink, fontFamily: FONTS.latin.bold }]}>
-            SONIM
+            Clean
           </AppText>
         </View>
 
@@ -910,7 +910,7 @@ export function SonimScreen() {
           ]}
         >
           <AppText style={[SONIM_TITLE_STYLE, { color: theme.colors.ink, fontFamily: FONTS.latin.bold }]}>
-            SONIM
+            Clean
           </AppText>
           <Pressable
             onPress={() => setMenuOpen(false)}

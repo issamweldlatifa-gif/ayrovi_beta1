@@ -4,7 +4,7 @@
 export const ar = {
   'tabs.home': 'الرئيسية',
   'tabs.lens': 'Lens',
-  'tabs.sonim': 'Sonim',
+  'tabs.sonim': 'Clean',
   'tabs.cart': 'السلّة',
   'tabs.account': 'حسابي',
   'common.language': 'اللغة',
@@ -934,13 +934,13 @@ export const ar = {
   'loading.cart': 'جارٍ تحميل السلّة…',
   'loading.requests': 'جارٍ تحميل الطلبات…',
 
-  /* ── Sonim (المساعد الذكي للمحادثة) ─────────────────────────────────────── */
+  /* ── Clean (المساعد الذكي للمحادثة) ─────────────────────────────────────── */
   'sonim.greeting': 'مرحباً',
   'sonim.greetingNamed': 'مرحباً {name}',
   'sonim.subtitle': 'كيف يمكنني مساعدتك اليوم؟',
   'sonim.body': 'يمكنني تحليل منتجاتك واحتساب السعر النهائي بالدينار والبحث عن المنتجات وتتبّع طلباتك.',
-  'sonim.unavailable': 'مساعد Sonim غير متاح مؤقتاً. يرجى المحاولة بعد لحظات.',
-  'sonim.placeholder': 'اسأل Sonim…',
+  'sonim.unavailable': 'مساعد Clean غير متاح مؤقتاً. يرجى المحاولة بعد لحظات.',
+  'sonim.placeholder': 'اسأل Clean…',
   'sonim.send': 'إرسال',
   'sonim.stop': 'إيقاف',
   'sonim.camera': 'التقاط صورة',

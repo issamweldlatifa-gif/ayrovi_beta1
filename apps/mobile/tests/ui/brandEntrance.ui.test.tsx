@@ -3,22 +3,21 @@ import { Animated } from 'react-native';
 import { Path } from 'react-native-svg';
 import { BrandEntrance } from '@/design/BrandEntrance';
 import { TabHomeIcon } from '@/design/TabNavIcons';
-import { BRAND_ACCENT } from '@/design/brandAppearance';
 let mockReduce = false;
 let mockMode = 'light';
 jest.mock('@/design/motion', () => ({ useReduceMotion: () => mockReduce }));
 jest.mock('@/design/theme', () => ({ useTheme: () => ({ mode: mockMode, colors: { ink: '#0A0A0A', muted: '#666666', line: '#E5E5E5' }, iconSize: { md: 24 } }) }));
 afterEach(() => { jest.useRealTimers(); jest.restoreAllMocks(); mockReduce = false; mockMode = 'light'; });
-it('uses verified blue only for the selected Home brand symbol', () => {
+it('keeps the Home symbol monochrome in both selection states and themes', () => {
   const tree = render(<TabHomeIcon color="black" focused={false} />);
   expect(tree.UNSAFE_getByType(Path).props.fill).toBe('#0A0A0A');
   tree.rerender(<TabHomeIcon color="black" focused />);
-  expect(tree.UNSAFE_getByType(Path).props.fill).toBe(BRAND_ACCENT);
+  expect(tree.UNSAFE_getByType(Path).props.fill).toBe('#0A0A0A');
   mockMode = 'dark';
   tree.rerender(<TabHomeIcon color="black" focused={false} />);
   expect(tree.UNSAFE_getByType(Path).props.fill).toBe('#FFFFFF');
   tree.rerender(<TabHomeIcon color="black" focused />);
-  expect(tree.UNSAFE_getByType(Path).props.fill).toBe(BRAND_ACCENT);
+  expect(tree.UNSAFE_getByType(Path).props.fill).toBe('#FFFFFF');
 });
 it('releases the native splash after paint, waits for readiness and completes once even if animation callbacks are lost', () => {
   jest.useFakeTimers();

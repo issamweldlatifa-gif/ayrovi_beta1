@@ -170,14 +170,15 @@ describe('identité visuelle AYWEBs — nouveau mot-symbole et nouvelle icône d
     const tabs = readFileSync(path.join(ROOT, 'app/(tabs)/_layout.tsx'), 'utf8');
     const navIcons = readFileSync(path.join(ROOT, 'src/design/TabNavIcons.tsx'), 'utf8');
     expect(tabs).toContain('TabAywebsPawIcon');
-    expect(navIcons).toContain('name="paw-outline"');
+    expect(navIcons).toContain('kind="search"');
+    expect(navIcons).toContain('strokeWidth={TAB_ICON_STROKE}');
     expect(tabs.includes('pricetags'), 'la puce générique doit avoir disparu').toBe(false);
     expect(iconViolet.width).toBe(iconViolet.height);
 
     /* Teinte native exacte (#0113B5 en clair, #FFFFFF en sombre) appliquée sur
        les trois emplacements. */
     expect(header).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
-    expect(tabs).toContain('color={AYWEBS_WORDMARK_TINT[theme.mode]}');
+    expect(tabs).not.toContain('AYWEBS_WORDMARK_TINT');
     expect(sheet).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
 
     /* Barre du bas : uniquement l’icône AYWEBs, aucun texte « AYWEBs » dessous. */

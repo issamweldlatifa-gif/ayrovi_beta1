@@ -189,7 +189,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
   icons: { library: 'ayrovi', color: '#000000', activeColor: '#0113b5', size: 28, style: 'outline' },
   navigation: {
     background: '#ffffff', color: '#000000', activeBackground: '#000000', showLabels: true, height: 56,
-    homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'SONIM', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision', aywebsLabel: 'AyWebs', ocerexLabel: 'OCEREX',
+    homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'Clean', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision', aywebsLabel: 'AyWebs', ocerexLabel: 'OCEREX',
   },
   slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
   layout: { sectionGap: 0, maxWidth: 1280, pagePadding: 16, cardRadius: 16, cardBorderWidth: 1, shadow: 'soft' },

@@ -3,7 +3,7 @@
  * - Surface pleine opaque (`TAB_BAR_SURFACE`), zéro translucidité
  * - Posée bord à bord tout en bas de l'écran (`bottom: 0`, aucun espace sous la barre)
  * - 5 icônes vectorielles à trait fin de la même famille (`TabHomeIcon`, `TabLensIcon`,
- *   `TabAyWebsIcon` patte violette `#0113B5`, `TabSonimIcon`, `TabProfileIcon`) `24 × 24` pt
+ *   `TabAyWebsIcon` recherche monochrome, `TabSonimIcon` (Clean), `TabProfileIcon`) `24 × 24` pt
  */
 import React from 'react';
 import { render } from '@testing-library/react-native';
@@ -129,7 +129,7 @@ describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille
       size: number;
     }) => React.ReactElement<{ color?: string }>;
     const aywebsIconEl = aywebsIconFn({ color: '#0A0A0A', focused: false, size: 24 });
-    expect(aywebsIconEl.props.color).toBe(AYWEBS_WORDMARK_TINT.light);
+    expect(aywebsIconEl.props.color).toBe('#0A0A0A');
 
     const json = JSON.stringify(tree.toJSON());
     expect(json).not.toContain('#E5E5E5');

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AyWebs, Vision, LensBox, Sonim, ScanSearch } from './QatafoIcons';
+import { AyWebs, Vision, LensBox, ScanSearch } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
@@ -89,9 +89,9 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
             <LensBox className="interface-runtime-icon" style={iconStyle(false)} />
             {config.showLabels && <span className="max-w-full truncate">{config.lensLabel}</span>}
           </button>
-          <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr("SONIM — l'assistant IA de ZAYROVI", 'SONIM — المساعد الذكي لـ ZAYROVI')} aria-pressed={isAiDrawerOpen}>
-            <Sonim className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />
-            {config.showLabels && <span className={`max-w-full truncate ${isAiDrawerOpen ? 'text-cta' : ''}`}>{config.aiLabel}</span>}
+          <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr("Clean — l'assistant IA de ZAYROVI", 'Clean — المساعد الذكي لـ ZAYROVI')} aria-pressed={isAiDrawerOpen}>
+            <img src="/media/clean-message.svg" alt="" aria-hidden="true" className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />
+            {config.showLabels && <span className={`max-w-full truncate ${isAiDrawerOpen ? 'text-cta' : ''}`}>{/^sonim$/i.test(config.aiLabel.trim()) ? 'Clean' : config.aiLabel}</span>}
           </button>
           {ayWebsEnabled && (
             <button type="button" onClick={onOpenAyWebs} className={NAV_ITEM} aria-label={tr('AyWebs — shopping depuis le web', 'AyWebs — التسوق من الويب')} aria-current={isAyWebsOpen ? 'page' : undefined}>

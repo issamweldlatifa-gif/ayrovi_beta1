@@ -139,7 +139,8 @@ describe('verrous statiques anti-collision dans AppImage, AYWEBs et CI Android',
       collectSourceText(path.join(MOBILE_ROOT, 'app'));
     const aywebsDir = path.join(MOBILE_ROOT, 'assets/aywebs');
     for (const entry of fs.readdirSync(aywebsDir, { withFileTypes: true })) {
-      if (entry.isDirectory()) continue;
+      // Retired navigation rasters are deliberately retained, not rendered; see navigation-icon-update.md.
+      if (entry.isDirectory() || ['aywebs-icon-violet.png', 'aywebs-icon-white.png'].includes(entry.name)) continue;
       expect(allMobileSources, `asset orphelin : assets/aywebs/${entry.name}`).toContain(`assets/aywebs/${entry.name}`);
     }
 
