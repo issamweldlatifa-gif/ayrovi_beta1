@@ -11,15 +11,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type SetStateAction } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
+  Keyboard,
+  StatusBar,
   Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
@@ -35,19 +35,17 @@ import {
   type AssistantState,
   type StreamFetch,
 } from '@/api/assistant';
+import { TabSonimIcon, ReferenceNavigationGlyph } from '@/design/TabNavIcons';
 import { AppImage } from '@/design/appImage';
 import { useResponsive } from '@/design/layout';
 import { rowDirectionFor } from '@/design/layoutLogic';
-import { TabSonimIcon } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
-import { FONTS } from '@/design/tokens.generated';
-import { SONIM_TITLE_STYLE } from '@/design/tokens.mobile';
-import { AppText, Drawer, DrawerItem } from '@/design/ui';
+import { AppText, Drawer } from '@/design/ui';
 import { AppSheet } from '@/design/sheet/AppSheet';
-import { SheetHeader } from '@/design/sheet/SheetHeader';
 import { cancelSonimGeneration, claimSonimGeneration, releaseSonimGeneration, useSonimSession, type SonimAttachment } from './sonimSession';
 import { sonimOwner } from './sonimContext';
-import { useKeyboardInset } from '@/design/useKeyboardInset';
+import { useCleanKeyboard } from './useCleanKeyboard';
+import { CleanCameraPanel } from './CleanCameraPanel';
 import { useI18n } from '@/i18n';
 import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
@@ -57,7 +55,7 @@ import {
   sonimStateTranslationKey,
   type SonimChatMessage,
 } from './sonimModel';
-import { CLEAN, CleanWordmark, CleanActionGlyph } from './CleanVisuals';
+import { CLEAN, CLEAN_TYPE, CleanWordmark, CleanActionGlyph, CleanSpeakerIcon, CleanMenuGlyph } from './CleanVisuals';
 import { useCleanRecording } from './useCleanRecording';
 import { SonimToolCards } from './SonimToolCards';
 
@@ -138,13 +136,16 @@ async function prepareAttachment(asset: ImagePicker.ImagePickerAsset): Promise<P
 
 export function SonimScreen() {
   const theme = useTheme();
+  const isFocused = useIsFocused();
   const { locale, t } = useI18n();
   const insets = useSafeAreaInsets();
   const { gutter } = useResponsive();
   const sessionId = useSessionId();
   const { account, status } = useSession();
-  const keyboardInset = useKeyboardInset(true);
-  const keyboardOpen = keyboardInset > 0;
+  const keyboard = useCleanKeyboard();
+  const keyboardOpen = keyboard.open;
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const closeCamera = useCallback(() => setCameraOpen(false), []);
 
   const [menuOpen, setMenuOpen] = useState(false);
   // Conversation is scoped to this signed-in account or guest session, held
@@ -189,15 +190,6 @@ export function SonimScreen() {
 
   const rowDir = rowDirectionFor(theme.isRTL);
   const bottomComposerClearance = Math.max(insets.bottom, theme.space[2]);
-
-  const closeSonim = useCallback(() => {
-    const maybeCanGoBack = (router as unknown as { canGoBack?: () => boolean }).canGoBack;
-    if (typeof maybeCanGoBack === 'function' && maybeCanGoBack()) {
-      router.back();
-      return;
-    }
-    router.replace('/');
-  }, []);
 
   const scrollToEnd = useCallback((animated = true) => {
     requestAnimationFrame(() => {
@@ -347,6 +339,7 @@ export function SonimScreen() {
   );
 
   const pickImage = useCallback(async (source: 'camera' | 'gallery') => {
+    const origin = captureOwner.current;
     if (attachments.length >= ASSISTANT_MAX_ATTACHMENTS || isStreaming) return;
     try {
       if (source === 'camera') {
@@ -359,6 +352,7 @@ export function SonimScreen() {
         : await ImagePicker.launchImageLibraryAsync(options);
       if (result.canceled || !result.assets?.[0]) return;
       const prepared = await prepareAttachment(result.assets[0]);
+      if (origin !== captureOwner.current) return;
       if (prepared) {
         setAttachments((prev) => [...prev.slice(0, ASSISTANT_MAX_ATTACHMENTS - 1), prepared]);
       }
@@ -366,6 +360,48 @@ export function SonimScreen() {
       setAttachmentError(true);
     }
   }, [attachments.length, isStreaming, setAttachments]);
+
+  const captureSerial = useRef(0), captureOwner = useRef('');
+  captureOwner.current = isFocused ? `${owner}:${conversationId}:${captureSerial.current}` : '';
+  const acceptPhoto = useCallback(async (asset: ImagePicker.ImagePickerAsset) => {
+    const origin = captureOwner.current;
+    const prepared = await prepareAttachment(asset);
+    if (origin !== captureOwner.current) return;
+    if (!prepared) throw new Error('photo');
+    setAttachments(prev => prev.length < ASSISTANT_MAX_ATTACHMENTS ? [...prev, prepared] : prev);
+  }, [setAttachments]);
+  const openCamera = useCallback(async () => {
+    if (isStreaming || attachments.length >= ASSISTANT_MAX_ATTACHMENTS) return;
+    const origin = captureOwner.current;
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (origin !== captureOwner.current) return;
+      if (!permission.granted) { setAttachmentError(true); return; }
+      setCameraOpen(true);
+    } catch { setAttachmentError(true); }
+  }, [isStreaming, attachments.length]);
+  useEffect(() => {
+    captureSerial.current++;
+    captureOwner.current = isFocused ? `${owner}:${conversationId}:${captureSerial.current}` : '';
+    setCameraOpen(false); setAttachmentOpen(false);
+    return () => { captureOwner.current = ''; };
+  }, [owner, conversationId, isFocused]);
+  const pickFile = useCallback(async () => {
+    if (isStreaming || attachments.length >= ASSISTANT_MAX_ATTACHMENTS) return;
+    const origin = captureOwner.current;
+    try {
+      const picker = require('expo-document-picker') as typeof import('expo-document-picker');
+      // The existing assistant accepts image attachments, not arbitrary PDF payloads.
+      const result = await picker.getDocumentAsync({ type: ['image/jpeg', 'image/png', 'image/webp'], copyToCacheDirectory: true, multiple: false });
+      if (result.canceled || origin !== captureOwner.current) return;
+      const asset = result.assets[0];
+      if (!asset || !asset.size || asset.size > 8 * 1024 * 1024) throw new Error('file-size');
+      const { File } = require('expo-file-system') as typeof import('expo-file-system');
+      const base64 = await new File(asset.uri).base64();
+      if (origin !== captureOwner.current) return;
+      await acceptPhoto({ uri: asset.uri, width: 0, height: 0, base64, mimeType: asset.mimeType });
+    } catch { if (origin === captureOwner.current) setAttachmentError(true); }
+  }, [isStreaming, attachments.length, acceptPhoto]);
 
   const copyMessage = useCallback(async (message: SonimChatMessage) => {
     const cleaned = cleanSonimText(message.text);
@@ -430,6 +466,11 @@ export function SonimScreen() {
   );
 
   const recording = useCleanRecording(`${owner}:${conversationId}`, text => setDraft(previous => previous ? `${previous} ${text}` : text));
+  useEffect(() => {
+    if (!isFocused) recording.cancel();
+    // Capture ownership is explicitly revoked on blur, even when tabs keep this screen mounted.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFocused]);
   const voiceBusy = recording.state !== 'idle';
   const canSend = (draft.trim().length > 0 || attachments.length > 0) && Boolean(sessionId && owned && conversationId);
   const assistantOffline = statusQuery.data?.ready === false;
@@ -460,7 +501,7 @@ export function SonimScreen() {
           ]}
           testID="sonim-menu-open"
         >
-          <Ionicons name="menu-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+          <CleanMenuGlyph />
         </Pressable>
 
         <View style={styles.headerCenter}><CleanWordmark /></View>
@@ -530,8 +571,8 @@ export function SonimScreen() {
         {messages.length === 0 ? (
           <View style={styles.welcomeWrap} testID="sonim-welcome">
             <View style={{ alignSelf: 'stretch', backgroundColor: CLEAN.bubble, borderRadius: theme.radius.xl, padding: theme.space[4], gap: theme.space[2] }}>
-              <AppText style={{ ...theme.text('body'), color: CLEAN.text, fontFamily: FONTS.latin.bold }}>{t('clean.welcome')}</AppText>
-              <AppText style={{ ...theme.text('caption'), color: CLEAN.text }}>{t('clean.disclaimer')}</AppText>
+              <AppText style={{ ...theme.text('label'), ...CLEAN_TYPE, color: CLEAN.ink }}>{t('clean.welcome')}</AppText>
+              <AppText style={{ ...theme.text('label'), ...CLEAN_TYPE, color: CLEAN.ink }}>{t('clean.disclaimer')}</AppText>
             </View>
 
             <View style={styles.actionsGrid}>
@@ -552,7 +593,7 @@ export function SonimScreen() {
                   ]}
                   testID={`sonim-action-${action.id}`}
                 >
-                  <AppText style={{ ...theme.text('label'), fontFamily: theme.isRTL ? FONTS.arabic.regular : FONTS.latin.regular, color: CLEAN.text }}>{action.title}</AppText>
+                  <AppText style={{ ...theme.text('label'), ...CLEAN_TYPE, color: CLEAN.ink }}>{action.title}</AppText>
                 </Pressable>
               ))}
             </View>
@@ -570,9 +611,10 @@ export function SonimScreen() {
                     key={message.id}
                     style={[
                       styles.userRow,
-                      { alignItems: theme.isRTL ? 'flex-start' : 'flex-end' },
+                      { flexDirection: rowDir, justifyContent: 'flex-end', alignItems: 'flex-start' },
                     ]}
                   >
+                    <View style={{ maxWidth: '82%', gap: 8, alignItems: 'flex-end' }}>
                     {message.attachments?.length ? (
                       <View style={[styles.attachmentRow, { flexDirection: rowDir }]}>
                         {message.attachments.map((att) => (
@@ -593,20 +635,23 @@ export function SonimScreen() {
                         styles.userBubble,
                         {
                           backgroundColor: CLEAN.bubble,
+                          borderBottomEndRadius: theme.radius.xs,
                           borderRadius: theme.radius.xl,
                         },
                       ]}
                     >
-                      <AppText variant="label" style={{ fontFamily: theme.isRTL ? FONTS.arabic.regular : FONTS.latin.regular }} color={CLEAN.text}>
+                      <AppText variant="label" style={{ ...CLEAN_TYPE }} color={CLEAN.text}>
                         {displayText}
                       </AppText>
                     </View> : null}
+                    </View>
+                    <CleanSpeakerIcon role="user" />
                   </View>
                 );
               }
 
               return (
-                <View key={message.id} style={styles.assistantRow}>
+                <View key={message.id} style={[styles.assistantRow, { flexDirection: rowDir, gap: 8, alignItems: 'flex-start' }]}><CleanSpeakerIcon role="assistant" />
                   <View
                     style={[
                       styles.assistantBubble,
@@ -617,15 +662,8 @@ export function SonimScreen() {
                       },
                     ]}
                   >
-                    <View style={[styles.assistantHead, { flexDirection: rowDir }]}>
-                      <TabSonimIcon size={theme.iconSize.xs} color={theme.colors.ink} focused />
-                      <AppText variant="captionStrong" color={CLEAN.ink}>
-                        {t('tabs.sonim')}
-                      </AppText>
-                    </View>
-
                     {displayText ? (
-                      <AppText variant="label" style={{ fontFamily: theme.isRTL ? FONTS.arabic.regular : FONTS.latin.regular }} color={CLEAN.ink}>{displayText}</AppText>
+                      <AppText variant="label" style={{ ...CLEAN_TYPE }} color={CLEAN.ink}>{displayText}</AppText>
                     ) : null}
 
                     {isLastAssistant && isStreaming && streamingState ? (
@@ -746,9 +784,9 @@ export function SonimScreen() {
           {voiceBusy ? <View style={{ flexDirection: rowDir, alignItems: 'center', minHeight: 40, gap: 8 }}>
             <AppText color={CLEAN.ink}>{recording.state === 'recording' ? t('clean.recording') : t('clean.processing')}</AppText>
             <Pressable onPress={recording.cancel} accessibilityRole="button" accessibilityLabel={t('common.cancel')} style={styles.composerIconBtn}><Ionicons name="close-outline" size={theme.iconSize.md} color={CLEAN.ink} /></Pressable>
-          </View> : <TextInput value={draft} onChangeText={setDraft} placeholder={t('sonim.placeholder')} placeholderTextColor={CLEAN.muted} selectionColor={CLEAN.text} multiline maxLength={ASSISTANT_MAX_CHARS} textAlign={theme.isRTL ? 'right' : 'left'} style={[theme.text('body'), theme.direction, styles.input, { color: CLEAN.ink }]} testID="sonim-input" />}
+          </View> : <TextInput value={draft} onChangeText={setDraft} placeholder={t('sonim.placeholder')} placeholderTextColor={CLEAN.muted} selectionColor={CLEAN.text} multiline maxLength={ASSISTANT_MAX_CHARS} textAlign={theme.isRTL ? 'right' : 'left'} style={[theme.text('label'), CLEAN_TYPE, theme.direction, styles.input, { color: CLEAN.ink }]} testID="sonim-input" />}
           <View style={{ flexDirection: rowDir, alignItems: 'center', justifyContent: 'space-between' }}>
-            <Pressable onPress={() => { setAttachmentError(false); setAttachmentOpen(true); }} disabled={isStreaming || voiceBusy || attachments.length >= ASSISTANT_MAX_ATTACHMENTS} accessibilityRole="button" accessibilityLabel={t('sonim.attach')} style={styles.composerIconBtn} testID="sonim-attach"><Ionicons name="add-outline" size={theme.iconSize.md} color={CLEAN.ink} /></Pressable>
+            <Pressable onPress={() => { Keyboard.dismiss(); setAttachmentError(false); setAttachmentOpen(true); }} disabled={isStreaming || voiceBusy || attachments.length >= ASSISTANT_MAX_ATTACHMENTS} accessibilityRole="button" accessibilityLabel={t('sonim.attach')} style={styles.composerIconBtn} testID="sonim-attach"><Ionicons name="add-outline" size={theme.iconSize.md} color={CLEAN.ink} /></Pressable>
             <View style={{ flexDirection: rowDir, alignItems: 'center', gap: 4 }}>
               <View style={{ width: 1, height: 24, backgroundColor: CLEAN.line }} />
               {recording.state === 'recording' ? <Pressable onPress={() => { void recording.finish(); }} accessibilityRole="button" accessibilityLabel={t('clean.finishRecording')} style={styles.composerIconBtn} testID="clean-recording-stop"><CleanActionGlyph state="recording" /></Pressable> : <>
@@ -763,16 +801,11 @@ export function SonimScreen() {
   );
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.colors.canvas }]}>
-      {Platform.OS === 'ios' ? (
-        <KeyboardAvoidingView style={[styles.body, { backgroundColor: CLEAN.paper }]} behavior="padding">
-          {content}
-        </KeyboardAvoidingView>
-      ) : (
-        content
-      )}
+    <View ref={keyboard.root} onLayout={keyboard.measure} style={[styles.root, { backgroundColor: CLEAN.paper, paddingBottom: keyboard.overlap }]}>
+      {isFocused && <StatusBar barStyle="dark-content" />}
+      {content}
 
-      <Drawer visible={menuOpen} onClose={() => setMenuOpen(false)}>
+      <Drawer surfaceColor={CLEAN.paper} visible={menuOpen} onClose={() => setMenuOpen(false)}>
         <View
           style={[
             styles.drawerHeader,
@@ -782,9 +815,7 @@ export function SonimScreen() {
             },
           ]}
         >
-          <AppText style={[SONIM_TITLE_STYLE, { color: theme.colors.ink, fontFamily: FONTS.latin.bold }]}>
-            Clean
-          </AppText>
+          <CleanWordmark />
           <Pressable
             onPress={() => setMenuOpen(false)}
             accessibilityRole="button"
@@ -794,43 +825,26 @@ export function SonimScreen() {
               { opacity: pressed ? theme.opacity.subtle : 1 },
             ]}
           >
-            <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+            <Ionicons name="close-outline" size={theme.iconSize.md} color={CLEAN.ink} accessibilityElementsHidden />
           </Pressable>
         </View>
 
-        <DrawerItem icon="close-outline" label={t('common.close')} onPress={closeSonim} />
-        <DrawerItem
-          icon="add-outline"
-          label={t('sonim.newChat')}
-          onPress={() => {
-            setMenuOpen(false);
-            startNewChat();
-          }}
-        />
-        {quickActions.map((action) => (
-          <DrawerItem
-            key={action.id}
-            icon={action.icon}
-            label={action.title}
-            hint={action.subtitle}
-            onPress={() => {
-              setMenuOpen(false);
-              action.onPress();
-            }}
-          />
-        ))}
       </Drawer>
-      <AppSheet open={attachmentOpen} onDismiss={() => setAttachmentOpen(false)} presentation="bottom"
-        header={<SheetHeader title={t('sonim.attach')} onClose={() => setAttachmentOpen(false)} />}>
-        <Pressable testID="sonim-attach-camera" accessibilityRole="button" onPress={() => { setAttachmentOpen(false); void pickImage('camera'); }} style={styles.attachmentAction}>
-          <Ionicons name="camera-outline" size={theme.iconSize.md} color={theme.colors.ink} />
-          <AppText variant="body">{t('sonim.camera')}</AppText>
-        </Pressable>
-        <Pressable testID="sonim-attach-gallery" accessibilityRole="button" onPress={() => { setAttachmentOpen(false); void pickImage('gallery'); }} style={styles.attachmentAction}>
-          <Ionicons name="image-outline" size={theme.iconSize.md} color={theme.colors.ink} />
-          <AppText variant="body">{t('sonim.gallery')}</AppText>
-        </Pressable>
+      <AppSheet surfaceColor={CLEAN.paper} open={attachmentOpen} onDismiss={() => setAttachmentOpen(false)} presentation="bottom"
+        header={<View style={[styles.drawerHeader, { flexDirection: rowDir, borderBottomColor: CLEAN.line }]}><AppText style={CLEAN_TYPE} color={CLEAN.ink}>{t('sonim.attach')}</AppText><Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => setAttachmentOpen(false)} style={styles.headerBtn}><Ionicons name="close-outline" size={theme.iconSize.md} color={CLEAN.ink} /></Pressable></View>}>
+        {([
+          ['camera', 'camera-outline', t('sonim.camera'), () => { void openCamera(); }],
+          ['aywebs', 'search-outline', 'AYWEBs', () => router.push('/(tabs)/aywebs')],
+          ['lens', 'scan-outline', 'Lens', () => router.push('/lens')],
+          ['gallery', 'image-outline', t('sonim.gallery'), () => { void pickImage('gallery'); }],
+          ['files', 'attach-outline', t('clean.files'), () => { void pickFile(); }],
+        ] as const).map(([id, icon, label, action]) => <Pressable key={id} testID={`sonim-attach-${id}`} accessibilityRole="button" onPress={() => { setAttachmentOpen(false); action(); }} style={[styles.attachmentAction, { flexDirection: rowDir }]}>
+          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: CLEAN.line, alignItems: 'center', justifyContent: 'center' }}>{id === 'aywebs' || id === 'lens' ? <ReferenceNavigationGlyph kind={id === 'aywebs' ? 'search' : 'lens'} size={theme.iconSize.md} color={CLEAN.ink} /> : <Ionicons name={icon} size={theme.iconSize.md} color={CLEAN.ink} />}</View>
+          <AppText variant="body" style={CLEAN_TYPE} color={CLEAN.ink}>{label}</AppText>
+        </Pressable>)}
       </AppSheet>
+      {cameraOpen && <CleanCameraPanel key={`${owner}:${conversationId}`} onClose={closeCamera} onPhoto={acceptPhoto} />}
+
     </View>
   );
 }
@@ -900,9 +914,9 @@ const styles = StyleSheet.create({
   attachmentRow: { gap: 8, flexWrap: 'wrap' },
   sentThumbWrap: { width: 96, height: 96, borderWidth: 1, overflow: 'hidden' },
   sentThumb: { width: '100%', height: '100%' },
-  userBubble: { maxWidth: '86%', paddingHorizontal: 16, paddingVertical: 10 },
+  userBubble: { maxWidth: '100%', paddingHorizontal: 16, paddingVertical: 10 },
   assistantRow: { width: '100%' },
-  assistantBubble: { borderWidth: 1, padding: 12, gap: 8 },
+  assistantBubble: { flex: 1, minWidth: 0, gap: 8 },
   assistantHead: { alignItems: 'center', gap: 6 },
   statusRow: { alignItems: 'center', gap: 8, paddingVertical: 4 },
   errorBox: { borderWidth: 1, padding: 10 },

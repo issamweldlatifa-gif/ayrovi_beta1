@@ -6,6 +6,7 @@
  *   2. l'envoi d'un message, le flux SSE et le rendu d'une carte outil (`calculate_price`).
  */
 import React from 'react';
+import { Platform } from 'react-native';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -23,6 +24,7 @@ jest.mock('expo-image-picker', () => ({
 }));
 
 jest.mock('expo-router', () => ({
+  useIsFocused: () => true,
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
   useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
   useLocalSearchParams: () => ({}),
@@ -102,6 +104,7 @@ describe('SonimScreen UI', () => {
     await renderSonim();
     expect(screen.getByText('Bonjour, je suis Clean !')).toBeTruthy();
     expect(screen.getAllByTestId(/sonim-action-/)).toHaveLength(3);
+    expect(screen.getByText('Analyser une image')).toHaveStyle({ fontFamily: Platform.OS === 'ios' ? 'Arial' : 'sans-serif', fontWeight: '400', color: '#000000' });
 
     fireEvent.press(screen.getByTestId('sonim-action-lens'));
     expect(router.push).toHaveBeenCalledWith('/lens');
@@ -115,6 +118,22 @@ describe('SonimScreen UI', () => {
     expect(picker.requestCameraPermissionsAsync).toHaveBeenCalled();
     expect(picker.launchCameraAsync).not.toHaveBeenCalled();
     expect(screen.getByText('Impossible d’ouvrir les photos ou l’appareil photo. Vérifiez les autorisations et réessayez.')).toBeTruthy();
+  });
+
+  it('shows exactly five ordered attachment entries and routes AYWEBs without adding a chat message', async () => {
+    await renderSonim();
+    fireEvent.press(screen.getByTestId('sonim-attach'));
+    const entries = screen.getAllByTestId(/^sonim-attach-(camera|aywebs|lens|gallery|files)$/);
+    expect(entries.map(entry => entry.props.testID)).toEqual(['sonim-attach-camera', 'sonim-attach-aywebs', 'sonim-attach-lens', 'sonim-attach-gallery', 'sonim-attach-files']);
+    fireEvent.press(screen.getByTestId('sonim-attach-aywebs'));
+    expect(router.push).toHaveBeenCalledWith('/(tabs)/aywebs');
+  });
+
+  it('keeps the menu empty pending its new specification', async () => {
+    await renderSonim();
+    fireEvent.press(screen.getByTestId('sonim-menu-open'));
+    expect(screen.queryByText('Nouvelle conversation')).toBeNull();
+    expect(screen.queryByText('Suivre une commande')).toBeNull();
   });
 
   it('préserve le brouillon et les messages après navigation', async () => {

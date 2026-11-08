@@ -1,0 +1,40 @@
+/* Approved Clean-only presentation. No commerce/publication theme override. */
+.clean-wordmark { display:inline-flex; align-items:baseline; color:#000; font-size:30px; line-height:42px; font-weight:400; letter-spacing:0; direction:ltr; }
+.clean-wordmark-n { position:relative; }
+.clean-star { position:absolute; top:-5px; right:1px; color:#85BAC2; font-size:11px; line-height:14px; }
+.clean-welcome { padding:16px; border-radius:22px; font-size:14px; line-height:1.5; }
+.clean-welcome strong { display:block; margin-bottom:6px; font-weight:600; }
+.clean-suggestion { min-height:44px; padding:10px 16px; border-radius:999px; font-weight:400; text-align:start; max-width:100%; }
+.clean-composer-action { display:grid; place-items:center; width:44px; height:44px; padding:0; border:0; background:transparent; flex-shrink:0; }
+.clean-composer-action:disabled { opacity:.45; }
+[data-clean-composer] { background:#fff; }
+[data-clean-composer] > div { border-radius:24px; }
+.clean-assistant-envelope { background:#fff; border:0; box-shadow:none; color:#000; }
+.clean-user-envelope { background:transparent; box-shadow:none; }
+
+[data-clean-screen] > section { background:#fff; }
+
+/* Clean's approved local system-sans exception, isolated from commerce identity. */
+#root [data-clean-screen] { font-family: Arial, 'Noto Sans Arabic', sans-serif; font-weight:400; }
+#root [data-clean-screen] * { font-family:inherit; }
+#root [data-clean-screen][data-ay-design] button { font-family:inherit !important; font-weight:400 !important; font-stretch:normal !important; }
+#root [data-clean-composer] > div { border:1px solid #E5E5E5; padding:8px 12px; box-shadow:0 2px 8px #0000000a; }
+#root [data-clean-composer] textarea { min-height:32px; margin-bottom:4px; padding:4px 0; line-height:20px; }
+.clean-composer-tools { position:relative; padding-inline-start:8px; }
+.clean-composer-tools::before { content:''; position:absolute; inset-inline-start:0; top:50%; height:24px; border-inline-start:1px solid #E5E5E5; transform:translateY(-50%); }
+.clean-star { top:4px; right:-4px; color:#85BAC2; font-size:10px; line-height:12px; }
+.clean-welcome strong { font-weight:400; }
+.clean-message-text, .clean-suggestion, [data-clean-composer] textarea { font-family:inherit; font-size:14px; font-weight:400; }
+.clean-speaker-icon { width:30px; height:30px; flex:0 0 30px; object-fit:contain; }
+.clean-user-envelope { padding:0; }
+.clean-attachment-sheet { position:absolute; z-index:50; inset-inline:12px; bottom:max(12px,env(safe-area-inset-bottom)); padding:12px 18px 20px; max-height:82%; overflow-y:auto; border-radius:28px; background:#fff; color:#000; box-shadow:0 8px 30px #00000015; }
+.clean-attachment-row { display:flex; width:100%; align-items:center; gap:16px; min-height:64px; text-align:start; font-size:16px; font-weight:400; }
+.clean-attachment-icon { display:grid; place-items:center; width:44px; height:44px; flex-shrink:0; border-radius:50%; background:#eee; }
+.clean-empty-menu { position:absolute; z-index:40; inset-block:0; inset-inline-start:0; width:85%; max-width:400px; padding:20px; background:#fff; color:#000; }
+.clean-camera-panel { position:absolute; z-index:60; inset-inline:12px; bottom:max(12px,env(safe-area-inset-bottom)); height:min(60dvh,460px); display:flex; flex-direction:column; overflow:hidden; padding:16px; border-radius:28px; background:#000; color:#fff; }
+.clean-camera-control { display:grid; place-items:center; width:48px; height:48px; border-radius:50%; background:#00000066; color:#fff; }
+.clean-camera-shutter { width:68px; height:68px; border-radius:50%; background:#fff; }
+.clean-camera-panel button:disabled { opacity:.45; }
+.clean-flash-off { position:relative; display:block; }
+.clean-flash-off::after { content:''; position:absolute; width:26px; height:1.5px; top:11px; left:-1px; background:#fff; transform:rotate(45deg); }
+#root [data-clean-screen][data-ay-design] .clean-attachment-row { font-size:16px !important; line-height:24px !important; }

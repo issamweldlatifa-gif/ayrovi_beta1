@@ -1,20 +1,33 @@
 /** Explicit Clean-only palette and reference composer glyphs. Commerce theme is unchanged. */
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform, Image } from 'react-native';
+import { useI18n } from '@/i18n';
 import { AppText } from '@/design/ui';
-import { FONTS } from '@/design/tokens.generated';
 import palette from '../../../../../shared/cleanAppearance.json';
 export const CLEAN = palette;
+// Approved local system-sans exception; never changes commerce typography.
+export const CLEAN_TYPE = { fontFamily: Platform.OS === 'ios' ? 'Arial' : 'sans-serif', fontWeight: '400' as const };
+export function CleanSpeakerIcon({ role }: { role: 'user' | 'assistant' }) {
+  return <Image source={role === 'user' ? require('../../../../../assets/brand/clean/customer-speaker.png') : require('../../../../../assets/brand/clean/assistant-speaker.png')} style={{ width: 30, height: 30 }} resizeMode="contain" accessible={false} />;
+}
 export function CleanWordmark() {
-  return <View style={styles.wordmark} accessible accessibilityLabel={'clean'}>
-    <AppText variant="h2" style={{ fontFamily: FONTS.latin.regular, color: CLEAN.ink }}>clean</AppText>
-    <View style={styles.star}><Svg width={10} height={10} viewBox="0 0 20 20"><Path fill={CLEAN.text} d="M10 0Q11 9 20 10Q11 11 10 20Q9 11 0 10Q9 9 10 0Z" /></Svg></View>
+  const { t } = useI18n();
+  return <View style={styles.wordmark} accessible accessibilityLabel={t('tabs.sonim')}>
+    <AppText variant="h2" style={{ ...CLEAN_TYPE, color: CLEAN.ink }}>clea</AppText>
+    <View><AppText variant="h2" style={{ ...CLEAN_TYPE, color: CLEAN.ink }}>n</AppText>
+      <View style={styles.star}><Svg width={9} height={9} viewBox="0 0 20 20"><Path fill={CLEAN.star} d="M10 0Q11 9 20 10Q11 11 10 20Q9 11 0 10Q9 9 10 0Z" /></Svg></View>
+    </View>
   </View>;
 }
+
 export function CleanActionGlyph({ state }: { state: 'wave' | 'send' | 'busy' | 'recording' }) {
   return <Svg width={44} height={44} viewBox="0 0 24 24">
-    <Path fill={CLEAN.orange} d="M3 22V11A9 9 0 1 1 7.2 18.6Z" />
+    <Path fill={CLEAN.orange} d={CLEAN.actionShape} />
     {state === 'wave' ? <Path d="M7 10V13M9.5 8V15M12 6V17M14.5 8V15M17 10V13" fill="none" stroke={CLEAN.paper} strokeWidth={1.3} strokeLinecap="round" /> : state === 'send' ? <Path d="M12 17V7M8 11L12 7L16 11" stroke={CLEAN.paper} strokeWidth={1.7} fill="none" strokeLinecap="round" strokeLinejoin="round" /> : state === 'busy' ? <Circle cx={12} cy={11} r={2.7} fill={CLEAN.paper} /> : <Rect x={8} y={7} width={8} height={8} fill={CLEAN.paper} />}
   </Svg>;
 }
-const styles = StyleSheet.create({ wordmark: { width: 88, height: 42, alignItems: 'center', justifyContent: 'center' }, star: { position: 'absolute', right: 14, top: 1 } });
+const styles = StyleSheet.create({ wordmark: { height: 42, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }, star: { position: 'absolute', right: -4, top: 4 } });
+
+export function CleanMenuGlyph() {
+  return <Svg width={24} height={24} viewBox="0 0 24 24" fill="none"><Path d="M4 8h16M4 16h10" stroke={CLEAN.ink} strokeWidth={1.5} strokeLinecap="round" /></Svg>;
+}

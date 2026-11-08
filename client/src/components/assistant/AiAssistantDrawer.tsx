@@ -1,3 +1,4 @@
+import { CleanCameraPanel } from './CleanCameraPanel';
 import { resolveProductSelection, completeProductOffer, productSelectionLabels } from '../../ayrovix/services/productSelection';
 import { useAssistantAttachments } from './media/useAssistantAttachments';
 import { VoiceNoteCapture, type VoiceNoteState } from './media/VoiceNoteCapture';
@@ -7,7 +8,7 @@ import { validProductUrl } from '../../ayrovix/services/resultPolicy';
 import type { HistoryStatus } from './conversationHistory';
 import { useDialogFocus } from '../../hooks/useDialogFocus';
 import { copyAssistantText, textActionLabels } from './messageActions';
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AssistantAttachmentSheet } from './AssistantAttachmentSheet';
 import { AssistantComposer } from './AssistantComposer';
 import { AssistantFeedbackSheet } from './AssistantFeedbackSheet';
@@ -104,6 +105,8 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const feedbackLayer = navigation.stack.find((layer) => layer.id === 'assistant:feedback');
   const productLayer = navigation.stack.find((layer) => layer.id === 'assistant:product');
   const closeAssistantLayer = () => navigation.back();
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const closeCamera = useCallback(() => setCameraOpen(false), []);
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [isBooting, setIsBooting] = useState(true);
   const [historyStatus, setHistoryStatus] = useState<HistoryStatus>('ready');
@@ -168,6 +171,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const mediaScopeRef = useRef(mediaScope); mediaScopeRef.current = mediaScope;
   const attachmentQueue = useAssistantAttachments(mediaScope, code => showToast(tr(...imageErrorLabels[code])));
   const { attachments, pending: pendingAttachments } = attachmentQueue;
+  useEffect(() => { setCameraOpen(false); }, [mediaScope, isOpen]);
   const voiceNoteRef = useRef<VoiceNoteCapture | null>(null);
   const cancelVoiceNote = () => {
     voiceNoteRef.current?.cancel(false); voiceNoteRef.current = null;
@@ -863,7 +867,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       aria-label={tr('Clean', 'Clean')}
     >
       <section ref={pageRef} tabIndex={-1} className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden font-sans outline-none ${isDark ? 'bg-ink' : 'bg-surface'}`}>
-        <div className="contents" inert={Boolean(isMenuOpen || isAttachmentSheetOpen || (feedbackLayer && feedbackMessage))}>
+        <div className="contents" inert={Boolean(cameraOpen || isMenuOpen || isAttachmentSheetOpen || (feedbackLayer && feedbackMessage))}>
         {voiceMode ? (
           <AssistantVoiceModeScreen
             state={isMuted ? 'muted' : voiceState}
@@ -1008,8 +1012,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           onClose={closeAssistantLayer}
           onPickFile={handleFilePicked}
           onToggleWebSearch={() => setWebSearchEnabled((enabled) => !enabled)}
+          onOpenCamera={() => { closeAssistantLayer(); setCameraOpen(true); }}
+          onOpenAyWebs={() => navigation.navigate([{ id: 'app:aywebs' }])}
+          onOpenLens={() => { closeAssistantLayer(); onOpenLens(); }}
           onConnectors={() => showToast(tr('Les connecteurs seront bientôt disponibles', 'الخدمات المتصلة ستتوفر قريبًا'))}
         />
+
+        {cameraOpen && <CleanCameraPanel onClose={closeCamera} onPhoto={file => attachmentQueue.add(file)} />}
 
         <AssistantFeedbackSheet
           isOpen={Boolean(feedbackLayer && feedbackMessage)}

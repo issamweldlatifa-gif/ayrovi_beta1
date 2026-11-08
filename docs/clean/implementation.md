@@ -1,4 +1,6 @@
-# Clean — approved appearance implementation
+# Clean — initial appearance implementation
+
+**Historical first pass.** Later approved typography, icons, navigation and menu changes, plus new browser checks, are documented in [approved-redesign.md](approved-redesign.md).
 
 Implemented for native Expo and web, 2026-11-05.
 

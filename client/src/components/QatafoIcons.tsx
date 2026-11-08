@@ -126,3 +126,6 @@ export const Grip = I.AyroviGrip;
 export const Sonim = I.AyroviSonim;
 export const Vision = I.AyroviVision;
 export const AyWebs = I.AyroviAyWebs;
+
+export const Paperclip = I.AyroviPaperclip;
+export const CleanMenu = I.AyroviCleanMenu;

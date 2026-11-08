@@ -5,6 +5,8 @@ import identity from './identity.json';
 export type EditorialIconName = keyof typeof glyphs;
 export interface EditorialIconProps extends Omit<React.SVGProps<SVGSVGElement>, 'name' | 'children'> {
   name: EditorialIconName;
+  /** Opt-in, user-approved Clean control treatment; editorial remains the default. */
+  appearance?: 'clean';
   size?: number | string;
   title?: string;
   direction?: 'ltr' | 'rtl';
@@ -12,7 +14,7 @@ export interface EditorialIconProps extends Omit<React.SVGProps<SVGSVGElement>, 
 
 /** Static local geometry only; never takes SVG/HTML supplied by CMS or a customer. */
 export const EditorialIcon = forwardRef<SVGSVGElement, EditorialIconProps>(function EditorialIcon(
-  { name, size = identity.geometry.iconGrid, title, direction = 'ltr', className, style, ...props }, ref,
+  { name, size = identity.geometry.iconGrid, title, direction = 'ltr', appearance, className, style, ...props }, ref,
 ) {
   const id = useId();
   const titleId = `${id}-icon-title`;
@@ -29,8 +31,8 @@ export const EditorialIcon = forwardRef<SVGSVGElement, EditorialIconProps>(funct
       fill={props.fill === 'currentColor' ? 'currentColor' : 'none'}
       stroke="currentColor"
       strokeWidth={identity.geometry.iconStroke}
-      strokeLinecap="square"
-      strokeLinejoin="miter"
+      strokeLinecap={appearance === 'clean' ? 'round' : 'square'}
+      strokeLinejoin={appearance === 'clean' ? 'round' : 'miter'}
       strokeMiterlimit={3}
       focusable="false"
       role={named ? 'img' : undefined}

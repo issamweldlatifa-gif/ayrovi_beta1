@@ -1631,5 +1631,27 @@
         }
       }
     ]
+  },
+  "Paperclip": {
+    "mirrorRtl": false,
+    "shapes": [
+      {
+        "tag": "path",
+        "attrs": {
+          "d": "M9 12V6a4 4 0 0 1 8 0v11a6 6 0 0 1-12 0V8M13 6v11a2 2 0 0 1-4 0v-5"
+        }
+      }
+    ]
+  },
+  "CleanMenu": {
+    "mirrorRtl": false,
+    "shapes": [
+      {
+        "tag": "path",
+        "attrs": {
+          "d": "M4 8h16M4 16h10"
+        }
+      }
+    ]
   }
 }

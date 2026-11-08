@@ -11,6 +11,7 @@ export const AYROVI_CORNER = identity.geometry.controlRadius;
 export type AyroviIconProps = React.SVGProps<SVGSVGElement> & {
   size?: number | string;
   title?: string;
+  appearance?: 'clean';
 };
 
 export function createAyroviIcon(name: EditorialIconName) {

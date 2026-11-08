@@ -2,6 +2,12 @@
  * النصوص العربية بالفصحى السليمة. جميع المفاتيح هنا مطابقة تماماً لمفاتيح fr.ts.
  */
 export const ar = {
+  'sonim.newChat': 'محادثة جديدة',
+  "clean.camera.options": "خيارات الكاميرا",
+  "clean.camera.capture": "التقاط صورة",
+  "clean.camera.flip": "تبديل الكاميرا",
+  "clean.camera.flash": "تشغيل الفلاش أو إيقافه",
+  "clean.files": "الملفات",
   "clean.welcome": "مرحبًا، أنا Clean!",
   "clean.disclaimer": "اسألني عن مشترياتك. إجاباتي مولّدة بالذكاء الاصطناعي وقد تحتوي على أخطاء.",
   "clean.record": "تسجيل رسالة صوتية",
@@ -953,7 +959,6 @@ export const ar = {
   'sonim.attachmentError': 'تعذّر فتح الصور أو الكاميرا. تحقق من الأذونات وحاول مجددًا.',
   'sonim.attach': 'إرفاق صورة',
   'sonim.removeAttachment': 'إزالة الصورة',
-  'sonim.newChat': 'محادثة جديدة',
   'sonim.copy': 'نسخ',
   'sonim.copied': 'تم النسخ',
   'sonim.state.thinking': 'يفكّر…',

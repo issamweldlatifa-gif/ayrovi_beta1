@@ -41,6 +41,8 @@ const DRAG_SLOP = 6;
 
 export interface AppSheetProps {
   open: boolean;
+  /** Opt-in presentation surface; Clean is white independently of the commerce theme. */
+  surfaceColor?: string;
   onDismiss: () => void;
   onClosed?: () => void;
   header?: ReactNode;
@@ -52,7 +54,7 @@ export interface AppSheetProps {
 }
 
 export function AppSheet({
-  open, onDismiss, onClosed, header, footer, presentation = 'full', children,
+  open, onDismiss, onClosed, header, footer, presentation = 'full', children, surfaceColor,
 }: AppSheetProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -184,7 +186,7 @@ export function AppSheet({
             height: presentation === 'bottom' ? undefined : sheetHeight,
             maxHeight: presentation === 'bottom' ? sheetHeight : undefined,
             paddingTop: topInset,
-            backgroundColor: theme.colors.canvas,
+            backgroundColor: surfaceColor ?? theme.colors.canvas,
             borderTopLeftRadius: presentation === 'bottom' ? SHEET_CORNER_RADIUS : 0,
             borderTopRightRadius: presentation === 'bottom' ? SHEET_CORNER_RADIUS : 0,
             transform: [{ translateY: translate }],

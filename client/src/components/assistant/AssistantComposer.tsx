@@ -55,7 +55,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
   const canSend = value.trim().length > 0 || attachments.length > 0;
   const surfaceButton = isDark
     ? 'bg-white/10 text-muted hover:bg-white/15 hover:text-white'
-    : 'bg-surface text-muted hover:bg-line hover:text-ink';
+    : 'bg-transparent text-black';
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (!mediaWaiting && shouldSubmitComposer({
@@ -76,9 +76,9 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
           <div role="region" tabIndex={0} aria-label={tr('Images prêtes à envoyer', 'صور جاهزة للإرسال')} className="mb-2.5 flex max-h-[25dvh] flex-wrap gap-2 overflow-y-auto">
             {attachments.map((attachment) => (
               <div key={attachment.id} className={`flex max-w-full flex-wrap items-center gap-2 rounded-control py-1.5 ps-2 pe-1.5 text-xs ${isDark ? 'bg-white/10 text-white/90' : 'bg-surface text-ink'}`}>
-                {attachment.preview ? <img src={attachment.preview} alt="" className="h-7 w-7 shrink-0 rounded-control object-cover" /> : <FileText className="h-7 w-7 shrink-0 text-muted" />}
+                {attachment.preview ? <img src={attachment.preview} alt="" className="h-7 w-7 shrink-0 rounded-control object-cover" /> : <FileText appearance="clean" className="h-7 w-7 shrink-0 text-muted" />}
                 <span className="ay-readable-label min-w-0 flex-1 basis-24">{attachment.name}</span>
-                <button type="button" onClick={() => onRemoveAttachment(attachment.id)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-muted hover:text-ink" aria-label={tr(`Retirer ${attachment.name}`, `إزالة ${attachment.name}`)}><X className="h-3.5 w-3.5" /></button>
+                <button type="button" onClick={() => onRemoveAttachment(attachment.id)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-muted hover:text-ink" aria-label={tr(`Retirer ${attachment.name}`, `إزالة ${attachment.name}`)}><X appearance="clean" className="h-3.5 w-3.5" /></button>
               </div>
             ))}
           </div>
@@ -93,7 +93,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
             <button type="button" onClick={onCancelRecording}
               className={`flex min-h-11 min-w-11 items-center justify-center gap-2 px-2 text-sm ${isDark ? 'text-white' : 'text-ink'}`}
               aria-label={tr('Annuler l’enregistrement', 'إلغاء التسجيل')}>
-              <X size={20} />{tr('Annuler', 'إلغاء')}
+              <X appearance="clean" size={20} />{tr('Annuler', 'إلغاء')}
             </button>
           </div>
         ) : isTranscribing ? (
@@ -119,11 +119,11 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${surfaceButton}`}
             aria-label={tr('Ajouter au chat', 'إضافة إلى المحادثة')}
           >
-            <Plus className="h-6 w-6" />
+            <Plus appearance="clean" className="h-6 w-6" />
           </button>
 
           {/* Right actions: Mic | Send (if text typed) | Voice Mode Button */}
-          <div className="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
+          <div className="clean-composer-tools flex min-w-0 max-w-full flex-wrap items-center justify-end gap-2">
             {/* 1. Dictation Microphone */}
             <button
               type="button"
@@ -137,7 +137,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
               aria-label={isRecording ? tr('Terminer l’enregistrement', 'إنهاء التسجيل') : tr('Enregistrer un message vocal', 'تسجيل صوتي')}
               title={isRecording ? tr('Terminer l’enregistrement', 'إنهاء التسجيل') : tr('Enregistrer un message vocal', 'تسجيل صوتي')}
             >
-              <>{isRecording ? <CleanActionGlyph state="recording" /> : <Mic className="h-6 w-6" />}</>
+              <>{isRecording ? <CleanActionGlyph state="recording" /> : <Mic appearance="clean" className="h-6 w-6" />}</>
             </button>
 
             {!isRecording && <button type="button" onClick={isGenerating ? onStop : canSend ? onSend : onToggleVoiceMode ?? onStartRecording}

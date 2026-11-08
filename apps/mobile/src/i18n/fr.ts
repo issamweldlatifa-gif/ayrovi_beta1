@@ -2,6 +2,12 @@
  * Textes français. Toute clé ajoutée ici DOIT exister dans ar.ts — un test le vérifie.
  */
 export const fr = {
+  'sonim.newChat': 'Nouvelle conversation',
+  "clean.camera.options": "Options de la caméra",
+  "clean.camera.capture": "Prendre une photo",
+  "clean.camera.flip": "Changer de caméra",
+  "clean.camera.flash": "Activer ou désactiver le flash",
+  "clean.files": "Fichiers",
   "clean.welcome": "Bonjour, je suis Clean !",
   "clean.disclaimer": "Posez-moi vos questions sur vos achats. Mes réponses sont générées par IA et peuvent contenir des erreurs.",
   "clean.record": "Enregistrer un message vocal",
@@ -949,12 +955,11 @@ export const fr = {
   'sonim.placeholder': 'Demander à Clean',
   'sonim.send': 'Envoyer',
   'sonim.stop': 'Arrêter',
-  'sonim.camera': 'Prendre une photo',
-  'sonim.gallery': 'Choisir une photo',
+  'sonim.camera': 'Appareil photo',
+  'sonim.gallery': 'Photos',
   'sonim.attachmentError': 'Impossible d’ouvrir les photos ou l’appareil photo. Vérifiez les autorisations et réessayez.',
-  'sonim.attach': 'Joindre une image',
+  'sonim.attach': 'Ajouter au chat',
   'sonim.removeAttachment': 'Retirer l’image',
-  'sonim.newChat': 'Nouvelle conversation',
   'sonim.copy': 'Copier',
   'sonim.copied': 'Copié',
   'sonim.state.thinking': 'Réflexion en cours…',

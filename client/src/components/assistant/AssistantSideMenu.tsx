@@ -25,7 +25,7 @@ interface AssistantSideMenuProps {
   onExit: () => void;
 }
 
-export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
+export const LegacyAssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
   isOpen,
   isDark,
   conversations,
@@ -106,4 +106,15 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
       </aside>
     </>
   );
+};
+
+/** Old contents intentionally unmounted pending the user's new menu specification. */
+export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({ isOpen, onClose }) => {
+  const { tr, direction } = useLocale();
+  const panel = React.useRef<HTMLElement>(null); useDialogFocus(panel, isOpen);
+  if (!isOpen) return null;
+  return <><button type="button" onClick={onClose} className="absolute inset-0 z-30 bg-black/30" aria-label={tr('Fermer le menu', 'إغلاق القائمة')} />
+    <aside ref={panel} tabIndex={-1} role="dialog" aria-modal="true" aria-label={tr('Menu Clean', 'قائمة Clean')} dir={direction} className="clean-empty-menu">
+      <button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center" aria-label={tr('Fermer le menu', 'إغلاق القائمة')}><ArrowLeft size={24} /></button>
+    </aside></>;
 };

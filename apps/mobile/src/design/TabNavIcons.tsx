@@ -1,5 +1,5 @@
 /** Five icon-only destinations. Reference-derived camera/search and matching profile;
- * original Home contour retained. Clean is the sole approved multicolor exception.
+ * Approved thin-outline Home contour; master brand assets untouched. Clean is the sole approved multicolor exception.
  * Legacy export names are compatibility APIs, not visible product names/routes.
  */
 import { View, type ColorValue } from 'react-native';
@@ -11,7 +11,7 @@ import { useTheme } from './theme';
 import cleanPalette from '../../../../assets/brand/navigation-palette.json';
 
 export type TabNavIconProps = { color: ColorValue; size?: number; focused?: boolean };
-export const TAB_ICON_STROKE = 2.2;
+export const TAB_ICON_STROKE = 1.5;
 export const NAV_ICON_SIZE = 28;
 
 function useIcon(size?: number) {
@@ -20,6 +20,10 @@ function useIcon(size?: number) {
 }
 function StrokeGlyph({ kind, size }: TabNavIconProps & { kind: 'lens' | 'search' | 'profile' }) {
   const { dim, ink } = useIcon(size);
+  return <ReferenceNavigationGlyph kind={kind} size={dim} color={ink} />;
+}
+/** Shared reference geometry, also used on Clean's always-white attachment sheet. */
+export function ReferenceNavigationGlyph({ kind, size: dim, color: ink }: { kind: 'lens' | 'search' | 'profile'; size: number; color: string }) {
   return <View style={{ width: dim, height: dim, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
     <Svg width={dim} height={dim} viewBox="0 0 24 24" fill="none" stroke={ink} strokeWidth={TAB_ICON_STROKE} strokeLinecap="round" strokeLinejoin="round">
       {kind === 'lens' ? <>
@@ -33,7 +37,7 @@ function StrokeGlyph({ kind, size }: TabNavIconProps & { kind: 'lens' | 'search'
 }
 export function TabHomeIcon({ size }: TabNavIconProps) {
   const { dim, ink } = useIcon(size);
-  return <View style={{ width: dim, height: dim, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><BrandSymbol width={dim} color={ink} /></View>;
+  return <View style={{ width: dim, height: dim, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants"><Svg width={dim} height={dim} viewBox="0 0 24 24" fill="none" stroke={ink} strokeWidth={TAB_ICON_STROKE} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 10.5L12 3L21 10.5V21H15V14H9V21H3Z" /></Svg></View>;
 }
 export function TabLensIcon(props: TabNavIconProps) { return <StrokeGlyph {...props} kind="lens" />; }
 export function TabAyWebsIcon(props: TabNavIconProps) { return <StrokeGlyph {...props} kind="search" />; }

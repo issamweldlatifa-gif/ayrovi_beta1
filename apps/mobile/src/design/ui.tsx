@@ -584,9 +584,10 @@ export interface DrawerProps {
   children: ReactNode;
   /** Bord d'où sort le tiroir. */
   side?: 'start' | 'end';
+  surfaceColor?: string;
 }
 
-export function Drawer({ visible, onClose, children, side = 'start' }: DrawerProps) {
+export function Drawer({ visible, onClose, children, side = 'start', surfaceColor }: DrawerProps) {
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
@@ -634,7 +635,7 @@ export function Drawer({ visible, onClose, children, side = 'start' }: DrawerPro
             styles.drawerPanel,
             {
               width,
-              backgroundColor: theme.colors.canvas,
+              backgroundColor: surfaceColor ?? theme.colors.canvas,
               borderLeftColor: theme.colors.line,
               borderRightColor: theme.colors.line,
               paddingTop: insets.top + theme.space[3],

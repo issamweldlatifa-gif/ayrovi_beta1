@@ -79,7 +79,7 @@ describe('barre du bas transparente à coins arrondis compacts (5 onglets — st
 
   it('uses the approved reference glyphs with a shared monochrome stroke and a local Clean color exception', () => {
     expect(navIcons).toContain("from 'react-native-svg'");
-    expect(navIcons).toContain('TAB_ICON_STROKE = 2.2');
+    expect(navIcons).toContain('TAB_ICON_STROKE = 1.5');
     expect(navIcons).toContain('strokeWidth={TAB_ICON_STROKE}');
     expect(navIcons).toContain('export const TabSonimIcon = TabCleanIcon');
     expect(navIcons).toContain('export const TabAywebsPawIcon = TabAyWebsIcon');

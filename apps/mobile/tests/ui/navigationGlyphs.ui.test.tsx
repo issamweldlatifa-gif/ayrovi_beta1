@@ -14,8 +14,7 @@ for (const mode of ['light', 'dark']) {
         const tree = render(<Icon color="#0095F6" focused={focused} />);
         const svg = tree.UNSAFE_getByType(Svg);
         expect(svg.props.width).toBe(24); expect(svg.props.height).toBeLessThanOrEqual(24);
-        if (Icon === TabHomeIcon) expect(tree.UNSAFE_getByType(Path).props.fill).toBe(ink);
-        else { expect(svg.props.stroke).toBe(ink); expect(svg.props.strokeWidth).toBe(TAB_ICON_STROKE); expect(svg.props.strokeLinecap).toBe('round'); }
+        { expect(svg.props.stroke).toBe(ink); expect(svg.props.strokeWidth).toBe(TAB_ICON_STROKE); expect(svg.props.strokeLinecap).toBe('round'); }
         tree.unmount();
       }
     }

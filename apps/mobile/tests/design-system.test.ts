@@ -529,6 +529,8 @@ describe('Design System — typographie, rayons, icônes (audit 27/10/2026)', ()
       if (TOKEN_FILES.has(rel) || rel === 'src/design/theme.tsx') continue;
       const text = code(rel);
       for (const match of text.matchAll(/fontWeight:/g)) {
+        // User-approved Clean-only system sans: the OS requires an explicit regular weight.
+        if (rel === 'src/features/sonim/CleanVisuals.tsx' && text.slice(match.index).startsWith("fontWeight: '400' as const")) continue;
         const line = text.slice(0, match.index).split('\n').length;
         offenders.push(`${rel}:${line}`);
       }

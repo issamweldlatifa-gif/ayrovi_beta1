@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 273,
-    "customerAndSharedFiles": 207,
-    "controls": 474,
-    "iconAliases": 102,
-    "uniqueGlyphs": 99
+    "files": 275,
+    "customerAndSharedFiles": 209,
+    "controls": 480,
+    "iconAliases": 104,
+    "uniqueGlyphs": 101
   },
   "aliases": [
     {
@@ -416,6 +416,14 @@
     {
       "alias": "AyWebs",
       "glyph": "AyWebs"
+    },
+    {
+      "alias": "Paperclip",
+      "glyph": "Paperclip"
+    },
+    {
+      "alias": "CleanMenu",
+      "glyph": "CleanMenu"
     }
   ],
   "files": [
@@ -14644,9 +14652,10 @@
     {
       "file": "client/src/components/assistant/AiAssistantDrawer.tsx",
       "domain": "sonim",
-      "sha256": "56266239c78708c16d507bd78485ccaf64083b8b01681656460404e480769ac2",
-      "lines": 1031,
+      "sha256": "05b6d503bd60c651ca8da6a75fce28e1a849e4f3cf3b9261dbd8b6474c5c075b",
+      "lines": 1040,
       "imports": [
+        "./CleanCameraPanel",
         "../../ayrovix/services/productSelection",
         "./media/useAssistantAttachments",
         "./media/VoiceNoteCapture",
@@ -14684,7 +14693,7 @@
       "controls": [
         {
           "tag": "AssistantVoiceModeScreen",
-          "line": 868,
+          "line": 872,
           "className": null,
           "type": null,
           "role": null,
@@ -14694,7 +14703,7 @@
         },
         {
           "tag": "button",
-          "line": 925,
+          "line": 929,
           "className": "\"ay-btn-secondary mt-2 min-h-11 px-3 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -14704,7 +14713,7 @@
         },
         {
           "tag": "AssistantAttachmentSheet",
-          "line": 1002,
+          "line": 1006,
           "className": null,
           "type": null,
           "role": null,
@@ -14714,7 +14723,7 @@
         },
         {
           "tag": "AssistantFeedbackSheet",
-          "line": 1014,
+          "line": 1023,
           "className": null,
           "type": null,
           "role": null,
@@ -14760,8 +14769,8 @@
     {
       "file": "client/src/components/assistant/AssistantAttachmentSheet.tsx",
       "domain": "sonim",
-      "sha256": "5907a0454558c838d0607e01cdcee0f6756d542ab122606a24194164812abd51",
-      "lines": 110,
+      "sha256": "b48c94593ad6a0c8c819d5c653af16d9e7bee2517199de1a750593ef4e02e5f8",
+      "lines": 41,
       "imports": [
         "./AssistantMediaPending",
         "../../hooks/useDialogFocus",
@@ -14775,8 +14784,8 @@
       "controls": [
         {
           "tag": "button",
-          "line": 57,
-          "className": "\"absolute inset-0 z-40 bg-ink/45 backdrop-blur-[2px]\"",
+          "line": 29,
+          "className": "\"absolute inset-0 z-40 bg-black/30\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Fermer', 'إغلاق')}",
@@ -14785,8 +14794,8 @@
         },
         {
           "tag": "button",
-          "line": 62,
-          "className": "{`absolute end-0 flex h-9 w-9 items-center justify-center rounded-full ${isDark ? 'bg-ink text-white/80' : 'bg-surface text-muted'}`}",
+          "line": 32,
+          "className": "\"absolute end-3 top-2 grid h-11 w-11 place-items-center\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Fermer', 'إغلاق')}",
@@ -14795,47 +14804,17 @@
         },
         {
           "tag": "button",
-          "line": 69,
-          "className": "{rowClass}",
+          "line": 34,
+          "className": "\"clean-attachment-row\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => chooseFile('image')}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 77,
-          "className": "{rowClass}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => chooseFile('file')}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 85,
-          "className": "{rowClass}",
-          "type": "\"button\"",
-          "role": "\"switch\"",
-          "ariaLabel": null,
-          "onClick": "{onToggleWebSearch}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 95,
-          "className": "{rowClass}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onConnectors}",
-          "disabled": null
+          "onClick": "{action}",
+          "disabled": "{!action}"
         },
         {
           "tag": "input",
-          "line": 104,
+          "line": 35,
           "className": "\"hidden\"",
           "type": "\"file\"",
           "role": null,
@@ -14845,7 +14824,17 @@
         },
         {
           "tag": "input",
-          "line": 105,
+          "line": 36,
+          "className": "\"hidden\"",
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 37,
           "className": "\"hidden\"",
           "type": "\"file\"",
           "role": null,
@@ -14857,7 +14846,7 @@
       "icons": [
         {
           "module": "../QatafoIcons",
-          "bindings": "{ Camera, ChevronRight, Globe2, Image, Plug, X }",
+          "bindings": "{ Camera, Paperclip, Image, Search, LensBox, X }",
           "line": 4
         }
       ],
@@ -14888,7 +14877,7 @@
     {
       "file": "client/src/components/assistant/AssistantComposer.tsx",
       "domain": "sonim",
-      "sha256": "6a224a7f676a402e960ea45ca9fb370cc8857293d15c5b5d9a84f709fe4db0c1",
+      "sha256": "11f639e1bfe7ee754ec8bab0aee7e4c3d059f2bf3f15278a888460aecb7257eb",
       "lines": 155,
       "imports": [
         "./AssistantMediaPending",
@@ -15068,7 +15057,7 @@
     {
       "file": "client/src/components/assistant/AssistantHeader.tsx",
       "domain": "sonim",
-      "sha256": "e7a7d0e3dbe4327c3991bee97004fc96f22881bbbd6fc79189ec6e74bf534c02",
+      "sha256": "061ab4d7702f07680d3f97d6e7413630d6418213e056d7c6b04cd215ee171549",
       "lines": 20,
       "imports": [
         "./CleanVisuals",
@@ -15094,7 +15083,7 @@
       "icons": [
         {
           "module": "../QatafoIcons",
-          "bindings": "{ Menu }",
+          "bindings": "{ CleanMenu }",
           "line": 3
         }
       ],
@@ -15275,8 +15264,8 @@
     {
       "file": "client/src/components/assistant/AssistantMessages.tsx",
       "domain": "sonim",
-      "sha256": "5f124ec7cb4f955d711816dc530223d00d80c8d109feb49d68e691c292a6c756",
-      "lines": 187,
+      "sha256": "cd2537e74a24bf74f19bcc825126c8199abbeb3592759e2fc5bafb27715be30a",
+      "lines": 180,
       "imports": [
         "./CleanVisuals",
         "../../ayrovix/components/MerchantRating",
@@ -15286,7 +15275,6 @@
         "./composerPolicy",
         "../QatafoIcons",
         "../AyroviMotion",
-        "./AssistantBrandMark",
         "../../shop",
         "../../shop",
         "../../ayrovix/types",
@@ -15300,7 +15288,7 @@
       "controls": [
         {
           "tag": "a",
-          "line": 77,
+          "line": 76,
           "className": "{`inline-flex min-h-10 items-center gap-1 rounded-card border px-3 text-xs font-extrabold ${isDark ? 'border-white/15 text-white/90' : 'border-line text-ink'}`}",
           "type": null,
           "role": null,
@@ -15310,7 +15298,7 @@
         },
         {
           "tag": "button",
-          "line": 77,
+          "line": 76,
           "className": "\"ay-btn-primary min-h-10 flex-1 px-3 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -15320,7 +15308,7 @@
         },
         {
           "tag": "ShopProductScreen",
-          "line": 81,
+          "line": 80,
           "className": null,
           "type": null,
           "role": null,
@@ -15330,7 +15318,7 @@
         },
         {
           "tag": "button",
-          "line": 126,
+          "line": 125,
           "className": "\"clean-suggestion\"",
           "type": "\"button\"",
           "role": null,
@@ -15340,7 +15328,7 @@
         },
         {
           "tag": "button",
-          "line": 172,
+          "line": 164,
           "className": "{`min-h-11 rounded-control border px-3.5 text-xs font-bold transition active:scale-95 ${isDark ? 'border-white/15 bg-white/5 text-white/90 hover:bg-white/10' : 'border-line bg-white text-ink hover:bg-surface'}`}",
           "type": "\"button\"",
           "role": null,
@@ -15350,7 +15338,7 @@
         },
         {
           "tag": "button",
-          "line": 173,
+          "line": 165,
           "className": "\"ay-btn-primary mt-3 w-full text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -15374,8 +15362,8 @@
     {
       "file": "client/src/components/assistant/AssistantSideMenu.tsx",
       "domain": "sonim",
-      "sha256": "d82d6174ffb6d08fc4519724cb813e0a3ba5477ef05339bf9c845f41d41301e5",
-      "lines": 110,
+      "sha256": "e2e49c28910be9e66e53139ab0de2ff4e22bfae60673e7c62863ce9ff99a19fc",
+      "lines": 121,
       "imports": [
         "./AssistantHistoryNotice",
         "./conversationHistory",
@@ -15386,6 +15374,7 @@
         "../../i18n/LocaleContext"
       ],
       "exports": [
+        "LegacyAssistantSideMenu",
         "AssistantSideMenu"
       ],
       "controls": [
@@ -15477,6 +15466,26 @@
           "role": "\"switch\"",
           "ariaLabel": null,
           "onClick": "{onToggleDark}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 116,
+          "className": "\"absolute inset-0 z-30 bg-black/30\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Fermer le menu', 'إغلاق القائمة')}",
+          "onClick": "{onClose}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 118,
+          "className": "\"grid h-11 w-11 place-items-center\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Fermer le menu', 'إغلاق القائمة')}",
+          "onClick": "{onClose}",
           "disabled": null
         }
       ],
@@ -15698,17 +15707,134 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/components/assistant/clean.css",
+      "domain": "sonim",
+      "sha256": "71039d0517b340254e9a61c6adc23e1df1ea3ca248b71f9c8fc9f28395c36cd6",
+      "lines": 41,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [
+        "#000",
+        "#0000000a",
+        "#00000015",
+        "#00000066",
+        "#85BAC2",
+        "#E5E5E5",
+        "#eee",
+        "#fff"
+      ],
+      "fontDeclarations": [
+        "font-family: Arial, 'Noto Sans Arabic', sans-serif",
+        "font-family:inherit",
+        "font-family:inherit !important",
+        "font-family:inherit"
+      ],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/components/assistant/CleanCameraPanel.tsx",
+      "domain": "sonim",
+      "sha256": "e8d703cd72c367ac7c22513dd50a4357d455723c88f01e0e53bffb0165f3b3ff",
+      "lines": 68,
+      "imports": [
+        "react",
+        "../QatafoIcons",
+        "../../i18n/LocaleContext",
+        "../../hooks/useDialogFocus"
+      ],
+      "exports": [
+        "CleanCameraPanel"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 52,
+          "className": "\"absolute inset-0 z-40 bg-black/30\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Fermer la caméra', 'إغلاق الكاميرا')}",
+          "onClick": "{onClose}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 57,
+          "className": "{control}",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Activer ou désactiver le flash', 'تشغيل الفلاش أو إيقافه')}",
+          "onClick": "{() => { void flash(); }}",
+          "disabled": "{!torchSupported || busy}"
+        },
+        {
+          "tag": "button",
+          "line": 58,
+          "className": "{control}",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Changer de caméra', 'تبديل الكاميرا')}",
+          "onClick": "{() => setFacing(value => value === 'user' ? 'environment' : 'user')}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "button",
+          "line": 61,
+          "className": "{control}",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Retour', 'رجوع')}",
+          "onClick": "{onClose}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "button",
+          "line": 62,
+          "className": "\"clean-camera-shutter\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Prendre une photo', 'التقاط صورة')}",
+          "onClick": "{() => { void capture(); }}",
+          "disabled": "{!ready || busy}"
+        },
+        {
+          "tag": "button",
+          "line": 63,
+          "className": "{control}",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Options de la caméra', 'خيارات الكاميرا')}",
+          "onClick": "{() => setOptions(value => !value)}",
+          "disabled": "{busy}"
+        }
+      ],
+      "icons": [
+        {
+          "module": "../QatafoIcons",
+          "bindings": "{ Camera, ChevronLeft, MoreVertical, RefreshCw, X, Zap }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/components/assistant/CleanVisuals.tsx",
       "domain": "sonim",
-      "sha256": "476dd2c8a0ebca183e276fdbf1ed67f15c2c18df6ee7cfd7e7f870a34c4845e0",
-      "lines": 13,
+      "sha256": "13a1e53a9257341a60bef71e72804966321c7fd617deec60ac69642cbd326e97",
+      "lines": 17,
       "imports": [
         "../../../../shared/cleanAppearance.json"
       ],
       "exports": [
         "CLEAN",
         "CleanWordmark",
-        "CleanActionGlyph"
+        "CleanActionGlyph",
+        "CleanSpeakerIcon"
       ],
       "controls": [],
       "icons": [],
@@ -16082,7 +16208,7 @@
     {
       "file": "client/src/components/BottomNavBar.tsx",
       "domain": "shell-content",
-      "sha256": "483fb0d26d9b4168746196b300c9ea8f7d2051dee155b016b8b3a01a06428cac",
+      "sha256": "81ce4e7c2bf7bed31a619c9aa3a16a184f3a51bd20307fec8347c3c38eea72a2",
       "lines": 93,
       "imports": [
         "react",
@@ -17446,8 +17572,8 @@
     {
       "file": "client/src/components/icons/ayrovi/AyroviIcon.tsx",
       "domain": "shared-design",
-      "sha256": "72ebc78b35e780ce421febcfa8363c5ef566eef2c874250152550d7030d1026b",
-      "lines": 25,
+      "sha256": "719d10a0159ab3000a48c731dcdbe406e57e5571d95727b3e41a275d54ec7226",
+      "lines": 26,
       "imports": [
         "react",
         "../../../design/editorial/IconDirection",
@@ -17471,8 +17597,8 @@
     {
       "file": "client/src/components/icons/ayrovi/catalog.tsx",
       "domain": "shared-design",
-      "sha256": "ab73a7859c7b024079401baf0c9b1a08056054cb6a55c3b2e40ed608f0c7c111",
-      "lines": 104,
+      "sha256": "25d895c6daa27a0d63ecd4e7884d9f425e726ede4d964f25b6fa6f3c9f8be953",
+      "lines": 107,
       "imports": [
         "./AyroviIcon"
       ],
@@ -17575,7 +17701,9 @@
         "AyroviGrip",
         "AyroviSonim",
         "AyroviVision",
-        "AyroviAyWebs"
+        "AyroviAyWebs",
+        "AyroviPaperclip",
+        "AyroviCleanMenu"
       ],
       "controls": [],
       "icons": [],
@@ -18315,8 +18443,8 @@
     {
       "file": "client/src/components/QatafoIcons.tsx",
       "domain": "shared-design",
-      "sha256": "4d28850fbeba435e29ffd718630e12f821c49aed2bad4e9db51337f28940b3ee",
-      "lines": 129,
+      "sha256": "cf24ee1ef45926120c621464c1ef97b8b9a486d0d38e22767d6120b238332236",
+      "lines": 132,
       "imports": [
         "./icons/ayrovi",
         "./icons/ayrovi/catalog"
@@ -18423,7 +18551,9 @@
         "Grip",
         "Sonim",
         "Vision",
-        "AyWebs"
+        "AyWebs",
+        "Paperclip",
+        "CleanMenu"
       ],
       "controls": [],
       "icons": [
@@ -19575,8 +19705,8 @@
     {
       "file": "client/src/design/editorial/Icon.tsx",
       "domain": "shared-design",
-      "sha256": "894610fa4e1079864ece622d8498a70ac5e1df8256bdf382599933734f5d353f",
-      "lines": 50,
+      "sha256": "d41ff50cabddef178655b6bd10812bd8f5fc1343326a4611f51ec182f6504587",
+      "lines": 52,
       "imports": [
         "react",
         "./glyphs.json",
@@ -19589,7 +19719,7 @@
       "icons": [],
       "inlineSvg": [
         {
-          "line": 22,
+          "line": 24,
           "viewBox": "\"0 0 24 24\""
         }
       ],
@@ -21602,18 +21732,14 @@
     {
       "file": "client/src/index.css",
       "domain": "shell-content",
-      "sha256": "fb26a1f023efce5e1c0b3cad6a38a339a0f2e8a727802bc150b76c0a8ff9cfc8",
-      "lines": 1272,
+      "sha256": "0e43b5431bcd9b20395718f3a1f884db71b195ad37478bd5460ce12147bfc945",
+      "lines": 1257,
       "imports": [],
       "exports": [],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
-      "colors": [
-        "#000",
-        "#85BAC2",
-        "#fff"
-      ],
+      "colors": [],
       "fontDeclarations": [
         "font-family: var(--font-primary)"
       ],

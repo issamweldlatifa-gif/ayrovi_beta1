@@ -101,3 +101,6 @@ export const AyroviGrip = createAyroviIcon('Grip');
 export const AyroviSonim = createAyroviIcon('Sonim');
 export const AyroviVision = createAyroviIcon('Vision');
 export const AyroviAyWebs = createAyroviIcon('AyWebs');
+
+export const AyroviPaperclip = createAyroviIcon('Paperclip');
+export const AyroviCleanMenu = createAyroviIcon('CleanMenu');

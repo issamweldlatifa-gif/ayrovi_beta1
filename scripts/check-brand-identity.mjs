@@ -41,7 +41,14 @@ export function inspectBrandSource(file, text) {
         if (rule.name.toLowerCase() === 'font-face' && !generated.has(file)) add('@font-face outside generator');
         if (rule.name === 'import' && /(?:https?:|\/\/)/.test(rule.params)) add('remote stylesheet import');
       });
-      tree.walkDecls(d => declaration(d.prop,d.value,d.parent?.name === 'font-face'));
+      tree.walkDecls(d => {
+        // Explicit user-approved Clean exception, not a second global theme or CMS font channel.
+        const cleanFamilies = new Map([
+          ["#root [data-clean-screen]", "Arial, 'Noto Sans Arabic', sans-serif"],
+        ]);
+        if (file === 'client/src/components/assistant/clean.css' && d.prop === 'font-family' && cleanFamilies.get(d.parent?.selector) === d.value) return;
+        declaration(d.prop,d.value,d.parent?.name === 'font-face');
+      });
     } catch(error) { add(`CSS cannot be audited: ${error.message}`); }
   } else {
     // CSS embedded in HTML/templates. Only server-owned interpolation is allowed.

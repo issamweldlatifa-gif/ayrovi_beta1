@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./components/assistant/clean.css";
 
 /*
  * ORDRE DES COUCHES — cause racine trouvée le 27/09/2026.
@@ -1253,19 +1254,3 @@
 .stories-showcase__card { cursor: default; }
 .stories-showcase__cta:disabled { opacity: 1; cursor: default; }
 .stories-showcase__cardtitle, .stories-showcase__carddesc { margin: 0; }
-
-/* Approved Clean-only presentation. No commerce/publication theme override. */
-.clean-wordmark { display:inline-flex; align-items:baseline; color:#000; font-size:30px; line-height:42px; font-weight:400; letter-spacing:0; direction:ltr; }
-.clean-wordmark-n { position:relative; }
-.clean-star { position:absolute; top:-5px; right:1px; color:#85BAC2; font-size:11px; line-height:14px; }
-.clean-welcome { padding:16px; border-radius:22px; font-size:14px; line-height:1.5; }
-.clean-welcome strong { display:block; margin-bottom:6px; font-weight:600; }
-.clean-suggestion { min-height:44px; padding:10px 16px; border-radius:999px; font-weight:400; text-align:start; max-width:100%; }
-.clean-composer-action { display:grid; place-items:center; width:44px; height:44px; padding:0; border:0; background:transparent; flex-shrink:0; }
-.clean-composer-action:disabled { opacity:.45; }
-[data-clean-composer] { background:#fff; }
-[data-clean-composer] > div { border-radius:24px; }
-.clean-assistant-envelope { background:#fff; border:0; box-shadow:none; color:#000; }
-.clean-user-envelope { background:transparent; box-shadow:none; }
-
-[data-clean-screen] > section { background:#fff; }

@@ -1,4 +1,4 @@
-import { CLEAN } from './CleanVisuals';
+import { CLEAN, CleanSpeakerIcon } from './CleanVisuals';
 import { MerchantRating } from '../../ayrovix/components/MerchantRating';
 import React, { useEffect, useRef } from 'react';
 import { AssistantMessageActions } from './AssistantMessageActions';
@@ -6,7 +6,6 @@ import { useMessageReader } from './useMessageReader';
 import { cleanAssistantText } from './composerPolicy';
 import { Mic, ArrowUpRight, MessageSquare, PackageCheck, ShoppingBag, LensBox } from '../QatafoIcons';
 import { AyroviMotionState } from '../AyroviMotion';
-import { AssistantBrandMark } from './AssistantBrandMark';
 import type { AyrovixOrderSelection } from '../../shop';
 import { ShopProductScreen } from '../../shop';
 import type { AyrovixCandidate, AyrovixProduct } from '../../ayrovix/types';
@@ -115,7 +114,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
         {historyNotice}
         {!hasMessages ? (
           <div className="assistant-welcome flex flex-1 flex-col">
-            <div className="clean-welcome" style={{ backgroundColor: CLEAN.bubble, color: CLEAN.text }}>
+            <div className="clean-welcome" style={{ backgroundColor: CLEAN.bubble, color: CLEAN.ink }}>
               <strong>{tr('Bonjour, je suis Clean !', 'مرحبًا، أنا Clean!')}</strong>
               <p>{tr('Posez-moi vos questions sur vos achats. Mes réponses sont générées par IA et peuvent contenir des erreurs.', 'اسألني عن مشترياتك. إجاباتي مولّدة بالذكاء الاصطناعي وقد تحتوي على أخطاء.')}</p>
             </div>
@@ -127,7 +126,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                   key={item.title[0]}
                   type="button"
                   onClick={() => onPrompt(item.prompt[isArabic ? 1 : 0])}
-                  className="clean-suggestion" style={{ backgroundColor: CLEAN.bubble, color: CLEAN.text }}
+                  className="clean-suggestion" style={{ backgroundColor: CLEAN.bubble, color: CLEAN.ink }}
                 >
                   <span className="text-sm font-normal leading-5">{item.title[isArabic ? 1 : 0]}</span>
                 </button>
@@ -144,15 +143,8 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
               if (message.role === 'assistant' && !assistantText && !hasPresentation) return null;
               const isLastAssistantStreaming = isGenerating && index === messages.length - 1 && message.role === 'assistant';
               return <div key={message.id} className={`flex flex-wrap gap-y-2 items-start ${message.role === 'user' ? 'justify-end' : 'justify-start gap-2.5'}`}>
-                {message.role === 'assistant' && (
-                  <AssistantBrandMark
-                    state={isLastAssistantStreaming ? motionState : 'idle'}
-                    size={43}
-                    className="mt-1"
-                    label={isLastAssistantStreaming ? tr('ZAYROVI prépare la réponse', 'ZAYROVI تحضّر الرد') : 'ZAYROVI'}
-                  />
-                )}
-                <div className={message.role === 'user' ? 'min-w-0 max-w-[82%]' : hasPresentation ? 'min-w-0 flex-1 basis-[min(100%,20rem)]' : 'min-w-0 max-w-[82%]'}>
+                {message.role === 'assistant' && <CleanSpeakerIcon role="assistant" />}
+                <div className={message.role === 'user' ? 'min-w-0 max-w-[80%]' : hasPresentation ? 'min-w-0 flex-1 basis-[min(100%,20rem)]' : 'min-w-0 max-w-[82%]'}>
                   <div className={`rounded-card px-4 py-3 text-sm leading-6 ${message.role === 'user' ? 'clean-user-envelope' : 'clean-assistant-envelope'}`} >
                     {message.role === 'user' && message.fromVoice && (
                       <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-black/5 px-2.5 py-0.5 text-xs font-normal text-black">
@@ -161,7 +153,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                       </span>
                     )}
                     {message.role === 'assistant' && message.incomplete && !isLastAssistantStreaming && <p data-incomplete-response role="status" className="ay-readable mb-2 text-xs text-muted">{tr('Réponse interrompue avant sa fin. Vous pouvez la régénérer.', 'توقف الرد قبل اكتماله. يمكنك إعادة توليده.')}</p>}
-                    {assistantText && <p className="ay-readable whitespace-pre-wrap clean-message-text" style={message.role === 'user' ? { backgroundColor: CLEAN.bubble, color: CLEAN.text, borderRadius: 24, padding: '10px 16px' } : { color: CLEAN.ink }}>{assistantText}</p>}
+                    {assistantText && <p className="ay-readable whitespace-pre-wrap clean-message-text" style={message.role === 'user' ? { backgroundColor: CLEAN.bubble, color: CLEAN.text, borderRadius: 24, borderEndEndRadius: 4, padding: '10px 16px' } : { color: CLEAN.ink }}>{assistantText}</p>}
                     {message.attachments?.length ? <div className="mt-2 space-y-2">{message.attachments.map((attachment) => <div key={attachment.id} className="overflow-hidden rounded-card border border-white/15 bg-ink/10">{attachment.preview ? <img src={attachment.preview} alt={attachment.name} className="max-h-48 w-full object-cover"/> : <p className="ay-readable px-3 py-2 text-xs">{attachment.name}</p>}</div>)}</div> : null}
                     {message.role === 'assistant' && <ToolPresentations message={message} isDark={isDark} selectedProduct={selectedProduct} productBusyId={productBusyId} isOrdering={isOrdering} onSelectProduct={onSelectProduct} onProductOrder={onProductOrder} onOpenCart={onOpenCart} onProductBack={onProductBack}/>}
                     {message.role === 'assistant' && message.lensSummary && <div className="mt-2 ay-readable text-xs text-muted">
@@ -174,9 +166,10 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                   </div>
                   {message.role === 'assistant' && !isLastAssistantStreaming && <AssistantMessageActions message={message} isDark={isDark} copied={copiedId === message.id} generating={isGenerating} feedback={feedback[message.id]} feedbackPending={feedbackPending[message.id]} reader={reader} onCopy={onCopy} onRegenerate={onRegenerate} onFeedback={onFeedback} onOpenComment={onOpenComment}/>}
                 </div>
+                {message.role === 'user' && <CleanSpeakerIcon role="user" />}
               </div>;
             })}
-            {isGenerating && !lastAssistantHasContent && <div className="flex items-center gap-3 px-1 py-1"><AssistantBrandMark state={motionState} size={43} label={tr('ZAYROVI prépare la réponse', 'ZAYROVI تحضّر الرد')}/><div><p className={`text-xs font-bold ${isDark ? 'text-white/80' : 'text-ink'}`}>{motionState === 'thinking' ? tr('Recherche en cours…', 'جارٍ البحث…') : motionState === 'analyzing' ? tr('Vérification du produit…', 'جارٍ التحقق من المنتج…') : motionState === 'reasoning' ? tr('Récupération du prix…', 'جارٍ جلب السعر…') : tr('Création de la réponse…', 'جارٍ إنشاء الرد…')}</p><span className={`text-xs ${isDark ? 'text-muted' : 'text-muted'}`}>{tr('Les données de commande et de prix ne sont jamais inventées.', 'لا تُختلق أبدًا بيانات الطلبات والأسعار.')}</span></div></div>}
+            {isGenerating && !lastAssistantHasContent && <div className="flex items-center gap-3 px-1 py-1"><CleanSpeakerIcon role="assistant" /><div><p className={`text-xs font-bold ${isDark ? 'text-white/80' : 'text-ink'}`}>{motionState === 'thinking' ? tr('Recherche en cours…', 'جارٍ البحث…') : motionState === 'analyzing' ? tr('Vérification du produit…', 'جارٍ التحقق من المنتج…') : motionState === 'reasoning' ? tr('Récupération du prix…', 'جارٍ جلب السعر…') : tr('Création de la réponse…', 'جارٍ إنشاء الرد…')}</p><span className={`text-xs ${isDark ? 'text-muted' : 'text-muted'}`}>{tr('Les données de commande et de prix ne sont jamais inventées.', 'لا تُختلق أبدًا بيانات الطلبات والأسعار.')}</span></div></div>}
           </div>
         )}
         <div aria-hidden="true" />

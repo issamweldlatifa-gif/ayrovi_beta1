@@ -87,6 +87,14 @@ describe('ZAYROVI A — enforceable identity', () => {
     ['client/public/new.html', '<style>body{font:14px Georgia}</style>'],
     ['client/index.html', '<link href="https://fonts.googleapis.com/css2?family=Inter">'],
   ])('blocks a new bypass in %s', (file, code) => expect(inspectBrandSource(file, code).length).toBeGreaterThan(0));
+  test('allows only the explicitly scoped Clean system font exception', () => {
+    const file = 'client/src/components/assistant/clean.css';
+    const accepted = "#root [data-clean-screen]{font-family:Arial, 'Noto Sans Arabic', sans-serif}";
+    expect(inspectBrandSource(file, accepted)).toEqual([]);
+    expect(inspectBrandSource(file, 'body{font-family:Arial}').length).toBeGreaterThan(0);
+    expect(inspectBrandSource('client/src/New.css', accepted).length).toBeGreaterThan(0);
+    expect(inspectBrandSource(file, '#root [data-clean-screen]{font-family:Georgia}').length).toBeGreaterThan(0);
+  });
   test('accepts official roles and does not mistake business text for a font', () => {
     expect(inspectBrandSource('client/src/New.css', '.x{font-family:var(--ay-font-stack);font-weight:700}')).toEqual([]);
     expect(inspectBrandSource('client/src/New.tsx', 'const x=<p className="ay-number">Inter est une marque dans ce texte.</p>')).toEqual([]);
