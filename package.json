@@ -14,7 +14,7 @@
     "audit:design": "node verify/zalando-audit.mjs",
     "backup": "node scripts/backup-sqlite.mjs",
     "android:assetlinks": "node scripts/assetlinks.mjs",
-    "android:assets": "node scripts/cap-assets.mjs && capacitor-assets generate --android --iconBackgroundColor '#0A0A0A' --iconBackgroundColorDark '#0A0A0A' --splashBackgroundColor '#0A0A0A' --splashBackgroundColorDark '#0A0A0A'",
+    "android:assets": "node scripts/cap-assets.mjs && capacitor-assets generate --android --iconBackgroundColor '#FFFFFF' --iconBackgroundColorDark '#FFFFFF' --splashBackgroundColor '#FFFFFF' --splashBackgroundColorDark '#FFFFFF'",
     "android:sync": "cap sync android",
     "android:open": "cap open android",
     "design:inventory": "node scripts/inventory-customer-design.mjs",

@@ -86,7 +86,7 @@ describe("v6 heart-handshake replaces the retired Z, including grey page loading
   ])(
     "%s has the actual new silhouette, not just a changed filename",
     async (file) => {
-      async function silhouette(input: string | Buffer) {
+      async function silhouette(input: string | Buffer, blue = false) {
         const { data, info } = await sharp(input)
           .ensureAlpha()
           .raw()
@@ -100,9 +100,7 @@ describe("v6 heart-handshake replaces the retired Z, including grey page loading
           for (let x = 0; x < info.width; x++) {
             const i = (y * info.width + x) * 4;
             if (
-              data[i] > 180 &&
-              data[i + 1] > 180 &&
-              data[i + 2] > 180 &&
+              (blue ? data[i] < 75 && data[i + 1] < 185 && data[i + 2] > 200 : data[i] > 180 && data[i + 1] > 180 && data[i + 2] > 180) &&
               data[i + 3] > 180
             ) {
               mask[y * info.width + x] = 255;
@@ -131,7 +129,7 @@ describe("v6 heart-handshake replaces the retired Z, including grey page loading
           `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="${BRAND_SYMBOL.viewBox}"><path fill="white" d="${BRAND_SYMBOL.d}"/></svg>`
         )
       );
-      const actual = await silhouette(file);
+      const actual = await silhouette(file, !file.startsWith('client/public'));
       let union = 0,
         intersection = 0;
       for (let i = 0; i < expected.length; i++) {

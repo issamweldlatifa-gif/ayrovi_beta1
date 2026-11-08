@@ -181,6 +181,8 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
     const ALLOWED = new Set([
       'src/design/layout.tsx', // `AppScreen.overlayHeader` — la superposition de référence
       'src/design/ui.tsx', // le tiroir : panneau au-dessus du contenu
+      'src/design/BrandEntrance.tsx', // approved full-screen startup overlay and expanding cover
+      'src/features/shell/LegacyMainMenu.tsx', // original unmounted overlay retained for future restoration
       'src/features/shell/AppHeader.tsx', // en-tête transparent sous lequel défile la page
       'app/(tabs)/_layout.tsx', // barre d'onglets flottante transparente à angles arrondis sous laquelle défile la page
       'app/aywebs/browser.tsx', // AYWEBs : voile de chargement posé au-dessus de la page du magasin (WebView)

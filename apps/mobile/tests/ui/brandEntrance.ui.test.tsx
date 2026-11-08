@@ -1,0 +1,45 @@
+import { act, render } from '@testing-library/react-native';
+import { Animated } from 'react-native';
+import { Path } from 'react-native-svg';
+import { BrandEntrance } from '@/design/BrandEntrance';
+import { TabSocialIcon } from '@/design/TabNavIcons';
+import { BRAND_ACCENT } from '@/design/brandAppearance';
+let mockReduce = false;
+let mockMode = 'light';
+jest.mock('@/design/motion', () => ({ useReduceMotion: () => mockReduce }));
+jest.mock('@/design/theme', () => ({ useTheme: () => ({ mode: mockMode, colors: { ink: '#0A0A0A', muted: '#666666', line: '#E5E5E5' }, iconSize: { md: 24 } }) }));
+afterEach(() => { jest.useRealTimers(); jest.restoreAllMocks(); mockReduce = false; mockMode = 'light'; });
+it('uses verified blue only for the selected Social symbol', () => {
+  const tree = render(<TabSocialIcon color="black" focused={false} />);
+  expect(tree.UNSAFE_getByType(Path).props.fill).toBe('#0A0A0A');
+  tree.rerender(<TabSocialIcon color="black" focused />);
+  expect(tree.UNSAFE_getByType(Path).props.fill).toBe(BRAND_ACCENT);
+  mockMode = 'dark';
+  tree.rerender(<TabSocialIcon color="black" focused={false} />);
+  expect(tree.UNSAFE_getByType(Path).props.fill).toBe('#FFFFFF');
+  tree.rerender(<TabSocialIcon color="black" focused />);
+  expect(tree.UNSAFE_getByType(Path).props.fill).toBe(BRAND_ACCENT);
+});
+it('releases the native splash after paint, waits for readiness and completes once even if animation callbacks are lost', () => {
+  jest.useFakeTimers();
+  jest.spyOn(Animated, 'sequence').mockReturnValue({ start: jest.fn(), stop: jest.fn(), reset: jest.fn() });
+  const onDone = jest.fn(), onShown = jest.fn();
+  const tree = render(<BrandEntrance ready={false} onShown={onShown} onDone={onDone} />);
+  expect(onShown).toHaveBeenCalledTimes(1);
+  act(() => jest.advanceTimersByTime(1100));
+  expect(onDone).not.toHaveBeenCalled();
+  tree.rerender(<BrandEntrance ready onShown={onShown} onDone={onDone} />);
+  act(() => jest.advanceTimersByTime(300));
+  expect(onDone).toHaveBeenCalledTimes(1);
+  tree.unmount();
+  act(() => jest.advanceTimersByTime(2000));
+  expect(onDone).toHaveBeenCalledTimes(1);
+});
+it('skips the expanding motion with reduced motion and never blocks a ready app', () => {
+  mockReduce = true;
+  const onDone = jest.fn();
+  const sequence = jest.spyOn(Animated, 'sequence');
+  render(<BrandEntrance ready onShown={() => {}} onDone={onDone} />);
+  expect(sequence).not.toHaveBeenCalled();
+  expect(onDone).toHaveBeenCalledTimes(1);
+});

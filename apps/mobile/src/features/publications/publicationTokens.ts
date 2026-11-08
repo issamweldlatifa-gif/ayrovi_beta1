@@ -1,4 +1,5 @@
 /** Explicitly approved visual scope: Publication only, never a global theme override. */
+import { BRAND_ACCENT } from '@/design/brandAppearance';
 import { PUBLICATION_THEME } from '@/design/tokens.mobile';
 export const PUBLICATION_PALETTE = {
   ...PUBLICATION_THEME,
@@ -12,7 +13,7 @@ export const PUBLICATION_PALETTE = {
   splitPaper: '#FFFFFF',
   campaignPaper: '#FFFFFF',
   socialSurface: '#F3F3F3',
-  verified: '#0095F6',
+  verified: BRAND_ACCENT,
   discovery: '#0078CA',
   like: '#F23F5D',
   accent: '#101010',

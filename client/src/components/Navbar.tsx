@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Menu, ShoppingBag, User } from './QatafoIcons';
+import { ShoppingBag, Bell } from './QatafoIcons';
 import { useLocale } from '../i18n/LocaleContext';
 import { Button } from '../design/Button';
 
 interface NavbarProps {
   onOpenMenuDrawer: () => void;
   onOpenAccount: () => void;
+  onOpenNotifications?: () => void;
   onGoHome: () => void;
   onOpenCart: () => void;
   cartCount?: number;
@@ -35,6 +36,7 @@ export function headerOverHero(hero: { top: number; bottom: number; layout?: str
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenMenuDrawer,
   onOpenAccount,
+  onOpenNotifications,
   onGoHome,
   onOpenCart,
   cartCount = 0,
@@ -65,6 +67,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
   }, []);
 
+  const customLogo = logoUrl?.trim() && !/^\/media\/logo-ayrovi(?:[.-])/.test(logoUrl.trim()) ? logoUrl.trim() : null;
   const iconButtonClass = overHero ? 'public-site-header-icon' : undefined;
 
   return (
@@ -73,31 +76,22 @@ export const Navbar: React.FC<NavbarProps> = ({
         overHero ? 'is-over-hero' : 'border-line'
       }`}
     >
-      <div className="mx-auto grid h-16 w-full max-w-7xl grid-cols-[1fr_auto_1fr] items-center px-3 sm:h-20 sm:px-6">
-        <div className="flex justify-start">
-          <Button variant="ghost" size="icon" onClick={onOpenMenuDrawer} className={iconButtonClass} aria-label={tr('Ouvrir le menu', 'فتح القائمة')} title={tr('Menu', 'القائمة')}>
-            <Menu className="h-6 w-6" />
-          </Button>
-        </div>
-        <button type="button" onClick={onGoHome} className="flex items-center bg-transparent" aria-label="ZAYROVI">
-          {logoUrl && !/^\/media\/logo-ayrovi[a-z0-9-]*\.(?:svg|png)(?:[?#].*)?$/.test(logoUrl) ? (
-            <>
-              <img
-                src={overHero ? '/media/logo-ayrovi-light.png?v=6.0' : logoUrl}
-                alt=""
-                className={`h-11 w-11 bg-transparent object-contain transition-opacity duration-300 sm:h-11 sm:w-11 ${overHero ? '' : 'brightness-0'}`}
-              />
-              <strong className={`font-display text-lg font-black tracking-tight transition-colors duration-300 sm:text-xl ${overHero ? 'text-white' : 'text-ink'}`}>zayrovi</strong>
-            </>
-          ) : (
-            <img
-              src={overHero ? '/media/logo-ayrovi-lockup-white-violet.svg?v=6.0' : '/media/logo-ayrovi-lockup-black-violet.svg?v=6.0'}
-              alt="ZAYROVI"
-              className="h-7 w-auto bg-transparent object-contain transition-opacity duration-300 sm:h-8"
-            />
-          )}
+      <div className="mx-auto grid h-16 w-full max-w-7xl grid-cols-[1fr_auto_auto] gap-1 items-center px-3 sm:h-20 sm:px-6">
+        <button type="button" onClick={onGoHome} className="flex min-h-11 items-center bg-transparent" aria-label="zayrovi">
+          <img src={customLogo ?? (overHero ? '/media/logo-ayrovi-wordmark-white.svg?v=6.0' : '/media/logo-ayrovi-wordmark-black.svg?v=6.0')} alt="zayrovi" className="h-7 w-auto object-contain" />
         </button>
+        <button type="button" disabled aria-disabled="true" className="min-h-11 rounded-full border border-current px-2 text-sm whitespace-nowrap">Plus ★ Light</button>
         <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onOpenNotifications ?? onOpenAccount}
+            className={`relative ${iconButtonClass ?? ''}`}
+            aria-label={tr('Notifications', 'الإشعارات')}
+            title={isAuthenticated ? tr('Notifications', 'الإشعارات') : tr('Se connecter', 'تسجيل الدخول')}
+          >
+            <Bell className="h-6 w-6" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -110,17 +104,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <ShoppingBag className="h-6 w-6" />
             {cartCount > 0 && <span className="absolute bottom-1.5 end-1.5 min-w-4 rounded-full border-2 border-white bg-ink px-1 text-center text-micro font-black leading-4 text-white" aria-hidden="true">{cartCount}</span>}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onOpenAccount}
-            className={`relative ${iconButtonClass ?? ''}`}
-            aria-label={tr('Ouvrir mon espace', 'فتح فضائي')}
-            title={isAuthenticated ? tr('Mon compte ZAYROVI', 'حسابي في ZAYROVI') : tr('Se connecter', 'تسجيل الدخول')}
-          >
-            <User className="h-6 w-6" />
-            {isAuthenticated && <span className="absolute bottom-2 end-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-ink" />}
           </Button>
         </div>
       </div>

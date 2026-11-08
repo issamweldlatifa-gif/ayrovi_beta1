@@ -87,7 +87,7 @@ function renderTabsBar() {
 }
 
 describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille d’icônes unifiée', () => {
-  it('applique une surface pleine opaque collée tout en bas (zéro espace dessous) et 5 icônes 24×24 de la même famille', () => {
+  it('applique une surface pleine opaque collée tout en bas (zéro espace dessous) et 6 icônes 24×24 de la même famille', () => {
     const tree = renderTabsBar();
     expect(mockCapturedScreenOptions).not.toBeNull();
 
@@ -103,11 +103,12 @@ describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille
       'index',
       'lens',
       'aywebs',
+      'social',
       'sonim',
       'account',
       'cart',
     ]);
-    for (const tabName of ['index', 'lens', 'aywebs', 'sonim', 'account']) {
+    for (const tabName of ['index', 'lens', 'aywebs', 'social', 'sonim', 'account']) {
       const entry = mockCapturedScreens.find((s) => s.name === tabName);
       const iconSlot = entry?.options.tabBarIconStyle as { width: number; height: number };
       expect(iconSlot.width).toBe(24);

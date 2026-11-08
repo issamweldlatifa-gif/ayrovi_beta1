@@ -14,6 +14,9 @@ import React from 'react';
 import { View, type ColorValue } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { BrandSymbol } from './BrandMark';
+import { BRAND } from './tokens.generated';
+import { BRAND_ACCENT } from './brandAppearance';
 import { useTheme } from '@/design/theme';
 
 export type TabNavIconProps = {
@@ -60,4 +63,12 @@ export function TabSonimIcon({ color, size }: TabNavIconProps) {
 
 export function TabProfileIcon({ color, size }: TabNavIconProps) {
   return <TabStrokeGlyph name="person-outline" color={color} size={size} />;
+}
+
+/** A brand navigation exception, not a second interface icon family. */
+export function TabSocialIcon({ focused = false, size = 24 }: TabNavIconProps) {
+  const theme = useTheme();
+  return <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+    <BrandSymbol width={size} color={focused ? BRAND_ACCENT : theme.mode === 'dark' ? BRAND.white : BRAND.black} />
+  </View>;
 }

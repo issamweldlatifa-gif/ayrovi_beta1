@@ -23,6 +23,7 @@ import {
   TabLensIcon,
   TabProfileIcon,
   TabSonimIcon,
+  TabSocialIcon,
 } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
 import { AYWEBS_WORDMARK_TINT, TAB_BAR_SURFACE } from '@/design/tokens.mobile';
@@ -140,6 +141,8 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="social" options={{ title: t('tabs.social'), tabBarLabel: label(t('tabs.social')),
+        tabBarIconStyle: standardIconSlot, tabBarIcon: ({ focused, color }) => <TabSocialIcon focused={focused} color={color} /> }} />
       <Tabs.Screen
         name="sonim"
         options={{

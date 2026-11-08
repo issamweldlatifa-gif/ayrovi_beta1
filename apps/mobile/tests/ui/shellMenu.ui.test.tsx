@@ -5,6 +5,7 @@
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { LegacyMainMenu } from '../../src/features/shell/LegacyMainMenu';
 import { AppHeader } from '../../src/features/shell/AppHeader';
 import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
@@ -22,12 +23,12 @@ jest.mock('../../src/state/session', () => ({
   useSession: () => ({ status: (globalThis as any).__testStatus ?? 'signedOut' }),
 }));
 
-async function renderHeader(props: { brand?: 'zayrovi' | 'aywebs'; showNotifications?: boolean } = {}) {
+async function renderHeader(props: { brand?: 'zayrovi' | 'aywebs'; showNotifications?: boolean } = {}, legacy = false) {
   const view = render(
     <PrefsProvider>
       <I18nProvider>
         <ThemeProvider>
-          <AppHeader scrolled={false} {...props} />
+          {legacy ? <LegacyMainMenu scrolled={false} {...props} /> : <AppHeader scrolled={false} {...props} />}
         </ThemeProvider>
       </I18nProvider>
     </PrefsProvider>,
@@ -55,10 +56,13 @@ describe('icône compte et menu', () => {
     expect(router.push).toHaveBeenCalledWith('/account/notifications');
   });
 
-  it('l’icône menu est à gauche du logo, la cloche et le panier à droite', async () => {
+  it('removes the menu entry and exposes only a disabled unassigned Plus Light', async () => {
     await renderHeader();
     expect(screen.queryByRole('button', { name: 'Mon compte' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Menu' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Menu' })).toBeNull();
+    fireEvent.press(screen.getByTestId('plus-light'));
+    expect(router.push).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('zayrovi')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Panier ZAYROVI' })).toBeTruthy();
   });
 
@@ -72,8 +76,8 @@ describe('icône compte et menu', () => {
     expect(router.push).toHaveBeenCalledWith('/panier');
   });
 
-  it('le menu contient la langue et le thème, avec leurs choix', async () => {
-    await renderHeader();
+  it('retains the unmounted legacy settings for an explicit future restoration', async () => {
+    await renderHeader({}, true);
     fireEvent.press(screen.getByRole('button', { name: 'Menu' }));
     expect(screen.getByText('Langue')).toBeTruthy();
     expect(screen.getByText('Thème')).toBeTruthy();

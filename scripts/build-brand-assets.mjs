@@ -5,6 +5,7 @@ const dir = 'assets/brand/zayrovi-2026-11';
 const logo = JSON.parse(fs.readFileSync(`${dir}/logo.json`, 'utf8'));
 const { symbol, wordmark } = logo;
 const INK = '#0A0A0A', WHITE = '#FFFFFF';
+const { accent: BLUE } = JSON.parse(fs.readFileSync('assets/brand/appearance.json', 'utf8'));
 const transform = `translate(19 ${Number(((136 - 98 * symbol.height / symbol.width) / 2).toFixed(4))}) scale(${Number((98 / symbol.width).toFixed(9))})`;
 const data = ({ width, height, viewBox, d }) => ({ width, height, viewBox, d });
 const ts = `/** GENERATED from supplied heart-handshake contours by npm run brand:build. */\nexport const BRAND_SYMBOL = ${JSON.stringify(data(symbol), null, 2)} as const;\nexport const BOOT_SYMBOL_TRANSFORM = '${transform}';\n`;
@@ -16,15 +17,16 @@ const mark = color => svg(symbol.width, symbol.height, path(symbol, color));
 // Symbol at 1000 high; wordmark at 660 high, optically centered; 240 clear-space units. No divider.
 const lockup = color => svg(Number((symbol.width + 240 + wordmark.width * .66).toFixed(2)), 1000,
   path(symbol, color) + path(wordmark, color, `translate(${symbol.width + 240} 170) scale(0.66)`));
-const square = (size, share = .68, background = INK) => {
+const square = (size, share = .68, background = INK, foreground = WHITE) => {
   const scale = size * share / Math.max(symbol.width, symbol.height);
-  return svg(size, size, `${background ? `<rect width="${size}" height="${size}" fill="${background}"/>` : ''}${path(symbol, WHITE, `translate(${(size - symbol.width * scale) / 2} ${(size - symbol.height * scale) / 2}) scale(${scale})`)}`);
+  return svg(size, size, `${background ? `<rect width="${size}" height="${size}" fill="${background}"/>` : ''}${path(symbol, foreground, `translate(${(size - symbol.width * scale) / 2} ${(size - symbol.height * scale) / 2}) scale(${scale})`)}`);
 };
 const writePng = async (file, input, width, height = width) => {
   fs.mkdirSync(file.substring(0, file.lastIndexOf('/')), { recursive: true });
   await sharp(Buffer.from(input)).resize(width, height, { fit: 'contain' }).png({ compressionLevel: 9 }).toFile(file);
 };
 const media = 'client/public/media';
+for (const [tone, ink] of [['black', INK], ['white', WHITE]]) fs.writeFileSync(`${media}/logo-ayrovi-wordmark-${tone}.svg`, svg(wordmark.width, wordmark.height, path(wordmark, ink)));
 fs.writeFileSync(`${media}/logo-ayrovi-mark.svg`, mark(INK));
 fs.writeFileSync(`${media}/logo-ayrovi-icon.svg`, square(512));
 fs.writeFileSync(`${media}/logo-ayrovi-loading.svg`, svg(136, 136,
@@ -38,12 +40,12 @@ await writePng(`${media}/logo-ayrovi.png`, svg(512, 512, path(symbol, INK, `tran
 await writePng(`${media}/logo-ayrovi-light.png`, square(512, .86, null), 512);
 for (const [name, size] of [['192', 192], ['512', 512], ['apple-touch', 180]]) await writePng(`${media}/logo-ayrovi-${name}.png`, square(size), size);
 for (const [name, size, share, bg] of [
-  ['icon', 1024, .68, INK], ['adaptive-icon', 1024, .60, null], ['favicon', 64, .72, INK],
+  ['icon', 1024, .68, WHITE], ['adaptive-icon', 1024, .60, null], ['favicon', 64, .72, WHITE],
   ['splash-icon', 1024, .68, null], ['splash-icon-dark', 1024, .68, null],
-]) await writePng(`apps/mobile/assets/images/${name}.png`, square(size, share, bg), size);
+]) await writePng(`apps/mobile/assets/images/${name}.png`, square(size, share, bg, BLUE), size);
 // Capacitor inputs; its platform generator writes density-specific launcher/splash resources.
-await writePng('assets/icon.png', square(1024, .62), 1024);
-for (const name of ['splash', 'splash-dark']) await writePng(`assets/${name}.png`, square(2732, .40), 2732);
+await writePng('assets/icon.png', square(1024, .62, WHITE, BLUE), 1024);
+for (const name of ['splash', 'splash-dark']) await writePng(`assets/${name}.png`, square(2732, .40, WHITE, BLUE), 2732);
 // Preserve the existing loader style, changing only symbol geometry/centering.
 const htmlPath = 'client/index.html';
 let html = fs.readFileSync(htmlPath, 'utf8');

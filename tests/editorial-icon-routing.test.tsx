@@ -23,20 +23,22 @@ describe('every compatibility icon resolves to the approved geometry',()=>{
     const html=renderToStaticMarkup(<Icons.Star fill="currentColor" strokeWidth={9} strokeLinecap="round" viewBox="0 0 90 90" style={{strokeWidth:99}}/>);
     expect(html).toContain('fill="currentColor"');expect(html).toContain('stroke-width="1.5"');expect(html).toContain('stroke-linecap="square"');expect(html).toContain('viewBox="0 0 24 24"');expect(html).not.toContain('stroke-width:99');
   });
-  it('the real header renders Menu and User through CustomerIdentity, without replacing the logo',()=>{
+  it('the real header has only a wordmark, unassigned Plus Light, Bell and Bag',()=>{
     const html=renderToStaticMarkup(<LocaleProvider><CustomerIdentity><Navbar onOpenMenuDrawer={()=>{}} onOpenAccount={()=>{}} onGoHome={()=>{}} onOpenCart={()=>{}} logoUrl="/media/logo-ayrovi.png" /></CustomerIdentity></LocaleProvider>);
-    expect(html).toContain('data-editorial-icon="Menu"');
-    expect(html).toContain('data-editorial-icon="User"');
+    expect(html).not.toContain('data-editorial-icon="Menu"');
+    expect(html).toContain('Plus ★ Light');
+    expect(html).toContain('disabled=""');
+    expect(html).toContain('data-editorial-icon="Bell"');
     // Identité A.ROVI : le lockup officiel remplace l'icône + le mot « ZAYROVI »
     // lorsque le logo public n'est pas personnalisé dans l'Admin.
-    expect(html).toContain('src="/media/logo-ayrovi-lockup-black-violet.svg?v=6.0"');
+    expect(html).toContain('src="/media/logo-ayrovi-wordmark-black.svg?v=6.0"');
     expect(html).not.toContain('<strong');
     expect(html).toContain('stroke-linecap="square"');
   });
-  it('a custom public logo keeps the historical icon + word rendering',()=>{
+  it('preserves a CRM custom logo without a second decorative word or symbol',()=>{
     const html=renderToStaticMarkup(<LocaleProvider><CustomerIdentity><Navbar onOpenMenuDrawer={()=>{}} onOpenAccount={()=>{}} onGoHome={()=>{}} onOpenCart={()=>{}} logoUrl="/uploads/interface/logo-custom.png" /></CustomerIdentity></LocaleProvider>);
     expect(html).toContain('src="/uploads/interface/logo-custom.png"');
-    expect(html).toContain('>zayrovi</strong>');
+    expect(html).not.toContain('<strong');
   });
   it('all account section icons resolve to editorial, not only the authentication screen',()=>{
     for(const item of accountSections){

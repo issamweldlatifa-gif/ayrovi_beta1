@@ -7,7 +7,6 @@ import { Image, Linking, Modal, Pressable, ScrollView, StyleSheet, View, useWind
 import { router } from 'expo-router';
 import { AppText } from '@/design/ui';
 import { FOOTER_THEME as PALETTE, RADIUS, OPACITY } from '@/design/tokens.mobile';
-import { BrandMark } from '@/design/BrandMark';
 import { responsiveMetricsFor, rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
@@ -50,7 +49,6 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
         <AppText color={PALETTE.separator}>·</AppText>
         <FooterLink label={t('footer.terms')} muted onPress={() => router.push('/legal/terms')} />
       </View>
-      <View style={styles.brand}><BrandMark nameSize={27} color={PALETTE.paper} /></View>
     </View>
 
     <Modal visible={panel !== null} transparent animationType="fade" onRequestClose={() => setPanel(null)}>

@@ -1,285 +1,53 @@
-/**
- * En-tête applicatif — fixe, transparent au sommet, surface lisible après scroll.
- *
- * L’en-tête reste hors du ScrollView : sa géométrie et sa position ne bougent
- * jamais. `AppScreen` lui transmet l’état de défilement : le fond et le liseré
- * changent, sans déplacer le contenu; au sommet, les icônes gardent une ombre.
- *
- * ── Le menu ────────────────────────────────────────────────────────────────
- * Le tiroir regroupe des destinations réellement câblées (Accueil, Catalogue,
- * Commandes et Compte). Aucun élément décoratif n’est rendu cliquable.
- */
-import Svg, { Path } from 'react-native-svg';
-import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+/** Sparse main identity. LegacyMainMenu and all destinations remain available in source, unmounted. */
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { BrandMark } from '@/design/BrandMark';
+import { BrandWordmark } from '@/design/BrandMark';
 import { AppImage } from '@/design/appImage';
+import { RADIUS } from '@/design/tokens.mobile';
 import { AYWEBS_WORDMARK_TINT } from '@/design/tokens.mobile';
-import { AppText, Drawer, DrawerItem, Segmented } from '@/design/ui';
-import { rowDirectionFor } from '@/design/layoutLogic';
-import { usePrefs, type Locale, type ThemeMode } from '@/state/prefs';
+import { AppText } from '@/design/ui';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { adaptiveInk } from '@/features/home/heroPalette';
 
-function HeaderIcon({
-  name, label, onPress, color,
-}: {
-  name: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-  color: string;
+export function AppHeader({ scrolled, heroBackground = null, brand = 'zayrovi', showNotifications = true }: {
+  scrolled: boolean; heroBackground?: string | null; brand?: 'zayrovi' | 'aywebs'; showNotifications?: boolean;
 }) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={({ pressed }) => [
-        styles.icon,
-        {
-          width: theme.geometry.minTarget,
-          height: theme.geometry.minTarget,
-          opacity: pressed ? theme.opacity.subtle : 1,
-        },
-      ]}
-      hitSlop={8}
-    >
-      <>{name === 'menu-outline' ? <Svg width={theme.iconSize.md} height={theme.iconSize.md} viewBox="0 0 24 24" {...(Platform.OS === 'web' ? { 'aria-hidden': true as const } : { accessibilityElementsHidden: true })}><Path d="M4 8h16M4 16h10" stroke={color} strokeWidth={1.5} strokeLinecap="round" /></Svg> : <Ionicons name={name} size={theme.iconSize.md} color={color} />}</>
-    </Pressable>
-  );
-}
-
-export function AppHeader({
-  scrolled, heroBackground = null, brand = 'zayrovi', showNotifications = true,
-}: {
-  scrolled: boolean;
-  /** Fond de la carte Hero active : repris par le header tant qu'il est au sommet. */
-  heroBackground?: string | null;
-  /** Identité du contexte : AYWEBs garde son propre libellé sans dupliquer le chrome. */
-  brand?: 'zayrovi' | 'aywebs';
-  showNotifications?: boolean;
-}) {
-  const theme = useTheme();
-  const t = useT();
-  const insets = useSafeAreaInsets();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const { locale, setLocale, themeMode, setThemeMode } = usePrefs();
+  const theme = useTheme(), t = useT(), insets = useSafeAreaInsets();
   const { status } = useSession();
-  // Cloche : connecté → la liste des notifications ; sinon → la connexion
-  // (les notifications sont celles du compte).
-  const accountHref = status === 'signedIn' ? '/(tabs)/account' : '/sign-in';
-  const notificationsHref = status === 'signedIn' ? '/account/notifications' : '/sign-in';
-
-  // Au sommet, sur une carte Hero : le header prend sa couleur et ses icônes
-  // suivent la luminance du fond. Après défilement : surface lisible d'origine.
   const onHero = !scrolled && heroBackground !== null;
-  const barBackground = onHero ? heroBackground : (scrolled ? theme.colors.surface : 'transparent');
-  // Encre adaptée au fond (blanc sur fond sombre, noir sur fond clair), sans ombre :
-  // l'ombre sombre sur les icônes alourdissait le header.
-  const iconColor = onHero ? adaptiveInk(heroBackground, theme.colors) : theme.colors.ink;
-
-  // En arabe, la lecture commence à droite : le logo est à DROITE, les actions
-  // à gauche. Mettre le logo à gauche en RTL, c’est commencer une phrase par la
-  // fin.
+  const ink = onHero ? adaptiveInk(heroBackground, theme.colors) : theme.colors.ink;
   const row = theme.isRTL ? 'row-reverse' : 'row';
-
-  const go = (href: string) => {
-    setMenuOpen(false);
-    router.push(href as never);
-  };
-
-  return (
-    <>
-      <View
-        style={[
-          styles.bar,
-          {
-            height: insets.top + theme.chrome.header,
-            paddingTop: insets.top + theme.space[1],
-            paddingBottom: theme.space[1],
-            paddingHorizontal: theme.space[2],
-            flexDirection: row,
-            backgroundColor: barBackground,
-            borderBottomColor: scrolled ? theme.colors.line : 'transparent',
-          },
-        ]}
-        // La barre ne doit PAS absorber les gestes : sans cela, elle bloque le
-        // défilement du contenu qui passe en dessous.
-        pointerEvents="box-none"
-      >
-        {/* ZAYROVI keeps its menu beside the brand; AYWEBs uses the supplied standalone wordmark. */}
-        <View style={[styles.actions, { flexDirection: row }]}>
-          {brand === 'aywebs' ? null : (
-            <HeaderIcon
-              name="menu-outline"
-              label={t('nav.menu')}
-              onPress={() => { setMenuOpen(true); }}
-              color={iconColor}
-            />
-          )}
-          <Pressable
-            onPress={() => go('/')}
-            accessibilityRole="button"
-            accessibilityLabel={t('nav.home')}
-            testID={brand === 'aywebs' ? 'aywebs-header-wordmark' : undefined}
-            style={({ pressed }) => [styles.logo, { opacity: pressed ? theme.opacity.subtle : 1 }]}
-          >
-            {brand === 'aywebs' ? (
-              /* Mot-symbole OFFICIEL, reteinté aux couleurs de la marque et posé
-                 sur fond transparent : aucune plaque grise autour du logo.
-                 • thème clair : violet #0113B5 (la marque) ;
-                 • thème sombre : blanc — le violet sur #0A0A0A ne se lit pas. */
-              <AppImage
-                localSource={
-                  theme.mode === 'dark'
-                    ? require('../../../assets/aywebs/aywebs-wordmark-white.png')
-                    : require('../../../assets/aywebs/aywebs-wordmark-violet.png')
-                }
-                contentFit="contain"
-                tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}
-                decorative
-                background={null}
-                style={styles.aywebsWordmark}
-              />
-            ) : (
-              <BrandMark size={30} nameColor={onHero ? iconColor : undefined} />
-            )}
-          </Pressable>
-        </View>
-
-        {/* Groupe de droite : notifications (ouvre directement la liste), panier. */}
-        <View style={[styles.actions, { flexDirection: row }]}>
-          {showNotifications ? (
-            <HeaderIcon
-              name="notifications-outline"
-              label={t('account.menu.notifications')}
-              onPress={() => go(notificationsHref)}
-              color={iconColor}
-            />
-          ) : null}
-          {/* AYWEBs : le cœur ouvre les favoris — l'en-tête ne porte que
-              ces deux actions avec le panier (ni cloche, ni menu). */}
-          {brand === 'aywebs' ? (
-            <HeaderIcon
-              name="heart-outline"
-              label={t('account.menu.favorites')}
-              onPress={() => go('/account/favorites')}
-              color={iconColor}
-            />
-          ) : null}
-          <HeaderIcon
-            name="bag-outline"
-            label={t('cart.title')}
-            onPress={() => go('/panier')}
-            color={iconColor}
-          />
-        </View>
-      </View>
-
-      {/* Le bord suit la langue : en arabe le tiroir sort à droite. */}
-      <Drawer visible={menuOpen} onClose={() => { setMenuOpen(false); }} side={theme.isRTL ? 'end' : 'start'}>
-        <View style={[styles.drawerHead, { flexDirection: rowDirectionFor(theme.isRTL), borderBottomColor: theme.colors.line }]}>
-          <BrandMark color={theme.colors.ink} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('common.close')}
-            onPress={() => { setMenuOpen(false); }}
-            hitSlop={8}
-            style={({ pressed }) => [
-              styles.drawerClose,
-              {
-                minWidth: theme.geometry.minTarget,
-                minHeight: theme.geometry.minTarget,
-                opacity: pressed ? theme.opacity.subtle : 1,
-              },
-            ]}
-          >
-            <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} />
-          </Pressable>
-        </View>
-        <View style={styles.drawerNav}>
-          <DrawerItem icon="home-outline" label={t('tabs.home')} onPress={() => go('/')} />
-          <DrawerItem icon="compass-outline" label={t('catalog.title')} onPress={() => go('/catalog')} />
-          <DrawerItem icon="receipt-outline" label={t('orders.title')} onPress={() => go('/orders')} />
-          <DrawerItem icon="person-outline" label={t('tabs.account')} onPress={() => go(accountHref)} />
-        </View>
-
-        {/* Réglages d'affichage : langue et thème, dans le menu (plus sur la page compte). */}
-        <View style={[styles.prefs, { borderTopColor: theme.colors.line }]}>
-          <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <Ionicons name="language-outline" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
-            <AppText variant="captionStrong" color={theme.colors.muted}>{t('common.language')}</AppText>
-          </View>
-          <Segmented<Locale>
-            value={locale as Locale}
-            onChange={setLocale}
-            options={[
-              { value: 'fr', label: t('language.fr') },
-              { value: 'ar', label: t('language.ar') },
-            ]}
-          />
-          <View style={[styles.prefHead, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <Ionicons name="contrast-outline" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
-            <AppText variant="captionStrong" color={theme.colors.muted}>{t('common.theme')}</AppText>
-          </View>
-          <Segmented<ThemeMode>
-            value={themeMode}
-            onChange={setThemeMode}
-            options={[
-              { value: 'system', label: t('theme.system') },
-              { value: 'light', label: t('theme.light') },
-              { value: 'dark', label: t('theme.dark') },
-            ]}
-          />
-        </View>
-      </Drawer>
-    </>
-  );
+  const icon = (name: keyof typeof Ionicons.glyphMap, label: string, href: string) => <Pressable
+    accessibilityRole="button" accessibilityLabel={label} onPress={() => router.push(href as never)} style={styles.hit}>
+    <Ionicons name={name} size={theme.iconSize.md} color={ink} />
+  </Pressable>;
+  return <View testID="main-app-header" pointerEvents="box-none" style={[styles.bar, {
+    height: insets.top + theme.chrome.header, paddingTop: insets.top, flexDirection: row,
+    backgroundColor: onHero ? heroBackground : theme.colors.canvas,
+    borderBottomColor: scrolled ? theme.colors.line : 'transparent',
+  }]}>
+    <Pressable testID={brand === 'aywebs' ? 'aywebs-header-wordmark' : 'main-header-wordmark'} accessibilityRole="button" accessibilityLabel={t('nav.home')} onPress={() => router.push('/')} style={styles.wordmark}>
+      {brand === 'aywebs' ? <AppImage localSource={theme.mode === 'dark' ? require('../../../assets/aywebs/aywebs-wordmark-white.png') : require('../../../assets/aywebs/aywebs-wordmark-violet.png')}
+        contentFit="contain" tintColor={AYWEBS_WORDMARK_TINT[theme.mode]} decorative background={null} style={styles.aywebsWordmark} />
+        : <BrandWordmark height={25} color={ink} />}
+    </Pressable>
+    <View style={{ flexDirection: row, alignItems: 'center', gap: 0 }}>
+      {brand === 'zayrovi' ? <Pressable testID="plus-light" accessibilityRole="button" accessibilityLabel={t('brand.plusLight')} accessibilityState={{ disabled: true }} disabled
+        style={[styles.plus, { borderColor: ink }]}><AppText variant="captionStrong" color={ink}>Plus</AppText><Ionicons name="star" size={theme.iconSize.xs} color={ink} /><AppText variant="caption" color={ink}>Light</AppText></Pressable> : null}
+      {showNotifications ? icon('notifications-outline', t('account.menu.notifications'), status === 'signedIn' ? '/account/notifications' : '/sign-in') : null}
+      {brand === 'aywebs' ? icon('heart-outline', t('account.menu.favorites'), '/account/favorites') : null}
+      {icon('bag-outline', t('cart.title'), '/panier')}
+    </View>
+  </View>;
 }
-
 const styles = StyleSheet.create({
-  drawerHead: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingBottom: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  drawerClose: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  drawerNav: { paddingTop: 8, gap: 2 },
-  prefs: { marginTop: 12, paddingTop: 16, borderTopWidth: StyleSheet.hairlineWidth, gap: 10 },
-  prefHead: { alignItems: 'center', gap: 8, marginTop: 4 },
-  bar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  logo: {
-    paddingVertical: 4,
-    paddingHorizontal: 2,
-    justifyContent: 'center',
-  },
-  /* 121 × 42 : ratio exact du nouveau mot-symbole officiel (508 × 176 ≈ 2.89). */
   aywebsWordmark: { width: 121, height: 42 },
-  actions: {
-    alignItems: 'center',
-    gap: 2,
-  },
-  icon: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  bar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth },
+  hit: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  wordmark: { minHeight: 44, justifyContent: 'center', flexShrink: 1 },
+  plus: { minHeight: 44, paddingHorizontal: 8, borderWidth: 1, borderRadius: RADIUS.full, flexDirection: 'row', gap: 4, alignItems: 'center', justifyContent: 'center' },
 });

@@ -42,7 +42,6 @@ import { TabSonimIcon } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
 import { BRAND, FONTS } from '@/design/tokens.generated';
 import { SONIM_TITLE_STYLE } from '@/design/tokens.mobile';
-import { BrandMark } from '@/design/BrandMark';
 import { AppText, Drawer, DrawerItem } from '@/design/ui';
 import { AppSheet } from '@/design/sheet/AppSheet';
 import { SheetHeader } from '@/design/sheet/SheetHeader';
@@ -469,7 +468,6 @@ export function SonimScreen() {
           <AppText style={[SONIM_TITLE_STYLE, { color: theme.colors.ink, fontFamily: FONTS.latin.bold }]}>
             SONIM
           </AppText>
-          <BrandMark nameSize={10} color={theme.colors.muted} />
         </View>
 
         <Pressable

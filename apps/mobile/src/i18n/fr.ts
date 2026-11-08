@@ -232,6 +232,8 @@ export const fr = {
   'footer.faqPayment': "Quels moyens de paiement sont disponibles ?",
   'footer.faqTerms': "Où consulter les conditions d’achat ?",
   'footer.orders': 'Mes commandes',
+  'brand.plusLight': 'Plus Light',
+  'tabs.social': 'Social',
   'social.title': 'Communauté',
   'social.reels': 'Reels',
   'social.publications': 'Publications',

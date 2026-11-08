@@ -20,7 +20,7 @@ const { getDefaultConfig } = require('expo/metro-config');
 const config = getDefaultConfig(__dirname);
 // Shared CMS contracts live outside apps/mobile and must resolve Babel helpers
 // from the mobile installation, both in development and native exports.
-config.watchFolders = [...(config.watchFolders || []), path.resolve(__dirname, '../../shared')];
+config.watchFolders = [...(config.watchFolders || []), path.resolve(__dirname, '../../shared'), path.resolve(__dirname, '../../assets/brand')];
 config.resolver.nodeModulesPaths = [path.resolve(__dirname, 'node_modules'), path.resolve(__dirname, '../../node_modules'), ...(config.resolver.nodeModulesPaths || [])];
 
 const DEV_API_TARGET = process.env.AYROVI_DEV_API || 'http://localhost:3000';

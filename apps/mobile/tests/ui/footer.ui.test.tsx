@@ -14,9 +14,10 @@ jest.mock('@/design/ui', () => ({ AppText: ({ children }: { children: React.Reac
 describe('native footer', () => {
   it('shows five local payment logos without the old oversized link list', () => {
     render(<Footer />);
-    for (const label of ['Mastercard', 'Visa', 'D17', 'Virement bancaire', 'Flouci', 'ZAYROVI']) {
+    for (const label of ['Mastercard', 'Visa', 'D17', 'Virement bancaire', 'Flouci']) {
       expect(screen.getByLabelText(label)).toBeTruthy();
     }
+    expect(screen.queryByLabelText('ZAYROVI')).toBeNull();
     expect(screen.queryByText('Accès utiles')).toBeNull();
     expect(screen.getByText(fr['footer.paymentHint'])).toBeTruthy();
   });

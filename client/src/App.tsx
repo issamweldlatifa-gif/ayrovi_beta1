@@ -114,7 +114,7 @@ export const App: React.FC = () => {
   // Customer authentication is isolated from the Admin session.
   const [customerSession, setCustomerSession] = useState<CustomerSession | null>(null);
   const [isCustomerSessionLoading, setIsCustomerSessionLoading] = useState(true);
-  const [accountInitialSection, setAccountInitialSection] = useState<'home' | 'orders' | 'favorites' | 'cart' | 'addresses'>('home');
+  const [accountInitialSection, setAccountInitialSection] = useState<'home' | 'orders' | 'favorites' | 'cart' | 'addresses' | 'notifications'>('home');
   const [accountInitialOrderId, setAccountInitialOrderId] = useState('');
   const [accountMessage, setAccountMessage] = useState('');
   const [resumeCheckoutAfterAuth, setResumeCheckoutAfterAuth] = useState(false);
@@ -492,7 +492,7 @@ export const App: React.FC = () => {
     <div className="ayrovi-app-shell interface-page-shell min-h-screen flex flex-col text-ink relative" style={customerTheme(locale, interfaceConfig)}>
       
 
-      {/* Header: Left Menu, Center Fig Logo + ZAYROVI, Right Profile */}
+      {/* Sparse wordmark, unassigned Plus Light, notifications and cart; legacy menu remains in source. */}
       <div data-preserved-navigation style={{ display: 'contents' }}>
       <Navbar
         onOpenMenuDrawer={() => openAppView('app:menu')}
@@ -500,6 +500,12 @@ export const App: React.FC = () => {
           if (publicPage || unknownPath) { window.location.assign('/'); return; }
           navigation.goHome();
           window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenNotifications={() => {
+          setResumeCheckoutAfterAuth(false);
+          setAccountInitialSection('notifications');
+          setAccountMessage('');
+          openAppView('app:account');
         }}
         onOpenCart={() => openAppView('app:cart')}
         cartCount={totalCartCount}

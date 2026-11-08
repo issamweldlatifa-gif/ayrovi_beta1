@@ -231,6 +231,8 @@ export const ar = {
   'footer.faqTerms': "أين أجد شروط الشراء؟",
   'footer.orders': 'طلباتي',
 
+  'brand.plusLight': 'Plus Light',
+  'tabs.social': 'المجتمع',
   'social.title': 'المجتمع',
   'social.reels': 'الريلز',
   'social.publications': 'المنشورات',

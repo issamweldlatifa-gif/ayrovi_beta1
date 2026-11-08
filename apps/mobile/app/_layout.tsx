@@ -9,7 +9,7 @@
  * AVANT la navigation : au premier rendu, l'application sait déjà si elle
  * parle en tant que visiteur ou en tant que client connecté.
  */
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useNetworkState } from 'expo-network';
@@ -26,7 +26,7 @@ import { SessionProvider } from '@/state/session';
 import { useDeepLinkRouting } from '@/features/links/useDeepLinkRouting';
 import { usePushNotifications } from '@/features/notifications/usePush';
 import { useSessionId } from '@/session/session';
-import { LoadingScreen } from '@/design/LoadingScreen';
+import { BrandEntrance } from '@/design/BrandEntrance';
 import { NetworkBanner } from '@/design/NetworkBanner';
 import { AppErrorBoundary, RouteErrorBoundary } from '@/design/AppErrorBoundary';
 import { useImageCacheGuard } from '@/design/appImage';
@@ -55,6 +55,7 @@ export { RouteErrorBoundary as ErrorBoundary };
 
 function Navigation() {
   const theme = useTheme();
+  const [bootDone, setBootDone] = useState(false);
   const { ready, locale } = usePrefs();
   const sessionId = useSessionId();
   const [fontsLoaded, fontError] = useFonts(FONT_SOURCES);
@@ -78,21 +79,7 @@ function Navigation() {
   // passée plus tard puisse être annoncée.
   usePushNotifications(sessionId, locale);
 
-  useEffect(() => {
-    if (readyToPaint) SplashScreen.hideAsync().catch(() => {});
-  }, [readyToPaint]);
-
-  /**
-   * Chargement : NOTRE marque animée, pas l'image figée du système.
-   *
-   * L'image native est masquée par `onShown`, donc APRÈS que cet écran a été
-   * peint — la masquer plus tôt laisserait une frame vide entre les deux.
-   */
-  if (!readyToPaint) {
-    return <LoadingScreen onShown={() => { SplashScreen.hideAsync().catch(() => {}); }} />;
-  }
-
-  return (
+  const content = readyToPaint ? (
     <View style={{ flex: 1, backgroundColor: theme.colors.canvas }}>
       <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
       {/* Hors ligne : bandeau DANS LE FLUX — le contenu est poussé, jamais
@@ -117,7 +104,9 @@ function Navigation() {
         </Stack>
       </View>
     </View>
-  );
+  ) : null;
+  return <View style={{ flex: 1 }}>{content}{!bootDone ? <BrandEntrance ready={readyToPaint}
+    onShown={() => { SplashScreen.hideAsync().catch(() => {}); }} onDone={() => setBootDone(true)} /> : null}</View>;
 }
 
 export default function RootLayout() {

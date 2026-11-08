@@ -87,3 +87,13 @@ export function BrandMark({
     </View>
   );
 }
+
+/** Wordmark only: headers/auth do not repeat the standalone emblem. */
+export function BrandWordmark({ height = 26, color }: { height?: number; color?: string }) {
+  const theme = useTheme();
+  return <View accessible accessibilityRole="image" accessibilityLabel={BRAND_NAME.toLowerCase()}>
+    <Svg width={height * BRAND_WORDMARK.width / BRAND_WORDMARK.height} height={height} viewBox={BRAND_WORDMARK.viewBox} {...hiddenSvg}>
+      <Path d={BRAND_WORDMARK.d} fill={color ?? theme.colors.ink} />
+    </Svg>
+  </View>;
+}

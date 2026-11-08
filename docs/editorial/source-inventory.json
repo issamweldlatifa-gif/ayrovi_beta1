@@ -12412,8 +12412,8 @@
     {
       "file": "client/src/App.tsx",
       "domain": "shell-content",
-      "sha256": "efed19c3f746531b04125a188b083ac9f31741008aaac9ffac72c0918d33c341",
-      "lines": 743,
+      "sha256": "58eb1c725ee381c70e39188d32b5f9d7ed1ec02b611fce261040a0324d9c2632",
+      "lines": 749,
       "imports": [
         "./design/editorial/customerTheme",
         "react",
@@ -12450,7 +12450,7 @@
       "controls": [
         {
           "tag": "MenuDrawer",
-          "line": 524,
+          "line": 530,
           "className": null,
           "type": null,
           "role": null,
@@ -12460,7 +12460,7 @@
         },
         {
           "tag": "ProductDrawer",
-          "line": 595,
+          "line": 601,
           "className": null,
           "type": null,
           "role": null,
@@ -12470,7 +12470,7 @@
         },
         {
           "tag": "AiAssistantDrawer",
-          "line": 610,
+          "line": 616,
           "className": null,
           "type": null,
           "role": null,
@@ -12480,7 +12480,7 @@
         },
         {
           "tag": "OcerexScreen",
-          "line": 636,
+          "line": 642,
           "className": null,
           "type": null,
           "role": null,
@@ -12490,7 +12490,7 @@
         },
         {
           "tag": "ShopBagScreen",
-          "line": 668,
+          "line": 674,
           "className": null,
           "type": null,
           "role": null,
@@ -12500,7 +12500,7 @@
         },
         {
           "tag": "ShopCheckoutScreen",
-          "line": 688,
+          "line": 694,
           "className": null,
           "type": null,
           "role": null,
@@ -12510,7 +12510,7 @@
         },
         {
           "tag": "OrderSuccessModal",
-          "line": 731,
+          "line": 737,
           "className": null,
           "type": null,
           "role": null,
@@ -17260,8 +17260,8 @@
     {
       "file": "client/src/components/Footer.tsx",
       "domain": "shell-content",
-      "sha256": "5f6b277e41dd5d3aaa87acb978e4efb99f2cba051b1c7b93583c1f7e8c56d52d",
-      "lines": 110,
+      "sha256": "7c6e904c97b982950a7a88985482e61394493c1d700f14672a601547451d559d",
+      "lines": 109,
       "imports": [
         "react",
         "../design/BrandIcon",
@@ -17279,7 +17279,7 @@
       "controls": [
         {
           "tag": "a",
-          "line": 85,
+          "line": 84,
           "className": null,
           "type": null,
           "role": null,
@@ -17289,7 +17289,7 @@
         },
         {
           "tag": "button",
-          "line": 95,
+          "line": 94,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -17299,7 +17299,7 @@
         },
         {
           "tag": "button",
-          "line": 96,
+          "line": 95,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -17309,12 +17309,22 @@
         },
         {
           "tag": "button",
-          "line": 98,
+          "line": 97,
           "className": null,
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{onOpenAbout}",
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 103,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
           "disabled": null
         },
         {
@@ -17330,16 +17340,6 @@
         {
           "tag": "a",
           "line": 105,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 106,
           "className": null,
           "type": null,
           "role": null,
@@ -17784,8 +17784,8 @@
     {
       "file": "client/src/components/Navbar.tsx",
       "domain": "shell-content",
-      "sha256": "b873e1ba58f69430459b68cde199e5d78a07020ff756873f8b5576980ebd57c4",
-      "lines": 130,
+      "sha256": "e050c9906679fd81b88869be4448039ee2ef0f9c2fef97498662de32111a65b1",
+      "lines": 113,
       "imports": [
         "react",
         "./QatafoIcons",
@@ -17798,50 +17798,50 @@
       ],
       "controls": [
         {
-          "tag": "Button",
-          "line": 78,
-          "className": "{iconButtonClass}",
-          "type": null,
-          "role": null,
-          "ariaLabel": "{tr('Ouvrir le menu', 'فتح القائمة')}",
-          "onClick": "{onOpenMenuDrawer}",
-          "disabled": null
-        },
-        {
           "tag": "button",
-          "line": 82,
-          "className": "\"flex items-center bg-transparent\"",
+          "line": 80,
+          "className": "\"flex min-h-11 items-center bg-transparent\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "\"ZAYROVI\"",
+          "ariaLabel": "\"zayrovi\"",
           "onClick": "{onGoHome}",
           "disabled": null
         },
         {
+          "tag": "button",
+          "line": 83,
+          "className": "\"min-h-11 rounded-full border border-current px-2 text-sm whitespace-nowrap\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "true"
+        },
+        {
           "tag": "Button",
-          "line": 101,
+          "line": 85,
+          "className": "{`relative ${iconButtonClass ?? ''}`}",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Notifications', 'الإشعارات')}",
+          "onClick": "{onOpenNotifications ?? onOpenAccount}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 95,
           "className": "{`relative ${iconButtonClass ?? ''}`}",
           "type": null,
           "role": null,
           "ariaLabel": "{cartCount > 0\n              ? tr(`Ouvrir mon panier, ${cartCount} article${cartCount > 1 ? 's' : ''}`, `فتح سلّتي، ${cartCount} منتج`)\n              : tr('Ouvrir mon panier', 'فتح سلّتي')}",
           "onClick": "{onOpenCart}",
           "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 114,
-          "className": "{`relative ${iconButtonClass ?? ''}`}",
-          "type": null,
-          "role": null,
-          "ariaLabel": "{tr('Ouvrir mon espace', 'فتح فضائي')}",
-          "onClick": "{onOpenAccount}",
-          "disabled": null
         }
       ],
       "icons": [
         {
           "module": "./QatafoIcons",
-          "bindings": "{ Menu, ShoppingBag, User }",
+          "bindings": "{ ShoppingBag, Bell }",
           "line": 2
         }
       ],

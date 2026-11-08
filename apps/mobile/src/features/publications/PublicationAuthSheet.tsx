@@ -11,7 +11,7 @@ import {
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BrandMark } from "@/design/BrandMark";
+import { BrandWordmark } from "@/design/BrandMark";
 import { AppText } from "@/design/ui";
 import { PUBLICATION_THEME as P, RADIUS, veil } from "@/design/tokens.mobile";
 import { useI18n } from "@/i18n";
@@ -83,7 +83,7 @@ function AuthContent({
         style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}
       >
         <View style={styles.handle} />
-        <BrandMark nameSize={24} color={P.ink} />
+        <BrandWordmark height={28} color={P.ink} />
         <AppText variant="h3" color={P.ink} align="center">
           {ar ? "كون جزء من الحكاية" : "Faites partie de l’inspiration"}
         </AppText>
