@@ -48,3 +48,10 @@ __pycache__/
 data/media-originals/
 # AI design discussion mockups are not app assets or implementation proof.
 docs/concepts/
+
+# Regenerated review screenshots / design previews are not application assets.
+# Already tracked reference images remain tracked; fixtures and native assets are untouched.
+/screenshots/
+/verify/*.png
+/explorations/aywebs-mockup/img/
+/design/*.png

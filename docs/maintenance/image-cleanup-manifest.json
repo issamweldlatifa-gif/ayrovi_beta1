@@ -1,0 +1,914 @@
+{
+  "reviewedCommit": "a6874df5",
+  "imagesScanned": 1566,
+  "deletedFiles": 181,
+  "deletedBytes": 55586084,
+  "policy": "Only manually reviewed unreferenced historical output images; no runtime media, CMS storage, identity masters, test fixtures, Android resources, or referenced report images. Local database read-only; production database unavailable.",
+  "files": [
+    {
+      "file": "design/aywebs-home-brand-violet.png",
+      "bytes": 739113,
+      "sha256": "a04e78cdceb2986557ae4a5f86c956f46f3db80327c9d522d7f7424d2ddfcb3d"
+    },
+    {
+      "file": "design/aywebs-home-categories-concept.png",
+      "bytes": 4125674,
+      "sha256": "3a6b1258ad9709897ded799babfda723f09ed602d8f8c35bddce5147ef200036"
+    },
+    {
+      "file": "design/aywebs-home-concepts.png",
+      "bytes": 1484577,
+      "sha256": "59a1a762a9d3a683692c242ff9c1985436f68461cb93d050e01090cd375e1b82"
+    },
+    {
+      "file": "design/aywebs-home-footer-concept.png",
+      "bytes": 3621614,
+      "sha256": "5cc3f4a46b3e39e87e099f7a352424663507c743c3a48977235202131d71b084"
+    },
+    {
+      "file": "design/aywebs-home-proposal.png",
+      "bytes": 6375985,
+      "sha256": "ccf24f9f6116e7439746950f3fa14dd64919f8e38390d79a79821b954767d42f"
+    },
+    {
+      "file": "design/aywebs-home-stores-compact.png",
+      "bytes": 696089,
+      "sha256": "e93a87dd8d6aa3ee4482f645b612a1a89c1406eeef52314909f4c9b1b29df1bc"
+    },
+    {
+      "file": "design/aywebs-home-stores-concept.png",
+      "bytes": 1584178,
+      "sha256": "dbb63590075cd20a8e042eb8a6f89245e262a27234725db3e3b32856c16f1164"
+    },
+    {
+      "file": "design/aywebs-new-branding-preview.png",
+      "bytes": 2234290,
+      "sha256": "aea1a907fddb2ed9bf883dc42efefbe243ad3830a9350d151d03caf39105326d"
+    },
+    {
+      "file": "docs/design/bigcard/mockup-24-10.jpg",
+      "bytes": 213986,
+      "sha256": "23e492b8fcdaebed948ea2bfb34038ecf85aaa832a206dc4a485669ac66dffde"
+    },
+    {
+      "file": "docs/design/bigcard/mockup-24-10.png",
+      "bytes": 366143,
+      "sha256": "7d41819d3f27179596de3ea1940f6a1a342083905296b260721513e1c66aa422"
+    },
+    {
+      "file": "docs/design/bigcard/mockup-A-B-24-10.jpg",
+      "bytes": 216389,
+      "sha256": "7f4b7a95c72822cdb23cc667c0925673229a000d91bf35d1a2761bba60874346"
+    },
+    {
+      "file": "docs/design/bigcard/mockup-A-B-24-10.png",
+      "bytes": 456125,
+      "sha256": "0e4f3d992ed47a319c335e9d8361c396fc95213b7ad723a3be110c0a59132a66"
+    },
+    {
+      "file": "docs/design/bigcard/mockup-sticky-24-10.jpg",
+      "bytes": 231163,
+      "sha256": "7b0e75600fe6ddfabf4e8dabb02e223d51e71af50bbfbc54d39c0624f12af809"
+    },
+    {
+      "file": "docs/design/cardproduit/apercu-ecran-25-10.png",
+      "bytes": 209734,
+      "sha256": "e83e158363672ae11f73816f80cd0a6521e7b550830a0a04287aa8d78becf736"
+    },
+    {
+      "file": "docs/design/cardproduit/apercu-ecran-v5-25-10.png",
+      "bytes": 163432,
+      "sha256": "fb16ab015a0d79d9c25b282fbbafa5621ee7327e003b32c01042096d0a557bf2"
+    },
+    {
+      "file": "docs/design/cardproduit/comparaison-v5-25-10.png",
+      "bytes": 448247,
+      "sha256": "f88de9df38d55953564b5adb84050d732e8b2ef5b50a36bfe49774bc57781357"
+    },
+    {
+      "file": "docs/design/cardproduit/ecran-1-fiche-haut-25-10.png",
+      "bytes": 162460,
+      "sha256": "4a9d529119e6d959d688e8e2a5444e97c6984a9b74bb0dfe70f8f204822da125"
+    },
+    {
+      "file": "docs/design/cardproduit/ecran-2-fiche-bas-25-10.png",
+      "bytes": 114040,
+      "sha256": "c82b7ae49f8c4c1c3f3b878d02651f48f243a48bcc87334d0e77a1d6b09cf8e1"
+    },
+    {
+      "file": "docs/design/cardproduit/ecran-3-feuille-taille-25-10.png",
+      "bytes": 55180,
+      "sha256": "732facb56c9b3134ff5cda07256927f5507822d995c11572bfc573c41f7ead60"
+    },
+    {
+      "file": "docs/design/cardproduit/ecran-4-plein-ecran-25-10.png",
+      "bytes": 176837,
+      "sha256": "3192cb54f86fc2574a488aeab6ba23beb62b10fd056066b601e2ed3c70182f69"
+    },
+    {
+      "file": "docs/design/lens/lens-1-proposition.jpg",
+      "bytes": 196214,
+      "sha256": "2731ee5aa1503ce6bf3348d88ef97b24854f7004aae900a9349b24efc4784838"
+    },
+    {
+      "file": "docs/design/lens/lens-2-barre-transparente.jpg",
+      "bytes": 181286,
+      "sha256": "7d7d17bfe13ed8232a46d1a53723daed92f1fcb9dded9ae42f96132ece9ba008"
+    },
+    {
+      "file": "docs/design/lens/lens-3-directions.jpg",
+      "bytes": 289038,
+      "sha256": "141116ec6a429fc76559946b465c478454603e7dc1a3930d75a785433e5b6b79"
+    },
+    {
+      "file": "docs/design/lens/lens-3a-barre-flottante.jpg",
+      "bytes": 95273,
+      "sha256": "8426507a34632e8f088ec28781d279d7270edfea802aa011cc5279eeed694fd8"
+    },
+    {
+      "file": "docs/design/lens/lens-3b-modes-texte.jpg",
+      "bytes": 96220,
+      "sha256": "944edfcef9c0fa17b46d1ab3598f3fb5ee2c24e35bce2bbbc3e4fb257db6de5d"
+    },
+    {
+      "file": "docs/design/lens/lens-3c-panneau.jpg",
+      "bytes": 88295,
+      "sha256": "f94da1bc33e0d006221ebeec46cf2a89a872e37feea6cc60ae2b48e17a399592"
+    },
+    {
+      "file": "docs/design/lens/lens-3d-menu.jpg",
+      "bytes": 91943,
+      "sha256": "3ce6ff898750ce0dcfc12ceaf4b9f98733c258968ab05a931c9c9d8729964c2a"
+    },
+    {
+      "file": "docs/design/lens/lens-4-option3.jpg",
+      "bytes": 301412,
+      "sha256": "48daf8a04097a66000daed96cd2713d7c7b379f816469798928d1bf2772f19be"
+    },
+    {
+      "file": "docs/design/lens/lens-4a-live.jpg",
+      "bytes": 83700,
+      "sha256": "f5f4d7e3d85f1ec501296b449099eddcbc011d57cdf24e965e876a0475b05cac"
+    },
+    {
+      "file": "docs/design/lens/lens-4b-qr-code.jpg",
+      "bytes": 104133,
+      "sha256": "032a403c3a924008f4efc571c62bd2dde44ac44fd69372064ee0215431481e7e"
+    },
+    {
+      "file": "docs/design/lens/lens-4c-lien.jpg",
+      "bytes": 53332,
+      "sha256": "d8c6158d33c42662eb0bb5c7be8ffacbc07c990e1324ce23868ab7035c1f548a"
+    },
+    {
+      "file": "docs/design/lens/lens-4d-mot-cle.jpg",
+      "bytes": 51755,
+      "sha256": "36871926e3d1355853cd939a86f1c888f88b2bcb88a0c121f8f60eaa8a16eda7"
+    },
+    {
+      "file": "docs/design/lens/lens-4e-menu.jpg",
+      "bytes": 83314,
+      "sha256": "843194a785638b542f0ba20f899ea9edf64ac9d77fd87f4a321548052293335a"
+    },
+    {
+      "file": "docs/design/reel/compare/mockup-v2-24-10.jpg",
+      "bytes": 189885,
+      "sha256": "ba22b08d329052f78c81ba48ea74d14ed42ae50b33ba31212b0cd9b8838c80e1"
+    },
+    {
+      "file": "docs/design/reel/compare/mockup-v3-24-10.jpg",
+      "bytes": 161087,
+      "sha256": "e9da735db71c774598d2debb28060024709315f68a9a29c46825dd12c9c8017a"
+    },
+    {
+      "file": "docs/design/reel/compare/mockup-v4-24-10.jpg",
+      "bytes": 174247,
+      "sha256": "0ffac5cace9d7c433c68b3660b77117f21ccca944f289897ea2791f40da55744"
+    },
+    {
+      "file": "docs/design/reel/compare/proposition-24-10.jpg",
+      "bytes": 218402,
+      "sha256": "e8d54283413f87c0ab1b62a1cc5bf6d73531db1ccfb5fc0157e76fe107428b31"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/aywebs-3sections-v2.png",
+      "bytes": 1340795,
+      "sha256": "2d66989a1d87b9638dda1bd593478f28a38b5360ff8e23265a8fee046c6edf0b"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/aywebs-3sections.png",
+      "bytes": 1173786,
+      "sha256": "d30a5cf5f93bf7eec18e1c79fc7d64911a63d7fd2a3bee12d50ba959ef408015"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/aywebs-final-set.png",
+      "bytes": 4357650,
+      "sha256": "ed895e87b2b73bb1e3531ddce4b7537e3f2ed2fae81d4995da2d68c89d733b4f"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/aywebs-page-1-5.png",
+      "bytes": 1186271,
+      "sha256": "408dab3fed5c1decc9376d90c1ca07a5907e01151fdbad245640171b81ab180e"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/aywebs-scroll-2ecrans.png",
+      "bytes": 1320851,
+      "sha256": "c76dc91046f0ad07dcf6aa97ff004861e78cca29e76e4c66c7965f9ec24c7d7f"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/controle-27-10.png",
+      "bytes": 591216,
+      "sha256": "89bb3fd1e91cdd62b3dfc806b17c344f7aecd77eed8f65028b9a4d588d089a5b"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/final-01-categories.png",
+      "bytes": 1032000,
+      "sha256": "bbf830b152f8911ef1d890cf498017a2cf1bc87db3037d0c34e6744a8ac16790"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/final-02-sponsor.png",
+      "bytes": 1243787,
+      "sha256": "724527cd75189c21ecfbd0ac514e7b8a957d97e43c927d3272cb8f4fa31e7704"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/final-03-boutiques.png",
+      "bytes": 1061817,
+      "sha256": "39adf7ad8ad0e142141750f26387192963d5ef0588e76eae9a0a94ad5c533752"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/final-04-boutiques-liste.png",
+      "bytes": 757780,
+      "sha256": "ae6b873f089ca428ef2ee078c7294d9c60273ac1e90d0e841f3c2f8d95fe0b85"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/final-05-recherche.png",
+      "bytes": 1062332,
+      "sha256": "f9aa1389fa4c12f06170058bb853bcd6828c16b800061639de544cda8a300590"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/officiel-01-section-categories.png",
+      "bytes": 416709,
+      "sha256": "c88ac376dee3924c42760f6ccead1aa54b49f262865c2ad79935eb5707fc102b"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/reference-aywebs.jpg",
+      "bytes": 55773,
+      "sha256": "a998c357dd43cbafc21428aa19bc22af49df94b240749848799c08328b0e1a62"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/screen-A-categories.png",
+      "bytes": 332316,
+      "sha256": "85ec32c6decd557e2295f272d4f08e042ee4757ed2c36025bbcf0306a0006570"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/screen-B-sponsor.png",
+      "bytes": 403947,
+      "sha256": "fb45daa77d68b59145ed60689586b840b8917c4c9d7ef692f98ee7884c258e46"
+    },
+    {
+      "file": "explorations/aywebs-mockup/img/screen-C-boutiques.png",
+      "bytes": 328988,
+      "sha256": "f30284d0421c55e00f6e2dd298b35fdb25cab168b4e353051b394025f51587a2"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/cart-ar-320.png",
+      "bytes": 23344,
+      "sha256": "3a2feb2651f92ab8018f45c072d72ea275ecb987dd85542c2abe37588d0853a9"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/cart-ar-390.png",
+      "bytes": 23761,
+      "sha256": "2de70a8d001e84e29297b49b7c8d4876ea7d80d68cd7f304ce9921ef294b6584"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/cart-fr-320.png",
+      "bytes": 22204,
+      "sha256": "ebb70a557a4faef23e47524e1115fc7adaf69148740cb160f4d918370e313f3a"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/cart-fr-390.png",
+      "bytes": 22339,
+      "sha256": "9e973d6afdbe44cc93ebfdc07b14024e4ea130d3329cc3c3610d5d3d64f21f00"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/checkout-ar-320.png",
+      "bytes": 34878,
+      "sha256": "1b7608f2e3a2e9279ee02ad4797a8a453d363dc06198262d5d66ddf49ac15aef"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/checkout-ar-390.png",
+      "bytes": 35889,
+      "sha256": "a153cf4e4335d99f0629189e36637977a3af12a57931fbf5ad42f20fb0693e07"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/checkout-fr-320.png",
+      "bytes": 28715,
+      "sha256": "b41b479474cba3d0170d002d042b3a54a1fdef64e32c06dacb96e8915c45723b"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/checkout-fr-390.png",
+      "bytes": 32590,
+      "sha256": "662bf43a8e9955cb36ae5ab78df9a78cf2e852547f361d849ab895b633f4be4a"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/checkout-policy-error-ar-320.png",
+      "bytes": 17944,
+      "sha256": "dd95a0c5ec2d08a6b6e49b97a3fa97a4402778f4545454d3d4d91197b2f4b640"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/checkout-policy-error-ar-390.png",
+      "bytes": 18349,
+      "sha256": "50766ef1ca4be6688c98ba12d04fd27af52482d11bb127288a30bfe17ff75e7d"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/checkout-policy-error-fr-320.png",
+      "bytes": 16254,
+      "sha256": "73476143b5383c9d25819a6a1e9562a4306fe3dec2f6dc9a1d0550cedb7298a9"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/checkout-policy-error-fr-390.png",
+      "bytes": 16508,
+      "sha256": "414521811922a49a1447e832f8c65c37511e5a8f383cc49d4ff851f368e45243"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/comments-error-ar-320.png",
+      "bytes": 15062,
+      "sha256": "dc807ed058a7374495e45e1ae64ae6e8c0c155d95afebdc5fdd7932d87736401"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/comments-error-ar-390.png",
+      "bytes": 15418,
+      "sha256": "8501ae1bda9a76df78cf1a0421537425b2485324e244f7dd9fa27e5d603a60c9"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/comments-error-fr-320.png",
+      "bytes": 14291,
+      "sha256": "91f9716a34df21e2a44231dabfc3c6fa988fbec29c64a800bdfaaf78e4d9c5c6"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/comments-error-fr-390.png",
+      "bytes": 14595,
+      "sha256": "6e046d0e8e41b42a5f0da12bd56d85e868d5adcbe9933cecafebf29ecafcb824"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/product-ar.png",
+      "bytes": 11870,
+      "sha256": "d5b3c65b67213648a7649d0bdd8e00f4c7302a45603688080b1a2c488552e1cc"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/product-fr.png",
+      "bytes": 10325,
+      "sha256": "ec8987cce266b6a95ce862fe345f1348a64d6d895cb886a2e9f834e56c014623"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/voice-error-ar-dark.png",
+      "bytes": 18851,
+      "sha256": "b5e750688a0302ddf2cbc7957f6a7f153c2b5228d1a65c4ecf8355f364ed0283"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/voice-error-ar-light.png",
+      "bytes": 18514,
+      "sha256": "ddb13c3d4be1f6f0d33cb4327ae993ad6c0da88b416b301e0d1a01930f9599bb"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/voice-error-fr-dark.png",
+      "bytes": 18716,
+      "sha256": "3ebb6bff36656ae9d429e659a27dcf2324f0688c79bd164e7c502d0ad771b8bf"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/voice-error-fr-light.png",
+      "bytes": 18331,
+      "sha256": "e1ac59e454d316848e70a0c228eec6fb6512d7a6d2a8dcbb55ebd0e11b1fd591"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/voice-listening-ar-dark.png",
+      "bytes": 23987,
+      "sha256": "7fd2a8a499124ed24f3e9ee2f4130c47a6537df6204e5a909736fa8f9f999324"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/voice-listening-ar-light.png",
+      "bytes": 23491,
+      "sha256": "0e8b25affef96b79a04a39e6da09d9e6e96a0a258303c29df0ca272f82967f5c"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/voice-listening-fr-dark.png",
+      "bytes": 22531,
+      "sha256": "a325337507e70c0ccb10c6639c233a635828a5f2d034064ed62f7c2c5e51c6b8"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/voice-listening-fr-light.png",
+      "bytes": 21810,
+      "sha256": "748d98676836af4f02c2b726ffc987a844c7c6ec4ae57ef64decf1ee0e4c0ca6"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/voice-settings-ar-dark.png",
+      "bytes": 27861,
+      "sha256": "4c64e9c4d5aea5e8ad16eeaf91d957107a01ecd905c0013b99f866b986a1ece3"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/voice-settings-ar-light.png",
+      "bytes": 27628,
+      "sha256": "f92335abdf368e391fa6beaa6d814635fa9d0c0366031fdd704c5afbeed134c2"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/voice-settings-fr-dark.png",
+      "bytes": 28037,
+      "sha256": "d16402cff3bc2ded314216a7ddc2ce5facdfe0edc0ce36aecd7e9a96857e0bb3"
+    },
+    {
+      "file": "screenshots/editorial/complete-icons/voice-settings-fr-light.png",
+      "bytes": 27877,
+      "sha256": "0d9c64eb1aba5c9ef22dcc4709b80a52ac2e2115cf31332011aea409f755f163"
+    },
+    {
+      "file": "screenshots/editorial/customer/auth-ar-1360.png",
+      "bytes": 33064,
+      "sha256": "47dcde368c2916b5afe936fd26418496421f4f87f0dcc9c09bfa7f06c5779447"
+    },
+    {
+      "file": "screenshots/editorial/customer/auth-fr-1360.png",
+      "bytes": 32766,
+      "sha256": "e8a91324d81b8837281e2b97b52660ac25730cf3f50835122b647b53c6876c88"
+    },
+    {
+      "file": "screenshots/editorial/customer/auth-fr-390.png",
+      "bytes": 27204,
+      "sha256": "6fda688972edbd1c0893ddce302c76f5c948d992cb51e36447f2ca2dad4c50a7"
+    },
+    {
+      "file": "screenshots/editorial/customer/home-ar-1360.png",
+      "bytes": 332783,
+      "sha256": "aa25ff5d820493c2d359f5456d901b64e45b6f77237d0818a8669c1fa115f951"
+    },
+    {
+      "file": "screenshots/editorial/customer/home-fr-1360.png",
+      "bytes": 334135,
+      "sha256": "c4e5456b1b9590bc0fe74a7dbc3998bd7e08e2b3441509d98df4473ca6f5a9d2"
+    },
+    {
+      "file": "screenshots/editorial/customer/lens-ar-1360.png",
+      "bytes": 49292,
+      "sha256": "1bd719fe77eda5149c1bf67bd1fb3a2651f18c0387b1ad267a86fa3b3e0e31db"
+    },
+    {
+      "file": "screenshots/editorial/customer/lens-fr-1360.png",
+      "bytes": 45373,
+      "sha256": "892e6c1ad621f66b19a220b63705685a57bb5ea801381374931dfd62ac93956d"
+    },
+    {
+      "file": "screenshots/editorial/customer/menu-ar-1360.png",
+      "bytes": 187872,
+      "sha256": "e52a44b9895bc50b3294fade081a1b263b4b1d17d5b90eb8d13037ffb565a157"
+    },
+    {
+      "file": "screenshots/editorial/customer/menu-fr-1360.png",
+      "bytes": 173916,
+      "sha256": "02ae4b59f83cc0615adc7671ff12c16da43112aff610cde066558cd2e3b8fad4"
+    },
+    {
+      "file": "screenshots/editorial/customer/menu-fr-390.png",
+      "bytes": 28151,
+      "sha256": "3a18a4585cbf253213ac4447cbb736d9dc24ddb95770cb63931e017d3eadfb83"
+    },
+    {
+      "file": "screenshots/editorial/customer/sonim-ar-1360.png",
+      "bytes": 31421,
+      "sha256": "3154d4672029faebf2e06f81af30570541b46d4b2f6927e192dcdf2163837e05"
+    },
+    {
+      "file": "screenshots/editorial/customer/sonim-fr-1360.png",
+      "bytes": 30660,
+      "sha256": "98ea49caa00646454af18610be432b63d15ea717c1f311d8fbb510e9fbdab1cf"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-enlarged-lens-ar-320.png",
+      "bytes": 37384,
+      "sha256": "1be799cf8e4b9b2c984b450d3005d7b4ad6a23ec7a0f7109165f96234862ac86"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-enlarged-lens-ar-390.png",
+      "bytes": 44135,
+      "sha256": "8fa53685cb0c9960296971c86f3a6a2ecf76bc6ccdb5f47b44dec2f3bea8f8a5"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-enlarged-lens-fr-320.png",
+      "bytes": 34713,
+      "sha256": "08b689e75d702b4a06aac5171b29b16e9f7b11ac8613574152acd052fa6f5be6"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-enlarged-lens-fr-390.png",
+      "bytes": 42205,
+      "sha256": "d29529df77e691dbf8a76cba253be9283b8e607533842d5d81c9503ab1d2727e"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-enlarged-sonim-ar-320.png",
+      "bytes": 20887,
+      "sha256": "c6069319ee1788c869934c0fbaf8dec0e22079cb3c52c6c91c5173f558245c05"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-enlarged-sonim-ar-390.png",
+      "bytes": 25561,
+      "sha256": "3d72dd26d3c6eda5c8e21efcbfddd138c00db3f57b89ce84399eddb42ce46713"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-enlarged-sonim-fr-320.png",
+      "bytes": 20151,
+      "sha256": "e8bb38edc320a5809c84ae849d01aa4706e88bfd54f5bc762bd9a49397340f38"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-enlarged-sonim-fr-390.png",
+      "bytes": 23645,
+      "sha256": "2a740cc61bd128dc222b650e6b4e76f8f0dec8d57cf2e5c3fa2af98bffe20c1d"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-lens-ar-320.png",
+      "bytes": 40900,
+      "sha256": "94cba23e495fb173f2b22564ec58d598535b581c76c91faf9e81d3e9f5c1402c"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-lens-ar-390.png",
+      "bytes": 42301,
+      "sha256": "380e7e8e3e41bf425ea3bdc34b77427ee383bf91b4b6cf38ce2c96f53211d878"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-lens-fr-320.png",
+      "bytes": 38330,
+      "sha256": "d192e345688216de39e4bb800127e312a646343d738de58a3b23b066e58f7a02"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-lens-fr-390.png",
+      "bytes": 39120,
+      "sha256": "63c7c2ebdb814152eafdc5a0443e1c7f3ca8289d117ff1107788b8a9aee0b0c7"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-sonim-ar-320.png",
+      "bytes": 41705,
+      "sha256": "8665e2953f002f076be5ecaf0d3229f967351d1d564fe3b318bccf0b74f45ccb"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-sonim-ar-390.png",
+      "bytes": 43910,
+      "sha256": "8b7410cde24bf703aebc91408cee07c834be903e042010ec6e7fa1d031567f2d"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-sonim-fr-320.png",
+      "bytes": 36677,
+      "sha256": "3750f1b6cf9a3e592c924eccd02953a0435dc8612c54104446963a49ce48a886"
+    },
+    {
+      "file": "screenshots/editorial/product-selection/selection-sonim-fr-390.png",
+      "bytes": 37863,
+      "sha256": "906282daec34d952affe0b9e79d6f742ee2d5fe2e08bd71e22ae3433bccce4d0"
+    },
+    {
+      "file": "screenshots/editorial/sonim-actions/feedback-ar-320.png",
+      "bytes": 22460,
+      "sha256": "406230b1459c35adc449b3f3acf458aaa73656ef05cb2d0f3d39a60d33c70101"
+    },
+    {
+      "file": "screenshots/editorial/sonim-actions/feedback-ar-390.png",
+      "bytes": 23441,
+      "sha256": "17c0936b4597149b05652763fdcfeae70c6767175f44f44ef246abf5bd43ba9d"
+    },
+    {
+      "file": "screenshots/editorial/sonim-actions/feedback-fr-320.png",
+      "bytes": 21612,
+      "sha256": "ea264179b80acaa7c0fb8fa994c429cf3c027955fdc134b03f14b03fb45eb9d8"
+    },
+    {
+      "file": "screenshots/editorial/sonim-actions/feedback-fr-390.png",
+      "bytes": 22590,
+      "sha256": "78a02a59260d677bf49eeb296bd543b90eaae2b3202dd3e8536ae186b5131c2e"
+    },
+    {
+      "file": "screenshots/editorial/sonim-actions/feedback-normal-ar-320.png",
+      "bytes": 28762,
+      "sha256": "09267e02f958d57f5744ec81737c67225dbe3ba661389dc813068c5fa1e974b1"
+    },
+    {
+      "file": "screenshots/editorial/sonim-actions/feedback-normal-ar-390.png",
+      "bytes": 36429,
+      "sha256": "c8fdabff8d36d7887dbb4db9e852133456f404a4ebff6736accf3d13e31961b7"
+    },
+    {
+      "file": "screenshots/editorial/sonim-actions/feedback-normal-fr-320.png",
+      "bytes": 29657,
+      "sha256": "fa4f2e9d2b87fee1ad0c65b6feadebc750f2fec61ee62474d91ef5c5c5ba230e"
+    },
+    {
+      "file": "screenshots/editorial/sonim-actions/feedback-normal-fr-390.png",
+      "bytes": 38693,
+      "sha256": "817b9f560e1eb10df81b155873e7155399ef60c9333e4cf8111db8199538ac25"
+    },
+    {
+      "file": "screenshots/editorial/sonim-handsfree/handsfree-ar-320.png",
+      "bytes": 17354,
+      "sha256": "9c0cc5267621a0ad465e7b547889d1d063c33c2793939b9491340670fc781ce2"
+    },
+    {
+      "file": "screenshots/editorial/sonim-handsfree/handsfree-ar-390.png",
+      "bytes": 17796,
+      "sha256": "395400083913fa820fcbf77f5bea9772338d075847e6945748a26fb9287a959c"
+    },
+    {
+      "file": "screenshots/editorial/sonim-handsfree/handsfree-fr-320.png",
+      "bytes": 18121,
+      "sha256": "7ec60f4ca144145c51aa87d86c7f3771049a86543e89908e4b8a4b7419f55f2b"
+    },
+    {
+      "file": "screenshots/editorial/sonim-handsfree/handsfree-fr-390.png",
+      "bytes": 18404,
+      "sha256": "5194557b9503731bdbdd4990bb1c93a734b024ca7e007a6e6604558208c5a63e"
+    },
+    {
+      "file": "screenshots/editorial/sonim-history/history-ar-320.png",
+      "bytes": 28604,
+      "sha256": "ea808401150a893890c4648c1630ad9426056ccea15b9fe266ab420b5a389bb8"
+    },
+    {
+      "file": "screenshots/editorial/sonim-history/history-ar-390.png",
+      "bytes": 35790,
+      "sha256": "47be5bdaad767d3d255c044f164d6c3a3bb04d80e03c388dd1538e3dac584626"
+    },
+    {
+      "file": "screenshots/editorial/sonim-history/history-fr-320.png",
+      "bytes": 26756,
+      "sha256": "869c5c18f69e1400c2bd44813abaec8e4b5f536ec4aac4595e3d4a23056a98b4"
+    },
+    {
+      "file": "screenshots/editorial/sonim-history/history-fr-390.png",
+      "bytes": 30984,
+      "sha256": "3136ef92c748d7c506d3dba5d25ca10e0271166ff8dcbe3b5d771a11c5a48cfd"
+    },
+    {
+      "file": "screenshots/editorial/sonim-media/media-ar-320.png",
+      "bytes": 25316,
+      "sha256": "e39c9acdf9fb3f7f566fd795791d84b79426a1f2dd9255ff34d74ea6a1111acc"
+    },
+    {
+      "file": "screenshots/editorial/sonim-media/media-ar-390.png",
+      "bytes": 32211,
+      "sha256": "32069698478a65ba0244a866166b76d10cb32e232dc289d143e3c4a1a7de6df5"
+    },
+    {
+      "file": "screenshots/editorial/sonim-media/media-fr-320.png",
+      "bytes": 22148,
+      "sha256": "550498ff620cf61f96cb821d552a2a0c76af892d729e2e92286313d2b3042184"
+    },
+    {
+      "file": "screenshots/editorial/sonim-media/media-fr-390.png",
+      "bytes": 26888,
+      "sha256": "aaf374fa863405edc0322f45a31a994d853febd5a491466577a4d6e451efa796"
+    },
+    {
+      "file": "screenshots/editorial/sonim-media/media-normal-ar-320.png",
+      "bytes": 27637,
+      "sha256": "d8bb5de0eff294302b6984a873884504d12c91d0681cd03f4caeeb7a281a9dc0"
+    },
+    {
+      "file": "screenshots/editorial/sonim-media/media-normal-ar-390.png",
+      "bytes": 28612,
+      "sha256": "c25741d1daba568d9eecf18bb45ba6aa0d472fe7845157e15830d338935cfd77"
+    },
+    {
+      "file": "screenshots/editorial/sonim-media/media-normal-fr-320.png",
+      "bytes": 27779,
+      "sha256": "47f49d26663dc32a83c632bc7e620647868356bbe701c14866834fc2ecb7705f"
+    },
+    {
+      "file": "screenshots/editorial/sonim-media/media-normal-fr-390.png",
+      "bytes": 28739,
+      "sha256": "ddbdda27c042dc02dd1b502f4c3e7b69c513b1853c77692ed378b9f96f4cd4a1"
+    },
+    {
+      "file": "screenshots/editorial/sonim-playback/settings-ar-320.png",
+      "bytes": 22140,
+      "sha256": "2c91187ac0876c06b47cbb55ee6d6d4a0eff0f62a027c1e10e34d16b9b90edd0"
+    },
+    {
+      "file": "screenshots/editorial/sonim-playback/settings-ar-390.png",
+      "bytes": 22263,
+      "sha256": "90868c6969e39884196907dfcb0c165d4f5004c7ac2ec8551674b11c2c652015"
+    },
+    {
+      "file": "screenshots/editorial/sonim-playback/settings-fr-320.png",
+      "bytes": 23930,
+      "sha256": "bbf4efee7ee66a78d98cced454d4a8721bbb15bd6df3c4f1c4965e255120cf69"
+    },
+    {
+      "file": "screenshots/editorial/sonim-playback/settings-fr-390.png",
+      "bytes": 23986,
+      "sha256": "9f4c2d6b259424e1f9d0d15726484af799b05b0eb062ddf19db19b3cbf500438"
+    },
+    {
+      "file": "screenshots/editorial/variant-availability/variant-stock-ar-320.png",
+      "bytes": 38046,
+      "sha256": "0abf2009b8a773e063334a5bfef5dd61b5b38d6f7e65c7ba5aee8ba3abb3bf30"
+    },
+    {
+      "file": "screenshots/editorial/variant-availability/variant-stock-ar-390.png",
+      "bytes": 42241,
+      "sha256": "171e95ff305ae5d5d80c347c7ed15b8d03a97b7173405535f397803e9b1b02f4"
+    },
+    {
+      "file": "screenshots/editorial/variant-availability/variant-stock-fr-320.png",
+      "bytes": 37489,
+      "sha256": "2634f5a4bed8f4884ed8d1068b30ea2e2e8db3ba4996580673517b190a2b4a41"
+    },
+    {
+      "file": "screenshots/editorial/variant-availability/variant-stock-fr-390.png",
+      "bytes": 38223,
+      "sha256": "19dd725724ce570e407e61a627b0e50d7808fb6e4ef4c80dc032bc6dc8bfe1a0"
+    },
+    {
+      "file": "verify/accueil-hero-lens-stories.png",
+      "bytes": 415465,
+      "sha256": "f287d5cc7185b53e288ed7e09ef03637902821ff397904c3e9190457ccb8a9fe"
+    },
+    {
+      "file": "verify/admin-bloc-accueil-stories.png",
+      "bytes": 44987,
+      "sha256": "f4c6ba29782dcbd90f3bb33cc02fb4385478c0e7281988684dd500918b6a358f"
+    },
+    {
+      "file": "verify/admin-ou-trouver-stories.png",
+      "bytes": 44987,
+      "sha256": "f4c6ba29782dcbd90f3bb33cc02fb4385478c0e7281988684dd500918b6a358f"
+    },
+    {
+      "file": "verify/bloc-stories-modele.png",
+      "bytes": 93306,
+      "sha256": "93e75edb8a495e2c1ac4829334f7a78f44b05770eafc6016691c63a3e42b939d"
+    },
+    {
+      "file": "verify/bloc-stories-vides-reduits.png",
+      "bytes": 92147,
+      "sha256": "592ee9c74c312dff0f79617c5ebda6578139de26470a8847b3a1c6f899f44311"
+    },
+    {
+      "file": "verify/lens-feature-desktop.png",
+      "bytes": 64834,
+      "sha256": "a59f8d538af6c40de84c0a1e2f1a6988c6bffbb6fefc3b9809cf97816e64661f"
+    },
+    {
+      "file": "verify/lens-feature-mobile.png",
+      "bytes": 120788,
+      "sha256": "3b4a99f5b32f74bacdbd09adfa6c13f5152a0930522c5be79e0f6a68d05f0e8d"
+    },
+    {
+      "file": "verify/lens2-desktop.png",
+      "bytes": 97047,
+      "sha256": "a24a46be47ef465b9beab2ce09bb7ab70ae799c87ba9de608d30ef10f8d089a8"
+    },
+    {
+      "file": "verify/lens2-mobile.png",
+      "bytes": 292047,
+      "sha256": "004b7dd8ffe01a31a3252f55faadf3226da2b88ed074db768a57f4eff4389e82"
+    },
+    {
+      "file": "verify/page-accueil-finale.png",
+      "bytes": 352961,
+      "sha256": "9396547b0bdbd6314df50cf75db39aed1d9939961b661516d41495a1da7b8b66"
+    },
+    {
+      "file": "verify/page-complete-bloc-sombre.png",
+      "bytes": 357173,
+      "sha256": "2a90ed83f926cdca865f76d145104cde79ac32429ac96bc2168768e85dd56c71"
+    },
+    {
+      "file": "verify/page-complete-mobile.png",
+      "bytes": 447392,
+      "sha256": "eba07d5abd46045b9c80717374b022a3d29434b4846969992c8f551fd37d386c"
+    },
+    {
+      "file": "verify/stories-modele-desktop.png",
+      "bytes": 75726,
+      "sha256": "fbc6e277016a9af184190f6c78453a57e930b3ffe6da261764e4d1513aaee9ef"
+    },
+    {
+      "file": "verify/stories-modele-mobile.png",
+      "bytes": 145822,
+      "sha256": "d4704c68048ae08b31f8f5b49675957b80e04eddb845af1946eed67ce62c03c0"
+    },
+    {
+      "file": "verify/stories-showcase-desktop.png",
+      "bytes": 52841,
+      "sha256": "6fd56b985fd7f520a35074e0f6675e5d1ed0010b2f8a54a5a1bc49c7906bbecb"
+    },
+    {
+      "file": "verify/stories-showcase-mobile.png",
+      "bytes": 85986,
+      "sha256": "146c625d3e99afc63061b3a5f66f222614f1761670b4ad5c064a90e4a2a71007"
+    },
+    {
+      "file": "verify/zalando-TrustBar-desktop.png",
+      "bytes": 3575,
+      "sha256": "90a81cc504833daac1e596effd224b59a9c67b2eb0bfbf81283dddcbb16436e7"
+    },
+    {
+      "file": "verify/zalando-TrustBar-mobile.png",
+      "bytes": 3086,
+      "sha256": "bdb88296dd3d1aff1be907641fff8b9168908839bf1825c360dc04a1f238cc06"
+    },
+    {
+      "file": "verify/zalando-before-home-desktop.png",
+      "bytes": 231534,
+      "sha256": "f33a8c26a30149c8379eeca35de4c4f4d0b2c727cdae84d55e072b9f8181d79c"
+    },
+    {
+      "file": "verify/zalando-before-home-mobile.png",
+      "bytes": 187808,
+      "sha256": "e6f3d8071d15a80c17968618021fe6380e58e260fa770cd47fe2d9eef829d30b"
+    },
+    {
+      "file": "verify/zalando-before-lens2-desktop.png",
+      "bytes": 63644,
+      "sha256": "f25b4db48efbe412235c7fc0a43651ae1d889404277a89163444af49a3aff763"
+    },
+    {
+      "file": "verify/zalando-before-lens2-mobile.png",
+      "bytes": 86475,
+      "sha256": "32c95ce14dd02173cd249371a20e6e0f1c2bc13629f5c3aa1fd8d56537164137"
+    },
+    {
+      "file": "verify/zalando-before-transitioncardfade-desktop.png",
+      "bytes": 4327,
+      "sha256": "1f6559888e974a13a40607a307886c2eb53290e126d8ff22c736a455aba518e1"
+    },
+    {
+      "file": "verify/zalando-before-transitioncardfade-mobile.png",
+      "bytes": 3425,
+      "sha256": "e096c7cbd087a4a45ce881ff1a4bd3d4759a79b94eba9c606964c49bc8c3ae86"
+    },
+    {
+      "file": "verify/zalando-conteneurStories-desktop.png",
+      "bytes": 411846,
+      "sha256": "27b6a7a3b97ff383b16e4d0d5e8adb338db0bf8fd1c7732f57175621dd3746e4"
+    },
+    {
+      "file": "verify/zalando-conteneurStories-mobile.png",
+      "bytes": 160052,
+      "sha256": "bb58db42d9732c862918ab4d8399fa1a8cdfc5b726fee75a924d0cffba7d512a"
+    },
+    {
+      "file": "verify/zalando-home-desktop.png",
+      "bytes": 1500922,
+      "sha256": "3e5e079fc0a100ef33f25e52809546392941243e26fc944c86302e866c3d15a6"
+    },
+    {
+      "file": "verify/zalando-home-mobile.png",
+      "bytes": 481666,
+      "sha256": "94ee8b64228326e69a34bc2ce165a59fd56221c16d225bff6f7b188be62067e0"
+    },
+    {
+      "file": "verify/zalando-lens-screen-desktop.png",
+      "bytes": 750674,
+      "sha256": "52b0c8c9216920aa845edad0becd80954b087d9382b7d1cde2f0d5aa385b826a"
+    },
+    {
+      "file": "verify/zalando-lens-screen-mobile.png",
+      "bytes": 296503,
+      "sha256": "fd44c6237c826670aadb23a1a19791d02fe8f356a93f9a2126551fa5fc238d9f"
+    },
+    {
+      "file": "verify/zalando-lens2-desktop.png",
+      "bytes": 51559,
+      "sha256": "97f1de7d9d32342d1752903b309530e01a1aab066a468b3ffedea27a408d0b61"
+    },
+    {
+      "file": "verify/zalando-lens2-mobile.png",
+      "bytes": 64054,
+      "sha256": "8341969ffea5d438f29e8a608916a4b73838baf180d5ad6ed1629804d87c91c1"
+    },
+    {
+      "file": "verify/zalando-sectionHero-desktop.png",
+      "bytes": 1403831,
+      "sha256": "abb852c76a78181be040dc2ca4bd30e1e238d01e021568f0b3caa8e981c37972"
+    },
+    {
+      "file": "verify/zalando-sectionHero-mobile.png",
+      "bytes": 450667,
+      "sha256": "af2d734797fd69281321abf5a14399b692012873560382193769712ccc9ab174"
+    },
+    {
+      "file": "verify/zalando-sectionLENSblocditorial-desktop.png",
+      "bytes": 310873,
+      "sha256": "2ecd49e24c1b449a572e46ea25429ddfe616b33f9313ead3835e2d8c28ecb8db"
+    },
+    {
+      "file": "verify/zalando-sectionLENSblocditorial-mobile.png",
+      "bytes": 113446,
+      "sha256": "d158f653c25e1702cdd5b778005443526ff81b2fa59d0ef17ad7afede24c549e"
+    },
+    {
+      "file": "verify/zalando-transitioncardfade-desktop.png",
+      "bytes": 5197,
+      "sha256": "7638c266852b1af01f2d7985aeb1431f1fde72f55b5ece5cd7af17033bef4a5b"
+    },
+    {
+      "file": "verify/zalando-transitioncardfade-mobile.png",
+      "bytes": 3406,
+      "sha256": "d6b9ddeb769458c7294682ad0aa0ebf898ec79e84e177c20166124f63054a1a4"
+    }
+  ]
+}
