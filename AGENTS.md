@@ -18,3 +18,7 @@ Read [the owner-approved development and evolution agreement](docs/architecture/
 - Protect experimental CMS/configuration data too. A later migration needs backups and a tested restore/rollback path.
 
 For each delivery, state what changed, what was actually tested, and what remains unverified. Record materially different architectural decisions, their tradeoffs and owner approval rather than silently replacing this agreement.
+
+## Database changes
+
+Consult [the schema inventory and staged backlog](docs/architecture/DATABASE_STRUCTURE_INVENTORY_AR.md). Run `npm run audit:database` and the schema/reopen/migration tests listed there when changing relationships, indexes or bootstrapping. New child-FK index gaps require an appropriate index or an explicitly justified review entry in `docs/architecture/database-index-review.json`; legacy entries are pending investigation, not proof of optimal indexing. Keep that backlog current when resolving gaps. Verify upgrades and preservation of existing data, not only creation of empty tables.

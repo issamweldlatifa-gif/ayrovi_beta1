@@ -1,0 +1,830 @@
+{
+  "scope": "Fresh application schema; legacy child-index review backlog, not proof indexes are unnecessary. New exceptions need a specific justification and review.",
+  "pendingReview": [
+    {
+      "table": "assistant_support_tickets",
+      "parent": "admin_users",
+      "columns": [
+        "assigned_to"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_cart_items",
+      "parent": "ayweb_products",
+      "columns": [
+        "product_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_consolidations",
+      "parent": "ayweb_warehouse_items",
+      "columns": [
+        "warehouse_item_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_domain_events",
+      "parent": "ayweb_orders",
+      "columns": [
+        "order_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_domain_events",
+      "parent": "customer_accounts",
+      "columns": [
+        "account_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_evidence",
+      "parent": "ayweb_order_items",
+      "columns": [
+        "order_item_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_evidence",
+      "parent": "ayweb_cart_items",
+      "columns": [
+        "cart_item_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_order_items",
+      "parent": "ayweb_products",
+      "columns": [
+        "product_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_order_items",
+      "parent": "ayweb_cart_items",
+      "columns": [
+        "cart_item_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_orders",
+      "parent": "customers",
+      "columns": [
+        "customer_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_orders",
+      "parent": "ayweb_carts",
+      "columns": [
+        "cart_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_payments",
+      "parent": "customer_accounts",
+      "columns": [
+        "account_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_purchase_requests",
+      "parent": "ayweb_orders",
+      "columns": [
+        "order_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_purchase_requests",
+      "parent": "customers",
+      "columns": [
+        "customer_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_recent_stores",
+      "parent": "customer_accounts",
+      "columns": [
+        "account_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_sessions",
+      "parent": "ayweb_carts",
+      "columns": [
+        "cart_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_store_requests",
+      "parent": "ayweb_stores",
+      "columns": [
+        "promoted_store_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_store_requests",
+      "parent": "customer_accounts",
+      "columns": [
+        "account_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "ayweb_warehouse_items",
+      "parent": "ayweb_order_items",
+      "columns": [
+        "order_item_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "catalogue_attribute_values",
+      "parent": "catalogue_variants",
+      "columns": [
+        "variant_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm360_activities",
+      "parent": "crm360_contacts",
+      "columns": [
+        "contact_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm360_communications",
+      "parent": "crm360_contacts",
+      "columns": [
+        "contact_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm360_issues",
+      "parent": "crm360_contacts",
+      "columns": [
+        "contact_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm360_notes",
+      "parent": "crm360_tasks",
+      "columns": [
+        "task_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm360_notes",
+      "parent": "crm360_activities",
+      "columns": [
+        "activity_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm360_notes",
+      "parent": "crm360_contacts",
+      "columns": [
+        "contact_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm360_status_events",
+      "parent": "erp_employees",
+      "columns": [
+        "actor_employee_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm360_tasks",
+      "parent": "crm360_contacts",
+      "columns": [
+        "contact_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm_arrival_clients",
+      "parent": "crm_stores",
+      "columns": [
+        "store_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm_arrival_clients",
+      "parent": "customers",
+      "columns": [
+        "customer_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm_arrival_sources",
+      "parent": "admin_users",
+      "columns": [
+        "uploaded_by"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm_arrival_sources",
+      "parent": "crm_extraction_jobs",
+      "columns": [
+        "last_job_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm_arrivals",
+      "parent": "admin_users",
+      "columns": [
+        "confirmed_by"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm_extracted_products",
+      "parent": "crm_extraction_jobs",
+      "columns": [
+        "superseded_by_job_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm_extracted_products",
+      "parent": "admin_users",
+      "columns": [
+        "approved_by"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm_extracted_products",
+      "parent": "crm_stores",
+      "columns": [
+        "store_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm_extracted_products",
+      "parent": "customers",
+      "columns": [
+        "customer_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm_extracted_products",
+      "parent": "crm_arrival_sources",
+      "columns": [
+        "source_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "crm_extraction_jobs",
+      "parent": "admin_users",
+      "columns": [
+        "started_by"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "customer_auth_mail_jobs",
+      "parent": "customer_accounts",
+      "columns": [
+        "account_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "customer_favorites",
+      "parent": "products",
+      "columns": [
+        "product_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "customer_native_handoffs",
+      "parent": "customer_accounts",
+      "columns": [
+        "account_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "customer_oauth_states",
+      "parent": "customer_accounts",
+      "columns": [
+        "account_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "erp_departments",
+      "parent": "erp_organizations",
+      "columns": [
+        "organization_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "erp_employees",
+      "parent": "erp_employees",
+      "columns": [
+        "manager_employee_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "erp_employees",
+      "parent": "erp_teams",
+      "columns": [
+        "team_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "erp_employees",
+      "parent": "erp_organizations",
+      "columns": [
+        "organization_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "erp_teams",
+      "parent": "erp_organizations",
+      "columns": [
+        "organization_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "goods_receipt_lines",
+      "parent": "products",
+      "columns": [
+        "product_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "goods_receipts",
+      "parent": "crm_arrivals",
+      "columns": [
+        "arrival_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "inventory_stock_items",
+      "parent": "catalogue_variants",
+      "columns": [
+        "variant_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "inventory_stock_movements",
+      "parent": "catalogue_variants",
+      "columns": [
+        "variant_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "inventory_stocktake_lines",
+      "parent": "inventory_stock_items",
+      "columns": [
+        "item_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "magazine_drafts",
+      "parent": "admin_users",
+      "columns": [
+        "generated_by"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "news_items",
+      "parent": "products",
+      "columns": [
+        "product_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "news_items",
+      "parent": "arrivals",
+      "columns": [
+        "arrival_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "orders",
+      "parent": "arrivals",
+      "columns": [
+        "arrival_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "payment_proofs",
+      "parent": "payments",
+      "columns": [
+        "payment_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "payment_transactions",
+      "parent": "orders",
+      "columns": [
+        "order_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "product_arrivals",
+      "parent": "arrivals",
+      "columns": [
+        "arrival_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "products",
+      "parent": "brands",
+      "columns": [
+        "brand_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "promotion_arrivals",
+      "parent": "arrivals",
+      "columns": [
+        "arrival_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "promotion_products",
+      "parent": "products",
+      "columns": [
+        "product_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "publication_dislikes",
+      "parent": "customer_accounts",
+      "columns": [
+        "account_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "publication_follows",
+      "parent": "story_publishers",
+      "columns": [
+        "publisher_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "publication_preferences",
+      "parent": "publications",
+      "columns": [
+        "publication_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "publications",
+      "parent": "products",
+      "columns": [
+        "product_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "publications",
+      "parent": "story_publishers",
+      "columns": [
+        "channel_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "purchase_order_lines",
+      "parent": "catalogue_variants",
+      "columns": [
+        "variant_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "reels",
+      "parent": "products",
+      "columns": [
+        "product_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "reels",
+      "parent": "story_publishers",
+      "columns": [
+        "channel_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "social_comment_replies",
+      "parent": "story_interactions",
+      "columns": [
+        "parent_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "stories",
+      "parent": "promotions",
+      "columns": [
+        "promotion_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "stories",
+      "parent": "arrivals",
+      "columns": [
+        "arrival_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    },
+    {
+      "table": "stories",
+      "parent": "products",
+      "columns": [
+        "product_id"
+      ],
+      "parentColumns": [
+        "id"
+      ],
+      "reason": "Existing relationship at initial inventory; workload/index decision still pending. Not a confirmed defect."
+    }
+  ]
+}
