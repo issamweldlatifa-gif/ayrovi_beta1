@@ -32,6 +32,8 @@ try {
   // Reduced viewport checks layout only, not an actual OS keyboard.
   await page.setViewportSize({ width: 390, height: 480 });
   await page.locator('textarea').fill('Je cherche des baskets');
+  // The app updates visualViewport CSS bounds on the next animation frame.
+  await page.waitForFunction(() => document.querySelector('[data-clean-composer]').getBoundingClientRect().bottom <= window.innerHeight + 1);
   const composer = await page.locator('[data-clean-composer]').boundingBox(); assert(composer.y + composer.height <= 481);
   await page.getByRole('button', { name: 'Envoyer', exact: true }).waitFor();
   await page.screenshot({ path: '.cache/clean-review/short-viewport.png' });
