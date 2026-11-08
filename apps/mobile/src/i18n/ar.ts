@@ -2,6 +2,16 @@
  * النصوص العربية بالفصحى السليمة. جميع المفاتيح هنا مطابقة تماماً لمفاتيح fr.ts.
  */
 export const ar = {
+  "clean.welcome": "مرحبًا، أنا Clean!",
+  "clean.disclaimer": "اسألني عن مشترياتك. إجاباتي مولّدة بالذكاء الاصطناعي وقد تحتوي على أخطاء.",
+  "clean.record": "تسجيل رسالة صوتية",
+  "clean.recording": "● ● ● جارٍ التسجيل",
+  "clean.processing": "جارٍ معالجة الصوت…",
+  "clean.finishRecording": "إنهاء التسجيل",
+  "clean.voiceError": "تعذّر استخدام الميكروفون أو تحويل الصوت. أعد المحاولة أو اكتب رسالتك.",
+  "home.clean.title": "مساعدك للتسوّق.",
+  "home.clean.body": "عندك سؤال على منتج أو سومه؟ اسأل Clean.",
+  "home.clean.cta": "افتح Clean",
   'tabs.home': 'الرئيسية',
   'tabs.lens': 'Lens',
   'tabs.sonim': 'Clean',
@@ -681,7 +691,6 @@ export const ar = {
   'lens.help.step2': 'استخدم إضاءة جيّدة وتجنّب الانعكاسات مع تثبيت الهاتف.',
   'lens.help.step3': 'يمكنك أيضاً اختيار صورة جاهزة من معرض الصور.',
   'lens.help.step4': 'للبحث بالرمز الشريطي أو الرابط أو الاسم، بدّل الوضع أسفل الكاميرا.',
-  'home.lens.cta': 'فتح Lens',
   'lens.product.order': 'أضف إلى السلّة',
   'lens.product.added': 'أُضيف إلى السلّة',
   'lens.product.chooseSizeAction': 'اختر المقاس',
@@ -935,12 +944,8 @@ export const ar = {
   'loading.requests': 'جارٍ تحميل الطلبات…',
 
   /* ── Clean (المساعد الذكي للمحادثة) ─────────────────────────────────────── */
-  'sonim.greeting': 'مرحباً',
-  'sonim.greetingNamed': 'مرحباً {name}',
-  'sonim.subtitle': 'كيف يمكنني مساعدتك اليوم؟',
-  'sonim.body': 'يمكنني تحليل منتجاتك واحتساب السعر النهائي بالدينار والبحث عن المنتجات وتتبّع طلباتك.',
   'sonim.unavailable': 'مساعد Clean غير متاح مؤقتاً. يرجى المحاولة بعد لحظات.',
-  'sonim.placeholder': 'اسأل Clean…',
+  'sonim.placeholder': 'اسأل Clean',
   'sonim.send': 'إرسال',
   'sonim.stop': 'إيقاف',
   'sonim.camera': 'التقاط صورة',

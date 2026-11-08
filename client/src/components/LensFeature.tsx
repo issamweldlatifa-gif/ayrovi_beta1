@@ -1,3 +1,4 @@
+import { useLocale } from '../i18n/LocaleContext';
 import { ArrowRight } from './QatafoIcons';
 import { safePublicHref } from '../utils/publicLinks';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -54,7 +55,7 @@ function embedKind(url: string): 'youtube' | 'vimeo' | 'file' | null {
   return 'file';
 }
 
-export const LensFeature: React.FC<{ onOpenLens: () => void }> = ({ onOpenLens }) => {
+export const LegacyLensFeature: React.FC<{ onOpenLens: () => void }> = ({ onOpenLens }) => {
   const [data, setData] = useState<LensPayload | null>(null);
 
   useEffect(() => {
@@ -133,4 +134,24 @@ export const LensFeature: React.FC<{ onOpenLens: () => void }> = ({ onOpenLens }
   );
 };
 
+export const LensFeature: React.FC<{ onOpenLens: () => void }> = ({ onOpenLens }) => {
+  const { tr } = useLocale();
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/public/lens-hero', { signal: controller.signal })
+      .then(res => res.ok ? res.json() : null)
+      .then(json => { if (!controller.signal.aborted && json?.success) setEnabled(json.data?.enabled !== false); })
+      .catch(() => { /* Preserve the CMS visibility gate; no fabricated content fallback. */ });
+    return () => controller.abort();
+  }, []);
+  if (!enabled) return null;
+  return <section className="lens-feature" aria-labelledby="clean-home-title"><div className="lens-feature__inner">
+    <p className="lens-feature__eyebrow">Clean</p>
+    <h2 className="lens-feature__title" id="clean-home-title">{tr('Votre assistant shopping.', 'مساعدك للتسوّق.')}</h2>
+    <p className="lens-feature__desc">{tr('Des questions sur un produit ou son prix ? Demandez à Clean.', 'عندك سؤال على منتج أو سومه؟ اسأل Clean.')}</p>
+    <img src="/media/clean/promo-v1.webp" alt={tr('Zayrovi Clean', 'Zayrovi Clean')} loading="lazy" decoding="async" style={{ width: '100%', height: 'auto' }} />
+    <button type="button" className="lens-feature__cta" onClick={onOpenLens}>{tr('Ouvrir Clean', 'افتح Clean')}<ArrowRight size={20} /></button>
+  </div></section>;
+};
 export default LensFeature;

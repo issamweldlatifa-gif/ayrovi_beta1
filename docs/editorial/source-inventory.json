@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 272,
-    "customerAndSharedFiles": 206,
-    "controls": 476,
+    "files": 273,
+    "customerAndSharedFiles": 207,
+    "controls": 474,
     "iconAliases": 102,
     "uniqueGlyphs": 99
   },
@@ -12412,7 +12412,7 @@
     {
       "file": "client/src/App.tsx",
       "domain": "shell-content",
-      "sha256": "58eb1c725ee381c70e39188d32b5f9d7ed1ec02b611fce261040a0324d9c2632",
+      "sha256": "9b72ddbcfc610a5500da9cae918267f921d59b984c2d4ae4d60f5cf5b3062416",
       "lines": 749,
       "imports": [
         "./design/editorial/customerTheme",
@@ -14644,8 +14644,8 @@
     {
       "file": "client/src/components/assistant/AiAssistantDrawer.tsx",
       "domain": "sonim",
-      "sha256": "57e9c45c19d0f739c0ba31156fcf49507f321124e2ea52dae80db00ad02cd79e",
-      "lines": 1030,
+      "sha256": "56266239c78708c16d507bd78485ccaf64083b8b01681656460404e480769ac2",
+      "lines": 1031,
       "imports": [
         "../../ayrovix/services/productSelection",
         "./media/useAssistantAttachments",
@@ -14684,7 +14684,7 @@
       "controls": [
         {
           "tag": "AssistantVoiceModeScreen",
-          "line": 867,
+          "line": 868,
           "className": null,
           "type": null,
           "role": null,
@@ -14694,7 +14694,7 @@
         },
         {
           "tag": "button",
-          "line": 924,
+          "line": 925,
           "className": "\"ay-btn-secondary mt-2 min-h-11 px-3 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -14704,7 +14704,7 @@
         },
         {
           "tag": "AssistantAttachmentSheet",
-          "line": 1001,
+          "line": 1002,
           "className": null,
           "type": null,
           "role": null,
@@ -14714,7 +14714,7 @@
         },
         {
           "tag": "AssistantFeedbackSheet",
-          "line": 1013,
+          "line": 1014,
           "className": null,
           "type": null,
           "role": null,
@@ -14888,10 +14888,11 @@
     {
       "file": "client/src/components/assistant/AssistantComposer.tsx",
       "domain": "sonim",
-      "sha256": "a78f3c61eea251e81f8fb519648c0ef389fbc2ca7182ebd54c2ef268c4fff8d3",
-      "lines": 176,
+      "sha256": "6a224a7f676a402e960ea45ca9fb370cc8857293d15c5b5d9a84f709fe4db0c1",
+      "lines": 155,
       "imports": [
         "./AssistantMediaPending",
+        "./CleanVisuals",
         "react",
         "../QatafoIcons",
         "./types",
@@ -14904,7 +14905,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 80,
+          "line": 81,
           "className": "\"flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-muted hover:text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -14914,7 +14915,7 @@
         },
         {
           "tag": "button",
-          "line": 92,
+          "line": 93,
           "className": "{`flex min-h-11 min-w-11 items-center justify-center gap-2 px-2 text-sm ${isDark ? 'text-white' : 'text-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -14924,7 +14925,7 @@
         },
         {
           "tag": "textarea",
-          "line": 101,
+          "line": 102,
           "className": "{`mb-2 min-h-[42px] max-h-32 w-full resize-none bg-transparent py-1 text-base leading-6 outline-none placeholder:text-muted ${isDark ? 'text-white' : 'text-ink'}`}",
           "type": null,
           "role": null,
@@ -14934,7 +14935,7 @@
         },
         {
           "tag": "button",
-          "line": 114,
+          "line": 115,
           "className": "{`flex h-11 w-11 shrink-0 items-center justify-center rounded-control transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${surfaceButton}`}",
           "type": "\"button\"",
           "role": null,
@@ -14944,8 +14945,8 @@
         },
         {
           "tag": "button",
-          "line": 127,
-          "className": "{`flex h-11 w-11 shrink-0 items-center justify-center rounded-control transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${\n                isRecording\n                  ? 'animate-pulse bg-danger text-white'\n                  : surfaceButton\n              }`}",
+          "line": 128,
+          "className": "{`flex h-11 w-11 shrink-0 items-center justify-center rounded-control transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${\n                isRecording\n                  ? 'bg-transparent'\n                  : surfaceButton\n              }`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{isRecording ? tr('Terminer l’enregistrement', 'إنهاء التسجيل') : tr('Enregistrer un message vocal', 'تسجيل صوتي')}",
@@ -14954,30 +14955,20 @@
         },
         {
           "tag": "button",
-          "line": 144,
-          "className": "\"flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-cta text-cta-ink shadow-md transition hover:bg-cta-hover active:scale-90 disabled:pointer-events-none disabled:opacity-30\"",
+          "line": 143,
+          "className": "\"clean-composer-action\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{isGenerating ? tr('Arrêter la réponse', 'إيقاف الرد') : tr('Envoyer', 'إرسال')}",
-          "onClick": "{isGenerating ? onStop : onSend}",
-          "disabled": "{isTranscribing || isRecording || mediaWaiting}"
-        },
-        {
-          "tag": "button",
-          "line": 157,
-          "className": "{`flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-line bg-white text-ink shadow-sm transition hover:bg-surface active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${\n                  voiceMode ? 'ring-2 ring-white animate-pulse' : ''\n                }`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Mode vocal', 'الوضع الصوتي')}",
-          "onClick": "{onToggleVoiceMode}",
-          "disabled": "{isGenerating || isTranscribing || isRecording || mediaWaiting}"
+          "ariaLabel": "{isGenerating ? tr('Arrêter la réponse', 'إيقاف الرد') : canSend ? tr('Envoyer', 'إرسال') : tr('Mode vocal', 'الوضع الصوتي')}",
+          "onClick": "{isGenerating ? onStop : canSend ? onSend : onToggleVoiceMode ?? onStartRecording}",
+          "disabled": "{isTranscribing || mediaWaiting}"
         }
       ],
       "icons": [
         {
           "module": "../QatafoIcons",
-          "bindings": "{ ArrowUp, FileText, Mic, Pause, Plus, VoiceWave, X }",
-          "line": 3
+          "bindings": "{ FileText, Mic, Plus, X }",
+          "line": 4
         }
       ],
       "inlineSvg": [],
@@ -15077,9 +15068,10 @@
     {
       "file": "client/src/components/assistant/AssistantHeader.tsx",
       "domain": "sonim",
-      "sha256": "05d5a25036967f9476c47c4ba2fab19262862fb18cb59ffb9c04494d290f1713",
-      "lines": 19,
+      "sha256": "e7a7d0e3dbe4327c3991bee97004fc96f22881bbbd6fc79189ec6e74bf534c02",
+      "lines": 20,
       "imports": [
+        "./CleanVisuals",
         "react",
         "../QatafoIcons",
         "../../i18n/LocaleContext"
@@ -15090,30 +15082,20 @@
       "controls": [
         {
           "tag": "button",
-          "line": 13,
+          "line": 14,
           "className": "{iconButton}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Menu', 'القائمة')}",
           "onClick": "{onOpenMenu}",
           "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 15,
-          "className": "{iconButton}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Fermer Clean', 'إغلاق Clean')}",
-          "onClick": "{onClose}",
-          "disabled": null
         }
       ],
       "icons": [
         {
           "module": "../QatafoIcons",
-          "bindings": "{ Menu, X }",
-          "line": 2
+          "bindings": "{ Menu }",
+          "line": 3
         }
       ],
       "inlineSvg": [],
@@ -15293,9 +15275,10 @@
     {
       "file": "client/src/components/assistant/AssistantMessages.tsx",
       "domain": "sonim",
-      "sha256": "348cdd813445058810a0ee98dc33e6b0efd8e73412d3576e86b5e64114af4e49",
-      "lines": 217,
+      "sha256": "5f124ec7cb4f955d711816dc530223d00d80c8d109feb49d68e691c292a6c756",
+      "lines": 187,
       "imports": [
+        "./CleanVisuals",
         "../../ayrovix/components/MerchantRating",
         "react",
         "./AssistantMessageActions",
@@ -15317,7 +15300,7 @@
       "controls": [
         {
           "tag": "a",
-          "line": 81,
+          "line": 77,
           "className": "{`inline-flex min-h-10 items-center gap-1 rounded-card border px-3 text-xs font-extrabold ${isDark ? 'border-white/15 text-white/90' : 'border-line text-ink'}`}",
           "type": null,
           "role": null,
@@ -15327,7 +15310,7 @@
         },
         {
           "tag": "button",
-          "line": 81,
+          "line": 77,
           "className": "\"ay-btn-primary min-h-10 flex-1 px-3 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -15337,7 +15320,7 @@
         },
         {
           "tag": "ShopProductScreen",
-          "line": 85,
+          "line": 81,
           "className": null,
           "type": null,
           "role": null,
@@ -15347,8 +15330,8 @@
         },
         {
           "tag": "button",
-          "line": 141,
-          "className": "\"assistant-quick-card flex min-h-[92px] flex-col justify-center rounded-card p-4 text-start text-ink transition active:scale-[0.98]\"",
+          "line": 126,
+          "className": "\"clean-suggestion\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -15357,17 +15340,7 @@
         },
         {
           "tag": "button",
-          "line": 158,
-          "className": "{`flex min-h-11 items-center rounded-control px-3 text-xs font-bold transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white/90' : 'text-muted hover:bg-surface hover:text-ink'}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => onPrompt(item.prompt[isArabic ? 1 : 0])}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 202,
+          "line": 172,
           "className": "{`min-h-11 rounded-control border px-3.5 text-xs font-bold transition active:scale-95 ${isDark ? 'border-white/15 bg-white/5 text-white/90 hover:bg-white/10' : 'border-line bg-white text-ink hover:bg-surface'}`}",
           "type": "\"button\"",
           "role": null,
@@ -15377,7 +15350,7 @@
         },
         {
           "tag": "button",
-          "line": 203,
+          "line": 173,
           "className": "\"ay-btn-primary mt-3 w-full text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -15390,7 +15363,7 @@
         {
           "module": "../QatafoIcons",
           "bindings": "{ Mic, ArrowUpRight, MessageSquare, PackageCheck, ShoppingBag, LensBox }",
-          "line": 6
+          "line": 7
         }
       ],
       "inlineSvg": [],
@@ -15720,6 +15693,31 @@
         }
       ],
       "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/components/assistant/CleanVisuals.tsx",
+      "domain": "sonim",
+      "sha256": "476dd2c8a0ebca183e276fdbf1ed67f15c2c18df6ee7cfd7e7f870a34c4845e0",
+      "lines": 13,
+      "imports": [
+        "../../../../shared/cleanAppearance.json"
+      ],
+      "exports": [
+        "CLEAN",
+        "CleanWordmark",
+        "CleanActionGlyph"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [
+        {
+          "line": 8,
+          "viewBox": "\"0 0 24 24\""
+        }
+      ],
       "colors": [],
       "fontDeclarations": [],
       "apiReferences": []
@@ -16084,8 +16082,8 @@
     {
       "file": "client/src/components/BottomNavBar.tsx",
       "domain": "shell-content",
-      "sha256": "ba86a10827020155061d53457f60b213d3b6f78161df690b9c9accbee897af77",
-      "lines": 116,
+      "sha256": "483fb0d26d9b4168746196b300c9ea8f7d2051dee155b016b8b3a01a06428cac",
+      "lines": 93,
       "imports": [
         "react",
         "./QatafoIcons",
@@ -16101,7 +16099,7 @@
       "controls": [
         {
           "tag": "AppHeader",
-          "line": 70,
+          "line": 65,
           "className": null,
           "type": null,
           "role": null,
@@ -16111,7 +16109,17 @@
         },
         {
           "tag": "button",
-          "line": 88,
+          "line": 83,
+          "className": "{NAV_ITEM}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Accueil', 'الرئيسية')}",
+          "onClick": "{() => navigation.goHome()}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 84,
           "className": "{NAV_ITEM}",
           "type": "\"button\"",
           "role": null,
@@ -16121,56 +16129,44 @@
         },
         {
           "tag": "button",
-          "line": 92,
+          "line": 85,
           "className": "{NAV_ITEM}",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr(\"Clean — l'assistant IA de ZAYROVI\", 'Clean — المساعد الذكي لـ ZAYROVI')}",
+          "ariaLabel": "{tr('Clean', 'Clean')}",
           "onClick": "{onToggleAiDrawer}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 97,
+          "line": 86,
           "className": "{NAV_ITEM}",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('AyWebs — shopping depuis le web', 'AyWebs — التسوق من الويب')}",
+          "ariaLabel": "{tr('AYWEBs', 'AYWEBs')}",
           "onClick": "{onOpenAyWebs}",
-          "disabled": null
+          "disabled": "{!ayWebsEnabled}"
         },
         {
           "tag": "button",
-          "line": 102,
+          "line": 87,
           "className": "{NAV_ITEM}",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Vision — bientôt disponible', 'Vision — قريبًا')}",
-          "onClick": "{() => navigation.navigate([{ id: 'app:vision' }])}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 107,
-          "className": "{NAV_ITEM}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('OCEREX — prix depuis une image', 'OCEREX — السعر من صورة')}",
-          "onClick": "{() => navigation.navigate([{ id: 'app:ocerex' }])}",
+          "ariaLabel": "{tr('Profil', 'حسابي')}",
+          "onClick": "{() => navigation.navigate([{ id: 'app:account' }])}",
           "disabled": null
         }
       ],
       "icons": [
         {
           "module": "./QatafoIcons",
-          "bindings": "{ AyWebs, Vision, LensBox, ScanSearch }",
+          "bindings": "{ Vision }",
           "line": 2
         }
       ],
       "inlineSvg": [],
-      "colors": [
-        "#000000"
-      ],
+      "colors": [],
       "fontDeclarations": [],
       "apiReferences": []
     },
@@ -17631,28 +17627,42 @@
     {
       "file": "client/src/components/LensFeature.tsx",
       "domain": "lens",
-      "sha256": "b81c2e55ff48d132a5970f43c17ad418714fd7b33c1fea399eba15a0d68ed110",
-      "lines": 137,
+      "sha256": "6b3b31a57c8cd2f4f37fb2c5351ed6e1b0b7f27ef56df971d606efceae47c690",
+      "lines": 158,
       "imports": [
+        "../i18n/LocaleContext",
         "./QatafoIcons",
         "../utils/publicLinks",
         "react"
       ],
       "exports": [
+        "LegacyLensFeature",
         "LensFeature"
       ],
-      "controls": [],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 154,
+          "className": "\"lens-feature__cta\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onOpenLens}",
+          "disabled": null
+        }
+      ],
       "icons": [
         {
           "module": "./QatafoIcons",
           "bindings": "{ ArrowRight }",
-          "line": 1
+          "line": 2
         }
       ],
       "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
       "apiReferences": [
+        "/api/public/lens-hero",
         "/api/public/lens-hero"
       ]
     },
@@ -21592,14 +21602,18 @@
     {
       "file": "client/src/index.css",
       "domain": "shell-content",
-      "sha256": "8f1855d85bde57f570f2a6a3cc6a3fd72edb1e3104a99a0f285a6068fdcffa1c",
-      "lines": 1256,
+      "sha256": "fb26a1f023efce5e1c0b3cad6a38a339a0f2e8a727802bc150b76c0a8ff9cfc8",
+      "lines": 1272,
       "imports": [],
       "exports": [],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
-      "colors": [],
+      "colors": [
+        "#000",
+        "#85BAC2",
+        "#fff"
+      ],
       "fontDeclarations": [
         "font-family: var(--font-primary)"
       ],

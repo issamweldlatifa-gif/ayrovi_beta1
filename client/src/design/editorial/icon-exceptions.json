@@ -17,6 +17,12 @@
       "attribute": "data-brand",
       "value": "zayrovi-loader",
       "reason": "ZAYROVI loading screen: the heart-handshake brand mark inside its ring (same drawing as the static loader of client/index.html), not an interface icon."
+    },
+    "client/src/components/assistant/CleanVisuals.tsx": {
+      "count": 1,
+      "attribute": "data-brand",
+      "value": "clean-composer-state",
+      "reason": "User-approved orange Clean speech-bubble mark with state-dependent waveform, send, response and stop inset; localized brand control, not a global icon family replacement."
     }
   },
   "brandModule": "client/src/design/BrandIcon.tsx",

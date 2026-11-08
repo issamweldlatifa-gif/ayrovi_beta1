@@ -100,8 +100,8 @@ describe('SonimScreen UI', () => {
 
   it('affiche le message d’accueil personnalisé et ouvre Lens au clic sur le raccourci image', async () => {
     await renderSonim();
-    expect(screen.getByText('Bonjour Sami')).toBeTruthy();
-    expect(screen.getByText('Que souhaitez-vous faire aujourd’hui ?')).toBeTruthy();
+    expect(screen.getByText('Bonjour, je suis Clean !')).toBeTruthy();
+    expect(screen.getAllByTestId(/sonim-action-/)).toHaveLength(3);
 
     fireEvent.press(screen.getByTestId('sonim-action-lens'));
     expect(router.push).toHaveBeenCalledWith('/lens');

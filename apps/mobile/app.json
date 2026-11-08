@@ -113,6 +113,14 @@
           "cameraPermission": "ZAYROVI utilise la caméra pour photographier ou scanner un produit avec Lens ou Sonim.",
           "microphonePermission": false
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Clean utilise le microphone pour transcrire vos messages vocaux.",
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
+        }
       ]
     ],
     "experiments": {

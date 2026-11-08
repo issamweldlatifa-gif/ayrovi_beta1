@@ -2,6 +2,16 @@
  * Textes français. Toute clé ajoutée ici DOIT exister dans ar.ts — un test le vérifie.
  */
 export const fr = {
+  "clean.welcome": "Bonjour, je suis Clean !",
+  "clean.disclaimer": "Posez-moi vos questions sur vos achats. Mes réponses sont générées par IA et peuvent contenir des erreurs.",
+  "clean.record": "Enregistrer un message vocal",
+  "clean.recording": "● ● ● Enregistrement en cours",
+  "clean.processing": "Traitement du son…",
+  "clean.finishRecording": "Terminer l’enregistrement",
+  "clean.voiceError": "Microphone ou transcription indisponible. Réessayez ou écrivez votre message.",
+  "home.clean.title": "Votre assistant shopping.",
+  "home.clean.body": "Des questions sur un produit ou son prix ? Demandez à Clean.",
+  "home.clean.cta": "Ouvrir Clean",
   'tabs.home': 'Accueil',
   'tabs.lens': 'Lens',
   'tabs.sonim': 'Clean',
@@ -684,7 +694,6 @@ export const fr = {
   'lens.help.step2': 'Utilisez une lumière claire, évitez les reflets et stabilisez le téléphone.',
   'lens.help.step3': 'Vous pouvez aussi choisir une photo existante depuis votre galerie.',
   'lens.help.step4': 'Pour un code-barres, un lien ou un nom, changez de mode en bas de la caméra.',
-  'home.lens.cta': 'Ouvrir Lens',
   'lens.product.order': 'Ajouter au panier',
   'lens.product.added': 'Ajouté au panier',
   'lens.product.chooseSizeAction': 'Choisir une taille',
@@ -936,12 +945,8 @@ export const fr = {
   'loading.requests': "Chargement des demandes…",
 
   /* ── Clean (assistant IA conversationnel) ───────────────────────────────── */
-  'sonim.greeting': 'Bonjour',
-  'sonim.greetingNamed': 'Bonjour {name}',
-  'sonim.subtitle': 'Que souhaitez-vous faire aujourd’hui ?',
-  'sonim.body': 'Je peux analyser vos produits, calculer le prix final en dinars, rechercher des articles et suivre vos commandes.',
   'sonim.unavailable': 'Clean est momentanément indisponible. Réessayez dans quelques instants.',
-  'sonim.placeholder': 'Posez votre question à Clean…',
+  'sonim.placeholder': 'Demander à Clean',
   'sonim.send': 'Envoyer',
   'sonim.stop': 'Arrêter',
   'sonim.camera': 'Prendre une photo',

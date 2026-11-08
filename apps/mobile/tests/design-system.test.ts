@@ -181,6 +181,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
     const ALLOWED = new Set([
       'src/design/layout.tsx', // `AppScreen.overlayHeader` — la superposition de référence
       'src/design/ui.tsx', // le tiroir : panneau au-dessus du contenu
+      'src/features/sonim/CleanVisuals.tsx', // approved tiny sparkle accent above the n in the wordmark
       'src/design/BrandEntrance.tsx', // approved full-screen startup overlay and expanding cover
       'src/features/shell/LegacyMainMenu.tsx', // original unmounted overlay retained for future restoration
       'src/features/shell/AppHeader.tsx', // en-tête transparent sous lequel défile la page

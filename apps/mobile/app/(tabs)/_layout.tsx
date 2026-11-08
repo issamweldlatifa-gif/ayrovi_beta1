@@ -3,7 +3,7 @@
  * pleine largeur posée bord à bord en bas de l'écran (aucune transparence,
  * aucun vide sous la barre) :
  *
- *   `Accueil` · `Lens` · `AYWEBs` · `Clean` · `Profil`
+ *   `Accueil` · `Lens` · `Clean` · `AYWEBs` · `Profil`
  *
  *   • Aucun libellé visuel; les noms accessibles sont conservés.
  *   • Accueil utilise notre symbole (noir/blanc même actif). Les autres icônes appartiennent à la famille unique officielle (`Ionicons`
@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { revealChrome, useChromeHidden } from '@/design/chrome';
 import {
   TabAywebsPawIcon,
+  NAV_ICON_SIZE,
   TabHomeIcon,
   TabLensIcon,
   TabProfileIcon,
@@ -38,13 +39,12 @@ export default function TabsLayout() {
   const surface = TAB_BAR_SURFACE[theme.mode];
 
   const standardIconSlot = {
-    width: theme.iconSize.md,
-    height: theme.iconSize.md,
+    width: NAV_ICON_SIZE,
+    height: NAV_ICON_SIZE,
   };
   const centerIconSlot = {
-    flex: 1,
-    width: theme.iconSize.md,
-    height: theme.iconSize.md,
+    width: NAV_ICON_SIZE,
+    height: NAV_ICON_SIZE,
   };
 
   return (
@@ -80,7 +80,7 @@ export default function TabsLayout() {
           tabBarAccessibilityLabel: t('tabs.home'),
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
-            <TabHomeIcon color={color} focused={focused} />
+            <TabHomeIcon size={NAV_ICON_SIZE} color={color} focused={focused} />
           ),
         }}
       />
@@ -98,7 +98,19 @@ export default function TabsLayout() {
           tabBarStyle: { display: 'none' },
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
-            <TabLensIcon color={color} focused={focused} />
+            <TabLensIcon size={NAV_ICON_SIZE} color={color} focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="sonim"
+        options={{
+          title: t('tabs.sonim'),
+          tabBarAccessibilityLabel: t('tabs.sonim'),
+          tabBarStyle: { display: 'none' },
+          tabBarIconStyle: standardIconSlot,
+          tabBarIcon: ({ color, focused }) => (
+            <TabSonimIcon size={NAV_ICON_SIZE} color={color} focused={focused} />
           ),
         }}
       />
@@ -111,19 +123,7 @@ export default function TabsLayout() {
           tabBarAccessibilityLabel: t('tabs.aywebs'),
           tabBarIconStyle: centerIconSlot,
           tabBarIcon: ({ focused }) => (
-            <TabAywebsPawIcon color={theme.colors.ink} focused={focused} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="sonim"
-        options={{
-          title: t('tabs.sonim'),
-          tabBarAccessibilityLabel: t('tabs.sonim'),
-          tabBarStyle: { display: 'none' },
-          tabBarIconStyle: standardIconSlot,
-          tabBarIcon: ({ color, focused }) => (
-            <TabSonimIcon color={color} focused={focused} />
+            <TabAywebsPawIcon size={NAV_ICON_SIZE} color={theme.colors.ink} focused={focused} />
           ),
         }}
       />
@@ -134,7 +134,7 @@ export default function TabsLayout() {
           tabBarAccessibilityLabel: t('tabs.account'),
           tabBarIconStyle: standardIconSlot,
           tabBarIcon: ({ color, focused }) => (
-            <TabProfileIcon color={color} focused={focused} />
+            <TabProfileIcon size={NAV_ICON_SIZE} color={color} focused={focused} />
           ),
         }}
       />

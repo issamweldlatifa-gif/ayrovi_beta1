@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AyWebs, Vision, LensBox, ScanSearch } from './QatafoIcons';
+import { Vision } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
@@ -18,21 +18,16 @@ interface BottomNavBarProps {
 
 const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-2.5 rounded-control text-xs font-extrabold text-ink transition duration-200 hover:bg-ink-deep/5 active:scale-[0.96]';
 
-export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, onOpenAyWebs, ayWebsEnabled = true, config, iconConfig }) => {
+export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, onOpenAyWebs, ayWebsEnabled = true, config }) => {
   const navigation = useNavigationHistory();
   const { tr, direction } = useLocale();
   const isVisionOpen = navigation.stack[0]?.id === 'app:vision';
   const isAyWebsOpen = navigation.stack[0]?.id === 'app:aywebs';
-  const isOcerexOpen = navigation.stack[0]?.id === 'app:ocerex';
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const frame = useRef<number | null>(null);
-  const iconStyle = (active = false): React.CSSProperties => ({
-    width: Math.max(iconConfig.size, 30),
-    height: Math.max(iconConfig.size, 30),
-    color: active ? (iconConfig.activeColor || 'var(--ay-e-accent-text)') : (iconConfig.color || '#000000'),
-    fill: 'none',
-  });
+  const iconStyle = (_active = false): React.CSSProperties => ({ width: 28, height: 28, color: 'var(--ayrovi-text-primary)', flexShrink: 0 });
+  const monochrome = (name: string) => <span aria-hidden="true" style={{ ...iconStyle(), backgroundColor: 'currentColor', maskImage: `url(${name})`, WebkitMaskImage: `url(${name})`, maskSize: 'contain', WebkitMaskSize: 'contain', maskRepeat: 'no-repeat', WebkitMaskRepeat: 'no-repeat', maskPosition: 'center', WebkitMaskPosition: 'center' }} />;
   useBodyScrollLock(isVisionOpen);
 
   useEffect(() => {
@@ -84,30 +79,12 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
         aria-hidden={!isVisible}
         inert={isVisible ? undefined : true}
       >
-        <nav className={`mx-auto grid max-w-lg gap-1 ${ayWebsEnabled ? 'grid-cols-5' : 'grid-cols-4'}`} style={{ minHeight: Math.min(config.height, 56) }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
-          <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>
-            <LensBox className="interface-runtime-icon" style={iconStyle(false)} />
-            {config.showLabels && <span className="max-w-full truncate">{config.lensLabel}</span>}
-          </button>
-          <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr("Clean — l'assistant IA de ZAYROVI", 'Clean — المساعد الذكي لـ ZAYROVI')} aria-pressed={isAiDrawerOpen}>
-            <img src="/media/clean-message.svg" alt="" aria-hidden="true" className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />
-            {config.showLabels && <span className={`max-w-full truncate ${isAiDrawerOpen ? 'text-cta' : ''}`}>{/^sonim$/i.test(config.aiLabel.trim()) ? 'Clean' : config.aiLabel}</span>}
-          </button>
-          {ayWebsEnabled && (
-            <button type="button" onClick={onOpenAyWebs} className={NAV_ITEM} aria-label={tr('AyWebs — shopping depuis le web', 'AyWebs — التسوق من الويب')} aria-current={isAyWebsOpen ? 'page' : undefined}>
-              <AyWebs className="interface-runtime-icon" style={iconStyle(isAyWebsOpen)} />
-              {config.showLabels && <span className={`max-w-full truncate ${isAyWebsOpen ? 'text-cta' : ''}`}>{config.aywebsLabel}</span>}
-            </button>
-          )}
-          <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} aria-current={isVisionOpen ? 'page' : undefined}>
-            <Vision className="interface-runtime-icon" style={iconStyle(isVisionOpen)} />
-            {config.showLabels && <span className={`max-w-full truncate ${isVisionOpen ? 'text-cta' : ''}`}>{config.visionLabel}</span>}
-            <span className="absolute end-2 top-1.5 h-1.5 w-1.5 rounded-full bg-ink" aria-hidden="true" />
-          </button>
-          <button type="button" onClick={() => navigation.navigate([{ id: 'app:ocerex' }])} className={NAV_ITEM} aria-label={tr('OCEREX — prix depuis une image', 'OCEREX — السعر من صورة')} aria-current={isOcerexOpen ? 'page' : undefined}>
-            <ScanSearch className="interface-runtime-icon" style={iconStyle(isOcerexOpen)} />
-            {config.showLabels && <span className={`max-w-full truncate ${isOcerexOpen ? 'text-cta' : ''}`}>{config.ocerexLabel || 'OCEREX'}</span>}
-          </button>
+        <nav className="mx-auto grid max-w-lg grid-cols-5 gap-1" style={{ minHeight: Math.min(config.height, 56) }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
+          <button type="button" onClick={() => navigation.goHome()} className={NAV_ITEM} aria-label={tr('Accueil', 'الرئيسية')}>{monochrome('/media/logo-ayrovi.png?v=6.0')}</button>
+          <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>{monochrome('/media/clean/nav-lens-v1.svg')}</button>
+          <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr('Clean', 'Clean')} aria-pressed={isAiDrawerOpen}><img src="/media/clean-message.svg" alt="" aria-hidden="true" style={iconStyle()} /></button>
+          <button type="button" onClick={onOpenAyWebs} disabled={!ayWebsEnabled} className={NAV_ITEM} aria-label={tr('AYWEBs', 'AYWEBs')} aria-current={isAyWebsOpen ? 'page' : undefined}>{monochrome('/media/clean/nav-aywebs-v1.svg')}</button>
+          <button type="button" onClick={() => navigation.navigate([{ id: 'app:account' }])} className={NAV_ITEM} aria-label={tr('Profil', 'حسابي')}>{monochrome('/media/clean/nav-profile-v1.svg')}</button>
         </nav>
       </div>
     </>

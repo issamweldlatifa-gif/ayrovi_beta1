@@ -67,7 +67,7 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     foregroundMarkers.forEach(([path, marker]) => expect(readFileSync(path, 'utf8')).toContain(marker));
   });
 
-  it('offers the three Lens entry points and keeps the existing tools plus OCEREX', () => {
+  it('keeps Lens capabilities while using the five approved navigation destinations', () => {
     // بوابات الدخول الثلاث انتقلت إلى الصفحة الأولى لـ Lens (صورة / استيراد / رابط)
     expect(lensCameraSource).toContain('Prendre une photo');
     expect(lensUploadSource).toContain('Importer une image');
@@ -77,7 +77,13 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(bottomNavSource).toContain('grid-cols-5');
     expect(bottomNavSource).toContain('app:aywebs');
     expect(bottomNavSource).toContain('app:vision');
-    expect(bottomNavSource).toContain('app:ocerex');
+    expect(bottomNavSource).toContain('app:account');
+    const nav = bottomNavSource.slice(bottomNavSource.indexOf('<nav '), bottomNavSource.indexOf('</nav>'));
+    expect(nav.match(/<button /g)).toHaveLength(5);
+    expect(nav.indexOf('onToggleAiDrawer')).toBeGreaterThan(nav.indexOf('onOpenLens'));
+    expect(nav.indexOf('onToggleAiDrawer')).toBeLessThan(nav.indexOf('onOpenAyWebs'));
+    expect(nav).not.toContain('app:vision');
+    expect(nav).not.toContain('app:ocerex');
   });
 
   it('uses a white glass bottom navigation with muted icons that hides down and returns up', () => {

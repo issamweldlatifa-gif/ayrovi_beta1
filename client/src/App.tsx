@@ -462,7 +462,7 @@ export const App: React.FC = () => {
           */}
           {storiesBelowLens ? (
             <>
-              <LensFeature onOpenLens={handleOpenLens} />
+              <LensFeature onOpenLens={() => openAppView('app:assistant')} />
               <StoriesShowcase
                 isAuthenticated={Boolean(customerSession)}
                 onRequireAuth={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
@@ -476,7 +476,7 @@ export const App: React.FC = () => {
                 onRequireAuth={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
               />
               {announcementBlock}
-              <LensFeature onOpenLens={handleOpenLens} />
+              <LensFeature onOpenLens={() => openAppView('app:assistant')} />
             </>
           )}
         </>

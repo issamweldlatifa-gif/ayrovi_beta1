@@ -40,7 +40,7 @@ import { useResponsive } from '@/design/layout';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { TabSonimIcon } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
-import { BRAND, FONTS } from '@/design/tokens.generated';
+import { FONTS } from '@/design/tokens.generated';
 import { SONIM_TITLE_STYLE } from '@/design/tokens.mobile';
 import { AppText, Drawer, DrawerItem } from '@/design/ui';
 import { AppSheet } from '@/design/sheet/AppSheet';
@@ -57,6 +57,8 @@ import {
   sonimStateTranslationKey,
   type SonimChatMessage,
 } from './sonimModel';
+import { CLEAN, CleanWordmark, CleanActionGlyph } from './CleanVisuals';
+import { useCleanRecording } from './useCleanRecording';
 import { SonimToolCards } from './SonimToolCards';
 
 type PickedAttachment = AssistantAttachment & { previewUri: string };
@@ -184,11 +186,6 @@ export function SonimScreen() {
     if (activeAssistantRef.current) cancelSonimGeneration(owner);
     if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
   }, [owner]);
-
-  const firstName = useMemo(() => {
-    const raw = account?.displayName?.trim() ?? '';
-    return raw ? raw.split(/\s+/)[0] : '';
-  }, [account?.displayName]);
 
   const rowDir = rowDirectionFor(theme.isRTL);
   const bottomComposerClearance = Math.max(insets.bottom, theme.space[2]);
@@ -432,11 +429,13 @@ export function SonimScreen() {
     [sendPrompt, t],
   );
 
+  const recording = useCleanRecording(`${owner}:${conversationId}`, text => setDraft(previous => previous ? `${previous} ${text}` : text));
+  const voiceBusy = recording.state !== 'idle';
   const canSend = (draft.trim().length > 0 || attachments.length > 0) && Boolean(sessionId && owned && conversationId);
   const assistantOffline = statusQuery.data?.ready === false;
 
   const content = (
-    <View style={styles.body}>
+    <View style={[styles.body, { backgroundColor: CLEAN.paper }]}>
       <View
         style={[
           styles.sonimHeader,
@@ -445,7 +444,7 @@ export function SonimScreen() {
             paddingTop: insets.top + theme.space[1],
             paddingBottom: theme.space[2],
             paddingHorizontal: gutter,
-            backgroundColor: theme.colors.canvas,
+            backgroundColor: CLEAN.paper,
             borderBottomColor: theme.colors.line,
           },
         ]}
@@ -464,24 +463,8 @@ export function SonimScreen() {
           <Ionicons name="menu-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
 
-        <View style={styles.headerCenter}>
-          <AppText style={[SONIM_TITLE_STYLE, { color: theme.colors.ink, fontFamily: FONTS.latin.bold }]}>
-            Clean
-          </AppText>
-        </View>
-
-        <Pressable
-          onPress={closeSonim}
-          accessibilityRole="button"
-          accessibilityLabel={t('common.close')}
-          style={({ pressed }) => [
-            styles.headerBtn,
-            { opacity: pressed ? theme.opacity.subtle : 1 },
-          ]}
-          testID="sonim-close"
-        >
-          <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-        </Pressable>
+        <View style={styles.headerCenter}><CleanWordmark /></View>
+        <View style={styles.headerBtn} />
       </View>
 
       <ScrollView
@@ -519,7 +502,7 @@ export function SonimScreen() {
               testID="sonim-new-chat"
             >
               <Ionicons name="refresh-outline" size={theme.iconSize.xs} color={theme.colors.ink} accessibilityElementsHidden />
-              <AppText variant="captionStrong" >
+              <AppText variant="captionStrong" color={CLEAN.ink}>
                 {t('sonim.newChat')}
               </AppText>
             </Pressable>
@@ -546,65 +529,30 @@ export function SonimScreen() {
 
         {messages.length === 0 ? (
           <View style={styles.welcomeWrap} testID="sonim-welcome">
-            <View
-              style={[
-                styles.heroMarkWrap,
-                {
-                  backgroundColor: theme.colors.surface,
-                  borderColor: theme.colors.line,
-                  borderRadius: theme.radius.full,
-                },
-              ]}
-            >
-              <TabSonimIcon size={theme.iconSize.lg} color={theme.colors.ink} focused />
+            <View style={{ alignSelf: 'stretch', backgroundColor: CLEAN.bubble, borderRadius: theme.radius.xl, padding: theme.space[4], gap: theme.space[2] }}>
+              <AppText style={{ ...theme.text('body'), color: CLEAN.text, fontFamily: FONTS.latin.bold }}>{t('clean.welcome')}</AppText>
+              <AppText style={{ ...theme.text('caption'), color: CLEAN.text }}>{t('clean.disclaimer')}</AppText>
             </View>
 
-            <AppText variant="h3" align="center">
-              {firstName ? t('sonim.greetingNamed', { name: firstName }) : t('sonim.greeting')}
-            </AppText>
-            <AppText variant="subtitle" align="center">
-              {t('sonim.subtitle')}
-            </AppText>
-            <AppText variant="body" color={theme.colors.muted} align="center" style={styles.welcomeBody}>
-              {t('sonim.body')}
-            </AppText>
-
             <View style={styles.actionsGrid}>
-              {quickActions.map((action) => (
+              {quickActions.filter(action => ['lens', 'search', 'price'].includes(action.id)).sort((a, b) => ['lens', 'search', 'price'].indexOf(a.id) - ['lens', 'search', 'price'].indexOf(b.id)).map((action) => (
                 <Pressable
                   key={action.id}
                   onPress={action.onPress}
                   accessibilityRole="button"
-                  accessibilityLabel={`${action.title} — ${action.subtitle}`}
+                  accessibilityLabel={action.title}
                   style={({ pressed }) => [
                     styles.actionCard,
                     {
-                      backgroundColor: theme.colors.surface,
-                      borderColor: theme.colors.line,
-                      borderRadius: theme.radius.card,
+                      backgroundColor: CLEAN.bubble,
+                      borderColor: CLEAN.bubble,
+                      borderRadius: theme.radius.full,
                       opacity: pressed ? theme.opacity.subtle : 1,
                     },
                   ]}
                   testID={`sonim-action-${action.id}`}
                 >
-                  <View
-                    style={[
-                      styles.actionIconWrap,
-                      {
-                        backgroundColor: theme.colors.canvas,
-                        borderColor: theme.colors.line,
-                        borderRadius: theme.radius.control,
-                      },
-                    ]}
-                  >
-                    <Ionicons name={action.icon} size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
-                  </View>
-                  <AppText variant="label" >
-                    {action.title}
-                  </AppText>
-                  <AppText variant="caption" color={theme.colors.muted}>
-                    {action.subtitle}
-                  </AppText>
+                  <AppText style={{ ...theme.text('label'), fontFamily: theme.isRTL ? FONTS.arabic.regular : FONTS.latin.regular, color: CLEAN.text }}>{action.title}</AppText>
                 </Pressable>
               ))}
             </View>
@@ -640,19 +588,19 @@ export function SonimScreen() {
                         ))}
                       </View>
                     ) : null}
-                    <View
+                    {displayText ? <View
                       style={[
                         styles.userBubble,
                         {
-                          backgroundColor: theme.colors.ink,
-                          borderRadius: theme.radius.lg,
+                          backgroundColor: CLEAN.bubble,
+                          borderRadius: theme.radius.xl,
                         },
                       ]}
                     >
-                      <AppText variant="body" color={theme.colors.canvas}>
+                      <AppText variant="label" style={{ fontFamily: theme.isRTL ? FONTS.arabic.regular : FONTS.latin.regular }} color={CLEAN.text}>
                         {displayText}
                       </AppText>
-                    </View>
+                    </View> : null}
                   </View>
                 );
               }
@@ -663,21 +611,21 @@ export function SonimScreen() {
                     style={[
                       styles.assistantBubble,
                       {
-                        backgroundColor: theme.colors.surface,
-                        borderColor: theme.colors.line,
+                        backgroundColor: CLEAN.paper,
+                        borderColor: CLEAN.paper,
                         borderRadius: theme.radius.card,
                       },
                     ]}
                   >
                     <View style={[styles.assistantHead, { flexDirection: rowDir }]}>
                       <TabSonimIcon size={theme.iconSize.xs} color={theme.colors.ink} focused />
-                      <AppText variant="captionStrong" >
+                      <AppText variant="captionStrong" color={CLEAN.ink}>
                         {t('tabs.sonim')}
                       </AppText>
                     </View>
 
                     {displayText ? (
-                      <AppText variant="body">{displayText}</AppText>
+                      <AppText variant="label" style={{ fontFamily: theme.isRTL ? FONTS.arabic.regular : FONTS.latin.regular }} color={CLEAN.ink}>{displayText}</AppText>
                     ) : null}
 
                     {isLastAssistant && isStreaming && streamingState ? (
@@ -757,7 +705,7 @@ export function SonimScreen() {
         style={[
           styles.composerOuter,
           {
-            backgroundColor: theme.colors.canvas,
+            backgroundColor: CLEAN.paper,
             borderTopColor: theme.colors.line,
             paddingHorizontal: gutter,
             paddingBottom: keyboardOpen ? theme.space[2] : bottomComposerClearance,
@@ -793,97 +741,22 @@ export function SonimScreen() {
           </View>
         ) : null}
 
-        <View
-          style={[
-            styles.composerBox,
-            {
-              backgroundColor: theme.colors.surface,
-              borderColor: BRAND.secondaryBlue,
-              borderRadius: theme.radius.xl,
-              flexDirection: rowDir,
-            },
-          ]}
-        >
-          <Pressable
-            onPress={() => { setAttachmentError(false); setAttachmentOpen(true); }}
-            disabled={isStreaming || attachments.length >= ASSISTANT_MAX_ATTACHMENTS}
-            accessibilityRole="button"
-            accessibilityLabel={t('sonim.attach')}
-            style={({ pressed }) => [
-              styles.composerIconBtn,
-              {
-                opacity:
-                  isStreaming || attachments.length >= ASSISTANT_MAX_ATTACHMENTS
-                    ? theme.opacity.disabled
-                    : pressed
-                      ? theme.opacity.subtle
-                      : 1,
-              },
-            ]}
-            testID="sonim-attach"
-          >
-            <Ionicons name="add-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-          </Pressable>
-
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={t('sonim.placeholder')}
-            placeholderTextColor={theme.colors.muted}
-            selectionColor={theme.colors.selection}
-            multiline
-            maxLength={ASSISTANT_MAX_CHARS}
-            textAlign={theme.isRTL ? 'right' : 'left'}
-            style={[
-              theme.text('body'),
-              theme.direction,
-              styles.input,
-              { color: theme.colors.ink },
-            ]}
-            testID="sonim-input"
-          />
-
-          {isStreaming ? (
-            <Pressable
-              onPress={stopGeneration}
-              accessibilityRole="button"
-              accessibilityLabel={t('sonim.stop')}
-              style={({ pressed }) => [
-                styles.sendCircle,
-                {
-                  backgroundColor: theme.colors.ink,
-                  borderRadius: theme.radius.full,
-                  opacity: pressed ? theme.opacity.subtle : 1,
-                },
-              ]}
-              testID="sonim-stop"
-            >
-              <Ionicons name="stop-outline" size={theme.iconSize.sm} color={theme.colors.canvas} accessibilityElementsHidden />
-            </Pressable>
-          ) : (
-            <Pressable
-              onPress={() => { void sendPrompt(); }}
-              disabled={!canSend}
-              accessibilityRole="button"
-              accessibilityLabel={t('sonim.send')}
-              style={({ pressed }) => [
-                styles.sendCircle,
-                {
-                  backgroundColor: canSend ? theme.colors.ink : theme.colors.disabled,
-                  borderRadius: theme.radius.full,
-                  opacity: pressed ? theme.opacity.subtle : 1,
-                },
-              ]}
-              testID="sonim-send"
-            >
-              <Ionicons
-                name="arrow-up-outline"
-                size={theme.iconSize.sm}
-                color={canSend ? theme.colors.canvas : theme.colors.disabledText}
-                accessibilityElementsHidden
-              />
-            </Pressable>
-          )}
+        {recording.error ? <AppText accessibilityRole="alert" variant="caption" color={CLEAN.ink}>{t('clean.voiceError')}</AppText> : null}
+        <View style={[styles.composerBox, { backgroundColor: CLEAN.paper, borderColor: CLEAN.line, borderRadius: theme.radius.xl }]}>
+          {voiceBusy ? <View style={{ flexDirection: rowDir, alignItems: 'center', minHeight: 40, gap: 8 }}>
+            <AppText color={CLEAN.ink}>{recording.state === 'recording' ? t('clean.recording') : t('clean.processing')}</AppText>
+            <Pressable onPress={recording.cancel} accessibilityRole="button" accessibilityLabel={t('common.cancel')} style={styles.composerIconBtn}><Ionicons name="close-outline" size={theme.iconSize.md} color={CLEAN.ink} /></Pressable>
+          </View> : <TextInput value={draft} onChangeText={setDraft} placeholder={t('sonim.placeholder')} placeholderTextColor={CLEAN.muted} selectionColor={CLEAN.text} multiline maxLength={ASSISTANT_MAX_CHARS} textAlign={theme.isRTL ? 'right' : 'left'} style={[theme.text('body'), theme.direction, styles.input, { color: CLEAN.ink }]} testID="sonim-input" />}
+          <View style={{ flexDirection: rowDir, alignItems: 'center', justifyContent: 'space-between' }}>
+            <Pressable onPress={() => { setAttachmentError(false); setAttachmentOpen(true); }} disabled={isStreaming || voiceBusy || attachments.length >= ASSISTANT_MAX_ATTACHMENTS} accessibilityRole="button" accessibilityLabel={t('sonim.attach')} style={styles.composerIconBtn} testID="sonim-attach"><Ionicons name="add-outline" size={theme.iconSize.md} color={CLEAN.ink} /></Pressable>
+            <View style={{ flexDirection: rowDir, alignItems: 'center', gap: 4 }}>
+              <View style={{ width: 1, height: 24, backgroundColor: CLEAN.line }} />
+              {recording.state === 'recording' ? <Pressable onPress={() => { void recording.finish(); }} accessibilityRole="button" accessibilityLabel={t('clean.finishRecording')} style={styles.composerIconBtn} testID="clean-recording-stop"><CleanActionGlyph state="recording" /></Pressable> : <>
+                <Pressable onPress={() => { void recording.start(); }} disabled={isStreaming || voiceBusy || statusQuery.data?.voiceReady !== true} accessibilityRole="button" accessibilityLabel={t('clean.record')} style={styles.composerIconBtn} testID="clean-mic"><Ionicons name="mic-outline" size={theme.iconSize.md} color={CLEAN.ink} /></Pressable>
+                <Pressable onPress={isStreaming ? stopGeneration : canSend ? () => { void sendPrompt(); } : () => { void recording.start(); }} disabled={voiceBusy || (!isStreaming && !canSend && statusQuery.data?.voiceReady !== true)} accessibilityRole="button" accessibilityLabel={isStreaming ? t('sonim.stop') : canSend ? t('sonim.send') : t('clean.record')} style={styles.composerIconBtn} testID={isStreaming ? 'sonim-stop' : 'sonim-send'}><CleanActionGlyph state={isStreaming || voiceBusy ? 'busy' : canSend ? 'send' : 'wave'} /></Pressable>
+              </>}
+            </View>
+          </View>
         </View>
       </View>
     </View>
@@ -892,7 +765,7 @@ export function SonimScreen() {
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.canvas }]}>
       {Platform.OS === 'ios' ? (
-        <KeyboardAvoidingView style={styles.body} behavior="padding">
+        <KeyboardAvoidingView style={[styles.body, { backgroundColor: CLEAN.paper }]} behavior="padding">
           {content}
         </KeyboardAvoidingView>
       ) : (
@@ -925,6 +798,7 @@ export function SonimScreen() {
           </Pressable>
         </View>
 
+        <DrawerItem icon="close-outline" label={t('common.close')} onPress={closeSonim} />
         <DrawerItem
           icon="add-outline"
           label={t('sonim.newChat')}
@@ -1001,7 +875,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   noticeBanner: { borderWidth: 1, padding: 12 },
-  welcomeWrap: { alignItems: 'center', paddingTop: 12, gap: 10 },
+  welcomeWrap: { alignItems: 'flex-start', paddingTop: 12, gap: 10 },
   heroMarkWrap: {
     width: 64,
     height: 64,
@@ -1012,7 +886,7 @@ const styles = StyleSheet.create({
   },
   welcomeBody: { maxWidth: 340 },
   actionsGrid: { width: '100%', gap: 10, marginTop: 12 },
-  actionCard: { borderWidth: 1, padding: 12, gap: 4 },
+  actionCard: { alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 10, minHeight: 44 },
   actionIconWrap: {
     width: 36,
     height: 36,
@@ -1047,7 +921,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: 8,
     paddingVertical: 6,
-    alignItems: 'flex-end',
     gap: 8,
   },
   retryAction: { minHeight: 40, justifyContent: 'center', alignSelf: 'flex-start' },
@@ -1059,7 +932,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   input: {
-    flex: 1,
     minHeight: 36,
     maxHeight: 112,
     paddingVertical: 6,

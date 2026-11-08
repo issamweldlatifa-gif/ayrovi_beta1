@@ -31,9 +31,9 @@ describe('barre du bas transparente à coins arrondis compacts (5 onglets — st
   const navIcons = readFileSync(path.join(ROOT, 'src/design/TabNavIcons.tsx'), 'utf8');
   const tokensMobile = readFileSync(path.join(ROOT, 'src/design/tokens.mobile.ts'), 'utf8');
 
-  it('respecte l’ordre exact Accueil · Lens · AYWEBs · Sonim · Profil (+ cart masqué) et masque la barre sur Lens, Sonim et Panier', () => {
+  it('respecte l’ordre exact Accueil · Lens · Clean · AYWEBs · Profil (+ cart masqué) et masque la barre sur Lens, Sonim et Panier', () => {
     const names = Array.from(layout.matchAll(/<Tabs\.Screen[\s\S]*?\bname="([^"]+)"/g), (m) => m[1]);
-    expect(names).toEqual(['index', 'lens', 'aywebs', 'sonim', 'account', 'social', 'cart']);
+    expect(names).toEqual(['index', 'lens', 'sonim', 'aywebs', 'account', 'social', 'cart']);
     expect(layout).toMatch(/name="cart"\s+options=\{\{\s*href:\s*null,\s*tabBarStyle:\s*\{\s*display:\s*'none'\s*\}/);
     expect(layout).toContain('backBehavior="history"');
     const lensBlock = /<Tabs\.Screen\s+name="lens"[\s\S]*?\/>/.exec(layout)?.[0] ?? '';

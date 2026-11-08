@@ -12,6 +12,7 @@ import cleanPalette from '../../../../assets/brand/navigation-palette.json';
 
 export type TabNavIconProps = { color: ColorValue; size?: number; focused?: boolean };
 export const TAB_ICON_STROKE = 2.2;
+export const NAV_ICON_SIZE = 28;
 
 function useIcon(size?: number) {
   const theme = useTheme();
@@ -22,8 +23,8 @@ function StrokeGlyph({ kind, size }: TabNavIconProps & { kind: 'lens' | 'search'
   return <View style={{ width: dim, height: dim, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
     <Svg width={dim} height={dim} viewBox="0 0 24 24" fill="none" stroke={ink} strokeWidth={TAB_ICON_STROKE} strokeLinecap="round" strokeLinejoin="round">
       {kind === 'lens' ? <>
-        <Path d="M3 10V7Q3 4 6 4H8L9.5 2H14.5L16 4H18Q21 4 21 7V13M3 14V18Q3 21 6 21H13" />
-        <Circle cx={12} cy={11} r={3.5} /><Circle cx={19} cy={19} r={2.5} />
+        <Path d="M14 5H8L6.5 7H5Q3 7 3 10V18Q3 21 6 21H18Q21 21 21 18V11" />
+        <Circle cx={11} cy={14} r={3.5} /><Path d="M18 2L19 5L22 6L19 7L18 10L17 7L14 6L17 5Z" />
       </> : kind === 'search' ? <>
         <Path d="M11 3A8 8 0 1 0 19 11M16.7 16.7L22 22M17 2L18.4 5.6L22 7L18.4 8.4L17 12L15.6 8.4L12 7L15.6 5.6Z" />
       </> : <><Circle cx={12} cy={6} r={3.5} /><Path d="M3 21V19A9 9 0 0 1 21 19V21Z" /></>}

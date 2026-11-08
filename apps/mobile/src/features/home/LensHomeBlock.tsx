@@ -10,9 +10,9 @@ import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 
-import { apiGetData, mediaUrl } from '@/api/client';
+import { apiGetData } from '@/api/client';
 import { AppImage } from '@/design/appImage';
-import { MEDIA_RATIO } from '@/design/tokens.mobile';
+const CLEAN_HOME_RATIO = 16 / 9;
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
@@ -32,29 +32,17 @@ export function LensHomeBlock() {
   const lens = useLensHome();
   const content = lens.data ?? null;
 
-  if (!content || !content.enabled || !content.title) return null;
+  if (!content || !content.enabled) return null;
 
   return (
     <View style={styles.section} testID="home-lens">
-      {content.eyebrow ? (
-        <AppText variant="caption" color={theme.colors.muted}>{content.eyebrow}</AppText>
-      ) : null}
-      <AppText variant="h3" >{content.title}</AppText>
-      {content.description ? (
-        <AppText variant="body" color={theme.colors.secondary}>{content.description}</AppText>
-      ) : null}
-      {content.poster ? (
-        <AppImage
-          uri={mediaUrl(content.poster)}
-          style={[styles.image, { borderRadius: theme.radius.card }]}
-          contentFit="cover"
-          accessibilityLabel={content.title}
-          decorative={false}
-        />
-      ) : null}
+      <AppText variant="caption" color={theme.colors.muted}>Clean</AppText>
+      <AppText variant="h3">{t('home.clean.title')}</AppText>
+      <AppText variant="body" color={theme.colors.secondary}>{t('home.clean.body')}</AppText>
+      <AppImage localSource={require('../../../../../assets/brand/clean/promo.webp')} style={[styles.image, { borderRadius: theme.radius.card }]} contentFit="contain" accessibilityLabel={t('home.clean.title')} decorative={false} />
       <Button
-        label={content.ctaLabel || t('home.lens.cta')}
-        onPress={() => router.push('/lens')}
+        label={t('home.clean.cta')}
+        onPress={() => router.push('/(tabs)/sonim')}
         tone="quiet"
         block
         testID="home-lens-open"
@@ -65,5 +53,5 @@ export function LensHomeBlock() {
 
 const styles = StyleSheet.create({
   section: { paddingVertical: 12, gap: 10 },
-  image: { width: '100%', aspectRatio: MEDIA_RATIO.square },
+  image: { width: '100%', aspectRatio: CLEAN_HOME_RATIO },
 });

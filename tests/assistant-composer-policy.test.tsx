@@ -33,6 +33,8 @@ describe('SONIM composer interaction policy', () => {
     expect(html).toContain('Annuler l’enregistrement');
     expect(html).toContain('1:05');
     expect(html).not.toContain('<textarea');
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*aria-label="Envoyer"/);
+    expect(html).not.toMatch(/aria-label="Envoyer"/);
+    expect(html).toContain('Terminer l’enregistrement');
+    expect(html.match(/data-brand="clean-composer-state"/g)).toHaveLength(1);
   });
 });

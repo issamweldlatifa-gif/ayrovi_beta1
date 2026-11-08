@@ -1,6 +1,7 @@
 import { AssistantMediaPending } from './AssistantMediaPending';
+import { CleanActionGlyph } from './CleanVisuals';
 import React from 'react';
-import { ArrowUp, FileText, Mic, Pause, Plus, VoiceWave, X } from '../QatafoIcons';
+import { FileText, Mic, Plus, X } from '../QatafoIcons';
 import { AssistantAttachment } from './types';
 import { useLocale } from '../../i18n/LocaleContext';
 import { recordingTime, shouldSubmitComposer } from './composerPolicy';
@@ -36,7 +37,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
   isGenerating,
   isRecording,
   isTranscribing,
-  voiceMode = false,
+  voiceMode: _voiceMode = false,
   capturePending = false, pendingAttachments = 0, onCancelAttachments, onCancelTranscription,
   recordSeconds,
   onChange,
@@ -68,7 +69,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
   };
 
   return (
-    <footer data-assistant-composer className={`relative z-30 max-h-[65%] shrink-0 overflow-y-auto px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] ${isDark ? 'bg-ink' : 'bg-surface'}`}>
+    <footer data-clean-composer data-assistant-composer className={`relative z-30 max-h-[65%] shrink-0 overflow-y-auto px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] ${isDark ? 'bg-ink' : 'bg-surface'}`}>
       <div className={`rounded-control px-4 pb-2.5 pt-3.5 shadow-card ring-1 transition ${isDark ? 'bg-ink-deep ring-white/10' : 'bg-white ring-black/5'}`}>
         {pendingAttachments > 0 && <AssistantMediaPending phase="images" count={pendingAttachments} onCancel={onCancelAttachments}/>}
         {attachments.length > 0 && (
@@ -86,7 +87,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
         {capturePending ? <AssistantMediaPending phase="permission" onCancel={onCancelTranscription}/> : isRecording ? (
           <div className="mb-3 flex min-h-11 flex-wrap items-center justify-between gap-3">
             <span className={`text-sm ${isDark ? 'text-white' : 'text-ink'}`}>
-              <span role="status">{tr('Enregistrement en cours', 'جارٍ التسجيل')}</span>{' '}
+              <span aria-hidden="true">● ● ● </span><span role="status">{tr('Enregistrement en cours', 'جارٍ التسجيل')}</span>{' '}
               <bdi className="tabular-nums" dir="ltr">{recordingTime(recordSeconds)}</bdi>
             </span>
             <button type="button" onClick={onCancelRecording}
@@ -102,8 +103,8 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
             value={value}
             onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
-            rows={2}
-            placeholder={tr("Votre message…", 'اكتب رسالتك...')}
+            rows={1}
+            placeholder={tr('Demander à Clean', 'اسأل Clean')}
             className={`mb-2 min-h-[42px] max-h-32 w-full resize-none bg-transparent py-1 text-base leading-6 outline-none placeholder:text-muted ${isDark ? 'text-white' : 'text-ink'}`}
             aria-label={tr('Votre message', 'رسالتك')}
           />
@@ -130,43 +131,21 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
               disabled={isGenerating || isTranscribing || mediaWaiting}
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${
                 isRecording
-                  ? 'animate-pulse bg-danger text-white'
+                  ? 'bg-transparent'
                   : surfaceButton
               }`}
               aria-label={isRecording ? tr('Terminer l’enregistrement', 'إنهاء التسجيل') : tr('Enregistrer un message vocal', 'تسجيل صوتي')}
               title={isRecording ? tr('Terminer l’enregistrement', 'إنهاء التسجيل') : tr('Enregistrer un message vocal', 'تسجيل صوتي')}
             >
-              <Mic className="h-6 w-6" />
+              <>{isRecording ? <CleanActionGlyph state="recording" /> : <Mic className="h-6 w-6" />}</>
             </button>
 
-            {/* 2. Send Text Button (when text or attachments are present or generating) */}
-            {(canSend || isGenerating) && (
-              <button
-                type="button"
-                onClick={isGenerating ? onStop : onSend}
-                disabled={isTranscribing || isRecording || mediaWaiting}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-cta text-cta-ink shadow-md transition hover:bg-cta-hover active:scale-90 disabled:pointer-events-none disabled:opacity-30"
-                aria-label={isGenerating ? tr('Arrêter la réponse', 'إيقاف الرد') : tr('Envoyer', 'إرسال')}
-              >
-                {isGenerating ? <Pause className="h-6 w-6 fill-current" /> : <ArrowUp className="h-6 w-6" />}
-              </button>
-            )}
+            {!isRecording && <button type="button" onClick={isGenerating ? onStop : canSend ? onSend : onToggleVoiceMode ?? onStartRecording}
+              disabled={isTranscribing || mediaWaiting} className="clean-composer-action"
+              aria-label={isGenerating ? tr('Arrêter la réponse', 'إيقاف الرد') : canSend ? tr('Envoyer', 'إرسال') : tr('Mode vocal', 'الوضع الصوتي')}>
+              <CleanActionGlyph state={isGenerating || isTranscribing ? 'busy' : canSend ? 'send' : 'wave'} />
+            </button>}
 
-            {/* 3. Voice Mode Button (Mode Switcher strictly to Voice Mode) */}
-            {onToggleVoiceMode && (
-              <button
-                type="button"
-                onClick={onToggleVoiceMode}
-                disabled={isGenerating || isTranscribing || isRecording || mediaWaiting}
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-line bg-white text-ink shadow-sm transition hover:bg-surface active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${
-                  voiceMode ? 'ring-2 ring-white animate-pulse' : ''
-                }`}
-                aria-label={tr('Mode vocal', 'الوضع الصوتي')}
-                title={tr('Activer le mode vocal', 'دخول الوضع الصوتي')}
-              >
-                <VoiceWave className="h-6 w-6" />
-              </button>
-            )}
           </div>
         </div>
       </div>

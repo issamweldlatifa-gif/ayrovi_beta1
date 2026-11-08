@@ -1,3 +1,4 @@
+import { CLEAN } from './CleanVisuals';
 import { MerchantRating } from '../../ayrovix/components/MerchantRating';
 import React, { useEffect, useRef } from 'react';
 import { AssistantMessageActions } from './AssistantMessageActions';
@@ -47,11 +48,6 @@ const primaryActions = [
   { title: ['Suivre une commande', 'تتبع طلب'], subtitle: ['Voir votre commande', 'عرض طلبك'], prompt: ['Je veux suivre ma commande.', 'أريد تتبع طلبي.'] },
 ] as const;
 
-const secondaryActions = [
-  { text: ['Découvrir ZAYROVI', 'اكتشف ZAYROVI'], prompt: ['Présente-moi les services ZAYROVI.', 'عرّفني بخدمات ZAYROVI.'] },
-  { text: ['Contacter le support', 'التواصل مع الدعم'], prompt: ['J’ai besoin d’aide du support ZAYROVI.', 'أحتاج إلى مساعدة دعم ZAYROVI.'] },
-] as const;
-
 const CandidateImage = ({ product }: { product: AyrovixCandidate }) => {
   const images = [...new Set([product.image, ...(product.images || [])].filter(Boolean))] as string[];
   const [index, setIndex] = React.useState(0);
@@ -90,7 +86,7 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
 export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
   messages, historyNotice, isGenerating, motionState, isDark, copiedId, feedbackPending = {}, feedback, selectedProduct, productBusyId, isOrdering,
   onPrompt, onCopy, onRegenerate, onFeedback, onOpenComment, onOpenLens, onSelectProduct, onProductOrder, onOpenCart, onProductBack,
-  customerFirstName, assistantReady,
+  customerFirstName: _customerFirstName, assistantReady,
 }) => {
   const { locale, direction, isArabic, tr } = useLocale();
   const reader = useMessageReader(messages, locale);
@@ -119,52 +115,26 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
         {historyNotice}
         {!hasMessages ? (
           <div className="assistant-welcome flex flex-1 flex-col">
-            {/* Identité AI + accueil personnalisé */}
-            <div className="flex flex-col items-center text-center">
-              <h2 className={`assistant-editorial-greeting text-3xl font-normal leading-tight sm:text-3xl ${isDark ? 'text-white' : 'text-ink'}`}>
-                {tr('Bonjour', 'مرحبًا')}{customerFirstName ? ` ${customerFirstName}` : ''}
-              </h2>
-              <p className={`mt-1.5 text-sm font-bold ${isDark ? 'text-white/80' : 'text-ink'}`}>{tr('Que souhaitez-vous faire aujourd’hui ?', 'ماذا تريد أن تفعل اليوم؟')}</p>
-              <p className={`mt-3 max-w-sm text-sm leading-6 ${isDark ? 'text-muted' : 'text-muted'}`}>
-                {tr('Je peux analyser vos produits, vérifier les prix, rechercher des articles et vous accompagner dans vos commandes.', 'يمكنني تحليل منتجاتك والتحقق من الأسعار والبحث عن المنتجات ومساعدتك في طلباتك.')}
-              </p>
-              {assistantReady === false && (
-                <p className="mt-4 max-w-sm rounded-card border border-line bg-surface px-4 py-3 text-xs font-semibold leading-5 text-ink">
-                  {tr('L’assistant n’est pas encore activé sur ce serveur. Vous pouvez toujours utiliser Lens, le panier et le suivi de commande.', 'المساعد غير مفعّل بعد على هذا الخادم. يمكنك استخدام Lens والسلة وتتبع الطلب.')}
-                </p>
-              )}
+            <div className="clean-welcome" style={{ backgroundColor: CLEAN.bubble, color: CLEAN.text }}>
+              <strong>{tr('Bonjour, je suis Clean !', 'مرحبًا، أنا Clean!')}</strong>
+              <p>{tr('Posez-moi vos questions sur vos achats. Mes réponses sont générées par IA et peuvent contenir des erreurs.', 'اسألني عن مشترياتك. إجاباتي مولّدة بالذكاء الاصطناعي وقد تحتوي على أخطاء.')}</p>
             </div>
-
+            {assistantReady === false && <p role="status" className="text-sm">{tr('Clean est momentanément indisponible.', 'Clean غير متاح حاليًا.')}</p>}
             {/* Actions primaires — 2×2, même famille d’icônes */}
-            <div className="mt-6 grid w-full grid-cols-2 gap-2.5">
-              {primaryActions.map((item) => (
+            <div className="mt-5 flex flex-col items-start gap-3">
+              {[primaryActions[0], primaryActions[2], primaryActions[1]].map((item) => (
                 <button
                   key={item.title[0]}
                   type="button"
                   onClick={() => onPrompt(item.prompt[isArabic ? 1 : 0])}
-                  className="assistant-quick-card flex min-h-[92px] flex-col justify-center rounded-card p-4 text-start text-ink transition active:scale-[0.98]"
+                  className="clean-suggestion" style={{ backgroundColor: CLEAN.bubble, color: CLEAN.text }}
                 >
-                  <span className="relative z-[1] block text-sm font-extrabold leading-5">{item.title[isArabic ? 1 : 0]}</span>
-                  <span className="relative z-[1] mt-1 block text-xs font-semibold leading-4 text-muted">{item.subtitle[isArabic ? 1 : 0]}</span>
+                  <span className="text-sm font-normal leading-5">{item.title[isArabic ? 1 : 0]}</span>
                 </button>
               ))}
             </div>
 
-            {/* Actions secondaires — poids visuel léger */}
-            <div className="mt-4 flex items-center justify-center gap-1">
-              {secondaryActions.map((item, index) => (
-                <React.Fragment key={item.text[0]}>
-                  {index > 0 && <span className={`mx-1.5 h-3.5 w-px ${isDark ? 'bg-white/10' : 'bg-line'}`} aria-hidden="true" />}
-                  <button
-                    type="button"
-                    onClick={() => onPrompt(item.prompt[isArabic ? 1 : 0])}
-                    className={`flex min-h-11 items-center rounded-control px-3 text-xs font-bold transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white/90' : 'text-muted hover:bg-surface hover:text-ink'}`}
-                  >
-                    {item.text[isArabic ? 1 : 0]}
-                  </button>
-                </React.Fragment>
-              ))}
-            </div>
+
           </div>
         ) : (
           <div className="space-y-5">
@@ -183,15 +153,15 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                   />
                 )}
                 <div className={message.role === 'user' ? 'min-w-0 max-w-[82%]' : hasPresentation ? 'min-w-0 flex-1 basis-[min(100%,20rem)]' : 'min-w-0 max-w-[82%]'}>
-                  <div className={`rounded-card px-4 py-3 text-sm leading-6 ${message.role === 'user' ? 'bg-ink text-white shadow-card' : isDark ? 'border border-white/10 bg-white/[0.055] text-white' : 'border border-line bg-white text-ink shadow-card'}`}>
+                  <div className={`rounded-card px-4 py-3 text-sm leading-6 ${message.role === 'user' ? 'clean-user-envelope' : 'clean-assistant-envelope'}`} >
                     {message.role === 'user' && message.fromVoice && (
-                      <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black text-white">
+                      <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-black/5 px-2.5 py-0.5 text-xs font-normal text-black">
                         <Mic size={14} />
                         <span>{tr('Vocal', 'صوتي')}</span>
                       </span>
                     )}
                     {message.role === 'assistant' && message.incomplete && !isLastAssistantStreaming && <p data-incomplete-response role="status" className="ay-readable mb-2 text-xs text-muted">{tr('Réponse interrompue avant sa fin. Vous pouvez la régénérer.', 'توقف الرد قبل اكتماله. يمكنك إعادة توليده.')}</p>}
-                    {assistantText && <p className="ay-readable whitespace-pre-wrap">{assistantText}</p>}
+                    {assistantText && <p className="ay-readable whitespace-pre-wrap clean-message-text" style={message.role === 'user' ? { backgroundColor: CLEAN.bubble, color: CLEAN.text, borderRadius: 24, padding: '10px 16px' } : { color: CLEAN.ink }}>{assistantText}</p>}
                     {message.attachments?.length ? <div className="mt-2 space-y-2">{message.attachments.map((attachment) => <div key={attachment.id} className="overflow-hidden rounded-card border border-white/15 bg-ink/10">{attachment.preview ? <img src={attachment.preview} alt={attachment.name} className="max-h-48 w-full object-cover"/> : <p className="ay-readable px-3 py-2 text-xs">{attachment.name}</p>}</div>)}</div> : null}
                     {message.role === 'assistant' && <ToolPresentations message={message} isDark={isDark} selectedProduct={selectedProduct} productBusyId={productBusyId} isOrdering={isOrdering} onSelectProduct={onSelectProduct} onProductOrder={onProductOrder} onOpenCart={onOpenCart} onProductBack={onProductBack}/>}
                     {message.role === 'assistant' && message.lensSummary && <div className="mt-2 ay-readable text-xs text-muted">

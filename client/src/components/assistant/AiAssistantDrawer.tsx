@@ -853,6 +853,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   return (
     <div
       ref={viewportFrameRef}
+      data-clean-screen={!voiceMode || undefined}
       data-sonim-tone={isDark ? 'dark' : 'light'}
       data-ay-design="editorial" data-tone={isDark ? 'dark' : 'light'}
       className={`fixed z-[80] overflow-hidden overscroll-none [height:var(--assistant-viewport-height,100dvh)] [left:var(--assistant-viewport-left,0px)] [top:var(--assistant-viewport-top,0px)] [width:var(--assistant-viewport-width,100vw)] ${isDark ? 'bg-ink' : 'bg-surface'}`}
@@ -903,7 +904,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         ) : (
           <>
             <AssistantHeader
-              isDark={isDark}
+              isDark={false}
               onOpenMenu={() => navigation.pushLayer({ id: 'assistant:menu' })}
               onClose={handleCloseAssistant}
             />
@@ -928,7 +929,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                 isGenerating={isGenerating}
                 motionState={motionState}
                 assistantReady={assistantReady}
-                isDark={isDark}
+                isDark={false}
                 copiedId={copiedId}
                 feedback={feedback}
                 feedbackPending={feedbackPending}
@@ -958,7 +959,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                 onCancelAttachments={attachmentQueue.cancelPending}
                 capturePending={voiceNoteState === 'requesting'}
                 onCancelTranscription={cancelVoiceNote}
-                isDark={isDark}
+                isDark={false}
                 isGenerating={isGenerating}
                 isRecording={isRecording}
                 isTranscribing={isTranscribing}
