@@ -1,6 +1,7 @@
 /** Optional cursor protocol: legacy clients keep their array response. */
-export type SocialCursor = { at: string; id: string };
-export type SocialPage = { limit: number; cursor?: SocialCursor; anchor?: string };
+import type { SocialPage } from '../magazine/socialPagination';
+export type { SocialCursor, SocialPage } from '../magazine/socialPagination';
+export { socialCursor } from '../magazine/socialPagination';
 const validId = (id: unknown): id is string => typeof id === 'string' && /^[A-Za-z0-9_-]{1,120}$/.test(id);
 export function socialPage(query: Record<string, unknown>): SocialPage | undefined {
   if (query.limit === undefined && query.cursor === undefined && query.anchor === undefined) return;
@@ -18,7 +19,4 @@ export function socialPage(query: Record<string, unknown>): SocialPage | undefin
     page.anchor = query.anchor;
   }
   return page;
-}
-export function socialCursor(row: { publish_at: string; id: string }): string {
-  return Buffer.from(JSON.stringify({ at: row.publish_at, id: row.id })).toString('base64url');
 }

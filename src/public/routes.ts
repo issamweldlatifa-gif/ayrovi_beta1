@@ -1,5 +1,6 @@
 import { readPublicProducts } from '../catalogue/publicProducts';
-import { socialPage, socialCursor } from './socialPaging';
+import { socialPage } from './socialPaging';
+import { readPublishedSocial } from '../magazine/publicSocialReads';
 import { imageWork, writeImageCache } from '../services/imageWork';
 import { readPublicationFeedSettings } from '../services/publicationFeedSettings';
 import { PUBLICATION_CATEGORIES } from '../../shared/publicationFeed';
@@ -847,56 +848,20 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     let page: ReturnType<typeof socialPage>;
     try { page = socialPage(req.query); }
     catch { return res.status(400).json({ success: false, code: 'INVALID_PAGE', error: 'Invalid page cursor or limit.' }); }
-    const now = new Date().toISOString();
-    const params: unknown[] = [now];
-    let seek = '';
-    let position = page?.cursor;
-    if (page?.anchor) {
-      const anchor = db.get<any>("SELECT id,publish_at FROM publications WHERE id=? AND status='publie' AND publish_at<=?", page.anchor, now);
-      if (anchor) position = { id: anchor.id, at: anchor.publish_at };
-    }
-    if (position) {
-      seek = ' AND (pub.publish_at < ? OR (pub.publish_at = ? AND pub.id ' + (page?.anchor ? '<=' : '<') + ' ?))';
-      params.push(position.at, position.at, position.id);
-    }
-    if (page) params.push(page.limit + 1);
-    const selected = db.all<any>(`SELECT pub.id,pub.title,pub.subtitle,pub.channel_id,pub.image_url,pub.publish_at,pub.content_mode,${LINKED_PRODUCT_JOIN_SELECT}
-      FROM publications pub LEFT JOIN products p ON p.id=pub.product_id
-      WHERE pub.status='publie' AND pub.publish_at<=?${seek}
-      ORDER BY pub.publish_at DESC,pub.id DESC${page ? ' LIMIT ?' : ''}`, ...params);
-    const hasMore = page && selected.length > page.limit;
-    const rows = (page ? selected.slice(0, page.limit) : selected).map(withLinkedProduct);
+    const result = readPublishedSocial(db, 'publication', new Date().toISOString(), page);
+    const rows = result.items.map(withLinkedProduct);
     attachContentProducts(db, 'publication', rows);
-    res.json({ success: true, data: page ? { items: rows, nextCursor: hasMore ? socialCursor(selected[page!.limit - 1]) : null } : rows });
+    res.json({ success: true, data: page ? { items: rows, nextCursor: result.nextCursor } : rows });
   });
 
   router.get('/social/reels', (req, res) => {
     let page: ReturnType<typeof socialPage>;
     try { page = socialPage(req.query); }
     catch { return res.status(400).json({ success: false, code: 'INVALID_PAGE', error: 'Invalid page cursor or limit.' }); }
-    const now = new Date().toISOString();
-    const params: unknown[] = [now];
-    let seek = '';
-    let position = page?.cursor;
-    if (page?.anchor) {
-      const anchor = db.get<any>("SELECT id,publish_at FROM reels WHERE id=? AND status='publie' AND publish_at<=?", page.anchor, now);
-      if (anchor) position = { id: anchor.id, at: anchor.publish_at };
-    }
-    if (position) {
-      seek = ' AND (r.publish_at < ? OR (r.publish_at = ? AND r.id ' + (page?.anchor ? '<=' : '<') + ' ?))';
-      params.push(position.at, position.at, position.id);
-    }
-    if (page) params.push(page.limit + 1);
-    const selected = db.all<any>(`SELECT r.id,r.title,r.channel_id,r.description,r.video_url,r.poster_url,r.duration_seconds,r.publish_at,r.content_mode,
-      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='view') views,
-      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='like') likes,${LINKED_PRODUCT_JOIN_SELECT}
-      FROM reels r LEFT JOIN products p ON p.id=r.product_id
-      WHERE r.status='publie' AND r.publish_at<=?${seek}
-      ORDER BY r.publish_at DESC,r.id DESC${page ? ' LIMIT ?' : ''}`, ...params);
-    const hasMore = page && selected.length > page.limit;
-    const rows = (page ? selected.slice(0, page.limit) : selected).map(withLinkedProduct);
+    const result = readPublishedSocial(db, 'reel', new Date().toISOString(), page);
+    const rows = result.items.map(withLinkedProduct);
     attachContentProducts(db, 'reel', rows);
-    res.json({ success: true, data: page ? { items: rows, nextCursor: hasMore ? socialCursor(selected[page!.limit - 1]) : null } : rows });
+    res.json({ success: true, data: page ? { items: rows, nextCursor: result.nextCursor } : rows });
   });
 
   // Anciens endpoints non protégés : fermeture explicite. Le client courant utilise /social/interact.
