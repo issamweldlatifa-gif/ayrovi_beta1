@@ -215,3 +215,7 @@ npx vitest run tests/schema-inspection.test.ts tests/schema-review.test.ts tests
 ## دفعة كتابات التفاعل المنفّذة
 
 فُصل منطق like/reaction/comment/view/share مع معاملة تشمل التحقق والتكرار والكتابة والعدادات، دون تغيير المخطط. انظر [سجل فصل كتابات التفاعل](SOCIAL_INTERACTION_WRITE_BOUNDARY_AR.md) لعقود toggle والتكرار وأدلة rollback وما لم يُقَس بعد.
+
+## دفعة قراءة التعليقات والعدادات المنفّذة
+
+فُصلت قراءتا التعليقات والعدادات مع حفظ حدود 100 تعليق و60 مدخلًا، وإصلاح مفاتيح prototype في خريطة النتائج. التفاصيل وحدود الخصوصية والاختبارات في [سجل قراءة التفاعل](SOCIAL_ENGAGEMENT_READ_BOUNDARY_AR.md).

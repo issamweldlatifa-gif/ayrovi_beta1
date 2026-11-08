@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 type SocialStore = Pick<QatafoDatabase, 'get' | 'all' | 'run' | 'transaction'>;
 export type SocialTarget = { kind: 'story' | 'post'; source: 'story' | 'publication' | 'reel' };
-export function publishedSocialTarget(db: SocialStore, targetId: string, now: string): SocialTarget | null {
+export function publishedSocialTarget(db: Pick<SocialStore, 'get'>, targetId: string, now: string): SocialTarget | null {
     if (db.get(`SELECT 1 FROM stories WHERE id=? AND status='PUBLISHED' AND publish_at<=?
       AND (expires_at IS NULL OR expires_at>?)`, targetId, now, now)) return { kind: 'story', source: 'story' };
     if (db.get(`SELECT 1 FROM publications WHERE id=? AND status='publie' AND publish_at<=?`, targetId, now)) {

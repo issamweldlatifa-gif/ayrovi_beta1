@@ -1,4 +1,5 @@
-import { publishedSocialTarget, writeSocialInteraction } from '../magazine/socialInteractions';
+import { readSocialCounts, readSocialComments } from '../magazine/socialEngagementReads';
+import { writeSocialInteraction } from '../magazine/socialInteractions';
 import { readPublisherFollow, writePublisherFollow, writePublicationPreference } from '../magazine/publicationPreferences';
 import { preferenceTiming } from '../analytics/preferenceTiming';
 import { readPublicProducts } from '../catalogue/publicProducts';
@@ -872,34 +873,16 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
   /* ===== Interactions sociales persistantes et dédupliquées ===== */
   router.get('/social/counts', (req, res) => {
-    const ids = [...new Set(String(req.query.ids || '').split(',')
-      .map((value) => value.trim()).filter((value) => /^[A-Za-z0-9_-]{1,120}$/.test(value)).slice(0, 60))];
-    const out: Record<string, { likes: number; comments: number; views: number; shares: number }> = {};
-    for (const id of ids) out[id] = { likes: 0, comments: 0, views: 0, shares: 0 };
-    if (ids.length) {
-      const placeholders = ids.map(() => '?').join(',');
-      const rows = db.all<any>(`SELECT target_id,type,COUNT(*) n FROM story_interactions
-        WHERE target_id IN (${placeholders}) GROUP BY target_id,type`, ...ids);
-      for (const row of rows) {
-        const counts = out[row.target_id];
-        if (!counts) continue;
-        if (row.type === 'like') counts.likes = Number(row.n);
-        if (row.type === 'comment') counts.comments = Number(row.n);
-        if (row.type === 'view') counts.views = Number(row.n);
-        if (row.type === 'share') counts.shares = Number(row.n);
-      }
-    }
+    const out = readSocialCounts(db, req.query.ids);
     res.json({ success: true, data: out });
   });
 
   router.get('/social/comments', (req, res) => {
     const id = String(req.query.targetId || '').trim();
     if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) return res.status(400).json({ success: false, error: 'Cible invalide.' });
-    if (!publishedSocialTarget(db, id, new Date().toISOString())) return res.status(404).json({ success: false, error: 'Contenu introuvable.' });
-    const rows = db.all<any>(`SELECT i.id,i.text,i.created_at,c.display_name author,(SELECT parent_id FROM social_comment_replies r WHERE r.comment_id=i.id) parent_id
-      FROM story_interactions i LEFT JOIN customer_accounts c ON c.id=i.account_id
-      WHERE i.target_id=? AND i.type='comment' ORDER BY i.created_at DESC LIMIT 100`, id).reverse();
-    res.json({ success: true, data: rows.map((row) => ({ id: row.id, author: row.author || 'Membre ZAYROVI', text: row.text, createdAt: row.created_at, parentId: row.parent_id || null })) });
+    const result = readSocialComments(db, id, new Date().toISOString());
+    if (result.status === 'not_found') return res.status(404).json({ success: false, error: 'Contenu introuvable.' });
+    res.json({ success: true, data: result.data });
   });
 
   router.post('/social/interact', optionalCustomer(db), (req, res) => {
