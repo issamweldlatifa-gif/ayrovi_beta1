@@ -1,3 +1,4 @@
+import { imageWork, writeImageCache } from './imageWork';
 /*
  * CARTE PRODUIT « NATIVE » (16/10/2026) — montrer la photo marchande TELLE QUELLE
  * quand c'est visuellement propre, et réserver l'isolation d'arrière-plan aux cas
@@ -238,7 +239,10 @@ export interface NativeCardOptions {
  * fois, mise en cache avec le verdict), rendu 9/13 sans isolation, cache disque
  * par (URL, largeur). `{ file: null }` ⇒ la route compose (cas D) ou letterbox.
  */
-export async function getNativeCard(
+export function getNativeCard(rawUrl: string, width: number, options: NativeCardOptions = {}) {
+  return imageWork.share(`${nativeCacheDir()}|native|${width}|${rawUrl}`, () => loadNativeCard(rawUrl, width, options));
+}
+async function loadNativeCard(
   rawUrl: string,
   width: number,
   options: NativeCardOptions = {},
@@ -250,36 +254,39 @@ export async function getNativeCard(
   const jpgPath = path.join(dir, `${key}.jpg`);
   try {
     const cached = JSON.parse(fs.readFileSync(metaPath, 'utf8')) as NativeCardMeta;
-    if (cached.file == null) return cached;
+    if (cached.file == null && cached.kind !== 'unreadable') return cached;
+    // Old transient-error metadata must not disable the fast path indefinitely.
     if (cached.file === `${key}.jpg` && fs.existsSync(jpgPath)) return cached;
     fs.unlinkSync(metaPath);
   } catch { /* pas encore en cache */ }
 
-  let meta: NativeCardMeta = { file: null };
-  try {
-    const buffer = options.fetcher ? await options.fetcher(rawUrl) : await fetchRemoteImage(rawUrl);
-    const { data, info } = await sharp(buffer, { failOn: 'none', limitInputPixels: 40_000_000 })
-      .rotate().ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    const analysis = analyzeEdges({ data, width: info.width, height: info.height, channels: 4 });
-    const frame = frameSizeFor(width);
-    const plan = planNativeCard(analysis.kind, analysis.color, info.width / info.height, frame.width / frame.height);
-    meta = { file: null, kind: analysis.kind };
-    if (plan) {
-      const rendered = await renderNativeCard(buffer, width, plan);
-      if (rendered) {
-        fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(jpgPath, rendered.body);
-        meta = { file: `${key}.jpg`, mode: rendered.mode, kind: analysis.kind, type: 'jpeg', checks: rendered.checks };
+  return imageWork.limit(async (): Promise<NativeCardMeta> => {
+    let meta: NativeCardMeta = { file: null };
+    try {
+      const buffer = options.fetcher ? await options.fetcher(rawUrl) : await fetchRemoteImage(rawUrl);
+      const { data, info } = await sharp(buffer, { failOn: 'none', limitInputPixels: 40_000_000 })
+        .rotate().ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      const analysis = analyzeEdges({ data, width: info.width, height: info.height, channels: 4 });
+      const frame = frameSizeFor(width);
+      const plan = planNativeCard(analysis.kind, analysis.color, info.width / info.height, frame.width / frame.height);
+      meta = { file: null, kind: analysis.kind };
+      if (plan) {
+        const rendered = await renderNativeCard(buffer, width, plan);
+        if (rendered) {
+          fs.mkdirSync(dir, { recursive: true });
+          writeImageCache(jpgPath, rendered.body);
+          meta = { file: `${key}.jpg`, mode: rendered.mode, kind: analysis.kind, type: 'jpeg', checks: rendered.checks };
+        }
       }
+    } catch (error) {
+      if (error instanceof UnsafeUrlError || (error as { code?: string })?.code === 'UNSAFE_URL') throw error;
+      return { file: null, kind: 'unreadable' }; // transient failures are never persisted
     }
-  } catch (error) {
-    if (error instanceof UnsafeUrlError || (error as { code?: string })?.code === 'UNSAFE_URL') throw error;
-    meta = { file: null, kind: 'unreadable' };
-  }
-  try {
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(metaPath, JSON.stringify(meta));
-    pruneDiskCache(dir, { maxBytes: 192 * 1024 * 1024, maxFiles: 4_000 });
-  } catch { /* cache best-effort */ }
-  return meta;
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      writeImageCache(metaPath, JSON.stringify(meta));
+      pruneDiskCache(dir, { maxBytes: 192 * 1024 * 1024, maxFiles: 4_000 });
+    } catch { /* cache best-effort */ }
+    return meta;
+  });
 }

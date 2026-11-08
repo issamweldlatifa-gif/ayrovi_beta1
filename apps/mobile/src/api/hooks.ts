@@ -4,7 +4,7 @@
  * Un seul endroit décide des clés de requête et des durées de cache : les écrans
  * ne parlent jamais à `fetch` directement.
  */
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, type UseQueryResult } from '@tanstack/react-query';
 import {
   fetchHeroCarouselSettings, fetchHeroSlides, fetchHomeFeatured,
   fetchNavigation,
@@ -21,8 +21,8 @@ import { fetchFooterInfo, type FooterInfo } from './footer';
 import { HERO_DEMO_ENABLED } from '@/features/home/heroDemo';
 import { demoHeroSlides } from '@/features/home/heroDemoSlides';
 import {
-  fetchPublications, fetchReels, fetchSocialCounts, fetchStoryPublishers,
-  type Publication, type Reel, type SocialCounts, type StoryPublisher,
+  fetchPublications, fetchReelPage, fetchSocialCounts, fetchStoryPublishers,
+  type Publication, type SocialCounts, type StoryPublisher,
 } from './social';
 
 /**
@@ -108,8 +108,16 @@ export const useNews = (): UseQueryResult<NewsItem[]> =>
 export const useFooterInfo = (): UseQueryResult<FooterInfo> =>
   useQuery({ queryKey: queryKeys.footer, queryFn: ({ signal }) => fetchFooterInfo({ signal }), ...CONTENT });
 
-export const useReels = (enabled = true): UseQueryResult<Reel[]> =>
-  useQuery({ enabled, queryKey: queryKeys.reels, queryFn: ({ signal }) => fetchReels({ signal }), ...CONTENT });
+export const reelPagesKey = (anchor?: string) => [...queryKeys.reels, 'pages', anchor ?? ''] as const;
+export function useReels(enabled = true, anchor?: string) {
+  const result = useInfiniteQuery({
+    enabled, queryKey: reelPagesKey(anchor), initialPageParam: null as string | null,
+    queryFn: ({ signal, pageParam }) => fetchReelPage(pageParam, { signal }, anchor),
+    getNextPageParam: last => last.nextCursor ?? undefined,
+    ...CONTENT,
+  });
+  return { ...result, data: result.data?.pages.flatMap(page => page.items) };
+}
 
 export const usePublications = (): UseQueryResult<Publication[]> =>
   useQuery({ queryKey: queryKeys.publications, queryFn: ({ signal }) => fetchPublications({ signal }), ...CONTENT });

@@ -1,3 +1,4 @@
+import { ReelPageFooter } from '@/features/reels/ReelPageFooter';
 import { useIsFocused } from 'expo-router';
 import { useHiddenReels } from '@/features/reels/reelVisibility';
 /**
@@ -62,12 +63,13 @@ export default function ReelsScreen() {
       fallback="/(tabs)"
     >
       {reels.isPending ? <LoadingBlock /> : null}
-      {reels.isError ? <ErrorBlock error={reels.error} onRetry={() => reels.refetch()} /> : null}
+      {reels.isError && rows.length === 0 ? <ErrorBlock error={reels.error} onRetry={() => reels.refetch()} /> : null}
       {!reels.isPending && !reels.isError && rows.length === 0 ? <EmptyBlock>{t('social.empty')}</EmptyBlock> : null}
 
       <FlatList
         data={rows}
         keyExtractor={(item) => item.id}
+        ListFooterComponent={<ReelPageFooter query={reels} />}
         scrollEnabled={false}
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}

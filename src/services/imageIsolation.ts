@@ -1,3 +1,4 @@
+import { imageWork, writeImageCache } from './imageWork';
 /*
  * ISOLATION D'ARRIÈRE-PLAN (décision client 24/09/2026 — « يعزل خلفية المنتج »).
  * Pipeline serveur, gratuit, avec cache disque :
@@ -355,7 +356,10 @@ export function isPublicHttpUrl(rawUrl: string): boolean {
   }
 }
 
-export async function fetchRemoteImage(rawUrl: string): Promise<Buffer> {
+export function fetchRemoteImage(rawUrl: string): Promise<Buffer> {
+  return imageWork.share(`remote|${rawUrl}`, () => loadRemoteImage(rawUrl));
+}
+async function loadRemoteImage(rawUrl: string): Promise<Buffer> {
   const response = await fetchSafeRemote(rawUrl, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: { 'user-agent': 'AyroviBot/1.0 (+https://ayrovi.com)', accept: 'image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8' },
@@ -382,7 +386,10 @@ export interface CachedIsolation {
   file: string | null;
 }
 
-export async function getIsolatedImage(rawUrl: string): Promise<CachedIsolation> {
+export function getIsolatedImage(rawUrl: string) {
+  return imageWork.share(`${cacheDir()}|isolated|${isolationCacheInput(rawUrl, isolationProvider())}`, () => loadIsolatedImage(rawUrl));
+}
+async function loadIsolatedImage(rawUrl: string): Promise<CachedIsolation> {
   const provider = isolationProvider();
   const key = crypto.createHash('sha256').update(isolationCacheInput(rawUrl, provider)).digest('hex').slice(0, 32);
   const dir = cacheDir();
@@ -397,29 +404,31 @@ export async function getIsolatedImage(rawUrl: string): Promise<CachedIsolation>
     // Drop the stale pointer and recompute instead of serving a permanent 502.
     fs.unlinkSync(metaPath);
   } catch { /* pas encore en cache */ }
-  const buffer = await fetchRemoteImage(rawUrl);
-  let result = await isolateBuffer(buffer);
-  // 3ᵉ couche (24/09/2026) : fond COMPLEXE (pièce, miroir, extérieur) → le modèle
-  // local u2netp prend le relais. Absence du runtime/modèle → null silencieux et
-  // le comportement historique (original intact) s'applique.
-  if (result.kind === 'complex' && !result.png) {
-    try {
-      const segmented = await segmentBuffer(buffer);
-      if (segmented) result = { kind: 'segmented', png: segmented };
-    } catch { /* repli : original */ }
-  }
-  const meta: CachedIsolation = { kind: result.kind, file: null };
-  // Mode PhotoRoom : un échec (sans PNG) n'est pas persisté, il sera retenté.
-  if (!result.png && !shouldPersistNegative(provider)) return meta;
-  if (result.png) {
+  return imageWork.limit(async (): Promise<CachedIsolation> => {
+    const buffer = await fetchRemoteImage(rawUrl);
+    let result = await isolateBuffer(buffer);
+    // 3ᵉ couche (24/09/2026) : fond COMPLEXE (pièce, miroir, extérieur) → le modèle
+    // local u2netp prend le relais. Absence du runtime/modèle → null silencieux et
+    // le comportement historique (original intact) s'applique.
+    if (result.kind === 'complex' && !result.png) {
+      try {
+        const segmented = await segmentBuffer(buffer);
+        if (segmented) result = { kind: 'segmented', png: segmented };
+      } catch { /* repli : original */ }
+    }
+    const meta: CachedIsolation = { kind: result.kind, file: null };
+    // Mode PhotoRoom : un échec (sans PNG) n'est pas persisté, il sera retenté.
+    if (!result.png && !shouldPersistNegative(provider)) return meta;
+    if (result.png) {
+      fs.mkdirSync(dir, { recursive: true });
+      writeImageCache(pngPath, result.png);
+      meta.file = `${key}.png`;
+    }
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(pngPath, result.png);
-    meta.file = `${key}.png`;
-  }
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(metaPath, JSON.stringify(meta));
-  pruneDiskCache(dir, { maxBytes: 256 * 1024 * 1024, maxFiles: 4_000 });
-  return meta;
+    writeImageCache(metaPath, JSON.stringify(meta));
+    pruneDiskCache(dir, { maxBytes: 256 * 1024 * 1024, maxFiles: 4_000 });
+    return meta;
+  });
 }
 
 /** Chauffe le cache en arrière-plan — le premier visiteur ne paie plus le travail. */

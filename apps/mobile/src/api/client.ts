@@ -208,6 +208,7 @@ async function attempt<T>(method: string, path: string, options: SendOptions = {
   if (!form && body !== undefined) payloadHeaders['Content-Type'] = 'application/json';
 
   let response: Response;
+  let raw: string;
   try {
     response = await fetch(apiUrl(path), {
       method,
@@ -215,6 +216,7 @@ async function attempt<T>(method: string, path: string, options: SendOptions = {
       headers: payloadHeaders,
       ...(form ? { body: form } : body !== undefined ? { body: JSON.stringify(body) } : null),
     });
+    raw = await response.text();
   } catch (error) {
     // Certains ponts React Native rejettent un abort avec une Error générique :
     // l’état de notre signal reste alors la source de vérité.
@@ -231,7 +233,6 @@ async function attempt<T>(method: string, path: string, options: SendOptions = {
 
   // Corps lu en texte d'abord : une passerelle peut répondre du HTML d'erreur,
   // et `response.json()` lèverait alors une erreur de syntaxe trompeuse.
-  const raw = await response.text().catch(() => '');
   let payload: unknown = null;
   if (raw.trim()) {
     try {
@@ -307,14 +308,16 @@ export async function apiGetText(path: string, options: RequestOptions = {}): Pr
   const gate = withTimeout(signal, timeoutMs);
 
   let response: Response;
+  let raw: string;
   try {
     response = await fetch(apiUrl(path), {
       method: 'GET',
       signal: gate.signal,
       headers: { Accept: 'text/javascript, text/plain, */*', ...authHeaders('GET'), ...headers },
     });
+    raw = await response.text();
   } catch (error) {
-    if (isAbort(error)) {
+    if (isAbort(error) || gate.signal.aborted) {
       if (gate.timedOut()) {
         throw new ApiError('timeout', `Délai dépassé (${timeoutMs} ms) : ${path}`, { cause: error });
       }
@@ -325,7 +328,6 @@ export async function apiGetText(path: string, options: RequestOptions = {}): Pr
     gate.dispose();
   }
 
-  const raw = await response.text().catch(() => '');
   if (!response.ok) {
     throw failureFrom(response.status, null, parseRetryAfter(response.headers.get('retry-after')));
   }

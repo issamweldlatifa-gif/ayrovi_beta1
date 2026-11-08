@@ -1,3 +1,4 @@
+import { shouldRetryQuery, queryRetryDelay } from '@/api/queryRetry';
 /**
  * Racine de l'application : fournisseurs, polices, écran de démarrage.
  *
@@ -38,9 +39,9 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Un réseau mobile tunisien n'est pas un réseau de bureau : on réessaie
-      // deux fois, puis on montre l'erreur au lieu de tourner indéfiniment.
-      retry: 2,
+      // One recovery for transient failures; never retry auth, cancellation or bad data.
+      retry: shouldRetryQuery,
+      retryDelay: queryRetryDelay,
       staleTime: 30_000,
       refetchOnWindowFocus: false,
     },

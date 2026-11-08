@@ -1,3 +1,5 @@
+import { socialPage, socialCursor } from './socialPaging';
+import { imageWork, writeImageCache } from '../services/imageWork';
 import { readPublicationFeedSettings } from '../services/publicationFeedSettings';
 import { PUBLICATION_CATEGORIES } from '../../shared/publicationFeed';
 import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
@@ -233,6 +235,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         return;
       }
     } catch (error: any) {
+      if (error?.code === 'IMAGE_BUSY') { res.setHeader('Retry-After', '2'); return res.status(503).json({ success: false, code: 'IMAGE_BUSY', error: 'Image processing busy. Retry shortly.' }); }
       if (error instanceof UnsafeUrlError || error?.code === 'UNSAFE_URL') {
         return res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' });
       }
@@ -271,6 +274,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         return;
       }
     } catch (error: any) {
+      if (error?.code === 'IMAGE_BUSY') { res.setHeader('Retry-After', '2'); return res.status(503).json({ success: false, code: 'IMAGE_BUSY', error: 'Image processing busy. Retry shortly.' }); }
       if (error instanceof UnsafeUrlError || error?.code === 'UNSAFE_URL') {
         return res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' });
       }
@@ -286,6 +290,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         return;
       }
     } catch (error: any) {
+      if (error?.code === 'IMAGE_BUSY') { res.setHeader('Retry-After', '2'); return res.status(503).json({ success: false, code: 'IMAGE_BUSY', error: 'Image processing busy. Retry shortly.' }); }
       if (error instanceof UnsafeUrlError || error?.code === 'UNSAFE_URL') {
         return res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' });
       }
@@ -325,6 +330,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       res.send(letterboxed);
       return;
     } catch (error: any) {
+      if (error?.code === 'IMAGE_BUSY') { res.setHeader('Retry-After', '2'); return res.status(503).json({ success: false, code: 'IMAGE_BUSY', error: 'Image processing busy. Retry shortly.' }); }
       if (error instanceof UnsafeUrlError || error?.code === 'UNSAFE_URL') {
         return res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' });
       }
@@ -349,22 +355,28 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       const dir = process.env.AYROVI_PROXY_CACHE_DIR || path.resolve(process.cwd(), 'data', 'media-proxy');
       const key = crypto.createHash('sha256').update(`${width}|${url}`).digest('hex').slice(0, 32);
       const file = path.join(dir, `${key}.webp`);
-      if (!fs.existsSync(file)) {
-        const buffer = await fetchRemoteImage(url);
-        const resized = await sharp(buffer, { failOn: 'none', limitInputPixels: 40_000_000 })
-          .rotate()
-          .resize({ width, withoutEnlargement: true })
-          .webp({ quality: 78 })
-          .toBuffer();
-        fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(file, resized);
-        pruneDiskCache(dir, { maxBytes: 256 * 1024 * 1024, maxFiles: 5_000 });
-      }
+      await imageWork.share(`proxy|${file}`, async () => {
+        if (fs.existsSync(file)) return;
+        await imageWork.limit(async () => {
+          if (!fs.existsSync(file)) {
+            const buffer = await fetchRemoteImage(url);
+            const resized = await sharp(buffer, { failOn: 'none', limitInputPixels: 40_000_000 })
+              .rotate()
+              .resize({ width, withoutEnlargement: true })
+              .webp({ quality: 78 })
+              .toBuffer();
+            fs.mkdirSync(dir, { recursive: true });
+            writeImageCache(file, resized);
+            pruneDiskCache(dir, { maxBytes: 256 * 1024 * 1024, maxFiles: 5_000 });
+          }
+        });
+      });
       res.setHeader('Content-Type', 'image/webp');
       res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=2592000');
       res.send(fs.readFileSync(file));
       return;
     } catch (error: any) {
+      if (error?.code === 'IMAGE_BUSY') { res.setHeader('Retry-After', '2'); return res.status(503).json({ success: false, code: 'IMAGE_BUSY', error: 'Image processing busy. Retry shortly.' }); }
       if (error instanceof UnsafeUrlError || error?.code === 'UNSAFE_URL') {
         return res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' });
       }
@@ -836,25 +848,60 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     db.run(`INSERT INTO publication_preferences VALUES (?,?,?,?,?) ON CONFLICT(account_id,publication_id) DO UPDATE SET saved=excluded.saved,feedback=excluded.feedback,updated_at=excluded.updated_at`, account, req.params.id, saved ? 1 : 0, feedback, new Date().toISOString());
     res.json({ success: true, data: { saved, feedback } });
   });
-  router.get('/social/publications', (_req, res) => {
+  router.get('/social/publications', (req, res) => {
+    let page: ReturnType<typeof socialPage>;
+    try { page = socialPage(req.query); }
+    catch { return res.status(400).json({ success: false, code: 'INVALID_PAGE', error: 'Invalid page cursor or limit.' }); }
     const now = new Date().toISOString();
-    // Liste blanche stricte : les notes éditoriales et champs Admin ne quittent jamais l'API publique.
-    const rows = db.all<any>(`SELECT pub.id,pub.title,pub.subtitle,pub.channel_id,pub.image_url,pub.publish_at,pub.content_mode,${LINKED_PRODUCT_JOIN_SELECT}
+    const params: unknown[] = [now];
+    let seek = '';
+    let position = page?.cursor;
+    if (page?.anchor) {
+      const anchor = db.get<any>("SELECT id,publish_at FROM publications WHERE id=? AND status='publie' AND publish_at<=?", page.anchor, now);
+      if (anchor) position = { id: anchor.id, at: anchor.publish_at };
+    }
+    if (position) {
+      seek = ' AND (pub.publish_at < ? OR (pub.publish_at = ? AND pub.id ' + (page?.anchor ? '<=' : '<') + ' ?))';
+      params.push(position.at, position.at, position.id);
+    }
+    if (page) params.push(page.limit + 1);
+    const selected = db.all<any>(`SELECT pub.id,pub.title,pub.subtitle,pub.channel_id,pub.image_url,pub.publish_at,pub.content_mode,${LINKED_PRODUCT_JOIN_SELECT}
       FROM publications pub LEFT JOIN products p ON p.id=pub.product_id
-      WHERE pub.status='publie' AND pub.publish_at<=? ORDER BY pub.publish_at DESC`, now).map(withLinkedProduct);
+      WHERE pub.status='publie' AND pub.publish_at<=?${seek}
+      ORDER BY pub.publish_at DESC,pub.id DESC${page ? ' LIMIT ?' : ''}`, ...params);
+    const hasMore = page && selected.length > page.limit;
+    const rows = (page ? selected.slice(0, page.limit) : selected).map(withLinkedProduct);
     attachContentProducts(db, 'publication', rows);
-    res.json({ success: true, data: rows });
+    res.json({ success: true, data: page ? { items: rows, nextCursor: hasMore ? socialCursor(selected[page!.limit - 1]) : null } : rows });
   });
 
-  router.get('/social/reels', (_req, res) => {
+  router.get('/social/reels', (req, res) => {
+    let page: ReturnType<typeof socialPage>;
+    try { page = socialPage(req.query); }
+    catch { return res.status(400).json({ success: false, code: 'INVALID_PAGE', error: 'Invalid page cursor or limit.' }); }
     const now = new Date().toISOString();
-    const rows = db.all<any>(`SELECT r.id,r.title,r.channel_id,r.description,r.video_url,r.poster_url,r.duration_seconds,r.publish_at,r.content_mode,
+    const params: unknown[] = [now];
+    let seek = '';
+    let position = page?.cursor;
+    if (page?.anchor) {
+      const anchor = db.get<any>("SELECT id,publish_at FROM reels WHERE id=? AND status='publie' AND publish_at<=?", page.anchor, now);
+      if (anchor) position = { id: anchor.id, at: anchor.publish_at };
+    }
+    if (position) {
+      seek = ' AND (r.publish_at < ? OR (r.publish_at = ? AND r.id ' + (page?.anchor ? '<=' : '<') + ' ?))';
+      params.push(position.at, position.at, position.id);
+    }
+    if (page) params.push(page.limit + 1);
+    const selected = db.all<any>(`SELECT r.id,r.title,r.channel_id,r.description,r.video_url,r.poster_url,r.duration_seconds,r.publish_at,r.content_mode,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='view') views,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='like') likes,${LINKED_PRODUCT_JOIN_SELECT}
       FROM reels r LEFT JOIN products p ON p.id=r.product_id
-      WHERE r.status='publie' AND r.publish_at<=? ORDER BY r.publish_at DESC`, now).map(withLinkedProduct);
+      WHERE r.status='publie' AND r.publish_at<=?${seek}
+      ORDER BY r.publish_at DESC,r.id DESC${page ? ' LIMIT ?' : ''}`, ...params);
+    const hasMore = page && selected.length > page.limit;
+    const rows = (page ? selected.slice(0, page.limit) : selected).map(withLinkedProduct);
     attachContentProducts(db, 'reel', rows);
-    res.json({ success: true, data: rows });
+    res.json({ success: true, data: page ? { items: rows, nextCursor: hasMore ? socialCursor(selected[page!.limit - 1]) : null } : rows });
   });
 
   // Anciens endpoints non protégés : fermeture explicite. Le client courant utilise /social/interact.

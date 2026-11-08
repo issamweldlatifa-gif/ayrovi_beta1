@@ -1,3 +1,4 @@
+import { ReelPageFooter } from '@/features/reels/ReelPageFooter';
 import { useHiddenReels } from "@/features/reels/reelVisibility";
 import { BackButton } from "@/design/BackButton";
 /**
@@ -57,10 +58,9 @@ export default function ReelsViewerScreen() {
   const [{ width, height }, setViewport] = useState({ width: window.width, height: window.height });
   const { id } = useLocalSearchParams<{ id?: string }>();
 
-  const reels = useReels();
+  const reels = useReels(true, id);
   const hidden = useHiddenReels();
   const rows = (reels.data ?? []).filter((reel) => !hidden.includes(reel.id));
-  const counts = useSocialCounts(rows.map((reel) => reel.id));
 
   const initialIndex = Math.max(
     0,
@@ -72,10 +72,18 @@ export default function ReelsViewerScreen() {
   const playingId = rows.some((reel) => reel.id === activeId)
     ? activeId
     : rows[initialIndex]?.id;
+  const visibleIndex = Math.max(0, rows.findIndex(reel => reel.id === playingId));
+  const counts = useSocialCounts(rows.slice(Math.max(0, visibleIndex - 1), visibleIndex + 2).map(reel => reel.id));
 
   useEffect(() => {
-    if (activeId && hidden.includes(activeId) && rows.length === 0) goBack("/");
-  }, [activeId, hidden, rows.length]);
+    if (activeId && hidden.includes(activeId) && rows.length === 0 && !reels.isPending && !reels.hasNextPage && !reels.isError) goBack("/");
+  }, [activeId, hidden, rows.length, reels.isPending, reels.hasNextPage, reels.isError]);
+
+  useEffect(() => {
+    // Hidden items must not make the viewer claim there is no content while more pages exist.
+    if (focused && rows.length === 0 && reels.hasNextPage && !reels.isFetching && !reels.isFetchNextPageError)
+      void reels.fetchNextPage();
+  }, [focused, rows.length, reels.hasNextPage, reels.isFetching, reels.isFetchNextPageError, reels.fetchNextPage]);
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
   const onViewableItemsChanged = useRef(
@@ -104,6 +112,9 @@ export default function ReelsViewerScreen() {
         maxToRenderPerBatch={2}
         windowSize={3}
         extraData={{ playingId, focused, commentsFor }}
+        onEndReached={() => { if (reels.hasNextPage && !reels.isFetching && !reels.isFetchNextPageError) void reels.fetchNextPage(); }}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={<ReelPageFooter query={reels} onMedia />}
         pagingEnabled
         initialScrollIndex={initialIndex}
         getItemLayout={(_, index) => ({
@@ -124,21 +135,25 @@ export default function ReelsViewerScreen() {
         )}
       /> : null}
 
-      {reels.isPending ? (
+      {reels.isPending || (rows.length === 0 && reels.hasNextPage && !reels.isFetchNextPageError) ? (
         <View testID="reels-viewer-loading" style={styles.feedback}>
           <BrandLoadingIndicator />
         </View>
       ) : null}
-      {reels.isError ? (
+      {reels.isError && rows.length === 0 && !reels.isFetchNextPageError ? (
         <View testID="reels-viewer-error" style={styles.feedback}>
           <ErrorBlock error={reels.error} onRetry={() => reels.refetch()} />
         </View>
       ) : null}
-      {!reels.isPending && !reels.isError && rows.length === 0 ? (
+      {!reels.isPending && !reels.isError && !reels.hasNextPage && rows.length === 0 ? (
         <View testID="reels-viewer-empty" style={styles.feedback}>
           <AppText color={theme.colors.onMedia}>{t("social.empty")}</AppText>
         </View>
       ) : null}
+
+      {rows.length === 0 && reels.isFetchNextPageError ? <View style={styles.feedback}>
+        <ReelPageFooter query={reels} onMedia />
+      </View> : null}
 
       {/* Barre d'état claire et translucide : les icônes (heure, réseau, batterie) restent lisibles sur la vidéo. */}
       <StatusBar

@@ -323,3 +323,25 @@ describe('aucune isolation, cache, interrupteur', () => {
     }
   });
 });
+
+it('shares a cold image across concurrent requests', async () => {
+  const buffer = await photo({ width: 300, height: 400, background: '#ffffff', product: { x: 50, y: 50, w: 200, h: 300, color: '#ff0000' } });
+  const stub = fetcherOf(buffer);
+  const results = await Promise.all(Array.from({ length: 8 }, () => getNativeCard('https://cdn.shop.example/same-cold.jpg', 600, stub)));
+  expect(stub.calls.count).toBe(1);
+  expect(results[0].file).toBeTruthy();
+  expect(new Set(results.map(r => r.file)).size).toBe(1);
+});
+it('recovers after transient errors and removes legacy unreadable metadata', async () => {
+  const url = 'https://cdn.shop.example/recover.jpg';
+  const failed = await getNativeCard(url, 600, { fetcher: async () => { throw Error('timeout'); } });
+  expect(failed.kind).toBe('unreadable');
+  expect(fs.existsSync(cacheDir) ? fs.readdirSync(cacheDir).length : 0).toBe(0);
+  const buffer = await photo({ width: 300, height: 400, background: '#ffffff', product: { x: 50, y: 50, w: 200, h: 300, color: '#ff0000' } });
+  const stub = fetcherOf(buffer);
+  expect((await getNativeCard(url, 600, stub)).file).toBeTruthy();
+  const metaFile = fs.readdirSync(cacheDir).find(name => name.endsWith('.meta.json'))!;
+  fs.writeFileSync(path.join(cacheDir, metaFile), JSON.stringify({ file: null, kind: 'unreadable' }));
+  expect((await getNativeCard(url, 600, stub)).file).toBeTruthy();
+  expect(stub.calls.count).toBe(2);
+});

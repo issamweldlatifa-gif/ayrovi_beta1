@@ -234,3 +234,18 @@ describe('lecture du contenu public', () => {
   });
 
 });
+
+it('keeps the timeout alive while a response body is stalled after headers arrive', async () => {
+  vi.useFakeTimers();
+  try {
+    vi.stubGlobal('fetch', vi.fn(async (_url: unknown, init: RequestInit) => ({
+      ok: true, status: 200, headers: new Headers(),
+      text: () => new Promise((_resolve, reject) => {
+        init.signal!.addEventListener('abort', () => reject(new Error('body interrupted')), { once: true });
+      }),
+    })));
+    const checked = expect(apiGet('/slow-body', { timeoutMs: 25 })).rejects.toMatchObject({ kind: 'timeout' });
+    await vi.advanceTimersByTimeAsync(25);
+    await checked;
+  } finally { vi.useRealTimers(); }
+});

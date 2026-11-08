@@ -14,6 +14,7 @@
  *   3. **العدادات تُقرأ من الخادم** (`/social/counts`)، والتفاؤل correctif: نُظهر
  *      الأثر فوراً، ونرجّع لرقم الخادم إذا هو قال غيرو.
  */
+import { ApiError } from './errors';
 import { apiGet, apiSend } from './client';
 import type { RequestOptions } from './client';
 import { parseLinkedProduct, type LinkedProduct } from './linkedProduct';
@@ -122,8 +123,8 @@ function rowsOf(payload: unknown): Record<string, unknown>[] {
   });
 }
 
-export async function fetchReels(options: RequestOptions = {}): Promise<Reel[]> {
-  return rowsOf(await apiGet('/api/public/social/reels', options)).flatMap((entry) => {
+function parseReels(payload: unknown): Reel[] {
+  return rowsOf(payload).flatMap((entry) => {
     const id = str(entry.id);
     if (!id) return [];
     return [{
@@ -141,6 +142,22 @@ export async function fetchReels(options: RequestOptions = {}): Promise<Reel[]> 
       products: parseLinkedProducts(entry.products, parseLinkedProduct(entry.product)),
     }];
   });
+}
+
+export async function fetchReels(options: RequestOptions = {}): Promise<Reel[]> {
+  return parseReels(await apiGet('/api/public/social/reels', options));
+}
+export interface ReelPage { items: Reel[]; nextCursor: string | null }
+export async function fetchReelPage(cursor: string | null, options: RequestOptions = {}, anchor?: string): Promise<ReelPage> {
+  const query = new URLSearchParams({ limit: '12' });
+  if (cursor) query.set('cursor', cursor);
+  else if (anchor) query.set('anchor', anchor);
+  const { data } = await apiGet<{ items: unknown[]; nextCursor: string | null } | unknown[]>(`/api/public/social/reels?${query}`, options);
+  // Rolling deploys: an older server ignores paging parameters and returns an array.
+  if (Array.isArray(data)) return { items: parseReels(data), nextCursor: null };
+  if (!data || !Array.isArray(data.items) || !(data.nextCursor === null || typeof data.nextCursor === 'string'))
+    throw new ApiError('malformed', 'Invalid Reel page');
+  return { items: parseReels(data.items), nextCursor: data.nextCursor };
 }
 
 export async function fetchPublications(options: RequestOptions = {}): Promise<Publication[]> {
@@ -181,25 +198,28 @@ export async function fetchStoryPublishers(options: RequestOptions = {}): Promis
  * عدّادات صفر صامتة (الخادم يسقط ما لا يطابق النمط).
  */
 export async function fetchSocialCounts(ids: string[], options: RequestOptions = {}): Promise<Record<string, SocialCounts>> {
-  const clean = ids
+  const clean = [...new Set(ids
     .map((value) => String(value).trim())
     .filter((value) => /^[A-Za-z0-9_-]{1,120}$/.test(value))
-    .slice(0, 60);
+  )];
   const out: Record<string, SocialCounts> = {};
   for (const id of clean) out[id] = { ...ZERO_COUNTS };
   if (clean.length === 0) return out;
 
-  const body = record(await apiGet(`/api/public/social/counts?ids=${encodeURIComponent(clean.join(','))}`, options));
-  const data = record(body.data);
-  for (const [key, value] of Object.entries(data)) {
-    const counts = record(value);
-    out[key] = {
-      likes: num(counts.likes),
-      comments: num(counts.comments),
-      views: num(counts.views),
-      shares: num(counts.shares),
-    };
+  for (let offset = 0; offset < clean.length; offset += 60) {
+    const body = record(await apiGet(`/api/public/social/counts?ids=${encodeURIComponent(clean.slice(offset, offset + 60).join(','))}`, options));
+    const data = record(body.data);
+    for (const [key, value] of Object.entries(data)) {
+      const counts = record(value);
+      out[key] = {
+        likes: num(counts.likes),
+        comments: num(counts.comments),
+        views: num(counts.views),
+        shares: num(counts.shares),
+      };
+    }
   }
+
   return out;
 }
 

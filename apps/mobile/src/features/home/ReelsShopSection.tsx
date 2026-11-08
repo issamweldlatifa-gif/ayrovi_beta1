@@ -1,3 +1,4 @@
+import { ReelPageFooter } from '@/features/reels/ReelPageFooter';
 /** Real, muted Reel previews with a first-party publisher row outside the media. */
 import { useRef, useState } from 'react';
 import {
@@ -63,9 +64,12 @@ export function ReelsShopSection() {
         </View>
         <FullBleed>
           <FlatList
+            onEndReached={() => { if (reels.hasNextPage && !reels.isFetching && !reels.isFetchNextPageError) void reels.fetchNextPage(); }}
+            onEndReachedThreshold={0.5}
             horizontal
             data={rows}
             keyExtractor={(item) => item.id}
+        ListFooterComponent={<ReelPageFooter query={reels} />}
             showsHorizontalScrollIndicator={false}
             viewabilityConfig={viewabilityConfig}
             onViewableItemsChanged={onViewableItemsChanged}

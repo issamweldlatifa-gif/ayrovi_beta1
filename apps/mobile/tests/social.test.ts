@@ -61,12 +61,17 @@ describe('العدّادات', () => {
     expect(counts.reel_1).toEqual({ likes: 3, comments: 0, views: 0, shares: 0 });
   });
 
-  it('الحدّ 60 معرّفاً — الخادم يسقط ما بعدها بصمت', async () => {
+  it('يرسل كل العدّادات في دفعات لا تتجاوز 60', async () => {
     const ids = Array.from({ length: 80 }, (_, index) => `id_${index}`);
-    await fetchSocialCounts(ids, {});
+    apiGet.mockResolvedValueOnce({ data: { id_0: { likes: 1 } } }).mockResolvedValueOnce({ data: { id_79: { likes: 7 } } });
+    const result = await fetchSocialCounts(ids, {});
+    expect(result.id_0.likes).toBe(1);
+    expect(result.id_79.likes).toBe(7);
     const called = String(apiGet.mock.calls[0]?.[0] ?? '');
     const sent = decodeURIComponent(called.split('ids=')[1] ?? '');
     expect(sent.split(',')).toHaveLength(60);
+    expect(apiGet).toHaveBeenCalledTimes(2);
+    expect(decodeURIComponent(String(apiGet.mock.calls[1]?.[0]).split('ids=')[1]).split(',')).toHaveLength(20);
   });
 
   it('قائمة فارغة ⇒ **صفر طلب** (موّش `?ids=`)', async () => {
@@ -120,4 +125,14 @@ describe('هدف الستوري', () => {
     const base = { id: 's', product: null, mediaType: 'IMAGE', mediaUrl: '', title: 'T', description: '', cta: '', targetUrl: '', productId: '', arrivalId: '', promotionId: '', publishAt: '', expiresAt: '', priority: 0, status: 'PUBLISHED' };
     expect(storyHasTarget(base)).toBe(false);
   });
+});
+
+it('parses bounded Reel pages and supports an older server during deployment', async () => {
+  const { fetchReelPage } = await import('../src/api/social');
+  apiGet.mockResolvedValueOnce({ data: { items: [{ id: 'r1', video_url: '/media/real.mp4' }], nextCursor: 'next' } });
+  expect(await fetchReelPage(null, {}, 'r1')).toMatchObject({ items: [{ id: 'r1' }], nextCursor: 'next' });
+  expect(String(apiGet.mock.calls[0][0])).toContain('limit=12&anchor=r1');
+  apiGet.mockResolvedValueOnce({ data: [{ id: 'legacy' }] });
+  expect(await fetchReelPage('next')).toMatchObject({ items: [{ id: 'legacy' }], nextCursor: null });
+  expect(String(apiGet.mock.calls[1][0])).toContain('cursor=next');
 });

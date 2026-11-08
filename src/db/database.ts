@@ -368,6 +368,7 @@ export class QatafoDatabase {
       saved INTEGER NOT NULL DEFAULT 0, feedback TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL,
       PRIMARY KEY(account_id,publication_id));`);
 
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_reels_public_page ON reels(status,publish_at DESC,id DESC)');
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_publications_feed ON publications(status,publish_at DESC,id DESC); CREATE INDEX IF NOT EXISTS idx_publications_feed_category ON publications(status,category,publish_at DESC,id DESC)');
     this.db.exec(`CREATE TABLE IF NOT EXISTS publication_feed_settings (
       id TEXT PRIMARY KEY CHECK(id='global'), config_json TEXT NOT NULL, updated_at TEXT NOT NULL

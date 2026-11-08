@@ -1,3 +1,4 @@
+import { imageWork, writeImageCache } from './imageWork';
 /*
  * COMPOSITION D'IMAGE PRODUIT — MOTEUR GÉNÉRAL (phase 2, 25/09/2026).
  *
@@ -413,53 +414,58 @@ export function acceptComposition(result: CompositionResult): { pass: boolean; c
  * contrat d'acceptation non tenu…) : l'appelant sert alors l'image d'origine.
  * Règle intangible du projet — jamais d'image cassée, jamais de produit déformé.
  */
-export async function getComposedCard(rawUrl: string, idealWidth = IDEAL_FRAME_WIDTH): Promise<{ file: string | null; checks?: Record<string, boolean> }> {
+export function getComposedCard(rawUrl: string, idealWidth = IDEAL_FRAME_WIDTH) {
+  return imageWork.share(`${composedCacheDir()}|composed|${idealWidth}|${isolationCacheInput(rawUrl, isolationProvider())}`, () => loadComposedCard(rawUrl, idealWidth));
+}
+async function loadComposedCard(rawUrl: string, idealWidth = IDEAL_FRAME_WIDTH): Promise<{ file: string | null; checks?: Record<string, boolean> }> {
   const provider = isolationProvider();
   const key = crypto.createHash('sha256').update(`${idealWidth}|${isolationCacheInput(rawUrl, provider)}`).digest('hex').slice(0, 32);
   const dir = composedCacheDir();
   const metaPath = path.join(dir, `${key}.meta.json`);
   const pngPath = path.join(dir, `${key}.png`);
   try {
-    const cached = JSON.parse(fs.readFileSync(metaPath, 'utf8')) as { file: string | null; checks?: Record<string, boolean> };
-    if (cached.file == null) return cached;
+    const cached = JSON.parse(fs.readFileSync(metaPath, 'utf8')) as { file: string | null; checks?: Record<string, boolean>; expiresAt?: number };
+    if (cached.file == null && typeof cached.expiresAt === 'number' && cached.expiresAt > Date.now()) return cached;
     if (cached.file === `${key}.png` && fs.existsSync(pngPath)) return cached;
     // Bounded disk-cache cleanup can evict the PNG and leave its metadata file.
     fs.unlinkSync(metaPath);
   } catch { /* pas encore en cache */ }
 
-  let meta: { file: string | null; checks?: Record<string, boolean> } = { file: null };
-  try {
-    const buffer = await fetchRemoteImage(rawUrl);
-    // ORDRE VALIDÉ PAR LE PROTOTYPE : la SEGMENTATION (saillance produit) d'abord.
-    // Le chroma-key ne connaît que la couleur : sur une photo portée, un pantalon
-    // clair sur fond clair disparaît. Le modèle, lui, raisonne « objet ». Le
-    // chroma-key reste le repli quand le modèle est absent ou indécis.
-    let isolated = await segmentBuffer(buffer);
-    if (!isolated) isolated = (await isolateBuffer(buffer, { treatWhiteAsUniform: true })).png;
-    if (isolated) {
-      const composed = await composeOnMockup(isolated, { idealWidth });
-      if (composed) {
-        const verdict = acceptComposition(composed);
-        if (verdict.pass) {
-          fs.mkdirSync(dir, { recursive: true });
-          fs.writeFileSync(pngPath, composed.png);
-          meta = { file: `${key}.png`, checks: verdict.checks };
-        } else {
-          meta = { file: null, checks: verdict.checks };
+  return imageWork.limit(async () => {
+    let meta: { file: string | null; checks?: Record<string, boolean> } = { file: null };
+    try {
+      const buffer = await fetchRemoteImage(rawUrl);
+      // ORDRE VALIDÉ PAR LE PROTOTYPE : la SEGMENTATION (saillance produit) d'abord.
+      // Le chroma-key ne connaît que la couleur : sur une photo portée, un pantalon
+      // clair sur fond clair disparaît. Le modèle, lui, raisonne « objet ». Le
+      // chroma-key reste le repli quand le modèle est absent ou indécis.
+      let isolated = await segmentBuffer(buffer);
+      if (!isolated) isolated = (await isolateBuffer(buffer, { treatWhiteAsUniform: true })).png;
+      if (isolated) {
+        const composed = await composeOnMockup(isolated, { idealWidth });
+        if (composed) {
+          const verdict = acceptComposition(composed);
+          if (verdict.pass) {
+            fs.mkdirSync(dir, { recursive: true });
+            writeImageCache(pngPath, composed.png);
+            meta = { file: `${key}.png`, checks: verdict.checks };
+          } else {
+            meta = { file: null, checks: verdict.checks };
+          }
         }
       }
+    } catch (error) {
+      if (error instanceof UnsafeUrlError || (error as any)?.code === 'UNSAFE_URL') throw error;
+      return { file: null }; // do not persist transient fetch/processing failures
     }
-  } catch (error) {
-    if (error instanceof UnsafeUrlError || (error as any)?.code === 'UNSAFE_URL') throw error;
-    meta = { file: null };
-  }
-  if (meta.file == null && !shouldPersistNegative(provider)) return meta;
-  try {
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(metaPath, JSON.stringify(meta));
-    pruneDiskCache(dir, { maxBytes: 256 * 1024 * 1024, maxFiles: 4_000 });
-  } catch { /* cache best-effort */ }
-  return meta;
+    if (meta.file == null && !shouldPersistNegative(provider)) return meta;
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+      writeImageCache(metaPath, JSON.stringify(meta.file ? meta : { ...meta, expiresAt: Date.now() + 60_000 }));
+      pruneDiskCache(dir, { maxBytes: 256 * 1024 * 1024, maxFiles: 4_000 });
+    } catch { /* cache best-effort */ }
+    return meta;
+  });
 }
 
 export function composedCacheDir(): string {
