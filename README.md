@@ -2,6 +2,10 @@
 
 ZAYROVI est une plateforme Express, React et SQLite de shopping international en dinars tunisiens. Le site public, Lens, le panier, le checkout, l’Assistant et l’espace Admin utilisent le même backend et la même base de données.
 
+## Développeurs — direction d’architecture à respecter
+
+Avant d’ajouter des fonctions ou de modifier l’architecture, lire [l’accord de développement et d’évolution validé par le propriétaire (arabe)](docs/architecture/DEVELOPMENT_AND_EVOLUTION_AR.md) et [AGENTS.md](AGENTS.md). Continuer la construction d’un monolithe modulaire, préparer progressivement les frontières données/stockage/services, sans migration d’infrastructure ni réécriture globale non autorisée.
+
 ## Fonctions principales
 
 - Site public responsive avec Hero administrable, marques partenaires et une navigation textuelle simple sous le Hero pour Arrivages, Promotions, Stories et Actualités.
