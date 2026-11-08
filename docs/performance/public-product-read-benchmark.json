@@ -1,0 +1,246 @@
+{
+  "scope": "Local in-memory SQL only, synthetic products with tied timestamps, no arrival links. Twenty alternating repetitions after warmup; not HTTP latency, production capacity or disk measurement.",
+  "node": "v22.22.3",
+  "results": [
+    {
+      "syntheticProducts": 5000,
+      "scope": "catalog",
+      "limit": 50,
+      "repetitions": 20,
+      "legacy": {
+        "p50Ms": 6.96,
+        "p95Ms": 13.196,
+        "plan": [
+          {
+            "id": 12,
+            "parent": 0,
+            "notused": 61,
+            "detail": "SEARCH p USING INDEX idx_products_public_catalog (status=? AND visibility=?)"
+          },
+          {
+            "id": 18,
+            "parent": 0,
+            "notused": 56,
+            "detail": "SEARCH pa USING COVERING INDEX sqlite_autoindex_product_arrivals_1 (product_id=?) LEFT-JOIN"
+          },
+          {
+            "id": 25,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR GROUP BY"
+          },
+          {
+            "id": 148,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR ORDER BY"
+          }
+        ]
+      },
+      "current": {
+        "p50Ms": 1.246,
+        "p95Ms": 1.606,
+        "plan": [
+          {
+            "id": 7,
+            "parent": 0,
+            "notused": 61,
+            "detail": "SEARCH p USING INDEX idx_products_public_catalog (status=? AND visibility=?)"
+          },
+          {
+            "id": 52,
+            "parent": 0,
+            "notused": 0,
+            "detail": "CORRELATED SCALAR SUBQUERY 1"
+          },
+          {
+            "id": 57,
+            "parent": 52,
+            "notused": 56,
+            "detail": "SEARCH pa USING COVERING INDEX sqlite_autoindex_product_arrivals_1 (product_id=?)"
+          }
+        ]
+      }
+    },
+    {
+      "syntheticProducts": 5000,
+      "scope": "home",
+      "limit": 12,
+      "repetitions": 20,
+      "legacy": {
+        "p50Ms": 7.357,
+        "p95Ms": 8.617,
+        "plan": [
+          {
+            "id": 12,
+            "parent": 0,
+            "notused": 61,
+            "detail": "SEARCH p USING INDEX idx_products_status (status=?)"
+          },
+          {
+            "id": 17,
+            "parent": 0,
+            "notused": 56,
+            "detail": "SEARCH pa USING COVERING INDEX sqlite_autoindex_product_arrivals_1 (product_id=?) LEFT-JOIN"
+          },
+          {
+            "id": 24,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR GROUP BY"
+          },
+          {
+            "id": 147,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR ORDER BY"
+          }
+        ]
+      },
+      "current": {
+        "p50Ms": 0.373,
+        "p95Ms": 0.591,
+        "plan": [
+          {
+            "id": 7,
+            "parent": 0,
+            "notused": 62,
+            "detail": "SEARCH p USING INDEX idx_products_public_home (status=?)"
+          },
+          {
+            "id": 51,
+            "parent": 0,
+            "notused": 0,
+            "detail": "CORRELATED SCALAR SUBQUERY 1"
+          },
+          {
+            "id": 56,
+            "parent": 51,
+            "notused": 56,
+            "detail": "SEARCH pa USING COVERING INDEX sqlite_autoindex_product_arrivals_1 (product_id=?)"
+          }
+        ]
+      }
+    },
+    {
+      "syntheticProducts": 50000,
+      "scope": "catalog",
+      "limit": 50,
+      "repetitions": 20,
+      "legacy": {
+        "p50Ms": 64.118,
+        "p95Ms": 74.91,
+        "plan": [
+          {
+            "id": 12,
+            "parent": 0,
+            "notused": 61,
+            "detail": "SEARCH p USING INDEX idx_products_public_catalog (status=? AND visibility=?)"
+          },
+          {
+            "id": 18,
+            "parent": 0,
+            "notused": 56,
+            "detail": "SEARCH pa USING COVERING INDEX sqlite_autoindex_product_arrivals_1 (product_id=?) LEFT-JOIN"
+          },
+          {
+            "id": 25,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR GROUP BY"
+          },
+          {
+            "id": 148,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR ORDER BY"
+          }
+        ]
+      },
+      "current": {
+        "p50Ms": 0.812,
+        "p95Ms": 1.386,
+        "plan": [
+          {
+            "id": 7,
+            "parent": 0,
+            "notused": 61,
+            "detail": "SEARCH p USING INDEX idx_products_public_catalog (status=? AND visibility=?)"
+          },
+          {
+            "id": 52,
+            "parent": 0,
+            "notused": 0,
+            "detail": "CORRELATED SCALAR SUBQUERY 1"
+          },
+          {
+            "id": 57,
+            "parent": 52,
+            "notused": 56,
+            "detail": "SEARCH pa USING COVERING INDEX sqlite_autoindex_product_arrivals_1 (product_id=?)"
+          }
+        ]
+      }
+    },
+    {
+      "syntheticProducts": 50000,
+      "scope": "home",
+      "limit": 12,
+      "repetitions": 20,
+      "legacy": {
+        "p50Ms": 84.752,
+        "p95Ms": 105.642,
+        "plan": [
+          {
+            "id": 12,
+            "parent": 0,
+            "notused": 61,
+            "detail": "SEARCH p USING INDEX idx_products_status (status=?)"
+          },
+          {
+            "id": 17,
+            "parent": 0,
+            "notused": 56,
+            "detail": "SEARCH pa USING COVERING INDEX sqlite_autoindex_product_arrivals_1 (product_id=?) LEFT-JOIN"
+          },
+          {
+            "id": 24,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR GROUP BY"
+          },
+          {
+            "id": 147,
+            "parent": 0,
+            "notused": 0,
+            "detail": "USE TEMP B-TREE FOR ORDER BY"
+          }
+        ]
+      },
+      "current": {
+        "p50Ms": 0.436,
+        "p95Ms": 0.672,
+        "plan": [
+          {
+            "id": 7,
+            "parent": 0,
+            "notused": 62,
+            "detail": "SEARCH p USING INDEX idx_products_public_home (status=?)"
+          },
+          {
+            "id": 51,
+            "parent": 0,
+            "notused": 0,
+            "detail": "CORRELATED SCALAR SUBQUERY 1"
+          },
+          {
+            "id": 56,
+            "parent": 51,
+            "notused": 56,
+            "detail": "SEARCH pa USING COVERING INDEX sqlite_autoindex_product_arrivals_1 (product_id=?)"
+          }
+        ]
+      }
+    }
+  ]
+}

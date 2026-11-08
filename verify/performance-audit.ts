@@ -1,3 +1,4 @@
+import { publicProductQuery } from '../src/catalogue/publicProducts';
 /** Local diagnostic only. Always creates an in-memory database; never accepts a remote target. */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -106,7 +107,7 @@ async function main() {
     const plans = {
       reels: db.all('EXPLAIN QUERY PLAN SELECT id,publish_at FROM reels WHERE status=? AND publish_at<=? ORDER BY publish_at DESC,id DESC LIMIT 13', 'publie', '2026-11-05'),
       counts: db.all('EXPLAIN QUERY PLAN SELECT COUNT(*) FROM story_interactions WHERE target_id=? AND type=?', 'perf_reel_000001', 'view'),
-      catalog: db.all(`EXPLAIN QUERY PLAN SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.status='ACTIVE' AND p.visibility='CATALOG' GROUP BY p.id ORDER BY p.updated_at DESC LIMIT 50`),
+      catalog: db.all('EXPLAIN QUERY PLAN ' + publicProductQuery({ scope: 'catalog', limit: 50 }).sql, 50),
     };
     const { getNativeCard } = await import('../src/services/cardNative');
     const image = await sharp({ create: { width: 1600, height: 2400, channels: 3, background: 'white' } })

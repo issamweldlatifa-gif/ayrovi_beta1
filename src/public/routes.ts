@@ -1,3 +1,4 @@
+import { readPublicProducts } from '../catalogue/publicProducts';
 import { socialPage, socialCursor } from './socialPaging';
 import { imageWork, writeImageCache } from '../services/imageWork';
 import { readPublicationFeedSettings } from '../services/publicationFeedSettings';
@@ -566,12 +567,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   router.get('/products', (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 50);
     const arrivalId = typeof req.query.arrivalId === 'string' ? req.query.arrivalId : '';
-    const params: any[] = [];
-    const filter = arrivalId ? 'AND EXISTS (SELECT 1 FROM product_arrivals f WHERE f.product_id=p.id AND f.arrival_id=?)' : '';
-    if (arrivalId) params.push(arrivalId);
-    const rows = db.all<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p
-      LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.status='ACTIVE' AND p.visibility='CATALOG' ${filter}
-      GROUP BY p.id ORDER BY p.updated_at DESC LIMIT ?`, ...params, limit);
+    const rows = readPublicProducts(db, { scope: 'catalog', limit, arrivalId });
     res.json({ success: true, data: rows.map(mapProduct) });
   });
 
@@ -708,8 +704,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const brands = db.all<any>(`SELECT id,name,logo,image,category,url,description,display_order displayOrder
       FROM brands WHERE active=1 ORDER BY display_order,name`);
     const arrivals = db.all<any>(`SELECT * FROM arrivals WHERE status IN ('ACTIVE','SCHEDULED') ORDER BY expected_arrival_at`).map(mapArrival);
-    const products = db.all<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p LEFT JOIN product_arrivals pa ON pa.product_id=p.id
-      WHERE p.status='ACTIVE' GROUP BY p.id ORDER BY p.updated_at DESC LIMIT 12`).map(mapProduct);
+    const products = readPublicProducts(db, { scope: 'home', limit: 12 }).map(mapProduct);
     const promotions = db.all<any>(`SELECT * FROM promotions WHERE status='ACTIVE' AND starts_at<=? AND ends_at>? ORDER BY starts_at DESC LIMIT 8`, now, now);
     const stories = db.all<any>(`SELECT * FROM stories WHERE status='PUBLISHED' AND publish_at<=? AND (expires_at IS NULL OR expires_at>?) ORDER BY priority DESC,publish_at DESC LIMIT 12`, now, now);
     const news = db.all<any>(`SELECT * FROM news_items WHERE status IN ('PUBLISHED','SCHEDULED') AND published_at<=? ORDER BY published_at DESC LIMIT 8`, now);

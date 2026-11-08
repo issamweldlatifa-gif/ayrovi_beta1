@@ -170,6 +170,10 @@ export function ensureCatalogueSchema(db: QatafoDatabase): CatalogueIndexReport 
     CREATE UNIQUE INDEX IF NOT EXISTS idx_brands_slug_unique ON brands(slug COLLATE NOCASE) WHERE slug IS NOT NULL;
     CREATE UNIQUE INDEX IF NOT EXISTS idx_catalogue_categories_slug_unique ON catalogue_categories(slug COLLATE NOCASE);
   `);
+  // Non-unique read indexes, after visibility exists. Direct execution makes failures
+  // observable through the existing catalogue initialization error path.
+  db.run('CREATE INDEX IF NOT EXISTS idx_products_public_catalog ON products(status,visibility,updated_at DESC,id ASC)');
+  db.run('CREATE INDEX IF NOT EXISTS idx_products_public_home ON products(status,updated_at DESC,id ASC)');
   const indexes = rebuildSlugIndexesCaseInsensitive(db);
   ensureSequencesSchema(db);
   const now = new Date().toISOString();
