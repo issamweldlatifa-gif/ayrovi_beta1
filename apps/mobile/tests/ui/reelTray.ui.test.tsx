@@ -135,3 +135,17 @@ it('allocates no video player for offscreen cards; mounts playback only when act
   card.rerender(wrap(<ReelCard {...props} active={false} />));
   expect(usePlayer).toHaveBeenCalledTimes(calls);
 });
+
+it('does not re-render a stable player when only equal parent objects change', () => {
+  const item = reel();
+  const onOpenComments = jest.fn();
+  const node = (likes: number) => wrap(<ReelCard reel={item} active
+    onOpenComments={onOpenComments} fill={{ width: 390, height: 844 }}
+    counts={{ likes, comments: 0, views: 0, shares: 0 }} />);
+  const card = render(node(1));
+  const renders = (useVideoPlayer as jest.Mock).mock.calls.length;
+  card.rerender(node(1));
+  expect((useVideoPlayer as jest.Mock).mock.calls.length).toBe(renders);
+  card.rerender(node(2));
+  expect((useVideoPlayer as jest.Mock).mock.calls.length).toBeGreaterThan(renders);
+});

@@ -24,3 +24,15 @@ it('leaves touches to the navigation tile and loads the source asynchronously', 
   preview.rerender(<ReelPreview uri="/media/reels/real.mp4" playing={false} />);
   expect(mockPlayer.pause).toHaveBeenCalled();
 });
+
+jest.mock('../../src/design/theme', () => ({ useTheme: () => ({ colors: {} }) }));
+jest.mock('../../src/i18n', () => ({ useT: () => (key: string) => key, useI18n: () => ({ locale: 'ar' }) }));
+it('fills fullscreen video without stretching and preserves contain for embedded cards', () => {
+  const { ReelPlayback } = require('../../src/features/reels/ReelPlayback');
+  const { VideoView } = require('expo-video');
+  const props = { id: 'r1', uri: '/real.mp4', paused: false, onPausedChange: jest.fn(), soundOn: false, blocked: false };
+  const player = render(<ReelPlayback {...props} contentFit="cover" />);
+  expect(screen.UNSAFE_getByType(VideoView).props.contentFit).toBe('cover');
+  player.rerender(<ReelPlayback {...props} />);
+  expect(screen.UNSAFE_getByType(VideoView).props.contentFit).toBe('contain');
+});

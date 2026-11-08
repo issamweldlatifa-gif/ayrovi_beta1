@@ -1,3 +1,4 @@
+import { memo } from 'react';
 /**
  * بلوك Lens في الصفحة الرئيسية — نفس مصدر الموقع: `/api/public/lens-hero` (Admin → Contenu → LENS).
  *
@@ -26,7 +27,7 @@ export function useLensHome() {
   });
 }
 
-export function LensHomeBlock() {
+export const LensHomeBlock = memo(function LensHomeBlock() {
   const theme = useTheme();
   const t = useT();
   const lens = useLensHome();
@@ -49,7 +50,7 @@ export function LensHomeBlock() {
       />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   section: { paddingVertical: 12, gap: 10 },

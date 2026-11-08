@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 /**
  * Hooks de données de la page d'accueil (react-query).
  *
@@ -116,7 +117,8 @@ export function useReels(enabled = true, anchor?: string) {
     getNextPageParam: last => last.nextCursor ?? undefined,
     ...CONTENT,
   });
-  return { ...result, data: result.data?.pages.flatMap(page => page.items) };
+  const data = useMemo(() => result.data?.pages.flatMap(page => page.items), [result.data]);
+  return { ...result, data };
 }
 
 export const usePublications = (): UseQueryResult<Publication[]> =>

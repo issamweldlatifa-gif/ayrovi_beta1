@@ -21,8 +21,10 @@ import { useResponsive } from './layout';
 
 export function SubScreen({
   title, subtitle, children, onRefresh, refreshing = false, fallback = '/',
-  scrollRef, onScroll, sticky, testID,
+  scrollRef, onScroll, sticky, testID, scroll = true,
 }: {
+  /** False when a child virtualized list owns scrolling and refresh. */
+  scroll?: boolean;
   title: string;
   subtitle?: string;
   children: ReactNode;
@@ -48,6 +50,21 @@ export function SubScreen({
   const insets = useSafeAreaInsets();
   // Même marge que AppScreen : une seule source (layoutLogic), pas de chiffre propre à l'écran.
   const { gutter } = useResponsive();
+
+  const header = (<View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+        <BackButton onPress={() => goBack(fallback)} label={t('common.back')} color={theme.colors.ink} />
+        <View style={styles.headerText}>
+          <AppText variant="h2">{title}</AppText>
+          {subtitle ? <AppText variant="caption" color={theme.colors.muted}>{subtitle}</AppText> : null}
+        </View>
+      </View>);
+  if (!scroll) return <View testID={testID} style={[styles.screen, {
+    flex: 1, backgroundColor: theme.colors.canvas,
+    paddingTop: insets.top + theme.space[2], paddingBottom: insets.bottom + theme.space[5],
+    paddingHorizontal: gutter, gap: screenContentGap(theme.space),
+  }]}>
+    {sticky}{header}{children}
+  </View>;
 
   return (
     <ScrollView
@@ -80,13 +97,7 @@ export function SubScreen({
           enfant. Sans lui, l'indicateur d'étapes défile et le client perd le
           fil dès qu'il remplit un champ. */}
       {sticky ? <View style={{ backgroundColor: theme.colors.canvas }}>{sticky}</View> : null}
-      <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <BackButton onPress={() => goBack(fallback)} label={t('common.back')} color={theme.colors.ink} />
-        <View style={styles.headerText}>
-          <AppText variant="h2">{title}</AppText>
-          {subtitle ? <AppText variant="caption" color={theme.colors.muted}>{subtitle}</AppText> : null}
-        </View>
-      </View>
+      {header}
       {children}
     </ScrollView>
   );

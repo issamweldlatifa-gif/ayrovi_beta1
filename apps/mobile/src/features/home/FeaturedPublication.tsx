@@ -1,3 +1,4 @@
+import { memo } from 'react';
 /**
  * Section « à la une » de l'accueil, sous les onglets.
  *
@@ -26,7 +27,7 @@ import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 
-export function FeaturedPublication() {
+export const FeaturedPublication = memo(function FeaturedPublication() {
   const theme = useTheme();
   const t = useT();
   const featured = useHomeFeatured();
@@ -67,7 +68,7 @@ export function FeaturedPublication() {
       />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   // Marge horizontale = celle de l'écran (AppScreen) : pas de double marge.

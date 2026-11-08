@@ -13,7 +13,7 @@ import { shareReel } from "@/features/reels/shareReel";
  *
  * وقاعدة الصدق: **الإعجاب يحتاج حساباً** ⇒ الزر معطّل بسبب مكتوب.
  */
-import { useCallback, useRef, useState } from "react";
+import { memo, useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { ReelPlayback } from "@/features/reels/ReelPlayback";
@@ -48,7 +48,7 @@ export interface ReelCardProps {
   fill?: { width: number; height: number };
 }
 
-export function ReelCard({
+export const ReelCard = memo(function ReelCard({
   reel,
   active,
   counts,
@@ -122,6 +122,7 @@ export function ReelCard({
         <ReelPlayback
           key={reel.id}
           id={reel.id}
+          contentFit={fill ? "cover" : "contain"}
           uri={mediaUrl(reel.videoUrl)}
           paused={paused}
           onPausedChange={setPaused}
@@ -326,7 +327,16 @@ export function ReelCard({
       )}
     </View>
   );
-}
+}, (previous, next) => previous.reel === next.reel
+  && previous.active === next.active
+  && previous.onOpenComments === next.onOpenComments
+  && Boolean(previous.fill) === Boolean(next.fill)
+  && previous.fill?.width === next.fill?.width
+  && previous.fill?.height === next.fill?.height
+  && previous.counts?.likes === next.counts?.likes
+  && previous.counts?.comments === next.counts?.comments
+  && previous.counts?.views === next.counts?.views
+  && previous.counts?.shares === next.counts?.shares);
 
 const styles = StyleSheet.create({
   card: { marginBottom: 12, overflow: "hidden" },

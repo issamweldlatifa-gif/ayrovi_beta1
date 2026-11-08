@@ -1,6 +1,6 @@
 import { ReelPageFooter } from '@/features/reels/ReelPageFooter';
 /** Real, muted Reel previews with a first-party publisher row outside the media. */
-import { useRef, useState } from 'react';
+import { memo, useMemo, useRef, useState } from 'react';
 import {
   useWindowDimensions,
   FlatList,
@@ -31,7 +31,7 @@ import {
 import { shareReel } from '@/features/reels/shareReel';
 import type { Reel } from '@/api/social';
 
-export function ReelsShopSection() {
+export const ReelsShopSection = memo(function ReelsShopSection() {
   const theme = useTheme(),
     t = useT(),
     { locale } = useI18n();
@@ -42,7 +42,10 @@ export function ReelsShopSection() {
   // Below-fold media must not compete with the first visible homepage content.
   const reels = useReels(autoplay.visible);
   const hidden = useHiddenReels();
-  const rows = (reels.data ?? []).filter((row) => !hidden.includes(row.id));
+  const rows = useMemo(() => {
+    const excluded = new Set(hidden);
+    return (reels.data ?? []).filter(row => !excluded.has(row.id));
+  }, [reels.data, hidden]);
   const [visibleId, setVisibleId] = useState<string | null>(null);
   const [options, setOptions] = useState<Reel | null>(null);
   const [error, setError] = useState('');
@@ -66,10 +69,13 @@ export function ReelsShopSection() {
           <FlatList
             onEndReached={() => { if (reels.hasNextPage && !reels.isFetching && !reels.isFetchNextPageError) void reels.fetchNextPage(); }}
             onEndReachedThreshold={0.5}
+            initialNumToRender={2}
+            maxToRenderPerBatch={2}
+            windowSize={3}
             horizontal
             data={rows}
             keyExtractor={(item) => item.id}
-        ListFooterComponent={<ReelPageFooter query={reels} />}
+            ListFooterComponent={<ReelPageFooter query={reels} />}
             showsHorizontalScrollIndicator={false}
             viewabilityConfig={viewabilityConfig}
             onViewableItemsChanged={onViewableItemsChanged}
@@ -181,7 +187,7 @@ export function ReelsShopSection() {
       ) : null}
     </FadeIn>
   );
-}
+});
 const styles = StyleSheet.create({
   section: { paddingTop: 24 },
   tile: { overflow: 'hidden' },

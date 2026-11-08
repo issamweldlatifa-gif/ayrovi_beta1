@@ -16,7 +16,7 @@
  * le contenu défile (demande explicite, Q8). Il est donc implémenté ICI, une
  * seule fois, plutôt que recopié écran par écran.
  */
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useRef, useCallback, useMemo, useState, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -131,11 +131,15 @@ export function AppScreen({
   const { gutter } = useResponsive();
   const onChromeScroll = useChromeScroll();
   const [headerScrolled, setHeaderScrolled] = useState(false);
+  const headerScrolledRef = useRef(false);
 
   const onScroll = useCallback((event: Parameters<NonNullable<ScrollViewProps['onScroll']>>[0]) => {
     if (overlayHeader) {
       const next = headerSolidFor(event.nativeEvent.contentOffset.y);
-      setHeaderScrolled((current) => current === next ? current : next);
+      if (headerScrolledRef.current !== next) {
+        headerScrolledRef.current = next;
+        setHeaderScrolled(next);
+      }
     }
     if (chrome) onChromeScroll(event);
   }, [chrome, onChromeScroll, overlayHeader]);

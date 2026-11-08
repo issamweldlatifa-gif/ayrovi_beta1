@@ -13,7 +13,7 @@ import { BackButton } from "@/design/BackButton";
  * • Un seul lecteur vivant : la page réellement visible (`viewabilityConfig`), comme
  *   la page Reels. Les autres pages attendent (règle de `ReelCard`).
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { goBack } from "@/design/navigation";
 import {
   FlatList,
@@ -56,11 +56,16 @@ export default function ReelsViewerScreen() {
   const insets = useSafeAreaInsets();
   const window = useWindowDimensions();
   const [{ width, height }, setViewport] = useState({ width: window.width, height: window.height });
+  const listRef = useRef<FlatList<Reel>>(null);
+  const previousHeight = useRef(height);
   const { id } = useLocalSearchParams<{ id?: string }>();
 
   const reels = useReels(true, id);
   const hidden = useHiddenReels();
-  const rows = (reels.data ?? []).filter((reel) => !hidden.includes(reel.id));
+  const rows = useMemo(() => {
+    const excluded = new Set(hidden);
+    return (reels.data ?? []).filter(reel => !excluded.has(reel.id));
+  }, [reels.data, hidden]);
 
   const initialIndex = Math.max(
     0,
@@ -97,6 +102,21 @@ export default function ReelsViewerScreen() {
 
   const closeComments = useCallback(() => setCommentsFor(null), []);
 
+  const fill = useMemo(() => ({ width, height }), [width, height]);
+  const renderItem = useCallback(({ item }: { item: Reel }) => (
+    <ReelCard reel={item} active={focused && !commentsFor && playingId === item.id}
+      counts={counts.data?.[item.id]} onOpenComments={setCommentsFor} fill={fill} />
+  ), [focused, commentsFor, playingId, counts.data, fill]);
+  useEffect(() => {
+    if (previousHeight.current !== height) {
+      previousHeight.current = height;
+      listRef.current?.scrollToIndex({ index: visibleIndex, animated: false });
+    }
+  }, [height, visibleIndex]);
+  const getItemLayout = useCallback((_: unknown, index: number) => (
+    { length: height, offset: height * index, index }
+  ), [height]);
+
   return (
     <View testID="reels-viewer" style={styles.root} onLayout={({ nativeEvent: { layout } }) => {
       if (layout.width > 0 && layout.height > 0)
@@ -105,7 +125,11 @@ export default function ReelsViewerScreen() {
     }}>
       {/* Wait for rows before mounting: initialScrollIndex is only honored at mount. */}
       {rows.length > 0 ? <FlatList
+        ref={listRef}
         testID="reels-viewer-list"
+        accessibilityLabel={t("social.reels")}
+        refreshing={Boolean(reels.isRefetching)}
+        onRefresh={() => { void reels.refetch(); void counts.refetch(); }}
         data={rows}
         keyExtractor={(item) => item.id}
         initialNumToRender={1}
@@ -115,24 +139,13 @@ export default function ReelsViewerScreen() {
         onEndReached={() => { if (reels.hasNextPage && !reels.isFetching && !reels.isFetchNextPageError) void reels.fetchNextPage(); }}
         onEndReachedThreshold={0.5}
         ListFooterComponent={<ReelPageFooter query={reels} onMedia />}
+        showsVerticalScrollIndicator={false}
         pagingEnabled
         initialScrollIndex={initialIndex}
-        getItemLayout={(_, index) => ({
-          length: height,
-          offset: height * index,
-          index,
-        })}
+        getItemLayout={getItemLayout}
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}
-        renderItem={({ item }) => (
-          <ReelCard
-            reel={item}
-            active={focused && !commentsFor && playingId === item.id}
-            counts={counts.data?.[item.id]}
-            onOpenComments={setCommentsFor}
-            fill={{ width, height }}
-          />
-        )}
+        renderItem={renderItem}
       /> : null}
 
       {reels.isPending || (rows.length === 0 && reels.hasNextPage && !reels.isFetchNextPageError) ? (

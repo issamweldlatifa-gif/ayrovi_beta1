@@ -1,3 +1,4 @@
+import { memo } from 'react';
 /** Native footer: white payment gallery, black help panel, shared brand identity.
  * Logos are informational, not checkout switches. Checkout availability stays server-owned.
  */
@@ -16,7 +17,7 @@ import { useFooterInfo } from '@/api/hooks';
 
 export interface FooterProps { testID?: string }
 
-export function Footer({ testID = 'app-footer' }: FooterProps) {
+export const Footer = memo(function Footer({ testID = 'app-footer' }: FooterProps) {
   const theme = useTheme();
   const { width } = useWindowDimensions();
   const gutter = responsiveMetricsFor(width).gutter;
@@ -84,7 +85,7 @@ export function Footer({ testID = 'app-footer' }: FooterProps) {
       </View>
     </Modal>
   </View>;
-}
+});
 
 function FooterLink({ label, onPress, violet, muted }: { label: string; onPress: () => void; violet?: boolean; muted?: boolean }) {
   return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress}

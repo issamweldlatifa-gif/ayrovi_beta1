@@ -1,3 +1,4 @@
+import ReelsScreen from '../../app/reels';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { FlatList } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -25,6 +26,12 @@ it('opens a cold-link Reel after loading, and pages by the actual available view
   expect(list.props.initialScrollIndex).toBe(1);
   expect(list.props.initialNumToRender).toBe(1);
   expect(list.props.windowSize).toBe(3);
+  const reposition = jest.spyOn(list.instance, 'scrollToIndex');
   fireEvent(screen.getByTestId('reels-viewer'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 360, height: 700 } } });
+  expect(reposition).toHaveBeenCalledWith({ index: 1, animated: false });
   expect(screen.UNSAFE_getByType(FlatList).props.getItemLayout(null, 1)).toEqual({ length: 700, offset: 700, index: 1 });
+});
+
+it('uses the same full-screen virtualized viewer for the /reels entry point', () => {
+  expect(ReelsScreen).toBe(ReelsViewerScreen);
 });

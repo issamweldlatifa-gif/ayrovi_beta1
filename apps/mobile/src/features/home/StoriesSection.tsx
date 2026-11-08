@@ -1,3 +1,4 @@
+import { memo } from 'react';
 /** Official Stories extension: editorial gallery only. No legacy circles or viewer.
  * Geometry is shared with Hero; section spacing is owned by AppScreen/SectionRule.
  * The Explore label is deliberately non-interactive until its destination is specified.
@@ -14,7 +15,7 @@ import { FOOTER_THEME, veil } from '@/design/tokens.mobile';
 import { useI18n } from '@/i18n';
 import { CARD_ASPECT, CARD_GAP, carouselGeometry } from './heroCarouselLogic';
 
-export function StoriesSection() {
+export const StoriesSection = memo(function StoriesSection() {
   const theme = useTheme();
   const { locale, t } = useI18n();
   const { gutter } = useResponsive();
@@ -53,7 +54,7 @@ export function StoriesSection() {
         </View>} />
     </View>
   </FullBleed>;
-}
+});
 
 const styles = StyleSheet.create({
   section: { backgroundColor: FOOTER_THEME.ink, paddingVertical: 24, gap: 24 },

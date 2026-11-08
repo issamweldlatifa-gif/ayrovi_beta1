@@ -1,3 +1,4 @@
+import { memo } from 'react';
 /**
  * بطاقة منتوج — واجهة المتجر (Q1، 08/10/2026).
  *
@@ -57,7 +58,7 @@ function stockLabel(status: string, t: Translate): { text: string; tone: 'ok' | 
   }
 }
 
-export function ProductCard({ product, onOpen, style, hasCombinations = false, promo = false, withCart = true }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product, onOpen, style, hasCombinations = false, promo = false, withCart = true }: ProductCardProps) {
   const theme = useTheme();
   const t = useT();
   const sessionId = useSessionId();
@@ -146,7 +147,7 @@ export function ProductCard({ product, onOpen, style, hasCombinations = false, p
       ) : null}
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {

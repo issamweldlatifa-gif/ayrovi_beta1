@@ -8,7 +8,7 @@
  * (`?arrivalId=`) وهي من أهم تبويبات الموقع.
  */
 import { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 
@@ -69,6 +69,7 @@ export default function CatalogScreen() {
 
   return (
     <SubScreen
+      scroll={false}
       title={t('catalog.title')}
       subtitle={t('catalog.subtitle')}
       onRefresh={reload}
@@ -85,11 +86,20 @@ export default function CatalogScreen() {
         <EmptyBlock>{t('catalog.empty')}</EmptyBlock>
       ) : null}
 
-      <View style={[styles.grid, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        {rows.map((product) => (
-          <ProductCard key={product.id} product={product} onOpen={open} />
-        ))}
-      </View>
+      <FlatList
+        testID="catalog-list"
+        data={rows}
+        keyExtractor={product => product.id}
+        numColumns={2}
+        initialNumToRender={3}
+        maxToRenderPerBatch={2}
+        windowSize={5}
+        style={{ flex: 1 }}
+        onRefresh={reload}
+        refreshing={products.isFetching || arrivals.isFetching}
+        columnWrapperStyle={[styles.grid, { flexDirection: rowDirectionFor(theme.isRTL) }]}
+        renderItem={({ item }) => <ProductCard product={item} onOpen={open} />}
+      />
 
       <AppText variant="caption" color={theme.colors.muted}>
         {/* السعر المعروض هو سعر الخادم: التطبيق ما يحسبش ديناراً واحداً. */}
@@ -100,5 +110,5 @@ export default function CatalogScreen() {
 }
 
 const styles = StyleSheet.create({
-  grid: { flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 12 },
+  grid: { justifyContent: 'space-between', marginTop: 12 },
 });

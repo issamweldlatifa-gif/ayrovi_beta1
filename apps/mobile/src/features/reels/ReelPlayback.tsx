@@ -10,9 +10,9 @@ import { veil, VIDEO_BACKDROP } from '@/design/tokens.mobile';
 import { playReelVideo, reloadReelVideo } from './playReelVideo';
 import { useReelPlaybackStatus } from './useReelPlaybackStatus';
 
-export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked }: {
+export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked, contentFit = 'contain' }: {
   id: string; uri: string; paused: boolean; onPausedChange: (paused: boolean) => void;
-  soundOn: boolean; blocked: boolean;
+  soundOn: boolean; blocked: boolean; contentFit?: 'cover' | 'contain';
 }) {
   const theme = useTheme();
   const t = useT();
@@ -41,7 +41,7 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
   useEffect(() => { if (player) player.muted = !soundOn; }, [player, soundOn]);
   return <>
     {player ? <VideoView ref={view} player={player} pointerEvents="none" surfaceType="textureView"
-      style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', backgroundColor: VIDEO_BACKDROP }]} contentFit="contain" nativeControls={false} /> : null}
+      style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', backgroundColor: VIDEO_BACKDROP }]} contentFit={contentFit} nativeControls={false} /> : null}
     <Pressable accessibilityRole="button" accessibilityLabel={paused ? t('social.play') : t('social.pause')}
       onPress={() => onPausedChange(!paused)} style={StyleSheet.absoluteFill} />
     {(playback.status === 'loading' || playback.status === 'idle') && <View pointerEvents="none"

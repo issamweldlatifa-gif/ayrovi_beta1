@@ -55,3 +55,12 @@ it('loads pages on demand and retains the first page when the next request fails
   expect(hook.result.current.data?.map(row => row.id)).toEqual(['r1', 'r2']);
   expect(hook.result.current.hasNextPage).toBe(false);
 });
+
+it('preserves Reel array identity on unrelated parent renders', async () => {
+  (fetchReelPage as jest.Mock).mockResolvedValueOnce({ items: [{ id: 'stable' }], nextCursor: null });
+  const hook = renderHook(() => useReels(), { wrapper });
+  await waitFor(() => expect(hook.result.current.isSuccess).toBe(true));
+  const data = hook.result.current.data;
+  hook.rerender({});
+  expect(hook.result.current.data).toBe(data);
+});

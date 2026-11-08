@@ -9,7 +9,7 @@ import { SessionProvider } from '../../src/state/session';
  *  • le logo affiche « Reels » puis « Shop ».
  */
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 
@@ -35,10 +35,15 @@ jest.mock('expo-video', () => ({
   useVideoPlayer: () => null,
 }));
 jest.mock('../../src/features/reels/useReelPreviewActivity', () => ({
-  useReelPreviewActivity: () => ({ visible: mockVisible, autoplay: true }),
+  useReelPreviewActivity: () => {
+    const [visible, update] = require('react').useState(mockVisible);
+    mockUpdateVisibility = update;
+    return { visible, autoplay: true };
+  },
 }));
 
 let mockVisible = true;
+let mockUpdateVisibility: (visible: boolean) => void;
 const mockUseReels = jest.fn();
 const mockReels: { data: unknown } = { data: undefined };
 jest.mock('../../src/api/hooks', () => ({
@@ -163,6 +168,6 @@ it('defers the below-fold Reel request, but keeps a measurable anchor for scroll
   expect(mockUseReels).toHaveBeenLastCalledWith(false);
   expect(section.toJSON()).not.toBeNull();
   mockVisible = true;
-  section.rerender(wrap(<ReelsShopSection />));
+  act(() => mockUpdateVisibility(true));
   expect(mockUseReels).toHaveBeenLastCalledWith(true);
 });

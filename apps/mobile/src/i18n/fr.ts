@@ -250,7 +250,6 @@ export const fr = {
   'footer.orders': 'Mes commandes',
   'brand.plusLight': 'Plus Light',
   'tabs.social': 'Social',
-  'social.title': 'Communauté',
   'social.reels': 'Reels',
   'social.publications': 'Publications',
   'social.comments': 'Commentaires',
