@@ -1,7 +1,7 @@
-import { PublicationAuthSheet } from '@/features/publications/PublicationAuthSheet';
-import { ReelPublisher } from '@/features/reels/ReelPublisher';
-import { ReelOptions } from '@/features/reels/ReelOptions';
-import { shareReel } from '@/features/reels/shareReel';
+import { PublicationAuthSheet } from "@/features/publications/PublicationAuthSheet";
+import { ReelPublisher } from "@/features/reels/ReelPublisher";
+import { ReelOptions } from "@/features/reels/ReelOptions";
+import { shareReel } from "@/features/reels/shareReel";
 /**
  * بطاقة ريلز (Q3، 08/10/2026).
  *
@@ -13,22 +13,30 @@ import { shareReel } from '@/features/reels/shareReel';
  *
  * وقاعدة الصدق: **الإعجاب يحتاج حساباً** ⇒ الزر معطّل بسبب مكتوب.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Pressable, StyleSheet, View } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { VideoView, useVideoPlayer } from 'expo-video';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState, Pressable, StyleSheet, View } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { VideoView, useVideoPlayer } from "expo-video";
 
-import { AppText } from '@/design/ui';
-import { useTheme } from '@/design/theme';
-import { useT } from '@/i18n';
-import { MEDIA_RATIO, RADIUS, VIDEO_BACKDROP, veil } from '@/design/tokens.mobile';
-import { ReelShopTray } from '@/features/reels/ReelShopTray';
-import { useProductFavorites } from '@/features/reels/useProductFavorites';
-import { mediaUrl } from '@/api/client';
-import { AppImage } from '@/design/appImage';
-import { useSession } from '@/state/session';
-import { sendInteraction, type Reel } from '@/api/social';
-import { useSessionId } from '@/session/session';
+import { AppText } from "@/design/ui";
+import { useTheme } from "@/design/theme";
+import { useT, useI18n } from "@/i18n";
+import { BrandLoadingIndicator } from "@/design/LoadingScreen";
+import { playReelVideo } from "@/features/reels/playReelVideo";
+import { useReelPlaybackStatus } from "@/features/reels/useReelPlaybackStatus";
+import {
+  MEDIA_RATIO,
+  RADIUS,
+  VIDEO_BACKDROP,
+  veil,
+} from "@/design/tokens.mobile";
+import { ReelShopTray } from "@/features/reels/ReelShopTray";
+import { useProductFavorites } from "@/features/reels/useProductFavorites";
+import { mediaUrl } from "@/api/client";
+import { AppImage } from "@/design/appImage";
+import { useSession } from "@/state/session";
+import { sendInteraction, type Reel } from "@/api/social";
+import { useSessionId } from "@/session/session";
 
 export interface ReelCardProps {
   reel: Reel;
@@ -43,12 +51,19 @@ export interface ReelCardProps {
   fill?: { width: number; height: number };
 }
 
-export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCardProps) {
+export function ReelCard({
+  reel,
+  active,
+  counts,
+  onOpenComments,
+  fill,
+}: ReelCardProps) {
   const theme = useTheme();
   const t = useT();
+  const { locale } = useI18n();
   const session = useSession();
   const guestSession = useSessionId();
-  const signedIn = session.status === 'signedIn';
+  const signedIn = session.status === "signedIn";
   // En plein écran le texte est posé sur la vidéo : blanc, pas la couleur de carte.
   const ink = fill ? theme.colors.onMedia : theme.colors.ink;
   const muted = fill ? theme.colors.onMedia : theme.colors.muted;
@@ -56,28 +71,65 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
   const [liked, setLiked] = useState(false);
   const [options, setOptions] = useState(false);
   const [auth, setAuth] = useState(false);
-  const [error, setError] = useState('');
-  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const [error, setError] = useState("");
+  const [foreground, setForeground] = useState(
+    AppState.currentState === "active"
+  );
+  const videoView = useRef<VideoView>(null);
   const likeLock = useRef(false);
-  useEffect(() => { const sub = AppState.addEventListener('change', state => setForeground(state === 'active')); return () => sub.remove(); }, []);
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (state) =>
+      setForeground(state === "active")
+    );
+    return () => sub.remove();
+  }, []);
   const [paused, setPaused] = useState(false);
   // الصوت مطفي افتراضياً (قاعدة البطاقة) — والزرّ يقلبها.
   const [soundOn, setSoundOn] = useState(false);
   // مفضّلة المنتوج: القلب على الكارطة، بلا حساب ما فمّاش قلب.
-  const favourites = useProductFavorites(fill ? signedIn : false, session.account?.id || '');
+  const favourites = useProductFavorites(
+    fill ? signedIn : false,
+    session.account?.id || ""
+  );
 
   // `null` ⇒ لا مشغّل: البطاقة البعيدة ما تكلّفش الجهاز ولا الشبكة.
-  const player = useVideoPlayer(active ? { uri: mediaUrl(reel.videoUrl) } : null, (instance) => {
-    instance.loop = true;
-    instance.muted = true;
-    instance.play();
-  });
+  const player = useVideoPlayer(
+    active ? { uri: mediaUrl(reel.videoUrl) } : null,
+    (instance) => {
+      instance.loop = true;
+      instance.muted = true;
+    }
+  );
+
+  const playback = useReelPlaybackStatus(
+    player,
+    active,
+    mediaUrl(reel.videoUrl),
+    videoView
+  );
 
   useEffect(() => {
     if (!player) return;
-    if (paused || !active || !foreground || options || auth) player.pause();
-    else player.play();
-  }, [player, paused, active, foreground, options, auth]);
+    if (
+      playback.status !== "readyToPlay" ||
+      paused ||
+      !active ||
+      !foreground ||
+      options ||
+      auth
+    )
+      player.pause();
+    else playReelVideo(player, videoView.current, playback.reportError);
+  }, [
+    player,
+    playback.status,
+    playback.reportError,
+    paused,
+    active,
+    foreground,
+    options,
+    auth,
+  ]);
 
   useEffect(() => {
     if (!player) return;
@@ -87,40 +139,124 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
   const toggleLike = useCallback(async () => {
     if (!signedIn) return;
     if (likeLock.current) return;
-    likeLock.current = true; setError('');
+    likeLock.current = true;
+    setError("");
     try {
-      const result = await sendInteraction({ type: 'like', targetId: reel.id, sessionId: guestSession || undefined });
-      if (typeof result.liked === 'boolean') setLiked(result.liked);
-    } catch { setError(t('common.retry')); } finally { likeLock.current = false; }
+      const result = await sendInteraction({
+        type: "like",
+        targetId: reel.id,
+        sessionId: guestSession || undefined,
+      });
+      if (typeof result.liked === "boolean") setLiked(result.liked);
+    } catch {
+      setError(t("common.retry"));
+    } finally {
+      likeLock.current = false;
+    }
   }, [signedIn, reel.id, guestSession, t]);
   const share = useCallback(() => shareReel(reel), [reel]);
-  const shareWithFeedback = () => { setError(''); share().catch(() => setError(t('common.retry'))); };
+  const shareWithFeedback = () => {
+    setError("");
+    share().catch(() => setError(t("common.retry")));
+  };
 
   /** Média : couverture, lecteur (un seul vivant), bouton pause. */
   const media = (
-    <View style={fill ? styles.fillMedia : [styles.media, { backgroundColor: theme.colors.canvas }]}>
+    <View
+      style={
+        fill
+          ? styles.fillMedia
+          : [styles.media, { backgroundColor: theme.colors.canvas }]
+      }
+    >
       {reel.posterUrl ? (
         // Couverture derrière la vidéo : elle reste visible tant que la vidéo n'a pas d'image.
-        <AppImage uri={mediaUrl(reel.posterUrl)} style={StyleSheet.absoluteFill} contentFit="cover" decorative />
+        <AppImage
+          uri={mediaUrl(reel.posterUrl)}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          decorative
+        />
       ) : null}
       {active && player ? (
-        <VideoView player={player} style={[StyleSheet.absoluteFill, { width: '100%', height: '100%' }]} contentFit="cover" nativeControls={false} />
+        <VideoView
+          ref={videoView}
+          player={player}
+          style={[StyleSheet.absoluteFill, { width: "100%", height: "100%" }]}
+          contentFit="cover"
+          nativeControls={false}
+        />
       ) : reel.posterUrl ? null : (
         <View style={[StyleSheet.absoluteFill, styles.poster]}>
-          <Ionicons name="play-circle-outline" size={theme.iconSize.xl} color={muted} accessibilityElementsHidden />
+          <Ionicons
+            name="play-circle-outline"
+            size={theme.iconSize.xl}
+            color={muted}
+            accessibilityElementsHidden
+          />
         </View>
       )}
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={paused ? t('social.play') : t('social.pause')}
+        accessibilityLabel={paused ? t("social.play") : t("social.pause")}
         onPress={() => setPaused((value) => !value)}
         style={StyleSheet.absoluteFill}
       />
 
+      {active &&
+      player &&
+      (playback.status === "loading" || playback.status === "idle") ? (
+        <View
+          pointerEvents="none"
+          testID={`reel-loading-${reel.id}`}
+          style={[StyleSheet.absoluteFill, styles.poster]}
+          accessibilityRole="progressbar"
+        >
+          <BrandLoadingIndicator size={64} />
+        </View>
+      ) : null}
+      {active && playback.status === "error" ? (
+        <View
+          testID={`reel-playback-error-${reel.id}`}
+          style={[
+            StyleSheet.absoluteFill,
+            styles.poster,
+            { padding: 24, gap: 16, backgroundColor: veil(0.75) },
+          ]}
+        >
+          <AppText color={theme.colors.onMedia} align="center">
+            {locale === "ar"
+              ? "تعذّر تشغيل الفيديو. ثبّت في الاتصال وعاود جرّب."
+              : "Impossible de lire la vidéo. Vérifiez votre connexion et réessayez."}
+          </AppText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("common.retry")}
+            onPress={() => {
+              setPaused(false);
+              void playback.retry();
+            }}
+            style={{
+              minHeight: 44,
+              minWidth: 120,
+              padding: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: theme.colors.canvas,
+              borderRadius: theme.radius.card,
+            }}
+          >
+            <AppText color={theme.colors.ink}>{t("common.retry")}</AppText>
+          </Pressable>
+        </View>
+      ) : null}
+
       {!fill && reel.durationSeconds > 0 ? (
         <View style={styles.duration}>
-          <AppText variant="caption" color={theme.colors.onMedia}>{`0:${String(reel.durationSeconds % 60).padStart(2, '0')}`}</AppText>
+          <AppText variant="caption" color={theme.colors.onMedia}>{`0:${String(
+            reel.durationSeconds % 60
+          ).padStart(2, "0")}`}</AppText>
         </View>
       ) : null}
     </View>
@@ -134,69 +270,142 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
    * dessous. `bottom` est calculé par le tiroir — une seule géométrie.
    */
   const body = (bottom?: number) => (
-    <View style={[fill ? styles.fillBody : styles.body, fill && bottom !== undefined ? { bottom } : null]}>
+    <View
+      style={[
+        fill ? styles.fillBody : styles.body,
+        fill && bottom !== undefined ? { bottom } : null,
+      ]}
+    >
       {fill ? <ReelPublisher onMedia /> : null}
-      {!fill && reel.title ? <AppText variant="label" color={ink} numberOfLines={1}>{reel.title}</AppText> : null}
+      {!fill && reel.title ? (
+        <AppText variant="label" color={ink} numberOfLines={1}>
+          {reel.title}
+        </AppText>
+      ) : null}
       {!fill && reel.description ? (
-        <AppText variant="caption" color={muted} numberOfLines={2}>{reel.description}</AppText>
+        <AppText variant="caption" color={muted} numberOfLines={2}>
+          {reel.description}
+        </AppText>
       ) : null}
 
-      {error ? <AppText accessibilityRole="alert" variant="caption" color={muted}>{error}</AppText> : null}
+      {error ? (
+        <AppText accessibilityRole="alert" variant="caption" color={muted}>
+          {error}
+        </AppText>
+      ) : null}
       {/* En plein écran, partage/son/commentaire vivent dans le rail posé sur la
           vidéo (accroché à la pastille) : pas de doublon ici. */}
       {!fill ? (
-      <View style={styles.actions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={liked ? t('social.liked') : t('social.like')}
-          accessibilityState={{ disabled: !signedIn }}
-          disabled={!signedIn}
-          onPress={toggleLike}
-          style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
-        >
-          <Ionicons name={liked ? 'heart' : 'heart-outline'} size={theme.iconSize.md} color={liked ? (fill ? theme.colors.accentOnMedia : theme.colors.accentText) : muted} accessibilityElementsHidden />
-          <AppText variant="caption" color={muted}>{String(counts?.likes ?? reel.likes)}</AppText>
-        </Pressable>
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={liked ? t("social.liked") : t("social.like")}
+            accessibilityState={{ disabled: !signedIn }}
+            disabled={!signedIn}
+            onPress={toggleLike}
+            style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
+          >
+            <Ionicons
+              name={liked ? "heart" : "heart-outline"}
+              size={theme.iconSize.md}
+              color={
+                liked
+                  ? fill
+                    ? theme.colors.accentOnMedia
+                    : theme.colors.accentText
+                  : muted
+              }
+              accessibilityElementsHidden
+            />
+            <AppText variant="caption" color={muted}>
+              {String(counts?.likes ?? reel.likes)}
+            </AppText>
+          </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('social.comments')}
-          onPress={() => onOpenComments(reel)}
-          style={styles.action}
-        >
-          <Ionicons name="chatbubble-outline" size={theme.iconSize.md} color={muted} accessibilityElementsHidden />
-          <AppText variant="caption" color={muted}>{String(counts?.comments ?? 0)}</AppText>
-        </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("social.comments")}
+            onPress={() => onOpenComments(reel)}
+            style={styles.action}
+          >
+            <Ionicons
+              name="chatbubble-outline"
+              size={theme.iconSize.md}
+              color={muted}
+              accessibilityElementsHidden
+            />
+            <AppText variant="caption" color={muted}>
+              {String(counts?.comments ?? 0)}
+            </AppText>
+          </Pressable>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('social.share')}
-          onPress={shareWithFeedback}
-          style={styles.action}
-        >
-          <Ionicons name="share-social-outline" size={theme.iconSize.md} color={muted} accessibilityElementsHidden />
-          <AppText variant="caption" color={muted}>{String(counts?.shares ?? 0)}</AppText>
-        </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("social.share")}
+            onPress={shareWithFeedback}
+            style={styles.action}
+          >
+            <Ionicons
+              name="share-social-outline"
+              size={theme.iconSize.md}
+              color={muted}
+              accessibilityElementsHidden
+            />
+            <AppText variant="caption" color={muted}>
+              {String(counts?.shares ?? 0)}
+            </AppText>
+          </Pressable>
 
-        {counts && counts.views > 0 ? (
-          <AppText variant="caption" color={muted}>{t('social.views', { value: String(counts.views) })}</AppText>
-        ) : null}
-      </View>
+          {counts && counts.views > 0 ? (
+            <AppText variant="caption" color={muted}>
+              {t("social.views", { value: String(counts.views) })}
+            </AppText>
+          ) : null}
+        </View>
       ) : null}
 
       {!fill && !signedIn ? (
-        <AppText variant="caption" color={muted}>{t('social.needAccount')}</AppText>
+        <AppText variant="caption" color={muted}>
+          {t("social.needAccount")}
+        </AppText>
       ) : null}
     </View>
   );
 
   return (
-    <View style={fill
-      ? [styles.card, styles.fillCard, { width: fill.width, height: fill.height }]
-      : [styles.card, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
+    <View
+      style={
+        fill
+          ? [
+              styles.card,
+              styles.fillCard,
+              { width: fill.width, height: fill.height },
+            ]
+          : [
+              styles.card,
+              {
+                backgroundColor: theme.colors.surface,
+                borderRadius: theme.radius.card,
+              },
+            ]
+      }
+    >
       {media}
-      {auth ? <PublicationAuthSheet visible onClose={() => setAuth(false)} /> : null}
-      {options ? <ReelOptions reel={reel} onClose={() => setOptions(false)} onShare={share} onLike={toggleLike} onComment={() => onOpenComments(reel)} liked={liked} canLike={signedIn} interactionError={error} /> : null}
+      {auth ? (
+        <PublicationAuthSheet visible onClose={() => setAuth(false)} />
+      ) : null}
+      {options ? (
+        <ReelOptions
+          reel={reel}
+          onClose={() => setOptions(false)}
+          onShare={share}
+          onLike={toggleLike}
+          onComment={() => onOpenComments(reel)}
+          liked={liked}
+          canLike={signedIn}
+          interactionError={error}
+        />
+      ) : null}
       {fill ? (
         // Plein écran : tiroir par-dessus la vidéo. Le lecteur n'est pas démonté,
         // donc ouvrir les articles ne met PAS le Reel en pause.
@@ -212,7 +421,11 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
             onComment: () => onOpenComments(reel),
             onOptions: () => setOptions(true),
           }}
-          favourites={signedIn ? favourites : { isFavorite: () => false, toggle: () => setAuth(true) }}
+          favourites={
+            signedIn
+              ? favourites
+              : { isFavorite: () => false, toggle: () => setAuth(true) }
+          }
         >
           {({ bottom }) => body(bottom)}
         </ReelShopTray>
@@ -234,16 +447,53 @@ export function ReelCard({ reel, active, counts, onOpenComments, fill }: ReelCar
 }
 
 const styles = StyleSheet.create({
-  card: { marginBottom: 12, overflow: 'hidden' },
-  media: { width: '100%', aspectRatio: MEDIA_RATIO.reel, justifyContent: 'flex-end' },
-  fillCard: { marginBottom: 0, borderRadius: 0, backgroundColor: VIDEO_BACKDROP },
-  fillMedia: { position: 'absolute', top: 0, bottom: 0, start: 0, end: 0, backgroundColor: VIDEO_BACKDROP },
+  card: { marginBottom: 12, overflow: "hidden" },
+  media: {
+    width: "100%",
+    aspectRatio: MEDIA_RATIO.reel,
+    justifyContent: "flex-end",
+  },
+  fillCard: {
+    marginBottom: 0,
+    borderRadius: 0,
+    backgroundColor: VIDEO_BACKDROP,
+  },
+  fillMedia: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    start: 0,
+    end: 0,
+    backgroundColor: VIDEO_BACKDROP,
+  },
   // `paddingEnd` réserve la colonne du rail (44 de cible + 8 de marge) : la légende
   // ne passe jamais sous les icônes, comme sur la planche `mockup-v4-24-10.png`.
-  fillBody: { position: 'absolute', start: 0, end: 0, bottom: 0, padding: 16, paddingEnd: 64, paddingBottom: 20, gap: 6 },
-  poster: { alignItems: 'center', justifyContent: 'center' },
-  duration: { position: 'absolute', top: 10, start: 10, paddingHorizontal: 8, paddingVertical: 2, borderRadius: RADIUS.full, backgroundColor: veil(0.55) },
+  fillBody: {
+    position: "absolute",
+    start: 0,
+    end: 0,
+    bottom: 0,
+    padding: 16,
+    paddingEnd: 64,
+    paddingBottom: 20,
+    gap: 6,
+  },
+  poster: { alignItems: "center", justifyContent: "center" },
+  duration: {
+    position: "absolute",
+    top: 10,
+    start: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: RADIUS.full,
+    backgroundColor: veil(0.55),
+  },
   body: { padding: 12, gap: 4 },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 6 },
-  action: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    marginTop: 6,
+  },
+  action: { flexDirection: "row", alignItems: "center", gap: 4 },
 });

@@ -2304,8 +2304,15 @@ export class QatafoDatabase {
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM reels').get() as any).count === 0) {
       const nowR = new Date().toISOString();
       this.db.prepare(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?)`)
-        .run('reel_demo_01', 'La sélection ZAYROVI en mouvement', 'pub_ayrovi', 'Découvrez la sélection en vidéo.', 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', 8, nowR, 'publie', nowR, nowR);
+        .run('reel_demo_01', 'La sélection ZAYROVI en mouvement', 'pub_ayrovi', 'Découvrez la sélection en vidéo.', '/media/reels/flower-cc0-v1.mp4', 8, nowR, 'publie', nowR, nowR);
     }
+
+    // Only repair the known hotlinked seed. Never overwrite a CRM-edited video or other Reel.
+    this.runOnceDataMigration('reel_demo_same_origin_media_v1', () => {
+      this.run(`UPDATE reels SET video_url=? WHERE id=? AND video_url=?`,
+        '/media/reels/flower-cc0-v1.mp4', 'reel_demo_01',
+        'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4');
+    });
 
     this.ensureColumn('order_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'requested_color', "TEXT NOT NULL DEFAULT ''");
