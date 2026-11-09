@@ -1,0 +1,26 @@
+{
+  "tech": {
+    "top": "#827d7b",
+    "bottom": "#464240"
+  },
+  "modeHomme": {
+    "top": "#a6a19b",
+    "bottom": "#a6a19b"
+  },
+  "modeFemme": {
+    "top": "#d4beaf",
+    "bottom": "#b0a59e"
+  },
+  "bebe": {
+    "top": "#c59769",
+    "bottom": "#ba8a59"
+  },
+  "maison": {
+    "top": "#7e6a5c",
+    "bottom": "#6d5e54"
+  },
+  "sport": {
+    "top": "#ababac",
+    "bottom": "#a7a6a7"
+  }
+}

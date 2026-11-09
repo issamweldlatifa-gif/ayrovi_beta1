@@ -11,3 +11,8 @@ Amazon screenshots are typography references only, not bundled artwork.
 Each photo fills a 900×1440 JPEG edge to edge using a centered cover crop.
 There is no baked-in padding or header. Native localized titles overlay a contrast
 gradient. This supersedes the earlier contained composition.
+
+`palette.json` is photo metadata (mean RGB of the decoded top and bottom rows),
+not a brand/action/status palette. Brown/orange pixels in owner photographs are
+not UI brand orange. Recompute these samples if the JPEGs change; materialize
+sharp's extract before averaging (stats alone ignores pending transforms).

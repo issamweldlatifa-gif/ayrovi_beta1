@@ -1,3 +1,4 @@
+import HERO_PHOTO_EDGES from '../../assets/hero/palette.json';
 import { PUBLICATION_SOCIAL_SURFACE, PUBLICATION_LIKE, PUBLICATION_DISLIKE, PUBLICATION_DISCOVERY_BLUE } from '../../../../shared/publicationPresentation';
 /**
  * Jetons propres à React Native — écrits à la main, et c'est volontaire.
@@ -730,14 +731,8 @@ export const HERO_DEMO_BACKGROUND = {
  * Le carrousel prend ainsi le fond même de la photo, du haut jusqu'en bas.
  * Couleurs de CONTENU (tirées des photos), réservées aux cartes de démonstration.
  */
-export const HERO_DEMO_EDGES = {
-  tech: { top: '#585655', bottom: '#585655' },
-  modeHomme: { top: '#a09386', bottom: '#a09386' },
-  modeFemme: { top: '#817b79', bottom: '#817b79' },
-  bebe: { top: '#a37549', bottom: '#a37549' },
-  maison: { top: '#6f5c4f', bottom: '#6f5c4f' },
-  sport: { top: '#aeadae', bottom: '#aeadae' },
-} as const;
+// Photo metadata is content, never a brand/action/status colour.
+export const HERO_DEMO_EDGES = HERO_PHOTO_EDGES;
 
 /**
  * Couleurs officielles du logo « G » de Google (identité de marque d'un TIERS,
