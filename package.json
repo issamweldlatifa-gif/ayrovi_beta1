@@ -1,7 +1,7 @@
 {
   "name": "ayrovi",
   "version": "3.10.4",
-  "description": "ZAYROVI \u2014 Universal Cross-Border Shopping & Visual AI Platform (React + Vite + TypeScript)",
+  "description": "ZAYROVI — Universal Cross-Border Shopping & Visual AI Platform (React + Vite + TypeScript)",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
@@ -58,7 +58,8 @@
     "audit:performance": "esbuild verify/performance-audit.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/performance-audit.cjs --log-level=error && node .cache/performance-audit.cjs",
     "audit:database": "esbuild verify/database-structure-audit.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/database-structure-audit.cjs --log-level=error && node .cache/database-structure-audit.cjs",
     "bench:public-products": "esbuild verify/public-product-read-benchmark.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/public-product-read-benchmark.cjs --log-level=error && node .cache/public-product-read-benchmark.cjs",
-    "backup:verify": "node scripts/verify-sqlite-backup.mjs"
+    "backup:verify": "node scripts/verify-sqlite-backup.mjs",
+    "test:security:local": "vitest run tests/adversarial-customer-isolation.test.ts tests/adversarial-inputs.test.ts tests/authenticated-rate-key.test.ts tests/rate-limit.test.ts tests/customer-mobile-session.test.ts tests/customer-account-settings.test.ts tests/customer-native-oauth-handoff.test.ts tests/customer-password-recovery.test.ts tests/assistant-tool-security.test.ts tests/quote-security.test.ts tests/public-upload-policy.test.ts tests/safe-url.test.ts tests/admin-bootstrap-security.test.ts tests/hardening.test.ts tests/social-interaction-boundary.test.ts tests/publication-preference-boundary.test.ts tests/push.test.ts"
   },
   "keywords": [
     "ayrovi",
