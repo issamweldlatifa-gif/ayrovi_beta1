@@ -717,23 +717,27 @@ export const isAndroid = Platform.OS === 'android';
  * ne servent qu'aux cartes de démonstration hors ligne.
  */
 export const HERO_DEMO_BACKGROUND = {
-  tech: '#252B2D',
-  modeHomme: '#A09C96',
-  modeFemme: '#997B68',
-  sport: '#A78F7A',
+  tech: '#202124',
+  modeHomme: '#EDE6DC',
+  modeFemme: '#F2F1EF',
+  bebe: '#EFE5D8',
+  maison: '#EDE4D9',
+  sport: '#F1F1EF',
 } as const;
 
 /**
- * Bords EXACTS (haut / bas) de chaque visuel de démo : médiane des deux lignes
- * extrêmes de sa miniature 10×10 — le même calcul que le serveur (palette v3).
+ * Bords haut / bas des compositions : couleur du cadre ajouté autour
+ * des photos fournies par le propriétaire.
  * Le carrousel prend ainsi le fond même de la photo, du haut jusqu'en bas.
  * Couleurs de CONTENU (tirées des photos), réservées aux cartes de démonstration.
  */
 export const HERO_DEMO_EDGES = {
-  tech: { top: '#274546', bottom: '#20272A' },
-  modeHomme: { top: '#60685B', bottom: '#A9A49E' },
-  modeFemme: { top: '#E0C3A0', bottom: '#8E877E' },
-  sport: { top: '#D0D6D9', bottom: '#E1B889' },
+  tech: { top: HERO_DEMO_BACKGROUND.tech, bottom: HERO_DEMO_BACKGROUND.tech },
+  modeHomme: { top: HERO_DEMO_BACKGROUND.modeHomme, bottom: HERO_DEMO_BACKGROUND.modeHomme },
+  modeFemme: { top: HERO_DEMO_BACKGROUND.modeFemme, bottom: HERO_DEMO_BACKGROUND.modeFemme },
+  bebe: { top: HERO_DEMO_BACKGROUND.bebe, bottom: HERO_DEMO_BACKGROUND.bebe },
+  maison: { top: HERO_DEMO_BACKGROUND.maison, bottom: HERO_DEMO_BACKGROUND.maison },
+  sport: { top: HERO_DEMO_BACKGROUND.sport, bottom: HERO_DEMO_BACKGROUND.sport },
 } as const;
 
 /**

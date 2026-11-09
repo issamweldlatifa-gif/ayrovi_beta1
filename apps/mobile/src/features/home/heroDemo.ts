@@ -6,7 +6,7 @@
  * cartes embarquées (visuels dans `assets/hero/`) prennent alors le relais.
  * Une carte réellement publiée par l'Admin gagne toujours sur la démo.
  *
- * Les visuels sont générés (IA), sans texte ; les titres viennent des données.
+ * Les visuels sont fournis par le propriétaire, sans texte ; les titres viennent des données.
  */
 
 export const HERO_DEMO_ENABLED = process.env.EXPO_PUBLIC_HERO_DEMO === '1';

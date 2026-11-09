@@ -255,3 +255,19 @@ describe('une seule carte', () => {
     expect(currentCard()).toBe(1);
   });
 });
+
+
+describe('owner Hero collection', () => {
+  it('ships the six renamed cards in order with local images and readable black/white copy', async () => {
+    const { demoHeroSlides } = require('../../src/features/home/heroDemoSlides');
+    const cards: HeroSlide[] = demoHeroSlides();
+    expect(cards.map(card => card.title)).toEqual([
+      'Mode homme', 'Mode femme', 'Mode bébé', 'Mode électrique', 'Mode maison', 'Mode sport',
+    ]);
+    expect(cards.every(card => card.localImage != null && card.subtitle && card.titleAr && card.subtitleAr)).toBe(true);
+    await renderCarousel(SETTINGS, cards);
+    expect(StyleSheet.flatten(screen.getByText('Mode homme').props.style).color).toBe('#0A0A0A');
+    await renderCarousel(SETTINGS, [cards[3]]);
+    expect(StyleSheet.flatten(screen.getByText('Mode électrique').props.style).color).toBe('#FFFFFF');
+  });
+});

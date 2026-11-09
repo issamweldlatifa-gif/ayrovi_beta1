@@ -299,6 +299,10 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
   const isArabic = locale === 'ar';
   const title = pickHeroText(card.title, card.titleAr, isArabic);
   const subtitle = pickHeroText(card.subtitle, card.subtitleAr, isArabic);
+  // Bundled artwork reserves a clean header; CMS photos keep their protective scrim.
+  const ownedArtwork = card.localImage != null && isDemoSlide(card.id);
+  const darkCopy = ownedArtwork && card.id !== 'demo-tech';
+  const copyColor = darkCopy ? theme.colors.ink : theme.colors.onMedia;
   // La carte entière est le lien : aucun bouton CTA séparé sous le visuel.
   const label = [title, subtitle].filter(Boolean).join(' · ');
 
@@ -321,7 +325,7 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
           decorative={!title}
         />
         {/* Voile sombre en haut : garantit le contraste du titre posé sur la photo. */}
-        <LinearGradient
+        {!ownedArtwork ? <LinearGradient
           colors={[theme.colors.scrim, withAlpha(theme.colors.scrim, 0)]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 0.6 }}
@@ -329,16 +333,16 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
           pointerEvents="none"
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
-        />
+        /> : null}
         {title || subtitle ? (
           <View style={styles.cardCopy} pointerEvents="none">
             {title ? (
-              <AppText variant="h3" color={theme.colors.onMedia} numberOfLines={2}>
+              <AppText variant="h2" color={copyColor} numberOfLines={2} style={{ fontFamily: theme.font('bold') }}>
                 {title}
               </AppText>
             ) : null}
             {subtitle ? (
-              <AppText variant="body" color={theme.colors.onMedia} numberOfLines={2} style={styles.cardSubtitle}>
+              <AppText variant="bodySmall" color={copyColor} numberOfLines={2} style={styles.cardSubtitle}>
                 {subtitle}
               </AppText>
             ) : null}
