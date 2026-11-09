@@ -1,4 +1,4 @@
-import { PUBLICATION_PALETTE as P } from './publicationDesign';
+import { PUBLICATION_PALETTE as P, PUBLICATION_TYPE } from './publicationDesign';
 import {
   mediaFit,
   mediaRatio,
@@ -319,7 +319,7 @@ export function PublicationMedia({
                     : photoAspect
                 ),
                 backgroundColor: P.paper,
-                borderRadius: template === 'campaign' ? 0 : RADIUS.md,
+                borderRadius: PUBLICATION_TYPE.mediaRadius,
               }
             : undefined,
           natural

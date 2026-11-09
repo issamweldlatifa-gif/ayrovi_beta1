@@ -206,7 +206,7 @@ export function PublicationPublisher({
           <View
             style={[
               styles.identity,
-              onOptions ? { paddingRight: PUBLICATION_TYPE.touch } : undefined,
+              onOptions ? { paddingEnd: PUBLICATION_TYPE.touch } : undefined,
             ]}
           >
             <AppText
@@ -303,7 +303,7 @@ export function PublicationPublisher({
 }
 const styles = StyleSheet.create({
   row: { minHeight: PUBLICATION_TYPE.column, minWidth: 0 },
-  name: { marginLeft: PUBLICATION_TYPE.column, minWidth: 0, gap: 4 },
+  name: { marginStart: PUBLICATION_TYPE.column, minWidth: 0, gap: 4 },
   identity: { flexDirection: "row", alignItems: "center", gap: 4, minWidth: 0 },
   detailFollow: {
     position: "absolute",
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   },
   avatarWrap: {
     position: "absolute",
-    left: 0,
+    start: 0,
     top: 0,
     width: PUBLICATION_TYPE.column,
     height: PUBLICATION_TYPE.column,

@@ -87,7 +87,7 @@ export function PublicationDescription({
   );
   const measured = (height: number) => {
     if (latest.current !== token || !width) return;
-    const fits = height <= PUBLICATION_TYPE.bodyLine * fontScale * 3 + 1;
+    const fits = height <= (publicationTextStyle(locale).lineHeight || PUBLICATION_TYPE.bodyLine) * fontScale * 3 + 1;
     if (!search) {
       setFit(
         fits

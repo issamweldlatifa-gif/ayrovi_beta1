@@ -36,6 +36,12 @@ export function publicationTextStyle(
       : PUBLICATION_TYPE.bodySize,
     lineHeight: caption
       ? PUBLICATION_TYPE.captionLine
+      : variant === 'display' || variant === 'h1'
+      ? PUBLICATION_TYPE.headlineLine
+      : variant === 'h3' || variant === 'h2'
+      ? PUBLICATION_TYPE.titleLine
+      : locale === 'ar'
+      ? PUBLICATION_TYPE.arabicBodyLine
       : PUBLICATION_TYPE.bodyLine,
   };
 }

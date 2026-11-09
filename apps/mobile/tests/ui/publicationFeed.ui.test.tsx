@@ -1176,7 +1176,7 @@ it.each([false, true])(
       />
     );
     expect(screen.getByTestId('publication-publisher-avatar-slot')).toHaveStyle(
-      { position: 'absolute', left: 0, top: 0, width: 52, height: 52 }
+      { position: 'absolute', start: 0, top: 0, width: 52, height: 52 }
     );
     expect(screen.getByTestId('publication-publisher-avatar')).toHaveStyle({
       width: 44,
@@ -1328,8 +1328,10 @@ it.each([
     expect(copyIndex).toBeGreaterThanOrEqual(0);
     expect(copyIndex).toBeLessThan(mediaIndex);
     expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle({
-      ...(template === 'split' || template === 'campaign'
+      ...(template === 'split'
         ? { gap: 0 }
+        : template === 'campaign'
+        ? { marginStart: 52 }
         : template === 'social_pair' || template === 'social_mosaic'
         ? { marginHorizontal: 4 }
         : [
@@ -1341,7 +1343,7 @@ it.each([
             'caption_photo',
             'shoppable',
           ].includes(template)
-        ? { marginLeft: 52 }
+        ? { marginStart: 52 }
         : { gap: 8 }),
     });
   }
@@ -1493,7 +1495,7 @@ it('aligns the copy column with the publisher name and keeps media independent',
     screen.getByTestId('publication-editorial-header-ui-post')
   ).toHaveStyle({ gap: 4, minHeight: 52 });
   expect(screen.getByTestId('publication-publisher-column')).toHaveStyle({
-    marginLeft: 52,
+    marginStart: 52,
   });
   expect(screen.getByTestId('publication-publisher-column')).toContainElement(
     screen.getByTestId('publication-copy-ui-post')
@@ -1716,4 +1718,24 @@ it('groups feed actions at the copy edge but centers the immersive group', async
   expect(
     screen.getByTestId('publication-action-row-viewer-ui-post')
   ).toHaveStyle({ justifyContent: 'center', gap: 8 });
+});
+
+
+it('uses compact reference leading and a rounded aligned campaign image', async () => {
+  const { publicationTextStyle } = require('@/features/publications/publicationDesign');
+  expect(publicationTextStyle('fr')).toMatchObject({ fontSize: 16, lineHeight: 22 });
+  expect(publicationTextStyle('fr', 'h1')).toMatchObject({ fontSize: 20, lineHeight: 26 });
+  expect(publicationTextStyle('ar')).toMatchObject({ fontFamily: 'NotoSansArabic-Regular', lineHeight: 26 });
+  await mount(<PublicationCard post={referencePost('campaign', 1)} compact={false} onComments={jest.fn()} onReaction={jest.fn()} />);
+  expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle({ marginStart: 52 });
+  expect(screen.getByTestId('publication-media-ui-post')).toHaveStyle({ borderRadius: 16 });
+});
+
+
+it('selects native Android Roboto without replacing the iOS bundled family', () => {
+  const { publicationLatinFont } = require('@/features/publications/publicationTokens');
+  expect(publicationLatinFont(false, 'android')).toBe('sans-serif');
+  expect(publicationLatinFont(true, 'android')).toBe('sans-serif-medium');
+  expect(publicationLatinFont(false, 'ios')).toBe('Publication-Regular');
+  expect(publicationLatinFont(true, 'ios')).toBe('Publication-SemiBold');
 });

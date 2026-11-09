@@ -1,4 +1,5 @@
 /** Explicitly approved visual scope: Publication only, never a global theme override. */
+import { Platform } from 'react-native';
 import { BRAND_ACCENT } from '@/design/brandAppearance';
 import { PUBLICATION_THEME } from '@/design/tokens.mobile';
 export const PUBLICATION_PALETTE = {
@@ -20,15 +21,25 @@ export const PUBLICATION_PALETTE = {
   backdrop: '#000000',
   input: '#F1F1F1',
 } as const;
+/** Native Android Roboto is a closer reference match; do not override other features. */
+export function publicationLatinFont(strong: boolean, os: string = Platform.OS): string {
+  if (os === 'android') return strong ? 'sans-serif-medium' : 'sans-serif';
+  return strong ? 'Publication-SemiBold' : 'Publication-Regular';
+}
 export const PUBLICATION_TYPE = {
-  regular: 'Publication-Regular',
-  semibold: 'Publication-SemiBold',
+  // Android reference: native Roboto; keep the licensed bundled face elsewhere.
+  regular: publicationLatinFont(false),
+  semibold: publicationLatinFont(true),
   captionSize: 13,
   captionLine: 18,
   titleSize: 18,
   headlineSize: 20,
   bodySize: 16,
-  bodyLine: 24,
+  bodyLine: 22,
+  arabicBodyLine: 26,
+  titleLine: 24,
+  headlineLine: 26,
+  mediaRadius: 16,
   nameSize: 16,
   nameLine: 22,
   icon: 22,

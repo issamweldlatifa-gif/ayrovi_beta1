@@ -55,7 +55,7 @@ export function PublicationCard({
     post.category
   );
   const wideMedia = template === 'social_pair' || template === 'social_mosaic';
-  const columnMedia = template !== 'split' && template !== 'campaign';
+  const columnMedia = template !== 'split';
   const split = template === 'split';
   const campaign = template === 'campaign';
   const action = () => {
@@ -177,11 +177,9 @@ export function PublicationCard({
           wideMedia
             ? { marginHorizontal: 4 }
             : columnMedia
-            ? { marginLeft: PUBLICATION_TYPE.column }
+            ? { marginStart: PUBLICATION_TYPE.column }
             : split
             ? styles.editorial
-            : campaign
-            ? [styles.campaign, { marginHorizontal: -mediaInset }]
             : styles.content
         }
       >
@@ -196,14 +194,14 @@ export function PublicationCard({
       </View>
       <View
         style={
-          columnMedia ? { marginLeft: PUBLICATION_TYPE.column } : undefined
+          columnMedia ? { marginStart: PUBLICATION_TYPE.column } : undefined
         }
       >
         {cta}
       </View>
       <View
         style={
-          columnMedia ? { marginLeft: PUBLICATION_TYPE.column } : undefined
+          columnMedia ? { marginStart: PUBLICATION_TYPE.column } : undefined
         }
       >
         <PublicationActions
@@ -240,9 +238,7 @@ const styles = StyleSheet.create({
   editorial: { gap: 0, backgroundColor: P.splitPaper },
   editorialCopy: { backgroundColor: P.splitPaper },
   splitMedia: { width: '100%' },
-  campaign: { gap: 0 },
   campaignCopy: {
-    paddingVertical: S.group,
     backgroundColor: P.campaignPaper,
   },
   cta: {
