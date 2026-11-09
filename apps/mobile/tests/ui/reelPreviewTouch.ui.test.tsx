@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react-native';
+import { AppState } from 'react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { useVideoPlayer } from 'expo-video';
 import { ReelPreview } from '../../src/features/reels/ReelPreview';
 import { reloadReelVideo } from '../../src/features/reels/playReelVideo';
@@ -38,4 +39,31 @@ it('fills fullscreen video without stretching and preserves contain for embedded
   expect(screen.UNSAFE_getByType(VideoView).props.contentFit).toBe('cover');
   player.rerender(<ReelPlayback {...props} />);
   expect(screen.UNSAFE_getByType(VideoView).props.contentFit).toBe('contain');
+});
+
+jest.mock('../../src/design/LoadingScreen', () => ({ BrandLoadingIndicator: () => null }));
+it('keeps loading until the native first-frame callback, not just readyToPlay', () => {
+  const original = AppState.currentState;
+  AppState.currentState = 'active';
+  try {
+    const { ReelPlayback } = require('../../src/features/reels/ReelPlayback');
+    const { VideoView } = require('expo-video');
+    const player = render(<ReelPlayback id="frame" uri="/real.mp4" paused={false} onPausedChange={jest.fn()} soundOn={false} blocked={false} />);
+    expect(screen.getByTestId('reel-loading-frame')).toBeTruthy();
+    fireEvent(screen.UNSAFE_getByType(VideoView), 'firstFrameRender');
+    expect(screen.queryByTestId('reel-loading-frame')).toBeNull();
+    player.unmount();
+  } finally { AppState.currentState = original; }
+});
+it('reports a ready-but-no-frame stall and clears its deadline on unmount', () => {
+  jest.useFakeTimers(); mockReportError.mockClear();
+  const original = AppState.currentState; AppState.currentState = 'active';
+  try {
+    const { ReelPlayback } = require('../../src/features/reels/ReelPlayback');
+    const player = render(<ReelPlayback id="stall" uri="/real.mp4" paused={false} onPausedChange={jest.fn()} soundOn={false} blocked={false} />);
+    act(() => jest.advanceTimersByTime(20_000));
+    expect(mockReportError).toHaveBeenCalledTimes(1);
+    player.unmount();
+    expect(jest.getTimerCount()).toBe(0);
+  } finally { AppState.currentState = original; jest.useRealTimers(); }
 });

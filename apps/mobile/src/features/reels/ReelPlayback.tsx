@@ -8,7 +8,8 @@ import { BrandLoadingIndicator } from '@/design/LoadingScreen';
 import { useI18n, useT } from '@/i18n';
 import { veil, VIDEO_BACKDROP } from '@/design/tokens.mobile';
 import { playReelVideo, reloadReelVideo } from './playReelVideo';
-import { useReelPlaybackStatus } from './useReelPlaybackStatus';
+import { reelPlaybackTiming } from './reelPlaybackTiming';
+import { REEL_LOAD_DEADLINE_MS, useReelPlaybackStatus } from './useReelPlaybackStatus';
 
 export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked, contentFit = 'contain' }: {
   id: string; uri: string; paused: boolean; onPausedChange: (paused: boolean) => void;
@@ -18,6 +19,8 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
   const t = useT();
   const { locale } = useI18n();
   const view = useRef<VideoView>(null);
+  const [firstFrame, setFirstFrame] = useState(false);
+  const finishTiming = useRef<((firstFrame: boolean) => void) | null>(null);
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
   useEffect(() => {
     const sub = AppState.addEventListener('change', state => setForeground(state === 'active'));
@@ -30,8 +33,18 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
   const playback = useReelPlaybackStatus(player, true, uri, view);
   useEffect(() => {
     if (!player) return;
+    setFirstFrame(false);
+    const finish = reelPlaybackTiming.start();
+    finishTiming.current = finish;
     void reloadReelVideo(player, view.current, uri).catch(playback.reportError);
+    return () => { finishTiming.current?.(false); finishTiming.current = null; };
   }, [player, uri, playback.reportError]);
+  // readyToPlay means buffered, not that a frame was actually displayed.
+  useEffect(() => {
+    if (firstFrame || paused || blocked || !foreground || playback.status !== 'readyToPlay') return;
+    const timer = setTimeout(playback.reportError, REEL_LOAD_DEADLINE_MS);
+    return () => clearTimeout(timer);
+  }, [firstFrame, paused, blocked, foreground, playback.status, playback.reportError]);
   useEffect(() => {
     if (!player) return;
     if (playback.status === 'readyToPlay' && !paused && foreground && !blocked)
@@ -41,10 +54,11 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
   useEffect(() => { if (player) player.muted = !soundOn; }, [player, soundOn]);
   return <>
     {player ? <View pointerEvents="none" collapsable={false} style={StyleSheet.absoluteFill}><VideoView ref={view} player={player} pointerEvents="none" surfaceType="textureView"
+      onFirstFrameRender={() => { setFirstFrame(true); finishTiming.current?.(true); }}
       style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', backgroundColor: VIDEO_BACKDROP }]} contentFit={contentFit} nativeControls={false} /></View> : null}
     <Pressable accessibilityRole="button" accessibilityLabel={paused ? t('social.play') : t('social.pause')}
       onPress={() => onPausedChange(!paused)} style={StyleSheet.absoluteFill} />
-    {(playback.status === 'loading' || playback.status === 'idle') && <View pointerEvents="none"
+    {(playback.status === 'loading' || playback.status === 'idle' || (!firstFrame && !paused && !blocked && foreground && playback.status === 'readyToPlay')) && <View pointerEvents="none"
       testID={`reel-loading-${id}`} style={[StyleSheet.absoluteFill, styles.center]} accessibilityRole="progressbar">
       <BrandLoadingIndicator size={64} />
     </View>}
@@ -54,7 +68,13 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
         ? 'تعذّر تشغيل الفيديو. ثبّت في الاتصال وعاود جرّب.'
         : 'Impossible de lire la vidéo. Vérifiez votre connexion et réessayez.'}</AppText>
       <Pressable accessibilityRole="button" accessibilityLabel={t('common.retry')}
-        onPress={() => { onPausedChange(false); void playback.retry(); }}
+        onPress={() => {
+          finishTiming.current?.(false);
+          finishTiming.current = reelPlaybackTiming.start();
+          setFirstFrame(false);
+          onPausedChange(false);
+          void playback.retry();
+        }}
         style={{ minHeight: 44, minWidth: 120, padding: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.colors.canvas, borderRadius: theme.radius.card }}>
         <AppText color={theme.colors.ink}>{t('common.retry')}</AppText>
       </Pressable>

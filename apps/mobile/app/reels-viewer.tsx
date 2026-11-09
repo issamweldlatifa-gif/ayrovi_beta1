@@ -104,9 +104,9 @@ export default function ReelsViewerScreen() {
 
   const fill = useMemo(() => ({ width, height }), [width, height]);
   const renderItem = useCallback(({ item }: { item: Reel }) => (
-    <ReelCard reel={item} active={focused && !commentsFor && playingId === item.id}
+    <ReelCard reel={item} active={focused && !reels.isPlaceholderData && !commentsFor && playingId === item.id}
       counts={counts.data?.[item.id]} onOpenComments={setCommentsFor} fill={fill} />
-  ), [focused, commentsFor, playingId, counts.data, fill]);
+  ), [focused, reels.isPlaceholderData, commentsFor, playingId, counts.data, fill]);
   useEffect(() => {
     if (previousHeight.current !== height) {
       previousHeight.current = height;
@@ -148,7 +148,7 @@ export default function ReelsViewerScreen() {
         renderItem={renderItem}
       /> : null}
 
-      {reels.isPending || (rows.length === 0 && reels.hasNextPage && !reels.isFetchNextPageError) ? (
+      {reels.isPending || reels.isPlaceholderData || (rows.length === 0 && reels.hasNextPage && !reels.isFetchNextPageError) ? (
         <View testID="reels-viewer-loading" style={styles.feedback}>
           <BrandLoadingIndicator />
         </View>

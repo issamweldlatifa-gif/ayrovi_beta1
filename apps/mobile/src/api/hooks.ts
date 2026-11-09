@@ -5,7 +5,7 @@ import { useMemo } from 'react';
  * Un seul endroit décide des clés de requête et des durées de cache : les écrans
  * ne parlent jamais à `fetch` directement.
  */
-import { useInfiniteQuery, useQuery, type UseQueryResult } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData, type UseQueryResult } from '@tanstack/react-query';
 import {
   fetchHeroCarouselSettings, fetchHeroSlides, fetchHomeFeatured,
   fetchNavigation,
@@ -23,7 +23,7 @@ import { HERO_DEMO_ENABLED } from '@/features/home/heroDemo';
 import { demoHeroSlides } from '@/features/home/heroDemoSlides';
 import {
   fetchPublications, fetchReelPage, fetchSocialCounts, fetchStoryPublishers,
-  type Publication, type SocialCounts, type StoryPublisher,
+  type Publication, type ReelPage, type SocialCounts, type StoryPublisher,
 } from './social';
 
 /**
@@ -111,10 +111,21 @@ export const useFooterInfo = (): UseQueryResult<FooterInfo> =>
 
 export const reelPagesKey = (anchor?: string) => [...queryKeys.reels, 'pages', anchor ?? ''] as const;
 export function useReels(enabled = true, anchor?: string) {
+  const client = useQueryClient();
   const result = useInfiniteQuery({
     enabled, queryKey: reelPagesKey(anchor), initialPageParam: null as string | null,
     queryFn: ({ signal, pageParam }) => fetchReelPage(pageParam, { signal }, anchor),
     getNextPageParam: last => last.nextCursor ?? undefined,
+    // Presentation-only handoff; never borrow another query's pagination cursor.
+    placeholderData: anchor ? () => {
+      const state = client.getQueryState<InfiniteData<ReelPage>>(reelPagesKey());
+      if (!state?.data || state.isInvalidated || Date.now() - state.dataUpdatedAt > CONTENT.staleTime) return undefined;
+      for (const page of state.data.pages) {
+        const item = page.items.find(row => row.id === anchor);
+        if (item) return { pages: [{ items: [item], nextCursor: null }], pageParams: [null] };
+      }
+      return undefined;
+    } : undefined,
     ...CONTENT,
   });
   const data = useMemo(() => result.data?.pages.flatMap(page => page.items), [result.data]);

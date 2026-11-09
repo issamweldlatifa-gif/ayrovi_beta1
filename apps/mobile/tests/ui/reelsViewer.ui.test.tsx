@@ -6,7 +6,7 @@ import ReelsViewerScreen from '../../app/reels-viewer';
 import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
-const mockReels: { data: unknown; isPending: boolean } = { data: undefined, isPending: true };
+const mockReels: { data: unknown; isPending: boolean; isPlaceholderData?: boolean } = { data: undefined, isPending: true };
 jest.mock('expo-router', () => ({ useIsFocused: () => true, useLocalSearchParams: () => ({ id: 'r2' }) }));
 jest.mock('../../src/api/hooks', () => ({ useReels: () => mockReels, useSocialCounts: () => ({ data: {} }) }));
 jest.mock('../../src/features/reels/reelVisibility', () => ({ useHiddenReels: () => [] }));
@@ -34,4 +34,14 @@ it('opens a cold-link Reel after loading, and pages by the actual available view
 
 it('uses the same full-screen virtualized viewer for the /reels entry point', () => {
   expect(ReelsScreen).toBe(ReelsViewerScreen);
+});
+
+it('shows cached presentation while keeping playback disabled until the anchored response is verified', () => {
+  mockReels.data = [{ id: 'r2' }]; mockReels.isPending = false; mockReels.isPlaceholderData = true;
+  const viewer = render(wrap());
+  expect(screen.getByTestId('reels-viewer-loading')).toBeTruthy();
+  expect(screen.UNSAFE_getByType(FlatList).props.renderItem({ item: { id: 'r2' } }).props.active).toBe(false);
+  mockReels.isPlaceholderData = false; viewer.rerender(wrap());
+  expect(screen.queryByTestId('reels-viewer-loading')).toBeNull();
+  expect(screen.UNSAFE_getByType(FlatList).props.renderItem({ item: { id: 'r2' } }).props.active).toBe(true);
 });
