@@ -113,7 +113,7 @@ describe('SonimScreen UI', () => {
   it('keeps the mobile composer pure white against a subtle canvas, with a 32dp orange glyph and 44dp touch target', async () => {
     await renderSonim();
     expect(screen.getByTestId('clean-screen-root')).toHaveStyle({ backgroundColor: '#F7F7F7' });
-    expect(screen.getByTestId('clean-composer-box')).toHaveStyle({ backgroundColor: '#FFFFFF', borderRadius: 28 });
+    expect(screen.getByTestId('clean-composer-box')).toHaveStyle({ backgroundColor: '#FFFFFF', borderRadius: 28, paddingHorizontal: 12, paddingVertical: 10 });
     expect(screen.getByTestId('sonim-input')).toHaveStyle({ backgroundColor: '#FFFFFF', color: '#000000' });
     expect(screen.getByTestId('sonim-input').props.underlineColorAndroid).toBe('transparent');
     expect(screen.getByTestId('sonim-send')).toHaveStyle({ width: 44, height: 44 });
@@ -211,6 +211,7 @@ describe('SonimScreen UI', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Voici le calcul complet en dinars.')).toBeTruthy();
+      expect(screen.getByTestId('clean-assistant-bubble')).toHaveStyle({ paddingHorizontal: 16, paddingVertical: 12 });
       expect(screen.getByText('Estimation ZAYROVI')).toBeTruthy();
       expect(screen.getByText('245.50 TND')).toBeTruthy();
     });

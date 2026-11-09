@@ -8,5 +8,6 @@ Owner supplied and requested their use; no independent third-party copyright cla
 The pastel electronics and beauty images were not added (six requested categories).
 Amazon screenshots are typography references only, not bundled artwork.
 
-Each photo is contained without cropping in a 900×1440 JPEG composition with a
-clean header for native localized text. No titles are baked into the artwork.
+Each photo fills a 900×1440 JPEG edge to edge using a centered cover crop.
+There is no baked-in padding or header. Native localized titles overlay a contrast
+gradient. This supersedes the earlier contained composition.

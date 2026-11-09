@@ -1,3 +1,4 @@
+import { TEXT_FRAME } from '../tokens.mobile';
 /**
  * رأس الدرج: العنوان الاختياري، والزر الذي يغلقه. الشريط الصغير فوقه (المقبض) يرمز
  * إلى أن الدرج يُسحب، والسحب يعمل على الرأس كما يعمل على المحتوى.
@@ -40,8 +41,8 @@ export function SheetHeader({ title, subtitle, onClose }: SheetHeaderProps) {
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: TEXT_FRAME.horizontal, paddingVertical: TEXT_FRAME.vertical, borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  titles: { flex: 1, gap: 2 },
+  titles: { flex: 1, minWidth: 0, gap: 2 },
   close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
 });

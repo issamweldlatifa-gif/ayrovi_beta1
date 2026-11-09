@@ -1,3 +1,4 @@
+import { TEXT_FRAME } from '@/design/tokens.mobile';
 /**
  * AYWEBs — page « Toutes les boutiques ».
  *
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     paddingHorizontal: 16,
   },
-  searchInput: { flex: 1, minHeight: 44 },
+  searchInput: { flex: 1, minHeight: 44, paddingVertical: TEXT_FRAME.inputVertical },
   body: { gap: 24, paddingTop: 24, paddingBottom: 24 },
   section: { gap: 12 },
   gridRow: { flexDirection: 'row', alignItems: 'stretch' },

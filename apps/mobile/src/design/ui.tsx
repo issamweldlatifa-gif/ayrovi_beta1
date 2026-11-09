@@ -1,3 +1,4 @@
+import { TEXT_FRAME } from './tokens.mobile';
 /**
  * Briques d'interface minimales du shell. Pas de bibliothèque : chaque élément
  * ici est utilisé par au moins un écran, rien n'est ajouté « au cas où ».
@@ -513,7 +514,9 @@ export function Field(props: TextInputProps & { label?: string }) {
             ...chrome.style,
             borderRadius: theme.radius.control,
             minHeight: theme.geometry.controlHeight,
-            paddingHorizontal: theme.space[3] - chrome.inset,
+            paddingHorizontal: TEXT_FRAME.inputHorizontal - chrome.inset,
+            paddingVertical: TEXT_FRAME.inputVertical - chrome.inset,
+            textAlignVertical: rest.multiline ? 'top' : 'center',
             ...webDirection(theme.isRTL),
           },
           style,

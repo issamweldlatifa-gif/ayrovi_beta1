@@ -123,7 +123,7 @@ function HeroCarouselView({
     return () => subscription.remove();
   }, []);
 
-  // Marge de page (gutter) : la première carte s'aligne sur les titres et le header.
+  // Padding symétrique : chaque carte active se centre dans la largeur mesurée.
   const { cardWidth, stride, sideInset } = carouselGeometry(viewportWidth, gutter);
 
   // Fond de chaque carte = les bords EXACTS de sa photo en mode clair ;
@@ -262,7 +262,7 @@ function HeroCarouselView({
         decelerationRate="fast"
         contentContainerStyle={{ paddingHorizontal: sideInset, gap: CARD_GAP }}
         // Le décalage inclut le retrait initial : sans lui, `scrollToIndex` vise à côté.
-        getItemLayout={(_, index) => ({ length: stride, offset: sideInset + stride * index, index })}
+        getItemLayout={(_, index) => ({ length: stride, offset: stride * index, index })}
         initialNumToRender={2}
         maxToRenderPerBatch={2}
         windowSize={5}
@@ -299,7 +299,7 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
   const isArabic = locale === 'ar';
   const title = pickHeroText(card.title, card.titleAr, isArabic);
   const subtitle = pickHeroText(card.subtitle, card.subtitleAr, isArabic);
-  // Bundled artwork reserves a clean header; CMS photos keep their protective scrim.
+  // Full-bleed photos: a contrast veil keeps copy legible without an inset frame.
   const ownedArtwork = card.localImage != null && isDemoSlide(card.id);
   const darkCopy = ownedArtwork && card.id !== 'demo-tech';
   const copyColor = darkCopy ? theme.colors.ink : theme.colors.onMedia;
@@ -325,15 +325,17 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
           decorative={!title}
         />
         {/* Voile sombre en haut : garantit le contraste du titre posé sur la photo. */}
-        {!ownedArtwork ? <LinearGradient
-          colors={[theme.colors.scrim, withAlpha(theme.colors.scrim, 0)]}
+        <LinearGradient
+          colors={darkCopy
+            ? [withAlpha(theme.colors.surface, 0.94), withAlpha(theme.colors.surface, 0)]
+            : [withAlpha(theme.colors.scrim, 0.85), withAlpha(theme.colors.scrim, 0)]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 0.6 }}
           style={styles.cardScrim}
           pointerEvents="none"
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
-        /> : null}
+        />
         {title || subtitle ? (
           <View style={styles.cardCopy} pointerEvents="none">
             {title ? (

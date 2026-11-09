@@ -1,3 +1,4 @@
+import { TEXT_FRAME } from '@/design/tokens.mobile';
 /**
  * AYWEBs — accueil : TROIS sections, dans cet ordre, et rien de plus.
  *
@@ -546,7 +547,7 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     paddingHorizontal: 16,
   },
-  searchInput: { flex: 1, minHeight: 46 },
+  searchInput: { flex: 1, minHeight: 46, paddingVertical: TEXT_FRAME.inputVertical },
   searchClear: { padding: 2 },
   section: { gap: 12 },
   sectionTitle: { alignItems: 'center', justifyContent: 'space-between', minHeight: 36, gap: 8 },

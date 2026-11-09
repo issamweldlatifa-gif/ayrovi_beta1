@@ -1,3 +1,4 @@
+import { TEXT_FRAME } from '@/design/tokens.mobile';
 /**
  * Sonim — assistant conversationnel IA natif branché sur `/api/assistant/*`.
  *
@@ -653,6 +654,7 @@ export function SonimScreen() {
               return (
                 <View key={message.id} style={[styles.assistantRow, { flexDirection: rowDir, gap: 8, alignItems: 'flex-start' }]}><CleanSpeakerIcon role="assistant" />
                   <View
+                    testID="clean-assistant-bubble"
                     style={[
                       styles.assistantBubble,
                       {
@@ -830,7 +832,7 @@ export function SonimScreen() {
 
       </Drawer>
       <AppSheet surfaceColor={CLEAN.paper} open={attachmentOpen} onDismiss={() => setAttachmentOpen(false)} presentation="bottom"
-        header={<View style={[styles.drawerHeader, { flexDirection: rowDir, borderBottomColor: CLEAN.line }]}><AppText style={CLEAN_TYPE} color={CLEAN.ink}>{t('sonim.attach')}</AppText><Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => setAttachmentOpen(false)} style={styles.headerBtn}><Ionicons name="close-outline" size={theme.iconSize.md} color={CLEAN.ink} /></Pressable></View>}>
+        header={<View style={[styles.drawerHeader, { flexDirection: rowDir, borderBottomColor: CLEAN.line }]}><AppText style={[CLEAN_TYPE, { flex: 1, minWidth: 0 }]} color={CLEAN.ink}>{t('sonim.attach')}</AppText><Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} onPress={() => setAttachmentOpen(false)} style={styles.headerBtn}><Ionicons name="close-outline" size={theme.iconSize.md} color={CLEAN.ink} /></Pressable></View>}>
         {([
           ['camera', 'camera-outline', t('sonim.camera'), () => { void openCamera(); }],
           ['aywebs', 'search-outline', 'AYWEBs', () => router.push('/(tabs)/aywebs')],
@@ -872,7 +874,7 @@ const styles = StyleSheet.create({
   drawerHeader: {
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 12,
+    padding: TEXT_FRAME.horizontal,
     marginBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
@@ -915,7 +917,7 @@ const styles = StyleSheet.create({
   sentThumb: { width: '100%', height: '100%' },
   userBubble: { maxWidth: '100%', paddingHorizontal: 16, paddingVertical: 10 },
   assistantRow: { width: '100%' },
-  assistantBubble: { flex: 1, minWidth: 0, gap: 8 },
+  assistantBubble: { flex: 1, minWidth: 0, gap: 8, paddingHorizontal: TEXT_FRAME.horizontal, paddingVertical: TEXT_FRAME.vertical },
   assistantHead: { alignItems: 'center', gap: 6 },
   statusRow: { alignItems: 'center', gap: 8, paddingVertical: 4 },
   errorBox: { borderWidth: 1, padding: 10 },
@@ -932,8 +934,8 @@ const styles = StyleSheet.create({
   pendingThumb: { width: 44, height: 44 },
   composerBox: {
     borderWidth: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: TEXT_FRAME.inputHorizontal,
+    paddingVertical: TEXT_FRAME.inputVertical,
     gap: 8,
   },
   retryAction: { minHeight: 40, justifyContent: 'center', alignSelf: 'flex-start' },

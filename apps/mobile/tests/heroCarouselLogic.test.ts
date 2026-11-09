@@ -13,10 +13,10 @@ describe('carouselGeometry — dimensions selon l’écran', () => {
     expect(1 / CARD_ASPECT).toBe(1.6);
   });
 
-  it.each([360, 390, 412, 430])('téléphone %i px : carte = 76 %, alignée sur la marge', (screen) => {
+  it.each([360, 390, 412, 430])('téléphone %i px : carte = 76 %, centrée', (screen) => {
     const g = carouselGeometry(screen, 16);
     expect(g.cardWidth).toBe(Math.round(screen * 0.76));
-    expect(g.sideInset).toBe(16);
+    expect(g.sideInset).toBe((screen - g.cardWidth) / 2);
     expect(g.stride).toBe(g.cardWidth + CARD_GAP);
     // La voisine de droite reste visible.
     expect(screen - g.sideInset - g.cardWidth).toBeGreaterThan(0);
@@ -25,7 +25,7 @@ describe('carouselGeometry — dimensions selon l’écran', () => {
   it('tablette : la carte est plafonnée', () => {
     const g = carouselGeometry(1024, 24);
     expect(g.cardWidth).toBe(CARD_MAX_WIDTH);
-    expect(g.sideInset).toBe(24);
+    expect(g.sideInset).toBe((1024 - g.cardWidth) / 2);
   });
 
   it('très petit écran : la carte tient entre les deux marges', () => {
@@ -39,29 +39,30 @@ describe('carouselGeometry — dimensions selon l’écran', () => {
     expect(Number.isInteger(carouselGeometry(390, 16).cardWidth)).toBe(true);
   });
 
-  it('sans marge fournie : départ à 0', () => {
-    expect(carouselGeometry(390).sideInset).toBe(0);
+  it('sans marge fournie : carte centrée', () => {
+    const g = carouselGeometry(390);
+    expect(g.sideInset).toBe((390 - g.cardWidth) / 2);
   });
 });
 
-describe('alignement sur les bords — début ET fin', () => {
+describe('centrage — début ET fin', () => {
   // Décalage maximal du défilement = contenu − écran. Le contenu = marge + cartes + espaces + marge.
   const contentWidth = (count: number, g: ReturnType<typeof carouselGeometry>) =>
     2 * g.sideInset + count * g.cardWidth + (count - 1) * CARD_GAP;
 
   it.each([[360, 2], [360, 4], [390, 3], [430, 6]])(
-    'écran %i, %i cartes : la 1re commence à la marge, la dernière finit à la marge droite',
+    'écran %i, %i cartes : la première et la dernière restent centrées',
     (screen, count) => {
       const inset = 16;
       const g = carouselGeometry(screen, inset);
       const maxScroll = contentWidth(count, g) - screen;
       expect(maxScroll).toBeGreaterThan(0);
       // Début : à défilement 0, la 1re carte commence à la marge.
-      expect(g.sideInset).toBe(inset);
+      expect(g.sideInset).toBe((screen - g.cardWidth) / 2);
       // Fin : au défilement maximal, la dernière carte finit à screen − marge.
       const lastLeftInContent = g.sideInset + (count - 1) * g.stride;
       const lastRightOnScreen = lastLeftInContent + g.cardWidth - maxScroll;
-      expect(lastRightOnScreen).toBe(screen - inset);
+      expect(lastRightOnScreen).toBe(screen - g.sideInset);
     },
   );
 });
@@ -167,3 +168,14 @@ describe('scrollOffsetForIndex — défilement automatique', () => {
   });
 });
 
+
+
+it.each([320, 360, 390, 430, 1024])('equal neighbour visibility at every interior snap on %i', (width) => {
+  const g = carouselGeometry(width, 16);
+  for (let index = 1; index < 5; index++) {
+    const offset = scrollOffsetForIndex(index, g.stride, false);
+    const left = g.sideInset + index * g.stride - offset;
+    expect(left).toBeCloseTo(width - left - g.cardWidth);
+    expect(left - CARD_GAP).toBeCloseTo(width - left - g.cardWidth - CARD_GAP);
+  }
+});

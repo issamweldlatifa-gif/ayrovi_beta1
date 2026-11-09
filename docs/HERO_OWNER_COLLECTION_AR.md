@@ -1,3 +1,5 @@
+> تحديث لاحق: راجع HERO_FULL_BLEED_AND_TEXT_INSETS_AR.md؛ أُلغي تركيب الصورة داخل إطار وأصبح العرض plein cadre مع تمركز الكروت.
+
 # تحديث Hero في التطبيق
 
 - ست فئات بالترتيب: Mode homme، Mode femme، Mode bébé، Mode électrique، Mode maison، Mode sport.

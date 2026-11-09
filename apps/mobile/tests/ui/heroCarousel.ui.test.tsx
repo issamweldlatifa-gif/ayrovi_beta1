@@ -183,21 +183,21 @@ describe('action de la carte Hero', () => {
 });
 
 describe('géométrie et fond', () => {
-  it('la 1re carte commence à la marge de page (gutter, comme le header) : retrait issu de la largeur MESURÉE', async () => {
+  it('la carte est centrée dans la largeur MESURÉE', async () => {
     await renderCarousel();
     measureSection(360);
     const { sideInset } = carouselGeometry(360, GUTTER);
-    expect(sideInset).toBe(GUTTER);
+    expect(sideInset).toBe((360 - carouselGeometry(360, GUTTER).cardWidth) / 2);
     const padding = StyleSheet.flatten(list().props.contentContainerStyle).paddingHorizontal;
     expect(padding).toBe(sideInset);
   });
 
-  it('getItemLayout inclut le retrait : scrollToIndex vise la carte, pas un décalage', async () => {
+  it('getItemLayout suit le pas de centrage sans ajouter le padding', async () => {
     await renderCarousel();
     measureSection(360);
-    const { sideInset, stride: measuredStride } = carouselGeometry(360, GUTTER);
+    const { stride: measuredStride } = carouselGeometry(360, GUTTER);
     const layout = list().props.getItemLayout(null, 1);
-    expect(layout.offset).toBe(sideInset + measuredStride);
+    expect(layout.offset).toBe(measuredStride);
   });
 
   it('les cartes n’ont pas de fond propre : la couleur continue passe derrière les voisines', async () => {

@@ -726,18 +726,17 @@ export const HERO_DEMO_BACKGROUND = {
 } as const;
 
 /**
- * Bords haut / bas des compositions : couleur du cadre ajouté autour
- * des photos fournies par le propriétaire.
+ * Bords haut / bas : moyenne RGB des lignes extrêmes des photos plein cadre.
  * Le carrousel prend ainsi le fond même de la photo, du haut jusqu'en bas.
  * Couleurs de CONTENU (tirées des photos), réservées aux cartes de démonstration.
  */
 export const HERO_DEMO_EDGES = {
-  tech: { top: HERO_DEMO_BACKGROUND.tech, bottom: HERO_DEMO_BACKGROUND.tech },
-  modeHomme: { top: HERO_DEMO_BACKGROUND.modeHomme, bottom: HERO_DEMO_BACKGROUND.modeHomme },
-  modeFemme: { top: HERO_DEMO_BACKGROUND.modeFemme, bottom: HERO_DEMO_BACKGROUND.modeFemme },
-  bebe: { top: HERO_DEMO_BACKGROUND.bebe, bottom: HERO_DEMO_BACKGROUND.bebe },
-  maison: { top: HERO_DEMO_BACKGROUND.maison, bottom: HERO_DEMO_BACKGROUND.maison },
-  sport: { top: HERO_DEMO_BACKGROUND.sport, bottom: HERO_DEMO_BACKGROUND.sport },
+  tech: { top: '#585655', bottom: '#585655' },
+  modeHomme: { top: '#a09386', bottom: '#a09386' },
+  modeFemme: { top: '#817b79', bottom: '#817b79' },
+  bebe: { top: '#a37549', bottom: '#a37549' },
+  maison: { top: '#6f5c4f', bottom: '#6f5c4f' },
+  sport: { top: '#aeadae', bottom: '#aeadae' },
 } as const;
 
 /**
@@ -778,3 +777,6 @@ export const PUBLICATION_THEME = {
 
 /** Owner-approved Clean-only composer contrast and reference sizing; not commerce defaults. */
 export const CLEAN_COMPOSER = { canvas: '#F7F7F7', actionSize: 32, radius: 28 } as const;
+
+/** Minimum breathing room for text inside mobile bordered surfaces. */
+export const TEXT_FRAME = { horizontal: 16, vertical: 12, inputHorizontal: 12, inputVertical: 10 } as const;

@@ -174,3 +174,15 @@ describe('filet de section', () => {
     expect(rule.props.style.backgroundColor).toBe(theme!.colors.line);
   });
 });
+
+
+it('gives shared Fields consistent horizontal and vertical breathing room, including focus', () => {
+  render(wrap(<Field testID="padded-field" multiline placeholder="Message" />));
+  const input = screen.getByTestId('padded-field');
+  for (const phase of ['initial', 'focused']) {
+    if (phase === 'focused') fireEvent(input, 'focus', { nativeEvent: {} });
+    const style = StyleSheet.flatten(input.props.style);
+    expect(style.paddingHorizontal + style.borderWidth).toBeCloseTo(12 + StyleSheet.hairlineWidth);
+    expect(style.paddingVertical + style.borderWidth).toBeCloseTo(10 + StyleSheet.hairlineWidth);
+  }
+});

@@ -1,3 +1,4 @@
+import { TEXT_FRAME } from '@/design/tokens.mobile';
 /**
  * Lens — le filtre des résultats : LE TITRE, rien d'autre (28/10/2026).
  *
@@ -98,6 +99,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  input: { flex: 1, minHeight: 44, padding: 0 },
+  input: { flex: 1, minHeight: 44, paddingVertical: TEXT_FRAME.inputVertical, paddingHorizontal: 0 },
   clear: { alignItems: 'center', justifyContent: 'center' },
 });
