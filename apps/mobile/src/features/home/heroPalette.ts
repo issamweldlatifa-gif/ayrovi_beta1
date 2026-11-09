@@ -99,11 +99,11 @@ export function heroEdgeColors(
 }
 
 
-/** Surrounding section is a lighter derivative, never the card's exact paint. */
+/** Surrounding section stays close to the photo — lightly tempered, never washed out. */
 export function heroBackdropColors(
   card: { background?: string; edgeTop?: string; edgeBottom?: string },
   surface: string,
 ): { top: string; bottom: string } {
   const edge = heroEdgeColors(card, surface);
-  return { top: mixHex(edge.top, surface, 0.65), bottom: mixHex(edge.bottom, surface, 0.65) };
+  return { top: mixHex(edge.top, surface, 0.35), bottom: mixHex(edge.bottom, surface, 0.35) };
 }

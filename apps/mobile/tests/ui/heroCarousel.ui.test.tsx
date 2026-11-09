@@ -15,7 +15,7 @@ import { HeroCarousel } from '../../src/features/home/HeroCarousel';
 import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
-import { carouselGeometry } from '../../src/features/home/heroCarouselLogic';
+import { carouselGeometry, CARD_GAP } from '../../src/features/home/heroCarouselLogic';
 import { heroBackdropColors } from '../../src/features/home/heroPalette';
 import { COLORS } from '../../src/design/tokens.generated';
 import type { HeroSlide } from '../../src/api/public';
@@ -32,9 +32,7 @@ jest.mock('../../src/api/public', () => {
 
 const INTERVAL_MS = 1000;
 const SCREEN_WIDTH = 390; // jest-expo : largeur d'écran par défaut proche d'un téléphone
-// Marge de page des téléphones compacts (même valeur que le header dans jest-expo).
-const GUTTER = 16;
-const { stride } = carouselGeometry(SCREEN_WIDTH, GUTTER);
+const { stride } = carouselGeometry(SCREEN_WIDTH, 3);
 
 function slide(id: string, index: number): HeroSlide {
   return {
@@ -184,23 +182,36 @@ describe('action de la carte Hero', () => {
 });
 
 describe('géométrie et fond', () => {
-  it('la première carte démarre au bord et les suivantes se centrent dans la largeur MESURÉE', async () => {
+  it('gouttière d’écran = espace entre cartes ; cartes intérieures centrées', async () => {
     await renderCarousel();
     measureSection(360);
-    const { sideInset } = carouselGeometry(360, GUTTER);
-    expect(sideInset).toBe((360 - carouselGeometry(360, GUTTER).cardWidth) / 2);
+    const g = carouselGeometry(360, 3);
+    expect(g.startInset).toBe(CARD_GAP);
+    expect(g.endInset).toBe(CARD_GAP);
     const container = StyleSheet.flatten(list().props.contentContainerStyle);
-    expect(container.paddingStart).toBe(0);
-    expect(container.paddingEnd).toBe(sideInset);
-    expect(list().props.snapToOffsets).toEqual([0, carouselGeometry(360, GUTTER).stride - sideInset, 2 * carouselGeometry(360, GUTTER).stride - sideInset]);
+    expect(container.paddingStart).toBe(g.startInset);
+    expect(container.paddingEnd).toBe(g.endInset);
+    // Départ sur la gouttière, centrage de la carte 2, fin bornée à maxScroll.
+    expect(list().props.snapToOffsets).toEqual([0, g.stride - g.centeringOffset, g.maxScroll]);
+    // Au snap de la carte intérieure : reste partagé également entre voisines.
+    const left = g.startInset + g.stride - (g.stride - g.centeringOffset);
+    expect(left).toBe(g.centerInset);
+    expect(left - CARD_GAP).toBe(360 - left - g.cardWidth - CARD_GAP);
   });
 
-  it('getItemLayout suit le pas de centrage sans ajouter le padding', async () => {
+  it('getItemLayout inclut la gouttière de départ', async () => {
     await renderCarousel();
     measureSection(360);
-    const { stride: measuredStride } = carouselGeometry(360, GUTTER);
+    const g = carouselGeometry(360, 3);
     const layout = list().props.getItemLayout(null, 1);
-    expect(layout.offset).toBe(measuredStride);
+    expect(layout.offset).toBe(g.startInset + g.stride);
+  });
+
+  it('la carte garde une limite visible : liseré et élévation sur le visuel', async () => {
+    await renderCarousel();
+    const media = StyleSheet.flatten(screen.getByTestId('hero-card-a-media').props.style);
+    expect(media.borderWidth).toBeGreaterThan(0);
+    expect(media.elevation).toBeGreaterThan(0);
   });
 
   it('les cartes n’ont pas de fond propre : la couleur continue passe derrière les voisines', async () => {
@@ -238,7 +249,7 @@ describe('fondu du fond Hero vers la page', () => {
       expect(screen.getByTestId(`hero-carousel-backdrop-${index}`, { includeHiddenElements: true })).toBeTruthy();
     }
     const gradient = screen.getByTestId('hero-carousel-backdrop-0', { includeHiddenElements: true });
-    expect(gradient.props.locations).toEqual([0, 0.18, 0.55, 0.82, 1]);
+    expect(gradient.props.locations).toEqual([0, 0.62, 0.92, 0.985, 1]);
     expect(gradient.props.colors).toHaveLength(5);
     expect([COLORS.light.canvas, COLORS.dark.canvas].map(processColor)).toContain(gradient.props.colors.at(-1));
   });

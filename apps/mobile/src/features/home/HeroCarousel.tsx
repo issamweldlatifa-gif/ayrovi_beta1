@@ -124,10 +124,11 @@ function HeroCarouselView({
     return () => subscription.remove();
   }, []);
 
-  // sideInset is the centering correction, not leading content padding.
-  const { cardWidth, stride, sideInset } = carouselGeometry(viewportWidth, gutter);
+  // Gouttière d'écran = espace entre cartes ; les cartes intérieures se centrent.
+  const { cardWidth, stride, startInset, endInset, centeringOffset, maxScroll } =
+    carouselGeometry(viewportWidth, slides.length);
 
-  // Fond extérieur dérivé et éclairci, distinct de la peinture de la carte ;
+  // Fond extérieur dérivé de la photo (adouci de justesse, jamais délavé) ;
   // en mode sombre, toile sombre unifiée pour éviter toute rupture chromatique.
   const edges = useMemo(
     () => slides.map((card) => (
@@ -178,12 +179,12 @@ function HeroCarouselView({
       if (!shouldAutoplayAdvance(current, slides.length)) return;
       const next = nextIndex(current, slides.length);
       indexRef.current = next; // sans attendre le rendu : deux ticks successifs restent cohérents
-      // Décalage exact (un pas = une carte) avec le padding de centrage symétrique.
-      listRef.current?.scrollToOffset({ offset: scrollOffsetForIndex(next, stride, theme.isRTL, sideInset), animated: true });
+      // Décalage exact : carte intérieure centrée, dernière bornée à sa gouttière.
+      listRef.current?.scrollToOffset({ offset: scrollOffsetForIndex(next, stride, theme.isRTL, centeringOffset, maxScroll), animated: true });
       setActiveIndex(next);
     }, settings.autoplayIntervalMs);
     return () => clearInterval(timer);
-  }, [settings.autoplay, settings.autoplayIntervalMs, slides.length, paused, reduceMotion, stride, sideInset, theme.isRTL]);
+  }, [settings.autoplay, settings.autoplayIntervalMs, slides.length, paused, reduceMotion, stride, centeringOffset, maxScroll, theme.isRTL]);
 
   const onScrollBeginDrag = useCallback(() => setInteracting(true), []);
   // Glissement relâché SANS élan : RN ne déclenche pas `onMomentumScrollEnd`,
@@ -193,8 +194,8 @@ function HeroCarouselView({
   }, []);
   const onScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     setInteracting(false);
-    setActiveIndex(indexForOffset(event.nativeEvent.contentOffset.x, stride, slides.length, sideInset));
-  }, [slides.length, stride, sideInset]);
+    setActiveIndex(indexForOffset(event.nativeEvent.contentOffset.x, stride, slides.length, centeringOffset));
+  }, [slides.length, stride, centeringOffset]);
 
   const onPressCard = useCallback((card: HeroSlide) => {
     if (!isDemoSlide(card.id)) trackHeroEvent(card.id, 'click', card.destinationType, locale);
@@ -230,13 +231,14 @@ function HeroCarouselView({
             ]}
           >
             <LinearGradient
-              // Plusieurs étapes et un fondu long : la teinte de la photo
-              // s'éclaircit progressivement, sans bande colorée avant le blanc.
+              // La teinte de la photo TIENT sur toute la hauteur (haut puis bas
+              // de sa photo) ; un court fondu final rejoint le fond de page sous
+              // les cartes — les flancs ne blanchissent plus.
               colors={[
                 edge.top,
                 edge.top,
-                mixHex(edge.bottom, theme.colors.canvas, 0.32),
-                mixHex(edge.bottom, theme.colors.canvas, 0.74),
+                edge.bottom,
+                mixHex(edge.bottom, theme.colors.canvas, 0.45),
                 theme.colors.canvas,
               ]}
               locations={EDGE_LOCATIONS}
@@ -257,13 +259,14 @@ function HeroCarouselView({
         horizontal
         inverted={theme.isRTL}
         showsHorizontalScrollIndicator={false}
-        snapToOffsets={carouselSnapOffsets(slides.length, stride, sideInset)}
-        // Snap 0 starts flush; subsequent explicit offsets center each card.
+        snapToOffsets={carouselSnapOffsets(slides.length, stride, centeringOffset, maxScroll)}
+        // Snap 0 = gouttière de départ ; snaps intérieurs = carte centrée ;
+        // dernier snap = maxScroll (gouttière de fin).
         snapToAlignment="start"
         decelerationRate="fast"
-        contentContainerStyle={{ paddingStart: 0, paddingEnd: sideInset, gap: CARD_GAP }}
-        // Physical item positions have no leading padding. Autoplay uses snap offsets.
-        getItemLayout={(_, index) => ({ length: stride, offset: stride * index, index })}
+        contentContainerStyle={{ paddingStart: startInset, paddingEnd: endInset, gap: CARD_GAP }}
+        // Positions physiques : gouttière de départ + un pas par carte.
+        getItemLayout={(_, index) => ({ length: stride, offset: startInset + stride * index, index })}
         initialNumToRender={2}
         maxToRenderPerBatch={2}
         windowSize={5}
@@ -334,7 +337,16 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
       accessibilityRole="link"
       accessibilityLabel={label || undefined}
     >
-      <View style={[styles.cardMedia, { borderRadius: theme.radius.lg }, ownedArtwork ? { backgroundColor: card.edgeTop || card.background } : null]}>
+      {/* Liseré + ombre : la limite entre la carte et le fond dérivé reste
+          nettement visible, même quand le fond reprend la teinte de la photo. */}
+      <View
+        testID={`hero-card-${card.id}-media`}
+        style={[styles.cardMedia, {
+          borderRadius: theme.radius.lg,
+          backgroundColor: theme.colors.shimmer,
+          borderColor: theme.mode === 'dark' ? withAlpha(HERO_COPY.white, 0.24) : withAlpha(HERO_COPY.black, 0.16),
+        }, ownedArtwork ? { backgroundColor: card.edgeTop || card.background } : null]}
+      >
         {ownedArtwork ? copy : null}
         <AppImage
           testID={`hero-card-${card.id}-image`}
@@ -370,7 +382,16 @@ const styles = StyleSheet.create({
   section: { paddingTop: 16, paddingBottom: SECTION_BOTTOM_GAP, overflow: 'hidden' },
   // Pas de marge interne : le visuel occupe toute la largeur de la carte (plus grand).
   card: {},
-  cardMedia: { overflow: 'hidden' },
+  // Liseré fin + ombre douce : la carte reste lisible sur un fond de sa propre teinte.
+  cardMedia: {
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    shadowColor: HERO_COPY.black,
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 7,
+  },
   cardImage: { width: '100%', aspectRatio: CARD_ASPECT },
   ownedImage: { width: '100%', aspectRatio: 1 },
   ownedCopy: { padding: HERO_COPY.inset, minHeight: HERO_COPY.minHeight, justifyContent: 'center' },
@@ -382,8 +403,9 @@ const styles = StyleSheet.create({
 });
 
 /**
- * Bandes de la couche de fond : le haut reprend le bord haut de la photo,
- * puis son bord bas, avant un fondu vers le fond de page en bas de la section.
+ * Bandes de la couche de fond : la teinte pleine de la photo tient jusqu'aux
+ * deux tiers, croisement haut→bas, puis un fondu court (sous les cartes) rejoint
+ * exactement le fond de page.
  */
-const EDGE_LOCATIONS = [0, 0.18, 0.55, 0.82, 1] as const;
+const EDGE_LOCATIONS = [0, 0.62, 0.92, 0.985, 1] as const;
 

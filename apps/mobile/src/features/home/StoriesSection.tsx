@@ -13,7 +13,7 @@ import { FullBleed, useResponsive } from '@/design/layout';
 import { useTheme } from '@/design/theme';
 import { FOOTER_THEME, veil } from '@/design/tokens.mobile';
 import { useI18n } from '@/i18n';
-import { CARD_ASPECT, CARD_GAP, carouselGeometry } from './heroCarouselLogic';
+import { CARD_ASPECT, CARD_GAP, carouselGeometry, carouselSnapOffsets } from './heroCarouselLogic';
 
 export const StoriesSection = memo(function StoriesSection() {
   const theme = useTheme();
@@ -24,7 +24,9 @@ export const StoriesSection = memo(function StoriesSection() {
   const showcase = useStoriesShowcase();
   const settings = showcase.data;
   const rows = (stories.data ?? []).filter(row => row.mediaType === 'IMAGE' && row.mediaUrl).slice(0, settings?.cardCount ?? 0);
-  const { cardWidth, stride } = carouselGeometry(width, gutter);
+  // Même géométrie que le Hero : gouttière d'écran = espace entre cartes,
+  // cartes intérieures centrées à chaque arrêt.
+  const { cardWidth, stride, startInset, endInset, centeringOffset, maxScroll } = carouselGeometry(width, rows.length);
   const local = (fr: string, ar?: string) => locale === 'ar' && ar ? ar : fr;
 
   if (!settings?.enabled || !rows.length || showcase.isError || stories.isError) return null;
@@ -41,8 +43,9 @@ export const StoriesSection = memo(function StoriesSection() {
       <FlatList horizontal data={rows} keyExtractor={item => item.id}
         testID="stories-editorial-rail" accessibilityLabel={t('sections.stories')}
         showsHorizontalScrollIndicator={false} inverted={theme.isRTL}
-        snapToInterval={stride} decelerationRate="fast" disableIntervalMomentum
-        contentContainerStyle={{ paddingHorizontal: gutter, gap: CARD_GAP }}
+        snapToOffsets={carouselSnapOffsets(rows.length, stride, centeringOffset, maxScroll)}
+        decelerationRate="fast" disableIntervalMomentum
+        contentContainerStyle={{ paddingStart: startInset, paddingEnd: endInset, gap: CARD_GAP }}
         renderItem={({ item }) => <View testID={`editorial-story-${item.id}`}
           style={[styles.card, { width: cardWidth, aspectRatio: CARD_ASPECT, borderRadius: theme.radius.card }]}>
           <AppImage uri={mediaUrl(item.mediaUrl)} contentFit="cover" style={StyleSheet.absoluteFill}

@@ -79,6 +79,11 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
             showsHorizontalScrollIndicator={false}
             viewabilityConfig={viewabilityConfig}
             onViewableItemsChanged={onViewableItemsChanged}
+            // Arrêt net sur chaque Reel : la tuile se cale à la marge, la suivante
+            // reste entamée sur le flanc. Gaps serrés (space[2]).
+            snapToInterval={tileWidth + theme.space[2]}
+            decelerationRate="fast"
+            disableIntervalMomentum
             contentContainerStyle={{
               paddingHorizontal: gutter,
               gap: theme.space[2],

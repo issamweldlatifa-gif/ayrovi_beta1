@@ -35,9 +35,9 @@ export function AppHeader({ scrolled, heroBackground = null, brand = 'zayrovi', 
         contentFit="contain" tintColor={AYWEBS_WORDMARK_TINT[theme.mode]} decorative background={null} style={styles.aywebsWordmark} />
         : <BrandWordmark height={25} color={ink} />}
     </Pressable>
-    <View style={{ flexDirection: row, alignItems: 'center', gap: 0 }}>
+    <View style={{ flexDirection: row, alignItems: 'center', gap: 0, flexShrink: 0 }}>
       {brand === 'zayrovi' ? <Pressable testID="plus-light" accessibilityRole="button" accessibilityLabel={t('brand.plusLight')} accessibilityState={{ disabled: true }} disabled
-        style={[styles.plus, { borderColor: ink }]}><AppText variant="captionStrong" color={ink}>Plus</AppText><Ionicons name="star" size={theme.iconSize.xs} color={ink} /><AppText variant="caption" color={ink}>Light</AppText></Pressable> : null}
+        style={[styles.plus, { borderColor: ink }]}><AppText variant="captionStrong" color={ink} numberOfLines={1}>Plus</AppText><Ionicons name="star" size={theme.iconSize.xs} color={ink} /><AppText variant="caption" color={ink} numberOfLines={1}>Light</AppText></Pressable> : null}
       {showNotifications ? icon('notifications-outline', t('account.menu.notifications'), status === 'signedIn' ? '/account/notifications' : '/sign-in') : null}
       {brand === 'aywebs' ? icon('heart-outline', t('account.menu.favorites'), '/account/favorites') : null}
       {icon('bag-outline', t('cart.title'), '/panier')}
@@ -46,8 +46,10 @@ export function AppHeader({ scrolled, heroBackground = null, brand = 'zayrovi', 
 }
 const styles = StyleSheet.create({
   aywebsWordmark: { width: 121, height: 42 },
-  bar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth },
+  // Une seule ligne, toujours : le groupe de contrôles ne se replie jamais,
+  // seul le mot-symbole peut se resserrer sur écran étroit.
+  bar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'nowrap', borderBottomWidth: StyleSheet.hairlineWidth },
   hit: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   wordmark: { minHeight: 44, justifyContent: 'center', flexShrink: 1 },
-  plus: { minHeight: 44, paddingHorizontal: 8, borderWidth: 1, borderRadius: RADIUS.full, flexDirection: 'row', gap: 4, alignItems: 'center', justifyContent: 'center' },
+  plus: { minHeight: 44, paddingHorizontal: 8, borderWidth: 1, borderRadius: RADIUS.full, flexDirection: 'row', flexShrink: 0, gap: 4, alignItems: 'center', justifyContent: 'center' },
 });
