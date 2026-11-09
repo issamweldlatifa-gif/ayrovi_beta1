@@ -30,8 +30,11 @@ application runtime dependency). Scaling preserved aspect ratio, padding was add
 sources looped to the target duration, CRF 24 with maxrate 1500k and bufsize 3000k.
 Posters were extracted at second 1. No original runtime file was replaced.
 
-## Installation is explicit
+## Owner-approved startup installation
 
-The files alone do **not** publish any Reel. Consult `docs/REEL_LICENSED_TEST_PACK_AR.md`
-in the repository before running the opt-in installer. Do not put these in the
-production database without deciding that test content may be visible to its users.
+The owner explicitly approved publishing these test Reels. A one-shot backend
+startup migration now registers them after a verified file-backed snapshot.
+Subsequent edits/deletions are preserved. Deployment of that backend revision is
+required; copying media or rebuilding an APK alone does not publish database rows.
+See `docs/REEL_LICENSED_TEST_PACK_AR.md` for startup safeguards and the alternative
+manual installer. These test clips will be visible to users of the updated backend.

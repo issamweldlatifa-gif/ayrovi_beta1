@@ -34,7 +34,9 @@ it('defaults to dry run, backs up before opt-in insertion and preserves repeated
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'reel-pack-'));const file=path.join(root,'test.sqlite');
   let db: QatafoDatabase | undefined;
   try {
-    db=new QatafoDatabase(file);const before=db.all('SELECT * FROM reels ORDER BY id');db.close();db=undefined;
+    db=new QatafoDatabase(file);
+    for(const entry of manifest.entries) db.run('DELETE FROM reels WHERE id=?',entry.id);
+    const before=db.all('SELECT * FROM reels ORDER BY id');db.close();db=undefined;
     const dry=run(file);expect(dry.status,dry.stderr).toBe(0);expect(JSON.parse(dry.stdout)).toMatchObject({mode:'dry-run',pending:5,inserted:0,backup:null});
     db=new QatafoDatabase(file);expect(db.all('SELECT * FROM reels ORDER BY id')).toEqual(before);db.close();db=undefined;
     const applied=run(file,true);expect(applied.status,applied.stderr).toBe(0);const report=JSON.parse(applied.stdout);

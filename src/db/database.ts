@@ -1,3 +1,4 @@
+import { installReelTestPack } from '../magazine/installReelTestPack';
 import { schemaStatements } from './schemaStatements';
 import { upgradePublicationMediaPresentation } from '../catalogue/upgradePublicationMediaPresentation';
 import { reserveCatalogueSale, catalogId } from '../catalogue/localSale';
@@ -395,6 +396,26 @@ export class QatafoDatabase {
     this.runOnceDataMigration('publication_publisher_team_v1', () => {
       this.run("UPDATE story_publishers SET name='Zayrovi Team' WHERE id='pub_ayrovi' AND official=1 AND lower(trim(name)) IN ('zayrovi','zayrovi official')");
     });
+    // Owner approved publication. Add once like other bundled editorial media.
+    try {
+      installReelTestPack(this, () => {
+        if (this.databasePath === ':memory:') return;
+        const backupDir = path.join(path.dirname(path.resolve(this.databasePath)), 'backups');
+        fs.mkdirSync(backupDir, { recursive: true, mode: 0o700 });
+        const backup = path.join(backupDir, `pre-reel-test-pack-${randomUUID()}.sqlite`);
+        this.db.prepare('VACUUM INTO ?').run(backup);
+        fs.chmodSync(backup, 0o600);
+        const copy = new Database(backup, { readonly: true, fileMustExist: true });
+        try {
+          const integrity = copy.pragma('integrity_check') as Array<{integrity_check: string}>;
+          if (integrity.length !== 1 || integrity[0].integrity_check !== 'ok' || (copy.pragma('foreign_key_check') as unknown[]).length)
+            throw new Error('REEL_TEST_BACKUP_INVALID');
+        } finally { copy.close(); }
+      });
+    } catch {
+      // Optional test media must not prevent the store from starting. Retry next boot.
+      console.error('[reel-test-pack] installation failed; no test content was changed');
+    }
   }
 
   /** One-shot migration of persisted brand configuration, not merchandise/media or arbitrary copy. */
