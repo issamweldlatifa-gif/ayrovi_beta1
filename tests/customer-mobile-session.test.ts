@@ -136,26 +136,13 @@ describe('session Bearer mobile', () => {
 });
 
 describe('clé de limitation de débit', () => {
-  test('compte la session avant l’IP — un opérateur n’est pas un client', () => {
-    const sharedIp = { ip: '41.226.0.7', headers: {} } as any;
-    const phoneA = clientRateLimitKey(sharedIp);
-    const phoneB = clientRateLimitKey(sharedIp);
-    expect(phoneA).toBe(phoneB);
-    expect(phoneA).toContain('41.226.0.7');
-
-    const aliceSameNat = clientRateLimitKey({ ip: '41.226.0.7', headers: { authorization: 'Bearer jeton-alice' } } as any);
-    const bobSameNat = clientRateLimitKey({ ip: '41.226.0.7', headers: { authorization: 'Bearer jeton-bob' } } as any);
-    expect(aliceSameNat).not.toBe(bobSameNat);
-    expect(aliceSameNat.startsWith('session:')).toBe(true);
-    // Le jeton lui-même ne doit jamais apparaître dans la clé.
-    expect(aliceSameNat).not.toContain('jeton-alice');
+  test('unknown caller-selected Bearers and cookies cannot create new budgets', () => {
+    const request = (headers: Record<string, string>) => ({ ip: '41.226.0.7', headers } as any);
+    expect(clientRateLimitKey(request({ authorization: 'Bearer jeton-alice' }), db)).toBe('ip:41.226.0.7');
+    expect(clientRateLimitKey(request({ authorization: 'Bearer jeton-bob' }), db)).toBe('ip:41.226.0.7');
+    expect(clientRateLimitKey(request({ cookie: 'ayrovi_customer_session=jeton-web' }), db)).toBe('ip:41.226.0.7');
   });
 
-  test('accepte aussi le cookie du web', () => {
-    const web = clientRateLimitKey({ ip: '41.226.0.7', headers: { cookie: 'ayrovi_customer_session=jeton-web' } } as any);
-    expect(web.startsWith('session:')).toBe(true);
-    expect(web).not.toContain('jeton-web');
-  });
 });
 
 describe('champs d’échange de session', () => {

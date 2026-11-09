@@ -90,3 +90,18 @@ describe('Persistent customer account settings',()=>{
   const {agent,csrf}=await register();expect((await agent.put('/api/customer/account/profile').set('x-csrf-token',csrf).send({displayName:'Client',email:''})).status).toBe(400);
  });
 });
+
+
+test('authenticated push-device mutations require CSRF, while guest registration remains supported', async () => {
+ const { agent, csrf, id } = await register('push-guard@example.com');
+ const token = 'test-push-csrf-token';
+ expect((await agent.post('/api/customer/account/devices').send({token})).status).toBe(403);
+ expect(db.get('SELECT id FROM customer_push_devices WHERE token=?',token)).toBeFalsy();
+ expect((await agent.post('/api/customer/account/devices').set('x-csrf-token',csrf).send({token})).status).toBe(200);
+ expect(db.get<any>('SELECT account_id FROM customer_push_devices WHERE token=?',token).account_id).toBe(id);
+ expect((await agent.delete('/api/customer/account/devices').send({token})).status).toBe(403);
+ expect(db.get<any>('SELECT enabled FROM customer_push_devices WHERE token=?',token).enabled).toBe(1);
+ expect((await agent.delete('/api/customer/account/devices').set('x-csrf-token',csrf).send({token})).status).toBe(200);
+ expect(db.get<any>('SELECT enabled FROM customer_push_devices WHERE token=?',token).enabled).toBe(0);
+ expect((await request(app).post('/api/customer/account/devices').send({token:'guest-push-security-token'})).status).toBe(200);
+});

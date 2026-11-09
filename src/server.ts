@@ -38,6 +38,11 @@ import { pruneCanonicalLensCache } from './ayrovix/services/lensCache';
 import { dispatchPushNotifications } from './services/pushDispatch';
 import { pushConfigured } from './services/push';
 import { clientRateLimitKey } from './services/rateKey';
+
+// Invoked only while serving requests, after the session store is initialized.
+function authenticatedRateLimitKey(req: Request): string {
+  return clientRateLimitKey(req, db);
+}
 import { stripeDiagnostics } from './services/paymentGateway';
 
 const app = express();
@@ -196,7 +201,7 @@ app.use('/api/customer/auth/native/claim', rateLimit('native-handoff', process.e
 // Connexion Google native : chaque appel déclenche une vérification chez
 // Google. Sans plafond, un tiers pourrait s'en servir comme amplificateur.
 app.use('/api/customer/auth/google/native', rateLimit('google-native', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000));
-app.use('/api/checkout', rateLimit('checkout', process.env.NODE_ENV === 'test' ? 1_000 : 15, 5 * 60_000, clientRateLimitKey));
+app.use('/api/checkout', rateLimit('checkout', process.env.NODE_ENV === 'test' ? 1_000 : 15, 5 * 60_000, authenticatedRateLimitKey));
 app.use('/api/customer/account/orders', (req, res, next) => req.path.includes('/payments/card/')
   ? rateLimit('card-payment', process.env.NODE_ENV === 'test' ? 1_000 : 20, 5 * 60_000)(req, res, next)
   : next());
@@ -205,42 +210,52 @@ app.use('/api/customer/payments/stripe/webhook', rateLimit('stripe-webhook', pro
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/ocerex', rateLimit('ocerex', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
-app.use('/api/v1/aywebs/capture', rateLimit('aywebs-capture', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
-app.use('/api/v1/aywebs/product/resolve', rateLimit('aywebs-resolve', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
-app.use('/api/v1/aywebs/product/variants', rateLimit('aywebs-variants', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000, clientRateLimitKey));
-app.use('/api/v1/aywebs/page/analyze', rateLimit('aywebs-analyze', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000, clientRateLimitKey));
-app.use('/api/v1/aywebs/price-quote', rateLimit('aywebs-quote', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000, clientRateLimitKey));
-app.use('/api/v1/aywebs/events', rateLimit('aywebs-events', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/capture', rateLimit('aywebs-capture', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, authenticatedRateLimitKey));
+app.use('/api/v1/aywebs/product/resolve', rateLimit('aywebs-resolve', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, authenticatedRateLimitKey));
+app.use('/api/v1/aywebs/product/variants', rateLimit('aywebs-variants', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000, authenticatedRateLimitKey));
+app.use('/api/v1/aywebs/page/analyze', rateLimit('aywebs-analyze', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000, authenticatedRateLimitKey));
+app.use('/api/v1/aywebs/price-quote', rateLimit('aywebs-quote', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000, authenticatedRateLimitKey));
+app.use('/api/v1/aywebs/events', rateLimit('aywebs-events', process.env.NODE_ENV === 'test' ? 1_000 : 120, 10 * 60_000, authenticatedRateLimitKey));
 // Écritures propriétaires du domaine AYWEBs : panier, commande, paiement, demandes.
-app.use('/api/v1/aywebs/cart', rateLimit('aywebs-cart', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000, clientRateLimitKey));
-app.use('/api/v1/aywebs/checkout', rateLimit('aywebs-checkout', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, clientRateLimitKey));
-app.use('/api/v1/aywebs/orders', rateLimit('aywebs-orders', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, clientRateLimitKey));
-app.use('/api/v1/aywebs/payments', rateLimit('aywebs-payments', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, clientRateLimitKey));
-app.use('/api/v1/aywebs/purchase-requests', rateLimit('aywebs-purchase-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
-app.use('/api/v1/aywebs/store-requests', rateLimit('aywebs-store-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
+app.use('/api/v1/aywebs/cart', rateLimit('aywebs-cart', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000, authenticatedRateLimitKey));
+app.use('/api/v1/aywebs/checkout', rateLimit('aywebs-checkout', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, authenticatedRateLimitKey));
+app.use('/api/v1/aywebs/orders', rateLimit('aywebs-orders', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, authenticatedRateLimitKey));
+app.use('/api/v1/aywebs/payments', rateLimit('aywebs-payments', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, authenticatedRateLimitKey));
+app.use('/api/v1/aywebs/purchase-requests', rateLimit('aywebs-purchase-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, authenticatedRateLimitKey));
+app.use('/api/v1/aywebs/store-requests', rateLimit('aywebs-store-requests', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, authenticatedRateLimitKey));
 app.use('/api/public/assistant-feedback', rateLimit('assistant-feedback', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
-app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV === 'test' ? 1_000 : 25, 10 * 60_000, clientRateLimitKey));
-app.use('/api/assistant/transcribe', rateLimit('assistant-voice', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, clientRateLimitKey));
+app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV === 'test' ? 1_000 : 25, 10 * 60_000, authenticatedRateLimitKey));
+// Aliases must share counters: switching a URL is not a new allowance.
+app.use(['/api/assistant/transcribe', '/api/assistant/voice/transcribe'],
+  rateLimit('assistant-voice', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000, authenticatedRateLimitKey));
+export const ASSISTANT_VOICE_OUTPUT_PATHS = [
+  '/api/assistant/voice/tts', '/api/assistant/voice/live-audio',
+  '/api/assistant/tts', '/api/assistant/live-audio',
+];
+export const assistantVoiceOutputRateLimit = rateLimit('assistant-voice-output', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, authenticatedRateLimitKey);
+app.use(ASSISTANT_VOICE_OUTPUT_PATHS, assistantVoiceOutputRateLimit);
+app.use(['/api/assistant/voice/session', '/api/assistant/session'],
+  rateLimit('assistant-voice-session', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, authenticatedRateLimitKey));
 app.use('/api/public/media', rateLimit('public-media-proxy', process.env.NODE_ENV === 'test' ? 1_000 : 300, 10 * 60_000));
 app.use('/api/public/hero-events', rateLimit('public-hero-events', process.env.NODE_ENV === 'test' ? 1_000 : 120, 60_000));
-const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000, clientRateLimitKey);
+const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000, authenticatedRateLimitKey);
 const configuredLensDailyLimit = Number(process.env.AYROVIX_LENS_IP_DAILY_LIMIT);
 const lensDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredLensDailyLimit) ? Math.max(5, Math.min(200, configuredLensDailyLimit)) : 40;
-const ayrovixDailyCostLimit = rateLimit('ayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000, clientRateLimitKey);
+const ayrovixDailyCostLimit = rateLimit('ayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
 const costlyAyrovixPaths = new Set(['/localize', '/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
 // Z Lens mobile : la détection seule (cadre de sélection + Live) a son PROPRE
 // compteur. Live interroge la caméra quand le téléphone se stabilise : sur le
 // compteur général (12 / 10 min, partagé avec les recherches), quelques visées
 // suffiraient à bloquer la recherche elle-même. Plafond journalier par client
 // pour borner la dépense vision (réglable : AYROVIX_DETECT_DAILY_LIMIT).
-const ayrovixDetectRateLimit = rateLimit('ayrovix-detect', process.env.NODE_ENV === 'test' ? 1_000 : 90, 10 * 60_000, clientRateLimitKey);
+const ayrovixDetectRateLimit = rateLimit('ayrovix-detect', process.env.NODE_ENV === 'test' ? 1_000 : 90, 10 * 60_000, authenticatedRateLimitKey);
 const configuredDetectDailyLimit = Number(process.env.AYROVIX_DETECT_DAILY_LIMIT);
 const detectDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredDetectDailyLimit) ? Math.max(20, Math.min(2_000, configuredDetectDailyLimit)) : 400;
-const ayrovixDetectDailyLimit = rateLimit('ayrovix-detect-daily', detectDailyLimit, 24 * 60 * 60_000, clientRateLimitKey);
+const ayrovixDetectDailyLimit = rateLimit('ayrovix-detect-daily', detectDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
 app.use('/api/ayrovix', (req, res, next) => {
-  // Reading compact history is free. Costly analyses also have a daily IP
+  // Reading compact history is free. Costly analyses also have a daily client
   // ceiling so a long rolling 10-minute series cannot create unbounded vendor spend.
   if (req.method === 'GET' && req.path === '/history') return next();
   if (req.method === 'POST' && req.path === '/detect') {

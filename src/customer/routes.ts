@@ -24,6 +24,7 @@ import {
   hashToken,
   keyedHash,
   requireCustomer,
+  optionalCustomer,
   resolveCustomer,
   rotateCustomerCsrf,
   safeEqualHash,
@@ -1744,7 +1745,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
    * activées » au lieu de faire croire qu'un jeton enregistré suffit à être
    * prévenu. C'est la même règle que `google.enabled` sur les fournisseurs.
    */
-  router.post('/account/devices', (req, res) => {
+  router.post('/account/devices', optionalCustomer(db), (req, res) => {
     const token = String(req.body?.token || '').trim();
     if (!token || token.length > 4096) {
       return res.status(400).json({ success: false, code: 'PUSH_TOKEN_INVALID', error: 'Jeton d\'appareil invalide.' });
@@ -1777,7 +1778,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
   });
 
   /** Retrait volontaire : désactivation, jamais effacement (traçabilité). */
-  router.delete('/account/devices', (req, res) => {
+  router.delete('/account/devices', optionalCustomer(db), (req, res) => {
     revokePushDevice(db, String(req.body?.token || ''));
     return res.json({ success: true });
   });
