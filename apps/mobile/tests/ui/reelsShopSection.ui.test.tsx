@@ -32,17 +32,18 @@ jest.mock('expo-router', () => ({
 
 jest.mock('expo-video', () => ({
   VideoView: () => null,
-  useVideoPlayer: () => null,
+  useVideoPlayer: jest.fn(() => null),
 }));
 jest.mock('../../src/features/reels/useReelPreviewActivity', () => ({
   useReelPreviewActivity: () => {
     const [visible, update] = require('react').useState(mockVisible);
     mockUpdateVisibility = update;
-    return { visible, autoplay: true };
+    return { visible, autoplay: mockAutoplay };
   },
 }));
 
 let mockVisible = true;
+let mockAutoplay = true;
 let mockUpdateVisibility: (visible: boolean) => void;
 const mockUseReels = jest.fn();
 const mockReels: { data: unknown } = { data: undefined };
@@ -91,6 +92,8 @@ beforeEach(() => {
   (router.push as jest.Mock).mockClear();
   mockReels.data = undefined;
   mockVisible = true;
+  mockAutoplay = true;
+  require('expo-video').useVideoPlayer.mockClear();
   mockUseReels.mockClear();
 });
 
@@ -105,7 +108,7 @@ describe('section Reels • Shop (accueil)', () => {
     mockReels.data = [reel('r1', 'Nouveauté'), reel('r2')];
     render(wrap(<ReelsShopSection />));
     expect(screen.getByTestId('home-reels-shop')).toBeTruthy();
-    const tile = screen.getByTestId('home-reel-tile-r1');
+    const tile = screen.getByTestId('home-reel-media-r1');
     const style = StyleSheet.flatten(tile.props.style);
     expect(style.height / style.width).toBeCloseTo(1 / MEDIA_RATIO.reel, 1);
     expect(screen.getByTestId('home-reel-tile-r2')).toBeTruthy();
@@ -117,8 +120,8 @@ describe('section Reels • Shop (accueil)', () => {
       reel('r2'),
     ];
     render(wrap(<ReelsShopSection />));
-    const withPoster = screen.getByTestId('home-reel-tile-r1');
-    const without = screen.getByTestId('home-reel-tile-r2');
+    const withPoster = screen.getByTestId('home-reel-visual-r1');
+    const without = screen.getByTestId('home-reel-visual-r2');
     expect(
       withPoster.findAll((n: any) =>
         n.props?.source?.uri?.includes('cover-r1.jpg')
@@ -170,4 +173,28 @@ it('defers the below-fold Reel request, but keeps a measurable anchor for scroll
   mockVisible = true;
   act(() => mockUpdateVisibility(true));
   expect(mockUseReels).toHaveBeenLastCalledWith(true);
+});
+
+it('keeps navigation above a non-interactive native video subtree through preview visibility changes', () => {
+  mockReels.data = [reel('r1')];
+  render(wrap(<ReelsShopSection />));
+  const visual = screen.getByTestId('home-reel-visual-r1');
+  expect(visual.props.pointerEvents).toBe('none');
+  expect(visual.props.collapsable).toBe(false);
+  expect(visual.findAll(n => n.props.testID === 'home-reel-tile-r1')).toHaveLength(0);
+  fireEvent.press(screen.getByTestId('home-reel-tile-r1'));
+  act(() => mockUpdateVisibility(false));
+  fireEvent.press(screen.getByTestId('home-reel-tile-r1'));
+  act(() => mockUpdateVisibility(true));
+  fireEvent.press(screen.getByTestId('home-reel-tile-r1'));
+  expect(router.push).toHaveBeenCalledTimes(3);
+});
+
+it('does not allocate preview decoders when reduced motion disables autoplay, while tiles still open', () => {
+  mockAutoplay = false;
+  mockReels.data = [reel('r1'), reel('r2')];
+  render(wrap(<ReelsShopSection />));
+  expect(require('expo-video').useVideoPlayer).not.toHaveBeenCalled();
+  fireEvent.press(screen.getByTestId('home-reel-tile-r2'));
+  expect(router.push).toHaveBeenCalledWith({ pathname: '/reels-viewer', params: { id: 'r2' } });
 });

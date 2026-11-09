@@ -40,8 +40,8 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
   }, [player, playback.status, playback.reportError, paused, foreground, blocked]);
   useEffect(() => { if (player) player.muted = !soundOn; }, [player, soundOn]);
   return <>
-    {player ? <VideoView ref={view} player={player} pointerEvents="none" surfaceType="textureView"
-      style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', backgroundColor: VIDEO_BACKDROP }]} contentFit={contentFit} nativeControls={false} /> : null}
+    {player ? <View pointerEvents="none" collapsable={false} style={StyleSheet.absoluteFill}><VideoView ref={view} player={player} pointerEvents="none" surfaceType="textureView"
+      style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', backgroundColor: VIDEO_BACKDROP }]} contentFit={contentFit} nativeControls={false} /></View> : null}
     <Pressable accessibilityRole="button" accessibilityLabel={paused ? t('social.play') : t('social.pause')}
       onPress={() => onPausedChange(!paused)} style={StyleSheet.absoluteFill} />
     {(playback.status === 'loading' || playback.status === 'idle') && <View pointerEvents="none"

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { mediaUrl } from "@/api/client";
 import { playReelVideo, reloadReelVideo } from "./playReelVideo";
@@ -35,15 +35,17 @@ export function ReelPreview({
     else player.pause();
   }, [player, playing, playback.status, playback.reportError]);
   return player ? (
-    <VideoView
-      ref={videoView}
-      pointerEvents="none"
-      surfaceType="textureView"
-      testID="reel-preview-video"
-      player={player}
-      nativeControls={false}
-      contentFit="cover"
-      style={[StyleSheet.absoluteFill, { width: "100%", height: "100%" }]}
-    />
+    <View testID="reel-preview-surface" pointerEvents="none" collapsable={false} style={StyleSheet.absoluteFill}>
+      <VideoView
+        ref={videoView}
+        pointerEvents="none"
+        surfaceType="textureView"
+        testID="reel-preview-video"
+        player={player}
+        nativeControls={false}
+        contentFit="cover"
+        style={[StyleSheet.absoluteFill, { width: "100%", height: "100%" }]}
+      />
+    </View>
   ) : null;
 }

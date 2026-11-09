@@ -18,6 +18,9 @@ it('leaves touches to the navigation tile and loads the source asynchronously', 
   const preview = render(<ReelPreview uri="/media/reels/real.mp4" playing />);
   const video = screen.getByTestId('reel-preview-video');
   expect(video.props.pointerEvents).toBe('none');
+  const surface = screen.getByTestId('reel-preview-surface');
+  expect(surface.props.pointerEvents).toBe('none');
+  expect(surface.props.collapsable).toBe(false);
   expect(video.props.surfaceType).toBe('textureView');
   expect(useVideoPlayer).toHaveBeenCalledWith(null, expect.any(Function));
   expect(reloadReelVideo).toHaveBeenCalledWith(mockPlayer, null, expect.stringContaining('/media/reels/real.mp4'));

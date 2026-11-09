@@ -86,11 +86,8 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
             }}
             renderItem={({ item }) => (
               <View style={{ width: tileWidth }}>
-                <Pressable
-                  testID={`home-reel-tile-${item.id}`}
-                  accessibilityRole="button"
-                  accessibilityLabel={item.title || t('home.reelsShop.open')}
-                  onPress={() => open(item)}
+                <View
+                  testID={`home-reel-media-${item.id}`}
                   style={[
                     styles.tile,
                     {
@@ -101,37 +98,47 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
                     },
                   ]}
                 >
-                  {item.posterUrl ? (
-                    <AppImage
-                      uri={mediaUrl(item.posterUrl)}
-                      style={StyleSheet.absoluteFill}
-                      contentFit="cover"
-                      decorative
-                    />
-                  ) : null}
-                  {autoplay.visible &&
-                  !options &&
-                  item.id === (visibleId ?? rows[0]?.id) ? (
-                    <ReelPreview
-                      uri={item.videoUrl}
-                      playing={autoplay.autoplay}
-                    />
-                  ) : null}
-                  <View
-                    pointerEvents="none"
-                    style={[
-                      styles.videoMark,
-                      { backgroundColor: theme.colors.onMedia },
-                    ]}
-                  >
-                    <Ionicons
-                      name="play"
-                      size={theme.iconSize.xs}
-                      color={theme.colors.muted}
-                      accessibilityElementsHidden
-                    />
+                  <View testID={`home-reel-visual-${item.id}`} pointerEvents="none" collapsable={false} style={StyleSheet.absoluteFill}>
+                    {item.posterUrl ? (
+                      <AppImage
+                        uri={mediaUrl(item.posterUrl)}
+                        style={StyleSheet.absoluteFill}
+                        contentFit="cover"
+                        decorative
+                      />
+                    ) : null}
+                    {autoplay.visible && autoplay.autoplay &&
+                    !options &&
+                    item.id === (visibleId ?? rows[0]?.id) ? (
+                      <ReelPreview
+                        uri={item.videoUrl}
+                        playing={autoplay.autoplay}
+                      />
+                    ) : null}
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.videoMark,
+                        { backgroundColor: theme.colors.onMedia },
+                      ]}
+                    >
+                      <Ionicons
+                        name="play"
+                        size={theme.iconSize.xs}
+                        color={theme.colors.muted}
+                        accessibilityElementsHidden
+                      />
+                    </View>
                   </View>
-                </Pressable>
+                  {/* Keep the touch target above, not around, Android PlayerView. */}
+                  <Pressable
+                    testID={`home-reel-tile-${item.id}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={item.title || t('home.reelsShop.open')}
+                    onPress={() => open(item)}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </View>
                 <View style={styles.publisherRow}>
                   <ReelPublisher />
                   <Pressable

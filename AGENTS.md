@@ -24,3 +24,7 @@ For each delivery, state what changed, what was actually tested, and what remain
 Consult [the schema inventory and staged backlog](docs/architecture/DATABASE_STRUCTURE_INVENTORY_AR.md). Run `npm run audit:database` and the schema/reopen/migration tests listed there when changing relationships, indexes or bootstrapping. New child-FK index gaps require an appropriate index or an explicitly justified review entry in `docs/architecture/database-index-review.json`; legacy entries are pending investigation, not proof of optimal indexing. Keep that backlog current when resolving gaps. Verify upgrades and preservation of existing data, not only creation of empty tables.
 
 `runSchema` now rolls back its batch and propagates errors; use `IF NOT EXISTS` or explicit column checks, never depend on swallowed DDL errors. Its splitter supports simple DDL with quoted/comment semicolons, not trigger bodies or transaction-control statements. See [schema/restore safety](docs/architecture/SQLITE_SCHEMA_AND_RESTORE_SAFETY_AR.md). Test backup restoration only in isolation (`npm run backup:verify -- <backup-file>`); that command does not boot the app or verify uploads, and is not permission to overwrite a running database.
+
+## Current client scope (owner decision)
+
+New client features and UI fixes target the mobile application. Website/client UI updates are paused until the owner makes a separate decision; do not mirror mobile changes into `client/` without approval. Shared backend work remains separately scoped and must preserve API contracts.
