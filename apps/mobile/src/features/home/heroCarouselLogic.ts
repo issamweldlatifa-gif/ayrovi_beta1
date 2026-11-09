@@ -5,8 +5,8 @@
  * Le composant `HeroCarousel` n'y met que l'état et les effets.
  *
  * ── Décisions ──────────────────────────────────────────────────────────────
- * • La carte active est centrée ; les voisines occupent la même largeur
- *   visible de chaque côté (sauf aux extrémités, sans duplication).
+ * • La première carte commence au bord. Les cartes suivantes se centrent,
+ *   avec des voisines visibles à parts égales (sauf la dernière, sans duplication).
  * • La largeur de carte est une PART de l'écran (`CARD_WIDTH_RATIO`), bornée
  *   pour les tablettes. Aucune valeur fixe par appareil.
  * • Pas de boucle : à la dernière carte, le défilement automatique s'arrête.
@@ -34,7 +34,8 @@ export interface CarouselGeometry {
 
 /**
  * Géométrie centrée : edgeInset réserve une marge minimale sur écran étroit.
- * Le padding symétrique permet aussi de centrer les première/dernière cartes.
+ * sideInset est la correction de centrage des cartes après la première.
+ * Aucun padding de départ ; padding de fin = sideInset pour centrer la dernière.
  */
 export function carouselGeometry(screenWidth: number, edgeInset = 0): CarouselGeometry {
   const inset = Math.max(0, edgeInset);
@@ -53,16 +54,18 @@ export function carouselGeometry(screenWidth: number, edgeInset = 0): CarouselGe
  * Décalage de défilement pour atteindre la carte `index`. En RTL (liste
  * `inverted`), le décalage est négatif, comme le lit `indexForOffset`.
  */
-export function scrollOffsetForIndex(index: number, stride: number, rtl: boolean): number {
-  const offset = Math.max(0, index) * Math.max(0, stride);
+export function scrollOffsetForIndex(index: number, stride: number, rtl: boolean, centerInset = 0): number {
+  const offset = index <= 0 ? 0 : Math.max(0, index * Math.max(0, stride) - centerInset);
   return rtl ? -offset : offset;
 }
 
 /** Index de la carte qui se trouve au centre, pour un offset de défilement donné. */
-export function indexForOffset(offset: number, stride: number, count: number): number {
+export function indexForOffset(offset: number, stride: number, count: number, centerInset = 0): number {
   if (count <= 0 || stride <= 0) return 0;
   // `inverted` (RTL) donne un offset négatif : la valeur absolue suit toujours l'index.
-  const index = Math.round(Math.abs(offset) / stride);
+  const distance = Math.abs(offset);
+  if (distance < Math.max(0, stride - centerInset) / 2) return 0;
+  const index = Math.round((distance + centerInset) / stride);
   return Math.min(count - 1, Math.max(0, index));
 }
 
@@ -99,4 +102,10 @@ export function isStillAfterDrag(velocityX: number | undefined): boolean {
 export function backdropLayerRange(index: number): { inputRange: number[]; outputRange: number[] } | null {
   if (!Number.isInteger(index) || index < 1) return null;
   return { inputRange: [index - 1, index], outputRange: [0, 1] };
+}
+
+
+/** First card starts at the edge; every later snap centers its card. */
+export function carouselSnapOffsets(count: number, stride: number, centerInset: number): number[] {
+  return Array.from({ length: Math.max(0, count) }, (_, index) => scrollOffsetForIndex(index, stride, false, centerInset));
 }

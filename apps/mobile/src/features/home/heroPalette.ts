@@ -97,3 +97,13 @@ export function heroEdgeColors(
   const bottom = valid(card.edgeBottom) || top;
   return { top, bottom };
 }
+
+
+/** Surrounding section is a lighter derivative, never the card's exact paint. */
+export function heroBackdropColors(
+  card: { background?: string; edgeTop?: string; edgeBottom?: string },
+  surface: string,
+): { top: string; bottom: string } {
+  const edge = heroEdgeColors(card, surface);
+  return { top: mixHex(edge.top, surface, 0.65), bottom: mixHex(edge.bottom, surface, 0.65) };
+}

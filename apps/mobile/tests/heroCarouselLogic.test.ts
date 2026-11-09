@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  backdropLayerRange, CARD_ASPECT, CARD_GAP, CARD_MAX_WIDTH, CARD_MIN_WIDTH, carouselGeometry, indexForOffset,
+  carouselSnapOffsets, backdropLayerRange, CARD_ASPECT, CARD_GAP, CARD_MAX_WIDTH, CARD_MIN_WIDTH, carouselGeometry, indexForOffset,
   isStillAfterDrag, nextIndex, scrollOffsetForIndex, shouldAutoplayAdvance,
 } from '../src/features/home/heroCarouselLogic';
 
@@ -45,26 +45,16 @@ describe('carouselGeometry — dimensions selon l’écran', () => {
   });
 });
 
-describe('centrage — début ET fin', () => {
-  // Décalage maximal du défilement = contenu − écran. Le contenu = marge + cartes + espaces + marge.
-  const contentWidth = (count: number, g: ReturnType<typeof carouselGeometry>) =>
-    2 * g.sideInset + count * g.cardWidth + (count - 1) * CARD_GAP;
-
-  it.each([[360, 2], [360, 4], [390, 3], [430, 6]])(
-    'écran %i, %i cartes : la première et la dernière restent centrées',
-    (screen, count) => {
-      const inset = 16;
-      const g = carouselGeometry(screen, inset);
-      const maxScroll = contentWidth(count, g) - screen;
-      expect(maxScroll).toBeGreaterThan(0);
-      // Début : à défilement 0, la 1re carte commence à la marge.
-      expect(g.sideInset).toBe((screen - g.cardWidth) / 2);
-      // Fin : au défilement maximal, la dernière carte finit à screen − marge.
-      const lastLeftInContent = g.sideInset + (count - 1) * g.stride;
-      const lastRightOnScreen = lastLeftInContent + g.cardWidth - maxScroll;
-      expect(lastRightOnScreen).toBe(screen - g.sideInset);
-    },
-  );
+describe('bord au départ, centrage à la fin', () => {
+  it.each([[360, 2], [360, 4], [390, 3], [430, 6]])('écran %i, %i cartes', (screen, count) => {
+    const g = carouselGeometry(screen, 16);
+    const contentWidth = count * g.cardWidth + (count - 1) * CARD_GAP + g.sideInset;
+    const maxScroll = contentWidth - screen;
+    expect(scrollOffsetForIndex(0, g.stride, false, g.sideInset)).toBe(0);
+    const lastLeft = (count - 1) * g.stride - maxScroll;
+    expect(lastLeft).toBeCloseTo(g.sideInset);
+    expect(screen - lastLeft - g.cardWidth).toBeCloseTo(g.sideInset);
+  });
 });
 
 describe('indexForOffset — la carte centrée donne l’index', () => {
@@ -173,9 +163,29 @@ describe('scrollOffsetForIndex — défilement automatique', () => {
 it.each([320, 360, 390, 430, 1024])('equal neighbour visibility at every interior snap on %i', (width) => {
   const g = carouselGeometry(width, 16);
   for (let index = 1; index < 5; index++) {
-    const offset = scrollOffsetForIndex(index, g.stride, false);
-    const left = g.sideInset + index * g.stride - offset;
+    const offset = scrollOffsetForIndex(index, g.stride, false, g.sideInset);
+    const left = index * g.stride - offset;
     expect(left).toBeCloseTo(width - left - g.cardWidth);
     expect(left - CARD_GAP).toBeCloseTo(width - left - g.cardWidth - CARD_GAP);
   }
+});
+
+
+describe('flush first card, centered later snaps', () => {
+  it.each([240, 320, 360, 390, 430, 1024])('viewport %i keeps equal neighbours after first snap', width => {
+    const g = carouselGeometry(width, 16);
+    const snaps = carouselSnapOffsets(13, g.stride, g.sideInset);
+    expect(snaps[0]).toBe(0);
+    for (let i = 1; i < 13; i++) {
+      const left = i * g.stride - snaps[i];
+      expect(left).toBeCloseTo(width - left - g.cardWidth);
+      expect(indexForOffset(snaps[i], g.stride, 13, g.sideInset)).toBe(i);
+      expect(scrollOffsetForIndex(i, g.stride, true, g.sideInset)).toBe(-snaps[i]);
+    }
+    const content = 13 * g.cardWidth + 12 * CARD_GAP + g.sideInset;
+    expect(content - width).toBeCloseTo(snaps[12]);
+    const firstBoundary = snaps[1] / 2;
+    expect(indexForOffset(firstBoundary - .1, g.stride, 13, g.sideInset)).toBe(0);
+    expect(indexForOffset(firstBoundary + .1, g.stride, 13, g.sideInset)).toBe(1);
+  });
 });

@@ -35,11 +35,11 @@ import {
   parseHeroCarouselSettings, trackHeroEvent,
   type HeroCarouselSettings, type HeroSlide,
 } from '@/api/public';
-import { heroEdgeColors, mixHex, pickHeroText, withAlpha } from './heroPalette';
+import { heroBackdropColors, mixHex, pickHeroText, withAlpha } from './heroPalette';
 import { isDemoSlide } from './heroDemo';
 import { HERO_COPY } from '@/design/tokens.mobile';
 import {
-  backdropLayerRange, CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
+  carouselSnapOffsets, backdropLayerRange, CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
   scrollOffsetForIndex, shouldAutoplayAdvance,
 } from './heroCarouselLogic';
 
@@ -124,21 +124,21 @@ function HeroCarouselView({
     return () => subscription.remove();
   }, []);
 
-  // Padding symétrique : chaque carte active se centre dans la largeur mesurée.
+  // sideInset is the centering correction, not leading content padding.
   const { cardWidth, stride, sideInset } = carouselGeometry(viewportWidth, gutter);
 
-  // Fond de chaque carte = les bords EXACTS de sa photo en mode clair ;
+  // Fond extérieur dérivé et éclairci, distinct de la peinture de la carte ;
   // en mode sombre, toile sombre unifiée pour éviter toute rupture chromatique.
   const edges = useMemo(
     () => slides.map((card) => (
       theme.mode === 'dark'
         ? { top: theme.colors.canvas, bottom: theme.colors.canvas }
-        : heroEdgeColors(card, theme.colors.surface)
+        : heroBackdropColors(card, theme.colors.surface)
     )),
     [slides, theme.colors.canvas, theme.colors.surface, theme.mode],
   );
 
-  // Le header reprend le bord HAUT de la photo active en mode clair ; en mode sombre il garde sa toile sombre.
+  // Le header reprend la teinte extérieure éclaircie ; le fond du titre reste intact.
   const activeTop = theme.mode === 'dark' ? null : (edges[activeIndex]?.top ?? null);
   useEffect(() => {
     onActiveBackgroundChange?.(activeTop);
@@ -179,11 +179,11 @@ function HeroCarouselView({
       const next = nextIndex(current, slides.length);
       indexRef.current = next; // sans attendre le rendu : deux ticks successifs restent cohérents
       // Décalage exact (un pas = une carte) avec le padding de centrage symétrique.
-      listRef.current?.scrollToOffset({ offset: scrollOffsetForIndex(next, stride, theme.isRTL), animated: true });
+      listRef.current?.scrollToOffset({ offset: scrollOffsetForIndex(next, stride, theme.isRTL, sideInset), animated: true });
       setActiveIndex(next);
     }, settings.autoplayIntervalMs);
     return () => clearInterval(timer);
-  }, [settings.autoplay, settings.autoplayIntervalMs, slides.length, paused, reduceMotion, stride, theme.isRTL]);
+  }, [settings.autoplay, settings.autoplayIntervalMs, slides.length, paused, reduceMotion, stride, sideInset, theme.isRTL]);
 
   const onScrollBeginDrag = useCallback(() => setInteracting(true), []);
   // Glissement relâché SANS élan : RN ne déclenche pas `onMomentumScrollEnd`,
@@ -193,8 +193,8 @@ function HeroCarouselView({
   }, []);
   const onScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     setInteracting(false);
-    setActiveIndex(indexForOffset(event.nativeEvent.contentOffset.x, stride, slides.length));
-  }, [slides.length, stride]);
+    setActiveIndex(indexForOffset(event.nativeEvent.contentOffset.x, stride, slides.length, sideInset));
+  }, [slides.length, stride, sideInset]);
 
   const onPressCard = useCallback((card: HeroSlide) => {
     if (!isDemoSlide(card.id)) trackHeroEvent(card.id, 'click', card.destinationType, locale);
@@ -257,12 +257,12 @@ function HeroCarouselView({
         horizontal
         inverted={theme.isRTL}
         showsHorizontalScrollIndicator={false}
-        snapToInterval={stride}
-        // « start » : la carte s'aligne sur sa marge de départ (le gutter), comme le header.
+        snapToOffsets={carouselSnapOffsets(slides.length, stride, sideInset)}
+        // Snap 0 starts flush; subsequent explicit offsets center each card.
         snapToAlignment="start"
         decelerationRate="fast"
-        contentContainerStyle={{ paddingHorizontal: sideInset, gap: CARD_GAP }}
-        // Le décalage inclut le retrait initial : sans lui, `scrollToIndex` vise à côté.
+        contentContainerStyle={{ paddingStart: 0, paddingEnd: sideInset, gap: CARD_GAP }}
+        // Physical item positions have no leading padding. Autoplay uses snap offsets.
         getItemLayout={(_, index) => ({ length: stride, offset: stride * index, index })}
         initialNumToRender={2}
         maxToRenderPerBatch={2}
@@ -310,7 +310,7 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
   const copy = title || subtitle ? (
     <View
       testID={`hero-card-${card.id}-copy`}
-      style={ownedArtwork ? styles.ownedCopy : styles.cardCopy}
+      style={ownedArtwork ? [styles.ownedCopy, { minHeight: Math.max(HERO_COPY.minHeight, width * (1 / CARD_ASPECT - 1)) }] : styles.cardCopy}
       pointerEvents="none"
     >
       {title ? (

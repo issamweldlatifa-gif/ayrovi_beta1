@@ -16,6 +16,7 @@ import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
 import { carouselGeometry } from '../../src/features/home/heroCarouselLogic';
+import { heroBackdropColors } from '../../src/features/home/heroPalette';
 import { COLORS } from '../../src/design/tokens.generated';
 import type { HeroSlide } from '../../src/api/public';
 
@@ -183,13 +184,15 @@ describe('action de la carte Hero', () => {
 });
 
 describe('géométrie et fond', () => {
-  it('la carte est centrée dans la largeur MESURÉE', async () => {
+  it('la première carte démarre au bord et les suivantes se centrent dans la largeur MESURÉE', async () => {
     await renderCarousel();
     measureSection(360);
     const { sideInset } = carouselGeometry(360, GUTTER);
     expect(sideInset).toBe((360 - carouselGeometry(360, GUTTER).cardWidth) / 2);
-    const padding = StyleSheet.flatten(list().props.contentContainerStyle).paddingHorizontal;
-    expect(padding).toBe(sideInset);
+    const container = StyleSheet.flatten(list().props.contentContainerStyle);
+    expect(container.paddingStart).toBe(0);
+    expect(container.paddingEnd).toBe(sideInset);
+    expect(list().props.snapToOffsets).toEqual([0, carouselGeometry(360, GUTTER).stride - sideInset, 2 * carouselGeometry(360, GUTTER).stride - sideInset]);
   });
 
   it('getItemLayout suit le pas de centrage sans ajouter le padding', async () => {
@@ -229,7 +232,8 @@ describe('fondu du fond Hero vers la page', () => {
     }));
     await renderCarousel(SETTINGS, withEdges);
     const background = StyleSheet.flatten(screen.getByTestId('hero-carousel').props.style).backgroundColor;
-    expect(background).toBe('#433F39');
+    expect(background).toBe(heroBackdropColors(withEdges[0], COLORS.light.surface).top);
+    expect(background).not.toBe(withEdges[0].edgeTop);
     for (const index of [0, 1, 2]) {
       expect(screen.getByTestId(`hero-carousel-backdrop-${index}`, { includeHiddenElements: true })).toBeTruthy();
     }
@@ -274,7 +278,9 @@ describe('owner Hero collection', () => {
       const copyStyle = StyleSheet.flatten(copy.props.style);
       expect(copyStyle.position).not.toBe('absolute');
       expect(copyStyle.padding).toBe(16);
-      expect(copyStyle.minHeight).toBe(104);
+      const cardWidth = StyleSheet.flatten(screen.getByTestId(`hero-card-${card.id}`).props.style).width;
+      expect(copyStyle.minHeight).toBeCloseTo(cardWidth * 0.6);
+      expect((copyStyle.minHeight + cardWidth) / cardWidth).toBeCloseTo(1.6);
       const image = screen.getByTestId(`hero-card-${card.id}-image`);
       expect(StyleSheet.flatten(image.props.style)).toMatchObject({ width: '100%', aspectRatio: 1 });
       expect(StyleSheet.flatten(screen.getByText(card.title).props.style).color).toBe(card.copyTone === 'light' ? '#FFFFFF' : '#000000');
