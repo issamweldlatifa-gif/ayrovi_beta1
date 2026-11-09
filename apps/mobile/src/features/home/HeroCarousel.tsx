@@ -5,7 +5,7 @@
  * Contrat d'affichage :
  *  • chargement ⇒ squelette de la forme attendue, JAMAIS un trou blanc ;
  *  • module désactivé / erreur API / aucune carte ⇒ rien (il n'existe plus d'ancien hero) ;
- *  • carte = titre + visuel 5:8 ; toute la carte ouvre sa destination ;
+ *  • carte = titre + photo carrée (collection locale), visuel 5:8 pour CMS ; toute la carte ouvre sa destination ;
  *  • le fond de la section reprend la palette de la photo active puis se fond
  *    progressivement dans le fond de page, en fondu enchaîné ;
  *  • impression/clic tracés en fire-and-forget — mesurer ne casse jamais rien.
@@ -37,6 +37,7 @@ import {
 } from '@/api/public';
 import { heroEdgeColors, mixHex, pickHeroText, withAlpha } from './heroPalette';
 import { isDemoSlide } from './heroDemo';
+import { HERO_COPY } from '@/design/tokens.mobile';
 import {
   backdropLayerRange, CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
   scrollOffsetForIndex, shouldAutoplayAdvance,
@@ -177,7 +178,7 @@ function HeroCarouselView({
       if (!shouldAutoplayAdvance(current, slides.length)) return;
       const next = nextIndex(current, slides.length);
       indexRef.current = next; // sans attendre le rendu : deux ticks successifs restent cohérents
-      // Décalage exact (un pas = une carte) : la carte arrive sur la marge, pas au centre.
+      // Décalage exact (un pas = une carte) avec le padding de centrage symétrique.
       listRef.current?.scrollToOffset({ offset: scrollOffsetForIndex(next, stride, theme.isRTL), animated: true });
       setActiveIndex(next);
     }, settings.autoplayIntervalMs);
@@ -299,12 +300,31 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
   const isArabic = locale === 'ar';
   const title = pickHeroText(card.title, card.titleAr, isArabic);
   const subtitle = pickHeroText(card.subtitle, card.subtitleAr, isArabic);
-  // Full-bleed photos: a contrast veil keeps copy legible without an inset frame.
+  // Local photos remain untouched: native text sits above them on the sampled background.
   const ownedArtwork = card.localImage != null && isDemoSlide(card.id);
-  const darkCopy = ownedArtwork && card.id !== 'demo-tech';
-  const copyColor = darkCopy ? theme.colors.ink : theme.colors.onMedia;
+  const darkCopy = ownedArtwork && card.copyTone !== 'light';
+  const copyColor = ownedArtwork ? (darkCopy ? HERO_COPY.black : HERO_COPY.white) : theme.colors.onMedia;
   // La carte entière est le lien : aucun bouton CTA séparé sous le visuel.
   const label = [title, subtitle].filter(Boolean).join(' · ');
+
+  const copy = title || subtitle ? (
+    <View
+      testID={`hero-card-${card.id}-copy`}
+      style={ownedArtwork ? styles.ownedCopy : styles.cardCopy}
+      pointerEvents="none"
+    >
+      {title ? (
+        <AppText variant="h2" color={copyColor} numberOfLines={2} style={{ fontFamily: theme.font('bold') }}>
+          {title}
+        </AppText>
+      ) : null}
+      {subtitle ? (
+        <AppText variant="bodySmall" color={copyColor} numberOfLines={2} style={styles.cardSubtitle}>
+          {subtitle}
+        </AppText>
+      ) : null}
+    </View>
+  ) : null;
 
   return (
     <Pressable
@@ -314,42 +334,29 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
       accessibilityRole="link"
       accessibilityLabel={label || undefined}
     >
-      <View style={[styles.cardMedia, { borderRadius: theme.radius.lg }]}>
+      <View style={[styles.cardMedia, { borderRadius: theme.radius.lg }, ownedArtwork ? { backgroundColor: card.edgeTop || card.background } : null]}>
+        {ownedArtwork ? copy : null}
         <AppImage
           testID={`hero-card-${card.id}-image`}
           uri={card.localImage != null ? null : mediaUrl(card.image)}
           localSource={card.localImage}
           contentFit="cover"
-          style={styles.cardImage}
+          style={ownedArtwork ? styles.ownedImage : styles.cardImage}
           accessibilityLabel={title || undefined}
           decorative={!title}
         />
         {/* Voile sombre en haut : garantit le contraste du titre posé sur la photo. */}
-        <LinearGradient
-          colors={darkCopy
-            ? [withAlpha(theme.colors.surface, 0.94), withAlpha(theme.colors.surface, 0)]
-            : [withAlpha(theme.colors.scrim, 0.85), withAlpha(theme.colors.scrim, 0)]}
+        {!ownedArtwork ? <LinearGradient
+          testID={`hero-card-${card.id}-scrim`}
+          colors={[withAlpha(theme.colors.scrim, 0.85), withAlpha(theme.colors.scrim, 0)]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 0.6 }}
           style={styles.cardScrim}
           pointerEvents="none"
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
-        />
-        {title || subtitle ? (
-          <View style={styles.cardCopy} pointerEvents="none">
-            {title ? (
-              <AppText variant="h2" color={copyColor} numberOfLines={2} style={{ fontFamily: theme.font('bold') }}>
-                {title}
-              </AppText>
-            ) : null}
-            {subtitle ? (
-              <AppText variant="bodySmall" color={copyColor} numberOfLines={2} style={styles.cardSubtitle}>
-                {subtitle}
-              </AppText>
-            ) : null}
-          </View>
-        ) : null}
+        /> : null}
+        {!ownedArtwork ? copy : null}
       </View>
     </Pressable>
   );
@@ -365,6 +372,8 @@ const styles = StyleSheet.create({
   card: {},
   cardMedia: { overflow: 'hidden' },
   cardImage: { width: '100%', aspectRatio: CARD_ASPECT },
+  ownedImage: { width: '100%', aspectRatio: 1 },
+  ownedCopy: { padding: HERO_COPY.inset, minHeight: HERO_COPY.minHeight, justifyContent: 'center' },
   cardScrim: { position: 'absolute', left: 0, right: 0, top: 0, height: '60%' },
   /** Pastilles posées sur le bas de la photo, centrées, sur un petit voile. */
   /** Titre et sous-titre posés sur le visuel, en haut (début de ligne), marges intérieures. */

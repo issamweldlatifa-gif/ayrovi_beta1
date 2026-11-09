@@ -1,3 +1,5 @@
+> التحديث الأحدث لتركيب الصور والعناوين: [مجموعة Hero المربعة](HERO_SQUARE_COLLECTION_AR.md).
+
 > تحديث لاحق: راجع HERO_FULL_BLEED_AND_TEXT_INSETS_AR.md؛ أُلغي تركيب الصورة داخل إطار وأصبح العرض plein cadre مع تمركز الكروت.
 
 # تحديث Hero في التطبيق

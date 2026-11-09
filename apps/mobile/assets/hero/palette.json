@@ -1,26 +1,54 @@
 {
-  "tech": {
-    "top": "#827d7b",
-    "bottom": "#464240"
+  "beaute": {
+    "top": "#df7f28",
+    "bottom": "#df7f28"
   },
-  "modeHomme": {
-    "top": "#a6a19b",
-    "bottom": "#a6a19b"
+  "mode": {
+    "top": "#c7e3f4",
+    "bottom": "#b9d4e5"
   },
-  "modeFemme": {
-    "top": "#d4beaf",
-    "bottom": "#b0a59e"
+  "voyage": {
+    "top": "#efd2b2",
+    "bottom": "#efd2b2"
   },
-  "bebe": {
-    "top": "#c59769",
-    "bottom": "#ba8a59"
+  "audio": {
+    "top": "#ffde59",
+    "bottom": "#ffdf5b"
   },
-  "maison": {
-    "top": "#7e6a5c",
-    "bottom": "#6d5e54"
+  "soin-visage": {
+    "top": "#6700ce",
+    "bottom": "#6700ce"
+  },
+  "accessoires": {
+    "top": "#fee13d",
+    "bottom": "#fee13d"
+  },
+  "entretien": {
+    "top": "#f3f0ed",
+    "bottom": "#f6f2ef"
+  },
+  "connecte": {
+    "top": "#e0e3ec",
+    "bottom": "#d6ddeb"
   },
   "sport": {
-    "top": "#ababac",
-    "bottom": "#a7a6a7"
+    "top": "#e3dbb4",
+    "bottom": "#e3dbb4"
+  },
+  "cheveux": {
+    "top": "#e1d3c6",
+    "bottom": "#e1d3c6"
+  },
+  "parfums": {
+    "top": "#e1d3c6",
+    "bottom": "#e1d3c6"
+  },
+  "maison": {
+    "top": "#dacaaf",
+    "bottom": "#d1bba2"
+  },
+  "montres": {
+    "top": "#f621a1",
+    "bottom": "#f621a1"
   }
 }

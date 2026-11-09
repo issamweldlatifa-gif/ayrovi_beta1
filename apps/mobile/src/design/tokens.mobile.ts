@@ -712,21 +712,6 @@ export const isAndroid = Platform.OS === 'android';
 /* ── Carrousel Hero — palette de la démo embarquée ─────────────────────────── */
 
 /**
- * Couleur de fond de chaque carte de démo : moyenne du bas du visuel (là où
- * le fondu se dissout). En production, le serveur extrait cette palette lui-même.
- * Ce sont des couleurs de CONTENU (tirées des photos), pas de la marque : elles
- * ne servent qu'aux cartes de démonstration hors ligne.
- */
-export const HERO_DEMO_BACKGROUND = {
-  tech: '#202124',
-  modeHomme: '#EDE6DC',
-  modeFemme: '#F2F1EF',
-  bebe: '#EFE5D8',
-  maison: '#EDE4D9',
-  sport: '#F1F1EF',
-} as const;
-
-/**
  * Bords haut / bas : moyenne RGB des lignes extrêmes des photos plein cadre.
  * Le carrousel prend ainsi le fond même de la photo, du haut jusqu'en bas.
  * Couleurs de CONTENU (tirées des photos), réservées aux cartes de démonstration.
@@ -775,3 +760,6 @@ export const CLEAN_COMPOSER = { canvas: '#F7F7F7', actionSize: 32, radius: 28 } 
 
 /** Minimum breathing room for text inside mobile bordered surfaces. */
 export const TEXT_FRAME = { horizontal: 16, vertical: 12, inputHorizontal: 12, inputVertical: 10 } as const;
+
+/** Local Hero copy is outside the square photo, never a bleaching overlay. */
+export const HERO_COPY = { black: '#000000', white: '#FFFFFF', inset: 16, minHeight: 104 } as const;

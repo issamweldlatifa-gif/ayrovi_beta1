@@ -1,0 +1,106 @@
+[
+  {
+    "slug": "beaute",
+    "file": "hero-beaute.jpg",
+    "source": "51oG7c5jwdL._SR1050,1050_.jpg",
+    "title": "Beauté & soins",
+    "titleAr": "جمال وعناية",
+    "textTone": "dark"
+  },
+  {
+    "slug": "mode",
+    "file": "hero-mode.jpg",
+    "source": "41CP5SNAD2L._SR420,420_.jpg",
+    "title": "Mode & style",
+    "titleAr": "موضة وأناقة",
+    "textTone": "dark"
+  },
+  {
+    "slug": "voyage",
+    "file": "hero-voyage.jpg",
+    "source": "31OdrN1gd0L._SR420,420_.jpg",
+    "title": "Sacs & voyage",
+    "titleAr": "حقائب وسفر",
+    "textTone": "dark"
+  },
+  {
+    "slug": "audio",
+    "file": "hero-audio.jpg",
+    "source": "415kidUXnKL._SR420,420_.jpg",
+    "title": "Audio & musique",
+    "titleAr": "صوت وموسيقى",
+    "textTone": "dark"
+  },
+  {
+    "slug": "soin-visage",
+    "file": "hero-soin-visage.jpg",
+    "source": "31E-a35gpPL._SR420,420_.jpg",
+    "title": "Soin du visage",
+    "titleAr": "العناية بالوجه",
+    "textTone": "light"
+  },
+  {
+    "slug": "accessoires",
+    "file": "hero-accessoires.jpg",
+    "source": "41y6vNeJV6L._SR420,420_.jpg",
+    "title": "Accessoires mode",
+    "titleAr": "إكسسوارات الموضة",
+    "textTone": "dark"
+  },
+  {
+    "slug": "entretien",
+    "file": "hero-entretien.jpg",
+    "source": "21vfmYI-aiL._SR420,420_.jpg",
+    "title": "Entretien maison",
+    "titleAr": "العناية بالمنزل",
+    "textTone": "dark"
+  },
+  {
+    "slug": "connecte",
+    "file": "hero-connecte.jpg",
+    "source": "31c19ZC1NXL._SR420,420_.jpg",
+    "title": "Style connecté",
+    "titleAr": "أناقة متصلة",
+    "textTone": "dark"
+  },
+  {
+    "slug": "sport",
+    "file": "hero-sport.jpg",
+    "source": "311BQJrM98L._SR420,420_.jpg",
+    "title": "Sport & loisirs",
+    "titleAr": "رياضة وترفيه",
+    "textTone": "dark"
+  },
+  {
+    "slug": "cheveux",
+    "file": "hero-cheveux.jpg",
+    "source": "41gcm32NTlL._SR420,420_.jpg",
+    "title": "Soin des cheveux",
+    "titleAr": "العناية بالشعر",
+    "textTone": "dark"
+  },
+  {
+    "slug": "parfums",
+    "file": "hero-parfums.jpg",
+    "source": "31UiIKhqBtL._SR420,420_.jpg",
+    "title": "Parfums",
+    "titleAr": "عطور",
+    "textTone": "dark"
+  },
+  {
+    "slug": "maison",
+    "file": "hero-maison.jpg",
+    "source": "315APYnq5PL._SR420,420_.jpg",
+    "title": "Maison & déco",
+    "titleAr": "منزل وديكور",
+    "textTone": "dark"
+  },
+  {
+    "slug": "montres",
+    "file": "hero-montres.jpg",
+    "source": "41kqSARvR0L._SR420,420_.jpg",
+    "title": "Montres connectées",
+    "titleAr": "ساعات ذكية",
+    "textTone": "dark"
+  }
+]

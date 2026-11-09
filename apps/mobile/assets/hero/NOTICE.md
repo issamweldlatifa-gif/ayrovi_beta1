@@ -1,18 +1,20 @@
-# Mobile Hero artwork
+# Owner-supplied mobile Hero collection
 
-Owner-supplied replacements for the four previous bundled images, plus baby and home.
-Sources: Look Expensive.jpg (homme), d7903d52-76a0-42af-9abe-08200b36a1ec.jpg
-(femme), Tenue d’automne trop mignonne pour bébé 🍁👶.jpg (bébé), Tech Essentials.jpg
-(électrique), warm chic.jpg (maison), 69ea34f4-895b-4ae7-ad3c-4994484409a4.jpg (sport).
-Owner supplied and requested their use; no independent third-party copyright claim.
-The pastel electronics and beauty images were not added (six requested categories).
-Amazon screenshots are typography references only, not bundled artwork.
+The 13 photos in `manifest.json` replace the previous six Hero photos. The
+manifest records each supplied filename, local filename, localized title and
+black/white title choice. Old unmatched local artwork has been removed.
 
-Each photo fills a 900×1440 JPEG edge to edge using a centered cover crop.
-There is no baked-in padding or header. Native localized titles overlay a contrast
-gradient. This supersedes the earlier contained composition.
+Owner supplied and requested use; this is not an independent verification of
+third-party copyright or a claim that these are original/official brand assets.
+The supplied app screenshots are design references, not bundled artwork.
 
-`palette.json` is photo metadata (mean RGB of the decoded top and bottom rows),
-not a brand/action/status palette. Brown/orange pixels in owner photographs are
-not UI brand orange. Recompute these samples if the JPEGs change; materialize
-sharp's extract before averaging (stats alone ignores pending transforms).
+Photos retain their square composition. No cover crop, inset border, added
+footer, faded overlay or title is baked into them. 420px originals are not
+upscaled; the 1050px source is downsampled to 900px. Native text is laid out above
+the image, in the same card on a background sampled from its top row. The
+header may grow with accessibility font scale; it does not overlap products.
+
+`palette.json` contains decoded first/last-row RGB means, not brand colours.
+Recompute after replacing artwork. The title tone selects the better black or
+white WCAG contrast against the header; automated tests require at least 4.5:1.
+No new runtime image-processing or native dependencies were added.

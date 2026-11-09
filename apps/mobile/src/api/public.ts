@@ -144,6 +144,8 @@ export interface HeroSlide {
   dominant: string;
   /** Visuel embarqué dans l'APK (mode démo) — prioritaire sur `image`. */
   localImage?: number;
+  /** Bundled artwork only: contrast-selected copy on its sampled header. */
+  copyTone?: 'dark' | 'light';
 }
 
 /** Réglages du carrousel (`GET /api/public/hero-carousel-settings`). */

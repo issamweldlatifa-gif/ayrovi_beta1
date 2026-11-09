@@ -258,16 +258,39 @@ describe('une seule carte', () => {
 
 
 describe('owner Hero collection', () => {
-  it('ships the six renamed cards in order with local images and readable black/white copy', async () => {
+  it('ships all thirteen new categories with clear photos and native copy above the image', async () => {
     const { demoHeroSlides } = require('../../src/features/home/heroDemoSlides');
     const cards: HeroSlide[] = demoHeroSlides();
     expect(cards.map(card => card.title)).toEqual([
-      'Mode homme', 'Mode femme', 'Mode bébé', 'Mode électrique', 'Mode maison', 'Mode sport',
+      'Beauté & soins', 'Mode & style', 'Sacs & voyage', 'Audio & musique',
+      'Soin du visage', 'Accessoires mode', 'Entretien maison', 'Style connecté',
+      'Sport & loisirs', 'Soin des cheveux', 'Parfums', 'Maison & déco', 'Montres connectées',
     ]);
-    expect(cards.every(card => card.localImage != null && card.subtitle && card.titleAr && card.subtitleAr)).toBe(true);
-    await renderCarousel(SETTINGS, cards);
-    expect(StyleSheet.flatten(screen.getByText('Mode homme').props.style).color).toBe('#0A0A0A');
-    await renderCarousel(SETTINGS, [cards[3]]);
-    expect(StyleSheet.flatten(screen.getByText('Mode électrique').props.style).color).toBe('#FFFFFF');
+    expect(cards.every(card => card.localImage != null && card.titleAr)).toBe(true);
+    for (const card of cards) {
+      const view = await renderCarousel(SETTINGS, [card]);
+      expect(screen.queryByTestId(`hero-card-${card.id}-scrim`)).toBeNull();
+      const copy = screen.getByTestId(`hero-card-${card.id}-copy`);
+      const copyStyle = StyleSheet.flatten(copy.props.style);
+      expect(copyStyle.position).not.toBe('absolute');
+      expect(copyStyle.padding).toBe(16);
+      expect(copyStyle.minHeight).toBe(104);
+      const image = screen.getByTestId(`hero-card-${card.id}-image`);
+      expect(StyleSheet.flatten(image.props.style)).toMatchObject({ width: '100%', aspectRatio: 1 });
+      expect(StyleSheet.flatten(screen.getByText(card.title).props.style).color).toBe(card.copyTone === 'light' ? '#FFFFFF' : '#000000');
+      view.unmount();
+    }
   });
+});
+
+
+it('does not truncate the thirteen bundled cards to the CMS six-card setting', async () => {
+  const { demoHeroSlides } = require('../../src/features/home/heroDemoSlides');
+  await renderCarousel(SETTINGS, demoHeroSlides());
+  measureSection(SCREEN_WIDTH);
+  expect(list().props.data).toHaveLength(13);
+  fireEvent(list(), 'momentumScrollEnd', { nativeEvent: { contentOffset: { x: stride * 12, y: 0 } } });
+  expect(currentCard()).toBe(13);
+  act(() => { jest.advanceTimersByTime(INTERVAL_MS * 2); });
+  expect(currentCard()).toBe(13);
 });
