@@ -58,8 +58,7 @@
     "audit:performance": "esbuild verify/performance-audit.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/performance-audit.cjs --log-level=error && node .cache/performance-audit.cjs",
     "audit:database": "esbuild verify/database-structure-audit.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/database-structure-audit.cjs --log-level=error && node .cache/database-structure-audit.cjs",
     "bench:public-products": "esbuild verify/public-product-read-benchmark.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/public-product-read-benchmark.cjs --log-level=error && node .cache/public-product-read-benchmark.cjs",
-    "backup:verify": "node scripts/verify-sqlite-backup.mjs",
-    "reels:test-pack": "node scripts/install-reel-test-pack.mjs"
+    "backup:verify": "node scripts/verify-sqlite-backup.mjs"
   },
   "keywords": [
     "ayrovi",

@@ -6,7 +6,7 @@ const prefix = 'paging_reel_';
 beforeAll(() => {
   const publisher = db.get<any>('SELECT id FROM story_publishers LIMIT 1').id;
   for (let i = 0; i < 65; i++) db.run(`INSERT INTO reels (id,title,channel_id,video_url,publish_at,status,created_at,updated_at)
-    VALUES (?,?,?, '/media/reels/flower-cc0-v1.mp4', '2026-01-01T00:00:00.000Z','publie','2026-01-01','2026-01-01')`, prefix + String(i).padStart(3, '0'), 'Real Reel', publisher);
+    VALUES (?,?,?, '/media/reels-owned/shoes-v1.mp4', '2026-01-01T00:00:00.000Z','publie','2026-01-01','2026-01-01')`, prefix + String(i).padStart(3, '0'), 'Real Reel', publisher);
 });
 afterAll(() => db.run('DELETE FROM reels WHERE id LIKE ?', prefix + '%'));
 it('pages all published rows without gaps or duplicate timestamp ties', async () => {

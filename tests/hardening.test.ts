@@ -65,7 +65,7 @@ describe('ZAYROVI production hardening', () => {
   test('social targets are validated and guest views are deduplicated by session', async () => {
     const withoutSession = await request(app)
       .post('/api/public/social/interact')
-      .send({ targetId: 'reel_demo_01', type: 'view' });
+      .send({ targetId: 'reel_owner_shoes_v1', type: 'view' });
     expect(withoutSession.status).toBe(400);
     expect(withoutSession.body.code).toBe('SOCIAL_SESSION_REQUIRED');
 
@@ -80,21 +80,21 @@ describe('ZAYROVI production hardening', () => {
     const first = await request(app)
       .post('/api/public/social/interact')
       .set('x-session-id', sessionId)
-      .send({ targetId: 'reel_demo_01', type: 'view' });
+      .send({ targetId: 'reel_owner_shoes_v1', type: 'view' });
     const second = await request(app)
       .post('/api/public/social/interact')
       .set('x-session-id', sessionId)
-      .send({ targetId: 'reel_demo_01', type: 'view' });
+      .send({ targetId: 'reel_owner_shoes_v1', type: 'view' });
     expect(first.status).toBe(200);
     expect(first.body.data.recorded).toBe(true);
     expect(second.status).toBe(200);
     expect(second.body.data.recorded).toBe(false);
 
-    const counts = await request(app).get('/api/public/social/counts?ids=reel_demo_01');
-    expect(counts.body.data.reel_demo_01.views).toBe(1);
+    const counts = await request(app).get('/api/public/social/counts?ids=reel_owner_shoes_v1');
+    expect(counts.body.data.reel_owner_shoes_v1.views).toBe(1);
 
     const legacy = await request(app)
-      .post('/api/public/social/reels/reel_demo_01/view')
+      .post('/api/public/social/reels/reel_owner_shoes_v1/view')
       .set('x-session-id', 'hardening-legacy-session');
     expect(legacy.status).toBe(410);
     expect(legacy.body.code).toBe('ENDPOINT_REPLACED');
@@ -104,7 +104,7 @@ describe('ZAYROVI production hardening', () => {
     const guest = await request(app)
       .post('/api/public/social/interact')
       .set('x-session-id', 'hardening-guest-like')
-      .send({ targetId: 'reel_demo_01', type: 'like' });
+      .send({ targetId: 'reel_owner_shoes_v1', type: 'like' });
     expect(guest.status).toBe(401);
 
     const accountId = `hardening_account_${Date.now()}`;
@@ -117,7 +117,7 @@ describe('ZAYROVI production hardening', () => {
       .set('Cookie', `ayrovi_customer_session=${encodeURIComponent(session.token)}`)
       .set('x-csrf-token', session.csrfToken)
       .set('x-session-id', 'hardening-auth-like')
-      .send({ targetId: 'reel_demo_01', type: 'like' });
+      .send({ targetId: 'reel_owner_shoes_v1', type: 'like' });
 
     const first = await like();
     expect(first.status).toBe(200);
@@ -152,7 +152,7 @@ describe('ZAYROVI production hardening', () => {
       const response = await request(app)
         .post('/api/public/social/interact')
         .set('x-session-id', sessionId)
-        .send({ targetId: 'reel_demo_01', type: 'view' });
+        .send({ targetId: 'reel_owner_shoes_v1', type: 'view' });
       statuses.push(response.status);
     }
     expect(statuses.slice(0, 12)).toEqual(Array(12).fill(200));

@@ -1,4 +1,4 @@
-import { installReelTestPack, upgradeReelTestPackCover } from '../magazine/installReelTestPack';
+import { installOwnerReels } from '../magazine/installOwnerReels';
 import { schemaStatements } from './schemaStatements';
 import { upgradePublicationMediaPresentation } from '../catalogue/upgradePublicationMediaPresentation';
 import { reserveCatalogueSale, catalogId } from '../catalogue/localSale';
@@ -396,27 +396,26 @@ export class QatafoDatabase {
     this.runOnceDataMigration('publication_publisher_team_v1', () => {
       this.run("UPDATE story_publishers SET name='Zayrovi Team' WHERE id='pub_ayrovi' AND official=1 AND lower(trim(name)) IN ('zayrovi','zayrovi official')");
     });
-    // Owner approved publication. Add once like other bundled editorial media.
+    // Owner approved replacing all prior Reels with five supplied clips (once).
     try {
       const backupReelContent = () => {
         if (this.databasePath === ':memory:') return;
         const backupDir = path.join(path.dirname(path.resolve(this.databasePath)), 'backups');
         fs.mkdirSync(backupDir, { recursive: true, mode: 0o700 });
-        const backup = path.join(backupDir, `pre-reel-test-pack-${randomUUID()}.sqlite`);
+        const backup = path.join(backupDir, `pre-owner-reels-${randomUUID()}.sqlite`);
         this.db.prepare('VACUUM INTO ?').run(backup);
         fs.chmodSync(backup, 0o600);
         const copy = new Database(backup, { readonly: true, fileMustExist: true });
         try {
           const integrity = copy.pragma('integrity_check') as Array<{integrity_check: string}>;
           if (integrity.length !== 1 || integrity[0].integrity_check !== 'ok' || (copy.pragma('foreign_key_check') as unknown[]).length)
-            throw new Error('REEL_TEST_BACKUP_INVALID');
+            throw new Error('OWNER_REEL_BACKUP_INVALID');
         } finally { copy.close(); }
       };
-      installReelTestPack(this, backupReelContent);
-      upgradeReelTestPackCover(this, backupReelContent);
+      installOwnerReels(this, backupReelContent);
     } catch {
-      // Optional test media must not prevent the store from starting. Retry next boot.
-      console.error('[reel-test-pack] installation or cover upgrade failed; pending step will retry next boot');
+      // Old bundled URLs are removed in this release: do not serve a half-replaced collection.
+      throw new Error('OWNER_REEL_REPLACEMENT_FAILED');
     }
   }
 
@@ -2326,19 +2325,6 @@ export class QatafoDatabase {
       insP.run('pub_post_01', 'Nouvel arrivage #08 disponible', 'La sélection mode & lifestyle de la semaine', 'pub_ayrovi', '/media/hero-femme.jpg', '', nowPub, 'publie', nowPub, nowPub);
       insP.run('pub_post_02', 'Tendances du moment', 'Les pièces préférées de la communauté', 'pub_style', '/media/hero-enfants.jpg', 'Note interne : mettre à jour chaque vendredi.', nowPub, 'publie', nowPub, nowPub);
     }
-    if ((this.db.prepare('SELECT COUNT(*) AS count FROM reels').get() as any).count === 0) {
-      const nowR = new Date().toISOString();
-      this.db.prepare(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?)`)
-        .run('reel_demo_01', 'La sélection ZAYROVI en mouvement', 'pub_ayrovi', 'Découvrez la sélection en vidéo.', '/media/reels/flower-cc0-v1.mp4', 8, nowR, 'publie', nowR, nowR);
-    }
-
-    // Only repair the known hotlinked seed. Never overwrite a CRM-edited video or other Reel.
-    this.runOnceDataMigration('reel_demo_same_origin_media_v1', () => {
-      this.run(`UPDATE reels SET video_url=? WHERE id=? AND video_url=?`,
-        '/media/reels/flower-cc0-v1.mp4', 'reel_demo_01',
-        'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4');
-    });
-
     this.ensureColumn('order_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'requested_color', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");
