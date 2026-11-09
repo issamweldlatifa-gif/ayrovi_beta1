@@ -1327,25 +1327,13 @@ it.each([
     );
     expect(copyIndex).toBeGreaterThanOrEqual(0);
     expect(copyIndex).toBeLessThan(mediaIndex);
-    expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle({
-      ...(template === 'split'
+    expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle(
+      template === 'split'
         ? { gap: 0 }
-        : template === 'campaign'
-        ? { marginStart: 52 }
-        : template === 'social_pair' || template === 'social_mosaic'
-        ? { marginHorizontal: 4 }
-        : [
-            'photo',
-            'carousel',
-            'social_mosaic',
-            'social_strip',
-            'social_pair',
-            'caption_photo',
-            'shoppable',
-          ].includes(template)
-        ? { marginStart: 52 }
-        : { gap: 8 }),
-    });
+        : ['social_mosaic', 'social_pair', 'social_strip'].includes(template)
+        ? { marginHorizontal: -12 }
+        : { gap: 8 }
+    );
   }
 );
 
@@ -1727,8 +1715,61 @@ it('uses compact reference leading and a rounded aligned campaign image', async 
   expect(publicationTextStyle('fr', 'h1')).toMatchObject({ fontSize: 20, lineHeight: 26 });
   expect(publicationTextStyle('ar')).toMatchObject({ fontFamily: 'NotoSansArabic-Regular', lineHeight: 26 });
   await mount(<PublicationCard post={referencePost('campaign', 1)} compact={false} onComments={jest.fn()} onReaction={jest.fn()} />);
-  expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle({ marginStart: 52 });
+  // Cadre arrondi : toute la largeur de carte (écran moins la gouttière), sans retrait.
+  expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle({ gap: 8 });
+  expect(screen.getByTestId('publication-content-ui-post')).not.toHaveStyle({ marginStart: 52 });
   expect(screen.getByTestId('publication-media-ui-post')).toHaveStyle({ borderRadius: 16 });
+});
+
+
+it('extends sharp-edged media to the exact screen width, rounded frames to the card width', async () => {
+  // Grille sociale à bords francs : marges négatives = gouttière de liste → plein écran.
+  await mount(
+    <PublicationCard
+      post={referencePost('social_strip', 3)}
+      compact={false}
+      onComments={jest.fn()}
+      onReaction={jest.fn()}
+      mediaInset={8}
+    />
+  );
+  expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle({
+    marginHorizontal: -8,
+  });
+  // Collection multi-images : tuiles sans rayon → même règle plein écran.
+  const base = referencePost('photo', 2);
+  const collectionPost = {
+    ...base,
+    content: { ...base.content!, type: 'collection' as const },
+  };
+  await mount(
+    <PublicationCard
+      post={collectionPost}
+      compact={false}
+      onComments={jest.fn()}
+      onReaction={jest.fn()}
+      mediaInset={8}
+    />
+  );
+  expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle({
+    marginHorizontal: -8,
+  });
+  // Cadre arrondi d'une photo simple : largeur de carte, sans marge négative.
+  await mount(
+    <PublicationCard
+      post={referencePost('photo', 1)}
+      compact={false}
+      onComments={jest.fn()}
+      onReaction={jest.fn()}
+      mediaInset={8}
+    />
+  );
+  expect(screen.getByTestId('publication-content-ui-post')).toHaveStyle({
+    gap: 8,
+  });
+  expect(screen.getByTestId('publication-media-ui-post')).toHaveStyle({
+    borderRadius: 16,
+  });
 });
 
 

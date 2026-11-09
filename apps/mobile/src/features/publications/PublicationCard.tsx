@@ -14,7 +14,10 @@ import { PublicationPublisher } from './PublicationPublisher';
 import { PublicationText as AppText } from './publicationDesign';
 import { PUBLICATION_SPACING as S, ICON_SIZE } from '@/design/tokens.mobile';
 import { useI18n } from '@/i18n';
-import { resolvePublicationTemplate } from '../../../../../shared/publicationLayouts';
+import {
+  resolvePublicationTemplate,
+  SOCIAL_TEMPLATES,
+} from '../../../../../shared/publicationLayouts';
 
 export function PublicationCard({
   post,
@@ -54,9 +57,17 @@ export function PublicationCard({
     post.content?.media.length,
     post.category
   );
-  const wideMedia = template === 'social_pair' || template === 'social_mosaic';
-  const columnMedia = template !== 'split';
+  // Règle de largeur des médias (demande du propriétaire) : les images vivent
+  // à la largeur de l'écran.
+  // • Tuiles à bords FRANCS (grilles sociales, collection) : PLEINE largeur
+  //   écran — les marges négatives annulent exactement la gouttière de liste.
+  // • Cadre à coins ARRONDIS (radius 16) : toute la largeur de carte, soit
+  //   l'écran moins la fine gouttière — « presque pleine largeur ».
   const split = template === 'split';
+  const tiledMedia =
+    (SOCIAL_TEMPLATES as readonly string[]).includes(template) ||
+    (post.content?.type === 'collection' &&
+      (post.content?.media.length ?? 0) > 1);
   const campaign = template === 'campaign';
   const action = () => {
     if (post.content?.actionTarget === 'products') {
@@ -174,10 +185,8 @@ export function PublicationCard({
       <View
         testID={`publication-content-${post.id}`}
         style={
-          wideMedia
-            ? { marginHorizontal: 4 }
-            : columnMedia
-            ? { marginStart: PUBLICATION_TYPE.column }
+          tiledMedia
+            ? { marginHorizontal: -mediaInset }
             : split
             ? styles.editorial
             : styles.content
@@ -192,18 +201,8 @@ export function PublicationCard({
           />
         </View>
       </View>
-      <View
-        style={
-          columnMedia ? { marginStart: PUBLICATION_TYPE.column } : undefined
-        }
-      >
-        {cta}
-      </View>
-      <View
-        style={
-          columnMedia ? { marginStart: PUBLICATION_TYPE.column } : undefined
-        }
-      >
+      <View>{cta}</View>
+      <View>
         <PublicationActions
           post={post}
           onComments={onComments}
