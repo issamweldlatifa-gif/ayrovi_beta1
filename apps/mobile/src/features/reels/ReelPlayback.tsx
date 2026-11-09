@@ -19,6 +19,7 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
   const t = useT();
   const { locale } = useI18n();
   const view = useRef<VideoView>(null);
+  const [showLoading, setShowLoading] = useState(false);
   const [firstFrame, setFirstFrame] = useState(false);
   const finishTiming = useRef<((firstFrame: boolean) => void) | null>(null);
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
@@ -52,13 +53,20 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
     else player.pause();
   }, [player, playback.status, playback.reportError, paused, foreground, blocked]);
   useEffect(() => { if (player) player.muted = !soundOn; }, [player, soundOn]);
+  const waiting = foreground && !paused && !blocked && (playback.status === 'loading' || playback.status === 'idle' || (!firstFrame && playback.status === 'readyToPlay'));
+  useEffect(() => {
+    setShowLoading(false);
+    if (!waiting) return;
+    const timer = setTimeout(() => setShowLoading(true), 250);
+    return () => clearTimeout(timer);
+  }, [waiting, uri]);
   return <>
-    {player ? <View pointerEvents="none" collapsable={false} style={StyleSheet.absoluteFill}><VideoView ref={view} player={player} pointerEvents="none" surfaceType="textureView"
+    {player ? <View testID={`reel-video-surface-${id}`} pointerEvents="none" collapsable={false} style={[StyleSheet.absoluteFill, { opacity: firstFrame ? 1 : 0 }]}><VideoView ref={view} player={player} pointerEvents="none" surfaceType="textureView"
       onFirstFrameRender={() => { setFirstFrame(true); finishTiming.current?.(true); }}
       style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', backgroundColor: VIDEO_BACKDROP }]} contentFit={contentFit} nativeControls={false} /></View> : null}
     <Pressable accessibilityRole="button" accessibilityLabel={paused ? t('social.play') : t('social.pause')}
       onPress={() => onPausedChange(!paused)} style={StyleSheet.absoluteFill} />
-    {(playback.status === 'loading' || playback.status === 'idle' || (!firstFrame && !paused && !blocked && foreground && playback.status === 'readyToPlay')) && <View pointerEvents="none"
+    {waiting && showLoading && <View pointerEvents="none"
       testID={`reel-loading-${id}`} style={[StyleSheet.absoluteFill, styles.center]} accessibilityRole="progressbar">
       <BrandLoadingIndicator size={64} />
     </View>}

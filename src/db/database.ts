@@ -1,4 +1,4 @@
-import { installReelTestPack } from '../magazine/installReelTestPack';
+import { installReelTestPack, upgradeReelTestPackCover } from '../magazine/installReelTestPack';
 import { schemaStatements } from './schemaStatements';
 import { upgradePublicationMediaPresentation } from '../catalogue/upgradePublicationMediaPresentation';
 import { reserveCatalogueSale, catalogId } from '../catalogue/localSale';
@@ -398,7 +398,7 @@ export class QatafoDatabase {
     });
     // Owner approved publication. Add once like other bundled editorial media.
     try {
-      installReelTestPack(this, () => {
+      const backupReelContent = () => {
         if (this.databasePath === ':memory:') return;
         const backupDir = path.join(path.dirname(path.resolve(this.databasePath)), 'backups');
         fs.mkdirSync(backupDir, { recursive: true, mode: 0o700 });
@@ -411,10 +411,12 @@ export class QatafoDatabase {
           if (integrity.length !== 1 || integrity[0].integrity_check !== 'ok' || (copy.pragma('foreign_key_check') as unknown[]).length)
             throw new Error('REEL_TEST_BACKUP_INVALID');
         } finally { copy.close(); }
-      });
+      };
+      installReelTestPack(this, backupReelContent);
+      upgradeReelTestPackCover(this, backupReelContent);
     } catch {
       // Optional test media must not prevent the store from starting. Retry next boot.
-      console.error('[reel-test-pack] installation failed; no test content was changed');
+      console.error('[reel-test-pack] installation or cover upgrade failed; pending step will retry next boot');
     }
   }
 

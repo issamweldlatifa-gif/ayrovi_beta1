@@ -1,4 +1,17 @@
-# Opt-in licensed Reel test pack
+# Licensed Reel test pack
+
+## Current presentation: cover v2
+
+`cover-manifest.json` is the active manifest for fresh installation and the CLI.
+The five `*-cover-v2.mp4` files and corresponding posters are aspect-preserving
+center crops that fill portrait, with no added black padding. Cropping deliberately
+removes side content; it is not stretching or a claim of higher source resolution.
+The original `manifest.json` and padded v1 media remain for provenance and existing
+cached/database URLs. A one-shot startup upgrade changes only exact known v1 test
+URLs; owner video replacements and custom posters, titles, statuses and deletions
+are preserved. New filenames avoid reusing immutable cached URLs.
+
+## Original v1 preparation (historical)
 
 Five **edited test files from three upstream sources**, not five independent advertisements.
 No product association, prices, endorsement, account or commerce data is implied.

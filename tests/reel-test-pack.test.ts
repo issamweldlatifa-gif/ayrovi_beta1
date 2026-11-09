@@ -8,7 +8,7 @@ import request from 'supertest';
 import { expect, it } from 'vitest';
 import { QatafoDatabase } from '../src/db/database';
 import { readPublishedSocial } from '../src/magazine/publicSocialReads';
-import manifest from '../assets/media/reel-test-pack/manifest.json';
+import manifest from '../assets/media/reel-test-pack/cover-manifest.json';
 const directory=path.resolve('assets/media/reel-test-pack');
 const run=(file:string, apply=false)=>spawnSync(process.execPath,['scripts/install-reel-test-pack.mjs','--database',file,...(apply?['--apply']:[])],{encoding:'utf8',timeout:20_000});
 it('ships five hashed licensed faststart MP4s and posters served with byte-range support',async()=>{

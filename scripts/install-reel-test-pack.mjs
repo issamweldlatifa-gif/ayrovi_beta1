@@ -7,7 +7,7 @@ import { createHash, randomUUID } from 'node:crypto';
 const Database = createRequire(import.meta.url)('better-sqlite3');
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const directory = path.join(root, 'assets/media/reel-test-pack');
-const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'manifest.json'), 'utf8'));
+const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'cover-manifest.json'), 'utf8'));
 let db;
 try {
   const args = process.argv.slice(2);
