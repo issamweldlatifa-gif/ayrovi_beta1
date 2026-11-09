@@ -55,7 +55,7 @@ import {
   sonimStateTranslationKey,
   type SonimChatMessage,
 } from './sonimModel';
-import { CLEAN, CLEAN_TYPE, CleanWordmark, CleanActionGlyph, CleanSpeakerIcon, CleanMenuGlyph } from './CleanVisuals';
+import { CLEAN, CLEAN_CANVAS, CLEAN_COMPOSER_RADIUS, CLEAN_TYPE, CleanWordmark, CleanActionGlyph, CleanSpeakerIcon, CleanMenuGlyph } from './CleanVisuals';
 import { useCleanRecording } from './useCleanRecording';
 import { SonimToolCards } from './SonimToolCards';
 
@@ -476,7 +476,7 @@ export function SonimScreen() {
   const assistantOffline = statusQuery.data?.ready === false;
 
   const content = (
-    <View style={[styles.body, { backgroundColor: CLEAN.paper }]}>
+    <View style={[styles.body, { backgroundColor: CLEAN_CANVAS }]}>
       <View
         style={[
           styles.sonimHeader,
@@ -485,7 +485,7 @@ export function SonimScreen() {
             paddingTop: insets.top + theme.space[1],
             paddingBottom: theme.space[2],
             paddingHorizontal: gutter,
-            backgroundColor: CLEAN.paper,
+            backgroundColor: CLEAN_CANVAS,
             borderBottomColor: theme.colors.line,
           },
         ]}
@@ -743,7 +743,7 @@ export function SonimScreen() {
         style={[
           styles.composerOuter,
           {
-            backgroundColor: CLEAN.paper,
+            backgroundColor: CLEAN_CANVAS,
             paddingHorizontal: gutter,
             paddingBottom: keyboardOpen ? theme.space[2] : bottomComposerClearance,
           },
@@ -779,11 +779,11 @@ export function SonimScreen() {
         ) : null}
 
         {recording.error ? <AppText accessibilityRole="alert" variant="caption" color={CLEAN.ink}>{t('clean.voiceError')}</AppText> : null}
-        <View style={[styles.composerBox, { backgroundColor: CLEAN.paper, borderColor: CLEAN.line, borderRadius: theme.radius.xl }]}>
+        <View testID="clean-composer-box" style={[styles.composerBox, { backgroundColor: CLEAN.paper, borderColor: CLEAN.line, borderRadius: CLEAN_COMPOSER_RADIUS }]}>
           {voiceBusy ? <View style={{ flexDirection: rowDir, alignItems: 'center', minHeight: 40, gap: 8 }}>
             <AppText color={CLEAN.ink}>{recording.state === 'recording' ? t('clean.recording') : t('clean.processing')}</AppText>
             <Pressable onPress={recording.cancel} accessibilityRole="button" accessibilityLabel={t('common.cancel')} style={styles.composerIconBtn}><Ionicons name="close-outline" size={theme.iconSize.md} color={CLEAN.ink} /></Pressable>
-          </View> : <TextInput value={draft} onChangeText={setDraft} placeholder={t('sonim.placeholder')} placeholderTextColor={CLEAN.muted} selectionColor={CLEAN.text} multiline maxLength={ASSISTANT_MAX_CHARS} textAlign={theme.isRTL ? 'right' : 'left'} style={[theme.text('label'), CLEAN_TYPE, theme.direction, styles.input, { color: CLEAN.ink }]} testID="sonim-input" />}
+          </View> : <TextInput value={draft} onChangeText={setDraft} placeholder={t('sonim.placeholder')} placeholderTextColor={CLEAN.muted} underlineColorAndroid="transparent" selectionColor={CLEAN.text} multiline maxLength={ASSISTANT_MAX_CHARS} textAlign={theme.isRTL ? 'right' : 'left'} style={[theme.text('label'), CLEAN_TYPE, theme.direction, styles.input, { color: CLEAN.ink, backgroundColor: CLEAN.paper }]} testID="sonim-input" />}
           <View style={{ flexDirection: rowDir, alignItems: 'center', justifyContent: 'space-between' }}>
             <Pressable onPress={() => { Keyboard.dismiss(); setAttachmentError(false); setAttachmentOpen(true); }} disabled={isStreaming || voiceBusy || attachments.length >= ASSISTANT_MAX_ATTACHMENTS} accessibilityRole="button" accessibilityLabel={t('sonim.attach')} style={styles.composerIconBtn} testID="sonim-attach"><Ionicons name="add-outline" size={theme.iconSize.md} color={CLEAN.ink} /></Pressable>
             <View style={{ flexDirection: rowDir, alignItems: 'center', gap: 4 }}>
@@ -800,7 +800,7 @@ export function SonimScreen() {
   );
 
   return (
-    <View ref={keyboard.root} onLayout={keyboard.measure} style={[styles.root, { backgroundColor: CLEAN.paper, paddingBottom: keyboard.overlap }]}>
+    <View testID="clean-screen-root" ref={keyboard.root} onLayout={keyboard.measure} style={[styles.root, { backgroundColor: CLEAN_CANVAS, paddingBottom: keyboard.overlap }]}>
       {isFocused && <StatusBar barStyle="dark-content" />}
       {content}
 
@@ -939,8 +939,8 @@ const styles = StyleSheet.create({
   retryAction: { minHeight: 40, justifyContent: 'center', alignSelf: 'flex-start' },
   attachmentAction: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16 },
   composerIconBtn: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

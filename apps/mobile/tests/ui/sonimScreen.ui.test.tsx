@@ -110,6 +110,18 @@ describe('SonimScreen UI', () => {
     expect(router.push).toHaveBeenCalledWith('/lens');
   });
 
+  it('keeps the mobile composer pure white against a subtle canvas, with a 32dp orange glyph and 44dp touch target', async () => {
+    await renderSonim();
+    expect(screen.getByTestId('clean-screen-root')).toHaveStyle({ backgroundColor: '#F7F7F7' });
+    expect(screen.getByTestId('clean-composer-box')).toHaveStyle({ backgroundColor: '#FFFFFF', borderRadius: 28 });
+    expect(screen.getByTestId('sonim-input')).toHaveStyle({ backgroundColor: '#FFFFFF', color: '#000000' });
+    expect(screen.getByTestId('sonim-input').props.underlineColorAndroid).toBe('transparent');
+    expect(screen.getByTestId('sonim-send')).toHaveStyle({ width: 44, height: 44 });
+    const glyph = screen.getByTestId('clean-action-glyph');
+    expect(Number(glyph.props.width)).toBe(32);
+    expect(Number(glyph.props.height)).toBe(32);
+  });
+
   it('ouvre le menu d’images et signale le refus de la caméra', async () => {
     const picker = jest.requireMock('expo-image-picker');
     await renderSonim();

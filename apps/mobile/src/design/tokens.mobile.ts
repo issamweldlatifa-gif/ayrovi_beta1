@@ -771,3 +771,6 @@ export const PUBLICATION_THEME = {
   splitPaper: alpha(BRAND.violet, .025), glass: alpha(BRAND.violet, .035),
   glassLine: frost(.6), campaignPaper: PUBLICATION_EDITORIAL_PAPER,
 } as const;
+
+/** Owner-approved Clean-only composer contrast and reference sizing; not commerce defaults. */
+export const CLEAN_COMPOSER = { canvas: '#F7F7F7', actionSize: 32, radius: 28 } as const;
