@@ -201,6 +201,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/social/StoryViewer.tsx', // zones de tape + pied, au-dessus du média
       'src/features/home/ReelsShopSection.tsx', // small video-type badge overlays its own media; publisher remains in normal flow
       'src/features/home/HeroCarousel.tsx', // couches de fond (le fond de chaque photo) et voile du titre (§5.4)
+      'src/features/home/HomeCover.tsx', // cover plein écran : voile bas, titre et bouton contour posés SUR le média, bouton pause
       'app/reels-viewer.tsx', // en-tête transparent FIXE au-dessus de la liste plein écran (Reels)
       'src/design/sheet/AppSheet.tsx', // درج موحّد: الورقة والظل فوق المحتوى (إيماءة سحب، بلا Modal)
       'src/design/sheet/SheetBackdrop.tsx', // الظل الخلفي للدرج، يغطي الشاشة تحت الورقة

@@ -790,11 +790,11 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HOME_SECTIONS', resourceType: 'home_block' },
   },
   {
-    key: 'content.home-featured', label: 'Section à la une', singular: 'section', module: 'cms', domain: 'CONTENT',
-    description: 'Publication « à la une » affichée sous les onglets de l’accueil mobile.', navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
+    key: 'content.home-featured', label: 'Cover d’accueil', singular: 'section', module: 'cms', domain: 'CONTENT',
+    description: 'Le nouveau bloc d’entrée de l’accueil mobile : médias, texte et bouton posés dessus.', navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
     section: 'home-featured', nav: { group: 'Contenu', order: 91, icon: 'Sparkles' },
-    surface: 'custom', component: 'HomeFeaturedPage', api: { prefix: '/home-featured', kind: 'generic' },
-    columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HOME_FEATURED', resourceType: 'home_featured' },
+    surface: 'custom', component: 'HomeFeaturedPage', api: { prefix: '/home-cover', kind: 'generic' },
+    columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HOME_COVER', resourceType: 'home_cover' },
   },
   {
     key: 'marketing.ai-discovery', label: 'Découverte IA', singular: 'rapport', module: 'marketing', domain: 'CONTENT',

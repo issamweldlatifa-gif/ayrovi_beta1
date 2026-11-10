@@ -5,7 +5,6 @@ import { reserveCatalogueSale, catalogId } from '../catalogue/localSale';
 import { installPublicationSelection } from '../catalogue/installPublicationSelection';
 import { installPublicationShowcase } from '../services/publicationShowcase';
 import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../shared/publicationFeed';
-import { resolveFeaturedPublication } from '../services/homeFeatured';
 import { seedOfficialStories } from '../services/officialStories';
 import { FONT_STACK } from '../../shared/brand.generated';
 import { RETIRED_BRAND_PURPLES } from '../../shared/identityPolicy';
@@ -387,7 +386,6 @@ export class QatafoDatabase {
     this.purgeDemoProductsV1();
     this.seedTestProductV1();
     this.installOfficialStories();
-    this.installFeaturedPortrait();
     this.installPublicationEditorialLaunch();
     this.runOnceDataMigration('publication_visible_showcase_v1', () => { installPublicationShowcase(this); });
     this.rebrandBlueV1();
@@ -465,20 +463,6 @@ export class QatafoDatabase {
           VALUES (?,?,?,?,?,?,'publie',?,?,?,'generated')`,
           `publication_editorial_${slug}`, title, subtitle, channel.id, `/media/publications/editorial-${slug}.jpg`, published, now, now, category);
       }
-    });
-  }
-
-  /** Replace only the configured featured publication's photo; preserve its identity and routing. */
-  private installFeaturedPortrait(): void {
-    this.runOnceDataMigration('home_featured_editorial_portrait_v1', () => {
-      const settings = this.get<any>("SELECT * FROM home_featured_settings WHERE id='global'");
-      const featured = resolveFeaturedPublication({
-        // Resolve the chosen content even when the section is hidden, without enabling it.
-        enabled: true, source: settings?.source === 'pinned' ? 'pinned' : 'latest',
-        publicationId: settings?.publication_id || '', ctaLabel: settings?.cta_label || '',
-      }, this.all('SELECT id,title,subtitle,image_url,publish_at,status FROM publications'), Date.now());
-      if (featured) this.run('UPDATE publications SET image_url=?,updated_at=? WHERE id=?',
-        '/media/editorial/featured-beauty.jpg', new Date().toISOString(), featured.id);
     });
   }
 
@@ -2195,6 +2179,32 @@ export class QatafoDatabase {
     if (!(this.db.prepare("SELECT COUNT(*) count FROM home_featured_settings WHERE id='global'").get() as { count: number }).count) {
       this.run('INSERT INTO home_featured_settings (id,updated_at) VALUES (?,?)', 'global', new Date().toISOString());
     }
+
+    // « Cover » d'accueil — le NOUVEAU bloc d'entrée (remplace « à la une ») :
+    // médias (images / vidéos) téléversés, grand texte posé sur le média,
+    // bouton contour transparent, destination fermée, cadence du carrousel.
+    this.db.exec(`CREATE TABLE IF NOT EXISTS home_cover_settings (
+      id TEXT PRIMARY KEY CHECK(id='global'),
+      enabled INTEGER NOT NULL DEFAULT 1,
+      title TEXT NOT NULL DEFAULT '',
+      cta_label TEXT NOT NULL DEFAULT '',
+      destination TEXT NOT NULL DEFAULT 'publications' CHECK(destination IN ('publications','catalog','promotions')),
+      autoplay_interval_ms INTEGER NOT NULL DEFAULT 5000,
+      updated_at TEXT NOT NULL
+    );`);
+    if (!(this.db.prepare("SELECT COUNT(*) count FROM home_cover_settings WHERE id='global'").get() as { count: number }).count) {
+      this.run('INSERT INTO home_cover_settings (id,updated_at) VALUES (?,?)', 'global', new Date().toISOString());
+    }
+    this.db.exec(`CREATE TABLE IF NOT EXISTS home_cover_slides (
+      id TEXT PRIMARY KEY,
+      position INTEGER NOT NULL DEFAULT 0,
+      type TEXT NOT NULL CHECK(type IN ('image','video')),
+      url TEXT NOT NULL,
+      poster TEXT NOT NULL DEFAULT '',
+      alt TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_home_cover_slides_position ON home_cover_slides(position);`);
 
     // Télémétrie carrousel : impression / clic, sans donnée personnelle (même
     // philosophie que le funnel d'achat — mesurer ne doit jamais planter).

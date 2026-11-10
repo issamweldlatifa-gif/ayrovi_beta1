@@ -1494,3 +1494,11 @@ html[data-theme='dark'] .admin-table th { color: var(--admin-text-soft); }
 .admin-story-editor-preview { display: block; width: 160px; max-width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 8px; margin-bottom: 12px; }
 
 .admin-stories-fields { border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
+
+/* Aperçu « cover » d'accueil : le média est suggéré par le ton inversé de la
+   console ; le grand titre et le bouton contour TRANSPARENT sont posés dessus,
+   comme dans l'application. */
+.admin-cover-preview { background: var(--admin-ink); color: var(--admin-surface-card); border-radius: 12px; padding: 28px 16px; display: grid; gap: 12px; justify-items: center; max-width: 320px; }
+.admin-cover-preview-title { font-size: 18px; text-align: center; white-space: pre-line; }
+.admin-cover-preview-pill { border: 1px solid var(--admin-on-dark); border-radius: 999px; padding: 8px 22px; font-size: 13px; }
+.admin-cover-preview-meta { font-size: 11px; opacity: .7; }

@@ -288,8 +288,6 @@ export const ar = {
   'shopping.favouriteRemove': 'إزالة من المفضّلة',
   'home.reelsShop.open': 'فتح الريل',
   'home.reelsShop.label': 'Reels، Shop',
-  'home.featured.label': 'مختارات مميّزة',
-  'home.featured.cta': 'اكتشف',
   'home.hero.slideOf': 'الشريحة {current} من {total}',
   'home.hero.swipeHint': 'اسحب لاستعراض الحملات',
 

@@ -288,8 +288,6 @@ export const fr = {
   'shopping.favouriteRemove': 'Retirer des favoris',
   'home.reelsShop.open': 'Ouvrir le reel',
   'home.reelsShop.label': 'Reels, Shop',
-  'home.featured.label': 'À la une',
-  'home.featured.cta': 'Découvrir',
   /* ── Carrousel Hero (piloté Admin) ─────────────────────────────────────── */
   'home.hero.slideOf': 'Carte {current} sur {total}',
   'home.hero.swipeHint': 'Glissez latéralement pour découvrir les campagnes',

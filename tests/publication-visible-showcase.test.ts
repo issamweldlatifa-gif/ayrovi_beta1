@@ -46,9 +46,9 @@ describe('Code-installed publication examples visible without CRM creation', () 
     expect(
       rows.find((row: any) => row.template_id === 'carousel').products
     ).toHaveLength(3);
-    const featured = (await request(app).get('/api/public/home-featured')).body
-      .data.publication;
-    expect(featured?.id.startsWith(PUBLICATION_SHOWCASE_PREFIX)).not.toBe(true);
+    // Le nouveau « cover » ne lit plus les publications : rien sans médias du CRM.
+    const cover = (await request(app).get('/api/public/home-cover')).body.data;
+    expect(cover?.slides ?? []).toHaveLength(0);
   });
   test('does not overwrite CRM edits, including archived status, when installer is called twice', () => {
     const id = PUBLICATION_SHOWCASE_PREFIX + 'social_pair';

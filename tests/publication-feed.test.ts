@@ -59,8 +59,9 @@ describe('Publication Phase 1 feed contract', () => {
     expect(item).toMatchObject({ category: 'home', media_origin: 'uploaded' });
     expect(item.products).toHaveLength(1); expect(item.products[0].id).toBe('product_selection_swarovski-tasse');
     expect((await request(app).get(item.image_url)).status).toBe(200);
-    const featured = (await request(app).get('/api/public/home-featured')).body.data.publication;
-    expect(featured?.id).not.toContain('publication_editorial_');
+    // Le nouveau « cover » ne lit plus les publications : rien sans médias du CRM.
+    const cover = (await request(app).get('/api/public/home-cover')).body.data;
+    expect(cover?.slides ?? []).toHaveLength(0);
   });
   test('CRM taxonomy writes are authenticated and validate unsupported categories', async () => {
     const admin = request.agent(app);

@@ -7,9 +7,9 @@ import { useMemo } from 'react';
  */
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData, type UseQueryResult } from '@tanstack/react-query';
 import {
-  fetchHeroCarouselSettings, fetchHeroSlides, fetchHomeFeatured,
+  fetchHeroCarouselSettings, fetchHeroSlides, fetchHomeCover,
   fetchNavigation,
-  type HeroCarouselSettings, type HeroSlide, type HomeFeatured,
+  type HeroCarouselSettings, type HeroSlide, type HomeCover,
   type NavLink,
 } from './public';
 import { fetchCatalogBrands } from './catalog';
@@ -58,8 +58,8 @@ export const queryKeys = {
  */
 const CONTENT = { staleTime: 60_000, refetchOnMount: true } as const;
 
-export const useHomeFeatured = (): UseQueryResult<HomeFeatured> =>
-  useQuery({ queryKey: ['home', 'featured'] as const, queryFn: ({ signal }) => fetchHomeFeatured({ signal }), ...CONTENT });
+export const useHomeCover = (): UseQueryResult<HomeCover | null> =>
+  useQuery({ queryKey: ['home', 'cover'] as const, queryFn: ({ signal }) => fetchHomeCover({ signal }), ...CONTENT });
 
 export const useHeroSlides = (): UseQueryResult<HeroSlide[]> =>
   useQuery({

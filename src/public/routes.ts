@@ -28,7 +28,10 @@ import sharp from 'sharp';
 import { customerFromRequest, keyedHash, optionalCustomer, requireCustomer } from '../customer/auth';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { liveValues, publishedRows, toPublicCards } from '../services/heroSlideDrafts';
-import { DEFAULT_FEATURED_SETTINGS, resolveFeaturedPublication, type FeaturedSettings } from '../services/homeFeatured';
+import {
+  COVER_DESTINATIONS, DEFAULT_COVER_SETTINGS, MAX_COVER_INTERVAL_MS, MIN_COVER_INTERVAL_MS,
+  resolveCoverPublic, type CoverSettings, type CoverSlide,
+} from '../../shared/homeCover';
 import { UnsafeUrlError } from '../services/safeUrl';
 import { pruneDiskCache } from '../services/diskCache';
 import { LINKED_PRODUCT_JOIN_SELECT, linkedProductFromJoin } from '../services/shoppableContent';
@@ -439,18 +442,26 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: cards });
   });
 
-  /* Section « à la une » de l'accueil mobile : une publication PUBLIÉE, ou rien. */
-  router.get('/home-featured', (_req, res) => {
-    const row = db.get<any>("SELECT * FROM home_featured_settings WHERE id='global'");
-    const settings: FeaturedSettings = row ? {
+  /* « Cover » d'accueil : le nouveau bloc d'entrée piloté par le CRM — médias,
+     grand texte posé dessus, bouton contour transparent. Rien si désactivé. */
+  router.get('/home-cover', (_req, res) => {
+    const row = db.get<any>("SELECT * FROM home_cover_settings WHERE id='global'");
+    const settings: CoverSettings = row ? {
       enabled: row.enabled !== 0,
-      source: row.source === 'pinned' ? 'pinned' : 'latest',
-      publicationId: String(row.publication_id || ''),
+      title: String(row.title || ''),
       ctaLabel: String(row.cta_label || ''),
-    } : DEFAULT_FEATURED_SETTINGS;
-    const rows = db.all<any>("SELECT id,title,subtitle,image_url,publish_at,status FROM publications WHERE status='publie'");
-    const publication = resolveFeaturedPublication(settings, rows, Date.now());
-    res.json({ success: true, data: { publication, ctaLabel: settings.ctaLabel } });
+      destination: COVER_DESTINATIONS.includes(row.destination) ? row.destination : 'publications',
+      autoplayIntervalMs: Math.max(MIN_COVER_INTERVAL_MS, Math.min(MAX_COVER_INTERVAL_MS, Number(row.autoplay_interval_ms) || 5000)),
+    } : DEFAULT_COVER_SETTINGS;
+    const slides = db.all<any>('SELECT id,type,url,poster,alt FROM home_cover_slides ORDER BY position ASC, created_at ASC')
+      .map((slide) => ({
+        id: String(slide.id),
+        type: (slide.type === 'video' ? 'video' : 'image') as CoverSlide['type'],
+        url: String(slide.url || ''),
+        poster: String(slide.poster || ''),
+        alt: String(slide.alt || ''),
+      }));
+    res.json({ success: true, data: resolveCoverPublic(settings, slides) });
   });
 
   router.get('/hero-carousel-settings', (_req, res) => {

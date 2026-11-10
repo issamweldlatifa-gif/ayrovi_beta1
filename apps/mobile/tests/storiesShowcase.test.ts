@@ -13,10 +13,10 @@ describe('official showcase settings', () => {
       expect(() => parseStoriesShowcase(value)).toThrow();
     }
   });
-  it('sits between À la une and Lens with the same section rules as surrounding content', () => {
+  it('sits between the home cover and Lens with the same section rules as surrounding content', () => {
     const home = readFileSync(new URL('../app/(tabs)/index.tsx', import.meta.url), 'utf8');
-    expect(home.indexOf('<FeaturedPublication')).toBeLessThan(home.indexOf('<StoriesSection'));
+    expect(home.indexOf('<HomeCover')).toBeLessThan(home.indexOf('<StoriesSection'));
     expect(home.indexOf('<StoriesSection')).toBeLessThan(home.indexOf('<LensHomeBlock'));
-    expect(home).toMatch(/<FeaturedPublication \/>\s*<SectionRule \/>\s*<StoriesSection \/>\s*<SectionRule \/>/);
+    expect(home).toMatch(/<HomeCover \/>\s*<SectionRule \/>\s*<StoriesSection \/>\s*<SectionRule \/>/);
   });
 });

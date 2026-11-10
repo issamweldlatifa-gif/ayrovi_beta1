@@ -222,47 +222,71 @@ export function parseHeroCarouselSettings(payload: unknown): HeroCarouselSetting
   };
 }
 
-/* ── Section « à la une » (accueil, sous les onglets) — pilotée Admin ─────── */
+/* ── « Cover » d'accueil (le nouveau bloc d'entrée) — piloté CRM ──────────── */
 
-/** Publication affichée, telle que la renvoie `GET /api/public/home-featured`. */
-export interface HomeFeaturedPublication {
+/** `GET /api/public/home-cover` — un média image OU vidéo, avec attente facultative. */
+export interface HomeCoverSlide {
   id: string;
-  title: string;
-  subtitle: string;
-  imageUrl: string;
+  type: 'image' | 'video';
+  url: string;
+  poster: string;
+  alt: string;
 }
 
-/** `publication` = `null` ⇒ la section ne s'affiche pas du tout. */
-export interface HomeFeatured {
-  publication: HomeFeaturedPublication | null;
+/** Destination fermée : des pages DE L'APPLICATION (clé CRM, sans barre oblique). */
+export type HomeCoverDestinationKey = 'publications' | 'catalog' | 'promotions';
+
+/** `data` = `null` (désactivé ou sans média) ⇒ la section ne s'affiche pas du tout. */
+export interface HomeCover {
+  enabled: boolean;
+  title: string;
   ctaLabel: string;
+  destination: HomeCoverDestinationKey;
+  autoplayIntervalMs: number;
+  slides: HomeCoverSlide[];
 }
 
 /**
- * Lecture défensive : une réponse illisible ⇒ AUCUNE section (on n'invente pas de
- * publication). Le libellé du bouton retombe sur le texte par défaut de l'application.
+ * Lecture défensive : une réponse illisible ⇒ AUCUNE section (on n'invente rien).
+ * Le libellé et la destination invalides retombent sur les valeurs sûres.
  */
-export function parseHomeFeatured(payload: unknown): HomeFeatured {
-  if (!isRecord(payload) || !isRecord(payload.publication)) {
-    return { publication: null, ctaLabel: '' };
-  }
-  const row = payload.publication;
-  const id = typeof row.id === 'string' ? row.id.trim() : '';
-  if (!id) return { publication: null, ctaLabel: '' };
+export function parseHomeCover(payload: unknown): HomeCover | null {
+  if (!isRecord(payload)) return null;
+  const rawSlides = Array.isArray(payload.slides) ? payload.slides : [];
+  const slides = rawSlides
+    .map((row, index): HomeCoverSlide | null => {
+      if (!isRecord(row)) return null;
+      const url = typeof row.url === 'string' ? row.url.trim() : '';
+      if (!url) return null;
+      return {
+        id: typeof row.id === 'string' && row.id.trim() ? row.id.trim() : `cover-${index + 1}`,
+        type: row.type === 'video' ? 'video' : 'image',
+        url,
+        poster: typeof row.poster === 'string' ? row.poster.trim() : '',
+        alt: typeof row.alt === 'string' ? row.alt.trim().slice(0, 120) : '',
+      };
+    })
+    .filter((row): row is HomeCoverSlide => row !== null)
+    .slice(0, 10);
+  if (!slides.length) return null;
+  const destination = typeof payload.destination === 'string'
+    && ['publications', 'catalog', 'promotions'].includes(payload.destination)
+    ? payload.destination as HomeCoverDestinationKey
+    : 'publications';
+  const interval = Math.round(Number(payload.autoplayIntervalMs));
   return {
-    publication: {
-      id,
-      title: typeof row.title === 'string' ? row.title.trim() : '',
-      subtitle: typeof row.subtitle === 'string' ? row.subtitle.trim() : '',
-      imageUrl: typeof row.imageUrl === 'string' ? row.imageUrl.trim() : '',
-    },
+    enabled: payload.enabled !== false,
+    title: typeof payload.title === 'string' ? payload.title.trim().slice(0, 120) : '',
     ctaLabel: typeof payload.ctaLabel === 'string' ? payload.ctaLabel.trim().slice(0, 40) : '',
+    destination,
+    autoplayIntervalMs: Number.isFinite(interval) ? Math.min(30000, Math.max(2000, interval)) : 5000,
+    slides,
   };
 }
 
-export async function fetchHomeFeatured(options?: RequestOptions): Promise<HomeFeatured> {
-  const { data } = await apiGet<unknown>('/api/public/home-featured', options);
-  return parseHomeFeatured(data);
+export async function fetchHomeCover(options?: RequestOptions): Promise<HomeCover | null> {
+  const { data } = await apiGet<unknown>('/api/public/home-cover', options);
+  return parseHomeCover(data);
 }
 
 export async function fetchHeroSlides(options?: RequestOptions): Promise<HeroSlide[]> {

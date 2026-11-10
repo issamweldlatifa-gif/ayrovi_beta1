@@ -25,8 +25,9 @@ import {
 } from '../services/contentProducts';
 import { isHexColor, refreshHeroSlidePalette } from '../services/heroPalette';
 import {
-  DEFAULT_FEATURED_SETTINGS, normalizeFeaturedInput, resolveFeaturedPublication, type FeaturedSettings,
-} from '../services/homeFeatured';
+  COVER_DESTINATIONS, DEFAULT_COVER_SETTINGS, MAX_COVER_INTERVAL_MS, MIN_COVER_INTERVAL_MS,
+  normalizeCoverInput, resolveCoverPublic, type CoverSettings, type CoverSlide,
+} from '../../shared/homeCover';
 import {
   EDITABLE_FIELDS, EMPTY_VALUES, draftRowsById, heroImageAvailable, liveValues, mergeSlides, previewCards,
   publishedRows, validateSlideForSave, type ChangeType, type MergedSlide, type SlideValues,
@@ -1068,47 +1069,58 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     res.json({ success: true, data: rows.map((row) => ({ id: row.id, sortOrder: row.sortOrder, visible: Boolean(row.visible) })) });
   });
 
-  /* ==================== SECTION « À LA UNE » — accueil mobile (singleton 'global') ====================
-   * Réglages : activée ou non, source (la plus récente, ou une publication choisie), libellé du bouton.
-   * La règle de sortie vers l'application est dans src/services/homeFeatured.ts. */
-  const featuredSettingsFrom = (row: any): FeaturedSettings => ({
-    enabled: row ? row.enabled !== 0 : DEFAULT_FEATURED_SETTINGS.enabled,
-    source: row?.source === 'pinned' ? 'pinned' : 'latest',
-    publicationId: String(row?.publication_id || ''),
-    ctaLabel: String(row?.cta_label || ''),
-  });
-  const featuredAdminView = () => {
-    const settings = featuredSettingsFrom(db.get<any>("SELECT * FROM home_featured_settings WHERE id='global'"));
-    const rows = db.all<any>('SELECT id,title,subtitle,image_url,publish_at,status FROM publications');
-    const publications = db.all<any>('SELECT id,title,status,publish_at FROM publications ORDER BY publish_at DESC');
-    return {
-      enabled: settings.enabled,
-      source: settings.source,
-      publicationId: settings.publicationId,
-      ctaLabel: settings.ctaLabel,
-      publications: publications.map((row) => ({ id: row.id, title: row.title, status: row.status, publishAt: row.publish_at })),
-      // Aperçu EXACT de ce que voit l'application : même résolution que la route publique.
-      preview: resolveFeaturedPublication(settings, rows, Date.now()),
-    };
+  /* ==================== « COVER » D'ACCUEIL — le nouveau bloc d'entrée (singleton 'global') ====================
+   * Médias (images / vidéos téléversés), grand texte posé SUR le média, bouton
+   * contour transparent, destination fermée, cadence du carrousel.
+   * Contrat et validation : shared/homeCover.ts (partagés avec l'application). */
+  const coverSettingsFrom = (row: any): CoverSettings => (row ? {
+    enabled: row.enabled !== 0,
+    title: String(row.title || ''),
+    ctaLabel: String(row.cta_label || ''),
+    destination: COVER_DESTINATIONS.includes(row.destination) ? row.destination : 'publications',
+    autoplayIntervalMs: Math.max(MIN_COVER_INTERVAL_MS, Math.min(MAX_COVER_INTERVAL_MS, Number(row.autoplay_interval_ms) || 5000)),
+  } : { ...DEFAULT_COVER_SETTINGS });
+  const coverSlides = (): CoverSlide[] => db.all<any>(
+    'SELECT id,type,url,poster,alt FROM home_cover_slides ORDER BY position ASC, created_at ASC'
+  ).map((slide, index) => ({
+    id: String(slide.id),
+    type: (slide.type === 'video' ? 'video' : 'image') as CoverSlide['type'],
+    url: String(slide.url || ''),
+    poster: String(slide.poster || ''),
+    alt: String(slide.alt || ''),
+    position: index,
+  }));
+  const coverAdminView = () => {
+    const settings = coverSettingsFrom(db.get<any>("SELECT * FROM home_cover_settings WHERE id='global'"));
+    return { ...settings, slides: coverSlides(), preview: resolveCoverPublic(settings, coverSlides()) };
   };
 
-  router.get('/home-featured', requireAdmin(db, 'content:read'), (_req, res) => {
-    res.json({ success: true, data: featuredAdminView() });
+  router.get('/home-cover', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.json({ success: true, data: coverAdminView() });
   });
 
-  router.put('/home-featured', requireAdmin(db, 'content:write'), (req, res) => {
-    const existing = featuredSettingsFrom(db.get<any>("SELECT * FROM home_featured_settings WHERE id='global'"));
-    const next = normalizeFeaturedInput(req.body, existing);
+  router.put('/home-cover', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = coverSettingsFrom(db.get<any>("SELECT * FROM home_cover_settings WHERE id='global'"));
+    const next = normalizeCoverInput(req.body, existing);
     if (!next) {
-      return res.status(400).json({ success: false, error: 'Réglage invalide : source inconnue, ou publication à choisir.' });
+      return res.status(400).json({ success: false, error: 'Cover invalide : destination inconnue ou liste de médias attendue.' });
     }
-    if (next.source === 'pinned' && !db.get('SELECT id FROM publications WHERE id=?', next.publicationId)) {
-      return res.status(400).json({ success: false, error: 'Publication introuvable.' });
-    }
-    db.run("UPDATE home_featured_settings SET enabled=?,source=?,publication_id=?,cta_label=?,updated_at=? WHERE id='global'",
-      next.enabled ? 1 : 0, next.source, next.publicationId, next.ctaLabel, new Date().toISOString());
-    audit(db, req, 'UPDATE', 'HOME_FEATURED', 'global', existing, next);
-    res.json({ success: true, data: featuredAdminView() });
+    const now = new Date().toISOString();
+    db.transaction(() => {
+      db.run(`UPDATE home_cover_settings SET enabled=?,title=?,cta_label=?,destination=?,autoplay_interval_ms=?,updated_at=? WHERE id='global'`,
+        next.settings.enabled ? 1 : 0, next.settings.title, next.settings.ctaLabel,
+        next.settings.destination, next.settings.autoplayIntervalMs, now);
+      // `slides: null` (absents du PUT) = la liste existante reste en place.
+      if (next.slides) {
+        db.run('DELETE FROM home_cover_slides');
+        next.slides.forEach((slide, index) => {
+          db.run('INSERT INTO home_cover_slides (id,position,type,url,poster,alt,created_at) VALUES (?,?,?,?,?,?,?)',
+            slide.id, index, slide.type, slide.url, slide.poster, slide.alt, now);
+        });
+      }
+    });
+    audit(db, req, 'UPDATE', 'HOME_COVER', 'global', { ...existing }, next);
+    res.json({ success: true, data: coverAdminView() });
   });
 
   /* ==================== CARROUSEL HERO — réglages (singleton 'global') ==================== */

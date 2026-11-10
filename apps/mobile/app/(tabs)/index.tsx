@@ -25,7 +25,7 @@ import { AppScreen, FullBleed } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
 import { HeroCarousel } from '@/features/home/HeroCarousel';
 import { HomeTabs } from '@/features/home/HomeTabs';
-import { FeaturedPublication } from '@/features/home/FeaturedPublication';
+import { HomeCover } from '@/features/home/HomeCover';
 import { StoriesSection } from '@/features/home/StoriesSection';
 import { useStories, useStoriesShowcase } from '@/api/hooks';
 import { LensHomeBlock } from '@/features/home/LensHomeBlock';
@@ -112,8 +112,8 @@ export default function HomeScreen() {
         <HomeTabs />
       </View>
 
-      {/* Dernière publication du magazine — « Découvrir » ouvre la page Publications. */}
-      <FeaturedPublication />
+      {/* Cover d'accueil — médias CRM plein écran, texte et bouton posés dessus. */}
+      <HomeCover />
 
       <SectionRule />
 
