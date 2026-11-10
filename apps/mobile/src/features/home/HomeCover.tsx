@@ -34,8 +34,8 @@ import type { HomeCoverSlide } from '@/api/public';
 import { withAlpha } from './heroPalette';
 import { isStillAfterDrag } from './heroCarouselLogic';
 
-/** Hauteur du bloc : ~1,4 × la largeur, comme le splash de référence. */
-export const COVER_ASPECT = 10 / 14;
+/** Hauteur du bloc : ~1,5 × la largeur — plein écran comme le splash de référence. */
+export const COVER_ASPECT = 10 / 15;
 
 /** Destination fermée : des pages de l'APPLICATION, jamais du site. */
 const DESTINATION_ROUTES = {
@@ -150,10 +150,11 @@ export const HomeCover = memo(function HomeCover() {
     <View
       testID="home-cover"
       onLayout={onLayout}
-      style={[styles.section, { marginHorizontal: -gutter, backgroundColor: theme.colors.shimmer }]}
+      style={[styles.section, { marginHorizontal: -gutter }]}
       accessibilityLabel={title || undefined}
     >
-      <View style={[styles.media, { aspectRatio: COVER_ASPECT, borderRadius: theme.radius.card }]}>
+      {/* Plein écran, bords FRANCS (référence splash) : aucun rayon, aucune bande. */}
+      <View style={[styles.media, { aspectRatio: COVER_ASPECT }]}>
         <FlatList
           testID="home-cover-list"
           horizontal
@@ -222,7 +223,7 @@ export const HomeCover = memo(function HomeCover() {
             onPress={() => router.push(route as never)}
             style={[styles.cta, { borderColor: theme.colors.onMedia }]}
           >
-            <AppText variant="bodyStrong" color={theme.colors.onMedia}>{ctaLabel}</AppText>
+            <AppText variant="body" color={theme.colors.onMedia}>{ctaLabel}</AppText>
           </Pressable>
         </View>
         {slides.length > 1 || hasVideo ? (
@@ -232,7 +233,7 @@ export const HomeCover = memo(function HomeCover() {
             accessibilityLabel={pauseLabel}
             accessibilityState={{ selected: !userPaused }}
             onPress={() => setUserPaused((value) => !value)}
-            style={[styles.pause, { backgroundColor: withAlpha(VIDEO_BACKDROP, 0.55) }]}
+            style={[styles.pause, { backgroundColor: withAlpha(VIDEO_BACKDROP, 0.35) }]}
           >
             <Ionicons
               name={userPaused ? 'play-outline' : 'pause-outline'}
@@ -242,40 +243,38 @@ export const HomeCover = memo(function HomeCover() {
           </Pressable>
         ) : null}
       </View>
-      <AppText variant="caption" color={theme.colors.muted} style={styles.counter}>
-        {`${index + 1}/${slides.length}`}
-      </AppText>
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  // Marge négative = celle de l'écran : le média vit PLEIN ÉCRAN (règle des
-  // médias de l'accueil), coins arrondis seulement sur le bloc lui-même.
-  section: { paddingVertical: 16 },
+  // Marge négative = celle de l'écran : le média vit PLEIN ÉCRAN, bords francs,
+  // collé sous les onglets comme le splash de référence.
+  section: { paddingTop: 0, paddingBottom: 16 },
   media: { width: '100%', overflow: 'hidden' },
   fill: { ...StyleSheet.absoluteFill },
-  veil: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '52%' },
+  veil: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '48%' },
   // Texte + bouton posés SUR le média, en bas, centrés comme la référence.
   overlay: {
     position: 'absolute', left: 0, right: 0, bottom: 20,
     alignItems: 'center', gap: 16, paddingHorizontal: 20,
   },
   title: { textAlign: 'center' },
-  // Bouton contour TRANSPARENT : le média reste visible à travers lui.
+  // Bouton contour TRANSPARENT : trait FIN (1), aucun remplissage — le média
+  // reste visible à travers lui (référence « Je découvre »).
   cta: {
-    minHeight: 48,
-    minWidth: 200,
+    minHeight: 46,
+    minWidth: 190,
     paddingHorizontal: 32,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderRadius: RADIUS.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Discret, comme la référence : petit cercle translucide en bas à droite.
   pause: {
-    position: 'absolute', bottom: 14, end: 14,
-    width: 44, height: 44, borderRadius: RADIUS.full,
+    position: 'absolute', bottom: 16, end: 16,
+    width: 38, height: 38, borderRadius: RADIUS.full,
     alignItems: 'center', justifyContent: 'center',
   },
-  counter: { marginTop: 6, textAlign: 'center' },
 });
