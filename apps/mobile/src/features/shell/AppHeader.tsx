@@ -65,7 +65,9 @@ export function AppHeader({ scrolled, heroBackground = null, brand = 'zayrovi', 
       </Pressable>
     )}
     <View style={{ flexDirection: row, alignItems: 'center', gap: 0, flexShrink: 0 }}>
-      {brand === 'zayrovi' ? <Pressable testID="plus-light" accessibilityRole="button" accessibilityLabel={t('brand.plusLight')} accessibilityState={{ disabled: true }} disabled
+      {/* Plus Light : visible seulement connecté — le visiteur, lui, ne voit
+          QUE l'invitation de connexion (demande du 10/11, capture 122549). */}
+      {brand === 'zayrovi' && status === 'signedIn' ? <Pressable testID="plus-light" accessibilityRole="button" accessibilityLabel={t('brand.plusLight')} accessibilityState={{ disabled: true }} disabled
         style={styles.plusHit}><View testID="plus-light-pill" style={[styles.plus, { borderColor: ink }]}><AppText variant="captionStrong" color={ink} numberOfLines={1}>Plus</AppText><Ionicons name="star" size={theme.iconSize.xs} color={ink} /><AppText variant="caption" color={ink} numberOfLines={1}>Light</AppText></View></Pressable> : null}
       {!guest && showNotifications ? icon('notifications-outline', t('account.menu.notifications'), status === 'signedIn' ? '/account/notifications' : '/sign-in') : null}
       {brand === 'aywebs' ? icon('heart-outline', t('account.menu.favorites'), '/account/favorites') : null}

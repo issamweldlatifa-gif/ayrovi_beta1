@@ -1,14 +1,20 @@
 import { BackButton } from '@/design/BackButton';
 /**
- * Mot de passe oublié — demande de lien, et rien d'autre.
+ * Mot de passe oublié — référence Zalando, noir et blanc (10/11/2026).
  *
- * Ce que cet écran fait, exactement :
- *   • il envoie l'adresse au serveur et rapporte ce que le serveur a RÉPONDU ;
+ * Deux temps, comme la capture :
+ *   1. « Réinitialiser le mot de passe » : l'adresse liée au compte, un bouton
+ *      encre « Recevoir le lien », retour à la connexion souligné ;
+ *   2. la confirmation : encadré gris à coche noire, conseils numérotés
+ *      (courriers indésirables, adresse, délai), renvoi avec compte à
+ *      rebours, retour à la connexion.
+ *
+ * Ce que cet écran continue de garantir :
  *   • un 202 veut dire « demande acceptée », jamais « e-mail remis » : la
  *     formulation le reflète, parce qu'un lien annoncé et jamais reçu ferait
  *     perdre plus de temps qu'un doute avoué ;
  *   • le serveur ne dit pas si le compte existe (protection contre
- *     l'énumération) — l'écran ne le devine donc pas non plus ;
+ *     l'énumération) — l'écran ne le devine pas non plus, LUI ;
  *   • quand l'envoi d'e-mails n'est pas configuré, le serveur répond 503 AVANT
  *     toute recherche : l'écran l'annonce et n'invite pas à réessayer en boucle.
  *
@@ -17,15 +23,21 @@ import { BackButton } from '@/design/BackButton';
  */
 import { useEffect, useState } from 'react';
 import { goBack } from '@/design/navigation';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AppText, Button, Card, Field } from '@/design/ui';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useResponsive } from '@/design/layout';
 import { useI18n } from '@/i18n';
 import { authMessage } from '@/api/authMessages';
 import { requestPasswordReset } from '@/api/account';
 import { useSession } from '@/state/session';
+import { AuthField } from '@/features/auth/AuthField';
+import { BrandWordmark } from '@/design/BrandMark';
+import { rowDirectionFor } from '@/design/layoutLogic';
+import { RADIUS } from '@/design/tokens.mobile';
 
 /** Le serveur annonce ce délai dans sa réponse 202 (`retryAfterSeconds`). */
 const DEFAULT_RETRY_SECONDS = 60;
@@ -45,8 +57,11 @@ export default function ForgotPasswordScreen() {
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const session = useSession();
+  // L'adresse peut arriver pré-remplie depuis l'écran de connexion (Modifier y renvoie).
+  const params = useLocalSearchParams<{ email?: string }>();
+  const initialEmail = typeof params.email === 'string' ? params.email : '';
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail);
   const [busy, setBusy] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [cooldown, setCooldown] = useState(0);
@@ -84,6 +99,8 @@ export default function ForgotPasswordScreen() {
     }
   };
 
+  const backToSignIn = () => goBack('/(tabs)/account');
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -97,62 +114,117 @@ export default function ForgotPasswordScreen() {
         ]}
         keyboardShouldPersistTaps="handled"
       >
-        <BackButton onPress={() => goBack('/(tabs)/account')} label={t('common.back')} color={theme.colors.ink} />
+        <BackButton onPress={backToSignIn} label={t('common.back')} color={theme.colors.ink} />
+
+        {/* Marque en tête, comme la référence. */}
+        <View style={styles.brandMark}>
+          <BrandWordmark height={25} color={theme.colors.ink} />
+        </View>
 
         <AppText variant="h1">{t('auth.forgot.title')}</AppText>
-        {/* Le sous-titre promet un envoi : il disparaît quand aucun envoi n'est possible. */}
-        {enabled ? (
-          <AppText variant="body" color={theme.colors.secondary} style={styles.intro}>{t('auth.forgot.subtitle')}</AppText>
-        ) : null}
 
-        <Card title={t('auth.forgot.title')}>
-          {/* Quand l'envoi n'est pas configuré, on ne montre NI champ NI bouton :
-              un champ qui ne peut pas aboutir est un piège, pas une option. */}
-          {!enabled ? (
-            <>
-              <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>
-                {t('auth.forgot.unavailable')}
+        {/* Quand l'envoi n'est pas configuré, on ne montre NI champ NI bouton :
+            un champ qui ne peut pas aboutir est un piège, pas une option. */}
+        {!enabled ? (
+          <>
+            <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>
+              {t('auth.forgot.unavailable')}
+            </AppText>
+            <Button label={t('auth.forgot.backToSignIn')} tone="quiet" onPress={backToSignIn} />
+          </>
+        ) : !accepted ? (
+          <>
+            <AppText variant="body" color={theme.colors.secondary} style={styles.intro}>
+              {t('auth.forgot.subtitle')}
+            </AppText>
+            <AuthField
+              label={t('auth.email.label')}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              editable={!busy}
+              testID="auth-forgot-email"
+            />
+            {failure ? (
+              <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
+            ) : null}
+            <Button label={t('auth.forgot.submit')} tone="solid" onPress={submit} busy={busy} testID="auth-forgot-submit" />
+            <Pressable
+              accessibilityRole="link"
+              onPress={backToSignIn}
+              style={[styles.backLink, { minHeight: theme.geometry.minTarget }]}
+              testID="auth-forgot-back"
+            >
+              <AppText variant="label" color={theme.colors.ink} style={styles.underlined}>
+                {t('auth.forgot.backToSignIn')}
               </AppText>
-              <Button
-                label={t('auth.forgot.backToSignIn')}
-                tone="quiet"
-                onPress={() => goBack('/(tabs)/account')}
+            </Pressable>
+          </>
+        ) : (
+          <>
+            {/* Encadré gris à coche noire (référence Zalando). */}
+            <View
+              accessibilityRole="alert"
+              testID="auth-forgot-sent"
+              style={[styles.sentBox, {
+                backgroundColor: theme.colors.disabled,
+                flexDirection: rowDirectionFor(theme.isRTL),
+                borderRadius: RADIUS.sm,
+              }]}
+            >
+              <Ionicons
+                name="checkmark-circle"
+                size={theme.iconSize.md}
+                color={theme.colors.ink}
+                accessibilityElementsHidden
+                importantForAccessibility="no"
               />
-            </>
-          ) : !accepted ? (
-            <>
-              <Field
-                label={t('auth.forgot.email')}
-                accessibilityLabel={t('auth.forgot.email')}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoComplete="email"
-                editable={!busy}
-              />
-              {failure ? (
-                <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
-              ) : null}
-              <Button label={t('auth.forgot.submit')} tone="main" onPress={submit} busy={busy} testID="auth-forgot-submit" />
-              <AppText variant="caption" color={theme.colors.muted}>{t('auth.forgot.socialOnly')}</AppText>
-            </>
-          ) : (
-            <>
-              <AppText accessibilityRole="alert" variant="body" color={theme.status.success.fg}>
-                {t('auth.forgot.accepted')}
+              <AppText variant="body" color={theme.colors.ink} style={styles.sentText}>
+                {t('auth.forgot.sentTo', { email: email.trim() })}
               </AppText>
-              <AppText variant="caption" color={theme.colors.muted}>{t('auth.forgot.openLink')}</AppText>
-              {cooldown > 0 ? (
-                <AppText variant="caption" color={theme.colors.muted}>
-                  {t('auth.forgot.retryIn', { seconds: cooldown })}
+            </View>
+
+            <AppText variant="body" color={theme.colors.ink}>{t('auth.forgot.noEmail')}</AppText>
+            <View style={styles.tips}>
+              <AppText variant="body" color={theme.colors.ink}>{t('auth.forgot.tip1')}</AppText>
+              <AppText variant="body" color={theme.colors.ink}>{t('auth.forgot.tip2')}</AppText>
+              <AppText variant="body" color={theme.colors.ink}>{t('auth.forgot.tip3')}</AppText>
+            </View>
+
+            {failure ? (
+              <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
+            ) : null}
+            {cooldown > 0 ? (
+              <AppText variant="caption" color={theme.colors.muted}>
+                {t('auth.forgot.retryIn', { seconds: cooldown })}
+              </AppText>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                onPress={submit}
+                disabled={busy}
+                style={[styles.backLink, { minHeight: theme.geometry.minTarget }]}
+                testID="auth-forgot-resend"
+              >
+                <AppText variant="label" color={theme.colors.ink} style={styles.underlined}>
+                  {t('auth.forgot.resend')}
                 </AppText>
-              ) : (
-                <Button label={t('auth.forgot.resend')} onPress={submit} tone="quiet" busy={busy} />
-              )}
-            </>
-          )}
-        </Card>
+              </Pressable>
+            )}
+            <Pressable
+              accessibilityRole="link"
+              onPress={backToSignIn}
+              style={[styles.backLink, { minHeight: theme.geometry.minTarget }]}
+              testID="auth-forgot-back"
+            >
+              <AppText variant="label" color={theme.colors.ink} style={styles.underlined}>
+                {t('auth.forgot.backToSignIn')}
+              </AppText>
+            </Pressable>
+          </>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -160,6 +232,11 @@ export default function ForgotPasswordScreen() {
 
 const styles = StyleSheet.create({
   screen: { gap: 12 },
-  close: { alignItems: 'flex-start', justifyContent: 'center' },
+  brandMark: { alignItems: 'flex-start' },
   intro: { marginBottom: 4 },
+  backLink: { alignItems: 'flex-start', justifyContent: 'center' },
+  underlined: { textDecorationLine: 'underline' },
+  sentBox: { alignItems: 'center', gap: 12, padding: 16 },
+  sentText: { flex: 1 },
+  tips: { gap: 4 },
 });

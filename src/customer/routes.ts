@@ -639,6 +639,23 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
    * La réponse à la demande est identique qu'un compte existe ou non (pas
    * d'énumération d'adresses).
    */
+  // Branchement de l'écran de connexion (parité Zalando, demandé par le
+  // propriétaire le 10/11) : adresse connue ⇒ formulaire « mot de passe »,
+  // adresse inconnue ⇒ inscription. La référence Zalando fait le même choix
+  // d'affichage ; la demande de RÉCUPÉRATION, elle, reste non-révélante.
+  router.post('/auth/email/lookup', (req, res) => {
+    if (!customerAuthReady()) return res.status(503).json({ success: false, code: 'LOOKUP_UNAVAILABLE', error: 'Authentification client non configurée.' });
+    const email = normalizedEmail(req.body?.email);
+    if (!EMAIL_PATTERN.test(email)) return res.status(400).json({ success: false, code: 'EMAIL_INVALID', error: 'Adresse e-mail invalide.' });
+    // Plafond large (60 / 15 min / IP) : un écran de connexion légitime ne
+    // l'atteint jamais, un robot d'énumération si.
+    if (!customerAuthRateAllowed(db, 'lookup-ip', req.ip || '', 60)) {
+      return res.status(429).json({ success: false, code: 'LOOKUP_RATE_LIMITED', error: 'Trop de demandes. Réessayez dans 15 minutes.' });
+    }
+    const account = db.get<any>('SELECT status FROM customer_accounts WHERE email=? COLLATE NOCASE', email);
+    // Seul le fait d'avoir un compte ACTIF est répondu — jamais le reste.
+    return res.json({ success: true, data: { registered: account?.status === 'ACTIVE' } });
+  });
   router.post('/auth/email-code/request', async (req, res) => {
     if (!customerAuthReady()) return res.status(503).json({ success: false, code: 'EMAIL_CODE_UNAVAILABLE', error: 'Authentification client non configurée.' });
     const email = normalizedEmail(req.body?.email);

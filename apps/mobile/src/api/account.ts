@@ -524,8 +524,20 @@ export async function verifyOtp(challengeId: string, code: string, options?: Req
   return parseSessionIssue(data);
 }
 
-/** Demande un code à usage unique envoyé à l'adresse (connexion dans l'application). */
-export async function requestEmailCode(email: string, locale: 'fr' | 'ar', options?: RequestOptions): Promise<EmailCodeChallenge> {
+/**
+ * L'adresse a-t-elle déjà un compte ? Branchement de l'écran de connexion
+ * (parité Zalando) : connue ⇒ mot de passe, inconnue ⇒ inscription. Le
+ * serveur ne répond QUE sur ce point — jamais le reste du compte.
+ */
+export async function lookupEmail(email: string, options?: RequestOptions): Promise<{ registered: boolean }> {
+  const { data } = await apiSend<{ registered?: boolean }>('POST', '/api/customer/auth/email/lookup', {
+    ...options,
+    body: { email },
+  });
+  return { registered: data?.registered === true };
+}
+
+/** Demande un code à usage unique envoyé à l'adresse (connexion dans l'application). */export async function requestEmailCode(email: string, locale: 'fr' | 'ar', options?: RequestOptions): Promise<EmailCodeChallenge> {
   const { data } = await apiSend<unknown>('POST', '/api/customer/auth/email-code/request', {
     ...options,
     body: { email, locale },

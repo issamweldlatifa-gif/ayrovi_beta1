@@ -453,12 +453,11 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
     }
     expect(counts).toEqual({
       'app/checkout.tsx': 1,               // valider la commande
-      'app/forgot.tsx': 1,                 // envoyer le lien de réinitialisation
       // `app/product/[id].tsx` et `app/(tabs)/cart.tsx` portent un CTA **noir**
       // compact (tone="solid") selon le gabarit officiel Zalando / Bag.
-      // 5 : code, téléphone, mot de passe, inscription — la page d'accueil de
-      // la connexion est passée au bouton noir plein (référence Zalando).
-      'app/sign-in.tsx': 5,                // une validation par étape de connexion
+      // La connexion et la récupération sont passées TOUT-ENCRE (10/11/2026,
+      // demande explicite : « blanc et noir, le bleu en plus est retiré ») —
+      // plus aucun tone="main" sur ces deux écrans.
       'src/features/lens/LensProductView.tsx': 1, // ajouter au panier (voir le panier -> tone="solid" dans la feuille compacte)
       'src/features/lens/ocerex/OcerexFlow.tsx': 1, // confirmer la commande OCEREX
     });

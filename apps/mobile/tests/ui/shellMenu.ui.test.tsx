@@ -45,11 +45,13 @@ describe('icône compte et menu', () => {
     jest.clearAllMocks();
   });
 
-  it('non connecté (référence Zalando) : « Bienvenue, se connecter ? » ouvre la connexion, sans logo, cloche ni panier', async () => {
+  it('non connecté (référence Zalando) : « Bienvenue, se connecter ? » ouvre la connexion, sans logo, cloche, panier ni Plus', async () => {
     await renderHeader();
     expect(screen.queryByRole('button', { name: 'Notifications' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Panier ZAYROVI' })).toBeNull();
     expect(screen.queryByLabelText('zayrovi')).toBeNull();
+    // Le visiteur ne voit pas Plus Light non plus (demande du 10/11).
+    expect(screen.queryByTestId('plus-light')).toBeNull();
     fireEvent.press(screen.getByTestId('guest-header-signin'));
     expect(router.push).toHaveBeenCalledWith('/sign-in');
   });
@@ -63,18 +65,20 @@ describe('icône compte et menu', () => {
     expect(router.push).toHaveBeenCalledWith('/account/notifications');
   });
 
-  it('removes the menu entry and exposes only a disabled unassigned Plus Light', async () => {
+  it('visiteur : ni menu, ni Plus Light — seulement l’invitation de connexion', async () => {
     await renderHeader();
     expect(screen.queryByRole('button', { name: 'Mon compte' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Menu' })).toBeNull();
-    fireEvent.press(screen.getByTestId('plus-light'));
-    expect(router.push).not.toHaveBeenCalled();
-    // Visiteur : l'invitation de connexion remplace le mot-symbole et les icônes.
+    expect(screen.queryByTestId('plus-light')).toBeNull();
     expect(screen.getByTestId('guest-header-signin')).toBeTruthy();
   });
 
-  it('Plus Light : cadre fin qui épouse le texte, zone 44, une seule ligne', async () => {
+  it('connecté : Plus Light désactivé reste exposé, cadre fin qui épouse le texte, zone 44', async () => {
+    (globalThis as any).__testStatus = 'signedIn';
     await renderHeader();
+    expect(screen.queryByRole('button', { name: 'Menu' })).toBeNull();
+    fireEvent.press(screen.getByTestId('plus-light'));
+    expect(router.push).not.toHaveBeenCalled();
     // Zone de toucher conservée, sans cadre dessiné à cette taille.
     const hit = screen.getByTestId('plus-light');
     expect(StyleSheet.flatten(hit.props.style)).toMatchObject({ minWidth: 44, minHeight: 44 });

@@ -1,33 +1,40 @@
 /**
- * Écran de connexion — page unique, façon ChatGPT.
+ * Écran de connexion — moudal fort, noir et blanc, façon Zalando (10/11/2026).
  *
- * Parcours :
- *   • « start » : adresse e-mail → code reçu par e-mail → session (dans l'écran) ;
- *   • autres méthodes proposées sous « OU » : Google, numéro de téléphone, mot de passe ;
- *   • conditions et confidentialité toujours en bas, ouvertes dans l'application.
+ * Parcours demandé par le propriétaire (captures Zalando à l'appui) :
+ *   • adresse e-mail → le serveur dit si le compte EXISTE :
+ *       – connu  → formulaire « mot de passe » (+ code par e-mail en option,
+ *                  + mot de passe oublié) ;
+ *       – inconnu → inscription : mot de passe, prénom et nom de famille ;
+ *   • les fournisseurs restent des pastilles contour AVEC leur marque
+ *     (Google/Facebook/Apple), mais le serveur seul décide qui est cliquable ;
+ *   • récupération : écran dédié `/forgot` (lien de réinitialisation).
  *
  * Règles tenues par cet écran :
- *   • il ne propose QUE ce que le serveur sait faire (`/auth/config`). Une
- *     méthode absente du serveur est expliquée, pas cliquable ;
+ *   • tout est encre sur canvas — AUCUN violet ici (demande explicite) ;
+ *   • les lignes « pas encore activé », « même compte que le site »,
+ *     « trousseau », le téléphone et la case marketing ont été RETIRÉES :
+ *     la page ne montre que ce qui agit ;
+ *   • il ne propose QUE ce que le serveur sait faire (`/auth/config`) ;
  *   • chaque échec affiche la raison réelle, dans la langue de l'utilisateur ;
- *   • le bouton d'action porte l'état d'attente : aucun écran figé muet ;
- *   • en développement, quand aucun SMS ni e-mail n'est configuré, le serveur
- *     renvoie le code — on l'affiche tel quel plutôt que de laisser l'utilisateur bloqué.
+ *   • en développement, quand aucun e-mail n'est configuré, le serveur renvoie
+ *     le code — on l'affiche tel quel plutôt que de laisser bloqué.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { goBack } from '@/design/navigation';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { AppText, Button, Card, Field } from '@/design/ui';
+import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useResponsive } from '@/design/layout';
 import { useI18n } from '@/i18n';
 import { authMessage, type AuthMessageKey } from '@/api/authMessages';
 import { fetchServerReadiness, mobileSessionSupport } from '@/api/public';
+import { lookupEmail } from '@/api/account';
 import {
   googleNativeLogin, newHandoffCode, pollHandoff, providerDoneUrl, providerStartUrl, type ProviderId,
 } from '@/api/providers';
@@ -37,13 +44,17 @@ import { GoogleLogo } from '@/design/GoogleLogo';
 import { FacebookLogo } from '@/design/FacebookLogo';
 import { AppleLogo } from '@/design/AppleLogo';
 import { BrandWordmark } from '@/design/BrandMark';
+import { AuthField } from '@/features/auth/AuthField';
 import { RADIUS } from '@/design/tokens.mobile';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { useSession } from '@/state/session';
 import { signInWithGoogleNative, googleFailureCode, googleFailureDetail } from '@/features/auth/googleNative';
 
-/** « start » = adresse e-mail (page d'accueil de la connexion). */
-type Mode = 'start' | 'phone' | 'password' | 'register';
+/** « start » = adresse e-mail ; la suite dépend de l'existence du compte. */
+type Mode = 'start' | 'password' | 'register';
+
+/** Délai avant un nouveau code (référence Zalando : compte à rebours visible). */
+const RESEND_SECONDS = 60;
 
 /** Forme minimale d'une adresse : le serveur fait foi, ceci évite un aller-retour inutile. */
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
@@ -60,27 +71,21 @@ export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 export default function SignInScreen() {
   const theme = useTheme();
   const { gutter } = useResponsive();
-  /**
-   * Liens « Conditions » et « Confidentialité » : encre + soulignement (v4.2.0).
-   * Ils voisinent l'action principale violette : un second violet juste à côté
-   * diluerait le signal. Le soulignement garde l'affordance de lien.
-   */
-  const legalLink = theme.colors.ink;
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const session = useSession();
 
   const [mode, setMode] = useState<Mode>('start');
-  const [phone, setPhone] = useState('');
-  const [code, setCode] = useState('');
   const [email, setEmail] = useState('');
   const [emailCode, setEmailCode] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
-  const [marketing, setMarketing] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [reveal, setReveal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState<ProviderId | null>(null);
   const [failure, setFailure] = useState<{ message: string; hint?: string } | null>(null);
+  const [resendIn, setResendIn] = useState(0);
   // « Se connecter autrement » : affiche le formulaire complet même si un compte est mémorisé.
   const [otherWaysOpen, setOtherWaysOpen] = useState(false);
   const remembered = useRememberedAccount();
@@ -102,7 +107,6 @@ export default function SignInScreen() {
 
   const config = session.authConfig;
   const emailChallenge = session.emailChallenge;
-  const challenge = session.challenge;
 
   /** Traduit un échec puis l'affiche — un seul chemin pour tous les formulaires. */
   const show = (error: unknown, fallback?: AuthMessageKey) => {
@@ -122,13 +126,6 @@ export default function SignInScreen() {
     }
   };
 
-  /**
-   * Google NATIF : sélecteur de compte dans l'application, puis jeton vérifié par le
-   * serveur. Aucun onglet navigateur, donc aucune sortie de l'application.
-   *
-   * `silent` : reprend le dernier compte Google de l'appareil sans sélecteur ; s'il
-   * n'y en a pas, on ouvre le sélecteur normal.
-   */
   const startGoogleNative = async (silent: boolean) => {
     setFailure(null);
     setBusy(true);
@@ -154,31 +151,9 @@ export default function SignInScreen() {
     }
   };
 
-  const changeMode = (next: Mode) => {
-    setFailure(null);
-    setMode(next);
-  };
-
   const closeIfSignedIn = () => goBack('/(tabs)/account');
 
-  /* ── Téléphone (SMS) ──────────────────────────────────────────────────── */
-
-  const sendCode = () => run(async () => {
-    // Refus local AVANT l'appel : inutile de consommer un quota SMS pour un
-    // numéro qui ne peut pas être tunisien.
-    if (phone.replace(/\D/g, '').length < 8) {
-      setFailure({ message: t('auth.error.phone') });
-      return;
-    }
-    await session.requestPhoneCode(phone);
-  }, 'auth.error.phone');
-
-  const confirmCode = () => run(async () => {
-    await session.confirmPhoneCode(code);
-    closeIfSignedIn();
-  }, 'auth.error.otpInvalid');
-
-  /* ── E-mail : code (par défaut) et mot de passe (en option) ───────────── */
+  /* ── Connexion par code e-mail (option « Recevoir un code ») ──────────── */
 
   // Connexion par code e-mail : tout reste dans l'écran, aucun navigateur ni lien de retour.
   const sendEmailCode = () => run(async () => {
@@ -196,13 +171,21 @@ export default function SignInScreen() {
     closeIfSignedIn();
   }, 'auth.emailCode.invalid');
 
+  /* ── Mot de passe et inscription (selon l'existence du compte) ────────── */
+
   const emailSignIn = () => run(async () => {
-    await session.signInWithEmail(email, password);
+    await session.signInWithEmail(email.trim(), password);
     closeIfSignedIn();
   }, 'auth.error.credentials');
 
   const register = () => run(async () => {
-    await session.signUpWithEmail({ displayName: name, email, password, locale, marketingOptIn: marketing });
+    await session.signUpWithEmail({
+      displayName: `${firstName.trim()} ${lastName.trim()}`.replace(/\s+/g, ' ').trim(),
+      email: email.trim(),
+      password,
+      locale,
+      marketingOptIn: false,
+    });
     closeIfSignedIn();
   }, 'auth.error.register');
 
@@ -247,27 +230,61 @@ export default function SignInScreen() {
     }
   };
 
-  // Un fournisseur n'est proposé QUE si le serveur le dit configuré : un bouton
-  // qui mène à une page d'erreur est pire qu'une absence expliquée.
-  const providers: { id: ProviderId; label: string; enabled: boolean }[] = [
-    { id: 'google', label: t('auth.providers.google'), enabled: config?.googleNative === true },
-    { id: 'facebook', label: t('auth.providers.facebook'), enabled: config?.facebook === true },
-    { id: 'apple', label: t('auth.providers.apple'), enabled: config?.apple === true },
-  ];
-  const offered = providers.filter((provider) => provider.enabled);
+  /** L'adresse décide de la suite : connue ⇒ mot de passe, inconnue ⇒ inscription. */
+  const continueWithEmail = () => run(async () => {
+    const clean = email.trim();
+    if (!EMAIL_SHAPE.test(clean)) {
+      setFailure({ message: t('auth.emailCode.invalidAddress') });
+      return;
+    }
+    const { registered } = await lookupEmail(clean);
+    setPassword('');
+    setMode(registered ? 'password' : 'register');
+  }, 'auth.error.unavailable');
 
-  const emailReady = EMAIL_SHAPE.test(email.trim());
+  const backToAddress = () => {
+    setFailure(null);
+    setEmailCode('');
+    setPassword('');
+    setMode('start');
+  };
 
-  /**
-   * Compte mémorisé proposé seulement si le serveur accepte encore sa méthode :
-   * un bouton qui mène à une panne est pire qu'un formulaire complet.
-   */
+  /* ── Compte à rebours du renvoi de code (référence Zalando « (60) ») ──── */
+
+  useEffect(() => {
+    if (!emailChallenge) {
+      setResendIn(0);
+      return;
+    }
+    setResendIn(RESEND_SECONDS);
+  }, [emailChallenge?.challengeId]);
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = setInterval(() => setResendIn((value) => (value <= 1 ? 0 : value - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [resendIn]);
+
+  /* ── Titres selon l'étape ─────────────────────────────────────────────── */
+  // Le code reçu par e-mail prend le dessus sur TOUT mode : c'est lui la preuve.
+  let heading = { title: t('auth.title'), subtitle: t('auth.subtitle') };
+  if (emailChallenge) {
+    heading = { title: t('auth.emailCode.checkInbox'), subtitle: t('auth.emailCode.sentTo', { email: emailChallenge.maskedEmail || email }) };
+  } else if (mode === 'start') {
+    heading = { title: t('auth.start.title'), subtitle: '' };
+  } else if (mode === 'register') {
+    heading = { title: t('auth.register.title'), subtitle: '' };
+  } else if (mode === 'password') {
+    heading = { title: t('auth.title'), subtitle: '' };
+  }
+
+  // Un compte mémorisé n'est proposé que si le serveur accepte encore sa méthode.
   const rememberedUsable = (account: LastAccount | null): boolean => {
     if (!account) return false;
     if (account.provider === 'google') return config?.googleNative === true;
     return config?.emailCode !== false;
   };
-  const shownAccount = remembered.ready && rememberedUsable(remembered.account) && !otherWaysOpen
+  const shownAccount = remembered.ready && rememberedUsable(remembered.account) && !otherWaysOpen && !emailChallenge
     ? remembered.account
     : null;
 
@@ -287,110 +304,15 @@ export default function SignInScreen() {
     }, 'auth.error.unavailable');
   };
 
-  /* ── Titres selon l'étape ─────────────────────────────────────────────── */
-  // Page d'accueil de la connexion (référence Zalando 085315) : la marque,
-  // le titre, le champ e-mail — pas de sous-titre qui retarde l'action.
-  // Le sous-titre revient à l'étape « code » (vérifier la boîte e-mail).
-  let heading = { title: t('auth.title'), subtitle: t('auth.subtitle') };
-  if (mode === 'start') {
-    heading = emailChallenge
-      ? { title: t('auth.emailCode.checkInbox'), subtitle: t('auth.emailCode.sentTo', { email: emailChallenge.maskedEmail || email }) }
-      : { title: t('auth.start.title'), subtitle: '' };
-  }
-
-  /* ── Bloc « OU » : Google, puis les autres fournisseurs configurés ────── */
-  const providerList = (
-    <>
-      {providers.map((provider) =>
-        provider.enabled ? (
-          <Button
-            key={provider.id}
-            label={provider.label}
-            tone="quiet"
-            onPress={() => (provider.id === 'google' ? startGoogleNative(false) : startProvider(provider.id))}
-            leading={provider.id === 'google' ? <GoogleLogo size={20} /> : undefined}
-            busy={waiting === provider.id}
-            disabled={busy && waiting !== provider.id}
-            testID={`auth-provider-${provider.id}`}
-          />
-        ) : (
-          <AppText key={provider.id} variant="caption" color={theme.colors.muted}>
-            {provider.label} — {t('auth.providers.off')}
-          </AppText>
-        ),
-      )}
-      {offered.length ? (
-        <AppText variant="caption" color={theme.colors.muted}>{t('auth.providers.sameAccount')}</AppText>
-      ) : null}
-      {/* Attente « navigateur » : réservée aux fournisseurs ouverts dans un onglet.
-          Google natif affiche son propre sélecteur : pas de texte d'attente ici. */}
-      {waiting && waiting !== 'google' ? (
-        <>
-          <AppText variant="label" color={theme.status.info.fg}>{t('auth.providers.waiting')}</AppText>
-          <Button
-            label={t('auth.providers.cancel')}
-            tone="quiet"
-            onPress={() => {
-              cancelled.current = true;
-            }}
-          />
-        </>
-      ) : null}
-    </>
-  );
-
-  /** Bloc « OU » complet : séparateur puis fournisseurs (formulaire complet). */
-  const otherWays = (
-    <>
-      <View style={styles.orRow}>
-        <View style={[styles.orLine, { backgroundColor: theme.colors.line }]} />
-        <AppText variant="caption" color={theme.colors.muted}>{t('auth.or')}</AppText>
-        <View style={[styles.orLine, { backgroundColor: theme.colors.line }]} />
-      </View>
-      {providerList}
-    </>
-  );
+  const emailReady = EMAIL_SHAPE.test(email.trim());
+  // La page d'accueil reste ouverte tant qu'UNE méthode e-mail existe.
+  const emailPathOpen = config?.email !== false || config?.emailCode !== false;
+  const passwordOpen = config?.email !== false;
+  const codeOpen = config?.emailCode !== false;
 
   /**
-   * Boutons sociaux façon Zalando (085315) : pastille contour encre, marque
-   * du tiers DEVANT le libellé. Une méthode que le serveur n'a pas encore
-   * activée reste VISIBLE (la page ressemble à la référence) mais non
-   * cliquable, avec l'explication sous la pile — jamais un bouton mort sans
-   * raison affichée.
-   */
-  const socialStack = (
-    <>
-      {providers.map((provider) => (
-        <Button
-          key={provider.id}
-          label={provider.label}
-          tone="quiet"
-          onPress={() => (provider.id === 'google' ? startGoogleNative(false) : startProvider(provider.id))}
-          leading={
-            provider.id === 'google' ? <GoogleLogo size={20} />
-              : provider.id === 'facebook' ? <FacebookLogo size={20} />
-                : <AppleLogo size={20} />
-          }
-          busy={waiting === provider.id}
-          disabled={!provider.enabled || (busy && waiting !== provider.id)}
-          testID={`auth-provider-${provider.id}`}
-        />
-      ))}
-      {providers.some((provider) => !provider.enabled) ? (
-        <AppText variant="caption" color={theme.colors.muted} style={styles.providersOff}>
-          {t('auth.providers.off')}
-        </AppText>
-      ) : null}
-      {offered.length ? (
-        <AppText variant="caption" color={theme.colors.muted}>{t('auth.providers.sameAccount')}</AppText>
-      ) : null}
-    </>
-  );
-
-  /**
-   * Mentions dans le paragraphe (référence Zalando) : « En créant un compte,
-   * vous acceptez nos Conditions d'utilisation… » — liens soulignés OUVERTS
-   * DANS l'application, les mêmes pages que la rangée du bas.
+   * Mentions dans le paragraphe (référence Zalando) : liens soulignés ENCRE,
+   * ouverts DANS l'application — les mêmes pages que la rangée du bas.
    */
   const termsParagraph = (
     <AppText variant="caption" color={theme.colors.secondary} style={styles.terms}>
@@ -418,14 +340,8 @@ export default function SignInScreen() {
     </AppText>
   );
 
-  /**
-   * Champ e-mail « encoché » (référence Zalando 085315) : l'étiquette vit
-   * dans sa propre boîte qui coupe la bordure haute du champ, sans aucune
-   * superposition — une rangée haute (étiquette + suite du trait) posée sur
-   * le corps (bords gauche/droite/bas). Tout reste dans le flux : la mise en
-   * page ne peut pas se casser sur un écran non testé.
-   */
-  const boxedEmailField = (
+  /** Champ e-mail « encoché » : étiquette dans sa boîte, corps sans bordure haute. */
+  const boxedEmailField = (options: { editable: boolean; onEdit?: () => void } = { editable: true }) => (
     <View testID="auth-boxed-email">
       <View style={[styles.boxTopRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         <View style={[styles.boxLabel, { backgroundColor: theme.colors.canvas }]}>
@@ -433,7 +349,14 @@ export default function SignInScreen() {
         </View>
         <View style={[styles.boxTopLine, { borderTopColor: theme.colors.ink }]} />
       </View>
-      <View style={[styles.boxBody, { borderBottomColor: theme.colors.ink, borderLeftColor: theme.colors.ink, borderRightColor: theme.colors.ink }]}>
+      <View
+        style={[styles.boxBody, {
+          borderBottomColor: theme.colors.ink,
+          borderLeftColor: theme.colors.ink,
+          borderRightColor: theme.colors.ink,
+          flexDirection: rowDirectionFor(theme.isRTL),
+        }]}
+      >
         <TextInput
           accessibilityLabel={t('auth.email.label')}
           value={email}
@@ -441,19 +364,86 @@ export default function SignInScreen() {
           autoCapitalize="none"
           keyboardType="email-address"
           autoComplete="email"
-          editable={!busy && config?.emailCode !== false}
+          editable={options.editable && !busy}
           placeholderTextColor={theme.colors.muted}
-          selectionColor={theme.colors.selection}
-          cursorColor={theme.colors.focus}
+          selectionColor={theme.colors.ink}
+          cursorColor={theme.colors.ink}
           style={[
             theme.text('body'),
             styles.boxInput,
-            { color: theme.colors.ink },
+            { color: options.editable ? theme.colors.ink : theme.colors.muted, flex: 1 },
             theme.isRTL ? { textAlign: 'right' } : null,
           ]}
         />
+        {options.onEdit ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('auth.edit')}
+            onPress={options.onEdit}
+            testID="auth-email-edit"
+            style={styles.boxAction}
+          >
+            <AppText variant="label" color={theme.colors.ink} style={styles.termsLink}>{t('auth.edit')}</AppText>
+          </Pressable>
+        ) : null}
       </View>
     </View>
+  );
+
+  /**
+   * Pastilles sociales façon Zalando : contour encre, marque du tiers DEVANT
+   * le libellé. Une méthode que le serveur n'a pas activée reste VISIBLE mais
+   * non cliquable — sans ligne d'explication permanente (retirée, demande du
+   * 10/11) : l'échec, lui, reste expliqué au moment où il arrive.
+   */
+  const providers: { id: ProviderId; label: string; enabled: boolean }[] = [
+    { id: 'google', label: t('auth.providers.google'), enabled: config?.googleNative === true },
+    { id: 'facebook', label: t('auth.providers.facebook'), enabled: config?.facebook === true },
+    { id: 'apple', label: t('auth.providers.apple'), enabled: config?.apple === true },
+  ];
+  const socialStack = (
+    <>
+      {providers.map((provider) => (
+        <Button
+          key={provider.id}
+          label={provider.label}
+          tone="quiet"
+          onPress={() => (provider.id === 'google' ? startGoogleNative(false) : startProvider(provider.id))}
+          leading={
+            provider.id === 'google' ? <GoogleLogo size={20} />
+              : provider.id === 'facebook' ? <FacebookLogo size={20} />
+                : <AppleLogo size={20} />
+          }
+          busy={waiting === provider.id}
+          disabled={!provider.enabled || (busy && waiting !== provider.id)}
+          testID={`auth-provider-${provider.id}`}
+        />
+      ))}
+      {/* Attente « navigateur » : réservée aux fournisseurs ouverts dans un onglet.
+          Google natif affiche son propre sélecteur : pas de texte d'attente ici. */}
+      {waiting && waiting !== 'google' ? (
+        <>
+          <AppText variant="label" color={theme.colors.ink}>{t('auth.providers.waiting')}</AppText>
+          <Button
+            label={t('auth.providers.cancel')}
+            tone="quiet"
+            onPress={() => {
+              cancelled.current = true;
+            }}
+          />
+        </>
+      ) : null}
+    </>
+  );
+
+  /** Les six boîtes du code (référence Zalando) : saisie chiffre par chiffre. */
+  const codeBoxes = (
+    <CodeBoxes
+      value={emailCode}
+      onChange={setEmailCode}
+      disabled={busy}
+      label={t('auth.emailCode.code')}
+    />
   );
 
   return (
@@ -478,13 +468,10 @@ export default function SignInScreen() {
           <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
 
-        {/* Marque posée en tête, comme la référence (Zalando 085315) : le
-            modal se suffit à lui-même, même partagé en capture d'écran. */}
-        {mode === 'start' ? (
-          <View style={styles.brandMark}>
-            <BrandWordmark height={25} color={theme.colors.ink} />
-          </View>
-        ) : null}
+        {/* Marque posée en tête sur TOUTES les étapes (référence Zalando). */}
+        <View style={styles.brandMark}>
+          <BrandWordmark height={25} color={theme.colors.ink} />
+        </View>
 
         <AppText variant="h1">{heading.title}</AppText>
         {heading.subtitle ? (
@@ -525,8 +512,8 @@ export default function SignInScreen() {
           </View>
         ) : null}
 
-        {/* Page d'accueil : adresse → code. */}
-        {mode === 'start' && !emailChallenge && shownAccount ? (
+        {/* Compte mémorisé : le geste le plus court (référence « Hi Essam »). */}
+        {shownAccount ? (
           <>
             <RememberedAccountButton
               account={shownAccount}
@@ -535,7 +522,6 @@ export default function SignInScreen() {
               disabled={busy && !rememberedSpinning}
               onPress={() => continueWithRemembered(shownAccount)}
             />
-            {providerList}
             <Button
               label={t('auth.remembered.another')}
               tone="quiet"
@@ -546,205 +532,170 @@ export default function SignInScreen() {
           </>
         ) : null}
 
+        {/* Page d'accueil : adresse → le serveur dit connu ou inconnu. */}
         {mode === 'start' && !emailChallenge && !shownAccount ? (
           <>
-            {boxedEmailField}
+            {boxedEmailField({ editable: true })}
             <Button
               label={t('auth.continue')}
               tone="solid"
-              onPress={sendEmailCode}
+              onPress={continueWithEmail}
               busy={busy && waiting === null}
-              disabled={busy || !emailReady || config?.emailCode === false}
-              testID="auth-email-code-send"
+              disabled={busy || !emailReady || !emailPathOpen}
+              testID="auth-email-continue"
             />
             {termsParagraph}
             {socialStack}
-            <Button label={t('auth.start.phone')} tone="quiet" onPress={() => changeMode('phone')} disabled={busy} testID="auth-start-phone" />
-            <Button label={t('auth.start.password')} tone="quiet" onPress={() => changeMode('password')} disabled={busy} testID="auth-start-password" />
           </>
         ) : null}
 
-        {/* Étape « code » : même page, code reçu par e-mail. */}
-        {mode === 'start' && emailChallenge ? (
+        {/* Adresse connue : mot de passe, code en option, récupération. */}
+        {mode === 'password' && !emailChallenge ? (
           <>
-            <AppText variant="caption" color={theme.colors.muted}>{t('auth.emailCode.spam')}</AppText>
-            {emailChallenge.developmentCode ? (
-              <AppText variant="caption" color={theme.status.info.fg}>
-                {t('auth.emailCode.dev', { code: emailChallenge.developmentCode })}
-              </AppText>
-            ) : null}
-            <Field
-              label={t('auth.emailCode.code')}
-              accessibilityLabel={t('auth.emailCode.code')}
-              value={emailCode}
-              onChangeText={setEmailCode}
-              keyboardType="number-pad"
-              maxLength={6}
-              editable={!busy}
-            />
-            <Button label={t('auth.continue')} tone="main" onPress={confirmEmailCode} busy={busy && waiting === null} disabled={busy} testID="auth-email-code-verify" />
-            <Button label={t('auth.emailCode.resend')} onPress={sendEmailCode} tone="quiet" disabled={busy} />
-            <Button label={t('auth.emailCode.change')} onPress={session.cancelEmailCode} tone="quiet" disabled={busy} />
-            {otherWays}
-            <Button label={t('auth.start.password')} tone="quiet" onPress={() => changeMode('password')} disabled={busy} />
-          </>
-        ) : null}
-
-        {/* Téléphone : Tunisie uniquement (le serveur ne normalise que les numéros tunisiens). */}
-        {mode === 'phone' ? (
-          <>
-            {!challenge ? (
-              <>
-                <Field
-                  label={t('auth.phone.country')}
-                  accessibilityLabel={t('auth.phone.country')}
-                  value={t('auth.phone.countryValue')}
-                  editable={false}
-                />
-                <Field
-                  label={t('auth.phone.label')}
-                  accessibilityLabel={t('auth.phone.label')}
-                  placeholder={t('auth.phone.placeholder')}
-                  value={phone}
-                  onChangeText={setPhone}
-                  keyboardType="phone-pad"
-                  autoComplete="tel"
-                  editable={!busy && (config?.phoneOtp ?? true)}
-                />
-                <Button
-                  label={t('auth.continue')}
-                  tone="main"
-                  onPress={sendCode}
-                  busy={busy && waiting === null}
-                  disabled={busy || config?.phoneOtp === false}
-                  testID="auth-send-code"
-                />
-              </>
-            ) : (
-              <>
-                <AppText variant="caption" color={theme.colors.muted}>
-                  {t('auth.phone.sent', { phone: challenge.maskedPhone || phone })}
-                </AppText>
-                {challenge.developmentCode ? (
-                  <AppText variant="caption" color={theme.status.info.fg}>
-                    {t('auth.phone.dev', { code: challenge.developmentCode })}
-                  </AppText>
-                ) : null}
-                <Field
-                  label={t('auth.phone.code')}
-                  accessibilityLabel={t('auth.phone.code')}
-                  value={code}
-                  onChangeText={setCode}
-                  keyboardType="number-pad"
-                  maxLength={6}
-                  editable={!busy}
-                />
-                <Button label={t('auth.phone.verify')} tone="main" onPress={confirmCode} busy={busy && waiting === null} disabled={busy} testID="auth-verify-code" />
-                <Button label={t('auth.phone.resend')} onPress={sendCode} tone="quiet" disabled={busy} />
-                <Button label={t('auth.phone.change')} onPress={session.cancelPhoneCode} tone="quiet" disabled={busy} />
-              </>
-            )}
-            {otherWays}
-            <Button label={t('auth.start.email')} tone="quiet" onPress={() => changeMode('start')} disabled={busy} />
-          </>
-        ) : null}
-
-        {/* Mot de passe : méthode en option, pour les comptes qui en ont un. */}
-        {mode === 'password' ? (
-          <Card title={t('auth.tabs.email')} hint={config && !config.email ? t('auth.error.unavailable') : undefined}>
-            <Field
-              label={t('auth.email.label')}
-              accessibilityLabel={t('auth.email.label')}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-              editable={!busy}
-            />
-            <Field
+            {boxedEmailField({ editable: false, onEdit: backToAddress })}
+            <AuthField
               label={t('auth.password.label')}
-              accessibilityLabel={t('auth.password.label')}
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!reveal}
+              autoComplete="current-password"
               editable={!busy}
+              testID="auth-password-field"
+              trailing={{
+                label: reveal ? t('auth.password.hide') : t('auth.password.reveal'),
+                onPress: () => setReveal((value) => !value),
+                testID: 'auth-password-reveal',
+              }}
             />
-            <Button label={t('auth.email.submit')} tone="main" onPress={emailSignIn} busy={busy && waiting === null} disabled={busy} testID="auth-email-submit" />
-            {/* Le lien reste visible même quand la récupération est fermée :
-                l'écran suivant explique POURQUOI au lieu de laisser un vide. */}
+            <Button
+              label={t('auth.title')}
+              tone="solid"
+              onPress={emailSignIn}
+              busy={busy && waiting === null}
+              disabled={busy || !passwordOpen || password.length < 8}
+              testID="auth-email-submit"
+            />
+            <Button
+              label={t('auth.code.login')}
+              tone="quiet"
+              onPress={sendEmailCode}
+              disabled={busy || !codeOpen}
+              testID="auth-email-code-send"
+            />
             <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push('/forgot')}
-              style={[styles.link, { minHeight: theme.geometry.minTarget }]}
+              accessibilityRole="link"
+              onPress={() => router.push({ pathname: '/forgot', params: { email: email.trim() } as never })}
+              style={[styles.forgotLink, { minHeight: theme.geometry.minTarget }]}
+              testID="auth-forgot-link"
             >
-              <AppText variant="label" color={theme.colors.accentText}>
+              <AppText variant="label" color={theme.colors.ink} style={styles.termsLink}>
                 {t('auth.forgot.link')}
               </AppText>
             </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => changeMode('register')}
-              style={[styles.link, { minHeight: theme.geometry.minTarget }]}
-            >
-              <AppText variant="label" color={theme.colors.accentText}>
-                {t('auth.start.createAccount')}
-              </AppText>
-            </Pressable>
-            <Button label={t('auth.emailCode.useCode')} tone="quiet" onPress={() => changeMode('start')} disabled={busy} />
-          </Card>
+          </>
         ) : null}
 
+        {/* Adresse inconnue : inscription — mot de passe, prénom, nom (référence Zalando). */}
         {mode === 'register' ? (
-          <Card title={t('auth.tabs.register')} hint={t('auth.register.hint')}>
-            <Field label={t('auth.name.label')} accessibilityLabel={t('auth.name.label')} value={name} onChangeText={setName} editable={!busy} />
-            <Field
-              label={t('auth.email.label')}
-              accessibilityLabel={t('auth.email.label')}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-              editable={!busy}
-            />
-            <Field
+          <>
+            {boxedEmailField({ editable: false, onEdit: backToAddress })}
+            <AuthField
               label={t('auth.password.label')}
-              accessibilityLabel={t('auth.password.label')}
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
+              secureTextEntry={!reveal}
+              autoComplete="new-password"
               editable={!busy}
+              testID="auth-register-password"
+              trailing={{
+                label: reveal ? t('auth.password.hide') : t('auth.password.reveal'),
+                onPress: () => setReveal((value) => !value),
+                testID: 'auth-password-reveal',
+              }}
             />
-            <Pressable
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: marketing }}
-              onPress={() => setMarketing((value) => !value)}
-              style={[styles.checkboxRow, { minHeight: theme.geometry.minTarget }]}
-            >
-              <Ionicons
-                name={marketing ? 'checkbox' : 'square-outline'}
-                size={theme.iconSize.sm}
-                color={marketing ? theme.colors.accentText : theme.colors.muted}
-                accessibilityElementsHidden
-              />
-              <AppText variant="caption" style={styles.checkboxLabel}>{t('auth.marketing')}</AppText>
-            </Pressable>
-            <Button label={t('auth.register.submit')} tone="main" onPress={register} busy={busy && waiting === null} disabled={busy} testID="auth-register-submit" />
-            <AppText variant="caption" color={theme.colors.muted}>{t('auth.legal')}</AppText>
-            <Button label={t('auth.emailCode.useCode')} tone="quiet" onPress={() => changeMode('start')} disabled={busy} />
-          </Card>
+            <AppText variant="caption" color={theme.colors.secondary}>{t('auth.password.hint')}</AppText>
+            <AuthField
+              label={t('auth.firstName.label')}
+              value={firstName}
+              onChangeText={setFirstName}
+              autoComplete="given-name"
+              editable={!busy}
+              testID="auth-register-first-name"
+            />
+            <AuthField
+              label={t('auth.lastName.label')}
+              value={lastName}
+              onChangeText={setLastName}
+              autoComplete="family-name"
+              editable={!busy}
+              testID="auth-register-last-name"
+            />
+            {termsParagraph}
+            <Button
+              label={t('auth.register.submit')}
+              tone="solid"
+              onPress={register}
+              busy={busy && waiting === null}
+              disabled={busy || password.length < 8 || !firstName.trim() || !lastName.trim()}
+              testID="auth-register-submit"
+            />
+          </>
         ) : null}
 
-        {mode === 'start' ? (
-          <AppText variant="caption" color={theme.colors.muted}>
-            {session.storageSecure ? t('auth.secure.keychain') : t('auth.secure.fallback')}
-          </AppText>
+        {/* Étape « code » : six boîtes, renvoi compte à rebours, autre compte.
+            Elle prend le dessus sur tout mode — le code est LA preuve. */}
+        {emailChallenge ? (
+          <>
+            {emailChallenge.developmentCode ? (
+              <AppText variant="caption" color={theme.colors.ink}>
+                {t('auth.emailCode.dev', { code: emailChallenge.developmentCode })}
+              </AppText>
+            ) : null}
+            {codeBoxes}
+            <Button
+              label={t('auth.continue')}
+              tone="solid"
+              onPress={confirmEmailCode}
+              busy={busy && waiting === null}
+              disabled={busy || emailCode.length !== 6}
+              testID="auth-email-code-verify"
+            />
+            <AppText variant="caption" color={theme.colors.secondary}>
+              {t('auth.emailCode.noCode')} {t('auth.emailCode.spam')}
+            </AppText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: busy || resendIn > 0 }}
+              onPress={sendEmailCode}
+              disabled={busy || resendIn > 0}
+              style={[styles.forgotLink, { minHeight: theme.geometry.minTarget }]}
+              testID="auth-email-code-resend"
+            >
+              <AppText
+                variant="label"
+                color={busy || resendIn > 0 ? theme.colors.muted : theme.colors.ink}
+                style={styles.termsLink}
+              >
+                {resendIn > 0
+                  ? `${t('auth.emailCode.resend')} (${resendIn})`
+                  : t('auth.emailCode.resend')}
+              </AppText>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => { session.cancelEmailCode(); backToAddress(); }}
+              style={[styles.forgotLink, { minHeight: theme.geometry.minTarget }]}
+              testID="auth-email-another"
+            >
+              <AppText variant="label" color={theme.colors.ink} style={styles.termsLink}>
+                {t('auth.emailCode.another')}
+              </AppText>
+            </Pressable>
+          </>
         ) : null}
 
         {/* Conditions et confidentialité : toujours visibles en bas, ouvertes dans l'application. */}
         <View style={[styles.legal, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          {/* Liens violets : ouvrent la page DANS l'application (retour, jamais de navigateur). */}
           <Pressable
             accessibilityRole="link"
             accessibilityLabel={t('auth.legal.terms')}
@@ -752,7 +703,7 @@ export default function SignInScreen() {
             style={[styles.legalLink, { minHeight: theme.geometry.minTarget }]}
             testID="auth-legal-terms"
           >
-            <AppText variant="caption" color={legalLink} style={styles.legalText}>{t('auth.legal.terms')}</AppText>
+            <AppText variant="caption" color={theme.colors.ink} style={styles.legalText}>{t('auth.legal.terms')}</AppText>
           </Pressable>
           <AppText variant="caption" color={theme.colors.muted}>·</AppText>
           <Pressable
@@ -762,7 +713,7 @@ export default function SignInScreen() {
             style={[styles.legalLink, { minHeight: theme.geometry.minTarget }]}
             testID="auth-legal-privacy"
           >
-            <AppText variant="caption" color={legalLink} style={styles.legalText}>{t('auth.legal.privacy')}</AppText>
+            <AppText variant="caption" color={theme.colors.ink} style={styles.legalText}>{t('auth.legal.privacy')}</AppText>
           </Pressable>
         </View>
       </ScrollView>
@@ -774,9 +725,7 @@ const styles = StyleSheet.create({
   screen: { gap: 12 },
   // La marque tête de page s'aligne sur le titre (pas de centrage flottant).
   brandMark: { alignItems: 'flex-start' },
-  // L'explication des fournisseurs inactifs respire sous la pile de boutons.
-  providersOff: { marginTop: 2 },
-  // Paragraphe légal : souffle au-dessus, liens encre soulignés dedans.
+  // Paragraphe légal : liens encre soulignés.
   terms: { marginTop: 4 },
   termsLink: { textDecorationLine: 'underline' },
   // Champ « encoché » : l'étiquette coupe la bordure haute, sans superposition.
@@ -795,32 +744,95 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     borderBottomLeftRadius: RADIUS.sm,
     borderBottomRightRadius: RADIUS.sm,
-    paddingHorizontal: 16,
+    paddingLeft: 16,
+    paddingRight: 8,
     paddingVertical: 12,
+    alignItems: 'center',
   },
   boxInput: { padding: 0, backgroundColor: 'transparent', borderWidth: 0 },
+  boxAction: { minHeight: 44, paddingHorizontal: 8, justifyContent: 'center' },
+  // Lien « Mot de passe oublié ? » aligné sur le texte, zone 44.
+  forgotLink: { alignItems: 'flex-start', justifyContent: 'center' },
+  alert: { borderWidth: StyleSheet.hairlineWidth, padding: 12 },
+  close: { alignItems: 'flex-start', justifyContent: 'center' },
+  intro: { marginBottom: 4 },
+  legal: { alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 4, paddingVertical: 8 },
+  legalLink: { justifyContent: 'center', paddingHorizontal: 6 },
+  legalText: { textDecorationLine: 'underline' },
   remembered: { alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 10, overflow: 'hidden' },
   avatar: {
     width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
   },
   rememberedText: { flex: 1, alignItems: 'flex-start', gap: 2 },
   emailRow: { alignItems: 'center', gap: 6 },
-  close: { alignItems: 'flex-start', justifyContent: 'center' },
-  intro: { marginBottom: 4 },
-  alert: { borderWidth: StyleSheet.hairlineWidth, padding: 12 },
-  checkboxRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  checkboxLabel: { flex: 1 },
-  link: { justifyContent: 'center' },
-  orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
-  orLine: { flex: 1, height: StyleSheet.hairlineWidth },
-  legal: { alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 4, paddingVertical: 8 },
-  legalLink: { justifyContent: 'center', paddingHorizontal: 6 },
-  legalText: { textDecorationLine: 'underline' },
 });
 
 /**
- * « Continuer avec ce compte » : le dernier compte de l'appareil, avec son initiale,
- * son adresse et, pour Google, le logo en pastille — comme la page de connexion de ChatGPT.
+ * Les six boîtes du code : une saisie chiffre par chiffre, l'ordre de frappe
+ * reste gauche → droite même en arabe (un code n'a pas de direction). Le
+ * retour arrière d'une boîte vide rend la main à la précédente.
+ */
+function CodeBoxes({ value, onChange, disabled, label }: {
+  value: string; onChange: (next: string) => void; disabled: boolean; label: string;
+}) {
+  const theme = useTheme();
+  const refs = useRef<Array<TextInput | null>>([]);
+  const digits = Array.from({ length: 6 }, (_, index) => value.charAt(index));
+  const setDigit = (index: number, raw: string) => {
+    const digit = raw.replace(/\D/g, '').slice(-1);
+    const next = (value.slice(0, index) + digit + value.slice(index + 1)).slice(0, 6);
+    onChange(next);
+    if (digit && index < 5) refs.current[index + 1]?.focus();
+  };
+  return (
+    <View
+      testID="auth-code-boxes"
+      style={{ flexDirection: theme.isRTL ? 'row-reverse' : 'row', gap: 8, justifyContent: 'center' }}
+    >
+      {digits.map((digit, index) => (
+        <TextInput
+          key={index}
+          ref={(input) => { refs.current[index] = input; }}
+          value={digit}
+          onChangeText={(raw) => {
+            if (!raw) {
+              // Retour arrière : on vide la boîte et on rend la main à la précédente.
+              onChange(value.slice(0, index) + value.slice(index + 1));
+              if (index > 0) refs.current[index - 1]?.focus();
+              return;
+            }
+            setDigit(index, raw);
+          }}
+          keyboardType="number-pad"
+          maxLength={1}
+          editable={!disabled}
+          accessibilityLabel={`${label} ${index + 1}`}
+          testID={`auth-code-box-${index}`}
+          selectionColor={theme.colors.ink}
+          cursorColor={theme.colors.ink}
+          style={[
+            theme.text('h3'),
+            {
+              flex: 1,
+              minHeight: 56,
+              borderWidth: 1.5,
+              borderRadius: RADIUS.sm,
+              borderColor: theme.colors.ink,
+              textAlign: 'center',
+              color: theme.colors.ink,
+              backgroundColor: theme.colors.canvas,
+              padding: 0,
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
+/**
+ * « Continuer avec ce compte » : le dernier compte de l'appareil — encre
+ * pleine désormais (aucun violet sur ces écrans, demande du 10/11).
  */
 function RememberedAccountButton({ account, label, busy, disabled, onPress }: {
   account: LastAccount;
@@ -845,24 +857,23 @@ function RememberedAccountButton({ account, label, busy, disabled, onPress }: {
         {
           minHeight: theme.geometry.controlHeight,
           borderRadius: theme.radius.cta,
-          // Même rôle que le bouton principal : violet plein, plus profond à l'appui.
-          backgroundColor: pressed ? theme.colors.actionHover : theme.colors.action,
+          backgroundColor: pressed ? theme.colors.secondary : theme.colors.ink,
           flexDirection: rowDirectionFor(theme.isRTL),
           opacity: disabled && !busy ? theme.opacity.disabled : 1,
         },
       ]}
     >
-      <View style={[styles.avatar, { backgroundColor: theme.colors.surface }]}>
+      <View style={[styles.avatar, { backgroundColor: theme.colors.canvas }]}>
         <AppText variant="label" color={theme.colors.ink}>{initial}</AppText>
       </View>
       <View style={styles.rememberedText}>
-        <AppText variant="label" color={theme.colors.onAction}>{label}</AppText>
+        <AppText variant="label" color={theme.colors.canvas}>{label}</AppText>
         <View style={[styles.emailRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           {account.provider === 'google' ? <GoogleLogo size={14} /> : null}
-          <AppText variant="caption" color={theme.colors.onAction}>{account.email}</AppText>
+          <AppText variant="caption" color={theme.colors.canvas}>{account.email}</AppText>
         </View>
       </View>
-      {busy ? <LoadingSpinner size="sm" color={theme.colors.onAction} testID="auth-remembered-busy" /> : null}
+      {busy ? <LoadingSpinner size="sm" color={theme.colors.canvas} testID="auth-remembered-busy" /> : null}
     </Pressable>
   );
 }

@@ -61,6 +61,11 @@ jest.mock('../../src/features/auth/lastAccount', () => ({
   useRememberedAccount: jest.fn(() => ({ account: null, ready: true, remember: jest.fn() })),
 }));
 
+// Recherche d'adresse (branchement Zalando) : simulée, contrôlable par test.
+jest.mock('../../src/api/account', () => ({
+  lookupEmail: jest.fn(async () => ({ registered: false })),
+}));
+
 jest.mock('../../src/features/auth/browser', () => ({
   closeProviderBrowser: jest.fn(async () => undefined),
   openProviderSession: jest.fn(async () => 'done'),
@@ -152,31 +157,89 @@ beforeEach(() => {
   resetSession();
 });
 
-describe('connexion par code e-mail, dans l’application', () => {
-  it('la page s’ouvre sur l’adresse e-mail ; le bouton reste grisé tant qu’elle est invalide', async () => {
+describe('branchement de l’adresse — connu ⇒ mot de passe, inconnu ⇒ inscription', () => {
+  const { lookupEmail } = jest.requireMock('../../src/api/account');
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    resetSession();
+    lookupEmail.mockResolvedValue({ registered: false });
+  });
+
+  it('la page s’ouvre sur l’adresse ; le bouton reste grisé tant qu’elle est invalide, sans appeler le serveur', async () => {
     await renderScreen();
     fireEvent.changeText(screen.getByLabelText('Adresse e-mail'), 'pas-une-adresse');
-    expect(screen.getByTestId('auth-email-code-send')).toBeDisabled();
-    await act(async () => { fireEvent.press(screen.getByTestId('auth-email-code-send')); });
-    expect(mockSession.requestEmailCode).not.toHaveBeenCalled();
+    expect(screen.getByTestId('auth-email-continue')).toBeDisabled();
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-email-continue')); });
+    expect(lookupEmail).not.toHaveBeenCalled();
   });
 
-  it('demande le code pour l’adresse saisie, puis affiche l’étape « code » sur la même page', async () => {
+  it('adresse connue : mot de passe d’abord, avec Révéler, code en option et mot de passe oublié', async () => {
+    lookupEmail.mockResolvedValue({ registered: true });
     await renderScreen();
-    fireEvent.changeText(screen.getByLabelText('Adresse e-mail'), '  Ahmed@Example.tn ');
+    fireEvent.changeText(screen.getByLabelText('Adresse e-mail'), 'known@example.tn');
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-email-continue')); });
+    expect(lookupEmail).toHaveBeenCalledWith('known@example.tn');
+    const field = screen.getByTestId('auth-password-field');
+    expect(field.props.secureTextEntry).toBe(true);
+    fireEvent.press(screen.getByTestId('auth-password-reveal'));
+    expect(screen.getByTestId('auth-password-field').props.secureTextEntry).toBe(false);
+    // « Modifier » ramène à l'adresse, éditable.
+    fireEvent.press(screen.getByTestId('auth-email-edit'));
+    expect(screen.getByTestId('auth-email-continue')).toBeTruthy();
+    // Revenir au mot de passe pour la suite du test.
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-email-continue')); });
+    // Le bouton principal est « Se connecter » (encre), le code est l'option.
+    expect(screen.getByTestId('auth-email-submit').props.accessibilityLabel).toBe('Se connecter');
+    expect(screen.getByTestId('auth-email-code-send').props.accessibilityLabel).toBe('Recevoir un code par e-mail');
+    // Mot de passe oublié : le lien emporte l'adresse vers l'écran de récupération.
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-forgot-link')); });
+    expect(router.push).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/forgot', params: { email: 'known@example.tn' } }));
+  });
+
+  it('adresse connue : « Recevoir un code par e-mail » demande le code et affiche les six boîtes', async () => {
+    lookupEmail.mockResolvedValue({ registered: true });
+    await renderScreen();
+    fireEvent.changeText(screen.getByLabelText('Adresse e-mail'), 'known@example.tn');
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-email-continue')); });
     await act(async () => { fireEvent.press(screen.getByTestId('auth-email-code-send')); });
-    expect(mockSession.requestEmailCode).toHaveBeenCalledWith('  Ahmed@Example.tn ', 'fr');
+    expect(mockSession.requestEmailCode).toHaveBeenCalledWith('known@example.tn', 'fr');
     await waitFor(() => expect(screen.getByTestId('auth-email-code-verify')).toBeTruthy());
     expect(screen.getByText('Saisissez le code de vérification envoyé à ah***@ex***.tn.')).toBeTruthy();
-    expect(screen.getByText('Vérifiez votre boîte de réception')).toBeTruthy();
+    for (let index = 0; index < 6; index += 1) {
+      expect(screen.getByTestId(`auth-code-box-${index}`)).toBeTruthy();
+    }
   });
 
-  it('valider le code appelle la session avec le code saisi, sans quitter l’écran pour un navigateur', async () => {
+  it('adresse inconnue : inscription — mot de passe, prénom, nom de famille, S’inscrire', async () => {
+    await renderScreen();
+    fireEvent.changeText(screen.getByLabelText('Adresse e-mail'), 'nouveau@example.tn');
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-email-continue')); });
+    expect(screen.getByTestId('auth-register-password')).toBeTruthy();
+    expect(screen.getByLabelText('Prénom')).toBeTruthy();
+    expect(screen.getByLabelText('Nom de famille')).toBeTruthy();
+    // Incomplete : le bouton reste grisé tant que nom/prénom/mot de passe manquent.
+    expect(screen.getByTestId('auth-register-submit')).toBeDisabled();
+    fireEvent.changeText(screen.getByTestId('auth-register-password'), 'motdepasse8');
+    fireEvent.changeText(screen.getByLabelText('Prénom'), 'Sami');
+    fireEvent.changeText(screen.getByLabelText('Nom de famille'), 'Ben Ali');
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-register-submit')); });
+    expect(mockSession.signUpWithEmail).toHaveBeenCalledWith(expect.objectContaining({
+      displayName: 'Sami Ben Ali',
+      email: 'nouveau@example.tn',
+      password: 'motdepasse8',
+      marketingOptIn: false,
+    }));
+  });
+
+  it('valider le code : saisie boîte par boîte, la session reçoit les 6 chiffres', async () => {
     resetSession({
       emailChallenge: { challengeId: 'ecode_x', maskedEmail: 'ah***@ex***.tn', expiresInSeconds: 600, developmentCode: '' },
     });
     await renderScreen();
-    fireEvent.changeText(screen.getByLabelText('Code reçu par e-mail'), '482913');
+    '482913'.split('').forEach((digit, index) => {
+      fireEvent.changeText(screen.getByTestId(`auth-code-box-${index}`), digit);
+    });
     await act(async () => { fireEvent.press(screen.getByTestId('auth-email-code-verify')); });
     expect(mockSession.confirmEmailCode).toHaveBeenCalledWith('482913');
     const { openProviderSession } = jest.requireMock('../../src/features/auth/browser');
@@ -191,26 +254,33 @@ describe('connexion par code e-mail, dans l’application', () => {
     expect(screen.getByText('E-mail non configuré : code de développement 123456')).toBeTruthy();
   });
 
-  it('le mot de passe n’est pas le chemin par défaut, mais reste accessible en option', async () => {
+  it('renvoi du code : compte à rebours visible puis lien actif ; « autre compte » ramène à l’adresse', async () => {
+    resetSession({
+      emailChallenge: { challengeId: 'ecode_z', maskedEmail: 'ah***@ex***.tn', expiresInSeconds: 600, developmentCode: '' },
+    });
     await renderScreen();
-    expect(screen.queryByLabelText('Mot de passe')).toBeNull();
-    fireEvent.press(screen.getByTestId('auth-start-password'));
-    expect(screen.getByLabelText('Mot de passe')).toBeTruthy();
-    expect(screen.getByTestId('auth-email-submit')).toBeTruthy();
+    const resend = screen.getByTestId('auth-email-code-resend');
+    expect(resend.props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByText(/Renvoyer un nouveau code \(60\)/)).toBeTruthy();
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-email-another')); });
+    expect(mockSession.cancelEmailCode).toHaveBeenCalled();
+    expect(screen.getByTestId('auth-email-continue')).toBeTruthy();
   });
 
-  it('le téléphone est une option sous « OU » : Tunisie, numéro, code SMS', async () => {
-    await renderScreen();
-    fireEvent.press(screen.getByTestId('auth-start-phone'));
-    expect(screen.getByLabelText('Pays/Région')).toBeTruthy();
-    expect(screen.getByLabelText('Numéro tunisien')).toBeTruthy();
-    expect(screen.getByTestId('auth-send-code')).toBeTruthy();
-  });
-
-  it('sans méthode e-mail configurée, le bouton d’envoi est désactivé', async () => {
+  it('sans aucune méthode e-mail configurée, le bouton Continuer est désactivé', async () => {
     resetSession({ authConfig: { ...mockSession.authConfig, emailCode: false, email: false } });
     await renderScreen();
-    expect(screen.getByTestId('auth-email-code-send')).toBeDisabled();
+    expect(screen.getByTestId('auth-email-continue')).toBeDisabled();
+  });
+
+  it('les lignes retirées n’apparaissent plus : téléphone, mot de passe en entrée, trousseau, explications', async () => {
+    await renderScreen();
+    expect(screen.queryByText('Continuer avec un numéro de téléphone')).toBeNull();
+    expect(screen.queryByText('Continuer avec un mot de passe')).toBeNull();
+    expect(screen.queryByText('Session rangée dans le trousseau de l’appareil.')).toBeNull();
+    expect(screen.queryByText('Pas encore activé sur le serveur.')).toBeNull();
+    expect(screen.queryByText('Le même compte que sur le site — vos commandes suivent.')).toBeNull();
+    expect(screen.queryByText('OU')).toBeNull();
   });
 });
 
@@ -331,7 +401,7 @@ describe('Compte mémorisé et attente dans le bouton', () => {
     remembered(null);
     await renderScreen();
     expect(screen.queryByTestId('auth-remembered-account')).toBeNull();
-    expect(screen.getByTestId('auth-email-code-send')).toBeTruthy();
+    expect(screen.getByTestId('auth-email-continue')).toBeTruthy();
   });
 
   it('un compte Google mémorisé s’affiche « Continuer avec ce compte » avec son adresse', async () => {
@@ -341,14 +411,14 @@ describe('Compte mémorisé et attente dans le bouton', () => {
     expect(screen.getByText('Continuer avec ce compte')).toBeTruthy();
     expect(screen.getByText('essam@gmail.com')).toBeTruthy();
     // Le formulaire complet n'apparaît qu'après « Se connecter autrement ».
-    expect(screen.queryByTestId('auth-email-code-send')).toBeNull();
+    expect(screen.queryByTestId('auth-email-continue')).toBeNull();
   });
 
   it('« Se connecter autrement » révèle le formulaire complet', async () => {
     remembered({ provider: 'google', email: 'essam@gmail.com', name: 'Essam' });
     await renderScreen();
     await act(async () => { fireEvent.press(screen.getByTestId('auth-remembered-other')); });
-    expect(screen.getByTestId('auth-email-code-send')).toBeTruthy();
+    expect(screen.getByTestId('auth-email-continue')).toBeTruthy();
     expect(screen.queryByTestId('auth-remembered-account')).toBeNull();
   });
 
@@ -386,7 +456,7 @@ describe('Compte mémorisé et attente dans le bouton', () => {
     expect(googleButton().props.accessibilityState.busy).toBe(true);
     expect(within(googleButton()).UNSAFE_getByType(LoadingSpinner)).toBeTruthy();
     expect(within(googleButton()).getByTestId('auth-provider-google-busy', { includeHiddenElements: true })).toBeTruthy();
-    expect(screen.getByTestId('auth-email-code-send').props.accessibilityState.busy).toBeFalsy();
+    expect(screen.getByTestId('auth-email-continue').props.accessibilityState.busy).toBeFalsy();
   });
 });
 
@@ -426,7 +496,7 @@ describe('page d’accueil de la connexion — modal fort (référence Zalando 0
       </QueryClientProvider>,
     );
     await act(async () => { await Promise.resolve(); });
-    const style = StyleSheet.flatten(screen.getByTestId('auth-email-code-send').props.style);
+    const style = StyleSheet.flatten(screen.getByTestId('auth-email-continue').props.style);
     expect(style.backgroundColor).toBe(theme!.colors.ink);
     expect(view.toJSON()).toBeTruthy();
     view.unmount();
@@ -451,13 +521,13 @@ describe('page d’accueil de la connexion — modal fort (référence Zalando 0
       const button = screen.getByTestId(`auth-provider-${id}`);
       expect(button.props.accessibilityState.disabled).toBe(true);
     }
-    // L'explication reste affichée : jamais un bouton mort sans raison.
-    expect(screen.getByText('Pas encore activé sur le serveur.')).toBeTruthy();
+    // Plus aucune ligne d'explication permanente (retirée, demande du 10/11).
+    expect(screen.queryByText('Pas encore activé sur le serveur.')).toBeNull();
     await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-apple')); });
     expect(mockSession.adoptSession).not.toHaveBeenCalled();
   });
 
-  it('fournisseur activé par le serveur : sa pastille devient cliquable, les autres restent expliquées', async () => {
+  it('fournisseur activé par le serveur : sa pastille devient cliquable, les autres restent inactives', async () => {
     resetSession({
       authConfig: { phoneOtp: true, email: true, emailCode: true, google: true, googleNative: true, facebook: false, apple: false, passwordReset: true },
     });

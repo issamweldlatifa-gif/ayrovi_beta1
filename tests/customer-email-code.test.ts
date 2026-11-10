@@ -164,3 +164,34 @@ describe('helpers purs', () => {
     expect(emailCodeHtml(true, '482913')).toContain('dir="rtl"');
   });
 });
+
+describe('recherche d’adresse (branchement connexion Zalando)', () => {
+  const lookup = (email: string) =>
+    request(app).post('/api/customer/auth/email/lookup').send({ email });
+
+  test('adresse inconnue ⇒ registered:false, sans rien créer', async () => {
+    const email = uniqueEmail('inconnu');
+    const res = await lookup(email);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ registered: false });
+    const row = db.get<any>('SELECT id FROM customer_accounts WHERE email=? COLLATE NOCASE', email);
+    expect(row).toBeUndefined();
+  });
+
+  test('adresse d’un compte existant ⇒ registered:true', async () => {
+    const email = uniqueEmail('connu');
+    await requestCode(email);
+    const challenge = (await requestCode(email)).body.data;
+    await request(app).post('/api/customer/auth/email-code/verify')
+      .send({ challengeId: challenge.challengeId, code: challenge.developmentCode });
+    const res = await lookup(email);
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual({ registered: true });
+  });
+
+  test('adresse invalide ⇒ 400 EMAIL_INVALID', async () => {
+    const res = await lookup('pas-une-adresse');
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('EMAIL_INVALID');
+  });
+});
