@@ -19,8 +19,9 @@ import {
 } from './sections';
 import { fetchStoriesShowcase } from './storiesShowcase';
 import { fetchFooterInfo, type FooterInfo } from './footer';
-import { HERO_DEMO_ENABLED } from '@/features/home/heroDemo';
+import { HERO_DEMO_ENABLED, COVER_DEMO_ENABLED } from '@/features/home/heroDemo';
 import { demoHeroSlides } from '@/features/home/heroDemoSlides';
+import { demoHomeCover } from '@/features/home/homeCoverDemo';
 import {
   fetchPublications, fetchReelPage, fetchSocialCounts, fetchStoryPublishers,
   type Publication, type ReelPage, type SocialCounts, type StoryPublisher,
@@ -35,6 +36,7 @@ export const queryKeys = {
   // Carrousel Hero : contenu éditorial Admin ⇒ même traitement que le hero.
   heroSlides: ['home', 'hero-slides'] as const,
   heroCarouselSettings: ['home', 'hero-carousel-settings'] as const,
+  homeCover: ['home', 'cover'] as const,
   navigation: ['home', 'navigation'] as const,
   // الكتالوج أثقل من المحتوى التحريري ⇒ نخفّف الطلبات بشوية.
   catalog: ['catalog'] as const,
@@ -59,7 +61,16 @@ export const queryKeys = {
 const CONTENT = { staleTime: 60_000, refetchOnMount: true } as const;
 
 export const useHomeCover = (): UseQueryResult<HomeCover | null> =>
-  useQuery({ queryKey: ['home', 'cover'] as const, queryFn: ({ signal }) => fetchHomeCover({ signal }), ...CONTENT });
+  useQuery({
+    queryKey: queryKeys.homeCover,
+    queryFn: async ({ signal }) => {
+      if (!COVER_DEMO_ENABLED) return fetchHomeCover({ signal });
+      // Démo : une cover publiée dans le CRM gagne ; sinon les visuels embarqués.
+      const live = await fetchHomeCover({ signal }).catch(() => null);
+      return live ?? demoHomeCover();
+    },
+    ...CONTENT,
+  });
 
 export const useHeroSlides = (): UseQueryResult<HeroSlide[]> =>
   useQuery({

@@ -11,6 +11,9 @@
 
 export const HERO_DEMO_ENABLED = process.env.EXPO_PUBLIC_HERO_DEMO === '1';
 
+/** Même fanion de build : la « cover » d'accueil embarque ses visuels de démo. */
+export const COVER_DEMO_ENABLED = HERO_DEMO_ENABLED;
+
 const DEMO_PREFIX = 'demo-';
 
 /** Vrai pour les cartes embarquées : elles ne doivent jamais être envoyées en télémétrie. */

@@ -231,6 +231,8 @@ export interface HomeCoverSlide {
   url: string;
   poster: string;
   alt: string;
+  /** Visuel embarqué (APK démo uniquement) : gagne sur `url` quand présent. */
+  localImage?: number;
 }
 
 /** Destination fermée : des pages DE L'APPLICATION (clé CRM, sans barre oblique). */

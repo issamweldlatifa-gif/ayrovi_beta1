@@ -185,7 +185,8 @@ export const HomeCover = memo(function HomeCover() {
                 >
                   <AppImage
                     testID={`home-cover-image-${item.id}`}
-                    uri={mediaUrl(item.url)}
+                    uri={item.localImage != null ? null : mediaUrl(item.url)}
+                    localSource={item.localImage}
                     style={styles.fill}
                     contentFit="cover"
                     accessibilityLabel={item.alt || title || undefined}
