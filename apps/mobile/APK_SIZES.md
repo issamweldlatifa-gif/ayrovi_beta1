@@ -1,7 +1,7 @@
 # Tailles d'APK — mesurées
 
-Dernière mesure : 2026-11-10 00:03 UTC
-Commit mesuré : `d3c13484500cfff19561d2cb5ba15fc4279d37c2`
+Dernière mesure : 2026-11-10 00:56 UTC
+Commit mesuré : `62180f30e5070aa332582a2d58867f003ce13101`
 
 Écrit automatiquement par `Mobile — APK Android (démo)`.
 Ne pas éditer à la main : réécrit à chaque build.
