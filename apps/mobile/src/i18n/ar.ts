@@ -38,6 +38,11 @@ export const ar = {
 
   /* ── الحساب وتسجيل الدخول ──────────────────────────────────────────────── */
   'auth.title': 'تسجيل الدخول',
+  'header.guest.prefix': 'مرحبًا،',
+  'header.guest.link': 'تسجيل الدخول؟',
+  'auth.terms.before': 'بإنشاء حساب، فإنك تقبل',
+  'auth.terms.middle': '. ولمعرفة كيف نعالج بياناتك، راجع',
+  'auth.terms.after': '.',
   'auth.subtitle': 'عبر الهاتف أو البريد الإلكتروني أو مزوّد معتمد — الحساب نفسه المستخدم على الموقع.',
   'legal.frenchOnly': 'هذه الوثيقة متوفرة بالفرنسية حالياً.',
   'auth.legal.terms': 'شروط الاستخدام',
@@ -60,7 +65,6 @@ export const ar = {
   'auth.google.config': 'إعداد Google غير مكتمل على هذا الجهاز. يرجى التواصل مع الدعم.',
   'auth.google.noPlayServices': 'خدمات Google Play غير متوفّرة على هذا الجهاز.',
   'auth.start.title': 'تسجيل الدخول أو إنشاء حساب',
-  'auth.start.subtitle': 'تابِع باستخدام بريدك الإلكتروني. إذا لم يكن لديك حساب، فسيتم إنشاؤه الآن.',
   'auth.emailCode.checkInbox': 'تحقّق من صندوق الوارد',
   'auth.emailCode.sentTo': 'أدخل الرمز المرسل إلى {email}.',
   'auth.or': 'أو',

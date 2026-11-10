@@ -16,7 +16,7 @@
  */
 import { useRef, useState } from 'react';
 import { goBack } from '@/design/navigation';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,6 +34,10 @@ import {
 import { closeProviderBrowser, openProviderSession } from '@/features/auth/browser';
 import { useRememberedAccount, type LastAccount } from '@/features/auth/lastAccount';
 import { GoogleLogo } from '@/design/GoogleLogo';
+import { FacebookLogo } from '@/design/FacebookLogo';
+import { AppleLogo } from '@/design/AppleLogo';
+import { BrandWordmark } from '@/design/BrandMark';
+import { RADIUS } from '@/design/tokens.mobile';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { useSession } from '@/state/session';
 import { signInWithGoogleNative, googleFailureCode, googleFailureDetail } from '@/features/auth/googleNative';
@@ -284,11 +288,14 @@ export default function SignInScreen() {
   };
 
   /* ── Titres selon l'étape ─────────────────────────────────────────────── */
+  // Page d'accueil de la connexion (référence Zalando 085315) : la marque,
+  // le titre, le champ e-mail — pas de sous-titre qui retarde l'action.
+  // Le sous-titre revient à l'étape « code » (vérifier la boîte e-mail).
   let heading = { title: t('auth.title'), subtitle: t('auth.subtitle') };
   if (mode === 'start') {
     heading = emailChallenge
       ? { title: t('auth.emailCode.checkInbox'), subtitle: t('auth.emailCode.sentTo', { email: emailChallenge.maskedEmail || email }) }
-      : { title: t('auth.start.title'), subtitle: t('auth.start.subtitle') };
+      : { title: t('auth.start.title'), subtitle: '' };
   }
 
   /* ── Bloc « OU » : Google, puis les autres fournisseurs configurés ────── */
@@ -344,6 +351,111 @@ export default function SignInScreen() {
     </>
   );
 
+  /**
+   * Boutons sociaux façon Zalando (085315) : pastille contour encre, marque
+   * du tiers DEVANT le libellé. Une méthode que le serveur n'a pas encore
+   * activée reste VISIBLE (la page ressemble à la référence) mais non
+   * cliquable, avec l'explication sous la pile — jamais un bouton mort sans
+   * raison affichée.
+   */
+  const socialStack = (
+    <>
+      {providers.map((provider) => (
+        <Button
+          key={provider.id}
+          label={provider.label}
+          tone="quiet"
+          onPress={() => (provider.id === 'google' ? startGoogleNative(false) : startProvider(provider.id))}
+          leading={
+            provider.id === 'google' ? <GoogleLogo size={20} />
+              : provider.id === 'facebook' ? <FacebookLogo size={20} />
+                : <AppleLogo size={20} />
+          }
+          busy={waiting === provider.id}
+          disabled={!provider.enabled || (busy && waiting !== provider.id)}
+          testID={`auth-provider-${provider.id}`}
+        />
+      ))}
+      {providers.some((provider) => !provider.enabled) ? (
+        <AppText variant="caption" color={theme.colors.muted} style={styles.providersOff}>
+          {t('auth.providers.off')}
+        </AppText>
+      ) : null}
+      {offered.length ? (
+        <AppText variant="caption" color={theme.colors.muted}>{t('auth.providers.sameAccount')}</AppText>
+      ) : null}
+    </>
+  );
+
+  /**
+   * Mentions dans le paragraphe (référence Zalando) : « En créant un compte,
+   * vous acceptez nos Conditions d'utilisation… » — liens soulignés OUVERTS
+   * DANS l'application, les mêmes pages que la rangée du bas.
+   */
+  const termsParagraph = (
+    <AppText variant="caption" color={theme.colors.secondary} style={styles.terms}>
+      {t('auth.terms.before')}{' '}
+      <AppText
+        variant="caption"
+        color={theme.colors.ink}
+        style={styles.termsLink}
+        accessibilityRole="link"
+        onPress={() => router.push('/legal/terms')}
+      >
+        {t('auth.legal.terms')}
+      </AppText>
+      {t('auth.terms.middle')}{' '}
+      <AppText
+        variant="caption"
+        color={theme.colors.ink}
+        style={styles.termsLink}
+        accessibilityRole="link"
+        onPress={() => router.push('/legal/privacy')}
+      >
+        {t('auth.legal.privacy')}
+      </AppText>
+      {t('auth.terms.after')}
+    </AppText>
+  );
+
+  /**
+   * Champ e-mail « encoché » (référence Zalando 085315) : l'étiquette vit
+   * dans sa propre boîte qui coupe la bordure haute du champ, sans aucune
+   * superposition — une rangée haute (étiquette + suite du trait) posée sur
+   * le corps (bords gauche/droite/bas). Tout reste dans le flux : la mise en
+   * page ne peut pas se casser sur un écran non testé.
+   */
+  const boxedEmailField = (
+    <View testID="auth-boxed-email">
+      <View style={[styles.boxTopRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+        <View style={[styles.boxLabel, { backgroundColor: theme.colors.canvas }]}>
+          <AppText variant="caption" color={theme.colors.muted}>{t('auth.email.label')}</AppText>
+        </View>
+        <View style={[styles.boxTopLine, { borderTopColor: theme.colors.ink }]} />
+      </View>
+      <View style={[styles.boxBody, { borderBottomColor: theme.colors.ink, borderLeftColor: theme.colors.ink, borderRightColor: theme.colors.ink }]}>
+        <TextInput
+          accessibilityLabel={t('auth.email.label')}
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          autoComplete="email"
+          editable={!busy && config?.emailCode !== false}
+          placeholderTextColor={theme.colors.muted}
+          selectionColor={theme.colors.selection}
+          cursorColor={theme.colors.focus}
+          style={[
+            theme.text('body'),
+            styles.boxInput,
+            { color: theme.colors.ink },
+            theme.isRTL ? { textAlign: 'right' } : null,
+          ]}
+        />
+      </View>
+    </View>
+  );
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -366,8 +478,18 @@ export default function SignInScreen() {
           <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
 
+        {/* Marque posée en tête, comme la référence (Zalando 085315) : le
+            modal se suffit à lui-même, même partagé en capture d'écran. */}
+        {mode === 'start' ? (
+          <View style={styles.brandMark}>
+            <BrandWordmark height={25} color={theme.colors.ink} />
+          </View>
+        ) : null}
+
         <AppText variant="h1">{heading.title}</AppText>
-        <AppText variant="body" color={theme.colors.secondary} style={styles.intro}>{heading.subtitle}</AppText>
+        {heading.subtitle ? (
+          <AppText variant="body" color={theme.colors.secondary} style={styles.intro}>{heading.subtitle}</AppText>
+        ) : null}
 
         {legacyServer ? (
           <View
@@ -426,25 +548,17 @@ export default function SignInScreen() {
 
         {mode === 'start' && !emailChallenge && !shownAccount ? (
           <>
-            <Field
-              label={t('auth.email.label')}
-              accessibilityLabel={t('auth.email.label')}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-              editable={!busy && config?.emailCode !== false}
-            />
+            {boxedEmailField}
             <Button
               label={t('auth.continue')}
-              tone="main"
+              tone="solid"
               onPress={sendEmailCode}
               busy={busy && waiting === null}
               disabled={busy || !emailReady || config?.emailCode === false}
               testID="auth-email-code-send"
             />
-            {otherWays}
+            {termsParagraph}
+            {socialStack}
             <Button label={t('auth.start.phone')} tone="quiet" onPress={() => changeMode('phone')} disabled={busy} testID="auth-start-phone" />
             <Button label={t('auth.start.password')} tone="quiet" onPress={() => changeMode('password')} disabled={busy} testID="auth-start-password" />
           </>
@@ -658,6 +772,33 @@ export default function SignInScreen() {
 
 const styles = StyleSheet.create({
   screen: { gap: 12 },
+  // La marque tête de page s'aligne sur le titre (pas de centrage flottant).
+  brandMark: { alignItems: 'flex-start' },
+  // L'explication des fournisseurs inactifs respire sous la pile de boutons.
+  providersOff: { marginTop: 2 },
+  // Paragraphe légal : souffle au-dessus, liens encre soulignés dedans.
+  terms: { marginTop: 4 },
+  termsLink: { textDecorationLine: 'underline' },
+  // Champ « encoché » : l'étiquette coupe la bordure haute, sans superposition.
+  boxTopRow: { alignItems: 'flex-end' },
+  boxLabel: {
+    borderWidth: 1.5,
+    borderBottomWidth: 0,
+    borderTopLeftRadius: RADIUS.sm,
+    borderTopRightRadius: RADIUS.sm,
+    paddingHorizontal: 8,
+    paddingBottom: 2,
+  },
+  boxTopLine: { flex: 1, borderTopWidth: 1.5 },
+  boxBody: {
+    borderWidth: 1.5,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: RADIUS.sm,
+    borderBottomRightRadius: RADIUS.sm,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  boxInput: { padding: 0, backgroundColor: 'transparent', borderWidth: 0 },
   remembered: { alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 10, overflow: 'hidden' },
   avatar: {
     width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',

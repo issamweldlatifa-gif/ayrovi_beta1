@@ -16,8 +16,8 @@
  * حتى سعر ما يتحسب هنا. الأرقام الجاية من الخادم، واللي موش أكيد يتقال،
  * ما يتلزّقش بتقدير من الجهاز.
  */
-import { useCallback, useState } from 'react';
-import { View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ScrollView, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useIsFocused } from 'expo-router';
 
@@ -32,6 +32,7 @@ import { LensHomeBlock } from '@/features/home/LensHomeBlock';
 import { ReelsShopSection } from '@/features/home/ReelsShopSection';
 import { SectionRule } from '@/design/SectionRule';
 import { Footer } from '@/features/shell/Footer';
+import { registerScrollToTopHandler } from '@/features/shell/scrollToTop';
 import {
   useHeroCarouselSettings, useHeroSlides,
 } from '@/api/hooks';
@@ -69,6 +70,17 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   // Couleur de la carte Hero active : le header la reprend (en haut de page).
   const [heroBackground, setHeroBackground] = useState<string | null>(null);
+  /**
+   * Remontée en haut de page (re-tap sur l'onglet Accueil, mot-symbole de
+   * l'en-tête) : l'écran prête sa `ScrollView` à `AppScreen` et se déclare
+   * une fois au montage — l'accueil reste monté sous les onglets, la
+   * déclaration vit donc tout le long de la session.
+   */
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    registerScrollToTopHandler(() => scrollRef.current?.scrollTo({ y: 0, animated: true }));
+    return () => registerScrollToTopHandler(null);
+  }, []);
 
   const stories = useStories();
   const storiesShowcase = useStoriesShowcase();
@@ -97,6 +109,7 @@ export default function HomeScreen() {
       chrome
       onRefresh={reload}
       refreshing={refreshing}
+      scrollRef={scrollRef}
       testID="home"
     >
       {/* الهيرو الوحيد والديناميكي : يُدار كله من Admin → Hero (بطاقات + إعدادات). */}

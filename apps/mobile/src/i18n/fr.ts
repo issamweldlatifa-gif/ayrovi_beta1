@@ -40,6 +40,11 @@ export const fr = {
 
 
   /* ── Compte et connexion (phase P2) ─────────────────────────────────────── */
+  'header.guest.prefix': 'Bienvenue,',
+  'header.guest.link': 'se connecter ?',
+  'auth.terms.before': 'En créant un compte, vous acceptez nos',
+  'auth.terms.middle': '. Découvrez comment nous traitons vos données dans notre',
+  'auth.terms.after': '.',
   'auth.title': 'Se connecter',
   'auth.subtitle': 'Téléphone, e-mail ou fournisseur — le même compte que sur le site.',
   'legal.frenchOnly': 'Ce document est disponible en français pour le moment.',
@@ -63,7 +68,6 @@ export const fr = {
   'auth.google.config': 'Google n’est pas correctement configuré sur cet appareil (identifiant ou empreinte). Prévenez le support.',
   'auth.google.noPlayServices': 'Services Google Play indisponibles sur ce téléphone.',
   'auth.start.title': 'Se connecter ou s\'inscrire',
-  'auth.start.subtitle': 'Utilisez votre adresse e-mail pour continuer. Un compte est créé automatiquement si besoin.',
   'auth.emailCode.checkInbox': 'Vérifiez votre boîte de réception',
   'auth.emailCode.sentTo': 'Saisissez le code de vérification envoyé à {email}.',
   'auth.or': 'OU',

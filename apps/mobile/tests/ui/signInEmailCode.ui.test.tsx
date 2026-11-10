@@ -9,10 +9,11 @@
  */
 import { router } from 'expo-router';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import SignInScreen from '../../app/sign-in';
-import { ThemeProvider } from '../../src/design/theme';
+import { ThemeProvider, useTheme } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
 import { LoadingSpinner } from '../../src/design/LoadingSpinner';
@@ -386,6 +387,84 @@ describe('Compte mémorisé et attente dans le bouton', () => {
     expect(within(googleButton()).UNSAFE_getByType(LoadingSpinner)).toBeTruthy();
     expect(within(googleButton()).getByTestId('auth-provider-google-busy', { includeHiddenElements: true })).toBeTruthy();
     expect(screen.getByTestId('auth-email-code-send').props.accessibilityState.busy).toBeFalsy();
+  });
+});
+
+describe('page d’accueil de la connexion — modal fort (référence Zalando 085315)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    resetSession();
+  });
+
+  it('la marque ouvre la page : mot-symbole posé au-dessus du titre, sans sous-titre', async () => {
+    await renderScreen();
+    expect(screen.getByLabelText('zayrovi')).toBeTruthy();
+    expect(screen.getByText("Se connecter ou s'inscrire")).toBeTruthy();
+    // L'ancien sous-titre a disparu de la page d'accueil (le titre suffit).
+    expect(screen.queryByText('Utilisez votre adresse e-mail pour continuer. Un compte est créé automatiquement si besoin.')).toBeNull();
+  });
+
+  it('le champ e-mail est une boîte « encochée » : étiquette dans sa propre boîte, corps sans bordure haute', async () => {
+    await renderScreen();
+    const boxed = screen.getByTestId('auth-boxed-email');
+    const box = boxed.props.children;
+    const topRow = Array.isArray(box) ? box[0] : box;
+    const labelBox = topRow.props.children[0];
+    const body = Array.isArray(box) ? box[1] : null;
+    expect(StyleSheet.flatten(labelBox.props.style)).toMatchObject({ borderBottomWidth: 0, borderTopLeftRadius: 8 });
+    expect(StyleSheet.flatten(body.props.style)).toMatchObject({ borderTopWidth: 0, borderBottomLeftRadius: 8 });
+    // Aucune superposition : l'encoche vit dans le flux (rangée haute + corps).
+    expect(JSON.stringify(StyleSheet.flatten(topRow.props.style))).not.toContain('absolute');
+  });
+
+  it('Continuer est un bouton plein ENCRE (plus jamais la lavande du violet désactivé)', async () => {
+    let theme: ReturnType<typeof useTheme> | null = null;
+    const Probe = () => { theme = useTheme(); return null; };
+    const view = render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })}>
+        <PrefsProvider><I18nProvider><ThemeProvider><Probe /><SignInScreen /></ThemeProvider></I18nProvider></PrefsProvider>
+      </QueryClientProvider>,
+    );
+    await act(async () => { await Promise.resolve(); });
+    const style = StyleSheet.flatten(screen.getByTestId('auth-email-code-send').props.style);
+    expect(style.backgroundColor).toBe(theme!.colors.ink);
+    expect(view.toJSON()).toBeTruthy();
+    view.unmount();
+  });
+
+  it('le paragraphe légal porte des liens soulignés qui ouvrent les pages DANS l’application', async () => {
+    await renderScreen();
+    // Deux porteurs du même nom : le paragraphe (en haut) et la rangée du bas.
+    // Le paragraphe arrive en premier dans l'arbre.
+    const terms = screen.getAllByRole('link', { name: 'Conditions d’utilisation' })[0];
+    const privacy = screen.getAllByRole('link', { name: 'Politique de confidentialité' })[0];
+    expect(StyleSheet.flatten(terms.props.style)).toMatchObject({ textDecorationLine: 'underline' });
+    fireEvent.press(terms);
+    fireEvent.press(privacy);
+    expect(router.push).toHaveBeenCalledWith('/legal/terms');
+    expect(router.push).toHaveBeenCalledWith('/legal/privacy');
+  });
+
+  it('les trois fournisseurs s’affichent en pastilles contour avec leur marque, inactifs tant que le serveur les refuse', async () => {
+    await renderScreen();
+    for (const id of ['google', 'facebook', 'apple']) {
+      const button = screen.getByTestId(`auth-provider-${id}`);
+      expect(button.props.accessibilityState.disabled).toBe(true);
+    }
+    // L'explication reste affichée : jamais un bouton mort sans raison.
+    expect(screen.getByText('Pas encore activé sur le serveur.')).toBeTruthy();
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-apple')); });
+    expect(mockSession.adoptSession).not.toHaveBeenCalled();
+  });
+
+  it('fournisseur activé par le serveur : sa pastille devient cliquable, les autres restent expliquées', async () => {
+    resetSession({
+      authConfig: { phoneOtp: true, email: true, emailCode: true, google: true, googleNative: true, facebook: false, apple: false, passwordReset: true },
+    });
+    await renderScreen();
+    expect(screen.getByTestId('auth-provider-google').props.accessibilityState.disabled).toBe(false);
+    expect(screen.getByTestId('auth-provider-facebook').props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByTestId('auth-provider-apple').props.accessibilityState.disabled).toBe(true);
   });
 });
 

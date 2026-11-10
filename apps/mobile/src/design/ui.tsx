@@ -34,12 +34,14 @@ export interface AppTextProps {
   accessibilityLiveRegion?: TextProps['accessibilityLiveRegion'];
   onTextLayout?: TextProps['onTextLayout'];
   onLayout?: TextProps['onLayout'];
+  /** Lien en ligne (mentions dans un paragraphe) : le Text imbriqué reste tappable. */
+  onPress?: TextProps['onPress'];
   testID?: string;
 }
 
 export function AppText({
   children, variant = 'body', color, align = 'auto', numberOfLines, style, accessibilityRole,
-  testID, accessibilityLiveRegion, onTextLayout, onLayout,
+  testID, accessibilityLiveRegion, onTextLayout, onLayout, onPress,
 }: AppTextProps) {
   const theme = useTheme();
   return (
@@ -50,6 +52,7 @@ export function AppText({
       numberOfLines={numberOfLines}
       onTextLayout={onTextLayout}
       onLayout={onLayout}
+      onPress={onPress}
       style={[
         theme.text(variant),
         { color: color ?? theme.colors.ink },

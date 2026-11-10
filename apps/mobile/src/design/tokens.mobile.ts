@@ -731,6 +731,22 @@ export const GOOGLE_BRAND = {
   green: '#34A853',
 } as const;
 
+/**
+ * Couleurs officielles des marques Facebook et Apple (identités de TIERS,
+ * imposées par leurs règles d'usage — à ne pas modifier). Même régime que
+ * `GOOGLE_BRAND` : seule exception à la palette ZAYROVI, uniquement dans
+ * `FacebookLogo.tsx` / `AppleLogo.tsx`.
+ */
+export const FACEBOOK_BRAND = {
+  blue: '#1877F2',
+  onBlue: '#FFFFFF',
+} as const;
+
+export const APPLE_BRAND = {
+  black: '#000000',
+  onBlack: '#FFFFFF',
+} as const;
+
 /** Approved native footer: a white payment strip and black help/identity panel. */
 export const FOOTER_THEME = {
   paper: '#FFFFFF', ink: '#111111', mutedOnPaper: '#666666', line: '#DDDDDD',

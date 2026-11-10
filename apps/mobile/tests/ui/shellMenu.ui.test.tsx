@@ -14,6 +14,7 @@ import { PrefsProvider } from '../../src/state/prefs';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: () => false },
+  usePathname: () => '/',
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -44,15 +45,20 @@ describe('icône compte et menu', () => {
     jest.clearAllMocks();
   });
 
-  it('non connecté : la cloche ouvre directement la connexion', async () => {
+  it('non connecté (référence Zalando) : « Bienvenue, se connecter ? » ouvre la connexion, sans logo, cloche ni panier', async () => {
     await renderHeader();
-    fireEvent.press(screen.getByRole('button', { name: 'Notifications' }));
+    expect(screen.queryByRole('button', { name: 'Notifications' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Panier ZAYROVI' })).toBeNull();
+    expect(screen.queryByLabelText('zayrovi')).toBeNull();
+    fireEvent.press(screen.getByTestId('guest-header-signin'));
     expect(router.push).toHaveBeenCalledWith('/sign-in');
   });
 
   it('connecté : la cloche ouvre directement les notifications', async () => {
     (globalThis as any).__testStatus = 'signedIn';
     await renderHeader();
+    expect(screen.getByLabelText('zayrovi')).toBeTruthy();
+    expect(screen.queryByTestId('guest-header-signin')).toBeNull();
     fireEvent.press(screen.getByRole('button', { name: 'Notifications' }));
     expect(router.push).toHaveBeenCalledWith('/account/notifications');
   });
@@ -63,8 +69,8 @@ describe('icône compte et menu', () => {
     expect(screen.queryByRole('button', { name: 'Menu' })).toBeNull();
     fireEvent.press(screen.getByTestId('plus-light'));
     expect(router.push).not.toHaveBeenCalled();
-    expect(screen.getByLabelText('zayrovi')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Panier ZAYROVI' })).toBeTruthy();
+    // Visiteur : l'invitation de connexion remplace le mot-symbole et les icônes.
+    expect(screen.getByTestId('guest-header-signin')).toBeTruthy();
   });
 
   it('Plus Light : cadre fin qui épouse le texte, zone 44, une seule ligne', async () => {

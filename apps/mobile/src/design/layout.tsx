@@ -16,7 +16,7 @@
  * le contenu défile (demande explicite, Q8). Il est donc implémenté ICI, une
  * seule fois, plutôt que recopié écran par écran.
  */
-import { useRef, useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useRef, useCallback, useMemo, useState, type ReactNode, type RefObject } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -107,6 +107,12 @@ export interface AppScreenProps {
   contentStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
   scrollViewProps?: Omit<ScrollViewProps, 'children' | 'refreshControl' | 'onScroll'>;
+  /**
+   * Poignée de défilement optionnelle (scroll-to-top : re-tap sur l'onglet
+   * actif, mot-symbole d'en-tête). La primitive reste la seule propriétaire
+   * de la `ScrollView` ; elle prête seulement la référence.
+   */
+  scrollRef?: RefObject<ScrollView | null>;
   testID?: string;
 }
 
@@ -124,6 +130,7 @@ export function AppScreen({
   contentStyle,
   style,
   scrollViewProps,
+  scrollRef,
   testID,
 }: AppScreenProps) {
   const theme = useTheme();
@@ -154,6 +161,7 @@ export function AppScreen({
 
   const body = scroll ? (
     <ScrollView
+      ref={scrollRef}
       style={styles.fill}
       contentContainerStyle={[padding, contentStyle]}
       showsVerticalScrollIndicator={false}

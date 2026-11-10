@@ -9,8 +9,10 @@ import React from 'react';
 import { render } from '@testing-library/react-native';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
 import TabsLayout from '../../app/(tabs)/_layout';
+import { registerScrollToTopHandler } from '../../src/features/shell/scrollToTop';
 import {
   TabAyWebsIcon,
   TabHomeIcon,
@@ -24,7 +26,9 @@ import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
 
 let mockCapturedScreenOptions: Record<string, unknown> | null = null;
-const mockCapturedScreens: Array<{ name: string; options: Record<string, unknown> }> = [];
+const mockCapturedScreens: Array<{ name: string; options: Record<string, unknown>; listeners: Record<string, unknown> | null }> = [];
+/** Chemin courant simulé : le layout s'en sert pour distinguer re-tap et navigation. */
+let mockPathname = '/';
 
 jest.mock('expo-router', () => {
   const ReactActual = jest.requireActual('react');
@@ -47,11 +51,13 @@ jest.mock('expo-router', () => {
   MockTabs.Screen = function MockTabScreen({
     name,
     options,
+    listeners,
   }: {
     name: string;
     options: Record<string, unknown>;
+    listeners?: Record<string, unknown> | null;
   }) {
-    mockCapturedScreens.push({ name, options });
+    mockCapturedScreens.push({ name, options, listeners: listeners ?? null });
     const iconRenderer = options?.tabBarIcon as
       | ((mockProps: { color: string; focused: boolean; size: number }) => unknown)
       | undefined;
@@ -64,8 +70,13 @@ jest.mock('expo-router', () => {
   return {
     Tabs: MockTabs,
     router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
+    usePathname: () => mockPathname,
   };
 });
+
+jest.mock('../../src/state/session', () => ({
+  useSession: () => ({ status: (globalThis as any).__testSessionStatus ?? 'signedOut' }),
+}));
 
 function renderTabsBar() {
   return render(
@@ -133,6 +144,72 @@ describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille
 
     const json = JSON.stringify(tree.toJSON());
     expect(json).not.toContain('#E5E5E5');
+  });
+
+  it('re-tap sur l’Accueil déjà actif : remonte la page en haut (référence Zalando), sans re-navigation', () => {
+    jest.clearAllMocks();
+    mockPathname = '/';
+    renderTabsBar();
+    const scrollToTop = jest.fn();
+    registerScrollToTopHandler(scrollToTop);
+    const event = { preventDefault: jest.fn() };
+    const listeners = mockCapturedScreens.find((s) => s.name === 'index')?.listeners as {
+      tabPress: (event: { preventDefault: jest.Mock }) => void;
+    };
+    listeners.tabPress(event);
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(scrollToTop).toHaveBeenCalledTimes(1);
+    expect(router.push).not.toHaveBeenCalled();
+    registerScrollToTopHandler(null);
+    // Premier tap depuis une autre page : navigation normale, aucun intercepteur.
+    mockPathname = '/catalog';
+    renderTabsBar();
+    const fresh = mockCapturedScreens.find((s) => s.name === 'index')?.listeners as {
+      tabPress: (event: { preventDefault: jest.Mock }) => void;
+    };
+    const second = { preventDefault: jest.fn() };
+    fresh.tabPress(second);
+    expect(second.preventDefault).not.toHaveBeenCalled();
+    expect(scrollToTop).toHaveBeenCalledTimes(1);
+  });
+
+  it('Profil non connecté : ouvre DIRECTEMENT la connexion (plus d’étape intermédiaire)', () => {
+    jest.clearAllMocks();
+    (globalThis as any).__testSessionStatus = 'signedOut';
+    mockPathname = '/';
+    renderTabsBar();
+    const event = { preventDefault: jest.fn() };
+    const listeners = mockCapturedScreens.find((s) => s.name === 'account')?.listeners as {
+      tabPress: (event: { preventDefault: jest.Mock }) => void;
+    };
+    listeners.tabPress(event);
+    expect(event.preventDefault).toHaveBeenCalled();
+    expect(router.push).toHaveBeenCalledWith('/sign-in');
+    // Le moudal connexion déjà ouvert : aucun empilement supplémentaire.
+    mockPathname = '/sign-in';
+    (router.push as jest.Mock).mockClear();
+    renderTabsBar();
+    const reopened = mockCapturedScreens.find((s) => s.name === 'account')?.listeners as {
+      tabPress: (event: { preventDefault: jest.Mock }) => void;
+    };
+    reopened.tabPress({ preventDefault: jest.fn() });
+    expect(router.push).not.toHaveBeenCalled();
+    (globalThis as any).__testSessionStatus = undefined;
+  });
+
+  it('Profil connecté : navigation normale vers la page compte', () => {
+    jest.clearAllMocks();
+    (globalThis as any).__testSessionStatus = 'signedIn';
+    mockPathname = '/';
+    renderTabsBar();
+    const event = { preventDefault: jest.fn() };
+    const listeners = mockCapturedScreens.find((s) => s.name === 'account')?.listeners as {
+      tabPress: (event: { preventDefault: jest.Mock }) => void;
+    };
+    listeners.tabPress(event);
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(router.push).not.toHaveBeenCalled();
+    (globalThis as any).__testSessionStatus = undefined;
   });
 
   it('rend les 5 icônes vectorielles à trait fin sur une boîte 24×24 identique', () => {

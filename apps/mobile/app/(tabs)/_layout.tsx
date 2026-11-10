@@ -13,10 +13,12 @@
  *   • `cart` reste une route valide (`href: null`) pour l'icône panier.
  */
 import { StyleSheet } from 'react-native';
-import { Tabs, router } from 'expo-router';
+import { Tabs, router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { revealChrome, useChromeHidden } from '@/design/chrome';
+import { requestScrollToTop } from '@/features/shell/scrollToTop';
+import { useSession } from '@/state/session';
 import {
   TabAywebsPawIcon,
   NAV_ICON_SIZE,
@@ -37,6 +39,8 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   const chromeHidden = useChromeHidden();
   const surface = TAB_BAR_SURFACE[theme.mode];
+  const pathname = usePathname();
+  const signedIn = useSession().status === 'signedIn';
 
   const standardIconSlot = {
     width: NAV_ICON_SIZE,
@@ -75,6 +79,18 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
+        listeners={{
+          /**
+           * Re-tap sur l'onglet déjà actif : la page remonte EN HAUT
+           * (référence Zalando). Le premier tap change d'onglet normalement.
+           */
+          tabPress: (event) => {
+            if (pathname !== '/') return;
+            event.preventDefault();
+            revealChrome();
+            requestScrollToTop();
+          },
+        }}
         options={{
           title: t('tabs.home'),
           tabBarAccessibilityLabel: t('tabs.home'),
@@ -129,6 +145,20 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="account"
+        listeners={{
+          /**
+           * Visiteur non connecté : l'onglet Profil ouvre DIRECTEMENT la
+           * connexion (référence Zalando) — plus d'étape intermédiaire
+           * « Votre compte ». La page compte reste atteignable en lien
+           * direct une fois connecté.
+           */
+          tabPress: (event) => {
+            if (signedIn) return;
+            event.preventDefault();
+            revealChrome();
+            if (pathname !== '/sign-in') router.push('/sign-in');
+          },
+        }}
         options={{
           title: t('tabs.account'),
           tabBarAccessibilityLabel: t('tabs.account'),
