@@ -4,6 +4,7 @@
  *  • la langue et le thème sont dans le menu (plus sur la page compte).
  */
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { LegacyMainMenu } from '../../src/features/shell/LegacyMainMenu';
 import { AppHeader } from '../../src/features/shell/AppHeader';
@@ -64,6 +65,17 @@ describe('icône compte et menu', () => {
     expect(router.push).not.toHaveBeenCalled();
     expect(screen.getByLabelText('zayrovi')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Panier ZAYROVI' })).toBeTruthy();
+  });
+
+  it('Plus Light : cadre fin qui épouse le texte, zone 44, une seule ligne', async () => {
+    await renderHeader();
+    // Zone de toucher conservée, sans cadre dessiné à cette taille.
+    const hit = screen.getByTestId('plus-light');
+    expect(StyleSheet.flatten(hit.props.style)).toMatchObject({ minWidth: 44, minHeight: 44 });
+    // Le cadre visible est mince et serre les mots + l'étoile (référence « New for you »).
+    const pill = StyleSheet.flatten(screen.getByTestId('plus-light-pill').props.style);
+    expect(pill).toMatchObject({ borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row' });
+    expect(StyleSheet.flatten(hit.props.style)).not.toHaveProperty('borderWidth');
   });
 
   it('AYWEBs uses its supplied wordmark, hides the neighboring menu, and keeps the cart action', async () => {
