@@ -657,6 +657,8 @@ export function derivedColors(colors: DerivablePalette) {
     reelSheetLine: alpha(BRAND.white, 0.14),
     /** Fond du champ de saisie (pilule « Partager votre avis »). */
     reelSheetField: alpha(BRAND.white, 0.08),
+    /** Carte du menu de tri (« populaires / récents ») — #0D0D0D mesuré, plus sombre que la feuille. */
+    reelSheetMenu: '#0D0D0D',
   } as const;
 }
 

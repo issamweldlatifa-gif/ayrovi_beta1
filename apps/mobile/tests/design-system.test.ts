@@ -193,6 +193,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/publications/PublicationViewer.tsx', // official back control overlays fullscreen media
       'src/features/publications/PublicationMedia.tsx', // Compteur et commandes audio superposés au média défilant, pas de positionnement du contenu.
       'src/features/social/ReelCard.tsx', // durée posée sur la vignette vidéo
+      'src/features/social/CommentSortMenu.tsx', // menu de tri ancré sous l'icône, dans un Modal par-dessus la feuille (référence 10/11)
       'src/features/shopping/LinkedProductCard.tsx', // pastille favori posée dans l'angle de la carte article
       'src/features/aywebs/AyWebsHomeContent.tsx', // cœur posé dans l'angle de la grande carte boutique (même motif que la carte article)
       'src/features/aywebs/StoresContent.tsx', // cœur posé SUR le visuel 3:4 de la carte boutique (pastille qui reste lisible sur tout logo)

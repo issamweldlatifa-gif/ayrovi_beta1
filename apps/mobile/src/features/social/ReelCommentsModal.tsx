@@ -44,6 +44,8 @@ import { isApiError, userMessage } from '@/api/errors';
 import { useSession } from '@/state/session';
 import { useSessionId } from '@/session/session';
 import { relativeTimeLabel } from '@/format/relativeTime';
+import { sortComments, type CommentSort } from './commentSort';
+import { CommentSortMenu, type SortAnchor } from './CommentSortMenu';
 
 const COMMENT_LIMIT = 500;
 /** Brouillon par compte et par Reel, conservé en mémoire (plus AsyncStorage). */
@@ -63,7 +65,10 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
   const owner = signedIn ? session.account?.id || 'guest' : 'guest';
   const draftKey = `reel-comment-draft:${owner}:${reel.id}`;
 
-  const [sort, setSort] = useState<'recent' | 'oldest'>('recent');
+  /** Référence : « Popular Comments » en tête du menu = ordre par défaut. */
+  const [sort, setSort] = useState<CommentSort>('popular');
+  const [sortAnchor, setSortAnchor] = useState<SortAnchor | null>(null);
+  const sortButton = useRef<View>(null);
   const [replyTo, setReplyTo] = useState<SocialComment | null>(null);
   const [draft, setDraft] = useState(drafts.get(draftKey) || '');
   const [auth, setAuth] = useState(false);
@@ -158,9 +163,13 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
     },
   });
 
-  const rows = (comments.data || []).slice().sort((a, b) => sort === 'recent'
-    ? b.createdAt.localeCompare(a.createdAt)
-    : a.createdAt.localeCompare(b.createdAt));
+  const rows = sortComments(comments.data || [], sort);
+  /** Ouvre le menu sous l'icône : position réelle du bouton dans la fenêtre. */
+  const openSortMenu = () => {
+    const node = sortButton.current;
+    if (!node?.measureInWindow) return;
+    node.measureInWindow((x, y, width, height) => setSortAnchor({ x, y, width, height }));
+  };
   const visible = replyTo ? rows.filter((row) => row.parentId === replyTo.id) : rows;
   const canSend = draft.trim().length >= 2;
 
@@ -189,13 +198,17 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
         <View style={styles.spacer} />
         {!replyTo ? (
           <Pressable
+            ref={sortButton}
             accessibilityRole="button"
-            accessibilityLabel={t(sort === 'recent' ? 'social.sortRecent' : 'social.sortOldest')}
-            onPress={() => setSort((value) => (value === 'recent' ? 'oldest' : 'recent'))}
+            accessibilityLabel={`${t('social.sortMenu')} · ${t(sort === 'popular' ? 'social.sortPopular' : 'social.sortRecent')}`}
+            accessibilityState={{ expanded: sortAnchor !== null }}
+            onPress={openSortMenu}
             style={styles.sortButton}
+            testID="comment-sort-button"
           >
-            {/* Référence : le glyphe seul (trois filets dégressifs), sans libellé —
-                l'ordre courant reste annoncé par `accessibilityLabel`. */}
+            {/* Référence : le glyphe seul (trois filets dégressifs), sans libellé ;
+                il ouvre le menu « populaires / récents ». L'ordre courant reste
+                annoncé par `accessibilityLabel`. */}
             <ReelGlyph name="sort" size={theme.iconSize.md} color={theme.colors.reelSheetInk} />
           </Pressable>
         ) : null}
@@ -380,6 +393,12 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
           </View>
         ))}
       </AppSheet>
+      <CommentSortMenu
+        anchor={sortAnchor}
+        value={sort}
+        onPick={(value) => { setSort(value); setSortAnchor(null); }}
+        onClose={() => setSortAnchor(null)}
+      />
       {auth ? <PublicationAuthSheet visible onClose={() => setAuth(false)} /> : null}
     </>
   );
