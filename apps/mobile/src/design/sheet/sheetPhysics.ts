@@ -5,11 +5,15 @@
  * على خيط الواجهة (UI thread) عبر Reanimated. لا حساب في خيط JavaScript أثناء السحب.
  */
 
-/** نابض الفتح والإغلاق: سريع، بلا ارتداد زائد، فيبدو ثابتاً. */
+/**
+ * نابض الفتح والإغلاق: سريع، بلا ارتداد زائد، فيبدو ثابتاً.
+ * 11/11 : أخفّ (stiffness 420، mass 0.8) — الدرج يستقرّ في ~280ms بدل ~360ms،
+ * كيف إنستغرام/فيسبوك ؛ damping مرفوع شويّة باش يبقى بلا ارتداد.
+ */
 export const SHEET_SPRING = {
-  damping: 30,
-  stiffness: 340,
-  mass: 0.9,
+  damping: 32,
+  stiffness: 420,
+  mass: 0.8,
   overshootClamping: true,
 } as const;
 

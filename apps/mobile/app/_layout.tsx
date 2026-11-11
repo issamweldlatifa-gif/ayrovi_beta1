@@ -31,6 +31,8 @@ import { BrandEntrance } from '@/design/BrandEntrance';
 import { NetworkBanner } from '@/design/NetworkBanner';
 import { AppErrorBoundary, RouteErrorBoundary } from '@/design/AppErrorBoundary';
 import { useImageCacheGuard } from '@/design/appImage';
+import { useReduceMotion } from '@/design/motion';
+import { stackMotion } from '@/design/navigationMotion';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Déjà masqué (rechargement à chaud) : sans effet, ne bloque pas le rendu.
@@ -56,6 +58,8 @@ export { RouteErrorBoundary as ErrorBoundary };
 
 function Navigation() {
   const theme = useTheme();
+  const reduceMotion = useReduceMotion();
+  const motion = stackMotion(theme.isRTL, reduceMotion);
   const [bootDone, setBootDone] = useState(false);
   const { ready, locale } = usePrefs();
   const sessionId = useSessionId();
@@ -92,15 +96,23 @@ function Navigation() {
           screenOptions={{
             headerShown: false,
             contentStyle: { backgroundColor: theme.colors.canvas },
+            // Mouvement des réseaux sociaux (11/11) : on POUSSE l'écran depuis le
+            // bord de lecture, retour au geste — jamais un écran qui « apparaît ».
+            ...motion.push,
           }}
         >
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="panier" />
-          <Stack.Screen name="sonim-assistant" />
-          <Stack.Screen name="z-lens" />
+          <Stack.Screen name="sonim-assistant" options={motion.sheet} />
+          {/* Média plein écran : fondu (la vidéo/caméra ne glisse pas). */}
+          <Stack.Screen name="z-lens" options={motion.media} />
+          <Stack.Screen name="lens" options={motion.media} />
+          <Stack.Screen name="reels-viewer" options={motion.media} />
+          <Stack.Screen name="reels" options={motion.media} />
+          <Stack.Screen name="stories" options={motion.media} />
           {/* Connexion : présentée par-dessus l'onglet courant, refermée au succès. */}
-          <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="forgot" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="sign-in" options={{ presentation: 'modal', ...motion.sheet }} />
+          <Stack.Screen name="forgot" options={{ presentation: 'modal', ...motion.sheet }} />
           <Stack.Screen name="orders" />
         </Stack>
       </View>

@@ -42,7 +42,7 @@ describe('barre du bas transparente à coins arrondis compacts (5 onglets — st
 
     const rootLayout = readFileSync(path.join(ROOT, 'app/_layout.tsx'), 'utf8');
     expect(rootLayout).toContain('<Stack.Screen name="panier" />');
-    expect(rootLayout).toContain('<Stack.Screen name="z-lens" />');
+    expect(rootLayout).toContain('<Stack.Screen name="z-lens" options={motion.media} />');
     expect(existsSync(path.join(ROOT, 'app/panier.tsx'))).toBe(true);
     expect(existsSync(path.join(ROOT, 'app/z-lens.tsx'))).toBe(true);
 
