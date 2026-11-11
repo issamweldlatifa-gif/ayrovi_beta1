@@ -1,4 +1,4 @@
-import { localizeProducts } from './services/productLocalization';
+import { LocalizationError, localizeProducts } from './services/productLocalization';
 import { Router } from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
@@ -252,7 +252,11 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     } catch (error) {
       if (controller.signal.aborted || res.destroyed) return;
       if (error instanceof InvalidImageError) return res.status(400).json({success:false,code:'INVALID_IMAGE'});
-      return res.status(503).json({success:false,code:'LOCALIZATION_UNAVAILABLE',error:'Sélection automatique indisponible. Réessayez ou recherchez la photo entière.'});
+      // Raison journalisée (sans image ni donnée personnelle) : diagnostiquer
+      // les pannes « par moments » (fournisseur, délai, file pleine…).
+      const reason = error instanceof LocalizationError ? error.reason : 'PROVIDER';
+      console.warn(`[lens] localize failed: ${reason}`);
+      return res.status(503).json({success:false,code:'LOCALIZATION_UNAVAILABLE',reason,error:'Sélection automatique indisponible. Réessayez ou recherchez la photo entière.'});
     } finally { res.off('close', onClose); }
   });
 

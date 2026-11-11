@@ -244,7 +244,7 @@ const configuredLensDailyLimit = Number(process.env.AYROVIX_LENS_IP_DAILY_LIMIT)
 const lensDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredLensDailyLimit) ? Math.max(5, Math.min(200, configuredLensDailyLimit)) : 40;
 const ayrovixDailyCostLimit = rateLimit('ayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
-const costlyAyrovixPaths = new Set(['/localize', '/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
+const costlyAyrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
 // Z Lens mobile : la détection seule (cadre de sélection + Live) a son PROPRE
 // compteur. Live interroge la caméra quand le téléphone se stabilise : sur le
 // compteur général (12 / 10 min, partagé avec les recherches), quelques visées
@@ -255,10 +255,24 @@ const configuredDetectDailyLimit = Number(process.env.AYROVIX_DETECT_DAILY_LIMIT
 const detectDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredDetectDailyLimit) ? Math.max(20, Math.min(2_000, configuredDetectDailyLimit)) : 400;
 const ayrovixDetectDailyLimit = rateLimit('ayrovix-detect-daily', detectDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
+// Z Lens : le repérage des produits d'une photo (`/localize`, secours de ML Kit
+// sur le téléphone) a lui aussi SON compteur (11/11/2026). Il partageait celui
+// des recherches (12 / 10 min, 40 / jour) : chaque photo en consommait deux
+// (repérage + recherche), si bien qu'après ~6 photos le repérage tombait en
+// 429 — « Sélection automatique indisponible » par intermittence.
+// Plafond journalier réglable : AYROVIX_LOCALIZE_DAILY_LIMIT.
+const ayrovixLocalizeRateLimit = rateLimit('ayrovix-localize', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000, authenticatedRateLimitKey);
+const configuredLocalizeDailyLimit = Number(process.env.AYROVIX_LOCALIZE_DAILY_LIMIT);
+const localizeDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
+  : Number.isInteger(configuredLocalizeDailyLimit) ? Math.max(20, Math.min(2_000, configuredLocalizeDailyLimit)) : 300;
+const ayrovixLocalizeDailyLimit = rateLimit('ayrovix-localize-daily', localizeDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
 app.use('/api/ayrovix', (req, res, next) => {
   // Reading compact history is free. Costly analyses also have a daily client
   // ceiling so a long rolling 10-minute series cannot create unbounded vendor spend.
   if (req.method === 'GET' && req.path === '/history') return next();
+  if (req.method === 'POST' && req.path === '/localize') {
+    return ayrovixLocalizeDailyLimit(req, res, () => ayrovixLocalizeRateLimit(req, res, next));
+  }
   if (req.method === 'POST' && req.path === '/detect') {
     return ayrovixDetectDailyLimit(req, res, () => ayrovixDetectRateLimit(req, res, next));
   }
