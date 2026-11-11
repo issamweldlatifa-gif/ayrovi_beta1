@@ -120,6 +120,19 @@ export function reelTrayPillBottom(open: boolean, insetBottom = 0, trayHeight = 
 }
 
 /**
+ * Compteur du rail au format de la référence 10/11 (« 1.8K », « 9 ») : compact
+ * au-delà de 999, brut en dessous. 1 800 → « 1.8K », 1 000 → « 1K » (une
+ * décimale max), 950 → « 950 ».
+ */
+export function formatRailCount(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return '0';
+  if (value < 1000) return String(Math.round(value));
+  const compact = value / 1000;
+  const label = compact >= 100 ? Math.round(compact) : Math.round(compact * 10) / 10;
+  return `${label}K`;
+}
+
+/**
  * Bas du rail d'actions. Il est **accroché à la pastille** : quand on escamote
  * les cartes, la pastille descend et les icônes descendent avec elle (demande
  * explicite du propriétaire : « الأزرار تهبط مع الزرّ »).

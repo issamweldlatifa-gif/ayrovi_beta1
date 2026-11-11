@@ -888,10 +888,11 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: out });
   });
 
-  router.get('/social/comments', (req, res) => {
+  router.get('/social/comments', optionalCustomer(db), (req, res) => {
     const id = String(req.query.targetId || '').trim();
     if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) return res.status(400).json({ success: false, error: 'Cible invalide.' });
-    const result = readSocialComments(db, id, new Date().toISOString());
+    const viewer = (req as any).customer?.id || null;
+    const result = readSocialComments(db, id, new Date().toISOString(), viewer);
     if (result.status === 'not_found') return res.status(404).json({ success: false, error: 'Contenu introuvable.' });
     res.json({ success: true, data: result.data });
   });

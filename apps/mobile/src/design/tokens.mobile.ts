@@ -631,6 +631,30 @@ export function derivedColors(colors: DerivablePalette) {
      * blanc dans les DEUX modes — le pendant de `onAdaptiveLight`.
      */
     onAdaptiveDark: BRAND.white,
+    /**
+     * ═══ Référence vidéo du 10/11 — rail Reels & feuille de commentaires ═══
+     * Teintes FIXES, identiques dans les deux modes : elles ne vivent que sur
+     * le média plein écran et sur la feuille, toujours sombre (#121212 mesuré
+     * image par image). EXCEPTION DOCUMENTÉE au « plus d'orange » du 15/10 :
+     * l'orange mesuré (#FF9000) ne sort JAMAIS de ce périmètre — coeur rempli,
+     * rafale de coeurs, barre de défilement de la feuille.
+     */
+    /** Coeur du rail rempli + rafale + barre de défilement de la feuille. */
+    reelAccent: '#FF9000',
+    /** Pouce « j'aime » d'un commentaire, rempli (bleu mesuré #3080E8). */
+    commentLike: '#3080E8',
+    /** Pouce « je n'aime pas » d'un commentaire, rempli (rouge mesuré). */
+    commentDislike: '#F05040',
+    /** Surface de la feuille de commentaires — sombre quel que soit le thème. */
+    reelSheet: '#121212',
+    /** Encre sur cette feuille (texte, icônes inactives). */
+    reelSheetInk: BRAND.white,
+    /** Texte secondaire sur la feuille (dates, compteurs à zéro). */
+    reelSheetMuted: alpha(BRAND.white, 0.6),
+    /** Filets et séparateurs de la feuille. */
+    reelSheetLine: alpha(BRAND.white, 0.14),
+    /** Fond du champ de saisie (pilule « Partager votre avis »). */
+    reelSheetField: alpha(BRAND.white, 0.08),
   } as const;
 }
 

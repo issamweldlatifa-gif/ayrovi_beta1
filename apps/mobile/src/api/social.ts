@@ -79,12 +79,17 @@ export interface SocialComment {
   text: string;
   createdAt: string;
   parentId?: string | null;
+  /** Référence vidéo 10/11 : chaque commentaire porte ses réactions. */
+  likesCount?: number;
+  myReaction?: 'like' | 'dislike' | null;
 }
 
 export interface InteractionResult {
   disliked?: boolean;
   /** للإعجاب: هل صار «معجباً» بعد الضغطة (الخادم يبدّل). */
   liked: boolean | null;
+  /** تفاعل التعليق: الحالة بعد الضغطة (like/dislike/null = أُلغيت). */
+  reaction: 'like' | 'dislike' | null;
   likesCount: number;
   counts: SocialCounts | null;
   /** للتعليق: السطر المضاف كما سجّلو الخادم. */
@@ -228,11 +233,14 @@ export async function fetchComments(targetId: string, options: RequestOptions = 
     .flatMap((entry) => {
       const id = str(entry.id);
       if (!id) return [];
+      const reaction = entry.myReaction === 'like' ? 'like' as const : entry.myReaction === 'dislike' ? 'dislike' as const : null;
       return [{
         id,
         author: str(entry.author) || 'Membre ZAYROVI',
         text: str(entry.text),
         createdAt: str(entry.createdAt), parentId: str(entry.parentId) || null,
+        likesCount: num(entry.likesCount),
+        myReaction: reaction,
       }];
     });
 }
@@ -275,6 +283,7 @@ export async function sendInteraction(input: {
   return {
     disliked: payload.disliked === true,
     liked: typeof payload.liked === 'boolean' ? payload.liked : null,
+    reaction: payload.reaction === 'like' || payload.reaction === 'dislike' ? payload.reaction : null,
     likesCount: num(payload.likesCount),
     counts: Object.keys(counts).length > 0 ? {
       likes: num(counts.likes),
@@ -283,7 +292,7 @@ export async function sendInteraction(input: {
       shares: num(counts.shares),
     } : null,
     comment: str(comment.id)
-      ? { id: str(comment.id), author: str(comment.author) || 'Membre ZAYROVI', text: str(comment.text), createdAt: str(comment.createdAt), parentId: str(comment.parentId) || null }
+      ? { id: str(comment.id), author: str(comment.author) || 'Membre ZAYROVI', text: str(comment.text), createdAt: str(comment.createdAt), parentId: str(comment.parentId) || null, likesCount: 0, myReaction: null }
       : null,
     recorded: typeof payload.recorded === 'boolean' ? payload.recorded : null,
   };

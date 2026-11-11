@@ -23,7 +23,9 @@ it('returns the last 100 comments in chronological order, preserving author fall
   expect(result.data).toHaveLength(100);
   expect(result.data[0]).toMatchObject({id:prefix+5,author:'Reader',text:'Comment 5',parentId:null});
   expect(result.data[99]).toMatchObject({id:prefix+104,author:'Membre ZAYROVI',parentId:prefix+103});
-  const old=db.all<any>(`SELECT i.id,i.text,i.created_at,c.display_name author,(SELECT parent_id FROM social_comment_replies r WHERE r.comment_id=i.id) parent_id FROM story_interactions i LEFT JOIN customer_accounts c ON c.id=i.account_id WHERE i.target_id=? AND i.type='comment' ORDER BY i.created_at DESC LIMIT 100`,target).reverse().map(row=>({id:row.id,author:row.author||'Membre ZAYROVI',text:row.text,createdAt:row.created_at,parentId:row.parent_id||null}));
+  const old=db.all<any>(`SELECT i.id,i.text,i.created_at,c.display_name author,(SELECT parent_id FROM social_comment_replies r WHERE r.comment_id=i.id) parent_id,
+      (SELECT COUNT(*) FROM social_comment_reactions x WHERE x.comment_id=i.id AND x.reaction='like') likes_count
+    FROM story_interactions i LEFT JOIN customer_accounts c ON c.id=i.account_id WHERE i.target_id=? AND i.type='comment' ORDER BY i.created_at DESC LIMIT 100`,target).reverse().map(row=>({id:row.id,author:row.author||'Membre ZAYROVI',text:row.text,createdAt:row.created_at,parentId:row.parent_id||null,likesCount:Number(row.likes_count||0),myReaction:null}));
   expect(result.data).toEqual(old);
   expect((await request(app).get('/api/public/social/comments').query({targetId:target})).body).toEqual({success:true,data:old});
 });

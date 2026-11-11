@@ -353,11 +353,23 @@ describe('plus d’orange dans l’application', () => {
       ...hexesIn(derivedColors(COLORS.light)), ...hexesIn(derivedColors(COLORS.dark)),
     ];
     expect(all.length).toBeGreaterThan(40);
-    expect(all.filter(isOrange)).toEqual([]);
+    /**
+     * EXCEPTION UNIQUE (demande du propriétaire, 10/11/2026) : l'orange du rail
+     * Reels et de la feuille de commentaires, mesuré sur la vidéo de référence
+     * (#FF9000 — cœur rempli, rafale, barre de défilement). Il vit DANS
+     * `derivedColors` sous les clés `reel*` / `comment*`, ne sort JAMAIS de ce
+     * périmètre (média plein écran + feuille sombre) et ne peint aucun élément
+     * de marque. Toute autre teinte orangée reste bannie.
+     */
+    const reelReference = new Set(['#FF9000']);
+    expect(all.filter((hex) => isOrange(hex) && !reelReference.has(upper(hex)))).toEqual([]);
   });
 
-  it('aucune couleur orangée écrite dans le code (seule exception : le logo Google, imposé par Google)', () => {
+  it('aucune couleur orangée écrite dans le code (exceptions : le logo Google imposé par Google, et le rail Reels de la référence 10/11)', () => {
     const allowed = new Set(Object.values(GOOGLE_BRAND).map(upper));
+    // Le rail Reels (demande du propriétaire, 10/11/2026) : voir l'exception
+    // détaillée au test « dans les jetons » ci-dessus.
+    allowed.add('#FF9000');
     /**
      * DONNÉES, pas palette : `optionColour.ts` traduit le nom de couleur d'un
      * article publié par le marchand (« Brown », « Orange », « Gold ») en

@@ -42,6 +42,27 @@ export function writeSocialInteraction(db: SocialStore, input: unknown, customer
     if (!['like', 'reaction', 'comment', 'view', 'share'].includes(type) || !/^[A-Za-z0-9_-]{1,120}$/.test(targetId)) {
       return { outcome: 'invalid_interaction' };
     }
+
+    // Référence vidéo 10/11 : les commentaires portent LEURS propres réactions.
+    // La cible d'un `reaction` peut donc être un commentaire — traité AVANT la
+    // résolution de cible publiée. Table réservée aux comptes (jamais de
+    // session visiteur) : un visiteur reçoit `auth_required`, pas une écriture.
+    const commentTarget = type === 'reaction'
+      ? db.get<any>("SELECT id FROM story_interactions WHERE id=? AND type='comment'", targetId)
+      : null;
+    if (commentTarget) {
+      if (!customer) return { outcome: 'auth_required' };
+      const requested = body?.reaction;
+      if (requested !== 'like' && requested !== 'dislike' && requested !== null) return { outcome: 'invalid_reaction' };
+      db.run('DELETE FROM social_comment_reactions WHERE comment_id=? AND account_id=?', targetId, customer.id);
+      if (requested === 'like' || requested === 'dislike') {
+        db.run('INSERT INTO social_comment_reactions(comment_id,account_id,reaction,created_at) VALUES (?,?,?,?)', targetId, customer.id, requested, now);
+      }
+      const likesCount = Number(db.get<any>("SELECT COUNT(*) n FROM social_comment_reactions WHERE comment_id=? AND reaction='like'", targetId)?.n || 0);
+      const dislikesCount = Number(db.get<any>("SELECT COUNT(*) n FROM social_comment_reactions WHERE comment_id=? AND reaction='dislike'", targetId)?.n || 0);
+      return { outcome: 'ok', data: { reaction: requested ?? null, likesCount, dislikesCount } };
+    }
+
     const target = publishedSocialTarget(db, targetId, now);
     if (!target) return { outcome: 'target_not_found' };
 
@@ -60,7 +81,9 @@ export function writeSocialInteraction(db: SocialStore, input: unknown, customer
     if (type === 'like' || type === 'reaction') {
       const requested = body?.reaction;
       if (type === 'reaction' && requested !== 'like' && requested !== 'dislike' && requested !== null) return { outcome: 'invalid_reaction' };
-      if (type === 'reaction' && target.source !== 'publication') return { outcome: 'reaction_target_invalid' };
+      // Le pouce vers le bas vaut pour les publications ET les Reels (rail
+      // plein écran) — la table `publication_dislikes` est générique.
+      if (type === 'reaction' && target.source !== 'publication' && target.source !== 'reel') return { outcome: 'reaction_target_invalid' };
       const reaction = (() => {
         const existing = db.get<any>(`SELECT id FROM story_interactions WHERE target_id=? AND type='like' AND account_id=?`, targetId, accountId);
         const next = type === 'like' ? (existing ? null : 'like') : requested;

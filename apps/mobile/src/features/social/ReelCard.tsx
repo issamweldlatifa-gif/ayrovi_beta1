@@ -17,6 +17,7 @@ import { memo, useCallback, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { ReelPlayback } from "@/features/reels/ReelPlayback";
+import type { VideoView } from "expo-video";
 
 import { AppText } from "@/design/ui";
 import { useTheme } from "@/design/theme";
@@ -65,10 +66,25 @@ export const ReelCard = memo(function ReelCard({
   const muted = fill ? theme.colors.onMedia : theme.colors.muted;
 
   const [liked, setLiked] = useState(false);
+  // Pouce bas (rail plein écran, référence 10/11) : publications ET reels.
+  const [disliked, setDisliked] = useState(false);
+  // Cœur favori du rail : état local du Reel (affichage fidèle à la référence).
+  const [favourited, setFavourited] = useState(false);
   const [options, setOptions] = useState(false);
   const [auth, setAuth] = useState(false);
   const [error, setError] = useState("");
   const likeLock = useRef(false);
+  // VideoView du lecteur actif : le bouton plein écran du rail appelle
+  // `enterFullscreen()` dessus (contrôles natifs toujours activés en plein écran).
+  const videoView = useRef<VideoView | null>(null);
+  const onVideoViewReady = useCallback((view: VideoView | null) => {
+    videoView.current = view;
+  }, []);
+  const enterFullscreen = useCallback(() => {
+    const view = videoView.current;
+    if (!view) return;
+    view.enterFullscreen().catch(() => setError(t("common.retry")));
+  }, [t]);
   const [paused, setPaused] = useState(false);
   const [soundOn, setSoundOn] = useState(false);
   const favourites = useProductFavorites(
@@ -88,12 +104,33 @@ export const ReelCard = memo(function ReelCard({
         sessionId: guestSession || undefined,
       });
       if (typeof result.liked === "boolean") setLiked(result.liked);
+      // Le serveur est exclusif : un like efface le pouce bas.
+      setDisliked(result.disliked === true);
     } catch {
       setError(t("common.retry"));
     } finally {
       likeLock.current = false;
     }
   }, [signedIn, reel.id, guestSession, t]);
+  const toggleDislike = useCallback(async () => {
+    if (!signedIn || likeLock.current) return;
+    likeLock.current = true;
+    setError("");
+    try {
+      const result = await sendInteraction({
+        type: "reaction",
+        reaction: disliked ? null : "dislike",
+        targetId: reel.id,
+        sessionId: guestSession || undefined,
+      });
+      setDisliked(result.reaction === "dislike");
+      setLiked(result.liked === true);
+    } catch {
+      setError(t("common.retry"));
+    } finally {
+      likeLock.current = false;
+    }
+  }, [signedIn, disliked, reel.id, guestSession, t]);
   const share = useCallback(() => shareReel(reel), [reel]);
   const shareWithFeedback = () => {
     setError("");
@@ -128,6 +165,7 @@ export const ReelCard = memo(function ReelCard({
           onPausedChange={setPaused}
           soundOn={soundOn}
           blocked={options || auth}
+          onVideoViewReady={fill ? onVideoViewReady : undefined}
         />
       ) : !reel.posterUrl ? (
         <View style={[StyleSheet.absoluteFill, styles.poster]}>
@@ -303,6 +341,19 @@ export const ReelCard = memo(function ReelCard({
             onShare: shareWithFeedback,
             onComment: () => onOpenComments(reel),
             onOptions: () => setOptions(true),
+            // Rail complet (référence 10/11) : pouces, cœur, plein écran.
+            liked,
+            likesCount: counts?.likes ?? reel.likes,
+            likeEnabled: signedIn,
+            onLike: toggleLike,
+            disliked,
+            onDislike: signedIn ? toggleDislike : undefined,
+            commentsCount: counts?.comments ?? 0,
+            favourited,
+            onFavourite: signedIn
+              ? () => setFavourited((value) => !value)
+              : () => setAuth(true),
+            onFullscreen: enterFullscreen,
           }}
           favourites={
             signedIn

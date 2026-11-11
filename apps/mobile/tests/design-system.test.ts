@@ -752,9 +752,14 @@ describe('Design System — typographie, rayons, icônes (audit 27/10/2026)', ()
       'play', 'play-circle', 'heart', 'bookmark', 'flash', 'flash-off', // bookmark filled = saved state
       // Notes
       'star',
+      // États de réaction (feuille Reels, référence 10/11) : pouce PLEIN = réaction
+      // posée, pouce en trait = disponible — même logique que le cœur favori.
+      'thumbs-up', 'thumbs-down',
       // Glyphes directionnels : le dessin est identique quelle que soit la variante
       'chevron-up', 'chevron-down', 'chevron-back', 'chevron-forward',
       'arrow-back', 'arrow-forward',
+      // Citation de réponse (feuille Reels) : glyphe de renvoi, sans variante utile
+      'return-down-forward',
     ]);
     const offenders: string[] = [];
     for (const rel of FILES) {

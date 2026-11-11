@@ -25,8 +25,8 @@
  * disponibles dans les options, même sans article.
  */
 import { RADIUS, VIDEO_BACKDROP } from '@/design/tokens.mobile';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -38,6 +38,7 @@ import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 import type { LinkedProduct } from '@/api/linkedProduct';
 import {
   REEL_TRAY,
+  formatRailCount,
   reelTrayContentBottom,
   reelTrayHeight,
   reelTrayDefaultOpen,
@@ -55,7 +56,23 @@ export interface ReelTrayRail {
   onToggleMute: () => void;
   onShare: () => void;
   onComment: () => void;
+  /** Le ⋮ reste dans ReelOptions : la référence (10/11) ne l'affiche pas dans le rail. */
   onOptions?: () => void;
+  /** Pouce haut : compte affiché SOUS l'icône (compteur seulement ici et au commentaire). */
+  liked: boolean;
+  likesCount: number;
+  onLike: () => void;
+  /** Compte visiteur : le pouce reste VISIBLE mais désactivé (honnêteté à l'écran). */
+  likeEnabled: boolean;
+  /** Pouce bas : publie ET reels (référence 10/11) — aucun compteur affiché. */
+  disliked: boolean;
+  onDislike?: () => void;
+  commentsCount: number;
+  /** Cœur favori : rempli orange + rafale de trois cœurs à l'activation. */
+  favourited: boolean;
+  onFavourite?: () => void;
+  /** Plein écran natif de la vidéo (VideoView.enterFullscreen). */
+  onFullscreen?: () => void;
 }
 
 /** Favoris : fournis seulement si l'écran sait les gérer ; sinon aucun cœur. */
@@ -75,6 +92,133 @@ export interface ReelShopTrayProps {
   favourites?: ReelTrayFavourites | null;
   /** Le contenu qui vit au-dessus du tiroir en mode `overlay` (légende). */
   children: (state: { open: boolean; bottom: number }) => React.ReactNode;
+}
+
+/** Une ligne du rail : icône, étiquette, compteur facultatif, état actif. */
+interface RailAction {
+  key: 'fullscreen' | 'sound' | 'heart' | 'share' | 'comment' | 'dislike' | 'like';
+  icon: string;
+  label: string;
+  /** Compteur SOUS l'icône — seulement pouce haut et commentaire (référence). */
+  count: string | null;
+  disabled: boolean;
+  onPress?: () => void;
+  active: boolean;
+  activeColor: string;
+  /** Le cœur déclenche la rafale de trois cœurs à l'activation. */
+  burst: boolean;
+}
+
+/** Durée du flash blanc à l'intérieur du glyphe (mesuré : 100–150 ms). */
+const RAIL_FLASH_MS = 120;
+/** Rafale de trois cœurs orange (mesuré : 8.0–8.8 s sur la vidéo). */
+const BURST_DURATION_MS = 650;
+const BURST_STAGGER_MS = 90;
+
+/**
+ * Un bouton du rail : cible 44 posée sur la vidéo, FLASH blanc à la pression
+ * (voile rond derrière le glyphe ~120 ms), et pour le cœur une RAFALE de trois
+ * cœurs orange qui montent et s'estompent quand il s'active. Compteur posé
+ * sous l'icône quand l'action en porte un (pouce haut, commentaire).
+ */
+function RailButton({ action, index, reelId, open, insetBottom, trayHeight, onMedia }: {
+  action: RailAction;
+  index: number;
+  reelId: string;
+  open: boolean;
+  insetBottom: number;
+  trayHeight: number;
+  onMedia: string;
+}) {
+  const theme = useTheme();
+  const [flash, setFlash] = useState(false);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
+
+  // Rafale : trois cœurs animés, déclenchés à l'ACTIVATION (pas à la pression).
+  const hearts = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
+  const wasActive = useRef(action.active);
+  useEffect(() => {
+    if (!action.burst || !action.active || wasActive.current) {
+      wasActive.current = action.active;
+      return;
+    }
+    wasActive.current = action.active;
+    hearts.forEach((value, offset) => {
+      value.setValue(0);
+      Animated.timing(value, {
+        toValue: 1,
+        duration: BURST_DURATION_MS,
+        delay: offset * BURST_STAGGER_MS,
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [action.burst, action.active, hearts]);
+  useEffect(() => () => hearts.forEach((value) => value.stopAnimation()), [hearts]);
+
+  const press = () => {
+    setFlash(true);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlash(false), RAIL_FLASH_MS);
+    action.onPress?.();
+  };
+
+  return (
+    <Pressable
+      testID={`reel-rail-${action.key}-${reelId}`}
+      accessibilityRole="button"
+      accessibilityLabel={action.label}
+      accessibilityState={{ disabled: action.disabled, checked: action.active || undefined }}
+      disabled={action.disabled}
+      onPress={press}
+      hitSlop={4}
+      style={[
+        styles.railButton,
+        { bottom: reelTrayRailBottom(open, index, insetBottom, trayHeight) },
+      ]}
+    >
+      {/* Flash blanc : voile rond DERRIÈRE le glyphe, même blanc que l'encre média,
+          à l'opacité d'appui du système (`theme.opacity.subtle`). */}
+      {flash ? (
+        <View
+          style={[styles.railFlash, { backgroundColor: onMedia, opacity: theme.opacity.subtle }]}
+          pointerEvents="none"
+        />
+      ) : null}
+      <Ionicons
+        name={action.icon as keyof typeof Ionicons.glyphMap}
+        size={theme.iconSize.md}
+        color={action.active ? action.activeColor : onMedia}
+        accessibilityElementsHidden
+      />
+      {action.count ? (
+        <AppText variant="caption" color={onMedia} style={styles.railCount}>
+          {action.count}
+        </AppText>
+      ) : null}
+      {action.burst && action.active
+        ? hearts.map((value, offset) => (
+            <Animated.View
+              key={offset}
+              pointerEvents="none"
+              style={[
+                styles.burstHeart,
+                {
+                  opacity: value,
+                  transform: [
+                    { translateX: (offset - 1) * 16 },
+                    { translateY: value.interpolate({ inputRange: [0, 1], outputRange: [0, -52] }) },
+                    { scale: value.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.3] }) },
+                  ],
+                },
+              ]}
+            >
+              <Ionicons name="heart" size={theme.iconSize.sm} color={theme.colors.reelAccent} accessibilityElementsHidden />
+            </Animated.View>
+          ))
+        : null}
+    </Pressable>
+  );
 }
 
 export function ReelShopTray({
@@ -129,47 +273,108 @@ export function ReelShopTray({
   ) : null;
 
   /**
-   * Rail d'actions : options (alignées sur le centre de la pastille), son,
-   * partage — de bas en haut, comme le modèle. Chaque icône est accrochée à la
-   * pastille : elle descend avec elle quand on range les articles.
+   * Rail d'actions — SEPT boutons, ordre exact de la référence vidéo 10/11.
+   * De bas en haut : plein écran · son · cœur · partage · commentaire · pouce
+   * bas · pouce haut (la référence les montre de haut en bas dans l'ordre
+   * inverse, pouce haut avec son compteur au sommet). Le compteur n'est posé
+   * QUE sous le pouce haut et sous le commentaire — comme la référence. Le ⋮
+   * reste dans ReelOptions : la référence ne l'affiche pas dans le rail.
+   *
+   * Chaque pression déclenche le FLASH blanc à l'intérieur du glyphe (~120 ms,
+   * fenêtre mesurée 8.0–8.2 s sur la vidéo) ; l'activation du cœur déclenche
+   * la rafale de trois cœurs orange (~700 ms, mesuré 8.0–8.8 s).
    */
   const railView = overlay && rail ? (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
-      {[
-        { key: 'options', icon: 'ellipsis-horizontal', label: t('reel.options'), onPress: rail.onOptions ?? rail.onComment, dim: false },
+      {([
+        {
+          key: 'fullscreen',
+          icon: 'scan-outline',
+          label: t('social.fullscreen'),
+          count: null,
+          disabled: !rail.onFullscreen,
+          onPress: rail.onFullscreen,
+          active: false,
+          activeColor: theme.colors.onMedia,
+          burst: false,
+        },
         {
           key: 'sound',
           icon: rail.muted ? 'volume-mute' : 'volume-high',
           label: t(rail.muted ? 'social.unmute' : 'social.mute'),
+          count: null,
+          disabled: false,
           onPress: rail.onToggleMute,
-          dim: false,
+          active: false,
+          activeColor: theme.colors.onMedia,
+          burst: false,
         },
-        { key: 'share', icon: 'share-social-outline', label: t('social.share'), onPress: rail.onShare, dim: false },
-      ].map((action, index) => (
-        <Pressable
+        {
+          key: 'heart',
+          icon: rail.favourited ? 'heart' : 'heart-outline',
+          label: t('social.like'),
+          count: null,
+          disabled: !rail.onFavourite,
+          onPress: rail.onFavourite,
+          active: rail.favourited,
+          activeColor: theme.colors.reelAccent,
+          burst: true,
+        },
+        {
+          key: 'share',
+          icon: 'share-social-outline',
+          label: t('social.share'),
+          count: null,
+          disabled: false,
+          onPress: rail.onShare,
+          active: false,
+          activeColor: theme.colors.onMedia,
+          burst: false,
+        },
+        {
+          key: 'comment',
+          icon: 'chatbubble-outline',
+          label: t('social.comments'),
+          count: formatRailCount(rail.commentsCount),
+          disabled: false,
+          onPress: rail.onComment,
+          active: false,
+          activeColor: theme.colors.onMedia,
+          burst: false,
+        },
+        {
+          key: 'dislike',
+          icon: rail.disliked ? 'thumbs-down' : 'thumbs-down-outline',
+          label: rail.disliked ? t('social.disliked') : t('social.dislike'),
+          count: null,
+          disabled: !rail.onDislike,
+          onPress: rail.onDislike,
+          active: rail.disliked,
+          activeColor: theme.colors.onMedia,
+          burst: false,
+        },
+        {
+          key: 'like',
+          icon: rail.liked ? 'thumbs-up' : 'thumbs-up-outline',
+          label: rail.liked ? t('social.liked') : t('social.like'),
+          count: formatRailCount(rail.likesCount),
+          disabled: !rail.likeEnabled,
+          onPress: rail.onLike,
+          active: rail.liked,
+          activeColor: theme.colors.onMedia,
+          burst: false,
+        },
+      ] as RailAction[]).map((action, index) => (
+        <RailButton
           key={action.key}
-          testID={`reel-rail-${action.key}-${reel.id}`}
-          accessibilityRole="button"
-          accessibilityLabel={action.label}
-          accessibilityState={{ disabled: action.dim }}
-          disabled={action.dim}
-          onPress={action.onPress}
-          hitSlop={4}
-          style={({ pressed }) => [
-            styles.railButton,
-            {
-              bottom: reelTrayRailBottom(open, index, insetBottom, trayHeight),
-              opacity: action.dim ? theme.opacity.disabled : pressed ? theme.opacity.subtle : 1,
-            },
-          ]}
-        >
-          <Ionicons
-            name={action.icon as keyof typeof Ionicons.glyphMap}
-            size={theme.iconSize.md}
-            color={onMedia}
-            accessibilityElementsHidden
-          />
-        </Pressable>
+          action={action}
+          index={index}
+          reelId={reel.id}
+          open={open}
+          insetBottom={insetBottom}
+          trayHeight={trayHeight}
+          onMedia={onMedia}
+        />
       ))}
     </View>
   ) : null;
@@ -276,5 +481,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Flash de pression : disque de 32 posé derrière le glyphe (22), rond.
+  // L'opacité d'appui vient de `theme.opacity` — passée inline par RailButton.
+  railFlash: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    borderRadius: RADIUS.full,
+    top: 6,
+  },
+  // Compteur sous l'icône : la cible passe à 56 de hauteur utile.
+  railCount: {},
+  // Un cœur de la rafale : posé au centre du bouton, il monte en s'estompant.
+  burstHeart: { position: 'absolute', top: 10 },
   inlineWrap: { paddingBottom: 4 },
 });

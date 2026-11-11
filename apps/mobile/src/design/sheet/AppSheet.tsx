@@ -30,7 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/design/theme';
 import { useReduceMotion } from '@/design/motion';
 import { MOTION } from '@/design/tokens.generated';
-import { SHEET_CORNER_RADIUS } from '@/design/tokens.mobile';
+import { RADIUS, SHEET_CORNER_RADIUS } from '@/design/tokens.mobile';
 import { SheetBackdrop } from '@/design/sheet/SheetBackdrop';
 import {
   SHEET_SPRING, nextTranslate, panMovesSheet, shouldDismiss,
@@ -50,11 +50,24 @@ export interface AppSheetProps {
   footer?: ReactNode;
   /** Product-purchase sheets may sit over the page instead of covering it fully. */
   presentation?: 'full' | 'bottom';
+  /**
+   * Couleurs du pied FIXÉ à la feuille : la feuille de commentaires des Reels
+   * (référence vidéo 10/11) est sombre quel que soit le thème — son pied doit
+   * suivre SA surface, pas le thème de la page derrière.
+   */
+  footerSurfaceColor?: string;
+  footerLineColor?: string;
+  /**
+   * Couleur de la barre de défilement (Android ; iOS garde son indicateur).
+   * La feuille Reels (référence 10/11) impose l'orange de son rail.
+   */
+  indicatorColor?: string;
   children: ReactNode;
 }
 
 export function AppSheet({
   open, onDismiss, onClosed, header, footer, presentation = 'full', children, surfaceColor,
+  footerSurfaceColor, footerLineColor, indicatorColor,
 }: AppSheetProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -80,6 +93,10 @@ export function AppSheet({
   const dragStart = useRef(0);
   /** كم مررنا المحتوى للأسفل. */
   const scrollY = useRef(0);
+  /** مؤشّر التمرير المرسوم: موضع المحتوى وارتفاعا المنطقة والمحتوى. */
+  const scrollOffset = useRef(new Animated.Value(0)).current;
+  const [scrollHeight, setScrollHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
 
   // مراجع مستقرة: المعالجات لا تُعاد إنشاؤها عند كل رسم.
   const onDismissRef = useRef(onDismiss);
@@ -164,6 +181,7 @@ export function AppSheet({
 
   const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollY.current = event.nativeEvent.contentOffset.y;
+    scrollOffset.setValue(event.nativeEvent.contentOffset.y);
   };
 
   return (
@@ -194,17 +212,39 @@ export function AppSheet({
         ]}
       >
         {header}
-        <ScrollView
-          style={presentation === 'bottom' ? styles.bottomScroll : styles.scroll}
-          onScroll={onScroll}
-          scrollEventThrottle={16}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[styles.body, { paddingBottom: footer ? 12 : insets.bottom + 20 }]}
+        <View
+          style={presentation === 'bottom' ? styles.scrollWrapBottom : styles.scrollWrap}
+          onLayout={(event) => setScrollHeight(event.nativeEvent.layout.height)}
         >
-          {children}
-        </ScrollView>
+          <ScrollView
+            style={presentation === 'bottom' ? styles.bottomScroll : styles.scroll}
+            onScroll={onScroll}
+            onContentSizeChange={(_, height) => setContentHeight(height)}
+            scrollEventThrottle={16}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={[styles.body, { paddingBottom: footer ? 12 : insets.bottom + 20 }]}
+          >
+            {children}
+          </ScrollView>
+          {/**
+           * Barre de défilement dessinée par nos soins (option
+           * `indicatorColor` — la feuille Reels, référence 10/11, impose
+           * l'orange) : `ScrollView` d'Android ne permet plus de teinter
+           * l'indicateur natif, et iOS jamais. La barre est une vraie
+           * superposition sur la zone de défilement : sa hauteur suit la part
+           * visible du contenu, sa position suit le défilement.
+           */}
+          {indicatorColor && contentHeight > scrollHeight && scrollHeight > 0 ? (
+            <ScrollIndicator
+              color={indicatorColor}
+              offset={scrollOffset}
+              trackHeight={scrollHeight}
+              contentHeight={contentHeight}
+            />
+          ) : null}
+        </View>
         {footer ? (
-          <View style={[styles.footer, { backgroundColor: theme.colors.canvas, borderTopColor: theme.colors.line, paddingBottom: insets.bottom + 12 }]}>
+          <View style={[styles.footer, { backgroundColor: footerSurfaceColor ?? theme.colors.canvas, borderTopColor: footerLineColor ?? theme.colors.line, paddingBottom: insets.bottom + 12 }]}>
             {footer}
           </View>
         ) : null}
@@ -213,11 +253,50 @@ export function AppSheet({
   );
 }
 
+const MIN_THUMB_HEIGHT = 24;
+
+/**
+ * شريط تمرير مرسوم (عرض 3، على الحافة الأخيرة): ارتفاعه يمثّل نسبة الجزء
+ * الظاهر من المحتوى، وموضعه يتبع التمرير عبر `Animated.interpolate` محصور
+ * بين أعلى وأسفل المسار — بلا إعادة قياس عند كل إطار.
+ */
+function ScrollIndicator({ color, offset, trackHeight, contentHeight }: {
+  color: string;
+  offset: Animated.Value;
+  trackHeight: number;
+  contentHeight: number;
+}) {
+  const thumbHeight = Math.max(MIN_THUMB_HEIGHT, trackHeight * (trackHeight / contentHeight));
+  const maxOffset = Math.max(1, contentHeight - trackHeight);
+  const translateY = offset.interpolate({
+    inputRange: [0, maxOffset],
+    outputRange: [0, trackHeight - thumbHeight],
+    extrapolate: 'clamp',
+  });
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        end: 2,
+        top: 0,
+        width: 3,
+        height: thumbHeight,
+        borderRadius: RADIUS.full,
+        backgroundColor: color,
+        transform: [{ translateY }],
+      }}
+    />
+  );
+}
+
 const styles = StyleSheet.create({
   panel: {
     position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
   },
   bottomPanel: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden' },
+  scrollWrap: { flex: 1 },
+  scrollWrapBottom: { flexGrow: 0 },
   scroll: { flex: 1 },
   bottomScroll: { flexGrow: 0 },
   body: { paddingHorizontal: 16, paddingVertical: 12, gap: 10 },

@@ -25,10 +25,20 @@ export function readSocialCounts(db: Pick<ReadStore, 'all'>, input: unknown): Re
   return out;
 }
 
-export function readSocialComments(db: ReadStore, targetId: string, now: string) {
+export function readSocialComments(db: ReadStore, targetId: string, now: string, viewerAccountId: string | null = null) {
   if (!publishedSocialTarget(db, targetId, now)) return { status: 'not_found' as const };
-  const rows = db.all<any>(`SELECT i.id,i.text,i.created_at,c.display_name author,(SELECT parent_id FROM social_comment_replies r WHERE r.comment_id=i.id) parent_id
+  const rows = db.all<any>(`SELECT i.id,i.text,i.created_at,c.display_name author,(SELECT parent_id FROM social_comment_replies r WHERE r.comment_id=i.id) parent_id,
+      (SELECT COUNT(*) FROM social_comment_reactions x WHERE x.comment_id=i.id AND x.reaction='like') likes_count,
+      (SELECT x.reaction FROM social_comment_reactions x WHERE x.comment_id=i.id AND x.account_id=? AND x.reaction='like') my_like
     FROM story_interactions i LEFT JOIN customer_accounts c ON c.id=i.account_id
-    WHERE i.target_id=? AND i.type='comment' ORDER BY i.created_at DESC LIMIT 100`, targetId).reverse();
-  return { status: 'ok' as const, data: rows.map((row) => ({ id: row.id, author: row.author || 'Membre ZAYROVI', text: row.text, createdAt: row.created_at, parentId: row.parent_id || null })) };
+    WHERE i.target_id=? AND i.type='comment' ORDER BY i.created_at DESC LIMIT 100`, viewerAccountId || '', targetId).reverse();
+  return { status: 'ok' as const, data: rows.map((row) => ({
+    id: row.id,
+    author: row.author || 'Membre ZAYROVI',
+    text: row.text,
+    createdAt: row.created_at,
+    parentId: row.parent_id || null,
+    likesCount: Number(row.likes_count || 0),
+    myReaction: row.my_like ? 'like' as const : null,
+  })) };
 }

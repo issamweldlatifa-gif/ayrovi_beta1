@@ -11,14 +11,24 @@ import { playReelVideo, reloadReelVideo } from './playReelVideo';
 import { reelPlaybackTiming } from './reelPlaybackTiming';
 import { REEL_LOAD_DEADLINE_MS, useReelPlaybackStatus } from './useReelPlaybackStatus';
 
-export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked, contentFit = 'contain' }: {
+export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked, contentFit = 'contain', onVideoViewReady }: {
   id: string; uri: string; paused: boolean; onPausedChange: (paused: boolean) => void;
   soundOn: boolean; blocked: boolean; contentFit?: 'cover' | 'contain';
+  /** Rail plein écran : expose la VideoView pour `enterFullscreen()` (référence 10/11). */
+  onVideoViewReady?: (view: VideoView | null) => void;
 }) {
   const theme = useTheme();
   const t = useT();
   const { locale } = useI18n();
   const view = useRef<VideoView>(null);
+  // Enregistrement de la VideoView : le rail appelle enterFullscreen() dessus.
+  // La ref est peuplée avant les effets — l'appelant reçoit la vue réelle.
+  const ready = useRef(onVideoViewReady);
+  ready.current = onVideoViewReady;
+  useEffect(() => {
+    ready.current?.(view.current);
+    return () => ready.current?.(null);
+  }, []);
   const [showLoading, setShowLoading] = useState(false);
   const [firstFrame, setFirstFrame] = useState(false);
   const finishTiming = useRef<((firstFrame: boolean) => void) | null>(null);

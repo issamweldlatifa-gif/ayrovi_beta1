@@ -77,7 +77,6 @@ it('leaves business rows unchanged on invalid, unpublished or unauthorized reque
   for(const type of ['like','reaction','comment']) expect(write({type},null).outcome).toBe('auth_required');
   expect(write({type:'view'},null,'bad').outcome).toBe('guest_session_required');
   expect(write({type:'reaction',reaction:'invalid'}).outcome).toBe('invalid_reaction');
-  expect(write({type:'reaction',reaction:'like',targetId:reel}).outcome).toBe('reaction_target_invalid');
   expect(write({type:'comment',text:'x'}).outcome).toBe('comment_too_short');
   expect(write({type:'comment',text:'Valid',clientRequestId:'bad'}).outcome).toBe('comment_request_invalid');
   expect(state()).toEqual(before);
@@ -103,4 +102,32 @@ it('keeps HTTP auth and CSRF rejection before business mutation',async()=>{
   expect((await request(app).post(endpoint).send({type:'like',targetId:post})).status).toBe(401);
   expect((await request(app).post(endpoint).set('Authorization',`Bearer ${session.token}`).send({type:'like',targetId:post})).status).toBe(403);
   expect(state()).toEqual(before);
+});
+it('lets a Reel carry the thumb-down (référence 10/11) and clears it with a like',()=>{
+  expect(data(write({type:'reaction',targetId:reel,reaction:'dislike'})).disliked).toBe(true);
+  expect(db.get<any>('SELECT COUNT(*) n FROM publication_dislikes WHERE target_id=?',reel).n).toBe(1);
+  // Le like supprime le dislike : une seule réaction par propriétaire.
+  const result=data(write({type:'like',targetId:reel}));
+  expect(result.liked).toBe(true);
+  expect(db.get<any>('SELECT COUNT(*) n FROM publication_dislikes WHERE target_id=?',reel).n).toBe(0);
+});
+it('reactions on a comment live in their own table, one per account',()=>{
+  const comment=data(write({type:'comment',text:'Commentaire à réagir'}));
+  const commentId=(comment as any).id as string;
+  // Visiteur : auth requis, rien écrit.
+  expect(writeSocialInteraction(db,{type:'reaction',targetId:commentId,reaction:'like'},null,'boundary-guest-one',now).outcome).toBe('auth_required');
+  // B aime, A passe à dislike : une ligne par compte, compteur juste.
+  write({type:'reaction',targetId:commentId,reaction:'like'},b);
+  const mine=data(write({type:'reaction',targetId:commentId,reaction:'like'}));
+  expect(mine.reaction).toBe('like');
+  expect((mine as any).likesCount).toBe(2);
+  const switched=data(write({type:'reaction',targetId:commentId,reaction:'dislike'}));
+  expect(switched.reaction).toBe('dislike');
+  expect((switched as any).likesCount).toBe(1);
+  expect((switched as any).dislikesCount).toBe(1);
+  // Annulation : reaction null supprime la ligne.
+  const cleared=data(write({type:'reaction',targetId:commentId,reaction:null}));
+  expect(cleared.reaction).toBeNull();
+  expect((cleared as any).likesCount).toBe(1);
+  expect(db.get<any>('SELECT COUNT(*) n FROM social_comment_reactions WHERE comment_id=?',commentId).n).toBe(1);
 });

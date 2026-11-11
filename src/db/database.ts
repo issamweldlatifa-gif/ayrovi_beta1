@@ -1697,6 +1697,14 @@ export class QatafoDatabase {
         comment_id TEXT PRIMARY KEY REFERENCES story_interactions(id) ON DELETE CASCADE,
         parent_id TEXT NOT NULL REFERENCES story_interactions(id) ON DELETE CASCADE
       );
+      CREATE TABLE IF NOT EXISTS social_comment_reactions (
+        comment_id TEXT NOT NULL REFERENCES story_interactions(id) ON DELETE CASCADE,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        reaction TEXT NOT NULL CHECK(reaction IN ('like','dislike')),
+        created_at TEXT NOT NULL, PRIMARY KEY(comment_id,account_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_social_comment_reactions_account
+        ON social_comment_reactions(account_id);
       CREATE TABLE IF NOT EXISTS story_interactions(
         id TEXT PRIMARY KEY,
         target_id TEXT NOT NULL,
