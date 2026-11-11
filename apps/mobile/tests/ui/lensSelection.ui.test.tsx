@@ -132,3 +132,39 @@ it('bounds the dot strip and keeps the final active slide correct for long merch
   expect(screen.getAllByTestId(/^long-dot-/)).toHaveLength(7);
   expect(screen.getByTestId('long-dot-11').props.style).toEqual(expect.arrayContaining([expect.objectContaining({width:14})]));
 });
+
+const flat = (node: any) => Object.assign({}, ...([node.props.style].flat(Infinity).filter(Boolean) as object[]));
+it('style Pinterest Lens : photo voilée sans flou, produit net, deux arcs à la taille du produit', async () => {
+  const view = (selection: typeof bag.box, index: number) => wrap(
+    <LensSelectionView
+      uri="file:///photo.jpg"
+      width={400}
+      height={400}
+      imageWidth={100}
+      imageHeight={100}
+      top={0}
+      products={[coat, bag]}
+      selection={selection}
+      selectedIndex={index}
+      detecting={false}
+      onCommit={jest.fn()}
+    />
+  );
+  const { rerender } = render(view(coat.box, 0));
+  await act(async () => {});
+  expect(screen.getByTestId('lens-focus-dim')).toBeTruthy();
+  expect(screen.getByTestId('lens-captured-preview').props.blurRadius ?? 0).toBe(0);
+  expect(screen.queryByTestId('lens-search-ring')).toBeNull();
+  const bigArc = flat(screen.getByTestId('lens-focus-arc-top')).width;
+  expect(screen.getByTestId('lens-focus-arc-bottom')).toBeTruthy();
+  // Veste : 280 × 280 points → arc de 30 ; sac : 80 × 100 → arc plus petit.
+  expect(bigArc).toBe(30);
+  rerender(view(bag.box, 1));
+  await act(async () => {});
+  expect(flat(screen.getByTestId('lens-focus-arc-top')).width).toBeLessThan(bigArc);
+  // Rien de sélectionné (photo entière) : ni voile ni arcs.
+  rerender(view({ x: 0, y: 0, w: 1, h: 1 }, -1));
+  await act(async () => {});
+  expect(screen.queryByTestId('lens-focus-dim')).toBeNull();
+  expect(screen.queryByTestId('lens-focus-arc-top')).toBeNull();
+});

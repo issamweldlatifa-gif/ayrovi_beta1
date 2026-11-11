@@ -254,7 +254,13 @@ describe('Z Lens — option 3 voulue par le client (16/10/2026)', () => {
     expect(lens).toContain('analyzeImageStream(');
     expect(selectionView).not.toMatch(/resizeSelection\(|moveSelection\(|zoneAround\(|PanResponder/);
     expect(selectionView).toContain('productIndexAt(products, point)');
-    expect(selectionView).toContain('blurRadius={selected ? 18 : 0}');
+    // 11/11/2026 — style Pinterest Lens : voile (pas de flou), cadre arrondi, deux arcs.
+    expect(selectionView).not.toContain('blurRadius');
+    expect(selectionView).not.toContain('LensSearchRing');
+    expect(selectionView).toContain('styles.dim');
+    expect(selectionView).toContain('testID="lens-focus-arc-top"');
+    expect(selectionView).toContain('testID="lens-focus-arc-bottom"');
+    expect(selectionView).toContain('focusGeometry(frame.w, frame.h)');
     expect(selectionView).toContain("{ kind: 'point', point }");
   });
 

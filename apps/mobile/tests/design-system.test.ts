@@ -211,12 +211,11 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/publications/PublicationCard.tsx', // authored campaign caption plate overlays its own media, not page layout
       'src/features/lens/LensResultCard.tsx', // badge promo et favori posés sur la vignette produit
       'src/features/lens/LensCardGallery.tsx', // page-count overlay on retail images
-      'src/features/lens/LensSelectionView.tsx', // Z Lens : photo, voile, cadre de sélection et points posés les uns sur les autres
+      'src/features/lens/LensSelectionView.tsx', // Z Lens : photo, voile, cadre de sélection et arcs posés les uns sur les autres
       'src/features/lens/LensLiveOverlay.tsx', // Z Lens Live : cadre et points posés sur l'aperçu caméra plein écran
       'src/features/lens/LensMenu.tsx', // menu ⋮ flottant au-dessus de la caméra, sous son bouton
       'src/features/lens/LensGalleryViewer.tsx', // visionneuse plein écran : photo, voile noir, chrome et compteur au-dessus
       'src/features/lens/LensSizeGuide.tsx', // guide des tailles : feuille modale au-dessus de la fiche
-      'src/features/lens/LensSearchRing.tsx', // Z Lens : couronne de points et balayage posés sur le cadre, au-dessus de la photo
       'src/features/product/ProductFiche.tsx', // grande fiche : photo FIXE derrière la feuille qui monte, en-tête et barre d'achat posés dessus (planche mockup-sticky)
     ]);
     const offenders: string[] = [];

@@ -153,7 +153,7 @@ describe('caméra Lens directe', () => {
     expect(screen.queryByTestId('lens-product-dot-0')).toBeNull();
   });
 
-  it('montre la couronne de recherche autour du produit cherché, puis la retire', async () => {
+  it('pendant la recherche, le produit est encadré (voile + deux arcs qui respirent), puis l’attente se retire', async () => {
     let resolveSearch!: (value: typeof EMPTY_RESULT) => void;
     mockAnalyzeImage.mockReturnValue(new Promise((resolve) => { resolveSearch = resolve; }));
 
@@ -162,18 +162,18 @@ describe('caméra Lens directe', () => {
     await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
     fireEvent.press(capture);
 
-    // Pendant la recherche : 8 points autour du cadre + le trait de balayage.
-    expect(await screen.findByTestId('lens-search-ring')).toBeTruthy();
-    expect(screen.getByTestId('lens-search-scan')).toBeTruthy();
-    for (let index = 0; index < 8; index += 1) {
-      expect(screen.getByTestId(`lens-search-dot-${index}`)).toBeTruthy();
-    }
+    // Style Pinterest Lens : photo voilée, cadre arrondi, deux arcs — plus de couronne de points.
+    await waitFor(() => expect(screen.getByTestId('lens-selected-product').props.accessibilityState.busy).toBe(true));
+    expect(screen.getByTestId('lens-focus-dim')).toBeTruthy();
+    expect(screen.getByTestId('lens-focus-arc-top')).toBeTruthy();
+    expect(screen.getByTestId('lens-focus-arc-bottom')).toBeTruthy();
+    expect(screen.queryByTestId('lens-search-ring')).toBeNull();
+    expect(screen.queryByTestId('lens-search-dot-0')).toBeNull();
 
     // Résultat rendu : plus aucune attente affichée.
     resolveSearch(EMPTY_RESULT);
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 50)); });
-    await waitFor(() => expect(screen.queryByTestId('lens-search-ring')).toBeNull());
-    expect(screen.queryByTestId('lens-search-scan')).toBeNull();
+    await waitFor(() => expect(screen.getByTestId('lens-selected-product').props.accessibilityState.busy).toBe(false));
   });
 
   it('annonce honnêtement la panne du repérage et cherche la photo entière, sans cadre inventé', async () => {

@@ -199,28 +199,22 @@ export function clampRectToArea(
   return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
 }
 
-export interface RingPoint { x: number; y: number }
 
 /**
- * Points d'attente autour d'un cadre (16/10/2026) : `count` points répartis à
- * intervalles réguliers sur le pourtour du rectangle (0,0,w,h), dans le sens
- * horaire. Sert à montrer OÙ porte la recherche pendant l'analyse.
+ * Cadre de sélection « comme Pinterest Lens » (11/11/2026) : photo voilée,
+ * produit net dans un cadre arrondi, DEUX arcs blancs aux coins opposés
+ * (haut-droit, bas-gauche). Tout est proportionnel au produit : un grand
+ * produit a un grand arrondi et de grands arcs, un petit produit de petits —
+ * bornés pour rester lisibles et ne jamais écraser un petit objet.
+ *
+ * `arc` = rayon extérieur de l'arc, concentrique à l'arrondi du cadre :
+ * arrondi + écart + épaisseur.
  */
-export function ringPoints(width: number, height: number, count = 8): RingPoint[] {
-  const w = Math.max(1, width);
-  const h = Math.max(1, height);
-  const perimeter = 2 * (w + h);
-  const step = perimeter / count;
-  const points: RingPoint[] = [];
-  for (let index = 0; index < count; index += 1) {
-    let distance = (step * index + step / 2) % perimeter;
-    if (distance < w) { points.push({ x: distance, y: 0 }); continue; }
-    distance -= w;
-    if (distance < h) { points.push({ x: w, y: distance }); continue; }
-    distance -= h;
-    if (distance < w) { points.push({ x: w - distance, y: h }); continue; }
-    distance -= w;
-    points.push({ x: 0, y: h - distance });
-  }
-  return points;
+export interface FocusGeometry { radius: number; stroke: number; gap: number; arc: number }
+export function focusGeometry(width: number, height: number): FocusGeometry {
+  const side = Math.max(0, Math.min(width, height));
+  const radius = Math.round(clamp(side * 0.12, 8, 20));
+  const stroke = side < 80 ? 3 : 4;
+  const gap = side < 80 ? 4 : 6;
+  return { radius, stroke, gap, arc: radius + gap + stroke };
 }
