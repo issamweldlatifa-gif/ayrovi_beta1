@@ -270,6 +270,8 @@ export const ar = {
   'social.sortRecent': 'أحدث التعليقات',
   'social.sortMenu': 'ترتيب التعليقات',
   'social.replies': 'الردود',
+  'social.replyingTo': 'ردًّا على',
+  'social.cancelReply': 'إلغاء الرد',
   'social.reply': 'رد',
   'social.back': 'رجوع',
   'social.placeholder': 'شارك رأيك',

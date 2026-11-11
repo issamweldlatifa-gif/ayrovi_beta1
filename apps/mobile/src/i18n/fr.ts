@@ -271,6 +271,8 @@ export const fr = {
   'social.sortRecent': 'Commentaires récents',
   'social.sortMenu': 'Trier les commentaires',
   'social.replies': 'Réponses',
+  'social.replyingTo': 'En réponse à',
+  'social.cancelReply': 'Annuler la réponse',
   'social.reply': 'Répondre',
   'social.back': 'Retour',
   'social.placeholder': 'Partager votre avis',

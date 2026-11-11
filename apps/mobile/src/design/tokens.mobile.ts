@@ -659,6 +659,8 @@ export function derivedColors(colors: DerivablePalette) {
     reelSheetField: alpha(BRAND.white, 0.08),
     /** Carte du menu de tri (« populaires / récents ») — #0D0D0D mesuré, plus sombre que la feuille. */
     reelSheetMenu: '#0D0D0D',
+    /** Pied de la feuille quand une réponse est ciblée (« En réponse à … ») — noir pur mesuré. */
+    reelReplyBar: BRAND.black,
   } as const;
 }
 

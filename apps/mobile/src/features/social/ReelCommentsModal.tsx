@@ -69,7 +69,21 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
   const [sort, setSort] = useState<CommentSort>('popular');
   const [sortAnchor, setSortAnchor] = useState<SortAnchor | null>(null);
   const sortButton = useRef<View>(null);
+  /**
+   * Référence 10/11 (20–24 s) — DEUX états distincts :
+   *  • `thread` : la vue « Réponses » ouverte sur un commentaire (le parent en
+   *    tête, ses réponses dessous) ; on en sort par la flèche retour ;
+   *  • `replyTo` : la cible du champ, annoncée par la barre noire
+   *    « En réponse à <nom> ✕ ». La croix retire la cible SANS quitter la vue.
+   */
+  const [thread, setThread] = useState<SocialComment | null>(null);
   const [replyTo, setReplyTo] = useState<SocialComment | null>(null);
+  const openReplies = (comment: SocialComment) => { setThread(comment); setReplyTo(comment); };
+  // Changer de cible = nouvelle tentative : l'identifiant anti-doublon d'un
+  // envoi vers une AUTRE cible ne doit pas être rejoué (le serveur rendrait
+  // l'ancien commentaire).
+  useEffect(() => { attempts.delete(draftKey); }, [replyTo?.id, draftKey]);
+  const closeReplies = () => { setThread(null); setReplyTo(null); };
   const [draft, setDraft] = useState(drafts.get(draftKey) || '');
   const [auth, setAuth] = useState(false);
   const [error, setError] = useState('');
@@ -148,6 +162,9 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
       void AsyncStorage.removeItem(draftKey).catch(() => {});
       setDraft('');
       setError('');
+      // Commentaire sans cible écrit depuis la vue « Réponses » : on revient à
+      // la liste, sinon l'auteur ne verrait pas ce qu'il vient de publier.
+      if (!result.comment?.parentId && thread) setThread(null);
       if (result.comment) {
         client.setQueryData<SocialComment[]>(['social', 'comments', reel.id], (prev) => [
           ...(prev || []).filter((row) => row.id !== result.comment!.id),
@@ -170,7 +187,10 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
     if (!node?.measureInWindow) return;
     node.measureInWindow((x, y, width, height) => setSortAnchor({ x, y, width, height }));
   };
-  const visible = replyTo ? rows.filter((row) => row.parentId === replyTo.id) : rows;
+  // Vue « Réponses » : le parent EN TÊTE (comme la référence), puis ses réponses.
+  const visible = thread
+    ? [rows.find((row) => row.id === thread.id) ?? thread, ...rows.filter((row) => row.parentId === thread.id)]
+    : rows;
   const canSend = draft.trim().length >= 2;
 
   const header = (
@@ -178,25 +198,25 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
       {/* Poignée : la référence montre une barre grise centrée sous le bord. */}
       <View style={[styles.grabber, { backgroundColor: theme.colors.reelSheetLine }]} />
       <View style={[styles.headerRow, { flexDirection: ar ? 'row-reverse' : 'row' }]}>
-        {replyTo ? (
+        {thread ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('social.back')}
-            onPress={() => setReplyTo(null)}
+            onPress={closeReplies}
             style={styles.iconTarget}
           >
             <ReelGlyph name="back" mirrored={ar} size={theme.iconSize.md} color={theme.colors.reelSheetInk} />
           </Pressable>
         ) : null}
         <AppText variant="bodyStrong" color={theme.colors.reelSheetInk}>
-          {replyTo
+          {thread
             ? t('social.replies')
             : rows.length === 1
               ? t('social.commentsTitleOne')
               : t('social.commentsTitle', { value: String(rows.length) })}
         </AppText>
         <View style={styles.spacer} />
-        {!replyTo ? (
+        {!thread ? (
           <Pressable
             ref={sortButton}
             accessibilityRole="button"
@@ -221,14 +241,6 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
           <ReelGlyph name="close" size={theme.iconSize.md} color={theme.colors.reelSheetInk} />
         </Pressable>
       </View>
-      {replyTo ? (
-        <View style={[styles.quote, { flexDirection: ar ? 'row-reverse' : 'row' }]} pointerEvents="none">
-          <ReelGlyph name="reply" mirrored={ar} size={theme.iconSize.xs} color={theme.colors.reelSheetMuted} />
-          <AppText variant="caption" color={theme.colors.reelSheetMuted} numberOfLines={1}>
-            {replyTo.author} · {replyTo.text}
-          </AppText>
-        </View>
-      ) : null}
       {error ? (
         <AppText accessibilityRole="alert" variant="caption" color={theme.colors.commentDislike} style={styles.error}>
           {error}
@@ -243,7 +255,8 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
         open
         presentation="bottom"
         surfaceColor={theme.colors.reelSheet}
-        footerSurfaceColor={theme.colors.reelSheet}
+        // Référence : le pied passe au NOIR pur tant qu'une cible de réponse est armée.
+        footerSurfaceColor={replyTo ? theme.colors.reelReplyBar : theme.colors.reelSheet}
         footerLineColor={theme.colors.reelSheetLine}
         // Barre de défilement orange — la référence 10/11 l'impose (Android).
         indicatorColor={theme.colors.reelAccent}
@@ -252,7 +265,25 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
         header={header}
         footer={
           <View style={styles.composer}>
-            <AppText variant="caption" color={theme.colors.reelSheetMuted} style={styles.charCount}>
+            {replyTo ? (
+              <View style={[styles.replyBar, { flexDirection: ar ? 'row-reverse' : 'row' }]} testID="reel-reply-bar">
+                <AppText variant="caption" color={theme.colors.reelSheetMuted} numberOfLines={1} style={styles.replyBarText}>
+                  <AppText variant="captionStrong" color={theme.colors.reelSheetMuted}>{t('social.replyingTo')}</AppText>
+                  {' '}
+                  <AppText variant="captionStrong" color={theme.colors.reelSheetInk}>{replyTo.author}</AppText>
+                </AppText>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('social.cancelReply')}
+                  onPress={() => setReplyTo(null)}
+                  style={styles.iconTarget}
+                  testID="reel-reply-cancel"
+                >
+                  <ReelGlyph name="close" size={theme.iconSize.md} color={theme.colors.reelSheetInk} />
+                </Pressable>
+              </View>
+            ) : null}
+            <AppText variant="caption" color={theme.colors.reelSheetMuted} style={[styles.charCount, { alignSelf: ar ? 'flex-start' : 'flex-end' }]}>
               {t('social.charCount', { value: String(draft.length) })}
             </AppText>
             <View style={[styles.composerRow, { flexDirection: ar ? 'row-reverse' : 'row' }]}>
@@ -362,7 +393,7 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t('social.reply')}
-                    onPress={() => { if (!signedIn) { setAuth(true); return; } setReplyTo(item); }}
+                    onPress={() => { if (!signedIn) { setAuth(true); return; } openReplies(item); }}
                     style={styles.replyButton}
                   >
                     {/* Référence : deux bulles superposées devant « Répondre ». */}
@@ -410,7 +441,6 @@ const styles = StyleSheet.create({
   spacer: { flex: 1 },
   sortButton: { flexDirection: 'row', alignItems: 'center', gap: 6, minWidth: 44, minHeight: 44 },
   iconTarget: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  quote: { alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingBottom: 8 },
   error: { paddingHorizontal: 16, paddingBottom: 4 },
   row: { gap: 10 },
   avatar: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
@@ -426,7 +456,10 @@ const styles = StyleSheet.create({
   retry: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   empty: { textAlign: 'center', paddingVertical: 32 },
   composer: { gap: 6, paddingTop: 8 },
-  charCount: { alignSelf: 'flex-start' },
+  // Référence : « 0/500 » au-dessus de la pilule, côté FIN (droite en LTR).
+  charCount: {},
+  replyBar: { alignItems: 'center', gap: 8, minHeight: 44 },
+  replyBarText: { flex: 1 },
   composerRow: { alignItems: 'flex-end', gap: 8 },
   field: {
     flex: 1,
