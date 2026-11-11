@@ -12,6 +12,9 @@ jest.mock('../../src/features/reels/useReelPlaybackStatus', () => ({
   useReelPlaybackStatus: () => ({ status: 'readyToPlay', reportError: mockReportError }),
 }));
 const mockReportError = jest.fn();
+// Le filet de chargement est une boucle Animated : en test on le fige (réduction
+// des animations) pour que le décompte des minuteries ne mesure que l'échéance.
+jest.mock('../../src/design/motion', () => ({ ...jest.requireActual('../../src/design/motion'), useReduceMotion: () => true }));
 jest.mock('../../src/features/reels/playReelVideo', () => ({
   playReelVideo: jest.fn(), reloadReelVideo: jest.fn(async () => {}),
 }));
@@ -52,7 +55,7 @@ it('keeps loading until the native first-frame callback, not just readyToPlay', 
     const player = render(<ReelPlayback id="frame" uri="/real.mp4" paused={false} onPausedChange={jest.fn()} soundOn={false} blocked={false} />);
     expect(screen.queryByTestId('reel-loading-frame')).toBeNull();
     expect(StyleSheet.flatten(screen.getByTestId('reel-video-surface-frame').props.style).opacity).toBe(0);
-    act(() => jest.advanceTimersByTime(249));
+    act(() => jest.advanceTimersByTime(699));
     expect(screen.queryByTestId('reel-loading-frame')).toBeNull();
     act(() => jest.advanceTimersByTime(1));
     expect(screen.getByTestId('reel-loading-frame')).toBeTruthy();

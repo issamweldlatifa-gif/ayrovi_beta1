@@ -148,7 +148,7 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
         reaction: wanted,
         sessionId: guest || undefined,
       });
-      patch(comment.id, (row) => ({ ...row, myReaction: result.reaction, likesCount: result.likesCount }));
+      patch(comment.id, (row) => ({ ...row, myReaction: result.reaction === 'love' ? null : result.reaction, likesCount: result.likesCount }));
     } catch (cause) {
       patch(comment.id, () => comment);
       setError(isApiError(cause) ? userMessage(cause)[ar ? 'ar' : 'fr'] : t('common.retry'));

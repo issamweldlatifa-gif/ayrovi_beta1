@@ -10,8 +10,8 @@ import { BackButton } from "@/design/BackButton";
  *   « ▶ Reels • Shop » a été retiré de la visionneuse (demande du propriétaire,
  *   24/10/2026) : sur une vidéo plein écran, le titre de section ne fait que
  *   manger l'image ; la marque reste sur l'accueil, au-dessus de la section.
- * • Un seul lecteur vivant : la page réellement visible (`viewabilityConfig`), comme
- *   la page Reels. Les autres pages attendent (règle de `ReelCard`).
+ * • Deux lecteurs vivants au plus : la page réellement visible (`viewabilityConfig`)
+ *   qui joue, et la SUIVANTE qui précharge en pause (11/11). Les autres attendent.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { goBack } from "@/design/navigation";
@@ -78,7 +78,7 @@ export default function ReelsViewerScreen() {
     ? activeId
     : rows[initialIndex]?.id;
   const visibleIndex = Math.max(0, rows.findIndex(reel => reel.id === playingId));
-  const counts = useSocialCounts(rows.slice(Math.max(0, visibleIndex - 1), visibleIndex + 2).map(reel => reel.id));
+  const counts = useSocialCounts(rows.slice(Math.max(0, visibleIndex - 1), visibleIndex + 3).map(reel => reel.id));
 
   useEffect(() => {
     if (activeId && hidden.includes(activeId) && rows.length === 0 && !reels.isPending && !reels.hasNextPage && !reels.isError) goBack("/");
@@ -103,10 +103,16 @@ export default function ReelsViewerScreen() {
   const closeComments = useCallback(() => setCommentsFor(null), []);
 
   const fill = useMemo(() => ({ width, height }), [width, height]);
-  const renderItem = useCallback(({ item }: { item: Reel }) => (
-    <ReelCard reel={item} active={focused && !reels.isPlaceholderData && !commentsFor && playingId === item.id}
+  // Lecture fluide (11/11) : la carte visible JOUE, la suivante PRÉCHARGE en
+  // pause (au plus deux lecteurs natifs), et ouvrir les commentaires SUSPEND
+  // le lecteur au lieu de le démonter — plus de roue à chaque Reel.
+  const live = focused && !reels.isPlaceholderData;
+  const renderItem = useCallback(({ item, index }: { item: Reel; index: number }) => (
+    <ReelCard reel={item} active={live && playingId === item.id}
+      preload={live && index === visibleIndex + 1}
+      suspended={Boolean(commentsFor)}
       counts={counts.data?.[item.id]} onOpenComments={setCommentsFor} fill={fill} />
-  ), [focused, reels.isPlaceholderData, commentsFor, playingId, counts.data, fill]);
+  ), [live, commentsFor, playingId, visibleIndex, counts.data, fill]);
   useEffect(() => {
     if (previousHeight.current !== height) {
       previousHeight.current = height;
@@ -132,10 +138,10 @@ export default function ReelsViewerScreen() {
         onRefresh={() => { void reels.refetch(); void counts.refetch(); }}
         data={rows}
         keyExtractor={(item) => item.id}
-        initialNumToRender={1}
+        initialNumToRender={2}
         maxToRenderPerBatch={2}
-        windowSize={3}
-        extraData={{ playingId, focused, commentsFor }}
+        windowSize={5}
+        extraData={{ playingId, focused, commentsFor, visibleIndex }}
         onEndReached={() => { if (reels.hasNextPage && !reels.isFetching && !reels.isFetchNextPageError) void reels.fetchNextPage(); }}
         onEndReachedThreshold={0.5}
         ListFooterComponent={<ReelPageFooter query={reels} onMedia />}

@@ -290,7 +290,7 @@ describe('Publication Phase 1 UI', () => {
     );
     expect(screen.getByTestId('publication-reader')).toBeTruthy();
   });
-  it('optimistically likes, blocks duplicate taps, and rolls back a failed write', async () => {
+  it('optimistically likes, keeps one write in flight (last gesture wins), and rolls back a failed write', async () => {
     let reject!: (error: Error) => void;
     mockSend.mockReturnValue(
       new Promise((_, fail) => {
@@ -307,7 +307,11 @@ describe('Publication Phase 1 UI', () => {
     );
     fireEvent.press(screen.getByTestId('publication-like-ui-post'));
     expect(screen.getByText('3')).toBeTruthy();
-    expect(screen.getByTestId('publication-like-ui-post')).toBeDisabled();
+    // Z-Reactions : le bouton reste actif ; un second toucher ne lance PAS de
+    // seconde requête tant que la première vole (il sera envoyé à son retour).
+    fireEvent.press(screen.getByTestId('publication-like-ui-post'));
+    fireEvent.press(screen.getByTestId('publication-like-ui-post'));
+    expect(mockSend).toHaveBeenCalledTimes(1);
     await act(async () => {
       reject(new Error('offline'));
     });
@@ -330,7 +334,7 @@ describe('Publication Phase 1 UI', () => {
     );
     fireEvent.press(screen.getByTestId('publication-like-ui-post'));
     await waitFor(() => expect(screen.getByText('9')).toBeTruthy());
-    expect(reaction).toHaveBeenCalledWith('ui-post', true, 9, false);
+    expect(reaction).toHaveBeenCalledWith('ui-post', true, 9, false, false);
   });
   it('persists save through the authenticated API without a follow button', async () => {
     await mount();
@@ -775,7 +779,8 @@ describe('Reference additions, not replacements', () => {
     await mount();
     expect(screen.getByText('+3')).toBeTruthy();
     fireEvent.press(screen.getByTestId('publication-tile-ui-post-4'));
-    const lightbox = screen.getByTestId('publication-lightbox');
+    // Z-Reactions : le toucher simple attend la fenêtre du double-tap (260 ms).
+    const lightbox = await screen.findByTestId('publication-lightbox');
     expect(lightbox).toHaveStyle({ backgroundColor: '#000000' });
     fireEvent(
       within(lightbox).getByTestId('publication-media-ui-post'),
@@ -964,7 +969,27 @@ it('closes the discovery reader before opening its real catalogue product', asyn
 });
 
 describe('Integrated reaction and viewer contracts', () => {
-  it('opens an accessible reaction chooser and persists yellow dislike exclusively', async () => {
+  it('double-tap on the media sets J’adore through the same official button', async () => {
+    mockSend.mockResolvedValue({ reaction: 'love', loved: true, liked: false, disliked: false, likesCount: 2, reactionsCount: 3 });
+    await mount(
+      <PublicationCard post={post} compact={false} onComments={jest.fn()} onReaction={jest.fn()} />
+    );
+    fireEvent(screen.getByTestId('publication-media-ui-post'), 'layout', {
+      nativeEvent: { layout: { width: 360, height: 450 } },
+    });
+    const image = screen.getByTestId('publication-image-ui-post-0');
+    fireEvent.press(image, { nativeEvent: { locationX: 120, locationY: 200 } });
+    fireEvent.press(image, { nativeEvent: { locationX: 120, locationY: 200 } });
+    await waitFor(() =>
+      expect(mockSend).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'reaction', reaction: 'love', targetId: post.id })
+      )
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('publication-like-ui-post').props.accessibilityLabel).toBe('Adoré')
+    );
+  });
+  it('opens the official Z-Reactions chooser and persists dislike exclusively', async () => {
     const changed = jest.fn();
     mockSend.mockResolvedValue({ liked: false, disliked: true, likesCount: 2 });
     await mount(
@@ -976,9 +1001,10 @@ describe('Integrated reaction and viewer contracts', () => {
       />
     );
     fireEvent(screen.getByTestId('publication-like-ui-post'), 'longPress');
-    fireEvent.press(screen.getByRole('button', { name: 'Je n’aime pas' }));
+    expect(screen.getByTestId('reaction-pick-love')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('reaction-pick-dislike'));
     await waitFor(() =>
-      expect(changed).toHaveBeenCalledWith(post.id, false, 2, true)
+      expect(changed).toHaveBeenCalledWith(post.id, false, 2, true, false)
     );
     expect(mockSend).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -988,9 +1014,9 @@ describe('Integrated reaction and viewer contracts', () => {
       })
     );
     expect(
-      screen.getByRole('button', { name: 'Retirer Je n’aime pas' }).props
-        .accessibilityState
+      screen.getByTestId('publication-like-ui-post').props.accessibilityState
     ).toMatchObject({ selected: true });
+    expect(screen.queryByTestId('reaction-picker')).toBeNull();
   });
   it('opens the same comment conversation inside the black viewer and preserves its media', async () => {
     await mount(
@@ -1585,8 +1611,9 @@ it('exits the fullscreen image with its close control even when comments are ope
 
 it('uses the Publication SVG family with one stroke and four real actions', async () => {
   await mount(<PublicationActions post={post} onComments={jest.fn()} />);
+  // La réaction est le bouton officiel Z-Reactions (même famille que les Reels).
+  expect(screen.getByTestId('publication-like-ui-post')).toBeTruthy();
   for (const glyph of [
-    'heart-outline',
     'chatbubble-outline',
     'share-outline',
     'bookmark-outline',

@@ -1,8 +1,10 @@
 import { publicationCount } from './publicationFormat';
 import { PUBLICATION_PALETTE as P } from './publicationDesign';
-import { RADIUS } from '@/design/tokens.mobile';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
+import { ReactionButton } from '@/design/reactions/ReactionButton';
+import { useContentReaction } from '@/design/reactions/useContentReaction';
+import type { ContentReaction } from '@/design/reactions/reactionModel';
 import { PublicationIcon as Ionicons } from './publicationDesign';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -21,7 +23,6 @@ import {
 } from '@/api/publicationFeed';
 import { isApiError, userMessage } from '@/api/errors';
 import { PublicationAuthSheet } from './PublicationAuthSheet';
-import { PUBLICATION_DISLIKE } from '../../../../../shared/publicationPresentation';
 
 export function PublicationActions({
   post,
@@ -31,9 +32,12 @@ export function PublicationActions({
   presentation = 'feed',
   backdrop = 'dark',
   optionsRequest = 0,
+  loveRequest = 0,
 }: {
+  /** Double-tap sur le média (carte) : J'adore, sans retrait. */
+  loveRequest?: number;
   presentation?: 'feed' | 'viewer';
-  /** Toolbar request to open the existing reaction picker, not a second action core. */
+  /** Toolbar request to open the official reaction picker, not a second action core. */
   optionsRequest?: number;
   backdrop?: 'dark' | 'light';
   post: FeedPost;
@@ -42,7 +46,8 @@ export function PublicationActions({
     id: string,
     liked: boolean,
     likes: number,
-    disliked?: boolean
+    disliked?: boolean,
+    loved?: boolean
   ) => void;
   onPreference?: (action: string, id: string) => void;
 }) {
@@ -52,29 +57,44 @@ export function PublicationActions({
   const sessionId = useSessionId();
   const client = useQueryClient();
   const [auth, setAuth] = useState(false);
-  const [picker, setPicker] = useState(false);
-  useEffect(() => {
-    if (!optionsRequest) return;
-    if (session.status === 'signedIn') setPicker((open) => !open);
-    else setAuth(true);
-  }, [optionsRequest]);
-  const [reaction, setReaction] = useState<'like' | 'dislike' | null>(
-    post.disliked ? 'dislike' : post.liked ? 'like' : null
-  );
-  const [likes, setLikes] = useState(post.likes);
   const [saved, setSaved] = useState(!!post.saved);
   const [busy, setBusy] = useState(false);
   const lock = useRef(false);
   const [error, setError] = useState('');
   useEffect(() => {
-    if (!lock.current) {
-      setReaction(post.disliked ? 'dislike' : post.liked ? 'like' : null);
-      setLikes(post.likes);
-      setSaved(!!post.saved);
-    }
-  }, [post.liked, post.disliked, post.likes, post.saved]);
+    if (!lock.current) setSaved(!!post.saved);
+  }, [post.saved]);
+  const signedIn = session.status === 'signedIn';
+  /**
+   * Z-Reactions (11/11) : le bouton officiel unique (J'aime · J'adore · Je
+   * n'aime pas), le même que sur les Reels. Optimiste, « le dernier geste
+   * gagne », retour à l'état confirmé si l'écriture échoue.
+   */
+  const reactionChanged = useRef(onReaction);
+  reactionChanged.current = onReaction;
+  const reaction = useContentReaction({
+    targetId: post.id,
+    initial: post.disliked ? 'dislike' : post.loved ? 'love' : post.liked ? 'like' : null,
+    initialCount: post.likes + (post.loves ?? 0),
+    signedIn,
+    sessionId: sessionId || undefined,
+    onAuthRequired: useCallback(() => setAuth(true), []),
+    onSettled: useCallback((current: ContentReaction | null, count: number) => {
+      reactionChanged.current?.(post.id, current === 'like', count, current === 'dislike', current === 'love');
+      void client.invalidateQueries({ queryKey: ['publication-feed'] });
+    }, [post.id, client]),
+  });
+  const lastLove = useRef(loveRequest);
+  useEffect(() => {
+    if (loveRequest === lastLove.current) return;
+    lastLove.current = loveRequest;
+    reaction.love();
+  }, [loveRequest, reaction]);
+  const reactionError = reaction.error
+    ? ar ? 'تعذّر الحفظ. أعد المحاولة.' : 'Modification non enregistrée. Réessayez.'
+    : '';
   const account = () => {
-    if (session.status === 'signedIn') return true;
+    if (signedIn) return true;
     setAuth(true);
     return false;
   };
@@ -101,46 +121,6 @@ export function PublicationActions({
       setBusy(false);
     }
   };
-  const choose = (choice: 'like' | 'dislike') => {
-    setPicker(false);
-    void perform(async () => {
-      const next = reaction === choice ? null : choice;
-      const before = { reaction, likes };
-      setReaction(next);
-      setLikes(
-        Math.max(
-          0,
-          likes + (next === 'like' ? 1 : 0) - (reaction === 'like' ? 1 : 0)
-        )
-      );
-      let result;
-      try {
-        result = await sendInteraction({
-          type: 'reaction',
-          targetId: post.id,
-          reaction: next,
-          sessionId: sessionId || undefined,
-        });
-      } catch (e) {
-        setReaction(before.reaction);
-        setLikes(before.likes);
-        throw e;
-      }
-      const current = result.disliked
-        ? 'dislike'
-        : result.liked
-        ? 'like'
-        : null;
-      setReaction(current);
-      setLikes(result.likesCount);
-      onReaction?.(
-        post.id,
-        current === 'like',
-        result.likesCount,
-        current === 'dislike'
-      );
-    });
-  };
   const share = () =>
     void perform(async () => {
       const url = new URL(
@@ -161,8 +141,6 @@ export function PublicationActions({
     });
   const immersive = presentation === 'viewer';
   const ink = immersive && backdrop === 'dark' ? P.paper : P.icon;
-  const floatingSurface =
-    backdrop === 'dark' ? P.viewerDarkSurface : P.viewerLightSurface;
   const button = {
     minHeight: 44,
     minWidth: 44,
@@ -177,61 +155,6 @@ export function PublicationActions({
       testID={`publication-actions-${presentation}-${post.id}`}
       style={{ gap: 4 }}
     >
-      {picker ? (
-        <View
-          accessibilityLabel={ar ? 'اختيار التفاعل' : 'Choisir une réaction'}
-          style={{
-            backgroundColor: immersive ? floatingSurface : P.socialSurface,
-            borderRadius: RADIUS.full,
-            padding: 8,
-            flexDirection: ar ? 'row-reverse' : 'row',
-            flexWrap: 'wrap',
-            gap: 12,
-          }}
-        >
-          {(['like', 'dislike'] as const).map((v) => (
-            <Pressable
-              key={v}
-              accessibilityLabel={
-                v === 'like'
-                  ? ar
-                    ? 'أعجبني'
-                    : 'J’aime'
-                  : ar
-                  ? 'لم يعجبني'
-                  : 'Je n’aime pas'
-              }
-              accessibilityRole="button"
-              accessibilityState={{ selected: reaction === v }}
-              onPress={() => choose(v)}
-              style={button}
-            >
-              <Ionicons
-                name={v === 'like' ? 'heart' : 'thumbs-down-outline'}
-                size={PUBLICATION_TYPE.icon}
-                color={v === 'like' ? P.like : PUBLICATION_DISLIKE}
-              />
-              <AppText variant="captionStrong" color={ink}>
-                {v === 'like'
-                  ? ar
-                    ? 'أعجبني'
-                    : 'J’aime'
-                  : ar
-                  ? 'لم يعجبني'
-                  : 'Je n’aime pas'}
-              </AppText>
-            </Pressable>
-          ))}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={ar ? 'إغلاق' : 'Fermer'}
-            onPress={() => setPicker(false)}
-            style={button}
-          >
-            <Ionicons name="close" size={PUBLICATION_TYPE.icon} color={ink} />
-          </Pressable>
-        </View>
-      ) : null}
       <View
         testID={`publication-action-row-${presentation}-${post.id}`}
         style={{
@@ -243,79 +166,21 @@ export function PublicationActions({
           gap: immersive ? 8 : 12,
         }}
       >
-        <Pressable
+        <ReactionButton
           testID={`publication-like-${post.id}`}
-          accessibilityRole="button"
-          accessibilityLabel={
-            reaction === 'dislike'
-              ? ar
-                ? 'إلغاء عدم الإعجاب'
-                : 'Retirer Je n’aime pas'
-              : reaction === 'like'
-              ? ar
-                ? 'إلغاء الإعجاب'
-                : 'Ne plus aimer'
-              : ar
-              ? 'أعجبني'
-              : 'J’aime'
-          }
-          accessibilityHint={
-            ar
-              ? 'اضغط مطوّلا لاختيار التفاعل'
-              : 'Appui long pour choisir une réaction'
-          }
-          accessibilityValue={{ text: String(likes) }}
-          accessibilityState={{ selected: !!reaction, disabled: busy }}
-          disabled={busy}
-          accessibilityActions={[
-            {
-              name: 'longpress',
-              label: ar ? 'اختيار التفاعل' : 'Choisir une réaction',
-            },
-          ]}
-          onAccessibilityAction={(e) => {
-            if (e.nativeEvent.actionName === 'longpress' && account())
-              setPicker(true);
-          }}
-          onLongPress={() => {
-            if (account()) setPicker(true);
-          }}
-          onPress={() => {
-            choose(reaction === 'dislike' ? 'dislike' : 'like');
-          }}
-          style={button}
-        >
-          <Ionicons
-            name={
-              reaction === 'dislike'
-                ? 'thumbs-down-outline'
-                : reaction === 'like'
-                ? 'heart'
-                : 'heart-outline'
-            }
-            size={PUBLICATION_TYPE.icon}
-            color={
-              reaction === 'like'
-                ? P.like
-                : reaction === 'dislike'
-                ? PUBLICATION_DISLIKE
-                : ink
-            }
-          />
-          {likes > 0 ? (
-            <AppText
-              variant="caption"
-              numberOfLines={1}
-              color={ink}
-              style={{
-                fontSize: PUBLICATION_TYPE.countSize,
-                lineHeight: PUBLICATION_TYPE.countLine,
-              }}
-            >
-              {publicationCount(likes, locale)}
-            </AppText>
-          ) : null}
-        </Pressable>
+          variant="inline"
+          surface={immersive && backdrop === 'dark' ? 'media' : 'card'}
+          reaction={reaction.reaction}
+          count={reaction.count > 0 ? publicationCount(reaction.count, locale) : null}
+          accessibilityCount={String(reaction.count)}
+          onTap={reaction.tap}
+          onPick={reaction.pick}
+          guest={!signedIn}
+          ink={ink}
+          size={PUBLICATION_TYPE.icon}
+          openRequest={optionsRequest}
+          style={{ justifyContent: immersive ? 'center' : 'flex-start', flexShrink: 1 }}
+        />
 
         <Pressable
           accessibilityRole="button"
@@ -384,13 +249,13 @@ export function PublicationActions({
           />
         </Pressable>
       </View>
-      {error ? (
+      {error || reactionError ? (
         <AppText
           accessibilityLiveRegion="polite"
           variant="caption"
           color={P.reactionError}
         >
-          {error}
+          {error || reactionError}
         </AppText>
       ) : null}
       <PublicationAuthSheet visible={auth} onClose={() => setAuth(false)} />

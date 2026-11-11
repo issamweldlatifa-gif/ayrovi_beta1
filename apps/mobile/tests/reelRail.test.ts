@@ -29,11 +29,14 @@ describe('rail du Reel — toujours visible en plein écran', () => {
     expect(tray).toMatch(/const pill = products\.length > 0 \?/);
   });
 
-  it('sept actions restent sur la vidéo — référence 10/11', () => {
-    for (const key of ['fullscreen', 'sound', 'heart', 'share', 'comment', 'dislike', 'like']) {
-      expect(tray).toContain(`key: '${key}'`);
-      expect(tray).toContain('reel-rail-${action.key}-${reelId}');
-    }
+  it('quatre actions sur la vidéo — révision du 11/11 (plein écran retiré, réactions fusionnées)', () => {
+    for (const key of ['sound', 'share', 'comment']) expect(tray).toContain(`key: '${key}'`);
+    expect(tray).toContain('reel-rail-${action.key}-${reelId}');
+    expect(tray).toContain('reel-rail-reaction-${reel.id}');
+    // « زر تكبير نحيه » : plus de bouton plein écran, plus de pouces/cœur séparés.
+    for (const gone of ['fullscreen', 'heart', 'dislike', 'like']) expect(tray).not.toContain(`key: '${gone}'`);
+    expect(tray).not.toMatch(/onFullscreen|enterFullscreen/);
+    expect(src('src/features/social/ReelCard.tsx')).not.toMatch(/enterFullscreen|onFullscreen/);
   });
 
   it('le compteur compact de la référence (« 1.8K », « 9 »)', () => {
@@ -59,17 +62,20 @@ describe('rail du Reel — toujours visible en plein écran', () => {
     expect(card).toMatch(/onOptions: \(\) => setOptions\(true\)/);
   });
 
-  it('le pouce bas vaut pour les Reels (référence 10/11) et nécessite un compte', () => {
+  it('un seul bouton Z-Reactions, branché sur le vrai état de session et sur le serveur', () => {
     const card = src('src/features/social/ReelCard.tsx');
-    expect(card).toMatch(/type: "reaction",/);
-    expect(card).toMatch(/onDislike: signedIn \? toggleDislike : undefined/);
+    expect(card).toContain('useContentReaction({');
+    expect(card).toContain('initial: reel.myReaction ?? null');
+    expect(card).toMatch(/reactionEnabled: signedIn/);
+    expect(card).toMatch(/canLike=\{signedIn\}/);
+    expect(card).toMatch(/onLike=\{reaction\.tap\}/);
   });
 
-  it('l’écran plein écran branche le cœur sur le vrai état de session', () => {
+  it('double-tap sur la vidéo = J’adore + cœurs rouges', () => {
     const card = src('src/features/social/ReelCard.tsx');
-    expect(card).toMatch(/canLike=\{signedIn\}/);
-    expect(card).toMatch(/onLike=\{toggleLike\}/);
-    expect(card).toMatch(/liked=\{liked\}/);
+    expect(card).toMatch(/onDoubleTap=\{active \? loveFromDoubleTap : undefined\}/);
+    expect(card).toContain('<DoubleTapHearts');
+    expect(card).toContain('reaction.love()');
   });
 
   it('la légende réserve la colonne du rail (pas de texte sous les icônes)', () => {
@@ -84,12 +90,11 @@ describe('glyphes et effets de la référence du 11/11', () => {
   const sheet = src('src/features/social/ReelCommentsModal.tsx');
 
   it('le rail dessine les glyphes de la référence, plus aucun Ionicons dans le rail', () => {
-    for (const glyph of ['fullscreen', 'heart', 'share', 'comment', 'dislike', 'like']) {
-      expect(tray).toContain(`glyph: '${glyph}'`);
-    }
+    for (const glyph of ['share', 'comment']) expect(tray).toContain(`glyph: '${glyph}'`);
     expect(tray).toContain("glyph: rail.muted ? 'muted' : 'sound'");
     expect(tray).not.toMatch(/icon: '(thumbs|chatbubble|share-social|scan|volume|heart)/);
     expect(tray).toContain('<ReelGlyph name={action.glyph}');
+    expect(tray).toContain('<ReactionButton');
   });
 
   it('chaque glyphe a son tracé (pouce = manchette détachée + main)', () => {
@@ -101,21 +106,21 @@ describe('glyphes et effets de la référence du 11/11', () => {
     expect(icons).toContain("name === 'dislike' ? 'rotate(180 12 12)'");
   });
 
-  it('les trois effets sont branchés sur la bonne action et la bonne teinte', () => {
-    expect(tray).toMatch(/activeColor: theme\.colors\.reelLike,\s*effect: 'like'/);
-    expect(tray).toMatch(/activeColor: theme\.colors\.commentDislike,\s*effect: 'dislike'/);
-    expect(tray).toMatch(/activeColor: theme\.colors\.reelAccent,\s*effect: 'heart'/);
-    expect(tray).toContain('<LikeSparks');
-    expect(tray).toMatch(/MINI_HEARTS = \[/);
+  it('les trois effets vivent dans le bouton officiel, avec la teinte de chaque réaction', () => {
+    const button = src('src/design/reactions/ReactionButton.tsx');
+    expect(button).toContain('<LikeSparks');
+    expect(button).toMatch(/MINI_HEARTS = \[/);
+    expect(button).toContain('colors.reactionLike');
+    expect(button).toContain('colors.reactionLove');
+    expect(button).toContain('colors.reactionDislike');
     // L'indicateur d'appui d'Android n'est pas un effet de l'app : plus de flash.
     expect(tray).not.toMatch(/railFlash|RAIL_FLASH_MS/);
   });
 
-  it('pouce haut / bas optimistes : l\'effet part au toucher, rollback en cas d\'échec', () => {
-    const card = src('src/features/social/ReelCard.tsx');
-    expect(card).toContain('setLiked(!liked);');
-    expect(card).toContain('setDisliked(!disliked);');
-    expect(card.match(/setLiked\(before\.liked\)/g)?.length).toBe(2);
+  it('réaction optimiste : l\'effet part au toucher, retour à l\'état confirmé en cas d\'échec', () => {
+    const hook = src('src/design/reactions/useContentReaction.ts');
+    expect(hook).toContain('optimisticCount(');
+    expect(hook).toContain('setReaction(confirmed.current.reaction)');
   });
 
   it('la feuille utilise les mêmes glyphes (tri, fermer, répondre, signaler, vérifié)', () => {

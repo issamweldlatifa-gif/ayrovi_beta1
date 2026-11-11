@@ -18,17 +18,20 @@ import { ApiError } from './errors';
 import { apiGet, apiSend } from './client';
 import type { RequestOptions } from './client';
 import { parseLinkedProduct, type LinkedProduct } from './linkedProduct';
+import { parseReaction, type ContentReaction } from '@/design/reactions/reactionModel';
 
 export type SocialInteractionType = 'reaction' | 'like' | 'comment' | 'view' | 'share';
 
 export interface SocialCounts {
   likes: number;
+  /** Z-Reactions (11/11) : « J'adore ». Compteur affiché = likes + loves. */
+  loves: number;
   comments: number;
   views: number;
   shares: number;
 }
 
-export const ZERO_COUNTS: SocialCounts = { likes: 0, comments: 0, views: 0, shares: 0 };
+export const ZERO_COUNTS: SocialCounts = { likes: 0, loves: 0, comments: 0, views: 0, shares: 0 };
 
 export interface Reel {
   id: string;
@@ -51,6 +54,8 @@ export interface Reel {
   products?: LinkedProduct[];
   /** Image de couverture (vide = pas de couverture). */
   posterUrl: string;
+  /** Z-Reactions : réaction du compte connecté (absente = visiteur / serveur ancien). */
+  myReaction?: ContentReaction | null;
 }
 
 export interface Publication {
@@ -86,10 +91,14 @@ export interface SocialComment {
 
 export interface InteractionResult {
   disliked?: boolean;
+  /** Z-Reactions : « J'adore » posé après la requête. */
+  loved?: boolean;
+  /** Compteur affiché (J'aime + J'adore) — `likesCount` + `lovesCount` sur un serveur ancien. */
+  reactionsCount?: number;
   /** للإعجاب: هل صار «معجباً» بعد الضغطة (الخادم يبدّل). */
   liked: boolean | null;
-  /** تفاعل التعليق: الحالة بعد الضغطة (like/dislike/null = أُلغيت). */
-  reaction: 'like' | 'dislike' | null;
+  /** الحالة بعد الضغطة (like/love/dislike/null = أُلغيت). `love` : contenus seulement. */
+  reaction: ContentReaction | null;
   likesCount: number;
   counts: SocialCounts | null;
   /** للتعليق: السطر المضاف كما سجّلو الخادم. */
@@ -143,6 +152,7 @@ function parseReels(payload: unknown): Reel[] {
       publishAt: str(entry.publish_at),
       views: num(entry.views),
       likes: num(entry.likes),
+      ...(entry.my_reaction !== undefined ? { myReaction: parseReaction(entry.my_reaction) } : {}),
       product: parseLinkedProduct(entry.product),
       products: parseLinkedProducts(entry.products, parseLinkedProduct(entry.product)),
     }];
@@ -218,6 +228,7 @@ export async function fetchSocialCounts(ids: string[], options: RequestOptions =
       const counts = record(value);
       out[key] = {
         likes: num(counts.likes),
+        loves: num(counts.loves),
         comments: num(counts.comments),
         views: num(counts.views),
         shares: num(counts.shares),
@@ -256,7 +267,7 @@ export async function sendInteraction(input: {
   type: SocialInteractionType;
   targetId: string;
   text?: string;
-  reaction?: 'like' | 'dislike' | null;
+  reaction?: ContentReaction | null;
   parentId?: string;
   clientRequestId?: string;
   sessionId?: string;
@@ -282,11 +293,16 @@ export async function sendInteraction(input: {
 
   return {
     disliked: payload.disliked === true,
+    loved: payload.loved === true,
     liked: typeof payload.liked === 'boolean' ? payload.liked : null,
-    reaction: payload.reaction === 'like' || payload.reaction === 'dislike' ? payload.reaction : null,
+    reaction: parseReaction(payload.reaction),
     likesCount: num(payload.likesCount),
+    reactionsCount: payload.reactionsCount !== undefined
+      ? num(payload.reactionsCount)
+      : num(payload.likesCount) + num(payload.lovesCount),
     counts: Object.keys(counts).length > 0 ? {
       likes: num(counts.likes),
+      loves: num(counts.loves),
       comments: num(counts.comments),
       views: num(counts.views),
       shares: num(counts.shares),

@@ -384,7 +384,7 @@ export function PublicationFeedScreen() {
               settings?.layout === 'compact' ||
               (settings?.layout === 'mixed' && index % 3 === 1)
             }
-            onReaction={(id, liked, likes, disliked) =>
+            onReaction={(id, liked, likes, disliked, loved) =>
               queryClient.setQueriesData<InfiniteData<FeedPage>>(
                 { queryKey: ['publication-feed', owner] },
                 (old) =>
@@ -395,7 +395,8 @@ export function PublicationFeedScreen() {
                           ...page,
                           items: page.items.map((row) =>
                             row.id === id
-                              ? { ...row, liked, likes, disliked }
+                              // `likes` reçu = J'aime + J'adore (compteur affiché).
+                              ? { ...row, liked, loved, disliked, likes: Math.max(0, likes - (row.loves ?? 0)) }
                               : row
                           ),
                         })),

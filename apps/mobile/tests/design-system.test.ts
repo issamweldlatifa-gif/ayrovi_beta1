@@ -216,6 +216,9 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/lens/LensMenu.tsx', // menu ⋮ flottant au-dessus de la caméra, sous son bouton
       'src/features/lens/LensGalleryViewer.tsx', // visionneuse plein écran : photo, voile noir, chrome et compteur au-dessus
       'src/features/lens/LensSizeGuide.tsx', // guide des tailles : feuille modale au-dessus de la fiche
+      'src/features/reels/ReelPlayback.tsx', // filet de mise en mémoire tampon posé au bas de la vidéo (remplace la roue centrale, 11/11)
+      'src/design/reactions/ReactionButton.tsx', // Z-Reactions : éclats/petits cœurs autour du glyphe + sélecteur ancré au bouton dans un Modal
+      'src/design/reactions/DoubleTapHearts.tsx', // Z-Reactions : cœurs rouges du double-tap posés sous le doigt, au-dessus du média
       'src/features/product/ProductFiche.tsx', // grande fiche : photo FIXE derrière la feuille qui monte, en-tête et barre d'achat posés dessus (planche mockup-sticky)
     ]);
     const offenders: string[] = [];

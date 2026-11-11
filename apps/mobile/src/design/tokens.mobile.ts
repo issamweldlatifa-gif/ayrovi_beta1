@@ -115,6 +115,19 @@ export const MEDIA_RATIO = {
 export const VIDEO_BACKDROP = BRAND.black;
 
 /**
+ * Z-Reactions (11/11) — les trois teintes de la famille officielle d'interaction.
+ *  • like    : vert mesuré sur la vidéo de référence du 10/11 (#29B057) ;
+ *  • love    : rouge « J'adore » (demande du propriétaire : le cœur est ROUGE) ;
+ *  • dislike : ardoise (gris bleuté) — ni rouge (réservé à J'adore), ni orange
+ *    (banni de l'application depuis le 15/10) : un avis négatif reste discret.
+ */
+export const REACTION_COLORS = {
+  like: '#29B057',
+  love: '#FF3040',
+  dislike: '#7C8BA1',
+} as const;
+
+/**
  * Rouge des prix soldés : le MÊME rouge que `STATUS.danger.light.fg` (5,57:1
  * sur blanc). Une seule teinte rouge dans l'application, et c'est une couleur
  * FONCTIONNELLE (une baisse de prix), pas une couleur de marque.
@@ -641,6 +654,16 @@ export function derivedColors(colors: DerivablePalette) {
      */
     /** Coeur du rail rempli + rafale + barre de défilement de la feuille. */
     reelAccent: '#FF9000',
+    /**
+     * ═══ Z-Reactions (11/11) — famille OFFICIELLE d'interaction ═══
+     * Un seul bouton partout (Reel, vidéo, publication, story) : J'aime ·
+     * J'adore · Je n'aime pas. Teintes fixes (posées sur média ET sur carte).
+     */
+    reactionLike: REACTION_COLORS.like,
+    /** J'adore — ROUGE (demande du propriétaire 11/11), cœurs du double-tap compris. */
+    reactionLove: REACTION_COLORS.love,
+    /** Je n'aime pas — ardoise, distinct du rouge de J'adore. */
+    reactionDislike: REACTION_COLORS.dislike,
     /** Pouce « j'aime » du RAIL, rempli (vert mesuré #29B057 sur la vidéo du 10/11). */
     reelLike: '#29B057',
     /** Pouce « j'aime » d'un commentaire, rempli (bleu mesuré #3080E8). */

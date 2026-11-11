@@ -1,21 +1,35 @@
-/** Only mount for the active card: a null source STILL allocates a native player. */
+/**
+ * Lecteur d'un Reel. Monté pour la carte ACTIVE et pour la SUIVANTE (`preload`) :
+ * au plus deux lecteurs natifs vivants. La suivante charge sa source et son
+ * premier image en pause — quand on glisse, la vidéo part tout de suite, sans
+ * indicateur (correctif du 11/11 : la roue apparaissait sur chaque Reel).
+ * A null source STILL allocates a native player: never mount it for far cards.
+ */
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, AppState, Pressable, StyleSheet, View } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { BrandLoadingIndicator } from '@/design/LoadingScreen';
+import { useReduceMotion } from '@/design/motion';
+import { useDoubleTap } from '@/design/reactions/useDoubleTap';
 import { useI18n, useT } from '@/i18n';
 import { veil, VIDEO_BACKDROP } from '@/design/tokens.mobile';
 import { playReelVideo, reloadReelVideo } from './playReelVideo';
 import { reelPlaybackTiming } from './reelPlaybackTiming';
 import { REEL_LOAD_DEADLINE_MS, useReelPlaybackStatus } from './useReelPlaybackStatus';
 
-export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked, contentFit = 'contain', onVideoViewReady }: {
+/** Attente RÉELLE avant de montrer quoi que ce soit : un chargement normal reste invisible. */
+export const REEL_BUFFER_HINT_MS = 700;
+
+export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked, contentFit = 'contain', onVideoViewReady, preload = false, onDoubleTap }: {
   id: string; uri: string; paused: boolean; onPausedChange: (paused: boolean) => void;
   soundOn: boolean; blocked: boolean; contentFit?: 'cover' | 'contain';
-  /** Rail plein écran : expose la VideoView pour `enterFullscreen()` (référence 10/11). */
+  /** Expose la VideoView à l'appelant (plein écran natif, mesures). */
   onVideoViewReady?: (view: VideoView | null) => void;
+  /** Carte SUIVANTE : charge source + premier image, reste en pause, aucun chrome. */
+  preload?: boolean;
+  /** Double-tap sur la vidéo (J'adore + cœurs) — position du doigt dans la vidéo. */
+  onDoubleTap?: (x: number, y: number) => void;
 }) {
   const theme = useTheme();
   const t = useT();
@@ -41,7 +55,7 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
     instance.loop = true;
     instance.muted = true;
   });
-  const playback = useReelPlaybackStatus(player, true, uri, view);
+  const playback = useReelPlaybackStatus(player, !preload, uri, view);
   useEffect(() => {
     if (!player) return;
     setFirstFrame(false);
@@ -52,34 +66,33 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
   }, [player, uri, playback.reportError]);
   // readyToPlay means buffered, not that a frame was actually displayed.
   useEffect(() => {
-    if (firstFrame || paused || blocked || !foreground || playback.status !== 'readyToPlay') return;
+    if (preload || firstFrame || paused || blocked || !foreground || playback.status !== 'readyToPlay') return;
     const timer = setTimeout(playback.reportError, REEL_LOAD_DEADLINE_MS);
     return () => clearTimeout(timer);
   }, [firstFrame, paused, blocked, foreground, playback.status, playback.reportError]);
   useEffect(() => {
     if (!player) return;
-    if (playback.status === 'readyToPlay' && !paused && foreground && !blocked)
+    if (!preload && playback.status === 'readyToPlay' && !paused && foreground && !blocked)
       playReelVideo(player, view.current, playback.reportError);
     else player.pause();
-  }, [player, playback.status, playback.reportError, paused, foreground, blocked]);
+  }, [player, playback.status, playback.reportError, paused, foreground, blocked, preload]);
   useEffect(() => { if (player) player.muted = !soundOn; }, [player, soundOn]);
-  const waiting = foreground && !paused && !blocked && (playback.status === 'loading' || playback.status === 'idle' || (!firstFrame && playback.status === 'readyToPlay'));
+  const waiting = !preload && foreground && !paused && !blocked && (playback.status === 'loading' || playback.status === 'idle' || (!firstFrame && playback.status === 'readyToPlay'));
   useEffect(() => {
     setShowLoading(false);
     if (!waiting) return;
-    const timer = setTimeout(() => setShowLoading(true), 250);
+    const timer = setTimeout(() => setShowLoading(true), REEL_BUFFER_HINT_MS);
     return () => clearTimeout(timer);
   }, [waiting, uri]);
+  const onTap = useDoubleTap({ onSingle: () => onPausedChange(!paused), onDouble: onDoubleTap });
   return <>
     {player ? <View testID={`reel-video-surface-${id}`} pointerEvents="none" collapsable={false} style={[StyleSheet.absoluteFill, { opacity: firstFrame ? 1 : 0 }]}><VideoView ref={view} player={player} pointerEvents="none" surfaceType="textureView"
       onFirstFrameRender={() => { setFirstFrame(true); finishTiming.current?.(true); }}
       style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', backgroundColor: VIDEO_BACKDROP }]} contentFit={contentFit} nativeControls={false} /></View> : null}
-    <Pressable accessibilityRole="button" accessibilityLabel={paused ? t('social.play') : t('social.pause')}
-      onPress={() => onPausedChange(!paused)} style={StyleSheet.absoluteFill} />
-    {waiting && showLoading && <View pointerEvents="none"
-      testID={`reel-loading-${id}`} style={[StyleSheet.absoluteFill, styles.center]} accessibilityRole="progressbar">
-      <BrandLoadingIndicator size={64} />
-    </View>}
+    {preload ? null : <Pressable testID={`reel-tap-${id}`} accessibilityRole="button" accessibilityLabel={paused ? t('social.play') : t('social.pause')}
+      accessibilityHint={onDoubleTap ? t('social.doubleTapLove') : undefined}
+      onPress={onTap} style={StyleSheet.absoluteFill} />}
+    {waiting && showLoading && <ReelBufferLine testID={`reel-loading-${id}`} color={theme.colors.onMedia} />}
     {playback.status === 'error' && <View testID={`reel-playback-error-${id}`}
       style={[StyleSheet.absoluteFill, styles.center, { padding: 24, gap: 16, backgroundColor: veil(0.75) }]}>
       <AppText color={theme.colors.onMedia} align="center">{locale === 'ar'
@@ -99,4 +112,31 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
     </View>}
   </>;
 }
-const styles = StyleSheet.create({ center: { alignItems: 'center', justifyContent: 'center' } });
+/**
+ * Mise en mémoire tampon : un FILET au bas de la vidéo qui s'ouvre depuis le
+ * centre (comme TikTok) — plus de roue au milieu de l'image. Le poster reste
+ * visible dessous ; ce filet n'apparaît qu'après `REEL_BUFFER_HINT_MS`.
+ */
+function ReelBufferLine({ testID, color }: { testID: string; color: string }) {
+  const reduce = useReduceMotion();
+  const sweep = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (reduce) return;
+    const loop = Animated.loop(Animated.timing(sweep, { toValue: 1, duration: 900, useNativeDriver: true }));
+    loop.start();
+    return () => loop.stop();
+  }, [reduce, sweep]);
+  return <View testID={testID} pointerEvents="none" accessibilityRole="progressbar" style={styles.bufferTrack}>
+    {reduce
+      // Moins de mouvement : un filet fixe, sans boucle.
+      ? <View style={[styles.bufferLine, { backgroundColor: color }]} />
+      : <Animated.View style={[styles.bufferLine, { backgroundColor: color,
+          opacity: sweep.interpolate({ inputRange: [0, 0.7, 1], outputRange: [0.9, 0.5, 0] }),
+          transform: [{ scaleX: sweep.interpolate({ inputRange: [0, 1], outputRange: [0.05, 1] }) }] }]} />}
+  </View>;
+}
+const styles = StyleSheet.create({
+  center: { alignItems: 'center', justifyContent: 'center' },
+  bufferTrack: { position: 'absolute', start: 0, end: 0, bottom: 0, height: 2, overflow: 'hidden' },
+  bufferLine: { height: 2, width: '100%' },
+});

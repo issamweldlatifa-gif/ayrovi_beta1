@@ -14,6 +14,9 @@ import { PublicationPublisher } from './PublicationPublisher';
 import { PublicationText as AppText } from './publicationDesign';
 import { PUBLICATION_SPACING as S, ICON_SIZE } from '@/design/tokens.mobile';
 import { useI18n } from '@/i18n';
+import { useCallback, useRef, useState } from 'react';
+import { useSession } from '@/state/session';
+import { DoubleTapHearts, type DoubleTapHeartsHandle } from '@/design/reactions/DoubleTapHearts';
 import {
   resolvePublicationTemplate,
   SOCIAL_TEMPLATES,
@@ -46,11 +49,21 @@ export function PublicationCard({
     id: string,
     liked: boolean,
     likes: number,
-    disliked?: boolean
+    disliked?: boolean,
+    loved?: boolean
   ) => void;
 }) {
   const { locale } = useI18n();
   const ar = locale === 'ar';
+  // Z-Reactions : double-tap sur l'image = J'adore (cœurs ROUGES sous le doigt).
+  // Le bouton officiel (dans les actions) porte l'état ; on lui transmet la demande.
+  const signedIn = useSession().status === 'signedIn';
+  const hearts = useRef<DoubleTapHeartsHandle>(null);
+  const [loveRequest, setLoveRequest] = useState(0);
+  const loveFromMedia = useCallback((x: number, y: number) => {
+    setLoveRequest((n) => n + 1);
+    if (signedIn) hearts.current?.burst(x, y);
+  }, [signedIn]);
   const template = resolvePublicationTemplate(
     post.content?.template,
     post.content?.type,
@@ -197,8 +210,10 @@ export function PublicationCard({
             post={post}
             active={active}
             onOpen={(index) => (onMediaOpen ? onMediaOpen(index) : onOpen?.())}
+            onDoubleTap={loveFromMedia}
             thumbnails={false}
           />
+          <DoubleTapHearts ref={hearts} testID={`publication-hearts-${post.id}`} />
         </View>
       </View>
       <View>{cta}</View>
@@ -207,6 +222,7 @@ export function PublicationCard({
           post={post}
           onComments={onComments}
           onReaction={onReaction}
+          loveRequest={loveRequest}
           onPreference={onPreference}
         />
       </View>

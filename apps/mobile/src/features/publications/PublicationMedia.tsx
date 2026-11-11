@@ -14,6 +14,8 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import type { GestureResponderEvent } from 'react-native';
+import { useDoubleTap } from '@/design/reactions/useDoubleTap';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { PublicationIcon as Ionicons } from './publicationDesign';
 import { useFocusEffect } from 'expo-router';
@@ -162,7 +164,10 @@ export function PublicationMedia({
   initialIndex = 0,
   showIndicators = true,
   indicatorBottom = 0,
+  onDoubleTap,
 }: {
+  /** Z-Reactions : double-tap sur une image = J'adore (position du doigt). */
+  onDoubleTap?: (x: number, y: number) => void;
   post: FeedPost;
   active?: boolean;
   immersive?: boolean;
@@ -174,6 +179,14 @@ export function PublicationMedia({
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const { width, height } = size;
+  // Toucher simple = ouvrir (retardé de la fenêtre du double-tap SEULEMENT si
+  // le double-tap est branché) ; double-tap = J'adore.
+  const tappedIndex = useRef(0);
+  const tap = useDoubleTap({ onSingle: () => onOpen?.(tappedIndex.current), onDouble: onDoubleTap });
+  const openAt = (at: number) => (event?: GestureResponderEvent) => {
+    tappedIndex.current = at;
+    tap(event);
+  };
   const [index, setIndex] = useState(initialIndex);
   const [photoAspect, setPhotoAspect] = useState(4 / 5);
   const list = useRef<FlatList<Media>>(null);
@@ -211,7 +224,7 @@ export function PublicationMedia({
                   }/${items.length}${
                     tile.remaining ? ` · +${tile.remaining}` : ''
                   }`}
-                  onPress={() => onOpen?.(tile.index)}
+                  onPress={openAt(tile.index)}
                   style={{
                     flex: 1,
                     aspectRatio: tileRatio(row.map((t) => items[t.index])),
@@ -282,7 +295,7 @@ export function PublicationMedia({
             key={i}
             accessibilityRole="button"
             accessibilityLabel={item.alt || post.title}
-            onPress={() => onOpen?.(i)}
+            onPress={openAt(i)}
             style={styles.tile}
           >
             <AppImage
@@ -383,7 +396,7 @@ export function PublicationMedia({
                   <Pressable
                     accessibilityRole={onOpen ? 'button' : undefined}
                     accessibilityLabel={item.alt || post.title}
-                    onPress={() => onOpen?.(mediaIndex)}
+                    onPress={openAt(mediaIndex)}
                     style={styles.fill}
                   >
                     <AppImage

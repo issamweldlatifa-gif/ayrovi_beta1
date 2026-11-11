@@ -14,10 +14,13 @@ import { shareReel } from "@/features/reels/shareReel";
  * وقاعدة الصدق: **الإعجاب يحتاج حساباً** ⇒ الزر معطّل بسبب مكتوب.
  */
 import { memo, useCallback, useRef, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Animated, Pressable, StyleSheet, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { ReelPlayback } from "@/features/reels/ReelPlayback";
-import type { VideoView } from "expo-video";
+import { ReactionButton } from "@/design/reactions/ReactionButton";
+import { DoubleTapHearts, type DoubleTapHeartsHandle } from "@/design/reactions/DoubleTapHearts";
+import { useContentReaction } from "@/design/reactions/useContentReaction";
+import { formatRailCount } from "@/features/reels/reelTray";
 
 import { AppText } from "@/design/ui";
 import { useTheme } from "@/design/theme";
@@ -33,14 +36,24 @@ import { useProductFavorites } from "@/features/reels/useProductFavorites";
 import { mediaUrl } from "@/api/client";
 import { AppImage } from "@/design/appImage";
 import { useSession } from "@/state/session";
-import { sendInteraction, type Reel } from "@/api/social";
+import type { Reel } from "@/api/social";
 import { useSessionId } from "@/session/session";
 
 export interface ReelCardProps {
   reel: Reel;
-  /** هل هذه البطاقة هي الظاهرة؟ المشغّل يُنشأ لها وحدها. */
+  /** هل هذه البطاقة هي الظاهرة؟ المشغّل يُنشأ لها (وللموالية في وضع التحميل المسبق). */
   active: boolean;
-  counts?: { likes: number; comments: number; views: number; shares: number };
+  /**
+   * Carte SUIVANTE de la visionneuse : son lecteur charge la vidéo en pause
+   * pour qu'elle démarre sans attente au prochain glissement (11/11).
+   */
+  preload?: boolean;
+  /**
+   * Feuille de commentaires ouverte par-dessus : le lecteur RESTE monté et se
+   * met seulement en pause — fermer la feuille ne recharge plus la vidéo.
+   */
+  suspended?: boolean;
+  counts?: { likes: number; loves?: number; comments: number; views: number; shares: number };
   onOpenComments: (reel: Reel) => void;
   /**
    * Mode plein écran (visionneuse) : la vidéo remplit `width`×`height`, le texte
@@ -52,6 +65,8 @@ export interface ReelCardProps {
 export const ReelCard = memo(function ReelCard({
   reel,
   active,
+  preload = false,
+  suspended = false,
   counts,
   onOpenComments,
   fill,
@@ -65,26 +80,9 @@ export const ReelCard = memo(function ReelCard({
   const ink = fill ? theme.colors.onMedia : theme.colors.ink;
   const muted = fill ? theme.colors.onMedia : theme.colors.muted;
 
-  const [liked, setLiked] = useState(false);
-  // Pouce bas (rail plein écran, référence 10/11) : publications ET reels.
-  const [disliked, setDisliked] = useState(false);
-  // Cœur favori du rail : état local du Reel (affichage fidèle à la référence).
-  const [favourited, setFavourited] = useState(false);
   const [options, setOptions] = useState(false);
   const [auth, setAuth] = useState(false);
   const [error, setError] = useState("");
-  const likeLock = useRef(false);
-  // VideoView du lecteur actif : le bouton plein écran du rail appelle
-  // `enterFullscreen()` dessus (contrôles natifs toujours activés en plein écran).
-  const videoView = useRef<VideoView | null>(null);
-  const onVideoViewReady = useCallback((view: VideoView | null) => {
-    videoView.current = view;
-  }, []);
-  const enterFullscreen = useCallback(() => {
-    const view = videoView.current;
-    if (!view) return;
-    view.enterFullscreen().catch(() => setError(t("common.retry")));
-  }, [t]);
   const [paused, setPaused] = useState(false);
   const [soundOn, setSoundOn] = useState(false);
   const favourites = useProductFavorites(
@@ -92,59 +90,27 @@ export const ReelCard = memo(function ReelCard({
     session.account?.id || ""
   );
 
-  const toggleLike = useCallback(async () => {
-    if (!signedIn) return;
-    if (likeLock.current) return;
-    likeLock.current = true;
-    setError("");
-    // Optimiste (référence 11/11) : le pouce vert et ses éclats partent AU
-    // TOUCHER, pas après l'aller-retour serveur ; l'état serveur s'applique
-    // ensuite, et un échec remet l'état d'avant.
-    const before = { liked, disliked };
-    setLiked(!liked);
-    if (!liked) setDisliked(false);
-    try {
-      const result = await sendInteraction({
-        type: "like",
-        targetId: reel.id,
-        sessionId: guestSession || undefined,
-      });
-      if (typeof result.liked === "boolean") setLiked(result.liked);
-      // Le serveur est exclusif : un like efface le pouce bas.
-      setDisliked(result.disliked === true);
-    } catch {
-      setLiked(before.liked);
-      setDisliked(before.disliked);
-      setError(t("common.retry"));
-    } finally {
-      likeLock.current = false;
-    }
-  }, [signedIn, liked, disliked, reel.id, guestSession, t]);
-  const toggleDislike = useCallback(async () => {
-    if (!signedIn || likeLock.current) return;
-    likeLock.current = true;
-    setError("");
-    // Optimiste, comme le pouce haut : le pouce rouge bascule au toucher.
-    const before = { liked, disliked };
-    setDisliked(!disliked);
-    if (!disliked) setLiked(false);
-    try {
-      const result = await sendInteraction({
-        type: "reaction",
-        reaction: disliked ? null : "dislike",
-        targetId: reel.id,
-        sessionId: guestSession || undefined,
-      });
-      setDisliked(result.reaction === "dislike");
-      setLiked(result.liked === true);
-    } catch {
-      setLiked(before.liked);
-      setDisliked(before.disliked);
-      setError(t("common.retry"));
-    } finally {
-      likeLock.current = false;
-    }
-  }, [signedIn, liked, disliked, reel.id, guestSession, t]);
+  /**
+   * Z-Reactions (11/11) : UN bouton (J'aime · J'adore · Je n'aime pas), état
+   * initial venu du serveur (`myReaction`), optimiste, « le dernier geste gagne ».
+   * Compteur affiché = J'aime + J'adore.
+   */
+  const reactionCount = counts ? counts.likes + (counts.loves ?? 0) : reel.likes;
+  const requireAccount = useCallback(() => setAuth(true), []);
+  const reaction = useContentReaction({
+    targetId: reel.id,
+    initial: reel.myReaction ?? null,
+    initialCount: reactionCount,
+    signedIn,
+    sessionId: guestSession || undefined,
+    onAuthRequired: requireAccount,
+  });
+  // Double-tap sur la vidéo : J'adore + cœurs ROUGES sous le doigt.
+  const hearts = useRef<DoubleTapHeartsHandle>(null);
+  const loveFromDoubleTap = useCallback((x: number, y: number) => {
+    if (reaction.love()) hearts.current?.burst(x, y);
+  }, [reaction]);
+  const visibleError = error || (reaction.error ? t("common.retry") : "");
   const share = useCallback(() => shareReel(reel), [reel]);
   const shareWithFeedback = () => {
     setError("");
@@ -169,7 +135,7 @@ export const ReelCard = memo(function ReelCard({
           decorative
         />
       ) : null}
-      {active ? (
+      {active || preload ? (
         <ReelPlayback
           key={reel.id}
           id={reel.id}
@@ -178,14 +144,17 @@ export const ReelCard = memo(function ReelCard({
           paused={paused}
           onPausedChange={setPaused}
           soundOn={soundOn}
-          blocked={options || auth}
-          onVideoViewReady={fill ? onVideoViewReady : undefined}
+          blocked={options || auth || suspended}
+          preload={!active}
+          onDoubleTap={active ? loveFromDoubleTap : undefined}
         />
       ) : !reel.posterUrl ? (
         <View style={[StyleSheet.absoluteFill, styles.poster]}>
           <Ionicons name="play-circle-outline" size={theme.iconSize.xl} color={muted} accessibilityElementsHidden />
         </View>
       ) : null}
+
+      {active ? <DoubleTapHearts ref={hearts} testID={`reel-hearts-${reel.id}`} /> : null}
 
       {!fill && reel.durationSeconds > 0 ? (
         <View style={styles.duration}>
@@ -204,11 +173,13 @@ export const ReelCard = memo(function ReelCard({
    * sortent, la légende et les actions montent avec eux au lieu de passer
    * dessous. `bottom` est calculé par le tiroir — une seule géométrie.
    */
-  const body = (bottom?: number) => (
-    <View
+  const body = (bottom?: number, lift?: Animated.AnimatedInterpolation<number>) => (
+    <Animated.View
+      pointerEvents="box-none"
       style={[
         fill ? styles.fillBody : styles.body,
         fill && bottom !== undefined ? { bottom } : null,
+        fill && lift ? { transform: [{ translateY: lift }] } : null,
       ]}
     >
       {fill ? <ReelPublisher onMedia /> : null}
@@ -223,39 +194,25 @@ export const ReelCard = memo(function ReelCard({
         </AppText>
       ) : null}
 
-      {error ? (
+      {visibleError ? (
         <AppText accessibilityRole="alert" variant="caption" color={muted}>
-          {error}
+          {visibleError}
         </AppText>
       ) : null}
       {/* En plein écran, partage/son/commentaire vivent dans le rail posé sur la
           vidéo (accroché à la pastille) : pas de doublon ici. */}
       {!fill ? (
         <View style={styles.actions}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={liked ? t("social.liked") : t("social.like")}
-            accessibilityState={{ disabled: !signedIn }}
-            disabled={!signedIn}
-            onPress={toggleLike}
-            style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
-          >
-            <Ionicons
-              name={liked ? "heart" : "heart-outline"}
-              size={theme.iconSize.md}
-              color={
-                liked
-                  ? fill
-                    ? theme.colors.accentOnMedia
-                    : theme.colors.accentText
-                  : muted
-              }
-              accessibilityElementsHidden
-            />
-            <AppText variant="caption" color={muted}>
-              {String(counts?.likes ?? reel.likes)}
-            </AppText>
-          </Pressable>
+          <ReactionButton
+            testID={`reel-reaction-${reel.id}`}
+            variant="inline"
+            reaction={reaction.reaction}
+            count={formatRailCount(reaction.count)}
+            onTap={reaction.tap}
+            onPick={reaction.pick}
+            guest={!signedIn}
+            ink={muted}
+          />
 
           <Pressable
             accessibilityRole="button"
@@ -304,7 +261,7 @@ export const ReelCard = memo(function ReelCard({
           {t("social.needAccount")}
         </AppText>
       ) : null}
-    </View>
+    </Animated.View>
   );
 
   return (
@@ -334,11 +291,11 @@ export const ReelCard = memo(function ReelCard({
           reel={reel}
           onClose={() => setOptions(false)}
           onShare={share}
-          onLike={toggleLike}
+          onLike={reaction.tap}
           onComment={() => onOpenComments(reel)}
-          liked={liked}
+          liked={reaction.reaction !== null}
           canLike={signedIn}
-          interactionError={error}
+          interactionError={visibleError}
         />
       ) : null}
       {fill ? (
@@ -355,19 +312,14 @@ export const ReelCard = memo(function ReelCard({
             onShare: shareWithFeedback,
             onComment: () => onOpenComments(reel),
             onOptions: () => setOptions(true),
-            // Rail complet (référence 10/11) : pouces, cœur, plein écran.
-            liked,
-            likesCount: counts?.likes ?? reel.likes,
-            likeEnabled: signedIn,
-            onLike: toggleLike,
-            disliked,
-            onDislike: signedIn ? toggleDislike : undefined,
+            // Z-Reactions (11/11) : un bouton unique remplace pouces + cœur ;
+            // le plein écran est retiré du rail.
+            reaction: reaction.reaction,
+            reactionsCount: reaction.count,
+            onReactionTap: reaction.tap,
+            onReactionPick: reaction.pick,
+            reactionEnabled: signedIn,
             commentsCount: counts?.comments ?? 0,
-            favourited,
-            onFavourite: signedIn
-              ? () => setFavourited((value) => !value)
-              : () => setAuth(true),
-            onFullscreen: enterFullscreen,
           }}
           favourites={
             signedIn
@@ -375,7 +327,7 @@ export const ReelCard = memo(function ReelCard({
               : { isFavorite: () => false, toggle: () => setAuth(true) }
           }
         >
-          {({ bottom }) => body(bottom)}
+          {({ bottom, lift }) => body(bottom, lift)}
         </ReelShopTray>
       ) : (
         <>
@@ -394,11 +346,14 @@ export const ReelCard = memo(function ReelCard({
   );
 }, (previous, next) => previous.reel === next.reel
   && previous.active === next.active
+  && previous.preload === next.preload
+  && previous.suspended === next.suspended
   && previous.onOpenComments === next.onOpenComments
   && Boolean(previous.fill) === Boolean(next.fill)
   && previous.fill?.width === next.fill?.width
   && previous.fill?.height === next.fill?.height
   && previous.counts?.likes === next.counts?.likes
+  && previous.counts?.loves === next.counts?.loves
   && previous.counts?.comments === next.counts?.comments
   && previous.counts?.views === next.counts?.views
   && previous.counts?.shares === next.counts?.shares);

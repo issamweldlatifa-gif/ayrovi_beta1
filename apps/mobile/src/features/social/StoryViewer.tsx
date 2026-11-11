@@ -29,6 +29,8 @@ import { sendInteraction } from '@/api/social';
 import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 import type { StoryItem } from '@/api/sections';
 import { useSessionId } from '@/session/session';
+import { ReactionButton } from '@/design/reactions/ReactionButton';
+import { useContentReaction } from '@/design/reactions/useContentReaction';
 import { RADIUS } from '@/design/tokens.mobile';
 
 /** مدّة الستوري الواحد: صورة 6 ثوانٍ، فيديو مدّته من الخادم. */
@@ -54,7 +56,6 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
 
   const [index, setIndex] = useState(initialIndex);
   const [paused, setPaused] = useState(false);
-  const [liked, setLiked] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
 
   const current = stories[index] ?? null;
@@ -86,12 +87,10 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
   }, [visible, current, onStorySeen]);
 
   const goNext = useCallback(() => {
-    setLiked(false);
     setIndex((value) => (value + 1 < stories.length ? value + 1 : value));
   }, [stories.length]);
 
   const goPrev = useCallback(() => {
-    setLiked(false);
     setIndex((value) => (value > 0 ? value - 1 : value));
   }, []);
 
@@ -113,12 +112,17 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
     return () => animation.stop();
   }, [visible, current, index, paused, duration, progress, stories.length, goNext, onClose]);
 
-  const toggleLike = useCallback(async () => {
-    if (!current || !signedIn) return;
-    const result = await sendInteraction({ type: 'like', targetId: current.id, sessionId: guestSession || undefined });
-    // رقم الخادم هو الحكم، موش تفاؤلنا.
-    setLiked(result.liked ?? !liked);
-  }, [current, signedIn, guestSession, liked]);
+  // Z-Reactions (11/11) : le même bouton officiel que les Reels et les
+  // publications (J'aime · J'adore · Je n'aime pas). Remonté à chaque story.
+  const noop = useCallback(() => undefined, []);
+  const reaction = useContentReaction({
+    targetId: current?.id ?? '',
+    initial: null,
+    initialCount: 0,
+    signedIn: signedIn && Boolean(current),
+    sessionId: guestSession || undefined,
+    onAuthRequired: noop,
+  });
 
   const bars = useMemo(() => stories.map((_, position) => position), [stories]);
 
@@ -207,16 +211,18 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
           ) : null}
 
           <View style={styles.actions}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={liked ? t('social.liked') : t('social.like')}
-              accessibilityState={{ disabled: !signedIn }}
-              disabled={!signedIn}
-              onPress={toggleLike}
-              style={[styles.action, { opacity: signedIn ? 1 : 0.45 }]}
-            >
-              <Ionicons name={liked ? 'heart' : 'heart-outline'} size={theme.iconSize.md} color={liked ? theme.colors.accentOnMedia : theme.colors.onMedia} />
-            </Pressable>
+            <ReactionButton
+              key={current.id}
+              testID="story-reaction"
+              variant="inline"
+              surface="media"
+              reaction={reaction.reaction}
+              count={null}
+              onTap={reaction.tap}
+              onPick={reaction.pick}
+              guest={!signedIn}
+              ink={theme.colors.onMedia}
+            />
 
             {signedIn ? null : (
               <AppText variant="caption" color={theme.colors.onMedia}>{t('social.needAccount')}</AppText>

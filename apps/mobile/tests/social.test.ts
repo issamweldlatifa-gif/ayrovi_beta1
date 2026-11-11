@@ -58,7 +58,7 @@ describe('العدّادات', () => {
   it('القيم الناقصة ⇒ أصفار، موش `NaN`', async () => {
     apiGet.mockResolvedValue({ data: { reel_1: { likes: 3 } } });
     const counts = await fetchSocialCounts(['reel_1'], {});
-    expect(counts.reel_1).toEqual({ likes: 3, comments: 0, views: 0, shares: 0 });
+    expect(counts.reel_1).toEqual({ likes: 3, loves: 0, comments: 0, views: 0, shares: 0 });
   });
 
   it('يرسل كل العدّادات في دفعات لا تتجاوز 60', async () => {

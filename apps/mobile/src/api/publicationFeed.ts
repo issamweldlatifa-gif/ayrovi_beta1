@@ -18,6 +18,10 @@ export interface FeedPost extends Publication {
   views?: number;
   shares?: number;
   disliked?: boolean;
+  /** Z-Reactions : J'adore posé par le compte (exclusif avec J'aime / Je n'aime pas). */
+  loved?: boolean;
+  /** Nombre de J'adore — le compteur affiché vaut `likes + loves`. */
+  loves?: number;
   generated: boolean;
   category: string;
   channelName: string;
@@ -95,6 +99,8 @@ export function parseFeedPage(value: unknown): FeedPage {
       category: text(row.category),
       channelName: text(row.channel_name),
       disliked: row.disliked === true || row.disliked === 1,
+      loved: row.loved === true || row.loved === 1,
+      loves: count(row.loves),
       generated: row.media_origin === 'generated',
       liked: row.liked === true || row.liked === 1,
       likes: count(row.likes),
