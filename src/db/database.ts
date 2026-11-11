@@ -1693,6 +1693,12 @@ export class QatafoDatabase {
         target_id TEXT NOT NULL, account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
         created_at TEXT NOT NULL, PRIMARY KEY(target_id,account_id)
       );
+      -- Z-Reactions (11/11) : « J'adore » — table générique (publication · reel · story),
+      -- exclusive avec le like (story_interactions) et le dislike (publication_dislikes).
+      CREATE TABLE IF NOT EXISTS social_loves (
+        target_id TEXT NOT NULL, account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        created_at TEXT NOT NULL, PRIMARY KEY(target_id,account_id)
+      );
       CREATE TABLE IF NOT EXISTS social_comment_replies (
         comment_id TEXT PRIMARY KEY REFERENCES story_interactions(id) ON DELETE CASCADE,
         parent_id TEXT NOT NULL REFERENCES story_interactions(id) ON DELETE CASCADE

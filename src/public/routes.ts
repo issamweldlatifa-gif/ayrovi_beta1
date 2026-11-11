@@ -1,5 +1,5 @@
 import { readSocialCounts, readSocialComments } from '../magazine/socialEngagementReads';
-import { writeSocialInteraction } from '../magazine/socialInteractions';
+import { viewerContentReactions, writeSocialInteraction } from '../magazine/socialInteractions';
 import { readPublisherFollow, writePublisherFollow, writePublicationPreference } from '../magazine/publicationPreferences';
 import { preferenceTiming } from '../analytics/preferenceTiming';
 import { readPublicProducts } from '../catalogue/publicProducts';
@@ -819,12 +819,14 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='share') shares,
       EXISTS(SELECT 1 FROM story_interactions i WHERE i.target_id=pub.id AND i.type='like' AND i.account_id=?) liked,
       EXISTS(SELECT 1 FROM publication_dislikes d WHERE d.target_id=pub.id AND d.account_id=?) disliked,
+      EXISTS(SELECT 1 FROM social_loves l WHERE l.target_id=pub.id AND l.account_id=?) loved,
+      (SELECT COUNT(*) FROM social_loves l WHERE l.target_id=pub.id) loves,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='like') likes,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='comment') comments,
       ${LINKED_PRODUCT_JOIN_SELECT}
       FROM publications pub LEFT JOIN products p ON p.id=pub.product_id
       LEFT JOIN story_publishers channel ON channel.id=pub.channel_id
-      WHERE ${where.join(' AND ')} ORDER BY pub.publish_at DESC,pub.id DESC LIMIT ?`, accountId, accountId, accountId, accountId, ...args, limit + 1);
+      WHERE ${where.join(' AND ')} ORDER BY pub.publish_at DESC,pub.id DESC LIMIT ?`, accountId, accountId, accountId, accountId, accountId, ...args, limit + 1);
     const hasMore = rows.length > limit;
     const items = rows.slice(0, limit).map(withLinkedProduct);
     attachContentProducts(db, 'publication', items);
@@ -863,13 +865,21 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: page ? { items: rows, nextCursor: result.nextCursor } : rows });
   });
 
-  router.get('/social/reels', (req, res) => {
+  router.get('/social/reels', optionalCustomer(db), (req, res) => {
     let page: ReturnType<typeof socialPage>;
     try { page = socialPage(req.query); }
     catch { return res.status(400).json({ success: false, code: 'INVALID_PAGE', error: 'Invalid page cursor or limit.' }); }
     const result = readPublishedSocial(db, 'reel', new Date().toISOString(), page);
     const rows = result.items.map(withLinkedProduct);
     attachContentProducts(db, 'reel', rows);
+    // Z-Reactions : la réaction du compte connecté arrive AVEC le Reel — le rail
+    // s'ouvre sur le bon état (plus de « j'aime » perdu à chaque ouverture).
+    const accountId = (req as any).customer?.id || '';
+    if (accountId) {
+      res.setHeader('Cache-Control', 'private, no-store');
+      const mine = viewerContentReactions(db, accountId, rows.map((row: any) => String(row.id)));
+      for (const row of rows as any[]) row.my_reaction = mine[row.id] ?? null;
+    }
     res.json({ success: true, data: page ? { items: rows, nextCursor: result.nextCursor } : rows });
   });
 

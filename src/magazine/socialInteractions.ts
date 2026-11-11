@@ -14,8 +14,14 @@ export function publishedSocialTarget(db: Pick<SocialStore, 'get'>, targetId: st
     }
     return null;
   };
+/** Z-Reactions (11/11) : les trois réactions officielles d'un contenu. */
+export type ContentReaction = 'like' | 'love' | 'dislike';
+export const CONTENT_REACTIONS: readonly ContentReaction[] = ['like', 'love', 'dislike'];
+export function isContentReaction(value: unknown): value is ContentReaction {
+  return value === 'like' || value === 'love' || value === 'dislike';
+}
 export function socialInteractionCounts(db: SocialStore, targetId: string) {
-    const result = { likes: 0, comments: 0, views: 0, shares: 0 };
+    const result = { likes: 0, loves: 0, dislikes: 0, comments: 0, views: 0, shares: 0 };
     const rows = db.all<any>(`SELECT type,COUNT(*) n FROM story_interactions WHERE target_id=? GROUP BY type`, targetId);
     for (const row of rows) {
       if (row.type === 'like') result.likes = Number(row.n);
@@ -23,12 +29,31 @@ export function socialInteractionCounts(db: SocialStore, targetId: string) {
       if (row.type === 'view') result.views = Number(row.n);
       if (row.type === 'share') result.shares = Number(row.n);
     }
+    result.loves = Number(db.get<any>('SELECT COUNT(*) n FROM social_loves WHERE target_id=?', targetId)?.n || 0);
+    result.dislikes = Number(db.get<any>('SELECT COUNT(*) n FROM publication_dislikes WHERE target_id=?', targetId)?.n || 0);
     return result;
   };
+
+/**
+ * Réaction posée par un compte sur chaque contenu demandé (feed Reels/Publications).
+ * Une seule réaction par compte (exclusivité garantie à l'écriture) ; priorité
+ * défensive love > like > dislike si une ancienne base contenait un doublon.
+ */
+export function viewerContentReactions(db: Pick<SocialStore, 'all'>, accountId: string | null | undefined, ids: string[]): Record<string, ContentReaction> {
+  const out: Record<string, ContentReaction> = Object.create(null);
+  const unique = [...new Set(ids.filter((id) => typeof id === 'string' && /^[A-Za-z0-9_-]{1,120}$/.test(id)))].slice(0, 100);
+  if (!accountId || unique.length === 0) return out;
+  const marks = unique.map(() => '?').join(',');
+  for (const row of db.all<any>(`SELECT target_id FROM publication_dislikes WHERE account_id=? AND target_id IN (${marks})`, accountId, ...unique)) out[row.target_id] = 'dislike';
+  for (const row of db.all<any>(`SELECT target_id FROM story_interactions WHERE type='like' AND account_id=? AND target_id IN (${marks})`, accountId, ...unique)) out[row.target_id] = 'like';
+  for (const row of db.all<any>(`SELECT target_id FROM social_loves WHERE account_id=? AND target_id IN (${marks})`, accountId, ...unique)) out[row.target_id] = 'love';
+  return out;
+}
 function syncReelCounters(db: SocialStore, targetId: string, target: SocialTarget, now: string) {
     if (target.source !== 'reel') return;
     const counts = socialInteractionCounts(db, targetId);
-    db.run('UPDATE reels SET views=?,likes=?,updated_at=? WHERE id=?', counts.views, counts.likes, now, targetId);
+    // `reels.likes` = réactions POSITIVES (J'aime + J'adore), le compteur affiché.
+    db.run('UPDATE reels SET views=?,likes=?,updated_at=? WHERE id=?', counts.views, counts.likes + counts.loves, now, targetId);
   };
 
 
@@ -80,23 +105,29 @@ export function writeSocialInteraction(db: SocialStore, input: unknown, customer
 
     if (type === 'like' || type === 'reaction') {
       const requested = body?.reaction;
-      if (type === 'reaction' && requested !== 'like' && requested !== 'dislike' && requested !== null) return { outcome: 'invalid_reaction' };
-      // Le pouce vers le bas vaut pour les publications ET les Reels (rail
-      // plein écran) — la table `publication_dislikes` est générique.
-      if (type === 'reaction' && target.source !== 'publication' && target.source !== 'reel') return { outcome: 'reaction_target_invalid' };
+      // Z-Reactions (11/11) : J'aime · J'adore · Je n'aime pas — une famille,
+      // valable partout (publications, Reels, stories). Les tables `social_loves`
+      // et `publication_dislikes` sont génériques (clé = target_id).
+      if (type === 'reaction' && !isContentReaction(requested) && requested !== null) return { outcome: 'invalid_reaction' };
       const reaction = (() => {
         const existing = db.get<any>(`SELECT id FROM story_interactions WHERE target_id=? AND type='like' AND account_id=?`, targetId, accountId);
-        const next = type === 'like' ? (existing ? null : 'like') : requested;
+        const next: ContentReaction | null = type === 'like' ? (existing ? null : 'like') : requested as ContentReaction | null;
+        // Exclusivité : une seule réaction par compte et par contenu.
         db.run("DELETE FROM story_interactions WHERE target_id=? AND type='like' AND account_id=?",targetId,accountId);
         db.run('DELETE FROM publication_dislikes WHERE target_id=? AND account_id=?',targetId,accountId);
+        db.run('DELETE FROM social_loves WHERE target_id=? AND account_id=?',targetId,accountId);
         if (next === 'like') db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,created_at) VALUES (?,?,?,?,?,?)`,
           `int_${createHash('sha256').update(`${owner}:${targetId}:like`).digest('hex').slice(0,32)}`,targetId,target.kind,'like',accountId,now);
+        if (next === 'love') db.run('INSERT INTO social_loves(target_id,account_id,created_at) VALUES (?,?,?)',targetId,accountId,now);
         if (next === 'dislike') db.run('INSERT INTO publication_dislikes(target_id,account_id,created_at) VALUES (?,?,?)',targetId,accountId,now);
         syncReelCounters(db, targetId,target,now);
         return next;
       })();
       const counts = socialInteractionCounts(db, targetId);
-      return { outcome: 'ok', data:{ liked:reaction === 'like', disliked:reaction === 'dislike', reaction, likesCount:counts.likes, counts } };
+      return { outcome: 'ok', data:{
+        liked:reaction === 'like', loved:reaction === 'love', disliked:reaction === 'dislike', reaction,
+        likesCount:counts.likes, lovesCount:counts.loves, reactionsCount:counts.likes + counts.loves, counts,
+      } };
     }
 
     if (type === 'comment') {

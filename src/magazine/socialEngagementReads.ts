@@ -2,13 +2,14 @@
 import type { QatafoDatabase } from '../db/database';
 import { publishedSocialTarget } from './socialInteractions';
 type ReadStore = Pick<QatafoDatabase, 'get' | 'all'>;
-export interface SocialCounts { likes: number; comments: number; views: number; shares: number }
+/** `loves` / `dislikes` : Z-Reactions (11/11). `likes` reste le seul « J'aime » (compat). */
+export interface SocialCounts { likes: number; loves: number; dislikes: number; comments: number; views: number; shares: number }
 export function readSocialCounts(db: Pick<ReadStore, 'all'>, input: unknown): Record<string, SocialCounts> {
   const ids = [...new Set(String(input || '').split(',')
     .map((value) => value.trim()).filter((value) => /^[A-Za-z0-9_-]{1,120}$/.test(value)).slice(0, 60))];
   // User-controlled IDs must never invoke Object.prototype setters.
   const out: Record<string, SocialCounts> = Object.create(null);
-  for (const id of ids) out[id] = { likes: 0, comments: 0, views: 0, shares: 0 };
+  for (const id of ids) out[id] = { likes: 0, loves: 0, dislikes: 0, comments: 0, views: 0, shares: 0 };
   if (ids.length) {
     const placeholders = ids.map(() => '?').join(',');
     const rows = db.all<any>(`SELECT target_id,type,COUNT(*) n FROM story_interactions
@@ -20,6 +21,12 @@ export function readSocialCounts(db: Pick<ReadStore, 'all'>, input: unknown): Re
       if (row.type === 'comment') counts.comments = Number(row.n);
       if (row.type === 'view') counts.views = Number(row.n);
       if (row.type === 'share') counts.shares = Number(row.n);
+    }
+    for (const [table, key] of [['social_loves', 'loves'], ['publication_dislikes', 'dislikes']] as const) {
+      for (const row of db.all<any>(`SELECT target_id,COUNT(*) n FROM ${table} WHERE target_id IN (${placeholders}) GROUP BY target_id`, ...ids)) {
+        const counts = out[row.target_id];
+        if (counts) counts[key] = Number(row.n);
+      }
     }
   }
   return out;

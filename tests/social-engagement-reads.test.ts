@@ -37,10 +37,11 @@ it('keeps target validation and visibility responses without leaking unpublished
   }
 });
 it('aggregates actual types, returns zero for unknown IDs and preserves the public counts contract',async()=>{
-  const expected={likes:1,comments:105,views:1,shares:1};
+  // Z-Reactions (11/11) : contrat ÉTENDU (additif) — loves/dislikes rejoignent les quatre compteurs historiques.
+  const expected={likes:1,loves:0,dislikes:0,comments:105,views:1,shares:1};
   expect(readSocialCounts(db,target)[target]).toEqual(expected);
   const response=await request(app).get('/api/public/social/counts').query({ids:`${target},missing_target,${target}`});
-  expect(response.body).toEqual({success:true,data:{[target]:expected,missing_target:{likes:0,comments:0,views:0,shares:0}}});
+  expect(response.body).toEqual({success:true,data:{[target]:expected,missing_target:{likes:0,loves:0,dislikes:0,comments:0,views:0,shares:0}}});
 });
 it('bounds the SQL batch, retains slice-before-dedup semantics and skips SQL for empty input',()=>{
   let calls=0;let params: unknown[]=[];
@@ -57,7 +58,7 @@ it('treats prototype-like valid IDs as ordinary JSON keys without changing objec
   const result=readSocialCounts(db,'__proto__,constructor,toString');
   expect(Object.getPrototypeOf(result)).toBeNull();
   expect(Object.keys(result)).toEqual(['__proto__','constructor','toString']);
-  for(const id of Object.keys(result)) expect(result[id]).toEqual({likes:0,comments:0,views:0,shares:0});
+  for(const id of Object.keys(result)) expect(result[id]).toEqual({likes:0,loves:0,dislikes:0,comments:0,views:0,shares:0});
   const response=await request(app).get('/api/public/social/counts').query({ids:'__proto__,constructor,toString'});
   expect(Object.keys(response.body.data)).toEqual(['__proto__','constructor','toString']);
 });
