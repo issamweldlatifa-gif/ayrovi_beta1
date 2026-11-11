@@ -115,27 +115,33 @@ describe('feuille de commentaires « comme Instagram »', () => {
     expect(flatStyle(scrollOf('row').parent).flexShrink).toBe(1);
   });
 
-  it('hauteur FIXE : ne bouge pas avec le nombre de messages, se limite au-dessus du clavier', () => {
+  it('hauteur FIXE et haut IMMOBILE : ni les messages ni le clavier ne font monter/descendre la feuille', () => {
     const view = (count: number) => (
       <Providers>
-        <AppSheet open presentation="bottom" heightRatio={0.7} onDismiss={() => undefined} footer={<Text testID="composer">champ</Text>}>
+        <AppSheet open presentation="bottom" heightRatio={0.5} onDismiss={() => undefined} footer={<Text testID="composer">champ</Text>}>
           {Array.from({ length: count }, (_, index) => <Text key={index} testID={`row-${index}`}>commentaire {index}</Text>)}
         </AppSheet>
       </Providers>
     );
     const { rerender } = render(view(1));
     layoutRoot('composer');
-    // useWindowDimensions de jest : 750 × 1334 → 0.7 × 1334 = 934, borné par la feuille.
-    const resting = flatStyle(panelOf('composer')).height;
-    expect(resting).toBeGreaterThan(0);
+    // Fenêtre jest 1334 de haut → 0.5 × 1334 = 667 ; feuille posée sur 844.
+    const top = () => { const panel = flatStyle(panelOf('composer')); return 844 - panel.bottom - panel.height; };
+    expect(flatStyle(panelOf('composer')).height).toBe(667);
+    expect(top()).toBe(177);
     rerender(view(40));
-    expect(flatStyle(panelOf('composer')).height).toBe(resting);
+    expect(flatStyle(panelOf('composer')).height).toBe(667);
     expect(flatStyle(scrollOf('row-0')).flex).toBe(1);
     show(524);
-    const lifted = flatStyle(panelOf('composer'));
-    expect(lifted.bottom).toBe(320);
-    expect(lifted.height).toBe(Math.min(resting, 492));
+    // Le champ se pose sur le clavier (bas = 320), le HAUT reste à 177.
+    expect(flatStyle(panelOf('composer')).bottom).toBe(320);
+    expect(flatStyle(panelOf('composer')).height).toBe(347);
+    expect(top()).toBe(177);
+    // Le clavier change de hauteur (bandeau de suggestions) : le haut ne bouge toujours pas.
+    show(480);
+    expect(top()).toBe(177);
     hide();
-    expect(flatStyle(panelOf('composer')).height).toBe(resting);
+    expect(flatStyle(panelOf('composer')).height).toBe(667);
+    expect(top()).toBe(177);
   });
 });

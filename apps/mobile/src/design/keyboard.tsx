@@ -44,7 +44,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-export { keyboardOverlap, keyboardTopFrom } from './keyboardLogic';
+export { anchoredSheetHeight, keyboardOverlap, keyboardTopFrom } from './keyboardLogic';
 
 const SHOW_EVENT = Platform.OS === 'ios' ? 'keyboardWillChangeFrame' : 'keyboardDidShow';
 const HIDE_EVENT = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';

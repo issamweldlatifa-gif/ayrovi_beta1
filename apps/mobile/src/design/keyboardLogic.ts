@@ -30,3 +30,23 @@ export function keyboardTopFrom(
   return null;
 }
 
+
+/**
+ * Feuille de commentaires ANCRÉE PAR LE HAUT (11/11/2026 — « comme Instagram /
+ * Facebook, sans monter ni descendre avec la frappe ») : à l'ouverture du
+ * clavier, le bord HAUT de la feuille ne bouge pas ; seul son bord bas (le
+ * champ) monte sur le clavier, la liste perd la part recouverte.
+ *
+ * Hauteur visible de la feuille :
+ *   • sans clavier : `restHeight` ;
+ *   • avec clavier : `restHeight − overlap` (haut immobile) ;
+ *   • jamais moins que `minHeight` (en-tête + champ + quelques lignes) — seul
+ *     cas où le haut doit monter, clavier très grand ;
+ *   • jamais plus que `maxHeight` (espace visible au-dessus du clavier).
+ */
+export function anchoredSheetHeight(restHeight: number, overlap: number, minHeight: number, maxHeight: number): number {
+  const rest = Math.max(0, restHeight);
+  if (!(overlap > 0)) return Math.min(rest, Math.max(0, maxHeight));
+  const ceiling = Math.max(0, maxHeight);
+  return Math.round(Math.min(ceiling, Math.max(rest - overlap, Math.min(minHeight, ceiling))));
+}

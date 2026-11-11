@@ -32,10 +32,16 @@ import { useReduceMotion } from '@/design/motion';
 import { MOTION } from '@/design/tokens.generated';
 import { RADIUS, SHEET_CORNER_RADIUS } from '@/design/tokens.mobile';
 import { SheetBackdrop } from '@/design/sheet/SheetBackdrop';
-import { useKeyboardOverlap } from '@/design/keyboard';
+import { anchoredSheetHeight, useKeyboardOverlap } from '@/design/keyboard';
 import {
   SHEET_SPRING, nextTranslate, panMovesSheet, shouldDismiss,
 } from '@/design/sheet/sheetPhysics';
+
+/**
+ * Feuille à hauteur fixe + clavier : hauteur visible minimale (en-tête, champ
+ * et quelques lignes). En dessous seulement, le haut de la feuille monte.
+ */
+export const TYPING_MIN_SHEET = 240;
 
 /** مسافة دنيا (px) قبل أن تُعدّ الحركة سحباً، حتى لا تسرق النقرات. */
 const DRAG_SLOP = 6;
@@ -110,10 +116,18 @@ export function AppSheet({
     ? Math.max(1, Math.min(sheetHeight, measuredHeight - keyboardLift - (presentation === 'bottom' ? insets.top + 8 : 0)))
     : sheetHeight;
   const bottomSafe = keyboardLift > 0 ? 0 : insets.bottom;
-  // Feuille à hauteur fixe : jamais plus haute que l'espace visible (clavier).
-  const fixedHeight = presentation === 'bottom' && heightRatio
-    ? Math.max(1, Math.min(availableHeight, Math.round(windowHeight * heightRatio)))
+  /*
+   * Feuille à hauteur fixe, ANCRÉE PAR LE HAUT : le clavier ne fait ni monter
+   * ni descendre son bord haut — seul le bas (le champ) se pose sur le clavier
+   * et la liste perd la part recouverte (Instagram / Facebook). Le haut ne
+   * monte que si l'espace restant passerait sous `TYPING_MIN_SHEET`.
+   */
+  const restFixed = presentation === 'bottom' && heightRatio
+    ? Math.max(1, Math.min(sheetHeight, Math.round(windowHeight * heightRatio)))
     : undefined;
+  const fixedHeight = restFixed === undefined
+    ? undefined
+    : Math.max(1, anchoredSheetHeight(restFixed, keyboardLift, TYPING_MIN_SHEET, measuredHeight - keyboardLift - insets.top - 8));
 
   /** الموضع: 0 مفتوح، sheetHeight مغلق. يبدأ مغلقاً ثم يُفتح عند الظهور. */
   const translate = useRef(new Animated.Value(sheetHeight)).current;

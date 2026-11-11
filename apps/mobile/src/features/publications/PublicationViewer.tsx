@@ -22,7 +22,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { useKeyboardOverlap } from '@/design/keyboard';
+import { anchoredSheetHeight, useKeyboardOverlap } from '@/design/keyboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { FeedPost } from '@/api/publicationFeed';
 import { PublicationText as AppText } from './publicationDesign';
@@ -131,14 +131,27 @@ export function PublicationViewer({
   /**
    * Clavier (11/11/2026) — « وين تكتب متبانش » : la couche galerie est en
    * `absoluteFill`, donc le `paddingBottom` d'un conteneur évitant le clavier
-   * ne la touchait pas : le clavier couvrait le champ. Le recouvrement mesuré
-   * s'applique maintenant aux DEUX couches (lecture : marge basse ; galerie :
-   * bord bas), et en galerie, pendant la frappe, les commentaires prennent
-   * toute la place au-dessus du clavier — comme Facebook.
+   * ne la touchait pas : le clavier couvrait le champ.
+   *  • Lecture (page entière) : marge basse = part recouverte ; le haut de la
+   *    page ne bouge pas, seul le champ se pose sur le clavier (Facebook).
+   *  • Galerie : média et actions IMMOBILES ; le panneau des commentaires
+   *    garde son bord HAUT, seul son bord bas (le champ) monte sur le clavier
+   *    — « sans monter ni descendre avec la frappe ».
    */
   const keyboard = useKeyboardOverlap();
   const typing = keyboard.overlap > 0;
-  const typingInGallery = typing && comments;
+  const [commentsSlot, setCommentsSlot] = useState({ y: 0, height: 0 });
+  // Part du clavier sous le panneau (la couche réserve déjà la zone sûre basse).
+  const panelLift = typing ? Math.max(0, keyboard.overlap - insets.bottom) : 0;
+  const panelHeight = anchoredSheetHeight(
+    commentsSlot.height,
+    panelLift,
+    COMMENTS_TYPING_MIN,
+    commentsSlot.y + commentsSlot.height - panelLift
+  );
+  // Haut du panneau, relatif à sa place : 0 au repos ET pendant la frappe,
+  // négatif seulement si le clavier laisse moins de COMMENTS_TYPING_MIN.
+  const panelTop = commentsSlot.height - panelLift - panelHeight;
   const { locale } = useI18n();
   const ar = locale === 'ar';
   const exitGallery = () => {
@@ -194,7 +207,9 @@ export function PublicationViewer({
                 flex: 1,
                 backgroundColor: gallery ? P.backdrop : P.paper,
                 paddingTop: insets.top,
-                paddingBottom: typing ? keyboard.overlap : insets.bottom,
+                // En galerie, la couche du dessus gère seule le clavier : la
+                // page de lecture dessous ne doit pas se recomposer.
+                paddingBottom: typing && !gallery ? keyboard.overlap : insets.bottom,
               }}
             >
               {initialMediaIndex == null ? (
@@ -344,8 +359,7 @@ export function PublicationViewer({
                     {
                       backgroundColor: P.backdrop,
                       paddingTop: insets.top,
-                      paddingBottom: typing ? 0 : insets.bottom,
-                      bottom: keyboard.overlap,
+                      paddingBottom: insets.bottom,
                     },
                   ]}
                 >
@@ -392,11 +406,7 @@ export function PublicationViewer({
                     </View>
                     <View
                       testID="publication-viewer-media-slot"
-                      style={
-                        typingInGallery
-                          ? styles.collapsed
-                          : { flex: comments ? 0.45 : 1, minHeight: 0 }
-                      }
+                      style={{ flex: comments ? 0.45 : 1, minHeight: 0 }}
                     >
                       <Animated.View
                         testID="publication-lightbox-gesture"
@@ -425,9 +435,9 @@ export function PublicationViewer({
                     </View>
                     <View
                       testID="publication-viewer-actions"
-                      style={typingInGallery ? styles.collapsed : styles.viewerActions}
+                      style={styles.viewerActions}
                     >
-                      {(controls || comments) && !typingInGallery ? (
+                      {controls || comments ? (
                         <PublicationActions
                           presentation="viewer"
                           backdrop="dark"
@@ -439,9 +449,25 @@ export function PublicationViewer({
                     </View>
                     {comments ? (
                       <View
+                        testID="publication-viewer-comments-slot"
+                        style={{ flex: 0.55 }}
+                        onLayout={(event) => {
+                          const { y, height } = event.nativeEvent.layout;
+                          setCommentsSlot((prev) =>
+                            prev.y === y && prev.height === height
+                              ? prev
+                              : { y, height }
+                          );
+                        }}
+                      >
+                      <View
                         testID="publication-viewer-comments"
                         style={{
-                          flex: typingInGallery ? 1 : 0.55,
+                          position: 'absolute',
+                          left: 0,
+                          right: 0,
+                          top: panelTop,
+                          bottom: panelLift,
                           backgroundColor: P.paper,
                           borderTopLeftRadius: RADIUS.xl,
                           borderTopRightRadius: RADIUS.xl,
@@ -486,6 +512,7 @@ export function PublicationViewer({
                         </View>
                         <Comments targetId={post.id} publication />
                       </View>
+                      </View>
                     ) : null}
                   </>
                 </FadeIn>
@@ -504,6 +531,8 @@ export function PublicationViewer({
     </Modal>
   );
 }
+/** Hauteur visible minimale du panneau pendant la frappe (titre + champ + lignes). */
+const COMMENTS_TYPING_MIN = 220;
 const styles = StyleSheet.create({
   toolbar: {
     height: 60,
@@ -527,8 +556,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     backgroundColor: P.backdrop,
   },
-  // Masqué sans démonter (la vidéo garde sa position) pendant la frappe.
-  collapsed: { height: 0, minHeight: 0, flex: 0, overflow: 'hidden' },
   detailPost: { paddingHorizontal: 12, paddingBottom: 12, gap: 12 },
   content: {
     padding: 12,

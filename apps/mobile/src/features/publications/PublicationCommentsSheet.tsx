@@ -8,7 +8,7 @@ import {
   Pressable,
   View,
 } from 'react-native';
-import { useKeyboardOverlap } from '@/design/keyboard';
+import { anchoredSheetHeight, useKeyboardOverlap } from '@/design/keyboard';
 import { PublicationIcon as Ionicons } from './publicationDesign';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicationText as AppText } from './publicationDesign';
@@ -25,12 +25,17 @@ export function PublicationCommentsSheet({
   const { locale } = useI18n();
   const [expanded, setExpanded] = useState(false);
   /**
-   * Clavier ouvert : la feuille occupe tout l'espace visible au-dessus de lui,
-   * le champ collé au clavier (Instagram / Facebook) ; elle ne « danse » pas
-   * entre 72 % et une hauteur réduite.
+   * Clavier : la feuille est ANCRÉE PAR LE HAUT (Instagram / Facebook) — son
+   * bord haut ne bouge pas, seul le champ se pose sur le clavier et la liste
+   * perd la part recouverte. Elle ne monte que si moins de 220 restaient.
    */
   const keyboard = useKeyboardOverlap();
   const typing = keyboard.overlap > 0;
+  const [frameHeight, setFrameHeight] = useState(0);
+  const room = Math.max(0, frameHeight - (insets.top + 48));
+  const sheetHeight = frameHeight
+    ? anchoredSheetHeight(Math.round(room * (expanded ? 0.94 : 0.72)), keyboard.overlap, 220, room - keyboard.overlap)
+    : undefined;
   const close = useRef(onClose);
   close.current = onClose;
   const drag = useRef(
@@ -50,7 +55,10 @@ export function PublicationCommentsSheet({
       <PublicationAuthHost onNavigate={onClose}>
         <View
           ref={keyboard.ref}
-          onLayout={keyboard.measure}
+          onLayout={(event) => {
+            setFrameHeight(event.nativeEvent.layout.height);
+            keyboard.measure();
+          }}
           style={{
             flex: 1,
             paddingTop: insets.top + 48,
@@ -69,7 +77,7 @@ export function PublicationCommentsSheet({
           />
           <View
             style={{
-              height: typing ? '100%' : expanded ? '94%' : '72%',
+              height: sheetHeight ?? (expanded ? '94%' : '72%'),
               backgroundColor: P.paper,
               borderTopLeftRadius: RADIUS.xl,
               borderTopRightRadius: RADIUS.xl,
