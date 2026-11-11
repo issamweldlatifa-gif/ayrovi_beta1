@@ -10,6 +10,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Bell } from '../../components/QatafoIcons';
 import { adminApi } from '../api';
 import { formatDate } from './resource-ui';
+import { notificationTarget } from './notificationTarget';
 
 export const NotificationsBell: React.FC<{ onNavigate: (section: string, request?: string) => void }> = ({ onNavigate }) => {
   const [open, setOpen] = useState(false);
@@ -27,10 +28,9 @@ export const NotificationsBell: React.FC<{ onNavigate: (section: string, request
   const openItem = async (item: any) => {
     try { const result = await adminApi<any>(`/notifications/${item.id}/read`, { method: 'POST' }); setUnread(Number(result.unread) || 0); } catch { /* */ }
     setOpen(false);
-    const action = String(item.action_url || '');
-    if (action.includes('section=lens-requests')) { const target = new URL(action, location.origin); onNavigate('lens-requests', target.searchParams.get('request') || undefined); }
-    else if (action.includes('section=assistant-support')) { const target = new URL(action, location.origin); onNavigate('assistant-support', target.searchParams.get('ticket') || undefined); }
-    else if (action.includes('tab=orders')) onNavigate('orders');
+    // Toute URL de console mène à son écran (CRM, commandes, AYWEBs, Lens, support…).
+    const target = notificationTarget(String(item.action_url || ''), location.origin);
+    if (target) onNavigate(target.section, target.request);
   };
   return <div className="admin-bell">
     <button className="admin-icon-button" onClick={() => { setOpen(!open); if (!open) void load(); }} aria-label="Notifications"><Bell />{unread > 0 && <b className="admin-bell-badge">{unread > 99 ? '99+' : unread}</b>}</button>

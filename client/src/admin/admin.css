@@ -1520,3 +1520,5 @@ html[data-theme='dark'] .admin-table th { color: var(--admin-text-soft); }
 @keyframes bo-pop-in { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .bo-shortcuts-backdrop, .bo-shortcuts { animation: none; } }
 .admin-link-button { padding: 0; border: 0; background: none; color: var(--bo-accent); font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+/* Carte visée par une notification (file AYWEBs) */
+.admin-card.is-requested { outline: 2px solid var(--bo-accent); outline-offset: 2px; }

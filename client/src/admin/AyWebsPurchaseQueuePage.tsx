@@ -40,7 +40,7 @@ function errorMessage(error: unknown): string {
   return 'Action impossible pour le moment.';
 }
 
-export const AyWebsPurchaseQueuePage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
+export const AyWebsPurchaseQueuePage: React.FC<{ canWrite: boolean; requestedId?: string }> = ({ canWrite, requestedId }) => {
   const [orders, setOrders] = useState<QueueOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +64,11 @@ export const AyWebsPurchaseQueuePage: React.FC<{ canWrite: boolean }> = ({ canWr
   }, []);
 
   useEffect(() => { void load(); }, [load]);
+  // Ouvert depuis la cloche (`request=<commande>`) : la carte visée vient à l'écran.
+  useEffect(() => {
+    if (!requestedId || !orders.some((order) => order.id === requestedId)) return;
+    document.getElementById(`aywebs-queue-${requestedId}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [requestedId, orders]);
 
   const byDue = (a: QueueOrder, b: QueueOrder) => {
     const da = a.purchaseDueAt ? Date.parse(a.purchaseDueAt) : Number.POSITIVE_INFINITY;
@@ -114,6 +119,7 @@ export const AyWebsPurchaseQueuePage: React.FC<{ canWrite: boolean }> = ({ canWr
           order={order}
           canWrite={canWrite}
           busy={busyId === order.id}
+          highlighted={order.id === requestedId}
           onCopy={() => void copyCustomer(order)}
           onStart={() => void run(order.id, () => adminApi(`/aywebs/orders/${encodeURIComponent(order.id)}/purchase/start`, { method: 'POST', body: '{}' }), 'Achat commencé.')}
           onConfirm={null}
@@ -129,6 +135,7 @@ export const AyWebsPurchaseQueuePage: React.FC<{ canWrite: boolean }> = ({ canWr
           order={order}
           canWrite={canWrite}
           busy={busyId === order.id}
+          highlighted={order.id === requestedId}
           onCopy={() => void copyCustomer(order)}
           onStart={null}
           onConfirm={(note) => void run(order.id, () => adminApi(`/aywebs/orders/${encodeURIComponent(order.id)}/purchase/confirm`, { method: 'POST', body: JSON.stringify({ note }) }), 'Achat confirmé.')}
@@ -143,18 +150,19 @@ const QueueCard: React.FC<{
   order: QueueOrder;
   canWrite: boolean;
   busy: boolean;
+  highlighted?: boolean;
   onCopy: () => void;
   onStart: (() => void) | null;
   onConfirm: ((note: string) => void) | null;
   onFail: ((reason: string) => void) | null;
-}> = ({ order, canWrite, busy, onCopy, onStart, onConfirm, onFail }) => {
+}> = ({ order, canWrite, busy, highlighted = false, onCopy, onStart, onConfirm, onFail }) => {
   const [note, setNote] = useState('');
   const [reason, setReason] = useState('');
   const address = order.shippingAddress || {};
   const disabled = !canWrite || busy;
 
   return (
-    <section className="admin-card" style={{ marginBottom: 16, padding: 16 }}>
+    <section id={`aywebs-queue-${order.id}`} className={`admin-card${highlighted ? ' is-requested' : ''}`} style={{ marginBottom: 16, padding: 16 }}>
       <header style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
         <strong>{order.orderNumber}</strong>
         <span>

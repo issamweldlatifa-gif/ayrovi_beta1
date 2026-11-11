@@ -660,6 +660,14 @@ function markOrderPaid(db: QatafoDatabase, order: AyWebsOrder, payment: any, now
   setOrderItemsPurchaseStatus(db, order.id, 'PENDING_INTEGRATION',
     'aucune_intégration_achat_marchand_automatisée:revue_humaine_requise');
   releaseAyWebsCart(db, order.cartId || '', 'ORDERED');
+  // Intégration app ↔ CRM (11/11) : un achat payé arrive dans la cloche de la
+  // console et ouvre directement la file « Achats AYWEBs » (plus de commande
+  // payée qui attend sans que personne ne soit prévenu).
+  try {
+    db.notifyAdmins('ORDER', 'Achat AYWEBs à effectuer',
+      `${order.orderNumber} — ${Number(payment.amount_tnd || 0).toFixed(3)} TND payée : à acheter chez le marchand.`,
+      `/admin?section=aywebs-purchases&request=${encodeURIComponent(order.id)}`);
+  } catch { /* la notification ne doit jamais faire échouer un paiement confirmé */ }
   emitAyWebsEvent(db, {
     event: 'AYWEB_PAYMENT_CONFIRMED',
     resourceType: 'order', resourceId: order.id, accountId: input.accountId, orderId: order.id, orderNumber: order.orderNumber,

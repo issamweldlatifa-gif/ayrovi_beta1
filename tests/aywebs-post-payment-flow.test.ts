@@ -59,6 +59,9 @@ describe('AYWEBs post-payment flow — virement', () => {
     const after = db.get<any>('SELECT purchase_due_at, proof_submitted_at FROM ayweb_orders WHERE id=?', orderId);
     expect(after.purchase_due_at).toBe(proof.purchase_due_at);
     expect(after.proof_submitted_at).toBe(proof.proof_submitted_at);
+    // Intégration CRM (11/11) : la console est prévenue et la notification ouvre la file.
+    const bell = db.get<any>("SELECT title, action_url FROM admin_notifications WHERE action_url LIKE '%section=aywebs-purchases%' ORDER BY created_at DESC LIMIT 1");
+    expect(bell).toMatchObject({ title: 'Achat AYWEBs à effectuer', action_url: `/admin?section=aywebs-purchases&request=${encodeURIComponent(orderId)}` });
   });
 
   it('POSTE suit la même règle', () => {
