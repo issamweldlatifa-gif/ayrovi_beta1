@@ -22,6 +22,16 @@ export function customerAuthRateAllowed(db: QatafoDatabase, name: string, value:
     return true;
   });
 }
+/** Lecture seule du compteur (aucune incrémentation) — pour les plafonds « par échec ». */
+export function customerAuthRateCount(db: QatafoDatabase, name: string, value: string): number {
+  const bucket = keyedHash(`password-recovery:${name}:${value}`);
+  const row = db.get<any>('SELECT count FROM customer_auth_rate_limits WHERE bucket=? AND expires_at>?', bucket, Date.now());
+  return Number(row?.count || 0);
+}
+/** Remet un compteur à zéro (connexion réussie). */
+export function customerAuthRateReset(db: QatafoDatabase, name: string, value: string): void {
+  db.run('DELETE FROM customer_auth_rate_limits WHERE bucket=?', keyedHash(`password-recovery:${name}:${value}`));
+}
 function activeReset(db: QatafoDatabase, token: string) {
   if (!TOKEN_PATTERN.test(token)) return undefined;
   return db.get<any>(`SELECT r.*,a.locale FROM customer_password_resets r JOIN customer_accounts a ON a.id=r.account_id

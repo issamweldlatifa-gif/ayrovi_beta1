@@ -16,3 +16,16 @@ export function verifyPassword(password: string, stored: string | null | undefin
   return derived.length === expected.length && timingSafeEqual(derived, expected);
 }
 
+
+/**
+ * Empreinte factice calculée une fois : quand l'adresse n'existe pas (ou n'a pas
+ * de mot de passe), on fait QUAND MÊME un calcul scrypt complet. Sans cela, la
+ * réponse « inconnu » revenait en ~1 ms et la réponse « mauvais mot de passe » en
+ * ~50 ms : le chronomètre suffisait à dresser la liste des clients.
+ */
+let dummyHash = '';
+export function burnPasswordCheck(password: string): false {
+  dummyHash ||= hashPassword('ayrovi-dummy-password-never-valid');
+  verifyPassword(password, dummyHash);
+  return false;
+}

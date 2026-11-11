@@ -9,9 +9,9 @@ import { invoiceAbsolutePath, depositWriteDir, proofRoots, invoiceRoots } from '
 import { servePrivateDocument } from '../documents/fileAccess';
 import { mailerReady, sendMail } from '../services/mailer';
 import { createAccountSettingsRouter } from './accountSettings';
-import { hashPassword, verifyPassword } from './passwords';
+import { burnPasswordCheck, hashPassword, verifyPassword } from './passwords';
 import { enqueueWelcomeMail, passwordRecoveryReady } from './accountMail';
-import { createPasswordRecoveryRouter, customerAuthRateAllowed } from './passwordRecovery';
+import { createPasswordRecoveryRouter, customerAuthRateAllowed, customerAuthRateCount, customerAuthRateReset } from './passwordRecovery';
 import { cardGatewayAvailable, initiateStripeCardPayment, verifyStripeCardPayment, verifyStripeWebhookSignature } from '../services/paymentGateway';
 import { normalizeTunisianPhone } from './phone';
 import {
@@ -43,6 +43,7 @@ const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_PHONE_WINDOW_MS = 15 * 60 * 1000;
 const OTP_IP_WINDOW_MS = 15 * 60 * 1000;
 const GOOGLE_OAUTH_COOKIE = 'ayrovi_customer_oauth';
+const APPLE_OAUTH_COOKIE = 'ayrovi_customer_apple_oauth';
 const FACEBOOK_OAUTH_COOKIE = 'ayrovi_customer_facebook_oauth';
 
 function requestCookie(req: Request, name: string): string {
@@ -67,6 +68,10 @@ function oauthCookie(name: string, routePath: string, value: string, maxAgeSecon
 
 function googleOauthCookie(value: string, maxAgeSeconds: number): string {
   return oauthCookie(GOOGLE_OAUTH_COOKIE, '/api/customer/auth/google', value, maxAgeSeconds);
+}
+
+function appleOauthCookie(value: string, maxAgeSeconds: number): string {
+  return oauthCookie(APPLE_OAUTH_COOKIE, '/api/customer/auth/apple', value, maxAgeSeconds);
 }
 
 function facebookOauthCookie(value: string, maxAgeSeconds: number): string {
@@ -211,6 +216,8 @@ function normalizedEmail(value: any): string {
 const emailLoginFailures = new Map<string, number[]>();
 const EMAIL_LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const EMAIL_LOGIN_MAX_FAILURES = 5;
+/** Échecs tolérés par ADRESSE sur 15 minutes, toutes IP confondues. */
+const EMAIL_LOGIN_MAX_ACCOUNT_FAILURES = 10;
 
 function emailLoginAllowed(ip: string): boolean {
   const since = Date.now() - EMAIL_LOGIN_WINDOW_MS;
@@ -244,6 +251,17 @@ function accountRow(db: QatafoDatabase, accountId: string) {
   return db.get<any>('SELECT * FROM customer_accounts WHERE id=?', accountId);
 }
 
+/**
+ * Refuse d'ouvrir une session sur un compte bloqué. `resolveCustomer` ignore
+ * déjà ces sessions, mais les fournisseurs (Google, Facebook, Apple)
+ * annonçaient « connexion réussie » puis la session mourait au premier appel :
+ * on refuse franchement, avant d'émettre quoi que ce soit.
+ */
+function assertActiveAccount(db: QatafoDatabase, accountId: string): void {
+  const row = accountRow(db, accountId);
+  if (!row || row.status !== 'ACTIVE') throw new Error('ACCOUNT_BLOCKED');
+}
+
 function notification(db: QatafoDatabase, accountId: string, type: string, title: string, message: string, actionUrl = '') {
   db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
     VALUES (?,?,?,?,?,?,?)`, `notification_${randomUUID()}`, accountId, type, title, message, actionUrl, new Date().toISOString());
@@ -255,6 +273,10 @@ function mergeAccounts(db: QatafoDatabase, sourceId: string, targetId: string): 
     const source = accountRow(db, sourceId);
     const target = accountRow(db, targetId);
     if (!source || !target) throw new Error('ACCOUNT_MERGE_FAILED');
+    // Un compte bloqué ne se fond JAMAIS dans un autre (ni l'inverse) : sinon il
+    // suffirait d'ouvrir un compte neuf puis d'y rattacher le numéro, l'identité
+    // Google ou Facebook du compte bloqué pour récupérer commandes et accès.
+    if (source.status !== 'ACTIVE' || target.status !== 'ACTIVE') throw new Error('ACCOUNT_BLOCKED');
     if (source.phone && target.phone && source.phone !== target.phone) throw new Error('ACCOUNT_PHONE_CONFLICT');
     const now = new Date().toISOString();
     const email = target.email || source.email || null;
@@ -355,6 +377,11 @@ function completePhoneVerification(db: QatafoDatabase, req: Request, phone: stri
   const current = resolveCustomer(db, req);
   const byPhone = db.get<any>('SELECT * FROM customer_accounts WHERE phone=?', phone);
   if (current?.phone && current.phone !== phone) throw new Error('PHONE_CHANGE_NOT_SUPPORTED');
+  // Audit auth 11/11/2026 : la vérification SMS remettait `status='ACTIVE'` sans
+  // condition — un compte bloqué par l'administration se débloquait tout seul en
+  // redemandant un code. Le blocage est une décision du back-office, pas un état
+  // qu'un SMS peut lever.
+  if (byPhone && byPhone.status !== 'ACTIVE') throw new Error('ACCOUNT_BLOCKED');
   let accountId: string;
   let created = false;
   if (current && byPhone && current.id !== byPhone.id) accountId = mergeAccounts(db, current.id, byPhone.id);
@@ -369,7 +396,7 @@ function completePhoneVerification(db: QatafoDatabase, req: Request, phone: stri
     created = true;
   }
   const now = new Date().toISOString();
-  db.run('UPDATE customer_accounts SET phone=?,phone_verified_at=?,status=\'ACTIVE\',last_login_at=?,updated_at=? WHERE id=?', phone, now, now, now, accountId);
+  db.run('UPDATE customer_accounts SET phone=?,phone_verified_at=?,last_login_at=?,updated_at=? WHERE id=?', phone, now, now, now, accountId);
   ensurePhoneIdentity(db, accountId, phone);
   const linked = linkHistoricalOrders(db, accountId, phone);
   if (created && !linked) notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte est actif. Votre panier et vos commandes sont maintenant accessibles sur tous vos appareils.', '/compte');
@@ -625,6 +652,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       } });
     } catch (error: any) {
       if (error?.message === 'PHONE_CHANGE_NOT_SUPPORTED') return res.status(409).json({ success: false, error: 'Ce compte possède déjà un autre numéro vérifié.' });
+      if (error?.message === 'ACCOUNT_BLOCKED') return res.status(403).json({ success: false, code: 'ACCOUNT_BLOCKED', error: 'Ce compte est bloqué. Contactez le support.' });
       console.error('[Customer OTP Verification]', error);
       return res.status(500).json({ success: false, error: 'La connexion n’a pas pu être finalisée.' });
     }
@@ -721,11 +749,47 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       if (!claimed.changes) return res.status(409).json({ success: false, code: 'EMAIL_CODE_ALREADY_USED', error: 'Ce code a déjà été utilisé.' });
       const email: string = challenge.email;
       let account = db.get<any>('SELECT * FROM customer_accounts WHERE email=? COLLATE NOCASE', email);
+      /*
+       * Audit auth 11/11/2026 — pré-appropriation de compte.
+       *
+       * Une adresse NON vérifiée sur un compte ne prouve rien : n'importe qui peut
+       * s'inscrire (ou modifier son profil) avec l'adresse d'autrui. Avant ce
+       * correctif, le code e-mail du vrai propriétaire « validait » ce compte en
+       * l'état — mot de passe, téléphone et sessions de l'auteur compris : les deux
+       * personnes partageaient ensuite le même compte.
+       *   • compte qui porte d'autres moyens de connexion (téléphone vérifié,
+       *     Google, Facebook, Apple) : on ne peut pas savoir à qui il est ; on lui
+       *     RETIRE l'adresse et le propriétaire prouvé reçoit un compte neuf
+       *     (même règle que la connexion Google) ;
+       *   • compte à mot de passe seul : le code prouve la possession de
+       *     l'adresse, pas celle du mot de passe. On garde le compte, mais le mot
+       *     de passe et toutes les sessions existantes sont révoqués.
+       */
+      if (account && !account.email_verified_at) {
+        const unverified = account;
+        const otherCredential = Boolean(unverified.phone_verified_at)
+          || Boolean(db.get<any>('SELECT 1 FROM customer_auth_identities WHERE account_id=? LIMIT 1', unverified.id));
+        if (otherCredential) {
+          db.run('UPDATE customer_accounts SET email=NULL,updated_at=? WHERE id=? AND email_verified_at IS NULL', now, unverified.id);
+          notification(db, unverified.id, 'ACCOUNT', 'Adresse e-mail retirée', 'Une adresse e-mail non vérifiée a été retirée de votre profil car son propriétaire l’a vérifiée.', '/compte/profil');
+          account = undefined;
+        } else if (unverified.status === 'ACTIVE') {
+          db.transaction(() => {
+            db.run('UPDATE customer_accounts SET email_verified_at=?,password_hash=NULL,updated_at=? WHERE id=?', now, now, unverified.id);
+            db.run('DELETE FROM customer_sessions WHERE account_id=?', unverified.id);
+            db.run('DELETE FROM customer_native_handoffs WHERE account_id=?', unverified.id);
+            db.run('UPDATE customer_password_resets SET consumed_at=? WHERE account_id=? AND consumed_at IS NULL', now, unverified.id);
+            if (unverified.password_hash) {
+              notification(db, unverified.id, 'ACCOUNT', 'Adresse e-mail vérifiée', 'Votre adresse est confirmée. Par sécurité, l’ancien mot de passe a été désactivé : définissez-en un nouveau depuis « Mot de passe oublié ».', '/compte/profil');
+            }
+          });
+          account = db.get<any>('SELECT * FROM customer_accounts WHERE id=?', unverified.id);
+        }
+      }
       if (account && account.status !== 'ACTIVE') return res.status(403).json({ success: false, code: 'ACCOUNT_BLOCKED', error: 'Ce compte est bloqué. Contactez le support.' });
       let accountId: string;
       if (account) {
         accountId = account.id;
-        if (!account.email_verified_at) db.run('UPDATE customer_accounts SET email_verified_at=?, updated_at=? WHERE id=?', now, now, accountId);
       } else {
         accountId = `account_${randomUUID()}`;
         db.transaction(() => {
@@ -815,8 +879,21 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const fail = () => res.status(401).json({ success: false, code: 'INVALID_CREDENTIALS', error: 'E-mail ou mot de passe incorrect.' });
     if (!EMAIL_PATTERN.test(email) || password.length < 8 || password.length > 100) return fail();
     if (!emailLoginAllowed(req.ip || '')) return res.status(429).json({ success: false, code: 'LOGIN_RATE_LIMITED', error: 'Trop de tentatives. Réessayez dans un quart d’heure.' });
+    // Plafond PAR ADRESSE, persistant (audit 11/11/2026) : le plafond par IP, en
+    // mémoire, ne freinait pas un essai de mots de passe réparti sur des milliers
+    // d'adresses IP, et s'effaçait à chaque redémarrage. L'adresse est hachée
+    // (clé HMAC) : la table ne contient aucune adresse en clair.
+    if (customerAuthRateCount(db, 'login-account', email) >= EMAIL_LOGIN_MAX_ACCOUNT_FAILURES) {
+      return res.status(429).json({ success: false, code: 'LOGIN_RATE_LIMITED', error: 'Trop de tentatives. Réessayez dans un quart d’heure.' });
+    }
     const account = db.get<any>('SELECT * FROM customer_accounts WHERE email=? COLLATE NOCASE', email);
-    if (!account || !verifyPassword(password, account.password_hash)) { registerEmailFailure(req.ip || ''); return fail(); }
+    const passwordOk = account?.password_hash ? verifyPassword(password, account.password_hash) : burnPasswordCheck(password);
+    if (!account || !passwordOk) {
+      registerEmailFailure(req.ip || '');
+      customerAuthRateAllowed(db, 'login-account', email, Number.MAX_SAFE_INTEGER);
+      return fail();
+    }
+    customerAuthRateReset(db, 'login-account', email);
     if (account.status !== 'ACTIVE') return res.status(403).json({ success: false, code: 'ACCOUNT_BLOCKED', error: 'Ce compte est bloqué. Contactez le support.' });
     const cartSession = validCartSession(req.body?.cartSessionId || req.headers['x-session-id']);
     if (cartSession) db.attachCartToAccount(cartSession, account.id);
@@ -852,18 +929,43 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       response_type: 'code',
       scope: 'name email',
       state,
-      response_mode: 'query',
+      // Apple REFUSE `response_mode=query` dès qu'un scope (name, email) est
+      // demandé : seul `form_post` est accepté. Avec `query`, le bouton Apple
+      // aboutissait à une page d'erreur chez Apple (audit 11/11/2026).
+      response_mode: 'form_post',
     });
+    res.append('Set-Cookie', appleOauthCookie(state, 10 * 60));
     return res.redirect(`https://appleid.apple.com/auth/authorize?${params}`);
+  });
+
+  /*
+   * Retour `form_post` d'Apple : un POST INTER-SITES. Le cookie d'état
+   * (SameSite=Lax) n'y voyage pas. On renvoie donc le navigateur, en 303, vers le
+   * GET ci-dessous — une navigation de premier niveau qui, elle, porte le cookie.
+   * Seuls `code` et `state` sont relayés, après contrôle de forme.
+   */
+  router.post('/auth/apple/callback', (req, res) => {
+    const code = typeof req.body?.code === 'string' ? req.body.code : '';
+    const stateValue = typeof req.body?.state === 'string' ? req.body.state : '';
+    if (!/^[A-Za-z0-9._-]{1,512}$/.test(code) || !/^[A-Za-z0-9_-]{20,128}$/.test(stateValue)) {
+      return res.redirect(303, '/?customerAuth=error');
+    }
+    const params = new URLSearchParams({ code, state: stateValue });
+    return res.redirect(303, `/api/customer/auth/apple/callback?${params}`);
   });
 
   router.get('/auth/apple/callback', async (req, res) => {
     const apple = appleConfig();
     const stateValue = String(req.query.state || '');
     const stateHash = hashToken(stateValue);
+    // Liaison au navigateur (comme Google et Facebook) : sans elle, un tiers
+    // pouvait faire ouvrir à sa victime SA propre session Apple (CSRF de connexion).
+    const browserState = requestCookie(req, APPLE_OAUTH_COOKIE);
+    const browserStateMatches = Boolean(stateValue && browserState && hashToken(browserState) === stateHash);
+    res.append('Set-Cookie', appleOauthCookie('', 0));
     const state = db.get<any>("SELECT * FROM customer_oauth_states WHERE id=? AND provider='APPLE' AND expires_at>?", stateHash, new Date().toISOString());
     const failure = () => res.redirect('/?customerAuth=error');
-    if (!customerAuthReady() || !apple.ready || !state || typeof req.query.code !== 'string') {
+    if (!customerAuthReady() || !apple.ready || !state || !browserStateMatches || typeof req.query.code !== 'string') {
       if (state) db.run('DELETE FROM customer_oauth_states WHERE id=?', state.id);
       return failure();
     }
@@ -885,13 +987,21 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       const tokens: any = await tokenResponse.json();
       const [, payloadB64] = String(tokens.id_token || '').split('.');
       const payload = payloadB64 ? JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) : {};
+      // Le jeton vient DIRECTEMENT du point d'échange Apple, en TLS, contre notre
+      // secret client (OIDC Core §3.1.3.7) ; on contrôle tout de même qu'il nous
+      // est destiné, qu'il vient d'Apple et qu'il n'est pas périmé.
+      const audience = Array.isArray(payload.aud) ? payload.aud.map(String) : [String(payload.aud || '')];
+      if (!audience.includes(apple.clientId)) throw new Error('APPLE_ID_TOKEN_AUDIENCE');
+      if (String(payload.iss || '') !== 'https://appleid.apple.com') throw new Error('APPLE_ID_TOKEN_ISSUER');
+      if (Number(payload.exp || 0) * 1000 <= Date.now()) throw new Error('APPLE_ID_TOKEN_EXPIRED');
       const subject = String(payload.sub || '');
       if (!subject) throw new Error('APPLE_IDENTITY_INVALID');
       const email = String(payload.email || '').trim().toLowerCase();
       const emailVerifiedHere = Boolean(payload.email_verified === true || payload.email_verified === 'true');
       const nowIso = new Date().toISOString();
       const identityOwnerId = db.get<any>(`SELECT account_id FROM customer_auth_identities WHERE provider='APPLE' AND provider_subject=?`, subject)?.account_id as string | undefined;
-      const emailOwner = email
+      // L'adresse ne sert de preuve de rattachement que si Apple la déclare vérifiée.
+      const emailOwner = email && emailVerifiedHere
         ? db.get<any>('SELECT id,email_verified_at FROM customer_accounts WHERE email=? COLLATE NOCASE', email)
         : undefined;
       const verifiedEmailOwnerId = emailOwner?.email_verified_at ? emailOwner.id as string : undefined;
@@ -907,7 +1017,8 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       } else {
         const currentAccount = accountRow(db, accountId);
         if (!currentAccount) throw new Error('ACCOUNT_MISSING');
-        const adoptAppleEmail = email && (!currentAccount.email || !currentAccount.email_verified_at);
+        const adoptAppleEmail = email && emailVerifiedHere && (!currentAccount.email || !currentAccount.email_verified_at)
+          && !db.get<any>('SELECT 1 FROM customer_accounts WHERE email=? COLLATE NOCASE AND id!=?', email, accountId);
         db.run(`UPDATE customer_accounts SET
           email=CASE WHEN ?!='' AND ? THEN ? ELSE email END,
           email_verified_at=CASE WHEN ?!='' AND ? THEN ? ELSE email_verified_at END,
@@ -918,6 +1029,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       }
       db.run(`INSERT OR IGNORE INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
         VALUES (?,?,'APPLE',?,?)`, `identity_${randomUUID()}`, accountId, subject, nowIso);
+      assertActiveAccount(db, accountId);
       if (state.cart_session_id) db.attachCartToAccount(state.cart_session_id, accountId);
       const prior = resolveCustomer(db, req) as any;
       if (prior?.sessionId) db.run('DELETE FROM customer_sessions WHERE id=?', prior.sessionId);
@@ -990,6 +1102,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
   }
   db.run(`INSERT OR IGNORE INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
     VALUES (?,?,'GOOGLE',?,?)`, `identity_${randomUUID()}`, accountId, subject, now);
+  assertActiveAccount(db, accountId);
   return accountId;
 }
 
@@ -1164,13 +1277,19 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
           account: account ? publicAccount(account) : null,
           csrfToken: session.csrfToken,
           expiresAt: session.expiresAt,
-          // La coque n'a pas de cookie exploitable : elle porte ce jeton en
-          // en-tête. Même contrat que /auth/native/claim.
-          native_session_token: session.token,
+          // Le jeton n'est remis dans le corps qu'à un client DÉCLARÉ
+          // (`x-ayrovi-client: mobile/…` → session_token ; ancienne coque
+          // `x-ayrovi-native: 1` → native_session_token). Un appel depuis le
+          // site n'a que son cookie HttpOnly : un script injecté ne peut plus
+          // lire un jeton de 30 jours dans la réponse (audit 11/11/2026).
+          ...sessionExchangeFields(req, session),
         },
       });
     } catch (error) {
       console.error('[Customer Google native]', error);
+      if ((error as Error)?.message === 'ACCOUNT_BLOCKED') {
+        return res.status(403).json({ success: false, code: 'ACCOUNT_BLOCKED', error: 'Ce compte est bloqué. Contactez le support.' });
+      }
       return res.status(401).json({ success: false, code: 'GOOGLE_NATIVE_FAILED', error: 'Connexion Google refusée.' });
     }
   });
@@ -1291,6 +1410,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
       }
       db.run(`INSERT OR IGNORE INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
         VALUES (?,?,'FACEBOOK',?,?)`, `identity_${randomUUID()}`, accountId, subject, now);
+      assertActiveAccount(db, accountId);
       if (state.cart_session_id) db.attachCartToAccount(state.cart_session_id, accountId);
       const prior = resolveCustomer(db, req) as any;
       if (prior?.sessionId) db.run('DELETE FROM customer_sessions WHERE id=?', prior.sessionId);
