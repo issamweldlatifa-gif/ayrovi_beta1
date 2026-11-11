@@ -3,13 +3,12 @@ import { PublicationAuthHost } from './PublicationAuthSheet';
 import { useRef, useState } from 'react';
 import { RADIUS, ICON_SIZE, veil } from '@/design/tokens.mobile';
 import {
-  KeyboardAvoidingView,
   PanResponder,
   Modal,
-  Platform,
   Pressable,
   View,
 } from 'react-native';
+import { KeyboardAvoider } from '@/design/keyboard';
 import { PublicationIcon as Ionicons } from './publicationDesign';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicationText as AppText } from './publicationDesign';
@@ -42,8 +41,7 @@ export function PublicationCommentsSheet({
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <PublicationAuthHost onNavigate={onClose}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <KeyboardAvoider
           style={{
             flex: 1,
             paddingTop: insets.top + 48,
@@ -126,7 +124,7 @@ export function PublicationCommentsSheet({
             </View>
             <Comments targetId={targetId} publication />
           </View>
-        </KeyboardAvoidingView>
+        </KeyboardAvoider>
       </PublicationAuthHost>
     </Modal>
   );

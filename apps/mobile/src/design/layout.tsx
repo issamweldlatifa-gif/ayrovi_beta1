@@ -17,9 +17,8 @@
  * seule fois, plutôt que recopié écran par écran.
  */
 import { useRef, useCallback, useMemo, useState, type ReactNode, type RefObject } from 'react';
+import { KeyboardAvoider } from '@/design/keyboard';
 import {
-  KeyboardAvoidingView,
-  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -85,8 +84,12 @@ export interface AppScreenProps {
   /** Tirer vers le bas pour rafraîchir. */
   onRefresh?: () => void;
   refreshing?: boolean;
-  /** Envelopper d'un `KeyboardAvoidingView` (§4.4) — obligatoire si l'écran
-   *  contient un champ, faute de quoi le clavier le recouvre. */
+  /**
+   * Éviter le clavier (§4.4). ACTIF PAR DÉFAUT depuis le 11/11/2026 : en
+   * edge-to-edge (Android SDK 54+), la fenêtre n'est plus réduite et le clavier
+   * recouvrait tout champ d'un écran qui avait oublié l'option. `false` pour
+   * un écran qui gère lui-même le clavier.
+   */
   keyboard?: boolean;
   /**
    * Marge latérale automatique selon le palier (§4.1). La désactiver est une
@@ -122,7 +125,7 @@ export function AppScreen({
   scroll = true,
   onRefresh,
   refreshing = false,
-  keyboard = false,
+  keyboard = true,
   padded = true,
   hasBottomBar = false,
   chrome = true,
@@ -193,16 +196,10 @@ export function AppScreen({
     </View>
   );
 
-  const wrapped = keyboard ? (
-    <KeyboardAvoidingView
-      style={styles.fill}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      {body}
-    </KeyboardAvoidingView>
-  ) : (
-    body
-  );
+  // Recouvrement RÉEL par le clavier (voir `design/keyboard.tsx`) : le bas de
+  // l'écran remonte juste au-dessus du clavier, et le `ScrollView` qui rétrécit
+  // ramène le champ actif dans la zone visible.
+  const wrapped = <KeyboardAvoider style={styles.fill} enabled={keyboard}>{body}</KeyboardAvoider>;
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.canvas }, style]}>

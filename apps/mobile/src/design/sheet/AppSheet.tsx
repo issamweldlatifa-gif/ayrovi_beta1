@@ -32,6 +32,7 @@ import { useReduceMotion } from '@/design/motion';
 import { MOTION } from '@/design/tokens.generated';
 import { RADIUS, SHEET_CORNER_RADIUS } from '@/design/tokens.mobile';
 import { SheetBackdrop } from '@/design/sheet/SheetBackdrop';
+import { useKeyboardOverlap } from '@/design/keyboard';
 import {
   SHEET_SPRING, nextTranslate, panMovesSheet, shouldDismiss,
 } from '@/design/sheet/sheetPhysics';
@@ -84,6 +85,22 @@ export function AppSheet({
     ? Math.min(measuredHeight, Math.round(windowHeight * 0.9))
     : measuredHeight);
   const topInset = presentation === 'bottom' ? 8 : insets.top + 8;
+  /**
+   * Clavier (11/11/2026) — « ما يبانش وين قاعدين نكتبو » : le champ du pied
+   * (commentaire de Reel, recherche…) passait SOUS le clavier, Android
+   * edge-to-edge ne réduisant plus la fenêtre. La feuille remonte de la part
+   * RÉELLEMENT recouverte, et sa hauteur maximale se réduit d'autant pour que
+   * l'en-tête reste à l'écran. Pas de zone sûre basse quand le clavier est
+   * là : il couvre déjà la barre de navigation.
+   */
+  const keyboard = useKeyboardOverlap(open);
+  const keyboardLift = keyboard.overlap;
+  // Avec le clavier : jamais plus haut que l'espace VISIBLE au-dessus de lui
+  // (moins la zone sûre haute), pour que l'en-tête reste à l'écran.
+  const availableHeight = keyboardLift > 0
+    ? Math.max(1, Math.min(sheetHeight, measuredHeight - keyboardLift - (presentation === 'bottom' ? insets.top + 8 : 0)))
+    : sheetHeight;
+  const bottomSafe = keyboardLift > 0 ? 0 : insets.bottom;
 
   /** الموضع: 0 مفتوح، sheetHeight مغلق. يبدأ مغلقاً ثم يُفتح عند الظهور. */
   const translate = useRef(new Animated.Value(sheetHeight)).current;
@@ -193,7 +210,11 @@ export function AppSheet({
        * (retour, fermer, barre du bas) — c'était le cas de la page boutique.
        */
       pointerEvents={open ? 'box-none' : 'none'}
-      onLayout={(event) => setMeasuredHeight(event.nativeEvent.layout.height)}
+      ref={keyboard.ref}
+      onLayout={(event) => {
+        setMeasuredHeight(event.nativeEvent.layout.height);
+        keyboard.measure();
+      }}
     >
       <SheetBackdrop opacity={backdrop} onPress={onDismiss} />
       <Animated.View
@@ -201,8 +222,9 @@ export function AppSheet({
         style={[
           presentation === 'bottom' ? styles.bottomPanel : styles.panel,
           {
-            height: presentation === 'bottom' ? undefined : sheetHeight,
-            maxHeight: presentation === 'bottom' ? sheetHeight : undefined,
+            height: presentation === 'bottom' ? undefined : availableHeight,
+            maxHeight: presentation === 'bottom' ? availableHeight : undefined,
+            bottom: keyboardLift,
             paddingTop: topInset,
             backgroundColor: surfaceColor ?? theme.colors.canvas,
             borderTopLeftRadius: presentation === 'bottom' ? SHEET_CORNER_RADIUS : 0,
@@ -222,7 +244,7 @@ export function AppSheet({
             onContentSizeChange={(_, height) => setContentHeight(height)}
             scrollEventThrottle={16}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={[styles.body, { paddingBottom: footer ? 12 : insets.bottom + 20 }]}
+            contentContainerStyle={[styles.body, { paddingBottom: footer ? 12 : bottomSafe + 20 }]}
           >
             {children}
           </ScrollView>
@@ -244,7 +266,7 @@ export function AppSheet({
           ) : null}
         </View>
         {footer ? (
-          <View style={[styles.footer, { backgroundColor: footerSurfaceColor ?? theme.colors.canvas, borderTopColor: footerLineColor ?? theme.colors.line, paddingBottom: insets.bottom + 12 }]}>
+          <View style={[styles.footer, { backgroundColor: footerSurfaceColor ?? theme.colors.canvas, borderTopColor: footerLineColor ?? theme.colors.line, paddingBottom: bottomSafe + 12 }]}>
             {footer}
           </View>
         ) : null}

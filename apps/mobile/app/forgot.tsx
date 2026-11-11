@@ -23,7 +23,8 @@ import { BackButton } from '@/design/BackButton';
  */
 import { useEffect, useState } from 'react';
 import { goBack } from '@/design/navigation';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoider } from '@/design/keyboard';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -102,8 +103,7 @@ export default function ForgotPasswordScreen() {
   const backToSignIn = () => goBack('/(tabs)/account');
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <KeyboardAvoider
       style={{ flex: 1, backgroundColor: theme.colors.canvas }}
     >
       <ScrollView
@@ -226,7 +226,7 @@ export default function ForgotPasswordScreen() {
           </>
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 

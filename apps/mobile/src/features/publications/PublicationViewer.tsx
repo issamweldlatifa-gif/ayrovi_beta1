@@ -16,14 +16,13 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Modal,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   PanResponder,
   StyleSheet,
   View,
   useWindowDimensions,
 } from 'react-native';
+import { KeyboardAvoider } from '@/design/keyboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { FeedPost } from '@/api/publicationFeed';
 import { PublicationText as AppText } from './publicationDesign';
@@ -176,9 +175,8 @@ export function PublicationViewer({
       >
         <Animated.View style={transition.style}>
           <PublicationAuthHost onNavigate={onClose}>
-            <KeyboardAvoidingView
+            <KeyboardAvoider
               testID="publication-viewer"
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               style={{
                 flex: 1,
                 backgroundColor: gallery ? P.backdrop : P.paper,
@@ -480,7 +478,7 @@ export function PublicationViewer({
                   onPreference={onPreference}
                 />
               ) : null}
-            </KeyboardAvoidingView>
+            </KeyboardAvoider>
           </PublicationAuthHost>
         </Animated.View>
       </View>

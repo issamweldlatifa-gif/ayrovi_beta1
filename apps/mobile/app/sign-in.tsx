@@ -22,7 +22,8 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { goBack } from '@/design/navigation';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoider } from '@/design/keyboard';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -447,8 +448,7 @@ export default function SignInScreen() {
   );
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <KeyboardAvoider
       style={{ flex: 1, backgroundColor: theme.colors.canvas }}
     >
       <ScrollView
@@ -717,7 +717,7 @@ export default function SignInScreen() {
           </Pressable>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoider>
   );
 }
 

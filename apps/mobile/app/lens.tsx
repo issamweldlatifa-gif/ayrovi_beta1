@@ -19,7 +19,7 @@ import { BackButton } from '@/design/BackButton';
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  Animated, AppState, Keyboard, Linking, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions,
+  Animated, AppState, Keyboard, Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, View, useWindowDimensions,
   type NativeScrollEvent, type NativeSyntheticEvent, type PanResponderGestureState,
 } from 'react-native';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
@@ -52,7 +52,7 @@ import { LensProgressLine, lensProgressLabel } from '@/features/lens/LensProgres
 import { LensSearchBar } from '@/features/lens/LensSearchBar';
 import { OcerexFlow } from '@/features/lens/ocerex/OcerexFlow';
 import { lensOpenDecision } from '@/features/lens/lensOpen';
-import { useKeyboardInset } from '@/design/useKeyboardInset';
+import { useKeyboardOverlap } from '@/design/keyboard';
 import { LensHelpView } from '@/features/lens/LensHelpView';
 import { LensHistoryView } from '@/features/lens/LensHistoryView';
 import { LensRulesView } from '@/features/lens/LensRulesView';
@@ -314,9 +314,13 @@ export default function LensScreen() {
    * tapait à l'aveugle. Déclaré ICI, avec les autres hooks : les deux vues
    * (résultats / viseur) sont rendues par le même composant, un hook après un
    * `return` changerait le nombre de hooks entre deux rendus.
-   * iOS seulement — Android réduit déjà la fenêtre (voir `useKeyboardInset`).
+   * 11/11/2026 : iOS ET Android. L'ancienne règle « iOS seulement — Android
+   * réduit déjà la fenêtre » ne vaut plus en edge-to-edge (SDK 54+) : sur
+   * Android le clavier recouvrait « Recherche par lien » et « mots-clés ».
+   * La valeur est le recouvrement RÉEL de la scène (voir `design/keyboard`).
    */
-  const keyboardInset = useKeyboardInset(Platform.OS === 'ios');
+  const lensKeyboard = useKeyboardOverlap(true);
+  const keyboardInset = lensKeyboard.overlap;
   const { width, height } = useWindowDimensions();
   const focused = useIsFocused();
   const [permission, requestPermission] = useCameraPermissions();
@@ -1211,7 +1215,12 @@ export default function LensScreen() {
     : live.status === 'empty' ? t('lens.live.noMatch')
       : live.status === 'unavailable' ? t('lens.cameraHint') : t('lens.live.scanning');
   return (
-    <View style={[styles.scene, { backgroundColor: LENS_COLORS.black }]} testID="lens-camera-experience">
+    <View
+      ref={lensKeyboard.ref}
+      onLayout={lensKeyboard.measure}
+      style={[styles.scene, { backgroundColor: LENS_COLORS.black }]}
+      testID="lens-camera-experience"
+    >
       <StatusBar style="light" />
       {showCamera ? (
         <CameraView
@@ -1315,7 +1324,7 @@ export default function LensScreen() {
             TRANSPARENT : la caméra plein écran reste visible derrière les boutons, comme
             Google Lens ; seuls les boutons et la barre portent un voile translucide. */}
         <View
-          style={[styles.panel, { paddingBottom: insets.bottom + 12, bottom: keyboardInset }]}
+          style={[styles.panel, { paddingBottom: keyboardInset > 0 ? 12 : insets.bottom + 12, bottom: keyboardInset }]}
           onLayout={(event) => setPanelHeight(Math.round(event.nativeEvent.layout.height))}
           testID="lens-panel"
         >

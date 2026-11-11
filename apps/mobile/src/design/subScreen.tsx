@@ -18,6 +18,7 @@ import { useT } from '@/i18n';
 import { rowDirectionFor, screenContentGap } from './layoutLogic';
 import { goBack } from './navigation';
 import { useResponsive } from './layout';
+import { KeyboardAvoider } from './keyboard';
 
 export function SubScreen({
   title, subtitle, children, onRefresh, refreshing = false, fallback = '/',
@@ -58,15 +59,21 @@ export function SubScreen({
           {subtitle ? <AppText variant="caption" color={theme.colors.muted}>{subtitle}</AppText> : null}
         </View>
       </View>);
-  if (!scroll) return <View testID={testID} style={[styles.screen, {
-    flex: 1, backgroundColor: theme.colors.canvas,
-    paddingTop: insets.top + theme.space[2], paddingBottom: insets.bottom + theme.space[5],
-    paddingHorizontal: gutter, gap: screenContentGap(theme.space),
-  }]}>
-    {sticky}{header}{children}
-  </View>;
+  // Clavier (11/11/2026) : en edge-to-edge, Android ne réduit plus la fenêtre ;
+  // sans ce conteneur, le clavier recouvrait les champs (adresse, profil,
+  // paiement…). Il ajoute en bas exactement la part recouverte.
+  if (!scroll) return <KeyboardAvoider style={[styles.fill, { backgroundColor: theme.colors.canvas }]}>
+    <View testID={testID} style={[styles.screen, {
+      flex: 1, backgroundColor: theme.colors.canvas,
+      paddingTop: insets.top + theme.space[2], paddingBottom: insets.bottom + theme.space[5],
+      paddingHorizontal: gutter, gap: screenContentGap(theme.space),
+    }]}>
+      {sticky}{header}{children}
+    </View>
+  </KeyboardAvoider>;
 
   return (
+    <KeyboardAvoider style={[styles.fill, { backgroundColor: theme.colors.canvas }]}>
     <ScrollView
       ref={scrollRef}
       testID={testID}
@@ -100,10 +107,12 @@ export function SubScreen({
       {header}
       {children}
     </ScrollView>
+    </KeyboardAvoider>
   );
 }
 
 const styles = StyleSheet.create({
+  fill: { flex: 1 },
   screen: { flexGrow: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headerText: { flex: 1 },
