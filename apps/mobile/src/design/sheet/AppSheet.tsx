@@ -12,7 +12,7 @@
  *  • `onClosed` يُستدعى بعد انتهاء حركة الإغلاق، فيُزال المحتوى من الشجرة.
  *  • لا `Modal`: الكاميرا وخلفيتها تبقى حيّة تحت الدرج.
  */
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
   Animated,
   PanResponder,
@@ -63,12 +63,21 @@ export interface AppSheetProps {
    * La feuille Reels (référence 10/11) impose l'orange de son rail.
    */
   indicatorColor?: string;
+  /**
+   * Hauteur FIXE (fraction de la fenêtre) d'une feuille `bottom` — feuille de
+   * commentaires « comme Instagram / Facebook » (11/11/2026) : elle ne grandit
+   * pas à chaque message (« متعملش ارتفاع او انخفاظ »). La liste défile
+   * dedans, le champ reste collé en bas. Sans valeur : hauteur du contenu.
+   */
+  heightRatio?: number;
+  /** Accès au défilement (ex. remonter sur le commentaire qu'on vient d'écrire). */
+  scrollRef?: RefObject<ScrollView | null>;
   children: ReactNode;
 }
 
 export function AppSheet({
   open, onDismiss, onClosed, header, footer, presentation = 'full', children, surfaceColor,
-  footerSurfaceColor, footerLineColor, indicatorColor,
+  footerSurfaceColor, footerLineColor, indicatorColor, heightRatio, scrollRef,
 }: AppSheetProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -101,6 +110,10 @@ export function AppSheet({
     ? Math.max(1, Math.min(sheetHeight, measuredHeight - keyboardLift - (presentation === 'bottom' ? insets.top + 8 : 0)))
     : sheetHeight;
   const bottomSafe = keyboardLift > 0 ? 0 : insets.bottom;
+  // Feuille à hauteur fixe : jamais plus haute que l'espace visible (clavier).
+  const fixedHeight = presentation === 'bottom' && heightRatio
+    ? Math.max(1, Math.min(availableHeight, Math.round(windowHeight * heightRatio)))
+    : undefined;
 
   /** الموضع: 0 مفتوح، sheetHeight مغلق. يبدأ مغلقاً ثم يُفتح عند الظهور. */
   const translate = useRef(new Animated.Value(sheetHeight)).current;
@@ -222,7 +235,7 @@ export function AppSheet({
         style={[
           presentation === 'bottom' ? styles.bottomPanel : styles.panel,
           {
-            height: presentation === 'bottom' ? undefined : availableHeight,
+            height: presentation === 'bottom' ? fixedHeight : availableHeight,
             maxHeight: presentation === 'bottom' ? availableHeight : undefined,
             bottom: keyboardLift,
             paddingTop: topInset,
@@ -235,11 +248,12 @@ export function AppSheet({
       >
         {header}
         <View
-          style={presentation === 'bottom' ? styles.scrollWrapBottom : styles.scrollWrap}
+          style={presentation === 'bottom' && !fixedHeight ? styles.scrollWrapBottom : styles.scrollWrap}
           onLayout={(event) => setScrollHeight(event.nativeEvent.layout.height)}
         >
           <ScrollView
-            style={presentation === 'bottom' ? styles.bottomScroll : styles.scroll}
+            ref={scrollRef}
+            style={presentation === 'bottom' && !fixedHeight ? styles.bottomScroll : styles.scroll}
             onScroll={onScroll}
             onContentSizeChange={(_, height) => setContentHeight(height)}
             scrollEventThrottle={16}
@@ -318,9 +332,15 @@ const styles = StyleSheet.create({
   },
   bottomPanel: { position: 'absolute', left: 0, right: 0, bottom: 0, overflow: 'hidden' },
   scrollWrap: { flex: 1 },
-  scrollWrapBottom: { flexGrow: 0 },
+  /*
+   * Feuille « à la hauteur du contenu » : la liste PEUT rétrécir (`flexShrink`).
+   * Sans cela (11/11/2026, commentaires des Reels) chaque message agrandissait
+   * la liste jusqu'au plafond de 90 % — puis elle poussait le champ de saisie
+   * SOUS le bord coupé (`overflow: hidden`) : plus moyen d'écrire.
+   */
+  scrollWrapBottom: { flexGrow: 0, flexShrink: 1, minHeight: 0 },
   scroll: { flex: 1 },
-  bottomScroll: { flexGrow: 0 },
+  bottomScroll: { flexGrow: 0, flexShrink: 1 },
   body: { paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
   footer: { paddingHorizontal: 16, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
 });

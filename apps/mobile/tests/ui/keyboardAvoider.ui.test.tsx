@@ -79,3 +79,63 @@ it('AppSheet : la feuille remonte au-dessus du clavier et réduit sa hauteur', (
   expect(flatStyle(findPanel()).bottom).toBe(0);
   expect(flatStyle(findPanel()).maxHeight).toBe(restingMax);
 });
+
+/*
+ * 11/11/2026 (2e retour) — commentaires des Reels : « تطلع sheet لين تتغطي ومن
+ * بعد معاش تنجم تكتب ». Chaque message agrandissait la liste ; au plafond, elle
+ * poussait le champ SOUS le bord coupé de la feuille.
+ */
+describe('feuille de commentaires « comme Instagram »', () => {
+  const panelOf = (id: string) => {
+    let node: any = screen.getByTestId(id);
+    while (node && flatStyle(node).position !== 'absolute') node = node.parent;
+    return node;
+  };
+  const layoutRoot = (id: string) => {
+    let root: any = panelOf(id);
+    while (root.parent && !root.props.onLayout) root = root.parent;
+    act(() => root.props.onLayout({ nativeEvent: { layout: { x: 0, y: 0, width: 390, height: 844 } } }));
+  };
+  const scrollOf = (id: string) => {
+    let node: any = screen.getByTestId(id);
+    while (node && !node.props.onScroll) node = node.parent;
+    return node;
+  };
+
+  it('la liste peut rétrécir : le champ reste toujours dans la feuille', () => {
+    render(
+      <Providers>
+        <AppSheet open presentation="bottom" onDismiss={() => undefined} footer={<Text testID="composer">champ</Text>}>
+          <Text testID="row">commentaire</Text>
+        </AppSheet>
+      </Providers>,
+    );
+    const scroll = flatStyle(scrollOf('row'));
+    expect(scroll.flexShrink).toBe(1);
+    expect(flatStyle(scrollOf('row').parent).flexShrink).toBe(1);
+  });
+
+  it('hauteur FIXE : ne bouge pas avec le nombre de messages, se limite au-dessus du clavier', () => {
+    const view = (count: number) => (
+      <Providers>
+        <AppSheet open presentation="bottom" heightRatio={0.7} onDismiss={() => undefined} footer={<Text testID="composer">champ</Text>}>
+          {Array.from({ length: count }, (_, index) => <Text key={index} testID={`row-${index}`}>commentaire {index}</Text>)}
+        </AppSheet>
+      </Providers>
+    );
+    const { rerender } = render(view(1));
+    layoutRoot('composer');
+    // useWindowDimensions de jest : 750 × 1334 → 0.7 × 1334 = 934, borné par la feuille.
+    const resting = flatStyle(panelOf('composer')).height;
+    expect(resting).toBeGreaterThan(0);
+    rerender(view(40));
+    expect(flatStyle(panelOf('composer')).height).toBe(resting);
+    expect(flatStyle(scrollOf('row-0')).flex).toBe(1);
+    show(524);
+    const lifted = flatStyle(panelOf('composer'));
+    expect(lifted.bottom).toBe(320);
+    expect(lifted.height).toBe(Math.min(resting, 492));
+    hide();
+    expect(flatStyle(panelOf('composer')).height).toBe(resting);
+  });
+});

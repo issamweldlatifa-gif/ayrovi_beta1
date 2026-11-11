@@ -27,7 +27,7 @@
  * comme la référence.
  */
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View, type ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ReelGlyph, VerifiedBadge } from '@/features/reels/ReelIcons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -48,6 +48,12 @@ import { sortComments, type CommentSort } from './commentSort';
 import { CommentSortMenu, type SortAnchor } from './CommentSortMenu';
 
 const COMMENT_LIMIT = 500;
+/**
+ * Hauteur fixe de la feuille (fraction de l'écran), comme Instagram : elle ne
+ * monte ni ne descend quand les messages arrivent ; avec le clavier, elle se
+ * limite à l'espace visible au-dessus de lui (AppSheet).
+ */
+export const REEL_COMMENTS_HEIGHT = 0.7;
 /** Brouillon par compte et par Reel, conservé en mémoire (plus AsyncStorage). */
 const drafts = new Map<string, string>();
 /** Identifiant de tentative anti-doublon, conservé jusqu'au succès du serveur. */
@@ -78,7 +84,16 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
    */
   const [thread, setThread] = useState<SocialComment | null>(null);
   const [replyTo, setReplyTo] = useState<SocialComment | null>(null);
-  const openReplies = (comment: SocialComment) => { setThread(comment); setReplyTo(comment); };
+  const input = useRef<TextInput>(null);
+  const list = useRef<ScrollView>(null);
+  /**
+   * Le commentaire qu'on vient d'écrire reste EN TÊTE (Instagram, Facebook) :
+   * en tri « populaires » il n'a encore aucun « j'aime » et tomberait en bas,
+   * hors de vue — l'auteur croirait qu'il n'est pas parti.
+   */
+  const [mine, setMine] = useState<string[]>([]);
+  // « Répondre » ouvre le clavier directement, comme Instagram.
+  const openReplies = (comment: SocialComment) => { setThread(comment); setReplyTo(comment); input.current?.focus(); };
   // Changer de cible = nouvelle tentative : l'identifiant anti-doublon d'un
   // envoi vers une AUTRE cible ne doit pas être rejoué (le serveur rendrait
   // l'ancien commentaire).
@@ -166,6 +181,9 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
       // la liste, sinon l'auteur ne verrait pas ce qu'il vient de publier.
       if (!result.comment?.parentId && thread) setThread(null);
       if (result.comment) {
+        const id = result.comment.id;
+        setMine((prev) => [id, ...prev.filter((row) => row !== id)]);
+        requestAnimationFrame(() => list.current?.scrollTo({ y: 0, animated: true }));
         client.setQueryData<SocialComment[]>(['social', 'comments', reel.id], (prev) => [
           ...(prev || []).filter((row) => row.id !== result.comment!.id),
           result.comment!,
@@ -180,7 +198,10 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
     },
   });
 
-  const rows = sortComments(comments.data || [], sort);
+  const sorted = sortComments(comments.data || [], sort);
+  const rows = mine.length
+    ? [...mine.map((id) => sorted.find((row) => row.id === id)).filter((row): row is SocialComment => !!row), ...sorted.filter((row) => !mine.includes(row.id))]
+    : sorted;
   /** Ouvre le menu sous l'icône : position réelle du bouton dans la fenêtre. */
   const openSortMenu = () => {
     const node = sortButton.current;
@@ -254,6 +275,8 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
       <AppSheet
         open
         presentation="bottom"
+        heightRatio={REEL_COMMENTS_HEIGHT}
+        scrollRef={list}
         surfaceColor={theme.colors.reelSheet}
         // Référence : le pied passe au NOIR pur tant qu'une cible de réponse est armée.
         footerSurfaceColor={replyTo ? theme.colors.reelReplyBar : theme.colors.reelSheet}
@@ -288,6 +311,7 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
             </AppText>
             <View style={[styles.composerRow, { flexDirection: ar ? 'row-reverse' : 'row' }]}>
               <TextInput
+                ref={input}
                 value={draft}
                 onChangeText={change}
                 placeholder={t('social.placeholder')}

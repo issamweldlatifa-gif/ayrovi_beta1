@@ -22,7 +22,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { KeyboardAvoider } from '@/design/keyboard';
+import { useKeyboardOverlap } from '@/design/keyboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { FeedPost } from '@/api/publicationFeed';
 import { PublicationText as AppText } from './publicationDesign';
@@ -128,6 +128,17 @@ export function PublicationViewer({
   const [comments, setComments] = useState(false);
   const scrollY = useRef(0);
   const insets = useSafeAreaInsets();
+  /**
+   * Clavier (11/11/2026) — « وين تكتب متبانش » : la couche galerie est en
+   * `absoluteFill`, donc le `paddingBottom` d'un conteneur évitant le clavier
+   * ne la touchait pas : le clavier couvrait le champ. Le recouvrement mesuré
+   * s'applique maintenant aux DEUX couches (lecture : marge basse ; galerie :
+   * bord bas), et en galerie, pendant la frappe, les commentaires prennent
+   * toute la place au-dessus du clavier — comme Facebook.
+   */
+  const keyboard = useKeyboardOverlap();
+  const typing = keyboard.overlap > 0;
+  const typingInGallery = typing && comments;
   const { locale } = useI18n();
   const ar = locale === 'ar';
   const exitGallery = () => {
@@ -175,13 +186,15 @@ export function PublicationViewer({
       >
         <Animated.View style={transition.style}>
           <PublicationAuthHost onNavigate={onClose}>
-            <KeyboardAvoider
+            <View
+              ref={keyboard.ref}
+              onLayout={keyboard.measure}
               testID="publication-viewer"
               style={{
                 flex: 1,
                 backgroundColor: gallery ? P.backdrop : P.paper,
                 paddingTop: insets.top,
-                paddingBottom: insets.bottom,
+                paddingBottom: typing ? keyboard.overlap : insets.bottom,
               }}
             >
               {initialMediaIndex == null ? (
@@ -331,7 +344,8 @@ export function PublicationViewer({
                     {
                       backgroundColor: P.backdrop,
                       paddingTop: insets.top,
-                      paddingBottom: insets.bottom,
+                      paddingBottom: typing ? 0 : insets.bottom,
+                      bottom: keyboard.overlap,
                     },
                   ]}
                 >
@@ -378,7 +392,11 @@ export function PublicationViewer({
                     </View>
                     <View
                       testID="publication-viewer-media-slot"
-                      style={{ flex: comments ? 0.45 : 1, minHeight: 0 }}
+                      style={
+                        typingInGallery
+                          ? styles.collapsed
+                          : { flex: comments ? 0.45 : 1, minHeight: 0 }
+                      }
                     >
                       <Animated.View
                         testID="publication-lightbox-gesture"
@@ -407,9 +425,9 @@ export function PublicationViewer({
                     </View>
                     <View
                       testID="publication-viewer-actions"
-                      style={styles.viewerActions}
+                      style={typingInGallery ? styles.collapsed : styles.viewerActions}
                     >
-                      {controls || comments ? (
+                      {(controls || comments) && !typingInGallery ? (
                         <PublicationActions
                           presentation="viewer"
                           backdrop="dark"
@@ -421,8 +439,9 @@ export function PublicationViewer({
                     </View>
                     {comments ? (
                       <View
+                        testID="publication-viewer-comments"
                         style={{
-                          flex: 0.55,
+                          flex: typingInGallery ? 1 : 0.55,
                           backgroundColor: P.paper,
                           borderTopLeftRadius: RADIUS.xl,
                           borderTopRightRadius: RADIUS.xl,
@@ -478,7 +497,7 @@ export function PublicationViewer({
                   onPreference={onPreference}
                 />
               ) : null}
-            </KeyboardAvoider>
+            </View>
           </PublicationAuthHost>
         </Animated.View>
       </View>
@@ -508,6 +527,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     backgroundColor: P.backdrop,
   },
+  // Masqué sans démonter (la vidéo garde sa position) pendant la frappe.
+  collapsed: { height: 0, minHeight: 0, flex: 0, overflow: 'hidden' },
   detailPost: { paddingHorizontal: 12, paddingBottom: 12, gap: 12 },
   content: {
     padding: 12,

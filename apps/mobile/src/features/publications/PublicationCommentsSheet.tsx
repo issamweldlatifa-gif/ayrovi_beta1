@@ -8,7 +8,7 @@ import {
   Pressable,
   View,
 } from 'react-native';
-import { KeyboardAvoider } from '@/design/keyboard';
+import { useKeyboardOverlap } from '@/design/keyboard';
 import { PublicationIcon as Ionicons } from './publicationDesign';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PublicationText as AppText } from './publicationDesign';
@@ -24,6 +24,13 @@ export function PublicationCommentsSheet({
   const insets = useSafeAreaInsets();
   const { locale } = useI18n();
   const [expanded, setExpanded] = useState(false);
+  /**
+   * Clavier ouvert : la feuille occupe tout l'espace visible au-dessus de lui,
+   * le champ collé au clavier (Instagram / Facebook) ; elle ne « danse » pas
+   * entre 72 % et une hauteur réduite.
+   */
+  const keyboard = useKeyboardOverlap();
+  const typing = keyboard.overlap > 0;
   const close = useRef(onClose);
   close.current = onClose;
   const drag = useRef(
@@ -41,10 +48,13 @@ export function PublicationCommentsSheet({
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
       <PublicationAuthHost onNavigate={onClose}>
-        <KeyboardAvoider
+        <View
+          ref={keyboard.ref}
+          onLayout={keyboard.measure}
           style={{
             flex: 1,
             paddingTop: insets.top + 48,
+            paddingBottom: keyboard.overlap,
             justifyContent: 'flex-end',
             backgroundColor: veil(0.25),
           }}
@@ -59,12 +69,12 @@ export function PublicationCommentsSheet({
           />
           <View
             style={{
-              height: expanded ? '94%' : '72%',
+              height: typing ? '100%' : expanded ? '94%' : '72%',
               backgroundColor: P.paper,
               borderTopLeftRadius: RADIUS.xl,
               borderTopRightRadius: RADIUS.xl,
               paddingHorizontal: 16,
-              paddingBottom: Math.max(12, insets.bottom),
+              paddingBottom: typing ? 8 : Math.max(12, insets.bottom),
               gap: 8,
             }}
           >
@@ -124,7 +134,7 @@ export function PublicationCommentsSheet({
             </View>
             <Comments targetId={targetId} publication />
           </View>
-        </KeyboardAvoider>
+        </View>
       </PublicationAuthHost>
     </Modal>
   );
