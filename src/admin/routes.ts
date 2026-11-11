@@ -1376,6 +1376,13 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   const socialList = (table: string, res: Response) => {
     const rows = db.all<any>(`SELECT * FROM ${table} ORDER BY publish_at DESC`);
     if (table === 'publications') for (const row of rows) row.product_ids = db.all<any>("SELECT product_id FROM content_products WHERE content_kind='publication' AND content_id=? ORDER BY sort_order", row.id).map(link => link.product_id);
+    // Z-Reactions (11/11) : la console voit la même famille que l'application —
+    // J'aime, J'adore, Je n'aime pas — détaillée, pas seulement le total affiché.
+    if (table === 'reels') for (const row of rows) {
+      row.reaction_likes = db.get<any>("SELECT COUNT(*) n FROM story_interactions WHERE target_id=? AND type='like'", row.id)?.n ?? 0;
+      row.loves = db.get<any>('SELECT COUNT(*) n FROM social_loves WHERE target_id=?', row.id)?.n ?? 0;
+      row.dislikes = db.get<any>('SELECT COUNT(*) n FROM publication_dislikes WHERE target_id=?', row.id)?.n ?? 0;
+    }
     res.json({ success: true, data: rows });
   };
 
@@ -1398,6 +1405,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     res.json({ success: true, data: db.all<any>(`SELECT p.id,p.title,p.sponsored,p.sponsor_name,p.status,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=p.id AND i.type='view') views,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=p.id AND i.type='like') likes,
+      (SELECT COUNT(*) FROM social_loves l WHERE l.target_id=p.id) loves,
+      (SELECT COUNT(*) FROM publication_dislikes d WHERE d.target_id=p.id) dislikes,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=p.id AND i.type='comment') comments,
       (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=p.id AND i.type='share') shares,
       (SELECT COUNT(*) FROM publication_preferences pref WHERE pref.publication_id=p.id AND pref.saved=1) saves

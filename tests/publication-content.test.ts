@@ -76,7 +76,7 @@ describe('Publication media and preferences', () => {
     expect(row.description_position).toBe('above'); expect(JSON.parse(row.media_json)).toHaveLength(2);
     for (let i = 0; i < 2; i++) expect((await request(app).post('/api/public/social/interact').set('x-session-id', 'content_qa_session').send({ type: 'view', targetId: id })).status).toBe(200);
     const insights = (await admin.get('/api/admin/publication-insights')).body.data.find((entry: any) => entry.id === id);
-    expect(insights).toMatchObject({ views: 1, shares: 0, likes: 0, comments: 0 });
+    expect(insights).toMatchObject({ views: 1, shares: 0, likes: 0, loves: 0, dislikes: 0, comments: 0 });
     expect(insights).not.toHaveProperty('revenue');
   });
 

@@ -32,7 +32,7 @@
  *     même information reste disponible — infobulle de l'entrée, et bandeau « ancienne surface »
  *     de l'écran concerné, qui dit quoi faire.
  */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, Clipboard, Eye, FileText, Gift, Globe2, Grid, History, Home, Image, LayoutGrid, LensBox,
   LogOut, MapPin, Menu, MessageSquare, Package, PackageCheck, Palette, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X, Zap,
@@ -42,6 +42,7 @@ import { labels } from './resource-ui';
 import { NotificationsBell } from './NotificationsBell';
 import { CommandPalette, GlobalSearch } from './BackOfficeSearch';
 import { sectionFromAdminPath, useBackOffice, type BackOfficeNavItem } from './framework';
+import { availableGoShortcuts, resolveShortcut } from './shortcuts';
 
 export type BackOfficeRenderContext = {
   section: string;
@@ -96,6 +97,8 @@ export const BackOfficeShell: React.FC<{
   const [mobile, setMobile] = useState(false);
   const [profile, setProfile] = useState(false);
   const [palette, setPalette] = useState(false);
+  /** Carte des raccourcis (`?`). */
+  const [shortcutHelp, setShortcutHelp] = useState(false);
   const [density, setDensity] = useState<string>(() => {
     if (typeof window === 'undefined') return 'compact';
     try {
@@ -152,10 +155,12 @@ export const BackOfficeShell: React.FC<{
   useEffect(() => {
     if (!navigation) return;
     const known = navigation.groups.flatMap((group) => group.items);
-    if (!known.some((item) => item.section === section || (item as any).aliases?.includes(section))) {
+    // Écran hors navigation mais enregistré (fenêtre fusionnée, ex. `audit`) : il reste joignable.
+    const registered = resources.some((item) => item.section === section || (item.aliases ?? []).includes(section));
+    if (!registered && !known.some((item) => item.section === section || (item as any).aliases?.includes(section))) {
       if (section !== 'dashboard') navigate('dashboard');
     }
-  }, [navigation, section, navigate]);
+  }, [navigation, resources, section, navigate]);
 
   useEffect(() => {
     try { window.localStorage.setItem('ayrovi.bo.density', density); } catch { /* stockage indisponible : présentationnel seulement */ }
@@ -182,6 +187,25 @@ export const BackOfficeShell: React.FC<{
   const services = useMemo(() => navigation?.groups ?? [], [navigation]);
   const allItems = useMemo(() => services.flatMap((group) => group.items), [services]);
   const activeItem = allItems.find((item) => item.section === section || (item as any).aliases?.includes(section));
+
+  // Raccourcis clavier (11/11) : `g`+lettre, `/` recherche, `?` aide, Échap.
+  // Seuls les écrans présents dans la navigation SERVEUR de l'opérateur sont joignables.
+  const allowedSections = useMemo(() => new Set(allItems.map((item) => item.section)), [allItems]);
+  const armedAt = useRef<number | null>(null);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const { action, armedAt: next } = resolveShortcut(event as any, armedAt.current, Date.now(), allowedSections);
+      armedAt.current = next;
+      if (!action || action.type === 'arm') return;
+      if (action.type === 'close') { setShortcutHelp(false); return; }
+      event.preventDefault();
+      if (action.type === 'go') navigate(action.section);
+      else if (action.type === 'search') (document.querySelector('.bo-search input') as HTMLInputElement | null)?.focus();
+      else if (action.type === 'help') setShortcutHelp((open) => !open);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [allowedSections, navigate]);
   // Le service affiché suit l'écran courant, sauf si l'utilisateur a choisi un service explicitement.
   const activeService = services.find((group) => group.label === service)
     ?? services.find((group) => group.label === activeItem?.group)
@@ -257,6 +281,7 @@ export const BackOfficeShell: React.FC<{
       <div className="bo-topbar-actions admin-header-actions">
         <button className="admin-mobile-menu admin-icon-button" onClick={() => setMobile(true)} aria-label="Ouvrir le menu"><Menu /></button>
         <button className="admin-icon-button" onClick={() => setPalette(true)} title="Palette de commandes (⌘K)" aria-label="Palette de commandes"><Sparkles /></button>
+        <button className="admin-icon-button bo-shortcut-button" onClick={() => setShortcutHelp(true)} title="Raccourcis clavier (?)" aria-label="Raccourcis clavier"><kbd>?</kbd></button>
         <button className="admin-icon-button" onClick={() => setDensity(density === 'compact' ? 'comfortable' : 'compact')}
           title={density === 'compact' ? 'Densité confortable' : 'Densité compacte'} aria-label="Changer la densité"><Zap /></button>
         <button className="admin-icon-button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -400,5 +425,26 @@ export const BackOfficeShell: React.FC<{
     </div>
 
     <CommandPalette open={palette} onClose={() => setPalette(false)} onNavigate={navigate} />
+    {shortcutHelp && (
+      <div className="bo-shortcuts-backdrop" onClick={() => setShortcutHelp(false)}>
+        <section className="bo-shortcuts" role="dialog" aria-modal="true" aria-label="Raccourcis clavier" onClick={(event) => event.stopPropagation()}>
+          <header>
+            <strong>Raccourcis clavier</strong>
+            <button type="button" onClick={() => setShortcutHelp(false)} aria-label="Fermer"><X size={16} /></button>
+          </header>
+          <dl>
+            <div><dt><kbd>⌘</kbd><kbd>K</kbd></dt><dd>Palette de commandes</dd></div>
+            <div><dt><kbd>/</kbd></dt><dd>Recherche globale</dd></div>
+            <div><dt><kbd>?</kbd></dt><dd>Afficher / masquer cette carte</dd></div>
+            {availableGoShortcuts(allowedSections).map((entry) => (
+              <div key={entry.key}>
+                <dt><kbd>g</kbd><kbd>{entry.key}</kbd></dt>
+                <dd><button type="button" onClick={() => { setShortcutHelp(false); navigate(entry.section); }}>{entry.label}</button></dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      </div>
+    )}
   </div>;
 };

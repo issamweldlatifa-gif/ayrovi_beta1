@@ -56,7 +56,7 @@ function PublicationInsights() {
   useEffect(load, []);
   return <section className="admin-card"><h2>Engagement des publications</h2><p>Vues et partages uniques observés, pas des impressions publicitaires facturables. Aucun budget ou revenu estimé.</p><Button onClick={load}>Actualiser</Button>{error ? <div className="admin-error">{error}</div> : null}<DataTable rows={rows} emptyText="Aucune publication." columns={[
     { key: 'title', label: 'Publication' }, { key: 'sponsored', label: 'Annonceur', render: (row: any) => row.sponsored ? row.sponsor_name || 'Sponsorisé' : 'Éditorial' },
-    ...['views', 'likes', 'comments', 'shares', 'saves'].map(key => ({ key, label: ({ views: 'Vues uniques', likes: 'J’aime', comments: 'Commentaires', shares: 'Partages uniques', saves: 'Enregistrements' } as Record<string,string>)[key] })),
+    ...['views', 'likes', 'loves', 'dislikes', 'comments', 'shares', 'saves'].map(key => ({ key, label: ({ views: 'Vues uniques', likes: 'J’aime', loves: 'J’adore', dislikes: 'Je n’aime pas', comments: 'Commentaires', shares: 'Partages uniques', saves: 'Enregistrements' } as Record<string,string>)[key] })),
   ]} /></section>;
 }
 
@@ -192,7 +192,7 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
         <span className="admin-block-small">Format conseillé : vidéo verticale 9:16, sous-titres lisibles et caption courte.</span>
       </div>
       <DataTable
-        minWidth={700}
+        minWidth={860}
         emptyText="Aucun reel."
         rows={rows}
         columns={[
@@ -200,7 +200,9 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           { key: 'channel', label: 'Canal', render: (row: any) => channels.find((c) => c.id === row.channel_id)?.name || '—' },
           { key: 'duration_seconds', label: 'Durée', render: (row: any) => fmt(row.duration_seconds || 0) },
           { key: 'views', label: 'Vues', align: 'end', render: (row: any) => <span className="admin-cell-num">{row.views}</span> },
-          { key: 'likes', label: 'Likes', align: 'end', render: (row: any) => <span className="admin-cell-num">{row.likes}</span> },
+          { key: 'likes', label: 'J’aime', align: 'end', render: (row: any) => <span className="admin-cell-num">{row.reaction_likes ?? row.likes}</span> },
+          { key: 'loves', label: 'J’adore', align: 'end', render: (row: any) => <span className="admin-cell-num">{row.loves ?? 0}</span> },
+          { key: 'dislikes', label: 'Je n’aime pas', align: 'end', render: (row: any) => <span className="admin-cell-num">{row.dislikes ?? 0}</span> },
           { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={st(row.status)} /> },
         ]}
         rowActions={[

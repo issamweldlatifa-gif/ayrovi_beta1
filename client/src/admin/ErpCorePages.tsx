@@ -360,7 +360,7 @@ interface AuditRow {
   changes?: { field_name: string; old_value: string | null; new_value: string | null; value_kind: string }[];
 }
 
-export const ErpAuditPage: React.FC = () => {
+export const ErpAuditPage: React.FC<{ onOpenLegacy?: () => void }> = ({ onOpenLegacy }) => {
   const [filters, setFilters] = useState({ module: '', employeeCode: '', action: '', resourceType: '', resourceId: '', from: '', to: '' });
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState('');
@@ -374,6 +374,7 @@ export const ErpAuditPage: React.FC = () => {
 
   return <>
     <ErpHeader title="Journal d’audit (ERP)" description="Un seul système pour le back-office et le CRM : qui (employé), quoi (action), quand, où (écran), sur quel enregistrement, avant/après champ par champ, IP, session et user-agent." />
+    {onOpenLegacy && <p className="admin-block-small">Lignes antérieures au journal unifié : <button type="button" className="admin-link-button" onClick={onOpenLegacy}>Journal historique (audit_logs)</button></p>}
     <Filters>
       <Search value={filters.employeeCode} onChange={(value) => set({ employeeCode: value })} placeholder="Code EMP-…" />
       <Search value={filters.module} onChange={(value) => set({ module: value })} placeholder="Module (SOCIAL_REELS, TRUST_BAR…)" />
