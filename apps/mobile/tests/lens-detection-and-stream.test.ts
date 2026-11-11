@@ -33,6 +33,28 @@ describe('Z Lens — la reconnaissance visuelle parle, la recherche progresse', 
     expect(lens).toContain('const roi = toRoi(photo.selection)');
   });
 
+  /*
+   * 11/11/2026 — « كيما Google Lens بالضبط » : ML Kit SUR LE TÉLÉPHONE d'abord
+   * (instantané, gratuit) ; `/localize` seulement en secours ou pour un toucher
+   * hors des points. Toujours UNE seule recherche SerpApi par zone.
+   */
+  it('les produits sont d’abord repérés sur le téléphone (ML Kit), le cadre va au plus grand', () => {
+    expect(lens).toContain('await detectProductsOnDevice(photo.uri, photo.width, photo.height)');
+    expect(lens).toContain('const main = biggestProductIndex(local);');
+    expect(lens).toContain("if (local.length > 1) showTip('lens.select.many', local.length);");
+    expect(lens.indexOf('detectProductsOnDevice(photo.uri')).toBeLessThan(lens.indexOf('await localizeImage('));
+    expect(lens.match(/searchVisualMatches\(/g)?.length).toBe(1);
+    // La catégorie ML Kit n'est jamais un titre de résultat.
+    expect(lens).toContain("product?.source === 'device' ? undefined : product?.name");
+  });
+
+  it('en direct : points ML Kit, toucher un point déplace le cadre', () => {
+    expect(lens).toContain('detectProductsOnDevice(small.uri, livePhoto.width, livePhoto.height)');
+    expect(lens).toContain('products: deviceProducts,');
+    expect(lens).toContain('writeLive({ ...view, selected: index });');
+    expect(lens).toContain("detected={live.status === 'detected' || live.products.length > 0}");
+  });
+
   it('les correspondances visuelles sont affichées (vignette + titre) et ouvrables', () => {
     expect(lens).toContain('<LensLiveOverlay');
     expect(lens).toContain('matches={live.matches}');

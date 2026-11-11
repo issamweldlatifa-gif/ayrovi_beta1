@@ -62,6 +62,8 @@ import { LensSelectionView, type SelectionCommit } from '@/features/lens/LensSel
 import { LENS_COLORS } from '@/features/lens/lensPalette';
 import { shrinkImage } from '@/features/lens/lensImage';
 import { FULL_BOX, biggestProductIndex, isFullFrame, padBox, selectionKey, toRoi } from '@/features/lens/lensSelection';
+import { detectProductsOnDevice, warmUpOnDeviceDetector } from '@/features/lens/onDeviceDetection';
+import type { LensDetectedProduct as DetectedProduct } from '@/api/lens';
 import { initialMotion, isSteady, nextMotion, shouldDetect, type MotionState } from '@/features/lens/lensLive';
 import {
   clampLensSheet, lensSheetGeometry, lensSheetOwnsPan, snapLensSheet, toggleLensSheet, type LensSheetGeometry,
@@ -129,6 +131,14 @@ const MODES: ReadonlyArray<[Mode, TranslationKey, keyof typeof Ionicons.glyphMap
 ];
 /** Bords maximaux des copies envoyées : recherche, repérage d'une photo, image Live. */
 const SEARCH_EDGE = 1600;
+/** Catégorie ML Kit → libellé lisible (accessibilité des points blancs). */
+const OBJECT_LABELS: Record<string, TranslationKey> = {
+  fashion: 'lens.object.fashion',
+  home: 'lens.object.home',
+  food: 'lens.object.food',
+  plant: 'lens.object.plant',
+  product: 'lens.object.product',
+};
 const LIVE_EDGE = 640;
 /** Galerie : plusieurs photos d'un coup, bornées (chaque photo coûte une recherche). */
 const GALLERY_LIMIT = 5;
@@ -457,6 +467,17 @@ export default function LensScreen() {
     if (ms > 0) tipTimer.current = setTimeout(() => setTip(null), ms);
   }, []);
 
+  /**
+   * ML Kit ne rend que des catégories grossières en anglais (« Fashion good »…) :
+   * on les dit dans la langue de l'application. Ce n'est PAS une
+   * identification — elle reste celle de SerpApi (`resultTitle` l'ignore).
+   */
+  const nameProducts = useCallback((products: DetectedProduct[]): DetectedProduct[] =>
+    products.map((product) => ({ ...product, name: t(OBJECT_LABELS[product.category] ?? 'lens.object.product') })), [t]);
+
+  // Le modèle ML Kit se charge dès l'ouverture : la première photo n'attend pas.
+  useEffect(() => { warmUpOnDeviceDetector(); }, []);
+
   const writeSession = useCallback((next: PhotoSession | null) => {
     sessionRef.current = next;
     setSession(next);
@@ -519,7 +540,18 @@ export default function LensScreen() {
     void run(job);
   }, [run, showSearch]);
 
-  /** Ground shopping objects independently of merchant search. No synthetic boxes on failure. */
+  /**
+   * Repère les produits de la photo, pose le cadre sur le plus grand, puis
+   * lance la recherche SerpApi sur cette zone. Jamais de cadre inventé.
+   *
+   * 11/11/2026 — « كيما Google Lens بالضبط » : D'ABORD ML Kit, sur le
+   * téléphone (instantané, sans réseau, sans coût). Le repérage serveur
+   * (`/localize`, vision IA — plus fin : il sépare les vêtements portés, mais
+   * lent et payant) ne sert plus que :
+   *   • quand ML Kit ne trouve rien, ou n'existe pas (ancien APK) ;
+   *   • quand on touche la photo HORS de tout point (`point`) : « qu'y a-t-il
+   *     ici ? » — le serveur encadre exactement l'article touché.
+   */
   const groundPhoto = useCallback(
     async (photoKey: string, point?: { x: number; y: number }) => {
       const photo = sessionRef.current?.photos.find(
@@ -532,6 +564,19 @@ export default function LensScreen() {
       localizationRef.current = controller;
       patchPhoto(photoKey, { detection: 'pending' });
       setStage({ kind: 'busy', progress: null, identification: null, cards: [] });
+      if (!point) {
+        const local = nameProducts(await detectProductsOnDevice(photo.uri, photo.width, photo.height));
+        if (controller.signal.aborted || sessionRef.current?.photos[sessionRef.current.index]?.key !== photoKey) return;
+        if (local.length) {
+          const main = biggestProductIndex(local);
+          const updated = patchPhoto(photoKey, { detection: 'done', products: local, selected: main, selection: local[main].box });
+          if (updated) {
+            if (local.length > 1) showTip('lens.select.many', local.length);
+            searchSelection(updated);
+          }
+          return;
+        }
+      }
       try {
         const products = await localizeImage(
           { uri: photo.uri, name: 'capture.jpg', type: 'image/jpeg' },
@@ -582,7 +627,7 @@ export default function LensScreen() {
         }
       }
     },
-    [patchPhoto, searchSelection, showTip]
+    [nameProducts, patchPhoto, searchSelection, showTip]
   );
   const preparePhoto = useCallback(
     async (photoKey: string) => {
@@ -715,6 +760,23 @@ export default function LensScreen() {
         return;
       }
       const small = await shrinkImage(snapshot.uri, LIVE_EDGE, 0.6, { width: snapshot.width, height: snapshot.height });
+      const livePhoto = { width: small.width || snapshot.width, height: small.height || snapshot.height };
+      /*
+       * Points blancs en direct (11/11/2026) : ML Kit repère les produits du
+       * même instantané, localement, pendant que SerpApi cherche. Les points
+       * s'affichent DÈS qu'ils sont trouvés, sans attendre le réseau.
+       */
+      let deviceProducts: DetectedProduct[] = [];
+      const pickLive = (products: DetectedProduct[]) => {
+        const previous = liveRef.current.view;
+        return previous.selected >= 0 && previous.selected < products.length ? previous.selected : biggestProductIndex(products);
+      };
+      const devicePass = detectProductsOnDevice(small.uri, livePhoto.width, livePhoto.height).then((found) => {
+        deviceProducts = nameProducts(found);
+        if (stopped || motionRef.current.movedAt > startedAt || !deviceProducts.length) return;
+        state.doneAt = Date.now();
+        writeLive({ ...liveRef.current.view, products: deviceProducts, selected: pickLive(deviceProducts), photo: livePhoto });
+      });
       try {
         // SerpApi est l'unique entrée Lens : attendre le vrai délai de recherche
         // visuelle au lieu d'afficher un fallback d'identification différent.
@@ -724,14 +786,14 @@ export default function LensScreen() {
         // Le téléphone a bougé pendant la requête : ces cadres ne correspondent plus à l'aperçu.
         if (motionRef.current.movedAt > startedAt) return;
         state.doneAt = Date.now();
+        await devicePass;
         writeLive({
-          // Les résultats sont des pages visuelles ; le viseur ne prétend pas
-          // identifier une position sans boîte fournie par le fournisseur.
+          // Les pages viennent de SerpApi ; les cadres, de ML Kit (local).
           status: result.matches.length ? 'detected' : 'empty',
-          products: [],
+          products: deviceProducts,
           matches: result.matches,
-          selected: -1,
-          photo: { width: small.width || snapshot.width, height: small.height || snapshot.height },
+          selected: pickLive(deviceProducts),
+          photo: livePhoto,
         });
       } catch (error) {
         if (stopped || controller.signal.aborted) return;
@@ -740,6 +802,8 @@ export default function LensScreen() {
           writeLive({ ...IDLE_LIVE, status: 'unavailable' });
         }
       } finally {
+        // Le fichier réduit sert aussi à ML Kit : on le garde jusqu'à sa fin.
+        await devicePass.catch(() => undefined);
         removePrivateCapture(snapshot.uri);
         if (small.created) removePrivateCapture(small.uri);
       }
@@ -768,17 +832,19 @@ export default function LensScreen() {
       controller.abort();
       if (timer) clearTimeout(timer);
     };
-  }, [liveActive, writeLive]);
+  }, [liveActive, nameProducts, writeLive]);
 
   const resetLive = useCallback(() => {
     liveRef.current = { lastAt: 0, doneAt: 0, count: 0, failures: 0, view: IDLE_LIVE };
     setLive(IDLE_LIVE);
   }, []);
 
-  const onLiveSelect = useCallback((_index: number) => {
-    // Pas de boîtes SerpApi : les pages visuelles s'ouvrent depuis leur carte,
-    // et le cadre de sélection photo reste manuel.
-  }, []);
+  /** Toucher un point en direct : le cadre prend ce produit (et la photo suivante le cherchera). */
+  const onLiveSelect = useCallback((index: number) => {
+    const view = liveRef.current.view;
+    if (index < 0 || index >= view.products.length || index === view.selected) return;
+    writeLive({ ...view, selected: index });
+  }, [writeLive]);
 
   /* ── Déclencheur, galerie, codes, lien, mot clé ────────────────────────── */
 
@@ -820,7 +886,9 @@ export default function LensScreen() {
       // le cadre reste sur le produit que le client avait choisi.
       const state = liveRef.current;
       const view = state.view;
-      const reuse = view.status === 'detected' && Date.now() - state.doneAt < LIVE_REUSE_MS && motionRef.current.movedAt <= state.doneAt;
+      // Points du direct encore valables (téléphone immobile) : la photo
+      // reprend les mêmes produits et le même choix, sans redétecter.
+      const reuse = view.products.length > 0 && Date.now() - state.doneAt < LIVE_REUSE_MS && motionRef.current.movedAt <= state.doneAt;
       const working = await shrinkImage(picture.uri, SEARCH_EDGE, 0.8, { width: picture.width, height: picture.height });
       if (!mountedRef.current) return;
       openSession([{
@@ -829,7 +897,7 @@ export default function LensScreen() {
         width: working.width || picture.width,
         height: working.height || picture.height,
         cleanup: working.created ? [working.uri] : [],
-        detection: 'pending',
+        detection: reuse ? 'done' : 'pending',
         products: reuse ? view.products : [],
         selected: reuse ? view.selected : -1,
         selection: reuse && view.products[view.selected] ? padBox(view.products[view.selected].box) : FULL_BOX,
@@ -1053,7 +1121,11 @@ export default function LensScreen() {
   const sessionPhoto = session ? session.photos[session.index] ?? null : null;
   const resultTitle = useMemo(() => {
     if (!sessionPhoto) return undefined;
-    if (sessionPhoto.selected >= 0) return sessionPhoto.products[sessionPhoto.selected]?.name;
+    if (sessionPhoto.selected >= 0) {
+      const product = sessionPhoto.products[sessionPhoto.selected];
+      // Catégorie ML Kit (« Article de mode ») : pas un titre — il vient de SerpApi.
+      return product?.source === 'device' ? undefined : product?.name;
+    }
     return isFullFrame(sessionPhoto.selection) ? undefined : t('lens.select.zone');
   }, [sessionPhoto, t]);
 
@@ -1243,7 +1315,7 @@ export default function LensScreen() {
       <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
         {mode === 'live' && showCamera ? (
           <LensLiveOverlay
-            detected={live.status === 'detected'}
+            detected={live.status === 'detected' || live.products.length > 0}
             products={live.products}
             selected={live.selected}
             photo={live.photo}

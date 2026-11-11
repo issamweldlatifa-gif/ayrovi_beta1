@@ -1,10 +1,11 @@
 /**
  * Z Lens — Live : le cadre aux coins arrondis posé sur l'aperçu caméra.
  *
- * SerpApi renvoie des pages visuellement ressemblantes, pas des boîtes : le
- * cadre reste donc un viseur manuel au centre. Les matches s'affichent comme
- * des cartes ouvrables en bas de l'aperçu. Le rendu de boîtes reste inactif
- * tant qu'aucun fournisseur ne renvoie des coordonnées fiables.
+ * SerpApi renvoie des pages ressemblantes (cartes ouvrables en bas de
+ * l'aperçu) ; les CADRES viennent de ML Kit, sur le téléphone (11/11/2026) :
+ * un point blanc par produit, le cadre posé sur le produit choisi, toucher un
+ * point le déplace — comme Google Lens. Sans produit repéré, le cadre reste
+ * un viseur carré qui « respire » au centre.
  *
  * `coverRect` permet de replacer une éventuelle boîte normalisée sur l'aperçu
  * qui remplit l'écran en débordant (`cover`), sans jamais en inventer.
@@ -37,6 +38,11 @@ interface Props {
   matches?: readonly LensVisualMatch[];
   /** Ouvrir la fiche d'une correspondance (le prix est lu sur sa page). */
   onOpenMatch?: (match: LensVisualMatch) => void;
+  /**
+   * Étiquette au-dessus du cadre. Coupée par défaut : Google Lens n'en montre
+   * pas, et ML Kit ne connaît que des catégories grossières (« Mode »).
+   */
+  showLabel?: boolean;
 }
 
 const PAD = 8;
@@ -44,7 +50,7 @@ const CHIP_H = 30;
 
 export function LensLiveOverlay({
   detected, products, selected, photo, width, height, visibleTop, visibleBottom, onSelect,
-  matches = [], onOpenMatch,
+  matches = [], onOpenMatch, showLabel = false,
 }: Props) {
   const theme = useTheme();
   const t = useT();
@@ -131,7 +137,7 @@ export function LensLiveOverlay({
           <View style={[styles.arc, { bottom: 0, left: 0, width: radius, height: radius, borderColor: arcColor, borderBottomWidth: stroke, borderLeftWidth: stroke, borderBottomLeftRadius: radius }]} />
           <View style={[styles.arc, { bottom: 0, right: 0, width: radius, height: radius, borderColor: arcColor, borderBottomWidth: stroke, borderRightWidth: stroke, borderBottomRightRadius: radius }]} />
         </Animated.View>
-        {active ? (
+        {active && showLabel ? (
           <View
             style={[styles.chip, chipInside ? styles.chipInside : styles.chipAbove, { backgroundColor: veil(0.75), flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
             accessibilityLiveRegion="polite"

@@ -158,6 +158,11 @@ export interface LensDetectedProduct {
   name: string;
   category: string;
   box: LensBox;
+  /**
+   * Origine du cadre : `device` = ML Kit sur le téléphone (nom = catégorie
+   * grossière, jamais un titre) ; absent = repérage serveur (`/localize`).
+   */
+  source?: 'device';
 }
 
 /**
