@@ -97,6 +97,12 @@ export const ReelCard = memo(function ReelCard({
     if (likeLock.current) return;
     likeLock.current = true;
     setError("");
+    // Optimiste (référence 11/11) : le pouce vert et ses éclats partent AU
+    // TOUCHER, pas après l'aller-retour serveur ; l'état serveur s'applique
+    // ensuite, et un échec remet l'état d'avant.
+    const before = { liked, disliked };
+    setLiked(!liked);
+    if (!liked) setDisliked(false);
     try {
       const result = await sendInteraction({
         type: "like",
@@ -107,15 +113,21 @@ export const ReelCard = memo(function ReelCard({
       // Le serveur est exclusif : un like efface le pouce bas.
       setDisliked(result.disliked === true);
     } catch {
+      setLiked(before.liked);
+      setDisliked(before.disliked);
       setError(t("common.retry"));
     } finally {
       likeLock.current = false;
     }
-  }, [signedIn, reel.id, guestSession, t]);
+  }, [signedIn, liked, disliked, reel.id, guestSession, t]);
   const toggleDislike = useCallback(async () => {
     if (!signedIn || likeLock.current) return;
     likeLock.current = true;
     setError("");
+    // Optimiste, comme le pouce haut : le pouce rouge bascule au toucher.
+    const before = { liked, disliked };
+    setDisliked(!disliked);
+    if (!disliked) setLiked(false);
     try {
       const result = await sendInteraction({
         type: "reaction",
@@ -126,11 +138,13 @@ export const ReelCard = memo(function ReelCard({
       setDisliked(result.reaction === "dislike");
       setLiked(result.liked === true);
     } catch {
+      setLiked(before.liked);
+      setDisliked(before.disliked);
       setError(t("common.retry"));
     } finally {
       likeLock.current = false;
     }
-  }, [signedIn, disliked, reel.id, guestSession, t]);
+  }, [signedIn, liked, disliked, reel.id, guestSession, t]);
   const share = useCallback(() => shareReel(reel), [reel]);
   const shareWithFeedback = () => {
     setError("");

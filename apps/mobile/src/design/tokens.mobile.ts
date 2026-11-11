@@ -641,9 +641,11 @@ export function derivedColors(colors: DerivablePalette) {
      */
     /** Coeur du rail rempli + rafale + barre de défilement de la feuille. */
     reelAccent: '#FF9000',
+    /** Pouce « j'aime » du RAIL, rempli (vert mesuré #29B057 sur la vidéo du 10/11). */
+    reelLike: '#29B057',
     /** Pouce « j'aime » d'un commentaire, rempli (bleu mesuré #3080E8). */
     commentLike: '#3080E8',
-    /** Pouce « je n'aime pas » d'un commentaire, rempli (rouge mesuré). */
+    /** Pouce « je n'aime pas » — commentaire ET rail (rouge mesuré #F15243 ≈ même teinte). */
     commentDislike: '#F05040',
     /** Surface de la feuille de commentaires — sombre quel que soit le thème. */
     reelSheet: '#121212',

@@ -29,6 +29,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { LikeSparks, ReelGlyph, type ReelGlyphName } from './ReelIcons';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -94,32 +95,53 @@ export interface ReelShopTrayProps {
   children: (state: { open: boolean; bottom: number }) => React.ReactNode;
 }
 
-/** Une ligne du rail : icône, étiquette, compteur facultatif, état actif. */
+/** Une ligne du rail : glyphe, étiquette, compteur facultatif, état actif. */
 interface RailAction {
   key: 'fullscreen' | 'sound' | 'heart' | 'share' | 'comment' | 'dislike' | 'like';
-  icon: string;
+  glyph: ReelGlyphName;
   label: string;
   /** Compteur SOUS l'icône — seulement pouce haut et commentaire (référence). */
   count: string | null;
   disabled: boolean;
   onPress?: () => void;
   active: boolean;
+  /** Teinte du glyphe PLEIN quand l'action est posée (vert, rouge, orange). */
   activeColor: string;
-  /** Le cœur déclenche la rafale de trois cœurs à l'activation. */
-  burst: boolean;
+  /** Effet joué à l'ACTIVATION — relevé image par image sur la vidéo du 10/11. */
+  effect: 'like' | 'dislike' | 'heart' | null;
 }
 
-/** Durée du flash blanc à l'intérieur du glyphe (mesuré : 100–150 ms). */
-const RAIL_FLASH_MS = 120;
-/** Rafale de trois cœurs orange (mesuré : 8.0–8.8 s sur la vidéo). */
-const BURST_DURATION_MS = 650;
-const BURST_STAGGER_MS = 90;
+/**
+ * Chronologie des effets (vidéo de référence, 15–20 i/s) :
+ *  • pouce haut  : apparaît vert, basculé en arrière (≈ −28°), se redresse avec
+ *    un léger dépassement (~260 ms) ; trois éclats blancs naissent au-dessus de
+ *    la pointe pendant le redressement et RESTENT tant que le j'aime est posé ;
+ *  • pouce bas   : apparaît rouge, basculé (≈ +28°), revient droit en oscillant
+ *    (~500 ms) — pas d'éclats ;
+ *  • cœur        : se remplit d'orange un cran plus petit (0.88), tient ~260 ms,
+ *    BONDIT (1.22) puis se pose (1.0) ; trois petits cœurs jaillissent au-dessus
+ *    (gauche moyen, centre petit, droite grand), tiennent ~450 ms puis
+ *    s'estompent (~1.3 s au total).
+ * Le disque blanc translucide visible sur la vidéo à chaque toucher est
+ * l'indicateur « Afficher les appuis » d'Android (il suit le doigt, y compris
+ * dans la feuille) — ce n'est pas un effet de l'application : il n'est pas
+ * reproduit.
+ */
+const TILT_DEG = 28;
+const HEART_SETTLE_MS = 260;
+const MINI_RISE_MS = 220;
+const MINI_HOLD_MS = 450;
+const MINI_FADE_MS = 350;
+/** Les trois petits cœurs : position (depuis le centre du glyphe), taille, inclinaison. */
+const MINI_HEARTS = [
+  { x: -10, y: -19, size: 10, rotate: '-14deg' },
+  { x: 0, y: -13, size: 6, rotate: '0deg' },
+  { x: 10, y: -22, size: 12, rotate: '14deg' },
+] as const;
 
 /**
- * Un bouton du rail : cible 44 posée sur la vidéo, FLASH blanc à la pression
- * (voile rond derrière le glyphe ~120 ms), et pour le cœur une RAFALE de trois
- * cœurs orange qui montent et s'estompent quand il s'active. Compteur posé
- * sous l'icône quand l'action en porte un (pouce haut, commentaire).
+ * Un bouton du rail : cible 44 posée sur la vidéo, glyphe de la référence
+ * (trait blanc ⇄ plein coloré) et l'effet propre à l'action à son activation.
  */
 function RailButton({ action, index, reelId, open, insetBottom, trayHeight, onMedia }: {
   action: RailAction;
@@ -131,37 +153,62 @@ function RailButton({ action, index, reelId, open, insetBottom, trayHeight, onMe
   onMedia: string;
 }) {
   const theme = useTheme();
-  const [flash, setFlash] = useState(false);
-  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current); }, []);
+  // Bascule (pouces) et échelle (cœur) du glyphe principal.
+  const tilt = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+  // Éclats du pouce : apparaissent pendant le redressement, restent ensuite.
+  const sparks = useRef(new Animated.Value(action.effect === 'like' && action.active ? 1 : 0)).current;
+  // Petits cœurs : 0 → 1 (jaillissement), puis opacité 1 → 0 (estompe).
+  const minis = useRef(new Animated.Value(0)).current;
+  const miniFade = useRef(new Animated.Value(0)).current;
 
-  // Rafale : trois cœurs animés, déclenchés à l'ACTIVATION (pas à la pression).
-  const hearts = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
   const wasActive = useRef(action.active);
   useEffect(() => {
-    if (!action.burst || !action.active || wasActive.current) {
-      wasActive.current = action.active;
-      return;
-    }
+    const activated = action.active && !wasActive.current;
     wasActive.current = action.active;
-    hearts.forEach((value, offset) => {
-      value.setValue(0);
-      Animated.timing(value, {
-        toValue: 1,
-        duration: BURST_DURATION_MS,
-        delay: offset * BURST_STAGGER_MS,
-        useNativeDriver: true,
-      }).start();
-    });
-  }, [action.burst, action.active, hearts]);
-  useEffect(() => () => hearts.forEach((value) => value.stopAnimation()), [hearts]);
+    if (action.effect === 'like') {
+      if (!action.active) { sparks.setValue(0); tilt.setValue(0); return; }
+      if (!activated) return;
+      tilt.setValue(-TILT_DEG);
+      sparks.setValue(0);
+      Animated.parallel([
+        Animated.spring(tilt, { toValue: 0, friction: 5, tension: 160, useNativeDriver: true }),
+        Animated.timing(sparks, { toValue: 1, duration: 160, delay: 110, useNativeDriver: true }),
+      ]).start();
+    } else if (action.effect === 'dislike') {
+      if (!activated) { if (!action.active) tilt.setValue(0); return; }
+      tilt.setValue(TILT_DEG);
+      Animated.spring(tilt, { toValue: 0, friction: 3.5, tension: 120, useNativeDriver: true }).start();
+    } else if (action.effect === 'heart') {
+      if (!activated) {
+        if (!action.active) { scale.setValue(1); minis.setValue(0); miniFade.setValue(0); }
+        return;
+      }
+      scale.setValue(0.88);
+      minis.setValue(0);
+      miniFade.setValue(1);
+      Animated.parallel([
+        Animated.sequence([
+          Animated.delay(HEART_SETTLE_MS),
+          Animated.timing(scale, { toValue: 1.22, duration: 100, useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 1, duration: 160, useNativeDriver: true }),
+        ]),
+        Animated.sequence([
+          Animated.delay(HEART_SETTLE_MS + 20),
+          Animated.timing(minis, { toValue: 1, duration: MINI_RISE_MS, useNativeDriver: true }),
+          Animated.delay(MINI_HOLD_MS),
+          Animated.timing(miniFade, { toValue: 0, duration: MINI_FADE_MS, useNativeDriver: true }),
+        ]),
+      ]).start();
+    }
+  }, [action.effect, action.active, tilt, scale, sparks, minis, miniFade]);
+  useEffect(
+    () => () => [tilt, scale, sparks, minis, miniFade].forEach((value) => value.stopAnimation()),
+    [tilt, scale, sparks, minis, miniFade],
+  );
 
-  const press = () => {
-    setFlash(true);
-    if (flashTimer.current) clearTimeout(flashTimer.current);
-    flashTimer.current = setTimeout(() => setFlash(false), RAIL_FLASH_MS);
-    action.onPress?.();
-  };
+  const filled = action.active && action.effect !== null;
+  const color = filled ? action.activeColor : onMedia;
 
   return (
     <Pressable
@@ -170,56 +217,66 @@ function RailButton({ action, index, reelId, open, insetBottom, trayHeight, onMe
       accessibilityLabel={action.label}
       accessibilityState={{ disabled: action.disabled, checked: action.active || undefined }}
       disabled={action.disabled}
-      onPress={press}
+      onPress={action.onPress}
       hitSlop={4}
-      style={[
+      style={({ pressed }) => [
         styles.railButton,
         { bottom: reelTrayRailBottom(open, index, insetBottom, trayHeight) },
+        { opacity: action.disabled ? theme.opacity.disabled : pressed ? theme.opacity.subtle : 1 },
       ]}
     >
-      {/* Flash blanc : voile rond DERRIÈRE le glyphe, même blanc que l'encre média,
-          à l'opacité d'appui du système (`theme.opacity.subtle`). */}
-      {flash ? (
-        <View
-          style={[styles.railFlash, { backgroundColor: onMedia, opacity: theme.opacity.subtle }]}
+      <Animated.View
+        style={[
+          styles.railGlyph,
+          {
+            transform: [
+              { rotate: tilt.interpolate({ inputRange: [-90, 90], outputRange: ['-90deg', '90deg'] }) },
+              { scale },
+            ],
+          },
+        ]}
+      >
+        <ReelGlyph name={action.glyph} size={theme.iconSize.md} color={color} filled={filled} />
+      </Animated.View>
+      {action.effect === 'like' && action.active ? (
+        <Animated.View
           pointerEvents="none"
-        />
+          style={[styles.likeSparks, { opacity: sparks, transform: [{ scale: sparks }] }]}
+        >
+          <LikeSparks size={theme.iconSize.md} color={onMedia} />
+        </Animated.View>
       ) : null}
-      <Ionicons
-        name={action.icon as keyof typeof Ionicons.glyphMap}
-        size={theme.iconSize.md}
-        color={action.active ? action.activeColor : onMedia}
-        accessibilityElementsHidden
-      />
       {action.count ? (
         <AppText variant="caption" color={onMedia} style={styles.railCount}>
           {action.count}
         </AppText>
       ) : null}
-      {action.burst && action.active
-        ? hearts.map((value, offset) => (
+      {action.effect === 'heart' && action.active
+        ? MINI_HEARTS.map((mini, offset) => (
             <Animated.View
               key={offset}
               pointerEvents="none"
               style={[
-                styles.burstHeart,
+                styles.miniHeart,
                 {
-                  opacity: value,
+                  opacity: Animated.multiply(minis, miniFade),
                   transform: [
-                    { translateX: (offset - 1) * 16 },
-                    { translateY: value.interpolate({ inputRange: [0, 1], outputRange: [0, -52] }) },
-                    { scale: value.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.3] }) },
+                    { translateX: minis.interpolate({ inputRange: [0, 1], outputRange: [0, mini.x] }) },
+                    { translateY: minis.interpolate({ inputRange: [0, 1], outputRange: [0, mini.y] }) },
+                    { scale: minis.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) },
+                    { rotate: mini.rotate },
                   ],
                 },
               ]}
             >
-              <Ionicons name="heart" size={theme.iconSize.sm} color={theme.colors.reelAccent} accessibilityElementsHidden />
+              <ReelGlyph name="heart" size={mini.size} color={action.activeColor} filled />
             </Animated.View>
           ))
         : null}
     </Pressable>
   );
 }
+
 
 export function ReelShopTray({
   reel, mode, surface, onMedia, rail = null, favourites = null, children,
@@ -280,89 +337,89 @@ export function ReelShopTray({
    * QUE sous le pouce haut et sous le commentaire — comme la référence. Le ⋮
    * reste dans ReelOptions : la référence ne l'affiche pas dans le rail.
    *
-   * Chaque pression déclenche le FLASH blanc à l'intérieur du glyphe (~120 ms,
-   * fenêtre mesurée 8.0–8.2 s sur la vidéo) ; l'activation du cœur déclenche
-   * la rafale de trois cœurs orange (~700 ms, mesuré 8.0–8.8 s).
+   * Glyphes : ceux de la référence (`ReelIcons.tsx`), pas Ionicons. Effets à
+   * l'activation (voir `RailButton`) : pouce vert redressé + trois éclats,
+   * pouce rouge qui oscille, cœur orange qui bondit + trois petits cœurs.
    */
   const railView = overlay && rail ? (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
       {([
         {
           key: 'fullscreen',
-          icon: 'scan-outline',
+          glyph: 'fullscreen',
           label: t('social.fullscreen'),
           count: null,
           disabled: !rail.onFullscreen,
           onPress: rail.onFullscreen,
           active: false,
           activeColor: theme.colors.onMedia,
-          burst: false,
+          effect: null,
         },
         {
           key: 'sound',
-          icon: rail.muted ? 'volume-mute' : 'volume-high',
+          glyph: rail.muted ? 'muted' : 'sound',
           label: t(rail.muted ? 'social.unmute' : 'social.mute'),
           count: null,
           disabled: false,
           onPress: rail.onToggleMute,
           active: false,
           activeColor: theme.colors.onMedia,
-          burst: false,
+          effect: null,
         },
         {
           key: 'heart',
-          icon: rail.favourited ? 'heart' : 'heart-outline',
+          glyph: 'heart',
           label: t('social.like'),
           count: null,
           disabled: !rail.onFavourite,
           onPress: rail.onFavourite,
           active: rail.favourited,
           activeColor: theme.colors.reelAccent,
-          burst: true,
+          effect: 'heart',
         },
         {
           key: 'share',
-          icon: 'share-social-outline',
+          glyph: 'share',
           label: t('social.share'),
           count: null,
           disabled: false,
           onPress: rail.onShare,
           active: false,
           activeColor: theme.colors.onMedia,
-          burst: false,
+          effect: null,
         },
         {
           key: 'comment',
-          icon: 'chatbubble-outline',
+          glyph: 'comment',
           label: t('social.comments'),
           count: formatRailCount(rail.commentsCount),
           disabled: false,
           onPress: rail.onComment,
           active: false,
           activeColor: theme.colors.onMedia,
-          burst: false,
+          effect: null,
         },
         {
           key: 'dislike',
-          icon: rail.disliked ? 'thumbs-down' : 'thumbs-down-outline',
+          glyph: 'dislike',
           label: rail.disliked ? t('social.disliked') : t('social.dislike'),
           count: null,
           disabled: !rail.onDislike,
           onPress: rail.onDislike,
           active: rail.disliked,
-          activeColor: theme.colors.onMedia,
-          burst: false,
+          activeColor: theme.colors.commentDislike,
+          effect: 'dislike',
         },
         {
           key: 'like',
-          icon: rail.liked ? 'thumbs-up' : 'thumbs-up-outline',
+          glyph: 'like',
           label: rail.liked ? t('social.liked') : t('social.like'),
           count: formatRailCount(rail.likesCount),
           disabled: !rail.likeEnabled,
           onPress: rail.onLike,
           active: rail.liked,
-          activeColor: theme.colors.onMedia,
-          burst: false,
+          activeColor: theme.colors.reelLike,
+          effect: 'like',
         },
       ] as RailAction[]).map((action, index) => (
         <RailButton
@@ -481,18 +538,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Flash de pression : disque de 32 posé derrière le glyphe (22), rond.
-  // L'opacité d'appui vient de `theme.opacity` — passée inline par RailButton.
-  railFlash: {
-    position: 'absolute',
-    width: 32,
-    height: 32,
-    borderRadius: RADIUS.full,
-    top: 6,
-  },
+  // Le glyphe tourne autour de son centre (bascule des pouces, bond du cœur).
+  railGlyph: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
+  // Trois éclats du pouce vert : posés au-dessus de la pointe (décalée à droite).
+  likeSparks: { position: 'absolute', top: -6, start: 12 },
   // Compteur sous l'icône : la cible passe à 56 de hauteur utile.
   railCount: {},
-  // Un cœur de la rafale : posé au centre du bouton, il monte en s'estompant.
-  burstHeart: { position: 'absolute', top: 10 },
+  // Un petit cœur : part du centre du glyphe principal et jaillit vers le haut.
+  miniHeart: { position: 'absolute', top: 14 },
   inlineWrap: { paddingBottom: 4 },
 });

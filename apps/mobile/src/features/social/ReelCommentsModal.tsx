@@ -29,7 +29,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { ReelGlyph, VerifiedBadge } from '@/features/reels/ReelIcons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AppText } from '@/design/ui';
@@ -176,7 +176,7 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
             onPress={() => setReplyTo(null)}
             style={styles.iconTarget}
           >
-            <Ionicons name={ar ? 'arrow-forward' : 'arrow-back'} size={theme.iconSize.md} color={theme.colors.reelSheetInk} />
+            <ReelGlyph name="back" mirrored={ar} size={theme.iconSize.md} color={theme.colors.reelSheetInk} />
           </Pressable>
         ) : null}
         <AppText variant="bodyStrong" color={theme.colors.reelSheetInk}>
@@ -194,10 +194,9 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
             onPress={() => setSort((value) => (value === 'recent' ? 'oldest' : 'recent'))}
             style={styles.sortButton}
           >
-            <Ionicons name="options-outline" size={theme.iconSize.xs} color={theme.colors.reelSheetMuted} />
-            <AppText variant="caption" color={theme.colors.reelSheetMuted}>
-              {t(sort === 'recent' ? 'social.sortRecent' : 'social.sortOldest')}
-            </AppText>
+            {/* Référence : le glyphe seul (trois filets dégressifs), sans libellé —
+                l'ordre courant reste annoncé par `accessibilityLabel`. */}
+            <ReelGlyph name="sort" size={theme.iconSize.md} color={theme.colors.reelSheetInk} />
           </Pressable>
         ) : null}
         <Pressable
@@ -206,12 +205,12 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
           onPress={onClose}
           style={styles.iconTarget}
         >
-          <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.reelSheetInk} />
+          <ReelGlyph name="close" size={theme.iconSize.md} color={theme.colors.reelSheetInk} />
         </Pressable>
       </View>
       {replyTo ? (
         <View style={[styles.quote, { flexDirection: ar ? 'row-reverse' : 'row' }]} pointerEvents="none">
-          <Ionicons name="return-down-forward" size={theme.iconSize.xs} color={theme.colors.reelSheetMuted} />
+          <ReelGlyph name="reply" mirrored={ar} size={theme.iconSize.xs} color={theme.colors.reelSheetMuted} />
           <AppText variant="caption" color={theme.colors.reelSheetMuted} numberOfLines={1}>
             {replyTo.author} · {replyTo.text}
           </AppText>
@@ -261,8 +260,9 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
                 onPress={() => send.mutate()}
                 style={styles.iconTarget}
               >
-                <Ionicons
-                  name="paper-plane-outline"
+                <ReelGlyph
+                  name="send"
+                  mirrored={ar}
                   size={theme.iconSize.sm}
                   color={canSend ? theme.colors.reelAccent : theme.colors.reelSheetMuted}
                 />
@@ -294,7 +294,7 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
                 <AppText variant="captionStrong" color={theme.colors.reelSheetInk}>
                   {item.author}
                 </AppText>
-                <Ionicons name="checkmark-circle" size={theme.iconSize.xs} color={theme.colors.commentLike} accessibilityElementsHidden />
+                <VerifiedBadge size={theme.iconSize.xs} color={theme.colors.commentLike} mark={theme.colors.reelSheetInk} />
                 <View style={styles.spacer} />
                 <AppText variant="caption" color={theme.colors.reelSheetMuted}>
                   {relativeTimeLabel(item.createdAt, ar ? 'ar' : 'fr')}
@@ -309,37 +309,42 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
                 {item.text}
               </AppText>
               <View style={[styles.actions, { flexDirection: ar ? 'row-reverse' : 'row' }]}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('social.like')}
-                  accessibilityState={{ checked: item.myReaction === 'like' || undefined }}
-                  onPress={() => void react(item, item.myReaction === 'like' ? null : 'like')}
-                  style={styles.reaction}
-                >
-                  <Ionicons
-                    name={item.myReaction === 'like' ? 'thumbs-up' : 'thumbs-up-outline'}
-                    size={theme.iconSize.xs}
-                    color={item.myReaction === 'like' ? theme.colors.commentLike : theme.colors.reelSheetMuted}
-                  />
-                  {(item.likesCount ?? 0) > 0 ? (
-                    <AppText variant="caption" color={item.myReaction === 'like' ? theme.colors.commentLike : theme.colors.reelSheetMuted}>
+                <View style={[styles.reactionPair, { flexDirection: ar ? 'row-reverse' : 'row' }]}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('social.like')}
+                    accessibilityState={{ checked: item.myReaction === 'like' || undefined }}
+                    onPress={() => void react(item, item.myReaction === 'like' ? null : 'like')}
+                    style={styles.reaction}
+                  >
+                    <ReelGlyph
+                      name="like"
+                      filled={item.myReaction === 'like'}
+                      size={theme.iconSize.sm}
+                      color={item.myReaction === 'like' ? theme.colors.commentLike : theme.colors.reelSheetMuted}
+                    />
+                    {/* Référence : compteur toujours affiché (« 0 » compris), gris clair
+                        même quand le pouce est bleu. */}
+                    <AppText variant="captionStrong" color={theme.colors.reelSheetMuted}>
                       {String(item.likesCount ?? 0)}
                     </AppText>
-                  ) : null}
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t('social.dislike')}
-                  accessibilityState={{ checked: item.myReaction === 'dislike' || undefined }}
-                  onPress={() => void react(item, item.myReaction === 'dislike' ? null : 'dislike')}
-                  style={styles.reaction}
-                >
-                  <Ionicons
-                    name={item.myReaction === 'dislike' ? 'thumbs-down' : 'thumbs-down-outline'}
-                    size={theme.iconSize.xs}
-                    color={item.myReaction === 'dislike' ? theme.colors.commentDislike : theme.colors.reelSheetMuted}
-                  />
-                </Pressable>
+                  </Pressable>
+                  <View style={[styles.reactionDivider, { backgroundColor: theme.colors.reelSheetMuted }]} />
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t('social.dislike')}
+                    accessibilityState={{ checked: item.myReaction === 'dislike' || undefined }}
+                    onPress={() => void react(item, item.myReaction === 'dislike' ? null : 'dislike')}
+                    style={styles.reaction}
+                  >
+                    <ReelGlyph
+                      name="dislike"
+                      filled={item.myReaction === 'dislike'}
+                      size={theme.iconSize.sm}
+                      color={item.myReaction === 'dislike' ? theme.colors.commentDislike : theme.colors.reelSheetMuted}
+                    />
+                  </Pressable>
+                </View>
                 {!item.parentId ? (
                   <Pressable
                     accessibilityRole="button"
@@ -347,7 +352,9 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
                     onPress={() => { if (!signedIn) { setAuth(true); return; } setReplyTo(item); }}
                     style={styles.replyButton}
                   >
-                    <AppText variant="caption" color={theme.colors.reelSheetMuted}>
+                    {/* Référence : deux bulles superposées devant « Répondre ». */}
+                    <ReelGlyph name="reply" mirrored={ar} size={theme.iconSize.sm} color={theme.colors.reelSheetMuted} />
+                    <AppText variant="captionStrong" color={theme.colors.reelSheetMuted}>
                       {t('social.reply')}
                     </AppText>
                   </Pressable>
@@ -366,7 +373,7 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
                   disabled
                   style={styles.reaction}
                 >
-                  <Ionicons name="flag-outline" size={theme.iconSize.xs} color={theme.colors.reelSheetMuted} />
+                  <ReelGlyph name="flag" mirrored={ar} size={theme.iconSize.sm} color={theme.colors.reelSheetMuted} />
                 </Pressable>
               </View>
             </View>
@@ -392,7 +399,11 @@ const styles = StyleSheet.create({
   nameRow: { alignItems: 'center', gap: 4 },
   actions: { alignItems: 'center', gap: 16, marginTop: 4 },
   reaction: { flexDirection: 'row', alignItems: 'center', gap: 4, minWidth: 32, minHeight: 32 },
-  replyButton: { minWidth: 44, minHeight: 32, justifyContent: 'center' },
+  replyButton: { flexDirection: 'row', alignItems: 'center', gap: 6, minWidth: 44, minHeight: 32 },
+  // Filet vertical « | » entre le pouce haut (et son compteur) et le pouce bas.
+  reactionDivider: { width: StyleSheet.hairlineWidth * 2, height: 14 },
+  // Pouce haut | pouce bas : un groupe serré (la référence les colle), à part du reste.
+  reactionPair: { alignItems: 'center', gap: 8 },
   retry: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   empty: { textAlign: 'center', paddingVertical: 32 },
   composer: { gap: 6, paddingTop: 8 },

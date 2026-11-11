@@ -77,3 +77,53 @@ describe('rail du Reel — toujours visible en plein écran', () => {
     expect(card).toMatch(/paddingEnd: 64/);
   });
 });
+
+describe('glyphes et effets de la référence du 11/11', () => {
+  const tray = src('src/features/reels/ReelShopTray.tsx');
+  const icons = src('src/features/reels/ReelIcons.tsx');
+  const sheet = src('src/features/social/ReelCommentsModal.tsx');
+
+  it('le rail dessine les glyphes de la référence, plus aucun Ionicons dans le rail', () => {
+    for (const glyph of ['fullscreen', 'heart', 'share', 'comment', 'dislike', 'like']) {
+      expect(tray).toContain(`glyph: '${glyph}'`);
+    }
+    expect(tray).toContain("glyph: rail.muted ? 'muted' : 'sound'");
+    expect(tray).not.toMatch(/icon: '(thumbs|chatbubble|share-social|scan|volume|heart)/);
+    expect(tray).toContain('<ReelGlyph name={action.glyph}');
+  });
+
+  it('chaque glyphe a son tracé (pouce = manchette détachée + main)', () => {
+    for (const name of ['like', 'dislike', 'comment', 'share', 'heart', 'muted', 'sound', 'fullscreen', 'sort', 'close', 'back', 'reply', 'flag', 'send']) {
+      expect(icons).toContain(`case '${name}':`);
+    }
+    expect(icons).toMatch(/const THUMB_CUFF = /);
+    // Le pouce bas est le pouce haut retourné, comme sur la capture.
+    expect(icons).toContain("name === 'dislike' ? 'rotate(180 12 12)'");
+  });
+
+  it('les trois effets sont branchés sur la bonne action et la bonne teinte', () => {
+    expect(tray).toMatch(/activeColor: theme\.colors\.reelLike,\s*effect: 'like'/);
+    expect(tray).toMatch(/activeColor: theme\.colors\.commentDislike,\s*effect: 'dislike'/);
+    expect(tray).toMatch(/activeColor: theme\.colors\.reelAccent,\s*effect: 'heart'/);
+    expect(tray).toContain('<LikeSparks');
+    expect(tray).toMatch(/MINI_HEARTS = \[/);
+    // L'indicateur d'appui d'Android n'est pas un effet de l'app : plus de flash.
+    expect(tray).not.toMatch(/railFlash|RAIL_FLASH_MS/);
+  });
+
+  it('pouce haut / bas optimistes : l\'effet part au toucher, rollback en cas d\'échec', () => {
+    const card = src('src/features/social/ReelCard.tsx');
+    expect(card).toContain('setLiked(!liked);');
+    expect(card).toContain('setDisliked(!disliked);');
+    expect(card.match(/setLiked\(before\.liked\)/g)?.length).toBe(2);
+  });
+
+  it('la feuille utilise les mêmes glyphes (tri, fermer, répondre, signaler, vérifié)', () => {
+    expect(sheet).not.toContain('Ionicons');
+    for (const name of ['sort', 'close', 'reply', 'flag', 'like', 'dislike', 'back', 'send']) {
+      expect(sheet).toContain(`name="${name}"`);
+    }
+    expect(sheet).toContain('<VerifiedBadge');
+    expect(sheet).toContain('styles.reactionDivider');
+  });
+});
