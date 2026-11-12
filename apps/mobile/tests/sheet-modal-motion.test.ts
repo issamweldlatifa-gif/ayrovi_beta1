@@ -25,7 +25,6 @@ describe('mouvement unique des feuilles', () => {
       'src/features/reels/ReelOptions.tsx',
       'src/features/aywebs/ChoiceField.tsx',
       'src/features/publications/PublicationAuthSheet.tsx',
-      'src/features/publications/PublicationCommentsSheet.tsx',
       'app/lens.tsx',
     ]) {
       const source = readFileSync(join(root, file), 'utf8');

@@ -303,7 +303,7 @@ export interface PublicationBlockPublic {
 }
 
 /** Un bloc sans assez de produits vendables n'est pas montré (jamais de carte vide). */
-export function isRenderablePublicationBlock(block: Pick<PublicationBlockPublic, 'kind' | 'products' | 'media'>): boolean {
+export function isRenderablePublicationBlock(block: { kind: PublicationBlockKind; products: readonly unknown[]; media: PublicationBlockPublic['media'] }): boolean {
   if (block.kind === 'sponsored_pair') return block.products.length >= 1 && !!block.media;
   if (block.kind === 'media') return !!block.media && block.products.length >= 1;
   return block.products.length >= 1;

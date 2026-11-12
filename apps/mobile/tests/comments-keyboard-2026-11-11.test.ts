@@ -2,8 +2,8 @@
  * Commentaires & clavier — 2e retour du 11/11/2026 (captures Reels + Facebook).
  *  • Reels : la feuille ne grandit plus à chaque message (hauteur fixe), la
  *    liste rétrécit, le champ reste visible ; son propre commentaire en tête.
- *  • Publication (galerie) : la couche `absoluteFill` suit le clavier ; pendant
- *    la frappe, les commentaires prennent toute la place (comme Facebook).
+ *  (La galerie Publication et sa feuille de commentaires ont été retirées avec
+ *   l'ancien fil le 13/11/2026 : la page Publication n'a plus de commentaires.)
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -13,8 +13,6 @@ import { anchoredSheetHeight } from '../src/design/keyboardLogic';
 const read = (path: string) => readFileSync(join(__dirname, '..', path), 'utf8');
 const sheet = read('src/design/sheet/AppSheet.tsx');
 const reel = read('src/features/social/ReelCommentsModal.tsx');
-const viewer = read('src/features/publications/PublicationViewer.tsx');
-const commentsSheet = read('src/features/publications/PublicationCommentsSheet.tsx');
 
 describe('commentaires : le champ de saisie reste toujours visible', () => {
   it('AppSheet : liste rétrécissable + hauteur fixe optionnelle bornée par le clavier', () => {
@@ -29,16 +27,6 @@ describe('commentaires : le champ de saisie reste toujours visible', () => {
     expect(reel).toContain('setMine((prev) => [id, ...prev.filter((row) => row !== id)]);');
     expect(reel).toContain('list.current?.scrollTo({ y: 0, animated: true })');
     expect(reel).toContain('input.current?.focus();');
-  });
-
-  it('Publication : média immobile, panneau ancré par le haut, champ sur le clavier', () => {
-    expect(viewer).not.toContain('KeyboardAvoider');
-    expect(viewer).not.toContain('styles.collapsed');
-    expect(viewer).toContain('top: panelTop,');
-    expect(viewer).toContain('bottom: panelLift,');
-    expect(viewer).toContain("style={{ flex: comments ? 0.45 : 1, minHeight: 0 }}");
-    expect(commentsSheet).toContain('anchoredSheetHeight(');
-    expect(commentsSheet).not.toContain("'100%'");
   });
 });
 

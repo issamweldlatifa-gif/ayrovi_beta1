@@ -6,7 +6,7 @@ import {
   useIsMutating,
   useQueryClient,
 } from '@tanstack/react-query';
-import { followPublisher, fetchPublisherFollow } from '@/api/publicationFeed';
+import { followPublisher, fetchPublisherFollow } from '@/api/publisherFollow';
 import { useSession } from '@/state/session';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';

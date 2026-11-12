@@ -51,22 +51,3 @@ export const PUBLICATION_TYPE = {
   countSize: 15,
   countLine: 20,
 } as const;
-export const PUBLICATION_PUBLISHER = {
-  font: PUBLICATION_TYPE.semibold,
-  nameSize: PUBLICATION_TYPE.nameSize,
-  lineHeight: PUBLICATION_TYPE.nameLine,
-  avatar: PUBLICATION_TYPE.avatar,
-  mark: 24,
-  follow: 24,
-  sealEdge: 1,
-} as const;
-
-/** Local, deliberately short motion; not inferred Threads timings. */
-export const PUBLICATION_MOTION = {
-  enter: 200,
-  exit: 140,
-  dismiss: 180,
-  travel: 12,
-  stiffness: 280,
-  damping: 32,
-} as const;

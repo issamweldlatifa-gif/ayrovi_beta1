@@ -49,7 +49,6 @@ describe('aucune protection « iOS seulement »', () => {
   const files = [
     'app/lens.tsx', 'app/sign-in.tsx', 'app/forgot.tsx',
     'src/design/layout.tsx', 'src/design/subScreen.tsx', 'src/design/sheet/AppSheet.tsx',
-    'src/features/publications/PublicationCommentsSheet.tsx', 'src/features/publications/PublicationViewer.tsx',
   ];
   it.each(files)('%s n’utilise plus KeyboardAvoidingView ni useKeyboardInset(ios)', (file) => {
     const source = read(file);

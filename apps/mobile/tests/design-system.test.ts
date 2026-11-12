@@ -188,11 +188,8 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'app/(tabs)/_layout.tsx', // barre d'onglets flottante transparente à angles arrondis sous laquelle défile la page
       'app/aywebs/browser.tsx', // AYWEBs : voile de chargement posé au-dessus de la page du magasin (WebView)
       'src/features/sections/PromotionCard.tsx', // badge de réduction posé sur la vignette
-      'src/features/publications/PublicationPublisher.tsx', // verified seal overlaps the avatar; publisher text remains in normal flow
-      'src/features/publications/PublicationDescription.tsx', // invisible same-width measurement layer, never positioned content
-      'src/features/publications/PublicationViewer.tsx', // official back control overlays fullscreen media
-      'src/features/publications/PublicationMedia.tsx', // Compteur et commandes audio superposés au média défilant, pas de positionnement du contenu.
       'src/features/social/ReelCard.tsx', // durée posée sur la vignette vidéo
+      'src/features/publications/templates/PublicationVideo.tsx', // Publication (13/11) : affiche sous la vidéo + commandes pause/son posées SUR le média
       'src/features/social/CommentSortMenu.tsx', // menu de tri ancré sous l'icône, dans un Modal par-dessus la feuille (référence 10/11)
       'src/features/shopping/LinkedProductCard.tsx', // pastille favori posée dans l'angle de la carte article
       'src/features/aywebs/AyWebsHomeContent.tsx', // cœur posé dans l'angle de la grande carte boutique (même motif que la carte article)
@@ -208,7 +205,6 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/design/sheet/SheetBackdrop.tsx', // الظل الخلفي للدرج، يغطي الشاشة تحت الورقة
       'app/lens.tsx', // caméra plein écran : commandes, cadre et feuille au-dessus du flux vidéo
       'src/features/lens/LensProductView.tsx', // galerie : en-tête fixe, badges et aide zoom au-dessus des images
-      'src/features/publications/PublicationCard.tsx', // authored campaign caption plate overlays its own media, not page layout
       'src/design/ProductTile.tsx', // carte produit de grille (13/11) : pastilles au ras du bord et cœur posés SUR la photo qui défile
       'src/features/lens/LensSelectionView.tsx', // Z Lens : photo, voile, cadre de sélection et arcs posés les uns sur les autres
       'src/features/lens/LensLiveOverlay.tsx', // Z Lens Live : cadre et points posés sur l'aperçu caméra plein écran

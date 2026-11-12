@@ -1,4 +1,4 @@
-/** Existing Publication entry: Phase 1 editorial discovery, navigation unchanged. */
-import { PublicationFeedScreen } from '@/features/publications/PublicationFeedScreen';
+/** Page Publication : en-tête conservé + blocs composés dans le CRM (refonte du 13/11/2026). */
+import { PublicationTemplatesScreen } from '@/features/publications/PublicationTemplatesScreen';
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
-export default PublicationFeedScreen;
+export default PublicationTemplatesScreen;

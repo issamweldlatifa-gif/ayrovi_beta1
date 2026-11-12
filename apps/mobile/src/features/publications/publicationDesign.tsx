@@ -7,11 +7,7 @@ import { NavigationIcon } from '@/design/NavigationIcon';
 import { useI18n } from '@/i18n';
 
 import { PUBLICATION_PALETTE, PUBLICATION_TYPE } from './publicationTokens';
-export {
-  PUBLICATION_PALETTE,
-  PUBLICATION_TYPE,
-  PUBLICATION_PUBLISHER,
-} from './publicationTokens';
+export { PUBLICATION_PALETTE, PUBLICATION_TYPE } from './publicationTokens';
 export function publicationTextStyle(
   locale: string,
   variant: AppTextProps['variant'] = 'body'

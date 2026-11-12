@@ -1,4 +1,3 @@
-import { publicationCount } from '../src/features/publications/publicationFormat';
 import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -56,32 +55,31 @@ describe('Publication-only visual model, not a second commerce or social core', 
     ])
       expect(s).toContain(hex);
     for (const file of [
-      'PublicationActions',
-      'PublicationMedia',
-      'PublicationFeedScreen',
-      'PublicationViewer',
+      'PublicationHeader',
+      'PublicationTemplatesScreen',
+      'templates/MediaTemplate',
+      'templates/ContainerTemplate',
+      'templates/SponsoredPairTemplate',
+      'templates/PublicationVideo',
     ])
       expect(read(dir + file + '.tsx')).not.toContain('@expo/vector-icons');
     expect(read(dir + 'publicationDesign.tsx')).toContain(
       'strokeWidth={PUBLICATION_TYPE.stroke}'
     );
   });
-  it('reuses persisted social and preference endpoints without inventing unsupported menu actions', () => {
-    const sheet = read(dir + 'PublicationPostOptions.tsx');
-    expect(sheet).toContain('writePublicationPreference(');
-    expect(sheet).not.toMatch(/Traduire|Bloquer|Signaler|Meta AI/);
-    expect(read('src/features/social/Comments.tsx')).toContain(
-      'sendInteraction({'
-    );
-    expect(read(dir + 'PublicationFeedScreen.tsx')).toContain(
-      'setViewer(item)'
-    );
+  it('refonte 13/11 : en-tête seul + blocs du CRM, sans aucun bouton d’interaction', () => {
+    const page = read(dir + 'PublicationTemplatesScreen.tsx');
+    expect(page).toContain('<PublicationHeader />');
+    expect(page).toContain('fetchPublicationBlocks');
+    const templates = walk(dir + 'templates').filter((f) => f.endsWith('.tsx'));
+    expect(templates.length).toBeGreaterThanOrEqual(5);
+    for (const file of [...templates, dir + 'PublicationTemplatesScreen.tsx', dir + 'PublicationHeader.tsx']) {
+      const source = read(file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+      // Ni réaction, ni commentaire, ni partage, ni favori, ni « Suivre » : consigne du propriétaire.
+      expect(source, file).not.toMatch(/ReactionButton|sendInteraction|Comments|share-outline|heart|favorite=|Follow\b|followPublisher/);
+    }
+    // L'ancien fil (posts, visionneuse, commentaires) a disparu du dossier.
+    for (const gone of ['PublicationFeedScreen', 'PublicationViewer', 'PublicationCard', 'PublicationActions', 'PublicationCommentsSheet'])
+      expect(fs.existsSync(path.join(root, dir + gone + '.tsx'))).toBe(false);
   });
-});
-
-it('formats only real nonnegative counters compactly without changing the source', () => {
-  expect(publicationCount(42, 'fr')).toBe('42');
-  expect(publicationCount(1500, 'fr').replace(/\s/g, '')).toBe('1,5K');
-  expect(publicationCount(-2, 'fr')).toBe('0');
-  expect(publicationCount(NaN, 'ar')).toBe('0');
 });
