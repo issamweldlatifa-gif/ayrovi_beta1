@@ -101,6 +101,12 @@ export function ensureBootstrapAdmin(db: QatafoDatabase) {
         if (!claimed.changes) throw new Error('ADMIN_BOOTSTRAP_RESET token already consumed.');
         db.run('UPDATE admin_users SET email=?, password_hash=?, active=1, updated_at=? WHERE id=?',
           email, hashPassword(password), now, target.id);
+        // Récupération d'urgence : la double authentification du compte est aussi levée
+        // (téléphone perdu), à réactiver ensuite depuis « Sécurité du compte ».
+        try {
+          db.run("UPDATE admin_users SET totp_enabled=0, totp_secret=NULL, totp_pending=NULL, totp_last_step=0, totp_recovery='[]' WHERE id=?", target.id);
+        } catch { /* base sans colonnes TOTP : rien à lever */ }
+        db.run('DELETE FROM admin_sessions WHERE user_id=?', target.id);
       });
       console.info(`[Admin] Mot de passe réinitialisé une seule fois pour ${email}. Retirez ADMIN_BOOTSTRAP_RESET immédiatement.`);
       return;

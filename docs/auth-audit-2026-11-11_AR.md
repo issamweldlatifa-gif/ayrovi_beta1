@@ -144,7 +144,7 @@
 | كلمة السر الافتراضية `AyroviBeta2026!` ممنوعة في prod | ✅ |
 | `ADMIN_BOOTSTRAP_RESET` يتستعمل مرة وحدة، 32 حرف على الأقل | ✅ |
 | `X-Frame-Options: DENY` على `/admin` | ✅ |
-| **2FA (TOTP)** | ❌ ما فماش. **أهم توصية للإدارة**، خاطر هي اللي تقرر الأسوام وترجيع الفلوس. |
+| **2FA (TOTP)** | ✅ (12/11) اختيارية لكل حساب: «Sécurité du compte (2FA)» في قائمة البروفيل. كود 6 أرقام (±30 ثانية، ما يتعاودش)، السر مشفّر AES-GCM بـ `ADMIN_TOTP_KEY` (ولا `CUSTOMER_AUTH_SECRET`)، 8 codes de secours يتستعملو مرة وحدة. المسؤول (`users:write`) ينجم يرفعها على زميلو، و`ADMIN_BOOTSTRAP_RESET` يرفعها زادة. الملفات: `src/admin/totp.ts`، `src/admin/twoFactor.ts`، `client/src/admin/back-office/AccountSecurity.tsx`. ⚠️ كي تبدّل `ADMIN_TOTP_KEY` الأسرار القديمة ما عادش تتقرا: لازم reset. |
 | حد على كل إيمايل admin + تسجيل المحاولات الفاشلة في audit | ⏳ توصية |
 | توقيت مختلف كي الإيمايل موش موجود | 🔵 ضعيف (نفس تصليح `burnPasswordCheck` ينجم يتطبق) |
 

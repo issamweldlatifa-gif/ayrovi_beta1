@@ -43,8 +43,15 @@ export async function adminApi<T = any>(endpoint: string, options: RequestInit =
   return payload as T;
 }
 
-export async function login(email: string, password: string) {
-  const result = await adminApi<any>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+/**
+ * Connexion. Avec la double authentification active, le serveur répond 401
+ * `TOTP_REQUIRED` au premier envoi : l'écran demande alors le code et rappelle
+ * `login` avec `otp` (code à 6 chiffres ou code de secours `abcd-efgh`).
+ */
+export async function login(email: string, password: string, otp?: string) {
+  const body: Record<string, string> = { email, password };
+  if (otp && otp.trim()) body.otp = otp.trim();
+  const result = await adminApi<any>('/auth/login', { method: 'POST', body: JSON.stringify(body) });
   setCsrfToken(result.data.csrfToken);
   return result.data.user;
 }

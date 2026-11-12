@@ -60,6 +60,7 @@ import {
   verifyPassword,
 } from './auth';
 import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
+import { checkLoginSecondFactor, registerTwoFactorRoutes, resetTwoFactor } from './twoFactor';
 import { requireErpPermission } from '../erp-core/permissions';
 import { createCatalogueRouter } from '../catalogue/routes';
 import { createInventoryRouter } from '../inventory/routes';
@@ -561,7 +562,24 @@ export function createAdminRouter(
       loginAttempts.set(key, current);
       return res.status(401).json({ success: false, error: 'Email ou mot de passe incorrect.' });
     }
+    // Double authentification (12/11/2026) : sans 2FA active, rien ne change.
+    const second = checkLoginSecondFactor(db, user, req.body);
+    if ('code' in second) {
+      if (second.code === 'TOTP_INVALID') {
+        const current = attempt && attempt.resetAt > nowTime ? attempt : { count: 0, resetAt: nowTime + 15 * 60 * 1000 };
+        current.count += 1;
+        loginAttempts.set(key, current);
+      }
+      return res.status(401).json({ success: false, code: second.code, error: second.error });
+    }
     loginAttempts.delete(key);
+    if ('method' in second && second.method === 'recovery') {
+      writeAuditEvent(db, {
+        actor: { id: user.id, name: user.name, ipAddress: req.ip || null },
+        action: 'LOGIN_RECOVERY_CODE', module: 'USERS', resource: { id: user.id },
+        oldValues: null, newValues: null, context: auditContextFromAdminRequest(req),
+      });
+    }
     const session = createAdminSession(db, user);
     setAdminCookie(res, session.token);
     res.json({
@@ -1162,6 +1180,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     clearAdminCookie(res);
     res.json({ success: true });
   });
+
+  registerTwoFactorRoutes(router, db, (req, action, entityId) => audit(db, req, action, 'USERS', entityId, null, null));
 
   router.post('/auth/change-password', requireAdmin(db), (req, res) => {
     const currentPassword = String(req.body?.currentPassword || '');
@@ -2488,7 +2508,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   // jour reste identique (ADMIN, CONTENT_MANAGER, ORDER_MANAGER recoivent toujours 403,
   // comme le fige tests/ayrovi.test.ts), tandis que POST/PUT/DELETE exigent users:write.
   router.get('/users', requireErpPermission(db, { module: 'users', action: 'read', resourceType: 'admin_user', permissive: false }), (_req, res) => {
-    res.json({ success: true, data: db.all<any>('SELECT id,email,name,role,active,last_login_at,created_at,updated_at FROM admin_users ORDER BY created_at') });
+    res.json({ success: true, data: db.all<any>('SELECT id,email,name,role,active,totp_enabled,last_login_at,created_at,updated_at FROM admin_users ORDER BY created_at') });
   });
 
   router.post('/users', requireAdmin(db, 'users:write'), (req, res) => {
@@ -2516,6 +2536,13 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (typeof req.body?.password === 'string' && req.body.password) {
       if (req.body.password.length < 12) return res.status(400).json({ success: false, error: 'Mot de passe trop court.' });
       payload.password_hash = hashPassword(req.body.password);
+    }
+    // Compte bloqué (téléphone perdu) : un responsable lève la 2FA d'un COLLÈGUE.
+    if (req.body?.resetTwoFactor === true) {
+      if (existing.id === admin(req).id) return res.status(400).json({ success: false, error: 'Utilisez « Sécurité du compte » pour votre propre double authentification.' });
+      resetTwoFactor(db, existing.id);
+      audit(db, req, 'RESET_2FA', 'USERS', existing.id, { totp_enabled: existing.totp_enabled }, { totp_enabled: 0 });
+      if (!Object.keys(payload).length) return res.json({ success: true });
     }
     if (existing.id === admin(req).id && (payload.active === 0 || (payload.role && payload.role !== 'SUPER_ADMIN'))) return res.status(400).json({ success: false, error: 'Vous ne pouvez pas désactiver ou rétrograder votre propre compte.' });
     if (!Object.keys(payload).length) return res.status(400).json({ success: false, error: 'Aucune modification reçue.' });

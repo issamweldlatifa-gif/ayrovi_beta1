@@ -350,6 +350,11 @@ export class QatafoDatabase {
       },
       loadRecent: (limit) => this.db.prepare('SELECT trace FROM ayrovix_lens_traces ORDER BY created_at DESC LIMIT ?').all(limit) as Array<{ trace: string }>,
     });
+    // Double authentification de la console (TOTP, 12/11/2026) — voir src/admin/totp.ts.
+    for (const [name, definition] of Object.entries({
+      totp_secret: 'TEXT', totp_pending: 'TEXT', totp_enabled: 'INTEGER NOT NULL DEFAULT 0',
+      totp_last_step: 'INTEGER NOT NULL DEFAULT 0', totp_recovery: "TEXT NOT NULL DEFAULT '[]'",
+    })) this.ensureColumn('admin_users', name, definition);
     this.ensureColumn('publications', 'category', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('publications', 'media_origin', "TEXT NOT NULL DEFAULT 'uploaded'");
     for (const [name, definition] of Object.entries({

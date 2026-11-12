@@ -40,6 +40,7 @@ import {
 import { pushUrlPreservingNavigation } from '../../navigation/NavigationHistory';
 import { labels } from './resource-ui';
 import { NotificationsBell } from './NotificationsBell';
+import { AccountSecurity } from './AccountSecurity';
 import { CommandPalette, GlobalSearch } from './BackOfficeSearch';
 import { sectionFromAdminPath, useBackOffice, type BackOfficeNavItem } from './framework';
 import { availableGoShortcuts, resolveShortcut } from './shortcuts';
@@ -100,6 +101,7 @@ export const BackOfficeShell: React.FC<{
   const [service, setService] = useState<string | null>(null);
   const [mobile, setMobile] = useState(false);
   const [profile, setProfile] = useState(false);
+  const [security, setSecurity] = useState(false);
   const [palette, setPalette] = useState(false);
   /** Carte des raccourcis (`?`). */
   const [shortcutHelp, setShortcutHelp] = useState(false);
@@ -304,9 +306,11 @@ export const BackOfficeShell: React.FC<{
             <span>{identity.email}</span>
             {employee && <span className="bo-profile-employee">{employee.label ?? '—'} · <code>{employee.code}</code>{employee.branch ? ` · ${employee.branch}` : ''}</span>}
             {!employee && <span className="bo-profile-employee muted">Aucune fiche employée rattachée à ce compte</span>}
+            <button onClick={() => { setProfile(false); setSecurity(true); }} data-testid="bo-account-security">Sécurité du compte (2FA)</button>
             <button onClick={onLogout}><LogOut />Se déconnecter</button>
           </div>}
         </div>
+        <AccountSecurity open={security} onClose={() => setSecurity(false)} />
       </div>
     </header>
 

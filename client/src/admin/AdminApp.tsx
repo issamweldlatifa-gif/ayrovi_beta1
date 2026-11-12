@@ -145,6 +145,8 @@ const resources: Record<string, ResourceDefinition> = {
  */
 const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = ({ onAuthenticated }) => {
   const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [show, setShow] = useState(false);
+  // Double authentification (12/11/2026) : le champ n'apparaît que si le compte l'exige.
+  const [otpNeeded, setOtpNeeded] = useState(false); const [otp, setOtp] = useState('');
   const [health, setHealth] = useState<{ state: 'checking' | 'ok' | 'down'; version?: string }>({ state: 'checking' });
   const probe = useCallback(async () => {
     setHealth({ state: 'checking' });
@@ -157,7 +159,14 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
   useEffect(() => { void probe(); }, [probe]);
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); setBusy(true); setError('');
-    try { onAuthenticated(await login(email, password)); } catch (reason: any) { setError(reason.message); } finally { setBusy(false); }
+    try { onAuthenticated(await login(email, password, otpNeeded ? otp : undefined)); }
+    catch (reason: any) {
+      if (reason instanceof ApiError && (reason.code === 'TOTP_REQUIRED' || reason.code === 'TOTP_INVALID')) {
+        setOtpNeeded(true);
+        setOtp('');
+        setError(reason.code === 'TOTP_REQUIRED' && !otpNeeded ? '' : reason.message);
+      } else setError(reason.message);
+    } finally { setBusy(false); }
   };
   return (
     <main className="admin-login">
@@ -210,6 +219,12 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
               </div>
               <small id="admin-login-email-help">Le mot de passe n’est jamais stocké en clair : le serveur ne compare qu’une empreinte.</small>
             </Field>
+            {otpNeeded && (
+              <Field label="Code de vérification" required full hint="6 chiffres de votre application d’authentification — ou un code de secours abcd-efgh.">
+                <input name="otp" value={otp} autoFocus autoComplete="one-time-code" inputMode="text" maxLength={12}
+                  data-testid="admin-login-otp" onChange={(e) => setOtp(e.target.value)} placeholder="123 456" required />
+              </Field>
+            )}
             {error && <div className="admin-login-error" role="alert"><AlertCircle size={18} />{error}</div>}
             <Button busy={busy} className="admin-login-submit" type="submit">Se connecter</Button>
           </Form>
@@ -849,7 +864,9 @@ const UsersPage:React.FC=()=>{
   const [rows,setRows]=useState<any[]>([]);const [modal,setModal]=useState(false);const [form,setForm]=useState({name:'',email:'',password:'',role:'CONTENT_MANAGER'});const [toast,setToast]=useState<any>(null);const [busy,setBusy]=useState(false);const load=()=>adminApi<any>('/users').then(r=>setRows(r.data));useEffect(()=>{load();},[]);
   const create=async()=>{setBusy(true);try{await adminApi('/users',{method:'POST',body:JSON.stringify(form)});setModal(false);setForm({name:'',email:'',password:'',role:'CONTENT_MANAGER'});await load();setToast({message:'Utilisateur créé.',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
   const toggle=async(row:any)=>{try{await adminApi(`/users/${row.id}`,{method:'PUT',body:JSON.stringify({active:!row.active})});await load();}catch(e:any){setToast({message:e.message,tone:'error'});}};
-  return <><PageHeader title="Utilisateurs" description="Comptes internes et contrôle d’accès par rôle." action={<Button onClick={()=>setModal(true)}><Plus/>Nouvel utilisateur</Button>}/><section className="admin-list-card"><DataTable rows={rows} columns={[{key:'name',label:'Utilisateur',render:r=><div><strong>{r.name}</strong><small className="admin-block-small">{r.email}</small></div>},{key:'role',label:'Rôle',render:r=><StatusBadge status={r.role}/>},{key:'active',label:'Statut',render:r=><StatusBadge status={r.active?'ACTIVE':'INACTIVE'}/>},{key:'last_login_at',label:'Dernière connexion',render:r=>formatDate(r.last_login_at,true)},{key:'action',label:'',render:r=><Button variant="ghost" onClick={()=>toggle(r)}>{r.active?'Désactiver':'Activer'}</Button>}]}/></section>
+  // Téléphone perdu : lever la 2FA d'un collègue (ses sessions sont fermées, il la réactive ensuite).
+  const resetTwoFactor=async(row:any)=>{if(!window.confirm(`Lever la double authentification de ${row.name} ? Ses sessions seront fermées.`))return;try{await adminApi(`/users/${row.id}`,{method:'PUT',body:JSON.stringify({resetTwoFactor:true})});await load();setToast({message:'Double authentification levée.',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}};
+  return <><PageHeader title="Utilisateurs" description="Comptes internes et contrôle d’accès par rôle." action={<Button onClick={()=>setModal(true)}><Plus/>Nouvel utilisateur</Button>}/><section className="admin-list-card"><DataTable rows={rows} columns={[{key:'name',label:'Utilisateur',render:r=><div><strong>{r.name}</strong><small className="admin-block-small">{r.email}</small></div>},{key:'role',label:'Rôle',render:r=><StatusBadge status={r.role}/>},{key:'active',label:'Statut',render:r=><StatusBadge status={r.active?'ACTIVE':'INACTIVE'}/>},{key:'totp_enabled',label:'2FA',render:r=>r.totp_enabled?<span className="admin-block-small" data-testid={`user-2fa-${r.id}`}>Active · <Button variant="ghost" onClick={()=>resetTwoFactor(r)}>Réinitialiser</Button></span>:<small className="admin-block-small">—</small>},{key:'last_login_at',label:'Dernière connexion',render:r=>formatDate(r.last_login_at,true)},{key:'action',label:'',render:r=><Button variant="ghost" onClick={()=>toggle(r)}>{r.active?'Désactiver':'Activer'}</Button>}]}/></section>
   <Modal open={modal} title="Créer un utilisateur" onClose={()=>setModal(false)}><Form onSubmit={e=>{e.preventDefault();create();}}><Field label="Nom" required full><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required/></Field><Field label="Email" required full><input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} required/></Field><Field label="Mot de passe" hint="12 caractères minimum" required full><input type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} required/></Field><Field label="Rôle" full><Select value={form.role} onChange={e=>setForm({...form,role:e.target.value})} options={options(['SUPER_ADMIN','ADMIN','CONTENT_MANAGER','ORDER_MANAGER'])}/></Field><Button busy={busy} type="submit">Créer le compte</Button></Form></Modal>{toast&&<Toast {...toast}/>}</>;
 };
 
