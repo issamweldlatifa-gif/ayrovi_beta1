@@ -4,6 +4,8 @@ import { publishedSocialTarget } from './socialInteractions';
 type ReadStore = Pick<QatafoDatabase, 'get' | 'all'>;
 /** `loves` / `dislikes` : Z-Reactions (11/11). `likes` reste le seul « J'aime » (compat). */
 export interface SocialCounts { likes: number; loves: number; dislikes: number; comments: number; views: number; shares: number }
+/** Type matérialisé → champ du contrat public (inchangé). */
+const SOCIAL_TOTAL_KEYS = { like: 'likes', comment: 'comments', view: 'views', share: 'shares', love: 'loves', dislike: 'dislikes' } as const;
 export function readSocialCounts(db: Pick<ReadStore, 'all'>, input: unknown): Record<string, SocialCounts> {
   const ids = [...new Set(String(input || '').split(',')
     .map((value) => value.trim()).filter((value) => /^[A-Za-z0-9_-]{1,120}$/.test(value)).slice(0, 60))];
@@ -11,22 +13,16 @@ export function readSocialCounts(db: Pick<ReadStore, 'all'>, input: unknown): Re
   const out: Record<string, SocialCounts> = Object.create(null);
   for (const id of ids) out[id] = { likes: 0, loves: 0, dislikes: 0, comments: 0, views: 0, shares: 0 };
   if (ids.length) {
+    // Compteurs matérialisés (src/db/socialTotals.ts) : une recherche par clé, O(1) —
+    // le recomptage COUNT(*) coûtait ~13 ms/requête à 1 M d'interactions.
     const placeholders = ids.map(() => '?').join(',');
-    const rows = db.all<any>(`SELECT target_id,type,COUNT(*) n FROM story_interactions
-      WHERE target_id IN (${placeholders}) GROUP BY target_id,type`, ...ids);
+    const rows = db.all<any>(`SELECT target_id,type,n FROM social_interaction_totals
+      WHERE target_id IN (${placeholders})`, ...ids);
     for (const row of rows) {
       const counts = out[row.target_id];
       if (!counts) continue;
-      if (row.type === 'like') counts.likes = Number(row.n);
-      if (row.type === 'comment') counts.comments = Number(row.n);
-      if (row.type === 'view') counts.views = Number(row.n);
-      if (row.type === 'share') counts.shares = Number(row.n);
-    }
-    for (const [table, key] of [['social_loves', 'loves'], ['publication_dislikes', 'dislikes']] as const) {
-      for (const row of db.all<any>(`SELECT target_id,COUNT(*) n FROM ${table} WHERE target_id IN (${placeholders}) GROUP BY target_id`, ...ids)) {
-        const counts = out[row.target_id];
-        if (counts) counts[key] = Number(row.n);
-      }
+      const key = SOCIAL_TOTAL_KEYS[row.type as keyof typeof SOCIAL_TOTAL_KEYS];
+      if (key) counts[key] = Number(row.n);
     }
   }
   return out;

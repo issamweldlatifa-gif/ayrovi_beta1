@@ -87,6 +87,7 @@ import { funnelSummary } from '../analytics/funnel';
 import { ayWebsAnalyticsSummary } from '../aywebs/analytics';
 import { decideShoppable, type ProductSnapshot } from '../services/shoppableContent';
 import { createAyWebsAdminRouter } from '../aywebs/adminRoutes';
+import { socialTotalSql } from '../db/socialTotals';
 import {
   GenerateMagazineInput,
   MagazineAgentProviderError,
@@ -1423,12 +1424,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   router.get('/publication-insights', requireAdmin(db, 'content:read'), (_req, res) => {
     res.setHeader('Cache-Control', 'private, no-store');
     res.json({ success: true, data: db.all<any>(`SELECT p.id,p.title,p.sponsored,p.sponsor_name,p.status,
-      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=p.id AND i.type='view') views,
-      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=p.id AND i.type='like') likes,
-      (SELECT COUNT(*) FROM social_loves l WHERE l.target_id=p.id) loves,
-      (SELECT COUNT(*) FROM publication_dislikes d WHERE d.target_id=p.id) dislikes,
-      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=p.id AND i.type='comment') comments,
-      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=p.id AND i.type='share') shares,
+      ${socialTotalSql('p.id', 'view')} views,
+      ${socialTotalSql('p.id', 'like')} likes,
+      ${socialTotalSql('p.id', 'love')} loves,
+      ${socialTotalSql('p.id', 'dislike')} dislikes,
+      ${socialTotalSql('p.id', 'comment')} comments,
+      ${socialTotalSql('p.id', 'share')} shares,
       (SELECT COUNT(*) FROM publication_preferences pref WHERE pref.publication_id=p.id AND pref.saved=1) saves
       FROM publications p ORDER BY p.publish_at DESC`) });
   });

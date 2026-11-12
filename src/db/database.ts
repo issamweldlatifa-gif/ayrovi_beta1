@@ -1,5 +1,6 @@
 import { installOwnerReels } from '../magazine/installOwnerReels';
 import { schemaStatements } from './schemaStatements';
+import { ensureSocialTotals, socialTotalsDrift } from './socialTotals';
 import { upgradePublicationMediaPresentation } from '../catalogue/upgradePublicationMediaPresentation';
 import { reserveCatalogueSale, catalogId } from '../catalogue/localSale';
 import { installPublicationSelection } from '../catalogue/installPublicationSelection';
@@ -420,6 +421,14 @@ export class QatafoDatabase {
       // Old bundled URLs are removed in this release: do not serve a half-replaced collection.
       throw new Error('OWNER_REEL_REPLACEMENT_FAILED');
     }
+    // Compteurs sociaux matérialisés (audit d'architecture 12/11) : posés EN DERNIER,
+    // après toutes les migrations qui suppriment ou réinstallent des interactions.
+    if (ensureSocialTotals(this.db).installed) console.log('[database] social totals: table + triggers installed');
+  }
+
+  /** Diagnostic : écarts entre compteurs matérialisés et recomptage (vide = sain). */
+  public socialTotalsDrift(limit = 50) {
+    return socialTotalsDrift(this.db, limit);
   }
 
   /** One-shot migration of persisted brand configuration, not merchandise/media or arbitrary copy. */

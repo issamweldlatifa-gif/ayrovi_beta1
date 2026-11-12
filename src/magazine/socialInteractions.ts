@@ -22,15 +22,17 @@ export function isContentReaction(value: unknown): value is ContentReaction {
 }
 export function socialInteractionCounts(db: SocialStore, targetId: string) {
     const result = { likes: 0, loves: 0, dislikes: 0, comments: 0, views: 0, shares: 0 };
-    const rows = db.all<any>(`SELECT type,COUNT(*) n FROM story_interactions WHERE target_id=? GROUP BY type`, targetId);
+    // Compteurs matérialisés par déclencheurs (src/db/socialTotals.ts) : lus dans la
+    // MÊME transaction que l'écriture, donc déjà à jour — et en O(1).
+    const rows = db.all<any>('SELECT type,n FROM social_interaction_totals WHERE target_id=?', targetId);
     for (const row of rows) {
       if (row.type === 'like') result.likes = Number(row.n);
       if (row.type === 'comment') result.comments = Number(row.n);
       if (row.type === 'view') result.views = Number(row.n);
       if (row.type === 'share') result.shares = Number(row.n);
+      if (row.type === 'love') result.loves = Number(row.n);
+      if (row.type === 'dislike') result.dislikes = Number(row.n);
     }
-    result.loves = Number(db.get<any>('SELECT COUNT(*) n FROM social_loves WHERE target_id=?', targetId)?.n || 0);
-    result.dislikes = Number(db.get<any>('SELECT COUNT(*) n FROM publication_dislikes WHERE target_id=?', targetId)?.n || 0);
     return result;
   };
 

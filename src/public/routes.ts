@@ -40,6 +40,7 @@ import { buildProductSheet, MAX_SHEET_IMAGES } from '../services/productSheet';
 import { listVariants } from '../catalogue/variants';
 import { listMedia } from '../catalogue/media';
 import { getCategory } from '../catalogue/categories';
+import { socialTotalSql } from '../db/socialTotals';
 
 function parseJson(value: string, fallback: any = []) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -815,14 +816,14 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       pub.show_title,pub.template_id,pub.action_label,pub.action_target,pub.post_type,pub.media_json,pub.description,pub.description_position,pub.sponsored,pub.sponsor_name,pub.audience,pub.topic,
       EXISTS(SELECT 1 FROM publication_follows f WHERE f.publisher_id=pub.channel_id AND f.account_id=?) following,
       EXISTS(SELECT 1 FROM publication_preferences pref WHERE pref.publication_id=pub.id AND pref.account_id=? AND pref.saved=1) saved,
-      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='view') views,
-      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='share') shares,
+      ${socialTotalSql('pub.id', 'view')} views,
+      ${socialTotalSql('pub.id', 'share')} shares,
       EXISTS(SELECT 1 FROM story_interactions i WHERE i.target_id=pub.id AND i.type='like' AND i.account_id=?) liked,
       EXISTS(SELECT 1 FROM publication_dislikes d WHERE d.target_id=pub.id AND d.account_id=?) disliked,
       EXISTS(SELECT 1 FROM social_loves l WHERE l.target_id=pub.id AND l.account_id=?) loved,
-      (SELECT COUNT(*) FROM social_loves l WHERE l.target_id=pub.id) loves,
-      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='like') likes,
-      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=pub.id AND i.type='comment') comments,
+      ${socialTotalSql('pub.id', 'love')} loves,
+      ${socialTotalSql('pub.id', 'like')} likes,
+      ${socialTotalSql('pub.id', 'comment')} comments,
       ${LINKED_PRODUCT_JOIN_SELECT}
       FROM publications pub LEFT JOIN products p ON p.id=pub.product_id
       LEFT JOIN story_publishers channel ON channel.id=pub.channel_id

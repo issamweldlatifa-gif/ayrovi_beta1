@@ -2,14 +2,15 @@
 import type { QatafoDatabase } from '../db/database';
 import { LINKED_PRODUCT_JOIN_SELECT } from '../services/shoppableContent';
 import { socialCursor, type SocialPage } from './socialPagination';
+import { socialTotalSql } from '../db/socialTotals';
 type ContentReader = Pick<QatafoDatabase, 'all' | 'get'>;
 export type PublicSocialKind = 'publication' | 'reel';
 export interface PublishedSocialRow { id: string; publish_at: string; [column: string]: any }
 const sources = {
   publication: { table: 'publications', alias: 'pub', select: 'pub.id,pub.title,pub.subtitle,pub.channel_id,pub.image_url,pub.publish_at,pub.content_mode' },
   reel: { table: 'reels', alias: 'r', select: `r.id,r.title,r.channel_id,r.description,r.video_url,r.poster_url,r.duration_seconds,r.publish_at,r.content_mode,
-    (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='view') views,
-    (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='like') likes` },
+    ${socialTotalSql('r.id', 'view')} views,
+    ${socialTotalSql('r.id', 'like')} likes` },
 } as const;
 export function readPublishedSocial(db: ContentReader, kind: PublicSocialKind, now: string, page?: SocialPage): {
   items: PublishedSocialRow[]; nextCursor: string | null;
