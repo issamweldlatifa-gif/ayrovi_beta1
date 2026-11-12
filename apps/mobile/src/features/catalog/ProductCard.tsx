@@ -1,6 +1,6 @@
-import { memo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 /**
- * بطاقة منتوج — واجهة المتجر (Q1، 08/10/2026).
+ * بطاقة منتوج — واجهة المتجر (Q1، 08/10/2026 ؛ أُعيد بناؤها 13/11/2026).
  *
  * قاعدتان لا تُكسران :
  *
@@ -10,15 +10,25 @@ import { memo } from 'react';
  *      ⇒ «غير مؤكّد»؛ سعر صفر ⇒ «بلا تسعير» (موّش «0.00 TND»، وهي كذبة
  *      مطبوعة).
  *
- * الشكل أصلي (React Native) — المرجع الموقع هو **الخاصية**، موش التصميم.
+ * ── 13/11/2026 : الشكل مأخوذ من فيديو المرجع (Drive، شبكة «Sélection baskets») ──
+ * الكارت توّا مبنية على `ProductTile` المشترك (`@/design/ProductTile`) وقياساتو
+ * في `@/design/productTile.ts` :
+ *   • صورة 2:3 من الحاشية للحاشية، فاصل 4 بين العمودين، وبلا إطار ولا حشو ؛
+ *   • **التصاور تتقلّب بالصبع** داخل الكارت، والنقاط تحت الصورة تقول وين وصلت،
+ *     والضغطة تحلّ الفيش على نفس الصورة ؛
+ *   • **سطور ثابتة** : النقاط · الماركة · الاسم · المخزون · السعر (+ زرّ السلّة) —
+ *     كل كارت عندها نفس الطول، والسطور متاع جارتين على نفس الخط ؛
+ *   • «Promo» و«Combinaisons» ولّاو شارات على حاشية الصورة (ما عادش يطوّلو الكارت) ؛
+ *   • **صور كبيرة / صغيرة** : الشاشة هي اللي تعطي المقاسات (`metrics`).
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { AppImage } from '@/design/appImage';
+import { ProductTile, productTileTextStyle, type ProductTileBadge } from '@/design/ProductTile';
+import { PRODUCT_TILE, productTileImages, productTileMetrics, type ProductTileMetrics } from '@/design/productTile';
 import { useT, type Translate } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { normalizeStockStatus, type CatalogProduct } from '@/api/catalog';
@@ -29,9 +39,14 @@ import { formatMoney } from '@/format/money';
 
 export interface ProductCardProps {
   product: CatalogProduct;
-  onOpen: (product: CatalogProduct) => void;
-  /** Largeur/forme imposées par l'écran appelant (ex. liste pleine largeur des résultats). */
-  style?: StyleProp<ViewStyle>;
+  /** Ouvre la fiche ; `photo` = la photo regardée dans la carte (0 = la première). */
+  onOpen: (product: CatalogProduct, photo?: number) => void;
+  /**
+   * Cotes de la grille (`productTileMetrics`), calculées UNE fois par l'écran :
+   * toutes les cartes ont la même hauteur. Sans elles : grille 2 colonnes à la
+   * largeur de l'écran.
+   */
+  metrics?: ProductTileMetrics;
   /** Le marchand publie des couleurs ou tailles : repère « Combinaisons disponibles » (donnée réelle seulement). */
   hasCombinations?: boolean;
   /** Promotion donnée par le serveur (jamais déduite ici) : repère « Promo ». */
@@ -58,9 +73,12 @@ function stockLabel(status: string, t: Translate): { text: string; tone: 'ok' | 
   }
 }
 
-export const ProductCard = memo(function ProductCard({ product, onOpen, style, hasCombinations = false, promo = false, withCart = true }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({
+  product, onOpen, metrics, hasCombinations = false, promo = false, withCart = true,
+}: ProductCardProps) {
   const theme = useTheme();
   const t = useT();
+  const window = useWindowDimensions();
   const sessionId = useSessionId();
   const queryClient = useQueryClient();
   /**
@@ -74,99 +92,83 @@ export const ProductCard = memo(function ProductCard({ product, onOpen, style, h
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
   });
+  const tile = metrics ?? productTileMetrics({ width: window.width, density: 'grid', fontScale: window.fontScale });
   const stock = stockLabel(product.stockStatus, t);
   const hasPrice = product.finalPrice > 0;
+  const brand = product.brandName?.trim() || product.family?.name?.trim() || '';
+
+  // Toutes les photos publiées, dans l'ordre du CRM : principale puis additionnelles.
+  const images = useMemo(
+    () => productTileImages(product.image, product.additionalImages ?? []).map((uri) => ({ uri: mediaUrl(uri) })),
+    [product.image, product.additionalImages],
+  );
+  const badges = useMemo(() => {
+    const list: ProductTileBadge[] = [];
+    if (promo) list.push({ label: t('product.promoBadge'), tone: 'sale' });
+    if (hasCombinations) list.push({ label: t('product.combinations'), tone: 'neutral' });
+    return list;
+  }, [promo, hasCombinations, t]);
+  const open = useCallback((photo: number) => onOpen(product, photo), [onOpen, product]);
+
+  const stockColor = stock.tone === 'ok' ? theme.status.success.fg : stock.tone === 'warn' ? theme.status.warning.fg : theme.colors.muted;
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <ProductTile
+      testID={`product-card-${product.id}`}
+      metrics={tile}
+      images={images}
       accessibilityLabel={`${product.name}${hasPrice ? ` — ${formatMoney(product.finalPrice)}` : ''}`}
-      onPress={() => onOpen(product)}
-      style={[styles.card, { borderColor: theme.colors.line, borderRadius: theme.radius.card }, style]}
-    >
-      <View style={[styles.imageFrame, { backgroundColor: theme.colors.surface, borderRadius: theme.radius.card }]}>
-        {product.image ? (
-          <AppImage uri={mediaUrl(product.image)} style={styles.image} contentFit="cover" accessibilityLabel={product.name} />
-        ) : (
-          <AppText variant="caption" color={theme.colors.muted}>{t('catalog.noImage')}</AppText>
-        )}
-      </View>
-
-      {hasCombinations || promo ? (
-        <View style={styles.chipRow}>
-          {hasCombinations ? (
-            <View style={[styles.chip, { backgroundColor: theme.colors.canvas, borderColor: theme.colors.line, borderRadius: theme.radius.control }]}>
-              <AppText variant="caption" color={theme.colors.ink} numberOfLines={1}>{t('product.combinations')}</AppText>
-            </View>
-          ) : null}
-          {promo ? (
-            <View style={[styles.chip, { backgroundColor: theme.status.danger.fg, borderColor: theme.status.danger.fg, borderRadius: theme.radius.control }]}>
-              <AppText variant="captionStrong" color={theme.colors.canvas} numberOfLines={1}>{t('product.promoBadge')}</AppText>
-            </View>
-          ) : null}
-        </View>
-      ) : null}
-
-      {product.brandName ? (
-        <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{product.brandName}</AppText>
-      ) : null}
-
-      <AppText variant="label" numberOfLines={2} style={styles.name}>{product.name}</AppText>
-
-      <View style={styles.footer}>
-        {hasPrice ? (
-          <AppText variant="label" color={theme.colors.ink}>
-            {formatMoney(product.finalPrice)}
-          </AppText>
-        ) : (
-          <AppText variant="caption" color={theme.colors.muted}>{t('catalog.noPrice')}</AppText>
-        )}
+      imageLabel={product.name}
+      brand={brand}
+      name={product.name}
+      meta={(
         <AppText
-          variant="caption"
-          color={stock.tone === 'ok' ? theme.status.success.fg : stock.tone === 'warn' ? theme.status.warning.fg : theme.colors.muted}
+          numberOfLines={1}
+          color={stockColor}
+          maxFontSizeMultiplier={PRODUCT_TILE.maxFontScale}
+          style={[productTileTextStyle('meta', tile), { fontFamily: theme.font('regular') }]}
+          testID={`product-card-stock-${product.id}`}
         >
           {stock.text}
         </AppText>
-      </View>
-
-      {withCart && hasPrice ? (
+      )}
+      price={hasPrice ? formatMoney(product.finalPrice) : (
+        <AppText
+          numberOfLines={1}
+          color={theme.colors.muted}
+          maxFontSizeMultiplier={PRODUCT_TILE.maxFontScale}
+          style={[productTileTextStyle('meta', tile), { fontFamily: theme.font('regular') }]}
+        >
+          {t('catalog.noPrice')}
+        </AppText>
+      )}
+      badges={badges}
+      onOpen={open}
+      trailing={withCart && hasPrice ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={t('catalog.addToCart')}
+          accessibilityLabel={cart.isSuccess ? t('catalog.added') : t('catalog.addToCart')}
           accessibilityState={{ disabled: cart.isPending }}
           disabled={cart.isPending}
           testID={`product-card-cart-${product.id}`}
+          hitSlop={styles.cartHit}
           onPress={(event) => { event.stopPropagation?.(); cart.mutate(); }}
-          style={[styles.cartButton, { backgroundColor: theme.colors.ink, borderRadius: theme.radius.control }]}
+          style={({ pressed }) => [styles.cartButton, { height: tile.lines.price, opacity: cart.isPending ? theme.opacity.subtle : pressed ? theme.opacity.subtle : 1 }]}
         >
-          <Ionicons name={cart.isSuccess ? 'checkmark' : 'bag-add-outline'} size={theme.iconSize.sm} color={theme.colors.canvas} accessibilityElementsHidden />
-          <AppText variant="captionStrong" color={theme.colors.canvas} numberOfLines={1}>
-            {cart.isSuccess ? t('catalog.added') : t('catalog.addToCart')}
-          </AppText>
+          <Ionicons
+            name={cart.isSuccess ? 'checkmark' : 'bag-add-outline'}
+            size={theme.iconSize.md}
+            color={cart.isSuccess ? theme.status.success.fg : theme.colors.ink}
+            accessibilityElementsHidden
+          />
         </Pressable>
       ) : null}
-    </Pressable>
+    />
   );
 });
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    padding: 10,
-    width: '48%',
-    marginBottom: 12,
-  },
-  imageFrame: {
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-  image: { width: '100%', height: '100%' },
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
-  chip: { paddingHorizontal: 8, paddingVertical: 4, borderWidth: StyleSheet.hairlineWidth, alignSelf: 'flex-start' },
-  name: { marginTop: 2, minHeight: 34 },
-  cartButton: { marginTop: 8, paddingVertical: 8, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6, gap: 6 },
+  // 40 × (ligne prix) + débord de 10 en haut et en bas : cible ≥ 44 sans grandir la ligne.
+  cartButton: { width: 40, alignItems: 'center', justifyContent: 'center' },
+  cartHit: { top: 12, bottom: 12, left: 4, right: 4 },
 });

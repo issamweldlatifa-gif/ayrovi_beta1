@@ -168,6 +168,11 @@ export const ar = {
   'notifications.unread': 'غير مقروء',
   'notifications.markAll': 'تحديد الكل كمقروء ({count})',
 
+  /* Grille produits (13/11/2026) : compteur, bascule grandes / petites photos */
+  'products.countOne': '{count} منتوج',
+  'products.countMany': '{count} منتوجات',
+  'products.view.large': 'عرض بصور كبيرة',
+  'products.view.grid': 'عرض بصور صغيرة',
   'catalog.addToCart': 'أضف إلى السلّة',
   'catalog.added': 'تمت الإضافة إلى السلّة',
   'catalog.title': 'المتجر',
@@ -180,7 +185,6 @@ export const ar = {
   'catalog.stock.limited': 'كمية محدودة',
   'catalog.stock.out_of_stock': 'غير متوفّر',
   'catalog.stock.unknown': 'التوفّر غير مؤكّد',
-  'catalog.totalTnd': 'الإجمالي',
   'catalog.size': 'المقاس',
   'catalog.color': 'اللون',
   'catalog.variant.unavailable': 'غير متوفّر',

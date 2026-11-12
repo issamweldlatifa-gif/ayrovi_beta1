@@ -85,7 +85,14 @@ export default function ProductScreen() {
   const theme = useTheme();
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, photo: photoParam } = useLocalSearchParams<{ id: string; photo?: string }>();
+  /**
+   * Photo d'arrivée (13/11/2026) : la carte de la grille passe la photo que le
+   * client regardait (`?photo=2`) ; la fiche s'ouvre dessus au lieu de revenir à
+   * la première. Valeur absente, illisible ou négative ⇒ la première photo ; un
+   * index trop grand est ramené à la dernière par `FichePhoto`.
+   */
+  const startPhoto = Math.max(0, Math.floor(Number(photoParam) || 0));
   const sessionId = useSessionId();
   const queryClient = useQueryClient();
 
@@ -96,7 +103,7 @@ export default function ProductScreen() {
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
   /** الصورة المعروضة: تتبدّل كي يختار couleur عندها صورة (ميديا المتغيّر). */
-  const [photo, setPhoto] = useState(0);
+  const [photo, setPhoto] = useState(startPhoto);
   const [viewer, setViewer] = useState<number | null>(null);
   const [sizeSheet, setSizeSheet] = useState(false);
   const [pendingAddOnSize, setPendingAddOnSize] = useState(false);
@@ -108,8 +115,9 @@ export default function ProductScreen() {
   useEffect(() => {
     setSize('');
     setColor('');
-    setPhoto(0);
+    setPhoto(startPhoto);
     setPendingAddOnSize(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- la photo d'arrivée ne s'applique qu'à l'ouverture du produit
   }, [id]);
 
   useEffect(() => {
@@ -247,6 +255,8 @@ export default function ProductScreen() {
     ? sheet.images
     : [product.image, ...product.additionalImages].filter(Boolean);
   const items = galleryItems(images, sheet?.videos ?? []);
+  /** Photo réellement affichée : la photo d'arrivée ne peut pas dépasser la galerie. */
+  const shownPhoto = Math.max(0, Math.min(photo, items.length - 1));
 
   const sizes = sizeChoices(sheet?.dimensions);
   const rows = sizeRows(sizes);
@@ -308,7 +318,7 @@ export default function ProductScreen() {
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.canvas }]}>
       {/* 1. الصورة ثابتة (ما تتحرّكش): الورقة البيضاء هي اللي تطلع فوقها */}
-      <FichePhotoLayer items={items} index={photo} />
+      <FichePhotoLayer items={items} index={shownPhoto} />
 
       <Animated.ScrollView
         testID="product-fiche-scroll"
@@ -322,7 +332,7 @@ export default function ProductScreen() {
           testID="product-photo-window"
           accessibilityRole="button"
           accessibilityLabel={t('product.openGallery')}
-          onPress={() => setViewer(photo)}
+          onPress={() => setViewer(shownPhoto)}
           style={[styles.photoWindow, { height: FICHE.imageHeight + insets.top }]}
         />
 

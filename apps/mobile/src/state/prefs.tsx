@@ -1,5 +1,5 @@
 /**
- * Réglages persistants de l'application : langue et thème.
+ * Réglages persistants de l'application : langue, thème et affichage de la grille produits.
  *
  * Stockage : AsyncStorage (préférences non sensibles). Les JETONS DE SESSION
  * iront dans expo-secure-store en phase P2 — jamais ici.
@@ -9,6 +9,8 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode,
 } from 'react';
 
+import { isProductDensity, type ProductDensity } from '@/design/productTile';
+
 export type Locale = 'fr' | 'ar';
 export type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -17,10 +19,12 @@ export interface Prefs {
   themeMode: ThemeMode;
   /** L'intro OCEREX n'est montrée qu'une fois (comme sur le site). */
   ocerexOnboarded: boolean;
+  /** Grille produits : petites photos (`grid`) ou grandes photos (`large`) — 13/11/2026. */
+  productDensity: ProductDensity;
 }
 
 const STORAGE_KEY = 'ayrovi.prefs.v1';
-const DEFAULTS: Prefs = { locale: 'fr', themeMode: 'system', ocerexOnboarded: false };
+const DEFAULTS: Prefs = { locale: 'fr', themeMode: 'system', ocerexOnboarded: false, productDensity: 'grid' };
 
 interface PrefsValue extends Prefs {
   /** false tant que le disque n'a pas répondu : on ne peint pas avant. */
@@ -28,6 +32,7 @@ interface PrefsValue extends Prefs {
   setLocale: (locale: Locale) => void;
   setThemeMode: (mode: ThemeMode) => void;
   setOcerexOnboarded: (value: boolean) => void;
+  setProductDensity: (density: ProductDensity) => void;
 }
 
 const PrefsContext = createContext<PrefsValue | null>(null);
@@ -51,6 +56,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
             locale: isLocale(parsed.locale) ? parsed.locale : DEFAULTS.locale,
             themeMode: isThemeMode(parsed.themeMode) ? parsed.themeMode : DEFAULTS.themeMode,
             ocerexOnboarded: parsed.ocerexOnboarded === true,
+            productDensity: isProductDensity(parsed.productDensity) ? parsed.productDensity : DEFAULTS.productDensity,
           });
         }
       } catch {
@@ -76,6 +82,7 @@ export function PrefsProvider({ children }: { children: ReactNode }) {
     setLocale: (locale) => persist({ ...prefs, locale }),
     setThemeMode: (themeMode) => persist({ ...prefs, themeMode }),
     setOcerexOnboarded: (ocerexOnboarded) => persist({ ...prefs, ocerexOnboarded }),
+    setProductDensity: (productDensity) => persist({ ...prefs, productDensity }),
   }), [prefs, ready, persist]);
 
   return <PrefsContext.Provider value={value}>{children}</PrefsContext.Provider>;

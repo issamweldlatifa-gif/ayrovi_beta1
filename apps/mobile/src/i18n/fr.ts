@@ -172,6 +172,11 @@ export const fr = {
   'notifications.unread': 'Non lu',
   'notifications.markAll': 'Tout marquer comme lu ({count})',
 
+  /* Grille produits (13/11/2026) : compteur, bascule grandes / petites photos */
+  'products.countOne': '{count} article',
+  'products.countMany': '{count} articles',
+  'products.view.large': 'Afficher en grandes photos',
+  'products.view.grid': 'Afficher en petites photos',
   'catalog.addToCart': 'Ajouter au panier',
   'catalog.added': 'Ajouté au panier ✅',
   'catalog.title': 'Boutique',
@@ -184,7 +189,6 @@ export const fr = {
   'catalog.stock.limited': 'Stock limité',
   'catalog.stock.out_of_stock': 'Épuisé',
   'catalog.stock.unknown': 'Disponibilité non confirmée',
-  'catalog.totalTnd': 'Total',
   'catalog.size': 'Taille',
   'catalog.color': 'Couleur',
   'catalog.variant.unavailable': 'Indisponible',
