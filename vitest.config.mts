@@ -7,6 +7,8 @@ export default defineConfig({
     // الحدّ: اختبارات الموقع/الخادم هنا، واختبارات التطبيق داخل apps/mobile بوحدها.
     // بلا هذا السطر، عدّاد الاختبارات هذا يلتقط ملفات التطبيق ويجرّبها ببيئة الخادم.
     exclude: [...configDefaults.exclude, 'apps/**'],
+    // Contrats HTTP/SPA : coquille `public/index.html` temporaire si le build manque.
+    globalSetup: ['tests/setup/spa-shell.ts'],
     // Tests must be hermetic: pin the env BEFORE any module loads so a local
     // .env (dotenv n'écrase pas les variables déjà définies) cannot leak into the suite.
     env: {
