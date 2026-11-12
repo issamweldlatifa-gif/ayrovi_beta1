@@ -9,6 +9,8 @@ export default defineConfig({
     exclude: [...configDefaults.exclude, 'apps/**'],
     // Contrats HTTP/SPA : coquille `public/index.html` temporaire si le build manque.
     globalSetup: ['tests/setup/spa-shell.ts'],
+    // Lots de capture AYWEBs : inerte sauf AYWEBS_BUNDLE_DIFF=1 (cœur complet ≡ lot spécialisé, test par test).
+    setupFiles: ['tests/setup/capture-bundle-diff.ts'],
     // Tests must be hermetic: pin the env BEFORE any module loads so a local
     // .env (dotenv n'écrase pas les variables déjà définies) cannot leak into the suite.
     env: {

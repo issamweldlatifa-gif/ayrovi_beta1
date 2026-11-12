@@ -44,6 +44,9 @@ import { findAyWebsStore } from '../../shared/aywebsStores';
 import { AYWEBS_DEDICATED_CAPTURE_SCRIPTS } from './storeScripts';
 import { resolveAyWebsCaptureReader } from './captureReaders/registry';
 import { wrapAyWebsCaptureIntegration } from './captureEnvelope';
+import { AYWEBS_CAPTURE_BUNDLES, type AyWebsCaptureBundleId } from './captureBundles.generated';
+import type { AyWebsCaptureReaderDefinition } from './captureReaders/contract';
+import { createHash } from 'node:crypto';
 
 /** Chemin de service du script (le client le récupère une fois puis le rejoue). */
 export const AYWEBS_CAPTURE_SCRIPT_PATH = '/api/v1/aywebs/capture/script.js';
@@ -6869,21 +6872,63 @@ export const AYWEBS_NETWORK_OBSERVER_SCRIPT = String.raw`(function () {
   } catch (e) {}
 })();`;
 
+/** Lot du cœur partagé pour un lecteur `shared_core` / `generic` (défaut : `kernel`). */
+export function ayWebsCaptureBundleFor(reader: AyWebsCaptureReaderDefinition): AyWebsCaptureBundleId {
+  const name = reader.bundle ?? 'kernel';
+  return name in AYWEBS_CAPTURE_BUNDLES ? name : 'kernel';
+}
+
+export interface AyWebsServedCaptureScript {
+  readonly text: string;
+  /** Lecteur effectif, `null` = bundle historique complet (app ancienne / boutique inconnue). */
+  readonly reader: AyWebsCaptureReaderDefinition | null;
+  /** `dedicated:<id>`, nom du lot (`kernel`, `shein`…) ou `legacy`. */
+  readonly bundle: string;
+  /** Empreinte du texte servi : diagnostic et « rayon d'impact » d'une modification. */
+  readonly sha256: string;
+}
+
+const servedCache = new Map<string, AyWebsServedCaptureScript>();
+
 /**
  * Script servi pour une boutique — UN SEUL chemin pour toutes les boutiques :
  * lecteur effectif (`resolveAyWebsCaptureReader`) → intégration propre à la
- * boutique (script dédié ou cœur partagé piloté par `priceMode`) → enveloppe
- * commune (`wrapAyWebsCaptureIntegration`). Sans store_id (ou boutique
- * inconnue) : le bundle historique, pour les anciennes versions de l'app.
+ * boutique → enveloppe commune (`wrapAyWebsCaptureIntegration`).
+ *
+ * Intégration (12/11/2026) : script dédié (`dedicated`) OU LOT du cœur partagé
+ * (`kernel` / `shein` / `temu` / `aliexpress`) — plus jamais le cœur complet à une
+ * boutique enregistrée : une retouche SHEIN ne peut plus atteindre Sephora.
+ * Sans store_id (ou boutique inconnue) : le bundle historique complet, pour les
+ * anciennes versions de l'app.
  */
-export function buildAyWebsCaptureScript(storeId?: string | null): string {
+export function describeAyWebsCaptureScript(storeId?: string | null): AyWebsServedCaptureScript {
+  const key = String(storeId ?? '').trim().toLowerCase();
+  const cached = servedCache.get(key);
+  if (cached) return cached;
+  const served = computeServedScript(key);
+  // Seules les boutiques connues sont mémorisées : un store_id arbitraire ne fait pas grossir la table.
+  if (served.reader) servedCache.set(key, served);
+  else if (!servedCache.has('')) servedCache.set('', served);
+  return served.reader ? served : (servedCache.get('') as AyWebsServedCaptureScript);
+}
+
+function servedScript(text: string, reader: AyWebsCaptureReaderDefinition | null, bundle: string): AyWebsServedCaptureScript {
+  return { text, reader, bundle, sha256: createHash('sha256').update(text).digest('hex') };
+}
+
+function computeServedScript(storeId: string): AyWebsServedCaptureScript {
   const reader = resolveAyWebsCaptureReader(storeId);
-  if (!reader) return AYWEBS_CAPTURE_SCRIPT;
-  const store = findAyWebsStore(reader.storeId);
-  if (!store) return AYWEBS_CAPTURE_SCRIPT;
-  const integration = reader.integration === 'dedicated'
-    ? AYWEBS_DEDICATED_CAPTURE_SCRIPTS[reader.storeId]
-    : AYWEBS_CAPTURE_SCRIPT;
-  if (!integration) return AYWEBS_CAPTURE_SCRIPT;
-  return wrapAyWebsCaptureIntegration(reader, store.domains, integration);
+  const store = reader ? findAyWebsStore(reader.storeId) : null;
+  if (!reader || !store) return servedScript(AYWEBS_CAPTURE_SCRIPT, null, 'legacy');
+  if (reader.integration === 'dedicated') {
+    const dedicated = AYWEBS_DEDICATED_CAPTURE_SCRIPTS[reader.storeId];
+    if (!dedicated) return servedScript(AYWEBS_CAPTURE_SCRIPT, null, 'legacy');
+    return servedScript(wrapAyWebsCaptureIntegration(reader, store.domains, dedicated), reader, `dedicated:${reader.storeId}`);
+  }
+  const bundle = ayWebsCaptureBundleFor(reader);
+  return servedScript(wrapAyWebsCaptureIntegration(reader, store.domains, AYWEBS_CAPTURE_BUNDLES[bundle].text), reader, bundle);
+}
+
+export function buildAyWebsCaptureScript(storeId?: string | null): string {
+  return describeAyWebsCaptureScript(storeId).text;
 }

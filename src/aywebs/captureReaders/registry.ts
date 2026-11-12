@@ -50,4 +50,4 @@ export function resolveAyWebsCaptureReader(storeId: unknown): AyWebsCaptureReade
 
 export { AYWEBS_CAPTURE_CONTRACT_VERSION } from './contract';
 export type { AyWebsCaptureIntegration } from './contract';
-export type { AyWebsCapturePriceMode, AyWebsCaptureReaderDefinition } from './contract';
+export type { AyWebsCaptureBundleName, AyWebsCapturePriceMode, AyWebsCaptureReaderDefinition } from './contract';

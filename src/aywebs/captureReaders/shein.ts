@@ -5,5 +5,6 @@ export const sheinCaptureReader: AyWebsCaptureReaderDefinition = {
   version: 2,
   priceMode: 'named_containers',
   integration: 'shared_core',
+  bundle: 'shein',
   note: 'Dedicated SHEIN v2 reader: product-intro sale containers, embedded state (gbRawData/productIntroData/SSR), color swatches with goods_id/images, per-size price & stock.',
 };

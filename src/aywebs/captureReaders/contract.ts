@@ -32,10 +32,20 @@ export const AYWEBS_CAPTURE_CONTRACT_VERSION = 1;
  */
 export type AyWebsCaptureIntegration = 'dedicated' | 'shared_core' | 'generic';
 
+/**
+ * LOT du cœur partagé servi à une boutique `shared_core` / `generic` (12/11/2026).
+ * Généré par `scripts/build-aywebs-capture-bundles.mjs` : le cœur où les drapeaux
+ * des AUTRES boutiques sont fixés à `false` et leur code retiré. `kernel` = aucun
+ * code de place de marché (Sephora, Primark, boutiques génériques).
+ */
+export type AyWebsCaptureBundleName = 'kernel' | 'shein' | 'temu' | 'aliexpress';
+
 export interface AyWebsCaptureReaderDefinition {
   readonly storeId: string;
   readonly version: number;
   readonly priceMode: AyWebsCapturePriceMode;
   readonly integration: AyWebsCaptureIntegration;
+  /** Lot du cœur partagé (défaut `kernel`). Ignoré pour `dedicated`. */
+  readonly bundle?: AyWebsCaptureBundleName;
   readonly note: string;
 }

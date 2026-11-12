@@ -60,6 +60,11 @@ jobs:
       - name: Test
         run: npx vitest run
 
+      # Lots de capture AYWEBs par boutique : à jour, et ÉQUIVALENTS au cœur sur
+      # chaque page de la suite de capture (rejeu différentiel).
+      - name: AYWEBs capture bundles (fresh + differential)
+        run: npm run aywebs:bundles:check && npm run aywebs:bundles:diff
+
       - name: Install reference browser
         run: npx playwright install --with-deps chromium firefox
 

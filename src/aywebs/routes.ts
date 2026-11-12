@@ -7,8 +7,8 @@ import { cardGatewayAvailable } from '../services/paymentGateway';
 import { ayWebsReadGateStats } from './readGate';
 import { readerFingerprintReport } from '../scraper/readerFingerprint';
 import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION, type AyWebsCapturedVariantGroup } from '../../shared/aywebsCapture';
-import { buildAyWebsCaptureScript } from './captureScript';
-import { AYWEBS_CAPTURE_CONTRACT_VERSION, resolveAyWebsCaptureReader } from './captureReaders/registry';
+import { describeAyWebsCaptureScript } from './captureScript';
+import { AYWEBS_CAPTURE_CONTRACT_VERSION } from './captureReaders/registry';
 import { AYWEBS_CAPTURE_TRACKED_STORES, ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
 import { getAyroviAiCore } from '../ai-core/core';
 import { ayWebsResolveCacheStats, ayWebsResolveFailureCacheStats } from './resolveCache';
@@ -592,11 +592,14 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
    * d'application. Aucun secret, aucune donnée, aucun en-tête d'autorisation.
    */
   router.get('/capture/script.js', (req, res) => {
-    const storeId = String(req.query.store_id || '').trim().toLowerCase();
-    const script = buildAyWebsCaptureScript(storeId || null);
-    const reader = resolveAyWebsCaptureReader(storeId);
+    const storeId = String(req.query.store_id || '').trim().toLowerCase().slice(0, 40);
+    const served = describeAyWebsCaptureScript(storeId || null);
+    const script = served.text;
+    const reader = served.reader;
     res.type('application/javascript');
     res.setHeader('Cache-Control', 'public, max-age=300');
+    res.setHeader('X-AyWebs-Capture-Bundle', served.bundle);
+    res.setHeader('X-AyWebs-Capture-Hash', served.sha256.slice(0, 16));
     if (reader) {
       res.setHeader('X-AyWebs-Capture-Reader', reader.storeId);
       res.setHeader('X-AyWebs-Capture-Reader-Version', String(reader.version));
