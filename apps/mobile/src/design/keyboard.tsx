@@ -33,7 +33,7 @@
  * `scrollResponderScrollNativeHandleToKeyboard` à la frappe).
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { keyboardOverlap, keyboardTopFrom } from './keyboardLogic';
+import { fallbackKeyboardOverlap, keyboardOverlap, keyboardTopFrom, measuredViewIsUsable } from './keyboardLogic';
 import {
   Dimensions,
   Keyboard,
@@ -44,7 +44,10 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-export { anchoredSheetHeight, keyboardOverlap, keyboardTopFrom } from './keyboardLogic';
+export { anchoredSheetHeight, fallbackKeyboardOverlap, keyboardOverlap, keyboardTopFrom } from './keyboardLogic';
+
+/** Android pose parfois la vue APRÈS l'évènement clavier : une seconde mesure courte. */
+const REMEASURE_MS = 120;
 
 const SHOW_EVENT = Platform.OS === 'ios' ? 'keyboardWillChangeFrame' : 'keyboardDidShow';
 const HIDE_EVENT = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -62,11 +65,19 @@ export function useKeyboardOverlap(enabled = true) {
   const measure = useCallback(() => {
     const top = keyboardTop.current;
     const node = ref.current;
-    if (top === null || !node?.measureInWindow) {
+    if (top === null) {
       setOverlap(0);
       return;
     }
-    node.measureInWindow((_x, y, _width, height) => setOverlap(keyboardOverlap(y, height, top)));
+    // Repli (12/11) : sans mesure possible, on ne laisse plus le champ sous le
+    // clavier — on suppose la vue posée en bas de la fenêtre.
+    const fallback = () => fallbackKeyboardOverlap(Dimensions.get('window').height, top);
+    if (!node?.measureInWindow) {
+      setOverlap(fallback());
+      return;
+    }
+    node.measureInWindow((_x, y, _width, height) =>
+      setOverlap(measuredViewIsUsable(y, height) ? keyboardOverlap(y, height, top) : fallback()));
   }, []);
 
   useEffect(() => {
@@ -76,11 +87,15 @@ export function useKeyboardOverlap(enabled = true) {
       return undefined;
     }
     const screenHeight = () => Dimensions.get('screen').height;
+    let again: ReturnType<typeof setTimeout> | null = null;
     const show = Keyboard.addListener(SHOW_EVENT, (event: KeyboardEvent) => {
       keyboardTop.current = keyboardTopFrom(event?.endCoordinates, screenHeight());
       measure();
+      if (again) clearTimeout(again);
+      again = setTimeout(() => { again = null; if (keyboardTop.current !== null) measure(); }, REMEASURE_MS);
     });
     const hide = Keyboard.addListener(HIDE_EVENT, () => {
+      if (again) { clearTimeout(again); again = null; }
       keyboardTop.current = null;
       setOverlap(0);
     });
@@ -90,6 +105,7 @@ export function useKeyboardOverlap(enabled = true) {
       measure();
     }
     return () => {
+      if (again) clearTimeout(again);
       show.remove();
       hide.remove();
     };

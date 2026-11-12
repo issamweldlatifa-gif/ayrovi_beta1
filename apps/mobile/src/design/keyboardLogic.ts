@@ -14,6 +14,23 @@ export function keyboardOverlap(viewTop: number, viewHeight: number, keyboardTop
 }
 
 /**
+ * Repli sans mesure (12/11/2026) — ce que fournirait `react-native-keyboard-
+ * controller`, sans module natif : quand la vue ne peut pas être mesurée
+ * (`measureInWindow` absent, vue pas encore posée ⇒ hauteur 0 / NaN), on
+ * suppose qu'elle touche le bas de la fenêtre : recouvrement = fenêtre − haut
+ * du clavier. Jamais négatif, jamais plus grand que la fenêtre.
+ */
+export function fallbackKeyboardOverlap(windowHeight: number, keyboardTop: number | null): number {
+  if (keyboardTop === null || !Number.isFinite(keyboardTop) || !(windowHeight > 0)) return 0;
+  return Math.round(Math.min(windowHeight, Math.max(0, windowHeight - keyboardTop)));
+}
+
+/** Une mesure `measureInWindow` est-elle exploitable ? (vue posée, nombres finis) */
+export function measuredViewIsUsable(y: number, height: number): boolean {
+  return Number.isFinite(y) && Number.isFinite(height) && height > 0;
+}
+
+/**
  * Haut du clavier, dans les coordonnées de l'écran. `screenY` est la source ;
  * s'il manque ou est aberrant (certains claviers tiers), on le déduit de la
  * hauteur de l'écran.

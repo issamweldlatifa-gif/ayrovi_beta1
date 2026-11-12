@@ -64,3 +64,17 @@ describe('anchoredSheetHeight — le haut de la feuille ne bouge pas avec le cla
     expect(anchoredSheetHeight(100, 50, 240, -10)).toBe(0);
   });
 });
+
+describe('clavier : repli sans mesure (12/11)', () => {
+  it('suppose la vue posée en bas de la fenêtre quand elle ne peut pas être mesurée', async () => {
+    const { fallbackKeyboardOverlap, measuredViewIsUsable } = await import('../src/design/keyboardLogic');
+    expect(fallbackKeyboardOverlap(800, 500)).toBe(300);
+    expect(fallbackKeyboardOverlap(800, 900)).toBe(0);
+    expect(fallbackKeyboardOverlap(800, null)).toBe(0);
+    expect(fallbackKeyboardOverlap(0, 400)).toBe(0);
+    expect(fallbackKeyboardOverlap(800, -100)).toBe(800);
+    expect(measuredViewIsUsable(10, 200)).toBe(true);
+    expect(measuredViewIsUsable(10, 0)).toBe(false);
+    expect(measuredViewIsUsable(Number.NaN, 200)).toBe(false);
+  });
+});
