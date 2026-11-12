@@ -1720,6 +1720,8 @@ export class QatafoDatabase {
         target_id TEXT NOT NULL, account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
         created_at TEXT NOT NULL, PRIMARY KEY(target_id,account_id)
       );
+      -- Suppression d'un compte (CASCADE) et « mes réactions » passent par account_id.
+      CREATE INDEX IF NOT EXISTS idx_social_loves_account ON social_loves(account_id);
       CREATE TABLE IF NOT EXISTS social_comment_replies (
         comment_id TEXT PRIMARY KEY REFERENCES story_interactions(id) ON DELETE CASCADE,
         parent_id TEXT NOT NULL REFERENCES story_interactions(id) ON DELETE CASCADE
