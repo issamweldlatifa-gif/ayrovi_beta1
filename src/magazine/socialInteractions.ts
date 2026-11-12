@@ -60,6 +60,21 @@ function syncReelCounters(db: SocialStore, targetId: string, target: SocialTarge
 
 
 export type InteractionResult = { outcome: 'invalid_interaction' | 'target_not_found' | 'auth_required' | 'guest_session_required' | 'invalid_reaction' | 'reaction_target_invalid' | 'comment_too_short' | 'comment_parent_invalid' | 'comment_request_invalid' | 'comment_conflict' } | { outcome: 'ok' | 'created'; data: Record<string, unknown> };
+/**
+ * Recherche « ce propriétaire a-t-il déjà vu / partagé ce contenu ? ».
+ * Le prédicat reprend MOT POUR MOT celui des index uniques partiels
+ * (idx_social_unique_account / idx_social_unique_guest) : sans lui, le
+ * planificateur ne peut pas prouver que `type=?` tombe dans l'index et balaie
+ * toutes les vues du contenu — 35 ms par vue sur un Reel à 37 000 vues, DANS la
+ * transaction d'écriture (mesuré le 12/11/2026). Avec : O(log n), ~0,02 ms.
+ * PostgreSQL applique la même règle aux index partiels.
+ */
+export function uniqueOwnerLookupSql(byAccount: boolean): string {
+  return byAccount
+    ? "SELECT id FROM story_interactions WHERE target_id=? AND type=? AND account_id=? AND type IN ('like','view','share') AND account_id IS NOT NULL"
+    : "SELECT id FROM story_interactions WHERE target_id=? AND type=? AND guest_hash=? AND type IN ('view','share') AND guest_hash IS NOT NULL";
+}
+
 export function writeSocialInteraction(db: SocialStore, input: unknown, customer: { id: string; displayName?: string } | null, guestSession: string, now: string): InteractionResult {
   const body = input !== null && typeof input === 'object' ? input as Record<string, unknown> : {};
   // Enclose visibility, validation, deduplication, writes and counters in one atomic unit.
@@ -152,10 +167,10 @@ export function writeSocialInteraction(db: SocialStore, input: unknown, customer
     }
 
     // Les vues et partages sont comptés par propriétaire unique afin d'éviter le gonflement artificiel.
-    const ownerColumn = accountId ? 'account_id' : 'guest_hash';
     const ownerValue = accountId || guestHash;
     const inserted = (() => {
-      const existing = db.get<any>(`SELECT id FROM story_interactions WHERE target_id=? AND type=? AND ${ownerColumn}=?`, targetId, type, ownerValue);
+      // Recherche servie par l'index unique partiel (voir uniqueOwnerLookupSql).
+      const existing = db.get<any>(uniqueOwnerLookupSql(Boolean(accountId)), targetId, type, ownerValue);
       if (existing) return false;
       db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at)
         VALUES (?,?,?,?,?,?,NULL,?)`, `int_${randomUUID()}`, targetId, target.kind, type, accountId, guestHash, now);

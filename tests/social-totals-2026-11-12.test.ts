@@ -12,7 +12,7 @@ import Database from 'better-sqlite3';
 import { QatafoDatabase } from '../src/db/database';
 import { ensureSocialTotals, socialTotalSql, socialTotalsDrift } from '../src/db/socialTotals';
 import { readSocialCounts } from '../src/magazine/socialEngagementReads';
-import { socialInteractionCounts, writeSocialInteraction } from '../src/magazine/socialInteractions';
+import { socialInteractionCounts, uniqueOwnerLookupSql, writeSocialInteraction } from '../src/magazine/socialInteractions';
 
 /** Les trois tables sources, au schéma de production (sans le reste de la base). */
 function bareSchema(): Database.Database {
@@ -180,6 +180,41 @@ describe('lectures non paginées plafonnées', () => {
         seen += page.items.filter((row) => row.id.startsWith('cap_')).length; cursor = page.nextCursor;
       } while (cursor);
       expect(seen).toBe(LEGACY_UNPAGED_LIMIT + 25);
+    } finally { db.close(); }
+  });
+});
+
+describe('écriture d’une vue : servie par l’index unique partiel (pas de balayage)', () => {
+  it('le plan d’exécution utilise idx_social_unique_guest / idx_social_unique_account', () => {
+    const db = new QatafoDatabase(':memory:');
+    try {
+      const plan = (sql: string) => db.all<any>(`EXPLAIN QUERY PLAN ${sql}`, 'r', 'view', 'o').map((row) => row.detail).join(' | ');
+      expect(plan(uniqueOwnerLookupSql(false))).toContain('idx_social_unique_guest (target_id=? AND type=? AND guest_hash=?)');
+      expect(plan(uniqueOwnerLookupSql(true))).toContain('idx_social_unique_account (target_id=? AND type=? AND account_id=?)');
+    } finally { db.close(); }
+  });
+
+  it('un Reel très vu : la vue suivante reste dédoublonnée et rapide', () => {
+    const db = new QatafoDatabase(':memory:');
+    const now = '2026-11-12T00:00:00.000Z';
+    try {
+      const publisher = db.get<any>('SELECT id FROM story_publishers LIMIT 1').id;
+      db.run("INSERT INTO reels(id,title,channel_id,video_url,publish_at,status,created_at,updated_at) VALUES ('hot_reel','Hot',?,'/media/x',?,'publie',?,?)", publisher, now, now, now);
+      db.transaction(() => {
+        for (let i = 0; i < 20_000; i++) {
+          db.run("INSERT INTO story_interactions (id,target_id,target_kind,type,guest_hash,created_at) VALUES (?,'hot_reel','post','view',?,?)", `hv_${i}`, `h_${i}`, now);
+        }
+      });
+      const view = (session: string) => writeSocialInteraction(db, { type: 'view', targetId: 'hot_reel' }, null, session, now) as any;
+      const started = performance.now();
+      expect(view('guest-session-hot-aaaaaaaaaaaa').data.recorded).toBe(true);
+      expect(view('guest-session-hot-aaaaaaaaaaaa').data.recorded).toBe(false); // même visiteur : non compté
+      for (let i = 0; i < 200; i++) view(`guest-session-bulk-${i}-aaaaaaaa`);
+      const perView = (performance.now() - started) / 202;
+      expect(socialInteractionCounts(db, 'hot_reel').views).toBe(20_201);
+      // Avant correctif : balayage des 20 000 vues à chaque écriture (~20 ms ici).
+      expect(perView).toBeLessThan(5);
+      expect(db.socialTotalsDrift()).toEqual([]);
     } finally { db.close(); }
   });
 });
