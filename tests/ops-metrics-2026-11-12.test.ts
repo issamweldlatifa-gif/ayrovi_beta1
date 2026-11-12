@@ -83,6 +83,25 @@ describe('fenêtres glissantes', () => {
   });
 });
 
+describe('fenêtre lue juste après un changement de minute', () => {
+  it('ne retombe pas à zéro et divise par la durée réellement couverte', () => {
+    let clock = Date.UTC(2026, 10, 12, 10, 0, 0);
+    const metrics = createOpsMetrics({ dataRoot: '/nonexistent', now: () => clock, limits, sampleMs: 0 });
+    clock += 30_000; // 10:00:30
+    for (let i = 0; i < 600; i++) metrics.record('/api/public/products', 200, 4);
+    metrics.sample({ cpuPercent: 90, rssBytes: 300 * 1024 * 1024, heapBytes: 100 * 1024 * 1024, loopP99Ms: 40 });
+    clock = Date.UTC(2026, 10, 12, 10, 1, 2); // 2 s après le changement de minute
+    const w = metrics.summarize(1);
+    expect(w.requests).toBe(600);
+    expect(w.rps).toBeCloseTo(600 / 62, 1); // couvert : 10:00:00 → 10:01:02
+    expect(w.cpuAvg).toBe(90);
+    expect(metrics.prometheus()).toContain('ayrovi_cpu_percent 90');
+    // Deux minutes plus tard, la fenêtre d'une minute a bien oublié ce pic.
+    clock = Date.UTC(2026, 10, 12, 10, 3, 0);
+    expect(metrics.summarize(1).requests).toBe(0);
+  });
+});
+
 describe('grille de signaux (audit §5)', () => {
   const calm: WindowSummary = { minutes: 5, requests: 1000, rps: 3.3, errors5xx: 0, errorRate: 0, p50: 10, p95: 50, p99: 100,
     cpuAvg: 30, cpuMax: 50, rssMaxMb: 200, heapMaxMb: 100, eventLoopP99Ms: 20 };

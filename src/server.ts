@@ -46,6 +46,7 @@ function authenticatedRateLimitKey(req: Request): string {
   return clientRateLimitKey(req, db);
 }
 import { stripeDiagnostics } from './services/paymentGateway';
+import { applyHttpTimeouts } from './services/httpTimeouts';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -755,6 +756,7 @@ if (process.env.NODE_ENV !== 'test') {
       .then((count) => { if (count) console.log(`[hero] palettes recalculées : ${count}`); })
       .catch((error) => console.error('[hero] recalcul des palettes échoué:', error instanceof Error ? error.message : error));
   });
+  applyHttpTimeouts(httpServer); // keep-alive > délai du proxy : pas de 502 intermittents (src/services/httpTimeouts.ts)
   process.once('SIGTERM', () => shutdown(0, 'SIGTERM reçu'));
   process.once('SIGINT', () => shutdown(0, 'SIGINT reçu'));
   process.once('unhandledRejection', (reason) => {

@@ -245,6 +245,7 @@ export function createOpsMetrics(options: OpsMetricsOptions) {
   const now = options.now || Date.now;
   const limits = options.limits || detectLimits();
   const buckets: MinuteBucket[] = [];
+  const createdAt = now();
   let inFlight = 0;
   let lastFlushedMinute = Math.floor(now() / 60_000);
   let diskCache: { at: number; value: DiskSummary } | null = null;
@@ -285,8 +286,17 @@ export function createOpsMetrics(options: OpsMetricsOptions) {
     flushHourly();
   }
 
+  /**
+   * Fenêtre GLISSANTE d'au moins `minutes` minutes complètes : les seaux de la
+   * minute en cours ET des `minutes` précédentes, débit divisé par la durée
+   * RÉELLEMENT couverte. (Avant le 12/11/2026 : seule la minute calendaire en
+   * cours, divisée par 60 s — lu juste après hh:mm:00, tout retombait à ~0 :
+   * courbe en dents de scie sur Prometheus, relevé faux en test de charge.)
+   */
   function summarize(minutes: number): WindowSummary {
-    const from = Math.floor(now() / 60_000) - minutes + 1;
+    const at = now();
+    const from = Math.floor((at - minutes * 60_000) / 60_000);
+    const coveredSeconds = Math.max(1, (at - Math.max(from * 60_000, createdAt)) / 1000);
     const selected = buckets.filter((entry) => entry.minute >= from);
     const latency = new Array(LATENCY_BOUNDS_MS.length).fill(0);
     let requests = 0; let errors = 0; let cpuSum = 0; let cpuSamples = 0; let cpuMax = 0; let rss = 0; let heap = 0; let loop = 0;
@@ -298,7 +308,7 @@ export function createOpsMetrics(options: OpsMetricsOptions) {
     }
     const mb = (value: number) => (value ? Math.round(value / (1024 * 1024)) : null);
     return {
-      minutes, requests, rps: +(requests / (minutes * 60)).toFixed(2), errors5xx: errors,
+      minutes, requests, rps: +(requests / coveredSeconds).toFixed(2), errors5xx: errors,
       errorRate: requests ? errors / requests : 0,
       p50: histogramPercentile(latency, 0.5), p95: histogramPercentile(latency, 0.95), p99: histogramPercentile(latency, 0.99),
       cpuAvg: cpuSamples ? Math.round(cpuSum / cpuSamples) : null, cpuMax: cpuSamples ? Math.round(cpuMax) : null,
@@ -307,7 +317,7 @@ export function createOpsMetrics(options: OpsMetricsOptions) {
   }
 
   function topGroups(minutes = 5, limit = 12) {
-    const from = Math.floor(now() / 60_000) - minutes + 1;
+    const from = Math.floor((now() - minutes * 60_000) / 60_000);
     const merged = new Map<string, GroupStat>();
     for (const entry of buckets) {
       if (entry.minute < from) continue;
@@ -420,7 +430,7 @@ export function createOpsMetrics(options: OpsMetricsOptions) {
     const w = summarize(1);
     const d = disk();
     const lines = [
-      '# HELP ayrovi_requests_per_second Requêtes HTTP par seconde (moyenne 1 min).',
+      '# HELP ayrovi_requests_per_second Requêtes HTTP par seconde (fenêtre glissante : minute précédente + minute en cours).',
       '# TYPE ayrovi_requests_per_second gauge',
       `ayrovi_requests_per_second ${w.rps}`,
       '# TYPE ayrovi_http_error_rate gauge', `ayrovi_http_error_rate ${w.errorRate}`,
@@ -502,7 +512,10 @@ export function ensureOpsMetricsSchema(db: { exec(sql: string): unknown }) {
 
 /** Identité d'instance (Render : RENDER_INSTANCE_ID ; ailleurs : nom d'hôte). */
 export function instanceId(env: NodeJS.ProcessEnv = process.env): string {
-  return String(env.RENDER_INSTANCE_ID || env.HOSTNAME || os.hostname() || 'local').slice(0, 80);
+  // `AYROVI_WORKER_ID` : posé par scripts/web-cluster.cjs (plusieurs processus sur la même machine) —
+  // sans lui, les processus d'un même hôte écraseraient mutuellement leur historique horaire.
+  const worker = /^\d{1,3}$/.test(String(env.AYROVI_WORKER_ID || '')) ? `#${env.AYROVI_WORKER_ID}` : '';
+  return `${String(env.RENDER_INSTANCE_ID || env.HOSTNAME || os.hostname() || 'local').slice(0, 76)}${worker}`;
 }
 
 /**
