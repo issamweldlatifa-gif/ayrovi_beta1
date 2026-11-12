@@ -1,3 +1,4 @@
+import { recordAyWebsCaptureOutcome } from './captureControl';
 import { randomUUID } from 'node:crypto';
 import { ayWebsAlignAttributes } from '../../shared/aywebsAttributes';
 import type { QatafoDatabase } from '../db/database';
@@ -50,6 +51,7 @@ import { withAyWebsReadSlot } from './readGate';
 import {
   shouldVerifyWebviewCaptureInBackground,
   validateAyWebsCapturedPage,
+  ayWebsCaptureStoreKey,
   webviewCaptureDivergence,
   ayWebsCaptureRejectionErrorCode,
 } from './webviewCapture';
@@ -239,6 +241,14 @@ export async function resolveAyWebsProduct(
         requireProductPage: !preliminary.registered || captureRecognition,
       })
     : null;
+  if (captureValidation) {
+    /* Mesure durable par boutique (alerte < 80 % sur 24 h, voir captureControl.ts). */
+    recordAyWebsCaptureOutcome(deps.db, {
+      storeKey: ayWebsCaptureStoreKey(preliminary.normalizedUrl),
+      accepted: captureValidation.ok,
+      rejection: captureValidation.rejection,
+    });
+  }
   const captureUsed = captureValidation?.ok === true;
   const externalCapturePath = captureProvided && !preliminary.registered;
 

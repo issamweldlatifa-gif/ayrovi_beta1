@@ -8,6 +8,8 @@ import { AYWEBS_ADAPTER_DESCRIPTORS } from './adapters/registry';
 import { ayWebsAnalyticsSummary } from './analytics';
 import { ayWebsMetrics, listAyWebsAudit, listAyWebsDomainEvents } from './events';
 import { ensureAyWebsSchema } from './schema';
+import { AYWEBS_CAPTURE_CONTROL_MODES, ayWebsCaptureHealth, isAyWebsCaptureControlMode, setAyWebsCaptureControl } from './captureControl';
+import { describeAyWebsCaptureScript } from './captureScript';
 import { ayWebsOrderMachine, ayWebsPurchaseRequestMachine } from './stateMachines';
 import {
   approveAyWebsTransferPayment,
@@ -130,6 +132,8 @@ export function createAyWebsAdminRouter(db: QatafoDatabase): Router {
         blocked_cart_items: Number(blockedCartItems?.count || 0),
         purchase_requests: purchaseRequests.map((row) => ({ status: String(row.status), count: Number(row.count) })),
         pending_store_requests: Number(storeRequests?.count || 0),
+        /** Boutiques sous 80 % de captures acceptées sur 24 h (voir /capture/health). */
+        capture_alerts: safeCaptureAlerts(db),
         stores: AYWEBS_STORES.length,
         adapters: AYWEBS_ADAPTER_DESCRIPTORS.length,
         /** §48 : l'état réel de l'intégration d'achat, visible par l'opérateur. */
@@ -159,6 +163,54 @@ export function createAyWebsAdminRouter(db: QatafoDatabase): Router {
         categories: [...store.categories],
       })),
     });
+  }));
+
+  /* ---- Capture : santé par boutique, coupe-circuit, retour arrière (12/11/2026) ---- */
+  router.get('/capture/health', ...requireAyWebsAdmin(db, 'read'), wrap((req, res) => {
+    const health = ayWebsCaptureHealth(db, {
+      windowHours: Number(req.query.hours) || undefined,
+      threshold: req.query.threshold == null ? undefined : Number(req.query.threshold),
+      minSamples: Number(req.query.min_samples) || undefined,
+    });
+    res.json({
+      success: true,
+      data: {
+        ...health,
+        modes: AYWEBS_CAPTURE_CONTROL_MODES,
+        /** Ce que chaque boutique du registre reçoit réellement (lot + empreinte). */
+        scripts: AYWEBS_STORES.map((store) => {
+          const control = health.controls.find((entry) => entry.storeId === store.id)?.mode ?? 'auto';
+          const served = describeAyWebsCaptureScript(control === 'core' ? null : store.id);
+          return { store_id: store.id, control, bundle: served.bundle, hash: served.sha256.slice(0, 16), bytes: served.text.length };
+        }),
+      },
+    });
+  }));
+
+  router.put('/capture/controls/:storeId', ...requireAyWebsAdmin(db, 'approve', 'store_adapter'), wrap((req, res) => {
+    const storeId = String(req.params.storeId || '').trim().toLowerCase();
+    if (!AYWEBS_STORES.some((store) => store.id === storeId)) {
+      res.status(404).json({ success: false, code: 'STORE_UNKNOWN', error: 'Boutique inconnue du registre AyWebs.' });
+      return;
+    }
+    const mode = req.body?.mode;
+    if (!isAyWebsCaptureControlMode(mode)) {
+      res.status(400).json({ success: false, code: 'INVALID_CAPTURE_MODE', error: `Mode attendu : ${AYWEBS_CAPTURE_CONTROL_MODES.join(', ')}.` });
+      return;
+    }
+    const note = String(req.body?.note || '').trim();
+    if (mode !== 'auto' && note.length < 3) {
+      res.status(400).json({ success: false, code: 'NOTE_REQUIRED', error: 'Indiquez la raison (visible dans le journal d’audit).' });
+      return;
+    }
+    const control = setAyWebsCaptureControl(db, {
+      storeId,
+      mode,
+      note,
+      actorId: String((req as AyWebsAdminRequest).admin?.id || ''),
+      requestId: String((req as any).requestId || ''),
+    });
+    res.json({ success: true, data: { store_id: control.storeId, mode: control.mode, note: control.note, updated_by: control.updatedBy, updated_at: control.updatedAt } });
   }));
 
   router.get('/adapters', ...requireAyWebsAdmin(db, 'read'), wrap((_req, res) => {
@@ -414,6 +466,14 @@ export function createAyWebsAdminRouter(db: QatafoDatabase): Router {
   router.get('/shipping', ...requireAyWebsAdmin(db, 'read'), notImplemented('L’expédition internationale AyWebs'));
 
   return router;
+}
+
+function safeCaptureAlerts(db: QatafoDatabase): Array<{ store_key: string; acceptance_rate: number | null; validated: number }> {
+  try {
+    return ayWebsCaptureHealth(db).alerts.map((row) => ({ store_key: row.store_key, acceptance_rate: row.acceptance_rate, validated: row.validated }));
+  } catch {
+    return [];
+  }
 }
 
 /** Commandes clientes en attente d'achat — utile au tableau de bord global. */

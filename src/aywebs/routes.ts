@@ -8,6 +8,7 @@ import { ayWebsReadGateStats } from './readGate';
 import { readerFingerprintReport } from '../scraper/readerFingerprint';
 import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION, type AyWebsCapturedVariantGroup } from '../../shared/aywebsCapture';
 import { describeAyWebsCaptureScript } from './captureScript';
+import { ayWebsCaptureControlMode } from './captureControl';
 import { AYWEBS_CAPTURE_CONTRACT_VERSION } from './captureReaders/registry';
 import { AYWEBS_CAPTURE_TRACKED_STORES, ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
 import { getAyroviAiCore } from '../ai-core/core';
@@ -593,13 +594,17 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
    */
   router.get('/capture/script.js', (req, res) => {
     const storeId = String(req.query.store_id || '').trim().toLowerCase().slice(0, 40);
-    const served = describeAyWebsCaptureScript(storeId || null);
+    /* Retour arrière du CRM (12/11/2026) : mode `core` ⇒ le cœur partagé
+       complet, celui d'avant le découpage par boutique. */
+    const control = ayWebsCaptureControlMode(db, storeId || null);
+    const served = describeAyWebsCaptureScript(control === 'core' ? null : (storeId || null));
     const script = served.text;
     const reader = served.reader;
     res.type('application/javascript');
     res.setHeader('Cache-Control', 'public, max-age=300');
     res.setHeader('X-AyWebs-Capture-Bundle', served.bundle);
     res.setHeader('X-AyWebs-Capture-Hash', served.sha256.slice(0, 16));
+    res.setHeader('X-AyWebs-Capture-Control', control);
     if (reader) {
       res.setHeader('X-AyWebs-Capture-Reader', reader.storeId);
       res.setHeader('X-AyWebs-Capture-Reader-Version', String(reader.version));

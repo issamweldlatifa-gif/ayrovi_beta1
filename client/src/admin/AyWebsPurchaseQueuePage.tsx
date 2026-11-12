@@ -13,6 +13,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi, ApiError } from './api';
 import { Button, PageHeader, StatusBadge, Toast } from './components';
 import { customerCopyText, safeStoreLink, type AyWebsQueueOrder } from './aywebsPurchaseQueueLogic';
+import { AyWebsCaptureHealthPanel } from './AyWebsCaptureHealthPanel';
 
 type QueueOrder = AyWebsQueueOrder;
 
@@ -40,7 +41,7 @@ function errorMessage(error: unknown): string {
   return 'Action impossible pour le moment.';
 }
 
-export const AyWebsPurchaseQueuePage: React.FC<{ canWrite: boolean; requestedId?: string }> = ({ canWrite, requestedId }) => {
+export const AyWebsPurchaseQueuePage: React.FC<{ canWrite: boolean; canControlCapture?: boolean; requestedId?: string }> = ({ canWrite, canControlCapture = false, requestedId }) => {
   const [orders, setOrders] = useState<QueueOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -110,6 +111,8 @@ export const AyWebsPurchaseQueuePage: React.FC<{ canWrite: boolean; requestedId?
       {toast && <Toast message={toast.message} tone={toast.tone} />}
       {error && <p className="admin-error" role="alert">{error}</p>}
       {loading && orders.length === 0 && <p>Chargement…</p>}
+
+      <AyWebsCaptureHealthPanel canControl={canControlCapture} />
 
       <h3>À acheter ({toBuy.length})</h3>
       {toBuy.length === 0 && !loading && <p>Aucun achat en attente.</p>}

@@ -1,3 +1,4 @@
+import { ayWebsCaptureControlMode } from './captureControl';
 import type { NextFunction, Request, Response } from 'express';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
@@ -73,11 +74,14 @@ export function ayWebsFeatureFlags(): AyWebsFeatureFlags {
  * AVANT que l'erreur `DOMAIN_NOT_ALLOWED` ne soit levée, et la garde doit
  * répondre « non » au lieu de casser l'analyse de page (§10).
  */
-export function createStoreCaptureGate(flags: AyWebsFeatureFlags) {
+export function createStoreCaptureGate(flags: AyWebsFeatureFlags, db?: QatafoDatabase | null) {
   return (store: AyWebsStoreDefinition | null | undefined): boolean => {
     if (!store) return false;
     const storeFlag = `AYWEBS_${store.id.toUpperCase()}_CAPTURE_ENABLED`;
-    return store.captureSupported && flags.captureEnabled && envFlag(storeFlag, true);
+    /* Coupe-circuit du CRM (12/11/2026) : même effet que le drapeau
+       d'environnement, posé depuis l'administration sans redéploiement. */
+    return store.captureSupported && flags.captureEnabled && envFlag(storeFlag, true)
+      && ayWebsCaptureControlMode(db, store.id) !== 'paused';
   };
 }
 
@@ -101,7 +105,7 @@ export function createAyWebsContext(db: QatafoDatabase, scraper: SmartLinkScrape
       };
     },
     storeCaptureEnabled: (store: AyWebsStoreDefinition | null | undefined): boolean =>
-      createStoreCaptureGate(context.flags)(store),
+      createStoreCaptureGate(context.flags, db)(store),
   };
   return context;
 }

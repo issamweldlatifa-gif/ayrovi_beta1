@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 278,
+    "files": 279,
     "customerAndSharedFiles": 209,
     "controls": 487,
     "iconAliases": 104,
@@ -453,7 +453,7 @@
     {
       "file": "client/src/admin/AdminApp.tsx",
       "domain": "admin",
-      "sha256": "31560076d9cbec30f674e343ffbfa81f87b32b0f570d7514aca0467765be7459",
+      "sha256": "e8f89af9bfe0c199fa6f87d3ab659420fee9bfb2ed8a6cb508393e34e0552064",
       "lines": 1052,
       "imports": [
         "../../../shared/brand.generated",
@@ -3731,6 +3731,57 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/admin/AyWebsCaptureHealthPanel.tsx",
+      "domain": "admin",
+      "sha256": "041bb067f61102dc2a42a343731db4c87c631703d9c40bf61882118a8d4a8278",
+      "lines": 206,
+      "imports": [
+        "react",
+        "./api",
+        "./components"
+      ],
+      "exports": [
+        "AyWebsCaptureHealthPanel"
+      ],
+      "controls": [
+        {
+          "tag": "input",
+          "line": 183,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": "\"Raison du changement\"",
+          "onClick": null,
+          "disabled": "{!canControl || busy}"
+        },
+        {
+          "tag": "Button",
+          "line": 191,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void apply()}",
+          "disabled": "{!canControl || busy || !storeId || (mode !== 'auto' && note.trim().length < 3)}"
+        },
+        {
+          "tag": "Button",
+          "line": 199,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void load()}",
+          "disabled": "{loading}"
+        }
+      ],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/admin/aywebsPurchaseQueueLogic.ts",
       "domain": "admin",
       "sha256": "8a223ebb5afb3c6e7dbbe04f15b4bce2ec2db7e47702d2ab5b004abfc4dc07a7",
@@ -3750,13 +3801,14 @@
     {
       "file": "client/src/admin/AyWebsPurchaseQueuePage.tsx",
       "domain": "admin",
-      "sha256": "4df06a021596fd08846a53fd0ac7c9af0067ad3fcc467732314958828374a228",
-      "lines": 234,
+      "sha256": "9fa1b0810f50563f249b0ec55f2fc034b03dc73facb6ff73b4f25152ca456137",
+      "lines": 237,
       "imports": [
         "react",
         "./api",
         "./components",
-        "./aywebsPurchaseQueueLogic"
+        "./aywebsPurchaseQueueLogic",
+        "./AyWebsCaptureHealthPanel"
       ],
       "exports": [
         "AyWebsPurchaseQueuePage"
@@ -3764,7 +3816,7 @@
       "controls": [
         {
           "tag": "Button",
-          "line": 108,
+          "line": 109,
           "className": null,
           "type": null,
           "role": null,
@@ -3774,7 +3826,7 @@
         },
         {
           "tag": "QueueCard",
-          "line": 117,
+          "line": 120,
           "className": null,
           "type": null,
           "role": null,
@@ -3784,7 +3836,7 @@
         },
         {
           "tag": "QueueCard",
-          "line": 133,
+          "line": 136,
           "className": null,
           "type": null,
           "role": null,
@@ -3794,7 +3846,7 @@
         },
         {
           "tag": "a",
-          "line": 181,
+          "line": 184,
           "className": null,
           "type": null,
           "role": null,
@@ -3804,7 +3856,7 @@
         },
         {
           "tag": "Button",
-          "line": 193,
+          "line": 196,
           "className": null,
           "type": null,
           "role": null,
@@ -3814,7 +3866,7 @@
         },
         {
           "tag": "Button",
-          "line": 198,
+          "line": 201,
           "className": null,
           "type": null,
           "role": null,
@@ -3824,7 +3876,7 @@
         },
         {
           "tag": "input",
-          "line": 204,
+          "line": 207,
           "className": null,
           "type": null,
           "role": null,
@@ -3834,7 +3886,7 @@
         },
         {
           "tag": "Button",
-          "line": 211,
+          "line": 214,
           "className": null,
           "type": null,
           "role": null,
@@ -3844,7 +3896,7 @@
         },
         {
           "tag": "input",
-          "line": 218,
+          "line": 221,
           "className": null,
           "type": null,
           "role": null,
@@ -3854,7 +3906,7 @@
         },
         {
           "tag": "Button",
-          "line": 225,
+          "line": 228,
           "className": null,
           "type": null,
           "role": null,
