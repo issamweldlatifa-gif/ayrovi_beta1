@@ -131,7 +131,8 @@ describe('Arrival multi-store database migration', () => {
     fresh.close();
 
     const backupDirectory = path.join(root, 'backups');
-    fs.mkdirSync(backupDirectory);
+    // Le dossier peut déjà exister : la migration des Reels du propriétaire (af933723) y sauvegarde aussi.
+    fs.mkdirSync(backupDirectory, { recursive: true });
     const postMigrationCopy = path.join(backupDirectory, 'pre-arrival-multistore-invalid.sqlite');
     fs.copyFileSync(databasePath, postMigrationCopy);
 
