@@ -9,6 +9,11 @@
 export interface NotificationTarget {
   section: string;
   request?: string;
+  /**
+   * Fiche à mettre en avant quand `request` est un filtre (Commandes) : la
+   * notification « Nouvelle commande » ouvre l'écran ET la commande (12/11).
+   */
+  focus?: string;
 }
 
 const SECTION = /^[a-z0-9][a-z0-9-]{0,40}$/;
@@ -17,8 +22,12 @@ const SECTION = /^[a-z0-9][a-z0-9-]{0,40}$/;
  * (Commandes : filtre de statut). On y ouvre l'écran, sans paramètre.
  */
 const REQUEST_IS_FILTER = new Set(['orders']);
-const withRequest = (section: string, request?: string): NotificationTarget =>
-  request && !REQUEST_IS_FILTER.has(section) ? { section, request } : { section };
+const RECORD_ID = /^[A-Za-z0-9_.:-]{1,120}$/;
+const withRequest = (section: string, request?: string): NotificationTarget => {
+  if (!request) return { section };
+  if (!REQUEST_IS_FILTER.has(section)) return { section, request };
+  return RECORD_ID.test(request) ? { section, focus: request } : { section };
+};
 
 export function notificationTarget(actionUrl: string, origin = 'https://console.local'): NotificationTarget | null {
   const raw = String(actionUrl || '').trim();

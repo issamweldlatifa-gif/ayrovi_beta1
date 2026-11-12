@@ -46,8 +46,10 @@ import { availableGoShortcuts, resolveShortcut } from './shortcuts';
 
 export type BackOfficeRenderContext = {
   section: string;
-  navigate: (section: string, request?: string) => void;
+  navigate: (section: string, request?: string, focus?: string) => void;
   requestedReview: string;
+  /** Fiche à ouvrir/mettre en avant (`?focus=`), distincte du filtre `request` (12/11). */
+  focusedRecord: string;
   pendingMagazineDraft: string;
   openMagazineDraft: (draftId?: string) => void;
   clearPendingMagazineDraft: () => void;
@@ -90,6 +92,8 @@ export const BackOfficeShell: React.FC<{
     || 'dashboard';
   const [section, setSection] = useState(initialSection);
   const [requestedReview, setRequestedReview] = useState(initialParams.get('request') || '');
+  // `?focus=` ; les anciens liens « Nouvelle commande » portent `?order=`.
+  const [focusedRecord, setFocusedRecord] = useState(initialParams.get('focus') || initialParams.get('order') || '');
   const [pendingMagazineDraft, setPendingMagazineDraft] = useState('');
   const [domain, setDomain] = useState<string>('ALL');
   /** Service choisi explicitement : `null` = on suit l'écran courant (deep links, palette, popstate). */
@@ -122,10 +126,11 @@ export const BackOfficeShell: React.FC<{
   });
 
   const can = useCallback((permission: string) => identity.permissions.includes(permission as never), [identity.permissions]);
-  const navigate = useCallback((id: string, request?: string) => {
-    setSection(id); setRequestedReview(request || ''); setMobile(false);
+  const navigate = useCallback((id: string, request?: string, focus?: string) => {
+    setSection(id); setRequestedReview(request || ''); setFocusedRecord(focus || ''); setMobile(false);
     const params = new URLSearchParams({ section: id });
     if (request) params.set('request', request);
+    if (focus) params.set('focus', focus);
     pushUrlPreservingNavigation(`/admin?${params}`);
     if (id === 'arrival-ingestion') window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
   }, []);
@@ -137,6 +142,7 @@ export const BackOfficeShell: React.FC<{
       const params = new URLSearchParams(location.search);
       setSection(params.get('section') || sectionFromAdminPath(location.pathname) || 'dashboard');
       setRequestedReview(params.get('request') || '');
+      setFocusedRecord(params.get('focus') || params.get('order') || '');
     };
     addEventListener('popstate', onPop);
     return () => removeEventListener('popstate', onPop);
@@ -419,7 +425,7 @@ export const BackOfficeShell: React.FC<{
         )}
 
         <main className="admin-main">
-          {renderPage({ section, navigate, requestedReview, pendingMagazineDraft, openMagazineDraft, clearPendingMagazineDraft, can })}
+          {renderPage({ section, navigate, requestedReview, focusedRecord, pendingMagazineDraft, openMagazineDraft, clearPendingMagazineDraft, can })}
         </main>
       </div>
     </div>

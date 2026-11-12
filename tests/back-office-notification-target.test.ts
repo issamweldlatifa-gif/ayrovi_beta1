@@ -10,10 +10,20 @@ describe('cible d’une notification de la console', () => {
     expect(notificationTarget('/admin?section=crm-tasks')).toEqual({ section: 'crm-tasks' });
     expect(notificationTarget('/admin?section=aywebs-purchases&request=o9')).toEqual({ section: 'aywebs-purchases', request: 'o9' });
   });
-  it('Commandes : le paramètre est un filtre de statut, jamais un identifiant', () => {
-    expect(notificationTarget('/admin?section=orders&order=ord_1')).toEqual({ section: 'orders' });
-    expect(notificationTarget('/admin/orders/ord_1')).toEqual({ section: 'orders' });
+  it('Commandes : `request` reste un filtre ; l’identifiant devient `focus` (fiche ouverte)', () => {
+    expect(notificationTarget('/admin?section=orders&order=ord_1')).toEqual({ section: 'orders', focus: 'ord_1' });
+    expect(notificationTarget('/admin/orders/ord_1')).toEqual({ section: 'orders', focus: 'ord_1' });
     expect(notificationTarget('/admin?tab=orders')).toEqual({ section: 'orders' });
+    expect(notificationTarget('/admin?section=orders&order=%3Cscript%3E')).toEqual({ section: 'orders' });
+  });
+  it('la coquille transporte `focus` et Commandes ouvre la fiche demandée', () => {
+    const shell = readFileSync('client/src/admin/back-office/BackOfficeShell.tsx', 'utf8');
+    expect(shell).toContain("params.set('focus', focus)");
+    expect(shell).toContain('focusedRecord');
+    const bell = readFileSync('client/src/admin/back-office/NotificationsBell.tsx', 'utf8');
+    expect(bell).toContain('target.focus');
+    const app = readFileSync('client/src/admin/AdminApp.tsx', 'utf8');
+    expect(app).toContain('focusedId={focusedRecord||undefined}');
   });
   it('refuse le vide, les autres origines et les chemins hors console', () => {
     expect(notificationTarget('')).toBeNull();

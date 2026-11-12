@@ -12,7 +12,7 @@ import { adminApi } from '../api';
 import { formatDate } from './resource-ui';
 import { notificationTarget } from './notificationTarget';
 
-export const NotificationsBell: React.FC<{ onNavigate: (section: string, request?: string) => void }> = ({ onNavigate }) => {
+export const NotificationsBell: React.FC<{ onNavigate: (section: string, request?: string, focus?: string) => void }> = ({ onNavigate }) => {
   const [open, setOpen] = useState(false);
   const [rows, setRows] = useState<any[]>([]);
   const [unread, setUnread] = useState(0);
@@ -30,7 +30,7 @@ export const NotificationsBell: React.FC<{ onNavigate: (section: string, request
     setOpen(false);
     // Toute URL de console mène à son écran (CRM, commandes, AYWEBs, Lens, support…).
     const target = notificationTarget(String(item.action_url || ''), location.origin);
-    if (target) onNavigate(target.section, target.request);
+    if (target) onNavigate(target.section, target.request, target.focus);
   };
   return <div className="admin-bell">
     <button className="admin-icon-button" onClick={() => { setOpen(!open); if (!open) void load(); }} aria-label="Notifications"><Bell />{unread > 0 && <b className="admin-bell-badge">{unread > 99 ? '99+' : unread}</b>}</button>
