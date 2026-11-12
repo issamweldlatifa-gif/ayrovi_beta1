@@ -12,9 +12,9 @@
 import vm from 'node:vm';
 import { describe, expect, it } from 'vitest';
 
-import { AYWEBS_CAPTURE_SCRIPT } from '../../../src/aywebs/captureScript';
+import { AYWEBS_CAPTURE_SCRIPT, buildAyWebsCaptureScript } from '../../../src/aywebs/captureScript';
 import {
-  buildAyWebsCaptureInjection, captureScriptExpression, parseAyWebsCaptureMessage,
+  buildAyWebsCaptureInjection, captureScriptExpression, isAyWebsBridgeMessage, parseAyWebsCaptureMessage,
 } from '@/api/aywebs';
 
 /** DOM minimal : le script réel ne lit que des textes, des métas et des attributs. */
@@ -80,5 +80,27 @@ describe('حقن الكابتشر — السكريبت الحقيقي متاع �
   it('السكريبت الفارغ يُرفض بالكلام، موش بحقن صامت', () => {
     expect(() => buildAyWebsCaptureInjection('  ')).toThrow(/vide/);
     expect(() => buildAyWebsCaptureInjection(';;;')).toThrow(/vide/);
+  });
+
+  // 12/11/2026 — enveloppe unifiée : chaque boutique reçoit son bundle + un tampon `contract`.
+  it('bundle par boutique (enveloppe unifiée) : la rampe mobile accepte le tampon `contract`', () => {
+    for (const [store, url] of [
+      ['sephora', 'https://www.sephora.com/product/rouge-P123'],
+      ['amazon', 'https://www.amazon.com/dp/B0GYM3V9H5'],
+      ['zalando', 'https://www.zalando.fr/nike-sneakers-ni112o0kq-a11.html'],
+    ] as const) {
+      const { posted, messages } = runInjection(buildAyWebsCaptureScript(store), url);
+      expect(posted, store).toHaveLength(1);
+      expect(isAyWebsBridgeMessage(posted[0]), store).toBe(true);
+      expect(messages[0], store).toMatchObject({ ok: true });
+      const capture = (messages[0] as { ok: true; capture: Record<string, unknown> }).capture;
+      expect(capture.contract, store).toMatchObject({ store, matched: true });
+    }
+  });
+
+  it('un tampon `contract` inattendu ne casse jamais la lecture du message', () => {
+    const text = JSON.stringify({ v: 1, url: 'x', contract: { v: 99, store: 'inconnu', integration: 'autre', matched: false } });
+    expect(isAyWebsBridgeMessage(text)).toBe(true);
+    expect(parseAyWebsCaptureMessage(text)).toMatchObject({ ok: true, capture: { v: 1, contract: { v: 99 } } });
   });
 });

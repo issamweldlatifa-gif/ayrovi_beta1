@@ -23,6 +23,21 @@
  *   • un texte de prix SANS chiffre ET sans devise n'est pas candidat : cela
  *     évite le piège des prix « coupés » (Amazon publie la partie entière et la
  *     partie décimale dans deux spans séparés : « 6 » + « 99 »).
+ *
+ * ── UN SEUL CHEMIN POUR TOUTES LES BOUTIQUES (12/11/2026) ───────────────────
+ * `GET …/capture/script.js?store_id=<id>` → `buildAyWebsCaptureScript(id)` :
+ *   1. lecteur effectif `resolveAyWebsCaptureReader` (captureReaders/registry) :
+ *      version, `priceMode`, et INTÉGRATION propre à la boutique —
+ *      `dedicated` (amazon, zalando : storeScripts/), `shared_core` (sephora,
+ *      primark, shein, temu, aliexpress : profil injecté dans ce cœur) ou
+ *      `generic` (les autres boutiques enregistrées : ce cœur, profil v1) ;
+ *   2. enveloppe commune `wrapAyWebsCaptureIntegration` (captureEnvelope.ts) :
+ *      profil publié seulement sur un domaine de la boutique, global restauré,
+ *      tampon `contract` ajouté à la sortie (diagnostic, jamais une preuve) ;
+ *   3. en-têtes de réponse `X-AyWebs-Capture-*` (boutique, version, intégration).
+ * Sans `store_id` ou boutique inconnue : `AYWEBS_CAPTURE_SCRIPT` exactement
+ * (anciennes versions de l'application). L'app mobile lit le message tel quel
+ * (`parseAyWebsCaptureMessage`) : le champ `contract` ne la gêne pas.
  */
 
 import { findAyWebsStore } from '../../shared/aywebsStores';
