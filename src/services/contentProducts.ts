@@ -71,7 +71,7 @@ export function effectiveProductIds(linked: string[], legacyProductId: string | 
 export function readContentProductIds(db: QatafoDatabase, kind: ContentKind, contentId: string): string[] {
   return db
     .all<{ product_id: string }>(
-      'SELECT product_id FROM content_products WHERE content_kind=? AND content_id=? ORDER BY sort_order, rowid',
+      'SELECT product_id FROM content_products WHERE content_kind=? AND content_id=? ORDER BY sort_order, product_id',
       kind,
       contentId,
     )
@@ -184,7 +184,7 @@ export function publicProductsByContent(
        FROM content_products cp
        JOIN products p ON p.id = cp.product_id
       WHERE cp.content_kind = ? AND cp.content_id IN (${placeholders})
-      ORDER BY cp.sort_order, cp.rowid`,
+      ORDER BY cp.sort_order, cp.product_id`, // sort_order est unique par contenu (réécrit 0..n-1) ; product_id = départage portable (pas de rowid en PostgreSQL)
     kind,
     ...ids,
   );
