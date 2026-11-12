@@ -1,0 +1,120 @@
+{
+  "baseUrl": "http://127.0.0.1:3900",
+  "mode": "users",
+  "think": 6,
+  "ramp": 15,
+  "duration": 60,
+  "at": "2026-11-12T14:13:53.420Z",
+  "summary": [
+    {
+      "users": 100,
+      "targetRps": 17,
+      "rps": 17,
+      "p50": 3,
+      "p95": 7,
+      "p99": 12,
+      "ok": 1003,
+      "non2xx": 0,
+      "network": 0,
+      "timeouts": 0,
+      "errorRate": 0,
+      "generatorLagP99Ms": 21,
+      "generatorCpuPercent": 2,
+      "server": {
+        "cpuPercent": 6,
+        "rssMb": 203,
+        "eventLoopP99Ms": 39,
+        "serverRps": 16.89
+      },
+      "verdict": "OK"
+    },
+    {
+      "users": 500,
+      "targetRps": 83,
+      "rps": 84,
+      "p50": 2,
+      "p95": 8,
+      "p99": 37,
+      "ok": 5008,
+      "non2xx": 0,
+      "network": 3,
+      "timeouts": 0,
+      "errorRate": 0.06,
+      "generatorLagP99Ms": 23,
+      "generatorCpuPercent": 7,
+      "server": {
+        "cpuPercent": 16,
+        "rssMb": 202,
+        "eventLoopP99Ms": 35,
+        "serverRps": 69.55
+      },
+      "verdict": "OK"
+    },
+    {
+      "users": 1000,
+      "targetRps": 167,
+      "rps": 167,
+      "p50": 2,
+      "p95": 8,
+      "p99": 26,
+      "ok": 9993,
+      "non2xx": 0,
+      "network": 1,
+      "timeouts": 0,
+      "errorRate": 0.01,
+      "generatorLagP99Ms": 24,
+      "generatorCpuPercent": 8,
+      "server": {
+        "cpuPercent": 22,
+        "rssMb": 221,
+        "eventLoopP99Ms": 39,
+        "serverRps": 127.35
+      },
+      "verdict": "OK"
+    },
+    {
+      "users": 5000,
+      "targetRps": 833,
+      "rps": 789,
+      "p50": 39,
+      "p95": 1265,
+      "p99": 1916,
+      "ok": 47293,
+      "non2xx": 0,
+      "network": 74,
+      "timeouts": 0,
+      "errorRate": 0.16,
+      "generatorLagP99Ms": 43,
+      "generatorCpuPercent": 24,
+      "server": {
+        "cpuPercent": 90,
+        "rssMb": 296,
+        "eventLoopP99Ms": 58,
+        "serverRps": 763.08
+      },
+      "verdict": "SATURÉ"
+    },
+    {
+      "users": 10000,
+      "targetRps": 1667,
+      "rps": 997,
+      "p50": 895,
+      "p95": 5353,
+      "p99": 9359,
+      "ok": 46352,
+      "non2xx": 0,
+      "network": 514,
+      "timeouts": 12949,
+      "errorRate": 22.51,
+      "generatorLagP99Ms": 77,
+      "generatorCpuPercent": 29,
+      "server": {
+        "cpuPercent": 83,
+        "rssMb": 297,
+        "eventLoopP99Ms": 78,
+        "serverRps": 697.44
+      },
+      "verdict": "SATURÉ"
+    }
+  ]
+}

@@ -1,0 +1,308 @@
+{
+  "at": "2026-11-12T13:51:32.482Z",
+  "host": {
+    "cpus": 2,
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.60GHz",
+    "affinity": "1"
+  },
+  "sqlite": "/home/user/scratch/lt/ayrovi.sqlite",
+  "source": {
+    "files": 297,
+    "totals": {
+      "syncCalls": 1651,
+      "transactions": 119,
+      "insertOrIgnore": 40,
+      "insertOrReplace": 3,
+      "groupConcat": 4,
+      "dateFunctions": 4,
+      "jsonFunctions": 0,
+      "instr": 2,
+      "ifnull": 11,
+      "likeOperator": 85,
+      "collateNocase": 43,
+      "pragma": 41,
+      "sqliteMaster": 27,
+      "rowid": 11,
+      "lastInsertRowid": 0,
+      "isNot": 2
+    },
+    "modulesTouched": 21,
+    "topModules": [
+      {
+        "module": "customer",
+        "syncCalls": 245,
+        "dialect": 28
+      },
+      {
+        "module": "admin",
+        "syncCalls": 229,
+        "dialect": 18
+      },
+      {
+        "module": "db",
+        "syncCalls": 188,
+        "dialect": 83
+      },
+      {
+        "module": "aywebs",
+        "syncCalls": 177,
+        "dialect": 11
+      },
+      {
+        "module": "arrival-ingestion",
+        "syncCalls": 166,
+        "dialect": 8
+      },
+      {
+        "module": "crm",
+        "syncCalls": 109,
+        "dialect": 19
+      },
+      {
+        "module": "catalogue",
+        "syncCalls": 105,
+        "dialect": 31
+      },
+      {
+        "module": "magazine",
+        "syncCalls": 72,
+        "dialect": 1
+      },
+      {
+        "module": "erp-core",
+        "syncCalls": 63,
+        "dialect": 8
+      },
+      {
+        "module": "purchasing",
+        "syncCalls": 59,
+        "dialect": 22
+      },
+      {
+        "module": "ayrovix",
+        "syncCalls": 56,
+        "dialect": 11
+      },
+      {
+        "module": "services",
+        "syncCalls": 53,
+        "dialect": 2
+      }
+    ]
+  },
+  "postgres": "18.6",
+  "data": {
+    "rows": 1047072,
+    "rejected": [],
+    "nulBytesStripped": 0,
+    "seconds": 16.4
+  },
+  "schema": {
+    "tables": {
+      "ok": 161,
+      "failed": []
+    },
+    "uniques": {
+      "ok": 55,
+      "failed": []
+    },
+    "indexes": {
+      "ok": 236,
+      "failed": [],
+      "nocaseDropped": 9
+    },
+    "checks": {
+      "ok": 191,
+      "failed": []
+    },
+    "foreignKeys": {
+      "ok": 185,
+      "failed": []
+    },
+    "triggers": {
+      "sqlite": 7,
+      "portedByHand": 7
+    }
+  },
+  "queries": {
+    "unique": 30,
+    "ok": 30,
+    "failed": []
+  },
+  "read": {
+    "sqlite": {
+      "requestsPerSec": 6465,
+      "p50": 0.159,
+      "p99": 0.464,
+      "cpuMsPerRequest": 0.155
+    },
+    "postgresql": [
+      {
+        "concurrency": 1,
+        "prepared": false,
+        "requestsPerSec": 685,
+        "p50": 1.42,
+        "p99": 5.27,
+        "errors": 0,
+        "pgCpuMsPerRequest": 0.927,
+        "driverCpuMsPerRequest": 0.517
+      },
+      {
+        "concurrency": 1,
+        "prepared": true,
+        "requestsPerSec": 1023,
+        "p50": 1.01,
+        "p99": 2.65,
+        "errors": 0,
+        "pgCpuMsPerRequest": 0.559,
+        "driverCpuMsPerRequest": 0.418
+      },
+      {
+        "concurrency": 4,
+        "prepared": false,
+        "requestsPerSec": 1109,
+        "p50": 2.88,
+        "p99": 11.44,
+        "errors": 0,
+        "pgCpuMsPerRequest": 0.86,
+        "driverCpuMsPerRequest": 0.35
+      },
+      {
+        "concurrency": 4,
+        "prepared": true,
+        "requestsPerSec": 1849,
+        "p50": 1.76,
+        "p99": 8.94,
+        "errors": 0,
+        "pgCpuMsPerRequest": 0.491,
+        "driverCpuMsPerRequest": 0.296
+      },
+      {
+        "concurrency": 16,
+        "prepared": false,
+        "requestsPerSec": 955,
+        "p50": 15.38,
+        "p99": 44.52,
+        "errors": 0,
+        "pgCpuMsPerRequest": 1.01,
+        "driverCpuMsPerRequest": 0.392
+      },
+      {
+        "concurrency": 16,
+        "prepared": true,
+        "requestsPerSec": 1802,
+        "p50": 7.91,
+        "p99": 27.74,
+        "errors": 0,
+        "pgCpuMsPerRequest": 0.525,
+        "driverCpuMsPerRequest": 0.306
+      },
+      {
+        "concurrency": 64,
+        "prepared": false,
+        "requestsPerSec": 966,
+        "p50": 64.48,
+        "p99": 189.82,
+        "errors": 0,
+        "pgCpuMsPerRequest": 0.992,
+        "driverCpuMsPerRequest": 0.347
+      },
+      {
+        "concurrency": 64,
+        "prepared": true,
+        "requestsPerSec": 1535,
+        "p50": 36.53,
+        "p99": 151.76,
+        "errors": 0,
+        "pgCpuMsPerRequest": 0.62,
+        "driverCpuMsPerRequest": 0.339
+      }
+    ]
+  },
+  "write": [
+    {
+      "engine": "sqlite",
+      "scenario": "répartie",
+      "concurrency": 1,
+      "viewsPerSec": 5561,
+      "p50": 0.057,
+      "p99": 0.802,
+      "cpuMsPerView": 0.13
+    },
+    {
+      "engine": "postgresql",
+      "scenario": "répartie",
+      "concurrency": 1,
+      "viewsPerSec": 484,
+      "p50": 1.96,
+      "p99": 3.15,
+      "errors": 0,
+      "firstError": "",
+      "pgCpuMsPerView": 1.189
+    },
+    {
+      "engine": "postgresql",
+      "scenario": "répartie",
+      "concurrency": 4,
+      "viewsPerSec": 911,
+      "p50": 4.19,
+      "p99": 7.57,
+      "errors": 0,
+      "firstError": "",
+      "pgCpuMsPerView": 1.045
+    },
+    {
+      "engine": "postgresql",
+      "scenario": "répartie",
+      "concurrency": 16,
+      "viewsPerSec": 789,
+      "p50": 19.53,
+      "p99": 29.61,
+      "errors": 0,
+      "firstError": "",
+      "pgCpuMsPerView": 0.631
+    },
+    {
+      "engine": "sqlite",
+      "scenario": "Reel viral",
+      "concurrency": 1,
+      "viewsPerSec": 6347,
+      "p50": 0.051,
+      "p99": 0.694,
+      "cpuMsPerView": 0.111
+    },
+    {
+      "engine": "postgresql",
+      "scenario": "Reel viral",
+      "concurrency": 1,
+      "viewsPerSec": 493,
+      "p50": 1.96,
+      "p99": 3.02,
+      "errors": 0,
+      "firstError": "",
+      "pgCpuMsPerView": 1.17
+    },
+    {
+      "engine": "postgresql",
+      "scenario": "Reel viral",
+      "concurrency": 4,
+      "viewsPerSec": 833,
+      "p50": 4.57,
+      "p99": 7.98,
+      "errors": 0,
+      "firstError": "",
+      "pgCpuMsPerView": 1.134
+    },
+    {
+      "engine": "postgresql",
+      "scenario": "Reel viral",
+      "concurrency": 16,
+      "viewsPerSec": 674,
+      "p50": 22.29,
+      "p99": 38.59,
+      "errors": 0,
+      "firstError": "",
+      "pgCpuMsPerView": 1.085
+    }
+  ]
+}

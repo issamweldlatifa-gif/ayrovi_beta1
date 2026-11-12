@@ -1,0 +1,54 @@
+{
+  "baseUrl": "http://127.0.0.1:3900",
+  "mode": "users",
+  "think": 6,
+  "ramp": 15,
+  "duration": 60,
+  "at": "2026-11-12T14:24:26.066Z",
+  "summary": [
+    {
+      "users": 5000,
+      "targetRps": 833,
+      "rps": 830,
+      "p50": 3,
+      "p95": 86,
+      "p99": 138,
+      "ok": 49792,
+      "non2xx": 0,
+      "network": 0,
+      "timeouts": 0,
+      "errorRate": 0,
+      "generatorLagP99Ms": 27,
+      "generatorCpuPercent": 19,
+      "server": {
+        "cpuPercent": 46,
+        "rssMb": 276,
+        "eventLoopP99Ms": 93,
+        "serverRps": 352.33
+      },
+      "verdict": "OK"
+    },
+    {
+      "users": 10000,
+      "targetRps": 1667,
+      "rps": 1025,
+      "p50": 1124,
+      "p95": 2673,
+      "p99": 3914,
+      "ok": 53524,
+      "non2xx": 0,
+      "network": 0,
+      "timeouts": 7993,
+      "errorRate": 12.99,
+      "generatorLagP99Ms": 74,
+      "generatorCpuPercent": 33,
+      "server": {
+        "cpuPercent": 55,
+        "rssMb": 285,
+        "eventLoopP99Ms": 1422,
+        "serverRps": 476.38
+      },
+      "verdict": "SATURÉ"
+    }
+  ]
+}

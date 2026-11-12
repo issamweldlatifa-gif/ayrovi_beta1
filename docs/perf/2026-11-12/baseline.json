@@ -1,0 +1,44 @@
+{
+  "baseUrl": "http://127.0.0.1:3900",
+  "duration": 15,
+  "think": 6,
+  "at": "2026-11-12T13:02:49.124Z",
+  "summary": [
+    {
+      "connections": 100,
+      "rps": 611,
+      "p50": 158,
+      "p90": 233,
+      "p99": 354,
+      "max": 1805,
+      "errors": 0,
+      "non2xx": 0,
+      "errorRate": 0,
+      "usersAtThink": 3667
+    },
+    {
+      "connections": 500,
+      "rps": 700,
+      "p50": 723,
+      "p90": 1065,
+      "p99": 1165,
+      "max": 1199,
+      "errors": 0,
+      "non2xx": 0,
+      "errorRate": 0,
+      "usersAtThink": 4198
+    },
+    {
+      "connections": 1000,
+      "rps": 661,
+      "p50": 192,
+      "p90": 247,
+      "p99": 1802,
+      "max": 9936,
+      "errors": 1698,
+      "non2xx": 0,
+      "errorRate": 17.12,
+      "usersAtThink": 3967
+    }
+  ]
+}

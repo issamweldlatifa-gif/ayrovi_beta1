@@ -1,0 +1,501 @@
+{
+ "reelIds": [
+  "reel_owner_shoes_v1",
+  "reel_owner_clothing_v1",
+  "reel_owner_home_v1",
+  "reel_owner_perfume_v1",
+  "reel_owner_accessories_v1",
+  "lt-r-99",
+  "lt-r-98",
+  "lt-r-97",
+  "lt-r-96",
+  "lt-r-95",
+  "lt-r-94",
+  "lt-r-93"
+ ],
+ "productIds": [
+  "lt-p-1",
+  "lt-p-10"
+ ],
+ "endpoints": {
+  "reels": {
+   "url": "/api/public/social/reels?limit=12",
+   "weight": 5,
+   "status": 200,
+   "httpMs": 5,
+   "queries": [
+    {
+     "m": "all",
+     "sql": "SELECT r.id,r.title,r.channel_id,r.description,r.video_url,r.poster_url,r.duration_seconds,r.publish_at,r.content_mode,\n    COALESCE((SELECT st.n FROM social_interaction_totals st WHERE st.target_id=r.id AND st.type='view'),0) views,\n    COALESCE((SELECT st.n FROM social_interaction_totals st WHERE st.target_id=r.id AND st.type='like'),0) likes,\n  p.id AS lp_id, p.name AS lp_name, p.brand_name AS lp_brand_name,\n  p.image AS lp_image, p.status AS lp_status,\n  p.final_price AS lp_final_price, p.stock_status AS lp_stock_status\n    FROM reels r LEFT JOIN products p ON p.id=r.product_id\n    WHERE r.status='publie' AND r.publish_at<=?\n    ORDER BY r.publish_at DESC,r.id DESC LIMIT ?",
+     "params": [
+      "2026-11-12T13:48:13.455Z",
+      13
+     ],
+     "ms": 0.307564,
+     "rows": 13
+    },
+    {
+     "m": "all",
+     "sql": "SELECT cp.content_id AS content_id, \n  p.id AS lp_id, p.name AS lp_name, p.brand_name AS lp_brand_name,\n  p.image AS lp_image, p.status AS lp_status,\n  p.final_price AS lp_final_price, p.stock_status AS lp_stock_status\n       FROM content_products cp\n       JOIN products p ON p.id = cp.product_id\n      WHERE cp.content_kind = ? AND cp.content_id IN (?,?,?,?,?,?,?,?,?,?,?,?)\n      ORDER BY cp.sort_order, cp.product_id",
+     "params": [
+      "reel",
+      "reel_owner_shoes_v1",
+      "reel_owner_clothing_v1",
+      "reel_owner_home_v1",
+      "reel_owner_perfume_v1",
+      "reel_owner_accessories_v1",
+      "lt-r-99",
+      "lt-r-98",
+      "lt-r-97",
+      "lt-r-96",
+      "lt-r-95",
+      "lt-r-94",
+      "lt-r-93"
+     ],
+     "ms": 0.063427,
+     "rows": 0
+    },
+    {
+     "m": "all",
+     "sql": "SELECT cp.id AS content_id, \n  p.id AS lp_id, p.name AS lp_name, p.brand_name AS lp_brand_name,\n  p.image AS lp_image, p.status AS lp_status,\n  p.final_price AS lp_final_price, p.stock_status AS lp_stock_status\n       FROM reels cp\n       JOIN products p ON p.id = cp.product_id\n      WHERE ? = 'reel' AND cp.id IN (?,?,?,?,?,?,?,?,?,?,?,?) AND cp.product_id IS NOT NULL\n     UNION ALL\n     SELECT cp.id AS content_id, \n  p.id AS lp_id, p.name AS lp_name, p.brand_name AS lp_brand_name,\n  p.image AS lp_image, p.status AS lp_status,\n  p.final_price AS lp_final_price, p.stock_status AS lp_stock_status\n       FROM publications cp\n       JOIN products p ON p.id = cp.product_id\n      WHERE ? = 'publication' AND cp.id IN (?,?,?,?,?,?,?,?,?,?,?,?) AND cp.product_id IS NOT NULL\n     UNION ALL\n     SELECT cp.id AS content_id, \n  p.id AS lp_id, p.name AS lp_name, p.brand_name AS lp_brand_name,\n  p.image AS lp_image, p.status AS lp_status,\n  p.final_price AS lp_final_price, p.stock_status AS lp_stock_status\n       FROM stories cp\n       JOIN products p ON p.id = cp.product_id\n      WHERE ? = 'story' AND cp.id IN (?,?,?,?,?,?,?,?,?,?,?,?) AND cp.product_id IS NOT NULL",
+     "params": [
+      "reel",
+      "reel_owner_shoes_v1",
+      "reel_owner_clothing_v1",
+      "reel_owner_home_v1",
+      "reel_owner_perfume_v1",
+      "reel_owner_accessories_v1",
+      "lt-r-99",
+      "lt-r-98",
+      "lt-r-97",
+      "lt-r-96",
+      "lt-r-95",
+      "lt-r-94",
+      "lt-r-93",
+      "reel",
+      "reel_owner_shoes_v1",
+      "reel_owner_clothing_v1",
+      "reel_owner_home_v1",
+      "reel_owner_perfume_v1",
+      "reel_owner_accessories_v1",
+      "lt-r-99",
+      "lt-r-98",
+      "lt-r-97",
+      "lt-r-96",
+      "lt-r-95",
+      "lt-r-94",
+      "lt-r-93",
+      "reel",
+      "reel_owner_shoes_v1",
+      "reel_owner_clothing_v1",
+      "reel_owner_home_v1",
+      "reel_owner_perfume_v1",
+      "reel_owner_accessories_v1",
+      "lt-r-99",
+      "lt-r-98",
+      "lt-r-97",
+      "lt-r-96",
+      "lt-r-95",
+      "lt-r-94",
+      "lt-r-93"
+     ],
+     "ms": 0.099249,
+     "rows": 7
+    }
+   ]
+  },
+  "products": {
+   "url": "/api/public/products?limit=24",
+   "weight": 4,
+   "status": 200,
+   "httpMs": 4,
+   "queries": [
+    {
+     "m": "all",
+     "sql": "SELECT p.*,\n    (SELECT GROUP_CONCAT(pa.arrival_id) FROM product_arrivals pa WHERE pa.product_id=p.id) AS arrival_ids\n    FROM products p WHERE p.status='ACTIVE' AND p.visibility='CATALOG'\n    ORDER BY p.updated_at DESC,p.id ASC LIMIT ?",
+     "params": [
+      24
+     ],
+     "ms": 0.3826,
+     "rows": 24
+    }
+   ]
+  },
+  "counts": {
+   "url": "/api/public/social/counts?ids=reel_owner_shoes_v1%2Creel_owner_clothing_v1%2Creel_owner_home_v1%2Creel_owner_perfume_v1%2Creel_owner_accessories_v1%2Clt-r-99%2Clt-r-98%2Clt-r-97%2Clt-r-96%2Clt-r-95%2Clt-r-94%2Clt-r-93",
+   "weight": 3,
+   "status": 200,
+   "httpMs": 5,
+   "queries": [
+    {
+     "m": "all",
+     "sql": "SELECT target_id,type,n FROM social_interaction_totals\n      WHERE target_id IN (?,?,?,?,?,?,?,?,?,?,?,?)",
+     "params": [
+      "reel_owner_shoes_v1",
+      "reel_owner_clothing_v1",
+      "reel_owner_home_v1",
+      "reel_owner_perfume_v1",
+      "reel_owner_accessories_v1",
+      "lt-r-99",
+      "lt-r-98",
+      "lt-r-97",
+      "lt-r-96",
+      "lt-r-95",
+      "lt-r-94",
+      "lt-r-93"
+     ],
+     "ms": 0.079596,
+     "rows": 36
+    }
+   ]
+  },
+  "commerceConfig": {
+   "url": "/api/public/commerce-config",
+   "weight": 2,
+   "status": 200,
+   "httpMs": 6,
+   "queries": [
+    {
+     "m": "get",
+     "sql": "SELECT * FROM pricing_config WHERE id = ?",
+     "params": [
+      "default"
+     ],
+     "ms": 0.075381,
+     "rows": 1
+    },
+    {
+     "m": "all",
+     "sql": "SELECT * FROM customs_categories ORDER BY display_order,id",
+     "params": [],
+     "ms": 0.078641,
+     "rows": 8
+    },
+    {
+     "m": "all",
+     "sql": "SELECT setting_key,setting_value,value_type FROM settings WHERE setting_key IN\n      ('delivery_delay','return_window_days','governorates','payment_methods','deposit_percent','deposit_review_delay','unavailable_refund_policy','company_legal_name','company_name','bank_rib','poste_account','flouci_number','card_discount_percent','facebook_url','instagram_url','tiktok_url','whatsapp_url','site_theme','interface_config','footer_about')",
+     "params": [],
+     "ms": 0.101707,
+     "rows": 20
+    },
+    {
+     "m": "all",
+     "sql": "SELECT * FROM promo_rules ORDER BY scope,target,id",
+     "params": [],
+     "ms": 0.063269,
+     "rows": 7
+    },
+    {
+     "m": "get",
+     "sql": "SELECT * FROM pricing_config WHERE id = ?",
+     "params": [
+      "default"
+     ],
+     "ms": 0.078462,
+     "rows": 1
+    },
+    {
+     "m": "all",
+     "sql": "SELECT * FROM customs_categories ORDER BY display_order,id",
+     "params": [],
+     "ms": 0.065665,
+     "rows": 8
+    }
+   ]
+  },
+  "stories": {
+   "url": "/api/public/stories",
+   "weight": 2,
+   "status": 200,
+   "httpMs": 5,
+   "queries": [
+    {
+     "m": "all",
+     "sql": "SELECT s.*,\n  p.id AS lp_id, p.name AS lp_name, p.brand_name AS lp_brand_name,\n  p.image AS lp_image, p.status AS lp_status,\n  p.final_price AS lp_final_price, p.stock_status AS lp_stock_status FROM stories s LEFT JOIN products p ON p.id=s.product_id\n      WHERE s.status='PUBLISHED' AND s.publish_at<=?\n      AND (s.expires_at IS NULL OR s.expires_at>?) ORDER BY s.priority DESC,s.publish_at DESC",
+     "params": [
+      "2026-11-12T13:48:13.499Z",
+      "2026-11-12T13:48:13.499Z"
+     ],
+     "ms": 0.178438,
+     "rows": 7
+    },
+    {
+     "m": "all",
+     "sql": "SELECT cp.content_id AS content_id, \n  p.id AS lp_id, p.name AS lp_name, p.brand_name AS lp_brand_name,\n  p.image AS lp_image, p.status AS lp_status,\n  p.final_price AS lp_final_price, p.stock_status AS lp_stock_status\n       FROM content_products cp\n       JOIN products p ON p.id = cp.product_id\n      WHERE cp.content_kind = ? AND cp.content_id IN (?,?,?,?,?,?,?)\n      ORDER BY cp.sort_order, cp.product_id",
+     "params": [
+      "story",
+      "official_story_everyday",
+      "official_story_wellbeing",
+      "official_story_trench",
+      "official_story_coffee",
+      "official_story_winter",
+      "official_story_skincare",
+      "official_story_beauty"
+     ],
+     "ms": 0.039833,
+     "rows": 0
+    },
+    {
+     "m": "all",
+     "sql": "SELECT cp.id AS content_id, \n  p.id AS lp_id, p.name AS lp_name, p.brand_name AS lp_brand_name,\n  p.image AS lp_image, p.status AS lp_status,\n  p.final_price AS lp_final_price, p.stock_status AS lp_stock_status\n       FROM reels cp\n       JOIN products p ON p.id = cp.product_id\n      WHERE ? = 'reel' AND cp.id IN (?,?,?,?,?,?,?) AND cp.product_id IS NOT NULL\n     UNION ALL\n     SELECT cp.id AS content_id, \n  p.id AS lp_id, p.name AS lp_name, p.brand_name AS lp_brand_name,\n  p.image AS lp_image, p.status AS lp_status,\n  p.final_price AS lp_final_price, p.stock_status AS lp_stock_status\n       FROM publications cp\n       JOIN products p ON p.id = cp.product_id\n      WHERE ? = 'publication' AND cp.id IN (?,?,?,?,?,?,?) AND cp.product_id IS NOT NULL\n     UNION ALL\n     SELECT cp.id AS content_id, \n  p.id AS lp_id, p.name AS lp_name, p.brand_name AS lp_brand_name,\n  p.image AS lp_image, p.status AS lp_status,\n  p.final_price AS lp_final_price, p.stock_status AS lp_stock_status\n       FROM stories cp\n       JOIN products p ON p.id = cp.product_id\n      WHERE ? = 'story' AND cp.id IN (?,?,?,?,?,?,?) AND cp.product_id IS NOT NULL",
+     "params": [
+      "story",
+      "official_story_everyday",
+      "official_story_wellbeing",
+      "official_story_trench",
+      "official_story_coffee",
+      "official_story_winter",
+      "official_story_skincare",
+      "official_story_beauty",
+      "story",
+      "official_story_everyday",
+      "official_story_wellbeing",
+      "official_story_trench",
+      "official_story_coffee",
+      "official_story_winter",
+      "official_story_skincare",
+      "official_story_beauty",
+      "story",
+      "official_story_everyday",
+      "official_story_wellbeing",
+      "official_story_trench",
+      "official_story_coffee",
+      "official_story_winter",
+      "official_story_skincare",
+      "official_story_beauty"
+     ],
+     "ms": 0.113588,
+     "rows": 0
+    }
+   ]
+  },
+  "navigation": {
+   "url": "/api/public/navigation",
+   "weight": 1,
+   "status": 200,
+   "httpMs": 2,
+   "queries": [
+    {
+     "m": "all",
+     "sql": "SELECT id,destination,label_fr,label_ar,display_order FROM public_nav_items WHERE active=1 ORDER BY display_order,id",
+     "params": [],
+     "ms": 0.04265,
+     "rows": 3
+    }
+   ]
+  },
+  "product": {
+   "url": "/api/public/products/lt-p-1",
+   "weight": 2,
+   "status": 200,
+   "httpMs": 3,
+   "queries": [
+    {
+     "m": "get",
+     "sql": "SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p\n      LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.id=? AND (p.status='ACTIVE' AND (p.visibility='CATALOG' OR (p.visibility='CONTENT' AND (\n    EXISTS (SELECT 1 FROM reels cr WHERE cr.product_id=p.id AND cr.status='publie' AND cr.publish_at<=?)\n    OR EXISTS (SELECT 1 FROM publications cp WHERE cp.product_id=p.id AND cp.status='publie' AND cp.publish_at<=?)\n    OR EXISTS (SELECT 1 FROM stories cs WHERE cs.product_id=p.id AND cs.status='PUBLISHED'\n               AND cs.publish_at<=? AND (cs.expires_at IS NULL OR cs.expires_at>?))\n  )))) GROUP BY p.id",
+     "params": [
+      "lt-p-1",
+      "2026-11-12T13:48:13.514Z",
+      "2026-11-12T13:48:13.514Z",
+      "2026-11-12T13:48:13.514Z",
+      "2026-11-12T13:48:13.514Z"
+     ],
+     "ms": 0.07655,
+     "rows": 1
+    },
+    {
+     "m": "all",
+     "sql": "SELECT id, product_id, variant_id, media_type, url, alt_text, sort_order, is_primary, created_at, updated_at FROM catalogue_media WHERE product_id=? ORDER BY is_primary DESC, media_type, sort_order",
+     "params": [
+      "lt-p-1"
+     ],
+     "ms": 0.016352,
+     "rows": 0
+    },
+    {
+     "m": "all",
+     "sql": "SELECT id, product_id, sku, barcode, size, color, status, sort_order, created_at, updated_at, created_by, updated_by FROM catalogue_variants WHERE product_id=? ORDER BY sort_order, sku",
+     "params": [
+      "lt-p-1"
+     ],
+     "ms": 0.009501,
+     "rows": 0
+    },
+    {
+     "m": "all",
+     "sql": "SELECT variant_id, quantity, reorder_point FROM inventory_stock_items\n        WHERE product_id=? AND status='ACTIVE'",
+     "params": [
+      "lt-p-1"
+     ],
+     "ms": 0.007372,
+     "rows": 0
+    },
+    {
+     "m": "all",
+     "sql": "SELECT a.attribute_key AS key, a.label, a.data_type AS type, a.section, a.sort_order AS sortOrder, v.value_text AS value\n         FROM catalogue_attribute_values v\n         JOIN catalogue_attributes a ON a.attribute_key = v.attribute_key\n        WHERE v.product_id=? AND v.variant_id IS NULL AND a.status='ACTIVE'\n        ORDER BY a.sort_order, a.label",
+     "params": [
+      "lt-p-1"
+     ],
+     "ms": 0.010895,
+     "rows": 0
+    },
+    {
+     "m": "get",
+     "sql": "SELECT id, name, slug, parent_id, status, sort_order, description, created_at, updated_at FROM catalogue_categories WHERE id=?",
+     "params": [
+      "category_selection_soins-cheveux"
+     ],
+     "ms": 0.02041,
+     "rows": 1
+    },
+    {
+     "m": "get",
+     "sql": "SELECT COUNT(*) AS n FROM products WHERE category_id=?",
+     "params": [
+      "category_selection_soins-cheveux"
+     ],
+     "ms": 0.097338,
+     "rows": 1
+    }
+   ]
+  },
+  "ready": {
+   "url": "/api/ready",
+   "weight": 1,
+   "status": 200,
+   "httpMs": 2,
+   "queries": [
+    {
+     "m": "get",
+     "sql": "SELECT 1 AS ready",
+     "params": [],
+     "ms": 0.006325,
+     "rows": 1
+    },
+    {
+     "m": "get",
+     "sql": "SELECT applied_at,backup_status,backup_file FROM crm_schema_migrations\n      WHERE migration_key='crm_arrival_multistore_v1'",
+     "params": [],
+     "ms": 0.013472,
+     "rows": 1
+    },
+    {
+     "m": "get",
+     "sql": "SELECT\n      (SELECT COUNT(*) FROM crm_arrival_sources WHERE arrival_client_store_id IS NULL)\n      +(SELECT COUNT(*) FROM crm_extraction_jobs WHERE arrival_client_store_id IS NULL)\n      +(SELECT COUNT(*) FROM crm_extracted_products WHERE arrival_client_store_id IS NULL) count",
+     "params": [],
+     "ms": 0.006238,
+     "rows": 1
+    }
+   ]
+  },
+  "view": {
+   "url": "POST view",
+   "weight": 0,
+   "status": 200,
+   "queries": [
+    {
+     "m": "run",
+     "sql": "BEGIN",
+     "params": [],
+     "ms": 0.013202,
+     "rows": 1
+    },
+    {
+     "m": "get",
+     "sql": "SELECT 1 FROM stories WHERE id=? AND status='PUBLISHED' AND publish_at<=?\n      AND (expires_at IS NULL OR expires_at>?)",
+     "params": [
+      "reel_owner_perfume_v1",
+      "2026-11-12T13:48:13.531Z",
+      "2026-11-12T13:48:13.531Z"
+     ],
+     "ms": 0.023519,
+     "rows": 0
+    },
+    {
+     "m": "get",
+     "sql": "SELECT 1 FROM publications WHERE id=? AND status='publie' AND publish_at<=?",
+     "params": [
+      "reel_owner_perfume_v1",
+      "2026-11-12T13:48:13.531Z"
+     ],
+     "ms": 0.003687,
+     "rows": 0
+    },
+    {
+     "m": "get",
+     "sql": "SELECT 1 FROM reels WHERE id=? AND status='publie' AND publish_at<=?",
+     "params": [
+      "reel_owner_perfume_v1",
+      "2026-11-12T13:48:13.531Z"
+     ],
+     "ms": 0.011521,
+     "rows": 1
+    },
+    {
+     "m": "get",
+     "sql": "SELECT id FROM story_interactions WHERE target_id=? AND type=? AND guest_hash=? AND type IN ('view','share') AND guest_hash IS NOT NULL",
+     "params": [
+      "reel_owner_perfume_v1",
+      "view",
+      "guest:68e0715c5d134a16ff9831ed907de46e"
+     ],
+     "ms": 0.009903,
+     "rows": 0
+    },
+    {
+     "m": "run",
+     "sql": "INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at)\n        VALUES (?,?,?,?,?,?,NULL,?)",
+     "params": [
+      "int_704f99f0-c795-46af-ac03-fb517b4f2410",
+      "reel_owner_perfume_v1",
+      "post",
+      "view",
+      null,
+      "guest:68e0715c5d134a16ff9831ed907de46e",
+      "2026-11-12T13:48:13.531Z"
+     ],
+     "ms": 0.098713,
+     "rows": 1
+    },
+    {
+     "m": "all",
+     "sql": "SELECT type,n FROM social_interaction_totals WHERE target_id=?",
+     "params": [
+      "reel_owner_perfume_v1"
+     ],
+     "ms": 0.01575,
+     "rows": 3
+    },
+    {
+     "m": "run",
+     "sql": "UPDATE reels SET views=?,likes=?,updated_at=? WHERE id=?",
+     "params": [
+      861,
+      223,
+      "2026-11-12T13:48:13.531Z",
+      "reel_owner_perfume_v1"
+     ],
+     "ms": 0.010438,
+     "rows": 1
+    },
+    {
+     "m": "all",
+     "sql": "SELECT type,n FROM social_interaction_totals WHERE target_id=?",
+     "params": [
+      "reel_owner_perfume_v1"
+     ],
+     "ms": 0.005992,
+     "rows": 3
+    },
+    {
+     "m": "run",
+     "sql": "COMMIT",
+     "params": [],
+     "ms": 0.101073,
+     "rows": 1
+    }
+   ],
+   "body": "{\"success\":true,\"data\":{\"recorded\":true,\"counts\":{\"likes\":223,\"loves\":0,\"dislikes\":0,\"comments\":0,\"views\":861,\"shares\":113}}}"
+  }
+ }
+}
