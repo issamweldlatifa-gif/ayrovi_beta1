@@ -154,3 +154,32 @@ it('le fragment SQL n’accepte que des expressions et des types de confiance', 
   expect(() => socialTotalSql('pub.id; DROP TABLE x', 'view')).toThrow('SOCIAL_TOTAL_TARGET_INVALID');
   expect(() => socialTotalSql('pub.id', 'boost' as never)).toThrow('SOCIAL_TOTAL_TYPE_INVALID');
 });
+
+describe('lectures non paginées plafonnées', () => {
+  it('renvoie au plus LEGACY_UNPAGED_LIMIT contenus, les plus récents d’abord', async () => {
+    const { readPublishedSocial, LEGACY_UNPAGED_LIMIT } = await import('../src/magazine/publicSocialReads');
+    const db = new QatafoDatabase(':memory:');
+    try {
+      const publisher = db.get<any>('SELECT id FROM story_publishers LIMIT 1').id;
+      db.transaction(() => {
+        for (let i = 0; i < LEGACY_UNPAGED_LIMIT + 25; i++) {
+          const at = new Date(Date.UTC(2026, 0, 1) + i * 60_000).toISOString();
+          db.run("INSERT INTO reels(id,title,channel_id,video_url,publish_at,status,created_at,updated_at) VALUES (?,'R',?,'/media/x',?,'publie',?,?)", `cap_${String(i).padStart(4, '0')}`, publisher, at, at, at);
+        }
+      });
+      const { items, nextCursor } = readPublishedSocial(db, 'reel', '2027-01-01T00:00:00.000Z');
+      expect(items).toHaveLength(LEGACY_UNPAGED_LIMIT);
+      expect(nextCursor).toBeNull();
+      // Les plus récents d'abord (la base contient aussi ses Reels d'origine, plus récents).
+      expect(items.find((row) => row.id.startsWith('cap_'))?.id).toBe(`cap_${String(LEGACY_UNPAGED_LIMIT + 24).padStart(4, '0')}`);
+      expect(items.some((row) => row.id === 'cap_0000')).toBe(false);
+      // La pagination, elle, n'est pas plafonnée par cette règle : elle va jusqu'au bout.
+      let cursor: string | null = null; let seen = 0;
+      do {
+        const page = readPublishedSocial(db, 'reel', '2027-01-01T00:00:00.000Z', cursor ? { limit: 30, cursor: JSON.parse(Buffer.from(cursor, 'base64url').toString()) } : { limit: 30 });
+        seen += page.items.filter((row) => row.id.startsWith('cap_')).length; cursor = page.nextCursor;
+      } while (cursor);
+      expect(seen).toBe(LEGACY_UNPAGED_LIMIT + 25);
+    } finally { db.close(); }
+  });
+});

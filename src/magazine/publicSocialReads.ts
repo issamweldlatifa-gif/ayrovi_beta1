@@ -12,6 +12,8 @@ const sources = {
     ${socialTotalSql('r.id', 'view')} views,
     ${socialTotalSql('r.id', 'like')} likes` },
 } as const;
+/** Plafond des lectures NON paginées (contrat historique : un tableau, les plus récents d'abord). */
+export const LEGACY_UNPAGED_LIMIT = 100;
 export function readPublishedSocial(db: ContentReader, kind: PublicSocialKind, now: string, page?: SocialPage): {
   items: PublishedSocialRow[]; nextCursor: string | null;
 } {
@@ -30,11 +32,14 @@ export function readPublishedSocial(db: ContentReader, kind: PublicSocialKind, n
     seek = ` AND (${alias}.publish_at < ? OR (${alias}.publish_at = ? AND ${alias}.id ${page?.anchor ? '<=' : '<'} ?))`;
     params.push(position.at, position.at, position.id);
   }
-  if (page) params.push(page.limit + 1);
+  // Sans pagination (anciennes versions de l'app, ancien site) : plafond fixe des
+  // contenus les plus récents. Avant le 12/11 la liste était ENTIÈRE — 250 Ko et
+  // 148 req/s/vCPU à 300 publications, et elle grossissait à chaque publication.
+  params.push(page ? page.limit + 1 : LEGACY_UNPAGED_LIMIT);
   const selected = db.all<PublishedSocialRow>(`SELECT ${select},${LINKED_PRODUCT_JOIN_SELECT}
     FROM ${table} ${alias} LEFT JOIN products p ON p.id=${alias}.product_id
     WHERE ${alias}.status='publie' AND ${alias}.publish_at<=?${seek}
-    ORDER BY ${alias}.publish_at DESC,${alias}.id DESC${page ? ' LIMIT ?' : ''}`, ...params);
+    ORDER BY ${alias}.publish_at DESC,${alias}.id DESC LIMIT ?`, ...params);
   const items = page ? selected.slice(0, page.limit) : selected;
   return { items, nextCursor: page && selected.length > page.limit ? socialCursor(items[items.length - 1]) : null };
 }
