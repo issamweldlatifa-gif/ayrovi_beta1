@@ -9,7 +9,7 @@
 
 1. **تصحيح مهم:** AYROVI موش مبني على NestJS + PostgreSQL + Prisma. الـ stack الحقيقي هو **Express 4 + TypeScript + SQLite (better-sqlite3)**، على **Render Starter** (0,5 vCPU · 512 Mo RAM · disk 1 Go) في Frankfurt. التفاصيل في §1.
 2. الكود **أصلاً Modular Monolith** (27 module: `crm`, `erp-core`, `aywebs`, `ayrovix`, `catalogue`…). ما نحتاجوش Microservices، وما نحتاجوش نعاودو نكتبوه بـ NestJS: هذا ما يزيد حتى طلب في الثانية.
-3. **القياس:** vCPU واحد يخدم توّا **~1 000 req/s** على mix القراءات متاع التطبيق، يعني **~6 000 مستخدم نشيط في نفس الوقت** (§3).
+3. **القياس:** vCPU واحد يخدم توّا **~1 040 req/s** (كان ~700 قبل التصليحات) على mix القراءات متاع التطبيق، يعني **~6 000 مستخدم نشيط في نفس الوقت** (§3).
 4. لقيت **ثلاث نقاط اختناق حقيقية** في الكود وصلّحتهم في هذا الـ audit: compteurs اجتماعية تتعاود تتحسب مع كل طلب (**×18 أسرع**)، listes بلا حدود، و disk يتعبّى بالـ caches (§4).
 5. **أكبر خطر توّا موش الـ CPU:** هو **RAM 512 Mo** (175 Mo في الراحة و 286 Mo تحت الضغط، وفوقها OCR، الصور، الـ ONNX)، و**الـ disk 1 Go** اللي فيه الـ base والـ médias والـ backups.
 6. **أكبر خطر مع الكبر:** الفيديوات متاع الـ Reels (2–5 Mo للواحد) **يبعثهم الـ process Node بيدّو**. بألف مستخدم يتفرجو يلزم ~1,6 Gbps. لازم **Object Storage + CDN** قبل أي server زايد (§6.3).
@@ -99,7 +99,7 @@
 |---|---:|---:|---|
 | `/api/public/social/counts` (12 Reel) | **87 req/s** · p50 575 ms | **1 578 req/s** · p50 27 ms | compteurs matérialisés (×18) |
 | `/api/public/social/reels?limit=12` | 542 req/s | **942 req/s** | نفس السبب (vues/likes في الـ feed) |
-| `/api/public/social/publications` (بلا pagination) | 135 req/s · 250 Ko | __PUB_AFTER__ | سقف 100 contenu |
+| `/api/public/social/publications` (بلا pagination) | 135 req/s · 250 Ko | **308 req/s** · 82 Ko (×2,3) | سقف 100 contenu |
 | `/api/public/products?limit=24` | 985 req/s | 985 req/s | كان سليم |
 | `/api/public/products/:id` | 1 035 req/s | 1 035 req/s | سليم |
 | `/api/public/stories` | 1 067 req/s | 1 067 req/s | سليم |
@@ -110,11 +110,19 @@
 | **قبل** | 100 | 611 | 158 ms | 354 ms | 0 % |
 | **قبل** | 500 | 700 | 723 ms | 1 165 ms | 0 % |
 | **قبل** | 1 000 | 661 | — | 1 802 ms | **17 %** |
-__MIX_AFTER__
+| **بعد** | 100 | **1 045** | **94 ms** | **196 ms** | 0 % |
+| **بعد** | 500 | **1 022** | 532 ms | **697 ms** | 0 % |
+| **بعد** | 1 000 | 1 033 | 150 ms | 1 007 ms | 10 % (*) |
+
+**الربح:** **+49 % في الطاقة الاستيعابية** (700 → 1 040 req/s)، والـ p99 تحت 500 connexion **نقص 40 %** (1 165 → 697 ms).
+
+(*) الأخطاء في 1 000 connexion **موش 5xx** (الـ server ما رجّع حتى erreur). هي connexions تستنّى أكثر من 10 ثواني في الـ file TCP متاع core واحد مشبّع. الحد الحقيقي هو **~1 000 req/s لكل vCPU**، و 1 000 connexion مفتوحة مع بعضها أكثر برشا من 1 000 مستخدم حقيقي (مستخدم حقيقي يبعث طلب كل ~6 ثواني، موش connexion مفتوحة ديما).
+
+**الـ métriques الجدد تخدم تحت الضغط:** مباشرة بعد التست، الـ panneau عرض إشارة `EVENT_LOOP_BLOCKED` (p99 = 599 ms > 200 ms)، و جدول «Où part le temps» عرض `/api/public/social` = 43 % من وقت الحساب. يعني الإشارة صحيحة (الـ core كان مشبّع)، والـ route اللي لازم نشوفوها الأولى معروفة.
 
 **Mémoire:** 175 Mo في الراحة، و**286 Mo** تحت 1 000 connexion، من غير OCR ولا ONNX ولا upload. على Starter (512 Mo) **ما يبقاش هامش** وقت يجي pic فيه صور.
 
-**الكتابة (SQLite):** ~13 000 insertion/s للسطر الواحد (WAL). __WRITE_AFTER__
+**الكتابة (SQLite):** ~13 000 insertion/s للسطر الواحد (WAL). بعد الـ compteurs matérialisés، كل vue = insertion + trigger (O(1))، عوض ما تتعاود تتحسب `COUNT(*)` على مليون سطر.
 
 ### من req/s لعدد المستخدمين (قانون Little)
 
