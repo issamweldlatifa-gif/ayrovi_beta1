@@ -10,7 +10,7 @@ import fs from 'fs';
 import { KNOWN_PAGE_PATHS, isKnownPagePath, sitemapRoutes } from '../shared/publicSeo';
 import { ANDROID_APP_LINK_ENV, appLinksDiagnostics, appLinksForDeployment } from '../shared/appLinks';
 import { deploymentIdentity } from './services/deploymentIdentity';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Server } from 'node:http';
 import { spawn } from 'node:child_process';
 import { QatafoDatabase as AyroviDatabase } from './db/database';
@@ -21,6 +21,7 @@ import { createApiRouter } from './api/routes';
 import { observeCheckoutFunnel } from './analytics/funnel';
 import { createAyrovixRouter } from './ayrovix/routes';
 import { createAdminRouter } from './admin/routes';
+import { requireAdmin } from './admin/auth';
 import { createPublicRouter } from './public/routes';
 import { createCustomerRouter } from './customer/routes';
 import { processCustomerAuthMail } from './customer/accountMail';
@@ -38,6 +39,7 @@ import { pruneCanonicalLensCache } from './ayrovix/services/lensCache';
 import { dispatchPushNotifications } from './services/pushDispatch';
 import { pushConfigured } from './services/push';
 import { clientRateLimitKey } from './services/rateKey';
+import { backgroundJobsEnabled, createOpsMetrics, ensureOpsMetricsSchema } from './services/opsMetrics';
 
 // Invoked only while serving requests, after the session store is initialized.
 function authenticatedRateLimitKey(req: Request): string {
@@ -105,6 +107,16 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// Métriques d'exploitation (audit d'architecture 12/11) : posées AVANT les limiteurs
+// et les routes pour mesurer TOUTE requête, y compris celles refusées en 429.
+const opsMetrics = createOpsMetrics({
+  dataRoot: path.resolve(process.cwd(), 'data'),
+  databasePath: process.env.NODE_ENV === 'test' ? ':memory:' : (process.env.DATABASE_PATH || path.resolve(process.cwd(), 'data', 'qatafo.sqlite')),
+  sampleMs: process.env.NODE_ENV === 'test' ? 0 : 5_000,
+});
+app.use(opsMetrics.middleware);
+opsMetrics.start();
 
 // Compress JSON, JavaScript, CSS and other text responses. Hashed assets keep
 // their immutable cache policy while transferring at a fraction of the size.
@@ -340,6 +352,14 @@ app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify-challenge', 10, 5
 // Tests must always be hermetic: never let a local .env DATABASE_PATH hijack the test run.
 const databasePath = process.env.NODE_ENV === 'test' ? ':memory:' : (process.env.DATABASE_PATH || undefined);
 const db = new AyroviDatabase(databasePath);
+try {
+  ensureOpsMetricsSchema({ exec: (sql: string) => db.runSchema(sql) });
+  opsMetrics.attachStore(db);
+} catch (error: any) { console.warn('[ops-metrics] historique horaire désactivé:', error?.message || 'unknown'); }
+// Rôle du processus : `AYROVI_BACKGROUND_JOBS=off` = instance web pure (préparation
+// multi-instances, voir docs/AYROVI_ARCHITECTURE_SCALABLE_AR_2026-11-12.md §6).
+const runBackgroundJobs = backgroundJobsEnabled();
+if (!runBackgroundJobs) console.log('[jobs] AYROVI_BACKGROUND_JOBS=off — tâches planifiées confiées à une autre instance.');
 try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens cache] startup prune failed:', error?.message || 'unknown'); }
 /*
  * Répartiteur de notifications push.
@@ -353,7 +373,7 @@ try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens ca
  * répartiteur qui tourne à vide n'apprend rien à personne.
  */
 const pushDispatcher = setInterval(() => {
-  if (!pushConfigured()) return;
+  if (!runBackgroundJobs || !pushConfigured()) return;
   void dispatchPushNotifications(db).catch((error: any) => {
     console.warn('[Push] dispatch failed:', error?.message || 'unknown');
   });
@@ -361,6 +381,7 @@ const pushDispatcher = setInterval(() => {
 pushDispatcher.unref?.();
 
 const lensCacheCleanupTimer = setInterval(() => {
+  if (!runBackgroundJobs) return;
   try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens cache] scheduled prune failed:', error?.message || 'unknown'); }
 }, 60 * 60_000);
 lensCacheCleanupTimer.unref?.();
@@ -496,6 +517,30 @@ app.use('/api', (_req, res, next) => {
 // de la caisse, donc il compte chaque refus — celui qu'on a prévu comme celui qu'on ajoutera
 // demain sans y penser. C'est la seule mesure de ce fichier qui ne dépend d'aucune liste.
 app.use('/api/checkout', observeCheckoutFunnel(db));
+/*
+ * Capacité & santé de l'infrastructure (audit d'architecture 12/11) — lecture seule.
+ * CRM : Modules & environnement → « Capacité du serveur ». Aucune donnée personnelle.
+ */
+app.get('/api/admin/ops/metrics', requireAdmin(db, 'settings:read'), (_req, res) => {
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.json({ success: true, data: opsMetrics.snapshot() });
+});
+/*
+ * Supervision externe (Prometheus / Grafana Cloud / Better Stack) : fermée tant que
+ * `OPS_METRICS_TOKEN` n'est pas défini, puis jeton porteur obligatoire (comparaison
+ * à temps constant). Aucun identifiant, aucune URL : des agrégats seulement.
+ */
+app.get('/api/ops/metrics', (req, res) => {
+  const expected = String(process.env.OPS_METRICS_TOKEN || '').trim();
+  const supplied = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
+  const a = Buffer.from(createHash('sha256').update(supplied).digest('hex'));
+  const b = Buffer.from(createHash('sha256').update(expected).digest('hex'));
+  if (expected.length < 24 || !timingSafeEqual(a, b)) {
+    return res.status(404).json({ success: false, code: 'API_NOT_FOUND', error: 'Route API introuvable.' });
+  }
+  res.setHeader('Cache-Control', 'no-store');
+  res.type('text/plain; version=0.0.4').send(opsMetrics.prometheus());
+});
 app.use('/api/admin', createAdminRouter(db));
 app.use('/api/ayrovix', createAyrovixRouter(db, scraper));
 app.use('/api/ocerex', createOcerexRouter(db, scraper));
@@ -618,6 +663,7 @@ app.get('*', (req, res) => {
 
 // Nettoyage périodique : sessions clients expirées + défis OTP consommés/périmés.
 const housekeeping = setInterval(() => {
+  if (!runBackgroundJobs) return;
   try {
     const now = new Date().toISOString();
     db.run(`DELETE FROM customer_sessions WHERE expires_at <= ?`, now);
@@ -654,7 +700,7 @@ function runBackupIfDue() {
     else console.error(`[backup] فشلت النسخة المجدولة (exit=${code}): ${output.trim()}`);
   });
 }
-if (backupIntervalMs && process.env.NODE_ENV !== 'test') {
+if (runBackgroundJobs && backupIntervalMs && process.env.NODE_ENV !== 'test') {
   const initial = setTimeout(runBackupIfDue, 60_000);
   initial.unref?.();
   backupTimer = setInterval(runBackupIfDue, Math.min(backupIntervalMs, 60 * 60 * 1000));
@@ -662,7 +708,7 @@ if (backupIntervalMs && process.env.NODE_ENV !== 'test') {
 }
 
 // Durable welcome/reset mail: retries survive process restarts. Never run delivery in tests.
-const customerMailTimer = process.env.NODE_ENV !== 'test'
+const customerMailTimer = runBackgroundJobs && process.env.NODE_ENV !== 'test'
   ? setInterval(() => { void processCustomerAuthMail(db).catch(() => console.warn('[Customer Auth Mail] Worker unavailable')); }, 15_000)
   : null;
 customerMailTimer?.unref();
@@ -670,7 +716,7 @@ customerMailTimer?.unref();
 // Taux de change LIVE (audit pricing 23/09/2026) : aligne pricing_config sur le
 // marché (ExchangeRate-API par défaut), version++ et re-tarification inclus.
 // Jamais en test ; se suspend quand un admin saisit un taux manuellement.
-if (process.env.NODE_ENV !== 'test') {
+if (runBackgroundJobs && process.env.NODE_ENV !== 'test') {
   startFxRatesScheduler(db);
   startPriceWatchScheduler(db, scraper);
 }
@@ -686,6 +732,7 @@ function shutdown(exitCode: number, reason: string) {
   clearInterval(housekeeping);
   if (customerMailTimer) clearInterval(customerMailTimer);
   clearInterval(rateSweeper);
+  opsMetrics.stop();
   if (backupTimer) clearInterval(backupTimer);
   const finish = () => {
     try { db.close(); } catch { /* already closed */ }
