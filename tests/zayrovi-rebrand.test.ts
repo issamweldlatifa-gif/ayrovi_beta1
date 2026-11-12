@@ -180,11 +180,13 @@ describe('5. APK de démo', () => {
     expect(workflow).toContain('APK="$RUNNER_TEMP/ZAYROVI-demo-${SHORT}.apk"');
   });
 
-  test('écran d’ouverture : fond noir #0A0A0A et Z blanc, dans les deux thèmes', () => {
+  // Ouverture blanche + symbole bleu depuis f80504cb (« blue native entrance ») ;
+  // même contrat que apps/mobile/tests/brand-colors.test.ts.
+  test('écran d’ouverture : fond blanc #FFFFFF et symbole bleu, dans les deux thèmes', () => {
     const app = JSON.parse(read('apps/mobile/app.json')).expo;
     const splash = app.plugins.find((p: unknown) => Array.isArray(p) && p[0] === 'expo-splash-screen')[1];
-    expect(splash.backgroundColor).toBe('#0A0A0A');
-    expect(splash.dark.backgroundColor).toBe('#0A0A0A');
-    expect(app.android.adaptiveIcon.backgroundColor).toBe('#0A0A0A');
+    expect(splash.backgroundColor).toBe('#FFFFFF');
+    expect(splash.dark.backgroundColor).toBe('#FFFFFF');
+    expect(app.android.adaptiveIcon.backgroundColor).toBe('#FFFFFF');
   });
 });

@@ -20,10 +20,13 @@ describe('feature identity is consistent, not a brand exception',()=>{
  });
  it('preserves the navigation destinations/callbacks while using distinct feature icons',async()=>{
   const lens=vi.fn(),sonim=vi.fn(),aywebs=vi.fn();await act(async()=>root.render(<LocaleProvider><NavigationHistoryProvider><BottomNavBar isAiDrawerOpen={false} onOpenLens={lens} onToggleAiDrawer={sonim} onOpenAyWebs={aywebs} config={DEFAULT_INTERFACE_CONFIG.navigation} iconConfig={DEFAULT_INTERFACE_CONFIG.icons}/></NavigationHistoryProvider></LocaleProvider>));
-  expect([...host.querySelectorAll('nav [data-editorial-icon]')].map(el=>el.getAttribute('data-editorial-icon'))).toEqual(['Lens','Sonim','AyWebs','Vision','Scan']);
-  const buttons=host.querySelectorAll<HTMLButtonElement>('nav button');await act(async()=>{buttons[0].click();buttons[1].click();buttons[2].click();});expect(lens).toHaveBeenCalledOnce();expect(sonim).toHaveBeenCalledOnce();expect(aywebs).toHaveBeenCalledOnce();
-  await act(async()=>buttons[3].click());expect(host.querySelector('[role="dialog"] [data-editorial-icon="Vision"]')).not.toBeNull();
-  expect(host.textContent).toContain('Bientôt disponible'); // No fictional new backend capability.
+  // Barre « Clean » (0a37eb38) : Accueil · Lens · Clean (SONIM) · AYWEBs · Profil, chaque entrée avec son
+  // propre pictogramme ; Vision et OCEREX restent des destinations, ouvertes depuis le menu.
+  const buttons=[...host.querySelectorAll<HTMLButtonElement>('nav button')];
+  expect(buttons.map(b=>b.getAttribute('aria-label'))).toEqual(['Accueil','Lens — recherche par image','Clean','AYWEBs','Profil']);
+  const icons=buttons.map(b=>b.querySelector('img')?.getAttribute('src')||b.querySelector('span[style]')?.getAttribute('style')||'');
+  expect(new Set(icons).size).toBe(5);
+  await act(async()=>{buttons[1].click();buttons[2].click();buttons[3].click();});expect(lens).toHaveBeenCalledOnce();expect(sonim).toHaveBeenCalledOnce();expect(aywebs).toHaveBeenCalledOnce();
  });
  it('uses SONIM in every activity state, settles and cleans up without old geometry',async()=>{
   vi.useFakeTimers();

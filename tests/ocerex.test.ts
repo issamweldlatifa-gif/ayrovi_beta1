@@ -336,7 +336,8 @@ describe('OCEREX copy and navigation', () => {
     expect(errors).toContain('الرابط غير صالح.');
     expect(errors).toContain('الصورة غير واضحة كمنتج أو سلة.');
     expect(errors).toContain('حدث خطأ أثناء تحليل الصورة.');
-    expect(readFileSync('client/src/components/BottomNavBar.tsx', 'utf8')).toContain('app:ocerex');
+    // Depuis la refonte « Clean » (0a37eb38), OCEREX est dans le menu, plus dans la barre du bas.
+    expect(readFileSync('client/src/components/MenuDrawer.tsx', 'utf8')).toContain("navigation.navigate([{ id: 'app:ocerex' }])");
     expect(readFileSync('client/src/App.tsx', 'utf8')).toContain('OcerexScreen');
     expect(readFileSync('src/api/routes.ts', 'utf8')).toContain('attachOcerexExtractionsToOrder');
   });
