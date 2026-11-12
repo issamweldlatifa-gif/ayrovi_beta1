@@ -157,6 +157,13 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     } catch (e) { return false; }
   }
   var IS_SHOPIFY = !IS_AMAZON && !IS_SHEIN && !IS_TEMU && !IS_ALIEXPRESS && detectShopify();
+  /* ── PLATEFORME WOOCOMMERCE (12/11/2026) — même discipline que Shopify. */
+  function detectWooCommerce() {
+    try {
+      return hasSelector('form.variations_form[data-product_variations], body.woocommerce, body.woocommerce-page, link[href*="/plugins/woocommerce/"], script[src*="/plugins/woocommerce/"]');
+    } catch (e) { return false; }
+  }
+  var IS_WOOCOMMERCE = !IS_AMAZON && !IS_SHEIN && !IS_TEMU && !IS_ALIEXPRESS && !IS_SHOPIFY && detectWooCommerce();
   var SHEIN_GOODS_ID = '';
   var TEMU_GOODS_ID = '';
   var ALIEXPRESS_ITEM_ID = '';
@@ -3263,6 +3270,15 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (collected.length && amounts.length === 1) return collected[0];
     return null;
   }
+  /* Montant normalisé pour COMPARER deux bornes (« 39.00 » = « 39 »), jamais publié. */
+  function ldAmountKey(value) {
+    var cleaned = String(value === undefined || value === null ? '' : value).replace(/[^0-9.,]/g, '');
+    if (!cleaned) return '';
+    if (cleaned.indexOf(',') >= 0 && cleaned.indexOf('.') < 0) cleaned = cleaned.replace(',', '.');
+    else cleaned = cleaned.replace(/,/g, '');
+    var amount = parseFloat(cleaned);
+    return isFinite(amount) && amount > 0 ? amount.toFixed(2) : '';
+  }
   function offerField(offer, names) {
     if (!offer) return '';
     for (var i = 0; i < names.length; i++) {
@@ -3300,7 +3316,16 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     if (offer) {
       var priceText = offerField(offer, ['price', 'lowPrice', 'highPrice']);
       var currencyText = offerField(offer, ['priceCurrency', 'currency']);
-      if (priceText && HAS_DIGIT.test(priceText)) {
+      /* FOURCHETTE « 39 € – 59 € » (AggregateOffer d'un produit variable,
+         12/11/2026) : « lowPrice » n'est le prix d'AUCUNE variante choisie en
+         particulier. Publier le bas de la fourchette comme prix JSON-LD (qui se
+         corrobore seul) devisait 39 € un article choisi à 59 €. On s'abstient ;
+         les lecteurs de plateforme (WooCommerce, Shopify) lisent la variante. */
+      var offerLow = ldAmountKey(offerField(offer, ['lowPrice']));
+      var offerHigh = ldAmountKey(offerField(offer, ['highPrice']));
+      var offerIsRange = Boolean(offerLow && offerHigh && offerLow !== offerHigh);
+      if (offerIsRange) diag('price:jsonld_range');
+      if (priceText && HAS_DIGIT.test(priceText) && !offerIsRange) {
         out.priceCandidates.push({ text: cut(priceText + ' ' + currencyText, LIMITS.text), source: 'json_ld' });
       }
       if (currencyText) out.currencyText = cut(currencyText, LIMITS.label);
@@ -3535,6 +3560,117 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
           out.availabilityText = shopifyVariant.available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
         }
         if (!out.title && shopifyState.product.title) out.title = cut(shopifyState.product.title, LIMITS.text);
+      }
+    } catch (e) {}
+  }
+
+  /* ── 3 ter. Plateforme WooCommerce (12/11/2026) ──────────────────────────
+     Produit VARIABLE : le formulaire « variations_form » publie toutes les
+     variations en JSON (« data-product_variations » : attributs, display_price,
+     is_in_stock). La variation choisie est celle dont chaque attribut vaut la
+     valeur sélectionnée (« » = n'importe laquelle). Deux sources indépendantes
+     pour la corroboration exigée hors registre : le JSON de la variation ET le
+     prix que WooCommerce affiche pour elle (« woocommerce-variation-price »).
+     Aucune sélection complète ⇒ aucun prix (la fourchette est déjà écartée). */
+  function wooIsList(value) { return Object.prototype.toString.call(value) === '[object Array]'; }
+  function wooNormalize(value) { return String(value === undefined || value === null ? '' : value).toLowerCase(); }
+  function wooVariationState() {
+    var form = document.querySelector('form.variations_form[data-product_variations]');
+    if (!form) return null;
+    var rawVariations = form.getAttribute('data-product_variations') || '';
+    /* « false » : trop de variations, WooCommerce les charge en AJAX — rien à lire ici. */
+    if (!rawVariations || rawVariations === 'false' || rawVariations.length > 400000) return null;
+    var variations = null;
+    try { variations = JSON.parse(rawVariations); } catch (e) { return null; }
+    if (!wooIsList(variations) || !variations.length) return null;
+    var axes = [];
+    var selects = form.querySelectorAll('select[name^="attribute_"]');
+    var query = '';
+    try { query = String(location.search || ''); } catch (e) {}
+    for (var wa = 0; wa < selects.length && axes.length < 3; wa++) {
+      var select = selects[wa];
+      var attribute = text(select.getAttribute('name'));
+      if (!attribute) continue;
+      var labelNode = select.id ? document.querySelector('label[for="' + select.id.replace(/"/g, '') + '"]') : null;
+      var axisLabel = text(labelNode && labelNode.textContent) || attribute.replace(/^attribute_(?:pa_)?/, '').replace(/[-_]+/g, ' ');
+      var choices = [];
+      for (var wo = 0; wo < select.options.length && choices.length < 60; wo++) {
+        var opt = select.options[wo];
+        var optValue = text(opt.value);
+        if (!optValue) continue;
+        choices.push({ value: optValue, label: text(opt.textContent) || optValue });
+      }
+      var chosen = text(select.value);
+      if (!chosen) {
+        var fromQuery = query.match(new RegExp('[?&]' + attribute.replace(/[^a-z0-9_-]/gi, '') + '=([^&#]*)', 'i'));
+        if (fromQuery) { try { chosen = decodeURIComponent(fromQuery[1].replace(/\+/g, ' ')); } catch (e) { chosen = ''; } }
+      }
+      axes.push({ attribute: attribute, label: cut(axisLabel, LIMITS.label), choices: choices, selected: chosen });
+    }
+    if (!axes.length) return null;
+    return { variations: variations, axes: axes };
+  }
+  function wooVariationFor(state, values) {
+    for (var v = 0; v < state.variations.length && v < 300; v++) {
+      var variation = state.variations[v];
+      var attrs = variation && variation.attributes;
+      if (!attrs || typeof attrs !== 'object') continue;
+      var matches = true;
+      for (var a = 0; a < state.axes.length; a++) {
+        var wanted = values[a];
+        var published = attrs[state.axes[a].attribute];
+        if (published === undefined || published === null || published === '') continue;
+        if (!wanted || wooNormalize(published) !== wooNormalize(wanted)) { matches = false; break; }
+      }
+      if (matches) return variation;
+    }
+    return null;
+  }
+  function wooAmount(value) {
+    if (typeof value === 'number' && isFinite(value) && value > 0) return value.toFixed(2);
+    if (typeof value === 'string' && /^\d{1,9}(?:\.\d{1,4})?$/.test(value) && parseFloat(value) > 0) return parseFloat(value).toFixed(2);
+    return '';
+  }
+  var wooState = null;
+  var wooVariation = null;
+  if (IS_WOOCOMMERCE) {
+    try {
+      wooState = wooVariationState();
+      if (!wooState) diag('platform:woocommerce');
+      else {
+        var wooSelected = [];
+        var wooComplete = true;
+        for (var ws = 0; ws < wooState.axes.length; ws++) {
+          wooSelected.push(wooState.axes[ws].selected);
+          if (!wooState.axes[ws].selected) wooComplete = false;
+        }
+        wooVariation = wooComplete ? wooVariationFor(wooState, wooSelected) : null;
+        if (!wooVariation) diag(wooComplete ? 'platform:woocommerce_variation_unknown' : 'platform:woocommerce_selection_incomplete');
+        else {
+          diag('platform:woocommerce_variation');
+          var wooCurrency = /^[A-Z]{3}$/.test(String(out.currencyText || '')) ? String(out.currencyText) : '';
+          if (!wooCurrency) {
+            var wooMetaCurrency = document.querySelector('meta[property="product:price:currency"], meta[itemprop="priceCurrency"]');
+            var wooMetaValue = text(wooMetaCurrency && wooMetaCurrency.getAttribute('content')).toUpperCase();
+            if (/^[A-Z]{3}$/.test(wooMetaValue)) wooCurrency = wooMetaValue;
+          }
+          var wooPrice = wooAmount(wooVariation.display_price);
+          if (wooPrice && wooCurrency) {
+            out.priceCandidates.push({ text: cut(wooPrice + ' ' + wooCurrency, LIMITS.text), source: 'embedded_json' });
+            if (!out.currencyText) out.currencyText = wooCurrency;
+            /* Le prix AFFICHÉ pour la variation (rendu par WooCommerce après le choix). */
+            var wooShown = document.querySelector('.woocommerce-variation-price ins .amount, .woocommerce-variation-price .amount');
+            var wooShownText = text(wooShown && wooShown.textContent);
+            if (wooShownText && HAS_DIGIT.test(wooShownText) && wooShownText.length <= LIMITS.text) {
+              out.priceCandidates.push({ text: cut(wooShownText + (CURRENCY_HINT.test(wooShownText) ? '' : ' ' + wooCurrency), LIMITS.text), source: 'dom' });
+            }
+          } else diag('platform:woocommerce_no_amount');
+          if (typeof wooVariation.is_in_stock === 'boolean') {
+            out.availabilityText = wooVariation.is_in_stock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
+          }
+          var wooImage = wooVariation.image && (wooVariation.image.full_src || wooVariation.image.src);
+          if (wooImage && /^https?:\/\//i.test(String(wooImage))) pushUnique(out.images, wooImage, LIMITS.images, 600);
+        }
       }
     } catch (e) {}
   }
@@ -4799,6 +4935,43 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         pushVariantGroup(axisName, axisValues, axisSelected ? [axisSelected] : [], axisOptions);
       }
       if (out.variantGroups.length) diag('platform:shopify_variant_groups');
+    } catch (e) {}
+  }
+  /* Groupes WooCommerce : libellés des listes déroulantes ; état et prix d'une
+     valeur = la variation qui garde les AUTRES choix tels qu'affichés. */
+  if (IS_WOOCOMMERCE && wooState) {
+    try {
+      var wooGroupsBefore = out.variantGroups.length;
+      for (var wg = 0; wg < wooState.axes.length; wg++) {
+        var wooAxis = wooState.axes[wg];
+        var wooValues = [];
+        var wooOptions = [];
+        var wooChosenLabel = '';
+        for (var wc = 0; wc < wooAxis.choices.length; wc++) {
+          var wooChoice = wooAxis.choices[wc];
+          wooValues.push(wooChoice.label);
+          if (wooAxis.selected && wooNormalize(wooChoice.value) === wooNormalize(wooAxis.selected)) wooChosenLabel = wooChoice.label;
+          var wooProbe = [];
+          var wooProbeComplete = true;
+          for (var wp = 0; wp < wooState.axes.length; wp++) {
+            var probeValue = wp === wg ? wooChoice.value : wooState.axes[wp].selected;
+            if (!probeValue) wooProbeComplete = false;
+            wooProbe.push(probeValue);
+          }
+          var wooProbeVariation = wooProbeComplete ? wooVariationFor(wooState, wooProbe) : null;
+          var wooProbeAmount = wooProbeVariation ? wooAmount(wooProbeVariation.display_price) : '';
+          var wooProbeCurrency = /^[A-Z]{3}$/.test(String(out.currencyText || '')) ? String(out.currencyText) : '';
+          wooOptions.push({
+            value: wooChoice.label,
+            available: wooProbeVariation ? (wooProbeVariation.is_in_stock === true ? true : wooProbeVariation.is_in_stock === false ? false : null) : (wooProbeComplete ? false : null),
+            price: wooProbeAmount && wooProbeCurrency ? wooProbeAmount + ' ' + wooProbeCurrency : null,
+            priceFrom: false,
+            stock: null
+          });
+        }
+        pushVariantGroup(wooAxis.label, wooValues, wooChosenLabel ? [wooChosenLabel] : [], wooOptions);
+      }
+      if (out.variantGroups.length > wooGroupsBefore) diag('platform:woocommerce_variant_groups');
     } catch (e) {}
   }
   function ldBuild() {

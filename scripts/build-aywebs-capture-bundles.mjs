@@ -43,11 +43,16 @@ export const GENERATED_PATH = path.join(ROOT, 'src/aywebs/captureBundles.generat
  * dans les lots des places de marché qui ne tournent pas sur Shopify.
  */
 const STORE_FLAGS = ['IS_AMAZON', 'IS_SHEIN', 'IS_TEMU', 'IS_ALIEXPRESS', 'IS_ZALANDO'];
+/* Lecteurs de PLATEFORME (Shopify, WooCommerce) : détectés à l'exécution, ils
+   restent dans le noyau (boutiques génériques) et sortent des lots des places
+   de marché, qui ne tournent jamais sur ces plateformes. */
+const PLATFORM_FLAGS = ['IS_SHOPIFY', 'IS_WOOCOMMERCE'];
+
 export const AYWEBS_CAPTURE_BUNDLE_FLAGS = {
   kernel: [...STORE_FLAGS],
-  shein: STORE_FLAGS.filter((flag) => flag !== 'IS_SHEIN').concat('IS_SHOPIFY'),
-  temu: STORE_FLAGS.filter((flag) => flag !== 'IS_TEMU').concat('IS_SHOPIFY'),
-  aliexpress: STORE_FLAGS.filter((flag) => flag !== 'IS_ALIEXPRESS').concat('IS_SHOPIFY'),
+  shein: STORE_FLAGS.filter((flag) => flag !== 'IS_SHEIN').concat(PLATFORM_FLAGS),
+  temu: STORE_FLAGS.filter((flag) => flag !== 'IS_TEMU').concat(PLATFORM_FLAGS),
+  aliexpress: STORE_FLAGS.filter((flag) => flag !== 'IS_ALIEXPRESS').concat(PLATFORM_FLAGS),
 };
 
 const sha256 = (text) => createHash('sha256').update(text).digest('hex');

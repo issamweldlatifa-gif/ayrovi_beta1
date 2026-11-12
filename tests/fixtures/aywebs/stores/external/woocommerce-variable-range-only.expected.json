@@ -1,0 +1,16 @@
+{
+  "served": "legacy",
+  "detectedStore": null,
+  "ok": false,
+  "rejection": "NO_PRICE_TEXT",
+  "price": null,
+  "currency": null,
+  "priceSource": null,
+  "corroborated": false,
+  "availability": "UNKNOWN",
+  "title": "Huile d’olive bio",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://huilerie-bio.example/wp-content/uploads/huile.jpg"
+}

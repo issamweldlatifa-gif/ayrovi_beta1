@@ -1,0 +1,27 @@
+{
+  "served": "legacy",
+  "detectedStore": null,
+  "ok": true,
+  "rejection": null,
+  "price": 24.9,
+  "currency": "EUR",
+  "priceSource": "embedded_json",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "Huile d’olive bio",
+  "variantGroups": [
+    {
+      "name": "Contenance",
+      "values": [
+        "250 ml",
+        "500 ml"
+      ],
+      "selected": [
+        "500 ml"
+      ]
+    }
+  ],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://huilerie-bio.example/wp-content/uploads/huile.jpg"
+}
