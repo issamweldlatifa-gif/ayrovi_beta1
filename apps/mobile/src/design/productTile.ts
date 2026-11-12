@@ -208,3 +208,14 @@ export function productTileInitialRows(columns: number): number {
   if (safe === 1) return 2;
   return Math.max(2, Math.ceil(6 / safe));
 }
+
+/**
+ * Photo d'arrivée sur la fiche (`/product/[id]?photo=2`) : celle que le client
+ * regardait dans la carte. Absente, illisible, négative ou fractionnaire ⇒ un
+ * entier ≥ 0 (la première photo par défaut). La fiche la borne ensuite à sa galerie.
+ */
+export function productTileArrivalPhoto(param: unknown): number {
+  const raw = Array.isArray(param) ? param[0] : param;
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+}

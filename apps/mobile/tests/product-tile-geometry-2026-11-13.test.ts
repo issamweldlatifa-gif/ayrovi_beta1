@@ -22,6 +22,7 @@ import {
   productTileInitialRows,
   productTileMetrics,
   productTilePageAt,
+  productTileArrivalPhoto,
 } from '@/design/productTile';
 
 const read = (relative: string) => readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
@@ -161,6 +162,17 @@ describe('navigation dans la carte', () => {
     expect(productTileInitialRows(2)).toBe(3);
     expect(productTileInitialRows(3)).toBe(2);
     expect(productTileInitialRows(4)).toBe(2);
+  });
+
+  it('photo d’arrivée sur la fiche : un entier ≥ 0, quoi qu’il arrive dans l’URL', () => {
+    expect(productTileArrivalPhoto(undefined)).toBe(0);
+    expect(productTileArrivalPhoto('')).toBe(0);
+    expect(productTileArrivalPhoto('2')).toBe(2);
+    expect(productTileArrivalPhoto(['3', '1'])).toBe(3);
+    expect(productTileArrivalPhoto('-4')).toBe(0);
+    expect(productTileArrivalPhoto('1.7')).toBe(1);
+    expect(productTileArrivalPhoto('abc')).toBe(0);
+    expect(productTileArrivalPhoto('Infinity')).toBe(0);
   });
 
   it('bascule grandes / petites photos', () => {

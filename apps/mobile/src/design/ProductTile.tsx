@@ -254,6 +254,7 @@ function ProductTileComponent({
               <Pressable
                 testID={`${testID}-photo-${index}`}
                 onPress={() => onOpen(index)}
+                accessibilityLabel={accessibilityLabel}
                 importantForAccessibility="no"
                 style={{ width: pageWidth, height: metrics.mediaHeight }}
               >
@@ -265,6 +266,7 @@ function ProductTileComponent({
           <Pressable
             testID={`${testID}-photo-0`}
             onPress={() => onOpen(0)}
+            accessibilityLabel={accessibilityLabel}
             importantForAccessibility="no"
             style={[StyleSheet.absoluteFill, styles.center]}
           >

@@ -26,6 +26,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, Share, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { productTileArrivalPhoto } from '@/design/productTile';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -92,7 +93,7 @@ export default function ProductScreen() {
    * la première. Valeur absente, illisible ou négative ⇒ la première photo ; un
    * index trop grand est ramené à la dernière par `FichePhoto`.
    */
-  const startPhoto = Math.max(0, Math.floor(Number(photoParam) || 0));
+  const startPhoto = productTileArrivalPhoto(photoParam);
   const sessionId = useSessionId();
   const queryClient = useQueryClient();
 
