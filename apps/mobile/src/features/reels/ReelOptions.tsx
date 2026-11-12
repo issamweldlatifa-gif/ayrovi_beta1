@@ -69,13 +69,15 @@ export function ReelOptions({
     ...(onLike
       ? [
           {
-            icon: liked ? 'heart' : 'heart-outline',
+            // Z-Reactions : même sens que le toucher du bouton officiel —
+            // J'aime, ou retirer la réaction posée (quelle qu'elle soit).
+            icon: liked ? 'close-circle-outline' : 'thumbs-up-outline',
             label: ar
               ? liked
-                ? 'إلغاء الإعجاب'
+                ? 'إلغاء التفاعل'
                 : 'إعجاب'
               : liked
-              ? 'Retirer le J’aime'
+              ? 'Retirer la réaction'
               : 'J’aime',
             action: () => {
               if (!canLike) setAuth(true);
