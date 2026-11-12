@@ -71,10 +71,12 @@ export function LensLiveOverlay({
     const side = Math.min(width * 0.72, bandH * 0.78);
     return { x: (width - side) / 2, y: visibleTop + (bandH - side) * 0.42, w: side, h: side };
   }, [active, image, visibleBottom, visibleTop, width]);
-  // Coins = quarts de cercle (« حواف دائرية » comme Google Lens) : rayon selon la taille du cadre.
+  // Arcs = quarts de cercle (deux coins opposés, comme Pinterest Lens) : rayon selon la taille du cadre.
   const radius = Math.round(Math.max(24, Math.min(56, Math.min(target.w, target.h) * 0.2)));
   const stroke = active ? 3.5 : 2.5;
   const arcColor = active ? LENS_COLORS.white : frost(0.82);
+  // Comme Pinterest : l'arc s'écarte un peu du coin, il ne touche pas le produit.
+  const arcOut = active ? 6 : 4;
 
   const layout = useRef({
     x: new Animated.Value(target.x),
@@ -132,10 +134,16 @@ export function LensLiveOverlay({
         testID={active ? 'lens-live-frame-locked' : 'lens-live-frame-scanning'}
       >
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: breath }]}>
-          <View style={[styles.arc, { top: 0, left: 0, width: radius, height: radius, borderColor: arcColor, borderTopWidth: stroke, borderLeftWidth: stroke, borderTopLeftRadius: radius }]} />
-          <View style={[styles.arc, { top: 0, right: 0, width: radius, height: radius, borderColor: arcColor, borderTopWidth: stroke, borderRightWidth: stroke, borderTopRightRadius: radius }]} />
-          <View style={[styles.arc, { bottom: 0, left: 0, width: radius, height: radius, borderColor: arcColor, borderBottomWidth: stroke, borderLeftWidth: stroke, borderBottomLeftRadius: radius }]} />
-          <View style={[styles.arc, { bottom: 0, right: 0, width: radius, height: radius, borderColor: arcColor, borderBottomWidth: stroke, borderRightWidth: stroke, borderBottomRightRadius: radius }]} />
+          {/* Deux ARCS « Pinterest Lens » aux coins opposés (haut-droit, bas-gauche),
+              la même signature que la sélection sur photo (12/11/2026). */}
+          <View
+            testID="lens-live-arc-top"
+            style={[styles.arc, { top: -arcOut, right: -arcOut, width: radius, height: radius, borderColor: arcColor, borderTopWidth: stroke, borderRightWidth: stroke, borderTopRightRadius: radius }]}
+          />
+          <View
+            testID="lens-live-arc-bottom"
+            style={[styles.arc, { bottom: -arcOut, left: -arcOut, width: radius, height: radius, borderColor: arcColor, borderBottomWidth: stroke, borderLeftWidth: stroke, borderBottomLeftRadius: radius }]}
+          />
         </Animated.View>
         {active && showLabel ? (
           <View

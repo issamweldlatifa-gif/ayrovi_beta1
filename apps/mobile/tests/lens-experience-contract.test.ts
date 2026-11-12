@@ -245,6 +245,11 @@ describe('Z Lens — option 3 voulue par le client (16/10/2026)', () => {
     expect(lens).toContain('shutterSound: false');
     expect(lens).toContain('animateShutter={false}');
     expect(liveOverlay).toContain('productIndexAt(');
+    // 12/11/2026 : Live porte les DEUX arcs Pinterest (haut-droit, bas-gauche), plus quatre coins.
+    expect(liveOverlay).toContain('testID="lens-live-arc-top"');
+    expect(liveOverlay).toContain('testID="lens-live-arc-bottom"');
+    expect(liveOverlay).not.toContain('borderTopLeftRadius: radius');
+    expect(liveOverlay).not.toContain('borderBottomRightRadius: radius');
   });
 
   it('repère les produits avant la recherche puis permet de toucher un autre article sans cadre manuel', () => {
