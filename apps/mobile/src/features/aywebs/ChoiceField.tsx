@@ -7,6 +7,7 @@
  *
  * ما فيه حتى طلب شبكة هنا: هذا عرض فقط. الخادم هو من يقرأ ويحكم وقت الإضافة.
  */
+import { SheetRise, SHEET_MODAL_ANIMATION } from '@/design/sheet/SheetRise';
 import { useMemo } from 'react';
 import { Modal, PanResponder, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -90,10 +91,10 @@ export function ChoiceField({
         />
       </Pressable>
 
-      <Modal visible={open} transparent animationType="slide" onRequestClose={onToggle} statusBarTranslucent>
+      <Modal visible={open} transparent animationType={SHEET_MODAL_ANIMATION} onRequestClose={onToggle} statusBarTranslucent>
         <View style={styles.overlay} accessibilityViewIsModal>
           <Pressable style={styles.backdrop} accessibilityRole="button" accessibilityLabel={t('sheet.close')} onPress={onToggle} />
-          <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
+          <SheetRise style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
             <View {...swipe.panHandlers} style={[styles.sheetHeader, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
               <AppText variant="label" style={styles.optionLabel}>{label}</AppText>
               <Pressable accessibilityRole="button" accessibilityLabel={t('sheet.close')} onPress={onToggle} hitSlop={8} style={styles.close}>
@@ -120,7 +121,7 @@ export function ChoiceField({
                 );
               })}
             </ScrollView>
-          </View>
+          </SheetRise>
         </View>
       </Modal>
     </View>

@@ -30,6 +30,8 @@ import {
 import { useTheme } from '@/design/theme';
 import { TAB_BAR_SURFACE } from '@/design/tokens.mobile';
 import { useI18n } from '@/i18n';
+import { useReduceMotion } from '@/design/motion';
+import { tabMotion } from '@/design/navigationMotion';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
@@ -41,6 +43,7 @@ export default function TabsLayout() {
   const surface = TAB_BAR_SURFACE[theme.mode];
   const pathname = usePathname();
   const signedIn = useSession().status === 'signedIn';
+  const motion = tabMotion(useReduceMotion());
 
   const standardIconSlot = {
     width: NAV_ICON_SIZE,
@@ -59,6 +62,7 @@ export default function TabsLayout() {
       }}
       screenOptions={{
         headerShown: false,
+        ...motion,
         tabBarActiveTintColor: theme.colors.ink,
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarShowLabel: false,

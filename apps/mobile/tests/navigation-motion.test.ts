@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { stackMotion } from '../src/design/navigationMotion';
+import { stackMotion, tabMotion, NAV_TAB_MS } from '../src/design/navigationMotion';
 
 describe('mouvement de navigation (11/11)', () => {
   it('pousse depuis le bord de lecture, et le respecte en arabe', () => {
@@ -22,5 +22,13 @@ describe('mouvement de navigation (11/11)', () => {
     for (const name of ['reels-viewer', 'z-lens', 'lens', 'stories']) {
       expect(layout).toContain(`<Stack.Screen name="${name}" options={motion.media} />`);
     }
+  });
+  it('onglets : fondu croisé court, aucun mouvement si réduit, appliqué à la barre', () => {
+    expect(tabMotion(false)).toEqual({ animation: 'fade', transitionSpec: { animation: 'timing', config: { duration: NAV_TAB_MS } } });
+    expect(NAV_TAB_MS).toBeLessThanOrEqual(200);
+    expect(tabMotion(true)).toEqual({ animation: 'none' });
+    const tabs = readFileSync(join(__dirname, '../app/(tabs)/_layout.tsx'), 'utf8');
+    expect(tabs).toContain('...motion,');
+    expect(tabs).toContain('tabMotion(useReduceMotion())');
   });
 });

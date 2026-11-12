@@ -1,4 +1,5 @@
 import { PUBLICATION_PALETTE as P } from './publicationDesign';
+import { SheetRise, SHEET_MODAL_ANIMATION } from '@/design/sheet/SheetRise';
 import { PublicationAuthHost } from './PublicationAuthSheet';
 import { useRef, useState } from 'react';
 import { RADIUS, ICON_SIZE, veil } from '@/design/tokens.mobile';
@@ -51,7 +52,7 @@ export function PublicationCommentsSheet({
   ).current;
 
   return (
-    <Modal visible transparent animationType="slide" onRequestClose={onClose}>
+    <Modal visible transparent animationType={SHEET_MODAL_ANIMATION} onRequestClose={onClose}>
       <PublicationAuthHost onNavigate={onClose}>
         <View
           ref={keyboard.ref}
@@ -75,7 +76,7 @@ export function PublicationCommentsSheet({
             onPress={onClose}
             style={{ flex: 1 }}
           />
-          <View
+          <SheetRise
             style={{
               height: sheetHeight ?? (expanded ? '94%' : '72%'),
               backgroundColor: P.paper,
@@ -141,7 +142,7 @@ export function PublicationCommentsSheet({
               </Pressable>
             </View>
             <Comments targetId={targetId} publication />
-          </View>
+          </SheetRise>
         </View>
       </PublicationAuthHost>
     </Modal>

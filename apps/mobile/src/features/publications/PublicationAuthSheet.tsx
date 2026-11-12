@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { SheetRise, SHEET_MODAL_ANIMATION } from '@/design/sheet/SheetRise';
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -77,7 +78,7 @@ function AuthContent({
         onPress={onClose}
         style={styles.backdrop}
       />
-      <View
+      <SheetRise
         testID="publication-auth-sheet"
         accessibilityViewIsModal
         style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}
@@ -110,7 +111,7 @@ function AuthContent({
             {ar ? "موش توّا" : "Continuer à découvrir"}
           </AppText>
         </Pressable>
-      </View>
+      </SheetRise>
     </View>
   );
 }
@@ -133,7 +134,7 @@ export function PublicationAuthSheet({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      animationType={SHEET_MODAL_ANIMATION}
       onRequestClose={onClose}
     >
       <AuthContent

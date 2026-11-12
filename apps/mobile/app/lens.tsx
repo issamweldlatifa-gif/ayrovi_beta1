@@ -17,6 +17,7 @@ import { BackButton } from '@/design/BackButton';
  * Une action = une seule recherche annulable ; l'image reste visible sous une
  * feuille de résultats ajustable. Les diagnostics restent côté serveur.
  */
+import { SheetRise, SHEET_MODAL_ANIMATION } from '@/design/sheet/SheetRise';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Animated, AppState, Keyboard, Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, View, useWindowDimensions,
@@ -1138,10 +1139,10 @@ export default function LensScreen() {
   }, [stage, resultTitle, t]);
 
   const infoModal = (
-    <Modal visible={panel !== null} transparent animationType="slide" onRequestClose={() => setPanel(null)}>
+    <Modal visible={panel !== null} transparent animationType={SHEET_MODAL_ANIMATION} onRequestClose={() => setPanel(null)}>
       <View style={styles.helpRoot}>
         <Pressable style={styles.helpScrim} onPress={() => setPanel(null)} accessibilityRole="button" accessibilityLabel={t('sheet.close')} />
-        <View style={[styles.helpSheet, { backgroundColor: theme.colors.surface, borderTopLeftRadius: theme.radius.sheet, borderTopRightRadius: theme.radius.sheet, paddingBottom: insets.bottom + 16 }]}>
+        <SheetRise style={[styles.helpSheet, { backgroundColor: theme.colors.surface, borderTopLeftRadius: theme.radius.sheet, borderTopRightRadius: theme.radius.sheet, paddingBottom: insets.bottom + 16 }]}>
           <View style={[styles.sheetHandle, { backgroundColor: theme.colors.lineControl }]} />
           {panel === 'history' ? <LensHistoryView onOpen={openHistoryItem} /> : (
             <ScrollView style={styles.helpScroll} contentContainerStyle={styles.helpScrollContent} showsVerticalScrollIndicator={false}>
@@ -1149,7 +1150,7 @@ export default function LensScreen() {
             </ScrollView>
           )}
           <Button label={t('lens.help.back')} onPress={() => setPanel(null)} tone="quiet" block />
-        </View>
+        </SheetRise>
       </View>
     </Modal>
   );

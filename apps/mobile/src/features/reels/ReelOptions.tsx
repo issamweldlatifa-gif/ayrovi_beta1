@@ -1,4 +1,5 @@
 import { ReelFollow } from './ReelFollow';
+import { SheetRise, SHEET_MODAL_ANIMATION } from '@/design/sheet/SheetRise';
 import {
   PublicationAuthHost,
   PublicationAuthSheet,
@@ -110,7 +111,7 @@ export function ReelOptions({
     },
   ];
   return (
-    <Modal transparent animationType="slide" visible onRequestClose={onClose}>
+    <Modal transparent animationType={SHEET_MODAL_ANIMATION} visible onRequestClose={onClose}>
       <PublicationAuthHost onNavigate={onClose}>
         <View style={[styles.overlay, { backgroundColor: veil(0.45) }]}>
           <Pressable
@@ -119,7 +120,7 @@ export function ReelOptions({
             onPress={onClose}
             style={StyleSheet.absoluteFill}
           />
-          <View
+          <SheetRise
             testID="reel-options"
             accessibilityViewIsModal
             style={[
@@ -193,7 +194,7 @@ export function ReelOptions({
                 </AppText>
               ) : null}
             </ScrollView>
-          </View>
+          </SheetRise>
           {auth ? (
             <PublicationAuthSheet visible onClose={() => setAuth(false)} />
           ) : null}

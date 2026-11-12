@@ -43,3 +43,20 @@ export function stackMotion(rtl: boolean, reduce: boolean): {
     media: { animation: 'fade', animationDuration: NAV_FADE_MS, gestureEnabled: true },
   };
 }
+
+/**
+ * Changement d'onglet (12/11/2026) — fondu croisé très court, comme les
+ * applications sociales : l'onglet ne « saute » plus, sans glissement latéral
+ * (les onglets sont des destinations, pas une pile). Moins de mouvement ⇒ rien.
+ */
+export const NAV_TAB_MS = 150;
+
+export interface TabMotionOptions {
+  animation: 'fade' | 'none';
+  transitionSpec?: { animation: 'timing'; config: { duration: number } };
+}
+
+export function tabMotion(reduce: boolean): TabMotionOptions {
+  if (reduce) return { animation: 'none' };
+  return { animation: 'fade', transitionSpec: { animation: 'timing', config: { duration: NAV_TAB_MS } } };
+}
