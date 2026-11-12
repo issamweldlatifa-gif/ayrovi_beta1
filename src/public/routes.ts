@@ -893,9 +893,16 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   });
 
   /* ===== Interactions sociales persistantes et dédupliquées ===== */
-  router.get('/social/counts', (req, res) => {
+  router.get('/social/counts', optionalCustomer(db), (req, res) => {
     const out = readSocialCounts(db, req.query.ids);
-    res.json({ success: true, data: out });
+    // Z-Reactions (12/11) : un compte connecté reçoit AUSSI sa propre réaction
+    // (`mine`) — les stories (sans feed personnalisé) s'ouvrent sur le bon état.
+    // Contrat visiteur strictement inchangé ; réponse personnelle jamais cachée.
+    const accountId = (req as any).customer?.id || '';
+    if (!accountId) return res.json({ success: true, data: out });
+    res.setHeader('Cache-Control', 'private, no-store');
+    const mine = viewerContentReactions(db, accountId, Object.keys(out));
+    res.json({ success: true, data: out, mine: { ...mine } });
   });
 
   router.get('/social/comments', optionalCustomer(db), (req, res) => {

@@ -12,7 +12,9 @@ import { PublicationActions } from './PublicationActions';
 import { router } from 'expo-router';
 import { PublicationProductLink } from './PublicationProductLink';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { DoubleTapHearts, type DoubleTapHeartsHandle } from '@/design/reactions/DoubleTapHearts';
+import { useSession } from '@/state/session';
 import {
   Animated,
   Modal,
@@ -128,6 +130,21 @@ export function PublicationViewer({
   const [comments, setComments] = useState(false);
   const scrollY = useRef(0);
   const insets = useSafeAreaInsets();
+  /**
+   * Z-Reactions (12/11/2026) — double-tap sur le média plein écran = J'adore,
+   * cœurs ROUGES sous le doigt (comme la carte du fil). Le toucher simple garde
+   * son rôle (afficher/masquer les contrôles), retardé de la fenêtre du
+   * double-tap. Les actions restent MONTÉES quand les contrôles sont masqués
+   * (invisibles, sans toucher) : c'est le bouton officiel qui porte l'état et
+   * reçoit la demande `loveRequest`.
+   */
+  const signedIn = useSession().status === 'signedIn';
+  const hearts = useRef<DoubleTapHeartsHandle>(null);
+  const [loveRequest, setLoveRequest] = useState(0);
+  const loveFromMedia = useCallback((x: number, y: number) => {
+    setLoveRequest((n) => n + 1);
+    if (signedIn) hearts.current?.burst(x, y);
+  }, [signedIn]);
   /**
    * Clavier (11/11/2026) — « وين تكتب متبانش » : la couche galerie est en
    * `absoluteFill`, donc le `paddingBottom` d'un conteneur évitant le clavier
@@ -426,10 +443,12 @@ export function PublicationViewer({
                             showIndicators={controls && !comments}
                             indicatorBottom={12}
                             onOpen={() => {
-                              setControls(!controls);
+                              setControls((shown) => !shown);
                               setPostOptions(false);
                             }}
+                            onDoubleTap={loveFromMedia}
                           />
+                          <DoubleTapHearts ref={hearts} testID="publication-viewer-hearts" />
                         </View>
                       </Animated.View>
                     </View>
@@ -437,15 +456,24 @@ export function PublicationViewer({
                       testID="publication-viewer-actions"
                       style={styles.viewerActions}
                     >
-                      {controls || comments ? (
+                      <View
+                        testID="publication-viewer-actions-layer"
+                        pointerEvents={controls || comments ? 'auto' : 'none'}
+                        accessibilityElementsHidden={!(controls || comments)}
+                        importantForAccessibility={
+                          controls || comments ? 'auto' : 'no-hide-descendants'
+                        }
+                        style={{ opacity: controls || comments ? 1 : 0 }}
+                      >
                         <PublicationActions
                           presentation="viewer"
                           backdrop="dark"
                           post={post}
+                          loveRequest={loveRequest}
                           onComments={() => setComments(!comments)}
                           onPreference={onPreference}
                         />
-                      ) : null}
+                      </View>
                     </View>
                     {comments ? (
                       <View

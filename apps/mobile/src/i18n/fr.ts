@@ -258,6 +258,8 @@ export const fr = {
   'social.close': 'Fermer',
   'social.previous': 'Précédent',
   'social.next': 'Suivant',
+  'social.storyLove': 'J’adore cette story',
+  'social.storyLoveHint': 'Touchez deux fois pour réagir J’adore',
   'social.play': 'Lire',
   'social.pause': 'Pause',
   'social.mute': 'Couper le son',

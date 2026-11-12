@@ -239,6 +239,36 @@ export async function fetchSocialCounts(ids: string[], options: RequestOptions =
   return out;
 }
 
+/**
+ * Z-Reactions (12/11) — compteurs + réaction du compte connecté (`mine`) pour
+ * des contenus SANS feed personnalisé (stories). Visiteur : `mine` vide.
+ */
+export interface SocialEngagement {
+  counts: Record<string, SocialCounts>;
+  mine: Record<string, 'like' | 'love' | 'dislike'>;
+}
+
+export async function fetchSocialEngagement(ids: string[], options: RequestOptions = {}): Promise<SocialEngagement> {
+  const clean = [...new Set(ids
+    .map((value) => String(value).trim())
+    .filter((value) => /^[A-Za-z0-9_-]{1,120}$/.test(value))
+  )];
+  const counts: Record<string, SocialCounts> = {};
+  const mine: Record<string, 'like' | 'love' | 'dislike'> = {};
+  for (const id of clean) counts[id] = { ...ZERO_COUNTS };
+  for (let offset = 0; offset < clean.length; offset += 60) {
+    const body = record(await apiGet(`/api/public/social/counts?ids=${encodeURIComponent(clean.slice(offset, offset + 60).join(','))}`, options));
+    for (const [key, value] of Object.entries(record(body.data))) {
+      const row = record(value);
+      counts[key] = { likes: num(row.likes), loves: num(row.loves), comments: num(row.comments), views: num(row.views), shares: num(row.shares) };
+    }
+    for (const [key, value] of Object.entries(record(body.mine))) {
+      if (value === 'like' || value === 'love' || value === 'dislike') mine[key] = value;
+    }
+  }
+  return { counts, mine };
+}
+
 export async function fetchComments(targetId: string, options: RequestOptions = {}): Promise<SocialComment[]> {
   return rowsOf(await apiGet(`/api/public/social/comments?targetId=${encodeURIComponent(targetId)}`, options))
     .flatMap((entry) => {

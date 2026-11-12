@@ -103,3 +103,16 @@ it('ships `my_reaction` with the Reel feed only for the signed-in account', asyn
   expect(anonymous).toBeTruthy();
   expect(anonymous.my_reaction).toBeUndefined();
 });
+
+it('ships the viewer reaction (`mine`) with batch counts only for the signed-in account (stories)', async () => {
+  react(story, 'like');
+  const url = `/api/public/social/counts?ids=${story},${post}`;
+  const signed = await request(app).get(url).set('Authorization', `Bearer ${session.token}`);
+  expect(signed.status).toBe(200);
+  expect(signed.body.mine).toEqual({ [story]: 'like' });
+  expect(signed.body.data[story]).toMatchObject({ likes: 1 });
+  expect(signed.headers['cache-control']).toBe('private, no-store');
+  const guest = await request(app).get(url);
+  expect(guest.body.mine).toBeUndefined();
+  expect(Object.keys(guest.body)).toEqual(['success', 'data']);
+});

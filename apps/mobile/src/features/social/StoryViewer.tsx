@@ -25,12 +25,16 @@ import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { useSession } from '@/state/session';
-import { sendInteraction } from '@/api/social';
+import { fetchSocialEngagement, sendInteraction } from '@/api/social';
 import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 import type { StoryItem } from '@/api/sections';
 import { useSessionId } from '@/session/session';
 import { ReactionButton } from '@/design/reactions/ReactionButton';
 import { useContentReaction } from '@/design/reactions/useContentReaction';
+import { useDoubleTap } from '@/design/reactions/useDoubleTap';
+import { DoubleTapHearts, type DoubleTapHeartsHandle } from '@/design/reactions/DoubleTapHearts';
+import type { ContentReaction } from '@/design/reactions/reactionModel';
+import { formatRailCount } from '@/features/reels/reelTray';
 import { RADIUS } from '@/design/tokens.mobile';
 
 /** مدّة الستوري الواحد: صورة 6 ثوانٍ، فيديو مدّته من الخادم. */
@@ -114,14 +118,49 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
 
   // Z-Reactions (11/11) : le même bouton officiel que les Reels et les
   // publications (J'aime · J'adore · Je n'aime pas). Remonté à chaque story.
+  // 12/11 : l'état EXISTANT et le compteur (J'aime + J'adore) sont chargés en
+  // une requête pour toutes les stories ouvertes (`/social/counts` + `mine`),
+  // puis tenus à jour localement après chaque confirmation serveur.
+  const [engagement, setEngagement] = useState<Record<string, { reaction: ContentReaction | null; count: number }>>({});
+  const storyIds = useMemo(() => stories.map((story) => story.id).join(','), [stories]);
+  useEffect(() => {
+    if (!visible || !storyIds) return;
+    let alive = true;
+    fetchSocialEngagement(storyIds.split(','))
+      .then(({ counts, mine }) => {
+        if (!alive) return;
+        const next: Record<string, { reaction: ContentReaction | null; count: number }> = {};
+        for (const id of Object.keys(counts)) {
+          next[id] = { reaction: mine[id] ?? null, count: counts[id].likes + counts[id].loves };
+        }
+        setEngagement(next);
+      })
+      .catch(() => null); // Lecture ratée : le bouton reste utilisable, sans compteur.
+    return () => { alive = false; };
+  }, [visible, storyIds, signedIn]);
+  const known = current ? engagement[current.id] : undefined;
   const noop = useCallback(() => undefined, []);
+  const settled = useCallback((value: ContentReaction | null, count: number) => {
+    const id = current?.id;
+    if (id) setEngagement((prev) => ({ ...prev, [id]: { reaction: value, count } }));
+  }, [current?.id]);
   const reaction = useContentReaction({
     targetId: current?.id ?? '',
-    initial: null,
-    initialCount: 0,
+    initial: known?.reaction ?? null,
+    initialCount: known?.count ?? 0,
     signedIn: signedIn && Boolean(current),
     sessionId: guestSession || undefined,
     onAuthRequired: noop,
+    onSettled: settled,
+  });
+  // Double-tap = J'adore + cœurs rouges, UNIQUEMENT dans la bande centrale :
+  // les bandes gauche/droite gardent leur toucher simple (précédent/suivant)
+  // sans aucun retard. Le toucher simple du centre ne fait rien.
+  const hearts = useRef<DoubleTapHeartsHandle>(null);
+  const centerTap = useDoubleTap({
+    onDouble: (x, y) => {
+      if (reaction.love()) hearts.current?.burst(x, y);
+    },
   });
 
   const bars = useMemo(() => stories.map((_, position) => position), [stories]);
@@ -181,6 +220,19 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
           style={[styles.tapZone, theme.isRTL ? styles.tapLeft : styles.tapRight]}
         />
 
+        <Pressable
+          testID="story-center-zone"
+          accessibilityRole="button"
+          accessibilityLabel={t('social.storyLove')}
+          accessibilityHint={t('social.storyLoveHint')}
+          onPress={centerTap}
+          onLongPress={() => setPaused(true)}
+          onPressOut={() => setPaused(false)}
+          style={styles.centerZone}
+        >
+          <DoubleTapHearts ref={hearts} testID="story-hearts" />
+        </Pressable>
+
         {/* الوسائط */}
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           {isVideo ? (
@@ -217,7 +269,7 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
               variant="inline"
               surface="media"
               reaction={reaction.reaction}
-              count={null}
+              count={reaction.count > 0 ? formatRailCount(reaction.count) : null}
               onTap={reaction.tap}
               onPick={reaction.pick}
               guest={!signedIn}
@@ -255,6 +307,7 @@ const styles = StyleSheet.create({
   tapZone: { position: 'absolute', top: 0, bottom: 0, width: '33%', zIndex: 2 },
   tapLeft: { left: 0 },
   tapRight: { right: 0 },
+  centerZone: { position: 'absolute', top: 0, bottom: 0, left: '33%', width: '34%', zIndex: 2 },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: 16, gap: 6, zIndex: 3 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8 },
   action: { padding: 4 },

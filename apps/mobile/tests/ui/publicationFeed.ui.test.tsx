@@ -989,6 +989,35 @@ describe('Integrated reaction and viewer contracts', () => {
       expect(screen.getByTestId('publication-like-ui-post').props.accessibilityLabel).toBe('Adoré')
     );
   });
+  it('double-tap in the black fullscreen viewer loves the post, even with controls hidden', async () => {
+    mockSend.mockResolvedValue({ reaction: 'love', loved: true, liked: false, disliked: false, likesCount: 2, reactionsCount: 3 });
+    await mount(
+      <PublicationViewer
+        post={post}
+        initialMediaIndex={0}
+        owner="qa"
+        onClose={jest.fn()}
+        onPreference={jest.fn()}
+      />
+    );
+    expect(screen.getByTestId('publication-viewer-hearts')).toBeTruthy();
+    fireEvent(screen.getByTestId('publication-media-ui-post'), 'layout', {
+      nativeEvent: { layout: { width: 360, height: 640 } },
+    });
+    const image = screen.getByTestId('publication-image-ui-post-0');
+    // Toucher simple (après la fenêtre du double-tap) : masque les contrôles…
+    fireEvent.press(image);
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 300)); });
+    expect(screen.getByTestId('publication-viewer-actions-layer', { includeHiddenElements: true }).props.pointerEvents).toBe('none');
+    // …et le double-tap passe quand même par le bouton officiel (resté monté).
+    fireEvent.press(image, { nativeEvent: { locationX: 100, locationY: 160 } });
+    fireEvent.press(image, { nativeEvent: { locationX: 100, locationY: 160 } });
+    await waitFor(() =>
+      expect(mockSend).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'reaction', reaction: 'love', targetId: post.id })
+      )
+    );
+  });
   it('opens the official Z-Reactions chooser and persists dislike exclusively', async () => {
     const changed = jest.fn();
     mockSend.mockResolvedValue({ liked: false, disliked: true, likesCount: 2 });

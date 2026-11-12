@@ -257,6 +257,8 @@ export const ar = {
   'social.close': 'إغلاق',
   'social.previous': 'السابق',
   'social.next': 'التالي',
+  'social.storyLove': 'أحبّ هذه القصة',
+  'social.storyLoveHint': 'انقر مرتين للتعبير عن الحب',
   'social.play': 'تشغيل',
   'social.pause': 'إيقاف مؤقت',
   'social.mute': 'كتم الصوت',
