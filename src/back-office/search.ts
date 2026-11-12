@@ -41,8 +41,8 @@ export interface SearchSource {
 }
 
 export const SEARCH_SOURCES: readonly SearchSource[] = [
-  { resource: 'cms.products', label: 'Produits', table: 'products', title: 'name', secondary: 'brand_name', searchColumns: ['name', 'description', 'brand_name', 'category'], orderBy: 'updated_at DESC', section: 'products', idParam: 'id', permission: 'content:read', erp: { module: 'cms', action: 'read' } },
-  { resource: 'cms.brands', label: 'Marques', table: 'brands', title: 'name', secondary: 'category', searchColumns: ['name', 'description', 'category'], orderBy: 'display_order ASC', section: 'brands', idParam: 'id', permission: 'content:read', erp: { module: 'cms', action: 'read' } },
+  { resource: 'cms.products', label: 'Produits (ancien écran)', table: 'products', title: 'name', secondary: 'brand_name', searchColumns: ['name', 'description', 'brand_name', 'category'], orderBy: 'updated_at DESC', section: 'products', idParam: 'id', permission: 'content:read', erp: { module: 'cms', action: 'read' } },
+  { resource: 'cms.brands', label: 'Marques (ancien écran)', table: 'brands', title: 'name', secondary: 'category', searchColumns: ['name', 'description', 'category'], orderBy: 'display_order ASC', section: 'brands', idParam: 'id', permission: 'content:read', erp: { module: 'cms', action: 'read' } },
   { resource: 'cms.news', label: 'مجلتي (articles)', table: 'news_items', title: 'title', secondary: 'category', searchColumns: ['title', 'summary', 'author'], orderBy: 'published_at DESC', section: 'news', idParam: 'id', permission: 'content:read', erp: { module: 'cms', action: 'read' } },
   { resource: 'cms.arrivals', label: 'Arrivages (vitrine)', table: 'arrivals', title: 'name', secondary: 'status', searchColumns: ['name', 'description', 'badge'], orderBy: 'expected_arrival_at DESC', section: 'arrivals', idParam: 'id', permission: 'content:read', erp: { module: 'cms', action: 'read' } },
   // `orders` ne porte pas de nom de client : la recherche se fait sur la référence, le téléphone
