@@ -246,7 +246,6 @@ export const fr = {
   'brand.plusLight': 'Plus Light',
   'tabs.social': 'Social',
   'social.reels': 'Reels',
-  'social.publications': 'Publications',
   'social.comments': 'Commentaires',
   'social.like': 'J’aime',
   'social.liked': 'Aimé',

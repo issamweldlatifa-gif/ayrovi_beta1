@@ -245,7 +245,6 @@ export const ar = {
   'brand.plusLight': 'Plus Light',
   'tabs.social': 'المجتمع',
   'social.reels': 'الريلز',
-  'social.publications': 'المنشورات',
   'social.comments': 'التعليقات',
   'social.like': 'إعجاب',
   'social.liked': 'أعجبني',
