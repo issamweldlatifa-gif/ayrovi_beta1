@@ -264,8 +264,12 @@ export function ReelShopTray({
     </Animated.View>
   ) : null;
 
+  // Animated.View OBLIGATOIRE : une interpolation posée sur une View simple ne
+  // bouge jamais (régression du 11/11 — « Masquer » laissait la carte en place
+  // et la pastille glissait DERRIÈRE elle).
+  const TrayContainer = overlay ? Animated.View : View;
   const tray = products.length > 0 ? (
-    <View
+    <TrayContainer
       testID={`reel-tray-${reel.id}`}
       style={[
         overlay ? styles.trayOverlay : styles.trayInline,
@@ -300,7 +304,7 @@ export function ReelShopTray({
           />
         ))}
       </ScrollView>
-    </View>
+    </TrayContainer>
   ) : null;
 
   if (!overlay) {
@@ -317,9 +321,11 @@ export function ReelShopTray({
   return (
     <>
       {children({ open, bottom: captionBottom, lift: captionLift })}
+      {/* Les cartes d'abord, la pastille et le rail PAR-DESSUS : même en cours de
+          glissement, le bouton reste visible et touchable. */}
+      {tray}
       {pillView}
       {railView}
-      {tray}
     </>
   );
 }

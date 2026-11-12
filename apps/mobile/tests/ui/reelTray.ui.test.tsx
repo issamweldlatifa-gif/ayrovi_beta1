@@ -9,6 +9,7 @@
  */
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import { Animated, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
@@ -93,6 +94,41 @@ describe('Reel — tiroir des articles', () => {
     fireEvent.press(toggle);
     expect(screen.getByTestId('reel-tray-toggle-r1').props.accessibilityState).toMatchObject({ expanded: true });
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('« Masquer » fait réellement DESCENDRE les cartes, et la pastille reste au-dessus (régression 12/11)', () => {
+    // Le ressort natif n'avance pas sous jest : on le remplace par un ressort
+    // qui arrive tout de suite à sa cible, sur le MÊME Animated.Value.
+    const spy = jest.spyOn(Animated, 'spring').mockImplementation(((value: Animated.Value, config: { toValue: number }) => ({
+      start: (done?: (result: { finished: boolean }) => void) => { value.setValue(config.toValue); done?.({ finished: true }); },
+      stop: () => undefined,
+      reset: () => undefined,
+    })) as unknown as typeof Animated.spring);
+    try {
+      renderCard({}, { width: 390, height: 844 });
+      const translateY = () => {
+        const tray = screen.getByTestId('reel-tray-r1', { includeHiddenElements: true });
+        const style = StyleSheet.flatten(tray.props.style) as { transform?: Array<{ translateY?: unknown }> };
+        return style.transform?.find((entry) => 'translateY' in entry)?.translateY;
+      };
+      // Une View simple garderait l'objet d'interpolation : la carte ne bougerait jamais.
+      expect(translateY()).toBe(0);
+      fireEvent.press(screen.getByTestId('reel-tray-toggle-r1'));
+      const closed = translateY();
+      expect(typeof closed).toBe('number');
+      // Fermé : la carte sort entièrement par le bas (hauteur carte + vide + zone sûre).
+      expect(closed as number).toBeGreaterThan(150);
+      fireEvent.press(screen.getByTestId('reel-tray-toggle-r1'));
+      expect(translateY()).toBe(0);
+
+      // Ordre de dessin : les cartes AVANT la pastille (sinon elles la recouvrent).
+      const json = JSON.stringify(screen.toJSON());
+      expect(json.indexOf('reel-tray-r1')).toBeGreaterThan(-1);
+      expect(json.indexOf('reel-tray-r1')).toBeLessThan(json.indexOf('reel-tray-toggle-r1'));
+      expect(json.indexOf('reel-tray-r1')).toBeLessThan(json.indexOf('reel-rail-sound-r1'));
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('fermé, le tiroir n’est plus rendu du tout dans la liste (rien de caché)', () => {
