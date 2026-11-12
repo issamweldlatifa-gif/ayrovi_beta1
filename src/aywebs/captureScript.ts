@@ -4750,6 +4750,57 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   var LD_GROUPS = [];
   var LD_OPTIONS = {};
   var DOM_OPTIONS = {};
+  /* ── 7 ter-S. GROUPES DE VARIANTES SHOPIFY (12/11/2026) ───────────────────
+     Le JSON produit Shopify nomme les axes (« options ») et publie chaque
+     variante (option1..3, prix en centimes, « available »). On les publie en
+     PREMIER : les groupes lus ensuite dans le DOM sous le même nom sont alors
+     ignorés (la donnée du marchand prime sur le libellé d'un bouton).
+     Pour chaque valeur, état et prix sont ceux de la variante qui garde les
+     AUTRES axes tels qu'affichés — jamais un prix « d'une autre taille ». */
+  function shopifyAxisName(option, index) {
+    if (option && typeof option === 'object') return text(option.name);
+    return text(option) || ('Option ' + (index + 1));
+  }
+  if (IS_SHOPIFY && shopifyState && shopifyVariant) {
+    try {
+      var shopifyAxes = shopifyIsList(shopifyState.product.options) ? shopifyState.product.options : [];
+      var shopifyVariants = shopifyState.product.variants;
+      for (var sa = 0; sa < shopifyAxes.length && sa < 3; sa++) {
+        var axisName = shopifyAxisName(shopifyAxes[sa], sa);
+        var axisKey = 'option' + (sa + 1);
+        var axisValues = [];
+        var axisOptions = [];
+        for (var sv = 0; sv < shopifyVariants.length && sv < 250; sv++) {
+          var axisValue = text(shopifyVariants[sv] && shopifyVariants[sv][axisKey]);
+          if (axisValue && !ciExactContains(axisValues, axisValue)) axisValues.push(axisValue);
+        }
+        for (var av = 0; av < axisValues.length; av++) {
+          var shopifyMatch = null;
+          for (var mv = 0; mv < shopifyVariants.length && mv < 250 && !shopifyMatch; mv++) {
+            var candidateVariant = shopifyVariants[mv];
+            if (!candidateVariant || text(candidateVariant[axisKey]) !== axisValues[av]) continue;
+            var sameOthers = true;
+            for (var oa = 0; oa < 3; oa++) {
+              if (oa === sa) continue;
+              if (text(candidateVariant['option' + (oa + 1)]) !== text(shopifyVariant['option' + (oa + 1)])) { sameOthers = false; break; }
+            }
+            if (sameOthers) shopifyMatch = candidateVariant;
+          }
+          var shopifyMatchAmount = shopifyMatch ? shopifyMoney(shopifyMatch.price) : '';
+          axisOptions.push({
+            value: axisValues[av],
+            available: shopifyMatch ? (shopifyMatch.available === true ? true : shopifyMatch.available === false ? false : null) : false,
+            price: shopifyMatchAmount && shopifyState.currency ? shopifyMatchAmount + ' ' + shopifyState.currency : null,
+            priceFrom: false,
+            stock: null
+          });
+        }
+        var axisSelected = text(shopifyVariant[axisKey]);
+        pushVariantGroup(axisName, axisValues, axisSelected ? [axisSelected] : [], axisOptions);
+      }
+      if (out.variantGroups.length) diag('platform:shopify_variant_groups');
+    } catch (e) {}
+  }
   function ldBuild() {
     if (!jsonLd || IS_AMAZON) return;
     try {

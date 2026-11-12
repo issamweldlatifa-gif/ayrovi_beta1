@@ -1,0 +1,16 @@
+{
+  "served": "kernel",
+  "detectedStore": "walmart",
+  "ok": true,
+  "rejection": null,
+  "price": 9.98,
+  "currency": "USD",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "Hanes Men's Beefy-T Crewneck Tee",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://i5.walmartimages.com/seo/Hanes-Beefy-T_1.jpeg"
+}

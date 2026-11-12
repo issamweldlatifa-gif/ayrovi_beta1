@@ -1,0 +1,16 @@
+{
+  "served": "legacy",
+  "detectedStore": null,
+  "ok": true,
+  "rejection": null,
+  "price": 6.5,
+  "currency": "EUR",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "Savon olive lavande",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://savonnerie-artisanale.example/wp-content/uploads/savon.jpg"
+}

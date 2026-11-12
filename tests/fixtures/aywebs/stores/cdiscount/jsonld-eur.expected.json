@@ -1,0 +1,16 @@
+{
+  "served": "kernel",
+  "detectedStore": "cdiscount",
+  "ok": true,
+  "rejection": null,
+  "price": 299.99,
+  "currency": "EUR",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "PC Portable ASUS Vivobook 15",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://www.cdiscount.com/pdt2/4/5/6/1/700x700/asu4711387123456.jpg"
+}

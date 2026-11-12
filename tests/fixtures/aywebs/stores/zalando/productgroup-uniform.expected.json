@@ -1,0 +1,25 @@
+{
+  "served": "dedicated:zalando",
+  "detectedStore": "zalando",
+  "ok": true,
+  "rejection": null,
+  "price": 29.9,
+  "currency": "EUR",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "T-shirt Nike Sportswear Club",
+  "variantGroups": [
+    {
+      "name": "Taille",
+      "values": [
+        "S",
+        "M"
+      ],
+      "selected": []
+    }
+  ],
+  "skuCombinations": 2,
+  "images": 2,
+  "firstImage": "https://img01.ztat.net/article/NI121D0A2-Q11/front.webp"
+}

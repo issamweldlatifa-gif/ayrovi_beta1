@@ -1,0 +1,16 @@
+{
+  "served": "kernel",
+  "detectedStore": "etsy",
+  "ok": true,
+  "rejection": null,
+  "price": 42.5,
+  "currency": "EUR",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "Bague argent martelé faite main",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://i.etsystatic.com/123/r/il/abc/1234567890/il_794xN.jpg"
+}

@@ -1,0 +1,16 @@
+{
+  "served": "shein",
+  "detectedStore": "shein",
+  "ok": false,
+  "rejection": "NO_PRICE_TEXT",
+  "price": null,
+  "currency": null,
+  "priceSource": null,
+  "corroborated": false,
+  "availability": "UNKNOWN",
+  "title": "Robe",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 0,
+  "firstImage": null
+}

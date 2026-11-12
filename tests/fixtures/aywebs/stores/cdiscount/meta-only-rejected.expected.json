@@ -1,0 +1,16 @@
+{
+  "served": "kernel",
+  "detectedStore": "cdiscount",
+  "ok": false,
+  "rejection": "PRICE_NOT_CORROBORATED",
+  "price": null,
+  "currency": null,
+  "priceSource": null,
+  "corroborated": false,
+  "availability": "UNKNOWN",
+  "title": "PC Portable ASUS Vivobook 15",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 0,
+  "firstImage": null
+}

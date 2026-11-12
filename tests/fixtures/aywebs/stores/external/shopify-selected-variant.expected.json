@@ -1,0 +1,28 @@
+{
+  "served": "legacy",
+  "detectedStore": null,
+  "ok": true,
+  "rejection": null,
+  "price": 34,
+  "currency": "EUR",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "Tee coton bio",
+  "variantGroups": [
+    {
+      "name": "Taille",
+      "values": [
+        "S",
+        "M",
+        "L"
+      ],
+      "selected": [
+        "M"
+      ]
+    }
+  ],
+  "skuCombinations": 0,
+  "images": 0,
+  "firstImage": null
+}

@@ -1,0 +1,16 @@
+{
+  "served": "kernel",
+  "detectedStore": "sephora",
+  "ok": true,
+  "rejection": null,
+  "price": 23,
+  "currency": "USD",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "Soft Pinch Liquid Blush",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://www.sephora.com/productimages/sku/s2518959-main-zoom.jpg"
+}

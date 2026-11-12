@@ -1,0 +1,38 @@
+{
+  "served": "aliexpress",
+  "detectedStore": "aliexpress",
+  "ok": true,
+  "rejection": null,
+  "price": 22.19,
+  "currency": "EUR",
+  "priceSource": "a11y_label",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "Veste Cargo Homme Hiver Imperméable",
+  "variantGroups": [
+    {
+      "name": "Couleur",
+      "values": [
+        "01",
+        "02"
+      ],
+      "selected": [
+        "02"
+      ]
+    },
+    {
+      "name": "Taille",
+      "values": [
+        "XL",
+        "3XL",
+        "4XL"
+      ],
+      "selected": [
+        "4XL"
+      ]
+    }
+  ],
+  "skuCombinations": 1,
+  "images": 2,
+  "firstImage": "https://ae01.alicdn.com/kf/S222222222222222222222222B.jpg"
+}

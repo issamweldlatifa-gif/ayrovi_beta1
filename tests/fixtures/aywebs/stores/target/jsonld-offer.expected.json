@@ -1,0 +1,16 @@
+{
+  "served": "kernel",
+  "detectedStore": "target",
+  "ok": true,
+  "rejection": null,
+  "price": 35,
+  "currency": "USD",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "Stanley 40oz Quencher H2.0 FlowState Tumbler",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://target.scene7.com/is/image/Target/GUEST_stanley"
+}

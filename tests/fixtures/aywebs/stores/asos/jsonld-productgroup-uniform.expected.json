@@ -1,0 +1,25 @@
+{
+  "served": "kernel",
+  "detectedStore": "asos",
+  "ok": true,
+  "rejection": null,
+  "price": 35.99,
+  "currency": "EUR",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "ASOS DESIGN - Robe mi-longue en satin",
+  "variantGroups": [
+    {
+      "name": "Taille",
+      "values": [
+        "34",
+        "36"
+      ],
+      "selected": []
+    }
+  ],
+  "skuCombinations": 2,
+  "images": 1,
+  "firstImage": "https://images.asos-media.com/products/204512345-1"
+}

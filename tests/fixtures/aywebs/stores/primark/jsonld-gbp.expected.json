@@ -1,0 +1,16 @@
+{
+  "served": "kernel",
+  "detectedStore": "primark",
+  "ok": true,
+  "rejection": null,
+  "price": 18,
+  "currency": "GBP",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "Oversized Hoodie",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://primark.a.bigcontent.io/v1/static/991234567_01"
+}

@@ -1,0 +1,16 @@
+{
+  "served": "kernel",
+  "detectedStore": "best-buy",
+  "ok": true,
+  "rejection": null,
+  "price": 189.99,
+  "currency": "USD",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "Apple - AirPods Pro (2nd generation)",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://pisces.bbystatic.com/image2/BestBuy_US/images/products/6447/6447382_sd.jpg"
+}

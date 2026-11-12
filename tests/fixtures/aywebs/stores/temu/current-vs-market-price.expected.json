@@ -1,0 +1,16 @@
+{
+  "served": "temu",
+  "detectedStore": "temu",
+  "ok": true,
+  "rejection": null,
+  "price": 13.55,
+  "currency": "GBP",
+  "priceSource": "dom",
+  "corroborated": false,
+  "availability": "AVAILABLE",
+  "title": "Women's Fashion Open-Heel Sandals",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 0,
+  "firstImage": null
+}

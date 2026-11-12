@@ -18,9 +18,9 @@ type Capture = { priceCandidates: Array<{ text: string; source: string }>; diagn
 const SCRIPTS = { core: AYWEBS_CAPTURE_SCRIPT, kernel: AYWEBS_CAPTURE_BUNDLES.kernel.text } as const;
 
 const VARIANTS = [
-  { id: 41000000001, title: 'S', public_title: 'S', sku: 'TEE-S', price: 2900, available: true },
-  { id: 41000000002, title: 'M', public_title: 'M', sku: 'TEE-M', price: 3400, available: true },
-  { id: 41000000003, title: 'L', public_title: 'L', sku: 'TEE-L', price: 3400, available: false },
+  { id: 41000000001, title: 'S', public_title: 'S', option1: 'S', sku: 'TEE-S', price: 2900, available: true },
+  { id: 41000000002, title: 'M', public_title: 'M', option1: 'M', sku: 'TEE-M', price: 3400, available: true },
+  { id: 41000000003, title: 'L', public_title: 'L', option1: 'L', sku: 'TEE-L', price: 3400, available: false },
 ];
 
 function jsonLdPerVariant(base: string): string {
@@ -53,7 +53,7 @@ function page(options: PageOptions) {
     ${options.jsonLd === false ? '' : `<script type="application/ld+json">${jsonLdPerVariant(base)}</script>`}
     </head><body><main>
       <h1>Tee coton bio</h1>
-      ${options.productJson === false ? '' : `<script type="application/json" data-product-json>${JSON.stringify({ id: 9, title: 'Tee coton bio', variants })}</script>`}
+      ${options.productJson === false ? '' : `<script type="application/json" data-product-json>${JSON.stringify({ id: 9, title: 'Tee coton bio', options: ['Taille'], variants })}</script>`}
       <form action="/cart/add" method="post">
         ${options.formVariant ? `<input type="hidden" name="id" value="${options.formVariant}">` : ''}
         <button type="submit">Ajouter au panier</button>
@@ -138,6 +138,52 @@ describe.each(Object.entries(SCRIPTS))('Shopify — %s', (_name, script) => {
     const dom = new JSDOM('<!doctype html><html><head><meta property="product:price:amount" content="12.95"><meta property="product:price:currency" content="EUR"></head><body><h1>Article</h1></body></html>', { url: 'https://shop.example/p/1' });
     const capture = run(script, dom);
     expect(capture.diagnostics.some((d) => d.startsWith('platform:shopify'))).toBe(false);
+  });
+});
+
+describe.each(Object.entries(SCRIPTS))('Shopify — groupes de variantes — %s', (_name, script) => {
+  type Groups = Array<{ name: string; values: string[]; selected: string[]; options?: Array<{ value: string; available: boolean | null; price: string | null }> }>;
+  const groupsOf = (capture: Capture) => (capture as unknown as { variantGroups: Groups }).variantGroups;
+
+  it('un axe : valeurs, sélection, état et prix PAR taille', () => {
+    const capture = run(script, page({ url: 'https://tee-bio.example/products/tee?variant=41000000002' }));
+    const groups = groupsOf(capture);
+    expect(groups).toHaveLength(1);
+    expect(groups[0]).toMatchObject({ name: 'Taille', values: ['S', 'M', 'L'], selected: ['M'] });
+    expect(groups[0].options).toEqual([
+      expect.objectContaining({ value: 'S', available: true, price: '29.00 EUR' }),
+      expect.objectContaining({ value: 'M', available: true, price: '34.00 EUR' }),
+      expect.objectContaining({ value: 'L', available: false, price: '34.00 EUR' }),
+    ]);
+    expect(capture.diagnostics).toContain('platform:shopify_variant_groups');
+  });
+
+  it('deux axes : l’état d’une couleur est celui de la variante qui GARDE la taille affichée', () => {
+    const variants = [
+      { id: 51, option1: 'Noir', option2: 'S', sku: 'N-S', price: 2900, available: true },
+      { id: 52, option1: 'Noir', option2: 'M', sku: 'N-M', price: 2900, available: true },
+      { id: 53, option1: 'Blanc', option2: 'S', sku: 'B-S', price: 3100, available: true },
+      { id: 54, option1: 'Blanc', option2: 'M', sku: 'B-M', price: 3100, available: false },
+    ];
+    const dom = new JSDOM(`<!doctype html><html><head><link rel="stylesheet" href="https://cdn.shopify.com/t.css"></head><body><h1>Tee</h1>
+      <script type="application/json" data-product-json>${JSON.stringify({ id: 9, title: 'Tee', options: [{ name: 'Couleur', position: 1 }, { name: 'Taille', position: 2 }], variants })}</script></body></html>`,
+    { url: 'https://tee-bio.example/products/tee?variant=52' });
+    (dom.window as unknown as Record<string, unknown>).Shopify = { shop: 'x.myshopify.com', currency: { active: 'EUR' } };
+    const groups = groupsOf(run(script, dom));
+    expect(groups.map((group) => group.name)).toEqual(['Couleur', 'Taille']);
+    const colour = groups[0];
+    expect(colour.selected).toEqual(['Noir']);
+    // Taille affichée = M : Blanc/M est épuisé (et non Blanc/S, disponible).
+    expect(colour.options).toEqual([
+      expect.objectContaining({ value: 'Noir', available: true, price: '29.00 EUR' }),
+      expect.objectContaining({ value: 'Blanc', available: false, price: '31.00 EUR' }),
+    ]);
+    expect(groups[1]).toMatchObject({ values: ['S', 'M'], selected: ['M'] });
+  });
+
+  it('variante inconnue : aucun groupe affirmé par Shopify', () => {
+    const capture = run(script, page({ url: 'https://tee-bio.example/products/tee' }));
+    expect(capture.diagnostics).not.toContain('platform:shopify_variant_groups');
   });
 });
 

@@ -1,0 +1,16 @@
+{
+  "served": "kernel",
+  "detectedStore": "h-m",
+  "ok": true,
+  "rejection": null,
+  "price": 19.99,
+  "currency": "EUR",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "T-shirt Regular Fit",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://image.hm.com/assets/hm/12/34/1234567001.jpg"
+}

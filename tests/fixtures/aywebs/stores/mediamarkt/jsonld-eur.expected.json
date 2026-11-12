@@ -1,0 +1,16 @@
+{
+  "served": "kernel",
+  "detectedStore": "mediamarkt",
+  "ok": true,
+  "rejection": null,
+  "price": 249,
+  "currency": "EUR",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "APPLE AirPods Pro (2. Generation) USB-C",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://assets.mmsrg.com/isr/166325/c1/-/ASSET_MMS_2911234"
+}

@@ -1,0 +1,16 @@
+{
+  "served": "dedicated:amazon",
+  "detectedStore": "amazon",
+  "ok": false,
+  "rejection": "NO_PRICE_TEXT",
+  "price": null,
+  "currency": null,
+  "priceSource": null,
+  "corroborated": false,
+  "availability": "UNKNOWN",
+  "title": "Apple AirPods Pro 2 Wireless Earbuds, Active Noise Cancellation, Hearing Aid Feature, Bluetooth Headphones, Transparency, Personalized Spatial Audio, High-Fidelity Sound, H2 Chip, USB-C Charging",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://m.media-amazon.com/images/I/61SUj2aKoEL._AC_SX679_.jpg"
+}

@@ -1,0 +1,16 @@
+{
+  "served": "dedicated:amazon",
+  "detectedStore": "amazon",
+  "ok": false,
+  "rejection": "OUT_OF_STOCK",
+  "price": null,
+  "currency": null,
+  "priceSource": null,
+  "corroborated": false,
+  "availability": "UNKNOWN",
+  "title": "Apple AirPods Pro (2nd Generation) Wireless Ear Buds with USB-C Charging, Up to 2X More Active Noise Cancelling Bluetooth HEA",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 1,
+  "firstImage": "https://m.media-amazon.com/images/I/61SUj2aKoEL._AC_SX679_.jpg"
+}
