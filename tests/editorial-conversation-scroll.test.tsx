@@ -24,7 +24,9 @@ describe('SONIM preserves the reader position while responses stream',()=>{
  });
  it('renders untrusted response markup as text, preserves paragraphs and exposes wrapping action controls',async()=>{
   await render([{id:'safe',role:'assistant',text:'<img src=x onerror=alert(1)>\n\nمرحبا ✅'},{id:'user',role:'user',text:'question'}]);
-  expect(host.querySelector('img')).toBeNull();expect(host.textContent).toContain('<img src=x onerror=alert(1)>');
+  // Seules les pastilles « speaker » de la refonte Clean sont des <img> ; la réponse, elle, reste du texte.
+  expect(host.querySelector('img:not(.clean-speaker-icon)')).toBeNull();expect(host.querySelector('[onerror]')).toBeNull();
+  expect([...host.querySelectorAll('img')].every(img=>/^\/media\/clean\/(assistant|customer)-speaker\.png$/.test(img.getAttribute('src')||''))).toBe(true);expect(host.textContent).toContain('<img src=x onerror=alert(1)>');
   expect(host.querySelector('.whitespace-pre-wrap')?.textContent).toContain('\n\nمرحبا ✅');
   expect(host.querySelector('.assistant-message-actions > div')?.className).toContain('flex-wrap');
  });

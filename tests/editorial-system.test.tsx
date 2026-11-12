@@ -29,8 +29,9 @@ describe('editorial identity, generated from one versioned source', () => {
     // porte d'entrée unique. Un dessin orphelin n'est pas un ajout, c'est un doublon en puissance.
     const published = new Set([...aliases.matchAll(/export const \w+ = I\.Ayrovi(\w+);/g)].map(m => m[1]));
     expect(names.filter(name => !published.has(name))).toEqual([]);
-    // 99 = 96 concepts d'origine + Bank + Mail + l'identité fonctionnelle AyWebs.
-    expect(names).toHaveLength(99);
+    // 101 = 96 concepts d'origine + Bank + Mail + l'identité fonctionnelle AyWebs
+    //       + Paperclip et CleanMenu (refonte Clean approuvée, 0a37eb38).
+    expect(names).toHaveLength(101);
   });
   it('defines the area budget, semantic customer geometry, and touch target', () => {
     // Palette officielle (2026-10-15) : le violet électrique occupe ≈ 10 % d'un écran, jamais plus.

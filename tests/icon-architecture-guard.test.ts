@@ -6,8 +6,9 @@ describe('whole-application icon architecture gate',()=>{
   it('audits the actual application, including admin, with zero unreviewed exceptions',()=>{
     const report=checkIconContract();
     expect(report.files).toBeGreaterThan(150);
-    // Canonical icon renderer + audio waveform + the ZAYROVI loading screen (brand mark, not an icon); Lens uses CSS geometry.
-    expect(report.rawSvg).toBe(3);
+    // Canonical icon renderer + audio waveform + the ZAYROVI loading screen (brand mark, not an icon)
+    // + the approved Clean composer mark (CleanVisuals, reviewed in icon-exceptions.json); Lens uses CSS geometry.
+    expect(report.rawSvg).toBe(4);
     expect(report.issues).toEqual([]);
   });
   it.each([
