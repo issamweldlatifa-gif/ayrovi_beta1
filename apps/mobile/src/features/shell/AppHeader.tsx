@@ -1,5 +1,6 @@
 /** Sparse main identity. LegacyMainMenu and all destinations remain available in source, unmounted. */
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, usePathname } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -13,15 +14,40 @@ import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { adaptiveInk } from '@/features/home/heroPalette';
 import { requestScrollToTop } from '@/features/shell/scrollToTop';
+import { backdropLayerRange } from '@/features/home/heroCarouselLogic';
+import type { HeroTint } from '@/features/home/HeroCarousel';
 
-export function AppHeader({ scrolled, heroBackground = null, brand = 'zayrovi', showNotifications = true }: {
-  scrolled: boolean; heroBackground?: string | null; brand?: 'zayrovi' | 'aywebs'; showNotifications?: boolean;
+/** Passage teinte Hero ↔ fond de page quand la page défile : fondu court, jamais une coupure. */
+export const HEADER_TINT_FADE_MS = 180;
+
+export function AppHeader({ scrolled, heroBackground = null, heroTint = null, brand = 'zayrovi', showNotifications = true }: {
+  scrolled: boolean; heroBackground?: string | null;
+  /**
+   * Teintes du carrousel + avancement animé (12/11/2026) : le fond de
+   * l'en-tête se fond d'une carte à l'autre AU MÊME RYTHME que la section,
+   * au lieu de changer d'un coup à la fin du geste.
+   */
+  heroTint?: HeroTint | null;
+  brand?: 'zayrovi' | 'aywebs'; showNotifications?: boolean;
 }) {
   const theme = useTheme(), t = useT(), insets = useSafeAreaInsets();
   const { status } = useSession();
   const pathname = usePathname();
   const onHero = !scrolled && heroBackground !== null;
   const ink = onHero ? adaptiveInk(heroBackground, theme.colors) : theme.colors.ink;
+  // Calque « teinte Hero » au-dessus du fond de page : seule son opacité bouge.
+  const hasTint = heroBackground !== null || (heroTint?.colors.length ?? 0) > 0;
+  const tintFade = useRef(new Animated.Value(onHero ? 1 : 0)).current;
+  useEffect(() => {
+    const animation = Animated.timing(tintFade, {
+      toValue: onHero ? 1 : 0,
+      duration: HEADER_TINT_FADE_MS,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [onHero, tintFade]);
   const row = theme.isRTL ? 'row-reverse' : 'row';
   /**
    * Visiteur (référence Zalando 085451) : sur l'en-tête PRINCIPAL, le
@@ -41,9 +67,34 @@ export function AppHeader({ scrolled, heroBackground = null, brand = 'zayrovi', 
   };
   return <View testID="main-app-header" pointerEvents="box-none" style={[styles.bar, {
     height: insets.top + theme.chrome.header, paddingTop: insets.top, flexDirection: row,
-    backgroundColor: onHero ? heroBackground : theme.colors.canvas,
+    backgroundColor: theme.colors.canvas,
     borderBottomColor: scrolled ? theme.colors.line : 'transparent',
   }]}>
+    {hasTint ? (
+      <Animated.View
+        testID="main-app-header-tint"
+        pointerEvents="none"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={[StyleSheet.absoluteFill, { opacity: tintFade }]}
+      >
+        {heroTint && heroTint.colors.length > 0 ? heroTint.colors.map((color, index) => {
+          const range = backdropLayerRange(index);
+          return (
+            <Animated.View
+              key={`${index}-${color}`}
+              style={[
+                StyleSheet.absoluteFill,
+                { backgroundColor: color },
+                range ? { opacity: heroTint.progress ? heroTint.progress.interpolate({ ...range, extrapolate: 'clamp' }) : 0 } : null,
+              ]}
+            />
+          );
+        }) : (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: heroBackground ?? theme.colors.canvas }]} />
+        )}
+      </Animated.View>
+    ) : null}
     {guest ? (
       <Pressable
         testID="guest-header-signin"

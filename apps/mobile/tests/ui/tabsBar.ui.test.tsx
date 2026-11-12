@@ -74,6 +74,10 @@ jest.mock('expo-router', () => {
   };
 });
 
+// La vraie barre de React Navigation n'est pas rendue ici (Tabs est simulé) ;
+// son module tire des dépendances ESM que Jest ne transforme pas.
+jest.mock('expo-router/js-tabs', () => ({ BottomTabBar: () => null }));
+
 jest.mock('../../src/state/session', () => ({
   useSession: () => ({ status: (globalThis as any).__testSessionStatus ?? 'signedOut' }),
 }));

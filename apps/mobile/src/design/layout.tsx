@@ -98,9 +98,9 @@ export interface AppScreenProps {
   padded?: boolean;
   /**
    * L'écran vit-il au-dessus de la barre d'onglets ?
-   * §4.3-3 : la barre ajoute `insets.bottom` POUR ELLE-MÊME ; le contenu ne
-   * l'ajoute que s'il n'y a PAS de barre. Sans cette distinction, on cumule
-   * les deux et le bas de l'écran se retrouve à double distance du bord.
+   * Depuis le 12/11/2026 la barre est une superposition qui glisse : l'écran
+   * réserve alors `tabBar + insets.bottom` (la place exacte de la barre) ;
+   * sans barre, seulement `insets.bottom`. Jamais les deux cumulés.
    */
   hasBottomBar?: boolean;
   /** Relier le défilement au repli de la barre (Q8). */
@@ -155,7 +155,11 @@ export function AppScreen({
   }, [chrome, onChromeScroll, overlayHeader]);
 
   const topInset = insets.top + (overlayHeader ? theme.chrome.header : 0);
-  const bottomInset = hasBottomBar ? theme.space[3] : insets.bottom;
+  // La barre d'onglets est POSÉE au-dessus de l'écran et glisse (12/11/2026) :
+  // l'écran lui réserve sa hauteur (barre + zone sûre du bas) une fois pour
+  // toutes, pour que la fin de page ne passe jamais dessous — et que rien ne
+  // change de taille quand elle se replie.
+  const bottomInset = hasBottomBar ? theme.chrome.tabBar + insets.bottom + theme.space[3] : insets.bottom;
   const contentGap = screenContentGap(theme.space);
 
   const padding = padded

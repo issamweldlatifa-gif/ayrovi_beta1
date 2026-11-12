@@ -9,7 +9,7 @@
  */
 import { router } from 'expo-router';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import SignInScreen from '../../app/sign-in';
@@ -166,12 +166,19 @@ describe('branchement de l’adresse — connu ⇒ mot de passe, inconnu ⇒ ins
     lookupEmail.mockResolvedValue({ registered: false });
   });
 
-  it('la page s’ouvre sur l’adresse ; le bouton reste grisé tant qu’elle est invalide, sans appeler le serveur', async () => {
+  it('la page s’ouvre sur l’adresse ; Continuer reste ENCRE (référence Zalando) et une adresse invalide est signalée SOUS le champ, sans appeler le serveur', async () => {
     await renderScreen();
     fireEvent.changeText(screen.getByLabelText('Adresse e-mail'), 'pas-une-adresse');
-    expect(screen.getByTestId('auth-email-continue')).toBeDisabled();
+    expect(screen.getByTestId('auth-email-continue')).not.toBeDisabled();
     await act(async () => { fireEvent.press(screen.getByTestId('auth-email-continue')); });
     expect(lookupEmail).not.toHaveBeenCalled();
+    // L'erreur appartient au champ : elle s'affiche dessous, pas en haut de page.
+    const boxed = screen.getByTestId('auth-boxed-email');
+    expect(within(boxed).getByText('Saisissez une adresse e-mail valide.')).toBeTruthy();
+    expect(screen.queryByTestId('auth-failure')).toBeNull();
+    // Corriger l'adresse efface l'erreur aussitôt.
+    fireEvent.changeText(screen.getByLabelText('Adresse e-mail'), 'pas-une-adresse@');
+    expect(screen.queryByText('Saisissez une adresse e-mail valide.')).toBeNull();
   });
 
   it('adresse connue : mot de passe d’abord, avec Révéler, code en option et mot de passe oublié', async () => {
@@ -474,17 +481,32 @@ describe('page d’accueil de la connexion — modal fort (référence Zalando 0
     expect(screen.queryByText('Utilisez votre adresse e-mail pour continuer. Un compte est créé automatiquement si besoin.')).toBeNull();
   });
 
-  it('le champ e-mail est une boîte « encochée » : étiquette dans sa propre boîte, corps sans bordure haute', async () => {
+  it('le champ e-mail a la forme Zalando (12/11) : étiquette AU-DESSUS, boîte de 48 pt comme les autres champs', async () => {
     await renderScreen();
     const boxed = screen.getByTestId('auth-boxed-email');
-    const box = boxed.props.children;
-    const topRow = Array.isArray(box) ? box[0] : box;
-    const labelBox = topRow.props.children[0];
-    const body = Array.isArray(box) ? box[1] : null;
-    expect(StyleSheet.flatten(labelBox.props.style)).toMatchObject({ borderBottomWidth: 0, borderTopLeftRadius: 8 });
-    expect(StyleSheet.flatten(body.props.style)).toMatchObject({ borderTopWidth: 0, borderBottomLeftRadius: 8 });
-    // Aucune superposition : l'encoche vit dans le flux (rangée haute + corps).
-    expect(JSON.stringify(StyleSheet.flatten(topRow.props.style))).not.toContain('absolute');
+    expect(within(boxed).getByText('Adresse e-mail')).toBeTruthy();
+    const input = screen.getByLabelText('Adresse e-mail');
+    const box = StyleSheet.flatten(input.parent?.props.style ?? {});
+    // On remonte jusqu'à la boîte bordée (le parent direct peut être un hôte interne).
+    let node: any = input;
+    let style: any = box;
+    while (node && !(style && style.borderWidth)) {
+      node = node.parent;
+      style = node ? StyleSheet.flatten(node.props.style ?? {}) : null;
+    }
+    expect(style).toMatchObject({ minHeight: 48, borderWidth: 1.5, borderRadius: 8 });
+    // Plus de bordure haute supprimée (l'ancien champ « encoché »).
+    expect(style.borderTopWidth).toBeUndefined();
+  });
+
+  it('titre à la taille de l’écran (24 petit téléphone · 28 téléphone · 32 tablette), grossissement système plafonné', async () => {
+    const { authTitleSize, authGutter } = jest.requireActual('../../src/features/auth/AuthLayout');
+    expect([authTitleSize(320), authTitleSize(360), authTitleSize(412), authTitleSize(600), authTitleSize(1024)]).toEqual([24, 28, 28, 32, 32]);
+    expect([authGutter(390, [4, 8, 12, 16, 24]), authGutter(800, [4, 8, 12, 16, 24])]).toEqual([16, 24]);
+    await renderScreen();
+    const title = screen.getByTestId('auth-title');
+    expect(StyleSheet.flatten(title.props.style).fontSize).toBe(authTitleSize(Dimensions.get('window').width));
+    expect(title.props.maxFontSizeMultiplier).toBe(1.2);
   });
 
   it('Continuer est un bouton plein ENCRE (plus jamais la lavande du violet désactivé)', async () => {
@@ -515,26 +537,31 @@ describe('page d’accueil de la connexion — modal fort (référence Zalando 0
     expect(router.push).toHaveBeenCalledWith('/legal/privacy');
   });
 
-  it('les trois fournisseurs s’affichent en pastilles contour avec leur marque, inactifs tant que le serveur les refuse', async () => {
+  it('les trois fournisseurs : pastilles contour au MÊME contraste (12/11, plus de gris « cassé ») ; non activé ⇒ « bientôt » au toucher, rien ne s’ouvre', async () => {
+    const { openProviderSession } = jest.requireMock('../../src/features/auth/browser');
     await renderScreen();
     for (const id of ['google', 'facebook', 'apple']) {
       const button = screen.getByTestId(`auth-provider-${id}`);
-      expect(button.props.accessibilityState.disabled).toBe(true);
+      expect(button.props.accessibilityState.disabled).toBe(false);
+      expect(StyleSheet.flatten(button.props.style).opacity).toBe(1);
     }
     // Plus aucune ligne d'explication permanente (retirée, demande du 10/11).
     expect(screen.queryByText('Pas encore activé sur le serveur.')).toBeNull();
     await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-apple')); });
     expect(mockSession.adoptSession).not.toHaveBeenCalled();
+    expect(openProviderSession).not.toHaveBeenCalled();
+    expect(screen.getByText('La connexion avec Apple arrive bientôt. En attendant, continuez avec votre adresse e-mail.')).toBeTruthy();
   });
 
-  it('fournisseur activé par le serveur : sa pastille devient cliquable, les autres restent inactives', async () => {
+  it('fournisseur activé par le serveur : sa pastille lance la connexion, les autres expliquent', async () => {
+    const { openProviderSession } = jest.requireMock('../../src/features/auth/browser');
     resetSession({
       authConfig: { phoneOtp: true, email: true, emailCode: true, google: true, googleNative: true, facebook: false, apple: false, passwordReset: true },
     });
     await renderScreen();
-    expect(screen.getByTestId('auth-provider-google').props.accessibilityState.disabled).toBe(false);
-    expect(screen.getByTestId('auth-provider-facebook').props.accessibilityState.disabled).toBe(true);
-    expect(screen.getByTestId('auth-provider-apple').props.accessibilityState.disabled).toBe(true);
+    await act(async () => { fireEvent.press(screen.getByTestId('auth-provider-facebook')); });
+    expect(openProviderSession).not.toHaveBeenCalled();
+    expect(screen.getByText('La connexion avec Facebook arrive bientôt. En attendant, continuez avec votre adresse e-mail.')).toBeTruthy();
   });
 });
 

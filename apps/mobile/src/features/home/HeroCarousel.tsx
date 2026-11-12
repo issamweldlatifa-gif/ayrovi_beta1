@@ -7,7 +7,10 @@
  *  • module désactivé / erreur API / aucune carte ⇒ rien (il n'existe plus d'ancien hero) ;
  *  • carte = titre + photo carrée (collection locale), visuel 5:8 pour CMS ; toute la carte ouvre sa destination ;
  *  • le fond de la section reprend la palette de la photo active puis se fond
- *    progressivement dans le fond de page, en fondu enchaîné ;
+ *    progressivement dans le fond de page, en fondu enchaîné QUI SUIT LE DOIGT
+ *    (12/11/2026 : piloté par la position de défilement sur le fil natif, plus
+ *    par une minuterie lancée une fois le geste fini) — l'en-tête reçoit le
+ *    même avancement (`onTintChange`) et change de teinte en même temps ;
  *  • impression/clic tracés en fire-and-forget — mesurer ne casse jamais rien.
  *
  * Les couches de fond (une par carte, empilées) et le voile du titre sont les
@@ -17,7 +20,7 @@ import {
   memo, useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 import {
-  AccessibilityInfo, Animated, AppState, Easing, FlatList, Linking, Pressable, StyleSheet, View,
+  AccessibilityInfo, Animated, AppState, FlatList, Linking, Pressable, StyleSheet, View,
   type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -39,7 +42,7 @@ import { heroBackdropColors, mixHex, pickHeroText, withAlpha } from './heroPalet
 import { isDemoSlide } from './heroDemo';
 import { HERO_COPY } from '@/design/tokens.mobile';
 import {
-  carouselSnapOffsets, backdropLayerRange, CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
+  carouselSnapOffsets, backdropLayerRange, backdropProgressRange, CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
   scrollOffsetForIndex, shouldAutoplayAdvance,
 } from './heroCarouselLogic';
 
@@ -55,9 +58,20 @@ interface HeroCarouselProps {
   /** Repli : l'ancien hero éditorial (module désactivé / erreur / vide). */
   /** Fond de la carte active (ou `null` hors carrousel) — le header le reprend. */
   onActiveBackgroundChange?: (color: string | null) => void;
+  /** Teintes + avancement animé : l'en-tête fond ses couleurs au même rythme. */
+  onTintChange?: (tint: HeroTint | null) => void;
 }
 
-export function HeroCarousel({ settings, slides, onActiveBackgroundChange }: HeroCarouselProps) {
+/**
+ * Teinte du haut de chaque carte et avancement « en cartes » (0 → n−1) lu sur
+ * le défilement. Partagé avec l'en-tête : un seul mouvement, deux surfaces.
+ */
+export interface HeroTint {
+  colors: string[];
+  progress: Animated.AnimatedInterpolation<number> | null;
+}
+
+export function HeroCarousel({ settings, slides, onActiveBackgroundChange, onTintChange }: HeroCarouselProps) {
   // 1. Chargement ⇒ squelette, jamais un indicateur indéfini ni un trou blanc.
   if (settings.isPending || slides.isPending) return <HeroCarouselSkeleton />;
   // 2. Erreur de réglages ⇒ défauts sûrs (module actif, sobre, sans autoplay).
@@ -71,6 +85,7 @@ export function HeroCarousel({ settings, slides, onActiveBackgroundChange }: Her
       settings={config}
       slides={cards}
       onActiveBackgroundChange={onActiveBackgroundChange}
+      onTintChange={onTintChange}
     />
   );
 }
@@ -78,11 +93,12 @@ export function HeroCarousel({ settings, slides, onActiveBackgroundChange }: Her
 /* ── Le carrousel ─────────────────────────────────────────────────────────── */
 
 function HeroCarouselView({
-  settings, slides, onActiveBackgroundChange,
+  settings, slides, onActiveBackgroundChange, onTintChange,
 }: {
   settings: HeroCarouselSettings;
   slides: HeroSlide[];
   onActiveBackgroundChange?: (color: string | null) => void;
+  onTintChange?: (tint: HeroTint | null) => void;
 }) {
   const theme = useTheme();
   const t = useT();
@@ -102,7 +118,11 @@ function HeroCarouselView({
   const [reduceMotion, setReduceMotion] = useState(false);
   const [appActive, setAppActive] = useState(AppState.currentState === 'active');
   const listRef = useRef<FlatList<HeroSlide>>(null);
-  const bgAnim = useRef(new Animated.Value(0)).current;
+  // Position de défilement, lue sur le fil natif : c'est ELLE qui fond les couleurs.
+  const scrollX = useRef(new Animated.Value(0)).current;
+  // Carte la plus proche PENDANT le geste (encre de l'en-tête, barre d'état) ;
+  // `activeIndex` reste la carte posée (impressions, accessibilité).
+  const [tintIndex, setTintIndex] = useState(0);
 
   // Mouvement réduit (préférence système) : transitions instantanées, pas d'autoplay.
   useEffect(() => {
@@ -140,22 +160,43 @@ function HeroCarouselView({
   );
 
   // Le header reprend la teinte extérieure éclaircie ; le fond du titre reste intact.
-  const activeTop = theme.mode === 'dark' ? null : (edges[activeIndex]?.top ?? null);
+  const activeTop = theme.mode === 'dark' ? null : (edges[tintIndex]?.top ?? edges[activeIndex]?.top ?? null);
   useEffect(() => {
     onActiveBackgroundChange?.(activeTop);
   }, [activeTop, onActiveBackgroundChange]);
   useEffect(() => () => onActiveBackgroundChange?.(null), [onActiveBackgroundChange]);
 
-  // Transition du fond de section vers la carte active : seule l'opacité des
-  // couches bouge (fil natif), aucune couleur recalculée image par image.
+  // Avancement « en cartes » tiré du défilement : seule l'opacité des couches
+  // bouge (fil natif), aucune couleur recalculée image par image, et le fondu
+  // avance exactement au rythme du doigt (ou du défilement automatique).
+  const progressRange = useMemo(
+    () => backdropProgressRange(slides.length, stride, centeringOffset, maxScroll),
+    [slides.length, stride, centeringOffset, maxScroll],
+  );
+  const progress = useMemo(
+    () => (progressRange ? scrollX.interpolate({ ...progressRange, extrapolate: 'clamp' }) : null),
+    [progressRange, scrollX],
+  );
+  const lightTops = useMemo(
+    () => (theme.mode === 'dark' ? [] : edges.map((edge) => edge.top)),
+    [edges, theme.mode],
+  );
   useEffect(() => {
-    Animated.timing(bgAnim, {
-      toValue: activeIndex,
-      duration: reduceMotion ? 0 : settings.transitionMs,
-      easing: Easing.inOut(Easing.ease),
+    onTintChange?.(lightTops.length > 0 ? { colors: lightTops, progress } : null);
+  }, [lightTops, progress, onTintChange]);
+  useEffect(() => () => onTintChange?.(null), [onTintChange]);
+
+  const onScroll = useMemo(
+    () => Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
       useNativeDriver: true,
-    }).start();
-  }, [bgAnim, activeIndex, reduceMotion, settings.transitionMs]);
+      // Côté JS : seulement la carte la plus proche (encre de l'en-tête), sans
+      // re-rendu tant qu'elle ne change pas.
+      listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+        setTintIndex(indexForOffset(event.nativeEvent.contentOffset.x, stride, slides.length, centeringOffset));
+      },
+    }),
+    [scrollX, stride, slides.length, centeringOffset],
+  );
 
   // Impression : une seule fois par carte réellement affichée.
   const trackedRef = useRef(-1);
@@ -182,6 +223,7 @@ function HeroCarouselView({
       // Décalage exact : carte intérieure centrée, dernière bornée à sa gouttière.
       listRef.current?.scrollToOffset({ offset: scrollOffsetForIndex(next, stride, theme.isRTL, centeringOffset, maxScroll), animated: true });
       setActiveIndex(next);
+      setTintIndex(next);
     }, settings.autoplayIntervalMs);
     return () => clearInterval(timer);
   }, [settings.autoplay, settings.autoplayIntervalMs, slides.length, paused, reduceMotion, stride, centeringOffset, maxScroll, theme.isRTL]);
@@ -194,7 +236,9 @@ function HeroCarouselView({
   }, []);
   const onScrollEnd = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     setInteracting(false);
-    setActiveIndex(indexForOffset(event.nativeEvent.contentOffset.x, stride, slides.length, centeringOffset));
+    const settled = indexForOffset(event.nativeEvent.contentOffset.x, stride, slides.length, centeringOffset);
+    setActiveIndex(settled);
+    setTintIndex(settled);
   }, [slides.length, stride, centeringOffset]);
 
   const onPressCard = useCallback((card: HeroSlide) => {
@@ -227,7 +271,7 @@ function HeroCarouselView({
             key={slides[index]?.id ?? index}
             style={[
               StyleSheet.absoluteFill,
-              range ? { opacity: bgAnim.interpolate({ ...range, extrapolate: 'clamp' }) } : null,
+              range && progress ? { opacity: progress.interpolate({ ...range, extrapolate: 'clamp' }) } : null,
             ]}
           >
             <LinearGradient
@@ -249,7 +293,7 @@ function HeroCarouselView({
           );
         })}
       </View>
-      <FlatList
+      <Animated.FlatList
         ref={listRef}
         testID="hero-carousel-list"
         accessibilityLabel={t('home.hero.slideOf', { current: activeIndex + 1, total: slides.length })}
@@ -270,6 +314,8 @@ function HeroCarouselView({
         initialNumToRender={2}
         maxToRenderPerBatch={2}
         windowSize={5}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         onMomentumScrollEnd={onScrollEnd}
         onScrollBeginDrag={onScrollBeginDrag}
         onScrollEndDrag={onScrollEndDrag}

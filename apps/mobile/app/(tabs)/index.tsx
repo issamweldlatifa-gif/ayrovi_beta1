@@ -23,7 +23,7 @@ import { useIsFocused } from 'expo-router';
 
 import { AppScreen, FullBleed } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
-import { HeroCarousel } from '@/features/home/HeroCarousel';
+import { HeroCarousel, type HeroTint } from '@/features/home/HeroCarousel';
 import { HomeTabs } from '@/features/home/HomeTabs';
 import { HomeCover } from '@/features/home/HomeCover';
 import { StoriesSection } from '@/features/home/StoriesSection';
@@ -70,6 +70,8 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   // Couleur de la carte Hero active : le header la reprend (en haut de page).
   const [heroBackground, setHeroBackground] = useState<string | null>(null);
+  // Teintes + avancement du carrousel : l'en-tête se fond au même rythme.
+  const [heroTint, setHeroTint] = useState<HeroTint | null>(null);
   /**
    * Remontée en haut de page (re-tap sur l'onglet Accueil, mot-symbole de
    * l'en-tête) : l'écran prête sa `ScrollView` à `AppScreen` et se déclare
@@ -100,7 +102,7 @@ export default function HomeScreen() {
       overlayHeader={({ scrolled }) => (
         <>
           <HeroStatusBar background={scrolled ? null : heroBackground} />
-          <AppHeader scrolled={scrolled} heroBackground={heroBackground} />
+          <AppHeader scrolled={scrolled} heroBackground={heroBackground} heroTint={heroTint} />
         </>
       )}
       // البار السفلي يضيف منطقته الآمنة لنفسو، والمحتوى ما يضيفهاش (§4.3-3)
@@ -118,6 +120,7 @@ export default function HomeScreen() {
           settings={heroCarouselSettings}
           slides={heroSlides}
           onActiveBackgroundChange={setHeroBackground}
+          onTintChange={setHeroTint}
         />
 
         {/* التبويبات تظهر على نفس لون نهاية تدرّج الهيرو لانتقال بصري متصل. */}

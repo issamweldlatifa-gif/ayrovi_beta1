@@ -63,7 +63,12 @@ describe('barre du bas transparente à coins arrondis compacts (5 onglets — st
   it('applique une surface pleine opaque collée tout en bas (zéro transparence, zéro vide sous la barre)', () => {
     expect(layout).toContain('TAB_BAR_SURFACE[theme.mode]');
     expect(layout).not.toContain('TAB_BAR_GLASS');
-    expect(layout).not.toContain("position: 'absolute'");
+    // 12/11/2026 : la barre GLISSE au lieu de disparaître. Le seul calque
+    // positionné est le support de glissement, collé bord à bord en bas
+    // (aucun vide dessous) ; la barre elle-même reste pleine et opaque.
+    expect(layout.match(/position: 'absolute'/g) ?? []).toHaveLength(1);
+    expect(layout).toContain("slider: { position: 'absolute', left: 0, right: 0, bottom: 0 }");
+    expect(layout).not.toMatch(/tabBarStyle: chromeHidden/);
     expect(layout).not.toContain("backgroundColor: 'transparent'");
     expect(layout).toContain('paddingBottom: insets.bottom');
     expect(layout).toContain('backgroundColor: surface.background');

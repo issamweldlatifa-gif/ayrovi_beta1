@@ -14,21 +14,25 @@
  * Native : c'est ce qui permet de tester le COMPORTEMENT (seuil, haut de page,
  * tremblement) au lieu de tester du React.
  *
- * ── L'animation ────────────────────────────────────────────────────────────
- * `LayoutAnimation` plutôt qu'un `Animated.Value` : la barre d'onglets est
- * construite par React Navigation, ce n'est PAS un composant animé, et y
- * injecter un nœud animé ne produirait rien. Intercaler notre propre barre
- * aurait fonctionné — au prix d'un composant qui réimplémente les onglets.
- * `LayoutAnimation` anime le changement de hauteur en une ligne, sans rien
- * réimplémenter.
+ * ── L'animation (refaite le 12/11/2026) ────────────────────────────────────
+ * Avant : `display: 'none'` + `LayoutAnimation`. La barre disparaissait d'un
+ * coup (un `display` ne s'anime pas), l'écran entier changeait de hauteur, et
+ * `LayoutAnimation` — GLOBAL — animait au passage tout autre changement de mise
+ * en page du même instant (images, carrousel) : c'est le « saut » ressenti.
+ * Pire : en bas de page, l'écran qui grandit fait reculer le défilement, lu
+ * comme une remontée ⇒ la barre ressortait, l'écran rétrécissait… et ainsi de
+ * suite (clignotement).
+ *
+ * Maintenant : la barre est POSÉE au-dessus de l'écran (voir
+ * `app/(tabs)/_layout.tsx`, `SlidingTabBar`) et ne fait que GLISSER
+ * (`translateY`, fil natif). Aucune hauteur ne change jamais : l'écran réserve
+ * une fois pour toutes la place de la barre (`AppScreen hasBottomBar`). La
+ * décision suit une course cumulée (`nextChromeTravel`), pas un écart entre
+ * deux événements.
  */
 import { useCallback, useRef, useSyncExternalStore } from 'react';
-import { LayoutAnimation, Platform, UIManager, type NativeSyntheticEvent, type NativeScrollEvent } from 'react-native';
-import { chromeHiddenFor } from './chromeLogic';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import type { NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { nextChromeTravel } from './chromeLogic';
 
 /* ── Magasin minimal ──────────────────────────────────────────────────────── */
 
@@ -39,14 +43,6 @@ const emit = () => { for (const listener of listeners) listener(); };
 
 export function setChromeHidden(next: boolean): void {
   if (next === chromeHidden) return;
-  // configureNext doit être appelé AVANT le changement d'état : c'est lui qui
-  // transforme la disparition sèche en glissement.
-  try {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  } catch {
-    // Animation indisponible : la barre disparaîtra sèchement, ce qui reste
-    // mieux que pas de réaction du tout.
-  }
   chromeHidden = next;
   emit();
 }
@@ -69,12 +65,18 @@ export function useChromeHidden(): boolean {
  * presque jamais atteint.
  */
 export function useChromeScroll() {
-  const previousY = useRef(0);
+  // Point de retournement propre à l'écran ; l'état visible/masqué, lui, est
+  // partagé (un changement d'onglet peut l'avoir remis à « visible »).
+  const anchor = useRef(0);
 
   return useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const y = event.nativeEvent.contentOffset.y;
-    setChromeHidden(chromeHiddenFor(y, previousY.current, chromeHidden));
-    previousY.current = y;
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const maxY = contentSize && layoutMeasurement
+      ? Math.max(0, contentSize.height - layoutMeasurement.height)
+      : undefined;
+    const next = nextChromeTravel({ hidden: chromeHidden, anchor: anchor.current }, contentOffset.y, { maxY });
+    anchor.current = next.anchor;
+    setChromeHidden(next.hidden);
   }, []);
 }
 

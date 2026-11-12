@@ -160,3 +160,40 @@ export function backdropLayerRange(index: number): { inputRange: number[]; outpu
   if (!Number.isInteger(index) || index < 1) return null;
   return { inputRange: [index - 1, index], outputRange: [0, 1] };
 }
+
+/**
+ * Défilement → avancement « en cartes » (12/11/2026), pour que la couleur de
+ * fond SUIVE LE DOIGT au lieu de basculer une fois le geste fini.
+ *
+ * Points d'appui : l'offset de chaque arrêt (`scrollOffsetForIndex`) ↔ l'index
+ * de la carte. Entre deux arrêts, l'avancement est linéaire ; la fin bornée par
+ * `maxScroll` est respectée (si deux arrêts tombent au même offset, la
+ * dernière carte l'emporte). La plage est MIROIR (offsets négatifs ⇒ mêmes
+ * index) : une liste `inverted` (arabe) peut rapporter un offset négatif selon
+ * la plateforme, et l'interpolation n'a pas de valeur absolue.
+ *
+ * `null` sous deux cartes : rien à faire avancer (et une plage à un seul point
+ * ferait planter l'interpolation, cf. `backdropLayerRange`).
+ */
+export function backdropProgressRange(
+  count: number,
+  stride: number,
+  centeringOffset = 0,
+  maxScroll = Number.POSITIVE_INFINITY,
+): { inputRange: number[]; outputRange: number[] } | null {
+  const total = Math.max(0, Math.floor(count));
+  if (total < 2 || !(stride > 0)) return null;
+  const points: Array<{ offset: number; index: number }> = [];
+  for (let index = 0; index < total; index += 1) {
+    const offset = scrollOffsetForIndex(index, stride, false, centeringOffset, maxScroll);
+    const last = points[points.length - 1];
+    if (!last || offset > last.offset) points.push({ offset, index });
+    else last.index = index;
+  }
+  if (points.length < 2) return null;
+  const mirrored = points.slice(1).reverse();
+  return {
+    inputRange: [...mirrored.map((point) => -point.offset), ...points.map((point) => point.offset)],
+    outputRange: [...mirrored.map((point) => point.index), ...points.map((point) => point.index)],
+  };
+}

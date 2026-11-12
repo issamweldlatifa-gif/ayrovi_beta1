@@ -12,8 +12,10 @@
  *     en noir/blanc, comme les autres icônes monochromes, sans libellé.
  *   • `cart` reste une route valide (`href: null`) pour l'icône panier.
  */
-import { StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import { Tabs, router, usePathname } from 'expo-router';
+import { BottomTabBar, type BottomTabBarProps } from 'expo-router/js-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { revealChrome, useChromeHidden } from '@/design/chrome';
@@ -35,11 +37,59 @@ import { tabMotion } from '@/design/navigationMotion';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
+/** Glissement de la barre : court à la sortie, un peu plus doux au retour. */
+export const TAB_BAR_HIDE_MS = 200;
+export const TAB_BAR_SHOW_MS = 240;
+
+/**
+ * Barre d'onglets qui GLISSE (12/11/2026). La barre de React Navigation est
+ * rendue telle quelle (mêmes options, mêmes icônes) dans un calque posé en bas
+ * de l'écran ; seul son `translateY` bouge, sur le fil natif — aucune hauteur
+ * d'écran ne change, donc rien ne saute ni ne clignote. L'écran réserve la
+ * place de la barre (`AppScreen hasBottomBar`). Mouvement réduit : bascule
+ * immédiate.
+ */
+export function SlidingTabBar(props: BottomTabBarProps) {
+  const hidden = useChromeHidden();
+  const reduceMotion = useReduceMotion();
+  const progress = useRef(new Animated.Value(hidden ? 1 : 0)).current;
+  const [height, setHeight] = useState(0);
+
+  useEffect(() => {
+    const animation = Animated.timing(progress, {
+      toValue: hidden ? 1 : 0,
+      duration: reduceMotion ? 0 : hidden ? TAB_BAR_HIDE_MS : TAB_BAR_SHOW_MS,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [hidden, progress, reduceMotion]);
+
+  const onLayout = (event: LayoutChangeEvent) => {
+    const next = Math.ceil(event.nativeEvent.layout.height);
+    if (next !== height) setHeight(next);
+  };
+
+  return (
+    <Animated.View
+      testID="tab-bar-slider"
+      onLayout={onLayout}
+      pointerEvents={hidden ? 'none' : 'box-none'}
+      style={[
+        styles.slider,
+        { transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, height + 1] }) }] },
+      ]}
+    >
+      <BottomTabBar {...props} />
+    </Animated.View>
+  );
+}
+
 export default function TabsLayout() {
   const theme = useTheme();
   const { t } = useI18n();
   const insets = useSafeAreaInsets();
-  const chromeHidden = useChromeHidden();
   const surface = TAB_BAR_SURFACE[theme.mode];
   const pathname = usePathname();
   const signedIn = useSession().status === 'signedIn';
@@ -57,6 +107,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       backBehavior="history"
+      tabBar={(props) => <SlidingTabBar {...props} />}
       screenListeners={{
         tabPress: () => revealChrome(),
       }}
@@ -67,18 +118,18 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarShowLabel: false,
         tabBarItemStyle: styles.tabItem,
-        tabBarStyle: chromeHidden
-          ? { display: 'none' }
-          : {
-              height: theme.chrome.tabBar + insets.bottom,
-              paddingTop: theme.space[0],
-              paddingBottom: insets.bottom,
-              paddingHorizontal: theme.space[0],
-              backgroundColor: surface.background,
-              borderTopWidth: StyleSheet.hairlineWidth,
-              borderTopColor: surface.border,
-              ...theme.elevation.none,
-            },
+        // Toujours la MÊME barre : le repli au défilement est un glissement
+        // (`SlidingTabBar`), plus un `display: 'none'` qui changeait la hauteur.
+        tabBarStyle: {
+          height: theme.chrome.tabBar + insets.bottom,
+          paddingTop: theme.space[0],
+          paddingBottom: insets.bottom,
+          paddingHorizontal: theme.space[0],
+          backgroundColor: surface.background,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: surface.border,
+          ...theme.elevation.none,
+        },
       }}
     >
       <Tabs.Screen
@@ -181,6 +232,9 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
+  // Calque de la barre : posé en bas, au-dessus de l'écran (superposition
+  // inventoriée dans tests/design-system.test.ts).
+  slider: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   tabItem: {
     paddingVertical: 4,
     justifyContent: 'center',

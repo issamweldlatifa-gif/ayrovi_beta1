@@ -415,6 +415,7 @@ export const ar = {
   'auth.providers.apple': 'المتابعة عبر Apple',
   'auth.providers.waiting': 'أكمل تسجيل الدخول في المتصفّح. جارٍ الانتظار…',
   'auth.providers.cancel': 'إلغاء الانتظار',
+  'auth.providers.soon': 'الدخول عبر {provider} سيتوفّر قريبًا. في الأثناء، واصل ببريدك الإلكتروني.',
   'auth.providers.incomplete': 'لم يكتمل تسجيل الدخول ولم يطرأ أي تغيير على الحساب.',
   'auth.providers.incompleteHint': 'إذا ظهرت رسالة خطأ من المزوّد في المتصفّح، فقد يكون الحساب غير مخوّل في إعدادات المزوّد؛ وإذا أغلقت الصفحة قبل الإتمام، فيرجى إعادة المحاولة.',
 

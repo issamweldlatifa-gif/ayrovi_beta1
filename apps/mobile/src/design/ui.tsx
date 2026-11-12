@@ -36,12 +36,18 @@ export interface AppTextProps {
   onLayout?: TextProps['onLayout'];
   /** Lien en ligne (mentions dans un paragraphe) : le Text imbriqué reste tappable. */
   onPress?: TextProps['onPress'];
+  /**
+   * Plafond du grossissement système pour CE texte (titres, libellés de
+   * bouton) : la taille choisie dans les réglages reste respectée, mais un
+   * titre ne casse plus la page en trois lignes. Absent = aucun plafond.
+   */
+  maxFontSizeMultiplier?: number;
   testID?: string;
 }
 
 export function AppText({
   children, variant = 'body', color, align = 'auto', numberOfLines, style, accessibilityRole,
-  testID, accessibilityLiveRegion, onTextLayout, onLayout, onPress,
+  testID, accessibilityLiveRegion, onTextLayout, onLayout, onPress, maxFontSizeMultiplier,
 }: AppTextProps) {
   const theme = useTheme();
   return (
@@ -53,6 +59,7 @@ export function AppText({
       onTextLayout={onTextLayout}
       onLayout={onLayout}
       onPress={onPress}
+      maxFontSizeMultiplier={maxFontSizeMultiplier}
       style={[
         theme.text(variant),
         { color: color ?? theme.colors.ink },
@@ -274,6 +281,11 @@ export interface ButtonProps {
   style?: StyleProp<ViewStyle>;
   /** Contexte lu par le lecteur d'écran (ex. « passer à la caisse »). */
   accessibilityHint?: string;
+  /**
+   * `lg` : 48 pt de haut, libellé 16 — les écrans de connexion (référence
+   * Zalando). `md` (défaut) : gabarit compact du reste de l'application.
+   */
+  size?: 'md' | 'lg';
   testID?: string;
 }
 
@@ -291,8 +303,12 @@ export const BUTTON_OUTLINE_WIDTH = 2;
  * Désactivé : même forme, opacité réduite. Occupé : le cercle d'attente prend
  * la place du pictogramme de tête, dans la couleur du libellé.
  */
-export function Button({ label, onPress, busy = false, disabled = false, tone = 'solid', block = false, style, accessibilityHint, testID, leading }: ButtonProps) {
+export function Button({ label, onPress, busy = false, disabled = false, tone = 'solid', block = false, style, accessibilityHint, testID, leading, size = 'md' }: ButtonProps) {
   const theme = useTheme();
+  const large = size === 'lg';
+  const labelVariant = large ? 'bodyStrong' : 'button';
+  // Libellé plafonné : le bouton garde sa hauteur même en très grande police.
+  const labelScale = large ? 1.3 : undefined;
   const blocked = busy || disabled;
   const quiet = tone === 'quiet';
   const main = tone === 'main';
@@ -318,7 +334,7 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
         styles.button,
         block ? { alignSelf: 'stretch' } : null,
         {
-          minHeight: theme.chrome.button,
+          minHeight: large ? theme.geometry.controlHeight : theme.chrome.button,
           // Système de boutons : pastille compacte (CTA), contour encre épais en mode « quiet ».
           borderRadius: theme.radius.cta,
           borderWidth: quiet ? BUTTON_OUTLINE_WIDTH : StyleSheet.hairlineWidth,
@@ -339,12 +355,12 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
         // Pictogramme (ex. logo Google) posé avant le libellé, dans le sens de lecture.
         <View style={[styles.leadingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           {lead}
-          <AppText variant="button" color={labelColor}>
+          <AppText variant={labelVariant} color={labelColor} maxFontSizeMultiplier={labelScale}>
             {label}
           </AppText>
         </View>
       ) : (
-        <AppText variant="button" color={labelColor}>
+        <AppText variant={labelVariant} color={labelColor} maxFontSizeMultiplier={labelScale}>
           {label}
         </AppText>
       )}

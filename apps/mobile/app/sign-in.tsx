@@ -10,6 +10,13 @@
  *     (Google/Facebook/Apple), mais le serveur seul décide qui est cliquable ;
  *   • récupération : écran dédié `/forgot` (lien de réinitialisation).
  *
+ * 12/11/2026 — comparaison côte à côte avec Zalando : titre ramené à la taille
+ * de l'écran et tenu sur une ligne, marges 16, boutons et champs de 48 pt,
+ * champ adresse à étiquette AU-DESSUS (fin de l'encoche), Continuer toujours
+ * encre (l'adresse invalide est signalée sous le champ), fournisseurs au même
+ * contraste, erreurs posées dans le formulaire (plus rien ne pousse la page).
+ * Le cadre (marges, colonne bornée, en-tête stable) vit dans `AuthLayout`.
+ *
  * Règles tenues par cet écran :
  *   • tout est encre sur canvas — AUCUN violet ici (demande explicite) ;
  *   • les lignes « pas encore activé », « même compte que le site »,
@@ -22,16 +29,13 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { goBack } from '@/design/navigation';
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { KeyboardAvoider } from '@/design/keyboard';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
-import { useResponsive } from '@/design/layout';
 import { useI18n } from '@/i18n';
 import { authMessage, type AuthMessageKey } from '@/api/authMessages';
 import { fetchServerReadiness, mobileSessionSupport } from '@/api/public';
@@ -44,8 +48,8 @@ import { useRememberedAccount, type LastAccount } from '@/features/auth/lastAcco
 import { GoogleLogo } from '@/design/GoogleLogo';
 import { FacebookLogo } from '@/design/FacebookLogo';
 import { AppleLogo } from '@/design/AppleLogo';
-import { BrandWordmark } from '@/design/BrandMark';
 import { AuthField } from '@/features/auth/AuthField';
+import { AuthLayout } from '@/features/auth/AuthLayout';
 import { RADIUS } from '@/design/tokens.mobile';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { useSession } from '@/state/session';
@@ -71,9 +75,7 @@ export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function SignInScreen() {
   const theme = useTheme();
-  const { gutter } = useResponsive();
   const { t, locale } = useI18n();
-  const insets = useSafeAreaInsets();
   const session = useSession();
 
   const [mode, setMode] = useState<Mode>('start');
@@ -85,7 +87,8 @@ export default function SignInScreen() {
   const [reveal, setReveal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState<ProviderId | null>(null);
-  const [failure, setFailure] = useState<{ message: string; hint?: string } | null>(null);
+  // `field: 'email'` : l'erreur appartient au champ adresse et s'affiche sous lui.
+  const [failure, setFailure] = useState<{ message: string; hint?: string; field?: 'email' } | null>(null);
   const [resendIn, setResendIn] = useState(0);
   // « Se connecter autrement » : affiche le formulaire complet même si un compte est mémorisé.
   const [otherWaysOpen, setOtherWaysOpen] = useState(false);
@@ -159,7 +162,7 @@ export default function SignInScreen() {
   // Connexion par code e-mail : tout reste dans l'écran, aucun navigateur ni lien de retour.
   const sendEmailCode = () => run(async () => {
     if (!EMAIL_SHAPE.test(email.trim())) {
-      setFailure({ message: t('auth.emailCode.invalidAddress') });
+      setFailure({ message: t('auth.emailCode.invalidAddress'), field: 'email' });
       return;
     }
     setEmailCode('');
@@ -235,7 +238,7 @@ export default function SignInScreen() {
   const continueWithEmail = () => run(async () => {
     const clean = email.trim();
     if (!EMAIL_SHAPE.test(clean)) {
-      setFailure({ message: t('auth.emailCode.invalidAddress') });
+      setFailure({ message: t('auth.emailCode.invalidAddress'), field: 'email' });
       return;
     }
     const { registered } = await lookupEmail(clean);
@@ -305,7 +308,6 @@ export default function SignInScreen() {
     }, 'auth.error.unavailable');
   };
 
-  const emailReady = EMAIL_SHAPE.test(email.trim());
   // La page d'accueil reste ouverte tant qu'UNE méthode e-mail existe.
   const emailPathOpen = config?.email !== false || config?.emailCode !== false;
   const passwordOpen = config?.email !== false;
@@ -341,82 +343,96 @@ export default function SignInScreen() {
     </AppText>
   );
 
-  /** Champ e-mail « encoché » : étiquette dans sa boîte, corps sans bordure haute. */
-  const boxedEmailField = (options: { editable: boolean; onEdit?: () => void } = { editable: true }) => (
+  /**
+   * Champ adresse (12/11/2026) : étiquette AU-DESSUS, boîte de 48 pt — la même
+   * forme que « Mot de passe » et que la référence Zalando. L'ancien champ
+   * « encoché » (étiquette dans un onglet découpé dans la bordure) faisait un
+   * cadre irrégulier, plus haut que les autres champs. Une fois l'adresse
+   * validée, elle reste affichée, verrouillée, avec « Modifier » dans la boîte.
+   */
+  const emailField = (options: { editable: boolean; onEdit?: () => void } = { editable: true }) => (
     <View testID="auth-boxed-email">
-      <View style={[styles.boxTopRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <View style={[styles.boxLabel, { backgroundColor: theme.colors.canvas }]}>
-          <AppText variant="caption" color={theme.colors.muted}>{t('auth.email.label')}</AppText>
-        </View>
-        <View style={[styles.boxTopLine, { borderTopColor: theme.colors.ink }]} />
-      </View>
-      <View
-        style={[styles.boxBody, {
-          borderBottomColor: theme.colors.ink,
-          borderLeftColor: theme.colors.ink,
-          borderRightColor: theme.colors.ink,
-          flexDirection: rowDirectionFor(theme.isRTL),
-        }]}
-      >
-        <TextInput
-          accessibilityLabel={t('auth.email.label')}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          autoComplete="email"
-          editable={options.editable && !busy}
-          placeholderTextColor={theme.colors.muted}
-          selectionColor={theme.colors.ink}
-          cursorColor={theme.colors.ink}
-          style={[
-            theme.text('body'),
-            styles.boxInput,
-            { color: options.editable ? theme.colors.ink : theme.colors.muted, flex: 1 },
-            theme.isRTL ? { textAlign: 'right' } : null,
-          ]}
-        />
-        {options.onEdit ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('auth.edit')}
-            onPress={options.onEdit}
-            testID="auth-email-edit"
-            style={styles.boxAction}
-          >
-            <AppText variant="label" color={theme.colors.ink} style={styles.termsLink}>{t('auth.edit')}</AppText>
-          </Pressable>
-        ) : null}
-      </View>
+      <AuthField
+        label={t('auth.email.label')}
+        value={email}
+        onChangeText={(next) => {
+          setEmail(next);
+          // L'erreur d'adresse disparaît dès qu'on corrige : pas de rouge qui traîne.
+          if (failure?.field === 'email') setFailure(null);
+        }}
+        autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="email-address"
+        autoComplete="email"
+        textContentType="emailAddress"
+        returnKeyType="next"
+        onSubmitEditing={options.editable ? continueWithEmail : undefined}
+        editable={options.editable && !busy}
+        error={options.editable && failure?.field === 'email' ? failure.message : null}
+        trailing={options.onEdit ? { label: t('auth.edit'), onPress: options.onEdit, testID: 'auth-email-edit', disabled: busy } : undefined}
+      />
     </View>
   );
 
   /**
-   * Pastilles sociales façon Zalando : contour encre, marque du tiers DEVANT
-   * le libellé. Une méthode que le serveur n'a pas activée reste VISIBLE mais
-   * non cliquable — sans ligne d'explication permanente (retirée, demande du
-   * 10/11) : l'échec, lui, reste expliqué au moment où il arrive.
+   * Échec général : posé DANS le formulaire, juste au-dessus de l'action
+   * principale de l'étape — plus en haut de page, où son apparition décalait
+   * tout l'écran.
    */
-  const providers: { id: ProviderId; label: string; enabled: boolean }[] = [
-    { id: 'google', label: t('auth.providers.google'), enabled: config?.googleNative === true },
-    { id: 'facebook', label: t('auth.providers.facebook'), enabled: config?.facebook === true },
-    { id: 'apple', label: t('auth.providers.apple'), enabled: config?.apple === true },
+  const failureBlock = failure && failure.field !== 'email' ? (
+    <View
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+      testID="auth-failure"
+      style={[styles.alert, {
+        backgroundColor: theme.colors.surface,
+        borderColor: theme.status.danger.fg,
+        borderRadius: theme.radius.card,
+      }]}
+    >
+      <AppText variant="label" color={theme.status.danger.fg}>{failure.message}</AppText>
+      {failure.hint ? (
+        <AppText variant="caption" color={theme.colors.secondary}>{failure.hint}</AppText>
+      ) : null}
+    </View>
+  ) : null;
+
+  /**
+   * Pastilles sociales façon Zalando : contour encre, marque du tiers DEVANT
+   * le libellé, TOUTES au même contraste (12/11/2026 : les pastilles grisées
+   * donnaient un écran qui a l'air cassé). Le serveur décide toujours qui
+   * fonctionne : une méthode qu'il n'a pas activée explique, au toucher,
+   * qu'elle arrive bientôt — sans ligne d'explication permanente (demande du
+   * 10/11) et sans rien ouvrir.
+   */
+  const providers: { id: ProviderId; label: string; name: string; enabled: boolean }[] = [
+    { id: 'google', label: t('auth.providers.google'), name: 'Google', enabled: config?.googleNative === true },
+    { id: 'facebook', label: t('auth.providers.facebook'), name: 'Facebook', enabled: config?.facebook === true },
+    { id: 'apple', label: t('auth.providers.apple'), name: 'Apple', enabled: config?.apple === true },
   ];
+  const pressProvider = (provider: (typeof providers)[number]) => {
+    if (!provider.enabled) {
+      setFailure({ message: t('auth.providers.soon', { provider: provider.name }) });
+      return;
+    }
+    void (provider.id === 'google' ? startGoogleNative(false) : startProvider(provider.id));
+  };
   const socialStack = (
-    <>
+    <View style={styles.socialStack}>
       {providers.map((provider) => (
         <Button
           key={provider.id}
           label={provider.label}
           tone="quiet"
-          onPress={() => (provider.id === 'google' ? startGoogleNative(false) : startProvider(provider.id))}
+          size="lg"
+          onPress={() => pressProvider(provider)}
           leading={
             provider.id === 'google' ? <GoogleLogo size={20} />
               : provider.id === 'facebook' ? <FacebookLogo size={20} />
                 : <AppleLogo size={20} />
           }
           busy={waiting === provider.id}
-          disabled={!provider.enabled || (busy && waiting !== provider.id)}
+          disabled={busy && waiting !== provider.id}
           testID={`auth-provider-${provider.id}`}
         />
       ))}
@@ -428,13 +444,14 @@ export default function SignInScreen() {
           <Button
             label={t('auth.providers.cancel')}
             tone="quiet"
+            size="lg"
             onPress={() => {
               cancelled.current = true;
             }}
           />
         </>
       ) : null}
-    </>
+    </View>
   );
 
   /** Les six boîtes du code (référence Zalando) : saisie chiffre par chiffre. */
@@ -448,163 +465,146 @@ export default function SignInScreen() {
   );
 
   return (
-    <KeyboardAvoider
-      style={{ flex: 1, backgroundColor: theme.colors.canvas }}
-    >
-      <ScrollView
-        contentContainerStyle={[
-          styles.screen,
-          { paddingHorizontal: gutter },
-          { paddingTop: insets.top + theme.space[2], paddingBottom: insets.bottom + theme.space[5] },
-        ]}
-        keyboardShouldPersistTaps="handled"
-      >
+    <AuthLayout
+      title={heading.title}
+      subtitle={heading.subtitle || undefined}
+      top={(
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t('common.close')}
           onPress={() => goBack('/')}
+          hitSlop={8}
           style={[styles.close, { minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget }]}
         >
           <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
-
-        {/* Marque posée en tête sur TOUTES les étapes (référence Zalando). */}
-        <View style={styles.brandMark}>
-          <BrandWordmark height={25} color={theme.colors.ink} />
+      )}
+    >
+      {legacyServer ? (
+        <View
+          accessibilityRole="alert"
+          style={[styles.alert, {
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.status.danger.fg,
+            borderRadius: theme.radius.card,
+          }]}
+        >
+          <AppText variant="label" color={theme.status.danger.fg}>
+            {t('signin.serverLegacy.title')}
+          </AppText>
+          <AppText variant="caption" color={theme.colors.secondary}>
+            {t('signin.serverLegacy.body')}
+          </AppText>
         </View>
+      ) : null}
 
-        <AppText variant="h1">{heading.title}</AppText>
-        {heading.subtitle ? (
-          <AppText variant="body" color={theme.colors.secondary} style={styles.intro}>{heading.subtitle}</AppText>
-        ) : null}
+      {/* Compte mémorisé : le geste le plus court (référence « Hi Essam »). */}
+      {shownAccount ? (
+        <>
+          {failureBlock}
+          <RememberedAccountButton
+            account={shownAccount}
+            label={t('auth.remembered.continue')}
+            busy={rememberedSpinning}
+            disabled={busy && !rememberedSpinning}
+            onPress={() => continueWithRemembered(shownAccount)}
+          />
+          <Button
+            label={t('auth.remembered.another')}
+            tone="quiet"
+            size="lg"
+            onPress={() => setOtherWaysOpen(true)}
+            disabled={busy}
+            testID="auth-remembered-other"
+          />
+        </>
+      ) : null}
 
-        {legacyServer ? (
-          <View
-            accessibilityRole="alert"
-            style={[styles.alert, {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.status.danger.fg,
-              borderRadius: theme.radius.card,
-            }]}
+      {/* Page d'accueil : adresse → le serveur dit connu ou inconnu. Le bouton
+          reste ENCRE (référence) : une adresse invalide est signalée sous le
+          champ au toucher, sans appel au serveur. */}
+      {mode === 'start' && !emailChallenge && !shownAccount ? (
+        <>
+          {emailField({ editable: true })}
+          {failureBlock}
+          <Button
+            label={t('auth.continue')}
+            tone="solid"
+            size="lg"
+            onPress={continueWithEmail}
+            busy={busy && waiting === null}
+            disabled={busy || !emailPathOpen}
+            testID="auth-email-continue"
+          />
+          {termsParagraph}
+          {socialStack}
+        </>
+      ) : null}
+
+      {/* Adresse connue : mot de passe, code en option, récupération. */}
+      {mode === 'password' && !emailChallenge ? (
+        <>
+          {emailField({ editable: false, onEdit: backToAddress })}
+          <AuthField
+            label={t('auth.password.label')}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!reveal}
+            autoComplete="current-password"
+            textContentType="password"
+            returnKeyType="go"
+            onSubmitEditing={password.length >= 8 ? emailSignIn : undefined}
+            editable={!busy}
+            testID="auth-password-field"
+            trailing={{
+              label: reveal ? t('auth.password.hide') : t('auth.password.reveal'),
+              onPress: () => setReveal((value) => !value),
+              testID: 'auth-password-reveal',
+            }}
+          />
+          {failureBlock}
+          <Button
+            label={t('auth.title')}
+            tone="solid"
+            size="lg"
+            onPress={emailSignIn}
+            busy={busy && waiting === null}
+            disabled={busy || !passwordOpen || password.length < 8}
+            testID="auth-email-submit"
+          />
+          <Button
+            label={t('auth.code.login')}
+            tone="quiet"
+            size="lg"
+            onPress={sendEmailCode}
+            disabled={busy || !codeOpen}
+            testID="auth-email-code-send"
+          />
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => router.push({ pathname: '/forgot', params: { email: email.trim() } as never })}
+            style={[styles.forgotLink, { minHeight: theme.geometry.minTarget }]}
+            testID="auth-forgot-link"
           >
-            <AppText variant="label" color={theme.status.danger.fg}>
-              {t('signin.serverLegacy.title')}
+            <AppText variant="label" color={theme.colors.ink} style={styles.termsLink}>
+              {t('auth.forgot.link')}
             </AppText>
-            <AppText variant="caption" color={theme.colors.secondary}>
-              {t('signin.serverLegacy.body')}
-            </AppText>
-          </View>
-        ) : null}
+          </Pressable>
+        </>
+      ) : null}
 
-        {failure?.hint ? (
-          <AppText variant="caption" color={theme.colors.muted}>{failure.hint}</AppText>
-        ) : null}
-        {failure ? (
-          <View
-            accessibilityRole="alert"
-            style={[styles.alert, {
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.line,
-              borderRadius: theme.radius.card,
-            }]}
-          >
-            <AppText variant="label" color={theme.status.danger.fg}>{failure.message}</AppText>
-          </View>
-        ) : null}
-
-        {/* Compte mémorisé : le geste le plus court (référence « Hi Essam »). */}
-        {shownAccount ? (
-          <>
-            <RememberedAccountButton
-              account={shownAccount}
-              label={t('auth.remembered.continue')}
-              busy={rememberedSpinning}
-              disabled={busy && !rememberedSpinning}
-              onPress={() => continueWithRemembered(shownAccount)}
-            />
-            <Button
-              label={t('auth.remembered.another')}
-              tone="quiet"
-              onPress={() => setOtherWaysOpen(true)}
-              disabled={busy}
-              testID="auth-remembered-other"
-            />
-          </>
-        ) : null}
-
-        {/* Page d'accueil : adresse → le serveur dit connu ou inconnu. */}
-        {mode === 'start' && !emailChallenge && !shownAccount ? (
-          <>
-            {boxedEmailField({ editable: true })}
-            <Button
-              label={t('auth.continue')}
-              tone="solid"
-              onPress={continueWithEmail}
-              busy={busy && waiting === null}
-              disabled={busy || !emailReady || !emailPathOpen}
-              testID="auth-email-continue"
-            />
-            {termsParagraph}
-            {socialStack}
-          </>
-        ) : null}
-
-        {/* Adresse connue : mot de passe, code en option, récupération. */}
-        {mode === 'password' && !emailChallenge ? (
-          <>
-            {boxedEmailField({ editable: false, onEdit: backToAddress })}
-            <AuthField
-              label={t('auth.password.label')}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!reveal}
-              autoComplete="current-password"
-              editable={!busy}
-              testID="auth-password-field"
-              trailing={{
-                label: reveal ? t('auth.password.hide') : t('auth.password.reveal'),
-                onPress: () => setReveal((value) => !value),
-                testID: 'auth-password-reveal',
-              }}
-            />
-            <Button
-              label={t('auth.title')}
-              tone="solid"
-              onPress={emailSignIn}
-              busy={busy && waiting === null}
-              disabled={busy || !passwordOpen || password.length < 8}
-              testID="auth-email-submit"
-            />
-            <Button
-              label={t('auth.code.login')}
-              tone="quiet"
-              onPress={sendEmailCode}
-              disabled={busy || !codeOpen}
-              testID="auth-email-code-send"
-            />
-            <Pressable
-              accessibilityRole="link"
-              onPress={() => router.push({ pathname: '/forgot', params: { email: email.trim() } as never })}
-              style={[styles.forgotLink, { minHeight: theme.geometry.minTarget }]}
-              testID="auth-forgot-link"
-            >
-              <AppText variant="label" color={theme.colors.ink} style={styles.termsLink}>
-                {t('auth.forgot.link')}
-              </AppText>
-            </Pressable>
-          </>
-        ) : null}
-
-        {/* Adresse inconnue : inscription — mot de passe, prénom, nom (référence Zalando). */}
-        {mode === 'register' ? (
-          <>
-            {boxedEmailField({ editable: false, onEdit: backToAddress })}
+      {/* Adresse inconnue : inscription — mot de passe, prénom, nom (référence Zalando). */}
+      {mode === 'register' ? (
+        <>
+          {emailField({ editable: false, onEdit: backToAddress })}
+          <View style={styles.fieldWithHint}>
             <AuthField
               label={t('auth.password.label')}
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!reveal}
               autoComplete="new-password"
+              textContentType="newPassword"
               editable={!busy}
               testID="auth-register-password"
               trailing={{
@@ -614,148 +614,131 @@ export default function SignInScreen() {
               }}
             />
             <AppText variant="caption" color={theme.colors.secondary}>{t('auth.password.hint')}</AppText>
-            <AuthField
-              label={t('auth.firstName.label')}
-              value={firstName}
-              onChangeText={setFirstName}
-              autoComplete="given-name"
-              editable={!busy}
-              testID="auth-register-first-name"
-            />
-            <AuthField
-              label={t('auth.lastName.label')}
-              value={lastName}
-              onChangeText={setLastName}
-              autoComplete="family-name"
-              editable={!busy}
-              testID="auth-register-last-name"
-            />
-            {termsParagraph}
-            <Button
-              label={t('auth.register.submit')}
-              tone="solid"
-              onPress={register}
-              busy={busy && waiting === null}
-              disabled={busy || password.length < 8 || !firstName.trim() || !lastName.trim()}
-              testID="auth-register-submit"
-            />
-          </>
-        ) : null}
+          </View>
+          <AuthField
+            label={t('auth.firstName.label')}
+            value={firstName}
+            onChangeText={setFirstName}
+            autoComplete="given-name"
+            textContentType="givenName"
+            editable={!busy}
+            testID="auth-register-first-name"
+          />
+          <AuthField
+            label={t('auth.lastName.label')}
+            value={lastName}
+            onChangeText={setLastName}
+            autoComplete="family-name"
+            textContentType="familyName"
+            editable={!busy}
+            testID="auth-register-last-name"
+          />
+          {termsParagraph}
+          {failureBlock}
+          <Button
+            label={t('auth.register.submit')}
+            tone="solid"
+            size="lg"
+            onPress={register}
+            busy={busy && waiting === null}
+            disabled={busy || password.length < 8 || !firstName.trim() || !lastName.trim()}
+            testID="auth-register-submit"
+          />
+        </>
+      ) : null}
 
-        {/* Étape « code » : six boîtes, renvoi compte à rebours, autre compte.
-            Elle prend le dessus sur tout mode — le code est LA preuve. */}
-        {emailChallenge ? (
-          <>
-            {emailChallenge.developmentCode ? (
-              <AppText variant="caption" color={theme.colors.ink}>
-                {t('auth.emailCode.dev', { code: emailChallenge.developmentCode })}
-              </AppText>
-            ) : null}
-            {codeBoxes}
-            <Button
-              label={t('auth.continue')}
-              tone="solid"
-              onPress={confirmEmailCode}
-              busy={busy && waiting === null}
-              disabled={busy || emailCode.length !== 6}
-              testID="auth-email-code-verify"
-            />
-            <AppText variant="caption" color={theme.colors.secondary}>
-              {t('auth.emailCode.noCode')} {t('auth.emailCode.spam')}
+      {/* Étape « code » : six boîtes, renvoi compte à rebours, autre compte.
+          Elle prend le dessus sur tout mode — le code est LA preuve. */}
+      {emailChallenge ? (
+        <>
+          {emailChallenge.developmentCode ? (
+            <AppText variant="caption" color={theme.colors.ink}>
+              {t('auth.emailCode.dev', { code: emailChallenge.developmentCode })}
             </AppText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ disabled: busy || resendIn > 0 }}
-              onPress={sendEmailCode}
-              disabled={busy || resendIn > 0}
-              style={[styles.forgotLink, { minHeight: theme.geometry.minTarget }]}
-              testID="auth-email-code-resend"
+          ) : null}
+          {codeBoxes}
+          {failureBlock}
+          <Button
+            label={t('auth.continue')}
+            tone="solid"
+            size="lg"
+            onPress={confirmEmailCode}
+            busy={busy && waiting === null}
+            disabled={busy || emailCode.length !== 6}
+            testID="auth-email-code-verify"
+          />
+          <AppText variant="caption" color={theme.colors.secondary}>
+            {t('auth.emailCode.noCode')} {t('auth.emailCode.spam')}
+          </AppText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: busy || resendIn > 0 }}
+            onPress={sendEmailCode}
+            disabled={busy || resendIn > 0}
+            style={[styles.forgotLink, { minHeight: theme.geometry.minTarget }]}
+            testID="auth-email-code-resend"
+          >
+            <AppText
+              variant="label"
+              color={busy || resendIn > 0 ? theme.colors.muted : theme.colors.ink}
+              style={styles.termsLink}
             >
-              <AppText
-                variant="label"
-                color={busy || resendIn > 0 ? theme.colors.muted : theme.colors.ink}
-                style={styles.termsLink}
-              >
-                {resendIn > 0
-                  ? `${t('auth.emailCode.resend')} (${resendIn})`
-                  : t('auth.emailCode.resend')}
-              </AppText>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => { session.cancelEmailCode(); backToAddress(); }}
-              style={[styles.forgotLink, { minHeight: theme.geometry.minTarget }]}
-              testID="auth-email-another"
-            >
-              <AppText variant="label" color={theme.colors.ink} style={styles.termsLink}>
-                {t('auth.emailCode.another')}
-              </AppText>
-            </Pressable>
-          </>
-        ) : null}
+              {resendIn > 0
+                ? `${t('auth.emailCode.resend')} (${resendIn})`
+                : t('auth.emailCode.resend')}
+            </AppText>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => { session.cancelEmailCode(); backToAddress(); }}
+            style={[styles.forgotLink, { minHeight: theme.geometry.minTarget }]}
+            testID="auth-email-another"
+          >
+            <AppText variant="label" color={theme.colors.ink} style={styles.termsLink}>
+              {t('auth.emailCode.another')}
+            </AppText>
+          </Pressable>
+        </>
+      ) : null}
 
-        {/* Conditions et confidentialité : toujours visibles en bas, ouvertes dans l'application. */}
-        <View style={[styles.legal, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={t('auth.legal.terms')}
-            onPress={() => { router.push('/legal/terms'); }}
-            style={[styles.legalLink, { minHeight: theme.geometry.minTarget }]}
-            testID="auth-legal-terms"
-          >
-            <AppText variant="caption" color={theme.colors.ink} style={styles.legalText}>{t('auth.legal.terms')}</AppText>
-          </Pressable>
-          <AppText variant="caption" color={theme.colors.muted}>·</AppText>
-          <Pressable
-            accessibilityRole="link"
-            accessibilityLabel={t('auth.legal.privacy')}
-            onPress={() => { router.push('/legal/privacy'); }}
-            style={[styles.legalLink, { minHeight: theme.geometry.minTarget }]}
-            testID="auth-legal-privacy"
-          >
-            <AppText variant="caption" color={theme.colors.ink} style={styles.legalText}>{t('auth.legal.privacy')}</AppText>
-          </Pressable>
-        </View>
-      </ScrollView>
-    </KeyboardAvoider>
+      {/* Conditions et confidentialité : toujours visibles en bas, ouvertes dans l'application. */}
+      <View style={[styles.legal, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={t('auth.legal.terms')}
+          onPress={() => { router.push('/legal/terms'); }}
+          style={[styles.legalLink, { minHeight: theme.geometry.minTarget }]}
+          testID="auth-legal-terms"
+        >
+          <AppText variant="caption" color={theme.colors.ink} style={styles.legalText}>{t('auth.legal.terms')}</AppText>
+        </Pressable>
+        <AppText variant="caption" color={theme.colors.muted}>·</AppText>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={t('auth.legal.privacy')}
+          onPress={() => { router.push('/legal/privacy'); }}
+          style={[styles.legalLink, { minHeight: theme.geometry.minTarget }]}
+          testID="auth-legal-privacy"
+        >
+          <AppText variant="caption" color={theme.colors.ink} style={styles.legalText}>{t('auth.legal.privacy')}</AppText>
+        </Pressable>
+      </View>
+    </AuthLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { gap: 12 },
-  // La marque tête de page s'aligne sur le titre (pas de centrage flottant).
-  brandMark: { alignItems: 'flex-start' },
   // Paragraphe légal : liens encre soulignés.
   terms: { marginTop: 4 },
   termsLink: { textDecorationLine: 'underline' },
-  // Champ « encoché » : l'étiquette coupe la bordure haute, sans superposition.
-  boxTopRow: { alignItems: 'flex-end' },
-  boxLabel: {
-    borderWidth: 1.5,
-    borderBottomWidth: 0,
-    borderTopLeftRadius: RADIUS.sm,
-    borderTopRightRadius: RADIUS.sm,
-    paddingHorizontal: 8,
-    paddingBottom: 2,
-  },
-  boxTopLine: { flex: 1, borderTopWidth: 1.5 },
-  boxBody: {
-    borderWidth: 1.5,
-    borderTopWidth: 0,
-    borderBottomLeftRadius: RADIUS.sm,
-    borderBottomRightRadius: RADIUS.sm,
-    paddingLeft: 16,
-    paddingRight: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  boxInput: { padding: 0, backgroundColor: 'transparent', borderWidth: 0 },
-  boxAction: { minHeight: 44, paddingHorizontal: 8, justifyContent: 'center' },
+  // Pastilles sociales : même écart que la référence (16 entre deux).
+  socialStack: { gap: 16 },
+  // Mot de passe + sa consigne : la consigne colle au champ (4), pas à 16.
+  fieldWithHint: { gap: 4 },
   // Lien « Mot de passe oublié ? » aligné sur le texte, zone 44.
   forgotLink: { alignItems: 'flex-start', justifyContent: 'center' },
   alert: { borderWidth: StyleSheet.hairlineWidth, padding: 12 },
   close: { alignItems: 'flex-start', justifyContent: 'center' },
-  intro: { marginBottom: 4 },
   legal: { alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 4, paddingVertical: 8 },
   legalLink: { justifyContent: 'center', paddingHorizontal: 6 },
   legalText: { textDecorationLine: 'underline' },
