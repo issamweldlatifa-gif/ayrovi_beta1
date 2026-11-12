@@ -1,11 +1,13 @@
-import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { FlatList, Pressable, StyleSheet, View, useWindowDimensions, type LayoutChangeEvent } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import type { LensCandidate } from '@/api/lens';
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
+import { ProductDensityToggle, useProductDensity } from '@/design/ProductGridBar';
+import { PRODUCT_TILE, productTileInitialRows, productTileMetrics } from '@/design/productTile';
 import { LensResultCard } from './LensResultCard';
 import { ProductSkeleton } from './LensSearchSkeleton';
 import { LensTitleFilter } from './LensTitleFilter';
@@ -49,6 +51,22 @@ export function LensResultsGrid({
    */
   const [query, setQuery] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
+  /**
+   * Cotes de la grille (13/11/2026, `@/design/productTile.ts`) : calculées UNE
+   * fois pour toutes les cartes — même hauteur, lignes alignées — à la largeur
+   * réelle de la feuille, en petites (2 col.) ou grandes photos (1 col.).
+   */
+  const window = useWindowDimensions();
+  const { density, toggle } = useProductDensity();
+  const [gridWidth, setGridWidth] = useState(window.width);
+  const onGridLayout = useCallback((event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    if (width > 0) setGridWidth((current) => (Math.abs(current - width) > 0.5 ? width : current));
+  }, []);
+  const metrics = useMemo(
+    () => productTileMetrics({ width: gridWidth, density, fontScale: window.fontScale }),
+    [gridWidth, density, window.fontScale],
+  );
 
   /* Seules les cartes portant un vrai lien marchand ouvrable dans AYWEBs sont affichées. */
   const openable = useMemo(
@@ -73,10 +91,13 @@ export function LensResultsGrid({
 
   return (
     <FlatList
+      // numColumns ne change pas sur une liste montée : nouvelle clé par nombre de colonnes.
+      key={`lens-grid-${metrics.columns}`}
       testID="lens-results-grid"
       data={shown}
       style={styles.list}
-      numColumns={2}
+      onLayout={onGridLayout}
+      numColumns={metrics.columns}
       stickyHeaderIndices={[0]}
       keyExtractor={(candidate) => candidate.sourceUrl || candidate.id}
       showsVerticalScrollIndicator={false}
@@ -84,8 +105,8 @@ export function LensResultsGrid({
       onScroll={onSheetScroll}
       scrollEventThrottle={16}
       contentContainerStyle={styles.content}
-      columnWrapperStyle={[styles.row, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
-      initialNumToRender={6}
+      columnWrapperStyle={metrics.columns > 1 ? [styles.row, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }] : undefined}
+      initialNumToRender={productTileInitialRows(metrics.columns)}
       maxToRenderPerBatch={6}
       windowSize={7}
       removeClippedSubviews
@@ -98,6 +119,7 @@ export function LensResultsGrid({
                 {t(candidates.length === 1 ? 'lens.resultsCountOne' : 'lens.resultsCountMany', { count: openable.length })}
               </AppText>
             </View>
+            <ProductDensityToggle density={density} onToggle={toggle} color={LENS_COLORS.black} testID="lens-density-toggle" />
             <Pressable accessibilityRole="button" accessibilityLabel={t('lens.filters.title')} accessibilityState={{ expanded: filterOpen }} testID="lens-toggle-filter" onPress={() => setFilterOpen(value => !value)} style={styles.newSearch}><Ionicons name="options-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden /></Pressable>
             <Pressable
               onPress={onNewSearch}
@@ -122,16 +144,15 @@ export function LensResultsGrid({
         </View>
       )}
       renderItem={({ item }) => (
-        <View style={styles.cell}>
-          <LensResultCard
-            candidate={item}
-            favorite={favorited[item.sourceUrl] === true}
-            onOpen={onOpen}
-            onFavorite={onFavorite}
-          />
-        </View>
+        <LensResultCard
+          candidate={item}
+          favorite={favorited[item.sourceUrl] === true}
+          onOpen={onOpen}
+          onFavorite={onFavorite}
+          metrics={metrics}
+        />
       )}
-      ListFooterComponent={loading ? <View style={styles.pending} testID="lens-stream-pending"><ProductSkeleton index={4} /><ProductSkeleton index={5} /></View> : filteredOut && shown.length > 0 ? (
+      ListFooterComponent={loading ? <View style={styles.pending} testID="lens-stream-pending"><ProductSkeleton index={4} metrics={metrics} /><ProductSkeleton index={5} metrics={metrics} /></View> : filteredOut && shown.length > 0 ? (
         <AppText variant="caption" color={theme.colors.muted} align="center" style={styles.footer} testID="lens-filters-active">
           {t('lens.resultsCountMany', { count: shown.length })} / {openable.length}
         </AppText>
@@ -141,11 +162,11 @@ export function LensResultsGrid({
 }
 
 const styles = StyleSheet.create({
-  pending: { flexDirection: 'row', gap: 4 },
+  pending: { flexDirection: 'row', flexWrap: 'wrap', gap: PRODUCT_TILE.columnGap },
   list: { flex: 1 },
-  content: { paddingHorizontal: 0, paddingTop: 0, paddingBottom: 32, gap: 4 },
-  row: { gap: 2, alignItems: 'stretch', backgroundColor: LENS_COLORS.white },
-  cell: { flex: 0.5, minWidth: 0, marginBottom: 4 },
+  // Bord à bord, filet de 4 entre colonnes, aucun écart entre rangées (vidéo de référence, 13/11).
+  content: { paddingHorizontal: PRODUCT_TILE.gridPadding, paddingTop: 0, paddingBottom: 32, gap: PRODUCT_TILE.rowGap },
+  row: { gap: PRODUCT_TILE.columnGap, backgroundColor: LENS_COLORS.white },
   header: { backgroundColor: LENS_COLORS.white, gap: 8, paddingHorizontal: 8, paddingTop: 2, paddingBottom: 12 },
   headerRow: { alignItems: 'center', gap: 12 },
   headerCopy: { flex: 1, gap: 2 },

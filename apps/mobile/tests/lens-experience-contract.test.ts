@@ -8,7 +8,9 @@ const lens = read('../app/lens.tsx');
 const skeleton = read('../src/features/lens/LensSearchSkeleton.tsx');
 const grid = read('../src/features/lens/LensResultsGrid.tsx');
 const card = read('../src/features/lens/LensResultCard.tsx');
-const cardGeometry = read('../src/features/lens/lensCard.ts');
+// Carte partagée de grille (13/11/2026) : cotes mesurées sur la vidéo de référence.
+const tile = read('../src/design/ProductTile.tsx');
+const tileGeometry = read('../src/design/productTile.ts');
 const product = read('../src/features/lens/LensProductView.tsx');
 const help = read('../src/features/lens/LensHelpView.tsx');
 const palette = read('../src/features/lens/lensPalette.ts');
@@ -68,8 +70,12 @@ describe('chargement et résultats Lens', () => {
     expect(skeleton).toContain('[0, 1, 2, 3]');
     expect(skeleton).toContain('lens-skeleton-card-');
     expect(skeleton).toContain('flexWrap: \'wrap\'');
-    expect(skeleton).toContain('const GRID_GAP = 2');
-    expect(skeleton).toContain("width: '49.3%'");
+    // 13/11/2026 : la carte d'attente a EXACTEMENT la boîte de la carte réelle
+    // (largeur, photo 2/3, lignes) et la même grille bord à bord (filet de 4).
+    expect(skeleton).toContain('productTileMetrics(');
+    expect(skeleton).toContain('columnGap: PRODUCT_TILE.columnGap');
+    expect(skeleton).toContain('width: tile.cardWidth, height: tile.height');
+    expect(skeleton).not.toContain("width: '49.3%'");
     expect(skeleton).toContain('minOpacity={0.48}');
     expect(skeleton).toContain("t('common.cancel')");
     expect(skeleton).not.toContain('ActivityIndicator');
@@ -77,17 +83,21 @@ describe('chargement et résultats Lens', () => {
 
   it('virtualise une grille commerciale compacte à deux colonnes avec favoris', () => {
     expect(grid).toContain('<FlatList');
-    expect(grid).toContain('numColumns={2}');
+    // Petites photos = 2 colonnes sur téléphone, grandes photos = 1 (bascule enregistrée).
+    expect(grid).toContain('numColumns={metrics.columns}');
+    expect(grid).toContain('<ProductDensityToggle');
     expect(grid).toContain('removeClippedSubviews');
-    expect(card).toContain('numberOfLines={2}');
+    // Lignes FIXES (13/11/2026) : chaque ligne de la carte tient sur une ligne,
+    // toutes les cartes ont la même hauteur (plus de titre sur 2 lignes qui décale les prix).
+    expect(card).toContain('<ProductTile');
+    expect(tile).not.toContain('numberOfLines={2}');
+    expect(tile).toContain('height: metrics.height');
     expect(card).toContain('lens-favorite-');
-    expect(card).toContain('event.stopPropagation()');
-    // Vignette allongée au 2/3 mesuré sur le modèle commerce (17/10/2026) :
-    // un seul rapport, partagé avec le squelette — plus de littéral local.
-    expect(card).toContain('aspectRatio: LENS_CARD_MEDIA_RATIO');
-    expect(card).toContain("from './lensCard'");
-    expect(cardGeometry).toContain('LENS_CARD_MEDIA_RATIO = 2 / 3');
-    expect(skeleton).toContain('lensCardMediaHeight(width)');
+    expect(tile).toContain('event.stopPropagation?.()');
+    // Vignette au 2/3 mesuré (17/10/2026, confirmé par la vidéo du 12/11 : 285 × 431 px),
+    // une seule source partagée par la carte et le squelette.
+    expect(tileGeometry).toContain('mediaRatio: 2 / 3');
+    expect(tile).toContain('height: metrics.mediaHeight');
     expect(card).not.toContain('aspectRatio: 4 / 5');
     expect(card).toContain('candidate.brand?.trim() || candidate.source.trim()');
     expect(card).not.toContain('cardOptions');
@@ -107,8 +117,12 @@ describe('chargement et résultats Lens', () => {
     expect(nativeTokens).not.toContain('ACTION_GRADIENT');
     expect(nativeTokens).not.toContain('WAITING_GRADIENTS');
     expect(card).toContain('color={LENS_COLORS.star}');
-    expect(card).toContain('backgroundColor: LENS_COLORS.sale');
-    expect(card).toContain('favorite ? LENS_COLORS.active : LENS_COLORS.black');
+    // Carte partagée sur fond blanc fixe : rouge de baisse pour la pastille promo,
+    // violet pour le cœur coché, noir sinon.
+    expect(card).toContain('onWhite');
+    expect(tile).toContain('sale: LENS_COLORS.sale');
+    expect(tile).toContain('ink: LENS_COLORS.black');
+    expect(tile).toContain('favorite.active ? LENS_COLORS.active : palette.ink');
     // Fiche produit : le cœur est posé À MÊME LA PHOTO (17/10/2026, plus de
     // pastille blanche) — il est donc blanc sur le média, violet une fois coché.
     expect(product).toContain('favorite ? LENS_COLORS.active : LENS_COLORS.white');

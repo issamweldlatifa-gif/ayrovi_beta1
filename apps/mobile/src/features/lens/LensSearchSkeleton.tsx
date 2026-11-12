@@ -5,27 +5,41 @@ import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import type { LensStreamProgress } from '@/api/lensStream';
-import { lensCardMediaHeight } from './lensCard';
+import { useProductDensity } from '@/design/ProductGridBar';
+import { PRODUCT_TILE, productTileMetrics, type ProductTileMetrics } from '@/design/productTile';
 import { LENS_COLORS } from './lensPalette';
 import { LensProgressLine } from './LensProgressLine';
 import { useLensSheetScroll } from './lensSheetScroll';
 
 
-const GRID_GAP = 2;
+/** Cotes du squelette : celles de la vraie carte, à la largeur de l'écran et à l'affichage choisi. */
+function useSkeletonMetrics(): ProductTileMetrics {
+  const window = useWindowDimensions();
+  const { density } = useProductDensity();
+  return productTileMetrics({ width: window.width, density, fontScale: window.fontScale });
+}
 
-export function ProductSkeleton({ index }: { index: number }) {
-  const { width } = useWindowDimensions();
-  // Même vignette que la carte réelle (2/3) : le squelette ne rétrécit pas.
-  const mediaHeight = lensCardMediaHeight(width);
+/**
+ * Carte d'attente : EXACTEMENT la boîte de la carte réelle (`ProductTile`,
+ * 13/11/2026) — même largeur, même photo 2/3, mêmes lignes à la même hauteur —
+ * pour que rien ne saute à l'arrivée des résultats. Une barre par ligne.
+ */
+export function ProductSkeleton({ index, metrics }: { index: number; metrics?: ProductTileMetrics }) {
+  const fallback = useSkeletonMetrics();
+  const tile = metrics ?? fallback;
+  const bar = (key: string, line: number, height: number, width: `${number}%`) => (
+    <View key={key} style={[styles.line, { height: line }]}>
+      <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={height} width={width} />
+    </View>
+  );
   return (
-    <View testID={`lens-skeleton-card-${index}`} style={styles.card}>
-      <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={mediaHeight} radius={0} />
-      <View style={styles.copy}>
-        <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={13} width="45%" />
-        <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={18} width="88%" />
-        <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={12} width="70%" />
-        <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={12} width="58%" />
-        <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={14} width="48%" />
+    <View testID={`lens-skeleton-card-${index}`} style={[styles.card, { width: tile.cardWidth, height: tile.height }]}>
+      <Skeleton color={LENS_COLORS.skeleton} minOpacity={0.48} height={tile.mediaHeight} radius={0} />
+      <View style={[styles.copy, { height: tile.textHeight, paddingHorizontal: tile.inset }]}>
+        {bar('brand', tile.lines.brand, 12, '45%')}
+        {bar('name', tile.lines.name, 10, '88%')}
+        {bar('meta', tile.lines.meta, 10, '58%')}
+        {bar('price', tile.lines.price, 14, '40%')}
       </View>
     </View>
   );
@@ -45,6 +59,7 @@ export function LensSearchSkeleton({
   const theme = useTheme();
   const t = useT();
   const onSheetScroll = useLensSheetScroll();
+  const metrics = useSkeletonMetrics();
   return (
     <View style={styles.wrap} testID="lens-search-skeleton">
       <View style={[styles.header, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
@@ -76,7 +91,7 @@ export function LensSearchSkeleton({
         contentContainerStyle={styles.scrollContent}
       >
         <View style={[styles.grid, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-          {[0, 1, 2, 3].map((index) => <ProductSkeleton key={index} index={index} />)}
+          {[0, 1, 2, 3].map((index) => <ProductSkeleton key={index} index={index} metrics={metrics} />)}
         </View>
       </ScrollView>
     </View>
@@ -89,9 +104,12 @@ const styles = StyleSheet.create({
   title: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 16 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP, paddingTop: 8, backgroundColor: LENS_COLORS.white },
-  card: { width: '49.3%', overflow: 'hidden', backgroundColor: LENS_COLORS.white },
-  copy: { gap: 8, paddingHorizontal: 8, paddingTop: 8, paddingBottom: 12 },
+  // Même grille que les résultats : bord à bord, filet de 4 entre colonnes, rangées jointives.
+  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: PRODUCT_TILE.columnGap, rowGap: PRODUCT_TILE.rowGap, paddingTop: 8, backgroundColor: LENS_COLORS.white },
+  card: { overflow: 'hidden', backgroundColor: LENS_COLORS.white },
+  // La rangée des points reste vide (rien à compter avant les photos) mais garde sa place.
+  copy: { paddingTop: PRODUCT_TILE.dotsTop + PRODUCT_TILE.dot + PRODUCT_TILE.dotsBottom, paddingBottom: PRODUCT_TILE.bottom },
+  line: { justifyContent: 'center' },
   cancel: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 8 },
   cancelText: { textDecorationLine: 'underline' },
   progress: { paddingHorizontal: 4, paddingBottom: 4 },
