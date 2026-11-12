@@ -21,6 +21,7 @@ import { fetchSafeRemote, parsePublicHttpUrl, readLimitedBuffer } from './safeUr
 import { pruneDiskCache } from './diskCache';
 import { segmentBuffer } from './segmentation';
 import { isolationCacheInput, isolationProvider, removeBackgroundWithPhotoRoom, shouldPersistNegative } from './photoroomIsolation';
+import { regenerableCacheDir } from './cacheRoot';
 
 const MAX_DIMENSION = 900;
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -378,7 +379,7 @@ async function loadRemoteImage(rawUrl: string): Promise<Buffer> {
 
 /* ── 5. Cache disque — un URL, un travail ───────────────────────── */
 function cacheDir(): string {
-  return process.env.AYROVI_ISOLATED_CACHE_DIR || path.resolve(process.cwd(), 'data', 'media-isolated');
+  return process.env.AYROVI_ISOLATED_CACHE_DIR || regenerableCacheDir('media-isolated');
 }
 
 export interface CachedIsolation {

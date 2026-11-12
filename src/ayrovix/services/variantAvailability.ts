@@ -23,6 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pruneDiskCache } from '../../services/diskCache';
 import { buildProductCard, type Availability, type ProductCard } from './productVariants';
+import { regenerableCacheDir } from '../../services/cacheRoot';
 
 export interface ResolvableVariant {
   value: string;
@@ -48,7 +49,7 @@ const DEFAULT_CONCURRENCY = 3;
 const LOOKUP_TIMEOUT_MS = 6000;
 
 function cacheDir(): string {
-  return process.env.AYROVI_VARIANT_CACHE_DIR || path.resolve(process.cwd(), 'data', 'variant-availability');
+  return process.env.AYROVI_VARIANT_CACHE_DIR || regenerableCacheDir('variant-availability');
 }
 
 function ttlMs(): number {

@@ -41,6 +41,7 @@ import { listVariants } from '../catalogue/variants';
 import { listMedia } from '../catalogue/media';
 import { getCategory } from '../catalogue/categories';
 import { socialTotalSql } from '../db/socialTotals';
+import { regenerableCacheDir } from '../services/cacheRoot';
 
 function parseJson(value: string, fallback: any = []) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -362,7 +363,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     if (!PROXY_WIDTHS.has(width)) { res.status(400).json({ success: false, error: 'INVALID_WIDTH' }); return; }
     try {
       const crypto = await import('node:crypto');
-      const dir = process.env.AYROVI_PROXY_CACHE_DIR || path.resolve(process.cwd(), 'data', 'media-proxy');
+      const dir = process.env.AYROVI_PROXY_CACHE_DIR || regenerableCacheDir('media-proxy');
       const key = crypto.createHash('sha256').update(`${width}|${url}`).digest('hex').slice(0, 32);
       const file = path.join(dir, `${key}.webp`);
       await imageWork.share(`proxy|${file}`, async () => {

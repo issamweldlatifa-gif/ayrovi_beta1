@@ -39,6 +39,8 @@ import { normalizeTitle, titleOverlap } from './titleMatch';
 import { buildProductCard, parseSerpApi } from './productVariants';
 import { resolveVariants, type Fetcher as VariantAvailabilityFetcher } from './variantAvailability';
 import type { AyrovixProductFact, AyrovixProductFactSection } from '../types';
+import { regenerableCacheDir } from '../../services/cacheRoot';
+import { pruneDiskCache } from '../../services/diskCache';
 
 export interface EnrichedVariant {
   /** Literal value published by the merchant: clothing size, volume, storage, etc. */
@@ -109,7 +111,7 @@ function sameMerchantPage(left: string, right: string): boolean {
 
 function cacheFile(title: string, scope = ''): string {
   const dir = process.env.AYROVI_PRODUCT_ENRICH_CACHE_DIR
-    || path.resolve(process.cwd(), 'data', 'product-enrichment');
+    || regenerableCacheDir('product-enrichment');
   // Item titles are not unique; isolate merchant page data in cache identity.
   const key = crypto.createHash('sha256').update(`${normalizeTitle(title)}|${scope}`).digest('hex').slice(0, 32);
   return path.join(dir, `${key}.json`);
@@ -131,6 +133,9 @@ function writeCache(title: string, value: ProductEnrichment, now: number, scope 
     const file = cacheFile(title, scope);
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify({ at: now, value }), 'utf8');
+    // Plafond (audit 12/11) : les entrées expirent après 6 h mais leurs fichiers
+    // n'étaient jamais supprimés — croissance sans limite sur le disque.
+    pruneDiskCache(path.dirname(file), { maxBytes: 64 * 1024 * 1024, maxFiles: 10_000 });
   } catch {
     /* un cache muet reste un cache */
   }

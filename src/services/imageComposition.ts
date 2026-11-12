@@ -32,6 +32,7 @@ import { UnsafeUrlError } from './safeUrl';
 import { segmentBuffer } from './segmentation';
 import { isolationCacheInput, isolationProvider, shouldPersistNegative } from './photoroomIsolation';
 import { pruneDiskCache } from './diskCache';
+import { regenerableCacheDir } from './cacheRoot';
 
 /* ── Contrat visuel ZAYROVI — miroir de client/src/ayrovix/components/lens-product-card.css ──
  * .lens-card-media { aspect-ratio: 9/13; border-radius: 16..18px; background: #F0F2F2 }
@@ -469,7 +470,7 @@ async function loadComposedCard(rawUrl: string, idealWidth = IDEAL_FRAME_WIDTH):
 }
 
 export function composedCacheDir(): string {
-  return process.env.AYROVI_COMPOSED_CACHE_DIR || path.resolve(process.cwd(), 'data', 'media-composed');
+  return process.env.AYROVI_COMPOSED_CACHE_DIR || regenerableCacheDir('media-composed');
 }
 
 export function readComposedPng(file: string): Buffer {

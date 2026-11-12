@@ -30,6 +30,7 @@ import {
   frameSizeFor, MAX_UPSCALE, OPTICAL_CENTER_Y, SAFE_BOTTOM, SAFE_INLINE, SAFE_TOP, type Size,
 } from './imageComposition';
 import { UnsafeUrlError } from './safeUrl';
+import { regenerableCacheDir } from './cacheRoot';
 
 /** Version du rendu : changer cette valeur invalide le cache disque. */
 export const NATIVE_CARD_VERSION = 1;
@@ -218,7 +219,7 @@ export async function renderNativeCard(
 /* ── Cache disque + point d'entrée ─────────────────────────────────────────── */
 
 export function nativeCacheDir(): string {
-  return process.env.AYROVI_NATIVE_CARD_CACHE_DIR || path.resolve(process.cwd(), 'data', 'media-native');
+  return process.env.AYROVI_NATIVE_CARD_CACHE_DIR || regenerableCacheDir('media-native');
 }
 
 export function readNativeCard(file: string): Buffer {

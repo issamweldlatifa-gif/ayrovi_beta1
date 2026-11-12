@@ -18,6 +18,17 @@ services:
         value: 22.23.4
       - key: DATABASE_PATH
         value: /opt/render/project/src/data/qatafo.sqlite
+      # Audit d'architecture 12/11 : les caches qui se RECALCULENT (vignettes, images
+      # redimensionnées/détourées, variantes, enrichissement) quittent le disque
+      # persistant de 1 Go — leurs plafonds additionnés dépassaient sa taille, et un
+      # disque plein empêche SQLite d'écrire. Hors du point de montage `data/` :
+      # système de fichiers du conteneur, vidé à chaque déploiement (voulu).
+      - key: AYROVI_CACHE_ROOT
+        value: /opt/render/project/src/.runtime-cache
+      # Supervision externe (Prometheus) : /api/ops/metrics reste en 404 tant que ce
+      # jeton (24 caractères minimum) n'est pas défini.
+      - key: OPS_METRICS_TOKEN
+        sync: false
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD
