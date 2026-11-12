@@ -20,6 +20,14 @@ fi
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
+# Les tests tournent sur l'arbre de travail : il doit être IDENTIQUE au commit
+# poussé, sinon un vert local ne prouverait rien sur ce que la CI recevra.
+if [[ -n "$(git status --porcelain --untracked-files=no)" ]]; then
+  echo "[porte] refus : modifications non commitées — commitez ou remisez-les (git stash) avant de pousser."
+  git status --short --untracked-files=no | head -20
+  exit 1
+fi
+
 # Base de comparaison : la branche distante si elle existe, sinon main.
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 if git rev-parse --verify -q "origin/$BRANCH" >/dev/null; then BASE="origin/$BRANCH";

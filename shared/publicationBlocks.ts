@@ -58,6 +58,13 @@ export const PUBLICATION_BLOCK_KIND_LABELS: Record<PublicationBlockKind, string>
   sponsored_pair: 'Duo sponsorisé (image + carte produit)',
 };
 
+/**
+ * Encres de l'écran public (texte foncé / papier des cartes). L'application les
+ * lit dans ses jetons ; l'aperçu du CRM, qui simule ce même écran, les lit ici.
+ */
+export const PUBLICATION_PREVIEW_INK = '#111111';
+export const PUBLICATION_PREVIEW_PAPER = '#FFFFFF';
+
 /** Couleur de fond proposée par défaut quand le CRM n'en donne pas. */
 export const PUBLICATION_BLOCK_DEFAULT_COLOR: Record<PublicationBlockKind, string> = {
   container: '#F2AD11',

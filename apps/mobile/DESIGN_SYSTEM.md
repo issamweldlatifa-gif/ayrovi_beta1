@@ -1328,6 +1328,7 @@ SectionHeader({ title, hint?, action?, style? })
 | شريط التبويبات | `app/(tabs)/_layout.tsx` | ◐ مبني على `expo-router`; ليس بدائية منفصلة |
 | `ProductImage`, `Price`, `SearchInput`, `IconButton` | — | 🔶 لا يوجد عقد عام موحّد بعد |
 | `Chip` / `Badge` | حسب المجال | ◐ أنماط محلية؛ لا يوجد مكوّن عام |
+| قوالب صفحة Publication (13/11/2026) | `src/features/publications/templates/` | ✅ ثلاثة قوالب يتحكم فيها الـCRM: `ContainerTemplate` (حاوية ملوّنة + صفّ منتجات)، `MediaTemplate` (صورة أو فيديو + صفّ منتجات)، `SponsoredPairTemplate` (بطاقتان بنفس المقاس). القياسات في `templateMetrics.ts`، والألوان المشتقة (حبر مقروء، لوحة الحاوية) في `blockColors.ts` ومصدرها `shared/publicationBlocks.ts`. بلا أزرار تفاعل؛ الناشر «zayrovi team» |
 
 ## 24.2 الجيتونات والقرارات
 
@@ -1343,6 +1344,7 @@ SectionHeader({ title, hint?, action?, style? })
 | الحركة | `MOTION`, `duration`, `EASING`, `SPRING` | ◐ النظام موجود؛ ليس كل انتقال موحّداً |
 | chrome | `CHROME` و`Z_INDEX` | ✅ ارتفاعات وطبقات مسماة |
 | content max | `GEOMETRY.contentMax = 1280` | ◐ الجيتون موجود؛ لا يُفرض على كل حاوية |
+| ألوان خلفية القوالب | يختارها الـCRM (`bg_color` بصيغة #RRGGBB، لوحة كاملة + 16 لون سريع) | ✅ قيمة بيانات وليست جيتون؛ الحبر يُحسب بالتباين ≥ 4.5 |
 
 ---
 
