@@ -26,9 +26,9 @@
  */
 
 import { findAyWebsStore } from '../../shared/aywebsStores';
-import { AMAZON_MOBILE_CAPTURE_SCRIPT } from './storeScripts/amazon';
-import { ZALANDO_MOBILE_CAPTURE_SCRIPT } from './storeScripts/zalando';
-import { ayWebsCaptureReader } from './captureReaders/registry';
+import { AYWEBS_DEDICATED_CAPTURE_SCRIPTS } from './storeScripts';
+import { resolveAyWebsCaptureReader } from './captureReaders/registry';
+import { wrapAyWebsCaptureIntegration } from './captureEnvelope';
 
 /** Chemin de service du script (le client le récupère une fois puis le rejoue). */
 export const AYWEBS_CAPTURE_SCRIPT_PATH = '/api/v1/aywebs/capture/script.js';
@@ -6855,40 +6855,20 @@ export const AYWEBS_NETWORK_OBSERVER_SCRIPT = String.raw`(function () {
 })();`;
 
 /**
- * Build the independently versioned script served for a registered store.
- * Amazon and Zalando use standalone readers; remaining stores still use the legacy
- * shared core until their independent readers have been migrated and tested.
- * Calling without a store keeps the legacy bundle for old app builds.
+ * Script servi pour une boutique — UN SEUL chemin pour toutes les boutiques :
+ * lecteur effectif (`resolveAyWebsCaptureReader`) → intégration propre à la
+ * boutique (script dédié ou cœur partagé piloté par `priceMode`) → enveloppe
+ * commune (`wrapAyWebsCaptureIntegration`). Sans store_id (ou boutique
+ * inconnue) : le bundle historique, pour les anciennes versions de l'app.
  */
 export function buildAyWebsCaptureScript(storeId?: string | null): string {
-  const reader = ayWebsCaptureReader(storeId);
+  const reader = resolveAyWebsCaptureReader(storeId);
   if (!reader) return AYWEBS_CAPTURE_SCRIPT;
-  if (reader.storeId === 'amazon') return AMAZON_MOBILE_CAPTURE_SCRIPT;
-  if (reader.storeId === 'zalando') return ZALANDO_MOBILE_CAPTURE_SCRIPT;
   const store = findAyWebsStore(reader.storeId);
   if (!store) return AYWEBS_CAPTURE_SCRIPT;
-  const profile = JSON.stringify({
-    storeId: reader.storeId,
-    version: reader.version,
-    priceMode: reader.priceMode,
-    domains: store.domains,
-  });
-  const coreExpression = AYWEBS_CAPTURE_SCRIPT.trim().replace(/[\s;]+$/, '');
-  return [
-    '(function () {',
-    '  var w = window;',
-    '  var key = "__AYWEBS_CAPTURE_READER__";',
-    '  var previous = w[key];',
-    '  var requested = ' + profile + ';',
-    '  var host = String((w.location && w.location.hostname) || "").toLowerCase().replace(/^(?:www\\d*|m\\d*|mobile|wap|touch|smile)\\./, "");',
-    '  var matches = false;',
-    '  for (var i = 0; i < requested.domains.length; i++) {',
-    '    var domain = String(requested.domains[i] || "").toLowerCase();',
-    '    if (host === domain || host.slice(-(domain.length + 1)) === "." + domain) { matches = true; break; }',
-    '  }',
-    '  w[key] = matches ? requested : null;',
-    '  try { return (' + coreExpression + '); }',
-    '  finally { if (previous === undefined) { try { delete w[key]; } catch (e) { w[key] = null; } } else { w[key] = previous; } }',
-    '})()',
-  ].join('\n');
+  const integration = reader.integration === 'dedicated'
+    ? AYWEBS_DEDICATED_CAPTURE_SCRIPTS[reader.storeId]
+    : AYWEBS_CAPTURE_SCRIPT;
+  if (!integration) return AYWEBS_CAPTURE_SCRIPT;
+  return wrapAyWebsCaptureIntegration(reader, store.domains, integration);
 }

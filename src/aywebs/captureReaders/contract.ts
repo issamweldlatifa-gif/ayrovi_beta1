@@ -15,9 +15,27 @@ export type AyWebsCapturePriceMode =
   | 'named_containers'
   | 'structured_only';
 
+/**
+ * Version de l'ENVELOPPE commune (12/11/2026). Toute boutique — lecteur dédié ou
+ * cœur partagé — est servie dans la même enveloppe : profil, garde de domaine,
+ * restauration du global, tampon `contract` dans la sortie JSON. Incrémenter
+ * seulement si la forme de `contract` change (le serveur la lit en notes).
+ */
+export const AYWEBS_CAPTURE_CONTRACT_VERSION = 1;
+
+/**
+ * Intégration propre à chaque boutique :
+ *   • `dedicated`   — script autonome (`storeScripts/<id>.ts`), sa propre logique DOM ;
+ *   • `shared_core` — cœur partagé (`captureScript.ts`) piloté par `priceMode` ;
+ *   • `generic`     — boutique enregistrée sans lecteur mesuré : cœur partagé en
+ *                     mode `standard`, mais profil/version/garde de domaine à elle.
+ */
+export type AyWebsCaptureIntegration = 'dedicated' | 'shared_core' | 'generic';
+
 export interface AyWebsCaptureReaderDefinition {
   readonly storeId: string;
   readonly version: number;
   readonly priceMode: AyWebsCapturePriceMode;
+  readonly integration: AyWebsCaptureIntegration;
   readonly note: string;
 }

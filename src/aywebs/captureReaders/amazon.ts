@@ -5,5 +5,6 @@ export const amazonCaptureReader: AyWebsCaptureReaderDefinition = {
   storeId: 'amazon',
   version: 5,
   priceMode: 'amazon_buy_box',
+  integration: 'dedicated',
   note: 'Amazon buy-box only; sponsored and recommendation prices are excluded.',
 };

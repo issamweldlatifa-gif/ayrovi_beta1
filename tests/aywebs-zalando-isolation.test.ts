@@ -11,7 +11,9 @@ function run(url: string): unknown {
 
 describe('Zalando independent capture reader', () => {
   it('serves its own bundle rather than Amazon or the legacy core', () => {
-    expect(buildAyWebsCaptureScript('zalando')).toBe(ZALANDO_MOBILE_CAPTURE_SCRIPT);
+    /* Enveloppe unique (12/11/2026) : le script dédié est servi DANS l'enveloppe commune. */
+    expect(buildAyWebsCaptureScript('zalando')).toContain(ZALANDO_MOBILE_CAPTURE_SCRIPT.trim().replace(/[\s;]+$/, ''));
+    expect(buildAyWebsCaptureScript('zalando')).toContain('"integration":"dedicated"');
     expect(ZALANDO_MOBILE_CAPTURE_SCRIPT).not.toBe(AYWEBS_CAPTURE_SCRIPT);
     expect(ZALANDO_MOBILE_CAPTURE_SCRIPT).not.toBe(buildAyWebsCaptureScript('amazon'));
     expect(ZALANDO_MOBILE_CAPTURE_SCRIPT).not.toMatch(/IS_AMAZON|IS_SHEIN|IS_TEMU|IS_ALIEXPRESS/);

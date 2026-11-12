@@ -236,6 +236,17 @@ export interface AyWebsCapturedPage {
   /** Identité/version du lecteur livré par le serveur — diagnostic seulement, jamais une preuve métier. */
   reader?: { id: string | null; version: number } | null;
   /**
+   * Tampon de l'enveloppe commune (12/11/2026) : version d'enveloppe, boutique et
+   * intégration servies, domaine reconnu. Diagnostic seulement (notes serveur).
+   */
+  contract?: {
+    v: number;
+    store: string;
+    readerVersion: number;
+    integration: 'dedicated' | 'shared_core' | 'generic';
+    matched: boolean;
+  } | null;
+  /**
    * Amazon : variantes et option choisie (évidence structurée, sans texte libre).
    * Les index numériques ne deviennent jamais des noms d'option : le lecteur les résout
    * via variationValues, ou les écarte.

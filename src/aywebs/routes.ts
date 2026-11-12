@@ -8,7 +8,7 @@ import { ayWebsReadGateStats } from './readGate';
 import { readerFingerprintReport } from '../scraper/readerFingerprint';
 import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION, type AyWebsCapturedVariantGroup } from '../../shared/aywebsCapture';
 import { buildAyWebsCaptureScript } from './captureScript';
-import { ayWebsCaptureReader } from './captureReaders/registry';
+import { AYWEBS_CAPTURE_CONTRACT_VERSION, resolveAyWebsCaptureReader } from './captureReaders/registry';
 import { AYWEBS_CAPTURE_TRACKED_STORES, ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
 import { getAyroviAiCore } from '../ai-core/core';
 import { ayWebsResolveCacheStats, ayWebsResolveFailureCacheStats } from './resolveCache';
@@ -594,12 +594,14 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
   router.get('/capture/script.js', (req, res) => {
     const storeId = String(req.query.store_id || '').trim().toLowerCase();
     const script = buildAyWebsCaptureScript(storeId || null);
-    const reader = ayWebsCaptureReader(storeId);
+    const reader = resolveAyWebsCaptureReader(storeId);
     res.type('application/javascript');
     res.setHeader('Cache-Control', 'public, max-age=300');
     if (reader) {
       res.setHeader('X-AyWebs-Capture-Reader', reader.storeId);
       res.setHeader('X-AyWebs-Capture-Reader-Version', String(reader.version));
+      res.setHeader('X-AyWebs-Capture-Integration', reader.integration);
+      res.setHeader('X-AyWebs-Capture-Contract', String(AYWEBS_CAPTURE_CONTRACT_VERSION));
     } else {
       res.setHeader('X-AyWebs-Capture-Reader', 'legacy');
     }

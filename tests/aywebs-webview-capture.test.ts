@@ -746,5 +746,14 @@ describe('AYWEBs 2.1 — le script est servi par le serveur (pas de version d’
     expect(primark.headers['x-aywebs-capture-reader']).toBe('primark');
     expect(primark.text).toContain('"priceMode":"structured_only"');
     expect(primark.text).not.toBe(sephora.text);
+
+    /* Enveloppe unique (12/11/2026) : toute boutique capturable a son lecteur. */
+    const walmart = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=walmart');
+    expect(walmart.headers['x-aywebs-capture-reader']).toBe('walmart');
+    expect(walmart.headers['x-aywebs-capture-integration']).toBe('generic');
+    expect(walmart.headers['x-aywebs-capture-contract']).toBe('1');
+    expect(walmart.text).toBe(buildAyWebsCaptureScript('walmart'));
+    expect(amazon.headers['x-aywebs-capture-integration']).toBe('dedicated');
+    expect(sephora.headers['x-aywebs-capture-integration']).toBe('shared_core');
   });
 });

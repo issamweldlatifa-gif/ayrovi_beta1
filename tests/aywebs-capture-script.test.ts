@@ -16,7 +16,7 @@ import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 
-import { buildAyWebsCaptureScript } from '../src/aywebs/captureScript';
+import { buildAyWebsCaptureScript, AYWEBS_CAPTURE_SCRIPT as LEGACY_CAPTURE_SCRIPT } from '../src/aywebs/captureScript';
 const AYWEBS_CAPTURE_SCRIPT = buildAyWebsCaptureScript('amazon');
 
 const FIXTURE = readFileSync(join(__dirname, 'fixtures', 'amazon-product-page.html'), 'utf8');
@@ -219,7 +219,10 @@ describe('script AYWEBs — contrat d’injection dans le WebView', () => {
   });
 
   it('la forme injectée telle quelle serait refusée : c’est bien le piège corrigé côté client', () => {
-    expect(AYWEBS_CAPTURE_SCRIPT.trimEnd().endsWith(';')).toBe(true);
-    expect(() => new Function(`return (${AYWEBS_CAPTURE_SCRIPT});`)).toThrow(SyntaxError);
+    /* Le bundle historique (anciennes apps) garde son « ; » final : le client le retire. */
+    expect(LEGACY_CAPTURE_SCRIPT.trimEnd().endsWith(';')).toBe(true);
+    expect(() => new Function(`return (${LEGACY_CAPTURE_SCRIPT});`)).toThrow(SyntaxError);
+    /* L'enveloppe unique (12/11/2026) sert une expression directement injectable. */
+    expect(() => new Function(`return (${AYWEBS_CAPTURE_SCRIPT});`)).not.toThrow();
   });
 });

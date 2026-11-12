@@ -5,5 +5,6 @@ export const zalandoCaptureReader: AyWebsCaptureReaderDefinition = {
   storeId: 'zalando',
   version: 2,
   priceMode: 'structured_only',
+  integration: 'dedicated',
   note: 'ProductGroup variant offers only; generic page DOM prices are excluded.',
 };

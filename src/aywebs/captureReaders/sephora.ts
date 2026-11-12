@@ -8,5 +8,6 @@ export const sephoraCaptureReader: AyWebsCaptureReaderDefinition = {
   storeId: 'sephora',
   version: 1,
   priceMode: 'structured_only',
+  integration: 'shared_core',
   note: 'JSON-LD, meta and microdata only until Sephora DOM fixtures are measured.',
 };

@@ -696,6 +696,25 @@ export function classifyAyWebsCapturedPage(signals: AyWebsPageSignals): { kind: 
   return { kind: 'STOREFRONT', reason: 'aucun_repere_de_fiche' };
 }
 
+/**
+ * Notes `reader:` tirées du tampon `contract` de l'enveloppe commune. Codes
+ * courts et filtrés ; un tampon malformé est ignoré. `reader_store_mismatch`
+ * signale un lecteur servi pour une autre boutique que l'URL demandée.
+ */
+export function captureReaderNote(contract: unknown, requestStoreId: string | null): string[] | null {
+  if (!contract || typeof contract !== 'object' || Array.isArray(contract)) return null;
+  const c = contract as Record<string, unknown>;
+  const store = typeof c.store === 'string' ? c.store.slice(0, 40) : '';
+  const version = Number(c.readerVersion);
+  const integration = typeof c.integration === 'string' ? c.integration : '';
+  if (!/^[a-z0-9-]{1,40}$/.test(store) || !Number.isInteger(version) || version < 0 || version > 999) return null;
+  if (!['dedicated', 'shared_core', 'generic'].includes(integration)) return null;
+  const out = [`reader:${store}@${version}:${integration}`];
+  if (c.matched !== true) out.push('reader_domain_unmatched');
+  if (requestStoreId && requestStoreId !== store) out.push('reader_store_mismatch');
+  return out;
+}
+
 /** Signaux d'une capture — bornés, jamais de texte de page. */
 export function ayWebsPageSignalsOf(payload: AyWebsCapturedPage): AyWebsPageSignals {
   const title = collapse(payload?.title, AYWEBS_CAPTURE_LIMITS.maxTitleLength);
@@ -809,6 +828,9 @@ export function validateAyWebsCapturedPage(
       .filter((entry) => /^[a-z0-9_:.,=-]+$/i.test(entry))
     : [];
   clientDiagnostics.forEach((code) => notes.push(`client:${code}`));
+  /* Enveloppe commune : quelle intégration a lu la page (diagnostic seulement). */
+  const readerNote = captureReaderNote(payload.contract, detectAyWebsStore(requestUrl)?.id ?? null);
+  if (readerNote) notes.push(...readerNote);
   const storeForPrice = detectAyWebsStore(requestUrl);
   const isAmazon = storeForPrice?.id === 'amazon';
   const candidates: Array<{ text: string; source: AyWebsCaptureSource; value: number; rank: number; index: number; hints: string[] }> = [];

@@ -8,5 +8,6 @@ export const primarkCaptureReader: AyWebsCaptureReaderDefinition = {
   storeId: 'primark',
   version: 1,
   priceMode: 'structured_only',
+  integration: 'shared_core',
   note: 'JSON-LD, meta and microdata only until region-specific Primark fixtures are measured.',
 };
