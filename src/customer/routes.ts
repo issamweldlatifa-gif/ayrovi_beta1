@@ -9,6 +9,7 @@ import { invoiceAbsolutePath, depositWriteDir, proofRoots, invoiceRoots } from '
 import { servePrivateDocument } from '../documents/fileAccess';
 import { mailerReady, sendMail } from '../services/mailer';
 import { createAccountSettingsRouter } from './accountSettings';
+import { createAccountSecurityRouter } from './accountSecurity';
 import { burnPasswordCheck, hashPassword, verifyPassword } from './passwords';
 import { enqueueWelcomeMail, passwordRecoveryReady } from './accountMail';
 import { createPasswordRecoveryRouter, customerAuthRateAllowed, customerAuthRateCount, customerAuthRateReset } from './passwordRecovery';
@@ -423,6 +424,8 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
   const router = Router();
   router.use(createPasswordRecoveryRouter(db));
   router.use(createAccountSettingsRouter(db, publicAccount));
+  // Appareils connectés, « tout déconnecter », confirmation de l'adresse (12/11/2026).
+  router.use(createAccountSecurityRouter(db));
   cleanupCustomerAuth(db);
 
   // Stripe Checkout — la passerelle envoie un event signé. ZAYROVI refait toujours

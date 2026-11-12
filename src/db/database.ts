@@ -1374,6 +1374,22 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_customer_email_code_email_created ON customer_email_code_challenges(email, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_customer_email_code_ip_created ON customer_email_code_challenges(request_ip, created_at DESC);
 
+      -- Confirmation de l'adresse d'un compte CONNECTÉ (12/11/2026) : code lié au
+      -- compte ET à l'adresse ; distinct des codes de connexion (aucun croisement).
+      CREATE TABLE IF NOT EXISTS customer_email_verifications (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        email TEXT NOT NULL,
+        code_hash TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        consumed_at TEXT,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        max_attempts INTEGER NOT NULL DEFAULT 5,
+        request_ip TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_email_verifications_account ON customer_email_verifications(account_id, created_at DESC);
+
       CREATE TABLE IF NOT EXISTS customer_oauth_states (
         id TEXT PRIMARY KEY,
         account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,

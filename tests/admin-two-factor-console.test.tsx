@@ -3,10 +3,11 @@
  * Le parcours HTTP est couvert par `admin-two-factor.test.ts`.
  */
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { groupSecret } from '../client/src/admin/back-office/AccountSecurity';
 
-const read = (path: string) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+const read = (file: string) => readFileSync(path.resolve(process.cwd(), file), 'utf8');
 
 describe('console — double authentification', () => {
   it('la connexion demande le code seulement quand le serveur l’exige', () => {
@@ -24,8 +25,8 @@ describe('console — double authentification', () => {
     expect(shell).toContain('<AccountSecurity open={security}');
     expect(shell).toContain('data-testid="bo-account-security"');
     const security = read('client/src/admin/back-office/AccountSecurity.tsx');
-    for (const path of ['/auth/2fa', '/auth/2fa/setup', '/auth/2fa/enable', '/auth/2fa/disable', '/auth/2fa/recovery']) {
-      expect(security).toContain(`'${path}'`);
+    for (const endpoint of ['/auth/2fa', '/auth/2fa/setup', '/auth/2fa/enable', '/auth/2fa/disable', '/auth/2fa/recovery']) {
+      expect(security).toContain(`'${endpoint}'`);
     }
   });
 

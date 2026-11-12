@@ -54,6 +54,8 @@ export function createAccountSettingsRouter(db: QatafoDatabase, publicAccount: (
       const now=new Date().toISOString();
       db.run('UPDATE customer_accounts SET password_hash=?,updated_at=? WHERE id=?',hashPassword(password),now,account.id);
       db.run('DELETE FROM customer_sessions WHERE account_id=?',account.id);
+      // Audit faible n°7 : un relais OAuth natif en attente ne survit pas au changement.
+      db.run('DELETE FROM customer_native_handoffs WHERE account_id=?',account.id);
       db.run('UPDATE customer_password_resets SET consumed_at=? WHERE account_id=? AND consumed_at IS NULL',now,account.id);
       db.run("UPDATE customer_auth_mail_jobs SET status='CANCELLED',payload='' WHERE account_id=? AND kind='PASSWORD_RESET' AND status IN ('PENDING','SENDING')",account.id);
       if(row.email) {

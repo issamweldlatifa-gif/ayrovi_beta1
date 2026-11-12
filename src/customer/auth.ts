@@ -19,7 +19,7 @@ export interface CustomerIdentity {
   marketingOptIn: boolean;
 }
 
-interface ResolvedCustomer extends CustomerIdentity {
+export interface ResolvedCustomer extends CustomerIdentity {
   sessionId: string;
   /** Fin de validité de la session — l'application l'affiche et s'y fie. */
   expiresAt: string;
