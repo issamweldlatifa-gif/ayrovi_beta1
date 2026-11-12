@@ -11,6 +11,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi, queryString } from './api';
 import { Button, CardTitle, DataTable, Field, Filters, Form, Modal, PageHeader, Pagination, Search, Select, StatusBadge, Toast } from './components';
+import { OpsCapacityPanel } from './OpsCapacityPanel';
 
 type ToastValue = { message: string; tone: 'success' | 'error' } | null;
 
@@ -299,7 +300,7 @@ export const ErpEnvironmentPage: React.FC = () => {
   const env = environment.data;
 
   return <>
-    <ErpHeader title="Modules & environnement" description="Registre des modules (actif / hérité / planifié), politique de stockage des fichiers, auto-test de sécurité et séquences de numérotation." />
+    <ErpHeader title="Modules & environnement" description="Registre des modules (actif / hérité / planifié), politique de stockage des fichiers, auto-test de sécurité, séquences de numérotation et capacité du serveur." />
     {registry.error && <p className="admin-block-small">{registry.error}</p>}
     <div className="admin-report-grid">
       <section className="admin-card"><CardTitle title="Registre des modules" subtitle={`${total} module(s) déclarés`} />
@@ -325,6 +326,7 @@ export const ErpEnvironmentPage: React.FC = () => {
       </section>
       <SequencesCard />
     </div>
+    <OpsCapacityPanel />
   </>;
 };
 

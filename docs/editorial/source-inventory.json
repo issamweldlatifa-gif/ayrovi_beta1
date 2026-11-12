@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 279,
+    "files": 280,
     "customerAndSharedFiles": 209,
     "controls": 487,
     "iconAliases": 104,
@@ -6645,12 +6645,13 @@
     {
       "file": "client/src/admin/ErpCorePages.tsx",
       "domain": "admin",
-      "sha256": "25c3dfe3e642ae0f2990fb5ca1d0138f176ff170583d480f78e2741a9f9ac9cf",
-      "lines": 460,
+      "sha256": "fe10b1fe6ed96885bd81f657bc10fcfdce235ef92e8483ede47fcef69e6d8374",
+      "lines": 462,
       "imports": [
         "react",
         "./api",
-        "./components"
+        "./components",
+        "./OpsCapacityPanel"
       ],
       "exports": [
         "ErpEmployeesPage",
@@ -6663,7 +6664,7 @@
       "controls": [
         {
           "tag": "Button",
-          "line": 121,
+          "line": 122,
           "className": null,
           "type": null,
           "role": null,
@@ -6673,33 +6674,13 @@
         },
         {
           "tag": "Modal",
-          "line": 126,
+          "line": 127,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": null,
           "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 130,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 130,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canManage}"
         },
         {
           "tag": "Field",
@@ -6723,7 +6704,7 @@
         },
         {
           "tag": "Field",
-          "line": 133,
+          "line": 132,
           "className": null,
           "type": null,
           "role": null,
@@ -6733,7 +6714,7 @@
         },
         {
           "tag": "input",
-          "line": 133,
+          "line": 132,
           "className": null,
           "type": null,
           "role": null,
@@ -6743,13 +6724,23 @@
         },
         {
           "tag": "Field",
-          "line": 135,
+          "line": 134,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": null,
           "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 134,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canManage}"
         },
         {
           "tag": "Field",
@@ -6762,24 +6753,24 @@
           "disabled": null
         },
         {
+          "tag": "Field",
+          "line": 137,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "input",
-          "line": 136,
+          "line": 137,
           "className": null,
           "type": "\"date\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
           "disabled": "{!canManage}"
-        },
-        {
-          "tag": "Field",
-          "line": 139,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
         },
         {
           "tag": "Field",
@@ -6793,7 +6784,7 @@
         },
         {
           "tag": "Field",
-          "line": 143,
+          "line": 141,
           "className": null,
           "type": null,
           "role": null,
@@ -6812,8 +6803,18 @@
           "disabled": null
         },
         {
+          "tag": "Field",
+          "line": 145,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "Button",
-          "line": 146,
+          "line": 147,
           "className": null,
           "type": "\"submit\"",
           "role": null,
@@ -6823,7 +6824,7 @@
         },
         {
           "tag": "Button",
-          "line": 181,
+          "line": 182,
           "className": null,
           "type": null,
           "role": null,
@@ -6833,27 +6834,7 @@
         },
         {
           "tag": "Modal",
-          "line": 198,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 200,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 200,
+          "line": 199,
           "className": null,
           "type": null,
           "role": null,
@@ -6892,6 +6873,16 @@
           "disabled": null
         },
         {
+          "tag": "input",
+          "line": 202,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "Field",
           "line": 203,
           "className": null,
@@ -6902,8 +6893,18 @@
           "disabled": null
         },
         {
+          "tag": "Field",
+          "line": 204,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "Button",
-          "line": 205,
+          "line": 206,
           "className": null,
           "type": "\"submit\"",
           "role": null,
@@ -6913,32 +6914,12 @@
         },
         {
           "tag": "Button",
-          "line": 251,
+          "line": 252,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": "{reseed}",
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 258,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 258,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
           "disabled": null
         },
         {
@@ -6952,8 +6933,28 @@
           "disabled": null
         },
         {
+          "tag": "input",
+          "line": 259,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "Field",
-          "line": 261,
+          "line": 260,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 262,
           "className": null,
           "type": null,
           "role": null,
@@ -6963,7 +6964,7 @@
         },
         {
           "tag": "input",
-          "line": 261,
+          "line": 262,
           "className": null,
           "type": null,
           "role": null,
@@ -6973,7 +6974,7 @@
         },
         {
           "tag": "Button",
-          "line": 262,
+          "line": 263,
           "className": null,
           "type": null,
           "role": null,
@@ -6983,7 +6984,7 @@
         },
         {
           "tag": "SequencesCard",
-          "line": 326,
+          "line": 327,
           "className": null,
           "type": null,
           "role": null,
@@ -6993,7 +6994,7 @@
         },
         {
           "tag": "Button",
-          "line": 348,
+          "line": 350,
           "className": null,
           "type": null,
           "role": null,
@@ -7003,7 +7004,7 @@
         },
         {
           "tag": "button",
-          "line": 377,
+          "line": 379,
           "className": "\"admin-link-button\"",
           "type": "\"button\"",
           "role": null,
@@ -7013,7 +7014,7 @@
         },
         {
           "tag": "input",
-          "line": 382,
+          "line": 384,
           "className": null,
           "type": "\"date\"",
           "role": null,
@@ -7023,7 +7024,7 @@
         },
         {
           "tag": "input",
-          "line": 383,
+          "line": 385,
           "className": null,
           "type": "\"date\"",
           "role": null,
@@ -10242,6 +10243,37 @@
         "moveHint"
       ],
       "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/admin/OpsCapacityPanel.tsx",
+      "domain": "admin",
+      "sha256": "0ed176a8c081579e9ba350ba4c4e8600288f7d7eb52e9996b7d79a657122961a",
+      "lines": 149,
+      "imports": [
+        "react",
+        "./api",
+        "./components"
+      ],
+      "exports": [
+        "OpsCapacityPanel"
+      ],
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 145,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{load}",
+          "disabled": "{loading}"
+        }
+      ],
       "icons": [],
       "inlineSvg": [],
       "colors": [],
