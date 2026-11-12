@@ -126,9 +126,11 @@ function inlineConstants(code, constants) {
     edits.push({ start: node.getStart(sf), end: node.end, text: `(${constants.get(node.text)})` });
   });
   for (const [name, count] of declarations) if (count !== 1) throw new Error(`Drapeau déclaré ${count} fois : ${name}`);
-  edits.sort((a, b) => b.start - a.start);
+  // Un initialiseur remplacé en entier absorbe les remplacements qu'il contient.
+  const kept = edits.filter((edit) => !edits.some((outer) => outer !== edit && outer.start <= edit.start && edit.end <= outer.end && (outer.end - outer.start) > (edit.end - edit.start)));
+  kept.sort((a, b) => b.start - a.start);
   let out = code;
-  for (const edit of edits) out = out.slice(0, edit.start) + edit.text + out.slice(edit.end);
+  for (const edit of kept) out = out.slice(0, edit.start) + edit.text + out.slice(edit.end);
   return out;
 }
 

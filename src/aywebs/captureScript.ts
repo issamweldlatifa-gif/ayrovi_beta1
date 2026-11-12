@@ -143,6 +143,20 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   var IS_SHEIN = /(^|\.)shein\.(com|co\.uk|fr|de|es|it|ca|com\.mx|com\.br)$/.test(host);
   var IS_TEMU = /(^|\.)temu\.com$/.test(host);
   var IS_ALIEXPRESS = /(^|\.)aliexpress\.(com|us|ru)$/.test(host);
+  /* ── PLATEFORME SHOPIFY (12/11/2026) ──────────────────────────────────────
+     Une partie du catalogue tourne sur Shopify : UN lecteur de plateforme les
+     couvre toutes, au lieu d'un script par boutique. Détection à l'exécution
+     (objet « Shopify » de la page ou ressources cdn.shopify.com), jamais sur
+     une place de marché connue. Drapeau déclaré UNE fois et jamais réaffecté :
+     les lots des places de marché le fixent à false (code retiré). */
+  function detectShopify() {
+    try {
+      var shop = GLOBAL_WIN && GLOBAL_WIN.Shopify;
+      if (shop && typeof shop === 'object' && shop.shop) return true;
+      return hasSelector('script[src*="cdn.shopify.com"], link[href*="cdn.shopify.com"]');
+    } catch (e) { return false; }
+  }
+  var IS_SHOPIFY = !IS_AMAZON && !IS_SHEIN && !IS_TEMU && !IS_ALIEXPRESS && detectShopify();
   var SHEIN_GOODS_ID = '';
   var TEMU_GOODS_ID = '';
   var ALIEXPRESS_ITEM_ID = '';
@@ -3359,6 +3373,171 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
       if (availabilityText) out.availabilityText = cut(availabilityText, LIMITS.text);
     }
   } catch (e) {}
+
+  /* ── 3 bis. Plateforme Shopify (12/11/2026) ──────────────────────────────
+     Shopify publie le produit en JSON : prix par VARIANTE, en centimes, dans la
+     devise de présentation (« Shopify.currency.active »). La variante choisie
+     est celle de « ?variant= », sinon du formulaire d'ajout au panier, sinon
+     « ShopifyAnalytics.meta.selectedVariantId » ; un produit à une seule
+     variante n'a pas d'ambiguïté. Plusieurs variantes sans variante
+     identifiable : on s'abstient (jamais le prix d'une autre taille).
+
+     Le JSON-LD Shopify publie souvent UNE offre PAR variante : le lecteur
+     générique s'abstient alors (montants différents). On reprend l'offre dont
+     l'URL (« ?variant=<id> ») ou le SKU désigne la variante choisie — la donnée
+     du marchand pour CETTE variante. Le serveur exige toujours la
+     corroboration (JSON-LD, ou deux sources d'accord) : une lecture fausse est
+     refusée, jamais devisée. */
+  function shopifyIsList(value) { return Object.prototype.toString.call(value) === '[object Array]'; }
+  function shopifyProductState() {
+    var product = null;
+    var nodes = document.querySelectorAll('script[type="application/json"][data-product-json], script[type="application/json"][id^="ProductJson"], script[type="application/json"][data-product]');
+    for (var i = 0; i < nodes.length && !product; i++) {
+      try {
+        var rawJson = nodes[i].textContent || '';
+        if (!rawJson || rawJson.length > 400000) continue;
+        var parsedJson = JSON.parse(rawJson);
+        var candidate = parsedJson && parsedJson.product && shopifyIsList(parsedJson.product.variants) ? parsedJson.product : parsedJson;
+        if (candidate && shopifyIsList(candidate.variants) && candidate.variants.length) product = candidate;
+      } catch (e) {}
+    }
+    var analytics = GLOBAL_WIN && GLOBAL_WIN.ShopifyAnalytics;
+    var analyticsMeta = analytics && analytics.meta;
+    if (!product && analyticsMeta && analyticsMeta.product && shopifyIsList(analyticsMeta.product.variants) && analyticsMeta.product.variants.length) product = analyticsMeta.product;
+    if (!product) {
+      var pageMeta = GLOBAL_WIN && GLOBAL_WIN.meta;
+      if (pageMeta && pageMeta.product && shopifyIsList(pageMeta.product.variants) && pageMeta.product.variants.length) product = pageMeta.product;
+    }
+    if (!product) return null;
+    var currency = '';
+    try {
+      var activeCurrency = GLOBAL_WIN.Shopify && GLOBAL_WIN.Shopify.currency && GLOBAL_WIN.Shopify.currency.active;
+      if (activeCurrency) currency = String(activeCurrency).toUpperCase();
+    } catch (e) {}
+    if (!/^[A-Z]{3}$/.test(currency) && analyticsMeta && analyticsMeta.currency) currency = String(analyticsMeta.currency).toUpperCase();
+    if (!/^[A-Z]{3}$/.test(currency)) currency = '';
+    return { product: product, currency: currency, selectedId: analyticsMeta && analyticsMeta.selectedVariantId ? String(analyticsMeta.selectedVariantId) : '' };
+  }
+  function shopifySelectedVariant(state) {
+    var variants = state.product.variants;
+    var id = '';
+    try {
+      var variantMatch = String(location.search || '').match(/[?&]variant=(\d{1,20})(?:&|$)/);
+      if (variantMatch) id = variantMatch[1];
+    } catch (e) {}
+    if (!id) {
+      try {
+        var field = document.querySelector('form[action*="/cart/add"] [name="id"]');
+        if (field) id = text(field.value || field.getAttribute('value'));
+      } catch (e) {}
+    }
+    if (!id && state.selectedId) id = state.selectedId;
+    if (id) {
+      for (var v = 0; v < variants.length; v++) {
+        if (variants[v] && String(variants[v].id) === id) return variants[v];
+      }
+      return null;
+    }
+    return variants.length === 1 ? variants[0] : null;
+  }
+  /* Montant Shopify : entier = centimes (product.json, ShopifyAnalytics),
+     chaîne décimale « 24.90 » = unités. Tout autre format : abstention. */
+  function shopifyMoney(value) {
+    if (typeof value === 'number' && isFinite(value) && value > 0 && Math.floor(value) === value) return (value / 100).toFixed(2);
+    if (typeof value === 'string' && /^\d{1,9}\.\d{1,2}$/.test(value) && parseFloat(value) > 0) return value;
+    return '';
+  }
+  function shopifyUrlNamesVariant(url, id) {
+    var at = String(url || '').indexOf('variant=' + id);
+    if (at < 0) return false;
+    var next = String(url).charAt(at + 8 + id.length);
+    return !/[0-9]/.test(next);
+  }
+  function shopifyJsonLdOffer(product, variant) {
+    if (!product || !variant) return null;
+    var id = String(variant.id || '');
+    var sku = text(variant.sku);
+    var offers = [];
+    var rawOffers = product.offers;
+    if (shopifyIsList(rawOffers)) offers = rawOffers;
+    else if (rawOffers && shopifyIsList(rawOffers.offers)) offers = rawOffers.offers;
+    else if (rawOffers && typeof rawOffers === 'object') offers = [rawOffers];
+    var groupVariants = shopifyIsList(product.hasVariant) ? product.hasVariant : [];
+    for (var g = 0; g < groupVariants.length; g++) {
+      var member = groupVariants[g];
+      if (!member || typeof member !== 'object') continue;
+      var memberOffer = shopifyIsList(member.offers) ? member.offers[0] : member.offers;
+      if (!memberOffer || typeof memberOffer !== 'object') continue;
+      if ((id && shopifyUrlNamesVariant(memberOffer.url || member.url, id)) || (sku && text(member.sku) === sku)) return memberOffer;
+    }
+    for (var o = 0; o < offers.length; o++) {
+      if (offers[o] && typeof offers[o] === 'object' && id && shopifyUrlNamesVariant(offers[o].url || offers[o]['@id'], id)) return offers[o];
+    }
+    for (var k = 0; k < offers.length; k++) {
+      if (offers[k] && typeof offers[k] === 'object' && sku && text(offers[k].sku) === sku) return offers[k];
+    }
+    return null;
+  }
+  function shopifyJsonLdAmounts(product) {
+    var amounts = [];
+    if (!product) return amounts;
+    var list = shopifyIsList(product.offers) ? product.offers : (product.offers && shopifyIsList(product.offers.offers) ? product.offers.offers : []);
+    var members = shopifyIsList(product.hasVariant) ? product.hasVariant : [];
+    for (var m = 0; m < members.length; m++) {
+      if (members[m] && members[m].offers) list = list.concat(shopifyIsList(members[m].offers) ? members[m].offers : [members[m].offers]);
+    }
+    for (var a = 0; a < list.length && a < 200; a++) {
+      var amount = list[a] && typeof list[a] === 'object' ? offerField(list[a], ['price']) : '';
+      if (amount && amounts.indexOf(amount) < 0) amounts.push(amount);
+    }
+    return amounts;
+  }
+  /* Retire l'offre JSON-LD « première publiée » du lecteur générique : sur
+     Shopify, c'est le prix d'une variante arbitraire (la première taille). */
+  function shopifyDropGenericOffer() {
+    var dropped = false;
+    for (var d = out.priceCandidates.length - 1; d >= 0; d--) {
+      if (out.priceCandidates[d].source === 'json_ld') { out.priceCandidates.splice(d, 1); dropped = true; }
+    }
+    if (dropped && offer && out.availabilityText === cut(offerField(offer, ['availability', 'inventoryLevel']), LIMITS.text)) out.availabilityText = null;
+    return dropped;
+  }
+  if (IS_SHOPIFY) {
+    try {
+      var shopifyState = shopifyProductState();
+      var shopifyVariant = shopifyState ? shopifySelectedVariant(shopifyState) : null;
+      var shopifyLdAmbiguous = shopifyJsonLdAmounts(jsonLd).length > 1;
+      if (!shopifyState) {
+        diag('platform:shopify_no_product_json');
+        if (shopifyLdAmbiguous && shopifyDropGenericOffer()) diag('platform:shopify_jsonld_ambiguous');
+      } else if (!shopifyVariant) {
+        diag('platform:shopify_variant_unknown');
+        if (shopifyLdAmbiguous && shopifyDropGenericOffer()) diag('platform:shopify_jsonld_ambiguous');
+      } else {
+        diag('platform:shopify');
+        var shopifyOffer = shopifyJsonLdOffer(jsonLd, shopifyVariant);
+        var shopifyOfferPrice = shopifyOffer ? offerField(shopifyOffer, ['price']) : '';
+        if (shopifyOfferPrice && HAS_DIGIT.test(shopifyOfferPrice)) {
+          shopifyDropGenericOffer();
+          var shopifyOfferCurrency = offerField(shopifyOffer, ['priceCurrency', 'currency']);
+          out.priceCandidates.unshift({ text: cut(shopifyOfferPrice + ' ' + shopifyOfferCurrency, LIMITS.text), source: 'json_ld' });
+          if (shopifyOfferCurrency) out.currencyText = cut(shopifyOfferCurrency, LIMITS.label);
+          var shopifyOfferAvailability = offerField(shopifyOffer, ['availability']);
+          if (shopifyOfferAvailability) out.availabilityText = cut(shopifyOfferAvailability, LIMITS.text);
+          diag('platform:shopify_variant_offer');
+        } else if (shopifyLdAmbiguous && shopifyDropGenericOffer()) diag('platform:shopify_jsonld_ambiguous');
+        var shopifyAmount = shopifyMoney(shopifyVariant.price);
+        if (shopifyAmount && shopifyState.currency) {
+          out.priceCandidates.push({ text: cut(shopifyAmount + ' ' + shopifyState.currency, LIMITS.text), source: 'embedded_json' });
+          if (!out.currencyText) out.currencyText = shopifyState.currency;
+        } else diag('platform:shopify_no_amount');
+        if (!out.availabilityText && typeof shopifyVariant.available === 'boolean') {
+          out.availabilityText = shopifyVariant.available ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock';
+        }
+        if (!out.title && shopifyState.product.title) out.title = cut(shopifyState.product.title, LIMITS.text);
+      }
+    } catch (e) {}
+  }
 
   /* Amazon publie sa disponibilité en clair dans «#availability» (« In Stock »,
      « Currently unavailable »…) : c'est un TEXTE BRUT, que le vocabulaire fermé
