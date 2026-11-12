@@ -70,9 +70,11 @@ describe("v6 heart-handshake replaces the retired Z, including grey page loading
     expect(read("apps/mobile/src/design/states.tsx")).toContain(
       "BrandLoadingIndicator"
     );
+    // Refonte Publication (13/11/2026) : le chargement de la page passe par le
+    // même bloc d'état gris (LoadingBlock → BrandLoadingIndicator).
     expect(
-      read("apps/mobile/src/features/publications/PublicationFeedback.tsx")
-    ).toContain("color={P.muted}");
+      read("apps/mobile/src/features/publications/PublicationTemplatesScreen.tsx")
+    ).toContain("<LoadingBlock");
   });
 
   test.each([

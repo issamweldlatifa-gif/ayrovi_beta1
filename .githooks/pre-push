@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Activé par : git config core.hooksPath .githooks
+exec "$(git rev-parse --show-toplevel)/scripts/prepush-gate.sh"

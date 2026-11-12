@@ -72,7 +72,7 @@ export const PUBLICATION_BLOCK_DEFAULT_COLOR: Record<PublicationBlockKind, strin
  */
 export const PUBLICATION_BLOCK_SWATCHES = [
   '#FFFFFF', '#F4F4F4', '#E9E4DC', '#111111',
-  '#F2AD11', '#F4C430', '#FF6900', '#D7263D',
+  '#F2AD11', '#F4C430', '#E4572E', '#D7263D',
   '#8B1A2B', '#4262AD', '#1F3A5F', '#2E7D5B',
   '#C9E4DE', '#F7D6E0', '#B39DDB', '#6D4C41',
 ] as const;

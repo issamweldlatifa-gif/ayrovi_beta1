@@ -11,6 +11,8 @@
     "build": "npm run build:client && npm run build:server",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit",
     "test": "vitest run",
+    "gate": "bash scripts/prepush-gate.sh",
+    "hooks:install": "git config core.hooksPath .githooks",
     "audit:design": "node verify/zalando-audit.mjs",
     "backup": "node scripts/backup-sqlite.mjs",
     "android:assetlinks": "node scripts/assetlinks.mjs",
