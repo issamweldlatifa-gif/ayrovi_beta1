@@ -736,6 +736,82 @@ export async function changePassword(currentPassword: string, newPassword: strin
   return parseSessionIssue(data);
 }
 
+/* ── Appareils connectés et confirmation de l'adresse (12/11/2026) ────────── */
+
+export interface DeviceSession {
+  /** Poignée dérivée par le serveur — jamais le jeton. */
+  handle: string;
+  current: boolean;
+  platform: string;
+  client: string;
+  ipMasked: string;
+  createdAt: string;
+  lastSeenAt: string;
+}
+
+export function parseDeviceSessions(payload: unknown): DeviceSession[] {
+  if (!Array.isArray(payload)) return [];
+  return payload.flatMap((row) => {
+    if (!isRecord(row) || !str(row.handle)) return [];
+    return [{
+      handle: str(row.handle),
+      current: bool(row.current),
+      platform: str(row.platform),
+      client: str(row.client),
+      ipMasked: str(row.ipMasked),
+      createdAt: str(row.createdAt),
+      lastSeenAt: str(row.lastSeenAt),
+    }];
+  }).sort((a, b) => Number(b.current) - Number(a.current));
+}
+
+export async function fetchDeviceSessions(options?: RequestOptions): Promise<DeviceSession[]> {
+  return parseDeviceSessions(await apiGetData<unknown>('/api/customer/account/sessions', options));
+}
+
+export async function revokeDeviceSession(handle: string, options?: RequestOptions): Promise<void> {
+  await apiSend<unknown>('DELETE', `/api/customer/account/sessions/${encodeURIComponent(handle)}`, options);
+}
+
+/** Ferme les AUTRES appareils (l'appareil courant reste connecté). Rend le nombre fermé. */
+export async function logoutOtherDevices(options?: RequestOptions): Promise<number> {
+  const { data } = await apiSend<unknown>('POST', '/api/customer/auth/logout-all', { ...options, body: { includeCurrent: false } });
+  return isRecord(data) ? num(data.revoked) : 0;
+}
+
+export interface EmailVerificationChallenge {
+  alreadyVerified: boolean;
+  challengeId: string;
+  maskedEmail: string;
+  expiresInSeconds: number;
+  /** Hors production sans service d'envoi seulement. */
+  developmentCode: string;
+}
+
+export function parseEmailVerificationChallenge(payload: unknown): EmailVerificationChallenge {
+  const row = isRecord(payload) ? payload : {};
+  return {
+    alreadyVerified: bool(row.alreadyVerified),
+    challengeId: str(row.challengeId),
+    maskedEmail: str(row.maskedEmail),
+    expiresInSeconds: num(row.expiresInSeconds),
+    developmentCode: str(row.developmentCode),
+  };
+}
+
+export async function requestEmailVerification(locale: string, options?: RequestOptions): Promise<EmailVerificationChallenge> {
+  const { data } = await apiSend<unknown>('POST', '/api/customer/account/email/verification/request', { ...options, body: { locale } });
+  return parseEmailVerificationChallenge(data);
+}
+
+export async function confirmEmailVerification(challengeId: string, code: string, locale: string, options?: RequestOptions): Promise<boolean> {
+  const { data } = await apiSend<unknown>('POST', '/api/customer/account/email/verification/confirm', {
+    ...options,
+    body: { challengeId, code: code.replace(/\D/g, ''), locale },
+  });
+  return isRecord(data) && bool(data.emailVerified);
+}
+
 export async function fetchOrderDetail(id: string, options?: RequestOptions): Promise<OrderDetail> {
   return parseOrderDetail(await apiGetData<unknown>(`/api/customer/account/orders/${encodeURIComponent(id)}`, options));
 }

@@ -12,7 +12,11 @@ import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { changePassword, fetchSecurity } from '@/api/account';
+import {
+  changePassword, confirmEmailVerification, fetchDeviceSessions, fetchSecurity, logoutOtherDevices,
+  requestEmailVerification, revokeDeviceSession,
+} from '@/api/account';
+import { relativeTimeLabel } from '@/format/relativeTime';
 import { authMessage } from '@/api/authMessages';
 import { SubScreen } from '@/design/subScreen';
 import { router } from 'expo-router';
@@ -64,6 +68,63 @@ export default function SecurityScreen() {
 
   const canSubmit = current.length > 0 && next.length >= 8 && next !== current;
 
+  // Appareils connectés (12/11/2026) : la liste réelle du serveur, pas un compteur.
+  const devices = useQuery({ queryKey: ['account', 'sessions'], queryFn: ({ signal }) => fetchDeviceSessions({ signal }) });
+  const [deviceBusy, setDeviceBusy] = useState('');
+  const [deviceMessage, setDeviceMessage] = useState('');
+  const reportError = (error: unknown) => {
+    const message = authMessage(error);
+    return 'key' in message ? t(message.key) : message[locale];
+  };
+  const refreshDevices = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['account', 'sessions'] });
+    await queryClient.invalidateQueries({ queryKey: ['account', 'security'] });
+  };
+  const revoke = async (handle: string) => {
+    setDeviceBusy(handle); setDeviceMessage('');
+    try { await revokeDeviceSession(handle); await refreshDevices(); }
+    catch (error) { setDeviceMessage(reportError(error)); }
+    finally { setDeviceBusy(''); }
+  };
+  const revokeOthers = async () => {
+    setDeviceBusy('all'); setDeviceMessage('');
+    try {
+      const count = await logoutOtherDevices();
+      setDeviceMessage(t('security.devicesClosed', { count }));
+      await refreshDevices();
+    } catch (error) { setDeviceMessage(reportError(error)); }
+    finally { setDeviceBusy(''); }
+  };
+  const otherDevices = (devices.data ?? []).filter((device) => !device.current).length;
+
+  // Confirmation de l'adresse : code envoyé à l'adresse, saisi ICI (session du compte).
+  const accountEmail = session.account?.email ?? '';
+  const [challenge, setChallenge] = useState<{ id: string; masked: string } | null>(null);
+  const [emailCode, setEmailCode] = useState('');
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailMessage, setEmailMessage] = useState('');
+  const sendEmailCode = async () => {
+    setEmailBusy(true); setEmailMessage('');
+    try {
+      const sent = await requestEmailVerification(locale);
+      if (sent.alreadyVerified) { await refreshDevices(); return; }
+      setChallenge({ id: sent.challengeId, masked: sent.maskedEmail });
+      setEmailCode(sent.developmentCode);
+    } catch (error) { setEmailMessage(reportError(error)); }
+    finally { setEmailBusy(false); }
+  };
+  const confirmEmail = async () => {
+    if (!challenge) return;
+    setEmailBusy(true); setEmailMessage('');
+    try {
+      await confirmEmailVerification(challenge.id, emailCode, locale);
+      setChallenge(null); setEmailCode('');
+      await queryClient.invalidateQueries({ queryKey: ['account'] });
+      await session.refreshAccount();
+    } catch (error) { setEmailMessage(reportError(error)); }
+    finally { setEmailBusy(false); }
+  };
+
   return (
     <SubScreen
       title={t('security.title')}
@@ -102,6 +163,60 @@ export default function SecurityScreen() {
           <Button label={t('security.verifyGo')} onPress={() => router.push('/sign-in')} />
         </Card>
       ) : null}
+
+      {security.data && !security.data.emailVerified && accountEmail ? (
+        <Card title={t('security.emailConfirmTitle')} hint={t('security.emailConfirmHint')}>
+          {challenge ? (
+            <>
+              <AppText variant="body" color={theme.colors.secondary}>{t('security.emailCodeSent', { email: challenge.masked })}</AppText>
+              <Field
+                label={t('security.emailCode')}
+                value={emailCode}
+                onChangeText={setEmailCode}
+                keyboardType="number-pad"
+                textContentType="oneTimeCode"
+                autoComplete="one-time-code"
+                maxLength={6}
+                editable={!emailBusy}
+                testID="security-email-code"
+              />
+              <Button label={t('security.emailConfirm')} onPress={confirmEmail} busy={emailBusy} disabled={emailCode.replace(/\D/g, '').length !== 6} testID="security-email-confirm" />
+              <Button label={t('security.emailResend')} tone="quiet" onPress={sendEmailCode} disabled={emailBusy} />
+            </>
+          ) : (
+            <Button label={t('security.emailSend')} onPress={sendEmailCode} busy={emailBusy} testID="security-email-send" />
+          )}
+          {emailMessage ? (
+            <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{emailMessage}</AppText>
+          ) : null}
+        </Card>
+      ) : null}
+
+      <Card title={t('security.devices')} hint={t('security.devicesHint')}>
+        {devices.isLoading ? <LoadingBlock /> : null}
+        {(devices.data ?? []).map((device) => (
+          <KeyValue
+            key={device.handle}
+            label={[device.platform, device.client].filter(Boolean).join(' · ') + (device.current ? ` — ${t('security.thisDevice')}` : '')}
+            value={[device.lastSeenAt ? relativeTimeLabel(device.lastSeenAt, locale) : '', device.ipMasked].filter(Boolean).join(' · ')}
+          />
+        ))}
+        {(devices.data ?? []).filter((device) => !device.current).map((device) => (
+          <Button
+            key={`revoke-${device.handle}`}
+            label={t('security.deviceRevoke', { device: [device.platform, device.client].filter(Boolean).join(' · ') })}
+            tone="quiet"
+            onPress={() => revoke(device.handle)}
+            busy={deviceBusy === device.handle}
+            disabled={Boolean(deviceBusy)}
+            testID={`security-revoke-${device.handle}`}
+          />
+        ))}
+        {otherDevices > 0 ? (
+          <Button label={t('security.devicesRevokeOthers')} onPress={revokeOthers} busy={deviceBusy === 'all'} disabled={Boolean(deviceBusy)} testID="security-logout-others" />
+        ) : null}
+        {deviceMessage ? <AppText accessibilityRole="alert" variant="label" color={theme.colors.secondary}>{deviceMessage}</AppText> : null}
+      </Card>
 
       {security.data?.hasPassword ? (
         <Card title={t('security.change')} hint={t('security.changeHint')}>
