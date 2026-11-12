@@ -1,3 +1,4 @@
+import { installPublicationBlocksDemo, PUBLICATION_BLOCKS_SCHEMA } from '../services/publicationBlocks';
 import { installOwnerReels } from '../magazine/installOwnerReels';
 import { schemaStatements } from './schemaStatements';
 import { ensureSocialTotals, socialTotalsDrift } from './socialTotals';
@@ -421,6 +422,10 @@ export class QatafoDatabase {
       // Old bundled URLs are removed in this release: do not serve a half-replaced collection.
       throw new Error('OWNER_REEL_REPLACEMENT_FAILED');
     }
+    // Page Publication refondue (13/11) : blocs composés dans le CRM. La démonstration
+    // reprend les produits et les vidéos déjà installés (Reels), une seule fois.
+    this.db.exec(PUBLICATION_BLOCKS_SCHEMA);
+    this.runOnceDataMigration('publication_blocks_demo_v1', () => { installPublicationBlocksDemo(this); });
     // Compteurs sociaux matérialisés (audit d'architecture 12/11) : posés EN DERNIER,
     // après toutes les migrations qui suppriment ou réinstallent des interactions.
     if (ensureSocialTotals(this.db).installed) console.log('[database] social totals: table + triggers installed');

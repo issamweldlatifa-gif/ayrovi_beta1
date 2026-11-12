@@ -7,6 +7,7 @@ import { socialPage } from './socialPaging';
 import { readPublishedSocial } from '../magazine/publicSocialReads';
 import { imageWork, writeImageCache } from '../services/imageWork';
 import { readPublicationFeedSettings } from '../services/publicationFeedSettings';
+import { readPublicBlocks } from '../services/publicationBlocks';
 import { PUBLICATION_CATEGORIES } from '../../shared/publicationFeed';
 import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { readFicheLabels } from '../catalogue/products';
@@ -764,6 +765,11 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     } });
   });
 
+  // Page Publication (13/11) : blocs composés dans le CRM, produits lus dans le catalogue.
+  router.get('/social/publication-blocks', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: readPublicBlocks(db) });
+  });
   router.get('/social/publication-feed-settings', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, data: readPublicationFeedSettings(db) });
