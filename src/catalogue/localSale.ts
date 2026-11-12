@@ -66,7 +66,7 @@ export function inspectCatalogueSale(
   );
   const available = stocks.length
     ? stocks.reduce((sum, row) => sum + row.quantity, 0)
-    : id.startsWith('product_selection_')
+    : id.startsWith('product_official_')
     ? 0
     : null;
   if (available !== null && quantity > available)

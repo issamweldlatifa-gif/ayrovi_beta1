@@ -1,5 +1,4 @@
 import type { QatafoDatabase } from '../db/database';
-import { TEST_PRODUCT_ID } from '../catalogue/seedTestProduct';
 import { publicLinkedProduct } from './shoppableContent';
 import { setContentProducts } from './contentProducts';
 
@@ -18,9 +17,11 @@ export function installPublicationShowcase(
     'SELECT id FROM story_publishers WHERE official=1 ORDER BY id LIMIT 1'
   );
   if (!publisher) return [];
+  // Le produit de test d'origine a quitté le catalogue (catalogue officiel du 12/11) :
+  // l'exemple « shoppable » reprend le premier produit officiel, s'il existe.
   const product = publicLinkedProduct(
     'shoppable',
-    db.get<any>('SELECT * FROM products WHERE id=?', TEST_PRODUCT_ID)
+    db.get<any>("SELECT * FROM products WHERE id LIKE 'product_official_%' AND status='ACTIVE' ORDER BY product_code LIMIT 1")
   );
   const examples = [
     {

@@ -1,0 +1,829 @@
+{
+ "source": "products_official.json — catalogue fourni par le propriétaire le 12/11/2026 (pages officielles des marques)",
+ "rates": {
+  "USD": 2.95,
+  "GBP": 3.95
+ },
+ "priceBasis": "Prix de vente en dinars fixés à l’installation (prix source × taux retenu, arrondi au dinar) ; aucun frais ajouté. Le recalcul de change ne les touche pas (original_price = 0).",
+ "categories": [
+  {
+   "slug": "hauts",
+   "name": "Hauts",
+   "family": "clothing"
+  },
+  {
+   "slug": "sweats-vestes",
+   "name": "Sweats et vestes",
+   "family": "clothing"
+  },
+  {
+   "slug": "jeans",
+   "name": "Jeans",
+   "family": "clothing"
+  },
+  {
+   "slug": "robes",
+   "name": "Robes",
+   "family": "clothing"
+  },
+  {
+   "slug": "chaussures",
+   "name": "Chaussures",
+   "family": "clothing"
+  },
+  {
+   "slug": "smartphones",
+   "name": "Smartphones",
+   "family": "electronics"
+  },
+  {
+   "slug": "audio",
+   "name": "Audio",
+   "family": "electronics"
+  },
+  {
+   "slug": "montres",
+   "name": "Montres connectées",
+   "family": "electronics"
+  },
+  {
+   "slug": "accessoires-tech",
+   "name": "Accessoires tech",
+   "family": "electronics"
+  },
+  {
+   "slug": "photo",
+   "name": "Photo",
+   "family": "electronics"
+  },
+  {
+   "slug": "jeux-video",
+   "name": "Jeux vidéo",
+   "family": "electronics"
+  }
+ ],
+ "products": [
+  {
+   "key": "nike-dri-fit-legend",
+   "sourceId": "nike-001",
+   "brand": "Nike",
+   "name": "Dri-FIT Legend — T-shirt de fitness homme",
+   "category": "hauts",
+   "family": "clothing",
+   "sourcePrice": 32,
+   "sourceCurrency": "USD",
+   "salePriceTND": 94,
+   "compareAtTND": null,
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL"
+   ],
+   "color": "Vivid Purple/Black",
+   "stockPerSize": 8,
+   "sku": "DX0989-551",
+   "description": "T-shirt d’entraînement en polyester recyclé avec la technologie Dri-FIT qui évacue la transpiration. Coupe standard, col côtelé, toucher léger.",
+   "images": [
+    "/media/catalogue/official/nike-dri-fit-legend-1.jpg"
+   ],
+   "fields": [
+    {
+     "key": "material",
+     "label": "Matière",
+     "value": "100 % polyester, technologie Dri-FIT"
+    },
+    {
+     "key": "care",
+     "label": "Entretien",
+     "value": "Lavable en machine"
+    },
+    {
+     "key": "coupe",
+     "label": "Coupe",
+     "value": "Standard, aisance confortable — le mannequin (185 cm) porte un M"
+    }
+   ],
+   "video": "https://assets.nmp.nike.com/a/videos/6ad99ea4-fb65-4ee8-abfb-0662f8274c11/video.mp4"
+  },
+  {
+   "key": "adidas-essentials-hoodie",
+   "sourceId": "adidas-002",
+   "brand": "adidas",
+   "name": "Essentials — Sweat à capuche oversize en molleton",
+   "category": "sweats-vestes",
+   "family": "clothing",
+   "sourcePrice": 35,
+   "sourceCurrency": "USD",
+   "salePriceTND": 103,
+   "compareAtTND": 206,
+   "sizes": [
+    "XS",
+    "S",
+    "M",
+    "L"
+   ],
+   "color": "Noir",
+   "stockPerSize": 8,
+   "sku": "IY7344",
+   "description": "Sweat à capuche femme en molleton doux, coupe oversize. Taille normalement : choisissez votre taille habituelle.",
+   "images": [
+    "/media/catalogue/official/adidas-essentials-hoodie-1.jpg"
+   ],
+   "fields": [
+    {
+     "key": "material",
+     "label": "Matière",
+     "value": "Molleton"
+    },
+    {
+     "key": "coupe",
+     "label": "Coupe",
+     "value": "Oversize, taille normalement — le mannequin porte un S"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "puma-essentials-logo-tee",
+   "sourceId": "puma-003",
+   "brand": "Puma",
+   "name": "Essentials No. 1 Logo — T-shirt homme",
+   "category": "hauts",
+   "family": "clothing",
+   "sourcePrice": 14.99,
+   "sourceCurrency": "USD",
+   "salePriceTND": 44,
+   "compareAtTND": 74,
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL",
+    "XXL"
+   ],
+   "color": "PUMA Black",
+   "stockPerSize": 8,
+   "sku": "677463",
+   "description": "T-shirt à manches courtes et col rond, logo PUMA No. 1 sur la poitrine. Un basique du quotidien.",
+   "images": [
+    "/media/catalogue/official/puma-essentials-logo-tee-1.jpg",
+    "/media/catalogue/official/puma-essentials-logo-tee-2.jpg"
+   ],
+   "fields": [
+    {
+     "key": "coupe",
+     "label": "Coupe",
+     "value": "Manches courtes, col rond"
+    },
+    {
+     "key": "material",
+     "label": "Matière",
+     "value": "Jersey de coton"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "levis-501-original",
+   "sourceId": "levi’s-004",
+   "brand": "Levi’s",
+   "name": "501® Original — Jean homme",
+   "category": "jeans",
+   "family": "clothing",
+   "sourcePrice": 77,
+   "sourceCurrency": "USD",
+   "salePriceTND": 227,
+   "compareAtTND": 324,
+   "sizes": [
+    "30",
+    "32",
+    "34",
+    "36"
+   ],
+   "color": "Crispy Rinse",
+   "stockPerSize": 8,
+   "sku": "005011484",
+   "description": "Le jean d’origine : coupe droite, taille normale, braguette boutonnée et cinq poches. Denim 100 % coton non stretch.",
+   "images": [
+    "/media/catalogue/official/levis-501-original-1.jpg"
+   ],
+   "fields": [
+    {
+     "key": "material",
+     "label": "Matière",
+     "value": "100 % coton, denim non stretch"
+    },
+    {
+     "key": "care",
+     "label": "Entretien",
+     "value": "Lavage à froid sur l’envers, pas de javel, séchage moyen"
+    },
+    {
+     "key": "coupe",
+     "label": "Coupe",
+     "value": "Droite, ajustée sur la cuisse, se porte à la taille (entrejambe en 32 : ouverture 40,6 cm)"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "tnf-1996-retro-nuptse",
+   "sourceId": "the-north-face-005",
+   "brand": "The North Face",
+   "name": "1996 Retro Nuptse — Doudoune homme",
+   "category": "sweats-vestes",
+   "family": "clothing",
+   "sourcePrice": 315,
+   "sourceCurrency": "GBP",
+   "salePriceTND": 1244,
+   "compareAtTND": null,
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL"
+   ],
+   "color": "TNF Black",
+   "stockPerSize": 8,
+   "sku": "NF0A3C8D",
+   "description": "La doudoune iconique : duvet d’oie 700 cold-fill certifié RDS, coupe ample et carrée, capuche rangée dans le col. Se replie dans sa poche.",
+   "images": [
+    "/media/catalogue/official/tnf-1996-retro-nuptse-1.jpg",
+    "/media/catalogue/official/tnf-1996-retro-nuptse-2.jpg"
+   ],
+   "fields": [
+    {
+     "key": "material",
+     "label": "Matière",
+     "value": "Ripstop nylon 100 % recyclé, finition déperlante sans PFC ; garnissage duvet d’oie 700"
+    },
+    {
+     "key": "poids",
+     "label": "Poids",
+     "value": "775 g en moyenne ; longueur dos 66 cm"
+    },
+    {
+     "key": "coupe",
+     "label": "Coupe",
+     "value": "Ample, silhouette carrée"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "uniqlo-airism-tee",
+   "sourceId": "uniqlo-006",
+   "brand": "Uniqlo",
+   "name": "AIRism — T-shirt col rond homme",
+   "category": "hauts",
+   "family": "clothing",
+   "sourcePrice": 14.9,
+   "sourceCurrency": "USD",
+   "salePriceTND": 44,
+   "compareAtTND": null,
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL"
+   ],
+   "color": "Blanc",
+   "stockPerSize": 8,
+   "sku": "E482514-000",
+   "description": "T-shirt AIRism à séchage rapide, doux et respirant, coupe classique. Prix indicatif à confirmer dans le CRM (la page officielle n’affichait pas de prix).",
+   "images": [
+    "/media/catalogue/official/uniqlo-airism-tee-1.jpg"
+   ],
+   "fields": [
+    {
+     "key": "material",
+     "label": "Matière",
+     "value": "88 % polyester, 12 % élasthanne"
+    },
+    {
+     "key": "care",
+     "label": "Entretien",
+     "value": "Lavage à froid, cycle délicat ; pas de nettoyage à sec"
+    },
+    {
+     "key": "coupe",
+     "label": "Coupe",
+     "value": "Classique"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "hm-relaxed-cotton-shirt",
+   "sourceId": "h&m-007",
+   "brand": "H&M",
+   "name": "Chemise Relaxed Fit en coton — homme",
+   "category": "hauts",
+   "family": "clothing",
+   "sourcePrice": 39.99,
+   "sourceCurrency": "USD",
+   "salePriceTND": 118,
+   "compareAtTND": null,
+   "sizes": [
+    "S",
+    "M",
+    "L",
+    "XL"
+   ],
+   "color": "Gris foncé",
+   "stockPerSize": 8,
+   "sku": "1372573001",
+   "description": "Chemise en coton tissé, coupe ample, col classique, patte boutonnée, poche poitrine et poignets boutonnés.",
+   "images": [
+    "/media/catalogue/official/hm-relaxed-cotton-shirt-1.jpg"
+   ],
+   "fields": [
+    {
+     "key": "material",
+     "label": "Matière",
+     "value": "100 % coton"
+    },
+    {
+     "key": "coupe",
+     "label": "Coupe",
+     "value": "Relaxed fit, manches longues, ourlet droit"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "zara-pleated-mini-dress",
+   "sourceId": "zara-008",
+   "brand": "Zara",
+   "name": "Robe courte plissée à épaulettes",
+   "category": "robes",
+   "family": "clothing",
+   "sourcePrice": 59.9,
+   "sourceCurrency": "USD",
+   "salePriceTND": 177,
+   "compareAtTND": null,
+   "sizes": [
+    "XS",
+    "S",
+    "M",
+    "L"
+   ],
+   "color": "Noir",
+   "stockPerSize": 8,
+   "sku": "3067/214/800",
+   "description": "Robe courte à col montant, manches longues et épaulettes, détails plissés et fermeture zip invisible au dos.",
+   "images": [
+    "/media/catalogue/official/zara-pleated-mini-dress-1.jpg",
+    "/media/catalogue/official/zara-pleated-mini-dress-2.jpg"
+   ],
+   "fields": [
+    {
+     "key": "material",
+     "label": "Matière",
+     "value": "96 % polyester, 4 % élasthanne ; doublure 100 % polyester"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "new-balance-574-core",
+   "sourceId": "new-balance-009",
+   "brand": "New Balance",
+   "name": "574 Core — Baskets femme",
+   "category": "chaussures",
+   "family": "clothing",
+   "sourcePrice": 99.99,
+   "sourceCurrency": "USD",
+   "salePriceTND": 295,
+   "compareAtTND": null,
+   "sizes": [
+    "37",
+    "38",
+    "39",
+    "40",
+    "41"
+   ],
+   "color": "Nimbus Cloud / White",
+   "stockPerSize": 8,
+   "sku": "WL574EVW",
+   "description": "La 574 en daim et mesh, amorti ENCAP et semelle en caoutchouc (5 % recyclé). Taille petit : prenez une demi-pointure au-dessus.",
+   "images": [
+    "/media/catalogue/official/new-balance-574-core-1.jpg",
+    "/media/catalogue/official/new-balance-574-core-2.jpg"
+   ],
+   "fields": [
+    {
+     "key": "material",
+     "label": "Matière",
+     "value": "Daim et mesh (contient du cuir de vache)"
+    },
+    {
+     "key": "poids",
+     "label": "Poids",
+     "value": "300 g"
+    },
+    {
+     "key": "coupe",
+     "label": "Coupe",
+     "value": "Taille petit, largeur standard"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "converse-chuck-taylor-hi",
+   "sourceId": "converse-010",
+   "brand": "Converse",
+   "name": "Chuck Taylor All Star — Baskets montantes unisexe",
+   "category": "chaussures",
+   "family": "clothing",
+   "sourcePrice": 65,
+   "sourceCurrency": "USD",
+   "salePriceTND": 192,
+   "compareAtTND": null,
+   "sizes": [
+    "39",
+    "40",
+    "41",
+    "42",
+    "43",
+    "44"
+   ],
+   "color": "Noir",
+   "stockPerSize": 8,
+   "sku": "M9160",
+   "description": "La montante en toile emblématique, semelle intérieure OrthoLite et semelle à motif losanges. Taille grand : prenez une demi-pointure en dessous.",
+   "images": [
+    "/media/catalogue/official/converse-chuck-taylor-hi-1.jpg"
+   ],
+   "fields": [
+    {
+     "key": "material",
+     "label": "Matière",
+     "value": "Toile, semelle caoutchouc"
+    },
+    {
+     "key": "coupe",
+     "label": "Coupe",
+     "value": "Montante, taille grand"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "apple-iphone-18-pro",
+   "sourceId": "apple-011",
+   "brand": "Apple",
+   "name": "iPhone 18 Pro",
+   "category": "smartphones",
+   "family": "electronics",
+   "sourcePrice": 1099,
+   "sourceCurrency": "USD",
+   "salePriceTND": 3242,
+   "compareAtTND": null,
+   "sizes": [
+    "256 Go"
+   ],
+   "color": "Burgundy",
+   "stockPerSize": 8,
+   "sku": "iPhone 18 Pro",
+   "description": "Écran Super Retina XDR 6,3 pouces ProMotion jusqu’à 120 Hz, puce A20 Pro et appareil Fusion 48 Mpx à ouverture variable. Prix indicatif à confirmer dans le CRM.",
+   "images": [
+    "/media/catalogue/official/apple-iphone-18-pro-1.jpg",
+    "/media/catalogue/official/apple-iphone-18-pro-2.jpg"
+   ],
+   "fields": [
+    {
+     "key": "caracteristiques",
+     "label": "Caractéristiques",
+     "value": "Écran 6,3\" ProMotion 120 Hz ; puce A20 Pro ; caméra 48 Mpx, zoom qualité optique jusqu’à 8x ; Ceramic Shield 2"
+    },
+    {
+     "key": "garantie",
+     "label": "Garantie",
+     "value": "Garantie constructeur"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "samsung-galaxy-s26-ultra",
+   "sourceId": "samsung-012",
+   "brand": "Samsung",
+   "name": "Galaxy S26 Ultra",
+   "category": "smartphones",
+   "family": "electronics",
+   "sourcePrice": 1299.99,
+   "sourceCurrency": "USD",
+   "salePriceTND": 3835,
+   "compareAtTND": null,
+   "sizes": [
+    "256 Go",
+    "512 Go"
+   ],
+   "color": "Cobalt Violet",
+   "stockPerSize": 8,
+   "sku": "Galaxy S26 Ultra",
+   "description": "Écran 6,9 pouces avec Privacy Display, capteur principal 200 Mpx, batterie 5000 mAh et S Pen. 7,9 mm d’épaisseur.",
+   "images": [
+    "/media/catalogue/official/samsung-galaxy-s26-ultra-1.jpg"
+   ],
+   "fields": [
+    {
+     "key": "caracteristiques",
+     "label": "Caractéristiques",
+     "value": "Écran 6,9\" ; 200 + 50 + 50 Mpx, selfie 12 Mpx ; 5000 mAh, jusqu’à 31 h de vidéo"
+    },
+    {
+     "key": "poids",
+     "label": "Poids",
+     "value": "214 g ; 7,9 mm"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "sony-wh-1000xm6",
+   "sourceId": "sony-013",
+   "brand": "Sony",
+   "name": "WH-1000XM6 — Casque sans fil à réduction de bruit",
+   "category": "audio",
+   "family": "electronics",
+   "sourcePrice": 379.99,
+   "sourceCurrency": "USD",
+   "salePriceTND": 1121,
+   "compareAtTND": 1357,
+   "sizes": [
+    "Unique"
+   ],
+   "color": "Noir",
+   "stockPerSize": 8,
+   "sku": "WH-1000XM6/B",
+   "description": "Processeur HD QN3 et 12 micros pour une réduction de bruit adaptative, jusqu’à 30 h d’autonomie, charge rapide et multipoint.",
+   "images": [
+    "/media/catalogue/official/sony-wh-1000xm6-1.jpg",
+    "/media/catalogue/official/sony-wh-1000xm6-2.jpg"
+   ],
+   "fields": [
+    {
+     "key": "caracteristiques",
+     "label": "Caractéristiques",
+     "value": "Réduction de bruit QN3, 12 micros ; multipoint ; charge rapide"
+    },
+    {
+     "key": "autonomie",
+     "label": "Autonomie",
+     "value": "Jusqu’à 30 heures"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "bose-quietcomfort",
+   "sourceId": "bose-014",
+   "brand": "Bose",
+   "name": "QuietComfort Headphones — Casque à réduction de bruit",
+   "category": "audio",
+   "family": "electronics",
+   "sourcePrice": 359,
+   "sourceCurrency": "USD",
+   "salePriceTND": 1059,
+   "compareAtTND": null,
+   "sizes": [
+    "Unique"
+   ],
+   "color": "White Smoke",
+   "stockPerSize": 8,
+   "sku": "QC-HEADPHONEARN",
+   "description": "Casque circum-auriculaire à réduction de bruit active, jusqu’à 24 h d’autonomie, micro intégré et coussinets amovibles.",
+   "images": [
+    "/media/catalogue/official/bose-quietcomfort-1.jpg",
+    "/media/catalogue/official/bose-quietcomfort-2.jpg"
+   ],
+   "fields": [
+    {
+     "key": "caracteristiques",
+     "label": "Caractéristiques",
+     "value": "Réduction de bruit active ; Bluetooth ; micro intégré ; coussinets amovibles"
+    },
+    {
+     "key": "autonomie",
+     "label": "Autonomie",
+     "value": "Jusqu’à 24 heures ; recharge 2 h 30"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "jbl-go-4",
+   "sourceId": "jbl-015",
+   "brand": "JBL",
+   "name": "Go 4 — Enceinte Bluetooth portable",
+   "category": "audio",
+   "family": "electronics",
+   "sourcePrice": 49.95,
+   "sourceCurrency": "USD",
+   "salePriceTND": 147,
+   "compareAtTND": 177,
+   "sizes": [
+    "Unique"
+   ],
+   "color": "Violet",
+   "stockPerSize": 8,
+   "sku": "JBLGO4",
+   "description": "Ultra-compacte, étanche IP67, son JBL Pro de 4,2 W, Bluetooth 5.3 et Auracast. Jusqu’à 7 h d’écoute.",
+   "images": [
+    "/media/catalogue/official/jbl-go-4-1.jpg"
+   ],
+   "fields": [
+    {
+     "key": "caracteristiques",
+     "label": "Caractéristiques",
+     "value": "4,2 W ; 90 Hz–20 kHz ; Bluetooth 5.3 ; Auracast ; IP67"
+    },
+    {
+     "key": "poids",
+     "label": "Dimensions",
+     "value": "9,4 × 7,8 × 4,2 cm ; 190 g"
+    },
+    {
+     "key": "autonomie",
+     "label": "Autonomie",
+     "value": "Jusqu’à 7 heures ; recharge 3 h"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "garmin-forerunner-265",
+   "sourceId": "garmin-016",
+   "brand": "Garmin",
+   "name": "Forerunner® 265 — Montre GPS de course",
+   "category": "montres",
+   "family": "electronics",
+   "sourcePrice": 449.99,
+   "sourceCurrency": "USD",
+   "salePriceTND": 1327,
+   "compareAtTND": null,
+   "sizes": [
+    "46 mm"
+   ],
+   "color": "Noir",
+   "stockPerSize": 8,
+   "sku": "010-02810-01",
+   "description": "Montre de course GPS à écran AMOLED tactile, métriques d’entraînement et musique sans téléphone. Jusqu’à 13 jours d’autonomie.",
+   "images": [
+    "/media/catalogue/official/garmin-forerunner-265-1.jpg",
+    "/media/catalogue/official/garmin-forerunner-265-2.jpg"
+   ],
+   "fields": [
+    {
+     "key": "caracteristiques",
+     "label": "Caractéristiques",
+     "value": "Écran AMOLED tactile ; métriques d’entraînement ; musique sans téléphone"
+    },
+    {
+     "key": "autonomie",
+     "label": "Autonomie",
+     "value": "Jusqu’à 13 jours (mode montre)"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "logitech-mx-master-4",
+   "sourceId": "logitech-017",
+   "brand": "Logitech",
+   "name": "MX Master 4 — Souris sans fil",
+   "category": "accessoires-tech",
+   "family": "electronics",
+   "sourcePrice": 119.99,
+   "sourceCurrency": "USD",
+   "salePriceTND": 354,
+   "compareAtTND": null,
+   "sizes": [
+    "Unique"
+   ],
+   "color": "Graphite",
+   "stockPerSize": 8,
+   "sku": "MX Master 4",
+   "description": "Souris haut de gamme à retour haptique, capteur 8 000 DPI qui fonctionne même sur le verre et molette MagSpeed jusqu’à 1 000 lignes/s.",
+   "images": [
+    "/media/catalogue/official/logitech-mx-master-4-1.jpg",
+    "/media/catalogue/official/logitech-mx-master-4-2.jpg"
+   ],
+   "fields": [
+    {
+     "key": "caracteristiques",
+     "label": "Caractéristiques",
+     "value": "Capteur 8 000 DPI ; molette électromagnétique MagSpeed ; Actions Ring ; retour haptique"
+    }
+   ],
+   "video": "https://resource.logitech.com/q_auto,c_fill/content/dam/logitech/en/products/mice/mx-master-4/product-tour/mx-master-4-product-tour-hero-loop-video.mp4"
+  },
+  {
+   "key": "canon-eos-r5",
+   "sourceId": "canon-018",
+   "brand": "Canon",
+   "name": "EOS R5 — Appareil photo hybride (boîtier nu)",
+   "category": "photo",
+   "family": "electronics",
+   "sourcePrice": 2599,
+   "sourceCurrency": "USD",
+   "salePriceTND": 7667,
+   "compareAtTND": 9732,
+   "sizes": [
+    "Boîtier nu"
+   ],
+   "color": "Noir",
+   "stockPerSize": 8,
+   "sku": "EOS R5 BODY",
+   "description": "Capteur plein format 45 Mpx, processeur DIGIC X, rafale jusqu’à 20 i/s, autofocus Dual Pixel CMOS AF II, vidéo 8K RAW et stabilisation intégrée.",
+   "images": [
+    "/media/catalogue/official/canon-eos-r5-1.jpg",
+    "/media/catalogue/official/canon-eos-r5-2.jpg"
+   ],
+   "fields": [
+    {
+     "key": "caracteristiques",
+     "label": "Caractéristiques",
+     "value": "45 Mpx plein format ; ISO 100–51 200 ; 12 i/s mécanique, 20 i/s électronique ; vidéo 8K RAW ; IBIS"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "nintendo-switch-neon",
+   "sourceId": "nintendo-019",
+   "brand": "Nintendo",
+   "name": "Nintendo Switch™ — Joy-Con Bleu néon / Rouge néon",
+   "category": "jeux-video",
+   "family": "electronics",
+   "sourcePrice": 339.99,
+   "sourceCurrency": "USD",
+   "salePriceTND": 1003,
+   "compareAtTND": null,
+   "sizes": [
+    "Unique"
+   ],
+   "color": "Bleu néon / Rouge néon",
+   "stockPerSize": 8,
+   "sku": "117972",
+   "description": "Console à écran tactile 6,2 pouces, trois modes de jeu (TV, sur table, portable). Livrée avec station d’accueil, deux Joy-Con, dragonnes, support Joy-Con, câble HDMI et adaptateur secteur.",
+   "images": [
+    "/media/catalogue/official/nintendo-switch-neon-1.jpg",
+    "/media/catalogue/official/nintendo-switch-neon-2.jpg"
+   ],
+   "fields": [
+    {
+     "key": "caracteristiques",
+     "label": "Caractéristiques",
+     "value": "Écran LCD tactile 6,2\" ; batterie 5220 mAh ; multijoueur local et en ligne"
+    },
+    {
+     "key": "contenu",
+     "label": "Contenu de la boîte",
+     "value": "Console, station, Joy-Con gauche et droit, dragonnes, support, câble HDMI, adaptateur secteur"
+    }
+   ],
+   "video": null
+  },
+  {
+   "key": "anker-prime-26k",
+   "sourceId": "anker-020",
+   "brand": "Anker",
+   "name": "Prime Power Bank 26K 300W",
+   "category": "accessoires-tech",
+   "family": "electronics",
+   "sourcePrice": 229.99,
+   "sourceCurrency": "USD",
+   "salePriceTND": 678,
+   "compareAtTND": null,
+   "sizes": [
+    "Unique"
+   ],
+   "color": "Gris",
+   "stockPerSize": 8,
+   "sku": "A110A",
+   "description": "Batterie externe 26 250 mAh, 300 W au total : USB-C jusqu’à 140 W, deux ports USB-C et un port USB-A.",
+   "images": [
+    "/media/catalogue/official/anker-prime-26k-1.jpg",
+    "/media/catalogue/official/anker-prime-26k-2.jpg"
+   ],
+   "fields": [
+    {
+     "key": "caracteristiques",
+     "label": "Caractéristiques",
+     "value": "26 250 mAh ; 300 W max ; USB-C 140 W ; USB-A 22,5 W"
+    },
+    {
+     "key": "poids",
+     "label": "Dimensions",
+     "value": "159,9 × 38 × 62,7 mm ; 600 g"
+    }
+   ],
+   "video": null
+  }
+ ]
+}

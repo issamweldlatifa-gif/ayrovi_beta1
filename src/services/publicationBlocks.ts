@@ -216,14 +216,19 @@ export function readPublicBlocks(db: Store): PublicationBlockPublic[] {
 
 /* ── Contenu de démonstration ─────────────────────────────────────────────── */
 
-const SELECTION = (key: string) => `product_selection_${key}`;
+const OFFICIAL = (key: string) => `product_official_${key}`;
+const PHOTO = (file: string) => `/media/catalogue/official/${file}.jpg`;
+/** Vidéos produit officielles fournies par le propriétaire (fichiers MP4 directs). */
+export const OFFICIAL_VIDEOS = {
+  nike: 'https://assets.nmp.nike.com/a/videos/6ad99ea4-fb65-4ee8-abfb-0662f8274c11/video.mp4',
+  logitech: 'https://resource.logitech.com/q_auto,c_fill/content/dam/logitech/en/products/mice/mx-master-4/product-tour/mx-master-4-product-tour-hero-loop-video.mp4',
+} as const;
 
 /**
- * Remplit la page avec les produits et les vidéos DÉJÀ présents (catalogue de
- * la sélection propriétaire + Reels du propriétaire). Une seule fois, et
- * seulement si aucun bloc n'existe : le CRM reste maître ensuite. Les produits
- * absents d'une installation sont simplement écartés ; un bloc qui n'a plus
- * assez de produits n'est pas créé.
+ * Démonstration (catalogue officiel du 12/11/2026) : douze blocs qui alternent
+ * les trois modèles, chacun avec les produits qui lui correspondent. Vidéos :
+ * les deux MP4 officiels (Nike, Logitech) et les deux clips du propriétaire qui
+ * montrent des articles du catalogue (défilé, baskets).
  */
 export const PUBLICATION_BLOCKS_DEMO: Array<Omit<PublicationBlockInput, 'active' | 'panel_color' | 'poster_url'> & {
   panel_color?: string;
@@ -231,49 +236,64 @@ export const PUBLICATION_BLOCKS_DEMO: Array<Omit<PublicationBlockInput, 'active'
   reel?: string;
 }> = [
   {
-    kind: 'media', title: 'Accessoires', subtitle: 'Les détails qui signent une allure.', bg_color: '#FFFFFF', sponsored: false,
-    media_type: 'video', media_url: '/media/reels-owned/accessories-v1.mp4', poster_url: '/media/reels-owned/accessories-v1.jpg', reel: 'reel_owner_accessories_v1',
-    product_ids: [SELECTION('mk-laila-pochette'), SELECTION('mk-charms-braided'), SELECTION('furla-easy-shape'), SELECTION('armani-traditional')],
+    kind: 'media', title: 'Nike Dri-FIT', subtitle: 'L’entraînement commence ici : des hauts qui respirent avec vous.', bg_color: '#FFFFFF', sponsored: true,
+    media_type: 'video', media_url: OFFICIAL_VIDEOS.nike, poster_url: PHOTO('nike-dri-fit-legend-1'),
+    product_ids: [OFFICIAL('nike-dri-fit-legend'), OFFICIAL('puma-essentials-logo-tee'), OFFICIAL('adidas-essentials-hoodie'), OFFICIAL('uniqlo-airism-tee')],
   },
   {
-    kind: 'container', title: 'MICHAEL Michael Kors', subtitle: 'La touche bordeaux.', bg_color: '#D7263D', sponsored: true,
+    kind: 'container', title: 'The North Face', subtitle: 'Prêts pour l’hiver ?', bg_color: '#111111', sponsored: true,
     media_type: '', media_url: '',
-    product_ids: [SELECTION('mk-bri-ruched'), SELECTION('mk-laila-pochette'), SELECTION('mk-charms-braided')],
+    product_ids: [OFFICIAL('tnf-1996-retro-nuptse'), OFFICIAL('adidas-essentials-hoodie'), OFFICIAL('levis-501-original')],
   },
   {
-    kind: 'sponsored_pair', title: 'Calvin Klein Jeans', subtitle: 'Les dernières nouveautés', bg_color: '#4262AD', sponsored: true,
-    media_type: 'image', media_url: '/media/publications/editorial-style.jpg',
-    product_ids: [SELECTION('ck-henley-white')],
+    kind: 'sponsored_pair', title: 'Sony', subtitle: 'Le silence, version WH-1000XM6', bg_color: '#1F3A5F', sponsored: true,
+    media_type: 'image', media_url: PHOTO('sony-wh-1000xm6-2'),
+    product_ids: [OFFICIAL('sony-wh-1000xm6')],
   },
   {
-    kind: 'media', title: 'Soins cheveux', subtitle: 'Volume, densité et éclat : la routine en trois gestes.', bg_color: '#FFFFFF', sponsored: false,
-    media_type: 'image', media_url: '/media/publications/editorial-beauty-mirror.jpg',
-    product_ids: [SELECTION('kerastase-volumifique'), SELECTION('kerastase-chronologiste'), SELECTION('ordinary-hair-density')],
+    kind: 'media', title: 'Smartphones', subtitle: 'Les nouveaux phares, et de quoi les garder chargés.', bg_color: '#FFFFFF', sponsored: false,
+    media_type: 'image', media_url: PHOTO('samsung-galaxy-s26-ultra-1'),
+    product_ids: [OFFICIAL('samsung-galaxy-s26-ultra'), OFFICIAL('apple-iphone-18-pro'), OFFICIAL('anker-prime-26k')],
   },
   {
-    kind: 'container', title: 'Kérastase', subtitle: 'Prêt pour le volume ?', bg_color: '#F2AD11', sponsored: true,
+    kind: 'container', title: 'Sneakers', subtitle: 'Deux classiques, du matin au soir.', bg_color: '#F2AD11', sponsored: false,
     media_type: '', media_url: '',
-    product_ids: [SELECTION('kerastase-volumifique'), SELECTION('kerastase-chronologiste'), SELECTION('ordinary-hair-density')],
+    product_ids: [OFFICIAL('converse-chuck-taylor-hi'), OFFICIAL('new-balance-574-core')],
   },
   {
     kind: 'media', title: 'Chaussures', subtitle: 'Un pas d’avance, du matin au soir.', bg_color: '#FFFFFF', sponsored: false,
     media_type: 'video', media_url: '/media/reels-owned/shoes-v1.mp4', poster_url: '/media/reels-owned/shoes-v1.jpg', reel: 'reel_owner_shoes_v1',
-    product_ids: ['product_test_baskets', SELECTION('mk-bri-ruched')],
+    product_ids: [OFFICIAL('new-balance-574-core'), OFFICIAL('converse-chuck-taylor-hi')],
   },
   {
-    kind: 'sponsored_pair', title: 'MICHAEL Michael Kors', subtitle: 'Les sacs de la saison', bg_color: '#F4C430', sponsored: true,
-    media_type: 'image', media_url: '/media/publications/bag-editorial-caramel.jpg',
-    product_ids: [SELECTION('mk-laila-pochette')],
+    kind: 'sponsored_pair', title: 'Garmin', subtitle: 'Chaque foulée compte', bg_color: '#2E7D5B', sponsored: true,
+    media_type: 'image', media_url: PHOTO('garmin-forerunner-265-2'),
+    product_ids: [OFFICIAL('garmin-forerunner-265')],
   },
   {
-    kind: 'container', title: 'Swarovski', subtitle: 'Une touche de couleur à table.', bg_color: '#F4F4F4', sponsored: false,
-    media_type: 'image', media_url: '/media/publications/editorial-lifestyle.jpg',
-    product_ids: [SELECTION('swarovski-tasse'), SELECTION('armani-traditional'), SELECTION('furla-easy-shape')],
+    kind: 'container', title: 'Le son, partout', subtitle: 'Casques et enceinte à emporter.', bg_color: '#4262AD', sponsored: false,
+    media_type: '', media_url: '',
+    product_ids: [OFFICIAL('bose-quietcomfort'), OFFICIAL('sony-wh-1000xm6'), OFFICIAL('jbl-go-4')],
   },
   {
-    kind: 'media', title: 'Vêtements', subtitle: 'Les essentiels qui se portent tous les jours.', bg_color: '#E9E4DC', sponsored: false,
+    kind: 'media', title: 'Logitech MX Master 4', subtitle: 'Un bureau qui travaille pour vous.', bg_color: '#F4F4F4', sponsored: true,
+    media_type: 'video', media_url: OFFICIAL_VIDEOS.logitech, poster_url: PHOTO('logitech-mx-master-4-2'),
+    product_ids: [OFFICIAL('logitech-mx-master-4'), OFFICIAL('anker-prime-26k'), OFFICIAL('canon-eos-r5'), OFFICIAL('nintendo-switch-neon')],
+  },
+  {
+    kind: 'media', title: 'Mode', subtitle: 'Les pièces vues sur le podium.', bg_color: '#E9E4DC', sponsored: false,
     media_type: 'video', media_url: '/media/reels-owned/clothing-v1.mp4', poster_url: '/media/reels-owned/clothing-v1.jpg', reel: 'reel_owner_clothing_v1',
-    product_ids: [SELECTION('ck-henley-white'), 'product_test_baskets', SELECTION('mk-bri-ruched')],
+    product_ids: [OFFICIAL('zara-pleated-mini-dress'), OFFICIAL('hm-relaxed-cotton-shirt'), OFFICIAL('levis-501-original'), OFFICIAL('tnf-1996-retro-nuptse')],
+  },
+  {
+    kind: 'sponsored_pair', title: 'Zara', subtitle: 'La petite robe noire', bg_color: '#8B1A2B', sponsored: true,
+    media_type: 'image', media_url: PHOTO('zara-pleated-mini-dress-2'),
+    product_ids: [OFFICIAL('zara-pleated-mini-dress')],
+  },
+  {
+    kind: 'container', title: 'Jeux et photo', subtitle: 'Pour jouer et immortaliser.', bg_color: '#C9E4DE', sponsored: false,
+    media_type: '', media_url: '',
+    product_ids: [OFFICIAL('nintendo-switch-neon'), OFFICIAL('canon-eos-r5'), OFFICIAL('jbl-go-4')],
   },
 ];
 

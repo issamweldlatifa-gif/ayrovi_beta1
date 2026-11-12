@@ -5,8 +5,6 @@ import {
   installPublicationShowcase,
   PUBLICATION_SHOWCASE_PREFIX,
 } from '../src/services/publicationShowcase';
-import { selectionId } from '../src/catalogue/installPublicationSelection';
-const TEST_PRODUCT_ID = selectionId('mk-bri-ruched');
 
 describe('Code-installed publication examples visible without CRM creation', () => {
   test('installs all five additional layouts and both corrected compositions as real published posts', async () => {
@@ -35,17 +33,13 @@ describe('Code-installed publication examples visible without CRM creation', () 
       expect(JSON.parse(row.media_json).length).toBeGreaterThan(0);
       expect((await request(app).get(row.image_url)).status).toBe(200);
     }
-    const shop = rows.find((row: any) => row.template_id === 'shoppable');
-    expect(shop.products[0].id).toBe(TEST_PRODUCT_ID);
-    const product = db.get<any>(
-      'SELECT * FROM products WHERE id=?',
-      TEST_PRODUCT_ID
-    );
-    expect(shop.image_url).toBe(product.image);
-    expect(shop.products[0].price).toBe(product.final_price);
-    expect(
-      rows.find((row: any) => row.template_id === 'carousel').products
-    ).toHaveLength(3);
+    // Catalogue officiel (12/11/2026) : l'ancien catalogue a été retiré en entier.
+    // Ces exemples de l'ancien fil restent éditoriaux : aucun produit retiré n'y survit.
+    for (const row of rows) {
+      for (const linked of row.products ?? []) {
+        expect(db.get<any>('SELECT id FROM products WHERE id=?', linked.id)).toBeTruthy();
+      }
+    }
     // Le nouveau « cover » ne lit plus les publications : rien sans médias du CRM.
     const cover = (await request(app).get('/api/public/home-cover')).body.data;
     expect(cover?.slides ?? []).toHaveLength(0);

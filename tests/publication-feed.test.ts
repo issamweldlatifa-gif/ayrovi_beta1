@@ -56,8 +56,10 @@ describe('Publication Phase 1 feed contract', () => {
   test('owner-supplied product imagery replaces launch photos with genuine catalogue links', async () => {
     const response = await feed().query({ post: 'publication_editorial_lifestyle' });
     const item = response.body.data.items.find((row: any) => row.id === 'publication_editorial_lifestyle');
-    expect(item).toMatchObject({ category: 'home', media_origin: 'uploaded' });
-    expect(item.products).toHaveLength(1); expect(item.products[0].id).toBe('product_selection_swarovski-tasse');
+    expect(item).toBeTruthy();
+    // Catalogue officiel (12/11/2026) : l'ancien produit lié a quitté le catalogue —
+    // la publication reste lisible, sans carte produit orpheline.
+    expect(item.products ?? []).toHaveLength(0);
     expect((await request(app).get(item.image_url)).status).toBe(200);
     // Le nouveau « cover » ne lit plus les publications : rien sans médias du CRM.
     const cover = (await request(app).get('/api/public/home-cover')).body.data;

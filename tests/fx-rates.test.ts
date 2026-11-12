@@ -63,7 +63,8 @@ describe('FX live rates service', () => {
     expect(sourced).toBeGreaterThanOrEqual(1);
     expect(outcome.repriced).toBe(sourced);
     expect(outcome.skipped).toBe(nativeTnd);
-    expect(db.get<any>('SELECT final_price FROM products WHERE id=?', 'product_test_baskets').final_price).toBe(89);
+    // Catalogue officiel : prix saisis en dinars, jamais re-tarifés par le change.
+    expect(db.get<any>('SELECT final_price FROM products WHERE id=?', 'product_official_nike-dri-fit-legend').final_price).toBe(94);
     const after = db.getPricingRules();
     expect(after.version).toBe(before.version + 1);
     expect(after.fxSource).toBe('live');

@@ -4,7 +4,7 @@ import { schemaStatements } from './schemaStatements';
 import { ensureSocialTotals, socialTotalsDrift } from './socialTotals';
 import { upgradePublicationMediaPresentation } from '../catalogue/upgradePublicationMediaPresentation';
 import { reserveCatalogueSale, catalogId } from '../catalogue/localSale';
-import { installPublicationSelection } from '../catalogue/installPublicationSelection';
+import { installOfficialCatalogue, linkOfficialReelProducts, purgeCatalogueProducts } from '../catalogue/installOfficialCatalogue';
 import { installPublicationShowcase } from '../services/publicationShowcase';
 import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../shared/publicationFeed';
 import { seedOfficialStories } from '../services/officialStories';
@@ -21,7 +21,6 @@ import { quoteCartLine } from '../services/cartQuote';
 import { DEFAULT_DAY_LADDER, dayLabelFr, type PromoRule, type PromoScope } from '../services/promotions';
 import { seedArrivalStores } from '../arrival-ingestion/storeProfiles';
 import { PUBLIC_NAV_DESTINATIONS } from '../../shared/publicNavigation';
-import { seedTestProduct } from '../catalogue/seedTestProduct';
 import { ensureErpCoreSchema } from '../erp-core/bootstrap';
 import { ensureCatalogueSchema } from '../catalogue/bootstrap';
 import { ensureInventorySchema } from '../inventory/bootstrap';
@@ -391,12 +390,10 @@ export class QatafoDatabase {
     this.seedCoreData();
     this.rebrandZayroviV1();
     this.purgeDemoProductsV1();
-    this.seedTestProductV1();
     this.installOfficialStories();
     this.installPublicationEditorialLaunch();
     this.runOnceDataMigration('publication_visible_showcase_v1', () => { installPublicationShowcase(this); });
     this.rebrandBlueV1();
-    this.runOnceDataMigration('publication_owner_products_v1', () => { installPublicationSelection(this); });
     this.runOnceDataMigration('publication_media_presentation_v1', () => { upgradePublicationMediaPresentation(this); });
     this.runOnceDataMigration('publication_publisher_team_v1', () => {
       this.run("UPDATE story_publishers SET name='Zayrovi Team' WHERE id='pub_ayrovi' AND official=1 AND lower(trim(name)) IN ('zayrovi','zayrovi official')");
@@ -425,7 +422,16 @@ export class QatafoDatabase {
     // Page Publication refondue (13/11) : blocs composés dans le CRM. La démonstration
     // reprend les produits et les vidéos déjà installés (Reels), une seule fois.
     this.db.exec(PUBLICATION_BLOCKS_SCHEMA);
-    this.runOnceDataMigration('publication_blocks_demo_v1', () => { installPublicationBlocksDemo(this); });
+    // Catalogue officiel (12/11) : l'ancien catalogue est retiré EN ENTIER et remplacé
+    // par les vingt produits fournis par le propriétaire (`catalogue/installOfficialCatalogue.ts`).
+    this.runOnceDataMigration('official_catalogue_v1', () => {
+      const report = purgeCatalogueProducts(this);
+      const created = installOfficialCatalogue(this);
+      linkOfficialReelProducts(this);
+      console.log(`[database] catalogue officiel : ${report.products} produit(s) retiré(s), ${created} installé(s)`);
+    });
+    // v2 : la démonstration reprend le catalogue officiel (la v1 citait l'ancien).
+    this.runOnceDataMigration('publication_blocks_demo_v2', () => { installPublicationBlocksDemo(this); });
     // Compteurs sociaux matérialisés (audit d'architecture 12/11) : posés EN DERNIER,
     // après toutes les migrations qui suppriment ou réinstallent des interactions.
     if (ensureSocialTotals(this.db).installed) console.log('[database] social totals: table + triggers installed');
@@ -509,22 +515,6 @@ export class QatafoDatabase {
           SELECT id,title,subtitle,cta_label,cta_url,7,enabled,0,updated_at FROM stories_showcase_legacy;
         DROP TABLE stories_showcase_legacy;`);
       seedOfficialStories(this);
-    });
-  }
-
-  /**
-   * PRODUIT DE TEST FIXE (25/10/2026) — une seule fois, et seulement si la ligne
-   * n'existe pas : cent pièces, deux couleurs, cinq tailles, trois photos, les
-   * noms de blocs de la maquette. Détail et garde-fous : `catalogue/seedTestProduct.ts`.
-   */
-  private seedTestProductV1(): void {
-    this.runOnceDataMigration('seed_test_product_v1', () => {
-      try {
-        seedTestProduct(this);
-      } catch (error: any) {
-        // Un produit de test ne doit jamais empêcher l'application de démarrer.
-        console.warn(`[database] produit de test non créé : ${String(error?.message || error)}`);
-      }
     });
   }
 
