@@ -32,3 +32,17 @@ describe('mouvement de navigation (11/11)', () => {
     expect(tabs).toContain('tabMotion(useReduceMotion())');
   });
 });
+
+describe('Reels : fil allégé (12/11)', () => {
+  it('détache les cartes hors fenêtre sur Android et garde une fenêtre courte', () => {
+    const viewer = readFileSync(join(__dirname, '../app/reels-viewer.tsx'), 'utf8');
+    expect(viewer).toContain('removeClippedSubviews={Platform.OS === "android"}');
+    expect(viewer).toContain('windowSize={5}');
+  });
+  it('la couverture du Reel apparaît en fondu (AppImage transition), jamais d’un coup', () => {
+    const image = readFileSync(join(__dirname, '../src/design/appImage.tsx'), 'utf8');
+    expect(image).toContain('transition={localSource != null ? 0 : theme.duration.fast}');
+    const card = readFileSync(join(__dirname, '../src/features/social/ReelCard.tsx'), 'utf8');
+    expect(card).toContain('uri={mediaUrl(reel.posterUrl)}');
+  });
+});

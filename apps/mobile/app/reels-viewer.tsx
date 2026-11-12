@@ -17,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { goBack } from "@/design/navigation";
 import {
   FlatList,
+  Platform,
   StatusBar,
   StyleSheet,
   View,
@@ -141,6 +142,10 @@ export default function ReelsViewerScreen() {
         initialNumToRender={2}
         maxToRenderPerBatch={2}
         windowSize={5}
+        // Android : les cartes hors fenêtre sont détachées de la vue native
+        // (mémoire et composition GPU allégées). iOS garde son rendu : le
+        // détachement y peut laisser un VideoView noir au retour.
+        removeClippedSubviews={Platform.OS === "android"}
         extraData={{ playingId, focused, commentsFor, visibleIndex }}
         onEndReached={() => { if (reels.hasNextPage && !reels.isFetching && !reels.isFetchNextPageError) void reels.fetchNextPage(); }}
         onEndReachedThreshold={0.5}
