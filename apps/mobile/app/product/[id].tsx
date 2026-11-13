@@ -134,6 +134,8 @@ export default function ProductScreen() {
     setSize('');
     setColor('');
     setPhoto(startPhoto);
+    // Même écran, autre produit : la galerie revient aussi sur la photo d'arrivée (contentOffset ne vaut qu'au montage).
+    pagerRef.current?.scrollTo({ x: startPhoto * screenWidth, animated: false });
     setPendingAddOnSize(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- la photo d'arrivée ne s'applique qu'à l'ouverture du produit
   }, [id]);

@@ -228,7 +228,10 @@ describe('branchements', () => {
   it('la fiche s’ouvre sur la photo regardée dans la carte', () => {
     expect(product).toContain('photo: photoParam');
     expect(product).toContain('useState(startPhoto)');
-    expect(product).toContain('index={shownPhoto}');
+    // 13/11 : la photo est fixe et suit le pager — les deux partent de la photo d'arrivée.
+    expect(product).toContain('initialIndex={shownPhoto}');
+    expect(product).toContain('new Animated.Value(startPhoto * screenWidth)');
+    expect(product).toContain('scrollTo({ x: startPhoto * screenWidth, animated: false })');
   });
 
   it('le choix grandes / petites photos est un réglage persistant', () => {
