@@ -99,8 +99,11 @@ describe('parseLinkedProduct — ce que l’application accepte', () => {
     // La marque fait partie de la carte (elle s'affiche au-dessus du titre) :
     // inconnue, elle vaut '' — et la ligne disparaîtra côté rendu.
     expect(parseLinkedProduct({ id: 'p', name: 'X', price: '12.5', image: '/i.jpg' })).toEqual({
-      id: 'p', name: 'X', brand: '', image: '/i.jpg', price: 12.5, currency: 'TND', stockStatus: 'AVAILABLE', available: true,
+      id: 'p', name: 'X', brand: '', image: '/i.jpg', price: 12.5, compareAtPrice: null, isNew: false, currency: 'TND', stockStatus: 'AVAILABLE', available: true,
     });
+    // 14/11 : prix barré gardé SEULEMENT s'il dépasse le prix ; « Nouveau » seulement si le serveur le dit.
+    expect(parseLinkedProduct({ id: 'p', name: 'X', price: 12.5, image: '/i.jpg', compareAtPrice: 20, isNew: true })).toMatchObject({ compareAtPrice: 20, isNew: true });
+    expect(parseLinkedProduct({ id: 'p', name: 'X', price: 12.5, image: '/i.jpg', compareAtPrice: 10, isNew: 'yes' })).toMatchObject({ compareAtPrice: null, isNew: false });
     expect(parseLinkedProduct({ id: 'p', name: 'X', price: 12.5, brand: ' Stradivarius ' })?.brand).toBe('Stradivarius');
   });
 });

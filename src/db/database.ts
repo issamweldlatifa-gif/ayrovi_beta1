@@ -1,4 +1,4 @@
-import { installPublicationBlocksDemo, PUBLICATION_BLOCKS_SCHEMA } from '../services/publicationBlocks';
+import { completeDemoSponsoredPairs, installPublicationBlocksDemo, PUBLICATION_BLOCKS_SCHEMA } from '../services/publicationBlocks';
 import { installOwnerReels } from '../magazine/installOwnerReels';
 import { schemaStatements } from './schemaStatements';
 import { ensureSocialTotals, socialTotalsDrift } from './socialTotals';
@@ -434,6 +434,8 @@ export class QatafoDatabase {
     this.runOnceDataMigration('publication_blocks_demo_v2', () => { installPublicationBlocksDemo(this); });
     // Photos officielles au format unique 2:3 (13/11) : adresses versionnées → caches rafraîchis.
     this.runOnceDataMigration('official_catalogue_images_v2', () => { versionOfficialImages(this); });
+    // Duo sponsorisé à deux cartes (14/11) : les blocs de démonstration reçoivent leur seconde carte.
+    this.runOnceDataMigration('publication_pair_two_cards_v1', () => { completeDemoSponsoredPairs(this); });
     // Compteurs sociaux matérialisés (audit d'architecture 12/11) : posés EN DERNIER,
     // après toutes les migrations qui suppriment ou réinstallent des interactions.
     if (ensureSocialTotals(this.db).installed) console.log('[database] social totals: table + triggers installed');

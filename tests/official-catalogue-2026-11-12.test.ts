@@ -72,7 +72,8 @@ describe('catalogue officiel — base neuve', () => {
       for (const product of block.products) expect(product.id.startsWith('product_official_')).toBe(true);
     }
     expect(blocks.filter((b) => b.media?.type === 'video')).toHaveLength(4);
-    for (const pair of blocks.filter((b) => b.kind === 'sponsored_pair')) expect(pair.products).toHaveLength(1);
+    // 14/11 : le duo montre deux cartes sous l'image (planche GBox « WE Fashion »).
+    for (const pair of blocks.filter((b) => b.kind === 'sponsored_pair')) expect(pair.products).toHaveLength(2);
   });
 
   test('Reels du propriétaire : le défilé et les baskets portent des produits officiels', () => {

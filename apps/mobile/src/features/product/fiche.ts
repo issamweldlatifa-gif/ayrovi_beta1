@@ -38,12 +38,12 @@ export const FICHE = {
   dotPitch: 13,            // 26 px entre deux points
   gutter: 16,              // 32 px : marge de tout l'écran
   nameTop: 12,             // 1186 − 1162 = 24 px sous la photo
-  nameSize: 22,            // 44 px
-  nameLine: 26,            // interligne du nom : 44 px de corps, 52 px de ligne
+  nameSize: 18,            // 14/11 Privé : marque en police « Expanded », 33 px d'ascendante à descendante ⇒ corps 18
+  nameLine: 24,            // interligne de la marque
   priceRight: 17,          // 34 px : le prix finit à 17 dp du bord
   priceSize: 20,           // 40 px gras, sur la même ligne que le nom
-  underlineGap: 5,         // le filet tombe 5 dp sous le texte
-  underlineWidth: 2,       // 4 px
+  underlineGap: 2,         // 14/11 Privé : le filet colle à la ligne de base (293 px sous 292 px)
+  underlineWidth: 1,       // 2 px : filet fin, couleur de l'encre
   descriptionGap: 2,       // 1256 − (1249 + 2) ≈ 2 dp
   /** Vidéo Veepee : sous la marque soulignée, le nom complet du produit (jamais coupé). */
   fullNameGap: 4,
@@ -55,7 +55,7 @@ export const FICHE = {
 
   /* Ligne « Taille » (et toute ligne de même facture) */
   rowHeight: 49,           // 1342 → 1440 = 98 px
-  rowLabel: 18,            // 36 px
+  rowLabel: 17,            // 14/11 Privé : « Taille », « Caractéristiques » en gras 17
   rowIcon: 24,             // l'icône fait 26 × 48 px
   rowIconStart: 17,        // 46 px → 23 dp : la boîte de 24 dp commence à 17
   rowLabelStart: 57,       // 114 px
@@ -68,7 +68,7 @@ export const FICHE = {
   /* En-tête (écran 2) */
   headerHeight: 60,        // 0 → 173 px (zone sûre exclue)
   headerTitle: 19,         // 38 px
-  headerRule: 3,           // 173 → 179 px
+  headerRule: 1,           // 14/11 Privé : filet fin sous l'en-tête blanc (2 px)
 
   /* Bloc Couleur */
   blockTop: 13,            // 157 − 143.5 = 27 px
@@ -96,11 +96,11 @@ export const FICHE = {
   shareHeight: 51,         // 1352 → 1454 = 102 px
 
   /* Barre d'achat compacte (écrans 1 et 2, proportions épurées Privé / Zalando) */
-  barHeight: 60,           // barre compacte : 10 dp haut + pastille 40 dp + 10 dp bas
+  barHeight: 68,           // 14/11 Privé : 10 dp + pastille 48 dp + 10 dp
   barPrice: 15,            // 30 px gras
-  barButtonWidth: 184,     // pastille compacte « Ajouter au panier »
-  barButtonHeight: 40,     // hauteur compacte alignée sur `CHROME.button`
-  barButtonRadius: 20,     // rayon plein (40 ÷ 2)
+  barButtonWidth: 212,     // 14/11 Privé : pastille violette 302 px sur 513 ⇒ 212 dp
+  barButtonHeight: 48,     // 67 px sur 1147 ⇒ 47 dp, arrondi à la cible tactile 48
+  barButtonRadius: 24,     // rayon plein (48 ÷ 2)
   barButtonTop: 10,        // centrage vertical dans la barre de 60 dp
 
   /* Feuille de taille (écran 3) */
@@ -140,7 +140,7 @@ export const FICHE = {
   // La croix de la visionneuse ne porte plus de cote : elle suit `theme.iconSize.md`.
 
   /** La barre d'achat compacte, zone sûre comprise — la page réserve cette hauteur. */
-  ctaHeight: 60,
+  ctaHeight: 68,
 } as const;
 
 /* ── En-tête : transparent sur la photo, plein dès qu'elle est sortie ─────── */
@@ -148,6 +148,92 @@ export const FICHE = {
 /** L'en-tête devient-il plein ? (la photo a quitté le haut de l'écran) */
 export function headerIsSolid(offsetY: number): boolean {
   return offsetY >= FICHE.imageHeight - FICHE.headerHeight;
+}
+
+/**
+ * 14/11 — le nom passe dans l'en-tête (Privé : « adidas Sportswear » devient le
+ * titre de la barre). La marque de la feuille glisse sous l'en-tête plein ; sur
+ * les 32 dp où elle disparaît, le titre de l'en-tête monte de 8 dp et apparaît,
+ * et la marque de la feuille s'efface d'autant : un fondu enchaîné, jamais deux
+ * noms lisibles en même temps.
+ */
+export const HEADER_TITLE = { travel: 8, span: 32, lead: 4 } as const;
+
+export function headerTitleRange(): [number, number] {
+  const start = FICHE.imageHeight - FICHE.headerHeight + FICHE.nameTop - HEADER_TITLE.lead;
+  return [start, start + HEADER_TITLE.span];
+}
+
+/** Opacité du titre de l'en-tête (0 → 1) pour une position de défilement. */
+export function headerTitleProgress(offsetY: number): number {
+  const [start, end] = headerTitleRange();
+  if (!Number.isFinite(offsetY) || offsetY <= start) return 0;
+  if (offsetY >= end) return 1;
+  return (offsetY - start) / (end - start);
+}
+
+/**
+ * 14/11 — galerie : la photo recule à 40 % de la vitesse du doigt pendant que la
+ * feuille blanche monte par-dessus (Privé : « la feuille qui bouge »). La photo
+ * n'est jamais coupée au repos : elle est posée ENTIÈRE (`contain`) sur le gris
+ * de son propre fond.
+ */
+export const GALLERY_PARALLAX = 0.4;
+
+export function galleryShift(offsetY: number): number {
+  if (!Number.isFinite(offsetY) || offsetY <= 0) return 0;
+  return -Math.min(offsetY, FICHE.imageHeight) * GALLERY_PARALLAX;
+}
+
+/**
+ * Cotes Privé (planches du 13/11, 720 px = 360 dp) des pièces AJOUTÉES le 14/11 :
+ * grille des caractéristiques, liens soulignés, plein écran, icône d'agrandissement.
+ * Elles ne concernent pas l'aperçu du CRM (qui ne dessine pas ces blocs).
+ */
+export const FICHE_DETAIL = {
+  /* Grille « Libellé: / valeur » sur deux colonnes (x = 32 px et 376 px) */
+  specColumnGap: 16,
+  specLabelSize: 14,       // « Référence du modèle: » gras, capitales de 20 px
+  specLabelLine: 18,
+  specValueSize: 14,
+  specValueLine: 20,
+  specRowGap: 16,          // 73 px entre deux paires ⇒ 2 lignes + 16 dp
+  /** Au-delà, la valeur prend toute la largeur (une phrase ne tient pas en demi-colonne). */
+  specWideFrom: 34,
+  sectionTop: 4,
+  sectionBottom: 24,
+  /* Liens soulignés : « Voir les informations sur la fabrication », « Guide des tailles » */
+  linkSize: 15,
+  linkLine: 22,
+  linkRule: 2,             // 4 px, nettement plus épais que le filet de la marque
+  linkGap: 3,
+  linkInset: 2,            // le lien commence 2 dp après le texte (x = 36 px)
+  linkTop: 8,
+  /* Nom complet sous la marque : gris, 16/21, en entier (3 lignes sur la casquette) */
+  fullNameSize: 16,
+  fullNameLine: 21,
+  referenceSize: 14,
+  /* Galerie : points en bas au centre, agrandissement en bas à droite */
+  expandIcon: 20,
+  expandInset: 12,
+  /* Plein écran : bande grise de 516 dp pour 360 (rapport 1,43), photo entière */
+  viewerStageRatio: 1.43,
+  viewerBottomSpace: 72,
+} as const;
+
+/** La valeur d'une caractéristique tient-elle dans une demi-colonne ? */
+export function specIsWide(row: { label: string; value: string }): boolean {
+  return row.value.length > FICHE_DETAIL.specWideFrom || row.label.length > FICHE_DETAIL.specWideFrom;
+}
+
+/**
+ * Hauteur de la bande photo du plein écran : 1,43 × la largeur (Privé), sans
+ * jamais déborder de l'espace entre la croix et les points.
+ */
+export function viewerStageHeight(width: number, height: number, top: number): number {
+  const ideal = Math.round(width * FICHE_DETAIL.viewerStageRatio);
+  const room = Math.max(1, height - top - FICHE_DETAIL.viewerBottomSpace);
+  return Math.max(1, Math.min(ideal, room));
 }
 
 /** Progression 0→1 du fond de l'en-tête, sur les 40 dp qui précèdent. */
@@ -256,23 +342,78 @@ export function sectionLabelKey(section: string): AttributeSectionKey {
 }
 
 /**
- * L'icône officielle (Ionicons, la famille embarquée du projet) de chaque
- * section. Une section inconnue prend l'étiquette générique : aucune ligne de la
- * fiche ne se retrouve sans icône.
+ * 14/11 — LE TYPE DU PRODUIT décide des pictogrammes et des noms de section
+ * (planches Privé : une basket montre « Taille & coupe » avec un buste de
+ * couturière, une casquette « Dimensions » avec un réglet, la matière une
+ * pelote). Le type se LIT dans la donnée du CRM — catégorie, libellé de taille,
+ * famille — jamais dans le nom commercial.
  */
-export type SectionIcon = 'pricetag-outline' | 'shirt-outline' | 'body-outline'
-  | 'construct-outline' | 'sparkles-outline' | 'shield-checkmark-outline' | 'list-outline';
+export type FicheProductKind = 'shoes' | 'clothing' | 'accessory' | 'electronics' | 'beauty' | 'other';
 
-export function sectionIcon(section: string): SectionIcon {
+const KIND_PATTERNS: Array<[FicheProductKind, RegExp]> = [
+  ['shoes', /chaussure|basket|sneaker|botte|sandale|mocassin|escarpin|pointure|shoe/i],
+  ['electronics', /smartphone|t[ée]l[ée]phone|audio|casque|[ée]couteur|enceinte|montre.?connect|tech|informatique|ordinateur|photo|cam[ée]ra|jeux?.?vid[ée]o|console|[ée]lectronique|electronics|tablette/i],
+  ['beauty', /beaut[ée]|parfum|soin|cosm[ée]tique|maquillage|beauty/i],
+  ['accessory', /accessoire|casquette|chapeau|bonnet|sac|ceinture|bijou|lunette|[ée]charpe|portefeuille|montre/i],
+  ['clothing', /v[êe]tement|haut|t-?shirt|chemise|sweat|veste|manteau|jean|pantalon|robe|jupe|short|pull|clothing/i],
+];
+
+export function ficheProductKind(product: {
+  category?: string | null;
+  family?: { name?: string | null; slug?: string | null } | null;
+  ficheLabels?: { size?: string | null } | null;
+}): FicheProductKind {
+  const sizeLabel = String(product.ficheLabels?.size ?? '').trim();
+  if (/pointure/i.test(sizeLabel)) return 'shoes';
+  const haystack = [product.category, product.family?.slug, product.family?.name].map((value) => String(value ?? '')).join(' ');
+  for (const [kind, pattern] of KIND_PATTERNS) {
+    if (pattern.test(haystack)) return kind;
+  }
+  if (/mod[èe]le|capacit[ée]/i.test(sizeLabel)) return 'electronics';
+  if (/taille/i.test(sizeLabel)) return 'clothing';
+  return 'other';
+}
+
+/** Pictogrammes de la fiche : tracés maison (`FicheGlyph`) ou Ionicons « outline ». */
+export type SectionIcon = 'ruler' | 'yarn' | 'mannequin' | 'pricetag-outline' | 'layers-outline'
+  | 'hardware-chip-outline' | 'sparkles-outline' | 'cube-outline' | 'flask-outline'
+  | 'information-circle-outline' | 'list-outline';
+
+const wearable = (kind: FicheProductKind) => kind === 'shoes' || kind === 'clothing';
+
+export function sectionIcon(section: string, kind: FicheProductKind = 'other'): SectionIcon {
   switch (String(section ?? '').trim()) {
     case 'identite': return 'pricetag-outline';
-    case 'matiere': return 'shirt-outline';
-    case 'mesures': return 'body-outline';
-    case 'technique': return 'construct-outline';
+    case 'matiere':
+      if (kind === 'electronics') return 'layers-outline';
+      if (kind === 'beauty') return 'flask-outline';
+      return 'yarn';
+    case 'mesures': return wearable(kind) ? 'mannequin' : 'ruler';
+    case 'technique': return 'hardware-chip-outline';
     case 'beaute': return 'sparkles-outline';
-    case 'pratique': return 'shield-checkmark-outline';
+    case 'pratique': return kind === 'electronics' ? 'cube-outline' : 'information-circle-outline';
     default: return 'list-outline';
   }
+}
+
+/** Nom de section par défaut (sans libellé du CRM), selon le type du produit. */
+export type SectionTitleKey = AttributeSectionKey
+  | 'product.section.fit'
+  | 'product.section.dimensions'
+  | 'product.section.design'
+  | 'product.section.inBox';
+
+export function sectionTitleKey(section: string, kind: FicheProductKind = 'other'): SectionTitleKey {
+  const slug = String(section ?? '').trim();
+  if (slug === 'mesures') return wearable(kind) ? 'product.section.fit' : 'product.section.dimensions';
+  if (slug === 'matiere' && kind === 'electronics') return 'product.section.design';
+  if (slug === 'pratique' && kind === 'electronics') return 'product.section.inBox';
+  return sectionLabelKey(slug);
+}
+
+/** Le lien « Guide des tailles » n'a de sens que pour ce qui se porte et a plusieurs tailles. */
+export function showsSizeGuide(section: string, kind: FicheProductKind, hasSizeChoice: boolean): boolean {
+  return String(section ?? '').trim() === 'mesures' && hasSizeChoice && kind !== 'electronics' && kind !== 'beauty';
 }
 
 export interface SpecGroup {

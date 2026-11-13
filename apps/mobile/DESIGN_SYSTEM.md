@@ -1345,6 +1345,14 @@ SectionHeader({ title, hint?, action?, style? })
 | chrome | `CHROME` و`Z_INDEX` | ✅ ارتفاعات وطبقات مسماة |
 | content max | `GEOMETRY.contentMax = 1280` | ◐ الجيتون موجود؛ لا يُفرض على كل حاوية |
 | ألوان خلفية القوالب | يختارها الـCRM (`bg_color` بصيغة #RRGGBB، لوحة كاملة + 16 لون سريع) | ✅ قيمة بيانات وليست جيتون؛ الحبر يُحسب بالتباين ≥ 4.5 |
+| استثناءات المطابقة (14/11) | القرار: المراجع (Privé للفيش، GBox للـPublication) تغلب على القواعد القديمة | ✅ موثّقة هنا وفي `tests/design-system.test.ts` |
+| ↳ CTA الفيش | `FICHE_COLORS.cta` `#571EF7` (مضغوط `ctaPressed` `#4515CC`)، pill 212 × 48 r24 في بار 68 | يعوّض الزر الأسود؛ نفس القيم في `client/src/admin/ficheGeometry.ts` و`--fiche-cta` |
+| ↳ خطوط الفيش | ماركة 18/24 مع خطّ 1 dp تحت (فراغ 2)، صفوف الأقسام 17 bold، أيقونة 24 | `FICHE` (مزامنة مع الـCRM) |
+| ↳ صور المنتوج | `contentFit="contain"` على `FICHE_COLORS.photo` `#F3F3F3`؛ شاشة كاملة بيضاء | الصورة كاملة، ما تتقصّش |
+| ↳ «Prix conseillé» | يظهر كان كي `compareAtPrice` جاي من الـCRM وأكبر من الثمن | يلغي ملاحظة 25/10 «لا prix conseillé»؛ ما نخترعوش أسعار |
+| ↳ قلب البطاقات | دائرة بيضاء `P.chip` (40، أو 32 في media) في `BlockProductCard` فقط، مربوطة بالمفضّلة الحقيقية | استثناء لقاعدة «لا pill أيقونة بيضاء» |
+| ↳ تموضع مطلق | `BlockProductCard.tsx` (القلب + شارة «Nouveau» فوق الصورة) | مضاف لقائمة ALLOWED |
+| ↳ أيقونات أقسام الفيش | `FicheGlyph` (مسطرة، خيط، مانكان) + Ionicons `-outline` حسب نوع المنتوج | `sectionIcon()` في `fiche.ts` |
 
 ---
 
@@ -1366,6 +1374,8 @@ SectionHeader({ title, hint?, action?, style? })
 | صور الكاتالوج الرسمي بصيغة واحدة 2:3 على خلفية `#F3F3F3` (13/11) | ✅ `scripts/normalize-catalogue-images.py` + `tests/official-catalogue-images-2026-11-13.test.ts`؛ العناوين `?v=2` باش الكاش يتجدّد |
 | Publication : زر « Suivre » (pill في container، inline في media) + سلّم خطوط مميّز (عنوان 22 > ثمن 16 > ماركة 15 > اسم 14 > Sponsorisé 13) + مسافة 16 بين البلوكات | ✅ `PublicationFollow` + `usePublisherFollow` (نفس علاقة Reels)؛ اختبارات UI ◐ تحتاج مراجعة على الجهاز |
 | هيدر الهوم : الـhairline يظهر كان بعد التمرير (كان يبان خطّ أبيض تحت « Bienvenue ») | ✅ `AppHeader` |
+| Publication (14/11، مقاسات GBox على 360 dp) : container 152 × 219، media 103 (3,15 ظاهرة)، duo صورة 336 × 161 + جوج بطاقات 160 × 230؛ نصّ البطاقات 16 | ✅ `templateMetrics.ts` + `tests/publication-templates-2026-11-13.test.ts` + UI ◐ مراجعة على الجهاز |
+| الفيش (14/11، Privé) : عنوان يدخل للهيدر، parallax للصورة 0,4، ورقة تتحرّك، ⤢ للتكبير، عارض أبيض | ✅ `ProductFiche.tsx` + `tests/productFiche.test.ts`؛ `LayoutAnimation` يخدم على Android (New Architecture إجبارية في RN 0.86) |
 
 ## ما لا تثبته هذه الوثيقة
 

@@ -633,4 +633,8 @@ html[data-theme='dark'] {
   --fiche-underline: #aaaaaa;
   --fiche-grab: #d1d1d1;
   --fiche-stage: #efefef;
+  /* 14/11 — pastille « Ajouter au panier » des planches Privé (= FICHE_COLORS.cta). */
+  --fiche-cta: #571ef7;
+  /* 14/11 — cadre gris des photos produit, posées entières (= FICHE_COLORS.photo). */
+  --fiche-photo: #f3f3f3;
 }

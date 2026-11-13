@@ -195,10 +195,16 @@ describe('branchements', () => {
     expect(card).toContain('<ProductTile');
     expect(card).not.toContain("width: '48%'");
     expect(card).not.toContain('borderWidth: 1');
-    // Règles d'origine conservées : prix serveur, stock toujours dit, panier sur la carte.
+    // Prix serveur ; un stock qui mérite d'être dit l'est encore (limité, épuisé, non confirmé).
     expect(card).toContain('formatMoney(product.finalPrice)');
     expect(card).toContain("t('catalog.stock.unknown')");
-    expect(card).toContain('product-card-cart-');
+    // 14/11 (planche Privé 023638) : plus de bouton panier ni de « En stock » vert ; prix
+    // conseillé barré seulement depuis le CRM ; photo entière sur le gris des photos.
+    expect(card).not.toContain('product-card-cart-');
+    expect(card).not.toContain("t('catalog.stock.in_stock')");
+    expect(card).toContain('product.compareAtPrice != null && product.compareAtPrice > product.finalPrice');
+    expect(tile).toContain('contentFit="contain"');
+    expect(tile).toContain('media: ficheColorsFor(theme.mode).photo');
     expect(card).toContain('product.additionalImages');
   });
 

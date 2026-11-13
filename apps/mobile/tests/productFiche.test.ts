@@ -31,8 +31,16 @@ import {
   hasSizeChoice,
   headerIsSolid,
   headerProgress,
+  ficheProductKind,
+  galleryShift,
+  headerTitleProgress,
+  headerTitleRange,
   sectionIcon,
   sectionLabelKey,
+  sectionTitleKey,
+  showsSizeGuide,
+  specIsWide,
+  viewerStageHeight,
   selectionReady,
   singleDimensionValue,
   singleSize,
@@ -52,10 +60,11 @@ const code = (rel: string) => readFileSync(resolve(__dirname, '..', rel), 'utf8'
 const src = (rel: string) => readFileSync(resolve(__dirname, '..', rel), 'utf8');
 
 describe('fiche — cotes de la maquette (720 × 1600 px ⇒ ÷ 2 en dp)', () => {
-  it('la photo mesure 476 dp (proportion Privé : ligne Taille visible d’emblée) et la barre d’achat compacte 60 dp', () => {
+  it('la photo mesure 476 dp et la barre d’achat Privé 68 dp (pastille 212 × 48)', () => {
     expect(FICHE.imageHeight).toBe(476);
-    expect(FICHE.barHeight).toBe(60);
-    expect(FICHE.barButtonHeight).toBe(40);
+    expect(FICHE.barHeight).toBe(68);
+    expect(FICHE.barButtonHeight).toBe(48);
+    expect(FICHE.barButtonWidth).toBe(212);
     expect(FICHE.rowHeight).toBe(49);
     expect(FICHE.band).toBe(9);
   });
@@ -138,13 +147,53 @@ describe('fiche — sections décidées par le CRM', () => {
     expect(groups[0]).toMatchObject({ section: 'matiere', title: null });
   });
 
-  it('chaque section a un libellé TRADUIT et une icône de la famille officielle', () => {
+  it('chaque section a un libellé TRADUIT et un pictogramme : tracé maison ou Ionicons « outline »', () => {
     expect(sectionLabelKey('matiere')).toBe('product.section.matiere');
     expect(sectionLabelKey('')).toBe('product.specs');
-    // Ionicons : la seule famille d'icônes du projet — aucun pictogramme rapporté.
-    for (const section of ['identite', 'matiere', 'mesures', 'technique', 'beaute', 'pratique', 'inconnue']) {
-      expect(sectionIcon(section)).toMatch(/-outline$/);
+    const drawn = new Set(['ruler', 'yarn', 'mannequin']);
+    for (const kind of ['shoes', 'clothing', 'accessory', 'electronics', 'beauty', 'other'] as const) {
+      for (const section of ['identite', 'matiere', 'mesures', 'technique', 'beaute', 'pratique', 'inconnue']) {
+        const icon = sectionIcon(section, kind);
+        expect(drawn.has(icon) || /-outline$/.test(icon), `${kind}/${section}: ${icon}`).toBe(true);
+      }
     }
+  });
+
+  it('14/11 — le TYPE du produit (catégorie, famille, libellé de taille) choisit pictogrammes et titres', () => {
+    expect(ficheProductKind({ category: 'Chaussures' })).toBe('shoes');
+    expect(ficheProductKind({ category: '', ficheLabels: { size: 'Pointure' } })).toBe('shoes');
+    expect(ficheProductKind({ category: 'Sweats & vestes' })).toBe('clothing');
+    expect(ficheProductKind({ category: 'Audio' })).toBe('electronics');
+    expect(ficheProductKind({ family: { name: 'Smartphones', slug: 'smartphones' } })).toBe('electronics');
+    expect(ficheProductKind({ category: 'Accessoires' })).toBe('accessory');
+    expect(ficheProductKind({})).toBe('other');
+    // Planches Privé : basket ⇒ buste « Taille & coupe », casquette ⇒ réglet « Dimensions », matière ⇒ pelote.
+    expect(sectionIcon('mesures', 'shoes')).toBe('mannequin');
+    expect(sectionTitleKey('mesures', 'shoes')).toBe('product.section.fit');
+    expect(sectionIcon('mesures', 'accessory')).toBe('ruler');
+    expect(sectionTitleKey('mesures', 'electronics')).toBe('product.section.dimensions');
+    expect(sectionIcon('matiere', 'clothing')).toBe('yarn');
+    expect(sectionTitleKey('matiere', 'electronics')).toBe('product.section.design');
+    expect(sectionTitleKey('pratique', 'electronics')).toBe('product.section.inBox');
+    expect(showsSizeGuide('mesures', 'shoes', true)).toBe(true);
+    expect(showsSizeGuide('mesures', 'electronics', true)).toBe(false);
+    expect(showsSizeGuide('mesures', 'clothing', false)).toBe(false);
+  });
+
+  it('14/11 — le nom monte dans l’en-tête en fondu enchaîné, la photo recule (parallaxe)', () => {
+    const [start, end] = headerTitleRange();
+    expect(end - start).toBe(32);
+    expect(headerTitleProgress(start)).toBe(0);
+    expect(headerTitleProgress(end)).toBe(1);
+    expect(headerTitleProgress((start + end) / 2)).toBeCloseTo(0.5);
+    expect(galleryShift(0)).toBe(0);
+    expect(galleryShift(100)).toBeCloseTo(-40);
+    expect(galleryShift(10_000)).toBeCloseTo(-FICHE.imageHeight * 0.4);
+    // Plein écran : bande grise 1,43 × la largeur, jamais plus haute que l'espace libre.
+    expect(viewerStageHeight(360, 800, 100)).toBe(515);
+    expect(viewerStageHeight(360, 500, 100)).toBe(328);
+    expect(specIsWide({ label: 'Couleur', value: 'Marron' })).toBe(false);
+    expect(specIsWide({ label: 'Entretien', value: 'Lavage en machine à 30 °C, ne pas sécher en tambour' })).toBe(true);
   });
 });
 
@@ -272,21 +321,21 @@ describe('fiche — contrat d’écran', () => {
     expect(screen).toContain('deliveryWindow');
   });
 
-  it('aucun « prix conseillé », aucun prix barré, aucune remise', () => {
+  it('14/11 — « Prix conseillé » barré SEULEMENT depuis le CRM et s’il dépasse le prix ; aucune remise calculée', () => {
+    const screen = code('app/product/[id].tsx');
+    expect(screen).toContain('product.compareAtPrice != null && product.compareAtPrice > product.finalPrice');
+    expect(screen).toContain('formatMoney(product.compareAtPrice)');
     for (const rel of ['app/product/[id].tsx', 'src/features/product/ProductFiche.tsx', 'src/features/product/fiche.ts']) {
       const source = code(rel);
-      expect(source, rel).not.toContain('compareAtPrice');
       expect(source, rel).not.toContain('Prix conseillé');
-      expect(source, rel).not.toMatch(/remise|discount|pourcentage/i);
+      expect(source, rel).not.toMatch(/remise|discount|pourcentage|%\s*\}/i);
     }
   });
 
-  it('le CTA est NOIR (décision du propriétaire) et la fiche ne calcule aucun prix', () => {
+  it('14/11 — le CTA est la pastille VIOLETTE des planches Privé et la fiche ne calcule aucun prix', () => {
     const parts = src('src/features/product/ProductFiche.tsx');
-    // Le bouton du CTA est dessiné dans la fiche (rayon 24 dp, cote de la
-    // maquette) mais sa COULEUR est celle de l encre : noir, jamais le violet
-    // d action (`action`).
-    expect(parts).toContain('backgroundColor: pressed ? theme.colors.secondary : theme.colors.ink');
+    // Dérogation client du 14/11 (« comme la référence ») : FICHE_COLORS.cta (#571EF7).
+    expect(parts).toContain('backgroundColor: pressed ? fc.ctaPressed : fc.cta');
     expect(parts).not.toMatch(/theme\.colors\.action\b/);
     expect(parts).not.toMatch(/tone="main"/);
     const screen = src('app/product/[id].tsx');

@@ -12,8 +12,11 @@
  *   │ ● ○ ○ ○ ○ ○          │  ← points SOUS la photo (rangée gardée même sans galerie)
  *   │ Marque               │  ← 1 ligne, gras
  *   │ NOM DU PRODUIT…      │  ← 1 ligne
- *   │ ligne d'info         │  ← 1 ligne (prix barré, stock, note…) — gardée vide sinon
- *   │ 30,90 TND        [+] │  ← prix gras + action éventuelle (panier)
+ *   │ ligne d'info         │  ← 1 ligne (« Prix conseillé ~~x~~ », stock…) — gardée vide sinon
+ *   │ 30,90 TND            │  ← prix gras (+ action éventuelle)
+ *
+ * 14/11/2026 (planche Privé) : photo ENTIÈRE en `contain` sur le gris des photos,
+ * marque grasse, nom GRIS, prix gras.
  *   └──────────────────────┘
  *
  * Ce que la carte ne fait jamais :
@@ -122,7 +125,8 @@ export function useProductTilePalette(onWhite = false): ProductTilePalette {
   }
   return {
     canvas: theme.colors.canvas,
-    media: theme.colors.surface,
+    // 14/11 Privé : le cadre photo est le gris du fond des photos (#F3F3F3), plus le blanc.
+    media: ficheColorsFor(theme.mode).photo,
     ink: theme.colors.ink,
     muted: theme.colors.muted,
     dotIdle: ficheColorsFor(theme.mode).dotIdle,
@@ -201,7 +205,8 @@ function ProductTileComponent({
         fallbackUris={image.fallbackUris}
         background={palette.media}
         style={StyleSheet.absoluteFill}
-        contentFit="cover"
+        // 14/11 : le produit ENTIER (`contain`), jamais recadré — planche Privé 023638.
+        contentFit="contain"
         accessibilityLabel={imageLabel}
         decorative
       />
@@ -360,7 +365,7 @@ function ProductTileComponent({
             numberOfLines={1}
             color={palette.ink}
             {...textStyle}
-            style={[styles.brand, { lineHeight: lines.brand, fontFamily: theme.font('semibold') }]}
+            style={[styles.brand, { lineHeight: lines.brand, fontFamily: theme.font('bold') }]}
             testID={`${testID}-brand`}
           >
             {brand ?? ''}
@@ -370,7 +375,7 @@ function ProductTileComponent({
         <View style={[styles.line, { height: lines.name }]}>
           <AppText
             numberOfLines={1}
-            color={palette.ink}
+            color={palette.muted}
             {...textStyle}
             style={[styles.name, { lineHeight: lines.name, fontFamily: theme.font('regular') }]}
             testID={`${testID}-name`}
@@ -399,7 +404,7 @@ function ProductTileComponent({
                 numberOfLines={1}
                 color={palette.ink}
                 {...textStyle}
-                style={[styles.price, { lineHeight: lines.price, fontFamily: theme.font('semibold') }]}
+                style={[styles.price, { lineHeight: lines.price, fontFamily: theme.font('bold') }]}
               >
                 {price}
               </AppText>

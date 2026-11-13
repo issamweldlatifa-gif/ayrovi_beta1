@@ -165,7 +165,7 @@ export function reorderBlocks(db: Store, ids: unknown, now = new Date().toISOStr
 
 /* ── Lecture publique ─────────────────────────────────────────────────────── */
 
-function publicProduct(row: Record<string, any> | undefined): PublicationBlockProduct | null {
+function publicProduct(row: Record<string, any> | undefined, now: Date): PublicationBlockProduct | null {
   if (!row || !isSellableProduct(row as any)) return null;
   const stock = row.stock_status || 'AVAILABLE';
   return {
@@ -174,13 +174,34 @@ function publicProduct(row: Record<string, any> | undefined): PublicationBlockPr
     brand: typeof row.brand_name === 'string' ? row.brand_name.trim() : '',
     image: row.image || '',
     price: Number(row.final_price),
+    compareAtPrice: referencePrice(row.compare_at_price, Number(row.final_price)),
+    isNew: isRecentProduct(row.created_at, now),
     currency: STOREFRONT_CURRENCY,
     stockStatus: stock,
     available: stock !== 'OUT_OF_STOCK',
   };
 }
 
-export function readPublicBlocks(db: Store): PublicationBlockPublic[] {
+/**
+ * Prix barré des cartes (planches Zalando : « Prix conseillé ~~€159,95~~ ») —
+ * UNIQUEMENT la valeur `compare_at_price` saisie dans le CRM, et seulement si
+ * elle dépasse vraiment le prix de vente. Rien n'est calculé ni inventé ici.
+ */
+export function referencePrice(value: unknown, price: number): number | null {
+  const reference = Number(value);
+  return Number.isFinite(reference) && reference > 0 && Number.isFinite(price) && reference > price ? reference : null;
+}
+
+/** Pastille « Nouveau » : produit créé dans le CRM depuis moins de 30 jours (date réelle). */
+export const NEW_PRODUCT_DAYS = 30;
+export function isRecentProduct(createdAt: unknown, now: Date): boolean {
+  const created = Date.parse(String(createdAt ?? ''));
+  if (!Number.isFinite(created)) return false;
+  const age = now.getTime() - created;
+  return age >= 0 && age <= NEW_PRODUCT_DAYS * 86_400_000;
+}
+
+export function readPublicBlocks(db: Store, now: Date = new Date()): PublicationBlockPublic[] {
   const rows = db.all<PublicationBlockRow>(
     'SELECT * FROM publication_blocks WHERE active=1 ORDER BY sort_order, created_at, id LIMIT ?',
     PUBLICATION_BLOCK_LIMITS.publicBlocks,
@@ -189,7 +210,7 @@ export function readPublicBlocks(db: Store): PublicationBlockPublic[] {
   const products = new Map<string, Record<string, any>>();
   if (wanted.length > 0) {
     const found = db.all<any>(
-      `SELECT id,name,brand_name,image,status,final_price,stock_status FROM products WHERE id IN (${wanted.map(() => '?').join(',')})`,
+      `SELECT id,name,brand_name,image,status,final_price,compare_at_price,created_at,stock_status FROM products WHERE id IN (${wanted.map(() => '?').join(',')})`,
       ...wanted,
     );
     for (const product of found) products.set(product.id, product);
@@ -197,7 +218,7 @@ export function readPublicBlocks(db: Store): PublicationBlockPublic[] {
   const blocks: PublicationBlockPublic[] = [];
   for (const row of rows) {
     const cards = parseProductIds(row.product_ids)
-      .map((id) => publicProduct(products.get(id)))
+      .map((id) => publicProduct(products.get(id), now))
       .filter((card): card is PublicationBlockProduct => card !== null);
     const block: PublicationBlockPublic = {
       id: row.id,
@@ -250,7 +271,7 @@ export const PUBLICATION_BLOCKS_DEMO: Array<Omit<PublicationBlockInput, 'active'
   {
     kind: 'sponsored_pair', title: 'Sony', subtitle: 'Le silence, version WH-1000XM6', bg_color: '#1F3A5F', sponsored: true,
     media_type: 'image', media_url: PHOTO('sony-wh-1000xm6-2'),
-    product_ids: [OFFICIAL('sony-wh-1000xm6')],
+    product_ids: [OFFICIAL('sony-wh-1000xm6'), OFFICIAL('bose-quietcomfort')],
   },
   {
     kind: 'media', title: 'Smartphones', subtitle: 'Les nouveaux phares, et de quoi les garder chargés.', bg_color: '#FFFFFF', sponsored: false,
@@ -270,7 +291,7 @@ export const PUBLICATION_BLOCKS_DEMO: Array<Omit<PublicationBlockInput, 'active'
   {
     kind: 'sponsored_pair', title: 'Garmin', subtitle: 'Chaque foulée compte', bg_color: '#2E7D5B', sponsored: true,
     media_type: 'image', media_url: PHOTO('garmin-forerunner-265-2'),
-    product_ids: [OFFICIAL('garmin-forerunner-265')],
+    product_ids: [OFFICIAL('garmin-forerunner-265'), OFFICIAL('apple-iphone-18-pro')],
   },
   {
     kind: 'container', title: 'Le son, partout', subtitle: 'Casques et enceinte à emporter.', bg_color: '#4262AD', sponsored: false,
@@ -290,7 +311,7 @@ export const PUBLICATION_BLOCKS_DEMO: Array<Omit<PublicationBlockInput, 'active'
   {
     kind: 'sponsored_pair', title: 'Zara', subtitle: 'La petite robe noire', bg_color: '#8B1A2B', sponsored: true,
     media_type: 'image', media_url: PHOTO('zara-pleated-mini-dress-2'),
-    product_ids: [OFFICIAL('zara-pleated-mini-dress')],
+    product_ids: [OFFICIAL('zara-pleated-mini-dress'), OFFICIAL('hm-relaxed-cotton-shirt')],
   },
   {
     kind: 'container', title: 'Jeux et photo', subtitle: 'Pour jouer et immortaliser.', bg_color: '#C9E4DE', sponsored: false,
@@ -298,6 +319,33 @@ export const PUBLICATION_BLOCKS_DEMO: Array<Omit<PublicationBlockInput, 'active'
     product_ids: [OFFICIAL('nintendo-switch-neon'), OFFICIAL('canon-eos-r5'), OFFICIAL('jbl-go-4')],
   },
 ];
+
+/**
+ * 14/11 — le duo sponsorisé montre DEUX cartes sous l'image (planche GBox). Les
+ * blocs de démonstration déjà installés avec UNE seule carte reçoivent la seconde
+ * prévue par la démonstration ; un bloc modifié dans le CRM (autre produit, deux
+ * produits déjà) n'est jamais touché. Retourne le nombre de blocs complétés.
+ */
+export function completeDemoSponsoredPairs(db: Store, now = new Date().toISOString()): number {
+  let updated = 0;
+  for (const demo of PUBLICATION_BLOCKS_DEMO) {
+    if (demo.kind !== 'sponsored_pair' || demo.product_ids.length < 2) continue;
+    const [first, second] = demo.product_ids;
+    const rows = db.all<{ id: string; product_ids: string }>(
+      "SELECT id,product_ids FROM publication_blocks WHERE kind='sponsored_pair' AND title=?",
+      demo.title,
+    );
+    for (const row of rows) {
+      let ids: unknown;
+      try { ids = JSON.parse(row.product_ids); } catch { continue; }
+      if (!Array.isArray(ids) || ids.length !== 1 || ids[0] !== first) continue;
+      if (!isSellableProduct(db.get<any>('SELECT id,name,image,status,final_price FROM products WHERE id=?', second))) continue;
+      db.run('UPDATE publication_blocks SET product_ids=?, updated_at=? WHERE id=?', JSON.stringify([first, second]), now, row.id);
+      updated += 1;
+    }
+  }
+  return updated;
+}
 
 export function installPublicationBlocksDemo(db: Store, now = new Date().toISOString()): number {
   if (db.get('SELECT 1 FROM publication_blocks LIMIT 1')) return 0;

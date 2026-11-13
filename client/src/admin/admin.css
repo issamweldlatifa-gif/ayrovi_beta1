@@ -1435,14 +1435,14 @@ html[data-theme='dark'] .admin-table th { color: var(--admin-text-soft); }
 
 /* ── L'écran de l'application, à l'échelle 1:1 (360 dp) ─────────────────── */
 .fiche-phone { background: var(--fiche-paper); color: var(--fiche-ink); font-family: inherit; overflow: hidden; }
-.fiche-phone__photo { position: relative; width: 100%; background: var(--fiche-stage); }
-.fiche-phone__photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fiche-phone__photo { position: relative; width: 100%; background: var(--fiche-photo); }
+.fiche-phone__photo img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .fiche-phone__photo-empty { position: absolute; inset: 0; display: grid; place-items: center; font-size: 13px; color: var(--fiche-muted); }
 .fiche-phone__dots { position: absolute; left: 0; right: 0; display: flex; justify-content: center; align-items: center; }
 .fiche-phone__dots i { display: block; border-radius: 50%; background: var(--fiche-dot); }
 .fiche-phone__dots i.is-on { background: var(--fiche-ink); }
 .fiche-phone__identity-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.fiche-phone__name { flex: 0 1 auto; border-bottom-style: solid; border-bottom-color: var(--fiche-underline); color: var(--fiche-ink); line-height: 1.18; }
+.fiche-phone__name { flex: 0 1 auto; border-bottom-style: solid; border-bottom-color: var(--fiche-ink); color: var(--fiche-ink); line-height: 1.18; }
 .fiche-phone__price { flex: 0 0 auto; font-weight: 700; color: var(--fiche-ink); line-height: 1.18; }
 .fiche-phone__description { margin: 0; color: var(--fiche-muted); }
 .fiche-phone__full-name { margin: 0; color: var(--fiche-ink); }
@@ -1464,7 +1464,7 @@ html[data-theme='dark'] .admin-table th { color: var(--admin-text-soft); }
 .fiche-phone__info p { margin: 0; color: var(--fiche-muted); }
 .fiche-phone__bar { display: flex; align-items: center; justify-content: space-between; background: var(--fiche-paper); }
 .fiche-phone__bar > span:first-child { font-weight: 700; color: var(--fiche-ink); }
-.fiche-phone__cta { display: inline-flex; align-items: center; justify-content: center; background: var(--fiche-ink); color: var(--fiche-paper); font-weight: 700; }
+.fiche-phone__cta { display: inline-flex; align-items: center; justify-content: center; background: var(--fiche-cta); color: var(--fiche-paper); font-weight: 700; }
 
 @media (max-width: 1180px) {
   .fiche-editor__grid { grid-template-columns: minmax(0, 1fr); }

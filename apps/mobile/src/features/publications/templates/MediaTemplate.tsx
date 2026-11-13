@@ -10,8 +10,10 @@
  *   Titre                              ← gras, 2 lignes max
  *   Sous-titre                         ← régulier, 2 lignes max
  *
- * 13/11 : « Suivre » ajouté (consigne du propriétaire). Ni cœur ni « ⋯ » : aucune
- * action réelle derrière pour l'instant. La carte « Découvrir plus » est reportée.
+ * 13/11 : « Suivre » ajouté (consigne du propriétaire).
+ * 14/11 (planche GBox The Ordinary) : photos ENTIÈRES (`contain`) sur gris clair,
+ * 103 × 148 dp, rond blanc du cœur (32 dp) relié aux vrais favoris. Pas de « ⋯ » :
+ * aucune action réelle derrière.
  */
 import { ScrollView, StyleSheet, View } from 'react-native';
 

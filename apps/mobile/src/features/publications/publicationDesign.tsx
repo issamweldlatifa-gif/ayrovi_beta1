@@ -6,7 +6,7 @@ import { AppText, type AppTextProps } from '@/design/ui';
 import { NavigationIcon } from '@/design/NavigationIcon';
 import { useI18n, useT } from '@/i18n';
 
-import { PUBLICATION_PALETTE, PUBLICATION_TYPE } from './publicationTokens';
+import { PUBLICATION_PALETTE, PUBLICATION_TYPE, publicationBlockFont } from './publicationTokens';
 export { PUBLICATION_PALETTE, PUBLICATION_TYPE } from './publicationTokens';
 export function publicationTextStyle(
   locale: string,
@@ -158,14 +158,24 @@ export function PublicationIcon(props: ComponentProps<typeof NavigationIcon>) {
  */
 export function PublicationSponsored({ color, testID }: { color: string; testID?: string }) {
   const t = useT();
+  const { locale } = useI18n();
   return (
     <View testID={testID} style={sponsoredStyles.row}>
-      <PublicationText variant="caption" color={color} numberOfLines={1}>{t('publication.sponsored')}</PublicationText>
+      {/* 14/11 GBox : « Sponsored » 14/20 en Zalando Sans régulier. */}
+      <PublicationText
+        variant="caption"
+        color={color}
+        numberOfLines={1}
+        style={[sponsoredStyles.text, { fontFamily: publicationBlockFont(locale, 'regular') }]}
+      >
+        {t('publication.sponsored')}
+      </PublicationText>
       <PublicationIcon name="information-circle-outline" size={PUBLICATION_TYPE.infoIcon} color={color} />
     </View>
   );
 }
 
 const sponsoredStyles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  text: { fontSize: PUBLICATION_TYPE.cardSponsoredSize, lineHeight: PUBLICATION_TYPE.cardSponsoredLine },
 });

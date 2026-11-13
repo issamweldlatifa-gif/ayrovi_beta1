@@ -21,6 +21,7 @@ import { fetchPublicationBlocks, type PublicationBlock } from '@/api/publication
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
+import { PublicationFavoritesProvider } from './PublicationFavorites';
 import { PublicationHeader } from './PublicationHeader';
 import { PUBLICATION_PALETTE as P, PublicationText } from './publicationDesign';
 import { ContainerTemplate } from './templates/ContainerTemplate';
@@ -86,6 +87,7 @@ export function PublicationTemplatesScreen() {
   return (
     <View testID="publication-page" style={[styles.screen, { paddingTop: insets.top }]}>
       <PublicationHeader />
+      <PublicationFavoritesProvider>
       <FlatList
         testID="publication-blocks"
         data={rows}
@@ -117,6 +119,7 @@ export function PublicationTemplatesScreen() {
           )
         }
       />
+      </PublicationFavoritesProvider>
     </View>
   );
 }

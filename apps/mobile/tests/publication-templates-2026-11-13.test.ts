@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest';
 import { parsePublicationBlock, parsePublicationBlocks } from '../src/api/publicationBlocks';
 import { blockInks, hasTintedBackground } from '../src/features/publications/templates/blockColors';
 import {
-  pairTileMetrics,
   publicationTemplateMetrics,
   PUBLICATION_TEMPLATE as T,
 } from '../src/features/publications/templates/templateMetrics';
@@ -81,10 +80,16 @@ describe('cotes des modèles (planches Zalando, 360 dp)', () => {
     expect(T.bandPaddingBottom).toBe(16);
   });
 
-  it('13/11 : chaque ligne de la carte a son propre niveau de texte', () => {
-    const levels = ['bandTitleSize', 'cardPriceSize', 'cardBrandSize', 'cardNameSize', 'captionSize'].map(token);
-    // Titre > prix > marque > nom > « Sponsorisé » : strictement décroissant, aucun doublon.
-    for (let i = 1; i < levels.length; i += 1) expect(levels[i]).toBeLessThan(levels[i - 1] as number);
+  it('14/11 (GBox) : titre du bandeau > texte de carte (16, la graisse distingue la marque) > « Sponsorisé »', () => {
+    expect(token('bandTitleSize')).toBeGreaterThan(token('cardBrandSize'));
+    for (const name of ['cardBrandSize', 'cardNameSize', 'cardPriceSize']) expect(token(name)).toBe(16);
+    expect(token('cardSponsoredSize')).toBe(14);
+    expect(token('cardSponsoredSize')).toBeLessThan(token('cardNameSize'));
+    // Cœur : rond blanc de 40 dp (grandes cartes) et 32 dp (rangée), à 8 dp du coin.
+    expect(token('heart')).toBe(40);
+    expect(token('heartSmall')).toBe(32);
+    expect(token('heartInset')).toBe(8);
+    expect(tokenSource).toContain("'AyroviExtracted-Heading'");
     // Pilule « + Suivre » : cible tactile ≥ 48 dp (planche : 95 px).
     expect(token('followHeight')).toBeGreaterThanOrEqual(token('touch'));
   });
@@ -96,32 +101,36 @@ describe('cotes des modèles (planches Zalando, 360 dp)', () => {
     expect(m.media.imageHeight).toBe(Math.round(336 / T.imageAspect));
     expect(Math.abs(m.media.imageHeight - 162)).toBeLessThanOrEqual(1); // 323 px relevés
     expect(m.media.videoHeight).toBe(336);
-    expect(m.media.tileWidth).toBeGreaterThan(98);
-    expect(m.media.tileWidth).toBeLessThan(106); // 102 dp relevés
-    expect(Math.abs(m.media.tileHeight - 148)).toBeLessThanOrEqual(3);
+    expect(Math.abs(m.media.tileWidth - 103)).toBeLessThanOrEqual(0.5); // 206 px relevés (GBox)
+    expect(Math.abs(m.media.tileHeight - 148)).toBeLessThanOrEqual(1);
+    // trois photos entières, trois filets, et une amorce de ~15 dp
+    const peek = m.media.width - 3 * m.media.tileWidth - 3 * T.rowSpacing;
+    expect(peek).toBeGreaterThan(12);
+    expect(peek).toBeLessThan(20);
   });
 
-  it('modèle container : deux cartes entières + une amorce, photo 1,45', () => {
-    expect(m.container.cardWidth).toBeGreaterThan(140);
-    expect(m.container.cardWidth).toBeLessThan(156); // 151 dp relevés
-    expect(m.container.cardImageHeight).toBe(Math.round(m.container.cardWidth * 1.45));
-    const twoCards = T.bandInset + m.container.cardWidth * 2 + T.cardSpacing * 2;
-    expect(twoCards).toBeLessThan(360); // l'amorce de la 3e carte reste visible
+  it('modèle container (GBox Vans) : cartes 152 dp, écart 16, photo 218 dp, 56 dp sous le bandeau', () => {
+    expect(m.container.cardWidth).toBe(152);
+    expect(m.container.cardImageHeight).toBe(219);
+    expect(T.cardSpacing).toBe(16);
+    expect(T.panelPaddingTop).toBe(56);
+    expect(T.cardRadius).toBe(12);
   });
 
-  it('modèle sponsored_pair : deux tuiles de MÊME taille, 160 dp chacune', () => {
+  it('modèle sponsored_pair (GBox WE Fashion) : image 336 × 161 qui déborde, puis deux cartes de 160 dp', () => {
+    expect(m.pair.mediaWidth).toBe(336);
+    expect(m.pair.mediaHeight).toBe(161);
     expect(m.pair.tileWidth).toBe(160);
-    const tile = pairTileMetrics(m.pair.tileWidth);
-    expect(tile.cardWidth).toBe(160);
-    expect(tile.height).toBe(tile.mediaHeight + tile.textHeight);
-    expect(T.pairInset * 2 + tile.cardWidth * 2 + T.pairSpacing).toBe(360);
+    expect(m.pair.cardImageHeight).toBe(230);
+    expect(T.pairInset * 2 + m.pair.tileWidth * 2 + T.pairSpacing).toBe(360);
+    expect(T.pairCardsTop).toBe(56);
   });
 
   it('tablette : colonne plafonnée, plus de cartes visibles, tuiles du duo toujours égales', () => {
     const wide = publicationTemplateMetrics(1024);
     expect(wide.width).toBe(T.maxContentWidth);
     expect(wide.media.tileWidth).toBeLessThan(m.media.tileWidth * 1.3);
-    expect(pairTileMetrics(wide.pair.tileWidth).columns).toBe(2);
+    expect(wide.pair.cardImageHeight).toBe(Math.round(wide.pair.tileWidth * T.pairCardRatio));
     expect(publicationTemplateMetrics(Number.NaN).width).toBe(360);
   });
 });

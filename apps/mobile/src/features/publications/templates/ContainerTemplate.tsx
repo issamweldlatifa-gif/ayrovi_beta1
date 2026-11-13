@@ -12,18 +12,22 @@
  *   └─────────────────────────────────────────────────────┘
  *
  * 13/11 : « + Suivre » ajouté (consigne du propriétaire), titre agrandi et en
- * gras, bandeau resserré. La carte « Découvrir plus » reste reportée.
+ * gras, bandeau resserré.
+ * 14/11 (planche GBox Vans) : cartes `BlockProductCard` — cadre gris arrondi,
+ * photo ENTIÈRE, rond blanc du cœur, texte sous le cadre ; titre du bandeau en
+ * Zalando Sans « Heading » ; la rangée s'aimante carte par carte.
  */
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { mediaUrl } from '@/api/client';
 import type { PublicationBlock } from '@/api/publicationBlocks';
 import { AppImage } from '@/design/appImage';
-import { useT } from '@/i18n';
+import { useI18n, useT } from '@/i18n';
 import { PublicationFollow } from '../PublicationFollow';
 import { PUBLICATION_PALETTE as P, PUBLICATION_TYPE, PublicationSponsored, PublicationText } from '../publicationDesign';
+import { publicationBlockFont } from '../publicationTokens';
 import { blockInks } from './blockColors';
-import { ContainerProductCard } from './ContainerProductCard';
+import { BlockProductCard } from './BlockProductCard';
 import { PUBLICATION_TEMPLATE as T, type PublicationTemplateMetrics } from './templateMetrics';
 
 export function ContainerTemplate({
@@ -36,6 +40,8 @@ export function ContainerTemplate({
   onOpenProduct: (id: string) => void;
 }) {
   const t = useT();
+  const { locale } = useI18n();
+  const heading = { fontFamily: publicationBlockFont(locale, 'heading') };
   const band = blockInks(block.bgColor, P.ink, P.paper);
   const panel = blockInks(block.panelColor, P.ink, P.paper);
   const label = block.subtitle ? `${block.title}. ${block.subtitle}` : block.title;
@@ -44,11 +50,11 @@ export function ContainerTemplate({
       <View testID={`publication-block-${block.id}-band`} style={[styles.band, { backgroundColor: block.bgColor }]}>
         {block.sponsored ? <PublicationSponsored color={band.muted} testID={`publication-block-${block.id}-sponsored`} /> : null}
         <View style={styles.titles}>
-          <PublicationText testID={`publication-block-${block.id}-title`} variant="h2" color={band.ink} numberOfLines={2} style={styles.title}>
+          <PublicationText testID={`publication-block-${block.id}-title`} variant="h2" color={band.ink} numberOfLines={2} style={[styles.title, heading]}>
             {block.title}
           </PublicationText>
           {block.subtitle ? (
-            <PublicationText variant="h2" color={band.ink} numberOfLines={2} style={styles.title}>{block.subtitle}</PublicationText>
+            <PublicationText variant="h2" color={band.ink} numberOfLines={2} style={[styles.title, heading]}>{block.subtitle}</PublicationText>
           ) : null}
         </View>
       </View>
@@ -68,9 +74,12 @@ export function ContainerTemplate({
           accessibilityLabel={t('publication.products', { title: block.title })}
           testID={`publication-block-${block.id}-row`}
           contentContainerStyle={styles.rowContent}
+          decelerationRate="fast"
+          snapToInterval={metrics.container.cardWidth + T.cardSpacing}
+          snapToAlignment="start"
         >
           {block.products.map((product) => (
-            <ContainerProductCard
+            <BlockProductCard
               key={product.id}
               product={product}
               width={metrics.container.cardWidth}

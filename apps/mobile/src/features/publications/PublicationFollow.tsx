@@ -66,7 +66,8 @@ export function PublicationFollow({
             <PublicationIcon name={following ? 'checkmark-outline' : 'add-outline'} size={PUBLICATION_TYPE.followIcon} color={ink} />
             <PublicationText variant="bodyStrong" color={ink} numberOfLines={1} style={styles.pillText}>{text}</PublicationText>
           </Pressable>
-          <PublicationText testID={`${testID}-name`} variant="bodyStrong" color={ink} numberOfLines={1} style={styles.name}>
+          {/* GBox : le nom de l'éditeur suit la pilule en RÉGULIER (« + Follow   Vans »). */}
+          <PublicationText testID={`${testID}-name`} variant="body" color={ink} numberOfLines={1} style={styles.name}>
             {publisherName}
           </PublicationText>
         </View>

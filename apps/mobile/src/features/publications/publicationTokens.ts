@@ -10,6 +10,8 @@ export const PUBLICATION_PALETTE = {
   muted: '#666666',
   line: '#E8E8E8',
   neutral: '#F3F3F3',
+  /** 14/11 — rond du cœur et pastille « Nouveau » posés sur la photo (planches GBox). */
+  chip: '#FFFFFF',
   commentPaper: '#FFFFFF',
   splitPaper: '#FFFFFF',
   campaignPaper: '#FFFFFF',
@@ -25,6 +27,18 @@ export const PUBLICATION_PALETTE = {
 export function publicationLatinFont(strong: boolean, os: string = Platform.OS): string {
   if (os === 'android') return strong ? 'sans-serif-medium' : 'sans-serif';
   return strong ? 'Publication-SemiBold' : 'Publication-Regular';
+}
+/**
+ * 14/11 — police des BLOCS (cartes, bandeaux) : la planche GBox est composée en
+ * Zalando Sans, la famille d'où viennent les fichiers `AyroviExtracted-*` déjà
+ * embarqués ; le titre du bandeau prend la coupe « Heading » (plus large). L'arabe
+ * garde Noto Sans Arabic. Le reste de Publication (en-tête) ne change pas.
+ */
+export type BlockFace = 'regular' | 'bold' | 'heading';
+export function publicationBlockFont(locale: string, face: BlockFace): string {
+  if (locale === 'ar') return face === 'regular' ? 'NotoSansArabic-Regular' : 'NotoSansArabic-Bold';
+  if (face === 'heading') return 'AyroviExtracted-Heading';
+  return face === 'bold' ? 'AyroviExtracted-Bold' : 'AyroviExtracted-Regular';
 }
 export const PUBLICATION_TYPE = {
   // Android reference: native Roboto; keep the licensed bundled face elsewhere.
@@ -54,14 +68,32 @@ export const PUBLICATION_TYPE = {
    * Blocs Publication (planches Zalando du 13/11, écran 360 dp) — une échelle
    * à niveaux DISTINCTS : titre du bandeau > prix > marque > nom > « Sponsorisé ».
    */
-  bandTitleSize: 22,   // « Nike Hybrid RN / Train everything » : 2 lignes, gras
-  bandTitleLine: 28,
-  cardBrandSize: 15,   // marque, gras
+  bandTitleSize: 22,   // « Vans / Ready for the plot twist? » : capitales de 31 px ⇒ corps 22
+  bandTitleLine: 27,   // 55 px entre deux lignes du titre
+  /*
+   * 14/11 — texte SOUS les cartes (planches GBox Vans 224048, WE Fashion 224107) :
+   * Sponsorisé 790 px → marque 830 → nom 865 → prix 915 (pas de 20 / 18 / 25 dp).
+   */
+  cardSponsoredSize: 14,
+  cardSponsoredLine: 20,
+  cardBrandSize: 16,   // marque, GRASSE
   cardBrandLine: 20,
-  cardNameSize: 14,    // nom du produit, régulier, une ligne
+  cardNameSize: 16,    // nom du produit, régulier, une ligne avec « … »
   cardNameLine: 18,
-  cardPriceSize: 16,   // prix, gras, le plus lisible de la carte
+  cardPriceSize: 16,   // prix, RÉGULIER sur la planche (« €26.00 »)
   cardPriceLine: 22,
+  cardPriceTop: 4,
+  cardTextTop: 6,      // 12 px entre le bas du cadre et « Sponsorisé »
+  heart: 40,           // rond blanc 80 px des grandes cartes
+  heartSmall: 32,      // rond blanc 64 px de la rangée du modèle `media`
+  heartIcon: 22,
+  heartIconSmall: 18,
+  heartInset: 8,       // 16 px du bord haut et du bord droit
+  badgeSize: 14,       // pastille « Nouveau » : blanche, en bas à gauche
+  badgeLine: 18,
+  badgeHeight: 22,
+  badgeInset: 8,
+  badgeRadius: 4,
   followSize: 16,      // « + Suivre » de la pilule
   followLine: 22,
   followHeight: 48,    // pilule : 95 px de haut sur la planche ⇒ 48 dp

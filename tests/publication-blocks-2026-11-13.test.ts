@@ -49,11 +49,12 @@ describe('module partagé', () => {
     expect(normalizePublicationBlockInput({ ...base, kind: 'container', bg_color: 'bleu' }, undefined, okLink).ok).toBe(false);
     expect(normalizePublicationBlockInput({ ...base, kind: 'media' }, undefined, okLink).ok).toBe(false); // média manquant
     const pair = normalizePublicationBlockInput(
-      { ...base, kind: 'sponsored_pair', media_url: '/media/x.jpg', product_ids: [P('jbl-go-4'), P('bose-quietcomfort')] },
+      { ...base, kind: 'sponsored_pair', media_url: '/media/x.jpg', product_ids: [P('jbl-go-4'), P('bose-quietcomfort'), P('sony-wh-1000xm6')] },
       undefined,
       okLink,
     );
-    expect(pair.ok && pair.value.product_ids).toEqual([P('jbl-go-4')]); // duo : un seul produit
+    // 14/11 (planche GBox) : une image puis DEUX cartes — le troisième produit est écarté.
+    expect(pair.ok && pair.value.product_ids).toEqual([P('jbl-go-4'), P('bose-quietcomfort')]);
     expect(pair.ok && pair.value.sponsored).toBe(true);
     const video = normalizePublicationBlockInput(
       { ...base, kind: 'media', media_type: 'video', media_url: '/media/v.mp4', poster_url: '/media/p.jpg' },

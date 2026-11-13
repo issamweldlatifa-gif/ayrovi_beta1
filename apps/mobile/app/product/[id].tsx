@@ -34,6 +34,7 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
+import { AppText } from '@/design/ui';
 import { useI18n } from '@/i18n';
 import { addCatalogToCart, fetchAyroviCart } from '@/api/cart';
 import { isApiError } from '@/api/errors';
@@ -47,15 +48,18 @@ import {
   ChoiceRow,
   ColorStrip,
   FicheHeader,
+  FicheLink,
+  FichePhotoChrome,
   FichePhotoLayer,
   FicheIdentity,
   GalleryViewer,
   GrayBand,
   Hairline,
   InfoRow,
+  MakerSheet,
   SectionRow,
   SizeSheet,
-  SpecLine,
+  SpecGrid,
 } from '@/features/product/ProductFiche';
 import {
   FICHE,
@@ -63,15 +67,18 @@ import {
   deliveryWindow,
   galleryItems,
   hasSizeChoice,
+  ficheProductKind,
   pickLabel,
   sectionIcon,
-  sectionLabelKey,
+  sectionTitleKey,
+  showsSizeGuide,
   singleDimensionValue,
   singleSize,
   sizeChoices,
   sizeRows,
   specGroups,
   type ColorTile,
+  type SpecRow,
 } from '@/features/product/fiche';
 import { useSessionId } from '@/session/session';
 import { formatMoney } from '@/format/money';
@@ -107,6 +114,7 @@ export default function ProductScreen() {
   const [photo, setPhoto] = useState(startPhoto);
   const [viewer, setViewer] = useState<number | null>(null);
   const [sizeSheet, setSizeSheet] = useState(false);
+  const [makerSheet, setMakerSheet] = useState(false);
   const [pendingAddOnSize, setPendingAddOnSize] = useState(false);
   const [reservedSheetOpen, setReservedSheetOpen] = useState(false);
   const [justAddedAt, setJustAddedAt] = useState(0);
@@ -285,6 +293,12 @@ export default function ProductScreen() {
   const canOrder = purchasable && (needsSizePickFirst || choice.ready);
   const hasPrice = product.finalPrice > 0;
   const priceLabel = hasPrice ? `${formatMoney(product.finalPrice)}` : '';
+  /** « Prix conseillé » barré : la valeur du CRM, seulement si elle dépasse le prix de vente. */
+  const referencePrice = hasPrice && product.compareAtPrice != null && product.compareAtPrice > product.finalPrice
+    ? formatMoney(product.compareAtPrice)
+    : null;
+  /** Le type du produit (catégorie, famille, libellé de taille) choisit pictogrammes et noms de section. */
+  const kind = ficheProductKind(product);
 
   /**
    * NOMS DES BLOCS — la donnée du CRM en premier.
@@ -300,6 +314,13 @@ export default function ProductScreen() {
 
   /** Sections : une par famille du CRM, dans l'ordre du CRM ; les vides n'existent pas. */
   const groups = specGroups(product.attributes, ficheLabels?.sections ?? null);
+  /** Feuille « fabrication » : marque, nom et références du CRM, rien d'autre. */
+  const makerRows: SpecRow[] = [
+    ...(product.brandName ? [{ key: 'maker', label: t('product.maker'), value: product.brandName }] : []),
+    { key: 'maker-product', label: t('product.makerProduct'), value: product.name },
+    ...groups.flatMap((group) => group.rows).filter((row) => /r[ée]f[ée]rence|sku|mod[èe]le/i.test(`${row.key} ${row.label}`)),
+  ];
+  const brandTitle = product.brandName?.trim() || product.name;
 
   /** Livraison : la date est calculée à partir du délai publié par le CRM. */
   const deliveryDates = policy.data ? deliveryWindow(policy.data.deliveryDelay, new Date(), locale) : null;
@@ -319,7 +340,7 @@ export default function ProductScreen() {
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.canvas }]}>
       {/* 1. الصورة ثابتة (ما تتحرّكش): الورقة البيضاء هي اللي تطلع فوقها */}
-      <FichePhotoLayer items={items} index={shownPhoto} />
+      <FichePhotoLayer items={items} index={shownPhoto} scrollY={scrollY} />
 
       <Animated.ScrollView
         testID="product-fiche-scroll"
@@ -335,18 +356,25 @@ export default function ProductScreen() {
           accessibilityLabel={t('product.openGallery')}
           onPress={() => setViewer(shownPhoto)}
           style={[styles.photoWindow, { height: FICHE.imageHeight + insets.top }]}
-        />
+        >
+          <FichePhotoChrome count={items.length} active={Math.max(0, Math.min(shownPhoto, items.length - 1))} />
+        </Pressable>
 
         {/* 2. الورقة: fond opaque, angles droits (cotes de la maquette) */}
         <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
         {/* الاسم مسطّر + الثمن + الوصف */}
-        <FicheIdentity brand={product.brandName || undefined} name={product.name} price={hasPrice ? priceLabel : null} description={product.description} />
+        <FicheIdentity
+          brand={product.brandName || undefined}
+          name={product.name}
+          price={hasPrice ? priceLabel : null}
+          referencePrice={referencePrice}
+          scrollY={scrollY}
+        />
 
-        {/* 3. خطّ رقيق ثمّ سطر Taille */}
-        <View style={styles.rule} />
+        {/* 3. خطّ رقيق ثمّ سطر Taille (réglet, comme Privé) */}
         <Hairline />
         <ChoiceRow
-          icon="pricetag-outline"
+          icon="ruler"
           label={sizeLabel}
           value={onlySize || chosenSize || undefined}
           chevron={chooseSize}
@@ -367,28 +395,47 @@ export default function ProductScreen() {
         ) : null}
 
         {/* 5. أقسام الـCRM */}
-        {groups.length > 0 ? (
+        {groups.length > 0 || product.description ? (
           <>
-            {groups.map((group) => (
+            {groups.map((group, position) => (
               <SectionRow
                 key={group.section}
-                icon={sectionIcon(group.section)}
-                title={group.title || t(sectionLabelKey(group.section))}
+                icon={sectionIcon(group.section, kind)}
+                title={group.title || t(sectionTitleKey(group.section, kind))}
+                defaultOpen={position === 0}
+                testID={`product-section-${group.section}`}
               >
-                <View style={styles.specs}>
-                  {group.rows.map((row) => <SpecLine key={row.key} label={row.label} value={row.value} />)}
-                </View>
+                <SpecGrid rows={group.rows} testID={`product-specs-${group.section}`} />
+                {position === 0 ? (
+                  <FicheLink label={t('product.makerLink')} onPress={() => setMakerSheet(true)} testID="product-maker-link" />
+                ) : null}
+                {showsSizeGuide(group.section, kind, chooseSize) ? (
+                  <FicheLink
+                    icon="ruler"
+                    label={t('product.sizeGuide')}
+                    onPress={() => { setPendingAddOnSize(false); setSizeSheet(true); }}
+                    testID="product-size-guide"
+                  />
+                ) : null}
               </SectionRow>
             ))}
+            {product.description ? (
+              <SectionRow icon="document-text-outline" title={t('product.description')} testID="product-section-description">
+                <AppText style={[styles.description, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
+                  {product.description}
+                </AppText>
+              </SectionRow>
+            ) : null}
             <GrayBand />
           </>
         ) : null}
 
         {/* 6. التوصيل والإرجاع والمشاركة */}
         <InfoRow
-          icon="car-outline"
+          icon="truck"
           title={t('product.fastDelivery')}
           titleColor={theme.status.success.fg}
+          iconColor={theme.status.success.fg}
           lines={deliveryLines}
         />
         {returnLines.length > 0 ? (
@@ -401,7 +448,7 @@ export default function ProductScreen() {
       </Animated.ScrollView>
 
       <FicheHeader
-        title={product.name}
+        title={brandTitle}
         onBack={() => goBack('/')}
         onCart={handleHeaderCartPress}
         scrollY={scrollY}
@@ -433,6 +480,7 @@ export default function ProductScreen() {
       ) : null}
 
       <GalleryViewer items={items} index={viewer} onClose={() => setViewer(null)} />
+      <MakerSheet visible={makerSheet} onClose={() => setMakerSheet(false)} rows={makerRows} />
       <SizeSheet
         visible={sizeSheet}
         onClose={() => {
@@ -469,7 +517,6 @@ const styles = StyleSheet.create({
   photoWindow: { height: FICHE.imageHeight },
   /** La feuille qui monte : opaque (elle doit cacher la photo) et sans coin arrondi. */
   sheet: { overflow: 'hidden' },
-  rule: { height: FICHE.ruleGap },
   colorBlock: { paddingTop: FICHE.blockTop, paddingBottom: FICHE.blockBottom },
-  specs: { gap: 8 },
+  description: { fontSize: FICHE.infoBody, lineHeight: FICHE.infoLine + 4 },
 });

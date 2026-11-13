@@ -77,8 +77,14 @@ describe('Publication-only visual model, not a second commerce or social core', 
       const source = read(file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
       // Ni réaction, ni commentaire, ni partage, ni favori. « Suivre » est permis
       // depuis le 13/11 (« نسيت زر Follow »), mais seulement via `PublicationFollow`.
-      expect(source, file).not.toMatch(/ReactionButton|sendInteraction|Comments|share-outline|heart|favorite=|followPublisher/);
+      // 14/11 (planches GBox) : le cœur des cartes est permis, mais SEULEMENT dans
+      // `BlockProductCard` (seul lieu du rond blanc) et branché sur les vrais favoris.
+      const hearts = file.endsWith('templates/BlockProductCard.tsx') ? /ReactionButton|sendInteraction|Comments|share-outline|followPublisher/ : /ReactionButton|sendInteraction|Comments|share-outline|heart-outline|'heart'|favorite=|followPublisher/;
+      expect(source, file).not.toMatch(hearts);
     }
+    expect(read(dir + 'templates/BlockProductCard.tsx')).toContain('usePublicationFavorites');
+    expect(read(dir + 'PublicationFavorites.tsx')).toContain('useProductFavorites');
+    expect(read(dir + 'PublicationTemplatesScreen.tsx')).toContain('<PublicationFavoritesProvider>');
     // Le bouton « Suivre » des planches : pilule sous le container, en ligne dans l'en-tête media.
     expect(read(dir + 'templates/ContainerTemplate.tsx')).toContain('look="pill"');
     expect(read(dir + 'templates/MediaTemplate.tsx')).toContain('look="inline"');

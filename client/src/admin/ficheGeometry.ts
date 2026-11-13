@@ -26,12 +26,12 @@ export const FICHE_GEOMETRY = {
   dotPitch: 13,
   gutter: 16,
   nameTop: 12,
-  nameSize: 22,
-  nameLine: 26,
+  nameSize: 18,
+  nameLine: 24,
   priceRight: 17,
   priceSize: 20,
-  underlineGap: 5,
-  underlineWidth: 2,
+  underlineGap: 2,
+  underlineWidth: 1,
   descriptionGap: 2,
   /** Sous la marque soulignée : le nom complet du produit (vidéo Veepee, 13/11). */
   fullNameGap: 4,
@@ -43,7 +43,7 @@ export const FICHE_GEOMETRY = {
 
   /* Ligne « Taille » */
   rowHeight: 49,
-  rowLabel: 18,
+  rowLabel: 17,
   rowIcon: 24,
   rowIconStart: 17,
   rowLabelStart: 57,
@@ -56,7 +56,7 @@ export const FICHE_GEOMETRY = {
   /* En-tête */
   headerHeight: 60,
   headerTitle: 19,
-  headerRule: 3,
+  headerRule: 1,
 
   /* Bloc Couleur */
   blockTop: 13,
@@ -84,11 +84,11 @@ export const FICHE_GEOMETRY = {
   shareHeight: 51,
 
   /* Barre d'achat compacte */
-  barHeight: 60,
+  barHeight: 68,
   barPrice: 15,
-  barButtonWidth: 184,
-  barButtonHeight: 40,
-  barButtonRadius: 20,
+  barButtonWidth: 212,
+  barButtonHeight: 48,
+  barButtonRadius: 24,
   barButtonTop: 10,
 
   /* Feuille de taille */
@@ -127,7 +127,7 @@ export const FICHE_GEOMETRY = {
   viewerCloseStart: 5,
 
   /** La barre d'achat compacte, zone sûre comprise — la page réserve cette hauteur. */
-  ctaHeight: 60,
+  ctaHeight: 68,
 } as const;
 
 /** Largeur de la maquette : 720 px ÷ 2. L'aperçu se rend à cette largeur, en dp. */

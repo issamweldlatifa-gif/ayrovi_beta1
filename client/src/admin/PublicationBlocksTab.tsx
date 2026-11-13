@@ -97,24 +97,35 @@ export function blockFormError(form: PublicationBlockForm): string {
   }
   const limits = PUBLICATION_BLOCK_LIMITS.products[form.kind];
   if (form.product_ids.length < limits.min) {
-    return form.kind === 'sponsored_pair' ? 'Choisissez le produit affiché à droite.' : 'Choisissez au moins un produit pour la rangée.';
+    return form.kind === 'sponsored_pair' ? 'Choisissez le ou les deux produits affichés sous l’image.' : 'Choisissez au moins un produit pour la rangée.';
   }
   return '';
 }
 
 /* ── Aperçu téléphone (même anatomie que l'application) ─────────────────── */
 
-function PreviewProduct({ product, width, ratio, framed }: { product?: BlockCatalogueProduct; width: number; ratio: number; framed?: boolean }) {
+/**
+ * Carte produit des blocs (planches GBox du 14/11) : cadre gris arrondi, photo
+ * ENTIÈRE (`contain`), rond blanc du cœur en haut à droite ; avec `framed`, le
+ * texte passe SOUS le cadre (Sponsorisé, marque grasse, nom, prix).
+ */
+function PreviewProduct({ product, width, ratio, framed, ink = INK, sponsored = '', testId }: {
+  product?: BlockCatalogueProduct; width: number; ratio: number; framed?: boolean; ink?: string; sponsored?: string; testId?: string;
+}) {
+  const height = Math.round(width * ratio);
+  const heart = Math.round((framed ? 40 : 32) * SCALE);
   return (
-    <div style={{ width, flex: '0 0 auto', background: framed ? PAPER : 'transparent', borderRadius: framed ? 12 * SCALE : 0, overflow: 'hidden' }}>
-      <div style={{ width, height: Math.round(width * ratio), background: mixColor(INK, PAPER, 0.94), borderRadius: framed ? 0 : 4 }}>
-        {product?.image ? <img src={product.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : null}
+    <div data-testid={testId} style={{ width, height: framed ? height + 72 : height, flex: '0 0 auto' }}>
+      <div style={{ width, height, background: mixColor(INK, PAPER, 0.95), borderRadius: (framed ? 12 : 8) * SCALE, overflow: 'hidden', position: 'relative' }}>
+        {product?.image ? <img src={product.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} /> : null}
+        <span aria-hidden="true" style={{ position: 'absolute', top: 8 * SCALE, right: 8 * SCALE, width: heart, height: heart, borderRadius: heart, background: PAPER }} />
       </div>
       {framed && product ? (
-        <div style={{ padding: 8 * SCALE, color: INK, fontSize: 11, lineHeight: 1.3 }}>
+        <div style={{ paddingTop: 6, color: ink, fontSize: 11, lineHeight: 1.3 }}>
+          {sponsored ? <div style={{ opacity: 0.7 }}>{sponsored}</div> : null}
           <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.brand_name || ' '}</div>
           <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
-          <div style={{ fontWeight: 700 }}>{price(product)}</div>
+          <div>{price(product)}</div>
         </div>
       ) : null}
     </div>
@@ -147,7 +158,7 @@ export function PublicationBlockPreview({ form, products }: { form: PublicationB
   if (form.kind === 'container') {
     const panel = normalizeHexColor(form.panel_color) ?? containerPanelColor(bg);
     const panelInk = readableInk(panel, INK, PAPER);
-    const cardWidth = Math.round((PREVIEW_WIDTH - 24 * SCALE - 16 * SCALE * 2) / 2.13);
+    const cardWidth = Math.round((PREVIEW_WIDTH - 24 * SCALE - 16 * SCALE * 2) / 2);
     return (
       <div style={frame} data-testid="block-preview" data-kind="container">
         <div style={{ background: bg, color: ink, padding: `${16 * SCALE}px ${24 * SCALE}px ${24 * SCALE}px` }}>
@@ -156,10 +167,10 @@ export function PublicationBlockPreview({ form, products }: { form: PublicationB
           {form.subtitle ? <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.2 }}>{form.subtitle}</div> : null}
         </div>
         {form.media_url ? <div style={{ background: bg, padding: `0 ${24 * SCALE}px ${16 * SCALE}px` }}><PreviewMedia form={{ ...form, media_type: 'image' }} height={Math.round((PREVIEW_WIDTH - 48 * SCALE) / 2.07)} /></div> : null}
-        <div style={{ background: panel, padding: `${48 * SCALE}px 0 ${16 * SCALE}px ${24 * SCALE}px` }}>
+        <div style={{ background: panel, padding: `${56 * SCALE}px 0 ${16 * SCALE}px ${24 * SCALE}px` }}>
           <div style={{ display: 'flex', gap: 16 * SCALE, overflow: 'hidden' }}>
             {(products.length ? products : [undefined, undefined]).map((product, index) => (
-              <PreviewProduct key={product?.id ?? index} product={product} width={cardWidth} ratio={1.45} framed />
+              <PreviewProduct key={product?.id ?? index} product={product} width={cardWidth} ratio={1.44} framed ink={panelInk} sponsored={sponsored} />
             ))}
           </div>
           <div style={{ color: panelInk, fontSize: 11, marginTop: 16 * SCALE }}>{PUBLICATION_PUBLISHER_NAME}</div>
@@ -170,7 +181,7 @@ export function PublicationBlockPreview({ form, products }: { form: PublicationB
 
   if (form.kind === 'media') {
     const width = PREVIEW_WIDTH - 24 * SCALE;
-    const tile = Math.round((width - 4 * 3) / 3.2);
+    const tile = Math.round((width - 4 * 3) / 3.15);
     const tinted = !isNearWhite(bg);
     return (
       <div style={{ ...frame, background: bg, color: ink, padding: `${tinted ? 16 * SCALE : 8}px ${12 * SCALE}px` }} data-testid="block-preview" data-kind="media">
@@ -181,7 +192,7 @@ export function PublicationBlockPreview({ form, products }: { form: PublicationB
         <PreviewMedia form={form} height={Math.round(width / (form.media_type === 'video' ? 1 : 2.07))} />
         <div style={{ display: 'flex', gap: 4, marginTop: 4, overflow: 'hidden' }}>
           {(products.length ? products : [undefined, undefined, undefined]).map((product, index) => (
-            <PreviewProduct key={product?.id ?? index} product={product} width={tile} ratio={1.45} />
+            <PreviewProduct key={product?.id ?? index} product={product} width={tile} ratio={1.44} />
           ))}
         </div>
         <div style={{ fontWeight: 700, fontSize: 14, marginTop: 8 }}>{title}</div>
@@ -190,30 +201,33 @@ export function PublicationBlockPreview({ form, products }: { form: PublicationB
     );
   }
 
-  // Duo sponsorisé : deux tuiles strictement identiques (photo 2:3 + bloc texte).
+  // Duo sponsorisé (planche GBox « WE Fashion ») : bandeau + image qui déborde à
+  // droite, puis DEUX cartes de même taille (160 dp, écart 8 dp, rapport 1,44).
   const tileWidth = Math.round((PREVIEW_WIDTH - 16 * SCALE * 2 - 8 * SCALE) / 2);
-  const mediaHeight = Math.round(tileWidth * 1.5);
-  const textHeight = 96;
-  const product = products[0];
+  const cards = products.length ? products.slice(0, 2) : [undefined];
   return (
-    <div style={{ ...frame, padding: 16 * SCALE, display: 'flex', gap: 8 * SCALE }} data-testid="block-preview" data-kind="sponsored_pair">
-      <div data-testid="pair-left" style={{ width: tileWidth, height: mediaHeight + textHeight, borderRadius: 12 * SCALE, overflow: 'hidden' }}>
-        <div style={{ height: mediaHeight, background: mixColor(INK, PAPER, 0.9) }}>
+    <div style={frame} data-testid="block-preview" data-kind="sponsored_pair">
+      <div style={{ background: bg, color: ink, padding: `${16 * SCALE}px 0 0 ${24 * SCALE}px` }}>
+        {sponsored ? <div style={{ color: muted, fontSize: 11 }}>{sponsored}</div> : null}
+        <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.2, marginTop: 6, paddingRight: 24 * SCALE }}>{title}</div>
+        {form.subtitle ? <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.2, paddingRight: 24 * SCALE }}>{form.subtitle}</div> : null}
+        <div style={{ height: Math.round((PREVIEW_WIDTH - 24 * SCALE) / 2.09), marginTop: 16 * SCALE, background: mixColor(INK, PAPER, 0.9) }}>
           {form.media_url ? <img src={form.media_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : null}
         </div>
-        <div style={{ height: textHeight, background: bg, color: ink, padding: 8, fontSize: 11, lineHeight: 1.3, boxSizing: 'border-box' }}>
-          <div style={{ color: muted }}>{sponsored ? `${sponsored} · ${PUBLICATION_PUBLISHER_NAME}` : PUBLICATION_PUBLISHER_NAME}</div>
-          <div style={{ fontWeight: 700, fontSize: 13 }}>{title}</div>
-          {form.subtitle ? <div>{form.subtitle}</div> : null}
-        </div>
       </div>
-      <div data-testid="pair-right" style={{ width: tileWidth, height: mediaHeight + textHeight, borderRadius: 12 * SCALE, overflow: 'hidden', background: PAPER }}>
-        <div style={{ height: mediaHeight, background: mixColor(INK, PAPER, 0.94) }}>
-          {product?.image ? <img src={product.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : null}
-        </div>
-        <div style={{ height: textHeight, padding: 8, fontSize: 11, lineHeight: 1.3, color: INK, boxSizing: 'border-box' }}>
-          {product ? <><div style={{ fontWeight: 700 }}>{product.brand_name}</div><div>{product.name}</div><div style={{ fontWeight: 700 }}>{price(product)}</div></> : <div>Produit à choisir</div>}
-        </div>
+      <div style={{ display: 'flex', gap: 8 * SCALE, padding: `${56 * SCALE}px ${16 * SCALE}px ${16 * SCALE}px` }}>
+        {cards.map((product, index) => (
+          <PreviewProduct
+            key={product?.id ?? index}
+            testId={index === 0 ? 'pair-left' : 'pair-right'}
+            product={product}
+            width={tileWidth}
+            ratio={1.44}
+            framed
+            sponsored={sponsored}
+          />
+        ))}
+        {cards.length === 1 ? <div data-testid="pair-right" style={{ width: tileWidth, height: Math.round(tileWidth * 1.44) + 72 }} /> : null}
       </div>
     </div>
   );
@@ -311,7 +325,7 @@ function BlockProductsField({ kind, ids, products, onChange }: {
 
   const add = (id: string) => {
     if (ids.includes(id)) return;
-    onChange(max === 1 ? [id] : [...ids, id].slice(0, max));
+    onChange([...ids, id].slice(0, max));
     setQuery('');
   };
   const move = (index: number, delta: number) => {
@@ -325,7 +339,7 @@ function BlockProductsField({ kind, ids, products, onChange }: {
 
   return (
     <div className="admin-field admin-field--full">
-      <span>{kind === 'sponsored_pair' ? 'Produit (carte de droite)' : `Produits de la rangée (${ids.length}/${max})`}<em>*</em></span>
+      <span>{kind === 'sponsored_pair' ? `Produits sous l’image (${ids.length}/${max})` : `Produits de la rangée (${ids.length}/${max})`}<em>*</em></span>
       {ids.length ? (
         <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
           {ids.map((id, index) => {
@@ -347,7 +361,7 @@ function BlockProductsField({ kind, ids, products, onChange }: {
           })}
         </ol>
       ) : <small>Aucun produit choisi.</small>}
-      {ids.length < max || max === 1 ? (
+      {ids.length < max ? (
         <input aria-label="Rechercher un produit" value={query} placeholder="Rechercher par nom, marque ou référence…" onChange={(e) => setQuery(e.target.value)} style={{ marginTop: 8 }} />
       ) : null}
       {error ? <small className="admin-field-error">{error}</small> : null}

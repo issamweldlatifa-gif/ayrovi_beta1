@@ -181,28 +181,38 @@ const product = (overrides: Record<string, unknown> = {}) => ({
 describe('ProductCard — boutique', () => {
   beforeEach(() => { mockAddToCart.mockClear(); });
 
-  it('lignes : marque · nom · stock · prix + panier ; toutes les photos du CRM', async () => {
+  it('lignes (Privé, 14/11) : marque · nom · info · prix ; plus de panier ni de « En stock »', async () => {
     render(wrap(<ProductCard product={product()} onOpen={jest.fn()} metrics={metrics} />));
     await act(async () => {});
     expect(screen.getByTestId('product-card-p1-brand').props.children).toBe('Puma');
     expect(screen.getByText('PUMA SNEAKERS HERREN 401622')).toBeTruthy();
-    expect(screen.getByText('En stock')).toBeTruthy();
+    expect(screen.queryByText('En stock')).toBeNull();
+    expect(screen.queryByTestId('product-card-cart-p1')).toBeNull();
     expect(screen.getAllByTestId(/^product-card-p1-dot-/, HIDDEN)).toHaveLength(3);
     expect(flat(screen.getByTestId('product-card-p1')).height).toBe(metrics.height);
   });
 
-  it('le panier ajoute sans ouvrir la fiche ; la photo regardée part avec l’ouverture', async () => {
+  it('prix conseillé barré seulement s’il vient du CRM et dépasse le prix ; sinon le stock utile', async () => {
+    const view = render(wrap(<ProductCard product={product({ compareAtPrice: 49.9 })} onOpen={jest.fn()} metrics={metrics} />));
+    await act(async () => {});
+    expect(screen.getByText(/Prix conseillé/)).toBeTruthy();
+    expect(screen.getByText('49.90 TND')).toBeTruthy();
+    view.unmount();
+    render(wrap(<ProductCard product={product({ compareAtPrice: 20, stockStatus: 'LIMITED' })} onOpen={jest.fn()} metrics={metrics} />));
+    await act(async () => {});
+    expect(screen.queryByText(/Prix conseillé/)).toBeNull();
+    expect(screen.getByText('Stock limité')).toBeTruthy();
+  });
+
+  it('un appui ouvre la fiche sur la photo regardée', async () => {
     const onOpen = jest.fn();
     render(wrap(<ProductCard product={product()} onOpen={onOpen} metrics={metrics} />));
     await act(async () => {});
-    await act(async () => { fireEvent.press(screen.getByTestId('product-card-cart-p1'), { stopPropagation: jest.fn() }); });
-    expect(mockAddToCart).toHaveBeenCalledWith({ productId: 'p1', sessionId: 'sess_test' });
-    expect(onOpen).not.toHaveBeenCalled();
     fireEvent.press(screen.getByTestId('product-card-p1-photo-1'));
     expect(onOpen).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'p1' }), 1);
   });
 
-  it('sans prix ni marque : « Sans tarif », pas de panier, même hauteur', async () => {
+  it('sans prix ni marque : « Sans tarif », même hauteur', async () => {
     render(wrap(<ProductCard product={product({ id: 'p2', finalPrice: 0, brandName: '', stockStatus: 'weird' })} onOpen={jest.fn()} metrics={metrics} />));
     await act(async () => {});
     expect(screen.getByText('Sans tarif')).toBeTruthy();

@@ -206,6 +206,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'app/lens.tsx', // caméra plein écran : commandes, cadre et feuille au-dessus du flux vidéo
       'src/features/lens/LensProductView.tsx', // galerie : en-tête fixe, badges et aide zoom au-dessus des images
       'src/design/ProductTile.tsx', // carte produit de grille (13/11) : pastilles au ras du bord et cœur posés SUR la photo qui défile
+      'src/features/publications/templates/BlockProductCard.tsx', // 14/11 GBox : rond du cœur et pastille « Nouveau » posés SUR la photo
       'src/features/lens/LensSelectionView.tsx', // Z Lens : photo, voile, cadre de sélection et arcs posés les uns sur les autres
       'src/features/lens/LensLiveOverlay.tsx', // Z Lens Live : cadre et points posés sur l'aperçu caméra plein écran
       'src/features/lens/LensMenu.tsx', // menu ⋮ flottant au-dessus de la caméra, sous son bouton
@@ -826,10 +827,11 @@ describe('Design System — les cotes de la fiche produit sont gelées', () => {
       rowState: numeric('rowState'),
       headerTitle: numeric('headerTitle'),
     }).toEqual({
-      nameSize: 22,
+      // 14/11 (planches Privé, dérogation client) : marque 18 en coupe « Heading », libellés 17.
+      nameSize: 18,
       priceSize: 20,
       descriptionSize: 15,
-      rowLabel: 18,
+      rowLabel: 17,
       tileLabel: 15,
       infoTitle: 16,
       infoBody: 15,
@@ -849,6 +851,6 @@ describe('Design System — les cotes de la fiche produit sont gelées', () => {
       descriptionLine: numeric('descriptionLine'),
       infoLine: numeric('infoLine'),
       sheetTitleLine: numeric('sheetTitleLine'),
-    }).toEqual({ nameLine: 26, descriptionLine: 17, infoLine: 18, sheetTitleLine: 20 });
+    }).toEqual({ nameLine: 24, descriptionLine: 17, infoLine: 18, sheetTitleLine: 20 });
   });
 });

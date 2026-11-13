@@ -20,10 +20,15 @@ import { memo, useCallback, useMemo } from 'react';
  *     كل كارت عندها نفس الطول، والسطور متاع جارتين على نفس الخط ؛
  *   • «Promo» و«Combinaisons» ولّاو شارات على حاشية الصورة (ما عادش يطوّلو الكارت) ؛
  *   • **صور كبيرة / صغيرة** : الشاشة هي اللي تعطي المقاسات (`metrics`).
+ *
+ * ── 14/11/2026 : planche Privé `Screenshot_20261113_023638` (dérogation client) ──
+ *   • la photo est posée ENTIÈRE (`contain`) sur le gris de son propre fond ;
+ *   • plus de bouton panier ni de « En stock » vert sur la carte : la ligne d'info
+ *     porte le « Prix conseillé ~~x~~ » du CRM quand il existe, sinon UNIQUEMENT
+ *     un état de stock qui mérite d'être dit (limité, épuisé, non confirmé) ;
+ *   • marque grasse, nom gris, prix gras.
  */
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import { useWindowDimensions } from 'react-native';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -32,9 +37,6 @@ import { PRODUCT_TILE, productTileImages, productTileMetrics, type ProductTileMe
 import { useT, type Translate } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { normalizeStockStatus, type CatalogProduct } from '@/api/catalog';
-import { addCatalogToCart } from '@/api/cart';
-import { touchCartReservation } from '@/features/shopping/cartReservation';
-import { useSessionId } from '@/session/session';
 import { formatMoney } from '@/format/money';
 
 export interface ProductCardProps {
@@ -51,19 +53,16 @@ export interface ProductCardProps {
   hasCombinations?: boolean;
   /** Promotion donnée par le serveur (jamais déduite ici) : repère « Promo ». */
   promo?: boolean;
-  /**
-   * Bouton « mettre au panier » sur la carte (exigence du 25/10 : « le bouton
-   * panier n'existait pas »). `true` par défaut ; les aperçus CRM le coupent
-   * pour ne pas créer de panier depuis une prévisualisation.
-   */
-  withCart?: boolean;
 }
 
-/** نصّ المخزون: كل الحالات المعروفة، والباقي «غير مؤكّد» موش فراغ. */
-function stockLabel(status: string, t: Translate): { text: string; tone: 'ok' | 'warn' | 'muted' } {
+/**
+ * نصّ المخزون اللي يستاهل يتقال : محدود، فارغ، أو غير مؤكّد. «En stock» ما
+ * عادش يتكتب على الكارت (Privé) — المنتوج المعروض متوفّر بطبيعتو.
+ */
+export function stockLabel(status: string, t: Translate): { text: string; tone: 'warn' | 'muted' } | null {
   switch (normalizeStockStatus(status)) {
     case 'AVAILABLE':
-      return { text: t('catalog.stock.in_stock'), tone: 'ok' };
+      return null;
     case 'LIMITED':
       return { text: t('catalog.stock.limited'), tone: 'warn' };
     case 'OUT_OF_STOCK':
@@ -74,27 +73,18 @@ function stockLabel(status: string, t: Translate): { text: string; tone: 'ok' | 
 }
 
 export const ProductCard = memo(function ProductCard({
-  product, onOpen, metrics, hasCombinations = false, promo = false, withCart = true,
+  product, onOpen, metrics, hasCombinations = false, promo = false,
 }: ProductCardProps) {
   const theme = useTheme();
   const t = useT();
   const window = useWindowDimensions();
-  const sessionId = useSessionId();
-  const queryClient = useQueryClient();
-  /**
-   * Le MÊME add-to-cart que la fiche : `/api/cart/catalog`, prix serveur, jamais
-   * un prix recomposé ici. Le panier de l'onglet est invalidé après succès.
-   */
-  const cart = useMutation({
-    mutationFn: () => addCatalogToCart({ productId: product.id, sessionId }),
-    onSuccess: () => {
-      touchCartReservation();
-      void queryClient.invalidateQueries({ queryKey: ['cart'] });
-    },
-  });
   const tile = metrics ?? productTileMetrics({ width: window.width, density: 'grid', fontScale: window.fontScale });
   const stock = stockLabel(product.stockStatus, t);
   const hasPrice = product.finalPrice > 0;
+  /** Prix barré : `compare_at_price` du CRM, seulement s'il dépasse le prix de vente. */
+  const reference = hasPrice && product.compareAtPrice != null && product.compareAtPrice > product.finalPrice
+    ? formatMoney(product.compareAtPrice)
+    : null;
   const brand = product.brandName?.trim() || product.family?.name?.trim() || '';
 
   // Toutes les photos publiées, dans l'ordre du CRM : principale puis additionnelles.
@@ -110,7 +100,8 @@ export const ProductCard = memo(function ProductCard({
   }, [promo, hasCombinations, t]);
   const open = useCallback((photo: number) => onOpen(product, photo), [onOpen, product]);
 
-  const stockColor = stock.tone === 'ok' ? theme.status.success.fg : stock.tone === 'warn' ? theme.status.warning.fg : theme.colors.muted;
+  const stockColor = stock?.tone === 'warn' ? theme.status.warning.fg : theme.colors.muted;
+  const metaStyle = [productTileTextStyle('meta', tile), { fontFamily: theme.font('regular') }];
 
   return (
     <ProductTile
@@ -121,17 +112,28 @@ export const ProductCard = memo(function ProductCard({
       imageLabel={product.name}
       brand={brand}
       name={product.name}
-      meta={(
+      meta={reference ? (
+        <AppText
+          numberOfLines={1}
+          color={theme.colors.muted}
+          maxFontSizeMultiplier={PRODUCT_TILE.maxFontScale}
+          style={metaStyle}
+          testID={`product-card-reference-${product.id}`}
+        >
+          {`${t('product.referencePrice')} `}
+          <AppText color={theme.colors.muted} style={[metaStyle, { textDecorationLine: 'line-through' }]}>{reference}</AppText>
+        </AppText>
+      ) : stock ? (
         <AppText
           numberOfLines={1}
           color={stockColor}
           maxFontSizeMultiplier={PRODUCT_TILE.maxFontScale}
-          style={[productTileTextStyle('meta', tile), { fontFamily: theme.font('regular') }]}
+          style={metaStyle}
           testID={`product-card-stock-${product.id}`}
         >
           {stock.text}
         </AppText>
-      )}
+      ) : undefined}
       price={hasPrice ? formatMoney(product.finalPrice) : (
         <AppText
           numberOfLines={1}
@@ -144,31 +146,6 @@ export const ProductCard = memo(function ProductCard({
       )}
       badges={badges}
       onOpen={open}
-      trailing={withCart && hasPrice ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={cart.isSuccess ? t('catalog.added') : t('catalog.addToCart')}
-          accessibilityState={{ disabled: cart.isPending }}
-          disabled={cart.isPending}
-          testID={`product-card-cart-${product.id}`}
-          hitSlop={styles.cartHit}
-          onPress={(event) => { event.stopPropagation?.(); cart.mutate(); }}
-          style={({ pressed }) => [styles.cartButton, { height: tile.lines.price, opacity: cart.isPending ? theme.opacity.subtle : pressed ? theme.opacity.subtle : 1 }]}
-        >
-          <Ionicons
-            name={cart.isSuccess ? 'checkmark' : 'bag-add-outline'}
-            size={theme.iconSize.md}
-            color={cart.isSuccess ? theme.status.success.fg : theme.colors.ink}
-            accessibilityElementsHidden
-          />
-        </Pressable>
-      ) : null}
     />
   );
-});
-
-const styles = StyleSheet.create({
-  // 40 × (ligne prix) + débord de 10 en haut et en bas : cible ≥ 44 sans grandir la ligne.
-  cartButton: { width: 40, alignItems: 'center', justifyContent: 'center' },
-  cartHit: { top: 12, bottom: 12, left: 4, right: 4 },
 });

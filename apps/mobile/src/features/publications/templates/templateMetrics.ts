@@ -17,13 +17,17 @@
  *  │  panneau : 110 px ⇒ 55 dp avant les cartes (48 sur l'échelle) ;
  *  │  photo de carte 302 × 438 px ⇒ 151 × 219 dp, rapport 1,45, rayon 12 ;
  *  │  écart entre cartes 34 px ⇒ 16 dp ; deux cartes entières + une amorce.
- *  └ Modèle `sponsored_pair` (planches Fred Perry, GUESS)
- *     deux tuiles de 320 px ⇒ 160 dp, retrait 16 dp, écart 8 dp ;
- *     photo 462 px de haut des DEUX côtés, encart = bloc texte voisin :
- *     les deux tuiles ont exactement la même taille.
+ *  └ Modèle `sponsored_pair` (14/11 : planche GBox « WE Fashion » 224107)
+ *     bandeau (Sponsorisé + titre) puis image qui part de x = 48 px et DÉBORDE à
+ *     droite : 672 × 322 px ⇒ rapport 2,09 ; 110 px ⇒ 56 dp de blanc ; puis DEUX
+ *     cartes de 320 px ⇒ 160 dp, retrait 16 dp, écart 8 dp, photo 461 px (1,44).
+ *
+ * 14/11 — relevés GBox complémentaires (Vans 224048, The Ordinary 224628) :
+ *  • container : cartes 304 px ⇒ 152 dp, écart 32 px ⇒ 16 dp, photo 437 px (1,44),
+ *    112 px ⇒ 56 dp entre le bandeau et les cartes, 77 px ⇒ ~32 dp jusqu'à « + Follow » ;
+ *  • media : photos 206 px ⇒ 103 dp, filet 8 px, amorce 31 px ⇒ 3,15 photos visibles,
+ *    hauteur 296 px (1,44).
  */
-
-import { productTileMetrics, PRODUCT_TILE, type ProductTileMetrics } from '@/design/productTile';
 
 export const PUBLICATION_TEMPLATE = {
   /** Largeur de l'écran de référence (720 px ÷ 2). */
@@ -42,8 +46,8 @@ export const PUBLICATION_TEMPLATE = {
   videoAspect: 1,
   mediaRadius: 8,
   rowSpacing: 4,
-  rowTileRatio: 1.45,
-  rowTilesVisible: 3.2,
+  rowTileRatio: 1.44,
+  rowTilesVisible: 3.15,
   rowTilesVisibleWide: 5.2,
 
   /* Modèle `container` */
@@ -51,20 +55,25 @@ export const PUBLICATION_TEMPLATE = {
   bandPaddingTop: 16,
   /** Planche : 29 px sous la 2e ligne du titre ⇒ 16 dp (24 laissait un bandeau trop haut). */
   bandPaddingBottom: 16,
-  panelPaddingTop: 48,
-  cardRatio: 1.45,
+  panelPaddingTop: 56,
+  cardRatio: 1.44,
   cardRadius: 12,
   cardSpacing: 16,
-  cardsVisible: 2.13,
+  /** Deux cartes ENTIÈRES de 152 dp ; la rangée s'aimante carte par carte. */
+  cardsVisible: 2,
   cardsVisibleWide: 4.2,
   containerMediaAspect: 2.07,
   /** Bas du panneau : 89 px entre le texte des cartes et la pilule « + Suivre » ⇒ 24 dp + interlignes. */
-  followTop: 24,
+  followTop: 32,
   panelPaddingBottom: 24,
 
   /* Modèle `sponsored_pair` */
   pairInset: 16,
   pairSpacing: 8,
+  pairMediaAspect: 2.09,
+  pairTitleGap: 16,
+  pairCardsTop: 56,
+  pairCardRatio: 1.44,
 
   /** Seuil « tablette » (même valeur que la grille produit). */
   wideFrom: 600,
@@ -86,8 +95,12 @@ export interface PublicationTemplateMetrics {
     mediaHeight: number;
   };
   pair: {
-    /** Largeur de CHAQUE tuile (gauche sponsorisée, droite produit). */
+    /** Largeur de CHAQUE carte produit sous l'image. */
     tileWidth: number;
+    cardImageHeight: number;
+    /** Image du bandeau : de `bandInset` jusqu'au bord droit. */
+    mediaWidth: number;
+    mediaHeight: number;
   };
 }
 
@@ -124,19 +137,9 @@ export function publicationTemplateMetrics(screenWidth: number): PublicationTemp
     },
     pair: {
       tileWidth: pairTile,
+      cardImageHeight: Math.round(pairTile * T.pairCardRatio),
+      mediaWidth: Math.max(1, width - T.bandInset),
+      mediaHeight: Math.round(Math.max(1, width - T.bandInset) / T.pairMediaAspect),
     },
   };
-}
-
-/**
- * Cotes de la carte produit du duo : la carte de grille de l'application
- * (`ProductTile`, mêmes lignes et même bloc texte) posée à la largeur du duo.
- * La tuile sponsorisée reçoit EXACTEMENT ces cotes : photo de même hauteur,
- * encart de la hauteur du bloc texte — les deux tuiles sont identiques en taille.
- */
-export function pairTileMetrics(tileWidth: number, fontScale = 1): ProductTileMetrics {
-  const base = productTileMetrics({ width: PRODUCT_TILE.referenceWidth, density: 'grid', fontScale });
-  const cardWidth = Math.max(1, tileWidth);
-  const mediaHeight = Math.max(1, Math.round(cardWidth / PRODUCT_TILE.mediaRatio));
-  return { ...base, columns: 2, cardWidth, mediaHeight, height: mediaHeight + base.textHeight };
 }

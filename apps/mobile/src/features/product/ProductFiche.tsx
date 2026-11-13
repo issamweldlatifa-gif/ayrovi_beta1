@@ -21,10 +21,11 @@ import { BackButton } from '@/design/BackButton';
  *  • aucun libellé écrit en dur : le nom des blocs vient du CRM quand il en
  *    donne un (`ficheLabels`), sinon de la traduction de l'application.
  */
-import { type ComponentProps, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   FlatList,
+  LayoutAnimation,
   Modal,
   Pressable,
   StyleSheet,
@@ -44,9 +45,21 @@ import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { ficheColorsFor, RADIUS, VIDEO_BACKDROP } from '@/design/tokens.mobile';
-import { FICHE, type ColorTile, type GalleryItem, type SizeRow } from './fiche';
-
-type IoniconName = ComponentProps<typeof Ionicons>['name'];
+import { FONTS, MOTION } from '@/design/tokens.generated';
+import { FicheGlyph, type FicheGlyphName } from '@/design/FicheGlyph';
+import {
+  FICHE,
+  FICHE_DETAIL,
+  GALLERY_PARALLAX,
+  HEADER_TITLE,
+  headerTitleRange,
+  specIsWide,
+  viewerStageHeight,
+  type ColorTile,
+  type GalleryItem,
+  type SizeRow,
+  type SpecRow,
+} from './fiche';
 
 /** Colonne des icônes : la boîte de 24 dp commence à 17 dp (maquette : 46 px). */
 const ICON_BOX = FICHE.rowIcon;
@@ -95,6 +108,11 @@ export function FicheHeader({
     extrapolate: 'clamp',
   });
 
+  /** 14/11 — le nom monte dans l'en-tête quand la marque de la feuille passe dessous. */
+  const titleRange = headerTitleRange();
+  const titleIn = scrollY.interpolate({ inputRange: titleRange, outputRange: [0, 1], extrapolate: 'clamp' });
+  const titleShift = scrollY.interpolate({ inputRange: titleRange, outputRange: [HEADER_TITLE.travel, 0], extrapolate: 'clamp' });
+
   const pillShiftX = expandAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [theme.isRTL ? -6 : 6, 0],
@@ -121,8 +139,17 @@ export function FicheHeader({
         <BackButton onPress={onBack} label={t('common.back')} color={theme.colors.ink} />
 
         <Animated.Text
+          testID="product-header-title"
           numberOfLines={1}
-          style={[styles.headerTitle, { color: theme.colors.ink, opacity: solid, fontFamily: theme.font('medium') }]}
+          style={[
+            styles.headerTitle,
+            {
+              color: theme.colors.ink,
+              opacity: titleIn,
+              transform: [{ translateY: titleShift }],
+              fontFamily: theme.isRTL ? theme.font('medium') : FONTS.latin.heading,
+            },
+          ]}
         >
           {title}
         </Animated.Text>
@@ -207,32 +234,50 @@ export function FicheHeader({
  *  • les points de galerie restent dans la photo : ils disparaissent sous la
  *    feuille en même temps qu'elle, comme sur la planche.
  */
-export function FichePhotoLayer({ items, index }: { items: GalleryItem[]; index: number }) {
+export function FichePhotoLayer({
+  items,
+  index,
+  scrollY,
+}: {
+  items: GalleryItem[];
+  index: number;
+  /** 14/11 — la photo recule (parallaxe) pendant que la feuille monte. */
+  scrollY?: Animated.Value;
+}) {
   const insets = useSafeAreaInsets();
   const totalHeight = FICHE.imageHeight + insets.top;
+  const shift = scrollY
+    ? scrollY.interpolate({
+      inputRange: [0, FICHE.imageHeight],
+      outputRange: [0, -FICHE.imageHeight * GALLERY_PARALLAX],
+      extrapolate: 'clamp',
+    })
+    : 0;
   return (
-    <View
-      style={[styles.pinnedPhoto, { height: totalHeight }]}
+    <Animated.View
+      testID="product-photo-layer"
+      style={[styles.pinnedPhoto, { height: totalHeight, transform: [{ translateY: shift }] }]}
       pointerEvents="none"
       accessible={false}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <FichePhoto items={items} index={index} height={totalHeight} onOpen={() => {}} />
-    </View>
+      <FichePhoto items={items} index={index} height={totalHeight} topInset={insets.top} />
+    </Animated.View>
   );
 }
 
-/* ── 2. Photo (écran 1) : une photo, des points, un appui = plein écran ────── */
+/* ── 2. Photo (écran 1) : le produit ENTIER sur le gris de son propre fond ─── */
 
 export function FichePhoto({
-  items, index, height, onOpen,
+  items, index, height, topInset = 0,
 }: {
   items: GalleryItem[];
   /** Photo affichée (change quand on choisit une couleur). */
   index: number;
   height?: number;
-  onOpen: (index: number) => void;
+  /** La photo commence sous la barre d'état : le produit n'est jamais caché par elle. */
+  topInset?: number;
 }) {
   const theme = useTheme();
   const fc = ficheColorsFor(theme.mode);
@@ -242,42 +287,56 @@ export function FichePhoto({
   const active = Math.max(0, Math.min(index, count - 1));
 
   return (
-    <View style={[styles.photo, { height: height ?? FICHE.imageHeight, backgroundColor: theme.colors.surface }]}>
+    <View testID="product-photo" style={[styles.photo, { height: height ?? FICHE.imageHeight, backgroundColor: fc.photo }]}>
       {current ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('product.openGallery')}
-          onPress={() => onOpen(active)}
-          style={StyleSheet.absoluteFill}
-        >
-          {current.kind === 'video' ? (
-            <View style={[StyleSheet.absoluteFill, styles.photoEmpty]}>
-              <Ionicons name="play-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
-            </View>
-          ) : (
+        current.kind === 'video' ? (
+          <View style={[StyleSheet.absoluteFill, styles.photoEmpty]}>
+            <Ionicons name="play-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
+          </View>
+        ) : (
+          /*
+           * 14/11 — `contain`, plus `cover` (« من برّا ما يبانش المنتوج مليح ») :
+           * la photo 2:3 tient ENTIÈRE dans le cadre, sous la barre d'état ; le gris
+           * du cadre est celui du fichier, donc aucune bande visible.
+           */
+          <View style={[styles.photoFrame, { top: topInset }]}>
             <AppImage
+              testID="product-photo-image"
               uri={mediaUrl(current.url)}
               highRes
-              background={theme.colors.surface}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
+              background={fc.photo}
+              style={styles.fill}
+              contentFit="contain"
               accessibilityLabel={t('product.photo', { index: String(active + 1), total: String(count) })}
               decorative
             />
-          )}
-        </Pressable>
+          </View>
+        )
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.photoEmpty]}>
           <AppText variant="caption" color={theme.colors.muted}>{t('catalog.noImage')}</AppText>
         </View>
       )}
+    </View>
+  );
+}
 
+/**
+ * Chrome de la galerie, posé dans la FENÊTRE de la feuille (il monte avec elle) :
+ * les points au centre et l'icône « agrandir » (quatre coins) en bas à droite —
+ * planche Privé `Screenshot_20261113_023704`.
+ */
+export function FichePhotoChrome({ count, active }: { count: number; active: number }) {
+  const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
+  return (
+    <>
       {count > 1 ? (
-        <View pointerEvents="none" style={styles.dots}>
-          {items.map((item, position) => {
+        <View pointerEvents="none" style={styles.dots} testID="product-photo-dots">
+          {Array.from({ length: Math.min(count, 8) }, (_, position) => {
             const size = position === active ? FICHE.dot : FICHE.dotIdle;
             return (
-              <View key={`${item.url}-${position}`} style={styles.dotSlot}>
+              <View key={position} style={styles.dotSlot}>
                 <View
                   style={{
                     width: size,
@@ -291,68 +350,91 @@ export function FichePhoto({
           })}
         </View>
       ) : null}
-    </View>
+      <View pointerEvents="none" style={[styles.expand, theme.isRTL ? styles.expandRTL : styles.expandLTR]}>
+        <FicheGlyph name="expand" size={FICHE_DETAIL.expandIcon} color={theme.colors.ink} testID="product-photo-expand" />
+      </View>
+    </>
   );
 }
 
-/* ── 3. Identité : nom souligné à la largeur du mot, prix en face, description ─ */
+/* ── 3. Identité : marque soulignée, prix en face, nom complet gris dessous ── */
 
 export function FicheIdentity({
-  brand, name, price, description,
+  brand, name, price, referencePrice, scrollY,
 }: {
   /**
-   * Marque (vidéo Veepee du 12/11) : elle prend la ligne soulignée à côté du
-   * prix, et le nom du produit passe dessous, EN ENTIER. Sans marque, le nom
-   * reste souligné — en entier lui aussi (plus de « Enceinte Blue… »).
+   * Marque (Privé) : police « Expanded », soulignée d'un filet fin à la largeur
+   * du mot ; le nom complet passe dessous, EN ENTIER et en gris. Sans marque, le
+   * nom prend la ligne soulignée.
    */
   brand?: string;
   name: string;
   price: string | null;
-  description: string;
+  /**
+   * « Prix conseillé ~~25,00 €~~ » — seulement la valeur `compare_at_price` du
+   * CRM, et seulement quand elle dépasse le prix de vente (sinon `null`).
+   */
+  referencePrice?: string | null;
+  /** 14/11 — la marque s'efface pendant qu'elle monte dans l'en-tête. */
+  scrollY?: Animated.Value;
 }) {
   const theme = useTheme();
   const fc = ficheColorsFor(theme.mode);
+  const t = useT();
   const title = brand?.trim() || name;
   const fullName = brand?.trim() ? name : '';
+  const fade = scrollY
+    ? scrollY.interpolate({ inputRange: headerTitleRange(), outputRange: [1, 0], extrapolate: 'clamp' })
+    : 1;
   return (
     <View style={styles.identity}>
       <View style={styles.identityTop}>
-        {/* Le filet fait exactement la largeur du mot : la boîte se rétrécit au texte. */}
-        <View style={[styles.nameBox, { borderBottomColor: fc.nameUnderline }]}>
-          <AppText testID="product-fiche-title" variant="h3" numberOfLines={fullName ? 1 : undefined} style={[styles.name, { color: theme.colors.ink }]}>
-            {title}
-          </AppText>
+        <View style={styles.identityStart}>
+          {/* Le filet fait exactement la largeur du mot : la boîte se rétrécit au texte. */}
+          <Animated.View style={[styles.nameBox, { borderBottomColor: theme.colors.ink, opacity: fade }]}>
+            <AppText
+              testID="product-fiche-title"
+              numberOfLines={fullName ? 1 : undefined}
+              style={[styles.name, { color: theme.colors.ink, fontFamily: theme.isRTL ? theme.font('bold') : FONTS.latin.heading }]}
+            >
+              {title}
+            </AppText>
+          </Animated.View>
+          {fullName ? (
+            <AppText
+              testID="product-fiche-name"
+              style={[styles.fullName, { color: fc.muted, fontFamily: theme.font('regular') }]}
+            >
+              {fullName}
+            </AppText>
+          ) : null}
         </View>
         {price ? (
-          <AppText variant="price" style={[styles.price, { color: theme.colors.ink }]}>{price}</AppText>
+          <View style={styles.priceColumn}>
+            <AppText testID="product-fiche-price" style={[styles.price, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>
+              {price}
+            </AppText>
+            {referencePrice ? (
+              <AppText testID="product-fiche-reference-price" style={[styles.reference, { color: fc.muted, fontFamily: theme.font('regular') }]}>
+                {`${t('product.referencePrice')} `}
+                <AppText style={[styles.reference, styles.struck, { color: fc.muted, fontFamily: theme.font('regular') }]}>
+                  {referencePrice}
+                </AppText>
+              </AppText>
+            ) : null}
+          </View>
         ) : null}
       </View>
-      {fullName ? (
-        <AppText
-          testID="product-fiche-name"
-          style={[styles.fullName, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}
-        >
-          {fullName}
-        </AppText>
-      ) : null}
-      {description ? (
-        <AppText
-          numberOfLines={2}
-          style={[styles.description, { color: fc.muted, fontFamily: theme.font('regular') }]}
-        >
-          {description}
-        </AppText>
-      ) : null}
     </View>
   );
 }
 
-/* ── 4. Ligne de choix : icône, libellé, valeur, chevron ───────────────────── */
+/* ── 4. Ligne de choix : pictogramme, libellé gras, valeur, chevron ────────── */
 
 export function ChoiceRow({
   icon, label, value, onPress, chevron = false, testID,
 }: {
-  icon: IoniconName;
+  icon: FicheGlyphName;
   label: string;
   value?: string;
   onPress?: () => void;
@@ -365,17 +447,18 @@ export function ChoiceRow({
   const content = (
     <>
       <View style={styles.rowIcon}>
-        <Ionicons name={icon} size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
+        <FicheGlyph name={icon} size={ICON_BOX} color={theme.colors.ink} />
       </View>
       <View style={styles.rowText}>
-        <AppText variant="label" numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink }]}>
+        {/* Privé : « Couleur Marron » — libellé gras et valeur régulière sur la même ligne. */}
+        <AppText numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>
           {label}
+          {value ? (
+            <AppText style={[styles.rowValue, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
+              {` ${value}`}
+            </AppText>
+          ) : null}
         </AppText>
-        {value ? (
-          <AppText numberOfLines={1} style={[styles.rowValue, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
-            {value}
-          </AppText>
-        ) : null}
       </View>
       {chevron ? (
         <View style={styles.chevron}>
@@ -385,7 +468,7 @@ export function ChoiceRow({
     </>
   );
 
-  if (!onPress) return <View style={styles.row}>{content}</View>;
+  if (!onPress) return <View style={styles.row} testID={testID}>{content}</View>;
   return (
     <Pressable
       accessibilityRole="button"
@@ -454,36 +537,46 @@ export function ColorStrip({
 /* ── 6. Accordéon : une section d'attributs du CRM (48 dp par ligne fermée) ── */
 
 export function SectionRow({
-  icon, title, children, defaultOpen = false,
+  icon, title, children, defaultOpen = false, testID,
 }: {
-  icon: IoniconName;
+  icon: FicheGlyphName;
   title: string;
   children: ReactNode;
   defaultOpen?: boolean;
+  testID?: string;
 }) {
   const theme = useTheme();
   const fc = ficheColorsFor(theme.mode);
   const [open, setOpen] = useState(defaultOpen);
+  /* Le chevron tourne (bas → haut) au lieu de changer d'icône d'un coup. */
+  const turn = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
+  useEffect(() => {
+    Animated.timing(turn, { toValue: open ? 1 : 0, duration: MOTION.fast, useNativeDriver: true }).start();
+  }, [open, turn]);
+  const rotate = turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
   return (
-    <View>
+    <View testID={testID}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
         accessibilityLabel={title}
-        onPress={() => setOpen((value) => !value)}
+        onPress={() => {
+          LayoutAnimation.configureNext(LayoutAnimation.create(MOTION.fast, 'easeInEaseOut', 'opacity'));
+          setOpen((value) => !value);
+        }}
         style={styles.row}
       >
         <View style={styles.rowIcon}>
-          <Ionicons name={icon} size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
+          <FicheGlyph name={icon} size={ICON_BOX} color={theme.colors.ink} />
         </View>
         <View style={styles.rowText}>
-          <AppText variant="label" numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink }]}>
+          <AppText numberOfLines={1} style={[styles.rowLabel, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>
             {title}
           </AppText>
         </View>
-        <View style={styles.chevron}>
-          <Ionicons name={open ? 'chevron-up-outline' : 'chevron-down-outline'} size={FICHE.chevronSize} color={theme.colors.ink} accessibilityElementsHidden />
-        </View>
+        <Animated.View style={[styles.chevron, { transform: [{ rotate }] }]}>
+          <Ionicons name="chevron-down-outline" size={FICHE.chevronSize} color={theme.colors.ink} accessibilityElementsHidden />
+        </Animated.View>
       </Pressable>
       {open ? <View style={styles.sectionBody}>{children}</View> : null}
       <View style={[styles.hairline, { backgroundColor: fc.hair }]} />
@@ -494,11 +587,13 @@ export function SectionRow({
 /* ── 7. Bloc d'information (livraison, retours, partage) ───────────────────── */
 
 export function InfoRow({
-  icon, title, titleColor, lines, onPress, testID,
+  icon, title, titleColor, iconColor, lines, onPress, testID,
 }: {
-  icon: IoniconName;
+  icon: FicheGlyphName;
   title: string;
   titleColor?: string;
+  /** Privé : le camion de « Livraison rapide » prend le vert du titre. */
+  iconColor?: string;
   lines?: string[];
   onPress?: () => void;
   testID?: string;
@@ -508,10 +603,10 @@ export function InfoRow({
   const content = (
     <>
       <View style={[styles.rowIcon, styles.infoIcon]}>
-        <Ionicons name={icon} size={ICON_BOX} color={theme.colors.ink} accessibilityElementsHidden />
+        <FicheGlyph name={icon} size={ICON_BOX} color={iconColor ?? theme.colors.ink} />
       </View>
       <View style={styles.infoText}>
-        <AppText variant="h3" style={[styles.infoTitle, { color: titleColor ?? theme.colors.ink }]}>
+        <AppText style={[styles.infoTitle, { color: titleColor ?? theme.colors.ink, fontFamily: theme.font('bold') }]}>
           {title}
         </AppText>
         {(lines ?? []).map((line, position) => (
@@ -526,7 +621,7 @@ export function InfoRow({
     </>
   );
 
-  if (!onPress) return <View style={styles.infoRow}>{content}</View>;
+  if (!onPress) return <View style={styles.infoRow} testID={testID}>{content}</View>;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={title} onPress={onPress} testID={testID} style={styles.infoRow}>
       {content}
@@ -534,19 +629,70 @@ export function InfoRow({
   );
 }
 
-/** Ligne « libellé — valeur » d'un accordéon (Caractéristiques, Matière…). */
+/**
+ * 14/11 — grille des caractéristiques (Privé `Screenshot_20261113_023826`) :
+ * deux colonnes, « Libellé: » en GRAS, la valeur dessous en régulier. Une valeur
+ * trop longue pour une demi-colonne (une phrase d'entretien, une liste) prend
+ * toute la largeur au lieu d'être coupée.
+ */
+export function SpecGrid({ rows, testID }: { rows: SpecRow[]; testID?: string }) {
+  const theme = useTheme();
+  if (rows.length === 0) return null;
+  return (
+    <View testID={testID} style={[styles.specGrid, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
+      {rows.map((row) => (
+        <View key={row.key} style={specIsWide(row) ? styles.specCellWide : styles.specCell}>
+          <SpecLine label={row.label} value={row.value} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Une paire « Libellé: / valeur » de la grille. */
 export function SpecLine({ label, value }: { label: string; value: string }) {
   const theme = useTheme();
-  const fc = ficheColorsFor(theme.mode);
   return (
-    <View style={[styles.specLine, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-      <AppText numberOfLines={1} style={[styles.specLabel, { color: fc.muted, fontFamily: theme.font('regular') }]}>
-        {label}
+    <View>
+      <AppText style={[styles.specLabel, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>
+        {`${label}:`}
       </AppText>
       <AppText style={[styles.specValue, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}>
         {value}
       </AppText>
     </View>
+  );
+}
+
+/**
+ * Lien souligné gras (« Voir les informations sur la fabrication », « Guide des
+ * tailles ») — filet épais de 2 dp, à la largeur du texte.
+ */
+export function FicheLink({
+  label, onPress, icon, testID,
+}: {
+  label: string;
+  onPress: () => void;
+  /** Privé : le réglet précède « Guide des tailles ». */
+  icon?: FicheGlyphName;
+  testID?: string;
+}) {
+  const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
+  return (
+    <Pressable
+      accessibilityRole="link"
+      accessibilityLabel={label}
+      onPress={onPress}
+      testID={testID}
+      hitSlop={8}
+      style={[styles.link, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
+    >
+      {icon ? <FicheGlyph name={icon} size={ICON_BOX} color={fc.link} /> : null}
+      <View style={[styles.linkBox, { borderBottomColor: fc.link }]}>
+        <AppText style={[styles.linkText, { color: fc.link, fontFamily: theme.font('bold') }]}>{label}</AppText>
+      </View>
+    </Pressable>
   );
 }
 
@@ -579,6 +725,7 @@ export function BuyBar({
   error?: string | null;
 }) {
   const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
   const insets = useSafeAreaInsets();
   const blocked = disabled || busy;
   return (
@@ -599,12 +746,11 @@ export function BuyBar({
       ) : null}
       <View style={styles.buyRow}>
         <View style={styles.buyPrice}>
-          <AppText variant="price" style={[styles.buyPriceText, { color: theme.colors.ink }]}>{price}</AppText>
+          <AppText style={[styles.buyPriceText, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>{price}</AppText>
         </View>
         {/*
-          Bouton du CTA : 207 × 48 dp, rayon 24 dp, **noir** (maquette). Ce n'est pas
-          le `Button` du Design System (pastille à rayon plein) : la cote est gelée,
-          donc la forme vient de `FICHE`, la couleur de l'encre du thème.
+          14/11 — pastille Privé : 212 × 48 dp, rayon plein, VIOLET (#571EF7), libellé
+          blanc gras. La forme vient de `FICHE`, la couleur de `FICHE_COLORS.cta`.
         */}
         <Pressable
           accessibilityRole="button"
@@ -616,21 +762,69 @@ export function BuyBar({
           style={({ pressed }) => [
             styles.buyButton,
             {
-              backgroundColor: pressed ? theme.colors.secondary : theme.colors.ink,
+              backgroundColor: pressed ? fc.ctaPressed : fc.cta,
               opacity: disabled ? theme.opacity.disabled : 1,
             },
           ]}
         >
           {busy
-            ? <LoadingSpinner size="sm" color={theme.colors.canvas} testID={testID ? `${testID}-busy` : undefined} />
+            ? <LoadingSpinner size="sm" color={fc.onAccent} testID={testID ? `${testID}-busy` : undefined} />
             : (
-              <AppText variant="button" style={[styles.buyButtonLabel, { color: theme.colors.canvas }]}>
+              <AppText style={[styles.buyButtonLabel, { color: fc.onAccent, fontFamily: theme.font('bold') }]}>
                 {label}
               </AppText>
             )}
         </Pressable>
       </View>
     </View>
+  );
+}
+
+/* ── 9 bis. Informations sur la fabrication (lien de la section Caractéristiques) ─ */
+
+/**
+ * Privé : « Voir les informations sur la fabrication » ouvre une feuille avec le
+ * fabricant. Ici : la MARQUE, le nom et les références déclarés dans le CRM —
+ * aucune adresse ni usine inventée.
+ */
+export function MakerSheet({
+  visible, onClose, rows,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  rows: SpecRow[];
+}) {
+  const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
+  const t = useT();
+  return (
+    <AppSheet
+      open={visible}
+      onDismiss={onClose}
+      presentation="bottom"
+      header={(
+        <View style={[styles.sheetHeaderRow, { flexDirection: rowDirectionFor(theme.isRTL), borderBottomColor: fc.hair }]}>
+          <View style={styles.sheetHeaderTitles}>
+            <AppText style={[styles.sheetTitle, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>
+              {t('product.makerTitle')}
+            </AppText>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t('common.close')}
+            onPress={onClose}
+            hitSlop={8}
+            style={styles.headerButton}
+          >
+            <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+          </Pressable>
+        </View>
+      )}
+    >
+      <View style={styles.makerBody} testID="product-maker-sheet">
+        <SpecGrid rows={rows} />
+      </View>
+    </AppSheet>
   );
 }
 
@@ -829,12 +1023,21 @@ export function GalleryViewer({
 
   useEffect(() => { if (index !== null) setCurrent(index); }, [index]);
 
-  /** Les points de la maquette : un par photo, 8 au plus, 12 dp d'écart. */
+  /** Les points : un par photo, 8 au plus, 12 dp d'écart. */
   const dots = useMemo(() => items.slice(0, 8), [items]);
+  /*
+   * 14/11 — plein écran Privé (`Screenshot_20261113_023800`) : fond BLANC, croix
+   * en haut à gauche, la photo ENTIÈRE (`contain`) dans une bande grise de 1,43 ×
+   * la largeur, centrée. L'ancien plein écran noir en `cover` agrandissait la
+   * photo au point de ne plus voir le produit (« تظهر كبيرة برشا »).
+   */
+  const stageTop = insets.top + FICHE.viewerCloseTop + FICHE.headerHeight - FICHE.viewerCloseStart;
+  const stage = viewerStageHeight(width, height - insets.bottom, stageTop);
+  const stageOffset = Math.max(stageTop, Math.round((height - stage) / 2) - FICHE.viewerDotsBottom);
 
   return (
     <Modal visible={index !== null} animationType="fade" onRequestClose={onClose} statusBarTranslucent>
-      <View style={[styles.viewer, { backgroundColor: VIDEO_BACKDROP }]} testID="product-gallery-viewer">
+      <View style={[styles.viewer, { backgroundColor: theme.colors.canvas }]} testID="product-gallery-viewer">
         <FlatList
           data={items}
           keyExtractor={(item) => item.url}
@@ -845,20 +1048,26 @@ export function GalleryViewer({
           getItemLayout={(_, position) => ({ length: width, offset: width * position, index: position })}
           onMomentumScrollEnd={(event) => setCurrent(Math.round(event.nativeEvent.contentOffset.x / width))}
           renderItem={({ item, index: position }) => (
-            <View style={{ width, height }}>
-              {item.kind === 'video' ? (
-                <VideoPage url={item.url} />
-              ) : (
-                <AppImage
-                  uri={mediaUrl(item.url)}
-                  highRes
-                  background={VIDEO_BACKDROP}
-                  style={StyleSheet.absoluteFill}
-                  contentFit="cover"
-                  accessibilityLabel={t('product.photo', { index: String(position + 1), total: String(items.length) })}
-                  decorative={false}
-                />
-              )}
+            <View style={[styles.viewerPage, { width, height, paddingTop: stageOffset }]}>
+              <View
+                testID="product-gallery-stage"
+                style={[styles.viewerStage, { height: stage, backgroundColor: item.kind === 'video' ? VIDEO_BACKDROP : fc.photo }]}
+              >
+                {item.kind === 'video' ? (
+                  <VideoPage url={item.url} />
+                ) : (
+                  <AppImage
+                    testID="product-gallery-image"
+                    uri={mediaUrl(item.url)}
+                    highRes
+                    background={fc.photo}
+                    style={styles.fill}
+                    contentFit="contain"
+                    accessibilityLabel={t('product.photo', { index: String(position + 1), total: String(items.length) })}
+                    decorative={false}
+                  />
+                )}
+              </View>
             </View>
           )}
         />
@@ -872,7 +1081,7 @@ export function GalleryViewer({
                     width: FICHE.viewerDot,
                     height: FICHE.viewerDot,
                     borderRadius: FICHE.viewerDot / 2,
-                    backgroundColor: position === current ? fc.onAccent : fc.dotIdle,
+                    backgroundColor: position === current ? theme.colors.ink : fc.dotIdle,
                   }}
                 />
               </View>
@@ -885,9 +1094,10 @@ export function GalleryViewer({
           accessibilityLabel={t('common.close')}
           onPress={onClose}
           hitSlop={8}
+          testID="product-gallery-close"
           style={[styles.viewerClose, { top: insets.top + FICHE.viewerCloseTop }]}
         >
-          <Ionicons name="close-outline" size={theme.iconSize.md} color={fc.onAccent} accessibilityElementsHidden />
+          <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
         </Pressable>
       </View>
     </Modal>
@@ -902,7 +1112,8 @@ const styles = StyleSheet.create({
   pinnedPhoto: { position: 'absolute', top: 0, start: 0, end: 0, height: FICHE.imageHeight },
   headerRow: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 4 },
   headerButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { flex: 1, textAlign: 'center', fontSize: FICHE.headerTitle },
+  // Privé : titre aligné après la flèche (« ← adidas Performance »), police Expanded.
+  headerTitle: { flex: 1, textAlign: 'auto', fontSize: FICHE.headerTitle, lineHeight: FICHE.nameLine, marginStart: 8 },
   cartPill: {
     height: 36,
     borderRadius: RADIUS.full,
@@ -927,17 +1138,25 @@ const styles = StyleSheet.create({
   cartPillBadgeRTL: { left: -6 },
 
   photo: { height: FICHE.imageHeight },
+  photoFrame: { position: 'absolute', start: 0, end: 0, bottom: 0 },
+  fill: { width: '100%', height: '100%' },
   photoEmpty: { alignItems: 'center', justifyContent: 'center' },
+  expand: { position: 'absolute', bottom: FICHE_DETAIL.expandInset },
+  expandLTR: { right: FICHE_DETAIL.expandInset },
+  expandRTL: { left: FICHE_DETAIL.expandInset },
   dots: { position: 'absolute', start: 0, end: 0, bottom: FICHE.photoDotsBottom, flexDirection: 'row', justifyContent: 'center' },
   dotSlot: { width: FICHE.dotPitch, alignItems: 'center', justifyContent: 'center' },
 
-  identity: { paddingHorizontal: FICHE.gutter, paddingTop: FICHE.nameTop },
+  identity: { paddingHorizontal: FICHE.gutter, paddingTop: FICHE.nameTop, paddingBottom: FICHE.gutter },
   identityTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  nameBox: { flexShrink: 1, borderBottomWidth: FICHE.underlineWidth, paddingBottom: FICHE.underlineGap, marginEnd: 12 },
+  identityStart: { flex: 1, alignItems: 'flex-start', marginEnd: 12 },
+  nameBox: { maxWidth: '100%', borderBottomWidth: FICHE.underlineWidth, paddingBottom: FICHE.underlineGap },
   name: { fontSize: FICHE.nameSize, lineHeight: FICHE.nameLine },
-  price: { fontSize: FICHE.priceSize, lineHeight: FICHE.nameLine, marginStart: 8 },
-  fullName: { fontSize: FICHE.descriptionSize, lineHeight: FICHE.descriptionLine, marginTop: FICHE.fullNameGap },
-  description: { fontSize: FICHE.descriptionSize, lineHeight: FICHE.descriptionLine, marginTop: FICHE.descriptionGap },
+  priceColumn: { alignItems: 'flex-end', flexShrink: 0 },
+  price: { fontSize: FICHE.priceSize, lineHeight: FICHE.nameLine },
+  reference: { fontSize: FICHE_DETAIL.referenceSize, lineHeight: FICHE_DETAIL.fullNameLine },
+  struck: { textDecorationLine: 'line-through' },
+  fullName: { fontSize: FICHE_DETAIL.fullNameSize, lineHeight: FICHE_DETAIL.fullNameLine, marginTop: FICHE.fullNameGap },
 
   row: {
     flexDirection: 'row',
@@ -963,10 +1182,16 @@ const styles = StyleSheet.create({
   tileRule: { height: FICHE.tileRule },
   tileLabel: { fontSize: FICHE.tileLabel, marginTop: FICHE.tileLabelGap },
 
-  sectionBody: { paddingStart: FICHE.rowLabelStart, paddingEnd: FICHE.gutter, paddingBottom: 16, gap: 8 },
-  specLine: { alignItems: 'baseline', gap: 8 },
-  specLabel: { fontSize: FICHE.infoBody },
-  specValue: { flex: 1, fontSize: FICHE.infoBody },
+  // Privé : le contenu d'une section s'aligne sur la marge de l'écran (x = 32 px), pas sur le libellé.
+  sectionBody: { paddingStart: FICHE.gutter, paddingEnd: FICHE.gutter, paddingTop: FICHE_DETAIL.sectionTop, paddingBottom: FICHE_DETAIL.sectionBottom },
+  specGrid: { flexWrap: 'wrap', columnGap: FICHE_DETAIL.specColumnGap, rowGap: FICHE_DETAIL.specRowGap },
+  specCell: { width: '47%', flexGrow: 1 },
+  specCellWide: { width: '100%' },
+  specLabel: { fontSize: FICHE_DETAIL.specLabelSize, lineHeight: FICHE_DETAIL.specLabelLine },
+  specValue: { fontSize: FICHE_DETAIL.specValueSize, lineHeight: FICHE_DETAIL.specValueLine },
+  link: { alignSelf: 'flex-start', alignItems: 'center', gap: 8, marginTop: FICHE_DETAIL.linkTop, marginStart: FICHE_DETAIL.linkInset },
+  linkBox: { borderBottomWidth: FICHE_DETAIL.linkRule, paddingBottom: FICHE_DETAIL.linkGap },
+  linkText: { fontSize: FICHE_DETAIL.linkSize, lineHeight: FICHE_DETAIL.linkLine },
   hairline: { height: FICHE.hairline },
 
   infoRow: {
@@ -993,7 +1218,7 @@ const styles = StyleSheet.create({
   },
   buyError: { paddingStart: FICHE.gutter, paddingEnd: FICHE.gutter, paddingTop: 4 },
   buyPrice: { flex: 1, justifyContent: 'center' },
-  buyPriceText: { fontSize: FICHE.barPrice },
+  buyPriceText: { fontSize: FICHE.priceSize },
   buyButton: {
     width: FICHE.barButtonWidth,
     height: FICHE.barButtonHeight,
@@ -1020,6 +1245,7 @@ const styles = StyleSheet.create({
     lineHeight: FICHE.sheetTitleLine,
   },
   sheetRows: { paddingTop: 0 },
+  makerBody: { paddingTop: 16, paddingBottom: 24 },
   sheetRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1055,6 +1281,8 @@ const styles = StyleSheet.create({
   },
 
   viewer: { flex: 1 },
+  viewerPage: { justifyContent: 'flex-start' },
+  viewerStage: { width: '100%', overflow: 'hidden' },
   viewerDotsOverlay: {
     position: 'absolute',
     start: 0,

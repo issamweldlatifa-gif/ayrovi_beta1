@@ -69,7 +69,7 @@ describe('onglet Publication du CRM', () => {
     const text = host.textContent ?? '';
     expect(text).toContain('Sneakers');
     expect(text).toContain('Conteneur coloré + rangée de produits');
-    expect(text).toContain('Duo sponsorisé (image + carte produit)');
+    expect(text).toContain('Duo sponsorisé (image + deux cartes produit)');
     expect(text).toContain('Inactif');
     expect(text).toContain('zayrovi team');
     expect(host.querySelectorAll('table')).toHaveLength(1);

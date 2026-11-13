@@ -233,6 +233,23 @@ export const FICHE_COLORS = {
   sheetGrab: '#D1D1D1',
   /** Fond de la bande photo du plein écran (#EFEFEF) : la photo est en `contain`. */
   viewerStage: '#EFEFEF',
+  /**
+   * 14/11/2026 — cadre de TOUTES les photos produit (fiche, plein écran, cartes de
+   * grille). Les photos du catalogue sont normalisées en 2:3 sur ce gris exact
+   * (#F3F3F3, `scripts/normalize-catalogue-images.py`) : posées en `contain`, le
+   * produit reste ENTIER et le cadre se confond avec le fond de la photo (Privé).
+   * Même valeur en mode sombre : le gris est cuit dans les fichiers.
+   */
+  photo: '#F3F3F3',
+  /** Lien souligné de la fiche (« Voir les informations sur la fabrication »). */
+  link: BRAND.black,
+  /**
+   * 14/11/2026 — pastille « Ajouter au panier » : violet électrique relevé sur les
+   * planches Privé (#571EF7, `Screenshot_20261113_023826`). Remplace le CTA noir du
+   * 25/10 sur demande expresse du client (« comme la référence »).
+   */
+  cta: '#571EF7',
+  ctaPressed: '#4515CC',
   /** Texte d'une taille épuisée (barré) : gris moyen, lisible sans crier. */
   struck: '#969696',
   /** Voile au-dessus de la feuille de taille (noir 35 %). */
@@ -255,6 +272,10 @@ export function ficheColorsFor(mode: 'light' | 'dark') {
     nameUnderline: COLORS.dark.lineControl,
     sheetGrab: COLORS.dark.lineControl,
     viewerStage: BRAND.black,
+    photo: '#F3F3F3',
+    link: BRAND.white,
+    cta: '#7A4DFA',
+    ctaPressed: '#571EF7',
     struck: COLORS.dark.muted,
     scrim: veil(0.64),
   } as const;

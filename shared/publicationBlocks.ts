@@ -48,7 +48,8 @@ export const PUBLICATION_BLOCK_LIMITS = {
   products: {
     container: { min: 1, max: 12 },
     media: { min: 1, max: 12 },
-    sponsored_pair: { min: 1, max: 1 },
+    // 14/11 (planche GBox « WE Fashion ») : une image puis DEUX cartes produit dessous.
+    sponsored_pair: { min: 1, max: 2 },
   },
 } as const satisfies {
   title: number;
@@ -61,7 +62,7 @@ export const PUBLICATION_BLOCK_LIMITS = {
 export const PUBLICATION_BLOCK_KIND_LABELS: Record<PublicationBlockKind, string> = {
   container: 'Conteneur coloré + rangée de produits',
   media: 'Image ou vidéo + rangée de produits',
-  sponsored_pair: 'Duo sponsorisé (image + carte produit)',
+  sponsored_pair: 'Duo sponsorisé (image + deux cartes produit)',
 };
 
 /**
@@ -295,6 +296,10 @@ export interface PublicationBlockProduct {
   brand: string;
   image: string;
   price: number;
+  /** Prix barré saisi dans le CRM (`compare_at_price`), seulement s'il dépasse `price`. */
+  compareAtPrice: number | null;
+  /** Créé dans le CRM depuis moins de 30 jours : pastille « Nouveau ». */
+  isNew: boolean;
   currency: string;
   stockStatus: string;
   available: boolean;

@@ -14,6 +14,10 @@ export interface LinkedProduct {
   brand?: string;
   image: string;
   price: number;
+  /** Prix barré du CRM (`compare_at_price`) — absent/`null` = aucune ligne barrée. */
+  compareAtPrice?: number | null;
+  /** Produit récent dans le CRM (moins de 30 jours) : pastille « Nouveau ». */
+  isNew?: boolean;
   currency: string;
   stockStatus: string;
   available: boolean;
@@ -39,6 +43,8 @@ export function parseLinkedProduct(value: unknown): LinkedProduct | null {
     brand: str(entry.brand).trim(),
     image: str(entry.image),
     price,
+    compareAtPrice: num(entry.compareAtPrice) > price ? num(entry.compareAtPrice) : null,
+    isNew: entry.isNew === true,
     currency: str(entry.currency) || CURRENCY,
     stockStatus: str(entry.stockStatus) || 'AVAILABLE',
     available: entry.available !== false,
