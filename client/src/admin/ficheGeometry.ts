@@ -33,6 +33,8 @@ export const FICHE_GEOMETRY = {
   underlineGap: 5,
   underlineWidth: 2,
   descriptionGap: 2,
+  /** Sous la marque soulignée : le nom complet du produit (vidéo Veepee, 13/11). */
+  fullNameGap: 4,
   descriptionSize: 15,
   descriptionLine: 17,
   descriptionRight: 8,

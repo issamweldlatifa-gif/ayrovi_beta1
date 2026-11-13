@@ -1445,6 +1445,7 @@ html[data-theme='dark'] .admin-table th { color: var(--admin-text-soft); }
 .fiche-phone__name { flex: 0 1 auto; border-bottom-style: solid; border-bottom-color: var(--fiche-underline); color: var(--fiche-ink); line-height: 1.18; }
 .fiche-phone__price { flex: 0 0 auto; font-weight: 700; color: var(--fiche-ink); line-height: 1.18; }
 .fiche-phone__description { margin: 0; color: var(--fiche-muted); }
+.fiche-phone__full-name { margin: 0; color: var(--fiche-ink); }
 .fiche-phone__hair { width: 100%; background: var(--fiche-hair); }
 .fiche-phone__band { width: 100%; background: var(--fiche-hair); }
 .fiche-phone__row { display: flex; align-items: center; }

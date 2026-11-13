@@ -82,6 +82,8 @@ function keyFrom(text: string, fallback: string): string {
 /* ── Aperçu : la fiche telle que l'application la dessine ──────────────────── */
 
 interface PreviewInput {
+  /** Marque choisie : elle prend la ligne soulignée, le nom complet passe dessous (comme l'application). */
+  brand?: string;
   name: string;
   description: string;
   image: string;
@@ -133,10 +135,18 @@ const FicheApercu: React.FC<{ input: PreviewInput }> = ({ input }) => {
               paddingBottom: G.underlineGap,
             }}
           >
-            {input.name.trim() || 'Nom du produit'}
+            {input.brand?.trim() || input.name.trim() || 'Nom du produit'}
           </span>
           {price ? <span className="fiche-phone__price" style={{ fontSize: G.priceSize }}>{price}</span> : null}
         </div>
+        {input.brand?.trim() && input.name.trim() ? (
+          <p
+            className="fiche-phone__full-name"
+            style={{ fontSize: G.descriptionSize, lineHeight: `${G.descriptionLine}px`, marginTop: G.fullNameGap }}
+          >
+            {input.name.trim()}
+          </p>
+        ) : null}
         {input.description.trim() ? (
           <p
             className="fiche-phone__description"
@@ -752,6 +762,7 @@ export const ProductFicheEditor: React.FC<{
           <div className="fiche-editor__phone-wrap">
             <FicheApercu
               input={{
+                brand: brands.find((row) => row.id === draft.brand_id)?.name || '',
                 name: draft.name,
                 description: draft.description,
                 image: draft.image,
