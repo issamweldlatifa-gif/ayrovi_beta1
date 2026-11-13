@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 
 import { AppText, Button } from '@/design/ui';
+import { CloseButton } from '@/design/CloseButton';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { AppImage } from '@/design/appImage';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
@@ -117,14 +118,7 @@ function OptionSelector({
           >
             <View style={[styles.optionHeaderRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
               <AppText variant="h3" >{label}</AppText>
-              <Pressable
-                onPress={() => setOpen(false)}
-                accessibilityRole="button"
-                accessibilityLabel={t('common.close')}
-                hitSlop={8}
-              >
-                <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-              </Pressable>
+              <CloseButton onPress={() => setOpen(false)} label={t('common.close')} color={theme.colors.ink} />
             </View>
             <ScrollView style={styles.optionList} showsVerticalScrollIndicator={false}>
               {values.map((option, index) => {
@@ -1311,15 +1305,7 @@ export function LensProductView({
                   {t('lens.cart.addedTitle')}
                 </AppText>
               </View>
-              <Pressable
-                onPress={() => setConfirmationOpen(false)}
-                accessibilityRole="button"
-                accessibilityLabel={t('common.close')}
-                hitSlop={8}
-                style={styles.confirmationCloseHit}
-              >
-                <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.ink} />
-              </Pressable>
+              <CloseButton onPress={() => setConfirmationOpen(false)} label={t('common.close')} color={theme.colors.ink} />
             </View>
 
             <View style={[styles.confirmationProductRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
@@ -1487,7 +1473,6 @@ const styles = StyleSheet.create({
   confirmationSheet: { paddingHorizontal: 16, paddingTop: 16, gap: 12 },
   confirmationHeaderRow: { alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   confirmationTitleInline: { flex: 1, alignItems: 'center', gap: 8 },
-  confirmationCloseHit: { minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center' },
   confirmationProductRow: { alignItems: 'flex-start', gap: 12 },
   confirmationThumb: { width: 76, height: 100, borderRadius: RADIUS.xs },
   confirmationProductBody: { flex: 1, gap: 2 },

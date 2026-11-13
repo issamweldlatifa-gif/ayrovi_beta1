@@ -360,6 +360,9 @@ export default function ProductScreen() {
 
       <Animated.ScrollView
         testID="product-fiche-scroll"
+        /* La photo est fixe : aucun rebond iOS qui décollerait la feuille et montrerait le fond sous la photo. */
+        bounces={false}
+        overScrollMode="never"
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         contentContainerStyle={{ paddingBottom: FICHE.ctaHeight + insets.bottom }}

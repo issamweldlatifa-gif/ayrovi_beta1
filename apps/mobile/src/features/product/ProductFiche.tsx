@@ -922,15 +922,7 @@ export function MakerSheet({
               {t('product.makerTitle')}
             </AppText>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('common.close')}
-            onPress={onClose}
-            hitSlop={8}
-            style={styles.headerButton}
-          >
-            <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-          </Pressable>
+          <CloseButton onPress={onClose} label={t('common.close')} color={theme.colors.ink} />
         </View>
       )}
     >
@@ -979,15 +971,7 @@ export function SizeSheet({
               {t('catalog.size')}
             </AppText>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('common.close')}
-            onPress={onClose}
-            hitSlop={8}
-            style={styles.headerButton}
-          >
-            <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-          </Pressable>
+          <CloseButton onPress={onClose} label={t('common.close')} color={theme.colors.ink} />
         </View>
       )}
     >
@@ -1071,15 +1055,7 @@ export function CartReservedSheet({
             },
           ]}
         >
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('common.close')}
-            onPress={onClose}
-            hitSlop={8}
-            style={styles.headerButton}
-          >
-            <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-          </Pressable>
+          <CloseButton onPress={onClose} label={t('common.close')} color={theme.colors.ink} />
         </View>
       )}
     >

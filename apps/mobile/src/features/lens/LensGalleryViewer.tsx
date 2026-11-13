@@ -1,4 +1,3 @@
-import { BackButton } from '@/design/BackButton';
 /**
  * Z Lens — visionneuse PLEIN ÉCRAN de la galerie produit (référence Zalando).
  *
@@ -20,14 +19,17 @@ import {
 import type { LensMediaItem } from './lensMedia';
 import { StatusBar } from 'expo-status-bar';
 import { AppText } from '@/design/ui';
-import { SPACE } from '@/design/tokens.generated';
 import { useTheme } from '@/design/theme';
+import { CloseButton } from '@/design/CloseButton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RADIUS, veil } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
 import { LENS_COLORS } from './lensPalette';
 
 /** Course verticale au-delà de laquelle on referme (en points). */
 const DISMISS_TRAVEL = 110;
+/** Rangée d'en-tête : la même que celle des écrans à flèche retour (`FICHE.headerHeight`). */
+const HEADER_ROW = 60;
 
 export function LensGalleryViewer({
   visible,
@@ -43,6 +45,7 @@ export function LensGalleryViewer({
   const theme = useTheme();
   const t = useT();
   const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [page, setPage] = useState(startIndex);
   const [zoomed, setZoomed] = useState(false);
   const shift = useRef(new Animated.Value(0)).current;
@@ -67,7 +70,7 @@ export function LensGalleryViewer({
   }), [onClose, shift, zoomed]);
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose} testID="lens-gallery-viewer">
+    <Modal visible={visible} transparent statusBarTranslucent animationType="fade" onRequestClose={onClose} testID="lens-gallery-viewer">
       <StatusBar style="light" />
       <View style={styles.root} {...responder.panHandlers}>
         <Animated.View
@@ -96,8 +99,13 @@ export function LensGalleryViewer({
           </ScrollView>
         </Animated.View>
 
-        <View style={[styles.chrome, { paddingTop: SPACE[3], flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]} pointerEvents="box-none">
-          <BackButton onPress={onClose} testID="lens-gallery-viewer-close" label={t('common.close')} color={LENS_COLORS.white} />
+        {/* 13/11 — RÈGLE : la croix vit EN HAUT, dans une rangée d'en-tête de la hauteur d'un en-tête à flèche retour, sous la zone sûre. */}
+        <View
+          testID="lens-gallery-viewer-header"
+          style={[styles.chrome, { paddingTop: insets.top, height: HEADER_ROW + insets.top, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
+          pointerEvents="box-none"
+        >
+          <CloseButton onPress={onClose} testID="lens-gallery-viewer-close" label={t('common.close')} color={LENS_COLORS.white} />
           {media.length > 1 ? (
             <View style={styles.counter}>
               <AppText variant="captionStrong" style={styles.counterText}>{`${page + 1}/${media.length}`}</AppText>
@@ -167,7 +175,7 @@ const styles = StyleSheet.create({
   stage: { alignSelf: 'center' },
   viewerImage: { alignItems: 'center', justifyContent: 'center' },
   viewerMedia: { backgroundColor: LENS_COLORS.black },
-  chrome: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 12, alignItems: 'center' },
+  chrome: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 8, alignItems: 'center' },
   closeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   crispIcon: { textShadowColor: veil(0.55), textShadowRadius: 3, textShadowOffset: { width: 0, height: 1 } },
   counter: { marginStart: 'auto', paddingHorizontal: 12, paddingVertical: 4, borderRadius: RADIUS.full, backgroundColor: LENS_COLORS.resultLine },

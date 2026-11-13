@@ -4,7 +4,7 @@ import { useTheme } from './theme';
 import { NAVIGATION_ARROW_SIZE, OPACITY } from './tokens.mobile';
 
 /**
- * Croix de fermeture d'un écran plein écran (visionneuse photo…) — RÈGLE du 13/11 :
+ * Croix de fermeture (visionneuses plein écran, feuilles des écrans produit) — RÈGLE du 13/11 :
  * elle vit EN HAUT, dans une rangée d'en-tête, à la place exacte d'une flèche
  * retour, et elle en a le dessin : même cible 44 × 44, même boîte de glyphe
  * (`NAVIGATION_ARROW_SIZE`), même trait fin de 1,7 aux extrémités arrondies,

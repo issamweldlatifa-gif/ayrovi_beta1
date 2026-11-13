@@ -441,6 +441,41 @@ describe('fiche — contrat d’écran', () => {
     expect(code('src/design/NavigationIcon.tsx')).toContain('strokeWidth={1.7}');
   });
 
+  it('13/11 — RÈGLE étendue : toutes les croix des écrans produit sont des CloseButton en haut', () => {
+    // Fiche : visionneuse + feuilles (fabricant, taille, réservé) — plus aucune croix d'une autre famille.
+    const fiche = code('src/features/product/ProductFiche.tsx');
+    expect(fiche).not.toContain('close-outline');
+    expect(fiche.match(/<CloseButton /g)?.length).toBe(4);
+    // Z Lens : la visionneuse ferme par une croix (plus une flèche) dans une rangée d'en-tête sous la zone sûre.
+    const lensViewer = code('src/features/lens/LensGalleryViewer.tsx');
+    expect(lensViewer).toContain('<CloseButton');
+    expect(lensViewer).not.toContain('<BackButton');
+    expect(lensViewer).toContain('height: HEADER_ROW + insets.top');
+    expect(lensViewer).toContain('statusBarTranslucent');
+    expect(lensViewer).toContain(`const HEADER_ROW = ${FICHE.headerHeight};`);
+    const lensProduct = code('src/features/lens/LensProductView.tsx');
+    expect(lensProduct).not.toMatch(/name="close(-outline)?"/);
+    expect(lensProduct.match(/<CloseButton /g)?.length).toBe(2);
+  });
+
+  it('13/11 — la feuille glisse sur une photo FIXE : la couche photo est hors du défilement, sans rebond', () => {
+    const screen = code('app/product/[id].tsx');
+    const layer = screen.indexOf('<FichePhotoLayer');
+    const scroll = screen.indexOf('<Animated.ScrollView');
+    // La photo est posée AVANT (donc sous) le défilement, et pas dedans.
+    expect(layer).toBeGreaterThan(0);
+    expect(layer).toBeLessThan(scroll);
+    expect(screen).not.toMatch(/<FichePhotoLayer[^>]*scrollY/);
+    expect(screen).toContain('bounces={false}');
+    expect(screen).toContain('overScrollMode="never"');
+    // La feuille est opaque : elle cache la photo en montant.
+    expect(screen).toMatch(/style=\{\[styles\.sheet, \{ backgroundColor: theme\.colors\.canvas \}\]\}/);
+    const fiche = code('src/features/product/ProductFiche.tsx');
+    const photoLayer = fiche.slice(fiche.indexOf('export function FichePhotoLayer'), fiche.indexOf('export function FichePhoto('));
+    expect(photoLayer).not.toContain('scrollY');
+    expect(photoLayer).toContain('pointerEvents="none"');
+  });
+
   it('la barre d’achat est FIXE (elle ne défile pas)', () => {
     const fiche = src('src/features/product/ProductFiche.tsx');
     expect(fiche).toContain('buyBar: { position: \'absolute\', start: 0, end: 0, bottom: 0 }');
