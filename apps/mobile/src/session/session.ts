@@ -17,6 +17,12 @@ export const SESSION_KEY = 'ayrovi.session';
 
 /** المعرّف الجاري في هذي العملية — يتفادى قراءة التخزين في كل شاشة. */
 let cached: string | null = null;
+/**
+ * القراءة/التوليد اللي مازال يدور. أوّل فتحة للتطبيق، برشا شاشات تطلب المعرّف في
+ * نفس اللحظة : بلا هذا، كل نداء يلقى التخزين فارغ ويولّد معرّف مختلف — السلّة
+ * تتبنى على جلسة والشاشة الأخرى تقرا جلسة أخرى. نداء واحد يخدم، والبقية يستنّاوه.
+ */
+let pending: Promise<string> | null = null;
 
 /**
  * يرجّع معرّف الجلسة، ويولّدو أول مرّة.
@@ -25,8 +31,13 @@ let cached: string | null = null;
  * والجلسة تخدم — غير ما تدومش بعد إغلاق التطبيق. ما نكذبوش على المستعمل
  * بحالة «محفوظة»؛ السلّة تخدم في الزوز الحالات.
  */
-export async function getSessionId(): Promise<string> {
-  if (cached) return cached;
+export function getSessionId(): Promise<string> {
+  if (cached) return Promise.resolve(cached);
+  if (!pending) pending = loadSessionId().finally(() => { pending = null; });
+  return pending;
+}
+
+async function loadSessionId(): Promise<string> {
   try {
     const stored = await AsyncStorage.getItem(SESSION_KEY);
     if (isValidSessionId(stored)) {

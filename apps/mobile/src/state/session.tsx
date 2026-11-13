@@ -21,6 +21,7 @@
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode,
 } from 'react';
+import { AppState } from 'react-native';
 import { clearSonimSession, useSonimSession } from '@/features/sonim/sonimSession';
 import { CLIENT_HEADER } from '@/api/config';
 import { resetAuthContext, setAuthContext, setCsrfRefresher } from '@/api/client';
@@ -226,6 +227,75 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
     return () => setCsrfRefresher(null);
   }, []);
+
+  /*
+   * Retour au premier plan (13/11) — deux trous fermés :
+   *   • la session a EXPIRÉ pendant que l'application dormait : on ne la
+   *     montrait plus jamais comme telle, chaque geste tombait sur un 401 ;
+   *   • lancement hors-ligne : le compte restait « non vérifié » (id vide,
+   *     favoris inactifs) jusqu'au prochain redémarrage complet.
+   * On ne relit `/auth/me` QUE si le compte n'est pas vérifié : cet appel fait
+   * tourner le jeton CSRF, inutile de le faire à chaque retour.
+   */
+  const revalidating = useRef(false);
+  const verifiedRef = useRef(verified);
+  verifiedRef.current = verified;
+  const revalidate = useCallback(async () => {
+    const store = backendRef.current;
+    if (!store || revalidating.current) return;
+    revalidating.current = true;
+    try {
+      const { session } = await loadSession(store);
+      if (!session) return;
+      const endLocally = async () => {
+        await clearSession(store);
+        resetAuthContext();
+        setAccount(null);
+        setVerified(false);
+        setStatus('signedOut');
+      };
+      if (isExpired(session)) {
+        await endLocally();
+        return;
+      }
+      if (verifiedRef.current) return;
+      let me: Awaited<ReturnType<typeof fetchMe>>;
+      try {
+        me = await fetchMe();
+      } catch {
+        return; // Toujours injoignable : on garde l'état honnête « non vérifié ».
+      }
+      // Une connexion / déconnexion a pu se produire pendant l'appel : on
+      // n'applique la réponse qu'au jeton qu'on vient de vérifier.
+      const { session: current } = await loadSession(store);
+      if (!current || current.token !== session.token) return;
+      if (!me) {
+        await endLocally();
+        return;
+      }
+      setAccount(me.account);
+      setVerified(true);
+      setAuthContext({ csrfToken: me.csrfToken });
+      await saveSession(store, {
+        ...current,
+        csrfToken: me.csrfToken,
+        expiresAt: me.expiresAt || current.expiresAt,
+        displayName: me.account.displayName || current.displayName,
+      });
+    } catch {
+      // Stockage illisible : rien à corriger ici, le prochain lancement tranchera.
+    } finally {
+      revalidating.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status !== 'signedIn') return;
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next === 'active') void revalidate();
+    });
+    return () => subscription.remove();
+  }, [status, revalidate]);
 
   const refreshAccount = useCallback(async () => {
     const me = await fetchMe();
