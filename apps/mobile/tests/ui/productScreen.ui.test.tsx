@@ -142,6 +142,27 @@ describe('écran produit — aucun plantage au montage', () => {
     view.unmount();
   });
 
+  it('identité façon Veepee : marque soulignée à côté du prix, nom complet dessous (jamais coupé)', async () => {
+    const long = 'Go 4 — Enceinte Bluetooth portable étanche IP67, son JBL Pro, Auracast';
+    require('./productFixture').setProduct({ ...product, name: long, brandName: 'JBL' });
+    const view = await mount();
+    expect(screen.getByTestId('product-fiche-title').props.children).toBe('JBL');
+    const name = screen.getByTestId('product-fiche-name');
+    expect(name.props.children).toBe(long);
+    expect(name.props.numberOfLines).toBeUndefined();
+    view.unmount();
+  });
+
+  it('sans marque : le nom reste souligné, en entier', async () => {
+    require('./productFixture').setProduct({ ...product, brandName: '' });
+    const view = await mount();
+    const title = screen.getByTestId('product-fiche-title');
+    expect(title.props.children).toBe('Baskets route homme');
+    expect(title.props.numberOfLines).toBeUndefined();
+    expect(screen.queryByTestId('product-fiche-name')).toBeNull();
+    view.unmount();
+  });
+
   it('monte encore quand tout manque : pas de photo, pas de variante, pas de prix', async () => {
     require('./productFixture').setProduct({
       ...product,

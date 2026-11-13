@@ -340,7 +340,7 @@ export default function ProductScreen() {
         {/* 2. الورقة: fond opaque, angles droits (cotes de la maquette) */}
         <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
         {/* الاسم مسطّر + الثمن + الوصف */}
-        <FicheIdentity name={product.name} price={hasPrice ? priceLabel : null} description={product.description} />
+        <FicheIdentity brand={product.brandName || undefined} name={product.name} price={hasPrice ? priceLabel : null} description={product.description} />
 
         {/* 3. خطّ رقيق ثمّ سطر Taille */}
         <View style={styles.rule} />

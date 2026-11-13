@@ -1,25 +1,25 @@
 /**
  * Modèle `media` — planches « Felix Hardy », « Tommy Hilfiger », « sascha.xtz ».
  *
- *   zayrovi team                       ← éditeur (toujours « zayrovi team »)
- *   Sponsorisé                         ← seulement si le CRM le coche
+ *   zayrovi team • Suivre              ← éditeur + « Suivre » (même relation que les Reels)
+ *   Sponsorisé ⓘ                       ← seulement si le CRM le coche
  *   ┌──────────────────────────────┐
  *   │   image (≈ 2:1) ou vidéo 1:1  │   ← même modèle pour les deux
  *   └──────────────────────────────┘
  *   [■][■][■][▌                         ← rangée de photos produit qui défile
- *   Titre                              ← titre + sous-titre en gras, 2 lignes max
- *   Sous-titre
+ *   Titre                              ← gras, 2 lignes max
+ *   Sous-titre                         ← régulier, 2 lignes max
  *
- * Aucun bouton d'interaction (ni cœur, ni « ⋯ », ni « Suivre ») : consigne du
- * propriétaire en attendant la prochaine maquette. La carte « Découvrir plus »
- * en bout de rangée est reportée.
+ * 13/11 : « Suivre » ajouté (consigne du propriétaire). Ni cœur ni « ⋯ » : aucune
+ * action réelle derrière pour l'instant. La carte « Découvrir plus » est reportée.
  */
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { mediaUrl } from '@/api/client';
 import type { PublicationBlock } from '@/api/publicationBlocks';
 import { AppImage } from '@/design/appImage';
-import { PUBLICATION_PALETTE as P, PublicationText } from '../publicationDesign';
+import { PublicationFollow } from '../PublicationFollow';
+import { PUBLICATION_PALETTE as P, PublicationSponsored, PublicationText } from '../publicationDesign';
 import { blockInks, hasTintedBackground } from './blockColors';
 import { PublicationVideo } from './PublicationVideo';
 import { RowProductTile } from './RowProductTile';
@@ -51,12 +51,15 @@ export function MediaTemplate({
       style={[styles.block, { backgroundColor: block.bgColor }, tinted ? styles.tinted : null]}
     >
       <View style={styles.head}>
-        <PublicationText testID={`publication-block-${block.id}-publisher`} variant="bodySmall" color={inks.ink} numberOfLines={1}>
-          {block.publisher.name}
-        </PublicationText>
-        {block.sponsored ? (
-          <PublicationText variant="caption" color={inks.muted}>{t('publication.sponsored')}</PublicationText>
-        ) : null}
+        <PublicationFollow
+          look="inline"
+          publisherId={block.publisher.id}
+          publisherName={block.publisher.name}
+          ink={inks.ink}
+          muted={inks.muted}
+          testID={`publication-block-${block.id}-follow`}
+        />
+        {block.sponsored ? <PublicationSponsored color={inks.muted} testID={`publication-block-${block.id}-sponsored`} /> : null}
       </View>
 
       {media ? (
@@ -98,7 +101,7 @@ export function MediaTemplate({
       <View style={styles.caption}>
         <PublicationText variant="bodyStrong" color={inks.ink} numberOfLines={2}>{block.title}</PublicationText>
         {block.subtitle ? (
-          <PublicationText variant="bodyStrong" color={inks.ink} numberOfLines={2}>{block.subtitle}</PublicationText>
+          <PublicationText variant="body" color={inks.ink} numberOfLines={2}>{block.subtitle}</PublicationText>
         ) : null}
       </View>
     </View>

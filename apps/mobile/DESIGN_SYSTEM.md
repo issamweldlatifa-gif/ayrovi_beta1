@@ -1363,6 +1363,9 @@ SectionHeader({ title, hint?, action?, style? })
 | تبنّي `AppScreen`/`SubScreen` لكل المسارات | ◐ ما زالت مسارات خاصة/قديمة خارج الغلاف |
 | منع المكوّنات المكررة آلياً | ◐ مراجعة كود فقط |
 | مطابقة screenshots النهائية على Android | ◐ تحتاج تشغيل APK ومراجعة مرئية؛ لا تُستنتج من اختبارات المصدر |
+| صور الكاتالوج الرسمي بصيغة واحدة 2:3 على خلفية `#F3F3F3` (13/11) | ✅ `scripts/normalize-catalogue-images.py` + `tests/official-catalogue-images-2026-11-13.test.ts`؛ العناوين `?v=2` باش الكاش يتجدّد |
+| Publication : زر « Suivre » (pill في container، inline في media) + سلّم خطوط مميّز (عنوان 22 > ثمن 16 > ماركة 15 > اسم 14 > Sponsorisé 13) + مسافة 16 بين البلوكات | ✅ `PublicationFollow` + `usePublisherFollow` (نفس علاقة Reels)؛ اختبارات UI ◐ تحتاج مراجعة على الجهاز |
+| هيدر الهوم : الـhairline يظهر كان بعد التمرير (كان يبان خطّ أبيض تحت « Bienvenue ») | ✅ `AppHeader` |
 
 ## ما لا تثبته هذه الوثيقة
 

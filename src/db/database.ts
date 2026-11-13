@@ -4,7 +4,7 @@ import { schemaStatements } from './schemaStatements';
 import { ensureSocialTotals, socialTotalsDrift } from './socialTotals';
 import { upgradePublicationMediaPresentation } from '../catalogue/upgradePublicationMediaPresentation';
 import { reserveCatalogueSale, catalogId } from '../catalogue/localSale';
-import { installOfficialCatalogue, linkOfficialReelProducts, purgeCatalogueProducts } from '../catalogue/installOfficialCatalogue';
+import { installOfficialCatalogue, linkOfficialReelProducts, purgeCatalogueProducts, versionOfficialImages } from '../catalogue/installOfficialCatalogue';
 import { installPublicationShowcase } from '../services/publicationShowcase';
 import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../shared/publicationFeed';
 import { seedOfficialStories } from '../services/officialStories';
@@ -432,6 +432,8 @@ export class QatafoDatabase {
     });
     // v2 : la démonstration reprend le catalogue officiel (la v1 citait l'ancien).
     this.runOnceDataMigration('publication_blocks_demo_v2', () => { installPublicationBlocksDemo(this); });
+    // Photos officielles au format unique 2:3 (13/11) : adresses versionnées → caches rafraîchis.
+    this.runOnceDataMigration('official_catalogue_images_v2', () => { versionOfficialImages(this); });
     // Compteurs sociaux matérialisés (audit d'architecture 12/11) : posés EN DERNIER,
     // après toutes les migrations qui suppriment ou réinstallent des interactions.
     if (ensureSocialTotals(this.db).installed) console.log('[database] social totals: table + triggers installed');

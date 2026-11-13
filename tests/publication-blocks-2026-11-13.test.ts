@@ -108,7 +108,7 @@ describe('routes CRM et lecture publique', () => {
 
     let pub = (await request(app).get('/api/public/social/publication-blocks')).body;
     expect(pub.success).toBe(true);
-    expect(pub.data[0]).toMatchObject({ id, title: 'Bloc de test', bgColor: '#2E7D5B', publisher: { name: 'zayrovi team' } });
+    expect(pub.data[0]).toMatchObject({ id, title: 'Bloc de test', bgColor: '#2E7D5B', publisher: { id: 'pub_ayrovi', name: 'zayrovi team' } });
 
     // désactivé : disparaît de l'application, reste dans le CRM
     expect((await admin.put(`/api/admin/publication-blocks/${id}`).set('x-csrf-token', csrf).send({ active: false })).status).toBe(200);

@@ -1,9 +1,17 @@
 /**
- * Carte produit du modèle `container` (planches Vans / adidas) : photo dans un
- * cadre blanc arrondi (rayon 12, rapport 1,45), puis sur le panneau coloré :
- * « Sponsorisé » (si coché), marque en gras, nom sur une ligne, prix.
- * Les couleurs du texte suivent le panneau (encre la plus lisible).
- * Pas de cœur ni de pastilles : aucun bouton d'interaction pour l'instant.
+ * Carte produit du modèle `container` (planches Nike / Vans / The North Face) :
+ * grande photo qui REMPLIT son cadre arrondi (rayon 12, rapport 1,45), puis sur
+ * le panneau coloré quatre niveaux de texte DISTINCTS :
+ *
+ *   Sponsorisé ⓘ   13/18 régulier, encre secondaire
+ *   Marque         15/20 gras
+ *   Nom du produit 14/18 régulier, une ligne
+ *   Prix           16/22 gras
+ *
+ * Photo : les photos du catalogue sont toutes au format 2:3 sur le même fond
+ * gris très clair (`scripts/normalize-catalogue-images.py`) ; en `cover` dans un
+ * cadre 1,45 elles remplissent le cadre sans bandes et sans couper le produit.
+ * Le cadre prend ce même gris pendant le chargement. Pas de cœur.
  */
 import { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -14,7 +22,7 @@ import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
 import { formatMoney } from '@/format/money';
 import { useT } from '@/i18n';
-import { PUBLICATION_PALETTE as P, PublicationText } from '../publicationDesign';
+import { PUBLICATION_PALETTE as P, PUBLICATION_TYPE, PublicationSponsored, PublicationText } from '../publicationDesign';
 import type { BlockInks } from './blockColors';
 import { PUBLICATION_TEMPLATE as T } from './templateMetrics';
 
@@ -47,18 +55,22 @@ function ContainerProductCardComponent({
       onPress={() => onOpen(product.id)}
       style={({ pressed }) => [{ width }, pressed ? { opacity: theme.opacity.subtle } : null]}
     >
-      <View style={[styles.frame, { height: imageHeight }]}>
-        <AppImage uri={mediaUrl(product.image)} decorative contentFit="contain" style={styles.fill} />
+      <View testID={`${testID}-frame`} style={[styles.frame, { height: imageHeight }]}>
+        <AppImage uri={mediaUrl(product.image)} decorative background={P.neutral} contentFit="cover" style={styles.fill} />
       </View>
       <View style={styles.text}>
-        {sponsored ? (
-          <PublicationText variant="caption" color={inks.muted} numberOfLines={1}>{t('publication.sponsored')}</PublicationText>
-        ) : null}
+        {sponsored ? <PublicationSponsored color={inks.muted} /> : null}
         {product.brand ? (
-          <PublicationText variant="bodyStrong" color={inks.ink} numberOfLines={1}>{product.brand}</PublicationText>
+          <PublicationText testID={`${testID}-brand`} variant="bodyStrong" color={inks.ink} numberOfLines={1} style={styles.brand}>
+            {product.brand}
+          </PublicationText>
         ) : null}
-        <PublicationText variant="bodySmall" color={inks.ink} numberOfLines={1}>{product.name}</PublicationText>
-        <PublicationText variant="bodySmall" color={inks.ink} numberOfLines={1}>{price}</PublicationText>
+        <PublicationText testID={`${testID}-name`} variant="body" color={inks.ink} numberOfLines={1} style={styles.name}>
+          {product.name}
+        </PublicationText>
+        <PublicationText testID={`${testID}-price`} variant="bodyStrong" color={inks.ink} numberOfLines={1} style={styles.price}>
+          {price}
+        </PublicationText>
       </View>
     </Pressable>
   );
@@ -67,7 +79,10 @@ function ContainerProductCardComponent({
 export const ContainerProductCard = memo(ContainerProductCardComponent);
 
 const styles = StyleSheet.create({
-  frame: { borderRadius: T.cardRadius, overflow: 'hidden', backgroundColor: P.paper },
+  frame: { borderRadius: T.cardRadius, overflow: 'hidden', backgroundColor: P.neutral },
   fill: { width: '100%', height: '100%' },
   text: { paddingTop: 8 },
+  brand: { fontSize: PUBLICATION_TYPE.cardBrandSize, lineHeight: PUBLICATION_TYPE.cardBrandLine },
+  name: { fontSize: PUBLICATION_TYPE.cardNameSize, lineHeight: PUBLICATION_TYPE.cardNameLine },
+  price: { fontSize: PUBLICATION_TYPE.cardPriceSize, lineHeight: PUBLICATION_TYPE.cardPriceLine, paddingTop: 4 },
 });

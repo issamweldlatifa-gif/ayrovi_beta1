@@ -1,7 +1,7 @@
 /**
  * Page Publication refondue (13/11/2026) — rendu réel des trois modèles.
  *  • l'en-tête reste (retour, titre, compte) ; le corps = les blocs du CRM ;
- *  • aucun bouton d'interaction (réaction, commentaire, partage, cœur, suivre) ;
+ *  • aucun bouton d'interaction (réaction, commentaire, partage, cœur) SAUF « Suivre » (13/11) ;
  *  • le duo sponsorisé : deux tuiles de MÊME taille ;
  *  • l'appui sur un produit ouvre la fiche de l'application ;
  *  • la vidéo ne tourne que pour le bloc actif, avec pause et son.
@@ -39,6 +39,13 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 const mockQuery = jest.fn();
 jest.mock('@tanstack/react-query', () => ({ useQuery: () => mockQuery() }));
+/** « Suivre » : la relation (serveur + session) est testée ailleurs ; ici, son rendu. */
+const mockFollowPress = jest.fn();
+const mockFollow = { state: 'idle', writeFailed: false, disabled: false, press: () => mockFollowPress() };
+const mockFollowCalls: Array<[string]> = [];
+jest.mock('@/features/publications/usePublisherFollow', () => ({
+  usePublisherFollow: (id: string) => { mockFollowCalls.push([id]); return mockFollow; },
+}));
 jest.mock('@/design/appImage', () => ({
   AppImage: (props: any) => {
     const { View } = require('react-native');
@@ -86,6 +93,9 @@ beforeEach(() => {
   mockPlayer.play.mockClear();
   mockPlayer.pause.mockClear();
   mockQuery.mockReturnValue(query());
+  mockFollowPress.mockClear();
+  mockFollowCalls.length = 0;
+  mockFollow.state = 'idle';
 });
 
 describe('page Publication : en-tête seul + modèles du CRM', () => {
@@ -102,16 +112,49 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
   it('éditeur « zayrovi team » sur les blocs ; « Sponsorisé » seulement si coché', () => {
     wrap(<PublicationTemplatesScreen />);
     expect(screen.getAllByText('zayrovi team').length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText('Sponsorisé · zayrovi team')).toBeTruthy();
-    expect(screen.getAllByText('Sponsorisé').length).toBeGreaterThanOrEqual(1);
+    // « Sponsorisé ⓘ » : sur le bandeau + chaque carte du container, et sur l'encart du duo.
+    expect(screen.getByTestId('publication-block-box-sponsored')).toBeTruthy();
+    expect(screen.getByTestId('publication-block-pair-sponsored')).toBeTruthy();
+    expect(screen.queryByTestId('publication-block-video-sponsored')).toBeNull();
+    expect(screen.getAllByText('Sponsorisé').length).toBe(1 + 2 + 1);
   });
 
-  it('aucun bouton d’interaction : ni réaction, ni commentaire, ni partage, ni cœur, ni suivre', () => {
+  it('« Suivre » (13/11) : pilule sous le container, en ligne dans l’en-tête media ; rien d’autre', () => {
     wrap(<PublicationTemplatesScreen />);
-    for (const label of [/j’aime/i, /commenter/i, /partager/i, /favori/i, /suivre/i, /follow/i]) {
+    const pill = screen.getByTestId('publication-block-box-follow');
+    expect(pill.props.accessibilityLabel).toBe('Suivre zayrovi team');
+    expect(screen.getByTestId('publication-block-box-follow-name')).toBeTruthy();
+    expect(screen.getByTestId('publication-block-video-follow')).toBeTruthy();
+    // Le duo n'a pas de « Suivre » (planche Fred Perry / GUESS).
+    expect(screen.queryByTestId('publication-block-pair-follow')).toBeNull();
+    // Le bouton suit l'éditeur officiel.
+    expect(mockFollowCalls.every(([id]) => id === 'pub_ayrovi')).toBe(true);
+    fireEvent.press(pill);
+    expect(mockFollowPress).toHaveBeenCalledTimes(1);
+    for (const label of [/j’aime/i, /commenter/i, /partager/i, /favori/i]) {
       expect(screen.queryAllByLabelText(label)).toHaveLength(0);
     }
     expect(screen.queryAllByText(/Découvrir plus|Discover more/i)).toHaveLength(0);
+  });
+
+  it('« Suivi » une fois l’éditeur suivi, libellé d’accessibilité inversé', () => {
+    mockFollow.state = 'following';
+    wrap(<PublicationTemplatesScreen />);
+    expect(screen.getByTestId('publication-block-box-follow').props.accessibilityLabel).toBe('Ne plus suivre zayrovi team');
+    expect(screen.getAllByText('Suivi').length).toBe(2);
+  });
+
+  it('carte du container : photo qui remplit le cadre, quatre niveaux de texte distincts', () => {
+    wrap(<PublicationTemplatesScreen />);
+    const frame = screen.getByTestId('publication-block-box-product-p4-frame');
+    expect(frame.props.children.props.contentFit).toBe('cover');
+    const size = (id: string) => StyleSheet.flatten(screen.getByTestId(`publication-block-box-product-p4-${id}`).props.style).fontSize;
+    const sizes = [size('price'), size('brand'), size('name')];
+    expect(new Set(sizes).size).toBe(3);
+    expect(sizes[0]).toBeGreaterThan(sizes[1]);
+    expect(sizes[1]).toBeGreaterThan(sizes[2]);
+    // Titre du bandeau : plus grand que tout le reste du bloc.
+    expect(StyleSheet.flatten(screen.getByTestId('publication-block-box-title').props.style).fontSize).toBeGreaterThan(sizes[0]);
   });
 
   it('les couleurs viennent du CRM (bandeau, panneau, encart)', () => {

@@ -298,27 +298,43 @@ export function FichePhoto({
 /* ── 3. Identité : nom souligné à la largeur du mot, prix en face, description ─ */
 
 export function FicheIdentity({
-  name, price, description,
+  brand, name, price, description,
 }: {
+  /**
+   * Marque (vidéo Veepee du 12/11) : elle prend la ligne soulignée à côté du
+   * prix, et le nom du produit passe dessous, EN ENTIER. Sans marque, le nom
+   * reste souligné — en entier lui aussi (plus de « Enceinte Blue… »).
+   */
+  brand?: string;
   name: string;
   price: string | null;
   description: string;
 }) {
   const theme = useTheme();
   const fc = ficheColorsFor(theme.mode);
+  const title = brand?.trim() || name;
+  const fullName = brand?.trim() ? name : '';
   return (
     <View style={styles.identity}>
       <View style={styles.identityTop}>
         {/* Le filet fait exactement la largeur du mot : la boîte se rétrécit au texte. */}
         <View style={[styles.nameBox, { borderBottomColor: fc.nameUnderline }]}>
-          <AppText variant="h3" numberOfLines={2} style={[styles.name, { color: theme.colors.ink }]}>
-            {name}
+          <AppText testID="product-fiche-title" variant="h3" numberOfLines={fullName ? 1 : undefined} style={[styles.name, { color: theme.colors.ink }]}>
+            {title}
           </AppText>
         </View>
         {price ? (
           <AppText variant="price" style={[styles.price, { color: theme.colors.ink }]}>{price}</AppText>
         ) : null}
       </View>
+      {fullName ? (
+        <AppText
+          testID="product-fiche-name"
+          style={[styles.fullName, { color: theme.colors.ink, fontFamily: theme.font('regular') }]}
+        >
+          {fullName}
+        </AppText>
+      ) : null}
       {description ? (
         <AppText
           numberOfLines={2}
@@ -920,6 +936,7 @@ const styles = StyleSheet.create({
   nameBox: { flexShrink: 1, borderBottomWidth: FICHE.underlineWidth, paddingBottom: FICHE.underlineGap, marginEnd: 12 },
   name: { fontSize: FICHE.nameSize, lineHeight: FICHE.nameLine },
   price: { fontSize: FICHE.priceSize, lineHeight: FICHE.nameLine, marginStart: 8 },
+  fullName: { fontSize: FICHE.descriptionSize, lineHeight: FICHE.descriptionLine, marginTop: FICHE.fullNameGap },
   description: { fontSize: FICHE.descriptionSize, lineHeight: FICHE.descriptionLine, marginTop: FICHE.descriptionGap },
 
   row: {

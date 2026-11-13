@@ -10,6 +10,7 @@ import {
   isPublicationBlockKind,
   isRenderablePublicationBlock,
   normalizeHexColor,
+  PUBLICATION_PUBLISHER_ID,
   PUBLICATION_PUBLISHER_NAME,
   type PublicationBlockPublic,
 } from '../../../../shared/publicationBlocks';
@@ -49,7 +50,10 @@ export function parsePublicationBlock(value: unknown): PublicationBlock | null {
     sponsored: row.sponsored === true,
     media,
     products,
-    publisher: { name: str((row.publisher as Record<string, unknown> | undefined)?.name).trim() || PUBLICATION_PUBLISHER_NAME },
+    publisher: {
+      id: str((row.publisher as Record<string, unknown> | undefined)?.id).trim() || PUBLICATION_PUBLISHER_ID,
+      name: str((row.publisher as Record<string, unknown> | undefined)?.name).trim() || PUBLICATION_PUBLISHER_NAME,
+    },
   };
   return isRenderablePublicationBlock(block) ? block : null;
 }

@@ -50,4 +50,21 @@ export const PUBLICATION_TYPE = {
   touch: 44,
   countSize: 15,
   countLine: 20,
+  /*
+   * Blocs Publication (planches Zalando du 13/11, écran 360 dp) — une échelle
+   * à niveaux DISTINCTS : titre du bandeau > prix > marque > nom > « Sponsorisé ».
+   */
+  bandTitleSize: 22,   // « Nike Hybrid RN / Train everything » : 2 lignes, gras
+  bandTitleLine: 28,
+  cardBrandSize: 15,   // marque, gras
+  cardBrandLine: 20,
+  cardNameSize: 14,    // nom du produit, régulier, une ligne
+  cardNameLine: 18,
+  cardPriceSize: 16,   // prix, gras, le plus lisible de la carte
+  cardPriceLine: 22,
+  followSize: 16,      // « + Suivre » de la pilule
+  followLine: 22,
+  followHeight: 48,    // pilule : 95 px de haut sur la planche ⇒ 48 dp
+  followIcon: 18,
+  infoIcon: 14,        // « ⓘ » après « Sponsorisé »
 } as const;

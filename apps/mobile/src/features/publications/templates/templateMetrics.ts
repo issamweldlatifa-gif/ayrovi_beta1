@@ -30,8 +30,11 @@ export const PUBLICATION_TEMPLATE = {
   referenceWidth: 360,
   /** Au-delà, la colonne est centrée (tablette) : les blocs ne s'étirent pas. */
   maxContentWidth: 640,
-  /** Espace vertical entre deux blocs. */
-  blockSpacing: 32,
+  /**
+   * Espace vertical entre deux blocs. 13/11 : 32 → 16 (consigne « قلّل
+   * المسافات بين البلوكات باش يبان أكثر » ; planches Zalando ≈ 16 dp).
+   */
+  blockSpacing: 16,
 
   /* Modèle `media` */
   mediaInset: 12,
@@ -46,7 +49,8 @@ export const PUBLICATION_TEMPLATE = {
   /* Modèle `container` */
   bandInset: 24,
   bandPaddingTop: 16,
-  bandPaddingBottom: 24,
+  /** Planche : 29 px sous la 2e ligne du titre ⇒ 16 dp (24 laissait un bandeau trop haut). */
+  bandPaddingBottom: 16,
   panelPaddingTop: 48,
   cardRatio: 1.45,
   cardRadius: 12,
@@ -54,6 +58,9 @@ export const PUBLICATION_TEMPLATE = {
   cardsVisible: 2.13,
   cardsVisibleWide: 4.2,
   containerMediaAspect: 2.07,
+  /** Bas du panneau : 89 px entre le texte des cartes et la pilule « + Suivre » ⇒ 24 dp + interlignes. */
+  followTop: 24,
+  panelPaddingBottom: 24,
 
   /* Modèle `sponsored_pair` */
   pairInset: 16,

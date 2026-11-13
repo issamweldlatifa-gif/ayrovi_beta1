@@ -1040,4 +1040,10 @@ export const ar = {
   'publication.videoUnmute': 'تشغيل الصوت',
   'publication.products': 'منتجات: {title}',
   'publication.productLabel': '{brand} {name}، {price}',
+  'publication.follow': 'متابعة',
+  'publication.following': 'متابَع',
+  'publication.followRetry': 'إعادة المحاولة',
+  'publication.followLabel': 'متابعة {name}',
+  'publication.unfollowLabel': 'إلغاء متابعة {name}',
+  'publication.followError': 'تعذّرت المتابعة. حاول مجددًا.',
 } as const;

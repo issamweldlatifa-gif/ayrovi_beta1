@@ -34,6 +34,12 @@ export type PublicationBlockMediaType = (typeof PUBLICATION_BLOCK_MEDIA_TYPES)[n
 /** Nom d'éditeur affiché sur chaque bloc (consigne du propriétaire, en minuscules). */
 export const PUBLICATION_PUBLISHER_NAME = 'zayrovi team';
 
+/**
+ * Éditeur officiel (`story_publishers.id`) : c'est lui que le bouton « Suivre »
+ * des blocs suit — la même relation que « Suivre » dans les Reels.
+ */
+export const PUBLICATION_PUBLISHER_ID = 'pub_ayrovi';
+
 export const PUBLICATION_BLOCK_LIMITS = {
   title: 80,
   subtitle: 120,
@@ -306,7 +312,7 @@ export interface PublicationBlockPublic {
   sponsored: boolean;
   media: { type: PublicationBlockMediaType; url: string; poster: string } | null;
   products: PublicationBlockProduct[];
-  publisher: { name: string };
+  publisher: { id: string; name: string };
 }
 
 /** Un bloc sans assez de produits vendables n'est pas montré (jamais de carte vide). */

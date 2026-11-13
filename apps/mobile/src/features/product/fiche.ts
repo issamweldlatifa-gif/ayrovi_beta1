@@ -45,6 +45,8 @@ export const FICHE = {
   underlineGap: 5,         // le filet tombe 5 dp sous le texte
   underlineWidth: 2,       // 4 px
   descriptionGap: 2,       // 1256 − (1249 + 2) ≈ 2 dp
+  /** Vidéo Veepee : sous la marque soulignée, le nom complet du produit (jamais coupé). */
+  fullNameGap: 4,
   descriptionSize: 15,     // 30 px
   descriptionLine: 17,     // 1290 − 1256 = 34 px
   descriptionRight: 8,     // 16 px entre le texte et la colonne du prix

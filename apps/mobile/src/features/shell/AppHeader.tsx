@@ -68,7 +68,12 @@ export function AppHeader({ scrolled, heroBackground = null, heroTint = null, br
   return <View testID="main-app-header" pointerEvents="box-none" style={[styles.bar, {
     height: insets.top + theme.chrome.header, paddingTop: insets.top, flexDirection: row,
     backgroundColor: theme.colors.canvas,
-    borderBottomColor: scrolled ? theme.colors.line : 'transparent',
+    // Le filet n'existe QUE une fois la page défilée. Un filet « transparent »
+    // laissait voir le fond blanc de la barre : la teinte du Hero (absoluteFill)
+    // s'arrête au bord intérieur de la bordure → fine ligne blanche sous
+    // « Bienvenue, se connecter ? » (capture du 13/11/2026).
+    borderBottomWidth: scrolled ? StyleSheet.hairlineWidth : 0,
+    borderBottomColor: theme.colors.line,
   }]}>
     {hasTint ? (
       <Animated.View
@@ -130,7 +135,7 @@ const styles = StyleSheet.create({
   aywebsWordmark: { width: 121, height: 42 },
   // Une seule ligne, toujours : le groupe de contrôles ne se replie jamais,
   // seul le mot-symbole peut se resserrer sur écran étroit.
-  bar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'nowrap', borderBottomWidth: StyleSheet.hairlineWidth },
+  bar: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'nowrap' },
   hit: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   wordmark: { minHeight: 44, justifyContent: 'center', flexShrink: 1 },
   // Invitation visiteur : « se connecter ? » porte le soulignement-lien,

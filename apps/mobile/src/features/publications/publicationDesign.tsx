@@ -1,10 +1,10 @@
 /** Publication-only visual model. Never import from product/cart/payment features. */
 import type { ComponentProps } from 'react';
-import { Platform, type TextStyle } from 'react-native';
+import { Platform, StyleSheet, View, type TextStyle } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { AppText, type AppTextProps } from '@/design/ui';
 import { NavigationIcon } from '@/design/NavigationIcon';
-import { useI18n } from '@/i18n';
+import { useI18n, useT } from '@/i18n';
 
 import { PUBLICATION_PALETTE, PUBLICATION_TYPE } from './publicationTokens';
 export { PUBLICATION_PALETTE, PUBLICATION_TYPE } from './publicationTokens';
@@ -76,6 +76,7 @@ const drawings: Record<string, string> = {
   'thumbs-down-outline': 'M14 4H5L3 14h6v6c4 0 4-6 5-7V4Zm4 0h3v10h-3Z',
   'chevron-down': 'm7 10 5 5 5-5',
   'add-outline': 'M12 5v14M5 12h14',
+  'information-circle-outline': 'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18ZM12 11v5.5M12 7.6v.2',
   'checkmark-outline': 'm5 12 4 4L19 6',
   close: 'm5 5 14 14M19 5 5 19',
   'search-outline': 'M20 20l-5-5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z',
@@ -150,3 +151,21 @@ export function PublicationIcon(props: ComponentProps<typeof NavigationIcon>) {
     </Svg>
   );
 }
+
+/**
+ * « Sponsorisé ⓘ » des blocs (planches Zalando) : la mention, puis le petit
+ * « i » cerclé, sur une ligne, dans l'encre secondaire du fond.
+ */
+export function PublicationSponsored({ color, testID }: { color: string; testID?: string }) {
+  const t = useT();
+  return (
+    <View testID={testID} style={sponsoredStyles.row}>
+      <PublicationText variant="caption" color={color} numberOfLines={1}>{t('publication.sponsored')}</PublicationText>
+      <PublicationIcon name="information-circle-outline" size={PUBLICATION_TYPE.infoIcon} color={color} />
+    </View>
+  );
+}
+
+const sponsoredStyles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+});

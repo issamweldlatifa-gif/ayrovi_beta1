@@ -11,6 +11,16 @@ import {
   PUBLICATION_TEMPLATE as T,
 } from '../src/features/publications/templates/templateMetrics';
 import { contrastRatio } from '../../../shared/publicationBlocks';
+import fs from 'node:fs';
+import path from 'node:path';
+
+/** Jetons Publication lus dans la source (le module importe `react-native`, illisible ici). */
+const tokenSource = fs.readFileSync(path.join(__dirname, '../src/features/publications/publicationTokens.ts'), 'utf8');
+const token = (name: string) => {
+  const match = tokenSource.match(new RegExp(`\\b${name}:\\s*(\\d+)`));
+  if (!match) throw new Error(`jeton absent : ${name}`);
+  return Number(match[1]);
+};
 
 const product = (id: string, extra: Record<string, unknown> = {}) => ({
   id, name: `Produit ${id}`, brand: 'Marque', image: `/media/${id}.jpg`, price: 120, currency: 'TND',
@@ -34,8 +44,10 @@ describe('lecture des blocs Publication', () => {
     expect(parsed?.products.map((p) => p.id)).toEqual(['p1', 'p2']);
   });
 
-  it('éditeur absent : « zayrovi team » (consigne du propriétaire)', () => {
-    expect(parsePublicationBlock(block({ publisher: undefined }))?.publisher.name).toBe('zayrovi team');
+  it('éditeur absent : « zayrovi team » (consigne du propriétaire), suivi via l’éditeur officiel', () => {
+    const parsed = parsePublicationBlock(block({ publisher: undefined }));
+    expect(parsed?.publisher).toEqual({ id: 'pub_ayrovi', name: 'zayrovi team' });
+    expect(parsePublicationBlock(block({ publisher: { id: 'pub_x', name: 'Autre' } }))?.publisher).toEqual({ id: 'pub_x', name: 'Autre' });
   });
 
   it('écarte un bloc mal formé sans faire tomber la page', () => {
@@ -64,6 +76,19 @@ describe('lecture des blocs Publication', () => {
 });
 
 describe('cotes des modèles (planches Zalando, 360 dp)', () => {
+  it('13/11 : blocs rapprochés (16 dp) et bandeau resserré', () => {
+    expect(T.blockSpacing).toBe(16);
+    expect(T.bandPaddingBottom).toBe(16);
+  });
+
+  it('13/11 : chaque ligne de la carte a son propre niveau de texte', () => {
+    const levels = ['bandTitleSize', 'cardPriceSize', 'cardBrandSize', 'cardNameSize', 'captionSize'].map(token);
+    // Titre > prix > marque > nom > « Sponsorisé » : strictement décroissant, aucun doublon.
+    for (let i = 1; i < levels.length; i += 1) expect(levels[i]).toBeLessThan(levels[i - 1] as number);
+    // Pilule « + Suivre » : cible tactile ≥ 48 dp (planche : 95 px).
+    expect(token('followHeight')).toBeGreaterThanOrEqual(token('touch'));
+  });
+
   const m = publicationTemplateMetrics(360);
 
   it('modèle media : retrait 12, photo ≈ 2:1, vidéo carrée, ~3 photos produit visibles', () => {

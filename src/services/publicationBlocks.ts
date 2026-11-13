@@ -16,6 +16,7 @@ import {
   isRenderablePublicationBlock,
   normalizePublicationBlockInput,
   PUBLICATION_BLOCK_LIMITS,
+  PUBLICATION_PUBLISHER_ID,
   PUBLICATION_PUBLISHER_NAME,
   type PublicationBlockInput,
   type PublicationBlockKind,
@@ -24,6 +25,7 @@ import {
   type PublicationBlockValidation,
 } from '../../shared/publicationBlocks';
 import { isSellableProduct, STOREFRONT_CURRENCY } from './shoppableContent';
+import { officialImageUrl } from '../catalogue/installOfficialCatalogue';
 
 type Store = Pick<QatafoDatabase, 'get' | 'all' | 'run'>;
 
@@ -207,7 +209,7 @@ export function readPublicBlocks(db: Store): PublicationBlockPublic[] {
       sponsored: !!row.sponsored,
       media: row.media_url && row.media_type ? { type: row.media_type, url: row.media_url, poster: row.poster_url || '' } : null,
       products: cards,
-      publisher: { name: PUBLICATION_PUBLISHER_NAME },
+      publisher: { id: PUBLICATION_PUBLISHER_ID, name: PUBLICATION_PUBLISHER_NAME },
     };
     if (isRenderablePublicationBlock(block)) blocks.push(block);
   }
@@ -217,7 +219,7 @@ export function readPublicBlocks(db: Store): PublicationBlockPublic[] {
 /* ── Contenu de démonstration ─────────────────────────────────────────────── */
 
 const OFFICIAL = (key: string) => `product_official_${key}`;
-const PHOTO = (file: string) => `/media/catalogue/official/${file}.jpg`;
+const PHOTO = (file: string) => officialImageUrl(`/media/catalogue/official/${file}.jpg`);
 /** Vidéos produit officielles fournies par le propriétaire (fichiers MP4 directs). */
 export const OFFICIAL_VIDEOS = {
   nike: 'https://assets.nmp.nike.com/a/videos/6ad99ea4-fb65-4ee8-abfb-0662f8274c11/video.mp4',

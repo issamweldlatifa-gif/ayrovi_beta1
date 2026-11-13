@@ -1,18 +1,18 @@
 /**
- * Modèle `container` — planches « Vans », « adidas Performance », « WE Fashion ».
+ * Modèle `container` — planches « Nike Hybrid RN », « Vans », « The North Face ».
  *
  *   ┌───────────── bandeau (couleur du CRM) ─────────────┐
- *   │ Sponsorisé                                          │
- *   │ Titre                         (deux grandes lignes) │
+ *   │ Sponsorisé ⓘ                                        │
+ *   │ Titre                       (gros, gras, 2 lignes)  │
  *   │ Sous-titre                                          │
  *   ├────────── image large facultative (même fond) ──────┤
  *   ├──── panneau (teinte voisine, calculée ou du CRM) ───┤
  *   │  [carte][carte][▌    ← rangée de cartes produit     │
- *   │  zayrovi team        ← éditeur (à la place de « + Follow ») │
+ *   │  (+ Suivre)  zayrovi team                           │
  *   └─────────────────────────────────────────────────────┘
  *
- * Le bouton « + Follow » de la planche n'est PAS repris (aucun bouton
- * d'interaction pour l'instant) ; la carte « Découvrir plus » est reportée.
+ * 13/11 : « + Suivre » ajouté (consigne du propriétaire), titre agrandi et en
+ * gras, bandeau resserré. La carte « Découvrir plus » reste reportée.
  */
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -20,7 +20,8 @@ import { mediaUrl } from '@/api/client';
 import type { PublicationBlock } from '@/api/publicationBlocks';
 import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
-import { PUBLICATION_PALETTE as P, PublicationText } from '../publicationDesign';
+import { PublicationFollow } from '../PublicationFollow';
+import { PUBLICATION_PALETTE as P, PUBLICATION_TYPE, PublicationSponsored, PublicationText } from '../publicationDesign';
 import { blockInks } from './blockColors';
 import { ContainerProductCard } from './ContainerProductCard';
 import { PUBLICATION_TEMPLATE as T, type PublicationTemplateMetrics } from './templateMetrics';
@@ -41,13 +42,13 @@ export function ContainerTemplate({
   return (
     <View testID={`publication-block-${block.id}`} style={styles.block}>
       <View testID={`publication-block-${block.id}-band`} style={[styles.band, { backgroundColor: block.bgColor }]}>
-        {block.sponsored ? (
-          <PublicationText variant="caption" color={band.muted}>{t('publication.sponsored')}</PublicationText>
-        ) : null}
+        {block.sponsored ? <PublicationSponsored color={band.muted} testID={`publication-block-${block.id}-sponsored`} /> : null}
         <View style={styles.titles}>
-          <PublicationText variant="h3" color={band.ink} numberOfLines={2}>{block.title}</PublicationText>
+          <PublicationText testID={`publication-block-${block.id}-title`} variant="h2" color={band.ink} numberOfLines={2} style={styles.title}>
+            {block.title}
+          </PublicationText>
           {block.subtitle ? (
-            <PublicationText variant="h3" color={band.ink} numberOfLines={2}>{block.subtitle}</PublicationText>
+            <PublicationText variant="h2" color={band.ink} numberOfLines={2} style={styles.title}>{block.subtitle}</PublicationText>
           ) : null}
         </View>
       </View>
@@ -81,10 +82,15 @@ export function ContainerTemplate({
             />
           ))}
         </ScrollView>
-        <View style={styles.publisher}>
-          <PublicationText testID={`publication-block-${block.id}-publisher`} variant="label" color={panel.ink} numberOfLines={1}>
-            {block.publisher.name}
-          </PublicationText>
+        <View style={styles.footer}>
+          <PublicationFollow
+            look="pill"
+            publisherId={block.publisher.id}
+            publisherName={block.publisher.name}
+            ink={panel.ink}
+            muted={panel.muted}
+            testID={`publication-block-${block.id}-follow`}
+          />
         </View>
       </View>
     </View>
@@ -95,9 +101,10 @@ const styles = StyleSheet.create({
   block: { width: '100%' },
   band: { paddingHorizontal: T.bandInset, paddingTop: T.bandPaddingTop, paddingBottom: T.bandPaddingBottom },
   titles: { paddingTop: 8 },
+  title: { fontSize: PUBLICATION_TYPE.bandTitleSize, lineHeight: PUBLICATION_TYPE.bandTitleLine },
   mediaBand: { paddingHorizontal: T.bandInset, paddingBottom: T.bandPaddingBottom },
   fill: { width: '100%', height: '100%' },
-  panel: { paddingTop: T.panelPaddingTop, paddingBottom: 24 },
+  panel: { paddingTop: T.panelPaddingTop, paddingBottom: T.panelPaddingBottom },
   rowContent: { paddingHorizontal: T.bandInset, gap: T.cardSpacing },
-  publisher: { paddingHorizontal: T.bandInset, paddingTop: 24 },
+  footer: { paddingHorizontal: T.bandInset, paddingTop: T.followTop },
 });

@@ -67,7 +67,7 @@ describe('Publication-only visual model, not a second commerce or social core', 
       'strokeWidth={PUBLICATION_TYPE.stroke}'
     );
   });
-  it('refonte 13/11 : en-tête seul + blocs du CRM, sans aucun bouton d’interaction', () => {
+  it('refonte 13/11 : en-tête seul + blocs du CRM ; seul « Suivre » est permis', () => {
     const page = read(dir + 'PublicationTemplatesScreen.tsx');
     expect(page).toContain('<PublicationHeader />');
     expect(page).toContain('fetchPublicationBlocks');
@@ -75,9 +75,16 @@ describe('Publication-only visual model, not a second commerce or social core', 
     expect(templates.length).toBeGreaterThanOrEqual(5);
     for (const file of [...templates, dir + 'PublicationTemplatesScreen.tsx', dir + 'PublicationHeader.tsx']) {
       const source = read(file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-      // Ni réaction, ni commentaire, ni partage, ni favori, ni « Suivre » : consigne du propriétaire.
-      expect(source, file).not.toMatch(/ReactionButton|sendInteraction|Comments|share-outline|heart|favorite=|Follow\b|followPublisher/);
+      // Ni réaction, ni commentaire, ni partage, ni favori. « Suivre » est permis
+      // depuis le 13/11 (« نسيت زر Follow »), mais seulement via `PublicationFollow`.
+      expect(source, file).not.toMatch(/ReactionButton|sendInteraction|Comments|share-outline|heart|favorite=|followPublisher/);
     }
+    // Le bouton « Suivre » des planches : pilule sous le container, en ligne dans l'en-tête media.
+    expect(read(dir + 'templates/ContainerTemplate.tsx')).toContain('look="pill"');
+    expect(read(dir + 'templates/MediaTemplate.tsx')).toContain('look="inline"');
+    // Une seule relation « suivre » : Reels et Publication partagent le même hook.
+    expect(read(dir + 'PublicationFollow.tsx')).toContain('usePublisherFollow');
+    expect(read('src/features/reels/ReelFollow.tsx')).toContain('usePublisherFollow');
     // L'ancien fil (posts, visionneuse, commentaires) a disparu du dossier.
     for (const gone of ['PublicationFeedScreen', 'PublicationViewer', 'PublicationCard', 'PublicationActions', 'PublicationCommentsSheet'])
       expect(fs.existsSync(path.join(root, dir + gone + '.tsx'))).toBe(false);

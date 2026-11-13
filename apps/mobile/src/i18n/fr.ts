@@ -1041,4 +1041,10 @@ export const fr = {
   'publication.videoUnmute': 'Activer le son',
   'publication.products': 'Produits : {title}',
   'publication.productLabel': '{brand} {name}, {price}',
+  'publication.follow': 'Suivre',
+  'publication.following': 'Suivi',
+  'publication.followRetry': 'Réessayer',
+  'publication.followLabel': 'Suivre {name}',
+  'publication.unfollowLabel': 'Ne plus suivre {name}',
+  'publication.followError': 'Action impossible. Réessayez.',
 } as const;

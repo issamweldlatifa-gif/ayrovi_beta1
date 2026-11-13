@@ -29,6 +29,52 @@ import { setContentProducts } from '../services/contentProducts';
 export const OFFICIAL_CATALOGUE = catalogue;
 export type OfficialProduct = (typeof catalogue.products)[number];
 
+/**
+ * Version des photos officielles (13/11/2026 : toutes ramenées au format 2:3 sur
+ * un même fond, `scripts/normalize-catalogue-images.py`). Le fichier garde son
+ * nom — une ancienne adresse (instantané de commande) reste valide — mais
+ * l'adresse enregistrée porte `?v=N` : le téléphone (cache disque d'expo-image)
+ * et les caches HTTP chargent la nouvelle photo au lieu de l'ancienne.
+ */
+export const OFFICIAL_IMAGE_VERSION = 2;
+const OFFICIAL_IMAGE_PREFIX = '/media/catalogue/official/';
+
+/** `/media/catalogue/official/x.jpg` → `…/x.jpg?v=2` ; toute autre adresse est rendue telle quelle. */
+export function officialImageUrl(url: string): string {
+  if (!url.startsWith(OFFICIAL_IMAGE_PREFIX)) return url;
+  return `${url.split('?')[0]}?v=${OFFICIAL_IMAGE_VERSION}`;
+}
+
+/**
+ * Migration (une fois) : les bases déjà installées reçoivent les adresses
+ * versionnées — produits, galerie, blocs Publication. Idempotente.
+ */
+export function versionOfficialImages(db: QatafoDatabase): number {
+  const version = (value: unknown) => (typeof value === 'string' ? officialImageUrl(value) : value);
+  let changed = 0;
+  for (const row of db.all<{ id: string; image: string; additional_images: string }>(
+    `SELECT id, image, additional_images FROM products WHERE image LIKE '${OFFICIAL_IMAGE_PREFIX}%' OR additional_images LIKE '%${OFFICIAL_IMAGE_PREFIX}%'`,
+  )) {
+    let extra: unknown = [];
+    try { extra = JSON.parse(row.additional_images || '[]'); } catch { extra = []; }
+    const next = Array.isArray(extra) ? extra.map(version) : [];
+    db.run('UPDATE products SET image=?, additional_images=? WHERE id=?', version(row.image), JSON.stringify(next), row.id);
+    changed += 1;
+  }
+  for (const row of db.all<{ id: string; url: string }>(`SELECT id, url FROM catalogue_media WHERE url LIKE '${OFFICIAL_IMAGE_PREFIX}%'`)) {
+    db.run('UPDATE catalogue_media SET url=? WHERE id=?', officialImageUrl(row.url), row.id);
+  }
+  const blocks = db.get<{ n: number }>("SELECT COUNT(*) n FROM sqlite_master WHERE type='table' AND name='publication_blocks'");
+  if (blocks?.n) {
+    for (const row of db.all<{ id: string; media_url: string; poster_url: string }>(
+      `SELECT id, media_url, poster_url FROM publication_blocks WHERE media_url LIKE '${OFFICIAL_IMAGE_PREFIX}%' OR poster_url LIKE '${OFFICIAL_IMAGE_PREFIX}%'`,
+    )) {
+      db.run('UPDATE publication_blocks SET media_url=?, poster_url=? WHERE id=?', officialImageUrl(row.media_url), officialImageUrl(row.poster_url), row.id);
+    }
+  }
+  return changed;
+}
+
 export const officialProductId = (key: string) => `product_official_${key}`;
 export const officialCategoryId = (slug: string) => `category_official_${slug}`;
 
@@ -184,7 +230,7 @@ export function installOfficialCatalogue(db: Db, now = new Date().toISOString())
          service_fee, final_price, compare_at_price, express_available, stock_status, status,
          product_code, slug, product_type, visibility, fiche_labels, created_at, updated_at
        ) VALUES (?,?,?,?,?,?,?,?,?,'','ZAYROVI',0,'TND',?,0,0,0,?,?,0,'AVAILABLE','ACTIVE',?,?,'STANDARD','CATALOG',?,?,?)`,
-      id, item.name, item.description, item.images[0], JSON.stringify(item.images.slice(1)),
+      id, item.name, item.description, officialImageUrl(item.images[0]), JSON.stringify(item.images.slice(1).map(officialImageUrl)),
       brand.id, brand.name, category?.name ?? item.category, category?.id ?? null,
       item.salePriceTND, item.salePriceTND, item.compareAtTND ?? null,
       code, item.key, JSON.stringify({ size: sizeLabel, sections: FICHE_SECTIONS[family] }), now, now,
@@ -194,7 +240,7 @@ export function installOfficialCatalogue(db: Db, now = new Date().toISOString())
       db.run(
         `INSERT INTO catalogue_media (id, product_id, variant_id, media_type, url, alt_text, sort_order, is_primary, created_at, updated_at)
          VALUES (?,?,NULL,'IMAGE',?,?,?,?,?,?)`,
-        `media_${id}_${position + 1}`, id, url, item.name, position, position === 0 ? 1 : 0, now, now,
+        `media_${id}_${position + 1}`, id, officialImageUrl(url), item.name, position, position === 0 ? 1 : 0, now, now,
       );
     });
 

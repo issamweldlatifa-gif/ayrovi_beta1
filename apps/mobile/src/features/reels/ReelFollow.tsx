@@ -1,16 +1,8 @@
-import { useRef } from 'react';
 import { Pressable, View } from 'react-native';
-import {
-  useQuery,
-  useMutation,
-  useIsMutating,
-  useQueryClient,
-} from '@tanstack/react-query';
-import { followPublisher, fetchPublisherFollow } from '@/api/publisherFollow';
-import { useSession } from '@/state/session';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { useI18n } from '@/i18n';
+import { useT } from '@/i18n';
+import { usePublisherFollow } from '@/features/publications/usePublisherFollow';
 
 /** Reuses Publication's persisted relation and write service, not a second business core. */
 export function ReelFollow({
@@ -20,66 +12,23 @@ export function ReelFollow({
   publisherId: string;
   onAuth: () => void;
 }) {
-  const session = useSession(),
-    theme = useTheme(),
-    { locale } = useI18n(),
-    client = useQueryClient();
-  const ar = locale === 'ar',
-    owner = session.account?.id || 'guest',
-    signedIn = session.status === 'signedIn';
-  const key = ['publisher-follow', owner, publisherId],
-    mutationKey = ['publisher-follow-write', owner, publisherId];
-  const relation = useQuery({
-    queryKey: key,
-    queryFn: ({ signal }) => fetchPublisherFollow(publisherId, { signal }),
-    enabled: signedIn && !!publisherId,
-    retry: false,
-    staleTime: 0,
-  });
-  const busy = useIsMutating({ mutationKey }) > 0,
-    lock = useRef(false);
-  const mutation = useMutation({
-    mutationKey,
-    mutationFn: async (following: boolean) => {
-      const value = await followPublisher(publisherId, following);
-      if (typeof value.following !== 'boolean')
-        throw new Error('Unconfirmed follow');
-      return value;
-    },
-    onSuccess: async (value) => {
-      client.setQueryData(key, value);
-      await client.invalidateQueries({ queryKey: ['publication-feed', owner] });
-    },
-  });
-  async function toggle() {
-    if (!signedIn) {
-      onAuth();
-      return;
-    }
-    if (lock.current || busy || !relation.data) return;
-    lock.current = true;
-    try {
-      await mutation.mutateAsync(!relation.data.following);
-    } catch {
-      /* Error remains visible and retryable. */
-    } finally {
-      lock.current = false;
-    }
-  }
-  const disabled = signedIn && (relation.isPending || busy);
+  const theme = useTheme();
+  const t = useT();
+  const follow = usePublisherFollow(publisherId, onAuth);
+  const label = follow.state === 'error'
+    ? t('publication.followRetry')
+    : follow.state === 'pending'
+      ? '…'
+      : follow.state === 'following'
+        ? t('publication.following')
+        : `+ ${t('publication.follow')}`;
   return (
     <View style={{ gap: 4, maxWidth: '48%', flexShrink: 1 }}>
       <Pressable
         accessibilityRole="button"
-        accessibilityState={{ disabled }}
-        disabled={disabled}
-        onPress={
-          relation.isError
-            ? () => {
-                relation.refetch();
-              }
-            : toggle
-        }
+        accessibilityState={{ disabled: follow.disabled }}
+        disabled={follow.disabled}
+        onPress={follow.press}
         style={{
           minHeight: 44,
           borderWidth: 1,
@@ -90,27 +39,11 @@ export function ReelFollow({
           justifyContent: 'center',
         }}
       >
-        <AppText variant="body">
-          {relation.isError
-            ? ar
-              ? 'إعادة المحاولة'
-              : 'Réessayer'
-            : disabled
-            ? '…'
-            : relation.data?.following
-            ? ar
-              ? 'متابَع'
-              : 'Suivi'
-            : ar
-            ? '+ متابعة'
-            : '+ Suivre'}
-        </AppText>
+        <AppText variant="body">{label}</AppText>
       </Pressable>
-      {mutation.isError ? (
+      {follow.writeFailed ? (
         <AppText accessibilityRole="alert" variant="caption">
-          {ar
-            ? 'تعذّرت المتابعة. حاول مجددًا.'
-            : 'Action impossible. Réessayez.'}
+          {t('publication.followError')}
         </AppText>
       ) : null}
     </View>

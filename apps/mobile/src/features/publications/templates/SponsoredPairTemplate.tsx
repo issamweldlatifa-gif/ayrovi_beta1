@@ -5,7 +5,7 @@
  *   │  image   │ │  photo   │   ← même hauteur de photo des deux côtés
  *   │          │ │ produit  │
  *   ├──────────┤ ├──────────┤
- *   │Sponsorisé│ │ marque   │   ← encart coloré (CRM) = hauteur du bloc texte
+ *   │Sponsor. ⓘ│ │ marque   │   ← encart coloré (CRM) = hauteur du bloc texte
  *   │ TITRE    │ │ nom      │
  *   │ sous-tit.│ │ prix     │
  *   └──────────┘ └──────────┘
@@ -25,7 +25,7 @@ import { ProductTile } from '@/design/ProductTile';
 import { useTheme } from '@/design/theme';
 import { formatMoney } from '@/format/money';
 import { useT } from '@/i18n';
-import { PUBLICATION_PALETTE as P, PublicationText } from '../publicationDesign';
+import { PUBLICATION_PALETTE as P, PublicationSponsored, PublicationText } from '../publicationDesign';
 import { blockInks } from './blockColors';
 import { pairTileMetrics, PUBLICATION_TEMPLATE as T, type PublicationTemplateMetrics } from './templateMetrics';
 
@@ -70,9 +70,11 @@ export function SponsoredPairTemplate({
           testID={`publication-block-${block.id}-sponsor-box`}
           style={[styles.box, { height: tile.textHeight, backgroundColor: block.bgColor, paddingHorizontal: tile.inset }]}
         >
-          <PublicationText variant="caption" color={inks.muted} numberOfLines={1}>
-            {block.sponsored ? `${t('publication.sponsored')} · ${block.publisher.name}` : block.publisher.name}
-          </PublicationText>
+          {block.sponsored ? (
+            <PublicationSponsored color={inks.muted} testID={`publication-block-${block.id}-sponsored`} />
+          ) : (
+            <PublicationText variant="caption" color={inks.muted} numberOfLines={1}>{block.publisher.name}</PublicationText>
+          )}
           <PublicationText variant="bodyStrong" color={inks.ink} numberOfLines={1}>{block.title}</PublicationText>
           {block.subtitle ? (
             <PublicationText variant="bodySmall" color={inks.ink} numberOfLines={2}>{block.subtitle}</PublicationText>
