@@ -16,7 +16,7 @@
  * vendabilité des produits ; un produit retiré du catalogue disparaît du bloc.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, X } from '../components/QatafoIcons';
+import { ArrowDown, ArrowUp, Heart, Pencil, Plus, Trash2, X } from '../components/QatafoIcons';
 import { adminApi } from './api';
 import { Button, DataTable, Field, Modal, StatusBadge, Switch } from './components';
 import { uploadMediaFile } from './mediaUpload';
@@ -127,9 +127,9 @@ function PreviewProduct({ product, width, ink = INK, sponsored = '', testId }: {
     <div data-testid={testId} style={{ width, height: height + 72, flex: '0 0 auto' }}>
       <div style={{ width, height, background: mixColor(INK, PAPER, 0.95), borderRadius: PREVIEW_CARD.radius * SCALE, overflow: 'hidden', position: 'relative' }}>
         {product?.image ? <img src={product.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} /> : null}
-        <svg data-testid="preview-heart" aria-hidden="true" width={heart} height={heart} viewBox="0 0 24 24" style={{ position: 'absolute', top: 11 * SCALE, right: 11 * SCALE }}>
-          <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z" fill="none" stroke={INK} strokeWidth={1.6} strokeLinejoin="round" />
-        </svg>
+        <span data-testid="preview-heart" aria-hidden="true" style={{ position: 'absolute', top: 11 * SCALE, right: 11 * SCALE, color: INK, display: 'flex' }}>
+          <Heart size={heart} aria-hidden="true" />
+        </span>
       </div>
       {product ? (
         <div style={{ paddingTop: 6, color: ink, fontSize: 11, lineHeight: 1.3 }}>
