@@ -24,6 +24,7 @@
  *  • inventer une photo, un prix ou une marque : elle affiche ce qu'on lui donne ;
  *  • ouvrir autre chose que ce que l'écran décide (`onOpen(photo)`).
  */
+import { CARD_SYSTEM } from './cardSystem';
 import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   FlatList,
@@ -324,7 +325,7 @@ function ProductTileComponent({
           >
             <Ionicons
               name={favorite.active ? 'heart' : 'heart-outline'}
-              size={theme.iconSize.sm}
+              size={CARD_SYSTEM.heartIcon}
               color={favorite.active ? LENS_COLORS.active : palette.ink}
               accessibilityElementsHidden
             />
@@ -438,9 +439,10 @@ const styles = StyleSheet.create({
   badgesRTL: { right: 0 },
   badge: { height: PRODUCT_TILE.badgeHeight, paddingHorizontal: 8, justifyContent: 'center', maxWidth: '100%' },
   // Cœur NU sur la vignette (décision du 17/10/2026) : aucune pastille blanche.
-  favorite: { position: 'absolute', top: 6, width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
-  favoriteLTR: { right: 8 },
-  favoriteRTL: { left: 8 },
+  /* 13/11 — le cœur du système de cartes (`cardSystem.ts`) : le même partout dans l'app. */
+  favorite: { position: 'absolute', top: CARD_SYSTEM.heartInset, width: CARD_SYSTEM.heartTarget, height: CARD_SYSTEM.heartTarget, alignItems: 'center', justifyContent: 'center' },
+  favoriteLTR: { right: CARD_SYSTEM.heartInset },
+  favoriteRTL: { left: CARD_SYSTEM.heartInset },
   copy: { width: '100%' },
   dots: {
     height: PRODUCT_TILE.dot,

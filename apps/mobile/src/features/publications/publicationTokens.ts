@@ -84,11 +84,8 @@ export const PUBLICATION_TYPE = {
   cardPriceLine: 22,
   cardPriceTop: 4,
   cardTextTop: 6,      // 12 px entre le bas du cadre et « Sponsorisé »
-  heart: 40,           // rond blanc 80 px des grandes cartes
-  heartSmall: 32,      // rond blanc 64 px de la rangée du modèle `media`
-  heartIcon: 22,
-  heartIconSmall: 18,
-  heartInset: 8,       // 16 px du bord haut et du bord droit
+  // 13/11 : le cœur (rond blanc 40 / 32 dp) est remplacé par le cœur nu du système de cartes (`cardSystem.ts`).
+  cardReferenceLine: 18, // ancien prix, sur sa ligne (corps = « Sponsorisé »)
   badgeSize: 14,       // pastille « Nouveau » : blanche, en bas à gauche
   badgeLine: 18,
   badgeHeight: 22,

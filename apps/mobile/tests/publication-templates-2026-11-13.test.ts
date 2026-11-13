@@ -10,6 +10,7 @@ import {
   PUBLICATION_TEMPLATE as T,
 } from '../src/features/publications/templates/templateMetrics';
 import { contrastRatio } from '../../../shared/publicationBlocks';
+import { CARD_SYSTEM as C, cardRailMaxOffset, cardRailMetrics, cardsPerView, cardWidthFor } from '../src/design/cardSystem';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -85,10 +86,9 @@ describe('cotes des modèles (planches Zalando, 360 dp)', () => {
     for (const name of ['cardBrandSize', 'cardNameSize', 'cardPriceSize']) expect(token(name)).toBe(16);
     expect(token('cardSponsoredSize')).toBe(14);
     expect(token('cardSponsoredSize')).toBeLessThan(token('cardNameSize'));
-    // Cœur : rond blanc de 40 dp (grandes cartes) et 32 dp (rangée), à 8 dp du coin.
-    expect(token('heart')).toBe(40);
-    expect(token('heartSmall')).toBe(32);
-    expect(token('heartInset')).toBe(8);
+    // 13/11 : plus de rond blanc sur la photo — le cœur nu vient du système de cartes.
+    expect(tokenSource).not.toMatch(/\bheart(Small)?:/);
+    expect(token('cardReferenceLine')).toBe(18);
     expect(tokenSource).toContain("'AyroviExtracted-Heading'");
     // Pilule « + Suivre » : cible tactile ≥ 48 dp (planche : 95 px).
     expect(token('followHeight')).toBeGreaterThanOrEqual(token('touch'));
@@ -96,46 +96,65 @@ describe('cotes des modèles (planches Zalando, 360 dp)', () => {
 
   const m = publicationTemplateMetrics(360);
 
-  it('modèle media : retrait 12, photo ≈ 2:1, vidéo carrée, ~3 photos produit visibles', () => {
+  it('13/11 — SYSTÈME DE CARTES : les trois modèles partagent la même carte, 2 entières à parts égales', () => {
+    // 12 · 164 · 8 · 164 · 12 = 360 : aucune amorce coupée, même marge des deux côtés.
+    expect(C.gutter).toBe(12);
+    expect(C.gap).toBe(8);
+    expect(m.container.cardWidth).toBe(164);
+    expect(m.media.tileWidth).toBe(164);
+    expect(m.pair.tileWidth).toBe(164);
+    expect(C.gutter * 2 + m.container.cardWidth * 2 + C.gap).toBe(360);
+    for (const height of [m.container.cardImageHeight, m.media.tileHeight, m.pair.cardImageHeight]) expect(height).toBe(236);
+    expect(m.container.snap).toBe(172);
+    // Une seule marge : titre, cartes, média, « Suivre ».
+    expect(T.bandInset).toBe(C.gutter);
+    expect(T.mediaInset).toBe(C.gutter);
+    expect(T.pairInset).toBe(C.gutter);
+    expect(T.cardSpacing).toBe(C.gap);
+    expect(T.pairSpacing).toBe(C.gap);
+    expect(T.cardRadius).toBe(C.radius);
+    expect(T.panelPaddingTop).toBe(56);
+    expect(T).not.toHaveProperty('cardsVisible');
+    expect(T).not.toHaveProperty('rowTilesVisible');
+  });
+
+  it('13/11 — la rangée s’arrête toujours sur la marge (début ET fin), quel que soit le nombre de cartes', () => {
+    for (const width of [320, 360, 393, 412, 600, 1024]) {
+      const rail = cardRailMetrics(Math.min(width, T.maxContentWidth));
+      const column = Math.min(width, T.maxContentWidth);
+      for (const count of [2, 3, 5, 8]) {
+        const content = C.gutter * 2 + count * rail.cardWidth + (count - 1) * C.gap;
+        const max = Math.max(0, content - column);
+        // le décalage maximal est un multiple exact du pas d'aimantation
+        expect(Math.abs(max - cardRailMaxOffset(count, rail))).toBeLessThan(1e-6);
+        expect(Math.abs((max / rail.snap) - Math.round(max / rail.snap))).toBeLessThan(1e-6);
+      }
+      // cartes entières : n cartes + marges + écarts = la colonne
+      expect(Math.abs(C.gutter * 2 + rail.perView * rail.cardWidth + (rail.perView - 1) * C.gap - column)).toBeLessThan(1e-6);
+    }
+    expect(cardsPerView(360)).toBe(2);
+    expect(cardsPerView(640)).toBe(4);
+    expect(cardWidthFor(Number.NaN)).toBe(164);
+  });
+
+  it('modèle media : média sur la marge commune, image ≈ 2:1, vidéo carrée', () => {
     expect(m.media.width).toBe(336);
     expect(m.media.imageHeight).toBe(Math.round(336 / T.imageAspect));
-    expect(Math.abs(m.media.imageHeight - 162)).toBeLessThanOrEqual(1); // 323 px relevés
     expect(m.media.videoHeight).toBe(336);
-    expect(Math.abs(m.media.tileWidth - 103)).toBeLessThanOrEqual(0.5); // 206 px relevés (GBox)
-    expect(Math.abs(m.media.tileHeight - 148)).toBeLessThanOrEqual(1);
-    // trois photos entières, trois filets, et une amorce de ~15 dp
-    const peek = m.media.width - 3 * m.media.tileWidth - 3 * T.rowSpacing;
-    expect(peek).toBeGreaterThan(12);
-    expect(peek).toBeLessThan(20);
   });
 
-  it('13/11 — modèle container (GBox Saucony) : cartes 163 dp, écart 16, photo 235 dp, 56 dp sous le bandeau', () => {
-    // GBox 178 px / nous 166 px sur la même planche ⇒ +7 % par rapport aux 152 dp d'avant.
-    expect(Math.round(m.container.cardWidth)).toBe(163);
-    expect(m.container.cardWidth / 152).toBeGreaterThan(1.06);
-    expect(m.container.cardImageHeight).toBe(235);
-    // La deuxième carte reste presque entière : une amorce de moins de 8 dp au bord.
-    const overflow = T.bandInset + 2 * m.container.cardWidth + T.cardSpacing - 360;
-    expect(overflow).toBeGreaterThan(0);
-    expect(overflow).toBeLessThan(8);
-    expect(T.cardSpacing).toBe(16);
-    expect(T.panelPaddingTop).toBe(56);
-    expect(T.cardRadius).toBe(12);
-  });
-
-  it('modèle sponsored_pair (GBox WE Fashion) : image 336 × 161 qui déborde, puis deux cartes de 160 dp', () => {
-    expect(m.pair.mediaWidth).toBe(336);
-    expect(m.pair.mediaHeight).toBe(161);
-    expect(m.pair.tileWidth).toBe(160);
-    expect(m.pair.cardImageHeight).toBe(230);
-    expect(T.pairInset * 2 + m.pair.tileWidth * 2 + T.pairSpacing).toBe(360);
+  it('modèle sponsored_pair : image qui déborde depuis la marge, puis les deux cartes du système', () => {
+    expect(m.pair.mediaWidth).toBe(348);
+    expect(m.pair.mediaHeight).toBe(Math.round(348 / T.pairMediaAspect));
     expect(T.pairCardsTop).toBe(56);
   });
 
   it('tablette : colonne plafonnée, plus de cartes visibles, tuiles du duo toujours égales', () => {
     const wide = publicationTemplateMetrics(1024);
     expect(wide.width).toBe(T.maxContentWidth);
-    expect(wide.media.tileWidth).toBeLessThan(m.media.tileWidth * 1.3);
+    // tablette : 4 cartes entières dans la colonne de 640 ; le duo reste deux cartes égales
+    expect(wide.container.cardWidth).toBe(cardWidthFor(640, 4));
+    expect(wide.pair.tileWidth).toBe(cardWidthFor(640, 2));
     expect(wide.pair.cardImageHeight).toBe(Math.round(wide.pair.tileWidth * T.pairCardRatio));
     expect(publicationTemplateMetrics(Number.NaN).width).toBe(360);
   });
@@ -152,5 +171,49 @@ describe('couleurs : le fond vient du CRM, le texte reste lisible', () => {
   it('fond blanc : pas de marge colorée ; fond teinté : bloc encadré', () => {
     expect(hasTintedBackground('#FFFFFF')).toBe(false);
     expect(hasTintedBackground('#E9E4DC')).toBe(true);
+  });
+});
+
+describe('13/11 — système de cartes dans les composants (captures 073653 → 073818)', () => {
+  const src = (file: string) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+
+  it('le cœur est nu (aucun rond blanc sur la photo) et partagé avec la grille du catalogue', () => {
+    const card = src('src/features/publications/templates/BlockProductCard.tsx');
+    const heart = card.match(/ {2}heart: \{[^}]*\}/)?.[0] ?? '';
+    expect(heart).toContain('C.heartTarget');
+    expect(heart).not.toContain('backgroundColor');
+    expect(card).not.toContain('borderRadius: size / 2');
+    expect(card).toContain('size={C.heartIcon}');
+    const tile = src('src/design/ProductTile.tsx');
+    expect(tile).toContain('size={CARD_SYSTEM.heartIcon}');
+    expect(tile).toContain('width: CARD_SYSTEM.heartTarget');
+  });
+
+  it('l’ancien prix a SA ligne (il ne colle plus au prix ni n’est coupé) et la ligne est réservée pour les voisines', () => {
+    const card = src('src/features/publications/templates/BlockProductCard.tsx');
+    expect(card).not.toContain('{`  ${reference}`}');
+    expect(card).toContain('-reference`');
+    expect(card).toContain('-reference-slot`');
+    for (const file of ['ContainerTemplate', 'MediaTemplate', 'SponsoredPairTemplate']) {
+      expect(src(`src/features/publications/templates/${file}.tsx`), file).toContain('reserveReference={reserveReference}');
+    }
+  });
+
+  it('les rangées s’aimantent d’une carte, sans élan qui saute une carte ; le modèle media utilise LA carte commune', () => {
+    for (const file of ['ContainerTemplate', 'MediaTemplate']) {
+      const code = src(`src/features/publications/templates/${file}.tsx`);
+      expect(code, file).toContain('snapToInterval={metrics.container.snap}');
+      expect(code, file).toContain('disableIntervalMomentum');
+      expect(code, file).toContain('<BlockProductCard');
+    }
+    expect(fs.existsSync(path.join(__dirname, '../src/features/publications/templates/RowProductTile.tsx'))).toBe(false);
+  });
+
+  it('Reels : l’écart du système (8) et plus de double blanc après le filet', () => {
+    const reels = src('src/features/home/ReelsShopSection.tsx');
+    expect(reels).toContain('gap: CARD_SYSTEM.gap');
+    expect(reels).toContain('snapToInterval={tileWidth + CARD_SYSTEM.gap}');
+    expect(reels).toContain('section: { paddingTop: 12 }');
+    expect(reels).not.toContain('paddingBottom: theme.space[4]');
   });
 });

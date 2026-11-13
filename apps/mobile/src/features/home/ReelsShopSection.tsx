@@ -17,6 +17,7 @@ import { mediaUrl } from '@/api/client';
 import { FullBleed, useResponsive } from '@/design/layout';
 import { useTheme } from '@/design/theme';
 import { MEDIA_RATIO, REEL_TILE, RADIUS } from '@/design/tokens.mobile';
+import { CARD_SYSTEM } from '@/design/cardSystem';
 import { FadeIn } from '@/design/motion';
 import { useT, useI18n } from '@/i18n';
 import { ReelsShopMark } from '@/features/reels/ReelsShopMark';
@@ -62,7 +63,7 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
   return (
     <FadeIn testID="home-reels-shop">
       <View ref={section} collapsable={false}>
-        <View style={[styles.section, { paddingBottom: theme.space[4] }]}>
+        <View style={[styles.section, { paddingBottom: theme.space[2] }]}>
           <ReelsShopMark />
         </View>
         <FullBleed>
@@ -80,14 +81,14 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
             viewabilityConfig={viewabilityConfig}
             onViewableItemsChanged={onViewableItemsChanged}
             // Arrêt net sur chaque Reel : la tuile se cale à la marge, la suivante
-            // reste entamée sur le flanc. Gaps serrés (space[2]).
-            snapToInterval={tileWidth + theme.space[2]}
+            // reste entamée sur le flanc. 13/11 : l'écart du système de cartes (8, était 12).
+            snapToInterval={tileWidth + CARD_SYSTEM.gap}
             decelerationRate="fast"
             disableIntervalMomentum
             contentContainerStyle={{
               paddingHorizontal: gutter,
-              gap: theme.space[2],
-              paddingBottom: theme.space[4],
+              gap: CARD_SYSTEM.gap,
+              paddingBottom: theme.space[2],
             }}
             renderItem={({ item }) => (
               <View style={{ width: tileWidth }}>
@@ -201,7 +202,8 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
   );
 });
 const styles = StyleSheet.create({
-  section: { paddingTop: 24 },
+  /* 13/11 — « فراغ كبير ابيض » : 12 + l'écart d'écran (12) = 24 après le filet, comme le bloc Lens (était 24 + 12). */
+  section: { paddingTop: 12 },
   tile: { overflow: 'hidden' },
   videoMark: {
     position: 'absolute',

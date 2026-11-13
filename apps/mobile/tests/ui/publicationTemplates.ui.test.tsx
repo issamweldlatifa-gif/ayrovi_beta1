@@ -168,7 +168,7 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     expect(screen.getAllByText('Suivi').length).toBe(2);
   });
 
-  it('carte du container (GBox) : photo ENTIÈRE, rond du cœur, marque grasse, texte 16 sous le cadre', () => {
+  it('carte du container (GBox) : photo ENTIÈRE, cœur nu, marque grasse, texte 16 sous le cadre', () => {
     wrap(<PublicationTemplatesScreen />);
     const frame = screen.getByTestId('publication-block-box-product-p4-frame');
     const photo = Array.isArray(frame.props.children) ? frame.props.children[0] : frame.props.children;
@@ -181,7 +181,9 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     expect(style('brand').fontFamily).toBe('AyroviExtracted-Bold');
     expect(style('name').fontFamily).toBe('AyroviExtracted-Regular');
     const heart = StyleSheet.flatten(screen.getByTestId('publication-block-box-product-p4-heart').props.style);
-    expect([heart.width, heart.height, heart.top]).toEqual([40, 40, 8]);
+    // 13/11 — système de cartes : cœur nu (cible 40, aucun rond blanc qui cache la photo).
+    expect([heart.width, heart.height, heart.top]).toEqual([40, 40, 2]);
+    expect(heart.backgroundColor).toBeUndefined();
     // Titre du bandeau : plus grand que tout le reste du bloc, coupe « Heading ».
     const title = StyleSheet.flatten(screen.getByTestId('publication-block-box-title').props.style);
     expect(title.fontSize).toBeGreaterThan(16);
@@ -210,6 +212,12 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     expect(screen.getByTestId('publication-block-pair-product-p7-new')).toBeTruthy();
     expect(screen.queryByTestId('publication-block-pair-product-p6-new')).toBeNull();
     expect(screen.getByText('150.00 TND')).toBeTruthy();
+    // 13/11 : l'ancien prix a SA ligne, barrée ; la voisine réserve la ligne (cartes alignées).
+    const reference = screen.getByTestId('publication-block-pair-product-p7-reference');
+    expect(StyleSheet.flatten(reference.props.style).textDecorationLine).toBe('line-through');
+    expect(screen.getByTestId('publication-block-pair-product-p7-price').props.children).not.toContain('150.00 TND');
+    expect(screen.getByTestId('publication-block-pair-product-p6-reference-slot')).toBeTruthy();
+    expect(screen.queryByTestId('publication-block-box-product-p4-reference-slot')).toBeNull();
   });
 
   it('les couleurs viennent du CRM (bandeau, panneau, encart)', () => {

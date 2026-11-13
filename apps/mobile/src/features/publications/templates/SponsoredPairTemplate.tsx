@@ -10,7 +10,7 @@
  *   └───┴────────────────────────────────────────
  *                   56 dp de blanc
  *   ╭──────────╮ ╭──────────╮
- *   │     (♡)  │ │     (♡)  │  ← deux cartes de 160 dp, écart 8 dp, photo 1,44
+ *   │      ♡   │ │      ♡   │  ← 13/11 : deux cartes du système (164 dp, marge 12, écart 8), cœur nu
  *   │ [Nouveau]│ │          │
  *   ╰──────────╯ ╰──────────╯
  *   Sponsorisé   Sponsorisé
@@ -21,7 +21,7 @@
  * Avant le 14/11, le duo posait l'image et UNE carte côte à côte : le
  * propriétaire a signalé que « le modèle avec une image et deux cartes dessous »
  * ne correspondait pas. Le CRM accepte désormais 1 ou 2 produits ; avec un seul,
- * la carte garde sa largeur de 160 dp (jamais étirée).
+ * la carte garde sa largeur (jamais étirée).
  */
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -56,6 +56,7 @@ export function SponsoredPairTemplate({
   const heading = { fontFamily: publicationBlockFont(locale, 'heading') };
   const label = [block.sponsored ? t('publication.sponsored') : '', block.title, block.subtitle].filter(Boolean).join('. ');
   const direction = theme.isRTL ? 'row-reverse' : 'row';
+  const reserveReference = products.some((product) => product.compareAtPrice != null && product.compareAtPrice > product.price);
   return (
     <View testID={`publication-block-${block.id}`} style={styles.block}>
       <View testID={`publication-block-${block.id}-band`} style={[styles.band, { backgroundColor: block.bgColor }]}>
@@ -99,6 +100,7 @@ export function SponsoredPairTemplate({
             imageHeight={metrics.pair.cardImageHeight}
             sponsored={block.sponsored}
             inks={paper}
+            reserveReference={reserveReference}
             onOpen={onOpenProduct}
             testID={`publication-block-${block.id}-product-${product.id}`}
           />

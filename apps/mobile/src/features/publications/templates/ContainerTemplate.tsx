@@ -16,6 +16,10 @@
  * 14/11 (planche GBox Vans) : cartes `BlockProductCard` — cadre gris arrondi,
  * photo ENTIÈRE, rond blanc du cœur, texte sous le cadre ; titre du bandeau en
  * Zalando Sans « Heading » ; la rangée s'aimante carte par carte.
+ * 13/11 (captures 073653/073658) : SYSTÈME DE CARTES — deux cartes ENTIÈRES qui
+ * se partagent l'écran à parts égales (12 · carte · 8 · carte · 12) ; titre,
+ * cartes et « Suivre » sur la même marge ; la rangée s'arrête toujours sur la
+ * marge (aimantation d'une carte, sans élan qui saute une carte).
  */
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -45,6 +49,7 @@ export function ContainerTemplate({
   const band = blockInks(block.bgColor, P.ink, P.paper);
   const panel = blockInks(block.panelColor, P.ink, P.paper);
   const label = block.subtitle ? `${block.title}. ${block.subtitle}` : block.title;
+  const reserveReference = block.products.some((product) => product.compareAtPrice != null && product.compareAtPrice > product.price);
   return (
     <View testID={`publication-block-${block.id}`} style={styles.block}>
       <View testID={`publication-block-${block.id}-band`} style={[styles.band, { backgroundColor: block.bgColor }]}>
@@ -75,8 +80,9 @@ export function ContainerTemplate({
           testID={`publication-block-${block.id}-row`}
           contentContainerStyle={styles.rowContent}
           decelerationRate="fast"
-          snapToInterval={metrics.container.cardWidth + T.cardSpacing}
+          snapToInterval={metrics.container.snap}
           snapToAlignment="start"
+          disableIntervalMomentum
         >
           {block.products.map((product) => (
             <BlockProductCard
@@ -86,6 +92,7 @@ export function ContainerTemplate({
               imageHeight={metrics.container.cardImageHeight}
               sponsored={block.sponsored}
               inks={panel}
+              reserveReference={reserveReference}
               onOpen={onOpenProduct}
               testID={`publication-block-${block.id}-product-${product.id}`}
             />

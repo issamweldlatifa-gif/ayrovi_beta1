@@ -29,6 +29,15 @@
  *    hauteur 296 px (1,44).
  */
 
+import { CARD_SYSTEM, cardRailMetrics, cardWidthFor } from '../../../design/cardSystem';
+
+/*
+ * 13/11 (captures 073653 → 073818) — SYSTÈME DE CARTES (`src/design/cardSystem.ts`) :
+ * les trois modèles partagent UNE marge (12, celle de l'app), UN écart (8) et
+ * UNE carte de largeur égale (2 entières sur téléphone : 164 dp à 360 dp). Les anciennes
+ * cotes « 1,96 carte » (container) et « 3,15 vignettes » (media) laissaient des
+ * marges inégales et des cartes coupées au bord : elles sont retirées.
+ */
 export const PUBLICATION_TEMPLATE = {
   /** Largeur de l'écran de référence (720 px ÷ 2). */
   referenceWidth: 360,
@@ -41,44 +50,36 @@ export const PUBLICATION_TEMPLATE = {
   blockSpacing: 16,
 
   /* Modèle `media` */
-  mediaInset: 12,
+  /** 13/11 : la marge commune des cartes et de l'app (12). */
+  mediaInset: CARD_SYSTEM.gutter,
   imageAspect: 2.07,
   videoAspect: 1,
   mediaRadius: 8,
-  rowSpacing: 4,
-  rowTileRatio: 1.44,
-  rowTilesVisible: 3.15,
-  rowTilesVisibleWide: 5.2,
+  /** Espace entre le média et la rangée de cartes. */
+  rowSpacing: 12,
 
   /* Modèle `container` */
-  bandInset: 24,
+  /** 13/11 : titre, cartes et « Suivre » partent de la MÊME marge (était 24 pour le texte). */
+  bandInset: CARD_SYSTEM.gutter,
   bandPaddingTop: 16,
   /** Planche : 29 px sous la 2e ligne du titre ⇒ 16 dp (24 laissait un bandeau trop haut). */
   bandPaddingBottom: 16,
   panelPaddingTop: 56,
-  cardRatio: 1.44,
-  cardRadius: 12,
-  cardSpacing: 16,
-  /**
-   * 13/11 — planche GBox Saucony (`Screenshot_20261113_023258`) : à l'échelle de
-   * NOTRE écran posé à côté, les cartes GBox sont 7 % plus grandes que nos 152 dp
-   * (178 px contre 166 px, photo 257 px contre 240 px) ⇒ 163 dp, photo 235 dp.
-   * La deuxième carte frôle le bord (amorce de 6 dp) : la rangée invite au geste.
-   */
-  cardsVisible: 1.96,
-  cardsVisibleWide: 4.2,
+  cardRatio: CARD_SYSTEM.imageRatio,
+  cardRadius: CARD_SYSTEM.radius,
+  cardSpacing: CARD_SYSTEM.gap,
   containerMediaAspect: 2.07,
   /** Bas du panneau : 89 px entre le texte des cartes et la pilule « + Suivre » ⇒ 24 dp + interlignes. */
   followTop: 32,
   panelPaddingBottom: 24,
 
   /* Modèle `sponsored_pair` */
-  pairInset: 16,
-  pairSpacing: 8,
+  pairInset: CARD_SYSTEM.gutter,
+  pairSpacing: CARD_SYSTEM.gap,
   pairMediaAspect: 2.09,
   pairTitleGap: 16,
   pairCardsTop: 56,
-  pairCardRatio: 1.44,
+  pairCardRatio: CARD_SYSTEM.imageRatio,
 
   /** Seuil « tablette » (même valeur que la grille produit). */
   wideFrom: 600,
@@ -91,12 +92,15 @@ export interface PublicationTemplateMetrics {
     width: number;
     imageHeight: number;
     videoHeight: number;
+    /** Cartes de la rangée sous le média : la même carte que les autres modèles. */
     tileWidth: number;
     tileHeight: number;
   };
   container: {
     cardWidth: number;
     cardImageHeight: number;
+    /** Pas d'aimantation de la rangée (carte + écart). */
+    snap: number;
     mediaHeight: number;
   };
   pair: {
@@ -114,17 +118,12 @@ const finite = (value: number, fallback: number) => (Number.isFinite(value) && v
 export function publicationTemplateMetrics(screenWidth: number): PublicationTemplateMetrics {
   const T = PUBLICATION_TEMPLATE;
   const width = Math.min(T.maxContentWidth, finite(screenWidth, T.referenceWidth));
-  const wide = width >= T.wideFrom;
 
   const mediaWidth = Math.max(1, width - T.mediaInset * 2);
-  const tilesVisible = wide ? T.rowTilesVisibleWide : T.rowTilesVisible;
-  // n photos visibles ⇒ n − 1 filets entiers + celui qui précède l'amorce.
-  const tileWidth = Math.max(1, (mediaWidth - T.rowSpacing * Math.floor(tilesVisible)) / tilesVisible);
-
-  const cardsVisible = wide ? T.cardsVisibleWide : T.cardsVisible;
-  const cardWidth = Math.max(1, (width - T.bandInset - T.cardSpacing * Math.floor(cardsVisible)) / cardsVisible);
-
-  const pairTile = Math.max(1, (width - T.pairInset * 2 - T.pairSpacing) / 2);
+  // Une seule carte pour les trois modèles : partage égal de la colonne.
+  const rail = cardRailMetrics(width);
+  // Le duo reste DEUX cartes égales, même sur tablette.
+  const pairTile = cardWidthFor(width, 2);
 
   return {
     width,
@@ -132,12 +131,13 @@ export function publicationTemplateMetrics(screenWidth: number): PublicationTemp
       width: mediaWidth,
       imageHeight: Math.round(mediaWidth / T.imageAspect),
       videoHeight: Math.round(mediaWidth / T.videoAspect),
-      tileWidth,
-      tileHeight: Math.round(tileWidth * T.rowTileRatio),
+      tileWidth: rail.cardWidth,
+      tileHeight: rail.imageHeight,
     },
     container: {
-      cardWidth,
-      cardImageHeight: Math.round(cardWidth * T.cardRatio),
+      cardWidth: rail.cardWidth,
+      cardImageHeight: rail.imageHeight,
+      snap: rail.snap,
       mediaHeight: Math.round((width - T.bandInset * 2) / T.containerMediaAspect),
     },
     pair: {

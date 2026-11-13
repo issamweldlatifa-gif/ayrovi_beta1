@@ -3,7 +3,7 @@
  * WE Fashion 224107), relevées au pixel (720 px = 360 dp) :
  *
  *   ╭────────────────────╮
- *   │                (♡) │  ← rond blanc 40 dp, à 8 dp du haut et du bord droit
+ *   │                 ♡  │  ← 13/11 : cœur NU (trait fin 18 dp, cible 40) — plus de rond blanc sur la photo
  *   │     photo ENTIÈRE  │  ← cadre gris clair, rayon 12, photo en `contain`
  *   │ [Nouveau]          │  ← pastille blanche (produit récent du CRM seulement)
  *   ╰────────────────────╯
@@ -11,9 +11,11 @@
  *   Marque                 16/20 GRAS
  *   NOM DU PRODUIT…        16/18 régulier, une ligne
  *   26,00 TND              16/22 régulier
+ *   ̶3̶2̶,̶0̶0̶ ̶T̶N̶D̶             13/11 : l'ancien prix sur SA ligne (14/18, gris barré) —
+ *                          il ne colle plus au prix et n'est plus coupé « 1357.… »
  *
- * Le même composant sert le modèle `container` (cartes de 152 dp qui défilent) et
- * le duo sponsorisé (deux cartes de 160 dp sous l'image). Le cœur est réel
+ * Le même composant sert les TROIS modèles (container, media, duo) : une seule
+ * carte, largeur du système de cartes (`src/design/cardSystem.ts`). Le cœur est réel
  * (`PublicationFavorites`) ; sans fournisseur (aperçu isolé) il n'est pas dessiné.
  */
 import { memo } from 'react';
@@ -30,31 +32,30 @@ import { usePublicationFavorites } from '../PublicationFavorites';
 import { publicationBlockFont } from '../publicationTokens';
 import type { BlockInks } from './blockColors';
 import { PUBLICATION_TEMPLATE as T } from './templateMetrics';
+import { CARD_SYSTEM as C } from '@/design/cardSystem';
 
-/** Rond blanc + cœur fin, en haut à droite d'une photo produit. */
-export function BlockHeart({ product, small = false, testID }: { product: LinkedProduct; small?: boolean; testID: string }) {
+/** Cœur fin NU dans le coin haut de la photo (système de cartes, 13/11) : il ne cache pas le produit. */
+export function BlockHeart({ product, testID }: { product: LinkedProduct; testID: string }) {
   const theme = useTheme();
   const t = useT();
   const favourites = usePublicationFavorites();
   if (!favourites) return null;
   const active = favourites.isFavorite(product.id);
-  const size = small ? TYPE.heartSmall : TYPE.heart;
   return (
     <Pressable
       testID={testID}
       accessibilityRole="button"
       accessibilityLabel={active ? t('publication.unfavorite', { name: product.name }) : t('publication.favorite', { name: product.name })}
       accessibilityState={{ selected: active }}
-      hitSlop={small ? 6 : 4}
+      hitSlop={4}
       onPress={(event) => { event?.stopPropagation?.(); favourites.press(product.id); }}
       style={({ pressed }) => [
         styles.heart,
         theme.isRTL ? styles.heartRTL : styles.heartLTR,
-        { width: size, height: size, borderRadius: size / 2 },
         pressed ? { opacity: theme.opacity.subtle } : null,
       ]}
     >
-      <PublicationIcon name={active ? 'heart' : 'heart-outline'} size={small ? TYPE.heartIconSmall : TYPE.heartIcon} color={P.ink} />
+      <PublicationIcon name={active ? 'heart' : 'heart-outline'} size={C.heartIcon} color={P.ink} />
     </Pressable>
   );
 }
@@ -67,6 +68,7 @@ function BlockProductCardComponent({
   inks,
   onOpen,
   testID,
+  reserveReference = false,
 }: {
   product: LinkedProduct;
   width: number;
@@ -75,6 +77,8 @@ function BlockProductCardComponent({
   inks: BlockInks;
   onOpen: (id: string) => void;
   testID: string;
+  /** Une voisine a un ancien prix : la ligne est réservée pour garder les cartes alignées. */
+  reserveReference?: boolean;
 }) {
   const theme = useTheme();
   const t = useT();
@@ -120,12 +124,20 @@ function BlockProductCardComponent({
           </PublicationText>
           <PublicationText testID={`${testID}-price`} variant="body" color={inks.ink} numberOfLines={1} style={[styles.price, { fontFamily: regular }]}>
             {price}
-            {reference ? (
-              <PublicationText variant="body" color={inks.muted} style={[styles.price, styles.struck, { fontFamily: regular }]}>
-                {`  ${reference}`}
-              </PublicationText>
-            ) : null}
           </PublicationText>
+          {reference ? (
+            <PublicationText
+              testID={`${testID}-reference`}
+              variant="caption"
+              color={inks.muted}
+              numberOfLines={1}
+              style={[styles.reference, styles.struck, { fontFamily: regular }]}
+            >
+              {reference}
+            </PublicationText>
+          ) : reserveReference ? (
+            <View testID={`${testID}-reference-slot`} style={styles.referenceSlot} />
+          ) : null}
         </View>
       </Pressable>
       <BlockHeart product={product} testID={`${testID}-heart`} />
@@ -138,9 +150,9 @@ export const BlockProductCard = memo(BlockProductCardComponent);
 const styles = StyleSheet.create({
   frame: { borderRadius: T.cardRadius, overflow: 'hidden', backgroundColor: P.neutral },
   fill: { width: '100%', height: '100%' },
-  heart: { position: 'absolute', top: TYPE.heartInset, backgroundColor: P.chip, alignItems: 'center', justifyContent: 'center' },
-  heartLTR: { right: TYPE.heartInset },
-  heartRTL: { left: TYPE.heartInset },
+  heart: { position: 'absolute', top: C.heartInset, width: C.heartTarget, height: C.heartTarget, alignItems: 'center', justifyContent: 'center' },
+  heartLTR: { right: C.heartInset },
+  heartRTL: { left: C.heartInset },
   badge: {
     position: 'absolute',
     bottom: TYPE.badgeInset,
@@ -157,5 +169,7 @@ const styles = StyleSheet.create({
   brand: { fontSize: TYPE.cardBrandSize, lineHeight: TYPE.cardBrandLine },
   name: { fontSize: TYPE.cardNameSize, lineHeight: TYPE.cardNameLine },
   price: { fontSize: TYPE.cardPriceSize, lineHeight: TYPE.cardPriceLine, paddingTop: TYPE.cardPriceTop },
-  struck: { textDecorationLine: 'line-through', paddingTop: 0 },
+  reference: { fontSize: TYPE.cardSponsoredSize, lineHeight: TYPE.cardReferenceLine },
+  referenceSlot: { height: TYPE.cardReferenceLine },
+  struck: { textDecorationLine: 'line-through' },
 });
