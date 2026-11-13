@@ -109,9 +109,15 @@ describe('cotes des modèles (planches Zalando, 360 dp)', () => {
     expect(peek).toBeLessThan(20);
   });
 
-  it('modèle container (GBox Vans) : cartes 152 dp, écart 16, photo 218 dp, 56 dp sous le bandeau', () => {
-    expect(m.container.cardWidth).toBe(152);
-    expect(m.container.cardImageHeight).toBe(219);
+  it('13/11 — modèle container (GBox Saucony) : cartes 163 dp, écart 16, photo 235 dp, 56 dp sous le bandeau', () => {
+    // GBox 178 px / nous 166 px sur la même planche ⇒ +7 % par rapport aux 152 dp d'avant.
+    expect(Math.round(m.container.cardWidth)).toBe(163);
+    expect(m.container.cardWidth / 152).toBeGreaterThan(1.06);
+    expect(m.container.cardImageHeight).toBe(235);
+    // La deuxième carte reste presque entière : une amorce de moins de 8 dp au bord.
+    const overflow = T.bandInset + 2 * m.container.cardWidth + T.cardSpacing - 360;
+    expect(overflow).toBeGreaterThan(0);
+    expect(overflow).toBeLessThan(8);
     expect(T.cardSpacing).toBe(16);
     expect(T.panelPaddingTop).toBe(56);
     expect(T.cardRadius).toBe(12);

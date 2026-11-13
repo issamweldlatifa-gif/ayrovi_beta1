@@ -19,7 +19,7 @@
 
 export const FICHE_GEOMETRY = {
   /* Écran 1 — photo, nom, prix, description, ligne Taille (px ÷ 2) */
-  imageHeight: 476,
+  imageHeight: 550,
   photoDotsBottom: 28,
   dot: 6,
   dotIdle: 5,
@@ -86,7 +86,7 @@ export const FICHE_GEOMETRY = {
   /* Barre d'achat compacte */
   barHeight: 68,
   barPrice: 15,
-  barButtonWidth: 212,
+  barButtonWidth: 196,
   barButtonHeight: 48,
   barButtonRadius: 24,
   barButtonTop: 10,

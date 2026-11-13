@@ -52,12 +52,12 @@ describe('géométrie de la fiche — l’aperçu du CRM suit l’application', 
   });
 
   test('les cotes sont celles de la maquette et de la barre compacte : 720 × 1600 px, donc 360 dp de large', () => {
-    // 476 dp : la photo de l'écran 1 ajustée afin que la ligne Taille soit visible au-dessus de la barre fixe.
-    expect(FICHE_GEOMETRY.imageHeight).toBe(476);
+    // 550 dp (13/11, Privé) : la photo occupe le haut de l'écran comme sur la référence.
+    expect(FICHE_GEOMETRY.imageHeight).toBe(550); // 13/11 Privé : photo plus grande
     // 1440 → 1458 px : la bande grise du séparateur.
     expect(FICHE_GEOMETRY.band).toBe(9);
-    // 14/11 — barre Privé : pastille violette 212 × 48 dp, rayon plein 24 dp.
-    expect(FICHE_GEOMETRY.barButtonWidth).toBe(212);
+    // 13/11 — bouton NOIR de la famille de boutons de l'app : 196 × 48 dp, rayon plein.
+    expect(FICHE_GEOMETRY.barButtonWidth).toBe(196); // 13/11 : 16 dp d'air entre le prix et le bouton
     expect(FICHE_GEOMETRY.barButtonHeight).toBe(48);
     expect(FICHE_GEOMETRY.barButtonRadius).toBe(24);
     expect(FICHE_WIDTH).toBe(360);
@@ -93,17 +93,18 @@ describe('écran 1 — l’empilement tombe sur les positions mesurées', () => 
 
   test('photo, nom, filet, description, règle, ligne Taille, bande, barre', () => {
     // 14/11 — marque Privé 18/24, filet fin collé (2 dp, 1 dp d'épaisseur), barre 68 dp.
-    expect(stack.photoBottom).toBe(476);
-    expect(stack.nameTop).toBe(488);
-    expect(Math.round(stack.underline)).toBe(514);
-    expect(stack.descriptionTop).toBe(517);
-    expect(stack.rule).toBe(560);
-    expect(stack.rowBottom).toBe(609);
-    expect(stack.bandBottom).toBe(618);
-    expect(stack.screenBottom).toBe(686);
+    // 13/11 — photo Privé de 550 dp : tout l'empilement descend de 74 dp.
+    expect(stack.photoBottom).toBe(550);
+    expect(stack.nameTop).toBe(562);
+    expect(Math.round(stack.underline)).toBe(588);
+    expect(stack.descriptionTop).toBe(591);
+    expect(stack.rule).toBe(634);
+    expect(stack.rowBottom).toBe(683);
+    expect(stack.bandBottom).toBe(692);
+    expect(stack.screenBottom).toBe(760);
   });
 
-  test('la pastille violette de la barre est centrée dans ses 68 dp', () => {
+  test('la pastille noire de la barre est centrée dans ses 68 dp', () => {
     expect(G.barButtonTop).toBe(10);
     expect(G.barButtonHeight).toBe(48);
     expect(G.barButtonTop * 2 + G.barButtonHeight).toBeLessThanOrEqual(G.barHeight);

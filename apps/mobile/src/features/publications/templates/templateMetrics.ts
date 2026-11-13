@@ -23,7 +23,7 @@
  *     cartes de 320 px ⇒ 160 dp, retrait 16 dp, écart 8 dp, photo 461 px (1,44).
  *
  * 14/11 — relevés GBox complémentaires (Vans 224048, The Ordinary 224628) :
- *  • container : cartes 304 px ⇒ 152 dp, écart 32 px ⇒ 16 dp, photo 437 px (1,44),
+ *  • container : cartes 304 px ⇒ 152 dp (13/11 : 163 dp, planche Saucony), écart 32 px ⇒ 16 dp, photo (1,44),
  *    112 px ⇒ 56 dp entre le bandeau et les cartes, 77 px ⇒ ~32 dp jusqu'à « + Follow » ;
  *  • media : photos 206 px ⇒ 103 dp, filet 8 px, amorce 31 px ⇒ 3,15 photos visibles,
  *    hauteur 296 px (1,44).
@@ -59,8 +59,13 @@ export const PUBLICATION_TEMPLATE = {
   cardRatio: 1.44,
   cardRadius: 12,
   cardSpacing: 16,
-  /** Deux cartes ENTIÈRES de 152 dp ; la rangée s'aimante carte par carte. */
-  cardsVisible: 2,
+  /**
+   * 13/11 — planche GBox Saucony (`Screenshot_20261113_023258`) : à l'échelle de
+   * NOTRE écran posé à côté, les cartes GBox sont 7 % plus grandes que nos 152 dp
+   * (178 px contre 166 px, photo 257 px contre 240 px) ⇒ 163 dp, photo 235 dp.
+   * La deuxième carte frôle le bord (amorce de 6 dp) : la rangée invite au geste.
+   */
+  cardsVisible: 1.96,
   cardsVisibleWide: 4.2,
   containerMediaAspect: 2.07,
   /** Bas du panneau : 89 px entre le texte des cartes et la pilule « + Suivre » ⇒ 24 dp + interlignes. */

@@ -24,7 +24,7 @@
  * ناقص — الخادم يرفض الثلاثة، فما نعرضوش زرّ يعرف مسبقاً أنه بش يفشل.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, Share, StyleSheet, View } from 'react-native';
+import { Animated, type ScrollView, Share, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { productTileArrivalPhoto } from '@/design/productTile';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,6 +34,7 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
+import { FadeIn, useAfterPush } from '@/design/motion';
 import { AppText } from '@/design/ui';
 import { useI18n } from '@/i18n';
 import { addCatalogToCart, fetchAyroviCart } from '@/api/cart';
@@ -47,6 +48,7 @@ import {
   CartReservedSheet,
   ChoiceRow,
   ColorStrip,
+  FicheGalleryPager,
   FicheHeader,
   FicheLink,
   FichePhotoChrome,
@@ -58,6 +60,7 @@ import {
   InfoRow,
   MakerSheet,
   SectionRow,
+  SheetEdgeShadow,
   SizeSheet,
   SpecGrid,
 } from '@/features/product/ProductFiche';
@@ -120,6 +123,12 @@ export default function ProductScreen() {
   const [justAddedAt, setJustAddedAt] = useState(0);
   const [addedUnits, setAddedUnits] = useState<number | null>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
+  const { width: screenWidth } = useWindowDimensions();
+  /** Décalage horizontal de la galerie : la fenêtre de la feuille le pilote, la photo fixe le suit. */
+  const galleryX = useRef(new Animated.Value(startPhoto * screenWidth)).current;
+  const pagerRef = useRef<ScrollView>(null);
+  /** Le bas de la fiche (couleurs, sections, livraison) attend la fin du glissement d'arrivée. */
+  const settled = useAfterPush();
 
   useEffect(() => {
     setSize('');
@@ -309,6 +318,7 @@ export default function ProductScreen() {
    * traduction de l application — jamais sur un nom choisi ici.
    */
   const ficheLabels = product.ficheLabels;
+  const brandTitle = product.brandName?.trim() || product.name;
   const sizeLabel = pickLabel(ficheLabels?.size, t('catalog.size'));
   const colorLabel = pickLabel(ficheLabels?.color, t('catalog.color'));
 
@@ -320,7 +330,6 @@ export default function ProductScreen() {
     { key: 'maker-product', label: t('product.makerProduct'), value: product.name },
     ...groups.flatMap((group) => group.rows).filter((row) => /r[ée]f[ée]rence|sku|mod[èe]le/i.test(`${row.key} ${row.label}`)),
   ];
-  const brandTitle = product.brandName?.trim() || product.name;
 
   /** Livraison : la date est calculée à partir du délai publié par le CRM. */
   const deliveryDates = policy.data ? deliveryWindow(policy.data.deliveryDelay, new Date(), locale) : null;
@@ -333,32 +342,41 @@ export default function ProductScreen() {
     setColor(tile.color);
     if (tile.image) {
       const position = items.findIndex((item) => item.url === tile.image);
-      if (position >= 0) setPhoto(position);
+      if (position >= 0) {
+        setPhoto(position);
+        // La galerie glisse jusqu'à la photo de la couleur (la photo fixe suit le pager).
+        pagerRef.current?.scrollTo({ x: position * screenWidth, animated: true });
+      }
     }
   };
 
+
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.canvas }]}>
-      {/* 1. الصورة ثابتة (ما تتحرّكش): الورقة البيضاء هي اللي تطلع فوقها */}
-      <FichePhotoLayer items={items} index={shownPhoto} scrollY={scrollY} />
+      {/* 1. الصورة ثابتة (ما تتحرّكش، حتى parallaxe): الورقة البيضاء هي اللي تطلع فوقها */}
+      <FichePhotoLayer items={items} galleryX={galleryX} />
 
       <Animated.ScrollView
         testID="product-fiche-scroll"
         scrollEventThrottle={16}
-        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
         contentContainerStyle={{ paddingBottom: FICHE.ctaHeight + insets.bottom }}
         showsVerticalScrollIndicator={false}
       >
-        {/* النافذة الشفافة: من هنا تبان الصورة الثابتة، والضغطة تفتح الفولسكرين */}
-        <Pressable
-          testID="product-photo-window"
-          accessibilityRole="button"
-          accessibilityLabel={t('product.openGallery')}
-          onPress={() => setViewer(shownPhoto)}
-          style={[styles.photoWindow, { height: FICHE.imageHeight + insets.top }]}
-        >
+        {/* النافذة الشفافة: من هنا تبان الصورة الثابتة؛ تتقلّب بالإصبع والضغطة تفتح الفولسكرين */}
+        <View testID="product-photo-window" style={[styles.photoWindow, { height: FICHE.imageHeight + insets.top }]}>
+          <FicheGalleryPager
+            ref={pagerRef}
+            items={items}
+            height={FICHE.imageHeight + insets.top}
+            initialIndex={shownPhoto}
+            galleryX={galleryX}
+            onIndexChange={setPhoto}
+            onOpen={setViewer}
+          />
           <FichePhotoChrome count={items.length} active={Math.max(0, Math.min(shownPhoto, items.length - 1))} />
-        </Pressable>
+          <SheetEdgeShadow testID="product-sheet-edge" />
+        </View>
 
         {/* 2. الورقة: fond opaque, angles droits (cotes de la maquette) */}
         <View style={[styles.sheet, { backgroundColor: theme.colors.canvas }]}>
@@ -368,7 +386,6 @@ export default function ProductScreen() {
           name={product.name}
           price={hasPrice ? priceLabel : null}
           referencePrice={referencePrice}
-          scrollY={scrollY}
         />
 
         {/* 3. خطّ رقيق ثمّ سطر Taille (réglet, comme Privé) */}
@@ -383,6 +400,9 @@ export default function ProductScreen() {
         />
         <GrayBand />
 
+        {/* Sous la ligne de flottaison : monté après le glissement d'arrivée (aucune saccade). */}
+        {settled ? (
+        <FadeIn testID="product-fiche-rest">
         {/* 4. Couleur + صور الألوان (الصورة تجي من ميديا المتغيّر) */}
         {tiles.length > 0 ? (
           <>
@@ -444,14 +464,16 @@ export default function ProductScreen() {
         <GrayBand />
         <InfoRow icon="share-social-outline" title={t('product.share')} onPress={share} testID="product-share" />
         <Hairline />
+        </FadeIn>
+        ) : <View style={styles.restPlaceholder} />}
         </View>
       </Animated.ScrollView>
 
       <FicheHeader
         title={brandTitle}
+        scrollY={scrollY}
         onBack={() => goBack('/')}
         onCart={handleHeaderCartPress}
-        scrollY={scrollY}
         topInset={insets.top}
         cartCount={effectiveCartUnits}
         justAdded={justAddedAt > 0}
@@ -514,9 +536,11 @@ export default function ProductScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
   /** Fenêtre de la photo : transparente, elle laisse voir la couche épinglée. */
-  photoWindow: { height: FICHE.imageHeight },
+  photoWindow: { height: FICHE.imageHeight, justifyContent: 'flex-end' },
   /** La feuille qui monte : opaque (elle doit cacher la photo) et sans coin arrondi. */
   sheet: { overflow: 'hidden' },
   colorBlock: { paddingTop: FICHE.blockTop, paddingBottom: FICHE.blockBottom },
+  /** Réserve la place du bas de fiche le temps du glissement : la barre de défilement ne saute pas. */
+  restPlaceholder: { height: FICHE.imageHeight },
   description: { fontSize: FICHE.infoBody, lineHeight: FICHE.infoLine + 4 },
 });

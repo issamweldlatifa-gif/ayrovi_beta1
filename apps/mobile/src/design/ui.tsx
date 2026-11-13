@@ -42,12 +42,19 @@ export interface AppTextProps {
    * titre ne casse plus la page en trois lignes. Absent = aucun plafond.
    */
   maxFontSizeMultiplier?: number;
+  /**
+   * Un montant sur UNE ligne (barre d'achat) : le texte rétrécit, jusqu'à
+   * `minimumFontScale`, plutôt que d'être coupé ou de toucher le bouton voisin.
+   */
+  adjustsFontSizeToFit?: boolean;
+  minimumFontScale?: number;
   testID?: string;
 }
 
 export function AppText({
   children, variant = 'body', color, align = 'auto', numberOfLines, style, accessibilityRole,
   testID, accessibilityLiveRegion, onTextLayout, onLayout, onPress, maxFontSizeMultiplier,
+  adjustsFontSizeToFit, minimumFontScale,
 }: AppTextProps) {
   const theme = useTheme();
   return (
@@ -60,6 +67,8 @@ export function AppText({
       onLayout={onLayout}
       onPress={onPress}
       maxFontSizeMultiplier={maxFontSizeMultiplier}
+      adjustsFontSizeToFit={adjustsFontSizeToFit}
+      minimumFontScale={minimumFontScale}
       style={[
         theme.text(variant),
         { color: color ?? theme.colors.ink },

@@ -9,7 +9,8 @@
  * pas dans la poche de quelqu'un.
  */
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { ThemeProvider } from '../../src/design/theme';
@@ -178,6 +179,43 @@ describe('écran produit — aucun plantage au montage', () => {
     // Sans prix ni disponibilité, pas de barre d'achat : on ne propose pas un
     // bouton qui échouera à coup sûr.
     expect(screen.queryByTestId('product-add-to-cart')).toBeNull();
+    view.unmount();
+  });
+
+  it('13/11 — galerie feuilletable : une page par photo, l’appui ouvre le plein écran avec la croix EN HAUT', async () => {
+    require('./productFixture').setProduct({
+      ...product,
+      sheet: { ...product.sheet, images: ['/media/catalogue/baskets-gris-1.jpg', '/media/catalogue/baskets-gris-2.jpg'] },
+    });
+    const view = await mount();
+    // Une page transparente par photo dans la fenêtre de la feuille.
+    expect(screen.getByTestId('product-photo-page-0')).toBeTruthy();
+    expect(screen.getByTestId('product-photo-page-1')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('product-photo-page-1'));
+    // La croix vit dans la rangée d'en-tête (zone sûre + 60 dp), comme une flèche retour.
+    const header = screen.getByTestId('product-gallery-header', { includeHiddenElements: true });
+    const headerStyle = StyleSheet.flatten(header.props.style);
+    expect(headerStyle.top).toBe(0);
+    expect(headerStyle.paddingTop).toBe(24);
+    expect(headerStyle.height).toBe(60 + 24);
+    const close = screen.getByTestId('product-gallery-close', { includeHiddenElements: true });
+    const closeStyle = StyleSheet.flatten(typeof close.props.style === 'function' ? close.props.style({ pressed: false }) : close.props.style);
+    expect(closeStyle.width).toBe(44);
+    expect(closeStyle.height).toBe(44);
+    view.unmount();
+  });
+
+  it('13/11 — barre d’achat : bouton NOIR de la famille de l’app, prix sur une ligne qui ne touche pas le bouton', async () => {
+    require('./productFixture').setProduct({ ...product, finalPrice: 1121 });
+    const view = await mount();
+    const button = screen.getByTestId('product-add-to-cart');
+    const style = StyleSheet.flatten(typeof button.props.style === 'function' ? button.props.style({ pressed: false }) : button.props.style);
+    expect(String(style.backgroundColor).toUpperCase()).toBe('#0A0A0A');
+    expect(style.borderRadius).toBe(999);
+    expect(style.width).toBe(196);
+    const price = screen.getByTestId('product-buy-price');
+    expect(price.props.numberOfLines).toBe(1);
+    expect(price.props.adjustsFontSizeToFit).toBe(true);
     view.unmount();
   });
 });

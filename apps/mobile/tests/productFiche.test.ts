@@ -29,12 +29,13 @@ import {
   formatDay,
   galleryItems,
   hasSizeChoice,
+  ficheProductKind,
+  galleryIndexFor,
   headerIsSolid,
   headerProgress,
-  ficheProductKind,
-  galleryShift,
   headerTitleProgress,
   headerTitleRange,
+  FICHE_DETAIL,
   sectionIcon,
   sectionLabelKey,
   sectionTitleKey,
@@ -60,24 +61,44 @@ const code = (rel: string) => readFileSync(resolve(__dirname, '..', rel), 'utf8'
 const src = (rel: string) => readFileSync(resolve(__dirname, '..', rel), 'utf8');
 
 describe('fiche — cotes de la maquette (720 × 1600 px ⇒ ÷ 2 en dp)', () => {
-  it('la photo mesure 476 dp et la barre d’achat Privé 68 dp (pastille 212 × 48)', () => {
-    expect(FICHE.imageHeight).toBe(476);
+  it('13/11 — la photo Privé mesure 550 dp et la barre d’achat 68 dp (bouton 196 × 48)', () => {
+    expect(FICHE.imageHeight).toBe(550);
     expect(FICHE.barHeight).toBe(68);
     expect(FICHE.barButtonHeight).toBe(48);
-    expect(FICHE.barButtonWidth).toBe(212);
+    expect(FICHE.barButtonWidth).toBe(196);
     expect(FICHE.rowHeight).toBe(49);
     expect(FICHE.band).toBe(9);
   });
 
-  it('l’en-tête bascule quand la photo a quitté le haut de l’écran — pas avant', () => {
+  it('l’en-tête bascule quand la feuille atteint le haut de l’écran — pas avant (Privé 023736)', () => {
     const seuil = FICHE.imageHeight - FICHE.headerHeight;
     expect(headerIsSolid(seuil - 1)).toBe(false);
     expect(headerIsSolid(seuil)).toBe(true);
     expect(headerIsSolid(seuil + 200)).toBe(true);
-    // Le dégradé couvre les 40 dp qui précèdent : aucun saut d'un pixel à l'autre.
+    // Le fondu couvre les 40 dp qui précèdent : aucun saut d'un pixel à l'autre.
     expect(headerProgress(seuil - 40)).toBe(0);
     expect(headerProgress(seuil)).toBe(1);
     expect(headerProgress(seuil - 20)).toBeCloseTo(0.5, 5);
+    // Le nom monte dans l'en-tête en fondu enchaîné.
+    const [start, end] = headerTitleRange();
+    expect(end - start).toBe(32);
+    expect(headerTitleProgress(start)).toBe(0);
+    expect(headerTitleProgress(end)).toBe(1);
+  });
+
+  it('13/11 — barre d’achat : le prix garde 16 dp d’air avant le bouton, même avec « 1121.00 TND »', () => {
+    const room = 360 - FICHE.gutter - FICHE_DETAIL.barGap - FICHE.barButtonWidth - FICHE_DETAIL.barEnd;
+    expect(FICHE_DETAIL.barGap).toBe(16);
+    // « 1121.00 TND » en 18 gras ≈ 11 signes × 10,5 dp : il tient sans rétrécir.
+    expect(room).toBeGreaterThanOrEqual(Math.ceil(11 * 10.5));
+  });
+
+  it('13/11 — badge du panier : un rond de 18 dp et un chiffre 11/14 qui tient dedans', () => {
+    expect(FICHE_DETAIL.cartBadge).toBe(18);
+    expect(FICHE_DETAIL.cartBadgeLine).toBeLessThan(FICHE_DETAIL.cartBadge);
+    expect(FICHE_DETAIL.cartBadgeText).toBeLessThanOrEqual(FICHE_DETAIL.cartBadgeLine);
+    // Le sac (24) centré dans la pastille de 36 : le badge (top −4) reste dans la pastille.
+    expect((FICHE_DETAIL.cartPill - 24) / 2 - 4).toBeGreaterThanOrEqual(0);
   });
 
   it('les 12 tailles de la maquette tiennent sur un écran de 800 dp', () => {
@@ -180,15 +201,14 @@ describe('fiche — sections décidées par le CRM', () => {
     expect(showsSizeGuide('mesures', 'clothing', false)).toBe(false);
   });
 
-  it('14/11 — le nom monte dans l’en-tête en fondu enchaîné, la photo recule (parallaxe)', () => {
-    const [start, end] = headerTitleRange();
-    expect(end - start).toBe(32);
-    expect(headerTitleProgress(start)).toBe(0);
-    expect(headerTitleProgress(end)).toBe(1);
-    expect(headerTitleProgress((start + end) / 2)).toBeCloseTo(0.5);
-    expect(galleryShift(0)).toBe(0);
-    expect(galleryShift(100)).toBeCloseTo(-40);
-    expect(galleryShift(10_000)).toBeCloseTo(-FICHE.imageHeight * 0.4);
+  it('13/11 — galerie feuilletable : la page affichée suit le doigt, bornée à la galerie', () => {
+    expect(galleryIndexFor(0, 360, 4)).toBe(0);
+    expect(galleryIndexFor(359, 360, 4)).toBe(1);
+    expect(galleryIndexFor(720, 360, 4)).toBe(2);
+    expect(galleryIndexFor(99_999, 360, 4)).toBe(3);
+    expect(galleryIndexFor(-50, 360, 4)).toBe(0);
+    expect(galleryIndexFor(Number.NaN, 360, 4)).toBe(0);
+    expect(galleryIndexFor(400, 0, 4)).toBe(0);
     // Plein écran : bande grise 1,43 × la largeur, jamais plus haute que l'espace libre.
     expect(viewerStageHeight(360, 800, 100)).toBe(515);
     expect(viewerStageHeight(360, 500, 100)).toBe(328);
@@ -332,12 +352,18 @@ describe('fiche — contrat d’écran', () => {
     }
   });
 
-  it('14/11 — le CTA est la pastille VIOLETTE des planches Privé et la fiche ne calcule aucun prix', () => {
-    const parts = src('src/features/product/ProductFiche.tsx');
-    // Dérogation client du 14/11 (« comme la référence ») : FICHE_COLORS.cta (#571EF7).
-    expect(parts).toContain('backgroundColor: pressed ? fc.ctaPressed : fc.cta');
+  it('13/11 — le CTA est le bouton NOIR de notre famille de boutons et la fiche ne calcule aucun prix', () => {
+    const parts = code('src/features/product/ProductFiche.tsx');
+    // Consigne client du 13/11 : « من عائلة الأزرار متاعنا، بالأسود » — plus de violet dessiné à part.
+    const buyBar = parts.slice(parts.indexOf('export function BuyBar'), parts.indexOf('export function MakerSheet'));
+    expect(buyBar).toMatch(/<Button[\s\S]*tone="solid"[\s\S]*size="lg"/);
+    expect(parts).not.toMatch(/fc\.cta\b|ctaPressed/);
+    expect(code('src/design/tokens.mobile.ts')).not.toMatch(/#571EF7/i);
     expect(parts).not.toMatch(/theme\.colors\.action\b/);
     expect(parts).not.toMatch(/tone="main"/);
+    // Le prix tient sur UNE ligne et ne colle plus au bouton.
+    expect(buyBar).toContain('adjustsFontSizeToFit');
+    expect(parts).toContain('gap: FICHE_DETAIL.barGap');
     const screen = src('app/product/[id].tsx');
     // Le total est celui du serveur, jamais une somme locale — et il s'écrit
     // par le module de format unique (devise comprise), pas par un `toFixed`
@@ -355,13 +381,18 @@ describe('fiche — contrat d’écran', () => {
   /**
    * LA MÉCANIQUE DE LA PLANCHE `docs/design/bigcard/mockup-sticky-24-10.png` :
    * « الصورة ثابتة والورقة تتحرك » — la photo ne défile pas, la feuille blanche
-   * monte par-dessus, l'en-tête passe de transparent à blanc quand elle arrive,
-   * et la barre d'achat ne bouge jamais.
+   * monte par-dessus et s'arrime sous l'en-tête (13/11, Privé), la barre
+   * d'achat ne bouge jamais.
    */
-  it('la photo est ÉPINGLÉE et la feuille glisse par-dessus', () => {
+  it('la photo est ÉPINGLÉE (sans parallaxe) et la feuille glisse par-dessus', () => {
     const fiche = src('src/features/product/ProductFiche.tsx');
     // Une couche fixe en haut de l'écran, de la hauteur exacte de la photo.
-    expect(fiche).toContain('pinnedPhoto: { position: \'absolute\', top: 0, start: 0, end: 0, height: FICHE.imageHeight }');
+    expect(fiche).toContain("pinnedPhoto: { position: 'absolute', top: 0, start: 0, end: 0, height: FICHE.imageHeight, overflow: 'hidden' }");
+    // 13/11 — « الصورة ثابتة » : la couche ne lit plus le défilement vertical (parallaxe retirée).
+    const layer = code('src/features/product/ProductFiche.tsx');
+    const layerBody = layer.slice(layer.indexOf('export function FichePhotoLayer'), layer.indexOf('export function FichePhoto('));
+    expect(layerBody).not.toContain('scrollY');
+    expect(layerBody).not.toMatch(/translateY/);
     expect(fiche).toContain('export function FichePhotoLayer');
     // La couche est inerte au toucher : l'appui passe à la fenêtre de la feuille.
     expect(fiche).toContain('pointerEvents="none"');
@@ -371,22 +402,43 @@ describe('fiche — contrat d’écran', () => {
     expect(screen).toContain('<FichePhotoLayer');
     expect(screen).not.toMatch(/<FichePhoto\s/);
     // …la feuille réserve la fenêtre de la photo, puis monte par-dessus.
-    expect(screen).toContain('photoWindow: { height: FICHE.imageHeight }');
+    expect(screen).toContain("photoWindow: { height: FICHE.imageHeight, justifyContent: 'flex-end' }");
+    expect(screen).toContain('height: FICHE.imageHeight + insets.top');
     expect(screen).toContain('styles.photoWindow');
     expect(screen).toContain('product-photo-window');
   });
 
-  it('l’en-tête devient blanc exactement quand la feuille atteint le haut', () => {
-    // Le seuil est la hauteur de photo MOINS la hauteur d'en-tête : au-delà, la
-    // feuille est sous l'en-tête, il n'y a plus de photo derrière lui.
-    expect(headerIsSolid(FICHE.imageHeight - FICHE.headerHeight - 1)).toBe(false);
-    expect(headerIsSolid(FICHE.imageHeight - FICHE.headerHeight)).toBe(true);
-    // La fenêtre de photo est plus haute que l'en-tête, sinon il n'y aurait
-    // jamais de photo derrière un en-tête transparent.
+  it('13/11 — l’en-tête devient blanc AVEC une ombre douce quand la feuille l’atteint ; défilement natif', () => {
     expect(FICHE.imageHeight).toBeGreaterThan(FICHE.headerHeight);
-    const fiche = src('src/features/product/ProductFiche.tsx');
-    expect(fiche).toContain('borderBottomWidth: FICHE.headerRule');
-    expect(fiche).toContain('opacity: solid');
+    const fiche = code('src/features/product/ProductFiche.tsx');
+    const header = fiche.slice(fiche.indexOf('export function FicheHeader'), fiche.indexOf('export function FicheCartButton'));
+    expect(header).toContain('opacity: solid');
+    expect(header).toContain('product-header-shadow');
+    expect(header).toContain('<LinearGradient');
+    const screen = code('app/product/[id].tsx');
+    // Défilement sur le fil natif : aucune saccade pendant que la feuille monte.
+    expect(screen).toMatch(/contentOffset: \{ y: scrollY \} \} \}\], \{ useNativeDriver: true \}/);
+    // La galerie se feuillette dans la fenêtre de la feuille.
+    expect(screen).toContain('<FicheGalleryPager');
+    expect(screen).toContain('pagerRef.current?.scrollTo');
+  });
+
+  it('13/11 — RÈGLE : la croix du plein écran est EN HAUT, dans une rangée d’en-tête, dessinée comme la flèche retour', () => {
+    const fiche = code('src/features/product/ProductFiche.tsx');
+    const viewer = fiche.slice(fiche.indexOf('export function GalleryViewer'), fiche.indexOf('const styles = StyleSheet.create'));
+    expect(viewer).toContain('<CloseButton');
+    expect(viewer).toContain('height: FICHE.headerHeight + insets.top');
+    expect(viewer).toContain('styles.headerRow');
+    expect(viewer).not.toContain('close-outline');
+    const close = code('src/design/CloseButton.tsx');
+    const back = code('src/design/BackButton.tsx');
+    for (const shared of ['width: 44', 'height: 44', 'OPACITY.subtle', 'hitSlop={8}']) {
+      expect(close, shared).toContain(shared);
+      expect(back, shared).toContain(shared);
+    }
+    expect(close).toContain('NAVIGATION_ARROW_SIZE');
+    expect(close).toContain('strokeWidth={1.7}');
+    expect(code('src/design/NavigationIcon.tsx')).toContain('strokeWidth={1.7}');
   });
 
   it('la barre d’achat est FIXE (elle ne défile pas)', () => {
@@ -398,5 +450,17 @@ describe('fiche — contrat d’écran', () => {
     expect(afterScroll).toContain('<BuyBar');
     // Et la page réserve sa hauteur en bas du contenu.
     expect(screen).toContain('paddingBottom: FICHE.ctaHeight + insets.bottom');
+  });
+
+  it('13/11 — aucune saccade à l’ouverture : le bas de la fiche attend la fin du glissement', () => {
+    const motion = code('src/design/motion.tsx');
+    expect(motion).toContain('export function useAfterPush');
+    expect(motion).toContain('NAV_PUSH_MS');
+    const screen = code('app/product/[id].tsx');
+    expect(screen).toContain('const settled = useAfterPush();');
+    expect(screen).toContain('{settled ? (');
+    // Le haut de la fiche (photo, identité, taille) n'attend pas.
+    expect(screen.indexOf('<FicheIdentity')).toBeLessThan(screen.indexOf('{settled ? ('));
+    expect(screen.indexOf('product-size-row')).toBeLessThan(screen.indexOf('{settled ? ('));
   });
 });

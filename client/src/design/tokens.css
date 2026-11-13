@@ -633,8 +633,8 @@ html[data-theme='dark'] {
   --fiche-underline: #aaaaaa;
   --fiche-grab: #d1d1d1;
   --fiche-stage: #efefef;
-  /* 14/11 — pastille « Ajouter au panier » des planches Privé (= FICHE_COLORS.cta). */
-  --fiche-cta: #571ef7;
+  /* 13/11 — « Ajouter au panier » : bouton NOIR de la famille de l'app (= FICHE_COLORS.cta). */
+  --fiche-cta: var(--fiche-ink);
   /* 14/11 — cadre gris des photos produit, posées entières (= FICHE_COLORS.photo). */
   --fiche-photo: #f3f3f3;
 }

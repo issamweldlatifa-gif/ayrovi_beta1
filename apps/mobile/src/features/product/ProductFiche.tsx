@@ -1,4 +1,5 @@
 import { BackButton } from '@/design/BackButton';
+import { CloseButton } from '@/design/CloseButton';
 /**
  * GRANDE FICHE — les 4 écrans de la maquette (25/10/2026).
  *
@@ -21,24 +22,25 @@ import { BackButton } from '@/design/BackButton';
  *  • aucun libellé écrit en dur : le nom des blocs vient du CRM quand il en
  *    donne un (`ficheLabels`), sinon de la traduction de l'application.
  */
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   FlatList,
   LayoutAnimation,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   View,
   useWindowDimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { AppText, Button } from '@/design/ui';
 import { AppSheet } from '@/design/sheet/AppSheet';
-import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
@@ -50,7 +52,7 @@ import { FicheGlyph, type FicheGlyphName } from '@/design/FicheGlyph';
 import {
   FICHE,
   FICHE_DETAIL,
-  GALLERY_PARALLAX,
+  galleryIndexFor,
   HEADER_TITLE,
   headerTitleRange,
   specIsWide,
@@ -64,8 +66,13 @@ import {
 /** Colonne des icônes : la boîte de 24 dp commence à 17 dp (maquette : 46 px). */
 const ICON_BOX = FICHE.rowIcon;
 
-/* ── 1. En-tête : transparent sur la photo, plein dès qu'elle est sortie ───── */
+/* ── 1. En-tête : transparent sur la photo, plein dès que la feuille l'atteint ── */
 
+/*
+ * Privé `Screenshot_20261113_023736` : quand la feuille atteint l'en-tête, il
+ * devient blanc, le nom de la marque y apparaît, et une OMBRE douce (pas un
+ * filet dur) le sépare du contenu qui passe dessous.
+ */
 export function FicheHeader({
   title,
   onBack,
@@ -82,7 +89,7 @@ export function FicheHeader({
   /** Position de défilement : le fond s'opacifie sans re-render de la page. */
   scrollY: Animated.Value;
   topInset: number;
-  /** Nombre total d'articles dans le panier pour le badge violet. */
+  /** Nombre total d'articles dans le panier pour le badge. */
   cartCount?: number;
   /** Déclenche l'extension verte « Article ajouté » pendant ~2,4 s après l'ajout. */
   justAdded?: boolean;
@@ -92,15 +99,6 @@ export function FicheHeader({
   const theme = useTheme();
   const fc = ficheColorsFor(theme.mode);
   const t = useT();
-  const expandAnim = useRef(new Animated.Value(justAdded ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.spring(expandAnim, {
-      toValue: justAdded ? 1 : 0,
-      useNativeDriver: true,
-      ...theme.spring.firm,
-    }).start();
-  }, [expandAnim, justAdded, theme.spring.firm]);
 
   const solid = scrollY.interpolate({
     inputRange: [FICHE.imageHeight - FICHE.headerHeight - 40, FICHE.imageHeight - FICHE.headerHeight],
@@ -108,35 +106,23 @@ export function FicheHeader({
     extrapolate: 'clamp',
   });
 
-  /** 14/11 — le nom monte dans l'en-tête quand la marque de la feuille passe dessous. */
+  /** Le nom monte dans l'en-tête quand la marque de la feuille passe dessous. */
   const titleRange = headerTitleRange();
   const titleIn = scrollY.interpolate({ inputRange: titleRange, outputRange: [0, 1], extrapolate: 'clamp' });
   const titleShift = scrollY.interpolate({ inputRange: titleRange, outputRange: [HEADER_TITLE.travel, 0], extrapolate: 'clamp' });
-
-  const pillShiftX = expandAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [theme.isRTL ? -6 : 6, 0],
-  });
-
-  const showPill = justAdded || cartCount > 0;
-  const badgeText = cartCount > 99 ? '99+' : String(Math.max(1, cartCount));
 
   return (
     <View pointerEvents="box-none" style={[styles.header, { paddingTop: topInset, height: FICHE.headerHeight + topInset }]}>
       <Animated.View
         pointerEvents="none"
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backgroundColor: theme.colors.canvas,
-            opacity: solid,
-            borderBottomWidth: FICHE.headerRule,
-            borderBottomColor: fc.hair,
-          },
-        ]}
+        testID="product-header-surface"
+        style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.canvas, opacity: solid }]}
       />
-      <View style={[styles.headerRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <BackButton onPress={onBack} label={t('common.back')} color={theme.colors.ink} />
+      <Animated.View pointerEvents="none" testID="product-header-shadow" style={[styles.headerShadow, { opacity: solid }]}>
+        <LinearGradient colors={[fc.sheetShadow, fc.sheetShadowClear]} style={styles.fill} />
+      </Animated.View>
+      <View pointerEvents="box-none" style={[styles.headerRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+        <BackButton onPress={onBack} label={t('common.back')} color={theme.colors.ink} testID="product-back" />
 
         <Animated.Text
           testID="product-header-title"
@@ -154,116 +140,187 @@ export function FicheHeader({
           {title}
         </Animated.Text>
 
-        {showPill ? (
-          <Animated.View style={{ transform: [{ translateX: pillShiftX }] }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('tabs.cart')}
-              onPress={onCart}
-              hitSlop={8}
-              testID="product-header-cart-pill"
-              style={({ pressed }) => [
-                styles.cartPill,
-                theme.elevation.low,
-                {
-                  flexDirection: rowDirectionFor(theme.isRTL),
-                  backgroundColor: justAdded ? fc.success : fc.pillSurface,
-                  borderColor: justAdded ? fc.success : fc.hair,
-                  opacity: pressed ? theme.opacity.subtle : 1,
-                },
-              ]}
-            >
-              {justAdded ? (
-                <AppText variant="label" color={fc.onAccent} numberOfLines={1}>
-                  {t('product.addedPill')}
-                </AppText>
-              ) : reservationCountdown ? (
-                <AppText variant="label" color={fc.ink} numberOfLines={1}>
-                  {reservationCountdown}
-                </AppText>
-              ) : null}
-              <View style={styles.cartPillBagWrap}>
-                <Ionicons
-                  name="bag-outline"
-                  size={theme.iconSize.sm}
-                  color={justAdded ? fc.onAccent : fc.ink}
-                  accessibilityElementsHidden
-                />
-                <View
-                  testID="product-header-cart-badge"
-                  style={[
-                    styles.cartPillBadge,
-                    { backgroundColor: fc.accent },
-                    theme.isRTL ? styles.cartPillBadgeRTL : styles.cartPillBadgeLTR,
-                  ]}
-                >
-                  <AppText variant="captionStrong" color={fc.onAccent}>
-                    {badgeText}
-                  </AppText>
-                </View>
-              </View>
-            </Pressable>
-          </Animated.View>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t('tabs.cart')}
-            onPress={onCart}
-            hitSlop={8}
-            testID="product-header-cart"
-            style={styles.headerButton}
-          >
-            <Ionicons name="bag-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-          </Pressable>
-        )}
+        <FicheCartButton
+          onPress={onCart}
+          cartCount={cartCount}
+          justAdded={justAdded}
+          reservationCountdown={reservationCountdown}
+        />
       </View>
     </View>
   );
 }
 
-/* ── 1 bis. La photo ÉPINGLÉE derrière la feuille qui monte ──────────────────
+/**
+ * Panier de l'en-tête. 13/11 — « 18:06 » et son badge débordaient : le badge est
+ * désormais un rond de 18 dp ENTIÈREMENT dans la pastille, son chiffre (11/14)
+ * n'est jamais agrandi par la police système, et le compte à rebours a des
+ * chiffres à chasse fixe — la pastille ne change plus de largeur chaque seconde.
+ */
+export function FicheCartButton({
+  onPress,
+  cartCount,
+  justAdded,
+  reservationCountdown,
+}: {
+  onPress: () => void;
+  cartCount: number;
+  justAdded: boolean;
+  reservationCountdown: string | null;
+}) {
+  const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
+  const t = useT();
+  const expandAnim = useRef(new Animated.Value(justAdded ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(expandAnim, {
+      toValue: justAdded ? 1 : 0,
+      useNativeDriver: true,
+      ...theme.spring.firm,
+    }).start();
+  }, [expandAnim, justAdded, theme.spring.firm]);
+
+  const pillShiftX = expandAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [theme.isRTL ? -6 : 6, 0],
+  });
+
+  const showPill = justAdded || cartCount > 0;
+  const badgeText = cartCount > 99 ? '99+' : String(Math.max(1, cartCount));
+
+  if (!showPill) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('tabs.cart')}
+        onPress={onPress}
+        hitSlop={8}
+        testID="product-header-cart"
+        style={({ pressed }) => [styles.headerButton, { opacity: pressed ? theme.opacity.subtle : 1 }]}
+      >
+        <Ionicons name="bag-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+      </Pressable>
+    );
+  }
+
+  return (
+    <Animated.View style={{ transform: [{ translateX: pillShiftX }] }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={reservationCountdown ? `${t('tabs.cart')} ${badgeText} — ${reservationCountdown}` : `${t('tabs.cart')} ${badgeText}`}
+        onPress={onPress}
+        hitSlop={8}
+        testID="product-header-cart-pill"
+        style={({ pressed }) => [
+          styles.cartPill,
+          theme.elevation.low,
+          {
+            flexDirection: rowDirectionFor(theme.isRTL),
+            backgroundColor: justAdded ? fc.success : fc.pillSurface,
+            borderColor: justAdded ? fc.success : fc.hair,
+            opacity: pressed ? theme.opacity.subtle : 1,
+          },
+        ]}
+      >
+        {justAdded ? (
+          <AppText variant="label" color={fc.onAccent} numberOfLines={1} maxFontSizeMultiplier={1.15}>
+            {t('product.addedPill')}
+          </AppText>
+        ) : reservationCountdown ? (
+          <AppText
+            testID="product-header-countdown"
+            variant="label"
+            color={fc.ink}
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.15}
+            style={styles.cartCountdown}
+          >
+            {reservationCountdown}
+          </AppText>
+        ) : null}
+        <View style={styles.cartPillBagWrap}>
+          <Ionicons
+            name="bag-outline"
+            size={theme.iconSize.sm}
+            color={justAdded ? fc.onAccent : fc.ink}
+            accessibilityElementsHidden
+          />
+          <View
+            testID="product-header-cart-badge"
+            style={[
+              styles.cartPillBadge,
+              { backgroundColor: fc.accent, borderColor: justAdded ? fc.success : fc.pillSurface },
+              theme.isRTL ? styles.cartPillBadgeRTL : styles.cartPillBadgeLTR,
+            ]}
+          >
+            <AppText
+              variant="captionStrong"
+              color={fc.onAccent}
+              numberOfLines={1}
+              maxFontSizeMultiplier={1}
+              style={styles.cartPillBadgeText}
+            >
+              {badgeText}
+            </AppText>
+          </View>
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+/* ── 1 bis. La photo FIXE derrière la feuille qui monte ──────────────────────
  *
- * Planche `docs/design/bigcard/mockup-sticky-24-10.png` : « الصورة ثابتة والورقة
- * تتحرك ». La photo ne défile donc PAS : elle est posée dans une couche fixe en
- * haut de l'écran, et la feuille blanche monte par-dessus au défilement.
+ * 13/11 — « الصورة ثابتة والورقة تتحرك فوقها » (Privé) : la photo ne défile pas
+ * et ne recule plus (la parallaxe du 14/11 est retirée). Elle est posée dans
+ * une couche fixe ; la feuille blanche glisse par-dessus.
  *
- * Deux conséquences volontaires :
- *  • la couche est `pointerEvents="none"` (et masquée aux lecteurs d'écran) :
- *    l'appui qui ouvre le plein écran se fait dans la FENÊTRE de la feuille, pas
- *    ici — sinon deux zones tactiles se superposeraient pour le même geste ;
- *  • les points de galerie restent dans la photo : ils disparaissent sous la
- *    feuille en même temps qu'elle, comme sur la planche.
+ *  • la couche est `pointerEvents="none"` (et masquée aux lecteurs d'écran) : le
+ *    glissement horizontal et l'appui se font dans la FENÊTRE de la feuille
+ *    (`FicheGalleryPager`), qui pilote cette couche par `galleryX` ;
+ *  • les photos sont posées côte à côte et la bande suit le doigt (pilote natif) :
+ *    la galerie se feuillette sans saut, comme une vraie galerie.
  */
 export function FichePhotoLayer({
   items,
-  index,
-  scrollY,
+  galleryX,
 }: {
   items: GalleryItem[];
-  index: number;
-  /** 14/11 — la photo recule (parallaxe) pendant que la feuille monte. */
-  scrollY?: Animated.Value;
+  /** Décalage horizontal de la galerie (pages pleine largeur). */
+  galleryX: Animated.Value;
 }) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const totalHeight = FICHE.imageHeight + insets.top;
-  const shift = scrollY
-    ? scrollY.interpolate({
-      inputRange: [0, FICHE.imageHeight],
-      outputRange: [0, -FICHE.imageHeight * GALLERY_PARALLAX],
-      extrapolate: 'clamp',
-    })
+  const pages = items.length > 0 ? items : [null];
+  /* La bande ne dépasse jamais la première ni la dernière photo (rebond, photo d'arrivée hors galerie). */
+  const last = width * (pages.length - 1);
+  const shift = last > 0
+    ? galleryX.interpolate({ inputRange: [0, last], outputRange: [0, -last], extrapolate: 'clamp' })
     : 0;
   return (
-    <Animated.View
+    <View
       testID="product-photo-layer"
-      style={[styles.pinnedPhoto, { height: totalHeight, transform: [{ translateY: shift }] }]}
+      style={[styles.pinnedPhoto, { height: totalHeight }]}
       pointerEvents="none"
       accessible={false}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <FichePhoto items={items} index={index} height={totalHeight} topInset={insets.top} />
-    </Animated.View>
+      <Animated.View
+        style={[
+          styles.photoStrip,
+          { width: width * pages.length, transform: [{ translateX: shift }] },
+        ]}
+      >
+        {pages.map((item, position) => (
+          <View key={item ? `${item.url}-${position}` : 'empty'} style={{ width, height: totalHeight }}>
+            <FichePhoto items={items} index={position} height={totalHeight} topInset={insets.top} />
+          </View>
+        ))}
+      </Animated.View>
+    </View>
   );
 }
 
@@ -295,9 +352,8 @@ export function FichePhoto({
           </View>
         ) : (
           /*
-           * 14/11 — `contain`, plus `cover` (« من برّا ما يبانش المنتوج مليح ») :
-           * la photo 2:3 tient ENTIÈRE dans le cadre, sous la barre d'état ; le gris
-           * du cadre est celui du fichier, donc aucune bande visible.
+           * `contain` : la photo 2:3 tient ENTIÈRE dans le cadre, sous la barre
+           * d'état ; le gris du cadre est celui du fichier, donc aucune bande.
            */
           <View style={[styles.photoFrame, { top: topInset }]}>
             <AppImage
@@ -318,6 +374,72 @@ export function FichePhoto({
         </View>
       )}
     </View>
+  );
+}
+
+/**
+ * Fenêtre de la galerie, DANS la feuille (elle monte avec elle) : des pages
+ * transparentes pleine largeur qu'on feuillette au doigt. Le décalage pilote la
+ * bande de photos de la couche fixe ; un appui ouvre le plein écran sur la photo
+ * visible. `initialIndex` : la photo d'arrivée (ou celle de la couleur choisie).
+ */
+export const FicheGalleryPager = forwardRef<ScrollView, {
+  items: GalleryItem[];
+  height: number;
+  initialIndex: number;
+  galleryX: Animated.Value;
+  onIndexChange: (index: number) => void;
+  onOpen: (index: number) => void;
+}>(function FicheGalleryPager({ items, height, initialIndex, galleryX, onIndexChange, onOpen }, ref) {
+  const t = useT();
+  const { width } = useWindowDimensions();
+  const pages = items.length > 0 ? items : [null];
+  return (
+    <Animated.ScrollView
+      ref={ref}
+      testID="product-photo-pager"
+      horizontal
+      pagingEnabled
+      bounces={false}
+      overScrollMode="never"
+      decelerationRate="fast"
+      showsHorizontalScrollIndicator={false}
+      scrollEnabled={items.length > 1}
+      contentOffset={{ x: initialIndex * width, y: 0 }}
+      scrollEventThrottle={16}
+      onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: galleryX } } }], { useNativeDriver: true })}
+      onMomentumScrollEnd={(event) => onIndexChange(galleryIndexFor(event.nativeEvent.contentOffset.x, width, items.length))}
+      style={StyleSheet.absoluteFill}
+    >
+      {pages.map((item, position) => (
+        <Pressable
+          key={item ? `${item.url}-${position}` : 'empty'}
+          accessibilityRole="button"
+          accessibilityLabel={t('product.openGallery')}
+          disabled={!item}
+          onPress={() => onOpen(position)}
+          testID={`product-photo-page-${position}`}
+          style={{ width, height }}
+        />
+      ))}
+    </Animated.ScrollView>
+  );
+});
+
+/**
+ * 13/11 — profondeur de la feuille (Privé) : une ombre douce sur le bord haut de
+ * la feuille quand elle glisse sur la photo fixe. Jamais un trait dur.
+ */
+export function SheetEdgeShadow({ testID }: { testID?: string }) {
+  const theme = useTheme();
+  const fc = ficheColorsFor(theme.mode);
+  return (
+    <LinearGradient
+      testID={testID}
+      pointerEvents="none"
+      colors={[fc.sheetShadowClear, fc.sheetShadow]}
+      style={styles.sheetEdge}
+    />
   );
 }
 
@@ -360,7 +482,7 @@ export function FichePhotoChrome({ count, active }: { count: number; active: num
 /* ── 3. Identité : marque soulignée, prix en face, nom complet gris dessous ── */
 
 export function FicheIdentity({
-  brand, name, price, referencePrice, scrollY,
+  brand, name, price, referencePrice,
 }: {
   /**
    * Marque (Privé) : police « Expanded », soulignée d'un filet fin à la largeur
@@ -375,23 +497,18 @@ export function FicheIdentity({
    * CRM, et seulement quand elle dépasse le prix de vente (sinon `null`).
    */
   referencePrice?: string | null;
-  /** 14/11 — la marque s'efface pendant qu'elle monte dans l'en-tête. */
-  scrollY?: Animated.Value;
 }) {
   const theme = useTheme();
   const fc = ficheColorsFor(theme.mode);
   const t = useT();
   const title = brand?.trim() || name;
   const fullName = brand?.trim() ? name : '';
-  const fade = scrollY
-    ? scrollY.interpolate({ inputRange: headerTitleRange(), outputRange: [1, 0], extrapolate: 'clamp' })
-    : 1;
   return (
     <View style={styles.identity}>
       <View style={styles.identityTop}>
         <View style={styles.identityStart}>
           {/* Le filet fait exactement la largeur du mot : la boîte se rétrécit au texte. */}
-          <Animated.View style={[styles.nameBox, { borderBottomColor: theme.colors.ink, opacity: fade }]}>
+          <View style={[styles.nameBox, { borderBottomColor: theme.colors.ink }]}>
             <AppText
               testID="product-fiche-title"
               numberOfLines={fullName ? 1 : undefined}
@@ -399,7 +516,7 @@ export function FicheIdentity({
             >
               {title}
             </AppText>
-          </Animated.View>
+          </View>
           {fullName ? (
             <AppText
               testID="product-fiche-name"
@@ -725,9 +842,7 @@ export function BuyBar({
   error?: string | null;
 }) {
   const theme = useTheme();
-  const fc = ficheColorsFor(theme.mode);
   const insets = useSafeAreaInsets();
-  const blocked = disabled || busy;
   return (
     <View
       testID="product-buy-bar"
@@ -746,35 +861,33 @@ export function BuyBar({
       ) : null}
       <View style={styles.buyRow}>
         <View style={styles.buyPrice}>
-          <AppText style={[styles.buyPriceText, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>{price}</AppText>
+          {/* 13/11 : UNE ligne, rétrécie plutôt que coupée, et 16 dp d'air avant le bouton. */}
+          <AppText
+            testID="product-buy-price"
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+            maxFontSizeMultiplier={1.15}
+            style={[styles.buyPriceText, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}
+          >
+            {price}
+          </AppText>
         </View>
         {/*
-          14/11 — pastille Privé : 212 × 48 dp, rayon plein, VIOLET (#571EF7), libellé
-          blanc gras. La forme vient de `FICHE`, la couleur de `FICHE_COLORS.cta`.
+          13/11 — « Ajouter au panier » est le bouton NOIR de la famille de l'app
+          (`<Button tone="solid" size="lg">` : 48 dp, rayon plein, libellé blanc),
+          plus une pastille violette dessinée à part. Seule la largeur vient de `FICHE`.
         */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={label}
-          accessibilityState={{ disabled: blocked, busy }}
-          disabled={blocked}
+        <Button
+          label={label}
+          tone="solid"
+          size="lg"
+          busy={busy}
+          disabled={disabled}
           onPress={onPress}
           testID={testID}
-          style={({ pressed }) => [
-            styles.buyButton,
-            {
-              backgroundColor: pressed ? fc.ctaPressed : fc.cta,
-              opacity: disabled ? theme.opacity.disabled : 1,
-            },
-          ]}
-        >
-          {busy
-            ? <LoadingSpinner size="sm" color={fc.onAccent} testID={testID ? `${testID}-busy` : undefined} />
-            : (
-              <AppText style={[styles.buyButtonLabel, { color: fc.onAccent, fontFamily: theme.font('bold') }]}>
-                {label}
-              </AppText>
-            )}
-        </Pressable>
+          style={styles.buyButton}
+        />
       </View>
     </View>
   );
@@ -1031,7 +1144,12 @@ export function GalleryViewer({
    * la largeur, centrée. L'ancien plein écran noir en `cover` agrandissait la
    * photo au point de ne plus voir le produit (« تظهر كبيرة برشا »).
    */
-  const stageTop = insets.top + FICHE.viewerCloseTop + FICHE.headerHeight - FICHE.viewerCloseStart;
+  /*
+   * 13/11 — RÈGLE : la croix vit EN HAUT, dans une rangée d'en-tête identique à
+   * celle des flèches retour (même hauteur, même retrait, même cible). La bande
+   * photo commence sous cette rangée.
+   */
+  const stageTop = insets.top + FICHE.headerHeight;
   const stage = viewerStageHeight(width, height - insets.bottom, stageTop);
   const stageOffset = Math.max(stageTop, Math.round((height - stage) / 2) - FICHE.viewerDotsBottom);
 
@@ -1089,16 +1207,15 @@ export function GalleryViewer({
           </View>
         ) : null}
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t('common.close')}
-          onPress={onClose}
-          hitSlop={8}
-          testID="product-gallery-close"
-          style={[styles.viewerClose, { top: insets.top + FICHE.viewerCloseTop }]}
+        <View
+          pointerEvents="box-none"
+          testID="product-gallery-header"
+          style={[styles.viewerHeader, { paddingTop: insets.top, height: FICHE.headerHeight + insets.top }]}
         >
-          <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-        </Pressable>
+          <View pointerEvents="box-none" style={[styles.headerRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+            <CloseButton onPress={onClose} label={t('common.close')} color={theme.colors.ink} testID="product-gallery-close" />
+          </View>
+        </View>
       </View>
     </Modal>
   );
@@ -1109,33 +1226,49 @@ export function GalleryViewer({
 const styles = StyleSheet.create({
   header: { position: 'absolute', top: 0, start: 0, end: 0 },
   /* La couche épinglée : la photo ne bouge pas, la feuille glisse dessus. */
-  pinnedPhoto: { position: 'absolute', top: 0, start: 0, end: 0, height: FICHE.imageHeight },
+  pinnedPhoto: { position: 'absolute', top: 0, start: 0, end: 0, height: FICHE.imageHeight, overflow: 'hidden' },
+  photoStrip: { flexDirection: 'row' },
   headerRow: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 4 },
-  headerButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  // Privé : titre aligné après la flèche (« ← adidas Performance »), police Expanded.
+  // Privé : titre aligné après la flèche (« ← adidas Sportswear »), police Expanded.
   headerTitle: { flex: 1, textAlign: 'auto', fontSize: FICHE.headerTitle, lineHeight: FICHE.nameLine, marginStart: 8 },
+  headerShadow: { position: 'absolute', start: 0, end: 0, bottom: -FICHE_DETAIL.headerShadow, height: FICHE_DETAIL.headerShadow },
+  headerButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   cartPill: {
-    height: 36,
+    height: FICHE_DETAIL.cartPill,
+    minWidth: FICHE_DETAIL.cartPill,
     borderRadius: RADIUS.full,
     borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 12,
+    paddingStart: 12,
+    paddingEnd: 10,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
   },
-  cartPillBagWrap: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center' },
+  cartCountdown: { fontVariant: ['tabular-nums'] },
+  /* Le sac (24) laisse 6 dp au-dessus et en dessous dans la pastille de 36 : le badge y tient. */
+  cartPillBagWrap: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
   cartPillBadge: {
     position: 'absolute',
     top: -4,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    minWidth: FICHE_DETAIL.cartBadge,
+    height: FICHE_DETAIL.cartBadge,
+    borderRadius: FICHE_DETAIL.cartBadge / 2,
+    borderWidth: 1,
     paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  cartPillBadgeText: {
+    fontSize: FICHE_DETAIL.cartBadgeText,
+    lineHeight: FICHE_DETAIL.cartBadgeLine,
+    textAlign: 'center',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
   cartPillBadgeLTR: { right: -6 },
   cartPillBadgeRTL: { left: -6 },
+  /* Ombres de la feuille (13/11) */
+  sheetEdge: { height: FICHE_DETAIL.headerShadow },
 
   photo: { height: FICHE.imageHeight },
   photoFrame: { position: 'absolute', start: 0, end: 0, bottom: 0 },
@@ -1214,19 +1347,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingStart: FICHE.gutter,
-    paddingEnd: 8,
+    paddingEnd: FICHE_DETAIL.barEnd,
+    gap: FICHE_DETAIL.barGap,
   },
   buyError: { paddingStart: FICHE.gutter, paddingEnd: FICHE.gutter, paddingTop: 4 },
-  buyPrice: { flex: 1, justifyContent: 'center' },
-  buyPriceText: { fontSize: FICHE.priceSize },
-  buyButton: {
-    width: FICHE.barButtonWidth,
-    height: FICHE.barButtonHeight,
-    borderRadius: FICHE.barButtonRadius,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buyButtonLabel: { fontSize: FICHE.barPrice },
+  buyPrice: { flex: 1, minWidth: 0, justifyContent: 'center' },
+  buyPriceText: { fontSize: FICHE_DETAIL.barPriceSize, lineHeight: FICHE_DETAIL.barPriceLine },
+  buyButton: { width: FICHE.barButtonWidth, height: FICHE.barButtonHeight, paddingHorizontal: 12 },
 
   sheetHeaderRow: {
     alignItems: 'center',
@@ -1291,8 +1418,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   viewerDotSlot: { width: FICHE.viewerDotPitch, alignItems: 'center' },
-  viewerClose: {
-    position: 'absolute', start: FICHE.viewerCloseStart,
-    width: 44, height: 44, alignItems: 'center', justifyContent: 'center',
-  },
+  viewerHeader: { position: 'absolute', top: 0, start: 0, end: 0 },
 });

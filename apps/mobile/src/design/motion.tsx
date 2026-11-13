@@ -13,6 +13,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Animated, type StyleProp, type ViewStyle } from 'react-native';
 
 import { MOTION } from './tokens.generated';
+import { NAV_PUSH_MS } from './navigationMotion';
 
 /** Vrai quand l'utilisateur a demandé moins d'animations dans les réglages du système. */
 export function useReduceMotion(): boolean {
@@ -30,6 +31,27 @@ export function useReduceMotion(): boolean {
     };
   }, []);
   return reduce;
+}
+
+/**
+ * 13/11 — « zéro saccade » à l'ouverture d'un écran poussé : ce qui est SOUS la
+ * ligne de flottaison n'est monté qu'une fois le glissement de navigation fini
+ * (`NAV_PUSH_MS` + une image). Le haut de l'écran est là dès la première image ;
+ * le reste ne vole plus de temps au thread pendant que l'écran glisse.
+ */
+export function useAfterPush(): boolean {
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    let frame = 0;
+    const timer = setTimeout(() => {
+      frame = requestAnimationFrame(() => setSettled(true));
+    }, NAV_PUSH_MS);
+    return () => {
+      clearTimeout(timer);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+  return settled;
 }
 
 export interface PressScaleProps {

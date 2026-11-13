@@ -158,7 +158,8 @@ export function PublicationBlockPreview({ form, products }: { form: PublicationB
   if (form.kind === 'container') {
     const panel = normalizeHexColor(form.panel_color) ?? containerPanelColor(bg);
     const panelInk = readableInk(panel, INK, PAPER);
-    const cardWidth = Math.round((PREVIEW_WIDTH - 24 * SCALE - 16 * SCALE * 2) / 2);
+    // 13/11 — même règle que l'app (`templateMetrics.cardsVisible` = 1,96, planche GBox Saucony).
+    const cardWidth = Math.round((PREVIEW_WIDTH - 24 * SCALE - 16 * SCALE) / 1.96);
     return (
       <div style={frame} data-testid="block-preview" data-kind="container">
         <div style={{ background: bg, color: ink, padding: `${16 * SCALE}px ${24 * SCALE}px ${24 * SCALE}px` }}>

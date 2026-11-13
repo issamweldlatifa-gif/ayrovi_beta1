@@ -31,7 +31,7 @@ import type { CatalogAttribute, ProductSheet, SheetDimension, SheetVariant } fro
 
 export const FICHE = {
   /* Écran 1 — photo, nom, prix, description, ligne Taille */
-  imageHeight: 476,        // hauteur ajustée afin que Nom + Prix + Description + Taille tiennent au-dessus de la barre fixe
+  imageHeight: 550,        // 13/11 Privé (`Screenshot_20261113_042843`) : la feuille commence à 574 dp du haut de l'écran ⇒ 550 + barre d'état
   photoDotsBottom: 28,     // 1162 − 1106 = 56 px sous les points
   dot: 6,                  // 12 px (point actif)
   dotIdle: 5,              // 10 px
@@ -98,7 +98,7 @@ export const FICHE = {
   /* Barre d'achat compacte (écrans 1 et 2, proportions épurées Privé / Zalando) */
   barHeight: 68,           // 14/11 Privé : 10 dp + pastille 48 dp + 10 dp
   barPrice: 15,            // 30 px gras
-  barButtonWidth: 212,     // 14/11 Privé : pastille violette 302 px sur 513 ⇒ 212 dp
+  barButtonWidth: 196,     // 13/11 : 212 → 196 — « 1121.00 TND » collait au bouton ; 16 dp d'air garantis entre le prix et le bouton
   barButtonHeight: 48,     // 67 px sur 1147 ⇒ 47 dp, arrondi à la cible tactile 48
   barButtonRadius: 24,     // rayon plein (48 ÷ 2)
   barButtonTop: 10,        // centrage vertical dans la barre de 60 dp
@@ -172,17 +172,16 @@ export function headerTitleProgress(offsetY: number): number {
   return (offsetY - start) / (end - start);
 }
 
-/**
- * 14/11 — galerie : la photo recule à 40 % de la vitesse du doigt pendant que la
- * feuille blanche monte par-dessus (Privé : « la feuille qui bouge »). La photo
- * n'est jamais coupée au repos : elle est posée ENTIÈRE (`contain`) sur le gris
- * de son propre fond.
+/*
+ * 13/11 — « الصورة ثابتة » (Privé 023725 / 023736) : la photo ne bouge PLUS du
+ * tout — la parallaxe du 14/11 est retirée. La feuille blanche monte par-dessus
+ * jusqu'à l'en-tête, qui devient alors blanc avec le nom et une ombre douce.
  */
-export const GALLERY_PARALLAX = 0.4;
 
-export function galleryShift(offsetY: number): number {
-  if (!Number.isFinite(offsetY) || offsetY <= 0) return 0;
-  return -Math.min(offsetY, FICHE.imageHeight) * GALLERY_PARALLAX;
+/** Galerie de la fiche : la photo affichée pour un décalage horizontal (pages pleine largeur). */
+export function galleryIndexFor(offsetX: number, pageWidth: number, count: number): number {
+  if (!Number.isFinite(offsetX) || !(pageWidth > 0) || count <= 0) return 0;
+  return Math.max(0, Math.min(count - 1, Math.round(offsetX / pageWidth)));
 }
 
 /**
@@ -219,6 +218,18 @@ export const FICHE_DETAIL = {
   /* Plein écran : bande grise de 516 dp pour 360 (rapport 1,43), photo entière */
   viewerStageRatio: 1.43,
   viewerBottomSpace: 72,
+  /** 13/11 — ombre douce sous l'en-tête plein (Privé 023736), au lieu d'un simple filet. */
+  headerShadow: 6,
+  /* Barre d'achat (13/11) : prix 18 gras sur UNE ligne, 16 dp d'air avant le bouton noir */
+  barPriceSize: 18,
+  barPriceLine: 24,
+  barGap: 16,
+  barEnd: 8,
+  /* Pastille panier de l'en-tête : badge 18 dp, chiffre 11/14 jamais agrandi (il sortait du rond) */
+  cartPill: 36,
+  cartBadge: 18,
+  cartBadgeText: 11,
+  cartBadgeLine: 14,
 } as const;
 
 /** La valeur d'une caractéristique tient-elle dans une demi-colonne ? */

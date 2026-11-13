@@ -243,17 +243,19 @@ export const FICHE_COLORS = {
   photo: '#F3F3F3',
   /** Lien souligné de la fiche (« Voir les informations sur la fabrication »). */
   link: BRAND.black,
-  /**
-   * 14/11/2026 — pastille « Ajouter au panier » : violet électrique relevé sur les
-   * planches Privé (#571EF7, `Screenshot_20261113_023826`). Remplace le CTA noir du
-   * 25/10 sur demande expresse du client (« comme la référence »).
+  /*
+   * 13/11/2026 — « Ajouter au panier » n'a plus de couleur propre : c'est le
+   * `<Button tone="solid">` NOIR de la famille de boutons de l'application
+   * (consigne client : « من عائلة الأزرار متاعنا، بالأسود »). Le violet #571EF7
+   * du 14/11 est retiré.
    */
-  cta: '#571EF7',
-  ctaPressed: '#4515CC',
   /** Texte d'une taille épuisée (barré) : gris moyen, lisible sans crier. */
   struck: '#969696',
   /** Voile au-dessus de la feuille de taille (noir 35 %). */
   scrim: veil(0.35),
+  /** 13/11 — ombre douce de la feuille qui glisse SUR la photo, et de sa ligne d'arrimage. */
+  sheetShadow: veil(0.1),
+  sheetShadowClear: veil(0),
 } as const;
 
 /** Adaptation mode clair / sombre de la grande fiche produit sans perte de contraste. */
@@ -274,10 +276,10 @@ export function ficheColorsFor(mode: 'light' | 'dark') {
     viewerStage: BRAND.black,
     photo: '#F3F3F3',
     link: BRAND.white,
-    cta: '#7A4DFA',
-    ctaPressed: '#571EF7',
     struck: COLORS.dark.muted,
     scrim: veil(0.64),
+    sheetShadow: veil(0.4),
+    sheetShadowClear: veil(0),
   } as const;
 }
 
