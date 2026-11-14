@@ -160,7 +160,9 @@ describe('endpoints CRM', () => {
     const csrf = login.body.data.csrfToken as string;
     resetAyWebsCaptureControlCache(db);
 
-    record(db, 'registre:primark', 5, 20);
+    // L'endpoint lit l'horloge réelle (fenêtre glissante de 24 h) : enregistrer à l'heure courante, pas à NOW (fixe),
+    // sinon le test expire 24 h après le 12/11/2026 15:30 UTC.
+    record(db, 'registre:primark', 5, 20, new Date());
     const health = await agent.get('/api/admin/aywebs/capture/health');
     expect(health.status, JSON.stringify(health.body)).toBe(200);
     expect(health.body.data.alerts.map((row: { store_key: string }) => row.store_key)).toContain('registre:primark');

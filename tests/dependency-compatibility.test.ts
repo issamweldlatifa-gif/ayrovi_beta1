@@ -41,13 +41,14 @@ describe('security updates retain the APIs actually consumed by ZAYROVI', () => 
     try {
       await mkdir(path.join(dir,'client/public/media'),{recursive:true});
       for (const d of ['assets/brand/zayrovi-2026-11', 'apps/mobile/src/design', 'client/src/design']) await mkdir(path.join(dir,d),{recursive:true});
+      await writeFile(path.join(dir,'apps/mobile/app.json'),await readFile('apps/mobile/app.json')); // géométrie et fond du splash natif
       await writeFile(path.join(dir,'assets/brand/zayrovi-2026-11/logo.json'),await readFile('assets/brand/zayrovi-2026-11/logo.json'));
       await writeFile(path.join(dir,'assets/brand/appearance.json'),await readFile('assets/brand/appearance.json'));
       await writeFile(path.join(dir,'client/index.html'),'<html></html>');
       execFileSync(process.execPath,[path.resolve('scripts/cap-assets.mjs')],{cwd:dir});
       expect(await sharp(path.join(dir,'assets/icon.png')).metadata()).toMatchObject({width:1024,height:1024});
-      // fond noir de la palette, Z à 62 % de la largeur de l'icône
-      const trimmed=(await sharp(path.join(dir,'assets/icon.png')).trim({background:'#FFFFFF',threshold:60}).toBuffer({resolveWithObject:true})).info.width;
+      // logo v7 : fond noir plat #0A0A0A, Z zébré blanc à 62 % de la HAUTEUR de l'icône (le Z est un peu plus haut que large)
+      const trimmed=(await sharp(path.join(dir,'assets/icon.png')).trim({background:'#0A0A0A',threshold:60}).toBuffer({resolveWithObject:true})).info.height;
       expect(Math.abs(trimmed-Math.round(1024*.62))).toBeLessThanOrEqual(10); // ±1 % : bord adouci par l'agrandissement
       expect(await sharp(path.join(dir,'assets/splash.png')).metadata()).toMatchObject({width:2732,height:2732});
       expect(await sharp(path.join(dir,'assets/splash-dark.png')).metadata()).toMatchObject({width:2732,height:2732});
