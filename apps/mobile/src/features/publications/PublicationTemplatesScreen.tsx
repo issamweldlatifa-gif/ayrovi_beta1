@@ -27,6 +27,9 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { PublicationFavoritesProvider } from './PublicationFavorites';
+import { PublicationSavedProvider } from './PublicationSaved';
+import { SheetPortalHost } from '@/design/sheet/SheetPortal';
+import { RHYTHM } from '@/design/tokens.mobile';
 import { PublicationHeader } from './PublicationHeader';
 import { PUBLICATION_PALETTE as P, PublicationText } from './publicationDesign';
 import { ContainerTemplate } from './templates/ContainerTemplate';
@@ -104,8 +107,12 @@ export function PublicationTemplatesScreen() {
 
   return (
     <View testID="publication-page" style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* Hôte des feuilles (commentaires) : elles couvrent l'écran entier,
+          au-dessus de la liste — jamais la seule rangée qui les déclare. */}
+      <SheetPortalHost>
       <PublicationHeader />
       <PublicationFavoritesProvider>
+      <PublicationSavedProvider>
       <FlatList
         testID="publication-blocks"
         data={rows}
@@ -128,7 +135,7 @@ export function PublicationTemplatesScreen() {
         ItemSeparatorComponent={Separator}
         viewabilityConfig={viewability}
         onViewableItemsChanged={onViewable}
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + RHYTHM.section }]}
         initialNumToRender={4}
         maxToRenderPerBatch={4}
         windowSize={5}
@@ -146,7 +153,9 @@ export function PublicationTemplatesScreen() {
           )
         }
       />
+      </PublicationSavedProvider>
       </PublicationFavoritesProvider>
+      </SheetPortalHost>
     </View>
   );
 }
@@ -157,7 +166,7 @@ function Separator() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: P.paper },
-  content: { paddingTop: 16 },
+  content: { paddingTop: RHYTHM.group },
   column: { alignSelf: 'center' },
   separator: { height: T.blockSpacing },
 });

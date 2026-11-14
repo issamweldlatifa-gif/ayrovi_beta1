@@ -30,6 +30,7 @@
  */
 
 import { CARD_SYSTEM, cardRailMetrics, cardWidthFor } from '../../../design/cardSystem';
+import { RHYTHM } from '../../../design/rhythm';
 
 /*
  * 13/11 (captures 073653 → 073818) — SYSTÈME DE CARTES (`src/design/cardSystem.ts`) :
@@ -45,9 +46,15 @@ export const PUBLICATION_TEMPLATE = {
   maxContentWidth: 640,
   /**
    * Espace vertical entre deux blocs. 13/11 : 32 → 16 (consigne « قلّل
-   * المسافات بين البلوكات باش يبان أكثر » ; planches Zalando ≈ 16 dp).
+   * المسافات بين البلوكات باش يبان أكثر »). 14/11 (système de rythme) : chaque
+   * bloc porte désormais SA barre d'interaction ; le blanc qui suit la barre
+   * doit être nettement plus grand que celui qui la relie à son bloc, sinon on
+   * ne sait plus à quel bloc elle appartient (Publication « chargée ») ⇒
+   * `RHYTHM.cluster` (32).
    */
-  blockSpacing: 16,
+  blockSpacing: RHYTHM.cluster,
+  /** Bloc ↔ sa barre d'interaction : la barre appartient au bloc (proximité). */
+  barTop: RHYTHM.inline,
 
   /* Modèle `media` */
   /** 13/11 : la marge commune des cartes et de l'app (12). */
@@ -61,17 +68,19 @@ export const PUBLICATION_TEMPLATE = {
   /* Modèle `container` */
   /** 13/11 : titre, cartes et « Suivre » partent de la MÊME marge (était 24 pour le texte). */
   bandInset: CARD_SYSTEM.gutter,
-  bandPaddingTop: 16,
-  /** Planche : 29 px sous la 2e ligne du titre ⇒ 16 dp (24 laissait un bandeau trop haut). */
-  bandPaddingBottom: 16,
+  /** 14/11 (rythme, bandeau bleu Zalando ≈ 24–30 dp) : 16 → `RHYTHM.block`. */
+  bandPaddingTop: RHYTHM.block,
+  /** 14/11 : 16 → `RHYTHM.block` — le titre du bandeau respire (planche Zalando 125655). */
+  bandPaddingBottom: RHYTHM.block,
   panelPaddingTop: 56,
   cardRatio: CARD_SYSTEM.imageRatio,
   cardRadius: CARD_SYSTEM.radius,
   cardSpacing: CARD_SYSTEM.gap,
   containerMediaAspect: 2.07,
   /** Bas du panneau : 89 px entre le texte des cartes et la pilule « + Suivre » ⇒ 24 dp + interlignes. */
-  followTop: 32,
-  panelPaddingBottom: 24,
+  followTop: RHYTHM.cluster,
+  /** 14/11 : 24 → `RHYTHM.cluster` — la pilule « + Suivre » ne colle plus au bas du panneau. */
+  panelPaddingBottom: RHYTHM.cluster,
 
   /* Modèle `sponsored_pair` */
   pairInset: CARD_SYSTEM.gutter,

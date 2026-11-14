@@ -11,7 +11,7 @@
  * sait DESSINER — aucun état de position ne remonte dans la carte.
  */
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { useTheme } from '@/design/theme';
 import { useReduceMotion } from '@/design/motion';
 import { HEART_PATH } from '@/features/reels/ReelIcons';
@@ -33,11 +33,20 @@ export const HEART_BURST = {
     { dx: 30, dy: -86, size: 18 },
     { dx: 2, dy: -112, size: 14 },
   ],
-  /** Durée de vie totale d'une gerbe (ms). */
-  lifetime: 1100,
+  /**
+   * Durée de vie totale d'une gerbe (ms). 14/11 (« les cœurs doivent être
+   * rapides et fluides ») : 1100 → 640. Avant : un ressort mou (friction 4,
+   * long à se poser) PUIS une pause de 260 ms PUIS l'envol — trois animations
+   * enchaînées, chacune attendant la précédente. Maintenant UNE seule
+   * horloge native, de durée fixe : éclosion, envol et fondu en découlent.
+   */
+  lifetime: 640,
   /** Au-delà, les plus anciennes gerbes disparaissent (mémoire bornée). */
   max: 4,
 } as const;
+
+/** Courbe de sortie douce (décélération) — jamais de rebond qui traîne. */
+const EASE_OUT = Easing.bezier(0.2, 0.8, 0.2, 1);
 
 function Heart({ size, color }: { size: number; color: string }) {
   return (
@@ -48,31 +57,33 @@ function Heart({ size, color }: { size: number; color: string }) {
 }
 
 function HeartBurst({ burst, color, reduce, onDone }: { burst: Burst; color: string; reduce: boolean; onDone: (id: number) => void }) {
-  const pop = useRef(new Animated.Value(reduce ? 1 : 0)).current;
-  const fly = useRef(new Animated.Value(0)).current;
+  // UNE horloge 0 → 1 : tout le reste est interpolé (thread natif, 60 i/s).
+  const clock = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    const animation = reduce
-      ? Animated.sequence([Animated.delay(500), Animated.timing(fly, { toValue: 1, duration: 200, useNativeDriver: true })])
-      : Animated.sequence([
-          Animated.spring(pop, { toValue: 1, friction: 4, tension: 260, useNativeDriver: true }),
-          Animated.delay(260),
-          Animated.timing(fly, { toValue: 1, duration: 420, useNativeDriver: true }),
-        ]);
+    const animation = Animated.timing(clock, {
+      toValue: 1,
+      duration: reduce ? 360 : HEART_BURST.lifetime,
+      easing: reduce ? Easing.linear : EASE_OUT,
+      useNativeDriver: true,
+    });
     animation.start(({ finished }) => { if (finished) onDone(burst.id); });
     return () => animation.stop();
-  }, [burst.id, reduce, pop, fly, onDone]);
+  }, [burst.id, reduce, clock, onDone]);
 
   const half = HEART_BURST.size / 2;
+  // Éclosion dans le premier quart (léger dépassement), envol + fondu ensuite.
+  const scale = reduce ? 1 : clock.interpolate({ inputRange: [0, 0.16, 0.28, 1], outputRange: [0.35, 1.12, 1, 0.92] });
+  const opacity = clock.interpolate({ inputRange: [0, 0.55, 1], outputRange: [1, 1, 0] });
+  const rise = clock.interpolate({ inputRange: [0, 0.45, 1], outputRange: [0, 0, reduce ? 0 : -72] });
+  const spread = clock.interpolate({ inputRange: [0, 0.35, 1], outputRange: [0, 1, 1.12], extrapolate: 'clamp' });
   return (
     <View pointerEvents="none" style={[styles.burst, { left: burst.x - half, top: burst.y - half }]}>
       <Animated.View
+        renderToHardwareTextureAndroid
+        shouldRasterizeIOS
         style={{
-          opacity: fly.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }),
-          transform: [
-            { translateY: fly.interpolate({ inputRange: [0, 1], outputRange: [0, reduce ? 0 : -90] }) },
-            { scale: pop.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }) },
-            { rotate: `${burst.tilt}deg` },
-          ],
+          opacity,
+          transform: [{ translateY: rise }, { scale }, { rotate: `${burst.tilt}deg` }],
         }}
       >
         <Heart size={HEART_BURST.size} color={color} />
@@ -80,18 +91,17 @@ function HeartBurst({ burst, color, reduce, onDone }: { burst: Burst; color: str
       {reduce ? null : HEART_BURST.minis.map((mini, index) => (
         <Animated.View
           key={index}
+          renderToHardwareTextureAndroid
           style={[
             styles.mini,
             {
               left: half - mini.size / 2,
               top: half - mini.size / 2,
-              opacity: Animated.multiply(pop, fly.interpolate({ inputRange: [0, 1], outputRange: [1, 0] })),
+              opacity,
               transform: [
-                { translateX: pop.interpolate({ inputRange: [0, 1], outputRange: [0, mini.dx] }) },
-                { translateY: Animated.add(
-                  pop.interpolate({ inputRange: [0, 1], outputRange: [0, mini.dy] }),
-                  fly.interpolate({ inputRange: [0, 1], outputRange: [0, -40] }),
-                ) },
+                { translateX: Animated.multiply(spread, mini.dx) },
+                { translateY: Animated.add(Animated.multiply(spread, mini.dy), rise) },
+                { scale: spread },
               ],
             },
           ]}

@@ -43,7 +43,7 @@ describe('géométrie responsive commune', () => {
   });
 
   it('AppScreen et SubScreen partagent le jeton d’espacement de section', () => {
-    expect(screenContentGap([4, 8, 12, 16, 24, 32, 48, 64, 96])).toBe(12);
-    expect(() => screenContentGap([4, 8])).toThrow('space[2]');
+    expect(screenContentGap([4, 8, 12, 16, 24, 32, 48, 64, 96])).toBe(16);
+    expect(() => screenContentGap([4, 8])).toThrow('space[3]');
   });
 });

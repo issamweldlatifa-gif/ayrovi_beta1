@@ -1064,6 +1064,8 @@ export const ar = {
   'publication.bar.shares': '{value} مشاركات',
   'publication.bar.sharesOne': 'مشاركة واحدة',
   'publication.bar.reactions': '{value} تفاعلات',
+  'publication.bar.save': 'حفظ',
+  'publication.bar.unsave': 'إزالة من المحفوظات',
   'publication.comments.firstLike': 'كن أول من يُعجب بهذا',
   'publication.comments.relevant': 'الأكثر صلة',
   'publication.comments.recent': 'الأحدث',

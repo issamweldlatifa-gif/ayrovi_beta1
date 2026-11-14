@@ -1065,6 +1065,8 @@ export const fr = {
   'publication.bar.shares': '{value} partages',
   'publication.bar.sharesOne': '1 partage',
   'publication.bar.reactions': '{value} réactions',
+  'publication.bar.save': 'Enregistrer',
+  'publication.bar.unsave': 'Retirer des enregistrements',
   'publication.comments.firstLike': 'Soyez la première personne à aimer ça',
   'publication.comments.relevant': 'Plus pertinents',
   'publication.comments.recent': 'Plus récents',

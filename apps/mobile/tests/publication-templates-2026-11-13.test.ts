@@ -76,9 +76,13 @@ describe('lecture des blocs Publication', () => {
 });
 
 describe('cotes des modèles (planches Zalando, 360 dp)', () => {
-  it('13/11 : blocs rapprochés (16 dp) et bandeau resserré', () => {
-    expect(T.blockSpacing).toBe(16);
-    expect(T.bandPaddingBottom).toBe(16);
+  it('14/11 (système de rythme) : la barre colle à SON bloc, le blanc sépare les blocs', () => {
+    // Remplace « blocs rapprochés (16 dp) » du 13/11 : chaque bloc porte
+    // maintenant sa barre d'interaction ; Publication était jugée chargée.
+    expect(T.blockSpacing).toBe(32);
+    expect(T.barTop).toBeLessThan(T.blockSpacing);
+    expect(T.bandPaddingTop).toBe(24);
+    expect(T.bandPaddingBottom).toBe(24);
   });
 
   it('14/11 (GBox) : titre du bandeau > texte de carte (16, la graisse distingue la marque) > « Sponsorisé »', () => {

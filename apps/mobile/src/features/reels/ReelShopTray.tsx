@@ -24,7 +24,7 @@
  * (options · son · partage) reste affiché ; commentaires et cœur restent
  * disponibles dans les options, même sans article.
  */
-import { MEDIA_GLYPH_SHADOW, RADIUS, VIDEO_BACKDROP } from '@/design/tokens.mobile';
+import { MEDIA_GLYPH_SHADOW, MEDIA_RAIL_GLYPH, RADIUS, VIDEO_BACKDROP } from '@/design/tokens.mobile';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -128,7 +128,7 @@ function RailButton({ action, reelId, bottom, onMedia }: {
       ]}
     >
       {/* Option A (14/11) : icône blanche PLEINE, nue, ombre douce — pas de pastille. */}
-      <ReelGlyph name={action.glyph} size={theme.iconSize.md} color={onMedia} filled shadow={MEDIA_GLYPH_SHADOW} />
+      <ReelGlyph name={action.glyph} size={MEDIA_RAIL_GLYPH} color={onMedia} filled shadow={MEDIA_GLYPH_SHADOW} />
       {action.count ? (
         <AppText variant="caption" color={onMedia}>
           {action.count}
@@ -260,6 +260,7 @@ export function ReelShopTray({
           onPick={rail.onReactionPick}
           guest={!rail.reactionEnabled}
           ink={onMedia}
+          size={MEDIA_RAIL_GLYPH}
         />
       </View>
     </Animated.View>

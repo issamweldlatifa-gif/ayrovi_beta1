@@ -70,6 +70,9 @@ export const SPACE_EXTENDED = [2, 6, 10, 20, 40] as const;
 /** Échelle complète : identité + compléments, triée. */
 export const SPACE_ALL: readonly number[] = [...SPACE, ...SPACE_EXTENDED].sort((a, b) => a - b);
 
+/* ── Rythme : le système d'espacement (14/11/2026) — voir `rhythm.ts` ──── */
+export { RHYTHM, type RhythmRole } from './rhythm';
+
 /** CTA d'achat propre à AYWEBs — jaune fixe, isolé des actions de marque globales. */
 export const COMMERCE = {
   action: '#FFD60A',
@@ -185,6 +188,14 @@ export function veil(opacity: number): string {
  * option A de la refonte du 14/11/2026 : icône blanche pleine, sans pastille.
  */
 export const MEDIA_GLYPH_SHADOW = veil(0.32);
+/**
+ * Taille des glyphes NUS posés sur une vidéo (rail Reels) — retour du 14/11 :
+ * « les icônes d'interaction sont difficiles à voir, un peu plus grandes ».
+ * Sans pastille, une icône blanche sur une image mouvante a besoin de plus de
+ * masse optique qu'une icône d'action sur fond uni (`md` 24) : 30, sous la
+ * pastille d'état vide (`lg` 32) — la colonne garde son pas de 56.
+ */
+export const MEDIA_RAIL_GLYPH = 30;
 
 /** Voile CLAIR (blanc de marque + opacité) : boutons « givrés » posés sur une image. */
 export function frost(opacity: number): string {

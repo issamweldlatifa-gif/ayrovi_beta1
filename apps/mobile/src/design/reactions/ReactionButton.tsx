@@ -65,6 +65,8 @@ export interface ReactionButtonProps {
    * (« J'aime ») qui prend la couleur de la réaction posée, comme Facebook.
    */
   tintLabel?: boolean;
+  /** Compteur en graisse forte, à l'encre (barre Publication redessinée, 14/11). */
+  strongCount?: boolean;
 }
 
 const TILT_DEG = 28;
@@ -158,13 +160,16 @@ function ReactionGlyph({ reaction, ink, size, media = false }: { reaction: Conte
         }}
       >
         {/* Sur vidéo (option A, 14/11) : pouce blanc PLEIN au repos, ombre douce.
-            Sur carte : contour gris au repos, plein coloré une fois posé. */}
+            Sur carte : contour au repos, plein coloré une fois posé.
+            Posé (retour du 14/11, « pas tout bleu ») : liseré BLANC + contour
+            défini, comme le pouce de Facebook — jamais une tache de couleur. */}
         <ReelGlyph
           name={reactionGlyph(reaction)}
           size={size}
           color={color}
           filled={media || reaction !== null}
           shadow={media ? MEDIA_GLYPH_SHADOW : undefined}
+          rim={reaction !== null ? (media ? theme.colors.onMedia : theme.colors.surface) : undefined}
         />
       </Animated.View>
       {reaction === 'like' ? (
@@ -296,7 +301,7 @@ function ReactionPicker({ current, position, surface, onPick, onClose }: {
 
 export function ReactionButton({
   reaction, count, onTap, onPick, disabled = false, guest = false, variant, ink, surface = variant === 'rail' ? 'media' : 'card', size, testID,
-  style, openRequest = 0, accessibilityCount, tintLabel = false,
+  style, openRequest = 0, accessibilityCount, tintLabel = false, strongCount = false,
 }: ReactionButtonProps) {
   const theme = useTheme();
   const t = useT();
@@ -362,7 +367,7 @@ export function ReactionButton({
         <ReactionGlyph reaction={reaction} ink={ink} size={glyphSize} media={surface === 'media'} />
         {count ? (
           <AppText
-            variant={tintLabel ? 'captionStrong' : 'caption'}
+            variant={tintLabel || strongCount ? 'captionStrong' : 'caption'}
             color={tintLabel ? reactionColor(reaction, theme.colors, ink) : ink}
             numberOfLines={1}
           >

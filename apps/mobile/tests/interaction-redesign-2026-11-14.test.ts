@@ -36,7 +36,8 @@ describe('phase 3 — glyphes v1 et option A sur vidéo', () => {
 
   it('rail Reels : icônes BLANCHES pleines, nues, avec ombre — pas de pastille', () => {
     const tray = code('src/features/reels/ReelShopTray.tsx');
-    expect(tray).toMatch(/<ReelGlyph name=\{action\.glyph\} size=\{theme\.iconSize\.md\} color=\{onMedia\} filled shadow=\{MEDIA_GLYPH_SHADOW\} \/>/);
+    // 14/11 (retour sur appareil) : glyphes plus grands sur vidéo (`MEDIA_RAIL_GLYPH`).
+    expect(tray).toMatch(/<ReelGlyph name=\{action\.glyph\} size=\{MEDIA_RAIL_GLYPH\} color=\{onMedia\} filled shadow=\{MEDIA_GLYPH_SHADOW\} \/>/);
   });
 
   it('le bouton de réaction est plein + ombré sur média, au trait au repos sur carte', () => {
@@ -64,16 +65,20 @@ describe('phase 4 — barre Publication et feuille de commentaires', () => {
     expect(screen).toMatch(/rows\.filter\(\(row\) => !row\.sponsored\)/);
   });
 
-  it('trois tiers égaux de 44 dp, rangée miroir en arabe', () => {
-    expect(engagement).toMatch(/export const PUBLICATION_BAR_HEIGHT = 44;/);
-    expect(engagement).toMatch(/third: \{ flex: 1, minHeight: PUBLICATION_BAR_HEIGHT/);
+  it('14/11 redessinée : rangée d’icônes 24 + signet, cibles ≥ 44 dp, rangée miroir en arabe', () => {
+    expect(engagement).toMatch(/export const PUBLICATION_BAR_HEIGHT = 48;/);
+    expect(engagement).toMatch(/action: \{ minWidth: 44, minHeight: 44/);
+    expect(engagement).toContain('const icon = theme.iconSize.md;');
     expect(engagement).toContain('rowDirectionFor(theme.isRTL)');
-    for (const id of ['publication-like-', 'publication-comment-', 'publication-share-']) expect(engagement).toContain(id);
+    for (const id of ['publication-like-', 'publication-comment-', 'publication-share-', 'publication-save-']) expect(engagement).toContain(id);
+    // Plus de tiers à libellés ni de résumé séparé au-dessus d’un filet.
+    expect(engagement).not.toMatch(/third:|publication-summary-/);
   });
 
-  it('J’aime : bouton officiel Z-Reactions, libellé teinté (bleu une fois posé)', () => {
-    expect(engagement).toMatch(/<ReactionButton[\s\S]*?count=\{t\('social\.like'\)\}[\s\S]*?tintLabel/);
-    expect(code('src/design/reactions/ReactionButton.tsx')).toMatch(/color=\{tintLabel \? reactionColor\(reaction, theme\.colors, ink\) : ink\}/);
+  it('J’aime : bouton officiel Z-Reactions ; posé = liseré blanc, compteur à l’encre (jamais tout bleu)', () => {
+    expect(engagement).toMatch(/<ReactionButton[\s\S]*?strongCount[\s\S]*?ink=\{P\.ink\}/);
+    expect(engagement).not.toContain('tintLabel');
+    expect(code('src/design/reactions/ReactionButton.tsx')).toMatch(/rim=\{reaction !== null \? \(media \? theme\.colors\.onMedia : theme\.colors\.surface\) : undefined\}/);
   });
 
   it('feuille : AUCUN autocollant, GIF, émoji ni appareil photo', () => {

@@ -301,24 +301,30 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
   });
 });
 
-describe('barre Publication (refonte des interactions 14/11)', () => {
-  it('résumé masqué à zéro ; puis « 👍❤️ 12 » à gauche et « 3 commentaires · 1 partage » à droite', () => {
+describe('barre Publication (redessinée après l’essai sur appareil, 14/11)', () => {
+  it('rangée d’icônes : compteurs collés, masqués à zéro', () => {
     const view = wrap(<PublicationTemplatesScreen />);
-    expect(screen.queryByTestId('publication-summary-video')).toBeNull();
+    expect(screen.getByTestId('publication-like-video')).toBeTruthy();
+    expect(screen.queryByText('12')).toBeNull();
     view.unmount();
     mockEngagement.counts = { video: { likes: 9, loves: 3, comments: 3, views: 0, shares: 1 } };
     wrap(<PublicationTemplatesScreen />);
-    expect(screen.getByTestId('publication-summary-video')).toBeTruthy();
     expect(screen.getByText('12')).toBeTruthy();
-    expect(screen.getByText('3 commentaires · 1 partage')).toBeTruthy();
+    expect(screen.getByText('3')).toBeTruthy();
+    expect(screen.getByText('1')).toBeTruthy();
+    // Le compteur reste lisible au lecteur d’écran.
+    expect(screen.getByTestId('publication-comment-video').props.accessibilityLabel).toBe('Commenter, 3 commentaires');
+    // Plus de libellés en tiers ni de résumé séparé.
+    expect(screen.queryByText('J’aime')).toBeNull();
+    expect(screen.queryByTestId('publication-summary-video')).toBeNull();
   });
 
-  it('J’aime posé : libellé BLEU (Bleu Z) ; visiteur : la connexion s’ouvre', () => {
+  it('J’aime posé : compteur à l’ENCRE (jamais tout bleu) ; visiteur : la connexion s’ouvre', () => {
     mockEngagement.counts = { video: { likes: 1, loves: 0, comments: 0, views: 0, shares: 0 } };
     mockEngagement.mine = { video: 'like' };
     const view = wrap(<PublicationTemplatesScreen />);
-    const label = screen.getByText('J’aime');
-    expect(String(StyleSheet.flatten(label.props.style).color).toUpperCase()).toBe('#0A63F5');
+    expect(screen.getByTestId('publication-like-video').props.accessibilityState).toMatchObject({ selected: true });
+    expect(String(StyleSheet.flatten(screen.getByText('1').props.style).color).toUpperCase()).toBe('#101010');
     view.unmount();
     mockEngagement.mine = {};
     wrap(<PublicationTemplatesScreen />);
@@ -327,9 +333,33 @@ describe('barre Publication (refonte des interactions 14/11)', () => {
     expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
   });
 
-  it('Commenter ouvre la feuille claire : invitation au premier J’aime, tri, état vide, champ', () => {
+  it('Enregistrer : invité ⇒ connexion ; compte ⇒ bascule immédiate', () => {
+    const view = wrap(<PublicationTemplatesScreen />);
+    fireEvent.press(screen.getByTestId('publication-save-video'));
+    expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
+    view.unmount();
+    mockSession.status = 'signedIn';
+    mockSession.account = { id: 'acc-1' };
     wrap(<PublicationTemplatesScreen />);
+    const save = () => screen.getByTestId('publication-save-video');
+    expect(save().props.accessibilityState).toMatchObject({ selected: false });
+    expect(save().props.accessibilityLabel).toBe('Enregistrer');
+    fireEvent.press(save());
+    expect(save().props.accessibilityState).toMatchObject({ selected: true });
+    expect(save().props.accessibilityLabel).toBe('Retirer des enregistrements');
+    // Aucun signet sous un bloc sponsorisé (pas de barre du tout).
+    expect(screen.queryByTestId('publication-save-box')).toBeNull();
+  });
+
+  it('Commenter ouvre la feuille DANS l’hôte de l’écran (pas dans la rangée) : invitation, tri, état vide, champ', () => {
+    wrap(<PublicationTemplatesScreen />);
+    expect(screen.queryByTestId('sheet-portal-host')).toBeNull();
     fireEvent.press(screen.getByTestId('publication-comment-video'));
+    const host = screen.getByTestId('sheet-portal-host');
+    const bar = screen.getByTestId('publication-bar-video');
+    // La feuille vit sous l’hôte, plus sous la barre du bloc.
+    expect(host.findAllByProps({ testID: 'publication-comment-input' }).length).toBeGreaterThan(0);
+    expect(bar.findAllByProps({ testID: 'publication-comment-input' })).toHaveLength(0);
     expect(screen.getByText('Soyez la première personne à aimer ça')).toBeTruthy();
     expect(screen.getByText('Plus pertinents')).toBeTruthy();
     expect(screen.getByText('Aucun commentaire pour l’instant')).toBeTruthy();

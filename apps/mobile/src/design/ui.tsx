@@ -14,7 +14,7 @@ import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, webDirection, type TextRole } from './theme';
 import { actionDirectionFor, responsiveMetricsFor, rowDirectionFor } from './layoutLogic';
-import { COMMERCE, veil } from './tokens.mobile';
+import { COMMERCE, RHYTHM, veil } from './tokens.mobile';
 import { LoadingSpinner } from './LoadingSpinner';
 import { useT } from '@/i18n';
 
@@ -160,7 +160,8 @@ export function SectionHeader({
         style,
       ]}
     >
-      <View style={{ flex: 1, gap: 2 }}>
+      {/* 14/11 (rythme) : titre ↔ phrase d'intention = `RHYTHM.inline` (était 2, collé). */}
+      <View style={{ flex: 1, gap: RHYTHM.inline }}>
         <AppText variant="label" color={theme.colors.ink}>
           {title}
         </AppText>
@@ -724,7 +725,8 @@ export function DrawerItem({
         color={active ? theme.colors.accentText : theme.colors.ink}
         accessibilityElementsHidden
       />
-      <View style={{ flex: 1, gap: 2 }}>
+      {/* 14/11 (rythme) : titre ↔ phrase d'intention = `RHYTHM.inline` (était 2, collé). */}
+      <View style={{ flex: 1, gap: RHYTHM.inline }}>
         <AppText variant="label" color={theme.colors.ink}>{label}</AppText>
         {hint ? <AppText variant="caption" color={theme.colors.muted}>{hint}</AppText> : null}
       </View>

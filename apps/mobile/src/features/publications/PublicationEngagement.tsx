@@ -4,14 +4,13 @@
  *
  * Remplace la consigne « page vidée » du 13/11 pour les blocs NON sponsorisés :
  *
- *  ┌──────────────────────────────────────────────────────────────┐
- *  │ (👍❤️) 12                        3 commentaires · 1 partage │ ← résumé (masqué à zéro)
- *  ├──────────────────────────────────────────────────────────────┤
- *  │    👍 J'aime    │   💬 Commenter   │   ↗ Partager            │ ← tiers égaux, 44 dp
- *  └──────────────────────────────────────────────────────────────┘
+ *  14/11 (retour sur appareil) — barre REDESSINÉE, signet ajouté :
+ *    👍 12   💬 3   ↗ 1                                     🔖
+ *  (icônes 24 au trait, compteurs collés et masqués à zéro, cibles ≥ 44 dp)
  *
  *  • J'aime = le bouton officiel Z-Reactions (toucher = 👍, appui long =
- *    sélecteur), contour gris au repos, BLEU une fois posé (libellé compris) ;
+ *    sélecteur) ; posé = pouce plein cerné de BLANC, compteur à l'encre ;
+ *  • Enregistrer = signet, mémoire par compte (`PublicationSaved`) ;
  *  • Commenter = feuille claire façon Facebook : en-tête « 👍❤️ N › » + pouce,
  *    « Soyez la première personne à aimer ça », tri « Plus pertinents »,
  *    état vide, champ « Rédigez un commentaire… » dont l'envoi passe au BLEU.
@@ -21,7 +20,8 @@
  * Serveur : les blocs actifs non sponsorisés sont des cibles sociales à part
  * entière (`publishedSocialTarget`, source `block`) — mêmes tables, mêmes
  * compteurs, mêmes règles d'authentification que les Reels et les stories.
- * Rangée miroir en arabe (`rowDirectionFor`).
+ * Rangée miroir en arabe (`rowDirectionFor`). La feuille passe par
+ * `SheetPortal` : elle couvre l'écran, jamais la seule rangée de liste.
  */
 import { useRef, useState } from 'react';
 import { Pressable, Share, StyleSheet, TextInput, View, type ScrollView } from 'react-native';
@@ -37,9 +37,13 @@ import { ReactionButton } from '@/design/reactions/ReactionButton';
 import type { ContentReaction } from '@/design/reactions/reactionModel';
 import { useContentReaction, type ContentReactionState } from '@/design/reactions/useContentReaction';
 import { AppSheet } from '@/design/sheet/AppSheet';
+import { SheetPortal } from '@/design/sheet/SheetPortal';
+import { playInteractionSound } from '@/design/feedback/interactionSounds';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
-import { RADIUS } from '@/design/tokens.mobile';
+import { RADIUS, RHYTHM } from '@/design/tokens.mobile';
+import { CARD_SYSTEM } from '@/design/cardSystem';
+import { PUBLICATION_TEMPLATE as T } from './templates/templateMetrics';
 import { relativeTimeLabel } from '@/format/relativeTime';
 import { useI18n, useT } from '@/i18n';
 import { ReelGlyph } from '@/features/reels/ReelIcons';
@@ -47,13 +51,16 @@ import { sortComments, type CommentSort } from '@/features/social/commentSort';
 import { useSession } from '@/state/session';
 import { getSessionId, useSessionId } from '@/session/session';
 import { PublicationAuthSheet } from './PublicationAuthSheet';
+import { usePublicationSaved } from './PublicationSaved';
 import { PUBLICATION_PALETTE as P, PublicationText } from './publicationDesign';
 
 const COMMENT_LIMIT = 500;
 /** Hauteur fixe de la feuille, comme Facebook : elle ne saute pas à chaque message. */
 export const PUBLICATION_COMMENTS_HEIGHT = 0.82;
-/** Cible tactile de chaque tiers de la barre (consigne : 44 dp). */
-export const PUBLICATION_BAR_HEIGHT = 44;
+/** Hauteur de la barre (14/11 : rangée d'icônes 24, cibles ≥ 44 dp). */
+export const PUBLICATION_BAR_HEIGHT = 48;
+/** Marge intérieure d'une cible de la barre : (44 − 24) / 2. */
+const BAR_TARGET_PAD = 10;
 /** Pastille d'une réaction dans le résumé (👍 bleu, ❤️ rouge), chevauchée de 4 dp. */
 const SUMMARY_BADGE = 18;
 
@@ -144,13 +151,26 @@ export interface PublicationBarProps {
   engagementKey: readonly unknown[];
 }
 
-/** La barre Facebook sous un bloc : résumé, filet, J'aime · Commenter · Partager. */
+/**
+ * La barre sous un bloc — REDESSINÉE le 14/11 (« la barre n'est pas bien du
+ * tout ») : plus de résumé, de filet ni de libellés en tiers. Une rangée
+ * d'icônes nettes, plus grandes (24 au lieu de 18), à l'encre du bloc, avec
+ * leur compteur collé (masqué à zéro) — et le signet « Enregistrer » à
+ * l'autre bout :
+ *
+ *   👍 12   💬 3   ↗ 1                                         🔖
+ *
+ * Les icônes sont au TRAIT (transparentes) au repos ; J'aime posé = pouce
+ * plein cerné de blanc (jamais tout bleu, compteur à l'encre) ; Enregistré =
+ * signet plein à l'encre.
+ */
 export function PublicationBar({ blockId, title, counts, mine, engagementKey }: PublicationBarProps) {
   const theme = useTheme();
   const t = useT();
   const session = useSession();
   const sessionId = useSessionId();
   const client = useQueryClient();
+  const saved = usePublicationSaved();
   const signedIn = session.status === 'signedIn';
   const [auth, setAuth] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
@@ -164,82 +184,85 @@ export function PublicationBar({ blockId, title, counts, mine, engagementKey }: 
     onSettled: () => { void client.invalidateQueries({ queryKey: engagementKey }); },
   });
   const badges = summaryBadges(counts, mine, reaction.reaction);
-  const parts = publicationSummaryParts(counts, t);
-  const showSummary = reaction.count > 0 || parts.length > 0;
   const direction = rowDirectionFor(theme.isRTL);
+  const icon = theme.iconSize.md;
+  const isSaved = saved?.isSaved(blockId) ?? false;
+  const commentsLabel = [t('social.comment'), ...publicationSummaryParts({ comments: counts.comments, shares: 0 }, t)].join(', ');
+  const shareLabel = [t('social.share'), ...publicationSummaryParts({ comments: 0, shares: counts.shares }, t)].join(', ');
 
   return (
-    <View testID={`publication-bar-${blockId}`} style={styles.bar}>
-      {showSummary ? (
-        <View testID={`publication-summary-${blockId}`} style={[styles.summary, { flexDirection: direction }]}>
-          {reaction.count > 0 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('publication.bar.reactions', { value: String(reaction.count) })}
-              onPress={() => setCommentsOpen(true)}
-              style={[styles.summarySide, { flexDirection: direction }]}
-            >
-              <ReactionBadges badges={badges} />
-              <PublicationText variant="caption" color={P.muted}>{String(reaction.count)}</PublicationText>
-            </Pressable>
-          ) : <View />}
-          {parts.length > 0 ? (
-            <Pressable accessibilityRole="button" onPress={() => setCommentsOpen(true)} hitSlop={6}>
-              <PublicationText variant="caption" color={P.muted}>{parts.join(' · ')}</PublicationText>
-            </Pressable>
-          ) : null}
-        </View>
+    <View testID={`publication-bar-${blockId}`} style={[styles.bar, { flexDirection: direction }]}>
+      <ReactionButton
+        testID={`publication-like-${blockId}`}
+        variant="inline"
+        surface="card"
+        reaction={reaction.reaction}
+        count={reaction.count > 0 ? String(reaction.count) : null}
+        accessibilityCount={reaction.count > 0 ? String(reaction.count) : undefined}
+        strongCount
+        onTap={reaction.tap}
+        onPick={reaction.pick}
+        guest={!signedIn}
+        ink={P.ink}
+        size={icon}
+        style={styles.action}
+      />
+      <Pressable
+        testID={`publication-comment-${blockId}`}
+        accessibilityRole="button"
+        accessibilityLabel={commentsLabel}
+        onPress={() => setCommentsOpen(true)}
+        hitSlop={4}
+        style={({ pressed }) => [styles.action, { flexDirection: direction, opacity: pressed ? theme.opacity.subtle : 1 }]}
+      >
+        <ReelGlyph name="comment" size={icon} color={P.ink} />
+        {counts.comments > 0 ? (
+          <PublicationText variant="captionStrong" color={P.ink}>{String(counts.comments)}</PublicationText>
+        ) : null}
+      </Pressable>
+      <Pressable
+        testID={`publication-share-${blockId}`}
+        accessibilityRole="button"
+        accessibilityLabel={shareLabel}
+        onPress={() => {
+          void shareBlock(blockId, title).then((shared) => {
+            if (shared) void client.invalidateQueries({ queryKey: engagementKey });
+          });
+        }}
+        hitSlop={4}
+        style={({ pressed }) => [styles.action, { flexDirection: direction, opacity: pressed ? theme.opacity.subtle : 1 }]}
+      >
+        <ReelGlyph name="share" size={icon} color={P.ink} mirrored={theme.isRTL} />
+        {counts.shares > 0 ? (
+          <PublicationText variant="captionStrong" color={P.ink}>{String(counts.shares)}</PublicationText>
+        ) : null}
+      </Pressable>
+      <View style={styles.flex} />
+      {saved ? (
+        <Pressable
+          testID={`publication-save-${blockId}`}
+          accessibilityRole="button"
+          accessibilityLabel={t(isSaved ? 'publication.bar.unsave' : 'publication.bar.save')}
+          accessibilityState={{ selected: isSaved }}
+          onPress={() => saved.toggle(blockId)}
+          hitSlop={4}
+          style={({ pressed }) => [styles.action, { opacity: pressed ? theme.opacity.subtle : 1 }]}
+        >
+          <ReelGlyph name="bookmark" size={icon} color={P.ink} filled={isSaved} />
+        </Pressable>
       ) : null}
-      <View style={[styles.rule, { backgroundColor: P.line }]} />
-      <View style={[styles.actions, { flexDirection: direction }]}>
-        <ReactionButton
-          testID={`publication-like-${blockId}`}
-          variant="inline"
-          surface="card"
-          reaction={reaction.reaction}
-          count={t('social.like')}
-          accessibilityCount={reaction.count > 0 ? String(reaction.count) : undefined}
-          tintLabel
-          onTap={reaction.tap}
-          onPick={reaction.pick}
-          guest={!signedIn}
-          ink={P.muted}
-          size={theme.iconSize.sm}
-          style={styles.third}
-        />
-        <Pressable
-          testID={`publication-comment-${blockId}`}
-          accessibilityRole="button"
-          accessibilityLabel={t('social.comment')}
-          onPress={() => setCommentsOpen(true)}
-          style={({ pressed }) => [styles.third, styles.action, { flexDirection: direction, opacity: pressed ? theme.opacity.subtle : 1 }]}
-        >
-          <ReelGlyph name="comment" size={theme.iconSize.sm} color={P.muted} />
-          <PublicationText variant="captionStrong" color={P.muted}>{t('social.comment')}</PublicationText>
-        </Pressable>
-        <Pressable
-          testID={`publication-share-${blockId}`}
-          accessibilityRole="button"
-          accessibilityLabel={t('social.share')}
-          onPress={() => {
-            void shareBlock(blockId, title).then((shared) => {
-              if (shared) void client.invalidateQueries({ queryKey: engagementKey });
-            });
-          }}
-          style={({ pressed }) => [styles.third, styles.action, { flexDirection: direction, opacity: pressed ? theme.opacity.subtle : 1 }]}
-        >
-          <ReelGlyph name="share" size={theme.iconSize.sm} color={P.muted} mirrored={theme.isRTL} />
-          <PublicationText variant="captionStrong" color={P.muted}>{t('social.share')}</PublicationText>
-        </Pressable>
-      </View>
       {commentsOpen ? (
-        <PublicationCommentsSheet
-          blockId={blockId}
-          reaction={reaction}
-          badges={badges}
-          engagementKey={engagementKey}
-          onClose={() => setCommentsOpen(false)}
-        />
+        // Portail : la feuille se dessine au-dessus de TOUT l'écran, pas dans
+        // la rangée de liste (correctif « Commenter s'ouvre bloqué », 14/11).
+        <SheetPortal>
+          <PublicationCommentsSheet
+            blockId={blockId}
+            reaction={reaction}
+            badges={badges}
+            engagementKey={engagementKey}
+            onClose={() => setCommentsOpen(false)}
+          />
+        </SheetPortal>
       ) : null}
       {auth ? <PublicationAuthSheet visible onClose={() => setAuth(false)} /> : null}
     </View>
@@ -320,6 +343,8 @@ export function PublicationCommentsSheet({ blockId, reaction, badges, engagement
       });
     },
     onSuccess: (result) => {
+      // 14/11 : ton court quand le serveur ACCEPTE le commentaire.
+      playInteractionSound('comment');
       attempts.delete(draftKey);
       drafts.delete(draftKey);
       setDraft('');
@@ -393,7 +418,12 @@ export function PublicationCommentsSheet({ blockId, reaction, badges, engagement
       <View style={[styles.grabber, { backgroundColor: P.line }]} />
       <View style={[styles.sheetHeader, { flexDirection: direction }]}>
         {reaction.count > 0 ? (
-          <View testID="publication-comments-reactions" style={[styles.summarySide, { flexDirection: direction }]}>
+          <View
+            testID="publication-comments-reactions"
+            accessible
+            accessibilityLabel={t('publication.bar.reactions', { value: String(reaction.count) })}
+            style={[styles.summarySide, { flexDirection: direction }]}
+          >
             <ReactionBadges badges={badges} />
             <PublicationText variant="bodyStrong" color={P.ink}>{String(reaction.count)}</PublicationText>
             <ReelGlyph name="back" size={theme.iconSize.xs} color={P.ink} mirrored={!ar} />
@@ -416,6 +446,7 @@ export function PublicationCommentsSheet({ blockId, reaction, badges, engagement
             name={reaction.reaction === 'love' ? 'heart' : 'like'}
             size={theme.iconSize.md}
             filled={liked}
+            rim={liked ? P.paper : undefined}
             color={reaction.reaction === 'love' ? theme.colors.reactionLove : liked ? theme.colors.reactionLike : P.ink}
           />
         </Pressable>
@@ -518,8 +549,9 @@ export function PublicationCommentsSheet({ blockId, reaction, badges, engagement
 }
 
 const styles = StyleSheet.create({
-  bar: { paddingHorizontal: 4 },
-  summary: { alignItems: 'center', justifyContent: 'space-between', minHeight: 32, paddingHorizontal: 8 },
+  // Les icônes s'alignent sur la marge des blocs (12) : cible 44 − glyphe 24 = 10 de chaque côté.
+  bar: { alignItems: 'center', minHeight: PUBLICATION_BAR_HEIGHT, paddingHorizontal: CARD_SYSTEM.gutter - BAR_TARGET_PAD, marginTop: T.barTop },
+  action: { minWidth: 44, minHeight: 44, paddingHorizontal: BAR_TARGET_PAD, alignItems: 'center', justifyContent: 'center', gap: RHYTHM.inline + 2 },
   summarySide: { alignItems: 'center', gap: 6 },
   badges: { alignItems: 'center' },
   badge: {
@@ -531,16 +563,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   rule: { height: StyleSheet.hairlineWidth, alignSelf: 'stretch' },
-  actions: { alignItems: 'stretch', minHeight: PUBLICATION_BAR_HEIGHT },
-  third: { flex: 1, minHeight: PUBLICATION_BAR_HEIGHT, justifyContent: 'center' },
-  action: { alignItems: 'center', gap: 6 },
   grabber: { alignSelf: 'center', marginTop: 8, width: 40, height: 4, borderRadius: RADIUS.full },
   sheetHeader: { alignItems: 'center', gap: 8, paddingHorizontal: 16, minHeight: 52 },
   flex: { flex: 1 },
   iconTarget: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   sort: { alignItems: 'center', gap: 4, paddingHorizontal: 16, minHeight: 40 },
   error: { paddingHorizontal: 16, paddingBottom: 4 },
-  thread: { gap: 12 },
+  // 14/11 (rythme) : réponses liées (`related`), fils séparés par un cran de plus.
+  thread: { gap: RHYTHM.related, paddingBottom: RHYTHM.inline },
   commentRow: { gap: 8 },
   avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   avatarSmall: { width: 28, height: 28, borderRadius: 14 },

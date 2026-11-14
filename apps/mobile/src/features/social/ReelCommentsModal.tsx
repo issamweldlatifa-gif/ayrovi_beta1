@@ -37,6 +37,7 @@ import { useTheme } from '@/design/theme';
 import { useI18n, useT } from '@/i18n';
 import { RADIUS } from '@/design/tokens.mobile';
 import { AppSheet } from '@/design/sheet/AppSheet';
+import { playInteractionSound } from '@/design/feedback/interactionSounds';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { PublicationAuthSheet } from '@/features/publications/PublicationAuthSheet';
 import { fetchComments, sendInteraction, type Reel, type SocialComment } from '@/api/social';
@@ -172,6 +173,8 @@ export function ReelCommentsModal({ reel, onClose }: { reel: Reel; onClose: () =
       });
     },
     onSuccess: (result) => {
+      // 14/11 : ton court quand le serveur ACCEPTE le commentaire.
+      playInteractionSound('comment');
       attempts.delete(draftKey);
       drafts.delete(draftKey);
       void AsyncStorage.removeItem(draftKey).catch(() => {});

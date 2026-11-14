@@ -18,6 +18,7 @@ import { veil } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
 import { playReelVideo, reloadReelVideo } from '@/features/reels/playReelVideo';
 import { useReelPlaybackStatus } from '@/features/reels/useReelPlaybackStatus';
+import { ReelGlyph } from '@/features/reels/ReelIcons';
 import { PUBLICATION_PALETTE as P, PublicationIcon } from '../publicationDesign';
 
 const CONTROL = 40;
@@ -99,7 +100,8 @@ export function PublicationVideo({
           onPress={() => setMuted((value) => !value)}
           style={styles.control}
         >
-          <PublicationIcon name={muted ? 'volume-mute-outline' : 'volume-high-outline'} size={theme.iconSize.sm} color={P.paper} />
+          {/* 14/11 : le même haut-parleur PLEIN que le rail des Reels (une seule famille). */}
+          <ReelGlyph name={muted ? 'muted' : 'sound'} size={theme.iconSize.sm} color={P.paper} filled />
         </Pressable>
       </View>
     </View>

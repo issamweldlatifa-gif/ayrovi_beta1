@@ -30,7 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/design/theme';
 import { useReduceMotion } from '@/design/motion';
 import { MOTION } from '@/design/tokens.generated';
-import { RADIUS, SHEET_CORNER_RADIUS } from '@/design/tokens.mobile';
+import { RADIUS, RHYTHM, SHEET_CORNER_RADIUS } from '@/design/tokens.mobile';
 import { SheetBackdrop } from '@/design/sheet/SheetBackdrop';
 import { anchoredSheetHeight, useKeyboardOverlap } from '@/design/keyboard';
 import {
@@ -355,6 +355,7 @@ const styles = StyleSheet.create({
   scrollWrapBottom: { flexGrow: 0, flexShrink: 1, minHeight: 0 },
   scroll: { flex: 1 },
   bottomScroll: { flexGrow: 0, flexShrink: 1 },
-  body: { paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
-  footer: { paddingHorizontal: 16, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  // 14/11 (rythme) : marge de feuille `group`, rangées `related` (gap 10 hors rôle → 12).
+  body: { paddingHorizontal: RHYTHM.group, paddingVertical: RHYTHM.related, gap: RHYTHM.related },
+  footer: { paddingHorizontal: RHYTHM.group, paddingTop: RHYTHM.related, borderTopWidth: StyleSheet.hairlineWidth },
 });

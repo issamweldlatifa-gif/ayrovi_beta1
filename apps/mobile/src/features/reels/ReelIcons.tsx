@@ -31,7 +31,8 @@ export type ReelGlyphName =
   | 'back'
   | 'reply'
   | 'flag'
-  | 'send';
+  | 'send'
+  | 'bookmark';
 
 /** Trait commun de la famille (relevé : ~6 px sur un glyphe de 75 px). */
 export const REEL_GLYPH_STROKE = 1.8;
@@ -84,6 +85,23 @@ const optical = (name: ReelGlyphName) => {
   return k ? `translate(12 12) scale(${k}) translate(-12 -12)` : undefined;
 };
 
+/**
+ * Signet « Enregistrer » (14/11 : barre Publication) — ruban aux angles doux,
+ * encoche en V en bas ; même grille, même trait, même poids que le pouce.
+ */
+const BOOKMARK =
+  'M6.4 5.3 Q6.4 3.6 8.1 3.6 H15.9 Q17.6 3.6 17.6 5.3 V19.5 Q17.6 20.8 16.5 20.1 L12 17.2 L7.5 20.1 Q6.4 20.8 6.4 19.5 Z';
+
+/**
+ * Liseré des réactions POSÉES (14/11 : « ما تعملش الكل أزرق — خلّي حاشية
+ * بيضاء كيف بوس الفيسبوك ») : corps coloré, anneau BLANC sur le tracé, et un
+ * contour extérieur de la même couleur qui le définit — lisible sur une carte
+ * blanche comme sur une vidéo claire.
+ */
+export const REEL_GLYPH_RIM = 0.9;
+/** Débord du contour extérieur au-delà du trait doux. */
+const RIM_OUTLINE = 1.1;
+
 /** Haut-parleur : pilule + pavillon trapézoïdal. */
 const SPEAKER_CUFF = { x: 2.4, y: 8.2, width: 3, height: 7.6, rx: 1.5 };
 const SPEAKER_HORN = 'M8.2 8 L13.6 3.6 Q14.8 2.8 14.8 4.2 V19.8 Q14.8 21.2 13.6 20.4 L8.2 16 Z';
@@ -103,10 +121,15 @@ export interface ReelGlyphProps {
    * Couleur fournie par l'appelant (jeton `veil`) — jamais une teinte en dur ici.
    */
   shadow?: string;
+  /**
+   * Liseré de l'état POSÉ (pleine forme seulement) : couleur de l'anneau
+   * intérieur — le blanc de la surface. Le contour extérieur garde `color`.
+   */
+  rim?: string;
 }
 
 /** Un glyphe de la famille Reels — trait 1.8, grille 24. */
-export function ReelGlyph({ name, size, color, filled = false, mirrored = false, shadow }: ReelGlyphProps) {
+export function ReelGlyph({ name, size, color, filled = false, mirrored = false, shadow, rim }: ReelGlyphProps) {
   const flip = mirrored ? 'translate(24 0) scale(-1 1)' : undefined;
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" {...hidden}>
@@ -122,18 +145,33 @@ export function ReelGlyph({ name, size, color, filled = false, mirrored = false,
           </G>
         </>
       ) : null}
-      <G transform={flip}>{glyphBody(name, color, filled, 0)}</G>
+      {rim && filled ? (
+        // Contour extérieur (même teinte, plus épais) puis corps plein cerné
+        // d'un anneau blanc : la forme reste définie, jamais une tache bleue.
+        <>
+          <G transform={flip}>{glyphBody(name, color, true, RIM_OUTLINE)}</G>
+          <G transform={flip}>{glyphBody(name, color, true, 0, rim, REEL_GLYPH_RIM)}</G>
+        </>
+      ) : (
+        <G transform={flip}>{glyphBody(name, color, filled, 0)}</G>
+      )}
     </Svg>
   );
 }
 
-/** Le dessin d'un glyphe dans une couleur ; `spread` épaissit le trait (ombre). */
-function glyphBody(name: ReelGlyphName, color: string, filled: boolean, spread: number): React.ReactNode {
-  const interaction = name === 'like' || name === 'dislike' || name === 'heart' || name === 'comment' || name === 'share';
+/** Formes de la famille v1 qui ont une variante PLEINE adoucie. */
+const SOFT_FILLED: ReadonlySet<ReelGlyphName> = new Set(['like', 'dislike', 'heart', 'comment', 'share', 'muted', 'sound', 'bookmark']);
+
+/**
+ * Le dessin d'un glyphe dans une couleur ; `spread` épaissit le trait (ombre,
+ * contour du liseré) ; `edge` / `edgeWidth` remplacent le trait (anneau blanc).
+ */
+function glyphBody(name: ReelGlyphName, color: string, filled: boolean, spread: number, edge?: string, edgeWidth?: number): React.ReactNode {
+  const interaction = SOFT_FILLED.has(name);
   const stroke = {
-    stroke: color,
+    stroke: edge ?? color,
     // Forme pleine de la famille v1 : trait d'adoucissement ; sinon trait 1.8.
-    strokeWidth: (filled && interaction ? REEL_GLYPH_SOFT : REEL_GLYPH_STROKE) + spread,
+    strokeWidth: edgeWidth ?? (filled && interaction ? REEL_GLYPH_SOFT : REEL_GLYPH_STROKE) + spread,
     strokeLinejoin: 'round' as const,
     strokeLinecap: 'round' as const,
   };
@@ -153,16 +191,17 @@ function glyphBody(name: ReelGlyphName, color: string, filled: boolean, spread: 
       );
       break;
     case 'comment':
+      // 14/11 : au TRAIT (cartes, blocs), la bulle est vide — « les icônes du
+      // bloc sont transparentes, pas noires » ; les trois points restent
+      // percés dans la variante pleine (vidéo).
       body = filled ? (
         <Path d={BUBBLE_PIERCED} fill={fill} fillRule="evenodd" {...stroke} />
       ) : (
-        <>
-          <Path d={BUBBLE} fill="none" {...stroke} />
-          {BUBBLE_DOTS.map(([cx, cy]) => (
-            <Circle key={cx} cx={cx} cy={cy} r={BUBBLE_DOT_R} fill={color} />
-          ))}
-        </>
+        <Path d={BUBBLE} fill="none" {...stroke} />
       );
+      break;
+    case 'bookmark':
+      body = <Path d={BOOKMARK} fill={fill} {...stroke} />;
       break;
     case 'share':
       body = <Path d={SHARE} fill={fill} {...stroke} />;
@@ -171,19 +210,23 @@ function glyphBody(name: ReelGlyphName, color: string, filled: boolean, spread: 
       body = <Path d={HEART_PATH} fill={fill} {...stroke} />;
       break;
     case 'muted':
-    case 'sound':
+    case 'sound': {
+      // 14/11 : le haut-parleur suit la famille du rail — corps PLEIN adouci
+      // (comme le pouce et la bulle), ondes / croix au trait rond 2.
+      const line = { ...stroke, strokeWidth: (edgeWidth ?? 2) + spread };
       body = (
         <>
-          <Rect {...SPEAKER_CUFF} fill="none" {...stroke} />
-          <Path d={SPEAKER_HORN} fill="none" {...stroke} />
+          <Rect {...SPEAKER_CUFF} fill={fill} {...stroke} />
+          <Path d={SPEAKER_HORN} fill={fill} {...stroke} />
           {name === 'muted' ? (
-            <Path d="M17.6 10.2 L21 13.6 M21 10.2 L17.6 13.6" fill="none" {...stroke} />
+            <Path d="M17.4 9.6 L21.2 13.4 M21.2 9.6 L17.4 13.4" fill="none" {...line} />
           ) : (
-            <Path d="M17.6 9 Q19.4 12 17.6 15 M19.6 6.8 Q23.2 12 19.6 17.2" fill="none" {...stroke} />
+            <Path d="M17.6 9 Q19.4 12 17.6 15 M19.6 6.8 Q23.2 12 19.6 17.2" fill="none" {...line} />
           )}
         </>
       );
       break;
+    }
     case 'fullscreen':
       body = (
         <Path

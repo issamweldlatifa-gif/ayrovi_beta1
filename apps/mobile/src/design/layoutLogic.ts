@@ -58,11 +58,16 @@ export function rowDirectionFor(isRTL: boolean): RowDirection {
   return isRTL ? 'row-reverse' : 'row';
 }
 
-/** Un seul espacement vertical entre blocs, partagé par AppScreen et SubScreen. */
+/**
+ * Un seul espacement vertical entre blocs, partagé par AppScreen et SubScreen.
+ * 14/11 (système de rythme, planches Zalando) : 12 → 16 = `RHYTHM.group` —
+ * l'écart entre deux éléments d'écran est plus grand que l'écart interne
+ * d'une carte (12), sinon tout se colle.
+ */
 export function screenContentGap(space: readonly number[]): number {
-  const gap = space[2];
+  const gap = space[3];
   if (typeof gap !== 'number' || !Number.isFinite(gap) || gap < 0) {
-    throw new Error('Le jeton d’espacement `space[2]` est requis pour les écrans.');
+    throw new Error('Le jeton d’espacement `space[3]` est requis pour les écrans.');
   }
   return gap;
 }

@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { sendInteraction, type InteractionResult } from '@/api/social';
 import { isApiError } from '@/api/errors';
+import { playInteractionSound } from '@/design/feedback/interactionSounds';
 import {
   doubleTapReaction,
   optimisticCount,
@@ -116,6 +117,9 @@ export function useContentReaction({
     if (before.reaction === next) return;
     const after = { reaction: next, count: optimisticCount(before.count, before.reaction, next) };
     shown.current = after;
+    // 14/11 : ton court quand on POSE J'aime / J'adore (geste de l'utilisateur
+    // seulement — jamais au retrait, jamais au retour du serveur).
+    if (next === 'like' || next === 'love') playInteractionSound('like');
     setError(false);
     setReaction(after.reaction);
     setCount(after.count);
