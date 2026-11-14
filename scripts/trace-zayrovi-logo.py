@@ -51,7 +51,7 @@ def trace(mask: Image.Image, precision: int):
         vtracer.convert_image_to_svg_py(str(png), str(svg), colormode='binary', mode='spline', filter_speckle=8,
             corner_threshold=60, length_threshold=4, max_iterations=10, splice_threshold=45, path_precision=2)
         tree = ET.parse(svg)
-        pen = SVGPathPen(None, ntos=lambda n: str(round(n, precision)).removesuffix('.0'))
+        pen = SVGPathPen(None, ntos=lambda n: str(round(n, precision) + 0).removesuffix('.0'))  # +0: no '-0'
         scale = 1000 / mask.height
         for path in tree.iter('{http://www.w3.org/2000/svg}path'):
             translate = re.fullmatch(r'translate\(([-\d.]+),([-\d.]+)\)', path.get('transform', 'translate(0,0)'))
@@ -98,7 +98,7 @@ def solid_z_geometry():
 
 def solid_z_path(origin, scale):
     """Exact SVG path data (clockwise arcs, all < 180 degrees or exact semicircles)."""
-    fmt = lambda v: str(round(v, 2)).removesuffix('.0')
+    fmt = lambda v: str(round(v, 2) + 0).removesuffix('.0')
     pt = lambda p: f'{fmt((p[0] - origin[0]) * scale)} {fmt((p[1] - origin[1]) * scale)}'
     out = []
     for seg in solid_z_geometry()[0]:
@@ -110,9 +110,8 @@ def solid_z_path(origin, scale):
     return ''.join(out) + 'Z'
 
 
-def solid_z_mask(size, origin, k):
-    """Rasterise the same outline (arcs sampled finely) in the k-times crop frame."""
-    sub = 16
+def solid_z_points():
+    """The outline as a dense polygon in source pixels (arcs sampled every ~0.7 degrees)."""
     points, current = [], None
     for seg in solid_z_geometry()[0]:
         if seg[0] == 'A':
@@ -131,6 +130,13 @@ def solid_z_mask(size, origin, k):
         else:
             current = np.array(seg[1], float)
             points.append(current)
+    return points
+
+
+def solid_z_mask(size, origin, k):
+    """Rasterise the same outline in the k-times crop frame."""
+    sub = 16
+    points = solid_z_points()
     poly = np.array([[(x - origin[0]) * k * sub, (y - origin[1]) * k * sub] for x, y in points]).round()
     mask = np.zeros((size[1], size[0]), np.uint8)
     cv2.fillPoly(mask, [poly.astype(np.int32)], 255, cv2.LINE_AA, 4)
@@ -160,12 +166,17 @@ outside = int((on & (solid == 0)).sum())
 assert outside < 0.005 * on.sum(), f'{outside} stripe pixels fall outside the measured silhouette'
 # Clip the stripes to the silhouette: crisp outer edge, identical for the striped and solid marks.
 stripes = Image.fromarray(np.where(on & (solid > 0), 255, 0).astype(np.uint8))
-result['symbol'] = {**trace(stripes, 1), **source_info(z_file, crop)}
+result['symbol'] = {**trace(stripes, 0), **source_info(z_file, crop)}
 scale = 1000 / (y1 - y0)
 result['symbolSolid'] = {'width': result['symbol']['width'], 'height': 1000,
                          'viewBox': result['symbol']['viewBox'], 'd': solid_z_path((x0, y0), scale),
                          'construction': 'analytic: bars + parallel diagonal + caps r=%.1f, corner circles r=%.1f/%.1f'
-                         % ((TOP_BAR[3] - TOP_BAR[1]) / 2, *solid_z_geometry()[1]), **source_info(z_file, crop)}
+                         % ((TOP_BAR[3] - TOP_BAR[1]) / 2, *solid_z_geometry()[1]),
+                         # Farthest outline point from the centre of the box, in symbol units: lets every
+                         # circular placement (loader ring, Android safe zone, round avatars) fit the Z exactly.
+                         'maxRadius': round(float(max(np.hypot(px - (x0 + x1) / 2, py - (y0 + y1) / 2)
+                                                      for px, py in solid_z_points())) * scale, 1),
+                         **source_info(z_file, crop)}
 
 # ---- Wordmark (unchanged since v6) --------------------------------------------------------------
 w_file = 'wordmark.jpg'

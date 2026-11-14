@@ -14,7 +14,8 @@
       "versionCode": 15,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+        "monochromeImage": "./assets/images/adaptive-icon-monochrome.png",
+        "backgroundColor": "#0A0A0A"
       },
       "predictiveBackGestureEnabled": false,
       "intentFilters": [
@@ -61,13 +62,20 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFFFFF",
+          "backgroundColor": "#0A0A0A",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 141,
+          "imageWidth": 160,
           "dark": {
-            "backgroundColor": "#FFFFFF",
+            "backgroundColor": "#0A0A0A",
             "image": "./assets/images/splash-icon-dark.png"
           }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#0A0A0A"
         }
       ],
       [
