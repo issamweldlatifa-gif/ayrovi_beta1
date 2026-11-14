@@ -403,19 +403,19 @@ describe('plus d’orange dans l’application', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('app.json : couleur principale violette, ouverture blanche (symbole bleu), aucune couleur orangée', () => {
+  it('app.json : couleur principale violette, ouverture noire (Z zébré v7), aucune couleur orangée', () => {
     const config = JSON.parse(fs.readFileSync(path.join(ROOT, 'app.json'), 'utf8')).expo;
     expect(config.primaryColor).toBe(BRAND.violet);
-    expect(config.backgroundColor).toBe(BRAND.white);
-    // Blue symbol on white launch assets, consistent in both themes.
-    expect(config.android.adaptiveIcon.backgroundColor).toBe(BRAND.white);
+    expect(config.backgroundColor).toBe(BRAND.white); // la toile de l'app sous la révélation blanche
+    // Logo v7 (14/11) : Z zébré blanc sur noir plat, identique dans les deux thèmes.
+    expect(config.android.adaptiveIcon.backgroundColor).toBe(BRAND.black);
     const splash = config.plugins.find((plugin: unknown) => Array.isArray(plugin) && plugin[0] === 'expo-splash-screen')[1];
-    expect(splash.backgroundColor).toBe(BRAND.white);
-    expect(splash.dark.backgroundColor).toBe(BRAND.white);
+    expect(splash.backgroundColor).toBe(BRAND.black);
+    expect(splash.dark.backgroundColor).toBe(BRAND.black);
     expect(hexesIn(config).filter(isOrange)).toEqual([]);
   });
 
-  it('icône, icône adaptative, favicon et écrans de démarrage : zéro pixel orange, zéro violet, symbole bleu Verified', () => {
+  it('icône, icône adaptative, favicon et écrans de démarrage : zéro pixel orange, zéro violet, zéro bleu — Z blanc (v7)', () => {
     const report: string[] = [];
     for (const name of ['icon.png', 'adaptive-icon.png', 'favicon.png', 'splash-icon.png', 'splash-icon-dark.png']) {
       const { pixels } = decodePng(path.join(ROOT, 'assets/images', name));
@@ -431,8 +431,8 @@ describe('plus d’orange dans l’application', () => {
         if (r < 15 && g >= 140 && g <= 158 && b >= 235) blue += 1;
         if (r > 240 && g > 240 && b > 240) white += 1;
       }
-      // Exact blue foreground, no orange or primary-action violet.
-      if (orange > 0 || violet > 0 || blue === 0) report.push(`${name}: orange=${orange} violet=${violet} blanc=${white} bleu=${blue}`);
+      // White zebra Z (v7): no orange, no primary-action violet, and the retired blue symbol is gone.
+      if (orange > 0 || violet > 0 || blue > 0 || white === 0) report.push(`${name}: orange=${orange} violet=${violet} blanc=${white} bleu=${blue}`);
     }
     expect(report).toEqual([]);
   });

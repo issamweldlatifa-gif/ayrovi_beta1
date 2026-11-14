@@ -33,8 +33,11 @@ const fitHeight = (box, share) => {
 const SPLASH_SHARE = 0.7;
 const appJson = JSON.parse(fs.readFileSync('apps/mobile/app.json', 'utf8'));
 const splashPlugin = appJson.expo.plugins.find((p) => Array.isArray(p) && p[0] === 'expo-splash-screen')[1];
+// The native splash and the JS redraw (BRAND.black token) must be the same flat ink: fail the build otherwise.
+for (const bg of [splashPlugin.backgroundColor, splashPlugin.dark?.backgroundColor, appJson.expo.android.adaptiveIcon.backgroundColor])
+  if (String(bg).toUpperCase() !== INK) throw new Error(`app.json: launch background ${bg} must be ${INK} (BRAND.black)`);
 const splashHeight = splashPlugin.imageWidth * SPLASH_SHARE;
-const SPLASH = { background: splashPlugin.backgroundColor, imageWidth: splashPlugin.imageWidth, share: SPLASH_SHARE,
+const SPLASH = { imageWidth: splashPlugin.imageWidth, share: SPLASH_SHARE,
   width: num((splashHeight * symbol.width) / symbol.height, 2), height: num(splashHeight, 2) };
 
 // Loading ring: 136 box, ring r = 65 (stroke 4–6). The Z fits a 52 radius circle -> ~9 px clear of the ring.
@@ -47,7 +50,7 @@ export const BRAND_SYMBOL_SOLID = ${JSON.stringify(data(solid), null, 2)} as con
 /** Farthest outline point from the box centre, in symbol units (fit the Z inside circles). */
 export const BRAND_SYMBOL_MAX_RADIUS = ${solid.maxRadius};
 export const BOOT_SYMBOL_TRANSFORM = '${BOOT_TRANSFORM}';
-/** Native splash geometry (app.json expo-splash-screen), in dp: the Z drawn by the startup handoff. */
+/** Native splash geometry (app.json expo-splash-screen, background BRAND.black), in dp: the Z drawn by the startup handoff. */
 export const SPLASH_SYMBOL = ${JSON.stringify(SPLASH)} as const;
 `;
 for (const file of ['client/src/design/brandSymbol.ts', 'apps/mobile/src/design/brandSymbol.ts']) fs.writeFileSync(file, ts);

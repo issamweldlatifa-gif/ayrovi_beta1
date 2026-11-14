@@ -5,6 +5,7 @@ import { BrandEntrance, REVEAL_DISC } from '@/design/BrandEntrance';
 import { Path } from 'react-native-svg';
 import { BRAND_SYMBOL, SPLASH_SYMBOL } from '@/design/brandSymbol';
 import appJson from '../../app.json';
+import { BRAND } from '@/design/tokens.generated';
 import { TabHomeIcon } from '@/design/TabNavIcons';
 let mockReduce = false;
 let mockMode = 'light';
@@ -62,7 +63,7 @@ it('starts as an exact redraw of the native splash: same background, same white 
   const tree = render(<BrandEntrance ready={false} onShown={() => {}} onDone={() => {}} />);
   const splash = (appJson.expo.plugins as unknown[]).find((p): p is [string, { backgroundColor: string; imageWidth: number; dark: { backgroundColor: string } }] => Array.isArray(p) && p[0] === 'expo-splash-screen')![1];
   expect(SPLASH_SYMBOL.imageWidth).toBe(splash.imageWidth);
-  expect(SPLASH_SYMBOL.background).toBe(splash.backgroundColor);
+  expect(BRAND.black).toBe(splash.backgroundColor);
   expect(splash.dark.backgroundColor).toBe(splash.backgroundColor);
   expect(StyleSheet.flatten(tree.getByTestId('brand-splash-cover').props.style).backgroundColor).toBe(splash.backgroundColor);
   const z = tree.UNSAFE_getAllByType(Path).find((p) => p.props.d === BRAND_SYMBOL.d)!;

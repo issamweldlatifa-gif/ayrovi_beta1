@@ -220,7 +220,8 @@ describe("v7 zebra Z — shipped pixels", () => {
     expect(splash.backgroundColor).toBe(INK);
     expect(splash.dark.backgroundColor).toBe(INK);
     expect(splash.imageWidth).toBe(SPLASH_SYMBOL.imageWidth);
-    expect(SPLASH_SYMBOL.background).toBe(INK);
+    expect(read("apps/mobile/src/design/BrandEntrance.tsx")).toContain("backgroundColor: BRAND.black,"); // the JS redraw of the splash
+    expect(read("apps/mobile/src/design/tokens.generated.ts")).toContain(`black: "${INK}"`);
     expect(plugin("expo-notifications")).toEqual({ icon: "./assets/images/notification-icon.png", color: INK });
     for (const file of [expo.icon, expo.web.favicon, splash.image, splash.dark.image, ...Object.values(expo.android.adaptiveIcon).filter((v) => String(v).startsWith("./")), plugin("expo-notifications").icon])
       expect(fs.existsSync(path.join("apps/mobile", String(file))), String(file)).toBe(true);

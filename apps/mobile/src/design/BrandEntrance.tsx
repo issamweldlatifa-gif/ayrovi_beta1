@@ -57,7 +57,7 @@ export function BrandEntrance({ ready, onShown, onDone }: { ready: boolean; onSh
   const half = REVEAL_DISC / 2;
   return <Animated.View onLayout={onLayout} testID="brand-entrance" accessibilityRole="progressbar" style={[StyleSheet.absoluteFill, { zIndex: 1000, backgroundColor: BRAND.white, alignItems: 'center', justifyContent: 'center', opacity: fade }]}>
     {waiting ? <BrandLoadingIndicator /> : null}
-    <Animated.View testID="brand-splash-cover" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: SPLASH_SYMBOL.background, alignItems: 'center', justifyContent: 'center', opacity: cover }]}>
+    <Animated.View testID="brand-splash-cover" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: BRAND.black, alignItems: 'center', justifyContent: 'center', opacity: cover }]}>
       <Animated.View testID="brand-reveal-fill" style={{ position: 'absolute', left: '50%', top: '50%', marginLeft: -half, marginTop: -half, width: REVEAL_DISC, height: REVEAL_DISC, borderRadius: half, backgroundColor: BRAND.white, transform: [{ scale: grow.interpolate({ inputRange: [0, 1], outputRange: [0, maxScale] }) }] }} />
       <BrandSymbol width={SPLASH_SYMBOL.width} color={BRAND.white} variant="striped" />
     </Animated.View>
