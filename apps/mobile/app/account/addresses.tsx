@@ -142,7 +142,7 @@ function AddressCard({ address, onDelete, busy }: { address: Address; onDelete: 
       {address.deliveryNotes ? (
         <AppText variant="caption" color={theme.colors.muted}>{address.deliveryNotes}</AppText>
       ) : null}
-      <Button label={t('common.delete')} tone="quiet" onPress={onDelete} busy={busy} />
+      <Button label={t('common.delete')} tone="danger" onPress={onDelete} busy={busy} />
     </Card>
   );
 }

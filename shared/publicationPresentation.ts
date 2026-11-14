@@ -39,10 +39,11 @@ export function showsPublicationTitle(template: string) {
     'shoppable',
   ].includes(template);
 }
-/** Reference-inspired cyan blue, darkened to 4.626:1 on white for discovery text. */
-export const PUBLICATION_DISCOVERY_BLUE = '#0078CA';
+/** 14/11: links, verified badge and active like share ONE action blue (Bleu Z, 5.1:1 under white text). */
+export const PUBLICATION_DISCOVERY_BLUE = '#0A63F5';
 export const PUBLICATION_SOCIAL_SURFACE = '#F0F1FC';
-export const PUBLICATION_LIKE = '#D92148';
+/** "J'adore" red, legible on white (4.1:1) and on black (4.8:1). */
+export const PUBLICATION_LIKE = '#F02849';
 export const PUBLICATION_DISLIKE = '#E8B323';
 
 export function nativeMediaPosition(media: MediaPresentation): {

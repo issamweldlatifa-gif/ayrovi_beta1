@@ -529,7 +529,7 @@ export default function SignInScreen() {
           {failureBlock}
           <Button
             label={t('auth.continue')}
-            tone="solid"
+            tone="main"
             size="lg"
             onPress={continueWithEmail}
             busy={busy && waiting === null}
@@ -565,7 +565,7 @@ export default function SignInScreen() {
           {failureBlock}
           <Button
             label={t('auth.title')}
-            tone="solid"
+            tone="main"
             size="lg"
             onPress={emailSignIn}
             busy={busy && waiting === null}
@@ -637,7 +637,7 @@ export default function SignInScreen() {
           {failureBlock}
           <Button
             label={t('auth.register.submit')}
-            tone="solid"
+            tone="main"
             size="lg"
             onPress={register}
             busy={busy && waiting === null}
@@ -660,7 +660,7 @@ export default function SignInScreen() {
           {failureBlock}
           <Button
             label={t('auth.continue')}
-            tone="solid"
+            tone="main"
             size="lg"
             onPress={confirmEmailCode}
             busy={busy && waiting === null}

@@ -4,12 +4,12 @@
    Règle stricte de la plateforme : le canvas est monochrome (blanc / noir).
    Le violet n'est PAS un outil de décoration : c'est un déclencheur d'action.
    Il est INTERDIT en fond de page, en dégradé, en pleine carte, en badge plein
-   ou en bordure / fond autour d'une photo produit. #0113B5 est RÉSERVÉ :
+   ou en bordure / fond autour d'une photo produit. #0A63F5 est RÉSERVÉ :
      • à l'action principale (ajout au panier, caisse, paiement, connexion) —
        un seul bouton violet plein par écran, et pas sur tous les écrans ;
      • aux liens importants, à l'onglet / l'étape / la navigation actifs ;
      • au contour d'une option choisie et au focus.
-   #CCD0F0 (violet clair) : fond d'une option choisie ou d'un état actif, texte
+   #DCE8FE (violet clair) : fond d'une option choisie ou d'un état actif, texte
    #0A0A0A, toujours accompagné d'un contour ou d'une graisse (jamais seul).
    Repère global : ≈ 3 % de l'app (2 % + 1 %) — pas un quota par écran
    (identity.json → accentShare ; plafond de sécurité : accentAreaLimit).

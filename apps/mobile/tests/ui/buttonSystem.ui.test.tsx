@@ -80,7 +80,7 @@ describe('couleurs de l’identité (violet · blanc · noir)', () => {
     let theme: ReturnType<typeof useTheme> | null = null;
     render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Button label="Commander" tone="main" onPress={() => {}} /></>));
     const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Commander' }).props.style);
-    expect(theme!.colors.action).toBe('#0113B5');
+    expect(theme!.colors.action).toBe('#0A63F5');
     expect(btn.backgroundColor).toBe(theme!.colors.action);
     expect(btn.borderColor).toBe(theme!.colors.action);
     expect(StyleSheet.flatten(screen.getByText('Commander').props.style).color).toBe('#FFFFFF');
@@ -108,7 +108,7 @@ describe('couleurs de l’identité (violet · blanc · noir)', () => {
   it('le bouton désactivé garde sa couleur et baisse son opacité', () => {
     render(wrap(<Button label="Payer" tone="main" onPress={() => {}} disabled />));
     const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Payer' }).props.style);
-    expect(btn.backgroundColor).toBe('#0113B5');
+    expect(btn.backgroundColor).toBe('#0A63F5');
     // 27/10/2026 : l'opacité d'un élément désactivé vient de `OPACITY.disabled`
     // (0.4) et non plus d'un 0.5 posé dans le bouton — le stepper du panier,
     // l'option de variante et le bouton disaient trois choses différentes.
@@ -123,7 +123,7 @@ describe('couleurs de l’identité (violet · blanc · noir)', () => {
     expect(idle.borderColor).toBe(theme!.colors.lineControl);
     fireEvent(screen.getByLabelText('Nom'), 'focus');
     const focused = StyleSheet.flatten(screen.getByLabelText('Nom').props.style);
-    expect(focused.borderColor).toBe('#0113B5');
+    expect(focused.borderColor).toBe('#0A63F5');
     expect(focused.borderWidth).toBe(FIELD_FOCUS_WIDTH);
     // La taille extérieure ne bouge pas : le contour épaissi est pris sur le padding.
     expect(focused.paddingHorizontal + focused.borderWidth).toBeCloseTo(idle.paddingHorizontal + idle.borderWidth, 5);
@@ -152,14 +152,14 @@ describe('sélecteur segmenté (v4.2.0)', () => {
     const [chosen, other] = screen.getAllByRole('button');
     const chosenStyle = StyleSheet.flatten(chosen.props.style);
     const otherStyle = StyleSheet.flatten(other.props.style);
-    expect(chosenStyle.backgroundColor).toBe('#CCD0F0');
+    expect(chosenStyle.backgroundColor).toBe('#DCE8FE');
     expect(otherStyle.backgroundColor).toBe('transparent');
     expect(chosen.props.accessibilityState).toMatchObject({ selected: true });
     const label = StyleSheet.flatten(screen.getByText('Boutique').props.style);
     expect(label.color).toBe('#0A0A0A');
     expect(String(label.fontFamily)).toMatch(/Bold/);
     const indicator = StyleSheet.flatten(screen.getByTestId('segment-indicator-shop').props.style);
-    expect(indicator.backgroundColor).toBe('#0113B5');
+    expect(indicator.backgroundColor).toBe('#0A63F5');
     expect(indicator.position).toBe('absolute');
     expect(screen.queryByTestId('segment-indicator-arrival')).toBeNull();
   });

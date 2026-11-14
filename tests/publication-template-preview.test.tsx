@@ -128,6 +128,6 @@ it.each([
     expect(html.indexOf('src="/source.jpg"')).toBeLessThan(
       html.indexOf('Explorer la sélection')
     );
-    expect(html).toContain('#0078CA');
+    expect(html).toContain('#0A63F5');
   }
 );

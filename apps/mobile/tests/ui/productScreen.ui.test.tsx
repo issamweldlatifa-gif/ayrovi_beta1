@@ -205,12 +205,12 @@ describe('écran produit — aucun plantage au montage', () => {
     view.unmount();
   });
 
-  it('13/11 — barre d’achat : bouton NOIR de la famille de l’app, prix sur une ligne qui ne touche pas le bouton', async () => {
+  it('14/11 — barre d’achat : bouton BLEU (CTA principal) de la famille de l’app, prix sur une ligne qui ne touche pas le bouton', async () => {
     require('./productFixture').setProduct({ ...product, finalPrice: 1121 });
     const view = await mount();
     const button = screen.getByTestId('product-add-to-cart');
     const style = StyleSheet.flatten(typeof button.props.style === 'function' ? button.props.style({ pressed: false }) : button.props.style);
-    expect(String(style.backgroundColor).toUpperCase()).toBe('#0A0A0A');
+    expect(String(style.backgroundColor).toUpperCase()).toBe('#0A63F5');
     expect(style.borderRadius).toBe(999);
     expect(style.width).toBe(196);
     const price = screen.getByTestId('product-buy-price');

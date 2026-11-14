@@ -136,7 +136,7 @@ export default function ForgotPasswordScreen() {
             error={failure || null}
             testID="auth-forgot-email"
           />
-          <Button label={t('auth.forgot.submit')} tone="solid" size="lg" onPress={submit} busy={busy} testID="auth-forgot-submit" />
+          <Button label={t('auth.forgot.submit')} tone="main" size="lg" onPress={submit} busy={busy} testID="auth-forgot-submit" />
           <Pressable
             accessibilityRole="link"
             onPress={backToSignIn}

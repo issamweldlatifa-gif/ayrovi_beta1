@@ -1,10 +1,10 @@
 /**
- * ZAYROVI — mesure de la couverture de la couleur de marque (violet électrique #0113B5).
+ * ZAYROVI — mesure de la couverture de la couleur de marque (violet électrique #0A63F5).
  *
  * Le cahier des charges fixe une règle chiffrée : aucun écran mesuré ne dépasse le plafond de
  * sécurité fixé par l'identité (identity.json → accentAreaLimit) — un garde-fou contre les
  * grandes surfaces violettes. Ce n'est PAS l'objectif : depuis la v4.2.0 le repère global du
- * violet est ≈ 3 % de l'application (identity.json → accentShare : 2 % #0113B5 + 1 % #CCD0F0),
+ * violet est ≈ 3 % de l'application (identity.json → accentShare : 2 % #0A63F5 + 1 % #DCE8FE),
  * un repère d'ensemble et non un quota par écran. Ce script ne fait pas confiance au code
  * source : il charge la page réelle, la photographie, et COMPTE les pixels.
  *
@@ -48,7 +48,7 @@ function publishFailure(error) {
 process.on('unhandledRejection', publishFailure);
 process.on('uncaughtException', publishFailure);
 
-/** Est-ce un pixel « bleu de marque » ? Fenêtre large autour de #0113B5 (et #737DD6). */
+/** Est-ce un pixel « bleu de marque » ? Fenêtre large autour de #0A63F5 (et #78A9FA). */
 function isAccentPixel(r, g, b) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);

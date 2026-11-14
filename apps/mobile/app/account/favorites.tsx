@@ -84,7 +84,7 @@ export default function FavoritesScreen() {
           </View>
           <Button
             label={t('favorites.remove')}
-            tone="quiet"
+            tone="danger"
             onPress={() => { setFailure(''); remove.mutate(favorite.id); }}
             busy={remove.isPending}
           />

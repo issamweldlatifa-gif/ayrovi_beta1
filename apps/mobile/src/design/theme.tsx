@@ -67,7 +67,7 @@ export interface Theme {
    * tons : `fg` (texte/icône), `soft` (fond de pastille), `border` (liseré).
    *
    * À utiliser pour tout SIGNAL. La marque, elle, reste noir/blanc/gris +
-   * violet (#0113B5) et violet clair (#CCD0F0) : c'est cette séparation qui
+   * violet (#0A63F5) et violet clair (#DCE8FE) : c'est cette séparation qui
    * garde le violet rare (repère global ≈ 3 % = 2 % + 1 %, pas un quota par
    * écran) et chaque statut lisible (§2.10).
    */

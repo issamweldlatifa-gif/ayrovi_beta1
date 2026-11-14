@@ -83,13 +83,15 @@ export function auditBrand(root=process.cwd()) {
   const identity=JSON.parse(fs.readFileSync(path.join(root,'client/src/design/editorial/identity.json'),'utf8'));
   if (identity.typography.stack !== "'Ayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif") errors.push('official stack changed');
   if (identity.fonts.length!==2 || identity.fonts.map(f=>f.family).join('|')!=='Ayrovi Extracted Sans|Noto Sans Arabic') errors.push('official family allowlist changed');
-  // Palette officielle (2026-10-15) : noir #0A0A0A · blanc #FFFFFF · violet électrique #0113B5 · gris clair #F2F2F2.
-  // v4.2.0 : violet clair #CCD0F0 (secondaire, texte #0A0A0A) ; repère global ≈ 3 % (2 % + 1 %), pas un quota par écran.
+  // Palette officielle (2026-10-15) : noir #0A0A0A · blanc #FFFFFF · gris clair #F2F2F2 + couleur d'action.
+  // v4.4.0 (décision du propriétaire, 14/11/2026) : la couleur d'action devient le « Bleu Z » électrique #0A63F5
+  // (ex-#0113B5) — boutons d'achat, liens, focus, badge vérifié, pouce posé — sur l'app, le CRM ET le site.
+  // v4.2.0 : violet clair #DCE8FE (secondaire, texte #0A0A0A) ; repère global ≈ 3 % (2 % + 1 %), pas un quota par écran.
   // Décision client n° 1 (17/10/2026) : la SURFACE devient BLANCHE — plus aucun
   // fond gris, les sections se séparent par un filet (`line`). Le gris clair
   // garde un seul rôle, `shimmer` : le squelette de chargement, qui n'existerait
   // pas sur fond blanc.
-  const official={canvas:'#FFFFFF',ink:'#0A0A0A',surface:'#FFFFFF',shimmer:'#F2F2F2',action:'#0113B5',accent:'#0113B5',onAction:'#FFFFFF',accentSoft:'#CCD0F0',onAccentSoft:'#0A0A0A',secondaryAction:'#0B57CF',onSecondaryAction:'#FFFFFF'};
+  const official={canvas:'#FFFFFF',ink:'#0A0A0A',surface:'#FFFFFF',shimmer:'#F2F2F2',action:'#0A63F5',accent:'#0A63F5',onAction:'#FFFFFF',accentSoft:'#DCE8FE',onAccentSoft:'#0A0A0A',secondaryAction:'#0B57CF',onSecondaryAction:'#FFFFFF'};
   for(const [role,value] of Object.entries(official)) if(identity.colors[role]!==value) errors.push(`official palette changed: ${role}`);
   for(const role of ['accentSoft','onAccentSoft','secondaryAction','onSecondaryAction']) if(identity.darkColors[role]!==official[role]) errors.push(`official palette changed: dark ${role}`);
   const share=identity.accentShare||{};

@@ -322,10 +322,10 @@ export function OfficialCartRow({
                 {onRemove ? (
                   <Button
                     label={t('cart.remove')}
-                    tone="quiet"
+                    tone="danger"
                     block
                     disabled={busy}
-                    leading={<Ionicons name="trash-outline" size={theme.iconSize.sm} color={theme.colors.ink} />}
+                    leading={<Ionicons name="trash-outline" size={theme.iconSize.sm} color={theme.status.danger.fg} />}
                     onPress={() => {
                       setMenuOpen(false);
                       onRemove();
@@ -396,9 +396,10 @@ export function OfficialCartStickySummary({
 
       {extraAboveButton}
 
+      {/* 14/11 — Valider la commande : CTA principal BLEU (seul bouton plein bleu de l'écran). */}
       <Button
         label={checkoutLabel}
-        tone="solid"
+        tone="main"
         block
         busy={checkoutBusy}
         disabled={checkoutDisabled}

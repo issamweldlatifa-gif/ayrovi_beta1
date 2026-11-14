@@ -59,14 +59,17 @@ describe('editorial identity, generated from one versioned source', () => {
         for (const text of [c.ink, c.muted, c.info, c.accentText, c.success, c.danger]) expect(contrast(text, bg)).toBeGreaterThanOrEqual(4.5);
       }
       expect(contrast(c.info, c.infoSoft)).toBeGreaterThanOrEqual(4.5);
-      expect(contrast(c.action, c.onAction)).toBeGreaterThan(7);
+      // Bleu Z #0A63F5 (décision du propriétaire, 14/11/2026) : blanc dessus = 5,10:1,
+      // au-dessus du seuil WCAG AA (4,5:1) — l'ancien violet foncé tenait 11,9:1.
+      expect(contrast(c.action, c.onAction)).toBeGreaterThanOrEqual(4.5);
     });
   }
-  it('lets the violet accent carry text both ways: violet on white and white on violet', () => {
-    // L'ancien orange (2,6:1) exigeait un jeton de texte distinct ; le violet #0113B5 tient 7,19:1.
+  it('lets the blue accent carry text both ways: blue on white and white on blue', () => {
+    // L'ancien orange (2,6:1) exigeait un jeton de texte distinct ; le Bleu Z #0A63F5 tient 5,10:1 (AA).
     expect(contrast(identity.colors.accent, '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
     expect(contrast(identity.colors.accentText, '#FFFFFF')).toBeGreaterThan(4.5);
-    expect(contrast(identity.colors.onAccent, identity.colors.accent)).toBeGreaterThan(7);
+    expect(contrast(identity.colors.onAccent, identity.colors.accent)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(identity.colors.onAccent, identity.colors.accent)).toBeCloseTo(5.1, 1);
     // Sur fond sombre, le texte d'accent est le violet éclairci, lisible (≥ 4,5:1).
     expect(contrast(identity.darkColors.accentText, identity.darkColors.canvas)).toBeGreaterThanOrEqual(4.5);
   });

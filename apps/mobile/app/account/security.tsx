@@ -205,7 +205,7 @@ export default function SecurityScreen() {
           <Button
             key={`revoke-${device.handle}`}
             label={t('security.deviceRevoke', { device: [device.platform, device.client].filter(Boolean).join(' · ') })}
-            tone="quiet"
+            tone="danger"
             onPress={() => revoke(device.handle)}
             busy={deviceBusy === device.handle}
             disabled={Boolean(deviceBusy)}
@@ -213,7 +213,7 @@ export default function SecurityScreen() {
           />
         ))}
         {otherDevices > 0 ? (
-          <Button label={t('security.devicesRevokeOthers')} onPress={revokeOthers} busy={deviceBusy === 'all'} disabled={Boolean(deviceBusy)} testID="security-logout-others" />
+          <Button label={t('security.devicesRevokeOthers')} tone="danger" onPress={revokeOthers} busy={deviceBusy === 'all'} disabled={Boolean(deviceBusy)} testID="security-logout-others" />
         ) : null}
         {deviceMessage ? <AppText accessibilityRole="alert" variant="label" color={theme.colors.secondary}>{deviceMessage}</AppText> : null}
       </Card>

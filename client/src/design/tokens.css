@@ -3,7 +3,7 @@
    in editorial/identity.json and injected by customerTheme.ts. The legacy aliases
    below must not override that customer-scoped identity.
    Charte : palette officielle du 2026-10-15 — noir #0A0A0A, blanc #FFFFFF, violet électrique
-   #0113B5, gris clair #F2F2F2 (« Monochrome Premium × Violet d'action »).
+   #0A63F5, gris clair #F2F2F2 (« Monochrome Premium × Violet d'action »).
 
    1. UNE SEULE ÉCHELLE NEUTRE (P0 de P4/T2, exécuté) :
       #FFFFFF canvas · #F8F9FA surface · #EAEAEA filet · #111111 encre ·
@@ -11,11 +11,11 @@
       élément doux sur sombre. Toute l'échelle slate héritée
       (#111318/#1d2130/#6b7280/#f8f9fe/#e2e8f0/#5b6472/#050505) est absorbée ;
       les anciens noms survivent UNIQUEMENT comme alias sans valeur propre.
-   2. Le VIOLET ÉLECTRIQUE (#0113B5, point du logo) n'est jamais décoratif : il est
+   2. Le VIOLET ÉLECTRIQUE (#0A63F5, point du logo) n'est jamais décoratif : il est
       réservé à l'action principale (ajout au panier, caisse, paiement, connexion),
       aux liens importants, à l'onglet / l'élément de navigation actif, au contour
       d'une option choisie et au focus. Texte sur violet : #FFFFFF (7,19:1, AAA).
-      Le VIOLET CLAIR (#CCD0F0) est secondaire : fond d'une option choisie ou d'un
+      Le VIOLET CLAIR (#DCE8FE) est secondaire : fond d'une option choisie ou d'un
       état actif, toujours avec un texte #0A0A0A (10,4:1) et jamais seul pour
       signaler l'état. Jamais de grande surface violette.
       Repère global (v4.2.0) : ≈ 3 % de l'application (2 % violet + 1 % violet
@@ -146,8 +146,8 @@ html[data-theme='dark'] {
     --ayrovi-border-soft: #e5e5e5;          /* Filets 1px, séparateurs fins */
     --ayrovi-text-primary: #0a0a0a;         /* Noir officiel : titres, marques, prix, texte */
     --ayrovi-text-secondary: #666666;       /* Encre secondaire : légendes, méta */
-    --ayrovi-color-brand-accent: #0113b5;   /* Violet électrique officiel (point du logo) — déclencheur d'action UNIQUE */
-    --ayrovi-color-brand-accent-soft: #ccd0f0; /* Violet clair (secondaire) : fond d'une option choisie, jamais une grande surface */
+    --ayrovi-color-brand-accent: #0a63f5;   /* Violet électrique officiel (point du logo) — déclencheur d'action UNIQUE */
+    --ayrovi-color-brand-accent-soft: #dce8fe; /* Violet clair (secondaire) : fond d'une option choisie, jamais une grande surface */
 
     /* — surfaces sombres premium : la SEULE famille de noir — */
     --ayrovi-ink-deep: #0a0a0a;             /* Hero, announcement, coquille Lens, rails */
@@ -159,7 +159,7 @@ html[data-theme='dark'] {
     --ayrovi-accent-soft: var(--ayrovi-color-brand-accent-soft);
     --ayrovi-on-accent-soft: #0a0a0a;                  /* texte SUR violet clair : 10,4:1 ; le blanc y est interdit (1,9:1) */
     --ayrovi-on-accent: #ffffff;                       /* texte SUR violet : 7,19:1, AAA */
-    --ayrovi-accent-on-dark: #737dd6;                  /* violet SUR noir (panneaux sombres) : 5,45:1 */
+    --ayrovi-accent-on-dark: #78a9fa;                  /* violet SUR noir (panneaux sombres) : 5,45:1 */
     --ayrovi-cta-ink: var(--ayrovi-on-accent);
     --ayrovi-cta-hover: color-mix(in srgb, var(--ayrovi-color-brand-accent) 87%, var(--ayrovi-text-primary));
     --ayrovi-cta-active: color-mix(in srgb, var(--ayrovi-color-brand-accent) 72%, var(--ayrovi-text-primary));

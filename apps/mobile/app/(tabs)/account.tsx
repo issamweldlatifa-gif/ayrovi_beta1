@@ -72,7 +72,7 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
         {notice ? <AppText variant="caption" color={theme.status.danger.fg}>{notice}</AppText> : null}
         <Button
           label={t('account.signOut')}
-          tone="quiet"
+          tone="danger"
           busy={busy}
           onPress={() => { setBusy(true); signOut().finally(() => setBusy(false)); }}
         />

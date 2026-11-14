@@ -133,7 +133,7 @@ export function LegacyMainMenu({
             {brand === 'aywebs' ? (
               /* Mot-symbole OFFICIEL, reteinté aux couleurs de la marque et posé
                  sur fond transparent : aucune plaque grise autour du logo.
-                 • thème clair : violet #0113B5 (la marque) ;
+                 • thème clair : violet #0A63F5 (la marque) ;
                  • thème sombre : blanc — le violet sur #0A0A0A ne se lit pas. */
               <AppImage
                 localSource={

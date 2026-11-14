@@ -2,26 +2,26 @@
  * GÉNÉRÉ — ne pas modifier à la main.
  *
  * Couleurs   : apps/mobile/src/design/brand.json
- *              ZAYROVI App — Official Brand Colors · version 4.3.0
- *              sha256 : a48c1402967604f0fb7c2b639b1d3ad5785bfdb02afd3e0b1961e18583ed4335
+ *              ZAYROVI App — Official Brand Colors · version 4.4.0
+ *              sha256 : a895dca4d3bf4b87f9bfc12c1178893ecb91c226171d809a3bc40b4b19c70b2a
  * Structure  : client/src/design/editorial/identity.json
- *              ZAYROVI A — Official Identity · version 4.3.0
- *              sha256 : ebca5cc02a008826ddf4a77cc395b719af3811eb64def08a5b78d190c5dbd01b
+ *              ZAYROVI A — Official Identity · version 4.4.0
+ *              sha256 : 3ea2186297bbf5713a98c0a1eaa6028baa879ff5ee0ccf06b7db84a739cf4a44
  *
  * Régénérer : npm run tokens:build   ·   vérifier : npm run tokens:check
  */
 /** Provenance de ces jetons (couleurs de l’application + structure partagée avec le site). */
 export const IDENTITY = {
   name: "ZAYROVI App — Official Brand Colors",
-  sha256: "a48c1402967604f0fb7c2b639b1d3ad5785bfdb02afd3e0b1961e18583ed4335",
+  sha256: "a895dca4d3bf4b87f9bfc12c1178893ecb91c226171d809a3bc40b4b19c70b2a",
   source: "apps/mobile/src/design/brand.json",
   structure: {
     name: "ZAYROVI A — Official Identity",
-    sha256: "ebca5cc02a008826ddf4a77cc395b719af3811eb64def08a5b78d190c5dbd01b",
+    sha256: "3ea2186297bbf5713a98c0a1eaa6028baa879ff5ee0ccf06b7db84a739cf4a44",
     source: "client/src/design/editorial/identity.json",
-    version: "4.3.0",
+    version: "4.4.0",
   },
-  version: "4.3.0",
+  version: "4.4.0",
 } as const;
 
 /** Les quatre couleurs officielles de la marque — la seule source des valeurs dérivées. */
@@ -29,8 +29,8 @@ export const BRAND = {
   black: "#0A0A0A",
   lightGray: "#F2F2F2",
   secondaryBlue: "#0B57CF",
-  violet: "#0113B5",
-  violetLight: "#CCD0F0",
+  violet: "#0A63F5",
+  violetLight: "#DCE8FE",
   white: "#FFFFFF",
 } as const;
 
@@ -54,14 +54,14 @@ export const NEUTRALS = {
 /** Palette sémantique, mode clair et mode sombre. */
 export const COLORS = {
   dark: {
-    accent: "#0113B5",
-    accentSoft: "#CCD0F0",
-    accentText: "#737DD6",
-    action: "#0113B5",
-    actionHover: "#031196",
+    accent: "#0A63F5",
+    accentSoft: "#DCE8FE",
+    accentText: "#78A9FA",
+    action: "#0A63F5",
+    actionHover: "#0A53CB",
     canvas: "#0A0A0A",
     danger: "#FFABAB",
-    focus: "#737DD6",
+    focus: "#78A9FA",
     info: "#BDBDBD",
     infoSoft: "#171717",
     ink: "#FFFFFF",
@@ -79,14 +79,14 @@ export const COLORS = {
     surface: "#171717",
   },
   light: {
-    accent: "#0113B5",
-    accentSoft: "#CCD0F0",
-    accentText: "#0113B5",
-    action: "#0113B5",
-    actionHover: "#031196",
+    accent: "#0A63F5",
+    accentSoft: "#DCE8FE",
+    accentText: "#0A63F5",
+    action: "#0A63F5",
+    actionHover: "#0A53CB",
     canvas: "#FFFFFF",
-    danger: "#A52D2D",
-    focus: "#0113B5",
+    danger: "#D92D20",
+    focus: "#0A63F5",
     info: "#666666",
     infoSoft: "#FFFFFF",
     ink: "#0A0A0A",

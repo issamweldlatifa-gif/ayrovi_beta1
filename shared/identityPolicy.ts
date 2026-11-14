@@ -6,12 +6,12 @@ const record = (value: unknown): Record<string, unknown> =>
 /** Oranges de marque des chartes retirées : #FF6900 (« Zalando », P4/T1), #FF7900 (ZAYROVI A v3),
  * #FE7003 et #FF7A00 (avant P4/T1). Ils restent écrits dans des réglages CMS déjà persistés et dans
  * les graines de la base ; ils ne sont plus l'identité depuis la palette officielle du 2026-11-06
- * (noir #0A0A0A · blanc #FFFFFF · bleu principal #0113B5 · gris clair #F2F2F2). */
+ * (noir #0A0A0A · blanc #FFFFFF · bleu principal #0A63F5 · gris clair #F2F2F2). */
 const LEGACY_BRAND_ORANGES = new Set(['#ff6900', '#ff7900', '#fe7003', '#ff7a00']);
 
 /** Retired brand palette only; never applied to merchandise colour options or photographs. */
 export const RETIRED_BRAND_PURPLES: Record<string, string> = {
-  '#571ef6': '#0113B5', '#c5b2f4': '#CCD0F0', '#491acc': '#031196', '#926df9': '#737DD6',
+  '#571ef6': '#0A63F5', '#c5b2f4': '#DCE8FE', '#491acc': '#0A53CB', '#926df9': '#78A9FA',
 };
 export function migrateBrandColor(value: unknown): string {
   const text = String(value ?? '').trim();

@@ -87,7 +87,7 @@ try {
     check(`${key}: selected preset and rate match the controls`,await settings.locator('.voice-choices [aria-pressed=true]').innerText().then(text=>text.includes('Puck'))&&await settings.locator('.voice-rates [aria-pressed=true]').innerText()==='0.9x');
     // Wait for the inherited color transition too, not merely aria-pressed.
     // Charte v4.2.0 (violet au minimum) : un choix sélectionné = fond violet clair
-    // (accentSoft #CCD0F0), libellé noir (onAccentSoft, 10,4:1) et contour violet ;
+    // (accentSoft #DCE8FE), libellé noir (onAccentSoft, 10,4:1) et contour violet ;
     // le violet plein reste réservé à l'action principale.
     await page.waitForFunction(({soft,onSoft})=>{const button=document.querySelector('.voice-rates [aria-pressed=true]');return button&&getComputedStyle(button).backgroundColor===soft&&getComputedStyle(button.firstElementChild).color===onSoft;},{soft:rgb(identity.colors.accentSoft),onSoft:rgb(identity.colors.onAccentSoft)});
     check(`${key}: selected rate settles on readable selected-state contrast`,await settings.locator('.voice-rates [aria-pressed=true]').evaluate(el=>getComputedStyle(el).color===getComputedStyle(el.firstElementChild).color));

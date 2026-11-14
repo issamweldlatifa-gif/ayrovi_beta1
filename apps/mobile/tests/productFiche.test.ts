@@ -352,15 +352,17 @@ describe('fiche — contrat d’écran', () => {
     }
   });
 
-  it('13/11 — le CTA est le bouton NOIR de notre famille de boutons et la fiche ne calcule aucun prix', () => {
+  it('14/11 — le CTA est le bouton BLEU de notre famille de boutons et la fiche ne calcule aucun prix', () => {
     const parts = code('src/features/product/ProductFiche.tsx');
-    // Consigne client du 13/11 : « من عائلة الأزرار متاعنا، بالأسود » — plus de violet dessiné à part.
+    // 13/11 : bouton de NOTRE famille (plus de pastille dessinée à part).
+    // 14/11 (refonte approuvée) : ce bouton est le CTA principal BLEU (tone="main").
     const buyBar = parts.slice(parts.indexOf('export function BuyBar'), parts.indexOf('export function MakerSheet'));
-    expect(buyBar).toMatch(/<Button[\s\S]*tone="solid"[\s\S]*size="lg"/);
+    expect(buyBar).toMatch(/<Button[\s\S]*tone="main"[\s\S]*size="lg"/);
     expect(parts).not.toMatch(/fc\.cta\b|ctaPressed/);
     expect(code('src/design/tokens.mobile.ts')).not.toMatch(/#571EF7/i);
+    // La couleur vient du Button, jamais peinte à la main dans la fiche.
     expect(parts).not.toMatch(/theme\.colors\.action\b/);
-    expect(parts).not.toMatch(/tone="main"/);
+    expect((parts.match(/tone="main"/g) ?? []).length).toBe(1);
     // Le prix tient sur UNE ligne et ne colle plus au bouton.
     expect(buyBar).toContain('adjustsFontSizeToFit');
     expect(parts).toContain('gap: FICHE_DETAIL.barGap');

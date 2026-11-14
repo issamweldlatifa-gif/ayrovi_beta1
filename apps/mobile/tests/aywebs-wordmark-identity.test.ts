@@ -8,7 +8,7 @@
  * elle se lit dans les PIXELS du fichier livré. Ce test décode le PNG
  * (IHDR + IDAT + dé-filtrage, avec `node:zlib` — aucune dépendance ajoutée) et
  * compare la couleur dominante des pixels opaques à `COLORS.light.accent`, le
- * violet officiel de l'identité (`#0113B5`).
+ * violet officiel de l'identité (`#0A63F5`).
  *
  * Il verrouille aussi la TAILLE : le ratio du fichier (551 × 147 ≈ 3.75) est
  * respecté par les deux endroits qui l'affichent, sinon le mot-symbole est
@@ -106,8 +106,8 @@ describe('identité visuelle AYWEBs — nouveau mot-symbole et nouvelle icône d
   const iconViolet = decodePng(path.join(ROOT, 'assets/aywebs/aywebs-icon-violet.png'));
   const iconWhite = decodePng(path.join(ROOT, 'assets/aywebs/aywebs-icon-white.png'));
 
-  it('le violet du mot-symbole et de l’icône est EXACTEMENT le violet officiel (#0113B5)', () => {
-    expect(officialViolet()).toBe('#0113B5');
+  it('le violet du mot-symbole et de l’icône est EXACTEMENT le violet officiel (#0A63F5)', () => {
+    expect(officialViolet()).toBe('#0A63F5');
 
     for (const asset of [violet, iconViolet]) {
       const counts = new Map<string, number>();
@@ -120,7 +120,7 @@ describe('identité visuelle AYWEBs — nouveau mot-symbole et nouvelle icône d
       expect(dominant[0]).toBe(officialViolet());
 
       /* Zéro halo délavé : au moins 85 % des pixels du tracé sont pleinement
-         opaques (alpha = 255) afin que la réduction garde le violet #0113B5 franc. */
+         opaques (alpha = 255) afin que la réduction garde le violet #0A63F5 franc. */
       const nonZero = asset.pixels.filter((pixel) => pixel[3] > 0);
       const opaque = nonZero.filter((pixel) => pixel[3] === 255);
       expect(opaque.length / nonZero.length).toBeGreaterThanOrEqual(0.85);
@@ -165,7 +165,7 @@ describe('identité visuelle AYWEBs — nouveau mot-symbole et nouvelle icône d
     expect(Number(sheetWidth) / Number(sheetHeight)).toBeCloseTo(ratio, 1);
 
     /* Barre du bas : icône patte de chat officielle à trait fin (`paw-outline` via
-       `TabAywebsPawIcon`) teintée en `AYWEBS_WORDMARK_TINT[theme.mode]` (#0113B5 en
+       `TabAywebsPawIcon`) teintée en `AYWEBS_WORDMARK_TINT[theme.mode]` (#0A63F5 en
        clair, #FFFFFF en sombre), grille 24 × 24, sans texte « AYWEBs » dessous. */
     const tabs = readFileSync(path.join(ROOT, 'app/(tabs)/_layout.tsx'), 'utf8');
     const navIcons = readFileSync(path.join(ROOT, 'src/design/TabNavIcons.tsx'), 'utf8');
@@ -175,7 +175,7 @@ describe('identité visuelle AYWEBs — nouveau mot-symbole et nouvelle icône d
     expect(tabs.includes('pricetags'), 'la puce générique doit avoir disparu').toBe(false);
     expect(iconViolet.width).toBe(iconViolet.height);
 
-    /* Teinte native exacte (#0113B5 en clair, #FFFFFF en sombre) appliquée sur
+    /* Teinte native exacte (#0A63F5 en clair, #FFFFFF en sombre) appliquée sur
        les trois emplacements. */
     expect(header).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
     expect(tabs).not.toContain('AYWEBS_WORDMARK_TINT');

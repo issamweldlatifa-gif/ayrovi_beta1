@@ -8,7 +8,7 @@
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#FFFFFF",
-    "primaryColor": "#0113B5",
+    "primaryColor": "#0A63F5",
     "android": {
       "package": "app.ayrovi.mobile",
       "versionCode": 15,

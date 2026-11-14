@@ -130,7 +130,7 @@
   cursor: pointer;
 }
 
-.ayw-fav.is-on { color: var(--ayrovi-cta, #0113b5); background: var(--ayrovi-bg-surface, #f2f2f2); }
+.ayw-fav.is-on { color: var(--ayrovi-cta, #0a63f5); background: var(--ayrovi-bg-surface, #f2f2f2); }
 
 .ayw-storedesc {
   margin-top: .5rem;
@@ -170,7 +170,7 @@
   cursor: pointer;
 }
 
-.ayw-tab.is-active { color: var(--ayrovi-cta, #0113b5); }
+.ayw-tab.is-active { color: var(--ayrovi-cta, #0a63f5); }
 
 .ayw-tab-icon { position: relative; }
 
@@ -238,7 +238,7 @@
 
 .ayw-cond { border: 0; padding: 0; margin: 0; }
 .ayw-radio { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; color: var(--ayrovi-ink, #101828); }
-.ayw-radio input { accent-color: var(--ayrovi-cta, #0113b5); width: 1.15rem; height: 1.15rem; }
+.ayw-radio input { accent-color: var(--ayrovi-cta, #0a63f5); width: 1.15rem; height: 1.15rem; }
 
 .ayw-selectwrap { display: block; }
 
@@ -262,7 +262,7 @@
   min-height: 3.1rem;
   border: 0;
   border-radius: .4rem;
-  background: var(--ayrovi-cta, #0113b5);
+  background: var(--ayrovi-cta, #0a63f5);
   color: #fff;
   font: inherit;
   font-size: 1.02rem;
@@ -493,7 +493,7 @@
   box-shadow: 0 1px 3px rgb(16 24 40 / .18);
   cursor: pointer;
 }
-.ayw-prodfav.is-on { color: var(--ayrovi-cta, #0113b5); }
+.ayw-prodfav.is-on { color: var(--ayrovi-cta, #0a63f5); }
 
 /* Écran « Wish List » interne — même liste que « Mon compte ». */
 .ayw-wishlist { display: flex; flex-direction: column; gap: .8rem; padding: 0 1rem; }

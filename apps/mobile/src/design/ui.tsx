@@ -272,13 +272,16 @@ export interface ButtonProps {
   busy?: boolean;
   disabled?: boolean;
   /**
-   * `main`     : action principale de marque (violet).
+   * `main`     : CTA principal BLEU (Bleu Z) — ajouter au panier, valider,
+   *              payer, se connecter. UN SEUL bouton plein bleu par écran.
    * `commerce` : CTA d'achat AYWEBs (jaune, texte encre), uniquement dans
    *              l'expérience boutique demandée.
    * `solid`    : bouton plein encre (défaut).
    * `quiet`    : bouton secondaire à contour.
+   * `danger`   : action destructrice (supprimer, retirer, se déconnecter) —
+   *              contour et libellé ROUGES (`status.danger.fg`), fond `canvas`.
    */
-  tone?: 'main' | 'commerce' | 'solid' | 'quiet';
+  tone?: 'main' | 'commerce' | 'solid' | 'quiet' | 'danger';
   /**
    * Pleine largeur du conteneur (Q8). Sans cette option, un bouton ne se
    * dimensionnait qu'à son texte : deux boutons côte à côte sortaient avec
@@ -302,13 +305,15 @@ export interface ButtonProps {
 export const BUTTON_OUTLINE_WIDTH = 2;
 
 /**
- * Quatre rôles — le violet reste rare hors exception AYWEBs :
- *   • `main`     : VIOLET plein (`action`, #0113B5), réservé aux actions principales
- *                  de marque hors expérience boutique AYWEBs.
+ * Quatre rôles — le bleu reste rare (un seul bouton plein bleu par écran) :
+ *   • `main`     : BLEU plein (`action`, #0A63F5, refonte 14/11), réservé au CTA
+ *                  principal : ajouter au panier, valider la commande, payer, se connecter.
  *   • `commerce` : jaune #FFD60A, texte encre, CTA d'achat isolé à AYWEBs.
  *   • `solid`    : défaut — fond encre (`ink`), libellé `canvas` (noir/blanc,
  *                  inversés en mode sombre), `secondary` quand on appuie.
  *   • `quiet`    : bouton secondaire — fond `canvas`, contour et libellé `ink`.
+ *   • `danger`   : même gabarit que `quiet`, contour et libellé ROUGES (14/11) —
+ *                  jamais plein : le seul bouton plein coloré reste le bleu.
  * Désactivé : même forme, opacité réduite. Occupé : le cercle d'attente prend
  * la place du pictogramme de tête, dans la couleur du libellé.
  */
@@ -319,12 +324,14 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
   // Libellé plafonné : le bouton garde sa hauteur même en très grande police.
   const labelScale = large ? 1.3 : undefined;
   const blocked = busy || disabled;
-  const quiet = tone === 'quiet';
+  const danger = tone === 'danger';
+  const quiet = tone === 'quiet' || danger;
   const main = tone === 'main';
   const commerce = tone === 'commerce';
   const commerceYellow = COMMERCE.action;
   const commercePressed = COMMERCE.actionPressed;
-  const labelColor = commerce ? COMMERCE.onAction : quiet ? theme.colors.ink : main ? theme.colors.onAction : theme.colors.canvas;
+  const dangerInk = theme.status.danger.fg;
+  const labelColor = commerce ? COMMERCE.onAction : danger ? dangerInk : quiet ? theme.colors.ink : main ? theme.colors.onAction : theme.colors.canvas;
   // Attente visible DANS le bouton : le cercle en pointillés remplace le
   // pictogramme de tête (ex. le logo Google), jamais posé à côté du libellé.
   const lead = busy
@@ -354,7 +361,7 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
               : main
                 ? (pressed ? theme.colors.actionHover : theme.colors.action)
                 : (pressed ? theme.colors.secondary : theme.colors.ink),
-          borderColor: quiet ? theme.colors.ink : commerce ? commerceYellow : main ? theme.colors.action : theme.colors.ink,
+          borderColor: danger ? dangerInk : quiet ? theme.colors.ink : commerce ? commerceYellow : main ? theme.colors.action : theme.colors.ink,
           opacity: disabled && !busy ? theme.opacity.disabled : pressed && quiet ? theme.opacity.dimmed : 1,
         },
         style,

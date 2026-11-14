@@ -2,7 +2,7 @@
  * Identité couleur officielle de l'application (décision produit du 15/10/2026).
  *
  *   NOIR  #0A0A0A (≈ 35 %) · BLANC #FFFFFF (≈ 50 %) · GRIS CLAIR #F2F2F2 (≈ 5 %)
- *   VIOLET ÉLECTRIQUE #0113B5 + VIOLET CLAIR #CCD0F0 : repère global ≈ 3 % (2 % + 1 %)
+ *   VIOLET ÉLECTRIQUE #0A63F5 + VIOLET CLAIR #DCE8FE : repère global ≈ 3 % (2 % + 1 %)
  *   depuis la v4.2.0 — il était de 10 %. Repère d'ensemble, jamais un quota par écran.
  *
  * Ce fichier verrouille trois choses vérifiables :
@@ -174,7 +174,7 @@ function decodePng(file: string): { width: number; height: number; pixels: Uint8
 
 describe('identité couleur officielle', () => {
   it('les couleurs officielles sont exactement celles de la charte (v4.2.0 : + violet clair)', () => {
-    expect(BRAND).toEqual({ black: '#0A0A0A', white: '#FFFFFF', violet: '#0113B5', violetLight: '#CCD0F0', lightGray: '#F2F2F2', secondaryBlue: '#0B57CF' });
+    expect(BRAND).toEqual({ black: '#0A0A0A', white: '#FFFFFF', violet: '#0A63F5', violetLight: '#DCE8FE', lightGray: '#F2F2F2', secondaryBlue: '#0B57CF' });
   });
 
   it('le violet est ramené de 10 % à un repère global de 3 % (2 % + 1 % clair), les autres parts sont inchangées', () => {
@@ -269,14 +269,16 @@ describe('contraste (WCAG)', () => {
     expect(failures).toEqual([]);
   });
 
-  it('le libellé des boutons violets reste lisible, au repos comme à l’appui', () => {
+  it('le libellé des boutons bleus (Bleu Z) reste lisible, au repos comme à l’appui', () => {
     for (const mode of modes) {
       const c = COLORS[mode];
       expect(contrast(c.onAction, c.action)).toBeGreaterThanOrEqual(4.5);
       expect(contrast(c.onAction, c.actionHover)).toBeGreaterThanOrEqual(4.5);
       expect(contrast(c.onAccent, c.accent)).toBeGreaterThanOrEqual(4.5);
     }
-    expect(contrast(BRAND.white, BRAND.violet)).toBeCloseTo(11.92, 1);
+    // Bleu Z #0A63F5 (14/11) : blanc 5,10:1 au repos, 6,75:1 à l'appui (#0A53CB).
+    expect(contrast(BRAND.white, BRAND.violet)).toBeCloseTo(5.1, 1);
+    expect(contrast(BRAND.white, COLORS.light.actionHover)).toBeCloseTo(6.75, 1);
   });
 
   it('le focus et le contour des champs restent visibles (≥ 3:1)', () => {
@@ -353,23 +355,14 @@ describe('plus d’orange dans l’application', () => {
       ...hexesIn(derivedColors(COLORS.light)), ...hexesIn(derivedColors(COLORS.dark)),
     ];
     expect(all.length).toBeGreaterThan(40);
-    /**
-     * EXCEPTION UNIQUE (demande du propriétaire, 10/11/2026) : l'orange du rail
-     * Reels et de la feuille de commentaires, mesuré sur la vidéo de référence
-     * (#FF9000 — cœur rempli, rafale, barre de défilement). Il vit DANS
-     * `derivedColors` sous les clés `reel*` / `comment*`, ne sort JAMAIS de ce
-     * périmètre (média plein écran + feuille sombre) et ne peint aucun élément
-     * de marque. Toute autre teinte orangée reste bannie.
-     */
-    const reelReference = new Set(['#FF9000']);
-    expect(all.filter((hex) => isOrange(hex) && !reelReference.has(upper(hex)))).toEqual([]);
+    // L'exception orange du rail Reels (#FF9000, 10/11) est RETIRÉE par la
+    // refonte des interactions du 14/11 : l'accent de la feuille est le Bleu Z.
+    expect(all.filter((hex) => isOrange(hex))).toEqual([]);
+    expect(all.map(upper)).not.toContain('#FF9000');
   });
 
-  it('aucune couleur orangée écrite dans le code (exceptions : le logo Google imposé par Google, et le rail Reels de la référence 10/11)', () => {
+  it('aucune couleur orangée écrite dans le code (exception : le logo Google imposé par Google)', () => {
     const allowed = new Set(Object.values(GOOGLE_BRAND).map(upper));
-    // Le rail Reels (demande du propriétaire, 10/11/2026) : voir l'exception
-    // détaillée au test « dans les jetons » ci-dessus.
-    allowed.add('#FF9000');
     /**
      * DONNÉES, pas palette : `optionColour.ts` traduit le nom de couleur d'un
      * article publié par le marchand (« Brown », « Orange », « Gold ») en
@@ -464,15 +457,18 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
       const n = (read(rel).match(/tone="main"/g) ?? []).length;
       if (n) counts[rel] = n;
     }
+    // Refonte des interactions (14/11/2026, approuvée) : le CTA principal est
+    // BLEU — ajouter au panier, valider la commande, payer, se connecter. Cela
+    // remplace le CTA noir de la fiche/du panier (13/11) et la connexion
+    // tout-encre (10/11). Un seul bleu par écran : voir one-blue-button.
     expect(counts).toEqual({
       'app/checkout.tsx': 1,               // valider la commande
-      // `app/product/[id].tsx` et `app/(tabs)/cart.tsx` portent un CTA **noir**
-      // compact (tone="solid") selon le gabarit officiel Zalando / Bag.
-      // La connexion et la récupération sont passées TOUT-ENCRE (10/11/2026,
-      // demande explicite : « blanc et noir, le bleu en plus est retiré ») —
-      // plus aucun tone="main" sur ces deux écrans.
+      'app/forgot.tsx': 1,                 // envoyer le lien de récupération
+      'app/sign-in.tsx': 4,                // continuer | se connecter | créer le compte | vérifier le code — étapes exclusives
       'src/features/lens/LensProductView.tsx': 1, // ajouter au panier (voir le panier -> tone="solid" dans la feuille compacte)
       'src/features/lens/ocerex/OcerexFlow.tsx': 1, // confirmer la commande OCEREX
+      'src/features/product/ProductFiche.tsx': 1,   // ajouter au panier (fiche)
+      'src/features/shopping/OfficialCartView.tsx': 1, // valider la commande (panier)
     });
   });
 

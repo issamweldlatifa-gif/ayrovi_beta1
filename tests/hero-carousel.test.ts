@@ -57,8 +57,8 @@ describe('heroDestinationHref — contrat fermé', () => {
 
 describe('heroPalette — math couleur', () => {
   test('hex ⇄ rgb aller-retour', () => {
-    expect(hexToRgb('#0113B5')).toEqual({ r: 1, g: 19, b: 181 });
-    expect(rgbToHex(1, 19, 181)).toBe('#0113b5');
+    expect(hexToRgb('#0A63F5')).toEqual({ r: 10, g: 99, b: 245 });
+    expect(rgbToHex(10, 99, 245)).toBe('#0a63f5');
     expect(hexToRgb('pas-une-couleur')).toBeNull();
   });
 

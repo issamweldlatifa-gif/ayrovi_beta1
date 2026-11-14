@@ -430,7 +430,7 @@
     {
       "file": "client/src/admin/admin.css",
       "domain": "admin",
-      "sha256": "c701e27cb2e096188d698f4ba351b20018817b329642f291569888badc1e9a90",
+      "sha256": "ee5d7154f555f773a0e584e74d99a4d36ac3ce6968d2d10617b1a018050a946c",
       "lines": 1526,
       "imports": [],
       "exports": [],
@@ -453,7 +453,7 @@
     {
       "file": "client/src/admin/AdminApp.tsx",
       "domain": "admin",
-      "sha256": "e8f89af9bfe0c199fa6f87d3ab659420fee9bfb2ed8a6cb508393e34e0552064",
+      "sha256": "2ae6892421153f65740533472fea4fcb31ce01744322f243910e8dc9f83dee09",
       "lines": 1052,
       "imports": [
         "../../../shared/brand.generated",
@@ -1675,11 +1675,11 @@
       ],
       "inlineSvg": [],
       "colors": [
-        "#0113b5",
         "#047857",
         "#050505",
         "#059669",
         "#064e3b",
+        "#0a63f5",
         "#0b1e4b",
         "#0f172a",
         "#111318",
@@ -4195,7 +4195,7 @@
     {
       "file": "client/src/admin/back-office/BackOfficeShell.tsx",
       "domain": "admin",
-      "sha256": "291ce2eeb8b9ec4903ef68743a4d3f0ddab252f442bcfe544141a39467c2da1b",
+      "sha256": "ef65c1b4daa12f617026eccdfafc09db3ac7699fd42059e5f03ff8cec0551195",
       "lines": 461,
       "imports": [
         "react",
@@ -7066,7 +7066,7 @@
     {
       "file": "client/src/admin/ficheGeometry.ts",
       "domain": "admin",
-      "sha256": "694c45f9b39762006bbcab04592be3bebf909248ac177b45e661d2e3c30ffcd8",
+      "sha256": "de6eec24cd9866cb185140d63f017307ffd8ef6c278c7bb3593b292882f5adf3",
       "lines": 153,
       "imports": [],
       "exports": [
@@ -7902,7 +7902,7 @@
     {
       "file": "client/src/admin/InterfaceStudio.tsx",
       "domain": "admin",
-      "sha256": "acfa63580fc336d8053a93d33892fbb5ba1122322b396a37aed4803726e04036",
+      "sha256": "4f7d818e25f596ebd5a75f5fa7c810e0356cf3c64808fbc94c5a4bcc73bf0013",
       "lines": 307,
       "imports": [
         "react",
@@ -10997,8 +10997,8 @@
     {
       "file": "client/src/admin/PublicationBlocksTab.tsx",
       "domain": "admin",
-      "sha256": "6958dc8f5bed771b3b5842cfe72bd3c7e2e08d6cc93a986e5633c18f29b1bfcc",
-      "lines": 559,
+      "sha256": "e30aba973da96bcc209ee6e52e353367391bf476ccd34cf72cda00025b095bbc",
+      "lines": 584,
       "imports": [
         "react",
         "../components/QatafoIcons",
@@ -11009,6 +11009,8 @@
         "../../../shared/publicationBlocks"
       ],
       "exports": [
+        "PREVIEW_CARD",
+        "previewCardWidth",
         "emptyBlock",
         "blockFormError",
         "PublicationBlockPreview",
@@ -11018,7 +11020,7 @@
       "controls": [
         {
           "tag": "input",
-          "line": 238,
+          "line": 263,
           "className": null,
           "type": "\"color\"",
           "role": null,
@@ -11028,7 +11030,7 @@
         },
         {
           "tag": "input",
-          "line": 239,
+          "line": 264,
           "className": null,
           "type": null,
           "role": null,
@@ -11038,7 +11040,7 @@
         },
         {
           "tag": "Button",
-          "line": 240,
+          "line": 265,
           "className": null,
           "type": null,
           "role": null,
@@ -11048,7 +11050,7 @@
         },
         {
           "tag": "button",
-          "line": 244,
+          "line": 269,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -11058,7 +11060,7 @@
         },
         {
           "tag": "input",
-          "line": 266,
+          "line": 291,
           "className": null,
           "type": null,
           "role": null,
@@ -11068,7 +11070,7 @@
         },
         {
           "tag": "input",
-          "line": 275,
+          "line": 300,
           "className": null,
           "type": "\"file\"",
           "role": null,
@@ -11078,7 +11080,7 @@
         },
         {
           "tag": "Button",
-          "line": 341,
+          "line": 366,
           "className": null,
           "type": null,
           "role": null,
@@ -11088,7 +11090,7 @@
         },
         {
           "tag": "Button",
-          "line": 342,
+          "line": 367,
           "className": null,
           "type": null,
           "role": null,
@@ -11098,7 +11100,7 @@
         },
         {
           "tag": "Button",
-          "line": 344,
+          "line": 369,
           "className": null,
           "type": null,
           "role": null,
@@ -11108,7 +11110,7 @@
         },
         {
           "tag": "input",
-          "line": 351,
+          "line": 376,
           "className": null,
           "type": null,
           "role": null,
@@ -11118,7 +11120,7 @@
         },
         {
           "tag": "Button",
-          "line": 358,
+          "line": 383,
           "className": null,
           "type": null,
           "role": null,
@@ -11128,7 +11130,7 @@
         },
         {
           "tag": "Button",
-          "line": 474,
+          "line": 499,
           "className": null,
           "type": null,
           "role": null,
@@ -11138,7 +11140,7 @@
         },
         {
           "tag": "Modal",
-          "line": 498,
+          "line": 523,
           "className": null,
           "type": null,
           "role": null,
@@ -11148,7 +11150,7 @@
         },
         {
           "tag": "Button",
-          "line": 499,
+          "line": 524,
           "className": null,
           "type": null,
           "role": null,
@@ -11158,7 +11160,7 @@
         },
         {
           "tag": "Button",
-          "line": 499,
+          "line": 524,
           "className": null,
           "type": null,
           "role": null,
@@ -11168,7 +11170,7 @@
         },
         {
           "tag": "Button",
-          "line": 508,
+          "line": 533,
           "className": null,
           "type": null,
           "role": "\"radio\"",
@@ -11178,7 +11180,7 @@
         },
         {
           "tag": "Field",
-          "line": 512,
+          "line": 537,
           "className": null,
           "type": null,
           "role": null,
@@ -11188,7 +11190,7 @@
         },
         {
           "tag": "input",
-          "line": 512,
+          "line": 537,
           "className": null,
           "type": null,
           "role": null,
@@ -11198,7 +11200,7 @@
         },
         {
           "tag": "Field",
-          "line": 513,
+          "line": 538,
           "className": null,
           "type": null,
           "role": null,
@@ -11208,7 +11210,7 @@
         },
         {
           "tag": "input",
-          "line": 513,
+          "line": 538,
           "className": null,
           "type": null,
           "role": null,
@@ -11218,7 +11220,7 @@
         },
         {
           "tag": "Button",
-          "line": 523,
+          "line": 548,
           "className": null,
           "type": null,
           "role": "\"radio\"",
@@ -11230,7 +11232,7 @@
       "icons": [
         {
           "module": "../components/QatafoIcons",
-          "bindings": "{ ArrowDown, ArrowUp, Pencil, Plus, Trash2, X }",
+          "bindings": "{ ArrowDown, ArrowUp, Heart, Pencil, Plus, Trash2, X }",
           "line": 19
         }
       ],
@@ -14272,7 +14274,7 @@
     {
       "file": "client/src/components/account/AccountHome.tsx",
       "domain": "account-auth",
-      "sha256": "857ab8ce51e56d3ba936d9000ffb1a6a2c88d6baf9bcae686ab147d1b3d47cbe",
+      "sha256": "4a96acd864e85f56db4f6434e081e68143d61512e93853a7014d0e68ae1c21a3",
       "lines": 50,
       "imports": [
         "react",
@@ -15349,7 +15351,7 @@
     {
       "file": "client/src/components/assistant/AssistantSideMenu.tsx",
       "domain": "sonim",
-      "sha256": "e2e49c28910be9e66e53139ab0de2ff4e22bfae60673e7c62863ce9ff99a19fc",
+      "sha256": "0966c0bf4767c3c69f1b68a5d2ba80cfc197eb2ee99d762ae243352b42f11609",
       "lines": 121,
       "imports": [
         "./AssistantHistoryNotice",
@@ -16286,7 +16288,7 @@
     {
       "file": "client/src/components/CustomerAccountPage.tsx",
       "domain": "account-auth",
-      "sha256": "8e0640e86eea871bbec3e08d2416a9b70bdfb66afba9d52c9de5aa54002baf54",
+      "sha256": "58a4d0d0e3368849072bf9476da783d298c7de5d91ede8f967d83a47c4d2c10a",
       "lines": 976,
       "imports": [
         "react",
@@ -17204,7 +17206,7 @@
     {
       "file": "client/src/components/CustomerPasswordRecovery.tsx",
       "domain": "account-auth",
-      "sha256": "dcdca55a09426658851573206ffe505986814fc6d0439bc3b5475954bd79cf47",
+      "sha256": "3c7f80f73789ac9d4c4d935d0916d3281c26ac7136de397cb209982f5601fee3",
       "lines": 122,
       "imports": [
         "react",
@@ -17909,7 +17911,7 @@
     {
       "file": "client/src/components/Navbar.tsx",
       "domain": "shell-content",
-      "sha256": "e050c9906679fd81b88869be4448039ee2ef0f9c2fef97498662de32111a65b1",
+      "sha256": "ec2493318cd2902135c476912bab7f6b639d79be31d9b4e2330114bf5f30f159",
       "lines": 113,
       "imports": [
         "react",
@@ -18657,7 +18659,7 @@
     {
       "file": "client/src/config/interfaceConfig.ts",
       "domain": "shell-content",
-      "sha256": "834c046695f5e35d46f5d93f34058aafd5528261d31e747249f7f731600d33c7",
+      "sha256": "d4f347d2e9f5dd2e43ad7fc66c13ddbb127a43b9972cecc552e04618e3e45e80",
       "lines": 332,
       "imports": [
         "../../../shared/brand.generated",
@@ -18678,8 +18680,8 @@
       "inlineSvg": [],
       "colors": [
         "#000000",
-        "#0113b5",
         "#0a0a0a",
+        "#0a63f5",
         "#15803d",
         "#3f3f46",
         "#666666",
@@ -19457,7 +19459,7 @@
     {
       "file": "client/src/design/AppHeader.tsx",
       "domain": "shared-design",
-      "sha256": "8d3ebe64d3d657121bf711d1c4a59b89321ae98c8bd41c28502db20dea1bc661",
+      "sha256": "5c46114f6d952ed130afc9df94b68c76f9a646eacc022e71b1a04ca1186e5a92",
       "lines": 76,
       "imports": [
         "react",
@@ -19548,7 +19550,7 @@
     {
       "file": "client/src/design/BrandLoadingIndicator.tsx",
       "domain": "shared-design",
-      "sha256": "534d5764ef811760385a27c4c719ebe9d98c1202b1502623c58fc6e7ced48ace",
+      "sha256": "8bd65d741fcb283d3522cbab2195302a5c83871eb18bb6ded307d051fa772348",
       "lines": 17,
       "imports": [
         "react"
@@ -19566,12 +19568,15 @@
     {
       "file": "client/src/design/brandSymbol.ts",
       "domain": "shared-design",
-      "sha256": "51052c7f7dedc842c29a893dc4e44e4706059b60899b34940bd90276d91f460c",
-      "lines": 9,
+      "sha256": "b1cbc247804cd32cf8ac7c1129dbc5fc4dee4755900254cd56f2bc7e048dd297",
+      "lines": 20,
       "imports": [],
       "exports": [
         "BRAND_SYMBOL",
-        "BOOT_SYMBOL_TRANSFORM"
+        "BRAND_SYMBOL_SOLID",
+        "BRAND_SYMBOL_MAX_RADIUS",
+        "BOOT_SYMBOL_TRANSFORM",
+        "SPLASH_SYMBOL"
       ],
       "controls": [],
       "icons": [],
@@ -19767,7 +19772,7 @@
     {
       "file": "client/src/design/editorial/tokens.generated.css",
       "domain": "shared-design",
-      "sha256": "beb938fec9e9d7d8d2cc627bdc47d8299cd7eeee49965e847cb3fb8adf6394e4",
+      "sha256": "50708daf0ccd7080fbb00d9ad027ef81c1da24f800cc852f39b1389fc534efbb",
       "lines": 160,
       "imports": [],
       "exports": [],
@@ -19775,9 +19780,9 @@
       "icons": [],
       "inlineSvg": [],
       "colors": [
-        "#0113B5",
-        "#031196",
         "#0A0A0A",
+        "#0A53CB",
+        "#0A63F5",
         "#0B57CF",
         "#171717",
         "#236044",
@@ -19785,12 +19790,12 @@
         "#525252",
         "#666666",
         "#6E6E6E",
-        "#737DD6",
+        "#78A9FA",
         "#888888",
         "#90D6AF",
-        "#A52D2D",
         "#BDBDBD",
-        "#CCD0F0",
+        "#D92D20",
+        "#DCE8FE",
         "#E5E5E5",
         "#F2F2F2",
         "#FFABAB",
@@ -19841,8 +19846,8 @@
     {
       "file": "client/src/design/tokens.css",
       "domain": "shared-design",
-      "sha256": "5997918d2b7daa7a41c3a1aad33b3885b74387e74791aa8fcf8f7dbeeaba565e",
-      "lines": 637,
+      "sha256": "37be6db234bd9312562046e191d8fe9779af5f433771fa12ffb46a1a6fe3b8be",
+      "lines": 641,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -19850,13 +19855,13 @@
       "inlineSvg": [],
       "colors": [
         "#008735",
-        "#0113B5",
-        "#0113b5",
         "#047857",
         "#050505",
         "#059669",
         "#0A0A0A",
+        "#0A63F5",
         "#0a0a0a",
+        "#0a63f5",
         "#0b7044",
         "#0f7147",
         "#10164f",
@@ -19922,10 +19927,10 @@
         "#6b7280",
         "#6f3a10",
         "#727488",
-        "#737dd6",
         "#757788",
         "#77798b",
         "#787a89",
+        "#78a9fa",
         "#795400",
         "#7c2d12",
         "#7d7f91",
@@ -19950,8 +19955,8 @@
         "#9ca3af",
         "#9d9faf",
         "#9f1239",
-        "#CCD0F0",
         "#DC2626",
+        "#DCE8FE",
         "#EAEAEA",
         "#F2F2F2",
         "#F8F9FA",
@@ -19990,7 +19995,6 @@
         "#c9362b",
         "#c9c6cc",
         "#cbccd3",
-        "#ccd0f0",
         "#ced2f3",
         "#cfd2f0",
         "#d1d1d1",
@@ -20010,6 +20014,7 @@
         "#d9d9d9",
         "#dbdce4",
         "#dc2626",
+        "#dce8fe",
         "#dddeea",
         "#dfe0e4",
         "#dfe0e7",
@@ -20044,6 +20049,7 @@
         "#f2f2f2",
         "#f2f3fa",
         "#f3d9c4",
+        "#f3f3f3",
         "#f4f4f5",
         "#f4f5ff",
         "#f5f5f5",
@@ -20507,7 +20513,7 @@
     {
       "file": "client/src/features/aywebs/aywebs.css",
       "domain": "shell-content",
-      "sha256": "189d77b068b557221436c33a056076e0b4349f829ee5b14475ce671f99b6b6fa",
+      "sha256": "757090fd724f9ef980a0a6cde2222bdf15f11998c95cbb2068494dd4e336f130",
       "lines": 559,
       "imports": [],
       "exports": [],
@@ -20515,8 +20521,8 @@
       "icons": [],
       "inlineSvg": [],
       "colors": [
-        "#0113b5",
         "#0a0a0a",
+        "#0a63f5",
         "#101828",
         "#1d3f8f",
         "#344054",
@@ -21735,7 +21741,7 @@
     {
       "file": "client/src/main.tsx",
       "domain": "shell-content",
-      "sha256": "d617093e03fe573efa2ff18611ab5914c420c908f7e32949bf6ea698e00e131d",
+      "sha256": "b459a5966ef6291af8ebb0bffd2a54a0fb5dd21b135e4a2e54fb1d2c8e927670",
       "lines": 51,
       "imports": [
         "react",
@@ -22584,7 +22590,7 @@
     {
       "file": "client/src/shop/shop.css",
       "domain": "shell-content",
-      "sha256": "b281311f12f5c1901c3d7edbfb470ffdf7a58403d880135084843d38c5578a58",
+      "sha256": "8c31f7495665add3c4c84e16b7f68b76086400d5cd13dd6f79abe8d676287bc5",
       "lines": 732,
       "imports": [],
       "exports": [],
@@ -22592,13 +22598,13 @@
       "icons": [],
       "inlineSvg": [],
       "colors": [
-        "#0113b5",
         "#0a0a0a",
+        "#0a63f5",
         "#236044",
         "#666666",
         "#888888",
-        "#a52d2d",
         "#a6a6a6",
+        "#d92d20",
         "#e5e5e5",
         "#f2f2f2",
         "#fff"
@@ -22914,7 +22920,7 @@
     {
       "file": "client/src/social/components/FullscreenMediaHeader.tsx",
       "domain": "discovery-social",
-      "sha256": "06a42bf6eedac3b07f812d4ce024868f50164d21274264bd94245b24f207ba5a",
+      "sha256": "f1edd59c75b755d6fd381d24ebff732b7cbc3dd83961237c2c112bf6ba7c356d",
       "lines": 33,
       "imports": [
         "react",
@@ -22961,7 +22967,7 @@
     {
       "file": "client/src/social/components/ReelsViewer.tsx",
       "domain": "discovery-social",
-      "sha256": "b1f0fc45a23969da2f180542ef1e7d5c329ae326abe6c4caa6982cf61e133a96",
+      "sha256": "19d64c71a877106b329c1cbb092f491118d0fb105eb73c7fbea6b60ddb601979",
       "lines": 165,
       "imports": [
         "../../components/QatafoIcons",
@@ -22993,7 +22999,7 @@
     {
       "file": "client/src/social/components/StoryCircles.tsx",
       "domain": "discovery-social",
-      "sha256": "ae2c55c7bd4bffcd908518d123a2e2a0b92948d0af3c28bc218cc067b0d0baeb",
+      "sha256": "be094948d8c004f5c48131936e32d970eeae193f326fd98c72830711a8a52537",
       "lines": 58,
       "imports": [
         "react",
@@ -23026,7 +23032,7 @@
     {
       "file": "client/src/social/components/StoryFeed.tsx",
       "domain": "discovery-social",
-      "sha256": "f2eb2ff6eb17505b60a265020e312119032ac1180c451384959e90bd09103a19",
+      "sha256": "ff57e32bd1a0dca6c648db4fa44299facf1905654db9a4124988042e477de7c1",
       "lines": 188,
       "imports": [
         "react",
@@ -23298,17 +23304,17 @@
     {
       "file": "client/src/styles/admin-console.css",
       "domain": "shell-content",
-      "sha256": "9341d42bb43017463fe2fd5438bc1a11755072e136d549e11450e6ca884c0e51",
-      "lines": 622,
+      "sha256": "4e5d4d80d2e1a297a4aa056f5b18af46d1c7fa7851e058a29c729e3e01964afb",
+      "lines": 624,
       "imports": [],
       "exports": [],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
       "colors": [
-        "#0113B5",
-        "#031196",
         "#0A0A0A",
+        "#0A53CB",
+        "#0A63F5",
         "#0E7C4A",
         "#0F0F0F",
         "#111110",
@@ -23330,16 +23336,16 @@
         "#5A5F66",
         "#6B4A00",
         "#6B7076",
-        "#737DD6",
+        "#78A9FA",
         "#946200",
         "#A0A0A0",
         "#A3A3A3",
         "#A8A8A8",
         "#B3271E",
         "#B4B4B4",
-        "#CCD0F0",
         "#D5D9D9",
         "#D6D6D6",
+        "#DCE8FE",
         "#E3E5E7",
         "#E8C98A",
         "#EAF1FA",
@@ -23594,7 +23600,7 @@
     {
       "file": "client/src/styles/zalando-ui.css",
       "domain": "shell-content",
-      "sha256": "fba905a81c29196047789b9a612ef892d11733b15a0f3ec18914a67fa4a9541e",
+      "sha256": "f320bae1a0bcd1e86729c822e2567e654377e2973f16d316186a2d819954cdcf",
       "lines": 201,
       "imports": [],
       "exports": [],
@@ -23602,9 +23608,9 @@
       "icons": [],
       "inlineSvg": [],
       "colors": [
-        "#0113B5",
         "#0A0A0A",
-        "#CCD0F0"
+        "#0A63F5",
+        "#DCE8FE"
       ],
       "fontDeclarations": [],
       "apiReferences": []

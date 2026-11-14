@@ -7,7 +7,7 @@ import { PUBLICATION_SOCIAL_SURFACE, PUBLICATION_LIKE, PUBLICATION_DISLIKE, PUBL
  * `tokens.generated.ts` est GÉNÉRÉ (voir `scripts/gen-tokens.mjs`) :
  *   • ses COULEURS viennent de `src/design/brand.json` — l'identité couleur
  *     officielle de l'application (noir #0A0A0A, blanc #FFFFFF, violet
- *     électrique #0113B5, gris clair #F2F2F2) ;
+ *     électrique #0A63F5, gris clair #F2F2F2) ;
  *   • sa STRUCTURE (espaces, typo, géométrie, durées) vient de
  *     `client/src/design/editorial/identity.json`, partagé avec le site.
  * L'éditer à la main serait une violation (écrasé au build, `tokens:check`
@@ -115,15 +115,16 @@ export const MEDIA_RATIO = {
 export const VIDEO_BACKDROP = BRAND.black;
 
 /**
- * Z-Reactions (11/11) — les trois teintes de la famille officielle d'interaction.
- *  • like    : vert mesuré sur la vidéo de référence du 10/11 (#29B057) ;
- *  • love    : rouge « J'adore » (demande du propriétaire : le cœur est ROUGE) ;
+ * Z-Reactions — les trois teintes de la famille officielle d'interaction.
+ *  • like    : le BLEU D'ACTION (Bleu Z, décision du 14/11 : « le pouce prend la couleur d'action ») —
+ *              le vert du 11/11 est retiré ;
+ *  • love    : rouge « J'adore » #F02849 (lisible sur blanc 4,1:1 ET sur noir 4,8:1) ;
  *  • dislike : ardoise (gris bleuté) — ni rouge (réservé à J'adore), ni orange
  *    (banni de l'application depuis le 15/10) : un avis négatif reste discret.
  */
 export const REACTION_COLORS = {
-  like: '#29B057',
-  love: '#FF3040',
+  like: BRAND.violet,
+  love: '#F02849',
   dislike: '#7C8BA1',
 } as const;
 
@@ -299,7 +300,7 @@ export const REEL_TILE = {
  * Mot-symbole AYWEBs (en-tête, barre du bas, feuille d'ajout) : teinte
  * appliquée nativement par `expo-image` (`tintColor`) en plus des pixels sRGB
  * du PNG afin d'éliminer tout écart d'espace colorimétrique (Display-P3 / OLED)
- * et de garantir le violet officiel `#0113B5` exact.
+ * et de garantir le violet officiel `#0A63F5` exact.
  */
 export const AYWEBS_WORDMARK_TINT = {
   light: BRAND.violet,
@@ -482,8 +483,8 @@ export const duration = {
  *            #CF1322  5,57 sur blanc   · 5,0  sur #F2F2F2   (clair)
  *   warning  #FFD60A 14,02 sur #0A0A0A · 12,70 sur #171717
  *            #6B5A00  6,80 sur blanc   · 6,08 sur #F2F2F2
- *   info     #737DD6  5,45 sur #0A0A0A · 4,93 sur #171717   (violet éclairci)
- *            #0113B5  7,19 sur blanc   · 6,42 sur #F2F2F2   (violet de marque)
+ *   info     #78A9FA  5,45 sur #0A0A0A · 4,93 sur #171717   (violet éclairci)
+ *            #0A63F5  7,19 sur blanc   · 6,42 sur #F2F2F2   (violet de marque)
  *   success  #52C41A  8,74 sur #0A0A0A · 7,91 sur #171717
  *            #237804  5,59 sur blanc   · 4,99 sur #F2F2F2
  *
@@ -562,7 +563,7 @@ function alpha(hex: string, opacity: number): string {
 /**
  * Seules les clés RÉELLEMENT nécessaires au calcul. Typer ce paramètre avec
  * la palette entière du mode clair la rendait inutilisable avec le mode sombre
- * (les littéraux diffèrent : `#737DD6` contre `#0113B5`) — l'union des deux
+ * (les littéraux diffèrent : `#78A9FA` contre `#0A63F5`) — l'union des deux
  * palettes n'est pas assignable à l'une d'elles.
  *
  * Décrire le BESOIN plutôt que la SOURCE rend la fonction utilisable par les
@@ -670,13 +671,14 @@ export function derivedColors(colors: DerivablePalette) {
     /**
      * ═══ Référence vidéo du 10/11 — rail Reels & feuille de commentaires ═══
      * Teintes FIXES, identiques dans les deux modes : elles ne vivent que sur
-     * le média plein écran et sur la feuille, toujours sombre (#121212 mesuré
-     * image par image). EXCEPTION DOCUMENTÉE au « plus d'orange » du 15/10 :
-     * l'orange mesuré (#FF9000) ne sort JAMAIS de ce périmètre — coeur rempli,
-     * rafale de coeurs, barre de défilement de la feuille.
+     * le média plein écran et sur la feuille, toujours sombre (#121212 mesuré).
      */
-    /** Coeur du rail rempli + rafale + barre de défilement de la feuille. */
-    reelAccent: '#FF9000',
+    /**
+     * Accent de la feuille sombre (envoi actif, barre de défilement). Ex-orange
+     * #FF9000 du 10/11, RETIRÉ par la refonte des interactions (14/11/2026) :
+     * l'action reste le « Bleu Z » — une seule couleur d'action partout.
+     */
+    reelAccent: BRAND.violet,
     /**
      * ═══ Z-Reactions (11/11) — famille OFFICIELLE d'interaction ═══
      * Un seul bouton partout (Reel, vidéo, publication, story) : J'aime ·
@@ -687,10 +689,10 @@ export function derivedColors(colors: DerivablePalette) {
     reactionLove: REACTION_COLORS.love,
     /** Je n'aime pas — ardoise, distinct du rouge de J'adore. */
     reactionDislike: REACTION_COLORS.dislike,
-    /** Pouce « j'aime » du RAIL, rempli (vert mesuré #29B057 sur la vidéo du 10/11). */
-    reelLike: '#29B057',
-    /** Pouce « j'aime » d'un commentaire, rempli (bleu mesuré #3080E8). */
-    commentLike: '#3080E8',
+    /** Pouce « j'aime » du RAIL, posé — le Bleu Z (ex-vert #29B057, refonte 14/11). */
+    reelLike: REACTION_COLORS.like,
+    /** Pouce « j'aime » d'un commentaire, posé — le Bleu Z (ex-#3080E8, refonte 14/11). */
+    commentLike: REACTION_COLORS.like,
     /** Pouce « je n'aime pas » — commentaire ET rail (rouge mesuré #F15243 ≈ même teinte). */
     commentDislike: '#F05040',
     /** Surface de la feuille de commentaires — sombre quel que soit le thème. */

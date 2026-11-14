@@ -155,7 +155,7 @@ export default function ProfileScreen() {
           <View style={styles.photoActions}>
             <Button label={t('profile.photoPick')} onPress={pickPhoto} busy={photoBusy} />
             {account?.avatarUrl ? (
-              <Button label={t('profile.photoRemove')} tone="quiet" onPress={removePhoto} disabled={photoBusy} />
+              <Button label={t('profile.photoRemove')} tone="danger" onPress={removePhoto} disabled={photoBusy} />
             ) : null}
           </View>
         </View>
