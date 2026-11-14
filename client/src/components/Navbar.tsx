@@ -78,7 +78,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     >
       <div className="mx-auto grid h-16 w-full max-w-7xl grid-cols-[1fr_auto_auto] gap-1 items-center px-3 sm:h-20 sm:px-6">
         <button type="button" onClick={onGoHome} className="flex min-h-11 items-center bg-transparent" aria-label="zayrovi">
-          <img src={customLogo ?? (overHero ? '/media/logo-ayrovi-wordmark-white.svg?v=6.0' : '/media/logo-ayrovi-wordmark-black.svg?v=6.0')} alt="zayrovi" className="h-7 w-auto object-contain" />
+          <img src={customLogo ?? (overHero ? '/media/logo-ayrovi-wordmark-white.svg?v=7.0' : '/media/logo-ayrovi-wordmark-black.svg?v=7.0')} alt="zayrovi" className="h-7 w-auto object-contain" />
         </button>
         <button type="button" disabled aria-disabled="true" className="min-h-11 rounded-full border border-current px-2 text-sm whitespace-nowrap">Plus ★ Light</button>
         <div className="flex items-center justify-end gap-1">

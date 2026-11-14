@@ -15,3 +15,5 @@ export const BRAND_SYMBOL_SOLID = {
 /** Farthest outline point from the box centre, in symbol units (fit the Z inside circles). */
 export const BRAND_SYMBOL_MAX_RADIUS = 641.1;
 export const BOOT_SYMBOL_TRANSFORM = 'translate(28.968 27.4447) scale(0.081110591)';
+/** Native splash geometry (app.json expo-splash-screen), in dp: the Z drawn by the startup handoff. */
+export const SPLASH_SYMBOL = {"background":"#0A0A0A","imageWidth":160,"share":0.7,"width":107.79,"height":112} as const;

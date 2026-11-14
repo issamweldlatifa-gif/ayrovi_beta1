@@ -31,7 +31,7 @@ describe('every compatibility icon resolves to the approved geometry',()=>{
     expect(html).toContain('data-editorial-icon="Bell"');
     // Identité A.ROVI : le lockup officiel remplace l'icône + le mot « ZAYROVI »
     // lorsque le logo public n'est pas personnalisé dans l'Admin.
-    expect(html).toContain('src="/media/logo-ayrovi-wordmark-black.svg?v=6.0"');
+    expect(html).toContain('src="/media/logo-ayrovi-wordmark-black.svg?v=7.0"');
     expect(html).not.toContain('<strong');
     expect(html).toContain('stroke-linecap="square"');
   });

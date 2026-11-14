@@ -28,6 +28,15 @@ const fitHeight = (box, share) => {
   return `translate(${num((box - symbol.width * scale) / 2)} ${num((box - symbol.height * scale) / 2)}) scale(${num(scale, 9)})`;
 };
 
+// Native splash (expo-splash-screen): the image is `imageWidth` dp square and the Z is SPLASH_SHARE of its height.
+// The JS entrance (apps/mobile/src/design/BrandEntrance.tsx) redraws the Z at exactly this size for a seamless handoff.
+const SPLASH_SHARE = 0.7;
+const appJson = JSON.parse(fs.readFileSync('apps/mobile/app.json', 'utf8'));
+const splashPlugin = appJson.expo.plugins.find((p) => Array.isArray(p) && p[0] === 'expo-splash-screen')[1];
+const splashHeight = splashPlugin.imageWidth * SPLASH_SHARE;
+const SPLASH = { background: splashPlugin.backgroundColor, imageWidth: splashPlugin.imageWidth, share: SPLASH_SHARE,
+  width: num((splashHeight * symbol.width) / symbol.height, 2), height: num(splashHeight, 2) };
+
 // Loading ring: 136 box, ring r = 65 (stroke 4–6). The Z fits a 52 radius circle -> ~9 px clear of the ring.
 const BOOT_TRANSFORM = fitCircle(136, 52);
 const data = ({ width, height, viewBox, d }) => ({ width, height, viewBox, d });
@@ -38,6 +47,8 @@ export const BRAND_SYMBOL_SOLID = ${JSON.stringify(data(solid), null, 2)} as con
 /** Farthest outline point from the box centre, in symbol units (fit the Z inside circles). */
 export const BRAND_SYMBOL_MAX_RADIUS = ${solid.maxRadius};
 export const BOOT_SYMBOL_TRANSFORM = '${BOOT_TRANSFORM}';
+/** Native splash geometry (app.json expo-splash-screen), in dp: the Z drawn by the startup handoff. */
+export const SPLASH_SYMBOL = ${JSON.stringify(SPLASH)} as const;
 `;
 for (const file of ['client/src/design/brandSymbol.ts', 'apps/mobile/src/design/brandSymbol.ts']) fs.writeFileSync(file, ts);
 fs.writeFileSync('apps/mobile/src/design/brandWordmark.ts', `/** GENERATED supplied lowercase zayrovi contours; no font dependency. */\nexport const BRAND_WORDMARK = ${JSON.stringify(data(wordmark), null, 2)} as const;\n`);
@@ -95,8 +106,8 @@ for (const [name, size, options] of [
   ['adaptive-icon-monochrome', 1024, { radius: SAFE_ZONE, shape: solid }], // Android 13 themed icon (alpha)
   ['notification-icon', 96, { share: 0.78, shape: solid }],               // status bar: alpha-only, white
   ['favicon', 64, { share: 0.68, background: INK, shape: solid }],
-  ['splash-icon', 1024, { share: 0.7 }],                                  // on #0A0A0A (app.json)
-  ['splash-icon-dark', 1024, { share: 0.7 }],
+  ['splash-icon', 1024, { share: SPLASH_SHARE }],                         // on #0A0A0A (app.json)
+  ['splash-icon-dark', 1024, { share: SPLASH_SHARE }],
 ]) await writePng(`${expo}/${name}.png`, tile(size, options), size);
 
 // ---- Capacitor inputs (android/ is generated from these by npm run android:assets) ---------------------

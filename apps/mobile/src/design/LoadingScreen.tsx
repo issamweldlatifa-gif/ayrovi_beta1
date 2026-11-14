@@ -1,9 +1,10 @@
 /**
- * Écran de chargement d'entrée — le symbole cœur-poignée de main zayrovi dans un anneau (maquette du 2026-10-16).
+ * Écran de chargement d'entrée — le Z zébré zayrovi (v7) dans un anneau (maquette du 2026-10-16).
  *
  * ── Enchaînement à l'ouverture ──────────────────────────────────────────────
- * 1. L'image de démarrage NATIVE (app.json : symbole blanc sur fond noir #0A0A0A, dans
- *    les deux thèmes) couvre le démarrage du moteur JavaScript.
+ * 1. L'image de démarrage NATIVE (app.json : Z zébré blanc sur fond noir #0A0A0A, dans
+ *    les deux thèmes) couvre le démarrage du moteur JavaScript ; BrandEntrance la reprend
+ *    au pixel près puis l'ouvre sur le blanc de l'application.
  * 2. Cet écran prend le relais pendant que les préférences et les polices se
  *    chargent : le symbole gris au centre d'un anneau clair, un arc plus foncé tourne.
  * On ne masque l'image native qu'APRÈS avoir peint cet écran (`onShown`) : sans
@@ -20,7 +21,7 @@ import { useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 
-import { BrandSymbol } from "./BrandMark";
+import { BrandSymbol, brandSymbolWidthForRadius } from "./BrandMark";
 import { useReduceMotion } from "./motion";
 import { useTheme } from "./theme";
 
@@ -29,13 +30,15 @@ export interface LoadingScreenProps {
   onShown?: () => void;
 }
 
-/** Proportions de la maquette : anneau ≈ 37 % de la largeur, symbole ≈ 73 % de l'anneau, arc ≈ 70°. */
+/** Proportions de la maquette : anneau ≈ 37 % de la largeur, arc ≈ 70°. Le Z (presque carré) est ajusté
+ * au CERCLE de rayon `symbolRadius` — même placement que le chargement web (logo-ayrovi-loading.svg) —
+ * pour qu'aucun de ses coins n'approche l'anneau (rayon 65). */
 export const RING = {
   size: 136,
   track: 4,
   arc: 6,
   arcDegrees: 70,
-  symbolShare: 0.72,
+  symbolRadius: 52,
   turnMs: 1100,
 } as const;
 
@@ -156,8 +159,9 @@ export function BrandLoadingIndicator({
           </Svg>
         </Animated.View>
         <BrandSymbol
-          width={Math.round(RING.size * RING.symbolShare)}
+          width={brandSymbolWidthForRadius(RING.symbolRadius)}
           color={ink}
+          variant="striped"
         />
       </View>
     </View>

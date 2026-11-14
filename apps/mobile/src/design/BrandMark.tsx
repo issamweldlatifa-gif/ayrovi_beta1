@@ -1,8 +1,9 @@
-/** Shared identity: heart-handshake + supplied lowercase zayrovi, no divider. */
+/** Shared identity (v7): zebra-striped Z + supplied lowercase zayrovi, no divider.
+ * Light surfaces tint the stripes ink, dark surfaces white — one master, never a second drawing. */
 import { Platform, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { useTheme } from "./theme";
-import { BRAND_SYMBOL } from "./brandSymbol";
+import { BRAND_SYMBOL, BRAND_SYMBOL_MAX_RADIUS, BRAND_SYMBOL_SOLID } from "./brandSymbol";
 import { BRAND_WORDMARK } from "./brandWordmark";
 
 const BRAND_NAME = "ZAYROVI";
@@ -23,24 +24,39 @@ export interface BrandMarkProps {
   color?: string;
 }
 
+/** Below this width the stripes are thinner than a pixel and blur to grey: the solid Z is drawn instead. */
+export const BRAND_SYMBOL_SOLID_BELOW = 24;
+
+/** Width at which the Z's outline fits inside a circle of `radius` (round avatars, loading rings). */
+export function brandSymbolWidthForRadius(radius: number) {
+  return Math.round(((radius * BRAND_SYMBOL.width) / BRAND_SYMBOL_MAX_RADIUS) * 10) / 10;
+}
+
 /** A single contour source; tint belongs to the caller's theme, not the asset. */
 export function BrandSymbol({
   width,
   color,
+  variant,
 }: {
   width: number;
   color: string;
+  /** Default: striped, solid below BRAND_SYMBOL_SOLID_BELOW. */
+  variant?: "striped" | "solid";
 }) {
+  const shape =
+    (variant ?? (width < BRAND_SYMBOL_SOLID_BELOW ? "solid" : "striped")) === "solid"
+      ? BRAND_SYMBOL_SOLID
+      : BRAND_SYMBOL;
   const height =
-    Math.round(((width * BRAND_SYMBOL.height) / BRAND_SYMBOL.width) * 10) / 10;
+    Math.round(((width * shape.height) / shape.width) * 10) / 10;
   return (
     <Svg
       width={width}
       height={height}
-      viewBox={BRAND_SYMBOL.viewBox}
+      viewBox={shape.viewBox}
       {...hiddenSvg}
     >
-      <Path d={BRAND_SYMBOL.d} fill={color} />
+      <Path d={shape.d} fill={color} />
     </Svg>
   );
 }

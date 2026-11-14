@@ -4,9 +4,8 @@
  */
 import { View, type ColorValue } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
-import { BrandSymbol } from './BrandMark';
+import { BrandSymbol, brandSymbolWidthForRadius } from './BrandMark';
 import { BRAND } from './tokens.generated';
-import { BRAND_ACCENT } from './brandAppearance';
 import { useTheme } from './theme';
 import officialGlyphs from '../../../../shared/officialNavigationGlyphs.json';
 import cleanPalette from '../../../../assets/brand/navigation-palette.json';
@@ -56,6 +55,6 @@ export const TabSonimIcon = TabCleanIcon;
 export const TabBrandIcon = TabHomeIcon;
 /** Kept for compatibility; never added back to the five-tab bar. */
 export function TabSocialIcon({ size }: TabNavIconProps) {
-  const { dim } = useIcon(size);
-  return <View style={{ width: dim, height: dim, alignItems: 'center', justifyContent: 'center' }}><BrandSymbol width={dim} color={BRAND_ACCENT} /></View>;
+  const { dim, ink } = useIcon(size);
+  return <View style={{ width: dim, height: dim, alignItems: 'center', justifyContent: 'center' }}><BrandSymbol width={brandSymbolWidthForRadius(dim / 2)} color={ink} /></View>;
 }

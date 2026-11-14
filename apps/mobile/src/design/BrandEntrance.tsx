@@ -1,10 +1,18 @@
-/** One startup presentation only. Never delays the app behind an unbounded animation callback. */
+/** One startup presentation only. Never delays the app behind an unbounded animation callback.
+ *
+ * v7 handoff: the first frame is the native splash redrawn exactly (flat #0A0A0A, white zebra Z at the
+ * app.json size — SPLASH_SYMBOL is generated from it), so hiding the native splash is invisible. A white disc
+ * then grows from the Z's centre; the white Z melts into it and the app's white canvas is revealed. */
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import { BrandSymbol } from './BrandMark';
 import { BrandLoadingIndicator } from './LoadingScreen';
-import { BRAND_ACCENT } from './brandAppearance';
+import { SPLASH_SYMBOL } from './brandSymbol';
 import { useReduceMotion } from './motion';
+import { BRAND } from './tokens.generated';
+
+/** Diameter of the reveal disc before it scales (dp); centred on the Z. */
+export const REVEAL_DISC = 96;
 
 export function BrandEntrance({ ready, onShown, onDone }: { ready: boolean; onShown: () => void; onDone: () => void }) {
   const reduce = useReduceMotion();
@@ -45,13 +53,13 @@ export function BrandEntrance({ ready, onShown, onDone }: { ready: boolean; onSh
     const deadline = setTimeout(done, 260); exit.start(done);
     return () => { finished = true; clearTimeout(deadline); exit.stop(); };
   }, [ready, waiting, reduce, fade]);
-  const maxScale = Math.ceil(Math.hypot(viewport?.width ?? 0, viewport?.height ?? 0) / 96) + 1;
-  const half = 48;
-  return <Animated.View onLayout={onLayout} testID="brand-entrance" accessibilityRole="progressbar" style={[StyleSheet.absoluteFill, { zIndex: 1000, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', opacity: fade }]}>
+  const maxScale = Math.ceil(Math.hypot(viewport?.width ?? 0, viewport?.height ?? 0) / REVEAL_DISC) + 1;
+  const half = REVEAL_DISC / 2;
+  return <Animated.View onLayout={onLayout} testID="brand-entrance" accessibilityRole="progressbar" style={[StyleSheet.absoluteFill, { zIndex: 1000, backgroundColor: BRAND.white, alignItems: 'center', justifyContent: 'center', opacity: fade }]}>
     {waiting ? <BrandLoadingIndicator /> : null}
-    <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center', opacity: cover }]}>
-      <Animated.View testID="brand-blue-fill" style={{ position: 'absolute', left: '50%', top: '50%', marginLeft: -half, marginTop: -half, width: 96, height: 96, borderRadius: 48, backgroundColor: BRAND_ACCENT, transform: [{ scale: grow.interpolate({ inputRange: [0, 1], outputRange: [0, maxScale] }) }] }} />
-      <BrandSymbol width={96} color={BRAND_ACCENT} />
+    <Animated.View testID="brand-splash-cover" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: SPLASH_SYMBOL.background, alignItems: 'center', justifyContent: 'center', opacity: cover }]}>
+      <Animated.View testID="brand-reveal-fill" style={{ position: 'absolute', left: '50%', top: '50%', marginLeft: -half, marginTop: -half, width: REVEAL_DISC, height: REVEAL_DISC, borderRadius: half, backgroundColor: BRAND.white, transform: [{ scale: grow.interpolate({ inputRange: [0, 1], outputRange: [0, maxScale] }) }] }} />
+      <BrandSymbol width={SPLASH_SYMBOL.width} color={BRAND.white} variant="striped" />
     </Animated.View>
   </Animated.View>;
 }

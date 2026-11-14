@@ -9,7 +9,7 @@ describe('approved navigation reference scope', () => {
     expect(read('apps/mobile/src/features/reels/ReelPublisher.tsx')).toContain('<BrandSymbol width={18} color={BRAND_ACCENT}');
     for (const file of ['StoryFeed', 'ReelsViewer', 'FullscreenMediaHeader']) {
       const s = read(`client/src/social/components/${file}.tsx`);
-      expect(s).toContain('official ? <img src="/media/logo-ayrovi-symbol-blue.svg?v=6.0"');
+      expect(s).toContain('official ? <img src="/media/logo-ayrovi-avatar.svg?v=7.0"');
     }
   });
   it('uses the same Clean vector contours and approved local colors on web and native', () => {

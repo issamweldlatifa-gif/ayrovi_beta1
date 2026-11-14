@@ -1,7 +1,7 @@
 /**
- * Écran de chargement ZAYROVI et marque (logo du 2026-11-08) :
+ * Écran de chargement ZAYROVI et marque (logo v7 du 2026-11-14, Z zébré) :
  *  • l'écran de chargement est une barre de progression qui masque l'image native une fois peint ;
- *  • le cœur-poignée de main est au centre de l'anneau, l'arc tourne (ou reste fixe si le système le demande) ;
+ *  • le Z zébré est au centre de l'anneau, l'arc tourne (ou reste fixe si le système le demande) ;
  *  • la marque affiche le nom ZAYROVI à côté du symbole.
  */
 import { act, render, screen } from '@testing-library/react-native';
