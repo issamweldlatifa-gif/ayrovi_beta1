@@ -1,6 +1,6 @@
 import React from "react";
 
-/** Grey heart-handshake. Animation lives in the SVG and respects reduced motion.
+/** Grey zebra Z (v7) fitted inside its ring. Animation lives in the SVG and respects reduced motion.
  * Decorative: the enclosing loading state owns its accessible status/label. */
 export function BrandLoadingIndicator({ size = 64 }: { size?: number }) {
   return (

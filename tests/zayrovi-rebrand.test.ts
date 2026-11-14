@@ -30,7 +30,7 @@ function walk(rel: string, pattern: RegExp): string[] {
   return out;
 }
 
-describe('1. cœur-poignée de main : un seul tracé partout', () => {
+describe('1. Z zébré (v7) : un seul tracé partout', () => {
   test('site, application et écran de chargement statique partagent exactement le même tracé', () => {
     const mobile = read('apps/mobile/src/design/brandSymbol.ts');
     expect(mobile).toContain(JSON.stringify(BRAND_SYMBOL.d));
@@ -38,13 +38,16 @@ describe('1. cœur-poignée de main : un seul tracé partout', () => {
     expect(read('client/index.html')).toContain(`d="${BRAND_SYMBOL.d}"`);
     // tracé normalisé : une hauteur de 1000, un seul chemin fermé par sous-tracé
     expect(BRAND_SYMBOL.height).toBe(1000);
-    expect(BRAND_SYMBOL.width).toBeGreaterThan(1100);
+    // le Z est presque carré (≈ 0,96 : 1) — l'ancien cœur-poignée de main faisait 1,19 : 1
+    expect(BRAND_SYMBOL.width).toBeGreaterThan(940);
+    expect(BRAND_SYMBOL.width).toBeLessThan(980);
     expect(BRAND_SYMBOL.d.startsWith('M')).toBe(true);
   });
 
   test('l’application dessine le nouveau symbole (BrandMark) et l’anneau de chargement avec les jetons du thème', () => {
     const mark = read('apps/mobile/src/design/BrandMark.tsx');
-    expect(mark).toContain('<Path d={BRAND_SYMBOL.d} fill={color} />');
+    expect(mark).toContain('<Path d={shape.d} fill={color} />');
+    expect(mark).toContain('? BRAND_SYMBOL_SOLID\n      : BRAND_SYMBOL;');
     expect(mark).toContain('ZAYROVI');
     const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     expect(code(mark)).not.toMatch(/#[0-9a-f]{3,8}\b/i); // aucune couleur en dur : encre du thème
@@ -182,11 +185,11 @@ describe('5. APK de démo', () => {
 
   // Ouverture blanche + symbole bleu depuis f80504cb (« blue native entrance ») ;
   // même contrat que apps/mobile/tests/brand-colors.test.ts.
-  test('écran d’ouverture : fond blanc #FFFFFF et symbole bleu, dans les deux thèmes', () => {
+  test('écran d’ouverture (logo v7) : fond noir plat #0A0A0A et Z zébré blanc, dans les deux thèmes', () => {
     const app = JSON.parse(read('apps/mobile/app.json')).expo;
     const splash = app.plugins.find((p: unknown) => Array.isArray(p) && p[0] === 'expo-splash-screen')[1];
-    expect(splash.backgroundColor).toBe('#FFFFFF');
-    expect(splash.dark.backgroundColor).toBe('#FFFFFF');
-    expect(app.android.adaptiveIcon.backgroundColor).toBe('#FFFFFF');
+    expect(splash.backgroundColor).toBe('#0A0A0A');
+    expect(splash.dark.backgroundColor).toBe('#0A0A0A');
+    expect(app.android.adaptiveIcon.backgroundColor).toBe('#0A0A0A');
   });
 });

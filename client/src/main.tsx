@@ -21,7 +21,7 @@ const AdminApp = lazy(() => import('./admin/AdminApp').then((module) => ({ defau
 
 /**
  * Écran de chargement ZAYROVI — même dessin que le chargeur statique de index.html :
- * le symbole cœur-poignée de main au centre d'un anneau clair, un arc plus foncé tourne pendant que les modules
+ * le Z zébré (v7) au centre d'un anneau clair, un arc plus foncé tourne pendant que les modules
  * se chargent. React remplace le contenu statique de #root au premier rendu ; ce
  * fallback prend le relais sans page blanche ni saut visuel (les styles vivent dans
  * index.html — couleurs comprises —, le tracé du symbole dans `design/brandSymbol`).

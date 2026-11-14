@@ -23,7 +23,7 @@ import { normalizeInterfaceConfig } from '../client/src/config/interfaceConfig';
 import { authMailTemplate } from '../src/customer/accountMail';
 import { invoiceEmailHtml } from '../src/services/invoice';
 import { customerTheme } from '../client/src/design/editorial/customerTheme';
-import { BOOT_SYMBOL_TRANSFORM, BRAND_SYMBOL } from '../client/src/design/brandSymbol';
+import { BOOT_SYMBOL_TRANSFORM, BRAND_SYMBOL, BRAND_SYMBOL_SOLID } from '../client/src/design/brandSymbol';
 
 const ROOT = process.cwd();
 const read = (rel: string) => fs.readFileSync(path.resolve(ROOT, rel), 'utf8');
@@ -204,8 +204,8 @@ describe('3. aucun orange retiré dans les sources produit', () => {
     expect(uses.every((line) => /\.bo-nav-state\.is-error|\.bo-tag--warn/.test(line))).toBe(true);
   });
 
-  test('les logos vectoriels sont le cœur-poignée de main monochrome, sans violet ; les anciens noms « -orange » ont disparu', () => {
-    // Logo officiel du 2026-10-16 : un Z blanc sur noir (ou noir sur blanc). Le violet reste réservé à l'action principale.
+  test('les logos vectoriels sont le Z zébré monochrome (v7), sans violet ; les anciens noms « -orange » ont disparu', () => {
+    // Logo officiel v7 du 2026-11-14 : Z zébré blanc sur noir (ou noir sur blanc). Le violet reste réservé à l'action principale.
     for (const [rel, ink] of [
       ['logo-ayrovi-mark.svg', OFFICIAL.black],
       ['logo-ayrovi-lockup-black-violet.svg', OFFICIAL.black],
@@ -221,7 +221,8 @@ describe('3. aucun orange retiré dans les sources produit', () => {
     }
     const icon = read('client/public/media/logo-ayrovi-icon.svg');
     expect(icon).toContain(`fill="${OFFICIAL.black}"`); // carré noir
-    expect(icon).toContain(`fill="${OFFICIAL.white}" d="${BRAND_SYMBOL.d}"`); // Z blanc
+    // onglet du navigateur (16–32 px) : le Z PLEIN blanc — les rayures ne survivent pas à cette taille
+    expect(icon).toContain(`fill="${OFFICIAL.white}" d="${BRAND_SYMBOL_SOLID.d}"`);
     for (const gone of ['black', 'white']) {
       for (const ext of ['svg', 'png']) {
         expect(fs.existsSync(path.resolve(ROOT, `client/public/media/logo-ayrovi-lockup-${gone}-orange.${ext}`))).toBe(false);
