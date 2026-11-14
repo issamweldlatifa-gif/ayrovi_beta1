@@ -1,7 +1,7 @@
 import { act, render, fireEvent } from '@testing-library/react-native';
 import { Animated, StyleSheet } from 'react-native';
 import Svg from 'react-native-svg';
-import { BrandEntrance, REVEAL_DISC } from '@/design/BrandEntrance';
+import { BrandEntrance, SETTLE_SCALE } from '@/design/BrandEntrance';
 import { Path } from 'react-native-svg';
 import { BRAND_SYMBOL, SPLASH_SYMBOL } from '@/design/brandSymbol';
 import appJson from '../../app.json';
@@ -50,24 +50,30 @@ it('skips the expanding motion with reduced motion and never blocks a ready app'
   expect(onDone).toHaveBeenCalledTimes(1);
 });
 
-it('centers the white reveal disc on the measured overlay and does not replay on rotation', () => {
+it('settles the splash Z (gentle step back while fading) and does not replay on rotation', () => {
   const onShown = jest.fn();
+  const sequence = jest.spyOn(Animated, 'sequence');
   const tree = render(<BrandEntrance ready={false} onShown={onShown} onDone={() => {}} />);
   const layout = (width: number, height: number) => fireEvent(tree.getByTestId('brand-entrance'), 'layout', { nativeEvent: { layout: { width, height, x: 0, y: 0 } } });
   layout(390, 780); layout(780, 390);
   expect(onShown).toHaveBeenCalledTimes(1);
-  expect(tree.getByTestId('brand-reveal-fill').props.style).toMatchObject({ left: '50%', top: '50%', marginLeft: -REVEAL_DISC / 2, marginTop: -REVEAL_DISC / 2, backgroundColor: '#FFFFFF' });
+  expect(sequence).toHaveBeenCalledTimes(1);
+  const mark = StyleSheet.flatten(tree.getByTestId('brand-splash-mark').props.style);
+  expect(mark.opacity).toBe(1);
+  expect(mark.transform).toEqual([{ scale: 1 }]);
+  expect(SETTLE_SCALE).toBeGreaterThan(0.8);
+  expect(SETTLE_SCALE).toBeLessThan(1);
 });
 
-it('starts as an exact redraw of the native splash: same background, same white Z at the app.json size', () => {
+it('starts as an exact redraw of the native splash: same white background, same ink Z at the app.json size', () => {
   const tree = render(<BrandEntrance ready={false} onShown={() => {}} onDone={() => {}} />);
   const splash = (appJson.expo.plugins as unknown[]).find((p): p is [string, { backgroundColor: string; imageWidth: number; dark: { backgroundColor: string } }] => Array.isArray(p) && p[0] === 'expo-splash-screen')![1];
   expect(SPLASH_SYMBOL.imageWidth).toBe(splash.imageWidth);
-  expect(BRAND.black).toBe(splash.backgroundColor);
+  expect(BRAND.white).toBe(splash.backgroundColor);
   expect(splash.dark.backgroundColor).toBe(splash.backgroundColor);
   expect(StyleSheet.flatten(tree.getByTestId('brand-splash-cover').props.style).backgroundColor).toBe(splash.backgroundColor);
   const z = tree.UNSAFE_getAllByType(Path).find((p) => p.props.d === BRAND_SYMBOL.d)!;
-  expect(z.props.fill).toBe('#FFFFFF');
+  expect(z.props.fill).toBe(BRAND.black);
   const svg = tree.UNSAFE_getAllByType(Svg).find((s) => s.findAll((n) => n.type === Path && n.props.d === BRAND_SYMBOL.d).length > 0)!;
   expect(svg.props.width).toBe(SPLASH_SYMBOL.width);
   expect(SPLASH_SYMBOL.height).toBeCloseTo(splash.imageWidth * SPLASH_SYMBOL.share, 5);

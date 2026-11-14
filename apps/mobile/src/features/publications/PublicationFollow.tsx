@@ -17,6 +17,8 @@ import { useT } from '@/i18n';
 import { PublicationAuthSheet } from './PublicationAuthSheet';
 import { PUBLICATION_TYPE, PublicationIcon, PublicationText } from './publicationDesign';
 import { usePublisherFollow } from './usePublisherFollow';
+import { OFFICIAL_AVATAR, OfficialAvatar } from '@/design/OfficialAvatar';
+import { PUBLICATION_PUBLISHER_ID } from '../../../../../shared/publicationBlocks';
 
 export function PublicationFollow({
   publisherId,
@@ -48,6 +50,10 @@ export function PublicationFollow({
     ? t('publication.unfollowLabel', { name: publisherName })
     : t('publication.followLabel', { name: publisherName });
   const pressedStyle = { opacity: theme.opacity.subtle };
+  // 14/11 : visage du compte officiel devant son nom (Z zébré blanc sur disque noir). Jamais d'avatar emprunté.
+  const avatar = publisherId === PUBLICATION_PUBLISHER_ID
+    ? <OfficialAvatar size={OFFICIAL_AVATAR.publication} testID={`${testID}-avatar`} />
+    : null;
   const busyStyle = follow.state === 'pending' ? { opacity: theme.opacity.disabled } : null;
 
   return (
@@ -66,13 +72,17 @@ export function PublicationFollow({
             <PublicationIcon name={following ? 'checkmark-outline' : 'add-outline'} size={PUBLICATION_TYPE.followIcon} color={ink} />
             <PublicationText variant="bodyStrong" color={ink} numberOfLines={1} style={styles.pillText}>{text}</PublicationText>
           </Pressable>
-          {/* GBox : le nom de l'éditeur suit la pilule en RÉGULIER (« + Follow   Vans »). */}
-          <PublicationText testID={`${testID}-name`} variant="body" color={ink} numberOfLines={1} style={styles.name}>
-            {publisherName}
-          </PublicationText>
+          {/* GBox : le nom de l'éditeur suit la pilule en RÉGULIER (« + Follow   Vans »), précédé de l'avatar. */}
+          <View style={styles.identity}>
+            {avatar}
+            <PublicationText testID={`${testID}-name`} variant="body" color={ink} numberOfLines={1} style={styles.name}>
+              {publisherName}
+            </PublicationText>
+          </View>
         </View>
       ) : (
         <View style={styles.inlineRow}>
+          {avatar}
           <PublicationText testID={`${testID}-name`} variant="bodyStrong" color={ink} numberOfLines={1} style={styles.inlineName}>
             {publisherName}
           </PublicationText>
@@ -114,6 +124,7 @@ const styles = StyleSheet.create({
   },
   pillText: { fontSize: PUBLICATION_TYPE.followSize, lineHeight: PUBLICATION_TYPE.followLine },
   name: { flexShrink: 1 },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
   inlineRow: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: PUBLICATION_TYPE.touch },
   inlineName: { flexShrink: 1 },
 });

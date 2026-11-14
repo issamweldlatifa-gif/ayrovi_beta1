@@ -220,9 +220,9 @@ describe('3. aucun orange retiré dans les sources produit', () => {
       expect(svg.toUpperCase(), rel).not.toContain(OFFICIAL.violet);
     }
     const icon = read('client/public/media/logo-ayrovi-icon.svg');
-    expect(icon).toContain(`fill="${OFFICIAL.black}"`); // carré noir
-    // onglet du navigateur (16–32 px) : le Z PLEIN blanc — les rayures ne survivent pas à cette taille
-    expect(icon).toContain(`fill="${OFFICIAL.white}" d="${BRAND_SYMBOL_SOLID.d}"`);
+    expect(icon).toContain(`fill="${OFFICIAL.white}"`); // carré blanc (icône blanche, 14/11)
+    // onglet du navigateur (16–32 px) : le Z PLEIN encre — les rayures ne survivent pas à cette taille
+    expect(icon).toContain(`fill="${OFFICIAL.black}" d="${BRAND_SYMBOL_SOLID.d}"`);
     for (const gone of ['black', 'white']) {
       for (const ext of ['svg', 'png']) {
         expect(fs.existsSync(path.resolve(ROOT, `client/public/media/logo-ayrovi-lockup-${gone}-orange.${ext}`))).toBe(false);

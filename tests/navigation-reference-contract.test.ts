@@ -2,11 +2,10 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 const read = (file: string) => readFileSync(file, 'utf8');
 describe('approved navigation reference scope', () => {
-  it('shows official Publication/Reel brand avatars as the v7 Z in ink, fitted inside their circle', () => {
-    // Refonte Publication (13/11/2026) : plus d'avatar d'éditeur sur les blocs —
-    // l'éditeur est un simple libellé « zayrovi team » venu du serveur.
+  it('shows official Publication/Reel brand avatars as the white zebra Z on a black disc, fitted inside their circle', () => {
+    // 14/11 : l'avatar du compte officiel revient devant « zayrovi team » (Publication) et dans les Reels.
     expect(read('shared/publicationBlocks.ts')).toContain("PUBLICATION_PUBLISHER_NAME = 'zayrovi team'");
-    expect(read('apps/mobile/src/features/reels/ReelPublisher.tsx')).toContain('<BrandSymbol width={brandSymbolWidthForRadius(11)} color={theme.colors.ink} />');
+    expect(read('apps/mobile/src/features/reels/ReelPublisher.tsx')).toContain('<OfficialAvatar size={OFFICIAL_AVATAR.reel} testID="reel-publisher-avatar" />');
     for (const file of ['StoryFeed', 'ReelsViewer', 'FullscreenMediaHeader']) {
       const s = read(`client/src/social/components/${file}.tsx`);
       expect(s).toContain('official ? <img src="/media/logo-ayrovi-avatar.svg?v=7.0"');

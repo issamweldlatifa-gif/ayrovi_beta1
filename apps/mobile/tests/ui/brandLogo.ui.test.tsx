@@ -96,12 +96,15 @@ describe("new zayrovi identity and grey loading", () => {
     expect(farthest).toBeLessThanOrEqual(RING.size / 2 - RING.arc - 8 + 0.1);
   });
 
-  it("shows the official Reel avatar as the ink Z inside its circle (solid at 28 dp), never a blue symbol", () => {
+  it("shows the official Reel avatar as the white zebra Z on a black disc (striped even at 28 dp), never a blue symbol", () => {
     const result = render(<ReelPublisher />);
     const path = result.UNSAFE_getByType(Path);
-    expect(path.props.d).toBe(BRAND_SYMBOL_SOLID.d);
-    expect(path.props.fill).toBe("#0A0A0A");
-    const width = svgDrawing(result, BRAND_SYMBOL_SOLID.d).props.width as number;
-    expect((width / BRAND_SYMBOL.width) * BRAND_SYMBOL_MAX_RADIUS).toBeLessThanOrEqual(11.05);
+    expect(path.props.d).toBe(BRAND_SYMBOL.d);
+    expect(path.props.fill).toBe("#FFFFFF");
+    const disc = result.getByTestId("reel-publisher-avatar", { includeHiddenElements: true });
+    expect(disc.props.style).toMatchObject({ width: 28, height: 28, borderRadius: 14, backgroundColor: "#0A0A0A" });
+    const width = svgDrawing(result, BRAND_SYMBOL.d).props.width as number;
+    // The Z's outline fits 80 % of the disc: radius ≤ 11.2 dp inside the 14 dp circle.
+    expect((width / BRAND_SYMBOL.width) * BRAND_SYMBOL_MAX_RADIUS).toBeLessThanOrEqual(11.25);
   });
 });

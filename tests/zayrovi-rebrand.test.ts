@@ -185,11 +185,11 @@ describe('5. APK de démo', () => {
 
   // Ouverture blanche + symbole bleu depuis f80504cb (« blue native entrance ») ;
   // même contrat que apps/mobile/tests/brand-colors.test.ts.
-  test('écran d’ouverture (logo v7) : fond noir plat #0A0A0A et Z zébré blanc, dans les deux thèmes', () => {
+  test('écran d’ouverture (logo v7, 14/11) : fond blanc plat #FFFFFF et Z zébré encre, dans les deux thèmes', () => {
     const app = JSON.parse(read('apps/mobile/app.json')).expo;
     const splash = app.plugins.find((p: unknown) => Array.isArray(p) && p[0] === 'expo-splash-screen')[1];
-    expect(splash.backgroundColor).toBe('#0A0A0A');
-    expect(splash.dark.backgroundColor).toBe('#0A0A0A');
-    expect(app.android.adaptiveIcon.backgroundColor).toBe('#0A0A0A');
+    expect(splash.backgroundColor).toBe('#FFFFFF');
+    expect(splash.dark.backgroundColor).toBe('#FFFFFF');
+    expect(app.android.adaptiveIcon.backgroundColor).toBe('#FFFFFF');
   });
 });

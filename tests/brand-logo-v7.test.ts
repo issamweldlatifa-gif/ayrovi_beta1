@@ -2,7 +2,8 @@
  * Logo v7 (14/11/2026) — le Z zébré remplace définitivement le cœur-poignée de main (v6) et l'ancien Z (2026-10).
  *
  * Verrouille : les originaux fournis (empreintes), le tracé partagé site / app / chargement statique, la
- * suppression des anciens logos, et les PIXELS des icônes livrées — silhouette, centrage, fond plat #0A0A0A,
+ * suppression des anciens logos, et les PIXELS des icônes livrées — silhouette, centrage, fond plat #FFFFFF (icône
+ * blanche, 14/11 ; le noir est réservé à l'avatar du compte officiel),
  * zone sûre Android, icônes alpha (notification, monochrome) — pas seulement des noms de fichiers.
  */
 import fs from "node:fs";
@@ -27,6 +28,7 @@ const walk = (dir: string): string[] =>
     return e.isDirectory() ? (e.name === "node_modules" ? [] : walk(file)) : [file];
   });
 const INK = "#0A0A0A";
+const WHITE = "#FFFFFF";
 
 /** Opening coordinates of the retired contours: enough to recognise them, not the drawings themselves. */
 const RETIRED = {
@@ -131,21 +133,21 @@ describe("v7 zebra Z — master, sources and the retired logos", () => {
 
 describe("v7 zebra Z — shipped pixels", () => {
   test.each([
-    ["apps/mobile/assets/images/icon.png", white, "striped"],
-    ["apps/mobile/assets/images/adaptive-icon.png", white, "striped"],
-    ["apps/mobile/assets/images/splash-icon.png", white, "striped"],
-    ["apps/mobile/assets/images/splash-icon-dark.png", white, "striped"],
-    ["client/public/media/logo-ayrovi-192.png", white, "striped"],
-    ["client/public/media/logo-ayrovi-512.png", white, "striped"],
-    ["client/public/media/logo-ayrovi-apple-touch.png", white, "striped"],
+    ["apps/mobile/assets/images/icon.png", ink, "striped"],
+    ["apps/mobile/assets/images/adaptive-icon.png", ink, "striped"],
+    ["apps/mobile/assets/images/splash-icon.png", ink, "striped"],
+    ["apps/mobile/assets/images/splash-icon-dark.png", ink, "striped"],
+    ["client/public/media/logo-ayrovi-192.png", ink, "striped"],
+    ["client/public/media/logo-ayrovi-512.png", ink, "striped"],
+    ["client/public/media/logo-ayrovi-apple-touch.png", ink, "striped"],
     ["client/public/media/logo-ayrovi.png", ink, "striped"],
     ["client/public/media/logo-ayrovi-light.png", white, "striped"],
-    ["android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png", white, "striped"],
-    ["android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png", white, "striped"],
-    ["assets/icon.png", white, "striped"],
+    ["android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png", ink, "striped"],
+    ["android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png", ink, "striped"],
+    ["assets/icon.png", ink, "striped"],
     ["apps/mobile/assets/images/notification-icon.png", white, "solid"],
     ["apps/mobile/assets/images/adaptive-icon-monochrome.png", white, "solid"],
-    ["apps/mobile/assets/images/favicon.png", white, "solid"],
+    ["apps/mobile/assets/images/favicon.png", ink, "solid"],
   ] as const)("%s draws the actual Z (%s), centred", async (file, pick, kind) => {
     const expected = await reference(kind === "solid" ? BRAND_SYMBOL_SOLID : BRAND_SYMBOL);
     const { info, box } = await mask(file, pick);
@@ -162,9 +164,9 @@ describe("v7 zebra Z — shipped pixels", () => {
     "client/public/media/logo-ayrovi-512.png",
     "assets/icon.png",
     "assets/splash.png",
-  ])("%s has a flat #0A0A0A background (no gradient)", async (file) => {
+  ])("%s has a flat #FFFFFF background (no gradient)", async (file) => {
     const { data, info } = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    const { box } = await mask(file, white);
+    const { box } = await mask(file, ink);
     const pad = Math.ceil(info.width * 0.01);
     let off = 0, total = 0;
     for (let y = 0; y < info.height; y += 2)
@@ -172,7 +174,7 @@ describe("v7 zebra Z — shipped pixels", () => {
         if (x >= box.left - pad && x <= box.right + pad && y >= box.top - pad && y <= box.bottom + pad) continue;
         const i = (y * info.width + x) * 4;
         total++;
-        if (data[i] !== 10 || data[i + 1] !== 10 || data[i + 2] !== 10 || data[i + 3] !== 255) off++;
+        if (data[i] !== 255 || data[i + 1] !== 255 || data[i + 2] !== 255 || data[i + 3] !== 255) off++;
       }
     expect(total).toBeGreaterThan(1000);
     expect(off).toBe(0);
@@ -207,33 +209,39 @@ describe("v7 zebra Z — shipped pixels", () => {
     expect(painted).toBeLessThan(data.length / 4 / 2);
   });
 
-  test("Expo config: dark adaptive icon + themed monochrome, dark splash in both themes, notification icon", () => {
+  test("Expo config: white adaptive icon + themed monochrome, white splash in both themes, notification icon", () => {
     const expo = JSON.parse(read("apps/mobile/app.json")).expo;
     expect(expo.icon).toBe("./assets/images/icon.png");
     expect(expo.android.adaptiveIcon).toEqual({
       foregroundImage: "./assets/images/adaptive-icon.png",
       monochromeImage: "./assets/images/adaptive-icon-monochrome.png",
-      backgroundColor: INK,
+      backgroundColor: WHITE,
     });
     const plugin = (name: string) => expo.plugins.find((p: unknown) => Array.isArray(p) && p[0] === name)?.[1];
     const splash = plugin("expo-splash-screen");
-    expect(splash.backgroundColor).toBe(INK);
-    expect(splash.dark.backgroundColor).toBe(INK);
+    expect(splash.backgroundColor).toBe(WHITE);
+    expect(splash.dark.backgroundColor).toBe(WHITE);
     expect(splash.imageWidth).toBe(SPLASH_SYMBOL.imageWidth);
-    expect(read("apps/mobile/src/design/BrandEntrance.tsx")).toContain("backgroundColor: BRAND.black,"); // the JS redraw of the splash
-    expect(read("apps/mobile/src/design/tokens.generated.ts")).toContain(`black: "${INK}"`);
+    expect(read("apps/mobile/src/design/BrandEntrance.tsx")).toContain("backgroundColor: BRAND.white,"); // the JS redraw of the splash
+    expect(read("apps/mobile/src/design/BrandEntrance.tsx")).toContain('color={BRAND.black} variant="striped"'); // ink Z
+    expect(read("apps/mobile/src/design/tokens.generated.ts")).toContain(`white: "${WHITE}"`);
     expect(plugin("expo-notifications")).toEqual({ icon: "./assets/images/notification-icon.png", color: INK });
     for (const file of [expo.icon, expo.web.favicon, splash.image, splash.dark.image, ...Object.values(expo.android.adaptiveIcon).filter((v) => String(v).startsWith("./")), plugin("expo-notifications").icon])
       expect(fs.existsSync(path.join("apps/mobile", String(file))), String(file)).toBe(true);
-    expect(read("android/app/src/main/res/values/ic_launcher_background.xml")).toContain(`>${INK}<`);
-    expect(read("package.json")).toContain("--iconBackgroundColor '#0A0A0A' --iconBackgroundColorDark '#0A0A0A' --splashBackgroundColor '#0A0A0A' --splashBackgroundColorDark '#0A0A0A'");
+    expect(read("android/app/src/main/res/values/ic_launcher_background.xml")).toContain(`>${WHITE}<`);
+    expect(read("package.json")).toContain("--iconBackgroundColor '#FFFFFF' --iconBackgroundColorDark '#FFFFFF' --splashBackgroundColor '#FFFFFF' --splashBackgroundColorDark '#FFFFFF'");
   });
 
-  test("official avatars on the site use the round-fitted Z, never the retired blue symbol", () => {
+  test("official avatars (site + app): white zebra Z on a black disc, round-fitted, never the retired blue symbol", () => {
     for (const file of ["StoryFeed", "ReelsViewer", "FullscreenMediaHeader", "StoryCircles"])
       expect(read(`client/src/social/components/${file}.tsx`)).toContain('src="/media/logo-ayrovi-avatar.svg?v=7.0"');
     const avatar = read("client/public/media/logo-ayrovi-avatar.svg");
-    expect(avatar).toContain(`fill="${INK}" d="${BRAND_SYMBOL.d}"`);
+    expect(avatar).toContain(`<circle cx="256" cy="256" r="256" fill="${INK}"/>`);
+    expect(avatar).toContain(`fill="${WHITE}" d="${BRAND_SYMBOL.d}"`);
+    expect(read("apps/mobile/src/design/OfficialAvatar.tsx")).toContain("backgroundColor: BRAND.black");
+    expect(read("apps/mobile/src/design/OfficialAvatar.tsx")).toContain('color={BRAND.white} variant="striped"');
+    expect(read("apps/mobile/src/features/reels/ReelPublisher.tsx")).toContain("<OfficialAvatar size={OFFICIAL_AVATAR.reel}");
+    expect(read("apps/mobile/src/features/publications/PublicationFollow.tsx")).toContain("<OfficialAvatar size={OFFICIAL_AVATAR.publication}");
     const scale = Number(avatar.match(/scale\(([\d.]+)\)/)![1]);
     expect(BRAND_SYMBOL_MAX_RADIUS * scale).toBeLessThanOrEqual(512 * 0.4 + 0.01); // inside the circle
   });

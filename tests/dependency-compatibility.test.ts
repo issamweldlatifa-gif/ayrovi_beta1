@@ -47,8 +47,8 @@ describe('security updates retain the APIs actually consumed by ZAYROVI', () => 
       await writeFile(path.join(dir,'client/index.html'),'<html></html>');
       execFileSync(process.execPath,[path.resolve('scripts/cap-assets.mjs')],{cwd:dir});
       expect(await sharp(path.join(dir,'assets/icon.png')).metadata()).toMatchObject({width:1024,height:1024});
-      // logo v7 : fond noir plat #0A0A0A, Z zébré blanc à 62 % de la HAUTEUR de l'icône (le Z est un peu plus haut que large)
-      const trimmed=(await sharp(path.join(dir,'assets/icon.png')).trim({background:'#0A0A0A',threshold:60}).toBuffer({resolveWithObject:true})).info.height;
+      // logo v7 (14/11) : fond blanc plat, Z zébré encre à 62 % de la HAUTEUR de l'icône (le Z est un peu plus haut que large)
+      const trimmed=(await sharp(path.join(dir,'assets/icon.png')).trim({background:'#FFFFFF',threshold:60}).toBuffer({resolveWithObject:true})).info.height;
       expect(Math.abs(trimmed-Math.round(1024*.62))).toBeLessThanOrEqual(10); // ±1 % : bord adouci par l'agrandissement
       expect(await sharp(path.join(dir,'assets/splash.png')).metadata()).toMatchObject({width:2732,height:2732});
       expect(await sharp(path.join(dir,'assets/splash-dark.png')).metadata()).toMatchObject({width:2732,height:2732});
