@@ -1,7 +1,7 @@
 # Tailles d'APK — mesurées
 
-Dernière mesure : 2026-11-13 07:37 UTC
-Commit mesuré : `40e9efad34fe13e7d5f496f7c3361c674eb3afae`
+Dernière mesure : 2026-11-14 08:26 UTC
+Commit mesuré : `b417133ab017629b36da9649d28ed42d2cfe56b7`
 
 Écrit automatiquement par `Mobile — APK Android (démo)`.
 Ne pas éditer à la main : réécrit à chaque build.
@@ -25,6 +25,6 @@ Ne pas éditer à la main : réécrit à chaque build.
 | lib/armeabi-v7a | 25.0 Mo |
 | classes.dex | 23.0 Mo |
 | res/ | 9.0 Mo |
-| assets/ | 8.8 Mo |
+| assets/ | 8.9 Mo |
 | autre | 2.4 Mo |
 | META-INF/ | 0.1 Mo |
