@@ -180,6 +180,12 @@ export function veil(opacity: number): string {
   return alpha(BRAND.black, opacity);
 }
 
+/**
+ * Ombre douce des icônes d'interaction posées NUES sur une vidéo (Reel, Story) —
+ * option A de la refonte du 14/11/2026 : icône blanche pleine, sans pastille.
+ */
+export const MEDIA_GLYPH_SHADOW = veil(0.32);
+
 /** Voile CLAIR (blanc de marque + opacité) : boutons « givrés » posés sur une image. */
 export function frost(opacity: number): string {
   return alpha(BRAND.white, opacity);

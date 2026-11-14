@@ -16,6 +16,7 @@ import { shareReel } from "@/features/reels/shareReel";
 import { memo, useCallback, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { ReelGlyph } from "@/features/reels/ReelIcons";
 import { ReelPlayback } from "@/features/reels/ReelPlayback";
 import { ReactionButton } from "@/design/reactions/ReactionButton";
 import { DoubleTapHearts, type DoubleTapHeartsHandle } from "@/design/reactions/DoubleTapHearts";
@@ -220,12 +221,7 @@ export const ReelCard = memo(function ReelCard({
             onPress={() => onOpenComments(reel)}
             style={styles.action}
           >
-            <Ionicons
-              name="chatbubble-outline"
-              size={theme.iconSize.md}
-              color={muted}
-              accessibilityElementsHidden
-            />
+            <ReelGlyph name="comment" size={theme.iconSize.md} color={muted} />
             <AppText variant="caption" color={muted}>
               {String(counts?.comments ?? 0)}
             </AppText>
@@ -237,12 +233,7 @@ export const ReelCard = memo(function ReelCard({
             onPress={shareWithFeedback}
             style={styles.action}
           >
-            <Ionicons
-              name="share-social-outline"
-              size={theme.iconSize.md}
-              color={muted}
-              accessibilityElementsHidden
-            />
+            <ReelGlyph name="share" size={theme.iconSize.md} color={muted} mirrored={theme.isRTL} />
             <AppText variant="caption" color={muted}>
               {String(counts?.shares ?? 0)}
             </AppText>

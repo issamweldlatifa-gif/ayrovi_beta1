@@ -1,9 +1,11 @@
 /**
- * Page Publication — refonte du 13/11/2026.
+ * Page Publication — refonte du 13/11/2026, interactions rétablies le 14/11.
  *
- * Consigne du propriétaire : la page est VIDÉE (plus de fil de posts, de
- * réactions, de commentaires, de partage ni de visionneuse) ; seul l'en-tête
- * reste. Le corps empile les blocs composés dans le CRM (Contenu → Social →
+ * 13/11 : la page est VIDÉE (plus de fil de posts ni de visionneuse) ; seul
+ * l'en-tête reste. 14/11 (refonte des interactions approuvée) : chaque bloc NON
+ * sponsorisé reçoit la barre Facebook — résumé, J'aime · Commenter · Partager —
+ * et sa feuille de commentaires (`PublicationEngagement`), reliées au serveur.
+ * Le corps empile les blocs composés dans le CRM (Contenu → Social →
  * Publication), d'après les planches Zalando : `container`, `media` (image ou
  * vidéo) et `sponsored_pair`. Données : `GET /api/public/social/publication-blocks`.
  *
@@ -18,6 +20,9 @@ import { setStatusBarStyle } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fetchPublicationBlocks, type PublicationBlock } from '@/api/publicationBlocks';
+import { fetchSocialEngagement, ZERO_COUNTS, type SocialEngagement } from '@/api/social';
+import { useSession } from '@/state/session';
+import { PublicationBar, publicationEngagementKey } from './PublicationEngagement';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
@@ -77,6 +82,19 @@ export function PublicationTemplatesScreen() {
     staleTime: 30_000,
   });
   const rows = blocks.data ?? [];
+  // Engagement (compteurs + réaction du compte) des blocs NON sponsorisés,
+  // en une requête ; la clé suit le compte pour ne jamais montrer la réaction
+  // d'un autre utilisateur après un changement de session.
+  const session = useSession();
+  const owner = session.status === 'signedIn' ? session.account?.id || 'member' : 'guest';
+  const socialIds = useMemo(() => rows.filter((row) => !row.sponsored).map((row) => row.id), [rows]);
+  const engagementKey = useMemo(() => [...publicationEngagementKey(socialIds), owner], [socialIds, owner]);
+  const engagement = useQuery<SocialEngagement>({
+    queryKey: engagementKey,
+    queryFn: ({ signal }) => fetchSocialEngagement(socialIds, { signal }),
+    enabled: socialIds.length > 0,
+    staleTime: 15_000,
+  });
 
   const viewability = useRef({ itemVisiblePercentThreshold: 60 }).current;
   const onViewable = useRef(({ viewableItems }: { viewableItems: Array<ViewToken<PublicationBlock>> }) => {
@@ -92,10 +110,19 @@ export function PublicationTemplatesScreen() {
         testID="publication-blocks"
         data={rows}
         keyExtractor={(item) => item.id}
-        extraData={`${activeId}:${focused}:${metrics.width}`}
+        extraData={`${activeId}:${focused}:${metrics.width}:${engagement.dataUpdatedAt}`}
         renderItem={({ item }) => (
           <View style={[styles.column, { width: metrics.width }]}>
             <PublicationBlockView block={item} metrics={metrics} active={focused && activeId === item.id} />
+            {!item.sponsored ? (
+              <PublicationBar
+                blockId={item.id}
+                title={item.title}
+                counts={engagement.data?.counts?.[item.id] ?? ZERO_COUNTS}
+                mine={engagement.data?.mine?.[item.id] ?? null}
+                engagementKey={engagementKey}
+              />
+            ) : null}
           </View>
         )}
         ItemSeparatorComponent={Separator}

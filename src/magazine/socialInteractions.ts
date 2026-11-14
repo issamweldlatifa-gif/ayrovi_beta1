@@ -2,7 +2,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 type SocialStore = Pick<QatafoDatabase, 'get' | 'all' | 'run' | 'transaction'>;
-export type SocialTarget = { kind: 'story' | 'post'; source: 'story' | 'publication' | 'reel' };
+export type SocialTarget = { kind: 'story' | 'post'; source: 'story' | 'publication' | 'reel' | 'block' };
 export function publishedSocialTarget(db: Pick<SocialStore, 'get'>, targetId: string, now: string): SocialTarget | null {
     if (db.get(`SELECT 1 FROM stories WHERE id=? AND status='PUBLISHED' AND publish_at<=?
       AND (expires_at IS NULL OR expires_at>?)`, targetId, now, now)) return { kind: 'story', source: 'story' };
@@ -11,6 +11,14 @@ export function publishedSocialTarget(db: Pick<SocialStore, 'get'>, targetId: st
     }
     if (db.get(`SELECT 1 FROM reels WHERE id=? AND status='publie' AND publish_at<=?`, targetId, now)) {
       return { kind: 'post', source: 'reel' };
+    }
+    // Refonte des interactions (14/11/2026, approuvée) : chaque bloc ACTIF et NON
+    // sponsorisé de la page Publication (composé dans le CRM) porte J'aime ·
+    // Commenter · Partager. Aucune table nouvelle : réactions, commentaires et
+    // partages sont déjà indexés par `target_id` (story_interactions,
+    // social_loves, publication_dislikes, totaux matérialisés).
+    if (db.get('SELECT 1 FROM publication_blocks WHERE id=? AND active=1 AND sponsored=0', targetId)) {
+      return { kind: 'post', source: 'block' };
     }
     return null;
   };

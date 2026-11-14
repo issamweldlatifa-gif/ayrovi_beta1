@@ -1,8 +1,9 @@
 /**
  * Page Publication refondue (13/11/2026) — rendu réel des trois modèles.
  *  • l'en-tête reste (retour, titre, compte) ; le corps = les blocs du CRM ;
- *  • aucun bouton d'interaction (réaction, commentaire, partage) SAUF « Suivre » (13/11)
- *    et, depuis le 14/11 (planches GBox), le cœur des cartes relié aux vrais favoris ;
+ *  • « Suivre » (13/11), le cœur des cartes relié aux vrais favoris (14/11, GBox) et,
+ *    depuis la refonte des interactions du 14/11, la barre J'aime · Commenter ·
+ *    Partager sous chaque bloc NON sponsorisé (+ sa feuille de commentaires) ;
  *  • le duo sponsorisé : une image puis deux cartes de MÊME taille ;
  *  • l'appui sur un produit ouvre la fiche de l'application ;
  *  • la vidéo ne tourne que pour le bloc actif, avec pause et son.
@@ -39,7 +40,20 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 const mockQuery = jest.fn();
-jest.mock('@tanstack/react-query', () => ({ useQuery: () => mockQuery() }));
+/** Engagement (14/11) : compteurs + réaction du compte, par bloc. */
+const mockEngagement = { counts: {} as Record<string, any>, mine: {} as Record<string, string> };
+const mockComments = jest.fn(() => ({ data: [], isPending: false, isError: false, refetch: jest.fn() }));
+const mockInvalidate = jest.fn();
+jest.mock('@tanstack/react-query', () => ({
+  useQuery: ({ queryKey }: { queryKey: readonly unknown[] }) => {
+    if (queryKey[0] === 'publication-blocks') return mockQuery();
+    if (queryKey[1] === 'engagement') return { data: mockEngagement, dataUpdatedAt: 1 };
+    return mockComments();
+  },
+  useQueryClient: () => ({ invalidateQueries: mockInvalidate, setQueryData: jest.fn() }),
+  useMutation: () => ({ mutate: jest.fn(), isPending: false }),
+}));
+jest.mock('@/session/session', () => ({ useSessionId: () => 'guest-session-0001', getSessionId: async () => 'guest-session-0001' }));
 /** « Suivre » : la relation (serveur + session) est testée ailleurs ; ici, son rendu. */
 const mockFollowPress = jest.fn();
 const mockFollow = { state: 'idle', writeFailed: false, disabled: false, press: () => mockFollowPress() };
@@ -118,6 +132,9 @@ beforeEach(() => {
   mockSession.account = null;
   mockFavourites.clear();
   mockToggle.mockClear();
+  mockEngagement.counts = {};
+  mockEngagement.mine = {};
+  mockInvalidate.mockClear();
 });
 
 describe('page Publication : en-tête seul + modèles du CRM', () => {
@@ -153,9 +170,13 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     expect(mockFollowCalls.every(([id]) => id === 'pub_ayrovi')).toBe(true);
     fireEvent.press(pill);
     expect(mockFollowPress).toHaveBeenCalledTimes(1);
-    for (const label of [/j’aime/i, /commenter/i, /partager/i]) {
-      expect(screen.queryAllByLabelText(label)).toHaveLength(0);
+    // 14/11 : J'aime · Commenter · Partager — UNE barre, sous le seul bloc non sponsorisé.
+    for (const label of [/^j’aime$/i, /^commenter$/i, /^partager$/i]) {
+      expect(screen.queryAllByLabelText(label)).toHaveLength(1);
     }
+    expect(screen.getByTestId('publication-bar-video')).toBeTruthy();
+    expect(screen.queryByTestId('publication-bar-box')).toBeNull();
+    expect(screen.queryByTestId('publication-bar-pair')).toBeNull();
     // 14/11 : les seuls « favoris » sont les cœurs des cartes produit (3 + 2 + 2).
     expect(screen.queryAllByLabelText(/favoris/i)).toHaveLength(7);
     expect(screen.queryAllByText(/Découvrir plus|Discover more/i)).toHaveLength(0);
@@ -277,5 +298,46 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     mockQuery.mockReturnValue(query({ data: [] }));
     wrap(<PublicationTemplatesScreen />);
     expect(screen.getByText('Aucune publication pour le moment.')).toBeTruthy();
+  });
+});
+
+describe('barre Publication (refonte des interactions 14/11)', () => {
+  it('résumé masqué à zéro ; puis « 👍❤️ 12 » à gauche et « 3 commentaires · 1 partage » à droite', () => {
+    const view = wrap(<PublicationTemplatesScreen />);
+    expect(screen.queryByTestId('publication-summary-video')).toBeNull();
+    view.unmount();
+    mockEngagement.counts = { video: { likes: 9, loves: 3, comments: 3, views: 0, shares: 1 } };
+    wrap(<PublicationTemplatesScreen />);
+    expect(screen.getByTestId('publication-summary-video')).toBeTruthy();
+    expect(screen.getByText('12')).toBeTruthy();
+    expect(screen.getByText('3 commentaires · 1 partage')).toBeTruthy();
+  });
+
+  it('J’aime posé : libellé BLEU (Bleu Z) ; visiteur : la connexion s’ouvre', () => {
+    mockEngagement.counts = { video: { likes: 1, loves: 0, comments: 0, views: 0, shares: 0 } };
+    mockEngagement.mine = { video: 'like' };
+    const view = wrap(<PublicationTemplatesScreen />);
+    const label = screen.getByText('J’aime');
+    expect(String(StyleSheet.flatten(label.props.style).color).toUpperCase()).toBe('#0A63F5');
+    view.unmount();
+    mockEngagement.mine = {};
+    wrap(<PublicationTemplatesScreen />);
+    expect(screen.queryByTestId('publication-auth-sheet')).toBeNull();
+    fireEvent.press(screen.getByTestId('publication-like-video'));
+    expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
+  });
+
+  it('Commenter ouvre la feuille claire : invitation au premier J’aime, tri, état vide, champ', () => {
+    wrap(<PublicationTemplatesScreen />);
+    fireEvent.press(screen.getByTestId('publication-comment-video'));
+    expect(screen.getByText('Soyez la première personne à aimer ça')).toBeTruthy();
+    expect(screen.getByText('Plus pertinents')).toBeTruthy();
+    expect(screen.getByText('Aucun commentaire pour l’instant')).toBeTruthy();
+    expect(screen.getByText('Soyez le premier à commenter.')).toBeTruthy();
+    expect(screen.getByTestId('publication-comment-input').props.placeholder).toBe('Rédigez un commentaire…');
+    fireEvent.press(screen.getByTestId('publication-comments-sort'));
+    expect(screen.getByText('Plus récents')).toBeTruthy();
+    // Envoi désactivé tant que le champ est vide.
+    expect(screen.getByTestId('publication-comment-send').props.accessibilityState).toMatchObject({ disabled: true });
   });
 });

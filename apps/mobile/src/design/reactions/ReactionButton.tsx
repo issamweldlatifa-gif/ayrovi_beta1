@@ -24,7 +24,7 @@ import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { useReduceMotion } from '@/design/motion';
-import { RADIUS, elevation, veil } from '@/design/tokens.mobile';
+import { MEDIA_GLYPH_SHADOW, RADIUS, elevation, veil } from '@/design/tokens.mobile';
 import { LikeSparks, ReelGlyph } from '@/features/reels/ReelIcons';
 import {
   REACTION_LONG_PRESS_MS,
@@ -60,6 +60,11 @@ export interface ReactionButtonProps {
   openRequest?: number;
   /** Compteur lu à voix haute (valeur brute) quand l'affichage est compact. */
   accessibilityCount?: string;
+  /**
+   * Barre Publication (14/11) : le texte à côté du glyphe est un LIBELLÉ
+   * (« J'aime ») qui prend la couleur de la réaction posée, comme Facebook.
+   */
+  tintLabel?: boolean;
 }
 
 const TILT_DEG = 28;
@@ -85,7 +90,7 @@ export function reactionColor(reaction: ContentReaction | null, colors: { reacti
 }
 
 /** Glyphe animé (bascule, bond, éclats, petits cœurs) — réutilisé par le bouton. */
-function ReactionGlyph({ reaction, ink, size }: { reaction: ContentReaction | null; ink: string; size: number }) {
+function ReactionGlyph({ reaction, ink, size, media = false }: { reaction: ContentReaction | null; ink: string; size: number; media?: boolean }) {
   const theme = useTheme();
   const reduce = useReduceMotion();
   const tilt = useRef(new Animated.Value(0)).current;
@@ -152,7 +157,15 @@ function ReactionGlyph({ reaction, ink, size }: { reaction: ContentReaction | nu
           ],
         }}
       >
-        <ReelGlyph name={reactionGlyph(reaction)} size={size} color={color} filled={reaction !== null} />
+        {/* Sur vidéo (option A, 14/11) : pouce blanc PLEIN au repos, ombre douce.
+            Sur carte : contour gris au repos, plein coloré une fois posé. */}
+        <ReelGlyph
+          name={reactionGlyph(reaction)}
+          size={size}
+          color={color}
+          filled={media || reaction !== null}
+          shadow={media ? MEDIA_GLYPH_SHADOW : undefined}
+        />
       </Animated.View>
       {reaction === 'like' ? (
         <Animated.View pointerEvents="none" style={[styles.sparks, { opacity: sparks, transform: [{ scale: sparks }] }]}>
@@ -283,7 +296,7 @@ function ReactionPicker({ current, position, surface, onPick, onClose }: {
 
 export function ReactionButton({
   reaction, count, onTap, onPick, disabled = false, guest = false, variant, ink, surface = variant === 'rail' ? 'media' : 'card', size, testID,
-  style, openRequest = 0, accessibilityCount,
+  style, openRequest = 0, accessibilityCount, tintLabel = false,
 }: ReactionButtonProps) {
   const theme = useTheme();
   const t = useT();
@@ -346,9 +359,13 @@ export function ReactionButton({
           { opacity: disabled ? theme.opacity.disabled : pressed ? theme.opacity.subtle : 1 },
         ]}
       >
-        <ReactionGlyph reaction={reaction} ink={ink} size={glyphSize} />
+        <ReactionGlyph reaction={reaction} ink={ink} size={glyphSize} media={surface === 'media'} />
         {count ? (
-          <AppText variant="caption" color={ink} numberOfLines={1}>
+          <AppText
+            variant={tintLabel ? 'captionStrong' : 'caption'}
+            color={tintLabel ? reactionColor(reaction, theme.colors, ink) : ink}
+            numberOfLines={1}
+          >
             {count}
           </AppText>
         ) : null}

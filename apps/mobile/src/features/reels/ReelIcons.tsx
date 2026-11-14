@@ -36,23 +36,53 @@ export type ReelGlyphName =
 /** Trait commun de la famille (relevé : ~6 px sur un glyphe de 75 px). */
 export const REEL_GLYPH_STROKE = 1.8;
 
-/** Pouce haut — main (la manchette est un `Rect` à part, comme sur la référence). */
+/*
+ * ═══ Famille d'interaction v1 (refonte du 14/11/2026, concept approuvé) ═══
+ * Pouce · cœur · partage · message : formes PLEINES aux angles adoucis (le
+ * remplissage reçoit un trait rond de même couleur, `REEL_GLYPH_SOFT`), grille 24.
+ * Variante TRAIT (au repos sur une carte claire) : mêmes contours, sans
+ * remplissage. Sur vidéo (option A) : blanc plein, nu, ombre douce.
+ */
+
+/** Trait d'adoucissement des formes pleines (angles arrondis, concept v1). */
+export const REEL_GLYPH_SOFT = 1.4;
+
+/** Pouce haut — main (la manchette est un `Rect` à part). */
 const THUMB_HAND =
-  'M8 10.2 L13 4.4 Q14.3 3.1 14.2 4.8 L13.5 9.6 H20.2 Q21.7 9.6 21.1 11 L17.8 19.8 Q17.5 20.6 16.7 20.6 H9 Q8 20.6 8 19.6 Z';
+  'M8.6 10.6 L12.9 5.2 Q13.9 4.1 14.8 5 Q15.3 5.6 15.1 6.4 L14.3 10 H19.4 Q20.9 10 20.4 11.6 L18.3 18.9 Q17.9 20 16.8 20 H9.9 Q8.6 20 8.6 18.7 Z';
 /** Manchette détachée à gauche de la main. */
-const THUMB_CUFF = { x: 2.4, y: 10.4, width: 3, height: 10.2, rx: 1.5 };
+const THUMB_CUFF = { x: 2.7, y: 10.6, width: 2.8, height: 9.4, rx: 1.4 };
 
-/** Bulle carrée, queue en bas à gauche. */
+/** Bulle de message arrondie, queue en bas à gauche (concept v1, échelle 0,94). */
 const BUBBLE =
-  'M6 4 H19 Q21 4 21 6 V15 Q21 17 19 17 H8.6 L4.9 20.3 Q4 21.1 4 19.9 V6 Q4 4 6 4 Z';
+  'M6.1 4.4 H17.9 Q20.6 4.4 20.6 7.1 V13.7 Q20.6 16.4 17.9 16.4 H11.2 L7.4 19.5 Q6.3 20.3 6.3 19 V16.4 Q3.4 16.2 3.4 13.5 V7.1 Q3.4 4.4 6.1 4.4 Z';
+/** Les trois points de la bulle (centres, grille 24). */
+export const BUBBLE_DOTS: readonly (readonly [number, number])[] = [[8.2, 10.4], [12, 10.4], [15.8, 10.4]];
+const BUBBLE_DOT_R = 1.25;
+/** Cercle en sous-tracé (pour percer la bulle pleine en `evenodd`). */
+const ring = (cx: number, cy: number, r: number) =>
+  `M${cx - r} ${cy} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`;
+/**
+ * Bulle PLEINE percée de trois points : le trait d'adoucissement mange
+ * `REEL_GLYPH_SOFT / 2` du bord de chaque trou — on l'agrandit d'autant pour
+ * que le point visible garde le rayon du concept.
+ */
+const BUBBLE_PIERCED = BUBBLE + ' ' + BUBBLE_DOTS.map(([cx, cy]) => ring(cx, cy, BUBBLE_DOT_R + REEL_GLYPH_SOFT / 2)).join(' ');
 
-/** Flèche de partage courbe. */
+/** Flèche de partage courbe (concept v1, échelle 1,05). */
 const SHARE =
-  'M14 4 L21.3 10.7 L14 17.5 V13.6 Q7.4 13.4 3 20 Q3.6 9.6 14 8 Z';
+  'M13.6 4.7 L20.6 11.1 L13.6 17.5 V13.9 Q7.5 13.7 4 19.3 Q4.6 10.4 13.6 8.8 Z';
 
-/** Cœur plein, pointe basse (gabarit de la référence : large et bombé). */
+/** Cœur, pointe basse (concept v1, échelle 0,96). */
 export const HEART_PATH =
-  'M12 20.6 C11.6 20.6 2.4 14.8 2.4 8.7 C2.4 5.6 4.7 3.4 7.5 3.4 C9.4 3.4 11 4.5 12 6.2 C13 4.5 14.6 3.4 16.5 3.4 C19.3 3.4 21.6 5.6 21.6 8.7 C21.6 14.8 12.4 20.6 12 20.6 Z';
+  'M12 20.1 C11.6 20.1 3.1 14.6 3.1 8.9 C3.1 6 5.2 4.1 7.8 4.1 C9.6 4.1 11.1 5.1 12 6.7 C12.9 5.1 14.4 4.1 16.2 4.1 C18.8 4.1 20.9 6 20.9 8.9 C20.9 14.6 12.4 20.1 12 20.1 Z';
+
+/** Échelle optique de chaque forme (concept v1) : même poids visuel côte à côte. */
+const OPTICAL: Partial<Record<ReelGlyphName, number>> = { heart: 0.96, share: 1.05, comment: 0.94 };
+const optical = (name: ReelGlyphName) => {
+  const k = OPTICAL[name];
+  return k ? `translate(12 12) scale(${k}) translate(-12 -12)` : undefined;
+};
 
 /** Haut-parleur : pilule + pavillon trapézoïdal. */
 const SPEAKER_CUFF = { x: 2.4, y: 8.2, width: 3, height: 7.6, rx: 1.5 };
@@ -68,18 +98,46 @@ export interface ReelGlyphProps {
   filled?: boolean;
   /** Miroir horizontal pour l'arabe (flèches, retour). */
   mirrored?: boolean;
+  /**
+   * Ombre douce sous le glyphe (option A sur vidéo : icône blanche nue).
+   * Couleur fournie par l'appelant (jeton `veil`) — jamais une teinte en dur ici.
+   */
+  shadow?: string;
 }
 
 /** Un glyphe de la famille Reels — trait 1.8, grille 24. */
-export function ReelGlyph({ name, size, color, filled = false, mirrored = false }: ReelGlyphProps) {
+export function ReelGlyph({ name, size, color, filled = false, mirrored = false, shadow }: ReelGlyphProps) {
+  const flip = mirrored ? 'translate(24 0) scale(-1 1)' : undefined;
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" {...hidden}>
+      {shadow ? (
+        // Ombre douce : la même forme, décalée d'un rien vers le bas et
+        // épaissie — lisible sur une vidéo claire sans pastille (option A).
+        <>
+          <G opacity={0.35} transform="translate(0 0.6)">
+            <G transform={flip}>{glyphBody(name, shadow, filled, 2.2)}</G>
+          </G>
+          <G opacity={0.7} transform="translate(0 0.4)">
+            <G transform={flip}>{glyphBody(name, shadow, filled, 0.8)}</G>
+          </G>
+        </>
+      ) : null}
+      <G transform={flip}>{glyphBody(name, color, filled, 0)}</G>
+    </Svg>
+  );
+}
+
+/** Le dessin d'un glyphe dans une couleur ; `spread` épaissit le trait (ombre). */
+function glyphBody(name: ReelGlyphName, color: string, filled: boolean, spread: number): React.ReactNode {
+  const interaction = name === 'like' || name === 'dislike' || name === 'heart' || name === 'comment' || name === 'share';
   const stroke = {
     stroke: color,
-    strokeWidth: REEL_GLYPH_STROKE,
+    // Forme pleine de la famille v1 : trait d'adoucissement ; sinon trait 1.8.
+    strokeWidth: (filled && interaction ? REEL_GLYPH_SOFT : REEL_GLYPH_STROKE) + spread,
     strokeLinejoin: 'round' as const,
     strokeLinecap: 'round' as const,
   };
   const fill = filled ? color : 'none';
-  const flip = mirrored ? 'translate(24 0) scale(-1 1)' : undefined;
 
   let body: React.ReactNode;
   switch (name) {
@@ -95,7 +153,16 @@ export function ReelGlyph({ name, size, color, filled = false, mirrored = false 
       );
       break;
     case 'comment':
-      body = <Path d={BUBBLE} fill={fill} {...stroke} />;
+      body = filled ? (
+        <Path d={BUBBLE_PIERCED} fill={fill} fillRule="evenodd" {...stroke} />
+      ) : (
+        <>
+          <Path d={BUBBLE} fill="none" {...stroke} />
+          {BUBBLE_DOTS.map(([cx, cy]) => (
+            <Circle key={cx} cx={cx} cy={cy} r={BUBBLE_DOT_R} fill={color} />
+          ))}
+        </>
+      );
       break;
     case 'share':
       body = <Path d={SHARE} fill={fill} {...stroke} />;
@@ -154,12 +221,8 @@ export function ReelGlyph({ name, size, color, filled = false, mirrored = false 
     default:
       body = null;
   }
-
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" {...hidden}>
-      <G transform={flip}>{body}</G>
-    </Svg>
-  );
+  const k = optical(name);
+  return k ? <G transform={k}>{body}</G> : body;
 }
 
 /**
