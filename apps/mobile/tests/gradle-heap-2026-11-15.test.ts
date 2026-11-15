@@ -5,7 +5,6 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error — script Node (ESM) sans déclaration de types
 import { GRADLE_JVM_ARGS, KOTLIN_JVM_ARGS, raiseGradleHeap } from '../scripts/raise-gradle-heap.mjs';
 
 const read = (relative: string) => readFileSync(fileURLToPath(new URL(relative, import.meta.url)), 'utf8');
