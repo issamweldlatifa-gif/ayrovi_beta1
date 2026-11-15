@@ -63,15 +63,16 @@ describe('catalogue officiel — base neuve', () => {
     }
   });
 
-  test('page Publication : douze blocs de démonstration, tous rendus avec des produits officiels', () => {
+  test('page Publication : douze blocs de démonstration + le bloc cinema (16/11) en tête, tous avec des produits officiels', () => {
     const blocks = readPublicBlocks(db as any);
-    expect(blocks).toHaveLength(PUBLICATION_BLOCKS_DEMO.length);
-    expect(new Set(blocks.map((b) => b.kind))).toEqual(new Set(['media', 'container', 'sponsored_pair']));
+    expect(blocks).toHaveLength(PUBLICATION_BLOCKS_DEMO.length + 1);
+    expect(blocks[0]).toMatchObject({ id: 'pubblock_demo_cinema', kind: 'cinema', bgColor: '#000000' });
+    expect(new Set(blocks.map((b) => b.kind))).toEqual(new Set(['cinema', 'media', 'container', 'sponsored_pair']));
     for (const block of blocks) {
       expect(block.publisher.name).toBe('zayrovi team');
       for (const product of block.products) expect(product.id.startsWith('product_official_')).toBe(true);
     }
-    expect(blocks.filter((b) => b.media?.type === 'video')).toHaveLength(4);
+    expect(blocks.filter((b) => b.media?.type === 'video')).toHaveLength(5);
     // 14/11 : le duo montre deux cartes sous l'image (planche GBox « WE Fashion »).
     for (const pair of blocks.filter((b) => b.kind === 'sponsored_pair')) expect(pair.products).toHaveLength(2);
   });

@@ -59,7 +59,10 @@ describe('parcours ZAYROVIX Lens unifié', () => {
     expect(grid).toContain('onScroll={onSheetScroll}');
     expect(lens).not.toContain('liftResponder');
     expect(lens).toContain('testID="lens-search-sheet-handle"');
-    expect(lens).toContain('<LensSearchSkeleton onCancel={cancelSearch}');
+    // 16/11 : plus de tiroir à squelettes pendant la recherche — l'attente vit dans la barre du haut.
+    expect(lens).not.toContain('<LensSearchSkeleton');
+    expect(lens).toContain('{searchingTop ? null : (');
+    expect(lens).toContain('loading={searchingTop}');
     expect(lens).toContain('removePrivateCapture');
     expect(lens).toContain('if (file.exists) file.delete()');
   });
@@ -132,10 +135,11 @@ describe('chargement et résultats Lens', () => {
     expect(product).toContain('countdownExpired ? LENS_COLORS.sale : LENS_COLORS.black');
     expect(product).not.toContain('countdownExpired ? LENS_COLORS.sale : LENS_COLORS.active');
     expect(product).toContain('color={theme.colors.ink} accessibilityElementsHidden');
-    // Mode caméra choisi : violet clair, libellé noir.
-    expect(nativeTokens).toContain('activeSoft: BRAND.violetLight');
-    expect(lens).toContain('modeActive: { backgroundColor: LENS_COLORS.activeSoft }');
-    expect(lens).toContain('color={active ? LENS_COLORS.black : LENS_COLORS.white}');
+    // 16/11 : mode caméra choisi au BLEU D'ACTION, libellé blanc (plus de violet clair).
+    expect(nativeTokens).toContain('active: BRAND.violet');
+    expect(lens).toContain('modeActive: { backgroundColor: LENS_COLORS.active }');
+    expect(lens).not.toContain('LENS_COLORS.activeSoft');
+    expect(read('../src/features/lens/LensSelectionView.tsx')).toContain("arc: { position: 'absolute', borderColor: LENS_COLORS.active }");
     // Le viseur reste sombre dans les DEUX modes : `ink` devient blanc en mode sombre
     // et rendait l'en-tête blanc illisible.
     expect(lens).not.toContain('backgroundColor: theme.colors.ink');

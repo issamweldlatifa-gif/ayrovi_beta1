@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   chip: { position: 'absolute', height: CHIP_H, maxWidth: 260, borderRadius: CHIP_H / 2, paddingHorizontal: 12, alignItems: 'center', gap: 8 },
   chipAbove: { left: 0, top: -(CHIP_H + PAD) },
   chipInside: { left: 10, top: 10 },
-  chipDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: LENS_COLORS.activeSoft },
+  chipDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: LENS_COLORS.active },
   dot: {
     position: 'absolute', width: DOT, height: DOT, borderRadius: DOT / 2, backgroundColor: LENS_COLORS.white,
     borderWidth: 6, borderColor: frost(0.45),

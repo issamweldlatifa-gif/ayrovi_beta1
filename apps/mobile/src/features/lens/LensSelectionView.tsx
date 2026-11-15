@@ -6,7 +6,7 @@
  * cherché. Référence (captures Pinterest) :
  *   • toute la photo légèrement ASSOMBRIE (voile, pas de flou) ;
  *   • le produit choisi reste NET dans un cadre aux coins arrondis ;
- *   • deux ARCS blancs posés aux coins opposés (haut-droit, bas-gauche) ;
+ *   • deux ARCS (bleu d'action depuis le 16/11) posés aux coins opposés (haut-droit, bas-gauche) ;
  *   • tout à la taille du produit : grand produit → grand cadre et grands
  *     arcs, petit produit → petits (`focusGeometry`) ;
  *   • toucher un autre produit : le cadre GLISSE jusqu'à lui.
@@ -19,7 +19,7 @@ import type { LensBox, LensDetectedProduct } from '@/api/lens';
 import { AppImage } from '@/design/appImage';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { frost, veil } from '@/design/tokens.mobile';
+import { veil } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
 import { LENS_COLORS } from './lensPalette';
 import {
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   dim: { backgroundColor: veil(FOCUS_DIM) },
   frame: { position: 'absolute' },
   crop: { overflow: 'hidden' },
-  // Arc blanc légèrement transparent, comme la référence.
-  arc: { position: 'absolute', borderColor: frost(0.9) },
+  // 16/11 (« من الألوان القديمة إلى لون الأكشن ») : arcs au bleu d'action de la marque.
+  arc: { position: 'absolute', borderColor: LENS_COLORS.active },
   notice: { alignSelf: 'center', padding: 12 },
 });

@@ -10,8 +10,14 @@
  * La barre ne montre JAMAIS une information que le serveur n'a pas envoyée :
  * elle affiche l'étape d'avancement (donc l'identification) ou la requête
  * réellement trouvée, et rien d'autre.
+ *
+ * 16/11 (retour du propriétaire) : pendant la recherche, le tiroir « Produits
+ * similaires » (squelettes) ne monte PLUS. La barre prend toute la largeur en haut :
+ * la petite photo ronde est entourée d'un anneau qui tourne et d'un halo qui
+ * respire, au bleu d'action. Le tiroir n'arrive qu'avec les premiers résultats.
  */
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { ActivityIndicator, Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppImage } from '@/design/appImage';
@@ -19,14 +25,18 @@ import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { RADIUS, frost, veil } from '@/design/tokens.mobile';
+import { LENS_COLORS } from './lensPalette';
 
 const THUMB = 30;
+/** Anneau de chargement autour de la vignette (vignette + 3 dp de chaque côté). */
+const RING = 36;
 
 export function LensSearchBar({
   uri,
   label,
   onCancel,
   busy,
+  loading = false,
 }: {
   /** Vignette de la photo analysée (null tant qu'aucune photo). */
   uri: string | null;
@@ -35,9 +45,27 @@ export function LensSearchBar({
   onCancel: () => void;
   /** La recherche est-elle en cours ? (l'annulation a du sens) */
   busy: boolean;
+  /** Recherche lancée, aucun résultat encore : anneau qui tourne + halo qui respire. */
+  loading?: boolean;
 }) {
   const theme = useTheme();
   const t = useT();
+  const reduced = theme.motion.reduced === 0;
+  const pulse = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!loading || reduced) {
+      pulse.setValue(0);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 900, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 900, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [loading, reduced, pulse]);
   return (
     <View
       style={[
@@ -49,12 +77,28 @@ export function LensSearchBar({
       testID="lens-search-bar"
     >
       {uri ? (
-        <View style={[styles.thumb, { borderColor: veil(0.12) }]}>
-          <AppImage uri={uri} contentFit="cover" style={StyleSheet.absoluteFill} decorative />
+        <View style={styles.ringBox} testID={loading ? 'lens-search-bar-loading' : undefined}>
+          {loading ? (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.halo,
+                { backgroundColor: LENS_COLORS.active, opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.12, 0.32] }), transform: [{ scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1.08] }) }] },
+              ]}
+            />
+          ) : null}
+          <View style={[styles.thumb, { borderColor: veil(0.12) }]}>
+            <AppImage uri={uri} contentFit="cover" style={StyleSheet.absoluteFill} decorative />
+          </View>
+          {loading ? (
+            <View pointerEvents="none" style={styles.spinner}>
+              <ActivityIndicator size="large" color={LENS_COLORS.active} accessibilityElementsHidden />
+            </View>
+          ) : null}
         </View>
       ) : null}
       <View style={styles.label} testID="lens-search-bar-label">
-        <AppText variant="captionStrong" color={theme.colors.ink} numberOfLines={1}>
+        <AppText variant="captionStrong" color={loading ? LENS_COLORS.black : theme.colors.ink} numberOfLines={1}>
           {label}
         </AppText>
       </View>
@@ -83,6 +127,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: RADIUS.full,
   },
+  ringBox: { width: RING, height: RING, alignItems: 'center', justifyContent: 'center' },
+  halo: { position: 'absolute', width: RING, height: RING, borderRadius: RING / 2 },
+  spinner: { position: 'absolute', width: RING, height: RING, alignItems: 'center', justifyContent: 'center' },
   thumb: {
     width: THUMB,
     height: THUMB,

@@ -130,6 +130,21 @@ describe('aperçu et validation', () => {
     expect(html).toContain('Vidéo');
   });
 
+  it('16/11 — cinema : vidéo bord à bord, titre blanc centré, panneau noir et cartes', () => {
+    const blank = emptyBlock('cinema');
+    expect(blank.media_type).toBe('video');
+    expect(blank.bg_color).toBe('#000000');
+    expect(blockFormError({ ...blank, title: 'Vivez chargé.', product_ids: ['p1'] })).toBe('Ajoutez la vidéo du bloc.');
+    const form = { ...blank, title: 'Vivez chargé.', media_url: '/v.mp4', poster_url: '/p.jpg', product_ids: ['p1', 'p2'] };
+    expect(blockFormError(form)).toBe('');
+    const html = renderToStaticMarkup(<PublicationBlockPreview form={form} products={[product('p1', 'Montre'), product('p2', 'Batterie')]} />);
+    expect(html).toContain('data-kind="cinema"');
+    expect(html).toContain('src="/p.jpg"');
+    expect(html).toContain('Vivez chargé.');
+    expect(html).toContain('background:#000000');
+    expect(html).not.toContain('border-radius:0'); // la vidéo n'a ni marge ni arrondi propre : elle prend le cadre entier
+  });
+
   it('messages de validation en français', () => {
     expect(blockFormError(emptyBlock('container'))).toContain('titre');
     expect(blockFormError({ ...emptyBlock('container'), title: 'Ok', bg_color: 'vert' })).toContain('Couleur');

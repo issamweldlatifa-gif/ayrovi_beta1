@@ -440,7 +440,8 @@ const styles = StyleSheet.create({
   },
   cardImage: { width: '100%', aspectRatio: CARD_ASPECT },
   ownedImage: { width: '100%', aspectRatio: 1 },
-  ownedCopy: { padding: HERO_COPY.inset, minHeight: HERO_COPY.minHeight, justifyContent: 'center' },
+  // 16/11 (« عناوين الهيرو في الفوق موش في الوسط ») : le titre part du HAUT du bandeau, plus centré verticalement.
+  ownedCopy: { padding: HERO_COPY.inset, minHeight: HERO_COPY.minHeight, justifyContent: 'flex-start' },
   cardScrim: { position: 'absolute', left: 0, right: 0, top: 0, height: '60%' },
   /** Pastilles posées sur le bas de la photo, centrées, sur un petit voile. */
   /** Titre et sous-titre posés sur le visuel, en haut (début de ligne), marges intérieures. */

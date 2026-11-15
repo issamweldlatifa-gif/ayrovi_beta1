@@ -209,6 +209,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/publications/templates/BlockProductCard.tsx', // 14/11 GBox : rond du cœur et pastille « Nouveau » posés SUR la photo
       'src/features/lens/LensSelectionView.tsx', // Z Lens : photo, voile, cadre de sélection et arcs posés les uns sur les autres
       'src/features/lens/LensLiveOverlay.tsx', // Z Lens Live : cadre et points posés sur l'aperçu caméra plein écran
+      'src/features/lens/LensSearchBar.tsx', // 16/11 : halo qui respire et anneau qui tourne posés SUR la vignette ronde pendant la recherche
       'src/features/lens/LensMenu.tsx', // menu ⋮ flottant au-dessus de la caméra, sous son bouton
       'src/features/lens/LensGalleryViewer.tsx', // visionneuse plein écran : photo, voile noir, chrome et compteur au-dessus
       'src/features/lens/LensSizeGuide.tsx', // guide des tailles : feuille modale au-dessus de la fiche

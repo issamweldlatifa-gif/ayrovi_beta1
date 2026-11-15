@@ -116,7 +116,10 @@ describe('caméra Lens directe', () => {
     await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
     fireEvent.press(capture);
 
-    expect(await screen.findByTestId('lens-search-skeleton')).toBeTruthy();
+    // 16/11 : la recherche s'affiche dans la barre du haut (anneau + halo), sans tiroir à squelettes.
+    expect(await screen.findByTestId('lens-search-bar-loading')).toBeTruthy();
+    expect(screen.queryByTestId('lens-search-skeleton')).toBeNull();
+    expect(screen.queryByTestId('lens-search-sheet-handle')).toBeNull();
     expect(screen.getByTestId('lens-captured-preview')).toBeTruthy();
     expect(shutterCalls()).toHaveLength(1);
     // The grounded item, not the entire scene, is sent to merchant search.
@@ -127,7 +130,7 @@ describe('caméra Lens directe', () => {
     expect(mockDetect).not.toHaveBeenCalled();
 
     const signal = mockAnalyzeImage.mock.calls[0][1].signal as AbortSignal;
-    fireEvent.press(screen.getByTestId('lens-search-cancel'));
+    fireEvent.press(screen.getByTestId('lens-search-bar-cancel'));
     await waitFor(() => expect(screen.getByTestId('lens-camera-experience')).toBeTruthy());
     expect(signal.aborted).toBe(true);
 
@@ -198,7 +201,7 @@ describe('caméra Lens directe', () => {
     fireEvent.press(capture);
     await waitFor(() => expect(mockLocalize).toHaveBeenCalledTimes(1));
     const signal=mockLocalize.mock.calls[0][1].signal;
-    fireEvent.press(screen.getByTestId('lens-search-cancel'));
+    fireEvent.press(screen.getByTestId('lens-search-bar-cancel'));
     expect(signal.aborted).toBe(true);
     await act(async()=>resolveGround([{name:'Sac',box:{x:.1,y:.1,w:.3,h:.3}}]));
     expect(mockAnalyzeImage).not.toHaveBeenCalled();

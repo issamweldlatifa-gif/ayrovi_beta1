@@ -129,7 +129,11 @@ export const VIDEO_BACKDROP = BRAND.black;
 export const REACTION_COLORS = {
   like: BRAND.violet,
   love: '#F02849',
-  dislike: '#7C8BA1',
+  /**
+   * 16/11 (référence « like / dislike » du propriétaire) : pouce bas PLEIN ROUGE, pendant du
+   * pouce haut plein bleu. Le rouge « danger » de la palette (4,9:1 sur blanc), pas le rouge des cœurs.
+   */
+  dislike: '#D92D20',
 } as const;
 
 /**
