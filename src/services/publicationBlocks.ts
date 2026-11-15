@@ -32,7 +32,7 @@ type Store = Pick<QatafoDatabase, 'get' | 'all' | 'run'>;
 export const PUBLICATION_BLOCKS_SCHEMA = `
   CREATE TABLE IF NOT EXISTS publication_blocks (
     id TEXT PRIMARY KEY,
-    kind TEXT NOT NULL CHECK(kind IN ('container','media','sponsored_pair')),
+    kind TEXT NOT NULL CHECK(kind IN ('container','media','sponsored_pair','cinema')),
     title TEXT NOT NULL,
     subtitle TEXT NOT NULL DEFAULT '',
     bg_color TEXT NOT NULL DEFAULT '#FFFFFF',
@@ -49,6 +49,26 @@ export const PUBLICATION_BLOCKS_SCHEMA = `
   );
   CREATE INDEX IF NOT EXISTS idx_publication_blocks_order ON publication_blocks(active, sort_order, id);
 `;
+
+/**
+ * 16/11 — modèle `cinema` : la contrainte CHECK de SQLite ne se modifie pas en place.
+ * Une base créée avant le 16/11 voit sa table reconstruite UNE fois (renommer → recréer →
+ * recopier → supprimer), dans une transaction : identifiants, ordre et dates intacts.
+ * Retourne `true` si la table a été reconstruite.
+ */
+export function allowCinemaPublicationBlocks(db: { prepare: (sql: string) => { get: (...args: unknown[]) => unknown }; exec: (sql: string) => unknown; transaction: <T>(fn: () => T) => () => T }): boolean {
+  const row = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='publication_blocks'").get() as { sql?: string } | undefined;
+  if (!row?.sql || row.sql.includes("'cinema'")) return false;
+  const columns = 'id,kind,title,subtitle,bg_color,panel_color,sponsored,media_type,media_url,poster_url,product_ids,sort_order,active,created_at,updated_at';
+  db.transaction(() => {
+    db.exec('DROP INDEX IF EXISTS idx_publication_blocks_order');
+    db.exec('ALTER TABLE publication_blocks RENAME TO publication_blocks_before_cinema');
+    db.exec(PUBLICATION_BLOCKS_SCHEMA);
+    db.exec(`INSERT INTO publication_blocks (${columns}) SELECT ${columns} FROM publication_blocks_before_cinema`);
+    db.exec('DROP TABLE publication_blocks_before_cinema');
+  })();
+  return true;
+}
 
 export interface PublicationBlockRow {
   id: string;
@@ -319,6 +339,38 @@ export const PUBLICATION_BLOCKS_DEMO: Array<Omit<PublicationBlockInput, 'active'
     product_ids: [OFFICIAL('nintendo-switch-neon'), OFFICIAL('canon-eos-r5'), OFFICIAL('jbl-go-4')],
   },
 ];
+
+/**
+ * 16/11 — bloc `cinema` de démonstration (référence Anker « Vivez chargé. ») : la vidéo
+ * « accessoires » du propriétaire (720 × 1280), bord à bord, puis le panneau noir.
+ */
+export const PUBLICATION_CINEMA_DEMO = {
+  kind: 'cinema' as const, title: 'Vivez l’instant.', subtitle: 'Les accessoires qui vous suivent partout.', bg_color: '#000000', sponsored: false,
+  media_type: 'video' as const, reel: 'reel_owner_accessories_v1',
+  product_ids: [OFFICIAL('garmin-forerunner-265'), OFFICIAL('anker-prime-26k'), OFFICIAL('jbl-go-4')],
+};
+
+/**
+ * Installe le bloc `cinema` de démonstration EN TÊTE de la page (une seule fois, via
+ * `runOnceDataMigration`) : supprimé ensuite dans le CRM, il ne revient pas.
+ */
+export function installCinemaDemo(db: Store, now = new Date().toISOString()): boolean {
+  const reel = db.get<{ video_url: string; poster_url: string }>('SELECT video_url,poster_url FROM reels WHERE id=?', PUBLICATION_CINEMA_DEMO.reel);
+  if (!reel?.video_url) return false;
+  const productIds = PUBLICATION_CINEMA_DEMO.product_ids.filter((id) => isSellableProduct(db.get<any>('SELECT id,name,image,status,final_price FROM products WHERE id=?', id)));
+  const checked = normalizePublicationBlockInput(
+    { ...PUBLICATION_CINEMA_DEMO, media_url: reel.video_url, poster_url: reel.poster_url || '', product_ids: productIds, panel_color: '', active: true },
+    undefined,
+    checkLink,
+  );
+  if (checked.ok === false) return false;
+  const first = db.get<{ n: number | null }>('SELECT MIN(sort_order) n FROM publication_blocks');
+  const id = 'pubblock_demo_cinema';
+  if (db.get('SELECT 1 FROM publication_blocks WHERE id=?', id)) return false;
+  createBlock(db, checked.value, now, id);
+  db.run('UPDATE publication_blocks SET sort_order=? WHERE id=?', Number(first?.n ?? 0) - 1, id);
+  return true;
+}
 
 /**
  * 14/11 — le duo sponsorisé montre DEUX cartes sous l'image (planche GBox). Les

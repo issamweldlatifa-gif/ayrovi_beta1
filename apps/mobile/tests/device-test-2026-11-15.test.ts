@@ -126,7 +126,7 @@ describe('mise en page du 15/11', () => {
 
   it('navigateur AYWEBs façon Walmart : barre bleue, pilule blanche, logo Clean, ligne « Ajouté au panier »', () => {
     const browser = read('app/aywebs/browser.tsx');
-    expect(browser).toContain('STORE_BAR.background');
+    expect(browser).toContain('BROWSER_BAR.background'); // 16/11 : barre d'adresse claire (réf. 025233)
     expect(browser).toContain('aywebs-store-header-pill');
     expect(browser).toContain('<TabCleanIcon');
     expect(browser).toContain('aywebs-store-added-strip');
@@ -134,10 +134,12 @@ describe('mise en page du 15/11', () => {
     expect(tokens).toMatch(/export const STORE_BAR = \{\s*background: BRAND\.violet,/);
   });
 
-  it('panier : le logo Clean remplace « Examiner », sous les cartes', () => {
+  it('panier : le logo Clean remplace « Examiner » — 16/11 : sur chaque carte, noir avec son reflet', () => {
     const cart = read('app/(tabs)/cart.tsx');
-    expect(cart).toContain('testID="cart-ask-sonim"');
-    expect(cart).toContain('<TabCleanIcon');
+    const row = read('src/features/shopping/OfficialCartView.tsx');
+    expect(cart).toContain('onAskClean={');
+    expect(cart).toContain('cartItemContext(line, locale)');
+    expect(row).toContain('<TabCleanIcon color={theme.colors.ink} tone="ink"');
     expect(cart).not.toMatch(/<Button label=\{t\('sonim\.shareCart'\)\}/);
   });
 });

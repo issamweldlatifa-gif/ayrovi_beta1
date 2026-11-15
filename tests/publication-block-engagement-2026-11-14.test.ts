@@ -2,8 +2,9 @@
  * Refonte des interactions (14/11/2026, approuvée) — les blocs Publication
  * composés dans le CRM portent J'aime · Commenter · Partager, reliés au serveur.
  *
- *  • un bloc ACTIF et NON sponsorisé est une cible sociale (`source: 'block'`) ;
- *  • un bloc inactif, sponsorisé ou inconnu ne l'est PAS (404, aucune écriture) ;
+ *  • un bloc ACTIF est une cible sociale (`source: 'block'`) — 16/11 : sponsorisé
+ *    compris (« chaque publication » a ses boutons) ;
+ *  • un bloc inactif ou inconnu ne l'est PAS (404, aucune écriture) ;
  *  • réactions, commentaires (et leurs réponses / « j'aime »), partages et
  *    compteurs passent par les tables existantes — aucune DDL nouvelle ;
  *  • visiteur : lecture libre, écriture de réaction/commentaire refusée (401).
@@ -49,16 +50,16 @@ afterAll(() => {
 
 const write = (input: Record<string, unknown>, actor: typeof a | null = a) => writeSocialInteraction(db, input, actor, actor ? '' : 'guest-session-0001', now);
 
-it('un bloc actif non sponsorisé est une cible ; sponsorisé, inactif ou inconnu ne l’est pas', () => {
+it('un bloc actif (sponsorisé ou non) est une cible ; inactif ou inconnu ne l’est pas', () => {
   expect(publishedSocialTarget(db, live, now)).toEqual({ kind: 'post', source: 'block' });
-  expect(publishedSocialTarget(db, sponsored, now)).toBeNull();
+  expect(publishedSocialTarget(db, sponsored, now)).toEqual({ kind: 'post', source: 'block' });
   expect(publishedSocialTarget(db, hidden, now)).toBeNull();
   expect(publishedSocialTarget(db, `${prefix}missing`, now)).toBeNull();
-  for (const target of [sponsored, hidden]) {
-    expect(write({ type: 'reaction', targetId: target, reaction: 'like' }).outcome).toBe('target_not_found');
-    expect(write({ type: 'comment', targetId: target, text: 'Bonjour' }).outcome).toBe('target_not_found');
-  }
-  expect(db.get<any>('SELECT COUNT(*) n FROM story_interactions WHERE target_id IN (?,?)', sponsored, hidden).n).toBe(0);
+  expect(write({ type: 'reaction', targetId: hidden, reaction: 'like' }).outcome).toBe('target_not_found');
+  expect(write({ type: 'comment', targetId: hidden, text: 'Bonjour' }).outcome).toBe('target_not_found');
+  expect(db.get<any>('SELECT COUNT(*) n FROM story_interactions WHERE target_id=?', hidden).n).toBe(0);
+  expect(write({ type: 'reaction', targetId: sponsored, reaction: 'like' })).toMatchObject({ outcome: 'ok', data: { reaction: 'like' } });
+  expect(socialInteractionCounts(db, sponsored).likes).toBe(1);
 });
 
 it('J’aime · J’adore sur un bloc : une réaction par compte, compteurs et « mine » à jour', () => {
@@ -101,6 +102,7 @@ it('HTTP : compteurs publics, partage visiteur compté une fois, écriture visit
   expect(memberLike.status).toBe(200);
   const mine = await request(app).get(`/api/public/social/counts?ids=${live}`).set('Authorization', `Bearer ${session.token}`);
   expect(mine.body.mine).toEqual({ [live]: 'like' });
-  expect((await request(app).get(`/api/public/social/comments?targetId=${sponsored}`)).status).toBe(404);
+  expect((await request(app).get(`/api/public/social/comments?targetId=${hidden}`)).status).toBe(404);
+  expect((await request(app).get(`/api/public/social/comments?targetId=${sponsored}`)).status).toBe(200);
   expect((await request(app).get(`/api/public/social/comments?targetId=${live}`)).status).toBe(200);
 });

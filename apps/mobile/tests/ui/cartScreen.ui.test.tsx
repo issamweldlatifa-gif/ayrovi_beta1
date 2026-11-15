@@ -123,12 +123,15 @@ function mount() {
 }
 
 describe('panier — aucun plantage au montage', () => {
-  it('prépare une revue modifiable du panier sans envoi automatique', async () => {
+  it('16/11 : logo Clean sur CHAQUE carte (à la place du •••) — revue modifiable de l’article, sans envoi', async () => {
     clearSonimSession();
     require('./cartFixture').setCart(poorCart);
     const view = mount();
-    const button = await screen.findByTestId('cart-ask-sonim');
-    fireEvent.press(button);
+    const buttons = await screen.findAllByLabelText('Demander à Clean à propos de cet article');
+    expect(buttons).toHaveLength(poorCart.items.length);
+    expect(screen.queryByTestId('cart-ask-sonim')).toBeNull();
+    expect(screen.queryByTestId(`cart-line-${poorCart.items[0].id}-menu`)).toBeNull();
+    fireEvent.press(screen.getByTestId(`cart-line-${poorCart.items[0].id}-clean`));
     expect(router.push).toHaveBeenCalledWith('/sonim-assistant');
     expect(useSonimSession.getState().draft).toContain('Article sans photo');
     expect(useSonimSession.getState().messages).toEqual([]);

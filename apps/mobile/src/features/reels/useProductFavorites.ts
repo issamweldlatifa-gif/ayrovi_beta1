@@ -18,6 +18,9 @@ export interface ProductFavorites {
   toggle: (productId: string) => void;
 }
 
+/** Favori en cours de création (pas encore d'identifiant serveur). */
+const PENDING = '__pending__';
+
 const NO_FAVOURITES: ProductFavorites = { isFavorite: () => false, toggle: () => {} };
 
 export function useProductFavorites(enabled: boolean, owner = ''): ProductFavorites {
@@ -53,6 +56,8 @@ export function useProductFavorites(enabled: boolean, owner = ''): ProductFavori
   const toggle = useCallback(
     (productId: string) => {
       const existing = byProduct[productId];
+      // Ajout en cours : le cœur est déjà plein, un second appui ne double pas la requête.
+      if (existing === PENDING) return;
       if (existing) {
         setByProduct((current) => {
           const next = { ...current };
@@ -65,12 +70,21 @@ export function useProductFavorites(enabled: boolean, owner = ''): ProductFavori
         });
         return;
       }
+      // 16/11 : bascule OPTIMISTE — le cœur se remplit à l'appui, il se vide si le serveur refuse.
+      setByProduct((current) => ({ ...current, [productId]: PENDING }));
+      const rollback = () =>
+        setByProduct((current) => {
+          if (current[productId] !== PENDING) return current;
+          const next = { ...current };
+          delete next[productId];
+          return next;
+        });
       addCatalogFavorite(productId)
         .then((favorite) => {
-          if (!favorite || !favorite.id) return;
+          if (!favorite || !favorite.id) return rollback();
           setByProduct((current) => ({ ...current, [productId]: favorite.id }));
         })
-        .catch(() => null);
+        .catch(rollback);
     },
     [byProduct],
   );

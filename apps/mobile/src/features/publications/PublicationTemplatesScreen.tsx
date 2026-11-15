@@ -7,7 +7,7 @@
  * et sa feuille de commentaires (`PublicationEngagement`), reliées au serveur.
  * Le corps empile les blocs composés dans le CRM (Contenu → Social →
  * Publication), d'après les planches Zalando : `container`, `media` (image ou
- * vidéo) et `sponsored_pair`. Données : `GET /api/public/social/publication-blocks`.
+ * vidéo), `sponsored_pair` et `cinema` (16/11 : vidéo bord à bord + panneau noir). Données : `GET /api/public/social/publication-blocks`.
  *
  * Une seule vidéo tourne à la fois : celle du bloc le plus visible, et
  * seulement quand l'écran est au premier plan.
@@ -35,6 +35,7 @@ import { PUBLICATION_PALETTE as P, PublicationText } from './publicationDesign';
 import { ContainerTemplate } from './templates/ContainerTemplate';
 import { MediaTemplate } from './templates/MediaTemplate';
 import { SponsoredPairTemplate } from './templates/SponsoredPairTemplate';
+import { CinemaTemplate } from './templates/CinemaTemplate';
 import { PUBLICATION_TEMPLATE as T, publicationTemplateMetrics, type PublicationTemplateMetrics } from './templates/templateMetrics';
 
 export const PUBLICATION_BLOCKS_QUERY_KEY = ['publication-blocks'] as const;
@@ -54,6 +55,7 @@ export function PublicationBlockView({
 }) {
   if (block.kind === 'container') return <ContainerTemplate block={block} metrics={metrics} onOpenProduct={openProduct} />;
   if (block.kind === 'sponsored_pair') return <SponsoredPairTemplate block={block} metrics={metrics} onOpenProduct={openProduct} />;
+  if (block.kind === 'cinema') return <CinemaTemplate block={block} metrics={metrics} active={active} onOpenProduct={openProduct} />;
   return <MediaTemplate block={block} metrics={metrics} active={active} onOpenProduct={openProduct} />;
 }
 
@@ -71,7 +73,8 @@ export function PublicationTemplatesScreen() {
   useFocusEffect(
     useCallback(() => {
       setFocused(true);
-      setStatusBarStyle('dark');
+      // 16/11 : en-tête noir → icônes de la barre d'état claires.
+      setStatusBarStyle('light');
       return () => {
         setFocused(false);
         setStatusBarStyle(theme.mode === 'dark' ? 'light' : 'dark');
@@ -85,12 +88,12 @@ export function PublicationTemplatesScreen() {
     staleTime: 30_000,
   });
   const rows = blocks.data ?? [];
-  // Engagement (compteurs + réaction du compte) des blocs NON sponsorisés,
-  // en une requête ; la clé suit le compte pour ne jamais montrer la réaction
+  // Engagement (compteurs + réaction du compte) de TOUS les blocs (16/11 :
+  // sponsorisés compris — « chaque publication » a ses boutons), en une requête ; la clé suit le compte pour ne jamais montrer la réaction
   // d'un autre utilisateur après un changement de session.
   const session = useSession();
   const owner = session.status === 'signedIn' ? session.account?.id || 'member' : 'guest';
-  const socialIds = useMemo(() => rows.filter((row) => !row.sponsored).map((row) => row.id), [rows]);
+  const socialIds = useMemo(() => rows.map((row) => row.id), [rows]);
   const engagementKey = useMemo(() => [...publicationEngagementKey(socialIds), owner], [socialIds, owner]);
   const engagement = useQuery<SocialEngagement>({
     queryKey: engagementKey,
@@ -106,7 +109,7 @@ export function PublicationTemplatesScreen() {
   }).current;
 
   return (
-    <View testID="publication-page" style={[styles.screen, { paddingTop: insets.top }]}>
+    <View testID="publication-page" style={styles.screen}>
       {/* Hôte des feuilles (commentaires) : elles couvrent l'écran entier,
           au-dessus de la liste — jamais la seule rangée qui les déclare. */}
       <SheetPortalHost>
@@ -121,15 +124,13 @@ export function PublicationTemplatesScreen() {
         renderItem={({ item }) => (
           <View style={[styles.column, { width: metrics.width }]}>
             <PublicationBlockView block={item} metrics={metrics} active={focused && activeId === item.id} />
-            {!item.sponsored ? (
-              <PublicationBar
-                blockId={item.id}
-                title={item.title}
-                counts={engagement.data?.counts?.[item.id] ?? ZERO_COUNTS}
-                mine={engagement.data?.mine?.[item.id] ?? null}
-                engagementKey={engagementKey}
-              />
-            ) : null}
+            <PublicationBar
+              blockId={item.id}
+              title={item.title}
+              counts={engagement.data?.counts?.[item.id] ?? ZERO_COUNTS}
+              mine={engagement.data?.mine?.[item.id] ?? null}
+              engagementKey={engagementKey}
+            />
           </View>
         )}
         ItemSeparatorComponent={Separator}

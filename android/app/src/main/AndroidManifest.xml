@@ -46,7 +46,8 @@
             android:label="@string/aywebs_browser_title"
             android:theme="@style/AppTheme.NoActionBar"
             android:parentActivityName=".MainActivity"
-            android:exported="false" />
+            android:exported="false"
+        />
 
         <service android:name=".MerchantDataService" android:process=":merchant" android:exported="false" />
 

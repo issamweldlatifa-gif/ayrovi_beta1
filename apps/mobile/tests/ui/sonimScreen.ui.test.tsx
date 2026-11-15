@@ -112,7 +112,7 @@ describe('SonimScreen UI', () => {
 
   it('keeps the mobile composer pure white against a subtle canvas, with a 32dp orange glyph and 44dp touch target', async () => {
     await renderSonim();
-    expect(screen.getByTestId('clean-screen-root')).toHaveStyle({ backgroundColor: '#F7F7F7' });
+    expect(screen.getByTestId('clean-screen-root')).toHaveStyle({ backgroundColor: '#FFFFFF' });
     expect(screen.getByTestId('clean-composer-box')).toHaveStyle({ backgroundColor: '#FFFFFF', borderRadius: 28, paddingHorizontal: 12, paddingVertical: 10 });
     expect(screen.getByTestId('sonim-input')).toHaveStyle({ backgroundColor: '#FFFFFF', color: '#000000' });
     expect(screen.getByTestId('sonim-input').props.underlineColorAndroid).toBe('transparent');

@@ -29,9 +29,10 @@ import {
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { StatusBar } from 'expo-status-bar';
+import { LinearGradient } from 'expo-linear-gradient';
 import { CartGlyph } from '@/design/CartGlyph';
 import { TabCleanIcon } from '@/design/TabNavIcons';
-import { RADIUS, STORE_BAR } from '@/design/tokens.mobile';
+import { RADIUS, BROWSER_BAR } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { ApiError } from '@/api/errors';
@@ -167,6 +168,8 @@ export default function AyWebsBrowserScreen() {
   const [loadUrl, setLoadUrl] = useState(url);
   /* الصفحة الحالية كما يصرّح بها التنقّل داخل الـWebView (تتبع الروابط). */
   const [pageUrl, setPageUrl] = useState(url);
+  /** Progression du chargement (0 → 1) : ligne dégradée sous la barre d'adresse. */
+  const [loadProgress, setLoadProgress] = useState(0);
   useEffect(() => {
     if (!url || url === loadUrl) return;
     setLoadUrl(url);
@@ -613,34 +616,34 @@ export default function AyWebsBrowserScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.canvas }]}>
-      {/* 15/11 (référence Walmart 003723) : barre BLEUE d'action, icônes blanches,
-          pilule blanche au centre (boutique + adresse), logo Clean dans un rond
-          blanc, sac blanc avec le nombre d'articles de cette boutique. */}
-      <StatusBar style="light" />
+      {/* 16/11 (référence 025233) : une VRAIE barre de navigateur — fond blanc, pilule gris
+          clair avec bouclier + domaine de la page réellement ouverte (mis à jour à chaque lien
+          suivi), en LECTURE SEULE : ce n'est pas un champ, le client ne peut rien y taper.
+          Ligne de progression dégradée violet → rose sous la barre pendant le chargement. */}
+      <StatusBar style="dark" />
       <View
         testID="aywebs-store-header"
         style={[
           styles.header,
           {
             flexDirection: rowDirectionFor(theme.isRTL),
-            backgroundColor: STORE_BAR.background,
+            backgroundColor: BROWSER_BAR.background,
             paddingTop: insets.top + theme.space[1],
           },
         ]}
       >
-        <BackButton onPress={() => goBack('/(tabs)/aywebs')} testID="aywebs-store-header-back" label={t('common.back')} color={STORE_BAR.ink} />
+        <BackButton onPress={() => goBack('/(tabs)/aywebs')} testID="aywebs-store-header-back" label={t('common.back')} color={BROWSER_BAR.ink} />
         <View
           testID="aywebs-store-header-pill"
           accessibilityRole="header"
-          accessibilityLabel={[headerStoreName, headerHost].filter(Boolean).join(', ')}
-          style={[styles.titlePill, { backgroundColor: STORE_BAR.pill, flexDirection: rowDirectionFor(theme.isRTL) }]}
+          accessibilityLabel={t('aywebs.addressA11y', { host: headerHost || headerStoreName })}
+          style={[styles.titlePill, { backgroundColor: BROWSER_BAR.pill, flexDirection: rowDirectionFor(theme.isRTL) }]}
         >
-          <Ionicons name="lock-closed-outline" size={theme.iconSize.xs} color={STORE_BAR.pillMuted} accessibilityElementsHidden />
+          <Ionicons name="shield-checkmark-outline" size={theme.iconSize.sm} color={BROWSER_BAR.pillInk} accessibilityElementsHidden />
           <View style={styles.titleText}>
-            <AppText variant="label" color={STORE_BAR.pillInk} numberOfLines={1}>{headerStoreName}</AppText>
-            {headerHost && headerHost !== headerStoreName ? (
-              <AppText variant="caption" color={STORE_BAR.pillMuted} numberOfLines={1}>{headerHost}</AppText>
-            ) : null}
+            <AppText testID="aywebs-store-header-address" variant="body" color={BROWSER_BAR.pillInk} numberOfLines={1}>
+              {headerHost || headerStoreName}
+            </AppText>
           </View>
         </View>
         <Pressable
@@ -659,8 +662,8 @@ export default function AyWebsBrowserScreen() {
           style={({ pressed }) => [styles.headerHit, pressed ? { opacity: theme.opacity.subtle } : null]}
         >
           {/* 15/11 : le LOGO Clean (et non une bulle générique), posé dans un rond blanc pour rester net sur le bleu. */}
-          <View testID="aywebs-ask-clean-logo" style={[styles.cleanDisc, { backgroundColor: STORE_BAR.pill }]}>
-            <TabCleanIcon color={STORE_BAR.pillInk} size={CLEAN_LOGO_SIZE} />
+          <View testID="aywebs-ask-clean-logo" style={styles.cleanDisc}>
+            <TabCleanIcon color={BROWSER_BAR.ink} size={CLEAN_LOGO_SIZE} />
           </View>
         </Pressable>
         <Pressable
@@ -672,13 +675,22 @@ export default function AyWebsBrowserScreen() {
         >
           <CartGlyph
             count={cartUnits}
-            color={STORE_BAR.ink}
-            badgeColor={STORE_BAR.pill}
-            badgeTextColor={STORE_BAR.background}
-            ringColor={STORE_BAR.background}
+            color={BROWSER_BAR.ink}
+            ringColor={BROWSER_BAR.background}
             testID="aywebs-store-header-cart-icon"
           />
         </Pressable>
+        {loadProgress < 1 ? (
+          <View
+            testID="aywebs-store-progress"
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={[styles.progressTrack, theme.isRTL ? { right: 0 } : { left: 0 }, { width: `${Math.max(8, Math.round(loadProgress * 100))}%` }]}
+          >
+            <LinearGradient colors={BROWSER_BAR.progress} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={StyleSheet.absoluteFill} />
+          </View>
+        ) : null}
       </View>
 
       {pageOk ? (
@@ -706,8 +718,11 @@ export default function AyWebsBrowserScreen() {
         allowsBackForwardNavigationGestures
         injectedJavaScriptBeforeContentLoaded={AYWEBS_NETWORK_OBSERVER_SCRIPT}
         setSupportMultipleWindows={false}
+        onLoadStart={() => setLoadProgress(0)}
+        onLoadProgress={(event) => setLoadProgress(event.nativeEvent.progress >= 1 ? 1 : event.nativeEvent.progress)}
         onNavigationStateChange={(state) => {
           pageLoadingRef.current = state.loading === true;
+          if (state.loading === false) setLoadProgress(1);
           setWebCanGoBack((prev) => (prev === state.canGoBack ? prev : state.canGoBack));
           if (!state.url || !isWebPageUrl(state.url)) return;
           if (pageUrlRef.current !== state.url) {
@@ -822,6 +837,7 @@ const styles = StyleSheet.create({
   titlePill: { flex: 1, minHeight: 40, borderRadius: RADIUS.full, paddingHorizontal: 12, alignItems: 'center', gap: 8 },
   titleText: { flex: 1, justifyContent: 'center' },
   cleanDisc: { width: 34, height: 34, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
+  progressTrack: { position: 'absolute', bottom: 0, height: BROWSER_BAR.progressHeight, overflow: 'hidden' },
   web: { flex: 1 },
   addedStrip: { alignItems: 'center', gap: 8, minHeight: 32 },
   addedText: { flex: 1 },

@@ -1,4 +1,6 @@
-# zayrovi — zebra-striped Z identity (v7), 14 November 2026
+# zayrovi — zebra-striped Z identity (v8, 15 November 2026; v7 on 14 November)
+
+> **v8 (15/11/2026):** the owner supplied a new zebra Z drawing (`source/z-zebra-black-v8.jpg`). It replaces the v7 drawing everywhere (icons, splash, web, avatars, loader); the v7 sources are deleted and their opening contours are listed as retired. `symbolSolid` is now derived from the same pixels (union of convex hulls of the bars and diagonal slices, simplified) instead of v7's analytic construction.
 
 ## Decision
 
@@ -30,7 +32,7 @@ These are **raster-derived contours**. The designer's original vector file was n
 ## Reproduction
 
 - Sources are in `assets/brand/zayrovi-2026-11/source/`: `z-zebra-black.jpeg` (the master) and `z-zebra-white.jpg` (the light reference), both unchanged, plus `wordmark.jpg`.
-- `logo.json` v7 holds:
+- `logo.json` v8 holds:
   - `symbol` (the stripes), `symbolSolid` (the solid outline) and `wordmark`;
   - `symbolSolid.maxRadius`, the farthest outline point from the centre, used for every circular fit;
   - SHA-256 hashes of the sources.
@@ -54,7 +56,7 @@ These are **raster-derived contours**. The designer's original vector file was n
   - app: the Reel publisher uses the solid ink Z, fitted inside its 28 dp circle.
 
   The blue symbol (`logo-zayrovi-symbol-blue.svg`) is gone. The blue *verified badge* of Publication is a separate token and is unchanged.
-- **Cache:** every public logo URL moves to `?v=7.0`. The "-violet" lockup names stay as historical URLs, because stored interface configurations reference them.
+- **Cache:** every public logo URL moves to `?v=8.0`. The "-violet" lockup names stay as historical URLs, because stored interface configurations reference them.
 
 ## Deleted permanently
 
@@ -64,7 +66,7 @@ These are **raster-derived contours**. The designer's original vector file was n
 - the v6 identity document;
 - the v6 test.
 
-`tests/brand-logo-v7.test.ts` fails if any of them comes back, or if the opening coordinates of either retired contour appear anywhere in the sources, scripts, assets or public files. Git history is not deployed branding.
+`tests/brand-logo-v8.test.ts` fails if any of them comes back, or if the opening coordinates of either retired contour appear anywhere in the sources, scripts, assets or public files. Git history is not deployed branding.
 
 ## Validation and limits
 

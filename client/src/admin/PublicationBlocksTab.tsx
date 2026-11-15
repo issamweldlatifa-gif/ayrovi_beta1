@@ -86,7 +86,7 @@ export const emptyBlock = (kind: PublicationBlockKind = 'container'): Publicatio
   bg_color: PUBLICATION_BLOCK_DEFAULT_COLOR[kind],
   panel_color: '',
   sponsored: kind === 'sponsored_pair',
-  media_type: kind === 'media' ? 'image' : '',
+  media_type: kind === 'media' ? 'image' : kind === 'cinema' ? 'video' : '',
   media_url: '',
   poster_url: '',
   product_ids: [],
@@ -101,8 +101,8 @@ export function blockFormError(form: PublicationBlockForm): string {
   if (form.title.trim().length < 2) return 'Le titre est obligatoire (2 caractères minimum).';
   if (!normalizeHexColor(form.bg_color)) return 'Couleur de fond invalide (format #RRGGBB).';
   if (form.kind === 'container' && form.panel_color && !normalizeHexColor(form.panel_color)) return 'Couleur du panneau invalide (format #RRGGBB).';
-  if ((form.kind === 'media' || form.kind === 'sponsored_pair') && !form.media_url.trim()) {
-    return form.kind === 'media' ? 'Ajoutez une image ou une vidéo.' : 'Ajoutez l’image de la carte sponsorisée.';
+  if ((form.kind === 'media' || form.kind === 'sponsored_pair' || form.kind === 'cinema') && !form.media_url.trim()) {
+    return form.kind === 'media' ? 'Ajoutez une image ou une vidéo.' : form.kind === 'cinema' ? 'Ajoutez la vidéo du bloc.' : 'Ajoutez l’image de la carte sponsorisée.';
   }
   const limits = PUBLICATION_BLOCK_LIMITS.products[form.kind];
   if (form.product_ids.length < limits.min) {
@@ -186,6 +186,32 @@ export function PublicationBlockPreview({ form, products }: { form: PublicationB
             ))}
           </div>
           <div style={{ color: panelInk, fontSize: 11, marginTop: 16 * SCALE }}>{PUBLICATION_PUBLISHER_NAME}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (form.kind === 'cinema') {
+    // 16/11 (référence Anker) : vidéo BORD À BORD au format 4:5, titre blanc centré dessus,
+    // puis le panneau noir profond : deux cartes entières, ou une rangée défilante.
+    const panelInk = readableInk(bg, INK, PAPER);
+    const cardWidth = previewCardWidth();
+    return (
+      <div style={{ ...frame, background: bg }} data-testid="block-preview" data-kind="cinema">
+        <div style={{ position: 'relative', height: Math.round(PREVIEW_WIDTH * 1.25), background: INK }}>
+          {form.poster_url
+            ? <img src={form.poster_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            : form.media_url ? <video src={form.media_url} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: G, textAlign: 'center', color: PAPER, background: 'rgba(0,0,0,0.28)' }}>
+            <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.1, textShadow: '0 1px 6px rgba(0,0,0,0.55)' }}>{title}</div>
+            {form.subtitle ? <div style={{ fontSize: 14, fontWeight: 600, textShadow: '0 1px 4px rgba(0,0,0,0.55)' }}>{form.subtitle}</div> : null}
+          </div>
+          <span style={{ position: 'absolute', left: G, top: G, color: PAPER, fontSize: 11, fontWeight: 700 }}>{PUBLICATION_PUBLISHER_NAME}</span>
+        </div>
+        <div data-testid="preview-row" style={{ display: 'flex', gap: PREVIEW_CARD.gap * SCALE, padding: `${24 * SCALE}px ${G}px`, overflow: 'hidden' }}>
+          {(products.length ? products : [undefined, undefined]).map((product, index) => (
+            <PreviewProduct key={product?.id ?? index} product={product} width={cardWidth} ink={panelInk} sponsored={sponsored} />
+          ))}
         </div>
       </div>
     );
@@ -449,8 +475,10 @@ export const PublicationBlocksTab: React.FC<{ canWrite: boolean }> = ({ canWrite
       ...current,
       kind,
       bg_color: keepColor ? current.bg_color : PUBLICATION_BLOCK_DEFAULT_COLOR[kind],
-      media_type: kind === 'media' ? (current.media_type || 'image') : current.media_url ? 'image' : '',
-      poster_url: kind === 'media' ? current.poster_url : '',
+      media_type: kind === 'media' ? (current.media_type || 'image') : kind === 'cinema' ? 'video' : current.media_url ? 'image' : '',
+      // Le modèle `cinema` n'accepte QU'une vidéo : une image reprise d'un autre modèle est retirée.
+      media_url: kind === 'cinema' && current.media_type !== 'video' ? '' : current.kind === 'cinema' && kind !== 'media' ? '' : current.media_url,
+      poster_url: kind === 'media' || kind === 'cinema' ? current.poster_url : '',
       sponsored: kind === 'sponsored_pair' ? true : current.sponsored,
       product_ids: current.product_ids.slice(0, max),
     };
@@ -536,7 +564,7 @@ export const PublicationBlocksTab: React.FC<{ canWrite: boolean }> = ({ canWrite
               </div>
               <Field label="Titre" required><input maxLength={PUBLICATION_BLOCK_LIMITS.title} value={form.title} onChange={(e) => patch({ title: e.target.value })} /></Field>
               <Field label="Sous-titre"><input maxLength={PUBLICATION_BLOCK_LIMITS.subtitle} value={form.subtitle} onChange={(e) => patch({ subtitle: e.target.value })} /></Field>
-              <ColorField label={form.kind === 'container' ? 'Couleur du bandeau' : form.kind === 'sponsored_pair' ? 'Couleur de l’encart' : 'Couleur de fond'} value={form.bg_color} onChange={(bg_color) => patch({ bg_color })} />
+              <ColorField label={form.kind === 'container' ? 'Couleur du bandeau' : form.kind === 'sponsored_pair' ? 'Couleur de l’encart' : form.kind === 'cinema' ? 'Couleur du panneau sous la vidéo (noir profond conseillé)' : 'Couleur de fond'} value={form.bg_color} onChange={(bg_color) => patch({ bg_color })} />
               {form.kind === 'container' ? (
                 <ColorField label="Couleur du panneau des produits" value={form.panel_color} allowAuto autoColor={containerPanelColor(normalizeHexColor(form.bg_color) ?? PUBLICATION_BLOCK_DEFAULT_COLOR.container)} onChange={(panel_color) => patch({ panel_color })} />
               ) : null}
@@ -552,13 +580,13 @@ export const PublicationBlocksTab: React.FC<{ canWrite: boolean }> = ({ canWrite
               ) : null}
               <MediaInput
                 key={`${form.kind}-${form.media_type}`}
-                label={form.kind === 'media' ? (form.media_type === 'video' ? 'Vidéo (mp4, webm, mov)' : 'Image (format paysage conseillé)') : form.kind === 'sponsored_pair' ? 'Image de la carte sponsorisée (portrait 2:3)' : 'Image large (facultative)'}
-                kind={form.kind === 'media' && form.media_type === 'video' ? 'video' : 'image'}
+                label={form.kind === 'cinema' ? 'Vidéo bord à bord (portrait 4:5 conseillé — mp4, webm, mov)' : form.kind === 'media' ? (form.media_type === 'video' ? 'Vidéo (mp4, webm, mov)' : 'Image (format paysage conseillé)') : form.kind === 'sponsored_pair' ? 'Image de la carte sponsorisée (portrait 2:3)' : 'Image large (facultative)'}
+                kind={form.kind === 'cinema' || (form.kind === 'media' && form.media_type === 'video') ? 'video' : 'image'}
                 value={form.media_url}
-                onChange={(media_url) => patch({ media_url, media_type: form.kind === 'media' ? (form.media_type || 'image') : media_url ? 'image' : '' })}
+                onChange={(media_url) => patch({ media_url, media_type: form.kind === 'cinema' ? 'video' : form.kind === 'media' ? (form.media_type || 'image') : media_url ? 'image' : '' })}
                 onError={setFormError}
               />
-              {form.kind === 'media' && form.media_type === 'video' ? (
+              {form.kind === 'cinema' || (form.kind === 'media' && form.media_type === 'video') ? (
                 <MediaInput label="Image de couverture (affichée avant la lecture)" kind="image" value={form.poster_url} onChange={(poster_url) => patch({ poster_url })} onError={setFormError} />
               ) : null}
               <BlockProductsField kind={form.kind} ids={form.product_ids} products={products} onChange={(product_ids) => patch({ product_ids })} />

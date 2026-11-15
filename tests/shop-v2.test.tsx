@@ -140,7 +140,7 @@ describe('boutique v2 — rendu', () => {
   it('le chargement n’invente pas de message', () => {
     const html = renderToStaticMarkup(<LoadingView title="Chargement…" />);
     expect(html).toContain('Chargement…');
-    expect(html).toContain('/media/logo-zayrovi-loading.svg?v=7.0');
+    expect(html).toContain('/media/logo-zayrovi-loading.svg?v=8.0');
   });
 });
 

@@ -1,8 +1,8 @@
 jest.mock('@/state/session', () => ({ useSession: () => ({ status: 'signedOut', account: null }) }));
 // AYWEBs merchant browser: fixed option-selection action, with a live store cart count.
 // The native WebView and server-backed sheets are mocked for deterministic UI tests.
-import { StyleSheet } from 'react-native';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { StyleSheet, TextInput } from 'react-native';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View } from 'react-native';
@@ -31,7 +31,7 @@ jest.mock('react-native-webview', () => {
   const React = jest.requireActual('react');
   const WebView = React.forwardRef((_props: Record<string, unknown>, ref: unknown) => {
     React.useImperativeHandle(ref, () => ({ goBack: () => undefined, goForward: () => undefined, injectJavaScript: () => undefined }));
-    return React.createElement(RNView, { testID: 'webview' });
+    return React.createElement(RNView, { testID: 'webview', onNavigationStateChange: _props.onNavigationStateChange, onLoadProgress: _props.onLoadProgress });
   });
   return { WebView, __esModule: true, default: WebView };
 });
@@ -148,15 +148,31 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     expect(screen.getByText('Article ajouté')).toBeTruthy();
   });
 
-  it('15/11 : barre bleue Walmart — icônes blanches, pilule blanche, logo Clean, CTA bleu', async () => {
+  it('16/11 : vraie barre de navigateur — fond blanc, pilule grise, logo Clean, CTA bleu', async () => {
     renderBrowser();
     const header = StyleSheet.flatten(screen.getByTestId('aywebs-store-header').props.style);
-    expect(header.backgroundColor).toBe('#0A63F5');
+    expect(header.backgroundColor).toBe('#FFFFFF');
     const pill = StyleSheet.flatten(screen.getByTestId('aywebs-store-header-pill').props.style);
-    expect(pill.backgroundColor).toBe('#FFFFFF');
+    expect(pill.backgroundColor).toBe('#ECECF0');
     expect(screen.getByTestId('aywebs-ask-clean-logo')).toBeTruthy();
     const cta = StyleSheet.flatten(screen.getByTestId('aywebs-store-add-to-cart').props.style);
     expect([cta.backgroundColor, cta.borderColor]).toContain('#0A63F5');
+  });
+
+  it('16/11 : adresse = domaine de la page ouverte, suit les liens, NON modifiable ; ligne de progression', async () => {
+    renderBrowser();
+    expect(screen.getByTestId('aywebs-store-header-address').props.children).toBe('amazon.com');
+    expect(screen.getByTestId('aywebs-store-header-pill').findAllByType(TextInput)).toHaveLength(0);
+    // Filet décoratif, masqué aux lecteurs d'écran : on le cherche donc parmi les éléments cachés.
+    expect(screen.getByTestId('aywebs-store-progress', { includeHiddenElements: true })).toBeTruthy();
+    await act(async () => {
+      fireEvent(screen.getByTestId('webview'), 'navigationStateChange', {
+        url: 'https://www.amazon.fr/dp/B0TEST', loading: false, canGoBack: true, canGoForward: false, title: '', navigationType: 'click',
+      });
+    });
+    expect(screen.getByTestId('aywebs-store-header-address').props.children).toBe('amazon.fr');
+    expect(screen.getByLabelText('Adresse de la page : amazon.fr')).toBeTruthy();
+    expect(screen.queryByTestId('aywebs-store-progress', { includeHiddenElements: true })).toBeNull();
   });
 
   it('retire la barre du bas et la demande de revue humaine', () => {

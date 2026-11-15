@@ -1,5 +1,6 @@
 /**
- * Logo v7 (14/11/2026) — le Z zébré remplace définitivement le cœur-poignée de main (v6) et l'ancien Z (2026-10).
+ * Logo v8 (15/11/2026) — le nouveau Z zébré fourni par le propriétaire remplace le dessin v7 (14/11), qui
+ * remplaçait lui-même le cœur-poignée de main (v6) et l'ancien Z (2026-10).
  *
  * Verrouille : les originaux fournis (empreintes), le tracé partagé site / app / chargement statique, la
  * suppression des anciens logos, et les PIXELS des icônes livrées — silhouette, centrage, fond plat #FFFFFF (icône
@@ -34,6 +35,8 @@ const WHITE = "#FFFFFF";
 const RETIRED = {
   "heart-handshake v6": "M543.29 86.58C544.32 87.5 545.34 88.43 546.4 89.38",
   "Z 2026-10": "M 1537.9 0.4 C 1531.9 0.6 1484.5 3.1 1466.9 4.2",
+  "zebra Z v7": "M806 0C807 0 807 0 808 0C808 0 809 0 809 0C810 0 811 0 811 0C812 0 812",
+  "zebra Z v7 solid": "M147.02 0L834.85 0A127.59 127.59 0 0 1 929.92 212.68",
 };
 
 type Pick = (r: number, g: number, b: number, a: number) => boolean;
@@ -74,15 +77,14 @@ const iou = (a: Buffer, b: Buffer) => {
   return inter / union;
 };
 
-describe("v7 zebra Z — master, sources and the retired logos", () => {
+describe("v8 zebra Z — master, sources and the retired logos", () => {
   test("pins the supplied originals and shares exact contours across web/native/static boot", () => {
     for (const part of ["symbol", "symbolSolid", "wordmark"]) {
       const shape = master[part];
       expect(createHash("sha256").update(fs.readFileSync(`${masterDir}/${shape.source}`)).digest("hex")).toBe(shape.sourceSha256);
     }
-    expect(master.version).toBe("7.0");
-    expect(master.symbol.source).toBe("source/z-zebra-black.jpeg");
-    expect(fs.existsSync(`${masterDir}/source/z-zebra-white.jpg`)).toBe(true); // light reference, same identity
+    expect(master.version).toBe("8.0");
+    expect(master.symbol.source).toBe("source/z-zebra-black-v8.jpg");
     expect(BRAND_SYMBOL.d).toBe(master.symbol.d);
     expect(BRAND_SYMBOL_SOLID.d).toBe(master.symbolSolid.d);
     expect(BRAND_SYMBOL_MAX_RADIUS).toBe(master.symbolSolid.maxRadius);
@@ -94,14 +96,16 @@ describe("v7 zebra Z — master, sources and the retired logos", () => {
     expect(lockup).toContain(master.wordmark.d);
     expect(lockup).toContain(master.symbol.d);
     expect(lockup).not.toMatch(/<(?:text|line|polygon|rect)\b/); // outlined lowercase, no divider
-    // The solid Z is an exact construction (lines + arcs), not a trace.
-    expect(BRAND_SYMBOL_SOLID.d).toMatch(/^M[\d. ]+(?:[LA][\d. ]+)+Z$/);
-    expect(BRAND_SYMBOL_SOLID.d.length).toBeLessThan(400);
+    // The solid Z is a compact straight-edged polygon derived from the same pixels (no curves to trace).
+    expect(BRAND_SYMBOL_SOLID.d).toMatch(/^M[\d. ]+(?:L[\d. ]+)+Z$/);
+    expect(BRAND_SYMBOL_SOLID.d.length).toBeLessThan(1200);
   });
 
   test("the old logos are deleted permanently: no source, archive, public file, module or contour remains", () => {
     for (const gone of [
       `${masterDir}/source/symbol.png`,
+      `${masterDir}/source/z-zebra-black.jpeg`, // v7 sources
+      `${masterDir}/source/z-zebra-white.jpg`,
       `${masterDir}/source/reference-lockup.png`,
       "assets/brand/archive",
       "client/public/media/logo-zayrovi-symbol-blue.svg",
@@ -131,7 +135,7 @@ describe("v7 zebra Z — master, sources and the retired logos", () => {
   });
 });
 
-describe("v7 zebra Z — shipped pixels", () => {
+describe("v8 zebra Z — shipped pixels", () => {
   test.each([
     ["apps/mobile/assets/images/icon.png", ink, "striped"],
     ["apps/mobile/assets/images/adaptive-icon.png", ink, "striped"],
@@ -234,7 +238,7 @@ describe("v7 zebra Z — shipped pixels", () => {
 
   test("official avatars (site + app): white zebra Z on a black disc, round-fitted, never the retired blue symbol", () => {
     for (const file of ["StoryFeed", "ReelsViewer", "FullscreenMediaHeader", "StoryCircles"])
-      expect(read(`client/src/social/components/${file}.tsx`)).toContain('src="/media/logo-zayrovi-avatar.svg?v=7.0"');
+      expect(read(`client/src/social/components/${file}.tsx`)).toContain('src="/media/logo-zayrovi-avatar.svg?v=8.0"');
     const avatar = read("client/public/media/logo-zayrovi-avatar.svg");
     expect(avatar).toContain(`<circle cx="256" cy="256" r="256" fill="${INK}"/>`);
     expect(avatar).toContain(`fill="${WHITE}" d="${BRAND_SYMBOL.d}"`);

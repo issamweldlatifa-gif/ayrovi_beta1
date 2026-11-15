@@ -30,6 +30,7 @@ import type { PublicationBlock } from '@/api/publicationBlocks';
 import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
 import { useI18n, useT } from '@/i18n';
+import { PublicationFollow } from '../PublicationFollow';
 import { PUBLICATION_PALETTE as P, PUBLICATION_TYPE, PublicationSponsored, PublicationText } from '../publicationDesign';
 import { publicationBlockFont } from '../publicationTokens';
 import { blockInks } from './blockColors';
@@ -61,11 +62,21 @@ export function SponsoredPairTemplate({
     <View testID={`publication-block-${block.id}`} style={styles.block}>
       <View testID={`publication-block-${block.id}-band`} style={[styles.band, { backgroundColor: block.bgColor }]}>
         <View style={styles.bandText}>
+          {/* 16/11 : comme les autres modèles, l'éditeur (pastille + nom + « Suivre ») ouvre le
+              bloc — sur le bandeau, dans l'encre que sa couleur supporte ; « Sponsorisé » dessous. */}
+          <View style={styles.publisher}>
+            <PublicationFollow
+              look="inline"
+              publisherId={block.publisher.id}
+              publisherName={block.publisher.name}
+              ink={band.ink}
+              muted={band.muted}
+              testID={`publication-block-${block.id}-follow`}
+            />
+          </View>
           {block.sponsored ? (
             <PublicationSponsored color={band.muted} testID={`publication-block-${block.id}-sponsored`} />
-          ) : (
-            <PublicationText variant="caption" color={band.muted} numberOfLines={1}>{block.publisher.name}</PublicationText>
-          )}
+          ) : null}
           <View style={styles.titles}>
             <PublicationText testID={`publication-block-${block.id}-title`} variant="h2" color={band.ink} numberOfLines={2} style={[styles.title, heading]}>
               {block.title}
@@ -114,6 +125,7 @@ const styles = StyleSheet.create({
   block: { width: '100%' },
   band: { paddingTop: T.bandPaddingTop },
   bandText: { paddingHorizontal: T.bandInset },
+  publisher: { paddingBottom: 8 },
   titles: { paddingTop: 8 },
   title: { fontSize: PUBLICATION_TYPE.bandTitleSize, lineHeight: PUBLICATION_TYPE.bandTitleLine },
   media: { marginTop: T.pairTitleGap, backgroundColor: P.neutral, overflow: 'hidden' },

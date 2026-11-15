@@ -2,7 +2,8 @@ import { BackButton } from '@/design/BackButton';
 /**
  * Panier officiel unifié ZAYROVI (style Bag / Zalando) :
  *   • Zone centrale défilante (`ScrollView flex: 1`) pour la liste des articles :
- *     vignette portrait, marque/boutique en gras + menu `•••`, titre sur 1 ligne,
+ *     vignette portrait, marque/boutique en gras + logo Clean NOIR (16/11 : il remplace
+ *     le menu `•••` sur chaque carte ; la fiche de détails s'ouvre d'un appui long), titre sur 1 ligne,
  *     prix en rouge + prix d'origine barré lorsqu'il y a une réduction (ou prix
  *     normal en encre sinon), lignes empilées `Couleur :` / `Taille :`, `Quantité : N`.
  *   • Bloc inférieur FIXE (hors du `ScrollView`, immobile pendant le défilement) :
@@ -24,6 +25,10 @@ import { RADIUS, veil } from '@/design/tokens.mobile';
 import { AppText, Button, KeyValue } from '@/design/ui';
 import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
+import { TabCleanIcon } from '@/design/TabNavIcons';
+
+/** Logo Clean de la carte : même encombrement que l'ancien `•••` (zone tactile élargie par hitSlop). */
+const CART_CLEAN_ICON = 26;
 import { formatMoney } from '@/format/money';
 
 export interface OfficialCartItemModel {
@@ -81,6 +86,8 @@ export function OfficialCartRow({
   onDecrease,
   onIncrease,
   onRemove,
+  onAskClean,
+  cleanDisabled = false,
 }: {
   item: OfficialCartItemModel;
   busy?: boolean;
@@ -88,6 +95,13 @@ export function OfficialCartRow({
   onDecrease?: () => void;
   onIncrease?: () => void;
   onRemove?: () => void;
+  /**
+   * 16/11 — « Demander à Clean » pour CET article : le logo Clean noir (reflet conservé)
+   * prend la place du `•••` sur chaque carte. Sans gestionnaire (feuilles en lecture
+   * seule), la carte garde le `•••`.
+   */
+  onAskClean?: () => void;
+  cleanDisabled?: boolean;
 }) {
   const theme = useTheme();
   const { t } = useI18n();
@@ -104,8 +118,11 @@ export function OfficialCartRow({
 
   return (
     <>
-      <View
+      <Pressable
         testID={`cart-row-${item.id}`}
+        accessible={false}
+        delayLongPress={350}
+        onLongPress={onAskClean ? () => setMenuOpen(true) : undefined}
         style={[
           styles.itemRow,
           {
@@ -141,16 +158,33 @@ export function OfficialCartRow({
             <AppText variant="label" numberOfLines={1} style={styles.brandName}>
               {item.brandOrStore || 'ZAYROVI'}
             </AppText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={t('cart.itemActions')}
-              onPress={() => setMenuOpen(true)}
-              hitSlop={8}
-              testID={`cart-line-${item.id}-menu`}
-              style={({ pressed }) => [styles.moreBtn, { opacity: pressed ? theme.opacity.subtle : 1 }]}
-            >
-              <Ionicons name="ellipsis-horizontal-outline" size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
-            </Pressable>
+            {onAskClean ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('cart.askCleanItem')}
+                accessibilityActions={[{ name: 'longpress', label: t('cart.itemActions') }]}
+                onAccessibilityAction={(event) => { if (event.nativeEvent.actionName === 'longpress') setMenuOpen(true); }}
+                accessibilityState={{ disabled: cleanDisabled }}
+                disabled={cleanDisabled}
+                onPress={onAskClean}
+                hitSlop={8}
+                testID={`cart-line-${item.id}-clean`}
+                style={({ pressed }) => [styles.moreBtn, { opacity: cleanDisabled ? theme.opacity.disabled : pressed ? theme.opacity.subtle : 1 }]}
+              >
+                <TabCleanIcon color={theme.colors.ink} tone="ink" size={CART_CLEAN_ICON} />
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('cart.itemActions')}
+                onPress={() => setMenuOpen(true)}
+                hitSlop={8}
+                testID={`cart-line-${item.id}-menu`}
+                style={({ pressed }) => [styles.moreBtn, { opacity: pressed ? theme.opacity.subtle : 1 }]}
+              >
+                <Ionicons name="ellipsis-horizontal-outline" size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
+              </Pressable>
+            )}
           </View>
 
           <AppText variant="label" color={theme.colors.ink} numberOfLines={1}>
@@ -277,7 +311,7 @@ export function OfficialCartRow({
             ) : null}
           </View>
         </View>
-      </View>
+      </Pressable>
 
       {menuOpen ? (
         <Modal

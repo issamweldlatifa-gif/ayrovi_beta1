@@ -108,7 +108,7 @@ for (const [name, size, options] of [
   ['icon', 1024, { share: 0.62, background: WHITE, color: INK }],         // iOS / store: flat white tile
   ['adaptive-icon', 1024, { radius: SAFE_ZONE, color: INK }],             // foreground, transparent (bg #FFFFFF)
   ['adaptive-icon-monochrome', 1024, { radius: SAFE_ZONE, shape: solid }], // Android 13 themed icon (alpha)
-  ['notification-icon', 96, { share: 0.78, shape: solid }],               // status bar: alpha-only, white
+  ['notification-icon', 96, { share: 0.7, shape: solid }],                // status bar: alpha-only, white
   ['favicon', 64, { share: 0.68, background: WHITE, color: INK, shape: solid }],
   ['splash-icon', 1024, { share: SPLASH_SHARE, color: INK }],             // on #FFFFFF (app.json)
   ['splash-icon-dark', 1024, { share: SPLASH_SHARE, color: INK }],

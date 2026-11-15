@@ -59,10 +59,11 @@ describe('phase 4 — barre Publication et feuille de commentaires', () => {
   const engagement = code('src/features/publications/PublicationEngagement.tsx');
   const screen = code('src/features/publications/PublicationTemplatesScreen.tsx');
 
-  it('la barre vit sous chaque bloc NON sponsorisé, branchée sur l’engagement serveur', () => {
-    expect(screen).toMatch(/!item\.sponsored \? \(\s*<PublicationBar/);
+  it('16/11 : la barre vit sous CHAQUE bloc (sponsorisé compris), branchée sur l’engagement serveur', () => {
+    expect(screen).not.toMatch(/!item\.sponsored \? \(\s*<PublicationBar/);
+    expect(screen).toContain('<PublicationBar');
     expect(screen).toContain('fetchSocialEngagement(socialIds');
-    expect(screen).toMatch(/rows\.filter\(\(row\) => !row\.sponsored\)/);
+    expect(screen).toMatch(/rows\.map\(\(row\) => row\.id\)/);
   });
 
   it('15/11 : rangée d’icônes 28 (« un peu plus grandes ») + signet, cibles ≥ 44 dp, rangée miroir en arabe', () => {

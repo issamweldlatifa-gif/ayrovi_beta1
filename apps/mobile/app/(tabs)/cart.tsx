@@ -10,7 +10,7 @@
  *     moyens de paiement acceptés.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -21,7 +21,6 @@ import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
 import { RADIUS } from '@/design/tokens.mobile';
 import { AppText, Button, Card, KeyValue } from '@/design/ui';
-import { TabCleanIcon } from '@/design/TabNavIcons';
 import { useI18n, useT } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import {
@@ -44,12 +43,10 @@ import {
 import { earliestCartDeadline, formatCartCountdown, remainingMs, serverClockOffset } from '@/features/lens/lensCartStatus';
 import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
-import { cartContext, sonimOwner, stageSonimDraft } from '@/features/sonim/sonimContext';
+import { cartItemContext, sonimOwner, stageSonimDraft } from '@/features/sonim/sonimContext';
 import { formatMoney } from '@/format/money';
 
 const MAX_QUANTITY = 99;
-/** Logo Clean sous les cartes du panier (bouton rond de 56 dp). */
-const CLEAN_LOGO = 32;
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
@@ -343,33 +340,18 @@ export default function ZayroviCartScreen() {
                 onDecrease={() => setQuantity.mutate({ itemId: model.id, quantity: model.quantity - 1 })}
                 onIncrease={() => setQuantity.mutate({ itemId: model.id, quantity: model.quantity + 1 })}
                 onRemove={() => removeLine.mutate(model.id)}
+                // 16/11 : chaque carte porte son logo Clean (noir, reflet conservé) à la place du `•••`.
+                cleanDisabled={!sonimOwner(sessionId, status, account?.id)}
+                onAskClean={() => {
+                  const line = cart?.items.find((entry) => entry.id === model.id);
+                  if (!line || !stageSonimDraft(sonimOwner(sessionId, status, account?.id), cartItemContext(line, locale))) {
+                    Alert.alert(t('sonim.shareUnavailable'));
+                    return;
+                  }
+                  router.push('/sonim-assistant');
+                }}
               />
             ))}
-            {/* 15/11 : « Examiner le panier avec Clean » devient le LOGO Clean, posé sous les cartes. */}
-            {cart && !cartQuery.isFetching ? (
-              <View style={styles.cleanRow}>
-                <Pressable
-                  testID="cart-ask-sonim"
-                  accessibilityRole="button"
-                  accessibilityLabel={t('sonim.shareCart')}
-                  disabled={!sonimOwner(sessionId, status, account?.id)}
-                  onPress={() => {
-                    if (!stageSonimDraft(sonimOwner(sessionId, status, account?.id), cartContext(cart, locale))) {
-                      Alert.alert(t('sonim.shareUnavailable'));
-                      return;
-                    }
-                    router.push('/sonim-assistant');
-                  }}
-                  hitSlop={8}
-                  style={({ pressed }) => [
-                    styles.cleanButton,
-                    { borderColor: theme.colors.line, opacity: !sonimOwner(sessionId, status, account?.id) ? theme.opacity.disabled : pressed ? theme.opacity.subtle : 1 },
-                  ]}
-                >
-                  <TabCleanIcon color={theme.colors.ink} size={CLEAN_LOGO} />
-                </Pressable>
-              </View>
-            ) : null}
           </>
         )}
       </OfficialCartScaffold>
@@ -391,6 +373,4 @@ const styles = StyleSheet.create({
   },
   reverifyBox: { gap: 8 },
   stateBlock: { paddingTop: 24 },
-  cleanRow: { alignItems: 'center', paddingVertical: 16 },
-  cleanButton: { width: 56, height: 56, borderRadius: RADIUS.full, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
 });

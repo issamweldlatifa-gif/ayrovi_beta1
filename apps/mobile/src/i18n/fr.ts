@@ -563,6 +563,8 @@ export const fr = {
   'cart.originally': 'Prix d’origine :',
   'cart.vatIncluded': 'TVA incluse',
   'cart.itemActions': 'Options de l’article',
+  'cart.askCleanItem': 'Demander à Clean à propos de cet article',
+  'aywebs.addressA11y': 'Adresse de la page : {host}',
   /* ── P3.4 : demande d'achat par procuration + demande de boutique (§37/§38). ─ */
   /* ── P4.1 : Lens — photo / texte → fiches marchandes réelles. ─────────────── */
   'sheet.close': 'Fermer',
@@ -1011,7 +1013,6 @@ export const fr = {
   'sonim.sharePage': 'Demander à Clean pour cette page',
   'sonim.sharePagePrompt': 'Aide-moi à examiner cette page. Le lien ci-dessous ne contient ni paramètres ni données de suivi ; vérifie les détails du produit sans supposer son prix ou sa disponibilité :',
   'sonim.shareProduct': 'Examiner ce produit avec Clean',
-  'sonim.shareCart': 'Examiner le panier avec Clean',
   'sonim.shareUnavailable': 'Impossible d’ajouter ces informations au brouillon. Vérifiez votre session ou raccourcissez le brouillon, puis réessayez.',
   'sonim.retryEdit': 'Modifier la question et réessayer',
   'sonim.action.stores.title': 'Explorer les boutiques',

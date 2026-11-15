@@ -563,6 +563,8 @@ export const ar = {
   'cart.originally': 'السعر الأصلي:',
   'cart.vatIncluded': 'شامل الأداءات والرسوم',
   'cart.itemActions': 'خيارات المنتج',
+  'cart.askCleanItem': 'اسأل Clean على هذا المنتج',
+  'aywebs.addressA11y': 'عنوان الصفحة: {host}',
 
   'sheet.close': 'إغلاق',
   'product.promoBadge': 'عرض',
@@ -1010,7 +1012,6 @@ export const ar = {
   'sonim.sharePage': 'اسأل سونيم عن هذه الصفحة',
   'sonim.sharePagePrompt': 'ساعدني في مراجعة هذه الصفحة. الرابط أدناه دون معلمات أو بيانات تتبّع؛ تحقّق من تفاصيل المنتج ولا تفترض السعر أو التوفّر:',
   'sonim.shareProduct': 'مراجعة المنتج مع سونيم',
-  'sonim.shareCart': 'مراجعة السلة مع سونيم',
   'sonim.shareUnavailable': 'تعذّرت إضافة المعلومات إلى المسودة. تحقق من الجلسة أو اختصر المسودة وحاول مجددًا.',
   'sonim.retryEdit': 'تعديل السؤال وإعادة المحاولة',
   'sonim.action.stores.title': 'تصفّح المتاجر',

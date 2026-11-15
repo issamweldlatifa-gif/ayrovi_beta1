@@ -40,8 +40,9 @@ import { BRAND, COLORS, GEOMETRY, MOTION, NEUTRALS, SPACE } from './tokens.gener
  * « devinaient » leur marge haute chacun à leur façon.
  */
 export const CHROME = {
-  // Hors safe area : 8 top + 44 cible tactile + 4 bottom.
-  header: 56,
+  // Hors safe area : 2 + 44 cible tactile + 2. 16/11 : en-tête resserré (56 → 48) à la
+  // demande du propriétaire (« Bienvenue, se connecter ? » trop haut) — la cible 44 reste.
+  header: 48,
   tabBar: 56,
   tabStrip: 40,
   /** Hauteur compacte et élégante des boutons d'action (inspirée Privé / Zalando). */
@@ -165,6 +166,22 @@ export const STORE_BAR = {
   pillInk: BRAND.black,
   /** Cadenas et adresse dans la pilule blanche — gris fixe (le `muted` du mode sombre serait illisible sur blanc). */
   pillMuted: NEUTRALS.textSecondary,
+  /** 16/11 (Walmart 030411) : rond de recherche bleu nuit au bout de la pilule blanche. */
+  searchButton: '#0B2D72',
+} as const;
+
+/**
+ * 16/11 (référence 025233) — barre d'adresse du navigateur de boutique : fond blanc pur,
+ * pilule gris clair en LECTURE SEULE (bouclier + domaine de la page ouverte), fine ligne
+ * de progression dégradée violet → rose sous la barre pendant le chargement.
+ */
+export const BROWSER_BAR = {
+  background: BRAND.white,
+  ink: BRAND.black,
+  pill: '#ECECF0',
+  pillInk: '#1C1B22',
+  progress: ['#9B6CF2', '#E46FA3'] as const,
+  progressHeight: 3,
 } as const;
 
 export const SALE_BADGE = {
@@ -885,14 +902,25 @@ export const PUBLICATION_THEME = {
   verified: PUBLICATION_DISCOVERY_BLUE, discovery: PUBLICATION_DISCOVERY_BLUE,
   paper: BRAND.white, ink: BRAND.black, muted: NEUTRALS.textSecondary,
   line: NEUTRALS.border, neutral: BRAND.lightGray, accent: BRAND.violet,
-  canvas: mix(BRAND.white, BRAND.violet, .018),
+  /** 16/11 : « notre blanc » est un blanc PUR — plus de voile violet de 1,8 %. */
+  canvas: BRAND.white,
   cardLine: alpha(BRAND.violet, .05), pill: alpha(BRAND.violet, .08), pillLine: alpha(BRAND.violet, .06),
   splitPaper: alpha(BRAND.violet, .025), glass: alpha(BRAND.violet, .035),
   glassLine: frost(.6), campaignPaper: PUBLICATION_EDITORIAL_PAPER,
+  /** 16/11 (référence 003723) : en-tête Publication NOIR #262626, flèche, titre et profil blancs. */
+  headerBar: '#262626', headerInk: BRAND.white,
 } as const;
 
 /** Owner-approved Clean-only composer contrast and reference sizing; not commerce defaults. */
-export const CLEAN_COMPOSER = { canvas: '#F7F7F7', actionSize: 32, radius: 28 } as const;
+/** 16/11 : fond Clean en blanc PUR (#FFFFFF) ; le champ se détache par son filet `CLEAN.line`. */
+/**
+ * 16/11 — Clean en ENCRE (bouton noir à côté de chaque carte du panier, navigateur
+ * boutique) : la moitié droite de la bulle est une encre un cran plus claire que la
+ * gauche, ce qui garde le relief (« le brillant ») de la version couleur.
+ */
+export const CLEAN_INK_SHADE = { light: '#3A3A3A', dark: '#CFCFCF' } as const;
+
+export const CLEAN_COMPOSER = { canvas: BRAND.white, actionSize: 32, radius: 28 } as const;
 
 /** Minimum breathing room for text inside mobile bordered surfaces. */
 export const TEXT_FRAME = { horizontal: 16, vertical: 12, inputHorizontal: 12, inputVertical: 10 } as const;

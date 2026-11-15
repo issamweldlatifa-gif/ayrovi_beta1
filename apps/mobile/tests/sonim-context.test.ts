@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { cartContext, shareableStoreUrl, sonimOwner, stageSonimDraft } from '../src/features/sonim/sonimContext';
+import { cartContext, cartItemContext, shareableStoreUrl, sonimOwner, stageSonimDraft } from '../src/features/sonim/sonimContext';
 import { clearSonimSession, useSonimSession } from '../src/features/sonim/sonimSession';
 import { applySonimToolEvent } from '../src/features/sonim/sonimModel';
 import type { ZayroviCart } from '../src/api/cart';
@@ -48,5 +48,17 @@ describe('Sonim explicit shopping context', () => {
     expect(result).toContain('غير محدد');
     expect(result).not.toContain('secret');
     expect(result).not.toContain('private_id');
+  });
+
+  it('16/11 : un SEUL article (logo Clean de la carte) — mêmes champs, sans note, ID ni lien', () => {
+    const item = { id: 'private_id', title: 'Puma Speedcat', store: 'Puma', quantity: 2, variant: 'Taille 40',
+      lineTotalTND: 696.415, priceTrust: '', availability: '', customerNote: 'secret note', sourceUrl: 'https://secret' } as unknown as ZayroviCart['items'][number];
+    const fr = cartItemContext(item, 'fr');
+    expect(fr).toContain('Puma Speedcat');
+    expect(fr).toContain('Quantité : 2');
+    expect(fr).toContain('Taille 40');
+    expect(fr).toContain('lecture seule');
+    expect(fr).not.toMatch(/secret|private_id/);
+    expect(cartItemContext(item, 'ar')).toContain('الكمية: 2');
   });
 });

@@ -90,6 +90,16 @@ export const PUBLICATION_TEMPLATE = {
   pairCardsTop: 56,
   pairCardRatio: CARD_SYSTEM.imageRatio,
 
+  /* Modèle `cinema` (16/11, référence Anker « Vivez chargé. » : 720 × 885 px) */
+  /** Vidéo BORD À BORD, portrait 4:5 (largeur ÷ hauteur). */
+  cinemaAspect: 0.8,
+  /** Panneau noir : air au-dessus et au-dessous des cartes. */
+  cinemaPanelTop: RHYTHM.block,
+  cinemaPanelBottom: RHYTHM.cluster,
+  /** Titre blanc posé sur la vidéo (gros, gras, centré). */
+  cinemaTitleSize: 34,
+  cinemaTitleLine: 40,
+
   /** Seuil « tablette » (même valeur que la grille produit). */
   wideFrom: 600,
 } as const;
@@ -111,6 +121,13 @@ export interface PublicationTemplateMetrics {
     /** Pas d'aimantation de la rangée (carte + écart). */
     snap: number;
     mediaHeight: number;
+  };
+  cinema: {
+    /** Hauteur de la vidéo bord à bord (largeur ÷ 0,8). */
+    videoHeight: number;
+    cardWidth: number;
+    cardImageHeight: number;
+    snap: number;
   };
   pair: {
     /** Largeur de CHAQUE carte produit sous l'image. */
@@ -148,6 +165,12 @@ export function publicationTemplateMetrics(screenWidth: number): PublicationTemp
       cardImageHeight: rail.imageHeight,
       snap: rail.snap,
       mediaHeight: Math.round((width - T.bandInset * 2) / T.containerMediaAspect),
+    },
+    cinema: {
+      videoHeight: Math.round(width / T.cinemaAspect),
+      cardWidth: rail.cardWidth,
+      cardImageHeight: rail.imageHeight,
+      snap: rail.snap,
     },
     pair: {
       tileWidth: pairTile,

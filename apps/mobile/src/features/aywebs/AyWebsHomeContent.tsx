@@ -27,7 +27,7 @@ import { TEXT_FRAME } from '@/design/tokens.mobile';
  * Le champ de recherche reste sur la page : dès qu'il contient du texte, les
  * trois sections laissent la place aux résultats (mêmes cartes, même grille).
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
@@ -35,7 +35,8 @@ import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
-import { MEDIA_RATIO, RADIUS } from '@/design/tokens.mobile';
+import { MEDIA_RATIO, RADIUS, STORE_BAR } from '@/design/tokens.mobile';
+import { useResponsive } from '@/design/layout';
 import { AppImage } from '@/design/appImage';
 import { FavoriteDiscGlyph } from '@/design/FavoriteDisc';
 import { mediaUrl } from '@/api/client';
@@ -153,6 +154,8 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
   const saved = useSavedStoreIds();
   const [search, setSearch] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const { gutter } = useResponsive();
+  const searchRef = useRef<TextInput>(null);
 
   const stores = catalog.data?.stores ?? [];
   const categories = catalog.data?.categories ?? [];
@@ -206,28 +209,32 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
 
   return (
     <View testID="aywebs-home-content" style={styles.content}>
-      {/* ── Recherche : pastille contour, jamais un aplat de couleur ──────── */}
+      {/* ── Recherche — 16/11 (référence Walmart 030411) : la barre BLEUE de l'en-tête se
+          prolonge ici, bord à bord ; pilule BLANCHE, rond de recherche bleu nuit au bout. ── */}
+      <View
+        testID="aywebs-home-search-band"
+        style={[styles.searchBand, { backgroundColor: STORE_BAR.background, marginHorizontal: -gutter, paddingHorizontal: gutter }]}
+      >
       <View
         style={[
           styles.search,
           {
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.line,
+            backgroundColor: STORE_BAR.pill,
             flexDirection: rowDirectionFor(theme.isRTL),
           },
         ]}
       >
-        <Ionicons name="search-outline" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
         <TextInput
+          ref={searchRef}
           value={search}
           onChangeText={(value) => { setSearch(value); setSelectedCategoryId(null); }}
           placeholder={t('aywebs.home.search')}
-          placeholderTextColor={theme.colors.muted}
+          placeholderTextColor={STORE_BAR.pillMuted}
           accessibilityLabel={t('aywebs.home.search')}
           autoCorrect={false}
           autoCapitalize="none"
           returnKeyType="search"
-          style={[styles.searchInput, theme.text('body'), { color: theme.colors.ink, textAlign: theme.isRTL ? 'right' : 'left' }]}
+          style={[styles.searchInput, theme.text('body'), { color: STORE_BAR.pillInk, textAlign: theme.isRTL ? 'right' : 'left' }]}
           testID="aywebs-home-search"
         />
         {searching ? (
@@ -239,9 +246,19 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
             style={styles.searchClear}
             testID="aywebs-home-search-clear"
           >
-            <Ionicons name="close-circle" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
+            <Ionicons name="close-circle" size={theme.iconSize.sm} color={STORE_BAR.pillMuted} accessibilityElementsHidden />
           </Pressable>
         ) : null}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('aywebs.home.search')}
+          onPress={() => (searching ? searchRef.current?.blur() : searchRef.current?.focus())}
+          testID="aywebs-home-search-go"
+          style={({ pressed }) => [styles.searchGo, { backgroundColor: STORE_BAR.searchButton, opacity: pressed ? theme.opacity.subtle : 1 }]}
+        >
+          <Ionicons name="search-outline" size={theme.iconSize.sm} color={STORE_BAR.ink} accessibilityElementsHidden />
+        </Pressable>
+      </View>
       </View>
 
       {/* ── 1. Explorer par catégorie ─────────────────────────────────────── */}
@@ -534,14 +551,16 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
 const styles = StyleSheet.create({
   // Les sections respirent : 32 entre elles, 12 à l'intérieur (échelle officielle).
   content: { gap: 32, paddingBottom: 24 },
+  searchBand: { paddingTop: 4, paddingBottom: 12 },
   search: {
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     minHeight: 48,
-    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: RADIUS.full,
-    paddingHorizontal: 16,
+    paddingStart: 16,
+    paddingEnd: 4,
   },
+  searchGo: { width: 40, height: 40, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   searchInput: { flex: 1, minHeight: 46, paddingVertical: TEXT_FRAME.inputVertical },
   searchClear: { padding: 2 },
   section: { gap: 12 },

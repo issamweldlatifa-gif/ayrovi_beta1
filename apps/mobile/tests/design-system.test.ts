@@ -216,6 +216,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/design/reactions/ReactionButton.tsx', // Z-Reactions : éclats/petits cœurs autour du glyphe + sélecteur ancré au bouton dans un Modal
       'src/design/reactions/DoubleTapHearts.tsx', // Z-Reactions : cœurs rouges du double-tap posés sous le doigt, au-dessus du média
       'src/design/CartGlyph.tsx', // 15/11 : pastille du nombre d'articles posée SUR l'angle du sac (partout où un panier s'affiche)
+      'src/features/publications/templates/CinemaTemplate.tsx', // 16/11 Anker : titre centré et ligne « nom · Suivre » posés SUR la vidéo bord à bord, sur des voiles
       'src/features/publications/templates/MediaTemplate.tsx', // 15/11 Instagram : ligne « nom · Suivre » posée en haut DU média, sur un voile
       'src/features/product/ProductFiche.tsx', // grande fiche : photo FIXE derrière la feuille qui monte, en-tête et barre d'achat posés dessus (planche mockup-sticky)
     ]);

@@ -1,4 +1,4 @@
-import { completeDemoSponsoredPairs, installPublicationBlocksDemo, PUBLICATION_BLOCKS_SCHEMA } from '../services/publicationBlocks';
+import { allowCinemaPublicationBlocks, completeDemoSponsoredPairs, installCinemaDemo, installPublicationBlocksDemo, PUBLICATION_BLOCKS_SCHEMA } from '../services/publicationBlocks';
 import { installOwnerReels } from '../magazine/installOwnerReels';
 import { schemaStatements } from './schemaStatements';
 import { ensureSocialTotals, socialTotalsDrift } from './socialTotals';
@@ -28,6 +28,7 @@ import { ensureCatalogueSchema } from '../catalogue/bootstrap';
 import { ensureInventorySchema } from '../inventory/bootstrap';
 import { ensurePurchasingSchema } from '../purchasing/bootstrap';
 import { ensureCrmSchema } from '../crm/bootstrap';
+import { relaxCustomerFavoritesSourceUnique } from './customerFavoritesMigration';
 
 /**
  * MOYENS DE PAIEMENT — SOURCE UNIQUE DES CODES.
@@ -428,6 +429,9 @@ export class QatafoDatabase {
     // Page Publication refondue (13/11) : blocs composés dans le CRM. La démonstration
     // reprend les produits et les vidéos déjà installés (Reels), une seule fois.
     this.db.exec(PUBLICATION_BLOCKS_SCHEMA);
+    // Modèle `cinema` (16/11) : une base plus ancienne voit sa contrainte CHECK élargie (table reconstruite une fois).
+    if (allowCinemaPublicationBlocks(this.db)) console.log('[database] publication_blocks : modèle « cinema » autorisé');
+    if (relaxCustomerFavoritesSourceUnique(this.db)) console.log('[database] customer_favorites : unicité de l’adresse limitée aux favoris externes');
     // Catalogue officiel (12/11) : l'ancien catalogue est retiré EN ENTIER et remplacé
     // par les vingt produits fournis par le propriétaire (`catalogue/installOfficialCatalogue.ts`).
     this.runOnceDataMigration('official_catalogue_v1', () => {
@@ -442,6 +446,8 @@ export class QatafoDatabase {
     this.runOnceDataMigration('official_catalogue_images_v2', () => { versionOfficialImages(this); });
     // Duo sponsorisé à deux cartes (14/11) : les blocs de démonstration reçoivent leur seconde carte.
     this.runOnceDataMigration('publication_pair_two_cards_v1', () => { completeDemoSponsoredPairs(this); });
+    // Bloc « vidéo bord à bord + fond noir » de démonstration (16/11), en tête de page, une seule fois.
+    this.runOnceDataMigration('publication_cinema_demo_v1', () => { installCinemaDemo(this); });
     // Compteurs sociaux matérialisés (audit d'architecture 12/11) : posés EN DERNIER,
     // après toutes les migrations qui suppriment ou réinstallent des interactions.
     if (ensureSocialTotals(this.db).installed) console.log('[database] social totals: table + triggers installed');
@@ -1466,8 +1472,7 @@ export class QatafoDatabase {
         image_url TEXT NOT NULL DEFAULT '',
         price_tnd REAL,
         created_at TEXT NOT NULL,
-        UNIQUE(account_id, product_id),
-        UNIQUE(account_id, source_url)
+        UNIQUE(account_id, product_id)
       );
       CREATE INDEX IF NOT EXISTS idx_customer_favorites_account ON customer_favorites(account_id, created_at DESC);
 

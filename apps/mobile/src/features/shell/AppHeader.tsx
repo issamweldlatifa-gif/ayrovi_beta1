@@ -7,7 +7,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { BrandWordmark } from '@/design/BrandMark';
 import { AppImage } from '@/design/appImage';
 import { RADIUS } from '@/design/tokens.mobile';
-import { AYWEBS_WORDMARK_TINT } from '@/design/tokens.mobile';
+import { STORE_BAR } from '@/design/tokens.mobile';
+import { StatusBar } from 'expo-status-bar';
 import { AppText } from '@/design/ui';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/design/theme';
@@ -34,8 +35,15 @@ export function AppHeader({ scrolled, heroBackground = null, heroTint = null, br
   const theme = useTheme(), t = useT(), insets = useSafeAreaInsets();
   const { status } = useSession();
   const pathname = usePathname();
-  const onHero = !scrolled && heroBackground !== null;
-  const ink = onHero ? adaptiveInk(heroBackground, theme.colors) : theme.colors.ink;
+  /**
+   * 16/11 (référence Walmart 030411) : l'accueil AYWEBs porte une barre BLEUE d'action —
+   * jusque sous la barre d'état, dans les deux thèmes —, mot-symbole, cœur et sac en
+   * BLANC ; la bande bleue se prolonge sous l'en-tête autour de la recherche.
+   */
+  const aywebs = brand === 'aywebs';
+  const onHero = !aywebs && !scrolled && heroBackground !== null;
+  const ink = aywebs ? STORE_BAR.ink : onHero ? adaptiveInk(heroBackground, theme.colors) : theme.colors.ink;
+  const barBackground = aywebs ? STORE_BAR.background : theme.colors.canvas;
   // Calque « teinte Hero » au-dessus du fond de page : seule son opacité bouge.
   const hasTint = heroBackground !== null || (heroTint?.colors.length ?? 0) > 0;
   const tintFade = useRef(new Animated.Value(onHero ? 1 : 0)).current;
@@ -68,14 +76,15 @@ export function AppHeader({ scrolled, heroBackground = null, heroTint = null, br
   };
   return <View testID="main-app-header" pointerEvents="box-none" style={[styles.bar, {
     height: insets.top + theme.chrome.header, paddingTop: insets.top, flexDirection: row,
-    backgroundColor: theme.colors.canvas,
+    backgroundColor: barBackground,
     // Le filet n'existe QUE une fois la page défilée. Un filet « transparent »
     // laissait voir le fond blanc de la barre : la teinte du Hero (absoluteFill)
     // s'arrête au bord intérieur de la bordure → fine ligne blanche sous
     // « Bienvenue, se connecter ? » (capture du 13/11/2026).
-    borderBottomWidth: scrolled ? StyleSheet.hairlineWidth : 0,
+    borderBottomWidth: scrolled && !aywebs ? StyleSheet.hairlineWidth : 0,
     borderBottomColor: theme.colors.line,
   }]}>
+    {aywebs && pathname === '/aywebs' ? <StatusBar style="light" /> : null}
     {hasTint ? (
       <Animated.View
         testID="main-app-header-tint"
@@ -116,8 +125,8 @@ export function AppHeader({ scrolled, heroBackground = null, heroTint = null, br
       </Pressable>
     ) : (
       <Pressable testID={brand === 'aywebs' ? 'aywebs-header-wordmark' : 'main-header-wordmark'} accessibilityRole="button" accessibilityLabel={t('nav.home')} onPress={brand === 'aywebs' ? () => router.push('/') : openHome} style={styles.wordmark}>
-        {brand === 'aywebs' ? <AppImage localSource={theme.mode === 'dark' ? require('../../../assets/aywebs/aywebs-wordmark-white.png') : require('../../../assets/aywebs/aywebs-wordmark-violet.png')}
-          contentFit="contain" tintColor={AYWEBS_WORDMARK_TINT[theme.mode]} decorative background={null} style={styles.aywebsWordmark} />
+        {brand === 'aywebs' ? <AppImage localSource={require('../../../assets/aywebs/aywebs-wordmark-white.png')}
+          contentFit="contain" tintColor={STORE_BAR.ink} decorative background={null} style={styles.aywebsWordmark} />
           : <BrandWordmark height={25} color={ink} />}
       </Pressable>
     )}
@@ -135,7 +144,9 @@ export function AppHeader({ scrolled, heroBackground = null, heroTint = null, br
           countLabel={(count) => t('cart.unitsA11y', { count })}
           onPress={() => router.push('/panier' as never)}
           color={ink}
-          ringColor={onHero && heroBackground ? heroBackground : theme.colors.canvas}
+          ringColor={aywebs ? STORE_BAR.background : onHero && heroBackground ? heroBackground : theme.colors.canvas}
+          badgeColor={aywebs ? STORE_BAR.pill : undefined}
+          badgeTextColor={aywebs ? STORE_BAR.background : undefined}
           hitStyle={styles.hit}
         />
       ) : null}

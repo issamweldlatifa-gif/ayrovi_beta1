@@ -41,8 +41,8 @@ describe('1. Z zébré (v7) : un seul tracé partout', () => {
     // tracé normalisé : une hauteur de 1000, un seul chemin fermé par sous-tracé
     expect(BRAND_SYMBOL.height).toBe(1000);
     // le Z est presque carré (≈ 0,96 : 1) — l'ancien cœur-poignée de main faisait 1,19 : 1
-    expect(BRAND_SYMBOL.width).toBeGreaterThan(940);
-    expect(BRAND_SYMBOL.width).toBeLessThan(980);
+    expect(BRAND_SYMBOL.width).toBeGreaterThan(1030); // v8 (15/11) : 1057,42
+    expect(BRAND_SYMBOL.width).toBeLessThan(1080);
     expect(BRAND_SYMBOL.d.startsWith('M')).toBe(true);
   });
 

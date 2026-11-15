@@ -12,12 +12,13 @@ export function publishedSocialTarget(db: Pick<SocialStore, 'get'>, targetId: st
     if (db.get(`SELECT 1 FROM reels WHERE id=? AND status='publie' AND publish_at<=?`, targetId, now)) {
       return { kind: 'post', source: 'reel' };
     }
-    // Refonte des interactions (14/11/2026, approuvée) : chaque bloc ACTIF et NON
-    // sponsorisé de la page Publication (composé dans le CRM) porte J'aime ·
-    // Commenter · Partager. Aucune table nouvelle : réactions, commentaires et
+    // Refonte des interactions (14/11/2026, approuvée) : chaque bloc ACTIF de la
+    // page Publication (composé dans le CRM) porte J'aime · Commenter · Partager.
+    // 16/11 (consigne du propriétaire : « chaque publication » a son éditeur et ses
+    // boutons) : les blocs SPONSORISÉS sont des cibles comme les autres. Aucune table nouvelle : réactions, commentaires et
     // partages sont déjà indexés par `target_id` (story_interactions,
     // social_loves, publication_dislikes, totaux matérialisés).
-    if (db.get('SELECT 1 FROM publication_blocks WHERE id=? AND active=1 AND sponsored=0', targetId)) {
+    if (db.get('SELECT 1 FROM publication_blocks WHERE id=? AND active=1', targetId)) {
       return { kind: 'post', source: 'block' };
     }
     return null;

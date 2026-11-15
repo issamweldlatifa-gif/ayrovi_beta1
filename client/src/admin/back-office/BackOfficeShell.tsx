@@ -282,7 +282,7 @@ export const BackOfficeShell: React.FC<{
     {/* Barre 1 — identité, recherche globale, préférences, compte */}
     <header className="bo-topbar bo-header">
       <div className="bo-topbar-brand">
-        <img src="/media/logo-zayrovi-lockup-white-violet.svg?v=7.0" alt="ZAYROVI" style={{ width: 'auto', height: 22 }} />
+        <img src="/media/logo-zayrovi-lockup-white-violet.svg?v=8.0" alt="ZAYROVI" style={{ width: 'auto', height: 22 }} />
         <div><span>CONSOLE DE GESTION</span></div>
       </div>
       <div className="bo-topbar-search"><GlobalSearch onNavigate={navigate} /></div>

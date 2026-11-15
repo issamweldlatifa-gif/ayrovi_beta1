@@ -153,9 +153,10 @@ describe('identité visuelle AYWEBs — nouveau mot-symbole et nouvelle icône d
     expect(Number(headerHeight)).toBeGreaterThanOrEqual(40);
 
     const sheet = readFileSync(path.join(ROOT, 'src/features/aywebs/AddToCartSheet.tsx'), 'utf8');
-    expect(header).toContain('aywebs-wordmark-violet.png');
+    // 16/11 (Walmart) : barre bleue dans les deux thèmes → mot-symbole BLANC uniquement.
+    expect(header).not.toContain('aywebs-wordmark-violet.png');
     expect(header).toContain('aywebs-wordmark-white.png');
-    expect(header).toContain("theme.mode === 'dark'");
+    expect(header).toContain('backgroundColor: barBackground');
     expect(sheet).toContain('aywebs-wordmark-violet.png');
     expect(sheet).toContain('aywebs-wordmark-white.png');
 
@@ -177,7 +178,7 @@ describe('identité visuelle AYWEBs — nouveau mot-symbole et nouvelle icône d
 
     /* Teinte native exacte (#0A63F5 en clair, #FFFFFF en sombre) appliquée sur
        les trois emplacements. */
-    expect(header).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
+    expect(header).toContain('tintColor={STORE_BAR.ink}');
     expect(tabs).not.toContain('AYWEBS_WORDMARK_TINT');
     expect(sheet).toContain('tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}');
 

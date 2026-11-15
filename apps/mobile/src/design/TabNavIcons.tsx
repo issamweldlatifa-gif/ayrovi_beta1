@@ -6,6 +6,7 @@ import { View, type ColorValue } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
 import { BrandSymbol, brandSymbolWidthForRadius } from './BrandMark';
 import { BRAND } from './tokens.generated';
+import { CLEAN_INK_SHADE } from './tokens.mobile';
 import { useTheme } from './theme';
 import officialGlyphs from '../../../../shared/officialNavigationGlyphs.json';
 import cleanPalette from '../../../../assets/brand/navigation-palette.json';
@@ -40,14 +41,24 @@ export function TabLensIcon(props: TabNavIconProps) { return <StrokeGlyph {...pr
 export function TabAyWebsIcon(props: TabNavIconProps) { return <StrokeGlyph {...props} kind="search" />; }
 export const TabAywebsPawIcon = TabAyWebsIcon;
 export function TabProfileIcon(props: TabNavIconProps) { return <StrokeGlyph {...props} kind="profile" />; }
-export function TabCleanIcon({ size }: TabNavIconProps) {
-  const { dim } = useIcon(size);
+/**
+ * Logo Clean. `tone="brand"` (défaut) : turquoise + orange. 16/11 — `tone="ink"` (carte du
+ * panier) : le logo en NOIR qui GARDE son éclat — moitié gauche en encre, moitié droite un
+ * ton plus clair (la coupure reste lisible), étincelle et reflet conservés en blanc (en noir
+ * sur thème sombre, où l'encre devient blanche).
+ */
+export function TabCleanIcon({ size, tone = 'brand' }: TabNavIconProps & { tone?: 'brand' | 'ink' }) {
+  const { dim, ink } = useIcon(size);
+  const dark = ink === BRAND.white;
+  const left = tone === 'ink' ? ink : cleanPalette.cleanTurquoise;
+  const right = tone === 'ink' ? (dark ? CLEAN_INK_SHADE.dark : CLEAN_INK_SHADE.light) : cleanPalette.cleanOrange;
+  const shine = tone === 'ink' && dark ? BRAND.black : BRAND.white;
   return <View style={{ width: dim, height: dim, alignItems: 'center', justifyContent: 'center' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
     <Svg width={dim} height={dim} viewBox="0 0 24 24">
-      <Path d="M12 3H9A8 8 0 0 0 5 18V22L9 19H12Z" fill={cleanPalette.cleanTurquoise} />
-      <Path d="M12 3H15A8 8 0 0 1 15 19H12Z" fill={cleanPalette.cleanOrange} />
-      <Path d="M18 9C17.4 13 16.5 13.8 13 14.5C16.5 15.1 17.4 15.9 18 20C18.6 15.9 19.5 15.1 23 14.5C19.5 13.8 18.6 13 18 9Z" fill={BRAND.white} />
-      <Path d="M20.5 10A6.5 6.5 0 0 0 15 4.4H9A6.5 6.5 0 0 0 5.9 16.6L6.2 19.4L8.6 17.6H14" fill="none" stroke={BRAND.white} strokeWidth={0.8} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M12 3H9A8 8 0 0 0 5 18V22L9 19H12Z" fill={left} />
+      <Path d="M12 3H15A8 8 0 0 1 15 19H12Z" fill={right} />
+      <Path d="M18 9C17.4 13 16.5 13.8 13 14.5C16.5 15.1 17.4 15.9 18 20C18.6 15.9 19.5 15.1 23 14.5C19.5 13.8 18.6 13 18 9Z" fill={shine} />
+      <Path d="M20.5 10A6.5 6.5 0 0 0 15 4.4H9A6.5 6.5 0 0 0 5.9 16.6L6.2 19.4L8.6 17.6H14" fill="none" stroke={shine} strokeWidth={0.8} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   </View>;
 }

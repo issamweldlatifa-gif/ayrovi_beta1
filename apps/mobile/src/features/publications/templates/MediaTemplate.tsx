@@ -25,7 +25,7 @@ import { mediaUrl } from '@/api/client';
 import type { PublicationBlock } from '@/api/publicationBlocks';
 import { AppImage } from '@/design/appImage';
 import { veil } from '@/design/tokens.mobile';
-import { PublicationFollow } from '../PublicationFollow';
+import { FOLLOW_ON_MEDIA, PublicationFollow } from '../PublicationFollow';
 import { PUBLICATION_PALETTE as P, PublicationSponsored, PublicationText } from '../publicationDesign';
 import { blockInks, hasTintedBackground } from './blockColors';
 import { PublicationVideo } from './PublicationVideo';
@@ -95,7 +95,7 @@ export function MediaTemplate({
           <View pointerEvents="box-none" style={styles.overlay} testID={`publication-block-${block.id}-follow-overlay`}>
             <LinearGradient
               pointerEvents="none"
-              colors={[veil(0.45), veil(0)]}
+              colors={[FOLLOW_ON_MEDIA.scrim, veil(0)]}
               style={StyleSheet.absoluteFill}
             />
             <PublicationFollow

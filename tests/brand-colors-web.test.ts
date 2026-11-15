@@ -235,13 +235,13 @@ describe('3. aucun orange retiré dans les sources produit', () => {
 
   test('les logos retouchés changent d’URL (les fichiers publics sont en cache « immutable » un an)', () => {
     const html = read('client/index.html');
-    expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/media/logo-zayrovi-icon.svg?v=7.0" />');
-    expect(html).toContain('/media/logo-zayrovi-192.png?v=7.0');
-    expect(html).toContain('/media/logo-zayrovi.png?v=7.0');
-    expect(html).toContain('/media/logo-zayrovi-apple-touch.png?v=7.0');
+    expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/media/logo-zayrovi-icon.svg?v=8.0" />');
+    expect(html).toContain('/media/logo-zayrovi-192.png?v=8.0');
+    expect(html).toContain('/media/logo-zayrovi.png?v=8.0');
+    expect(html).toContain('/media/logo-zayrovi-apple-touch.png?v=8.0');
     expect(html).not.toContain('?v=4.1');
     const manifest = JSON.parse(read('client/public/manifest.webmanifest'));
-    expect(manifest.icons.map((icon: { src: string }) => icon.src)).toEqual(['/media/logo-zayrovi-192.png?v=7.0', '/media/logo-zayrovi-512.png?v=7.0']);
+    expect(manifest.icons.map((icon: { src: string }) => icon.src)).toEqual(['/media/logo-zayrovi-192.png?v=8.0', '/media/logo-zayrovi-512.png?v=8.0']);
     expect(manifest.short_name).toBe('ZAYROVI');
     // la barre du navigateur est noire (pas une grande surface violette), plus l'ancien violet #673DE6
     expect(manifest.theme_color.toUpperCase()).toBe(OFFICIAL.black);
@@ -250,7 +250,7 @@ describe('3. aucun orange retiré dans les sources produit', () => {
     // « pas de logo personnalisé », '/media/logo-zayrovi.png', comparée telle quelle et jamais affichée)
     const stale = [...walk('client/src', /\.(tsx?)$/), ...walk('client/public', /\.(html|webmanifest)$/)]
       .flatMap((rel) => [...read(rel).matchAll(/\/media\/logo-zayrovi[a-z0-9-]*\.(?:svg|png)(\?v=[0-9.]+)?/g)]
-        .filter((m) => m[1] !== '?v=7.0' && m[0] !== '/media/logo-zayrovi.png')
+        .filter((m) => m[1] !== '?v=8.0' && m[0] !== '/media/logo-zayrovi.png')
         .map((m) => `${rel}: ${m[0]}`));
     expect(stale).toEqual([]);
   });

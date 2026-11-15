@@ -14,6 +14,10 @@
  *  • `sponsored_pair` — deux cartes de MÊME taille côte à côte : à gauche une
  *                       image avec un encart coloré « Sponsorisé / titre /
  *                       sous-titre », à droite une carte produit.
+ *  • `cinema`         — 16/11 (référence Anker « Vivez chargé. ») : une VIDÉO bord
+ *                       à bord, sans marge, au format portrait 4:5, titre blanc
+ *                       éclatant posé dessus ; dessous un panneau NOIR profond
+ *                       qui porte deux cartes produit (ou une rangée défilante).
  *
  * Règles fixées par le propriétaire :
  *  • la couleur de fond se choisit dans le CRM avec une palette complète ;
@@ -25,7 +29,7 @@
  * l'application lisent les mêmes bornes et les mêmes calculs de couleur.
  */
 
-export const PUBLICATION_BLOCK_KINDS = ['container', 'media', 'sponsored_pair'] as const;
+export const PUBLICATION_BLOCK_KINDS = ['container', 'media', 'sponsored_pair', 'cinema'] as const;
 export type PublicationBlockKind = (typeof PUBLICATION_BLOCK_KINDS)[number];
 
 export const PUBLICATION_BLOCK_MEDIA_TYPES = ['image', 'video'] as const;
@@ -50,6 +54,8 @@ export const PUBLICATION_BLOCK_LIMITS = {
     media: { min: 1, max: 12 },
     // 14/11 (planche GBox « WE Fashion ») : une image puis DEUX cartes produit dessous.
     sponsored_pair: { min: 1, max: 2 },
+    // 16/11 : deux cartes entières, ou une rangée défilante au-delà.
+    cinema: { min: 1, max: 12 },
   },
 } as const satisfies {
   title: number;
@@ -63,6 +69,7 @@ export const PUBLICATION_BLOCK_KIND_LABELS: Record<PublicationBlockKind, string>
   container: 'Conteneur coloré + rangée de produits',
   media: 'Image ou vidéo + rangée de produits',
   sponsored_pair: 'Duo sponsorisé (image + deux cartes produit)',
+  cinema: 'Vidéo bord à bord + fond noir + produits',
 };
 
 /**
@@ -77,6 +84,8 @@ export const PUBLICATION_BLOCK_DEFAULT_COLOR: Record<PublicationBlockKind, strin
   container: '#F2AD11',
   media: '#FFFFFF',
   sponsored_pair: '#4262AD',
+  /** Panneau NOIR profond sous la vidéo (consigne du 16/11 : « اسود قاتم »). */
+  cinema: '#000000',
 };
 
 /**
@@ -221,7 +230,7 @@ export function normalizePublicationBlockInput(
     input[key] !== undefined ? input[key] : existing?.[key];
 
   const kind = pick('kind');
-  if (!isPublicationBlockKind(kind)) return { ok: false, error: 'Modèle inconnu : choisissez un des trois modèles.' };
+  if (!isPublicationBlockKind(kind)) return { ok: false, error: 'Modèle inconnu : choisissez un des modèles proposés.' };
 
   const title = text(pick('title'), PUBLICATION_BLOCK_LIMITS.title);
   if (title.length < 2) return { ok: false, error: 'Le titre est obligatoire (2 caractères minimum).' };
@@ -235,10 +244,12 @@ export function normalizePublicationBlockInput(
   const panel = rawPanel === undefined || rawPanel === '' || rawPanel === null ? '' : normalizeHexColor(rawPanel);
   if (panel === null) return { ok: false, error: 'Couleur du panneau invalide (format #RRGGBB).' };
 
-  // Média : obligatoire pour `media` et `sponsored_pair`, facultatif (image large) pour `container`.
+  // Média : obligatoire pour `media`, `sponsored_pair` et `cinema` (TOUJOURS une vidéo),
+  // facultatif (image large) pour `container`.
   const rawType = pick('media_type');
   let mediaType: PublicationBlockMediaType | '' = rawType === 'video' ? 'video' : rawType === 'image' ? 'image' : '';
   if (kind === 'sponsored_pair' || kind === 'container') mediaType = mediaType ? 'image' : '';
+  if (kind === 'cinema') mediaType = 'video';
   const mediaInput = pick('media_url');
   let mediaUrl = '';
   if (mediaInput !== undefined && mediaInput !== null && String(mediaInput).trim()) {
@@ -248,8 +259,8 @@ export function normalizePublicationBlockInput(
   }
   if (mediaUrl && !mediaType) mediaType = 'image';
   if (!mediaUrl) mediaType = '';
-  if ((kind === 'media' || kind === 'sponsored_pair') && !mediaUrl) {
-    return { ok: false, error: kind === 'media' ? 'Ajoutez une image ou une vidéo.' : 'Ajoutez l’image de la carte sponsorisée.' };
+  if ((kind === 'media' || kind === 'sponsored_pair' || kind === 'cinema') && !mediaUrl) {
+    return { ok: false, error: kind === 'media' ? 'Ajoutez une image ou une vidéo.' : kind === 'cinema' ? 'Ajoutez la vidéo du bloc.' : 'Ajoutez l’image de la carte sponsorisée.' };
   }
   let posterUrl = '';
   const posterInput = mediaType === 'video' ? pick('poster_url') : '';
@@ -324,5 +335,6 @@ export interface PublicationBlockPublic {
 export function isRenderablePublicationBlock(block: { kind: PublicationBlockKind; products: readonly unknown[]; media: PublicationBlockPublic['media'] }): boolean {
   if (block.kind === 'sponsored_pair') return block.products.length >= 1 && !!block.media;
   if (block.kind === 'media') return !!block.media && block.products.length >= 1;
+  if (block.kind === 'cinema') return block.media?.type === 'video' && block.products.length >= 1;
   return block.products.length >= 1;
 }

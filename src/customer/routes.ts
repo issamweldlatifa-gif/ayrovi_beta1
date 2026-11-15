@@ -1845,9 +1845,19 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
       : db.get<any>('SELECT * FROM customer_favorites WHERE account_id=? AND source_url=?', account.id, sourceUrl);
     if (existing) return res.json({ success: true, data: existing });
     const id = `favorite_${randomUUID()}`;
-    db.run(`INSERT INTO customer_favorites (id,account_id,product_id,source_url,title,image_url,price_tnd,created_at)
-      VALUES (?,?,?,?,?,?,?,?)`, id, account.id, product?.id || null, sourceUrl, title,
-    String(req.body?.imageUrl || product?.image || '').slice(0, 2000), Number(req.body?.priceTND ?? product?.final_price) || null, new Date().toISOString());
+    try {
+      db.run(`INSERT INTO customer_favorites (id,account_id,product_id,source_url,title,image_url,price_tnd,created_at)
+        VALUES (?,?,?,?,?,?,?,?)`, id, account.id, product?.id || null, sourceUrl, title,
+      String(req.body?.imageUrl || product?.image || '').slice(0, 2000), Number(req.body?.priceTND ?? product?.final_price) || null, new Date().toISOString());
+    } catch (error: any) {
+      // 16/11 : deux appuis simultanés sur le même cœur — on renvoie le favori déjà créé, jamais un 500.
+      if (!String(error?.code || '').startsWith('SQLITE_CONSTRAINT')) throw error;
+      const raced = product
+        ? db.get<any>('SELECT * FROM customer_favorites WHERE account_id=? AND product_id=?', account.id, product.id)
+        : db.get<any>("SELECT * FROM customer_favorites WHERE account_id=? AND source_url=? AND source_url<>''", account.id, sourceUrl);
+      if (raced) return res.json({ success: true, data: raced });
+      return res.status(409).json({ success: false, error: 'Favori déjà enregistré.' });
+    }
     return res.status(201).json({ success: true, data: db.get<any>('SELECT * FROM customer_favorites WHERE id=?', id) });
   });
 

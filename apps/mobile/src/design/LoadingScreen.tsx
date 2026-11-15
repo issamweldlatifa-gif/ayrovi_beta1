@@ -1,5 +1,5 @@
 /**
- * Écran de chargement d'entrée — le Z zébré zayrovi (v7) dans un anneau (maquette du 2026-10-16).
+ * Écran de chargement d'entrée — le Z zébré zayrovi (v8) dans un anneau (maquette du 2026-10-16).
  *
  * ── Enchaînement à l'ouverture ──────────────────────────────────────────────
  * 1. L'image de démarrage NATIVE (app.json : Z zébré blanc sur fond noir #0A0A0A, dans

@@ -165,19 +165,17 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     expect(pill.props.accessibilityLabel).toBe('Suivre zayrovi team');
     expect(screen.getByTestId('publication-block-box-follow-name')).toBeTruthy();
     expect(screen.getByTestId('publication-block-video-follow')).toBeTruthy();
-    // Le duo n'a pas de « Suivre » (planche Fred Perry / GUESS).
-    expect(screen.queryByTestId('publication-block-pair-follow')).toBeNull();
+    // 16/11 : « chaque publication » a son éditeur — le duo aussi (« zayrovi team • Suivre » sur le bandeau).
+    expect(screen.getByTestId('publication-block-pair-follow')).toBeTruthy();
     // Le bouton suit l'éditeur officiel.
     expect(mockFollowCalls.every(([id]) => id === 'pub_zayrovi')).toBe(true);
     fireEvent.press(pill);
     expect(mockFollowPress).toHaveBeenCalledTimes(1);
-    // 14/11 : J'aime · Commenter · Partager — UNE barre, sous le seul bloc non sponsorisé.
+    // 16/11 : J'aime · Commenter · Partager sous CHAQUE bloc, sponsorisé compris.
     for (const label of [/^j’aime$/i, /^commenter$/i, /^partager$/i]) {
-      expect(screen.queryAllByLabelText(label)).toHaveLength(1);
+      expect(screen.queryAllByLabelText(label)).toHaveLength(3);
     }
-    expect(screen.getByTestId('publication-bar-video')).toBeTruthy();
-    expect(screen.queryByTestId('publication-bar-box')).toBeNull();
-    expect(screen.queryByTestId('publication-bar-pair')).toBeNull();
+    for (const id of ['video', 'box', 'pair']) expect(screen.getByTestId(`publication-bar-${id}`)).toBeTruthy();
     // 14/11 : les seuls « favoris » sont les cœurs des cartes produit (3 + 2 + 2).
     expect(screen.queryAllByLabelText(/favoris/i)).toHaveLength(7);
     expect(screen.queryAllByText(/Découvrir plus|Discover more/i)).toHaveLength(0);
@@ -187,7 +185,7 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     mockFollow.state = 'following';
     wrap(<PublicationTemplatesScreen />);
     expect(screen.getByTestId('publication-block-box-follow').props.accessibilityLabel).toBe('Ne plus suivre zayrovi team');
-    expect(screen.getAllByText('Suivi').length).toBe(2);
+    expect(screen.getAllByText('Suivi').length).toBe(3);
   });
 
   it('carte du container (GBox) : photo ENTIÈRE, cœur nu, marque grasse, texte 16 sous le cadre', () => {
@@ -293,6 +291,52 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     resetPublicationSound();
   });
 
+  it('16/11 : modèle cinema — vidéo BORD À BORD 4:5, titre blanc pur centré, panneau noir, deux cartes', () => {
+    const [cinema] = parsePublicationBlocks([{
+      id: 'cine', kind: 'cinema', title: 'Vivez chargé.', subtitle: 'Regarder la vidéo', bgColor: '#000000', panelColor: '',
+      sponsored: false, media: { type: 'video', url: '/media/reels-owned/accessories-v1.mp4', poster: '/media/reels-owned/accessories-v1.jpg' },
+      products: [product('c1', 'Anker'), product('c2', 'Anker')], publisher: { name: 'zayrovi team' },
+    }]);
+    mockQuery.mockReturnValue(query({ data: [cinema] }));
+    wrap(<PublicationTemplatesScreen />);
+    const metrics = publicationTemplateMetrics(750);
+    const media = StyleSheet.flatten(screen.getByTestId('publication-block-cine-media').props.style);
+    expect(media.width).toBe('100%');
+    expect(media.height).toBe(Math.round(metrics.width / 0.8));
+    const title = StyleSheet.flatten(screen.getByTestId('publication-block-cine-title').props.style);
+    expect(title.color).toBe('#FFFFFF');
+    expect(title.textAlign).toBe('center');
+    expect(title.textShadowColor).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('publication-block-cine').props.style).backgroundColor).toBe('#000000');
+    expect(screen.getByTestId('publication-block-cine-pair')).toBeTruthy();
+    expect(screen.queryByTestId('publication-block-cine-row')).toBeNull();
+    expect(screen.getByTestId('publication-block-cine-follow')).toBeTruthy();
+    expect(screen.getByTestId('publication-bar-cine')).toBeTruthy();
+  });
+
+  it('16/11 : cinema au-delà de deux produits → rangée défilante', () => {
+    const [cinema] = parsePublicationBlocks([{
+      id: 'cine', kind: 'cinema', title: 'Vivez chargé.', subtitle: '', bgColor: '#000000', panelColor: '',
+      sponsored: true, media: { type: 'video', url: '/media/v.mp4', poster: '' },
+      products: [product('c1'), product('c2'), product('c3')], publisher: { name: 'zayrovi team' },
+    }]);
+    mockQuery.mockReturnValue(query({ data: [cinema] }));
+    wrap(<PublicationTemplatesScreen />);
+    expect(screen.getByTestId('publication-block-cine-row')).toBeTruthy();
+    expect(screen.getByTestId('publication-block-cine-sponsored')).toBeTruthy();
+  });
+
+  it('16/11 (capture 031932) : « zayrovi team / Suivre » en encre NOIRE sur un panneau clair, blanc sur panneau sombre', () => {
+    wrap(<PublicationTemplatesScreen />);
+    // panneau #F7CE70 (clair) → encre sombre, pas de blanc illisible
+    const light = StyleSheet.flatten(screen.getByTestId('publication-block-box-follow-name').props.style);
+    expect(light.color).not.toBe('#FFFFFF');
+    expect(light.textShadowColor).toBeUndefined();
+    // sur la vidéo : blanc pur
+    const onMedia = StyleSheet.flatten(screen.getByTestId('publication-block-video-follow-name').props.style);
+    expect(onMedia.color).toBe('#FFFFFF');
+  });
+
   it('états : chargement, erreur avec réessai, liste vide', () => {
     mockQuery.mockReturnValue(query({ data: undefined, isPending: true }));
     const view = wrap(<PublicationTemplatesScreen />);
@@ -356,8 +400,8 @@ describe('barre Publication (redessinée après l’essai sur appareil, 14/11)',
     fireEvent.press(save());
     expect(save().props.accessibilityState).toMatchObject({ selected: true });
     expect(save().props.accessibilityLabel).toBe('Retirer des enregistrements');
-    // Aucun signet sous un bloc sponsorisé (pas de barre du tout).
-    expect(screen.queryByTestId('publication-save-box')).toBeNull();
+    // 16/11 : le bloc sponsorisé a lui aussi sa barre, donc son signet.
+    expect(screen.getByTestId('publication-save-box')).toBeTruthy();
   });
 
   it('Commenter ouvre la feuille DANS l’hôte de l’écran (pas dans la rangée) : invitation, tri, état vide, champ', () => {

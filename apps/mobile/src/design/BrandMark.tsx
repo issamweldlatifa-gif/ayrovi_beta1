@@ -1,4 +1,4 @@
-/** Shared identity (v7): zebra-striped Z + supplied lowercase zayrovi, no divider.
+/** Shared identity (v8): zebra-striped Z + supplied lowercase zayrovi, no divider.
  * Light surfaces tint the stripes ink, dark surfaces white — one master, never a second drawing. */
 import { Platform, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
