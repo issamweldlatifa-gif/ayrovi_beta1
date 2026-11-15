@@ -16,6 +16,7 @@ import { PrefsProvider } from '@/state/prefs';
 import { PublicationTemplatesScreen, PublicationBlockView } from '@/features/publications/PublicationTemplatesScreen';
 import { parsePublicationBlocks, type PublicationBlock } from '@/api/publicationBlocks';
 import { publicationTemplateMetrics } from '@/features/publications/templates/templateMetrics';
+import { publicationSoundOn, resetPublicationSound } from '@/features/publications/publicationSound';
 
 const mockPlayer = {
   play: jest.fn(),
@@ -271,17 +272,25 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/product/[id]', params: { id: 'p6' } });
   });
 
-  it('vidéo : commandes pause / son, libellés qui suivent l’état', () => {
+  it('vidéo : commandes pause / son — 15/11 : son ACTIF au départ, un geste le coupe pour toute la session', () => {
+    resetPublicationSound();
     const metrics = publicationTemplateMetrics(360);
-    wrap(<PublicationBlockView block={BLOCKS[0]} metrics={metrics} active />);
+    const first = wrap(<PublicationBlockView block={BLOCKS[0]} metrics={metrics} active />);
     const pause = screen.getByTestId('publication-block-video-video-pause');
     expect(pause.props.accessibilityLabel).toBe('Mettre la vidéo en pause');
     fireEvent.press(pause);
     expect(screen.getByTestId('publication-block-video-video-pause').props.accessibilityLabel).toBe('Lire la vidéo');
     const mute = screen.getByTestId('publication-block-video-video-mute');
-    expect(mute.props.accessibilityLabel).toBe('Activer le son');
+    expect(mute.props.accessibilityLabel).toBe('Couper le son');
+    expect(mute.props.accessibilityState).toEqual({ selected: true });
     fireEvent.press(mute);
-    expect(screen.getByTestId('publication-block-video-video-mute').props.accessibilityLabel).toBe('Couper le son');
+    expect(screen.getByTestId('publication-block-video-video-mute').props.accessibilityLabel).toBe('Activer le son');
+    expect(publicationSoundOn()).toBe(false);
+    // Une autre vidéo montée ensuite reste muette : le choix du client vaut pour la session.
+    first.unmount();
+    wrap(<PublicationBlockView block={BLOCKS[0]} metrics={metrics} active />);
+    expect(screen.getByTestId('publication-block-video-video-mute').props.accessibilityLabel).toBe('Activer le son');
+    resetPublicationSound();
   });
 
   it('états : chargement, erreur avec réessai, liste vide', () => {

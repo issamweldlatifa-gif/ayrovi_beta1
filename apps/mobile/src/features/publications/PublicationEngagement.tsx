@@ -41,7 +41,7 @@ import { SheetPortal } from '@/design/sheet/SheetPortal';
 import { playInteractionSound } from '@/design/feedback/interactionSounds';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
-import { RADIUS, RHYTHM } from '@/design/tokens.mobile';
+import { PUBLICATION_METRICS, RADIUS, RHYTHM } from '@/design/tokens.mobile';
 import { CARD_SYSTEM } from '@/design/cardSystem';
 import { PUBLICATION_TEMPLATE as T } from './templates/templateMetrics';
 import { relativeTimeLabel } from '@/format/relativeTime';
@@ -57,10 +57,10 @@ import { PUBLICATION_PALETTE as P, PublicationText } from './publicationDesign';
 const COMMENT_LIMIT = 500;
 /** Hauteur fixe de la feuille, comme Facebook : elle ne saute pas à chaque message. */
 export const PUBLICATION_COMMENTS_HEIGHT = 0.82;
-/** Hauteur de la barre (14/11 : rangée d'icônes 24, cibles ≥ 44 dp). */
-export const PUBLICATION_BAR_HEIGHT = 48;
-/** Marge intérieure d'une cible de la barre : (44 − 24) / 2. */
-const BAR_TARGET_PAD = 10;
+/** Hauteur de la barre (15/11 : rangée d'icônes 28, cibles ≥ 44 dp). */
+export const PUBLICATION_BAR_HEIGHT = 52;
+/** Marge intérieure d'une cible de la barre : (44 − 28) / 2. */
+const BAR_TARGET_PAD = 8;
 /** Pastille d'une réaction dans le résumé (👍 bleu, ❤️ rouge), chevauchée de 4 dp. */
 const SUMMARY_BADGE = 18;
 
@@ -185,7 +185,7 @@ export function PublicationBar({ blockId, title, counts, mine, engagementKey }: 
   });
   const badges = summaryBadges(counts, mine, reaction.reaction);
   const direction = rowDirectionFor(theme.isRTL);
-  const icon = theme.iconSize.md;
+  const icon = PUBLICATION_METRICS.actionIcon;
   const isSaved = saved?.isSaved(blockId) ?? false;
   const commentsLabel = [t('social.comment'), ...publicationSummaryParts({ comments: counts.comments, shares: 0 }, t)].join(', ');
   const shareLabel = [t('social.share'), ...publicationSummaryParts({ comments: 0, shares: counts.shares }, t)].join(', ');

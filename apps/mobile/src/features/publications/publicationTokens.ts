@@ -91,9 +91,11 @@ export const PUBLICATION_TYPE = {
   badgeHeight: 22,
   badgeInset: 8,
   badgeRadius: 4,
-  followSize: 16,      // « + Suivre » de la pilule
+  followSize: 16,      // « Suivre » de la pilule
   followLine: 22,
-  followHeight: 48,    // pilule : 95 px de haut sur la planche ⇒ 48 dp
+  followHeight: 44,    // 15/11 (Instagram 002046) : pilule détourée blanche, 44 dp dans un bloc (= cible tactile)
+  followHeightOnMedia: 32, // sur la vidéo / la photo : pilule basse comme Instagram, cible complétée à 44 par hitSlop
+  followBorder: 1.5,   // trait blanc assez franc pour rester visible sur un fond clair
   followIcon: 18,
   infoIcon: 14,        // « ⓘ » après « Sponsorisé »
 } as const;

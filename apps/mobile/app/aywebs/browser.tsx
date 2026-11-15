@@ -28,6 +28,10 @@ import {
 
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { StatusBar } from 'expo-status-bar';
+import { CartGlyph } from '@/design/CartGlyph';
+import { TabCleanIcon } from '@/design/TabNavIcons';
+import { RADIUS, STORE_BAR } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { ApiError } from '@/api/errors';
@@ -79,6 +83,11 @@ const WebView = RNWebView as unknown as ComponentType<
  */
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
+/** Durée de la ligne « Ajouté au panier · Voir le panier » après un ajout. */
+const ADDED_STRIP_MS = 4000;
+/** Logo Clean dans son rond blanc de 34 dp. */
+const CLEAN_LOGO_SIZE = 24;
+
 export default function AyWebsBrowserScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -91,7 +100,7 @@ export default function AyWebsBrowserScreen() {
 
   useEffect(() => {
     if (!cartAddedAt) return undefined;
-    const timerId = setTimeout(() => setCartAddedAt(0), 2400);
+    const timerId = setTimeout(() => setCartAddedAt(0), ADDED_STRIP_MS);
     return () => clearTimeout(timerId);
   }, [cartAddedAt]);
 
@@ -194,14 +203,23 @@ export default function AyWebsBrowserScreen() {
   const cartUnits = useMemo(() => (storeCart.data?.items ?? [])
     .filter((item) => item.storeId === currentStoreId)
     .reduce((total, item) => total + item.quantity, 0), [currentStoreId, storeCart.data?.items]);
+  const headerStoreName = currentStoreName || storeName || t('aywebs.browserTitle');
+  const headerHost = useMemo(() => {
+    try { return new URL(pageUrl).hostname.replace(/^www[.]/i, ''); } catch { return ''; }
+  }, [pageUrl]);
   const cartAccessibilityLabel = cartUnits > 0
     ? t('aywebs.bar.cartCount', { count: cartUnits })
     : t('aywebs.bar.cart');
   const handleCartAdded = useCallback((_item: AyWebsCartItem, cart: AyWebsCart) => {
     void queryClient.cancelQueries({ queryKey: cartQueryKey, exact: true });
     queryClient.setQueryData(cartQueryKey, cart);
+    // Les autres icônes panier (en-têtes principal et AYWEBs) lisent ces paniers-là.
+    queryClient.setQueryData(['aywebs', 'cart', sessionId], cart);
+    void queryClient.invalidateQueries({ queryKey: ['cart'] });
+    // 15/11 : pas de seconde feuille — on ferme celle des options, la barre confirme.
+    setSheet(null);
     setCartAddedAt(Date.now());
-  }, [cartQueryKey, queryClient]);
+  }, [cartQueryKey, queryClient, sessionId]);
   /** Persist the real last page locally; invalid/non-web URLs are ignored. */
   useEffect(() => {
     if (!isWebPageUrl(pageUrl)) return;
@@ -594,11 +612,36 @@ export default function AyWebsBrowserScreen() {
   const addEnabled = capturePage && !busy && Boolean(sessionId);
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingTop: insets.top + theme.space[2] }]}>
-      <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <BackButton onPress={() => goBack('/(tabs)/aywebs')} testID="aywebs-store-header-back" label={t('common.back')} color={theme.colors.ink} />
-        <View style={styles.titleBox}>
-          <AppText variant="label" numberOfLines={1}>{storeName || t('aywebs.browserTitle')}</AppText>
+    <View style={[styles.screen, { backgroundColor: theme.colors.canvas }]}>
+      {/* 15/11 (référence Walmart 003723) : barre BLEUE d'action, icônes blanches,
+          pilule blanche au centre (boutique + adresse), logo Clean dans un rond
+          blanc, sac blanc avec le nombre d'articles de cette boutique. */}
+      <StatusBar style="light" />
+      <View
+        testID="aywebs-store-header"
+        style={[
+          styles.header,
+          {
+            flexDirection: rowDirectionFor(theme.isRTL),
+            backgroundColor: STORE_BAR.background,
+            paddingTop: insets.top + theme.space[1],
+          },
+        ]}
+      >
+        <BackButton onPress={() => goBack('/(tabs)/aywebs')} testID="aywebs-store-header-back" label={t('common.back')} color={STORE_BAR.ink} />
+        <View
+          testID="aywebs-store-header-pill"
+          accessibilityRole="header"
+          accessibilityLabel={[headerStoreName, headerHost].filter(Boolean).join(', ')}
+          style={[styles.titlePill, { backgroundColor: STORE_BAR.pill, flexDirection: rowDirectionFor(theme.isRTL) }]}
+        >
+          <Ionicons name="lock-closed-outline" size={theme.iconSize.xs} color={STORE_BAR.pillMuted} accessibilityElementsHidden />
+          <View style={styles.titleText}>
+            <AppText variant="label" color={STORE_BAR.pillInk} numberOfLines={1}>{headerStoreName}</AppText>
+            {headerHost && headerHost !== headerStoreName ? (
+              <AppText variant="caption" color={STORE_BAR.pillMuted} numberOfLines={1}>{headerHost}</AppText>
+            ) : null}
+          </View>
         </View>
         <Pressable
           testID="aywebs-ask-sonim"
@@ -613,34 +656,28 @@ export default function AyWebsBrowserScreen() {
             }
             router.push('/sonim-assistant');
           }}
-          style={{ minHeight: 40, minWidth: 40, justifyContent: 'center', alignItems: 'center' }}
+          style={({ pressed }) => [styles.headerHit, pressed ? { opacity: theme.opacity.subtle } : null]}
         >
-          <Ionicons name="chatbubble-ellipses-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+          {/* 15/11 : le LOGO Clean (et non une bulle générique), posé dans un rond blanc pour rester net sur le bleu. */}
+          <View testID="aywebs-ask-clean-logo" style={[styles.cleanDisc, { backgroundColor: STORE_BAR.pill }]}>
+            <TabCleanIcon color={STORE_BAR.pillInk} size={CLEAN_LOGO_SIZE} />
+          </View>
         </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={cartAccessibilityLabel}
           onPress={() => setCartOpen(true)}
           testID="aywebs-store-header-cart"
-          style={{ minHeight: theme.geometry.minTarget, minWidth: theme.geometry.minTarget, justifyContent: 'center', alignItems: 'center' }}
+          style={({ pressed }) => [styles.headerHit, pressed ? { opacity: theme.opacity.subtle } : null]}
         >
-          <View style={styles.cartIconWrap}>
-            <Ionicons name="bag-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
-            {cartUnits > 0 ? (
-              <View
-                testID="aywebs-store-header-cart-count"
-                style={[
-                  styles.cartBadge,
-                  { backgroundColor: theme.status.success.fg, borderColor: theme.colors.canvas },
-                  theme.isRTL ? styles.cartBadgeRTL : styles.cartBadgeLTR,
-                ]}
-              >
-                <AppText variant="captionStrong" color={theme.colors.canvas}>
-                  {cartUnits > 99 ? '99+' : String(cartUnits)}
-                </AppText>
-              </View>
-            ) : null}
-          </View>
+          <CartGlyph
+            count={cartUnits}
+            color={STORE_BAR.ink}
+            badgeColor={STORE_BAR.pill}
+            badgeTextColor={STORE_BAR.background}
+            ringColor={STORE_BAR.background}
+            testID="aywebs-store-header-cart-icon"
+          />
         </Pressable>
       </View>
 
@@ -707,9 +744,33 @@ export default function AyWebsBrowserScreen() {
             une erreur réelle s'écrit en clair (23/10/2026). */}
         {note ? <AppText variant="caption" color={theme.status.danger.fg}>{note}</AppText> : null}
 
+        {/* 15/11 : plus de seconde feuille après l'ajout — la feuille se ferme, le
+            badge du sac grimpe, et cette ligne confirme avec un lien vers le panier. */}
+        {cartAddedAt ? (
+          <View
+            testID="aywebs-store-added-strip"
+            accessibilityLiveRegion="polite"
+            style={[styles.addedStrip, { flexDirection: rowDirectionFor(theme.isRTL) }]}
+          >
+            <Ionicons name="checkmark-circle-outline" size={theme.iconSize.sm} color={theme.status.success.fg} accessibilityElementsHidden />
+            <AppText variant="label" color={theme.colors.ink} numberOfLines={1} style={styles.addedText}>
+              {t('aywebs.addedBanner')}
+            </AppText>
+            <Pressable
+              testID="aywebs-store-added-go-to-cart"
+              accessibilityRole="link"
+              accessibilityLabel={t('aywebs.goToCart')}
+              hitSlop={10}
+              onPress={() => { setCartAddedAt(0); router.push('/panier'); }}
+            >
+              <AppText variant="label" color={theme.colors.action} style={styles.addedLink}>{t('aywebs.goToCart')}</AppText>
+            </Pressable>
+          </View>
+        ) : null}
+
         <Button
           label={busy ? t('aywebs.loading') : cartAddedAt ? t('aywebs.added') : t('aywebs.selectOptions')}
-          tone="commerce"
+          tone="main"
           block
           onPress={addToCart}
           busy={busy}
@@ -756,13 +817,15 @@ export default function AyWebsBrowserScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  header: { alignItems: 'center', gap: 4, paddingHorizontal: 8 },
-  cartIconWrap: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', position: 'relative' },
-  cartBadge: { position: 'absolute', top: -3, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
-  cartBadgeLTR: { right: -5 },
-  cartBadgeRTL: { left: -5 },
-  titleBox: { flex: 1, paddingHorizontal: 4 },
-  web: { flex: 1, marginTop: 8 },
+  header: { alignItems: 'center', gap: 4, paddingHorizontal: 4, paddingBottom: 8 },
+  headerHit: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' },
+  titlePill: { flex: 1, minHeight: 40, borderRadius: RADIUS.full, paddingHorizontal: 12, alignItems: 'center', gap: 8 },
+  titleText: { flex: 1, justifyContent: 'center' },
+  cleanDisc: { width: 34, height: 34, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
+  web: { flex: 1 },
+  addedStrip: { alignItems: 'center', gap: 8, minHeight: 32 },
+  addedText: { flex: 1 },
+  addedLink: { textDecorationLine: 'underline' },
   webFill: { flex: 1 },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 10, gap: 6 },

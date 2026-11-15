@@ -1,6 +1,6 @@
 import { memo } from 'react';
 /** Official Stories extension: editorial gallery only. No legacy circles or viewer.
- * Geometry is shared with Hero; section spacing is owned by AppScreen/SectionRule.
+ * Geometry is shared with Hero; section spacing is owned by AppScreen/SectionBreak (no rules since 15/11).
  * The Explore label is deliberately non-interactive until its destination is specified.
  */
 import { FlatList, StyleSheet, View, useWindowDimensions } from 'react-native';

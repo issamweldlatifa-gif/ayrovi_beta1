@@ -23,6 +23,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { FavoriteDiscGlyph } from '@/design/FavoriteDisc';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { MEDIA_RATIO, RADIUS } from '@/design/tokens.mobile';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
@@ -284,16 +285,10 @@ function StoreCard({ store, subtitle, enabled, saved, onOpen, onToggle }: {
           testID={`aywebs-store-save-${store.id}`}
           style={[
             styles.heart,
-            theme.isRTL ? { left: 8 } : { right: 8 },
-            { backgroundColor: theme.colors.canvas },
+            theme.isRTL ? { left: 4 } : { right: 4 },
           ]}
         >
-          <Ionicons
-            name={saved ? 'heart' : 'heart-outline'}
-            size={theme.iconSize.sm}
-            color={saved ? theme.colors.accentText : theme.colors.ink}
-            accessibilityElementsHidden
-          />
+          <FavoriteDiscGlyph active={saved} />
         </Pressable>
       </View>
 
@@ -352,10 +347,9 @@ const styles = StyleSheet.create({
   visit: { alignItems: 'center', alignSelf: 'flex-start', gap: 6, minHeight: 36, paddingVertical: 4 },
   heart: {
     position: 'absolute',
-    top: 8,
-    width: 36,
-    height: 36,
-    borderRadius: RADIUS.lg,
+    top: 4,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

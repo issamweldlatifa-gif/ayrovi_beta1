@@ -122,10 +122,12 @@ describe('chargement et résultats Lens', () => {
     expect(card).toContain('onWhite');
     expect(tile).toContain('sale: LENS_COLORS.sale');
     expect(tile).toContain('ink: LENS_COLORS.black');
-    expect(tile).toContain('favorite.active ? LENS_COLORS.active : palette.ink');
-    // Fiche produit : le cœur est posé À MÊME LA PHOTO (17/10/2026, plus de
-    // pastille blanche) — il est donc blanc sur le média, violet une fois coché.
-    expect(product).toContain('favorite ? LENS_COLORS.active : LENS_COLORS.white');
+    // 15/11 (capture 004641) : le cœur de la carte est le rond blanc partagé — trait encre, bleu de marque coché.
+    expect(tile).toContain('<FavoriteDiscGlyph active={favorite.active}');
+    expect(read('../src/design/FavoriteDisc.tsx')).toContain('color={active ? FAVORITE_DISC.active : FAVORITE_DISC.ink}');
+    // 15/11 (capture 004641) : la fiche reprend le rond blanc partagé des cartes
+    // (cœur au trait encre, bleu de marque une fois coché) — lisible sur toute photo.
+    expect(product).toContain('<FavoriteDiscGlyph active={favorite}');
     // v4.2.0 : un minuteur est une information, pas une action — encre noire.
     expect(product).toContain('countdownExpired ? LENS_COLORS.sale : LENS_COLORS.black');
     expect(product).not.toContain('countdownExpired ? LENS_COLORS.sale : LENS_COLORS.active');

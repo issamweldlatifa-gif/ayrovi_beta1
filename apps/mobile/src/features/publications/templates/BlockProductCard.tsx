@@ -27,14 +27,15 @@ import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
 import { formatMoney } from '@/format/money';
 import { useI18n, useT } from '@/i18n';
-import { PUBLICATION_PALETTE as P, PUBLICATION_TYPE as TYPE, PublicationIcon, PublicationSponsored, PublicationText } from '../publicationDesign';
+import { PUBLICATION_PALETTE as P, PUBLICATION_TYPE as TYPE, PublicationSponsored, PublicationText } from '../publicationDesign';
 import { usePublicationFavorites } from '../PublicationFavorites';
 import { publicationBlockFont } from '../publicationTokens';
 import type { BlockInks } from './blockColors';
 import { PUBLICATION_TEMPLATE as T } from './templateMetrics';
 import { CARD_SYSTEM as C } from '@/design/cardSystem';
+import { FavoriteDiscGlyph } from '@/design/FavoriteDisc';
 
-/** Cœur fin NU dans le coin haut de la photo (système de cartes, 13/11) : il ne cache pas le produit. */
+/** Cœur dans un rond blanc au coin haut de la photo (modèle du 15/11, capture 004641). */
 export function BlockHeart({ product, testID }: { product: LinkedProduct; testID: string }) {
   const theme = useTheme();
   const t = useT();
@@ -55,7 +56,7 @@ export function BlockHeart({ product, testID }: { product: LinkedProduct; testID
         pressed ? { opacity: theme.opacity.subtle } : null,
       ]}
     >
-      <PublicationIcon name={active ? 'heart' : 'heart-outline'} size={C.heartIcon} color={P.ink} />
+      <FavoriteDiscGlyph active={active} />
     </Pressable>
   );
 }

@@ -181,16 +181,19 @@ describe('couleurs : le fond vient du CRM, le texte reste lisible', () => {
 describe('13/11 — système de cartes dans les composants (captures 073653 → 073818)', () => {
   const src = (file: string) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 
-  it('le cœur est nu (aucun rond blanc sur la photo) et partagé avec la grille du catalogue', () => {
+  it('15/11 (capture 004641) : le cœur est UN rond blanc partagé — cible 44 dp, aucun second rond', () => {
     const card = src('src/features/publications/templates/BlockProductCard.tsx');
     const heart = card.match(/ {2}heart: \{[^}]*\}/)?.[0] ?? '';
     expect(heart).toContain('C.heartTarget');
+    // La zone de toucher ne peint rien : le rond blanc vient du glyphe partagé.
     expect(heart).not.toContain('backgroundColor');
-    expect(card).not.toContain('borderRadius: size / 2');
-    expect(card).toContain('size={C.heartIcon}');
+    expect(card).toContain('<FavoriteDiscGlyph active={active} />');
     const tile = src('src/design/ProductTile.tsx');
-    expect(tile).toContain('size={CARD_SYSTEM.heartIcon}');
+    expect(tile).toContain('<FavoriteDiscGlyph active={favorite.active} />');
     expect(tile).toContain('width: CARD_SYSTEM.heartTarget');
+    const disc = src('src/design/FavoriteDisc.tsx');
+    expect(disc).toContain('size = CARD_SYSTEM.heartIcon, disc = CARD_SYSTEM.heartDisc');
+    expect(disc).toContain('backgroundColor: FAVORITE_DISC.surface');
   });
 
   it('l’ancien prix a SA ligne (il ne colle plus au prix ni n’est coupé) et la ligne est réservée pour les voisines', () => {
@@ -213,11 +216,11 @@ describe('13/11 — système de cartes dans les composants (captures 073653 → 
     expect(fs.existsSync(path.join(__dirname, '../src/features/publications/templates/RowProductTile.tsx'))).toBe(false);
   });
 
-  it('Reels : l’écart du système (8) et plus de double blanc après le filet', () => {
+  it('Reels : l’écart du système (8) et plus de double blanc (15/11 : sans filet, l’espace de section suffit)', () => {
     const reels = src('src/features/home/ReelsShopSection.tsx');
     expect(reels).toContain('gap: CARD_SYSTEM.gap');
     expect(reels).toContain('snapToInterval={tileWidth + CARD_SYSTEM.gap}');
-    expect(reels).toContain('section: { paddingTop: 12 }');
+    expect(reels).toContain('section: { paddingTop: 0 }');
     expect(reels).not.toContain('paddingBottom: theme.space[4]');
   });
 });

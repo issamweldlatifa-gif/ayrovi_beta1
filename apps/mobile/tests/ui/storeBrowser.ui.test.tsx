@@ -1,6 +1,7 @@
 jest.mock('@/state/session', () => ({ useSession: () => ({ status: 'signedOut', account: null }) }));
 // AYWEBs merchant browser: fixed option-selection action, with a live store cart count.
 // The native WebView and server-backed sheets are mocked for deterministic UI tests.
+import { StyleSheet } from 'react-native';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -129,7 +130,7 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     expect(screen.getByText('Choisir les options')).toBeTruthy();
   });
 
-  it('met le compteur à jour dès l’ajout et confirme en vert', async () => {
+  it('15/11 : après l’ajout, la feuille se ferme, le badge grimpe et une ligne confirme (pas de seconde feuille)', async () => {
     renderBrowser();
     const button = await screen.findByTestId('aywebs-store-add-to-cart');
     await waitFor(() => expect(button.props.accessibilityState?.disabled).toBe(false));
@@ -137,11 +138,25 @@ describe('page boutique — actions intégrées AYWEBs', () => {
 
     fireEvent.press(await screen.findByTestId('aywebs-sheet-confirm-add'));
     await waitFor(() => {
-      const badge = screen.getByTestId('aywebs-store-header-cart-count');
+      const badge = screen.getByTestId('aywebs-store-header-cart-icon-badge');
       expect(within(badge).getByText('3')).toBeTruthy();
     });
     expect(screen.getByTestId('aywebs-store-header-cart').props.accessibilityLabel).toBe('Panier (3)');
+    expect(screen.queryByTestId('aywebs-sheet-confirm-add')).toBeNull();
+    expect(screen.getByTestId('aywebs-store-added-strip')).toBeTruthy();
+    expect(screen.getByText('Ajouté au panier')).toBeTruthy();
     expect(screen.getByText('Article ajouté')).toBeTruthy();
+  });
+
+  it('15/11 : barre bleue Walmart — icônes blanches, pilule blanche, logo Clean, CTA bleu', async () => {
+    renderBrowser();
+    const header = StyleSheet.flatten(screen.getByTestId('aywebs-store-header').props.style);
+    expect(header.backgroundColor).toBe('#0A63F5');
+    const pill = StyleSheet.flatten(screen.getByTestId('aywebs-store-header-pill').props.style);
+    expect(pill.backgroundColor).toBe('#FFFFFF');
+    expect(screen.getByTestId('aywebs-ask-clean-logo')).toBeTruthy();
+    const cta = StyleSheet.flatten(screen.getByTestId('aywebs-store-add-to-cart').props.style);
+    expect([cta.backgroundColor, cta.borderColor]).toContain('#0A63F5');
   });
 
   it('retire la barre du bas et la demande de revue humaine', () => {

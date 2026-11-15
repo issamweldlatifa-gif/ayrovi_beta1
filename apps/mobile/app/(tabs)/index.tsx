@@ -30,7 +30,7 @@ import { StoriesSection } from '@/features/home/StoriesSection';
 import { useStories, useStoriesShowcase } from '@/api/hooks';
 import { LensHomeBlock } from '@/features/home/LensHomeBlock';
 import { ReelsShopSection } from '@/features/home/ReelsShopSection';
-import { SectionRule } from '@/design/SectionRule';
+import { SectionBreak } from '@/design/SectionRule';
 import { Footer } from '@/features/shell/Footer';
 import { registerScrollToTopHandler } from '@/features/shell/scrollToTop';
 import {
@@ -131,16 +131,16 @@ export default function HomeScreen() {
       {/* Cover d'accueil — médias CRM plein écran, texte et bouton posés dessus. */}
       <HomeCover />
 
-      <SectionRule />
+      <SectionBreak />
 
       <StoriesSection />
 
-      <SectionRule />
+      <SectionBreak />
 
       {/* Lens — même contenu que le site (Admin → LENS) ; le bouton ouvre Lens dans l'app. */}
       <LensHomeBlock />
 
-      <SectionRule />
+      <SectionBreak />
 
       {/* Reels • Shop — vignettes verticales ; un toucher ouvre la visionneuse plein écran. */}
       <ReelsShopSection />

@@ -152,16 +152,14 @@ describe('logo Reels • Shop', () => {
   });
 });
 
-it('renders official publisher outside the video, a small media mark and a working options sheet', () => {
+it('15/11 : vignette nue — ni pastille « lecture », ni ligne éditeur (avatar, « Zayrovi Team », •••), ni titre posé dessus', () => {
   mockReels.data = [reel('r1', 'Do not overlay this title')];
   render(wrap(<ReelsShopSection />));
-  expect(screen.getByText('Zayrovi Team')).toBeTruthy();
+  expect(screen.getByTestId('home-reel-tile-r1')).toBeTruthy();
+  expect(screen.queryByText('Zayrovi Team')).toBeNull();
   expect(screen.queryByText('Do not overlay this title')).toBeNull();
-  fireEvent.press(screen.getByTestId('home-reel-options-r1'));
-  expect(screen.getByTestId('reel-options')).toBeTruthy();
-  expect(screen.getByText('Masquer sur cet appareil')).toBeTruthy();
-  fireEvent.press(screen.getByText('+ Suivre'));
-  expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
+  expect(screen.queryByTestId('home-reel-options-r1')).toBeNull();
+  expect(screen.queryByTestId('official-avatar')).toBeNull();
 });
 
 

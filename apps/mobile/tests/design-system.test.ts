@@ -197,7 +197,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/aywebs/VariantOptionChips.tsx', // coche posée SUR la pastille de couleur (elle ne doit pas décaler le libellé)
       'src/features/reels/ReelShopTray.tsx', // tiroir « articles » qui sort PAR-DESSUS la vidéo du Reel + bouton posé sur le média (le Reel continue de tourner dessous)
       'src/features/social/StoryViewer.tsx', // zones de tape + pied, au-dessus du média
-      'src/features/home/ReelsShopSection.tsx', // small video-type badge overlays its own media; publisher remains in normal flow
+      'src/features/home/ReelsShopSection.tsx', // aperçu vidéo + zone de toucher empilés sur l'affiche (15/11 : plus de pastille ni ligne éditeur)
       'src/features/home/HeroCarousel.tsx', // couches de fond (le fond de chaque photo) et voile du titre (§5.4)
       'src/features/home/HomeCover.tsx', // cover plein écran : voile bas, titre et bouton contour posés SUR le média, bouton pause
       'app/reels-viewer.tsx', // en-tête transparent FIXE au-dessus de la liste plein écran (Reels)
@@ -215,6 +215,8 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/reels/ReelPlayback.tsx', // filet de mise en mémoire tampon posé au bas de la vidéo (remplace la roue centrale, 11/11)
       'src/design/reactions/ReactionButton.tsx', // Z-Reactions : éclats/petits cœurs autour du glyphe + sélecteur ancré au bouton dans un Modal
       'src/design/reactions/DoubleTapHearts.tsx', // Z-Reactions : cœurs rouges du double-tap posés sous le doigt, au-dessus du média
+      'src/design/CartGlyph.tsx', // 15/11 : pastille du nombre d'articles posée SUR l'angle du sac (partout où un panier s'affiche)
+      'src/features/publications/templates/MediaTemplate.tsx', // 15/11 Instagram : ligne « nom · Suivre » posée en haut DU média, sur un voile
       'src/features/product/ProductFiche.tsx', // grande fiche : photo FIXE derrière la feuille qui monte, en-tête et barre d'achat posés dessus (planche mockup-sticky)
     ]);
     const offenders: string[] = [];

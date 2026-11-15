@@ -37,6 +37,7 @@ import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { MEDIA_RATIO, RADIUS } from '@/design/tokens.mobile';
 import { AppImage } from '@/design/appImage';
+import { FavoriteDiscGlyph } from '@/design/FavoriteDisc';
 import { mediaUrl } from '@/api/client';
 import { useI18n } from '@/i18n';
 import type { AyWebsCategory, AyWebsStore } from '@/api/aywebs';
@@ -505,17 +506,11 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
           hitSlop={8}
           style={[
             styles.tileHeart,
-            theme.isRTL ? { left: 8 } : { right: 8 },
-            { backgroundColor: theme.colors.surface },
+            theme.isRTL ? { left: 4 } : { right: 4 },
           ]}
           testID={`aywebs-home-store-save-${store.id}`}
         >
-          <Ionicons
-            name={saved ? 'heart' : 'heart-outline'}
-            size={theme.iconSize.sm}
-            color={saved ? theme.colors.accentText : theme.colors.ink}
-            accessibilityElementsHidden
-          />
+          <FavoriteDiscGlyph active={saved} />
         </Pressable>
       </View>
 
@@ -587,10 +582,9 @@ const styles = StyleSheet.create({
   imageFill: { width: '100%', height: '100%' },
   tileHeart: {
     position: 'absolute',
-    top: 8,
-    width: 36,
-    height: 36,
-    borderRadius: RADIUS.lg,
+    top: 4,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -11,7 +11,7 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Button, BUTTON_OUTLINE_WIDTH, Field, FIELD_FOCUS_WIDTH, Segmented } from '@/design/ui';
-import { SectionRule, SECTION_RULE_WIDTH } from '@/design/SectionRule';
+import { SectionBreak, sectionBreakHeight } from '@/design/SectionRule';
 import { ThemeProvider, useTheme } from '@/design/theme';
 import { OPACITY } from '@/design/tokens.mobile';
 import { I18nProvider } from '@/i18n';
@@ -165,13 +165,15 @@ describe('sélecteur segmenté (v4.2.0)', () => {
   });
 });
 
-describe('filet de section', () => {
-  it('rend un filet fin à la couleur de trait du thème', () => {
+describe('respiration de section (15/11 : sans filet)', () => {
+  it('sépare par l’espace seul : 16 + espaceur + 16 = 48 dp, sans couleur de trait', () => {
     let theme: ReturnType<typeof useTheme> | null = null;
-    render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><SectionRule /></>));
-    const rule = screen.getByTestId('section-rule');
-    expect(rule.props.style.height).toBe(SECTION_RULE_WIDTH);
-    expect(rule.props.style.backgroundColor).toBe(theme!.colors.line);
+    render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><SectionBreak /></>));
+    const gap = screen.getByTestId('section-break', { includeHiddenElements: true });
+    expect(gap.props.style.height).toBe(sectionBreakHeight(theme!.space));
+    expect(gap.props.style.height + 2 * theme!.space[3]).toBe(48);
+    expect(gap.props.style.backgroundColor).toBeUndefined();
+    expect(screen.queryByTestId('section-rule')).toBeNull();
   });
 });
 

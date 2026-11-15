@@ -25,7 +25,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
-import { COMMERCE, RADIUS } from '@/design/tokens.mobile';
+import { RADIUS } from '@/design/tokens.mobile';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import type { ChoiceOption } from '@/features/aywebs/ChoiceField';
@@ -93,7 +93,7 @@ function Option({ kind, label, option, index, active, onSelect }: {
             <View
               style={[
                 styles.imageRing,
-                { borderColor: active ? COMMERCE.action : theme.colors.line, opacity: disabled ? theme.opacity.disabled : 1 },
+                { borderColor: active ? theme.colors.action : theme.colors.line, opacity: disabled ? theme.opacity.disabled : 1 },
               ]}
             >
               <Swatch
@@ -120,19 +120,19 @@ function Option({ kind, label, option, index, active, onSelect }: {
           style={[
             styles.sizePill,
             {
-              borderColor: active ? COMMERCE.action : theme.colors.line,
-              backgroundColor: active ? theme.status.warning.soft : theme.colors.surface,
+              borderColor: active ? theme.colors.action : theme.colors.line,
+              backgroundColor: active ? theme.colors.accentSoft : theme.colors.surface,
               opacity: disabled ? theme.opacity.disabled : 1,
             },
           ]}
         >
-          <AppText variant="label" >{option.value}</AppText>
+          <AppText variant="label" color={active ? theme.colors.onAccentSoft : theme.colors.ink}>{option.value}</AppText>
           {active ? (
             <Ionicons
               testID={`aywebs-variant-selected-${index}`}
               name="checkmark"
               size={theme.iconSize.xs}
-              color={theme.colors.ink}
+              color={theme.colors.onAccentSoft}
             />
           ) : null}
           {disabled ? <AppText variant="caption" color={theme.colors.muted}>×</AppText> : null}

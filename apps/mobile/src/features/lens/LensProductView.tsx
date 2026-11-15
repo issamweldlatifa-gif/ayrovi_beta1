@@ -6,6 +6,7 @@
  * marchande ne parasite ce parcours natif.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FavoriteDiscGlyph } from '@/design/FavoriteDisc';
 import {
   Alert, Animated, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Vibration, View, useWindowDimensions,
   type NativeScrollEvent, type NativeSyntheticEvent,
@@ -564,6 +565,9 @@ const HAZE_STEPS = 5;
 const HAZE_BLUR = [0, 1.5, 4, 8, 13];
 const HAZE_VEIL = [0, 0.08, 0.17, 0.27, 0.38];
 
+/** Favori posé sur la galerie de la fiche Lens : rond blanc de 40 dp, cœur de 20. */
+const LENS_FAVORITE = { disc: 40, icon: 20 } as const;
+
 export function LensProductView({
   candidate,
   enriching = false,
@@ -1054,7 +1058,8 @@ export function LensProductView({
                 { top: insets.top + 66, opacity: favorite ? theme.opacity.favorite : pressed ? theme.opacity.subtle : 1 },
               ]}
             >
-              <Ionicons name={favorite ? 'heart' : 'heart-outline'} size={theme.iconSize.md} color={favorite ? LENS_COLORS.active : LENS_COLORS.white} style={styles.crispIcon} accessibilityElementsHidden />
+              {/* 15/11 (capture 004641) : même rond blanc + cœur au trait que les cartes produit. */}
+              <FavoriteDiscGlyph active={favorite} size={LENS_FAVORITE.icon} disc={LENS_FAVORITE.disc} />
             </Pressable>
           ) : null}
           {candidate.promo ? (

@@ -528,6 +528,7 @@ export const ar = {
   'pay.D17.blocked': 'بوابة D17 غير مفعّلة حالياً',
 
   'cart.title': 'سلّة التسوّق',
+  'cart.unitsA11y': '{count} منتج',
   'cart.empty': 'سلّة التسوّق فارغة حالياً.',
   'cart.delivery': 'التوصيل',
   'cart.total': 'الإجمالي',
@@ -905,7 +906,6 @@ export const ar = {
   'aywebs.adding': 'جارٍ الإضافة…',
   'aywebs.added': 'تمت إضافة المنتج',
   'aywebs.addedBanner': 'أُضيف إلى السلّة',
-  'aywebs.addedUnlinked': 'تم حفظ المنتج في سلّة AYWEBs وسيتم ربطه عند فتح السلّة.',
   'aywebs.goToCart': 'عرض السلّة',
   'aywebs.bagItemsCount': 'لديك الآن {count} منتج في سلّتك.',
   'aywebs.notAvailable': 'غير متوفّر',

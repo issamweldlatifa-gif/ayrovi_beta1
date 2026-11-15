@@ -15,7 +15,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
-import { COMMERCE, veil } from '@/design/tokens.mobile';
+import { veil } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
 
 export interface ChoiceOption {
@@ -68,7 +68,7 @@ export function ChoiceField({
           styles.control,
           {
             flexDirection: rowDirectionFor(theme.isRTL),
-            borderColor: open ? COMMERCE.action : theme.colors.line,
+            borderColor: open ? theme.colors.action : theme.colors.line,
             borderRadius: theme.radius.control,
             minHeight: theme.geometry.minTarget + 8,
             opacity: standard ? theme.opacity.disabled : 1,

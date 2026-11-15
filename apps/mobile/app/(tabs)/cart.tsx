@@ -10,7 +10,7 @@
  *     moyens de paiement acceptés.
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -21,6 +21,7 @@ import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
 import { RADIUS } from '@/design/tokens.mobile';
 import { AppText, Button, Card, KeyValue } from '@/design/ui';
+import { TabCleanIcon } from '@/design/TabNavIcons';
 import { useI18n, useT } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import {
@@ -47,6 +48,8 @@ import { cartContext, sonimOwner, stageSonimDraft } from '@/features/sonim/sonim
 import { formatMoney } from '@/format/money';
 
 const MAX_QUANTITY = 99;
+/** Logo Clean sous les cartes du panier (bouton rond de 56 dp). */
+const CLEAN_LOGO = 32;
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
@@ -230,17 +233,6 @@ export default function AyroviCartScreen() {
         refreshing={cartQuery.isFetching && !cartQuery.isPending}
         topNotice={(
           <View style={styles.notices}>
-            {hasItems && cart && !cartQuery.isError && !cartQuery.isFetching ? (
-              <Button label={t('sonim.shareCart')} tone="quiet" testID="cart-ask-sonim"
-                disabled={!sonimOwner(sessionId, status, account?.id)}
-                onPress={() => {
-                  if (!stageSonimDraft(sonimOwner(sessionId, status, account?.id), cartContext(cart, locale))) {
-                    Alert.alert(t('sonim.shareUnavailable'));
-                    return;
-                  }
-                  router.push('/sonim-assistant');
-                }} />
-            ) : null}
             {quoteDeadline && hasItems ? (
               <View
                 style={[
@@ -341,17 +333,44 @@ export default function AyroviCartScreen() {
             <EmptyBlock>{t('cart.empty')}</EmptyBlock>
           </View>
         ) : (
-          itemModels.map((model) => (
-            <OfficialCartRow
-              key={model.id}
-              item={model}
-              busy={busy}
-              maxQuantity={MAX_QUANTITY}
-              onDecrease={() => setQuantity.mutate({ itemId: model.id, quantity: model.quantity - 1 })}
-              onIncrease={() => setQuantity.mutate({ itemId: model.id, quantity: model.quantity + 1 })}
-              onRemove={() => removeLine.mutate(model.id)}
-            />
-          ))
+          <>
+            {itemModels.map((model) => (
+              <OfficialCartRow
+                key={model.id}
+                item={model}
+                busy={busy}
+                maxQuantity={MAX_QUANTITY}
+                onDecrease={() => setQuantity.mutate({ itemId: model.id, quantity: model.quantity - 1 })}
+                onIncrease={() => setQuantity.mutate({ itemId: model.id, quantity: model.quantity + 1 })}
+                onRemove={() => removeLine.mutate(model.id)}
+              />
+            ))}
+            {/* 15/11 : « Examiner le panier avec Clean » devient le LOGO Clean, posé sous les cartes. */}
+            {cart && !cartQuery.isFetching ? (
+              <View style={styles.cleanRow}>
+                <Pressable
+                  testID="cart-ask-sonim"
+                  accessibilityRole="button"
+                  accessibilityLabel={t('sonim.shareCart')}
+                  disabled={!sonimOwner(sessionId, status, account?.id)}
+                  onPress={() => {
+                    if (!stageSonimDraft(sonimOwner(sessionId, status, account?.id), cartContext(cart, locale))) {
+                      Alert.alert(t('sonim.shareUnavailable'));
+                      return;
+                    }
+                    router.push('/sonim-assistant');
+                  }}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.cleanButton,
+                    { borderColor: theme.colors.line, opacity: !sonimOwner(sessionId, status, account?.id) ? theme.opacity.disabled : pressed ? theme.opacity.subtle : 1 },
+                  ]}
+                >
+                  <TabCleanIcon color={theme.colors.ink} size={CLEAN_LOGO} />
+                </Pressable>
+              </View>
+            ) : null}
+          </>
         )}
       </OfficialCartScaffold>
     </View>
@@ -372,4 +391,6 @@ const styles = StyleSheet.create({
   },
   reverifyBox: { gap: 8 },
   stateBlock: { paddingTop: 24 },
+  cleanRow: { alignItems: 'center', paddingVertical: 16 },
+  cleanButton: { width: 56, height: 56, borderRadius: RADIUS.full, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
 });

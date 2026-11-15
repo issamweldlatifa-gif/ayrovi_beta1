@@ -469,16 +469,26 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
       'src/features/lens/ocerex/OcerexFlow.tsx': 1, // confirmer la commande OCEREX
       'src/features/product/ProductFiche.tsx': 1,   // ajouter au panier (fiche)
       'src/features/shopping/OfficialCartView.tsx': 1, // valider la commande (panier)
+      // 15/11 : AYWEBs passe au bleu au moment de la capture (« Choisir les options »)
+      // puis dans la feuille (« Ajouter au panier ») — deux écrans, un bleu chacun.
+      'app/aywebs/browser.tsx': 1,
+      'src/features/aywebs/AddToCartSheet.tsx': 1,
     });
   });
 
-  it('AYWEBs uses its approved yellow purchase CTA and selection accents only', () => {
+  it('15/11 : AYWEBs quitte le jaune — CTA bleus, choix au bleu clair + contour bleu', () => {
     const browser = read('app/aywebs/browser.tsx');
     const sheet = read('src/features/aywebs/AddToCartSheet.tsx');
     const choices = read('src/features/aywebs/ChoiceField.tsx');
-    expect(browser).toContain('tone="commerce"');
-    expect(sheet).toContain('tone="commerce"');
-    expect(choices).toContain('COMMERCE.action');
+    const chips = read('src/features/aywebs/VariantOptionChips.tsx');
+    for (const src of [browser, sheet, choices, chips]) {
+      expect(src).not.toContain('tone="commerce"');
+      expect(src).not.toContain('COMMERCE.');
+      expect(src).not.toContain('warning.soft');
+    }
+    expect(choices).toContain('theme.colors.action');
+    expect(chips).toMatch(/backgroundColor: active \? theme\.colors\.accentSoft/);
+    // Le jeton reste défini (ton `commerce` du bouton), mais plus aucun écran ne l'emploie.
     expect(COMMERCE.action).toBe('#FFD60A');
   });
 

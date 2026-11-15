@@ -263,13 +263,17 @@ describe('Ayrovi Extracted Sans — parité de la source web et du mobile', () =
     expect(existsSync(path.join(ROOT, 'assets/fonts/NotoSansArabic-Bold.ttf'))).toBe(true);
   });
 
-  it('place la photo seule en haut de AddToCartSheet et empile prix, titre et options en dessous', () => {
+  it('15/11 (Cdiscount 005006) : AddToCartSheet = carte produit compacte sur bande grise, puis options ; le panier s’ouvre depuis le navigateur', () => {
     const src = readFileSync(path.join(ROOT, 'src/features/aywebs/AddToCartSheet.tsx'), 'utf8');
-    expect(src).toContain('productStack:');
-    expect(src).toContain('productHeroWrap:');
-    expect(src).not.toContain('productRow:');
-    expect(src).toMatch(/productHero:\s*\{\s*width:\s*'100%',\s*height:\s*240/);
-    expect(src).toContain("router.push('/panier')");
+    expect(src).toContain('productBand:');
+    expect(src).toContain('productCard:');
+    expect(src).toMatch(/productThumb:\s*\{\s*width:\s*88,\s*height:\s*88/);
+    expect(src).not.toContain('productHero:');
+    expect(src).toContain('<SalePrice');
+    // Plus de seconde feuille : la feuille se ferme, le navigateur propose « Voir le panier ».
+    expect(src).not.toContain('aywebs-sheet-success');
+    const browser = readFileSync(path.join(ROOT, 'app/aywebs/browser.tsx'), 'utf8');
+    expect(browser).toContain("router.push('/panier')");
   });
 
   it('affiche SizeSheet en feuille compacte du bas (AppSheet presentation="bottom") sans boîte lavande', () => {

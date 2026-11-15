@@ -1,24 +1,30 @@
 /**
- * Filet gris fin entre deux sections de l'accueil (pleine largeur).
+ * Respiration entre deux sections de l'accueil — SANS filet.
  *
- * Sans lui, les blocs se confondent : une image puis un titre paraissent appartenir
- * au même bloc. Le filet utilise la couleur de trait du thème (jamais une couleur en dur).
+ * 15/11 (« نحي الخطوط اللي زدتهم بين الأقسام ») : les filets gris sont retirés.
+ * La séparation vient désormais de l'espace seul, comme Zalando : une section
+ * se termine, 48 dp de blanc (`RHYTHM.section`), la suivante commence. L'écart
+ * d'écran (`screenContentGap`, 16) s'ajoute de part et d'autre de l'espaceur :
+ * on n'ajoute donc ici que le complément pour atteindre exactement 48.
  */
 import { View } from 'react-native';
 import { useTheme } from './theme';
-import { FullBleed } from './layout';
+import { RHYTHM } from './rhythm';
+import { screenContentGap } from './layoutLogic';
 
-/** Épaisseur visible sur tous les écrans (un hairline disparaît sur les écrans haute densité). */
-export const SECTION_RULE_WIDTH = 1;
+/** Hauteur propre de l'espaceur : 48 − 2 × 16 (deux écarts d'écran) = 16. */
+export function sectionBreakHeight(space: readonly number[]): number {
+  return Math.max(0, RHYTHM.section - 2 * screenContentGap(space));
+}
 
-export function SectionRule() {
+export function SectionBreak() {
   const theme = useTheme();
   return (
-    <FullBleed>
-      <View
-        style={{ height: SECTION_RULE_WIDTH, backgroundColor: theme.colors.line }}
-        testID="section-rule"
-      />
-    </FullBleed>
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={{ height: sectionBreakHeight(theme.space) }}
+      testID="section-break"
+    />
   );
 }

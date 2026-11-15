@@ -86,8 +86,10 @@ describe('Publication-only visual model, not a second commerce or social core', 
     expect(read(dir + 'templates/BlockProductCard.tsx')).toContain('usePublicationFavorites');
     expect(read(dir + 'PublicationFavorites.tsx')).toContain('useProductFavorites');
     expect(read(dir + 'PublicationTemplatesScreen.tsx')).toContain('<PublicationFavoritesProvider>');
-    // Le bouton « Suivre » des planches : pilule sous le container, en ligne dans l'en-tête media.
-    expect(read(dir + 'templates/ContainerTemplate.tsx')).toContain('look="pill"');
+    // 15/11 (Instagram 002046) : « Suivre » blanc à pilule transparente — sur le bloc
+    // (container) et posé EN HAUT du média ; en ligne seulement sans média.
+    expect(read(dir + 'templates/ContainerTemplate.tsx')).toContain('look="block"');
+    expect(read(dir + 'templates/MediaTemplate.tsx')).toContain('look="media"');
     expect(read(dir + 'templates/MediaTemplate.tsx')).toContain('look="inline"');
     // Une seule relation « suivre » : Reels et Publication partagent le même hook.
     expect(read(dir + 'PublicationFollow.tsx')).toContain('usePublisherFollow');

@@ -19,15 +19,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
 
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { AYWEBS_WORDMARK_TINT, RADIUS, veil } from '@/design/tokens.mobile';
+import { AYWEBS_WORDMARK_TINT, RADIUS, RHYTHM, veil } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { AppImage } from '@/design/appImage';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
 import { AppSheet } from '@/design/sheet/AppSheet';
+import { SalePrice } from '@/design/SalePrice';
+import { saleSummary } from '@/design/saleLogic';
 import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { addErrorMessage } from '@/features/aywebs/addError';
@@ -61,7 +62,6 @@ import {
   resolveQuantityTotalTnd,
   upsertVariantMatrixCache,
 } from '@/features/aywebs/variantMatrixCache';
-import { splitCartVariantLabels } from '@/features/shopping/OfficialCartView';
 import { touchCartReservation } from '@/features/shopping/cartReservation';
 import { formatAmount, formatMoney } from '@/format/money';
 
@@ -139,7 +139,6 @@ export function AddToCartSheet({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [, setDiagnostic] = useState('');
-  const [added, setAdded] = useState<{ item: AyWebsCartItem; totalUnits: number; linked: boolean; reason: string } | null>(null);
   const [fetched, setFetched] = useState<AyWebsVariantOption[]>([]);
   const [fetchedGroups, setFetchedGroups] = useState<AyWebsVariantGroup[] | null>(null);
   /** Groupes publiés par le SERVEUR (lecture de la page) — noms de référence. */
@@ -345,7 +344,6 @@ export function AddToCartSheet({
     setQuantityOpen(false);
     setError('');
     setDiagnostic('');
-    setAdded(null);
     setBusy(false);
     setFetched([]);
     setFetchedGroups(null);
@@ -839,6 +837,16 @@ export function AddToCartSheet({
    * تغطيش الاختيار تتقرا صفحة الاختيار مرّة واحدة (كي عندها عنوان). الخادم
    * يسجّل السطر ويثبت الثمن النهائي.
    */
+  /**
+   * 15/11 (« نحّي الورقة اللي تجي بعد الإضافة ») : une fois le serveur d'accord,
+   * la feuille se FERME. L'écran parent confirme (badge du sac + ligne « Ajouté au
+   * panier · Voir le panier ») — plus de seconde feuille à refermer.
+   */
+  const finishAdd = useCallback((item: AyWebsCartItem, cart: AyWebsCart) => {
+    onAdded?.(item, cart);
+    onClose();
+  }, [onAdded, onClose]);
+
   const confirm = useCallback(async () => {
     if (!sessionId || !requestId.current || busy) return;
     if (!selectionComplete || chosenUnavailable) return;
@@ -866,13 +874,7 @@ export function AddToCartSheet({
         }, { sessionId });
         if (!alive.current) return;
         touchCartReservation();
-        setAdded({
-          item: fast.item,
-          totalUnits: fast.cart.totals.units || fast.item.quantity,
-          linked: fast.ayrovi?.linked === true,
-          reason: fast.ayrovi?.reason || '',
-        });
-        onAdded?.(fast.item, fast.cart);
+        finishAdd(fast.item, fast.cart);
         return;
       }
 
@@ -909,13 +911,7 @@ export function AddToCartSheet({
         }, { sessionId });
         if (!alive.current) return;
         touchCartReservation();
-        setAdded({
-          item: direct.item,
-          totalUnits: direct.cart.totals.units || direct.item.quantity,
-          linked: direct.ayrovi?.linked === true,
-          reason: direct.ayrovi?.reason || '',
-        });
-        onAdded?.(direct.item, direct.cart);
+        finishAdd(direct.item, direct.cart);
         return;
       }
 
@@ -1029,34 +1025,28 @@ export function AddToCartSheet({
       }, { sessionId });
       if (!alive.current) return;
       touchCartReservation();
-      setAdded({
-        item: outcome.item,
-        totalUnits: outcome.cart.totals.units || outcome.item.quantity,
-        linked: outcome.ayrovi?.linked === true,
-        reason: outcome.ayrovi?.reason || '',
-      });
-      onAdded?.(outcome.item, outcome.cart);
+      finishAdd(outcome.item, outcome.cart);
     } catch (caught) {
       if (!alive.current) return;
       setError(addErrorMessage(caught, locale, t));
     } finally {
       if (alive.current) setBusy(false);
     }
-  }, [busy, chosenUnavailable, effectiveCapture, effectiveUrl, groups.length, local, locale, matrixKey, missing.length, onAdded, pageQuote, product.productId, readOnlySelection,
+  }, [busy, chosenUnavailable, effectiveCapture, effectiveUrl, groups.length, local, locale, matrixKey, missing.length, finishAdd, pageQuote, product.productId, readOnlySelection,
     product.sourceUrl, product.storeId, quantity, quoteToken, readVariant, selection, selectionComplete, sessionId, t]);
 
   const sourceLine = tndText(quote.unitTnd);
   const resolvedTotalTnd = useMemo(() => resolveQuantityTotalTnd(quote, quantity), [quantity, quote]);
   const totalLine = resolvedTotalTnd != null ? tndText(resolvedTotalTnd) : '';
   const displayedTndLine = quantity > 1 && totalLine ? totalLine : sourceLine;
-  const title = added?.item.title || product.title;
+  const title = product.title;
   // Prefer the exact combination's published image over a color swatch thumbnail.
   const selectedColorImage = preferredVariantImage(quote.image, fields, selection) || '';
   /* الصورة الرئيسية تتبع لون المنتج المختار داخل نفس الورقة؛ fallback للصورة
      الأصلية فقط إذا التاجر ما نشرش صورة مرتبطة باللون. */
   const imageUri = readOnlySelection
-    ? added?.item.images[0] || product.images[0] || selectedColorImage
-    : selectedColorImage || added?.item.images[0] || product.images[0] || '';
+    ? product.images[0] || selectedColorImage
+    : selectedColorImage || product.images[0] || '';
 
   const discountMeta = useMemo(() => {
     if (!captureRecord) return null;
@@ -1086,25 +1076,17 @@ export function AddToCartSheet({
       ?? parseNum(shein?.salePrice)
       ?? parseNum(ae?.salePrice)
       ?? parseNum(temu?.salePrice);
-    if (orig == null || sale == null || orig <= sale * 1.01) return null;
-    const pct = Math.round(((orig - sale) / orig) * 100);
-    if (pct <= 0 || pct >= 98) return null;
+    // Mêmes garde-fous que partout (`saleSummary`) : jamais de remise inventée.
+    const summary = saleSummary(sale, orig);
+    if (!summary.discounted || summary.percent == null || orig == null || sale == null) return null;
     const ratio = orig / sale;
-    return { pct, ratio, origMerchant: moneyText(orig, product.currency) };
+    return { pct: summary.percent, ratio, origMerchant: moneyText(orig, product.currency) };
   }, [captureRecord, merchantPrice.amount, product.currency]);
 
   const regularBaseTnd = resolvedTotalTnd != null && quantity > 1 ? resolvedTotalTnd : quote.unitTnd;
   const regularUnitTnd = discountMeta && regularBaseTnd != null
     ? tndText(Math.round(regularBaseTnd * discountMeta.ratio * 100) / 100)
     : '';
-  const addedUnitOrLineTnd = added?.item.lineTotalTnd != null ? tndText(added.item.lineTotalTnd) : sourceLine;
-  const addedRegularTnd = discountMeta && added?.item.lineTotalTnd != null
-    ? tndText(Math.round(added.item.lineTotalTnd * discountMeta.ratio * 100) / 100)
-    : regularUnitTnd;
-  const addedSplitVariants = useMemo(
-    () => splitCartVariantLabels({ variant: added?.item.variantLabel }),
-    [added?.item.variantLabel],
-  );
 
   const closeButton = (
     <Pressable
@@ -1118,26 +1100,34 @@ export function AddToCartSheet({
     </Pressable>
   );
 
+  /*
+   * 15/11 — feuille « propre » sur le modèle Cdiscount (005006) :
+   *   en-tête   : mot-symbole AYWEBs au bleu d'action · ✕
+   *   bande grise : carte blanche [vignette | titre · prix rouge · -45 % · origine barrée]
+   *   options   : couleur / taille / … puis quantité
+   *   pied      : « Ajouter au panier », pilule bleue 48 dp
+   * L'ajout réussi ferme la feuille (pas de seconde feuille).
+   */
   return (
     <AppSheet
       open={visible}
       onDismiss={onClose}
       presentation="bottom"
-      footer={added ? undefined : (
+      footer={(
         <Button
           label={busy ? t('aywebs.adding') : (readOnlySelection ? t('aywebs.confirmAddCta') : t('aywebs.addToCart'))}
-          tone="commerce"
+          tone="main"
           onPress={confirm}
           busy={busy}
           disabled={Boolean(blockedCode) || !sessionId}
           block
-          style={styles.slimAddButton}
+          style={styles.addButton}
           testID="aywebs-sheet-add"
         />
       )}
       header={(
         <View
-          accessibilityLabel={added ? t('aywebs.addedBanner') : (readOnlySelection ? t('aywebs.confirmTitle') : t('aywebs.pickTitle'))}
+          accessibilityLabel={readOnlySelection ? t('aywebs.confirmTitle') : t('aywebs.pickTitle')}
           style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}
         >
           <View style={styles.headerSide} />
@@ -1155,181 +1145,64 @@ export function AddToCartSheet({
               style={styles.headerWordmark}
               testID="aywebs-sheet-wordmark"
             />
-            {added ? (
-              <View
-                testID="aywebs-sheet-success"
-                accessibilityLiveRegion="polite"
-                style={[styles.addedHeaderRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}
-              >
-                <Ionicons name="checkmark-outline" size={theme.iconSize.sm} color={theme.status.success.fg} />
-                <AppText variant="label" numberOfLines={1}>
-                  {t('aywebs.addedBanner')}
-                </AppText>
-              </View>
-            ) : null}
           </View>
           <View style={styles.headerSide}>{closeButton}</View>
         </View>
       )}
     >
-      <View style={styles.productStack}>
-        <View style={styles.productHeroWrap}>
+      <View testID="aywebs-sheet-product-band" style={[styles.productBand, { backgroundColor: theme.colors.shimmer }]}>
+        <View
+          testID="aywebs-sheet-product-card"
+          style={[styles.productCard, { backgroundColor: theme.colors.surface, flexDirection: rowDirectionFor(theme.isRTL) }]}
+        >
           {imageUri ? (
             <AppImage
               uri={mediaUrl(imageUri)}
               fallbackUris={[mediaUrl(product.images[0] || '')]}
               highRes
-              style={[styles.productHero, { backgroundColor: theme.colors.skeleton }]}
+              style={[styles.productThumb, { backgroundColor: theme.colors.skeleton }]}
               contentFit="cover"
               accessibilityLabel={title}
               testID="aywebs-sheet-product-image"
             />
           ) : (
-            <View
-              style={[
-                styles.productHero,
-                {
-                  borderColor: theme.colors.line,
-                  borderWidth: StyleSheet.hairlineWidth,
-                  backgroundColor: theme.colors.skeleton,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                },
-              ]}
-            >
+            <View style={[styles.productThumb, styles.productThumbEmpty, { backgroundColor: theme.colors.skeleton }]}>
               <Ionicons name="image-outline" size={theme.iconSize.lg} color={theme.colors.muted} />
             </View>
           )}
-        </View>
 
-        <View style={styles.productText}>
-          {added ? (
-            <>
-              {addedUnitOrLineTnd ? (
-                <View style={styles.discountPriceBlock}>
-                  <View style={[styles.priceInlineRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                    <AppText
-                      variant="price"
-                      color={discountMeta ? theme.status.danger.fg : theme.colors.ink}
-                    >
-                      {addedUnitOrLineTnd}
-                    </AppText>
-                    <AppText variant="caption" color={theme.colors.muted}>
-                      {t('aywebs.customsShippingIncluded')}
-                    </AppText>
-                  </View>
-                  {discountMeta && addedRegularTnd ? (
-                    <View style={[styles.regularPriceRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                      <AppText variant="caption" color={theme.colors.muted} style={styles.strikethrough}>
-                        {addedRegularTnd}
-                      </AppText>
-                      <AppText variant="captionStrong" color={theme.status.danger.fg}>
-                        {`-${discountMeta.pct}%`}
-                      </AppText>
-                    </View>
-                  ) : null}
-                </View>
-              ) : added.item.unitPrice != null ? (
-                <AppText variant="price" color={theme.colors.ink}>
-                  {`${added.item.unitPrice} ${added.item.currency}`.trim()}
-                </AppText>
-              ) : null}
-
-              <AppText variant="label" color={theme.colors.ink} numberOfLines={2}>
-                {title}
-              </AppText>
-
-              <View style={styles.addedVariantStack}>
-                {addedSplitVariants.color ? (
-                  <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
-                    {`${t('catalog.color')} : `}
-                    <AppText variant="caption" color={theme.colors.ink}>{addedSplitVariants.color}</AppText>
-                  </AppText>
-                ) : null}
-                {addedSplitVariants.size ? (
-                  <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
-                    {`${t('catalog.size')} : `}
-                    <AppText variant="caption" color={theme.colors.ink}>{addedSplitVariants.size}</AppText>
-                  </AppText>
-                ) : null}
-                <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
-                  {[added.item.variantLabel, `${t('aywebs.quantity')} ${added.item.quantity}`]
-                    .filter(Boolean).join(' · ')}
-                </AppText>
+          <View style={styles.productText}>
+            <AppText variant="body" color={theme.colors.ink} numberOfLines={2}>
+              {title}
+            </AppText>
+            {displayedTndLine ? (
+              <SalePrice
+                testID="aywebs-sheet-price"
+                price={displayedTndLine}
+                percent={discountMeta?.pct ?? null}
+                original={regularUnitTnd || undefined}
+                originalPrefix={t('cart.originally')}
+              />
+            ) : quoting ? (
+              <View style={[styles.pendingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                <LoadingSpinner size="sm" color={theme.colors.muted} testID="aywebs-sheet-price-pending" />
+                <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.pricePending')}</AppText>
               </View>
-            </>
-          ) : (
-            <>
-              {displayedTndLine ? (
-                <View style={styles.discountPriceBlock}>
-                  <View style={[styles.priceInlineRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                    <AppText
-                      variant="price"
-                      color={discountMeta ? theme.status.danger.fg : theme.colors.ink}
-                    >
-                      {displayedTndLine}
-                    </AppText>
-                    <AppText variant="caption" color={theme.colors.muted}>
-                      {t('aywebs.customsShippingIncluded')}
-                    </AppText>
-                  </View>
-                  {discountMeta && regularUnitTnd ? (
-                    <View style={[styles.regularPriceRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                      <AppText variant="caption" color={theme.colors.muted}>
-                        {t('cart.originally')}
-                      </AppText>
-                      <AppText variant="caption" color={theme.colors.muted} style={styles.strikethrough}>
-                        {regularUnitTnd}
-                      </AppText>
-                      <AppText variant="captionStrong" color={theme.status.danger.fg}>
-                        {`-${discountMeta.pct}%`}
-                      </AppText>
-                    </View>
-                  ) : null}
-                </View>
-              ) : quoting ? (
-                <View style={[styles.pendingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                  <LoadingSpinner size="sm" color={theme.colors.muted} testID="aywebs-sheet-price-pending" />
-                  <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.pricePending')}</AppText>
-                </View>
-              ) : (
-                <AppText variant="caption" color={theme.colors.muted}>
-                  {t('aywebs.priceAtAddShort')}
-                </AppText>
-              )}
-
-              <AppText variant="label" color={theme.colors.ink} numberOfLines={2}>
-                {title}
+            ) : (
+              <AppText variant="caption" color={theme.colors.muted}>
+                {t('aywebs.priceAtAddShort')}
               </AppText>
-            </>
-          )}
+            )}
+            {displayedTndLine ? (
+              <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
+                {t('aywebs.customsShippingIncluded')}
+              </AppText>
+            ) : null}
+          </View>
         </View>
       </View>
 
-      {added ? (
-        <View style={styles.addedActionsStack}>
-          {!added.linked ? (
-            <AppText variant="caption" color={theme.colors.muted}>
-              {t('aywebs.addedUnlinked')}
-            </AppText>
-          ) : null}
-          <Button
-            label={t('aywebs.goToCart')}
-            tone="solid"
-            block
-            style={styles.slimAddButton}
-            leading={<Ionicons name="bag-outline" size={theme.iconSize.sm} color={theme.colors.canvas} />}
-            onPress={() => { onClose(); router.push('/panier'); }}
-            testID="aywebs-sheet-go-to-bag"
-          />
-          <View testID="aywebs-sheet-bag-count-banner" style={styles.bagCountBanner}>
-            <AppText variant="caption" align="center" color={theme.colors.muted}>
-              {t('aywebs.bagItemsCount', { count: added.totalUnits })}
-            </AppText>
-          </View>
-        </View>
-      ) : (
-        <View style={[styles.optionsDivider, { borderTopColor: theme.colors.divider }]}>
+        <View testID="aywebs-sheet-options" style={styles.optionsSection}>
           {readOnlySelection ? (
             <View testID="aywebs-captured-selection-box" style={styles.capturedCleanStack}>
               {capturedBadges.map((badge, index) => (
@@ -1447,8 +1320,8 @@ export function AddToCartSheet({
                     <Pressable key={value} accessibilityRole="radio" accessibilityState={{ selected: value === quantity }}
                       onPress={() => { setQuantity(Math.min(value, maxQuantity)); setQuantityOpen(false); }}
                       testID={`aywebs-quantity-${value}`}
-                      style={[styles.quantityOption, { borderTopColor: theme.colors.line, backgroundColor: value === quantity ? theme.status.warning.soft : theme.colors.surface }]}>
-                      <AppText variant="body">{String(value)}</AppText>
+                      style={[styles.quantityOption, { borderTopColor: theme.colors.line, backgroundColor: value === quantity ? theme.colors.accentSoft : theme.colors.surface }]}>
+                      <AppText variant="body" color={value === quantity ? theme.colors.onAccentSoft : theme.colors.ink}>{String(value)}</AppText>
                     </Pressable>
                   ))}
                 </ScrollView>
@@ -1479,7 +1352,6 @@ export function AddToCartSheet({
             <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{error}</AppText>
           ) : null}
         </View>
-      )}
     </AppSheet>
   );
 }
@@ -1516,29 +1388,19 @@ function variantAvailability(
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 2 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 4 },
   headerSide: { width: 40, alignItems: 'flex-end' },
-  headerCenter: { flex: 1, alignItems: 'center', gap: 2 },
+  headerCenter: { flex: 1, alignItems: 'center' },
   headerWordmark: { width: 69, height: 24 },
   close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  addedHeaderRow: { alignItems: 'center', justifyContent: 'center', gap: 6 },
-  productStack: { gap: 12 },
-  productHeroWrap: { alignItems: 'center', alignSelf: 'stretch', paddingVertical: 4 },
-  productHero: { width: '100%', height: 240, borderRadius: RADIUS.xs },
-  productText: { gap: 8 },
-  discountPriceBlock: { gap: 2 },
-  priceInlineRow: { alignItems: 'baseline', gap: 6, flexWrap: 'wrap' },
-  regularPriceRow: { alignItems: 'center', gap: 6, flexWrap: 'wrap' },
-  strikethrough: { textDecorationLine: 'line-through' },
-  addedVariantStack: { marginTop: 2, gap: 2 },
-  addedActionsStack: { gap: 10, paddingTop: 4 },
-  bagCountBanner: {
-    paddingVertical: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  // Bande grise pleine largeur de la feuille + carte blanche (Cdiscount 005006).
+  productBand: { marginHorizontal: -RHYTHM.group, marginTop: -RHYTHM.related, paddingHorizontal: RHYTHM.group, paddingVertical: RHYTHM.related },
+  productCard: { borderRadius: RADIUS.md, padding: 12, gap: 12, alignItems: 'flex-start' },
+  productThumb: { width: 88, height: 88, borderRadius: RADIUS.sm },
+  productThumbEmpty: { alignItems: 'center', justifyContent: 'center' },
+  productText: { flex: 1, gap: 6 },
   pendingRow: { alignItems: 'center', gap: 8 },
-  optionsDivider: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 10, gap: 8 },
+  optionsSection: { paddingTop: 16, gap: 12 },
   capturedCleanStack: { gap: 6 },
   capturedAttributeRow: { alignItems: 'center', gap: 8 },
   capturedSwatch: { width: 16, height: 16, borderRadius: RADIUS.full },
@@ -1551,5 +1413,6 @@ const styles = StyleSheet.create({
   quantityDialog: { width: '72%', maxWidth: 360, maxHeight: '70%', borderRadius: RADIUS.xs, overflow: 'hidden' },
   quantityHeader: { minHeight: 56, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'space-between' },
   quantityOption: { minHeight: 48, borderTopWidth: StyleSheet.hairlineWidth, justifyContent: 'center', paddingHorizontal: 20 },
-  slimAddButton: { minHeight: 40, borderRadius: RADIUS.xs, paddingVertical: 6 },
+  // Pilule bleue 48 dp (Zalando / Cdiscount) — le seul bouton principal de la feuille.
+  addButton: { minHeight: 48, borderRadius: RADIUS.full },
 });

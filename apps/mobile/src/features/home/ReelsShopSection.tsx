@@ -1,5 +1,8 @@
 import { ReelPageFooter } from '@/features/reels/ReelPageFooter';
-/** Real, muted Reel previews with a first-party publisher row outside the media. */
+/**
+ * Real, muted Reel previews. 15/11 : la vignette est nue — ni pastille « lecture »
+ * sur la photo, ni ligne éditeur (avatar + « Zayrovi Team » + •••) dessous.
+ */
 import { memo, useMemo, useRef, useState } from 'react';
 import {
   useWindowDimensions,
@@ -9,27 +12,23 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useReels } from '@/api/hooks';
 import { AppText } from '@/design/ui';
 import { AppImage } from '@/design/appImage';
 import { mediaUrl } from '@/api/client';
 import { FullBleed, useResponsive } from '@/design/layout';
 import { useTheme } from '@/design/theme';
-import { MEDIA_RATIO, REEL_TILE, RADIUS } from '@/design/tokens.mobile';
+import { MEDIA_RATIO, REEL_TILE } from '@/design/tokens.mobile';
 import { CARD_SYSTEM } from '@/design/cardSystem';
 import { FadeIn } from '@/design/motion';
 import { useT, useI18n } from '@/i18n';
 import { ReelsShopMark } from '@/features/reels/ReelsShopMark';
-import { ReelPublisher } from '@/features/reels/ReelPublisher';
 import { ReelPreview } from '@/features/reels/ReelPreview';
-import { ReelOptions } from '@/features/reels/ReelOptions';
 import { useReelPreviewActivity } from '@/features/reels/useReelPreviewActivity';
 import {
   useHiddenReels,
   restoreHiddenReels,
 } from '@/features/reels/reelVisibility';
-import { shareReel } from '@/features/reels/shareReel';
 import type { Reel } from '@/api/social';
 
 export const ReelsShopSection = memo(function ReelsShopSection() {
@@ -48,7 +47,6 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
     return (reels.data ?? []).filter(row => !excluded.has(row.id));
   }, [reels.data, hidden]);
   const [visibleId, setVisibleId] = useState<string | null>(null);
-  const [options, setOptions] = useState<Reel | null>(null);
   const [error, setError] = useState('');
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
   const onViewableItemsChanged = useRef(
@@ -114,27 +112,12 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
                       />
                     ) : null}
                     {autoplay.visible && autoplay.autoplay &&
-                    !options &&
                     item.id === (visibleId ?? rows[0]?.id) ? (
                       <ReelPreview
                         uri={item.videoUrl}
                         playing={autoplay.autoplay}
                       />
                     ) : null}
-                    <View
-                      pointerEvents="none"
-                      style={[
-                        styles.videoMark,
-                        { backgroundColor: theme.colors.onMedia },
-                      ]}
-                    >
-                      <Ionicons
-                        name="play"
-                        size={theme.iconSize.xs}
-                        color={theme.colors.muted}
-                        accessibilityElementsHidden
-                      />
-                    </View>
                   </View>
                   {/* Keep the touch target above, not around, Android PlayerView. */}
                   <Pressable
@@ -144,24 +127,6 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
                     onPress={() => open(item)}
                     style={StyleSheet.absoluteFill}
                   />
-                </View>
-                <View style={styles.publisherRow}>
-                  <ReelPublisher />
-                  <Pressable
-                    testID={`home-reel-options-${item.id}`}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      locale === 'ar' ? 'خيارات الفيديو' : 'Options de la vidéo'
-                    }
-                    onPress={() => setOptions(item)}
-                    style={styles.options}
-                  >
-                    <Ionicons
-                      name="ellipsis-horizontal-outline"
-                      size={theme.iconSize.md}
-                      color={theme.colors.ink}
-                    />
-                  </Pressable>
                 </View>
               </View>
             )}
@@ -191,42 +156,12 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
         ) : null}
         {error ? <AppText accessibilityRole="alert">{error}</AppText> : null}
       </View>
-      {options ? (
-        <ReelOptions
-          reel={options}
-          onClose={() => setOptions(null)}
-          onShare={() => shareReel(options)}
-        />
-      ) : null}
     </FadeIn>
   );
 });
 const styles = StyleSheet.create({
-  /* 13/11 — « فراغ كبير ابيض » : 12 + l'écart d'écran (12) = 24 après le filet, comme le bloc Lens (était 24 + 12). */
-  section: { paddingTop: 12 },
+  /* 15/11 — plus de filet : le titre suit directement l'espace de section (48 dp, `SectionBreak`). */
+  section: { paddingTop: 0 },
   tile: { overflow: 'hidden' },
-  videoMark: {
-    position: 'absolute',
-    top: 10,
-    start: 10,
-    width: 20,
-    height: 16,
-    borderRadius: RADIUS.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  publisherRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 4,
-    paddingVertical: 4,
-  },
-  options: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   restore: { minHeight: 44, justifyContent: 'center' },
 });

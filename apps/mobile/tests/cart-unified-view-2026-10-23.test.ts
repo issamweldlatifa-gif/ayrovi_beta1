@@ -46,9 +46,11 @@ describe('panier principal — les lignes du navigateur y sont visibles', () => 
 
 describe('après l’ajout, on revient au panier principal', () => {
   const sheet = read('src/features/aywebs/AddToCartSheet.tsx');
+  const browser = read('app/aywebs/browser.tsx');
 
-  it('la feuille empile /panier sur le Stack racine et n’ouvre plus le panier AYWEBs séparé', () => {
-    expect(sheet).toContain("router.push('/panier')");
+  it('15/11 : la feuille se ferme ; « Voir le panier » du navigateur empile /panier (jamais le panier AYWEBs séparé)', () => {
+    expect(browser).toContain("router.push('/panier')");
+    expect(browser).not.toContain("router.push('/aywebs/cart')");
     expect(sheet).not.toContain("router.push('/aywebs/cart')");
   });
 });

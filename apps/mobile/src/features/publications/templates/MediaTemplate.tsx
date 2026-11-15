@@ -1,9 +1,9 @@
 /**
  * Modèle `media` — planches « Felix Hardy », « Tommy Hilfiger », « sascha.xtz ».
  *
- *   zayrovi team • Suivre              ← éditeur + « Suivre » (même relation que les Reels)
  *   Sponsorisé ⓘ                       ← seulement si le CRM le coche
  *   ┌──────────────────────────────┐
+ *   │ (Z) zayrovi team   ( Suivre ) │   ← 15/11 : posé SUR le média, comme Instagram
  *   │   image (≈ 2:1) ou vidéo 1:1  │   ← même modèle pour les deux
  *   └──────────────────────────────┘
  *   Titre                              ← gras, 2 lignes max
@@ -19,10 +19,12 @@
  * passe sous le média, avant les cartes ; marge commune 12.
  */
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { mediaUrl } from '@/api/client';
 import type { PublicationBlock } from '@/api/publicationBlocks';
 import { AppImage } from '@/design/appImage';
+import { veil } from '@/design/tokens.mobile';
 import { PublicationFollow } from '../PublicationFollow';
 import { PUBLICATION_PALETTE as P, PublicationSponsored, PublicationText } from '../publicationDesign';
 import { blockInks, hasTintedBackground } from './blockColors';
@@ -56,17 +58,25 @@ export function MediaTemplate({
       testID={`publication-block-${block.id}`}
       style={[styles.block, { backgroundColor: block.bgColor }, tinted ? styles.tinted : null]}
     >
-      <View style={styles.head}>
-        <PublicationFollow
-          look="inline"
-          publisherId={block.publisher.id}
-          publisherName={block.publisher.name}
-          ink={inks.ink}
-          muted={inks.muted}
-          testID={`publication-block-${block.id}-follow`}
-        />
-        {block.sponsored ? <PublicationSponsored color={inks.muted} testID={`publication-block-${block.id}-sponsored`} /> : null}
-      </View>
+      {media ? (
+        block.sponsored ? (
+          <View style={styles.head}>
+            <PublicationSponsored color={inks.muted} testID={`publication-block-${block.id}-sponsored`} />
+          </View>
+        ) : null
+      ) : (
+        <View style={styles.head}>
+          <PublicationFollow
+            look="inline"
+            publisherId={block.publisher.id}
+            publisherName={block.publisher.name}
+            ink={inks.ink}
+            muted={inks.muted}
+            testID={`publication-block-${block.id}-follow`}
+          />
+          {block.sponsored ? <PublicationSponsored color={inks.muted} testID={`publication-block-${block.id}-sponsored`} /> : null}
+        </View>
+      )}
 
       {media ? (
         <View testID={`publication-block-${block.id}-media`} style={[styles.media, { height }]}>
@@ -81,6 +91,22 @@ export function MediaTemplate({
           ) : (
             <AppImage uri={mediaUrl(media.url)} accessibilityLabel={label} contentFit="cover" style={styles.fill} />
           )}
+          {/* 15/11 (Instagram 002046) : éditeur + « Suivre » posés EN HAUT du média, blanc sur voile dégradé. */}
+          <View pointerEvents="box-none" style={styles.overlay} testID={`publication-block-${block.id}-follow-overlay`}>
+            <LinearGradient
+              pointerEvents="none"
+              colors={[veil(0.45), veil(0)]}
+              style={StyleSheet.absoluteFill}
+            />
+            <PublicationFollow
+              look="media"
+              publisherId={block.publisher.id}
+              publisherName={block.publisher.name}
+              ink={inks.ink}
+              muted={inks.muted}
+              testID={`publication-block-${block.id}-follow`}
+            />
+          </View>
         </View>
       ) : null}
 
@@ -132,6 +158,15 @@ const styles = StyleSheet.create({
     backgroundColor: P.neutral,
   },
   fill: { width: '100%', height: '100%' },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 24,
+  },
   // 13/11 — système de cartes : la rangée part de la marge commune, deux cartes entières à parts égales.
   row: { marginTop: T.rowSpacing, flexGrow: 0 },
   rowContent: { paddingHorizontal: T.mediaInset, gap: T.cardSpacing },

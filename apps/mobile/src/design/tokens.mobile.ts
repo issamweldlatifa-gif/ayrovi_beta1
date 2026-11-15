@@ -148,6 +148,30 @@ const PRICE_DROP_RED = '#CF1322';
  *   • noir   = texte, icônes, étoiles de note (plus de jaune orangé)
  *   • gris   = squelette, fond média, texte secondaire, filets
  */
+/**
+ * 15/11 — pastille de remise (référence « -45 % » rouge plein, texte blanc) :
+ * même rouge dans les deux modes (5,9:1 avec le blanc), car c'est un repère
+ * commercial fixe, pas une surface du thème.
+ */
+/**
+ * 15/11 — barre du navigateur AYWEBs (référence Walmart 003723) : fond bleu
+ * d'action, icônes blanches, pilule blanche à encre noire. Fixe dans les deux
+ * modes : c'est la signature de la boutique, comme la barre de Walmart.
+ */
+export const STORE_BAR = {
+  background: BRAND.violet,
+  ink: BRAND.white,
+  pill: BRAND.white,
+  pillInk: BRAND.black,
+  /** Cadenas et adresse dans la pilule blanche — gris fixe (le `muted` du mode sombre serait illisible sur blanc). */
+  pillMuted: NEUTRALS.textSecondary,
+} as const;
+
+export const SALE_BADGE = {
+  background: PRICE_DROP_RED,
+  text: BRAND.white,
+} as const;
+
 export const LENS_COLORS = {
   sale: PRICE_DROP_RED,
   /** Élément actif d'une surface Lens blanche (favori coché). */
@@ -756,7 +780,8 @@ export type DerivedColors = ReturnType<typeof derivedColors>;
 export const PUBLICATION_SPACING = { group: 4, section: 8, inset: 12, post: 12, rule: 4 } as const;
 /** Authorized publisher-only visual exception; global type and primary stay unchanged. */
 export const PUBLICATION_PUBLISHER = { font: 'PublicationPublisher-Bold', nameSize: 18, lineHeight: 24, avatar: 44, mark: 24, sealEdge: 1, follow: 24 } as const;
-export const PUBLICATION_METRICS = { icon: 22, actionIcon: 26, verified: 16, avatar: 36, productGap: 8 } as const;
+/** 15/11 : `actionIcon` 28 — icônes de la barre J'aime · Commenter · Partager · Enregistrer « un peu plus grandes » (24 → 28, rangée Instagram). */
+export const PUBLICATION_METRICS = { icon: 22, actionIcon: 28, verified: 16, avatar: 36, productGap: 8 } as const;
 
 export const ICON_SIZE = {
   xs: 14,

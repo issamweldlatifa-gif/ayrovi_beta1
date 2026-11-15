@@ -47,8 +47,12 @@ export const CARD_SYSTEM = {
   /** Cadre de la photo. */
   radius: 12,
   imageRatio: 1.44,
-  /** Cœur : trait nu, sans pastille. */
+  /**
+   * Cœur — 15/11 (modèle 004641) : rond BLANC de 32 dp, cœur au trait sombre
+   * de 18 dp au centre, zone de toucher 40 dp, posé à 6 dp du coin de la photo.
+   */
   heartIcon: 18,
+  heartDisc: 32,
   heartTarget: 40,
   heartInset: 2,
 } as const;

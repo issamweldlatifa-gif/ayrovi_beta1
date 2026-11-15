@@ -30,9 +30,9 @@
  *
  * La navigation reste interne : `/product/[id]`, jamais un site marchand.
  */
+import { FavoriteDiscGlyph } from '@/design/FavoriteDisc';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppImage } from '@/design/appImage';
 import { AppText } from '@/design/ui';
@@ -137,11 +137,7 @@ export function LinkedProductCard({
           hitSlop={8}
           style={styles.fav}
         >
-          <Ionicons
-            name={favourite ? 'heart' : 'heart-outline'}
-            size={ARTICLE_CARD.favourite}
-            color={favourite ? theme.colors.accentText : theme.colors.ink}
-          />
+          <FavoriteDiscGlyph active={favourite} />
         </Pressable>
       ) : null}
     </Pressable>

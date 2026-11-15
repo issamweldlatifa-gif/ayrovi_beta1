@@ -7,12 +7,13 @@
  *     corps de titre (28 pt) — trois lignes grises qui passaient sous le pied
  *     de la feuille. Désormais : une seule ligne discrète, jamais un titre.
  *
- *  2. **Le bandeau vert de « Article ajouté » était vide.** Un cadre vert avec
- *     une coche ne dit pas que l'ajout a réussi. La feuille écrit maintenant
- *     « Ajouté au panier », la variante et la quantité réellement enregistrées.
+ *  2. 15/11 : plus de « seconde feuille » après l'ajout. La feuille transmet la
+ *     ligne et le panier du serveur à l'écran parent puis se ferme ; c'est le
+ *     navigateur qui confirme (badge du sac + « Ajouté au panier · Voir le panier »).
  */
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { processColor, StyleSheet } from 'react-native';
 
 import type { AyWebsCart, AyWebsResolvedProduct } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
@@ -94,7 +95,7 @@ const product: AyWebsResolvedProduct = {
   cacheAgeMs: null,
 };
 
-function renderSheet() {
+function renderSheet(handlers: { onClose?: () => void; onAdded?: (item: unknown, cart: unknown) => void } = {}) {
   return render(
     <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
       <PrefsProvider>
@@ -105,7 +106,8 @@ function renderSheet() {
               sessionId="mob_1234567890123456"
               product={product}
               quoteToken="quote-token"
-              onClose={() => undefined}
+              onClose={handlers.onClose ?? (() => undefined)}
+              onAdded={handlers.onAdded}
             />
           </ThemeProvider>
         </I18nProvider>
@@ -131,18 +133,36 @@ describe('feuille d’ajout AYWEBs', () => {
     expect(screen.queryByText('Prix en dinars calculé à l’ajout.')).toBeNull();
   });
 
-  it('après ajout : le bandeau vert DIT que l’article est au panier', async () => {
-    renderSheet();
+  it('15/11 : après ajout, AUCUNE seconde feuille — la ligne et le panier remontent, la feuille se ferme', async () => {
+    const onClose = jest.fn();
+    const onAdded = jest.fn();
+    renderSheet({ onClose, onAdded });
     await waitFor(() => expect(screen.getByTestId('aywebs-sheet-add')).toBeTruthy(), { timeout: 5000 });
 
     await act(async () => {
       fireEvent.press(screen.getByTestId('aywebs-sheet-add'));
     });
 
-    await waitFor(() => expect(screen.getByTestId('aywebs-sheet-success')).toBeTruthy(), { timeout: 5000 });
-    expect(screen.getByText('Ajouté au panier')).toBeTruthy();
-    expect(screen.getByText('Black · M · Quantité 1')).toBeTruthy();
-    // Le pied de la feuille disparaît : l'action est faite, on ne la repropose pas.
-    expect(screen.queryByTestId('aywebs-sheet-add')).toBeNull();
+    await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1), { timeout: 5000 });
+    expect(onAdded.mock.calls[0][0]).toMatchObject({ id: 'line-1', variantLabel: 'Black · M' });
+    expect(onAdded.mock.calls[0][1]).toMatchObject({ totals: { units: 1 } });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('aywebs-sheet-success')).toBeNull();
+    expect(screen.queryByTestId('aywebs-sheet-go-to-bag')).toBeNull();
+  });
+
+  it('15/11 (Cdiscount) : carte produit compacte sur bande grise, mot-symbole bleu, pilule bleue 48 dp', async () => {
+    renderSheet();
+    await waitFor(() => expect(screen.getByTestId('aywebs-sheet-add')).toBeTruthy(), { timeout: 5000 });
+    const band = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-product-band').props.style);
+    expect(band.backgroundColor).toBe('#F2F2F2');
+    const card = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-product-card').props.style);
+    expect(card.backgroundColor).toBe('#FFFFFF');
+    const thumb = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-product-image').props.style);
+    expect(thumb.width).toBe(88);
+    expect(screen.getByTestId('aywebs-sheet-wordmark', { includeHiddenElements: true }).props.tintColor).toBe(processColor('#0A63F5'));
+    const cta = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-add').props.style);
+    expect(cta.minHeight).toBe(48);
+    expect(cta.backgroundColor).toBe('#0A63F5');
   });
 });

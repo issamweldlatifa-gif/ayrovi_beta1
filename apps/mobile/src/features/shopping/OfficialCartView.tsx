@@ -9,6 +9,7 @@ import { BackButton } from '@/design/BackButton';
  *     filet supérieur, `Livraison`, `Total` + `TVA incluse`, bouton pastille noir
  *     compact `Commander`, et rangée des moyens de paiement acceptés.
  */
+import { SalePrice } from '@/design/SalePrice';
 import { type ReactNode, useMemo, useState } from 'react';
 import { Image, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
@@ -161,23 +162,16 @@ export function OfficialCartRow({
               {t('cart.noLineTotal')}
             </AppText>
           ) : hasDiscount ? (
+            // 15/11 (référence 004418) : prix rouge, pastille rouge pleine « -25% », origine barrée.
             <View style={styles.priceGroup}>
-              <AppText variant="bodyStrong" color={theme.status.danger.fg}>
-                {formatMoney(item.lineTotalTnd)}
-              </AppText>
-              <View style={[styles.originalPriceRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                <AppText variant="caption" color={theme.colors.muted}>
-                  {t('cart.originally')}
-                </AppText>
-                <AppText variant="caption" color={theme.colors.muted} style={styles.strikethrough}>
-                  {formatMoney(item.originalLineTotalTnd as number)}
-                </AppText>
-                {computedPct && computedPct > 0 ? (
-                  <AppText variant="captionStrong" color={theme.status.danger.fg}>
-                    {`-${computedPct}%`}
-                  </AppText>
-                ) : null}
-              </View>
+              <SalePrice
+                testID={`cart-row-${item.id}-price`}
+                size="md"
+                price={formatMoney(item.lineTotalTnd)}
+                percent={computedPct && computedPct > 0 && computedPct < 98 ? computedPct : null}
+                original={formatMoney(item.originalLineTotalTnd as number)}
+                originalPrefix={t('cart.originally')}
+              />
             </View>
           ) : (
             <AppText variant="bodyStrong" color={theme.colors.ink} style={styles.regularPrice}>
@@ -541,14 +535,6 @@ const styles = StyleSheet.create({
   },
   regularPrice: {
     marginTop: 2,
-  },
-  originalPriceRow: {
-    alignItems: 'center',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  strikethrough: {
-    textDecorationLine: 'line-through',
   },
   variantsStack: {
     marginTop: 4,

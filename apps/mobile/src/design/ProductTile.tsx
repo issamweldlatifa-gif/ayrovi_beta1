@@ -25,6 +25,7 @@
  *  • ouvrir autre chose que ce que l'écran décide (`onOpen(photo)`).
  */
 import { CARD_SYSTEM } from './cardSystem';
+import { FavoriteDiscGlyph } from './FavoriteDisc';
 import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   FlatList,
@@ -323,12 +324,7 @@ function ProductTileComponent({
               { opacity: favorite.disabled && favorite.active ? theme.opacity.favorite : pressed ? theme.opacity.subtle : 1 },
             ]}
           >
-            <Ionicons
-              name={favorite.active ? 'heart' : 'heart-outline'}
-              size={CARD_SYSTEM.heartIcon}
-              color={favorite.active ? LENS_COLORS.active : palette.ink}
-              accessibilityElementsHidden
-            />
+            <FavoriteDiscGlyph active={favorite.active} />
           </Pressable>
         ) : null}
       </View>

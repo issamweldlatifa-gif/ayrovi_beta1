@@ -8,7 +8,7 @@
  *   ├────────── image large facultative (même fond) ──────┤
  *   ├──── panneau (teinte voisine, calculée ou du CRM) ───┤
  *   │  [carte][carte][▌    ← rangée de cartes produit     │
- *   │  (+ Suivre)  zayrovi team                           │
+ *   │  (Z) zayrovi team                       ( Suivre )  │  ← 15/11 : blanc, pilule transparente
  *   └─────────────────────────────────────────────────────┘
  *
  * 13/11 : « + Suivre » ajouté (consigne du propriétaire), titre agrandi et en
@@ -100,7 +100,7 @@ export function ContainerTemplate({
         </ScrollView>
         <View style={styles.footer}>
           <PublicationFollow
-            look="pill"
+            look="block"
             publisherId={block.publisher.id}
             publisherName={block.publisher.name}
             ink={panel.ink}

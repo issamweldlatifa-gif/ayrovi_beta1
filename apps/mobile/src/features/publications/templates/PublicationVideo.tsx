@@ -1,13 +1,16 @@
 /**
- * Vidéo d'un bloc Publication (modèle `media`) — lecture en boucle, muette au
- * départ, seulement quand le bloc est le plus visible de la page. Deux commandes
+ * Vidéo d'un bloc Publication (modèle `media`) — lecture en boucle, seulement
+ * quand le bloc est le plus visible de la page. 15/11 : le son est ACTIF au
+ * démarrage et le bouton le coupe (choix gardé pour la session,
+ * `publicationSound.ts`) ; une vidéo hors écran est en pause, donc jamais deux
+ * sons à la fois. Deux commandes
  * posées en bas à droite comme sur la planche Zalando : pause/lecture et son.
  * Ce sont des commandes du lecteur, pas des boutons d'interaction sociale.
  *
  * L'affiche (`poster`) reste dessous tant que la vidéo n'est pas prête : jamais
  * de rectangle noir au défilement.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { VideoView, useVideoPlayer } from 'expo-video';
 
@@ -20,6 +23,7 @@ import { playReelVideo, reloadReelVideo } from '@/features/reels/playReelVideo';
 import { useReelPlaybackStatus } from '@/features/reels/useReelPlaybackStatus';
 import { ReelGlyph } from '@/features/reels/ReelIcons';
 import { PUBLICATION_PALETTE as P, PublicationIcon } from '../publicationDesign';
+import { publicationSoundOn, subscribePublicationSound, togglePublicationSound } from '../publicationSound';
 
 const CONTROL = 40;
 
@@ -41,10 +45,11 @@ export function PublicationVideo({
   const t = useT();
   const view = useRef<VideoView>(null);
   const [paused, setPaused] = useState(false);
-  const [muted, setMuted] = useState(true);
+  const soundOn = useSyncExternalStore(subscribePublicationSound, publicationSoundOn, publicationSoundOn);
+  const muted = !soundOn;
   const source = mediaUrl(uri);
   const player = useVideoPlayer(null, (instance) => {
-    instance.muted = true;
+    instance.muted = !publicationSoundOn();
     instance.loop = true;
   });
   const playback = useReelPlaybackStatus(player, active, source, view);
@@ -97,7 +102,8 @@ export function PublicationVideo({
           accessibilityRole="button"
           accessibilityLabel={muted ? t('publication.videoUnmute') : t('publication.videoMute')}
           testID={`${testID}-mute`}
-          onPress={() => setMuted((value) => !value)}
+          accessibilityState={{ selected: soundOn }}
+          onPress={() => { togglePublicationSound(); }}
           style={styles.control}
         >
           {/* 14/11 : le même haut-parleur PLEIN que le rail des Reels (une seule famille). */}

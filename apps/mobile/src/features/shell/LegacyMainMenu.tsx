@@ -25,6 +25,7 @@ import { useSession } from '@/state/session';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { adaptiveInk } from '@/features/home/heroPalette';
+import { LiveCartButton } from '@/features/shopping/LiveCartGlyph';
 
 function HeaderIcon({
   name, label, onPress, color,
@@ -173,11 +174,12 @@ export function LegacyMainMenu({
               color={iconColor}
             />
           ) : null}
-          <HeaderIcon
-            name="bag-outline"
+          <LiveCartButton
             label={t('cart.title')}
+            countLabel={(count) => t('cart.unitsA11y', { count })}
             onPress={() => go('/panier')}
             color={iconColor}
+            ringColor={onHero && heroBackground ? heroBackground : theme.colors.canvas}
           />
         </View>
       </View>

@@ -16,6 +16,7 @@ import { adaptiveInk } from '@/features/home/heroPalette';
 import { requestScrollToTop } from '@/features/shell/scrollToTop';
 import { backdropLayerRange } from '@/features/home/heroCarouselLogic';
 import type { HeroTint } from '@/features/home/HeroCarousel';
+import { LiveCartButton } from '@/features/shopping/LiveCartGlyph';
 
 /** Passage teinte Hero ↔ fond de page quand la page défile : fondu court, jamais une coupure. */
 export const HEADER_TINT_FADE_MS = 180;
@@ -127,7 +128,17 @@ export function AppHeader({ scrolled, heroBackground = null, heroTint = null, br
         style={styles.plusHit}><View testID="plus-light-pill" style={[styles.plus, { borderColor: ink }]}><AppText variant="captionStrong" color={ink} numberOfLines={1}>Plus</AppText><Ionicons name="star" size={theme.iconSize.xs} color={ink} /><AppText variant="caption" color={ink} numberOfLines={1}>Light</AppText></View></Pressable> : null}
       {!guest && showNotifications ? icon('notifications-outline', t('account.menu.notifications'), status === 'signedIn' ? '/account/notifications' : '/sign-in') : null}
       {brand === 'aywebs' ? icon('heart-outline', t('account.menu.favorites'), '/account/favorites') : null}
-      {!guest ? icon('bag-outline', t('cart.title'), '/panier') : null}
+      {!guest ? (
+        <LiveCartButton
+          testID="main-header-cart"
+          label={t('cart.title')}
+          countLabel={(count) => t('cart.unitsA11y', { count })}
+          onPress={() => router.push('/panier' as never)}
+          color={ink}
+          ringColor={onHero && heroBackground ? heroBackground : theme.colors.canvas}
+          hitStyle={styles.hit}
+        />
+      ) : null}
     </View>
   </View>;
 }

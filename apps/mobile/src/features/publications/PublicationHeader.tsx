@@ -1,7 +1,9 @@
 /**
  * En-tête de la page Publication — CONSERVÉ tel quel lors de la refonte du
  * 13/11/2026 (consigne : « on vide la page, on garde seulement l'en-tête ») :
- * retour à gauche, titre centré, compte à droite, filet en bas.
+ * retour à gauche, titre centré, compte à droite.
+ * 15/11 : le filet du bas est retiré (« نحي الخطوط ») — les blocs commencent
+ * sous l'en-tête, séparés par l'espace seul.
  *
  * Seule la loupe est partie : elle cherchait dans l'ancien fil de posts, qui
  * n'existe plus — un bouton qui n'ouvre rien n'a pas sa place.
@@ -57,8 +59,6 @@ const styles = StyleSheet.create({
   header: {
     minHeight: 52,
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: P.line,
     backgroundColor: P.paper,
   },
   side: { width: 88, alignItems: 'center' },

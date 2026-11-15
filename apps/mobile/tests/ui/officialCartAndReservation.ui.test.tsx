@@ -11,6 +11,7 @@
  *      remisé, bouton plein `Voir le panier` et bandeau du nombre d'articles.
  */
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -283,7 +284,9 @@ describe('Refonte du 29/10/2026 — Panier officiel, Fiche réservation 20 min e
     expect(mockPush).toHaveBeenCalledWith('/panier');
   });
 
-  it('affiche le prix remisé et la feuille compacte « Ajouté au panier » avec le compteur d’articles', async () => {
+  it('affiche le prix remisé en rouge, puis ferme la feuille après l’ajout (pas de seconde feuille)', async () => {
+    const onClose = jest.fn();
+    const onAdded = jest.fn();
     const sheinProduct: AyWebsResolvedProduct = {
       productId: 'shein-jacket',
       storeId: 'shein',
@@ -323,23 +326,29 @@ describe('Refonte du 29/10/2026 — Panier officiel, Fiche réservation 20 min e
           }}
           quoteToken="quote-shein-1"
           readOnlySelection
-          onClose={() => undefined}
+          onClose={onClose}
+          onAdded={onAdded}
         />
       </Providers>,
     );
 
     await waitFor(() => expect(screen.getByTestId('aywebs-sheet-add')).toBeTruthy());
+    // 15/11 (référence 004418) : prix ROUGE, pastille rouge pleine « -25% » à texte blanc, origine barrée.
     expect(screen.getByText('-25%')).toBeTruthy();
+    const badge = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-price-badge').props.style);
+    expect(badge.backgroundColor).toBe('#CF1322');
+    expect(StyleSheet.flatten(screen.getByText('-25%').props.style).color).toBe('#FFFFFF');
+    expect(StyleSheet.flatten(screen.getByTestId('aywebs-sheet-price-amount').props.style).color).toBe('#CF1322');
+    expect(StyleSheet.flatten(screen.getByTestId('aywebs-sheet-price-original').props.style).textDecorationLine).toBe('line-through');
 
     await act(async () => {
       fireEvent.press(screen.getByTestId('aywebs-sheet-add'));
     });
 
-    await waitFor(() => expect(screen.getByTestId('aywebs-sheet-success')).toBeTruthy());
-    expect(screen.getByText('Ajouté au panier')).toBeTruthy();
-    expect(screen.getByText('Vous avez maintenant 3 article(s) dans votre panier.')).toBeTruthy();
-
-    fireEvent.press(screen.getByTestId('aywebs-sheet-go-to-bag'));
-    expect(mockPush).toHaveBeenCalledWith('/panier');
+    // Pas de seconde feuille : le panier du serveur (3 articles) remonte et la feuille se ferme.
+    await waitFor(() => expect(onAdded).toHaveBeenCalledTimes(1));
+    expect(onAdded.mock.calls[0][1]).toMatchObject({ totals: { units: 3 } });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('aywebs-sheet-success')).toBeNull();
   });
 });
