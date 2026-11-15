@@ -170,6 +170,12 @@ jobs:
       - name: Générer le projet Android
         run: npx expo prebuild --platform android --no-install
 
+      # 15/11 : R8 manquait de mémoire (« OutOfMemoryError: Java heap space » dans
+      # minifyReleaseWithR8, runs #463/#465). Le prebuild remet 2 Go : on relève le tas.
+      - name: Mémoire de Gradle (R8)
+        working-directory: apps/mobile
+        run: node scripts/raise-gradle-heap.mjs android/gradle.properties
+
       # EMPREINTE STABLE — pourquoi cette étape existe.
       #
       # Sans elle, Gradle fabrique une clé debug NEUVE sur chaque machine, donc
