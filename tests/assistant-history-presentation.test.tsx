@@ -21,7 +21,7 @@ describe('historical content remains visible and accurately labelled', () => {
     expect(render([{ id: 'complete', role: 'assistant', text: 'Text', incomplete: false }])).not.toContain('data-incomplete-response');
   });
   it.each(['fr', 'ar'])('exposes storage failure, retry and snapshot limits in %s', locale => {
-    localStorage.setItem('ayrovi.locale.v1', locale);
+    localStorage.setItem('zayrovi.locale.v1', locale);
     const html = renderToStaticMarkup(<LocaleProvider><AssistantHistoryNotice status="quota" restored onRetry={noop}/></LocaleProvider>);
     expect(html).toContain('role="status"');
     expect(html).toContain(locale === 'ar' ? 'إعادة محاولة الحفظ' : 'Réessayer l’enregistrement');

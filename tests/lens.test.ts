@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import { analyzeOcrText, classifyFinding, extractPriceCandidates } from '../src/ayrovix/services/ocrPrices';
-import { mergeVisionOcr } from '../src/ayrovix/services/lensPipeline';
+import { analyzeOcrText, classifyFinding, extractPriceCandidates } from '../src/zayrovix/services/ocrPrices';
+import { mergeVisionOcr } from '../src/zayrovix/services/lensPipeline';
 import { detectPriceCorrection, classifyPriceError } from '../src/assistant/learning';
-import type { AyrovixIdentification } from '../src/ayrovix/types';
+import type { ZayrovixIdentification } from '../src/zayrovix/types';
 
-const visionWith = (pricing: Partial<NonNullable<AyrovixIdentification['pricing']>>, confidence = 0.9): AyrovixIdentification => ({
+const visionWith = (pricing: Partial<NonNullable<ZayrovixIdentification['pricing']>>, confidence = 0.9): ZayrovixIdentification => ({
   input_kind: 'product_screenshot',
   category: 'mode',
   brand: 'Nike',

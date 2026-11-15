@@ -25,8 +25,8 @@
 import type { AyWebsResolvedProduct } from '@/api/aywebs';
 
 /** Le devis en dinars est-il absent de cette résolution ? */
-export function lacksServerQuote(product: Pick<AyWebsResolvedProduct, 'ayroviPricing'> | null | undefined): boolean {
-  const total = product?.ayroviPricing?.totalTnd;
+export function lacksServerQuote(product: Pick<AyWebsResolvedProduct, 'zayroviPricing'> | null | undefined): boolean {
+  const total = product?.zayroviPricing?.totalTnd;
   return !(typeof total === 'number' && Number.isFinite(total) && total > 0);
 }
 
@@ -46,7 +46,7 @@ export interface ServerReadDecision {
  */
 export function serverReadDecision(input: {
   /** Résolution obtenue depuis la capture (peut être nulle si l'appel a échoué). */
-  product: Pick<AyWebsResolvedProduct, 'ayroviPricing' | 'price' | 'currency' | 'priceVerified' | 'currencyVerified'> | null | undefined;
+  product: Pick<AyWebsResolvedProduct, 'zayroviPricing' | 'price' | 'currency' | 'priceVerified' | 'currencyVerified'> | null | undefined;
   /** Une relecture a-t-elle déjà eu lieu pour cette ouverture de feuille ? */
   attempted?: boolean;
   /** Session absente : le serveur refuserait l'appel. */
@@ -152,7 +152,7 @@ export function preferServerQuote(
     priceVerified: fromServer.priceVerified === true || fromCapture.priceVerified === true,
     currencyVerified: fromServer.currencyVerified === true || fromCapture.currencyVerified === true,
     availability: fromServer.availability.state !== 'UNKNOWN' ? fromServer.availability : fromCapture.availability,
-    ayroviPricing: fromServer.ayroviPricing ?? fromCapture.ayroviPricing,
+    zayroviPricing: fromServer.zayroviPricing ?? fromCapture.zayroviPricing,
     variantGroups: groups,
     variantDetails: fromServer.variantDetails.length ? fromServer.variantDetails : fromCapture.variantDetails,
     variantQuotes: fromServer.variantQuotes.length ? fromServer.variantQuotes : fromCapture.variantQuotes,

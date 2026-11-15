@@ -55,8 +55,8 @@ describe('configuration', () => {
 
   it('complète ⇒ configuré', () => {
     expect(pushConfigured({
-      projectId: 'ayrovi',
-      clientEmail: 'sa@ayrovi.iam.gserviceaccount.com',
+      projectId: 'zayrovi',
+      clientEmail: 'sa@zayrovi.iam.gserviceaccount.com',
       privateKey: '-----BEGIN PRIVATE KEY-----\nMIIB\n-----END PRIVATE KEY-----',
     })).toBe(true);
   });
@@ -69,18 +69,18 @@ describe('assertion JWT', () => {
   const pem = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
 
   it('a trois segments signés en RS256', () => {
-    const jwt = buildFcmAssertion({ clientEmail: 'sa@ayrovi.iam', privateKey: pem }, Date.now());
+    const jwt = buildFcmAssertion({ clientEmail: 'sa@zayrovi.iam', privateKey: pem }, Date.now());
     const [header, claims, signature] = jwt.split('.');
     expect(signature).toBeTruthy();
     expect(JSON.parse(Buffer.from(header, 'base64url').toString())).toMatchObject({ alg: 'RS256', typ: 'JWT' });
     expect(JSON.parse(Buffer.from(claims, 'base64url').toString())).toMatchObject({
-      iss: 'sa@ayrovi.iam',
+      iss: 'sa@zayrovi.iam',
       aud: 'https://oauth2.googleapis.com/token',
     });
   });
 
   it('la signature SE VÉRIFIE avec la clé publique — sinon Google la refuse', () => {
-    const jwt = buildFcmAssertion({ clientEmail: 'sa@ayrovi.iam', privateKey: pem }, Date.now());
+    const jwt = buildFcmAssertion({ clientEmail: 'sa@zayrovi.iam', privateKey: pem }, Date.now());
     const [header, claims, signature] = jwt.split('.');
     const ok = createVerify('RSA-SHA256')
       .update(`${header}.${claims}`)
@@ -107,7 +107,7 @@ describe('corps du message', () => {
   it('priorité haute et canal Android', () => {
     const body: any = fcmMessageBody('tok', { title: 'T', body: 'B' });
     expect(body.message.android.priority).toBe('HIGH');
-    expect(body.message.android.notification.channelId).toBe('ayrovi-default');
+    expect(body.message.android.notification.channelId).toBe('zayrovi-default');
   });
 
   it('tronque au lieu de faire refuser tout le message', () => {
@@ -120,8 +120,8 @@ describe('corps du message', () => {
 /* ── Envoi ─────────────────────────────────────────────────────────────────── */
 
 const config = {
-  projectId: 'ayrovi',
-  clientEmail: 'sa@ayrovi.iam',
+  projectId: 'zayrovi',
+  clientEmail: 'sa@zayrovi.iam',
   privateKey: generateKeyPairSync('rsa', { modulusLength: 2048 })
     .privateKey.export({ type: 'pkcs8', format: 'pem' }).toString(),
 };

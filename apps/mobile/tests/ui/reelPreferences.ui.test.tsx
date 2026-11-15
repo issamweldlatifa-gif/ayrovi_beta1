@@ -24,7 +24,7 @@ it('persists device hiding, restores it and never hides after a failed write', a
   });
   expect(result.current).toEqual(['r1']);
   expect(
-    JSON.parse((await AsyncStorage.getItem('ayrovi.reels.hidden.device.v1'))!)
+    JSON.parse((await AsyncStorage.getItem('zayrovi.reels.hidden.device.v1'))!)
   ).toEqual(['r1']);
   jest
     .spyOn(AsyncStorage, 'setItem')

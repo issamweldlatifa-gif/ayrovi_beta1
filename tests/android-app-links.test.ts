@@ -1,5 +1,5 @@
 /**
- * App Links — الملف اللي يخلّي `https://ayrovi.tn` تفتح التطبيق.
+ * App Links — الملف اللي يخلّي `https://zayrovi.com` تفتح التطبيق.
  *
  * القاعدة اللي كنتحاسبوا عليها هنا: **ملف غالط أسوأ من ملف غايب**. ملف غايب ⇒
  * أندرويد يفتح المتصفّح كما العادة. ملف موجود وبصمة غالطة ⇒ أندرويد يقعد
@@ -79,7 +79,7 @@ describe('أسماء الحزم', () => {
   test('بلا ضبط: حزمة الإصدار وحدها', () => {
     expect(parseAppLinkPackages(undefined)).toEqual([ANDROID_APP_LINK_PACKAGE]);
     expect(parseAppLinkPackages('')).toEqual([ANDROID_APP_LINK_PACKAGE]);
-    expect(ANDROID_APP_LINK_PACKAGE).toBe('app.ayrovi.mobile');
+    expect(ANDROID_APP_LINK_PACKAGE).toBe('app.zayrovi.mobile');
   });
 
   test('الإصدار + العرض التجريبي يتعايشوا في نفس الملف', () => {
@@ -89,13 +89,13 @@ describe('أسماء الحزم', () => {
 
   test('اسم حزمة باطل يرفض', () => {
     // بلا نقطة: موش اسم حزمة أندرويد.
-    expect(parseAppLinkPackages('ayrovi')).toBeNull();
+    expect(parseAppLinkPackages('zayrovi')).toBeNull();
     // مسطرة ممنوعة في اسم الحزمة.
-    expect(parseAppLinkPackages('app.ayrovi.mobile-x')).toBeNull();
+    expect(parseAppLinkPackages('app.zayrovi.mobile-x')).toBeNull();
   });
 
   test('الحروف الكبيرة تتنظّم لصغيرة — الحزم في `app.json` صغيرة', () => {
-    expect(parseAppLinkPackages('App.Ayrovi.Mobile')).toEqual(['app.ayrovi.mobile']);
+    expect(parseAppLinkPackages('App.Zayrovi.Mobile')).toEqual(['app.zayrovi.mobile']);
   });
 });
 
@@ -107,7 +107,7 @@ describe('البيان الذي يُنشر', () => {
         relation: [ANDROID_APP_LINK_RELATION],
         target: {
           namespace: 'android_app',
-          package_name: 'app.ayrovi.mobile',
+          package_name: 'app.zayrovi.mobile',
           sha256_cert_fingerprints: [SIGNING],
         },
       },

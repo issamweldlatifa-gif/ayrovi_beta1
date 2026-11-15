@@ -84,9 +84,9 @@ const resources: Record<string, ResourceDefinition> = {
   },
   news: {
     title: 'مجلتي', singular: 'محتوى مجلتي', description: 'مجلة ZAYROVI التحريرية المرتبطة بالمنتجات، مع مسودات وكيل مجلتي ومراجعة بشرية قبل النشر.', endpoint: '/news', keyField: 'title', statusField: 'status', permission: 'content:write',
-    defaults: { title: '', summary: '', content: '', image: '', category: 'AYROVI', arrival_id: '', product_id: '', author: 'Équipe ZAYROVI', published_at: new Date().toISOString(), status: 'DRAFT' },
+    defaults: { title: '', summary: '', content: '', image: '', category: 'ZAYROVI', arrival_id: '', product_id: '', author: 'Équipe ZAYROVI', published_at: new Date().toISOString(), status: 'DRAFT' },
     fields: [
-      { key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'category', label: 'Catégorie', type: 'select', options: ['NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','AYROVI','INFORMATION','OTHER'] },
+      { key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'category', label: 'Catégorie', type: 'select', options: ['NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','ZAYROVI','INFORMATION','OTHER'] },
       { key: 'summary', label: 'Résumé', type: 'textarea', full: true }, { key: 'content', label: 'Contenu', type: 'textarea', required: true, full: true }, { key: 'image', label: 'Image', type: 'image', full: true },
       { key: 'arrival_id', label: 'ID arrivage', type: 'text' }, { key: 'product_id', label: 'ID produit', type: 'text' }, { key: 'author', label: 'Auteur', type: 'text' },
       { key: 'published_at', label: 'Publication', type: 'date', required: true }, { key: 'status', label: 'Statut', type: 'select', options: ['DRAFT','SCHEDULED','PUBLISHED','ARCHIVED'] },
@@ -174,7 +174,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
       {/* Identité : le verrou A.ROVI porte le nom une seule fois (emblème + « YROVI »), ici en
           version blanche puisque le panneau est en encre. La ligne de service dit ce qu'on ouvre. */}
       <section className="admin-login-brand">
-        <img src="/media/logo-ayrovi-lockup-white-violet.svg?v=7.0" alt="ZAYROVI" className="admin-login-brand__lockup" />
+        <img src="/media/logo-zayrovi-lockup-white-violet.svg?v=7.0" alt="ZAYROVI" className="admin-login-brand__lockup" />
         <span>CONSOLE D’EXPLOITATION</span>
         <h1>Le commerce mondial,<br />piloté depuis Tunis.</h1>
         <p>Contenu, arrivages, commandes, tarification et assistance — une seule source de vérité, la même que le site public.</p>
@@ -190,7 +190,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
       </section>
       <section className="admin-login-panel">
         <div className="admin-login-box">
-          <div className="admin-login-mobile-logo"><img src="/media/logo-ayrovi-lockup-black-violet.svg?v=7.0" alt="ZAYROVI" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /></div>
+          <div className="admin-login-mobile-logo"><img src="/media/logo-zayrovi-lockup-black-violet.svg?v=7.0" alt="ZAYROVI" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /></div>
           {/* Cartouche d'état : la sonde est réelle, donc le chiffre affiché est celui du serveur en face. */}
           <div className="admin-login-status" data-state={health.state} role="status" aria-live="polite">
             <i aria-hidden="true" />
@@ -204,7 +204,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
           <p>Connectez-vous avec le compte administrateur configuré sur le serveur.</p>
           <Form onSubmit={submit}>
             <Field label="Adresse email" required full>
-              <input type="email" name="email" value={email} autoComplete="username" inputMode="email" autoFocus aria-describedby="admin-login-email-help" onChange={(e) => setEmail(e.target.value)} placeholder="admin@ayrovi.tn" required />
+              <input type="email" name="email" value={email} autoComplete="username" inputMode="email" autoFocus aria-describedby="admin-login-email-help" onChange={(e) => setEmail(e.target.value)} placeholder="admin@zayrovi.com" required />
             </Field>
             <Field label="Mot de passe" required full>
               <div className="admin-password">
@@ -652,7 +652,7 @@ const LensRequestsPage: React.FC<{ canWrite: boolean; requestedId?: string }> = 
   const load = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      const result = await adminApi<any>(`/ayrovix-reviews?${queryString({ page, pageSize: 20, search, status })}`);
+      const result = await adminApi<any>(`/zayrovix-reviews?${queryString({ page, pageSize: 20, search, status })}`);
       setRows(result.data || []);
       setPagination(result.pagination);
     } catch (error: any) {
@@ -666,7 +666,7 @@ const LensRequestsPage: React.FC<{ canWrite: boolean; requestedId?: string }> = 
     setSelected(row);
     setDetailLoading(true);
     try {
-      const result = await adminApi<any>(`/ayrovix-reviews/${row.id}`);
+      const result = await adminApi<any>(`/zayrovix-reviews/${row.id}`);
       setSelected(result.data);
     } catch (error: any) {
       setToast({ message: error.message, tone: 'error' });
@@ -685,7 +685,7 @@ const LensRequestsPage: React.FC<{ canWrite: boolean; requestedId?: string }> = 
     if (!selected || !canWrite) return;
     setBusy(true);
     try {
-      const result = await adminApi<any>(`/ayrovix-reviews/${selected.id}`, {
+      const result = await adminApi<any>(`/zayrovix-reviews/${selected.id}`, {
         method: 'PUT',
         body: JSON.stringify({
           status: selected.status,
@@ -895,7 +895,7 @@ const AuditPage:React.FC=()=>{
         <Button variant="secondary" type="button" onClick={()=>void load(page.page)} busy={loading}>Rafraîchir</Button>
         <Button variant="secondary" type="button" disabled={loading||rows.length===0}
           title={rows.length===0?'Aucune entrée à exporter sur cette page.':`Exporter les ${rows.length} entrées affichées en CSV`}
-          onClick={()=>downloadCsv(csvFileName('ayrovi-journal-audit'),AUDIT_COLUMNS,rows)}>Exporter CSV</Button>
+          onClick={()=>downloadCsv(csvFileName('zayrovi-journal-audit'),AUDIT_COLUMNS,rows)}>Exporter CSV</Button>
       </div>
     }/>
     <section className="admin-list-card"><DataTable rows={rows} loading={loading} columns={[
@@ -915,7 +915,7 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const [from,setFrom]=useState(monthStart);const [to,setTo]=useState(today);
   const [report,setReport]=useState<any>(null);const [expenses,setExpenses]=useState<any[]>([]);const [ayx,setAyx]=useState<any>(null);const [toast,setToast]=useState<any>(null);const [busy,setBusy]=useState(false);
   const [form,setForm]=useState({label:'',category:'OTHER',amountTnd:'',expenseDate:today,notes:''});
-  const load=useCallback(async()=>{try{const[r,e,a]=await Promise.all([adminApi<any>(`/reports/finance?from=${from}&to=${to}`),adminApi<any>(`/expenses?from=${from}&to=${to}`),adminApi<any>('/ayrovix/stats')]);setReport(r.data);setExpenses(e.data||[]);setAyx(a.data);}catch(err:any){setToast({message:err.message,tone:'error'});}},[from,to]);
+  const load=useCallback(async()=>{try{const[r,e,a]=await Promise.all([adminApi<any>(`/reports/finance?from=${from}&to=${to}`),adminApi<any>(`/expenses?from=${from}&to=${to}`),adminApi<any>('/zayrovix/stats')]);setReport(r.data);setExpenses(e.data||[]);setAyx(a.data);}catch(err:any){setToast({message:err.message,tone:'error'});}},[from,to]);
   useEffect(()=>{load();},[load]);
   const add=async()=>{setBusy(true);try{await adminApi('/expenses',{method:'POST',body:JSON.stringify({...form,amountTnd:Number(form.amountTnd)})});setForm({label:'',category:'OTHER',amountTnd:'',expenseDate:today,notes:''});await load();setToast({message:'Dépense enregistrée.',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
   const remove=async(id:string)=>{try{await adminApi(`/expenses/${id}`,{method:'DELETE'});await load();}catch(e:any){setToast({message:e.message,tone:'error'});}};
@@ -930,7 +930,7 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   <div className="admin-report-grid">
     <section className="admin-card"><CardTitle title="6 derniers mois" subtitle="Revenus vs dépenses (TND)"/><div className="admin-chart">{((report?.monthly||[]) as any[]).map(m=><div key={m.month} className="admin-chart-col"><div className="admin-chart-bars"><i className="is-income" style={{height:`${Math.max(2,Math.round((m.income/maxMonthly)*110))}px`}} title={`Revenus ${formatMoney(m.income)}`}/><i className="is-expense" style={{height:`${Math.max(2,Math.round((m.expenses/maxMonthly)*110))}px`}} title={`Dépenses ${formatMoney(m.expenses)}`}/></div><span>{m.month.slice(5)}/{m.month.slice(2,4)}</span></div>)}<div className="admin-chart-legend"><i className="is-income"/>Revenus<i className="is-expense"/>Dépenses</div></div></section>
       <section className="admin-card"><CardTitle title="Dépenses par catégorie" subtitle="Période sélectionnée"/><div className="admin-settings-list">{((report?.expensesByCategory||[]) as any[]).length===0&&<p className="admin-block-small">Aucune dépense sur la période.</p>}{((report?.expensesByCategory||[]) as any[]).map(row=><div key={row.category} className="admin-cat-row"><span>{({ADS:'Publicité',SHIPPING:'Transport',STOCK:'Stock',SERVICES:'Services',SALARIES:'Salaires',FEES:'Frais',OTHER:'Autres'} as any)[row.category]||row.category}</span><strong>{formatMoney(row.total)}</strong></div>)}</div></section>
-      {ayx&&<section className="admin-card"><CardTitle title="AYROVIX Lens · 7 derniers jours" subtitle="Usage du scan produit (image / lien / QR) — données anonymes"/>
+      {ayx&&<section className="admin-card"><CardTitle title="ZAYROVIX Lens · 7 derniers jours" subtitle="Usage du scan produit (image / lien / QR) — données anonymes"/>
         {ayx.providers&&<div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
           <Badge tone={ayx.providers.vision?.configured?'success':'warning'}>{ayx.providers.vision?.configured?<CheckCircle2 size={16}/>:<AlertCircle size={16}/>} AI Core Vision : {ayx.providers.vision?.configured?'Prix et compréhension actifs':'Fournisseur non configuré'}</Badge>
           <Badge tone={ayx.providers.visualSearch?.configured?'success':'warning'}>{ayx.providers.visualSearch?.configured?<CheckCircle2 size={16}/>:<AlertCircle size={16}/>} Google Lens : {ayx.providers.visualSearch?.configured?'SerpApi configuré · produits visuels actifs':'Clé manquante — SERPAPI_KEY'}</Badge>
@@ -979,15 +979,15 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const saveRow=(key:string,value:any)=>{const row=rows.find((r:any)=>r.setting_key===key);if(!row)return Promise.resolve();return adminApi(`/settings/${row.id}`,{method:'PUT',body:JSON.stringify({value})});};
   const save=async()=>{setBusy(true);try{await Promise.all([saveRow('site_theme',theme),saveRow('footer_about',footerAbout),saveRow('facebook_url',channels.facebook),saveRow('instagram_url',channels.instagram),saveRow('tiktok_url',channels.tiktok),saveRow('whatsapp_url',channels.whatsapp)]);await load();setToast({message:'Design publié — la boutique adopte le nouveau thème (rechargement des pages).',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
   const applyPreset=(preset:any)=>setTheme({...theme,...preset,preset:preset.id});
-  return <><PageHeader title="Développement & design" description="Palette officielle ZAYROVI : 50 % blanc · 35 % noir · 5 % gris clair · violet ≈ 3 % (2 % violet électrique + 1 % violet clair), réservé à l’action. Ayrovi Extracted Sans + Noto Sans Arabic unifient latin et arabe." action={canWrite?<Button busy={busy} onClick={save}>Publier le design</Button>:undefined}/>
+  return <><PageHeader title="Développement & design" description="Palette officielle ZAYROVI : 50 % blanc · 35 % noir · 5 % gris clair · violet ≈ 3 % (2 % violet électrique + 1 % violet clair), réservé à l’action. Zayrovi Extracted Sans + Noto Sans Arabic unifient latin et arabe." action={canWrite?<Button busy={busy} onClick={save}>Publier le design</Button>:undefined}/>
   <div className="admin-report-grid">
     <section className="admin-card"><CardTitle title="Modèles prêts" subtitle="Choisissez un modèle, personnalisez ensuite ses couleurs"/><div className="admin-theme-grid">{THEME_PRESETS.map(preset=><button key={preset.id} type="button" disabled={!canWrite} className={`admin-theme-card ${theme.preset===preset.id?'is-active':''}`} onClick={()=>applyPreset(preset)}><i style={{background:preset.gradient}}/><span>{preset.label}</span><small>{preset.primary} · {preset.accent}</small></button>)}</div>
     <div className="admin-form-row" style={{marginTop:16}}><Field label="Couleur principale" full><input type="color" value={theme.primary} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',primary:e.target.value})}/></Field><Field label="Accent (promos)" full><input type="color" value={theme.accent} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',accent:e.target.value})}/></Field><Field label="Police" full><Select disabled value={FONT_STACK} onChange={e=>setTheme({...theme,preset:'custom',font:FONT_STACK})} options={FONT_OPTIONS}/></Field></div>
     <div className="admin-theme-preview" style={{background:theme.gradient}}><strong>Boutique ZAYROVI</strong><span>50 % blanc · 35 % noir · 5 % gris · violet ≈ 3 %</span><button style={{background:theme.accent,color:'#fff'}} type="button">CTA</button></div></section>
     <section className="admin-card"><CardTitle title="Canaux & pied de page" subtitle="Liens affichés dans la section « Nos canaux » du site"/><div className="admin-settings-list">
-      <Field label="Facebook" full><input disabled={!canWrite} value={channels.facebook} onChange={e=>setChannels({...channels,facebook:e.target.value})} placeholder="https://facebook.com/ayrovi"/></Field>
-      <Field label="Instagram" full><input disabled={!canWrite} value={channels.instagram} onChange={e=>setChannels({...channels,instagram:e.target.value})} placeholder="https://instagram.com/ayrovi"/></Field>
-      <Field label="TikTok" full><input disabled={!canWrite} value={channels.tiktok} onChange={e=>setChannels({...channels,tiktok:e.target.value})} placeholder="https://tiktok.com/@ayrovi"/></Field>
+      <Field label="Facebook" full><input disabled={!canWrite} value={channels.facebook} onChange={e=>setChannels({...channels,facebook:e.target.value})} placeholder="https://facebook.com/zayrovi"/></Field>
+      <Field label="Instagram" full><input disabled={!canWrite} value={channels.instagram} onChange={e=>setChannels({...channels,instagram:e.target.value})} placeholder="https://instagram.com/zayrovi"/></Field>
+      <Field label="TikTok" full><input disabled={!canWrite} value={channels.tiktok} onChange={e=>setChannels({...channels,tiktok:e.target.value})} placeholder="https://tiktok.com/@zayrovi"/></Field>
       <Field label="WhatsApp" full><input disabled={!canWrite} value={channels.whatsapp} onChange={e=>setChannels({...channels,whatsapp:e.target.value})} placeholder="https://wa.me/21600000000"/></Field>
       <Field label="Texte du pied de page" full><textarea rows={4} disabled={!canWrite} value={footerAbout} onChange={e=>setFooterAbout(e.target.value)}/></Field>
     </div></section>
@@ -1044,7 +1044,7 @@ export const AdminApp:React.FC=()=>{
     loadIdentity().then((identity)=>{if(active)setUser(identity);}).catch((e)=>{if(!(e instanceof ApiError&&e.status===401))console.warn(e);}).finally(()=>{if(active)setLoading(false);});
     return()=>{active=false;window.removeEventListener(ADMIN_SESSION_EXPIRED_EVENT,resetExpiredSession);};
   },[]);
-  if(loading)return <div className="admin-boot"><img src="/media/logo-ayrovi-loading.svg?v=7.0" alt="" className="ay-boot-mark" style={{width:52,height:52,objectFit:'contain'}} /><span/></div>;
+  if(loading)return <div className="admin-boot"><img src="/media/logo-zayrovi-loading.svg?v=7.0" alt="" className="ay-boot-mark" style={{width:52,height:52,objectFit:'contain'}} /><span/></div>;
   if(!user)return <LoginPage onAuthenticated={setUser}/>;
   // Un seul provider pour tout le back office : contexte, navigation et descripteurs partagés.
   return <BackOfficeProvider><AdminShell user={user} onLogout={async()=>{await logout();setUser(null);}}/></BackOfficeProvider>;

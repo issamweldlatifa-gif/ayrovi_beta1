@@ -3,7 +3,7 @@ import sharp from 'sharp';
 import fs from 'node:fs';
 import { inspectEditorialIcons } from './editorial-icon-contract.mjs';
 const identity=JSON.parse(fs.readFileSync('client/src/design/editorial/identity.json','utf8'));
-const base=process.env.AYROVI_BASE_URL || 'http://127.0.0.1:3000';
+const base=process.env.ZAYROVI_BASE_URL || 'http://127.0.0.1:3000';
 const output='screenshots/editorial/customer';fs.mkdirSync(output,{recursive:true});
 const checks=[], errors=[], failures=[], orange=[];
 function check(label,pass,details){checks.push({label,pass:Boolean(pass),...(details===undefined?{}:{details})});if(!pass)failures.push(label+': '+JSON.stringify(details??null));}
@@ -12,7 +12,7 @@ const browser=await chromium.launch({headless:true});
 try{
  for(const locale of ['fr','ar']){
   const ctx=await browser.newContext({locale,viewport:{width:390,height:844}});
-  await ctx.addInitScript(locale=>localStorage.setItem('ayrovi.locale.v1',locale),locale);
+  await ctx.addInitScript(locale=>localStorage.setItem('zayrovi.locale.v1',locale),locale);
   const p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));
   for(const width of [320,360,390,768,1360]){
    await p.setViewportSize({width,height:844});await p.goto(base,{waitUntil:'domcontentloaded'});
@@ -26,11 +26,11 @@ try{
     check(`${locale}/${width}/${name}: violet area <= ${identity.accentAreaLimit*100}% (no exclusions)`,violet<=identity.accentAreaLimit,violet);
     if(width===390||width===1360)fs.writeFileSync(`${output}/${name}-${locale}-${width}.png`,image);
    };
-   await inspect('home','.ayrovi-app-shell');
-   check(`${locale}/${width}: actual logo source preserved`,(await p.locator('.public-site-header img').getAttribute('src')).includes('logo-ayrovi'));
-   const navCount=await p.locator('.ayrovi-glass-bottom-nav nav>button').count();
+   await inspect('home','.zayrovi-app-shell');
+   check(`${locale}/${width}: actual logo source preserved`,(await p.locator('.public-site-header img').getAttribute('src')).includes('logo-zayrovi'));
+   const navCount=await p.locator('.zayrovi-glass-bottom-nav nav>button').count();
    check(`${locale}/${width}: five navigation destinations preserved`,navCount===5,{navCount});
-   for(const [area,selector,names] of [['header','.public-site-header',['Menu','User']],['navigation','.ayrovi-glass-bottom-nav',['Lens','Sonim','Vision','Scan']]]){
+   for(const [area,selector,names] of [['header','.public-site-header',['Menu','User']],['navigation','.zayrovi-glass-bottom-nav',['Lens','Sonim','Vision','Scan']]]){
     const icons=await inspectEditorialIcons(p,selector);
     check(`${locale}/${width}: ${area} matches editorial geometry and stroke`,icons.errors.length===0 && names.every(name=>icons.names.includes(name)),icons);
    }
@@ -57,7 +57,7 @@ try{
    await p.keyboard.press('Tab');check(`${locale}/${width}: menu wraps focus to first target`,await menu.getByRole('button',{name:/Se connecter \/ Créer un compte|تسجيل الدخول \/ إنشاء حساب/}).evaluate(e=>e===document.activeElement));
    await menu.getByRole('button',{name:locale==='ar'?'حول ZAYROVI':'À propos de ZAYROVI',exact:true}).click();
    await p.getByRole('dialog',{name:locale==='ar'?'حول ZAYROVI':'À propos de ZAYROVI',exact:true}).waitFor();
-   check(`${locale}/${width}: About is a reachable screen`,await p.locator('#why-ayrovi-title').isVisible());
+   check(`${locale}/${width}: About is a reachable screen`,await p.locator('#why-zayrovi-title').isVisible());
    await p.keyboard.press('Escape');await menu.waitFor();await p.keyboard.press('Escape');await menu.waitFor({state:'hidden'});
    await p.getByRole('button',{name:locale==='ar'?'SONIM — المساعد الذكي لـ ZAYROVI':"SONIM — l'assistant IA de ZAYROVI",exact:true}).click();
    await p.locator('[data-assistant-composer]').waitFor();await inspect('sonim','[data-sonim-tone]');
@@ -65,10 +65,10 @@ try{
    check(`${locale}/${width}: controls do not cover conversation`,boxes.header<=boxes.messagesTop+1&&boxes.messagesBottom<=boxes.composer+1,boxes);
    await p.getByRole('button',{name:locale==='ar'?'إغلاق SONIM':'Fermer SONIM',exact:true}).click();await p.locator('[data-sonim-tone]').waitFor({state:'hidden'});
    await p.getByRole('button',{name:locale==='ar'?'Lens — البحث بالصورة':'Lens — recherche par image',exact:true}).click();
-   await p.locator('.lens-access, #ayrovix-url-input').first().waitFor();
+   await p.locator('.lens-access, #zayrovix-url-input').first().waitFor();
    if(await p.locator('.lens-access').count()){ for(const input of await p.locator('.lens-consent input').all()) await input.check(); await p.locator('.lens-consent .lens-panel-primary').click(); }
-   await p.locator('#ayrovix-url-input').waitFor();await inspect('lens','.ayrovix-theme-scope');
-   check(`${locale}/${width}: Lens imports new icon family`,await p.locator('.ayrovix-theme-scope [data-editorial-icon]').count()>0);
+   await p.locator('#zayrovix-url-input').waitFor();await inspect('lens','.zayrovix-theme-scope');
+   check(`${locale}/${width}: Lens imports new icon family`,await p.locator('.zayrovix-theme-scope [data-editorial-icon]').count()>0);
    await p.goBack();
   }
   await ctx.close();

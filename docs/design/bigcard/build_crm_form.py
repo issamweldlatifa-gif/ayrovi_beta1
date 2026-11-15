@@ -54,8 +54,8 @@ RED = (200, 24, 40)
 
 AR_R = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 AR_B = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-BRAND_R = ROOT / "assets/fonts/AyroviExtracted-Regular.ttf"
-BRAND_B = ROOT / "assets/fonts/AyroviExtracted-Bold.ttf"
+BRAND_R = ROOT / "assets/fonts/ZayroviExtracted-Regular.ttf"
+BRAND_B = ROOT / "assets/fonts/ZayroviExtracted-Bold.ttf"
 
 
 def F(s, bold=False):

@@ -38,7 +38,7 @@ export const PUBLICATION_PUBLISHER_NAME = 'zayrovi team';
  * Éditeur officiel (`story_publishers.id`) : c'est lui que le bouton « Suivre »
  * des blocs suit — la même relation que « Suivre » dans les Reels.
  */
-export const PUBLICATION_PUBLISHER_ID = 'pub_ayrovi';
+export const PUBLICATION_PUBLISHER_ID = 'pub_zayrovi';
 
 export const PUBLICATION_BLOCK_LIMITS = {
   title: 80,

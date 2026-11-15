@@ -1,5 +1,5 @@
 import { registerPlugin } from '@capacitor/core';
-import { AYROVI_API_ORIGIN } from '../services/apiOrigin';
+import { ZAYROVI_API_ORIGIN } from '../services/apiOrigin';
 import { isNativeApp } from '../services/nativeShell';
 
 /**
@@ -52,7 +52,7 @@ export function createHandoffCode(): string {
  */
 export function oauthStartUrl(provider: OAuthProvider, query: string, handoff = ''): string {
   const path = `/api/customer/auth/${provider}/start?${query}${handoff ? `&nativeHandoff=${encodeURIComponent(handoff)}` : ''}`;
-  return isNativeApp() ? `${AYROVI_API_ORIGIN}${path}` : path;
+  return isNativeApp() ? `${ZAYROVI_API_ORIGIN}${path}` : path;
 }
 
 export interface ClaimOptions {
@@ -76,9 +76,9 @@ export async function claimNativeSession(handoff: string, options: ClaimOptions 
   while (Date.now() < deadline) {
     if (options.signal?.aborted) return null;
     try {
-      const response = await fetch(`${AYROVI_API_ORIGIN}/api/customer/auth/native/claim`, {
+      const response = await fetch(`${ZAYROVI_API_ORIGIN}/api/customer/auth/native/claim`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-ayrovi-native': '1' },
+        headers: { 'Content-Type': 'application/json', 'x-zayrovi-native': '1' },
         body: JSON.stringify({ handoff }),
         signal: options.signal,
       });
@@ -127,7 +127,7 @@ export async function signInWithGoogleNatively(cartSessionId = ''): Promise<Nati
   if (!isNativeApp()) return null;
   let idToken = '';
   try {
-    const plugin = registerPlugin<AuthTabBridge>('AyroviAuthTab');
+    const plugin = registerPlugin<AuthTabBridge>('ZayroviAuthTab');
     const picked = await plugin.signInWithGoogle();
     if (!picked?.available || !picked.idToken) return null;
     idToken = picked.idToken;
@@ -135,9 +135,9 @@ export async function signInWithGoogleNatively(cartSessionId = ''): Promise<Nati
     return null; // coque antérieure : la méthode n'existe pas encore
   }
   try {
-    const response = await fetch(`${AYROVI_API_ORIGIN}/api/customer/auth/google/native`, {
+    const response = await fetch(`${ZAYROVI_API_ORIGIN}/api/customer/auth/google/native`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-ayrovi-native': '1' },
+      headers: { 'Content-Type': 'application/json', 'x-zayrovi-native': '1' },
       body: JSON.stringify({ idToken, cartSessionId }),
     });
     if (!response.ok) return null;
@@ -173,7 +173,7 @@ export async function signInWithGoogleNatively(cartSessionId = ''): Promise<Nati
 export async function openProviderInAppTab(url: string): Promise<void> {
   if (isNativeApp()) {
     try {
-      const plugin = registerPlugin<AuthTabBridge>('AyroviAuthTab');
+      const plugin = registerPlugin<AuthTabBridge>('ZayroviAuthTab');
       const result = await plugin.open({ url });
       if (result?.opened) return;
     } catch {

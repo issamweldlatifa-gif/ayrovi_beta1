@@ -7,7 +7,7 @@ name: Mobile — APK Android (démo)
 # Ce n'est PAS l'APK de production : celui-ci viendra en P6 (keystore de
 # l'application dans GitHub Secrets, `app-bundle` pour le Play Store).
 #
-# L'APK de démo porte un identifiant DISTINCT (`app.ayrovi.mobile.demo`) : il
+# L'APK de démo porte un identifiant DISTINCT (`app.zayrovi.mobile.demo`) : il
 # s'installe À CÔTÉ de l'application existante, sans la toucher. C'est le choix
 # assumé tant que le keystore d'origine n'est pas disponible pour une mise à
 # jour en place.
@@ -228,7 +228,7 @@ jobs:
           RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           set -euo pipefail
-          # `versionCode` strictement croissant pour `app.ayrovi.mobile.demo` :
+          # `versionCode` strictement croissant pour `app.zayrovi.mobile.demo` :
           # sur Android, Glide signe son cache disque de `R.drawable.*` avec
           # `PackageInfo.versionCode` uniquement (`ApplicationVersionSignature`).
           # Si deux APK démo gardent le même `versionCode` alors qu'un visuel a
@@ -236,12 +236,12 @@ jobs:
           # décalent et Glide sert les anciens logos inversés. Ce code monotone
           # (> 15, distinct à chaque run/tentative) invalide nativement le cache.
           DEMO_VERSION_CODE=$(( (100000 + ${RUN_NUMBER:-1}) * 10 + ${RUN_ATTEMPT:-1} ))
-          sed -i "s/applicationId 'app.ayrovi.mobile'/applicationId 'app.ayrovi.mobile.demo'/" app/build.gradle
+          sed -i "s/applicationId 'app.zayrovi.mobile'/applicationId 'app.zayrovi.mobile.demo'/" app/build.gradle
           sed -i -E "s/versionCode[[:space:]]+[0-9]+/versionCode ${DEMO_VERSION_CODE}/" app/build.gradle
           sed -i 's|<string name="app_name">ZAYROVI</string>|<string name="app_name">ZAYROVI Démo</string>|' app/src/main/res/values/strings.xml
           # Vérification réelle : si le motif avait changé, on échoue AU LIEU de
           # produire un APK qui écraserait l'application installée.
-          grep -q "applicationId 'app.ayrovi.mobile.demo'" app/build.gradle
+          grep -q "applicationId 'app.zayrovi.mobile.demo'" app/build.gradle
           grep -q "versionCode ${DEMO_VERSION_CODE}" app/build.gradle
           grep -q '<string name="app_name">ZAYROVI Démo</string>' app/src/main/res/values/strings.xml
           grep -n "applicationId\|versionCode" app/build.gradle
@@ -437,7 +437,7 @@ jobs:
         # son marque-page, on le télécharge, et c'est la dernière version.
         #
         # L'APK de démo s'installe PAR-DESSUS le précédent (même package
-        # `app.ayrovi.mobile.demo`, même clé de démo fixe) : c'est une mise à
+        # `app.zayrovi.mobile.demo`, même clé de démo fixe) : c'est une mise à
         # jour, pas une deuxième application à désinstaller.
         if: success() && github.event_name == 'push'
         env:

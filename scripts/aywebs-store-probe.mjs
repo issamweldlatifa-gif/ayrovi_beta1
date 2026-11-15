@@ -24,7 +24,7 @@
  *   node scripts/aywebs-store-probe.mjs --min-samples 5 --json
  *
  * Options :
- *   --base          origine du site (défaut : AYROVI_BASE_URL, sinon localhost:3000)
+ *   --base          origine du site (défaut : ZAYROVI_BASE_URL, sinon localhost:3000)
  *   --health        fichier JSON déjà téléchargé (aucun réseau)
  *   --min-samples   captures minimum pour trancher (défaut 3)
  *   --threshold     taux d'acceptation jugé suffisant (défaut 0.9)
@@ -44,7 +44,7 @@ function option(name, fallback = '') {
   return index >= 0 && args[index + 1] ? String(args[index + 1]) : fallback;
 }
 
-const base = option('base', process.env.AYROVI_BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
+const base = option('base', process.env.ZAYROVI_BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
 const healthFile = option('health', '');
 const minSamples = Math.max(1, Number(option('min-samples', '3')) || 3);
 const threshold = Math.min(1, Math.max(0.1, Number(option('threshold', '0.9')) || 0.9));

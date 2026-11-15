@@ -616,7 +616,7 @@ describe('Card approval gate and Warehouse dispatch', () => {
 
 describe('Schema migration on an existing database', () => {
   test('an existing (pre-feature) database is upgraded additively and its Cards keep working', async () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-category-mig-'));
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-category-mig-'));
     const file = path.join(dir, 'legacy.sqlite');
     try {
       const now = new Date().toISOString();

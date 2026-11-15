@@ -14,7 +14,7 @@ import { PublicCmsSections } from './components/PublicCmsSections';
 import { AnnouncementSection } from './components/AnnouncementSection';
 import { AboutSection } from './components/AboutSection';
 import { BottomNavBar } from './components/BottomNavBar';
-import type { AyrovixOrderPayload } from './ayrovix/types';
+import type { ZayrovixOrderPayload } from './zayrovix/types';
 import { ScrollToTopButton } from './components/ScrollToTopButton';
 import { Footer } from './components/Footer';
 import { AddToCartPayload, AddToCartResult, ScrapedProduct, CartItem, OrderResult, CustomerSession } from './types';
@@ -29,7 +29,7 @@ import { DEFAULT_INTERFACE_CONFIG, normalizeInterfaceConfig, type InterfaceSecti
 const AboutPage = lazy(() => import('./components/AboutPage').then(module => ({ default: module.AboutPage })));
 const MenuDrawer = lazy(() => import('./components/MenuDrawer').then((module) => ({ default: module.MenuDrawer })));
 const ProductDrawer = lazy(() => import('./components/ProductDrawer').then((module) => ({ default: module.ProductDrawer })));
-const LensLauncher = lazy(() => import('./ayrovix/components/LensLauncher').then((module) => ({ default: module.LensLauncher })));
+const LensLauncher = lazy(() => import('./zayrovix/components/LensLauncher').then((module) => ({ default: module.LensLauncher })));
 const AiAssistantDrawer = lazy(() => import('./components/assistant/AiAssistantDrawer').then((module) => ({ default: module.AiAssistantDrawer })));
 const ShopBagScreen = lazy(() => import('./shop').then((module) => ({ default: module.ShopBagScreen })));
 const ShopCheckoutScreen = lazy(() => import('./shop').then((module) => ({ default: module.ShopCheckoutScreen })));
@@ -50,10 +50,10 @@ export const DEFAULT_HOME_BLOCKS: string[] = [];
 
 const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children: React.ReactNode }> = ({ section, children }) => {
   const style = {
-    '--ayrovi-section-background': 'var(--ayrovi-bg-main)',
-    '--ayrovi-section-text': 'var(--ayrovi-text-primary)',
-    backgroundColor: 'var(--ayrovi-bg-main)',
-    color: 'var(--ayrovi-text-primary)',
+    '--zayrovi-section-background': 'var(--zayrovi-bg-main)',
+    '--zayrovi-section-text': 'var(--zayrovi-text-primary)',
+    backgroundColor: 'var(--zayrovi-bg-main)',
+    color: 'var(--zayrovi-text-primary)',
     paddingBlock: `${section.paddingY}px`,
   } as React.CSSProperties;
   return <div className="managed-public-section" data-public-section={section.id} style={style}>
@@ -107,7 +107,7 @@ export const App: React.FC = () => {
   // Keep the Lens component mounted while Panier/Checkout is in front so its current result survives Back.
   const [lensSessionActive, setLensSessionActive] = useState(false);
   const [lensDarkMode, setLensDarkMode] = useState(() => {
-    try { return typeof window !== 'undefined' && window.localStorage.getItem('ayrovix-theme') === 'dark'; }
+    try { return typeof window !== 'undefined' && window.localStorage.getItem('zayrovix-theme') === 'dark'; }
     catch { return false; }
   });
 
@@ -171,8 +171,8 @@ export const App: React.FC = () => {
   // ترتيب وإظهار كتل الصفحة الرئيسية — من الـ Dashboard (Admin → Sections)
   useEffect(() => {
     const root = document.documentElement;
-    root.dataset.ayrovixTheme = lensDarkMode ? 'dark' : 'light';
-    try { window.localStorage.setItem('ayrovix-theme', lensDarkMode ? 'dark' : 'light'); }
+    root.dataset.zayrovixTheme = lensDarkMode ? 'dark' : 'light';
+    try { window.localStorage.setItem('zayrovix-theme', lensDarkMode ? 'dark' : 'light'); }
     catch { /* Storage can be blocked without disabling Lens. */ }
   }, [lensDarkMode]);
 
@@ -273,7 +273,7 @@ export const App: React.FC = () => {
     else navigation.navigate([{ id: 'app:product' }, { id: 'product:details' }]);
   };
 
-  // AYROVIX Lens — nouvelle expérience (caméra / galerie / lien / QR) branchée sur le flux panier existant.
+  // ZAYROVIX Lens — nouvelle expérience (caméra / galerie / lien / QR) branchée sur le flux panier existant.
   /**
    * Position de la section Stories par rapport au bloc LENS.
    * Pilotée depuis Admin → Contenu → Social → onglet Story → « Bloc d'accueil »
@@ -304,7 +304,7 @@ export const App: React.FC = () => {
     closeAppView();
   };
 
-  const handleAyrovixOrder = async (payload: AyrovixOrderPayload) => {
+  const handleZayrovixOrder = async (payload: ZayrovixOrderPayload) => {
     const summary = await handleAddToCart({ ...payload, priceTND: payload.priceTND ?? 0 });
     if (!summary) throw new Error("Impossible d'ajouter l'article au panier.");
   };
@@ -318,7 +318,7 @@ export const App: React.FC = () => {
     if (isAyWebsOpen) return;
     navigation.navigate([{ id: 'app:aywebs' }]);
     replaceUrlPreservingNavigation('/aywebs');
-    window.dispatchEvent(new Event('ayrovi:urlchange'));
+    window.dispatchEvent(new Event('zayrovi:urlchange'));
   };
 
   const handleCloseAyWebs = () => {
@@ -489,7 +489,7 @@ export const App: React.FC = () => {
     });
 
   return (
-    <div className="ayrovi-app-shell interface-page-shell min-h-screen flex flex-col text-ink relative" style={customerTheme(locale, interfaceConfig)}>
+    <div className="zayrovi-app-shell interface-page-shell min-h-screen flex flex-col text-ink relative" style={customerTheme(locale, interfaceConfig)}>
       
 
       {/* Sparse wordmark, unassigned Plus Light, notifications and cart; legacy menu remains in source. */}
@@ -562,7 +562,7 @@ export const App: React.FC = () => {
       {/* Floating Scroll To Top FAB Button */}
       <ScrollToTopButton hidden={navigation.stack.length > 0} />
 
-      {/* Compact RTL glass navigation: Ayvisi (left), Zayrovi (center), Ayrovix (right). */}
+      {/* Compact RTL glass navigation: Ayvisi (left), Zayrovi (center), Zayrovix (right). */}
       {/* §3 (04/10/2026) — JAMAIS deux barres. AyWebs s'ouvre dans une couche
           `fixed inset-0 z-[25]`, mais cette barre-ci vit à la racine en z-30 :
           elle RECOUVRAIT donc la barre AyWebs, qui devenait visible mais
@@ -621,7 +621,7 @@ export const App: React.FC = () => {
             customerFirstName={customerSession?.account.displayName?.split(/\s+/)[0] || ''}
             onClose={closeAppView}
             onOpenLens={handleOpenLens}
-            onOrder={handleAyrovixOrder}
+            onOrder={handleZayrovixOrder}
             onOpenCart={() => openAppView('app:cart')}
             onOpenOrders={() => {
               setAccountInitialSection('orders');
@@ -650,7 +650,7 @@ export const App: React.FC = () => {
         </Suspense>
       )}
 
-      {/* AYROVIX Lens stays mounted behind commerce layers so Result/Product can be restored intact. */}
+      {/* ZAYROVIX Lens stays mounted behind commerce layers so Result/Product can be restored intact. */}
       {lensSessionActive && (
         <Suspense fallback={null}>
           <LensLauncher
@@ -660,7 +660,7 @@ export const App: React.FC = () => {
             isOpen={isLensOpen}
             historyScope={customerSession?.account.id || null}
             onClose={handleCloseLens}
-            onOrder={handleAyrovixOrder}
+            onOrder={handleZayrovixOrder}
             cartCount={totalCartCount}
             onOpenCart={() => openAppView('app:cart')}
             darkMode={lensDarkMode}

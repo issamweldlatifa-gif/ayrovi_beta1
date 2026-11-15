@@ -5,7 +5,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isWebPageUrl } from './webNavigation';
 
-export const LAST_VISITED_STORE_KEY = 'ayrovi.aywebs.lastVisitedStore';
+export const LAST_VISITED_STORE_KEY = 'zayrovi.aywebs.lastVisitedStore';
 
 export interface AyWebsLastVisit {
   storeId: string;

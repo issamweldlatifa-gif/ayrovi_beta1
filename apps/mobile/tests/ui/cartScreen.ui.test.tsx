@@ -14,7 +14,7 @@
  *
  * Les appels réseau sont simulés (`@/api/cart`, `@/api/aywebs`) : on vérifie le
  * RENDU, pas le serveur. Les fonctions pures de `@/api/cart` restent les vraies
- * (`ayroviCartReadiness`, `AYROVI_PRICE_TRUST_REASONS`) — c'est leur résultat
+ * (`zayroviCartReadiness`, `ZAYROVI_PRICE_TRUST_REASONS`) — c'est leur résultat
  * qui décide si le bouton de commande apparaît.
  */
 import React from 'react';
@@ -48,18 +48,18 @@ jest.mock('../../src/api/cart', () => {
   const actual = jest.requireActual('../../src/api/cart');
   return {
     ...actual,
-    fetchAyroviCart: jest.fn(async () => {
+    fetchZayroviCart: jest.fn(async () => {
       if (require('./cartFixture').getError()) throw require('./cartFixture').getError();
       return require('./cartFixture').getCart();
     }),
-    removeAyroviCartItem: jest.fn(async () => ({})),
-    updateAyroviCartQuantity: jest.fn(async () => ({})),
+    removeZayroviCartItem: jest.fn(async () => ({})),
+    updateZayroviCartQuantity: jest.fn(async () => ({})),
   };
 });
 
 jest.mock('../../src/api/aywebs', () => ({
   fetchAyWebsCart: jest.fn(async () => ({ lines: [], totals: null })),
-  bridgeAyWebsCartToAyrovi: jest.fn(async () => ({})),
+  bridgeAyWebsCartToZayrovi: jest.fn(async () => ({})),
 }));
 
 const emptyCart = {

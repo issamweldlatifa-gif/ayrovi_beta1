@@ -14,7 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const SPA_SHELL_MARKER = '<!-- ayrovi:test-spa-shell -->';
+export const SPA_SHELL_MARKER = '<!-- zayrovi:test-spa-shell -->';
 
 export default function setup() {
   const publicDir = path.resolve(process.cwd(), 'public');

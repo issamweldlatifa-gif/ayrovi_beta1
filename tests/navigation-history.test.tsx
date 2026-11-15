@@ -50,7 +50,7 @@ describe('ZAYROVI browser navigation history', () => {
 
     expect(navigation.stack).toEqual([]);
     expect(window.history.state.router).toEqual({ scroll: 120 });
-    expect(window.history.state.__ayroviNavigationV1).toEqual({ version: 1, depth: 0, stack: [] });
+    expect(window.history.state.__zayroviNavigationV1).toEqual({ version: 1, depth: 0, stack: [] });
   });
 
   it('creates restorable entries for cart and checkout, then replaces the submitted checkout with success', () => {
@@ -113,15 +113,15 @@ describe('ZAYROVI browser navigation history', () => {
   it('keeps navigation state while OAuth/admin URL helpers change the address', () => {
     mountNavigation({ thirdParty: true });
     act(() => navigation.navigate([{ id: 'app:account' }]));
-    const expected = structuredClone(window.history.state.__ayroviNavigationV1);
+    const expected = structuredClone(window.history.state.__zayroviNavigationV1);
 
     replaceUrlPreservingNavigation('/?customerAuth=success');
     expect(window.location.search).toBe('?customerAuth=success');
-    expect(window.history.state.__ayroviNavigationV1).toEqual(expected);
+    expect(window.history.state.__zayroviNavigationV1).toEqual(expected);
 
     pushUrlPreservingNavigation('/admin?section=orders');
     expect(window.location.pathname).toBe('/admin');
-    expect(window.history.state.__ayroviNavigationV1).toEqual(expected);
+    expect(window.history.state.__zayroviNavigationV1).toEqual(expected);
     expect(window.history.state.thirdParty).toBe(true);
   });
 
@@ -136,7 +136,7 @@ describe('ZAYROVI browser navigation history', () => {
 
     const rootState = {
       ...window.history.state,
-      __ayroviNavigationV1: { version: 1, depth: 0, stack: [] },
+      __zayroviNavigationV1: { version: 1, depth: 0, stack: [] },
     };
     act(() => window.dispatchEvent(new PopStateEvent('popstate', { state: rootState })));
     const back = vi.spyOn(window.history, 'back').mockImplementation(() => undefined);

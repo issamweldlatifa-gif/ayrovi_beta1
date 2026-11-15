@@ -47,7 +47,7 @@ adopte la réponse de l'API (un échec API ne casse jamais la navigation).
 
 ```bash
 npm run typecheck && npm test && npm run build
-AYROVI_BASE_URL=http://127.0.0.1:3000 npm run verify:public-nav
+ZAYROVI_BASE_URL=http://127.0.0.1:3000 npm run verify:public-nav
 ```
 
 `verify/public-navigation.mjs` prouve sur l'application réelle : renommage publié visible côté

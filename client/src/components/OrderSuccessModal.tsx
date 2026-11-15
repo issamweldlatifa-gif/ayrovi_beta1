@@ -29,7 +29,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
           particleCount: 90,
           spread: 70,
           origin: { y: 0.6 },
-          colors: ['--ayrovi-primary', '--ayrovi-primary-dark', '--ayrovi-primary-light', '--ayrovi-accent', '--ayrovi-white'].map((token) => styles.getPropertyValue(token).trim()),
+          colors: ['--zayrovi-primary', '--zayrovi-primary-dark', '--zayrovi-primary-light', '--zayrovi-accent', '--zayrovi-white'].map((token) => styles.getPropertyValue(token).trim()),
         });
       } catch {}
     }

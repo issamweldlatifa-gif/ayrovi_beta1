@@ -44,7 +44,7 @@ function product(overrides: Partial<AyWebsResolvedProduct> = {}): AyWebsResolved
     availability: { state: 'AVAILABLE', reason: 'capture', checkedAt: '2026-10-26T02:31:00Z', source: 'capture', quantityHint: null },
     purchaseMode: 'BROWSER',
     integrationType: 'CAPTURE',
-    ayroviPricing: null,
+    zayroviPricing: null,
     variantGroups: [{ attribute: 'Taille', values: ['35.5', '36'] }],
     variantDetails: [],
     variantQuotes: [],
@@ -56,7 +56,7 @@ function product(overrides: Partial<AyWebsResolvedProduct> = {}): AyWebsResolved
 
 describe('devis absent ⇒ une relecture serveur, jamais deux', () => {
   it('devis présent : aucune relecture (la capture a suffi)', () => {
-    const withQuote = product({ ayroviPricing: { totalTnd: 838.42 } as AyWebsResolvedProduct['ayroviPricing'] });
+    const withQuote = product({ zayroviPricing: { totalTnd: 838.42 } as AyWebsResolvedProduct['zayroviPricing'] });
     expect(serverReadDecision({ product: withQuote, sessionId: 'sess-1' })).toEqual({ read: false, reason: '' });
   });
 
@@ -78,8 +78,8 @@ describe('devis absent ⇒ une relecture serveur, jamais deux', () => {
 
   it('un devis nul ou absurde compte comme absent', () => {
     expect(lacksServerQuote(product())).toBe(true);
-    expect(lacksServerQuote(product({ ayroviPricing: { totalTnd: 0 } as AyWebsResolvedProduct['ayroviPricing'] }))).toBe(true);
-    expect(lacksServerQuote(product({ ayroviPricing: { totalTnd: 599.45 } as AyWebsResolvedProduct['ayroviPricing'] }))).toBe(false);
+    expect(lacksServerQuote(product({ zayroviPricing: { totalTnd: 0 } as AyWebsResolvedProduct['zayroviPricing'] }))).toBe(true);
+    expect(lacksServerQuote(product({ zayroviPricing: { totalTnd: 599.45 } as AyWebsResolvedProduct['zayroviPricing'] }))).toBe(false);
     expect(lacksServerQuote(null)).toBe(true);
   });
 });
@@ -90,12 +90,12 @@ describe('la relecture ne casse rien : elle AJOUTE le devis, elle ne remplace pa
     const server = product({
       productId: 'aywprd_server',
       price: 139.99,
-      ayroviPricing: { totalTnd: 781.52 } as AyWebsResolvedProduct['ayroviPricing'],
+      zayroviPricing: { totalTnd: 781.52 } as AyWebsResolvedProduct['zayroviPricing'],
       variantGroups: [],
       variantQuotes: [{ group: 'Taille', value: '35.5', totalTnd: 781.52 }] as AyWebsResolvedProduct['variantQuotes'],
     });
     const merged = preferServerQuote(capture, server);
-    expect(merged.ayroviPricing?.totalTnd).toBe(781.52);
+    expect(merged.zayroviPricing?.totalTnd).toBe(781.52);
     expect(merged.price).toBe(139.99);
     expect(merged.currency).toBe('EUR');
     expect(merged.productId).toBe('aywprd_server');
@@ -105,11 +105,11 @@ describe('la relecture ne casse rien : elle AJOUTE le devis, elle ne remplace pa
   });
 
   it('un serveur SANS devis ne remplace pas un champ prouvé par la capture', () => {
-    const capture = product({ ayroviPricing: { totalTnd: 838.42 } as AyWebsResolvedProduct['ayroviPricing'], price: 149.95 });
+    const capture = product({ zayroviPricing: { totalTnd: 838.42 } as AyWebsResolvedProduct['zayroviPricing'], price: 149.95 });
     const server = product({ price: 139.99, currency: '', priceVerified: false, currencyVerified: false });
     const merged = preferServerQuote(capture, server);
     expect(merged).toBe(capture);
-    expect(merged.ayroviPricing?.totalTnd).toBe(838.42);
+    expect(merged.zayroviPricing?.totalTnd).toBe(838.42);
     expect(merged.price).toBe(149.95);
   });
 
@@ -131,7 +131,7 @@ describe('la relecture ne casse rien : elle AJOUTE le devis, elle ne remplace pa
       }],
     });
     const merged = preferServerQuote(capture, server);
-    expect(merged.ayroviPricing).toBeNull();
+    expect(merged.zayroviPricing).toBeNull();
     expect(merged.variantDetails).toEqual(server.variantDetails);
     expect(merged.variantGroups).toEqual(capture.variantGroups);
   });

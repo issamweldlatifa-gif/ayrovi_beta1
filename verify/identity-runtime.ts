@@ -13,12 +13,12 @@ async function inspect(page: Page, label: string) {
   await page.evaluate(() => document.fonts.ready);
   const state = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth > innerWidth,
-    bad: [...document.querySelectorAll<HTMLElement>('h1,h2,h3,p,button,input,select,textarea,strong,small,code')].filter(e => e.getBoundingClientRect().height > 0).map(e => ({ tag: e.tagName, family: getComputedStyle(e).fontFamily })).filter(e => !e.family.includes('Ayrovi Extracted Sans') || !e.family.includes('Noto Sans Arabic')),
+    bad: [...document.querySelectorAll<HTMLElement>('h1,h2,h3,p,button,input,select,textarea,strong,small,code')].filter(e => e.getBoundingClientRect().height > 0).map(e => ({ tag: e.tagName, family: getComputedStyle(e).fontFamily })).filter(e => !e.family.includes('Zayrovi Extracted Sans') || !e.family.includes('Noto Sans Arabic')),
     loaded: [...document.fonts].filter(f => f.status === 'loaded').map(f => f.family),
   }));
   check(label + ': responsive', !state.overflow);
   check(label + ': all visible text and controls use the official stack', !state.bad.length, state);
-  check(label + ': actual local Latin font loaded', state.loaded.some(f => f.includes('Ayrovi Extracted Sans')));
+  check(label + ': actual local Latin font loaded', state.loaded.some(f => f.includes('Zayrovi Extracted Sans')));
   return state;
 }
 async function main() {
@@ -37,7 +37,7 @@ async function main() {
         const remoteFonts: string[] = [];
         page.on('request', r => { if (r.resourceType() === 'font' && !r.url().startsWith(base)) remoteFonts.push(r.url()); });
         for (const locale of ['fr', 'ar']) {
-          await page.goto(base); await page.evaluate(l => localStorage.setItem('ayrovi.locale.v1', l), locale); await page.reload();
+          await page.goto(base); await page.evaluate(l => localStorage.setItem('zayrovi.locale.v1', l), locale); await page.reload();
           await page.locator('[data-hero-layout="carousel"]').waitFor();
           check(name + ': actual locale ' + locale, (await page.locator('html').getAttribute('lang'))?.startsWith(locale));
           for (const width of [320, 390, 768, 1360]) {
@@ -51,7 +51,7 @@ async function main() {
         check(name + ': account created', register.ok());
         const id = (await register.json()).data.account.id, now = new Date().toISOString();
         db.run("INSERT INTO cart_items(id,session_id,account_id,store,source_url,title,source_price,source_currency,price_tnd,quantity,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", `identity-${name}`, 'identity-fixture', id, 'OTHER', 'https://example.com/item', 'Everyday shoes — Édition 2026 — منتج', 10, 'TND', 10, 1, now, now);
-        await page.evaluate(() => localStorage.setItem('ayrovi.locale.v1', 'fr'));
+        await page.evaluate(() => localStorage.setItem('zayrovi.locale.v1', 'fr'));
         await page.goto(base + '/?customerAuth=login'); await page.locator('.ac-profile-card').waitFor();
         await page.locator('.ac-shortcuts').getByRole('button', { name: /Panier/ }).click();
         await page.locator('.ac-cart-description strong').waitFor();
@@ -68,7 +68,7 @@ async function main() {
           for (const selector of ['.ac-cart-description strong', '.ac-cart-description h2']) {
             const { nodeId } = await cdp.send('DOM.querySelector', { nodeId: root.nodeId, selector });
             const actual = await cdp.send('CSS.getPlatformFontsForNode', { nodeId }); fonts.push({ selector, ...actual });
-            check('actual rendered glyphs use only downloaded approved fonts: ' + selector, actual.fonts.length && actual.fonts.every(f => f.isCustomFont && /Ayrovi Extracted Sans|Noto Sans Arabic/.test(f.familyName)), actual);
+            check('actual rendered glyphs use only downloaded approved fonts: ' + selector, actual.fonts.length && actual.fonts.every(f => f.isCustomFont && /Zayrovi Extracted Sans|Noto Sans Arabic/.test(f.familyName)), actual);
           }
         }
         await page.screenshot({ path: `${output}/${name.toLowerCase()}-cart.png` });

@@ -162,7 +162,7 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
       expect(frenchLabel.trim()).not.toBe('');
       expect(arabicLabel.trim()).not.toBe('');
       // ZAYROVI is a proper brand name, not an untranslated enum label.
-      if (code !== 'AYROVI') {
+      if (code !== 'ZAYROVI') {
         expect(frenchLabel).not.toBe(code);
         expect(arabicLabel).not.toBe(code);
       }

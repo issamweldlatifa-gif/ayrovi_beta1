@@ -45,8 +45,8 @@ C'est fait, et c'est **réglable en un seul endroit** (`client/src/styles/custom
 
 ```css
 .ay-auth {
-  --ay-auth-legal-rule: var(--ayrovi-border-soft);                                  /* le filet */
-  --ay-auth-legal-wash: color-mix(in srgb, var(--ayrovi-text-primary) 1%, transparent); /* le lavis */
+  --ay-auth-legal-rule: var(--zayrovi-border-soft);                                  /* le filet */
+  --ay-auth-legal-wash: color-mix(in srgb, var(--zayrovi-text-primary) 1%, transparent); /* le lavis */
 }
 .ay-auth[data-legal-tone='blue'] {                       /* la variante bleue demandée */
   --ay-auth-legal-rule: color-mix(in srgb, #1c5db5 24%, transparent);
@@ -88,7 +88,7 @@ une passe, assez grand pour être jugé sur une intention.
 | **02** | **Découvrir** | Ce qui donne envie de revenir : le récit et le rythme | Arrivage, Gift & Cards, Magazine, Social, Marques, Bandeau | Contenu (barre publique, arrivages, promos, magazine, ticker, social) |
 | **03** | **Suivre** | L'après-achat, là où l'on gagne un client qui revient | Mon compte, Commandes + suivi, Acompte/paiement, Favoris, Adresses, Support | Commerce (commandes, clients) · Support · CRM 360 |
 | **04** | **Confiance** | Les pages qui répondent avant que la question ne se pose | À propos, Conditions, Confidentialité, Suppression des données, Contact et canaux, Livraison et retours | Système (réglages, واجهتي, canaux) · Journal d'audit |
-| **05** | **Assister** | La couche IA : elle aide à choisir, elle ne remplace pas l'humain | ZAYROVI AI, AYROVIX Lens, AYVISI Vision (bientôt), réponses vérifiées | Contenu · Assistant (base de connaissance) · LENS |
+| **05** | **Assister** | La couche IA : elle aide à choisir, elle ne remplace pas l'humain | ZAYROVI AI, ZAYROVIX Lens, AYVISI Vision (bientôt), réponses vérifiées | Contenu · Assistant (base de connaissance) · LENS |
 
 ### Le chrome permanent (visible partout)
 

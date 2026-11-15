@@ -8,9 +8,9 @@
  * garder elle-même (expo-secure-store).
  *
  * Deux en-têtes sont reconnus :
- *   • `x-ayrovi-client: mobile/<version>` — le client de la nouvelle
+ *   • `x-zayrovi-client: mobile/<version>` — le client de la nouvelle
  *     application (ZAYROVI React Native). Reçoit `session_token`.
- *   • `x-ayrovi-native: 1` — l'ancienne coque Capacitor, encore installée chez
+ *   • `x-zayrovi-native: 1` — l'ancienne coque Capacitor, encore installée chez
  *     des utilisateurs. Reçoit `native_session_token`, exactement comme avant.
  *     Cette branche disparaîtra avec elle ; elle est isolée ici pour que la
  *     suppression soit une ligne, pas une chasse.
@@ -21,8 +21,8 @@
  */
 import type { Request } from 'express';
 
-export const MOBILE_CLIENT_HEADER = 'x-ayrovi-client';
-export const LEGACY_NATIVE_HEADER = 'x-ayrovi-native';
+export const MOBILE_CLIENT_HEADER = 'x-zayrovi-client';
+export const LEGACY_NATIVE_HEADER = 'x-zayrovi-native';
 
 /** `mobile/2.0.0`, `mobile/2` → vrai. Le type et la version, rien d'autre. */
 export function isMobileClient(req: Request): boolean {

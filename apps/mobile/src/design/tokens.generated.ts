@@ -6,7 +6,7 @@
  *              sha256 : a895dca4d3bf4b87f9bfc12c1178893ecb91c226171d809a3bc40b4b19c70b2a
  * Structure  : client/src/design/editorial/identity.json
  *              ZAYROVI A — Official Identity · version 4.4.0
- *              sha256 : 3ea2186297bbf5713a98c0a1eaa6028baa879ff5ee0ccf06b7db84a739cf4a44
+ *              sha256 : b8886729ddb802be645b0162f2b4f3d743f6cac481f56c39530f317244633ee7
  *
  * Régénérer : npm run tokens:build   ·   vérifier : npm run tokens:check
  */
@@ -17,7 +17,7 @@ export const IDENTITY = {
   source: "apps/mobile/src/design/brand.json",
   structure: {
     name: "ZAYROVI A — Official Identity",
-    sha256: "3ea2186297bbf5713a98c0a1eaa6028baa879ff5ee0ccf06b7db84a739cf4a44",
+    sha256: "b8886729ddb802be645b0162f2b4f3d743f6cac481f56c39530f317244633ee7",
     source: "client/src/design/editorial/identity.json",
     version: "4.4.0",
   },
@@ -258,12 +258,12 @@ export const TYPOGRAPHY = {
   labelLineHeight: 1.4286,
   labelWeight: 650,
   letterSpacing: "0em",
-  preset: "ayrovi-a",
+  preset: "zayrovi-a",
   priceWeight: 650,
-  stack: "'Ayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif",
+  stack: "'Zayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif",
 } as const;
 
-/** Noms chargés par expo-font depuis les TTF Ayrovi Extracted Sans générés à partir du WOFF2 source. */
+/** Noms chargés par expo-font depuis les TTF Zayrovi Extracted Sans générés à partir du WOFF2 source. */
 export const FONTS = {
   arabic: {
     bold: "NotoSansArabic-Bold",
@@ -273,11 +273,11 @@ export const FONTS = {
     semibold: "NotoSansArabic-Bold",
   },
   latin: {
-    bold: "AyroviExtracted-Bold",
-    heading: "AyroviExtracted-Heading",
-    medium: "AyroviExtracted-Medium",
-    regular: "AyroviExtracted-Regular",
-    semibold: "AyroviExtracted-SemiBold",
+    bold: "ZayroviExtracted-Bold",
+    heading: "ZayroviExtracted-Heading",
+    medium: "ZayroviExtracted-Medium",
+    regular: "ZayroviExtracted-Regular",
+    semibold: "ZayroviExtracted-SemiBold",
   },
 } as const;
 

@@ -6,7 +6,7 @@ Cette archive contient la plateforme complète : site public, interface Admin, b
 
 1. Créez un dépôt privé avec le contenu de l’archive.
 2. Dans Render, choisissez **New > Blueprint** et sélectionnez ce dépôt.
-3. Render détecte `render.yaml` et crée le service `ayrovi` en région Frankfurt.
+3. Render détecte `render.yaml` et crée le service `zayrovi` en région Frankfurt.
 4. Saisissez les variables demandées par le Blueprint :
    - `ADMIN_EMAIL` : l’adresse du premier Super Admin.
    - `ADMIN_PASSWORD` : un mot de passe unique d’au moins 12 caractères.
@@ -31,7 +31,7 @@ Le build exécute `npm ci --include=dev && npm run build`, puis le service déma
 
 ## SQLite et fichiers persistants
 
-Le Blueprint utilise le plan Render **Starter**, car SQLite et les médias Admin doivent être conservés sur un disque persistant. Le disque `ayrovi-data` est monté sur :
+Le Blueprint utilise le plan Render **Starter**, car SQLite et les médias Admin doivent être conservés sur un disque persistant. Le disque `zayrovi-data` est monté sur :
 
 ```text
 /opt/render/project/src/data
@@ -61,7 +61,7 @@ Le script sait maintenant envoyer directement la copie vers AWS S3, Cloudflare R
 
 - `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_REGION`.
 - `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`.
-- `BACKUP_S3_PREFIX` (par défaut `ayrovi/sqlite`).
+- `BACKUP_S3_PREFIX` (par défaut `zayrovi/sqlite`).
 - Après un premier test réussi, `BACKUP_REQUIRE_EXTERNAL=true` afin qu’un échec d’upload fasse échouer et signaler le job.
 
 Une copie locale seule ne protège pas contre la perte du disque. Activez une politique Lifecycle/Retention sur le bucket externe et testez une restauration au moins une fois par mois.
@@ -82,7 +82,7 @@ Dans Meta Developers, créez l’application ZAYROVI avec le cas d’usage **Aut
 
 L’adaptateur Twilio Verify reste dans le code uniquement pour compatibilité éventuelle; il n’est plus le choix par défaut pour la Tunisie. En développement seulement, `console` affiche et renvoie le code de test; ce mode est interdit en production.
 
-Le cookie client `ayrovi_customer_session` est séparé du cookie Admin. La confirmation de commande exige une session client active, un jeton CSRF valide et un numéro tunisien de livraison valide à 8 chiffres. La vérification SMS du téléphone du profil est optionnelle; elle sert à la connexion OTP et au rattachement sécurisé des anciennes commandes.
+Le cookie client `zayrovi_customer_session` est séparé du cookie Admin. La confirmation de commande exige une session client active, un jeton CSRF valide et un numéro tunisien de livraison valide à 8 chiffres. La vérification SMS du téléphone du profil est optionnelle; elle sert à la connexion OTP et au rattachement sécurisé des anciennes commandes.
 
 ## Vérification après déploiement
 
@@ -142,7 +142,7 @@ avec `Branch = arena/c0321e79-ayrovi-beta1` (voir `docs/RELEASE_PLAY_AR_2026-10-
 | `CUSTOMER_AUTH_SECRET` | ≥ 32 caractères, **la même valeur que la production** | sans elle : `customerAuthReady()` = faux ⇒ toutes les routes de connexion répondent 503 |
 | `PUBLIC_BASE_URL` | l’adresse de la nouvelle service | liens, redirections, e-mails |
 | `DATABASE_PATH` | `/opt/render/project/src/data/qatafo.sqlite` | identique au disque monté (base neuve = test propre) |
-| `AYROVIX_QUOTE_SECRET` | une valeur ≥ 32 caractères | jetons de devis AYWEBs |
+| `ZAYROVIX_QUOTE_SECRET` | une valeur ≥ 32 caractères | jetons de devis AYWEBs |
 | `ANDROID_APP_LINK_SHA256` | l’empreinte du keystore d’émission | sinon `/.well-known/assetlinks.json` répond 404 (liens profonds inertes) |
 | `CUSTOMER_OTP_PROVIDER` + (webhook ou Twilio) | voir ci-dessus | sinon `POST /api/customer/auth/otp/request` répond 503 `OTP_UNAVAILABLE` (la connexion par e-mail, elle, fonctionne) |
 | `GOOGLE_CALLBACK_URL` | `https://VOTRE-SERVICE-BETA.onrender.com/api/customer/auth/google/callback` | copiée de la production, elle renvoie vos utilisateurs vers l’ANCIEN serveur ⇒ la connexion Google échoue. La même URI doit être déclarée dans Google Cloud Console (Authorized redirect URIs). |

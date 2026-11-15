@@ -1,5 +1,5 @@
 /**
- * AYWEBs / AYROVIX — ZÉRO MONTANT FABRIQUÉ (Phase 0, suite · 07/10/2026).
+ * AYWEBs / ZAYROVIX — ZÉRO MONTANT FABRIQUÉ (Phase 0, suite · 07/10/2026).
  *
  * Ce que cette suite verrouille, avec des valeurs mesurées et non des phrases :
  *
@@ -48,7 +48,7 @@ vi.mock('tesseract.js', () => ({
 import { SmartLinkScraper } from '../src/scraper/scraper';
 import { VisualProductExtractor } from '../src/services/vision';
 import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, type PricingRules } from '../src/services/pricing';
-import { estimateTnd } from '../src/ayrovix/services/currency';
+import { estimateTnd } from '../src/zayrovix/services/currency';
 
 const scraper = new SmartLinkScraper();
 

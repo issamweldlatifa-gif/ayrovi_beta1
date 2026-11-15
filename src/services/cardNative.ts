@@ -219,7 +219,7 @@ export async function renderNativeCard(
 /* ── Cache disque + point d'entrée ─────────────────────────────────────────── */
 
 export function nativeCacheDir(): string {
-  return process.env.AYROVI_NATIVE_CARD_CACHE_DIR || regenerableCacheDir('media-native');
+  return process.env.ZAYROVI_NATIVE_CARD_CACHE_DIR || regenerableCacheDir('media-native');
 }
 
 export function readNativeCard(file: string): Buffer {
@@ -248,7 +248,7 @@ async function loadNativeCard(
   width: number,
   options: NativeCardOptions = {},
 ): Promise<NativeCardMeta> {
-  if (process.env.AYROVI_NATIVE_CARD === 'false') return { file: null };
+  if (process.env.ZAYROVI_NATIVE_CARD === 'false') return { file: null };
   const key = cacheKey(rawUrl, width);
   const dir = nativeCacheDir();
   const metaPath = path.join(dir, `${key}.meta.json`);

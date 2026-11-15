@@ -66,7 +66,7 @@ google_callback=autre-serveur:https://ayrovi-beta1-1.onrender.com/api/customer/a
 
 ---
 
-## الجزء 2 — Render (خدمة `Ayrovi2`)
+## الجزء 2 — Render (خدمة `Zayrovi2`)
 
 **Environment** ← زيد/بدّل الثلاثة (الثلاثة، موش واحد):
 

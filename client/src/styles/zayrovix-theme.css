@@ -1,0 +1,93 @@
+/* Scoped ZAYROVIX dark theme. Brand/runtime tokens stay authoritative; only Lens journey surfaces change. */
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope {
+  --zayrovix-dark-canvas: color-mix(in srgb, var(--zayrovi-neutral-950) 82%, var(--zayrovi-black));
+  --zayrovix-dark-panel: color-mix(in srgb, var(--zayrovi-neutral-950) 68%, var(--zayrovi-black));
+  --zayrovix-dark-raised: color-mix(in srgb, var(--zayrovi-primary) 13%, var(--zayrovix-dark-panel));
+  --zayrovix-dark-line: color-mix(in srgb, var(--zayrovi-white) 16%, transparent);
+  --zayrovix-dark-muted: color-mix(in srgb, var(--zayrovi-white) 68%, transparent);
+  color-scheme: dark;
+  background-color: var(--zayrovix-dark-canvas) !important;
+  color: var(--zayrovi-white) !important;
+}
+
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope.bg-white,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .bg-white,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .ay-journey-progress {
+  background-color: var(--zayrovix-dark-panel) !important;
+}
+
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .bg-surface,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .ay-journey-progress li > span {
+  background-color: var(--zayrovix-dark-raised) !important;
+}
+
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .text-ink,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .ay-journey-progress li.is-current,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .ay-journey-progress li.is-complete {
+  color: var(--zayrovi-white) !important;
+}
+
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .text-muted,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .ay-journey-progress li {
+  color: var(--zayrovix-dark-muted) !important;
+}
+
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .border-line,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .ay-journey-progress,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope input,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope select,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope textarea {
+  border-color: var(--zayrovix-dark-line) !important;
+}
+
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope input,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope select,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope textarea {
+  background-color: var(--zayrovix-dark-raised) !important;
+  color: var(--zayrovi-white) !important;
+}
+
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope input::placeholder,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope textarea::placeholder {
+  color: var(--zayrovix-dark-muted) !important;
+}
+
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .ay-btn-secondary {
+  border-color: color-mix(in srgb, var(--zayrovi-primary-light) 72%, var(--zayrovi-white)) !important;
+  background: var(--zayrovix-dark-raised) !important;
+  color: var(--zayrovi-white) !important;
+}
+
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .ay-journey-progress li:not(:first-child)::before {
+  background-color: var(--zayrovix-dark-line);
+}
+
+/* توحيد الفواصل والظلال في الوضع الداكن (إزالة تضارب اللون الفاتح على الخلفية الداكنة) */
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .divide-line > *,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .divide-y > *,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .divide-x > * {
+  border-color: var(--zayrovix-dark-line) !important;
+}
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .shadow-card,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .shadow-overlay {
+  box-shadow: 0 18px 48px -22px rgba(0, 0, 0, .65) !important;
+}
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .ay-journey-progress li.is-current::before,
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .ay-journey-progress li.is-complete::before {
+  background-color: var(--zayrovi-white);
+}
+/* Étape franchie : anneau blanc (neutre). Seule l'étape en cours garde le violet. */
+html[data-zayrovix-theme='dark'] .zayrovix-theme-scope .ay-journey-progress li.is-complete > span {
+  border-color: var(--zayrovi-white);
+}
+
+@media (max-width: 359px) {
+  .lens-context-header > div {
+    grid-template-columns: minmax(92px, 1fr) auto minmax(44px, 1fr);
+    padding-inline: 0.5rem;
+  }
+
+  .lens-context-header strong {
+    font-size: 0.75rem;
+  }
+}

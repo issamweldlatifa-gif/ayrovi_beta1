@@ -10,7 +10,7 @@
   align-items: flex-start;
   justify-content: center;
   overflow: hidden;
-  background: color-mix(in srgb, var(--ayrovi-neutral-900) 50%, transparent);
+  background: color-mix(in srgb, var(--zayrovi-neutral-900) 50%, transparent);
   backdrop-filter: blur(2px);
 }
 
@@ -23,10 +23,10 @@
   margin: 0;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--ayrovi-neutral-200);
-  border-radius: var(--ayrovi-radius-card);
-  background: var(--ayrovi-white);
-  box-shadow: var(--ayrovi-shadow-overlay);
+  border: 1px solid var(--zayrovi-neutral-200);
+  border-radius: var(--zayrovi-radius-card);
+  background: var(--zayrovi-white);
+  box-shadow: var(--zayrovi-shadow-overlay);
 }
 
 .order-confirmation-content {
@@ -64,7 +64,7 @@
   .order-confirmation-page {
     align-items: stretch;
     padding: 0;
-    background: var(--ayrovi-white);
+    background: var(--zayrovi-white);
     backdrop-filter: none;
   }
 

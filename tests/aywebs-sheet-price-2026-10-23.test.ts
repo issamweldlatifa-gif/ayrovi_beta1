@@ -26,7 +26,7 @@ import express from 'express';
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-sheet-price-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-sheet-price-')), 'cache');
 
 import { detectAyWebsStore } from '../shared/aywebsStores';
 import { QatafoDatabase } from '../src/db/database';
@@ -112,7 +112,7 @@ describe('feuille d’ajout — la fiche porte le prix en dinars', () => {
       url: PAGE_URL, sessionId: SESSION, capture: CAPTURE, refresh: true, selectedVariant: SHOWN,
     });
     expect(resolved.product.availability.state).toBe('AVAILABLE');
-    expect(resolved.product.ayroviPricing?.totalTnd).toBeGreaterThan(0);
+    expect(resolved.product.zayroviPricing?.totalTnd).toBeGreaterThan(0);
   });
 
   it('chaque couleur publie SON prix en dinars (variant_quotes)', async () => {
@@ -127,7 +127,7 @@ describe('feuille d’ajout — la fiche porte le prix en dinars', () => {
     expect(response.status).toBe(201);
     const quotes = response.body.data.variant_quotes as Array<Record<string, unknown>>;
     const byValue = (value: string) => quotes.find((entry) => entry.value === value)!;
-    expect(byValue('Color Blue').total_tnd).toBeCloseTo(response.body.data.ayrovi_pricing.total_tnd, 3);
+    expect(byValue('Color Blue').total_tnd).toBeCloseTo(response.body.data.zayrovi_pricing.total_tnd, 3);
     expect(byValue('Dark Gray').source_price).toBe(24.98);
     expect(byValue('Dark Gray').total_tnd as number).toBeGreaterThan(byValue('Color Blue').total_tnd as number);
     /* La taille ne publie pas de prix : aucun montant n'est inventé. */

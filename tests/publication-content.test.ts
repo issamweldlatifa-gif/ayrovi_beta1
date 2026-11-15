@@ -62,7 +62,7 @@ describe('Publication media and preferences', () => {
   test('CRM validates content before writing and reports observed deduplicated engagement only', async () => {
     const admin = request.agent(app);
     expect((await request(app).get('/api/admin/publication-insights')).status).toBe(401);
-    const auth = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const auth = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     const headers = { 'x-csrf-token': auth.body.data.csrfToken };
     expect((await admin.put(`/api/admin/publications/${id}`).set(headers).send({ post_type: 'video', media: [] })).status).toBe(400);
     expect((await admin.put(`/api/admin/publications/${id}`).set(headers).send({ post_type: 'product', media: [] })).status).toBe(400);

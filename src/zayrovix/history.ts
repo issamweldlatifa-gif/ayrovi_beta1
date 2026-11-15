@@ -1,0 +1,127 @@
+import type { QatafoDatabase } from '../db/database';
+
+export type ZayrovixHistoryKind = 'image' | 'url' | 'qr' | 'barcode' | 'code' | 'text';
+export type ZayrovixHistoryVerificationStatus = 'VERIFIED' | 'PENDING_MANUAL';
+
+export interface ZayrovixHistoryInput {
+  eventId: string;
+  accountId: string | null | undefined;
+  kind: ZayrovixHistoryKind;
+  inputValue?: string | null;
+  queryLabel?: string | null;
+  title: string;
+  imageUrl?: string | null;
+  sourceUrl?: string | null;
+  source?: string | null;
+  price?: number | null;
+  currency?: string | null;
+  verificationStatus?: ZayrovixHistoryVerificationStatus | null;
+  resultsCount: number;
+}
+
+export interface ZayrovixHistoryItem {
+  id: string;
+  kind: ZayrovixHistoryKind;
+  inputValue: string;
+  queryLabel: string;
+  title: string;
+  imageUrl: string;
+  sourceUrl: string;
+  source: string;
+  price: number | null;
+  currency: string | null;
+  verificationStatus: ZayrovixHistoryVerificationStatus;
+  resultsCount: number;
+  createdAt: string;
+}
+
+const ensured = new WeakSet<object>();
+
+function clean(value: unknown, limit: number): string {
+  return String(value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, limit);
+}
+
+export function ensureZayrovixHistoryTable(db: QatafoDatabase): void {
+  if (ensured.has(db as object)) return;
+  try {
+    const existing = db.get<any>(`SELECT sql FROM sqlite_master WHERE type='table' AND name='zayrovix_search_history'`);
+    if (existing?.sql && !existing.sql.includes("'text'")) {
+      db.run(`CREATE TABLE IF NOT EXISTS zayrovix_search_history_new (
+        event_id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        kind TEXT NOT NULL CHECK(kind IN ('image','url','qr','barcode','code','text')),
+        input_value TEXT NOT NULL DEFAULT '',
+        query_label TEXT NOT NULL DEFAULT '',
+        title TEXT NOT NULL,
+        image_url TEXT NOT NULL DEFAULT '',
+        source_url TEXT NOT NULL DEFAULT '',
+        source TEXT NOT NULL DEFAULT '',
+        price REAL,
+        currency TEXT,
+        verification_status TEXT NOT NULL DEFAULT 'PENDING_MANUAL' CHECK(verification_status IN ('VERIFIED','PENDING_MANUAL')),
+        results_count INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      )`);
+      db.run(`INSERT OR IGNORE INTO zayrovix_search_history_new SELECT * FROM zayrovix_search_history`);
+      db.run(`DROP TABLE zayrovix_search_history`);
+      db.run(`ALTER TABLE zayrovix_search_history_new RENAME TO zayrovix_search_history`);
+    }
+  } catch { /* best-effort */ }
+  db.run(`CREATE TABLE IF NOT EXISTS zayrovix_search_history (
+    event_id TEXT PRIMARY KEY,
+    account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL CHECK(kind IN ('image','url','qr','barcode','code','text')),
+    input_value TEXT NOT NULL DEFAULT '',
+    query_label TEXT NOT NULL DEFAULT '',
+    title TEXT NOT NULL,
+    image_url TEXT NOT NULL DEFAULT '',
+    source_url TEXT NOT NULL DEFAULT '',
+    source TEXT NOT NULL DEFAULT '',
+    price REAL,
+    currency TEXT,
+    verification_status TEXT NOT NULL DEFAULT 'PENDING_MANUAL' CHECK(verification_status IN ('VERIFIED','PENDING_MANUAL')),
+    results_count INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+  )`);
+  db.run('CREATE INDEX IF NOT EXISTS idx_zayrovix_history_account_created ON zayrovix_search_history(account_id,created_at DESC)');
+  ensured.add(db as object);
+}
+
+/** Authenticated history only. Guest history stays in the browser and never becomes server-side tracking. */
+export function recordZayrovixHistory(db: QatafoDatabase, input: ZayrovixHistoryInput): void {
+  if (!input.accountId || !/^ayx_[a-zA-Z0-9-]{10,64}$/.test(input.eventId)) return;
+  ensureZayrovixHistoryTable(db);
+  const price = Number(input.price);
+  const normalizedPrice = Number.isFinite(price) && price > 0 && price < 1_000_000 ? Math.round(price * 100) / 100 : null;
+  const currency = /^[A-Z]{3}$/.test(String(input.currency || '').toUpperCase()) ? String(input.currency).toUpperCase() : null;
+  db.run(`INSERT OR REPLACE INTO zayrovix_search_history
+    (event_id,account_id,kind,input_value,query_label,title,image_url,source_url,source,price,currency,verification_status,results_count,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+  input.eventId, input.accountId, input.kind, clean(input.inputValue, 4096), clean(input.queryLabel, 240),
+  clean(input.title, 500) || 'Recherche ZAYROVIX', clean(input.imageUrl, 4096), clean(input.sourceUrl, 4096), clean(input.source, 120),
+  normalizedPrice, currency, input.verificationStatus === 'VERIFIED' ? 'VERIFIED' : 'PENDING_MANUAL',
+  Math.max(0, Math.min(1000, Number(input.resultsCount) || 0)), new Date().toISOString());
+  db.run(`DELETE FROM zayrovix_search_history WHERE account_id=? AND event_id NOT IN (
+    SELECT event_id FROM zayrovix_search_history WHERE account_id=? ORDER BY created_at DESC LIMIT 100
+  )`, input.accountId, input.accountId);
+}
+
+export function listZayrovixHistory(db: QatafoDatabase, accountId: string, limit = 30): ZayrovixHistoryItem[] {
+  ensureZayrovixHistoryTable(db);
+  return db.all<any>(`SELECT * FROM zayrovix_search_history WHERE account_id=? ORDER BY created_at DESC LIMIT ?`,
+    accountId, Math.max(1, Math.min(50, limit))).map((row) => ({
+    id: String(row.event_id),
+    kind: row.kind as ZayrovixHistoryKind,
+    inputValue: String(row.input_value || ''),
+    queryLabel: String(row.query_label || ''),
+    title: String(row.title || 'Recherche ZAYROVIX'),
+    imageUrl: String(row.image_url || ''),
+    sourceUrl: String(row.source_url || ''),
+    source: String(row.source || ''),
+    price: row.price == null ? null : Number(row.price),
+    currency: row.currency || null,
+    verificationStatus: row.verification_status === 'VERIFIED' ? 'VERIFIED' : 'PENDING_MANUAL',
+    resultsCount: Number(row.results_count || 0),
+    createdAt: String(row.created_at),
+  }));
+}

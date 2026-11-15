@@ -79,12 +79,12 @@ describe('parcours serveur — admin + lecture publique', () => {
   const PAST = '2026-01-01T00:00:00.000Z';
 
   beforeAll(async () => {
-    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
     const now = new Date().toISOString();
     db.run(`INSERT OR REPLACE INTO story_publishers (id,slug,name,subtitle,avatar,official,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?)`, CHANNEL, 'shoppable-test', 'AYROVI', '', '', 1, now, now);
+      VALUES (?,?,?,?,?,?,?,?)`, CHANNEL, 'shoppable-test', 'ZAYROVI', '', '', 1, now, now);
     db.run(`INSERT OR REPLACE INTO products (id,name,image,status,final_price,original_price,currency,stock_status,source_platform,created_at,updated_at)
       VALUES (?,?,?,?,?,?,?,?,?,?,?)`, ACTIVE, 'Pantalon taille haute', '/m/pantalon.jpg', 'ACTIVE', 89, 40, 'TND', 'AVAILABLE', 'OTHER', now, now);
     db.run(`INSERT OR REPLACE INTO products (id,name,image,status,final_price,original_price,currency,stock_status,source_platform,created_at,updated_at)

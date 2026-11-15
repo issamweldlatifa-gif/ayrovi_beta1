@@ -28,7 +28,7 @@ import express from 'express';
 import request from 'supertest';
 import { describe, expect, test, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-journey-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-journey-')), 'cache');
 
 import { QatafoDatabase } from '../src/db/database';
 import { createCustomerSession } from '../src/customer/auth';
@@ -45,7 +45,7 @@ import {
   createAyWebsOrder, readAyWebsOrderById, startAyWebsPurchase, submitAyWebsOrder,
   transitionAyWebsOrder,
 } from '../src/aywebs/orders';
-import { bridgeAyWebsCartToAyrovi } from '../src/aywebs/ayroviBridge';
+import { bridgeAyWebsCartToZayrovi } from '../src/aywebs/zayroviBridge';
 import {
   createAyWebsPurchaseRequest, decideAyWebsPurchaseRequest,
   createAyWebsStoreRequest, decideAyWebsStoreRequest,
@@ -165,14 +165,14 @@ function signIn(db: QatafoDatabase) {
   db.run(
     `INSERT INTO customer_accounts (id,display_name,email,phone,email_verified_at,phone_verified_at,status,locale,created_at,updated_at)
      VALUES (?,?,?,?,?,?,?,?,?,?)`,
-    accountId, 'Client AyWebs', 'client@ayrovi.tn', '22334455', now, now, 'ACTIVE', 'fr-TN', now, now,
+    accountId, 'Client AyWebs', 'client@zayrovi.com', '22334455', now, now, 'ACTIVE', 'fr-TN', now, now,
   );
   const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
   return {
     accountId,
     headers: {
       'x-session-id': SESSION_ID,
-      cookie: `ayrovi_customer_session=${encodeURIComponent(session.token)}`,
+      cookie: `zayrovi_customer_session=${encodeURIComponent(session.token)}`,
       'x-csrf-token': session.csrfToken,
     },
   };
@@ -659,7 +659,7 @@ describe('AYWEBs — checkout et commande (§19, §21, §48)', () => {
     const session = createCustomerSession(h.db, accountId, { ip: '127.0.0.1', headers: {} } as any);
     const cookieOnly = {
       'x-session-id': SESSION_ID,
-      cookie: `ayrovi_customer_session=${encodeURIComponent(session.token)}`,
+      cookie: `zayrovi_customer_session=${encodeURIComponent(session.token)}`,
     };
     const added = await request(h.app).post('/api/v1/aywebs/cart/items').set(cookieOnly).send({
       source_url: AMAZON_URL, variant_attributes: { color: 'Black', size: '42' }, quantity: 1,
@@ -692,27 +692,27 @@ describe('AYWEBs — pont vers le panier ZAYROVI existant (§2, §16)', () => {
     const h = harness();
     const added = await addToCart(h, { quantity: 2 });
 
-    const bridge = bridgeAyWebsCartToAyrovi(h.db, { sessionId: SESSION_ID, accountId: null });
+    const bridge = bridgeAyWebsCartToZayrovi(h.db, { sessionId: SESSION_ID, accountId: null });
     expect(bridge.moved).toHaveLength(1);
     expect(bridge.moved[0].aywebsItemNumber).toBe(added.item.itemNumber);
     expect(bridge.totalItemsCount).toBe(2);
     expect(bridge.totalTnd).toBeGreaterThan(0);
 
-    const ayroviLines = h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID);
-    expect(ayroviLines).toHaveLength(1);
-    expect(ayroviLines[0].store).toBe('amazon');
-    expect(Number(ayroviLines[0].quantity)).toBe(2);
-    expect(Number(ayroviLines[0].price_tnd)).toBeGreaterThan(0);
+    const zayroviLines = h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID);
+    expect(zayroviLines).toHaveLength(1);
+    expect(zayroviLines[0].store).toBe('amazon');
+    expect(Number(zayroviLines[0].quantity)).toBe(2);
+    expect(Number(zayroviLines[0].price_tnd)).toBeGreaterThan(0);
     // La ligne ZAYROVI garde un prix vérifié : le checkout existant fonctionne.
-    expect(String(ayroviLines[0].price_verification_status)).toBe('VERIFIED');
+    expect(String(zayroviLines[0].price_verification_status)).toBe('VERIFIED');
     // La traçabilité AYWEBs suit la ligne dans le panier ZAYROVI.
-    expect(String(ayroviLines[0].customer_note)).toContain(added.item.itemNumber);
+    expect(String(zayroviLines[0].customer_note)).toContain(added.item.itemNumber);
 
     // Rien n'est détruit côté AYWEBs.
     expect(readAyWebsCartView(h.db, SESSION_ID, null).items).toHaveLength(1);
 
     // Idempotence : un second pont ne facture pas deux fois.
-    const again = bridgeAyWebsCartToAyrovi(h.db, { sessionId: SESSION_ID, accountId: null });
+    const again = bridgeAyWebsCartToZayrovi(h.db, { sessionId: SESSION_ID, accountId: null });
     expect(again.moved[0].duplicate).toBe(true);
     expect(h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID)).toHaveLength(1);
   });
@@ -725,7 +725,7 @@ describe('AYWEBs — pont vers le panier ZAYROVI existant (§2, §16)', () => {
     // La ligne SHEIN devient épuisée chez le marchand.
     h.db.run(`UPDATE ayweb_cart_items SET status='OUT_OF_STOCK', status_reason='merchant_out_of_stock' WHERE id=?`, shein.item.id);
 
-    const bridge = bridgeAyWebsCartToAyrovi(h.db, { sessionId: SESSION_ID, accountId: null });
+    const bridge = bridgeAyWebsCartToZayrovi(h.db, { sessionId: SESSION_ID, accountId: null });
     expect(bridge.moved).toHaveLength(1);
     expect(bridge.moved[0].store).toBe('Amazon');
     expect(bridge.skipped).toHaveLength(1);
@@ -734,16 +734,16 @@ describe('AYWEBs — pont vers le panier ZAYROVI existant (§2, §16)', () => {
     expect(bridge.skipped[0].message).toContain(shein.item.title);
     expect(bridge.message).toContain('retenue');
 
-    const ayroviLines = h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID);
-    expect(ayroviLines).toHaveLength(1);
-    expect(String(ayroviLines[0].store)).toBe('amazon');
+    const zayroviLines = h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID);
+    expect(zayroviLines).toHaveLength(1);
+    expect(String(zayroviLines[0].store)).toBe('amazon');
   });
 
   test('un panier sans ligne transférable est refusé, jamais un succès vide', async () => {
     const h = harness();
     const added = await addToCart(h);
     h.db.run(`UPDATE ayweb_cart_items SET status='PRICE_CHANGED', status_reason='39.99 → 59.99 USD' WHERE id=?`, added.item.id);
-    expect(() => bridgeAyWebsCartToAyrovi(h.db, { sessionId: SESSION_ID, accountId: null }))
+    expect(() => bridgeAyWebsCartToZayrovi(h.db, { sessionId: SESSION_ID, accountId: null }))
       .toThrow(AyWebsDomainError);
     expect(h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID)).toHaveLength(0);
   });
@@ -1046,7 +1046,7 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     expect(usedQuote.quoted_price).toBe(29.99);
     expect(usedQuote.quoted_currency).toBe('USD');
     expect(usedQuote.price_source).toBe('VARIANT');
-    expect(usedQuote.ayrovi_pricing.total_tnd).toBeGreaterThan(0);
+    expect(usedQuote.zayrovi_pricing.total_tnd).toBeGreaterThan(0);
     // …le panier prend le prix source de la variante exacte quand il est publié,
     // puis conserve le prix et la devise de cette variante dans le snapshot.
     expect(brandNew.item.unitPrice).toBe(39.99);
@@ -1168,7 +1168,7 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     expect(deliberateAdd.status, JSON.stringify(deliberateAdd.body)).toBe(201);
     expect(deliberateAdd.body.data.idempotent_replay).toBe(false);
     expect(deliberateAdd.body.data.item.quantity).toBe(3);
-    expect(deliberateAdd.body.data.ayrovi.quantity).toBe(3);
+    expect(deliberateAdd.body.data.zayrovi.quantity).toBe(3);
     expect(h.db.all('SELECT * FROM ayweb_cart_items')).toHaveLength(1);
     expect(h.db.get<any>('SELECT quantity FROM cart_items')).toEqual({ quantity: 3 });
 
@@ -1178,7 +1178,7 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
       .send(legacyAddPayload({ quantity: 2, request_id: 'mobile-add-0001' }));
     expect(replayAfterNewIntent.status).toBe(201);
     expect(replayAfterNewIntent.body.data.item.quantity).toBe(2);
-    expect(replayAfterNewIntent.body.data.ayrovi).toEqual(first.body.data.ayrovi);
+    expect(replayAfterNewIntent.body.data.zayrovi).toEqual(first.body.data.zayrovi);
     expect(replayAfterNewIntent.body.cart.totals.units).toBe(2);
     expect(h.db.get<any>('SELECT quantity FROM cart_items')).toEqual({ quantity: 3 });
   });
@@ -1231,7 +1231,7 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     const h = harness();
     const first = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload({ quantity: 1 }));
     expect(first.status, JSON.stringify(first.body)).toBe(201);
-    expect(first.body.data.ayrovi.linked).toBe(true);
+    expect(first.body.data.zayrovi.linked).toBe(true);
 
     let lines = h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID);
     expect(lines).toHaveLength(1);
@@ -1242,13 +1242,13 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     const second = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload({ quantity: 1 }));
     expect(second.status).toBe(201);
     expect(second.body.data.item.quantity).toBe(2);
-    expect(second.body.data.ayrovi.reason).toBe('SYNCED');
+    expect(second.body.data.zayrovi.reason).toBe('SYNCED');
     lines = h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID);
     expect(lines).toHaveLength(1);
     expect(Number(lines[0].quantity)).toBe(2);
 
     // Le pont explicite (« Proceed to order page ») reste idempotent.
-    const bridge = bridgeAyWebsCartToAyrovi(h.db, { sessionId: SESSION_ID, accountId: null });
+    const bridge = bridgeAyWebsCartToZayrovi(h.db, { sessionId: SESSION_ID, accountId: null });
     expect(bridge.moved[0].synced).toBe(true);
     expect(h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID)).toHaveLength(1);
   });
@@ -1261,7 +1261,7 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     const patched = await request(h.app).patch(`/api/v1/aywebs/cart/items/${itemId}`).set(ANONYMOUS).send({ quantity: 3 });
     expect(patched.status, JSON.stringify(patched.body)).toBe(200);
     expect(patched.body.data.item.quantity).toBe(3);
-    expect(patched.body.data.ayrovi.quantity).toBe(3);
+    expect(patched.body.data.zayrovi.quantity).toBe(3);
     const afterPatch = h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID);
     expect(afterPatch).toHaveLength(1);
     expect(Number(afterPatch[0].quantity)).toBe(3);
@@ -1272,7 +1272,7 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     // Aucun orphelin : la ligne quitte le panier ZAYROVI, et l'audit le prouve.
     expect(h.db.all<any>('SELECT * FROM cart_items WHERE session_id=?', SESSION_ID)).toHaveLength(0);
     const audit = h.db.all<any>(
-      `SELECT action, resource_id FROM ayweb_audit_logs WHERE resource_id=? AND action='cart.ayrovi_unlink'`, itemId,
+      `SELECT action, resource_id FROM ayweb_audit_logs WHERE resource_id=? AND action='cart.zayrovi_unlink'`, itemId,
     );
     expect(audit).toHaveLength(1);
   });
@@ -1312,14 +1312,14 @@ describe('AYWEBs — parcours d’achat façon Buyee : les 12 cas du lot Q12', (
     const h = harness();
     const resolved = await request(h.app).post('/api/v1/aywebs/product/resolve').set(ANONYMOUS).send({ url: AMAZON_URL });
     expect(resolved.status, JSON.stringify(resolved.body)).toBe(201);
-    const serverTotal = Number(resolved.body.data.ayrovi_pricing.total_tnd);
+    const serverTotal = Number(resolved.body.data.zayrovi_pricing.total_tnd);
     expect(serverTotal).toBeGreaterThan(0);
 
     const added = await request(h.app).post('/api/v1/aywebs/cart/items').set(ANONYMOUS).send(legacyAddPayload({
       quantity: 1,
       // Un client hostile (ou une coque ancienne) ne peut pas imposer son prix.
       unit_price: 0.01, price_tnd: 0.01, total_tnd: 0.01, pricing_tnd: 0.01, line_total_tnd: 0.01,
-      ayrovi_pricing: { total_tnd: 0.01, currency: 'TND' },
+      zayrovi_pricing: { total_tnd: 0.01, currency: 'TND' },
     }));
     expect(added.status, JSON.stringify(added.body)).toBe(201);
     const item = added.body.data.item;

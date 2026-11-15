@@ -45,7 +45,7 @@ jest.mock('@/api/aywebs', () => {
     purchaseMode: 'ASSISTED',
     checkoutReady: false,
     lineTotalTnd: 133.71,
-    linkedToAyrovi: true,
+    linkedToZayrovi: true,
     createdAt: '2026-10-27T00:00:00.000Z',
     updatedAt: '2026-10-27T00:00:00.000Z',
   };
@@ -67,7 +67,7 @@ jest.mock('@/api/aywebs', () => {
     ...actual,
     fetchAyWebsVariants: jest.fn(async () => ({ variants: [], variantGroups: [] })),
     resolveAyWebsProductWithCapture: jest.fn(async () => { throw new Error('serveur indisponible'); }),
-    addAyWebsCartItem: jest.fn(async () => ({ item, cart, ayrovi: { linked: true, reason: '' } })),
+    addAyWebsCartItem: jest.fn(async () => ({ item, cart, zayrovi: { linked: true, reason: '' } })),
   };
 });
 
@@ -87,7 +87,7 @@ const product: AyWebsResolvedProduct = {
   availability: { state: 'AVAILABLE', reason: '', checkedAt: '2026-10-27T00:00:00.000Z', source: 'server', quantityHint: null },
   purchaseMode: 'ASSISTED',
   integrationType: 'URL_REQUEST',
-  ayroviPricing: null,
+  zayroviPricing: null,
   variantGroups: [],
   variantDetails: [],
   variantQuotes: [],

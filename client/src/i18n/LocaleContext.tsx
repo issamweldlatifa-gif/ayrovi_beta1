@@ -1,22 +1,22 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
-export type AyroviLocale = 'fr' | 'ar';
+export type ZayroviLocale = 'fr' | 'ar';
 
 interface LocaleValue {
-  locale: AyroviLocale;
+  locale: ZayroviLocale;
   isArabic: boolean;
   direction: 'ltr' | 'rtl';
-  setLocale: (locale: AyroviLocale) => void;
+  setLocale: (locale: ZayroviLocale) => void;
   toggleLocale: () => void;
   tr: (french: string, arabic: string) => string;
   formatDate: (value: unknown, detailed?: boolean) => string;
   formatMoney: (value: unknown) => string;
 }
 
-const STORAGE_KEY = 'ayrovi.locale.v1';
+const STORAGE_KEY = 'zayrovi.locale.v1';
 const LocaleContext = createContext<LocaleValue | null>(null);
 
-function initialLocale(): AyroviLocale {
+function initialLocale(): ZayroviLocale {
   if (typeof window === 'undefined') return 'fr';
   if (window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')) return 'fr';
   try {
@@ -27,8 +27,8 @@ function initialLocale(): AyroviLocale {
 }
 
 export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [locale, setLocaleState] = useState<AyroviLocale>(initialLocale);
-  const setLocale = (next: AyroviLocale) => {
+  const [locale, setLocaleState] = useState<ZayroviLocale>(initialLocale);
+  const setLocale = (next: ZayroviLocale) => {
     setLocaleState(next);
     try { window.localStorage.setItem(STORAGE_KEY, next); } catch { /* storage may be unavailable */ }
   };

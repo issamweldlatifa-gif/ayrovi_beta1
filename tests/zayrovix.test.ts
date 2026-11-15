@@ -1,0 +1,1049 @@
+import { afterEach, describe, expect, test, vi, beforeAll, afterAll } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+import request from 'supertest';
+import sharp from 'sharp';
+import { app, db, scraper } from '../src/server';
+import { buildSearchQuery } from '../src/zayrovix/services/ai';
+import { catalogSearch, providerWebSearch, scoreCandidate, searchCandidates } from '../src/zayrovix/services/search';
+import { checkSerpApiVisualHealth, serpApiVisualSearch } from '../src/zayrovix/services/visualSearch';
+import { filterDisplayableCandidates } from '../src/zayrovix/services/candidatePolicy';
+import { extractProductFromUrl } from '../src/zayrovix/services/product';
+import { parseProductPageHtml } from '../src/scraper/productPageParser';
+import { detectMerchantStore } from '../src/scraper/merchantDomains';
+import { createZayrovixPriceToken, verifyZayrovixPriceToken } from '../src/zayrovix/priceQuote';
+import { recordZayrovixHistory } from '../src/zayrovix/history';
+import { getZayrovixStats } from '../src/zayrovix/events';
+import { createCustomerSession } from '../src/customer/auth';
+import { isUnsafeIpAddress, resolveSafeHttpUrl } from '../src/services/safeUrl';
+import type { ZayrovixIdentification } from '../src/zayrovix/types';
+
+/** PNG 1x1 minimal — multer valide le mimetype déclaré, pas le contenu. */
+const PNG_1PX = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+const NIKE_ID: ZayrovixIdentification = {
+  input_kind: 'product_photo',
+  category: 'sneakers',
+  brand: 'Nike',
+  model: 'Air Max 95',
+  color: ['navy', 'grey'],
+  visible_text: ['NIKE'],
+  possible_model_codes: [],
+  description: 'Baskets running bleu marine à bulle visible.',
+  confidence: 0.9,
+  detected_price: { amount: 0, currency: '', label: 'none', confidence: 0 },
+};
+
+function seedCatalogProduct() {
+  const now = new Date().toISOString();
+  const id = `prd_test_${Math.random().toString(36).slice(2, 10)}`;
+  db.run(
+    `INSERT INTO products (id,name,description,image,brand_name,category,source_url,source_platform,
+      original_price,currency,converted_price,customs_fee,shipping_fee,service_fee,final_price,express_available,stock_status,status,created_at,updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,0,0,0,0,?,1,'AVAILABLE','ACTIVE',?,?)`,
+    id, 'Nike Air Max 95 Ultra', '', '', 'Nike', 'chaussures', 'https://www.shein.com/nike-air-max-95-p-1.html', 'SHEIN',
+    44, 'EUR', 250, now, now,
+  );
+  return id;
+}
+
+function stubAnthropic(text: string) {
+  const mock = vi.fn(async (_url: string, _init: RequestInit = {}) => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ content: [{ type: 'text', text }] }),
+  }));
+  vi.stubGlobal('fetch', mock);
+  return mock;
+}
+
+function restoreEnv(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}
+
+/**
+ * SerpApi — SEULE entrée de la recherche (17/10/2026). Un lien + un prix sur
+ * la page marchande : c'est la page qui fait foi, jamais l'image.
+ */
+/**
+ * URL produit d'une boutique DÉCLARÉE (Zalando). Depuis le 25/10/2026 l'admission
+ * Lens est une décision d'URL (`PRODUCT_LINK_ADMISSION`) : un lien d'un domaine
+ * inconnu — `shop.example.com` — est exclu (`PRODUCT_PAGE_NOT_RECOGNIZED`) avant
+ * toute lecture. Les scénarios qui testent la découverte doivent donc partir d'un
+ * lien produit réel, sinon ils ne testent plus la découverte mais le rejet.
+ */
+const ZALANDO_PRODUCT_URL = 'https://www.zalando.fr/sac-a-main-noir-zara-n1241a1ev-i11.html';
+
+function stubSerpApiVisual(title = 'Sac à main noir Zara — 49.99 EUR', link = 'https://shop.example.com/sac-noir', inStock?: boolean) {
+  const mock = vi.fn(async (url: string) => {
+    if (String(url) === 'https://serpapi.com/image') {
+      return new Response(JSON.stringify({ image_id: 'image-id-sac' }), { status: 200 });
+    }
+    if (String(url).startsWith('https://serpapi.com/search.json?')) {
+      return new Response(JSON.stringify({
+        visual_matches: [{
+          title,
+          link,
+          source: 'Example Shop',
+          thumbnail: 'https://encrypted-tbn.example.com/sac.jpg',
+          price: { extracted_value: 49.99, currency: '€' },
+          ...(inStock === undefined ? {} : { in_stock: inStock }),
+        }],
+      }), { status: 200 });
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  });
+  vi.stubGlobal('fetch', mock);
+  return mock;
+}
+
+describe('ZAYROVIX Lens', () => {
+  /*
+   * Ces scénarios rejouent la MÊME image pour éprouver des comportements
+   * différents (vision qui tombe, prix lu, etc.). Le cache de reconnaissance
+   * servirait alors la réponse précédente et masquerait le cas testé : on le
+   * coupe explicitement ici. Le cache a ses propres tests
+   * (tests/lens-recognition-cache.test.ts) — aucune garantie n'est perdue.
+   */
+  const cacheBefore = process.env.ZAYROVI_LENS_CACHE;
+  const liveCacheBefore = process.env.ZAYROVI_LENS_LIVE_CACHE_DIR;
+  const variantCacheBefore = process.env.ZAYROVI_VARIANT_CACHE_DIR;
+  let liveCacheDir = '';
+  beforeAll(() => {
+    process.env.ZAYROVI_LENS_CACHE = 'false';
+    /*
+     * Même raison pour les caches DISQUE (stock vivant, contrats de variantes) :
+     * sans bac à sable, un passage précédent de `npm test` laisse des entrées
+     * sous data/ (6 h de TTL) et le scénario rejoué servirait un hit de cache
+     * au lieu de scraper la page marchande. CI part toujours à froid ; les
+     * runs locaux aussi, désormais. Le bac à sable suit le modèle de
+     * tests/lens-live-stock.test.ts — aucune garantie n'est perdue.
+     */
+    liveCacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovix-lens-live-'));
+    process.env.ZAYROVI_LENS_LIVE_CACHE_DIR = liveCacheDir;
+    process.env.ZAYROVI_VARIANT_CACHE_DIR = path.join(liveCacheDir, 'contracts');
+  });
+  afterAll(() => {
+    restoreEnv('ZAYROVI_LENS_CACHE', cacheBefore);
+    restoreEnv('ZAYROVI_LENS_LIVE_CACHE_DIR', liveCacheBefore);
+    restoreEnv('ZAYROVI_VARIANT_CACHE_DIR', variantCacheBefore);
+    if (liveCacheDir) fs.rmSync(liveCacheDir, { recursive: true, force: true });
+  });
+
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  test('analyze-image exige une image et refuse les formats non image', async () => {
+    const missing = await request(app).post('/api/zayrovix/analyze-image');
+    expect(missing.status).toBe(400);
+    expect(missing.body.code).toBe('IMAGE_REQUIRED');
+
+    const wrongType = await request(app)
+      .post('/api/zayrovix/analyze-image')
+      .attach('image', Buffer.from('plain text'), { filename: 'notes.txt', contentType: 'text/plain' });
+    expect(wrongType.status).toBe(415);
+    expect(wrongType.body.code).toBe('UNSUPPORTED_IMAGE');
+  });
+
+  test('rejette une fausse image sans écrire de fichier et garde le serveur disponible', async () => {
+    const uploadsDir = path.resolve(process.cwd(), 'data/uploads');
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    const before = fs.readdirSync(uploadsDir).sort();
+
+    const response = await request(app)
+      .post('/api/zayrovix/analyze-image')
+      .attach('image', Buffer.from("console.log('not an image')"), {
+        filename: 'payload.js',
+        contentType: 'image/jpeg',
+      });
+
+    expect(response.status).toBe(415);
+    expect(response.body.code).toBe('INVALID_IMAGE');
+    expect(fs.readdirSync(uploadsDir).sort()).toEqual(before);
+    expect((await request(app).get('/api/health')).status).toBe(200);
+  });
+
+  test('analyze-image sans clé serveur → 503 ZAYROVIX_UNAVAILABLE (la clé ne part jamais au client)', async () => {
+    const response = await request(app)
+      .post('/api/zayrovix/analyze-image')
+      .attach('image', PNG_1PX, { filename: 'sneakers.png', contentType: 'image/png' });
+    expect(response.status).toBe(503);
+    expect(response.body.code).toBe('ZAYROVIX_UNAVAILABLE');
+  });
+
+  test('buildSearchQuery : code article prioritaire, sinon marque + modèle + couleurs', () => {
+    expect(buildSearchQuery(NIKE_ID)).toBe('Nike Air Max 95 navy grey sneakers');
+    expect(buildSearchQuery({ ...NIKE_ID, possible_model_codes: ['DC9412-400'] })).toBe('Nike DC9412-400');
+    expect(buildSearchQuery({ ...NIKE_ID, brand: null, model: null, color: [] })).toBe('sneakers');
+  });
+
+  test('politique résultats : prix positif + devise + lien public, avec note toujours visible', () => {
+    const base = {
+      kind: 'external', title: 'Produit test', brand: null, model: null, colors: [], sizes: [],
+      source: 'Test', image: '', priceTnd: null, match: 86,
+    } as const;
+    const results = filterDisplayableCandidates([
+      { ...base, id: 'ok', sourceUrl: 'https://shop.example.com/product/1', price: 29.9, currency: 'EUR' },
+      { ...base, id: 'no-price', sourceUrl: 'https://shop.example.com/product/2', price: null, currency: 'EUR' },
+      { ...base, id: 'private', sourceUrl: 'http://127.0.0.1/product/3', price: 10, currency: 'EUR' },
+      { ...base, id: 'credentials', sourceUrl: 'https://user:pass@shop.example.com/product/4', price: 10, currency: 'EUR' },
+    ] as any);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({ id: 'ok', rating: 4.3, ratingKind: 'match' });
+  });
+
+  test('scoreCandidate : le code article domine, la marque pèse, le catalogue est trié', () => {
+    const withCode = scoreCandidate({ ...NIKE_ID, possible_model_codes: ['DC9412-400'] }, 'Nike DC9412-400', { title: 'Air Max 95 DC9412-400 bleu', brand: 'Nike' });
+    const weak = scoreCandidate(NIKE_ID, 'Nike Air Max 95 navy grey', { title: 'Sandales plage', brand: 'Autre' });
+    expect(withCode).toBeGreaterThan(85);
+    expect(weak).toBeLessThan(withCode);
+    expect(weak).toBeGreaterThanOrEqual(0);
+  });
+
+  // Catalogue ZAYROVI désactivé (ZAYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
+  test.skip('le catalogue transmet le vrai statut de stock au produit, sans déduire « disponible » de ACTIVE', () => {
+    const id = seedCatalogProduct();
+    try {
+      for (const [status, expected] of [
+        ['AVAILABLE', 'in_stock'], ['LIMITED', 'limited'], ['OUT_OF_STOCK', 'out_of_stock'],
+      ] as const) {
+        db.run('UPDATE products SET stock_status=? WHERE id=?', status, id);
+        const item = catalogSearch(db, null, 'Nike Air Max 95 Ultra').find(candidate => candidate.id === `cat_${id}`);
+        expect(item?.availability).toBe(expected);
+      }
+    } finally {
+      db.run('DELETE FROM products WHERE id=?', id);
+    }
+  });
+
+  test('SerpApi Google Lens envoie la clé dans le multipart officiel et demande visual_matches', async () => {
+    const previousKey = process.env.SERPAPI_KEY;
+    const previousCountries = process.env.ZAYROVIX_LENS_COUNTRIES;
+    const previousCountry = process.env.ZAYROVIX_LENS_COUNTRY;
+    process.env.SERPAPI_KEY = 'test-serpapi-key';
+    process.env.ZAYROVIX_LENS_COUNTRIES = 'fr';
+    process.env.ZAYROVIX_LENS_COUNTRY = 'fr';
+    const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+    const fetchMock = vi.fn(async (url: string, init: RequestInit = {}) => {
+      if (url === 'https://serpapi.com/image') {
+        expect(init.method).toBe('POST');
+        expect(init.body).toBeInstanceOf(FormData);
+        const form = init.body as FormData;
+        expect(form.get('api_key')).toBe('test-serpapi-key');
+        expect(form.get('source')).toBe('zayrovi-server');
+        expect(form.get('image')).toBeInstanceOf(Blob);
+        return new Response(JSON.stringify({ image_id: 'temporary-image-id' }), { status: 200 });
+      }
+      if (url.startsWith('https://serpapi.com/search.json?')) {
+        const parsed = new URL(url);
+        expect(parsed.searchParams.get('engine')).toBe('google_lens');
+        expect(parsed.searchParams.get('type')).toBe('visual_matches');
+        expect(parsed.searchParams.get('image_id')).toBe('temporary-image-id');
+        return new Response(JSON.stringify({
+          visual_matches: [{
+            title: 'Nike Air Max 95 Navy DC9412-400',
+            link: 'https://shop.example.com/nike-air-max-95',
+            source: 'Example Shop',
+            thumbnail: 'https://encrypted-tbn.example.com/nike-air-max-95-thumb.jpg',
+            image: 'https://cdn.example.com/nike-air-max-95.jpg',
+            exact_matches: true,
+            price: { extracted_value: 149.99, currency: '€' },
+          }],
+        }), { status: 200 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const visual = await serpApiVisualSearch(PNG_1PX, 8);
+      expect(visual).toHaveLength(1);
+      expect(visual[0]).toMatchObject({
+        kind: 'external',
+        image: 'https://encrypted-tbn.example.com/nike-air-max-95-thumb.jpg',
+        images: [
+          'https://encrypted-tbn.example.com/nike-air-max-95-thumb.jpg',
+          'https://cdn.example.com/nike-air-max-95.jpg',
+        ],
+        price: 149.99,
+        currency: 'EUR',
+        match: 99,
+      });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(timeoutSpy.mock.calls.map(([ms]) => ms)).toEqual(expect.arrayContaining([5_000, 18_000]));
+
+      const cachedVisual = await serpApiVisualSearch(PNG_1PX, 8);
+      expect(cachedVisual).toEqual(visual);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+
+      fetchMock.mockClear();
+      const candidates = await searchCandidates(db, NIKE_ID, 'Nike Air Max 95 DC9412-400', visual);
+      expect(candidates.find((item) => item.id.startsWith('lens_'))?.images).toEqual(expect.arrayContaining([
+        expect.stringContaining('nike-air-max-95-thumb.jpg'),
+        expect.stringContaining('nike-air-max-95.jpg'),
+      ]));
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      timeoutSpy.mockRestore();
+      restoreEnv('SERPAPI_KEY', previousKey);
+      restoreEnv('ZAYROVIX_LENS_COUNTRIES', previousCountries);
+      restoreEnv('ZAYROVIX_LENS_COUNTRY', previousCountry);
+    }
+  });
+
+  test('SerpApi Lens réessaie une seule fois si image_id vient juste d’être créé', async () => {
+    const previousKey = process.env.SERPAPI_KEY;
+    const previousCountries = process.env.ZAYROVIX_LENS_COUNTRIES;
+    const previousCountry = process.env.ZAYROVIX_LENS_COUNTRY;
+    process.env.SERPAPI_KEY = 'test-serpapi-key';
+    process.env.ZAYROVIX_LENS_COUNTRIES = 'fr';
+    process.env.ZAYROVIX_LENS_COUNTRY = 'fr';
+    let lensRequests = 0;
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === 'https://serpapi.com/image') {
+        return new Response(JSON.stringify({ image_id: 'propagating-image-id' }), { status: 200 });
+      }
+      if (url.startsWith('https://serpapi.com/search.json?')) {
+        lensRequests += 1;
+        if (lensRequests === 1) {
+          return new Response(JSON.stringify({ error: 'Image is still processing' }), { status: 200 });
+        }
+        return new Response(JSON.stringify({
+          visual_matches: [{
+            title: 'Sneaker après propagation',
+            link: 'https://shop.example.com/propagated-sneaker',
+            source: 'Example Shop',
+          }],
+        }), { status: 200 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      // Trailing bytes are accepted by the PNG decoder and make a distinct
+      // cache key from the preceding success scenario.
+      const distinctImage = Buffer.concat([PNG_1PX, Buffer.from('provider-retry')]);
+      const visual = await serpApiVisualSearch(distinctImage, 8);
+      expect(visual).toHaveLength(1);
+      expect(visual[0].title).toBe('Sneaker après propagation');
+      expect(lensRequests).toBe(2);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    } finally {
+      restoreEnv('SERPAPI_KEY', previousKey);
+      restoreEnv('ZAYROVIX_LENS_COUNTRIES', previousCountries);
+      restoreEnv('ZAYROVIX_LENS_COUNTRY', previousCountry);
+    }
+  });
+
+  test('SerpApi cherche dans les marchés majeurs, garde France, exclut Tunisie et fusionne les doublons', async () => {
+    const previousKey = process.env.SERPAPI_KEY;
+    const previousCountries = process.env.ZAYROVIX_LENS_COUNTRIES;
+    const previousCountry = process.env.ZAYROVIX_LENS_COUNTRY;
+    try {
+      process.env.SERPAPI_KEY = 'test-serpapi-multicountry';
+      delete process.env.ZAYROVIX_LENS_COUNTRIES;
+      delete process.env.ZAYROVIX_LENS_COUNTRY;
+      expect(checkSerpApiVisualHealth().countries).toEqual(['fr', 'de', 'it', 'es', 'uk', 'us', 'ca', 'tr', 'ae']);
+      process.env.ZAYROVIX_LENS_COUNTRIES = 'de,tn,us';
+      process.env.ZAYROVIX_LENS_COUNTRY = 'fr';
+      const requestedCountries: string[] = [];
+      let germanyAttempts = 0;
+      const fetchMock = vi.fn(async (url: string) => {
+        if (url === 'https://serpapi.com/image') {
+          return new Response(JSON.stringify({ image_id: 'multi-market-image' }), { status: 200 });
+        }
+        if (!url.startsWith('https://serpapi.com/search.json?')) {
+          throw new Error(`Unexpected request: ${url}`);
+        }
+        const country = new URL(url).searchParams.get('country') || '';
+        requestedCountries.push(country);
+        if (country === 'de') {
+          germanyAttempts += 1;
+          return new Response(JSON.stringify({ error: 'temporary market failure' }), { status: 503 });
+        }
+        const visualMatches = country === 'fr'
+          ? [
+              { title: 'Sac commun — France', link: 'https://shop.test/common-bag', thumbnail: 'https://cdn.test/common-fr.jpg', price: { extracted_value: 45, currency: 'EUR' } },
+              ...Array.from({ length: 7 }, (_, index) => ({
+                title: `Sac français ${index + 1}`,
+                link: `https://shop.test/fr-bag-${index + 1}`,
+                thumbnail: `https://cdn.test/fr-${index + 1}.jpg`,
+              })),
+            ]
+          : [
+              { title: 'Sac commun — US', link: 'https://shop.test/common-bag', thumbnail: 'https://cdn.test/common-us.jpg' },
+              { title: 'Sac américain', link: 'https://shop.test/us-bag', thumbnail: 'https://cdn.test/us.jpg' },
+            ];
+        return new Response(JSON.stringify({ visual_matches: visualMatches }), { status: 200 });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      expect(checkSerpApiVisualHealth().countries).toEqual(['fr', 'de', 'us']);
+      const uniqueImage = await sharp(PNG_1PX).extend({ top: 1, background: '#f0f0f0' }).png().toBuffer();
+      const matches = await serpApiVisualSearch(uniqueImage, 8);
+      expect([...new Set(requestedCountries)]).toEqual(['fr', 'de', 'us']);
+      expect(requestedCountries).not.toContain('tn');
+      expect(germanyAttempts).toBe(2);
+      expect(matches).toHaveLength(8);
+      expect(matches[0].sourceUrl).toBe('https://shop.test/common-bag');
+      expect(matches.some((item) => item.sourceUrl === 'https://shop.test/us-bag')).toBe(true);
+      expect(matches[0].images).toEqual(expect.arrayContaining([
+        'https://cdn.test/common-fr.jpg',
+        'https://cdn.test/common-us.jpg',
+      ]));
+      expect(matches[0]).toMatchObject({ price: 45, currency: 'EUR' });
+
+      // Changing the country scope must not reuse the previous multi-market cache entry.
+      process.env.ZAYROVIX_LENS_COUNTRIES = 'fr';
+      const franceOnly = await serpApiVisualSearch(uniqueImage, 8);
+      expect(franceOnly.some((item) => item.sourceUrl === 'https://shop.test/us-bag')).toBe(false);
+      expect(requestedCountries.slice(4)).toEqual(['fr']);
+    } finally {
+      vi.unstubAllGlobals();
+      restoreEnv('SERPAPI_KEY', previousKey);
+      restoreEnv('ZAYROVIX_LENS_COUNTRIES', previousCountries);
+      restoreEnv('ZAYROVIX_LENS_COUNTRY', previousCountry);
+    }
+  });
+
+  test('fiche marchand : extrait uniquement les variantes disponibles et leur prix réel', () => {
+    const html = `<!doctype html><html><head>
+      <meta property="og:title" content="Sneaker Test">
+      <meta property="product:price:amount" content="129,99 €">
+      <meta property="product:price:currency" content="EUR">
+      <meta property="og:image" content="/products/shoe.jpg">
+      <script type="application/ld+json">{"@type":"Product","name":"Sneaker Test","sku":"SKU-42","color":["Noir","Blanc"],"offers":{"price":"129.99","priceCurrency":"EUR","availability":"https://schema.org/InStock"}}</script>
+      <script type="application/json">{"product":{"id":42,"title":"Sneaker Test","options":["Taille","Couleur"],"variants":[
+        {"id":1,"option1":"42 EU","option2":"Noir","available":true,"price":12999,"public_title":"42 EU / Noir","requires_shipping":true},
+        {"id":2,"option1":"43 EU","option2":"Noir","available":false,"price":12999,"public_title":"43 EU / Noir","requires_shipping":true},
+        {"id":3,"option1":"44 EU","option2":"Blanc","available":true,"price":13999,"public_title":"44 EU / Blanc","requires_shipping":true}
+      ]}}</script>
+    </head><body><h1>Sneaker Test</h1></body></html>`;
+    const parsed = parseProductPageHtml(html, 'https://shop.example.org/item', 'generic');
+    expect(parsed).toMatchObject({ title: 'Sneaker Test', price: 129.99, currency: 'EUR', externalId: 'SKU-42', priceSource: 'json_ld' });
+    expect(parsed.images[0]).toBe('https://shop.example.org/products/shoe.jpg');
+    expect(parsed.variants.sizes).toEqual(['42 EU', '44 EU']);
+    expect(parsed.variants.colors).toEqual(['Noir', 'Blanc']);
+    expect(parsed.variants.details).toEqual([
+      expect.objectContaining({ id: '1', size: '42 EU', color: 'Noir', price: 129.99, available: true }),
+      expect.objectContaining({ id: '3', size: '44 EU', color: 'Blanc', price: 139.99, available: true }),
+    ]);
+  });
+
+  test('prix barré du marchand : lu tel quel (compare_at, ListPrice, <del>), jamais déduit', () => {
+    const shopify = `<!doctype html><html><head><title>Alphafly 3</title>
+      <script type="application/json">{"product":{"id":9,"title":"Alphafly 3","options":["Pointure"],"variants":[
+        {"id":1,"option1":"42","available":true,"price":22895,"compare_at_price":30995,"public_title":"42","requires_shipping":true}
+      ]}}</script></head><body><h1>Alphafly 3</h1></body></html>`;
+    expect(parseProductPageHtml(shopify, 'https://shop.example.org/alphafly', 'generic')).toMatchObject({ price: 228.95, originalPrice: 309.95 });
+
+    const jsonLd = `<!doctype html><html><head><title>Veste</title>
+      <script type="application/ld+json">{"@type":"Product","name":"Veste","offers":{"price":"59.00","priceCurrency":"EUR","priceSpecification":[{"@type":"UnitPriceSpecification","priceType":"https://schema.org/ListPrice","price":"89.00"}]}}</script>
+      </head><body><h1>Veste</h1></body></html>`;
+    expect(parseProductPageHtml(jsonLd, 'https://shop.example.org/veste', 'generic')).toMatchObject({ price: 59, originalPrice: 89 });
+
+    const dom = `<!doctype html><html><head><title>Sac</title>
+      <meta property="product:price:amount" content="40.00"><meta property="product:price:currency" content="EUR">
+      </head><body><h1>Sac</h1><div class="price"><del>55,00 €</del> <span>40,00 €</span></div></body></html>`;
+    expect(parseProductPageHtml(dom, 'https://shop.example.org/sac', 'generic')).toMatchObject({ price: 40, originalPrice: 55 });
+
+    // Un « ancien prix » égal ou inférieur n'est pas une remise : absent.
+    const fake = `<!doctype html><html><head><title>Tee</title>
+      <meta property="product:price:amount" content="20.00"><meta property="product:price:currency" content="EUR">
+      </head><body><h1>Tee</h1><s class="old-price">20,00 €</s></body></html>`;
+    expect(parseProductPageHtml(fake, 'https://shop.example.org/tee2', 'generic').originalPrice).toBeUndefined();
+  });
+
+  test('images PAR COULEUR : le scraper regroupe les photos de chaque couleur (référence Zalando)', () => {
+    const html = `<!doctype html><html><head><title>Tee multi</title>
+      <script type="application/json">{"product":{"id":7,"title":"Tee multi","options":["Couleur","Taille"],"variants":[
+        {"id":1,"options":["Noir","M"],"featured_image":"https://cdn.shop.example.org/black-front.jpg?imwidth=1000"},
+        {"id":2,"options":["Noir","L"],"featured_image":"https://cdn.shop.example.org/black-back.jpg?imwidth=1000"},
+        {"id":3,"options":["Rouge","M"],"featured_image":"https://cdn.shop.example.org/red-front.jpg?imwidth=1000"}
+      ],"images":[
+        {"src":"https://cdn.shop.example.org/black-model.jpg?imwidth=1000","variant_ids":[1]},
+        {"src":"https://cdn.shop.example.org/red-model.jpg?imwidth=1000","variant_ids":[3]}
+      ]}}</script>
+    </head><body><h1>Tee multi</h1></body></html>`;
+    const parsed = parseProductPageHtml(html, 'https://shop.example.org/tee', 'generic');
+    // Chaque couleur possède SON jeu de photos réel — aucune supposition d'index.
+    expect(parsed.colorImages['noir']).toEqual(expect.arrayContaining([
+      'https://cdn.shop.example.org/black-front.jpg?imwidth=1000',
+      'https://cdn.shop.example.org/black-back.jpg?imwidth=1000',
+      'https://cdn.shop.example.org/black-model.jpg?imwidth=1000',
+    ]));
+    expect(parsed.colorImages['rouge']).toEqual(expect.arrayContaining([
+      'https://cdn.shop.example.org/red-front.jpg?imwidth=1000',
+      'https://cdn.shop.example.org/red-model.jpg?imwidth=1000',
+    ]));
+    // Une couleur sans aucune photo connue ne crée PAS de seau inventé.
+    expect(Object.keys(parsed.colorImages).sort()).toEqual(['noir', 'rouge']);
+  });
+
+  test('parser prix : JSON-LD précède meta, puis regex prix contextuel en dernier recours', () => {
+    const prioritized = parseProductPageHtml(`<!doctype html><html><head>
+      <meta property="og:title" content="Produit prioritaire"><meta property="product:price:amount" content="49.90"><meta property="product:price:currency" content="USD">
+      <script type="application/ld+json">{"@type":"Product","name":"Produit prioritaire","offers":{"price":"79.95","priceCurrency":"EUR"}}</script>
+    </head><body>Prix : 29,90 €</body></html>`, 'https://shop.example.org/p/priority', 'generic');
+    expect(prioritized).toMatchObject({ price: 79.95, currency: 'EUR', priceSource: 'json_ld' });
+
+    const contextual = parseProductPageHtml('<html><head><title>Produit contextuel</title></head><body><strong>Prix : 1 299,50 EUR</strong></body></html>', 'https://shop.example.org/p/context', 'generic');
+    expect(contextual).toMatchObject({ price: 1299.5, currency: 'EUR', priceSource: 'context_regex' });
+  });
+
+  test('devis signé : lie prix, devise, titre, lien et statut et refuse altération ou expiration', () => {
+    const quote = { price: 89.99, currency: 'EUR', title: 'Robe noire', referenceUrl: 'https://shop.example.org/robe', status: 'PENDING_MANUAL' as const };
+    const token = createZayrovixPriceToken(quote);
+    expect(token).toBeTruthy();
+    expect(verifyZayrovixPriceToken(token, quote)).toBe(true);
+    expect(verifyZayrovixPriceToken(token, { ...quote, price: 8.99 })).toBe(false);
+    expect(verifyZayrovixPriceToken(token, { ...quote, referenceUrl: 'https://evil.example/other' })).toBe(false);
+    expect(verifyZayrovixPriceToken(createZayrovixPriceToken(quote, -1), quote)).toBe(false);
+  });
+
+  test('historique hybride : invité local côté client, compte authentifié isolé et synchronisé côté serveur', async () => {
+    const guest = await request(app).get('/api/zayrovix/history');
+    expect(guest.status).toBe(200);
+    expect(guest.body.data).toEqual([]);
+
+    const accountId = `account_lens_history_${Date.now()}`;
+    const eventId = `ayx_${randomUUID()}`;
+    const now = new Date().toISOString();
+    db.run("INSERT INTO customer_accounts (id,display_name,status,created_at,updated_at) VALUES (?,?,'ACTIVE',?,?)",
+      accountId, 'Client historique Lens', now, now);
+    try {
+      const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: { 'user-agent': 'Vitest' } } as any);
+      recordZayrovixHistory(db, {
+        eventId, accountId, kind: 'url', inputValue: 'https://www.amazon.fr/dp/TESTHISTORY',
+        queryLabel: 'Sneaker historique', title: 'Sneaker historique', imageUrl: 'https://images.example.org/history.jpg',
+        sourceUrl: 'https://www.amazon.fr/dp/TESTHISTORY', source: 'Amazon', price: 79.99, currency: 'EUR',
+        verificationStatus: 'VERIFIED', resultsCount: 3,
+      });
+      const cookie = `zayrovi_customer_session=${encodeURIComponent(session.token)}`;
+      const analyzed = await request(app).post('/api/zayrovix/analyze-barcode').set('Cookie', cookie).send({ code: '619125062532' });
+      expect(analyzed.status).toBe(200);
+
+      const response = await request(app).get('/api/zayrovix/history').set('Cookie', cookie);
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: eventId, kind: 'url', title: 'Sneaker historique', price: 79.99, currency: 'EUR', verificationStatus: 'VERIFIED', resultsCount: 3 }),
+        expect.objectContaining({ id: analyzed.body.data.eventId, kind: 'barcode', inputValue: '619125062532' }),
+      ]));
+      expect(response.body.data[0]).not.toHaveProperty('accountId');
+    } finally {
+      db.run('DELETE FROM customer_accounts WHERE id=?', accountId);
+    }
+  });
+
+  test('les domaines marchands sont appariés par suffixe exact', async () => {
+    expect(detectMerchantStore('https://www.amazon.fr/dp/TEST')).toBe('amazon');
+    expect(detectMerchantStore('https://amazon.evil.example/dp/TEST')).toBe('generic');
+    expect(detectMerchantStore('https://notamazon.com/dp/TEST')).toBe('generic');
+  });
+
+  // Catalogue ZAYROVI désactivé (ZAYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
+  test.skip('image → identification Claude (simulée) → candidats catalogue → événement → choix', async () => {
+    seedCatalogProduct();
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+    stubAnthropic(JSON.stringify({
+      input_kind: 'product_photo', category: 'sneakers', brand: 'Nike', model: 'Air Max 95',
+      color: ['navy', 'grey'], visible_text: ['NIKE'], possible_model_codes: [],
+      description: 'Baskets running bleu marine à bulle visible.', confidence: 0.9,
+      detected_price: { amount: 0, currency: '', label: 'none', confidence: 0 },
+    }));
+    try {
+      const response = await request(app)
+        .post('/api/zayrovix/analyze-image')
+        .attach('image', PNG_1PX, { filename: 'sneakers.png', contentType: 'image/png' });
+      expect(response.status).toBe(200);
+      const data = response.body.data;
+      expect(data.identification.brand).toBe('Nike');
+      expect(data.query).toContain('Nike');
+      expect(data.candidates.length).toBeGreaterThan(0);
+      expect(data.candidates[0].match).toBeGreaterThanOrEqual(35);
+      expect(data.candidates[0].title).toContain('Nike');
+      expect(data.candidates[0].priceTnd).toBeGreaterThan(0);
+      expect(data.candidates[0].priceToken).toMatch(/^[^.]+\.[^.]+$/);
+      expect(data.candidates[0].priceVerificationStatus).toBe('VERIFIED');
+      expect(data.eventId).toMatch(/^ayx_/);
+
+      const event = db.get<any>('SELECT * FROM zayrovix_events WHERE id=?', data.eventId);
+      expect(event.channel).toBe('image');
+      expect(event.candidates_count).toBeGreaterThan(0);
+      expect(event.chosen).toBe(0);
+
+      const choose = await request(app).post('/api/zayrovix/choose').send({ eventId: data.eventId });
+      expect(choose.status).toBe(200);
+      expect(db.get<any>('SELECT chosen FROM zayrovix_events WHERE id=?', data.eventId).chosen).toBe(1);
+
+      const stats = getZayrovixStats(db);
+      expect(stats.last7d.total).toBeGreaterThanOrEqual(1);
+      expect(stats.last7d.image).toBeGreaterThanOrEqual(1);
+    } finally {
+      process.env.ANTHROPIC_API_KEY = '';
+    }
+  });
+
+  test('analyze-image passe par SerpApi même si la vision IA est en panne', async () => {
+    const previousAnthropic = process.env.ANTHROPIC_API_KEY;
+    const previousSerp = process.env.SERPAPI_KEY;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-down';
+    process.env.SERPAPI_KEY = 'test-serpapi-key';
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes('api.anthropic.com')) {
+        return new Response('internal', { status: 500 });
+      }
+      if (String(url) === 'https://serpapi.com/image') {
+        return new Response(JSON.stringify({ image_id: 'temporary-image-id' }), { status: 200 });
+      }
+      if (String(url).startsWith('https://serpapi.com/search.json?')) {
+        return new Response(JSON.stringify({
+          visual_matches: [{
+            title: 'Nike Air Max 95 Navy',
+            link: 'https://www.zalando.fr/nike-air-max-95-navy-n1241a1ev-i11.html',
+            source: 'Zalando',
+            thumbnail: 'https://encrypted-tbn.example.com/nike-navy.jpg',
+            price: { extracted_value: 129.99, currency: '€' },
+          }],
+        }), { status: 200 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    /*
+     * Contrat actuel (25/10/2026) — `PRODUCT_LINK_ADMISSION` : la découverte
+     * n'ouvre AUCUNE page marchande à la volée. Elle vérifie le lien (boutique
+     * déclarée + URL produit + preuve fournisseur) et rend une carte dont le
+     * prix reste `null` jusqu'à vérification explicite. Ce scénario éprouve donc
+     * la panne de la vision : SerpApi suffit à identifier ET à admettre le lien,
+     * sans qu'aucun prix soit inventé.
+     */
+    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage');
+    try {
+      const response = await request(app)
+        .post('/api/zayrovix/analyze-image')
+        .attach('image', PNG_1PX, { filename: 'sneakers.png', contentType: 'image/png' });
+      expect(response.status).toBe(200);
+      expect(fetchMock.mock.calls.some(([url]: any[]) => String(url).startsWith('https://serpapi.com/search.json?'))).toBe(true);
+      expect(response.body.data.identification.description).toContain('Nike Air Max 95');
+      expect(response.body.data.candidates).toHaveLength(1);
+      const [candidate] = response.body.data.candidates;
+      expect(candidate.title).toContain('Nike Air Max 95');
+      expect(candidate.productLinkStatus).toBe('VERIFIED');
+      // Rien n'a été lu : rien n'est affirmé sur le prix.
+      expect(scrapeSpy).not.toHaveBeenCalled();
+      expect(response.body.data.discovery).toEqual({ mode: 'PRODUCT_LINK_ADMISSION', merchantPagesRead: 0 });
+      expect(candidate.price).toBeNull();
+      expect(candidate.currency).toBeNull();
+      expect(candidate.priceToken).toBeNull();
+      expect(candidate.priceVerificationStatus).toBe('PENDING_MANUAL');
+      expect(candidate.availability).toBe('unknown');
+      expect(response.body.data.excluded.count).toBe(0);
+    } finally {
+      scrapeSpy.mockRestore();
+      restoreEnv('ANTHROPIC_API_KEY', previousAnthropic);
+      restoreEnv('SERPAPI_KEY', previousSerp);
+    }
+  });
+
+  test('un prix visible sur l’image n’est plus jamais proposé (SerpApi = intitulé seulement)', async () => {
+    const previousSerp = process.env.SERPAPI_KEY;
+    process.env.SERPAPI_KEY = 'test-serpapi-price';
+    // Titre propre + lien d'une boutique déclarée : ce qu'on éprouve ici est le
+    // PRIX (celui de l'image, celui de SerpApi), pas l'admission du lien.
+    stubSerpApiVisual('Sac à main noir Zara', ZALANDO_PRODUCT_URL, false);
+    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage').mockRejectedValue(new Error('merchant page unavailable'));
+    try {
+      // Évite de réutiliser la clé du cache visuel d'un scénario précédent :
+      // le contenu normalisé doit être distinct, pas seulement le nom de fichier.
+      const uniquePng = await sharp(PNG_1PX).extend({ right: 1, background: '#fff' }).png().toBuffer();
+      const response = await request(app)
+        .post('/api/zayrovix/analyze-image')
+        .attach('image', uniquePng, { filename: 'capture-produit.png', contentType: 'image/png' });
+      expect(response.status).toBe(200);
+      // 02/10/2026 : un prix lu sur l'image n'est plus jamais proposé — seule la
+      // page marchande derrière un lien fait foi.
+      expect(response.body.data.detectedPrice).toBeNull();
+      expect(response.body.data.identification.detected_price.amount).toBe(0);
+      // 17/10/2026 : l'intitulé vient de SerpApi (le titre de la page), pas d'un
+      // modèle qui aurait « deviné » le produit.
+      expect(response.body.data.identification.description).toContain('Sac à main');
+      expect(response.body.data.identification.description).not.toContain('49.99');
+      // Une page marchande illisible ne peut plus effacer la découverte SerpApi,
+      // mais son extrait prix/stock ne devient pas une preuve d'achat.
+      expect(response.body.data.candidates).toHaveLength(1);
+      expect(response.body.data.candidates[0].title).not.toContain('49.99');
+      expect(response.body.data.candidates[0]).toMatchObject({
+        title: expect.stringContaining('Sac à main'),
+        sourceUrl: ZALANDO_PRODUCT_URL,
+        description: null,
+        price: null,
+        currency: null,
+        priceTnd: null,
+        priceToken: null,
+        availability: 'unknown',
+      });
+      // Le prix SerpApi (49,99 €) est dans la charge utile et n'en sort pas :
+      // aucune page n'a été lue, donc aucun montant ne peut être affirmé.
+      expect(scrapeSpy).not.toHaveBeenCalled();
+      expect(response.body.data.discovery.merchantPagesRead).toBe(0);
+      expect(response.body.data.excluded.count).toBe(0);
+    } finally {
+      scrapeSpy.mockRestore();
+      restoreEnv('SERPAPI_KEY', previousSerp);
+    }
+  });
+
+  test('un extrait de page marchand contenant un prix regex ne réintroduit pas un montant dans le texte', async () => {
+    const previousSerp = process.env.SERPAPI_KEY;
+    process.env.SERPAPI_KEY = 'test-serpapi-description';
+    stubSerpApiVisual('Sac à main noir Zara', ZALANDO_PRODUCT_URL, false);
+    const scrapeSpy = vi.spyOn(scraper, 'scrapeParsedPage').mockImplementation(async () => ({
+      data: {
+        title: 'Sac à main noir Zara — 49.99 EUR',
+        price: 39.99,
+        currency: 'EUR',
+        priceSource: 'context_regex',
+        description: 'Prix de lancement : 49,99 EUR, offre disponible dès maintenant.',
+        availability: 'in_stock',
+        variants: { sizes: [], colors: [], details: [] },
+        images: ['https://cdn.example.com/sac-noir.jpg'],
+      } as any,
+      verified: true,
+      provider: 'direct',
+      method: 'json_ld',
+      failureCode: null,
+    } as any));
+    try {
+      const uniquePng = await sharp(PNG_1PX).extend({ bottom: 1, background: '#fff' }).png().toBuffer();
+      const response = await request(app)
+        .post('/api/zayrovix/analyze-image')
+        .attach('image', uniquePng, { filename: 'sac-description.png', contentType: 'image/png' });
+      expect(response.status).toBe(200);
+      // Un extrait de page contenant « 49,99 EUR » ne peut réintroduire un montant
+      // s'il n'est jamais lu : la découverte n'ouvre plus la page marchande.
+      expect(scrapeSpy).not.toHaveBeenCalled();
+      expect(response.body.data.identification.description).not.toMatch(/49[.,]99/);
+      expect(response.body.data.candidates).toHaveLength(1);
+      expect(response.body.data.candidates[0]).toMatchObject({
+        title: 'Sac à main noir Zara',
+        description: null,
+        price: null,
+        priceTnd: null,
+        priceToken: null,
+      });
+      expect(JSON.stringify(response.body.data.candidates[0])).not.toMatch(/49[.,]99|39\.99/);
+    } finally {
+      scrapeSpy.mockRestore();
+      restoreEnv('SERPAPI_KEY', previousSerp);
+    }
+  });
+
+  test("un ancien prix barré n'est jamais accepté comme prix de commande", async () => {
+    const previousSerp = process.env.SERPAPI_KEY;
+    process.env.SERPAPI_KEY = 'test-serpapi-old-price';
+    stubSerpApiVisual('Chaussures blanches Nike — 99.00 EUR', 'https://shop.example.com/chaussures-blanches');
+    try {
+      const response = await request(app)
+        .post('/api/zayrovix/analyze-image')
+        .attach('image', PNG_1PX, { filename: 'ancien-prix.png', contentType: 'image/png' });
+      expect(response.status).toBe(200);
+      expect(response.body.data.detectedPrice).toBeNull();
+      expect(response.body.data).not.toHaveProperty('ocrPrice');
+    } finally {
+      restoreEnv('SERPAPI_KEY', previousSerp);
+    }
+  });
+
+  test('SSRF : bloque les IP privées issues du DNS et accepte une résolution publique', async () => {
+    expect(isUnsafeIpAddress('127.0.0.1')).toBe(true);
+    expect(isUnsafeIpAddress('169.254.169.254')).toBe(true);
+    expect(isUnsafeIpAddress('10.20.30.40')).toBe(true);
+    expect(isUnsafeIpAddress('2606:4700:4700::1111')).toBe(false);
+
+    await expect(resolveSafeHttpUrl('https://shop.example.org/product', async () => [
+      { address: '127.0.0.1', family: 4 },
+    ])).rejects.toMatchObject({ code: 'UNSAFE_URL' });
+
+    const publicTarget = await resolveSafeHttpUrl('https://shop.example.org/product', async () => [
+      { address: '1.1.1.1', family: 4 },
+      { address: '2606:4700:4700::1111', family: 6 },
+    ]);
+    expect(publicTarget.addresses).toEqual(['1.1.1.1', '2606:4700:4700::1111']);
+  });
+
+  test('analyze-url : SSRF bloqué (localhost) et lien vide rejeté', async () => {
+    const localhost = await request(app).post('/api/zayrovix/analyze-url').send({ url: 'http://localhost:3000/secret', channel: 'qr' });
+    expect(localhost.status).toBe(400);
+    expect(localhost.body.code).toBe('INVALID_URL');
+
+    const empty = await request(app).post('/api/zayrovix/analyze-url').send({ url: '' });
+    expect(empty.status).toBe(400);
+  });
+
+  test('analyze-url : rejette un domaine non résolvable avant tout scraping', async () => {
+    const response = await request(app)
+      .post('/api/zayrovix/analyze-url')
+      .send({ url: 'https://produit-inexistant-zayrovix-test.invalid/page-produit' });
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('INVALID_URL');
+  });
+
+  test('Claude Web Search transforme les résultats officiels Anthropic en candidats sans SerpApi', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    const previousModel = process.env.ANTHROPIC_MODEL;
+    const previousSearch = process.env.ZAYROVIX_AI_WEB_SEARCH;
+    const previousSerp = process.env.SERPAPI_KEY;
+    const previousSerpAlias = process.env.SERPAPI_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-web-search';
+    process.env.ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
+    process.env.ZAYROVIX_AI_WEB_SEARCH = 'true';
+    delete process.env.SERPAPI_KEY;
+    delete process.env.SERPAPI_API_KEY;
+    const fetchMock = vi.fn(async (_url: string, _init: RequestInit = {}) => new Response(JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      content: [{
+        type: 'web_search_tool_result',
+        content: [
+          { type: 'web_search_result', title: 'Nike Air Max 95 Navy Grey', url: 'https://stockx.com/nike-air-max-95-navy-grey' },
+          { type: 'web_search_result', title: 'Nike Air Max 95 listing', url: 'https://www.ebay.com/itm/123' },
+        ],
+      }],
+      usage: { server_tool_use: { web_search_requests: 1 } },
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const results = await providerWebSearch('Nike Air Max 95 navy grey', 6, Date.now() + 2_000);
+      expect(results).toHaveLength(2);
+      expect(results[0]).toMatchObject({ source: 'StockX', kind: 'external' });
+      expect(results[1].source).toBe('eBay');
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+      expect(body.tools[0]).toMatchObject({ type: 'web_search_20250305', max_uses: 1 });
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('ANTHROPIC_MODEL', previousModel);
+      restoreEnv('ZAYROVIX_AI_WEB_SEARCH', previousSearch);
+      restoreEnv('SERPAPI_KEY', previousSerp);
+      restoreEnv('SERPAPI_API_KEY', previousSerpAlias);
+    }
+  });
+
+  test('recherche texte mobile utilise SerpApi Shopping en priorité et renvoie des prix malgré le crédit Anthropic épuisé', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    const previousSearch = process.env.ZAYROVIX_AI_WEB_SEARCH;
+    const previousSerp = process.env.SERPAPI_KEY;
+    const previousSerpAlias = process.env.SERPAPI_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'anthropic-credit-exhausted';
+    process.env.ZAYROVIX_AI_WEB_SEARCH = 'true';
+    process.env.SERPAPI_KEY = 'test-serpapi-shopping';
+    delete process.env.SERPAPI_API_KEY;
+    const fetchMock = vi.fn(async (url: string | URL | Request) => {
+      const target = String(url);
+      if (!target.startsWith('https://serpapi.com/search.json?')) {
+        return new Response(JSON.stringify({ error: { message: 'credit balance is too low' } }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({
+        shopping_results: [{
+          title: 'Nike Air Max 95 Essential',
+          source: 'Nike',
+          link: 'https://www.nike.com/fr/t/air-max-95-essential/TEST',
+          thumbnail: 'https://static.nike.com/air-max-95.jpg',
+          price: '189,99 €',
+          extracted_price: 189.99,
+          rating: 4.7,
+          reviews: 215,
+        }],
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const response = await request(app)
+        .post('/api/zayrovix/analyze-text')
+        .send({ query: 'Nike Air Max 95 Essential test SerpApi' });
+      expect(response.status).toBe(200);
+      expect(response.body.data.candidates).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'external',
+          source: 'Nike',
+          price: 189.99,
+          currency: 'EUR',
+          priceOrigin: 'search',
+          priceVerificationStatus: 'PENDING_MANUAL',
+        }),
+      ]));
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const requestUrl = new URL(String(fetchMock.mock.calls[0][0]));
+      expect(requestUrl.searchParams.get('engine')).toBe('google_shopping');
+      expect(requestUrl.searchParams.get('q')).toContain('Nike Air Max 95');
+      expect(requestUrl.searchParams.get('api_key')).toBe('test-serpapi-shopping');
+      expect(fetchMock.mock.calls.some(([url]) => String(url).includes('api.anthropic.com'))).toBe(false);
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('ZAYROVIX_AI_WEB_SEARCH', previousSearch);
+      restoreEnv('SERPAPI_KEY', previousSerp);
+      restoreEnv('SERPAPI_API_KEY', previousSerpAlias);
+    }
+  });
+
+  test('QR texte exclut toute page Web Search sans prix et lien marchand exploitables', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    const previousSearch = process.env.ZAYROVIX_AI_WEB_SEARCH;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-qr-search';
+    process.env.ZAYROVIX_AI_WEB_SEARCH = 'true';
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      content: [{ type: 'web_search_tool_result', content: [
+        { type: 'web_search_result', title: 'Produit QR AYR-REF-2026', url: 'https://www.amazon.fr/dp/B000000001' },
+      ] }],
+      usage: { server_tool_use: { web_search_requests: 1 } },
+    }), { status: 200, headers: { 'content-type': 'application/json' } })));
+    try {
+      const response = await request(app).post('/api/zayrovix/analyze-code').send({ value: 'AYR-REF-2026' });
+      expect(response.status).toBe(200);
+      expect(response.body.data.code).toBe('AYR-REF-2026');
+      expect(response.body.data.candidates).not.toEqual(expect.arrayContaining([
+        expect.objectContaining({ source: 'Amazon', kind: 'external' }),
+      ]));
+      for (const candidate of response.body.data.candidates) {
+        expect(candidate.price).toBeGreaterThan(0);
+        expect(candidate.sourceUrl).toMatch(/^https?:\/\//);
+        expect(candidate.rating).toBeGreaterThan(0);
+      }
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('ZAYROVIX_AI_WEB_SEARCH', previousSearch);
+    }
+  });
+
+  test('Claude Web Search respecte une deadline globale déjà presque épuisée', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    const previousSearch = process.env.ZAYROVIX_AI_WEB_SEARCH;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-deadline';
+    process.env.ZAYROVIX_AI_WEB_SEARCH = 'true';
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const startedAt = Date.now();
+      const result = await providerWebSearch('deadline-test', 6, Date.now() + 150);
+      expect(result).toEqual([]);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(Date.now() - startedAt).toBeLessThan(300);
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('ZAYROVIX_AI_WEB_SEARCH', previousSearch);
+    }
+  });
+
+  test('demande de revue : validation, persistance, déduplication et propriété de session', async () => {
+    const sessionId = `lens-review-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const payload = {
+      sourceUrl: 'https://shop.example.org/products/nike-air-max-95',
+      title: 'Nike Air Max 95 Navy',
+      imageUrl: 'https://cdn.example.org/nike.jpg',
+      source: 'Example Shop',
+      lensPrice: 149.99,
+      lensCurrency: 'EUR',
+      desiredSize: '41 EU',
+      desiredColor: 'Navy',
+      contact: '+216 20 123 456',
+    };
+
+    expect((await request(app).post('/api/zayrovix/review-request').send(payload)).status).toBe(400);
+    expect((await request(app).post('/api/zayrovix/review-request').set('x-session-id', sessionId).send({ ...payload, contact: 'bad' })).body.code).toBe('CONTACT_REQUIRED');
+    expect((await request(app).post('/api/zayrovix/review-request').set('x-session-id', sessionId).send({ ...payload, sourceUrl: 'http://127.0.0.1/private' })).body.code).toBe('INVALID_PRODUCT');
+
+    const created = await request(app).post('/api/zayrovix/review-request').set('x-session-id', sessionId).send(payload);
+    expect(created.status).toBe(201);
+    expect(created.body.data).toMatchObject({
+      status: 'PENDING', title: payload.title, sourceUrl: payload.sourceUrl,
+      lensPrice: payload.lensPrice, lensCurrency: 'EUR', duplicate: false,
+    });
+    expect(created.body.data).not.toHaveProperty('contact');
+    expect(created.body.data).not.toHaveProperty('adminNote');
+    const id = created.body.data.id;
+    expect(id).toMatch(/^ayx_review_/);
+
+    const duplicate = await request(app).post('/api/zayrovix/review-request').set('x-session-id', sessionId).send(payload);
+    expect(duplicate.status).toBe(200);
+    expect(duplicate.body.data).toMatchObject({ id, duplicate: true });
+    expect(db.get<any>('SELECT COUNT(*) count FROM zayrovix_review_requests WHERE id=?', id).count).toBe(1);
+
+    const owned = await request(app).get(`/api/zayrovix/review-request/${id}`).set('x-session-id', sessionId);
+    expect(owned.status).toBe(200);
+    expect(owned.body.data.id).toBe(id);
+    const isolated = await request(app).get(`/api/zayrovix/review-request/${id}`).set('x-session-id', `${sessionId}-other`);
+    expect(isolated.status).toBe(404);
+
+    const notification = db.get<any>('SELECT * FROM admin_notifications WHERE action_url LIKE ? ORDER BY created_at DESC', `%request=${id}%`);
+    expect(notification).toMatchObject({ type: 'ORDER', title: 'Produit Lens à vérifier' });
+  });
+
+  test('administration des revues Lens : permissions, devis validé, audit et réponse publique sûre', async () => {
+    const sessionId = `lens-admin-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const created = await request(app).post('/api/zayrovix/review-request').set('x-session-id', sessionId).send({
+      sourceUrl: 'https://shop.example.org/products/admin-review', title: 'Produit à confirmer', source: 'Shop Test',
+      lensPrice: 75, lensCurrency: 'EUR', desiredSize: 'M', contact: 'review@example.org',
+    });
+    expect(created.status).toBe(201);
+    const id = created.body.data.id;
+
+    expect((await request(app).get('/api/admin/zayrovix-reviews')).status).toBe(401);
+    const reviewer = request.agent(app);
+    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
+    expect(login.status).toBe(200);
+    const csrf = login.body.data.csrfToken;
+
+    const queue = await reviewer.get('/api/admin/zayrovix-reviews?status=PENDING&search=Produit%20à%20confirmer');
+    expect(queue.status).toBe(200);
+    expect(queue.body.data.some((row: any) => row.id === id)).toBe(true);
+    const invalidQuote = await reviewer.put(`/api/admin/zayrovix-reviews/${id}`).set('x-csrf-token', csrf).send({ status: 'QUOTED' });
+    expect(invalidQuote.status).toBe(400);
+
+    const quoted = await reviewer.put(`/api/admin/zayrovix-reviews/${id}`).set('x-csrf-token', csrf).send({
+      status: 'QUOTED', quotedPrice: 389.5, quotedCurrency: 'TND', verifiedVariant: 'M · Noir · en stock',
+      verifiedUrl: 'https://shop.example.org/products/admin-review?variant=m-black',
+      customerMessage: 'Prix et stock confirmés pour la variante M noire.',
+      adminNote: 'Vérifié manuellement par la fiche marchand.',
+    });
+    expect(quoted.status).toBe(200);
+    expect(quoted.body.data).toMatchObject({ status: 'QUOTED', quoted_price: 389.5, quoted_currency: 'TND', verified_variant: 'M · Noir · en stock' });
+    expect(db.get<any>('SELECT action,module FROM audit_logs WHERE entity_id=? ORDER BY created_at DESC', id)).toMatchObject({ action: 'STATUS_CHANGE', module: 'ZAYROVIX_REVIEWS' });
+
+    const publicStatus = await request(app).get(`/api/zayrovix/review-request/${id}`).set('x-session-id', sessionId);
+    expect(publicStatus.status).toBe(200);
+    expect(publicStatus.body.data).toMatchObject({
+      status: 'QUOTED', quotedPrice: 389.5, quotedCurrency: 'TND', verifiedVariant: 'M · Noir · en stock',
+      customerMessage: 'Prix et stock confirmés pour la variante M noire.',
+    });
+    expect(publicStatus.body.data).not.toHaveProperty('adminNote');
+    expect(JSON.stringify(publicStatus.body.data)).not.toContain('Vérifié manuellement');
+  });
+
+  test('analyze-barcode : validation stricte + réponse propre sans fournisseur de recherche', async () => {
+    const invalid = await request(app).post('/api/zayrovix/analyze-barcode').send({ code: 'ABC-123' });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.code).toBe('INVALID_BARCODE');
+
+    const valid = await request(app).post('/api/zayrovix/analyze-barcode').send({ code: '619125062532' });
+    expect(valid.status).toBe(200);
+    expect(valid.body.data.code).toBe('619125062532');
+    expect(Array.isArray(valid.body.data.candidates)).toBe(true); // vide sans clé Anthropic — jamais de résultat inventé
+    expect(valid.body.data.eventId).toMatch(/^ayx_/);
+    expect(db.get<any>('SELECT query FROM zayrovix_events WHERE id=?', valid.body.data.eventId).query).toBe('barcode:619125062532');
+  });
+});
+
+test('product extraction admits only explicitly eligible variant quotes without inventing stock',async()=>{
+ const variants=[true,false,'false','true',null,undefined,1,{}].map((available,i)=>({id:String(i),label:'M '+i,size:'M',color:'Noir',available,price:20+i}));
+ const scraper={cleanPastedUrl:(value:string)=>value,scrapeProduct:async()=>({title:'Eligibility fixture',url:'https://shop.example.org/eligibility',sourcePrice:20,sourceCurrency:'EUR',storeName:'Fixture',variants:{details:variants},availability:'unknown'})};
+ const result=await extractProductFromUrl(db,scraper as any,'https://shop.example.org/eligibility');
+ expect(result.product.variantOptions?.map(option=>option.id)).toEqual(['0']);
+ expect(result.product.variantOptions?.[0]).toMatchObject({available:true,price:20,currency:'EUR'});
+ expect(result.product.availability).toBe('unknown');
+});

@@ -11,7 +11,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { serpApiVisualReady, serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
+import { serpApiVisualReady, serpApiVisualSearch } from '../src/zayrovix/services/visualSearch';
 import { SmartLinkScraper } from '../src/scraper/scraper';
 
 const CONCURRENCY = 3;

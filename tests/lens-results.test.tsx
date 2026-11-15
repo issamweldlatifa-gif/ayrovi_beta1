@@ -2,13 +2,13 @@ import React from 'react';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { InteractiveLensResults } from '../client/src/ayrovix/components/InteractiveLensResults';
-import type { AyrovixCandidate } from '../client/src/ayrovix/types';
+import { InteractiveLensResults } from '../client/src/zayrovix/components/InteractiveLensResults';
+import type { ZayrovixCandidate } from '../client/src/zayrovix/types';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 
 /** صفحة نتائج Lens تُعرض ببيانات حقيقية الشكل (نفس عقود الـ API) — لا Demo في التطبيق. */
 
-const candidate = (over: Partial<AyrovixCandidate>): AyrovixCandidate => ({
+const candidate = (over: Partial<ZayrovixCandidate>): ZayrovixCandidate => ({
   id: over.id || 'c',
   kind: 'external',
   title: 'Nike Dunk Low',
@@ -44,7 +44,7 @@ const render = () => renderToStaticMarkup(
   <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={'/preview.jpg'} fallbackImage={null} onChoose={() => {}} onReset={() => {}} /></LocaleProvider>,
 );
 
-describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
+describe('ZAYROVIX LENS results screen (post-analysis, real-data shape)', () => {
   it('renders the reference composition: summary, best, others, trust, new search', () => {
     const html = render();
     expect(html).toContain('Résultats Lens');
@@ -73,7 +73,7 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
   });
 
   it('the analyzing stage uses Google Lens style (image stays visible + sheet loading, no separate dots page)', () => {
-    const source = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
+    const source = readFileSync('client/src/zayrovix/components/LensLauncher.tsx', 'utf8');
     expect(source).not.toContain('lens-frame__dots');
     // Google Lens: no separate analyzing page — image stays visible + bottom sheet shows Analyse en cours
     expect(source).toContain('isAnalyzing');
@@ -82,8 +82,8 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
   });
 
   it('keeps the imported image INSIDE the camera shell (Amazon single path — no separate page, no preview interstitial)', () => {
-    const source = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
-    const camera = readFileSync('client/src/ayrovix/components/LiveCamera.tsx', 'utf8');
+    const source = readFileSync('client/src/zayrovix/components/LensLauncher.tsx', 'utf8');
+    const camera = readFileSync('client/src/zayrovix/components/LiveCamera.tsx', 'utf8');
     // Launcher: image stages render through the camera shell, not the white page
     expect(source).toContain("if (stage === 'live' || inImageFlow) {");
     expect(source).toContain('photoUrl={inImageFlow ? previewUrl : null}');
@@ -100,13 +100,13 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
   });
 
   it('header chrome: white flat icons, transparent interiors, official title, no Auto pill, explicit link/code entry', () => {
-    const camera = readFileSync('client/src/ayrovix/components/LiveCamera.tsx', 'utf8');
-    const irl = readFileSync('client/src/ayrovix/components/InteractiveLensResults.tsx', 'utf8');
+    const camera = readFileSync('client/src/zayrovix/components/LiveCamera.tsx', 'utf8');
+    const irl = readFileSync('client/src/zayrovix/components/InteractiveLensResults.tsx', 'utf8');
     // « Auto » and its star are gone for good
     expect(camera).not.toContain("tr('Auto'");
     expect(camera).not.toContain('Sparkles');
     // Wordmark + white flat header icons (no bg circle)
-    expect(camera).toContain('AYROVIX <span>Lens</span>');
+    expect(camera).toContain('ZAYROVIX <span>Lens</span>');
     expect(camera).toContain('className="lens-camera-icon"');
     // Bas de caméra (maquette approuvée) : vignette galerie + bouton OCEREX rond translucide
     expect(camera).toContain("tr('Lien / code', 'رابط أو رمز')");
@@ -120,9 +120,9 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
   });
 
   it('keeps the results view in the correct flow stage (candidates), not the first page', () => {
-    const source = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
-    const camera = readFileSync('client/src/ayrovix/components/LensCamera.tsx', 'utf8');
-    const upload = readFileSync('client/src/ayrovix/components/LensUpload.tsx', 'utf8');
+    const source = readFileSync('client/src/zayrovix/components/LensLauncher.tsx', 'utf8');
+    const camera = readFileSync('client/src/zayrovix/components/LensCamera.tsx', 'utf8');
+    const upload = readFileSync('client/src/zayrovix/components/LensUpload.tsx', 'utf8');
     expect(source).toContain("{stage === 'candidates' && candidatesView && (");
     expect(source).toContain('<InteractiveLensResults');
     // Legacy model must be gone — single Google Lens-style results UI

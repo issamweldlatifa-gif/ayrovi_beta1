@@ -11,13 +11,13 @@
  * Aucun appel réseau ici : ce fichier ne fait que classer ce que l'API a déjà dit.
  */
 import type { AyWebsCart, AyWebsCartItem } from '@/api/aywebs';
-import type { AyroviCart, AyroviCartLine } from '@/api/cart';
+import type { ZayroviCart, ZayroviCartLine } from '@/api/cart';
 import type { Favorite } from '@/api/account';
 import { formatMoney } from '@/format/money';
 
-export type StoreCartSegment = 'thisStore' | 'allStores' | 'ayrovi';
+export type StoreCartSegment = 'thisStore' | 'allStores' | 'zayrovi';
 
-export const STORE_CART_SEGMENTS: StoreCartSegment[] = ['thisStore', 'allStores', 'ayrovi'];
+export const STORE_CART_SEGMENTS: StoreCartSegment[] = ['thisStore', 'allStores', 'zayrovi'];
 
 export interface CartRow {
   id: string;
@@ -52,7 +52,7 @@ function awRow(item: AyWebsCartItem): CartRow {
   };
 }
 
-function ayroviRow(line: AyroviCartLine): CartRow {
+function zayroviRow(line: ZayroviCartLine): CartRow {
   return {
     id: line.id,
     title: line.title,
@@ -79,15 +79,15 @@ function awSections(items: AyWebsCartItem[]): CartSection[] {
 /** Sections à afficher pour une vue donnée. */
 export function storeCartSections(
   segment: StoreCartSegment,
-  input: { aywebs: AyWebsCart | null; ayrovi: AyroviCart | null; storeId: string },
+  input: { aywebs: AyWebsCart | null; zayrovi: ZayroviCart | null; storeId: string },
 ): CartSection[] {
-  if (segment === 'ayrovi') {
-    const lines = input.ayrovi?.items ?? [];
+  if (segment === 'zayrovi') {
+    const lines = input.zayrovi?.items ?? [];
     const byStore = new Map<string, CartSection>();
     for (const line of lines) {
       const key = line.store || '—';
       const section = byStore.get(key) ?? { storeKey: key, storeName: key, rows: [] };
-      section.rows.push(ayroviRow(line));
+      section.rows.push(zayroviRow(line));
       byStore.set(key, section);
     }
     return [...byStore.values()];
@@ -133,7 +133,7 @@ export function isPageSaved(favorites: Favorite[], pageUrl: string): boolean {
  * qu'elle est en attente, et on ne prétend pas non plus qu'elle est liée.
  */
 export function pendingAyWebsLines(items: readonly AyWebsCartItem[]): AyWebsCartItem[] {
-  return items.filter((item) => item.linkedToAyrovi === false);
+  return items.filter((item) => item.linkedToZayrovi === false);
 }
 
 /** Unités en attente de liaison — le nombre que le client doit voir. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AyWebsCart, AyWebsCartItem } from '../src/api/aywebs';
-import type { AyroviCart, AyroviCartLine } from '../src/api/cart';
+import type { ZayroviCart, ZayroviCartLine } from '../src/api/cart';
 import type { Favorite } from '../src/api/account';
 import {
   canonicalSourceUrl, isPageSaved, pendingAyWebsLines, pendingAyWebsUnits, storeCartSections,
@@ -12,7 +12,7 @@ function awItem(overrides: Partial<AyWebsCartItem>): AyWebsCartItem {
     sourceUrl: '', title: 'Joggers', images: [], unitPrice: 80, currency: 'TND',
     variantLabel: 'M / noir', quantity: 1, availability: '', status: 'ACTIVE',
     statusReason: '', customerNote: '', purchaseMode: '', checkoutReady: true,
-    lineTotalTnd: null, linkedToAyrovi: null, createdAt: '', updatedAt: '',
+    lineTotalTnd: null, linkedToZayrovi: null, createdAt: '', updatedAt: '',
     ...overrides,
   };
 }
@@ -25,7 +25,7 @@ function awCart(items: AyWebsCartItem[]): AyWebsCart {
   };
 }
 
-function ayLine(overrides: Partial<AyroviCartLine>): AyroviCartLine {
+function ayLine(overrides: Partial<ZayroviCartLine>): ZayroviCartLine {
   return {
     id: 'ay-1', store: 'amazon', title: 'Tablette', imageUrl: '', sourceUrl: '', sourcePrice: 120,
     sourceCurrency: 'USD', quantity: 1, variant: '', customerNote: '', priceVerificationStatus: 'VERIFIED',
@@ -35,7 +35,7 @@ function ayLine(overrides: Partial<AyroviCartLine>): AyroviCartLine {
   };
 }
 
-function ayCart(items: AyroviCartLine[]): AyroviCart {
+function ayCart(items: ZayroviCartLine[]): ZayroviCart {
   return {
     sessionId: 's', serverNow: '', items, units: items.length, productSubtotalTND: 0,
     deliveryTND: 0, totalTND: 0, blockedIds: [],
@@ -48,40 +48,40 @@ describe('storeCartSections — vues du panier', () => {
     awItem({ id: 'b', storeId: 'zara', storeName: 'Zara' }),
     awItem({ id: 'c', storeId: 'nike', storeName: 'Nike', title: 'T-shirt' }),
   ]);
-  const ayrovi = ayCart([ayLine({ id: 'x', store: 'amazon' }), ayLine({ id: 'y', store: 'ayrovi', title: 'Shop' })]);
+  const zayrovi = ayCart([ayLine({ id: 'x', store: 'amazon' }), ayLine({ id: 'y', store: 'zayrovi', title: 'Shop' })]);
 
   it('« Ce magasin » ne garde que les lignes du magasin courant', () => {
-    const sections = storeCartSections('thisStore', { aywebs, ayrovi, storeId: 'nike' });
+    const sections = storeCartSections('thisStore', { aywebs, zayrovi, storeId: 'nike' });
     expect(sections).toHaveLength(1);
     expect(sections[0].storeKey).toBe('nike');
     expect(sections[0].rows.map((row) => row.id)).toEqual(['a', 'c']);
   });
 
   it('« Tous les magasins » regroupe les lignes AYWEBs par magasin', () => {
-    const sections = storeCartSections('allStores', { aywebs, ayrovi, storeId: 'nike' });
+    const sections = storeCartSections('allStores', { aywebs, zayrovi, storeId: 'nike' });
     expect(sections.map((section) => section.storeKey)).toEqual(['nike', 'zara']);
     expect(sections[1].rows.map((row) => row.id)).toEqual(['b']);
   });
 
-  it('« Lens & Shop » reprend le panier Ayrovi, regroupé par source', () => {
-    const sections = storeCartSections('ayrovi', { aywebs, ayrovi, storeId: 'nike' });
-    expect(sections.map((section) => section.storeKey)).toEqual(['amazon', 'ayrovi']);
+  it('« Lens & Shop » reprend le panier Zayrovi, regroupé par source', () => {
+    const sections = storeCartSections('zayrovi', { aywebs, zayrovi, storeId: 'nike' });
+    expect(sections.map((section) => section.storeKey)).toEqual(['amazon', 'zayrovi']);
   });
 
   it('le prix TND de la ligne passe avant le prix source', () => {
-    const [section] = storeCartSections('ayrovi', { aywebs: null, ayrovi, storeId: 'nike' });
+    const [section] = storeCartSections('zayrovi', { aywebs: null, zayrovi, storeId: 'nike' });
     expect(section.rows[0].priceText).toBe('410.00 TND');
   });
 
   it('sans prix TND, on affiche le prix source avec sa devise', () => {
     const cart = awCart([awItem({ lineTotalTnd: null, unitPrice: 25.5, currency: 'EUR' })]);
-    const [section] = storeCartSections('allStores', { aywebs: cart, ayrovi: null, storeId: 'nike' });
+    const [section] = storeCartSections('allStores', { aywebs: cart, zayrovi: null, storeId: 'nike' });
     expect(section.rows[0].priceText).toBe('25.5 EUR');
   });
 
   it('sans panier chargé, rien à afficher (pas d’erreur)', () => {
-    expect(storeCartSections('thisStore', { aywebs: null, ayrovi: null, storeId: 'nike' })).toEqual([]);
-    expect(storeCartSections('ayrovi', { aywebs: null, ayrovi: null, storeId: 'nike' })).toEqual([]);
+    expect(storeCartSections('thisStore', { aywebs: null, zayrovi: null, storeId: 'nike' })).toEqual([]);
+    expect(storeCartSections('zayrovi', { aywebs: null, zayrovi: null, storeId: 'nike' })).toEqual([]);
   });
 });
 
@@ -110,25 +110,25 @@ describe('isPageSaved — la page est-elle déjà en favori ?', () => {
 describe('lignes AYWEBs en attente de liaison (23/10/2026)', () => {
   it('seules les lignes que le serveur dit NON liées sont en attente', () => {
     const items = [
-      awItem({ id: 'a', linkedToAyrovi: true }),
-      awItem({ id: 'b', linkedToAyrovi: false }),
+      awItem({ id: 'a', linkedToZayrovi: true }),
+      awItem({ id: 'b', linkedToZayrovi: false }),
       /* `null` = le serveur n'a rien dit : ni liée, ni « perdue ». */
-      awItem({ id: 'c', linkedToAyrovi: null }),
+      awItem({ id: 'c', linkedToZayrovi: null }),
     ];
     expect(pendingAyWebsLines(items).map((item) => item.id)).toEqual(['b']);
   });
 
   it('les unités en attente s’additionnent (le client voit le nombre réel)', () => {
     const items = [
-      awItem({ id: 'a', linkedToAyrovi: false, quantity: 2 }),
-      awItem({ id: 'b', linkedToAyrovi: false, quantity: 3 }),
-      awItem({ id: 'c', linkedToAyrovi: true, quantity: 4 }),
+      awItem({ id: 'a', linkedToZayrovi: false, quantity: 2 }),
+      awItem({ id: 'b', linkedToZayrovi: false, quantity: 3 }),
+      awItem({ id: 'c', linkedToZayrovi: true, quantity: 4 }),
     ];
     expect(pendingAyWebsUnits(items)).toBe(5);
   });
 
   it('panier vide ou tout lié ⇒ rien à signaler', () => {
     expect(pendingAyWebsLines([])).toEqual([]);
-    expect(pendingAyWebsUnits([awItem({ linkedToAyrovi: true, quantity: 2 })])).toBe(0);
+    expect(pendingAyWebsUnits([awItem({ linkedToZayrovi: true, quantity: 2 })])).toBe(0);
   });
 });

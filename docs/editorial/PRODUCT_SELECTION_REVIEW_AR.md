@@ -8,7 +8,7 @@
 
 ## عقد اختيار مشترك
 
-`client/src/ayrovix/services/productSelection.ts` يحل جميع المطابقات بدل أخذ الأولى:
+`client/src/zayrovix/services/productSelection.ts` يحل جميع المطابقات بدل أخذ الأولى:
 
 - **general:** دون تفضيل مقاس/لون؛ العرض العام كما كان.
 - **manual:** لا مطابقة؛ يبقى الطلب اليدوي والمقاس المخصص دون اختراع معرف خيار.

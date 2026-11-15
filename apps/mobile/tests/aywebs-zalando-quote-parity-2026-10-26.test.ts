@@ -12,7 +12,7 @@
  * AyWebsVariantSheet.tsx:92). التطبيق كان يبعث capture + المقاس المختار:
  * والـresolve كي تجيه capture + variante يطلب **دليل ثمن لكل قيمة**
  * (productResolver.ts, `variant_price_not_published` ⇒ PRICE_UNAVAILABLE)،
- * ووقتها ما فماش `ayrovi_pricing` ⇒ «Prix en dinars calculé à l'ajout.»
+ * ووقتها ما فماش `zayrovi_pricing` ⇒ «Prix en dinars calculé à l'ajout.»
  *
  * ── ما يُثبَّت هنا ─────────────────────────────────────────────────────────
  * خطّة القراءة: capture+variante ← capture وحدها ← طلب الويب بالضبط، ونتوقّفو
@@ -87,7 +87,7 @@ describe('خطّة قراءة الدينار — الثوابت', () => {
 
 describe('«فمّة دينار؟» — شرط التوقّف في الخطّة', () => {
   const priced = (totalTnd: number | null) => ({
-    ayroviPricing: totalTnd == null ? null : {
+    zayroviPricing: totalTnd == null ? null : {
       totalTnd, pricingVersion: 3, breakdown: null,
     },
   });

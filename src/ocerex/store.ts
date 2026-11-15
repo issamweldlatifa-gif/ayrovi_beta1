@@ -15,7 +15,7 @@ export interface OcerexExtractionRow {
   confidence: number;
   confidence_level: string;
   price_context: string | null;
-  ayrovi_price_tnd: number | null;
+  zayrovi_price_tnd: number | null;
   pricing_version: number | null;
   source_url: string;
   product_title: string;
@@ -42,7 +42,7 @@ export function ensureOcerexStore(db: QatafoDatabase): void {
     confidence REAL NOT NULL,
     confidence_level TEXT NOT NULL,
     price_context TEXT,
-    ayrovi_price_tnd REAL,
+    zayrovi_price_tnd REAL,
     pricing_version INTEGER,
     source_url TEXT NOT NULL DEFAULT '',
     product_title TEXT NOT NULL DEFAULT '',
@@ -86,7 +86,7 @@ export function saveOcerexExtraction(
   const id = `ocx_${randomUUID()}`;
   db.run(`INSERT INTO ocerex_extractions (
     id,session_id,account_id,screen_type,reference_price,currency,confidence,confidence_level,price_context,
-    ayrovi_price_tnd,pricing_version,source_url,product_title,platform,cart_item_id,order_id,order_item_id,
+    zayrovi_price_tnd,pricing_version,source_url,product_title,platform,cart_item_id,order_id,order_item_id,
     status,code,metadata_json,created_at,updated_at
   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
   id, input.sessionId, input.accountId || null, input.decision.type, input.decision.referencePrice, input.decision.currency,
@@ -108,13 +108,13 @@ export function updateOcerexExtraction(
   db: QatafoDatabase,
   id: string,
   sessionId: string,
-  patch: Partial<Pick<OcerexExtractionRow, 'currency' | 'ayrovi_price_tnd' | 'pricing_version' | 'source_url' | 'product_title' | 'platform' | 'cart_item_id' | 'order_id' | 'order_item_id' | 'status' | 'code' | 'account_id' | 'reference_price'>>,
+  patch: Partial<Pick<OcerexExtractionRow, 'currency' | 'zayrovi_price_tnd' | 'pricing_version' | 'source_url' | 'product_title' | 'platform' | 'cart_item_id' | 'order_id' | 'order_item_id' | 'status' | 'code' | 'account_id' | 'reference_price'>>,
 ): OcerexExtractionRow | null {
   const current = getOcerexExtraction(db, id, sessionId);
   if (!current) return null;
   const next = { ...current, ...patch, updated_at: new Date().toISOString() };
-  db.run(`UPDATE ocerex_extractions SET account_id=?,currency=?,reference_price=?,ayrovi_price_tnd=?,pricing_version=?,source_url=?,product_title=?,platform=?,cart_item_id=?,order_id=?,order_item_id=?,status=?,code=?,updated_at=? WHERE id=? AND session_id=?`,
-    next.account_id, next.currency, next.reference_price, next.ayrovi_price_tnd, next.pricing_version, next.source_url,
+  db.run(`UPDATE ocerex_extractions SET account_id=?,currency=?,reference_price=?,zayrovi_price_tnd=?,pricing_version=?,source_url=?,product_title=?,platform=?,cart_item_id=?,order_id=?,order_item_id=?,status=?,code=?,updated_at=? WHERE id=? AND session_id=?`,
+    next.account_id, next.currency, next.reference_price, next.zayrovi_price_tnd, next.pricing_version, next.source_url,
     next.product_title, next.platform, next.cart_item_id, next.order_id, next.order_item_id, next.status, next.code, next.updated_at, id, sessionId);
   return getOcerexExtraction(db, id, sessionId);
 }
@@ -136,7 +136,7 @@ export function attachOcerexExtractionsToOrder(db: QatafoDatabase, sessionId: st
     let pricingVersion = extraction.pricing_version;
     try { pricingVersion = JSON.parse(item.pricing_snapshot || '{}').pricingVersion ?? pricingVersion; } catch { /* snapshot remains the engine copy on the order item */ }
     const now = new Date().toISOString();
-    db.run(`UPDATE ocerex_extractions SET order_id=?,order_item_id=?,account_id=?,ayrovi_price_tnd=?,pricing_version=?,status='ORDERED',updated_at=? WHERE id=?`,
+    db.run(`UPDATE ocerex_extractions SET order_id=?,order_item_id=?,account_id=?,zayrovi_price_tnd=?,pricing_version=?,status='ORDERED',updated_at=? WHERE id=?`,
       orderId, item.id, accountId, Number(item.total_tnd), pricingVersion, now, extraction.id);
     db.run('UPDATE order_items SET ocerex_extraction_id=? WHERE id=?', extraction.id, item.id);
     linked += 1;

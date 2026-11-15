@@ -2,7 +2,7 @@
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
-import { InteractiveLensResults } from '../client/src/ayrovix/components/InteractiveLensResults';
+import { InteractiveLensResults } from '../client/src/zayrovix/components/InteractiveLensResults';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
 let root:Root,host:HTMLDivElement;

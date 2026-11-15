@@ -30,7 +30,7 @@ export interface StoredSession {
   displayName: string;
 }
 
-export const SESSION_STORAGE_KEY = 'ayrovi.session.v1';
+export const SESSION_STORAGE_KEY = 'zayrovi.session.v1';
 
 /** Ce que le trousseau doit savoir faire. `null` = lecture demandée, rien stocké. */
 export interface SecureBackend {

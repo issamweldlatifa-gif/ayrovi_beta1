@@ -38,7 +38,7 @@
 
 ```bash
 # بناء موجَّه إلى خادمك المحلي (عبر نفق) — بلا تعديل أي ملف
-VITE_AYROVI_API_ORIGIN=https://xxxxx.trycloudflare.com npx vite build
+VITE_ZAYROVI_API_ORIGIN=https://xxxxx.trycloudflare.com npx vite build
 npx cap sync android && cd android && sh ./gradlew assembleDebug
 ```
 
@@ -58,7 +58,7 @@ cloudflared tunnel --url http://localhost:3000
 #   → https://quelque-chose.trycloudflare.com
 
 # 3) بناء APK موجَّه إلى ذلك العنوان
-VITE_AYROVI_API_ORIGIN=https://quelque-chose.trycloudflare.com npx vite build
+VITE_ZAYROVI_API_ORIGIN=https://quelque-chose.trycloudflare.com npx vite build
 npx cap sync android && (cd android && sh ./gradlew assembleDebug)
 ```
 

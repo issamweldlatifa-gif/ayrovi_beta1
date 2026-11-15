@@ -61,7 +61,7 @@ async function emailCodeLogin(email: string) {
     .set('x-forwarded-for', freshIp()).send({ email, locale: 'fr' });
   expect(ask.status).toBe(201);
   return request(app).post('/api/customer/auth/email-code/verify')
-    .set('x-forwarded-for', freshIp()).set('x-ayrovi-client', 'mobile/2.0.0')
+    .set('x-forwarded-for', freshIp()).set('x-zayrovi-client', 'mobile/2.0.0')
     .send({ challengeId: ask.body.data.challengeId, code: ask.body.data.developmentCode });
 }
 
@@ -173,7 +173,7 @@ describe('H1 — plafond de connexion PAR ADRESSE', () => {
 
 describe('H2 — Apple : form_post et liaison au navigateur', () => {
   beforeEach(() => {
-    vi.stubEnv('APPLE_CLIENT_ID', 'tn.ayrovi.signin');
+    vi.stubEnv('APPLE_CLIENT_ID', 'tn.zayrovi.signin');
     vi.stubEnv('APPLE_TEAM_ID', 'TEAMID1234');
     vi.stubEnv('APPLE_KEY_ID', 'KEYID12345');
     vi.stubEnv('APPLE_PRIVATE_KEY', APPLE_TEST_KEY);
@@ -184,7 +184,7 @@ describe('H2 — Apple : form_post et liaison au navigateur', () => {
     expect(res.status).toBe(302);
     const location = new URL(res.headers.location);
     expect(location.searchParams.get('response_mode')).toBe('form_post');
-    const cookie = (res.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith('ayrovi_customer_apple_oauth='));
+    const cookie = (res.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith('zayrovi_customer_apple_oauth='));
     expect(cookie).toMatch(/HttpOnly/);
     expect(cookie).toMatch(/Path=\/api\/customer\/auth\/apple/);
     expect(decodeURIComponent(cookie!.split(';')[0].split('=')[1])).toBe(location.searchParams.get('state'));
@@ -218,7 +218,7 @@ describe('H2 — Apple : form_post et liaison au navigateur', () => {
 
 describe('H2 — Apple : parcours complet', () => {
   beforeEach(() => {
-    vi.stubEnv('APPLE_CLIENT_ID', 'tn.ayrovi.signin');
+    vi.stubEnv('APPLE_CLIENT_ID', 'tn.zayrovi.signin');
     vi.stubEnv('APPLE_TEAM_ID', 'TEAMID1234');
     vi.stubEnv('APPLE_KEY_ID', 'KEYID12345');
     vi.stubEnv('APPLE_PRIVATE_KEY', APPLE_TEST_KEY);
@@ -230,19 +230,19 @@ describe('H2 — Apple : parcours complet', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ id_token: idToken(claims) }), { status: 200 })));
     const start = await request(app).get('/api/customer/auth/apple/start');
     const state = new URL(start.headers.location).searchParams.get('state')!;
-    const cookie = (start.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith('ayrovi_customer_apple_oauth='))!.split(';')[0];
+    const cookie = (start.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith('zayrovi_customer_apple_oauth='))!.split(';')[0];
     const relay = await request(app).post('/api/customer/auth/apple/callback').type('form').send({ code: 'apple-code', state });
     return request(app).get(relay.headers.location).set('Cookie', cookie);
   }
 
   test('form_post → 303 → GET avec cookie : session ouverte', async () => {
     const res = await appleRoundTrip({
-      iss: 'https://appleid.apple.com', aud: 'tn.ayrovi.signin', exp: Math.floor(Date.now() / 1000) + 600,
+      iss: 'https://appleid.apple.com', aud: 'tn.zayrovi.signin', exp: Math.floor(Date.now() / 1000) + 600,
       sub: `apple-${uid()}`, email: `a.${uid()}@privaterelay.appleid.com`, email_verified: 'true',
     });
     expect(res.status).toBe(302);
     expect(res.headers.location).toContain('customerAuth=success');
-    expect(String(res.headers['set-cookie'])).toContain('ayrovi_customer_session=');
+    expect(String(res.headers['set-cookie'])).toContain('zayrovi_customer_session=');
   });
 
   test('un id_token destiné à une autre application est refusé', async () => {
@@ -268,13 +268,13 @@ describe('M1 — Google natif : pas de jeton dans le corps pour le site', () => 
     expect(res.status).toBe(200);
     expect(res.body.data.native_session_token).toBeUndefined();
     expect(res.body.data.session_token).toBeUndefined();
-    expect(String(res.headers['set-cookie'])).toContain('ayrovi_customer_session=');
+    expect(String(res.headers['set-cookie'])).toContain('zayrovi_customer_session=');
   });
 
   test('l’application déclarée reçoit session_token ; l’ancienne coque native_session_token', async () => {
-    const mobile = await request(app).post('/api/customer/auth/google/native').set('x-ayrovi-client', 'mobile/2.0.0').send({ idToken: 'a.b.c' });
+    const mobile = await request(app).post('/api/customer/auth/google/native').set('x-zayrovi-client', 'mobile/2.0.0').send({ idToken: 'a.b.c' });
     expect(typeof mobile.body.data.session_token).toBe('string');
-    const legacy = await request(app).post('/api/customer/auth/google/native').set('x-ayrovi-native', '1').send({ idToken: 'a.b.c' });
+    const legacy = await request(app).post('/api/customer/auth/google/native').set('x-zayrovi-native', '1').send({ idToken: 'a.b.c' });
     expect(typeof legacy.body.data.native_session_token).toBe('string');
   });
 
@@ -287,7 +287,7 @@ describe('M1 — Google natif : pas de jeton dans le corps pour le site', () => 
       aud: 'client-id-not-real', iss: 'accounts.google.com', exp: Math.floor(Date.now() / 1000) + 600,
       sub, email: `other.${uid()}@example.tn`, email_verified: true,
     }), { status: 200 })));
-    const res = await request(app).post('/api/customer/auth/google/native').set('x-ayrovi-client', 'mobile/2.0.0').send({ idToken: 'a.b.c' });
+    const res = await request(app).post('/api/customer/auth/google/native').set('x-zayrovi-client', 'mobile/2.0.0').send({ idToken: 'a.b.c' });
     expect(res.status).toBe(403);
     expect(res.body.code).toBe('ACCOUNT_BLOCKED');
     expect(db.get<any>('SELECT COUNT(*) n FROM customer_sessions WHERE account_id=?', blocked).n).toBe(0);

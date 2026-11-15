@@ -11,9 +11,9 @@
  *   • aucune donnée n'est déduite (pas de marque devinée depuis un titre, pas de
  *     conversion de taille maison, pas de stock supposé à partir d'un silence).
  */
-import type { AyrovixCandidate, AyrovixProduct, AyrovixVariantOption } from '../ayrovix/types';
-import { withIsolation } from '../ayrovix/services/mediaIsolation';
-import { classifyProduct, extractCapacity, presentSizes, usesCapacity } from '../ayrovix/services/productAttributes';
+import type { ZayrovixCandidate, ZayrovixProduct, ZayrovixVariantOption } from '../zayrovix/types';
+import { withIsolation } from '../zayrovix/services/mediaIsolation';
+import { classifyProduct, extractCapacity, presentSizes, usesCapacity } from '../zayrovix/services/productAttributes';
 import type { MediaView, PriceView, ProductView, SizeOption, StockState } from './types';
 
 function toMedia(urls: (string | null | undefined)[], alt: string): MediaView[] {
@@ -25,7 +25,7 @@ function toMedia(urls: (string | null | undefined)[], alt: string): MediaView[] 
 }
 
 /** Le stock d'une taille : le verdict du moteur, jamais une interprétation. */
-function stockOf(options: AyrovixVariantOption[]): StockState {
+function stockOf(options: ZayrovixVariantOption[]): StockState {
   if (!options.length) return 'unknown';
   const states = new Set(options.map((option) => option.availability === 'available' || option.availability === 'unavailable' ? option.availability : 'unknown'));
   return states.size === 1 ? [...states][0] : 'unknown';
@@ -67,7 +67,7 @@ function priceOf(
 }
 
 /** Une carte de résultat : ce que la recherche a réellement rapporté. */
-export function candidateToView(candidate: AyrovixCandidate): ProductView {
+export function candidateToView(candidate: ZayrovixCandidate): ProductView {
   const media = toMedia([candidate.image, ...(candidate.images || [])], candidate.title);
   return {
     id: candidate.id,
@@ -165,7 +165,7 @@ export interface CatalogProductLike {
 }
 
 /** La fiche complète : mêmes règles, plus les tailles et les couleurs. */
-export function productToView(product: AyrovixProduct, activeColor?: string | null): ProductView {
+export function productToView(product: ZayrovixProduct, activeColor?: string | null): ProductView {
   const options = product.variantOptions || [];
 
   /*

@@ -32,7 +32,7 @@ export interface OcerexExtraction {
   platform: string | null;
   sourceUrl: string | null;
   code: OcerexCode;
-  ayroviPrice: number | null;
+  zayroviPrice: number | null;
   supportedCurrencies: string[];
   resolved: { title: string; platform: string; url: string; imageUrl: string } | null;
 }
@@ -61,7 +61,7 @@ export function parseExtraction(value: unknown): OcerexExtraction {
     platform: str(value.platform),
     sourceUrl: str(value.sourceUrl),
     code: isCode(value.code) ? value.code : 'PROCESSING_ERROR',
-    ayroviPrice: num(value.ayroviPrice),
+    zayroviPrice: num(value.zayroviPrice),
     supportedCurrencies: Array.isArray(value.supportedCurrencies)
       ? value.supportedCurrencies.filter((item): item is string => typeof item === 'string')
       : [],

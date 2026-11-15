@@ -31,7 +31,7 @@ export interface LoadingScreenProps {
 }
 
 /** Proportions de la maquette : anneau ≈ 37 % de la largeur, arc ≈ 70°. Le Z (presque carré) est ajusté
- * au CERCLE de rayon `symbolRadius` — même placement que le chargement web (logo-ayrovi-loading.svg) —
+ * au CERCLE de rayon `symbolRadius` — même placement que le chargement web (logo-zayrovi-loading.svg) —
  * pour qu'aucun de ses coins n'approche l'anneau (rayon 65). */
 export const RING = {
   size: 136,

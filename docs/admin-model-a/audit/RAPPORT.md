@@ -41,7 +41,7 @@ Généré le 2026-09-22T05:02:35.652Z · 49 écrans inspectés · base http://12
 - en-têtes observés : {"xFrameOptions":null,"frameAncestors":null,"contentSecurityPolicy":"présente","xContentTypeOptions":"nosniff","referrerPolicy":"strict-origin-when-cross-origin"}
 - **projection production** (non mesurable ici) : /admin → {"X-Frame-Options":"DENY","frameAncestors":"frame-ancestors 'none'"} · site public → {"X-Frame-Options":"SAMEORIGIN","frameAncestors":"frame-ancestors 'self'"}
 - cookie : Secure ajouté au cookie de session quand NODE_ENV=production
-- cookie de session : {"name":"ayrovi_admin_session","httpOnly":true,"sameSite":"Strict","secure":false,"path":"/api/admin"}
+- cookie de session : {"name":"zayrovi_admin_session","httpOnly":true,"sameSite":"Strict","secure":false,"path":"/api/admin"}
 
 ## Écrans
 

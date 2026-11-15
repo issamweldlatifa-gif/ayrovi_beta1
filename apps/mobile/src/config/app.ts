@@ -4,16 +4,16 @@ import Constants from 'expo-constants';
 /** Version lue du manifeste Expo, source unique pour le pied de page. */
 export const APP_VERSION = Constants.expoConfig?.version ?? '0.0.0';
 
-/** Ayrovi Extracted Sans: poids statiques construits depuis la source WOFF2 vérifiée. */
+/** Zayrovi Extracted Sans: poids statiques construits depuis la source WOFF2 vérifiée. */
 export const FONT_SOURCES = {
   'Publication-Regular': require('../../assets/fonts/Publication-Regular.ttf'),
   'Publication-SemiBold': require('../../assets/fonts/Publication-SemiBold.ttf'),
   'PublicationPublisher-Bold': require('../../assets/fonts/PublicationPublisher-Bold.ttf'),
-  'AyroviExtracted-Regular': require('../../assets/fonts/AyroviExtracted-Regular.ttf'),
-  'AyroviExtracted-Medium': require('../../assets/fonts/AyroviExtracted-Medium.ttf'),
-  'AyroviExtracted-SemiBold': require('../../assets/fonts/AyroviExtracted-SemiBold.ttf'),
-  'AyroviExtracted-Bold': require('../../assets/fonts/AyroviExtracted-Bold.ttf'),
-  'AyroviExtracted-Heading': require('../../assets/fonts/AyroviExtracted-Heading.ttf'),
+  'ZayroviExtracted-Regular': require('../../assets/fonts/ZayroviExtracted-Regular.ttf'),
+  'ZayroviExtracted-Medium': require('../../assets/fonts/ZayroviExtracted-Medium.ttf'),
+  'ZayroviExtracted-SemiBold': require('../../assets/fonts/ZayroviExtracted-SemiBold.ttf'),
+  'ZayroviExtracted-Bold': require('../../assets/fonts/ZayroviExtracted-Bold.ttf'),
+  'ZayroviExtracted-Heading': require('../../assets/fonts/ZayroviExtracted-Heading.ttf'),
   'NotoSansArabic-Regular': require('../../assets/fonts/NotoSansArabic-Regular.ttf'),
   'NotoSansArabic-Bold': require('../../assets/fonts/NotoSansArabic-Bold.ttf'),
 } as const;

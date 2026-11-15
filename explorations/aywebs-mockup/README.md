@@ -36,7 +36,7 @@ Les trois variantes ne diffèrent que sur le bloc Catégories : grille 3×2, rai
 | Rayons | `RADIUS` : 4 · 8 · 12 · 16 · 24 · 999 |
 | Icônes | `ICON_SIZE` : 14 · 18 · 24 · 32 |
 | Chrome | `CHROME` : en-tête 64 · barre 56 |
-| Polices | Ayrovi Extracted Sans · Noto Sans Arabic (sous-ensemblées dans le fichier livré) |
+| Polices | Zayrovi Extracted Sans · Noto Sans Arabic (sous-ensemblées dans le fichier livré) |
 
 ---
 
@@ -55,7 +55,7 @@ Les trois variantes ne diffèrent que sur le bloc Catégories : grille 3×2, rai
 | **C · Éditorial** | montrer plus sans scroller | prêt (UI seule) |
 | **D · Flux vivant** | **décider** : quoi acheter, à quel prix réel | 3 briques serveur existent, 2 contrats à écrire |
 
-Direction D s'appuie, dans le dépôt, sur : `src/ayrovix/services/priceWatch.ts`
+Direction D s'appuie, dans le dépôt, sur : `src/zayrovix/services/priceWatch.ts`
 (veille prix, 6 h, 50 par compte — **aucune API mobile**), `src/aywebs/evidence.ts`
 (empreintes de lecture), `src/aywebs/variantQuotes.ts` (devis par valeur),
 `src/services/pricing.ts` (douane, TVA, fret, marge de change),
@@ -134,7 +134,7 @@ une image générée invente ses tailles ; ce script ne le peut pas.
 
 | Élément | Source réelle |
 | --- | --- |
-| Polices | `apps/mobile/assets/fonts/AyroviExtracted-{Regular,SemiBold,Bold}.ttf` |
+| Polices | `apps/mobile/assets/fonts/ZayroviExtracted-{Regular,SemiBold,Bold}.ttf` |
 | Couleurs | `brand.json` : #571EF6 · #0A0A0A · #333 · #666 · #E5E5E5 · #FFF · #F2F2F2 |
 | CTA d'achat | `COMMERCE.action` #FFD60A (`tokens.mobile.ts`) |
 | Échelle de types | 12 · 13 · 14 · 15 · 16 · 22 · 26 |

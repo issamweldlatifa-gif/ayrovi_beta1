@@ -5,7 +5,7 @@
   "protected_paths": [
     "client/src/components/StoriesShowcase.tsx",
     "client/src/social",
-    "client/src/ayrovix",
+    "client/src/zayrovix",
     "client/src/components/LensFeature.tsx",
     "android"
   ]

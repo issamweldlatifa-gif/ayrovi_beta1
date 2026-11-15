@@ -2,10 +2,10 @@
  * App Links — العقد الوحيد بين التطبيق (أندرويد) والموقع.
  *
  * علاش موجود: `android.intentFilters` في `apps/mobile/app.json` يخلّي
- * `https://ayrovi.tn/...` تفتح التطبيق مباشرة — **بشرط** أن أندرويد يتحقّق من
- * ملكية النطاق، وبذلك يقرأ `https://ayrovi.tn/.well-known/assetlinks.json`.
+ * `https://zayrovi.com/...` تفتح التطبيق مباشرة — **بشرط** أن أندرويد يتحقّق من
+ * ملكية النطاق، وبذلك يقرأ `https://zayrovi.com/.well-known/assetlinks.json`.
  * الملف هذا خاصو:
- *  • اسم الحزمة بالضبط كما في `app.json` (`app.ayrovi.mobile`)؛
+ *  • اسم الحزمة بالضبط كما في `app.json` (`app.zayrovi.mobile`)؛
  *  • بصمة SHA-256 للشهادة اللي توقّع الحزمة — **وشهادة Play مختلفة**:
  *    مفتاح التوقيع المحلي يُرفع مرّة أولى، وعندها Google Play تعيد توقيع الحزمة
  *    بمفتاحها. المعنى: لازم زوز بصمات على الأقل (مفتاح الإصدار + مفتاح Play)
@@ -23,10 +23,10 @@
  */
 
 /** اسم حزمة الإصدار — نفس القيمة في `apps/mobile/app.json`. */
-export const ANDROID_APP_LINK_PACKAGE = 'app.ayrovi.mobile';
+export const ANDROID_APP_LINK_PACKAGE = 'app.zayrovi.mobile';
 
 /** حزمة العرض التجريبي (`ZAYROVI Démo`) — بصمة الـdebug key مختلفة. */
-export const ANDROID_APP_LINK_DEMO_PACKAGE = 'app.ayrovi.mobile.demo';
+export const ANDROID_APP_LINK_DEMO_PACKAGE = 'app.zayrovi.mobile.demo';
 
 /**
  * شهادة APK العرض الثابتة، الموثّقة في `apps/mobile/keystores/README.md`.
@@ -93,7 +93,7 @@ export function parseCertificateFingerprints(raw: string | undefined | null): st
 
 /**
  * أسماء الحزم: الافتراضي حزمة الإصدار وحدها. تقبل تعدّد (الإصدار + العرض
- * التجريبي) لأنّ الاتنين يفتحوا `ayrovi.tn` في نفس التلفون.
+ * التجريبي) لأنّ الاتنين يفتحوا `zayrovi.com` في نفس التلفون.
  */
 export function parseAppLinkPackages(raw: string | undefined | null): string[] | null {
   const cleaned = (raw || '')
@@ -183,7 +183,7 @@ function statementFingerprints(entry: Record<string, unknown>): string[] {
  * يحصل على هذا الاستثناء، فلا نعطي مفتاح debug عمومياً صلاحية حزمة الإنتاج.
  *
  * إذا وُجدت بصمات إنتاج حقيقية في البيئة، تبقى كل حزمة مرتبطة ببصماتها وحدها؛
- * لا نخلط بصمة debug مع `app.ayrovi.mobile`.
+ * لا نخلط بصمة debug مع `app.zayrovi.mobile`.
  */
 export function appLinksForDeployment(
   env: Record<string, string | undefined>,

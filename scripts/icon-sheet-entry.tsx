@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import * as C from '../client/src/components/icons/ayrovi/catalog';
+import * as C from '../client/src/components/icons/zayrovi/catalog';
 
 export function renderSheet(): string {
   const entries = Object.entries(C)
-    .filter(([name, v]) => name.startsWith('Ayrovi') && (typeof v === 'function' || (typeof v === 'object' && v !== null && '$$typeof' in v)))
-    .filter(([name]) => !['AyroviSignature', 'AyroviSvg'].includes(name))
+    .filter(([name, v]) => name.startsWith('Zayrovi') && (typeof v === 'function' || (typeof v === 'object' && v !== null && '$$typeof' in v)))
+    .filter(([name]) => !['ZayroviSignature', 'ZayroviSvg'].includes(name))
     .sort(([a], [b]) => a.localeCompare(b));
 
   const cards = entries.map(([name, Cmp]) => {

@@ -1352,7 +1352,7 @@
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{()=>downloadCsv(csvFileName('ayrovi-journal-audit'),AUDIT_COLUMNS,rows)}",
+          "onClick": "{()=>downloadCsv(csvFileName('zayrovi-journal-audit'),AUDIT_COLUMNS,rows)}",
           "disabled": "{loading||rows.length===0}"
         },
         {
@@ -8722,7 +8722,7 @@
       "icons": [
         {
           "module": "../components/QatafoIcons",
-          "bindings": "{\n  ArrowDown, ArrowUp, AyWebs, Eye as AyroviEye, EyeOff, Heart, Home, Image as ImageIcon, LayoutGrid,\n  LensBox, Menu, Monitor, MousePointer2, Navigation, Palette, RotateCcw, Save, ScanSearch,\n  ShoppingBag, SlidersHorizontal, Sparkles, Type, User,\n}",
+          "bindings": "{\n  ArrowDown, ArrowUp, AyWebs, Eye as ZayroviEye, EyeOff, Heart, Home, Image as ImageIcon, LayoutGrid,\n  LensBox, Menu, Monitor, MousePointer2, Navigation, Palette, RotateCcw, Save, ScanSearch,\n  ShoppingBag, SlidersHorizontal, Sparkles, Type, User,\n}",
           "line": 2
         }
       ],
@@ -12352,7 +12352,7 @@
         "./components/AnnouncementSection",
         "./components/AboutSection",
         "./components/BottomNavBar",
-        "./ayrovix/types",
+        "./zayrovix/types",
         "./components/ScrollToTopButton",
         "./components/Footer",
         "./types",
@@ -12453,7 +12453,7 @@
       ]
     },
     {
-      "file": "client/src/ayrovix/components/InteractiveLensResults.tsx",
+      "file": "client/src/zayrovix/components/InteractiveLensResults.tsx",
       "domain": "lens",
       "sha256": "0a0fbf8b24ea0e9bd87ca96d0d1c11416e3b0683381be1440c62e0bbb37d62d5",
       "lines": 294,
@@ -12563,7 +12563,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/lens-camera.css",
+      "file": "client/src/zayrovix/components/lens-camera.css",
       "domain": "lens",
       "sha256": "23a54501cf17526888fb626a4409a4ae81f2ab2739a8a30ddcb351fb0e9415d7",
       "lines": 70,
@@ -12586,7 +12586,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/lens-results.css",
+      "file": "client/src/zayrovix/components/lens-results.css",
       "domain": "lens",
       "sha256": "b932d515079dda16c798d31276350583dbb933eeedf842ede31dd5ee35a0ae23",
       "lines": 50,
@@ -12613,7 +12613,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/LensCamera.tsx",
+      "file": "client/src/zayrovix/components/LensCamera.tsx",
       "domain": "lens",
       "sha256": "d0d05a642c680dae3a28521e3c6e35b278cb910e929f9264a25db8b1d9109654",
       "lines": 49,
@@ -12660,7 +12660,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/LensHelp.tsx",
+      "file": "client/src/zayrovix/components/LensHelp.tsx",
       "domain": "lens",
       "sha256": "0395a9734f5802e19a5ecc53cf6473e471d63cfcf42b90fdbd765b3d2e3cd13a",
       "lines": 66,
@@ -12804,7 +12804,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/LensHistory.tsx",
+      "file": "client/src/zayrovix/components/LensHistory.tsx",
       "domain": "lens",
       "sha256": "09a6d92cd5e2f953629b88d46e805eb49e88fc6afa73b60e1a34c8a05b0608f8",
       "lines": 122,
@@ -12825,7 +12825,7 @@
           "className": "\"inline-flex min-h-[44px] w-fit items-center gap-1 rounded-xl px-2 text-xs font-extrabold text-ink\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Retour à AYROVIX Lens', 'العودة إلى عدسة AYROVIX')}",
+          "ariaLabel": "{tr('Retour à ZAYROVIX Lens', 'العودة إلى عدسة ZAYROVIX')}",
           "onClick": "{onClose}",
           "disabled": null
         },
@@ -12873,7 +12873,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/LensLauncher.tsx",
+      "file": "client/src/zayrovix/components/LensLauncher.tsx",
       "domain": "lens",
       "sha256": "0f4ac387a28f81e93301f2efbfa7c6e15a1b2ea91e644ff8f2c627d3b9405c45",
       "lines": 1036,
@@ -13124,11 +13124,11 @@
       "colors": [],
       "fontDeclarations": [],
       "apiReferences": [
-        "/api/ayrovix/analyze-url"
+        "/api/zayrovix/analyze-url"
       ]
     },
     {
-      "file": "client/src/ayrovix/components/LensNavigation.tsx",
+      "file": "client/src/zayrovix/components/LensNavigation.tsx",
       "domain": "lens",
       "sha256": "f6a9b81da479f5b79340641d700f19bff20e141bed46326d39bc3d3f225df755",
       "lines": 167,
@@ -13148,7 +13148,7 @@
           "className": "{`grid h-11 w-11 place-items-center rounded-full ${control}`}",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Quitter AYROVIX Lens', 'مغادرة عدسة AYROVIX')}",
+          "ariaLabel": "{tr('Quitter ZAYROVIX Lens', 'مغادرة عدسة ZAYROVIX')}",
           "onClick": "{onExit}",
           "disabled": null
         },
@@ -13178,7 +13178,7 @@
           "className": "{`grid h-11 w-11 place-items-center rounded-full ${control}`}",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Menu AYROVIX Lens', 'قائمة عدسة AYROVIX')}",
+          "ariaLabel": "{tr('Menu ZAYROVIX Lens', 'قائمة عدسة ZAYROVIX')}",
           "onClick": "{onMenu}",
           "disabled": null
         },
@@ -13276,7 +13276,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/LensUpload.tsx",
+      "file": "client/src/zayrovix/components/LensUpload.tsx",
       "domain": "lens",
       "sha256": "66d43ec05793990c15e258f09e9f50aad7795a0e1eb51fdf5ff9d5b9518df074",
       "lines": 44,
@@ -13323,7 +13323,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/LiveCamera.tsx",
+      "file": "client/src/zayrovix/components/LiveCamera.tsx",
       "domain": "lens",
       "sha256": "afcd3296faf314d2211bde71e208d942f97b472e116f8afec3d9126b50c0a51f",
       "lines": 439,
@@ -13534,11 +13534,11 @@
       "colors": [],
       "fontDeclarations": [],
       "apiReferences": [
-        "/api/ayrovix/live-events"
+        "/api/zayrovix/live-events"
       ]
     },
     {
-      "file": "client/src/ayrovix/components/MerchantRating.tsx",
+      "file": "client/src/zayrovix/components/MerchantRating.tsx",
       "domain": "lens",
       "sha256": "d818c6219bcba4a87bb81b0df86e89e22a4e3c3a1ad2072a2b4d36c28e331016",
       "lines": 24,
@@ -13565,7 +13565,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/ProductCandidates.tsx",
+      "file": "client/src/zayrovix/components/ProductCandidates.tsx",
       "domain": "lens",
       "sha256": "e699b367ac312912900dd37289bd442c12fa66211a2b86163cd14dc55546fa77",
       "lines": 109,
@@ -13617,7 +13617,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/quiet-card.css",
+      "file": "client/src/zayrovix/components/quiet-card.css",
       "domain": "lens",
       "sha256": "372d8cc66072c969e5cbcc640d33d3033608ed887a2423be6e91126663c39468",
       "lines": 216,
@@ -13637,7 +13637,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/quiet-card.tsx",
+      "file": "client/src/zayrovix/components/quiet-card.tsx",
       "domain": "lens",
       "sha256": "14f14c8fa594ede7e4fad566ad03c60c0c6dc48b427f63e31d1b40d5db41bd84",
       "lines": 195,
@@ -13689,7 +13689,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/components/useLensFavorites.ts",
+      "file": "client/src/zayrovix/components/useLensFavorites.ts",
       "domain": "lens",
       "sha256": "e6c8732abb27197f1fb9c792ef4a44a7346b5120603d1ca55c8a270affc68d02",
       "lines": 68,
@@ -13714,7 +13714,7 @@
       ]
     },
     {
-      "file": "client/src/ayrovix/components/useLensResultsSheet.ts",
+      "file": "client/src/zayrovix/components/useLensResultsSheet.ts",
       "domain": "lens",
       "sha256": "0dcbff51f7a69808df27d6ed371beccb2bbca6e3921aa9a6cbefc3529d84bbe2",
       "lines": 107,
@@ -13732,7 +13732,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/services/history.ts",
+      "file": "client/src/zayrovix/services/history.ts",
       "domain": "lens",
       "sha256": "eeddbe11bad9f65a6686158c7659506166010002edc03ada43287c073ffa7b69",
       "lines": 87,
@@ -13740,9 +13740,9 @@
         "../types"
       ],
       "exports": [
-        "readLocalAyrovixHistory",
-        "rememberAyrovixHistory",
-        "loadAyrovixHistory"
+        "readLocalZayrovixHistory",
+        "rememberZayrovixHistory",
+        "loadZayrovixHistory"
       ],
       "controls": [],
       "icons": [],
@@ -13750,11 +13750,11 @@
       "colors": [],
       "fontDeclarations": [],
       "apiReferences": [
-        "/api/ayrovix/history?limit=30"
+        "/api/zayrovix/history?limit=30"
       ]
     },
     {
-      "file": "client/src/ayrovix/services/imagePrep.ts",
+      "file": "client/src/zayrovix/services/imagePrep.ts",
       "domain": "lens",
       "sha256": "15bcbb6b74e31c6ea0843c90c4e04a6bf55551067f480316b958084b860b23a8",
       "lines": 49,
@@ -13770,7 +13770,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/services/lensApi.ts",
+      "file": "client/src/zayrovix/services/lensApi.ts",
       "domain": "lens",
       "sha256": "4104b626ef5809e2f2544a8748909be67c2356fc43e77f28ccb2eef849ac462d",
       "lines": 259,
@@ -13780,7 +13780,7 @@
         "./lensStream"
       ],
       "exports": [
-        "AyrovixApiError",
+        "ZayrovixApiError",
         "LENS_STREAM_IDLE_MS",
         "LENS_JSON_TIMEOUT_MS",
         "analyzeImage",
@@ -13799,18 +13799,18 @@
       "colors": [],
       "fontDeclarations": [],
       "apiReferences": [
-        "/api/ayrovix/analyze-image",
-        "/api/ayrovix/analyze-url",
-        "/api/ayrovix/review-request",
-        "/api/ayrovix/live-stock",
-        "/api/ayrovix/choose",
-        "/api/ayrovix/analyze-code",
-        "/api/ayrovix/analyze-barcode",
-        "/api/ayrovix/analyze-text"
+        "/api/zayrovix/analyze-image",
+        "/api/zayrovix/analyze-url",
+        "/api/zayrovix/review-request",
+        "/api/zayrovix/live-stock",
+        "/api/zayrovix/choose",
+        "/api/zayrovix/analyze-code",
+        "/api/zayrovix/analyze-barcode",
+        "/api/zayrovix/analyze-text"
       ]
     },
     {
-      "file": "client/src/ayrovix/services/lensSelectionGeometry.ts",
+      "file": "client/src/zayrovix/services/lensSelectionGeometry.ts",
       "domain": "lens",
       "sha256": "ad18de9370a639ccf17757fc744499ab9fbbf715713db1f87ef22f83ec03439d",
       "lines": 38,
@@ -13830,7 +13830,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/services/lensStream.ts",
+      "file": "client/src/zayrovix/services/lensStream.ts",
       "domain": "lens",
       "sha256": "3fe80052a035ab89fd3e7d817c3105b397740da7e099c0343f67c4203bc9fdbe",
       "lines": 46,
@@ -13846,7 +13846,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/services/liveScanner.ts",
+      "file": "client/src/zayrovix/services/liveScanner.ts",
       "domain": "lens",
       "sha256": "2048ffd578e8d3a04c4634111064e51d8774fe0614ca9db41f3ad06753cd7f9e",
       "lines": 61,
@@ -13866,7 +13866,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/services/liveVisionRuntime.ts",
+      "file": "client/src/zayrovix/services/liveVisionRuntime.ts",
       "domain": "lens",
       "sha256": "74fe95ce17623ad883ee05f51c8659028ec2c2e2a1f42243d963717c38bc54ca",
       "lines": 470,
@@ -13896,7 +13896,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/services/mediaIsolation.ts",
+      "file": "client/src/zayrovix/services/mediaIsolation.ts",
       "domain": "lens",
       "sha256": "8f89cad40e08efb10553f58c0290281d58eb7e5b9896bd6f7730cc01eed5c22d",
       "lines": 99,
@@ -13925,7 +13925,7 @@
       ]
     },
     {
-      "file": "client/src/ayrovix/services/productAttributes.ts",
+      "file": "client/src/zayrovix/services/productAttributes.ts",
       "domain": "lens",
       "sha256": "e3be179ac9954f432d5d76f26fffddde26e130d330d063de7135734926133974",
       "lines": 150,
@@ -13946,7 +13946,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/services/productEnrichment.ts",
+      "file": "client/src/zayrovix/services/productEnrichment.ts",
       "domain": "lens",
       "sha256": "26b68675d029a9f78c475ee2a186d0be4baf4b25ee0a497bd4d054eecc2a3888",
       "lines": 73,
@@ -13964,7 +13964,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/services/productSelection.ts",
+      "file": "client/src/zayrovix/services/productSelection.ts",
       "domain": "lens",
       "sha256": "3e3b9fd2b7901b97054bb2af9d3b66a99898a5ec59ddf1414785c72224d5cd7c",
       "lines": 58,
@@ -13985,7 +13985,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/services/qr.ts",
+      "file": "client/src/zayrovix/services/qr.ts",
       "domain": "lens",
       "sha256": "a08fef39ada3a046e1b12358ca3e7ac7d09980ac4e034f300a49b079a1970202",
       "lines": 138,
@@ -14004,7 +14004,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/services/resultPolicy.ts",
+      "file": "client/src/zayrovix/services/resultPolicy.ts",
       "domain": "lens",
       "sha256": "94f5966c5429fb77bd23d781ea574f13a4ea1b902ab4c3f766a0850d0aa4ea54",
       "lines": 47,
@@ -14027,7 +14027,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/ayrovix/types.ts",
+      "file": "client/src/zayrovix/types.ts",
       "domain": "lens",
       "sha256": "d7ad9d4a35fef46d025b6b2d8fdfd19f859e2a601cbdc516aa39182efd0afddb",
       "lines": 273,
@@ -14645,12 +14645,12 @@
       "lines": 1040,
       "imports": [
         "./CleanCameraPanel",
-        "../../ayrovix/services/productSelection",
+        "../../zayrovix/services/productSelection",
         "./media/useAssistantAttachments",
         "./media/VoiceNoteCapture",
         "./media/mediaLabels",
         "./AssistantHistoryNotice",
-        "../../ayrovix/services/resultPolicy",
+        "../../zayrovix/services/resultPolicy",
         "./conversationHistory",
         "../../hooks/useDialogFocus",
         "./messageActions",
@@ -14666,9 +14666,9 @@
         "./voice/types",
         "../../hooks/useBodyScrollLock",
         "../../utils/session",
-        "../AyroviMotion",
-        "../../ayrovix/services/lensApi",
-        "../../ayrovix/types",
+        "../ZayroviMotion",
+        "../../zayrovix/services/lensApi",
+        "../../zayrovix/types",
         "../../shop",
         "./assistantApi",
         "./conversationHistory",
@@ -14737,7 +14737,7 @@
       "lines": 132,
       "imports": [
         "../../utils/session",
-        "../AyroviMotion",
+        "../ZayroviMotion",
         "./types"
       ],
       "exports": [
@@ -14851,7 +14851,7 @@
       "lines": 29,
       "imports": [
         "react",
-        "../AyroviMotion"
+        "../ZayroviMotion"
       ],
       "exports": [
         "AssistantBrandMark"
@@ -15257,18 +15257,18 @@
       "lines": 180,
       "imports": [
         "./CleanVisuals",
-        "../../ayrovix/components/MerchantRating",
+        "../../zayrovix/components/MerchantRating",
         "react",
         "./AssistantMessageActions",
         "./useMessageReader",
         "./composerPolicy",
         "../QatafoIcons",
-        "../AyroviMotion",
+        "../ZayroviMotion",
         "../../shop",
         "../../shop",
-        "../../ayrovix/types",
+        "../../zayrovix/types",
         "./types",
-        "../../ayrovix/services/resultPolicy",
+        "../../zayrovix/services/resultPolicy",
         "../../i18n/LocaleContext"
       ],
       "exports": [
@@ -15598,7 +15598,7 @@
           "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{onOpenLens ? tr('Scanner avec AYROVIX Lens','فحص مع AYROVIX Lens') : tr('Choisir une photo','اختيار صورة')}",
+          "ariaLabel": "{onOpenLens ? tr('Scanner avec ZAYROVIX Lens','فحص مع ZAYROVIX Lens') : tr('Choisir une photo','اختيار صورة')}",
           "onClick": "{() => onOpenLens ? onOpenLens() : fileRef.current?.click()}",
           "disabled": "{!onOpenLens && !onAddAttachment}"
         },
@@ -15862,7 +15862,7 @@
       "lines": 108,
       "imports": [
         "../../../../shared/variantPolicy",
-        "../../ayrovix/types",
+        "../../zayrovix/types",
         "./types",
         "../../utils/publicLinks"
       ],
@@ -16170,7 +16170,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/components/AyroviMotion.tsx",
+      "file": "client/src/components/ZayroviMotion.tsx",
       "domain": "shell-content",
       "sha256": "2c1ff5c5a8ff827c61aee30b2b0b0d69e6fd6957c5242d77cb1452c3f5ea382e",
       "lines": 32,
@@ -16179,7 +16179,7 @@
         "./QatafoIcons"
       ],
       "exports": [
-        "AyroviMotion"
+        "ZayroviMotion"
       ],
       "controls": [],
       "icons": [
@@ -17559,7 +17559,7 @@
       ]
     },
     {
-      "file": "client/src/components/icons/ayrovi/AyroviIcon.tsx",
+      "file": "client/src/components/icons/zayrovi/ZayroviIcon.tsx",
       "domain": "shared-design",
       "sha256": "719d10a0159ab3000a48c731dcdbe406e57e5571d95727b3e41a275d54ec7226",
       "lines": 26,
@@ -17571,10 +17571,10 @@
         "../../../design/editorial/glyphs.json"
       ],
       "exports": [
-        "AYROVI_ICON_SIZE",
-        "AYROVI_STROKE",
-        "AYROVI_CORNER",
-        "createAyroviIcon"
+        "ZAYROVI_ICON_SIZE",
+        "ZAYROVI_STROKE",
+        "ZAYROVI_CORNER",
+        "createZayroviIcon"
       ],
       "controls": [],
       "icons": [],
@@ -17584,115 +17584,115 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/components/icons/ayrovi/catalog.tsx",
+      "file": "client/src/components/icons/zayrovi/catalog.tsx",
       "domain": "shared-design",
       "sha256": "25d895c6daa27a0d63ecd4e7884d9f425e726ede4d964f25b6fa6f3c9f8be953",
       "lines": 107,
       "imports": [
-        "./AyroviIcon"
+        "./ZayroviIcon"
       ],
       "exports": [
-        "AyroviMenu",
-        "AyroviBack",
-        "AyroviClose",
-        "AyroviOptions",
-        "AyroviHome",
-        "AyroviChevronRight",
-        "AyroviChevronLeft",
-        "AyroviChevronDown",
-        "AyroviSearch",
-        "AyroviArrowRight",
-        "AyroviArrowUp",
-        "AyroviArrowDown",
-        "AyroviArrowUpRight",
-        "AyroviSwap",
-        "AyroviNav",
-        "AyroviPlus",
-        "AyroviStory",
-        "AyroviPerson",
-        "AyroviMinus",
-        "AyroviCheck",
-        "AyroviEdit",
-        "AyroviTrash",
-        "AyroviCopy",
-        "AyroviSave",
-        "AyroviShare",
-        "AyroviRefresh",
-        "AyroviUndo",
-        "AyroviLoader",
-        "AyroviPointer",
-        "AyroviSquare",
-        "AyroviPause",
-        "AyroviBag",
-        "AyroviHeart",
-        "AyroviHeartFilled",
-        "AyroviCube",
-        "AyroviPackageCheck",
-        "AyroviPercent",
-        "AyroviTag",
-        "AyroviGift",
-        "AyroviStar",
-        "AyroviCard",
-        "AyroviBank",
-        "AyroviMail",
-        "AyroviReceipt",
-        "AyroviTruck",
-        "AyroviCalculator",
-        "AyroviClipboard",
-        "AyroviHistory",
-        "AyroviChart",
-        "AyroviSparkles",
-        "AyroviLens",
-        "AyroviScan",
-        "AyroviEye",
-        "AyroviEyeOff",
-        "AyroviBarcode",
-        "AyroviCamera",
-        "AyroviPlug",
-        "AyroviLink",
-        "AyroviImage",
-        "AyroviZap",
-        "AyroviChat",
-        "AyroviMessage",
-        "AyroviPhone",
-        "AyroviBell",
-        "AyroviInfo",
-        "AyroviSuccess",
-        "AyroviAlert",
-        "AyroviThumbsUp",
-        "AyroviThumbsDown",
-        "AyroviMic",
-        "AyroviMicOff",
-        "AyroviVoiceWave",
-        "AyroviVideo",
-        "AyroviVolume",
-        "AyroviVolumeOff",
-        "AyroviUser",
-        "AyroviLock",
-        "AyroviLogout",
-        "AyroviPin",
-        "AyroviLocate",
-        "AyroviShield",
-        "AyroviMoon",
-        "AyroviSettings",
-        "AyroviSliders",
-        "AyroviGrid",
-        "AyroviBookmark",
-        "AyroviFile",
-        "AyroviCalendar",
-        "AyroviType",
-        "AyroviMonitor",
-        "AyroviPalette",
-        "AyroviGlobe",
-        "AyroviHourglass",
-        "AyroviExternal",
-        "AyroviPlay",
-        "AyroviGrip",
-        "AyroviSonim",
-        "AyroviVision",
-        "AyroviAyWebs",
-        "AyroviPaperclip",
-        "AyroviCleanMenu"
+        "ZayroviMenu",
+        "ZayroviBack",
+        "ZayroviClose",
+        "ZayroviOptions",
+        "ZayroviHome",
+        "ZayroviChevronRight",
+        "ZayroviChevronLeft",
+        "ZayroviChevronDown",
+        "ZayroviSearch",
+        "ZayroviArrowRight",
+        "ZayroviArrowUp",
+        "ZayroviArrowDown",
+        "ZayroviArrowUpRight",
+        "ZayroviSwap",
+        "ZayroviNav",
+        "ZayroviPlus",
+        "ZayroviStory",
+        "ZayroviPerson",
+        "ZayroviMinus",
+        "ZayroviCheck",
+        "ZayroviEdit",
+        "ZayroviTrash",
+        "ZayroviCopy",
+        "ZayroviSave",
+        "ZayroviShare",
+        "ZayroviRefresh",
+        "ZayroviUndo",
+        "ZayroviLoader",
+        "ZayroviPointer",
+        "ZayroviSquare",
+        "ZayroviPause",
+        "ZayroviBag",
+        "ZayroviHeart",
+        "ZayroviHeartFilled",
+        "ZayroviCube",
+        "ZayroviPackageCheck",
+        "ZayroviPercent",
+        "ZayroviTag",
+        "ZayroviGift",
+        "ZayroviStar",
+        "ZayroviCard",
+        "ZayroviBank",
+        "ZayroviMail",
+        "ZayroviReceipt",
+        "ZayroviTruck",
+        "ZayroviCalculator",
+        "ZayroviClipboard",
+        "ZayroviHistory",
+        "ZayroviChart",
+        "ZayroviSparkles",
+        "ZayroviLens",
+        "ZayroviScan",
+        "ZayroviEye",
+        "ZayroviEyeOff",
+        "ZayroviBarcode",
+        "ZayroviCamera",
+        "ZayroviPlug",
+        "ZayroviLink",
+        "ZayroviImage",
+        "ZayroviZap",
+        "ZayroviChat",
+        "ZayroviMessage",
+        "ZayroviPhone",
+        "ZayroviBell",
+        "ZayroviInfo",
+        "ZayroviSuccess",
+        "ZayroviAlert",
+        "ZayroviThumbsUp",
+        "ZayroviThumbsDown",
+        "ZayroviMic",
+        "ZayroviMicOff",
+        "ZayroviVoiceWave",
+        "ZayroviVideo",
+        "ZayroviVolume",
+        "ZayroviVolumeOff",
+        "ZayroviUser",
+        "ZayroviLock",
+        "ZayroviLogout",
+        "ZayroviPin",
+        "ZayroviLocate",
+        "ZayroviShield",
+        "ZayroviMoon",
+        "ZayroviSettings",
+        "ZayroviSliders",
+        "ZayroviGrid",
+        "ZayroviBookmark",
+        "ZayroviFile",
+        "ZayroviCalendar",
+        "ZayroviType",
+        "ZayroviMonitor",
+        "ZayroviPalette",
+        "ZayroviGlobe",
+        "ZayroviHourglass",
+        "ZayroviExternal",
+        "ZayroviPlay",
+        "ZayroviGrip",
+        "ZayroviSonim",
+        "ZayroviVision",
+        "ZayroviAyWebs",
+        "ZayroviPaperclip",
+        "ZayroviCleanMenu"
       ],
       "controls": [],
       "icons": [],
@@ -17702,7 +17702,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/components/icons/ayrovi/index.ts",
+      "file": "client/src/components/icons/zayrovi/index.ts",
       "domain": "shared-design",
       "sha256": "51bc0373abfd482100d8d4f0ed1256577f30b29a7f533cdbdff2aea43ad03340",
       "lines": 4,
@@ -18175,8 +18175,8 @@
         "../hooks/useBodyScrollLock",
         "../navigation/NavigationHistory",
         "../shop",
-        "../ayrovix/services/productSelection",
-        "../ayrovix/types",
+        "../zayrovix/services/productSelection",
+        "../zayrovix/types",
         "../features/aywebs/api"
       ],
       "exports": [
@@ -18435,8 +18435,8 @@
       "sha256": "cf24ee1ef45926120c621464c1ef97b8b9a486d0d38e22767d6120b238332236",
       "lines": 132,
       "imports": [
-        "./icons/ayrovi",
-        "./icons/ayrovi/catalog"
+        "./icons/zayrovi",
+        "./icons/zayrovi/catalog"
       ],
       "exports": [
         "Menu",
@@ -18547,12 +18547,12 @@
       "controls": [],
       "icons": [
         {
-          "module": "./icons/ayrovi",
-          "bindings": "type { AyroviIconProps }",
+          "module": "./icons/zayrovi",
+          "bindings": "type { ZayroviIconProps }",
           "line": 6
         },
         {
-          "module": "./icons/ayrovi/catalog",
+          "module": "./icons/zayrovi/catalog",
           "bindings": "* as I",
           "line": 7
         }
@@ -18668,7 +18668,7 @@
       ],
       "exports": [
         "PUBLIC_SECTION_IDS",
-        "AYROVI_FONT_STACK",
+        "ZAYROVI_FONT_STACK",
         "INTERFACE_FONT_PRESETS",
         "INTERFACE_ICON_LIBRARIES",
         "ANNOUNCEMENT_TARGETS",
@@ -19644,10 +19644,10 @@
       "colors": [],
       "fontDeclarations": [
         "font-family: var(--ay-font-stack)",
-        "font-family: var(--ayrovi-font-display)",
-        "font-family: var(--ayrovi-font-display)",
-        "font-family: var(--ayrovi-font-display)",
-        "font-family: var(--ayrovi-font-display)"
+        "font-family: var(--zayrovi-font-display)",
+        "font-family: var(--zayrovi-font-display)",
+        "font-family: var(--zayrovi-font-display)",
+        "font-family: var(--zayrovi-font-display)"
       ],
       "apiReferences": []
     },
@@ -19802,12 +19802,12 @@
         "#FFFFFF"
       ],
       "fontDeclarations": [
-        "font-family: \"Ayrovi Extracted Sans\"",
+        "font-family: \"Zayrovi Extracted Sans\"",
         "font-family: \"Noto Sans Arabic\"",
-        "--ay-font-stack: 'Ayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif",
+        "--ay-font-stack: 'Zayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif",
         "--font-primary: var(--ay-font-stack)",
-        "--ayrovi-font-body: var(--ay-font-stack)",
-        "--ayrovi-font-display: var(--ay-font-stack)",
+        "--zayrovi-font-body: var(--ay-font-stack)",
+        "--zayrovi-font-display: var(--ay-font-stack)",
         "--ay-font-body-width: 102.5%",
         "--ay-font-heading-width: 112.5%",
         "--ay-font-heading-weight: 520",
@@ -20093,9 +20093,9 @@
         "--font-weight-medium: 520",
         "--font-weight-semibold: 650",
         "--font-weight-bold: 700",
-        "--ayrovi-font-display: var(--font-primary)",
-        "--ayrovi-font-body: var(--font-primary)",
-        "--ayrovi-font: var(--ayrovi-font-body)"
+        "--zayrovi-font-display: var(--font-primary)",
+        "--zayrovi-font-body: var(--font-primary)",
+        "--zayrovi-font: var(--zayrovi-font-body)"
       ],
       "apiReferences": []
     },
@@ -20483,7 +20483,7 @@
         "removeAyWebsCartItem",
         "acceptAyWebsCartPrice",
         "verifyAyWebsCart",
-        "bridgeAyWebsCartToAyrovi",
+        "bridgeAyWebsCartToZayrovi",
         "previewAyWebsCheckout",
         "createAyWebsOrder",
         "listAyWebsOrders",
@@ -21854,7 +21854,7 @@
       "imports": [],
       "exports": [
         "normalizeApiOrigin",
-        "AYROVI_API_ORIGIN"
+        "ZAYROVI_API_ORIGIN"
       ],
       "controls": [],
       "icons": [],
@@ -21935,9 +21935,9 @@
       "sha256": "d7d250469528024c09b2da767ea4012ab23ac1e8c92245961d043038d40d9042",
       "lines": 260,
       "imports": [
-        "../ayrovix/types",
-        "../ayrovix/services/mediaIsolation",
-        "../ayrovix/services/productAttributes",
+        "../zayrovix/types",
+        "../zayrovix/services/mediaIsolation",
+        "../zayrovix/services/productAttributes",
         "./types"
       ],
       "exports": [
@@ -22625,7 +22625,7 @@
         "../commerce/useCommercePolicy",
         "../commerce/paymentMethods",
         "../hooks/useBodyScrollLock",
-        "../ayrovix/services/mediaIsolation",
+        "../zayrovix/services/mediaIsolation",
         "../types",
         "./BagPage",
         "./types"
@@ -22689,10 +22689,10 @@
       "imports": [
         "react",
         "../i18n/LocaleContext",
-        "../ayrovix/types",
-        "../ayrovix/services/productSelection",
-        "../ayrovix/services/lensApi",
-        "../ayrovix/types",
+        "../zayrovix/types",
+        "../zayrovix/services/productSelection",
+        "../zayrovix/services/lensApi",
+        "../zayrovix/types",
         "./ProductPage",
         "./adapter",
         "./types"
@@ -23366,7 +23366,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/styles/ayrovi-extracted-typography.css",
+      "file": "client/src/styles/zayrovi-extracted-typography.css",
       "domain": "shell-content",
       "sha256": "b50c94515ba65a7e432422ca537358e241e92484a777aafe588a9c86d79e727a",
       "lines": 224,
@@ -23403,7 +23403,7 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/styles/ayrovix-theme.css",
+      "file": "client/src/styles/zayrovix-theme.css",
       "domain": "shell-content",
       "sha256": "4efca60e9d465b7c9e61a84106aee741516be373e6fba44de70af2f458b0820a",
       "lines": 94,
@@ -23467,7 +23467,7 @@
         "#1c5db5"
       ],
       "fontDeclarations": [
-        "font-family: var(--ayrovi-font-display)"
+        "font-family: var(--zayrovi-font-display)"
       ],
       "apiReferences": []
     },
@@ -23502,7 +23502,7 @@
       "colors": [],
       "fontDeclarations": [
         "font-family:var(--ay-font-stack)",
-        "font-family:var(--ayrovi-font-display)"
+        "font-family:var(--zayrovi-font-display)"
       ],
       "apiReferences": []
     },
@@ -23518,7 +23518,7 @@
       "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [
-        "font-family:var(--ayrovi-font-body)"
+        "font-family:var(--zayrovi-font-body)"
       ],
       "apiReferences": []
     },

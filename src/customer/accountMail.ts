@@ -4,6 +4,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID }
 import { QatafoDatabase } from '../db/database';
 import { MailInput, mailerReady, sendMail } from '../services/mailer';
 import { customerAuthReady, requireCustomerAuthSecret } from './auth';
+import { FROZEN_CRYPTO_LABELS } from '../../shared/formerBrand';
 
 export function customerPublicOrigin(): string {
   try {
@@ -15,7 +16,7 @@ export function customerPublicOrigin(): string {
 }
 export const passwordRecoveryReady = () => customerAuthReady() && mailerReady() && Boolean(customerPublicOrigin());
 const escape = (value: string) => value.replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!));
-const key = () => createHash('sha256').update(`ayrovi-auth-mail-v1\0${requireCustomerAuthSecret()}`).digest();
+const key = () => createHash('sha256').update(`${FROZEN_CRYPTO_LABELS.authMail}\0${requireCustomerAuthSecret()}`).digest();
 function seal(input: MailInput): string {
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', key(), iv);

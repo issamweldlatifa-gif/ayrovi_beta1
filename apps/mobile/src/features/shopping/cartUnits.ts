@@ -13,10 +13,10 @@ const safeCount = (value: unknown): number =>
   typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
 
 export function totalCartUnits(
-  ayroviUnits: number | null | undefined,
+  zayroviUnits: number | null | undefined,
   aywebsItems: readonly AyWebsCartItem[] | null | undefined,
 ): number {
-  return safeCount(ayroviUnits) + safeCount(pendingAyWebsUnits(aywebsItems ?? []));
+  return safeCount(zayroviUnits) + safeCount(pendingAyWebsUnits(aywebsItems ?? []));
 }
 
 /** Texte du badge : rien à 0, « 99+ » au-delà de 99. */

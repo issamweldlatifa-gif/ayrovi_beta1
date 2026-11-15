@@ -3,14 +3,14 @@ import request from 'supertest';
 import sharp from 'sharp';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { QatafoDatabase } from '../src/db/database';
-import type { AyrovixCandidate } from '../src/ayrovix/types';
+import type { ZayrovixCandidate } from '../src/zayrovix/types';
 
-vi.mock('../src/ayrovix/services/lensEngine', () => ({ recognizeImage: vi.fn() }));
+vi.mock('../src/zayrovix/services/lensEngine', () => ({ recognizeImage: vi.fn() }));
 vi.mock('../src/services/imageIsolation', () => ({ warmIsolation: vi.fn() }));
 vi.mock('../src/services/imageComposition', () => ({ warmComposition: vi.fn() }));
 
-import { createAyrovixRouter } from '../src/ayrovix/routes';
-import { recognizeImage } from '../src/ayrovix/services/lensEngine';
+import { createZayrovixRouter } from '../src/zayrovix/routes';
+import { recognizeImage } from '../src/zayrovix/services/lensEngine';
 import { SmartLinkScraper } from '../src/scraper/scraper';
 
 const recognizeMock = vi.mocked(recognizeImage);
@@ -22,13 +22,13 @@ const db = {
 const scraper = new SmartLinkScraper();
 const app = express();
 app.use(express.json());
-app.use('/api/ayrovix', createAyrovixRouter(db, scraper));
+app.use('/api/zayrovix', createZayrovixRouter(db, scraper));
 
 let image: Buffer;
 let previousKey: string | undefined;
 let previousAlias: string | undefined;
 
-function candidate(id: string, title: string, sourceUrl: string, match: number): AyrovixCandidate {
+function candidate(id: string, title: string, sourceUrl: string, match: number): ZayrovixCandidate {
   return {
     id,
     kind: 'external',
@@ -51,7 +51,7 @@ function candidate(id: string, title: string, sourceUrl: string, match: number):
   };
 }
 
-function recognition(matches: AyrovixCandidate[]) {
+function recognition(matches: ZayrovixCandidate[]) {
   return {
     matches,
     matchesError: null,
@@ -91,17 +91,17 @@ describe('Lens /analyze-image — découverte PRODUCT sans scraping groupé', ()
     ]));
 
     const response = await request(app)
-      .post('/api/ayrovix/analyze-image')
+      .post('/api/zayrovix/analyze-image')
       .attach('image', image, { filename: 'product.png', contentType: 'image/png' });
 
     expect(response.status).toBe(200);
     expect(response.body.data.discovery).toEqual({ mode: 'PRODUCT_LINK_ADMISSION', merchantPagesRead: 0 });
     expect(response.body.data.liveStock).toEqual({ fetched: 0, cacheHits: 0, applied: 0, budget: 0 });
-    expect(response.body.data.candidates.map((row: AyrovixCandidate) => row.sourceUrl)).toEqual([
+    expect(response.body.data.candidates.map((row: ZayrovixCandidate) => row.sourceUrl)).toEqual([
       'https://www.zalando.fr/baskets-homme-AB1234.html',
       'https://www.amazon.com/dp/B0ABC12345?th=1&psc=1',
     ]);
-    for (const row of response.body.data.candidates as AyrovixCandidate[]) {
+    for (const row of response.body.data.candidates as ZayrovixCandidate[]) {
       expect(row.productPageType).toBe('PRODUCT');
       expect(row.productLinkStatus).toBe('VERIFIED');
       expect(row.availability).toBe('unknown');
@@ -128,7 +128,7 @@ describe('Lens /analyze-image — découverte PRODUCT sans scraping groupé', ()
     ]));
 
     const response = await request(app)
-      .post('/api/ayrovix/analyze-image')
+      .post('/api/zayrovix/analyze-image')
       .set('accept', 'text/event-stream')
       .attach('image', image, { filename: 'product.png', contentType: 'image/png' });
 

@@ -1,22 +1,22 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
-  AyroviTrash, AyroviSettings, AyroviWallet, AyroviPie, AyroviHeadset,
-  AyroviMessage, AyroviArabe, AyroviPinArc, AyroviBagFace, AyroviShieldUser,
-} from '../client/src/components/icons/ayrovi/catalog';
+  ZayroviTrash, ZayroviSettings, ZayroviWallet, ZayroviPie, ZayroviHeadset,
+  ZayroviMessage, ZayroviArabe, ZayroviPinArc, ZayroviBagFace, ZayroviShieldUser,
+} from '../client/src/components/icons/zayrovi/catalog';
 
 export function renderAll(): string {
   const icons: Array<[string, React.ComponentType<any>]> = [
-    ['Supprimer', AyroviTrash],
-    ['Paramètres', AyroviSettings],
-    ['Portefeuille', AyroviWallet],
-    ['Rapports', AyroviPie],
-    ['Support', AyroviHeadset],
-    ['Message', AyroviMessage],
-    ['Arabe', AyroviArabe],
-    ['Localisation', AyroviPinArc],
-    ['Shopping 26', AyroviBagFace],
-    ['Confidentialité 20', AyroviShieldUser],
+    ['Supprimer', ZayroviTrash],
+    ['Paramètres', ZayroviSettings],
+    ['Portefeuille', ZayroviWallet],
+    ['Rapports', ZayroviPie],
+    ['Support', ZayroviHeadset],
+    ['Message', ZayroviMessage],
+    ['Arabe', ZayroviArabe],
+    ['Localisation', ZayroviPinArc],
+    ['Shopping 26', ZayroviBagFace],
+    ['Confidentialité 20', ZayroviShieldUser],
   ];
   const cell = 120;
   const cols = 5;

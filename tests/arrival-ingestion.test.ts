@@ -114,7 +114,7 @@ function createHarness(autoRunJobs = true): Harness {
   ensureBootstrapAdmin(db);
   const admin = db.get<any>('SELECT * FROM admin_users ORDER BY created_at LIMIT 1');
   const session = createAdminSession(db, admin);
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-arrival-ingestion-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-arrival-ingestion-'));
   const adapter = new DeterministicIngestionAdapter();
   const module = createArrivalIngestionModule(db, { aiAdapter: adapter, sourceRoot: root, autoRunJobs });
   const app = express();
@@ -366,7 +366,7 @@ describe('Administration CRM Arrival AI ingestion', () => {
     expect(locked.status).toBe(409);
 
     expect(harness.adapter.requests.length).toBe(3);
-    expect(harness.adapter.requests.every((item) => item.workload === 'arrival-ingestion' && item.outputSchema?.name === 'ayrovi_arrival_product_extraction')).toBe(true);
+    expect(harness.adapter.requests.every((item) => item.workload === 'arrival-ingestion' && item.outputSchema?.name === 'zayrovi_arrival_product_extraction')).toBe(true);
     expect(harness.adapter.requests.every((item) => item.context?.userIdHash?.length === 64 && !JSON.stringify(item).includes('Ahmed Ben Ali'))).toBe(true);
     const pdfRequest = harness.adapter.requests.find((item) => item.instructions.includes('Store profile: TEMU'))!;
     expect(pdfRequest.messages[0].content.some((part) => part.type === 'image')).toBe(true);

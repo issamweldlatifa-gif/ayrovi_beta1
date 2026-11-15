@@ -1,0 +1,114 @@
+import { randomUUID } from 'node:crypto';
+import type { QatafoDatabase } from '../db/database';
+import type { ZayrovixChannel } from './types';
+
+/**
+ * ZAYROVIX · journal d'usage minimaliste (analytics produit, pas de données personnelles).
+ * Sert :
+ *  1) à la carte « ZAYROVIX » du tableau Rapports admin,
+ *  2) au taux de succès (identifications qui ont produit au moins un candidat).
+ * Jamais : image, contenu, IP ni données personnelles.
+ */
+
+let ensured = false;
+
+export function ensureZayrovixEventsTable(db: QatafoDatabase): void {
+  if (ensured) return;
+  // Migrate legacy table that only allowed ('image','url','qr') to also allow 'text'.
+  // SQLite does not support dropping a CHECK via ALTER, so we recreate if needed.
+  try {
+    const existing = db.get<any>(`SELECT sql FROM sqlite_master WHERE type='table' AND name='zayrovix_events'`);
+    if (existing?.sql && !existing.sql.includes("'text'")) {
+      db.run(`CREATE TABLE IF NOT EXISTS zayrovix_events_new (
+        id TEXT PRIMARY KEY,
+        channel TEXT NOT NULL CHECK(channel IN ('image','url','qr','text')),
+        brand TEXT,
+        query TEXT,
+        candidates_count INTEGER NOT NULL DEFAULT 0,
+        chosen INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      )`);
+      db.run(`INSERT OR IGNORE INTO zayrovix_events_new SELECT * FROM zayrovix_events`);
+      db.run(`DROP TABLE zayrovix_events`);
+      db.run(`ALTER TABLE zayrovix_events_new RENAME TO zayrovix_events`);
+    }
+  } catch { /* best-effort migration; fresh DB will just create correctly */ }
+  db.run(`CREATE TABLE IF NOT EXISTS zayrovix_events (
+    id TEXT PRIMARY KEY,
+    channel TEXT NOT NULL CHECK(channel IN ('image','url','qr','text')),
+    brand TEXT,
+    query TEXT,
+    candidates_count INTEGER NOT NULL DEFAULT 0,
+    chosen INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL
+  )`);
+  db.run('CREATE INDEX IF NOT EXISTS idx_zayrovix_events_created ON zayrovix_events(created_at)');
+  ensured = true;
+}
+
+export function recordZayrovixEvent(
+  db: QatafoDatabase,
+  input: { channel: ZayrovixChannel; brand?: string | null; query?: string | null; candidatesCount: number; chosen?: boolean },
+): string {
+  ensureZayrovixEventsTable(db);
+  const id = `ayx_${randomUUID()}`;
+  db.run(
+    'INSERT INTO zayrovix_events (id,channel,brand,query,candidates_count,chosen,created_at) VALUES (?,?,?,?,?,?,?)',
+    id,
+    input.channel,
+    (input.brand || '').slice(0, 80) || null,
+    (input.query || '').slice(0, 200) || null,
+    Math.max(0, input.candidatesCount | 0),
+    input.chosen ? 1 : 0,
+    new Date().toISOString(),
+  );
+  return id;
+}
+
+export function markZayrovixChosen(db: QatafoDatabase, eventId: string): void {
+  if (!/^ayx_[a-zA-Z0-9-]{10,64}$/.test(eventId)) return;
+  ensureZayrovixEventsTable(db);
+  db.run('UPDATE zayrovix_events SET chosen=1 WHERE id=?', eventId);
+}
+
+export interface ZayrovixStats {
+  last7d: { total: number; image: number; url: number; qr: number; text: number; withCandidates: number; chosen: number; matchRate: number };
+  topBrands: Array<{ brand: string; count: number }>;
+  topQueries: Array<{ query: string; count: number }>;
+}
+
+export function getZayrovixStats(db: QatafoDatabase): ZayrovixStats {
+  ensureZayrovixEventsTable(db);
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const totals = db.get<any>(
+    `SELECT COUNT(*) total,
+            SUM(CASE WHEN channel='image' THEN 1 ELSE 0 END) image,
+            SUM(CASE WHEN channel='url' THEN 1 ELSE 0 END) url,
+            SUM(CASE WHEN channel='qr' THEN 1 ELSE 0 END) qr,
+            SUM(CASE WHEN channel='text' THEN 1 ELSE 0 END) text,
+            SUM(CASE WHEN candidates_count>0 THEN 1 ELSE 0 END) withCandidates,
+            SUM(chosen) chosen
+     FROM zayrovix_events WHERE created_at>=?`, since,
+  ) || {};
+  const total = Number(totals.total || 0);
+  return {
+    last7d: {
+      total,
+      image: Number(totals.image || 0),
+      url: Number(totals.url || 0),
+      qr: Number(totals.qr || 0),
+      text: Number(totals.text || 0),
+      withCandidates: Number(totals.withCandidates || 0),
+      chosen: Number(totals.chosen || 0),
+      matchRate: total ? Math.round((Number(totals.withCandidates || 0) / total) * 100) : 0,
+    },
+    topBrands: db.all<any>(
+      `SELECT brand, COUNT(*) count FROM zayrovix_events
+       WHERE brand IS NOT NULL AND created_at>=? GROUP BY brand ORDER BY count DESC LIMIT 5`, since,
+    ),
+    topQueries: db.all<any>(
+      `SELECT query, COUNT(*) count FROM zayrovix_events
+       WHERE query IS NOT NULL AND created_at>=? GROUP BY query ORDER BY count DESC LIMIT 5`, since,
+    ),
+  };
+}

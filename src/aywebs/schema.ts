@@ -201,16 +201,16 @@ CREATE INDEX IF NOT EXISTS idx_ayweb_cart_items_status ON ayweb_cart_items(statu
 
 /* Stable identity for the AYWEBs → ZAYROVI cart bridge. The customer note remains
  * presentation/audit text only; editing it must not detach checkout safety. */
-CREATE TABLE IF NOT EXISTS ayweb_cart_ayrovi_links (
+CREATE TABLE IF NOT EXISTS ayweb_cart_zayrovi_links (
   aywebs_item_id TEXT PRIMARY KEY NOT NULL,
-  ayrovi_cart_item_id TEXT NOT NULL UNIQUE,
+  zayrovi_cart_item_id TEXT NOT NULL UNIQUE,
   session_id TEXT NOT NULL DEFAULT '',
   account_id TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_ayweb_cart_ayrovi_link_session
-  ON ayweb_cart_ayrovi_links(session_id, account_id);
+CREATE INDEX IF NOT EXISTS idx_ayweb_cart_zayrovi_link_session
+  ON ayweb_cart_zayrovi_links(session_id, account_id);
 
 /* Stable Add-to-Cart retries: one durable result per caller key, independent of
  * line-level duplicate merging. Stored snapshots replay the first outcome. */
@@ -317,7 +317,7 @@ CREATE TABLE IF NOT EXISTS ayweb_order_links (
   ayweb_order_id TEXT NOT NULL REFERENCES ayweb_orders(id) ON DELETE CASCADE,
   /* Pont vers l'OMS ZAYROVI existant : la commande AYWEBs peut être transférée
      dans le checkout ZAYROVI, sans jamais créer un second système de commande. */
-  link_type TEXT NOT NULL DEFAULT 'AYROVI_ORDER' CHECK(link_type IN ('AYROVI_ORDER','AYROVI_CART_ITEM','PURCHASE_REQUEST','WORKER_PACKAGE')),
+  link_type TEXT NOT NULL DEFAULT 'ZAYROVI_ORDER' CHECK(link_type IN ('ZAYROVI_ORDER','ZAYROVI_CART_ITEM','PURCHASE_REQUEST','WORKER_PACKAGE')),
   external_id TEXT NOT NULL,
   external_number TEXT NOT NULL DEFAULT '',
   detail TEXT NOT NULL DEFAULT '{}',
@@ -447,7 +447,7 @@ CREATE TABLE IF NOT EXISTS ayweb_checkout_fees (
   label TEXT NOT NULL DEFAULT '',
   amount_tnd REAL NOT NULL DEFAULT 0,
   currency TEXT NOT NULL DEFAULT 'TND',
-  source TEXT NOT NULL DEFAULT 'ayrovi',
+  source TEXT NOT NULL DEFAULT 'zayrovi',
   computed_at TEXT NOT NULL,
   detail TEXT NOT NULL DEFAULT '{}'
 );
@@ -579,7 +579,7 @@ export function syncAyWebsStoreRegistry(db: QatafoDatabase): { stores: number; c
 export function ensureAyWebsSchema(db: QatafoDatabase): void {
   if (initialized.has(db)) {
     const bridgeLinksTable = db.get<{ name: string }>(
-      `SELECT name FROM sqlite_master WHERE type='table' AND name='ayweb_cart_ayrovi_links'`,
+      `SELECT name FROM sqlite_master WHERE type='table' AND name='ayweb_cart_zayrovi_links'`,
     );
     if (bridgeLinksTable) return;
   }
@@ -587,16 +587,16 @@ export function ensureAyWebsSchema(db: QatafoDatabase): void {
   // This durable mapping is a checkout safety boundary. `runSchema` is best-effort
   // for legacy migrations, so explicitly backfill it even if an earlier bootstrap
   // marked this DB initialized before the table was introduced.
-  db.run(`CREATE TABLE IF NOT EXISTS ayweb_cart_ayrovi_links (
+  db.run(`CREATE TABLE IF NOT EXISTS ayweb_cart_zayrovi_links (
     aywebs_item_id TEXT PRIMARY KEY NOT NULL,
-    ayrovi_cart_item_id TEXT NOT NULL UNIQUE,
+    zayrovi_cart_item_id TEXT NOT NULL UNIQUE,
     session_id TEXT NOT NULL DEFAULT '',
     account_id TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_ayweb_cart_ayrovi_link_session
-    ON ayweb_cart_ayrovi_links(session_id, account_id)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_ayweb_cart_zayrovi_link_session
+    ON ayweb_cart_zayrovi_links(session_id, account_id)`);
   try {
     // Additif uniquement (§42) : colonne d'adresse de livraison du client,
     // collectée au checkout (§21) — jamais déduite, jamais inventée.

@@ -201,7 +201,7 @@ export function computeAyWebsCheckoutPreview(
       detail: { lines: lines.length, units: lines.reduce((sum, line) => sum + line.quantity, 0) },
     },
     {
-      kind: 'AYROVI_SERVICE', code: 'AYROVI_SERVICE_FEE',
+      kind: 'ZAYROVI_SERVICE', code: 'ZAYROVI_SERVICE_FEE',
       labelFr: 'Service ZAYROVI', labelAr: 'خدمة ZAYROVI',
       amountTnd: serviceFeeTnd, currency: 'TND', uncertain: false,
       detail: { commissionPercent: rules.commissionPercent, minimumCommissionTnd: rules.minimumCommissionTND },

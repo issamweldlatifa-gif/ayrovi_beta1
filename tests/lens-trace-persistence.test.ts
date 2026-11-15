@@ -2,7 +2,7 @@
 // survivre au redémarrage — le Map en mémoire (≤500) ne suffit plus. Écriture
 // best-effort : une panne DB ne casse jamais le pipeline Lens.
 import { beforeEach, describe, expect, it } from 'vitest';
-import { endTrace, lensPerformanceReport, registerLensTracePersistence, startTrace } from '../src/ayrovix/services/lensPerformanceTrace';
+import { endTrace, lensPerformanceReport, registerLensTracePersistence, startTrace } from '../src/zayrovix/services/lensPerformanceTrace';
 
 function memoryStore() {
   const rows: Array<{ requestId: string; traceJson: string; totalBackendMs: number | null; createdAt: string }> = [];

@@ -13,23 +13,23 @@ beforeEach(() => {
 afterEach(() => { jest.restoreAllMocks(); jest.clearAllMocks(); });
 it('queues a warm link received before the navigator mounts and flushes it exactly once', async () => {
   const hook = renderHook<void, { enabled: boolean }>(({ enabled }) => useDeepLinkRouting(enabled), { initialProps: { enabled: false } });
-  act(() => receive({ url: 'https://ayrovi.tn/catalog' }));
+  act(() => receive({ url: 'https://zayrovi.com/catalog' }));
   expect(router.push).not.toHaveBeenCalled();
   hook.rerender({ enabled: true });
   expect(router.push).toHaveBeenCalledWith('/catalog');
-  await act(async () => resolveInitial('https://ayrovi.tn/orders'));
+  await act(async () => resolveInitial('https://zayrovi.com/orders'));
   expect(router.push).toHaveBeenCalledTimes(1);
   hook.unmount(); expect(remove).toHaveBeenCalledTimes(1);
 });
 it('retains cold links, rejects foreign hosts, and ignores late OS replies after unmount', async () => {
   const hook = renderHook<void, { enabled: boolean }>(({ enabled }) => useDeepLinkRouting(enabled), { initialProps: { enabled: false } });
   act(() => receive({ url: 'https://attacker.example/catalog' }));
-  await act(async () => resolveInitial('https://ayrovi.tn/orders'));
+  await act(async () => resolveInitial('https://zayrovi.com/orders'));
   hook.rerender({ enabled: true });
   expect(router.push).toHaveBeenCalledWith('/orders');
   hook.unmount();
   const next = renderHook(() => useDeepLinkRouting(true));
   next.unmount();
-  await act(async () => resolveInitial('https://ayrovi.tn/catalog'));
+  await act(async () => resolveInitial('https://zayrovi.com/catalog'));
   expect(router.push).toHaveBeenCalledTimes(1);
 });

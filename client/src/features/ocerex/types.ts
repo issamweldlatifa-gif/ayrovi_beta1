@@ -29,7 +29,7 @@ export interface OcerexExtraction {
   platform: string | null;
   sourceUrl: string | null;
   code: OcerexCode;
-  ayroviPrice: number | null;
+  zayroviPrice: number | null;
   pricingVersion: number | null;
   supportedCurrencies: string[];
   resolved?: {

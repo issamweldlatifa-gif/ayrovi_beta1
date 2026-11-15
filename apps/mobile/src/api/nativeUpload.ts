@@ -89,7 +89,7 @@ export async function apiUploadFileData<T>(
       signal: controller.signal,
       headers: {
         Accept: 'application/json',
-        'x-ayrovi-native': '1',
+        'x-zayrovi-native': '1',
         ...authHeaders('POST'),
         ...options.headers,
       },

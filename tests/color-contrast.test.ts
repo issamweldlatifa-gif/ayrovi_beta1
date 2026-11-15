@@ -110,7 +110,7 @@ describe('contraste — les feuilles respectent le rôle de chaque token', () =>
   const CONTROL_SHEETS: Array<[string, string[]]> = [
     ['client/src/admin/admin.css', ['--admin-line-control']],
     ['client/src/shop/shop.css', ['--s-line-control']],
-    ['client/src/ayrovix/components/lens-camera.css', ['--ay-e-line-control']],
+    ['client/src/zayrovix/components/lens-camera.css', ['--ay-e-line-control']],
   ];
 
   test.each(CONTROL_SHEETS)('%s : les contrôles utilisent bien le token de contrôle', (file, tokens) => {

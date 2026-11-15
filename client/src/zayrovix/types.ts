@@ -1,0 +1,272 @@
+/** ZAYROVIX — contrats client (miroir 1:1 de src/zayrovix/types.ts). */
+
+export interface ZayrovixDetectedProductItem {
+  name: string;
+  brand: string | null;
+  category: string;
+  subcategory?: string | null;
+  price: number | null;
+  currency: string | null;
+  priceTnd?: number | null;
+  box?: [number, number, number, number] | null;
+  color?: string[];
+  pattern?: string | null;
+  material?: string | null;
+}
+
+export interface ZayrovixPricingBlock {
+  sale_price: number | null;
+  original_price: number | null;
+  shipping_price: number | null;
+  total_price: number | null;
+  currency: string | null;
+  discount_percent: number | null;
+}
+
+export interface ZayrovixIdentification {
+  input_kind: 'product_photo' | 'product_screenshot' | 'cart_screenshot' | 'barcode' | 'other';
+  category: string;
+  brand: string | null;
+  model: string | null;
+  color: string[];
+  visible_text: string[];
+  possible_model_codes: string[];
+  description: string;
+  confidence: number;
+  detected_price: {
+    amount: number;
+    currency: string;
+    label: 'none' | 'product_price' | 'old_price' | 'cart_total';
+    confidence: number;
+  };
+  pricing?: ZayrovixPricingBlock;
+  products?: ZayrovixDetectedProductItem[];
+  url?: string | null;
+  seller?: string | null;
+}
+
+/** Promo moteur (management 23/09/2026) : prix remisé + original barré + badge. */
+export interface ZayrovixPromo {
+  percent: number;
+  label: string;
+  priceTnd: number;
+  originalPriceTnd: number;
+}
+
+export interface ZayrovixCandidate {
+  id: string;
+  kind: 'catalog' | 'external';
+  title: string;
+  /** Promo du jour côté serveur — prix déjà remisé, original conservé. */
+  promo?: ZayrovixPromo | null;
+  /** Optional descriptive text supplied by the merchant/search provider. */
+  description?: string | null;
+  brand: string | null;
+  model: string | null;
+  colors: string[];
+  sizes: string[];
+  source: string;
+  sourceUrl: string;
+  /** Admission Lens : type et preuve du LIEN, jamais une preuve de prix/stock. */
+  productPageType?: 'PRODUCT';
+  productLinkStatus?: 'VERIFIED';
+  productLinkVerification?: 'PROVIDER_PRODUCT_EVIDENCE_AND_REGISTERED_PRODUCT_URL';
+  discoveryDataStatus?: 'TITLE_IMAGE_PRICE' | 'TITLE_IMAGE' | 'TITLE_PRICE' | 'TITLE_ONLY';
+  image: string;
+  images?: string[];
+  /** Jeu d'images PAR COULEUR (24/09/2026) — le swatch change toute la galerie. */
+  colorImages?: Record<string, string[]> | null;
+  price: number | null;
+  currency: string | null;
+  priceTnd: number | null;
+  /**
+   * VÉRITÉ MARCHANDE (02/10/2026) — d'où vient `price` :
+   *  'merchant' : lu sur la page produit derrière le lien (JSON-LD, meta, variante) ;
+   *  'search'   : extrait SerpApi, en attendant la lecture de la page.
+   */
+  priceOrigin?: 'merchant' | 'search';
+  /** Prix barré publié par le marchand (strictement > price), jamais déduit. */
+  originalPrice?: number | null;
+  /** Le même prix barré, passé par le calculateur ZAYROVI (tout inclus). */
+  originalPriceTnd?: number | null;
+  /**
+   * PREUVE D'ACHAT (02/10/2026) — la page marchande a-t-elle été lue, et que
+   * dit-elle du stock par variante ? Une fiche sans cette preuve n'atteint pas
+   * le client : on ne montre pas ce qu'on ne peut pas acheter.
+   */
+  sourceRead?: { at: string; variantsAvailable: number; variantsAvailableWithColor?: number; variantsUnavailable: number; variantsUnknown: number } | null;
+  priceToken?: string | null;
+  priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
+  /** Preuve de disponibilité marchand (niveaux de confiance 24/09/2026). */
+  availability?: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
+  /**
+   * État du produit TEL QUE LA SOURCE L'ÉCRIT (ex. « New », « Refurbished »).
+   * Il prime sur toute détection par mots-clés : ce que le marchand affirme
+   * vaut mieux que ce que nous devinons dans son titre.
+   */
+  sourceCondition?: string | null;
+  rating?: number | null;
+  ratingCount?: number | null;
+  ratingKind?: 'merchant' | 'match';
+  match: number;
+  /** GLOBAL DISCOVERY — un même produit trouvé chez plusieurs sources du web mondial
+   *  devient UN candidat avec plusieurs offres (jamais quatre doublons à la suite). */
+  offerCount?: number;
+  offers?: Array<{
+    source: string;
+    sourceUrl: string;
+    price: number | null;
+    currency: string | null;
+    priceTnd: number | null;
+    promo?: ZayrovixPromo | null;
+  }>;
+}
+
+export interface ZayrovixVariantOption {
+  id: string | null;
+  label: string;
+  size: string | null;
+  color: string | null;
+  /** Eligible for a variant-specific choice; not a live stock guarantee. */
+  available: boolean;
+  /**
+   * Stock RÉELLEMENT établi pour cette variante (25/09/2026).
+   * Trois états honnêtes : `available` = offre marchande constatée,
+   * `unavailable` = rupture constatée, `unknown` = la source ne dit rien.
+   * `unknown` n'est JAMAIS promu en `available`, ni par le client ni par le serveur.
+   */
+  availability?: 'available' | 'unavailable' | 'unknown';
+  price: number | null;
+  currency: string | null;
+  priceTnd: number | null;
+  priceToken?: string | null;
+}
+
+export interface ZayrovixProduct {
+  title: string;
+  brand: string | null;
+  model: string | null;
+  description: string;
+  image: string;
+  images: string[];
+  /** Jeu d'images PAR COULEUR (24/09/2026) — le swatch change toute la galerie. */
+  colorImages?: Record<string, string[]> | null;
+  source: string;
+  sourceUrl: string;
+  price: number | null;
+  currency: string | null;
+  priceTnd: number | null;
+  exchangeRate: number | null;
+  /** Prix barré publié par le marchand sur sa fiche (strictement > price). */
+  originalPrice?: number | null;
+  originalPriceTnd?: number | null;
+  promo?: ZayrovixPromo | null;
+  colors: string[];
+  sizes: string[];
+  optionLabel?: string | null;
+  variantOptions?: ZayrovixVariantOption[];
+  availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
+  /** Timestamp of the exact merchant-page fetch that supplied availability. */
+  availabilityCheckedAt?: string | null;
+  /** Expiration of the server's source-backed stock contract. */
+  availabilityExpiresAt?: string | null;
+  priceVerified?: boolean;
+  priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
+  priceToken?: string | null;
+  verificationProvider?: string;
+  verificationMethod?: string;
+  verificationFailureCode?: string | null;
+  rating?: number | null;
+  ratingCount?: number | null;
+  ratingKind?: 'merchant' | 'match' | 'listing-quality';
+}
+
+export interface ZayrovixDetectedPrice {
+  sourcePrice: number;
+  sourceCurrency: string;
+  convertedPriceTND: number | null;
+  serviceFeeTND: number | null;
+  estimatedShippingTND: number | null;
+  totalPriceTND: number | null;
+  title: string;
+  brand: string | null;
+  isCartScreenshot: boolean;
+  imageUrl: string | null;
+  priceToken?: string | null;
+}
+
+export interface ZayrovixImageResult {
+  identification: ZayrovixIdentification;
+  query: string;
+  candidates: ZayrovixCandidate[];
+  eventId: string;
+  detectedPrice?: ZayrovixDetectedPrice | null;
+  message?: string;
+  /** Fiches écartées par le serveur : page marchande non lue, prix non lu, rupture… (02/10/2026). */
+  excluded?: { count: number; reasons: Record<string, number> } | null;
+}
+
+export interface ZayrovixUrlResult {
+  product: ZayrovixProduct;
+  alternates: ZayrovixCandidate[];
+  eventId: string;
+  fallback?: boolean;
+}
+
+export interface ZayrovixReviewRequest {
+  id: string;
+  status: 'PENDING' | 'IN_REVIEW' | 'QUOTED' | 'REJECTED' | 'CANCELLED';
+  title: string;
+  sourceUrl: string;
+  imageUrl: string;
+  source: string;
+  lensPrice: number | null;
+  lensCurrency: string | null;
+  desiredSize: string;
+  desiredColor: string;
+  quotedPrice: number | null;
+  quotedCurrency: string | null;
+  verifiedVariant: string;
+  verifiedUrl: string;
+  customerMessage: string;
+  createdAt: string;
+  updatedAt: string;
+  duplicate?: boolean;
+}
+
+/** Charge utile transmise au Calculator/panier ZAYROVI existant (aucun flow modifié). */
+export interface ZayrovixHistoryItem {
+  id: string;
+  kind: 'image' | 'url' | 'qr' | 'barcode' | 'code' | 'text';
+  inputValue: string;
+  queryLabel: string;
+  title: string;
+  imageUrl: string;
+  sourceUrl: string;
+  source: string;
+  price: number | null;
+  currency: string | null;
+  verificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
+  resultsCount: number;
+  createdAt: string;
+}
+
+export interface ZayrovixOrderPayload {
+  store: 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic';
+  externalId: string | null;
+  url: string;
+  title: string;
+  imageUrl: string;
+  sourcePrice: number;
+  sourceCurrency: string;
+  /** Ignoré par le serveur (le Calculator recalcule) — fourni pour compatibilité AddToCartPayload. */
+  priceTND?: number;
+  variant?: string;
+  requestedSize?: string;
+  requestedColor?: string;
+  customerNote?: string;
+  referenceUrl?: string;
+  priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
+  priceToken: string;
+  quantity: number;
+}

@@ -4,14 +4,14 @@
 
 Le code du repérage réel des produits est intégré au Lens mobile, séparément de la recherche marchande. L'interface, les contrats, le transport et les protections ont été testés. **L'acceptation du repérage sur de vraies photos avec un fournisseur réel reste à faire : le fournisseur vision actif d'AI Core n'est pas configuré dans cet environnement.**
 
-Vérification réelle sur le serveur reconstruit : `POST /api/ayrovix/localize` avec une photo JPEG valide → **HTTP 503, `LOCALIZATION_UNAVAILABLE`**. Aucun cadre fixe n'est présenté comme un résultat de détection. La recherche de la photo entière reste le repli initial, explicitement annoncé. Ne pas confondre les tests avec doubles de fournisseur avec une validation de précision du modèle.
+Vérification réelle sur le serveur reconstruit : `POST /api/zayrovix/localize` avec une photo JPEG valide → **HTTP 503, `LOCALIZATION_UNAVAILABLE`**. Aucun cadre fixe n'est présenté comme un résultat de détection. La recherche de la photo entière reste le repli initial, explicitement annoncé. Ne pas confondre les tests avec doubles de fournisseur avec une validation de précision du modèle.
 
 ## Changements
 
 ### Sélection de produits
 
 - Suppression de l'ancien composant de sélection manuelle : plus de PanResponder de déplacement/redimensionnement, de coins à tirer ou de points blancs de sélection dans la photo prise/importée.
-- Nouveau `POST /api/ayrovix/localize` : image réellement envoyée à la capacité vision du fournisseur actif d'AI Core, schéma structuré de produits/boîtes/confiance. Il ne lit pas les coordonnées depuis les correspondances SerpApi.
+- Nouveau `POST /api/zayrovix/localize` : image réellement envoyée à la capacité vision du fournisseur actif d'AI Core, schéma structuré de produits/boîtes/confiance. Il ne lit pas les coordonnées depuis les correspondances SerpApi.
 - Repérage initial avant la première recherche : le plus grand produit validé est choisi. Un toucher dans les boîtes repérées choisit la plus petite boîte contenant ce point, afin de rendre les objets superposés accessibles.
 - Un toucher hors des produits connus demande un nouveau repérage ciblé au point exact. Réponse vide = aucun objet confirmé, pas un carré centré sur le doigt. Un échec du fournisseur est annoncé.
 - Flou réel `expo-image` sur la photo, avec une deuxième copie nette découpée dans la boîte du produit choisi. **Il s'agit d'une région rectangulaire de produit, pas d'un masque de segmentation au pixel ou d'un détourage de silhouette.** Les pixels hors de cette région sont floutés.

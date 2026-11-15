@@ -83,7 +83,7 @@ Gemini 3.5 Transcribe Live (STT only — no assistant)
   ↓  interim + one finalized transcript
 Claude ZAYROVI Agent
   ↓
-ZAYROVI Tools / AYROVIX / Orders / Tracking / CRM
+ZAYROVI Tools / ZAYROVIX / Orders / Tracking / CRM
   ↓  one authoritative final answer
 Gemini 3.1 Flash TTS streaming (voice rendering only)
   ↓

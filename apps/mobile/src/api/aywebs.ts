@@ -247,7 +247,7 @@ export interface AyWebsResolvedProduct {
   purchaseMode: string;
   integrationType: string;
   /** الحسبة التونسية — تصدر من الخادم وحدو، صفر حساب هنا. */
-  ayroviPricing: AyWebsPricing | null;
+  zayroviPricing: AyWebsPricing | null;
   /** المجموعات المنشورة من التاجر (لون، مقاس…) — الخادم يفرض الاختيار عليها (§13). */
   variantGroups: AyWebsVariantGroup[];
   /** الخيارات المنشورة مع سعرها بالدينار — نفس الّي تعرضه الخادم في `variant_details`. */
@@ -273,7 +273,7 @@ export function parseAyWebsResolvedProduct(payload: unknown): AyWebsResolvedProd
     });
   }
   const availability = isRecord(payload.availability) ? payload.availability : {};
-  const pricing = isRecord(payload.ayrovi_pricing) ? payload.ayrovi_pricing : null;
+  const pricing = isRecord(payload.zayrovi_pricing) ? payload.zayrovi_pricing : null;
   const breakdown = pricing && isRecord(pricing.breakdown) ? pricing.breakdown : null;
   return {
     productId: str(payload.product_id),
@@ -297,7 +297,7 @@ export function parseAyWebsResolvedProduct(payload: unknown): AyWebsResolvedProd
     },
     purchaseMode: str(payload.purchase_mode),
     integrationType: str(payload.integration_type),
-    ayroviPricing: pricing
+    zayroviPricing: pricing
       ? {
         totalTnd: numOrNull(pricing.total_tnd),
         pricingVersion: numOrNull(pricing.pricing_version),
@@ -716,7 +716,7 @@ export function ayWebsVariantKey(attributes: Record<string, string> | null | und
 
 export function parseAyWebsVariantOption(entry: unknown): AyWebsVariantOption {
   if (!isRecord(entry)) throw malformed('option de variante');
-  const pricing = isRecord(entry.ayrovi_pricing) ? entry.ayrovi_pricing : null;
+  const pricing = isRecord(entry.zayrovi_pricing) ? entry.zayrovi_pricing : null;
   const rawVariantUrl = str(entry.variant_url).trim();
   const rawEvSrc = str(entry.evidence_source).trim();
   const tiers = quantityTierList(entry.quantity_tiers);
@@ -1002,7 +1002,7 @@ export interface AyWebsCartItem {
   /** مجموع السطر بالدينار — من الخادم. */
   lineTotalTnd: number | null;
   /** `true` = نفس السطر موجود في سلّة ZAYROVI (جسر idempotent، بلا مضاعفة). */
-  linkedToAyrovi: boolean | null;
+  linkedToZayrovi: boolean | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1064,7 +1064,7 @@ export function parseAyWebsCartItem(entry: unknown): AyWebsCartItem {
     purchaseMode: str(entry.purchase_mode),
     checkoutReady: bool(entry.checkout_ready),
     lineTotalTnd: numOrNull(entry.line_total_tnd),
-    linkedToAyrovi: typeof entry.linked_to_ayrovi === 'boolean' ? entry.linked_to_ayrovi : null,
+    linkedToZayrovi: typeof entry.linked_to_zayrovi === 'boolean' ? entry.linked_to_zayrovi : null,
     createdAt: str(entry.created_at),
     updatedAt: str(entry.updated_at),
   };
@@ -1138,13 +1138,13 @@ export interface AyWebsAddOutcome {
   duplicate: boolean;
   idempotentReplay: boolean;
   /** `null` = الخادم ما رجّعش خبر الجسر (نسخة خادم قديمة) — ما نخمّنوش. */
-  ayrovi: { linked: boolean; cartItemId: string | null; quantity: number | null; reason: string } | null;
+  zayrovi: { linked: boolean; cartItemId: string | null; quantity: number | null; reason: string } | null;
   quoteUsed: boolean;
   sourceReread: boolean;
   rereadReason: string | null;
 }
 
-const parseAyroviLink = (raw: unknown): AyWebsAddOutcome['ayrovi'] => {
+const parseZayroviLink = (raw: unknown): AyWebsAddOutcome['zayrovi'] => {
   if (!isRecord(raw)) return null;
   return {
     linked: bool(raw.linked),
@@ -1200,7 +1200,7 @@ export async function addAyWebsCartItem(
     cart: parseAyWebsCart(data.cart ?? envelope.cart),
     duplicate: bool(data.duplicate),
     idempotentReplay: bool(data.idempotent_replay),
-    ayrovi: parseAyroviLink(data.ayrovi),
+    zayrovi: parseZayroviLink(data.zayrovi),
     quoteUsed: bool(data.quote_used),
     sourceReread: bool(data.source_reread),
     rereadReason: typeof data.reread_reason === 'string' ? data.reread_reason : null,
@@ -1296,16 +1296,16 @@ export interface AyWebsBridgeOutcome {
 }
 
 /**
- * الجسر إلى سلّة ZAYROVI (`POST /cart/bridge-to-ayrovi`).
+ * الجسر إلى سلّة ZAYROVI (`POST /cart/bridge-to-zayrovi`).
  *
  * الخادم يعيد التحقّق من المصدر قبل أي مزامنة؛ إذا لقى تغييراً يرجّع `409`
  * بالرمز `AYWEBS_SOURCE_VERIFICATION_REQUIRED` — والعرض يعرض السبب ويعاود
  * يقرا السلّة، ما يكمّلش على حالة قديمة.
  */
-export async function bridgeAyWebsCartToAyrovi(
+export async function bridgeAyWebsCartToZayrovi(
   options: AyWebsSessionOptions & { itemIds?: string[] },
 ): Promise<AyWebsBridgeOutcome> {
-  const envelope = await apiSendEnvelope<Record<string, unknown>>('POST', `${AYWEBS_BASE}/cart/bridge-to-ayrovi`, {
+  const envelope = await apiSendEnvelope<Record<string, unknown>>('POST', `${AYWEBS_BASE}/cart/bridge-to-zayrovi`, {
     body: { item_ids: options.itemIds ?? [] },
     headers: sessionHeaders(options.sessionId),
     signal: options.signal,

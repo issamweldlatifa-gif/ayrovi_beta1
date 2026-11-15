@@ -13,10 +13,10 @@
 | الكيان | المسار في الكود | يُقدَّم على | الدور |
 |---|---|---|---|
 | **AYWEBs** | `src/aywebs/` | `/api/v1/aywebs` (عمومي) · `/api/admin/aywebs` (إدارة) | وكيل الشراء: متاجر، التقاط، سلة AYWEBs، طلبات، جسر |
-| **AYROVIX** | `src/ayrovix/` | `/api/ayrovix` | البحث البصري (Lens) + **عقد السعر** (`priceQuote.ts`، `createAyrovixPriceToken`) + مراقبة الأسعار |
-| **Lens** | `src/ayrovix/services/{lensEngine,visualSearch,lensLiveStock}` | داخل AYROVIX | البحث بالصورة (Claude Vision + SerpApi Google Lens) — **ليس AYWEBs** |
+| **ZAYROVIX** | `src/zayrovix/` | `/api/zayrovix` | البحث البصري (Lens) + **عقد السعر** (`priceQuote.ts`، `createZayrovixPriceToken`) + مراقبة الأسعار |
+| **Lens** | `src/zayrovix/services/{lensEngine,visualSearch,lensLiveStock}` | داخل ZAYROVIX | البحث بالصورة (Claude Vision + SerpApi Google Lens) — **ليس AYWEBs** |
 
-**العلاقة:** AYWEBs لا يحسب الثمن لنفسه — ينادي محرّك التسعير المركزي `src/services/pricing.ts`، ويأخذ **رمز سعر** من AYROVIX قبل أن يعبر السطر الجسر إلى سلة ZAYROVI. «الثمن على الخادم فقط» تعني حرفياً: العميل يرسل رابطاً/منتجاً/متغيّرة/كمية — **ولا يرسل مبلغاً أبداً**.
+**العلاقة:** AYWEBs لا يحسب الثمن لنفسه — ينادي محرّك التسعير المركزي `src/services/pricing.ts`، ويأخذ **رمز سعر** من ZAYROVIX قبل أن يعبر السطر الجسر إلى سلة ZAYROVI. «الثمن على الخادم فقط» تعني حرفياً: العميل يرسل رابطاً/منتجاً/متغيّرة/كمية — **ولا يرسل مبلغاً أبداً**.
 
 ---
 
@@ -35,7 +35,7 @@
 | `errors.ts` | 18 435 | عقد الخطأ الموحّد (§44) |
 | `captureScript.ts` | 18 403 | **سكربت الالتقاط المُخدَّم للعميل** (ES5، بلا أسرار) |
 | `purchaseRequests.ts` | 17 838 | طلبات الشراء وطلبات المتجر |
-| `ayroviBridge.ts` | 17 622 | الجسر idempotent إلى سلة ZAYROVI |
+| `zayroviBridge.ts` | 17 622 | الجسر idempotent إلى سلة ZAYROVI |
 | `events.ts` · `resolveCache.ts` | 15 844 · 15 498 | المقاييس/الأحداث · ذاكرة القراءة |
 | `productNormalizer.ts` · `checkoutFees.ts` | 15 087 · 14 398 | التطبيع · **محرّك حساب الدفع** |
 | `stateMachines.ts` · `context.ts` | 10 304 · 9 948 | آلات الحالة · السياق والأعلام |
@@ -59,9 +59,9 @@
 (5) الدليل            → ayWebsEvidenceHash + تخزين المنتج
 (6) ورقة الاختيار فوق صفحة المتجر → إن لزمت متغيّرة، بلا اختيار لا إضافة
 (7) POST /cart/items  → تحقّق (متغيّرة منشورة/متاحة، pricing>0) ثم INSERT فعلي + لقطة سعر
-(8) الجسر (نفس الطلب) → رمز سعر AYROVIX → db.addItem ⇒ السطر يظهر في سلة ZAYROVI الموحّدة
+(8) الجسر (نفس الطلب) → رمز سعر ZAYROVIX → db.addItem ⇒ السطر يظهر في سلة ZAYROVI الموحّدة
 (9) تأكيد من بيانات الخادم → خياران فقط: Checkout أو Continue Shopping
-(10) POST /cart/bridge-to-ayrovi → POST /checkout/preview → POST /orders → الدفع → الشراء (مراجعة بشرية اليوم)
+(10) POST /cart/bridge-to-zayrovi → POST /checkout/preview → POST /orders → الدفع → الشراء (مراجعة بشرية اليوم)
 ```
 
 **القواعد الثمانية الثابتة** (`docs/AYWEBS_ADD_TO_CART_ORDER.md` — أمر هندسي دائم، أي PR يخالفه يُرفض):
@@ -98,13 +98,13 @@
 | 701 | `GET /product/:id/availability` | |
 | 734 | `POST /capture` | عقد V1 محفوظ — يفوّض لمحرّك المنتج |
 | 840 | `POST /price-quote` | تسعير خلفي فقط |
-| 872 | `GET /cart` | مجموعات حسب المتجر + `linked_to_ayrovi` |
+| 872 | `GET /cart` | مجموعات حسب المتجر + `linked_to_zayrovi` |
 | 880 | `POST /cart/items` | الإضافة الفعلية |
 | 981 | `PATCH /cart/items/:id` | |
 | 1015 | `DELETE /cart/items/:id` | |
 | 1040 | `POST /cart/items/:id/accept-price` | قبول تغيّر سعر التاجر صراحةً |
 | 1053 | `POST /cart/verify` | **يفرض `refresh:true` دائماً** |
-| 1065 | `POST /cart/bridge-to-ayrovi` | مزامنة idempotent قبل الدفع |
+| 1065 | `POST /cart/bridge-to-zayrovi` | مزامنة idempotent قبل الدفع |
 | 1103 | `POST /checkout/preview` | محرّك الرسوم |
 | 1118 | `POST /orders` · 1157 `GET /orders` · 1168 `GET /orders/:id` · 1182 `POST /orders/:id/submit` | |
 | 1198 | `GET /payments/methods` · 1210 `POST /payments/intents` · 1222 `POST /payments/confirm` · 1234 `POST /orders/:id/payments/transfer-proof` | |
@@ -180,7 +180,7 @@
 | CPU: 20 قراءة | بلا سقف | ~21 ث CPU ⇒ `readGate` سقف **3** قراءات متزامنة، لا يرفض أبداً (بعد 20 ث انتظار يمرّ موسوماً `bypassed`) |
 | نوم Render (خطة مجانية) | فشل مؤكَّد (مهلة 20 ث < استيقاظ 65 ث) | مهل 15/60 + إعادة محاولة واحدة + `warmUpApi()` عند فتح المتجر |
 
-السباق المتوازي: مباشر جوال ∥ مكتب ب`AYROVIX_DIRECT_TIMEOUT_MS=6500`، وقارئ Jina يبدأ بعد `AYROVIX_JINA_HEADSTART_MS=1200`، والمزوّد المدفوع في المرحلة B بعد استنفاد المجاني.
+السباق المتوازي: مباشر جوال ∥ مكتب ب`ZAYROVIX_DIRECT_TIMEOUT_MS=6500`، وقارئ Jina يبدأ بعد `ZAYROVIX_JINA_HEADSTART_MS=1200`، والمزوّد المدفوع في المرحلة B بعد استنفاد المجاني.
 
 ---
 
@@ -206,7 +206,7 @@
 
 - **ميت**: `AYWEBS_OCR_FALLBACK_ENABLED=true` ما زال في `.env.example` (السطر 188) بينما الكود **أزال العلم** (لا يوجد كود OCR في المستودع) — أُزيل من `/stores` لأنه كان يعلن قدرة غير موجودة. يجب حذفه من الملف.
 - **ناقص في `.env.example`**: `AYWEBS_PURCHASE_INTEGRATION_ENABLED`, `AYWEBS_WAREHOUSE_ENABLED`, `AYWEBS_SHIPPING_ENABLED`, `AYWEBS_READ_CONCURRENCY`, `AYWEBS_READ_GATE_MAX_WAIT_MS`, `AYWEBS_RESOLVE_STALE_MS`, `AYWEBS_RESOLVE_FAILURE_TTL_MS`, `AYWEBS_QUOTE_*` (الأربعة), `AYWEBS_HOST_CIRCUIT`, `AYWEBS_WEBVIEW_VERIFY_SAMPLE`.
-- المفاتيح الموجودة فعلاً في `.env.example`: `AYWEBS_ENABLED`, `AYWEBS_CAPTURE_ENABLED`, `AYWEBS_*_CAPTURE_ENABLED` (×4), `AYWEBS_AI_EXTRACTION_ENABLED`, `AYWEBS_OCR_FALLBACK_ENABLED` (ميت), `AYWEBS_RESOLVE_CACHE_TTL_MS`, `AYWEBS_RESOLVE_CACHE_MAX` + كل مجموعة `AYROVIX_*`.
+- المفاتيح الموجودة فعلاً في `.env.example`: `AYWEBS_ENABLED`, `AYWEBS_CAPTURE_ENABLED`, `AYWEBS_*_CAPTURE_ENABLED` (×4), `AYWEBS_AI_EXTRACTION_ENABLED`, `AYWEBS_OCR_FALLBACK_ENABLED` (ميت), `AYWEBS_RESOLVE_CACHE_TTL_MS`, `AYWEBS_RESOLVE_CACHE_MAX` + كل مجموعة `ZAYROVIX_*`.
 
 ---
 
@@ -214,7 +214,7 @@
 
 1. **جدار المتاجر**: Amazon يخدم عناوين مراكز البيانات صفحة قشرة بلا سعر؛ أفضل قراءة أولى ≈21 ث، وSHEIN/TEMU/AliExpress **معطّلة السعر** فعلياً حتى يُضبط مزوّد رسم مدفوع (`RENDER_PROVIDER_NOT_CONFIGURED`).
 2. **لا شراء آلي**: `purchase_integration_state: PENDING_INTEGRATION`، والمراحل 6–8 تُرجع `NOT_IMPLEMENTED`. الطلب يصل «مدفوع + مراجعة بشرية».
-3. **سلالان**: سلة AYWEBs + سلة ZAYROVI مع حالة ربط (`linked_to_ayrovi`, `unlinked_units`) — الجسر متين، لكنه أكبر تعقيد بنيوي في المودل.
+3. **سلالان**: سلة AYWEBs + سلة ZAYROVI مع حالة ربط (`linked_to_zayrovi`, `unlinked_units`) — الجسر متين، لكنه أكبر تعقيد بنيوي في المودل.
 4. **الخادم على خطة نائمة**: كل «أول» استخدام يدفع زمن الاستيقاظ.
 5. **تبعية خارجية للقراءة**: قارئ Jina (طرف ثالث) + مزوّد رسم مدفوع — تكلفة وتوفّر خارج سيطرتنا.
 6. **ذاكرة 5 دقائق** قد تُخفي تغيّر سعر حتى `verify` (وهو يفرض `refresh:true دائماً`).
@@ -228,7 +228,7 @@
 ## 11) الواجهات
 
 - **الويب** (`client/src/features/aywebs/`): AyWebsApp (رئيسية/متجر/منتج/متصفّح/طلبات)، تبويب «المفضلة» **داخلي** متزامن مع `/api/customer/account/favorites` (لا localStorage)، «حسابي» وحده يخرج (خروج مقصود)، شريط واحد، صور `contain` بحارس اختبار.
-- **أندرويد** (`android/.../AyWebsBrowseActivity.java`): متصفّح أصلي + زر عائم + ورقة متغيّرات Dialog فوق الصفحة + دروج السلة/المفضّلة فوق الصفحة (لا `finish()` يقتل المتجر) + `onBackPressed` + قراءة مُسبقة `prefetchResolve` + مهل 15/60 + `EXTRA_CUSTOMER_TOKEN` للحساب + Custom Tab (`AyroviAuthTabPlugin.java`). آخر إصدار موثّق: **1.0.5 / versionCode 5**.
+- **أندرويد** (`android/.../AyWebsBrowseActivity.java`): متصفّح أصلي + زر عائم + ورقة متغيّرات Dialog فوق الصفحة + دروج السلة/المفضّلة فوق الصفحة (لا `finish()` يقتل المتجر) + `onBackPressed` + قراءة مُسبقة `prefetchResolve` + مهل 15/60 + `EXTRA_CUSTOMER_TOKEN` للحساب + Custom Tab (`ZayroviAuthTabPlugin.java`). آخر إصدار موثّق: **1.0.5 / versionCode 5**.
 - **CRM**: `/api/admin/aywebs` (Dashboard · Stores · Adapters · Orders · Purchase Requests · Exceptions · Payments · Audit · Events؛ Warehouse/Consolidation/Shipping تعرض «غير منفَّذ» بدل بيانات مُتخيَّلة).
 - **تطبيق ZAYROVI الجديد** (React Native، `apps/mobile/`): `app/(tabs)/aywebs.tsx` **عنصر نائب** — P3 لم تبدأ بعد قائمة التحديثات.
 
@@ -258,7 +258,7 @@ npm run verify:aywebs-latency -- --base <origin> --url "https://www.amazon.com/d
 | إضافة/إيقاف متجر | `shared/aywebsStores.ts` + `src/aywebs/adapters/<store>.ts` + `registry.ts` |
 | التسعير/الرسوم | `src/services/pricing.ts` + `src/aywebs/checkoutFees.ts` |
 | حالات الطلب/الشراء | `shared/aywebsTypes.ts` + `stateMachines.ts` + `orders.ts` |
-| السلة/الكميات/الحذف | `cart.ts` + `ayroviBridge.ts` |
+| السلة/الكميات/الحذف | `cart.ts` + `zayroviBridge.ts` |
 | الدفع/التحويل البنكي | `orders.ts` + `purchaseRequests.ts` + `adminRoutes.ts` |
 | لوحة التحكم | `adminRoutes.ts` + `client/src/admin/…` |
 | الرسائل والأخطاء | `errors.ts` (عقد §44) |

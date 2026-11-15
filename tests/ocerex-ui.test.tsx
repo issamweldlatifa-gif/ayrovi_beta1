@@ -16,7 +16,7 @@ beforeEach(() => {
   document.body.append(host);
   root = createRoot(host);
   window.localStorage.clear();
-  window.localStorage.setItem('ayrovi.locale.v1', 'ar');
+  window.localStorage.setItem('zayrovi.locale.v1', 'ar');
 });
 
 afterEach(async () => {

@@ -35,7 +35,7 @@ describe('AYWEBs Mobile — VariantMatrixCache, lookup 0 ms, paliers quantité &
       availability: { state: 'AVAILABLE', reason: 'in_stock', checked_at: '2026-10-28T00:00:00Z', source: 'webview', quantity_hint: 15 },
       purchase_mode: 'ASSISTED',
       integration_type: 'WEBVIEW',
-      ayrovi_pricing: {
+      zayrovi_pricing: {
         total_tnd: 82.4,
         pricing_version: 4,
         quantity_totals_tnd: [82.4, 152.1, 221.8],
@@ -60,7 +60,7 @@ describe('AYWEBs Mobile — VariantMatrixCache, lookup 0 ms, paliers quantité &
           availability_reason: 'sku_in_stock_capture:15',
           stock: 15,
           image: 'https://img.ltwebstatic.com/noir.jpg',
-          ayrovi_pricing: { total_tnd: 82.4, pricing_version: 4, quantity_totals_tnd: [82.4, 152.1, 221.8] },
+          zayrovi_pricing: { total_tnd: 82.4, pricing_version: 4, quantity_totals_tnd: [82.4, 152.1, 221.8] },
         },
         {
           source_variant_id: 'shein:51200911:8Y_FLEECE',
@@ -76,7 +76,7 @@ describe('AYWEBs Mobile — VariantMatrixCache, lookup 0 ms, paliers quantité &
           stock: 4,
           quantity_tiers: [{ minQuantity: 2, unitPrice: 19.5 }],
           image: 'https://img.ltwebstatic.com/noir.jpg',
-          ayrovi_pricing: { total_tnd: 118.9, pricing_version: 4, quantity_totals_tnd: [118.9, 206.5, 305.0] },
+          zayrovi_pricing: { total_tnd: 118.9, pricing_version: 4, quantity_totals_tnd: [118.9, 206.5, 305.0] },
         },
         {
           source_variant_id: 'shein:51200933:4Y_STD',
@@ -91,7 +91,7 @@ describe('AYWEBs Mobile — VariantMatrixCache, lookup 0 ms, paliers quantité &
           availability: 'UNKNOWN',
           availability_reason: 'sku_stock_unspecified_capture',
           image: 'https://img.ltwebstatic.com/beige.jpg',
-          ayrovi_pricing: null,
+          zayrovi_pricing: null,
         },
       ],
       variant_quotes: [],
@@ -156,7 +156,7 @@ describe('AYWEBs Mobile — VariantMatrixCache, lookup 0 ms, paliers quantité &
       availability: { state: 'AVAILABLE', reason: 'in_stock', checked_at: '2026-10-28T00:00:00Z', source: 'webview', quantity_hint: 9 },
       purchase_mode: 'ASSISTED',
       integration_type: 'WEBVIEW',
-      ayrovi_pricing: { total_tnd: 89.7, pricing_version: 4, quantity_totals_tnd: [89.7, 166.7], breakdown: null },
+      zayrovi_pricing: { total_tnd: 89.7, pricing_version: 4, quantity_totals_tnd: [89.7, 166.7], breakdown: null },
       variant_groups: [],
       variant_details: [],
       variant_quotes: [],

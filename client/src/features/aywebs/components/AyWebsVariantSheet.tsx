@@ -179,8 +179,8 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
   const displayedPrice = quoteEvidenceComplete ? (selectedSourceVariant?.quoted_price ?? product?.price ?? 0) : 0;
   const displayedCurrency = quoteEvidenceComplete ? (selectedSourceVariant?.quoted_currency || product?.currency || '') : '';
   const displayedPricingTnd = selectedSourceVariant
-    ? selectedSourceVariant.ayrovi_pricing?.total_tnd ?? null
-    : product?.ayrovi_pricing?.total_tnd ?? null;
+    ? selectedSourceVariant.zayrovi_pricing?.total_tnd ?? null
+    : product?.zayrovi_pricing?.total_tnd ?? null;
 
   /** Disponibilité : UNKNOWN est visible comme incertitude, jamais comme disponible. */
   const availabilityLabel = (state: string | undefined, short = false): string => {
@@ -259,7 +259,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
       if (!result.idempotentReplay) trackAyWebsEvent('add_to_cart_succeeded', { store: product.store_id });
       pendingAddRequestId.current = '';
       setAdded(result.item ?? null);
-      setLinked(result.ayrovi ? { linked: Boolean(result.ayrovi.linked), reason: String(result.ayrovi.reason || '') } : null);
+      setLinked(result.zayrovi ? { linked: Boolean(result.zayrovi.linked), reason: String(result.zayrovi.reason || '') } : null);
       setPhase('added');
     } catch (caught: any) {
       // Aucun faux succès : on reste sur la feuille, le message vient du serveur.

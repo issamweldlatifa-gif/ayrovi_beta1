@@ -8,14 +8,14 @@
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { detectProductCondition, isUsedListing, filterOutUsedCandidates } from '../src/ayrovix/services/productCondition';
-import type { AyrovixCandidate } from '../src/ayrovix/types';
+import { detectProductCondition, isUsedListing, filterOutUsedCandidates } from '../src/zayrovix/services/productCondition';
+import type { ZayrovixCandidate } from '../src/zayrovix/types';
 
-const candidate = (over: Partial<AyrovixCandidate>): AyrovixCandidate => ({
+const candidate = (over: Partial<ZayrovixCandidate>): ZayrovixCandidate => ({
   id: 'c', kind: 'external', title: 'Veste', brand: null, model: null, colors: [], sizes: [],
   source: 'Boutique', sourceUrl: 'https://boutique.example/p', image: '', price: 10, currency: 'EUR',
   priceTnd: null, match: 80, ...over,
-} as AyrovixCandidate);
+} as ZayrovixCandidate);
 
 describe('état du produit — la source parle en premier', () => {
   it('« Used » déclaré par la source écarte l’annonce, même sur une boutique classique', () => {
@@ -44,7 +44,7 @@ describe('état du produit — la source parle en premier', () => {
 });
 
 describe('disponibilité annoncée par la source', () => {
-  const source = readFileSync('src/ayrovix/services/visualSearch.ts', 'utf8');
+  const source = readFileSync('src/zayrovix/services/visualSearch.ts', 'utf8');
 
   it('`in_stock` est enfin lu, et un silence reste « unknown »', () => {
     expect(source).toContain("row?.in_stock === true ? 'in_stock' as const");

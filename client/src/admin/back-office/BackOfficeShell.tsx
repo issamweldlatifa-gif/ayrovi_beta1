@@ -108,7 +108,7 @@ export const BackOfficeShell: React.FC<{
   const [density, setDensity] = useState<string>(() => {
     if (typeof window === 'undefined') return 'compact';
     try {
-      const stored = window.localStorage.getItem('ayrovi.bo.density');
+      const stored = window.localStorage.getItem('zayrovi.bo.density');
       // Modèle A : la densité d'outil est le défaut ; « confortable » reste un choix explicite.
       return stored === 'comfortable' ? 'comfortable' : 'compact';
     } catch { return 'compact'; }
@@ -117,14 +117,14 @@ export const BackOfficeShell: React.FC<{
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') return 'light';
     try {
-      const stored = window.localStorage.getItem('ayrovi.bo.theme');
+      const stored = window.localStorage.getItem('zayrovi.bo.theme');
       if (stored === 'dark' || stored === 'light') return stored;
       return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     } catch { return 'light'; }
   });
   const [dir, setDir] = useState<'ltr' | 'rtl'>(() => {
     if (typeof window === 'undefined') return 'ltr';
-    try { return window.localStorage.getItem('ayrovi.bo.dir') === 'rtl' ? 'rtl' : 'ltr'; } catch { return 'ltr'; }
+    try { return window.localStorage.getItem('zayrovi.bo.dir') === 'rtl' ? 'rtl' : 'ltr'; } catch { return 'ltr'; }
   });
 
   const can = useCallback((permission: string) => identity.permissions.includes(permission as never), [identity.permissions]);
@@ -171,16 +171,16 @@ export const BackOfficeShell: React.FC<{
   }, [navigation, resources, section, navigate]);
 
   useEffect(() => {
-    try { window.localStorage.setItem('ayrovi.bo.density', density); } catch { /* stockage indisponible : présentationnel seulement */ }
+    try { window.localStorage.setItem('zayrovi.bo.density', density); } catch { /* stockage indisponible : présentationnel seulement */ }
   }, [density]);
 
   useEffect(() => {
     if (typeof document !== 'undefined') document.documentElement.setAttribute('data-theme', theme);
-    try { window.localStorage.setItem('ayrovi.bo.theme', theme); } catch { /* idem */ }
+    try { window.localStorage.setItem('zayrovi.bo.theme', theme); } catch { /* idem */ }
   }, [theme]);
   useEffect(() => {
     if (typeof document !== 'undefined') document.documentElement.setAttribute('dir', dir);
-    try { window.localStorage.setItem('ayrovi.bo.dir', dir); } catch { /* idem */ }
+    try { window.localStorage.setItem('zayrovi.bo.dir', dir); } catch { /* idem */ }
   }, [dir]);
 
   // En quittant /admin, on retire les attributs posés sur <html> : le site public
@@ -268,7 +268,7 @@ export const BackOfficeShell: React.FC<{
       onDragOver={item.section === 'news' ? (event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } : undefined}
       onDrop={item.section === 'news' ? (event) => {
         event.preventDefault();
-        const draftId = event.dataTransfer.getData('application/x-ayrovi-magazine-draft') || event.dataTransfer.getData('text/plain');
+        const draftId = event.dataTransfer.getData('application/x-zayrovi-magazine-draft') || event.dataTransfer.getData('text/plain');
         if (draftId.startsWith('mag_draft_')) openMagazineDraft(draftId);
       } : undefined}
       title={hints.join(' · ')}>
@@ -282,7 +282,7 @@ export const BackOfficeShell: React.FC<{
     {/* Barre 1 — identité, recherche globale, préférences, compte */}
     <header className="bo-topbar bo-header">
       <div className="bo-topbar-brand">
-        <img src="/media/logo-ayrovi-lockup-white-violet.svg?v=7.0" alt="ZAYROVI" style={{ width: 'auto', height: 22 }} />
+        <img src="/media/logo-zayrovi-lockup-white-violet.svg?v=7.0" alt="ZAYROVI" style={{ width: 'auto', height: 22 }} />
         <div><span>CONSOLE DE GESTION</span></div>
       </div>
       <div className="bo-topbar-search"><GlobalSearch onNavigate={navigate} /></div>

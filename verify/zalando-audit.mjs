@@ -17,18 +17,18 @@ import sharp from 'sharp';
 import fs from 'node:fs';
 
 // 2026-10-03 — BUG DE FOND, corrigé ici.
-// Ce script n'honorait PAS `AYROVI_BASE_URL`, la convention de TOUS ses frères
+// Ce script n'honorait PAS `ZAYROVI_BASE_URL`, la convention de TOUS ses frères
 // (public-navigation, footer-payments, admin-audit, lens-*… lisent tous
-// process.env.AYROVI_BASE_URL). Il ne connaissait que son argument positionnel,
+// process.env.ZAYROVI_BASE_URL). Il ne connaissait que son argument positionnel,
 // avec `http://localhost:3000` en dur.
 // Conséquence en CI : le serveur y écoute sur 3210 et l'étape exporte
-// AYROVI_BASE_URL=http://127.0.0.1:3210 — les cinq autres gardes mesuraient donc
+// ZAYROVI_BASE_URL=http://127.0.0.1:3210 — les cinq autres gardes mesuraient donc
 // le bon serveur, et celui-ci partait sur localhost:3000, où personne n'écoute.
 // Il mourait sur son premier `goto` : le garde du budget de couleur était
 // INFIRANCHISSABLE par construction, et échouait avec un simple « exit code 1 »
 // sans jamais dire pourquoi. Ordre retenu : argument explicite, puis
 // environnement (la convention du dépôt), puis l'ancien défaut.
-const BASE = process.argv[2] || process.env.AYROVI_BASE_URL || 'http://localhost:3000';
+const BASE = process.argv[2] || process.env.ZAYROVI_BASE_URL || 'http://localhost:3000';
 const OUT = 'verify';
 /** Budget en % de la surface d'un écran — lu dans l'identité, jamais recopié ici. */
 const BUDGET = Number(JSON.parse(fs.readFileSync('client/src/design/editorial/identity.json', 'utf8')).accentAreaLimit) * 100;
@@ -76,12 +76,12 @@ const browser = await chromium.launch();
 const report = [];
 
 /**
- * Ouvre AYROVIX LENS et mesure l'écran obtenu.
+ * Ouvre ZAYROVIX LENS et mesure l'écran obtenu.
  * P4/T2 : la section v2 ne fait plus partie de la page d'accueil, LENS s'ouvre
  * désormais depuis la navigation basse (bouton « Lens — recherche par image »).
  */
 async function measureLensScreen(page, tag) {
-  const cta = page.locator('.ayrovi-glass-bottom-nav button[aria-label*="Lens"]').first();
+  const cta = page.locator('.zayrovi-glass-bottom-nav button[aria-label*="Lens"]').first();
   if (!(await cta.count())) return { label: `écran LENS — ${tag}`, absent: true };
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(400);

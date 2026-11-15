@@ -65,9 +65,9 @@ deux côtés : le problème n'est pas la reconnaissance.
 | Timeout client | `LENS_STREAM_IDLE_MS = 40 s` (silence) / `LENS_JSON_TIMEOUT_MS = 60 s` | `LENS_TIMEOUT_MS = 60 s` (`src/api/lens.ts:17`) |
 | Événements consommés | `progress` · `card` · `done` · `error` | **aucun** |
 | Ce que voit l'utilisateur | barre de progression, cartes qui remplissent la grille | un squelette jusqu'à la fin |
-| Code | `client/src/ayrovix/services/lensApi.ts` (stream) · `client/src/ayrovix/services/lensStream.ts` (parseur) | `apps/mobile/src/api/lens.ts:541` · `apps/mobile/src/api/nativeUpload.ts:41` |
+| Code | `client/src/zayrovix/services/lensApi.ts` (stream) · `client/src/zayrovix/services/lensStream.ts` (parseur) | `apps/mobile/src/api/lens.ts:541` · `apps/mobile/src/api/nativeUpload.ts:41` |
 
-**Côté serveur, le contrat existe déjà** (`src/ayrovix/routes.ts:186-505`) :
+**Côté serveur, le contrat existe déjà** (`src/zayrovix/routes.ts:186-505`) :
 
 | Événement SSE | Contenu | Émis à la ligne |
 |---|---|---|
@@ -77,8 +77,8 @@ deux côtés : le problème n'est pas la reconnaissance.
 | `error` | `{ code, error }` — dont `ANALYZE_TIMEOUT` | `routes.ts:228,474` |
 
 Et le délai global existe aussi : `LENS_ANALYZE_DEADLINE_DEFAULT_MS = 45 s`
-(`src/ayrovix/services/lensDeadline.ts:7`), borné 15–90 s, piloté par
-`AYROVI_LENS_ANALYZE_DEADLINE_MS`.
+(`src/zayrovix/services/lensDeadline.ts:7`), borné 15–90 s, piloté par
+`ZAYROVI_LENS_ANALYZE_DEADLINE_MS`.
 
 > **Conclusion de la fiche : le serveur parle déjà SSE. Le téléphone ne l'écoute pas.**
 > C'est un travail de **transport côté client**, pas de re-ingénierie du moteur.
@@ -141,12 +141,12 @@ réseau natif, et `xhr.responseText` grandit au fil de l'eau) + **`FormData` nat
 | Fichier | Action |
 |---|---|
 | `apps/mobile/src/api/lensStream.ts` **(nouveau)** | `analyzeImageStream(file, { roi, signal, onProgress, onCard, onDone })` : XHR + `Accept: text/event-stream` + parsing incrémental de `responseText` (`\n\n`) + chien de garde de silence (40 s, comme le web) + délai absolu (60 s) + `xhr.abort()` sur annulation |
-| `apps/mobile/src/api/lensStream.ts` | Parseur `parseLensSseBlock` — **portage** de `client/src/ayrovix/services/lensStream.ts` (règle du dépôt : le mobile n'importe **rien** de `client/`) |
+| `apps/mobile/src/api/lensStream.ts` | Parseur `parseLensSseBlock` — **portage** de `client/src/zayrovix/services/lensStream.ts` (règle du dépôt : le mobile n'importe **rien** de `client/`) |
 | `apps/mobile/src/features/lens/LensSearchSkeleton.tsx` | Ajouter la ligne d'étape, la barre `done/total`, le chrono ; rester un squelette **de la forme réelle** |
 | `apps/mobile/src/features/lens/LensOverviewCard.tsx` **(nouveau)** | La réponse « AI Overview » : description + marque + modèle + lien source |
 | `apps/mobile/app/lens.tsx` | Nouveau stage `busy` **progressif** (`progress` + `cards[]`) ; `stage.kind === 'results'` à la fin ; le tiroir passe de squelette à cartes au fur et à mesure |
 | `apps/mobile/src/i18n/fr.ts` + `ar.ts` | 4 clés : `lens.progress.identified` / `.searching` / `.reading` (avec `{done}` `{total}`) / `lens.overview.title` |
-| `src/ayrovix/routes.ts` | `res.on('close')` → drapeau `cancelled` → arrêt des enrichissements (E6) |
+| `src/zayrovix/routes.ts` | `res.on('close')` → drapeau `cancelled` → arrêt des enrichissements (E6) |
 
 **Ordre de grandeur à respecter :** le serveur ne change pas de contrat pour le P0 — il parle
 déjà SSE. Le P0 est **uniquement** un nouveau chemin de transport côté téléphone.
@@ -199,10 +199,10 @@ déjà SSE. Le P0 est **uniquement** un nouveau chemin de transport côté tél�
 
 | Sujet | Fichier |
 |---|---|
-| Contrat SSE du serveur | `src/ayrovix/routes.ts` (`/analyze-image`, `emit(...)`) |
-| Délai global + paliers | `src/ayrovix/services/lensDeadline.ts` |
-| Budgets par étape | `src/ayrovix/services/visualSearch.ts` (SerpApi 18–25 s) · `src/ayrovix/services/lensEngine.ts` (MATCHES 22 s) · `productEnrichment.ts` (3,5 s) |
-| Modèle à porter (web) | `client/src/ayrovix/services/lensApi.ts` · `client/src/ayrovix/services/lensStream.ts` · `client/src/ayrovix/components/LensLauncher.tsx:373-430` |
+| Contrat SSE du serveur | `src/zayrovix/routes.ts` (`/analyze-image`, `emit(...)`) |
+| Délai global + paliers | `src/zayrovix/services/lensDeadline.ts` |
+| Budgets par étape | `src/zayrovix/services/visualSearch.ts` (SerpApi 18–25 s) · `src/zayrovix/services/lensEngine.ts` (MATCHES 22 s) · `productEnrichment.ts` (3,5 s) |
+| Modèle à porter (web) | `client/src/zayrovix/services/lensApi.ts` · `client/src/zayrovix/services/lensStream.ts` · `client/src/zayrovix/components/LensLauncher.tsx:373-430` |
 | Client mobile actuel (bloquant) | `apps/mobile/src/api/lens.ts:541` · `apps/mobile/src/api/nativeUpload.ts:41` |
 | Écran d'attente actuel | `apps/mobile/src/features/lens/LensSearchSkeleton.tsx` · `apps/mobile/app/lens.tsx:1055` |
 | Copie existante | `apps/mobile/src/i18n/fr.ts:603-604` (`lens.searchingFriendly`, `lens.resultsTitle`) |
@@ -215,11 +215,11 @@ Les corrections décrites ci-dessus sont **en code** (branche `arena/b3539284-ay
 
 | Écart | Corrigé | Où |
 |---|---|---|
-| E1 — aucun retour progressif | Le serveur émet `progress` **avec l'identification** dès la première étape | `src/ayrovix/routes.ts` (`emit('progress', { step: 'identified', identification })`) |
+| E1 — aucun retour progressif | Le serveur émet `progress` **avec l'identification** dès la première étape | `src/zayrovix/routes.ts` (`emit('progress', { step: 'identified', identification })`) |
 | E2 — pas d'« AI Overview » | Carte « ce que nous avons reconnu » : description / marque / modèle / catégorie **publiées par le serveur** | `apps/mobile/src/features/lens/LensOverviewCard.tsx` |
 | E3 — résultats non streamés | Lecture SSE sur téléphone (XHR + `responseText` incrémental) ; chaque fiche lue s'affiche | `apps/mobile/src/api/lensStream.ts` · `apps/mobile/app/lens.tsx` (`onCard`) |
 | E4 — le délai serveur jette le travail | Les fiches déjà lues restent affichées ; le flux est clos proprement si le serveur s'arrête (`STREAM_INCOMPLETE`) | `apps/mobile/src/api/lensStream.ts` |
-| E6 — « Annuler » n'arrête que le client | Le serveur voit la fermeture de la connexion et cesse de lire les pages marchandes | `src/ayrovix/routes.ts` (`res.on('close')` → `cancelled`) |
+| E6 — « Annuler » n'arrête que le client | Le serveur voit la fermeture de la connexion et cesse de lire les pages marchandes | `src/zayrovix/routes.ts` (`res.on('close')` → `cancelled`) |
 
 Ajouts :
 

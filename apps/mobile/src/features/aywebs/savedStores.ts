@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { parseSavedStoreIds, toggleSavedStoreId } from './storesCatalog';
 
-export const SAVED_STORES_KEY = 'ayrovi.aywebs.savedStores';
+export const SAVED_STORES_KEY = 'zayrovi.aywebs.savedStores';
 
 export function useSavedStoreIds(): { ids: string[]; loaded: boolean; toggle: (storeId: string) => void } {
   const [ids, setIds] = useState<string[]>([]);

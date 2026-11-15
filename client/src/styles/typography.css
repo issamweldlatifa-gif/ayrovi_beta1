@@ -1,4 +1,4 @@
-/* ZAYROVI typography system — Ayrovi Extracted Sans + Noto Sans Arabic. Approved UI weights: 400, 520, 650, 700. */
+/* ZAYROVI typography system — Zayrovi Extracted Sans + Noto Sans Arabic. Approved UI weights: 400, 520, 650, 700. */
 html {
   font-family: var(--font-primary);
   font-stretch: var(--ay-font-body-width);
@@ -83,7 +83,7 @@ h3.font-black, h3.font-extrabold { font-weight: var(--ay-type-h3-weight); }
   line-height: var(--ay-type-button-line-height);
 }
 
-.ayrovi-glass-bottom-nav {
+.zayrovi-glass-bottom-nav {
   font-family: var(--font-primary);
   font-weight: var(--font-weight-regular);
 }
@@ -100,7 +100,7 @@ h3.font-black, h3.font-extrabold { font-weight: var(--ay-type-h3-weight); }
   font-weight: var(--ay-type-h1-weight);
 }
 
-/* Arabic remains supplied by Noto Sans Arabic, not by Ayrovi Extracted Sans. */
+/* Arabic remains supplied by Noto Sans Arabic, not by Zayrovi Extracted Sans. */
 :where(h1,h2,h3,.ay-text-h1,.ay-text-h2,.ay-text-h3):lang(ar) { font-stretch: 100%; line-height: 1.6; letter-spacing: 0; }
 .ay-text-secondary { color: var(--ay-e-secondary); }
 .ay-text-muted { color: var(--ay-e-muted); }

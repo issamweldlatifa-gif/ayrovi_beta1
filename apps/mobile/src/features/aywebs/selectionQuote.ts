@@ -3,7 +3,7 @@
  *
  * Le client ne calcule jamais un prix marchand : il lit ce que le serveur a
  * publié pour chaque valeur (`variant_quotes`), et pour la combinaison affichée
- * il lit le devis de la fiche (`ayrovi_pricing`). Ce module ne fait que
+ * il lit le devis de la fiche (`zayrovi_pricing`). Ce module ne fait que
  * CHOISIR la bonne ligne — jamais une règle de trois, jamais une moyenne.
  *
  * Trois règles, et aucune autre :

@@ -35,18 +35,18 @@ async function mobileLogin(phone: string, headers: Record<string, string>, agent
 
 describe('remise de session à un client déclaré', () => {
   test('le client mobile reçoit son jeton, jamais l’ancienne clé native', async () => {
-    const verified = await mobileLogin(uniquePhone(), { 'x-ayrovi-client': MOBILE });
+    const verified = await mobileLogin(uniquePhone(), { 'x-zayrovi-client': MOBILE });
     const data = verified.body.data;
     expect(typeof data.session_token).toBe('string');
     expect(data.session_token.length).toBeGreaterThan(30);
     expect(new Date(data.session_expires_at).getTime()).toBeGreaterThan(Date.now());
     expect(data.native_session_token).toBeUndefined();
     // Le cookie reste posé : le même endpoint sert le web et l'application.
-    expect(verified.headers['set-cookie']?.[0]).toContain('ayrovi_customer_session=');
+    expect(verified.headers['set-cookie']?.[0]).toContain('zayrovi_customer_session=');
   });
 
   test('l’ancienne coque Capacitor fonctionne exactement comme avant', async () => {
-    const verified = await mobileLogin(uniquePhone(), { 'x-ayrovi-native': '1' });
+    const verified = await mobileLogin(uniquePhone(), { 'x-zayrovi-native': '1' });
     expect(typeof verified.body.data.native_session_token).toBe('string');
     expect(verified.body.data.session_token).toBeUndefined();
   });
@@ -61,21 +61,21 @@ describe('remise de session à un client déclaré', () => {
 
   test('une déclaration fantaisiste n’ouvre aucun jeton', async () => {
     for (const header of ['mobile', 'mobile/', 'mobile/x', 'Android', 'mobile/2.0.0 extra', 'MOTOROLA']) {
-      const verified = await mobileLogin(uniquePhone(), { 'x-ayrovi-client': header });
+      const verified = await mobileLogin(uniquePhone(), { 'x-zayrovi-client': header });
       expect(verified.body.data.session_token, `en-tête accepté à tort : ${header}`).toBeUndefined();
     }
-    expect(isMobileClient({ headers: { 'x-ayrovi-client': MOBILE } } as any)).toBe(true);
+    expect(isMobileClient({ headers: { 'x-zayrovi-client': MOBILE } } as any)).toBe(true);
     expect(isMobileClient({ headers: {} } as any)).toBe(false);
   });
 });
 
 describe('session Bearer mobile', () => {
   test('/auth/me identifie le client, fait tourner le jeton CSRF et annonce l’expiration', async () => {
-    const login = await mobileLogin(uniquePhone(), { 'x-ayrovi-client': MOBILE });
+    const login = await mobileLogin(uniquePhone(), { 'x-zayrovi-client': MOBILE });
     const token = login.body.data.session_token;
 
     const me = await request(app).get('/api/customer/auth/me')
-      .set('Authorization', `Bearer ${token}`).set('x-ayrovi-client', MOBILE);
+      .set('Authorization', `Bearer ${token}`).set('x-zayrovi-client', MOBILE);
     expect(me.status).toBe(200);
     expect(me.body.data.account.phone).toBe(login.body.data.account.phone);
     expect(typeof me.body.data.csrfToken).toBe('string');
@@ -92,7 +92,7 @@ describe('session Bearer mobile', () => {
   });
 
   test('écrire sans jeton CSRF est refusé, même avec un Bearer valide', async () => {
-    const login = await mobileLogin(uniquePhone(), { 'x-ayrovi-client': MOBILE });
+    const login = await mobileLogin(uniquePhone(), { 'x-zayrovi-client': MOBILE });
     const token = login.body.data.session_token;
     const payload = { orderUpdates: true, paymentUpdates: false, shippingUpdates: false, invoiceUpdates: false, darkMode: false };
 
@@ -109,7 +109,7 @@ describe('session Bearer mobile', () => {
   });
 
   test('« se déconnecter » révoque réellement la session mise au porteur', async () => {
-    const login = await mobileLogin(uniquePhone(), { 'x-ayrovi-client': MOBILE });
+    const login = await mobileLogin(uniquePhone(), { 'x-zayrovi-client': MOBILE });
     const token = login.body.data.session_token;
     const hash = hashToken(token);
     expect(db.get('SELECT id FROM customer_sessions WHERE id=?', hash)).toBeTruthy();
@@ -127,7 +127,7 @@ describe('session Bearer mobile', () => {
   });
 
   test('le jeton de session n’est stocké que haché', async () => {
-    const login = await mobileLogin(uniquePhone(), { 'x-ayrovi-client': MOBILE });
+    const login = await mobileLogin(uniquePhone(), { 'x-zayrovi-client': MOBILE });
     const token = login.body.data.session_token;
     const plain = db.get('SELECT id FROM customer_sessions WHERE id=?', token);
     expect(plain).toBeFalsy();
@@ -140,7 +140,7 @@ describe('clé de limitation de débit', () => {
     const request = (headers: Record<string, string>) => ({ ip: '41.226.0.7', headers } as any);
     expect(clientRateLimitKey(request({ authorization: 'Bearer jeton-alice' }), db)).toBe('ip:41.226.0.7');
     expect(clientRateLimitKey(request({ authorization: 'Bearer jeton-bob' }), db)).toBe('ip:41.226.0.7');
-    expect(clientRateLimitKey(request({ cookie: 'ayrovi_customer_session=jeton-web' }), db)).toBe('ip:41.226.0.7');
+    expect(clientRateLimitKey(request({ cookie: 'zayrovi_customer_session=jeton-web' }), db)).toBe('ip:41.226.0.7');
   });
 
 });
@@ -151,7 +151,7 @@ describe('champs d’échange de session', () => {
   });
   test('n’exposent jamais les deux clés à la fois', () => {
     const both = sessionExchangeFields(
-      { headers: { 'x-ayrovi-client': MOBILE, 'x-ayrovi-native': '1' } } as any,
+      { headers: { 'x-zayrovi-client': MOBILE, 'x-zayrovi-native': '1' } } as any,
       { token: 't', expiresAt: '2026-11-07T00:00:00.000Z' },
     );
     // Une déclaration contradictoire ne donne pas deux jetons : le client
@@ -219,15 +219,15 @@ describe('anti-régression', () => {
   test('les trois routes qui créent une session remettent bien le jeton au mobile', async () => {
     // OTP vérifié ci-dessus ; on contrôle l'inscription et la connexion e-mail,
     // qui partagent le même mécanisme mais par un autre chemin de code.
-    const email = `mobile.${Date.now()}@ayrovi.test`;
+    const email = `mobile.${Date.now()}@zayrovi.test`;
     const created = await request(app).post('/api/customer/auth/email/register')
-      .set('x-ayrovi-client', MOBILE)
+      .set('x-zayrovi-client', MOBILE)
       .send({ email, password: 'MotDePasse2026!', displayName: 'Client Mobile', termsAccepted: true });
     expect(created.status).toBe(200);
     expect(typeof created.body.data.session_token).toBe('string');
 
     const logged = await request(app).post('/api/customer/auth/email/login')
-      .set('x-ayrovi-client', MOBILE).send({ email, password: 'MotDePasse2026!' });
+      .set('x-zayrovi-client', MOBILE).send({ email, password: 'MotDePasse2026!' });
     expect(logged.status).toBe(200);
     expect(typeof logged.body.data.session_token).toBe('string');
     expect(logged.body.data.session_token).not.toBe(created.body.data.session_token);

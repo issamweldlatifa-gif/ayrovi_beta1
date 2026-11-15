@@ -174,7 +174,7 @@ export function upsertVariantMatrixCache(input: {
      prix ferme en dinars, on matérialise aussi cette combinaison exacte dans la matrice ! */
   const selSig = selectionMatrixSignature(input.selection);
   if (selSig && input.selection && Object.keys(input.selection).length > 0) {
-    const prodTnd = input.product.ayroviPricing?.totalTnd ?? null;
+    const prodTnd = input.product.zayroviPricing?.totalTnd ?? null;
     const prodVerified = input.product.priceVerified && input.product.currencyVerified && prodTnd != null && prodTnd > 0;
     const availState = String(input.product.availability?.state || 'UNKNOWN').toUpperCase();
     if (prodVerified || availState === 'OUT_OF_STOCK') {
@@ -194,7 +194,7 @@ export function upsertVariantMatrixCache(input: {
         evidenceSource: 'delta_verified',
         image: input.product.images[0] || '',
         totalTnd: availState === 'OUT_OF_STOCK' ? null : prodTnd,
-        quantityTotalsTnd: availState === 'OUT_OF_STOCK' ? null : (input.product.ayroviPricing?.quantityTotalsTnd ?? null),
+        quantityTotalsTnd: availState === 'OUT_OF_STOCK' ? null : (input.product.zayroviPricing?.quantityTotalsTnd ?? null),
       };
       entry.combinations.set(selSig, mergeVariantOption(entry.combinations.get(selSig), synthesized));
     }

@@ -3,7 +3,7 @@ vi.mock('../client/src/services/nativeShell', () => ({ isNativeApp: vi.fn(() => 
 import { isNativeApp } from '../client/src/services/nativeShell';
 import { installNativeApiOrigin } from '../client/src/services/nativeApiOrigin';
 import { normalizeApiOrigin } from '../client/src/services/apiOrigin';
-const API = 'https://api.ayrovi.test';
+const API = 'https://api.zayrovi.test';
 class Xhr { open(..._args: any[]) {} setRequestHeader(..._args: any[]) {} }
 vi.stubGlobal('XMLHttpRequest', Xhr);
 vi.stubGlobal('location', { href: 'https://localhost/' });
@@ -12,7 +12,7 @@ const originalOpen = XMLHttpRequest.prototype.open;
 const originalGlobals = { Request: globalThis.Request, Headers: globalThis.Headers };
 beforeEach(() => {
   Object.assign(globalThis, { Request, Headers });
-  delete (window as any).__ayroviApiOriginPatched;
+  delete (window as any).__zayroviApiOriginPatched;
   vi.mocked(isNativeApp).mockReturnValue(true);
   window.fetch = vi.fn(async () => new Response('{}')) as any;
 });
@@ -26,7 +26,7 @@ describe('native API trust boundary', () => {
     const request = vi.mocked(spy).mock.calls[0][0] as Request;
     expect(request.url).toBe(API + '/api/cart');
     expect(request.headers.get('authorization')).toBe('Bearer session-test-only');
-    expect(request.headers.get('x-ayrovi-native')).toBe('1');
+    expect(request.headers.get('x-zayrovi-native')).toBe('1');
     expect(request.redirect).toBe('error');
   });
   it('preserves Request method, body, original headers and caller body', async () => {
@@ -39,17 +39,17 @@ describe('native API trust boundary', () => {
     expect(sent.headers.get('x-custom')).toBe('ok'); expect(await r.text()).toBe('{"x":1}');
     expect(r.headers.has('authorization')).toBe(false);
   });
-  it.each(['https://api.ayrovi.test.evil/api/x', 'https://sub.api.ayrovi.test/api/x', 'https://api.ayrovi.test:444/api/x', 'http://api.ayrovi.test/api/x', 'https://external.test', '/assets/a.png', '//external.test/api/x'])('does not inject credentials into %s', async url => {
+  it.each(['https://api.zayrovi.test.evil/api/x', 'https://sub.api.zayrovi.test/api/x', 'https://api.zayrovi.test:444/api/x', 'http://api.zayrovi.test/api/x', 'https://external.test', '/assets/a.png', '//external.test/api/x'])('does not inject credentials into %s', async url => {
     const spy = window.fetch; installNativeApiOrigin(API);
     const init = { headers: { 'x-own': 'value' } };
     await window.fetch(url, init);
     expect(spy).toHaveBeenCalledWith(url, init);
   });
   it('rejects user-info and invalid origin configuration', () => {
-    expect(normalizeApiOrigin('http://api.ayrovi.test')).toBe('');
-    expect(normalizeApiOrigin('https://user:pass@api.ayrovi.test')).toBe('');
+    expect(normalizeApiOrigin('http://api.zayrovi.test')).toBe('');
+    expect(normalizeApiOrigin('https://user:pass@api.zayrovi.test')).toBe('');
     const spy = window.fetch; installNativeApiOrigin(API);
-    expect(() => window.fetch('https://user:pass@api.ayrovi.test/api')).toThrow();
+    expect(() => window.fetch('https://user:pass@api.zayrovi.test/api')).toThrow();
     expect(spy).not.toHaveBeenCalled();
   });
   it('XHR rewrites API only, never injects headers; supports reused objects', () => {

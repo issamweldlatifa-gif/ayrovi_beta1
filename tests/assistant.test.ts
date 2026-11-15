@@ -12,7 +12,7 @@ import {
 import { isAssistantHelpQuestion, selectAssistantModel } from '../src/assistant/service';
 import type { CustomerIdentity } from '../src/customer/auth';
 import { SmartLinkScraper } from '../src/scraper/scraper';
-import { scanCodeFromImage } from '../src/ayrovix/services/codeScanner';
+import { scanCodeFromImage } from '../src/zayrovix/services/codeScanner';
 
 const originalAnthropicKey = process.env.ANTHROPIC_API_KEY;
 const originalSerpApiKey = process.env.SERPAPI_KEY;
@@ -284,7 +284,7 @@ describe('ZAYROVI Claude assistant', () => {
     expect(requestBody.tool_choice).toEqual({ type: 'tool', name: 'search_products' });
   });
 
-  test('lens_search sends a pasted product URL through the real AYROVIX extractor and opens the in-chat order product', async () => {
+  test('lens_search sends a pasted product URL through the real ZAYROVIX extractor and opens the in-chat order product', async () => {
     vi.spyOn(testScraper, 'scrapeProduct').mockResolvedValue({
       id: 'scraped_test', store: 'generic', storeName: 'Merchant Test',
       url: 'https://shop.example.org/products/air-max-95', externalId: 'sku-95',
@@ -321,15 +321,15 @@ describe('ZAYROVI Claude assistant', () => {
     expect(qrResult.presentation?.product.priceToken).toBeTruthy();
   });
 
-  test('server-side AYROVIX scanner reads QR links from assistant image attachments', async () => {
+  test('server-side ZAYROVIX scanner reads QR links from assistant image attachments', async () => {
     const code = await scanCodeFromImage(await qrPng('https://shop.example.org/products/qr-product'));
     expect(code).toMatchObject({ kind: 'url', value: 'https://shop.example.org/products/qr-product' });
   });
 
   test('lens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model', async () => {
     // Un seul marché : sinon Lens lance une recherche par pays (défaut : 9).
-    const previousCountries = process.env.AYROVIX_LENS_COUNTRIES;
-    process.env.AYROVIX_LENS_COUNTRIES = 'fr';
+    const previousCountries = process.env.ZAYROVIX_LENS_COUNTRIES;
+    process.env.ZAYROVIX_LENS_COUNTRIES = 'fr';
     process.env.SERPAPI_KEY = 'serpapi-assistant-test-key';
     delete process.env.ANTHROPIC_API_KEY;
     const fetchMock = vi.fn(async (url: any) => {
@@ -362,8 +362,8 @@ describe('ZAYROVI Claude assistant', () => {
     expect(result.presentation?.product.priceTnd).toBeGreaterThan(0);
     expect(result.modelResult.products[0].priceToken).toBeUndefined();
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    if (previousCountries === undefined) delete process.env.AYROVIX_LENS_COUNTRIES;
-    else process.env.AYROVIX_LENS_COUNTRIES = previousCountries;
+    if (previousCountries === undefined) delete process.env.ZAYROVIX_LENS_COUNTRIES;
+    else process.env.ZAYROVIX_LENS_COUNTRIES = previousCountries;
   });
 
   test('voice endpoint validates audio and returns Groq Whisper transcription', async () => {
@@ -415,7 +415,7 @@ describe('ZAYROVI Claude assistant', () => {
     expect(second.presentation?.ticket.duplicate).toBe(true);
 
     const reviewer = request.agent(app);
-    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     const listed = await reviewer.get('/api/admin/assistant-support').query({ search: first.presentation?.ticket.id });
     expect(listed.status).toBe(200);

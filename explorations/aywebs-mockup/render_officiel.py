@@ -7,7 +7,7 @@ AYWEBs — maquette rendue en code, avec les fondations OFFICIELLES.
 Pourquoi un rendu en code et plus une image générée : une image générée
 invente ses tailles, ses interlignes et ses icônes. Ici, tout vient du dépôt :
 
-  polices     apps/mobile/assets/fonts/AyroviExtracted-{Regular,SemiBold,Bold}.ttf
+  polices     apps/mobile/assets/fonts/ZayroviExtracted-{Regular,SemiBold,Bold}.ttf
   couleurs    brand.json  #571EF6 · #0A0A0A · #333 · #666 · #E5E5E5 · #FFF · #F2F2F2
   CTA achat   tokens.mobile.ts  COMMERCE.action  #FFD60A
   types       tokens.generated  display 40 · title 28 · lead 18 · body 16 · label 14 · caption 12
@@ -56,9 +56,9 @@ W = 390 * 2                      # rendu ×2 pour la netteté
 SCALE = 2
 
 FONT_FILES = {
-    ("regular", "latin"): "AyroviExtracted-Regular.ttf",
-    ("semibold", "latin"): "AyroviExtracted-SemiBold.ttf",
-    ("bold", "latin"): "AyroviExtracted-Bold.ttf",
+    ("regular", "latin"): "ZayroviExtracted-Regular.ttf",
+    ("semibold", "latin"): "ZayroviExtracted-SemiBold.ttf",
+    ("bold", "latin"): "ZayroviExtracted-Bold.ttf",
 }
 _font_cache: dict[tuple[str, int], ImageFont.FreeTypeFont] = {}
 

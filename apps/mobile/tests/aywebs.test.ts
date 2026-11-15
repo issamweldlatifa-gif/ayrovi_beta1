@@ -17,7 +17,7 @@ import {
   analyzeAyWebsPage,
   ayWebsAddReadiness,
   ayWebsNeedsHumanRequest,
-  bridgeAyWebsCartToAyrovi,
+  bridgeAyWebsCartToZayrovi,
   buildAyWebsCaptureInjection,
   createAyWebsPurchaseRequest,
   createAyWebsStoreRequest,
@@ -179,7 +179,7 @@ describe('بطاقة المنتوج', () => {
     integration_type: 'PARTIALLY_SUPPORTED',
     from_cache: false,
     cache_age_ms: null,
-    ayrovi_pricing: {
+    zayrovi_pricing: {
       total_tnd: 583.01,
       pricing_version: 3,
       breakdown: { converted_source_price: 436, shipping: 65, customs: 52, service_fee: 30, other: 0.01 },
@@ -188,18 +188,18 @@ describe('بطاقة المنتوج', () => {
 
   it('يقرا السعر بالدينار كما جاء من الخادم، بلا أي حساب محلي', () => {
     const parsed = parseAyWebsResolvedProduct(PRODUCT);
-    expect(parsed.ayroviPricing?.totalTnd).toBe(583.01);
-    expect(parsed.ayroviPricing?.breakdown?.shipping).toBe(65);
+    expect(parsed.zayroviPricing?.totalTnd).toBe(583.01);
+    expect(parsed.zayroviPricing?.breakdown?.shipping).toBe(65);
     expect(parsed.priceVerified).toBe(true);
     expect(parsed.images).toEqual(['https://m.media-amazon.com/images/I/x.jpg']);
   });
 
   it('يقبل بطاقة بلا سعر منشور (الحقيقة: لا سعر) وبلا حسبة', () => {
     const parsed = parseAyWebsResolvedProduct({
-      ...PRODUCT, price: null, currency: '', ayrovi_pricing: null, price_verified: false, currency_verified: false,
+      ...PRODUCT, price: null, currency: '', zayrovi_pricing: null, price_verified: false, currency_verified: false,
     });
     expect(parsed.price).toBeNull();
-    expect(parsed.ayroviPricing).toBeNull();
+    expect(parsed.zayroviPricing).toBeNull();
     expect(parsed.currencyVerified).toBe(false);
   });
 
@@ -247,7 +247,7 @@ describe('نداءات AYWEBs', () => {
   });
 
   it('رفض الخادم يوصل بالكود متاعو — SESSION_REQUIRED ما يتخبّاش', async () => {
-    stubFetch(() => json({ success: false, code: 'SESSION_REQUIRED', error: 'Session AYROVI invalide ou absente.' }, 400));
+    stubFetch(() => json({ success: false, code: 'SESSION_REQUIRED', error: 'Session ZAYROVI invalide ou absente.' }, 400));
     await expect(analyzeAyWebsPage(ANALYSIS.url, { sessionId: '' })).rejects.toMatchObject({
       code: 'SESSION_REQUIRED',
       status: 400,
@@ -383,8 +383,8 @@ const GROUPS = [
 ];
 
 const OPTIONS = [
-  { source_variant_id: 'v1', attributes: { color: 'Black', size: 'M' }, availability: 'AVAILABLE', ayrovi_pricing: { total_tnd: 412.55 } },
-  { source_variant_id: 'v2', attributes: { color: 'Black', size: 'L' }, availability: 'OUT_OF_STOCK', ayrovi_pricing: { total_tnd: 430 } },
+  { source_variant_id: 'v1', attributes: { color: 'Black', size: 'M' }, availability: 'AVAILABLE', zayrovi_pricing: { total_tnd: 412.55 } },
+  { source_variant_id: 'v2', attributes: { color: 'Black', size: 'L' }, availability: 'OUT_OF_STOCK', zayrovi_pricing: { total_tnd: 430 } },
   { source_variant_id: 'v3', attributes: { color: 'Blue', size: 'M' }, availability: 'AVAILABLE' },
 ].map(parseAyWebsVariantOption);
 
@@ -408,7 +408,7 @@ const CART_ITEM = {
   purchase_mode: 'SUPPORTED',
   checkout_ready: true,
   line_total_tnd: 825.1,
-  linked_to_ayrovi: true,
+  linked_to_zayrovi: true,
   created_at: '2026-10-07T10:00:00.000Z',
   updated_at: '2026-10-07T10:00:00.000Z',
 };
@@ -488,7 +488,7 @@ describe('شكل الخيارات والسلّة', () => {
         availability: option.availability,
         availability_reason: option.availabilityReason,
         image: option.image,
-        ayrovi_pricing: option.totalTnd == null ? null : { total_tnd: option.totalTnd },
+        zayrovi_pricing: option.totalTnd == null ? null : { total_tnd: option.totalTnd },
       })),
       selection_required: true,
       availability: 'AVAILABLE',
@@ -510,13 +510,13 @@ describe('شكل الخيارات والسلّة', () => {
     expect(cart.hasCart).toBe(true);
     expect(cart.totals.units).toBe(2);
     expect(cart.totals.unlinkedUnits).toBe(0);
-    expect(cart.items[0].linkedToAyrovi).toBe(true);
+    expect(cart.items[0].linkedToZayrovi).toBe(true);
     expect(cart.groups[0].items[0].itemNumber).toBe('AYWITEM-000001');
     expect(cart.blockers).toEqual([]);
 
-    // `linked_to_ayrovi` غايب = «ما نعرفوش» (null)، موش «موش مربوط».
-    const unknown = parseAyWebsCart({ ...cartPayload(), items: [{ ...CART_ITEM, linked_to_ayrovi: undefined }] });
-    expect(unknown.items[0].linkedToAyrovi).toBeNull();
+    // `linked_to_zayrovi` غايب = «ما نعرفوش» (null)، موش «موش مربوط».
+    const unknown = parseAyWebsCart({ ...cartPayload(), items: [{ ...CART_ITEM, linked_to_zayrovi: undefined }] });
+    expect(unknown.items[0].linkedToZayrovi).toBeNull();
 
     expect(() => parseAyWebsCart({ items: { a: 1 } })).toThrow(/panier/);
   });
@@ -537,7 +537,7 @@ describe('نداءات السلّة', () => {
         duplicate: false,
         idempotent_replay: false,
         message: 'Ajouté',
-        ayrovi: { linked: true, cart_item_id: 'cart_9', quantity: 2, reason: 'LINKED' },
+        zayrovi: { linked: true, cart_item_id: 'cart_9', quantity: 2, reason: 'LINKED' },
         quote_used: true,
         source_reread: false,
         reread_reason: null,
@@ -570,7 +570,7 @@ describe('نداءات السلّة', () => {
     }
 
     expect(outcome.item.itemNumber).toBe('AYWITEM-000001');
-    expect(outcome.ayrovi).toMatchObject({ linked: true, cartItemId: 'cart_9', quantity: 2 });
+    expect(outcome.zayrovi).toMatchObject({ linked: true, cartItemId: 'cart_9', quantity: 2 });
     expect(outcome.quoteUsed).toBe(true);
     expect(outcome.cart.totals.units).toBe(2);
   });
@@ -578,7 +578,7 @@ describe('نداءات السلّة', () => {
   it('تعديل الكمية: رقم مطلق — «3» تعني ثلاث قطع، موش +3', async () => {
     const spy = stubFetch(() => json({
       success: true,
-      data: { item: { ...CART_ITEM, quantity: 3 }, removed: false, ayrovi: { linked: true, cartItemId: 'cart_9', quantity: 3, reason: 'SYNCED' } },
+      data: { item: { ...CART_ITEM, quantity: 3 }, removed: false, zayrovi: { linked: true, cartItemId: 'cart_9', quantity: 3, reason: 'SYNCED' } },
       cart: cartPayload(),
     }));
 
@@ -615,7 +615,7 @@ describe('نداءات السلّة', () => {
       },
     }));
 
-    const result = await bridgeAyWebsCartToAyrovi({ sessionId: SESSION43 });
+    const result = await bridgeAyWebsCartToZayrovi({ sessionId: SESSION43 });
     expect(result.moved[0]).toMatchObject({ cartItemId: 'cart_9', synced: true, quantity: 2 });
     expect(result.skipped[0].code).toBe('NOT_CHECKOUT_READY');
     expect(result.totalTnd).toBe(825.1);
@@ -628,7 +628,7 @@ describe('نداءات السلّة', () => {
       error: 'Vérifiez les articles AYWEBs avant de continuer.',
     }, 409));
 
-    await expect(bridgeAyWebsCartToAyrovi({ sessionId: SESSION43 })).rejects.toMatchObject({
+    await expect(bridgeAyWebsCartToZayrovi({ sessionId: SESSION43 })).rejects.toMatchObject({
       code: AYWEBS_SOURCE_VERIFICATION_REQUIRED,
       status: 409,
     });
@@ -652,7 +652,7 @@ describe('نداءات السلّة', () => {
         title: 'Écouteurs',
         store_id: 'amazon',
         variant_groups: GROUPS,
-        variant_details: [{ source_variant_id: 'v1', attributes: { color: 'Black', size: 'M' }, availability: 'AVAILABLE', ayrovi_pricing: { total_tnd: 412.55 } }],
+        variant_details: [{ source_variant_id: 'v1', attributes: { color: 'Black', size: 'M' }, availability: 'AVAILABLE', zayrovi_pricing: { total_tnd: 412.55 } }],
       },
       missing: ['size'],
       quote_token: 'q'.repeat(40),

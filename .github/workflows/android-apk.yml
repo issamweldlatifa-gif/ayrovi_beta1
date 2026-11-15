@@ -18,8 +18,8 @@ jobs:
   android:
     runs-on: ubuntu-latest
     env:
-      AYROVI_VERSION_CODE: ${{ github.event.inputs.versionCode }}
-      AYROVI_VERSION_NAME: ${{ github.event.inputs.versionCode && format('1.0.{0}', github.event.inputs.versionCode) || '1.0' }}
+      ZAYROVI_VERSION_CODE: ${{ github.event.inputs.versionCode }}
+      ZAYROVI_VERSION_NAME: ${{ github.event.inputs.versionCode && format('1.0.{0}', github.event.inputs.versionCode) || '1.0' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -70,7 +70,7 @@ jobs:
         env:
           LAST: ${{ github.event.inputs.lastPublishedVersionCode }}
         run: |
-          node -e "const n=Number(process.env.AYROVI_VERSION_CODE), last=Number(process.env.LAST); if(!Number.isSafeInteger(n)||!Number.isSafeInteger(last)||last<0||n<=last||n>2100000000) process.exit(1)"
+          node -e "const n=Number(process.env.ZAYROVI_VERSION_CODE), last=Number(process.env.LAST); if(!Number.isSafeInteger(n)||!Number.isSafeInteger(last)||last<0||n<=last||n>2100000000) process.exit(1)"
       - name: Debug APK (test direct sur téléphone)
         # `sh ./gradlew` (et non `./gradlew`) : l'échec CI du 03/10 (exit 126,
         # « permission denied » à l'exécution directe du wrapper) ne peut plus
@@ -88,17 +88,17 @@ jobs:
       - name: Detect release signing secrets
         id: sign
         env:
-          KS: ${{ secrets.AYROVI_KEYSTORE_BASE64 }}
+          KS: ${{ secrets.ZAYROVI_KEYSTORE_BASE64 || secrets.AYROVI_KEYSTORE_BASE64 }}
         run: |
           if [ -n "$KS" ]; then echo "available=true" >> "$GITHUB_OUTPUT"; else echo "available=false" >> "$GITHUB_OUTPUT"; fi
 
       - name: Release AAB signé (Play Store) — seulement si le keystore est configuré
         if: steps.sign.outputs.available == 'true'
         env:
-          AYROVI_KEYSTORE_BASE64: ${{ secrets.AYROVI_KEYSTORE_BASE64 }}
-          AYROVI_KEYSTORE_PASSWORD: ${{ secrets.AYROVI_KEYSTORE_PASSWORD }}
-          AYROVI_KEY_ALIAS: ${{ secrets.AYROVI_KEY_ALIAS }}
-          AYROVI_KEY_PASSWORD: ${{ secrets.AYROVI_KEY_PASSWORD }}
+          ZAYROVI_KEYSTORE_BASE64: ${{ secrets.ZAYROVI_KEYSTORE_BASE64 || secrets.AYROVI_KEYSTORE_BASE64 }}
+          ZAYROVI_KEYSTORE_PASSWORD: ${{ secrets.ZAYROVI_KEYSTORE_PASSWORD || secrets.AYROVI_KEYSTORE_PASSWORD }}
+          ZAYROVI_KEY_ALIAS: ${{ secrets.ZAYROVI_KEY_ALIAS || secrets.AYROVI_KEY_ALIAS }}
+          ZAYROVI_KEY_PASSWORD: ${{ secrets.ZAYROVI_KEY_PASSWORD || secrets.AYROVI_KEY_PASSWORD }}
         run: cd android && sh ./gradlew bundleRelease --no-daemon
 
       - name: Verify release AAB signature

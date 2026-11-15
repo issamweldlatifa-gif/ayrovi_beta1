@@ -1,11 +1,11 @@
 
-> ayrovi@3.10.4 test
+> zayrovi@3.10.4 test
 > vitest run
 
 
 [1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/user/ayrovi_beta1[39m
 
-[90mstdout[2m | tests/ayrovi.test.ts
+[90mstdout[2m | tests/zayrovi.test.ts
 [22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -15,7 +15,7 @@
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-[90mstdout[2m | tests/ayrovi.test.ts[2m > [22m[2mAYSONIC platform[2m > [22m[2mone-shot data migrations never clobber admin edits across restarts (LENS block + payment methods)
+[90mstdout[2m | tests/zayrovi.test.ts[2m > [22m[2mAYSONIC platform[2m > [22m[2mone-shot data migrations never clobber admin edits across restarts (LENS block + payment methods)
 [22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -25,7 +25,7 @@
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
- [32m✓[39m tests/ayrovi.test.ts [2m([22m[2m43 tests[22m[2m)[22m[33m 1661[2mms[22m[39m
+ [32m✓[39m tests/zayrovi.test.ts [2m([22m[2m43 tests[22m[2m)[22m[33m 1661[2mms[22m[39m
      [33m[2m✓[22m[39m manual transfer lifecycle preserves proof history, separates invoice and enables tracking only after shipping [33m 547[2mms[22m[39m
 [90mstdout[2m | tests/arrival-ingestion.test.ts[2m > [22m[2mAdministration CRM Arrival AI ingestion[2m > [22m[2mkeeps operational Arrivals separate from the existing public CMS arrivals
 [22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
@@ -165,7 +165,7 @@
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-[90mstdout[2m | tests/purchasing-foundation.test.ts[2m > [22m[2mAYROVI Achats (P2.3)[2m > [22m[2mpermissions, listes et framework[2m > [22m[2mle schéma est prêt avant le premier appel, donc aucune table n’est créée à la volée
+[90mstdout[2m | tests/purchasing-foundation.test.ts[2m > [22m[2mZAYROVI Achats (P2.3)[2m > [22m[2mpermissions, listes et framework[2m > [22m[2mle schéma est prêt avant le premier appel, donc aucune table n’est créée à la volée
 [22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -176,7 +176,7 @@
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
  [32m✓[39m tests/purchasing-foundation.test.ts [2m([22m[2m36 tests[22m[2m)[22m[33m 592[2mms[22m[39m
-[90mstdout[2m | tests/ayrovix.test.ts
+[90mstdout[2m | tests/zayrovix.test.ts
 [22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -186,68 +186,68 @@
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mSerpApi Google Lens renvoie produits, images et prix puis évite la recherche texte Claude
-[22m[39m[AYROVIX serpapi-lens] 1 visual product matches
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2mSerpApi Google Lens renvoie produits, images et prix puis évite la recherche texte Claude
+[22m[39m[ZAYROVIX serpapi-lens] 1 visual product matches
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mimage → identification Claude (simulée) → candidats catalogue → événement → choix
-[22m[39m[AYROVIX] Trying anthropic claude-haiku-4-5-20251001
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2mimage → identification Claude (simulée) → candidats catalogue → événement → choix
+[22m[39m[ZAYROVIX] Trying anthropic claude-haiku-4-5-20251001
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mimage → identification Claude (simulée) → candidats catalogue → événement → choix
-[22m[39m[AYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2mimage → identification Claude (simulée) → candidats catalogue → événement → choix
+[22m[39m[ZAYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mimage → identification Claude (simulée) → candidats catalogue → événement → choix
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2mimage → identification Claude (simulée) → candidats catalogue → événement → choix
 [22m[39m[LensTrace ayx_muaornv7_l85f5d] {"requestId":"ayx_muaornv7_l85f5d","startedAt":"2026-09-21T03:29:03.379Z","normalizeMs":5,"imageBytesIn":91,"anthropicVisionMs":3,"serpApiTotalMs":3,"pipelineCacheHit":false,"searchCandidatesMs":1,"anthropicRelevanceMs":0,"dedupMs":0,"candidatesCount":1,"totalBackendMs":10,"endedAt":"2026-09-21T03:29:03.389Z"}
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
-[22m[39m[AYROVIX] Trying anthropic claude-haiku-4-5-20251001
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[22m[39m[ZAYROVIX] Trying anthropic claude-haiku-4-5-20251001
 
-[90mstderr[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[90mstderr[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
 [22m[39m[AI Core Anthropic] HTTP 500 internal
 
-[90mstderr[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
-[22m[39m[AYROVIX] structured output failed (Vision provider HTTP 500) — retrying JSON
+[90mstderr[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[22m[39m[ZAYROVIX] structured output failed (Vision provider HTTP 500) — retrying JSON
 
-[90mstderr[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[90mstderr[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
 [22m[39m[AI Core Anthropic] HTTP 500 internal
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
-[22m[39m[AYROVIX serpapi-lens] 1 visual product matches
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[22m[39m[ZAYROVIX serpapi-lens] 1 visual product matches
 
-[90mstderr[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
-[22m[39m[AYROVIX analyze-image] vision failed — continuing with visual matches
+[90mstderr[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[22m[39m[ZAYROVIX analyze-image] vision failed — continuing with visual matches
 
-[90mstderr[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[90mstderr[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
 [22m[39m[AI Core Anthropic] HTTP 500 internal
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
 [22m[39m[LensTrace ayx_muaornvv_9m6s5a] {"requestId":"ayx_muaornvv_9m6s5a","startedAt":"2026-09-21T03:29:03.403Z","normalizeMs":1,"imageBytesIn":91,"anthropicVisionMs":4,"serpApiTotalMs":4,"pipelineCacheHit":false,"searchCandidatesMs":1,"anthropicRelevanceMs":0,"dedupMs":0,"candidatesCount":1,"totalBackendMs":8,"endedAt":"2026-09-21T03:29:03.411Z"}
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mClaude lit le prix visible dans la même requête structurée que Vision
-[22m[39m[AYROVIX] Trying anthropic claude-haiku-4-5-20251001
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2mClaude lit le prix visible dans la même requête structurée que Vision
+[22m[39m[ZAYROVIX] Trying anthropic claude-haiku-4-5-20251001
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mClaude lit le prix visible dans la même requête structurée que Vision
-[22m[39m[AYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2mClaude lit le prix visible dans la même requête structurée que Vision
+[22m[39m[ZAYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mClaude lit le prix visible dans la même requête structurée que Vision
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2mClaude lit le prix visible dans la même requête structurée que Vision
 [22m[39m[LensTrace ayx_muaornw8_66xrwz] {"requestId":"ayx_muaornw8_66xrwz","startedAt":"2026-09-21T03:29:03.416Z","normalizeMs":2,"imageBytesIn":91,"anthropicVisionMs":1,"serpApiTotalMs":1,"pipelineCacheHit":false,"searchCandidatesMs":1,"dedupMs":0,"candidatesCount":0,"totalBackendMs":4,"endedAt":"2026-09-21T03:29:03.420Z"}
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mun ancien prix barré n'est jamais accepté comme prix de commande
-[22m[39m[AYROVIX] Trying anthropic claude-haiku-4-5-20251001
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2mun ancien prix barré n'est jamais accepté comme prix de commande
+[22m[39m[ZAYROVIX] Trying anthropic claude-haiku-4-5-20251001
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mun ancien prix barré n'est jamais accepté comme prix de commande
-[22m[39m[AYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2mun ancien prix barré n'est jamais accepté comme prix de commande
+[22m[39m[ZAYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mun ancien prix barré n'est jamais accepté comme prix de commande
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2mun ancien prix barré n'est jamais accepté comme prix de commande
 [22m[39m[LensTrace ayx_muaornwh_264yrh] {"requestId":"ayx_muaornwh_264yrh","startedAt":"2026-09-21T03:29:03.425Z","normalizeMs":2,"imageBytesIn":91,"anthropicVisionMs":1,"serpApiTotalMs":1,"pipelineCacheHit":false,"searchCandidatesMs":0,"anthropicRelevanceMs":1,"dedupMs":0,"candidatesCount":1,"totalBackendMs":4,"endedAt":"2026-09-21T03:29:03.429Z"}
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mClaude Web Search transforme les résultats officiels Anthropic en candidats
-[22m[39m[AYROVIX provider-search] 2 candidates, searches=1
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2mClaude Web Search transforme les résultats officiels Anthropic en candidats
+[22m[39m[ZAYROVIX provider-search] 2 candidates, searches=1
 
-[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mQR texte exclut toute page Web Search sans prix et lien marchand exploitables
-[22m[39m[AYROVIX provider-search] 1 candidates, searches=1
+[90mstdout[2m | tests/zayrovix.test.ts[2m > [22m[2mZAYROVIX Lens[2m > [22m[2mQR texte exclut toute page Web Search sans prix et lien marchand exploitables
+[22m[39m[ZAYROVIX provider-search] 1 candidates, searches=1
 
- [32m✓[39m tests/ayrovix.test.ts [2m([22m[2m26 tests[22m[2m)[22m[33m 389[2mms[22m[39m
-[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mCategory Master (official taxonomy)[2m > [22m[2mthe master is data imported from AYROVI, never hardcoded: empty master disables classification
+ [32m✓[39m tests/zayrovix.test.ts [2m([22m[2m26 tests[22m[2m)[22m[33m 389[2mms[22m[39m
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mCategory Master (official taxonomy)[2m > [22m[2mthe master is data imported from ZAYROVI, never hardcoded: empty master disables classification
 [22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -493,26 +493,26 @@
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mchat retries Claude without tools then still answers a greeting
+[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mZAYROVI Claude assistant[2m > [22m[2mchat retries Claude without tools then still answers a greeting
 [22m[39m[AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
 
-[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mchat retries Claude without tools then still answers a greeting
+[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mZAYROVI Claude assistant[2m > [22m[2mchat retries Claude without tools then still answers a greeting
 [22m[39m[AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
 
-[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mshopping chat stays online when Claude rejects every request
+[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mZAYROVI Claude assistant[2m > [22m[2mshopping chat stays online when Claude rejects every request
 [22m[39m[AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
 
-[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mshopping chat stays online when Claude rejects every request
+[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mZAYROVI Claude assistant[2m > [22m[2mshopping chat stays online when Claude rejects every request
 [22m[39m[AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
 
-[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mshopping chat stays online when Claude rejects every request
+[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mZAYROVI Claude assistant[2m > [22m[2mshopping chat stays online when Claude rejects every request
 [22m[39m[AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
 
-[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mshopping chat stays online when Claude rejects every request
+[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mZAYROVI Claude assistant[2m > [22m[2mshopping chat stays online when Claude rejects every request
 [22m[39m[AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
 
-[90mstdout[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mlens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model
-[22m[39m[AYROVIX serpapi-lens] 1 visual product matches
+[90mstdout[2m | tests/assistant.test.ts[2m > [22m[2mZAYROVI Claude assistant[2m > [22m[2mlens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model
+[22m[39m[ZAYROVIX serpapi-lens] 1 visual product matches
 
  [32m✓[39m tests/assistant.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 754[2mms[22m[39m
      [33m[2m✓[22m[39m lens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model [33m 513[2mms[22m[39m
@@ -681,7 +681,7 @@
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-[90mstdout[2m | tests/ai-shadow-readiness.test.ts[2m > [22m[2mAYROVIX execution-lane isolation[2m > [22m[2mshadow/probe cannot read, replace or evict the canonical Lens cache
+[90mstdout[2m | tests/ai-shadow-readiness.test.ts[2m > [22m[2mZAYROVIX execution-lane isolation[2m > [22m[2mshadow/probe cannot read, replace or evict the canonical Lens cache
 [22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -691,7 +691,7 @@
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-[90mstdout[2m | tests/ai-shadow-readiness.test.ts[2m > [22m[2mAYROVIX execution-lane isolation[2m > [22m[2mshadow/probe never enter canonical evaluations or learning aggregates
+[90mstdout[2m | tests/ai-shadow-readiness.test.ts[2m > [22m[2mZAYROVIX execution-lane isolation[2m > [22m[2mshadow/probe never enter canonical evaluations or learning aggregates
 [22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -712,7 +712,7 @@
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-[90mstderr[2m | tests/voice-transport.test.ts[2m > [22m[2mAYROVI voice transport and session subsystem[2m > [22m[2mopens one quota circuit on Gemini HTTP 429 and does not retry subsequent TTS requests
+[90mstderr[2m | tests/voice-transport.test.ts[2m > [22m[2mZAYROVI voice transport and session subsystem[2m > [22m[2mopens one quota circuit on Gemini HTTP 429 and does not retry subsequent TTS requests
 [22m[39m[Gemini TTS] TTS_QUOTA_EXCEEDED status=429 model=gemini-3.1-flash-tts-preview retryAt=2026-09-21T04:29:27.868Z
 
  [32m✓[39m tests/voice-transport.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 105[2mms[22m[39m
@@ -760,7 +760,7 @@
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
 [90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mregistration enqueues one escaped/localized welcome, not on login; provider accepted then payload erased
-[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "مرحبًا بك في AYROVI!"
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "مرحبًا بك في ZAYROVI!"
 
 [90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2munconfigured mail does not break registration, never fakes a reset send
 [22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
@@ -786,7 +786,7 @@
 [22m[39m[Mail] فشل الإرسال عبر resend: HTTP 503
 
 [90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mtemporary provider failure is durable and retried with stable idempotency key
-[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez ZAYROVI !"
 
 [90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mend-to-end reset: hashed token, encrypted payload, no session/password in responses; single-use and all sessions revoked
 [22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
@@ -799,7 +799,7 @@
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
 [90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mend-to-end reset: hashed token, encrypted payload, no session/password in responses; single-use and all sessions revoked
-[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez ZAYROVI !"
 
 [90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mend-to-end reset: hashed token, encrypted payload, no session/password in responses; single-use and all sessions revoked
 [22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
@@ -825,7 +825,7 @@
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
 [90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mexpiry, tampering, blocked account and changed email invalidate a link
-[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez ZAYROVI !"
 
 [90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mexpiry, tampering, blocked account and changed email invalidate a link
 [22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
@@ -841,7 +841,7 @@
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
 [90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mvalidating password does not consume token; consuming one invalidates all outstanding links
-[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez ZAYROVI !"
 
 [90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mvalidating password does not consume token; consuming one invalidates all outstanding links
 [22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
@@ -870,7 +870,7 @@
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
 [90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mrejects non-JSON and cross-origin POSTs and uses configured origin, never Host, for email links
-[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez ZAYROVI !"
 
 [90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mrejects non-JSON and cross-origin POSTs and uses configured origin, never Host, for email links
 [22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
@@ -1278,7 +1278,7 @@
  [32m✓[39m tests/navigation-history.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 55[2mms[22m[39m
  [32m✓[39m tests/homepage-navigation.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
  [32m✓[39m tests/editorial-system.test.tsx [2m([22m[2m107 tests[22m[2m)[22m[33m 747[2mms[22m[39m
- [32m✓[39m src/ayrovix/services/aiLensIntelligence.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/zayrovix/services/aiLensIntelligence.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 8[2mms[22m[39m
  [32m✓[39m tests/assistant-image-preparation.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 39[2mms[22m[39m
  [32m✓[39m tests/product-selection.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 11[2mms[22m[39m
 [90mstdout[2m | tests/lens-text.test.ts
@@ -1322,7 +1322,7 @@
  [32m✓[39m tests/voice-input-capture.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 28[2mms[22m[39m
  [32m✓[39m tests/editorial-commerce-policy.test.tsx [2m([22m[2m19 tests[22m[2m)[22m[32m 190[2mms[22m[39m
  [32m✓[39m tests/otp.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 32[2mms[22m[39m
- [32m✓[39m tests/ayrovix-navigation.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/zayrovix-navigation.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 22[2mms[22m[39m
 [90mstdout[2m | tests/mailer.test.ts[2m > [22m[2mtransactional mail readiness[2m > [22m[2mrequires a supported provider, API key and valid sender address
 [22m[39m[Mail] (غير مفعّل — MAIL_PROVIDER=unsupported) إلى=client@example.com الموضوع="Test"
 
@@ -1367,7 +1367,7 @@
  [32m✓[39m tests/customer-notification-migration.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 182[2mms[22m[39m
  [32m✓[39m tests/icon-system.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 32[2mms[22m[39m
  [32m✓[39m tests/editorial-feature-identity.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 127[2mms[22m[39m
- [32m✓[39m tests/ayrovix-gallery.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 20[2mms[22m[39m
+ [32m✓[39m tests/zayrovix-gallery.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 20[2mms[22m[39m
  [32m✓[39m tests/merchant-availability.test.ts [2m([22m[2m25 tests[22m[2m)[22m[33m 303[2mms[22m[39m
 [90mstdout[2m | tests/facebook-migration.test.ts[2m > [22m[2mFacebook identity migration[2m > [22m[2mupgrades legacy GOOGLE/PHONE identity constraints without losing identities
 [22m[39m[DB] تمت ترقية جدول customer_auth_identities إلى المخطط الحالي.

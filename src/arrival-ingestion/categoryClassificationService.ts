@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import { recordAdminAudit, type AdminAuditActor } from '../admin/audit';
 import type { AiCompletionRequest, AiCompletionResult, AiResponsesProviderAdapter } from '../ai-core/contracts';
-import { getAyroviAiCore } from '../ai-core/core';
+import { getZayroviAiCore } from '../ai-core/core';
 import { ArrivalIngestionError } from './errors';
 import { CategoryMasterService, normalizeCategoryCode } from './categoryMasterService';
 import type {
@@ -63,7 +63,7 @@ export class CategoryClassificationService {
   constructor(
     private readonly db: QatafoDatabase,
     readonly categories: CategoryMasterService = new CategoryMasterService(db),
-    private readonly adapter: AiResponsesProviderAdapter = getAyroviAiCore().responses(),
+    private readonly adapter: AiResponsesProviderAdapter = getZayroviAiCore().responses(),
   ) {}
 
   /**
@@ -423,7 +423,7 @@ export class CategoryClassificationService {
       messages: [{ role: 'user', content: [{ type: 'text', text: `LINES:\n${JSON.stringify(lines)}` }] }],
       maxOutputTokens: 4000,
       temperature: 0,
-      outputSchema: { name: 'ayrovi_arrival_category_classification', schema: CATEGORY_CLASSIFICATION_SCHEMA as unknown as Record<string, unknown> },
+      outputSchema: { name: 'zayrovi_arrival_category_classification', schema: CATEGORY_CLASSIFICATION_SCHEMA as unknown as Record<string, unknown> },
     };
     const result = await this.adapter.complete(request, AbortSignal.timeout(60_000) as unknown as AbortSignal);
     const parsed = this.parseResponse(result.textBlocks.join(''));

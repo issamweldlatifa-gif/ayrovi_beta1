@@ -25,7 +25,7 @@ export function verifyPassword(password: string, stored: string | null | undefin
  */
 let dummyHash = '';
 export function burnPasswordCheck(password: string): false {
-  dummyHash ||= hashPassword('ayrovi-dummy-password-never-valid');
+  dummyHash ||= hashPassword('zayrovi-dummy-password-never-valid');
   verifyPassword(password, dummyHash);
   return false;
 }

@@ -12,7 +12,7 @@ async function getOcrWorker() {
     ocrWorkerPromise = Tesseract.createWorker('eng+fra', 1, {
       logger: () => {},
       // Never let a worker error become an uncaught process-level exception.
-      errorHandler: (error) => console.warn('[AYROVIX OCR worker]', error?.message || error),
+      errorHandler: (error) => console.warn('[ZAYROVIX OCR worker]', error?.message || error),
     }).then(async (worker) => {
       await worker.setParameters({ tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT, preserve_interword_spaces: '1' });
       return worker;
@@ -69,7 +69,7 @@ async function recognizeDocument(imageBuffer: Buffer) {
   pendingOcrJobs += 1;
   const job = ocrQueue.then(async () => {
     const worker = await getOcrWorker();
-    const configuredTimeout = Number(process.env.AYROVIX_OCR_TIMEOUT_MS);
+    const configuredTimeout = Number(process.env.ZAYROVIX_OCR_TIMEOUT_MS);
     const timeoutMs = Number.isFinite(configuredTimeout)
       ? Math.min(15_000, Math.max(2_000, configuredTimeout))
       : 7_000;

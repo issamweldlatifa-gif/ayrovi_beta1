@@ -75,26 +75,26 @@ const writePng = async (file, input, width, height = width) => {
 // ---- Web (client/public/media) -------------------------------------------------------------------------
 const media = 'client/public/media';
 // Retired v6 file: the official avatar no longer uses a blue symbol.
-fs.rmSync(`${media}/logo-ayrovi-symbol-blue.svg`, { force: true });
-fs.writeFileSync(`${media}/logo-ayrovi-mark.svg`, svg(symbol.width, symbol.height, path(symbol, INK)));
+fs.rmSync(`${media}/logo-zayrovi-symbol-blue.svg`, { force: true });
+fs.writeFileSync(`${media}/logo-zayrovi-mark.svg`, svg(symbol.width, symbol.height, path(symbol, INK)));
 for (const [tone, ink] of [['black', INK], ['white', WHITE]]) {
-  fs.writeFileSync(`${media}/logo-ayrovi-wordmark-${tone}.svg`, svg(wordmark.width, wordmark.height, path(wordmark, ink)));
+  fs.writeFileSync(`${media}/logo-zayrovi-wordmark-${tone}.svg`, svg(wordmark.width, wordmark.height, path(wordmark, ink)));
   // `-violet` names are historical URLs kept by stored interface configs; same monochrome lockup.
-  for (const suffix of ['', '-violet']) fs.writeFileSync(`${media}/logo-ayrovi-lockup-${tone}${suffix}.svg`, lockup(ink));
-  await writePng(`${media}/logo-ayrovi-lockup-${tone}-violet.png`, lockup(ink), 1200, Math.round((1200 / lockupWidth) * 1000));
+  for (const suffix of ['', '-violet']) fs.writeFileSync(`${media}/logo-zayrovi-lockup-${tone}${suffix}.svg`, lockup(ink));
+  await writePng(`${media}/logo-zayrovi-lockup-${tone}-violet.png`, lockup(ink), 1200, Math.round((1200 / lockupWidth) * 1000));
 }
 // Official account avatar (round): white stripes on a black disc, fitted inside the circle (owner, 14/11).
-fs.writeFileSync(`${media}/logo-ayrovi-avatar.svg`, tile(512, { radius: 0.4, background: INK, color: WHITE, round: true }));
+fs.writeFileSync(`${media}/logo-zayrovi-avatar.svg`, tile(512, { radius: 0.4, background: INK, color: WHITE, round: true }));
 // Browser tab favicon: white tile, solid ink Z (stripes do not survive 16–32 px).
-fs.writeFileSync(`${media}/logo-ayrovi-icon.svg`, tile(512, { share: 0.64, background: WHITE, color: INK, shape: solid }));
-fs.writeFileSync(`${media}/logo-ayrovi-loading.svg`, svg(136, 136,
+fs.writeFileSync(`${media}/logo-zayrovi-icon.svg`, tile(512, { share: 0.64, background: WHITE, color: INK, shape: solid }));
+fs.writeFileSync(`${media}/logo-zayrovi-loading.svg`, svg(136, 136,
   `<style>.arc{transform-origin:68px 68px;animation:turn 1100ms linear infinite}@keyframes turn{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.arc{animation:none}}</style><circle cx="68" cy="68" r="65" fill="none" stroke="#E5E5E5" stroke-width="4"/><path class="arc" d="M 68 3 A 65 65 0 0 1 129.08 45.77" fill="none" stroke="${LOADING_GREY}" stroke-width="6" stroke-linecap="round"/>` + path(symbol, LOADING_GREY, BOOT_TRANSFORM)));
 // Light symbol (ink stripes, transparent) for headers/avatars/og:image; white stripes for dark surfaces.
-await writePng(`${media}/logo-ayrovi.png`, tile(512, { share: 0.86, color: INK }), 512);
-await writePng(`${media}/logo-ayrovi-light.png`, tile(512, { share: 0.86, color: WHITE }), 512);
+await writePng(`${media}/logo-zayrovi.png`, tile(512, { share: 0.86, color: INK }), 512);
+await writePng(`${media}/logo-zayrovi-light.png`, tile(512, { share: 0.86, color: WHITE }), 512);
 // PWA + apple-touch: white tile, ink stripes (same as the launcher icon).
 for (const [name, size] of [['192', 192], ['512', 512], ['apple-touch', 180]]) {
-  await writePng(`${media}/logo-ayrovi-${name}.png`, tile(size, { share: 0.62, background: WHITE, color: INK }), size);
+  await writePng(`${media}/logo-zayrovi-${name}.png`, tile(size, { share: 0.62, background: WHITE, color: INK }), size);
 }
 
 // ---- Expo (apps/mobile/assets/images) ------------------------------------------------------------------

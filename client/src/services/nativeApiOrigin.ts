@@ -1,7 +1,7 @@
 import { getNativeSessionToken, isNativeApp } from './nativeShell';
-import { AYROVI_API_ORIGIN, normalizeApiOrigin } from './apiOrigin';
-export { AYROVI_API_ORIGIN };
-const PATCH_FLAG = '__ayroviApiOriginPatched';
+import { ZAYROVI_API_ORIGIN, normalizeApiOrigin } from './apiOrigin';
+export { ZAYROVI_API_ORIGIN };
+const PATCH_FLAG = '__zayroviApiOriginPatched';
 
 /** Only bundled API paths move to the API. Assets and third-party URLs do not. */
 export function nativeTarget(input: string | URL, base: string, origin: string): URL {
@@ -13,7 +13,7 @@ export function nativeTarget(input: string | URL, base: string, origin: string):
   return url;
 }
 
-export function installNativeApiOrigin(origin: string = AYROVI_API_ORIGIN): void {
+export function installNativeApiOrigin(origin: string = ZAYROVI_API_ORIGIN): void {
   if (!isNativeApp()) return;
   const trusted = normalizeApiOrigin(origin);
   if (!trusted) throw new TypeError('HTTPS_API_ORIGIN_REQUIRED');
@@ -31,7 +31,7 @@ export function installNativeApiOrigin(origin: string = AYROVI_API_ORIGIN): void
       ? new Request(url.href, new Request(input.clone(), init))
       : new Request(url.href, init);
     const headers = new Headers(request.headers);
-    if (!headers.has('x-ayrovi-native')) headers.set('x-ayrovi-native', '1');
+    if (!headers.has('x-zayrovi-native')) headers.set('x-zayrovi-native', '1');
     const token = getNativeSessionToken();
     if (token && !headers.has('Authorization')) headers.set('Authorization', `Bearer ${token}`);
     // Never forward custom session headers over a redirect, even same-site.

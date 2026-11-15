@@ -59,7 +59,7 @@ describe('rankCandidates — la confiance décide, sans réglage', () => {
   const ebay = card({ id: 'e', sourceUrl: 'https://www.ebay.fr/itm/9', match: 80, priceTnd: 50 });
   const catalog = parseCandidate({
     id: 'cat', kind: 'catalog', title: 'Notre stock', source: 'Collection ZAYROVI',
-    sourceUrl: 'https://ayrovi.tn/p/1', match: 1,
+    sourceUrl: 'https://zayrovi.com/p/1', match: 1,
   });
 
   it('une boutique inconnue ne passe jamais devant une enseigne fiable', () => {

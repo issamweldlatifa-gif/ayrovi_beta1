@@ -32,7 +32,7 @@ npm start
 
 L’application utilise `http://localhost:3000` par défaut. L’Admin est disponible sur `/admin`.
 
-En développement, si `ADMIN_PASSWORD` n’est pas défini, un compte local `admin@ayrovi.tn` est créé avec le mot de passe de démonstration `AyroviBeta2026!`. En production, `ADMIN_EMAIL` et un `ADMIN_PASSWORD` unique d’au moins 12 caractères doivent être définis.
+En développement, si `ADMIN_PASSWORD` n’est pas défini, un compte local `admin@zayrovi.com` est créé avec le mot de passe de démonstration `ZayroviBeta2026!`. En production, `ADMIN_EMAIL` et un `ADMIN_PASSWORD` unique d’au moins 12 caractères doivent être définis.
 
 ## Validation
 
@@ -65,12 +65,12 @@ Ensuite, chaque vérificateur de navigateur se lance **avec un serveur réel en
 cours** et la variable d’adresse :
 
 ```bash
-AYROVI_BASE_URL=http://localhost:3000 npm run audit:design
-AYROVI_BASE_URL=http://localhost:3000 npm run verify:public-nav
-AYROVI_BASE_URL=http://localhost:3000 npm run verify:footer-payments
+ZAYROVI_BASE_URL=http://localhost:3000 npm run audit:design
+ZAYROVI_BASE_URL=http://localhost:3000 npm run verify:public-nav
+ZAYROVI_BASE_URL=http://localhost:3000 npm run verify:footer-payments
 ```
 
-Sinon ils s’arrêtent sur `AYROVI_BASE_URL est requis.` Les runners
+Sinon ils s’arrêtent sur `ZAYROVI_BASE_URL est requis.` Les runners
 `verify:public-additions`, `verify:lens-*` et `verify:sonim-*` hébergent en
 revanche leur propre fixture et n’ont besoin de rien.
 
@@ -108,7 +108,7 @@ Les tarifs, moyens de paiement, gouvernorats et délais affichés publiquement p
 - `src/admin/` : authentification, permissions et API Admin, isolées de l’authentification client.
 - `client/src/admin/` : interface Admin responsive.
 - `client/src/components/` : site public, Lens, panier, checkout et Assistant.
-- `tests/ayrovi.test.ts` : tests d’intégration backend.
+- `tests/zayrovi.test.ts` : tests d’intégration backend.
 
 La description complète des fichiers, rôles, données et routes se trouve dans [`ADMIN_CMS.md`](./docs/ADMIN_CMS.md).
 

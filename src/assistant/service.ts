@@ -8,7 +8,7 @@ import {
   type AssistantToolName,
 } from './tools';
 import type { AiMessage, AiModelClass, AiOutputBlock } from '../ai-core/contracts';
-import { getAyroviAiCore } from '../ai-core/core';
+import { getZayroviAiCore } from '../ai-core/core';
 import { getAssistantToolGateway } from './toolGateway';
 import { classifyPriceError, detectPriceCorrection, ownerHashOf, recordLensEvaluation, recordLearningEvent } from './learning';
 
@@ -71,7 +71,7 @@ export function selectAssistantModelClass(messages: AssistantConversationLine[])
 
 /** Backward-compatible diagnostic helper; routing itself uses model classes. */
 export function selectAssistantModel(messages: AssistantConversationLine[]): string {
-  return getAyroviAiCore().responses().resolveModel('assistant', selectAssistantModelClass(messages));
+  return getZayroviAiCore().responses().resolveModel('assistant', selectAssistantModelClass(messages));
 }
 
 export function isAssistantHelpQuestion(text: string): boolean {
@@ -223,7 +223,7 @@ async function recoverWithoutProvider(
           ? 'مرحباً بك في ZAYROVI! كيف يمكنني مساعدتك اليوم؟ يمكنك إرسال صورة أو رابط أو سؤالي عن أي منتج أو تتبع طلبك.'
           : 'Bonjour ! Comment puis-je vous aider aujourd’hui ? Vous pouvez m’envoyer une photo, un lien produit ou me poser une question.',
       });
-      emit({ type: 'done', model: 'ayrovi-guide' });
+      emit({ type: 'done', model: 'zayrovi-guide' });
       return;
     }
 
@@ -237,7 +237,7 @@ async function recoverWithoutProvider(
           ? 'لقيت معلومات طلبك في النظام. يمكنك مراجعة الحالة الحالية وتاريخ الشحن.'
           : 'Voici l’état actuel de vos commandes et le suivi de livraison.',
       });
-      emit({ type: 'done', model: 'ayrovi-guide' });
+      emit({ type: 'done', model: 'zayrovi-guide' });
       return;
     }
 
@@ -258,7 +258,7 @@ async function recoverWithoutProvider(
           ? `حسبتلك التكلفة التقديرية بالدينار التونسي مع الشحن والديوانة.`
           : `Voici le calcul estimatif du prix total en Dinars Tunisiens (TND) avec livraison et douane.`,
       });
-      emit({ type: 'done', model: 'ayrovi-guide' });
+      emit({ type: 'done', model: 'zayrovi-guide' });
       return;
     }
 
@@ -282,7 +282,7 @@ async function recoverWithoutProvider(
             : 'J’ai une piste à partir de la photo ou du lien. Confirme le produit pour commander.')
           : assistantFallbackReply(latestText),
       });
-      emit({ type: 'done', model: 'ayrovi-guide' });
+      emit({ type: 'done', model: 'zayrovi-guide' });
       return;
     }
 
@@ -300,7 +300,7 @@ async function recoverWithoutProvider(
             : 'Voici ce que j’ai trouvé. Choisis un article ou envoie un lien plus précis.')
           : assistantFallbackReply(latestText),
       });
-      emit({ type: 'done', model: 'ayrovi-guide' });
+      emit({ type: 'done', model: 'zayrovi-guide' });
       return;
     }
   } catch (error: any) {
@@ -308,7 +308,7 @@ async function recoverWithoutProvider(
   }
 
   emit({ type: 'delta', text: isAssistantHelpQuestion(latestText) ? assistantHelpReply(latestText) : assistantFallbackReply(latestText) });
-  emit({ type: 'done', model: 'ayrovi-guide' });
+  emit({ type: 'done', model: 'zayrovi-guide' });
 }
 
 export async function runAssistantChat(
@@ -328,7 +328,7 @@ export async function runAssistantChat(
     } as AssistantConversationLine))
     .filter((message) => Boolean(message.text || message.attachments?.length));
   if (!messages.length || messages.at(-1)?.role !== 'user') throw new Error('INVALID_ASSISTANT_MESSAGES');
-  const provider = getAyroviAiCore().responses();
+  const provider = getZayroviAiCore().responses();
   const modelClass = selectAssistantModelClass(messages);
   const model = provider.resolveModel('assistant', modelClass);
   const system = buildSystemPrompt(db, input.customer, input.conversationId, cleanText(input.clientState, 6000));
@@ -345,7 +345,7 @@ export async function runAssistantChat(
     && /\b\d{6,14}\b/.test(latestUser?.text || '');
   // A URL typed in the already-open order form is confirmation data, not a
   // request to re-extract price. All other fresh image/link/code turns force
-  // AYROVIX Lens so tool use is deterministic rather than model-optional.
+  // ZAYROVIX Lens so tool use is deterministic rather than model-optional.
   const forceLensTool = latestHasImage || latestHasCode
     || (latestHasUrl && clientState.orderStage !== 'PRODUCT_CONFIGURATION');
   const explicitProductSearch = /\b(?:search|find|look for|cherche|chercher|recherche|trouve|trouver)\b|(?:ابحث|أبحث|فتش|دوّر|وين نلقى|نحب نشري)/i
@@ -407,7 +407,7 @@ export async function runAssistantChat(
   if (isAssistantHelpQuestion(latestUser?.text || '') && !latestHasImage && !latestHasUrl && !latestHasCode) {
     emit({ type: 'state', state: 'creating' });
     emit({ type: 'delta', text: assistantHelpReply(latestUser?.text || '') });
-    emit({ type: 'done', model: 'ayrovi-guide' });
+    emit({ type: 'done', model: 'zayrovi-guide' });
     return;
   }
   for (let round = 0; round < 3; round += 1) {

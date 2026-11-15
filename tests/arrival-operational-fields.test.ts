@@ -91,7 +91,7 @@ function createHarness(): Harness {
   ensureBootstrapAdmin(db);
   const admin = db.get<any>('SELECT * FROM admin_users ORDER BY created_at LIMIT 1');
   const session = createAdminSession(db, admin);
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-operational-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-operational-'));
   const adapter = new OperationalAdapter();
   const module = createArrivalIngestionModule(db, { aiAdapter: adapter, sourceRoot: root, autoRunJobs: true });
   const app = express();
@@ -226,7 +226,7 @@ describe('Arrival CRM operational fields + multi-source customer aggregation', (
 
     // Both requests used the union-free structured output schema.
     expect(h.adapter.requests).toHaveLength(2);
-    expect(h.adapter.requests.every((r) => r.outputSchema?.name === 'ayrovi_arrival_product_extraction')).toBe(true);
+    expect(h.adapter.requests.every((r) => r.outputSchema?.name === 'zayrovi_arrival_product_extraction')).toBe(true);
 
     // Customer Arrival Card aggregates BOTH stores under ONE client/customer.
     const detail = await mut(h, 'get', `/api/admin/arrival-ingestion/arrivals/${arrivalId}`);

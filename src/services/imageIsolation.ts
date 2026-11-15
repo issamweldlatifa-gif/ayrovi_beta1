@@ -298,7 +298,7 @@ export interface IsolationOptions {
 }
 
 export async function isolateBuffer(buffer: Buffer, options: IsolationOptions = {}): Promise<{ kind: IsolationKind; png: Buffer | null }> {
-  // Fournisseur externe (AYROVI_ISOLATION_PROVIDER=photoroom + clé serveur) : il passe
+  // Fournisseur externe (ZAYROVI_ISOLATION_PROVIDER=photoroom + clé serveur) : il passe
   // en premier ; en cas d'échec on retombe sur le chroma-key ci-dessous.
   if (isolationProvider() === 'photoroom') {
     const cutout = await removeBackgroundWithPhotoRoom(buffer);
@@ -363,7 +363,7 @@ export function fetchRemoteImage(rawUrl: string): Promise<Buffer> {
 async function loadRemoteImage(rawUrl: string): Promise<Buffer> {
   const response = await fetchSafeRemote(rawUrl, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    headers: { 'user-agent': 'AyroviBot/1.0 (+https://ayrovi.com)', accept: 'image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8' },
+    headers: { 'user-agent': 'ZayroviBot/1.0 (+https://zayrovi.com)', accept: 'image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8' },
   });
   if (!response.ok) {
     await response.body?.cancel().catch(() => undefined);
@@ -379,7 +379,7 @@ async function loadRemoteImage(rawUrl: string): Promise<Buffer> {
 
 /* ── 5. Cache disque — un URL, un travail ───────────────────────── */
 function cacheDir(): string {
-  return process.env.AYROVI_ISOLATED_CACHE_DIR || regenerableCacheDir('media-isolated');
+  return process.env.ZAYROVI_ISOLATED_CACHE_DIR || regenerableCacheDir('media-isolated');
 }
 
 export interface CachedIsolation {

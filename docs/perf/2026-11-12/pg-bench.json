@@ -5,7 +5,7 @@
     "cpu": "Intel(R) Xeon(R) Processor @ 2.60GHz",
     "affinity": "1"
   },
-  "sqlite": "/home/user/scratch/lt/ayrovi.sqlite",
+  "sqlite": "/home/user/scratch/lt/zayrovi.sqlite",
   "source": {
     "files": 297,
     "totals": {
@@ -79,7 +79,7 @@
         "dialect": 22
       },
       {
-        "module": "ayrovix",
+        "module": "zayrovix",
         "syncCalls": 56,
         "dialect": 11
       },

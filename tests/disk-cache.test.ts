@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 function tempDir(): string {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-cache-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-cache-'));
   tempDirs.push(directory);
   return directory;
 }

@@ -134,7 +134,7 @@ export function hasBrandScale(sizes: SizeOption[]): boolean {
  * écran : il a survécu à la fiche qui l'hébergeait et vit désormais avec la
  * boutique, seule responsable de la saisie.
  */
-export interface AyrovixOrderSelection {
+export interface ZayrovixOrderSelection {
   size: string;
   color: string;
   option: { id?: string | null; label?: string | null } | any;

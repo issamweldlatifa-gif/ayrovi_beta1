@@ -2,7 +2,7 @@
  * Z Lens — « Produits interdits » (menu ⋮).
  *
  * Contenu repris À L'IDENTIQUE des règles d'utilisation déjà publiées sur le
- * site (`client/src/ayrovix/components/LensHelp.tsx`, section « 18 ans et plus
+ * site (`client/src/zayrovix/components/LensHelp.tsx`, section « 18 ans et plus
  * · utilisation autorisée ») : aucune règle nouvelle n'est inventée ici.
  */
 import { StyleSheet, View } from 'react-native';

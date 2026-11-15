@@ -19,7 +19,7 @@ import { LocaleProvider } from '../client/src/i18n/LocaleContext';
  */
 const LIVE_TODAY = {
   deposit: {
-    percent: 20, cardDiscountPercent: 5, companyName: 'AYROVI',
+    percent: 20, cardDiscountPercent: 5, companyName: 'ZAYROVI',
     bankRib: '', posteAccount: '', flouciNumber: '',
     reviewDelay: 'Sous 1 jour ouvré après réception du justificatif',
     unavailableRefundPolicy: 'Acompte remboursé si ZAYROVI ne peut pas valider ou acheter l’article demandé',

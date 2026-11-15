@@ -1,6 +1,9 @@
+// En premier : les anciennes variables d'environnement deviennent `ZAYROVI_…` avant toute lecture.
+import './config/formerBrandEnv';
+import { formerBrandCompat } from './services/formerBrandCompat';
 import { publicationShareHtml } from './services/publicationShare';
 import 'dotenv/config';
-import { validateQuoteSecret } from './ayrovix/priceQuote';
+import { validateQuoteSecret } from './zayrovix/priceQuote';
 validateQuoteSecret();
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
@@ -13,20 +16,20 @@ import { deploymentIdentity } from './services/deploymentIdentity';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Server } from 'node:http';
 import { spawn } from 'node:child_process';
-import { QatafoDatabase as AyroviDatabase } from './db/database';
+import { QatafoDatabase as ZayroviDatabase } from './db/database';
 import { refreshStaleHeroPalettes } from './services/heroPalette';
 import { SmartLinkScraper } from './scraper/scraper';
 import { VisualProductExtractor } from './services/vision';
 import { createApiRouter } from './api/routes';
 import { observeCheckoutFunnel } from './analytics/funnel';
-import { createAyrovixRouter } from './ayrovix/routes';
+import { createZayrovixRouter } from './zayrovix/routes';
 import { createAdminRouter } from './admin/routes';
 import { requireAdmin } from './admin/auth';
 import { createPublicRouter } from './public/routes';
 import { createCustomerRouter } from './customer/routes';
 import { processCustomerAuthMail } from './customer/accountMail';
 import { startFxRatesScheduler } from './services/fxRates';
-import { startPriceWatchScheduler } from './ayrovix/services/priceWatch';
+import { startPriceWatchScheduler } from './zayrovix/services/priceWatch';
 import { createAssistantRouter } from './assistant/routes';
 import { createOcerexRouter } from './ocerex/routes';
 import { createAyWebsRouter } from './aywebs/routes';
@@ -35,7 +38,7 @@ import { ERP_MODULES } from './erp-core/modules';
 import { bootstrapErpCore } from './erp-core/bootstrap';
 import { isPublicUploadPath } from './erp-core/storage';
 import { assertProductionConfiguration } from './config/productionConfig';
-import { pruneCanonicalLensCache } from './ayrovix/services/lensCache';
+import { pruneCanonicalLensCache } from './zayrovix/services/lensCache';
 import { dispatchPushNotifications } from './services/pushDispatch';
 import { pushConfigured } from './services/push';
 import { clientRateLimitKey } from './services/rateKey';
@@ -59,6 +62,8 @@ const trustProxyHops = Number.isInteger(configuredProxyHops) && configuredProxyH
   ? configuredProxyHops
   : (process.env.RENDER ? 1 : 0);
 app.set('trust proxy', trustProxyHops);
+// Ancien nom (liens, applications installées, sessions ouvertes) → ZAYROVI, avant toute route.
+app.use(formerBrandCompat);
 app.use((req, res, next) => {
   const isProd = process.env.NODE_ENV === 'production' || !!process.env.RENDER;
   // La console d'exploitation ne doit JAMAIS être affichée dans un cadre : une page du site
@@ -252,47 +257,47 @@ app.use(['/api/assistant/voice/session', '/api/assistant/session'],
   rateLimit('assistant-voice-session', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, authenticatedRateLimitKey));
 app.use('/api/public/media', rateLimit('public-media-proxy', process.env.NODE_ENV === 'test' ? 1_000 : 300, 10 * 60_000));
 app.use('/api/public/hero-events', rateLimit('public-hero-events', process.env.NODE_ENV === 'test' ? 1_000 : 120, 60_000));
-const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000, authenticatedRateLimitKey);
-const configuredLensDailyLimit = Number(process.env.AYROVIX_LENS_IP_DAILY_LIMIT);
+const zayrovixRateLimit = rateLimit('zayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000, authenticatedRateLimitKey);
+const configuredLensDailyLimit = Number(process.env.ZAYROVIX_LENS_IP_DAILY_LIMIT);
 const lensDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredLensDailyLimit) ? Math.max(5, Math.min(200, configuredLensDailyLimit)) : 40;
-const ayrovixDailyCostLimit = rateLimit('ayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
-const costlyAyrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
+const zayrovixDailyCostLimit = rateLimit('zayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
+const costlyZayrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
 // Z Lens mobile : la détection seule (cadre de sélection + Live) a son PROPRE
 // compteur. Live interroge la caméra quand le téléphone se stabilise : sur le
 // compteur général (12 / 10 min, partagé avec les recherches), quelques visées
 // suffiraient à bloquer la recherche elle-même. Plafond journalier par client
-// pour borner la dépense vision (réglable : AYROVIX_DETECT_DAILY_LIMIT).
-const ayrovixDetectRateLimit = rateLimit('ayrovix-detect', process.env.NODE_ENV === 'test' ? 1_000 : 90, 10 * 60_000, authenticatedRateLimitKey);
-const configuredDetectDailyLimit = Number(process.env.AYROVIX_DETECT_DAILY_LIMIT);
+// pour borner la dépense vision (réglable : ZAYROVIX_DETECT_DAILY_LIMIT).
+const zayrovixDetectRateLimit = rateLimit('zayrovix-detect', process.env.NODE_ENV === 'test' ? 1_000 : 90, 10 * 60_000, authenticatedRateLimitKey);
+const configuredDetectDailyLimit = Number(process.env.ZAYROVIX_DETECT_DAILY_LIMIT);
 const detectDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredDetectDailyLimit) ? Math.max(20, Math.min(2_000, configuredDetectDailyLimit)) : 400;
-const ayrovixDetectDailyLimit = rateLimit('ayrovix-detect-daily', detectDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
+const zayrovixDetectDailyLimit = rateLimit('zayrovix-detect-daily', detectDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
 // Z Lens : le repérage des produits d'une photo (`/localize`, secours de ML Kit
 // sur le téléphone) a lui aussi SON compteur (11/11/2026). Il partageait celui
 // des recherches (12 / 10 min, 40 / jour) : chaque photo en consommait deux
 // (repérage + recherche), si bien qu'après ~6 photos le repérage tombait en
 // 429 — « Sélection automatique indisponible » par intermittence.
-// Plafond journalier réglable : AYROVIX_LOCALIZE_DAILY_LIMIT.
-const ayrovixLocalizeRateLimit = rateLimit('ayrovix-localize', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000, authenticatedRateLimitKey);
-const configuredLocalizeDailyLimit = Number(process.env.AYROVIX_LOCALIZE_DAILY_LIMIT);
+// Plafond journalier réglable : ZAYROVIX_LOCALIZE_DAILY_LIMIT.
+const zayrovixLocalizeRateLimit = rateLimit('zayrovix-localize', process.env.NODE_ENV === 'test' ? 1_000 : 60, 10 * 60_000, authenticatedRateLimitKey);
+const configuredLocalizeDailyLimit = Number(process.env.ZAYROVIX_LOCALIZE_DAILY_LIMIT);
 const localizeDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredLocalizeDailyLimit) ? Math.max(20, Math.min(2_000, configuredLocalizeDailyLimit)) : 300;
-const ayrovixLocalizeDailyLimit = rateLimit('ayrovix-localize-daily', localizeDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
-app.use('/api/ayrovix', (req, res, next) => {
+const zayrovixLocalizeDailyLimit = rateLimit('zayrovix-localize-daily', localizeDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
+app.use('/api/zayrovix', (req, res, next) => {
   // Reading compact history is free. Costly analyses also have a daily client
   // ceiling so a long rolling 10-minute series cannot create unbounded vendor spend.
   if (req.method === 'GET' && req.path === '/history') return next();
   if (req.method === 'POST' && req.path === '/localize') {
-    return ayrovixLocalizeDailyLimit(req, res, () => ayrovixLocalizeRateLimit(req, res, next));
+    return zayrovixLocalizeDailyLimit(req, res, () => zayrovixLocalizeRateLimit(req, res, next));
   }
   if (req.method === 'POST' && req.path === '/detect') {
-    return ayrovixDetectDailyLimit(req, res, () => ayrovixDetectRateLimit(req, res, next));
+    return zayrovixDetectDailyLimit(req, res, () => zayrovixDetectRateLimit(req, res, next));
   }
-  if (costlyAyrovixPaths.has(req.path)) {
-    return ayrovixDailyCostLimit(req, res, () => ayrovixRateLimit(req, res, next));
+  if (costlyZayrovixPaths.has(req.path)) {
+    return zayrovixDailyCostLimit(req, res, () => zayrovixRateLimit(req, res, next));
   }
-  return ayrovixRateLimit(req, res, next);
+  return zayrovixRateLimit(req, res, next);
 });
 
 // Les lectures sociales restent publiques; toutes les mutations partagent une
@@ -328,7 +333,7 @@ app.use(cors({
   origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-requested-with', 'x-csrf-token', 'x-ayrovi-native'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-requested-with', 'x-csrf-token', 'x-zayrovi-native'],
 }));
 app.use('/api/admin/uploads', express.json({ limit: '15mb' }));
 app.use(express.json({
@@ -352,15 +357,15 @@ app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify-challenge', 10, 5
 // Database, Scraper & Vision Engine
 // Tests must always be hermetic: never let a local .env DATABASE_PATH hijack the test run.
 const databasePath = process.env.NODE_ENV === 'test' ? ':memory:' : (process.env.DATABASE_PATH || undefined);
-const db = new AyroviDatabase(databasePath);
+const db = new ZayroviDatabase(databasePath);
 try {
   ensureOpsMetricsSchema({ exec: (sql: string) => db.runSchema(sql) });
   opsMetrics.attachStore(db);
 } catch (error: any) { console.warn('[ops-metrics] historique horaire désactivé:', error?.message || 'unknown'); }
-// Rôle du processus : `AYROVI_BACKGROUND_JOBS=off` = instance web pure (préparation
-// multi-instances, voir docs/AYROVI_ARCHITECTURE_SCALABLE_AR_2026-11-12.md §6).
+// Rôle du processus : `ZAYROVI_BACKGROUND_JOBS=off` = instance web pure (préparation
+// multi-instances, voir docs/ZAYROVI_ARCHITECTURE_SCALABLE_AR_2026-11-12.md §6).
 const runBackgroundJobs = backgroundJobsEnabled();
-if (!runBackgroundJobs) console.log('[jobs] AYROVI_BACKGROUND_JOBS=off — tâches planifiées confiées à une autre instance.');
+if (!runBackgroundJobs) console.log('[jobs] ZAYROVI_BACKGROUND_JOBS=off — tâches planifiées confiées à une autre instance.');
 try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens cache] startup prune failed:', error?.message || 'unknown'); }
 /*
  * Répartiteur de notifications push.
@@ -425,7 +430,7 @@ app.use('/reset-password', (_req, res, next) => {
 app.get('/sitemap.xml', (_req, res) => {
   const urls = sitemapRoutes().map((route) => [
     '  <url>',
-    `    <loc>https://ayrovi.tn${route.path}</loc>`,
+    `    <loc>https://zayrovi.com${route.path}</loc>`,
     `    <changefreq>${route.changeFrequency}</changefreq>`,
     `    <priority>${route.priority.toFixed(1)}</priority>`,
     '  </url>',
@@ -439,7 +444,7 @@ app.get('/sitemap.xml', (_req, res) => {
 // أندرويد ما يفتحش روابط النطاق في التطبيق كان ما لقاش هذا الملف وبصمة صحيحة فيه.
 // إنتاج/Play يجي دائماً من البيئة. نشر `arena/*` يزيد وحده شهادة الـdebug العمومية
 // لحزمة `.demo` فقط؛ بهذا الـAPK المنشور يتجرّب من غير ما نخترع بصمة إنتاج أو
-// نعطي شهادة debug صلاحية `app.ayrovi.mobile`. خارج العرض، ضبط ناقص ⇒ 404 صريح:
+// نعطي شهادة debug صلاحية `app.zayrovi.mobile`. خارج العرض، ضبط ناقص ⇒ 404 صريح:
 // ملف غالط أسوأ من ملف غايب، لأنه يوهم بالعمل ثم يُرفض بلا إشارة.
 app.get('/.well-known/assetlinks.json', (_req, res) => {
   const statement = appLinksForDeployment(process.env);
@@ -543,7 +548,7 @@ app.get('/api/ops/metrics', (req, res) => {
   res.type('text/plain; version=0.0.4').send(opsMetrics.prometheus());
 });
 app.use('/api/admin', createAdminRouter(db));
-app.use('/api/ayrovix', createAyrovixRouter(db, scraper));
+app.use('/api/zayrovix', createZayrovixRouter(db, scraper));
 app.use('/api/ocerex', createOcerexRouter(db, scraper));
 app.use('/api/customer', createCustomerRouter(db));
 app.use('/api/assistant', createAssistantRouter(db, scraper));
@@ -683,7 +688,7 @@ function runBackupIfDue() {
   if (!backupIntervalMs || backupRunning || process.env.NODE_ENV === 'test') return;
   const backupDir = path.resolve(process.cwd(), process.env.BACKUP_DIR || 'data/backups');
   const newest = fs.existsSync(backupDir)
-    ? fs.readdirSync(backupDir).filter((name) => /^ayrovi-.*\.sqlite$/.test(name))
+    ? fs.readdirSync(backupDir).filter((name) => /^zayrovi-.*\.sqlite$/.test(name))
       .map((name) => fs.statSync(path.join(backupDir, name)).mtimeMs).reduce((max, value) => Math.max(max, value), 0)
     : 0;
   if (newest && Date.now() - newest < backupIntervalMs) return;

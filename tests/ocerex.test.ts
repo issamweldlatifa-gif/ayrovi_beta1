@@ -233,17 +233,17 @@ describe('OCEREX HTTP', () => {
     const calculated = await request(app)
       .post('/api/ocerex/calculate')
       .set('x-session-id', session)
-      .send({ extractionId: saved.id, referencePrice: 1, ayroviPrice: 1 });
+      .send({ extractionId: saved.id, referencePrice: 1, zayroviPrice: 1 });
     expect(calculated.status).toBe(200);
     expect(calculated.body.referencePrice).toBe(79.99);
     expect(calculated.body.sourceCurrency).toBe('USD');
-    expect(calculated.body.ayroviPrice).toBe(quoteOcerex(db, 79.99, 'USD', 'Nike Air Force 1').totalTND);
-    expect(calculated.body.ayroviPrice).not.toBe(1);
+    expect(calculated.body.zayroviPrice).toBe(quoteOcerex(db, 79.99, 'USD', 'Nike Air Force 1').totalTND);
+    expect(calculated.body.zayroviPrice).not.toBe(1);
 
     const committed = await request(app)
       .post('/api/ocerex/commit')
       .set('x-session-id', session)
-      .send({ extractionId: saved.id, referencePrice: 1, ayroviPrice: 1 });
+      .send({ extractionId: saved.id, referencePrice: 1, zayroviPrice: 1 });
     expect(committed.status).toBe(201);
     const cart = await request(app).get('/api/cart/items').set('x-session-id', session);
     const item = cart.body.items.find((entry: { sourceUrl: string }) => entry.sourceUrl.includes('nike.com'));
@@ -257,7 +257,7 @@ describe('OCEREX HTTP', () => {
     const accountId = `ocerex_account_${Date.now()}`;
     const orderSession = `ocerex-order-${Date.now()}`;
     db.run(`INSERT INTO customer_accounts (id,display_name,email,email_verified_at,status,created_at,updated_at)
-      VALUES (?,'Client OCEREX','ocerex@ayrovi.test',?,'ACTIVE',?,?)`, accountId, now, now, now);
+      VALUES (?,'Client OCEREX','ocerex@zayrovi.test',?,'ACTIVE',?,?)`, accountId, now, now, now);
     const decision = resolveOcerexPrices([
       token('Panier', { y: 8 }),
       token('Original total', { y: 40 }),
@@ -285,7 +285,7 @@ describe('OCEREX HTTP', () => {
       quantity: 1,
     }, accountId);
     const order = db.createOrderFromCart(orderSession, {
-      name: 'Client OCEREX', email: 'ocerex@ayrovi.test', phone: '98111022', governorate: 'Tunis', address: 'Tunis',
+      name: 'Client OCEREX', email: 'ocerex@zayrovi.test', phone: '98111022', governorate: 'Tunis', address: 'Tunis',
       paymentMethod: 'BANK_TRANSFER', latitude: null, longitude: null, termsAcceptedAt: now, locale: 'fr-TN',
     }, accountId);
     expect(attachOcerexExtractionsToOrder(db, orderSession, accountId, order.orderId)).toBe(1);

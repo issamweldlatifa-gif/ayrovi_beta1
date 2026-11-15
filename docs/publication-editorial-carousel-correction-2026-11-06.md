@@ -4,7 +4,7 @@
 
 ## Nom du véritable éditeur
 
-Le nom à côté de l’avatar est désormais un **AppText ordinaire**, corps fort 16 pt, dans `AyroviExtracted-Bold` ou `NotoSansArabic-Bold` selon la langue. Il n’utilise plus le composant SVG `BrandMark`. Le logo reste dans l’avatar lorsqu’il appartient réellement à ZAYROVI. Les autres éditeurs conservent leur propre nom et avatar ou initiale. La date, Sponsorisé et la vérification restent issus des métadonnées ; pas de nouvelle certification inventée.
+Le nom à côté de l’avatar est désormais un **AppText ordinaire**, corps fort 16 pt, dans `ZayroviExtracted-Bold` ou `NotoSansArabic-Bold` selon la langue. Il n’utilise plus le composant SVG `BrandMark`. Le logo reste dans l’avatar lorsqu’il appartient réellement à ZAYROVI. Les autres éditeurs conservent leur propre nom et avatar ou initiale. La date, Sponsorisé et la vérification restent issus des métadonnées ; pas de nouvelle certification inventée.
 
 Cette correction est locale au nom de l’éditeur : les logos officiels ailleurs dans l’application ne sont pas remplacés. Les grands titres utilisent également les rôles de la famille typographique officielle de l’application ; aucune police étrangère de la maquette n’est importée.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { containedImageRect, pointInImage, detectedBox, selectionForPoint, resizeSelection } from '../client/src/ayrovix/services/lensSelectionGeometry';
+import { containedImageRect, pointInImage, detectedBox, selectionForPoint, resizeSelection } from '../client/src/zayrovix/services/lensSelectionGeometry';
 describe('Lens image selection geometry', () => {
  it('letterboxes a wide image without zooming or crop', () => {
   expect(containedImageRect(400, 600, 800, 400)).toEqual({x:0,y:200,w:400,h:200});

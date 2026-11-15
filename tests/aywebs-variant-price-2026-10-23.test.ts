@@ -212,7 +212,7 @@ describe('le serveur cote la COMBINAISON demandée depuis la capture', () => {
     /* Le prix TND n'est pas recopié de la page : il est calculé sur le serveur
        à partir du prix de LA VALEUR. */
     const expected = calculatePrice(pricingRules(), 94.5, 'USD', { title: response.body.data.title });
-    expect(response.body.data.ayrovi_pricing.total_tnd).toBeCloseTo(expected.totalTND, 2);
+    expect(response.body.data.zayrovi_pricing.total_tnd).toBeCloseTo(expected.totalTND, 2);
     expect(response.body.quote_token).toBeTruthy();
     expect(response.body.capture.used).toBe(true);
     /* La page de test ne publie aucune image : seul champ non lu, et il ne bloque pas. */

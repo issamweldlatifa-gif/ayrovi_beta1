@@ -15,9 +15,9 @@ const cache = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-performance-'));
 Object.assign(process.env, {
   NODE_ENV: 'test', DATABASE_PATH: ':memory:', ADMIN_EMAIL: 'performance@localhost',
   ADMIN_PASSWORD: 'LocalPerformanceFixtureOnly123!', CUSTOMER_AUTH_SECRET: 'performance-local-only-0123456789abcdef0123456789',
-  FX_RATES_ENABLED: 'false', BACKUP_INTERVAL_HOURS: '0', AYROVI_LENS_LIVE_STOCK: 'false',
-  AYROVIX_AI_WEB_SEARCH: 'false', CUSTOMER_OTP_PROVIDER: 'console', MAIL_PROVIDER: '',
-  AYROVI_NATIVE_CARD_CACHE_DIR: cache,
+  FX_RATES_ENABLED: 'false', BACKUP_INTERVAL_HOURS: '0', ZAYROVI_LENS_LIVE_STOCK: 'false',
+  ZAYROVIX_AI_WEB_SEARCH: 'false', CUSTOMER_OTP_PROVIDER: 'console', MAIL_PROVIDER: '',
+  ZAYROVI_NATIVE_CARD_CACHE_DIR: cache,
   FIREBASE_PROJECT_ID: '', FIREBASE_CLIENT_EMAIL: '', FIREBASE_PRIVATE_KEY: '',
 });
 for (const key of ['ANTHROPIC_API_KEY','SERPAPI_KEY','SCRAPERAPI_KEY','GROQ_API_KEY','GEMINI_API_KEY','GOOGLE_API_KEY','OPENAI_API_KEY']) process.env[key] = '';

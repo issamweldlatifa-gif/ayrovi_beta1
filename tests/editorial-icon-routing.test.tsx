@@ -15,7 +15,7 @@ describe('every compatibility icon resolves to the approved geometry',()=>{
       const actual=renderToStaticMarkup(<IconDirectionProvider direction={direction}><Component /></IconDirectionProvider>);
       const name=actual.match(/data-editorial-icon="([^"]+)"/)?.[1] as EditorialIconName;
       expect(name,`${alias}: editorial family is mandatory`).toBeTruthy();
-      const expected=renderToStaticMarkup(<EditorialIcon name={name} direction={direction} data-ayrovi-icon={name} />);
+      const expected=renderToStaticMarkup(<EditorialIcon name={name} direction={direction} data-zayrovi-icon={name} />);
       expect(actual).toBe(expected);
     }
   });
@@ -24,14 +24,14 @@ describe('every compatibility icon resolves to the approved geometry',()=>{
     expect(html).toContain('fill="currentColor"');expect(html).toContain('stroke-width="1.5"');expect(html).toContain('stroke-linecap="square"');expect(html).toContain('viewBox="0 0 24 24"');expect(html).not.toContain('stroke-width:99');
   });
   it('the real header has only a wordmark, unassigned Plus Light, Bell and Bag',()=>{
-    const html=renderToStaticMarkup(<LocaleProvider><CustomerIdentity><Navbar onOpenMenuDrawer={()=>{}} onOpenAccount={()=>{}} onGoHome={()=>{}} onOpenCart={()=>{}} logoUrl="/media/logo-ayrovi.png" /></CustomerIdentity></LocaleProvider>);
+    const html=renderToStaticMarkup(<LocaleProvider><CustomerIdentity><Navbar onOpenMenuDrawer={()=>{}} onOpenAccount={()=>{}} onGoHome={()=>{}} onOpenCart={()=>{}} logoUrl="/media/logo-zayrovi.png" /></CustomerIdentity></LocaleProvider>);
     expect(html).not.toContain('data-editorial-icon="Menu"');
     expect(html).toContain('Plus ★ Light');
     expect(html).toContain('disabled=""');
     expect(html).toContain('data-editorial-icon="Bell"');
     // Identité A.ROVI : le lockup officiel remplace l'icône + le mot « ZAYROVI »
     // lorsque le logo public n'est pas personnalisé dans l'Admin.
-    expect(html).toContain('src="/media/logo-ayrovi-wordmark-black.svg?v=7.0"');
+    expect(html).toContain('src="/media/logo-zayrovi-wordmark-black.svg?v=7.0"');
     expect(html).not.toContain('<strong');
     expect(html).toContain('stroke-linecap="square"');
   });

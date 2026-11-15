@@ -3,7 +3,7 @@
     {
       "label": "lens/fr/320/exact: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL CALCULÉ\n\n108.00 DT\n\nPrix boutique 27.00 EUR\n\nPrix confirmé\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL CALCULÉ\n\n108.00 DT\n\nPrix boutique 27.00 EUR\n\nPrix confirmé\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’"
     },
     {
       "label": "lens/fr/320/exact: actual parent does not invent a variant or change the request",
@@ -56,13 +56,13 @@
     {
       "label": "lens/fr/320/size-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "lens/fr/320/size-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -143,13 +143,13 @@
     {
       "label": "lens/fr/320/reordered: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "lens/fr/320/reordered: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -209,13 +209,13 @@
     {
       "label": "lens/fr/320/color-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "lens/fr/320/color-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -275,13 +275,13 @@
     {
       "label": "lens/fr/320/conflicting: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "lens/fr/320/conflicting: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -341,13 +341,13 @@
     {
       "label": "lens/fr/320/custom: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme p"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme p"
     },
     {
       "label": "lens/fr/320/custom: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Estimation générale : le prix de la variante demandée reste à confirmer."
       }
     },
@@ -407,13 +407,13 @@
     {
       "label": "lens/fr/320/unpriced-option: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une tail"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une tail"
     },
     {
       "label": "lens/fr/320/unpriced-option: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Estimation générale : le prix de la variante demandée reste à confirmer."
       }
     },
@@ -468,7 +468,7 @@
     {
       "label": "lens/fr/320/missing-total: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n—\n\nPrix boutique 27.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à "
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n—\n\nPrix boutique 27.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à "
     },
     {
       "label": "lens/fr/320/missing-total: actual parent does not invent a variant or change the request",
@@ -541,7 +541,7 @@
     {
       "label": "sonim/fr/320/exact: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL CALCULÉ\n\n108.00 DT\n\nPrix boutique 27.00 EUR\n\nPrix confirmé\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL CALCULÉ\n\n108.00 DT\n\nPrix boutique 27.00 EUR\n\nPrix confirmé\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’"
     },
     {
       "label": "sonim/fr/320/exact: actual parent does not invent a variant or change the request",
@@ -594,13 +594,13 @@
     {
       "label": "sonim/fr/320/size-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "sonim/fr/320/size-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -681,13 +681,13 @@
     {
       "label": "sonim/fr/320/reordered: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "sonim/fr/320/reordered: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -747,13 +747,13 @@
     {
       "label": "sonim/fr/320/color-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "sonim/fr/320/color-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -813,13 +813,13 @@
     {
       "label": "sonim/fr/320/conflicting: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "sonim/fr/320/conflicting: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -879,13 +879,13 @@
     {
       "label": "sonim/fr/320/custom: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme p"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme p"
     },
     {
       "label": "sonim/fr/320/custom: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Estimation générale : le prix de la variante demandée reste à confirmer."
       }
     },
@@ -945,13 +945,13 @@
     {
       "label": "sonim/fr/320/unpriced-option: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une tail"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une tail"
     },
     {
       "label": "sonim/fr/320/unpriced-option: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Estimation générale : le prix de la variante demandée reste à confirmer."
       }
     },
@@ -1006,7 +1006,7 @@
     {
       "label": "sonim/fr/320/missing-total: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n—\n\nPrix boutique 27.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à "
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n—\n\nPrix boutique 27.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à "
     },
     {
       "label": "sonim/fr/320/missing-total: actual parent does not invent a variant or change the request",
@@ -1079,7 +1079,7 @@
     {
       "label": "lens/fr/390/exact: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL CALCULÉ\n\n108.00 DT\n\nPrix boutique 27.00 EUR\n\nPrix confirmé\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL CALCULÉ\n\n108.00 DT\n\nPrix boutique 27.00 EUR\n\nPrix confirmé\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’"
     },
     {
       "label": "lens/fr/390/exact: actual parent does not invent a variant or change the request",
@@ -1132,13 +1132,13 @@
     {
       "label": "lens/fr/390/size-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "lens/fr/390/size-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -1219,13 +1219,13 @@
     {
       "label": "lens/fr/390/reordered: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "lens/fr/390/reordered: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -1285,13 +1285,13 @@
     {
       "label": "lens/fr/390/color-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "lens/fr/390/color-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -1351,13 +1351,13 @@
     {
       "label": "lens/fr/390/conflicting: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "lens/fr/390/conflicting: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -1417,13 +1417,13 @@
     {
       "label": "lens/fr/390/custom: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme p"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme p"
     },
     {
       "label": "lens/fr/390/custom: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Estimation générale : le prix de la variante demandée reste à confirmer."
       }
     },
@@ -1483,13 +1483,13 @@
     {
       "label": "lens/fr/390/unpriced-option: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une tail"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une tail"
     },
     {
       "label": "lens/fr/390/unpriced-option: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Estimation générale : le prix de la variante demandée reste à confirmer."
       }
     },
@@ -1544,7 +1544,7 @@
     {
       "label": "lens/fr/390/missing-total: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n—\n\nPrix boutique 27.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à "
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n—\n\nPrix boutique 27.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à "
     },
     {
       "label": "lens/fr/390/missing-total: actual parent does not invent a variant or change the request",
@@ -1617,7 +1617,7 @@
     {
       "label": "sonim/fr/390/exact: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL CALCULÉ\n\n108.00 DT\n\nPrix boutique 27.00 EUR\n\nPrix confirmé\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL CALCULÉ\n\n108.00 DT\n\nPrix boutique 27.00 EUR\n\nPrix confirmé\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’"
     },
     {
       "label": "sonim/fr/390/exact: actual parent does not invent a variant or change the request",
@@ -1670,13 +1670,13 @@
     {
       "label": "sonim/fr/390/size-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "sonim/fr/390/size-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -1757,13 +1757,13 @@
     {
       "label": "sonim/fr/390/reordered: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "sonim/fr/390/reordered: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -1823,13 +1823,13 @@
     {
       "label": "sonim/fr/390/color-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "sonim/fr/390/color-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -1889,13 +1889,13 @@
     {
       "label": "sonim/fr/390/conflicting: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe cho"
     },
     {
       "label": "sonim/fr/390/conflicting: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nPlusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Plusieurs variantes correspondent. Précisez votre choix, ou envoyez une demande manuelle au prix général estimé."
       }
     },
@@ -1955,13 +1955,13 @@
     {
       "label": "sonim/fr/390/custom: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme p"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme p"
     },
     {
       "label": "sonim/fr/390/custom: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Estimation générale : le prix de la variante demandée reste à confirmer."
       }
     },
@@ -2021,13 +2021,13 @@
     {
       "label": "sonim/fr/390/unpriced-option: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une tail"
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une tail"
     },
     {
       "label": "sonim/fr/390/unpriced-option: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
+        "text": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n80.00 DT\n\nPrix boutique 20.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nEstimation générale : le prix de la variante demandée reste à confirmer.\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantité *\nTaille, couleur et commentaire (optionnel)\nCouleur\nTaille\nSans préférence\nM\nL\nAutre\n\nOptions détectées sur la fiche : tailles M, L · couleurs Bleu, Rouge.\n\nCommentaire spécial\nVoir chez le marchand\nCommander · 25%\n\nAcompte 25% · Suivi après expédition réelle",
         "notice": "Estimation générale : le prix de la variante demandée reste à confirmer."
       }
     },
@@ -2082,7 +2082,7 @@
     {
       "label": "sonim/fr/390/missing-total: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n—\n\nPrix boutique 27.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à "
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par ZAYROVIX\n\nPage du marchand\n\nPRIX TOTAL ESTIMÉ\n\n—\n\nPrix boutique 27.00 EUR\n\nPrix estimé — une vérification manuelle reste nécessaire.\n\nOption retenue : M · Bleu\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à "
     },
     {
       "label": "sonim/fr/390/missing-total: actual parent does not invent a variant or change the request",
@@ -2155,7 +2155,7 @@
     {
       "label": "lens/ar/320/exact: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي المحسوب\n\n108.00 د.ت\n\nسعر المتجر 27.00 EUR\n\nالسعر مؤكّد\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي المحسوب\n\n108.00 د.ت\n\nسعر المتجر 27.00 EUR\n\nالسعر مؤكّد\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل"
     },
     {
       "label": "lens/ar/320/exact: actual parent does not invent a variant or change the request",
@@ -2208,13 +2208,13 @@
     {
       "label": "lens/ar/320/size-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "lens/ar/320/size-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -2295,13 +2295,13 @@
     {
       "label": "lens/ar/320/reordered: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "lens/ar/320/reordered: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -2361,13 +2361,13 @@
     {
       "label": "lens/ar/320/color-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "lens/ar/320/color-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -2427,13 +2427,13 @@
     {
       "label": "lens/ar/320/conflicting: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "lens/ar/320/conflicting: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -2493,13 +2493,13 @@
     {
       "label": "lens/ar/320/custom: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج ال"
     },
     {
       "label": "lens/ar/320/custom: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "تقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد."
       }
     },
@@ -2559,13 +2559,13 @@
     {
       "label": "lens/ar/320/unpriced-option: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ا"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ا"
     },
     {
       "label": "lens/ar/320/unpriced-option: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "تقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد."
       }
     },
@@ -2620,7 +2620,7 @@
     {
       "label": "lens/ar/320/missing-total: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n—\n\nسعر المتجر 27.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n—\n\nسعر المتجر 27.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)"
     },
     {
       "label": "lens/ar/320/missing-total: actual parent does not invent a variant or change the request",
@@ -2693,7 +2693,7 @@
     {
       "label": "sonim/ar/320/exact: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي المحسوب\n\n108.00 د.ت\n\nسعر المتجر 27.00 EUR\n\nالسعر مؤكّد\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي المحسوب\n\n108.00 د.ت\n\nسعر المتجر 27.00 EUR\n\nالسعر مؤكّد\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل"
     },
     {
       "label": "sonim/ar/320/exact: actual parent does not invent a variant or change the request",
@@ -2746,13 +2746,13 @@
     {
       "label": "sonim/ar/320/size-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "sonim/ar/320/size-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -2833,13 +2833,13 @@
     {
       "label": "sonim/ar/320/reordered: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "sonim/ar/320/reordered: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -2899,13 +2899,13 @@
     {
       "label": "sonim/ar/320/color-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "sonim/ar/320/color-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -2965,13 +2965,13 @@
     {
       "label": "sonim/ar/320/conflicting: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "sonim/ar/320/conflicting: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -3031,13 +3031,13 @@
     {
       "label": "sonim/ar/320/custom: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج ال"
     },
     {
       "label": "sonim/ar/320/custom: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "تقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد."
       }
     },
@@ -3097,13 +3097,13 @@
     {
       "label": "sonim/ar/320/unpriced-option: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ا"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ا"
     },
     {
       "label": "sonim/ar/320/unpriced-option: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "تقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد."
       }
     },
@@ -3158,7 +3158,7 @@
     {
       "label": "sonim/ar/320/missing-total: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n—\n\nسعر المتجر 27.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n—\n\nسعر المتجر 27.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)"
     },
     {
       "label": "sonim/ar/320/missing-total: actual parent does not invent a variant or change the request",
@@ -3231,7 +3231,7 @@
     {
       "label": "lens/ar/390/exact: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي المحسوب\n\n108.00 د.ت\n\nسعر المتجر 27.00 EUR\n\nالسعر مؤكّد\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي المحسوب\n\n108.00 د.ت\n\nسعر المتجر 27.00 EUR\n\nالسعر مؤكّد\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل"
     },
     {
       "label": "lens/ar/390/exact: actual parent does not invent a variant or change the request",
@@ -3284,13 +3284,13 @@
     {
       "label": "lens/ar/390/size-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "lens/ar/390/size-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -3371,13 +3371,13 @@
     {
       "label": "lens/ar/390/reordered: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "lens/ar/390/reordered: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -3437,13 +3437,13 @@
     {
       "label": "lens/ar/390/color-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "lens/ar/390/color-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -3503,13 +3503,13 @@
     {
       "label": "lens/ar/390/conflicting: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "lens/ar/390/conflicting: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -3569,13 +3569,13 @@
     {
       "label": "lens/ar/390/custom: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج ال"
     },
     {
       "label": "lens/ar/390/custom: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "تقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد."
       }
     },
@@ -3635,13 +3635,13 @@
     {
       "label": "lens/ar/390/unpriced-option: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ا"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ا"
     },
     {
       "label": "lens/ar/390/unpriced-option: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "تقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد."
       }
     },
@@ -3696,7 +3696,7 @@
     {
       "label": "lens/ar/390/missing-total: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n—\n\nسعر المتجر 27.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n—\n\nسعر المتجر 27.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)"
     },
     {
       "label": "lens/ar/390/missing-total: actual parent does not invent a variant or change the request",
@@ -3769,7 +3769,7 @@
     {
       "label": "sonim/ar/390/exact: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي المحسوب\n\n108.00 د.ت\n\nسعر المتجر 27.00 EUR\n\nالسعر مؤكّد\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي المحسوب\n\n108.00 د.ت\n\nسعر المتجر 27.00 EUR\n\nالسعر مؤكّد\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل"
     },
     {
       "label": "sonim/ar/390/exact: actual parent does not invent a variant or change the request",
@@ -3822,13 +3822,13 @@
     {
       "label": "sonim/ar/390/size-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "sonim/ar/390/size-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -3909,13 +3909,13 @@
     {
       "label": "sonim/ar/390/reordered: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "sonim/ar/390/reordered: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -3975,13 +3975,13 @@
     {
       "label": "sonim/ar/390/color-only: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "sonim/ar/390/color-only: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -4041,13 +4041,13 @@
     {
       "label": "sonim/ar/390/conflicting: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ال"
     },
     {
       "label": "sonim/ar/390/conflicting: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتوجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "توجد عدة خيارات مطابقة. حدّد اختيارك أكثر، أو أرسل طلبًا يدويًا بالسعر العام التقديري."
       }
     },
@@ -4107,13 +4107,13 @@
     {
       "label": "sonim/ar/390/custom: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج ال"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج ال"
     },
     {
       "label": "sonim/ar/390/custom: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "تقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد."
       }
     },
@@ -4173,13 +4173,13 @@
     {
       "label": "sonim/ar/390/unpriced-option: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ا"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء ا"
     },
     {
       "label": "sonim/ar/390/unpriced-option: general estimate is honest and localized",
       "pass": true,
       "details": {
-        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
+        "text": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n80.00 د.ت\n\nسعر المتجر 20.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nتقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد.\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)\nاللون\nالمقاس\nدون تفضيل\nM\nL\nمقاس آخر\n\nالمواصفات المكتشفة في الصفحة: المقاسات M, L · الألوان Bleu, Rouge.\n\nملاحظة خاصة\nعرض صفحة المتجر\nاطلب · عربون 25%\n\nعربون 25% · التتبع بعد الشحن الفعلي",
         "notice": "تقدير عام: سعر المقاس أو اللون المطلوب ما زال يحتاج إلى تأكيد."
       }
     },
@@ -4234,7 +4234,7 @@
     {
       "label": "sonim/ar/390/missing-total: displayed monetary source agrees with selection",
       "pass": true,
-      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه AYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n—\n\nسعر المتجر 27.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)"
+      "details": "التوفر يحتاج إلى تأكيد\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nمنتج تعرّفت عليه ZAYROVIX\n\nصفحة المتجر\n\nالسعر الإجمالي التقديري\n\n—\n\nسعر المتجر 27.00 EUR\n\nالسعر تقديري — ما زال يحتاج إلى تحقق يدوي.\n\nالخيار المحدد: M · Bleu\n\nData for verification / بيانات اختبار\n\nتفاصيل طلبك\n\nستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.\n\nاختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.\n\nالرابط الدقيق للمنتج *\nيُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.\nالكمية *\nالمقاس واللون والملاحظة (اختياري)"
     },
     {
       "label": "sonim/ar/390/missing-total: actual parent does not invent a variant or change the request",

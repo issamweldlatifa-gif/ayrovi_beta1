@@ -1,0 +1,469 @@
+import { analyzeImage } from './lensApi';
+import { frameSignature, signatureDistance, liveObjectId } from './liveScanner';
+import type { ZayrovixCandidate, ZayrovixDetectedPrice } from '../types';
+
+/**
+ * ZAYROVIX LENS — LiveVisionRuntime (REAL LIVE MODE, V0 category-agnostic).
+ *
+ * Pipeline: Camera → Frame Sampler → Product Detection → Tracking(DETECT→TRACK→
+ * PREDICT→UPDATE) → Confidence(EMA) → Temporal Update → Live Overlay.
+ *
+ * - Adaptive inference FPS منفصل عن preview FPS (لا يُحجب الـ rendering).
+ * - Offline: الكاميرا والـ tracking يستمران على الكائنات المعروفة، والـ cloud matching
+ *   يتأجل حتى العودة.
+ * - Analytics: أحداث مجهولة عبر onEvent (لا صورة/لا IP/لا بيانات شخصية).
+ * - Graceful degradation: فشل الـ AI لا يُسقط الـ Live.
+ *
+ * ملاحظة (2026-10-01): كان هنا مسار «كشف محلي» يحمّل TensorFlow + COCO-SSD من
+ * `cdn.jsdelivr.net` عبر <script>. سياسة CSP في هذا المستودع تعلن `script-src 'self'`
+ * دائمًا (تطويرًا وإنتاجًا)، فكان المتصفح يحجب السكريبت حتمًا والمسار لا يمكن أن
+ * ينجح أبدًا — كود ميت يستهلك محاولتَي شبكة فاشلتين عند كل فتح. حُذف بدل إضعاف
+ * السياسة؛ والكشف يُؤدّى عبر مسار الخادم (AI Core Vision) الذي يغطي فئات المنتجات
+ * فعلًا، بينما فئات COCO العامة (سيارة، كلب، كرسي) لا تخدم عدسة متجر.
+ */
+
+export interface LiveBox { x: number; y: number; w: number; h: number; }
+
+export interface LiveDetection {
+  productInstanceId: string;
+  trackingId: string;
+  label: string;
+  category: string;
+  subcategory: string | null;
+  brand: string | null;
+  confidence: number;
+  rawConfidence: number;
+  box: LiveBox | null;
+  mask: null; // غير متوفر منStructured Outputs/COCO V0 — نقطة توسّع
+  visualFeatures: number[];
+  color: string[];
+  pattern: string | null;
+  material: string | null;
+  position: { x: number; y: number } | null;
+  status: 'tracking' | 'locked' | 'lost';
+  timestamp: number;
+  misses: number;
+  vx: number; vy: number;
+  candidates: ZayrovixCandidate[];
+  detectedPrice?: ZayrovixDetectedPrice | null;
+  image?: string;
+}
+
+const centerOf = (box: LiveBox | null) => (box ? { x: box.x + box.w / 2, y: box.y + box.h / 2 } : null);
+
+export type LiveStatus = 'idle' | 'live' | 'ai-unavailable' | 'low-confidence' | 'tracking-lost' | 'offline';
+export type LiveEventType = 'live_opened' | 'object_detected' | 'object_locked' | 'tracking_lost' | 'ai_unavailable' | 'match_requested' | 'match_returned';
+
+export const LOCK_THRESHOLD = 60;
+export const REDETECT_THRESHOLD = 35;
+export const MAX_MISSES = 3;
+export const PREDICT_FRAMES = 2;
+
+/** يحسب مستطيل القصّ بالبكسل لصندوق مُطبَّع، مقيّدًا داخل أبعاد الـ canvas. */
+export const computeCropRect = (canvasW: number, canvasH: number, box: LiveBox) => {
+  const w = Math.min(canvasW, Math.max(32, Math.round(box.w * canvasW)));
+  const h = Math.min(canvasH, Math.max(32, Math.round(box.h * canvasH)));
+  const x = Math.min(Math.max(0, Math.round(box.x * canvasW)), canvasW - w);
+  const y = Math.min(Math.max(0, Math.round(box.y * canvasH)), canvasH - h);
+  return { x, y, w, h };
+};
+
+/** بصمة بصرية محلية خفيفة (متجه رمادي مُطبَّع) لإعادة التعرّف على نفس المنتج بين الـ frames. */
+export const grayToFeatures = (gray: number[]): number[] => {
+  if (!gray.length) return [];
+  let max = 1;
+  for (const v of gray) if (v > max) max = v;
+  return gray.map((v) => Math.round((v / max) * 100) / 100);
+};
+
+export const computeVisualFeatures = (canvas: HTMLCanvasElement, box: LiveBox): number[] => {
+  const rect = computeCropRect(canvas.width, canvas.height, box);
+  const c = document.createElement('canvas');
+  c.width = 8; c.height = 8;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return [];
+  ctx.drawImage(canvas, rect.x, rect.y, rect.w, rect.h, 0, 0, 8, 8);
+  const d = ctx.getImageData(0, 0, 8, 8).data;
+  const gray: number[] = [];
+  for (let i = 0; i < d.length; i += 4) gray.push(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
+  return grayToFeatures(gray);
+};
+
+export const iou = (a: LiveBox, b: LiveBox): number => {
+  const x1 = Math.max(a.x, b.x); const y1 = Math.max(a.y, b.y);
+  const x2 = Math.min(a.x + a.w, b.x + b.w); const y2 = Math.min(a.y + a.h, b.y + b.h);
+  const inter = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  const union = a.w * a.h + b.w * b.h - inter;
+  return union > 0 ? inter / union : 0;
+};
+
+/** Adaptive inference interval: يبطئ عند inference بطيء ويسرع عند القدرة. */
+export const adaptiveNextInterval = (current: number, latencyMs: number): number => {
+  const factor = latencyMs > 1500 ? 1.4 : latencyMs < 400 ? 0.85 : 1;
+  return Math.round(Math.min(4000, Math.max(1200, current * factor)));
+};
+
+interface RawDetection { label: string; category: string; subcategory: string | null; brand: string | null; confidence: number; box: LiveBox | null; visualFeatures: number[]; color: string[]; pattern: string | null; material: string | null; candidates: ZayrovixCandidate[]; detectedPrice?: ZayrovixDetectedPrice | null; image?: string; }
+
+const instanceId = (label: string, brand: string | null) => liveObjectId(`${brand || ''}::${label}`);
+
+/** DETECT→TRACK→PREDICT→UPDATE: مطابقة IoU/label + تنبؤ بالحركة عند الغياب + recovery. */
+export function trackObjects(prev: LiveDetection[], next: RawDetection[], now: number): LiveDetection[] {
+  const tracks = prev.map((t) => ({ ...t }));
+  const used = new Set<number>();
+  const out: LiveDetection[] = [];
+
+  for (const det of next) {
+    let bestIdx = -1; let bestScore = 0;
+    tracks.forEach((t, i) => {
+      if (used.has(i)) return;
+      const score = det.box && t.box ? iou(det.box, t.box) : (t.label === det.label ? 0.5 : 0);
+      if (score > bestScore) { bestScore = score; bestIdx = i; }
+    });
+    if (bestIdx >= 0 && bestScore >= 0.3) {
+      const t = tracks[bestIdx]; used.add(bestIdx);
+      // UPDATE: velocity من فرق الـ box (لتنبؤ لاحق)
+      if (det.box && t.box) { t.vx = det.box.x - t.box.x; t.vy = det.box.y - t.box.y; }
+      t.confidence = Math.round(t.confidence * 0.6 + det.confidence * 0.4);
+      t.rawConfidence = det.confidence;
+      t.box = det.box ?? t.box;
+      t.label = det.label; t.category = det.category;
+      t.candidates = det.candidates.length ? det.candidates : t.candidates;
+      t.detectedPrice = det.detectedPrice ?? t.detectedPrice;
+      t.image = det.image ?? t.image;
+      t.color = det.color.length ? det.color : t.color;
+      t.pattern = det.pattern ?? t.pattern;
+      t.material = det.material ?? t.material;
+      t.brand = det.brand ?? t.brand;
+      t.subcategory = det.subcategory ?? t.subcategory;
+      t.visualFeatures = det.visualFeatures.length ? det.visualFeatures : t.visualFeatures;
+      t.position = centerOf(t.box);
+      t.misses = 0; t.timestamp = now;
+      t.status = t.confidence >= LOCK_THRESHOLD ? 'locked' : (t.confidence < REDETECT_THRESHOLD ? 'tracking' : t.status === 'locked' ? 'locked' : 'tracking');
+      out.push(t);
+    } else {
+      out.push({
+        productInstanceId: instanceId(det.label, det.brand),
+        trackingId: instanceId(det.label, det.brand),
+        label: det.label, category: det.category, subcategory: det.subcategory, brand: det.brand,
+        confidence: det.confidence, rawConfidence: det.confidence, box: det.box,
+        mask: null, visualFeatures: det.visualFeatures,
+        position: centerOf(det.box),
+        status: det.confidence >= LOCK_THRESHOLD ? 'locked' : 'tracking',
+        timestamp: now, misses: 0, vx: 0, vy: 0,
+        color: det.color, pattern: det.pattern, material: det.material,
+        candidates: det.candidates, detectedPrice: det.detectedPrice, image: det.image,
+      });
+    }
+  }
+
+  // PREDICT/UPDATE للـ tracks غير المطابقة: تنبؤ بالحركة ثم recovery ثم lost
+  tracks.forEach((t) => {
+    if (out.some((o) => o.trackingId === t.trackingId)) return;
+    const misses = t.misses + 1;
+    if (misses <= PREDICT_FRAMES && t.box) {
+      const predicted = { x: Math.min(1, Math.max(0, t.box.x + t.vx)), y: Math.min(1, Math.max(0, t.box.y + t.vy)), w: t.box.w, h: t.box.h };
+      out.push({ ...t, box: predicted, misses, status: 'tracking', confidence: Math.max(REDETECT_THRESHOLD, Math.round(t.confidence * 0.9)), timestamp: now });
+      return;
+    }
+    if (misses > MAX_MISSES) return; // إزالة بعد محاولات الاسترداد
+    out.push({ ...t, misses, status: 'lost', timestamp: now });
+  });
+
+  return out;
+}
+
+export interface LiveVisionState { objects: LiveDetection[]; status: LiveStatus; }
+
+export interface LiveVisionRuntimeOptions {
+  getVideo: () => HTMLVideoElement | null;
+  onState: (state: LiveVisionState) => void;
+  onEvent?: (type: LiveEventType, meta?: Record<string, number | string>) => void;
+  baseInterval?: number;
+}
+
+export class LiveVisionRuntime {
+  private opts: LiveVisionRuntimeOptions;
+  private timer: number | null = null;
+  private interval: number;
+  private objects: LiveDetection[] = [];
+  private lastSig = '';
+  private lastCanvas: HTMLCanvasElement | null = null;
+  private lastDetectionAt = 0;
+  private matchingIds = new Set<string>();
+  private matchingRequests = new Map<string, AbortController>();
+  private generation = 0;
+  private matchRetry = new Map<string, { failures: number; at: number }>();
+  private inflight = false;
+  private abort: AbortController | null = null;
+  private aiFailures = 0;
+  private online = typeof navigator !== 'undefined' ? navigator.onLine !== false : true;
+  private stopped = true;
+  private onOnline = () => { this.online = true; this.aiFailures = 0; this.emit(); };
+  private onOffline = () => { this.online = false; this.emit(); };
+
+  constructor(opts: LiveVisionRuntimeOptions) { this.opts = opts; this.interval = opts.baseInterval ?? 2200; }
+
+  start(): void {
+    if (!this.stopped) return;
+    this.stopped = false;
+    const generation = ++this.generation;
+    this.online = typeof navigator === 'undefined' || navigator.onLine !== false;
+    this.objects = []; this.aiFailures = 0; this.lastSig = ''; this.lastDetectionAt = 0;
+    if (typeof window !== 'undefined') { window.addEventListener('online', this.onOnline); window.addEventListener('offline', this.onOffline); }
+    this.opts.onEvent?.('live_opened');
+    this.emit();
+    // First ready frame has no artificial polling delay. Later frames stay adaptive.
+    this.schedule(generation, 0);
+  }
+
+  stop(): void {
+    this.stopped = true;
+    this.generation++;
+    if (this.timer != null) { window.clearTimeout(this.timer); this.timer = null; }
+    if (typeof window !== 'undefined') { window.removeEventListener('online', this.onOnline); window.removeEventListener('offline', this.onOffline); }
+    this.abort?.abort(); this.abort = null; this.inflight = false;
+    for (const controller of this.matchingRequests.values()) controller.abort();
+    this.matchingRequests.clear(); this.matchingIds.clear(); this.matchRetry.clear();
+    this.lastCanvas = null; this.lastSig = '';
+    this.objects = [];
+    this.opts.onState({ objects: [], status: 'idle' });
+  }
+
+  private isCurrent(generation: number): boolean {
+    return !this.stopped && generation === this.generation;
+  }
+
+  private schedule(generation = this.generation, delay = this.interval): void {
+    if (!this.isCurrent(generation)) return;
+    if (this.timer != null) window.clearTimeout(this.timer);
+    this.timer = window.setTimeout(() => {
+      this.timer = null;
+      void this.tick(generation);
+    }, delay);
+  }
+
+  private emit(): void {
+    const visible = this.objects.filter((o) => o.status !== 'lost');
+    const hasLocked = visible.some((o) => o.status === 'locked');
+    const status: LiveStatus = !this.online ? 'offline'
+      : this.aiFailures >= 2 ? 'ai-unavailable'
+        : hasLocked ? 'live'
+          : visible.length ? 'low-confidence' : 'live';
+    this.opts.onState({ objects: visible, status });
+  }
+
+  private drawSample(): HTMLCanvasElement | null {
+    const video = this.opts.getVideo();
+    if (!video || video.videoWidth === 0) return null;
+    const scale = Math.min(1, 512 / video.videoWidth);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+    canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas;
+  }
+
+  private toRawDetections(result: any, thumb: string, canvas: HTMLCanvasElement): RawDetection[] {
+    const id = result.identification || {};
+    const conf = Math.round((Number(id.confidence) || 0) * 100);
+    const products = Array.isArray(id.products) ? id.products : [];
+    const str = (v: unknown, max = 60) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
+    const colors = (v: unknown) => (Array.isArray(v) ? v.filter((c) => typeof c === 'string' && c.trim()).map((c) => c.trim().slice(0, 30)).slice(0, 4) : []);
+
+    // Multi-Product Intelligence: إذا توفّرت مصفوفة المنتجات (حتى بدون صناديق صريحة)
+    if (products.length > 0) {
+      return products.slice(0, 8).map((p: any, idx: number) => {
+        const hasBox = Array.isArray(p?.box) && p.box.length === 4;
+        const box: LiveBox = hasBox
+          ? { x: p.box[0], y: p.box[1], w: p.box[2], h: p.box[3] }
+          : { x: 0.1, y: 0.1 + (idx * 0.22) % 0.65, w: 0.8, h: Math.min(0.35, Math.max(0.18, 0.8 / products.length)) };
+
+        // استخراج صورة مصغرة مخصصة لكل منتج بناءً على الصندوق
+        let productThumb = thumb;
+        try {
+          const rect = computeCropRect(canvas.width, canvas.height, box);
+          const c = document.createElement('canvas');
+          c.width = rect.w;
+          c.height = rect.h;
+          const ctx = c.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(canvas, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+            productThumb = c.toDataURL('image/jpeg', 0.8);
+          }
+        } catch { /* fallback to general scene thumb */ }
+
+        let productPrice: ZayrovixDetectedPrice | null = null;
+        if (p.price != null && Number(p.price) > 0 && p.currency) {
+          productPrice = {
+            sourcePrice: Number(p.price),
+            sourceCurrency: String(p.currency),
+            convertedPriceTND: p.priceTnd ?? null,
+            serviceFeeTND: null,
+            estimatedShippingTND: null,
+            totalPriceTND: p.priceTnd ?? null,
+            title: String(p.name || 'Produit'),
+            brand: p.brand || null,
+            isCartScreenshot: false,
+            imageUrl: productThumb,
+          };
+        } else if (result.detectedPrice && idx === 0) {
+          productPrice = result.detectedPrice;
+        }
+
+        return {
+          label: String(p.name || '').slice(0, 80) || 'Produit',
+          category: String(p.category || id.category || 'product'),
+          subcategory: str(p.subcategory || p.category, 60),
+          brand: typeof p.brand === 'string' ? p.brand.slice(0, 80) : null,
+          confidence: conf > 0 ? conf : 80,
+          box,
+          visualFeatures: computeVisualFeatures(canvas, box),
+          color: colors(p.color || id.color),
+          pattern: str(p.pattern || p.motif || id.pattern),
+          material: str(p.material || id.material),
+          candidates: (idx === 0 && result.candidates?.length) ? result.candidates : [] as ZayrovixCandidate[],
+          detectedPrice: productPrice,
+          image: productThumb,
+        };
+      });
+    }
+
+    const desc = String(id.description || result.query || '');
+    if ((Number(id.confidence) || 0) <= 0 || desc === 'PRODUIT_NON_IDENTIFIE') return [];
+    return [{
+      label: (result.candidates?.[0]?.title || desc).slice(0, 80),
+      category: String(id.category || 'product'),
+      subcategory: str(id.category, 60),
+      brand: typeof id.brand === 'string' ? id.brand.slice(0, 80) : null,
+      confidence: conf,
+      box: null,
+      visualFeatures: computeVisualFeatures(canvas, { x: 0, y: 0, w: 1, h: 1 }),
+      color: colors(id.color),
+      pattern: str(id.pattern),
+      material: str(id.material),
+      candidates: result.candidates || [],
+      detectedPrice: result.detectedPrice || null,
+      image: thumb,
+    }];
+  }
+
+  /** مطابقة مستقلة لكل منتج: قصّ صندوقه وإرساله إلى AI Core Vision (بحد تزامن + بدون تكرار). */
+  private matchPending(canvas: HTMLCanvasElement, generation: number): void {
+    if (!this.isCurrent(generation) || !this.online) return;
+    const activeIds = new Set(this.objects.map(o => o.trackingId));
+    for (const id of this.matchRetry.keys()) if (!activeIds.has(id)) this.matchRetry.delete(id);
+    for (const obj of this.objects) {
+      if ((this.matchRetry.get(obj.trackingId)?.at ?? 0) > Date.now() || !obj.box || obj.status === 'lost' || obj.candidates.length || this.matchingIds.has(obj.trackingId) || this.matchingIds.size >= 3) continue;
+      const retryLater = () => {
+        if (!this.isCurrent(generation)) return;
+        const failures = Math.min(4, (this.matchRetry.get(obj.trackingId)?.failures ?? 0) + 1);
+        this.matchRetry.set(obj.trackingId, { failures, at: Date.now() + Math.min(15000, 2200 * 2 ** failures) });
+      };
+      const controller = new AbortController();
+      this.matchingIds.add(obj.trackingId);
+      this.matchingRequests.set(obj.trackingId, controller);
+      // Cleanup belongs to this request, never to a replacement with the same tracking id.
+      const release = () => {
+        if (this.matchingRequests.get(obj.trackingId) !== controller) return;
+        this.matchingRequests.delete(obj.trackingId);
+        this.matchingIds.delete(obj.trackingId);
+      };
+      try {
+        const rect = computeCropRect(canvas.width, canvas.height, obj.box);
+        const crop = document.createElement('canvas');
+        crop.width = rect.w; crop.height = rect.h;
+        const cctx = crop.getContext('2d');
+        if (!cctx) { release(); continue; }
+        cctx.drawImage(canvas, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+        crop.toBlob(async (blob) => {
+          if (!this.isCurrent(generation) || controller.signal.aborted || !blob) { release(); return; }
+          try {
+            const res = await analyzeImage(new File([blob], 'zayrovix-crop.jpg', { type: 'image/jpeg' }), controller.signal);
+            if (!this.isCurrent(generation) || controller.signal.aborted) return;
+            const cands = res.candidates || [];
+            if (cands.length) this.matchRetry.delete(obj.trackingId); else retryLater();
+            this.objects = this.objects.map((o) => (o.trackingId === obj.trackingId
+              ? { ...o, candidates: cands, confidence: cands[0]?.match != null ? Math.max(o.confidence, cands[0].match) : o.confidence }
+              : o));
+            if (cands.length) this.opts.onEvent?.('match_returned', { candidates: cands.length });
+            this.emit();
+          } catch { if (!controller.signal.aborted) retryLater(); }
+          finally { release(); }
+        }, 'image/jpeg', 0.85);
+      } catch { release(); }
+    }
+  }
+
+  private async tick(generation: number): Promise<void> {
+    if (!this.isCurrent(generation)) return;
+    let canvas: HTMLCanvasElement | null;
+    try { canvas = this.drawSample(); }
+    catch { this.schedule(generation); return; }
+    if (canvas) this.lastCanvas = canvas;
+    if (canvas) {
+      let sig: string;
+      try { sig = frameSignature(canvas); }
+      catch { this.schedule(generation); return; }
+      const unchanged = sig && this.lastSig && signatureDistance(sig, this.lastSig) < 0.06;
+      this.lastSig = sig;
+      if (unchanged && Date.now() - this.lastDetectionAt < 15000 && this.aiFailures === 0 && this.objects.some(o => o.status !== 'lost')) {
+        // A stable scene is not a missing detection. Keep existing evidence without
+        // inventing a confidence increase or dropping a stationary product.
+        this.objects = this.objects.filter(o => o.status !== 'lost');
+        this.matchPending(canvas, generation);
+        this.emit(); this.schedule(generation); return;
+      }
+      if (!this.inflight && this.online) {
+        this.inflight = true;
+        this.opts.onEvent?.('match_requested');
+        const started = Date.now();
+        try { canvas.toBlob(async (blob) => {
+          if (!this.isCurrent(generation)) return;
+          if (!blob) { this.inflight = false; this.schedule(generation); return; }
+          this.abort?.abort();
+          const ctrl = new AbortController(); this.abort = ctrl;
+          try {
+            const result = await analyzeImage(new File([blob], 'zayrovix-live.jpg', { type: 'image/jpeg' }), ctrl.signal);
+            if (!this.isCurrent(generation) || ctrl.signal.aborted) return;
+            this.interval = adaptiveNextInterval(this.interval, Date.now() - started);
+            this.aiFailures = 0;
+            this.opts.onEvent?.('match_returned', { candidates: (result.candidates || []).length });
+            const thumb = canvas.toDataURL('image/jpeg', 0.6);
+            const raw = this.toRawDetections(result, thumb, canvas);
+            const before = this.objects.length;
+            this.lastDetectionAt = Date.now();
+          this.objects = trackObjects(this.objects, raw, Date.now());
+            this.objects.filter((o) => o.status === 'locked').forEach((o) => this.opts.onEvent?.('object_locked', { confidence: o.confidence }));
+            if (this.objects.length > before) this.opts.onEvent?.('object_detected', { count: this.objects.length });
+            this.matchPending(canvas, generation);
+            this.emit();
+          } catch {
+            if (!this.isCurrent(generation) || ctrl.signal.aborted) return;
+            this.aiFailures += 1;
+            // Back off service failures rather than hammering the provider/rate limiter.
+            this.interval = Math.min(15000, Math.max(2200, this.interval) * 2);
+            if (this.aiFailures === 2) this.opts.onEvent?.('ai_unavailable');
+            this.objects = trackObjects(this.objects, [], Date.now());
+            this.emit();
+          } finally {
+            if (this.isCurrent(generation)) {
+              if (this.abort === ctrl) this.abort = null;
+              this.inflight = false;
+              this.schedule(generation);
+            }
+          }
+        }, 'image/jpeg', 0.8); } catch {
+          if (this.isCurrent(generation)) { this.inflight = false; this.schedule(generation); }
+        }
+        return;
+      }
+      // offline أو inflight: استمر بالـ tracking المحلي فقط
+      this.objects = trackObjects(this.objects, [], Date.now());
+      this.emit();
+    }
+    this.schedule(generation);
+  }
+}

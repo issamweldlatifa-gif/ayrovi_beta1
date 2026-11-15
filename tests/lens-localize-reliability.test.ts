@@ -14,14 +14,14 @@ import sharp from 'sharp';
 import express from 'express';
 
 const provider = vi.hoisted(() => ({ isConfigured: vi.fn(), complete: vi.fn() }));
-vi.mock('../src/ai-core/core', () => ({ getAyroviAiCore: () => ({ responses: () => provider }) }));
+vi.mock('../src/ai-core/core', () => ({ getZayroviAiCore: () => ({ responses: () => provider }) }));
 
-import { extractLocalizationJson, localizeProducts, LocalizationError } from '../src/ayrovix/services/productLocalization';
-import { createAyrovixRouter } from '../src/ayrovix/routes';
+import { extractLocalizationJson, localizeProducts, LocalizationError } from '../src/zayrovix/services/productLocalization';
+import { createZayrovixRouter } from '../src/zayrovix/routes';
 
 const bag = { name: 'Sac', category: 'bag', confidence: 0.9, box: [0.4, 0.4, 0.2, 0.25] };
 const app = express();
-app.use('/api/ayrovix', createAyrovixRouter({} as any, {} as any));
+app.use('/api/zayrovix', createZayrovixRouter({} as any, {} as any));
 let shade = 0;
 const photo = () => sharp({ create: { width: 64, height: 64, channels: 3, background: { r: 200, g: shade++ % 255, b: 90 } } }).png().toBuffer();
 const ok = () => ({ textBlocks: [JSON.stringify({ products: [bag] })] });
@@ -35,11 +35,11 @@ beforeEach(() => {
 describe('compteur propre au repérage', () => {
   const server = fs.readFileSync(path.resolve(__dirname, '../src/server.ts'), 'utf8');
   it('/localize ne consomme plus le quota des recherches', () => {
-    expect(server).not.toMatch(/costlyAyrovixPaths = new Set\(\[[^\]]*'\/localize'/);
-    expect(server).toContain("rateLimit('ayrovix-localize'");
-    expect(server).toContain("rateLimit('ayrovix-localize-daily'");
+    expect(server).not.toMatch(/costlyZayrovixPaths = new Set\(\[[^\]]*'\/localize'/);
+    expect(server).toContain("rateLimit('zayrovix-localize'");
+    expect(server).toContain("rateLimit('zayrovix-localize-daily'");
     expect(server).toContain("req.path === '/localize'");
-    expect(server).toContain('AYROVIX_LOCALIZE_DAILY_LIMIT');
+    expect(server).toContain('ZAYROVIX_LOCALIZE_DAILY_LIMIT');
   });
 });
 
@@ -94,7 +94,7 @@ describe('route : la raison accompagne le 503', () => {
   it('rend `reason` (diagnostic) avec le message client habituel', async () => {
     provider.complete.mockResolvedValue({ textBlocks: ['pas de JSON'] });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const res = await request(app).post('/api/ayrovix/localize').attach('image', await photo(), 'scene.png');
+    const res = await request(app).post('/api/zayrovix/localize').attach('image', await photo(), 'scene.png');
     expect(res.status).toBe(503);
     expect(res.body.code).toBe('LOCALIZATION_UNAVAILABLE');
     expect(res.body.reason).toBe('INVALID_OUTPUT');

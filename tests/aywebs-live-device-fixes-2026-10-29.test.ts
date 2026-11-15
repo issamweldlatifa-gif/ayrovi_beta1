@@ -13,7 +13,7 @@ import { JSDOM } from 'jsdom';
 import ts from 'typescript';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-live-fixes-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-live-fixes-')), 'cache');
 
 import { QatafoDatabase } from '../src/db/database';
 import { DEFAULT_CUSTOMS_CATEGORIES, type PricingRules } from '../src/services/pricing';
@@ -169,7 +169,7 @@ describe('AYWEBs — Corrections Terrain Appareil Réel (29/10/2026)', () => {
     expect(resolved.capture?.used).toBe(true);
     expect(resolved.product.price).toBeCloseTo(1.72, 2);
     expect(resolved.product.currency).toBe('EUR');
-    expect(resolved.product.ayroviPricing?.totalTnd).toBeGreaterThan(0);
+    expect(resolved.product.zayroviPricing?.totalTnd).toBeGreaterThan(0);
     expect(resolved.quoteToken).toBeTruthy();
   });
 
@@ -300,7 +300,7 @@ describe('AYWEBs — Corrections Terrain Appareil Réel (29/10/2026)', () => {
     expect(resolved.capture?.used).toBe(true);
     expect(resolved.product.price).toBeCloseTo(19.4, 2);
     expect(resolved.product.currency).toBe('USD');
-    expect(resolved.product.ayroviPricing?.totalTnd).toBeGreaterThan(0);
+    expect(resolved.product.zayroviPricing?.totalTnd).toBeGreaterThan(0);
     expect(resolved.quoteToken).toBeTruthy();
 
     const added = await addAyWebsCartItem(h.resolver, {

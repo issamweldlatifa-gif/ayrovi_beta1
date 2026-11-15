@@ -7,11 +7,11 @@ for(const [engine,type] of [['chromium',chromium],['firefox',firefox]]){
  const browser=await type.launch({headless:true});
  try{for(const locale of ['fr','ar']){
   const ar=locale==='ar';const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
-  await context.addInitScript(locale=>{localStorage.setItem('ayrovi.locale.v1',locale);window.BarcodeDetector=class{static async getSupportedFormats(){return ['qr_code','ean_13'];}async detect(){const v=window.codeToDetect;window.codeToDetect=null;return v?[{rawValue:v}]:[];}};},locale);
+  await context.addInitScript(locale=>{localStorage.setItem('zayrovi.locale.v1',locale);window.BarcodeDetector=class{static async getSupportedFormats(){return ['qr_code','ean_13'];}async detect(){const v=window.codeToDetect;window.codeToDetect=null;return v?[{rawValue:v}]:[];}};},locale);
   const p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));
-  await p.route('**/*',r=>{const u=r.request().url();return /^https?:/.test(u)&&!u.startsWith(process.env.AYROVI_BASE_URL+'/')?r.abort():r.continue();});
-  await p.route('**/api/ayrovix/**',r=>r.fulfill({status:503,json:{success:false,error:'Verification: external analysis disabled'}}));
-  await p.goto(process.env.AYROVI_BASE_URL+'/__verify/sonim');await p.locator('[data-open]').click();await p.locator('.lens-consent .lens-panel-primary').waitFor();
+  await p.route('**/*',r=>{const u=r.request().url();return /^https?:/.test(u)&&!u.startsWith(process.env.ZAYROVI_BASE_URL+'/')?r.abort():r.continue();});
+  await p.route('**/api/zayrovix/**',r=>r.fulfill({status:503,json:{success:false,error:'Verification: external analysis disabled'}}));
+  await p.goto(process.env.ZAYROVI_BASE_URL+'/__verify/sonim');await p.locator('[data-open]').click();await p.locator('.lens-consent .lens-panel-primary').waitFor();
   check(`${engine}/${locale}: no media request before agreement`,await p.evaluate(()=>lensEntryTest.mediaRequests===0));
   check('agreement disabled by default',await p.locator('.lens-consent .lens-panel-primary').isDisabled());
   await p.screenshot({path:`${output}/${engine}-${locale}-consent.png`});
@@ -22,13 +22,13 @@ for(const [engine,type] of [['chromium',chromium],['firefox',firefox]]){
    const geometry=await p.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth,controls:[...document.querySelectorAll('.lens-camera-header button,.lens-camera-controls button,.lens-camera-tab')].filter(e=>!e.disabled).map(e=>({w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height})),font:getComputedStyle(document.querySelector('.lens-camera-brand')).fontFamily,weight:getComputedStyle(document.querySelector('.lens-camera-brand')).fontWeight}));
    check(`${engine}/${locale}/${width}: no overflow`,!geometry.overflow,geometry);
    check('44px targets',geometry.controls.every(x=>x.w>=44&&x.h>=44),geometry);
-   check('official stack and medium title',geometry.font.includes('Ayrovi Extracted Sans')&&geometry.font.includes('Noto Sans Arabic')&&geometry.weight==='500',geometry);
+   check('official stack and medium title',geometry.font.includes('Zayrovi Extracted Sans')&&geometry.font.includes('Noto Sans Arabic')&&geometry.weight==='500',geometry);
   }
   await p.setViewportSize({width:390,height:844});await p.screenshot({path:`${output}/${engine}-${locale}-camera.png`});
   if(engine==='chromium'){
    const cdp=await context.newCDPSession(p);await cdp.send('DOM.enable');await cdp.send('CSS.enable');const {root}=await cdp.send('DOM.getDocument');
    const {nodeId}=await cdp.send('DOM.querySelector',{nodeId:root.nodeId,selector:'.lens-camera-brand'});const actual=await cdp.send('CSS.getPlatformFontsForNode',{nodeId});fonts.push({locale,...actual});
-   check('title glyphs really rendered with official local Ayrovi Extracted Sans',actual.fonts.length>0&&actual.fonts.every(f=>f.isCustomFont&&f.familyName.includes('Zalando')),actual);
+   check('title glyphs really rendered with official local Zayrovi Extracted Sans',actual.fonts.length>0&&actual.fonts.every(f=>f.isCustomFont&&f.familyName.includes('Zalando')),actual);
   }
 
   const help=p.getByRole('button',{name:ar?'مساعدة Lens وقواعد الاستخدام':'Aide et règles de Lens',exact:true});

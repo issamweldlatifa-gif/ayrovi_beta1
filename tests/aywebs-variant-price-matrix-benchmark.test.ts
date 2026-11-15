@@ -13,7 +13,7 @@ import request from 'supertest';
 import { JSDOM } from 'jsdom';
 import { describe, expect, it, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-vpm-bench-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-vpm-bench-')), 'cache');
 
 import { QatafoDatabase } from '../src/db/database';
 import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, type PricingRules } from '../src/services/pricing';
@@ -238,13 +238,13 @@ describe('AYWEBs Variant Price Matrix — SHEIN, Zalando & Amazon (extraction un
     const expectedFleece1 = calculatePrice(pricingRules(), 21.9, 'EUR', { title: res.body.data.title, quantity: 1 });
     expect(switchFleeceMs).toBeLessThan(2);
     expect(fleeceRow.quoted_price).toBe(21.9);
-    expect(fleeceRow.ayrovi_pricing.total_tnd).toBe(expectedFleece1.totalTND);
+    expect(fleeceRow.zayrovi_pricing.total_tnd).toBe(expectedFleece1.totalTND);
 
     /* Vérification remise quantité (q = 2 => palier marchand 19,50 €/u + calcul ZAYROVI non linéaire) */
     const expectedFleeceQty2 = calculatePrice(pricingRules(), 19.5, 'EUR', { title: res.body.data.title, quantity: 2 });
-    const naiveDouble = Math.round(fleeceRow.ayrovi_pricing.total_tnd * 2 * 100) / 100;
-    expect(fleeceRow.ayrovi_pricing.quantity_totals_tnd[1]).toBe(expectedFleeceQty2.totalTND);
-    expect(fleeceRow.ayrovi_pricing.quantity_totals_tnd[1]).toBeLessThan(naiveDouble);
+    const naiveDouble = Math.round(fleeceRow.zayrovi_pricing.total_tnd * 2 * 100) / 100;
+    expect(fleeceRow.zayrovi_pricing.quantity_totals_tnd[1]).toBe(expectedFleeceQty2.totalTND);
+    expect(fleeceRow.zayrovi_pricing.quantity_totals_tnd[1]).toBeLessThan(naiveDouble);
 
     /* Bascule 2 (0 ms) : Bleu Marine + 8-9Y + Doublé Polaire => 22,90 €, stock 4 */
     const marineRow = findMatrixDetail(details, { Couleur: 'Bleu Marine', Taille: '8-9Y', Type: 'Doublé Polaire' });
@@ -252,10 +252,10 @@ describe('AYWEBs Variant Price Matrix — SHEIN, Zalando & Amazon (extraction un
     expect(marineRow.availability).toBe('LOW_STOCK');
     expect(marineRow.stock).toBe(4);
 
-    /* Bascule 3 : Noir + 8-9Y + Standard épuisé => OUT_OF_STOCK, ayrovi_pricing: null */
+    /* Bascule 3 : Noir + 8-9Y + Standard épuisé => OUT_OF_STOCK, zayrovi_pricing: null */
     const soldOutRow = findMatrixDetail(details, { Couleur: 'Noir', Taille: '8-9Y', Type: 'Standard' });
     expect(soldOutRow.availability).toBe('OUT_OF_STOCK');
-    expect(soldOutRow.ayrovi_pricing).toBeNull();
+    expect(soldOutRow.zayrovi_pricing).toBeNull();
 
     /* Bascule 4 : Beige (couleur sœur partielle sans SKUs embarqués) => absente de la matrice initiale (0 faux prix !) */
     const beigeRow = findMatrixDetail(details, { Couleur: 'Beige', Taille: '4-5Y', Type: 'Standard' });
@@ -409,8 +409,8 @@ describe('AYWEBs Variant Price Matrix — SHEIN, Zalando & Amazon (extraction un
     expect(qPack3.quoted_price).not.toBeCloseTo(8.9 * 3, 2);
 
     /* 3 unités de « 1 pièce » != 1 unité de « Lot de 3 pièces » */
-    const threeSingleUnitsTnd = qPack1.ayrovi_pricing.quantity_totals_tnd[2];
-    expect(threeSingleUnitsTnd).toBeGreaterThan(qPack3.ayrovi_pricing.total_tnd);
+    const threeSingleUnitsTnd = qPack1.zayrovi_pricing.quantity_totals_tnd[2];
+    expect(threeSingleUnitsTnd).toBeGreaterThan(qPack3.zayrovi_pricing.total_tnd);
 
     const netEntry = capture.variantMatrix.find((m: any) => m.evidenceSource === 'network_cache');
     expect(netEntry).toBeDefined();
@@ -509,7 +509,7 @@ describe('AYWEBs Variant Price Matrix — SHEIN, Zalando & Amazon (extraction un
 
     expect(qRaisin365.quoted_price).toBe(139.99);
     expect(qRaisin38.availability).toBe('OUT_OF_STOCK');
-    expect(qRaisin38.ayrovi_pricing).toBeNull();
+    expect(qRaisin38.zayrovi_pricing).toBeNull();
     expect(qBw365.quoted_price).toBe(149.95);
     expect(qBw38.quoted_price).toBe(159.95);
     expect(qBw38.availability).toBe('LOW_STOCK');
@@ -621,7 +621,7 @@ describe('AYWEBs Variant Price Matrix — SHEIN, Zalando & Amazon (extraction un
 
     const qMedEmerald = findMatrixDetail(details, { Size: 'Medium', Color: 'Emerald Leaf' });
     expect(qMedEmerald.quoted_price).toBe(119);
-    expect(qMedEmerald.ayrovi_pricing.total_tnd).toBe(
+    expect(qMedEmerald.zayrovi_pricing.total_tnd).toBe(
       calculatePrice(pricingRules(), 119, 'USD', { title: amzRes.body.data.title }).totalTND,
     );
 
@@ -629,7 +629,7 @@ describe('AYWEBs Variant Price Matrix — SHEIN, Zalando & Amazon (extraction un
     const qMedTitanium = findMatrixDetail(details, { Size: 'Medium', Color: 'Titanium' });
     expect(qMedTitanium.quoted_price).toBeNull();
     expect(qMedTitanium.price_source).toBe('UNKNOWN');
-    expect(qMedTitanium.ayrovi_pricing).toBeNull();
+    expect(qMedTitanium.zayrovi_pricing).toBeNull();
     expect(qMedTitanium.variant_url).toBe('https://www.amazon.com/dp/B0GYM9LAZY');
     expect(amzCaptureMs).toBeGreaterThan(0);
   });
@@ -695,7 +695,7 @@ describe('AYWEBs Variant Price Matrix — SHEIN, Zalando & Amazon (extraction un
         const tStart = performance.now();
         const row = findMatrixDetail(details, { Taille: sizes[si], Type: types[ti] });
         switchLatenciesMs.push(performance.now() - tStart);
-        if (row && row.quoted_price === expectedMerchant && row.ayrovi_pricing?.total_tnd > 0) matchedCount += 1;
+        if (row && row.quoted_price === expectedMerchant && row.zayrovi_pricing?.total_tnd > 0) matchedCount += 1;
       }
     }
 

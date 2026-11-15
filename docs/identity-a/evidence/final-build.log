@@ -1,18 +1,18 @@
 
-> ayrovi@3.10.4 build
+> zayrovi@3.10.4 build
 > npm run build:client && npm run build:server
 
 
-> ayrovi@3.10.4 prebuild:client
+> zayrovi@3.10.4 prebuild:client
 > npm run identity:check
 
 
-> ayrovi@3.10.4 identity:check
+> zayrovi@3.10.4 identity:check
 > node scripts/build-editorial-design.mjs --check && node scripts/check-brand-identity.mjs
 
-AYROVI A: source, stack, pure neutrals, local assets and font hashes verified.
+ZAYROVI A: source, stack, pure neutrals, local assets and font hashes verified.
 
-> ayrovi@3.10.4 build:client
+> zayrovi@3.10.4 build:client
 > vite build
 
 vite v8.2.1 building client environment for production...
@@ -69,6 +69,6 @@ public/assets/AdminApp-DX242HVM.js                  447.91 kB │ gzip: 106.20 k
 
 ✓ built in 1.30s
 
-> ayrovi@3.10.4 build:server
+> zayrovi@3.10.4 build:server
 > node -e 'require("esbuild").buildSync({entryPoints:["src/server.ts"],bundle:true,platform:"node",target:"node20",outfile:"dist/server.js",external:["better-sqlite3","jsdom","express","compression","cors","dotenv","tesseract.js","multer","sharp","pdf-to-img","mailparser"]})'
 

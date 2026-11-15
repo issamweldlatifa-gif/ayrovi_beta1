@@ -649,9 +649,9 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     description: 'Revue des analyses Lens et des devis clients.',
     navPermission: 'commerce:read', permissions: { list: 'sales:read', view: 'sales:read', edit: 'sales:write', approve: 'sales:write' },
     section: 'lens-requests', nav: { group: 'Commerce', order: 228, icon: 'Sparkles' },
-    surface: 'custom', component: 'LensRequestsPage', api: { prefix: '/ayrovix-reviews', kind: 'generic' },
-    columns: [], fields: [], actions: ['list', 'view', 'edit', 'approve'], statusVocabulary: 'ayrovix.review',
-    audit: { module: 'AYROVIX', resourceType: 'ayrovix_review' },
+    surface: 'custom', component: 'LensRequestsPage', api: { prefix: '/zayrovix-reviews', kind: 'generic' },
+    columns: [], fields: [], actions: ['list', 'view', 'edit', 'approve'], statusVocabulary: 'zayrovix.review',
+    audit: { module: 'ZAYROVIX', resourceType: 'zayrovix_review' },
   },
   {
     key: 'crm.party', label: 'Clients', singular: 'client', module: 'customers', domain: 'CRM',

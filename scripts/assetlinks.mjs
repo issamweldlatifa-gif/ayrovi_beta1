@@ -20,18 +20,18 @@
  * script s'arrête en expliquant quoi faire — il ne produit pas de faux JSON.
  *
  * Usage :
- *   node scripts/assetlinks.mjs --keystore ./ayrovi.jks --alias ayrovi
+ *   node scripts/assetlinks.mjs --keystore ./zayrovi.jks --alias zayrovi
  *   node scripts/assetlinks.mjs --fingerprint AB:CD:…            ( hors ligne )
  *   node scripts/assetlinks.mjs --fingerprint AB:CD:… --check    ( publier ? )
- *   node scripts/assetlinks.mjs --keystore ./ayrovi.jks --alias ayrovi --write public/.well-known/assetlinks.json
+ *   node scripts/assetlinks.mjs --keystore ./zayrovi.jks --alias zayrovi --write public/.well-known/assetlinks.json
  */
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 const DEFAULTS = {
-  package: 'app.ayrovi.mobile',
-  hosts: ['ayrovi.tn', 'www.ayrovi.tn'],
+  package: 'app.zayrovi.mobile',
+  hosts: ['zayrovi.com', 'www.zayrovi.com'],
 };
 
 function parseArgs(argv) {
@@ -58,8 +58,8 @@ if (args.help) {
     '  --alias <nom>          alias de la clé dans le keystore',
     '  --storepass <mot>      mot de passe du keystore (sinon demandé par keytool)',
     '  --fingerprint <sha>    empreinte SHA-256 déjà connue (mode hors ligne)',
-    '  --package <id>         identifiant Android (défaut : app.ayrovi.mobile)',
-    '  --hosts <a,b>          hôtes à déclarer (défaut : ayrovi.tn,www.ayrovi.tn)',
+    '  --package <id>         identifiant Android (défaut : app.zayrovi.mobile)',
+    '  --hosts <a,b>          hôtes à déclarer (défaut : zayrovi.com,www.zayrovi.com)',
     '  --write <chemin>       écrit le fichier à cet emplacement',
     '  --check                compare avec le fichier DÉJÀ PUBLIÉ sur les hôtes',
     '',

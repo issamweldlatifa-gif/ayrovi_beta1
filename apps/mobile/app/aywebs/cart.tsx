@@ -21,7 +21,7 @@ import { addErrorMessage } from '@/features/aywebs/addError';
 import {
   AYWEBS_SOURCE_VERIFICATION_REQUIRED,
   acceptAyWebsCartPriceChange,
-  bridgeAyWebsCartToAyrovi,
+  bridgeAyWebsCartToZayrovi,
   fetchAyWebsCart,
   removeAyWebsCartItem,
   updateAyWebsCartItem,
@@ -116,8 +116,8 @@ export default function AyWebsCartScreen() {
     onError: onNote,
   });
 
-  const linkToAyrovi = useMutation({
-    mutationFn: () => bridgeAyWebsCartToAyrovi({ sessionId }),
+  const linkToZayrovi = useMutation({
+    mutationFn: () => bridgeAyWebsCartToZayrovi({ sessionId }),
     onSuccess: (result) => {
       setNote('');
       setBridge(result);
@@ -173,7 +173,7 @@ export default function AyWebsCartScreen() {
             rawVariant: parsed.extra || (!parsed.color && !parsed.size ? item.variantLabel : ''),
             sourcePriceLabel: item.unitPrice != null ? `${item.unitPrice} ${item.currency}`.trim() : t('aywebs.noPrice'),
             availabilityLabel,
-            trustLabel: item.linkedToAyrovi ? t('aywebs.cartLinked') : t('aywebs.cartNotLinked'),
+            trustLabel: item.linkedToZayrovi ? t('aywebs.cartLinked') : t('aywebs.cartNotLinked'),
             blockedAlert: blockers.get(item.id) ?? '',
           }}
           busy={busyLine}
@@ -221,8 +221,8 @@ export default function AyWebsCartScreen() {
                     />
                     <Button
                       label={t('aywebs.cartBridge')}
-                      busy={linkToAyrovi.isPending}
-                      onPress={() => linkToAyrovi.mutate()}
+                      busy={linkToZayrovi.isPending}
+                      onPress={() => linkToZayrovi.mutate()}
                     />
                   </View>
                 </Card>
@@ -262,10 +262,10 @@ export default function AyWebsCartScreen() {
               deliveryTnd={null}
               totalTnd={cart.totals.productSubtotalTnd}
               checkoutLabel={unlinkedUnits > 0 ? t('aywebs.cartBridge') : t('aywebs.cartBridgeOpen')}
-              checkoutBusy={linkToAyrovi.isPending}
+              checkoutBusy={linkToZayrovi.isPending}
               onCheckout={() => {
                 if (unlinkedUnits > 0) {
-                  linkToAyrovi.mutate();
+                  linkToZayrovi.mutate();
                   return;
                 }
                 router.push('/panier');

@@ -21,7 +21,7 @@
  * « soutenu » : un pic de 2 minutes ne justifie aucun achat.
  *
  * Les SIGNAUX appliquent la grille de l'audit d'architecture
- * (docs/AYROVI_ARCHITECTURE_SCALABLE_AR_2026-11-12.md, §5). Chaque signal dit
+ * (docs/ZAYROVI_ARCHITECTURE_SCALABLE_AR_2026-11-12.md, §5). Chaque signal dit
  * quoi CHERCHER avant de payer : la première réponse à une saturation est la
  * route qui la cause, pas une machine de plus.
  *
@@ -85,7 +85,7 @@ function readText(file: string): string | null {
 export function detectLimits(env: NodeJS.ProcessEnv = process.env, read: (file: string) => string | null = readText): OpsLimits {
   const machineCpu = typeof os.availableParallelism === 'function' ? os.availableParallelism() : os.cpus().length;
   let cpu = machineCpu; let cpuSource = 'machine';
-  const explicitCpu = Number(env.AYROVI_CPU_LIMIT);
+  const explicitCpu = Number(env.ZAYROVI_CPU_LIMIT);
   if (Number.isFinite(explicitCpu) && explicitCpu > 0) { cpu = explicitCpu; cpuSource = 'env'; }
   else {
     const v2 = read('/sys/fs/cgroup/cpu.max');
@@ -98,7 +98,7 @@ export function detectLimits(env: NodeJS.ProcessEnv = process.env, read: (file: 
     }
   }
   let memoryBytes = os.totalmem(); let memorySource = 'machine';
-  const explicitMem = Number(env.AYROVI_MEMORY_LIMIT_MB);
+  const explicitMem = Number(env.ZAYROVI_MEMORY_LIMIT_MB);
   if (Number.isFinite(explicitMem) && explicitMem > 0) { memoryBytes = explicitMem * 1024 * 1024; memorySource = 'env'; }
   else {
     const v2 = read('/sys/fs/cgroup/memory.max');
@@ -430,18 +430,18 @@ export function createOpsMetrics(options: OpsMetricsOptions) {
     const w = summarize(1);
     const d = disk();
     const lines = [
-      '# HELP ayrovi_requests_per_second Requêtes HTTP par seconde (fenêtre glissante : minute précédente + minute en cours).',
-      '# TYPE ayrovi_requests_per_second gauge',
-      `ayrovi_requests_per_second ${w.rps}`,
-      '# TYPE ayrovi_http_error_rate gauge', `ayrovi_http_error_rate ${w.errorRate}`,
-      '# TYPE ayrovi_latency_p95_ms gauge', `ayrovi_latency_p95_ms ${w.p95 ?? 0}`,
-      '# TYPE ayrovi_latency_p99_ms gauge', `ayrovi_latency_p99_ms ${w.p99 ?? 0}`,
-      '# TYPE ayrovi_cpu_percent gauge', `ayrovi_cpu_percent ${w.cpuAvg ?? 0}`,
-      '# TYPE ayrovi_rss_mb gauge', `ayrovi_rss_mb ${w.rssMaxMb ?? 0}`,
-      '# TYPE ayrovi_memory_limit_mb gauge', `ayrovi_memory_limit_mb ${Math.round(limits.memoryBytes / (1024 * 1024))}`,
-      '# TYPE ayrovi_event_loop_p99_ms gauge', `ayrovi_event_loop_p99_ms ${w.eventLoopP99Ms ?? 0}`,
-      '# TYPE ayrovi_in_flight gauge', `ayrovi_in_flight ${inFlight}`,
-      '# TYPE ayrovi_disk_used_percent gauge', `ayrovi_disk_used_percent ${d.usedPercent ?? 0}`,
+      '# HELP zayrovi_requests_per_second Requêtes HTTP par seconde (fenêtre glissante : minute précédente + minute en cours).',
+      '# TYPE zayrovi_requests_per_second gauge',
+      `zayrovi_requests_per_second ${w.rps}`,
+      '# TYPE zayrovi_http_error_rate gauge', `zayrovi_http_error_rate ${w.errorRate}`,
+      '# TYPE zayrovi_latency_p95_ms gauge', `zayrovi_latency_p95_ms ${w.p95 ?? 0}`,
+      '# TYPE zayrovi_latency_p99_ms gauge', `zayrovi_latency_p99_ms ${w.p99 ?? 0}`,
+      '# TYPE zayrovi_cpu_percent gauge', `zayrovi_cpu_percent ${w.cpuAvg ?? 0}`,
+      '# TYPE zayrovi_rss_mb gauge', `zayrovi_rss_mb ${w.rssMaxMb ?? 0}`,
+      '# TYPE zayrovi_memory_limit_mb gauge', `zayrovi_memory_limit_mb ${Math.round(limits.memoryBytes / (1024 * 1024))}`,
+      '# TYPE zayrovi_event_loop_p99_ms gauge', `zayrovi_event_loop_p99_ms ${w.eventLoopP99Ms ?? 0}`,
+      '# TYPE zayrovi_in_flight gauge', `zayrovi_in_flight ${inFlight}`,
+      '# TYPE zayrovi_disk_used_percent gauge', `zayrovi_disk_used_percent ${d.usedPercent ?? 0}`,
     ];
     return `${lines.join('\n')}\n`;
   }
@@ -512,19 +512,19 @@ export function ensureOpsMetricsSchema(db: { exec(sql: string): unknown }) {
 
 /** Identité d'instance (Render : RENDER_INSTANCE_ID ; ailleurs : nom d'hôte). */
 export function instanceId(env: NodeJS.ProcessEnv = process.env): string {
-  // `AYROVI_WORKER_ID` : posé par scripts/web-cluster.cjs (plusieurs processus sur la même machine) —
+  // `ZAYROVI_WORKER_ID` : posé par scripts/web-cluster.cjs (plusieurs processus sur la même machine) —
   // sans lui, les processus d'un même hôte écraseraient mutuellement leur historique horaire.
-  const worker = /^\d{1,3}$/.test(String(env.AYROVI_WORKER_ID || '')) ? `#${env.AYROVI_WORKER_ID}` : '';
+  const worker = /^\d{1,3}$/.test(String(env.ZAYROVI_WORKER_ID || '')) ? `#${env.ZAYROVI_WORKER_ID}` : '';
   return `${String(env.RENDER_INSTANCE_ID || env.HOSTNAME || os.hostname() || 'local').slice(0, 76)}${worker}`;
 }
 
 /**
  * Rôle du processus — préparation du passage à plusieurs instances.
- *  • `AYROVI_BACKGROUND_JOBS=off` : instance web pure (aucune tâche planifiée) ;
+ *  • `ZAYROVI_BACKGROUND_JOBS=off` : instance web pure (aucune tâche planifiée) ;
  *  • absent / `on` : comportement historique (le processus fait tout).
  * Avec SQLite il n'y a qu'UNE instance : la valeur par défaut ne change rien.
  * Après le passage à PostgreSQL, une seule instance garde les tâches (le worker).
  */
 export function backgroundJobsEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return !/^(off|false|0|no)$/i.test(String(env.AYROVI_BACKGROUND_JOBS || '').trim());
+  return !/^(off|false|0|no)$/i.test(String(env.ZAYROVI_BACKGROUND_JOBS || '').trim());
 }

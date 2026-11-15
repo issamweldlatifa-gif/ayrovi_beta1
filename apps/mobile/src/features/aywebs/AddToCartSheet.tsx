@@ -279,10 +279,10 @@ export function AddToCartSheet({
         return;
       }
       const pickedQuote = selectionQuote({
-        page: productForQuote.ayroviPricing?.totalTnd != null
+        page: productForQuote.zayroviPricing?.totalTnd != null
           ? {
             selection: pageSelection,
-            unitTnd: productForQuote.ayroviPricing.totalTnd,
+            unitTnd: productForQuote.zayroviPricing.totalTnd,
             availability: stateOf(productForQuote.availability.state),
             stock: productForQuote.availability.quantityHint ?? null,
             sourcePrice: productForQuote.price,
@@ -312,8 +312,8 @@ export function AddToCartSheet({
       });
       setPageQuote({
         selection: pageSelection,
-        unitTnd: productForQuote.ayroviPricing?.totalTnd ?? null,
-        quantityTotalsTnd: productForQuote.ayroviPricing?.quantityTotalsTnd ?? null,
+        unitTnd: productForQuote.zayroviPricing?.totalTnd ?? null,
+        quantityTotalsTnd: productForQuote.zayroviPricing?.quantityTotalsTnd ?? null,
         availability: stateOf(productForQuote.availability.state),
         stock: productForQuote.availability.quantityHint ?? null,
         sourcePrice: productForQuote.price,
@@ -351,7 +351,7 @@ export function AddToCartSheet({
     setActiveCapture(capture);
     setActiveUrl(product.sourceUrl);
     const cachedSnapshot = readVariantMatrixCache(matrixKey);
-    if (!local && (product.ayroviPricing?.totalTnd != null || product.variantDetails.length > 0 || product.variantQuotes.length > 0)) {
+    if (!local && (product.zayroviPricing?.totalTnd != null || product.variantDetails.length > 0 || product.variantQuotes.length > 0)) {
       const seeded = upsertVariantMatrixCache({
         matrixKey,
         product,
@@ -361,8 +361,8 @@ export function AddToCartSheet({
       });
       setPageQuote({
         selection: initial,
-        unitTnd: product.ayroviPricing?.totalTnd ?? null,
-        quantityTotalsTnd: product.ayroviPricing?.quantityTotalsTnd ?? null,
+        unitTnd: product.zayroviPricing?.totalTnd ?? null,
+        quantityTotalsTnd: product.zayroviPricing?.quantityTotalsTnd ?? null,
         availability: stateOf(product.availability.state),
         stock: product.availability.quantityHint ?? null,
         sourcePrice: product.price,
@@ -509,7 +509,7 @@ export function AddToCartSheet({
               sessionId, storeId: product.storeId, capture: effectiveCapture, variant: picked, refresh: false,
             });
             if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
-            const amount = fast.product.ayroviPricing?.totalTnd ?? null;
+            const amount = fast.product.zayroviPricing?.totalTnd ?? null;
             const availability = stateOf(fast.product.availability.state);
             if (fast.capture?.used && !fast.priceRejection && !fast.missing.length && fast.quoteToken
               && fast.product.priceVerified && fast.product.currencyVerified
@@ -519,7 +519,7 @@ export function AddToCartSheet({
               const cached = upsertVariantMatrixCache({ matrixKey, product: fast.product, selection: picked,
                 capture: effectiveCapture as Record<string, unknown>, quoteToken: fast.quoteToken, sourceUrl: effectiveUrl });
               setPageQuote({ selection: picked, unitTnd: amount,
-                quantityTotalsTnd: fast.product.ayroviPricing?.quantityTotalsTnd ?? null,
+                quantityTotalsTnd: fast.product.zayroviPricing?.quantityTotalsTnd ?? null,
                 availability, stock: fast.product.availability.quantityHint ?? null,
                 sourcePrice: fast.product.price, sourceCurrency: fast.product.currency,
                 quotes: cached.variantQuotes, details: cached.variantDetails, quoteToken: fast.quoteToken });
@@ -570,7 +570,7 @@ export function AddToCartSheet({
           setActiveUrl(targetUrl);
           setActiveCapture(siblingCaptureRead);
         }
-        const totalTnd = read.product.ayroviPricing?.totalTnd ?? null;
+        const totalTnd = read.product.zayroviPricing?.totalTnd ?? null;
         const deltaAvail = stateOf(read.product.availability.state);
         if ((totalTnd != null && Number.isFinite(totalTnd) && totalTnd > 0) || deltaAvail === 'OUT_OF_STOCK') {
           setServerGroups(read.product.variantGroups || []);
@@ -588,7 +588,7 @@ export function AddToCartSheet({
           setPageQuote({
             selection: picked,
             unitTnd: deltaAvail === 'OUT_OF_STOCK' ? null : totalTnd,
-            quantityTotalsTnd: deltaAvail === 'OUT_OF_STOCK' ? null : (read.product.ayroviPricing?.quantityTotalsTnd ?? null),
+            quantityTotalsTnd: deltaAvail === 'OUT_OF_STOCK' ? null : (read.product.zayroviPricing?.quantityTotalsTnd ?? null),
             availability: deltaAvail,
             stock: read.product.availability.quantityHint ?? null,
             sourcePrice: deltaAvail === 'OUT_OF_STOCK' ? null : read.product.price,
@@ -939,7 +939,7 @@ export function AddToCartSheet({
       let reads = 0;
       let seenUrl = target;
       while (reads < 2 && local && readVariant && resolved
-        && (resolved.product.availability.state === 'UNKNOWN' || resolved.product.ayroviPricing?.totalTnd == null)) {
+        && (resolved.product.availability.state === 'UNKNOWN' || resolved.product.zayroviPricing?.totalTnd == null)) {
         const optionsNow = optionsFromVariants(localVariantsFromCapture(
           (captureToUse && typeof captureToUse === 'object' ? captureToUse : {}) as Record<string, unknown>,
         ));

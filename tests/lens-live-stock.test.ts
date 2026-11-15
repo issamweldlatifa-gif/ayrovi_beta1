@@ -8,8 +8,8 @@ import {
   refreshLiveStock,
   toContractAvailability,
   type LiveStockFetcher,
-} from '../src/ayrovix/services/lensLiveStock';
-import { inspectVariantOrder } from '../src/ayrovix/services/variantAvailability';
+} from '../src/zayrovix/services/lensLiveStock';
+import { inspectVariantOrder } from '../src/zayrovix/services/variantAvailability';
 import {
   hostAllowsProbe,
   recordProbeFailure,
@@ -34,8 +34,8 @@ const page = (overrides: Partial<ParsedProductPage> = {}): ParsedProductPage => 
 let dir = '';
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-live-stock-'));
-  process.env.AYROVI_VARIANT_CACHE_DIR = path.join(dir, 'contracts');
-  delete process.env.AYROVI_LENS_LIVE_STOCK;
+  process.env.ZAYROVI_VARIANT_CACHE_DIR = path.join(dir, 'contracts');
+  delete process.env.ZAYROVI_LENS_LIVE_STOCK;
 });
 afterEach(() => {
   fs.rmSync(dir, { recursive: true, force: true });
@@ -146,7 +146,7 @@ describe('refreshLiveStock — relecture explicite seulement', () => {
     expect(fetcher).not.toHaveBeenCalled();
     recordProbeSuccess(url);
 
-    process.env.AYROVI_LENS_LIVE_STOCK = 'false';
+    process.env.ZAYROVI_LENS_LIVE_STOCK = 'false';
     await refreshLiveStock(['https://shop.tn/pants'], { fetcher });
     expect(fetcher).not.toHaveBeenCalled();
   });
@@ -161,7 +161,7 @@ describe('périmètre conservé', () => {
   });
 
   it('la grille Lens ne contient plus le scraping groupé ; la relecture explicite reste', () => {
-    const route = readFileSync('src/ayrovix/routes.ts', 'utf8');
+    const route = readFileSync('src/zayrovix/routes.ts', 'utf8');
     const analyze = route.split("router.post('/analyze-image'")[1].split("router.post('/detect'")[0];
     expect(analyze).toContain('admitLensProductCandidates(rawCandidates, scraper, 24)');
     expect(analyze).not.toContain('enrichCandidatesLiveStock');

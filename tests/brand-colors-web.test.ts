@@ -100,7 +100,7 @@ describe('1. une seule palette pour le site et l’application', () => {
 describe('2. réglages persistés en orange : relus en violet, jamais réécrits', () => {
   const persisted = {
     colors: { accent: '#ff6900', heroBackground: '#0a0a0a' },
-    icons: { library: 'ayrovi', color: '#000000', activeColor: '#ff6900', size: 28, style: 'outline' },
+    icons: { library: 'zayrovi', color: '#000000', activeColor: '#ff6900', size: 28, style: 'outline' },
     sections: [
       { id: 'hero', title: 'Contenu réel', backgroundColor: '#0a0a0a' },
       { id: 'announcement', visible: false, backgroundColor: '#ff6900', textColor: '#ffffff' },
@@ -174,7 +174,7 @@ describe('3. aucun orange retiré dans les sources produit', () => {
     'src/admin/routes.ts',
     'src/public/routes.ts',
     ...walk('android/app/src/main/res', /\.xml$/),
-    'docs/editorial/AYROVI-editorial-system.html',
+    'docs/editorial/ZAYROVI-editorial-system.html',
   ];
 
   test('le balayage couvre bien le site, les pages statiques, le serveur et Android', () => {
@@ -207,11 +207,11 @@ describe('3. aucun orange retiré dans les sources produit', () => {
   test('les logos vectoriels sont le Z zébré monochrome (v7), sans violet ; les anciens noms « -orange » ont disparu', () => {
     // Logo officiel v7 du 2026-11-14 : Z zébré blanc sur noir (ou noir sur blanc). Le violet reste réservé à l'action principale.
     for (const [rel, ink] of [
-      ['logo-ayrovi-mark.svg', OFFICIAL.black],
-      ['logo-ayrovi-lockup-black-violet.svg', OFFICIAL.black],
-      ['logo-ayrovi-lockup-black.svg', OFFICIAL.black],
-      ['logo-ayrovi-lockup-white-violet.svg', OFFICIAL.white],
-      ['logo-ayrovi-lockup-white.svg', OFFICIAL.white],
+      ['logo-zayrovi-mark.svg', OFFICIAL.black],
+      ['logo-zayrovi-lockup-black-violet.svg', OFFICIAL.black],
+      ['logo-zayrovi-lockup-black.svg', OFFICIAL.black],
+      ['logo-zayrovi-lockup-white-violet.svg', OFFICIAL.white],
+      ['logo-zayrovi-lockup-white.svg', OFFICIAL.white],
     ] as const) {
       const svg = read(`client/public/media/${rel}`);
       expect(svg, rel).toContain(`d="${BRAND_SYMBOL.d}"`);
@@ -219,13 +219,13 @@ describe('3. aucun orange retiré dans les sources produit', () => {
       expect(svg, rel).toContain('aria-label="ZAYROVI"');
       expect(svg.toUpperCase(), rel).not.toContain(OFFICIAL.violet);
     }
-    const icon = read('client/public/media/logo-ayrovi-icon.svg');
+    const icon = read('client/public/media/logo-zayrovi-icon.svg');
     expect(icon).toContain(`fill="${OFFICIAL.white}"`); // carré blanc (icône blanche, 14/11)
     // onglet du navigateur (16–32 px) : le Z PLEIN encre — les rayures ne survivent pas à cette taille
     expect(icon).toContain(`fill="${OFFICIAL.black}" d="${BRAND_SYMBOL_SOLID.d}"`);
     for (const gone of ['black', 'white']) {
       for (const ext of ['svg', 'png']) {
-        expect(fs.existsSync(path.resolve(ROOT, `client/public/media/logo-ayrovi-lockup-${gone}-orange.${ext}`))).toBe(false);
+        expect(fs.existsSync(path.resolve(ROOT, `client/public/media/logo-zayrovi-lockup-${gone}-orange.${ext}`))).toBe(false);
       }
     }
     const codeRefs = [...walk('client/src', /\.(tsx?|css)$/), 'client/index.html', ...walk('client/public', /\.html$/)]
@@ -235,22 +235,22 @@ describe('3. aucun orange retiré dans les sources produit', () => {
 
   test('les logos retouchés changent d’URL (les fichiers publics sont en cache « immutable » un an)', () => {
     const html = read('client/index.html');
-    expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/media/logo-ayrovi-icon.svg?v=7.0" />');
-    expect(html).toContain('/media/logo-ayrovi-192.png?v=7.0');
-    expect(html).toContain('/media/logo-ayrovi.png?v=7.0');
-    expect(html).toContain('/media/logo-ayrovi-apple-touch.png?v=7.0');
+    expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/media/logo-zayrovi-icon.svg?v=7.0" />');
+    expect(html).toContain('/media/logo-zayrovi-192.png?v=7.0');
+    expect(html).toContain('/media/logo-zayrovi.png?v=7.0');
+    expect(html).toContain('/media/logo-zayrovi-apple-touch.png?v=7.0');
     expect(html).not.toContain('?v=4.1');
     const manifest = JSON.parse(read('client/public/manifest.webmanifest'));
-    expect(manifest.icons.map((icon: { src: string }) => icon.src)).toEqual(['/media/logo-ayrovi-192.png?v=7.0', '/media/logo-ayrovi-512.png?v=7.0']);
+    expect(manifest.icons.map((icon: { src: string }) => icon.src)).toEqual(['/media/logo-zayrovi-192.png?v=7.0', '/media/logo-zayrovi-512.png?v=7.0']);
     expect(manifest.short_name).toBe('ZAYROVI');
     // la barre du navigateur est noire (pas une grande surface violette), plus l'ancien violet #673DE6
     expect(manifest.theme_color.toUpperCase()).toBe(OFFICIAL.black);
     expect(html).toContain('<meta name="theme-color" content="#0A0A0A" />');
     // toute référence de code à un fichier de logo porte la nouvelle version (sauf la valeur sentinelle
-    // « pas de logo personnalisé », '/media/logo-ayrovi.png', comparée telle quelle et jamais affichée)
+    // « pas de logo personnalisé », '/media/logo-zayrovi.png', comparée telle quelle et jamais affichée)
     const stale = [...walk('client/src', /\.(tsx?)$/), ...walk('client/public', /\.(html|webmanifest)$/)]
-      .flatMap((rel) => [...read(rel).matchAll(/\/media\/logo-ayrovi[a-z0-9-]*\.(?:svg|png)(\?v=[0-9.]+)?/g)]
-        .filter((m) => m[1] !== '?v=7.0' && m[0] !== '/media/logo-ayrovi.png')
+      .flatMap((rel) => [...read(rel).matchAll(/\/media\/logo-zayrovi[a-z0-9-]*\.(?:svg|png)(\?v=[0-9.]+)?/g)]
+        .filter((m) => m[1] !== '?v=7.0' && m[0] !== '/media/logo-zayrovi.png')
         .map((m) => `${rel}: ${m[0]}`));
     expect(stale).toEqual([]);
   });
@@ -276,12 +276,12 @@ describe('3. aucun orange retiré dans les sources produit', () => {
   });
 
   test('courriels et facture : bandeau et filets noirs, seul le CTA est violet', () => {
-    const mail = authMailTemplate(false, 'Titre', '<p>Corps</p>', { label: 'Ouvrir', url: 'https://ayrovi.tn/compte' });
+    const mail = authMailTemplate(false, 'Titre', '<p>Corps</p>', { label: 'Ouvrir', url: 'https://zayrovi.com/compte' });
     // v4.2.0 : le filet décoratif sous le bandeau n'a pas de fonction d'action — il devient noir.
     expect(mail).toContain(`background:${BRAND.colors.ink};color:#FFFFFF;border-bottom:3px solid ${BRAND.colors.ink}`);
     expect(mail).toContain(`background:${BRAND.colors.action};color:${BRAND.colors.onAction}`);
     expect(mail).not.toMatch(RETIRED);
-    const invoice = invoiceEmailHtml({ customerName: 'Client', orderNumber: 'TEST', invoiceNumber: 'TEST', trackingCode: '000123', totalLabel: '189.900 TND', depositLabel: '50.000 TND', balanceLabel: '139.900 TND', company: 'AYROVI' });
+    const invoice = invoiceEmailHtml({ customerName: 'Client', orderNumber: 'TEST', invoiceNumber: 'TEST', trackingCode: '000123', totalLabel: '189.900 TND', depositLabel: '50.000 TND', balanceLabel: '139.900 TND', company: 'ZAYROVI' });
     expect(invoice).not.toMatch(RETIRED);
     expect(read('src/services/invoice.ts')).toMatch(/border-bottom: 3px solid \$\{BRAND\.colors\.ink\}/);
     expect(read('src/services/invoice.ts')).not.toMatch(/BRAND\.colors\.accent/);
@@ -307,7 +307,7 @@ describe('4. aucun pixel orange dans les logos, icônes et écrans de démarrage
     return h >= 10 && h <= 50 && s >= 0.35 && l >= 0.06;
   };
   const files = [
-    ...walk('client/public/media', /^logo-ayrovi.*\.png$/),
+    ...walk('client/public/media', /^logo-zayrovi.*\.png$/),
     ...walk('android/app/src/main/res', /^(splash|ic_launcher.*)\.png$/),
     'assets/icon.png',
     'assets/splash.png',
@@ -344,20 +344,20 @@ describe('5. violet au minimum (v4.2.0) : seule l’action principale est violet
   test('les encres profondes du thème client sont noires, plus jamais l’action violette', () => {
     // Elles pointaient sur `action` : badges sombres, voile des modales, fond vidéo et panneaux
     // du thème sombre étaient repeints en violet depuis que l'action est violette.
-    for (const name of ['--ayrovi-ink-deep', '--ayrovi-neutral-950', '--ayrovi-primary-dark']) {
+    for (const name of ['--zayrovi-ink-deep', '--zayrovi-neutral-950', '--zayrovi-primary-dark']) {
       expect(hex(theme[name]), name).toBe(OFFICIAL.black);
     }
   });
 
   test('bouton primaire générique = encre ; le violet plein est réservé au CTA principal', () => {
-    expect(hex(theme['--ayrovi-button-bg'])).toBe(OFFICIAL.black);
-    expect(hex(theme['--ayrovi-button-color'])).toBe(OFFICIAL.white);
-    expect(hex(theme['--ayrovi-cta'])).toBe(OFFICIAL.violet);
-    expect(hex(theme['--ayrovi-accent-soft'])).toBe('#DCE8FE');
-    expect(hex(theme['--ayrovi-on-accent-soft'])).toBe(OFFICIAL.black);
+    expect(hex(theme['--zayrovi-button-bg'])).toBe(OFFICIAL.black);
+    expect(hex(theme['--zayrovi-button-color'])).toBe(OFFICIAL.white);
+    expect(hex(theme['--zayrovi-cta'])).toBe(OFFICIAL.violet);
+    expect(hex(theme['--zayrovi-accent-soft'])).toBe('#DCE8FE');
+    expect(hex(theme['--zayrovi-on-accent-soft'])).toBe(OFFICIAL.black);
     const runtime = withoutComments(read('client/src/styles/interface-runtime.css'));
-    expect(runtime).toMatch(/\.ay-runtime-button--primary,\.ay-btn-primary\{[^}]*background:var\(--ayrovi-button-bg,var\(--ayrovi-primary\)\)/);
-    expect(withoutComments(read('client/src/styles/journey.css'))).toMatch(/\.ay-btn-primary\{border:1px solid var\(--ayrovi-text-primary\);background:var\(--ayrovi-text-primary\)/);
+    expect(runtime).toMatch(/\.ay-runtime-button--primary,\.ay-btn-primary\{[^}]*background:var\(--zayrovi-button-bg,var\(--zayrovi-primary\)\)/);
+    expect(withoutComments(read('client/src/styles/journey.css'))).toMatch(/\.ay-btn-primary\{border:1px solid var\(--zayrovi-text-primary\);background:var\(--zayrovi-text-primary\)/);
   });
 
   test('boutique : ajout au panier / caisse / paiement en violet, rien de violet sur la photo produit', () => {
@@ -381,7 +381,7 @@ describe('5. violet au minimum (v4.2.0) : seule l’action principale est violet
   });
 
   test('actions secondaires repassées en noir ; option choisie = violet clair + contour violet', () => {
-    for (const rel of ['client/src/components/NotFoundPage.tsx', 'client/src/ayrovix/components/LiveCamera.tsx', 'client/src/ayrovix/components/InteractiveLensResults.tsx']) {
+    for (const rel of ['client/src/components/NotFoundPage.tsx', 'client/src/zayrovix/components/LiveCamera.tsx', 'client/src/zayrovix/components/InteractiveLensResults.tsx']) {
       expect(read(rel), rel).not.toMatch(/bg-cta\b/);
     }
     const ocerex = read('client/src/features/ocerex/screens/OcerexHome.tsx');
@@ -394,8 +394,8 @@ describe('5. violet au minimum (v4.2.0) : seule l’action principale est violet
 
   test('suivi d’étapes : seule l’étape en cours est violette, les étapes franchies sont noires', () => {
     const journey = withoutComments(read('client/src/styles/journey.css'));
-    expect(journey).toMatch(/li\.is-current>span\{border-color:var\(--ayrovi-cta\)/);
-    expect(journey).toMatch(/li\.is-complete>span\{border-color:var\(--ayrovi-text-primary\);background:var\(--ayrovi-text-primary\)/);
+    expect(journey).toMatch(/li\.is-current>span\{border-color:var\(--zayrovi-cta\)/);
+    expect(journey).toMatch(/li\.is-complete>span\{border-color:var\(--zayrovi-text-primary\);background:var\(--zayrovi-text-primary\)/);
   });
 });
 
@@ -465,7 +465,7 @@ describe('6. console d’administration — violet au minimum (v4.2.0)', () => {
   test('agent magazine en encre ; contours choisis et étape en cours gardent le violet officiel', () => {
     expect(adminCss).toMatch(/\.mag-agent \{[^}]*--mag-yellow: var\(--admin-ink-strong\); --mag-on-yellow: var\(--admin-on-dark\);/);
     expect(adminCss).toMatch(/\.mag-library-head \{[^}]*background:var\(--admin-ink-strong\); \}/);
-    expect(adminCss).toMatch(/\.admin-order-kpi\.is-active \{ border-color: var\(--ayrovi-cta\);/);
-    expect(adminCss).toMatch(/\.admin-pipeline li\.is-current i \{ background: var\(--ayrovi-cta\); box-shadow: 0 0 0 4px var\(--ayrovi-accent-soft\); \}/);
+    expect(adminCss).toMatch(/\.admin-order-kpi\.is-active \{ border-color: var\(--zayrovi-cta\);/);
+    expect(adminCss).toMatch(/\.admin-pipeline li\.is-current i \{ background: var\(--zayrovi-cta\); box-shadow: 0 0 0 4px var\(--zayrovi-accent-soft\); \}/);
   });
 });

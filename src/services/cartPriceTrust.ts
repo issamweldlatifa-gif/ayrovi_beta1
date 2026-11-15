@@ -1,9 +1,9 @@
 import { catalogId } from '../catalogue/localSale';
 import type { QatafoDatabase } from '../db/database';
 import {
-  inspectAyrovixPriceToken,
-  verifyAyrovixPriceToken,
-} from '../ayrovix/priceQuote';
+  inspectZayrovixPriceToken,
+  verifyZayrovixPriceToken,
+} from '../zayrovix/priceQuote';
 import type { CartItem } from '../types';
 
 /**
@@ -15,7 +15,7 @@ import type { CartItem } from '../types';
  * un montant encaissable sans qu'aucune source ne soit relue.
  *
  * Règle désormais : une ligne `VERIFIED` doit présenter, AU MOMENT de la
- * commande, le jeton signé par le serveur (`createAyrovixPriceToken`) pour
+ * commande, le jeton signé par le serveur (`createZayrovixPriceToken`) pour
  * exactement le prix, la devise, le titre et le lien de la ligne. Le jeton porte
  * sa propre expiration (30 minutes par défaut, comme la cotation Lens). Passé
  * ce délai, la ligne est `STALE` : la commande est refusée avec la raison, et
@@ -95,9 +95,9 @@ function lineTrust(
   }
   const token = proofs[itemId] || '';
   if (token) {
-    const claims = inspectAyrovixPriceToken(token);
+    const claims = inspectZayrovixPriceToken(token);
     const expiresAt = claims ? new Date(claims.expiresAt).toISOString() : null;
-    const valid = verifyAyrovixPriceToken(
+    const valid = verifyZayrovixPriceToken(
       token,
       {
         price: Number(item.sourcePrice),

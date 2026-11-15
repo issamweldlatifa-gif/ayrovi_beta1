@@ -2,7 +2,7 @@
  * VÉRIFICATION DU MOTEUR DE VARIANTES & DISPONIBILITÉ (phase 3, 25/09/2026).
  *
  * Rejoue le contrat d'acceptation du prototype, mais à travers le CODE DE
- * PRODUCTION (src/ayrovix/services/productVariants.ts + variantAvailability.ts)
+ * PRODUCTION (src/zayrovix/services/productVariants.ts + variantAvailability.ts)
  * sur 7 réponses SerpApi réelles couvrant les quatre formes de variantes
  * (`variations`, `variants`, `sizes`, `product_variations`), le piège du groupe
  * mal nommé, le produit sans variante et les ruptures écrites en clair.
@@ -21,10 +21,10 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildProductCard, decideOrder } from '../src/ayrovix/services/productVariants';
+import { buildProductCard, decideOrder } from '../src/zayrovix/services/productVariants';
 
 // Le script est empaqueté dans .cache/ : on repart de la racine du dépôt.
-const FIXTURES = process.env.AYROVI_VARIANT_FIXTURES || path.join(process.cwd(), 'verify', 'fixtures', 'product-variants');
+const FIXTURES = process.env.ZAYROVI_VARIANT_FIXTURES || path.join(process.cwd(), 'verify', 'fixtures', 'product-variants');
 
 /** Attente par fiche : ce que le moteur DOIT comprendre, et rien de plus. */
 const EXPECTED: Record<string, {

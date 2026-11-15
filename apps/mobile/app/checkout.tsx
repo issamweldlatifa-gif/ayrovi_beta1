@@ -34,7 +34,7 @@ import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import { fetchAddresses, type Address } from '@/api/account';
-import { ayroviCartReadiness, fetchAyroviCart } from '@/api/cart';
+import { zayroviCartReadiness, fetchZayroviCart } from '@/api/cart';
 import {
   availablePaymentChoices, checkoutRefusalText, fetchCommercePolicy, initiateCardPayment, paymentChoices,
   refuseCheckout, resolvePaymentMethod, submitCheckout, type CheckoutResult,
@@ -62,9 +62,9 @@ export default function CheckoutScreen() {
   const authenticated = session.status === 'signedIn' && Boolean(account);
 
   const cartQuery = useQuery({
-    queryKey: ['cart', 'ayrovi'],
+    queryKey: ['cart', 'zayrovi'],
     enabled: Boolean(sessionId),
-    queryFn: ({ signal }) => fetchAyroviCart({ sessionId, signal }),
+    queryFn: ({ signal }) => fetchZayroviCart({ sessionId, signal }),
     staleTime: 0,
   });
   const policyQuery = useQuery({
@@ -117,7 +117,7 @@ export default function CheckoutScreen() {
 
   const policy = policyQuery.data ?? null;
   const cart = cartQuery.data ?? null;
-  const cartGate = useMemo(() => ayroviCartReadiness(cart), [cart]);
+  const cartGate = useMemo(() => zayroviCartReadiness(cart), [cart]);
   const choices = useMemo(() => (policy ? paymentChoices(policy) : []), [policy]);
   const available = useMemo(() => (policy ? availablePaymentChoices(policy) : []), [policy]);
   const addresses = addressesQuery.data ?? [];
@@ -172,7 +172,7 @@ export default function CheckoutScreen() {
     onSuccess: (order) => {
       setResult(order);
       setNote('');
-      queryClient.invalidateQueries({ queryKey: ['cart', 'ayrovi'] });
+      queryClient.invalidateQueries({ queryKey: ['cart', 'zayrovi'] });
       queryClient.invalidateQueries({ queryKey: ['account', 'orders'] });
     },
     onError: (error) => {

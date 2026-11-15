@@ -114,7 +114,7 @@ describe('ZAYROVI production hardening', () => {
     const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
     const like = () => request(app)
       .post('/api/public/social/interact')
-      .set('Cookie', `ayrovi_customer_session=${encodeURIComponent(session.token)}`)
+      .set('Cookie', `zayrovi_customer_session=${encodeURIComponent(session.token)}`)
       .set('x-csrf-token', session.csrfToken)
       .set('x-session-id', 'hardening-auth-like')
       .send({ targetId: 'reel_owner_shoes_v1', type: 'like' });
@@ -133,8 +133,8 @@ describe('ZAYROVI production hardening', () => {
   test('Admin media upload rejects a spoofed image before writing it', async () => {
     const admin = request.agent(app);
     const login = await admin.post('/api/admin/auth/login').send({
-      email: 'admin@ayrovi.tn',
-      password: 'AyroviBeta2026!',
+      email: 'admin@zayrovi.com',
+      password: 'ZayroviBeta2026!',
     });
     expect(login.status).toBe(200);
     const response = await admin

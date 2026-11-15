@@ -14,7 +14,7 @@
 /home/user/ayrovi_beta1/
 ├── android/                      ← مشروع أندرويد الأصلي (Gradle)
 │   ├── app/src/main/AndroidManifest.xml
-│   ├── app/src/main/java/app/ayrovi/mobile/
+│   ├── app/src/main/java/app/zayrovi/mobile/
 │   │   ├── MainActivity.java             (126 سطر)  القشرة + زر الرجوع + المشاركة + الروابط العميقة
 │   │   ├── AyWebsBrowseActivity.java     (680 سطر)  متصفح المتاجر + شريط Add to Cart
 │   │   └── AyWebsBrowsePlugin.java       (67 سطر)   الجسر بين الويب والجافا
@@ -24,16 +24,16 @@
 │   │   └── values-ar/      نفس النصوص بالعربية (RTL مفعّل: supportsRtl=true)
 │   ├── app/build.gradle    التوقيع + versionCode/versionName
 │   └── variables.gradle    minSdk 23 · compileSdk 35 · targetSdk 35
-├── capacitor.config.ts           إعداد Capacitor (appId: app.ayrovi.mobile)
+├── capacitor.config.ts           إعداد Capacitor (appId: app.zayrovi.mobile)
 ├── client/                       واجهة React/Vite التي تُجمَّع داخل التطبيق
 └── .github/workflows/android-apk.yml   بناء APK/AAB عبر GitHub Actions (يدوي)
 ```
 
-**الـ APK المبني:** `/home/user/apk/AYROVI-debug.apk` (7.1 ميغابايت، موقّع بتوقيع debug).
+**الـ APK المبني:** `/home/user/apk/ZAYROVI-debug.apk` (7.1 ميغابايت، موقّع بتوقيع debug).
 
 | البند | القيمة |
 |---|---|
-| الحزمة | `app.ayrovi.mobile` |
+| الحزمة | `app.zayrovi.mobile` |
 | النسخة | versionName `1.0` · versionCode `1` |
 | أقل إصدار أندرويد | 23 (أندرويد 6) |
 | الإصدار المستهدف | 35 (أندرويد 15) |
@@ -60,10 +60,10 @@
 - **الحزمة مضمّنة**: واجهة الموقع كاملة (HTML/JS/CSS) داخل الـ APK — يفتح فورًا وبدون شبكة.
 - **الاتصال بالـ API**: مسار واحد — `client/src/services/nativeApiOrigin.ts` يعيد توجيه
   `/api/…` و`/uploads/…` إلى خادم الـ API الحقيقي.
-- **الجلسة**: داخل التطبيق تُستخدم هوية Bearer (`x-ayrovi-native`) بدل الكوكيز.
+- **الجلسة**: داخل التطبيق تُستخدم هوية Bearer (`x-zayrovi-native`) بدل الكوكيز.
 - **متصفح المتاجر (AyWebs)**: نشاط أصلي فيه شريط «Add to Cart» يضيف مباشرة إلى سلة ZAYROVI.
 - **المشاركة**: مشاركة نص/رابط من أي تطبيق آخر تفتح ZAYROVI على AyWebs.
-- **روابط عميقة**: `ayrovi://aywebs` و `ayrovi://aywebs/cart` و `ayrovi://aywebs/product?url=…`.
+- **روابط عميقة**: `zayrovi://aywebs` و `zayrovi://aywebs/cart` و `zayrovi://aywebs/product?url=…`.
 - **زر الرجوع**: يعود داخل الواجهة قبل إغلاق التطبيق.
 
 ---
@@ -86,7 +86,7 @@ npx cap sync android
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 export ANDROID_HOME=/opt/android-sdk ANDROID_SDK_ROOT=/opt/android-sdk
 export GRADLE_USER_HOME=/opt/gradle
-export AYROVI_VERSION_CODE=1 AYROVI_VERSION_NAME=1.0
+export ZAYROVI_VERSION_CODE=1 ZAYROVI_VERSION_NAME=1.0
 cd android && sh ./gradlew assembleDebug --no-daemon
 
 # الناتج: android/app/build/outputs/apk/debug/app-debug.apk

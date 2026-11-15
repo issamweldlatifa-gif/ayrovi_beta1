@@ -94,11 +94,11 @@ async function darkBounds(buffer: Buffer, threshold = 120) {
 let cacheDir = '';
 beforeEach(() => {
   cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'native-card-'));
-  process.env.AYROVI_NATIVE_CARD_CACHE_DIR = cacheDir;
+  process.env.ZAYROVI_NATIVE_CARD_CACHE_DIR = cacheDir;
 });
 afterEach(() => {
-  delete process.env.AYROVI_NATIVE_CARD_CACHE_DIR;
-  delete process.env.AYROVI_NATIVE_CARD;
+  delete process.env.ZAYROVI_NATIVE_CARD_CACHE_DIR;
+  delete process.env.ZAYROVI_NATIVE_CARD;
   fs.rmSync(cacheDir, { recursive: true, force: true });
 });
 
@@ -297,8 +297,8 @@ describe('aucune isolation, cache, interrupteur', () => {
     expect(stub.calls.count).toBe(2);
   });
 
-  it('interrupteur AYROVI_NATIVE_CARD=false : retour intégral à l’ancien comportement', async () => {
-    process.env.AYROVI_NATIVE_CARD = 'false';
+  it('interrupteur ZAYROVI_NATIVE_CARD=false : retour intégral à l’ancien comportement', async () => {
+    process.env.ZAYROVI_NATIVE_CARD = 'false';
     const buffer = await photo({
       width: 300, height: 400, background: '#ffffff',
       product: { x: 90, y: 250, w: 120, h: 60, color: '#2b2b2b' },

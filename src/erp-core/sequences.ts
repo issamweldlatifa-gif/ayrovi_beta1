@@ -7,7 +7,7 @@
  * Both produce holes, collisions and unreadable numbers — an ERP needs short,
  * human-quotable, gap-free identifiers ("EMP-001", "CMD-2026-000412").
  *
- * Existing generators are NOT modified in this phase (Rule Zero): `ayrovi.test.ts`
+ * Existing generators are NOT modified in this phase (Rule Zero): `zayrovi.test.ts`
  * and the checkout flow keep their current behaviour. This module is the single
  * numbering authority for ERP-native objects (employees first).
  */

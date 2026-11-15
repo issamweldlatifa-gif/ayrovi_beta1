@@ -1,0 +1,1518 @@
+import { afterAll, describe, expect, test, vi } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import request from 'supertest';
+import { app, db, scraper } from '../src/server';
+import { DEFAULT_PAYMENT_METHODS, QatafoDatabase } from '../src/db/database';
+import { calculatePrice } from '../src/services/pricing';
+import { createCustomerSession, hashToken } from '../src/customer/auth';
+import { createZayrovixPriceToken, inspectZayrovixPriceToken } from '../src/zayrovix/priceQuote';
+import { recordVariantContract } from '../src/zayrovix/services/variantAvailability';
+import { verifyKonnectCardPayment } from '../src/services/paymentGateway';
+
+const uniqueSession = (label: string) => `${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+const checkoutDefaults = { email: 'google.merge@zayrovi.test', termsAccepted: true, locale: 'fr-TN' };
+
+const createCartItem = (title = 'Muchica Matching Set') => ({
+  store: 'shein',
+  externalId: `SH-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  url: 'https://www.shein.com/product-p-382460229.html',
+  title,
+  imageUrl: '/uploads/product.jpg',
+  sourcePrice: 21.99,
+  sourceCurrency: 'EUR',
+  priceTND: 103.61,
+  quantity: 1,
+});
+
+const quoteEur = (price = 21.99, extra: Record<string, unknown> = {}) => calculatePrice(db.getPricingRules(), price, 'EUR', {
+  title: String(extra.title || 'ensemble tendance'),
+  quantity: Number(extra.quantity || 1),
+  includeLocalDelivery: extra.includeLocalDelivery !== false,
+  express: extra.express === true,
+})!;
+
+describe('ZAYROVI platform', () => {
+  const primarySession = uniqueSession('primary');
+  const isolatedSession = uniqueSession('isolated');
+  const quantitySession = uniqueSession('quantity');
+  const repeatSession = uniqueSession('repeat');
+  const superAdmin = request.agent(app);
+  const customerAgent = request.agent(app);
+  const secondCustomerAgent = request.agent(app);
+  let adminCsrf = '';
+  let customerCsrf = '';
+  let secondCustomerCsrf = '';
+  let primaryAccountId = '';
+  let persistedOrderId = '';
+  let persistedCustomerId = '';
+  let createdArrivalId = '';
+  let createdProductId = '';
+  let originalPricingVersion = 0;
+
+  afterAll(() => {
+    db.clearCart(primarySession);
+    db.clearCart(isolatedSession);
+    db.clearCart(quantitySession);
+    db.clearCart(repeatSession);
+  });
+
+  const insertHistoricalOrder = (suffix: string, phone: string) => {
+    const now = new Date().toISOString();
+    const customerId = `historical_customer_${suffix}`;
+    const orderId = `historical_order_${suffix}`;
+    db.run(`INSERT INTO customers (id,name,phone,governorate,address,registered_at,status,updated_at)
+      VALUES (?,?,?,'Tunis','Ancienne adresse',?,'ACTIVE',?)`, customerId, `Client historique ${suffix}`, phone, now, now);
+    db.run(`INSERT INTO orders
+      (id,order_number,customer_id,account_id,source,status,payment_status,payment_method,subtotal_tnd,customs_tnd,shipping_tnd,service_tnd,express_tnd,discount_tnd,total_tnd,pricing_snapshot,governorate,address,phone,notes,created_at,updated_at)
+      VALUES (?,?,?,NULL,'OTHER','DELIVERED','PAID','COD',100,0,7,10,0,0,117,?,'Tunis','Ancienne adresse',?,'',?,?)`,
+    orderId, `AYR-81${suffix.padStart(4, '0')}`, customerId, JSON.stringify({ version: 1 }), phone, now, now);
+    return orderId;
+  };
+
+  const otpLogin = async (agent: any, phone: string, cartSessionId?: string, checkInvalidCode = false) => {
+    const requested = await agent.post('/api/customer/auth/otp/request').send({ phone });
+    expect(requested.status).toBe(201);
+    expect(requested.body.data.developmentCode).toMatch(/^\d{6}$/);
+    if (checkInvalidCode) {
+      const rejected = await agent.post('/api/customer/auth/otp/verify').send({
+        challengeId: requested.body.data.challengeId, code: '000000', cartSessionId,
+      });
+      expect(rejected.status).toBe(400);
+      expect(rejected.body.code).toBe('OTP_INVALID');
+    }
+    const verified = await agent.post('/api/customer/auth/otp/verify').send({
+      challengeId: requested.body.data.challengeId,
+      code: requested.body.data.developmentCode,
+      cartSessionId,
+    });
+    expect(verified.status).toBe(200);
+    expect(verified.headers['set-cookie']?.[0]).toContain('zayrovi_customer_session=');
+    expect(verified.headers['set-cookie']?.[0]).toContain('HttpOnly');
+    return verified.body.data;
+  };
+
+  test('customer OTP activates isolated accounts and links only verified historical orders', async () => {
+    const primaryHistoricalOrder = insertHistoricalOrder('1', '98123456');
+    const otherHistoricalOrder = insertHistoricalOrder('2', '97123456');
+
+    expect((await request(app).get('/api/customer/account/orders')).status).toBe(401);
+    const primaryLogin = await otpLogin(customerAgent, '98 123 456', primarySession, true);
+    customerCsrf = primaryLogin.csrfToken;
+    primaryAccountId = primaryLogin.account.id;
+    expect(primaryLogin.account.phone).toBe('+21698123456');
+    expect(primaryLogin.account.phoneVerified).toBe(true);
+    expect(primaryLogin.linkedHistoricalOrders).toBe(1);
+
+    const primaryOrders = await customerAgent.get('/api/customer/account/orders');
+    expect(primaryOrders.status).toBe(200);
+    expect(primaryOrders.body.data.map((order: any) => order.id)).toContain(primaryHistoricalOrder);
+    expect(primaryOrders.body.data.map((order: any) => order.id)).not.toContain(otherHistoricalOrder);
+    expect((await customerAgent.get(`/api/customer/account/orders/${otherHistoricalOrder}`)).status).toBe(404);
+    expect(db.get<any>('SELECT account_id FROM orders WHERE id=?', otherHistoricalOrder).account_id).toBeNull();
+
+    const secondLogin = await otpLogin(secondCustomerAgent, '97123456');
+    secondCustomerCsrf = secondLogin.csrfToken;
+    expect(secondLogin.account.id).not.toBe(primaryAccountId);
+    expect(secondLogin.linkedHistoricalOrders).toBe(1);
+    expect((await secondCustomerAgent.get(`/api/customer/account/orders/${primaryHistoricalOrder}`)).status).toBe(404);
+    expect(db.get<any>('SELECT account_id FROM orders WHERE id=?', primaryHistoricalOrder).account_id).toBe(primaryAccountId);
+  });
+
+  test('Google OAuth state is bound to the initiating browser', async () => {
+    const previous = {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callback: process.env.GOOGLE_CALLBACK_URL,
+    };
+    process.env.GOOGLE_CLIENT_ID = 'test-google-client';
+    process.env.GOOGLE_CLIENT_SECRET = 'test-google-secret';
+    process.env.GOOGLE_CALLBACK_URL = 'https://zayrovi.example/api/customer/auth/google/callback';
+    try {
+      const browser = request.agent(app);
+      const started = await browser.get('/api/customer/auth/google/start?returnTo=/compte');
+      expect(started.status).toBe(302);
+      expect(started.headers.location).toContain('https://accounts.google.com/o/oauth2/v2/auth?');
+      expect(started.headers['set-cookie']?.[0]).toContain('zayrovi_customer_oauth=');
+      expect(started.headers['set-cookie']?.[0]).toContain('HttpOnly');
+      const state = new URL(started.headers.location).searchParams.get('state');
+      expect(state).toBeTruthy();
+
+      const foreignBrowser = await request(app)
+        .get('/api/customer/auth/google/callback')
+        .query({ state, code: 'code-that-must-not-be-exchanged' });
+      expect(foreignBrowser.status).toBe(302);
+      expect(foreignBrowser.headers.location).toBe('/?customerAuth=error');
+      expect(foreignBrowser.headers['set-cookie']?.[0]).toContain('Max-Age=0');
+      expect(db.get<any>('SELECT id FROM customer_oauth_states WHERE id=?', hashToken(state!))).toBeTruthy();
+    } finally {
+      if (previous.clientId === undefined) delete process.env.GOOGLE_CLIENT_ID;
+      else process.env.GOOGLE_CLIENT_ID = previous.clientId;
+      if (previous.clientSecret === undefined) delete process.env.GOOGLE_CLIENT_SECRET;
+      else process.env.GOOGLE_CLIENT_SECRET = previous.clientSecret;
+      if (previous.callback === undefined) delete process.env.GOOGLE_CALLBACK_URL;
+      else process.env.GOOGLE_CALLBACK_URL = previous.callback;
+    }
+  });
+
+  test('Google OAuth safely merges an explicitly linked account and rejects unverified email pre-hijacking', async () => {
+    const previous = {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callback: process.env.GOOGLE_CALLBACK_URL,
+    };
+    process.env.GOOGLE_CLIENT_ID = 'test-google-client';
+    process.env.GOOGLE_CLIENT_SECRET = 'test-google-secret';
+    process.env.GOOGLE_CALLBACK_URL = 'https://zayrovi.example/api/customer/auth/google/callback';
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    const mockGoogle = (profile: Record<string, unknown>) => {
+      fetchMock
+        .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'google-access-token' }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(profile), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    };
+    try {
+      const now = new Date().toISOString();
+      const googleSourceId = `google_source_${Date.now()}`;
+      db.run(`INSERT INTO customer_accounts (id,display_name,email,email_verified_at,status,created_at,updated_at)
+        VALUES (?,'Compte Google','google.merge@zayrovi.test',?,'ACTIVE',?,?)`, googleSourceId, now, now, now);
+      db.run(`INSERT INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
+        VALUES (?,?, 'GOOGLE','google-merge-subject',?)`, `identity_${Date.now()}`, googleSourceId, now);
+
+      const startedLink = await customerAgent.get('/api/customer/auth/google/start?returnTo=/compte');
+      const linkState = new URL(startedLink.headers.location).searchParams.get('state');
+      mockGoogle({ sub: 'google-merge-subject', email: 'google.merge@zayrovi.test', email_verified: true, name: 'Compte Google', picture: 'https://example.com/avatar.jpg' });
+      const linked = await customerAgent.get('/api/customer/auth/google/callback').query({ state: linkState, code: 'valid-link-code' });
+      expect(linked.status).toBe(302);
+      expect(linked.headers.location).toBe('/compte?customerAuth=success');
+      expect(linked.headers['set-cookie']).toEqual(expect.arrayContaining([
+        expect.stringContaining('zayrovi_customer_oauth='),
+        expect.stringContaining('zayrovi_customer_session='),
+      ]));
+      expect(db.get<any>('SELECT id FROM customer_accounts WHERE id=?', googleSourceId)).toBeUndefined();
+      expect(db.get<any>(`SELECT account_id FROM customer_auth_identities WHERE provider='GOOGLE' AND provider_subject='google-merge-subject'`).account_id).toBe(primaryAccountId);
+      const mergedAccount = db.get<any>('SELECT phone,email,phone_verified_at,email_verified_at FROM customer_accounts WHERE id=?', primaryAccountId);
+      expect(mergedAccount.phone).toBe('+21698123456');
+      expect(mergedAccount.phone_verified_at).toBeTruthy();
+      expect(mergedAccount.email).toBe('google.merge@zayrovi.test');
+      expect(mergedAccount.email_verified_at).toBeTruthy();
+      const refreshedPrimary = await customerAgent.get('/api/customer/auth/me');
+      customerCsrf = refreshedPrimary.body.data.csrfToken;
+
+      const squatterId = `email_squatter_${Date.now()}`;
+      db.run(`INSERT INTO customer_accounts (id,display_name,email,status,created_at,updated_at)
+        VALUES (?,'Compte non vérifié','victim.google@zayrovi.test','ACTIVE',?,?)`, squatterId, now, now);
+      const victimBrowser = request.agent(app);
+      const startedVictim = await victimBrowser.get('/api/customer/auth/google/start?returnTo=/compte');
+      const victimState = new URL(startedVictim.headers.location).searchParams.get('state');
+      mockGoogle({ sub: 'verified-victim-subject', email: 'victim.google@zayrovi.test', email_verified: true, name: 'Client vérifié', picture: '' });
+      const victimCallback = await victimBrowser.get('/api/customer/auth/google/callback').query({ state: victimState, code: 'valid-victim-code' });
+      expect(victimCallback.status).toBe(302);
+      expect(victimCallback.headers.location).toBe('/compte?customerAuth=success');
+      const victimIdentity = await victimBrowser.get('/api/customer/auth/me');
+      expect(victimIdentity.status).toBe(200);
+      expect(victimIdentity.body.data.account.id).not.toBe(squatterId);
+      expect(victimIdentity.body.data.account.email).toBe('victim.google@zayrovi.test');
+      expect(victimIdentity.body.data.account.emailVerified).toBe(true);
+      expect(db.get<any>('SELECT email FROM customer_accounts WHERE id=?', squatterId).email).toBeNull();
+    } finally {
+      fetchMock.mockRestore();
+      if (previous.clientId === undefined) delete process.env.GOOGLE_CLIENT_ID;
+      else process.env.GOOGLE_CLIENT_ID = previous.clientId;
+      if (previous.clientSecret === undefined) delete process.env.GOOGLE_CLIENT_SECRET;
+      else process.env.GOOGLE_CLIENT_SECRET = previous.clientSecret;
+      if (previous.callback === undefined) delete process.env.GOOGLE_CALLBACK_URL;
+      else process.env.GOOGLE_CALLBACK_URL = previous.callback;
+    }
+  });
+
+  test('Facebook OAuth state is provider-bound and tied to the initiating browser', async () => {
+    const previous = {
+      appId: process.env.FACEBOOK_APP_ID,
+      appSecret: process.env.FACEBOOK_APP_SECRET,
+      callback: process.env.FACEBOOK_CALLBACK_URL,
+      version: process.env.FACEBOOK_GRAPH_VERSION,
+    };
+    process.env.FACEBOOK_APP_ID = '123456789012345';
+    process.env.FACEBOOK_APP_SECRET = 'test-facebook-secret';
+    process.env.FACEBOOK_CALLBACK_URL = 'https://zayrovi.example/api/customer/auth/facebook/callback';
+    process.env.FACEBOOK_GRAPH_VERSION = 'v26.0';
+    try {
+      const browser = request.agent(app);
+      const started = await browser.get('/api/customer/auth/facebook/start?returnTo=/compte');
+      expect(started.status).toBe(302);
+      const location = new URL(started.headers.location);
+      expect(`${location.origin}${location.pathname}`).toBe('https://www.facebook.com/v26.0/dialog/oauth');
+      expect(location.searchParams.get('scope')).toBe('public_profile,email');
+      expect(location.searchParams.get('redirect_uri')).toBe(process.env.FACEBOOK_CALLBACK_URL);
+      expect(started.headers['set-cookie']?.[0]).toContain('zayrovi_customer_facebook_oauth=');
+      expect(started.headers['set-cookie']?.[0]).toContain('HttpOnly');
+      const state = location.searchParams.get('state');
+      expect(state).toBeTruthy();
+      expect(db.get<any>('SELECT provider FROM customer_oauth_states WHERE id=?', hashToken(state!))?.provider).toBe('FACEBOOK');
+
+      const foreignBrowser = await request(app)
+        .get('/api/customer/auth/facebook/callback')
+        .query({ state, code: 'must-not-be-exchanged' });
+      expect(foreignBrowser.status).toBe(302);
+      expect(foreignBrowser.headers.location).toBe('/?customerAuth=facebook_error');
+      expect(db.get<any>('SELECT id FROM customer_oauth_states WHERE id=?', hashToken(state!))).toBeTruthy();
+    } finally {
+      for (const [key, value] of Object.entries(previous)) {
+        const envKey = key === 'appId' ? 'FACEBOOK_APP_ID' : key === 'appSecret' ? 'FACEBOOK_APP_SECRET' : key === 'callback' ? 'FACEBOOK_CALLBACK_URL' : 'FACEBOOK_GRAPH_VERSION';
+        if (value === undefined) delete process.env[envKey]; else process.env[envKey] = value;
+      }
+    }
+  });
+
+  test('Facebook OAuth verifies the token and never merges accounts by an unverified email', async () => {
+    const previous = {
+      appId: process.env.FACEBOOK_APP_ID,
+      appSecret: process.env.FACEBOOK_APP_SECRET,
+      callback: process.env.FACEBOOK_CALLBACK_URL,
+      version: process.env.FACEBOOK_GRAPH_VERSION,
+    };
+    process.env.FACEBOOK_APP_ID = '123456789012345';
+    process.env.FACEBOOK_APP_SECRET = 'test-facebook-secret';
+    process.env.FACEBOOK_CALLBACK_URL = 'https://zayrovi.example/api/customer/auth/facebook/callback';
+    process.env.FACEBOOK_GRAPH_VERSION = 'v26.0';
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    const now = new Date().toISOString();
+    const email = `facebook-collision-${Date.now()}@zayrovi.test`;
+    const existingId = `facebook_email_owner_${Date.now()}`;
+    db.run(`INSERT INTO customer_accounts (id,display_name,email,email_verified_at,status,created_at,updated_at)
+      VALUES (?,'Compte Google existant',?,?,'ACTIVE',?,?)`, existingId, email, now, now, now);
+    try {
+      const browser = request.agent(app);
+      const started = await browser.get('/api/customer/auth/facebook/start?returnTo=/compte');
+      const state = new URL(started.headers.location).searchParams.get('state');
+      fetchMock
+        .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'facebook-user-token', token_type: 'bearer' }), { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ data: { is_valid: true, app_id: process.env.FACEBOOK_APP_ID, user_id: '998877665544' } }), { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify({
+          id: '998877665544', name: 'Client Facebook', email,
+          picture: { data: { is_silhouette: false, url: 'https://platform-lookaside.fbsbx.com/avatar.jpg' } },
+        }), { status: 200 }));
+      const callback = await browser.get('/api/customer/auth/facebook/callback').query({ state, code: 'valid-facebook-code' });
+      expect(callback.status).toBe(302);
+      expect(callback.headers.location).toBe('/compte?customerAuth=facebook_success');
+      const identity = await browser.get('/api/customer/auth/me');
+      expect(identity.status).toBe(200);
+      expect(identity.body.data.account.id).not.toBe(existingId);
+      expect(identity.body.data.account.displayName).toBe('Client Facebook');
+      expect(identity.body.data.account.email).toBeNull();
+      expect(identity.body.data.account.emailVerified).toBe(false);
+      expect(db.get<any>(`SELECT provider_subject FROM customer_auth_identities WHERE account_id=? AND provider='FACEBOOK'`, identity.body.data.account.id)?.provider_subject).toBe('998877665544');
+      expect(db.get<any>('SELECT email FROM customer_accounts WHERE id=?', existingId)?.email).toBe(email);
+      db.run('DELETE FROM customer_accounts WHERE id=?', identity.body.data.account.id);
+    } finally {
+      fetchMock.mockRestore();
+      db.run('DELETE FROM customer_accounts WHERE id=?', existingId);
+      for (const [key, value] of Object.entries(previous)) {
+        const envKey = key === 'appId' ? 'FACEBOOK_APP_ID' : key === 'appSecret' ? 'FACEBOOK_APP_SECRET' : key === 'callback' ? 'FACEBOOK_CALLBACK_URL' : 'FACEBOOK_GRAPH_VERSION';
+        if (value === undefined) delete process.env[envKey]; else process.env[envKey] = value;
+      }
+    }
+  });
+
+  test('customers can permanently delete their profile with CSRF and explicit confirmation', async () => {
+    const accountId = `account_delete_${Date.now()}`;
+    const now = new Date().toISOString();
+    db.run("INSERT INTO customer_accounts (id,display_name,email,status,created_at,updated_at) VALUES (?,? ,?,'ACTIVE',?,?)",
+      accountId, 'Compte à supprimer', `delete-${Date.now()}@zayrovi.test`, now, now);
+    db.run(`INSERT INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
+      VALUES (?,?,'FACEBOOK',?,?)`, `identity_delete_${Date.now()}`, accountId, `facebook-delete-${Date.now()}`, now);
+    const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
+    const cookie = `zayrovi_customer_session=${encodeURIComponent(session.token)}`;
+    const withoutConfirmation = await request(app).delete('/api/customer/account')
+      .set('Cookie', cookie).set('x-csrf-token', session.csrfToken).send({});
+    expect(withoutConfirmation.status).toBe(400);
+    expect(db.get<any>('SELECT id FROM customer_accounts WHERE id=?', accountId)).toBeTruthy();
+
+    const removed = await request(app).delete('/api/customer/account')
+      .set('Cookie', cookie).set('x-csrf-token', session.csrfToken).send({ confirmation: 'SUPPRIMER' });
+    expect(removed.status).toBe(200);
+    expect(removed.body.data.deleted).toBe(true);
+    expect(([] as string[]).concat(removed.headers['set-cookie'] || []).some((value) => value.includes('Max-Age=0'))).toBe(true);
+    expect(db.get<any>('SELECT id FROM customer_accounts WHERE id=?', accountId)).toBeUndefined();
+    expect(db.get<any>('SELECT id FROM customer_auth_identities WHERE account_id=?', accountId)).toBeUndefined();
+    expect(db.get<any>('SELECT id FROM customer_sessions WHERE account_id=?', accountId)).toBeUndefined();
+  });
+
+  test('URL cleaner extracts a valid link from pasted text', () => {
+    const value = scraper.cleanPastedUrl(
+      'Voir cet article : https://www.shein.com/product-p-382460229.html), merci',
+    );
+    expect(value).toBe('https://www.shein.com/product-p-382460229.html');
+  });
+
+  test('image extraction rejects a request without an image', async () => {
+    const response = await request(app).post('/api/extract-image');
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+  });
+
+  test('image extraction rejects non-image uploads', async () => {
+    const response = await request(app)
+      .post('/api/extract-image')
+      .attach('image', Buffer.from('not-an-image'), {
+        filename: 'payload.txt',
+        contentType: 'text/plain',
+      });
+    expect(response.status).toBe(415);
+    expect(response.body.success).toBe(false);
+  });
+
+  test('image extraction rejects spoofed image MIME and keeps healthcheck alive', async () => {
+    const response = await request(app)
+      .post('/api/extract-image')
+      .attach('image', Buffer.from('not-a-real-jpeg'), {
+        filename: 'payload.js',
+        contentType: 'image/jpeg',
+      });
+    expect(response.status).toBe(415);
+    expect(response.body.code).toBe('INVALID_IMAGE');
+    expect((await request(app).get('/api/health')).status).toBe(200);
+  });
+
+  test('scraping blocks malformed and private service addresses', async () => {
+    const malformed = await request(app).post('/api/scrape').send({ url: 'not-a-web-address' });
+    expect(malformed.status).toBe(400);
+
+    const privateAddress = await request(app).post('/api/scrape').send({ url: 'http://127.0.0.1:3000/' });
+    expect(privateAddress.status).toBe(400);
+    expect(privateAddress.body.success).toBe(false);
+  });
+
+  test('cart routes require a valid client session', async () => {
+    const response = await request(app).get('/api/cart/items');
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+  });
+
+  test('Lens manual/photo requests stay in the cart but cannot become orders without source stock', async () => {
+    const sessionId = uniqueSession('lens-manual-order');
+    let cartItemId = '';
+    const title = 'Article Lens à acheter manuellement';
+    const referenceUrl = 'https://www.google.com/shopping/product/reference';
+    const quote = {
+      price: 57.5,
+      currency: 'EUR',
+      title,
+      referenceUrl,
+      status: 'PENDING_MANUAL' as const,
+    };
+    const priceToken = createZayrovixPriceToken(quote);
+    const payload = {
+      store: 'generic', externalId: null, url: 'https://www.amazon.fr/dp/EXACTITEM', title,
+      imageUrl: 'https://images.example/item.jpg', sourcePrice: quote.price, sourceCurrency: quote.currency,
+      priceTND: 1, variant: 'Taille: XXL · Couleur: Noir', requestedSize: 'XXL', requestedColor: 'Noir',
+      customerNote: 'Emballage cadeau, sans prix visible.', referenceUrl,
+      priceVerificationStatus: quote.status, priceToken, quantity: 2,
+    };
+    try {
+      const added = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send(payload);
+      expect(added.status, JSON.stringify(added.body)).toBe(409);
+      expect(added.body.code).toBe('NO_CONTRACT');
+
+      // Simulate a pre-existing cart row from before the source-stock guard.
+      // Checkout must re-read its contract and refuse the old size-bearing line.
+      const legacyQuote = quoteEur(payload.sourcePrice, { title, quantity: payload.quantity });
+      const legacyItem = db.addItem(sessionId, {
+        store: payload.store, externalId: payload.externalId, url: payload.url, title,
+        imageUrl: payload.imageUrl, sourcePrice: payload.sourcePrice, sourceCurrency: payload.sourceCurrency,
+        priceTND: legacyQuote.totalTND, variant: payload.variant, requestedSize: payload.requestedSize,
+        requestedColor: payload.requestedColor, customerNote: payload.customerNote, referenceUrl,
+        priceVerificationStatus: payload.priceVerificationStatus, quantity: payload.quantity,
+      });
+      cartItemId = legacyItem.id;
+
+      const tampered = await request(app).post('/api/cart/items').set('x-session-id', `${sessionId}-tampered`).send({ ...payload, sourcePrice: 5.75 });
+      expect(tampered.status).toBe(400);
+      expect(tampered.body.code).toBe('INVALID_ZAYROVIX_PRICE_TOKEN');
+
+      const noManualLink = await request(app).post('/api/cart/items').set('x-session-id', `${sessionId}-link`).send({ ...payload, url: '' });
+      expect(noManualLink.status).toBe(400);
+      expect(noManualLink.body.code).toBe('MANUAL_PRODUCT_URL_REQUIRED');
+
+      const cart = await request(app).get('/api/cart/items').set('x-session-id', sessionId);
+      expect(cart.status).toBe(200);
+      expect(cart.body.items[0]).toMatchObject({
+        id: cartItemId, sourceUrl: payload.url, requestedSize: 'XXL', requestedColor: 'Noir',
+        customerNote: payload.customerNote, referenceUrl, availability: 'unknown',
+      });
+
+      // A manual/photo-derived item may be saved for review, but cannot become
+      // an order until the source has a fresh stock contract.
+      const checkoutAgent = request.agent(app);
+      const phone = `55${String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0')}`;
+      const authenticated = await otpLogin(checkoutAgent, phone, sessionId);
+      const checkout = await checkoutAgent.post('/api/checkout').set('x-session-id', sessionId).set('x-csrf-token', authenticated.csrfToken).send({
+        email: `lens-stock-${phone}@example.com`, termsAccepted: true, locale: 'fr-TN',
+        name: 'Client Lens', phone: `+216 ${phone}`, city: 'Tunis', address: 'Avenue de Tunis', paymentMethod: 'BANK_TRANSFER',
+      });
+      expect(checkout.status).toBe(409);
+      expect(checkout.body.code).toBe('NO_CONTRACT');
+    } finally {
+      if (cartItemId) db.run('DELETE FROM cart_items WHERE id=?', cartItemId);
+      db.clearCart(sessionId);
+      db.clearCart(`${sessionId}-tampered`);
+      db.clearCart(`${sessionId}-link`);
+    }
+  });
+
+  test('a source-confirmed Lens size with a signed product offer really enters the cart', async () => {
+    const sessionId = uniqueSession('lens-confirmed-size');
+    const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-confirmed-size-'));
+    const previousCacheDir = process.env.ZAYROVI_VARIANT_CACHE_DIR;
+    process.env.ZAYROVI_VARIANT_CACHE_DIR = cacheDir;
+    const title = 'Pull marchand avec taille confirmée';
+    // Un domaine `.example` est volontairement refusé par le garde URL public.
+    // Utiliser une page marchande publique réaliste exerce donc le vrai contrat.
+    const url = 'https://www.amazon.fr/dp/PULLCONFIRMED';
+    const quote = { price: 35, currency: 'EUR', title, referenceUrl: url, status: 'PENDING_MANUAL' as const };
+    try {
+      recordVariantContract(url, {
+        attribute: 'Taille',
+        productAvailability: 'available',
+        source: 'Merchant',
+        variants: [{ value: 'M', availability: 'available', reason: 'Offre source avec prix.' }],
+      });
+      const added = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send({
+        store: 'generic', externalId: 'variant-m', url, referenceUrl: url, title,
+        imageUrl: 'https://images.example/pull.jpg', sourcePrice: quote.price, sourceCurrency: quote.currency,
+        priceTND: 1, variant: 'M', requestedSize: 'M', requestedColor: '', customerNote: '',
+        priceVerificationStatus: quote.status, priceToken: createZayrovixPriceToken(quote), quantity: 1,
+      });
+      expect(added.status, JSON.stringify(added.body)).toBe(201);
+      expect(added.body.cartItem).toMatchObject({ requestedSize: 'M', sourceUrl: url });
+      expect(added.body.totalItemsCount).toBe(1);
+    } finally {
+      db.clearCart(sessionId);
+      if (previousCacheDir == null) delete process.env.ZAYROVI_VARIANT_CACHE_DIR;
+      else process.env.ZAYROVI_VARIANT_CACHE_DIR = previousCacheDir;
+      fs.rmSync(cacheDir, { recursive: true, force: true });
+    }
+  });
+
+  test('manual cart items default to PENDING_MANUAL — only signed Lens quotes can claim VERIFIED', async () => {
+    const sessionId = uniqueSession('manual-pending');
+    try {
+      // Ajout 100 % manuel : ni priceToken ni priceVerificationStatus envoyés.
+      const added = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send(createCartItem('Veste en cuir ajoutée à la main'));
+      expect(added.status, JSON.stringify(added.body)).toBe(201);
+      expect(added.body.cartItem.priceVerificationStatus).toBe('PENDING_MANUAL');
+      // Le prix reste calculé côté serveur — l'état honnête, pas le prix, change.
+      expect(added.body.cartItem.priceTND).toBe(quoteEur(21.99, { title: 'Veste en cuir ajoutée à la main' }).totalTND);
+
+      // Une quote Lens signée VERIFIED passe toujours VERIFIED (couverture anti-régression).
+      const quote = { price: 21.99, currency: 'EUR', title: 'ensemble tendance', status: 'VERIFIED' as const };
+      const priceToken = createZayrovixPriceToken(quote);
+      const lensAdd = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send({
+        ...createCartItem('ensemble tendance'), priceVerificationStatus: 'VERIFIED', priceToken,
+      });
+      expect(lensAdd.status, JSON.stringify(lensAdd.body)).toBe(201);
+      expect(lensAdd.body.cartItem.priceVerificationStatus).toBe('VERIFIED');
+      expect(lensAdd.body.quoteExpiresAt).toBe(new Date(inspectZayrovixPriceToken(priceToken)!.expiresAt).toISOString());
+      expect(Number.isFinite(Date.parse(lensAdd.body.serverNow))).toBe(true);
+      expect(lensAdd.body.totalItemsCount).toBe(2);
+    } finally {
+      db.clearCart(sessionId);
+    }
+  });
+
+  test('orders above the sanity cap are refused with a dedicated code', async () => {
+    const sessionId = uniqueSession('cap');
+    let capItemId = '';
+    try {
+      const added = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send({
+        ...createCartItem('Montre de luxe factice'),
+        sourcePrice: 50_000, // 50 000 € ≈ 173 602 TND au taux graine > plafond 100 000 TND
+        sourceCurrency: 'EUR',
+      });
+      expect(added.status, JSON.stringify(added.body)).toBe(201);
+      capItemId = String(added.body.cartItem.id);
+      expect(added.body.totalTND).toBeGreaterThan(100_000);
+
+      const checkout = await customerAgent.post('/api/checkout').set('x-session-id', sessionId).set('x-csrf-token', customerCsrf).send({
+        ...checkoutDefaults,
+        name: 'Client Cap Test',
+        phone: '+216 98 123 456',
+        city: 'Tunis',
+        address: 'Avenue Habib Bourguiba, Tunis',
+        paymentMethod: 'bank_transfer',
+      });
+      expect(checkout.status).toBe(400);
+      expect(checkout.body.code).toBe('ORDER_TOTAL_CAP');
+    } finally {
+      // Le checkout échoué a déjà ATTACHÉ la ligne au panier du compte : la purge
+      // par id est chirurgicale (clearCart par session ne suffit plus après attach).
+      if (capItemId) db.run('DELETE FROM cart_items WHERE id=?', capItemId);
+      db.clearCart(sessionId);
+    }
+  });
+
+  test('heavy cart lines surface requires_weight_validation for the frontend warning (matrice 23/09/2026)', async () => {
+    const sessionId = uniqueSession('heavy');
+    try {
+      // PC portable = tech_computers, poids par défaut 2,2 kg → ×3 = 6,6 kg > 5 kg.
+      const added = await request(app).post('/api/cart/items').set('x-session-id', sessionId)
+        .send({ ...createCartItem('PC portable gamer MSI'), quantity: 3 });
+      expect(added.status, JSON.stringify(added.body)).toBe(201);
+
+      const cart = await request(app).get('/api/cart/items').set('x-session-id', sessionId);
+      expect(cart.status).toBe(200);
+      expect(cart.body.items).toHaveLength(1);
+      expect(cart.body.items[0].requiresWeightValidation).toBe(true);
+
+      // Une ligne légère (0,5 kg × 1) ne lève pas le drapeau.
+      const lightSession = uniqueSession('light');
+      const lightAdd = await request(app).post('/api/cart/items').set('x-session-id', lightSession)
+        .send(createCartItem('t-shirt coton bio'));
+      expect(lightAdd.status).toBe(201);
+      const lightCart = await request(app).get('/api/cart/items').set('x-session-id', lightSession);
+      expect(lightCart.body.items[0].requiresWeightValidation).toBe(false);
+      db.clearCart(lightSession);
+    } finally {
+      db.clearCart(sessionId);
+    }
+  });
+
+  test('cart and checkout remain isolated between client sessions', async () => {
+    const addResponse = await customerAgent
+      .post('/api/cart/items')
+      .set('x-session-id', primarySession)
+      .set('x-csrf-token', customerCsrf)
+      .send(createCartItem());
+
+    expect(addResponse.status).toBe(201);
+    expect(addResponse.body.success).toBe(true);
+    expect(addResponse.body.cartItem.priceTND).toBe(quoteEur(21.99, { title: 'Muchica Matching Set' }).totalTND);
+    const itemId = addResponse.body.cartItem.id as string;
+
+    const primaryCart = await customerAgent
+      .get('/api/cart/items')
+      .set('x-session-id', primarySession);
+    expect(primaryCart.status).toBe(200);
+    expect(primaryCart.body.items).toHaveLength(1);
+
+    const isolatedCart = await request(app)
+      .get('/api/cart/items')
+      .set('x-session-id', isolatedSession);
+    expect(isolatedCart.status).toBe(200);
+    expect(isolatedCart.body.items).toHaveLength(0);
+
+    const unauthorizedUpdate = await request(app)
+      .patch(`/api/cart/items/${itemId}`)
+      .set('x-session-id', isolatedSession)
+      .send({ quantity: 2 });
+    expect(unauthorizedUpdate.status).toBe(404);
+
+    const unauthorizedDelete = await request(app)
+      .delete(`/api/cart/items/${itemId}`)
+      .set('x-session-id', isolatedSession);
+    expect(unauthorizedDelete.status).toBe(404);
+
+    const emptyCheckout = await request(app)
+      .post('/api/checkout')
+      .set('x-session-id', isolatedSession)
+      .send({ ...checkoutDefaults,
+        name: 'Client Test',
+        phone: '98123456',
+        city: 'Tunis',
+        address: 'Avenue Habib Bourguiba, Tunis',
+        paymentMethod: 'cod',
+      });
+    expect(emptyCheckout.status).toBe(401);
+    expect(emptyCheckout.body.code).toBe('AUTH_REQUIRED');
+
+    const withoutCsrf = await customerAgent
+      .patch(`/api/cart/items/${itemId}`)
+      .set('x-session-id', primarySession)
+      .send({ quantity: 2 });
+    expect(withoutCsrf.status).toBe(403);
+    expect(withoutCsrf.body.error).toContain('sécurité');
+
+    // Un numéro de livraison invalide est rejeté sans consommer le panier.
+    const invalidPhoneCheckout = await customerAgent
+      .post('/api/checkout')
+      .set('x-session-id', primarySession)
+      .set('x-csrf-token', customerCsrf)
+      .send({ ...checkoutDefaults,
+        name: 'Client Test',
+        phone: '1234',
+        city: 'Tunis',
+        address: 'Avenue Habib Bourguiba, Tunis',
+        paymentMethod: 'bank_transfer',
+      });
+    expect(invalidPhoneCheckout.status).toBe(400);
+
+    const validCheckoutPayload = {
+      ...checkoutDefaults,
+      name: 'Client Test',
+      phone: '+216 98 123 456',
+      city: 'Tunis',
+      address: 'Avenue Habib Bourguiba, Tunis',
+      paymentMethod: 'bank_transfer',
+    };
+
+    const withoutTerms = await customerAgent.post('/api/checkout').set('x-session-id', primarySession).set('x-csrf-token', customerCsrf).send({ ...validCheckoutPayload, termsAccepted: false });
+    expect(withoutTerms.status).toBe(400);
+    expect(withoutTerms.body.code).toBe('TERMS_REQUIRED');
+
+    const invalidLocale = await customerAgent.post('/api/checkout').set('x-session-id', primarySession).set('x-csrf-token', customerCsrf).send({ ...validCheckoutPayload, locale: 'en-US' });
+    expect(invalidLocale.status).toBe(400);
+    expect(invalidLocale.body.code).toBe('CHECKOUT_LOCALE_INVALID');
+
+    const incompleteLocation = await customerAgent.post('/api/checkout').set('x-session-id', primarySession).set('x-csrf-token', customerCsrf).send({ ...validCheckoutPayload, latitude: 36.8065 });
+    expect(incompleteLocation.status).toBe(400);
+    expect(incompleteLocation.body.code).toBe('DELIVERY_LOCATION_INVALID');
+
+    const outOfRangeLocation = await customerAgent.post('/api/checkout').set('x-session-id', primarySession).set('x-csrf-token', customerCsrf).send({ ...validCheckoutPayload, latitude: 91, longitude: 10 });
+    expect(outOfRangeLocation.status).toBe(400);
+    expect(outOfRangeLocation.body.code).toBe('DELIVERY_LOCATION_INVALID');
+
+    // Le téléphone de livraison, les coordonnées et la langue choisie sont conservés avec le consentement.
+    const checkoutResponse = await customerAgent
+      .post('/api/checkout')
+      .set('x-session-id', primarySession)
+      .set('x-csrf-token', customerCsrf)
+      .send({ ...validCheckoutPayload, latitude: 36.8065, longitude: 10.1815, locale: 'ar-TN' });
+
+    expect(checkoutResponse.status).toBe(200);
+    expect(checkoutResponse.body.success).toBe(true);
+    expect(checkoutResponse.body.orderNumber).toMatch(/^AYR-\d{6}$/);
+    // Acompte de confirmation : 20% du total, statut AWAITING_DEPOSIT tant que l'acompte n'est pas validé.
+    expect(checkoutResponse.body.deposit.percent).toBe(20);
+    expect(checkoutResponse.body.deposit.status).toBe('PENDING');
+    expect(checkoutResponse.body.deposit.method).toBe('BANK_TRANSFER');
+    expect(checkoutResponse.body.deposit.amountTnd).toBeCloseTo(checkoutResponse.body.totalTND * 0.2, 2);
+    persistedOrderId = checkoutResponse.body.orderId;
+    const order = db.get<any>('SELECT * FROM orders WHERE id=?', persistedOrderId);
+    persistedCustomerId = order.customer_id;
+    expect(order.pricing_snapshot).toContain('"version":1');
+    expect(order.account_id).toBe(primaryAccountId);
+    expect(order.phone).toBe('+216 98 123 456');
+    expect(order.contact_email).toBe(checkoutDefaults.email);
+    expect(order.delivery_latitude).toBeCloseTo(36.8065, 4);
+    expect(order.delivery_longitude).toBeCloseTo(10.1815, 4);
+    expect(order.terms_accepted_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(order.locale).toBe('ar-TN');
+    expect(order.status).toBe('AWAITING_DEPOSIT');
+    expect(order.deposit_status).toBe('PENDING');
+    expect(order.deposit_percent).toBe(20);
+    expect(order.payment_method).toBe('BANK_TRANSFER');
+    expect(db.get<any>('SELECT COUNT(*) count FROM order_items WHERE order_id=?', persistedOrderId).count).toBe(1);
+    expect(db.get<any>('SELECT status FROM payments WHERE order_id=?', persistedOrderId).status).toBe('PENDING');
+    expect(db.get<any>('SELECT status FROM deliveries WHERE order_id=?', persistedOrderId).status).toBe('PENDING');
+
+    const accountDetail = await customerAgent.get(`/api/customer/account/orders/${persistedOrderId}`);
+    expect(accountDetail.status).toBe(200);
+    expect(accountDetail.body.data.items).toHaveLength(1);
+    expect(JSON.parse(accountDetail.body.data.pricing_snapshot).version).toBe(1);
+    expect((await secondCustomerAgent.get(`/api/customer/account/orders/${persistedOrderId}`)).status).toBe(404);
+  });
+
+  test('invalid cart quantities are rejected', async () => {
+    const response = await request(app)
+      .post('/api/cart/items')
+      .set('x-session-id', primarySession)
+      .send({ ...createCartItem('Invalid quantity item'), quantity: 100 });
+    expect(response.status).toBe(400);
+    expect(response.body.success).toBe(false);
+  });
+
+  test('duplicate additions cannot exceed the per-item quantity limit', async () => {
+    const item = { ...createCartItem('Quantity limit item'), quantity: 99 };
+    const firstResponse = await request(app)
+      .post('/api/cart/items')
+      .set('x-session-id', quantitySession)
+      .send(item);
+    expect(firstResponse.status).toBe(201);
+    const qty99 = quoteEur(21.99, { quantity: 99, includeLocalDelivery: false, title: 'Quantity limit item' });
+    expect(firstResponse.body.totalTND).toBe(Math.round((qty99.totalTND + db.getPricingRules().localDeliveryTND) * 1000) / 1000);
+    const quantityCart = await request(app).get('/api/cart/items').set('x-session-id', quantitySession);
+    expect(quantityCart.body.items[0].lineTotalTND).toBe(qty99.totalTND);
+    expect(quantityCart.body.items[0].pricingVersion).toBe(1);
+
+    const unavailablePayment = await request(app)
+      .post('/api/checkout')
+      .set('x-session-id', quantitySession)
+      .send({ ...checkoutDefaults, name: 'Client Test', phone: '98123457', city: 'Tunis', address: 'Tunis', paymentMethod: 'paypal' });
+    expect(unavailablePayment.status).toBe(401);
+    expect(unavailablePayment.body.code).toBe('AUTH_REQUIRED');
+
+    const secondResponse = await request(app)
+      .post('/api/cart/items')
+      .set('x-session-id', quantitySession)
+      .send({ ...item, quantity: 1 });
+    expect(secondResponse.status).toBe(400);
+    expect(secondResponse.body.error).toContain('99');
+  });
+
+  test('email-only accounts checkout with a form-provided delivery phone (no SMS verification needed)', async () => {
+    const accountId = `account_google_only_${Date.now()}`;
+    const sessionId = uniqueSession('unverified');
+    const now = new Date().toISOString();
+    const verifiedEmail = `google-${Date.now()}@example.com`;
+    db.run(`INSERT INTO customer_accounts
+      (id,display_name,email,email_verified_at,status,created_at,updated_at)
+      VALUES (?,?,?,?,'ACTIVE',?,?)`, accountId, 'Google Client', verifiedEmail, now, now, now);
+    const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
+    const added = await request(app)
+      .post('/api/cart/items')
+      .set('x-session-id', sessionId)
+      .send(createCartItem('Unverified phone checkout'));
+    expect(added.status).toBe(201);
+
+    const checkoutWith = (payload: any) => request(app)
+      .post('/api/checkout')
+      .set('Cookie', `zayrovi_customer_session=${encodeURIComponent(session.token)}`)
+      .set('x-session-id', sessionId)
+      .set('x-csrf-token', session.csrfToken)
+      .send({ ...checkoutDefaults, email: verifiedEmail, name: 'Google Client', city: 'Tunis', address: 'Tunis', paymentMethod: 'card', ...payload });
+
+    // Sans téléphone ou avec un numéro invalide, la commande est refusée (400).
+    expect((await checkoutWith({})).status).toBe(400);
+    expect((await checkoutWith({ phone: '123' })).status).toBe(400);
+    expect(db.get<any>('SELECT COUNT(*) count FROM orders WHERE account_id=?', accountId).count).toBe(0);
+
+    // Avec un téléphone de livraison valide, la commande passe et attend l'acompte de 20%.
+    const checkout = await checkoutWith({ phone: '55123456' });
+    expect(checkout.status).toBe(200);
+    expect(checkout.body.deposit.percent).toBe(20);
+    const order = db.get<any>('SELECT * FROM orders WHERE account_id=?', accountId);
+    expect(order.status).toBe('AWAITING_DEPOSIT');
+    expect(order.payment_method).toBe('CARD');
+    expect(order.phone).toBe('55123456');
+    db.clearCart(sessionId);
+  });
+
+  test('checkout requires at least one verified contact channel', async () => {
+    const accountId = `account_no_verified_contact_${Date.now()}`;
+    const sessionId = uniqueSession('no-verified-contact');
+    const now = new Date().toISOString();
+    db.run(`INSERT INTO customer_accounts (id,display_name,email,status,created_at,updated_at) VALUES (?,?,?,'ACTIVE',?,?)`, accountId, 'Compte non vérifié', `pending-${Date.now()}@example.com`, now, now);
+    const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
+    try {
+      expect((await request(app).post('/api/cart/items').set('x-session-id', sessionId).send(createCartItem('Verification required item'))).status).toBe(201);
+      const checkout = await request(app)
+        .post('/api/checkout')
+        .set('Cookie', `zayrovi_customer_session=${encodeURIComponent(session.token)}`)
+        .set('x-session-id', sessionId)
+        .set('x-csrf-token', session.csrfToken)
+        .send({ ...checkoutDefaults, email: `pending-${Date.now()}@example.com`, name: 'Compte non vérifié', phone: '98123456', city: 'Tunis', address: 'Tunis', paymentMethod: 'card' });
+      expect(checkout.status).toBe(403);
+      expect(checkout.body.code).toBe('CONTACT_VERIFICATION_REQUIRED');
+      expect(db.get<any>('SELECT COUNT(*) count FROM orders WHERE account_id=?', accountId).count).toBe(0);
+    } finally {
+      db.clearCart(sessionId);
+      db.run('DELETE FROM customer_sessions WHERE account_id=?', accountId);
+      db.run('DELETE FROM customer_accounts WHERE id=?', accountId);
+    }
+  });
+
+  test('checkout reuses customers while preserving separate orders', async () => {
+    const added = await request(app)
+      .post('/api/cart/items')
+      .set('x-session-id', repeatSession)
+      .send(createCartItem('Second customer order'));
+    expect(added.status).toBe(201);
+
+    const checkout = await customerAgent
+      .post('/api/checkout')
+      .set('x-session-id', repeatSession)
+      .set('x-csrf-token', customerCsrf)
+      .send({ ...checkoutDefaults,
+        name: 'Client Test Updated',
+        phone: '98123456',
+        city: 'Ariana',
+        address: 'Centre Ariana',
+        paymentMethod: 'flouci',
+      });
+    expect(checkout.status).toBe(200);
+    expect(db.get<any>('SELECT COUNT(*) count FROM customers WHERE phone=?', '98123456').count).toBe(1);
+    expect(db.get<any>('SELECT COUNT(*) count FROM orders WHERE customer_id=?', persistedCustomerId).count).toBe(3);
+    expect(db.get<any>('SELECT payment_method FROM orders WHERE id=?', checkout.body.orderId).payment_method).toBe('FLOUCI');
+  });
+
+  test('manual transfer lifecycle preserves proof history, separates invoice and enables tracking only after shipping', async () => {
+    const png = Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0x00,0x00,0x00,0x0d,0x49,0x48,0x44,0x52,0x00]);
+    const depositSession = uniqueSession('deposit');
+    await request(app).post('/api/cart/items').set('x-session-id', depositSession).send(createCartItem('Deposit flow item'));
+    const checkout = await customerAgent.post('/api/checkout').set('x-session-id', depositSession).set('x-csrf-token', customerCsrf)
+      .send({ ...checkoutDefaults, name:'Client Test', phone:'98123456', city:'Tunis', address:'Rue de la République', paymentMethod:'PENDING_SELECTION' });
+    expect(checkout.status).toBe(200);
+    const orderId = checkout.body.orderId;
+    expect(db.get<any>('SELECT status,payment_method FROM orders WHERE id=?',orderId)).toMatchObject({status:'AWAITING_DEPOSIT',payment_method:'PENDING_SELECTION'});
+    expect((await customerAgent.get(`/api/customer/account/orders/${orderId}/invoice`)).status).toBe(404);
+
+    db.run("UPDATE settings SET setting_value='' WHERE setting_key='bank_rib'");
+    const unavailableTransfer = await customerAgent.post(`/api/customer/account/orders/${orderId}/deposit/method`).set('x-csrf-token',customerCsrf).send({method:'BANK_TRANSFER'});
+    expect(unavailableTransfer.status).toBe(503);
+    db.run("UPDATE settings SET setting_value='TEST-RIB-OWNERSHIP-ONLY' WHERE setting_key='bank_rib'");
+    const selectTransfer = await customerAgent.post(`/api/customer/account/orders/${orderId}/deposit/method`).set('x-csrf-token',customerCsrf).send({method:'BANK_TRANSFER'});
+    expect(selectTransfer.status).toBe(200);
+    expect(selectTransfer.body.data.quote.amountTnd).toBeGreaterThan(0);
+    const proof = await customerAgent.post(`/api/customer/account/orders/${orderId}/deposit-proof`).set('x-csrf-token',customerCsrf)
+      .field('transferReference','VIR-TEST-001').attach('proof',png,'recu.png');
+    expect(proof.status).toBe(200);
+    expect(proof.body.data.paymentStatus).toBe('PENDING_VERIFICATION');
+    expect(db.get<any>('SELECT status FROM orders WHERE id=?',orderId).status).toBe('AWAITING_PAYMENT_VERIFICATION');
+    expect(db.get<any>('SELECT status FROM payment_proofs WHERE order_id=?',orderId).status).toBe('PENDING_VERIFICATION');
+
+    const foreignProof = await secondCustomerAgent.post(`/api/customer/account/orders/${orderId}/deposit-proof`).set('x-csrf-token',secondCustomerCsrf)
+      .field('transferReference','FOREIGN').attach('proof',png,'recu.png');
+    expect(foreignProof.status).toBe(404);
+
+    const reviewer=request.agent(app); const login=await reviewer.post('/api/admin/auth/login').send({email:'admin@zayrovi.com',password:'ZayroviBeta2026!'});
+    const reviewerCsrf=login.body.data.csrfToken;
+    const pending=await reviewer.get('/api/admin/payment-proofs/pending');
+    expect(pending.body.data.some((item:any)=>item.order_id===orderId)).toBe(true);
+    const review=await reviewer.post(`/api/admin/orders/${orderId}/deposit/review`).set('x-csrf-token',reviewerCsrf).send({decision:'approve',note:'Virement rapproché'});
+    expect(review.status).toBe(200);
+    expect(review.body.data).toMatchObject({paymentStatus:'PAID',orderStatus:'CONFIRMED'});
+    const confirmed=db.get<any>('SELECT * FROM orders WHERE id=?',orderId);
+    expect(confirmed.invoice_number).toBe('');
+    expect(confirmed.tracking_code).toBe('');
+    expect(db.get<any>('SELECT transaction_number,status FROM payment_transactions WHERE order_id=?',orderId).status).toBe('PAID');
+
+    const issue=await reviewer.post(`/api/admin/orders/${orderId}/invoice/issue`).set('x-csrf-token',reviewerCsrf);
+    expect(issue.status).toBe(201);
+    expect(issue.body.data.invoiceNumber).toMatch(/^INV-\d{4}-\d{6}$/);
+    const invoice=await customerAgent.get(`/api/customer/account/orders/${orderId}/invoice`);
+    expect(invoice.status).toBe(200);
+    expect(invoice.headers['content-type']).toContain('application/pdf');
+
+    expect((await customerAgent.get('/api/customer/account/tracking')).body.data.some((item:any)=>item.order_id===orderId)).toBe(false);
+    expect((await reviewer.put(`/api/admin/orders/${orderId}/status`).set('x-csrf-token',reviewerCsrf).send({status:'PREPARING'})).status).toBe(200);
+    const shipped=await reviewer.put(`/api/admin/orders/${orderId}/delivery`).set('x-csrf-token',reviewerCsrf)
+      .send({status:'SHIPPED',carrier:'Rapid Poste',tracking_number:'TRACK-REAL-001',tracking_url:'https://tracking.example/REAL-001'});
+    expect(shipped.status).toBe(200);
+    const tracking=await customerAgent.get('/api/customer/account/tracking');
+    expect(tracking.body.data.find((item:any)=>item.order_id===orderId)).toMatchObject({carrier:'Rapid Poste',tracking_number:'TRACK-REAL-001'});
+
+    // Reject → reason → re-upload → approve while retaining both proof records.
+    const retrySession=uniqueSession('proof-retry');
+    await request(app).post('/api/cart/items').set('x-session-id',retrySession).send(createCartItem('Retry proof item'));
+    const retryCheckout=await customerAgent.post('/api/checkout').set('x-session-id',retrySession).set('x-csrf-token',customerCsrf)
+      .send({...checkoutDefaults,name:'Client Test',phone:'98123456',city:'Tunis',address:'Tunis',paymentMethod:'PENDING_SELECTION'});
+    const retryId=retryCheckout.body.orderId;
+    await customerAgent.post(`/api/customer/account/orders/${retryId}/deposit/method`).set('x-csrf-token',customerCsrf).send({method:'BANK_TRANSFER'});
+    await customerAgent.post(`/api/customer/account/orders/${retryId}/deposit-proof`).set('x-csrf-token',customerCsrf).field('transferReference','VIR-BAD').attach('proof',png,'bad.png');
+    const rejected=await reviewer.post(`/api/admin/orders/${retryId}/deposit/review`).set('x-csrf-token',reviewerCsrf).send({decision:'reject',note:'Document illisible'});
+    expect(rejected.status).toBe(200);
+    expect(db.get<any>('SELECT status,payment_status FROM orders WHERE id=?',retryId)).toMatchObject({status:'AWAITING_DEPOSIT',payment_status:'REJECTED'});
+    await customerAgent.post(`/api/customer/account/orders/${retryId}/deposit-proof`).set('x-csrf-token',customerCsrf).field('transferReference','VIR-GOOD').attach('proof',png,'good.png');
+    expect(db.get<any>('SELECT COUNT(*) count FROM payment_proofs WHERE order_id=?',retryId).count).toBe(2);
+    expect((await reviewer.post(`/api/admin/orders/${retryId}/deposit/review`).set('x-csrf-token',reviewerCsrf).send({decision:'approve'})).status).toBe(200);
+    expect(db.get<any>("SELECT COUNT(*) count FROM payment_proofs WHERE order_id=? AND status='REJECTED'",retryId).count).toBe(1);
+  },20000);
+
+  test('card gateway success/failure is verified server-side and cannot be approved manually', async () => {
+    const previous={key:process.env.KONNECT_API_KEY,wallet:process.env.KONNECT_WALLET_ID,base:process.env.PUBLIC_BASE_URL,environment:process.env.KONNECT_ENVIRONMENT};
+    process.env.KONNECT_API_KEY='konnect-test-key'; process.env.KONNECT_WALLET_ID='wallet-test'; process.env.PUBLIC_BASE_URL='https://zayrovi.example'; process.env.KONNECT_ENVIRONMENT='sandbox';
+    const fetchMock=vi.spyOn(globalThis,'fetch');
+    try {
+      fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({payment:{id:'PAYREFMISMATCH1',status:'completed',token:'TND',orderId:'AYR-EXPECTED:TXN-EXPECTED',reachedAmount:100001,transactions:[{status:'success'}]}}),{status:200,headers:{'Content-Type':'application/json'}}));
+      const mismatchedAmount=await verifyKonnectCardPayment({paymentRef:'PAYREFMISMATCH1',expectedAmountTnd:100,expectedOrderNumber:'AYR-EXPECTED',expectedTransactionNumber:'TXN-EXPECTED'});
+      expect(mismatchedAmount.state).toBe('FAILED');
+
+      const cardSession=uniqueSession('card-gateway');
+      await request(app).post('/api/cart/items').set('x-session-id',cardSession).send(createCartItem('Card gateway item'));
+      const checkout=await customerAgent.post('/api/checkout').set('x-session-id',cardSession).set('x-csrf-token',customerCsrf)
+        .send({...checkoutDefaults,name:'Client Test',phone:'98123456',city:'Tunis',address:'Tunis',paymentMethod:'PENDING_SELECTION'});
+      const orderId=checkout.body.orderId;
+      fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({payUrl:'https://gateway.konnect.test/pay?payment_ref=PAYREFSUCCESS1',paymentRef:'PAYREFSUCCESS1'}),{status:200,headers:{'Content-Type':'application/json'}}));
+      const initiated=await customerAgent.post(`/api/customer/account/orders/${orderId}/payments/card/initiate`).set('x-csrf-token',customerCsrf).send({});
+      expect(initiated.status).toBe(201);
+      expect(initiated.body.data.payUrl).toContain('https://gateway.konnect.test/');
+      const transactionNumber=initiated.body.data.transactionNumber;
+      const retriedInitiation=await customerAgent.post(`/api/customer/account/orders/${orderId}/payments/card/initiate`).set('x-csrf-token',customerCsrf).send({});
+      expect(retriedInitiation.status).toBe(200);
+      expect(retriedInitiation.body.data).toMatchObject({payUrl:initiated.body.data.payUrl,transactionNumber});
+      expect(db.get<any>("SELECT COUNT(*) count FROM payment_transactions WHERE order_id=? AND status='PENDING'",orderId).count).toBe(1);
+      const selected=db.get<any>('SELECT * FROM orders WHERE id=?',orderId);
+      expect(selected.payment_method).toBe('CARD');
+      expect(selected.deposit_discount_tnd).toBeGreaterThan(0);
+      const expectedMillimes=Math.round(Number(selected.deposit_amount_tnd)*1000);
+      fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({payment:{id:'PAYREFSUCCESS1',status:'completed',token:'TND',orderId:`${selected.order_number}:${transactionNumber}`,reachedAmount:expectedMillimes,transactions:[{status:'success'}]}}),{status:200,headers:{'Content-Type':'application/json'}}));
+      const verified=await customerAgent.get(`/api/customer/account/orders/${orderId}/payments/card/verify?transaction=${encodeURIComponent(transactionNumber)}`);
+      expect(verified.status).toBe(200); expect(verified.body.data.status).toBe('PAID');
+      expect(db.get<any>('SELECT status,payment_status FROM orders WHERE id=?',orderId)).toMatchObject({status:'CONFIRMED',payment_status:'PAID'});
+      expect(db.get<any>('SELECT status FROM payment_transactions WHERE order_id=?',orderId).status).toBe('PAID');
+
+      const reviewer=request.agent(app);const login=await reviewer.post('/api/admin/auth/login').send({email:'admin@zayrovi.com',password:'ZayroviBeta2026!'});
+      const manualApproval=await reviewer.post(`/api/admin/orders/${orderId}/deposit/review`).set('x-csrf-token',login.body.data.csrfToken).send({decision:'approve'});
+      expect(manualApproval.status).toBe(409);
+
+      const failSession=uniqueSession('card-failure');
+      await request(app).post('/api/cart/items').set('x-session-id',failSession).send(createCartItem('Card failure item'));
+      const failCheckout=await customerAgent.post('/api/checkout').set('x-session-id',failSession).set('x-csrf-token',customerCsrf)
+        .send({...checkoutDefaults,name:'Client Test',phone:'98123456',city:'Tunis',address:'Tunis',paymentMethod:'PENDING_SELECTION'});
+      const failedId=failCheckout.body.orderId;
+      fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({payUrl:'https://gateway.konnect.test/pay?payment_ref=PAYREFFAIL001',paymentRef:'PAYREFFAIL001'}),{status:200,headers:{'Content-Type':'application/json'}}));
+      const failedInit=await customerAgent.post(`/api/customer/account/orders/${failedId}/payments/card/initiate`).set('x-csrf-token',customerCsrf).send({});
+      const failedOrder=db.get<any>('SELECT * FROM orders WHERE id=?',failedId);
+      fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({payment:{id:'PAYREFFAIL001',status:'pending',token:'TND',orderId:`${failedOrder.order_number}:${failedInit.body.data.transactionNumber}`,reachedAmount:0,transactions:[{status:'failed'}]}}),{status:200,headers:{'Content-Type':'application/json'}}));
+      const failure=await customerAgent.get(`/api/customer/account/orders/${failedId}/payments/card/verify?transaction=${encodeURIComponent(failedInit.body.data.transactionNumber)}`);
+      expect(failure.body.data.status).toBe('FAILED');
+      expect(db.get<any>('SELECT status,payment_status FROM orders WHERE id=?',failedId)).toMatchObject({status:'AWAITING_DEPOSIT',payment_status:'FAILED'});
+    } finally {
+      fetchMock.mockRestore();
+      for(const [key,value] of Object.entries({KONNECT_API_KEY:previous.key,KONNECT_WALLET_ID:previous.wallet,PUBLIC_BASE_URL:previous.base,KONNECT_ENVIRONMENT:previous.environment})) value===undefined?delete process.env[key]:process.env[key]=value;
+    }
+  });
+
+  test('finance reports combine income, expenses and profit with strict validation', async () => {
+    const reviewer = request.agent(app);
+    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
+    const csrf = login.body.data.csrfToken;
+    const today = new Date().toISOString().slice(0, 10);
+
+    const badExpense = await reviewer.post('/api/admin/expenses').set('x-csrf-token', csrf).send({ label: '', amountTnd: -5, expenseDate: today });
+    expect(badExpense.status).toBe(400);
+    const created = await reviewer.post('/api/admin/expenses').set('x-csrf-token', csrf)
+      .send({ label: 'Campagne Facebook Ads', category: 'ADS', amountTnd: 120, expenseDate: today, notes: 'Test' });
+    expect(created.status).toBe(201);
+
+    const monthStart = `${today.slice(0, 7)}-01`;
+    const report = await reviewer.get(`/api/admin/reports/finance?from=${monthStart}&to=${today}`);
+    expect(report.status).toBe(200);
+    expect(report.body.data.income).toBeGreaterThan(0); // العربونات المؤكدة أعلاه
+    expect(report.body.data.expenses).toBe(120);
+    expect(report.body.data.profit).toBeCloseTo(report.body.data.income - 120, 2);
+    expect(report.body.data.monthly).toHaveLength(6);
+    expect(report.body.data.expensesByCategory[0].category).toBe('ADS');
+
+    const removed = await reviewer.delete(`/api/admin/expenses/${created.body.data.id}`).set('x-csrf-token', csrf);
+    expect(removed.status).toBe(200);
+    expect((await reviewer.get(`/api/admin/reports/finance?from=${monthStart}&to=${today}`)).body.data.expenses).toBe(0);
+    expect((await request(app).get('/api/admin/reports/finance')).status).toBe(401);
+  });
+
+  test('customer profile, addresses, favorites, notifications and ownership boundaries persist', async () => {
+    const profile = await customerAgent
+      .put('/api/customer/account/profile')
+      .set('x-csrf-token', customerCsrf)
+      .send({ displayName: 'Client Test', email: 'client.test@zayrovi.com', marketingOptIn: true });
+    expect(profile.status).toBe(200);
+    expect(profile.body.data.displayName).toBe('Client Test');
+    expect(profile.body.data.emailVerified).toBe(false);
+
+    const address = await customerAgent
+      .post('/api/customer/account/addresses')
+      .set('x-csrf-token', customerCsrf)
+      .send({ label: 'Bureau', recipientName: 'Client Test', phone: '98123456', governorate: 'Ariana', city: 'Ariana', postalCode: '2080', addressLine: 'Centre Ariana', deliveryNotes: 'Appeler avant', isDefault: true });
+    expect(address.status).toBe(201);
+    expect(address.body.data.is_default).toBe(1);
+
+    const forbiddenAddressUpdate = await secondCustomerAgent
+      .put(`/api/customer/account/addresses/${address.body.data.id}`)
+      .set('x-csrf-token', secondCustomerCsrf)
+      .send({ label: 'Volée', recipientName: 'Autre', phone: '97123456', governorate: 'Tunis', addressLine: 'Inaccessible', isDefault: true });
+    expect(forbiddenAddressUpdate.status).toBe(404);
+
+    const updatedAddress = await customerAgent
+      .put(`/api/customer/account/addresses/${address.body.data.id}`)
+      .set('x-csrf-token', customerCsrf)
+      .send({ label: 'Bureau principal', recipientName: 'Client Test', phone: '98123456', governorate: 'Ariana', city: 'Ariana', postalCode: '2080', addressLine: 'Nouvelle adresse Ariana', deliveryNotes: '', isDefault: false });
+    expect(updatedAddress.status).toBe(200);
+    expect(updatedAddress.body.data.address_line).toBe('Nouvelle adresse Ariana');
+    expect(updatedAddress.body.data.is_default).toBe(1);
+
+    const secondaryAddress = await customerAgent
+      .post('/api/customer/account/addresses')
+      .set('x-csrf-token', customerCsrf)
+      .send({ label: 'Maison', recipientName: 'Client Test', phone: '98123456', governorate: 'Tunis', city: 'Tunis', postalCode: '1000', addressLine: 'Adresse secondaire', deliveryNotes: '', isDefault: false });
+    expect(secondaryAddress.status).toBe(201);
+    expect((await secondCustomerAgent.delete(`/api/customer/account/addresses/${secondaryAddress.body.data.id}`).set('x-csrf-token', secondCustomerCsrf)).status).toBe(404);
+    expect((await customerAgent.delete(`/api/customer/account/addresses/${address.body.data.id}`).set('x-csrf-token', customerCsrf)).status).toBe(200);
+    const remainingAddresses = await customerAgent.get('/api/customer/account/addresses');
+    expect(remainingAddresses.body.data.some((item: any) => item.id === address.body.data.id)).toBe(false);
+    expect(remainingAddresses.body.data.filter((item: any) => item.is_default === 1)).toHaveLength(1);
+
+    const favorite = await customerAgent
+      .post('/api/customer/account/favorites')
+      .set('x-csrf-token', customerCsrf)
+      .send({ sourceUrl: 'https://www.shein.com/example', title: 'Favori test', imageUrl: '/uploads/product.jpg', priceTND: 42 });
+    expect(favorite.status).toBe(201);
+    expect((await customerAgent.get('/api/customer/account/favorites')).body.data).toHaveLength(1);
+    expect((await secondCustomerAgent.delete(`/api/customer/account/favorites/${favorite.body.data.id}`).set('x-csrf-token', secondCustomerCsrf)).status).toBe(404);
+
+    const overview = await customerAgent.get('/api/customer/account/overview');
+    expect(overview.status).toBe(200);
+    expect(overview.body.data.counts.orders).toBeGreaterThanOrEqual(3);
+    expect(overview.body.data.counts.addresses).toBeGreaterThanOrEqual(1);
+    expect(overview.body.data.counts.favorites).toBe(1);
+    expect(overview.body.data.counts.unreadNotifications).toBeGreaterThan(0);
+    expect((await customerAgent.put('/api/customer/account/notifications/read').set('x-csrf-token', customerCsrf).send({})).status).toBe(200);
+    expect(db.get<any>('SELECT COUNT(*) count FROM customer_notifications WHERE account_id=? AND read_at IS NULL', primaryAccountId).count).toBe(0);
+  });
+
+  test('guest carts merge into an account and customer logout and expiry invalidate sessions', async () => {
+    const mergeSession = uniqueSession('merge');
+    const mergeAgent = request.agent(app);
+    const guestItem = await request(app)
+      .post('/api/cart/items')
+      .set('x-session-id', mergeSession)
+      .send(createCartItem('Guest cart merge item'));
+    expect(guestItem.status).toBe(201);
+
+    const login = await otpLogin(mergeAgent, '95123456', mergeSession);
+    const mergedCart = await mergeAgent.get('/api/cart/items').set('x-session-id', mergeSession);
+    expect(mergedCart.status).toBe(200);
+    expect(mergedCart.body.items.map((item: any) => item.title)).toContain('Guest cart merge item');
+    const formerGuestView = await request(app).get('/api/cart/items').set('x-session-id', mergeSession);
+    expect(formerGuestView.body.items).toHaveLength(0);
+
+    const logout = await mergeAgent
+      .post('/api/customer/auth/logout')
+      .set('x-csrf-token', login.csrfToken)
+      .send({});
+    expect(logout.status).toBe(200);
+    const logoutCookies = ([] as string[]).concat(logout.headers['set-cookie'] || []);
+    expect(logoutCookies.some((value) => value.includes('Max-Age=0'))).toBe(true);
+    expect((await mergeAgent.get('/api/customer/auth/me')).status).toBe(401);
+
+    const freshLogin = await otpLogin(mergeAgent, '95123456', mergeSession);
+    db.run('UPDATE customer_sessions SET expires_at=? WHERE account_id=?', '2000-01-01T00:00:00.000Z', freshLogin.account.id);
+    const stale = await mergeAgent.get('/api/customer/auth/me');
+    expect(stale.status).toBe(401);
+    const staleCookies = ([] as string[]).concat(stale.headers['set-cookie'] || []);
+    expect(staleCookies.some((value) => value.includes('Max-Age=0'))).toBe(true);
+    expect(db.get<any>('SELECT COUNT(*) count FROM customer_sessions WHERE account_id=? AND expires_at>?', freshLogin.account.id, new Date().toISOString()).count).toBe(0);
+    db.clearCart(mergeSession, freshLogin.account.id);
+  });
+
+  test('public CMS and assistant APIs expose backend data without admin secrets', async () => {
+    const home = await request(app).get('/api/public/home');
+    expect(home.status).toBe(200);
+    expect(home.body.success).toBe(true);
+    // Le Hero n'est plus servi ici : seul /api/public/hero-slides (cartes publiées) fait foi.
+    expect(home.body.data.hero).toBeUndefined();
+    expect(home.body.data.brands.length).toBeGreaterThan(0);
+    expect(home.body.data.arrivals.length).toBeGreaterThan(0);
+    expect(home.body.serverTime).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+
+    const context = await request(app).get('/api/public/assistant-context');
+    expect(context.status).toBe(200);
+    // Graine = photo du marché 23/09/2026 (audit pricing) ; le service live aligne en production.
+    expect(context.body.data.pricing.rates.EUR).toBe(3.370911);
+    expect(context.body.data.facts.governorates).toHaveLength(24);
+    expect(context.body.data.knowledge.length).toBeGreaterThan(0);
+    expect(JSON.stringify(context.body)).not.toContain('password_hash');
+    expect(JSON.stringify(context.body)).not.toContain('updated_by');
+
+    const commerce = await request(app).get('/api/public/commerce-config');
+    expect(commerce.status).toBe(200);
+    expect(commerce.body.data.governorates).toHaveLength(24);
+    // Assertion adossée à la source unique : une boutique neuve publie EXACTEMENT
+    // la valeur par défaut de la plateforme. Écrire la liste à la main ici est ce
+    // qui avait laissé passer un défaut sans le paiement à la livraison — donc une
+    // commande refusée après saisie complète de l'adresse.
+    expect(commerce.body.data.paymentMethods).toEqual([...DEFAULT_PAYMENT_METHODS]);
+    expect(commerce.body.data.deposit.percent).toBe(20);
+    expect(commerce.body.data.deposit.companyName).toBeTruthy();
+    expect(commerce.body.data.deposit).toHaveProperty('bankRib');
+    expect(commerce.body.data.deposit).toHaveProperty('posteAccount');
+    expect(commerce.body.data.deposit).toHaveProperty('flouciNumber');
+    expect(commerce.body.data.deposit.cardDiscountPercent).toBe(5);
+    expect(commerce.body.data.channels).toEqual({ facebook: '', instagram: '', tiktok: '', whatsapp: '' });
+    expect(commerce.body.data.theme.primary).toBe('#111111'); // DS v1.0 : encre = #111111
+    expect(commerce.body.data.pricing.version).toBe(1);
+
+    const preview = await request(app).post('/api/public/pricing/preview').send({ originalPrice: 21.99, currency: 'EUR', quantity: 2 });
+    expect(preview.status).toBe(200);
+    expect(preview.body.data.totalTND).toBe(quoteEur(21.99, { quantity: 2 }).totalTND);
+    expect(preview.body.data.pricingVersion).toBe(1);
+  });
+
+  test('admin routes reject unauthenticated requests, clear stale cookies and reject invalid credentials', async () => {
+    const unauthorized = await request(app).get('/api/admin/dashboard');
+    expect(unauthorized.status).toBe(401);
+    expect(unauthorized.headers['set-cookie'][0]).toContain('Max-Age=0');
+    const identity = await request(app).get('/api/admin/auth/me');
+    expect(identity.status).toBe(401);
+    expect(identity.headers['set-cookie'][0]).toContain('Max-Age=0');
+    const failedLogin = await request(app).post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'incorrect-password' });
+    expect(failedLogin.status).toBe(401);
+  });
+
+  test('super admin login establishes an HttpOnly session and rotating CSRF token', async () => {
+    const loginResponse = await superAdmin.post('/api/admin/auth/login').send({
+      email: 'admin@zayrovi.com',
+      password: 'ZayroviBeta2026!',
+    });
+    expect(loginResponse.status).toBe(200);
+    expect(loginResponse.headers['set-cookie'][0]).toContain('HttpOnly');
+    expect(loginResponse.headers['set-cookie'][0]).toContain('SameSite=Strict');
+    expect(loginResponse.body.data.user.permissions).toContain('pricing:write');
+    adminCsrf = loginResponse.body.data.csrfToken;
+
+    const identity = await superAdmin.get('/api/admin/auth/me');
+    expect(identity.status).toBe(200);
+    expect(identity.body.data.user.role).toBe('SUPER_ADMIN');
+    expect(identity.body.data.user.permissions).toContain('pricing:write');
+    expect(identity.body.data.csrfToken).not.toBe(adminCsrf);
+    adminCsrf = identity.body.data.csrfToken;
+  });
+
+  test('واجهتي is seeded, publicly readable and rejects malformed section schemas', async () => {
+    const settings = await superAdmin.get('/api/admin/settings?category=INTERFACE');
+    expect(settings.status).toBe(200);
+    const row = settings.body.data.find((item: any) => item.setting_key === 'interface_config');
+    expect(row).toBeTruthy();
+    expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer', 'announcement']);
+    expect(row.setting_value.typography.preset).toBe('zayrovi-a');
+    // Palette officielle (2026-10-15) : la graine garde l'ancien orange en base, la lecture le rend en violet.
+    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#0a0a0a', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#0a63f5' }); // DS v1.0
+    expect(row.setting_value.icons).toMatchObject({ library: 'zayrovi', activeColor: '#0a63f5' });
+    expect(row.setting_value.sections.find((section: any) => section.id === 'announcement').backgroundColor).toBe('#0a0a0a');
+    expect(row.setting_value.navigation.color).toBe('#111111'); // DS v1.0
+
+    const malformed = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({
+      value: { ...row.setting_value, sections: row.setting_value.sections.slice(0, 4) },
+    });
+    expect(malformed.status).toBe(400);
+
+    const saved = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({ value: row.setting_value });
+    expect(saved.status).toBe(200);
+    const publicConfig = await request(app).get('/api/public/commerce-config');
+    expect(publicConfig.status).toBe(200);
+    expect(publicConfig.body.data.interfaceConfig.navigation.background).toBe('#ffffff');
+  });
+
+  test('official identity rejects API font overrides and keeps business content editable', async () => {
+    const settings = await superAdmin.get('/api/admin/settings?category=appearance');
+    const all = settings.body.data.length ? settings.body.data : (await superAdmin.get('/api/admin/settings')).body.data;
+    const row = all.find((item: any) => item.setting_key === 'interface_config');
+    expect(row).toBeTruthy();
+    const original = structuredClone(row.setting_value);
+    const rejected = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({ value: { ...original, typography: { ...original.typography, body: 'Arial, serif' } } });
+    expect(rejected.status).toBe(400);
+    expect(rejected.body.code).toBe('IDENTITY_LOCKED');
+    const next = structuredClone(original);
+    next.sections[0].title = 'Identité fixe, contenu modifiable';
+    const saved = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({ value: next });
+    expect(saved.status).toBe(200);
+    const pub = await request(app).get('/api/public/commerce-config');
+    expect(pub.body.data.interfaceConfig.sections[0].title).toBe(next.sections[0].title);
+    expect(pub.body.data.interfaceConfig.typography.body).toContain('Zayrovi Extracted Sans');
+    expect(pub.body.data.interfaceConfig.typography.body).not.toContain('Arial');
+    await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({ value: original });
+    const legacy = (await superAdmin.get('/api/admin/settings')).body.data.find((item: any) => item.setting_key === 'site_theme');
+    const oldTheme = await superAdmin.put(`/api/admin/settings/${legacy.id}`).set('x-csrf-token', adminCsrf).send({ value: { ...legacy.setting_value, font: 'jakarta' } });
+    expect(oldTheme.status).toBe(400);
+  });
+
+  test('admin mutations require a valid CSRF token', async () => {
+    const response = await superAdmin.post('/api/admin/brands').send({
+      name: 'Blocked Brand', category: 'FASHION', logo: '/blocked.jpg', active: true,
+    });
+    expect(response.status).toBe(403);
+    expect(response.body.error).toContain('CSRF');
+  });
+
+  test('dashboard and pricing preview are backend-driven', async () => {
+    const dashboard = await superAdmin.get('/api/admin/dashboard?days=30');
+    expect(dashboard.status).toBe(200);
+    expect(dashboard.body.data.metrics.orders).toBeGreaterThanOrEqual(2);
+    expect(dashboard.body.data.metrics.customers).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(dashboard.body.data.statuses)).toBe(true);
+    expect(Array.isArray(dashboard.body.data.sources)).toBe(true);
+
+    const pricing = await superAdmin.get('/api/admin/pricing');
+    expect(pricing.status).toBe(200);
+    originalPricingVersion = pricing.body.data.version;
+    const preview = await superAdmin
+      .post('/api/admin/pricing/preview')
+      .set('x-csrf-token', adminCsrf)
+      .send({ originalPrice: 21.99, currency: 'EUR', quantity: 1, express: false });
+    expect(preview.status).toBe(200);
+    expect(preview.body.data.totalTND).toBe(quoteEur(21.99).totalTND);
+  });
+
+  test('CMS CRUD validates, relates, publishes and safely archives content', async () => {
+    const invalid = await superAdmin
+      .post('/api/admin/promotions')
+      .set('x-csrf-token', adminCsrf)
+      .send({ name: 'Invalid dates', discount_type: 'FIXED', value: 4, starts_at: '2026-09-02T00:00:00Z', ends_at: '2026-09-01T00:00:00Z', status: 'ACTIVE' });
+    expect(invalid.status).toBe(400);
+
+    const malformedTimestamp = await superAdmin
+      .post('/api/admin/promotions')
+      .set('x-csrf-token', adminCsrf)
+      .send({ name: 'Malformed timestamp', discount_type: 'FIXED', value: 4, starts_at: 'tomorrow', ends_at: '2026-09-03T00:00:00Z', status: 'ACTIVE' });
+    expect(malformedTimestamp.status).toBe(400);
+    expect(malformedTimestamp.body.error).toContain('Date invalide');
+
+    const impossibleTimestamp = await superAdmin
+      .post('/api/admin/arrivals')
+      .set('x-csrf-token', adminCsrf)
+      .send({ name: 'Impossible timestamp', type: 'STANDARD', expected_arrival_at: '2026-02-30T12:00:00Z', status: 'ACTIVE' });
+    expect(impossibleTimestamp.status).toBe(400);
+    expect(impossibleTimestamp.body.error).toContain('Date invalide');
+
+    const arrival = await superAdmin
+      .post('/api/admin/arrivals')
+      .set('x-csrf-token', adminCsrf)
+      .send({ name: 'ARRIVAGE TEST API', type: 'STANDARD', expected_arrival_at: '2027-01-15T12:00:00Z', description: 'Arrivage automatisé', main_image: '/uploads/test.jpg', secondary_images: [], badge: 'Test', status: 'ACTIVE' });
+    expect(arrival.status).toBe(201);
+    createdArrivalId = arrival.body.data.id;
+
+    const product = await superAdmin
+      .post('/api/admin/products')
+      .set('x-csrf-token', adminCsrf)
+      .send({ name: 'Produit test API', description: 'Tarification centralisée', image: '/uploads/test.jpg', additional_images: [], brand_name: 'ZAYROVI', category: 'Mode', source_url: 'https://www.shein.com/', source_platform: 'SHEIN', original_price: 21.99, currency: 'EUR', express_available: true, stock_status: 'AVAILABLE', status: 'ACTIVE', arrival_ids: [createdArrivalId] });
+    expect(product.status).toBe(201);
+    createdProductId = product.body.data.id;
+    expect(product.body.data.final_price).toBe(quoteEur(21.99, { title: 'Produit test API' }).totalTND);
+    expect(product.body.data.arrival_ids).toContain(createdArrivalId);
+
+    const publicProducts = await request(app).get(`/api/public/products?arrivalId=${createdArrivalId}`);
+    expect(publicProducts.status).toBe(200);
+    expect(publicProducts.body.data.some((item: any) => item.id === createdProductId)).toBe(true);
+
+    const archive = await superAdmin
+      .delete(`/api/admin/arrivals/${createdArrivalId}`)
+      .set('x-csrf-token', adminCsrf);
+    expect(archive.status).toBe(200);
+    expect(db.get<any>('SELECT status FROM arrivals WHERE id=?', createdArrivalId).status).toBe('ARCHIVED');
+    expect(db.get<any>('SELECT COUNT(*) count FROM product_arrivals WHERE product_id=? AND arrival_id=?', createdProductId, createdArrivalId).count).toBe(1);
+  });
+
+  test('OMS prevents bypassing payment, order and shipping stages', async () => {
+    const before=await superAdmin.get(`/api/admin/orders/${persistedOrderId}`);
+    expect(before.status).toBe(200);
+    expect(before.body.data.pricing_snapshot.version).toBe(originalPricingVersion);
+    const status=await superAdmin.put(`/api/admin/orders/${persistedOrderId}/status`).set('x-csrf-token',adminCsrf).send({status:'CONFIRMED',note:'Bypass attempt'});
+    expect(status.status).toBe(409);
+    const payment=await superAdmin.put(`/api/admin/orders/${persistedOrderId}/payment`).set('x-csrf-token',adminCsrf).send({status:'PAID',reference:'FORBIDDEN'});
+    expect(payment.status).toBe(409);
+    const delivery=await superAdmin.put(`/api/admin/orders/${persistedOrderId}/delivery`).set('x-csrf-token',adminCsrf)
+      .send({status:'SHIPPED',carrier:'Future Carrier',tracking_number:'TRACK-001'});
+    expect(delivery.status).toBe(409);
+    const detail=await superAdmin.get(`/api/admin/orders/${persistedOrderId}`);
+    expect(detail.body.data.status).toBe('AWAITING_DEPOSIT');
+    expect(detail.body.data.payment.status).toBe('PENDING');
+    expect(detail.body.data.delivery.status).toBe('PENDING');
+  });
+
+  test('pricing changes are versioned without changing historical order snapshots', async () => {
+    const update = await superAdmin
+      .put('/api/admin/pricing')
+      .set('x-csrf-token', adminCsrf)
+      .send({ rateEUR: 4.2 });
+    expect(update.status).toBe(200);
+    expect(update.body.data.version).toBe(originalPricingVersion + 1);
+
+    const historical = await superAdmin.get(`/api/admin/orders/${persistedOrderId}`);
+    expect(historical.status).toBe(200);
+    expect(historical.body.data.pricing_snapshot.version).toBe(originalPricingVersion);
+    expect(historical.body.data.items[0].total_tnd).toBeGreaterThan(0);
+
+    const newPreview = await superAdmin
+      .post('/api/admin/pricing/preview')
+      .set('x-csrf-token', adminCsrf)
+      .send({ originalPrice: 21.99, currency: 'EUR', quantity: 1 });
+    expect(newPreview.body.data.totalTND).toBe(quoteEur(21.99).totalTND);
+  });
+
+  test('assistant feedback is persisted for guests and CSRF-protected accounts without storing raw guest sessions', async () => {
+    const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const guestSession = `assistant-guest-${suffix}`;
+    const guestPayload = {
+      conversationId: `conversation_${suffix}`,
+      messageId: `assistant_${suffix}`,
+      rating: 'down',
+      comment: 'La réponse pourrait être plus précise.',
+      responseExcerpt: 'Réponse test ZAYROVI',
+    };
+    const guest = await request(app)
+      .post('/api/public/assistant-feedback')
+      .set('x-session-id', guestSession)
+      .send(guestPayload);
+    expect(guest.status).toBe(201);
+    const guestRow = db.get<any>('SELECT * FROM assistant_feedback WHERE conversation_id=?', guestPayload.conversationId);
+    expect(guestRow.account_id).toBeNull();
+    expect(guestRow.guest_session_hash).not.toBe(guestSession);
+    expect(guestRow.guest_session_hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(guestRow.comment).toBe(guestPayload.comment);
+
+    const updated = await request(app)
+      .post('/api/public/assistant-feedback')
+      .set('x-session-id', guestSession)
+      .send({ ...guestPayload, rating: 'up', comment: '' });
+    expect(updated.status).toBe(201);
+    expect(db.get<any>('SELECT rating,comment FROM assistant_feedback WHERE id=?', guestRow.id)).toEqual({ rating: 'up', comment: '' });
+
+    const accountId = `assistant_account_${suffix}`;
+    const now = new Date().toISOString();
+    db.run(`INSERT INTO customer_accounts (id,display_name,status,created_at,updated_at)
+      VALUES (?,?,'ACTIVE',?,?)`, accountId, 'Assistant Client', now, now);
+    const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
+    const accountPayload = { ...guestPayload, conversationId: `conversation_account_${suffix}`, messageId: `assistant_account_${suffix}` };
+    const cookie = `zayrovi_customer_session=${encodeURIComponent(session.token)}`;
+    expect((await request(app).post('/api/public/assistant-feedback').set('Cookie', cookie).set('x-session-id', guestSession).send(accountPayload)).status).toBe(403);
+    const authenticated = await request(app)
+      .post('/api/public/assistant-feedback')
+      .set('Cookie', cookie)
+      .set('x-csrf-token', session.csrfToken)
+      .set('x-session-id', guestSession)
+      .send(accountPayload);
+    expect(authenticated.status).toBe(201);
+    const accountRow = db.get<any>('SELECT * FROM assistant_feedback WHERE conversation_id=?', accountPayload.conversationId);
+    expect(accountRow.account_id).toBe(accountId);
+    expect(accountRow.guest_session_hash).toBe('');
+  });
+
+  test('RBAC separates content, order, admin and super-admin capabilities', async () => {
+    const users = [
+      { name: 'Content User', email: 'content@test.zayrovi.com', password: 'ContentSecure2026!', role: 'CONTENT_MANAGER' },
+      { name: 'Order User', email: 'orders@test.zayrovi.com', password: 'OrdersSecure2026!', role: 'ORDER_MANAGER' },
+      { name: 'Admin User', email: 'admin-role@test.zayrovi.com', password: 'AdminSecure2026!', role: 'ADMIN' },
+    ];
+    for (const user of users) {
+      const created = await superAdmin.post('/api/admin/users').set('x-csrf-token', adminCsrf).send(user);
+      expect(created.status).toBe(201);
+    }
+
+    const contentAgent = request.agent(app);
+    const contentLogin = await contentAgent.post('/api/admin/auth/login').send({ email: users[0].email, password: users[0].password });
+    expect((await contentAgent.get('/api/admin/products')).status).toBe(200);
+    expect((await contentAgent.get('/api/admin/orders')).status).toBe(403);
+    expect((await contentAgent.put('/api/admin/pricing').set('x-csrf-token', contentLogin.body.data.csrfToken).send({ rateEUR: 4 })).status).toBe(403);
+
+    const orderAgent = request.agent(app);
+    const orderLogin = await orderAgent.post('/api/admin/auth/login').send({ email: users[1].email, password: users[1].password });
+    expect((await orderAgent.get('/api/admin/orders')).status).toBe(200);
+    expect((await orderAgent.post('/api/admin/brands').set('x-csrf-token', orderLogin.body.data.csrfToken).send({ name: 'Forbidden', category: 'OTHER' })).status).toBe(403);
+
+    const adminAgent = request.agent(app);
+    const adminLogin = await adminAgent.post('/api/admin/auth/login').send({ email: users[2].email, password: users[2].password });
+    expect((await adminAgent.put('/api/admin/settings/setting_delivery_delay').set('x-csrf-token', adminLogin.body.data.csrfToken).send({ value: '6 à 9 jours ouvrés' })).status).toBe(200);
+    expect((await adminAgent.get('/api/admin/users')).status).toBe(403);
+  });
+
+  test('audit logs record actors, targets and old/new values', async () => {
+    const audit = await superAdmin.get('/api/admin/audit-logs?pageSize=100');
+    expect(audit.status).toBe(200);
+    expect(audit.body.data.some((entry: any) => entry.action === 'CREATE' && entry.module === 'PRODUCTS' && entry.entity_id === createdProductId)).toBe(true);
+    const pricingAudit = audit.body.data.find((entry: any) => entry.module === 'PRICING');
+    expect(pricingAudit.user_name).toBe('ZAYROVI Admin');
+    expect(pricingAudit.old_value.version).toBe(originalPricingVersion);
+    expect(pricingAudit.new_value.version).toBe(originalPricingVersion + 1);
+  });
+
+  test('manual PUBLISHED status publishes now instead of showing a false published badge', async () => {
+    const before = Date.now();
+    const created = await superAdmin.post('/api/admin/news').set('x-csrf-token', adminCsrf).send({
+      title: `Publication immédiate ${before}`,
+      summary: 'Résumé de publication',
+      content: 'Contenu de publication',
+      image: '',
+      category: 'ZAYROVI',
+      author: 'Test',
+      published_at: new Date(before + 86_400_000).toISOString(),
+      status: 'PUBLISHED',
+    });
+    expect(created.status).toBe(201);
+    try {
+      expect(created.body.data.status).toBe('PUBLISHED');
+      expect(new Date(created.body.data.published_at).getTime()).toBeGreaterThanOrEqual(before);
+      expect(new Date(created.body.data.published_at).getTime()).toBeLessThanOrEqual(Date.now());
+      const publicResponse = await request(app).get('/api/public/news?limit=50');
+      expect(publicResponse.body.data.map((item: any) => item.id)).toContain(created.body.data.id);
+    } finally {
+      if (created.body.data?.id) db.run('DELETE FROM news_items WHERE id=?', created.body.data.id);
+    }
+  });
+
+  test('public magazine exposes due schedules but never future content', async () => {
+    const suffix = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const dueId = `news_due_${suffix}`;
+    const futureId = `news_future_${suffix}`;
+    const now = new Date().toISOString();
+    const due = new Date(Date.now() - 60_000).toISOString();
+    const future = new Date(Date.now() + 86_400_000).toISOString();
+    const insert = (id: string, publishedAt: string) => db.run(`INSERT INTO news_items
+      (id,title,summary,content,image,category,arrival_id,product_id,author,published_at,status,created_at,updated_at)
+      VALUES (?,?,?,'Contenu','', 'ZAYROVI',NULL,NULL,'Test',?,'SCHEDULED',?,?)`, id, `Magazine ${id}`, 'Résumé', publishedAt, now, now);
+    try {
+      insert(dueId, due);
+      insert(futureId, future);
+      const response = await request(app).get('/api/public/news?limit=50');
+      expect(response.status).toBe(200);
+      expect(response.body.data.map((item: any) => item.id)).toContain(dueId);
+      expect(response.body.data.map((item: any) => item.id)).not.toContain(futureId);
+    } finally {
+      db.run('DELETE FROM news_items WHERE id IN (?,?)', dueId, futureId);
+    }
+  });
+
+  test('rate limiting throttles brute-force attempts on sensitive endpoints', async () => {
+    // bucket otp-verify : 12 requêtes / 5 min par IP — des tentatives précédentes peuvent déjà compter
+    const statuses: number[] = [];
+    for (let i = 0; i < 16; i += 1) {
+      const res = await request(app).post('/api/customer/auth/otp/verify').send({ challengeId: 'bogus', code: '123456' });
+      statuses.push(res.status);
+    }
+    expect(statuses).toContain(429);
+  });
+
+  test('logout invalidates the admin session', async () => {
+    const logoutResponse = await superAdmin.post('/api/admin/auth/logout').set('x-csrf-token', adminCsrf);
+    expect(logoutResponse.status).toBe(200);
+    expect((await superAdmin.get('/api/admin/dashboard')).status).toBe(401);
+  });
+
+  test('healthcheck reports the service as ready', async () => {
+    const response = await request(app).get('/api/health');
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe('ok');
+  });
+
+  test('one-shot data migrations never clobber admin edits across restarts (LENS block + payment methods)', () => {
+    // Regression guard for the persistence bug: the legacy "compact trust bar" /
+    // payment-methods / rebrand data migrations used to run on EVERY boot and
+    // silently reverted admin CMS edits to stale defaults after a server restart.
+    // Each migration must now run exactly once (applied_data_migrations marker).
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-persist-'));
+    const file = path.join(dir, 'restart.sqlite');
+    try {
+      // Boot 1: fresh database, seeds applied, one-shot migrations run.
+      const firstBoot = new QatafoDatabase(file);
+      const item = firstBoot.get<any>("SELECT id, video_poster FROM lens_hero_settings WHERE id='global'");
+      expect(item).toBeTruthy();
+      // l'amorçage unique du bloc LENS a bien posé l'affiche livrée avec le projet
+      expect(item.video_poster).toBeTruthy();
+      // Admin edits content from the CMS (same writes the Admin API performs).
+      firstBoot.run("UPDATE lens_hero_settings SET video_poster=?, updated_at=? WHERE id='global'", 'Affiche choisie par l’admin', new Date().toISOString());
+      firstBoot.run(`UPDATE settings SET setting_value='["FLOUCI","BANK_TRANSFER"]',updated_at=? WHERE setting_key='payment_methods'`, new Date().toISOString());
+      firstBoot.close();
+
+      // Boot 2: simulated server restart on the SAME file.
+      const secondBoot = new QatafoDatabase(file);
+      const afterRestart = secondBoot.get<any>("SELECT video_poster FROM lens_hero_settings WHERE id='global'");
+      expect(afterRestart.video_poster).toBe('Affiche choisie par l’admin');
+      const paymentAfter = secondBoot.get<any>('SELECT setting_value FROM settings WHERE setting_key=\'payment_methods\'');
+      expect(paymentAfter.setting_value).toBe('["FLOUCI","BANK_TRANSFER"]');
+      const marker = secondBoot.get<any>("SELECT applied_at FROM applied_data_migrations WHERE key='lens_feature_media_v1'");
+      expect(marker).toBeTruthy();
+      secondBoot.close();
+
+      // Boot 3: idempotency — a further restart must not touch the data either.
+      const thirdBoot = new QatafoDatabase(file);
+      const stable = thirdBoot.get<any>("SELECT video_poster FROM lens_hero_settings WHERE id='global'");
+      expect(stable.video_poster).toBe('Affiche choisie par l’admin');
+      thirdBoot.close();
+    } finally {
+      for (const suffix of ['', '-wal', '-shm']) {
+        try { fs.rmSync(file + suffix, { force: true }); } catch { /* ignore */ }
+      }
+      try { fs.rmdirSync(dir); } catch { /* ignore */ }
+    }
+  });
+});

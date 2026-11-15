@@ -94,7 +94,7 @@ export function parseServerReadiness(payload: unknown): ServerReadiness | null {
 /**
  * هل الخادم هذا يعرف عميل الموبايل؟
  *
- * `x-ayrovi-client` (وإعطاء `session_token` في جسم الردّ) موجود في الفرع وحدو.
+ * `x-zayrovi-client` (وإعطاء `session_token` في جسم الردّ) موجود في الفرع وحدو.
  * الخادم القديم ما عندوش حتى حقل `branch` في `/api/ready` — يعني **حضور
  * الحقل** هو العلامة: كان غايب، الدخول غادي يفشل برسالة `SESSION_NOT_ISSUED`.
  *

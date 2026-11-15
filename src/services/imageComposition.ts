@@ -34,7 +34,7 @@ import { isolationCacheInput, isolationProvider, shouldPersistNegative } from '.
 import { pruneDiskCache } from './diskCache';
 import { regenerableCacheDir } from './cacheRoot';
 
-/* ── Contrat visuel ZAYROVI — miroir de client/src/ayrovix/components/lens-product-card.css ──
+/* ── Contrat visuel ZAYROVI — miroir de client/src/zayrovix/components/lens-product-card.css ──
  * .lens-card-media { aspect-ratio: 9/13; border-radius: 16..18px; background: #F0F2F2 }
  * Toute évolution du CSS doit être répercutée ici (et le test le vérifie). */
 export const CARD_ASPECT_WIDTH = 9;
@@ -470,7 +470,7 @@ async function loadComposedCard(rawUrl: string, idealWidth = IDEAL_FRAME_WIDTH):
 }
 
 export function composedCacheDir(): string {
-  return process.env.AYROVI_COMPOSED_CACHE_DIR || regenerableCacheDir('media-composed');
+  return process.env.ZAYROVI_COMPOSED_CACHE_DIR || regenerableCacheDir('media-composed');
 }
 
 export function readComposedPng(file: string): Buffer {

@@ -14,11 +14,11 @@ import type { CapacitorConfig } from '@capacitor/cli';
  * المطلق. لا يوجد مسار ثانٍ ولا نسخة ثانية من الواجهة (§2).
  *
  * ملاحظة أصالة: خادم الـ API يقبل أصول Capacitor القياسية في CORS مع
- * credentials، والمصادقة داخل التطبيق تعتمد رمز Bearer (x-ayrovi-native)
+ * credentials، والمصادقة داخل التطبيق تعتمد رمز Bearer (x-zayrovi-native)
  * بدل الكوكيز عبر الأصول — انظر src/customer/nativeToken.ts.
  */
 const config: CapacitorConfig = {
-  appId: 'app.ayrovi.mobile',
+  appId: 'app.zayrovi.mobile',
   appName: 'ZAYROVI',
   webDir: 'public',
   android: {

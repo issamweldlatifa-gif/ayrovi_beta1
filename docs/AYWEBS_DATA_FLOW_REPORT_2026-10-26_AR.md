@@ -146,10 +146,10 @@ AyWebsVariantSheet.tsx:105  getAyWebsVariants({ product_id })             ← ث
 
 **تجميع من مصدرين، وكلاهما «حديث» وليس «الأصلي»:**
 
-1. `POST /product/resolve` (نفس ما في س3): العنوان، الصور، السعر، العملة، `price_verified`/`currency_verified`، الحالة (`condition`)، `gtin`، `sku`، `seller`، `rating`/`review_count`، التوفّر، `ayrovi_pricing`، `variant_groups`، `variant_details`، `variant_quotes`. مُسلسَلة في `productPayload()` — `src/aywebs/routes.ts:1449`.
+1. `POST /product/resolve` (نفس ما في س3): العنوان، الصور، السعر، العملة، `price_verified`/`currency_verified`، الحالة (`condition`)، `gtin`، `sku`، `seller`، `rating`/`review_count`، التوفّر، `zayrovi_pricing`، `variant_groups`، `variant_details`، `variant_quotes`. مُسلسَلة في `productPayload()` — `src/aywebs/routes.ts:1449`.
 2. `POST /product/variants` بـ`product_id` — `src/aywebs/routes.ts:706` → يقرأ الصفّ من SQLite (`readAyWebsProduct`) ويعيد `ayWebsVariantPricingPayload` (السطر 1415): سعر كل خيار + سعره بالدينار + صورته + توفّره. **بلا أي شبكة** (الفرع `stored ? null : resolve(...)`).
 
-الصور والأسعار لكل مقاس في الصورتين 3 و4 تأتي من `variant_details[].image` و`quoted_price`/`ayrovi_pricing.total_tnd` (أي من الحقل `variants` المخزّن كـ JSON).
+الصور والأسعار لكل مقاس في الصورتين 3 و4 تأتي من `variant_details[].image` و`quoted_price`/`zayrovi_pricing.total_tnd` (أي من الحقل `variants` المخزّن كـ JSON).
 في التطبيق، إذا كان المسار محليًا، تأتي البطاقات من `capture.amazon.options`/`variantGroups` مباشرة، والسعر المحلي **لا يُحسب** (`localProduct: cardPrice` نصّ كما في الصفحة، و`total_tnd: null`).
 
 ### س5 — ماذا تشمل البيانات المحفوظة: الاسم/الصورة/السعر/الرابط فقط؟
@@ -198,7 +198,7 @@ evidence_hash, capture_id, resolved_at, created_at, updated_at
 - **الخادم:** تطبيق واحد. التطبيق يضرب `API_BASE_URL = https://ayrovi-beta1-moo8.onrender.com` (`apps/mobile/src/api/config.ts:19`) و`AYWEBS_BASE = '/api/v1/aywebs'` (`apps/mobile/src/api/aywebs.ts:16`). الويب يضرب نفس المسارات نسبيًا لأن Express نفسه يقدّم SPA (`src/server.ts:403,559`) و`app.use('/api/v1/aywebs', createAyWebsRouter(...))` في السطر 469.
 - **نموذج الويب:** استهلاك مباشر لحِمْل الخادم بصيغة `snake_case` (`client/src/features/aywebs/api.ts` — `AyWebsProductPayload`)، مع `quoteToken` و`cacheKind` و`servedStale`.
 - **نموذج التطبيق:** تحويل إلى `camelCase` عبر `parseAyWebsResolvedProduct` (`apps/mobile/src/api/aywebs.ts:259`) ⇒ `AyWebsResolvedProduct` + `AyWebsVariantOption` + `AyWebsVariantQuote`.
-- **نموذج ثالث محلي في التطبيق فقط:** `AyWebsResolvedProduct` مصنوع من `capture` (`localProduct.productFromCapture`): `productId` = ASIN، `price: null`، `currency: ''`، `ayroviPricing: null`، `variantGroups` من الصفحة، `LocalVariant.cardPrice` نصّ.
+- **نموذج ثالث محلي في التطبيق فقط:** `AyWebsResolvedProduct` مصنوع من `capture` (`localProduct.productFromCapture`): `productId` = ASIN، `price: null`، `currency: ''`، `zayroviPricing: null`، `variantGroups` من الصفحة، `LocalVariant.cardPrice` نصّ.
 
 **الفروق الوظيفية المثبتة بالكود:**
 
@@ -210,7 +210,7 @@ evidence_hash, capture_id, resolved_at, created_at, updated_at
 | كاش | ذاكرة الخادم فقط | + `prefetch` في العميل (`canReusePrefetch`, 30 ثانية) + إعادة محاولة قراءة السعر (`captureFlow.ts`, مرّتان) |
 | صفحة المقاس المنفصل | غير موجودة | `variantPage.ts` + قراءة WebView مخفي (`readVariant`) |
 | قائمة «منتجات حديثة» | نعم (`/home`) | **لا** — لا نداء لـ `/home` في التطبيق، ولا قسم في `StoresContent.tsx` |
-| حساب السعر بالدينار | خادم (`ayrovi_pricing`) | خادم فقط، و`selectionQuote.ts` يختار سطرًا ولا يحسب |
+| حساب السعر بالدينار | خادم (`zayrovi_pricing`) | خادم فقط، و`selectionQuote.ts` يختار سطرًا ولا يحسب |
 
 ### س8 — المسار الفعلي في الكود (فهرس الملفات والدوال والـ endpoints)
 

@@ -4,8 +4,8 @@ import { AddToCartPayload, AddToCartResult, ScrapedProduct } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { ShopProductScreen } from '../shop';
-import { resolveProductSelection } from '../ayrovix/services/productSelection';
-import type { AyrovixProduct } from '../ayrovix/types';
+import { resolveProductSelection } from '../zayrovix/services/productSelection';
+import type { ZayrovixProduct } from '../zayrovix/types';
 import { trackAyWebsEvent } from '../features/aywebs/api';
 
 interface ProductDrawerProps {
@@ -52,7 +52,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
 
-  const ayrovixProduct: AyrovixProduct | null = React.useMemo(() => {
+  const zayrovixProduct: ZayrovixProduct | null = React.useMemo(() => {
     if (!product) return null;
     return {
       title: product.title,
@@ -251,7 +251,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
               </div>
               <div>
                 <h3 id="lens-page-title" className="font-extrabold text-base sm:text-lg text-ink">
-                  AYROVIX Lens — Nouvelle commande
+                  ZAYROVIX Lens — Nouvelle commande
                 </h3>
                 <p className="text-xs text-muted font-medium">Conversion transparente et garantie</p>
               </div>
@@ -405,10 +405,10 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             </div>
           )}
 
-          {step === 'details' && ayrovixProduct && (
+          {step === 'details' && zayrovixProduct && (
             <div className="py-1">
               <ShopProductScreen
-                product={ayrovixProduct}
+                product={zayrovixProduct}
                 ordering={isAddingToCart}
                 priceVerified={product?.priceVerified === true}
                 onOpenCart={onOpenCart}
@@ -420,7 +420,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 onOrder={async (selection) => {
                   // Use the same coherent selected offer as the displayed quote.
                   // Never combine a variant's price with the general currency.
-                  const { offer } = resolveProductSelection(ayrovixProduct, selection.size, selection.color);
+                  const { offer } = resolveProductSelection(zayrovixProduct, selection.size, selection.color);
                   if (offer.price == null || !offer.currency) throw new Error('Le devis de cette sélection est incomplet.');
                   setIsAddingToCart(true);
                   setErrorMsg(null);
@@ -431,7 +431,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       store: product?.store || 'generic',
                       externalId: selection.option?.id || product?.externalId || null,
                       url: selection.manualUrl || product?.url || '',
-                      title: ayrovixProduct.title.trim(),
+                      title: zayrovixProduct.title.trim(),
                       imageUrl: product?.mainImage || uploadPreview || '',
                       sourcePrice: offer.price,
                       sourceCurrency: offer.currency,

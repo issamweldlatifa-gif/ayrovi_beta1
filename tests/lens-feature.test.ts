@@ -27,7 +27,7 @@ const code = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, '').replace
 
 describe('LENS editorial block — content comes from the dashboard', () => {
   test('super admin authenticates', async () => {
-    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
   });
@@ -155,16 +155,16 @@ describe('LENS editorial block — rythme et charte', () => {
     const block = /\.lens-feature[\s\S]*?@media \(prefers-reduced-motion/.exec(indexCss)?.[0] ?? '';
     // couleurs : uniquement les jetons de la charte
     expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(block).toMatch(/var\(--ayrovi-bg-main\)/);
-    expect(block).toMatch(/var\(--ayrovi-text-primary\)/);
-    expect(block).toMatch(/var\(--ayrovi-text-secondary\)/);
-    expect(block).toMatch(/var\(--ayrovi-bg-surface\)/);
+    expect(block).toMatch(/var\(--zayrovi-bg-main\)/);
+    expect(block).toMatch(/var\(--zayrovi-text-primary\)/);
+    expect(block).toMatch(/var\(--zayrovi-text-secondary\)/);
+    expect(block).toMatch(/var\(--zayrovi-bg-surface\)/);
     // Charte v4.2.0 (violet au minimum) : plus aucun violet dans ce bloc éditorial. La flèche
     // du lien suit la couleur du lien (currentColor) — un accent décoratif n'est pas une
     // fonction ; le violet reste réservé aux actions principales et aux états actifs.
-    expect(block).not.toMatch(/--ayrovi-color-brand-accent|--ayrovi-accent-on-dark|--ayrovi-cta\b/);
+    expect(block).not.toMatch(/--zayrovi-color-brand-accent|--zayrovi-accent-on-dark|--zayrovi-cta\b/);
     expect(block).toMatch(/\.lens-feature__cta svg \{[^}]*color: currentColor/);
-    expect(block).not.toMatch(/--ayrovi-color-brand-orange/);
+    expect(block).not.toMatch(/--zayrovi-color-brand-orange/);
   });
 
   test('the action is a text link, not a second filled button', () => {

@@ -34,7 +34,7 @@ export function maskEmail(email: string): string {
 export function displayNameFromEmail(email: string): string {
   const local = email.slice(0, Math.max(0, email.indexOf('@'))).replace(/[._-]+/g, ' ').trim();
   const name = local.slice(0, 100).trim();
-  return name.length >= 2 ? name : 'Client AYROVI';
+  return name.length >= 2 ? name : 'Client ZAYROVI';
 }
 
 export function emailCodeSubject(ar: boolean, code: string): string {

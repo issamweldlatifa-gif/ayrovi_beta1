@@ -111,7 +111,7 @@ describe('CSRF and session replay attacks', () => {
   });
   test('a poisoned cookie cannot borrow valid Bearer CSRF to cross identities', async () => {
     const before = victim();
-    const result = await req('delete', `/api/customer/account/addresses/${bobAddress}`).set('Cookie', `ayrovi_customer_session=${bob.token}`);
+    const result = await req('delete', `/api/customer/account/addresses/${bobAddress}`).set('Cookie', `zayrovi_customer_session=${bob.token}`);
     expect(result.status).toBe(403);
     expect(victim()).toEqual(before);
   });

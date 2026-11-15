@@ -41,7 +41,7 @@ describe('heroDestinationHref — contrat fermé', () => {
     expect(heroDestinationHref('INVENTED', 'x')).toBeNull();
     expect(heroDestinationHref('', '')).toBeNull();
     expect(heroDestinationHref('EXTERNAL', 'javascript:alert(1)')).toBeNull();
-    expect(heroDestinationHref('EXTERNAL', 'https://ayrovi.tn/promo')).toBe('https://ayrovi.tn/promo');
+    expect(heroDestinationHref('EXTERNAL', 'https://zayrovi.com/promo')).toBe('https://zayrovi.com/promo');
   });
 
   test('la liste des types est stable et fermée', () => {
@@ -202,7 +202,7 @@ describe('API carrousel Hero', () => {
 
   test('login admin + csrf', async () => {
     const login = await admin.post('/api/admin/auth/login')
-      .send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+      .send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
     expect(csrf).toBeTruthy();

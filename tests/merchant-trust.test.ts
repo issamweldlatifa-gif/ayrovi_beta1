@@ -5,10 +5,10 @@
 // Le registre est volontairement en mémoire par process : la preuve se
 // ré-accumule depuis les profiles crawlés — aucune liste figée sans historique.
 import { describe, expect, it } from 'vitest';
-import { filterDisplayableCandidates, isTrustedMerchantHost, merchantTrust, registerTrustedMerchantHost, shopperScore, type MerchantTrust } from '../src/ayrovix/services/candidatePolicy';
-import type { AyrovixCandidate } from '../src/ayrovix/types';
+import { filterDisplayableCandidates, isTrustedMerchantHost, merchantTrust, registerTrustedMerchantHost, shopperScore, type MerchantTrust } from '../src/zayrovix/services/candidatePolicy';
+import type { ZayrovixCandidate } from '../src/zayrovix/types';
 
-function candidate(overrides: Partial<AyrovixCandidate>): AyrovixCandidate {
+function candidate(overrides: Partial<ZayrovixCandidate>): ZayrovixCandidate {
   return {
     id: 'c1',
     kind: 'external',
@@ -31,7 +31,7 @@ function candidate(overrides: Partial<AyrovixCandidate>): AyrovixCandidate {
 
 describe('merchantTrust — la preuve avant la priorité', () => {
   it('catalogue interne = trusted', () => {
-    expect(merchantTrust(candidate({ kind: 'catalog', sourceUrl: 'https://ayrovi.tn/p/1' }))).toBe<MerchantTrust>('trusted');
+    expect(merchantTrust(candidate({ kind: 'catalog', sourceUrl: 'https://zayrovi.com/p/1' }))).toBe<MerchantTrust>('trusted');
   });
 
   it('marchand prouvé via registerTrustedMerchantHost = trusted', () => {
@@ -62,7 +62,7 @@ describe('merchantTrust — la preuve avant la priorité', () => {
 
   it('affichage : un unknown à 95% de match passe APRÈS un trusted à 80%', () => {
     const trusted = candidate({
-      id: 'trusted', kind: 'catalog', sourceUrl: 'https://ayrovi.tn/p/2', match: 80,
+      id: 'trusted', kind: 'catalog', sourceUrl: 'https://zayrovi.com/p/2', match: 80,
     });
     const unknown = candidate({
       id: 'unknown', match: 95,

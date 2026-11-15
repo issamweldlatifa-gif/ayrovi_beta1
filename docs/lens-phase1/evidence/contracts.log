@@ -25,7 +25,7 @@
 
 [31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
 
-[41m[1m FAIL [22m[49m tests/lens-reference-parity.test.ts[2m > [22mAYROVIX Lens ↔ Amazon reference parity[2m > [22mP7 — real drawer: follows the finger, magnets peek↔full, pull down under peek returns to Lens camera
+[41m[1m FAIL [22m[49m tests/lens-reference-parity.test.ts[2m > [22mZAYROVIX Lens ↔ Amazon reference parity[2m > [22mP7 — real drawer: follows the finger, magnets peek↔full, pull down under peek returns to Lens camera
 [31m[1mAssertionError[22m: expected 'import React, { useEffect, useRef, us…' to contain 'photoUrl ? \'bg-black/55 backdrop-blu…'[39m
 
 [32m- Expected[39m
@@ -44,9 +44,9 @@
 [31m+[39m
 [31m+ export interface LiveResultsView {[39m
 [31m+   queryLabel: string | null;[39m
-[31m+   list: import('../types').AyrovixCandidate[];[39m
+[31m+   list: import('../types').ZayrovixCandidate[];[39m
 [31m+   eventId: string;[39m
-[31m+   detectedPrice?: import('../types').AyrovixDetectedPrice | null;[39m
+[31m+   detectedPrice?: import('../types').ZayrovixDetectedPrice | null;[39m
 [31m+ }[39m
 [31m+[39m
 [31m+ interface LiveCameraProps {[39m
@@ -70,7 +70,7 @@
 [31m+ type CamMode = 'photo' | 'video';[39m
 [31m+[39m
 [31m+ /**[39m
-[31m+  * AYROVIX Lens — Camera UX (PHOTO + VIDÉO LIVE) فوق الـ LiveVisionRuntime.[39m
+[31m+  * ZAYROVIX Lens — Camera UX (PHOTO + VIDÉO LIVE) فوق الـ LiveVisionRuntime.[39m
 [31m+  * الواجهة كما هي؛ الـ runtime يوفّر detection/tracking/confidence/temporal.[39m
 [31m+  * LIVE ≠ تسجيل فيديو. الزر المركزي في LIVE = التقاط الحالة الحالية للنتيجة.[39m
 [31m+  */[39m
@@ -126,7 +126,7 @@
 [31m+         onState: setLiveState,[39m
 [31m+         onEvent: (type, meta) => {[39m
 [31m+           try {[39m
-[31m+             fetch('/api/ayrovix/live-events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, meta }), keepalive: true }).catch(() => {});[39m
+[31m+             fetch('/api/zayrovix/live-events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, meta }), keepalive: true }).catch(() => {});[39m
 [31m+           } catch { /* analytics غير حرجة */ }[39m
 [31m+         },[39m
 [31m+       });[39m
@@ -204,7 +204,7 @@
 [31m+       canvas.toBlob(blob => {[39m
 [31m+         if (epoch !== captureEpoch.current) return;[39m
 [31m+         setCapturing(false);[39m
-[31m+         if (blob) onPhoto(new File([blob], `ayrovix-${Date.now()}.jpg`, { type: 'image/jpeg' }));[39m
+[31m+         if (blob) onPhoto(new File([blob], `zayrovix-${Date.now()}.jpg`, { type: 'image/jpeg' }));[39m
 [31m+         else setNotice(tr('Photo non capturée. Réessayez.', 'لم تُلتقط الصورة. أعد المحاولة.'));[39m
 [31m+       }, 'image/jpeg', 0.88);[39m
 [31m+     } catch { setCapturing(false); setNotice(tr('Photo non capturée. Réessayez.', 'لم تُلتقط الصورة. أعد المحاولة.')); }[39m
@@ -244,7 +244,7 @@
 [31m+   };[39m
 [31m+[39m
 [31m+   return ([39m
-[31m+     <div ref={shellRef} tabIndex={-1} className="lens-camera fixed inset-0 z-[76] flex flex-col bg-ink text-white" dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens — caméra', 'عدسة AYROVIX — الكاميرا')} onKeyDown={event => { if (event.key === 'Escape' && !photoUrl) { event.preventDefault(); event.stopPropagation(); if (panel) closePanel(); else onClose(); } }}>[39m
+[31m+     <div ref={shellRef} tabIndex={-1} className="lens-camera fixed inset-0 z-[76] flex flex-col bg-ink text-white" dir={direction} role="dialog" aria-modal="true" aria-label={tr('ZAYROVIX Lens — caméra', 'عدسة ZAYROVIX — الكاميرا')} onKeyDown={event => { if (event.key === 'Escape' && !photoUrl) { event.preventDefault(); event.stopPropagation(); if (panel) closePanel(); else onClose(); } }}>[39m
 [31m+       <div className="lens-camera-stage" inert={Boolean(modal)} aria-hidden={modal ? true : undefined}>[39m
 [31m+       <video ref={videoRef} onCanPlay={() => setCameraReady(true)} muted playsInline className={`absolute inset-0 h-full w-full object-cover ${photoUrl ? 'invisible' : ''}`} />[39m
 [31m+       <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 ${photoUrl ? 'hidden' : ''}`} />[39m
@@ -262,7 +262,7 @@
 [31m+         <button type="button" onClick={panel === 'scan' ? closePanel : photoUrl && onPhotoClose ? onPhotoClose : onClose} className="lens-camera-icon" aria-label={photoUrl || panel === 'scan' ? tr('Retour à la caméra', 'العودة إلى الكاميرا') : tr('Quitter Lens', 'مغادرة Lens')}>[39m
 [31m+           <ArrowLeft size={22} />[39m
 [31m+         </button>[39m
-[31m+         <p className="lens-camera-brand" dir="ltr">AYROVIX <span>Lens</span></p>[39m
+[31m+         <p className="lens-camera-brand" dir="ltr">ZAYROVIX <span>Lens</span></p>[39m
 [31m+         {photoUrl ? null : ([39m
 [31m+           <div className="lens-camera-tools">[39m
 [31m+             <button type="button" className="lens-camera-icon" onClick={() => openPanel('help')} aria-label={tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')} aria-haspopup="dialog"><Info size={22} /></button>[39m

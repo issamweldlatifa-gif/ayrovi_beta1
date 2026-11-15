@@ -2,9 +2,9 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { NextFunction, Request, Response } from 'express';
 import { QatafoDatabase } from '../db/database';
 
-const COOKIE_NAME = 'ayrovi_customer_session';
+const COOKIE_NAME = 'zayrovi_customer_session';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const DEVELOPMENT_SECRET = 'ayrovi-development-customer-auth-secret-not-for-production';
+const DEVELOPMENT_SECRET = 'zayrovi-development-customer-auth-secret-not-for-production';
 
 export interface CustomerIdentity {
   id: string;

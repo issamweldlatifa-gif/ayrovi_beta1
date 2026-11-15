@@ -24,24 +24,24 @@
 **Trois prémisses à corriger (vérifiées dans le code, pas supposées).**
 
 1. **« Il faut construire une couche d'ajout unique »** — elle existe depuis le
-   04/10/2026 : `src/aywebs/ayroviBridge.ts` est *déjà* « le SEUL chemin qui fait
+   04/10/2026 : `src/aywebs/zayroviBridge.ts` est *déjà* « le SEUL chemin qui fait
    passer une ligne AYWEBs dans le panier ZAYROVI » (en-tête du fichier), et
    `POST /api/v1/aywebs/cart/items` **ponte automatiquement** chaque ajout
    (`src/aywebs/routes.ts:970-1000`). Le test `tests/aywebs-unified-cart.test.ts`
-   verrouille : ajout → `ayrovi.linked = true` → ligne ZAYROVI au prix du moteur,
+   verrouille : ajout → `zayrovi.linked = true` → ligne ZAYROVI au prix du moteur,
    sans doublon. **Le panier unifié existe ; c'est l'interface qui ne le dit pas.**
 2. **« Le calcul du prix est dupliqué »** — non. Il y a **une seule équation** :
    `src/services/pricing.ts::calculatePrice`, appelée par le panier ZAYROVI
    (`src/api/routes.ts:215`) **et** par AYWEBs (`src/aywebs/cart.ts:380,494,1028`,
    `src/aywebs/productResolver.ts`, `src/aywebs/checkoutFees.ts`). Le risque réel
    n'est pas l'équation, c'est **la fraîcheur** : deux émissions de jeton
-   (`src/ayrovix/routes.ts:110` pour Lens, `src/aywebs/ayroviBridge.ts:149` pour
+   (`src/zayrovix/routes.ts:110` pour Lens, `src/aywebs/zayroviBridge.ts:149` pour
    AYWEBs) et une version de règles qui peut bouger entre l'ajout et le pont.
 3. **« Supprimer la grande fiche Lens »** — elle porte des fonctions qui n'ont pas
    d'équivalent ailleurs : galerie zoomable, guide des tailles
    (`LensSizeGuide`), compte à rebours de validité du devis
    (`earliestCartDeadline`), favoris, et surtout le **contrat de variante**
-   `inspectVariantOrder` (`src/ayrovix/services/variantAvailability.ts:300`) qui
+   `inspectVariantOrder` (`src/zayrovix/services/variantAvailability.ts:300`) qui
    est la seule porte d'ajout pour une boutique **sans** capture WebView.
    La supprimer telle quelle supprime l'ajout pour ces boutiques.
 
@@ -90,8 +90,8 @@ Points d'entrée lus : `apps/mobile/app/lens.tsx`, `apps/mobile/app/aywebs/brows
 `apps/mobile/app/aywebs/cart.tsx`, `apps/mobile/app/(tabs)/cart.tsx`,
 `apps/mobile/app/checkout.tsx`, `apps/mobile/src/features/lens/*`,
 `apps/mobile/src/features/aywebs/*`, `apps/mobile/src/api/{cart,aywebs,lens,checkout}.ts`,
-`src/api/routes.ts`, `src/aywebs/{routes,cart,orders,ayroviBridge,schema,productResolver}.ts`,
-`src/services/{pricing,cartPriceTrust}.ts`, `src/ayrovix/{routes,priceQuote,services/*}`,
+`src/api/routes.ts`, `src/aywebs/{routes,cart,orders,zayroviBridge,schema,productResolver}.ts`,
+`src/services/{pricing,cartPriceTrust}.ts`, `src/zayrovix/{routes,priceQuote,services/*}`,
 `src/db/database.ts`, et les suites de tests correspondantes.
 
 ---
@@ -99,7 +99,7 @@ Points d'entrée lus : `apps/mobile/app/lens.tsx`, `apps/mobile/app/aywebs/brows
 ## 2. Constat A — Lens (découverte → fiche → ajout)
 
 **Recherche.** Trois entrées : texte, image (reconnaissance), URL/code-barre.
-Le serveur interroge SerpApi `google_shopping` (`src/ayrovix/services/search.ts:269`)
+Le serveur interroge SerpApi `google_shopping` (`src/zayrovix/services/search.ts:269`)
 puis, en secours, une recherche web IA (`aiCoreWebSearch`, même fichier). Les
 candidats sont normalisés dans `shoppingCandidates` : `sourceUrl`, `price`,
 `currency`, `availability`, `priceVerificationStatus: 'PENDING_MANUAL'`.
@@ -123,7 +123,7 @@ validité du devis, favoris, compteur d'unités du panier, confirmation « ajout
 Le payload est refusé côté client si `orderBlock(selection)` non nul, si un choix
 manque ou si l'offre n'a pas prix + devise + jeton signé (`completeOffer`).
 Côté serveur, `POST /api/cart/items` (`src/api/routes.ts:203`) revalide tout :
-URL publique, prix > 0, quantité 1..99, jeton `AYROVIX` valide, **et** la porte
+URL publique, prix > 0, quantité 1..99, jeton `ZAYROVIX` valide, **et** la porte
 de variante `inspectVariantOrder`.
 
 **Ce que Lens ne fait pas.** Il n'ouvre pas la page marchande dans un WebView, ne
@@ -165,7 +165,7 @@ estimée ; `UNKNOWN` reste `UNKNOWN`.
 
 **Services réutilisables déjà en place.** `captureScript` + `webviewCapture`,
 `productResolver`, `ayWebsVariantQuotes`, `selectionQuote` (côté app),
-`variantPageUrlFor` (relectures ciblées), `addAyWebsCartItem`, `ayroviBridge`.
+`variantPageUrlFor` (relectures ciblées), `addAyWebsCartItem`, `zayroviBridge`.
 
 ---
 
@@ -178,13 +178,13 @@ estimée ; `UNKNOWN` reste `UNKNOWN`.
 | Tables | `cart_items` (`src/db/database.ts:645`) | `ayweb_carts` + `ayweb_cart_items` (`src/aywebs/schema.ts:159,172`) |
 | Écriture | `POST /api/cart/items` | `POST /api/v1/aywebs/cart/items` |
 | Lecture | `GET /api/cart/items` | `GET /api/v1/aywebs/cart` |
-| Preuve | jeton signé `AYROVIX` + `inspectVariantOrder` | capture WebView + `ayWebsSelectionEvidence` + devis signé |
+| Preuve | jeton signé `ZAYROVIX` + `inspectVariantOrder` | capture WebView + `ayWebsSelectionEvidence` + devis signé |
 | Idempotence | **aucune clé serveur** : un second ajout **incrémente** la quantité (`db.addItem`) | `ayweb_cart_add_requests` (clé d'idempotence durable) |
-| Lien | reçoit les lignes AYWEBs | ponte vers ZAYROVI (`ayroviBridge.ts`) + table `ayweb_cart_ayrovi_links` |
+| Lien | reçoit les lignes AYWEBs | ponte vers ZAYROVI (`zayroviBridge.ts`) + table `ayweb_cart_zayrovi_links` |
 
 **Le pont est automatique à l'ajout** (`src/aywebs/routes.ts:979`) : la ligne AYWEBs
 est copiée dans `cart_items` avec le prix du moteur, l'identité source et la note
-de traçabilité. `GET /api/v1/aywebs/cart` renvoie `linked_to_ayrovi` par ligne et
+de traçabilité. `GET /api/v1/aywebs/cart` renvoie `linked_to_zayrovi` par ligne et
 `unlinked_units` global. Le pont est **idempotent** (relancer ne double pas : il
 synchronise la quantité, défaut corrigé le 04/10).
 
@@ -210,15 +210,15 @@ douane par catégorie, commission, RPD, livraison locale, express. Utilisée par
 TND (`source_price` / `currency` / `pricing_tnd`). Aucun calcul de prix côté app
 mobile : elle affiche ce que le serveur publie.
 
-**Point de vigilance réel** : deux émetteurs de jeton (`src/ayrovix/routes.ts:110`,
-`src/aywebs/ayroviBridge.ts:149`) pour un seul vérificateur
+**Point de vigilance réel** : deux émetteurs de jeton (`src/zayrovix/routes.ts:110`,
+`src/aywebs/zayroviBridge.ts:149`) pour un seul vérificateur
 (`src/services/cartPriceTrust.ts`). Si les règles changent entre l'ajout AYWEBs et
 le pont, le prix TND stocké et le prix recalculé divergent : la revérification de
 commande doit alors refuser, pas corriger en silence. À tester explicitement.
 
 ### 4.3 Deux portes de variante
 
-- Lens → `inspectVariantOrder` (`src/ayrovix/services/variantAvailability.ts:300`),
+- Lens → `inspectVariantOrder` (`src/zayrovix/services/variantAvailability.ts:300`),
   contrat par `productKey` + taille/couleur.
 - AYWEBs → `ayWebsSelectionEvidence` (`src/aywebs/variantEvidence.ts`), preuve de
   capture par valeur, avec `selection_matches_captured_page` /
@@ -271,9 +271,9 @@ Navigateur AYWEBs ──capture──> AddToCartSheet ──> POST /aywebs/cart/
 ### D2 — Services déjà partagés (à réutiliser, pas à réécrire)
 
 - `services/pricing.ts::calculatePrice` — équation unique.
-- `ayrovix/priceQuote.ts::createAyrovixPriceToken` — signature unique.
+- `zayrovix/priceQuote.ts::createZayrovixPriceToken` — signature unique.
 - `services/cartPriceTrust.ts` — vérification unique à la commande.
-- `aywebs/ayroviBridge.ts` — pont unique AYWEBs → ZAYROVI.
+- `aywebs/zayroviBridge.ts` — pont unique AYWEBs → ZAYROVI.
 - `aywebs/captureScript.ts` + `webviewCapture.ts` — capture et jugement.
 - `aywebs/variantQuotes.ts` + `api/aywebs.ts::variantQuoteList` — devis par valeur.
 
@@ -307,7 +307,7 @@ Navigateur AYWEBs ──capture──> AddToCartSheet ──> POST /aywebs/cart/
 | `apps/mobile/app/(tabs)/cart.tsx` | lire aussi `unlinked_units` + `/aywebs/cart` | ne plus perdre de lignes |
 | `apps/mobile/app/aywebs/cart.tsx` | fusionner dans l'écran unique | un seul panier à l'écran |
 | `src/aywebs/routes.ts` | `store_key` normalisé dans le pont | déduplication correcte |
-| `src/aywebs/ayroviBridge.ts` | utiliser la clé normalisée | idem |
+| `src/aywebs/zayroviBridge.ts` | utiliser la clé normalisée | idem |
 | `src/api/routes.ts` | clé d'idempotence sur `POST /api/cart/items` | double-tap |
 | `shared/aywebsStores.ts` | `storeKeyFor(url)` exporté | une seule vérité d'identité |
 
@@ -355,7 +355,7 @@ Navigateur AYWEBs ──capture──> AddToCartSheet ──> POST /aywebs/cart/
 | # | Angle mort | Pourquoi c'est bloquant | Ajout proposé |
 |---|---|---|---|
 | 1 | Aucune mention de la **preuve** | « extraire les données » peut être lu comme « lire puis afficher » — c'est exactement ce qu'on nous a reproché | la couche d'ajout prend `capture` + `quote_token` ; sans preuve, l'écran dit « à vérifier à l'ajout » |
-| 2 | Le pont **existe déjà** | sinon l'équipe reconstruit un troisième panier | l'ordre doit dire « adopter `ayroviBridge` », pas « créer une couche » |
+| 2 | Le pont **existe déjà** | sinon l'équipe reconstruit un troisième panier | l'ordre doit dire « adopter `zayroviBridge` », pas « créer une couche » |
 | 3 | **Identité boutique** non unifiée | déduplication impossible (`generic` vs `zalando`) | une fonction partagée, testée |
 | 4 | **Idempotence** asymétrique | double-tap = quantité doublée côté Lens | clé durable sur `POST /api/cart/items` |
 | 5 | **Boutique non supportée** non définie | AYWEBs refuse l'ajout (bouton désactivé) ; l'ordre ne dit pas quoi faire | renvoyer vers la **demande d'achat** existante (`POST /api/v1/aywebs/purchase-requests`, revue humaine) |
@@ -368,8 +368,8 @@ Navigateur AYWEBs ──capture──> AddToCartSheet ──> POST /aywebs/cart/
 
 | Lot | Contenu | Fichiers | Tests | Risque |
 |---|---|---|---|---|
-| **L0** | Rattrapage des lignes non pontées + badge panier unifié | `src/aywebs/ayroviBridge.ts`, `(tabs)/cart.tsx`, `aywebs/cart.tsx` | unitaires + HTTP | faible |
-| **L1** | Identité boutique unique | `shared/aywebsStores.ts`, `ayroviBridge.ts`, `lens/productOrder.ts` | table de correspondance | moyen (données existantes) |
+| **L0** | Rattrapage des lignes non pontées + badge panier unifié | `src/aywebs/zayroviBridge.ts`, `(tabs)/cart.tsx`, `aywebs/cart.tsx` | unitaires + HTTP | faible |
+| **L1** | Identité boutique unique | `shared/aywebsStores.ts`, `zayroviBridge.ts`, `lens/productOrder.ts` | table de correspondance | moyen (données existantes) |
 | **L2** | Idempotence du panier ZAYROVI | `src/api/routes.ts`, `database.ts` (colonne/table dédiée) | double POST = 1 ligne | moyen (migration additive) |
 | **L3** | Carte Lens → navigateur AYWEBs | `app/lens.tsx`, `storeEntry.ts`, `browser.tsx` | UI + contrat | moyen (repli obligatoire) |
 | **L4** | Écran de panier unique + revérification visible | `(tabs)/cart.tsx`, `aywebs/cart.tsx`, API | UI + HTTP + terrain | élevé (recette) |

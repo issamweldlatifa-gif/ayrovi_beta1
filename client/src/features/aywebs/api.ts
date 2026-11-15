@@ -229,7 +229,7 @@ export interface AyWebsVariantPriceOption {
   availability: string;
   availability_reason: string;
   image: string | null;
-  ayrovi_pricing: { total_tnd: number; pricing_version: number } | null;
+  zayrovi_pricing: { total_tnd: number; pricing_version: number } | null;
 }
 
 export interface AyWebsProductPayload {
@@ -272,7 +272,7 @@ export interface AyWebsProductPayload {
   integration_type: string;
   captured_at: string;
   evidence_hash: string;
-  ayrovi_pricing: {
+  zayrovi_pricing: {
     total_tnd: number;
     pricing_version: number;
     breakdown: Record<string, number>;
@@ -319,7 +319,7 @@ export interface AyWebsCartItemPayload {
   purchase_mode: string;
   checkout_ready: boolean;
   /** Panier unifié : la ligne vit déjà dans le panier ZAYROVI (synchronisée). */
-  linked_to_ayrovi?: boolean;
+  linked_to_zayrovi?: boolean;
 }
 
 export interface AyWebsCartPayload {
@@ -486,7 +486,7 @@ export async function addAyWebsCartItem(body: {
      * `linked: true` ⇒ l'article figure déjà dans le panier ZAYROVI de l'app.
      * `linked: false` ⇒ il reste dans le panier AYWEBs, la raison est donnée.
      */
-    ayrovi: (payload.data.ayrovi || null) as { linked: boolean; cart_item_id: string | null; quantity: number | null; reason: string } | null,
+    zayrovi: (payload.data.zayrovi || null) as { linked: boolean; cart_item_id: string | null; quantity: number | null; reason: string } | null,
   };
 }
 
@@ -514,8 +514,8 @@ export async function verifyAyWebsCart(recheckSource = false) {
 }
 
 /** §2/§16 : pont vers le panier ZAYROVI existant (réponse en camelCase, comme le service). */
-export async function bridgeAyWebsCartToAyrovi(itemIds?: string[]) {
-  const payload = await ayWebsRequest<any>('/cart/bridge-to-ayrovi', { method: 'POST', body: { item_ids: itemIds || [] } });
+export async function bridgeAyWebsCartToZayrovi(itemIds?: string[]) {
+  const payload = await ayWebsRequest<any>('/cart/bridge-to-zayrovi', { method: 'POST', body: { item_ids: itemIds || [] } });
   return payload.data as {
     moved: Array<{ aywebsItemId: string; aywebsItemNumber: string; cartItemId: string; store: string; title: string; quantity: number; priceTnd: number; duplicate: boolean; synced: boolean }>;
     skipped: Array<{ aywebsItemId: string; code: string; message: string }>;

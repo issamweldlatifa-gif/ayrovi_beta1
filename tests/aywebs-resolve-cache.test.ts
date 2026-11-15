@@ -21,7 +21,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-resolve-cache-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-resolve-cache-')), 'cache');
 
 import { QatafoDatabase } from '../src/db/database';
 import { createAyWebsContext } from '../src/aywebs/context';
@@ -136,7 +136,7 @@ describe('AYWEBs — cache de résolution : la fiche n’est pas relue pour rien
   test('les paramètres de suivi ne créent pas une seconde lecture pour le même article', async () => {
     const h = harness();
     await resolveAyWebsProduct(h.resolver, { url: AMAZON_URL, sessionId: SESSION_ID });
-    const tracked = `${AMAZON_URL}?ref_=nav_custrec_signin&th=1&utm_source=ayrovi`;
+    const tracked = `${AMAZON_URL}?ref_=nav_custrec_signin&th=1&utm_source=zayrovi`;
     const second = await resolveAyWebsProduct(h.resolver, { url: tracked, sessionId: SESSION_ID });
     expect(h.scrapeProduct).toHaveBeenCalledTimes(1);
     expect(second.fromCache).toBe(true);

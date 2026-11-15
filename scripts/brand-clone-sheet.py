@@ -176,6 +176,6 @@ out_svg = '\n'.join(svg)
 html = ('<!DOCTYPE html><html lang="ar" dir="ltr"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>'
         '<title>ZAYROVI — Brand Clone Study</title><style>body{margin:0;background:#fff;padding:12px}.wrap{max-width:1280px;margin:0 auto}</style></head>'
         '<body><div class="wrap">' + out_svg + '</div></body></html>')
-open('/home/user/ayrovi_beta1/docs/ayrovi-brand-clones.html', 'w').write(html)
+open('/home/user/ayrovi_beta1/docs/zayrovi-brand-clones.html', 'w').write(html)
 open('/tmp/brand-clones.svg', 'w').write(out_svg)
 print('OK')

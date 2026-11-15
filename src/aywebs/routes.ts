@@ -1,6 +1,6 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import multer from 'multer';
-import type { QatafoDatabase as AyroviDatabase } from '../db/database';
+import type { QatafoDatabase as ZayroviDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { calculatePrice, type PricingRules } from '../services/pricing';
 import { cardGatewayAvailable } from '../services/paymentGateway';
@@ -11,7 +11,7 @@ import { describeAyWebsCaptureScript } from './captureScript';
 import { ayWebsCaptureControlMode } from './captureControl';
 import { AYWEBS_CAPTURE_CONTRACT_VERSION } from './captureReaders/registry';
 import { AYWEBS_CAPTURE_TRACKED_STORES, ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
-import { getAyroviAiCore } from '../ai-core/core';
+import { getZayroviAiCore } from '../ai-core/core';
 import { ayWebsResolveCacheStats, ayWebsResolveFailureCacheStats } from './resolveCache';
 import {
   AYWEBS_CATEGORIES,
@@ -73,7 +73,7 @@ import {
   readAyWebsPurchaseRequest,
 } from './purchaseRequests';
 import { brightDataReady } from '../scraper/brightData';
-import { ayWebsCartLinkedMap, bridgeAyWebsCartToAyrovi, listAyWebsOrderLinks, syncAyWebsItemToAyroviCart } from './ayroviBridge';
+import { ayWebsCartLinkedMap, bridgeAyWebsCartToZayrovi, listAyWebsOrderLinks, syncAyWebsItemToZayroviCart } from './zayroviBridge';
 import {
   createAyWebsContext,
   optionalAyWebsCustomer,
@@ -142,7 +142,7 @@ export function rejectProvidedPage(raw: unknown): void {
   }
 }
 
-export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper): Router {
+export function createAyWebsRouter(db: ZayroviDatabase, scraper: SmartLinkScraper): Router {
   const router = Router();
   const ctx = createAyWebsContext(db, scraper);
   ensureAyWebsSchema(db);
@@ -465,7 +465,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
           },
         },
         ai_fallback_enabled: flags.aiExtractionEnabled,
-        ai_provider_ready: flags.aiExtractionEnabled && getAyroviAiCore().responses().isConfigured(),
+        ai_provider_ready: flags.aiExtractionEnabled && getZayroviAiCore().responses().isConfigured(),
         schema_ready: ayWebsSchemaReady(db),
         /** Honnêteté (§48) : l'achat marchand automatisé n'est pas connecté. */
         purchase_integration_enabled: flags.purchaseIntegrationEnabled,
@@ -984,19 +984,19 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     // ── POINT DE LIAISON SÛR (04/10/2026) ───────────────────────────────────
     // La ligne est DÉJÀ écrite dans `ayweb_cart_items` : cette réponse ne part
     // qu'après persistance. Elle est maintenant reflétée dans le panier ZAYROVI
-    // par SYNCHRONISATION — jamais une seconde addition (voir ayroviBridge).
+    // par SYNCHRONISATION — jamais une seconde addition (voir zayroviBridge).
     // Un échec du pont ne fait JAMAIS échouer l'ajout : le panier AYWEBs reste
     // la source, et « Proceed to order page » reprend la liaison.
     let bridged: { linked: boolean; cart_item_id: string | null; quantity: number | null; reason: string } | null = null;
     if (result.idempotentReplay) {
       // Replay the first bridge outcome verbatim; never repeat its side effect.
       // If an older snapshot predates bridge metadata, report no claimed link.
-      bridged = result.ayrovi || { linked: false, cart_item_id: null, quantity: null, reason: 'NOT_BRIDGED' };
+      bridged = result.zayrovi || { linked: false, cart_item_id: null, quantity: null, reason: 'NOT_BRIDGED' };
     } else {
       try {
         // Le pont est IDEMPOTENT : première liaison = création de la ligne ZAYROVI,
         // appels suivants = remise de la quantité au niveau AYWEBs. Jamais +1.
-        const bridge = bridgeAyWebsCartToAyrovi(db, {
+        const bridge = bridgeAyWebsCartToZayrovi(db, {
           sessionId: identity.sessionId,
           accountId: identity.accountId,
           itemIds: [result.item.id],
@@ -1023,7 +1023,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         bridged = { linked: false, cart_item_id: null, quantity: null, reason: 'BRIDGE_FAILED' };
       }
       if (!bridged) bridged = { linked: false, cart_item_id: null, quantity: null, reason: 'BRIDGE_FAILED' };
-      result.ayrovi = bridged;
+      result.zayrovi = bridged;
       saveAyWebsCartAddBridgeOutcome(db, identity, idempotencyKey, bridged);
     }
 
@@ -1035,7 +1035,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
         duplicate: result.duplicate,
         idempotent_replay: result.idempotentReplay,
         message: result.message,
-        ayrovi: bridged,
+        zayrovi: bridged,
         /* Phase 1 — pourquoi cet ajout a été instantané (ou pas) : le support et
            le client savent si le prix vient du devis signé ou d'une relecture. */
         quote_used: result.quoteUsed,
@@ -1064,7 +1064,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     // jamais d'addition) — sans jamais faire échouer la mutation AYWEBs.
     let bridged: { linked: boolean; removed: boolean; cartItemId: string | null; quantity: number | null; reason: string } | null = null;
     try {
-      bridged = syncAyWebsItemToAyroviCart(db, {
+      bridged = syncAyWebsItemToZayroviCart(db, {
         sessionId: identity.sessionId,
         accountId: identity.accountId,
         aywebsItemId: String(req.params.id),
@@ -1075,7 +1075,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     }
     res.json({
       success: true,
-      data: { item: result.item ? cartItemPayload(result.item) : null, removed: Boolean(result.removed), ayrovi: bridged },
+      data: { item: result.item ? cartItemPayload(result.item) : null, removed: Boolean(result.removed), zayrovi: bridged },
       cart: cartPayload(result.view, linkedStateFor(db, identity, result.view)),
     });
   }));
@@ -1092,7 +1092,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     // Retirer chez AYWEBs retire la MÊME ligne du panier ZAYROVI (aucun orphelin).
     let bridged: { linked: boolean; removed: boolean; cartItemId: string | null; quantity: number | null; reason: string } | null = null;
     try {
-      bridged = syncAyWebsItemToAyroviCart(db, {
+      bridged = syncAyWebsItemToZayroviCart(db, {
         sessionId: identity.sessionId,
         accountId: identity.accountId,
         aywebsItemId: String(req.params.id),
@@ -1101,7 +1101,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
     } catch (syncError) {
       console.error('[AyWebs][Bridge] retrait de la ligne liée impossible:', syncError instanceof Error ? syncError.message : syncError);
     }
-    res.json({ success: true, data: { removed: true, ayrovi: bridged }, cart: cartPayload(result.view, linkedStateFor(db, identity, result.view)) });
+    res.json({ success: true, data: { removed: true, zayrovi: bridged }, cart: cartPayload(result.view, linkedStateFor(db, identity, result.view)) });
   }));
 
   /** §29 : le client accepte explicitement le nouveau prix. Jamais automatique. */
@@ -1130,7 +1130,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
   }));
 
   /** Pont vers le panier ZAYROVI existant (§2 : aucun second panier côté ZAYROVI). */
-  router.post('/cart/bridge-to-ayrovi', optionalAyWebsCustomer(db), handle(async (req, res) => {
+  router.post('/cart/bridge-to-zayrovi', optionalAyWebsCustomer(db), handle(async (req, res) => {
     const identity = identityOf(req, res);
     if (!identity) return;
 
@@ -1155,7 +1155,7 @@ export function createAyWebsRouter(db: AyroviDatabase, scraper: SmartLinkScraper
       });
     }
 
-    const result = bridgeAyWebsCartToAyrovi(db, {
+    const result = bridgeAyWebsCartToZayrovi(db, {
       sessionId: identity.sessionId,
       accountId: identity.accountId,
       itemIds: Array.isArray(req.body?.item_ids) ? req.body.item_ids.map(String).slice(0, 60) : undefined,
@@ -1466,7 +1466,7 @@ function ayWebsVariantPricingPayload(
       evidence_source: variant.evidenceSource ?? null,
       quantity_tiers: variant.quantityTiers ?? [],
       image: variant.image,
-      ayrovi_pricing: usableQuote ? {
+      zayrovi_pricing: usableQuote ? {
         total_tnd: usableQuote.totalTND,
         pricing_version: usableQuote.pricingVersion,
         quantity_totals_tnd: quantityTotalsTnd,
@@ -1549,18 +1549,18 @@ function productPayload(
     integration_type: product.integrationType,
     captured_at: product.capturedAt,
     evidence_hash: product.evidenceHash,
-    ayrovi_pricing: product.ayroviPricing ? {
-      total_tnd: product.ayroviPricing.totalTnd,
-      pricing_version: product.ayroviPricing.pricingVersion,
+    zayrovi_pricing: product.zayroviPricing ? {
+      total_tnd: product.zayroviPricing.totalTnd,
+      pricing_version: product.zayroviPricing.pricingVersion,
       quantity_totals_tnd: pricingRules && quoteEvidence.priceVerified && quoteEvidence.currencyVerified
         ? computeQuantityTotalsTnd(pricingRules, product.price, product.currency, product.title)
         : null,
       breakdown: {
-        converted_source_price: product.ayroviPricing.breakdown.convertedSourcePrice,
-        shipping: product.ayroviPricing.breakdown.shipping,
-        customs: product.ayroviPricing.breakdown.customs,
-        service_fee: product.ayroviPricing.breakdown.serviceFee,
-        other: product.ayroviPricing.breakdown.other,
+        converted_source_price: product.zayroviPricing.breakdown.convertedSourcePrice,
+        shipping: product.zayroviPricing.breakdown.shipping,
+        customs: product.zayroviPricing.breakdown.customs,
+        service_fee: product.zayroviPricing.breakdown.serviceFee,
+        other: product.zayroviPricing.breakdown.other,
       },
     } : null,
   };
@@ -1667,7 +1667,7 @@ function cartPayload(
   // client somme les deux compteurs sans jamais doubler une ligne synchronisée.
   const withLinked = (item: Parameters<typeof cartItemPayload>[0]) => ({
     ...cartItemPayload(item),
-    linked_to_ayrovi: linked ? Boolean(linked.byId[item.id]) : undefined,
+    linked_to_zayrovi: linked ? Boolean(linked.byId[item.id]) : undefined,
   });
   return {
     cart: view.cart ? {
@@ -1705,7 +1705,7 @@ function cartPayload(
 
 /** État de liaison au panier ZAYROVI pour la vue courante (panier unifié). */
 function linkedStateFor(
-  database: AyroviDatabase,
+  database: ZayroviDatabase,
   identity: { sessionId: string; accountId: string | null },
   view: ReturnType<typeof readAyWebsCartView>,
 ) {

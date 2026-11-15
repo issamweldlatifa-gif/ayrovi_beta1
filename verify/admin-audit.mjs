@@ -12,15 +12,15 @@
  *      écriture exige le jeton CSRF, et le cookie de session porte les bons drapeaux.
  *
  * Sortie : `docs/admin-model-a/audit/*.json` + un rapport lisible `audit/RAPPORT.md`.
- * Usage  : AYROVI_BASE_URL=http://127.0.0.1:3000 AYROVI_ADMIN_PASSWORD=… node verify/admin-audit.mjs
+ * Usage  : ZAYROVI_BASE_URL=http://127.0.0.1:3000 ZAYROVI_ADMIN_PASSWORD=… node verify/admin-audit.mjs
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 
-const base = process.env.AYROVI_BASE_URL;
-if (!base) { console.error('AYROVI_BASE_URL est requis.'); process.exit(1); }
-const email = process.env.AYROVI_ADMIN_EMAIL || 'admin@ayrovi.tn';
-const password = process.env.AYROVI_ADMIN_PASSWORD || 'AyroviBeta2026!';
+const base = process.env.ZAYROVI_BASE_URL;
+if (!base) { console.error('ZAYROVI_BASE_URL est requis.'); process.exit(1); }
+const email = process.env.ZAYROVI_ADMIN_EMAIL || 'admin@zayrovi.com';
+const password = process.env.ZAYROVI_ADMIN_PASSWORD || 'ZayroviBeta2026!';
 const output = 'docs/admin-model-a/audit';
 fs.mkdirSync(output, { recursive: true });
 
@@ -155,7 +155,7 @@ await anonymousContext.close();
 /* Drapeaux du cookie : le cookie porte Path=/api/admin, il faut donc interroger ce chemin-là,
    sinon `context.cookies(base)` ne renvoie rien — c'était le défaut de la version précédente. */
 const cookies = await context.cookies(`${base}/api/admin`);
-const sessionCookie = cookies.find((cookie) => cookie.name === 'ayrovi_admin_session') || cookies[0] || {};
+const sessionCookie = cookies.find((cookie) => cookie.name === 'zayrovi_admin_session') || cookies[0] || {};
 
 /* Écriture sans jeton CSRF : doit être refusée (403), pas acceptée puis annulée. */
 const csrfProbe = await page.evaluate(async (base) => {
@@ -204,10 +204,10 @@ const hardened = {
 
 /* Session volée + déconnexion : la session doit être détruite côté serveur, pas seulement effacée
    dans le navigateur. On rejoue le cookie capturé APRÈS le POST /auth/logout. */
-const csrfToken = await page.evaluate(() => sessionStorage.getItem('ayrovi_admin_csrf'));
+const csrfToken = await page.evaluate(() => sessionStorage.getItem('zayrovi_admin_csrf'));
 const logoutOk = await page.evaluate(async (base) => {
   const response = await fetch(`${base}/api/admin/auth/logout`, {
-    method: 'POST', credentials: 'include', headers: { 'x-csrf-token': sessionStorage.getItem('ayrovi_admin_csrf') || '' },
+    method: 'POST', credentials: 'include', headers: { 'x-csrf-token': sessionStorage.getItem('zayrovi_admin_csrf') || '' },
   });
   return response.status;
 }, base);

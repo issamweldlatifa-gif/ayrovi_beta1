@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'ayrovi.ocerex.onboarding.v1';
+const STORAGE_KEY = 'zayrovi.ocerex.onboarding.v1';
 
 interface OnboardingRecord {
   guest?: boolean;

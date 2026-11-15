@@ -95,7 +95,7 @@ export const OcerexScreen: React.FC<{
     setUrlError(false);
     try {
       const resolved = await resolveOcerexLink(extraction.extractionId, url, csrfToken);
-      setExtraction({ ...extraction, ...resolved, ayroviPrice: extraction.ayroviPrice, referencePrice: extraction.referencePrice });
+      setExtraction({ ...extraction, ...resolved, zayroviPrice: extraction.zayroviPrice, referencePrice: extraction.referencePrice });
       setStep('summary');
     } catch (err) {
       if (err instanceof OcerexRequestError && err.code === 'INVALID_URL') { setUrlError(true); setBusy(false); return; }
@@ -159,7 +159,7 @@ export const OcerexScreen: React.FC<{
         ) : step === 'result' && extraction ? <OcerexResult extraction={extraction} busy={busy} urlError={urlError} onSubmit={(url) => void onLink(url)} />
         : step === 'summary' && extraction ? <OcerexSummary extraction={extraction} busy={busy} onConfirm={() => void onConfirm()} />
         : step === 'error' ? (
-          <OcerexError code={error} onRetry={reset} onCorrectUrl={() => setStep(extraction?.ayroviPrice ? 'result' : 'tool')} onContinueLink={(url) => void onContinueLink(url)} />
+          <OcerexError code={error} onRetry={reset} onCorrectUrl={() => setStep(extraction?.zayroviPrice ? 'result' : 'tool')} onContinueLink={(url) => void onContinueLink(url)} />
         ) : <OcerexHome busy={busy} onFile={(file, capture) => void onFile(file, capture)} />}
     </section>
   );

@@ -47,7 +47,7 @@ jest.mock('@/api/cart', () => {
   return {
     ...actual,
     addCatalogToCart: (input?: unknown) => mockAddCatalogToCart(input),
-    fetchAyroviCart: jest.fn(async () => ({
+    fetchZayroviCart: jest.fn(async () => ({
       sessionId: 'mob_1234567890123456',
       serverNow: new Date().toISOString(),
       items: [],
@@ -129,7 +129,7 @@ jest.mock('@/api/aywebs', () => {
     purchaseMode: 'ASSISTED',
     checkoutReady: true,
     lineTotalTnd: 75,
-    linkedToAyrovi: true,
+    linkedToZayrovi: true,
     createdAt: '2026-10-29T00:00:00.000Z',
     updatedAt: '2026-10-29T00:00:00.000Z',
   };
@@ -153,7 +153,7 @@ jest.mock('@/api/aywebs', () => {
     resolveAyWebsProductWithCapture: jest.fn(async () => {
       throw new Error('offline');
     }),
-    addAyWebsCartItem: jest.fn(async () => ({ item, cart, ayrovi: { linked: true, reason: '' } })),
+    addAyWebsCartItem: jest.fn(async () => ({ item, cart, zayrovi: { linked: true, reason: '' } })),
   };
 });
 
@@ -303,7 +303,7 @@ describe('Refonte du 29/10/2026 — Panier officiel, Fiche réservation 20 min e
       availability: { state: 'AVAILABLE', reason: '', checkedAt: '2026-10-29T00:00:00.000Z', source: 'server', quantityHint: null },
       purchaseMode: 'ASSISTED',
       integrationType: 'URL_REQUEST',
-      ayroviPricing: {
+      zayroviPricing: {
         totalTnd: 75,
         pricingVersion: 3,
         breakdown: null,

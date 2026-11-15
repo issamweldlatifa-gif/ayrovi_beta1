@@ -6,15 +6,15 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { lensImageKey, readLensCache, writeLensCache } from '../src/ayrovix/services/lensRecognitionCache';
+import { lensImageKey, readLensCache, writeLensCache } from '../src/zayrovix/services/lensRecognitionCache';
 
 let dir = '';
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-cache-'));
-  process.env.AYROVI_LENS_CACHE_DIR = dir;
-  delete process.env.AYROVI_LENS_CACHE;
-  delete process.env.AYROVI_LENS_RECOGNITION_TTL_MS;
-  delete process.env.AYROVI_LENS_MATCHES_TTL_MS;
+  process.env.ZAYROVI_LENS_CACHE_DIR = dir;
+  delete process.env.ZAYROVI_LENS_CACHE;
+  delete process.env.ZAYROVI_LENS_RECOGNITION_TTL_MS;
+  delete process.env.ZAYROVI_LENS_MATCHES_TTL_MS;
 });
 afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); });
 
@@ -76,26 +76,26 @@ describe('cache de reconnaissance Lens', () => {
   it('sous test, le cache est INACTIF sans répertoire isolé — un test ne doit pas dépendre de l’exécution précédente', () => {
     const key = lensImageKey(Buffer.from('photo'));
     writeLensCache(key, { identification: ident, matches });
-    const isolated = process.env.AYROVI_LENS_CACHE_DIR;
-    delete process.env.AYROVI_LENS_CACHE_DIR;
+    const isolated = process.env.ZAYROVI_LENS_CACHE_DIR;
+    delete process.env.ZAYROVI_LENS_CACHE_DIR;
     try {
       expect(readLensCache(key).hit).toBe('none');
     } finally {
-      process.env.AYROVI_LENS_CACHE_DIR = isolated;
+      process.env.ZAYROVI_LENS_CACHE_DIR = isolated;
     }
   });
 
   it('le cache est désactivable en production sans redéploiement', () => {
     const key = lensImageKey(Buffer.from('photo'));
     writeLensCache(key, { identification: ident, matches });
-    process.env.AYROVI_LENS_CACHE = 'false';
+    process.env.ZAYROVI_LENS_CACHE = 'false';
     expect(readLensCache(key).hit).toBe('none');
   });
 });
 
 describe('route Lens — usage du cache et mesure', () => {
-  const routes = fs.readFileSync('src/ayrovix/routes.ts', 'utf8');
-  const engine = fs.readFileSync('src/ayrovix/services/lensEngine.ts', 'utf8');
+  const routes = fs.readFileSync('src/zayrovix/routes.ts', 'utf8');
+  const engine = fs.readFileSync('src/zayrovix/services/lensEngine.ts', 'utf8');
 
   it('chaque moteur est mesuré séparément — plus deux fois la même durée', () => {
     expect(routes).not.toContain("Date.now() - tParallel");

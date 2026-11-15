@@ -11,11 +11,11 @@ describe('regenerableCacheDir', () => {
   it('sans variable : comportement historique, sous data/', () => {
     expect(regenerableCacheDir('media-proxy', {})).toBe(path.resolve(process.cwd(), 'data', 'media-proxy'));
   });
-  it('avec AYROVI_CACHE_ROOT : hors du disque persistant', () => {
-    expect(regenerableCacheDir('media-isolated', { AYROVI_CACHE_ROOT: '/srv/cache' })).toBe('/srv/cache/media-isolated');
+  it('avec ZAYROVI_CACHE_ROOT : hors du disque persistant', () => {
+    expect(regenerableCacheDir('media-isolated', { ZAYROVI_CACHE_ROOT: '/srv/cache' })).toBe('/srv/cache/media-isolated');
   });
   it('refuse un cache coûteux à reconstruire (reconnaissance Lens = appels IA facturés)', () => {
-    expect(() => regenerableCacheDir('lens-recognition' as never, { AYROVI_CACHE_ROOT: '/srv/cache' })).toThrow('CACHE_NOT_REGENERABLE');
+    expect(() => regenerableCacheDir('lens-recognition' as never, { ZAYROVI_CACHE_ROOT: '/srv/cache' })).toThrow('CACHE_NOT_REGENERABLE');
     expect(REGENERABLE_CACHES).not.toContain('lens-recognition');
   });
 });
@@ -41,7 +41,7 @@ it('chaque cache régénérable passe réellement par la racine (aucun chemin da
 it('render.yaml envoie les caches hors du point de montage persistant', () => {
   const blueprint = fs.readFileSync(path.resolve(process.cwd(), 'render.yaml'), 'utf8');
   const mount = /mountPath:\s*(\S+)/.exec(blueprint)?.[1];
-  const root = /key: AYROVI_CACHE_ROOT\s+value:\s*(\S+)/.exec(blueprint)?.[1];
+  const root = /key: ZAYROVI_CACHE_ROOT\s+value:\s*(\S+)/.exec(blueprint)?.[1];
   expect(mount).toBeTruthy();
   expect(root).toBeTruthy();
   expect(root!.startsWith(`${mount}/`) || root === mount).toBe(false);

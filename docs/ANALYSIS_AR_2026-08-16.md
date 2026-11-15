@@ -16,7 +16,7 @@ ZAYROVI ليس متجرًا تقليديًا فقط؛ هو منصة **تجارة
 
 - واجهة تسوق ومحتوى عامة.
 - تحويل الأسعار إلى الدينار التونسي مع الرسوم.
-- AYROVIX Lens للتعرف على المنتجات من الصور والروابط والأكواد.
+- ZAYROVIX Lens للتعرف على المنتجات من الصور والروابط والأكواد.
 - مساعد ذكي قابل لتنفيذ أدوات داخل النظام.
 - سلة، Checkout، حساب عميل، طلبات، عربون، فواتير وتتبع.
 - لوحة Admin تشمل CMS وOMS والتسعير والعملاء والتقارير والمحتوى الاجتماعي.
@@ -51,7 +51,7 @@ ZAYROVI ليس متجرًا تقليديًا فقط؛ هو منصة **تجارة
 
 - JavaScript الأولي التقريبي: **284.42KB خام / 86.70KB gzip** (`index` + `App`).
 - CSS العام: **123.26KB خام / 19.77KB gzip**.
-- AYROVIX Lens مؤجل لكنه كبير: **458.30KB خام / 121.90KB gzip**.
+- ZAYROVIX Lens مؤجل لكنه كبير: **458.30KB خام / 121.90KB gzip**.
 - Admin مؤجل: **127.86KB خام / 30.29KB gzip**.
 
 تقسيم الكود جيد؛ الزائر لا يحمل Lens وAdmin وCheckout كلها منذ البداية. لكن Lens ما زال يحتاج ميزانية أداء مستقلة، خصوصًا على هواتف متوسطة.
@@ -101,7 +101,7 @@ Anthropic / SerpApi / Groq / Google OAuth / SMS webhook / Mail provider
 - حفظ Pricing Snapshot داخل الطلب والعناصر.
 - معاملات SQLite عند إنشاء الطلب والعمليات الحساسة.
 - WAL وForeign Keys وBusy Timeout مع عدد جيد من الفهارس.
-- عزل الوحدات: Admin، Customer، Public، Assistant، AYROVIX، Scraper.
+- عزل الوحدات: Admin، Customer، Public، Assistant، ZAYROVIX، Scraper.
 - Code splitting حسب الشاشة/التفاعل.
 
 ### حدود العمارة
@@ -111,7 +111,7 @@ Anthropic / SerpApi / Groq / Google OAuth / SMS webhook / Mail provider
 - لا توجد Queue مستقلة للعمليات المكلفة مثل AI/OCR أو نظام Jobs دائم.
 - لا توجد طبقة Cache مشتركة أو Redis.
 - ملف `src/db/database.ts` وصل إلى نحو 1,397 سطرًا، و`src/admin/routes.ts` إلى نحو 1,249 سطرًا؛ الصيانة ستصبح أصعب مع توسع المنتج.
-- بعض الجداول الخاصة بـAYROVIX تُنشأ من ملفات Feature نفسها بدل Migration Registry موحد، ما يصعب تتبع نسخة المخطط.
+- بعض الجداول الخاصة بـZAYROVIX تُنشأ من ملفات Feature نفسها بدل Migration Registry موحد، ما يصعب تتبع نسخة المخطط.
 
 ---
 

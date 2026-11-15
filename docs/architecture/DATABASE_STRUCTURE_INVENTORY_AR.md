@@ -49,10 +49,10 @@
 | `assistant_tool_audit` | 19 | 4 | 0 | 0 |
 | `assistant_tool_idempotency` | 9 | 3 | 0 | 0 |
 | `audit_logs` | 21 | 6 | 0 | 0 |
-| `ayrovix_lens_traces` | 4 | 2 | 0 | 0 |
+| `zayrovix_lens_traces` | 4 | 2 | 0 | 0 |
 | `ayweb_audit_logs` | 11 | 3 | 0 | 0 |
 | `ayweb_cart_add_requests` | 8 | 3 | 0 | 0 |
-| `ayweb_cart_ayrovi_links` | 6 | 3 | 0 | 0 |
+| `ayweb_cart_zayrovi_links` | 6 | 3 | 0 | 0 |
 | `ayweb_cart_items` | 23 | 3 | 2 | 1 |
 | `ayweb_carts` | 8 | 3 | 1 | 0 |
 | `ayweb_checkout_fees` | 9 | 2 | 1 | 0 |

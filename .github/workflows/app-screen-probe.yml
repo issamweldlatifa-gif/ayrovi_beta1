@@ -40,7 +40,7 @@ jobs:
 
           call() {
             curl -s -o /tmp/probe.json -w '%{http_code}' --max-time 45 \
-              -H "x-ayrovi-client: $CLIENT" -H 'Accept: application/json' "$1"
+              -H "x-zayrovi-client: $CLIENT" -H 'Accept: application/json' "$1"
           }
 
           # Résumé tolérant : compte les éléments et montre un extrait lisible.

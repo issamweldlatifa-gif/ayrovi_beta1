@@ -17,7 +17,7 @@
  *   GET  /api/customer/account/orders       → [ { id, order_number, status, total_tnd, … } ]
  *
  * Le jeton (`session_token`) n'est présent que si le client s'est déclaré avec
- * `x-ayrovi-client` — c'est la couche réseau qui le pose (client.ts).
+ * `x-zayrovi-client` — c'est la couche réseau qui le pose (client.ts).
  */
 import { apiGet, apiGetData, apiSend, apiSendForm, type RequestOptions } from './client';
 

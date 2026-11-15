@@ -30,14 +30,14 @@ describe('security updates retain the APIs actually consumed by ZAYROVI', () => 
   });
   it('Capacitor can actually extract a template with tar 7 (not an incompatible tar-only override)', async () => {
     const {extractTemplate}=require('@capacitor/cli/dist/util/template');
-    const tar=require('tar');const dir=await mkdtemp(path.join(tmpdir(),'ayrovi-tar-'));
+    const tar=require('tar');const dir=await mkdtemp(path.join(tmpdir(),'zayrovi-tar-'));
     try {await writeFile(path.join(dir,'entry.txt'),'template');await tar.c({cwd:dir,file:path.join(dir,'template.tar.gz'),gzip:true},['entry.txt']);
       await extractTemplate(path.join(dir,'template.tar.gz'),path.join(dir,'result'));
       expect(await readFile(path.join(dir,'result/entry.txt'),'utf8')).toBe('template');
     } finally {await rm(dir,{recursive:true,force:true});}
   });
   it('the actual native asset script awaits composition and applies the requested logo scale', async () => {
-    const sharp=require('sharp');const dir=await mkdtemp(path.join(tmpdir(),'ayrovi-assets-'));
+    const sharp=require('sharp');const dir=await mkdtemp(path.join(tmpdir(),'zayrovi-assets-'));
     try {
       await mkdir(path.join(dir,'client/public/media'),{recursive:true});
       for (const d of ['assets/brand/zayrovi-2026-11', 'apps/mobile/src/design', 'client/src/design']) await mkdir(path.join(dir,d),{recursive:true});

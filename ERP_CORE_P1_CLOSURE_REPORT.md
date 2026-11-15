@@ -19,7 +19,7 @@ nouveaux, aucun test existant supprimé)**.
 
 Un point de l'énoncé n'a **pas** été fait tel que formulé, volontairement, et est
 documenté au §5 (`users:read` refusé à ADMIN) : il conflicte avec une attente figée par
-`tests/ayrovi.test.ts`, qui est une exigence de l'atelier (« les tests existants doivent
+`tests/zayrovi.test.ts`, qui est une exigence de l'atelier (« les tests existants doivent
 continuer de passer »).
 
 ---
@@ -93,7 +93,7 @@ Vérifications intermédiaires (obligation « ne jamais pousser un build rouge �
 
 - arbre de `fd8d9e1` (après durcissement du mode) : **359/359** dans un worktree neuf ;
 - arbre de `5b8cabb` (après correction des gates) : **359/359** dans un worktree neuf,
-  dont `tests/ayrovi.test.ts` — l'attente RBAC existante qui dit qu'ADMIN reçoit
+  dont `tests/zayrovi.test.ts` — l'attente RBAC existante qui dit qu'ADMIN reçoit
   403 sur `GET /users` est restée verte sans être modifiée ;
 - référence `2789927` (avant porte de clôture) : **350 tests**, d'où +23 exactement.
 
@@ -115,7 +115,7 @@ passage :
 
 | Sujet | Décision | Motif |
 |---|---|---|
-| `users:read` pour ADMIN | **Refusé** | `tests/ayrovi.test.ts:1232` fige « ADMIN gère les réglages mais ne voit pas les comptes ». Le corriger aurait demandé de modifier une attente existante pour un choix produit qui n'a pas été tranché. Le gate étant devenu nommable, l'accorder est désormais une ligne de données, plus une modification de code. |
+| `users:read` pour ADMIN | **Refusé** | `tests/zayrovi.test.ts:1232` fige « ADMIN gère les réglages mais ne voit pas les comptes ». Le corriger aurait demandé de modifier une attente existante pour un choix produit qui n'a pas été tranché. Le gate étant devenu nommable, l'accorder est désormais une ligne de données, plus une modification de code. |
 | Visibilité de l'entrée « Utilisateurs » côté client | inchangée (`users:write`) | `UsersPage` n'a pas de mode lecture seule ; montrer l'écran à un rôle qui ne peut que lire afficherait des boutons condamnés à 403. |
 | `lens-lab/*` (2 routes sous `settings:write`) | **Touché à rien** | hors périmètre de la porte ; le laboratoire d'objectifs est une fonction de réglages, et le test de non-régression le confirme inchangé. |
 | Passer `GET /users` en mode permissif (grant ERP seul, sans droit legacy) | **Refusé** | `permissive:false` est ce qui garantit que personne n'obtient la liste par accident. |

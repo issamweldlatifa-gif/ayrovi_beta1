@@ -235,7 +235,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
 
     return home.news.length ? (
       <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">{home.news.map((item) => (
-        <ContentCard key={item.id} variant="magazine" image={mediaSource(item.image, heroHomme)} title={item.title} description={item.summary} eyebrow={(!item.category || item.category === 'AYROVI' ? 'ZAYROVI' : String(item.category)).replaceAll('_', ' ')} dir="auto">
+        <ContentCard key={item.id} variant="magazine" image={mediaSource(item.image, heroHomme)} title={item.title} description={item.summary} eyebrow={(!item.category || item.category === 'ZAYROVI' ? 'ZAYROVI' : String(item.category)).replaceAll('_', ' ')} dir="auto">
           <p className="text-xs font-bold text-muted">{item.author}</p>
         </ContentCard>
       ))}</div>

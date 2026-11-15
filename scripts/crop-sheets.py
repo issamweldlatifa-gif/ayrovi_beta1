@@ -24,7 +24,7 @@ SHEETS = {
     'file_000000007340824691dc26e13cfeb890.png': {
         'prefix': '04-commerce-ai', 'count': 38,
         'names': ['Produits', 'Commandes', 'Arrivages', 'Panier', 'Favoris', 'Paiements', 'Factures', 'Suivi-colis', 'Adresses', 'Notifications',
-                  'ZAYROVI-AI', 'AYROVIX-Lens', 'AYVISI-Vision', 'Recherche-Web', 'Connecteurs', 'Code', 'Flash', 'Capture', 'Lien', 'Ajouter-image',
+                  'ZAYROVI-AI', 'ZAYROVIX-Lens', 'AYVISI-Vision', 'Recherche-Web', 'Connecteurs', 'Code', 'Flash', 'Capture', 'Lien', 'Ajouter-image',
                   'Chat', 'Support', 'Social', 'Message', 'Appel', 'Email', 'Info', 'Aide', 'Conditions', 'Confidentialite', 'Mentions-legales', 'A-propos',
                   'Langue', 'Mode-sombre', 'Parametres', 'Filtre', 'Tri', 'Localisation'],
         'header_frac': 0.21, 'footer_frac': 0.0,
@@ -44,7 +44,7 @@ SHEETS = {
         'names': ['Menu', 'Retour', 'Fermer', 'Options', 'Chevron', 'Accueil',
                   'Profil', 'Infos-personnelles', 'Securite', 'Parametres', 'Deconnexion',
                   'Produits', 'Commandes', 'Arrivages', 'Panier', 'Favoris', 'Promotions',
-                  'ZAYROVI-AI', 'AYROVIX-Lens', 'AYVISI-Vision', 'Recherche-Web', 'Connecteurs',
+                  'ZAYROVI-AI', 'ZAYROVIX-Lens', 'AYVISI-Vision', 'Recherche-Web', 'Connecteurs',
                   'Prendre-photo', 'Galerie', 'Lien', 'Flash', 'Code',
                   'Informations', 'Aide', 'Support', 'Conditions', 'Confidentialite'],
         'header_frac': 0.21, 'footer_frac': 0.08,
@@ -65,7 +65,7 @@ SHEETS = {
                   'Succes', 'Erreur', 'Attention', 'Information', 'Notification', 'En-attente',
                   'Ajouter', 'Modifier', 'Supprimer', 'Telecharger', 'Partager', 'Copier',
                   'Francais', 'Arabe', 'Globe', 'Mode-clair', 'Mode-sombre', 'Accessibilite',
-                  'ZAYROVI-AI-brain', 'AYROVIX-Lens', 'AYVISI-Vision', 'ZAYROVI-Shopping', 'ZAYROVI-Logo', 'AI-Sparkle', 'Scan-Reconnaissance'],
+                  'ZAYROVI-AI-brain', 'ZAYROVIX-Lens', 'AYVISI-Vision', 'ZAYROVI-Shopping', 'ZAYROVI-Logo', 'AI-Sparkle', 'Scan-Reconnaissance'],
         'header_frac': 0.21, 'footer_frac': 0.16,
     },
 }
@@ -131,7 +131,7 @@ def icon_cluster(group: list[dict]) -> dict | None:
 
 def main() -> int:
     src = Path('/home/user/uploads')
-    out_root = Path('/home/user/ayrovi_beta1/docs/ayrovi-icon-refs/sheets-cropped')
+    out_root = Path('/home/user/ayrovi_beta1/docs/zayrovi-icon-refs/sheets-cropped')
     out_root.mkdir(parents=True, exist_ok=True)
     report = {}
     for fname, spec in SHEETS.items():
@@ -190,7 +190,7 @@ def main() -> int:
                     parts.append({'x': x0, 'y': y0, 'w': x1 - x0, 'h': y1 - y0, 'area': a['area'] + b['area'],
                                   'cx': (x0 + x1) / 2, 'cy': (y0 + y1) / 2, 'pattern': True})
                     break
-        # نمط شبكة مدمجة (QR / قوسات AYROVIX Lens): 3+ أجزاء صغيرة في bbox مدمج متعدد الأعمدة/الصفوف
+        # نمط شبكة مدمجة (QR / قوسات ZAYROVIX Lens): 3+ أجزاء صغيرة في bbox مدمج متعدد الأعمدة/الصفوف
         sg_groups = group(small, gap=40)
         for g in sg_groups:
             if len(g) < 3:

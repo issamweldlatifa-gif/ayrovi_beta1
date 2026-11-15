@@ -133,7 +133,7 @@ export const AyWebsApp: React.FC<AyWebsAppProps> = ({
         />
       )}
       {tab === 'cart' && (
-        <AyWebsCartScreen tab={tab} onTab={onTab} onOpenAyroviCheckout={openCheckout} onCartChanged={setAyWebsCount} />
+        <AyWebsCartScreen tab={tab} onTab={onTab} onOpenZayroviCheckout={openCheckout} onCartChanged={setAyWebsCount} />
       )}
       {sheet && (
         <AyWebsVariantSheet

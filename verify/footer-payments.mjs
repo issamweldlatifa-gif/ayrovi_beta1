@@ -13,13 +13,13 @@
  *      débordement horizontal, ordre de lecture conservé en arabe (RTL) ;
  *   5. les invariants historiques du pied de page survivent : noir, quatre canaux, trois documents.
  *
- * Usage : AYROVI_BASE_URL=http://127.0.0.1:3000 node verify/footer-payments.mjs
+ * Usage : ZAYROVI_BASE_URL=http://127.0.0.1:3000 node verify/footer-payments.mjs
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 
-const base = process.env.AYROVI_BASE_URL;
-if (!base) { console.error('AYROVI_BASE_URL est requis.'); process.exit(1); }
+const base = process.env.ZAYROVI_BASE_URL;
+if (!base) { console.error('ZAYROVI_BASE_URL est requis.'); process.exit(1); }
 const output = 'docs/footer-payments/evidence';
 fs.mkdirSync(output, { recursive: true });
 
@@ -51,7 +51,7 @@ try {
     for (const [width, height] of [[390, 900], [1360, 900]]) {
       const view = `${suffix}-${width}`;
       const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 2, locale: locale === 'ar' ? 'ar-TN' : 'fr-TN' });
-      await context.addInitScript(value => { try { window.localStorage.setItem('ayrovi.locale.v1', value); } catch { /* stockage restreint */ } }, locale);
+      await context.addInitScript(value => { try { window.localStorage.setItem('zayrovi.locale.v1', value); } catch { /* stockage restreint */ } }, locale);
       const page = await context.newPage();
       const crashes = [];
       const serverErrors = [];

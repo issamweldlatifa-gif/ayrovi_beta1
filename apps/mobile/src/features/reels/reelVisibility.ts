@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const KEY = 'ayrovi.reels.hidden.device.v1';
+const KEY = 'zayrovi.reels.hidden.device.v1';
 let hidden: readonly string[] = [];
 let loading: Promise<void> | undefined;
 let writes = Promise.resolve();

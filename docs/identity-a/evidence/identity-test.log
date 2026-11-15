@@ -1,5 +1,5 @@
 
-> ayrovi@3.10.4 identity:test
+> zayrovi@3.10.4 identity:test
 > vitest run tests/brand-identity.test.ts
 
 

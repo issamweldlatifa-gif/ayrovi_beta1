@@ -50,11 +50,11 @@ describe('barre du bas transparente à coins arrondis compacts (5 onglets — st
     const fontPlugin = appJson.expo.plugins.find((entry: unknown) => Array.isArray(entry) && entry[0] === 'expo-font');
     expect(fontPlugin).toBeTruthy();
     expect(fontPlugin[1].fonts).toEqual([
-      './assets/fonts/AyroviExtracted-Regular.ttf',
-      './assets/fonts/AyroviExtracted-Medium.ttf',
-      './assets/fonts/AyroviExtracted-SemiBold.ttf',
-      './assets/fonts/AyroviExtracted-Bold.ttf',
-      './assets/fonts/AyroviExtracted-Heading.ttf',
+      './assets/fonts/ZayroviExtracted-Regular.ttf',
+      './assets/fonts/ZayroviExtracted-Medium.ttf',
+      './assets/fonts/ZayroviExtracted-SemiBold.ttf',
+      './assets/fonts/ZayroviExtracted-Bold.ttf',
+      './assets/fonts/ZayroviExtracted-Heading.ttf',
       './assets/fonts/NotoSansArabic-Regular.ttf',
       './assets/fonts/NotoSansArabic-Bold.ttf',
     ]);
@@ -180,7 +180,7 @@ describe('Sonim — modèle et outils serveur', () => {
   });
 });
 
-describe('Ayrovi Extracted Sans — parité de la source web et du mobile', () => {
+describe('Zayrovi Extracted Sans — parité de la source web et du mobile', () => {
   function readFontMetrics(relPath: string): {
     numGlyphs: number; usWeightClass: number; version: string; family: string;
     unitsPerEm: number; ascender: number; descender: number; lineGap: number;
@@ -240,21 +240,21 @@ describe('Ayrovi Extracted Sans — parité de la source web et du mobile', () =
   }
 
   it('embarque les poids et largeurs observés issus du WOFF2 extrait, avec métriques verticales et GPOS conservés', () => {
-    const build = JSON.parse(readFileSync(path.resolve(ROOT, '../../assets/fonts/ayrovi-extracted-fonts.json'), 'utf8'));
+    const build = JSON.parse(readFileSync(path.resolve(ROOT, '../../assets/fonts/zayrovi-extracted-fonts.json'), 'utf8'));
     const instances = [
       [400, 'Regular', 102.5], [520, 'Medium', 102.5], [650, 'SemiBold', 102.5],
       [700, 'Bold', 102.5], [520, 'Heading', 112.5],
     ] as const;
     for (const [weight, subfamily, width] of instances) {
-      const relative = `assets/fonts/AyroviExtracted-${subfamily}.ttf`;
+      const relative = `assets/fonts/ZayroviExtracted-${subfamily}.ttf`;
       const bytes = readFileSync(path.join(ROOT, relative));
       const record = build.static_instances.find((entry: { file: string }) => entry.file === `apps/mobile/${relative}`);
       expect(record).toBeTruthy();
       expect(record.width).toBe(width);
       expect(createHash('sha256').update(bytes).digest('hex')).toBe(record.sha256);
-      expect(bytes.equals(readFileSync(path.resolve(ROOT, `../../assets/fonts/AyroviExtracted-${subfamily}.ttf`)))).toBe(true);
+      expect(bytes.equals(readFileSync(path.resolve(ROOT, `../../assets/fonts/ZayroviExtracted-${subfamily}.ttf`)))).toBe(true);
       expect(readFontMetrics(relative)).toMatchObject({
-        numGlyphs: 438, usWeightClass: weight, version: 'Version 1.700', family: 'Ayrovi Extracted Sans',
+        numGlyphs: 438, usWeightClass: weight, version: 'Version 1.700', family: 'Zayrovi Extracted Sans',
         unitsPerEm: 1000, ascender: 964, descender: -250, lineGap: 0,
         gposSha256: record.gpos.sha256, cff: false, variable: false,
       });

@@ -38,8 +38,8 @@ RED = (214, 32, 45)
 
 DEJAVU = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 DEJAVU_B = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-BRAND_R = ROOT / "assets/fonts/AyroviExtracted-Regular.ttf"
-BRAND_B = ROOT / "assets/fonts/AyroviExtracted-Bold.ttf"
+BRAND_R = ROOT / "assets/fonts/ZayroviExtracted-Regular.ttf"
+BRAND_B = ROOT / "assets/fonts/ZayroviExtracted-Bold.ttf"
 
 
 def F(size, bold=False):

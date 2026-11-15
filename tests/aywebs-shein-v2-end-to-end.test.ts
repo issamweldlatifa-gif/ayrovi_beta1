@@ -21,7 +21,7 @@ import request from 'supertest';
 import { JSDOM } from 'jsdom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-shein-v2-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-shein-v2-')), 'cache');
 
 import { detectAyWebsStore } from '../shared/aywebsStores';
 import { QatafoDatabase } from '../src/db/database';
@@ -340,8 +340,8 @@ describe('AYWEBs — SHEIN v2 : activation, capture avancée, options et convers
       title: resolved.product.title,
       quantity: 1,
     });
-    expect(resolved.product.ayroviPricing?.totalTnd).toBe(expectedPricing.totalTND);
-    expect(resolved.product.ayroviPricing!.totalTnd).toBeGreaterThan(80);
+    expect(resolved.product.zayroviPricing?.totalTnd).toBe(expectedPricing.totalTND);
+    expect(resolved.product.zayroviPricing!.totalTnd).toBeGreaterThan(80);
 
     const added = await addAyWebsCartItem(h.resolver, {
       sessionId: SESSION_ID,
@@ -423,7 +423,7 @@ describe('AYWEBs — SHEIN v2 : activation, capture avancée, options et convers
     });
     expect(['AVAILABLE', 'LOW_STOCK']).toContain(resolvedM.product.availability.state);
     expect(resolvedM.product.availability.quantityHint).toBe(3);
-    expect(resolvedM.product.ayroviPricing?.totalTnd).toBe(expectedM.totalTND);
+    expect(resolvedM.product.zayroviPricing?.totalTnd).toBe(expectedM.totalTND);
 
     /* Sélection de Noir + XL (24,90 €) depuis la MÊME capture initiale ⇒ devis TND de 24,90 € */
     const resolvedXL = await resolveAyWebsProduct(h.resolver, {
@@ -437,8 +437,8 @@ describe('AYWEBs — SHEIN v2 : activation, capture avancée, options et convers
       title: resolvedXL.product.title,
       quantity: 1,
     });
-    expect(resolvedXL.product.ayroviPricing?.totalTnd).toBe(expectedXL.totalTND);
-    expect(resolvedXL.product.ayroviPricing!.totalTnd).toBeGreaterThan(expectedM.totalTND);
+    expect(resolvedXL.product.zayroviPricing?.totalTnd).toBe(expectedXL.totalTND);
+    expect(resolvedXL.product.zayroviPricing!.totalTnd).toBeGreaterThan(expectedM.totalTND);
 
     /* Bascule vers la couleur sœur Rouge (-p-400991122.html, 23,90 €) via VariantReader */
     const rougeUrl = sheinVariantPageUrl(noirUrl, rougeOpt.goodsId)!;
@@ -459,7 +459,7 @@ describe('AYWEBs — SHEIN v2 : activation, capture avancée, options et convers
       quantity: 1,
     });
     expect(resolvedRougeM.product.availability.state).toBe('AVAILABLE');
-    expect(resolvedRougeM.product.ayroviPricing?.totalTnd).toBe(expectedRouge.totalTND);
+    expect(resolvedRougeM.product.zayroviPricing?.totalTnd).toBe(expectedRouge.totalTND);
 
     const addedRouge = await addAyWebsCartItem(h.resolver, {
       sessionId: SESSION_ID,

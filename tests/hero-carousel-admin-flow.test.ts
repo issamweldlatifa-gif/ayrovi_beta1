@@ -31,7 +31,7 @@ describe('carrousel Hero — flux Admin de bout en bout', () => {
 
   test('upload → carte → palette → activation → publication → télémétrie', async () => {
     // 1) session admin
-    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     const auth = { 'x-csrf-token': login.body.data.csrfToken as string };
 

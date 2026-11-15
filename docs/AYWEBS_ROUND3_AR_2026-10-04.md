@@ -47,7 +47,7 @@
 كان زر «تسجيل الدخول» في الدرج ينادي `openWebRoute("/account")` — أي أنّه
 **يهدم صفحة المتجر في منتصف الشراء** لمجرّد أنّك أردت رؤية مفضّلتك. الآن:
 - `sheet_aywebs_login.xml`: بريد + كلمة مرور فوق الدرج، يناديان
-  `POST /api/customer/auth/email/login` برأس `x-ayrovi-native: 1` (بدونه لا
+  `POST /api/customer/auth/email/login` برأس `x-zayrovi-native: 1` (بدونه لا
   يُصدر الخادم رمزاً أصليّاً، فتبقى القشرة غير مسجّلة رغم نجاح الدخول).
 - بعد النجاح يُعاد فتح الدرج **ممتلئاً**، والصفحة المعروضة لم تتحرّك.
 
@@ -67,4 +67,4 @@
 | `android:check` | ✅ **43** ثابتاً |
 | `vitest run` | ✅ **2211 / 2211** |
 | `npm run build` | ✅ |
-| `assembleDebug` | ✅ `AYROVI-1.0.5-debug.apk` |
+| `assembleDebug` | ✅ `ZAYROVI-1.0.5-debug.apk` |

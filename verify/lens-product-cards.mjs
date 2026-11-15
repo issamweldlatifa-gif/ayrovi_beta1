@@ -12,11 +12,11 @@ try{
  for(const [engine,type] of [['chromium',chromium],['firefox',firefox]])for(const locale of ['fr','ar']){
   const browser=await type.launch();
   try{
-   const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});await context.addInitScript(l=>localStorage.setItem('ayrovi.locale.v1',l),locale);
+   const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});await context.addInitScript(l=>localStorage.setItem('zayrovi.locale.v1',l),locale);
    const p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));
-   await p.route('**/*',r=>{const u=r.request().url();return /^https?:/.test(u)&&!u.startsWith(process.env.AYROVI_BASE_URL+'/')?r.abort():r.continue();});
+   await p.route('**/*',r=>{const u=r.request().url();return /^https?:/.test(u)&&!u.startsWith(process.env.ZAYROVI_BASE_URL+'/')?r.abort():r.continue();});
    let favorites=[],writes=[],reads=0,failNext=false;
-   await p.route('**/api/ayrovix/live-stock',r=>r.fulfill({json:{success:true,data:{results:[{url:'https://example.com/p/0',availability:'in_stock',price:84,currency:'EUR',originalPrice:null,priceTnd:598,originalPriceTnd:null,sizes:[],colors:[],images:[],checkedAt:new Date().toISOString(),reason:'fixture'}]}}}));
+   await p.route('**/api/zayrovix/live-stock',r=>r.fulfill({json:{success:true,data:{results:[{url:'https://example.com/p/0',availability:'in_stock',price:84,currency:'EUR',originalPrice:null,priceTnd:598,originalPriceTnd:null,sizes:[],colors:[],images:[],checkedAt:new Date().toISOString(),reason:'fixture'}]}}}));
    await p.route('**/api/customer/account/favorites**',async r=>{
     const method=r.request().method();
     if(method==='GET'){reads++;return r.fulfill({json:{success:true,data:favorites}});}
@@ -27,7 +27,7 @@ try{
    });
    const priceText=new Intl.NumberFormat(locale==='ar'?'ar-TN':'fr-TN',{minimumFractionDigits:2,maximumFractionDigits:2}).format(598)+(locale==='ar'?' د.ت':' DT');
    const heartLabel=locale==='ar'?'المفضّلة':'Favori';
-   await p.goto(process.env.AYROVI_BASE_URL+'/__verify/sonim');await p.evaluate(()=>lensResultsTest.setLoading(false));await p.locator('.lens-sheet-handle').click();await p.evaluate(()=>document.fonts.ready);
+   await p.goto(process.env.ZAYROVI_BASE_URL+'/__verify/sonim');await p.evaluate(()=>lensResultsTest.setLoading(false));await p.locator('.lens-sheet-handle').click();await p.evaluate(()=>document.fonts.ready);
    const cards=p.locator('.lens-result-grid article.s-card'),first=cards.first();await first.waitFor();
    check(`${engine}/${locale}: shop card is the only result card`,await p.locator('.lens-result-grid article.s-card').count()>0&&await p.locator('.lens-product-card').count()===0);
    check(`${engine}/${locale}: clean reference card`,await first.innerText().then(s=>!/(Estimation|Prix boutique|Prix final|douane|transport|Tailles\/couleurs|Match|94%|Voir le produit|السعر النهائي|جمركة)/.test(s)&&s.includes(priceText)),priceText);

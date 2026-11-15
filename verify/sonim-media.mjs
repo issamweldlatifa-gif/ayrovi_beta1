@@ -10,7 +10,7 @@ try {
     const ar=locale==='ar', key=`${locale}/${width}`;
     const ctx=await browser.newContext({viewport:{width,height:844},reducedMotion:'reduce'});
     await ctx.addInitScript(locale=>{
-      localStorage.setItem('ayrovi.locale.v1',locale);
+      localStorage.setItem('zayrovi.locale.v1',locale);
       const realBitmap=window.createImageBitmap.bind(window), realFetch=window.fetch.bind(window), realNow=Date.now;
       window.mediaTest={holdImages:true,images:[],closedBitmaps:0,permissions:[],tracks:[],recorders:[],transcripts:[],abortedTranscripts:0,clock:0,holdStop:false,lateStops:[]};
       const m=window.mediaTest; Date.now=()=>realNow()+m.clock;
@@ -50,7 +50,7 @@ try {
     const grant=async index=>{await page.evaluate(index=>mediaTest.permissions[index].grant(),index);await button('Terminer l’enregistrement','إنهاء التسجيل').waitFor();};
     const finish=async()=>{const index=await page.evaluate(()=>mediaTest.transcripts.length);await page.evaluate(()=>mediaTest.clock+=1000);await button('Terminer l’enregistrement','إنهاء التسجيل').click();await page.waitForFunction(index=>mediaTest.transcripts.length===index+1,index);return index;};
     const reply=async(index,text,status=200)=>{await page.evaluate(({index,text,status})=>mediaTest.transcripts[index].reply(text,status),{index,text,status});await page.waitForTimeout(100);};
-    await page.goto(process.env.AYROVI_BASE_URL+'/__verify/sonim');await open();
+    await page.goto(process.env.ZAYROVI_BASE_URL+'/__verify/sonim');await open();
 
     let image=await pick('OLD_CONVERSATION.png');await escape();await reset();await release(image);
     check(`${key}: delayed image neither enters a new conversation nor closes SONIM`,await composer().count()===1&&await composer().locator('img').count()===0);

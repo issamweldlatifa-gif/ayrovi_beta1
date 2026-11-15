@@ -12,7 +12,7 @@ if (!input) {
 let root, source, restored;
 try {
   source = new Database(path.resolve(input), { readonly: true, fileMustExist: true });
-  root = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-restore-drill-'));
+  root = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-restore-drill-'));
   fs.chmodSync(root, 0o700);
   const destination = path.join(root, 'restored.sqlite');
   // SQLite backup API includes committed WAL data; never copy an open main file alone.

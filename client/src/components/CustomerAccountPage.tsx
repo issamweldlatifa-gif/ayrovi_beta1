@@ -719,7 +719,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
                   elle se lisait comme un bouton de plus. Centrée, elle
                   redevient ce qu'elle est — une signature. */}
               <div className="ay-auth__brand ay-auth__brand--centered" dir="ltr">
-                <img src="/media/logo-ayrovi-lockup-black-violet.svg?v=7.0" alt="ZAYROVI" className="ay-auth__logo ay-auth__logo--wordmark" />
+                <img src="/media/logo-zayrovi-lockup-black-violet.svg?v=7.0" alt="ZAYROVI" className="ay-auth__logo ay-auth__logo--wordmark" />
               </div>
               <div className="ay-auth__intro">
                 <h1 id="auth-title" tabIndex={-1}>
@@ -917,7 +917,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     if(section==='payments')return renderPayments(); if(section==='invoices')return renderInvoices(); if(section==='tracking')return renderTracking();
     if(section==='addresses')return renderAddresses(); if(section==='favorites')return renderFavorites(); if(section==='cart')return renderCart();
     if(section==='notifications')return renderNotifications(); if(section==='appearance')return renderSettings(); if(section==='security')return renderSecurity(); if(section==='settings')return renderSettings();
-    if(section==='lensHelp')return <div className="mx-auto max-w-2xl rounded-card border border-line bg-white p-6"><ScanSearch className="h-9 w-9 text-ink"/><h3 className="mt-4 text-xl font-black">{tr('Aide AYROVIX Lens','مساعدة عدسة AYROVIX')}</h3><p className="mt-3 text-sm leading-7 text-muted">{tr('Photographiez le produit entier, gardez le prix et la variante visibles, puis vérifiez le lien source avant de l’ajouter au panier.','صوّر المنتج كاملًا وأبقِ السعر والخصائص ظاهرة ثم تحقق من رابط المصدر قبل إضافته للسلة.')}</p><div className="ac-form-stack mt-5"><Button onClick={()=>navigation.navigate([{id:'app:lens'},{id:'lens:home'}])}>{tr('Ouvrir AYROVIX Lens','فتح AYROVIX Lens')}</Button><Button variant="secondary" onClick={()=>navigation.navigate([{id:'app:assistant'}])}>{tr('Ouvrir l’assistant','فتح المساعد')}</Button></div></div>;
+    if(section==='lensHelp')return <div className="mx-auto max-w-2xl rounded-card border border-line bg-white p-6"><ScanSearch className="h-9 w-9 text-ink"/><h3 className="mt-4 text-xl font-black">{tr('Aide ZAYROVIX Lens','مساعدة عدسة ZAYROVIX')}</h3><p className="mt-3 text-sm leading-7 text-muted">{tr('Photographiez le produit entier, gardez le prix et la variante visibles, puis vérifiez le lien source avant de l’ajouter au panier.','صوّر المنتج كاملًا وأبقِ السعر والخصائص ظاهرة ثم تحقق من رابط المصدر قبل إضافته للسلة.')}</p><div className="ac-form-stack mt-5"><Button onClick={()=>navigation.navigate([{id:'app:lens'},{id:'lens:home'}])}>{tr('Ouvrir ZAYROVIX Lens','فتح ZAYROVIX Lens')}</Button><Button variant="secondary" onClick={()=>navigation.navigate([{id:'app:assistant'}])}>{tr('Ouvrir l’assistant','فتح المساعد')}</Button></div></div>;
     return <div className="mx-auto max-w-2xl space-y-3"><a href="/terms.html" target="_blank" rel="noreferrer" className="flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black"><span>{tr('Conditions générales','الشروط العامة')}</span><ExternalLink className="h-7 w-7"/></a><a href="/privacy.html" target="_blank" rel="noreferrer" className="flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black"><span>{tr('Politique de confidentialité','سياسة الخصوصية')}</span><ExternalLink className="h-7 w-7"/></a></div>;
   };
 
@@ -926,7 +926,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     if(sectionLayer)navigation.back();else openSection('home');
   };
   const authVisible=!session||phoneLinkOpen||phoneLoginOpen;
-  return <div className={`${session ? 'ayrovix-theme-scope customer-account ' : ''}fixed inset-0 z-[95] overflow-hidden bg-surface`} dir={direction} role="dialog" aria-modal="true" aria-label={session?tr('Mon compte ZAYROVI','حسابي في ZAYROVI'):tr('Connexion client ZAYROVI','تسجيل الدخول إلى ZAYROVI')}>
+  return <div className={`${session ? 'zayrovix-theme-scope customer-account ' : ''}fixed inset-0 z-[95] overflow-hidden bg-surface`} dir={direction} role="dialog" aria-modal="true" aria-label={session?tr('Mon compte ZAYROVI','حسابي في ZAYROVI'):tr('Connexion client ZAYROVI','تسجيل الدخول إلى ZAYROVI')}>
     {!authVisible&&<AccountHeader section={section} onBack={accountBack}/>}
     <div ref={contentRef} className={authVisible?'h-[100dvh] overflow-y-auto':'ac-scroll'}>{loadingSession?<div className="ac-loading" role="status"><Loader2 className="h-8 w-8 animate-spin" aria-hidden/><span>{tr('Chargement…','جارٍ التحميل…')}</span></div>:authVisible?authPanel:<main className="ac-main">
       {notice&&<div className="ac-notice" role="status"><CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden/><span>{notice}</span><button type="button" aria-label={tr('Fermer le message','إغلاق الرسالة')} onClick={()=>setNotice('')}><X className="h-5 w-5" aria-hidden/></button></div>}

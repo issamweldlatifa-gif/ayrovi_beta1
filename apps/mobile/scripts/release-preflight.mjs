@@ -25,7 +25,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULTS = {
   apiBase: 'https://ayrovi-beta1-moo8.onrender.com',
   origin: 'https://ayrovi-beta1-moo8.onrender.com',
-  packageName: 'app.ayrovi.mobile',
+  packageName: 'app.zayrovi.mobile',
   repo: 'issamweldlatifa-gif/ayrovi_beta1',
   branch: 'arena/9fd9a9fc-ayrovi-beta1',
   timeoutMs: 8000,
@@ -73,7 +73,7 @@ function usage() {
     'المدخلات (كلها اختيارية):',
     '  --api-base <url>     عنوان الخادم اللي يتچرى في الحزمة (افتراضي https://ayrovi-beta1-moo8.onrender.com)',
     '  --origin <url>       أصل الموقع اللي فيه assetlinks.json (افتراضي مثل الخادم)',
-    '  --package <id>       اسم الحزمة (افتراضي app.ayrovi.mobile)',
+    '  --package <id>       اسم الحزمة (افتراضي app.zayrovi.mobile)',
     '  --version-name <s>   الإصدار اللي باش يتنشر (لازم ≥ متاع app.json)',
     '  --version-code <n>   كود الإصدار (لازم > متاع app.json، يزيد دايماً)',
     '  --branch-commit <s>  SHA متاع الفرع بدل سؤال GitHub',

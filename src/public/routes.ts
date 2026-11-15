@@ -196,9 +196,9 @@ export function createPublicRouter(db: QatafoDatabase): Router {
           : null,
       },
       capabilities: { cardGateway: cardGatewayAvailable() },
-      // Feature flags — LIVE multi-product vision. مفعّل افتراضيًا؛ عطّله بـ AYROVIX_LENS_LIVE_ENABLED=false
+      // Feature flags — LIVE multi-product vision. مفعّل افتراضيًا؛ عطّله بـ ZAYROVIX_LENS_LIVE_ENABLED=false
       features: {
-        ayrovixLensLive: process.env.AYROVIX_LENS_LIVE_ENABLED !== 'false',
+        zayrovixLensLive: process.env.ZAYROVIX_LENS_LIVE_ENABLED !== 'false',
         aywebsEnabled: !['0', 'false', 'off', 'disabled'].includes(String(process.env.AYWEBS_ENABLED ?? 'true').trim().toLowerCase()),
       },
       // تعليمات دفع العربون المعروضة في نموذج الطلب (قابلة للتحرير من لوحة الأدمن)
@@ -280,7 +280,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       const native = await getNativeCard(url, width);
       if (native.file) {
         res.setHeader('Content-Type', 'image/jpeg');
-        res.setHeader('X-Ayrovi-Card', `native-${native.mode}`);
+        res.setHeader('X-Zayrovi-Card', `native-${native.mode}`);
         res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
         res.send(readNativeCard(native.file));
         return;
@@ -296,7 +296,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       const meta = await getComposedCard(url, width);
       if (meta.file) {
         res.setHeader('Content-Type', 'image/png');
-        res.setHeader('X-Ayrovi-Card', 'composed');
+        res.setHeader('X-Zayrovi-Card', 'composed');
         res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
         res.send(readComposedPng(meta.file));
         return;
@@ -337,7 +337,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         .png()
         .toBuffer();
       res.setHeader('Content-Type', 'image/png');
-      res.setHeader('X-Ayrovi-Card', 'letterbox');
+      res.setHeader('X-Zayrovi-Card', 'letterbox');
       res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
       res.send(letterboxed);
       return;
@@ -364,7 +364,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     if (!PROXY_WIDTHS.has(width)) { res.status(400).json({ success: false, error: 'INVALID_WIDTH' }); return; }
     try {
       const crypto = await import('node:crypto');
-      const dir = process.env.AYROVI_PROXY_CACHE_DIR || regenerableCacheDir('media-proxy');
+      const dir = process.env.ZAYROVI_PROXY_CACHE_DIR || regenerableCacheDir('media-proxy');
       const key = crypto.createHash('sha256').update(`${width}|${url}`).digest('hex').slice(0, 32);
       const file = path.join(dir, `${key}.webp`);
       await imageWork.share(`proxy|${file}`, async () => {
@@ -528,7 +528,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data });
   });
 
-  /** AYROVIX LENS HERO — إعدادات عامة (خلفية/محتوى) — كل المحتوى من الـ Dashboard */
+  /** ZAYROVIX LENS HERO — إعدادات عامة (خلفية/محتوى) — كل المحتوى من الـ Dashboard */
   router.get('/lens-hero', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const row = db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'");

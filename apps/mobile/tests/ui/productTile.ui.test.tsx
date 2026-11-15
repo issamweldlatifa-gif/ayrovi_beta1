@@ -247,7 +247,7 @@ describe('Boutique — grille et bascule grandes / petites photos', () => {
     expect(grid().props.numColumns).toBe(2);
     expect(screen.getByTestId('product-density-toggle').props.accessibilityLabel).toBe('Afficher en petites photos');
     const AsyncStorage = require('@react-native-async-storage/async-storage');
-    const saved = JSON.parse((await AsyncStorage.getItem('ayrovi.prefs.v1')) ?? '{}');
+    const saved = JSON.parse((await AsyncStorage.getItem('zayrovi.prefs.v1')) ?? '{}');
     expect(saved.productDensity).toBe('large');
 
     // Toutes les cartes de la grille ont la même hauteur.

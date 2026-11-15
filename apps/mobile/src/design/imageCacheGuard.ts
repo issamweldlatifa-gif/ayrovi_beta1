@@ -24,7 +24,7 @@
  *      monotone sur chaque APK de démonstration.
  */
 
-export const IMAGE_CACHE_STAMP_STORAGE_KEY = 'ayrovi.imageCacheStamp.v1';
+export const IMAGE_CACHE_STAMP_STORAGE_KEY = 'zayrovi.imageCacheStamp.v1';
 
 export interface ImageCacheStampInput {
   version?: string | null;

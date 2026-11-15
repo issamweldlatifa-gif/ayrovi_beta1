@@ -8,7 +8,7 @@ import { QatafoDatabase } from '../src/db/database';
 const cleanEnvironment = () => Object.fromEntries(Object.entries(process.env).filter(([key])=>!key.startsWith('BACKUP_') && key!=='DATABASE_PATH'));
 const run=(script: string, args: string[], env: NodeJS.ProcessEnv)=>spawnSync(process.execPath,[script,...args],{cwd:process.cwd(),env,encoding:'utf8',timeout:30_000});
 it('backs up committed WAL content, verifies an isolated restore and preserves business rows on application reopen',async()=>{
-  const root=fs.mkdtempSync(path.join(os.tmpdir(),'ayrovi-backup-test-'));
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'zayrovi-backup-test-'));
   const sourcePath=path.join(root,'source.sqlite'), backupDir=path.join(root,'backups');
   let db: QatafoDatabase | undefined, restored: QatafoDatabase | undefined;
   try {
@@ -63,7 +63,7 @@ it('backs up committed WAL content, verifies an isolated restore and preserves b
   } finally {restored?.close();db?.close();fs.rmSync(root,{recursive:true,force:true});}
 },40_000);
 it('rejects absent/corrupt backups and FK violations without creating a missing input',()=>{
-  const root=fs.mkdtempSync(path.join(os.tmpdir(),'ayrovi-invalid-backup-'));
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'zayrovi-invalid-backup-'));
   try {
     const missing=path.join(root,'missing.sqlite');
     expect(run('scripts/verify-sqlite-backup.mjs',[missing],cleanEnvironment()).status).not.toBe(0);
@@ -74,10 +74,10 @@ it('rejects absent/corrupt backups and FK violations without creating a missing 
     raw.pragma('foreign_keys=OFF');raw.exec('CREATE TABLE parent(id TEXT PRIMARY KEY);CREATE TABLE child(parent_id TEXT REFERENCES parent(id));INSERT INTO child VALUES (\'missing\');');raw.close();
     expect(run('scripts/verify-sqlite-backup.mjs',[bad],cleanEnvironment()).status).not.toBe(0);
     const backupDir=path.join(root,'backups');fs.mkdirSync(backupDir);
-    const old=path.join(backupDir,'ayrovi-old.sqlite');fs.writeFileSync(old,'retained');fs.utimesSync(old,0,0);
+    const old=path.join(backupDir,'zayrovi-old.sqlite');fs.writeFileSync(old,'retained');fs.utimesSync(old,0,0);
     const result=run('scripts/backup-sqlite.mjs',[],{...cleanEnvironment(),DATABASE_PATH:bad,BACKUP_DIR:backupDir});
     expect(result.status).not.toBe(0);
     expect(fs.readFileSync(old,'utf8')).toBe('retained');
-    expect(fs.readdirSync(backupDir)).toEqual(['ayrovi-old.sqlite']);
+    expect(fs.readdirSync(backupDir)).toEqual(['zayrovi-old.sqlite']);
   } finally {fs.rmSync(root,{recursive:true,force:true});}
 });

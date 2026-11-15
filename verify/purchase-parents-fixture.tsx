@@ -5,10 +5,10 @@ import { createRoot } from 'react-dom/client';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import { CustomerIdentity } from '../client/src/design/editorial/CustomerIdentity';
 import { NavigationHistoryProvider, useNavigationHistory } from '../client/src/navigation/NavigationHistory';
-import { LensLauncher } from '../client/src/ayrovix/components/LensLauncher';
+import { LensLauncher } from '../client/src/zayrovix/components/LensLauncher';
 import { AiAssistantDrawer } from '../client/src/components/assistant/AiAssistantDrawer';
 import { ShopBagScreen } from '../client/src/shop/ShopBagScreen';
-import type { AyrovixOrderPayload } from '../client/src/ayrovix/types';
+import type { ZayrovixOrderPayload } from '../client/src/zayrovix/types';
 import type { CartItem } from '../client/src/types';
 import { getSessionId } from '../client/src/utils/session';
 
@@ -25,7 +25,7 @@ function PurchaseParents() {
     if (!response.ok || !data.success) throw new Error(data.error || 'Cart unavailable');
     setItems(data.items); setTotalTND(data.totalTND); setDeliveryTND(data.deliveryTND);
   };
-  const onOrder = async (payload: AyrovixOrderPayload) => {
+  const onOrder = async (payload: ZayrovixOrderPayload) => {
     const response = await fetch('/api/cart/items', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'x-session-id': getSessionId() },
       body: JSON.stringify(payload),
@@ -35,7 +35,7 @@ function PurchaseParents() {
     await refresh();
   };
   const onOpenCart = () => { void refresh().then(() => setCartOpen(true)); };
-  return <main className="ayrovix-theme-scope">
+  return <main className="zayrovix-theme-scope">
     <button data-open onClick={() => nav.pushLayer({ id: lens ? 'app:lens' : 'app:assistant' })}>Open purchase parent</button>
     {lens && nav.has('app:lens') && <LensLauncher isOpen onClose={() => nav.back()} onOrder={onOrder}
       onOpenCart={onOpenCart} cartCount={items.length} darkMode={false} onToggleDarkMode={() => {}}/>}

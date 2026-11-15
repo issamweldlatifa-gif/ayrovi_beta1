@@ -1,8 +1,8 @@
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 
-const origin = process.env.AYROVI_BASE_URL;
-const api = process.env.AYROVI_API_URL || 'http://127.0.0.1:3000';
+const origin = process.env.ZAYROVI_BASE_URL;
+const api = process.env.ZAYROVI_API_URL || 'http://127.0.0.1:3000';
 const output = '.cache/mobile-purchase-check';
 mkdirSync(output, { recursive: true });
 const checks = [];

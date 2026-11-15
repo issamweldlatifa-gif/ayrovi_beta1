@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { pipelineKey } from '../src/ayrovix/routes';
+import { pipelineKey } from '../src/zayrovix/routes';
 
 describe('Lens pipeline cache identity', () => {
   test('hashes every image byte and the user intent with a full SHA-256 digest', () => {

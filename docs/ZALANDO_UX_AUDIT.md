@@ -223,7 +223,7 @@
 
 | مبدأ Zalando (رسمي) | قرار ZAYROVI |
 |---|---|
-| Tokens مركزية = مصدر حقيقة واحد، تتحوّل لكل منصة | `ayrovi-design-system.html` يعرّف **CSS Custom Properties المرجعية**؛ عند الدمج تُنسخ إلى `index.css` بدون تغيير قيم |
+| Tokens مركزية = مصدر حقيقة واحد، تتحوّل لكل منصة | `zayrovi-design-system.html` يعرّف **CSS Custom Properties المرجعية**؛ عند الدمج تُنسخ إلى `index.css` بدون تغيير قيم |
 | Extended Atomic: Tokens → عناصر أساسية → مكوّنات → تجارب أعمال (Organisms مملوكة للفرق) | في ZAYROVI: Tokens → Atoms (زر/حقل/Badge) → Molecules (بطاقة منتج/شريط بحث) → Organisms (Hero، Arrivage rail، Checkout sheet) |
 | Semantic tokens (Background/Text/Border) بدل hex منتشر | كل المكوّنات تستهلك `--ay-bg` `--ay-text` `--ay-primary`…؛ لا hex داخل مكوّن |
 | Theming عبر دمج base + theme | يتوافق مع محرّك الثيم الحي الحالي في لوحة الإدارة (site_theme JSON) — نفس أسماء المتغيرات |
@@ -251,8 +251,8 @@
 
 ```
 ZALANDO_UX_AUDIT.md   ← هذا الملف (Discover/Define)
-ayrovi-design-system.html  ← المختبر البصري V1   ⟵ نتوقّف هنا للمراجعة
-ayrovi-home-v1.html        ← Prototype الرئيسية V1 ⟵ يراجع معه
+zayrovi-design-system.html  ← المختبر البصري V1   ⟵ نتوقّف هنا للمراجعة
+zayrovi-home-v1.html        ← Prototype الرئيسية V1 ⟵ يراجع معه
         ↓ Review → V2 → Approval
 Login → Accueil → Recherche → Arrivage → Stories → Product →
 Calculator → Cart → Checkout → Orders → Profile

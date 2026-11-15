@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:name=".AyroviApplication"
+        android:name=".ZayroviApplication"
         android:allowBackup="false"
         android:usesCleartextTraffic="false"
         android:icon="@mipmap/ic_launcher"
@@ -28,12 +28,12 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
 
-            <!-- AYWEBs §25 : liens profonds ayrovi://aywebs[…]. -->
+            <!-- AYWEBs §25 : liens profonds zayrovi://aywebs[…]. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="ayrovi" android:host="aywebs" />
+                <data android:scheme="zayrovi" android:host="aywebs" />
             </intent-filter>
         </activity>
 

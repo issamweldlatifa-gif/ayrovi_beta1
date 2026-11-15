@@ -1,34 +1,36 @@
 /**
- * AYROVI → ZAYROVI (2026-10-16) — la marque change partout (site, back-office, application,
- * courriels, factures, pages légales, documents), SAUF le serveur et le nom de domaine.
+ * ZAYROVI partout (16/10/2026, puis 16/11/2026).
+ *
+ * Le 16/10 la marque affichée est devenue ZAYROVI. Le 16/11, le nom de domaine
+ * proche de l'ancienne marque ayant été réservé par un tiers, TOUT ce qui portait
+ * encore l'ancien nom a été renommé : domaine (zayrovi.com), e-mails, identifiant
+ * Android/iOS, schéma de lien, routes, en-têtes, cookies, tables, variables
+ * d'environnement, fichiers.
  *
  * Ce fichier verrouille :
- *   1. le nouveau logo (Z officiel) : un seul tracé, identique sur le site, l'application et
+ *   1. le logo (Z officiel) : un seul tracé, identique sur le site, l'application et
  *      l'écran de chargement statique ;
- *   2. aucun « AYROVI » visible ne revient dans les sources produit — les seules occurrences
- *      restantes sont des IDENTIFIANTS, nommés ici avec leur raison ;
- *   3. ce qui ne doit PAS changer : domaine, identifiant Android, schéma de lien ;
- *   4. la migration one-shot des valeurs enregistrées (graines d'origine seulement) ;
+ *   2. l'ancien nom n'apparaît plus NULLE PART dans le dépôt, hors une liste courte
+ *      d'exceptions nommées ici avec leur raison ;
+ *   3. l'identité technique : domaine, identifiant Android/iOS, schéma de lien ;
+ *   4. la migration one-shot des textes enregistrés (graines d'origine seulement) ;
  *   5. l'APK de démo : le libellé réécrit par la CI suit le nom de l'application.
+ *
+ * L'ancien nom n'est jamais écrit ici en clair : il vient de `shared/formerBrand.ts`.
  */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { describe, expect, test } from 'vitest';
 import { QatafoDatabase } from '../src/db/database';
 import { BRAND_SYMBOL } from '../client/src/design/brandSymbol';
+import { FORMER_BRAND, FORMER_ENV_PREFIX } from '../shared/formerBrand';
 
 const ROOT = process.cwd();
 const read = (rel: string) => fs.readFileSync(path.resolve(ROOT, rel), 'utf8');
-function walk(rel: string, pattern: RegExp): string[] {
-  const out: string[] = [];
-  for (const entry of fs.readdirSync(path.resolve(ROOT, rel), { withFileTypes: true })) {
-    const child = path.posix.join(rel, entry.name);
-    if (entry.isDirectory()) { if (entry.name !== 'node_modules') out.push(...walk(child, pattern)); }
-    else if (pattern.test(entry.name)) out.push(child);
-  }
-  return out;
-}
+const OLD = FORMER_BRAND.toUpperCase();
+const Old = FORMER_BRAND[0].toUpperCase() + FORMER_BRAND.slice(1);
 
 describe('1. Z zébré (v7) : un seul tracé partout', () => {
   test('site, application et écran de chargement statique partagent exactement le même tracé', () => {
@@ -59,46 +61,46 @@ describe('1. Z zébré (v7) : un seul tracé partout', () => {
   });
 });
 
-describe('2. plus aucun « AYROVI » visible dans les sources produit', () => {
-  /** Les seules occurrences autorisées : des identifiants, jamais du texte affiché. */
-  const ALLOWED: Array<[RegExp, string]> = [
-    [/Ayrovi Extracted Sans|AYROVI EXTRACTED SANS/, 'nom technique de la famille de police OFL exigé par le système typographique'],
-    [/'AYROVI'(?=,'INFORMATION'|,\s*'INFORMATION')/, 'valeur d’énumération de la catégorie de news (CHECK en base)'],
-    [/category(?:: | TEXT NOT NULL DEFAULT )'AYROVI'/, 'catégorie de news par défaut (valeur stockée)'],
-    [/value: 'AYROVI'/, 'valeur de la catégorie de news (libellé affiché : ZAYROVI)'],
-    [/^\s*'AYROVI',$/, 'liste des codes de catégorie de news (application)'],
-    [/news\.category\.AYROVI/, 'clé de traduction de la catégorie de news'],
-    [/(?:^|[\s{,])AYROVI: '/, 'clé d’un dictionnaire indexé par la catégorie de news'],
-    [/=== 'AYROVI'|!== 'AYROVI'/, 'comparaison avec le code de catégorie de news'],
-    [/: 'AYROVI';$/, 'catégorie de news par défaut (service magazine)'],
-    [/\|\| 'AYROVI', 80\) \|\| 'AYROVI'|allowed\.includes\(category\) \? category : 'AYROVI'/, 'catégorie de news par défaut (service magazine)'],
-    [/^\s*'AYROVI', cleanText\(input\.adminId/, 'catégorie de news d’un brouillon (service magazine)'],
-    [/: 'AYROVI',$/, 'catégorie de news par défaut (API admin)'],
-    [/Client AYROVI/, 'nom provisoire des comptes clients, stocké et comparé tel quel'],
-    [/lastName: names\.join\(' '\) \|\| 'AYROVI'/, 'nom transmis au marchand pour l’expédition vers l’entrepôt (logistique)'],
-    [/AYROVI-WH-TN/, 'code d’emplacement de l’entrepôt'],
-    [/\['AYROVI', '1'\]/, 'marqueur de format du QR des factures déjà imprimées'],
-    [/AYROVI → ZAYROVI|catégorie de news `AYROVI`/, 'commentaire qui documente la migration de données'],
-    [/'AYROVI', 'ZAYROVI'\]|'(?:مجلة|Identité|Colis consolidé en entrepôt) [^']*AYROVI[^']*', '/, 'anciennes valeurs recherchées par la migration (miroir employé, séquences, barre publique)'],
-    [/setting_value='AYROVI'|name='AYROVI Admin'|'AYROVI LENS'|AYROVI Admin'|'Équipe AYROVI'|AYROVI est ouvert|AYROVI centralise|tendance AYROVI|Social AYROVI|'Ayrovi', 'Zayrovi'|AYROVI en mouvement|équipe AYROVI a sélectionné|AYROVI livre dans|gérés par AYROVI|IA AYROVI|"AYROVI LENS"|'AYROVI', 'ZAYROVI'|si AYROVI ne peut/, 'anciennes valeurs recherchées par les migrations de données'],
-  ];
-  const files = [
-    ...walk('client/src', /\.(tsx?|css|json)$/),
-    ...walk('src', /\.(ts|tsx)$/),
-    ...walk('shared', /\.ts$/),
-    ...walk('apps/mobile/src', /\.(tsx?|json)$/),
-    ...walk('apps/mobile/app', /\.tsx?$/),
-    ...walk('client/public', /\.(html|webmanifest|txt)$/),
-    'client/index.html', 'apps/mobile/app.json', 'capacitor.config.ts',
-    ...walk('android/app/src/main/res', /^strings\.xml$/),
-  ];
+describe('2. l’ancien nom a disparu du dépôt', () => {
+  /**
+   * Exceptions — et seulement elles :
+   *  • `shared/formerBrand.ts` : étiquettes cryptographiques figées (sinon secrets
+   *    TOTP, codes de secours et e-mails chiffrés deviennent illisibles), nom à
+   *    migrer dans les bases existantes, préfixe des anciennes variables Render ;
+   *  • les noms d'INFRASTRUCTURE qui appartiennent au propriétaire et ne se
+   *    renomment pas depuis le code : sous-domaines `onrender.com` des services,
+   *    nom du dépôt GitHub et de ses branches ;
+   *  • `render.yaml` : nom du service et du disque persistant — les renommer dans
+   *    le blueprint créerait un NOUVEAU disque vide (base de données perdue) ;
+   *  • le repli `secrets.<ancien>_…` des workflows, tant que les secrets GitHub
+   *    n'ont pas été recréés sous le nouveau nom.
+   */
+  const former = new RegExp(`(?<![zZ])${FORMER_BRAND}`, 'i');
+  const infrastructure = new RegExp(`${FORMER_BRAND}[-_]beta1`, 'gi');
+  const allowedLine = (rel: string, line: string): boolean => {
+    if (rel === 'render.yaml') return line.trim() === `name: ${FORMER_BRAND}` || line.trim() === `name: ${FORMER_BRAND}-data`;
+    if (rel.startsWith('.github/workflows/')) return !former.test(line.replace(new RegExp(`secrets\\.${FORMER_ENV_PREFIX}_[A-Z0-9_]+`, 'g'), ''));
+    return false;
+  };
 
-  test('chaque occurrence restante est un identifiant nommé ici', () => {
+  test('aucun fichier, aucun chemin ne porte l’ancien nom (hors exceptions)', () => {
+    const listed = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: ROOT })
+      .toString('utf8').split('\0').filter((rel) => rel && fs.existsSync(path.resolve(ROOT, rel)));
     const offenders: string[] = [];
-    for (const rel of files) {
-      read(rel).split('\n').forEach((line, index) => {
-        if (!/(?<![A-Za-z0-9_.\/-])(?:AYROVI|Ayrovi)(?![A-Za-z0-9_]|\$\{)|أيروفي/.test(line)) return;
-        if (ALLOWED.some(([pattern]) => pattern.test(line))) return;
+    for (const rel of listed) {
+      if (former.test(rel.replace(infrastructure, ''))) offenders.push(`${rel} (chemin)`);
+      if (rel === 'shared/formerBrand.ts') continue;
+      const raw = fs.readFileSync(path.resolve(ROOT, rel));
+      if (raw.subarray(0, 8192).includes(0)) {
+        // binaire : polices (table `name` en ASCII ou UTF-16BE), images, archives
+        const latin = raw.toString('latin1');
+        const utf16 = raw.toString('latin1').replace(/\0/g, '');
+        if (former.test(latin.replace(infrastructure, '')) || former.test(utf16.replace(infrastructure, ''))) offenders.push(`${rel} (contenu binaire)`);
+        continue;
+      }
+      raw.toString('utf8').split('\n').forEach((line, index) => {
+        if (!former.test(line.replace(infrastructure, ''))) return;
+        if (allowedLine(rel, line)) return;
         offenders.push(`${rel}:${index + 1}: ${line.trim().slice(0, 140)}`);
       });
     }
@@ -115,20 +117,23 @@ describe('2. plus aucun « AYROVI » visible dans les sources produit', () => {
   });
 });
 
-describe('3. ce qui ne change pas tant que le domaine n’est pas acheté', () => {
-  test('domaine, identifiant Android et schéma de lien restent ceux d’AYROVI', () => {
+describe('3. identité technique ZAYROVI', () => {
+  test('domaine zayrovi.com, identifiant app.zayrovi.mobile, schéma zayrovi://', () => {
     const app = JSON.parse(read('apps/mobile/app.json')).expo;
-    expect(app.android.package).toBe('app.ayrovi.mobile');
-    expect(app.ios.bundleIdentifier).toBe('app.ayrovi.mobile');
-    expect(app.scheme).toBe('ayrovi');
-    expect(app.android.intentFilters[0].data.map((d: { host: string }) => d.host)).toContain('ayrovi.tn');
-    expect(read('capacitor.config.ts')).toContain("appId: 'app.ayrovi.mobile',");
-    expect(read('client/index.html')).toContain('<link rel="canonical" href="https://ayrovi.tn/" />');
+    expect(app.slug).toBe('zayrovi');
+    expect(app.android.package).toBe('app.zayrovi.mobile');
+    expect(app.ios.bundleIdentifier).toBe('app.zayrovi.mobile');
+    expect(app.scheme).toBe('zayrovi');
+    const hosts = app.android.intentFilters[0].data.map((d: { host: string }) => d.host);
+    expect(hosts).toEqual(expect.arrayContaining(['zayrovi.com', 'www.zayrovi.com']));
+    expect(read('capacitor.config.ts')).toContain("appId: 'app.zayrovi.mobile',");
+    expect(read('client/index.html')).toContain('<link rel="canonical" href="https://zayrovi.com/" />');
+    expect(read('android/app/build.gradle')).toContain('applicationId "app.zayrovi.mobile"');
   });
 });
 
 describe('4. migration one-shot des valeurs enregistrées', () => {
-  test('les graines d’origine passent à ZAYROVI ; un texte édité et les identifiants restent intacts', () => {
+  test('les graines d’origine passent à ZAYROVI ; un texte édité reste intact', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-rebrand-'));
     const file = path.join(dir, 'db.sqlite');
     try {
@@ -136,17 +141,17 @@ describe('4. migration one-shot des valeurs enregistrées', () => {
       // base neuve : les graines disent déjà ZAYROVI
       expect(fresh.get<any>("SELECT setting_value AS v FROM settings WHERE setting_key='company_name'").v).toBe('ZAYROVI');
       // on simule une base d'avant le changement de nom…
-      fresh.run("UPDATE settings SET setting_value='AYROVI' WHERE setting_key IN ('company_name','company_legal_name')");
-      fresh.run("UPDATE settings SET setting_value='Acompte remboursé si AYROVI ne peut pas valider ou acheter l’article demandé' WHERE setting_key='unavailable_refund_policy'");
-      fresh.run("UPDATE stories_showcase_settings SET title='Social AYROVI' WHERE id='global'");
-      fresh.run("UPDATE lens_hero_settings SET phone_status_label='AYROVI LENS', sections_json=REPLACE(sections_json,'Propulsé par l’IA ZAYROVI','Propulsé par l’IA AYROVI') WHERE id='global'");
-      fresh.run("UPDATE story_publishers SET name='Ayrovi' WHERE id='pub_ayrovi'");
-      fresh.run("UPDATE erp_organizations SET name='AYROVI', legal_name='AYROVI' WHERE code='ORG-0001'");
-      fresh.run("UPDATE ai_knowledge SET answer='AYROVI livre dans les 24 gouvernorats. Le délai indicatif configuré est de 5 à 8 jours ouvrés.' WHERE id='ai_delivery'");
-      fresh.run("UPDATE public_nav_items SET label_ar='مجلة AYROVI' WHERE destination='news'");
-      fresh.run("UPDATE erp_sequences SET description='Colis consolidé en entrepôt AYROVI' WHERE sequence_key='ayweb_package_number'");
+      fresh.run(`UPDATE settings SET setting_value='${OLD}' WHERE setting_key IN ('company_name','company_legal_name')`);
+      fresh.run(`UPDATE settings SET setting_value='Acompte remboursé si ${OLD} ne peut pas valider ou acheter l’article demandé' WHERE setting_key='unavailable_refund_policy'`);
+      fresh.run(`UPDATE stories_showcase_settings SET title='Social ${OLD}' WHERE id='global'`);
+      fresh.run(`UPDATE lens_hero_settings SET phone_status_label='${OLD} LENS', sections_json=REPLACE(sections_json,'Propulsé par l’IA ZAYROVI','Propulsé par l’IA ${OLD}') WHERE id='global'`);
+      fresh.run(`UPDATE story_publishers SET name='${Old}' WHERE id='pub_zayrovi'`);
+      fresh.run(`UPDATE erp_organizations SET name='${OLD} SARL', legal_name='${OLD} SARL' WHERE code='ORG-0001'`);
+      fresh.run(`UPDATE ai_knowledge SET answer='${OLD} livre dans les 24 gouvernorats. Le délai indicatif configuré est de 5 à 8 jours ouvrés.' WHERE id='ai_delivery'`);
+      fresh.run(`UPDATE public_nav_items SET label_ar='مجلة ${OLD}' WHERE destination='news'`);
+      fresh.run(`UPDATE erp_sequences SET description='Colis consolidé en entrepôt ${OLD}' WHERE sequence_key='ayweb_package_number'`);
       // … avec un texte déjà personnalisé par l'admin, qui ne doit pas bouger
-      fresh.run("UPDATE ai_knowledge SET answer='Réponse écrite par l’équipe AYROVI, à garder.' WHERE id='ai_payment'");
+      fresh.run(`UPDATE ai_knowledge SET answer='Réponse écrite par l’équipe ${OLD}, à garder.' WHERE id='ai_payment'`);
       fresh.run("DELETE FROM applied_data_migrations WHERE key='rebrand_zayrovi_v1'");
       fresh.close?.();
 
@@ -159,13 +164,14 @@ describe('4. migration one-shot des valeurs enregistrées', () => {
       const lens = migrated.get<any>("SELECT phone_status_label, sections_json FROM lens_hero_settings WHERE id='global'");
       expect(lens.phone_status_label).toBe('ZAYROVI LENS');
       expect(lens.sections_json).toContain('Propulsé par l’IA ZAYROVI');
-      expect(lens.sections_json).not.toContain('IA AYROVI');
-      expect(migrated.get<any>("SELECT name FROM story_publishers WHERE id='pub_ayrovi'").name).toBe('Zayrovi');
-      expect(migrated.get<any>("SELECT name, legal_name FROM erp_organizations WHERE code='ORG-0001'")).toEqual({ name: 'ZAYROVI', legal_name: 'ZAYROVI' });
+      expect(lens.sections_json).not.toContain(`IA ${OLD}`);
+      expect(migrated.get<any>("SELECT name FROM story_publishers WHERE id='pub_zayrovi'").name).toBe('Zayrovi');
+      // texte libre qui n'est PAS une graine : la migration n'y touche pas
+      expect(migrated.get<any>("SELECT name FROM erp_organizations WHERE code='ORG-0001'").name).toBe(`${OLD} SARL`);
       expect(migrated.get<any>("SELECT answer FROM ai_knowledge WHERE id='ai_delivery'").answer).toMatch(/^ZAYROVI livre/);
       expect(migrated.get<any>("SELECT label_ar FROM public_nav_items WHERE destination='news'").label_ar).toBe('مجلة ZAYROVI');
       expect(migrated.get<any>("SELECT description FROM erp_sequences WHERE sequence_key='ayweb_package_number'").description).toBe('Colis consolidé en entrepôt ZAYROVI');
-      expect(migrated.get<any>("SELECT answer FROM ai_knowledge WHERE id='ai_payment'").answer).toBe('Réponse écrite par l’équipe AYROVI, à garder.');
+      expect(migrated.get<any>("SELECT answer FROM ai_knowledge WHERE id='ai_payment'").answer).toBe(`Réponse écrite par l’équipe ${OLD}, à garder.`);
       expect(migrated.get<any>("SELECT 1 AS ok FROM applied_data_migrations WHERE key='rebrand_zayrovi_v1'")).toBeTruthy();
       migrated.close?.();
     } finally {

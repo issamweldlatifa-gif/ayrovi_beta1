@@ -13,7 +13,7 @@ const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, ligh
   return (
     <div className="flex items-center gap-2.5 px-4 pb-3 pt-4 sm:px-5">
       <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
-        {post.publisher.official ? <img src="/media/logo-ayrovi-avatar.svg?v=7.0" alt="" className="h-10 w-10 object-contain" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-ink">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
+        {post.publisher.official ? <img src="/media/logo-zayrovi-avatar.svg?v=7.0" alt="" className="h-10 w-10 object-contain" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-ink">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
       </span>
       <div className="min-w-0 flex-1 leading-tight">
         <p className={`flex items-center gap-1 text-sm font-extrabold ${light ? 'text-white' : 'text-ink'}`}>
@@ -98,16 +98,16 @@ const PostActions: React.FC<{
 }> = ({ post, liked, onLike, onComment }) => {
   const { tr } = useLocale();
   const [saved, setSaved] = React.useState(() => {
-    try { const value = JSON.parse(localStorage.getItem('ayrovi_saved') || '[]'); return Array.isArray(value) && value.includes(post.id); } catch { return false; }
+    try { const value = JSON.parse(localStorage.getItem('zayrovi_saved') || '[]'); return Array.isArray(value) && value.includes(post.id); } catch { return false; }
   });
   const toggleSave = () => {
     const next = !saved;
     setSaved(next);
     try {
-      const value = JSON.parse(localStorage.getItem('ayrovi_saved') || '[]');
+      const value = JSON.parse(localStorage.getItem('zayrovi_saved') || '[]');
       const list: string[] = Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string').slice(0, 500) : [];
       const updated = next ? [...new Set([...list, post.id])] : list.filter((id: string) => id !== post.id);
-      localStorage.setItem('ayrovi_saved', JSON.stringify(updated));
+      localStorage.setItem('zayrovi_saved', JSON.stringify(updated));
     } catch { /* */ }
   };
   return (

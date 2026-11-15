@@ -12,9 +12,9 @@ const checkoutCss = readFileSync('client/src/shop/shop.css', 'utf8');
 const confirmationCss = readFileSync('client/src/styles/order-confirmation.css', 'utf8');
 const runtimeCss = readFileSync('client/src/styles/interface-runtime.css', 'utf8');
 const indexCss = readFileSync('client/src/index.css', 'utf8');
-const lensLauncherSource = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
-const lensCameraSource = readFileSync('client/src/ayrovix/components/LensCamera.tsx', 'utf8');
-const lensUploadSource = readFileSync('client/src/ayrovix/components/LensUpload.tsx', 'utf8');
+const lensLauncherSource = readFileSync('client/src/zayrovix/components/LensLauncher.tsx', 'utf8');
+const lensCameraSource = readFileSync('client/src/zayrovix/components/LensCamera.tsx', 'utf8');
+const lensUploadSource = readFileSync('client/src/zayrovix/components/LensUpload.tsx', 'utf8');
 
 describe('homepage close, sticky header and scroll-aware navigation', () => {
   it('closes the customer profile to the homepage instead of treating X as Back', () => {
@@ -51,14 +51,14 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(appSource).toContain('data-app-route="checkout"');
     expect(checkoutCss).toMatch(/\.shop-checkout-route\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*100;/);
     expect(confirmationCss).toMatch(/\.order-confirmation-page\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*50;/);
-    expect(runtimeCss).toMatch(/\.ayrovi-app-shell\{[^}]*isolation:isolate/);
+    expect(runtimeCss).toMatch(/\.zayrovi-app-shell\{[^}]*isolation:isolate/);
   });
 
   it('keeps all other full-screen experiences in the foreground overlay band', () => {
     const foregroundMarkers = [
       ['client/src/components/PublicCmsSections.tsx', 'fixed inset-0 z-[70]'],
-      ['client/src/ayrovix/components/LensLauncher.tsx', 'fixed inset-0 z-[75]'],
-      ['client/src/ayrovix/components/LiveCamera.tsx', 'fixed inset-0 z-[76]'],
+      ['client/src/zayrovix/components/LensLauncher.tsx', 'fixed inset-0 z-[75]'],
+      ['client/src/zayrovix/components/LiveCamera.tsx', 'fixed inset-0 z-[76]'],
       ['client/src/components/ProductDrawer.tsx', 'fixed inset-0 z-[80]'],
       ['client/src/components/assistant/AiAssistantDrawer.tsx', 'fixed z-[80]'],
       ['client/src/components/MenuDrawer.tsx', 'fixed inset-0 z-[85]'],
@@ -71,7 +71,7 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     // بوابات الدخول الثلاث انتقلت إلى الصفحة الأولى لـ Lens (صورة / استيراد / رابط)
     expect(lensCameraSource).toContain('Prendre une photo');
     expect(lensUploadSource).toContain('Importer une image');
-    expect(lensLauncherSource).toContain('ayrovix-url');
+    expect(lensLauncherSource).toContain('zayrovix-url');
     expect(navbarSource).toContain('onClick={onGoHome}');
     expect(navbarSource).toContain('onOpenCart');
     expect(bottomNavSource).toContain('grid-cols-5');
@@ -91,10 +91,10 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(bottomNavSource).toContain("window.addEventListener('scroll', onScroll, { passive: true })");
     expect(bottomNavSource).toContain('else if (delta > 8) setIsVisible(false)');
     expect(bottomNavSource).toContain('else if (delta < -8) setIsVisible(true)');
-    expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\{[^}]*color-mix\(in srgb,var\(--ayrovi-white\) 72%,transparent\)[^}]*backdrop-filter:blur\(22px\)/); // DS v1.0 : fond du rail en token
-    expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\.is-hidden\{[^}]*translate3d/);
+    expect(runtimeCss).toMatch(/\.zayrovi-glass-bottom-nav\{[^}]*color-mix\(in srgb,var\(--zayrovi-white\) 72%,transparent\)[^}]*backdrop-filter:blur\(22px\)/); // DS v1.0 : fond du rail en token
+    expect(runtimeCss).toMatch(/\.zayrovi-glass-bottom-nav\.is-hidden\{[^}]*translate3d/);
     // الأيقونات غير النشطة رمادية هادئة والنشطة برتقالية (الهوية الحالية)
-    expect(runtimeCss).toContain('.ayrovi-glass-bottom-nav .interface-runtime-icon{color:var(--ayrovi-text-secondary)}'); // DS v1.0
+    expect(runtimeCss).toContain('.zayrovi-glass-bottom-nav .interface-runtime-icon{color:var(--zayrovi-text-secondary)}'); // DS v1.0
     expect(runtimeCss).toContain("[aria-pressed='true'] .interface-runtime-icon");
   });
 
@@ -110,7 +110,7 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(aboutSource).not.toContain('300svh');
     expect(aboutSource).not.toContain('min-h-[300svh] overflow-clip');
     expect(aboutSource).not.toContain('paiement en espèces à la livraison');
-    expect(runtimeCss).toContain('.ayrovi-parallax{overflow:visible!important;contain:none}');
-    expect(runtimeCss).toContain('.ayrovi-parallax-media{position:sticky!important;top:0!important;will-change:transform}');
+    expect(runtimeCss).toContain('.zayrovi-parallax{overflow:visible!important;contain:none}');
+    expect(runtimeCss).toContain('.zayrovi-parallax-media{position:sticky!important;top:0!important;will-change:transform}');
   });
 });

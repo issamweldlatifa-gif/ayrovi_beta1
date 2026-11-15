@@ -8,7 +8,7 @@
  * through the single writer.
  */
 import { Router, type Request } from 'express';
-import { getAyroviAiCore } from '../ai-core/core';
+import { getZayroviAiCore } from '../ai-core/core';
 import type { QatafoDatabase } from '../db/database';
 import type { AdminIdentity } from '../admin/auth';
 import { requireAdmin } from '../admin/auth';
@@ -52,7 +52,7 @@ function audit(req: AuditedRequest, db: QatafoDatabase, input: {
 /** Optional-provider capability map (no secrets, only "configured or not"). */
 function readinessSnapshot() {
   try {
-    const aiCore = getAyroviAiCore();
+    const aiCore = getZayroviAiCore();
     const responses = aiCore.responses().isConfigured();
     const voice = aiCore.legacyVoiceReadiness();
     return {

@@ -10,7 +10,7 @@
  * écrire = plus de commandes, plus de connexions : panne totale.
  *
  * ── La décision ─────────────────────────────────────────────────────────────
- * `AYROVI_CACHE_ROOT` désigne un emplacement pour ce qui se RECALCULE (vignettes,
+ * `ZAYROVI_CACHE_ROOT` désigne un emplacement pour ce qui se RECALCULE (vignettes,
  * images redimensionnées, réponses de magasins à durée de vie courte). Sur
  * Render : le système de fichiers éphémère du conteneur (perdu au déploiement,
  * c'est voulu : un cache se reconstruit). Le disque persistant ne garde que ce
@@ -35,6 +35,6 @@ export type RegenerableCache = typeof REGENERABLE_CACHES[number];
 
 export function regenerableCacheDir(name: RegenerableCache, env: NodeJS.ProcessEnv = process.env): string {
   if (!REGENERABLE_CACHES.includes(name)) throw new Error(`CACHE_NOT_REGENERABLE:${name}`);
-  const root = String(env.AYROVI_CACHE_ROOT || '').trim();
+  const root = String(env.ZAYROVI_CACHE_ROOT || '').trim();
   return root ? path.resolve(root, name) : path.resolve(process.cwd(), 'data', name);
 }

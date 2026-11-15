@@ -218,7 +218,7 @@ describe('détail de commande', () => {
     history: [{ id: 'h1', status: 'CONFIRMED', note: '', created_at: '2026-10-05T11:00:00.000Z' }],
     delivery: { carrier: 'Aramex', tracking_number: 'TN123', tracking_url: 'https://track.tn/TN123', shipped_at: '2026-10-06T08:00:00.000Z' },
     invoice: { invoice_number: 'FAC-2026-001' },
-    paymentOptions: { transfer: { companyName: 'AYROVI', bankRib: 'TN59...', posteAccount: '12345', reviewDelay: '24h' } },
+    paymentOptions: { transfer: { companyName: 'ZAYROVI', bankRib: 'TN59...', posteAccount: '12345', reviewDelay: '24h' } },
   };
 
   it('lit ce que le serveur a calculé, sans le recalculer', () => {

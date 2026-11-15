@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import type { AiCompletionResult, AiMessage } from '../ai-core/contracts';
-import { getAyroviAiCore } from '../ai-core/core';
+import { getZayroviAiCore } from '../ai-core/core';
 import { AiProviderError } from '../ai-core/errors';
 import { MAGAZINE_AGENT_SYSTEM_PROMPT } from './prompt';
 
@@ -398,7 +398,7 @@ async function repairMagazineOutput(
 ): Promise<AiCompletionResult> {
   const rawText = agentTextBlocks(malformedResult).join('\n').slice(0, 24_000);
   try {
-    return await getAyroviAiCore().responses().complete({
+    return await getZayroviAiCore().responses().complete({
       workload: 'magazine',
       modelClass: 'deep',
       maxOutputTokens: 5200,
@@ -455,7 +455,7 @@ function normalizeOutput(raw: MagazineAgentOutput, products: MagazineProductCont
 }
 
 function magazineModel(): string {
-  return getAyroviAiCore().responses().resolveModel('magazine', 'deep');
+  return getZayroviAiCore().responses().resolveModel('magazine', 'deep');
 }
 
 function mapMagazineProviderError(error: unknown): never {
@@ -476,7 +476,7 @@ function mapMagazineProviderError(error: unknown): never {
 }
 
 async function generateWithProvider(input: GenerateMagazineInput, products: MagazineProductContext): Promise<{ output: MagazineAgentOutput; model: string; webReferences: ReferenceMedia[] }> {
-  const provider = getAyroviAiCore().responses();
+  const provider = getZayroviAiCore().responses();
   if (!provider.isConfigured()) throw new MagazineAgentUnavailableError('محرك التحرير غير مضبوط على الخادم.');
   const model = magazineModel();
   const safeHistory: AiMessage[] = (input.history || []).filter((line) => line && ['user','assistant'].includes(line.role))
@@ -630,7 +630,7 @@ async function searchPixabayVideos(query: string, scene: string): Promise<StockM
 }
 
 async function searchStockLibrariesWithProvider(scenes: ReelOutput['scenes']): Promise<StockMedia[]> {
-  const providerAdapter = getAyroviAiCore().responses();
+  const providerAdapter = getZayroviAiCore().responses();
   if (!providerAdapter.isConfigured() || !scenes.length) return [];
   try {
     const queryList = scenes.slice(0, 3).map((scene, index) => `${index + 1}. ${scene.stock_query || scene.text}`).join('\n');
@@ -735,7 +735,7 @@ export function saveMagazineDraftBundle(
       VALUES (?,?,?,?,?,?,?,?,?,?,?,'draft',?,?,?,?,?)`,
     id, cleanText(input.conversationId, 160), cleanText(batchId, 160), type, contentTitle(type, output), output.summary,
     JSON.stringify(contentForType(type, output)), JSON.stringify(references), JSON.stringify(stock), output.product_id,
-    'AYROVI', cleanText(input.adminId, 160) || null, cleanText(model, 120), cleanText(input.command, 500), now, now);
+    'ZAYROVI', cleanText(input.adminId, 160) || null, cleanText(model, 120), cleanText(input.command, 500), now, now);
     return id;
   }));
   return ids.map((id) => serializeMagazineDraft(db.get<any>(`${DRAFT_SELECT} WHERE d.id=?`, id)));
@@ -820,8 +820,8 @@ function targetForDraft(db: QatafoDatabase, row: any, status: MagazineTransferSt
 
   if (row.content_type === 'editorial') {
     const id = existingId || uniqueTargetId('news_agent');
-    const allowed = ['NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','AYROVI','INFORMATION','OTHER'];
-    const newsCategory = allowed.includes(category) ? category : 'AYROVI';
+    const allowed = ['NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','ZAYROVI','INFORMATION','OTHER'];
+    const newsCategory = allowed.includes(category) ? category : 'ZAYROVI';
     // نفصل دلاليًا بين المسودة والجدولة والنشر الفوري. تعرض Public API السجل
     // المجدول فقط عند حلول published_at، أما PUBLISHED فمعناه «منشور الآن».
     const cmsStatus = status === 'draft' ? 'DRAFT' : status === 'scheduled' ? 'SCHEDULED' : 'PUBLISHED';
@@ -838,9 +838,9 @@ function targetForDraft(db: QatafoDatabase, row: any, status: MagazineTransferSt
     const remark = 'مسودة من وكيل مجلتي. الصور الموجودة في المراجع للإلهام فقط ولا تُنشر قبل التحقق من الترخيص.';
     if (status !== 'draft' && !ownedImage) throw new Error('MAGAZINE_MEDIA_REQUIRED');
     const publicationStatus = status !== 'draft' ? 'publie' : 'brouillon';
-    if (existingId) db.run(`UPDATE publications SET title=?,subtitle=?,channel_id='pub_ayrovi',image_url=?,remark=?,publish_at=?,status=?,updated_at=? WHERE id=?`, row.title, subtitle, ownedImage, remark, date, publicationStatus, now, id);
+    if (existingId) db.run(`UPDATE publications SET title=?,subtitle=?,channel_id='pub_zayrovi',image_url=?,remark=?,publish_at=?,status=?,updated_at=? WHERE id=?`, row.title, subtitle, ownedImage, remark, date, publicationStatus, now, id);
     else db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,created_at,updated_at)
-      VALUES (?,?,?,'pub_ayrovi',?,?,?,?,?,?)`, id, row.title, subtitle, ownedImage, remark, date, publicationStatus, now, now);
+      VALUES (?,?,?,'pub_zayrovi',?,?,?,?,?,?)`, id, row.title, subtitle, ownedImage, remark, date, publicationStatus, now, now);
     return { resource: 'publications', id };
   }
   if (row.content_type === 'reel') {
@@ -849,9 +849,9 @@ function targetForDraft(db: QatafoDatabase, row: any, status: MagazineTransferSt
     const description = cleanMultiline([reel.hook, ...(reel.scenes || []).map((scene: any) => `${scene.seconds}: ${scene.text}`), reel.cta].filter(Boolean).join('\n'), 4000);
     if (status !== 'draft' && !licensedVideo) throw new Error('MAGAZINE_MEDIA_REQUIRED');
     const reelStatus = status !== 'draft' ? 'publie' : 'brouillon';
-    if (existingId) db.run(`UPDATE reels SET title=?,channel_id='pub_ayrovi',description=?,video_url=?,duration_seconds=?,publish_at=?,status=?,updated_at=? WHERE id=?`, row.title, description, licensedVideo, Number(reel.duration_seconds) || 20, date, reelStatus, now, id);
+    if (existingId) db.run(`UPDATE reels SET title=?,channel_id='pub_zayrovi',description=?,video_url=?,duration_seconds=?,publish_at=?,status=?,updated_at=? WHERE id=?`, row.title, description, licensedVideo, Number(reel.duration_seconds) || 20, date, reelStatus, now, id);
     else db.run(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,created_at,updated_at)
-      VALUES (?,?,'pub_ayrovi',?,?,?,?,?,0,0,?,?)`, id, row.title, description, licensedVideo, Number(reel.duration_seconds) || 20, date, reelStatus, now, now);
+      VALUES (?,?,'pub_zayrovi',?,?,?,?,?,0,0,?,?)`, id, row.title, description, licensedVideo, Number(reel.duration_seconds) || 20, date, reelStatus, now, now);
     return { resource: 'reels', id };
   }
   const id = existingId || uniqueTargetId('story_agent');
@@ -878,7 +878,7 @@ export function prepareMagazineDraft(
   const row = db.get<any>('SELECT * FROM magazine_drafts WHERE id=?', id);
   if (!row) throw new Error('MAGAZINE_DRAFT_NOT_FOUND');
   const status: MagazineTransferStatus = values.status === 'scheduled' ? 'scheduled' : values.status === 'published' ? 'published' : 'draft';
-  const category = cleanText(values.category || row.category || 'AYROVI', 80) || 'AYROVI';
+  const category = cleanText(values.category || row.category || 'ZAYROVI', 80) || 'ZAYROVI';
   let scheduledAt: string | null = null;
   if (status === 'scheduled') {
     const parsed = new Date(String(values.scheduledAt || ''));
@@ -895,7 +895,7 @@ export function prepareMagazineDraft(
 }
 
 export function magazineAgentCapabilities() {
-  const provider = getAyroviAiCore().responses();
+  const provider = getZayroviAiCore().responses();
   const providerConfigured = provider.isConfigured();
   return {
     provider: provider.id,

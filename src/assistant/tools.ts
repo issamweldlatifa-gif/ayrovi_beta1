@@ -4,16 +4,16 @@ import type { AiExecutionLane, CanonicalToolAudit } from '../ai-core/contracts';
 import type { CustomerIdentity } from '../customer/auth';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { calculatePrice } from '../services/pricing';
-import { createAyrovixPriceToken, type AyrovixQuoteStatus } from '../ayrovix/priceQuote';
-import { extractProductFromUrl, sanitizeProductUrl } from '../ayrovix/services/product';
-import { externalProductSearch, catalogSearch, scoreCandidate } from '../ayrovix/services/search';
-import { serpApiVisualSearch, serpApiVisualSearchUrl } from '../ayrovix/services/visualSearch';
-import { identifyProduct } from '../ayrovix/services/ai';
-import { runLensPipeline, type LensStandardResult } from '../ayrovix/services/lensPipeline';
+import { createZayrovixPriceToken, type ZayrovixQuoteStatus } from '../zayrovix/priceQuote';
+import { extractProductFromUrl, sanitizeProductUrl } from '../zayrovix/services/product';
+import { externalProductSearch, catalogSearch, scoreCandidate } from '../zayrovix/services/search';
+import { serpApiVisualSearch, serpApiVisualSearchUrl } from '../zayrovix/services/visualSearch';
+import { identifyProduct } from '../zayrovix/services/ai';
+import { runLensPipeline, type LensStandardResult } from '../zayrovix/services/lensPipeline';
 import { recordLearningEvent } from './learning';
-import { scanCodeFromImage, type AyrovixScannedCode } from '../ayrovix/services/codeScanner';
-import type { AyrovixCandidate, AyrovixProduct } from '../ayrovix/types';
-import { filterDisplayableCandidates, hasValidProductUrl, withDisplayRating } from '../ayrovix/services/candidatePolicy';
+import { scanCodeFromImage, type ZayrovixScannedCode } from '../zayrovix/services/codeScanner';
+import type { ZayrovixCandidate, ZayrovixProduct } from '../zayrovix/types';
+import { filterDisplayableCandidates, hasValidProductUrl, withDisplayRating } from '../zayrovix/services/candidatePolicy';
 
 export type AssistantToolName =
   | 'get_order_status'
@@ -296,28 +296,28 @@ function calculateRealPrice(input: any, context: AssistantToolContext): Assistan
   return { modelResult: { success: true, breakdown }, presentation: { breakdown } };
 }
 
-function withCalculatedTnd(candidate: AyrovixCandidate, db: QatafoDatabase): AyrovixCandidate {
+function withCalculatedTnd(candidate: ZayrovixCandidate, db: QatafoDatabase): ZayrovixCandidate {
   if (candidate.priceTnd != null || candidate.price == null || !candidate.currency) return candidate;
   const breakdown = calculatePrice(db.getPricingRules(), candidate.price, candidate.currency);
   return breakdown ? { ...candidate, priceTnd: breakdown.totalTND } : candidate;
 }
 
-function quoteCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
+function quoteCandidate(candidate: ZayrovixCandidate): ZayrovixCandidate {
   const normalized = withDisplayRating(candidate);
-  const status: AyrovixQuoteStatus = normalized.kind === 'catalog' ? 'VERIFIED' : 'PENDING_MANUAL';
+  const status: ZayrovixQuoteStatus = normalized.kind === 'catalog' ? 'VERIFIED' : 'PENDING_MANUAL';
   return {
     ...normalized,
     priceVerificationStatus: status,
     priceToken: candidate.price != null && candidate.currency
-      ? createAyrovixPriceToken({ price: candidate.price, currency: candidate.currency, title: candidate.title, referenceUrl: candidate.sourceUrl, status })
+      ? createZayrovixPriceToken({ price: candidate.price, currency: candidate.currency, title: candidate.title, referenceUrl: candidate.sourceUrl, status })
       : null,
   };
 }
 
-function quoteProduct(product: AyrovixProduct): AyrovixProduct {
-  const status: AyrovixQuoteStatus = product.priceVerified ? 'VERIFIED' : 'PENDING_MANUAL';
+function quoteProduct(product: ZayrovixProduct): ZayrovixProduct {
+  const status: ZayrovixQuoteStatus = product.priceVerified ? 'VERIFIED' : 'PENDING_MANUAL';
   const token = (price: number | null, currency: string | null) => price != null && currency
-    ? createAyrovixPriceToken({ price, currency, title: product.title, referenceUrl: product.sourceUrl, status })
+    ? createZayrovixPriceToken({ price, currency, title: product.title, referenceUrl: product.sourceUrl, status })
     : null;
   return {
     ...product,
@@ -330,7 +330,7 @@ function quoteProduct(product: AyrovixProduct): AyrovixProduct {
   };
 }
 
-function modelProduct(product: AyrovixProduct) {
+function modelProduct(product: ZayrovixProduct) {
   const { priceToken: _token, images: _images, image: _image, variantOptions, ...safe } = product;
   return {
     ...safe,
@@ -353,7 +353,7 @@ function productUrlFromText(raw: unknown): string {
   return publicProductUrl(match || '');
 }
 
-async function searchByCode(value: string, context: AssistantToolContext): Promise<AyrovixCandidate[]> {
+async function searchByCode(value: string, context: AssistantToolContext): Promise<ZayrovixCandidate[]> {
   const local = catalogSearch(context.db, null, value, 5)
     .map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) }));
   const external = context.webSearchEnabled ? await externalProductSearch(value, 8).catch(() => []) : [];
@@ -402,7 +402,7 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
   // Lens, not to the merchant-page extractor.
   const suppliedUrl = attachment?.url && possibleUrl === publicProductUrl(attachment.url) ? '' : possibleUrl;
 
-  let scannedCode: AyrovixScannedCode | null = null;
+  let scannedCode: ZayrovixScannedCode | null = null;
   if (!suppliedUrl && attachment?.data) {
     // Server-side ZXing is authoritative for uploaded QR/barcodes; model-read
     // code text is only a fallback.
@@ -484,19 +484,19 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
 
   const visiblePrice = Number(input?.visible_price);
   const visibleCurrency = cleanText(input?.visible_currency, 3).toUpperCase();
-  const detectedTitle = cleanText(input?.detected_title || query || 'Produit détecté par AYROVIX', 180);
+  const detectedTitle = cleanText(input?.detected_title || query || 'Produit détecté par ZAYROVIX', 180);
   const detectedBrand = cleanText(input?.detected_brand, 100) || null;
   const visibleBreakdown = Number.isFinite(visiblePrice) && visiblePrice > 0
     ? calculatePrice(context.db.getPricingRules(), visiblePrice, visibleCurrency)
     : null;
-  const detectedProduct: AyrovixProduct | null = visibleBreakdown ? quoteProduct({
+  const detectedProduct: ZayrovixProduct | null = visibleBreakdown ? quoteProduct({
     title: detectedTitle,
     brand: detectedBrand,
     model: null,
     description: 'Produit et prix courant lus dans l’image par ZAYROVI. Le lien marchand exact reste obligatoire.',
     image: visual[0]?.image || '',
     images: visual[0]?.images || [],
-    source: 'AYROVIX Vision',
+    source: 'ZAYROVIX Vision',
     sourceUrl: '',
     price: visiblePrice,
     currency: visibleCurrency,
@@ -565,8 +565,8 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
       detectedPrice: detectedProduct ? { price: detectedProduct.price, currency: detectedProduct.currency, totalTnd: detectedProduct.priceTnd } : null,
       products: modelProducts,
       instruction: (products.length || activeProduct
-        ? 'Use only these AYROVIX results. The product/order form is rendered inside chat when a reliable price exists; the customer confirms link, variant and quantity without opening Lens.'
-        : 'AYROVIX found no real result. Do not invent a product, price, size or color.')
+        ? 'Use only these ZAYROVIX results. The product/order form is rendered inside chat when a reliable price exists; the customer confirms link, variant and quantity without opening Lens.'
+        : 'ZAYROVIX found no real result. Do not invent a product, price, size or color.')
         + (lensPricing?.sale_price || lensPricing?.total_price
           ? ' If the customer asks for the TND/final price, call calculate_price directly with lensResult.pricing values — never ask them to retype the price. Never present total_price as the product price.'
           : '')

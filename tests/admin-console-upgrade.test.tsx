@@ -111,12 +111,12 @@ describe('3. Export CSV du moteur de ressources', () => {
   });
 
   it('nomme le fichier avec l’horodatage local', () => {
-    expect(csvFileName('ayrovi-orders')).toMatch(/^ayrovi-orders-\d{8}-\d{4}\.csv$/);
+    expect(csvFileName('zayrovi-orders')).toMatch(/^zayrovi-orders-\d{8}-\d{4}\.csv$/);
   });
 
   it('déclenche un téléchargement avec BOM UTF-8 (Excel lit l’arabe)', () => {
     const chunks: Blob[] = [];
-    vi.stubGlobal('URL', { ...URL, createObjectURL: (blob: Blob) => { chunks.push(blob); return 'blob:ayrovi'; }, revokeObjectURL: () => {} });
+    vi.stubGlobal('URL', { ...URL, createObjectURL: (blob: Blob) => { chunks.push(blob); return 'blob:zayrovi'; }, revokeObjectURL: () => {} });
     const clicked: string[] = [];
     const createElement = document.createElement.bind(document);
     vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
@@ -124,15 +124,15 @@ describe('3. Export CSV du moteur de ressources', () => {
       if (tag === 'a') node.click = () => { clicked.push((node as HTMLAnchorElement).download); };
       return node;
     });
-    downloadCsv('ayrovi-news.csv', [{ key: 'title', label: 'Titre' }], [{ title: 'Promo' }]);
-    expect(clicked).toEqual(['ayrovi-news.csv']);
+    downloadCsv('zayrovi-news.csv', [{ key: 'title', label: 'Titre' }], [{ title: 'Promo' }]);
+    expect(clicked).toEqual(['zayrovi-news.csv']);
     expect(chunks).toHaveLength(1);
     vi.restoreAllMocks();
   });
 
   it('le journal d’audit exporte la page affichée, avec un bouton de rafraîchissement motivé', () => {
     const admin = read('client/src/admin/AdminApp.tsx');
-    expect(admin).toContain("downloadCsv(csvFileName('ayrovi-journal-audit'),AUDIT_COLUMNS,rows)");
+    expect(admin).toContain("downloadCsv(csvFileName('zayrovi-journal-audit'),AUDIT_COLUMNS,rows)");
     expect(admin).toContain("title={rows.length===0?'Aucune entrée à exporter sur cette page.'");
     expect(admin).toContain('Rafraîchir');
   });
@@ -140,7 +140,7 @@ describe('3. Export CSV du moteur de ressources', () => {
   it('le tableau exporte exactement les colonnes qu’il affiche', () => {
     const source = read('client/src/admin/back-office/ResourceWorkspace.tsx');
     expect(source).toContain('buildColumns(descriptor).map(');
-    expect(source).toContain('downloadCsv(csvFileName(`ayrovi-${descriptor.section}`)');
+    expect(source).toContain('downloadCsv(csvFileName(`zayrovi-${descriptor.section}`)');
   });
 });
 
@@ -176,15 +176,15 @@ describe('4. Écran de connexion aligné sur le modèle A', () => {
   });
 
   it('la connexion porte le verrou A.ROVI une seule fois (identité 2026-09-22)', () => {
-    expect(login).toContain('/media/logo-ayrovi-lockup-white-violet.svg');
-    expect(login).toContain('/media/logo-ayrovi-lockup-black-violet.svg');
+    expect(login).toContain('/media/logo-zayrovi-lockup-white-violet.svg');
+    expect(login).toContain('/media/logo-zayrovi-lockup-black-violet.svg');
     // Le nom n'est plus écrit une seconde fois à côté du verrou.
     expect(login).not.toContain('<strong>ZAYROVI</strong>');
   });
 
   it('l’action forte de la connexion est bien le violet du modèle A, texte blanc', () => {
     expect(css).toContain(':is(.bo-shell, .admin-login) .admin-button--primary');
-    expect(css).toMatch(/--bo-accent:\s*var\(--ayrovi-color-brand-accent\)/);
+    expect(css).toMatch(/--bo-accent:\s*var\(--zayrovi-color-brand-accent\)/);
     expect(css).toMatch(/\.admin-button--primary \{\s*background: var\(--bo-accent\); border-color: var\(--bo-accent\); color: var\(--bo-on-accent\);/);
     expect(css).not.toMatch(/#FF6900|#E85F00/i);
   });

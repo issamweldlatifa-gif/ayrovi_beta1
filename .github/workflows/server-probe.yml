@@ -4,7 +4,7 @@ name: Serveur — état du déploiement (diagnostic)
 #   « quel code tourne réellement sur chaque serveur publié ? »
 #
 # Pourquoi ça compte : l'application mobile a besoin du serveur du BRANCH
-# (`x-ayrovi-client` → `session_token`). Sur un serveur de `main`, la connexion
+# (`x-zayrovi-client` → `session_token`). Sur un serveur de `main`, la connexion
 # échoue. Sans ce diagnostic, on cherche la panne dans l'application alors
 # qu'elle est dans le déploiement.
 #
@@ -30,7 +30,7 @@ on:
       # servi. Une liste de trois fichiers laissait les routes panier et
       # l'enrichissement produit partir sans aucun diagnostic de déploiement.
       - 'src/api/**'
-      - 'src/ayrovix/**'
+      - 'src/zayrovix/**'
       - 'src/public/routes.ts'
       - 'src/services/photoroomIsolation.ts'
       - 'src/services/imageIsolation.ts'
@@ -143,7 +143,7 @@ jobs:
           try: rows=json.load(open("/tmp/links"))
           except Exception: rows=[]
           targets=[row.get("target", {}) for row in rows if isinstance(row, dict)]
-          demo=[target for target in targets if target.get("package_name")=="app.ayrovi.mobile.demo"]
+          demo=[target for target in targets if target.get("package_name")=="app.zayrovi.mobile.demo"]
           expected=os.environ.get("DEMO_SHA256", "").upper()
           print("ok" if expected and any(expected in [str(v).upper() for v in target.get("sha256_cert_fingerprints", [])] for target in demo) else ("wrong" if demo else "missing"))' 2>/dev/null)
                 case "$DEMO_LINK_STATE" in
@@ -229,14 +229,14 @@ jobs:
           # Une vraie action de l'app, une seule requête payante au maximum :
           # texte mobile → serveur → SerpApi Google Shopping → candidats tarifés.
           # AI Core seul ne peut pas réussir ce verdict car ses liens sans prix
-          # sont écartés par la politique d'affichage AYROVIX.
-          TEXT_CODE=$(curl -s -o /tmp/ayrovix-text -w '%{http_code}' --max-time 60 \
+          # sont écartés par la politique d'affichage ZAYROVIX.
+          TEXT_CODE=$(curl -s -o /tmp/zayrovix-text -w '%{http_code}' --max-time 60 \
             -X POST -H 'Content-Type: application/json' \
             -d '{"query":"Nike Air Max 95"}' \
-            "$FIRST_BASE/api/ayrovix/analyze-text" 2>/dev/null)
+            "$FIRST_BASE/api/zayrovix/analyze-text" 2>/dev/null)
           if [ -z "$TEXT_CODE" ]; then TEXT_CODE="000"; fi
           TEXT_FACTS=$(python3 -c 'import json
-          try: d=json.load(open("/tmp/ayrovix-text"))
+          try: d=json.load(open("/tmp/zayrovix-text"))
           except Exception: d={}
           rows=(d.get("data") or {}).get("candidates") or []
           priced=sum(1 for x in rows if isinstance(x,dict) and isinstance(x.get("price"),(int,float)) and x.get("price",0)>0)
@@ -254,13 +254,13 @@ jobs:
 
           # Le vrai trajet en panne signalé par l'utilisateur : le même JPEG que
           # l'écran Galerie envoie en multipart, puis Google Lens via SerpApi.
-          IMAGE_CODE=$(curl -s -D /tmp/ayrovix-image-headers -o /tmp/ayrovix-image -w '%{http_code}' --max-time 75 \
+          IMAGE_CODE=$(curl -s -D /tmp/zayrovix-image-headers -o /tmp/zayrovix-image -w '%{http_code}' --max-time 75 \
             -H 'Accept: application/json' \
             -F 'image=@client/public/media/lens-sneakers.jpg;type=image/jpeg' \
-            "$FIRST_BASE/api/ayrovix/analyze-image" 2>/dev/null)
+            "$FIRST_BASE/api/zayrovix/analyze-image" 2>/dev/null)
           if [ -z "$IMAGE_CODE" ]; then IMAGE_CODE="000"; fi
           IMAGE_FACTS=$(python3 -c 'import json
-          try: d=json.load(open("/tmp/ayrovix-image"))
+          try: d=json.load(open("/tmp/zayrovix-image"))
           except Exception: d={}
           data=d.get("data") or {}
           rows=data.get("candidates") or []
@@ -270,7 +270,7 @@ jobs:
           print("%d %s %s %s"%(len(rows),code,provider,query))' 2>/dev/null)
           set -- ${IMAGE_FACTS:-0 unreadable none none}
           IMAGE_TOTAL=${1:-0}; IMAGE_ERROR=${2:-unreadable}; IMAGE_PROVIDER=${3:-none}; IMAGE_QUERY=${4:-none}
-          IMAGE_HEADER=$(awk -F': ' 'tolower($1)=="x-ayrovix-visual-status" {gsub("\\r", "", $2); print $2}' /tmp/ayrovix-image-headers | tail -1)
+          IMAGE_HEADER=$(awk -F': ' 'tolower($1)=="x-zayrovix-visual-status" {gsub("\\r", "", $2); print $2}' /tmp/zayrovix-image-headers | tail -1)
           IMAGE_HEADER=${IMAGE_HEADER:-none}
           if [ "$IMAGE_CODE" = "200" ]; then
             printf '**Sonde photo → SerpApi Lens réelle : ✅ code `%s`, %s candidat(s), requête `%s`.**\n\n' "$IMAGE_CODE" "$IMAGE_TOTAL" "$IMAGE_QUERY" >> "$S"

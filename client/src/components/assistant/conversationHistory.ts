@@ -1,7 +1,7 @@
 import { decodeConversation, type AssistantConversation } from './conversationCodec';
 export type { AssistantConversation } from './conversationCodec';
 
-const STORAGE_PREFIX = 'ayrovi_assistant_conversations_v1_';
+const STORAGE_PREFIX = 'zayrovi_assistant_conversations_v1_';
 export const MAX_CONVERSATIONS = 20;
 // A whole-document budget, never a per-message text truncation. Browsers may have
 // lower remaining quotas; setItem is still checked before reporting success.

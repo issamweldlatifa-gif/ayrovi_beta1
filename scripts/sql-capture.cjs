@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * AYROVI — capture du SQL RÉEL exécuté par chaque endpoint du mélange de charge
+ * ZAYROVI — capture du SQL RÉEL exécuté par chaque endpoint du mélange de charge
  * (audit d'architecture 12/11/2026). Charge le serveur construit (`npm run build:server`)
  * sur une COPIE de base, instrumente better-sqlite3, appelle chaque endpoint de
  * `scripts/load-test.mjs` + la transaction d'une vue de Reel, et écrit pour chacun
@@ -34,7 +34,7 @@ for (const m of ['get', 'all', 'run', 'iterate']) {
   };
 }
 process.chdir(REPO);
-Object.assign(process.env, { DATABASE_PATH: DB, PORT, FX_RATES_ENABLED: 'false', AYROVI_LENS_LIVE_STOCK: 'false', AYROVI_BACKGROUND_JOBS: 'off', AYROVI_CACHE_ROOT: process.env.AYROVI_CACHE_ROOT || path.join(require('node:os').tmpdir(), 'ayrovi-capture-cache') });
+Object.assign(process.env, { DATABASE_PATH: DB, PORT, FX_RATES_ENABLED: 'false', ZAYROVI_LENS_LIVE_STOCK: 'false', ZAYROVI_BACKGROUND_JOBS: 'off', ZAYROVI_CACHE_ROOT: process.env.ZAYROVI_CACHE_ROOT || path.join(require('node:os').tmpdir(), 'zayrovi-capture-cache') });
 require(path.join(REPO, 'dist/server.js'));
 const base = `http://127.0.0.1:${PORT}`;
 (async () => {

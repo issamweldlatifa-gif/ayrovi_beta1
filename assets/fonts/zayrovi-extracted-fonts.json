@@ -1,0 +1,384 @@
+{
+  "family": "Zayrovi Extracted Sans",
+  "source": "assets/fonts/source/extracted-site-variable-v1.7.woff2",
+  "source_sha256": "ba6fc11db691debbd271564b194e37d96fab6d3d58c96574c58ce15696196a8f",
+  "source_original_name_is_not_used_for_family_selection": true,
+  "source_axes": {
+    "wdth": {
+      "min": 75.0,
+      "default": 100.0,
+      "max": 125.0
+    },
+    "wght": {
+      "min": 200.0,
+      "default": 400.0,
+      "max": 900.0
+    }
+  },
+  "glyph_count": 438,
+  "unicode_mapping_count": 368,
+  "default_vertical_metrics": {
+    "units_per_em": 1000,
+    "hhea": {
+      "ascender": 964,
+      "descender": -250,
+      "line_gap": 0
+    },
+    "typo": {
+      "ascender": 964,
+      "descender": -250,
+      "line_gap": 0
+    },
+    "win": {
+      "ascent": 964,
+      "descent": 255
+    },
+    "cap_height": 714,
+    "x_height": 514
+  },
+  "web_variable": {
+    "file": "client/public/fonts/editorial/zayrovi-extracted-sans.woff2",
+    "sha256": "9d72f105d768be45cb51b223099485b713615f6847df911fab573be0e33d12e3"
+  },
+  "static_instances": [
+    {
+      "file": "apps/mobile/assets/fonts/ZayroviExtracted-Regular.ttf",
+      "sha256": "5bc7400111f47e595f98629cb09f06a5ad3d92f8c45bfd655c25403809516706",
+      "weight": 400,
+      "width": 102.5,
+      "subfamily": "Regular",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "69d6c6ce8faf93ddb99b41fea3dc735bf90da4f2da4b7718339aa5a71393398d",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/ZayroviExtracted-Regular.ttf",
+      "sha256": "5bc7400111f47e595f98629cb09f06a5ad3d92f8c45bfd655c25403809516706",
+      "weight": 400,
+      "width": 102.5,
+      "subfamily": "Regular",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "69d6c6ce8faf93ddb99b41fea3dc735bf90da4f2da4b7718339aa5a71393398d",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "apps/mobile/assets/fonts/ZayroviExtracted-Medium.ttf",
+      "sha256": "5aa97d3452caa1cfaac8ce2818907919f3b4033a6b98937d987bcfc3d073dfb9",
+      "weight": 520,
+      "width": 102.5,
+      "subfamily": "Medium",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "34a6bc12877094251c3c5ef5cdce7e32363a26abeae75b75529da67a89ab6cde",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/ZayroviExtracted-Medium.ttf",
+      "sha256": "5aa97d3452caa1cfaac8ce2818907919f3b4033a6b98937d987bcfc3d073dfb9",
+      "weight": 520,
+      "width": 102.5,
+      "subfamily": "Medium",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "34a6bc12877094251c3c5ef5cdce7e32363a26abeae75b75529da67a89ab6cde",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "apps/mobile/assets/fonts/ZayroviExtracted-SemiBold.ttf",
+      "sha256": "6e3c9ff4bf1cdc799f7b5c2c2ae56c827cb3353985a2e8129808e9a4871af607",
+      "weight": 650,
+      "width": 102.5,
+      "subfamily": "SemiBold",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "d42c35ab6213f68ea27e61acb4d72a9c63f63b3c1313fad54fbe072ac426b1b9",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/ZayroviExtracted-SemiBold.ttf",
+      "sha256": "6e3c9ff4bf1cdc799f7b5c2c2ae56c827cb3353985a2e8129808e9a4871af607",
+      "weight": 650,
+      "width": 102.5,
+      "subfamily": "SemiBold",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "d42c35ab6213f68ea27e61acb4d72a9c63f63b3c1313fad54fbe072ac426b1b9",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "apps/mobile/assets/fonts/ZayroviExtracted-Bold.ttf",
+      "sha256": "3c5c79dff975d719fe496592d1044d34e0c334138f1b97afbd5551ff6f9ed515",
+      "weight": 700,
+      "width": 102.5,
+      "subfamily": "Bold",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "19b33e438eb46705dae2ff6e3eff4f6cb700b13bf4c40df1fce04a108157d423",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/ZayroviExtracted-Bold.ttf",
+      "sha256": "3c5c79dff975d719fe496592d1044d34e0c334138f1b97afbd5551ff6f9ed515",
+      "weight": 700,
+      "width": 102.5,
+      "subfamily": "Bold",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "19b33e438eb46705dae2ff6e3eff4f6cb700b13bf4c40df1fce04a108157d423",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "apps/mobile/assets/fonts/ZayroviExtracted-Heading.ttf",
+      "sha256": "5bc6d5ce7fc485af9e3cbefa02b6af6606c7fe55f7601b3c7711179cee854b75",
+      "weight": 520,
+      "width": 112.5,
+      "subfamily": "Heading",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "7a07ac94a42ed067b9bc25633a5bf1a280c228b631f9c060b2b4b52f9460f6c2",
+        "features": 1,
+        "lookups": 2
+      }
+    },
+    {
+      "file": "assets/fonts/ZayroviExtracted-Heading.ttf",
+      "sha256": "5bc6d5ce7fc485af9e3cbefa02b6af6606c7fe55f7601b3c7711179cee854b75",
+      "weight": 520,
+      "width": 112.5,
+      "subfamily": "Heading",
+      "vertical_metrics": {
+        "units_per_em": 1000,
+        "hhea": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "typo": {
+          "ascender": 964,
+          "descender": -250,
+          "line_gap": 0
+        },
+        "win": {
+          "ascent": 964,
+          "descent": 255
+        },
+        "cap_height": 714,
+        "x_height": 514
+      },
+      "gpos": {
+        "present": true,
+        "sha256": "7a07ac94a42ed067b9bc25633a5bf1a280c228b631f9c060b2b4b52f9460f6c2",
+        "features": 1,
+        "lookups": 2
+      }
+    }
+  ],
+  "max_coordinate_rounding_units": {
+    "static": {
+      "Regular": 0.96295166015625,
+      "Medium": 0.9652055650949478,
+      "SemiBold": 0.9749526083469391,
+      "Bold": 0.9661806002259254,
+      "Heading": 0.997459203004837
+    },
+    "web_samples": {
+      "wdth=102.5,wght=400": 0.0,
+      "wdth=102.5,wght=520": 0.0,
+      "wdth=102.5,wght=650": 0.0,
+      "wdth=112.5,wght=520": 0.0,
+      "wdth=112.5,wght=650": 0.0,
+      "wdth=75,wght=200": 0.0,
+      "wdth=125,wght=900": 0.0
+    }
+  },
+  "validation": "Contour commands, mapped glyphs, advances, vertical metrics and GPOS positioning/anchors match; static coordinate rounding is <=1 font unit (0.1% em at 1000 UPM)."
+}

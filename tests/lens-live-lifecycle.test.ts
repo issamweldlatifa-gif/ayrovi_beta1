@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { LiveVisionRuntime } from '../client/src/ayrovix/services/liveVisionRuntime';
+import { LiveVisionRuntime } from '../client/src/zayrovix/services/liveVisionRuntime';
 const mocks=vi.hoisted(()=>({analyze:vi.fn(),signature:vi.fn(()=> 'same-frame')}));
-vi.mock('../client/src/ayrovix/services/lensApi',()=>({analyzeImage:mocks.analyze}));
-vi.mock('../client/src/ayrovix/services/liveScanner',()=>({frameSignature:mocks.signature,signatureDistance:(a:string,b:string)=>a===b?0:1,liveObjectId:(s:string)=>s}));
+vi.mock('../client/src/zayrovix/services/lensApi',()=>({analyzeImage:mocks.analyze}));
+vi.mock('../client/src/zayrovix/services/liveScanner',()=>({frameSignature:mocks.signature,signatureDistance:(a:string,b:string)=>a===b?0:1,liveObjectId:(s:string)=>s}));
 function deferred<T=any>(){let resolve!:(v:T)=>void,reject!:(e:unknown)=>void;const promise=new Promise<T>((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};}
 const result=(title='New product')=>({identification:{description:title,confidence:.9},candidates:[{id:title,title,match:90}],detectedPrice:null});
 // Une scène multi-produits AVEC boîte : c'est la forme que le provider renvoie réellement,

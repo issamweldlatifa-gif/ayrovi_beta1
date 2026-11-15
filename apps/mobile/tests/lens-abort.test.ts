@@ -7,9 +7,9 @@ const CASES: Array<{
   path: string;
   run: (signal: AbortSignal) => Promise<unknown>;
 }> = [
-  { name: 'lien / QR', path: '/api/ayrovix/analyze-code', run: (signal) => analyzeCode('https://shop.example/p/1', signal) },
-  { name: 'code-barres', path: '/api/ayrovix/analyze-barcode', run: (signal) => analyzeBarcode('6191234567890', signal) },
-  { name: 'nom', path: '/api/ayrovix/analyze-text', run: (signal) => analyzeText('sac noir', signal) },
+  { name: 'lien / QR', path: '/api/zayrovix/analyze-code', run: (signal) => analyzeCode('https://shop.example/p/1', signal) },
+  { name: 'code-barres', path: '/api/zayrovix/analyze-barcode', run: (signal) => analyzeBarcode('6191234567890', signal) },
+  { name: 'nom', path: '/api/zayrovix/analyze-text', run: (signal) => analyzeText('sac noir', signal) },
 ];
 
 afterEach(() => {

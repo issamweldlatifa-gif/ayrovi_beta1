@@ -10,7 +10,7 @@ import {
   OpenAIResponsesAdapter,
   toOpenAiResponsesInput,
 } from '../src/ai-core/adapters/openai/OpenAIResponsesAdapter';
-import { AyroviAiCore, resetAyroviAiCoreForTests } from '../src/ai-core/core';
+import { ZayroviAiCore, resetZayroviAiCoreForTests } from '../src/ai-core/core';
 import { AiProviderError, providerErrorFromHttp, publicAiError } from '../src/ai-core/errors';
 import { AiProviderCircuitBreaker, PolicyResponsesAdapter } from '../src/ai-core/policy';
 import { getAssistantToolGateway } from '../src/assistant/toolGateway';
@@ -28,7 +28,7 @@ afterEach(() => {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
-  resetAyroviAiCoreForTests();
+  resetZayroviAiCoreForTests();
 });
 
 function request(overrides: Partial<AiCompletionRequest> = {}): AiCompletionRequest {
@@ -57,7 +57,7 @@ describe('ZAYROVI AI Core Phase 1 contracts and routing', () => {
   test('keeps Anthropic active even when OpenAI is configured', async () => {
     process.env.ANTHROPIC_API_KEY = 'anthropic-test';
     process.env.OPENAI_API_KEY = 'openai-test';
-    const core = new AyroviAiCore();
+    const core = new ZayroviAiCore();
     const snapshot = core.registrySnapshot();
 
     expect(core.responses().id).toBe('anthropic');

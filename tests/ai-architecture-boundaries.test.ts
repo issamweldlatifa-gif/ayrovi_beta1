@@ -97,7 +97,7 @@ describe('AI architecture boundaries', () => {
   test('keeps provider session/response identities out of canonical persistence contracts', () => {
     const canonicalFiles = [
       'src/db/database.ts',
-      'src/ayrovix/types.ts',
+      'src/zayrovix/types.ts',
       'src/assistant/types.ts',
     ].filter((file) => fs.existsSync(path.join(ROOT, file)));
     const forbiddenCanonicalIdentity = /\b(?:previous_response_id|provider_session_id|provider_response_id|openai_response_id|anthropic_message_id)\b/gi;

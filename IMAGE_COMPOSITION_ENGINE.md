@@ -14,9 +14,9 @@
 | `src/services/segmentation.ts` | إصلاح | `firstChannel()` · `containBox()` · `fillMaskHoles()` + ربطها في `segmentBuffer` |
 | `src/services/imageIsolation.ts` | إصلاح/إضافة | `decontaminateFringe()` + خيار `treatWhiteAsUniform` |
 | `src/public/routes.ts` | إضافة | `GET /api/public/media/card` |
-| `client/src/ayrovix/services/mediaIsolation.ts` | إضافة | `composedMediaUrl()` · `isComposedUrl()` + ترتيب سلسلة الاحتياط |
-| `client/src/ayrovix/components/LensProductCard.tsx` | إضافة | وسم `data-composed` على الصورة المعروضة |
-| `client/src/ayrovix/components/lens-product-card.css` | إضافة | قاعدة `img[data-composed="true"]` → `contain` بلا `multiply` |
+| `client/src/zayrovix/services/mediaIsolation.ts` | إضافة | `composedMediaUrl()` · `isComposedUrl()` + ترتيب سلسلة الاحتياط |
+| `client/src/zayrovix/components/LensProductCard.tsx` | إضافة | وسم `data-composed` على الصورة المعروضة |
+| `client/src/zayrovix/components/lens-product-card.css` | إضافة | قاعدة `img[data-composed="true"]` → `contain` بلا `multiply` |
 | `tests/image-composition.test.ts` | **جديد** | 29 اختبارًا = عقد قابل للتنفيذ |
 | `verify/image-composition.ts` | **جديد** | `npm run verify:image-composition` على صور حقيقية |
 

@@ -47,20 +47,20 @@ These are **raster-derived contours**. The designer's original vector file was n
 
 ## Placement rules
 
-- **Loading:** the grey Z is fitted inside the 136 px ring by its farthest point (radius 52 inside the ring's 65), never by its width. It's the same placement on the web (static boot, React fallback, `logo-ayrovi-loading.svg`) and in the app (`RING.symbolRadius`). Only the arc turns, and it respects reduced motion.
+- **Loading:** the grey Z is fitted inside the 136 px ring by its farthest point (radius 52 inside the ring's 65), never by its width. It's the same placement on the web (static boot, React fallback, `logo-zayrovi-loading.svg`) and in the app (`RING.symbolRadius`). Only the arc turns, and it respects reduced motion.
 - **Native startup:** the native splash shows the white zebra Z on `#0A0A0A`. `BrandEntrance` then redraws it at the exact `app.json` size (`SPLASH_SYMBOL`, generated from `imageWidth` 160 × 0.7). Next, a white disc grows from the Z's centre and opens onto the app's white canvas; the timings are unchanged. The previous blue-on-white entrance would have flashed after a black splash.
 - **Official avatars:**
-  - website: Stories, Reels and the fullscreen header use `logo-ayrovi-avatar.svg` (ink Z fitted inside the circle);
+  - website: Stories, Reels and the fullscreen header use `logo-zayrovi-avatar.svg` (ink Z fitted inside the circle);
   - app: the Reel publisher uses the solid ink Z, fitted inside its 28 dp circle.
 
-  The blue symbol (`logo-ayrovi-symbol-blue.svg`) is gone. The blue *verified badge* of Publication is a separate token and is unchanged.
+  The blue symbol (`logo-zayrovi-symbol-blue.svg`) is gone. The blue *verified badge* of Publication is a separate token and is unchanged.
 - **Cache:** every public logo URL moves to `?v=7.0`. The "-violet" lockup names stay as historical URLs, because stored interface configurations reference them.
 
 ## Deleted permanently
 
 - the heart-handshake raster sources (`source/symbol.png`, `source/reference-lockup.png`);
 - the 2026-10 archive (`assets/brand/archive/`: the retired Z and the old PNG logos);
-- `logo-ayrovi-symbol-blue.svg`;
+- `logo-zayrovi-symbol-blue.svg`;
 - the v6 identity document;
 - the v6 test.
 

@@ -3,7 +3,7 @@ import { Loader2, Trash2 } from '../../../components/QatafoIcons';
 import { useLocale } from '../../../i18n/LocaleContext';
 import { openMerchantPage } from '../../../services/nativeShell';
 import {
-  bridgeAyWebsCartToAyrovi, getAyWebsCart, removeAyWebsCartItem, trackAyWebsEvent,
+  bridgeAyWebsCartToZayrovi, getAyWebsCart, removeAyWebsCartItem, trackAyWebsEvent,
   updateAyWebsCartItem, type AyWebsCartItemPayload, type AyWebsCartPayload,
 } from '../api';
 import { AyWebsTabBar, type AyWebsTab } from './AyWebsTabBar';
@@ -24,11 +24,11 @@ import { AyWebsTabBar, type AyWebsTab } from './AyWebsTabBar';
 export interface AyWebsCartScreenProps {
   tab: AyWebsTab;
   onTab: (tab: AyWebsTab) => void;
-  onOpenAyroviCheckout: () => void;
+  onOpenZayroviCheckout: () => void;
   onCartChanged?: (count: number) => void;
 }
 
-export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, onOpenAyroviCheckout, onCartChanged }) => {
+export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, onOpenZayroviCheckout, onCartChanged }) => {
   const { tr } = useLocale();
   const [cart, setCart] = useState<AyWebsCartPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,11 +68,11 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
     setBridging(true);
     setNotice('');
     try {
-      const result = await bridgeAyWebsCartToAyrovi();
+      const result = await bridgeAyWebsCartToZayrovi();
       // Le pont est une SYNCHRONISATION (idempotente) : ni doublon, ni perte.
       const synced = result.moved.filter((line) => line.synced).length;
       trackAyWebsEvent('capture_succeeded', { code: `bridge:${result.moved.length}:synced:${synced}` });
-      onOpenAyroviCheckout();
+      onOpenZayroviCheckout();
     } catch (caught: any) {
       setNotice(String(caught?.message || caught));
       // A source recheck can block the handoff and update availability/status.
@@ -111,7 +111,7 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
           <div><dt>{tr('Price', 'السعر')}</dt><dd>{item.unit_price.toLocaleString()} {item.currency}</dd></div>
           {item.variant_label && <div><dt>{tr('Options', 'الخيارات')}</dt><dd>{item.variant_label}</dd></div>}
           {/* Panier unifié : la ligne synchronisée vit déjà dans le panier ZAYROVI. */}
-          {item.linked_to_ayrovi && (
+          {item.linked_to_zayrovi && (
             <div>
               <dt>{tr('ZAYROVI cart', 'سلة ZAYROVI')}</dt>
               <dd>{tr('Already in your ZAYROVI cart', 'موجود بالفعل في سلة ZAYROVI')}</dd>

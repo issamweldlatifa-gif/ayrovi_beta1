@@ -58,7 +58,7 @@ webDir: 'public'   // ← الموقع كامل مضمّن داخل الـ APK
 ### 2.3 باقي الوحدات
 
 `discovery/` (ContentCard، TabHeader) · `social/` (ستوريهات، ريلز، تعليقات) ·
-`features/aywebs` و`features/ocerex` · `ayrovix/LensLauncher`
+`features/aywebs` و`features/ocerex` · `zayrovix/LensLauncher`
 
 ### 2.4 الخادم **فيه كلشي أصلاً** (قِسناه)
 

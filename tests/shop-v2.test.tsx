@@ -6,7 +6,7 @@ import { ProductGrid, ProductPage, SizeDrape, BagPage, PaymentPage, LoadingView 
 import type { BagLine } from '../client/src/shop/BagPage';
 import { productToView, candidateToView } from '../client/src/shop/adapter';
 import { hasBrandScale, isOrderable, refusalReason, type ProductView, type SizeOption } from '../client/src/shop/types';
-import type { AyrovixProduct, AyrovixCandidate } from '../client/src/ayrovix/types';
+import type { ZayrovixProduct, ZayrovixCandidate } from '../client/src/zayrovix/types';
 
 const tr = (fr: string) => fr;
 const money = (tnd: number) => `${tnd.toFixed(2)} DT`;
@@ -47,7 +47,7 @@ describe('boutique v2 — contrat', () => {
 });
 
 describe('boutique v2 — adaptateur', () => {
-  const product: AyrovixProduct = {
+  const product: ZayrovixProduct = {
     title: 'Pantalon de jogging Open Hem', brand: 'Champion', model: null, description: 'Molleton',
     image: 'https://m.tn/a.jpg', images: [], source: 'Champion', sourceUrl: 'https://m.tn/p',
     price: 35.95, currency: 'EUR', priceTnd: 118.9, exchangeRate: 3.31,
@@ -56,7 +56,7 @@ describe('boutique v2 — adaptateur', () => {
       { id: null, label: '52/54', size: 'M', color: null, available: true, availability: 'available', price: null } as any,
       { id: null, label: 'S', size: 'S', color: null, available: true, availability: 'unknown', price: null } as any,
     ],
-  } as AyrovixProduct;
+  } as ZayrovixProduct;
 
   it('reporte les trois états du moteur sans en promouvoir aucun', () => {
     const sizes = productToView(product).sizes;
@@ -69,7 +69,7 @@ describe('boutique v2 — adaptateur', () => {
   });
 
   it('n’invente pas de marque ni de description absentes', () => {
-    const bare = candidateToView({ id: 'c', title: 'Un titre', brand: null, description: null, image: '', images: [], source: 'S', sourceUrl: 'https://x.tn', price: null, currency: null, priceTnd: null, match: 10 } as unknown as AyrovixCandidate);
+    const bare = candidateToView({ id: 'c', title: 'Un titre', brand: null, description: null, image: '', images: [], source: 'S', sourceUrl: 'https://x.tn', price: null, currency: null, priceTnd: null, match: 10 } as unknown as ZayrovixCandidate);
     expect(bare.brand).toBeNull();
     expect(bare.description).toBeNull();
     expect(bare.price).toBeNull();
@@ -140,7 +140,7 @@ describe('boutique v2 — rendu', () => {
   it('le chargement n’invente pas de message', () => {
     const html = renderToStaticMarkup(<LoadingView title="Chargement…" />);
     expect(html).toContain('Chargement…');
-    expect(html).toContain('/media/logo-ayrovi-loading.svg?v=7.0');
+    expect(html).toContain('/media/logo-zayrovi-loading.svg?v=7.0');
   });
 });
 
@@ -165,7 +165,7 @@ describe('boutique v2 — indépendance', () => {
   it('aucun écran v2 n’importe un composant ancien', () => {
     for (const source of files) {
       expect(source).not.toMatch(/from '\.\.\/components\//);
-      expect(source).not.toMatch(/from '\.\.\/ayrovix\/components\//);
+      expect(source).not.toMatch(/from '\.\.\/zayrovix\/components\//);
     }
   });
 
@@ -189,7 +189,7 @@ describe('boutique v2 — installée dans l’application', () => {
 
   it('les trois surfaces affichent désormais l’écran v2', () => {
     for (const path of [
-      'client/src/ayrovix/components/LensLauncher.tsx',
+      'client/src/zayrovix/components/LensLauncher.tsx',
       'client/src/components/ProductDrawer.tsx',
       'client/src/components/assistant/AssistantMessages.tsx',
     ]) {
@@ -351,13 +351,13 @@ describe('boutique v2 — la cascade ne peut plus l’écraser', () => {
   const index = readFileSync('client/src/index.css', 'utf8');
 
   it('la feuille est importée dans SA couche, déclarée après celles de Tailwind', () => {
-    expect(index).toContain('@layer theme, base, components, utilities, ayrovi-shop;');
-    expect(index).toContain('@import "./shop/shop.css" layer(ayrovi-shop);');
+    expect(index).toContain('@layer theme, base, components, utilities, zayrovi-shop;');
+    expect(index).toContain('@import "./shop/shop.css" layer(zayrovi-shop);');
   });
 
   it('l’ordre déclaré place la boutique en dernier — une couche tardive l’emporte', () => {
     const order = /@layer ([^;]+);/.exec(index)?.[1].split(',').map((name) => name.trim()) ?? [];
-    expect(order[order.length - 1]).toBe('ayrovi-shop');
+    expect(order[order.length - 1]).toBe('zayrovi-shop');
     expect(order).toContain('utilities');
   });
 });

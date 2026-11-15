@@ -69,7 +69,7 @@ describe('vérification du code', () => {
     const email = uniqueEmail('ouvre');
     const issued = await requestCode(email);
     const res = await request(app).post('/api/customer/auth/email-code/verify')
-      .set('x-ayrovi-client', MOBILE)
+      .set('x-zayrovi-client', MOBILE)
       .send({ challengeId: issued.body.data.challengeId, code: issued.body.data.developmentCode });
     expect(res.status).toBe(200);
     expect(typeof res.body.data.session_token).toBe('string');
@@ -155,7 +155,7 @@ describe('helpers purs', () => {
 
   test('displayNameFromEmail : partie locale nettoyée, repli si trop court', () => {
     expect(displayNameFromEmail('ahmed.ben-salah@gmail.com')).toBe('ahmed ben salah');
-    expect(displayNameFromEmail('a@gmail.com')).toBe('Client AYROVI');
+    expect(displayNameFromEmail('a@gmail.com')).toBe('Client ZAYROVI');
   });
 
   test('le gabarit contient le code, en français ou en arabe', () => {

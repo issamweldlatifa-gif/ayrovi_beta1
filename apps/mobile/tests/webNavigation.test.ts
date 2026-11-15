@@ -20,7 +20,7 @@ describe('AYWEBs WebView navigation', () => {
   });
 
   it('صيغة الرابط الأولي: مضيف مطلوب، بلا مسافات', () => {
-    expect(isWebPageUrl('https://ayrovi.tn/x')).toBe(true);
+    expect(isWebPageUrl('https://zayrovi.com/x')).toBe(true);
     expect(isWebPageUrl('https://')).toBe(false);
     expect(isWebPageUrl('https://exa mple.com')).toBe(false);
     expect(isWebPageUrl('ftp://host/file')).toBe(false);

@@ -7,7 +7,7 @@ Aucun chemin dupliqué — `isNativeApp()` garde les ponts natifs hors du web.
 
 | Élément | Fichier |
 |---|---|
-| Config Capacitor (appId `app.ayrovi.mobile`, bundle `public/`, back système mappé sur `history.back()` → « retour » dans Lens) | `capacitor.config.ts` |
+| Config Capacitor (appId `app.zayrovi.mobile`, bundle `public/`, back système mappé sur `history.back()` → « retour » dans Lens) | `capacitor.config.ts` |
 | Projet Android complet (Gradle, MainActivity, ressources, icônes adaptatives, splash) | `android/` |
 | Permissions : `INTERNET` + `CAMERA` (Lens) — caméra `required:false` (l'app reste utilisable sans) | `android/app/src/main/AndroidManifest.xml` |
 | Pont natif unique (barre système par surface, lazy-import, no-op sur le web) | `client/src/services/nativeShell.ts` |
@@ -26,7 +26,7 @@ site. Un seul pont d'origine (`client/src/services/nativeApiOrigin.ts`, appelé
 une fois dans `main.tsx`) réécrit les chemins relatifs `/api/…`, `/uploads/…`,
 `/media/…` vers l'origine API — même code, même UI, une seule voie (§2).
 
-Session client dans l'app : jeton **Bearer** (`x-ayrovi-native: 1` à la
+Session client dans l'app : jeton **Bearer** (`x-zayrovi-native: 1` à la
 connexion → `native_session_token` rejoué en en-tête), les cookies SameSite=Lax
 ne circulant pas entre l'origine Capacitor et l'origine API. Le web garde ses
 cookies : aucune régression.
@@ -54,24 +54,24 @@ Debug USB complet : Chrome → `chrome://inspect` (WebView `webview/localhost:80
 2. AAB signé (Play Store) : créer le keystore une fois, puis stocker dans les secrets GitHub :
 
 ```bash
-keytool -genkeypair -v -keystore ayrovi-release.keystore -alias ayrovi \
+keytool -genkeypair -v -keystore zayrovi-release.keystore -alias zayrovi \
   -keyalg RSA -keysize 2048 -validity 10000
-base64 -w0 ayrovi-release.keystore   # → secret AYROVI_KEYSTORE_BASE64
+base64 -w0 zayrovi-release.keystore   # → secret ZAYROVI_KEYSTORE_BASE64
 ```
 
 | Secret GitHub | Valeur |
 |---|---|
-| `AYROVI_KEYSTORE_BASE64` | base64 du `.keystore` |
-| `AYROVI_KEYSTORE_PASSWORD` | mot de passe keystore |
-| `AYROVI_KEY_ALIAS` | `ayrovi` |
-| `AYROVI_KEY_PASSWORD` | mot de passe clé |
+| `ZAYROVI_KEYSTORE_BASE64` | base64 du `.keystore` |
+| `ZAYROVI_KEYSTORE_PASSWORD` | mot de passe keystore |
+| `ZAYROVI_KEY_ALIAS` | `zayrovi` |
+| `ZAYROVI_KEY_PASSWORD` | mot de passe clé |
 
 `workflow_dispatch` accepte `versionCode` (incrémenter à chaque upload Play).
 
 ## Play Store — checklist
 
 - [ ] Compte développeur Google Play (25 $ une fois)
-- [ ] `app.ayrovi.mobile` : si déjà pris, changer `appId` dans `capacitor.config.ts` puis `npx cap sync android`
+- [ ] `app.zayrovi.mobile` : si déjà pris, changer `appId` dans `capacitor.config.ts` puis `npx cap sync android`
 - [ ] Fiche : captures prises **dans l'app** (le store les vérifie — Lens doit y être filmable, caméra OK)
 - [ ] Politique de confidentialité : `https://<domaine>/privacy.html` (existe)
 - [ ] Formulaire sécurité des données : « collectées : non » si rien ne sort de l'app → sinon déclarer les flux API

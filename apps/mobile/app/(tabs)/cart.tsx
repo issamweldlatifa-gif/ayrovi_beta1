@@ -25,14 +25,14 @@ import { TabCleanIcon } from '@/design/TabNavIcons';
 import { useI18n, useT } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
 import {
-  AYROVI_PRICE_TRUST_REASONS,
-  ayroviCartReadiness,
-  fetchAyroviCart,
-  removeAyroviCartItem,
-  updateAyroviCartQuantity,
-  type AyroviCartLine,
+  ZAYROVI_PRICE_TRUST_REASONS,
+  zayroviCartReadiness,
+  fetchZayroviCart,
+  removeZayroviCartItem,
+  updateZayroviCartQuantity,
+  type ZayroviCartLine,
 } from '@/api/cart';
-import { bridgeAyWebsCartToAyrovi, fetchAyWebsCart } from '@/api/aywebs';
+import { bridgeAyWebsCartToZayrovi, fetchAyWebsCart } from '@/api/aywebs';
 import { pendingAyWebsLines, pendingAyWebsUnits } from '@/features/aywebs/storeShopping';
 import {
   OfficialCartRow,
@@ -53,7 +53,7 @@ const CLEAN_LOGO = 32;
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
-export default function AyroviCartScreen() {
+export default function ZayroviCartScreen() {
   const t = useT();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -65,9 +65,9 @@ export default function AyroviCartScreen() {
   const [now, setNow] = useState(Date.now());
 
   const cartQuery = useQuery({
-    queryKey: ['cart', 'ayrovi', sessionId, status, account?.id ?? ''],
+    queryKey: ['cart', 'zayrovi', sessionId, status, account?.id ?? ''],
     enabled: Boolean(sessionId),
-    queryFn: ({ signal }) => fetchAyroviCart({ sessionId, signal }),
+    queryFn: ({ signal }) => fetchZayroviCart({ sessionId, signal }),
     staleTime: 0,
   });
 
@@ -91,7 +91,7 @@ export default function AyroviCartScreen() {
 
   const setQuantity = useMutation({
     mutationFn: (input: { itemId: string; quantity: number }) =>
-      updateAyroviCartQuantity({ ...input, sessionId }),
+      updateZayroviCartQuantity({ ...input, sessionId }),
     onSuccess: () => {
       setNote('');
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
@@ -100,7 +100,7 @@ export default function AyroviCartScreen() {
   });
 
   const removeLine = useMutation({
-    mutationFn: (itemId: string) => removeAyroviCartItem({ itemId, sessionId }),
+    mutationFn: (itemId: string) => removeZayroviCartItem({ itemId, sessionId }),
     onSuccess: () => {
       setNote('');
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
@@ -118,7 +118,7 @@ export default function AyroviCartScreen() {
   );
 
   const linkPending = useMutation({
-    mutationFn: () => bridgeAyWebsCartToAyrovi({ sessionId }),
+    mutationFn: () => bridgeAyWebsCartToZayrovi({ sessionId }),
     onSuccess: () => {
       setNote('');
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
@@ -128,7 +128,7 @@ export default function AyroviCartScreen() {
   });
 
   const cart = cartQuery.data ?? null;
-  const gate = useMemo(() => ayroviCartReadiness(cart), [cart]);
+  const gate = useMemo(() => zayroviCartReadiness(cart), [cart]);
   const busy = setQuantity.isPending || removeLine.isPending;
   const quoteDeadline = earliestCartDeadline(cart);
   const clockOffset = useMemo(
@@ -152,7 +152,7 @@ export default function AyroviCartScreen() {
   }, [quoteDeadline]);
 
   const trustLabel = useCallback(
-    (line: AyroviCartLine): string => {
+    (line: ZayroviCartLine): string => {
       if (line.priceTrust === 'STALE') return t('cart.trust.STALE');
       if (line.priceTrust === 'MANUAL') return t('cart.trust.MANUAL');
       if (line.priceTrust === 'FRESH') return t('cart.trust.FRESH');
@@ -162,8 +162,8 @@ export default function AyroviCartScreen() {
   );
 
   const trustReasonText = useCallback(
-    (line: AyroviCartLine): string => {
-      const code = AYROVI_PRICE_TRUST_REASONS[line.priceTrustReason] ?? '';
+    (line: ZayroviCartLine): string => {
+      const code = ZAYROVI_PRICE_TRUST_REASONS[line.priceTrustReason] ?? '';
       switch (code) {
         case 'QUOTE_EXPIRED':
           return t('cart.trustReason.QUOTE_EXPIRED');

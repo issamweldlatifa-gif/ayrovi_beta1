@@ -91,7 +91,7 @@
 
 **التصليح:**
 - `response_mode: 'form_post'`، و route جديدة `POST /auth/apple/callback` تبعث **303** للـ GET بـ `code` و `state` برك. الـ POST اللي جاي من موقع آخر ما يهزّش cookie، أما الـ GET اللي بعدو (navigation عادية) يهزّو.
-- cookie جديد `ayrovi_customer_apple_oauth` (HttpOnly، SameSite=Lax، Path=/api/customer/auth/apple)، ويتراقب في الـ callback.
+- cookie جديد `zayrovi_customer_apple_oauth` (HttpOnly، SameSite=Lax، Path=/api/customer/auth/apple)، ويتراقب في الـ callback.
 - مراقبة `aud == APPLE_CLIENT_ID` و `iss == https://appleid.apple.com` و `exp`.
 - الدمج بالإيمايل وتبنّي الإيمايل ما يصيروش كان إذا `email_verified`.
 - `rateLimit('apple-oauth')` في `server.ts`، كيما Google و Facebook.
@@ -105,7 +105,7 @@
 ## 🟡 متوسطة
 
 ### M1 — `/auth/google/native` يرجّع الـ token للموقع ✅ تصلّح
-كانت ترجّع `native_session_token` في الـ JSON لكل واحد يطلبها، حتى من الموقع. الـ token صالح 30 يوم، وأي script مدسوس (XSS) ينجم يقراه. توا تستعمل `sessionExchangeFields`: التطبيق الجديد ياخو `session_token`، التطبيق القديم (`x-ayrovi-native: 1`) ياخو `native_session_token`، والموقع ياخو cookie HttpOnly برك. `parseSessionIssue` في التطبيق يقرا الزوز أسامي، فما تبدّل شي من جهتو.
+كانت ترجّع `native_session_token` في الـ JSON لكل واحد يطلبها، حتى من الموقع. الـ token صالح 30 يوم، وأي script مدسوس (XSS) ينجم يقراه. توا تستعمل `sessionExchangeFields`: التطبيق الجديد ياخو `session_token`، التطبيق القديم (`x-zayrovi-native: 1`) ياخو `native_session_token`، والموقع ياخو cookie HttpOnly برك. `parseSessionIssue` في التطبيق يقرا الزوز أسامي، فما تبدّل شي من جهتو.
 
 ### M2 — كي الحريف يتحظر، الجلسات اللي بدات بـ OAuth كانت تطلع «ناجحة» ✅ تصلّح (مع C1)
 
@@ -149,7 +149,7 @@
 | حد للمحاولات: 8 لكل IP (ذاكرة) + 10 في 5 دقايق لكل IP + 120 عام | ✅ |
 | تغيير كلمة السر يطلب القديمة ويسكّر كل الجلسات | ✅ |
 | `active=0` يسكّر الدخول فوراً | ✅ |
-| كلمة السر الافتراضية `AyroviBeta2026!` ممنوعة في prod | ✅ |
+| كلمة السر الافتراضية `ZayroviBeta2026!` ممنوعة في prod | ✅ |
 | `ADMIN_BOOTSTRAP_RESET` يتستعمل مرة وحدة، 32 حرف على الأقل | ✅ |
 | `X-Frame-Options: DENY` على `/admin` | ✅ |
 | **2FA (TOTP)** | ✅ (12/11) اختيارية لكل حساب: «Sécurité du compte (2FA)» في قائمة البروفيل. كود 6 أرقام (±30 ثانية، ما يتعاودش)، السر مشفّر AES-GCM بـ `ADMIN_TOTP_KEY` (ولا `CUSTOMER_AUTH_SECRET`)، 8 codes de secours يتستعملو مرة وحدة. المسؤول (`users:write`) ينجم يرفعها على زميلو، و`ADMIN_BOOTSTRAP_RESET` يرفعها زادة. الملفات: `src/admin/totp.ts`، `src/admin/twoFactor.ts`، `client/src/admin/back-office/AccountSecurity.tsx`. ⚠️ كي تبدّل `ADMIN_TOTP_KEY` الأسرار القديمة ما عادش تتقرا: لازم reset. |
@@ -163,7 +163,7 @@
 | العنصر | الحالة |
 |---|---|
 | الـ token في SecureStore (Keychain/Keystore)، عمرو ما يتحط في AsyncStorage على الجهاز | ✅ |
-| `x-ayrovi-client: mobile/x` → token في الـ body؛ Bearer + `x-csrf-token` على كل كتابة | ✅ |
+| `x-zayrovi-client: mobile/x` → token في الـ body؛ Bearer + `x-csrf-token` على كل كتابة | ✅ |
 | كي يطيح CSRF يتجدّد مرة وحدة (`csrfRefresher`) بلا ما يطلع للحريف | ✅ |
 | OAuth بالـ handoff: code عشوائي 32 byte، الخادم يخزّن hash برك، يتستعمل مرة وحدة، 10 دقايق | ✅ |
 | `parseSessionIssue` يقرا `session_token` و `native_session_token` | ✅، يعني تصليح M1 ما يكسّر شي |

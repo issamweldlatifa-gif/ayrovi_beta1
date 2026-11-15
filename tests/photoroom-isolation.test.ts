@@ -5,7 +5,7 @@ import { isolateBuffer } from '../src/services/imageIsolation';
 import { segmentBuffer } from '../src/services/segmentation';
 
 const KEY = 'sb_test_key_do_not_log_123456';
-const ENV = { AYROVI_ISOLATION_PROVIDER: 'photoroom', PHOTOROOM_API_KEY: KEY } as NodeJS.ProcessEnv;
+const ENV = { ZAYROVI_ISOLATION_PROVIDER: 'photoroom', PHOTOROOM_API_KEY: KEY } as NodeJS.ProcessEnv;
 
 async function pngBytes(): Promise<Buffer> {
   return sharp({ create: { width: 8, height: 8, channels: 4, background: { r: 200, g: 30, b: 30, alpha: 1 } } }).png().toBuffer();
@@ -21,8 +21,8 @@ describe('isolation PhotoRoom (sandbox / dev)', () => {
 
   it('reste en local sans clé, et ne prend PhotoRoom que si provider ET clé sont présents', () => {
     expect(isolationProvider({} as NodeJS.ProcessEnv)).toBe('local');
-    expect(isolationProvider({ AYROVI_ISOLATION_PROVIDER: 'photoroom' } as NodeJS.ProcessEnv)).toBe('local');
-    expect(isolationProvider({ AYROVI_ISOLATION_PROVIDER: 'photoroom', PHOTOROOM_API_KEY: '  ' } as NodeJS.ProcessEnv)).toBe('local');
+    expect(isolationProvider({ ZAYROVI_ISOLATION_PROVIDER: 'photoroom' } as NodeJS.ProcessEnv)).toBe('local');
+    expect(isolationProvider({ ZAYROVI_ISOLATION_PROVIDER: 'photoroom', PHOTOROOM_API_KEY: '  ' } as NodeJS.ProcessEnv)).toBe('local');
     expect(isolationProvider(ENV)).toBe('photoroom');
   });
 
@@ -77,7 +77,7 @@ describe('isolation PhotoRoom (sandbox / dev)', () => {
     const png = await pngBytes();
     const fetchImpl = vi.fn(async () => new Response(new Uint8Array(png), { status: 200 }));
     vi.stubGlobal('fetch', fetchImpl);
-    vi.stubEnv('AYROVI_ISOLATION_PROVIDER', 'photoroom');
+    vi.stubEnv('ZAYROVI_ISOLATION_PROVIDER', 'photoroom');
     vi.stubEnv('PHOTOROOM_API_KEY', KEY);
     try {
       const result = await isolateBuffer(await jpegSource());
@@ -113,7 +113,7 @@ describe('anti-doublon PhotoRoom', () => {
     const png = await pngBytes();
     const fetchImpl = vi.fn(async () => new Response(new Uint8Array(png), { status: 200 }));
     const input = await jpegSource();
-    const opts = { env: { AYROVI_ISOLATION_PROVIDER: 'photoroom', PHOTOROOM_API_KEY: 'k_dedupe_test_1' } as NodeJS.ProcessEnv, fetchImpl: fetchImpl as unknown as typeof fetch };
+    const opts = { env: { ZAYROVI_ISOLATION_PROVIDER: 'photoroom', PHOTOROOM_API_KEY: 'k_dedupe_test_1' } as NodeJS.ProcessEnv, fetchImpl: fetchImpl as unknown as typeof fetch };
     const [a, b] = await Promise.all([removeBackgroundWithPhotoRoom(input, opts), removeBackgroundWithPhotoRoom(input, opts)]);
     expect(a && isPhotoRoomPng(a)).toBe(true);
     expect(b && isPhotoRoomPng(b)).toBe(true);
@@ -127,7 +127,7 @@ describe('anti-doublon PhotoRoom', () => {
       .mockResolvedValueOnce(new Response('x', { status: 500 }))
       .mockResolvedValueOnce(new Response(new Uint8Array(png), { status: 200 }));
     const input = await jpegSource();
-    const opts = { env: { AYROVI_ISOLATION_PROVIDER: 'photoroom', PHOTOROOM_API_KEY: 'k_dedupe_test_2' } as NodeJS.ProcessEnv, fetchImpl: fetchImpl as unknown as typeof fetch };
+    const opts = { env: { ZAYROVI_ISOLATION_PROVIDER: 'photoroom', PHOTOROOM_API_KEY: 'k_dedupe_test_2' } as NodeJS.ProcessEnv, fetchImpl: fetchImpl as unknown as typeof fetch };
     expect(await removeBackgroundWithPhotoRoom(input, opts)).toBeNull();
     expect(await removeBackgroundWithPhotoRoom(input, opts)).not.toBeNull();
     expect(fetchImpl).toHaveBeenCalledTimes(2);

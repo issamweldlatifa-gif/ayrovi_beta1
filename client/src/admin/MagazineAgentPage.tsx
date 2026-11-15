@@ -51,7 +51,7 @@ function batchCount(command: string): number {
 }
 
 function getConversationId(): string {
-  const key = 'ayrovi_magazine_agent_conversation';
+  const key = 'zayrovi_magazine_agent_conversation';
   const current = sessionStorage.getItem(key);
   if (current && /^[A-Za-z0-9._:-]{8,160}$/.test(current)) return current;
   const next = `mag_${crypto.randomUUID()}`;
@@ -119,7 +119,7 @@ const DraftCard: React.FC<{
       draggable={canWrite}
       onDragStart={(event) => {
         event.dataTransfer.effectAllowed = 'copy';
-        event.dataTransfer.setData('application/x-ayrovi-magazine-draft', draft.id);
+        event.dataTransfer.setData('application/x-zayrovi-magazine-draft', draft.id);
         event.dataTransfer.setData('text/plain', draft.id);
         document.body.classList.add('is-dragging-magazine-card');
       }}

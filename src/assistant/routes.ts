@@ -12,7 +12,7 @@ import {
   type AssistantStreamEvent,
 } from './service';
 import type { AssistantConversationLine, AssistantImageAttachment } from './tools';
-import { getAyroviAiCore } from '../ai-core/core';
+import { getZayroviAiCore } from '../ai-core/core';
 import {
   createGeminiVoiceSession,
   getGeminiTtsRuntimeStatus,
@@ -122,7 +122,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
   const router = Router();
 
   router.get('/status', (_req, res) => {
-    const responsesProvider = getAyroviAiCore().responses();
+    const responsesProvider = getZayroviAiCore().responses();
     const speechToTextReady = Boolean(process.env.GROQ_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim());
     const serverTtsReady = serverTextToSpeechReady();
     const browserOnlyTts = !serverTextToSpeechEnabled();
@@ -254,7 +254,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     if (groqKey) {
       try {
         const form = new FormData();
-        form.append('file', new Blob([new Uint8Array(file.buffer)], { type: baseType }), `ayrovi-voice.${extension}`);
+        form.append('file', new Blob([new Uint8Array(file.buffer)], { type: baseType }), `zayrovi-voice.${extension}`);
         form.append('model', String(process.env.GROQ_STT_MODEL || 'whisper-large-v3-turbo'));
         form.append('response_format', 'json');
         form.append('temperature', '0');
@@ -279,7 +279,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     if (openaiKey) {
       try {
         const form = new FormData();
-        form.append('file', new Blob([new Uint8Array(file.buffer)], { type: baseType }), `ayrovi-voice.${extension}`);
+        form.append('file', new Blob([new Uint8Array(file.buffer)], { type: baseType }), `zayrovi-voice.${extension}`);
         form.append('model', 'whisper-1');
         form.append('response_format', 'json');
         form.append('temperature', '0');

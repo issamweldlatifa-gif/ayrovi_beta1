@@ -1,7 +1,7 @@
 /**
  * Z Lens — « Historique » (menu ⋮) : les recherches Lens de ce compte.
  *
- * Source : `GET /api/ayrovix/history` (déjà servi au site). Sans compte, le
+ * Source : `GET /api/zayrovix/history` (déjà servi au site). Sans compte, le
  * serveur renvoie une liste vide : l'écran le dit au lieu d'afficher un vide muet.
  * Toucher une ligne relance la recherche correspondante.
  */

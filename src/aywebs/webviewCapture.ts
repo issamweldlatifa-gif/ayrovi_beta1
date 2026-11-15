@@ -50,6 +50,7 @@ import {
 } from '../../shared/aywebsCapture';
 import type { AyWebsAvailabilityState, AyWebsErrorCode } from '../../shared/aywebsTypes';
 import { detectAyWebsCatalogStore } from '../../shared/aywebsStoreCatalog';
+import { FROZEN_CRYPTO_LABELS } from '../../shared/formerBrand';
 
 /**
  * Ordre de fiabilité des sources de prix : la donnée machine du marchand d'abord,
@@ -1346,7 +1347,7 @@ export function ayWebsWebviewVerifySample(): number {
 export function shouldVerifyWebviewCaptureInBackground(fingerprint: string, seed = ''): boolean {
   const rate = ayWebsWebviewVerifySample();
   if (rate <= 0) return false;
-  const digest = createHash('sha256').update(`ayrovi:aywebs-webview-verify:v1|${fingerprint}|${seed}`).digest();
+  const digest = createHash('sha256').update(`${FROZEN_CRYPTO_LABELS.aywebsWebviewVerify}|${fingerprint}|${seed}`).digest();
   const draw = digest.readUInt32BE(0) / 0x1_0000_0000;
   return draw < rate;
 }

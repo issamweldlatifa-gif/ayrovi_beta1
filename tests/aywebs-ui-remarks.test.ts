@@ -32,7 +32,7 @@ const STORES = 'client/src/features/aywebs/components/AyWebsStoresScreen.tsx';
 const WISH = 'client/src/features/aywebs/components/AyWebsWishScreen.tsx';
 const FAV_SHEET = 'client/src/features/aywebs/components/AyWebsFavoriteSheet.tsx';
 const FAV_HOOK = 'client/src/features/aywebs/useAyWebsFavorites.ts';
-const BROWSER_ACTIVITY = 'android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java';
+const BROWSER_ACTIVITY = 'android/app/src/main/java/app/zayrovi/mobile/AyWebsBrowseActivity.java';
 const NATIVE_OAUTH = 'client/src/customer/nativeOAuth.ts';
 const ACCOUNT_PAGE = 'client/src/components/CustomerAccountPage.tsx';
 const CUSTOMER_ROUTES = 'src/customer/routes.ts';
@@ -184,7 +184,7 @@ describe('§6 — favoris : tiroir réel et stockage du compte', () => {
 describe('§8 — connexion Google dans l’application : fin du 404', () => {
   test('l’URL de démarrage est absolue dans la coque, relative sur le web', () => {
     const module = read(NATIVE_OAUTH);
-    expect(module).toMatch(/isNativeApp\(\) \? `\$\{AYROVI_API_ORIGIN\}\$\{path\}` : path/);
+    expect(module).toMatch(/isNativeApp\(\) \? `\$\{ZAYROVI_API_ORIGIN\}\$\{path\}` : path/);
   });
 
   test('la page de compte n’émet plus de lien relatif codé en dur', () => {
@@ -237,8 +237,8 @@ describe('§8 — connexion Google dans l’application : fin du 404', () => {
        WebView embarquée, que Google refuse.
    ════════════════════════════════════════════════════════════════════════════ */
 
-const BROWSE_ACTIVITY = 'android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java';
-const AUTH_TAB_PLUGIN = 'android/app/src/main/java/app/ayrovi/mobile/AyroviAuthTabPlugin.java';
+const BROWSE_ACTIVITY = 'android/app/src/main/java/app/zayrovi/mobile/AyWebsBrowseActivity.java';
+const AUTH_TAB_PLUGIN = 'android/app/src/main/java/app/zayrovi/mobile/ZayroviAuthTabPlugin.java';
 
 describe('§9 — Panier et Favoris restent DANS la boutique', () => {
   test('les deux boutons de la barre marchande ouvrent un tiroir, plus une route', () => {
@@ -325,14 +325,14 @@ describe('§10 — la connexion ne sort plus de l’application', () => {
   });
 
   test('le plugin est enregistré, sinon le repli navigateur reprendrait', () => {
-    expect(read('android/app/src/main/java/app/ayrovi/mobile/MainActivity.java'))
-      .toMatch(/registerPlugin\(AyroviAuthTabPlugin\.class\)/);
+    expect(read('android/app/src/main/java/app/zayrovi/mobile/MainActivity.java'))
+      .toMatch(/registerPlugin\(ZayroviAuthTabPlugin\.class\)/);
   });
 
   test('la couche web appelle l’onglet et garde un repli honnête', () => {
     const module = read(NATIVE_OAUTH);
     expect(module).toMatch(/export async function openProviderInAppTab/);
-    expect(module).toMatch(/registerPlugin<AuthTabBridge>\('AyroviAuthTab'\)/);
+    expect(module).toMatch(/registerPlugin<AuthTabBridge>\('ZayroviAuthTab'\)/);
     expect(module).toMatch(/window\.open\(url, '_blank', 'noopener,noreferrer'\)/);
     expect(read(ACCOUNT_PAGE)).toMatch(/await openProviderInAppTab\(oauthStartUrl\(provider, query, handoff\)\)/);
   });
@@ -396,7 +396,7 @@ describe('Logos des boutiques et hôte de l’API', () => {
 
 /* ── Connexion Google NATIVE (04/10/2026, identifiant fourni par le client) ─ */
 describe('Connexion Google sans navigateur', () => {
-  const PLUGIN = 'android/app/src/main/java/app/ayrovi/mobile/AyroviAuthTabPlugin.java';
+  const PLUGIN = 'android/app/src/main/java/app/zayrovi/mobile/ZayroviAuthTabPlugin.java';
 
   test('le sélecteur de compte du système est demandé, pas une page web', () => {
     const plugin = readCode(PLUGIN);
@@ -463,7 +463,7 @@ describe('AYWEBs follow-up: variants, idempotent Add and Purchase Support', () =
 
   test('unknown stock is explicit and missing exact variants cannot be added', () => {
     const sheet = readCode(VARIANT_SHEET);
-    const activity = readCode('android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java');
+    const activity = readCode('android/app/src/main/java/app/zayrovi/mobile/AyWebsBrowseActivity.java');
     expect(sheet).toContain("displayedAvailability === 'AVAILABLE' || displayedAvailability === 'LOW_STOCK'");
     expect(sheet).toContain('const selectedAvailabilityUnconfirmed = !selectedAvailabilityConfirmed;');
     expect(sheet).toContain('selectedVariantUnknown');

@@ -33,7 +33,7 @@ describe('upload natif des photos', () => {
     });
 
     const result = await apiUploadFileData<{ eventId: string }>(
-      '/api/ayrovix/analyze-image',
+      '/api/zayrovix/analyze-image',
       'image',
       { uri: 'file:///cache/photo.jpg', name: 'capture.jpg', type: 'image/jpeg' },
       { parameters: { roi: '{"x":1}' }, timeoutMs: 2_000 },
@@ -42,20 +42,20 @@ describe('upload natif des photos', () => {
     expect(result).toEqual({ eventId: 'evt-mobile' });
     expect(uploadMock).toHaveBeenCalledTimes(1);
     const [url, options] = uploadMock.mock.calls[0];
-    expect(url).toBe(`${API_BASE_URL}/api/ayrovix/analyze-image`);
+    expect(url).toBe(`${API_BASE_URL}/api/zayrovix/analyze-image`);
     expect(options).toMatchObject({
       httpMethod: 'POST',
       uploadType: 1,
       fieldName: 'image',
       mimeType: 'image/jpeg',
       parameters: { roi: '{"x":1}' },
-      headers: expect.objectContaining({ Accept: 'application/json', 'x-ayrovi-native': '1' }),
+      headers: expect.objectContaining({ Accept: 'application/json', 'x-zayrovi-native': '1' }),
     });
   });
 
   it('signale le fichier Android illisible avant le réseau avec un code précis', async () => {
     await expect(apiUploadFileData(
-      '/api/ayrovix/analyze-image',
+      '/api/zayrovix/analyze-image',
       'image',
       { uri: 'file:///cache/missing.jpg', name: 'capture.jpg', type: 'image/jpeg' },
     )).rejects.toMatchObject({ kind: 'device', code: 'IMAGE_FILE_UNREADABLE' });
@@ -69,7 +69,7 @@ describe('upload natif des photos', () => {
       body: JSON.stringify({ success: false, code: 'RATE_LIMITED', error: 'Attendez.' }),
     });
     await expect(apiUploadFileData(
-      '/api/ayrovix/analyze-image',
+      '/api/zayrovix/analyze-image',
       'image',
       { uri: 'file:///cache/photo.jpg', name: 'capture.jpg', type: 'image/jpeg' },
     )).rejects.toMatchObject({ kind: 'http', status: 429, code: 'RATE_LIMITED', retryAfterMs: 3_000 });
@@ -83,7 +83,7 @@ describe('upload web réel, sans pont de fichiers natif', () => {
     vi.stubGlobal('document', {});
     const fetchMock = vi.fn().mockResolvedValueOnce(new Response(new Blob(['image-bytes'], {type:'image/jpeg'}))).mockResolvedValueOnce(new Response(JSON.stringify({success:true,data:{products:[]}}), {status:200,headers:{'content-type':'application/json'}}));
     vi.stubGlobal('fetch', fetchMock);
-    const result=await apiUploadFileData('/api/ayrovix/localize','image',{uri:'blob:photo',name:'capture.jpg',type:'image/jpeg'},{parameters:{point:'{"x":0.5,"y":0.4}'}});
+    const result=await apiUploadFileData('/api/zayrovix/localize','image',{uri:'blob:photo',name:'capture.jpg',type:'image/jpeg'},{parameters:{point:'{"x":0.5,"y":0.4}'}});
     expect(result).toEqual({products:[]});
     const form=fetchMock.mock.calls[1][1].body as FormData;
     expect(form.get('image')).toBeInstanceOf(Blob);

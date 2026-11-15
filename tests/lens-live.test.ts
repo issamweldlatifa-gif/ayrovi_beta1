@@ -3,22 +3,22 @@ import { execSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/server';
-import { frameSignature, signatureDistance, liveObjectId } from '../client/src/ayrovix/services/liveScanner';
-import { iou, trackObjects, adaptiveNextInterval, computeCropRect, LOCK_THRESHOLD, PREDICT_FRAMES } from '../client/src/ayrovix/services/liveVisionRuntime';
+import { frameSignature, signatureDistance, liveObjectId } from '../client/src/zayrovix/services/liveScanner';
+import { iou, trackObjects, adaptiveNextInterval, computeCropRect, LOCK_THRESHOLD, PREDICT_FRAMES } from '../client/src/zayrovix/services/liveVisionRuntime';
 
-import { grayToFeatures } from '../client/src/ayrovix/services/liveVisionRuntime';
+import { grayToFeatures } from '../client/src/zayrovix/services/liveVisionRuntime';
 
-const liveSource = readFileSync('client/src/ayrovix/components/LiveCamera.tsx', 'utf8');
-const launcherSource = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
-const runtimeSource = readFileSync('client/src/ayrovix/services/liveVisionRuntime.ts', 'utf8');
+const liveSource = readFileSync('client/src/zayrovix/components/LiveCamera.tsx', 'utf8');
+const launcherSource = readFileSync('client/src/zayrovix/components/LensLauncher.tsx', 'utf8');
+const runtimeSource = readFileSync('client/src/zayrovix/services/liveVisionRuntime.ts', 'utf8');
 
-describe('AYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existing engines)', () => {
+describe('ZAYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existing engines)', () => {
   it('exposes the LIVE feature flag via commerce-config (env-driven)', async () => {
     const res = await request(app).get('/api/public/commerce-config');
     expect(res.status).toBe(200);
     // NODE_ENV=test !== production → défaut activé ; en prod il faut le flag explicite
-    expect(res.body.data.features).toHaveProperty('ayrovixLensLive');
-    expect(typeof res.body.data.features.ayrovixLensLive).toBe('boolean');
+    expect(res.body.data.features).toHaveProperty('zayrovixLensLive');
+    expect(typeof res.body.data.features.zayrovixLensLive).toBe('boolean');
   });
 
   it('frame signature helpers are deterministic and distance sane', () => {
@@ -39,7 +39,7 @@ describe('AYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existin
     // Live gating + résultats renvoyés vers le flow candidates existant
     expect(launcherSource).toContain('liveEnabled={liveEnabled}');
     expect(launcherSource).toContain('onLiveResults');
-    expect(launcherSource).toContain('ayrovixLensLive');
+    expect(launcherSource).toContain('zayrovixLensLive');
     // La caméra consomme le runtime (start/stop selon le mode), sans re-ouvrir le stream
     expect(liveSource).toContain('LiveVisionRuntime');
     expect(liveSource).toContain('runtime.start()');
@@ -130,7 +130,7 @@ describe('AYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existin
     }
     expect(offenders).toEqual([]);
     // والملف الذي كان يكسرها لم يعد موجودًا.
-    expect(() => readFileSync('client/src/ayrovix/services/localDetector.ts', 'utf8')).toThrow();
+    expect(() => readFileSync('client/src/zayrovix/services/localDetector.ts', 'utf8')).toThrow();
   });
 
   it('multi-product intelligence: tracks multiple independent product instances in one scene', () => {

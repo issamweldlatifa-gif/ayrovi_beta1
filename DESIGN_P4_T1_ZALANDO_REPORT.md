@@ -1,6 +1,6 @@
 # P4 / T1 — إستراتيجية Zalando: واجهة أحادية اللون، والبرتقالي مُحفّزُ تنفيذ لا لونُ جدران
 
-**التاريخ:** 2026-09-14 · **النطاق:** الواجهة العامة (storefront) + واجهة AYROVIX LENS + القيم الافتراضية المُدارة من لوحة التحكم.
+**التاريخ:** 2026-09-14 · **النطاق:** الواجهة العامة (storefront) + واجهة ZAYROVIX LENS + القيم الافتراضية المُدارة من لوحة التحكم.
 **القاعدة الحاكمة:** المنصة محايدة بالأبيض والأسود؛ البرتقالي `#FF6900` ممنوع كخلفية أو تدرّج أو بطاقة ممتلئة، ومسموح كـ CTA رئيسي وحيد + خطوة نشطة + خط رفيع 3px. الميزانية: **≤ 3%** من مساحة أي شاشة.
 
 ---
@@ -30,18 +30,18 @@
 
 ```css
 :root {
-  --ayrovi-bg-main: #ffffff;              /* Canvas 95 % */
-  --ayrovi-bg-surface: #f8f9fa;           /* بطاقات وقوائم ومقارنات */
-  --ayrovi-border-soft: #eaeaea;          /* filets 1px */
-  --ayrovi-text-primary: #111111;         /* الأسود الفاخر */
-  --ayrovi-text-secondary: #666666;       /* الرمادي الموزون */
-  --ayrovi-color-brand-orange: #ff6900;   /* البرتقالي الصافي — CTA فقط */
+  --zayrovi-bg-main: #ffffff;              /* Canvas 95 % */
+  --zayrovi-bg-surface: #f8f9fa;           /* بطاقات وقوائم ومقارنات */
+  --zayrovi-border-soft: #eaeaea;          /* filets 1px */
+  --zayrovi-text-primary: #111111;         /* الأسود الفاخر */
+  --zayrovi-text-secondary: #666666;       /* الرمادي الموزون */
+  --zayrovi-color-brand-orange: #ff6900;   /* البرتقالي الصافي — CTA فقط */
 }
 ```
 
 وتم إخضاع كل الأسماء القديمة له كـ **alias** (لا قيمة ثانية في أي مكان):
-`--ayrovi-cta` · `--ayrovi-orange` · `--ayrovi-accent` → `var(--ayrovi-color-brand-orange)`،
-و`--ayrovi-accent-soft` (كان `#ffb070` خوخي) → `var(--ayrovi-bg-surface)`.
+`--zayrovi-cta` · `--zayrovi-orange` · `--zayrovi-accent` → `var(--zayrovi-color-brand-orange)`،
+و`--zayrovi-accent-soft` (كان `#ffb070` خوخي) → `var(--zayrovi-bg-surface)`.
 
 البرتقالي القديم `#fe7003` / `#ff7a00` **لم يبقَ له أي أثر** في `client/src` ولا في `src/`.
 
@@ -65,7 +65,7 @@
 ### 🔘 الأزرار والتفاعل
 * **الزر الرئيسي الفريد** (`Ouvrir LENS`، `Choisir cette offre`، `Envoyer`، `Appliquer`، CTA الشرائح، زر الخروج الصوتي): برتقالي ممتلئ `#FF6900` بنص أبيض `font-weight: 700`.
 * **قاعدة «زرّان = يُخفَّض الثاني»:** كل زر ثانٍ على الشاشة نفسها تحوّل تلقائياً إلى ثانوي — طُبّقت حرفياً على `lens2__banner-cta` (أصبح أبيض بحدّ نحيف) وعلى زر «Mode vocal» في المُركِّب.
-* **أسهم أسعار المتاجر:** `.lens2__merchant-go` وكل نظيراتها → خلفية شفافة، حدّ `--ayrovi-border-soft`، سهم أسود. لا بقع برتقالية في قائمة المقارنة.
+* **أسهم أسعار المتاجر:** `.lens2__merchant-go` وكل نظيراتها → خلفية شفافة، حدّ `--zayrovi-border-soft`، سهم أسود. لا بقع برتقالية في قائمة المقارنة.
 
 ### 🗂️ الحاويات والبطاقات
 * `TransitionCard` («Découvrez ZAYROVI»): **أُلغي الأورانج الممتلئ بالكامل** → `ay-surface-card` (رمادي `#F8F9FA`، عنوان `#111111`، خطّ رأسي 3px برتقالي على الحافة الابتدائية).
@@ -74,7 +74,7 @@
 
 ### 🏷️ الشارات ومؤشرات التتبع
 * شارات «Prix repéré» و«OFFRE DU MOMENT» و«Meilleure correspondance» وشارات الحالة/المخزون/العملة → أبيض أو رمادي فاتح بحدّ نحيف ونص أسود.
-* **مؤشّر الخطوات (Step Tracker) ثُبَّت كمعيار:** الدائرة والخط للخطوة النشطة برتقاليان، والقادمة رمادية باهتة (`--ayrovi-border-soft`). طُبّق على `.lens-step*`، `.ay-journey-progress`، و`.lens2__step` (الخطوة 1 نشطة).
+* **مؤشّر الخطوات (Step Tracker) ثُبَّت كمعيار:** الدائرة والخط للخطوة النشطة برتقاليان، والقادمة رمادية باهتة (`--zayrovi-border-soft`). طُبّق على `.lens-step*`، `.ay-journey-progress`، و`.lens2__step` (الخطوة 1 نشطة).
 
 ### شاشة تفاصيل المنتج ومقارنة الأسعار (`LensResults`)
 * كتلة «Prix final estimé»: من `bg-accent/10` + حدّ برتقالي → `bg-surface` + `border-line`.
@@ -107,7 +107,7 @@
 
 **`tests/design-zalando.test.ts` (جديد، 20 اختباراً):**
 1. المتغيرات الستة موجودة بقيمها الحرفية المطلوبة.
-2. **حامل واحد فقط** للبرتقالي: `--ayrovi-color-brand-orange`؛ والبقية aliases تَحِلّ إليه.
+2. **حامل واحد فقط** للبرتقالي: `--zayrovi-color-brand-orange`؛ والبقية aliases تَحِلّ إليه.
 3. صفر لترالي برتقالي قديم في أي `.css` / `.tsx` / `.ts` داخل `client/src`.
 4. صفر لترالي قديم في `src/admin/routes.ts`، `src/public/routes.ts`، `src/services/invoice.ts`، و`src/db/database.ts` خارج جسمي الترحيل (لهما الحق في ذكر القيم التي يعيدان طلاءها).
 5. قسم LENS: خلفية بيضاء بلا تدرّج، القطرية `display:none`، البانر سطح بحدّ 3px، وأسعار المتاجر شفافة.
@@ -115,7 +115,7 @@
 7. عناصر `zalando-ui.css` معرَّفة ومستورَدة من `index.css` وخالية من أي لون حرفي.
 8. **قائمة سماح مغلقة** لكل `bg-accent`/`bg-cta` المتبقية (كلها حالات نشطة أو CTA رئيسي) + سقف عددي على عدد الاستخدامات.
 
-**اختبارات حُدِّثت لتقفل القيمة الجديدة:** `tests/design-tokens.test.ts` (الآن يتحقق أن `--ayrovi-cta` يحلّ إلى `#ff6900`)، `tests/interface-config.test.ts`، `tests/ayrovi.test.ts`، `tests/home-content-cms.test.ts`، `scripts/design-token-sweep.cjs`.
+**اختبارات حُدِّثت لتقفل القيمة الجديدة:** `tests/design-tokens.test.ts` (الآن يتحقق أن `--zayrovi-cta` يحلّ إلى `#ff6900`)، `tests/interface-config.test.ts`، `tests/zayrovi.test.ts`، `tests/home-content-cms.test.ts`، `scripts/design-token-sweep.cjs`.
 
 **الحصيلة:** `npm run typecheck` ✓ · `npx vitest run` → **678/678 ناجح** · `npm run build` ✓.
 
@@ -148,8 +148,8 @@ npx vitest run tests/design-zalando.test.ts
 | `client/src/styles/interface-runtime.css` | halo الـhero محايد، `.ay-btn-cta` على الجِذر الرسمي |
 | `client/src/components/TransitionCard.tsx` | من بطاقة برتقالية إلى `ay-surface-card` |
 | `client/src/components/LensHero.tsx` | خطوة نشطة واحدة + بانر سطحي |
-| `client/src/ayrovix/components/LensResults.tsx` | شاشة مقارنة الأسعار: شارات وكتل أسعار محايدة |
-| `client/src/ayrovix/components/LiveCamera.tsx` | مِقياس (viewfinder) محايد |
+| `client/src/zayrovix/components/LensResults.tsx` | شاشة مقارنة الأسعار: شارات وكتل أسعار محايدة |
+| `client/src/zayrovix/components/LiveCamera.tsx` | مِقياس (viewfinder) محايد |
 | `client/src/App.tsx` | الحقن البرمجي للبرتقالي أصبح يكتب الجِذر الرسمي |
 | `src/db/database.ts` | القيم الافتراضية + ترحيل `rebrand_zalando_orange_v1` |
 | `tests/design-zalando.test.ts` *(جديد)* | 20 قفلاً تمنع عودة الماضي |

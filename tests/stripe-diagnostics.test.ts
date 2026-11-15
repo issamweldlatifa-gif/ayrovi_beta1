@@ -55,7 +55,7 @@ describe('stripeDiagnostics', () => {
   test('détecte un nom mal orthographié au lieu de dire simplement « absent »', () => {
     process.env.STRIPE_SECRET_KEY = '';
     process.env.STRIPE_WEBHOOK_SECRET = '';
-    process.env.PUBLIC_BASE_URL = 'https://ayrovi.example';
+    process.env.PUBLIC_BASE_URL = 'https://zayrovi.example';
     (process.env as any).STRIPE_SECRET = 'sk_test_51abcdef';
     process.env.NODE_ENV = 'test';
     try {
@@ -71,7 +71,7 @@ describe('stripeDiagnostics', () => {
   test('signale une valeur entourée de guillemets', () => {
     process.env.STRIPE_SECRET_KEY = '"sk_test_51abcdef"';
     process.env.STRIPE_WEBHOOK_SECRET = 'whsec_xyz';
-    process.env.PUBLIC_BASE_URL = 'https://ayrovi.example';
+    process.env.PUBLIC_BASE_URL = 'https://zayrovi.example';
     process.env.NODE_ENV = 'test';
 
     const diagnostic = stripeDiagnostics();

@@ -1,3 +1,5 @@
+// En premier : les clés de stockage à l'ancien nom passent sous `zayrovi…` avant toute lecture.
+import './services/formerBrandStorage';
 import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';

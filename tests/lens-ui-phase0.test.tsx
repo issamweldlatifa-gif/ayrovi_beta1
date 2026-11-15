@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
-import { InteractiveLensResults } from '../client/src/ayrovix/components/InteractiveLensResults';
+import { InteractiveLensResults } from '../client/src/zayrovix/components/InteractiveLensResults';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
-import type { AyrovixCandidate } from '../client/src/ayrovix/types';
+import type { ZayrovixCandidate } from '../client/src/zayrovix/types';
 
-const candidate = (over: Partial<AyrovixCandidate>): AyrovixCandidate => ({
+const candidate = (over: Partial<ZayrovixCandidate>): ZayrovixCandidate => ({
   id: over.id || 'c',
   kind: 'external',
   title: over.title || 'Produit sans image',
@@ -31,16 +31,16 @@ const candidate = (over: Partial<AyrovixCandidate>): AyrovixCandidate => ({
 
 describe('Lens Phase 0 UI improvements', () => {
   it('LensLauncher contains product-name search field (analytics-safe text)', () => {
-    const src = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
-    expect(src).toContain('ayrovix-text-input');
+    const src = readFileSync('client/src/zayrovix/components/LensLauncher.tsx', 'utf8');
+    expect(src).toContain('zayrovix-text-input');
     expect(src).toContain('analyzeText');
     expect(src).toContain("Nom du produit");
     expect(src).toContain("Rechercher");
     // must not misclassify as qr — check new channel text is used
     expect(src).toContain("kind: 'text'");
-    expect(readFileSync('src/ayrovix/routes.ts','utf8')).toContain("channel: 'text'");
-    expect(readFileSync('src/ayrovix/routes.ts','utf8')).toContain("analyze-text");
-    expect(readFileSync('src/ayrovix/types.ts','utf8')).toContain("'text'");
+    expect(readFileSync('src/zayrovix/routes.ts','utf8')).toContain("channel: 'text'");
+    expect(readFileSync('src/zayrovix/routes.ts','utf8')).toContain("analyze-text");
+    expect(readFileSync('src/zayrovix/types.ts','utf8')).toContain("'text'");
   });
 
   it('LensResults shows merchant fallback when product image is empty (no invent)', () => {
@@ -94,19 +94,19 @@ describe('Lens Phase 0 UI improvements', () => {
   });
 
   it('error guidance maps existing API codes to retry suggestions', () => {
-    const src = readFileSync('client/src/ayrovix/components/LensLauncher.tsx','utf8');
+    const src = readFileSync('client/src/zayrovix/components/LensLauncher.tsx','utf8');
     expect(src).toContain('errorGuidance');
     expect(src).toContain('INVALID_TEXT');
     expect(src).toContain('TEXT_SEARCH_FAILED');
     expect(src).toContain('IMAGE_REQUIRED');
-    expect(src).toContain('AYROVIX_UNAVAILABLE');
+    expect(src).toContain('ZAYROVIX_UNAVAILABLE');
     expect(src).toContain('INVALID_URL');
     expect(src).toContain('retryLast');
   });
 
   it('recent searches chips use existing history (localStorage)', () => {
-    const src = readFileSync('client/src/ayrovix/components/LensLauncher.tsx','utf8');
-    expect(src).toContain('readLocalAyrovixHistory');
+    const src = readFileSync('client/src/zayrovix/components/LensLauncher.tsx','utf8');
+    expect(src).toContain('readLocalZayrovixHistory');
     expect(src).toContain('Recherches récentes');
     expect(src).toContain('Voir tout');
   });

@@ -11,7 +11,7 @@ describe('official Stories — publication, editing, retirement and persistence'
   const admin = request.agent(app);
   let csrf = '';
   beforeAll(async () => {
-    const response = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const response = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     csrf = response.body.data.csrfToken;
   });
   test('ships exactly seven unique official cards, bilingual copy and real photos', async () => {

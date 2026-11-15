@@ -7,11 +7,11 @@ import React from 'react';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { classifyProduct, extractCapacity, pricePer100, presentSizes, usesCapacity } from '../client/src/ayrovix/services/productAttributes';
-import { ProductCandidates } from '../client/src/ayrovix/components/ProductCandidates';
+import { classifyProduct, extractCapacity, pricePer100, presentSizes, usesCapacity } from '../client/src/zayrovix/services/productAttributes';
+import { ProductCandidates } from '../client/src/zayrovix/components/ProductCandidates';
 import { ShopProductScreen } from '../client/src/shop';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
-import type { AyrovixCandidate, AyrovixProduct } from '../client/src/ayrovix/types';
+import type { ZayrovixCandidate, ZayrovixProduct } from '../client/src/zayrovix/types';
 
 const read = (rel: string) => readFileSync(rel, 'utf8');
 
@@ -57,7 +57,7 @@ describe('P1 — compréhension produit (pure)', () => {
   });
 });
 
-const beautyProduct: AyrovixProduct = {
+const beautyProduct: ZayrovixProduct = {
   title: 'AXIS-Y COLLAGEN EYE SERUM — Soin des yeux 10 ml',
   brand: 'AXIS-Y', model: null,
   description: 'Sérum contour des yeux au collagène végétal et à la niacinamide — réduit les cernes et les poches.',
@@ -66,7 +66,7 @@ const beautyProduct: AyrovixProduct = {
   availability: 'unknown', rating: 4.7, ratingCount: 5017, ratingKind: 'merchant',
 };
 
-const shoesProduct: AyrovixProduct = {
+const shoesProduct: ZayrovixProduct = {
   title: 'AIR ZOOM ALPHAFLY NEXT 3 — Chaussures de running',
   brand: 'Nike Performance', model: null,
   description: 'Chaussure de compétition avec mousse ZoomX et plaque carbone.',
@@ -117,7 +117,7 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
     const shopCss = read('client/src/shop/shop.css');
     expect(shopCss).toMatch(/\.s-desc\s*\{[^}]*color: var\(--s-muted\)/);
     expect(shopCss).toMatch(/\.s-was\s*\{[^}]*color: var\(--s-muted\)/);
-    const shared = read('client/src/ayrovix/components/quiet-card.css');
+    const shared = read('client/src/zayrovix/components/quiet-card.css');
     expect(shared).toMatch(/\.ay-quiet-price__original\s*\{[^}]*font-weight:\s*400/);
   });
 
@@ -125,11 +125,11 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
     const adapter = read('client/src/shop/adapter.ts');
     // Une seule scène : les photos se parcourent par flèches ou glissement.
     expect(adapter).toContain('withIsolation([url])');
-    expect(read('client/src/shop/ProductPage.tsx')).not.toContain('ayrovix-thumbnail-strip');
-    const helper = read('client/src/ayrovix/services/mediaIsolation.ts');
+    expect(read('client/src/shop/ProductPage.tsx')).not.toContain('zayrovix-thumbnail-strip');
+    const helper = read('client/src/zayrovix/services/mediaIsolation.ts');
     // withIsolation isole CHAQUE url (avant : seulement la première).
     expect(helper).toMatch(/for \(const url of urls\)/);
-    expect(read('client/src/ayrovix/components/quiet-card.tsx')).toContain('withIsolation(');
+    expect(read('client/src/zayrovix/components/quiet-card.tsx')).toContain('withIsolation(');
     // Les chemins locaux restent intacts (fixtures, uploads).
     expect(helper).toContain('/api/public/media/isolated?url=');
   });
@@ -149,7 +149,7 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
   });
 
   it('l’en-tête Lens : retour ‹ + catégorie du produit + panier (2ᵉ calcul conservé)', () => {
-    const src = read('client/src/ayrovix/components/LensLauncher.tsx');
+    const src = read('client/src/zayrovix/components/LensLauncher.tsx');
     expect(src).toContain('productClassLabel(classifyProduct(product.title');
     expect(src).toContain('onClick={onOpenCart}');
     expect(src).toContain('actions={(');
@@ -162,14 +162,14 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
 
 describe('P1 — la description atteint enfin les cartes', () => {
   it('candidateToProduct (Lens + Sonim) biche la description au lieu de la jeter', () => {
-    const lens = read('client/src/ayrovix/components/LensLauncher.tsx');
+    const lens = read('client/src/zayrovix/components/LensLauncher.tsx');
     const sonim = read('client/src/components/assistant/AiAssistantDrawer.tsx');
     expect(lens).toContain("description: candidate.description || candidate.model || ''");
     expect(sonim).toContain("description: candidate.description || candidate.model || ''");
   });
 
   it('la carte liste : titre encre + description grise dessous + prix même style', () => {
-    const candidate: AyrovixCandidate = {
+    const candidate: ZayrovixCandidate = {
       id: 'serum', kind: 'external', title: 'AXIS-Y COLLAGEN EYE SERUM', brand: 'AXIS-Y', model: null,
       description: 'Sérum contour des yeux au collagène — 10 ml.',
       colors: [], sizes: [], source: 'Example', sourceUrl: 'https://shop.example/serum', image: '/serum.jpg',

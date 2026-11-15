@@ -6,7 +6,7 @@
  * symptôme, pas un diagnostic. Le seul juge est la chaîne réelle —
  *   connexion (jeton de session) → profil → panier → CAISSE → commande
  * — exécutée exactement comme l'application l'exécute : en-tête
- * `x-ayrovi-client`, `Authorization: Bearer`, `x-session-id`, `x-csrf-token`.
+ * `x-zayrovi-client`, `Authorization: Bearer`, `x-session-id`, `x-csrf-token`.
  *
  * Différences avec le workflow `beta-smoke.yml` (qui vise un serveur distant et
  * ne peut pas créer de commande) : ici on va jusqu'à la COMMANDE CRÉÉE, sur un
@@ -56,7 +56,7 @@ const bad = () => results.some((entry) => entry.verdict === 'fail');
 const gated = () => results.some((entry) => entry.verdict === 'skip' || entry.verdict === 'warn');
 
 async function call(method, path, options = {}) {
-  const headers = { Accept: 'application/json', 'x-ayrovi-client': CLIENT, ...(options.headers || {}) };
+  const headers = { Accept: 'application/json', 'x-zayrovi-client': CLIENT, ...(options.headers || {}) };
   if (cookies.length) headers.Cookie = cookies.join('; ');
   if (options.token) headers.Authorization = `Bearer ${options.token}`;
   if (options.csrf) headers['x-csrf-token'] = options.csrf;
@@ -210,7 +210,7 @@ async function main() {
 
   // Sans e-mail de compte (connexion SMS), la commande a besoin d'une adresse de
   // facturation : l'appli la demande dans le formulaire. On en fournit une de test.
-  const billingEmail = accountEmail || `e2e.${Date.now()}@ayrovi.test`;
+  const billingEmail = accountEmail || `e2e.${Date.now()}@zayrovi.test`;
 
   // 6) Caisse : la commande est créée AVANT le paiement.
   const checkout = await call('POST', '/api/checkout', {

@@ -10,7 +10,7 @@ import { JSDOM } from 'jsdom';
 import ts from 'typescript';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-ae-temu-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-ae-temu-')), 'cache');
 
 import { QatafoDatabase } from '../src/db/database';
 import { DEFAULT_CUSTOMS_CATEGORIES, type PricingRules } from '../src/services/pricing';
@@ -158,7 +158,7 @@ describe('AYWEBs — AliExpress modale SKU mobile CSR & Bundle Deals', () => {
       expect(resolved.product.price).toBeCloseTo(22.19, 2);
       expect(resolved.product.currency).toBe('EUR');
       expect(resolved.product.availability.state).toBe('AVAILABLE');
-      expect(resolved.product.ayroviPricing?.totalTnd).toBeGreaterThan(0);
+      expect(resolved.product.zayroviPricing?.totalTnd).toBeGreaterThan(0);
 
       const added = await addAyWebsCartItem(resolver, {
         sessionId: SESSION_ID,

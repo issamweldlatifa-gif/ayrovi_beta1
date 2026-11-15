@@ -18,7 +18,7 @@
  *     --url "https://www.amazon.com/dp/B0GYM3V9H5"
  *
  * Options :
- *   --base   origine du site (défaut : variable AYROVI_BASE_URL, sinon localhost:3000)
+ *   --base   origine du site (défaut : variable ZAYROVI_BASE_URL, sinon localhost:3000)
  *   --url    lien produit à mesurer (obligatoire, sauf si --self-test)
  *   --runs   nombre de passes (défaut 2)
  *   --cold   force une LECTURE FRAÎCHE sur la première passe (`refresh:true`) :
@@ -38,7 +38,7 @@ function option(name, fallback = '') {
   return index >= 0 && args[index + 1] ? String(args[index + 1]) : fallback;
 }
 
-const base = (option('base', process.env.AYROVI_BASE_URL || 'http://localhost:3000')).replace(/\/+$/, '');
+const base = (option('base', process.env.ZAYROVI_BASE_URL || 'http://localhost:3000')).replace(/\/+$/, '');
 const productUrl = option('url', '');
 const runs = Math.max(1, Math.min(5, Number(option('runs', '2')) || 2));
 const store = option('store', '');
@@ -90,7 +90,7 @@ async function resolveOnce(index) {
     cacheAgeMs: typeof payload?.cache_age_ms === 'number' ? payload.cache_age_ms : null,
     price: Number(data.price || 0),
     currency: String(data.currency || ''),
-    pricingTnd: Number(data?.ayrovi_pricing?.total_tnd || 0),
+    pricingTnd: Number(data?.zayrovi_pricing?.total_tnd || 0),
     productId: String(data.product_id || ''),
     missing: Array.isArray(payload?.missing) ? payload.missing : [],
     title: String(data.title || '').slice(0, 60),

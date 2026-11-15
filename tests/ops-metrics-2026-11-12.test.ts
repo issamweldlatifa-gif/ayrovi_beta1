@@ -31,7 +31,7 @@ describe('limites allouées', () => {
   });
   it('« max » = pas de quota : on retombe sur la machine ; une variable explicite prime', () => {
     expect(detectLimits({}, (file) => (file.endsWith('cpu.max') ? 'max 100000' : null)).source.cpu).toBe('machine');
-    const explicit = detectLimits({ AYROVI_CPU_LIMIT: '0.5', AYROVI_MEMORY_LIMIT_MB: '512' }, () => null);
+    const explicit = detectLimits({ ZAYROVI_CPU_LIMIT: '0.5', ZAYROVI_MEMORY_LIMIT_MB: '512' }, () => null);
     expect(explicit).toMatchObject({ cpu: 0.5, memoryBytes: 512 * 1024 * 1024, source: { cpu: 'env', memory: 'env' } });
   });
 });
@@ -95,7 +95,7 @@ describe('fenêtre lue juste après un changement de minute', () => {
     expect(w.requests).toBe(600);
     expect(w.rps).toBeCloseTo(600 / 62, 1); // couvert : 10:00:00 → 10:01:02
     expect(w.cpuAvg).toBe(90);
-    expect(metrics.prometheus()).toContain('ayrovi_cpu_percent 90');
+    expect(metrics.prometheus()).toContain('zayrovi_cpu_percent 90');
     // Deux minutes plus tard, la fenêtre d'une minute a bien oublié ce pic.
     clock = Date.UTC(2026, 10, 12, 10, 3, 0);
     expect(metrics.summarize(1).requests).toBe(0);
@@ -150,9 +150,9 @@ it('historique horaire : une ligne par heure écoulée, idempotente', () => {
 
 it('rôle du processus : tâches planifiées actives par défaut, coupées sur demande', () => {
   expect(backgroundJobsEnabled({})).toBe(true);
-  expect(backgroundJobsEnabled({ AYROVI_BACKGROUND_JOBS: 'on' })).toBe(true);
-  expect(backgroundJobsEnabled({ AYROVI_BACKGROUND_JOBS: 'off' })).toBe(false);
-  expect(backgroundJobsEnabled({ AYROVI_BACKGROUND_JOBS: 'false' })).toBe(false);
+  expect(backgroundJobsEnabled({ ZAYROVI_BACKGROUND_JOBS: 'on' })).toBe(true);
+  expect(backgroundJobsEnabled({ ZAYROVI_BACKGROUND_JOBS: 'off' })).toBe(false);
+  expect(backgroundJobsEnabled({ ZAYROVI_BACKGROUND_JOBS: 'false' })).toBe(false);
 });
 
 describe('points d’accès HTTP', () => {
@@ -161,7 +161,7 @@ describe('points d’accès HTTP', () => {
   beforeAll(async () => {
     ({ app } = await import('../src/server'));
     agent = request.agent(app);
-    const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
   });
   afterAll(() => { delete process.env.OPS_METRICS_TOKEN; });
@@ -182,7 +182,7 @@ describe('points d’accès HTTP', () => {
     expect((await request(app).get('/api/ops/metrics').set('authorization', 'Bearer faux')).status).toBe(404);
     const ok = await request(app).get('/api/ops/metrics').set('authorization', 'Bearer token-de-supervision-assez-long-2026');
     expect(ok.status).toBe(200);
-    expect(ok.text).toContain('ayrovi_requests_per_second');
-    expect(ok.text).toContain('ayrovi_event_loop_p99_ms');
+    expect(ok.text).toContain('zayrovi_requests_per_second');
+    expect(ok.text).toContain('zayrovi_event_loop_p99_ms');
   });
 });

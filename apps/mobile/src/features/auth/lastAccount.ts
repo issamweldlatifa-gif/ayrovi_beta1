@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { openSecureBackend, type SecureBackend } from '@/state/sessionStore';
 
-export const LAST_ACCOUNT_KEY = 'ayrovi.lastAccount.v1';
+export const LAST_ACCOUNT_KEY = 'zayrovi.lastAccount.v1';
 
 export type LastAccount =
   | { provider: 'google'; email: string; name?: string }

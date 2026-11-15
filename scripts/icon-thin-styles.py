@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """نماذج انحف وأرقى بأسلوب Zalando / Apple — 6 أيقونات × 10 أنماط.
-المخرجات: docs/ayrovi-icon-thin-styles.html"""
+المخرجات: docs/zayrovi-icon-thin-styles.html"""
 
 INK = '#111827'
 SIG = '#FF6A00'
@@ -136,7 +136,7 @@ def main():
             '<title>ZAYROVI — Thin Icon Styles</title>'
             '<style>body{margin:0;background:#fff;padding:16px}.wrap{max-width:1180px;margin:0 auto}</style>'
             '</head><body><div class="wrap">' + svg + '</div></body></html>')
-    out = '/home/user/ayrovi_beta1/docs/ayrovi-icon-thin-styles.html'
+    out = '/home/user/ayrovi_beta1/docs/zayrovi-icon-thin-styles.html'
     with open(out, 'w') as f:
         f.write(html)
     print('OK →', out)

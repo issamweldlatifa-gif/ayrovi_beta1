@@ -43,7 +43,7 @@ jobs:
       PORT: "4399"
       DATABASE_PATH: /tmp/e2e-boot-data/qatafo.sqlite
       PUBLIC_BASE_URL: https://ayrovi-beta1-moo8.onrender.com
-      ADMIN_EMAIL: ops@ayrovi.test
+      ADMIN_EMAIL: ops@zayrovi.test
       ADMIN_PASSWORD: Un-Mot-De-Passe-Solide-2026-E2E
       CUSTOMER_AUTH_SECRET: secret-de-test-e2e-0123456789-abcdefghijklmnop-qrstuv
       ANDROID_APP_LINK_SHA256: AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99
@@ -94,7 +94,7 @@ jobs:
       DATABASE_PATH: /tmp/e2e-run-data/qatafo.sqlite
       PUBLIC_BASE_URL: http://127.0.0.1:4321
       CUSTOMER_AUTH_SECRET: secret-de-test-e2e-0123456789-abcdefghijklmnop-qrstuv
-      AYROVIX_QUOTE_SECRET: quote-de-test-e2e-0123456789-abcdefghijklmnop-qrstuv
+      ZAYROVIX_QUOTE_SECRET: quote-de-test-e2e-0123456789-abcdefghijklmnop-qrstuv
       ANDROID_APP_LINK_SHA256: AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99
     steps:
       - uses: actions/checkout@v4

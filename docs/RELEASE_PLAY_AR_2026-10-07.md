@@ -14,9 +14,9 @@
 | القطعة | الحالة |
 |---|---|
 | تطبيق React Native (`apps/mobile`) | ✅ 24 شاشة اصلية، يعمل على الخادم |
-| APK تجريبي (`app.ayrovi.mobile.demo` / «ZAYROVI Démo») | ✅ يتبنى في GitHub Actions — **موش** نسخة النشر |
+| APK تجريبي (`app.zayrovi.mobile.demo` / «ZAYROVI Démo») | ✅ يتبنى في GitHub Actions — **موش** نسخة النشر |
 | AAB موقّع للنشر | ⏳ الملف موجود (`.github/workflows/mobile-release-aab.yml`) — **ناقص غير المفاتيح** |
-| روابط عميقة `https://ayrovi.tn` | ✅ التطبيق (`app.json`) + الخادم (`/.well-known/assetlinks.json`) جاهزين — **ناقص** غير بصمتك في متغيّر البيئة |
+| روابط عميقة `https://zayrovi.com` | ✅ التطبيق (`app.json`) + الخادم (`/.well-known/assetlinks.json`) جاهزين — **ناقص** غير بصمتك في متغيّر البيئة |
 | إشعارات FCM | ❌ ما بدتش: تستلزم مشروع Firebase متاعك + مفاتيح (تحت) |
 | بوابة الدفع بالكارطة | ❌ موش مركّبة على الخادم — الكود في التطبيق جاهز ويستنّاها |
 | متجر Play | ❌ ما فماش تطبيق مسجّل بعد (خطوة 5) |
@@ -34,7 +34,7 @@
    gh run download -R issamweldlatifa-gif/ayrovi_beta1 -n ZAYROVI-demo-apk
    ```
 
-3. ثبّتو على التلفون. معرّفو `app.ayrovi.mobile.demo` ⇒ **يتمشّى حَدّ التطبيق
+3. ثبّتو على التلفون. معرّفو `app.zayrovi.mobile.demo` ⇒ **يتمشّى حَدّ التطبيق
    القديم وما يلمسوش** (الزوز يبقاو مثبّتين).
 4. تحقّق من اللي عندك: الرئيسية تعرض «بصمة البناء» = SHA متاع الـcommit اللي
    تبنى منو — ومع شاشة «حول التطبيق» تعرف شنوّة من التطبيق وشنوّة من الخادم.
@@ -68,14 +68,14 @@
 
 ```bash
 cd apps/mobile
-npm run device:acceptance -- --apk /المسار/AYROVI-demo-815a025.apk --launch
+npm run device:acceptance -- --apk /المسار/ZAYROVI-demo-815a025.apk --launch
 ```
 
 قبل كل شي: **حذف التطبيق القديم** إذا كان بتوقيع مختلف (Android ما يركّبوش فوقو).
 
 | # | الخطوة | اللي لازم تشوفو | كان ما شفتوش |
 |---|---|---|---|
-| 1 | ركّب `AYROVI-demo-815a025.apk` | التطبيق يحلّ على الرئيسية | — |
+| 1 | ركّب `ZAYROVI-demo-815a025.apk` | التطبيق يحلّ على الرئيسية | — |
 | 2 | شوف «حول التطبيق» في الحساب | سطر الخادم = **`ayrovi-beta1-moo8.onrender.com`** والنسخة `2.0.7` | يعني الـAPK قديم: حمّل الملف من Release `apk-815a025` |
 | 3 | **دخول بـGoogle** | ترجع للتطبيق وحسابك محلول | «ما فماش توثيق» ⇒ راجع `GOOGLE_CALLBACK_URL` (تحت) |
 | 4 | AYWEBs: حلّ صفحة منتج (شكّان/أمازون) | الكارطة والمعلومات تظهر | صوّر الشاشة وابعثها |
@@ -106,8 +106,8 @@ npm run device:acceptance -- --apk /المسار/AYROVI-demo-815a025.apk --launc
 
 ```bash
 keytool -genkeypair -v \
-  -keystore ayrovi-release.jks \
-  -alias ayrovi \
+  -keystore zayrovi-release.jks \
+  -alias zayrovi \
   -keyalg RSA -keysize 4096 -validity 10000 \
   -storetype JKS
 ```
@@ -119,21 +119,21 @@ keytool -genkeypair -v \
 تحقّق:
 
 ```bash
-keytool -list -keystore ayrovi-release.jks
+keytool -list -keystore zayrovi-release.jks
 ```
 
-(تكتب كلمة السر ⇒ يظهرلك سطر فيه `ayrovi`، نوع المفتاح `PrivateKeyEntry`.)
+(تكتب كلمة السر ⇒ يظهرلك سطر فيه `zayrovi`، نوع المفتاح `PrivateKeyEntry`.)
 
 ### تحويل الملف لصيغة يقبلها GitHub
 
 ```bash
 # Linux / macOS
-base64 -w0 ayrovi-release.jks > ayrovi-release.jks.base64
+base64 -w0 zayrovi-release.jks > zayrovi-release.jks.base64
 # macOS (بلا -w0)
-base64 -i ayrovi-release.jks -o ayrovi-release.jks.base64
+base64 -i zayrovi-release.jks -o zayrovi-release.jks.base64
 
 # Windows (PowerShell)
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("ayrovi-release.jks")) | Set-Content ayrovi-release.jks.base64
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("zayrovi-release.jks")) | Set-Content zayrovi-release.jks.base64
 ```
 
 افتح الملف الناتج وانسخ **كل** المحتوى (سطر واحد طويل).
@@ -146,9 +146,9 @@ base64 -i ayrovi-release.jks -o ayrovi-release.jks.base64
 
 | الاسم | القيمة |
 |---|---|
-| `ANDROID_KEYSTORE_BASE64` | محتوى `ayrovi-release.jks.base64` |
+| `ANDROID_KEYSTORE_BASE64` | محتوى `zayrovi-release.jks.base64` |
 | `ANDROID_KEYSTORE_PASSWORD` | كلمة سر المخزن |
-| `ANDROID_KEY_ALIAS` | `ayrovi` |
+| `ANDROID_KEY_ALIAS` | `zayrovi` |
 | `ANDROID_KEY_PASSWORD` | كلمة سر المفتاح |
 
 **كيفاش تعرف أنها نجحت**: الملف `.github/workflows/mobile-release-aab.yml`
@@ -199,7 +199,7 @@ base64 -i ayrovi-release.jks -o ayrovi-release.jks.base64
 
 1. **حساب مطوّر**: `play.google.com/console` → $25 مرّة واحدة → تحقّق الهوية
    (ياخذ من 1 لـ3 أيام عادة).
-2. **إنشاء تطبيق**: الاسم `AYROVI`، اللغة الافتراضية (العربية/الفرنسية)،
+2. **إنشاء تطبيق**: الاسم `ZAYROVI`، اللغة الافتراضية (العربية/الفرنسية)،
    «Application», «Gratuit».
 3. **Play App Signing**: اختار «استعمل مفتاحك» ولا خلي Google يولّي المفتاح
    الأساسي — الـAAB متاعنا موقّع بمفتاحك، فالمسار طبيعي.
@@ -213,7 +213,7 @@ base64 -i ayrovi-release.jks -o ayrovi-release.jks.base64
 
 ---
 
-## 5) الروابط العميقة (`https://ayrovi.tn/...` تفتح التطبيق)
+## 5) الروابط العميقة (`https://zayrovi.com/...` تفتح التطبيق)
 
 النصف الأول جاهز في `app.json` (`intentFilters` + `autoVerify: true`).
 النصف الثاني **مكتوب وموجود في الخادم** (`src/server.ts` — الطريق
@@ -226,7 +226,7 @@ base64 -i ayrovi-release.jks -o ayrovi-release.jks.base64
 1. خذ **بصمة SHA-256** من مفتاح التوقيع:
 
 ```bash
-keytool -list -v -keystore ayrovi-release.jks -alias ayrovi | grep SHA256
+keytool -list -v -keystore zayrovi-release.jks -alias zayrovi | grep SHA256
 # ⇒ SHA256:  C0:4A:9F:...   (32 بايت)
 ```
 
@@ -235,7 +235,7 @@ keytool -list -v -keystore ayrovi-release.jks -alias ayrovi | grep SHA256
 | المتغيّر | القيمة | إلزامي؟ |
 |---|---|---|
 | `ANDROID_APP_LINK_SHA256` | البصمة من الخطوة 1 — وبعدها **زيد بصمة Google Play** مفصولة بفاصلة (Play Console → App integrity → App signing key certificate) | ✅ |
-| `ANDROID_APP_LINK_PACKAGES` | `app.ayrovi.mobile` (افتراضي) + `app.ayrovi.mobile.demo` كان تحبّ العرض التجريبي يفتح الروابط هو أيضاً | ❌ (اختياري) |
+| `ANDROID_APP_LINK_PACKAGES` | `app.zayrovi.mobile` (افتراضي) + `app.zayrovi.mobile.demo` كان تحبّ العرض التجريبي يفتح الروابط هو أيضاً | ❌ (اختياري) |
 
 اللصقة تتقبل كما هي: `SHA256: C0:4A:...`، وكذلك 64 حرف بلا فواصل — الخادم
 ينظّم الكتابة (نفس البايتات) ويشيل التكرار.
@@ -247,17 +247,17 @@ keytool -list -v -keystore ayrovi-release.jks -alias ayrovi | grep SHA256
 
 ### كيفاش تتأكّد أنها نجحت
 
-> ⚠️ `ayrovi.tn` ما فيهش خادم توّا (شوف §6)، يعني بصمة أندرويد ما تتقراش منو.
+> ⚠️ `zayrovi.com` ما فيهش خادم توّا (شوف §6)، يعني بصمة أندرويد ما تتقراش منو.
 > لهذا `app.json` يعلن كذلك **`ayrovi-beta1-1.onrender.com`** — وخدمة الخادم
-> (الفرع) تنشر `assetlinks.json` على نفس النطاق. كي يولّي `ayrovi.tn` حيّ،
+> (الفرع) تنشر `assetlinks.json` على نفس النطاق. كي يولّي `zayrovi.com` حيّ،
 > النطاقان يخدمو بلا بناء جديد.
 
 ```bash
 curl -s https://ayrovi-beta1-1.onrender.com/.well-known/assetlinks.json | python3 -m json.tool
-# لازم تشوف package_name = app.ayrovi.mobile والبصمة صحيحة في القائمة
+# لازم تشوف package_name = app.zayrovi.mobile والبصمة صحيحة في القائمة
 ```
 
-ومن التلفون: اكتب في Chrome رابط `https://ayrovi.tn/...` ⇒ يفتح التطبيق
+ومن التلفون: اكتب في Chrome رابط `https://zayrovi.com/...` ⇒ يفتح التطبيق
 مباشرة بلا ما يسألك. المسارات اللي مازال ما عندهاش شاشة في التطبيق ما تعطيش
 صفحة بيضاء: `app/+not-found.tsx` تعرض المسار وتفتحو في المتصفّح.
 
@@ -268,7 +268,7 @@ curl -s https://ayrovi-beta1-1.onrender.com/.well-known/assetlinks.json | python
 
 ## 6) أي خادم يحكي مع التطبيق (الحقيقة، وتصحيح غلطة)
 
-**`ayrovi.tn` ما فيهش خادم** (07/10/2026) — على العنوان هذا التطبيق يلقى
+**`zayrovi.com` ما فيهش خادم** (07/10/2026) — على العنوان هذا التطبيق يلقى
 «ما فماش شبكة» في كل شاشة. الخادم الحقيقي هو خدمة Render،
 والاسم اللي يعلن عليه الخادم نفسه:
 
@@ -280,7 +280,7 @@ https://ayrovi-beta1-1.onrender.com
 على `-1`» — و`android/app/build.gradle` القديم.)
 
 **الغلطة اللي كانت**: حزمة التطبيق كانت تتبنى بـ`EXPO_PUBLIC_API_BASE_URL`
-افتراضي `https://ayrovi.tn` ⇒ كل شاشة تلقى «ما فماش شبكة» ⇒ «التطبيق ما يخدمش».
+افتراضي `https://zayrovi.com` ⇒ كل شاشة تلقى «ما فماش شبكة» ⇒ «التطبيق ما يخدمش».
 تصحّحت في: `apps/mobile/src/api/config.ts` (الأصل الافتراضي)، وورشتَي APK/AAB،
 وسكريبت الجهوزية — واختبار (`tests/origin.test.ts`) يمنع رجوع التشتّت.
 
@@ -290,7 +290,7 @@ https://ayrovi-beta1-1.onrender.com
 | **بعد نشر الفرع** | نفس الخدمة على فرع جديد ولا خدمة ثانية | كل شي: الدخول، السلّة، الشراء، وإصلاحات التقاط أمازون |
 
 **علاش الدخول يفشل على الخادم الحيّ**: إعطاء الجلسة للتطبيق
-(`src/customer/sessionExchange.ts` — `x-ayrovi-client: mobile/x.y.z`) موجود في
+(`src/customer/sessionExchange.ts` — `x-zayrovi-client: mobile/x.y.z`) موجود في
 **الفرع** وحدو؛ الخادم الحيّ `main` يعطي كوكي للمتصفّح. التطبيق يقولها بصراحة:
 «الخادم ما فتحش جلسة للتطبيق: النسخة اللي عندو ما تعرفش التطبيق».
 
@@ -377,14 +377,14 @@ curl -s https://<عنوان-الخدمة>/api/ready
   `CUSTOMER_OTP_WEBHOOK_URL` (لازم `https://`) + `CUSTOMER_OTP_WEBHOOK_TOKEN`.
 
 **عنوان خدمة الـBeta الحالية**: `https://ayrovi-beta1-moo8.onrender.com`
-(خدمة `Ayrovi2` في Render، من الفرع `arena/c0321e79-ayrovi-beta1`). العنوان
+(خدمة `Zayrovi2` في Render، من الفرع `arena/c0321e79-ayrovi-beta1`). العنوان
 مسجّل في المواضع الكل بأمر `release:set-api-base` — الرمز، الورشتين، الجهوزية،
 فحص الـBeta، والروابط العميقة.
 
 ### أداة قياس: «Serveur — test de bout en bout (appli)»
 
 في `.github/workflows/beta-smoke.yml`: تشغيل واحد يجيب جواب قاطع — يخلق حساب
-تجريبي بعنوان `smoke.<وقت>@ayrovi.test` بنفس `en-tête` متاع التطبيق، ويتحقّق
+تجريبي بعنوان `smoke.<وقت>@zayrovi.test` بنفس `en-tête` متاع التطبيق، ويتحقّق
 واحد واحد: `/api/ready` (فرع؟) · `session_token` في الجسم · `Bearer` يفتح
 الحساب · السلّة · `POST /api/checkout` (يطلب `x-session-id`، ويبعث نفس جسم
 التطبيق) · قائمة الطلبات · `assetlinks.json`. ويقرا زادة
@@ -425,13 +425,13 @@ Facebook، Apple، SMS، استرجاع كلمة السرّ. النتيجة تظ
 
 ### قياس الخدمة الجديدة (08/10/2026) — واللي ناقص بالضبط
 
-الخدمة `Ayrovi2` (`https://ayrovi-beta1-moo8.onrender.com`) من الفرع، والنشر
+الخدمة `Zayrovi2` (`https://ayrovi-beta1-moo8.onrender.com`) من الفرع، والنشر
 نجح. القياس الآلي يقول:
 
 | القياس | النتيجة | القراءة |
 |---|---|---|
 | `/api/health` · `/api/ready` | 200 · 200 · `branch=arena/c0321e79-ayrovi-beta1` | ✅ الكود متاع الفرع راهو منشور |
-| تسجيل بالإيميل + `x-ayrovi-client` | 200 + **`session_token`** | ✅ الدخول متاع التطبيق يخدم |
+| تسجيل بالإيميل + `x-zayrovi-client` | 200 + **`session_token`** | ✅ الدخول متاع التطبيق يخدم |
 | `/auth/me` · السلّة · الطلبات | 200 · 200 · 200 | ✅ |
 | الدخول بـGoogle | مفعّل (`google=oui`) | ✅ الكارطة تظهر في التطبيق |
 | **`redirect_uri` متاع Google** | ⛔ **`https://ayrovi-beta1-1.onrender.com/…`** | **آخر حاجة لازم تتصلّح** (تحت) |
@@ -444,7 +444,7 @@ Facebook، Apple، SMS، استرجاع كلمة السرّ. النتيجة تظ
 المستعمل على **العنوان القديم** ⇒ الخدمة القديمة ما تعرفش كود التسليم ⇒
 «دخول Google ما يخدمش» بلا حتى رسالة مفهومة. الإصلاح زوز خطوات:
 
-1. Render → خدمة `Ayrovi2` → Environment →
+1. Render → خدمة `Zayrovi2` → Environment →
 
    ```
    GOOGLE_CALLBACK_URL = https://ayrovi-beta1-moo8.onrender.com/api/customer/auth/google/callback
@@ -492,7 +492,7 @@ Git**. لهذا: الدخول من التطبيق ما يخدمش، وإصلاح
 **الحلّ 1 بالتفصيل**: Render → New → Web Service → نفس الريبو → Branch
 `arena/c0321e79-ayrovi-beta1` → Frankfurt · Starter · Build
 `npm ci --include=dev && npm run build` · Start `npm start` · Health
-`/api/ready` · Disk جديد `ayrovi-data-beta` في `/opt/render/project/src/data` ·
+`/api/ready` · Disk جديد `zayrovi-data-beta` في `/opt/render/project/src/data` ·
 انسخ متغيّرات البيئة من الخدمة الحالية + `PUBLIC_BASE_URL` = عنوان الخدمة
 الجديدة. من بعد: `npm run release:preflight -- --api-base <العنوان الجديد>` ثم
 بناء APK/AAB عليه.
@@ -516,6 +516,6 @@ Git**. لهذا: الدخول من التطبيق ما يخدمش، وإصلاح
 - [ ] الـCI أخضر على الفرع (`CI` + `Mobile — ZAYROVI app`).
 - [ ] الأسرار الأربعة موجودة (وما تبدّلتش من غير ما تعرف).
 - [ ] الـAAB المرفوع موقّع بالمفتاح متاعك (الـworkflow يقولها).
-- [ ] نسخة احتياطية جديدة من `ayrovi-release.jks` + كلمات السر.
+- [ ] نسخة احتياطية جديدة من `zayrovi-release.jks` + كلمات السر.
 - [ ] `npm run copy:check` أخضر (تدقيق النصوص: كود بلا نص، نص بلا مستعمل، لغة غالطة).
 - [ ] `ANDROID_APP_LINK_SHA256` موجود في بيئة الخادم (وإلاّ الروابط ما تفتحش التطبيق).

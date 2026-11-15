@@ -153,7 +153,7 @@ Les mutations demandent `content:write`, sauf `ai-knowledge` qui demande `settin
 - `client/src/App.tsx` et `client/src/types.ts` : composition CMS et modèles de totaux.
 - `client/src/components/HeroSlider.tsx`, `PartnerBrandsSlider.tsx`, `ProductDrawer.tsx`, `CartDrawer.tsx`, `CheckoutModal.tsx`, `Footer.tsx` et `assistant/AiAssistantDrawer.tsx` : intégrations backend publiques.
 - `client/index.html` : métadonnées et ressources locales compatibles CSP.
-- `tests/ayrovi.test.ts` : tests d’intégration et de sécurité.
+- `tests/zayrovi.test.ts` : tests d’intégration et de sécurité.
 - `.env.example` et `README.md` : configuration et exploitation.
 - `public/` : build de production généré, incluant les médias CMS.
 

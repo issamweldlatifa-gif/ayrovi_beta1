@@ -27,9 +27,9 @@
 import fs from 'node:fs';
 
 const MANIFEST = 'android/app/src/main/AndroidManifest.xml';
-const MAIN = 'android/app/src/main/java/app/ayrovi/mobile/MainActivity.java';
-const BROWSER = 'android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java';
-const PLUGIN = 'android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowsePlugin.java';
+const MAIN = 'android/app/src/main/java/app/zayrovi/mobile/MainActivity.java';
+const BROWSER = 'android/app/src/main/java/app/zayrovi/mobile/AyWebsBrowseActivity.java';
+const PLUGIN = 'android/app/src/main/java/app/zayrovi/mobile/AyWebsBrowsePlugin.java';
 const STRINGS = 'android/app/src/main/res/values/strings.xml';
 const CAP_CONFIG = 'capacitor.config.ts';
 
@@ -107,8 +107,8 @@ check(
 
 /* ── 2. Liens profonds AYWEBs (Manifest §25) ────────────────────────────────── */
 check(
-  'manifeste : lien profond ayrovi://aywebs déclaré',
-  /android:scheme="ayrovi"/.test(manifest) && /android:host="aywebs"/.test(manifest),
+  'manifeste : lien profond zayrovi://aywebs déclaré',
+  /android:scheme="zayrovi"/.test(manifest) && /android:host="aywebs"/.test(manifest),
   'sans ce filtre, les routes AYWEBs ne peuvent pas être reçues'
 );
 check(
@@ -126,9 +126,9 @@ check(
 );
 // Et cette action doit viser le schéma que le contrôle accepte.
 check(
-  'AyWebsBrowseActivity : openWebRoute utilise le schéma ayrovi://',
-  /AYWEBS_DEEP_LINK/.test(browser) && /ayrovi:\/\/aywebs/.test(browser),
-  'ayWebsTarget() exige scheme=ayrovi et host=aywebs ; une URL https://localhost/… est rejetée même avec ACTION_VIEW'
+  'AyWebsBrowseActivity : openWebRoute utilise le schéma zayrovi://',
+  /AYWEBS_DEEP_LINK/.test(browser) && /zayrovi:\/\/aywebs/.test(browser),
+  'ayWebsTarget() exige scheme=zayrovi et host=aywebs ; une URL https://localhost/… est rejetée même avec ACTION_VIEW'
 );
 // MainActivity doit refuser explicitement ce qu'il n'accepte pas (garde-fou de lecture).
 check(
@@ -324,7 +324,7 @@ check(
 );
 check(
   'AyWebsBrowseActivity : la connexion réclame le jeton natif',
-  /"x-ayrovi-native", "1"/.test(browser),
+  /"x-zayrovi-native", "1"/.test(browser),
   'sans cet en-tête le serveur n’émet aucun jeton natif : la coque resterait déconnectée après une connexion réussie'
 );
 check(
@@ -343,25 +343,25 @@ check(
 // 404 Google ouvrait le NAVIGATEUR SYSTÈME : application différente, bascule
 // visible, retour manuel. L'onglet personnalisé est la seule voie qui soit à la
 // fois acceptée par Google (qui refuse les WebView embarquées) et sans sortie.
-const authTab = read('android/app/src/main/java/app/ayrovi/mobile/AyroviAuthTabPlugin.java');
+const authTab = read('android/app/src/main/java/app/zayrovi/mobile/ZayroviAuthTabPlugin.java');
 check(
-  'AyroviAuthTabPlugin : onglet personnalisé présent',
+  'ZayroviAuthTabPlugin : onglet personnalisé présent',
   /CustomTabsIntent/.test(authTab) && /launchUrl/.test(authTab),
   'sans lui, la connexion par fournisseur bascule vers Chrome et quitte ZAYROVI'
 );
 check(
-  'AyroviAuthTabPlugin : l’onglet reste dans NOTRE tâche',
+  'ZayroviAuthTabPlugin : l’onglet reste dans NOTRE tâche',
   !/FLAG_ACTIVITY_NEW_TASK/.test(authTab),
   'avec NEW_TASK, l’onglet devient une fenêtre séparée dans le sélecteur d’applications'
 );
 check(
-  'AyroviAuthTabPlugin : https exigé pour une page de mot de passe',
+  'ZayroviAuthTabPlugin : https exigé pour une page de mot de passe',
   /AUTH_TAB_URL_INVALID/.test(authTab),
   'ouvrir un formulaire de connexion en http serait une faute'
 );
 check(
   'MainActivity : le plugin d’onglet est enregistré',
-  /registerPlugin\(AyroviAuthTabPlugin\.class\)/.test(read('android/app/src/main/java/app/ayrovi/mobile/MainActivity.java')),
+  /registerPlugin\(ZayroviAuthTabPlugin\.class\)/.test(read('android/app/src/main/java/app/zayrovi/mobile/MainActivity.java')),
   'un plugin non enregistré est invisible depuis le web : le repli navigateur reprendrait'
 );
 

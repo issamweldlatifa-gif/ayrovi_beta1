@@ -93,7 +93,7 @@ function buildLocalProduct(selectedSize: string | null): {
     availability: { state: 'AVAILABLE', reason: '', checkedAt: '2026-10-29T00:00:00.000Z', source: 'capture', quantityHint: null },
     purchaseMode: 'ASSISTED',
     integrationType: 'URL_REQUEST',
-    ayroviPricing: null,
+    zayroviPricing: null,
     variantGroups: [
       { attribute: 'Couleur', values: ['Jean clair', 'Bleu jean'] },
       { attribute: 'Taille', values: ['4Y (98-104 cm)', '5Y (104-110 cm)'] },
@@ -125,7 +125,7 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
         currency: 'USD',
         priceVerified: true,
         currencyVerified: true,
-        ayroviPricing: {
+        zayroviPricing: {
           unitPriceTnd: 79.4,
           totalTnd: 79.4,
           currency: 'TND',
@@ -159,7 +159,7 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
         purchaseMode: 'ASSISTED',
         checkoutReady: true,
         lineTotalTnd: 158.8,
-        linkedToAyrovi: true,
+        linkedToZayrovi: true,
         createdAt: '2026-10-29T00:00:00.000Z',
         updatedAt: '2026-10-29T00:00:00.000Z',
       };
@@ -170,7 +170,7 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
         totals: { units: item.quantity, productSubtotalTnd: 158.8, currency: 'TND', blockedItems: 0, checkoutReady: true, unlinkedUnits: 0 },
         blockers: [],
       };
-      return { item, cart, ayrovi: { linked: true, reason: '' } };
+      return { item, cart, zayrovi: { linked: true, reason: '' } };
     });
 
     render(

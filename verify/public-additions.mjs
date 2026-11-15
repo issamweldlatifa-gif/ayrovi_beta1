@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import fs from 'node:fs';
-const base = process.env.AYROVI_BASE_URL;
+const base = process.env.ZAYROVI_BASE_URL;
 const output = 'docs/public-additions/evidence'; fs.mkdirSync(output, { recursive: true });
 const checks = [], errors = [];
 const check = (name, pass, details) => { checks.push({ name, pass: Boolean(pass), details }); if (!pass) throw new Error(name + ': ' + JSON.stringify(details)); };
@@ -8,7 +8,7 @@ const browser = await chromium.launch({ headless: true });
 try {
   for (const locale of ['fr', 'ar']) {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, locale });
-    await context.addInitScript(locale => localStorage.setItem('ayrovi.locale.v1', locale), locale);
+    await context.addInitScript(locale => localStorage.setItem('zayrovi.locale.v1', locale), locale);
     const page = await context.newPage(); page.on('pageerror', e => errors.push(e.message));
 
     // Real application + isolated database. Force valid, deterministic CMS dates only in test responses.

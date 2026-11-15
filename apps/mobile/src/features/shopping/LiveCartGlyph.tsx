@@ -11,7 +11,7 @@ import { QueryClientContext, useQuery } from '@tanstack/react-query';
 
 import { CartGlyph } from '@/design/CartGlyph';
 import { useTheme } from '@/design/theme';
-import { fetchAyroviCart } from '@/api/cart';
+import { fetchZayroviCart } from '@/api/cart';
 import { fetchAyWebsCart } from '@/api/aywebs';
 import { useSessionId } from '@/session/session';
 import { useSession } from '@/state/session';
@@ -23,10 +23,10 @@ type GlyphProps = Omit<Parameters<typeof CartGlyph>[0], 'count'>;
 export function useCartUnits(): number {
   const sessionId = useSessionId();
   const { account, status } = useSession();
-  const ayrovi = useQuery({
-    queryKey: ['cart', 'ayrovi', sessionId, status, account?.id ?? ''],
+  const zayrovi = useQuery({
+    queryKey: ['cart', 'zayrovi', sessionId, status, account?.id ?? ''],
     enabled: Boolean(sessionId),
-    queryFn: ({ signal }) => fetchAyroviCart({ sessionId, signal }),
+    queryFn: ({ signal }) => fetchZayroviCart({ sessionId, signal }),
     staleTime: 30_000,
   });
   const aywebs = useQuery({
@@ -35,7 +35,7 @@ export function useCartUnits(): number {
     queryFn: ({ signal }) => fetchAyWebsCart({ sessionId, signal }),
     staleTime: 30_000,
   });
-  return totalCartUnits(ayrovi.data?.units, aywebs.data?.items);
+  return totalCartUnits(zayrovi.data?.units, aywebs.data?.items);
 }
 
 function CountedCartGlyph(props: GlyphProps) {

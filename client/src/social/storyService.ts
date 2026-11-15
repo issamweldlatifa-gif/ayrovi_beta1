@@ -19,7 +19,7 @@ const jsonHeaders = () => ({
   'x-session-id': getSessionId(),
   ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
 });
-const SEEN_KEY = 'ayrovi_stories_seen_v1';
+const SEEN_KEY = 'zayrovi_stories_seen_v1';
 
 async function interactionRequest(path: string, init?: RequestInit) {
   const controller = new AbortController();
@@ -38,7 +38,7 @@ function isComment(value: any): value is StoryComment {
 
 
 export const OFFICIAL: StoryPublisher = {
-  id: 'pub_ayrovi',
+  id: 'pub_zayrovi',
   name: 'Zayrovi',
   avatar: '',
   verified: true,

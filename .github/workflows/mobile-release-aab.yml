@@ -122,13 +122,13 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
-          KEYSTORE="$RUNNER_TEMP/ayrovi-release.jks"
+          KEYSTORE="$RUNNER_TEMP/zayrovi-release.jks"
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$KEYSTORE"
           # Contrôle réel : un base64 tronqué donnerait un fichier vide, et un
           # échec rouge incompréhensible trois étapes plus loin.
           test -s "$KEYSTORE"
           keytool -list -keystore "$KEYSTORE" -storepass "$ANDROID_KEYSTORE_PASSWORD" >/dev/null
-          echo "AYROVI_KEYSTORE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
+          echo "ZAYROVI_KEYSTORE_PATH=$KEYSTORE" >> "$GITHUB_ENV"
           echo "Clé de signature lue et vérifiable."
 
       - name: Version publiée (nom + code)
@@ -169,7 +169,7 @@ jobs:
           else:
               lines = [
                   '    release {',
-                  '        storeFile file(System.getenv("AYROVI_KEYSTORE_PATH"))',
+                  '        storeFile file(System.getenv("ZAYROVI_KEYSTORE_PATH"))',
                   '        storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")',
                   '        keyAlias System.getenv("ANDROID_KEY_ALIAS")',
                   '        keyPassword System.getenv("ANDROID_KEY_PASSWORD")',

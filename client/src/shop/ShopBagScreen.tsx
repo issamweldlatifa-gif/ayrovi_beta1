@@ -3,7 +3,7 @@ import { useLocale } from '../i18n/LocaleContext';
 import { useCommercePolicy } from '../commerce/useCommercePolicy';
 import { availableAtCheckout } from '../commerce/paymentMethods';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
-import { withIsolation } from '../ayrovix/services/mediaIsolation';
+import { withIsolation } from '../zayrovix/services/mediaIsolation';
 import type { CartItem } from '../types';
 import { BagPage, type BagLine, type PolicyState } from './BagPage';
 import type { StockState } from './types';

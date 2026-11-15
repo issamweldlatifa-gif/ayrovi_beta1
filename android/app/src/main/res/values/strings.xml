@@ -2,8 +2,8 @@
 <resources>
     <string name="app_name">ZAYROVI</string>
     <string name="title_activity_main">ZAYROVI</string>
-    <string name="package_name">app.ayrovi.mobile</string>
-    <string name="custom_url_scheme">app.ayrovi.mobile</string>
+    <string name="package_name">app.zayrovi.mobile</string>
+    <string name="custom_url_scheme">app.zayrovi.mobile</string>
 
     <!-- AYWEBs §9 — navigateur marchand interne (français, langue par défaut) -->
     <string name="aywebs_browser_title">Navigateur marchand</string>

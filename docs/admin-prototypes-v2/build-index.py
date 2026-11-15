@@ -2,7 +2,7 @@
 """
 Assemble docs/admin-prototypes-v2/index.html : page de comparaison autonome.
 
-Tout est embarqué (captures en base64 + police Ayrovi Extracted Sans en base64) : la page ne fait
+Tout est embarqué (captures en base64 + police Zayrovi Extracted Sans en base64) : la page ne fait
 aucune requête réseau, elle s'ouvre aussi bien depuis le dépôt que depuis une pièce jointe.
 
 Usage : python3 docs/admin-prototypes-v2/build-index.py
@@ -14,7 +14,7 @@ import re
 HERE = pathlib.Path(__file__).parent
 REPO = HERE.parent.parent
 
-FONT = (REPO / "client/public/fonts/editorial/ayrovi-extracted-sans.woff2").read_bytes()
+FONT = (REPO / "client/public/fonts/editorial/zayrovi-extracted-sans.woff2").read_bytes()
 FONT_B64 = base64.b64encode(FONT).decode()
 
 MODELS = [
@@ -140,11 +140,11 @@ HTML = f"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AYROVI — 4 modèles d'administration niveau entreprise (à choisir)</title>
+<title>ZAYROVI — 4 modèles d'administration niveau entreprise (à choisir)</title>
 <style>
-  @font-face{{font-family:'Ayrovi Extracted Sans';src:url(data:font/woff2;base64,{FONT_B64}) format('woff2');font-weight:100 900;font-display:swap}}
+  @font-face{{font-family:'Zayrovi Extracted Sans';src:url(data:font/woff2;base64,{FONT_B64}) format('woff2');font-weight:100 900;font-display:swap}}
   *{{box-sizing:border-box}}
-  html,body{{margin:0;background:#F4F5F6;color:#111110;font-family:'Ayrovi Extracted Sans','Noto Sans Arabic',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.55}}
+  html,body{{margin:0;background:#F4F5F6;color:#111110;font-family:'Zayrovi Extracted Sans','Noto Sans Arabic',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.55}}
   a{{color:#B85500}}
   .wrap{{max-width:1240px;margin:0 auto;padding:28px 20px 60px}}
   .top{{background:#111110;color:#fff;border-radius:14px;padding:26px 28px}}
@@ -186,13 +186,13 @@ HTML = f"""<!DOCTYPE html>
 <div class="wrap">
   <div class="top">
     <h1>4 modèles d'administration, niveau entreprise — à choisir</h1>
-    <p>Chaque modèle reprend les conventions opérationnelles d'une grande plateforme (Amazon Seller Central, Stripe, Google Cloud / AWS, Shopify Admin) et les applique aux vrais écrans AYROVI : commandes en TND, acomptes à vérifier, arrivages, barre sous l'en-tête. C'est le même contenu dans les quatre : seule la façon de travailler change.</p>
+    <p>Chaque modèle reprend les conventions opérationnelles d'une grande plateforme (Amazon Seller Central, Stripe, Google Cloud / AWS, Shopify Admin) et les applique aux vrais écrans ZAYROVI : commandes en TND, acomptes à vérifier, arrivages, barre sous l'en-tête. C'est le même contenu dans les quatre : seule la façon de travailler change.</p>
     <p style="margin-top:10px">Livrables Figma par modèle : un cadre SVG à calques nommés et un jeu de jetons (tokens.json, format Tokens Studio). Voir <b>FIGMA.md</b> pour la marche à suivre.</p>
     <span class="pill">Choisis une lettre (A, B, C ou D) — ou dis « A + l'index de D »</span>
   </div>
 
   <div class="common">
-    <article><h3>Contenu réel, pas de faux écran</h3><p>Commandes AYR-TN-10241…10235, acomptes de 82 580 TND, tarif v3 · EUR 1 → 3,412 TND, arrivages et libellés AR (وصلات جديدة · هدايا وبطاقات · مجلة AYROVI).</p></article>
+    <article><h3>Contenu réel, pas de faux écran</h3><p>Commandes AYR-TN-10241…10235, acomptes de 82 580 TND, tarif v3 · EUR 1 → 3,412 TND, arrivages et libellés AR (وصلات جديدة · هدايا وبطاقات · مجلة ZAYROVI).</p></article>
     <article><h3>Links : liste fermée</h3><p>Chaque lien de la barre sous l'en-tête affiche sa destination réelle. On renomme, on réordonne, on masque — jamais d'URL libre, donc pas de lien mort.</p></article>
     <article><h3>Permissions et journal</h3><p>Les actions sensibles (valider un acompte, publier la barre) sont liées à un rôle, et chaque action laisse une ligne datée et nominative.</p></article>
     <article><h3>Autonome</h3><p>Chaque maquette est un fichier HTML unique, police incluse, zéro requête réseau : elle s'ouvre partout, même hors ligne.</p></article>
@@ -204,9 +204,9 @@ HTML = f"""<!DOCTYPE html>
     <ol>
       <li>Ouvrir Figma → <b>Import file</b> → glisser un cadre <code>figma/cadres/*.svg</code>. Il arrive sur un cadre nommé « Admin / Modèle n — … », chaque élément gardant son nom de calque (chrome-haut, nav, tableau-commandes, inspecteur…).</li>
       <li>Le texte reste du texte : double-clic pour réécrire un libellé, la barre sous l'en-tête ou un montant. Les formes restent vectorielles (rectangles, filets, étiquettes).</li>
-      <li>Pour les couleurs et les typographies, installer le plugin <b>Tokens Studio</b> et importer <code>figma/tokens.json</code> : 4 jeux de jetons (un par modèle) plus le jeu de marque AYROVI.</li>
+      <li>Pour les couleurs et les typographies, installer le plugin <b>Tokens Studio</b> et importer <code>figma/tokens.json</code> : 4 jeux de jetons (un par modèle) plus le jeu de marque ZAYROVI.</li>
       <li>Dupliquer un cadre pour dessiner une variante (mobile, état vide, erreur) : la grille et les espacements du modèle restent en place.</li>
-      <li>Fonts : <b>Ayrovi Extracted Sans</b> est la police de marque (fichier dans le dépôt, <code>client/public/fonts/editorial/</code>) ; installer aussi <b>Noto Sans Arabic</b> pour les libellés arabes.</li>
+      <li>Fonts : <b>Zayrovi Extracted Sans</b> est la police de marque (fichier dans le dépôt, <code>client/public/fonts/editorial/</code>) ; installer aussi <b>Noto Sans Arabic</b> pour les libellés arabes.</li>
     </ol>
     <table>
       <thead><tr><th>Fichier</th><th>Contenu</th><th>Import</th></tr></thead>
@@ -215,11 +215,11 @@ HTML = f"""<!DOCTYPE html>
         <tr><td><code>figma/cadres/modele-2-stripe-acomptes.svg</code></td><td>Modèle B — console financière (Stripe)</td><td>Glisser-déposer dans Figma</td></tr>
         <tr><td><code>figma/cadres/modele-3-cloud-commandes.svg</code></td><td>Modèle C — console technique (Google Cloud / AWS)</td><td>Glisser-déposer dans Figma</td></tr>
         <tr><td><code>figma/cadres/modele-4-shopify-index.svg</code></td><td>Modèle D — console commerçant (Shopify Admin)</td><td>Glisser-déposer dans Figma</td></tr>
-        <tr><td><code>figma/tokens.json</code></td><td>Marque AYROVI + 4 jeux de jetons (couleurs, densité, rayon, typographie)</td><td>Plugin Tokens Studio → Import</td></tr>
+        <tr><td><code>figma/tokens.json</code></td><td>Marque ZAYROVI + 4 jeux de jetons (couleurs, densité, rayon, typographie)</td><td>Plugin Tokens Studio → Import</td></tr>
         <tr><td><code>figma/generate.mjs</code></td><td>Générateur des 4 cadres (modifie une valeur, relance, les SVG se régénèrent)</td><td><code>node docs/admin-prototypes-v2/figma/generate.mjs</code></td></tr>
       </tbody>
     </table>
-    <p class="foot">Les maquettes HTML servent à juger les écrans en vrai ; les cadres SVG et les jetons servent à produire et décliner dans Figma. Dis-moi la lettre retenue et je convertis l'admin AYROVI sur ce modèle.</p>
+    <p class="foot">Les maquettes HTML servent à juger les écrans en vrai ; les cadres SVG et les jetons servent à produire et décliner dans Figma. Dis-moi la lettre retenue et je convertis l'admin ZAYROVI sur ce modèle.</p>
   </section>
 </div>
 </body>

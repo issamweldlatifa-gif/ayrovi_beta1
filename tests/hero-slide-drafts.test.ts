@@ -25,12 +25,12 @@ describe('Hero — brouillons, aperçu et publication (Admin)', () => {
   const uploadedFiles: string[] = [];
 
   beforeAll(async () => {
-    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken as string;
 
     // Compte sans droit d'écriture sur le contenu (commandes uniquement).
-    const email = `hero-orders-${suffix}@test.ayrovi.tn`;
+    const email = `hero-orders-${suffix}@test.zayrovi.com`;
     const password = 'HeroOrders2026!x';
     const created = await admin.post('/api/admin/users').set('x-csrf-token', csrf)
       .send({ name: 'Hero orders', email, password, role: 'ORDER_MANAGER' });

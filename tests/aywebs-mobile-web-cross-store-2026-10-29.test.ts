@@ -8,7 +8,7 @@ import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
 import { describe, expect, it, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-mobile-web-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-mobile-web-')), 'cache');
 
 import { QatafoDatabase } from '../src/db/database';
 import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, type PricingRules } from '../src/services/pricing';
@@ -204,8 +204,8 @@ describe('AYWEBs Mobile Web (`m.<store>.com` + H5) — Cross-Store & Appareil R�
       title: resolved4Y.product.title,
       quantity: 1,
     });
-    expect(resolved4Y.product.ayroviPricing?.totalTnd).toBe(expectedTnd.totalTND);
-    expect(resolved4Y.product.ayroviPricing!.totalTnd).toBeGreaterThan(90);
+    expect(resolved4Y.product.zayroviPricing?.totalTnd).toBe(expectedTnd.totalTND);
+    expect(resolved4Y.product.zayroviPricing!.totalTnd).toBeGreaterThan(90);
 
     /* 5) Sélection d'une taille non prouvée (6Y) sur cette page DOM-only : refus honnête PRICE_UNAVAILABLE (jamais $28.60 emprunté) */
     await expect(resolveAyWebsProduct(h.ctx.resolver, {
@@ -362,7 +362,7 @@ describe('AYWEBs Mobile Web (`m.<store>.com` + H5) — Cross-Store & Appareil R�
     });
     expect(res3Y.product.price).toBe(28.1);
     expect(res6Y.product.price).toBe(30.4);
-    expect(res6Y.product.ayroviPricing!.totalTnd).toBeGreaterThan(res3Y.product.ayroviPricing!.totalTnd);
+    expect(res6Y.product.zayroviPricing!.totalTnd).toBeGreaterThan(res3Y.product.zayroviPricing!.totalTnd);
 
     /* Sécurité devise sur m.shein.com/ca/... : $ nu ne doit jamais inventer USD */
     const caMobileUrl = 'https://m.shein.com/ca/Dress-p-77334455.html';
@@ -439,7 +439,7 @@ describe('AYWEBs Mobile Web (`m.<store>.com` + H5) — Cross-Store & Appareil R�
     expect(amzResolved.product.title).toBe('Écouteurs Bluetooth Sans Fil Noir');
     expect(amzResolved.product.price).toBe(49.99);
     expect(amzResolved.product.currency).toBe('EUR');
-    expect(amzResolved.product.ayroviPricing!.totalTnd).toBeGreaterThan(150);
+    expect(amzResolved.product.zayroviPricing!.totalTnd).toBeGreaterThan(150);
 
     /* Usurpation d'hôte croisé toujours rejetée */
     const spoofedVerdict = validateAyWebsCapturedPage(

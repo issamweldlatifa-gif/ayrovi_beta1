@@ -1,4 +1,4 @@
-import { sanitizeProductUrl } from '../ayrovix/services/product';
+import { sanitizeProductUrl } from '../zayrovix/services/product';
 import type { SmartLinkScraper } from '../scraper/scraper';
 
 export function validateOcerexUrl(raw: unknown, scraper?: Pick<SmartLinkScraper, 'cleanPastedUrl'>): string | null {

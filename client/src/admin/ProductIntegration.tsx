@@ -271,7 +271,7 @@ export function ProductIntegration({ kind, value, onChange }: {
                         <button
                           type="button"
                           onClick={() => pick(product)}
-                          style={{ width: '100%', display: 'flex', gap: 10, alignItems: 'center', textAlign: 'start', padding: 8, border: '1px solid var(--bo-line)', borderRadius: 10, background: 'var(--ayrovi-white)', cursor: 'pointer' }}
+                          style={{ width: '100%', display: 'flex', gap: 10, alignItems: 'center', textAlign: 'start', padding: 8, border: '1px solid var(--bo-line)', borderRadius: 10, background: 'var(--zayrovi-white)', cursor: 'pointer' }}
                         >
                           {product.image ? <img src={product.image} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} /> : null}
                           <span style={{ flex: 1 }}>
@@ -366,7 +366,7 @@ export function ProductIntegration({ kind, value, onChange }: {
                         <button
                           type="button"
                           onClick={() => { addToLinked(product); setAddQuery(''); setAddResults([]); }}
-                          style={{ width: '100%', display: 'flex', gap: 10, alignItems: 'center', textAlign: 'start', padding: 8, border: '1px solid var(--bo-line)', borderRadius: 10, background: 'var(--ayrovi-white)', cursor: 'pointer' }}
+                          style={{ width: '100%', display: 'flex', gap: 10, alignItems: 'center', textAlign: 'start', padding: 8, border: '1px solid var(--bo-line)', borderRadius: 10, background: 'var(--zayrovi-white)', cursor: 'pointer' }}
                         >
                           {product.image ? <img src={product.image} alt="" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6, background: 'var(--bo-sunken)' }} /> : null}
                           <span style={{ flex: 1 }}>
@@ -402,8 +402,8 @@ export function ProductCardPreview({ kind, product }: { kind: ShoppableKind; pro
   const [pressed, setPressed] = useState(false);
   const dark = kind !== 'publication';
   const frame: React.CSSProperties = dark
-    ? { background: 'var(--ayrovi-ink-deep)', color: 'var(--ayrovi-white)' }
-    : { background: 'var(--ayrovi-white)', color: 'var(--ayrovi-ink-deep)', border: '1px solid var(--bo-line)' };
+    ? { background: 'var(--zayrovi-ink-deep)', color: 'var(--zayrovi-white)' }
+    : { background: 'var(--zayrovi-white)', color: 'var(--zayrovi-ink-deep)', border: '1px solid var(--bo-line)' };
 
   if (!product) {
     return (
@@ -429,8 +429,8 @@ export function ProductCardPreview({ kind, product }: { kind: ShoppableKind; pro
     <div>
       <small style={{ opacity: 0.75 }}>Aperçu sur le téléphone</small>
       <div style={{ ...frame, marginTop: 6, borderRadius: 16, padding: 12, maxWidth: 360, display: 'grid', gap: 8 }}>
-        {kind === 'reel' ? <div style={{ height: 90, borderRadius: 10, background: 'var(--ayrovi-text-secondary)' }} /> : null}
-        {kind === 'story' ? <div style={{ height: 4, borderRadius: 2, background: 'var(--ayrovi-text-secondary)' }} /> : null}
+        {kind === 'reel' ? <div style={{ height: 90, borderRadius: 10, background: 'var(--zayrovi-text-secondary)' }} /> : null}
+        {kind === 'story' ? <div style={{ height: 4, borderRadius: 2, background: 'var(--zayrovi-text-secondary)' }} /> : null}
         {kind === 'publication' ? <div style={{ height: 70, borderRadius: 10, background: 'var(--bo-sunken)' }} /> : null}
 
         <button
@@ -442,7 +442,7 @@ export function ProductCardPreview({ kind, product }: { kind: ShoppableKind; pro
             display: 'flex', alignItems: 'center', gap: ARTICLE_CARD.gap,
             width: '100%', maxWidth: ARTICLE_CARD.width, height: ARTICLE_CARD.height,
             padding: ARTICLE_CARD.padding, boxSizing: 'border-box',
-            background: 'var(--ayrovi-white)', color: 'var(--ayrovi-ink-deep)',
+            background: 'var(--zayrovi-white)', color: 'var(--zayrovi-ink-deep)',
             border: '1px solid var(--bo-line)', borderRadius: ARTICLE_CARD.radius,
             textAlign: 'start', cursor: 'pointer', font: 'inherit',
           }}

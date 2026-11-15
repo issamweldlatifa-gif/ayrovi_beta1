@@ -48,9 +48,9 @@ describe('remise (référence 004418)', () => {
 });
 
 describe('badge du panier — nombre d’articles partout', () => {
-  const line = (quantity: number, linkedToAyrovi: boolean) => ({ quantity, linkedToAyrovi }) as AyWebsCartItem;
+  const line = (quantity: number, linkedToZayrovi: boolean) => ({ quantity, linkedToZayrovi }) as AyWebsCartItem;
 
-  it('additionne le panier Ayrovi et les lignes AYWEBs pas encore liées (jamais deux fois)', () => {
+  it('additionne le panier Zayrovi et les lignes AYWEBs pas encore liées (jamais deux fois)', () => {
     expect(totalCartUnits(2, [line(3, false), line(5, true)])).toBe(5);
     expect(totalCartUnits(null, [line(1, false)])).toBe(1);
     expect(totalCartUnits(4, null)).toBe(4);

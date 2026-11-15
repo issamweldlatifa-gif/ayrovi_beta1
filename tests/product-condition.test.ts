@@ -2,16 +2,16 @@
 // photo, pas de fiche, isolation cassée) sont écartées ; les fiches marchands
 // standards passent — on ne perd jamais un produit neuf faute de mention « new ».
 import { describe, expect, it } from 'vitest';
-import { detectProductCondition, filterOutUsedCandidates, isUsedListing } from '../src/ayrovix/services/productCondition';
-import type { AyrovixCandidate } from '../src/ayrovix/types';
+import { detectProductCondition, filterOutUsedCandidates, isUsedListing } from '../src/zayrovix/services/productCondition';
+import type { ZayrovixCandidate } from '../src/zayrovix/types';
 
-function candidate(overrides: Partial<AyrovixCandidate>): AyrovixCandidate {
+function candidate(overrides: Partial<ZayrovixCandidate>): ZayrovixCandidate {
   return {
     id: 'c1', kind: 'external', title: 'Sweat col rond manches longues', brand: null, model: null,
     colors: [], sizes: [], source: 'Example', sourceUrl: 'https://shop.example.org/p/1',
     image: '', price: 29.99, currency: 'EUR', priceTnd: null, match: 80,
     ...overrides,
-  } as AyrovixCandidate;
+  } as ZayrovixCandidate;
 }
 
 describe('détection d’état (neuf vs occasion)', () => {

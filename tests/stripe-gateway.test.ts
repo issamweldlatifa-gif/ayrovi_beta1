@@ -48,7 +48,7 @@ const BASE_ENV = {
   STRIPE_SECRET_KEY: 'sk_test_fake_key_for_tests',
   STRIPE_WEBHOOK_SECRET: 'whsec_test_secret',
   STRIPE_CURRENCY: 'eur',
-  PUBLIC_BASE_URL: 'https://ayrovi.example',
+  PUBLIC_BASE_URL: 'https://zayrovi.example',
   KONNECT_API_KEY: '',
   KONNECT_WALLET_ID: '',
 };
@@ -91,9 +91,9 @@ describe('stripeConfig', () => {
     process.env.PUBLIC_BASE_URL = 'http://insecure.example';
     expect(cardGatewayAvailable()).toBe(false);
 
-    process.env.PUBLIC_BASE_URL = 'https://ayrovi.example';
+    process.env.PUBLIC_BASE_URL = 'https://zayrovi.example';
     expect(cardGatewayAvailable()).toBe(true);
-    expect(stripeConfig()).toMatchObject({ currency: 'eur', publicBaseUrl: 'https://ayrovi.example' });
+    expect(stripeConfig()).toMatchObject({ currency: 'eur', publicBaseUrl: 'https://zayrovi.example' });
   });
 
   test('refuse de démarrer un paiement sans configuration', async () => {
@@ -127,7 +127,7 @@ describe('initiateStripeCardPayment', () => {
     expect(params.client_reference_id).toBe('AYR-2026-0001:TXN-2026-000001');
     expect(params.line_items[0].price_data.currency).toBe('eur');
     expect(params.line_items[0].price_data.unit_amount).toBe(11800);
-    expect(params.success_url).toContain('https://ayrovi.example/?cardPayment=verify');
+    expect(params.success_url).toContain('https://zayrovi.example/?cardPayment=verify');
     expect(params.success_url).toContain('{CHECKOUT_SESSION_ID}');
     expect(params.cancel_url).toContain('cardPayment=verify');
     // Contrainte Stripe : la session doit vivre au moins 30 minutes.

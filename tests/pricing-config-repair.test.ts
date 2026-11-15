@@ -15,7 +15,7 @@ afterAll(() => {
 });
 
 function createDbPath(): { dir: string; file: string } {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-pricing-repair-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-pricing-repair-'));
   tempDirs.push(dir);
   return { dir, file: path.join(dir, 'pricing.sqlite') };
 }

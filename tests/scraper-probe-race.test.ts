@@ -135,7 +135,7 @@ describe('scraper — lecture unique via Bright Data', () => {
     expect(scraper).toContain("provider: 'brightdata'");
     expect(scraper).toContain('if (!brightDataReady())');
     expect(scraper).toContain("'BRIGHTDATA_NOT_CONFIGURED'");
-    expect(scraper).toContain("positiveIntEnv('AYROVIX_BRIGHTDATA_TIMEOUT_MS'");
+    expect(scraper).toContain("positiveIntEnv('ZAYROVIX_BRIGHTDATA_TIMEOUT_MS'");
   });
 });
 

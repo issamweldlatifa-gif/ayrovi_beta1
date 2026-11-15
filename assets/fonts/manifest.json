@@ -6,34 +6,34 @@
     "sha256": "ba6fc11db691debbd271564b194e37d96fab6d3d58c96574c58ce15696196a8f"
   },
   {
-    "file": "assets/fonts/AyroviExtracted-Regular.ttf",
-    "source": "scripts/build-ayrovi-extracted-fonts.py; wdth=102.5, wght=400",
+    "file": "assets/fonts/ZayroviExtracted-Regular.ttf",
+    "source": "scripts/build-zayrovi-extracted-fonts.py; wdth=102.5, wght=400",
     "version": "1.700 derived",
-    "sha256": "f5383082fd9f1f7c0e6b9bd1f82fbe462b9e8561cd82567bdcad81084e0d673c"
+    "sha256": "5bc7400111f47e595f98629cb09f06a5ad3d92f8c45bfd655c25403809516706"
   },
   {
-    "file": "assets/fonts/AyroviExtracted-Medium.ttf",
-    "source": "scripts/build-ayrovi-extracted-fonts.py; wdth=102.5, wght=520",
+    "file": "assets/fonts/ZayroviExtracted-Medium.ttf",
+    "source": "scripts/build-zayrovi-extracted-fonts.py; wdth=102.5, wght=520",
     "version": "1.700 derived",
-    "sha256": "6cea37613d89cc17287e7b44ebabdf35e05929c81dfe016a42044ef2868df3a9"
+    "sha256": "5aa97d3452caa1cfaac8ce2818907919f3b4033a6b98937d987bcfc3d073dfb9"
   },
   {
-    "file": "assets/fonts/AyroviExtracted-SemiBold.ttf",
-    "source": "scripts/build-ayrovi-extracted-fonts.py; wdth=102.5, wght=650",
+    "file": "assets/fonts/ZayroviExtracted-SemiBold.ttf",
+    "source": "scripts/build-zayrovi-extracted-fonts.py; wdth=102.5, wght=650",
     "version": "1.700 derived",
-    "sha256": "c547c977d5679cf7dfa0e53e38037d22e87d7f3dbde7c4e9d4b2098bc9d38014"
+    "sha256": "6e3c9ff4bf1cdc799f7b5c2c2ae56c827cb3353985a2e8129808e9a4871af607"
   },
   {
-    "file": "assets/fonts/AyroviExtracted-Bold.ttf",
-    "source": "scripts/build-ayrovi-extracted-fonts.py; wdth=102.5, wght=700",
+    "file": "assets/fonts/ZayroviExtracted-Bold.ttf",
+    "source": "scripts/build-zayrovi-extracted-fonts.py; wdth=102.5, wght=700",
     "version": "1.700 derived",
-    "sha256": "1740982faa9e267bd12a78b9fd03cfc59ab60aac526fa747e67b9c69ba531872"
+    "sha256": "3c5c79dff975d719fe496592d1044d34e0c334138f1b97afbd5551ff6f9ed515"
   },
   {
-    "file": "assets/fonts/AyroviExtracted-Heading.ttf",
-    "source": "scripts/build-ayrovi-extracted-fonts.py; wdth=112.5, wght=520",
+    "file": "assets/fonts/ZayroviExtracted-Heading.ttf",
+    "source": "scripts/build-zayrovi-extracted-fonts.py; wdth=112.5, wght=520",
     "version": "1.700 derived",
-    "sha256": "52a06d5bada986e37a67706708c61dc030e69f7e1610bc66c3cb093833aae20f"
+    "sha256": "5bc6d5ce7fc485af9e3cbefa02b6af6606c7fe55f7601b3c7711179cee854b75"
   },
   {
     "file": "assets/fonts/NotoSansArabic-Regular.ttf",

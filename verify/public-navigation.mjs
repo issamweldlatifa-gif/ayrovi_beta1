@@ -8,15 +8,15 @@
  *   4. le pied de page de l'accueil reste en place, en noir, avec ses documents légaux et la zone
  *      « Nos canaux officiels » (canaux non renseignés inertes, jamais inventés).
  *
- * Usage : AYROVI_BASE_URL=http://127.0.0.1:3000 AYROVI_ADMIN_PASSWORD=… node verify/public-navigation.mjs
+ * Usage : ZAYROVI_BASE_URL=http://127.0.0.1:3000 ZAYROVI_ADMIN_PASSWORD=… node verify/public-navigation.mjs
  */
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 
-const base = process.env.AYROVI_BASE_URL;
-if (!base) { console.error('AYROVI_BASE_URL est requis.'); process.exit(1); }
-const email = process.env.AYROVI_ADMIN_EMAIL || 'admin@ayrovi.tn';
-const password = process.env.AYROVI_ADMIN_PASSWORD || 'AyroviBeta2026!';
+const base = process.env.ZAYROVI_BASE_URL;
+if (!base) { console.error('ZAYROVI_BASE_URL est requis.'); process.exit(1); }
+const email = process.env.ZAYROVI_ADMIN_EMAIL || 'admin@zayrovi.com';
+const password = process.env.ZAYROVI_ADMIN_PASSWORD || 'ZayroviBeta2026!';
 const output = 'docs/public-navigation/evidence';
 fs.mkdirSync(output, { recursive: true });
 

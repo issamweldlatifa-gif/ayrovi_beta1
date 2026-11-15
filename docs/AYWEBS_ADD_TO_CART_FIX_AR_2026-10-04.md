@@ -158,7 +158,7 @@ WebView → JS يقرأ HTML الصفحة المعروضة (يُنزع منه م
   "data": { "price": 109, "currency": "USD", "title": "Vince Camuto …",
             "variant_groups": [ {"attribute":"size","values":["X-Small","Small","Medium","Large","X-Large"]},
                                 {"attribute":"color","values":["Emerald Leaf","Camel","Classic Navy"]} ],
-            "ayrovi_pricing": { "total_tnd": 580.783,
+            "zayrovi_pricing": { "total_tnd": 580.783,
               "breakdown": { "converted_source_price": 336.0, "shipping": 14.5,
                              "customs": 197.4, "service_fee": 33.6, "other": 6.5 } } } }
 ```

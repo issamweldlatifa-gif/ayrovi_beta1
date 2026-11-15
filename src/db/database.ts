@@ -10,11 +10,13 @@ import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../shared/publicationFeed'
 import { seedOfficialStories } from '../services/officialStories';
 import { FONT_STACK } from '../../shared/brand.generated';
 import { RETIRED_BRAND_PURPLES } from '../../shared/identityPolicy';
+import { REBRAND_V1_LENS_FRAGMENTS, REBRAND_V1_SEED_VALUES } from '../../shared/formerBrand';
+import { markFormerBrandMigrated, migrateFormerBrandIdentifiers } from './formerBrandMigration';
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { randomInt, randomUUID } from 'node:crypto';
-import { registerLensTracePersistence } from '../ayrovix/services/lensPerformanceTrace';
+import { registerLensTracePersistence } from '../zayrovix/services/lensPerformanceTrace';
 import { CartItem, AddToCartRequest } from '../types';
 import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, MAX_ORDER_TOTAL_TND, orderLocalDelivery, PricingRules } from '../services/pricing';
 import { quoteCartLine } from '../services/cartQuote';
@@ -344,12 +346,16 @@ export class QatafoDatabase {
     this.db.pragma('foreign_keys = ON');
     this.db.pragma('busy_timeout = 5000');
     this.backupBeforeArrivalMultistoreMigration(resolvedPath, existingDatabase);
+    // Ancienne marque → ZAYROVI (tables, colonnes, codes) AVANT le schéma : sinon
+    // les `CREATE TABLE IF NOT EXISTS` créeraient des tables vides à côté des anciennes.
+    if (existingDatabase) migrateFormerBrandIdentifiers(this.db, resolvedPath);
     this.initSchema();
+    if (!existingDatabase) markFormerBrandMigrated(this.db);
     registerLensTracePersistence({
       save: (requestId, trace, totalBackendMs, createdAt) => {
-        this.db.prepare('INSERT OR REPLACE INTO ayrovix_lens_traces (request_id, trace, total_backend_ms, created_at) VALUES (?, ?, ?, ?)').run(requestId, trace, totalBackendMs, createdAt);
+        this.db.prepare('INSERT OR REPLACE INTO zayrovix_lens_traces (request_id, trace, total_backend_ms, created_at) VALUES (?, ?, ?, ?)').run(requestId, trace, totalBackendMs, createdAt);
       },
-      loadRecent: (limit) => this.db.prepare('SELECT trace FROM ayrovix_lens_traces ORDER BY created_at DESC LIMIT ?').all(limit) as Array<{ trace: string }>,
+      loadRecent: (limit) => this.db.prepare('SELECT trace FROM zayrovix_lens_traces ORDER BY created_at DESC LIMIT ?').all(limit) as Array<{ trace: string }>,
     });
     // Double authentification de la console (TOTP, 12/11/2026) — voir src/admin/totp.ts.
     for (const [name, definition] of Object.entries({
@@ -396,7 +402,7 @@ export class QatafoDatabase {
     this.rebrandBlueV1();
     this.runOnceDataMigration('publication_media_presentation_v1', () => { upgradePublicationMediaPresentation(this); });
     this.runOnceDataMigration('publication_publisher_team_v1', () => {
-      this.run("UPDATE story_publishers SET name='Zayrovi Team' WHERE id='pub_ayrovi' AND official=1 AND lower(trim(name)) IN ('zayrovi','zayrovi official')");
+      this.run("UPDATE story_publishers SET name='Zayrovi Team' WHERE id='pub_zayrovi' AND official=1 AND lower(trim(name)) IN ('zayrovi','zayrovi official')");
     });
     // Owner approved replacing all prior Reels with five supplied clips (once).
     try {
@@ -571,65 +577,31 @@ export class QatafoDatabase {
   }
 
   /**
-   * AYROVI → ZAYROVI (2026-10-16) : la marque change partout, sauf le serveur et le
-   * nom de domaine. Le code et les graines disent déjà ZAYROVI ; cette migration
-   * one-shot met à jour les valeurs ENREGISTRÉES qui sont encore exactement les
-   * graines d'origine. Un texte modifié depuis le Dashboard n'est jamais touché
-   * (chaque UPDATE exige l'ancienne valeur exacte). Restent volontairement :
-   *  • la catégorie de news `AYROVI` (valeur d'énumération, CHECK en base — son
-   *    LIBELLÉ affiché devient ZAYROVI côté interfaces) ;
-   *  • « Client AYROVI », nom provisoire des comptes, comparé tel quel par la logique
-   *    des comptes clients ;
-   *  • les adresses e-mail et URL en `ayrovi.tn` (domaine).
+   * Première migration de marque (2026-10-16) : met à jour les valeurs ENREGISTRÉES
+   * qui sont encore exactement les textes des graines d'origine. Un texte modifié
+   * depuis le Dashboard n'est jamais touché (chaque UPDATE exige l'ancienne valeur
+   * exacte). Les anciennes valeurs vivent dans `shared/formerBrand.ts`, seul fichier
+   * autorisé à nommer l'ancienne marque. Les identifiants (tables, colonnes, codes)
+   * sont renommés avant tout, par `migrateFormerBrandIdentifiers` (16/11/2026).
    * Appelée en dernier : toutes les tables existent, et sur une base neuve les
    * graines viennent d'insérer les nouvelles valeurs — la migration n'y trouve rien.
    */
   private rebrandZayroviV1(): void {
     this.runOnceDataMigration('rebrand_zayrovi_v1', () => {
       const now = new Date().toISOString();
-      const exact: Array<[string, string, string, string, string]> = [
-        // [table, colonne, condition supplémentaire, ancienne valeur, nouvelle valeur]
-        ['settings', 'setting_value', "setting_key IN ('company_name','company_legal_name')", 'AYROVI', 'ZAYROVI'],
-        ['settings', 'setting_value', "setting_key='unavailable_refund_policy'",
-          'Acompte remboursé si AYROVI ne peut pas valider ou acheter l’article demandé',
-          'Acompte remboursé si ZAYROVI ne peut pas valider ou acheter l’article demandé'],
-        ['admin_users', 'name', '1=1', 'AYROVI Admin', 'ZAYROVI Admin'],
-        ['news_items', 'author', '1=1', 'Équipe AYROVI', 'Équipe ZAYROVI'],
-        ['news_items', 'title', "id='news_arrival_08'", 'Le nouvel arrivage AYROVI est ouvert', 'Le nouvel arrivage ZAYROVI est ouvert'],
-        ['news_items', 'content', "id='news_arrival_08'",
-          'Préparez vos liens et captures avec Lens. AYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
-          'Préparez vos liens et captures avec Lens. ZAYROVI centralise le calcul, l’achat et la livraison en Tunisie.'],
-        ['lens_hero_settings', 'phone_status_label', '1=1', 'AYROVI LENS', 'ZAYROVI LENS'],
-        ['stories_showcase_settings', 'title', "id='global'", 'Social AYROVI', 'Social ZAYROVI'],
-        ['story_publishers', 'name', "id='pub_ayrovi'", 'Ayrovi', 'Zayrovi'],
-        ['reels', 'title', "id='reel_demo_01'", 'La sélection AYROVI en mouvement', 'La sélection ZAYROVI en mouvement'],
-        ['stories', 'description', "id='story_demo_02'", 'Ce que l’équipe AYROVI a sélectionné pour vous.', 'Ce que l’équipe ZAYROVI a sélectionné pour vous.'],
-        ['ai_knowledge', 'answer', "id='ai_delivery'",
-          'AYROVI livre dans les 24 gouvernorats. Le délai indicatif configuré est de 5 à 8 jours ouvrés.',
-          'ZAYROVI livre dans les 24 gouvernorats. Le délai indicatif configuré est de 5 à 8 jours ouvrés.'],
-        ['ai_knowledge', 'answer', "id='ai_payment'",
-          'Les moyens gérés par AYROVI sont le paiement à la livraison, D17 et Flouci.',
-          'Les moyens gérés par ZAYROVI sont le paiement à la livraison, D17 et Flouci.'],
-        ['erp_organizations', 'name', "code='ORG-0001'", 'AYROVI', 'ZAYROVI'],
-        ['erp_organizations', 'legal_name', "code='ORG-0001'", 'AYROVI', 'ZAYROVI'],
-        // fiche employé miroir de l'admin d'origine (son ancien nom découpé en prénom / nom)
-        ['erp_employees', 'first_name', "last_name='Admin' AND user_id IN (SELECT id FROM admin_users WHERE name='ZAYROVI Admin')", 'AYROVI', 'ZAYROVI'],
-        ['erp_sequences', 'description', "sequence_key='ayweb_cart_item_number'", 'Identité AYROVI d’une ligne de panier AyWebs', 'Identité ZAYROVI d’une ligne de panier AyWebs'],
-        ['erp_sequences', 'description', "sequence_key='ayweb_package_number'", 'Colis consolidé en entrepôt AYROVI', 'Colis consolidé en entrepôt ZAYROVI'],
-        ['public_nav_items', 'label_ar', "destination='news'", 'مجلة AYROVI', 'مجلة ZAYROVI'],
-      ];
       const hasTable = (table: string) => Boolean(this.get<any>("SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name=?", table));
       const hasColumn = (table: string, column: string) => (this.all<any>(`PRAGMA table_info(${table})`) || []).some((c: any) => c.name === column);
-      for (const [table, column, where, before, after] of exact) {
+      for (const [table, column, where, before, after] of REBRAND_V1_SEED_VALUES) {
         if (!hasTable(table) || !hasColumn(table, column)) continue;
         const stamp = hasColumn(table, 'updated_at') ? ',updated_at=?' : '';
         const args: unknown[] = stamp ? [after, now, before] : [after, before];
         this.run(`UPDATE ${table} SET ${column}=?${stamp} WHERE ${where} AND ${column}=?`, ...args);
       }
-      // Contenu LENS v2 (JSON) : seules les deux mentions de la graine d'origine.
+      // Contenu LENS v2 (JSON) : seules les mentions de la graine d'origine.
       if (hasTable('lens_hero_settings') && hasColumn('lens_hero_settings', 'sections_json')) {
-        this.run(`UPDATE lens_hero_settings SET sections_json=REPLACE(REPLACE(sections_json,'Propulsé par l’IA AYROVI','Propulsé par l’IA ZAYROVI'),'"AYROVI LENS"','"ZAYROVI LENS"')
-          WHERE id='global' AND (sections_json LIKE '%Propulsé par l’IA AYROVI%' OR sections_json LIKE '%"AYROVI LENS"%')`);
+        for (const [before, after] of REBRAND_V1_LENS_FRAGMENTS) {
+          this.run("UPDATE lens_hero_settings SET sections_json=REPLACE(sections_json,?,?) WHERE id='global' AND instr(sections_json,?)>0", before, after, before);
+        }
       }
     });
   }
@@ -1171,7 +1143,7 @@ export class QatafoDatabase {
         summary TEXT NOT NULL DEFAULT '',
         content TEXT NOT NULL DEFAULT '',
         image TEXT NOT NULL DEFAULT '',
-        category TEXT NOT NULL CHECK(category IN ('NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','AYROVI','INFORMATION','OTHER')),
+        category TEXT NOT NULL CHECK(category IN ('NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','ZAYROVI','INFORMATION','OTHER')),
         arrival_id TEXT REFERENCES arrivals(id) ON DELETE SET NULL,
         product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
         author TEXT NOT NULL DEFAULT 'Équipe ZAYROVI',
@@ -1554,13 +1526,13 @@ export class QatafoDatabase {
        * performance (aucune image, aucun texte produit — uniquement des
        * durées/tailles/IDs) pour que le rapport admin p50/p95 survit au
        * redémarrage — le Map en mémoire (≤500) ne suffit plus. */
-      CREATE TABLE IF NOT EXISTS ayrovix_lens_traces (
+      CREATE TABLE IF NOT EXISTS zayrovix_lens_traces (
         request_id TEXT PRIMARY KEY,
         trace TEXT NOT NULL,
         total_backend_ms INTEGER,
         created_at TEXT NOT NULL
       );
-      CREATE INDEX IF NOT EXISTS idx_lens_traces_created ON ayrovix_lens_traces(created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_lens_traces_created ON zayrovix_lens_traces(created_at DESC);
 
       CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY,
@@ -1766,7 +1738,7 @@ export class QatafoDatabase {
         reference_media_json TEXT NOT NULL DEFAULT '[]',
         stock_media_json TEXT NOT NULL DEFAULT '[]',
         product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
-        category TEXT NOT NULL DEFAULT 'AYROVI',
+        category TEXT NOT NULL DEFAULT 'ZAYROVI',
         status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','scheduled','published','archived')),
         scheduled_at TEXT,
         target_resource TEXT,
@@ -2053,7 +2025,7 @@ export class QatafoDatabase {
     // Barre publique sous l'en-tête — les onglets sont pilotés depuis l'Admin (onglet de navigation).
     this.db.exec(PUBLIC_NAV_ITEMS_TABLE_SQL);
 
-    // AYROVIX LENS HERO — إعدادات قابلة للإدارة من الـAdmin (المحتوى فقط)
+    // ZAYROVIX LENS HERO — إعدادات قابلة للإدارة من الـAdmin (المحتوى فقط)
     this.db.exec(`CREATE TABLE IF NOT EXISTS lens_hero_settings (
       id TEXT PRIMARY KEY CHECK(id='global'),
       eyebrow TEXT NOT NULL DEFAULT 'LENS',
@@ -2368,7 +2340,7 @@ export class QatafoDatabase {
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM story_publishers').get() as any).count === 0) {
       const ins = this.db.prepare(`INSERT INTO story_publishers (id,slug,name,subtitle,avatar,official,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`);
       const nowP = new Date().toISOString();
-      ins.run('pub_ayrovi', 'ARRIVAGE', 'Zayrovi Team', 'Official', '', 1, nowP, nowP);
+      ins.run('pub_zayrovi', 'ARRIVAGE', 'Zayrovi Team', 'Official', '', 1, nowP, nowP);
       ins.run('pub_new', 'NEW', 'Nouveautés', 'Channel', '', 0, nowP, nowP);
       ins.run('pub_style', 'STYLE', 'Style', 'Channel', '', 0, nowP, nowP);
       ins.run('pub_actus', 'INFO', 'Actus', 'Channel', '', 0, nowP, nowP);
@@ -2377,7 +2349,7 @@ export class QatafoDatabase {
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM publications').get() as any).count === 0) {
       const insP = this.db.prepare(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`);
       const nowPub = new Date().toISOString();
-      insP.run('pub_post_01', 'Nouvel arrivage #08 disponible', 'La sélection mode & lifestyle de la semaine', 'pub_ayrovi', '/media/hero-femme.jpg', '', nowPub, 'publie', nowPub, nowPub);
+      insP.run('pub_post_01', 'Nouvel arrivage #08 disponible', 'La sélection mode & lifestyle de la semaine', 'pub_zayrovi', '/media/hero-femme.jpg', '', nowPub, 'publie', nowPub, nowPub);
       insP.run('pub_post_02', 'Tendances du moment', 'Les pièces préférées de la communauté', 'pub_style', '/media/hero-enfants.jpg', 'Note interne : mettre à jour chaque vendredi.', nowPub, 'publie', nowPub, nowPub);
     }
     this.ensureColumn('order_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
@@ -2893,9 +2865,9 @@ export class QatafoDatabase {
     });
     // One-shot legacy rebrand (was: executed on every boot).
     this.runOnceDataMigration('rebrand_aysonic_legacy_v1', () => {
-      this.db.exec(`UPDATE settings SET setting_value='AYROVI',updated_at='${now}'
+      this.db.exec(`UPDATE settings SET setting_value='ZAYROVI',updated_at='${now}'
         WHERE setting_key IN ('company_name','company_legal_name') AND setting_value='AYSONIC'`);
-      this.db.exec(`UPDATE admin_users SET name='AYROVI Admin',updated_at='${now}' WHERE name='AYSONIC Admin'`);
+      this.db.exec(`UPDATE admin_users SET name='ZAYROVI Admin',updated_at='${now}' WHERE name='AYSONIC Admin'`);
     });
     this.rebrandNoirOrangePalette();
     this.rebrandZalandoOrange();
@@ -3206,7 +3178,7 @@ export class QatafoDatabase {
     `);
     const settings = [
       ['setting_name', 'GENERAL', 'company_name', 'ZAYROVI', 'STRING', 'Nom de la plateforme'],
-      ['setting_email', 'GENERAL', 'company_email', 'contact@ayrovi.tn', 'STRING', 'Email'],
+      ['setting_email', 'GENERAL', 'company_email', 'contact@zayrovi.com', 'STRING', 'Email'],
       ['setting_phone', 'GENERAL', 'company_phone', '+216 00 000 000', 'STRING', 'Téléphone'],
       ['setting_address', 'GENERAL', 'company_address', 'Tunis, Tunisie', 'STRING', 'Adresse'],
       ['setting_currency', 'COMMERCE', 'default_currency', 'TND', 'STRING', 'Devise'],
@@ -3236,7 +3208,7 @@ export class QatafoDatabase {
         font: FONT_STACK, radius: 'soft',
       }), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
       ['setting_interface_config', 'INTERFACE', 'interface_config', JSON.stringify({
-        logoUrl: '/media/logo-ayrovi.png',
+        logoUrl: '/media/logo-zayrovi.png',
         sections: [
           { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#0a0a0a', textColor: '#ffffff', paddingY: 0, contained: false },
           { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
@@ -3245,10 +3217,10 @@ export class QatafoDatabase {
           { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
           { id: 'announcement', visible: false, order: 25, title: '', subtitle: '', image: '', backgroundColor: '#ff6900', textColor: '#ffffff', paddingY: 48, contained: false, mediaType: 'image', videoUrl: '', ctaLabel: 'Découvrir', ctaTarget: 'app:lens' },
         ],
-        typography: { preset: 'ayrovi-a', body: FONT_STACK, display: FONT_STACK, baseSize: 16, align: 'start', headingColor: '#111111', textColor: '#666666', lineHeight: 1.5, letterSpacing: -0.011, headingScale: 1 },
+        typography: { preset: 'zayrovi-a', body: FONT_STACK, display: FONT_STACK, baseSize: 16, align: 'start', headingColor: '#111111', textColor: '#666666', lineHeight: 1.5, letterSpacing: -0.011, headingScale: 1 },
         colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fa', borderColor: '#eaeaea', primary: '#111111', primaryDark: '#0a0a0a', primaryLight: '#3f3f46', accent: '#ff6900', headerBackground: '#ffffff', headerText: '#111111', announcementBackground: '#0a0a0a', announcementText: '#ffffff', heroBackground: '#0a0a0a', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#111111', success: '#15803d', warning: '#666666', danger: '#dc2626' },
         buttons: { background: '#111111', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#111111', borderColor: '#111111', borderWidth: 1, radius: 12, height: 44, shape: 'soft' },
-        icons: { library: 'ayrovi', color: '#000000', activeColor: '#ff6900', size: 28, style: 'outline' },
+        icons: { library: 'zayrovi', color: '#000000', activeColor: '#ff6900', size: 28, style: 'outline' },
         navigation: { background: '#ffffff', color: '#111111', activeBackground: '#0a0a0a', showLabels: true, height: 80, lensLabel: 'Lens', aiLabel: 'SONIM', visionLabel: 'Vision' },
         slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
         layout: { sectionGap: 0, maxWidth: 1280, pagePadding: 16, cardRadius: 16, cardBorderWidth: 1, shadow: 'soft' },

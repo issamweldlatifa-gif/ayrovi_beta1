@@ -139,7 +139,7 @@ const LOCAL_PRODUCT: AyWebsResolvedProduct = {
   availability: { state: 'AVAILABLE', reason: 'local', checkedAt: '2026-10-28T00:00:00.000Z', source: 'webview', quantityHint: 10 },
   purchaseMode: 'ASSISTED',
   integrationType: 'WEBVIEW',
-  ayroviPricing: null,
+  zayroviPricing: null,
   variantGroups: [
     { attribute: 'Couleur', values: ['Noir', 'Bleu Marine', 'Beige'] },
     { attribute: 'Âge', values: ['4-5Y', '8-9Y'] },
@@ -154,7 +154,7 @@ const LOCAL_PRODUCT: AyWebsResolvedProduct = {
 const SERVER_INITIAL_PRODUCT: AyWebsResolvedProduct = {
   ...LOCAL_PRODUCT,
   productId: 'aywprd_shein_51200911',
-  ayroviPricing: {
+  zayroviPricing: {
     totalTnd: 82.4,
     pricingVersion: 4,
     quantityTotalsTnd: [82.4, 152.1, 221.8],
@@ -228,7 +228,7 @@ const SERVER_BEIGE_DELTA_PRODUCT: AyWebsResolvedProduct = {
   sourceUrl: 'https://fr.shein.com/Ensemble-enfant-hiver-p-51200933.html',
   price: 16.5,
   images: ['https://img.ltwebstatic.com/beige.jpg'],
-  ayroviPricing: {
+  zayroviPricing: {
     totalTnd: 94.25,
     pricingVersion: 4,
     quantityTotalsTnd: [94.25, 175.5],
@@ -295,7 +295,7 @@ describe('AddToCartSheet — Matrice de Prix des Variantes en mémoire', () => {
         purchaseMode: 'ASSISTED',
         checkoutReady: true,
         lineTotalTnd: 206.5,
-        linkedToAyrovi: true,
+        linkedToZayrovi: true,
         createdAt: '2026-10-28T00:00:00.000Z',
         updatedAt: '2026-10-28T00:00:00.000Z',
       };
@@ -306,7 +306,7 @@ describe('AddToCartSheet — Matrice de Prix des Variantes en mémoire', () => {
         totals: { units: item.quantity, productSubtotalTnd: 206.5, currency: 'TND', blockedItems: 0, checkoutReady: true, unlinkedUnits: 0 },
         blockers: [],
       };
-      return { item, cart, ayrovi: { linked: true, reason: '' } };
+      return { item, cart, zayrovi: { linked: true, reason: '' } };
     });
 
     render(

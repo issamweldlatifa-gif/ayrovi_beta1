@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import {
   LENS_ANALYZE_DEADLINE_DEFAULT_MS, LENS_ANALYZE_DEADLINE_MIN_MS, lensAnalyzeDeadlineMs,
-} from '../src/ayrovix/services/lensDeadline';
+} from '../src/zayrovix/services/lensDeadline';
 import { describe, expect, it } from 'vitest';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
 
@@ -10,7 +10,7 @@ describe('Jina désactivé — Bright Data est le fournisseur unique de rendu', 
     const scraper = readFileSync('src/scraper/scraper.ts', 'utf8');
     expect(scraper).not.toContain('r.jina.ai');
     expect(scraper).not.toContain("provider: 'jina'");
-    expect(scraper).not.toContain('AYROVI_JINA_READER');
+    expect(scraper).not.toContain('ZAYROVI_JINA_READER');
     expect(scraper).toContain("provider: 'brightdata'");
   });
 
@@ -52,6 +52,6 @@ describe('Jina désactivé — Bright Data est le fournisseur unique de rendu', 
     expect(armed).toBe(LENS_ANALYZE_DEADLINE_DEFAULT_MS);
     // Un plancher trop bas rendrait le lecteur marchand inutilisable : la valeur
     // demandée par l'exploitant ne peut pas descendre sous 15 s.
-    expect(lensAnalyzeDeadlineMs({ AYROVI_LENS_ANALYZE_DEADLINE_MS: '1000' } as any)).toBeGreaterThanOrEqual(12_000);
+    expect(lensAnalyzeDeadlineMs({ ZAYROVI_LENS_ANALYZE_DEADLINE_MS: '1000' } as any)).toBeGreaterThanOrEqual(12_000);
   });
 });

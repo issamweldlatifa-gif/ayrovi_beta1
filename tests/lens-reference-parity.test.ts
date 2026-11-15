@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-const read = (name: string) => readFileSync('client/src/ayrovix/components/' + name, 'utf8');
+const read = (name: string) => readFileSync('client/src/zayrovix/components/' + name, 'utf8');
 const camera = read('LiveCamera.tsx'), results = read('InteractiveLensResults.tsx');
 const css = read('lens-results.css'), sheet = read('useLensResultsSheet.ts');
 describe('Lens results — approved September 21 reference', () => {

@@ -33,7 +33,7 @@ describe('panier principal — les lignes du navigateur y sont visibles', () => 
   });
 
   it('il propose de lier les lignes en attente, et dit ce qui se passe en cas d’échec', () => {
-    expect(cart).toContain('bridgeAyWebsCartToAyrovi');
+    expect(cart).toContain('bridgeAyWebsCartToZayrovi');
     expect(cart).toContain("t('cart.pendingLink')");
     /* Le repli d'erreur passe par `onNote(..., 'cart.linkFailed')`. */
     expect(cart).toContain("'cart.linkFailed'");

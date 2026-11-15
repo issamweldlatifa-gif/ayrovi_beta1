@@ -59,7 +59,7 @@ function payload(overrides: Record<string, unknown> = {}) {
     },
     merchant: {}, purchase_mode: 'MANUAL_REVIEW', integration_type: 'PARTIALLY_SUPPORTED',
     captured_at: new Date().toISOString(), evidence_hash: 'hash',
-    ayrovi_pricing: { total_tnd: 620.5, pricing_version: 3, breakdown: {} },
+    zayrovi_pricing: { total_tnd: 620.5, pricing_version: 3, breakdown: {} },
     ...overrides,
   };
 }

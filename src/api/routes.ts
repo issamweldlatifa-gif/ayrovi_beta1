@@ -3,7 +3,7 @@ import { availableProductParams, availableProductSql } from '../catalogue/conten
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { SmartLinkScraper } from '../scraper/scraper';
-import { QatafoDatabase as AyroviDatabase, PAYMENT_METHOD_CODES, resolveAcceptedPaymentMethods } from '../db/database';
+import { QatafoDatabase as ZayroviDatabase, PAYMENT_METHOD_CODES, resolveAcceptedPaymentMethods } from '../db/database';
 import type { PaymentMethodCode } from '../db/database';
 import { VisualProductExtractor } from '../services/vision';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
@@ -11,18 +11,18 @@ import { AddToCartRequest } from '../types';
 import { calculatePrice, orderLocalDelivery } from '../services/pricing';
 import { quoteCartLine } from '../services/cartQuote';
 import { CART_PRICE_TRUST_MESSAGE, verifyCartPriceTrust } from '../services/cartPriceTrust';
-import { inspectVariantOrder } from '../ayrovix/services/variantAvailability';
+import { inspectVariantOrder } from '../zayrovix/services/variantAvailability';
 import { notifyNewOrder } from '../services/orderNotification';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
-import { inspectAyrovixPriceToken, verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
+import { inspectZayrovixPriceToken, verifyZayrovixPriceToken } from '../zayrovix/priceQuote';
 import { attachOcerexExtractionsToOrder } from '../ocerex/store';
 import { recordOcerexEvent } from '../ocerex/analytics';
 import { funnelVisitorKey, recordFunnelEvent } from '../analytics/funnel';
 import { attachAyWebsCartToAccount, readAyWebsCart, readAyWebsCartItem, verifyAyWebsCart } from '../aywebs/cart';
 import { createAyWebsContext } from '../aywebs/context';
-import { findAyWebsItemForAyroviCartLine } from '../aywebs/ayroviBridge';
+import { findAyWebsItemForZayroviCartLine } from '../aywebs/zayroviBridge';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
@@ -30,7 +30,7 @@ const PAYMENT_METHODS = new Set<PaymentMethodCode>(PAYMENT_METHOD_CODES);
 
 
 export function createApiRouter(
-  db: AyroviDatabase,
+  db: ZayroviDatabase,
   scraper: SmartLinkScraper,
   visionExtractor: VisualProductExtractor
 ): Router {
@@ -41,7 +41,7 @@ export function createApiRouter(
 
   function cartSummary() {
     const rules = db.getPricingRules();
-    return (items: ReturnType<AyroviDatabase['getItems']>) => {
+    return (items: ReturnType<ZayroviDatabase['getItems']>) => {
       const pricedItems = items.map((item) => {
         const { price, promo, originalLineTotalTND } = quoteCartLine(db, item);
         return {
@@ -215,11 +215,11 @@ export function createApiRouter(
     const sourceCurrency = typeof item.sourceCurrency === 'string' ? item.sourceCurrency.trim().toUpperCase() : '';
     const calculatedPrice = calculatePrice(db.getPricingRules(), sourcePrice, sourceCurrency, { title: String(item.title || '') });
     const calculatedPriceTND = calculatedPrice && !calculatedPrice.restricted ? calculatedPrice.totalTND : null;
-    const ayrovixItem = typeof item.priceVerificationStatus === 'string' || typeof item.priceToken === 'string';
+    const zayrovixItem = typeof item.priceVerificationStatus === 'string' || typeof item.priceToken === 'string';
     // Audit 23/09/2026 — honnêteté des états : un article ajouté à la main (sans
     // estimate Lens signée) est PENDING_MANUAL par défaut ; seule une quote signée
     // (priceToken vérifié ci-dessous) peut revendiquer VERIFIED.
-    const priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL' = ayrovixItem
+    const priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL' = zayrovixItem
       ? (item.priceVerificationStatus === 'PENDING_MANUAL' ? 'PENDING_MANUAL' : 'VERIFIED')
       : 'PENDING_MANUAL';
     const requestedSize = String(item.requestedSize || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100);
@@ -228,13 +228,13 @@ export function createApiRouter(
     const referenceUrl = String(item.referenceUrl || '').trim();
     let manualUrlValid = true;
     let referenceUrlValid = true;
-    if (ayrovixItem) {
+    if (zayrovixItem) {
       try { parsePublicHttpUrl(item.url); } catch { manualUrlValid = false; }
       if (referenceUrl) {
         try { parsePublicHttpUrl(referenceUrl); } catch { referenceUrlValid = false; }
       }
     }
-    const quoteValid = !ayrovixItem || verifyAyrovixPriceToken(item.priceToken, {
+    const quoteValid = !zayrovixItem || verifyZayrovixPriceToken(item.priceToken, {
       price: sourcePrice,
       currency: sourceCurrency,
       title: item.title,
@@ -243,7 +243,7 @@ export function createApiRouter(
     });
     // Exposer uniquement l'échéance d'une preuve authentique : le mobile peut
     // afficher le même délai que la caisse, jamais un minuteur inventé.
-    const quoteClaims = quoteValid && ayrovixItem ? inspectAyrovixPriceToken(item.priceToken) : null;
+    const quoteClaims = quoteValid && zayrovixItem ? inspectZayrovixPriceToken(item.priceToken) : null;
     const quoteExpiresAt = quoteClaims ? new Date(quoteClaims.expiresAt).toISOString() : null;
 
     if (
@@ -265,9 +265,9 @@ export function createApiRouter(
     ) {
       return res.status(400).json({
         success: false,
-        code: !quoteValid ? 'INVALID_AYROVIX_PRICE_TOKEN' : !manualUrlValid ? 'MANUAL_PRODUCT_URL_REQUIRED' : 'INVALID_CART_ITEM',
+        code: !quoteValid ? 'INVALID_ZAYROVIX_PRICE_TOKEN' : !manualUrlValid ? 'MANUAL_PRODUCT_URL_REQUIRED' : 'INVALID_CART_ITEM',
         error: !quoteValid
-          ? 'Le prix AYROVIX a expiré ou a été modifié. Relancez Lens.'
+          ? 'Le prix ZAYROVIX a expiré ou a été modifié. Relancez Lens.'
           : !manualUrlValid
             ? 'Le lien produit fourni par le client est obligatoire et doit être public.'
             : 'Données produit incomplètes ou invalides.'
@@ -395,7 +395,7 @@ export function createApiRouter(
 
     const sourcePrice = Number(product.original_price) > 0 ? Number(product.original_price) : finalPrice;
     const sourceCurrency = String(product.currency || 'TND').toUpperCase();
-    const store = String(product.source_platform || 'ayrovi').toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'ayrovi';
+    const store = String(product.source_platform || 'zayrovi').toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'zayrovi';
 
     const item: AddToCartRequest = {
       store,
@@ -688,11 +688,11 @@ export function createApiRouter(
     // AYWEBs lines are re-resolved from the merchant at the final ZAYROVI order
     // boundary. Their signed client price token is not a stock/variant proof.
     const linkedAyWebsLines = items.map((line) => ({
-      ayroviLine: line,
-      sourceLine: findAyWebsItemForAyroviCartLine(db, line.id, sessionId, customer.id),
+      zayroviLine: line,
+      sourceLine: findAyWebsItemForZayroviCartLine(db, line.id, sessionId, customer.id),
     })).filter((entry): entry is {
-      ayroviLine: (typeof items)[number];
-      sourceLine: NonNullable<ReturnType<typeof findAyWebsItemForAyroviCartLine>>;
+      zayroviLine: (typeof items)[number];
+      sourceLine: NonNullable<ReturnType<typeof findAyWebsItemForZayroviCartLine>>;
     } => Boolean(entry.sourceLine));
 
     if (linkedAyWebsLines.length) {
@@ -711,32 +711,32 @@ export function createApiRouter(
 
       const ayWebsCart = readAyWebsCart(db, sessionId, customer.id);
       const blockedLines: Array<{ itemId: string; code: string; message: string }> = [];
-      for (const { ayroviLine, sourceLine } of linkedAyWebsLines) {
+      for (const { zayroviLine, sourceLine } of linkedAyWebsLines) {
         const currentSource = readAyWebsCartItem(db, sourceLine.id);
-        const currentAyroviLine = db.getItemById(ayroviLine.id, sessionId, customer.id);
+        const currentZayroviLine = db.getItemById(zayroviLine.id, sessionId, customer.id);
         if (sourceCheckFailed || !ayWebsCart || !currentSource || currentSource.cartId !== ayWebsCart.id) {
           blockedLines.push({
-            itemId: ayroviLine.id,
+            itemId: zayroviLine.id,
             code: 'AYWEBS_SOURCE_RECHECK_FAILED',
             message: 'La source AYWEBs ne peut pas être vérifiée. Réessayez depuis le panier AYWEBs.',
           });
         } else if (currentSource.status === 'REMOVED') {
           blockedLines.push({
-            itemId: ayroviLine.id,
+            itemId: zayroviLine.id,
             code: 'AYWEBS_ITEM_REMOVED',
             message: 'Cet article a été retiré du panier AYWEBs. Retirez-le du panier ZAYROVI avant de commander.',
           });
         } else if (!currentSource.checkoutReady) {
           blockedLines.push({
-            itemId: ayroviLine.id,
+            itemId: zayroviLine.id,
             code: currentSource.status === 'ACTIVE' ? 'AYWEBS_AVAILABILITY_UNCONFIRMED' : `AYWEBS_${currentSource.status}`,
             message: currentSource.statusReason || 'Le prix ou la disponibilité de cet article exige une nouvelle validation AYWEBs.',
           });
-        } else if (!currentAyroviLine
-          || Math.abs(Number(currentAyroviLine.sourcePrice) - currentSource.unitPrice) > 0.001
-          || String(currentAyroviLine.sourceCurrency || '').trim().toUpperCase() !== currentSource.currency.trim().toUpperCase()) {
+        } else if (!currentZayroviLine
+          || Math.abs(Number(currentZayroviLine.sourcePrice) - currentSource.unitPrice) > 0.001
+          || String(currentZayroviLine.sourceCurrency || '').trim().toUpperCase() !== currentSource.currency.trim().toUpperCase()) {
           blockedLines.push({
-            itemId: ayroviLine.id,
+            itemId: zayroviLine.id,
             code: 'AYWEBS_QUOTE_MISMATCH',
             message: 'Le devis de la ligne ZAYROVI ne correspond plus au devis source AYWEBs. Synchronisez-la avant de commander.',
           });

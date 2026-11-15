@@ -43,9 +43,9 @@ import { deliverOtp, otpProviderName, phoneOtpAvailable, verifyProviderOtp } fro
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_PHONE_WINDOW_MS = 15 * 60 * 1000;
 const OTP_IP_WINDOW_MS = 15 * 60 * 1000;
-const GOOGLE_OAUTH_COOKIE = 'ayrovi_customer_oauth';
-const APPLE_OAUTH_COOKIE = 'ayrovi_customer_apple_oauth';
-const FACEBOOK_OAUTH_COOKIE = 'ayrovi_customer_facebook_oauth';
+const GOOGLE_OAUTH_COOKIE = 'zayrovi_customer_oauth';
+const APPLE_OAUTH_COOKIE = 'zayrovi_customer_apple_oauth';
+const FACEBOOK_OAUTH_COOKIE = 'zayrovi_customer_facebook_oauth';
 
 function requestCookie(req: Request, name: string): string {
   const header = req.headers.cookie;
@@ -291,7 +291,7 @@ function mergeAccounts(db: QatafoDatabase, sourceId: string, targetId: string): 
     // Release unique account values before copying them to the surviving account.
     db.run('UPDATE customer_accounts SET email=NULL,phone=NULL,updated_at=? WHERE id=?', now, sourceId);
     db.run(`UPDATE customer_accounts SET
-      display_name=CASE WHEN display_name='' OR display_name='Client AYROVI' THEN ? ELSE display_name END,
+      display_name=CASE WHEN display_name='' OR display_name='Client ZAYROVI' THEN ? ELSE display_name END,
       email=?,phone=?,avatar_url=CASE WHEN avatar_url='' THEN ? ELSE avatar_url END,
       email_verified_at=?,phone_verified_at=?,marketing_opt_in=CASE WHEN marketing_opt_in=1 OR ?=1 THEN 1 ELSE 0 END,
       updated_at=? WHERE id=?`, source.display_name, email, phone, source.avatar_url,
@@ -326,8 +326,8 @@ function mergeAccounts(db: QatafoDatabase, sourceId: string, targetId: string): 
     }
     db.run('DELETE FROM customer_favorites WHERE account_id=?', sourceId);
     db.run('UPDATE customer_notifications SET account_id=? WHERE account_id=?', targetId, sourceId);
-    if (db.get<any>("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ayrovix_search_history'")) {
-      db.run('UPDATE ayrovix_search_history SET account_id=? WHERE account_id=?', targetId, sourceId);
+    if (db.get<any>("SELECT 1 FROM sqlite_master WHERE type='table' AND name='zayrovix_search_history'")) {
+      db.run('UPDATE zayrovix_search_history SET account_id=? WHERE account_id=?', targetId, sourceId);
     }
     if (db.get<any>("SELECT 1 FROM sqlite_master WHERE type='table' AND name='assistant_feedback'")) {
       db.run('UPDATE assistant_feedback SET account_id=? WHERE account_id=?', targetId, sourceId);
@@ -353,15 +353,15 @@ function linkHistoricalOrders(db: QatafoDatabase, accountId: string, verifiedPho
       JOIN customers c ON c.id=o.customer_id WHERE o.account_id=? ORDER BY o.created_at DESC LIMIT 1`, accountId);
     const current = accountRow(db, accountId);
     const now = new Date().toISOString();
-    if (latest && current && (!current.display_name || current.display_name === 'Client AYROVI')) {
-      db.run('UPDATE customer_accounts SET display_name=?,updated_at=? WHERE id=?', latest.customer_name || 'Client AYROVI', now, accountId);
+    if (latest && current && (!current.display_name || current.display_name === 'Client ZAYROVI')) {
+      db.run('UPDATE customer_accounts SET display_name=?,updated_at=? WHERE id=?', latest.customer_name || 'Client ZAYROVI', now, accountId);
     }
     const count = db.get<any>('SELECT COUNT(*) count FROM customer_addresses WHERE account_id=?', accountId)?.count || 0;
     if (!count && latest?.address && latest?.governorate) {
       db.run(`INSERT INTO customer_addresses
         (id,account_id,label,recipient_name,phone,governorate,city,postal_code,address_line,delivery_notes,is_default,created_at,updated_at)
         VALUES (?,?, 'Adresse précédente',?,?,?,?, '',?, '',1,?,?)`,
-      `address_${randomUUID()}`, accountId, latest.customer_name || 'Client AYROVI', verifiedPhone,
+      `address_${randomUUID()}`, accountId, latest.customer_name || 'Client ZAYROVI', verifiedPhone,
       latest.governorate, latest.governorate, latest.address, now, now);
     }
     notification(db, accountId, 'ACCOUNT', 'Historique retrouvé', `${linked} commande${linked > 1 ? 's ont' : ' a'} été rattachée${linked > 1 ? 's' : ''} à votre compte.`, '/compte/commandes');
@@ -393,7 +393,7 @@ function completePhoneVerification(db: QatafoDatabase, req: Request, phone: stri
     const now = new Date().toISOString();
     db.run(`INSERT INTO customer_accounts
       (id,display_name,phone,phone_verified_at,status,created_at,updated_at)
-      VALUES (?,'Client AYROVI',?,?,'ACTIVE',?,?)`, accountId, phone, now, now, now);
+      VALUES (?,'Client ZAYROVI',?,?,'ACTIVE',?,?)`, accountId, phone, now, now, now);
     created = true;
   }
   const now = new Date().toISOString();
@@ -1014,7 +1014,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         db.run(`INSERT INTO customer_accounts
           (id,display_name,email,email_verified_at,status,last_login_at,created_at,updated_at)
           VALUES (?,?,?,?, 'ACTIVE', ?, ?, ?)`,
-          accountId, 'Client AYROVI', emailVerifiedHere ? email : null, emailVerifiedHere ? nowIso : null, nowIso, nowIso, nowIso);
+          accountId, 'Client ZAYROVI', emailVerifiedHere ? email : null, emailVerifiedHere ? nowIso : null, nowIso, nowIso, nowIso);
         enqueueWelcomeMail(db, accountId);
         notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte Apple est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
       } else {
@@ -1086,7 +1086,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
     accountId = `account_${randomUUID()}`;
     db.run(`INSERT INTO customer_accounts
       (id,display_name,email,avatar_url,email_verified_at,status,last_login_at,created_at,updated_at)
-      VALUES (?,?,?,?,?,'ACTIVE',?,?,?)`, accountId, String(profile.name || 'Client AYROVI').slice(0, 100), email,
+      VALUES (?,?,?,?,?,'ACTIVE',?,?,?)`, accountId, String(profile.name || 'Client ZAYROVI').slice(0, 100), email,
     String(profile.picture || '').slice(0, 1000), now, now, now, now);
     enqueueWelcomeMail(db, accountId);
     notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte Google est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
@@ -1097,9 +1097,9 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
     const currentAccount = accountRow(db, accountId);
     if (!currentAccount) throw new Error('ACCOUNT_MERGE_FAILED');
     const adoptGoogleEmail = !currentAccount.email || !currentAccount.email_verified_at || currentAccount.email.toLowerCase() === email;
-    db.run(`UPDATE customer_accounts SET display_name=CASE WHEN display_name='' OR display_name='Client AYROVI' THEN ? ELSE display_name END,
+    db.run(`UPDATE customer_accounts SET display_name=CASE WHEN display_name='' OR display_name='Client ZAYROVI' THEN ? ELSE display_name END,
       email=?,avatar_url=CASE WHEN avatar_source='provider' AND ?!='' THEN ? ELSE avatar_url END,email_verified_at=?,last_login_at=?,updated_at=? WHERE id=?`,
-    String(profile.name || 'Client AYROVI').slice(0, 100), adoptGoogleEmail ? email : currentAccount.email,
+    String(profile.name || 'Client ZAYROVI').slice(0, 100), adoptGoogleEmail ? email : currentAccount.email,
     String(profile.picture || ''), String(profile.picture || '').slice(0, 1000),
     adoptGoogleEmail ? now : currentAccount.email_verified_at, now, now, accountId);
   }
@@ -1281,8 +1281,8 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
           csrfToken: session.csrfToken,
           expiresAt: session.expiresAt,
           // Le jeton n'est remis dans le corps qu'à un client DÉCLARÉ
-          // (`x-ayrovi-client: mobile/…` → session_token ; ancienne coque
-          // `x-ayrovi-native: 1` → native_session_token). Un appel depuis le
+          // (`x-zayrovi-client: mobile/…` → session_token ; ancienne coque
+          // `x-zayrovi-native: 1` → native_session_token). Un appel depuis le
           // site n'a que son cookie HttpOnly : un script injecté ne peut plus
           // lire un jeton de 30 jours dans la réponse (audit 11/11/2026).
           ...sessionExchangeFields(req, session),
@@ -1377,7 +1377,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
       }
       const rawEmail = String(profile.email || '').trim().toLowerCase();
       const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail.slice(0, 254) : '';
-      const displayName = String(profile.name || 'Client AYROVI').trim().slice(0, 100) || 'Client AYROVI';
+      const displayName = String(profile.name || 'Client ZAYROVI').trim().slice(0, 100) || 'Client ZAYROVI';
       const rawAvatar = profile.picture?.data?.is_silhouette ? '' : String(profile.picture?.data?.url || '');
       const avatarUrl = rawAvatar.startsWith('https://') ? rawAvatar.slice(0, 1000) : '';
       const now = new Date().toISOString();
@@ -1407,7 +1407,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
         const nextEmail = !currentAccount.email && email && !emailOwner ? email : currentAccount.email;
         const nextAvatar = currentAccount.avatar_source === 'provider' ? currentAccount.avatar_url || avatarUrl : currentAccount.avatar_url;
         db.run(`UPDATE customer_accounts SET
-          display_name=CASE WHEN display_name='' OR display_name='Client AYROVI' THEN ? ELSE display_name END,
+          display_name=CASE WHEN display_name='' OR display_name='Client ZAYROVI' THEN ? ELSE display_name END,
           email=?,avatar_url=?,last_login_at=?,updated_at=? WHERE id=?`,
         displayName, nextEmail || null, nextAvatar, now, now, accountId);
       }
@@ -1635,14 +1635,14 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
         amountTnd: created.transaction.amount_tnd,
         status: 'PENDING',
       } });
-      const names = String(account.displayName || 'Client AYROVI').trim().split(/\s+/);
+      const names = String(account.displayName || 'Client ZAYROVI').trim().split(/\s+/);
       const gateway = await initiateStripeCardPayment({
         orderId: String(created.order.id),
         orderNumber: String(created.order.order_number),
         transactionNumber: String(created.transaction.transaction_number),
         amountTnd: Number(created.transaction.amount_tnd),
         firstName: names.shift() || 'Client',
-        lastName: names.join(' ') || 'AYROVI',
+        lastName: names.join(' ') || 'ZAYROVI',
         phone: String(created.order.phone || account.phone || ''),
         email: String(created.order.contact_email || account.email || ''),
       });

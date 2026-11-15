@@ -3,7 +3,7 @@ import fs from 'node:fs';
 const output = 'screenshots/editorial/sonim-history'; fs.mkdirSync(output, { recursive: true });
 const checks = [], errors = [];
 function check(label, pass, details) { checks.push({ label, pass: Boolean(pass), details }); if (!pass) throw new Error(label + ': ' + JSON.stringify(details)); }
-const storageKey = 'ayrovi_assistant_conversations_v1_guest';
+const storageKey = 'zayrovi_assistant_conversations_v1_guest';
 const at = '2026-09-20T10:00:00.000Z';
 const price = { originalPrice: 20, currency: 'EUR', exchangeRate: 3, convertedPriceTND: 60, customsFeeTND: 2, shippingFeeTND: 4, serviceFeeTND: 4, expressFeeTND: 0, totalTND: 70, pricingVersion: 1 };
 const storedProduct = { title: 'STORED_PRODUCT / المنتج المحفوظ', brand: null, model: null, description: 'Description historique / وصف محفوظ', image: '', images: [], source: 'Test merchant', sourceUrl: 'https://example.test/product', price: 20, currency: 'EUR', priceTnd: 70, exchangeRate: 3, colors: ['Noir'], sizes: ['M'], availability: 'in_stock', priceVerificationStatus: 'VERIFIED', priceVerified: true, priceToken: 'OLD_TEST_QUOTE', rating: 4.8, ratingCount: 19, ratingKind: 'merchant' };
@@ -26,7 +26,7 @@ try {
     ], selectedProduct: { messageId: 'selected-only', product: storedProduct, priceVerified: true } }];
     const ctx = await browser.newContext({ viewport: { width, height: 844 }, reducedMotion: 'reduce' });
     await ctx.addInitScript(({ locale, storageKey, initial }) => {
-      localStorage.setItem('ayrovi.locale.v1', locale);
+      localStorage.setItem('zayrovi.locale.v1', locale);
       if (!sessionStorage.getItem('history-fixture-seeded')) { localStorage.setItem(storageKey, JSON.stringify(initial)); sessionStorage.setItem('history-fixture-seeded', 'yes'); }
       window.historyWriteFailure = false;
       window.holdHistoryStream = false;
@@ -63,7 +63,7 @@ try {
           ? { success: true, data: { lineTotalTND: 140, originalLineTotalTND: null, promo: null, pricingVersion: 1 } }
           : { success: false, error: 'Stale historical quote rejected' } });
     });
-    await page.route('**/api/ayrovix/analyze-url', route => {
+    await page.route('**/api/zayrovix/analyze-url', route => {
       if (resolutionMode === 'pending') { heldRoute = route; return; }
       return resolutionMode === 'error' ? route.fulfill({ status: 503, json: { success: false, error: 'Test failure' } }) : route.fulfill({ json: { success: true, data: { product: freshProduct, alternates: [], eventId: '' } } });
     });
@@ -73,7 +73,7 @@ try {
     const closeMenu = async () => { await page.keyboard.press('Escape'); await menu().waitFor({ state: 'hidden' }); };
     const send = async text => { const expected = replyNumber + 1; await page.getByRole('textbox', { name: ar ? 'رسالتك' : 'Votre message', exact: true }).fill(text); await page.getByRole('button', { name: ar ? 'إرسال' : 'Envoyer', exact: true }).click(); await page.getByText('LIVE_REPLY_'+expected, { exact: true }).waitFor(); };
     const persisted = () => page.evaluate(key => localStorage.getItem(key), storageKey);
-    await page.goto(process.env.AYROVI_BASE_URL + '/__verify/sonim'); await open();
+    await page.goto(process.env.ZAYROVI_BASE_URL + '/__verify/sonim'); await open();
     const prose = page.locator('p.whitespace-pre-wrap').filter({ hasText: 'LAST_PARAGRAPH' });
     check(`${key}: initial legacy long text is complete`, await prose.textContent() === longText);
     for (const marker of ['WARNING_LAST', 'ACTION_LAST', 'TICKET_LAST', 'ORDER_LAST', 'HISTORY_7', 'ATTACHMENT_LAST.png']) check(`${key}: restores ${marker} without prose`, (await page.locator('[data-assistant-messages]').innerText()).includes(marker));

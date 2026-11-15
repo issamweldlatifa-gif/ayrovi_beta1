@@ -5,7 +5,7 @@ import { afterAnalyze, errorCopy, isHttpUrl } from '../src/features/lens/ocerex/
 const base: OcerexExtraction = {
   extractionId: 'e', type: 'PRODUCT', referencePrice: 50, referenceTnd: 150, currency: 'EUR', confidence: 0.9,
   confidenceLevel: 'HIGH', priceContext: 'REFERENCE', productTitle: null, platform: null, sourceUrl: null,
-  code: 'OK', ayroviPrice: null, supportedCurrencies: ['EUR', 'USD'], resolved: null,
+  code: 'OK', zayroviPrice: null, supportedCurrencies: ['EUR', 'USD'], resolved: null,
 };
 
 describe('OCEREX — enchaînement des étapes', () => {

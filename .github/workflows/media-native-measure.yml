@@ -3,7 +3,7 @@ name: Carte native — mesure production
 # MESURE, pas barrière : quelle part du catalogue réel passe par la voie
 # native (native-trim / native-extend) au lieu de l'isolation (composed) ?
 # Lecture seule : le workflow ne fait que GET /api/public/media/card et lire
-# l'en-tête X-Ayrovi-Card. Toujours vert : c'est un instrument de mesure.
+# l'en-tête X-Zayrovi-Card. Toujours vert : c'est un instrument de mesure.
 #
 # Le sandbox de développement ne peut pas joindre Render ; GitHub Actions, si.
 # Déclenché par un push qui modifie CE fichier (ou le moteur de carte).
@@ -114,7 +114,7 @@ jobs:
               CODE=$(printf '%s' "$HDR" | head -1 | tr -dc '0-9')
             fi
             MS=$(( $(date +%s%3N) - START ))
-            KIND=$(printf '%s' "$HDR" | tr -d '\r' | sed -n 's/^x-ayrovi-card: *//Ip' | head -1)
+            KIND=$(printf '%s' "$HDR" | tr -d '\r' | sed -n 's/^x-zayrovi-card: *//Ip' | head -1)
             case "$KIND" in
               native-trim)   TRIM=$((TRIM+1)) ;;
               native-extend) EXTEND=$((EXTEND+1)) ;;

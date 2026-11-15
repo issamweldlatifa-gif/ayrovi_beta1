@@ -14,7 +14,7 @@ export const accountSections = [
   { id: 'appearance', label: 'Apparence', labelAr: 'المظهر', icon: Moon },
   { id: 'security', label: 'Connexion & sécurité', labelAr: 'الدخول والأمان', icon: Lock },
   { id: 'settings', label: 'Préférences', labelAr: 'التفضيلات', icon: Settings },
-  { id: 'lensHelp', label: 'Aide AYROVIX Lens', labelAr: 'مساعدة AYROVIX Lens', icon: ScanSearch },
+  { id: 'lensHelp', label: 'Aide ZAYROVIX Lens', labelAr: 'مساعدة ZAYROVIX Lens', icon: ScanSearch },
   { id: 'terms', label: 'Conditions & confidentialité', labelAr: 'الشروط والخصوصية', icon: FileText },
 ] satisfies Array<{id:AccountSection;label:string;labelAr:string;icon:React.ComponentType<any>}>;
 export const accountMenuGroups: Array<{id:string;label:string;labelAr:string;items:AccountSection[]}> = [

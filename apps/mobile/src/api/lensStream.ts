@@ -1,11 +1,11 @@
 /**
- * Lecture EN FLUX de `/api/ayrovix/analyze-image` (SSE) — Z Lens, téléphone.
+ * Lecture EN FLUX de `/api/zayrovix/analyze-image` (SSE) — Z Lens, téléphone.
  *
  * POURQUOI CE FICHIER EXISTE
  *
  * Le serveur sait émettre les résultats un par un (`card`), l'avancement
  * (`progress`) puis la fin (`done`) — et le SITE le consomme déjà
- * (`client/src/ayrovix/services/lensApi.ts`). Le téléphone, lui, attendait le
+ * (`client/src/zayrovix/services/lensApi.ts`). Le téléphone, lui, attendait le
  * corps JSON ENTIER : l'utilisateur restait devant un mur de squelettes
  * pendant 30 à 45 secondes, sans savoir si l'application travaillait encore.
  *
@@ -255,7 +255,7 @@ export function analyzeImageStream(
     try {
       xhr.open('POST', apiUrl(`${LENS_BASE}/analyze-image`));
       xhr.setRequestHeader('Accept', 'text/event-stream');
-      xhr.setRequestHeader('x-ayrovi-native', '1');
+      xhr.setRequestHeader('x-zayrovi-native', '1');
       for (const [name, value] of Object.entries(authHeaders('POST'))) xhr.setRequestHeader(name, value);
     } catch (error) {
       fail(new ApiError('network', "Connexion impossible.", { code: 'NETWORK_ERROR', cause: error }));

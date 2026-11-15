@@ -26,7 +26,7 @@ import urllib.request
 import http.cookiejar
 import uuid
 
-BASE = os.environ.get("AYROVI_BASE", "http://localhost:3000")
+BASE = os.environ.get("ZAYROVI_BASE", "http://localhost:3000")
 
 
 def _db_path_from_env_file():
@@ -45,10 +45,10 @@ def _db_path_from_env_file():
     return os.path.abspath(os.path.join(root, value))
 
 
-DB_PATH = os.environ.get("AYROVI_DB_PATH") or _db_path_from_env_file()
+DB_PATH = os.environ.get("ZAYROVI_DB_PATH") or _db_path_from_env_file()
 MARKER = os.path.join(os.path.dirname(__file__), ".e2e-marker.json")
-ADMIN_EMAIL = "admin@ayrovi.tn"
-ADMIN_PASSWORD = "AyroviBeta2026!"
+ADMIN_EMAIL = "admin@zayrovi.com"
+ADMIN_PASSWORD = "ZayroviBeta2026!"
 TEST_PHONE = os.environ.get("E2E_PHONE", "21620123457")
 
 
@@ -160,7 +160,7 @@ def create_phase():
                     f"now={item2.get('description') if item2 else None!r}")
 
     # 5. customer OTP login
-    guest_session = f"ayrovi-e2e-{uuid.uuid4()}"
+    guest_session = f"zayrovi-e2e-{uuid.uuid4()}"
     cust = Client()
     status, body = cust.request("POST", "/api/customer/auth/otp/request", {"phone": TEST_PHONE})
     dev_code = (body.get("data") or {}).get("developmentCode")

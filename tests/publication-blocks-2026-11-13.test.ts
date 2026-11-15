@@ -76,7 +76,7 @@ describe('routes CRM et lecture publique', () => {
   beforeAll(async () => {
     ({ app } = await import('../src/server'));
     admin = request.agent(app);
-    const auth = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const auth = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     csrf = auth.body.data.csrfToken;
   });
 
@@ -109,7 +109,7 @@ describe('routes CRM et lecture publique', () => {
 
     let pub = (await request(app).get('/api/public/social/publication-blocks')).body;
     expect(pub.success).toBe(true);
-    expect(pub.data[0]).toMatchObject({ id, title: 'Bloc de test', bgColor: '#2E7D5B', publisher: { id: 'pub_ayrovi', name: 'zayrovi team' } });
+    expect(pub.data[0]).toMatchObject({ id, title: 'Bloc de test', bgColor: '#2E7D5B', publisher: { id: 'pub_zayrovi', name: 'zayrovi team' } });
 
     // désactivé : disparaît de l'application, reste dans le CRM
     expect((await admin.put(`/api/admin/publication-blocks/${id}`).set('x-csrf-token', csrf).send({ active: false })).status).toBe(200);

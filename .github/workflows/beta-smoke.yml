@@ -6,9 +6,9 @@
 # puis utiliser ce jeton comme le fait l'application : profil, panier, caisse.
 #
 # Ce workflow ne touche JAMAIS la production : par défaut il vise le serveur
-# Beta (`Ayrovi2`, branche), et tout déclenchement automatique sur une adresse de
+# Beta (`Zayrovi2`, branche), et tout déclenchement automatique sur une adresse de
 # PRODUCTION est arrêté net (garde plus bas). Il crée un compte de test jetable
-# (`smoke.<horodatage>@ayrovi.test`) sur le serveur visé.
+# (`smoke.<horodatage>@zayrovi.test`) sur le serveur visé.
 name: Serveur — test de bout en bout (appli)
 
 on:
@@ -32,7 +32,7 @@ on:
       - "shared/appLinks.ts"
       - "src/server.ts"
       - "src/api/**"
-      - "src/ayrovix/**"
+      - "src/zayrovix/**"
       - "src/customer/**"
 
 permissions:
@@ -83,7 +83,7 @@ jobs:
           # تجريبي في قاعدة الإنتاج من غير ما نعرفو.
           EVENT="${GITHUB_EVENT_NAME:-local}"
           case "$BASE" in
-            *ayrovi-beta1-1.onrender.com*|*ayrovi-beta1.onrender.com*|*ayrovi.tn*)
+            *ayrovi-beta1-1.onrender.com*|*ayrovi-beta1.onrender.com*|*zayrovi.com*)
               if [ "$EVENT" != "workflow_dispatch" ]; then
                 printf '\n**⏭️ تشغيل آلي على عنوان الإنتاج — وقفنا. العنوان: `%s`**\n' "$BASE" >> "$S"
                 echo "::notice title=Test de bout en bout::⏭️ arrêté: ${BASE} est un serveur de production et l'exécution est automatique. Lancez le workflow à la main avec l'adresse du serveur Beta."
@@ -250,13 +250,13 @@ jobs:
             *) WARN=1; note "\`POST /api/customer/auth/native/claim\`" "$CLAIM_CODE" "⚠️ réponse inattendue (\`${CLAIM_REF:-—}\`)" ;;
           esac
 
-          # 2) Créer un compte comme le fait l'APPLI (en-tête \`x-ayrovi-client\`).
+          # 2) Créer un compte comme le fait l'APPLI (en-tête \`x-zayrovi-client\`).
           STAMP=$(date +%s)
-          EMAIL="smoke.$STAMP.$RANDOM@ayrovi.test"
-          PASSWORD="ayrovi-$STAMP-$RANDOM-aA1"
+          EMAIL="smoke.$STAMP.$RANDOM@zayrovi.test"
+          PASSWORD="zayrovi-$STAMP-$RANDOM-aA1"
           REG_CODE=$(http_code "$BASE/api/customer/auth/register" /tmp/reg \
             -X POST -H 'Content-Type: application/json' \
-            -H "x-ayrovi-client: $CLIENT" -c /tmp/jar -b /tmp/jar \
+            -H "x-zayrovi-client: $CLIENT" -c /tmp/jar -b /tmp/jar \
             -d "{\"displayName\":\"Test Auto\",\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"locale\":\"ar\"}")
           TOKEN=$(jget /tmp/reg data.session_token)
           if [ -z "$TOKEN" ]; then TOKEN=$(jget /tmp/reg session_token); fi
@@ -281,7 +281,7 @@ jobs:
             # `csrfToken`: التطبيق يبعثو مع كل كتابة (`x-csrf-token`)، والخادم
             # **يبدّلو** في كل `GET /auth/me` — نعاودو نقراوه من بعد `/me`.
             CSRF=$(jget /tmp/reg data.csrfToken)
-            AUTH=(-H "Authorization: Bearer $TOKEN" -H "x-ayrovi-client: $CLIENT" -b /tmp/jar)
+            AUTH=(-H "Authorization: Bearer $TOKEN" -H "x-zayrovi-client: $CLIENT" -b /tmp/jar)
             REPLAYED=0
 
             # كتابة محميّة بالـCSRF — نفس التطبيق بالضبط: كي يرجع `INVALID_CSRF`
@@ -364,7 +364,7 @@ jobs:
             note "Session de l'appli (profil / panier / caisse / commandes)" "—" "non testees : ce serveur n'ouvre aucune session pour l'appli (l'appli montrera auth.error.noSession)"
           fi
 
-          # 8) Liens profonds : sans ce fichier, cliquer un lien ayrovi.tn n'ouvre pas l'appli.
+          # 8) Liens profonds : sans ce fichier, cliquer un lien zayrovi.com n'ouvre pas l'appli.
           LINKS_CODE=$(http_code "$BASE/.well-known/assetlinks.json" /tmp/links)
           LINKS_HEAD=$(head -c 1 /tmp/links 2>/dev/null)
           if [ "$LINKS_HEAD" = "[" ]; then

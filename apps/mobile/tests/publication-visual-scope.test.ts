@@ -38,7 +38,7 @@ describe('Publication-only visual model, not a second commerce or social core', 
     expect(read('assets/fonts/Publication-OFL.txt')).toContain(
       'SIL OPEN FONT LICENSE'
     );
-    expect(read('src/config/app.ts')).toContain('AyroviExtracted-Regular');
+    expect(read('src/config/app.ts')).toContain('ZayroviExtracted-Regular');
   });
   it('uses local neutrals, separate badge/link blues and a single original content icon renderer', () => {
     const s = read(dir + 'publicationTokens.ts');

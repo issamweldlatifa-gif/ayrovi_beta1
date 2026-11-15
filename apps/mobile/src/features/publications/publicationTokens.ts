@@ -30,15 +30,15 @@ export function publicationLatinFont(strong: boolean, os: string = Platform.OS):
 }
 /**
  * 14/11 — police des BLOCS (cartes, bandeaux) : la planche GBox est composée en
- * Zalando Sans, la famille d'où viennent les fichiers `AyroviExtracted-*` déjà
+ * Zalando Sans, la famille d'où viennent les fichiers `ZayroviExtracted-*` déjà
  * embarqués ; le titre du bandeau prend la coupe « Heading » (plus large). L'arabe
  * garde Noto Sans Arabic. Le reste de Publication (en-tête) ne change pas.
  */
 export type BlockFace = 'regular' | 'bold' | 'heading';
 export function publicationBlockFont(locale: string, face: BlockFace): string {
   if (locale === 'ar') return face === 'regular' ? 'NotoSansArabic-Regular' : 'NotoSansArabic-Bold';
-  if (face === 'heading') return 'AyroviExtracted-Heading';
-  return face === 'bold' ? 'AyroviExtracted-Bold' : 'AyroviExtracted-Regular';
+  if (face === 'heading') return 'ZayroviExtracted-Heading';
+  return face === 'bold' ? 'ZayroviExtracted-Bold' : 'ZayroviExtracted-Regular';
 }
 export const PUBLICATION_TYPE = {
   // Android reference: native Roboto; keep the licensed bundled face elsewhere.

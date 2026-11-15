@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeTitle, titleOverlap } from '../src/ayrovix/services/titleMatch';
+import { normalizeTitle, titleOverlap } from '../src/zayrovix/services/titleMatch';
 
 describe('correspondance de titres — la preuve avant les faits', () => {
   it('le recouvrement ignore casse, accents et ponctuation', () => {

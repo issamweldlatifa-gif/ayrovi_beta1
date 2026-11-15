@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import * as I from '../client/src/components/icons/ayrovi/catalog';
+import * as I from '../client/src/components/icons/zayrovi/catalog';
 
 const ORDER: Array<[string, string]> = [
   ['Menu', 'Menu'], ['Back', 'Retour'], ['Close', 'Fermer'], ['Options', 'Options'],
@@ -35,7 +35,7 @@ const ORDER: Array<[string, string]> = [
 export function renderAll(): string {
   const entries: Array<[string, React.ComponentType<any>]> = [];
   for (const [key, label] of ORDER) {
-    const cmp = (I as any)[`Ayrovi${key}`];
+    const cmp = (I as any)[`Zayrovi${key}`];
     if (typeof cmp === 'function' || (typeof cmp === 'object' && cmp !== null)) {
       entries.push([label, cmp as React.ComponentType<any>]);
     }

@@ -1,6 +1,6 @@
 /** Official account avatar (owner, 14/11/2026): the zebra Z in WHITE on a BLACK disc — the dark rendering of
  * the v7 identity, reserved for the account's face in Publication, Reels and Stories (the app icon is the white
- * one). Same drawing and fit as client/public/media/logo-ayrovi-avatar.svg. Constant in both themes: identity,
+ * one). Same drawing and fit as client/public/media/logo-zayrovi-avatar.svg. Constant in both themes: identity,
  * not chrome. The Z's outline fits 80 % of the disc (`brandSymbolWidthForRadius`), and stays striped even at
  * 28 dp — measured legible at 2× and 3× densities. Decorative: the publisher's name is always written next to it. */
 import { View } from 'react-native';

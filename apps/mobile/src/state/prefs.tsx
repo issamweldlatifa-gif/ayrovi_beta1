@@ -23,7 +23,7 @@ export interface Prefs {
   productDensity: ProductDensity;
 }
 
-const STORAGE_KEY = 'ayrovi.prefs.v1';
+const STORAGE_KEY = 'zayrovi.prefs.v1';
 const DEFAULTS: Prefs = { locale: 'fr', themeMode: 'system', ocerexOnboarded: false, productDensity: 'grid' };
 
 interface PrefsValue extends Prefs {

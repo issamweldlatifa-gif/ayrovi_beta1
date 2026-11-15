@@ -19,8 +19,8 @@ export default defineConfig({
       MAIL_API_KEY: '',
       MAIL_FROM: '',
       DATABASE_PATH: ':memory:',
-      ADMIN_EMAIL: 'admin@ayrovi.tn',
-      ADMIN_PASSWORD: 'AyroviBeta2026!',
+      ADMIN_EMAIL: 'admin@zayrovi.com',
+      ADMIN_PASSWORD: 'ZayroviBeta2026!',
       CUSTOMER_AUTH_SECRET: 'test-customer-auth-secret-0123456789abcdef0123456789abcdef',
       // OTP hermétique : un .env avec webhook placeholder ne doit pas casser la suite.
       CUSTOMER_OTP_PROVIDER: 'console',
@@ -28,7 +28,7 @@ export default defineConfig({
       // montants des tests historiques restent sans remise (tests/promo-engine
       // l'active explicitement). Production : env absent = actif.
       PROMO_ENGINE_ENABLED: 'false',
-      // AYROVIX : hermétique — aucune clé IA ne fuit dans la suite ; les tests la simulent.
+      // ZAYROVIX : hermétique — aucune clé IA ne fuit dans la suite ; les tests la simulent.
       ANTHROPIC_API_KEY: '',
       SERPAPI_KEY: '',
       SCRAPERAPI_KEY: '',
@@ -36,7 +36,7 @@ export default defineConfig({
       GEMINI_API_KEY: '',
       GOOGLE_API_KEY: '',
       OPENAI_API_KEY: '',
-      AYROVIX_AI_WEB_SEARCH: 'false',
+      ZAYROVIX_AI_WEB_SEARCH: 'false',
     },
   },
 });

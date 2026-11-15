@@ -33,7 +33,7 @@ with no order created, tampered line refused, manual path still orders, cart rea
 with checkout, exact expiry boundary, legacy windows.
 
 ### 2. Quote signing secret can no longer be the public development constant
-`validateQuoteSecret()`: a dedicated `AYROVIX_QUOTE_SECRET` wins when it is strong and
+`validateQuoteSecret()`: a dedicated `ZAYROVIX_QUOTE_SECRET` wins when it is strong and
 different from `CUSTOMER_AUTH_SECRET`; otherwise a production key is **derived** from
 `CUSTOMER_AUTH_SECRET` with HKDF-SHA256 (domain-separated, no raw key reuse) and a warning
 asks for the dedicated variable; if nothing strong exists, the server refuses to start.
@@ -113,7 +113,7 @@ is strong.
   which this workspace cannot read.
 - Pushing these server changes to `main` may trigger a production deploy; the deploy is
   safe from a boot standpoint (see §2), but the derived-key warning should be replaced by
-  a real `AYROVIX_QUOTE_SECRET` in the dashboard as soon as possible.
+  a real `ZAYROVIX_QUOTE_SECRET` in the dashboard as soon as possible.
 
 ## Still missing (not started or not finished)
 

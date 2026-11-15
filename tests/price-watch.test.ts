@@ -8,12 +8,12 @@ import path from 'node:path';
 import request from 'supertest';
 import { QatafoDatabase } from '../src/db/database';
 import { SmartLinkScraper } from '../src/scraper/scraper';
-import { addPriceWatcher, checkDueWatchers, listPriceWatchers, removePriceWatcher, MAX_PRICE_WATCHERS_PER_ACCOUNT } from '../src/ayrovix/services/priceWatch';
+import { addPriceWatcher, checkDueWatchers, listPriceWatchers, removePriceWatcher, MAX_PRICE_WATCHERS_PER_ACCOUNT } from '../src/zayrovix/services/priceWatch';
 import { app } from '../src/server';
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-watch-'));
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-watch-'));
 process.env.DATABASE_PATH = path.join(tmp, 'test.db');
-process.env.ADMIN_PASSWORD = 'AyroviBeta2026!';
+process.env.ADMIN_PASSWORD = 'ZayroviBeta2026!';
 afterAll(() => { fs.rmSync(tmp, { recursive: true, force: true }); });
 
 function createAccount(db: QatafoDatabase, id: string, email: string): void {
@@ -91,7 +91,7 @@ describe('veille prix — relecture et notifications', () => {
 
 describe('API veille prix — compte requis', () => {
   it('refuse un visiteur non connecté', async () => {
-    const post = await request(app).post('/api/ayrovix/watch').send({ url: 'https://shop.example.org/p', title: 'Test' });
+    const post = await request(app).post('/api/zayrovix/watch').send({ url: 'https://shop.example.org/p', title: 'Test' });
     expect(post.status).toBe(401);
   });
 });

@@ -1,11 +1,11 @@
 
-> ayrovi@3.10.4 test
+> zayrovi@3.10.4 test
 > vitest run
 
 
  RUN  v4.1.11 /home/user/ayrovi_beta1
 
-stdout | tests/ayrovi.test.ts
+stdout | tests/zayrovi.test.ts
 [database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -15,7 +15,7 @@ stdout | tests/ayrovi.test.ts
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-stdout | tests/ayrovi.test.ts > AYSONIC platform > one-shot data migrations never clobber admin edits across restarts (LENS block + payment methods)
+stdout | tests/zayrovi.test.ts > AYSONIC platform > one-shot data migrations never clobber admin edits across restarts (LENS block + payment methods)
 [database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -25,7 +25,7 @@ stdout | tests/ayrovi.test.ts > AYSONIC platform > one-shot data migrations neve
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
- ✓ tests/ayrovi.test.ts (43 tests) 1692ms
+ ✓ tests/zayrovi.test.ts (43 tests) 1692ms
      ✓ manual transfer lifecycle preserves proof history, separates invoice and enables tracking only after shipping  520ms
 stdout | tests/arrival-ingestion.test.ts > Administration CRM Arrival AI ingestion > keeps operational Arrivals separate from the existing public CMS arrivals
 [database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
@@ -165,7 +165,7 @@ stdout | tests/purchasing-foundation.test.ts
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-stdout | tests/purchasing-foundation.test.ts > AYROVI Achats (P2.3) > permissions, listes et framework > le schéma est prêt avant le premier appel, donc aucune table n’est créée à la volée
+stdout | tests/purchasing-foundation.test.ts > ZAYROVI Achats (P2.3) > permissions, listes et framework > le schéma est prêt avant le premier appel, donc aucune table n’est créée à la volée
 [database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -176,7 +176,7 @@ stdout | tests/purchasing-foundation.test.ts > AYROVI Achats (P2.3) > permission
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
  ✓ tests/purchasing-foundation.test.ts (36 tests) 852ms
-stdout | tests/ayrovix.test.ts
+stdout | tests/zayrovix.test.ts
 [database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -186,68 +186,68 @@ stdout | tests/ayrovix.test.ts
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > SerpApi Google Lens renvoie produits, images et prix puis évite la recherche texte Claude
-[AYROVIX serpapi-lens] 1 visual product matches
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > SerpApi Google Lens renvoie produits, images et prix puis évite la recherche texte Claude
+[ZAYROVIX serpapi-lens] 1 visual product matches
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > image → identification Claude (simulée) → candidats catalogue → événement → choix
-[AYROVIX] Trying anthropic claude-haiku-4-5-20251001
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > image → identification Claude (simulée) → candidats catalogue → événement → choix
+[ZAYROVIX] Trying anthropic claude-haiku-4-5-20251001
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > image → identification Claude (simulée) → candidats catalogue → événement → choix
-[AYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > image → identification Claude (simulée) → candidats catalogue → événement → choix
+[ZAYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > image → identification Claude (simulée) → candidats catalogue → événement → choix
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > image → identification Claude (simulée) → candidats catalogue → événement → choix
 [LensTrace ayx_muavcy4p_dtuv2s] {"requestId":"ayx_muavcy4p_dtuv2s","startedAt":"2026-09-21T06:33:34.153Z","normalizeMs":2,"imageBytesIn":91,"anthropicVisionMs":4,"serpApiTotalMs":4,"pipelineCacheHit":false,"searchCandidatesMs":1,"anthropicRelevanceMs":1,"dedupMs":0,"candidatesCount":1,"totalBackendMs":9,"endedAt":"2026-09-21T06:33:34.162Z"}
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
-[AYROVIX] Trying anthropic claude-haiku-4-5-20251001
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
+[ZAYROVIX] Trying anthropic claude-haiku-4-5-20251001
 
-stderr | tests/ayrovix.test.ts > AYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
+stderr | tests/zayrovix.test.ts > ZAYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
 [AI Core Anthropic] HTTP 500 internal
 
-stderr | tests/ayrovix.test.ts > AYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
-[AYROVIX] structured output failed (Vision provider HTTP 500) — retrying JSON
+stderr | tests/zayrovix.test.ts > ZAYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
+[ZAYROVIX] structured output failed (Vision provider HTTP 500) — retrying JSON
 
-stderr | tests/ayrovix.test.ts > AYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
+stderr | tests/zayrovix.test.ts > ZAYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
 [AI Core Anthropic] HTTP 500 internal
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
-[AYROVIX serpapi-lens] 1 visual product matches
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
+[ZAYROVIX serpapi-lens] 1 visual product matches
 
-stderr | tests/ayrovix.test.ts > AYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
-[AYROVIX analyze-image] vision failed — continuing with visual matches
+stderr | tests/zayrovix.test.ts > ZAYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
+[ZAYROVIX analyze-image] vision failed — continuing with visual matches
 
-stderr | tests/ayrovix.test.ts > AYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
+stderr | tests/zayrovix.test.ts > ZAYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
 [AI Core Anthropic] HTTP 500 internal
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > analyze-image continue avec Google Lens si Claude Vision échoue
 [LensTrace ayx_muavcy5b_vqtmrg] {"requestId":"ayx_muavcy5b_vqtmrg","startedAt":"2026-09-21T06:33:34.175Z","normalizeMs":2,"imageBytesIn":91,"anthropicVisionMs":6,"serpApiTotalMs":6,"pipelineCacheHit":false,"searchCandidatesMs":1,"anthropicRelevanceMs":0,"dedupMs":0,"candidatesCount":1,"totalBackendMs":10,"endedAt":"2026-09-21T06:33:34.185Z"}
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > Claude lit le prix visible dans la même requête structurée que Vision
-[AYROVIX] Trying anthropic claude-haiku-4-5-20251001
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > Claude lit le prix visible dans la même requête structurée que Vision
+[ZAYROVIX] Trying anthropic claude-haiku-4-5-20251001
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > Claude lit le prix visible dans la même requête structurée que Vision
-[AYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > Claude lit le prix visible dans la même requête structurée que Vision
+[ZAYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > Claude lit le prix visible dans la même requête structurée que Vision
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > Claude lit le prix visible dans la même requête structurée que Vision
 [LensTrace ayx_muavcy5r_mktmrx] {"requestId":"ayx_muavcy5r_mktmrx","startedAt":"2026-09-21T06:33:34.191Z","normalizeMs":6,"imageBytesIn":91,"anthropicVisionMs":2,"serpApiTotalMs":2,"pipelineCacheHit":false,"searchCandidatesMs":1,"dedupMs":0,"candidatesCount":0,"totalBackendMs":9,"endedAt":"2026-09-21T06:33:34.200Z"}
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > un ancien prix barré n'est jamais accepté comme prix de commande
-[AYROVIX] Trying anthropic claude-haiku-4-5-20251001
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > un ancien prix barré n'est jamais accepté comme prix de commande
+[ZAYROVIX] Trying anthropic claude-haiku-4-5-20251001
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > un ancien prix barré n'est jamais accepté comme prix de commande
-[AYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > un ancien prix barré n'est jamais accepté comme prix de commande
+[ZAYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > un ancien prix barré n'est jamais accepté comme prix de commande
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > un ancien prix barré n'est jamais accepté comme prix de commande
 [LensTrace ayx_muavcy67_wx8i5c] {"requestId":"ayx_muavcy67_wx8i5c","startedAt":"2026-09-21T06:33:34.207Z","normalizeMs":1,"imageBytesIn":91,"anthropicVisionMs":2,"serpApiTotalMs":2,"pipelineCacheHit":false,"searchCandidatesMs":1,"anthropicRelevanceMs":0,"dedupMs":0,"candidatesCount":1,"totalBackendMs":4,"endedAt":"2026-09-21T06:33:34.211Z"}
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > Claude Web Search transforme les résultats officiels Anthropic en candidats
-[AYROVIX provider-search] 2 candidates, searches=1
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > Claude Web Search transforme les résultats officiels Anthropic en candidats
+[ZAYROVIX provider-search] 2 candidates, searches=1
 
-stdout | tests/ayrovix.test.ts > AYROVIX Lens > QR texte exclut toute page Web Search sans prix et lien marchand exploitables
-[AYROVIX provider-search] 1 candidates, searches=1
+stdout | tests/zayrovix.test.ts > ZAYROVIX Lens > QR texte exclut toute page Web Search sans prix et lien marchand exploitables
+[ZAYROVIX provider-search] 1 candidates, searches=1
 
- ✓ tests/ayrovix.test.ts (26 tests) 615ms
-stdout | tests/arrival-category-classification.test.ts > Category Master (official taxonomy) > the master is data imported from AYROVI, never hardcoded: empty master disables classification
+ ✓ tests/zayrovix.test.ts (26 tests) 615ms
+stdout | tests/arrival-category-classification.test.ts > Category Master (official taxonomy) > the master is data imported from ZAYROVI, never hardcoded: empty master disables classification
 [database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -495,26 +495,26 @@ stdout | tests/assistant.test.ts
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-stderr | tests/assistant.test.ts > AYROVI Claude assistant > chat retries Claude without tools then still answers a greeting
+stderr | tests/assistant.test.ts > ZAYROVI Claude assistant > chat retries Claude without tools then still answers a greeting
 [AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
 
-stderr | tests/assistant.test.ts > AYROVI Claude assistant > chat retries Claude without tools then still answers a greeting
+stderr | tests/assistant.test.ts > ZAYROVI Claude assistant > chat retries Claude without tools then still answers a greeting
 [AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
 
-stderr | tests/assistant.test.ts > AYROVI Claude assistant > shopping chat stays online when Claude rejects every request
+stderr | tests/assistant.test.ts > ZAYROVI Claude assistant > shopping chat stays online when Claude rejects every request
 [AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
 
-stderr | tests/assistant.test.ts > AYROVI Claude assistant > shopping chat stays online when Claude rejects every request
+stderr | tests/assistant.test.ts > ZAYROVI Claude assistant > shopping chat stays online when Claude rejects every request
 [AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
 
-stderr | tests/assistant.test.ts > AYROVI Claude assistant > shopping chat stays online when Claude rejects every request
+stderr | tests/assistant.test.ts > ZAYROVI Claude assistant > shopping chat stays online when Claude rejects every request
 [AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
 
-stderr | tests/assistant.test.ts > AYROVI Claude assistant > shopping chat stays online when Claude rejects every request
+stderr | tests/assistant.test.ts > ZAYROVI Claude assistant > shopping chat stays online when Claude rejects every request
 [AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
 
-stdout | tests/assistant.test.ts > AYROVI Claude assistant > lens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model
-[AYROVIX serpapi-lens] 1 visual product matches
+stdout | tests/assistant.test.ts > ZAYROVI Claude assistant > lens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model
+[ZAYROVIX serpapi-lens] 1 visual product matches
 
  ✓ tests/assistant.test.ts (15 tests) 865ms
      ✓ lens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model  618ms
@@ -684,7 +684,7 @@ stdout | tests/ai-shadow-readiness.test.ts > sanitized Shadow observability > pe
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-stdout | tests/ai-shadow-readiness.test.ts > AYROVIX execution-lane isolation > shadow/probe cannot read, replace or evict the canonical Lens cache
+stdout | tests/ai-shadow-readiness.test.ts > ZAYROVIX execution-lane isolation > shadow/probe cannot read, replace or evict the canonical Lens cache
 [database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -694,7 +694,7 @@ stdout | tests/ai-shadow-readiness.test.ts > AYROVIX execution-lane isolation > 
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-stdout | tests/ai-shadow-readiness.test.ts > AYROVIX execution-lane isolation > shadow/probe never enter canonical evaluations or learning aggregates
+stdout | tests/ai-shadow-readiness.test.ts > ZAYROVIX execution-lane isolation > shadow/probe never enter canonical evaluations or learning aggregates
 [database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
 [database] data migration applied (one-shot): rebrand_noir_orange_v1
 [database] data migration applied (one-shot): rebrand_zalando_orange_v1
@@ -715,7 +715,7 @@ stdout | tests/voice-transport.test.ts
 [database] data migration applied (one-shot): lens_feature_media_v1
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
-stderr | tests/voice-transport.test.ts > AYROVI voice transport and session subsystem > opens one quota circuit on Gemini HTTP 429 and does not retry subsequent TTS requests
+stderr | tests/voice-transport.test.ts > ZAYROVI voice transport and session subsystem > opens one quota circuit on Gemini HTTP 429 and does not retry subsequent TTS requests
 [Gemini TTS] TTS_QUOTA_EXCEEDED status=429 model=gemini-3.1-flash-tts-preview retryAt=2026-09-21T07:34:05.753Z
 
  ✓ tests/voice-transport.test.ts (10 tests) 108ms
@@ -763,7 +763,7 @@ stdout | tests/customer-password-recovery.test.ts > Customer welcome and passwor
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
 stdout | tests/customer-password-recovery.test.ts > Customer welcome and password recovery > registration enqueues one escaped/localized welcome, not on login; provider accepted then payload erased
-[Mail] أُرسل عبر resend إلى customer@example.com — "مرحبًا بك في AYROVI!"
+[Mail] أُرسل عبر resend إلى customer@example.com — "مرحبًا بك في ZAYROVI!"
 
 stdout | tests/customer-password-recovery.test.ts > Customer welcome and password recovery > unconfigured mail does not break registration, never fakes a reset send
 [database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
@@ -789,7 +789,7 @@ stderr | tests/customer-password-recovery.test.ts > Customer welcome and passwor
 [Mail] فشل الإرسال عبر resend: HTTP 503
 
 stdout | tests/customer-password-recovery.test.ts > Customer welcome and password recovery > temporary provider failure is durable and retried with stable idempotency key
-[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez ZAYROVI !"
 
 stdout | tests/customer-password-recovery.test.ts > Customer welcome and password recovery > end-to-end reset: hashed token, encrypted payload, no session/password in responses; single-use and all sessions revoked
 [database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
@@ -802,7 +802,7 @@ stdout | tests/customer-password-recovery.test.ts > Customer welcome and passwor
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
 stdout | tests/customer-password-recovery.test.ts > Customer welcome and password recovery > end-to-end reset: hashed token, encrypted payload, no session/password in responses; single-use and all sessions revoked
-[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez ZAYROVI !"
 
 stdout | tests/customer-password-recovery.test.ts > Customer welcome and password recovery > end-to-end reset: hashed token, encrypted payload, no session/password in responses; single-use and all sessions revoked
 [Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
@@ -828,7 +828,7 @@ stdout | tests/customer-password-recovery.test.ts > Customer welcome and passwor
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
 stdout | tests/customer-password-recovery.test.ts > Customer welcome and password recovery > expiry, tampering, blocked account and changed email invalidate a link
-[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez ZAYROVI !"
 
 stdout | tests/customer-password-recovery.test.ts > Customer welcome and password recovery > expiry, tampering, blocked account and changed email invalidate a link
 [Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
@@ -844,7 +844,7 @@ stdout | tests/customer-password-recovery.test.ts > Customer welcome and passwor
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
 stdout | tests/customer-password-recovery.test.ts > Customer welcome and password recovery > validating password does not consume token; consuming one invalidates all outstanding links
-[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez ZAYROVI !"
 
 stdout | tests/customer-password-recovery.test.ts > Customer welcome and password recovery > validating password does not consume token; consuming one invalidates all outstanding links
 [Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
@@ -873,7 +873,7 @@ stdout | tests/customer-password-recovery.test.ts > Customer welcome and passwor
 [database] data migration applied (one-shot): payment_methods_default_card_v1
 
 stdout | tests/customer-password-recovery.test.ts > Customer welcome and password recovery > rejects non-JSON and cross-origin POSTs and uses configured origin, never Host, for email links
-[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez ZAYROVI !"
 
 stdout | tests/customer-password-recovery.test.ts > Customer welcome and password recovery > rejects non-JSON and cross-origin POSTs and uses configured origin, never Host, for email links
 [Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
@@ -1283,7 +1283,7 @@ stdout | tests/admin-desk.test.ts
  ✓ tests/homepage-navigation.test.tsx (7 tests) 8ms
  ✓ tests/editorial-system.test.tsx (107 tests) 813ms
  ✓ tests/lens-ui-phase0.test.tsx (8 tests) 48ms
- ✓ src/ayrovix/services/aiLensIntelligence.test.ts (11 tests) 10ms
+ ✓ src/zayrovix/services/aiLensIntelligence.test.ts (11 tests) 10ms
  ✓ tests/assistant-image-preparation.test.ts (15 tests) 67ms
  ✓ tests/product-selection.test.ts (32 tests) 13ms
 stdout | tests/lens-text.test.ts
@@ -1309,7 +1309,7 @@ You have Reduced Motion enabled on your device. Animations may not appear as exp
  ✓ tests/editorial-integration.test.tsx (23 tests) 53ms
  ✓ tests/interface-config.test.ts (5 tests) 9ms
 stdout | tests/lens-product-cards.test.tsx > reference Lens product card > preserves SerpApi reviews from both supported rating fields and never uses match as a rating
-[AYROVIX serpapi-lens] 3 visual URL product matches
+[ZAYROVIX serpapi-lens] 3 visual URL product matches
 
  ✓ tests/lens-product-cards.test.tsx (20 tests) 113ms
  ✓ tests/assistant-composer-events.test.tsx (8 tests) 97ms
@@ -1333,7 +1333,7 @@ stdout | tests/pricing.test.ts
  ✓ tests/voice-input-capture.test.ts (8 tests) 37ms
  ✓ tests/editorial-commerce-policy.test.tsx (19 tests) 165ms
  ✓ tests/otp.test.ts (4 tests) 31ms
- ✓ tests/ayrovix-navigation.test.tsx (5 tests) 20ms
+ ✓ tests/zayrovix-navigation.test.tsx (5 tests) 20ms
 stdout | tests/mailer.test.ts > transactional mail readiness > requires a supported provider, API key and valid sender address
 [Mail] (غير مفعّل — MAIL_PROVIDER=unsupported) إلى=client@example.com الموضوع="Test"
 
@@ -1378,7 +1378,7 @@ stdout | tests/customer-notification-migration.test.ts > customer notification l
  ✓ tests/customer-notification-migration.test.ts (1 test) 189ms
  ✓ tests/icon-system.test.tsx (6 tests) 42ms
  ✓ tests/editorial-feature-identity.test.tsx (3 tests) 108ms
- ✓ tests/ayrovix-gallery.test.tsx (3 tests) 20ms
+ ✓ tests/zayrovix-gallery.test.tsx (3 tests) 20ms
  ✓ tests/merchant-availability.test.ts (25 tests) 273ms
 stdout | tests/facebook-migration.test.ts > Facebook identity migration > upgrades legacy GOOGLE/PHONE identity constraints without losing identities
 [DB] تمت ترقية جدول customer_auth_identities إلى المخطط الحالي.

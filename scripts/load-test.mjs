@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * AYROVI — test de charge par paliers (audit d'architecture du 12/11/2026).
+ * ZAYROVI — test de charge par paliers (audit d'architecture du 12/11/2026).
  *
  *   npm run loadtest -- --url https://staging.example.tn --stages 100,500,1000 --duration 30
  *
@@ -119,7 +119,7 @@ function runStage(connections, requests) {
       duration,
       requests,
       timeout: 10,
-      headers: { accept: 'application/json', 'user-agent': 'ayrovi-loadtest/1' },
+      headers: { accept: 'application/json', 'user-agent': 'zayrovi-loadtest/1' },
     }, (error, result) => (error ? reject(error) : resolve(result)));
     process.once('SIGINT', () => instance.stop());
   });
@@ -135,10 +135,10 @@ async function serverMetrics() {
     if (!response.ok) return null;
     const values = {};
     for (const line of (await response.text()).split('\n')) {
-      const match = line.match(/^(ayrovi_[a-z0-9_]+) (-?[\d.]+)$/);
+      const match = line.match(/^(zayrovi_[a-z0-9_]+) (-?[\d.]+)$/);
       if (match) values[match[1]] = Number(match[2]);
     }
-    return { cpuPercent: values.ayrovi_cpu_percent, rssMb: values.ayrovi_rss_mb, eventLoopP99Ms: values.ayrovi_event_loop_p99_ms, serverRps: values.ayrovi_requests_per_second };
+    return { cpuPercent: values.zayrovi_cpu_percent, rssMb: values.zayrovi_rss_mb, eventLoopP99Ms: values.zayrovi_event_loop_p99_ms, serverRps: values.zayrovi_requests_per_second };
   } catch { return null; }
 }
 
@@ -161,7 +161,7 @@ async function runUsersStage(users, requests) {
   const send = (agent, path) => new Promise((resolve) => {
     const began = performance.now();
     const req = transport.request({ host: target.hostname, port: target.port || (target.protocol === 'https:' ? 443 : 80), path, method: 'GET', agent,
-      headers: { accept: 'application/json', 'user-agent': 'ayrovi-loadtest-users/1' }, timeout: 10_000 }, (res) => {
+      headers: { accept: 'application/json', 'user-agent': 'zayrovi-loadtest-users/1' }, timeout: 10_000 }, (res) => {
       res.resume();
       res.on('end', () => resolve({ status: res.statusCode, ms: performance.now() - began }));
       res.on('error', () => resolve({ error: 'network', ms: performance.now() - began }));
@@ -217,7 +217,7 @@ async function runUsersStage(users, requests) {
 const summary = [];
 const ids = await discover();
 const requests = requestMix(ids);
-console.log(`AYROVI load test → ${baseUrl}`);
+console.log(`ZAYROVI load test → ${baseUrl}`);
 console.log(`mix: ${requests.length} requêtes/cycle · ${ids.reelIds.length} reels · ${ids.productIds.length} produits · ${duration}s par palier\n`);
 
 if (mode === 'users') {

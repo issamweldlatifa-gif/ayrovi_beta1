@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
  * ISOLATION PAR PHOTOROOM (Remove Background API, plan Basic).
  *
  * Activée uniquement si :
- *   • AYROVI_ISOLATION_PROVIDER=photoroom ;
+ *   • ZAYROVI_ISOLATION_PROVIDER=photoroom ;
  *   • PHOTOROOM_API_KEY est défini côté serveur (Render Environment).
  * Sinon le comportement reste celui de l'isolation locale (défaut `local`).
  *
@@ -33,7 +33,7 @@ export function isPhotoRoomSandboxKey(apiKey: string): boolean {
  * visuels PhotoRoom filigranés ; le pipeline local reste alors le repli sûr.
  */
 export function isolationProvider(env: NodeJS.ProcessEnv = process.env): IsolationProvider {
-  if (env.AYROVI_ISOLATION_PROVIDER !== 'photoroom') return 'local';
+  if (env.ZAYROVI_ISOLATION_PROVIDER !== 'photoroom') return 'local';
   const apiKey = String(env.PHOTOROOM_API_KEY || '').trim();
   if (!apiKey) return 'local';
   const isProduction = env.NODE_ENV === 'production' || Boolean(env.RENDER);

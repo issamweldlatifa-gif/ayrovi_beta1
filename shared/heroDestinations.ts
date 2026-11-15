@@ -16,7 +16,7 @@ export const HERO_DESTINATIONS = [
   { id: 'PRODUCT', needsValue: true, adminLabel: 'Produit — /product/<id>' },
   { id: 'NEWS', needsValue: false, adminLabel: 'Actualités — /news' },
   { id: 'STORIES', needsValue: false, adminLabel: 'Stories — /stories' },
-  { id: 'LENS', needsValue: false, adminLabel: 'Ayrovix Lens — /lens' },
+  { id: 'LENS', needsValue: false, adminLabel: 'Zayrovix Lens — /lens' },
   { id: 'AYWEBS', needsValue: false, adminLabel: 'AYWEBs — /aywebs' },
   { id: 'ASSISTANT', needsValue: false, adminLabel: 'Assistant — /assistant' },
   { id: 'EXTERNAL', needsValue: true, adminLabel: 'Lien externe (http/https)' },

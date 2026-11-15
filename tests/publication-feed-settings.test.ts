@@ -9,7 +9,7 @@ import { DEFAULT_PUBLICATION_FEED_SETTINGS as defaults, normalizePublicationFeed
 import { readPublicationFeedSettings } from '../src/services/publicationFeedSettings';
 const admin = request.agent(app);
 let csrf = '';
-beforeAll(async () => { const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' }); csrf = login.body.data.csrfToken; });
+beforeAll(async () => { const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' }); csrf = login.body.data.csrfToken; });
 afterEach(() => { db.run("UPDATE publication_feed_settings SET config_json=? WHERE id='global'", JSON.stringify(defaults)); });
 const write = (body: unknown) => admin.put('/api/admin/publication-feed-settings').set('x-csrf-token', csrf).send(body as any);
 describe('Publication feed CMS settings', () => {

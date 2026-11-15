@@ -11,8 +11,8 @@ try {
     const text = ar ? 'فقرة كاملة {30 TND}\n\nhttps://example.test/item#size' : 'Paragraphe complet {30 TND}\n\nhttps://example.test/item#size';
     const ctx = await browser.newContext({ viewport: { width, height: 844 }, reducedMotion: 'reduce' });
     await ctx.addInitScript(({ locale, text }) => {
-      localStorage.setItem('ayrovi.locale.v1', locale);
-      localStorage.setItem('ayrovi_assistant_conversations_v1_guest', JSON.stringify([{ id: 'conversation-fixture', title: 'Titre complet / عنوان كامل pour vérifier le retour au menu et la lisibilité de toutes les conversations', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), messages: [
+      localStorage.setItem('zayrovi.locale.v1', locale);
+      localStorage.setItem('zayrovi_assistant_conversations_v1_guest', JSON.stringify([{ id: 'conversation-fixture', title: 'Titre complet / عنوان كامل pour vérifier le retour au menu et la lisibilité de toutes les conversations', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), messages: [
         { id: 'first', role: 'assistant', text: text + ' [[OPEN_LENS]]' },
         { id: 'second', role: 'assistant', text: locale === 'ar' ? 'رد ثان كامل' : 'Deuxième réponse complète' },
         { id: 'tool', role: 'assistant', text: '[[OPEN_LENS]]', priceBreakdown: { originalPrice: 20, currency: 'TND', exchangeRate: 1, pricingVersion: 1, totalTND: 30, convertedPriceTND: 20, customsFeeTND: 2, shippingFeeTND: 4, serviceFeeTND: 4, expressFeeTND: 0 } },
@@ -34,7 +34,7 @@ try {
     const pending = [], writes = [], waiting = [];
     const takeRequest = () => pending.length ? Promise.resolve(pending.shift()) : new Promise(resolve => waiting.push(resolve));
     await page.route('**/api/public/assistant-feedback', r => { writes.push(r.request().postDataJSON()); if (waiting.length) waiting.shift()(r); else pending.push(r); });
-    await page.goto(process.env.AYROVI_BASE_URL + '/__verify/sonim');
+    await page.goto(process.env.ZAYROVI_BASE_URL + '/__verify/sonim');
     await page.locator('[data-open]').click();
     const rows = page.locator('.assistant-message-actions'); await rows.nth(2).waitFor();
     const first = rows.nth(0), second = rows.nth(1), tool = rows.nth(2);

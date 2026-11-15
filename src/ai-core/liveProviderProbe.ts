@@ -138,13 +138,13 @@ export function liveProviderProbeConfigFromEnv(
     },
 ): LiveProviderProbeConfig {
   return {
-    environmentGateEnabled: env.AYROVI_LIVE_PROVIDER_PROBE_ENABLED === 'true',
-    configuredApprovalId: String(env.AYROVI_LIVE_PROVIDER_PROBE_APPROVAL_ID || '').trim(),
-    billingAttested: env.AYROVI_TARGET_PROVIDER_BILLING_READY === 'attested',
-    budgetEnforcementEnabled: env.AYROVI_AI_BUDGET_ENFORCEMENT === 'true',
-    maxRunCostUsd: Number(env.AYROVI_PROBE_MAX_RUN_USD),
-    estimatedRunCostUsd: Number(env.AYROVI_PROBE_ESTIMATED_RUN_USD),
-    dailyBudgetUsd: Number(env.AYROVI_PROBE_DAILY_BUDGET_USD),
+    environmentGateEnabled: env.ZAYROVI_LIVE_PROVIDER_PROBE_ENABLED === 'true',
+    configuredApprovalId: String(env.ZAYROVI_LIVE_PROVIDER_PROBE_APPROVAL_ID || '').trim(),
+    billingAttested: env.ZAYROVI_TARGET_PROVIDER_BILLING_READY === 'attested',
+    budgetEnforcementEnabled: env.ZAYROVI_AI_BUDGET_ENFORCEMENT === 'true',
+    maxRunCostUsd: Number(env.ZAYROVI_PROBE_MAX_RUN_USD),
+    estimatedRunCostUsd: Number(env.ZAYROVI_PROBE_ESTIMATED_RUN_USD),
+    dailyBudgetUsd: Number(env.ZAYROVI_PROBE_DAILY_BUDGET_USD),
     ...controls,
   };
 }

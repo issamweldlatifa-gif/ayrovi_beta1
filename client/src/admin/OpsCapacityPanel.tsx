@@ -10,7 +10,7 @@
  *  • les familles de routes qui consomment le temps — la première chose à
  *    optimiser avant d'acheter quoi que ce soit.
  *
- * Grille et raisonnement : docs/AYROVI_ARCHITECTURE_SCALABLE_AR_2026-11-12.md (§5).
+ * Grille et raisonnement : docs/ZAYROVI_ARCHITECTURE_SCALABLE_AR_2026-11-12.md (§5).
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { adminApi, ApiError } from './api';

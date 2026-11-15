@@ -1,36 +1,36 @@
 apply plugin: 'com.android.application'
 
 // Signing release uniquement quand la CI fournit le keystore (env), jamais en local/debug.
-def ksB64 = System.getenv('AYROVI_KEYSTORE_BASE64')
+def ksB64 = System.getenv('ZAYROVI_KEYSTORE_BASE64')
 def hasReleaseKeystore = ksB64 != null && !ksB64.trim().isEmpty()
-def ksFile = hasReleaseKeystore ? new File(buildDir, 'ayrovi-release.keystore') : null
+def ksFile = hasReleaseKeystore ? new File(buildDir, 'zayrovi-release.keystore') : null
 if (hasReleaseKeystore) {
     buildDir.mkdirs()
     ksFile.bytes = Base64.decoder.decode(ksB64.replaceAll('\\s', ''))
 }
 
 android {
-    namespace "app.ayrovi.mobile"
+    namespace "app.zayrovi.mobile"
     compileSdk rootProject.ext.compileSdkVersion
     buildFeatures { buildConfig true }
     defaultConfig {
-        def apiOrigin = System.getenv('VITE_AYROVI_API_ORIGIN') ?: 'https://ayrovi-beta1-1.onrender.com'
+        def apiOrigin = System.getenv('VITE_ZAYROVI_API_ORIGIN') ?: 'https://ayrovi-beta1-1.onrender.com'
         def apiUri = new URI(apiOrigin)
         if (apiUri.scheme != 'https' || !apiUri.host || apiUri.userInfo || apiUri.query || apiUri.fragment || (apiUri.path && apiUri.path != '/') || (apiUri.port != -1 && apiUri.port != 443)) {
             throw new GradleException('HTTPS_API_ORIGIN_REQUIRED')
         }
-        buildConfigField 'String', 'AYROVI_API_ORIGIN', '"' + apiOrigin.replaceAll('/+$', '') + '"'
+        buildConfigField 'String', 'ZAYROVI_API_ORIGIN', '"' + apiOrigin.replaceAll('/+$', '') + '"'
 
-        applicationId "app.ayrovi.mobile"
+        applicationId "app.zayrovi.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Repli = version COURANTE du paquet (04/10/2026 : correctifs des sept
         // remarques d'interface + connexion Google dans l'app). La CI continue
-        // d'imposer la sienne par AYROVI_VERSION_CODE / AYROVI_VERSION_NAME ;
+        // d'imposer la sienne par ZAYROVI_VERSION_CODE / ZAYROVI_VERSION_NAME ;
         // un build local produit désormais le même numéro que la release, donc
         // s'installe PAR-DESSUS la 1.0.2 au lieu d'être refusé.
-        versionCode ((System.getenv('AYROVI_VERSION_CODE') ?: '6') as int)
-        versionName (System.getenv('AYROVI_VERSION_NAME') ?: '1.0.6')
+        versionCode ((System.getenv('ZAYROVI_VERSION_CODE') ?: '6') as int)
+        versionName (System.getenv('ZAYROVI_VERSION_NAME') ?: '1.0.6')
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -42,9 +42,9 @@ android {
         if (hasReleaseKeystore) {
             release {
                 storeFile ksFile
-                storePassword System.getenv('AYROVI_KEYSTORE_PASSWORD')
-                keyAlias System.getenv('AYROVI_KEY_ALIAS')
-                keyPassword System.getenv('AYROVI_KEY_PASSWORD')
+                storePassword System.getenv('ZAYROVI_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ZAYROVI_KEY_ALIAS')
+                keyPassword System.getenv('ZAYROVI_KEY_PASSWORD')
             }
         }
     }

@@ -5,7 +5,7 @@ import { AdminPermission, AdminRole, hasPermission, permissionsForRole } from '.
 import { backfillEmployeesFromAdminUsers } from '../erp-core/identity';
 // (erp-core/identity is loaded lazily above: it imports this module through the admin audit helpers)
 
-const COOKIE_NAME = 'ayrovi_admin_session';
+const COOKIE_NAME = 'zayrovi_admin_session';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 
 export interface AdminIdentity {
@@ -56,7 +56,7 @@ function cookieValue(token: string, maxAgeSeconds: number): string {
 }
 
 export function ensureBootstrapAdmin(db: QatafoDatabase) {
-  const email = (process.env.ADMIN_EMAIL || 'admin@ayrovi.tn').trim().toLowerCase();
+  const email = (process.env.ADMIN_EMAIL || 'admin@zayrovi.com').trim().toLowerCase();
   const configuredPassword = process.env.ADMIN_PASSWORD;
   const resetToken = String(process.env.ADMIN_BOOTSTRAP_RESET || '').trim();
   const forceReset = resetToken.length > 0;
@@ -66,7 +66,7 @@ export function ensureBootstrapAdmin(db: QatafoDatabase) {
   // Comportement normal : ne créer un compte que s'il n'existe aucun administrateur.
   if (hasAdmins && !forceReset) return;
 
-  const password = configuredPassword || (process.env.NODE_ENV === 'production' ? '' : 'AyroviBeta2026!');
+  const password = configuredPassword || (process.env.NODE_ENV === 'production' ? '' : 'ZayroviBeta2026!');
   if (!password) {
     console.warn('[Admin] Aucun compte créé. Définissez ADMIN_EMAIL et ADMIN_PASSWORD puis redémarrez.');
     return;
@@ -132,7 +132,7 @@ export function ensureBootstrapAdmin(db: QatafoDatabase) {
   try {
     backfillEmployeesFromAdminUsers(db);
   } catch { /* identity is additive: never block the login bootstrap over it */ }
-  if (!configuredPassword) console.warn('[Admin] Compte de développement créé: admin@ayrovi.tn (changez ADMIN_PASSWORD avant production).');
+  if (!configuredPassword) console.warn('[Admin] Compte de développement créé: admin@zayrovi.com (changez ADMIN_PASSWORD avant production).');
   if (forceReset) console.info(`[Admin] Compte administrateur créé en mode reset pour ${email}.`);
 }
 

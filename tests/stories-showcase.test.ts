@@ -36,7 +36,7 @@ describe('Stories showcase — settings come from the dashboard', () => {
   });
 
   test('super admin authenticates', async () => {
-    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
   });
@@ -124,8 +124,8 @@ describe('Stories showcase — settings come from the dashboard', () => {
     expect(overlay).toMatch(/linear-gradient\(to top/);
     // pastille claire + texte sombre, jamais de pavé orangé
     const badge = /\.stories-showcase__badge\s*\{[^}]*\}/.exec(indexCss)?.[0] ?? '';
-    expect(badge).toMatch(/background:\s*var\(--ayrovi-bg-main\)/);
-    expect(badge).toMatch(/color:\s*var\(--ayrovi-text-primary\)/);
+    expect(badge).toMatch(/background:\s*var\(--zayrovi-bg-main\)/);
+    expect(badge).toMatch(/color:\s*var\(--zayrovi-text-primary\)/);
   });
 
   test('the header carries the title, the subtitle then the « explore » link', () => {
@@ -156,19 +156,19 @@ describe('Stories showcase — settings come from the dashboard', () => {
     expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
 
     // Le modèle fourni est un bloc ENTIER posé sur un fond NOIR, titre et texte en blanc.
-    expect(block).toMatch(/\.stories-showcase \{[\s\S]*?background:\s*var\(--ayrovi-text-primary\)/);
-    expect(block).toMatch(/\.stories-showcase__title \{[\s\S]*?color:\s*var\(--ayrovi-bg-main\)/);
-    expect(block).toMatch(/\.stories-showcase__cta \{[\s\S]*?color:\s*var\(--ayrovi-bg-main\)/);
+    expect(block).toMatch(/\.stories-showcase \{[\s\S]*?background:\s*var\(--zayrovi-text-primary\)/);
+    expect(block).toMatch(/\.stories-showcase__title \{[\s\S]*?color:\s*var\(--zayrovi-bg-main\)/);
+    expect(block).toMatch(/\.stories-showcase__cta \{[\s\S]*?color:\s*var\(--zayrovi-bg-main\)/);
     // Sur fond noir, le texte secondaire est du blanc translucide — jamais #666, illisible.
     expect(block).toMatch(/\.stories-showcase__subtitle \{[\s\S]*?rgba\(255,\s*255,\s*255/);
-    expect(block).not.toMatch(/--ayrovi-text-secondary/);
+    expect(block).not.toMatch(/--zayrovi-text-secondary/);
 
     // Charte v4.2.0 (violet au minimum) : plus aucun violet dans le bloc. La flèche du lien
     // « Explorer toutes les stories » suit la couleur du lien (blanc sur le fond noir) — un
     // accent décoratif n'est pas une fonction.
-    expect(block).not.toMatch(/--ayrovi-accent-on-dark|--ayrovi-cta\b/);
+    expect(block).not.toMatch(/--zayrovi-accent-on-dark|--zayrovi-cta\b/);
     expect(block).toMatch(/\.stories-showcase__cta > svg \{[^}]*color: currentColor/);
-    expect(block).not.toMatch(/--ayrovi-color-brand-(?:orange|accent)/);
+    expect(block).not.toMatch(/--zayrovi-color-brand-(?:orange|accent)/);
     // le voile sous le texte est noir (monochrome), jamais orangé
     expect(block).not.toMatch(/rgba\(\s*2[0-9]{2}\s*,\s*1[0-9]{2}/);
   });

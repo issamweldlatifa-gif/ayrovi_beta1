@@ -56,8 +56,8 @@ describe('jetons générés', () => {
     const families = [...new Set(Object.values(FONTS).flatMap((set) => [set.regular, set.medium, set.semibold, set.bold, set.heading]))].sort();
     expect(families).toEqual([
       'NotoSansArabic-Bold', 'NotoSansArabic-Regular',
-      'AyroviExtracted-Bold', 'AyroviExtracted-Heading', 'AyroviExtracted-Medium',
-      'AyroviExtracted-Regular', 'AyroviExtracted-SemiBold',
+      'ZayroviExtracted-Bold', 'ZayroviExtracted-Heading', 'ZayroviExtracted-Medium',
+      'ZayroviExtracted-Regular', 'ZayroviExtracted-SemiBold',
     ].sort());
     for (const family of families) {
       expect(() => readFileSync(new URL(`../assets/fonts/${family}.ttf`, import.meta.url))).not.toThrow();

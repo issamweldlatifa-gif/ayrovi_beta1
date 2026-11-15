@@ -104,7 +104,7 @@ const KEY_SHAPE = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$/;
 /**
  * كل الحرفيات في المصدر اللي **تشبه مفتاح ترجمة معروف**: الشكل `a.b` وأوّل
  * قطعة منها عائلة موجودة في القاموس (`cart`, `aywebs`, `status`…). الشرط
- * الثاني هو اللي يمنع الأفعال المزيفة: `app.ayrovi.mobile`، `2.0.0`،
+ * الثاني هو اللي يمنع الأفعال المزيفة: `app.zayrovi.mobile`، `2.0.0`،
  * `shared/publicSeo` ما يدخلوش.
  */
 export function keyReferences(source: string, dictionary: Dictionary): string[] {

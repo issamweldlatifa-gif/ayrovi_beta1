@@ -1,28 +1,28 @@
 import { CLEAN, CleanSpeakerIcon } from './CleanVisuals';
-import { MerchantRating } from '../../ayrovix/components/MerchantRating';
+import { MerchantRating } from '../../zayrovix/components/MerchantRating';
 import React, { useEffect, useRef } from 'react';
 import { AssistantMessageActions } from './AssistantMessageActions';
 import { useMessageReader } from './useMessageReader';
 import { cleanAssistantText } from './composerPolicy';
 import { Mic, ArrowUpRight, MessageSquare, PackageCheck, ShoppingBag, LensBox } from '../QatafoIcons';
-import { AyroviMotionState } from '../AyroviMotion';
-import type { AyrovixOrderSelection } from '../../shop';
+import { ZayroviMotionState } from '../ZayroviMotion';
+import type { ZayrovixOrderSelection } from '../../shop';
 import { ShopProductScreen } from '../../shop';
-import type { AyrovixCandidate, AyrovixProduct } from '../../ayrovix/types';
+import type { ZayrovixCandidate, ZayrovixProduct } from '../../zayrovix/types';
 import { AssistantMessage, FeedbackValue } from './types';
-import { isDisplayableCandidate } from '../../ayrovix/services/resultPolicy';
+import { isDisplayableCandidate } from '../../zayrovix/services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
 
 interface AssistantMessagesProps {
   messages: AssistantMessage[];
   historyNotice?: React.ReactNode;
   isGenerating: boolean;
-  motionState: AyroviMotionState;
+  motionState: ZayroviMotionState;
   isDark: boolean;
   copiedId: string | null;
   feedbackPending?: Record<string, boolean>;
   feedback: Record<string, FeedbackValue | undefined>;
-  selectedProduct: { messageId: string; product: AyrovixProduct; priceVerified: boolean } | null;
+  selectedProduct: { messageId: string; product: ZayrovixProduct; priceVerified: boolean } | null;
   productBusyId: string;
   isOrdering: boolean;
   onPrompt: (prompt: string) => void;
@@ -31,8 +31,8 @@ interface AssistantMessagesProps {
   onFeedback: (message: AssistantMessage, value: FeedbackValue) => void;
   onOpenComment: (message: AssistantMessage) => void;
   onOpenLens: () => void;
-  onSelectProduct: (messageId: string, candidate: AyrovixCandidate) => void;
-  onProductOrder: (selection: AyrovixOrderSelection) => Promise<void>;
+  onSelectProduct: (messageId: string, candidate: ZayrovixCandidate) => void;
+  onProductOrder: (selection: ZayrovixOrderSelection) => Promise<void>;
   onOpenCart: () => void;
   onProductBack: () => void;
   customerFirstName?: string;
@@ -41,17 +41,17 @@ interface AssistantMessagesProps {
 }
 
 const primaryActions = [
-  { title: ['Analyser une image', 'تحليل صورة'], subtitle: ['Produit ou capture d’écran', 'منتج أو لقطة شاشة'], prompt: ['Explique-moi AYROVIX Lens et propose-moi de l’ouvrir.', 'اشرح لي عدسة AYROVIX واقترح فتحها.'] },
+  { title: ['Analyser une image', 'تحليل صورة'], subtitle: ['Produit ou capture d’écran', 'منتج أو لقطة شاشة'], prompt: ['Explique-moi ZAYROVIX Lens et propose-moi de l’ouvrir.', 'اشرح لي عدسة ZAYROVIX واقترح فتحها.'] },
   { title: ['Calculer un prix', 'حساب سعر'], subtitle: ['Estimez votre prix', 'تقدير السعر'], prompt: ['Je veux calculer le prix final d’un produit.', 'أريد حساب السعر النهائي لمنتج.'] },
   { title: ['Rechercher un produit', 'البحث عن منتج'], subtitle: ['Trouvez et vérifiez', 'ابحث وتحقّق'], prompt: ['Aide-moi à rechercher un produit à acheter.', 'ساعدني في البحث عن منتج لشرائه.'] },
   { title: ['Suivre une commande', 'تتبع طلب'], subtitle: ['Voir votre commande', 'عرض طلبك'], prompt: ['Je veux suivre ma commande.', 'أريد تتبع طلبي.'] },
 ] as const;
 
-const CandidateImage = ({ product }: { product: AyrovixCandidate }) => {
+const CandidateImage = ({ product }: { product: ZayrovixCandidate }) => {
   const images = [...new Set([product.image, ...(product.images || [])].filter(Boolean))] as string[];
   const [index, setIndex] = React.useState(0);
   if (!images[index]) return <div className="grid h-full place-items-center text-muted"><ShoppingBag size={35}/></div>;
-  return <img src={images[index]} alt="" referrerPolicy="no-referrer" onError={() => setIndex((value) => value + 1)} className="ayrovix-product-media-contain" loading="lazy" decoding="async" draggable={false}/>;
+  return <img src={images[index]} alt="" referrerPolicy="no-referrer" onError={() => setIndex((value) => value + 1)} className="zayrovix-product-media-contain" loading="lazy" decoding="async" draggable={false}/>;
 };
 
 const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, isOrdering, onSelectProduct, onProductOrder, onOpenCart, onProductBack }: Pick<AssistantMessagesProps, 'selectedProduct' | 'productBusyId' | 'isOrdering' | 'onSelectProduct' | 'onProductOrder' | 'onOpenCart' | 'onProductBack'> & { message: AssistantMessage; isDark: boolean }) => {
@@ -162,7 +162,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                       {message.lensSummary.warnings.length > 0 && <ul className="mt-1 list-inside list-disc space-y-1">{message.lensSummary.warnings.map((warning, warningIndex) => <li key={warningIndex}>{warning}</li>)}</ul>}
                     </div>}
                     {message.role === 'assistant' && !isGenerating && Boolean(message.suggestedActions?.length) && <div className="mt-2.5 flex flex-wrap gap-2">{(message.suggestedActions || []).map((action) => <button key={action.label} type="button" onClick={() => onPrompt(action.prompt)} className={`min-h-11 rounded-control border px-3.5 text-xs font-bold transition active:scale-95 ${isDark ? 'border-white/15 bg-white/5 text-white/90 hover:bg-white/10' : 'border-line bg-white text-ink hover:bg-surface'}`}>{action.label}</button>)}</div>}
-                    {message.role === 'assistant' && message.text.includes('[[OPEN_LENS]]') && <button type="button" onClick={onOpenLens} className="ay-btn-primary mt-3 w-full text-xs"><LensBox size={19}/>{tr('Ouvrir AYROVIX Lens', 'فتح عدسة AYROVIX')}</button>}
+                    {message.role === 'assistant' && message.text.includes('[[OPEN_LENS]]') && <button type="button" onClick={onOpenLens} className="ay-btn-primary mt-3 w-full text-xs"><LensBox size={19}/>{tr('Ouvrir ZAYROVIX Lens', 'فتح عدسة ZAYROVIX')}</button>}
                   </div>
                   {message.role === 'assistant' && !isLastAssistantStreaming && <AssistantMessageActions message={message} isDark={isDark} copied={copiedId === message.id} generating={isGenerating} feedback={feedback[message.id]} feedbackPending={feedbackPending[message.id]} reader={reader} onCopy={onCopy} onRegenerate={onRegenerate} onFeedback={onFeedback} onOpenComment={onOpenComment}/>}
                 </div>

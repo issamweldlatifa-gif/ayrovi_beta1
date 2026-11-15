@@ -7,13 +7,13 @@ const provider = vi.hoisted(() => ({
   complete: vi.fn(),
 }));
 vi.mock('../src/ai-core/core', () => ({
-  getAyroviAiCore: () => ({ responses: () => provider }),
+  getZayroviAiCore: () => ({ responses: () => provider }),
 }));
 import {
   parseLocalizedProducts,
   localizeProducts,
-} from '../src/ayrovix/services/productLocalization';
-import { createAyrovixRouter } from '../src/ayrovix/routes';
+} from '../src/zayrovix/services/productLocalization';
+import { createZayrovixRouter } from '../src/zayrovix/routes';
 const coat = {
   name: 'Veste',
   category: 'jacket',
@@ -27,7 +27,7 @@ const bag = {
   box: [0.4, 0.4, 0.2, 0.25],
 };
 const app = express();
-app.use('/api/ayrovix', createAyrovixRouter({} as any, {} as any));
+app.use('/api/zayrovix', createZayrovixRouter({} as any, {} as any));
 let color = 10;
 async function photo() {
   return sharp({
@@ -105,7 +105,7 @@ describe('Grounding validation, not guessed finger rectangles', () => {
 describe('Localization upload API', () => {
   it('returns item coordinates separately from merchant discovery', async () => {
     const res = await request(app)
-      .post('/api/ayrovix/localize')
+      .post('/api/zayrovix/localize')
       .attach('image', await photo(), 'scene.png');
     expect(res.status).toBe(200);
     expect(res.body.data.products).toHaveLength(2);
@@ -117,11 +117,11 @@ describe('Localization upload API', () => {
     });
   });
   it('rejects missing image and invalid points before provider access', async () => {
-    expect((await request(app).post('/api/ayrovix/localize')).status).toBe(400);
+    expect((await request(app).post('/api/zayrovix/localize')).status).toBe(400);
     expect(
       (
         await request(app)
-          .post('/api/ayrovix/localize')
+          .post('/api/zayrovix/localize')
           .field('point', '{"x":7,"y":0}')
           .attach('image', await photo(), 'scene.png')
       ).status
@@ -132,7 +132,7 @@ describe('Localization upload API', () => {
     expect(
       (
         await request(app)
-          .post('/api/ayrovix/localize')
+          .post('/api/zayrovix/localize')
           .attach('image', Buffer.from('not an image'), 'scene.png')
       ).status
     ).toBe(400);
@@ -141,7 +141,7 @@ describe('Localization upload API', () => {
   it('reports unavailable rather than inventing a central box', async () => {
     provider.isConfigured.mockReturnValue(false);
     const res = await request(app)
-      .post('/api/ayrovix/localize')
+      .post('/api/zayrovix/localize')
       .attach('image', await photo(), 'scene.png');
     expect(res.status).toBe(503);
     expect(res.body.code).toBe('LOCALIZATION_UNAVAILABLE');
@@ -149,7 +149,7 @@ describe('Localization upload API', () => {
   });
   it('returns empty when a touched spot contains no grounded product', async () => {
     const res = await request(app)
-      .post('/api/ayrovix/localize')
+      .post('/api/zayrovix/localize')
       .field('point', '{"x":0.95,"y":0.95}')
       .attach('image', await photo(), 'scene.png');
     expect(res.body.data.products).toEqual([]);

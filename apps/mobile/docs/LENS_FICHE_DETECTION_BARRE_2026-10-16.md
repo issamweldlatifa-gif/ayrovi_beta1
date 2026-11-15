@@ -34,8 +34,8 @@ visible, sans que le tiroir mange l'écran.
 
 | Pièce | Où | Ce qu'elle fait | État |
 |---|---|---|---|
-| Détection serveur | `POST /api/ayrovix/detect` (`src/ayrovix/routes.ts:505`) | Réduit l'image à 768 px, appelle la vision, renvoie `products[]` = `{ name, category, box }` (boîtes normalisées 0..1) | ✅ en service |
-| Budget détection | `src/ayrovix/services/ai.ts:707` | `AYROVIX_DETECT_TIMEOUT_MS` = 9 s (4–20 s) | ✅ |
+| Détection serveur | `POST /api/zayrovix/detect` (`src/zayrovix/routes.ts:505`) | Réduit l'image à 768 px, appelle la vision, renvoie `products[]` = `{ name, category, box }` (boîtes normalisées 0..1) | ✅ en service |
+| Budget détection | `src/zayrovix/services/ai.ts:707` | `ZAYROVIX_DETECT_TIMEOUT_MS` = 9 s (4–20 s) | ✅ |
 | Client mobile | `detectProducts` (`apps/mobile/src/api/lens.ts:565`) | 15 s de délai, après quoi **repli silencieux** sur le cadre manquant | ⚠️ |
 | Overlay Live | `LensLiveOverlay.tsx` | Dessine les boîtes **sur l'aperçu caméra**, tape pour choisir | ✅ |
 | Boîtes après photo | `LensSelectionView.tsx:196` | Dessine les boîtes détectées sur la photo, tape une boîte → cadre | ✅ |
@@ -223,7 +223,7 @@ multiplie pas « pour voir » : une cible = un objet **que l'utilisateur a chois
 
 | Sujet | Fichier |
 |---|---|
-| Détection (serveur) | `src/ayrovix/routes.ts:505` · `src/ayrovix/services/ai.ts:707` |
+| Détection (serveur) | `src/zayrovix/routes.ts:505` · `src/zayrovix/services/ai.ts:707` |
 | Détection (client) | `apps/mobile/src/api/lens.ts:563` (`LENS_DETECT_TIMEOUT_MS`) |
 | Boîtes + cadre | `apps/mobile/src/features/lens/LensSelectionView.tsx` · `lensSelection.ts` |
 | Overlay Live | `apps/mobile/src/features/lens/LensLiveOverlay.tsx` |
@@ -231,7 +231,7 @@ multiplie pas « pour voir » : une cible = un objet **que l'utilisateur a chois
 | Géométrie du Sheet (3 crans, 69 %, aperçu 112 px) | `apps/mobile/src/features/lens/lensSheet.ts` |
 | Notice temporaire à remplacer par la barre | `apps/mobile/app/lens.tsx:1383` (`styles.tip`), `showTip` |
 | Contrôle de la recherche (ROI) | `apps/mobile/app/lens.tsx` (`searchSelection`) |
-| Contrat SSE (pour la barre vivante) | `src/ayrovix/routes.ts:186-505` · fiche 1, §3 |
+| Contrat SSE (pour la barre vivante) | `src/zayrovix/routes.ts:186-505` · fiche 1, §3 |
 
 ---
 

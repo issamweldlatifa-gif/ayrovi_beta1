@@ -17,10 +17,10 @@ Official palette (2026-10-15), identity `v4.2.0` — the same values as the mobi
 |---|---|---|---|
 | Canvas / ink | `#FFFFFF` / `#0A0A0A` | `#0A0A0A` / `#FFFFFF` | Page base and readable text |
 | Surface | `#F2F2F2` | `#171717` | Secondary backgrounds, skeletons |
-| Main action (`action`, `--ayrovi-cta`) | `#571EF6` with white text (7.19:1) | same | **Only** the main purchase/sign-in action: add to bag, checkout, pay, sign in (`.s-cta`, `.ay-btn-cta`, `Button variant="cta"`, auth submit) |
-| Generic primary button (`--ayrovi-button-bg`) | `#0A0A0A` with white text | — | Every other solid button (`.ay-btn-primary`, `Button variant="primary"`) |
+| Main action (`action`, `--zayrovi-cta`) | `#571EF6` with white text (7.19:1) | same | **Only** the main purchase/sign-in action: add to bag, checkout, pay, sign in (`.s-cta`, `.ay-btn-cta`, `Button variant="cta"`, auth submit) |
+| Generic primary button (`--zayrovi-button-bg`) | `#0A0A0A` with white text | — | Every other solid button (`.ay-btn-primary`, `Button variant="primary"`) |
 | Accent text / focus | `#571EF6` | `#926DF9` | Important links, active tab / bottom-nav item, selected-option border, focus ring |
-| Light violet (`accentSoft`, `--ayrovi-accent-soft`) | `#C5B2F4` with `#0A0A0A` text (10.4:1) | same | Background of a selected option or active state — always with a violet border/indicator, never white text, never large areas or product cards |
+| Light violet (`accentSoft`, `--zayrovi-accent-soft`) | `#C5B2F4` with `#0A0A0A` text (10.4:1) | same | Background of a selected option or active state — always with a violet border/indicator, never white text, never large areas or product cards |
 | Information | `#666666` on `#F2F2F2` | `#BDBDBD` on `#171717` | Quiet information, tips, and neutral status |
 | Success / error | Green / dark red tokens | Accessible light variants | Outcome states only (unchanged) |
 
@@ -31,20 +31,20 @@ Official palette (2026-10-15), identity `v4.2.0` — the same values as the mobi
 - Never place violet frames or backgrounds around product photos; product images keep their original colors. Prices, sizes and ratings stay in ink. Promotion badges and decorative rules are neutral.
 - One violet main action per screen at most, and not on every screen; secondary actions are ink or outlined. Adjacent violet elements are avoided.
 
-Use the semantic information tokens (`--ayrovi-info`, `--ayrovi-info-soft`) for new informational copy or surfaces. Do not use success/error colors to style neutral information.
+Use the semantic information tokens (`--zayrovi-info`, `--zayrovi-info-soft`) for new informational copy or surfaces. Do not use success/error colors to style neutral information.
 
 ## Geometry
 
-- **Primary CTA:** capsule, `999px` (`--ayrovi-radius-cta`).
-- **Fields and secondary controls:** softly rounded, `12px` (`--ayrovi-radius-control`).
-- **Cards:** `16px` (`--ayrovi-radius-card`).
-- **Sheets:** `32px` at the exposed edge (`--ayrovi-radius-sheet`).
+- **Primary CTA:** capsule, `999px` (`--zayrovi-radius-cta`).
+- **Fields and secondary controls:** softly rounded, `12px` (`--zayrovi-radius-control`).
+- **Cards:** `16px` (`--zayrovi-radius-card`).
+- **Sheets:** `32px` at the exposed edge (`--zayrovi-radius-sheet`).
 - **Product media:** stays full-bleed/square unless a component explicitly needs a different crop.
 - **Icon-only controls:** keep at least a `44px` touch target, with a bare glyph by default—no square tile, border, or persistent background. A selected/action state may use a circular indicator, never a square frame.
 
 ## Typography
 
-The shared Ayrovi Extracted Sans / Noto Sans Arabic stack remains local to the project. Body defaults are weight `500`, Latin line-height `1.4`, and Arabic line-height `1.55`; headings use weight `650`, line-height `1.18` / Arabic `1.42`; prices use weight `600`. Keep important labels readable and do not increase line-height to create visual weight—use the weight token instead.
+The shared Zayrovi Extracted Sans / Noto Sans Arabic stack remains local to the project. Body defaults are weight `500`, Latin line-height `1.4`, and Arabic line-height `1.55`; headings use weight `650`, line-height `1.18` / Arabic `1.42`; prices use weight `600`. Keep important labels readable and do not increase line-height to create visual weight—use the weight token instead.
 
 ## Component contract
 

@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-const HISTORY_KEY = '__ayroviNavigationV1';
+const HISTORY_KEY = '__zayroviNavigationV1';
 const MAX_STACK_DEPTH = 16;
 
 export type NavigationPayload = Record<string, string | number | boolean | null | undefined>;

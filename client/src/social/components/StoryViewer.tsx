@@ -9,7 +9,7 @@ import type { StoryGroup } from './StoryCircles';
 import { useLocale } from '../../i18n/LocaleContext';
 
 const IMAGE_DURATION = 5000;
-const SAVED_KEY = 'ayrovi_saved';
+const SAVED_KEY = 'zayrovi_saved';
 
 function savedInitially(id: string): boolean {
   try { const value = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]'); return Array.isArray(value) && value.includes(id); } catch { return false; }

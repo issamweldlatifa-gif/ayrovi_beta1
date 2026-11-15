@@ -259,7 +259,7 @@ input { font: inherit; }
   fitHeight(); ph.classList.add('fit');
   const S = { live: { state: 'idle', sel: 0, timer: null }, photo: { set: null, i: 0, key: null, sel: null }, searchTimer: null };
 
-  // ── géométrie (même logique que le site : client/src/ayrovix/services/lensSelectionGeometry.ts) ──
+  // ── géométrie (même logique que le site : client/src/zayrovix/services/lensSelectionGeometry.ts) ──
   const coverRect = (W, H, nw, nh, px, py) => { const s = Math.max(W / nw, H / nh); const w = nw * s, h = nh * s; return { x: (W - w) * px, y: (H - h) * py, w, h }; };
   const containRect = (W, H, nw, nh) => { const s = Math.min(W / nw, H / nh); const w = nw * s, h = nh * s; return { x: (W - w) / 2, y: (H - h) / 2, w, h }; };
   const pct = (b) => ({ x: b[0] * 100, y: b[1] * 100, w: b[2] * 100, h: b[3] * 100 });

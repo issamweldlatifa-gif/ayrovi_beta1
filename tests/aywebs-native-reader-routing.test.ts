@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { findAyWebsStore } from '../shared/aywebsStores';
 
-const ANDROID_ACTIVITY = 'android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java';
+const ANDROID_ACTIVITY = 'android/app/src/main/java/app/zayrovi/mobile/AyWebsBrowseActivity.java';
 const activitySource = readFileSync(ANDROID_ACTIVITY, 'utf8');
 
 describe('AYWEBs Android natif — routage des readers par domaine', () => {

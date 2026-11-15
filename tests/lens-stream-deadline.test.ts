@@ -6,10 +6,10 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 
-const routes = readFileSync('src/ayrovix/routes.ts', 'utf8');
+const routes = readFileSync('src/zayrovix/routes.ts', 'utf8');
 const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
-const visual = readFileSync('src/ayrovix/services/visualSearch.ts', 'utf8');
-const clientApi = readFileSync('client/src/ayrovix/services/lensApi.ts', 'utf8');
+const visual = readFileSync('src/zayrovix/services/visualSearch.ts', 'utf8');
+const clientApi = readFileSync('client/src/zayrovix/services/lensApi.ts', 'utf8');
 
 describe('délai global de /analyze-image', () => {
   it('arme un délai qui répond par ANALYZE_TIMEOUT', () => {

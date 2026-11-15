@@ -33,7 +33,7 @@
  * écritures). Version dans les noms (`_v1`) : un changement de règle = nouveaux
  * noms + réinstallation propre.
  *
- * Le jour du passage à PostgreSQL (voir docs/AYROVI_ARCHITECTURE_SCALABLE_AR_2026-11-12.md),
+ * Le jour du passage à PostgreSQL (voir docs/ZAYROVI_ARCHITECTURE_SCALABLE_AR_2026-11-12.md),
  * la même table et les mêmes règles se traduisent en triggers PL/pgSQL.
  */
 import type Database from 'better-sqlite3';

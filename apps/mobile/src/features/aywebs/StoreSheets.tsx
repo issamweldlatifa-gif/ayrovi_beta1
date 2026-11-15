@@ -25,7 +25,7 @@ import { SheetHeader } from '@/design/sheet/SheetHeader';
 import { useI18n } from '@/i18n';
 import type { TranslationKey } from '@/i18n/keys';
 import { fetchAyWebsCart } from '@/api/aywebs';
-import { fetchAyroviCart } from '@/api/cart';
+import { fetchZayroviCart } from '@/api/cart';
 import { addExternalFavorite } from '@/api/account';
 import { addErrorMessage } from '@/features/aywebs/addError';
 import { useSession } from '@/state/session';
@@ -42,7 +42,7 @@ import {
 const SEGMENT_LABEL: Record<StoreCartSegment, TranslationKey> = {
   thisStore: 'aywebs.cart.thisStore',
   allStores: 'aywebs.cart.allStores',
-  ayrovi: 'aywebs.cart.ayrovi',
+  zayrovi: 'aywebs.cart.zayrovi',
 };
 
 export interface StoreCartSheetProps {
@@ -63,23 +63,23 @@ export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCa
     enabled: visible && Boolean(sessionId),
     retry: false,
   });
-  const ayrovi = useQuery({
-    queryKey: ['store-sheet', 'ayrovi-cart', sessionId],
-    queryFn: ({ signal }) => fetchAyroviCart({ sessionId, signal }),
+  const zayrovi = useQuery({
+    queryKey: ['store-sheet', 'zayrovi-cart', sessionId],
+    queryFn: ({ signal }) => fetchZayroviCart({ sessionId, signal }),
     enabled: visible && Boolean(sessionId),
     retry: false,
   });
 
-  const active = segment === 'ayrovi' ? ayrovi : aywebs;
+  const active = segment === 'zayrovi' ? zayrovi : aywebs;
   const sections = storeCartSections(segment, {
     aywebs: aywebs.data ?? null,
-    ayrovi: ayrovi.data ?? null,
+    zayrovi: zayrovi.data ?? null,
     storeId,
   });
 
   const unifiedRows = useMemo<OfficialCartItemModel[]>(() => {
-    if (segment === 'ayrovi') {
-      return (ayrovi.data?.items ?? []).map((line) => {
+    if (segment === 'zayrovi') {
+      return (zayrovi.data?.items ?? []).map((line) => {
         const parsed = splitCartVariantLabels({
           requestedColor: line.requestedColor,
           requestedSize: line.requestedSize,
@@ -116,13 +116,13 @@ export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCa
         rawVariant: parsed.extra || (!parsed.color && !parsed.size ? item.variantLabel : ''),
       };
     });
-  }, [ayrovi.data?.items, aywebs.data?.items, segment, storeId]);
+  }, [zayrovi.data?.items, aywebs.data?.items, segment, storeId]);
 
   const totalUnits = unifiedRows.reduce((sum, item) => sum + item.quantity, 0);
-  const summaryTotalTnd = segment === 'ayrovi'
-    ? (ayrovi.data?.totalTND ?? null)
-    : (aywebs.data?.totals?.productSubtotalTnd ?? ayrovi.data?.totalTND ?? null);
-  const summaryDeliveryTnd = segment === 'ayrovi' ? (ayrovi.data?.deliveryTND ?? null) : null;
+  const summaryTotalTnd = segment === 'zayrovi'
+    ? (zayrovi.data?.totalTND ?? null)
+    : (aywebs.data?.totals?.productSubtotalTnd ?? zayrovi.data?.totalTND ?? null);
+  const summaryDeliveryTnd = segment === 'zayrovi' ? (zayrovi.data?.deliveryTND ?? null) : null;
 
   return (
     <AppSheet

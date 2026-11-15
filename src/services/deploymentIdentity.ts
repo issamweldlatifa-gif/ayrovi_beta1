@@ -30,9 +30,9 @@ const trim = (value: unknown): string => String(value ?? '').trim();
 export function deploymentIdentity(env: Environment = process.env): DeploymentIdentity {
   const commit = trim(env.RENDER_GIT_COMMIT)
     || trim(env.RENDER_GIT_COMMIT_SHA)
-    || trim(env.AYROVI_BUILD_COMMIT);
+    || trim(env.ZAYROVI_BUILD_COMMIT);
   const branch = trim(env.RENDER_GIT_BRANCH)
-    || trim(env.AYROVI_BUILD_BRANCH);
+    || trim(env.ZAYROVI_BUILD_BRANCH);
   return {
     commit: (commit || 'local').slice(0, 12),
     branch: (branch || 'unknown').slice(0, 80),

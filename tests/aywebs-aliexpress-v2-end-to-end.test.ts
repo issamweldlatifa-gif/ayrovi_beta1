@@ -24,7 +24,7 @@ import request from 'supertest';
 import { JSDOM } from 'jsdom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-ae-v2-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-ae-v2-')), 'cache');
 
 import { detectAyWebsStore } from '../shared/aywebsStores';
 import { QatafoDatabase } from '../src/db/database';
@@ -394,7 +394,7 @@ describe('AYWEBs — AliExpress v2 : activation, capture avancée, matrice SKU e
     expect(resolveRes.body.data.currency).toBe('EUR');
     expect(resolveRes.body.data.source_product_id).toBe('AE-1005008811223344');
     expect(resolveRes.body.data.selected_variant.attributes).toEqual({ Couleur: 'Noir', Prise: 'EU Plug' });
-    expect(resolveRes.body.data.ayrovi_pricing.total_tnd).toBe(expectedQuote.totalTND);
+    expect(resolveRes.body.data.zayrovi_pricing.total_tnd).toBe(expectedQuote.totalTND);
     expect(resolveRes.body.data.variant_details).toHaveLength(4);
 
     const cartRes = await request(app)
@@ -459,13 +459,13 @@ describe('AYWEBs — AliExpress v2 : activation, capture avancée, matrice SKU e
       quoted_price: 23.99,
       quoted_currency: 'USD',
       availability: 'LOW_STOCK',
-      ayrovi_pricing: { total_tnd: expectedRedEuQuote.totalTND },
+      zayrovi_pricing: { total_tnd: expectedRedEuQuote.totalTND },
     });
     expect(redUsDetail).toMatchObject({
       source_variant_id: 'ae:12000039004',
       quoted_price: null,
       availability: 'OUT_OF_STOCK',
-      ayrovi_pricing: null,
+      zayrovi_pricing: null,
     });
 
     /* 2. Sélection dans la feuille de Red + EU Plug ($23.99, stock bas = 3) -> devis signé + photo Red + ajout panier */
@@ -485,7 +485,7 @@ describe('AYWEBs — AliExpress v2 : activation, capture avancée, matrice SKU e
     expect(redEuRes.body.data.availability.state).toBe('LOW_STOCK');
     expect(redEuRes.body.data.availability.quantity_hint).toBe(3);
     expect(redEuRes.body.data.images[0]).toBe('https://ae01.alicdn.com/kf/S222222red.jpg');
-    expect(redEuRes.body.data.ayrovi_pricing.total_tnd).toBe(expectedRedEuQuote.totalTND);
+    expect(redEuRes.body.data.zayrovi_pricing.total_tnd).toBe(expectedRedEuQuote.totalTND);
 
     const cartAddRes = await request(app)
       .post('/api/v1/aywebs/cart/items')
@@ -608,6 +608,6 @@ describe('AYWEBs — AliExpress v2 : activation, capture avancée, matrice SKU e
       })
       .expect(201);
     expect(res.body.capture.used).toBe(true);
-    expect(res.body.data.ayrovi_pricing?.total_tnd).toBeGreaterThan(0);
+    expect(res.body.data.zayrovi_pricing?.total_tnd).toBeGreaterThan(0);
   });
 });

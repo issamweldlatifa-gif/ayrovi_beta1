@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { enhanceForOcr } from '../ayrovix/services/imagePrep';
+import { enhanceForOcr } from '../zayrovix/services/imagePrep';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { detectStrikeInRegion } from './strikeDetection';
 import type { OcerexOcrToken } from './types';

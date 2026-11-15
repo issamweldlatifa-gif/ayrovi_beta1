@@ -106,7 +106,7 @@ export function fcmMessageBody(token: string, payload: FcmPayload): Record<strin
       token,
       notification: { title: String(payload.title).slice(0, 200), body: String(payload.body).slice(0, 1000) },
       data: Object.keys(data).length > 0 ? data : undefined,
-      android: { priority: 'HIGH', notification: { channelId: 'ayrovi-default', sound: 'default' } },
+      android: { priority: 'HIGH', notification: { channelId: 'zayrovi-default', sound: 'default' } },
     },
   };
 }

@@ -49,7 +49,7 @@ function product(overrides: Partial<AyWebsResolvedProduct> = {}): AyWebsResolved
     availability: { state: 'AVAILABLE', reason: '', checkedAt: '2026-10-28T00:00:00.000Z', source: 'server', quantityHint: null },
     purchaseMode: 'ASSISTED',
     integrationType: 'URL_REQUEST',
-    ayroviPricing: null,
+    zayroviPricing: null,
     variantGroups: [],
     variantDetails: [],
     variantQuotes: [],

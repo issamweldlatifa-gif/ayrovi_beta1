@@ -12,9 +12,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const routes = readFileSync('src/ayrovix/routes.ts', 'utf8');
-const pipeline = readFileSync('src/ayrovix/services/lensPipeline.ts', 'utf8');
-const engine = readFileSync('src/ayrovix/services/lensEngine.ts', 'utf8');
+const routes = readFileSync('src/zayrovix/routes.ts', 'utf8');
+const pipeline = readFileSync('src/zayrovix/services/lensPipeline.ts', 'utf8');
+const engine = readFileSync('src/zayrovix/services/lensEngine.ts', 'utf8');
 
 describe('une seule orchestration', () => {
   it('la route publique n’appelle plus les moteurs elle-même', () => {
@@ -84,7 +84,7 @@ describe('une seule orchestration', () => {
     // Le même message part par le flux ET par le JSON.
     expect(routes).toContain('visualSearchMessage(error.code)');
     // Et SerpApi a le budget qu'il faut : sous 18 s, le moteur Google Lens expire.
-    const visual = readFileSync('src/ayrovix/services/visualSearch.ts', 'utf8');
+    const visual = readFileSync('src/zayrovix/services/visualSearch.ts', 'utf8');
     expect(visual).toContain('Math.max(18_000, configured)');
   });
 });
@@ -93,20 +93,20 @@ describe('moteur — comportement réel', () => {
   let dir = '';
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-engine-'));
-    process.env.AYROVI_LENS_CACHE_DIR = dir;
-    delete process.env.AYROVI_LENS_CACHE;
+    process.env.ZAYROVI_LENS_CACHE_DIR = dir;
+    delete process.env.ZAYROVI_LENS_CACHE;
     vi.resetModules();
   });
   afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); vi.restoreAllMocks(); vi.resetModules(); });
 
   async function loadEngine(vision: any, matches: any) {
-    vi.doMock('../src/ayrovix/services/ai', () => ({ identifyProduct: vision }));
-    vi.doMock('../src/ayrovix/services/visualSearch', () => ({ serpApiVisualSearch: matches }));
-    vi.doMock('../src/ayrovix/services/lensSignals', async () => {
-      const actual = await vi.importActual<any>('../src/ayrovix/services/lensSignals');
+    vi.doMock('../src/zayrovix/services/ai', () => ({ identifyProduct: vision }));
+    vi.doMock('../src/zayrovix/services/visualSearch', () => ({ serpApiVisualSearch: matches }));
+    vi.doMock('../src/zayrovix/services/lensSignals', async () => {
+      const actual = await vi.importActual<any>('../src/zayrovix/services/lensSignals');
       return { ...actual, readLensSignals: async () => actual.EMPTY_SIGNALS };
     });
-    return import('../src/ayrovix/services/lensEngine');
+    return import('../src/zayrovix/services/lensEngine');
   }
 
   it('la vision peut échouer pendant que la recherche visuelle réussit', async () => {
@@ -153,8 +153,8 @@ describe('moteur — comportement réel', () => {
  * modification — ils ne masquaient rien, ils empêchaient seulement de vérifier.
  */
 describe('télémétrie Lens', () => {
-  const routes = readFileSync('src/ayrovix/routes.ts', 'utf8');
-  const contract = readFileSync('src/ayrovix/services/lensPerformanceTrace.ts', 'utf8');
+  const routes = readFileSync('src/zayrovix/routes.ts', 'utf8');
+  const contract = readFileSync('src/zayrovix/services/lensPerformanceTrace.ts', 'utf8');
 
   it('aucune mesure n’est posée en contournant le type', () => {
     const marks = routes.match(/mark\(trace,[^;]*?\)/g) || [];
@@ -184,29 +184,29 @@ describe('échéance de reconnaissance', () => {
   let dir = '';
   beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-deadline-'));
-    process.env.AYROVI_LENS_CACHE_DIR = dir;
+    process.env.ZAYROVI_LENS_CACHE_DIR = dir;
     vi.resetModules();
   });
   afterEach(() => {
     fs.rmSync(dir, { recursive: true, force: true });
-    delete process.env.AYROVI_LENS_VISION_DEADLINE_MS;
-    delete process.env.AYROVI_LENS_MATCHES_DEADLINE_MS;
+    delete process.env.ZAYROVI_LENS_VISION_DEADLINE_MS;
+    delete process.env.ZAYROVI_LENS_MATCHES_DEADLINE_MS;
     vi.restoreAllMocks();
     vi.resetModules();
   });
 
   async function loadEngine(vision: any, matches: any) {
-    vi.doMock('../src/ayrovix/services/ai', () => ({ identifyProduct: vision }));
-    vi.doMock('../src/ayrovix/services/visualSearch', () => ({ serpApiVisualSearch: matches }));
-    vi.doMock('../src/ayrovix/services/lensSignals', async () => {
-      const actual = await vi.importActual<any>('../src/ayrovix/services/lensSignals');
+    vi.doMock('../src/zayrovix/services/ai', () => ({ identifyProduct: vision }));
+    vi.doMock('../src/zayrovix/services/visualSearch', () => ({ serpApiVisualSearch: matches }));
+    vi.doMock('../src/zayrovix/services/lensSignals', async () => {
+      const actual = await vi.importActual<any>('../src/zayrovix/services/lensSignals');
       return { ...actual, readLensSignals: async () => actual.EMPTY_SIGNALS };
     });
-    return import('../src/ayrovix/services/lensEngine');
+    return import('../src/zayrovix/services/lensEngine');
   }
 
   it('un moteur qui ne répond jamais n’immobilise plus la requête', async () => {
-    process.env.AYROVI_LENS_VISION_DEADLINE_MS = '2000';
+    process.env.ZAYROVI_LENS_VISION_DEADLINE_MS = '2000';
     const { recognizeImage } = await loadEngine(
       vi.fn(() => new Promise(() => {})),            // ne se résout jamais
       vi.fn().mockResolvedValue([{ id: 'offre' }]),
@@ -220,7 +220,7 @@ describe('échéance de reconnaissance', () => {
   });
 
   it('un résultat arrivé trop tard n’est ni rendu ni mémorisé', async () => {
-    process.env.AYROVI_LENS_VISION_DEADLINE_MS = '2000';
+    process.env.ZAYROVI_LENS_VISION_DEADLINE_MS = '2000';
     const late = vi.fn(() => new Promise((resolve) => setTimeout(() => resolve({ brand: 'Tardif' }), 4000)));
     const { recognizeImage } = await loadEngine(late, vi.fn().mockResolvedValue([{ id: 'offre' }]));
     const image = Buffer.from('tardif');
@@ -234,7 +234,7 @@ describe('échéance de reconnaissance', () => {
   }, 15000);
 
   it('l’échéance est bornée : ni trop courte, ni sans effet', async () => {
-    const engine = readFileSync('src/ayrovix/services/lensEngine.ts', 'utf8');
+    const engine = readFileSync('src/zayrovix/services/lensEngine.ts', 'utf8');
     expect(engine).toContain('Math.min(30_000, Math.max(2_000, raw))');
     expect(engine).toContain("deadlineMs('VISION', 18_000)");
     expect(engine).toContain("deadlineMs('MATCHES', 26_000)");

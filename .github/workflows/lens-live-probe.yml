@@ -3,10 +3,10 @@ name: Lens — détection Live du serveur (sonde)
 # Répond à UNE question, avec un fait : « le mode Live de Z Lens repère-t-il
 # vraiment des produits sur le serveur publié ? »
 #
-# Live (application mobile) envoie une image réduite à POST /api/ayrovix/detect
+# Live (application mobile) envoie une image réduite à POST /api/zayrovix/detect
 # dès que le téléphone est stable ; la photo et la Galerie s'en servent aussi
 # pour poser le cadre sur le plus grand produit. Sans fournisseur IA configuré
-# sur Render, la route répond 503 (AYROVIX_UNAVAILABLE) : Live ne fait alors que
+# sur Render, la route répond 503 (ZAYROVIX_UNAVAILABLE) : Live ne fait alors que
 # filmer et le cadre ne se pose sur aucun produit. Ça ne se voit pas dans le code.
 #
 # Lecture seule : aucun secret, aucune écriture, UNE détection (modèle vision
@@ -29,7 +29,7 @@ on:
     paths:
       - '.github/workflows/lens-live-probe.yml'
       # Tout changement du chemin de détection est vérifié sur le serveur publié.
-      - 'src/ayrovix/**'
+      - 'src/zayrovix/**'
       - 'src/ai-core/**'
 
 permissions:
@@ -71,7 +71,7 @@ jobs:
           echo "::warning title=Deploiement non termine::Render ne sert pas encore $EXPECTED ; la mesure ci-dessous porte sur le commit réellement servi."
           exit 0
 
-      - name: POST /api/ayrovix/detect avec une vraie photo
+      - name: POST /api/zayrovix/detect avec une vraie photo
         run: |
           # Une absence de réponse est une MESURE, pas une panne du workflow.
           set +e +o pipefail
@@ -87,7 +87,7 @@ jobs:
           done
           COMMIT=$(printf '%s' "$READY" | sed -n 's/.*"commit": *"\([A-Za-z0-9]*\)".*/\1/p' | head -1)
 
-          # Même fournisseur que /detect : getAyroviAiCore().responses().
+          # Même fournisseur que /detect : getZayroviAiCore().responses().
           curl -s --max-time 30 -o /tmp/status.json "$BASE/api/assistant/status" 2>/dev/null
           AI=$(python3 -c 'import json
           try: d=json.load(open("/tmp/status.json")).get("data") or {}
@@ -96,9 +96,9 @@ jobs:
 
           START=$(date +%s%3N)
           CODE=$(curl -s -o /tmp/detect.json -w '%{http_code}' --max-time 60 \
-            -H 'Accept: application/json' -H "x-ayrovi-client: $CLIENT" \
+            -H 'Accept: application/json' -H "x-zayrovi-client: $CLIENT" \
             -F "image=@$IMAGE;type=image/jpeg" \
-            "$BASE/api/ayrovix/detect" 2>/dev/null)
+            "$BASE/api/zayrovix/detect" 2>/dev/null)
           MS=$(( $(date +%s%3N) - START ))
           [ -z "$CODE" ] && CODE=000
 
@@ -115,7 +115,7 @@ jobs:
           COUNT=${1:-0}; ERROR=${2:-unreadable}; NAMES=${3:-none}; BOXES=${4:-none}; REASON=${5:-none}; MODEL=${6:-none}
 
           printf '## Détection Live sur `%s`\n\n' "$BASE" >> "$S"
-          printf -- '- Commit servi : `%s`\n- Fournisseur IA : `%s`\n- `POST /api/ayrovix/detect` : **%s** en %s ms, %s produit(s), code `%s`\n- Diagnostic : `%s` (modèle `%s`)\n- Produits : `%s`\n- Boîtes [x,y,w,h] : `%s`\n' \
+          printf -- '- Commit servi : `%s`\n- Fournisseur IA : `%s`\n- `POST /api/zayrovix/detect` : **%s** en %s ms, %s produit(s), code `%s`\n- Diagnostic : `%s` (modèle `%s`)\n- Produits : `%s`\n- Boîtes [x,y,w,h] : `%s`\n' \
             "${COMMIT:-?}" "$AI" "$CODE" "$MS" "$COUNT" "$ERROR" "$REASON" "$MODEL" "$NAMES" "$BOXES" >> "$S"
 
           if [ "$CODE" = "200" ] && [ "$COUNT" -gt 0 ] 2>/dev/null; then

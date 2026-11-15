@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """يولّد 10 نماذج (أنماط) لتصميم عائلة أيقونات ZAYROVI — 5 أيقونات × 10 أنماط.
-المخرجات: docs/ayrovi-icon-styles.html + /tmp/icon-styles.png"""
+المخرجات: docs/zayrovi-icon-styles.html + /tmp/icon-styles.png"""
 import re
 from pathlib import Path
 
@@ -155,7 +155,7 @@ def build():
 
 def main():
     svg = build()
-    out = Path('/home/user/ayrovi_beta1/docs/ayrovi-icon-styles.html')
+    out = Path('/home/user/ayrovi_beta1/docs/zayrovi-icon-styles.html')
     html = ('<!DOCTYPE html><html lang="ar"><head><meta charset="utf-8"/>'
             '<meta name="viewport" content="width=device-width, initial-scale=1"/>'
             '<title>ZAYROVI Icon Styles — 10 نماذج</title>'

@@ -20,7 +20,7 @@ export const OrderConfirmationShell: React.FC<OrderConfirmationShellProps> = ({
     aria-labelledby={ariaLabelledBy}
     data-order-confirmation
   >
-    <div className="order-confirmation-container ayrovix-theme-scope">
+    <div className="order-confirmation-container zayrovix-theme-scope">
       {children}
     </div>
   </div>

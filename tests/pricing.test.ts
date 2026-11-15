@@ -8,7 +8,7 @@ import {
   millimes,
   type PricingRules,
 } from '../src/services/pricing';
-import { estimateTnd } from '../src/ayrovix/services/currency';
+import { estimateTnd } from '../src/zayrovix/services/currency';
 import { db } from '../src/server';
 
 function rules(overrides: Partial<PricingRules> = {}): PricingRules {

@@ -31,7 +31,7 @@ let content: { agent: any; csrf: string };
 let orders: { agent: any; csrf: string };
 
 async function makeSession(role: 'CONTENT_MANAGER' | 'ORDER_MANAGER') {
-  const email = `cat-${role.toLowerCase()}-${suffix}@test.ayrovi.tn`;
+  const email = `cat-${role.toLowerCase()}-${suffix}@test.zayrovi.com`;
   const password = 'CatalogueSecure2026!';
   const created = await superAgent.post('/api/admin/users').set('x-csrf-token', superCsrf)
     .send({ name: `Catalogue ${role}`, email, password, role });
@@ -58,7 +58,7 @@ describe('catalogue foundation (P2.1)', () => {
   beforeAll(async () => {
     superAgent = request.agent(app);
     const login = await superAgent.set('User-Agent', 'ZAYROVI-CatalogueTest/1.0 (vitest)')
-      .post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+      .post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     superCsrf = login.body.data.csrfToken;
     content = await makeSession('CONTENT_MANAGER');
@@ -591,7 +591,7 @@ describe('catalogue foundation (P2.1)', () => {
 
   describe('database safety: fresh, existing, repeated', () => {
     test('a fresh database gets the catalogue shape from the constructor alone', () => {
-      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-cat-'));
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-cat-'));
       const fresh = new QatafoDatabase(path.join(dir, 'fresh.sqlite'));
       try {
         const tables = fresh.all<{ name: string }>(`SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'catalogue_%' ORDER BY name`).map((row) => row.name);

@@ -10,7 +10,7 @@
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import request from 'supertest';
 import { app, db } from '../src/server';
-import { catalogSearch } from '../src/ayrovix/services/search';
+import { catalogSearch } from '../src/zayrovix/services/search';
 
 const PAST = '2026-01-01T00:00:00.000Z';
 const FUTURE = '2099-01-01T00:00:00.000Z';
@@ -40,12 +40,12 @@ describe('Produits temporaires — Reels, Stories, Publications', () => {
   });
 
   beforeAll(async () => {
-    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
     const now = new Date().toISOString();
     db.run(`INSERT OR REPLACE INTO story_publishers (id,slug,name,subtitle,avatar,official,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?)`, CHANNEL, 'temp-products-test', 'AYROVI', '', '', 1, now, now);
+      VALUES (?,?,?,?,?,?,?,?)`, CHANNEL, 'temp-products-test', 'ZAYROVI', '', '', 1, now, now);
     db.run(`INSERT OR REPLACE INTO products (id,name,image,status,final_price,original_price,currency,stock_status,source_platform,visibility,created_at,updated_at)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, CATALOG_ACTIVE, 'Chemise catalogue', '/m/chemise.jpg', 'ACTIVE', 60, 40, 'TND', 'AVAILABLE', 'OTHER', 'CATALOG', now, now);
     db.run(`INSERT OR REPLACE INTO products (id,name,image,status,final_price,original_price,currency,stock_status,source_platform,visibility,created_at,updated_at)
@@ -80,7 +80,7 @@ describe('Produits temporaires — Reels, Stories, Publications', () => {
     expect(contentList.body.data.some((p: any) => p.id === id)).toBe(true);
   });
 
-  // Catalogue ZAYROVI désactivé (AYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
+  // Catalogue ZAYROVI désactivé (ZAYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
 
   test.skip('la recherche de catalogue ne retourne jamais un produit temporaire (un produit catalogue au même nom, oui)', async () => {
     const created = await createTemp({ name: 'Blouson Zephyrix temporaire', status: 'ACTIVE' });

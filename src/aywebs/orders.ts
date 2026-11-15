@@ -199,7 +199,7 @@ export function createAyWebsOrder(db: QatafoDatabase, input: CreateAyWebsOrderIn
       db.run(
         `INSERT INTO ayweb_checkout_fees (id,order_id,kind,label,amount_tnd,currency,source,computed_at,detail)
          VALUES (?,?,?,?,?,?,?,?,?)`,
-        `aywfee_${randomUUID()}`, orderId, fee.kind, fee.labelFr, fee.amountTnd, 'TND', 'ayrovi_pricing_engine',
+        `aywfee_${randomUUID()}`, orderId, fee.kind, fee.labelFr, fee.amountTnd, 'TND', 'zayrovi_pricing_engine',
         preview.computedAt, JSON.stringify({ code: fee.code, labelAr: fee.labelAr, uncertain: fee.uncertain, ...fee.detail }),
       );
     }
@@ -445,7 +445,7 @@ export async function createAyWebsPaymentIntent(
        pay_url,initiated_at,created_at,updated_at)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     paymentId, paymentNumber, order.id, input.accountId, method, 'PENDING', order.totals.payableTnd, 'TND',
-    method === 'CARD' ? 'STRIPE' : 'AYROVI_MANUAL', '', '', now, now, now,
+    method === 'CARD' ? 'STRIPE' : 'ZAYROVI_MANUAL', '', '', now, now, now,
   );
 
   if (order.status === 'CHECKOUT') {
@@ -471,14 +471,14 @@ export async function createAyWebsPaymentIntent(
       const account = input.accountId
         ? db.get<any>(`SELECT display_name,email,phone FROM customer_accounts WHERE id=?`, input.accountId)
         : null;
-      const names = String(account?.display_name || 'Client AYROVI').trim().split(/\s+/);
+      const names = String(account?.display_name || 'Client ZAYROVI').trim().split(/\s+/);
       const gateway = await initiateStripeCardPayment({
         orderId: order.id,
         orderNumber: order.orderNumber,
         transactionNumber: paymentNumber,
         amountTnd: order.totals.payableTnd,
         firstName: names.shift() || 'Client',
-        lastName: names.join(' ') || 'AYROVI',
+        lastName: names.join(' ') || 'ZAYROVI',
         phone: String(account?.phone || ''),
         email: String(account?.email || ''),
       });

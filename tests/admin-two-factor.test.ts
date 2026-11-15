@@ -52,7 +52,7 @@ describe('TOTP — primitives (RFC 6238)', () => {
 });
 
 describe('TOTP — parcours console', () => {
-  const email = `totp-${Date.now()}@test.ayrovi.tn`;
+  const email = `totp-${Date.now()}@test.zayrovi.com`;
   const password = 'TotpSecure2026!x';
   let superAgent: ReturnType<typeof request.agent>;
   let superCsrf = '';
@@ -60,7 +60,7 @@ describe('TOTP — parcours console', () => {
 
   beforeAll(async () => {
     superAgent = request.agent(app);
-    const login = await superAgent.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await superAgent.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     superCsrf = login.body.data.csrfToken;
     const created = await superAgent.post('/api/admin/users').set('x-csrf-token', superCsrf)

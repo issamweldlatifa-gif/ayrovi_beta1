@@ -47,7 +47,7 @@ describe('validateSlideValues', () => {
   it('lien externe : http(s) uniquement, jamais un schéma libre', () => {
     const bad = validateSlideValues({ ...VALID, destination_type: 'EXTERNAL', destination_value: 'javascript:alert(1)' });
     expect(bad.errors.destination_value).toBeTruthy();
-    const good = validateSlideValues({ ...VALID, destination_type: 'EXTERNAL', destination_value: 'https://ayrovi.tn/promo' });
+    const good = validateSlideValues({ ...VALID, destination_type: 'EXTERNAL', destination_value: 'https://zayrovi.com/promo' });
     expect(good.errors.destination_value).toBeUndefined();
   });
 

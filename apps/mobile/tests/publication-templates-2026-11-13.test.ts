@@ -46,7 +46,7 @@ describe('lecture des blocs Publication', () => {
 
   it('éditeur absent : « zayrovi team » (consigne du propriétaire), suivi via l’éditeur officiel', () => {
     const parsed = parsePublicationBlock(block({ publisher: undefined }));
-    expect(parsed?.publisher).toEqual({ id: 'pub_ayrovi', name: 'zayrovi team' });
+    expect(parsed?.publisher).toEqual({ id: 'pub_zayrovi', name: 'zayrovi team' });
     expect(parsePublicationBlock(block({ publisher: { id: 'pub_x', name: 'Autre' } }))?.publisher).toEqual({ id: 'pub_x', name: 'Autre' });
   });
 
@@ -93,7 +93,7 @@ describe('cotes des modèles (planches Zalando, 360 dp)', () => {
     // 13/11 : plus de rond blanc sur la photo — le cœur nu vient du système de cartes.
     expect(tokenSource).not.toMatch(/\bheart(Small)?:/);
     expect(token('cardReferenceLine')).toBe(18);
-    expect(tokenSource).toContain("'AyroviExtracted-Heading'");
+    expect(tokenSource).toContain("'ZayroviExtracted-Heading'");
     // Pilule « + Suivre » : cible tactile ≥ 48 dp (planche : 95 px).
     expect(token('followHeight')).toBeGreaterThanOrEqual(token('touch'));
   });

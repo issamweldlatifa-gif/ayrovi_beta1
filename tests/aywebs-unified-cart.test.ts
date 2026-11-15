@@ -3,9 +3,9 @@
  *
  * Ce que le test verrouille, sur le vrai HTTP du routeur AYWEBs :
  *   1. l'ajout (POST /cart/items) synchronise immédiatement la ligne vers le
- *      panier ZAYROVI au prix du moteur tarifaire — `ayrovi.linked=true` dans
+ *      panier ZAYROVI au prix du moteur tarifaire — `zayrovi.linked=true` dans
  *      la réponse, et la ligne ZAYROVI existe avec priceTND > 0 ;
- *   2. GET /cart annote chaque ligne de `linked_to_ayrovi` (items ET groupes)
+ *   2. GET /cart annote chaque ligne de `linked_to_zayrovi` (items ET groupes)
  *      et les totaux de `unlinked_units` ;
  *   3. une ligne ajoutée SANS pont (écriture domaine directe) reste
  *      linked=false et compte dans unlinked_units — puis le pont HTTP la lie
@@ -19,7 +19,7 @@ import express from 'express';
 import request from 'supertest';
 import { describe, expect, test, vi } from 'vitest';
 
-process.env.AYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-unified-')), 'cache');
+process.env.ZAYROVI_VARIANT_CACHE_DIR = join(mkdtempSync(join(tmpdir(), 'aywebs-unified-')), 'cache');
 
 import { QatafoDatabase } from '../src/db/database';
 import { DEFAULT_CUSTOMS_CATEGORIES, type PricingRules } from '../src/services/pricing';
@@ -80,7 +80,7 @@ function harness() {
 
 const HEADERS = { 'x-session-id': SESSION_ID };
 
-describe('panier unifié AYWEBs ↔ ZAYROVI (linked_to_ayrovi / unlinked_units)', () => {
+describe('panier unifié AYWEBs ↔ ZAYROVI (linked_to_zayrovi / unlinked_units)', () => {
   test("liaison à l'ajout, annotation au pont, compteur sans doublon", async () => {
     const { db, ctx, app } = harness();
 
@@ -90,15 +90,15 @@ describe('panier unifié AYWEBs ↔ ZAYROVI (linked_to_ayrovi / unlinked_units)'
       .set(HEADERS)
       .send({ source_url: AMAZON_URL, quantity: 1 });
     expect(added.status).toBe(201);
-    expect(added.body.data.ayrovi.linked).toBe(true);
+    expect(added.body.data.zayrovi.linked).toBe(true);
 
-    const ayroviLines = () => db.getItems(SESSION_ID, null);
-    expect(ayroviLines()).toHaveLength(1);
-    expect(Number(ayroviLines()[0].priceTND)).toBeGreaterThan(0);
+    const zayroviLines = () => db.getItems(SESSION_ID, null);
+    expect(zayroviLines()).toHaveLength(1);
+    expect(Number(zayroviLines()[0].priceTND)).toBeGreaterThan(0);
 
     const afterAdd = await request(app).get('/api/v1/aywebs/cart').set(HEADERS);
     expect(afterAdd.status).toBe(200);
-    expect(afterAdd.body.data.items[0].linked_to_ayrovi).toBe(true);
+    expect(afterAdd.body.data.items[0].linked_to_zayrovi).toBe(true);
     expect(afterAdd.body.data.totals.unlinked_units).toBe(0);
 
     // 2. ligne ajoutée SANS pont (écriture domaine) : non liée, comptée une fois.
@@ -109,26 +109,26 @@ describe('panier unifié AYWEBs ↔ ZAYROVI (linked_to_ayrovi / unlinked_units)'
     const mixed = await request(app).get('/api/v1/aywebs/cart').set(HEADERS);
     expect(mixed.body.data.totals.units).toBe(3);
     expect(mixed.body.data.totals.unlinked_units).toBe(2);
-    expect(mixed.body.data.items.map((item: any) => item.linked_to_ayrovi).sort()).toEqual([false, true]);
+    expect(mixed.body.data.items.map((item: any) => item.linked_to_zayrovi).sort()).toEqual([false, true]);
     // Les groupes portent la même annotation que les lignes.
-    const groupFlags = mixed.body.data.groups.flatMap((group: any) => group.items.map((item: any) => item.linked_to_ayrovi)).sort();
+    const groupFlags = mixed.body.data.groups.flatMap((group: any) => group.items.map((item: any) => item.linked_to_zayrovi)).sort();
     expect(groupFlags).toEqual([false, true]);
 
     // Badge unifié : unités ZAYROVI (1) + non liées (2) = 3, jamais plus.
-    const ayroviUnits = ayroviLines().reduce((sum, line) => sum + Number(line.quantity), 0);
-    expect(ayroviUnits + mixed.body.data.totals.unlinked_units).toBe(3);
+    const zayroviUnits = zayroviLines().reduce((sum, line) => sum + Number(line.quantity), 0);
+    expect(zayroviUnits + mixed.body.data.totals.unlinked_units).toBe(3);
 
     // 3. le pont HTTP lie la ligne restante sans doubler la ligne ZAYROVI.
     const bridged = await request(app)
-      .post('/api/v1/aywebs/cart/bridge-to-ayrovi')
+      .post('/api/v1/aywebs/cart/bridge-to-zayrovi')
       .set(HEADERS)
       .send({});
     expect(bridged.status).toBe(200);
 
     const afterBridge = await request(app).get('/api/v1/aywebs/cart').set(HEADERS);
-    expect(afterBridge.body.data.items.every((item: any) => item.linked_to_ayrovi === true)).toBe(true);
+    expect(afterBridge.body.data.items.every((item: any) => item.linked_to_zayrovi === true)).toBe(true);
     expect(afterBridge.body.data.totals.unlinked_units).toBe(0);
-    expect(ayroviLines()).toHaveLength(2);
-    expect(ayroviLines().reduce((sum, line) => sum + Number(line.quantity), 0)).toBe(3);
+    expect(zayroviLines()).toHaveLength(2);
+    expect(zayroviLines().reduce((sum, line) => sum + Number(line.quantity), 0)).toBe(3);
   });
 });

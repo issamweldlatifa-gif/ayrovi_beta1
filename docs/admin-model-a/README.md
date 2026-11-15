@@ -190,7 +190,7 @@ Titre d'onglet : `ZAYROVI · Console d'exploitation` (la console ne s'annonce pl
 marketing du site public).
 Captures : `audit/login-desktop.png` et `audit/login-mobile.png` — elles sont régénérées par l'audit.
 
-Identité : la connexion utilise le **verrou A.ROVI** (`logo-ayrovi-lockup-white-violet.svg` sur le
+Identité : la connexion utilise le **verrou A.ROVI** (`logo-zayrovi-lockup-white-violet.svg` sur le
 panneau en encre, version noire sur la carte mobile). Le nom n'y est donc plus écrit deux fois. Un
 détail mesuré au passage : dans un conteneur flex en colonne, l'étirement transversal écrasait la
 hauteur imposée et centrait l'art dans une boîte trop large — l'emblème n'était plus aligné sur le
@@ -203,8 +203,8 @@ titre. Corrigé par `align-self: flex-start` (mesuré : boîte 170 × 32, calée
 | **Export CSV** | `client/src/admin/csv.ts`, branché sur le moteur de ressources (`public-nav`, `inventory`) et sur le journal d'audit | Exporte **exactement les lignes et les colonnes affichées**. BOM UTF-8 (Excel lit l'arabe et les accents), échappement RFC 4180, et **formules neutralisées** : une valeur de CMS commençant par `=` ne s'exécute jamais dans le tableur de l'administrateur. |
 | **Journal d'audit : Rafraîchir + Exporter** | `AuditPage` | On consulte un journal juste après une action : on ne devrait pas recharger toute la console pour voir sa propre trace. Le bouton d'export est grisé avec son motif quand la page est vide. |
 
-Preuves en direct (Playwright, téléchargement réel) : `ayrovi-public-nav-20260922-0452.csv` (4 lignes,
-BOM présent), `ayrovi-journal-audit-20260922-0452.csv` (20 lignes, en-tête `Date,Acteur,Action,Module,
+Preuves en direct (Playwright, téléchargement réel) : `zayrovi-public-nav-20260922-0452.csv` (4 lignes,
+BOM présent), `zayrovi-journal-audit-20260922-0452.csv` (20 lignes, en-tête `Date,Acteur,Action,Module,
 Cible,Valeur précédente,Nouvelle valeur`).
 
 ### 5.4 Durcissement : mise en cadre

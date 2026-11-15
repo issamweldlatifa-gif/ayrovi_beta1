@@ -28,14 +28,14 @@ describe('هوية النشر', () => {
     expect(deploymentIdentity({
       RENDER_GIT_COMMIT: 'aaaaaaaaaaaa1111',
       RENDER_GIT_COMMIT_SHA: 'bbbbbbbbbbbb2222',
-      AYROVI_BUILD_COMMIT: 'cccccccccccc3333',
+      ZAYROVI_BUILD_COMMIT: 'cccccccccccc3333',
       RENDER_GIT_BRANCH: 'main',
-      AYROVI_BUILD_BRANCH: 'beta',
+      ZAYROVI_BUILD_BRANCH: 'beta',
     })).toEqual({ commit: 'aaaaaaaaaaaa', branch: 'main' });
   });
 
   test('البدائل تخدم كان الأسماء الرسمية غايبة (بناء محلي ولا CI)', () => {
-    expect(deploymentIdentity({ AYROVI_BUILD_COMMIT: 'dddddddddddd4444', AYROVI_BUILD_BRANCH: 'ci' }))
+    expect(deploymentIdentity({ ZAYROVI_BUILD_COMMIT: 'dddddddddddd4444', ZAYROVI_BUILD_BRANCH: 'ci' }))
       .toEqual({ commit: 'dddddddddddd', branch: 'ci' });
     expect(deploymentIdentity({ RENDER_GIT_COMMIT_SHA: 'eeeeeeeeeeee5555' }))
       .toEqual({ commit: 'eeeeeeeeeeee', branch: 'unknown' });

@@ -37,7 +37,7 @@ import { useTheme } from '@/design/theme';
 import { FadeIn, useAfterPush } from '@/design/motion';
 import { AppText } from '@/design/ui';
 import { useI18n } from '@/i18n';
-import { addCatalogToCart, fetchAyroviCart } from '@/api/cart';
+import { addCatalogToCart, fetchZayroviCart } from '@/api/cart';
 import { isApiError } from '@/api/errors';
 import { fetchCommercePolicy } from '@/api/checkout';
 import { fetchCatalogProduct, fetchCatalogProducts, normalizeStockStatus } from '@/api/catalog';
@@ -147,9 +147,9 @@ export default function ProductScreen() {
   }, [justAddedAt]);
 
   const cartSummary = useQuery({
-    queryKey: ['cart', 'ayrovi', sessionId],
-    enabled: Boolean(sessionId) && typeof fetchAyroviCart === 'function',
-    queryFn: ({ signal }) => fetchAyroviCart({ sessionId, signal }),
+    queryKey: ['cart', 'zayrovi', sessionId],
+    enabled: Boolean(sessionId) && typeof fetchZayroviCart === 'function',
+    queryFn: ({ signal }) => fetchZayroviCart({ sessionId, signal }),
     staleTime: 15_000,
     retry: false,
   });

@@ -168,7 +168,7 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     // Le duo n'a pas de « Suivre » (planche Fred Perry / GUESS).
     expect(screen.queryByTestId('publication-block-pair-follow')).toBeNull();
     // Le bouton suit l'éditeur officiel.
-    expect(mockFollowCalls.every(([id]) => id === 'pub_ayrovi')).toBe(true);
+    expect(mockFollowCalls.every(([id]) => id === 'pub_zayrovi')).toBe(true);
     fireEvent.press(pill);
     expect(mockFollowPress).toHaveBeenCalledTimes(1);
     // 14/11 : J'aime · Commenter · Partager — UNE barre, sous le seul bloc non sponsorisé.
@@ -200,8 +200,8 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     expect(StyleSheet.flatten(frame.props.style).height).toBe(metrics.container.cardImageHeight);
     const style = (id: string) => StyleSheet.flatten(screen.getByTestId(`publication-block-box-product-p4-${id}`).props.style);
     for (const id of ['brand', 'name', 'price']) expect(style(id).fontSize).toBe(16);
-    expect(style('brand').fontFamily).toBe('AyroviExtracted-Bold');
-    expect(style('name').fontFamily).toBe('AyroviExtracted-Regular');
+    expect(style('brand').fontFamily).toBe('ZayroviExtracted-Bold');
+    expect(style('name').fontFamily).toBe('ZayroviExtracted-Regular');
     const heart = StyleSheet.flatten(screen.getByTestId('publication-block-box-product-p4-heart').props.style);
     // 13/11 — système de cartes : cœur nu (cible 40, aucun rond blanc qui cache la photo).
     expect([heart.width, heart.height, heart.top]).toEqual([40, 40, 2]);
@@ -209,7 +209,7 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     // Titre du bandeau : plus grand que tout le reste du bloc, coupe « Heading ».
     const title = StyleSheet.flatten(screen.getByTestId('publication-block-box-title').props.style);
     expect(title.fontSize).toBeGreaterThan(16);
-    expect(title.fontFamily).toBe('AyroviExtracted-Heading');
+    expect(title.fontFamily).toBe('ZayroviExtracted-Heading');
   });
 
   it('cœur : un invité reçoit la feuille de connexion, un client bascule son vrai favori', () => {

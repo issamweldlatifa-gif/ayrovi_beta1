@@ -77,7 +77,7 @@ Cette révision remplace les décisions précédentes concernant l'absence de su
 - Bleu commun de vérification et des textes/flèches de découverte : **#0078CA**, contraste calculé sur blanc **4,626119:1**. C'est une teinte proche de la référence, légèrement assombrie pour le texte ; aucun relevé exact de son RGB n'est prétendu. Le primaire global #0113B5 et les autres accents Publication restent inchangés.
 - Tous les modèles placent désormais le titre visible puis la description avant le média, avec le CTA de découverte seul après le média. Les modèles sociaux continuent de masquer leur titre autonome. Pas de duplication des textes, pas de bloc commercial ajouté ; rythme compact, collage, galerie, vidéo et Voir plus inline conservés.
 - Normalisation CRM vers `descriptionPosition: above` en conservant la compatibilité des anciennes entrées `below`. L'éditeur et son aperçu suivent cet ordre ; retrait des anciennes vignettes et blocs produits obsolètes dans l'aperçu, avec indication qu'un album y présente son premier média.
-- Migration unique `publication_publisher_team_v1`, appliquée au redémarrage local : uniquement le nom historique connu du publisher officiel `pub_ayrovi`, sans reseed de catalogue, sans modifier les autres éditeurs ni leurs dates/éditions personnalisées. Valeur par défaut neuve : Zayrovi Team.
+- Migration unique `publication_publisher_team_v1`, appliquée au redémarrage local : uniquement le nom historique connu du publisher officiel `pub_zayrovi`, sans reseed de catalogue, sans modifier les autres éditeurs ni leurs dates/éditions personnalisées. Valeur par défaut neuve : Zayrovi Team.
 
 ### Validation de cette révision
 

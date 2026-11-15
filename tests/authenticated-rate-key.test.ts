@@ -7,7 +7,7 @@ import { rateLimit } from '../src/server';
 
 let db: QatafoDatabase;
 const ip = '198.51.100.12';
-const req = (token?: string, cookie = false) => ({ ip, headers: token ? cookie ? { cookie: `ayrovi_customer_session=${token}` } : { authorization: `Bearer ${token}` } : {} } as any);
+const req = (token?: string, cookie = false) => ({ ip, headers: token ? cookie ? { cookie: `zayrovi_customer_session=${token}` } : { authorization: `Bearer ${token}` } : {} } as any);
 function account() {
   const id = `security-${randomUUID()}`;
   const now = new Date().toISOString();

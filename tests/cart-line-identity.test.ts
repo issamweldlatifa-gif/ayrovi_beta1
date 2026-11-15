@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { app, db } from '../src/server';
 import { tunisIsoDay } from '../src/services/promotions';
-import { recordVariantContract } from '../src/ayrovix/services/variantAvailability';
+import { recordVariantContract } from '../src/zayrovix/services/variantAvailability';
 
 const session = `price-flow-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const sessionHeaders = { 'x-session-id': session };

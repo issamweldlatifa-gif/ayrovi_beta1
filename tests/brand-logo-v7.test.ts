@@ -90,7 +90,7 @@ describe("v7 zebra Z — master, sources and the retired logos", () => {
     expect(read("client/index.html")).toContain(`d="${BRAND_SYMBOL.d}"`);
     expect(read("client/index.html")).toContain(`transform="${BOOT_SYMBOL_TRANSFORM}"`);
     expect(read("apps/mobile/src/design/brandWordmark.ts")).toContain(JSON.stringify(master.wordmark.d));
-    const lockup = read("client/public/media/logo-ayrovi-lockup-black.svg");
+    const lockup = read("client/public/media/logo-zayrovi-lockup-black.svg");
     expect(lockup).toContain(master.wordmark.d);
     expect(lockup).toContain(master.symbol.d);
     expect(lockup).not.toMatch(/<(?:text|line|polygon|rect)\b/); // outlined lowercase, no divider
@@ -104,7 +104,7 @@ describe("v7 zebra Z — master, sources and the retired logos", () => {
       `${masterDir}/source/symbol.png`,
       `${masterDir}/source/reference-lockup.png`,
       "assets/brand/archive",
-      "client/public/media/logo-ayrovi-symbol-blue.svg",
+      "client/public/media/logo-zayrovi-symbol-blue.svg",
       "client/src/design/zMark.ts",
       "apps/mobile/src/design/zMark.ts",
       "docs/zayrovi-heart-handshake-identity-2026-11-08.md",
@@ -120,7 +120,7 @@ describe("v7 zebra Z — master, sources and the retired logos", () => {
   });
 
   test("page loading is the grey Z fitted inside its ring; only the arc animates, with reduced-motion support", () => {
-    const loader = read("client/public/media/logo-ayrovi-loading.svg");
+    const loader = read("client/public/media/logo-zayrovi-loading.svg");
     expect(loader).toContain(`fill="#666666" d="${BRAND_SYMBOL.d}" transform="${BOOT_SYMBOL_TRANSFORM}"`);
     expect(loader).toContain("@media(prefers-reduced-motion:reduce){.arc{animation:none}}");
     const scale = Number(BOOT_SYMBOL_TRANSFORM.match(/scale\(([\d.]+)\)/)![1]);
@@ -137,11 +137,11 @@ describe("v7 zebra Z — shipped pixels", () => {
     ["apps/mobile/assets/images/adaptive-icon.png", ink, "striped"],
     ["apps/mobile/assets/images/splash-icon.png", ink, "striped"],
     ["apps/mobile/assets/images/splash-icon-dark.png", ink, "striped"],
-    ["client/public/media/logo-ayrovi-192.png", ink, "striped"],
-    ["client/public/media/logo-ayrovi-512.png", ink, "striped"],
-    ["client/public/media/logo-ayrovi-apple-touch.png", ink, "striped"],
-    ["client/public/media/logo-ayrovi.png", ink, "striped"],
-    ["client/public/media/logo-ayrovi-light.png", white, "striped"],
+    ["client/public/media/logo-zayrovi-192.png", ink, "striped"],
+    ["client/public/media/logo-zayrovi-512.png", ink, "striped"],
+    ["client/public/media/logo-zayrovi-apple-touch.png", ink, "striped"],
+    ["client/public/media/logo-zayrovi.png", ink, "striped"],
+    ["client/public/media/logo-zayrovi-light.png", white, "striped"],
     ["android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png", ink, "striped"],
     ["android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png", ink, "striped"],
     ["assets/icon.png", ink, "striped"],
@@ -161,7 +161,7 @@ describe("v7 zebra Z — shipped pixels", () => {
 
   test.each([
     "apps/mobile/assets/images/icon.png",
-    "client/public/media/logo-ayrovi-512.png",
+    "client/public/media/logo-zayrovi-512.png",
     "assets/icon.png",
     "assets/splash.png",
   ])("%s has a flat #FFFFFF background (no gradient)", async (file) => {
@@ -234,8 +234,8 @@ describe("v7 zebra Z — shipped pixels", () => {
 
   test("official avatars (site + app): white zebra Z on a black disc, round-fitted, never the retired blue symbol", () => {
     for (const file of ["StoryFeed", "ReelsViewer", "FullscreenMediaHeader", "StoryCircles"])
-      expect(read(`client/src/social/components/${file}.tsx`)).toContain('src="/media/logo-ayrovi-avatar.svg?v=7.0"');
-    const avatar = read("client/public/media/logo-ayrovi-avatar.svg");
+      expect(read(`client/src/social/components/${file}.tsx`)).toContain('src="/media/logo-zayrovi-avatar.svg?v=7.0"');
+    const avatar = read("client/public/media/logo-zayrovi-avatar.svg");
     expect(avatar).toContain(`<circle cx="256" cy="256" r="256" fill="${INK}"/>`);
     expect(avatar).toContain(`fill="${WHITE}" d="${BRAND_SYMBOL.d}"`);
     expect(read("apps/mobile/src/design/OfficialAvatar.tsx")).toContain("backgroundColor: BRAND.black");

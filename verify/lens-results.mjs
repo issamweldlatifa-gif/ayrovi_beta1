@@ -22,10 +22,10 @@ try{
   const browser=await type.launch();
   try{
    const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:'reduce'});
-   await context.addInitScript(locale=>localStorage.setItem('ayrovi.locale.v1',locale),locale);
+   await context.addInitScript(locale=>localStorage.setItem('zayrovi.locale.v1',locale),locale);
    const p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));
-   await p.route('**/*',r=>{const u=r.request().url();return /^https?:/.test(u)&&!u.startsWith(process.env.AYROVI_BASE_URL+'/')?r.abort():r.continue();});
-   await p.goto(process.env.AYROVI_BASE_URL+'/__verify/sonim');await p.locator('.lens-results-image img').waitFor();await p.evaluate(()=>document.fonts.ready);
+   await p.route('**/*',r=>{const u=r.request().url();return /^https?:/.test(u)&&!u.startsWith(process.env.ZAYROVI_BASE_URL+'/')?r.abort():r.continue();});
+   await p.goto(process.env.ZAYROVI_BASE_URL+'/__verify/sonim');await p.locator('.lens-results-image img').waitFor();await p.evaluate(()=>document.fonts.ready);
    check(`${engine}/${locale}: starts in peek`,await p.locator('.lens-results').getAttribute('data-expanded')==='false');
    check('analysis dots while request pending',await p.locator('.lens-analysis-dots').count()===1);
    check('no extra zoom/search/header buttons',await p.locator('.lens-results-chrome button').count()===1&&!await p.getByRole('button',{name:/^(Zoomer|Dézoomer|Agrandir|Réduire|Effacer|Nouvelle recherche)$/}).count());
@@ -36,7 +36,7 @@ try{
     await p.setViewportSize({width,height:844});await settle(p);
     const geometry=await p.evaluate(()=>{const r=document.querySelector('.lens-results');const img=document.querySelector('.lens-results-image img');return {overflow:document.documentElement.scrollWidth>innerWidth,fit:getComputedStyle(img).objectFit,font:getComputedStyle(r).fontFamily,targets:[...r.querySelectorAll('.lens-product-dot,.lens-sheet-handle,.lens-results-chrome button')].map(n=>({w:n.getBoundingClientRect().width,h:n.getBoundingClientRect().height}))};});
     check(`${width}: image contained and page fits`,!geometry.overflow&&geometry.fit==='contain',geometry);
-    check('official font stack',geometry.font.includes('Ayrovi Extracted Sans')&&geometry.font.includes('Noto Sans Arabic'),geometry);
+    check('official font stack',geometry.font.includes('Zayrovi Extracted Sans')&&geometry.font.includes('Noto Sans Arabic'),geometry);
     check('44px targets',geometry.targets.every(x=>x.w>=44&&x.h>=44),geometry);
    }
    await p.setViewportSize({width:390,height:844});await settle(p);

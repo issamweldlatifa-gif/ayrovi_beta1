@@ -28,11 +28,11 @@ const stripComments = (source) => source.replace(/<!--[\s\S]*?-->/g, '').replace
 const manifest = stripComments(readFileSync('android/app/src/main/AndroidManifest.xml', 'utf8'));
 const bridge = readFileSync('client/src/services/nativeShell.ts', 'utf8');
 const apiOrigin = readFileSync('client/src/services/apiOrigin.ts', 'utf8');
-const browserActivity = readFileSync('android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java', 'utf8');
+const browserActivity = readFileSync('android/app/src/main/java/app/zayrovi/mobile/AyWebsBrowseActivity.java', 'utf8');
 const origin = readFileSync('client/src/services/nativeApiOrigin.ts', 'utf8');
 const main = readFileSync('client/src/main.tsx', 'utf8');
 const gradle = readFileSync('android/app/build.gradle', 'utf8');
-const launcher = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
+const launcher = readFileSync('client/src/zayrovix/components/LensLauncher.tsx', 'utf8');
 
 describe('ZAYROVI Android shell (Capacitor) — application réelle', () => {
   it('config: paquet embarqué, AUCUN server.url (fin du wrapper), barre d’état réglée', () => {
@@ -50,14 +50,14 @@ describe('ZAYROVI Android shell (Capacitor) — application réelle', () => {
     // Le retour matériel est câblé côté Java (MainActivity.onBackPressed) et le
     // verrou correspondant vit dans scripts/check-android-shell.mjs.
     expect(cfg).toMatch(/overlaysWebView:\s*false/);
-    expect(cfg).toContain("appId: 'app.ayrovi.mobile'");
+    expect(cfg).toContain("appId: 'app.zayrovi.mobile'");
     expect(cfg).toContain("androidScheme: 'https'");
     expect(cfg).not.toContain('server.url');
     expect(cfg).not.toContain('onrender.com');
   });
 
   it('pont d\'origine API: un seul chemin, branché une fois au démarrage', () => {
-    expect(origin).toContain('AYROVI_API_ORIGIN');
+    expect(origin).toContain('ZAYROVI_API_ORIGIN');
     expect(origin).toContain('installNativeApiOrigin');
     expect(origin).toContain('isNativeApp()');
     expect(main).toContain('installNativeApiOrigin()');
@@ -87,18 +87,18 @@ describe('ZAYROVI Android shell (Capacitor) — application réelle', () => {
     const activities = manifest.match(/<activity/g) || [];
     expect(activities.length).toBe(2);
     expect(manifest).toContain('.AyWebsBrowseActivity');
-    // §24/§25 : partage texte + liens profonds ayrovi://aywebs
+    // §24/§25 : partage texte + liens profonds zayrovi://aywebs
     expect(manifest).toContain('android.intent.action.SEND');
-    expect(manifest).toContain('android:scheme="ayrovi"');
+    expect(manifest).toContain('android:scheme="zayrovi"');
   });
 
   it('AYWEBs V2 natif: barre flottante + feuille variantes + confirmation (captures 1/3/4)', () => {
-    const activity = readFileSync('android/app/src/main/java/app/ayrovi/mobile/AyWebsBrowseActivity.java', 'utf8');
+    const activity = readFileSync('android/app/src/main/java/app/zayrovi/mobile/AyWebsBrowseActivity.java', 'utf8');
     const browse = readFileSync('android/app/src/main/res/layout/activity_aywebs_browse.xml', 'utf8');
     const sheet = readFileSync('android/app/src/main/res/layout/dialog_aywebs_variant_sheet.xml', 'utf8');
     const added = readFileSync('android/app/src/main/res/layout/dialog_aywebs_added.xml', 'utf8');
     const strings = readFileSync('android/app/src/main/res/values/strings.xml', 'utf8');
-    const main = readFileSync('android/app/src/main/java/app/ayrovi/mobile/MainActivity.java', 'utf8');
+    const main = readFileSync('android/app/src/main/java/app/zayrovi/mobile/MainActivity.java', 'utf8');
     // barre flottante : retour, avant, Panier, Favoris, Add to Cart (libellé imposé)
     for (const id of ['aywebs_back', 'aywebs_forward', 'aywebs_cart', 'aywebs_wish', 'aywebs_add']) {
       expect(browse).toContain(`@+id/${id}`);
@@ -140,10 +140,10 @@ describe('ZAYROVI Android shell (Capacitor) — application réelle', () => {
   });
 
   it('AWEBs: l’origine de l’API est transmise par la couche web (source unique)', () => {
-    expect(bridge).not.toContain('apiOrigin: AYROVI_API_ORIGIN');
-    expect(browserActivity).toContain('BuildConfig.AYROVI_API_ORIGIN');
+    expect(bridge).not.toContain('apiOrigin: ZAYROVI_API_ORIGIN');
+    expect(browserActivity).toContain('BuildConfig.ZAYROVI_API_ORIGIN');
     expect(bridge).toContain("from './apiOrigin'");
-    expect(apiOrigin).toContain("export const AYROVI_API_ORIGIN");
+    expect(apiOrigin).toContain("export const ZAYROVI_API_ORIGIN");
     // Le module neutre ne doit RIEN importer : c'est ce qui empêche le cycle
     // nativeShell → nativeApiOrigin → nativeShell.
     expect(apiOrigin).not.toMatch(/^import /m);
@@ -226,10 +226,10 @@ describe('ZAYROVI Android shell (Capacitor) — application réelle', () => {
   });
 
   it('gradle: signature release env-driven + versionCode Play injectable', () => {
-    expect(gradle).toContain("System.getenv('AYROVI_KEYSTORE_BASE64')");
+    expect(gradle).toContain("System.getenv('ZAYROVI_KEYSTORE_BASE64')");
     // Ce qui compte est l'INJECTION par l'environnement, pas la valeur de repli
     // (qui suit la version courante du paquet : 1.0.3 / 3 au 04/10/2026).
-    expect(gradle).toMatch(/versionCode \(\(System\.getenv\('AYROVI_VERSION_CODE'\) \?: '\d+'\) as int\)/);
-    expect(gradle).toMatch(/versionName \(System\.getenv\('AYROVI_VERSION_NAME'\) \?: '\d+\.\d+(\.\d+)?'\)/);
+    expect(gradle).toMatch(/versionCode \(\(System\.getenv\('ZAYROVI_VERSION_CODE'\) \?: '\d+'\) as int\)/);
+    expect(gradle).toMatch(/versionName \(System\.getenv\('ZAYROVI_VERSION_NAME'\) \?: '\d+\.\d+(\.\d+)?'\)/);
   });
 });

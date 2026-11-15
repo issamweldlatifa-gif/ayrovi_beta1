@@ -61,7 +61,7 @@ import type { AyWebsAvailabilityState } from '../../shared/aywebsTypes';
 import { ayWebsEvidenceHash, canonicalVariant, recordAyWebsEvidence } from './evidence';
 import { emitAyWebsEvent, logAyWebsOperation, measureAyWebsOperation } from './events';
 import { ensureAyWebsSchema } from './schema';
-import { recordVariantContract } from '../ayrovix/services/variantAvailability';
+import { recordVariantContract } from '../zayrovix/services/variantAvailability';
 
 /**
  * AYWEBs — Product Engine (§11), Variant Engine (§13), Availability Engine (§14).
@@ -1124,7 +1124,7 @@ function toResolvedProduct(input: {
     integrationType: store.integrationType,
     capturedAt: sourceProduct.capturedAt,
     evidenceHash: input.evidenceHash,
-    ayroviPricing: pricing && !pricing.restricted
+    zayroviPricing: pricing && !pricing.restricted
       ? {
           totalTnd: pricing.totalTND,
           pricingVersion: pricing.pricingVersion,
@@ -1253,7 +1253,7 @@ export function persistAyWebsProduct(
 }
 
 /**
- * Pont avec la porte de variantes existante (`ayrovix/variantAvailability`) :
+ * Pont avec la porte de variantes existante (`zayrovix/variantAvailability`) :
  * AYWEBs alimente le contrat déjà utilisé par le panier ZAYROVI, il n'en crée
  * pas un second. Le silence marchand reste le chemin de revue historique.
  */

@@ -1,7 +1,7 @@
-import type { AyroviCart } from '@/api/cart';
+import type { ZayroviCart } from '@/api/cart';
 
 /** L'échéance la plus proche gouverne la capsule : c'est celle qui bloque en premier. */
-export function earliestCartDeadline(cart: AyroviCart | null | undefined): string {
+export function earliestCartDeadline(cart: ZayroviCart | null | undefined): string {
   const deadlines = (cart?.items ?? [])
     .map((line) => line.priceTrustExpiresAt)
     .filter(Boolean)

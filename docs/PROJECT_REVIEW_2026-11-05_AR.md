@@ -151,9 +151,9 @@
 
 **المكان:** `src/server.ts:284–288`؛ `apps/mobile/src/api/client.ts:76–83`؛ `apps/mobile/src/state/session.tsx:146`.
 
-العميل يرسل `x-ayrovi-client`، لكن `allowedHeaders` لا تتضمنها.
+العميل يرسل `x-zayrovi-client`، لكن `allowedHeaders` لا تتضمنها.
 
-**إثبات HTTP محلي:** preflight من origin مسموح، يطلب `x-ayrovi-client`، تلقى 204 لكن قائمة `Access-Control-Allow-Headers` لم تتضمن الترويسة المطلوبة.
+**إثبات HTTP محلي:** preflight من origin مسموح، يطلب `x-zayrovi-client`، تلقى 204 لكن قائمة `Access-Control-Allow-Headers` لم تتضمن الترويسة المطلوبة.
 
 **الأثر المشروط:** متصفح Expo Web عند استعمال API من أصل آخر قد يمنع الطلب حتى لو كان origin مسموحًا. تطبيق React Native الأصلي لا يخضع لـCORS المتصفح؛ هذا ليس تفسيرًا مثبتًا لفشل APK.
 

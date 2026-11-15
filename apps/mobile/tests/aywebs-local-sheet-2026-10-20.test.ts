@@ -89,7 +89,7 @@ describe('produit depuis la capture', () => {
     expect(product.title).toBe('T-shirt Coton');
     expect(product.images).toEqual(['https://m.media-amazon.com/a.jpg', 'https://m.media-amazon.com/b.jpg']);
     expect(product.price).toBeNull();
-    expect(product.ayroviPricing).toBeNull();
+    expect(product.zayroviPricing).toBeNull();
     expect(product.sourceDomain).toBe('www.amazon.com');
   });
 });

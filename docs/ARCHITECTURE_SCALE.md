@@ -49,20 +49,20 @@ Ce document décrit les cinq couches ajoutées pour la **stabilité, la sécurit
 - Modèle **u2netp** (saliency, 4,6 Mo) **commis dans le dépôt** `assets/models/u2netp.onnx`, empreinte SHA-256 épinglée dans le code — toute divergence désactive la couche.
 - Runtime **onnxruntime-web (WASM)** : aucun binaire natif (fonctionne sur Render Starter), `numThreads=1`, chargement paresseux une fois par processus.
 - Post-traitement **pur et testé** : normalisation, seuil/feather, suppression des petits îlots (composantes connexes), garde de couverture 3–97 %, alpha toujours multiplié (jamais opacifié).
-- Déclencheur : uniquement quand la couche heuristique renvoie « fond complexe » ; `AYROVI_SEGMENTATION=false` coupe tout.
+- Déclencheur : uniquement quand la couche heuristique renvoie « fond complexe » ; `ZAYROVI_SEGMENTATION=false` coupe tout.
 
 ## 3. Proxy images (`/api/public/media/img`)
-- Largeurs autorisées : 156, 320, 480, 760, 1000 (400 sinon) — WebP qualité 78, `rotate()` EXIF, cache disque par (URL, largeur) dans `AYROVI_PROXY_CACHE_DIR`.
+- Largeurs autorisées : 156, 320, 480, 760, 1000 (400 sinon) — WebP qualité 78, `rotate()` EXIF, cache disque par (URL, largeur) dans `ZAYROVI_PROXY_CACHE_DIR`.
 - But : finir le hotlink fragile, diviser les octets, servir depuis notre domaine avec un cache long.
 - La chaîne côté client (`withIsolation`) devient : **isolé → proxy → original** — trois filets, jamais d'image cassée.
 
 ## 4. Chauffe (`warmIsolation`)
-- Appelée dans `/api/ayrovix` à l'arrivée des candidats (image + URL : 8 URLs) et dans `/analyze-url` (galerie produit + alternates : 10 URLs).
+- Appelée dans `/api/zayrovix` à l'arrivée des candidats (image + URL : 8 URLs) et dans `/analyze-url` (galerie produit + alternates : 10 URLs).
 - Fire-and-forget, erreurs avalées — le premier visiteur trouve l'isolé et le WebP **déjà en cache disque**.
 
 ## 5. Veille prix (`price_watchers`)
 - API compte requis : `POST /watch`, `GET /watch`, `DELETE /watch/:id`.
-- Scheduler (même gabarit que FX) : tick horaire, watcher relu au mieux toutes les 6 h (`AYROVI_PRICE_WATCH_INTERVAL_MS`), 8 watchers max par tick.
+- Scheduler (même gabarit que FX) : tick horaire, watcher relu au mieux toutes les 6 h (`ZAYROVI_PRICE_WATCH_INTERVAL_MS`), 8 watchers max par tick.
 - Notification **uniquement sur baisse réellement relue** (jamais d'estimation) ; `failure_count ≥ 8` → statut `DEAD` + notification « Produit introuvable ».
 
 ## 6. Transparence (`/api/admin/lens-performance`)

@@ -7,7 +7,7 @@ import { createHash } from 'node:crypto';
 import postcss from 'postcss';
 import ts from 'typescript';
 const generated = new Set(['client/src/design/editorial/tokens.generated.css','client/public/identity.css']);
-const tokens = new Set(['--font-primary','--ay-font-stack','--ayrovi-font','--ayrovi-font-body','--ayrovi-font-display']);
+const tokens = new Set(['--font-primary','--ay-font-stack','--zayrovi-font','--zayrovi-font-body','--zayrovi-font-display']);
 const familyValue = value => value === 'inherit' || [...tokens].some(name => value === `var(${name})`);
 export function inspectBrandSource(file, text) {
   const errors = [];
@@ -29,7 +29,7 @@ export function inspectBrandSource(file, text) {
       if (!familyValue(value)) add(`unapproved font-family: ${value}`);
     }
     if (prop === 'font' && value !== 'inherit' && ![...tokens].some(t => value.endsWith(`var(${t})`))) add(`unapproved font shorthand: ${value}`);
-    if (/^--(?:font-(?:primary|sans|body|display|mono|serif)|ay-font-stack|ayrovi-font(?:-body|-display)?)$/.test(prop)) {
+    if (/^--(?:font-(?:primary|sans|body|display|mono|serif)|ay-font-stack|zayrovi-font(?:-body|-display)?)$/.test(prop)) {
       if (generated.has(file) && prop === '--ay-font-stack') return;
       if (!familyValue(value)) add(`unapproved stack token: ${prop}`);
     }
@@ -81,8 +81,8 @@ export function inspectBrandSource(file, text) {
 export function auditBrand(root=process.cwd()) {
   const errors=[];
   const identity=JSON.parse(fs.readFileSync(path.join(root,'client/src/design/editorial/identity.json'),'utf8'));
-  if (identity.typography.stack !== "'Ayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif") errors.push('official stack changed');
-  if (identity.fonts.length!==2 || identity.fonts.map(f=>f.family).join('|')!=='Ayrovi Extracted Sans|Noto Sans Arabic') errors.push('official family allowlist changed');
+  if (identity.typography.stack !== "'Zayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif") errors.push('official stack changed');
+  if (identity.fonts.length!==2 || identity.fonts.map(f=>f.family).join('|')!=='Zayrovi Extracted Sans|Noto Sans Arabic') errors.push('official family allowlist changed');
   // Palette officielle (2026-10-15) : noir #0A0A0A · blanc #FFFFFF · gris clair #F2F2F2 + couleur d'action.
   // v4.4.0 (décision du propriétaire, 14/11/2026) : la couleur d'action devient le « Bleu Z » électrique #0A63F5
   // (ex-#0113B5) — boutons d'achat, liens, focus, badge vérifié, pouce posé — sur l'app, le CRM ET le site.

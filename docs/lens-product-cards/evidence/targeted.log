@@ -2,7 +2,7 @@
  RUN  v4.1.11 /home/user/ayrovi_beta1
 
 stdout | tests/lens-product-cards.test.tsx > reference Lens product card > preserves SerpApi reviews from both supported rating fields and never uses match as a rating
-[AYROVIX serpapi-lens] 3 visual URL product matches
+[ZAYROVIX serpapi-lens] 3 visual URL product matches
 
  ✓ tests/lens-product-cards.test.tsx (20 tests) 123ms
  ✓ tests/lens-card-favorites.test.tsx (7 tests) 65ms

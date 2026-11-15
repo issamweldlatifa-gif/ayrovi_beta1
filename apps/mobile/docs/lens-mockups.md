@@ -1,4 +1,4 @@
-# AYROVIX Lens — maquettes approuvées (application React Native)
+# ZAYROVIX Lens — maquettes approuvées (application React Native)
 
 Document de référence (dans le dépôt pour ne pas être perdu). Chaque section : ce que montre la maquette, la décision, et l'état réel dans `apps/mobile`.
 Les maquettes sont des visuels de référence : la mise en œuvre suit les **données réelles** du serveur (aucun prix, promo ou pourcentage inventé).
@@ -10,7 +10,7 @@ Les maquettes sont des visuels de référence : la mise en œuvre suit les **don
 
 ## 2. Lens — résultats en cours (feuille de progression)
 - Montre : feuille « Résultats Lens », étapes « Image lue ✓ / Recherche des boutiques ⟳ / Lecture des fiches produit », emplacements gris, « Réessayer » et « Annuler ».
-- Décision : étapes et fiches viennent du serveur (flux SSE de `/api/ayrovix/analyze-image`, en-tête `Accept: text/event-stream` : `progress`, `card`, `done`, `error`). Rien n'est simulé.
+- Décision : étapes et fiches viennent du serveur (flux SSE de `/api/zayrovix/analyze-image`, en-tête `Accept: text/event-stream` : `progress`, `card`, `done`, `error`). Rien n'est simulé.
 - État : **réécrit selon le visuel** (`LensResultsSheet.tsx`, feuille en bas) — à tester sur appareil. Ancien état : client de flux `src/api/lensStream.ts` (XHR, car `fetch` ne livre pas le flux sous React Native), feuille `src/features/lens/LensProgressSheet.tsx`, annulation, « Réessayer » après échec. Tests : `tests/lens-stream.test.ts`. Le flux XHR n'a pas été vérifié sur un vrai téléphone.
 
 ## 3. Carte produit (résultats)

@@ -48,7 +48,7 @@ describe('Publication Phase 1 feed contract', () => {
   });
   test('external share URL renders the actual publication, escapes text and rejects drafts', async () => {
     const shared = await request(app).get('/publications').query({ post: prefix + 'a' });
-    expect(shared.status).toBe(200); expect(shared.text).toContain('ayrovi://publications?post=');
+    expect(shared.status).toBe(200); expect(shared.text).toContain('zayrovi://publications?post=');
     expect(shared.text).toContain('&lt;script&gt;'); expect(shared.text).not.toContain('<script>');
     expect((await request(app).get('/publications').query({ post: prefix + 'draft' })).status).toBe(404);
     expect((await request(app).get('/publications').query({ post: prefix + 'future' })).status).toBe(404);
@@ -67,7 +67,7 @@ describe('Publication Phase 1 feed contract', () => {
   });
   test('CRM taxonomy writes are authenticated and validate unsupported categories', async () => {
     const admin = request.agent(app);
-    const auth = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const auth = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     const csrfToken = auth.body.data.csrfToken;
     const path = '/api/admin/publications/' + prefix + 'a';
     expect((await request(app).put(path).send({ category: 'beauty' })).status).toBe(401);

@@ -145,7 +145,7 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
       setExtraction({
         ...extraction,
         ...resolved,
-        ayroviPrice: extraction.ayroviPrice,
+        zayroviPrice: extraction.zayroviPrice,
         referencePrice: extraction.referencePrice,
       });
       setStep('summary');
@@ -288,7 +288,7 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
           <KeyRow label={t('ocerex.summary.source')} value={extraction.resolved?.platform || extraction.platform || '—'} />
           <KeyRow label={t('ocerex.summary.link')} value={extraction.resolved?.url || extraction.sourceUrl || '—'} />
           <KeyRow label={t('ocerex.summary.referencePrice')} value={formatReference(extraction)} />
-          <KeyRow label={t('ocerex.summary.ayroviPrice')} value={formatMoney(extraction.ayroviPrice)} />
+          <KeyRow label={t('ocerex.summary.zayroviPrice')} value={formatMoney(extraction.zayroviPrice)} />
           <AppText variant="caption" color={theme.colors.muted}>{t('ocerex.summary.payNote')}</AppText>
           <Button label={t('ocerex.summary.confirm')} tone="main" onPress={onConfirmOrder} block disabled={busy} testID="ocerex-confirm" />
         </Card>
@@ -327,7 +327,7 @@ function ResultView({
     <Card>
       <AppText>{t('ocerex.result.title')}</AppText>
       <KeyRow label={t('ocerex.result.referencePrice')} value={formatReference(extraction)} />
-      <KeyRow label={t('ocerex.result.ayroviPrice')} value={formatMoney(extraction.ayroviPrice)} />
+      <KeyRow label={t('ocerex.result.zayroviPrice')} value={formatMoney(extraction.zayroviPrice)} />
       {extraction.productTitle ? <KeyRow label={t('ocerex.result.product')} value={extraction.productTitle} /> : null}
       <AppText variant="caption" color={theme.colors.muted}>{t('ocerex.result.linkPrompt')}</AppText>
       <Field

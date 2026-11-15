@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * AYROVI — analyse PostgreSQL : compatibilité RÉELLE + capacité MESURÉE
- * (audit d'architecture du 12/11/2026, §7 de docs/AYROVI_ARCHITECTURE_SCALABLE_AR_2026-11-12.md).
+ * ZAYROVI — analyse PostgreSQL : compatibilité RÉELLE + capacité MESURÉE
+ * (audit d'architecture du 12/11/2026, §7 de docs/ZAYROVI_ARCHITECTURE_SCALABLE_AR_2026-11-12.md).
  *
  *   node scripts/sql-capture.cjs --db data/qatafo.sqlite --out sql-capture.json      # 1. requêtes réelles
  *   node scripts/pg-capacity-bench.mjs --sqlite data/qatafo.sqlite \
@@ -446,7 +446,7 @@ function sqliteWriteBench(file, targets, label) {
 }
 
 // ───────────────────────── exécution ─────────────────────────
-log(`AYROVI — analyse PostgreSQL · ${report.host.cpu} · affinité CPU ${report.host.affinity}`);
+log(`ZAYROVI — analyse PostgreSQL · ${report.host.cpu} · affinité CPU ${report.host.affinity}`);
 report.source = auditSource(SRC);
 log(`\n[1] code : ${report.source.totals.syncCalls} appels DB synchrones, ${report.source.totals.transactions} transactions, ${report.source.modulesTouched} modules`);
 log('    dialecte :', JSON.stringify(Object.fromEntries(Object.entries(report.source.totals).filter(([k]) => !['syncCalls', 'transactions'].includes(k)))));
@@ -487,7 +487,7 @@ for (const [c, prep] of CONCURRENCY.flatMap((n) => [[n, false], [n, true]])) {
 }
 
 const reels = new Database(SQLITE, { readonly: true }).prepare("SELECT id FROM reels WHERE status='publie' AND publish_at<=?").all(new Date().toISOString()).map((r) => r.id);
-const copy = path.join(os.tmpdir(), `ayrovi-pg-bench-${process.pid}.sqlite`);
+const copy = path.join(os.tmpdir(), `zayrovi-pg-bench-${process.pid}.sqlite`);
 await lite.backup(copy);
 lite.close();
 report.write = [];

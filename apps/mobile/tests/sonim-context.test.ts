@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { cartContext, shareableStoreUrl, sonimOwner, stageSonimDraft } from '../src/features/sonim/sonimContext';
 import { clearSonimSession, useSonimSession } from '../src/features/sonim/sonimSession';
 import { applySonimToolEvent } from '../src/features/sonim/sonimModel';
-import type { AyroviCart } from '../src/api/cart';
+import type { ZayroviCart } from '../src/api/cart';
 
 describe('Sonim explicit shopping context', () => {
   afterEach(clearSonimSession);
@@ -41,7 +41,7 @@ describe('Sonim explicit shopping context', () => {
       serverNow: '2026-10-30T12:00:00Z', totalTND: 80, deliveryTND: 5,
       items: [{ id: 'private_id', title: 'Article', store: 'Store', quantity: 1, variant: 'M',
         lineTotalTND: null, priceTrust: '', availability: '', customerNote: 'secret note', sourceUrl: 'https://secret' }],
-    } as unknown as AyroviCart;
+    } as unknown as ZayroviCart;
     const result = cartContext(cart, 'ar');
     expect(result).toContain('Article');
     expect(result).toContain('المجموع: غير محدد');

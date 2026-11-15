@@ -155,7 +155,7 @@ describe('endpoints CRM', () => {
   it('santé, contrôle (note obligatoire), boutique inconnue, permission', async () => {
     const { app, db } = await import('../src/server');
     const agent = request.agent(app);
-    const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const login = await agent.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     const csrf = login.body.data.csrfToken as string;
     resetAyWebsCaptureControlCache(db);

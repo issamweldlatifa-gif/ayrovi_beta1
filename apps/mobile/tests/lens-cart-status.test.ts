@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AyroviCart } from '@/api/cart';
+import type { ZayroviCart } from '@/api/cart';
 import { earliestCartDeadline, formatCartCountdown, remainingMs, serverClockOffset } from '@/features/lens/lensCartStatus';
 
-function cart(deadlines: string[]): AyroviCart {
+function cart(deadlines: string[]): ZayroviCart {
   return {
     sessionId: 'mob_test',
     serverNow: '2026-10-14T08:00:00.000Z',

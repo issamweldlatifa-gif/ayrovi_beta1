@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/server';
-import { extractSerpApiMerchantProductUrl } from '../src/ayrovix/services/search';
+import { extractSerpApiMerchantProductUrl } from '../src/zayrovix/services/search';
 
 function restoreEnv(name: string, value: string | undefined): void {
   if (value === undefined) delete process.env[name];
@@ -71,7 +71,7 @@ describe('Lens → SerpApi → vrais liens produits marchands pour AYWEBs', () =
     vi.stubGlobal('fetch', fetchMock);
     try {
       const response = await request(app)
-        .post('/api/ayrovix/analyze-text')
+        .post('/api/zayrovix/analyze-text')
         .send({ query: `Adidas Samba OG ${Date.now()}` });
 
       expect(response.status).toBe(200);
@@ -143,7 +143,7 @@ describe('Lens → SerpApi → vrais liens produits marchands pour AYWEBs', () =
     vi.stubGlobal('fetch', fetchMock);
     try {
       const response = await request(app)
-        .post('/api/ayrovix/analyze-barcode')
+        .post('/api/zayrovix/analyze-barcode')
         .send({ code: '4548736132580' });
 
       expect(response.status).toBe(200);

@@ -18,7 +18,7 @@
  *  5. aucun `var(--x)` utilisé par une feuille système, ni par un style en ligne de la couche
  *     admin (`client/src/admin/**`), ne reste non résolu — à une seule exception allowlistée :
  *     `--bo-icon`, règle CSS morte de `back-office.css` (voir rapport P3/T1 §7, F-2) ;
- *  6. la couche admin ne connaît qu'une seule couleur d'action : la valeur de `--ayrovi-cta`
+ *  6. la couche admin ne connaît qu'une seule couleur d'action : la valeur de `--zayrovi-cta`
  *     (violet électrique #0A63F5 depuis la palette officielle du 2026-10-15 ; l'orange est retiré).
  *
  * Les nombres de ce fichier sont MESURÉS (scripts/design-token-sweep.cjs --check), pas déduits.
@@ -323,9 +323,9 @@ describe('une valeur, un seul porteur', () => {
 });
 
 describe('accent — une seule source', () => {
-  test('l\u2019accent du back-office est la valeur unique de --ayrovi-cta', () => {
+  test('l\u2019accent du back-office est la valeur unique de --zayrovi-cta', () => {
     const tokens = read(TOKENS);
-    const cta = declarations(tokens).find(([, n]) => n === '--ayrovi-cta');
+    const cta = declarations(tokens).find(([, n]) => n === '--zayrovi-cta');
     expect(cta).toBeTruthy();
     /* P4/T1 « Zalando Strategy » : la couleur de marque n'est plus un littéral local — elle
        alias le jeton canonique, qui est le seul porteur de la valeur (violet #0A63F5 depuis
@@ -336,14 +336,14 @@ describe('accent — une seule source', () => {
       const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
       return alias && depth < 4 ? resolve(alias[1], depth + 1) : raw;
     };
-    expect(cta![2].trim().toLowerCase()).toBe('var(--ayrovi-color-brand-accent)');
-    expect(resolve('--ayrovi-cta')).toBe('#0a63f5');
-    expect(resolve('--ayrovi-color-brand-accent')).toBe('#0a63f5');
+    expect(cta![2].trim().toLowerCase()).toBe('var(--zayrovi-color-brand-accent)');
+    expect(resolve('--zayrovi-cta')).toBe('#0a63f5');
+    expect(resolve('--zayrovi-color-brand-accent')).toBe('#0a63f5');
     // texte posé sur l'action : blanc (7,19:1), jamais l'encre noire de l'ancien orange
-    expect(resolve('--ayrovi-cta-ink')).toBe('#ffffff');
+    expect(resolve('--zayrovi-cta-ink')).toBe('#ffffff');
     for (const file of SYSTEM_SHEETS) {
       const body = withoutComments(read(file));
-      const oranges = (body.match(/var\(--ayrovi-cta\)|var\(--admin-yellow\)/g) ?? []).length;
+      const oranges = (body.match(/var\(--zayrovi-cta\)|var\(--admin-yellow\)/g) ?? []).length;
       expect(oranges, file).toBeGreaterThanOrEqual(0);
     }
     // la coquille hérite de l'accent ; la fiche agent n'emprunte plus l'accent pour son décor
@@ -352,7 +352,7 @@ describe('accent — une seule source', () => {
       /\.mag-agent\s*{[^}]*--mag-yellow:\s*var\(--admin-ink-strong\)/,
     );
     expect(withoutComments(read('client/src/admin/admin.css'))).toMatch(
-      /\.bo-shell\s*{[^}]*--bo-accent:\s*var\(--ayrovi-cta\)/,
+      /\.bo-shell\s*{[^}]*--bo-accent:\s*var\(--zayrovi-cta\)/,
     );
   });
 });

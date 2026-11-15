@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import { CustomerIdentity } from '../client/src/design/editorial/CustomerIdentity';
 import { NavigationHistoryProvider, useNavigationHistory } from '../client/src/navigation/NavigationHistory';
-import { LensLauncher } from '../client/src/ayrovix/components/LensLauncher';
+import { LensLauncher } from '../client/src/zayrovix/components/LensLauncher';
 import { AiAssistantDrawer } from '../client/src/components/assistant/AiAssistantDrawer';
 const orders:unknown[]=[];(window as any).selectionTestOrders=orders;
 const lens=new URLSearchParams(location.search).get('mode')==='lens';

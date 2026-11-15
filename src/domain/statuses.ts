@@ -22,8 +22,8 @@ export const CATALOGUE_ENTRY_STATUSES = ['DRAFT', 'ACTIVE', 'ARCHIVED'] as const
 /** Support : cycle court, tel que validé par `PUT /assistant-support/:id`. */
 export const SUPPORT_STATUSES = ['PENDING', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'] as const;
 
-/** Revues Lens (`ayrovix_review_requests.status`), tel que validé par l'API admin. */
-export const AYROVIX_REVIEW_STATUSES = ['PENDING', 'IN_REVIEW', 'QUOTED', 'REJECTED', 'CANCELLED'] as const;
+/** Revues Lens (`zayrovix_review_requests.status`), tel que validé par l'API admin. */
+export const ZAYROVIX_REVIEW_STATUSES = ['PENDING', 'IN_REVIEW', 'QUOTED', 'REJECTED', 'CANCELLED'] as const;
 
 /** P2.2 — le stock ne réinvente pas ses libellés : il ajoute deux vocabulaires au registre. */
 export const INVENTORY_STOCKTAKE_STATUSES = ['DRAFT', 'COUNTING', 'SUBMITTED', 'APPROVED', 'REJECTED'] as const;
@@ -127,7 +127,7 @@ export const STATUS_VOCABULARIES: Record<string, readonly string[]> = {
   'finance.payment': PAYMENT_STATUSES,
   'catalogue.product': CATALOGUE_PRODUCT_STATUSES,
   'catalogue.status': CATALOGUE_ENTRY_STATUSES,
-  'ayrovix.review': AYROVIX_REVIEW_STATUSES,
+  'zayrovix.review': ZAYROVIX_REVIEW_STATUSES,
   'support.ticket': SUPPORT_STATUSES,
   'inventory.stocktake': INVENTORY_STOCKTAKE_STATUSES,
   'inventory.movement': INVENTORY_MOVEMENT_DIRECTIONS,

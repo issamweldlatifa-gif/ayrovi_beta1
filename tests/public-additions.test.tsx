@@ -58,9 +58,9 @@ describe('additions without replacing the homepage', () => {
     expect(footerChannelLinks({})).toEqual([]);
     expect(footerChannelLinks(null)).toEqual([]);
     expect(footerChannelLinks({ facebook: 'javascript:alert(1)', instagram: 'https://a:b@instagram.com' })).toEqual([]);
-    expect(footerChannelLinks({ facebook: ' https://facebook.com/ayrovi ', tiktok: 'https://tiktok.com/@ayrovi' })).toEqual([
-      { id: 'facebook', label: 'Facebook', href: 'https://facebook.com/ayrovi' },
-      { id: 'tiktok', label: 'TikTok', href: 'https://tiktok.com/@ayrovi' },
+    expect(footerChannelLinks({ facebook: ' https://facebook.com/zayrovi ', tiktok: 'https://tiktok.com/@zayrovi' })).toEqual([
+      { id: 'facebook', label: 'Facebook', href: 'https://facebook.com/zayrovi' },
+      { id: 'tiktok', label: 'TikTok', href: 'https://tiktok.com/@zayrovi' },
     ]);
   });
   it('the unique Hero is data-driven: no fixed copy, no old visual fallback', () => {
@@ -75,5 +75,5 @@ describe('additions without replacing the homepage', () => {
 });
 describe('truthful campaign and channel data', () => {
   it.each(['javascript:alert(1)', 'data:text/html,x', '//example.com', '', 'https://a:b@example.com', 'ftp://example.com', 'https://'])('rejects unsafe social URL %s', value => expect(safeChannelUrl(value)).toBeNull());
-  it('accepts a configured public https destination', () => expect(safeChannelUrl(' https://instagram.com/ayrovi ')).toBe('https://instagram.com/ayrovi'));
+  it('accepts a configured public https destination', () => expect(safeChannelUrl(' https://instagram.com/zayrovi ')).toBe('https://instagram.com/zayrovi'));
 });

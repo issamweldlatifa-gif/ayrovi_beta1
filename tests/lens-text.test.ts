@@ -1,8 +1,8 @@
 import { describe, expect, test, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { app, db } from '../src/server';
-import { getAyrovixStats } from '../src/ayrovix/events';
-import { listAyrovixHistory } from '../src/ayrovix/history';
+import { getZayrovixStats } from '../src/zayrovix/events';
+import { listZayrovixHistory } from '../src/zayrovix/history';
 import { createCustomerSession } from '../src/customer/auth';
 
 function seedCatalogProduct(name = 'Nike Air Max 270 React', brand = 'Nike', price = 59, currency = 'EUR') {
@@ -18,24 +18,24 @@ function seedCatalogProduct(name = 'Nike Air Max 270 React', brand = 'Nike', pri
   return id;
 }
 
-describe('AYROVIX Lens — product-name text search (Phase 0, analytics-safe)', () => {
+describe('ZAYROVIX Lens — product-name text search (Phase 0, analytics-safe)', () => {
   test('rejects short query', async () => {
-    const res = await request(app).post('/api/ayrovix/analyze-text').send({ query: 'a' });
+    const res = await request(app).post('/api/zayrovix/analyze-text').send({ query: 'a' });
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('INVALID_TEXT');
   });
 
   test('rejects empty query', async () => {
-    const res = await request(app).post('/api/ayrovix/analyze-text').send({ query: '' });
+    const res = await request(app).post('/api/zayrovix/analyze-text').send({ query: '' });
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('INVALID_TEXT');
   });
 
-  // Catalogue ZAYROVI désactivé (AYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
+  // Catalogue ZAYROVI désactivé (ZAYROVI_CATALOG_SEARCH_ENABLED=false) : test à réactiver avec l'interrupteur.
 
   test.skip('text search uses catalog and returns priced candidate without inventing data', async () => {
     const id = seedCatalogProduct('Adidas Ultra Boost 22', 'Adidas', 62, 'EUR');
-    const res = await request(app).post('/api/ayrovix/analyze-text').send({ query: 'Adidas Ultra Boost' });
+    const res = await request(app).post('/api/zayrovix/analyze-text').send({ query: 'Adidas Ultra Boost' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     const data = res.body.data;
@@ -60,13 +60,13 @@ describe('AYROVIX Lens — product-name text search (Phase 0, analytics-safe)', 
 
   test('text channel is recorded separately from qr (analytics-safe)', async () => {
     // Clean events for this check (use fresh stats comparison)
-    const before = getAyrovixStats(db).last7d;
+    const before = getZayrovixStats(db).last7d;
     // Create a text search and a qr code search
     seedCatalogProduct('Puma RS-X', 'Puma', 55, 'EUR');
-    await request(app).post('/api/ayrovix/analyze-text').send({ query: 'Puma RS-X' });
+    await request(app).post('/api/zayrovix/analyze-text').send({ query: 'Puma RS-X' });
     // mock provider search for qr without external provider to avoid counting external
-    await request(app).post('/api/ayrovix/analyze-code').send({ value: 'Puma RS-X' });
-    const after = getAyrovixStats(db).last7d;
+    await request(app).post('/api/zayrovix/analyze-code').send({ value: 'Puma RS-X' });
+    const after = getZayrovixStats(db).last7d;
     // text should have increased, qr should also have increased, but they are separate counters
     expect(after.text).toBeGreaterThan(before.text);
     expect(after.qr).toBeGreaterThan(before.qr);
@@ -83,26 +83,26 @@ describe('AYROVIX Lens — product-name text search (Phase 0, analytics-safe)', 
     db.run(`INSERT INTO customer_accounts (id, display_name, status, created_at, updated_at) VALUES (?,?,'ACTIVE',?,?)`,
       accountId, 'Test Text History', now, now);
     const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: { 'user-agent': 'Vitest' } } as any);
-    const cookie = `ayrovi_customer_session=${encodeURIComponent(session.token)}`;
+    const cookie = `zayrovi_customer_session=${encodeURIComponent(session.token)}`;
     seedCatalogProduct('New Balance 550', 'New Balance', 70, 'EUR');
-    const res = await request(app).post('/api/ayrovix/analyze-text').set('Cookie', cookie).send({ query: 'New Balance 550' });
+    const res = await request(app).post('/api/zayrovix/analyze-text').set('Cookie', cookie).send({ query: 'New Balance 550' });
     expect(res.status).toBe(200);
     const eventId = res.body.data.eventId;
     expect(eventId).toMatch(/^ayx_/);
-    const history = listAyrovixHistory(db, accountId, 10);
+    const history = listZayrovixHistory(db, accountId, 10);
     const entry = history.find(h => h.id === eventId);
     expect(entry).toBeDefined();
     expect(entry?.kind).toBe('text');
     expect(entry?.queryLabel).toBe('New Balance 550');
     expect(entry?.title.length).toBeGreaterThan(0);
     // cleanup
-    db.run('DELETE FROM ayrovix_search_history WHERE account_id=?', accountId);
+    db.run('DELETE FROM zayrovix_search_history WHERE account_id=?', accountId);
     db.run('DELETE FROM customer_accounts WHERE id=?', accountId);
     db.run("DELETE FROM products WHERE name LIKE 'New Balance%'");
   });
 
   test('lensApi analyzeText is exposed (client)', async () => {
-    const mod = await import('../client/src/ayrovix/services/lensApi');
+    const mod = await import('../client/src/zayrovix/services/lensApi');
     expect(typeof (mod as any).analyzeText).toBe('function');
   });
 });

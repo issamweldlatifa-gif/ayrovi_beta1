@@ -1,6 +1,6 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import multer from 'multer';
-import { extractProductFromUrl, InvalidUrlError } from '../ayrovix/services/product';
+import { extractProductFromUrl, InvalidUrlError } from '../zayrovix/services/product';
 import { optionalCustomer } from '../customer/auth';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
@@ -51,7 +51,7 @@ function publicExtraction(row: OcerexExtractionRow, rules: PricingRules) {
     platform: row.platform || null,
     sourceUrl: row.source_url || null,
     code: row.code,
-    ayroviPrice: row.ayrovi_price_tnd,
+    zayroviPrice: row.zayrovi_price_tnd,
     pricingVersion: row.pricing_version,
     supportedCurrencies: supportedPricingCurrencies(rules),
   };
@@ -150,7 +150,7 @@ export function createOcerexRouter(db: QatafoDatabase, scraper: SmartLinkScraper
       }
       const saved = updateOcerexExtraction(db, row.id, sid, {
         currency,
-        ayrovi_price_tnd: quote.totalTND,
+        zayrovi_price_tnd: quote.totalTND,
         pricing_version: quote.pricingVersion,
         status: 'CALCULATED',
         account_id: accountId(req) || row.account_id,
@@ -159,7 +159,7 @@ export function createOcerexRouter(db: QatafoDatabase, scraper: SmartLinkScraper
       return res.json({
         success: true,
         ...publicExtraction(saved!, rules),
-        ayroviPrice: quote.totalTND,
+        zayroviPrice: quote.totalTND,
         pricingVersion: quote.pricingVersion,
         referencePrice: row.reference_price,
         sourceCurrency: currency,
@@ -244,7 +244,7 @@ export function createOcerexRouter(db: QatafoDatabase, scraper: SmartLinkScraper
       db.run('UPDATE cart_items SET ocerex_extraction_id=? WHERE id=?', row.id, cartItem.id);
       const saved = updateOcerexExtraction(db, row.id, sid, {
         cart_item_id: cartItem.id,
-        ayrovi_price_tnd: quote.totalTND,
+        zayrovi_price_tnd: quote.totalTND,
         pricing_version: quote.pricingVersion,
         status: 'COMMITTED',
         account_id: owner || row.account_id,
@@ -254,7 +254,7 @@ export function createOcerexRouter(db: QatafoDatabase, scraper: SmartLinkScraper
         success: true,
         cartItemId: cartItem.id,
         ...publicExtraction(saved!, db.getPricingRules()),
-        ayroviPrice: quote.totalTND,
+        zayroviPrice: quote.totalTND,
       });
     } catch (error) {
       console.warn('[OCEREX commit]', error instanceof Error ? error.message : 'failed');

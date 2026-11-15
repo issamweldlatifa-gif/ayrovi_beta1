@@ -64,12 +64,12 @@ describe('جلسة الزائر على كتابات Lens', () => {
       desiredSize: 'L', contact: '20123456',
     }, SESSION);
     const [postUrl, postInit] = spy.mock.calls[0] as unknown as [string, RequestInit];
-    expect(postUrl).toBe(`${API_BASE_URL}/api/ayrovix/review-request`);
+    expect(postUrl).toBe(`${API_BASE_URL}/api/zayrovix/review-request`);
     expect(headersOf(postInit)['x-session-id']).toBe(SESSION);
 
     await getManualReview('ayx_review_abcdef1234', SESSION);
     const [getUrl, getInit] = spy.mock.calls[1] as unknown as [string, RequestInit];
-    expect(getUrl).toBe(`${API_BASE_URL}/api/ayrovix/review-request/ayx_review_abcdef1234`);
+    expect(getUrl).toBe(`${API_BASE_URL}/api/zayrovix/review-request/ayx_review_abcdef1234`);
     expect(headersOf(getInit)['x-session-id']).toBe(SESSION);
   });
 });

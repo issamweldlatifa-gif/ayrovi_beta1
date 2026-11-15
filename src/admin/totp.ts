@@ -16,6 +16,7 @@
  *    réinitialiser pour un collègue bloqué, `ADMIN_BOOTSTRAP_RESET` aussi.
  */
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { FROZEN_CRYPTO_LABELS } from '../../shared/formerBrand';
 
 export const TOTP_PERIOD_SECONDS = 30;
 export const TOTP_DIGITS = 6;
@@ -133,7 +134,7 @@ export function normalizeRecoveryCode(code: unknown): string {
 }
 
 export function hashRecoveryCode(code: string): string {
-  return createHash('sha256').update(`ayrovi-admin-recovery:${normalizeRecoveryCode(code)}`).digest('hex');
+  return createHash('sha256').update(`${FROZEN_CRYPTO_LABELS.adminRecovery}${normalizeRecoveryCode(code)}`).digest('hex');
 }
 
 export function looksLikeRecoveryCode(code: unknown): boolean {
@@ -162,8 +163,8 @@ export function parseRecoveryHashes(raw: unknown): string[] {
 
 function encryptionKey(): Buffer {
   const material = String(process.env.ADMIN_TOTP_KEY || process.env.CUSTOMER_AUTH_SECRET || '').trim()
-    || 'ayrovi-dev-only-admin-totp-key';
-  return createHash('sha256').update(`ayrovi-admin-totp:v1:${material}`).digest();
+    || FROZEN_CRYPTO_LABELS.adminTotpDevelopmentKey;
+  return createHash('sha256').update(`${FROZEN_CRYPTO_LABELS.adminTotp}${material}`).digest();
 }
 
 export function sealTotpSecret(secret: string): string {

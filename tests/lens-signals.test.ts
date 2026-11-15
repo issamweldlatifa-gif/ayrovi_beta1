@@ -8,8 +8,8 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 describe('l’OCR ne touche jamais au prix (règle client du 25/09/2026)', () => {
-  const routes = readFileSync('src/ayrovix/routes.ts', 'utf8');
-  const signals = readFileSync('src/ayrovix/services/lensSignals.ts', 'utf8');
+  const routes = readFileSync('src/zayrovix/routes.ts', 'utf8');
+  const signals = readFileSync('src/zayrovix/services/lensSignals.ts', 'utf8');
 
   it('aucune fonction d’arbitrage de prix ne subsiste dans le module de signaux', () => {
     expect(signals).not.toContain('reconcileDetectedPrice');
@@ -42,10 +42,10 @@ describe('l’OCR ne touche jamais au prix (règle client du 25/09/2026)', () =>
 });
 
 describe('câblage sur la route client', () => {
-  const routes = readFileSync('src/ayrovix/routes.ts', 'utf8');
-  const source = readFileSync('src/ayrovix/services/lensSignals.ts', 'utf8');
+  const routes = readFileSync('src/zayrovix/routes.ts', 'utf8');
+  const source = readFileSync('src/zayrovix/services/lensSignals.ts', 'utf8');
 
-  const engine = readFileSync('src/ayrovix/services/lensEngine.ts', 'utf8');
+  const engine = readFileSync('src/zayrovix/services/lensEngine.ts', 'utf8');
 
   it('les signaux tournent en parallèle des moteurs, pas après eux', () => {
     const block = engine.split('Promise.allSettled([')[1].split(']);')[0];
@@ -69,8 +69,8 @@ describe('câblage sur la route client', () => {
 
   it('un budget de temps borne la lecture : jamais de client bloqué par l’OCR', () => {
     expect(source).toContain('withBudget');
-    expect(source).toContain('AYROVI_LENS_SIGNALS_BUDGET_MS');
-    expect(source).toContain("process.env.AYROVI_LENS_SIGNALS === 'false'");
+    expect(source).toContain('ZAYROVI_LENS_SIGNALS_BUDGET_MS');
+    expect(source).toContain("process.env.ZAYROVI_LENS_SIGNALS === 'false'");
   });
 
   it('aucun échec de lecture ne peut faire tomber la requête', () => {

@@ -31,7 +31,7 @@ function read(p) { return fs.readFileSync(path.join(root, p), 'utf-8'); }
 console.log('\n=== PART1 — TOUCH TAP INSTANT (10 cases) ===');
 
 test('1. Tap on sleeve → expands to complete shirt (findBoxForTap inside)', () => {
-  const src = read('client/src/ayrovix/components/InteractiveLensResults.tsx');
+  const src = read('client/src/zayrovix/components/InteractiveLensResults.tsx');
   if (!src.includes('findBoxForTap')) throw new Error('findBoxForTap missing');
   if (!src.includes('inside')) throw new Error('inside check missing');
   const box = [0.2,0.1,0.4,0.6];
@@ -43,7 +43,7 @@ test('1. Tap on sleeve → expands to complete shirt (findBoxForTap inside)', ()
 });
 
 test('2. Tap on shoe near center expands via nearest box (dist <12)', () => {
-  const src = read('client/src/ayrovix/components/InteractiveLensResults.tsx');
+  const src = read('client/src/zayrovix/components/InteractiveLensResults.tsx');
   if (!src.includes('dist < 12')) throw new Error('dist threshold missing');
   const box=[0.7,0.7,0.15,0.15];
   const tap={x:78,y:79};
@@ -54,7 +54,7 @@ test('2. Tap on shoe near center expands via nearest box (dist <12)', () => {
 });
 
 test('3. Tap far from any product returns 22% centered box fallback (Google Lens style)', () => {
-  const src = read('client/src/ayrovix/components/InteractiveLensResults.tsx');
+  const src = read('client/src/zayrovix/components/InteractiveLensResults.tsx');
   if (!src.includes('22')) throw new Error('22% fallback missing');
   if (!src.includes('22%') && !src.includes('22 ')) throw new Error('22% box missing');
   // far tap should fallback not null
@@ -63,7 +63,7 @@ test('3. Tap far from any product returns 22% centered box fallback (Google Lens
 });
 
 test('4. Instant tap <300ms highlight, no heavy lasso per-move (selectedBox + tapStart)', () => {
-  const src = read('client/src/ayrovix/components/InteractiveLensResults.tsx');
+  const src = read('client/src/zayrovix/components/InteractiveLensResults.tsx');
   if (!src.includes('selectedBox')) throw new Error('selectedBox missing — lasso not removed');
   if (!src.includes('tapStart')) throw new Error('tapStart missing');
   if (!src.includes('triggerTapSearch')) throw new Error('triggerTapSearch missing');
@@ -73,7 +73,7 @@ test('4. Instant tap <300ms highlight, no heavy lasso per-move (selectedBox + ta
 });
 
 test('5. Single rect highlight — no heavy SVG Q path, lightweight', () => {
-  const src = read('client/src/ayrovix/components/InteractiveLensResults.tsx');
+  const src = read('client/src/zayrovix/components/InteractiveLensResults.tsx');
   if (src.includes('lassoPathD')) throw new Error('heavy lassoPathD still present');
   if (src.includes(' Q')) throw new Error('heavy Q smoothing still present');
   if (!src.includes('<rect')) throw new Error('single rect highlight missing');
@@ -82,7 +82,7 @@ test('5. Single rect highlight — no heavy SVG Q path, lightweight', () => {
 });
 
 test('6. CropBoxToFile with 18% pad and 0.85 jpeg (faster/lighter than lasso 0.92)', () => {
-  const src = read('client/src/ayrovix/components/InteractiveLensResults.tsx');
+  const src = read('client/src/zayrovix/components/InteractiveLensResults.tsx');
   if (!src.includes('cropBoxToFile')) throw new Error('cropBoxToFile missing');
   if (!src.includes('18%') && !src.includes('0.18')) throw new Error('18% padding missing');
   if (!src.includes('0.85')) throw new Error('0.85 jpeg missing');
@@ -91,7 +91,7 @@ test('6. CropBoxToFile with 18% pad and 0.85 jpeg (faster/lighter than lasso 0.9
 });
 
 test('7. Lasso heavy code DELETED (no lassoPointsRef/rAF per-move, no even-odd 0.42)', () => {
-  const src = read('client/src/ayrovix/components/InteractiveLensResults.tsx');
+  const src = read('client/src/zayrovix/components/InteractiveLensResults.tsx');
   if (src.includes('lassoPointsRef')) throw new Error('lassoPointsRef not deleted');
   if (src.includes('rafPending')) throw new Error('rafPending not deleted');
   if (src.includes('isDrawing')) throw new Error('isDrawing not deleted');
@@ -101,10 +101,10 @@ test('7. Lasso heavy code DELETED (no lassoPointsRef/rAF per-move, no even-odd 0
 });
 
 test('8. Multi-product separate objects (person+shirt+pants+shoes+bag) via detectedProducts', () => {
-  const src = read('client/src/ayrovix/components/InteractiveLensResults.tsx');
+  const src = read('client/src/zayrovix/components/InteractiveLensResults.tsx');
   if (!src.includes('detectedProducts')) throw new Error('detectedProducts prop missing');
   if (!src.includes('box: [number,number,number,number]')) throw new Error('box type missing');
-  const launcher = read('client/src/ayrovix/components/LensLauncher.tsx');
+  const launcher = read('client/src/zayrovix/components/LensLauncher.tsx');
   if (!launcher.includes('detectedProducts')) throw new Error('Launcher not wiring detectedProducts');
   if (!launcher.includes('result.identification.products')) throw new Error('not mapping identification.products');
   if (!src.includes('detectedProducts.length > 1')) throw new Error('multi-product overlay missing');
@@ -112,7 +112,7 @@ test('8. Multi-product separate objects (person+shirt+pants+shoes+bag) via detec
 });
 
 test('9. Visual feedback: tap selected clear highlight dim 0.38 + white frame + pulse 0.55s', () => {
-  const src = read('client/src/ayrovix/components/InteractiveLensResults.tsx');
+  const src = read('client/src/zayrovix/components/InteractiveLensResults.tsx');
   if (!src.includes('rgba(0,0,0,0.38)')) throw new Error('dim 0.38 missing');
   if (!src.includes('stroke=\"white\"')) throw new Error('white outline missing');
   if (!src.includes('evenodd')) throw new Error('evenodd dim missing');
@@ -122,12 +122,12 @@ test('9. Visual feedback: tap selected clear highlight dim 0.38 + white frame + 
 });
 
 test('10. Performance: tap = fast local/lightweight instant, confirm = AI only (no AI per touch)', () => {
-  const src = read('client/src/ayrovix/components/InteractiveLensResults.tsx');
+  const src = read('client/src/zayrovix/components/InteractiveLensResults.tsx');
   if (!src.includes('INSTANT TAP') && !src.includes('Google Lens')) throw new Error('tap performance comment missing');
   if (!src.includes('no AI per')) throw new Error('no AI per touch missing');
-  const ai = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const ai = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!ai.includes('CACHE_TTL_MS')) throw new Error('cache missing');
-  const routes = read('src/ayrovix/routes.ts');
+  const routes = read('src/zayrovix/routes.ts');
   if (routes.includes('handlePointerMove') && routes.includes('generateOptimizedSearch')) throw new Error('AI should not be in pointer move');
   if (!src.includes('selectedBox')) throw new Error('tap state missing');
   return true;
@@ -137,7 +137,7 @@ test('10. Performance: tap = fast local/lightweight instant, confirm = AI only (
 console.log('\n=== PART2 — AI INTELLIGENCE (7 cases) ===');
 
 test('11. AI product understanding: category/type/brand/model/color/shape/material/pattern/style/text-logo/distinctive, visible vs inferred', () => {
-  const src = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const src = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!src.includes('ProductUnderstanding')) throw new Error('ProductUnderstanding missing');
   if (!src.includes('attributesVisible')) throw new Error('visible vs inferred missing');
   if (!src.includes('attributesInferred')) throw new Error('inferred missing');
@@ -149,16 +149,16 @@ test('11. AI product understanding: category/type/brand/model/color/shape/materi
 });
 
 test('12. AI does NOT invent brand/model/code/price when not visible', () => {
-  const ai = read('src/ayrovix/services/ai.ts');
+  const ai = read('src/zayrovix/services/ai.ts');
   if (!ai.includes("N'invente jamais")) throw new Error('no invention rule missing in ai.ts');
-  const intel = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const intel = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!intel.includes("N'invente jamais")) throw new Error('no invention in intelligence');
   if (!intel.includes('visible vs inferred')) throw new Error('visible vs inferred not enforced');
   return true;
 });
 
 test('13. Customer intent understanding: selected object + image + optional text + context', () => {
-  const src = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const src = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!src.includes('understandCustomerIntent')) throw new Error('intent function missing');
   if (!src.includes('selectedObject')) throw new Error('selectedObject missing');
   if (!src.includes('optionalText')) throw new Error('optionalText missing');
@@ -168,17 +168,17 @@ test('13. Customer intent understanding: selected object + image + optional text
 });
 
 test('14. Optional text handling (customerIntent text appended)', () => {
-  const src = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const src = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!src.includes('customerIntentText')) throw new Error('customerIntentText param missing');
-  const routes = read('src/ayrovix/routes.ts');
+  const routes = read('src/zayrovix/routes.ts');
   if (!routes.includes('customerIntentText')) throw new Error('routes not reading customerIntent');
-  const api = read('client/src/ayrovix/services/lensApi.ts');
+  const api = read('client/src/zayrovix/services/lensApi.ts');
   if (!api.includes('customerIntent')) throw new Error('lensApi not sending intent');
   return true;
 });
 
 test('15. AI search query generation: important vs unnecessary attributes, keywords, variations', () => {
-  const src = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const src = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!src.includes('generateOptimizedSearch')) throw new Error('generateOptimizedSearch missing');
   if (!src.includes('importantAttributes')) throw new Error('important missing');
   if (!src.includes('unnecessaryAttributes')) throw new Error('unnecessary missing');
@@ -189,7 +189,7 @@ test('15. AI search query generation: important vs unnecessary attributes, keywo
 });
 
 test('16. AI query fallback when AI not configured (rule-based) + ultra-fast timeout 3500', () => {
-  const src = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const src = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!src.includes('buildFallbackQuery')) throw new Error('fallback missing');
   if (!src.includes('isConfigured()')) throw new Error('isConfigured check missing');
   if (!src.includes('fallback: true')) throw new Error('fallback flag missing');
@@ -198,11 +198,11 @@ test('16. AI query fallback when AI not configured (rule-based) + ultra-fast tim
 });
 
 test('17. AI flow cached, only on confirm, no duplicate searches + pipeline cache', () => {
-  const src = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const src = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!src.includes('queryCache')) throw new Error('query cache missing');
   if (!src.includes('relevanceCache')) throw new Error('relevance cache missing');
   if (!src.includes('CACHE_TTL_MS')) throw new Error('TTL missing');
-  const routes = read('src/ayrovix/routes.ts');
+  const routes = read('src/zayrovix/routes.ts');
   if (!routes.includes('generateOptimizedSearch')) throw new Error('routes not using optimized');
   if (!routes.includes('analyzeResultRelevance')) throw new Error('routes not using relevance');
   if (!routes.includes('pipelineCache')) throw new Error('pipelineCache missing for 1000+ users');
@@ -214,16 +214,16 @@ test('17. AI flow cached, only on confirm, no duplicate searches + pipeline cach
 console.log('\n=== PART2 — SEARCH INTELLIGENCE (9 cases) ===');
 
 test('18. SerpApi kept (visualSearch still used)', () => {
-  const routes = read('src/ayrovix/routes.ts');
+  const routes = read('src/zayrovix/routes.ts');
   if (!routes.includes('serpApiVisualSearch')) throw new Error('SerpApi removed');
-  const vs = read('src/ayrovix/services/visualSearch.ts');
+  const vs = read('src/zayrovix/services/visualSearch.ts');
   if (!vs.includes('google_lens')) throw new Error('google lens engine missing');
   if (!vs.includes('serpApiVisualReady')) throw new Error('ready check missing');
   return true;
 });
 
 test('19. Flow: upload→Lens→tap confirm→AI understand→AI optimize→SerpApi→AI analyze→Dedup→Display (ultra-fast)', () => {
-  const routes = read('src/ayrovix/routes.ts');
+  const routes = read('src/zayrovix/routes.ts');
   const hasIdentify = routes.includes('identifyProduct');
   const hasOptimize = routes.includes('generateOptimizedSearch');
   const hasSerp = routes.includes('serpApiVisualSearch');
@@ -236,23 +236,23 @@ test('19. Flow: upload→Lens→tap confirm→AI understand→AI optimize→Serp
 });
 
 test('20. AI result analysis: strong/similar/weak/irrelevant, no false exact match, cap 86', () => {
-  const src = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const src = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!src.includes("'strong'") || !src.includes("'similar'") || !src.includes("'weak'") || !src.includes("'irrelevant'")) throw new Error('levels missing');
-  const routes = read('src/ayrovix/routes.ts');
+  const routes = read('src/zayrovix/routes.ts');
   if (!routes.includes("Math.min(adj, 86)") && !routes.includes('cap strong')) throw new Error('confidence cap not in routes');
   if (!src.includes('3800')) throw new Error('relevance fast timeout 3800 missing');
   return true;
 });
 
 test('21. Irrelevant filtered but at least 2 kept if all irrelevant', () => {
-  const routes = read('src/ayrovix/routes.ts');
+  const routes = read('src/zayrovix/routes.ts');
   if (!routes.includes("relevance !== 'irrelevant'")) throw new Error('irrelevant filter missing');
   if (!routes.includes('filtered.length >= 2')) throw new Error('keep at least 2 missing');
   return true;
 });
 
 test('22. Deterministic dedup by URL/ID (normalizeUrl)', () => {
-  const src = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const src = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!src.includes('normalizeUrl')) throw new Error('normalizeUrl missing');
   if (!src.includes('seenUrl')) throw new Error('seenUrl missing');
   if (!src.includes('seenId')) throw new Error('seenId missing');
@@ -260,7 +260,7 @@ test('22. Deterministic dedup by URL/ID (normalizeUrl)', () => {
 });
 
 test('23. Dedup by normalized title + brand + source (brand-model)', () => {
-  const src = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const src = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!src.includes('normalizeTitle')) throw new Error('normalizeTitle missing');
   if (!src.includes('brandModelKey')) throw new Error('brandModelKey missing');
   if (!src.includes('skuLike')) throw new Error('skuLike missing');
@@ -268,7 +268,7 @@ test('23. Dedup by normalized title + brand + source (brand-model)', () => {
 });
 
 test('24. Jaccard near-duplicate 0.88 threshold (semantic dedup, no incorrect merge)', () => {
-  const src = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const src = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!src.includes('jaccard')) throw new Error('jaccard missing');
   if (!src.includes('0.88')) throw new Error('0.88 threshold missing');
   if (!src.includes('no incorrect merge') && !src.includes('Do NOT merge')) throw new Error('no incorrect merge comment missing');
@@ -276,20 +276,20 @@ test('24. Jaccard near-duplicate 0.88 threshold (semantic dedup, no incorrect me
 });
 
 test('25. Duplicate prevention: URL/ID/SKU/source/brand-model/normalized + AI semantic', () => {
-  const src = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const src = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!src.includes('deduplicateCandidates')) throw new Error('deduplicateCandidates missing');
   if (!src.includes('aiSemanticDedup')) throw new Error('aiSemanticDedup missing');
-  const routes = read('src/ayrovix/routes.ts');
+  const routes = read('src/zayrovix/routes.ts');
   if (!routes.includes('deduplicateCandidates')) throw new Error('routes not deduping');
   return true;
 });
 
 test('26. Ultra-fast search: budget 4200ms, visual shortcut skip AI if ≥4 matches', () => {
-  const search = read('src/ayrovix/services/search.ts');
+  const search = read('src/zayrovix/services/search.ts');
   if (!search.includes('4_200') && !search.includes('4200')) throw new Error('4.2s budget missing');
-  const routes = read('src/ayrovix/routes.ts');
+  const routes = read('src/zayrovix/routes.ts');
   if (!routes.includes('visualCandidates.length <')) throw new Error('visual shortcut missing — must skip AI when Lens already has matches');
-  const ai = read('src/ayrovix/services/aiLensIntelligence.ts');
+  const ai = read('src/zayrovix/services/aiLensIntelligence.ts');
   if (!ai.includes('3500')) throw new Error('optimize fast timeout missing');
   return true;
 });
@@ -298,17 +298,17 @@ test('26. Ultra-fast search: budget 4200ms, visual shortcut skip AI if ≥4 matc
 console.log('\n=== REGRESSION ===');
 
 test('27. No second Lens/touch/SerpApi/pipeline/display (re-use components)', () => {
-  const files = fs.readdirSync(path.join(root, 'src/ayrovix/services'));
+  const files = fs.readdirSync(path.join(root, 'src/zayrovix/services'));
   const countLens = files.filter(f=> f.toLowerCase().includes('lens')).length;
   if (countLens > 6) throw new Error('too many lens files, maybe duplicate');
-  const routes = read('src/ayrovix/routes.ts');
+  const routes = read('src/zayrovix/routes.ts');
   const serpCount = (routes.match(/serpApiVisualSearch/g)||[]).length;
   if (serpCount > 2) throw new Error('duplicate SerpApi usage');
   return true;
 });
 
 test('28. Pricing/DB not broken (calculatePrice still used, tokenized)', () => {
-  const routes = read('src/ayrovix/routes.ts');
+  const routes = read('src/zayrovix/routes.ts');
   if (!routes.includes('calculatePrice')) throw new Error('pricing broken');
   if (!routes.includes('tokenizedCandidates')) throw new Error('tokenization broken');
   if (!routes.includes('priceToken')) throw new Error('priceToken broken');
@@ -317,7 +317,7 @@ test('28. Pricing/DB not broken (calculatePrice still used, tokenized)', () => {
 
 test('29. Build still passes (typecheck 0, vite 780 modules)', () => {
   if (!fs.existsSync(path.join(root, 'public/assets'))) throw new Error('build not run');
-  const snap = read('client/src/ayrovix/components/InteractiveLensResults.tsx');
+  const snap = read('client/src/zayrovix/components/InteractiveLensResults.tsx');
   if (snap.length < 3000) throw new Error('InteractiveLensResults too small');
   if (snap.length > 30000) throw new Error('InteractiveLensResults too heavy — should be light tap');
   return true;

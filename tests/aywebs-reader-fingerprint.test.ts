@@ -22,8 +22,8 @@ import {
 } from '../src/scraper/readerFingerprint';
 
 const TOUCHED_ENV = [
-  'AYROVIX_READER_PROFILE', 'AYROVIX_READER_PROFILE_AMAZON', 'AYROVIX_READER_PROFILE_SHEIN',
-  'AYROVIX_READER_FALLBACK_MS', 'AYROVIX_JINA_HEADSTART_MS',
+  'ZAYROVIX_READER_PROFILE', 'ZAYROVIX_READER_PROFILE_AMAZON', 'ZAYROVIX_READER_PROFILE_SHEIN',
+  'ZAYROVIX_READER_FALLBACK_MS', 'ZAYROVIX_JINA_HEADSTART_MS',
 ];
 
 afterEach(() => {
@@ -52,17 +52,17 @@ describe('AYWEBs Phase 1 — empreinte primaire par store', () => {
   });
 
   it('surcharge sans redéploiement : par store, puis globale ; valeur inconnue ignorée', () => {
-    process.env.AYROVIX_READER_PROFILE_AMAZON = 'desktop';
+    process.env.ZAYROVIX_READER_PROFILE_AMAZON = 'desktop';
     expect(readerProfileForStore('amazon')).toBe('desktop');
-    delete process.env.AYROVIX_READER_PROFILE_AMAZON;
+    delete process.env.ZAYROVIX_READER_PROFILE_AMAZON;
 
-    process.env.AYROVIX_READER_PROFILE = 'mobile';
+    process.env.ZAYROVIX_READER_PROFILE = 'mobile';
     expect(readerProfileForStore('shein')).toBe('mobile');
-    process.env.AYROVIX_READER_PROFILE_SHEIN = 'desktop';
+    process.env.ZAYROVIX_READER_PROFILE_SHEIN = 'desktop';
     expect(readerProfileForStore('shein')).toBe('desktop'); // le store l'emporte
-    delete process.env.AYROVIX_READER_PROFILE_SHEIN;
+    delete process.env.ZAYROVIX_READER_PROFILE_SHEIN;
 
-    process.env.AYROVIX_READER_PROFILE_AMAZON = 'navigateur-magique';
+    process.env.ZAYROVIX_READER_PROFILE_AMAZON = 'navigateur-magique';
     expect(readerProfileForStore('amazon')).toBe('mobile'); // on retombe sur la mesure
   });
 });
@@ -113,9 +113,9 @@ describe('AYWEBs Phase 1 — plan de sondes : une empreinte, puis un repli diff�
   });
 
   it('le repli est réglable, et désactivable (0 = aucune seconde requête)', () => {
-    process.env.AYROVIX_READER_FALLBACK_MS = '0';
+    process.env.ZAYROVIX_READER_FALLBACK_MS = '0';
     expect(readerProbePlan('amazon')[1].delayMs).toBe(0);
-    process.env.AYROVIX_READER_FALLBACK_MS = '4000';
+    process.env.ZAYROVIX_READER_FALLBACK_MS = '4000';
     expect(readerProbePlan('amazon')[1].delayMs).toBe(4000);
   });
 });
@@ -127,10 +127,10 @@ describe('AYWEBs Phase 1 — départ du lecteur Jina', () => {
   });
 
   it('surchargeable, et jamais inférieur au repli configuré si on l’impose', () => {
-    process.env.AYROVIX_JINA_HEADSTART_MS = '9000';
+    process.env.ZAYROVIX_JINA_HEADSTART_MS = '9000';
     expect(readerJinaHeadstartMs()).toBe(9000);
-    process.env.AYROVIX_READER_FALLBACK_MS = '0';
-    delete process.env.AYROVIX_JINA_HEADSTART_MS;
+    process.env.ZAYROVIX_READER_FALLBACK_MS = '0';
+    delete process.env.ZAYROVIX_JINA_HEADSTART_MS;
     expect(readerJinaHeadstartMs()).toBe(500);
   });
 });

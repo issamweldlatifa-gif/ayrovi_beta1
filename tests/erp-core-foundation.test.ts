@@ -40,7 +40,7 @@ describe('ERP Core foundation (P0 + P1)', () => {
   beforeAll(async () => {
     const login = await admin
       .set('User-Agent', 'ZAYROVI-ErpCoreTest/1.0 (vitest)')
-      .post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+      .post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
   });
@@ -182,7 +182,7 @@ describe('ERP Core foundation (P0 + P1)', () => {
     test('me / list / read / update all work and never touch the login credentials', async () => {
       const me = await admin.get('/api/admin/core/employees/me');
       expect(me.status).toBe(200);
-      expect(me.body.data.legacy.email).toBe('admin@ayrovi.tn');
+      expect(me.body.data.legacy.email).toBe('admin@zayrovi.com');
       const employeeId = me.body.data.employee.id;
       expect(employeeId).toBeTruthy();
 
@@ -452,7 +452,7 @@ describe('E8 — événements : résumé du tableau de bord (P1)', () => {
   beforeAll(async () => {
     const login = await admin
       .set('User-Agent', 'ZAYROVI-ErpSummary/1.0 (vitest)')
-      .post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+      .post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
     expect(login.status).toBe(200);
     csrf = login.body.data.csrfToken;
   });

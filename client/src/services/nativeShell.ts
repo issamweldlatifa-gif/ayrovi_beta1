@@ -1,12 +1,12 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import { AYROVI_API_ORIGIN } from './apiOrigin';
+import { ZAYROVI_API_ORIGIN } from './apiOrigin';
 import { getSessionId } from '../utils/session';
 
 /**
  * Coque native (APK Capacitor) — un seul point de détection pour tout l'app.
  * Le web ignore ces helpers ; l'UI est identique dans les deux modes.
  */
-const NATIVE_TOKEN_KEY = 'ayrovi_native_session_token';
+const NATIVE_TOKEN_KEY = 'zayrovi_native_session_token';
 
 /**
  * Application native (paquet embarqué) : le jeton de session client est gardé

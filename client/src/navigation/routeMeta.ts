@@ -9,7 +9,7 @@ import { seoRouteFor, type PublicSeoRoute } from '../../../shared/publicSeo';
  * cette fonction est la manière honnête de ne pas laisser chaque page se déclarer « accueil ».
  * Le sitemap et le 404, eux, sont côté serveur — voir `shared/publicSeo.ts` et `src/server.ts`.
  */
-const SITE_ORIGIN = 'https://ayrovi.tn';
+const SITE_ORIGIN = 'https://zayrovi.com';
 const LOCALE_TAGS: Record<string, string> = { fr: 'fr_TN', ar: 'ar_TN' };
 
 function ensureMeta(selector: string, create: () => Element): Element {

@@ -23,7 +23,7 @@ services:
       # persistant de 1 Go — leurs plafonds additionnés dépassaient sa taille, et un
       # disque plein empêche SQLite d'écrire. Hors du point de montage `data/` :
       # système de fichiers du conteneur, vidé à chaque déploiement (voulu).
-      - key: AYROVI_CACHE_ROOT
+      - key: ZAYROVI_CACHE_ROOT
         value: /opt/render/project/src/.runtime-cache
       # Supervision externe (Prometheus) : /api/ops/metrics reste en 404 tant que ce
       # jeton (24 caractères minimum) n'est pas défini.
@@ -96,13 +96,13 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
-      - key: AYROVI_LENS_LIVE_STOCK
+      - key: ZAYROVI_LENS_LIVE_STOCK
         value: 'true'
-      - key: AYROVI_LENS_LIVE_BUDGET
+      - key: ZAYROVI_LENS_LIVE_BUDGET
         value: '24'
-      - key: AYROVI_LENS_LIVE_CONCURRENCY
+      - key: ZAYROVI_LENS_LIVE_CONCURRENCY
         value: '8'
-      - key: AYROVI_LENS_LIVE_DEADLINE_MS
+      - key: ZAYROVI_LENS_LIVE_DEADLINE_MS
         value: '25000'
       - key: BACKUP_INTERVAL_HOURS
         value: 24
@@ -120,7 +120,7 @@ services:
       - key: BACKUP_S3_SECRET_ACCESS_KEY
         sync: false
       - key: BACKUP_S3_PREFIX
-        value: ayrovi/sqlite
+        value: zayrovi/sqlite
       - key: BACKUP_REQUIRE_EXTERNAL
         value: 'false'
       - key: ANTHROPIC_API_KEY
@@ -162,21 +162,21 @@ services:
         value: tts-1
       - key: SERPAPI_KEY
         sync: false
-      - key: AYROVIX_VISUAL_SEARCH_TIMEOUT_MS
+      - key: ZAYROVIX_VISUAL_SEARCH_TIMEOUT_MS
         value: 22000
-      - key: AYROVIX_LENS_COUNTRY
+      - key: ZAYROVIX_LENS_COUNTRY
         value: fr
-      - key: AYROVIX_AI_WEB_SEARCH
+      - key: ZAYROVIX_AI_WEB_SEARCH
         value: true
-      - key: AYROVIX_PROVIDER_TIMEOUT_MS
+      - key: ZAYROVIX_PROVIDER_TIMEOUT_MS
         value: 15000
-      - key: AYROVIX_QUOTE_SECRET
+      - key: ZAYROVIX_QUOTE_SECRET
         sync: false
-      - key: AYROVI_ISOLATION_PROVIDER
+      - key: ZAYROVI_ISOLATION_PROVIDER
         value: local
       - key: PHOTOROOM_API_KEY
         sync: false
-      - key: AYROVIX_OCR_TIMEOUT_MS
+      - key: ZAYROVIX_OCR_TIMEOUT_MS
         value: 7000
-      - key: AYROVIX_SEARCH_TIMEOUT_MS
+      - key: ZAYROVIX_SEARCH_TIMEOUT_MS
         value: 15000

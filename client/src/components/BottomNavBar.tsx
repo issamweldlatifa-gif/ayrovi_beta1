@@ -26,7 +26,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const frame = useRef<number | null>(null);
-  const iconStyle = (_active = false): React.CSSProperties => ({ width: 28, height: 28, color: 'var(--ayrovi-text-primary)', flexShrink: 0 });
+  const iconStyle = (_active = false): React.CSSProperties => ({ width: 28, height: 28, color: 'var(--zayrovi-text-primary)', flexShrink: 0 });
   const monochrome = (name: string) => <span aria-hidden="true" style={{ ...iconStyle(), backgroundColor: 'currentColor', maskImage: `url(${name})`, WebkitMaskImage: `url(${name})`, maskSize: 'contain', WebkitMaskSize: 'contain', maskRepeat: 'no-repeat', WebkitMaskRepeat: 'no-repeat', maskPosition: 'center', WebkitMaskPosition: 'center' }} />;
   useBodyScrollLock(isVisionOpen);
 
@@ -75,7 +75,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
       )}
 
       <div
-        className={`ayrovi-glass-bottom-nav fixed inset-x-0 bottom-0 z-30 border-t px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-1 ${isVisible ? 'is-visible' : 'is-hidden'}`}
+        className={`zayrovi-glass-bottom-nav fixed inset-x-0 bottom-0 z-30 border-t px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-1 ${isVisible ? 'is-visible' : 'is-hidden'}`}
         aria-hidden={!isVisible}
         inert={isVisible ? undefined : true}
       >

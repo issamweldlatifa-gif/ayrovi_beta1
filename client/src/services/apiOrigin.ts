@@ -21,9 +21,9 @@
  * La figer en dur obligeait à modifier le code pour viser un autre serveur :
  * impossible, donc, de tester l'application contre une préproduction, un
  * serveur local (tunnel) ou un autre hébergeur SANS toucher au dépôt.
- * Désormais la construction accepte `VITE_AYROVI_API_ORIGIN` :
+ * Désormais la construction accepte `VITE_ZAYROVI_API_ORIGIN` :
  *
- *   VITE_AYROVI_API_ORIGIN=https://mon-serveur.example npx vite build
+ *   VITE_ZAYROVI_API_ORIGIN=https://mon-serveur.example npx vite build
  *
  * La valeur de repli reste l'origine de production : sans variable, le
  * comportement est EXACTEMENT celui d'avant (aucune régression).
@@ -62,19 +62,19 @@ export function normalizeApiOrigin(raw: string | undefined | null): string {
 
 /**
  * La valeur est injectée à la CONSTRUCTION par Vite (`define` dans
- * vite.config.mts, à partir de `VITE_AYROVI_API_ORIGIN`).
+ * vite.config.mts, à partir de `VITE_ZAYROVI_API_ORIGIN`).
  *
  * Pourquoi pas `import.meta.env` : `tsconfig.json` (celui du serveur) compile en
  * `module: commonjs`, où `import.meta` est interdit — même pour un fichier
  * client, dès qu'un test l'importe. Le projet utilisait déjà ce motif pour
- * `__AYROVI_BUILD_STAMP__` ; on le reprend plutôt que d'ouvrir une exception.
+ * `__ZAYROVI_BUILD_STAMP__` ; on le reprend plutôt que d'ouvrir une exception.
  * `typeof` protège l'exécution hors Vite (tests unitaires) : la constante
  * n'existe alors simplement pas, et le repli de production s'applique.
  */
-declare const __AYROVI_API_ORIGIN__: string | undefined;
+declare const __ZAYROVI_API_ORIGIN__: string | undefined;
 
-const rawOrigin = typeof __AYROVI_API_ORIGIN__ === 'undefined' ? '' : __AYROVI_API_ORIGIN__;
+const rawOrigin = typeof __ZAYROVI_API_ORIGIN__ === 'undefined' ? '' : __ZAYROVI_API_ORIGIN__;
 const configured = normalizeApiOrigin(rawOrigin);
 if (rawOrigin && !configured) throw new Error('HTTPS_API_ORIGIN_REQUIRED');
 
-export const AYROVI_API_ORIGIN = configured || PRODUCTION_ORIGIN;
+export const ZAYROVI_API_ORIGIN = configured || PRODUCTION_ORIGIN;

@@ -27,7 +27,7 @@ function setup(storeId: 'amazon' | 'zalando', fastMatrix = false, rejectFast = f
     price: 25, currency: 'EUR', priceVerified: true, currencyVerified: true,
     availability: { state: 'AVAILABLE', reason: '', checkedAt: '', source: 'capture', quantityHint: null },
     purchaseMode: 'ASSISTED', integrationType: 'PARTIALLY_SUPPORTED',
-    ayroviPricing: { totalTnd: 100, pricingVersion: 1, breakdown: null },
+    zayroviPricing: { totalTnd: 100, pricingVersion: 1, breakdown: null },
     variantGroups: [{ attribute: 'size', values: ['38', '39', '40'] }],
     variantDetails: [], variantQuotes: [], fromCache: false, cacheAgeMs: null,
   };
@@ -37,12 +37,12 @@ function setup(storeId: 'amazon' | 'zalando', fastMatrix = false, rejectFast = f
       options: [{ value: '38', available: true }, { value: '39', available: true }, { value: '40', available: false }] }] };
   const fastCapture = fastMatrix ? { ...capture, variantMatrix: [{ attributes: { size: '39' }, price: '30 EUR', available: true, variantId: 'asin:B012345679', variantUrl: 'https://www.amazon.fr/dp/B012345679' }] } : capture;
   mockResolve.mockImplementation(async (_url, opts) => ({
-    product: fastMatrix && opts?.variant?.size === '39' ? { ...product, ayroviPricing: { totalTnd: 120, pricingVersion: 1, breakdown: null } } : product, quoteToken: 'server-signed-token', missing: [], capture: { used: !(rejectFast && opts?.variant?.size === '39') },
+    product: fastMatrix && opts?.variant?.size === '39' ? { ...product, zayroviPricing: { totalTnd: 120, pricingVersion: 1, breakdown: null } } : product, quoteToken: 'server-signed-token', missing: [], capture: { used: !(rejectFast && opts?.variant?.size === '39') },
     variant: opts?.variant,
   }));
   mockAdd.mockResolvedValue({
     item: { id: 'line', productId: 'test-product', images: [], quantity: 1, variantLabel: '39', unitPrice: 25, currency: 'EUR' },
-    cart: { totals: { units: 1 } }, ayrovi: { linked: true },
+    cart: { totals: { units: 1 } }, zayrovi: { linked: true },
   });
   render(<SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
     <PrefsProvider><I18nProvider><ThemeProvider>

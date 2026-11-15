@@ -1,5 +1,5 @@
 // QUIET CARD v2 (décision client 2026-09-23, référence Zalando) :
-//  • le prix remisé est ROUGE (var(--ayrovi-promo)) et l'original reste barré gris ;
+//  • le prix remisé est ROUGE (var(--zayrovi-promo)) et l'original reste barré gris ;
 //  • le badge −X% est rouge — le violet reste réservé aux CTA ;
 //  • toute image produit vit dans le cadre studio unifié (blanc + hairline +
 //    mix-blend-mode: multiply) — plus de fond marchand brut, plus de crop cover.
@@ -7,23 +7,23 @@ import React from 'react';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { StudioImageFrame, QuietPromoPrice } from '../client/src/ayrovix/components/quiet-card';
-import { ProductCandidates } from '../client/src/ayrovix/components/ProductCandidates';
+import { StudioImageFrame, QuietPromoPrice } from '../client/src/zayrovix/components/quiet-card';
+import { ProductCandidates } from '../client/src/zayrovix/components/ProductCandidates';
 import { ShopProductScreen } from '../client/src/shop';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
-import type { AyrovixCandidate, AyrovixProduct } from '../client/src/ayrovix/types';
+import type { ZayrovixCandidate, ZayrovixProduct } from '../client/src/zayrovix/types';
 
 const read = (rel: string) => readFileSync(rel, 'utf8');
 
 const promo = { percent: 7, label: 'Offre mercredi', priceTnd: 604.5, originalPriceTnd: 650 };
 
-const candidate: AyrovixCandidate = {
+const candidate: ZayrovixCandidate = {
   id: 'backpack', kind: 'external', title: 'CATERPILLAR — Sac à dos voyage', brand: 'CATERPILLAR', model: null,
   colors: [], sizes: [], source: 'Example', sourceUrl: 'https://shop.example/item', image: '/backpack.jpg',
   price: 179.95, currency: 'EUR', priceTnd: 604.5, match: 94, promo,
 };
 
-const product: AyrovixProduct = {
+const product: ZayrovixProduct = {
   title: 'Sac à dos — Voyager', brand: 'CATERPILLAR', model: 'Grand capacity', description: '',
   image: '/backpack.jpg', images: ['/backpack.jpg'], source: 'Example', sourceUrl: 'https://shop.example/item',
   price: 179.95, currency: 'EUR', priceTnd: 604.5, exchangeRate: 3.37, colors: [], sizes: [], variantOptions: [],
@@ -36,7 +36,7 @@ describe('Quiet Card v2 — cadre studio unifié', () => {
       <LocaleProvider><StudioImageFrame src="/a.jpg" fallbackSources={['/a.jpg', '/b.jpg']} alt="produit" ratio="3 / 4" /></LocaleProvider>,
     );
     expect(html).toContain('ay-studio-frame__image');
-    const css = read('client/src/ayrovix/components/quiet-card.css');
+    const css = read('client/src/zayrovix/components/quiet-card.css');
     expect(css).toMatch(/\.ay-studio-frame\s*\{[^}]*background:\s*#fff/);
     expect(css).toMatch(/\.ay-studio-frame__image\s*\{[^}]*mix-blend-mode:\s*multiply/);
     expect(css).toMatch(/\.ay-studio-frame\s*\{[^}]*border:\s*1px solid/);
@@ -77,10 +77,10 @@ describe('Quiet Card v2 — promo rouge, référence Zalando', () => {
     expect(html).toContain('ay-quiet-price__current--promo');
     expect(html).toContain('ay-quiet-price__badge');
     expect(html).toContain('−7%');
-    const css = read('client/src/ayrovix/components/quiet-card.css');
-    expect(css).toMatch(/\.ay-quiet-price__current--promo\s*\{[^}]*var\(--ayrovi-promo/);
-    expect(css).toMatch(/\.ay-quiet-price__badge\s*\{[^}]*var\(--ayrovi-promo/);
-    expect(read('client/src/design/tokens.css')).toContain('--ayrovi-promo:');
+    const css = read('client/src/zayrovix/components/quiet-card.css');
+    expect(css).toMatch(/\.ay-quiet-price__current--promo\s*\{[^}]*var\(--zayrovi-promo/);
+    expect(css).toMatch(/\.ay-quiet-price__badge\s*\{[^}]*var\(--zayrovi-promo/);
+    expect(read('client/src/design/tokens.css')).toContain('--zayrovi-promo:');
   });
 
   it('sans promo : un seul prix noir, aucun badge — pas de promo fantôme', () => {

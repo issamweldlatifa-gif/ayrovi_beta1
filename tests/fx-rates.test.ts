@@ -23,7 +23,7 @@ const tmpDirs: string[] = [];
 afterAll(() => { for (const dir of tmpDirs) { try { fs.rmSync(dir, { recursive: true, force: true }); } catch { /* ignore */ } } });
 
 function freshDb(): QatafoDatabase {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-fx-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-fx-'));
   tmpDirs.push(dir);
   return new QatafoDatabase(path.join(dir, 'fx.sqlite'));
 }
