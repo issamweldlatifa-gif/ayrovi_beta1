@@ -170,11 +170,26 @@ jobs:
       - name: Générer le projet Android
         run: npx expo prebuild --platform android --no-install
 
-      # 15/11 : R8 manquait de mémoire (« OutOfMemoryError: Java heap space » dans
-      # minifyReleaseWithR8, runs #463/#465). Le prebuild remet 2 Go : on relève le tas.
-      - name: Mémoire de Gradle (R8)
+      # 15/11 : le dépôt est PRIVÉ ⇒ runner 2 cœurs / 7 Go. R8 débordait avec 2 Go de tas
+      # (runs #463/#465), et 6 Go tuaient la machine (#467, exit 143). Réglages taillés pour
+      # 7 Go + seulement les ABI embarquées (voir le script).
+      - name: Réglages Gradle (mémoire, ABI)
         working-directory: apps/mobile
-        run: node scripts/raise-gradle-heap.mjs android/gradle.properties
+        run: node scripts/raise-gradle-heap.mjs android/gradle.properties app.json
+
+      # Filet de sécurité : 8 Go de swap en plus de la RAM, pour qu'un pic (R8 + bundle JS)
+      # ralentisse le build au lieu de faire tuer le runner.
+      - name: Swap de secours (8 Go)
+        run: |
+          free -m | head -2
+          # Jamais bloquant : sans swap, le build tente quand même sa chance (avec un avertissement).
+          if sudo swapoff -a && sudo fallocate -l 8G /mnt/ci-swapfile && sudo chmod 600 /mnt/ci-swapfile \
+             && sudo mkswap /mnt/ci-swapfile >/dev/null && sudo swapon /mnt/ci-swapfile; then
+            echo "::notice title=Swap::8 Go actifs"
+          else
+            echo "::warning title=Swap::swap de secours non créé — build sans filet"
+          fi
+          free -m | head -3
 
       # EMPREINTE STABLE — pourquoi cette étape existe.
       #
