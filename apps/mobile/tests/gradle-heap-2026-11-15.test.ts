@@ -49,7 +49,7 @@ describe('réglages Gradle pour le runner privé (7 Go)', () => {
   it('les deux workflows Android : swap, puis réglages juste après le prebuild, avant Gradle', () => {
     for (const workflow of ['mobile-android.yml', 'mobile-release-aab.yml']) {
       const text = read(`../../../.github/workflows/${workflow}`);
-      const swap = text.indexOf('sudo swapon');
+      const swap = text.indexOf('sudo swapon /ci-swapfile');
       const prebuild = text.indexOf('npx expo prebuild --platform android --no-install');
       const settings = text.indexOf('node scripts/raise-gradle-heap.mjs android/gradle.properties app.json');
       const gradle = text.search(/\.\/gradlew (assemble|bundle)Release/);
@@ -58,6 +58,9 @@ describe('réglages Gradle pour le runner privé (7 Go)', () => {
       expect(settings, workflow).toBeGreaterThan(prebuild);
       expect(gradle, workflow).toBeGreaterThan(settings);
       expect(swap, workflow).toBeLessThan(gradle);
+      // Run #468 : le swap ne doit jamais remplir le disque — taille bornée, créé seulement s'il reste de la place.
+      expect(text, workflow).not.toContain('fallocate -l 8G');
+      expect(text, workflow).toMatch(/FREE_GB:-0}" -ge 12 \] && sudo fallocate -l 4G/);
     }
   });
 });

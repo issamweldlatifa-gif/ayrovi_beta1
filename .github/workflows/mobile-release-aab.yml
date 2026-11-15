@@ -123,17 +123,23 @@ jobs:
         working-directory: apps/mobile
         run: node scripts/raise-gradle-heap.mjs android/gradle.properties app.json
 
-      # Filet de sécurité : 8 Go de swap en plus de la RAM, pour qu'un pic (R8 + bundle JS)
-      # ralentisse le build au lieu de faire tuer le runner.
-      - name: Swap de secours (8 Go)
+      # Filet de sécurité mémoire SANS remplir le disque. Run #468 : un swap de 8 Go a saturé
+      # le petit disque du runner privé (« No space left on device »). On libère d'abord des
+      # outils préinstallés que le build n'utilise JAMAIS (.NET, Haskell, CodeQL, Boost, Swift —
+      # le SDK Android et Java ne sont pas touchés), puis on crée un swap de 4 Go SEULEMENT
+      # s'il reste au moins 12 Go libres. Jamais bloquant.
+      - name: Disque libre + swap de secours
         run: |
-          free -m | head -2
-          # Jamais bloquant : sans swap, le build tente quand même sa chance (avec un avertissement).
-          if sudo swapoff -a && sudo fallocate -l 8G /mnt/ci-swapfile && sudo chmod 600 /mnt/ci-swapfile \
-             && sudo mkswap /mnt/ci-swapfile >/dev/null && sudo swapon /mnt/ci-swapfile; then
-            echo "::notice title=Swap::8 Go actifs"
+          df -h / | tail -1
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/boost /usr/share/swift || true
+          FREE_GB=$(df -BG --output=avail / | tail -1 | tr -dc '0-9')
+          echo "::notice title=Disque::${FREE_GB} Go libres après nettoyage"
+          if [ "${FREE_GB:-0}" -ge 12 ] && sudo fallocate -l 4G /ci-swapfile && sudo chmod 600 /ci-swapfile \
+             && sudo mkswap /ci-swapfile >/dev/null && sudo swapon /ci-swapfile; then
+            echo "::notice title=Swap::4 Go de swap en plus"
           else
-            echo "::warning title=Swap::swap de secours non créé — build sans filet"
+            echo "::warning title=Swap::pas de swap supplémentaire (disque ${FREE_GB:-?} Go)"
           fi
           free -m | head -3
 
