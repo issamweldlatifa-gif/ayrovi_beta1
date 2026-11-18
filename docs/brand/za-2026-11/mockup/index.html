@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZAYROVI — Maquette des choix · jaune = action (18/11/2026)</title>
+<script src="geometry.js"></script>
+<style>
+@font-face{font-family:"Zayrovi Extracted Sans";src:url("../../../../client/public/fonts/editorial/zayrovi-extracted-sans.woff2") format("woff2");font-weight:200 900;font-stretch:75% 125%}
+@font-face{font-family:"Noto Sans Arabic";src:url("../../../../client/public/fonts/editorial/noto-sans-arabic.woff2") format("woff2");font-weight:100 900}
+:root{--y:#F2AE00;--ink:#0A0A0A;--white:#FFFFFF;--grey:#F2F2F2;--line:#E5E5E5;--muted:#666;--love:#F02849;--sale:#CF1322;
+  font-family:"Zayrovi Extracted Sans","Noto Sans Arabic",system-ui,sans-serif;font-stretch:102.5%}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#E9E9E9;color:var(--ink)}
+button{font:inherit;cursor:pointer}
+
+/* ── Design tokens: AFTER (yellow = action) vs BEFORE (blue) ── */
+body{--action:#F2AE00;--on-action:#0A0A0A;--action-press:#D99A00;--soft:#FFF3CC;--on-soft:#0A0A0A;--store:#F2AE00;--store-ink:#0A0A0A;--link-dark:#F2AE00}
+body[data-mode=before]{--action:#0A63F5;--on-action:#FFFFFF;--action-press:#0A53CB;--soft:#DCE8FE;--on-soft:#0A0A0A;--store:#0A63F5;--store-ink:#FFFFFF;--link-dark:#78A9FA}
+/* Text links — option 2 */
+body{--link:#0A0A0A;--link-line:#F2AE00}
+body[data-links=B]{--link:#8A6100;--link-line:transparent}
+body[data-links=C]{--link:#F2AE00;--link-line:transparent}
+body[data-mode=before]{--link:#0A63F5;--link-line:transparent}
+.lnk{color:var(--link);font-weight:650;text-decoration:underline;text-decoration-color:var(--link-line);text-decoration-thickness:2px;text-underline-offset:4px;cursor:pointer}
+body:not([data-links=A]) .lnk,body[data-mode=before] .lnk{text-decoration:none}
+.dark .lnk{color:var(--link-dark);text-decoration-color:transparent}
+
+/* ── Control bar ── */
+.ctl{position:sticky;top:0;z-index:50;background:#0A0A0A;color:#fff;padding:14px 24px 16px;box-shadow:0 4px 18px rgba(0,0,0,.25)}
+.ctl-top{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.ctl-top h1{font-size:18px;font-weight:650;font-stretch:112.5%}
+.ctl-top .sub{font-size:13px;color:#BDBDBD}
+.groups{display:flex;gap:14px;flex-wrap:wrap}
+.grp{background:#1C1C1C;border-radius:14px;padding:8px 10px}
+.grp b{display:block;font-size:12px;font-weight:650;color:#BDBDBD;margin-bottom:6px}
+.seg{display:flex;gap:4px}
+.seg button{border:1px solid #3A3A3A;background:#111;color:#fff;border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap}
+.seg button[aria-pressed=true]{background:#F2AE00;color:#0A0A0A;border-color:#F2AE00;font-weight:650}
+.pick{margin-inline-start:auto;background:#F2AE00;color:#0A0A0A;border-radius:999px;padding:8px 16px;font-weight:700;font-size:15px}
+body[data-mode=before] .grp.opt{opacity:.35;pointer-events:none}
+
+main{padding:28px 24px 80px;max-width:1720px;margin:0 auto}
+h2.sec{font-size:26px;font-weight:650;font-stretch:112.5%;margin:8px 0 6px}
+p.sec{color:#555;font-size:15px;margin-bottom:20px}
+.phones{display:flex;flex-wrap:wrap;gap:28px}
+.ph-wrap{display:flex;flex-direction:column;gap:10px;align-items:center}
+.ph-wrap > span{font-size:14px;font-weight:650;color:#333}
+
+/* ── Phone ── */
+.phone{width:360px;height:760px;border-radius:44px;background:#0A0A0A;padding:10px;box-shadow:0 18px 40px rgba(0,0,0,.18)}
+.scr{position:relative;width:100%;height:100%;border-radius:36px;overflow:hidden;background:var(--canvas);color:var(--fg);display:flex;flex-direction:column}
+.scr{--canvas:#FFFFFF;--fg:#0A0A0A;--surface:#FFFFFF;--muted:#666;--line:#E5E5E5;--chip:#F2F2F2}
+.dark .scr,.scr.dark{--canvas:#0A0A0A;--fg:#FFFFFF;--surface:#171717;--muted:#BDBDBD;--line:#3A3A3A;--chip:#1E1E1E}
+.status{height:30px;flex:0 0 30px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:12px;font-weight:650}
+.body{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
+.body::-webkit-scrollbar{display:none}
+.hdr{height:56px;flex:0 0 56px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;transition:background-color .45s}
+.hdr .icons{display:flex;align-items:center;gap:14px}
+.plus{display:flex;align-items:center;gap:4px;border:1.5px solid currentColor;border-radius:999px;padding:4px 10px;font-size:12px}
+.plus b{font-weight:700}
+.tile{display:inline-flex;align-items:center;justify-content:center;border-radius:10px;padding:6px 8px;transition:background-color .3s}
+
+/* bottom nav */
+.nav{height:62px;flex:0 0 62px;display:flex;justify-content:space-around;align-items:center;border-top:1px solid var(--line);background:var(--canvas)}
+.nav img{width:26px;height:26px}
+.dark .nav img.mono{filter:invert(1)}
+
+/* buttons */
+.btn{display:flex;align-items:center;justify-content:center;height:48px;border-radius:999px;font-weight:650;font-size:15px;border:0;width:100%}
+.btn.main{background:var(--action);color:var(--on-action)}
+.btn.main:active{background:var(--action-press)}
+.btn.sec{background:transparent;color:var(--fg);border:1.5px solid var(--fg)}
+.badge{display:inline-block;background:var(--soft);color:var(--on-soft);font-size:11px;font-weight:650;border-radius:6px;padding:3px 7px}
+.chip{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13px}
+.chip.on{border-color:var(--fg);font-weight:650}
+.switch{width:44px;height:26px;border-radius:13px;background:var(--action);position:relative;flex:0 0 44px}
+.switch::after{content:"";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.check{width:20px;height:20px;border-radius:5px;background:var(--action);display:inline-flex;align-items:center;justify-content:center;color:var(--on-action);font-size:13px;font-weight:800}
+.dot-count{position:absolute;top:-4px;right:-6px;min-width:16px;height:16px;border-radius:8px;background:var(--action);color:var(--on-action);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.pad{padding:16px}
+.row{display:flex;align-items:center;gap:10px}
+.between{display:flex;align-items:center;justify-content:space-between}
+.t-h{font-size:22px;font-weight:650;font-stretch:112.5%}
+.t-s{font-size:13px;color:var(--muted)}
+.prod{background:var(--chip);border-radius:16px;overflow:hidden;position:relative}
+.prod img{width:100%;height:150px;object-fit:cover;display:block}
+.prod .heart{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;color:#0A0A0A;font-size:15px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.price{font-weight:650;font-size:15px}
+.price.sale{color:var(--sale)}
+
+/* home carousel */
+.hero-band{padding:6px 0 18px;transition:background-color .45s}
+.track{display:flex;gap:10px;padding:0 14px;transition:transform .6s cubic-bezier(.3,.7,.3,1)}
+.card{flex:0 0 260px;height:300px;border-radius:16px;position:relative;overflow:hidden;padding:18px}
+.card h3{font-size:26px;font-weight:700;font-stretch:112.5%;line-height:1.1;color:#0A0A0A;position:relative;z-index:1}
+.card img{position:absolute;bottom:0;left:0;width:100%;height:68%;object-fit:contain;object-position:bottom}
+.tabs{display:flex;gap:18px;padding:14px 16px 0;border-bottom:1px solid var(--line);font-size:16px}
+.tabs span{padding-bottom:10px}
+.tabs span.on{border-bottom:2px solid var(--fg);font-weight:650}
+
+/* publication */
+.pub-top{background:#262626;color:#fff}
+.actions{display:flex;gap:18px;padding:14px 16px;align-items:center}
+.actions svg{width:26px;height:26px}
+.navy{background:#1E3A5F;color:#fff;padding:18px 16px 0}
+.navy h4{font-size:24px;font-weight:600;line-height:1.15;margin:10px 0 14px}
+.who{display:flex;align-items:center;gap:10px;font-size:15px}
+.who b{font-weight:650}
+.who .follow{opacity:.75}
+.reel{position:relative;height:300px;border-radius:0;overflow:hidden;background:#111}
+.reel img{width:100%;height:100%;object-fit:cover;opacity:.85}
+.reel .scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45),rgba(0,0,0,0) 35%,rgba(0,0,0,0) 60%,rgba(0,0,0,.55))}
+.reel .who{position:absolute;left:14px;top:14px;color:#fff}
+
+/* clean */
+.msg{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px}
+.bub{border-radius:18px;padding:10px 14px;font-size:14px;line-height:1.4;max-width:230px}
+.bub.ai{background:var(--chip)}
+.bub.me{background:var(--soft);color:var(--on-soft);margin-left:auto}
+.composer{display:flex;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line)}
+.composer .in{flex:1;height:44px;border-radius:22px;background:var(--chip);display:flex;align-items:center;padding:0 16px;font-size:14px;color:var(--muted)}
+.send{width:44px;height:44px;border-radius:50%;background:var(--action);display:flex;align-items:center;justify-content:center}
+
+/* aywebs */
+.store-bar{background:var(--store);color:var(--store-ink);padding:0 14px 14px}
+.store-bar .top{height:56px;display:flex;align-items:center;justify-content:space-between}
+.wm{height:22px;filter:brightness(0)}
+body[data-mode=before] .wm{filter:none}
+.search{height:44px;border-radius:22px;background:#fff;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:14px;color:#767676;white-space:nowrap;overflow:hidden}
+.stores{display:flex;gap:8px;padding:14px 16px;overflow:hidden}
+
+/* auth */
+.field{border:1.5px solid var(--line);border-radius:12px;height:52px;display:flex;align-items:center;padding:0 14px;font-size:15px;margin-top:6px}
+.field.focus{border-color:var(--fg);box-shadow:0 0 0 3px var(--focus-glow)}
+body{--focus-glow:rgba(242,174,0,.55)} body[data-mode=before]{--focus-glow:rgba(10,99,245,.35)}
+
+/* ── Web ── */
+.web{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.14);max-width:1400px}
+.web .chrome{height:38px;background:#E3E3E3;display:flex;align-items:center;gap:8px;padding:0 14px}
+.web .chrome i{width:12px;height:12px;border-radius:50%;background:#C4C4C4}
+.web .url{flex:1;max-width:520px;margin:0 auto;height:24px;border-radius:12px;background:#fff;font-size:12px;display:flex;align-items:center;padding:0 12px;color:#555}
+.w-hero{position:relative;transition:background-color .45s}
+.w-hdr{height:72px;display:flex;align-items:center;gap:28px;padding:0 40px}
+.w-hdr nav{display:flex;gap:22px;font-size:15px;font-weight:600}
+.w-hdr .s{flex:1;max-width:420px;height:42px;border-radius:21px;background:rgba(255,255,255,.85);display:flex;align-items:center;padding:0 16px;color:#767676;font-size:14px;margin-left:auto}
+.w-hero-in{display:grid;grid-template-columns:1.1fr 1fr;align-items:center;padding:20px 40px 0;min-height:340px}
+.w-hero-in h3{font-size:52px;line-height:1.02;font-weight:700;font-stretch:112.5%}
+.w-hero-in p{font-size:18px;margin:14px 0 22px;max-width:420px}
+.w-hero-in img{width:100%;max-height:330px;object-fit:contain;object-position:bottom;border-radius:18px 18px 0 0}
+.w-sec{padding:34px 40px}
+.w-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:16px}
+.w-grid .prod img{height:220px}
+.w-foot{background:#000;color:#fff;padding:40px;display:grid;grid-template-columns:1.2fr 1fr 1fr 1.2fr;gap:30px;font-size:14px}
+.w-foot h5{font-size:13px;color:#BDBDBD;font-weight:650;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
+.w-foot a{display:block;color:#fff;margin-bottom:8px;text-decoration:none}
+.w-foot a:hover{color:var(--link-dark)}
+.w-foot .news{display:flex;gap:8px;margin-top:8px}
+.w-foot .news span{flex:1;height:44px;border-radius:22px;border:1px solid #444;display:flex;align-items:center;padding:0 14px;color:#888}
+.w-foot .news button{height:44px;border-radius:22px;border:0;padding:0 18px;background:var(--action);color:var(--on-action);font-weight:650}
+.w-foot-bottom{background:#000;color:#888;border-top:1px solid #222;padding:14px 40px;font-size:12px;display:flex;justify-content:space-between}
+.fab{position:absolute;right:24px;bottom:24px;width:62px;height:62px;border-radius:50%;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center}
+.note{background:#fff;border-radius:14px;padding:14px 18px;font-size:14px;color:#333;margin:18px 0 26px;line-height:1.6;max-width:1400px}
+.note b{font-weight:650}
+.ar{font-family:"Noto Sans Arabic","Zayrovi Extracted Sans",sans-serif}
+</style>
+</head>
+<body data-mode="after" data-av="A" data-links="A" data-hdr="A" data-clean="A" data-theme="light">
+
+<header class="ctl">
+  <div class="ctl-top">
+    <span id="ctlLogo"></span>
+    <div><h1>Maquette des choix — le jaune devient la couleur d’action</h1>
+      <div class="sub ar" dir="rtl">بدّل الاختيارات من فوق، وكل الشاشات (التطبيق + الموقع) تتبدّل مباشرة. ابعثلي الحروف اللي اخترتهم.</div></div>
+    <div class="pick" id="pick">1A · 2A · 3A · 4A</div>
+  </div>
+  <div class="groups">
+    <div class="grp"><b class="ar">مقارنة</b><div class="seg" data-key="mode">
+      <button data-v="before">Avant (actuel)</button><button data-v="after">Après (jaune)</button></div></div>
+    <div class="grp opt"><b>1 · Icône social « z. »</b><div class="seg" data-key="av">
+      <button data-v="A">A · z noir</button><button data-v="B">B · z jaune</button></div></div>
+    <div class="grp opt"><b>2 · Liens texte</b><div class="seg" data-key="links">
+      <button data-v="A">A · noir souligné</button><button data-v="B">B · or foncé</button><button data-v="C">C · jaune pur</button></div></div>
+    <div class="grp opt"><b>3 · Logo header (fonds colorés)</b><div class="seg" data-key="hdr">
+      <button data-v="A">A · tuile noire</button><button data-v="B">B · tuile blanche</button></div></div>
+    <div class="grp opt"><b>4 · Logo Clean</b><div class="seg" data-key="clean">
+      <button data-v="A">A · jaune 2 tons</button><button data-v="B">B · jaune uni</button></div></div>
+    <div class="grp"><b>Thème (app)</b><div class="seg" data-key="theme">
+      <button data-v="light">Clair</button><button data-v="dark">Sombre</button></div></div>
+  </div>
+</header>
+
+<main>
+  <h2 class="sec">Application</h2>
+  <p class="sec">Accueil (le header suit la couleur des cartes, toutes les 3 s) · Publication · Fiche produit · Clean · AYWEBs · Connexion. Chaque écran défile.</p>
+  <div class="phones" id="phones">
+
+    <!-- 1 · Accueil -->
+    <div class="ph-wrap"><div class="phone"><div class="scr" id="home">
+      <div class="status hero-status"><span>4:42</span><span>14 %</span></div>
+      <div class="hdr" id="homeHdr"><span id="homeLogo"></span>
+        <div class="icons"><span class="plus"><b>Plus</b>★ Light</span>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+          <span style="position:relative"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg><span class="dot-count">2</span></span>
+        </div></div>
+      <div class="body">
+        <div class="hero-band" id="homeBand"><div class="track" id="track">
+          <div class="card" style="background:#DF7F28"><h3>Beauté &amp; soins</h3><img src="img/beaute.jpg" alt=""></div>
+          <div class="card" style="background:#F621A1"><h3>Montres connectées</h3><img src="img/montre.jpg" alt="" style="mix-blend-mode:multiply"></div>
+          <div class="card" style="background:#C8E3F4"><h3>Mode</h3><img src="img/veste.jpg" alt="" style="mix-blend-mode:multiply"></div>
+          <div class="card" style="background:#F2F2F2"><h3>Nouveautés</h3><img src="img/blazer.jpg" alt="" style="mix-blend-mode:multiply"></div>
+        </div></div>
+        <div class="tabs"><span class="on">Nouveautés</span><span>Promotions</span><span>Magazine</span></div>
+        <div class="pad">
+          <div class="between" style="margin-bottom:10px"><span class="t-h" style="font-size:19px">Pour vous</span><span class="lnk" style="font-size:14px">Voir tout ›</span></div>
+          <div class="grid2">
+            <div class="prod"><img src="img/sony.jpg" alt=""><span class="heart">♡</span><div style="padding:8px 10px"><div class="t-s">Sony</div><div class="price">••• TND</div></div></div>
+            <div class="prod"><img src="img/bose.jpg" alt=""><span class="heart">♡</span><div style="padding:8px 10px"><div class="t-s">Bose</div><div class="price sale">••• TND</div></div></div>
+          </div>
+          <div style="margin-top:16px" class="btn main">Découvrir les nouveautés</div>
+        </div>
+      </div>
+      <div class="nav" data-nav></div>
+    </div></div><span>Accueil</span></div>
+
+    <!-- 2 · Publication -->
+    <div class="ph-wrap"><div class="phone"><div class="scr">
+      <div class="status pub-top"><span>4:58</span><span>12 %</span></div>
+      <div class="hdr pub-top"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>
+        <span style="font-weight:650;font-size:17px">Publication</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><circle cx="12" cy="7" r="3.5"/><path d="M4 21v-1a8 8 0 0 1 16 0v1z"/></svg></div>
+      <div class="body">
+        <div class="actions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 10v10H4V10zM7 10l4-7a2 2 0 0 1 3 2l-1 4h6a2 2 0 0 1 2 2l-2 7a2 2 0 0 1-2 2H7"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16v11H9l-4 4V5z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 5l7 6-7 6v-3.5C8 13.5 5 16 3 19c1-6 4-10 11-11z"/></svg>
+          <svg style="margin-left:auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h12v18l-6-5-6 5z"/></svg></div>
+        <div class="navy">
+          <div class="who"><span data-av="dark"></span><b>zayrovi team</b><span class="follow">•&nbsp; Suivi</span></div>
+          <div style="margin-top:12px;font-size:14px;opacity:.75">Sponsorisé ⓘ</div>
+          <h4>Sony<br>Le silence, version<br>WH-1000XM6</h4>
+          <img src="img/sony-hero.jpg" alt="" style="width:100%;display:block">
+        </div>
+        <div class="pad">
+          <div class="between" style="margin-bottom:10px"><span style="font-weight:650">Dans cette publication</span><span class="lnk" style="font-size:14px">Voir tout ›</span></div>
+          <div class="grid2">
+            <div class="prod"><img src="img/sony.jpg" alt=""><span class="heart">♡</span><div style="padding:8px 10px"><span class="badge">Nouveau</span><div class="price" style="margin-top:4px">••• TND</div></div></div>
+            <div class="prod"><img src="img/bose.jpg" alt=""><span class="heart">♡</span><div style="padding:8px 10px"><span class="badge">−20 %</span><div class="price sale" style="margin-top:4px">••• TND</div></div></div>
+          </div>
+          <div class="btn main" style="margin-top:14px">Ajouter au panier</div>
+        </div>
+        <div style="border-top:8px solid var(--chip)"></div>
+        <div class="pad"><div class="who"><span data-av="light"></span><b>zayrovi team</b><span class="follow t-s">•&nbsp; Suivi</span></div>
+          <p style="font-size:14px;margin-top:10px;line-height:1.45">Publication sur fond blanc : même icône, sans cercle.</p></div>
+        <div class="reel"><img src="img/beaute.jpg" alt=""><div class="scrim"></div>
+          <div class="who"><span data-av="dark"></span><b>zayrovi team</b><span class="follow">•&nbsp; Suivre</span></div></div>
+      </div>
+      <div class="nav" data-nav></div>
+    </div></div><span>Publication · Reels</span></div>
+
+    <!-- 3 · Fiche produit -->
+    <div class="ph-wrap"><div class="phone"><div class="scr">
+      <div class="status"><span>4:58</span><span>12 %</span></div>
+      <div class="hdr"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 12H4M10 6l-6 6 6 6"/></svg><span class="hdrLogoPlain"></span>
+        <span style="position:relative"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg><span class="dot-count">2</span></span></div>
+      <div class="body">
+        <img src="img/sony.jpg" alt="" style="width:100%;height:280px;object-fit:cover;display:block;background:#F2F2F2">
+        <div class="pad">
+          <div class="row"><span class="badge">Nouveau</span><span class="t-s">★★★★★ 4,8 · 312 avis</span></div>
+          <div class="t-h" style="margin-top:8px">Sony WH-1000XM6</div>
+          <div class="t-s" style="margin:2px 0 10px">Casque sans fil à réduction de bruit</div>
+          <div class="price" style="font-size:20px">••• TND</div>
+          <div style="margin:14px 0 8px;font-weight:650;font-size:14px">Couleur : Noir</div>
+          <div class="row" style="flex-wrap:wrap"><span class="chip on">Noir</span><span class="chip">Platine</span><span class="chip">Bleu nuit</span></div>
+          <div class="between" style="margin-top:14px"><span style="font-size:14px">Guide des tailles et compatibilité</span><span class="lnk" style="font-size:14px">Voir</span></div>
+          <div class="btn main" style="margin-top:16px">Ajouter au panier</div>
+          <div class="btn sec" style="margin-top:10px">Acheter maintenant</div>
+          <div class="between" style="margin-top:18px"><span style="font-size:14px">Emballage cadeau</span><span class="switch"></span></div>
+          <div class="row" style="margin-top:14px;font-size:14px"><span class="check">✓</span> Livraison express à Zarat</div>
+          <div style="margin-top:14px;font-size:14px">Livraison en 48 h. <span class="lnk">Détails de livraison</span></div>
+        </div>
+      </div>
+    </div></div><span>Fiche produit · boutons · liens</span></div>
+
+    <!-- 4 · Clean -->
+    <div class="ph-wrap"><div class="phone"><div class="scr">
+      <div class="status"><span>5:02</span><span>11 %</span></div>
+      <div class="hdr" style="border-bottom:1px solid var(--line)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>
+        <span class="row" style="gap:8px;font-weight:650;font-size:17px"><span data-clean="28"></span>Clean</span><span style="width:26px"></span></div>
+      <div class="body pad">
+        <div style="text-align:center;margin:10px 0 22px"><span data-clean="64"></span><div class="t-h" style="font-size:19px;margin-top:8px">Bonjour, je suis Clean</div><div class="t-s">Votre assistant shopping</div></div>
+        <div class="msg"><span data-speaker="ai"></span><div class="bub ai">Bonjour ! Que cherchez-vous aujourd’hui ?</div></div>
+        <div class="msg"><div class="bub me">Un casque sans fil pour le sport</div><span data-speaker="me"></span></div>
+        <div class="msg"><span data-speaker="ai"></span><div class="bub ai">Voici 2 modèles légers et résistants. <span class="lnk">Comparer</span></div></div>
+        <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:6px"><span class="chip">Moins cher</span><span class="chip">Livraison 48 h</span><span class="chip">Sony</span></div>
+      </div>
+      <div class="composer"><span class="in">Écrire à Clean…</span><span class="send"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--on-action)"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span></div>
+    </div></div><span>Clean (assistant)</span></div>
+
+    <!-- 5 · AYWEBs -->
+    <div class="ph-wrap"><div class="phone"><div class="scr">
+      <div class="status" style="background:var(--store);color:var(--store-ink)"><span>5:04</span><span>11 %</span></div>
+      <div class="store-bar"><div class="top"><img class="wm" src="../../../../apps/mobile/assets/aywebs/aywebs-wordmark-white.png" alt="AYWEBs">
+        <span class="row" style="gap:14px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg></span></div>
+        <div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#767676" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>Rechercher sur Amazon, Shein…</div></div>
+      <div class="body">
+        <div class="stores"><span class="chip on">Amazon</span><span class="chip">Shein</span><span class="chip">AliExpress</span><span class="chip">Temu</span></div>
+        <div class="pad" style="padding-top:0">
+          <div class="between" style="margin-bottom:10px"><span style="font-weight:650">Tendances</span><span class="lnk" style="font-size:14px">Voir tout ›</span></div>
+          <div class="grid2">
+            <div class="prod"><img src="img/montre.jpg" alt=""><div style="padding:8px 10px"><div class="t-s">Amazon</div><div class="price">••• TND</div></div></div>
+            <div class="prod"><img src="img/bose.jpg" alt=""><div style="padding:8px 10px"><div class="t-s">AliExpress</div><div class="price">••• TND</div></div></div>
+          </div>
+          <div class="btn main" style="margin-top:14px">Ajouter au panier</div>
+        </div>
+      </div>
+      <div class="nav" data-nav></div>
+    </div></div><span>AYWEBs · header</span></div>
+
+    <!-- 6 · Connexion -->
+    <div class="ph-wrap"><div class="phone"><div class="scr">
+      <div class="status"><span>5:06</span><span>11 %</span></div>
+      <div class="body pad" style="padding-top:40px">
+        <div style="text-align:center"><span class="authLogo"></span></div>
+        <div class="t-h" style="text-align:center;margin:26px 0 6px">Connexion</div>
+        <div class="t-s" style="text-align:center;margin-bottom:22px">Recevez un code par e-mail</div>
+        <label style="font-size:13px;font-weight:650">Adresse e-mail</label>
+        <div class="field focus">vous@exemple.com<span style="width:1.5px;height:20px;background:var(--fg);margin-left:2px"></span></div>
+        <div class="btn main" style="margin-top:18px">Recevoir le code</div>
+        <div class="btn sec" style="margin-top:10px">Continuer avec Google</div>
+        <div style="text-align:center;margin-top:22px;font-size:14px">Pas encore de compte ? <span class="lnk">Créer un compte</span></div>
+        <div style="text-align:center;margin-top:12px;font-size:12px" class="t-s">En continuant, vous acceptez les <span class="lnk">Conditions</span>.</div>
+      </div>
+    </div></div><span>Connexion · champ actif</span></div>
+  </div>
+
+  <h2 class="sec" style="margin-top:44px">Site web</h2>
+  <p class="sec">Header sur la teinte du Hero (change toutes les 3 s), produits, liens, footer, bouton Clean flottant.</p>
+  <div class="web">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">zayrovi.com</div></div>
+    <div class="w-hero" id="wHero">
+      <div class="w-hdr"><span id="webLogo"></span><nav><span>Femme</span><span>Homme</span><span>Enfants</span><span>Beauté</span><span>Tech</span></nav>
+        <span class="s">Rechercher un produit, une marque…</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-width="1.5"><circle cx="12" cy="7" r="3.5"/><path d="M4 21v-1a8 8 0 0 1 16 0v1z"/></svg>
+        <span style="position:relative"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0A0A0A" stroke-width="1.5"><path d="M5 8h14l-1 12H6z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg><span class="dot-count">2</span></span></div>
+      <div class="w-hero-in"><div><h3 id="wTitle">Beauté &amp; soins</h3><p>Les essentiels de la saison, livrés partout en Tunisie.</p>
+        <div style="display:flex;gap:12px;max-width:420px"><span class="btn main" style="width:auto;padding:0 26px">Découvrir</span><span class="btn sec" style="width:auto;padding:0 26px;color:#0A0A0A;border-color:#0A0A0A">Voir les marques</span></div></div>
+        <img id="wImg" src="img/beaute.jpg" alt=""></div>
+    </div>
+    <div class="w-sec" style="position:relative">
+      <div class="between"><span class="t-h" style="font-size:28px">Nouveautés</span><span class="lnk">Voir tout ›</span></div>
+      <div class="w-grid">
+        <div class="prod"><img src="img/sony.jpg" alt=""><span class="heart">♡</span><div style="padding:10px 12px"><span class="badge">Nouveau</span><div class="t-s" style="margin-top:6px">Sony</div><div class="price">••• TND</div></div></div>
+        <div class="prod"><img src="img/bose.jpg" alt=""><span class="heart">♡</span><div style="padding:10px 12px"><span class="badge">−20 %</span><div class="t-s" style="margin-top:6px">Bose</div><div class="price sale">••• TND</div></div></div>
+        <div class="prod"><img src="img/montre.jpg" alt=""><span class="heart">♡</span><div style="padding:10px 12px"><span class="badge">Nouveau</span><div class="t-s" style="margin-top:6px">Fitbit</div><div class="price">••• TND</div></div></div>
+        <div class="prod"><img src="img/beaute.jpg" alt=""><span class="heart">♡</span><div style="padding:10px 12px"><span class="badge">Best-seller</span><div class="t-s" style="margin-top:6px">Beauté</div><div class="price">••• TND</div></div></div>
+      </div>
+      <div style="margin-top:22px;font-size:15px">Déjà client ? <span class="lnk">Se connecter</span> pour suivre vos commandes.</div>
+      <span class="fab" title="Clean"><span data-clean="36"></span></span>
+    </div>
+    <footer class="w-foot">
+      <div><span id="footLogo"></span><p style="color:#BDBDBD;margin-top:14px;line-height:1.5">La mode, la beauté et la tech, livrées partout en Tunisie.</p></div>
+      <div><h5>Aide</h5><a>Livraison</a><a>Retours</a><a>Paiement</a><a>Contact</a></div>
+      <div><h5>ZAYROVI</h5><a>À propos</a><a>Magazine</a><a>AYWEBs</a><a>Carrières</a></div>
+      <div><h5>Newsletter</h5><div style="color:#BDBDBD">Les nouveautés, une fois par semaine.</div><div class="news"><span>vous@exemple.com</span><button>S’inscrire</button></div>
+        <div style="margin-top:12px"><span class="lnk">Conditions</span> · <span class="lnk">Confidentialité</span></div></div>
+    </footer>
+    <div class="w-foot-bottom"><span>© 2026 ZAYROVI</span><span>zayrovi.com</span></div>
+  </div>
+
+  <div class="note ar" dir="rtl"><b>ملاحظات:</b> اللوغو «Za.» ما يتبدّلش في حتى اختيار — نفس النسختين الرسميتين، والـ z ديما يخرج من الدائرة. على الأصفر، النص والأيقونات ديما بالأسود (الأبيض على الأصفر ما يتقراش). الأحمر متاع التخفيضات والقلب يبقى كيف هو. الأسعار مخبّية (•••) في الماكيت.</div>
+</main>
+
+<script>
+const G = window.ZA, Y = '#F2AE00', INK = '#0A0A0A', W = '#FFFFFF';
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const S = document.body.dataset;
+
+/* Full « Za. » logo — exact master paths. The z is a true cut-out of the ring. */
+function logo(h, aFill) {
+  const w = Math.round(h * 1586.6 / 1000 * 10) / 10;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 1586.6 1000" role="img" aria-label="ZAYROVI" style="display:block"><path d="${G.ring}" fill="${Y}"/><path d="${G.a}" fill="${aFill}"/><path d="${G.dot}" fill="${Y}"/></svg>`;
+}
+/* « z. » — the z exactly as cut out of the circle (open contour, long lower bar) + the logo's dot after it. */
+const ZX0 = 336.7, ZY0 = 265.4, ZY1 = 728.5, ZX1 = 1132.9, R = 58.2, GAP = 1470.2 - 1433.4;
+const DCX = ZX1 + GAP + R, DCY = ZY1 - R, ZW = DCX + R - ZX0, ZH = ZY1 - ZY0;
+function zdot(h, zFill) {
+  return `<svg width="${(h * ZW / ZH).toFixed(1)}" height="${h}" viewBox="${ZX0} ${ZY0} ${ZW} ${ZH}" aria-hidden="true" style="display:block"><path d="${G.zOpen}" fill="${zFill}"/><circle cx="${DCX}" cy="${DCY}" r="${R}" fill="${Y}"/></svg>`;
+}
+/* Current avatar (before): yellow symbol on a black disc + white ring = « 2 circles ». */
+function oldAvatar(onDark) {
+  return `<span style="display:inline-flex;width:34px;height:34px;border-radius:50%;background:${INK};align-items:center;justify-content:center;${onDark ? 'box-shadow:0 0 0 2px #fff' : ''}"><svg width="26" height="26" viewBox="0 0 1000 1000"><path d="${G.mark}" fill="${Y}"/></svg></span>`;
+}
+const CLEAN = ['M12 3H9A8 8 0 0 0 5 18V22L9 19H12Z', 'M12 3H15A8 8 0 0 1 15 19H12Z',
+  'M18 9C17.4 13 16.5 13.8 13 14.5C16.5 15.1 17.4 15.9 18 20C18.6 15.9 19.5 15.1 23 14.5C19.5 13.8 18.6 13 18 9Z',
+  'M20.5 10A6.5 6.5 0 0 0 15 4.4H9A6.5 6.5 0 0 0 5.9 16.6L6.2 19.4L8.6 17.6H14'];
+function cleanIcon(size, left, right, shine = W) {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="display:block"><path d="${CLEAN[0]}" fill="${left}"/><path d="${CLEAN[1]}" fill="${right}"/><path d="${CLEAN[2]}" fill="${shine}"/><path d="${CLEAN[3]}" fill="none" stroke="${shine}" stroke-width=".8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+function cleanColors() {
+  if (S.mode === 'before') return ['#35BED0', '#FF8127'];
+  return S.clean === 'A' ? [Y, '#FFC72E'] : [Y, Y];
+}
+/* Neutral surface (white / grey / black) → logo as is; coloured surface → official tile (option 3). */
+function chroma(hex) { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)); return Math.max(...c) - Math.min(...c); }
+function luma(hex) { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; }
+function headerLogo(h, bg) {
+  const dark = luma(bg) < .3;
+  if (S.mode === 'before' || chroma(bg) < 28) return logo(h, dark ? W : INK);
+  return S.hdr === 'A'
+    ? `<span class="tile" style="background:${INK}">${logo(h, W)}</span>`
+    : `<span class="tile" style="background:${W}">${logo(h, INK)}</span>`;
+}
+function mix(hex, t) { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)); return '#' + c.map(v => Math.round(v + (255 - v) * t).toString(16).padStart(2, '0')).join('').toUpperCase(); }
+
+/* ── Bottom nav: real web nav glyphs + Clean ── */
+function renderNav() {
+  const [l, r] = cleanColors();
+  const m = (f) => `<img class="mono" src="../../../../client/public/media/clean/${f}" alt="">`;
+  $$('[data-nav]').forEach(n => n.innerHTML = m('nav-home-v1.svg') + m('nav-lens-v2.svg') + cleanIcon(30, l, r) + m('nav-aywebs-v2.svg') + m('nav-profile-v1.svg'));
+}
+
+/* ── Home carousel ── */
+const CARDS = [['#DF7F28', 'Beauté & soins', 'img/beaute.jpg'], ['#F621A1', 'Montres connectées', 'img/montre.jpg'], ['#C8E3F4', 'Mode', 'img/veste.jpg'], ['#F2F2F2', 'Nouveautés', 'img/blazer.jpg']];
+let idx = 0;
+function renderHome() {
+  const dark = S.theme === 'dark';
+  const card = CARDS[idx][0];
+  const tint = card === '#F2F2F2' ? (dark ? '#0A0A0A' : '#FFFFFF') : mix(card, .4);
+  $('#homeHdr').style.background = tint; $('#homeBand').style.background = tint;
+  $('.hero-status').style.background = tint; $('.hero-status').style.color = luma(tint) < .3 ? '#fff' : INK;
+  $('#homeHdr').style.color = luma(tint) < .3 ? '#fff' : INK;
+  $('#homeLogo').innerHTML = headerLogo(32, tint);
+  $('#track').style.transform = `translateX(${-idx * 270}px)`;
+  // Web hero
+  const wt = card === '#F2F2F2' ? '#FFFFFF' : mix(card, .25);
+  $('#wHero').style.background = wt; $('#webLogo').innerHTML = headerLogo(36, wt);
+  $('#wTitle').textContent = CARDS[idx][1]; $('#wImg').src = CARDS[idx][2];
+}
+setInterval(() => { idx = (idx + 1) % CARDS.length; renderHome(); }, 3000);
+
+function render() {
+  const before = S.mode === 'before', dark = S.theme === 'dark';
+  $('#phones').classList.toggle('dark', dark);
+  // avatars
+  $$('[data-av]').forEach(el => {
+    if (el === document.body) return;
+    const onDark = el.dataset.av === 'dark' || (dark && el.dataset.av === 'light');
+    el.innerHTML = before ? oldAvatar(onDark) : zdot(18, S.av === 'B' ? Y : (onDark ? W : INK));
+    el.style.display = 'inline-flex';
+  });
+  // plain logos
+  $$('.hdrLogoPlain').forEach(el => el.innerHTML = logo(28, dark ? W : INK));
+  $$('.authLogo').forEach(el => el.innerHTML = `<span style="display:inline-block">${logo(40, dark ? W : INK)}</span>`);
+  $('#footLogo').innerHTML = logo(40, W);
+  $('#ctlLogo').innerHTML = logo(30, W);
+  // Clean
+  const [l, r] = cleanColors();
+  $$('[data-clean]').forEach(el => { if (el !== document.body) el.innerHTML = cleanIcon(+el.dataset.clean, l, r); });
+  $$('[data-speaker]').forEach(el => {
+    const ai = el.dataset.speaker === 'ai';
+    el.innerHTML = before ? cleanIcon(30, ai ? '#35BED0' : '#FF8127', ai ? '#35BED0' : '#FF8127')
+      : ai ? cleanIcon(30, l, r) : cleanIcon(30, dark ? W : INK, dark ? '#D6D6D6' : '#3A3A3A', dark ? INK : W);
+  });
+  renderNav(); renderHome();
+  $$('.seg').forEach(seg => $$('button', seg).forEach(b => b.setAttribute('aria-pressed', S[seg.dataset.key] === b.dataset.v)));
+  $('#pick').textContent = before ? 'Avant (actuel)' : `1${S.av} · 2${S.links} · 3${S.hdr} · 4${S.clean}`;
+}
+$$('.seg').forEach(seg => seg.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  S[seg.dataset.key] = b.dataset.v; render();
+}));
+render();
+</script>
+</body>
+</html>
