@@ -15,16 +15,20 @@ body{background:#E9E9E9;color:var(--ink)}
 button{font:inherit;cursor:pointer}
 
 /* ── Design tokens: AFTER (yellow = action) vs BEFORE (blue) ── */
-body{--action:#F2AE00;--on-action:#0A0A0A;--action-press:#D99A00;--soft:#FFF3CC;--on-soft:#0A0A0A;--store:#F2AE00;--store-ink:#0A0A0A;--link-dark:#F2AE00}
-body[data-mode=before]{--action:#0A63F5;--on-action:#FFFFFF;--action-press:#0A53CB;--soft:#DCE8FE;--on-soft:#0A0A0A;--store:#0A63F5;--store-ink:#FFFFFF;--link-dark:#78A9FA}
-/* Text links — option 2 */
-body{--link:#0A0A0A;--link-line:#F2AE00}
-body[data-links=B]{--link:#8A6100;--link-line:transparent}
-body[data-links=C]{--link:#F2AE00;--link-line:transparent}
-body[data-mode=before]{--link:#0A63F5;--link-line:transparent}
-.lnk{color:var(--link);font-weight:650;text-decoration:underline;text-decoration-color:var(--link-line);text-decoration-thickness:2px;text-underline-offset:4px;cursor:pointer}
-body:not([data-links=A]) .lnk,body[data-mode=before] .lnk{text-decoration:none}
-.dark .lnk{color:var(--link-dark);text-decoration-color:transparent}
+/* AFTER: yellow ONLY on the conversion action (.cta) + logo. Everything else is ink. Cart count in red. */
+body{--cta:#F2AE00;--on-cta:#0A0A0A;--cta-press:#D99A00;--main:#0A0A0A;--on-main:#FFFFFF;--soft:#F2F2F2;--on-soft:#0A0A0A;
+  --ctl:#0A0A0A;--on-ctl:#FFFFFF;--count:#D92D20;--on-count:#FFFFFF;--store:#0A0A0A;--store-ink:#FFFFFF;--link-dark:#FFFFFF;--me:#F2F2F2}
+body[data-store=yellow]{--store:#F2AE00;--store-ink:#0A0A0A}
+body[data-mode=before]{--cta:#0A63F5;--on-cta:#FFFFFF;--cta-press:#0A53CB;--main:#0A63F5;--on-main:#FFFFFF;--soft:#DCE8FE;--on-soft:#0A0A0A;
+  --ctl:#0A63F5;--on-ctl:#FFFFFF;--count:#0A63F5;--on-count:#FFFFFF;--store:#0A63F5;--store-ink:#FFFFFF;--link-dark:#78A9FA;--me:#DCE8FE}
+.dark{--main:#FFFFFF;--on-main:#0A0A0A;--ctl:#FFFFFF;--on-ctl:#0A0A0A;--soft:#2A2A2A;--on-soft:#FFFFFF;--me:#2A2A2A}
+body[data-mode=before] .dark{--main:#0A63F5;--on-main:#FFFFFF;--ctl:#0A63F5;--on-ctl:#FFFFFF;--soft:#DCE8FE;--on-soft:#0A0A0A;--me:#DCE8FE}
+/* Text links: ink, underlined (no yellow) */
+body{--link:#0A0A0A}
+body[data-mode=before]{--link:#0A63F5}
+.lnk{color:var(--link);font-weight:650;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:4px;cursor:pointer}
+body[data-mode=before] .lnk{text-decoration:none}
+.dark .lnk{color:var(--link-dark)}
 
 /* ── Control bar ── */
 .ctl{position:sticky;top:0;z-index:50;background:#0A0A0A;color:#fff;padding:14px 24px 16px;box-shadow:0 4px 18px rgba(0,0,0,.25)}
@@ -39,6 +43,8 @@ body:not([data-links=A]) .lnk,body[data-mode=before] .lnk{text-decoration:none}
 .seg button[aria-pressed=true]{background:#F2AE00;color:#0A0A0A;border-color:#F2AE00;font-weight:650}
 .pick{margin-inline-start:auto;background:#F2AE00;color:#0A0A0A;border-radius:999px;padding:8px 16px;font-weight:700;font-size:15px}
 body[data-mode=before] .grp.opt{opacity:.35;pointer-events:none}
+.yb{display:inline-block;margin-top:2px;font-size:12px;font-weight:650;border-radius:999px;padding:3px 10px;background:#fff;color:#333}
+.yb.over{background:#D92D20;color:#fff}
 
 main{padding:28px 24px 80px;max-width:1720px;margin:0 auto}
 h2.sec{font-size:26px;font-weight:650;font-stretch:112.5%;margin:8px 0 6px}
@@ -68,16 +74,20 @@ p.sec{color:#555;font-size:15px;margin-bottom:20px}
 
 /* buttons */
 .btn{display:flex;align-items:center;justify-content:center;height:48px;border-radius:999px;font-weight:650;font-size:15px;border:0;width:100%}
-.btn.main{background:var(--action);color:var(--on-action)}
-.btn.main:active{background:var(--action-press)}
+.btn.main{background:var(--main);color:var(--on-main)}
+.btn.cta{background:var(--cta);color:var(--on-cta)}
+.btn.cta:active{background:var(--cta-press)}
+/* Yellow = BUY, compact: price on the left, short yellow button on the right (keeps yellow under 4 %). */
+.buybar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-top:1px solid var(--line);background:var(--canvas);flex:0 0 auto}
+.add{position:absolute;right:8px;width:34px;height:34px;border-radius:50%;background:var(--cta);color:var(--on-cta);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:500;line-height:1;box-shadow:0 2px 6px rgba(0,0,0,.18)}
 .btn.sec{background:transparent;color:var(--fg);border:1.5px solid var(--fg)}
 .badge{display:inline-block;background:var(--soft);color:var(--on-soft);font-size:11px;font-weight:650;border-radius:6px;padding:3px 7px}
 .chip{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13px}
 .chip.on{border-color:var(--fg);font-weight:650}
-.switch{width:44px;height:26px;border-radius:13px;background:var(--action);position:relative;flex:0 0 44px}
-.switch::after{content:"";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-.check{width:20px;height:20px;border-radius:5px;background:var(--action);display:inline-flex;align-items:center;justify-content:center;color:var(--on-action);font-size:13px;font-weight:800}
-.dot-count{position:absolute;top:-4px;right:-6px;min-width:16px;height:16px;border-radius:8px;background:var(--action);color:var(--on-action);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.switch{width:44px;height:26px;border-radius:13px;background:var(--ctl);position:relative;flex:0 0 44px}
+.switch::after{content:"";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:var(--on-ctl);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.check{width:20px;height:20px;border-radius:5px;background:var(--ctl);display:inline-flex;align-items:center;justify-content:center;color:var(--on-ctl);font-size:13px;font-weight:800}
+.dot-count{position:absolute;top:-4px;right:-6px;min-width:16px;height:16px;border-radius:8px;background:var(--count);color:var(--on-count);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
 .pad{padding:16px}
 .row{display:flex;align-items:center;gap:10px}
 .between{display:flex;align-items:center;justify-content:space-between}
@@ -118,23 +128,24 @@ p.sec{color:#555;font-size:15px;margin-bottom:20px}
 .msg{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px}
 .bub{border-radius:18px;padding:10px 14px;font-size:14px;line-height:1.4;max-width:230px}
 .bub.ai{background:var(--chip)}
-.bub.me{background:var(--soft);color:var(--on-soft);margin-left:auto}
+.bub.me{background:var(--me);color:var(--fg);margin-left:auto}
+body[data-mode=before] .bub.me{color:#0A0A0A}
 .composer{display:flex;gap:8px;align-items:center;padding:10px 12px;border-top:1px solid var(--line)}
 .composer .in{flex:1;height:44px;border-radius:22px;background:var(--chip);display:flex;align-items:center;padding:0 16px;font-size:14px;color:var(--muted)}
-.send{width:44px;height:44px;border-radius:50%;background:var(--action);display:flex;align-items:center;justify-content:center}
+.send{width:44px;height:44px;border-radius:50%;background:var(--ctl);display:flex;align-items:center;justify-content:center}
 
 /* aywebs */
 .store-bar{background:var(--store);color:var(--store-ink);padding:0 14px 14px}
 .store-bar .top{height:56px;display:flex;align-items:center;justify-content:space-between}
-.wm{height:22px;filter:brightness(0)}
-body[data-mode=before] .wm{filter:none}
+.wm{height:22px}
+body[data-store=yellow]:not([data-mode=before]) .wm{filter:brightness(0)}
 .search{height:44px;border-radius:22px;background:#fff;display:flex;align-items:center;gap:8px;padding:0 14px;font-size:14px;color:#767676;white-space:nowrap;overflow:hidden}
 .stores{display:flex;gap:8px;padding:14px 16px;overflow:hidden}
 
 /* auth */
 .field{border:1.5px solid var(--line);border-radius:12px;height:52px;display:flex;align-items:center;padding:0 14px;font-size:15px;margin-top:6px}
-.field.focus{border-color:var(--fg);box-shadow:0 0 0 3px var(--focus-glow)}
-body{--focus-glow:rgba(242,174,0,.55)} body[data-mode=before]{--focus-glow:rgba(10,99,245,.35)}
+.field.focus{border:2px solid var(--fg)}
+body[data-mode=before] .field.focus{border:1.5px solid #0A63F5;box-shadow:0 0 0 3px rgba(10,99,245,.3)}
 
 /* ── Web ── */
 .web{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.14);max-width:1400px}
@@ -158,7 +169,8 @@ body{--focus-glow:rgba(242,174,0,.55)} body[data-mode=before]{--focus-glow:rgba(
 .w-foot a:hover{color:var(--link-dark)}
 .w-foot .news{display:flex;gap:8px;margin-top:8px}
 .w-foot .news span{flex:1;height:44px;border-radius:22px;border:1px solid #444;display:flex;align-items:center;padding:0 14px;color:#888}
-.w-foot .news button{height:44px;border-radius:22px;border:0;padding:0 18px;background:var(--action);color:var(--on-action);font-weight:650}
+.w-foot .news button{height:44px;border-radius:22px;border:0;padding:0 18px;background:#fff;color:#0A0A0A;font-weight:650}
+body[data-mode=before] .w-foot .news button{background:#0A63F5;color:#fff}
 .w-foot-bottom{background:#000;color:#888;border-top:1px solid #222;padding:14px 40px;font-size:12px;display:flex;justify-content:space-between}
 .fab{position:absolute;right:24px;bottom:24px;width:62px;height:62px;border-radius:50%;background:#fff;box-shadow:0 6px 20px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center}
 .note{background:#fff;border-radius:14px;padding:14px 18px;font-size:14px;color:#333;margin:18px 0 26px;line-height:1.6;max-width:1400px}
@@ -166,26 +178,20 @@ body{--focus-glow:rgba(242,174,0,.55)} body[data-mode=before]{--focus-glow:rgba(
 .ar{font-family:"Noto Sans Arabic","Zayrovi Extracted Sans",sans-serif}
 </style>
 </head>
-<body data-mode="after" data-av="A" data-links="A" data-hdr="A" data-clean="A" data-theme="light">
+<body data-mode="after" data-store="black" data-theme="light">
 
 <header class="ctl">
   <div class="ctl-top">
     <span id="ctlLogo"></span>
     <div><h1>Maquette des choix — le jaune devient la couleur d’action</h1>
-      <div class="sub ar" dir="rtl">بدّل الاختيارات من فوق، وكل الشاشات (التطبيق + الموقع) تتبدّل مباشرة. ابعثلي الحروف اللي اخترتهم.</div></div>
-    <div class="pick" id="pick">1A · 2A · 3A · 4A</div>
+      <div class="sub ar" dir="rtl">الأصفر = الشراء فقط (زر «Ajouter au panier» قصير، زر + على المنتج، «Commander») + اللوغو. عدد السلة بالأحمر. Clean كيف هو. تحت كل شاشة: نسبة الأصفر.</div></div>
+    <div class="pick" id="pick"></div>
   </div>
   <div class="groups">
     <div class="grp"><b class="ar">مقارنة</b><div class="seg" data-key="mode">
       <button data-v="before">Avant (actuel)</button><button data-v="after">Après (jaune)</button></div></div>
-    <div class="grp opt"><b>1 · Icône social « z. »</b><div class="seg" data-key="av">
-      <button data-v="A">A · z noir</button><button data-v="B">B · z jaune</button></div></div>
-    <div class="grp opt"><b>2 · Liens texte</b><div class="seg" data-key="links">
-      <button data-v="A">A · noir souligné</button><button data-v="B">B · or foncé</button><button data-v="C">C · jaune pur</button></div></div>
-    <div class="grp opt"><b>3 · Logo header (fonds colorés)</b><div class="seg" data-key="hdr">
-      <button data-v="A">A · tuile noire</button><button data-v="B">B · tuile blanche</button></div></div>
-    <div class="grp opt"><b>4 · Logo Clean</b><div class="seg" data-key="clean">
-      <button data-v="A">A · jaune 2 tons</button><button data-v="B">B · jaune uni</button></div></div>
+    <div class="grp opt"><b>Header AYWEBs (le bleu disparaît)</b><div class="seg" data-key="store">
+      <button data-v="black">Noir</button><button data-v="yellow">Jaune</button></div></div>
     <div class="grp"><b>Thème (app)</b><div class="seg" data-key="theme">
       <button data-v="light">Clair</button><button data-v="dark">Sombre</button></div></div>
   </div>
@@ -244,10 +250,10 @@ body{--focus-glow:rgba(242,174,0,.55)} body[data-mode=before]{--focus-glow:rgba(
         <div class="pad">
           <div class="between" style="margin-bottom:10px"><span style="font-weight:650">Dans cette publication</span><span class="lnk" style="font-size:14px">Voir tout ›</span></div>
           <div class="grid2">
-            <div class="prod"><img src="img/sony.jpg" alt=""><span class="heart">♡</span><div style="padding:8px 10px"><span class="badge">Nouveau</span><div class="price" style="margin-top:4px">••• TND</div></div></div>
-            <div class="prod"><img src="img/bose.jpg" alt=""><span class="heart">♡</span><div style="padding:8px 10px"><span class="badge">−20 %</span><div class="price sale" style="margin-top:4px">••• TND</div></div></div>
+            <div class="prod"><img src="img/sony.jpg" alt=""><span class="heart">♡</span><span class="add" style="top:110px">+</span><div style="padding:8px 10px"><span class="badge">Nouveau</span><div class="price" style="margin-top:4px">••• TND</div></div></div>
+            <div class="prod"><img src="img/bose.jpg" alt=""><span class="heart">♡</span><span class="add" style="top:110px">+</span><div style="padding:8px 10px"><span class="badge">−20 %</span><div class="price sale" style="margin-top:4px">••• TND</div></div></div>
           </div>
-          <div class="btn main" style="margin-top:14px">Ajouter au panier</div>
+          <div class="btn sec" style="margin-top:14px">Voir les 2 produits</div>
         </div>
         <div style="border-top:8px solid var(--chip)"></div>
         <div class="pad"><div class="who"><span data-av="light"></span><b>zayrovi team</b><span class="follow t-s">•&nbsp; Suivi</span></div>
@@ -273,14 +279,34 @@ body{--focus-glow:rgba(242,174,0,.55)} body[data-mode=before]{--focus-glow:rgba(
           <div style="margin:14px 0 8px;font-weight:650;font-size:14px">Couleur : Noir</div>
           <div class="row" style="flex-wrap:wrap"><span class="chip on">Noir</span><span class="chip">Platine</span><span class="chip">Bleu nuit</span></div>
           <div class="between" style="margin-top:14px"><span style="font-size:14px">Guide des tailles et compatibilité</span><span class="lnk" style="font-size:14px">Voir</span></div>
-          <div class="btn main" style="margin-top:16px">Ajouter au panier</div>
-          <div class="btn sec" style="margin-top:10px">Acheter maintenant</div>
+          <div class="btn sec" style="margin-top:16px">Ajouter aux favoris ♡</div>
           <div class="between" style="margin-top:18px"><span style="font-size:14px">Emballage cadeau</span><span class="switch"></span></div>
           <div class="row" style="margin-top:14px;font-size:14px"><span class="check">✓</span> Livraison express à Zarat</div>
           <div style="margin-top:14px;font-size:14px">Livraison en 48 h. <span class="lnk">Détails de livraison</span></div>
         </div>
       </div>
-    </div></div><span>Fiche produit · boutons · liens</span></div>
+      <div class="buybar"><div><div class="price" style="font-size:18px">••• TND</div><div class="t-s">Livraison 48 h</div></div><div class="btn cta" style="width:176px">Ajouter au panier</div></div>
+    </div></div><span>Fiche produit · barre d’achat</span></div>
+
+    <!-- 3b · Panier -->
+    <div class="ph-wrap"><div class="phone"><div class="scr">
+      <div class="status"><span>5:00</span><span>12 %</span></div>
+      <div class="hdr" style="border-bottom:1px solid var(--line)"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>
+        <span style="font-weight:650;font-size:17px">Panier (2)</span><span style="width:26px"></span></div>
+      <div class="body pad">
+        <div class="row" style="align-items:flex-start;gap:12px;margin-bottom:16px"><img src="img/sony.jpg" alt="" style="width:86px;height:96px;object-fit:cover;border-radius:12px;background:#F2F2F2">
+          <div style="flex:1"><div style="font-weight:650">Sony WH-1000XM6</div><div class="t-s">Noir · Qté 1</div><div class="price" style="margin-top:6px">••• TND</div><div style="margin-top:6px;font-size:13px"><span class="lnk">Retirer</span></div></div></div>
+        <div class="row" style="align-items:flex-start;gap:12px;margin-bottom:16px"><img src="img/bose.jpg" alt="" style="width:86px;height:96px;object-fit:cover;border-radius:12px;background:#F2F2F2">
+          <div style="flex:1"><div style="font-weight:650">Bose QuietComfort</div><div class="t-s">Blanc · Qté 1</div><div class="price sale" style="margin-top:6px">••• TND</div><div style="margin-top:6px;font-size:13px"><span class="lnk">Retirer</span></div></div></div>
+        <div style="border-top:1px solid var(--line);padding-top:14px;font-size:14px">
+          <div class="between" style="margin-bottom:8px"><span>Sous-total</span><span>••• TND</span></div>
+          <div class="between" style="margin-bottom:8px"><span>Livraison</span><span>Offerte</span></div>
+          <div class="between"><span>Code promo</span><span class="lnk">Ajouter</span></div>
+        </div>
+        <div class="row" style="margin-top:16px;font-size:14px"><span class="check">✓</span> Paiement à la livraison</div>
+      </div>
+      <div class="buybar"><div><div class="t-s">Total</div><div class="price" style="font-size:18px">••• TND</div></div><div class="btn cta" style="width:176px">Commander</div></div>
+    </div></div><span>Panier · barre de commande</span></div>
 
     <!-- 4 · Clean -->
     <div class="ph-wrap"><div class="phone"><div class="scr">
@@ -294,7 +320,7 @@ body{--focus-glow:rgba(242,174,0,.55)} body[data-mode=before]{--focus-glow:rgba(
         <div class="msg"><span data-speaker="ai"></span><div class="bub ai">Voici 2 modèles légers et résistants. <span class="lnk">Comparer</span></div></div>
         <div class="row" style="flex-wrap:wrap;gap:8px;margin-top:6px"><span class="chip">Moins cher</span><span class="chip">Livraison 48 h</span><span class="chip">Sony</span></div>
       </div>
-      <div class="composer"><span class="in">Écrire à Clean…</span><span class="send"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--on-action)"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span></div>
+      <div class="composer"><span class="in">Écrire à Clean…</span><span class="send"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--on-ctl)"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span></div>
     </div></div><span>Clean (assistant)</span></div>
 
     <!-- 5 · AYWEBs -->
@@ -309,10 +335,10 @@ body{--focus-glow:rgba(242,174,0,.55)} body[data-mode=before]{--focus-glow:rgba(
         <div class="pad" style="padding-top:0">
           <div class="between" style="margin-bottom:10px"><span style="font-weight:650">Tendances</span><span class="lnk" style="font-size:14px">Voir tout ›</span></div>
           <div class="grid2">
-            <div class="prod"><img src="img/montre.jpg" alt=""><div style="padding:8px 10px"><div class="t-s">Amazon</div><div class="price">••• TND</div></div></div>
-            <div class="prod"><img src="img/bose.jpg" alt=""><div style="padding:8px 10px"><div class="t-s">AliExpress</div><div class="price">••• TND</div></div></div>
+            <div class="prod"><img src="img/montre.jpg" alt=""><span class="add" style="top:110px">+</span><div style="padding:8px 10px"><div class="t-s">Amazon</div><div class="price">••• TND</div></div></div>
+            <div class="prod"><img src="img/bose.jpg" alt=""><span class="add" style="top:110px">+</span><div style="padding:8px 10px"><div class="t-s">AliExpress</div><div class="price">••• TND</div></div></div>
           </div>
-          <div class="btn main" style="margin-top:14px">Ajouter au panier</div>
+          <div class="btn sec" style="margin-top:14px">Voir toutes les offres</div>
         </div>
       </div>
       <div class="nav" data-nav></div>
@@ -351,10 +377,10 @@ body{--focus-glow:rgba(242,174,0,.55)} body[data-mode=before]{--focus-glow:rgba(
     <div class="w-sec" style="position:relative">
       <div class="between"><span class="t-h" style="font-size:28px">Nouveautés</span><span class="lnk">Voir tout ›</span></div>
       <div class="w-grid">
-        <div class="prod"><img src="img/sony.jpg" alt=""><span class="heart">♡</span><div style="padding:10px 12px"><span class="badge">Nouveau</span><div class="t-s" style="margin-top:6px">Sony</div><div class="price">••• TND</div></div></div>
-        <div class="prod"><img src="img/bose.jpg" alt=""><span class="heart">♡</span><div style="padding:10px 12px"><span class="badge">−20 %</span><div class="t-s" style="margin-top:6px">Bose</div><div class="price sale">••• TND</div></div></div>
-        <div class="prod"><img src="img/montre.jpg" alt=""><span class="heart">♡</span><div style="padding:10px 12px"><span class="badge">Nouveau</span><div class="t-s" style="margin-top:6px">Fitbit</div><div class="price">••• TND</div></div></div>
-        <div class="prod"><img src="img/beaute.jpg" alt=""><span class="heart">♡</span><div style="padding:10px 12px"><span class="badge">Best-seller</span><div class="t-s" style="margin-top:6px">Beauté</div><div class="price">••• TND</div></div></div>
+        <div class="prod"><img src="img/sony.jpg" alt=""><span class="heart">♡</span><span class="add" style="top:178px">+</span><div style="padding:10px 12px"><span class="badge">Nouveau</span><div class="t-s" style="margin-top:6px">Sony</div><div class="price">••• TND</div></div></div>
+        <div class="prod"><img src="img/bose.jpg" alt=""><span class="heart">♡</span><span class="add" style="top:178px">+</span><div style="padding:10px 12px"><span class="badge">−20 %</span><div class="t-s" style="margin-top:6px">Bose</div><div class="price sale">••• TND</div></div></div>
+        <div class="prod"><img src="img/montre.jpg" alt=""><span class="heart">♡</span><span class="add" style="top:178px">+</span><div style="padding:10px 12px"><span class="badge">Nouveau</span><div class="t-s" style="margin-top:6px">Fitbit</div><div class="price">••• TND</div></div></div>
+        <div class="prod"><img src="img/beaute.jpg" alt=""><span class="heart">♡</span><span class="add" style="top:178px">+</span><div style="padding:10px 12px"><span class="badge">Best-seller</span><div class="t-s" style="margin-top:6px">Beauté</div><div class="price">••• TND</div></div></div>
       </div>
       <div style="margin-top:22px;font-size:15px">Déjà client ? <span class="lnk">Se connecter</span> pour suivre vos commandes.</div>
       <span class="fab" title="Clean"><span data-clean="36"></span></span>
@@ -369,7 +395,7 @@ body{--focus-glow:rgba(242,174,0,.55)} body[data-mode=before]{--focus-glow:rgba(
     <div class="w-foot-bottom"><span>© 2026 ZAYROVI</span><span>zayrovi.com</span></div>
   </div>
 
-  <div class="note ar" dir="rtl"><b>ملاحظات:</b> اللوغو «Za.» ما يتبدّلش في حتى اختيار — نفس النسختين الرسميتين، والـ z ديما يخرج من الدائرة. على الأصفر، النص والأيقونات ديما بالأسود (الأبيض على الأصفر ما يتقراش). الأحمر متاع التخفيضات والقلب يبقى كيف هو. الأسعار مخبّية (•••) في الماكيت.</div>
+  <div class="note ar" dir="rtl"><b>القواعد في الماكيت:</b> اللوغو في الهيدر كيف هو بلا تبديل. أيقونة social = مربّع أسود + دائرة صفراء فيها z (الخط متاعو يخرج للأسود) + نقطة صفراء قريبة (المسافة = قطر النقطة). الأصفر: الشراء فقط (زر الإضافة للسلة القصير في الأسفل، زر + على المنتج، زر الطلب) واللوغو. باقي الأزرار (حتى الدخول)، الروابط، الـ switch والـ checkbox بالأسود. عدد السلة بالأحمر. Clean كيف هو. نسبة الأصفر مكتوبة تحت كل شاشة (الهدف ≤ 4 %). الأسعار مخبّية (•••).</div>
 </main>
 
 <script>
@@ -388,6 +414,14 @@ const DCX = ZX1 + GAP + R, DCY = ZY1 - R, ZW = DCX + R - ZX0, ZH = ZY1 - ZY0;
 function zdot(h, zFill) {
   return `<svg width="${(h * ZW / ZH).toFixed(1)}" height="${h}" viewBox="${ZX0} ${ZY0} ${ZW} ${ZH}" aria-hidden="true" style="display:block"><path d="${G.zOpen}" fill="${zFill}"/><circle cx="${DCX}" cy="${DCY}" r="${R}" fill="${Y}"/></svg>`;
 }
+/* Social icon (after, 18/11): owner's drawing — black tile, yellow circle with the knocked-out z (its bar runs out
+   into the black), yellow dot after it. Dot spacing = one dot diameter (the brand's clear-space unit), dot on the
+   logo's own height. Exact master geometry. */
+const EDGE = 500 + Math.sqrt(500 ** 2 - (653.3 - 500) ** 2), DOTX = EDGE + 2 * R + R, TW = DOTX + R;
+function socialTile(size) {
+  const s = size * 0.74 / TW, ox = (size - TW * s) / 2, oy = (size - 1000 * s) / 2;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true" style="display:block"><rect width="${size}" height="${size}" rx="${size * .2}" fill="${INK}"/><g transform="translate(${ox.toFixed(2)} ${oy.toFixed(2)}) scale(${s.toFixed(5)})"><path d="${G.mark}" fill="${Y}"/><circle cx="${DOTX.toFixed(1)}" cy="653.3" r="${R}" fill="${Y}"/></g></svg>`;
+}
 /* Current avatar (before): yellow symbol on a black disc + white ring = « 2 circles ». */
 function oldAvatar(onDark) {
   return `<span style="display:inline-flex;width:34px;height:34px;border-radius:50%;background:${INK};align-items:center;justify-content:center;${onDark ? 'box-shadow:0 0 0 2px #fff' : ''}"><svg width="26" height="26" viewBox="0 0 1000 1000"><path d="${G.mark}" fill="${Y}"/></svg></span>`;
@@ -398,19 +432,13 @@ const CLEAN = ['M12 3H9A8 8 0 0 0 5 18V22L9 19H12Z', 'M12 3H15A8 8 0 0 1 15 19H1
 function cleanIcon(size, left, right, shine = W) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" style="display:block"><path d="${CLEAN[0]}" fill="${left}"/><path d="${CLEAN[1]}" fill="${right}"/><path d="${CLEAN[2]}" fill="${shine}"/><path d="${CLEAN[3]}" fill="none" stroke="${shine}" stroke-width=".8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
-function cleanColors() {
-  if (S.mode === 'before') return ['#35BED0', '#FF8127'];
-  return S.clean === 'A' ? [Y, '#FFC72E'] : [Y, Y];
-}
+function cleanColors() { return ['#35BED0', '#FF8127']; } // Clean stays as it is (owner, 18/11)
 /* Neutral surface (white / grey / black) → logo as is; coloured surface → official tile (option 3). */
 function chroma(hex) { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)); return Math.max(...c) - Math.min(...c); }
 function luma(hex) { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; }
 function headerLogo(h, bg) {
   const dark = luma(bg) < .3;
-  if (S.mode === 'before' || chroma(bg) < 28) return logo(h, dark ? W : INK);
-  return S.hdr === 'A'
-    ? `<span class="tile" style="background:${INK}">${logo(h, W)}</span>`
-    : `<span class="tile" style="background:${W}">${logo(h, INK)}</span>`;
+  return logo(h, dark ? W : INK); // header logo stays as it is (owner, 18/11)
 }
 function mix(hex, t) { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)); return '#' + c.map(v => Math.round(v + (255 - v) * t).toString(16).padStart(2, '0')).join('').toUpperCase(); }
 
@@ -447,7 +475,7 @@ function render() {
   $$('[data-av]').forEach(el => {
     if (el === document.body) return;
     const onDark = el.dataset.av === 'dark' || (dark && el.dataset.av === 'light');
-    el.innerHTML = before ? oldAvatar(onDark) : zdot(18, S.av === 'B' ? Y : (onDark ? W : INK));
+    el.innerHTML = before ? oldAvatar(onDark) : socialTile(34);
     el.style.display = 'inline-flex';
   });
   // plain logos
@@ -460,13 +488,47 @@ function render() {
   $$('[data-clean]').forEach(el => { if (el !== document.body) el.innerHTML = cleanIcon(+el.dataset.clean, l, r); });
   $$('[data-speaker]').forEach(el => {
     const ai = el.dataset.speaker === 'ai';
-    el.innerHTML = before ? cleanIcon(30, ai ? '#35BED0' : '#FF8127', ai ? '#35BED0' : '#FF8127')
-      : ai ? cleanIcon(30, l, r) : cleanIcon(30, dark ? W : INK, dark ? '#D6D6D6' : '#3A3A3A', dark ? INK : W);
+    el.innerHTML = cleanIcon(30, ai ? '#35BED0' : '#FF8127', ai ? '#35BED0' : '#FF8127');
   });
   renderNav(); renderHome();
   $$('.seg').forEach(seg => $$('button', seg).forEach(b => b.setAttribute('aria-pressed', S[seg.dataset.key] === b.dataset.v)));
-  $('#pick').textContent = before ? 'Avant (actuel)' : `1${S.av} · 2${S.links} · 3${S.hdr} · 4${S.clean}`;
+  $('#pick').textContent = before ? 'Avant (actuel) — bleu partout' : 'Après — jaune = action importante seulement';
+  setTimeout(measureYellow, 80);
 }
+/* Yellow share per screen (visible viewport): CSS backgrounds by layout + SVG fills sampled on a canvas. */
+function isY(c) { const m = c.match(/[\d.]+/g); return m && +m[0] === 242 && +m[1] === 174 && +m[2] === 0 && (m[3] === undefined || +m[3] > 0); }
+const svgCache = new Map();
+function estimateSvg(svg) {
+  const html = svg.outerHTML; if (!/F2AE00/i.test(html)) return 0;
+  if (svgCache.has(html)) return svgCache.get(html);
+  svgCache.set(html, 0);
+  const w = 160, h = Math.max(1, Math.round(160 * svg.clientHeight / Math.max(1, svg.clientWidth)));
+  const img = new Image(); img.onload = () => {
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.drawImage(img, 0, 0, w, h);
+    const d = x.getImageData(0, 0, w, h).data; let n = 0;
+    for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 128 && Math.abs(d[i] - 242) < 30 && Math.abs(d[i + 1] - 174) < 30 && d[i + 2] < 60) n++;
+    svgCache.set(html, n / (w * h)); measureYellow();
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(html.includes('xmlns=') ? html : html.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"'));
+  return 0;
+}
+function measureYellow() {
+  $$('.scr').forEach(scr => {
+    const box = scr.getBoundingClientRect(); let area = 0;
+    const clip = (r) => Math.max(0, Math.min(r.right, box.right) - Math.max(r.left, box.left)) * Math.max(0, Math.min(r.bottom, box.bottom) - Math.max(r.top, box.top));
+    scr.querySelectorAll('*').forEach(el => {
+      if (el instanceof SVGElement) return;
+      if (isY(getComputedStyle(el).backgroundColor)) area += clip(el.getBoundingClientRect());
+    });
+    scr.querySelectorAll('svg').forEach(svg => { const r = estimateSvg(svg); if (r > 0) area += clip(svg.getBoundingClientRect()) * r; });
+    const pct = area / (box.width * box.height) * 100;
+    const wrap = scr.closest('.ph-wrap'); let tag = wrap.querySelector('.yb');
+    if (!tag) { tag = document.createElement('span'); tag.className = 'yb'; wrap.appendChild(tag); }
+    tag.textContent = `Jaune à l’écran : ${pct.toFixed(1)} %`; tag.classList.toggle('over', pct > 4);
+    tag.style.display = S.mode === 'before' ? 'none' : '';
+  });
+}
+setInterval(measureYellow, 1500);
 $$('.seg').forEach(seg => seg.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   S[seg.dataset.key] = b.dataset.v; render();
