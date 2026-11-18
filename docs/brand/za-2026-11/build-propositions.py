@@ -14,7 +14,9 @@ Sortie : ZAYROVI-Za-propositions.html (autonome, aucune ressource externe).
 """
 import base64
 import json
+import math
 import pathlib
+import re
 
 HERE = pathlib.Path(__file__).resolve().parent
 G = json.loads((HERE / "za-geometry.json").read_text())
@@ -33,12 +35,28 @@ def b64(name):
 
 
 # ---------------------------------------------------------------- symboles SVG
+def _clipped_z():
+    """Le Z déjà découpé par le cercle (aucun mask/clipPath : rendu identique partout)."""
+    pts = [tuple(map(float, q.split())) for q in re.findall(r"(-?[\d.]+ -?[\d.]+)", Z)]
+    # pts[4], pts[5] = extrémité droite de la barre basse, hors du cercle : on la remplace par l'arc.
+    y_top, y_bot = pts[4][1], pts[5][1]
+    x_top = 500 + math.sqrt(500 ** 2 - (y_top - 500) ** 2)
+    x_bot = 500 + math.sqrt(500 ** 2 - (y_bot - 500) ** 2)
+    head = " L".join(f"{x:.1f} {y:.1f}" for x, y in pts[:4])
+    tail = " L".join(f"{x:.1f} {y:.1f}" for x, y in pts[6:])
+    return (f"M{head} L{x_top:.1f} {y_top:.1f} A500 500 0 0 1 {x_bot:.1f} {y_bot:.1f} L{tail}Z")
+
+
+ZC = _clipped_z()
+CIRCLE = "M0 500A500 500 0 1 0 1000 500A500 500 0 1 0 0 500Z"
+
+
 def za(dx=0, circle=YELLOW, z=INK, a="#FFFFFF", dot=YELLOW, knock=False, with_dot=True):
     """Le logo « Za. » ; dx décale le « a » et le point (espacement)."""
-    out = [f'<circle cx="500" cy="500" r="500" fill="{circle}" mask="url(#mZ)"/>']
-    if not knock:
-        out.append(f'<use href="#pZ" fill="{z}" clip-path="url(#clipC)"/>')
-    out.append(f'<use href="#pA" fill="{a}" transform="translate({dx} 0)"/>')
+    out = [] if knock else [f'<use href="#pZC" fill="{z}"/>']
+    out.append(f'<use href="#pRing" fill="{circle}"/>')
+    if a != "none":
+        out.append(f'<use href="#pA" fill="{a}" transform="translate({dx} 0)"/>')
     if with_dot:
         out.append(f'<circle cx="{DOT["cx"] + dx}" cy="{DOT["cy"]}" r="{DOT["r"]}" fill="{dot}"/>')
     return "".join(out)
@@ -100,10 +118,8 @@ TILE = (f'<symbol id="za-tile" viewBox="0 0 1000 1000"><rect width="1000" height
 
 SPRITE = f'''<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
 <defs>
-<path id="pZ" d="{Z}"/><path id="pA" d="{A}"/>
-<clipPath id="clipC"><circle cx="500" cy="500" r="500"/></clipPath>
-<mask id="mZ" maskUnits="userSpaceOnUse" x="-10" y="-10" width="1020" height="1020">
-<circle cx="500" cy="500" r="500" fill="#fff"/><use href="#pZ" fill="#000"/></mask>
+<path id="pZ" d="{Z}"/><path id="pZC" d="{ZC}"/><path id="pA" d="{A}"/>
+<path id="pRing" fill-rule="evenodd" d="{CIRCLE}{ZC}"/>
 </defs>{SYMBOLS}{TILE}</svg>'''
 
 
@@ -115,6 +131,10 @@ def use(id_, h, extra="", label="ZAYROVI"):
     w = h * ratios[id_] / 1000
     return (f'<svg class="logo" width="{w:.1f}" height="{h}" role="img" aria-label="{label}" {extra}>'
             f'<use href="#{id_}"/></svg>')
+
+
+ICONS = ('<span class="hicons"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>'
+         '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"/></svg></span>')
 
 
 # ------------------------------------------------------------------ gabarits UI
@@ -136,7 +156,7 @@ def phone(header_bg, logo_html, body, header_border=True, aywebs=None):
         ay = (f'<div class="ayweb" style="background:{bg};color:{fg}">{logo2}<span class="aylabel">AYWEBs</span>'
               f'<span class="aysearch">Rechercher sur Amazon, Shein…</span></div>')
     return f'''<div class="phone" dir="ltr"><div class="status"><span>9:41</span><span>●●● ▮</span></div>
-<div class="hdr" style="background:{header_bg};{border}">{logo_html}<span class="hicons">⌕ &nbsp;♡</span></div>
+<div class="hdr" style="background:{header_bg};{border}">{logo_html}{ICONS}</div>
 <div class="pbody">{body}</div>{ay}</div>'''
 
 
@@ -179,7 +199,7 @@ sections.append(section(1, "المسافة بين الدائرة والـ a",
 # 2 — Fond clair
 def light_card(sym_id):
     return (f'<div class="stack"><div class="pane light big">{use(sym_id, 110)}</div>'
-            f'<div class="pane grey">{use(sym_id, 44)}<span class="sz">44 px</span>{use(sym_id, 26)}<span class="sz">26 px</span></div></div>')
+            f'<div class="pane grey" dir="ltr"><span class="sz">44 px</span>{use(sym_id, 44)}<span class="sz">26 px</span>{use(sym_id, 26)}</div></div>')
 
 sections.append(section(2, "الشعار على الخلفيات البيضاء",
     "موقعنا أغلبو أبيض #FFFFFF، والـ a الأبيض يختفي فوقو. وبفضل المسافة الجديدة، الـ a الأسود ما عادش يتلصق في الـ z.",
@@ -214,20 +234,20 @@ sections.append(section(3, "بلاصة الأصفر في ألوان التطبي
 
 # 4 — En-tête
 def header_card(dark_id, light_id, h_app):
-    return (f'<div class="stack"><div class="site" dir="ltr">{use(light_id, 34)}<nav>Femme · Homme · Maison · AYWEBs</nav><span class="sbtn">Panier</span></div>'
-            f'<div class="apphdr" dir="ltr">{use(light_id, h_app)}<span class="hicons">⌕ &nbsp;♡</span></div>'
-            f'<div class="apphdr dark" dir="ltr">{use(dark_id, h_app)}<span class="hicons">⌕ &nbsp;♡</span></div></div>')
+    return (f'<div class="stack"><div class="site" dir="ltr">{use(light_id, 34)}<nav>Femme · Homme · Maison · AYWEBs · Promotions</nav><span class="sbtn">Panier</span></div>'
+            f'<div class="apphdr" dir="ltr">{use(light_id, h_app)}{ICONS}</div>'
+            f'<div class="apphdr dark" dir="ltr">{use(dark_id, h_app)}{ICONS}</div></div>')
 
 sections.append(section(4, "الهيدر: الشعار وحدو ولّا مع الاسم؟",
     "كل خيار في هيدر الموقع، وهيدر التطبيق الأبيض، والهيدر الأسود.",
     [
-        option("H", "H1", "Za. وحدو", header_card("za-dark", "za-light", 30),
+        option("H", "H1", "<bdi dir='ltr'>Za.</bdi> وحدو", header_card("za-dark", "za-light", 30),
                "نظيف وقصير. أما الكليان الجديد ما يعرفش إنّو «Zayrovi» حتى يتعوّد."),
-        option("H", "H2", "Za. | zayrovi", header_card("lock-dark", "lock-light", 26),
+        option("H", "H2", "<bdi dir='ltr'>Za. | zayrovi</bdi>", header_card("lock-dark", "lock-light", 26),
                "الشعار ما يتبدّل، والاسم مكتوب بجنبو. ينصح بيه في الأشهر الأولى، ومن بعد نرجعو لـ H1.",
                recommended=True, checked=True),
-        option("H", "H3", "zayrovi. (الشعار يكمّل الاسم)", header_card("full-dark", "full-light", 26),
-               "اقتراح إبداعي: الـ «Za» متاع الشعار تولّي بداية الكلمة، والنقطة تمشي للآخر. أما يبدّل في شكل الشعار شويّة."),
+        option("H", "H3", "<bdi dir='ltr'>zayrovi.</bdi> (الشعار يكمّل الاسم)", header_card("full-dark", "full-light", 26),
+               "اقتراح إبداعي: الـ «<bdi dir='ltr'>Za</bdi>» متاع الشعار تولّي بداية الكلمة، والنقطة تمشي للآخر. أما يبدّل في شكل الشعار شويّة."),
     ]))
 
 # 5 — Taille accueil
@@ -238,10 +258,10 @@ def home_card(h, header_h):
 sections.append(section(5, "حجم الشعار في الصفحة الرئيسية",
     "طلبت يبان أكبر شويّة. اللوغو القديم كان طولو 25 px في هيدر طولو 48 px.",
     [
-        option("S", "S0", "25 px (نفس الحجم القديم)", home_card(25, 48)),
-        option("S", "S1", "32 px (+28%)", home_card(32, 48),
+        option("S", "S0", "<bdi dir='ltr'>25 px</bdi> (نفس الحجم القديم)", home_card(25, 48)),
+        option("S", "S1", "<bdi dir='ltr'>32 px (+28%)</bdi>", home_card(32, 48),
                "يبان أكبر بوضوح، والهيدر يقعد 48 px.", recommended=True, checked=True),
-        option("S", "S2", "40 px (+60%)", home_card(40, 56),
+        option("S", "S2", "<bdi dir='ltr'>40 px (+60%)</bdi>", home_card(40, 56),
                "حضور قوي، أما يلزم نطوّلو الهيدر لـ 56 px، فتنقص بلاصة المحتوى."),
     ]))
 
@@ -269,26 +289,26 @@ def mark_svg(id_):
 sections.append(section(6, "أيقونة التطبيق (Android)",
     "على شاشة التلفون الأيقونة صغيرة (حوالي 48–56 px)، وAndroid ينجّم يقصّها مربّع ولّا دائرة.",
     [
-        option("I", "I1", "أسود + Za. كامل", homescreen(lambda r: icon_full_tile(INK, r)),
+        option("I", "I1", "أسود + <bdi dir='ltr'>Za.</bdi> كامل", homescreen(lambda r: icon_full_tile(INK, r)),
                "نفس شاشة البداية بالضبط، أما الـ a والنقطة يصغرو برشا."),
         option("I", "I2", "أسود + دائرة الـ z", homescreen(lambda r: icon_tile("mark", INK, 0.72, r)),
                "الرمز يكبر ويتعرف من بعيد، والـ a يقعد في الشعار الكامل.", recommended=True, checked=True),
         option("I", "I3", "أصفر كامل + z أسود", homescreen(
             lambda r: f'<span class="ic" style="background:{YELLOW};border-radius:{"22%" if r else "50%"}">'
-                      f'<svg viewBox="0 0 1000 1000" width="100%" height="100%"><g transform="translate(150 150) scale(.7)"><use href="#pZ" fill="#000" clip-path="url(#clipC)"/></g></svg></span>'),
+                      f'<svg viewBox="0 0 1000 1000" width="100%" height="100%"><g transform="translate(150 150) scale(.7)"><use href="#pZC" fill="#000"/></g></svg></span>'),
                "يبان برشا بين الأيقونات، أما يشبه أيقونات تطبيقات أخرى صفراء (Snapchat، Bolt…)."),
     ]))
 
 # 7 — Favicon
 def fav_card(fn):
-    sizes = ''.join(f'<span class="fv" style="width:{s}px;height:{s}px">{fn()}</span><span class="sz">{s}</span>' for s in (16, 32, 48))
-    return (f'<div class="stack"><div class="pane light">{sizes}</div>'
+    sizes = ''.join(f'<span class="sz">{s} px</span><span class="fv" style="width:{s}px;height:{s}px">{fn()}</span>' for s in (16, 32, 48))
+    return (f'<div class="stack"><div class="pane light" dir="ltr">{sizes}</div>'
             f'<div class="tab" dir="ltr"><span class="fv" style="width:16px;height:16px">{fn()}</span>ZAYROVI — Mode, maison…<span class="x">×</span></div></div>')
 
 sections.append(section(7, "أيقونة المتصفح (favicon)",
     "في الـ 16 px النقطة والـ a ما يبانوش. انظر للحجم الحقيقي في التبويبة.",
     [
-        option("F", "F1", "Za. كامل", fav_card(lambda: f'<svg viewBox="0 0 {LOGO_W:.0f} 1000" width="100%" height="100%"><use href="#za-light"/></svg>'),
+        option("F", "F1", "<bdi dir='ltr'>Za.</bdi> كامل", fav_card(lambda: f'<svg viewBox="0 0 {LOGO_W:.0f} 1000" width="100%" height="100%"><use href="#za-light"/></svg>'),
                "يتقرا بالصعوبة تحت 32 px."),
         option("F", "F2", "دائرة الـ z برك", fav_card(lambda: mark_svg("mark")),
                "واضحة حتى في 16 px، وهذا اللي تعملو العلامات الكبار.", recommended=True, checked=True),
@@ -298,7 +318,7 @@ sections.append(section(7, "أيقونة المتصفح (favicon)",
 previews = f'''<section class="q" id="apercus"><h2><span class="qn">✓</span>معاينات (ما فيهمش اختيار)</h2>
 <p class="intro">كيفاش يجي الشعار في البلايص الأخرى، بالاختيارات المقترحة (★).</p>
 <div class="prev">
-  <figure><div class="splash" dir="ltr">{use("za-dark", 70)}</div><figcaption>شاشة البداية: أسود + Za.</figcaption></figure>
+  <figure><div class="splash" dir="ltr">{use("za-dark", 70)}</div><figcaption>شاشة البداية: أسود + <bdi dir='ltr'>Za.</bdi></figcaption></figure>
   <figure><div class="mail" dir="ltr"><div class="mailtop">{use("za-dark", 30)}</div><div class="mailbody"><b>Merci pour votre commande</b><br><span>Commande n° ZY-000000</span><i></i><i></i></div></div><figcaption>إيميل: شريط أسود</figcaption></figure>
   <figure><div class="invoice" dir="ltr"><div class="invtop">{use("za-mono-black", 28)}<span>FACTURE</span></div><i></i><i></i><i></i><i class="short"></i></div><figcaption>فاتورة تتطبع بالأبيض والأسود: نسخة سوداء</figcaption></figure>
   <figure><div class="footer" dir="ltr">{use("lock-dark", 26)}<span>© 2026 ZAYROVI · zayrovi.com</span></div><figcaption>footer الموقع</figcaption></figure>
@@ -333,9 +353,9 @@ main{max-width:1180px;margin:0 auto;padding:24px 16px 140px}
 .q h2{margin:0 0 6px;font-size:22px;display:flex;align-items:center;gap:12px}
 .qn{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#000;color:#FBB809;font-size:16px}
 .intro{margin:0 0 18px;color:#555}
-.opts{display:grid;gap:16px}.cols3{grid-template-columns:repeat(3,1fr)}.cols2{grid-template-columns:repeat(2,1fr)}
+.opts{display:grid;gap:16px}.cols3{grid-template-columns:repeat(3,minmax(0,1fr))}.cols2{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (max-width:900px){.cols3,.cols2{grid-template-columns:1fr}}
-.opt{position:relative;display:flex;flex-direction:column;border:2px solid #E6E6E6;border-radius:16px;padding:14px;cursor:pointer;transition:border-color .15s,box-shadow .15s;background:#fff}
+.opt{min-width:0;position:relative;display:flex;flex-direction:column;border:2px solid #E6E6E6;border-radius:16px;padding:14px;cursor:pointer;transition:border-color .15s,box-shadow .15s;background:#fff}
 .opt:hover{border-color:#BDBDBD}
 .opt input{position:absolute;opacity:0;pointer-events:none}
 .opt:has(input:checked){border-color:#000;box-shadow:0 0 0 3px #FBB809}
@@ -353,11 +373,11 @@ main{max-width:1180px;margin:0 auto;padding:24px 16px 140px}
 .phone{width:240px;height:440px;border:7px solid #111;border-radius:30px;overflow:hidden;background:#FAFAFA;display:flex;flex-direction:column;font-family:system-ui,sans-serif;position:relative}
 .status{display:flex;justify-content:space-between;font-size:10px;padding:6px 14px 2px;background:#fff;color:#111}
 .hdr{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 14px}
-.hicons{font-size:16px;color:#111;letter-spacing:2px}
+.hicons{display:flex;gap:12px;color:#111}
 .apphdr.dark .hicons{color:#fff}
 .pbody{flex:1;padding:12px;overflow:hidden}
 .pcard{background:#fff;border-radius:12px;padding:10px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.pimg{position:relative;height:150px;border-radius:8px;background:#F1F1F1;display:grid;place-items:center}
+.pimg{position:relative;height:112px;border-radius:8px;background:#F1F1F1;display:grid;place-items:center}
 .pbadge{position:absolute;top:8px;left:8px;font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px}
 .pname{font-size:13px;margin-top:8px}.pprice{font-size:13px;margin:2px 0 8px}.pprice b{color:#CF1322}.pprice s{color:#999;font-size:11px}
 .pbtn{width:100%;border:0;border-radius:999px;padding:10px;font-weight:700;font-size:13px}
@@ -365,8 +385,8 @@ main{max-width:1180px;margin:0 auto;padding:24px 16px 140px}
 .aylabel{font-weight:800;font-size:13px}.aysearch{flex-basis:100%;background:rgba(255,255,255,.92);color:#666;border-radius:999px;padding:6px 12px;font-size:11px}
 .hero{height:170px;border-radius:12px;background:linear-gradient(135deg,#222,#555);color:#fff;display:grid;place-items:center;font-size:12px;letter-spacing:2px}
 .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.row3 i{height:80px;border-radius:10px;background:#EAEAEA}
-.site{display:flex;align-items:center;gap:16px;background:#fff;border:1px solid #EEE;border-radius:10px;padding:12px 14px;flex-wrap:wrap}
-.site nav{font-size:12px;color:#444;flex:1}.sbtn{font-size:12px;font-weight:700;background:#000;color:#fff;border-radius:999px;padding:5px 12px}
+.site{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #EEE;border-radius:10px;padding:12px 14px}
+.site nav{font-size:12px;color:#444;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sbtn{font-size:12px;font-weight:700;background:#000;color:#fff;border-radius:999px;padding:5px 12px}
 .apphdr{display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 14px;border-radius:10px;background:#fff;border:1px solid #EEE}
 .apphdr.dark{background:#000;border-color:#000}
 .home{display:grid;grid-template-columns:repeat(2,1fr);gap:18px 10px;background:linear-gradient(160deg,#3B4A6B,#1D2333);border-radius:16px;padding:22px 14px;width:100%}
@@ -374,7 +394,7 @@ main{max-width:1180px;margin:0 auto;padding:24px 16px 140px}
 .ic{width:56px;height:56px;display:block;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.35)}.ic.ghost{background:rgba(255,255,255,.25);border-radius:22%}
 .fv{display:inline-block;flex:none}
 .tab{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #DDD;border-radius:10px 10px 0 0;padding:8px 12px;font-size:12px;width:100%;max-width:300px;align-self:center}.tab .x{margin-inline-start:auto;color:#888}
-.prev{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}@media (max-width:900px){.prev{grid-template-columns:1fr}}
+.prev{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}@media (max-width:900px){.prev{grid-template-columns:1fr}}
 .prev figure{margin:0}.prev figcaption{font-size:13px;color:#555;margin-top:6px}
 .splash{height:220px;background:#000;border-radius:14px;display:grid;place-items:center}
 .mail{height:220px;border:1px solid #EEE;border-radius:14px;overflow:hidden;background:#fff}.mailtop{background:#000;padding:16px;display:flex;justify-content:center}
@@ -412,7 +432,7 @@ HTML = f'''<!doctype html>
 <title>ZAYROVI — اقتراحات الشعار Za.</title><style>{CSS}</style></head><body>
 {SPRITE}
 <header class="top">
-  <h1>شعار ZAYROVI الجديد «Za.» — اقتراحات للاختيار</h1>
+  <h1>شعار ZAYROVI الجديد «<bdi dir='ltr'>Za.</bdi>» — اقتراحات للاختيار</h1>
   <div class="hero-logos" dir="ltr">{use("za-dark", 120)}<div class="whitebox">{use("za-light", 90)}</div></div>
   <p>في كل سؤال اختار خيار واحد (المختار يتلوّن بالأصفر). الخيارات اللي فيها ★ هوما اقتراحاتي، ومختارة من الأول.
   في الآخر اضغط «انسخ اختياراتي» وابعثهملي في الشات.</p>
