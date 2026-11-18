@@ -32,12 +32,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   sticky = false,
   tone = 'light',
   className = '',
-  logoUrl = '/media/logo-zayrovi.png?v=8.0',
+  logoUrl,
   onLogoClick,
   showLogo = true,
   backPlacement = 'trailing',
 }) => {
   const { tr, direction } = useLocale();
+  // Official « Za. » by surface: light master on white headers, dark master (white a) on ink headers.
+  const logoSrc = logoUrl ?? (tone === 'dark' ? '/media/logo-zayrovi-logo-dark.svg?v=9.0' : '/media/logo-zayrovi-logo-light.svg?v=9.0');
   const action = onBack || onClose;
   const label = actionLabel || (onBack ? tr('Retour', 'رجوع') : tr('Fermer', 'إغلاق'));
   const actionButton = action && (
@@ -53,10 +55,10 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {backPlacement === 'leading' && actionButton}
           {showLogo && (onLogoClick ? (
             <button type="button" onClick={onLogoClick} className="shrink-0 bg-transparent" aria-label="ZAYROVI">
-              <img src={logoUrl} alt="" className="h-10 w-10 bg-transparent object-contain sm:h-11 sm:w-11" />
+              <img src={logoSrc} alt="" className="h-8 w-auto bg-transparent object-contain" />
             </button>
           ) : (
-            <img src={logoUrl} alt="ZAYROVI" className="h-10 w-10 shrink-0 bg-transparent object-contain sm:h-11 sm:w-11" />
+            <img src={logoSrc} alt="ZAYROVI" className="h-8 w-auto shrink-0 bg-transparent object-contain" />
           ))}
           <div className="min-w-0" dir={direction}>
             <strong className={`block truncate font-display text-base font-black sm:text-lg ${tone === 'dark' ? 'text-white' : 'text-ink'}`}>{title}</strong>

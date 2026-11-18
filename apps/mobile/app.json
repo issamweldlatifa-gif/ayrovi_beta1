@@ -15,7 +15,7 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "monochromeImage": "./assets/images/adaptive-icon-monochrome.png",
-        "backgroundColor": "#FFFFFF"
+        "backgroundColor": "#0A0A0A"
       },
       "predictiveBackGestureEnabled": false,
       "intentFilters": [
@@ -62,11 +62,11 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FFFFFF",
+          "backgroundColor": "#0A0A0A",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 160,
           "dark": {
-            "backgroundColor": "#FFFFFF",
+            "backgroundColor": "#0A0A0A",
             "image": "./assets/images/splash-icon-dark.png"
           }
         }

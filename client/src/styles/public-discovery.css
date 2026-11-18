@@ -40,6 +40,7 @@
 .public-footer-columns{display:grid;gap:20px;padding-top:18px;border-top:1px solid #262626}
 .public-footer-eyebrow{display:block;font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#8A8A8A}
 .public-footer-message{display:grid;gap:7px;justify-items:center}
+.public-footer-logo{display:block;width:auto;height:40px;margin-bottom:9px}
 .public-footer-logo{height:26px;width:auto;object-fit:contain}
 .public-footer-message h2{font-size:17px;line-height:1.35;font-weight:650;margin:0;color:#FFFFFF;max-width:520px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .public-footer-message p{font-size:12.5px;line-height:1.6;color:#BDBDBD;margin:0;max-width:460px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}

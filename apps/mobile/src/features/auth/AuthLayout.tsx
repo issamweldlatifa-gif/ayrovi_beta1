@@ -24,7 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { KeyboardAvoider } from '@/design/keyboard';
-import { BrandWordmark } from '@/design/BrandMark';
+import { BrandLogo, LOGO_SIZE } from '@/design/BrandMark';
 import { useResponsive } from '@/design/layout';
 
 /** Largeur maximale de la colonne du formulaire. */
@@ -80,7 +80,7 @@ export function AuthLayout({ top, title, subtitle, children, testID }: {
           </View>
           {/* Marque posée en tête sur TOUTES les étapes (référence Zalando). */}
           <View style={{ alignItems: align }}>
-            <BrandWordmark height={25} color={theme.colors.ink} />
+            <BrandLogo testID="auth-logo" height={LOGO_SIZE.auth} />
           </View>
           <AppText
             variant="h2"

@@ -8,7 +8,7 @@
  * d'environnement, fichiers.
  *
  * Ce fichier verrouille :
- *   1. le logo (Z officiel) : un seul tracé, identique sur le site, l'application et
+ *   1. le logo (« Za. » officiel, v9) : un seul tracé, identique sur le site, l'application et
  *      l'écran de chargement statique ;
  *   2. l'ancien nom n'apparaît plus NULLE PART dans le dépôt, hors une liste courte
  *      d'exceptions nommées ici avec leur raison ;
@@ -24,7 +24,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { describe, expect, test } from 'vitest';
 import { QatafoDatabase } from '../src/db/database';
-import { BRAND_SYMBOL } from '../client/src/design/brandSymbol';
+import { BRAND_LOGO, BRAND_MARK } from '../client/src/design/brandSymbol';
 import { FORMER_BRAND, FORMER_ENV_PREFIX } from '../shared/formerBrand';
 
 const ROOT = process.cwd();
@@ -32,27 +32,27 @@ const read = (rel: string) => fs.readFileSync(path.resolve(ROOT, rel), 'utf8');
 const OLD = FORMER_BRAND.toUpperCase();
 const Old = FORMER_BRAND[0].toUpperCase() + FORMER_BRAND.slice(1);
 
-describe('1. Z zébré (v7) : un seul tracé partout', () => {
+describe('1. « Za. » (v9) : un seul tracé partout', () => {
   test('site, application et écran de chargement statique partagent exactement le même tracé', () => {
     const mobile = read('apps/mobile/src/design/brandSymbol.ts');
-    expect(mobile).toContain(JSON.stringify(BRAND_SYMBOL.d));
-    expect(mobile).toContain(JSON.stringify(BRAND_SYMBOL.viewBox));
-    expect(read('client/index.html')).toContain(`d="${BRAND_SYMBOL.d}"`);
-    // tracé normalisé : une hauteur de 1000, un seul chemin fermé par sous-tracé
-    expect(BRAND_SYMBOL.height).toBe(1000);
-    // le Z est presque carré (≈ 0,96 : 1) — l'ancien cœur-poignée de main faisait 1,19 : 1
-    expect(BRAND_SYMBOL.width).toBeGreaterThan(1030); // v8 (15/11) : 1057,42
-    expect(BRAND_SYMBOL.width).toBeLessThan(1080);
-    expect(BRAND_SYMBOL.d.startsWith('M')).toBe(true);
+    for (const d of [BRAND_LOGO.ring, BRAND_LOGO.a, BRAND_LOGO.dot]) expect(mobile).toContain(JSON.stringify(d));
+    expect(mobile).toContain(JSON.stringify(BRAND_LOGO.viewBox));
+    expect(read('client/index.html')).toContain(`d="${BRAND_MARK.d}"`);
+    // tracé normalisé : une hauteur de 1000 (le diamètre du cercle) ; « Za. » ≈ 1,59 : 1
+    expect(BRAND_LOGO.height).toBe(1000);
+    expect(BRAND_LOGO.width).toBeGreaterThan(1550);
+    expect(BRAND_LOGO.width).toBeLessThan(1620);
+    expect(BRAND_MARK.d.startsWith('M')).toBe(true);
   });
 
-  test('l’application dessine le nouveau symbole (BrandMark) et l’anneau de chargement avec les jetons du thème', () => {
+  test('l’application dessine le logo (BrandLogo) avec les jetons de marque et l’anneau de chargement avec ceux du thème', () => {
     const mark = read('apps/mobile/src/design/BrandMark.tsx');
-    expect(mark).toContain('<Path d={shape.d} fill={color} />');
-    expect(mark).toContain('? BRAND_SYMBOL_SOLID\n      : BRAND_SYMBOL;');
+    expect(mark).toContain('<Path d={BRAND_LOGO.ring} fill={BRAND.yellow} />');
+    expect(mark).toContain('<Path d={BRAND_LOGO.a} fill={a} />');
+    expect(mark).toContain('<Path d={BRAND_LOGO.dot} fill={BRAND.yellow} />');
     expect(mark).toContain('ZAYROVI');
     const code = (text: string) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-    expect(code(mark)).not.toMatch(/#[0-9a-f]{3,8}\b/i); // aucune couleur en dur : encre du thème
+    expect(code(mark)).not.toMatch(/#[0-9a-f]{3,8}\b/i); // aucune couleur en dur : jetons uniquement
     const loading = read('apps/mobile/src/design/LoadingScreen.tsx');
     for (const token of ['theme.colors.canvas', 'theme.colors.line', 'theme.colors.muted']) expect(loading).toContain(token);
     expect(loading).toContain('strokeLinecap="round"');
@@ -189,13 +189,12 @@ describe('5. APK de démo', () => {
     expect(workflow).toContain('APK="$RUNNER_TEMP/ZAYROVI-demo-${SHORT}.apk"');
   });
 
-  // Ouverture blanche + symbole bleu depuis f80504cb (« blue native entrance ») ;
-  // même contrat que apps/mobile/tests/brand-colors.test.ts.
-  test('écran d’ouverture (logo v7, 14/11) : fond blanc plat #FFFFFF et Z zébré encre, dans les deux thèmes', () => {
+  // Même contrat que apps/mobile/tests/brand-colors.test.ts et tests/brand-logo-v9.test.ts.
+  test('écran d’ouverture (logo « Za. » v9, 18/11) : fond noir plat #0A0A0A et version sombre du logo, dans les deux thèmes', () => {
     const app = JSON.parse(read('apps/mobile/app.json')).expo;
     const splash = app.plugins.find((p: unknown) => Array.isArray(p) && p[0] === 'expo-splash-screen')[1];
-    expect(splash.backgroundColor).toBe('#FFFFFF');
-    expect(splash.dark.backgroundColor).toBe('#FFFFFF');
-    expect(app.android.adaptiveIcon.backgroundColor).toBe('#FFFFFF');
+    expect(splash.backgroundColor).toBe('#0A0A0A');
+    expect(splash.dark.backgroundColor).toBe('#0A0A0A');
+    expect(app.android.adaptiveIcon.backgroundColor).toBe('#0A0A0A');
   });
 });

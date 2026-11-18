@@ -5,7 +5,7 @@ import React from "react";
 export function BrandLoadingIndicator({ size = 64 }: { size?: number }) {
   return (
     <img
-      src="/media/logo-zayrovi-loading.svg?v=8.0"
+      src="/media/logo-zayrovi-loading.svg?v=9.0"
       width={size}
       height={size}
       alt=""

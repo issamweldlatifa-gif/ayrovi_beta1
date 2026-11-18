@@ -5,6 +5,7 @@ import { QatafoDatabase } from '../db/database';
 import { MailInput, mailerReady, sendMail } from '../services/mailer';
 import { customerAuthReady, requireCustomerAuthSecret } from './auth';
 import { FROZEN_CRYPTO_LABELS } from '../../shared/formerBrand';
+import { BRAND_LOGO_EMAIL } from '../../shared/brandLogo.generated';
 
 export function customerPublicOrigin(): string {
   try {
@@ -29,8 +30,16 @@ function unseal(payload: string): MailInput {
   decipher.setAuthTag(buffer.subarray(12, 28));
   return JSON.parse(Buffer.concat([decipher.update(buffer.subarray(28)), decipher.final()]).toString('utf8'));
 }
+/** Mail header: the official logo (dark master on the black band) when the public origin is known; the name otherwise.
+ *  The image's alt text keeps the brand readable when a client blocks images. */
+function mailBrandHeader(): string {
+  const origin = customerPublicOrigin();
+  if (!origin) return 'ZAYROVI';
+  return `<img src="${escape(origin + BRAND_LOGO_EMAIL.path)}" width="${BRAND_LOGO_EMAIL.width}" height="${BRAND_LOGO_EMAIL.height}" alt="ZAYROVI" style="display:inline-block;border:0;height:${BRAND_LOGO_EMAIL.height}px;width:auto;color:#FFFFFF;font-weight:bold;letter-spacing:3px">`;
+}
+
 export function authMailTemplate(ar: boolean, title: string, body: string, action?: { label: string; url: string }): string {
-  return `<!doctype html><html lang="${ar ? 'ar' : 'fr'}" dir="${ar ? 'rtl' : 'ltr'}"><head><meta charset="utf-8">${mailIdentityStyle()}</head><body style="margin:0;background:#FFFFFF;font-family:${FONT_STACK};color:#000000"><div style="max-width:520px;margin:32px auto;background:#fff;border-radius:24px;overflow:hidden"><div style="background:${BRAND.colors.ink};color:#FFFFFF;border-bottom:3px solid ${BRAND.colors.ink};padding:24px;text-align:center;font-weight:bold;letter-spacing:3px">ZAYROVI</div><div style="padding:32px;line-height:1.8"><h1 style="font-size:24px">${escape(title)}</h1>${body}${action ? `<p style="margin:28px 0"><a href="${escape(action.url)}" style="display:inline-block;background:${BRAND.colors.action};color:${BRAND.colors.onAction};padding:12px 24px;border-radius:24px;text-decoration:none;font-weight:bold">${escape(action.label)}</a></p>` : ''}<p style="font-size:12px;color:${BRAND.colors.muted}">${ar ? 'لن تطلب منك ZAYROVI كلمة المرور أو رمز التحقق عبر البريد.' : 'ZAYROVI ne vous demandera jamais votre mot de passe ou votre code de vérification par e-mail.'}</p></div></div></body></html>`;
+  return `<!doctype html><html lang="${ar ? 'ar' : 'fr'}" dir="${ar ? 'rtl' : 'ltr'}"><head><meta charset="utf-8">${mailIdentityStyle()}</head><body style="margin:0;background:#FFFFFF;font-family:${FONT_STACK};color:#000000"><div style="max-width:520px;margin:32px auto;background:#fff;border-radius:24px;overflow:hidden"><div style="background:${BRAND.colors.ink};color:#FFFFFF;border-bottom:3px solid ${BRAND.colors.ink};padding:24px;text-align:center;font-weight:bold;letter-spacing:3px">${mailBrandHeader()}</div><div style="padding:32px;line-height:1.8"><h1 style="font-size:24px">${escape(title)}</h1>${body}${action ? `<p style="margin:28px 0"><a href="${escape(action.url)}" style="display:inline-block;background:${BRAND.colors.action};color:${BRAND.colors.onAction};padding:12px 24px;border-radius:24px;text-decoration:none;font-weight:bold">${escape(action.label)}</a></p>` : ''}<p style="font-size:12px;color:${BRAND.colors.muted}">${ar ? 'لن تطلب منك ZAYROVI كلمة المرور أو رمز التحقق عبر البريد.' : 'ZAYROVI ne vous demandera jamais votre mot de passe ou votre code de vérification par e-mail.'}</p></div></div></body></html>`;
 }
 export function enqueueAuthMail(db: QatafoDatabase, accountId: string, kind: string, input: MailInput, options: { dedupKey: string; expiresAt?: string; resetHash?: string }) {
   const now = new Date().toISOString();

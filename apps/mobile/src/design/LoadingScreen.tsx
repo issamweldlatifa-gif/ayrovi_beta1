@@ -1,12 +1,12 @@
 /**
- * Écran de chargement d'entrée — le Z zébré zayrovi (v8) dans un anneau (maquette du 2026-10-16).
+ * Écran de chargement d'entrée — le symbole « Za. » (cercle jaune + z, v9) dans un anneau (maquette du 2026-10-16).
  *
  * ── Enchaînement à l'ouverture ──────────────────────────────────────────────
- * 1. L'image de démarrage NATIVE (app.json : Z zébré blanc sur fond noir #0A0A0A, dans
+ * 1. L'image de démarrage NATIVE (app.json : logo « Za. » version sombre sur fond noir #0A0A0A, dans
  *    les deux thèmes) couvre le démarrage du moteur JavaScript ; BrandEntrance la reprend
  *    au pixel près puis l'ouvre sur le blanc de l'application.
  * 2. Cet écran prend le relais pendant que les préférences et les polices se
- *    chargent : le symbole gris au centre d'un anneau clair, un arc plus foncé tourne.
+ *    chargent : le symbole jaune au centre d'un anneau clair, un arc plus foncé tourne.
  * On ne masque l'image native qu'APRÈS avoir peint cet écran (`onShown`) : sans
  * cette précaution, une frame vide apparaîtrait entre les deux.
  *
@@ -15,7 +15,7 @@
  * parce qu'on n'en connaît aucune : il tourne, il ne se remplit pas. Si le système
  * demande moins d'animations, l'arc reste immobile.
  *
- * Couleurs : jetons du thème — symbole et arc en `muted`, anneau en `line`, fond `canvas`.
+ * Couleurs : symbole jaune ZAYROVI (identité, constant), arc en `muted`, anneau en `line`, fond `canvas`.
  */
 import { useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, View } from "react-native";
@@ -30,9 +30,8 @@ export interface LoadingScreenProps {
   onShown?: () => void;
 }
 
-/** Proportions de la maquette : anneau ≈ 37 % de la largeur, arc ≈ 70°. Le Z (presque carré) est ajusté
- * au CERCLE de rayon `symbolRadius` — même placement que le chargement web (logo-zayrovi-loading.svg) —
- * pour qu'aucun de ses coins n'approche l'anneau (rayon 65). */
+/** Proportions de la maquette : anneau ≈ 37 % de la largeur, arc ≈ 70°. Le cercle du symbole a le rayon
+ * `symbolRadius` — même placement que le chargement web (logo-zayrovi-loading.svg) — à 10 dp de l'anneau (rayon 65). */
 export const RING = {
   size: 136,
   track: 4,
@@ -69,7 +68,7 @@ export function LoadingScreen({ onShown }: LoadingScreenProps) {
   );
 }
 
-/** Page-level loading uses the same stationary grey emblem as startup. Only the arc turns. */
+/** Page-level loading uses the same stationary yellow symbol as startup. Only the arc turns. */
 export function BrandLoadingIndicator({
   size = RING.size,
   color,
@@ -158,11 +157,7 @@ export function BrandLoadingIndicator({
             />
           </Svg>
         </Animated.View>
-        <BrandSymbol
-          width={brandSymbolWidthForRadius(RING.symbolRadius)}
-          color={ink}
-          variant="striped"
-        />
+        <BrandSymbol width={brandSymbolWidthForRadius(RING.symbolRadius)} />
       </View>
     </View>
   );

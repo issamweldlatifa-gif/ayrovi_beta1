@@ -176,8 +176,8 @@ describe('4. Écran de connexion aligné sur le modèle A', () => {
   });
 
   it('la connexion porte le verrou A.ROVI une seule fois (identité 2026-09-22)', () => {
-    expect(login).toContain('/media/logo-zayrovi-lockup-white-violet.svg');
-    expect(login).toContain('/media/logo-zayrovi-lockup-black-violet.svg');
+    expect(login).toContain('/media/logo-zayrovi-logo-dark.svg');
+    expect(login).toContain('/media/logo-zayrovi-logo-light.svg');
     // Le nom n'est plus écrit une seconde fois à côté du verrou.
     expect(login).not.toContain('<strong>ZAYROVI</strong>');
   });

@@ -15,7 +15,7 @@ import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { BrandMark } from '@/design/BrandMark';
+import { BrandMark, brandToneForInk } from '@/design/BrandMark';
 import { AppImage } from '@/design/appImage';
 import { AYWEBS_WORDMARK_TINT } from '@/design/tokens.mobile';
 import { AppText, Drawer, DrawerItem, Segmented } from '@/design/ui';
@@ -149,7 +149,7 @@ export function LegacyMainMenu({
                 style={styles.aywebsWordmark}
               />
             ) : (
-              <BrandMark size={30} nameColor={onHero ? iconColor : undefined} />
+              <BrandMark size={30} tone={onHero ? brandToneForInk(iconColor) : undefined} />
             )}
           </Pressable>
         </View>
@@ -187,7 +187,7 @@ export function LegacyMainMenu({
       {/* Le bord suit la langue : en arabe le tiroir sort à droite. */}
       <Drawer visible={menuOpen} onClose={() => { setMenuOpen(false); }} side={theme.isRTL ? 'end' : 'start'}>
         <View style={[styles.drawerHead, { flexDirection: rowDirectionFor(theme.isRTL), borderBottomColor: theme.colors.line }]}>
-          <BrandMark color={theme.colors.ink} />
+          <BrandMark />
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('common.close')}

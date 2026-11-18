@@ -1,5 +1,6 @@
 import { FONT_STACK, BRAND, documentIdentityCss, mailIdentityStyle } from './brandDocuments';
 import { invoiceQrSvg } from './invoiceQr';
+import { BRAND_LOGO_SVG } from '../../shared/brandLogo.generated';
 /**
  * ZAYROVI Invoice Service — توليد فاتورة PDF محلية بدون متصفح headless.
  *
@@ -117,6 +118,8 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   body { font-family: ${FONT_STACK}; color: #000000; font-size: 13px; padding: 40px; }
   .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid ${BRAND.colors.ink}; padding-bottom: 20px; }
   .brand { font-size: 26px; font-weight: 900; color: #000000; letter-spacing: -0.5px; }
+  .brand .logo { display: block; margin-bottom: 10px; }
+  .brand .logo svg { display: block; height: 40px; width: auto; }
   .brand small { display: block; font-size: 11px; color: ${BRAND.colors.muted}; font-weight: 600; margin-top: 6px; letter-spacing: 0; }
   .doc { text-align: right; }
   .doc h1 { font-size: 22px; font-weight: 900; }
@@ -144,7 +147,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid ${BRAND.colors.line}; color: ${BRAND.colors.muted}; font-size: 11px; text-align: center; line-height: 1.6; }
 </style></head><body>
   <div class="header">
-    <div class="brand">${escapeHtml(company.name)}
+    <div class="brand"><span class="logo" aria-hidden="true">${BRAND_LOGO_SVG.light}</span>${escapeHtml(company.name)}
       <small>${escapeHtml(company.address)} · ${escapeHtml(company.email)}${company.phone ? ` · ${escapeHtml(company.phone)}` : ''}</small>
     </div>
     <div class="doc">

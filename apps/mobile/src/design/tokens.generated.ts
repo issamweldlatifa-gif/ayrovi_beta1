@@ -2,26 +2,26 @@
  * GÉNÉRÉ — ne pas modifier à la main.
  *
  * Couleurs   : apps/mobile/src/design/brand.json
- *              ZAYROVI App — Official Brand Colors · version 4.4.0
- *              sha256 : a895dca4d3bf4b87f9bfc12c1178893ecb91c226171d809a3bc40b4b19c70b2a
+ *              ZAYROVI App — Official Brand Colors · version 4.5.0
+ *              sha256 : 048943e0538e363f1712745f141383628bbaec63ad4885375fe30cf6b0e72cdc
  * Structure  : client/src/design/editorial/identity.json
  *              ZAYROVI A — Official Identity · version 4.4.0
- *              sha256 : b8886729ddb802be645b0162f2b4f3d743f6cac481f56c39530f317244633ee7
+ *              sha256 : 094c0e82369dde2d3cfd648a0f465a27f46045159e7683876d5e1a4b9286fe51
  *
  * Régénérer : npm run tokens:build   ·   vérifier : npm run tokens:check
  */
 /** Provenance de ces jetons (couleurs de l’application + structure partagée avec le site). */
 export const IDENTITY = {
   name: "ZAYROVI App — Official Brand Colors",
-  sha256: "a895dca4d3bf4b87f9bfc12c1178893ecb91c226171d809a3bc40b4b19c70b2a",
+  sha256: "048943e0538e363f1712745f141383628bbaec63ad4885375fe30cf6b0e72cdc",
   source: "apps/mobile/src/design/brand.json",
   structure: {
     name: "ZAYROVI A — Official Identity",
-    sha256: "b8886729ddb802be645b0162f2b4f3d743f6cac481f56c39530f317244633ee7",
+    sha256: "094c0e82369dde2d3cfd648a0f465a27f46045159e7683876d5e1a4b9286fe51",
     source: "client/src/design/editorial/identity.json",
     version: "4.4.0",
   },
-  version: "4.4.0",
+  version: "4.5.0",
 } as const;
 
 /** Les quatre couleurs officielles de la marque — la seule source des valeurs dérivées. */
@@ -32,6 +32,7 @@ export const BRAND = {
   violet: "#0A63F5",
   violetLight: "#DCE8FE",
   white: "#FFFFFF",
+  yellow: "#F2AE00",
 } as const;
 
 /** Part visuelle visée par couleur (objectif d’ensemble, pas une contrainte par écran). */
@@ -59,6 +60,7 @@ export const COLORS = {
     accentText: "#78A9FA",
     action: "#0A63F5",
     actionHover: "#0A53CB",
+    brandYellow: "#F2AE00",
     canvas: "#0A0A0A",
     danger: "#FFABAB",
     focus: "#78A9FA",
@@ -84,6 +86,7 @@ export const COLORS = {
     accentText: "#0A63F5",
     action: "#0A63F5",
     actionHover: "#0A53CB",
+    brandYellow: "#F2AE00",
     canvas: "#FFFFFF",
     danger: "#D92D20",
     focus: "#0A63F5",

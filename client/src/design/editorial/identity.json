@@ -1,5 +1,5 @@
 {
-  "version": "4.4.0",
+  "version": "4.5.0",
   "name": "ZAYROVI A — Official Identity",
   "accentShare": {
     "scope": "app",
@@ -34,7 +34,8 @@
     "secondary": "#333333",
     "shimmer": "#F2F2F2",
     "secondaryAction": "#0B57CF",
-    "onSecondaryAction": "#FFFFFF"
+    "onSecondaryAction": "#FFFFFF",
+    "brandYellow": "#F2AE00"
   },
   "darkColors": {
     "canvas": "#0A0A0A",
@@ -59,7 +60,8 @@
     "secondary": "#E5E5E5",
     "shimmer": "#171717",
     "secondaryAction": "#0B57CF",
-    "onSecondaryAction": "#FFFFFF"
+    "onSecondaryAction": "#FFFFFF",
+    "brandYellow": "#F2AE00"
   },
   "fonts": [
     {

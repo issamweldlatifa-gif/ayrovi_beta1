@@ -49,9 +49,9 @@
 .ay-auth__header .ay-runtime-button--ghost { color: var(--zayrovi-text-primary) !important; }
 .ay-auth__brand { display: flex; align-items: center; justify-self: center; gap: 8px; font-size: 16px; font-weight: 700; letter-spacing: .1em; }
 .ay-auth__logo { width: 32px; height: 32px; padding: 5px; object-fit: contain; background: var(--zayrovi-bg-main); border-radius: 0; flex-shrink: 0; }
-.ay-auth__logo--wordmark { width: auto; height: 22px; padding: 0; background: none; }
+.ay-auth__logo--wordmark { width: auto; height: 32px; padding: 0; background: none; }
 .ay-auth__brand--centered { justify-content: center; margin-block-start: var(--zayrovi-space-5); }
-.ay-auth__brand--centered .ay-auth__logo--wordmark { height: 30px; }
+.ay-auth__brand--centered .ay-auth__logo--wordmark { height: 40px; }
 .ay-auth__intro { text-align: center; margin-block-start: var(--zayrovi-space-4); }
 .ay-auth__intro h1 { max-width: 280px; margin-inline: auto; font-family: var(--zayrovi-font-display); font-size: 32px; line-height: var(--zayrovi-heading-line-height, 1.18); font-weight: var(--zayrovi-heading-weight, 650); font-synthesis: none; letter-spacing: 0; }
 .ay-auth:lang(ar) .ay-auth__intro h1 { line-height: var(--zayrovi-arabic-heading-line-height, 1.42); }

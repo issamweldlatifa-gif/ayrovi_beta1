@@ -536,7 +536,7 @@ html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8
    `align-self: flex-start` est indispensable : le panneau est un conteneur flex en colonne, où
    l'étirement transversal écrasait la hauteur imposée et centrait l'art dans une boîte trop large
    (l'emblème n'était plus aligné sur le titre). */
-.admin-login-brand__lockup { display: block; align-self: flex-start; width: auto; height: 32px; margin-bottom: 18px; }
+.admin-login-brand__lockup { display: block; align-self: flex-start; width: auto; height: 40px; margin-bottom: 18px; }
 .admin-login-brand > span { font-size: 10px; letter-spacing: .24em; color: var(--bo-bar-muted); }
 .admin-login-brand h1 { margin: 16px 0 14px; font-size: clamp(30px, 3.4vw, 46px); line-height: 1.02; letter-spacing: -.045em; }
 .admin-login-brand > p { max-width: 520px; font-size: 14.5px; line-height: 1.75; color: var(--bo-bar-muted); }

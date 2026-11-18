@@ -1,14 +1,15 @@
 {
   "name": "ZAYROVI App — Official Brand Colors",
-  "version": "4.4.0",
-  "updated": "2026-11-14",
+  "version": "4.5.0",
+  "updated": "2026-11-18",
   "brand": {
     "black": "#0A0A0A",
     "white": "#FFFFFF",
     "violet": "#0A63F5",
     "violetLight": "#DCE8FE",
     "lightGray": "#F2F2F2",
-    "secondaryBlue": "#0B57CF"
+    "secondaryBlue": "#0B57CF",
+    "yellow": "#F2AE00"
   },
   "share": {
     "white": 0.5,
@@ -46,7 +47,8 @@
     "danger": "#D92D20",
     "shimmer": "#F2F2F2",
     "secondaryAction": "#0B57CF",
-    "onSecondaryAction": "#FFFFFF"
+    "onSecondaryAction": "#FFFFFF",
+    "brandYellow": "#F2AE00"
   },
   "darkColors": {
     "canvas": "#0A0A0A",
@@ -71,6 +73,7 @@
     "danger": "#FFABAB",
     "shimmer": "#171717",
     "secondaryAction": "#0B57CF",
-    "onSecondaryAction": "#FFFFFF"
+    "onSecondaryAction": "#FFFFFF",
+    "brandYellow": "#F2AE00"
   }
 }

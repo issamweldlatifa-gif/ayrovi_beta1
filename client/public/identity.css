@@ -103,6 +103,7 @@
   --ay-e-shimmer: #F2F2F2;
   --ay-e-secondary-action: #0B57CF;
   --ay-e-on-secondary-action: #FFFFFF;
+  --ay-e-brand-yellow: #F2AE00;
   --ay-e-cta-radius: 999px;
   --ay-e-control-radius: 12px;
   --ay-e-card-radius: 16px;
@@ -136,6 +137,7 @@
   --ay-e-shimmer: #171717;
   --ay-e-secondary-action: #0B57CF;
   --ay-e-on-secondary-action: #FFFFFF;
+  --ay-e-brand-yellow: #F2AE00;
 }
 html { font-family: var(--ay-font-stack); font-stretch: var(--ay-font-body-width); font-synthesis: none; }
 body { margin: 0; font-family: var(--ay-font-stack); font-stretch: var(--ay-font-body-width); color: var(--ay-e-ink); background: var(--ay-e-canvas); }

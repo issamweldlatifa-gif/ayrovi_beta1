@@ -3,7 +3,7 @@ import { Animated, StyleSheet } from 'react-native';
 import Svg from 'react-native-svg';
 import { BrandEntrance, SETTLE_SCALE } from '@/design/BrandEntrance';
 import { Path } from 'react-native-svg';
-import { BRAND_SYMBOL, SPLASH_SYMBOL } from '@/design/brandSymbol';
+import { BRAND_LOGO, SPLASH_LOGO } from '@/design/brandSymbol';
 import appJson from '../../app.json';
 import { BRAND } from '@/design/tokens.generated';
 import { TabHomeIcon } from '@/design/TabNavIcons';
@@ -50,7 +50,7 @@ it('skips the expanding motion with reduced motion and never blocks a ready app'
   expect(onDone).toHaveBeenCalledTimes(1);
 });
 
-it('settles the splash Z (gentle step back while fading) and does not replay on rotation', () => {
+it('settles the splash logo (gentle step back while fading) and does not replay on rotation', () => {
   const onShown = jest.fn();
   const sequence = jest.spyOn(Animated, 'sequence');
   const tree = render(<BrandEntrance ready={false} onShown={onShown} onDone={() => {}} />);
@@ -65,16 +65,19 @@ it('settles the splash Z (gentle step back while fading) and does not replay on 
   expect(SETTLE_SCALE).toBeLessThan(1);
 });
 
-it('starts as an exact redraw of the native splash: same white background, same ink Z at the app.json size', () => {
+it('starts as an exact redraw of the native splash: same black background, same dark « Za. » at the app.json size', () => {
   const tree = render(<BrandEntrance ready={false} onShown={() => {}} onDone={() => {}} />);
   const splash = (appJson.expo.plugins as unknown[]).find((p): p is [string, { backgroundColor: string; imageWidth: number; dark: { backgroundColor: string } }] => Array.isArray(p) && p[0] === 'expo-splash-screen')![1];
-  expect(SPLASH_SYMBOL.imageWidth).toBe(splash.imageWidth);
-  expect(BRAND.white).toBe(splash.backgroundColor);
+  expect(SPLASH_LOGO.imageWidth).toBe(splash.imageWidth);
+  expect(BRAND.black).toBe(splash.backgroundColor);
   expect(splash.dark.backgroundColor).toBe(splash.backgroundColor);
   expect(StyleSheet.flatten(tree.getByTestId('brand-splash-cover').props.style).backgroundColor).toBe(splash.backgroundColor);
-  const z = tree.UNSAFE_getAllByType(Path).find((p) => p.props.d === BRAND_SYMBOL.d)!;
-  expect(z.props.fill).toBe(BRAND.black);
-  const svg = tree.UNSAFE_getAllByType(Svg).find((s) => s.findAll((n) => n.type === Path && n.props.d === BRAND_SYMBOL.d).length > 0)!;
-  expect(svg.props.width).toBe(SPLASH_SYMBOL.width);
-  expect(SPLASH_SYMBOL.height).toBeCloseTo(splash.imageWidth * SPLASH_SYMBOL.share, 5);
+  const paths = tree.UNSAFE_getAllByType(Path);
+  expect(paths.find((p) => p.props.d === BRAND_LOGO.ring)!.props.fill).toBe(BRAND.yellow);
+  expect(paths.find((p) => p.props.d === BRAND_LOGO.a)!.props.fill).toBe(BRAND.white);
+  expect(paths.find((p) => p.props.d === BRAND_LOGO.dot)!.props.fill).toBe(BRAND.yellow);
+  const svg = tree.UNSAFE_getAllByType(Svg).find((s) => s.findAll((n) => n.type === Path && n.props.d === BRAND_LOGO.a).length > 0)!;
+  expect(svg.props.height).toBe(SPLASH_LOGO.height);
+  expect(svg.props.width).toBeCloseTo(SPLASH_LOGO.width, 1);
+  expect(SPLASH_LOGO.width).toBeCloseTo(splash.imageWidth * SPLASH_LOGO.share, 1);
 });

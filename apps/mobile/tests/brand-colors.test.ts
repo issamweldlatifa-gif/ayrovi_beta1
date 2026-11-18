@@ -84,7 +84,12 @@ function isOrangeRgb(r: number, g: number, b: number): boolean {
   const { h, s, v } = hsv(r, g, b);
   return s >= 0.5 && v >= 0.35 && h >= 10 && h <= 48;
 }
-const isOrange = (hex: string) => isOrangeRgb(...channels(hex));
+/** The ONE warm exception: the yellow of the official « Za. » logo (owner, 18/11/2026), BRAND.yellow — reserved to
+ * the logo's circle and dot. Exact hex only in code; in shipped pixels its hue (± anti-aliasing) only. */
+const LOGO_YELLOW = '#F2AE00';
+const LOGO_YELLOW_HUE = hsv(...channels(LOGO_YELLOW)).h;
+const isLogoYellowRgb = (r: number, g: number, b: number) => Math.abs(hsv(r, g, b).h - LOGO_YELLOW_HUE) <= 3;
+const isOrange = (hex: string) => hex.toUpperCase() !== LOGO_YELLOW && isOrangeRgb(...channels(hex));
 const hue = (hex: string) => hsv(...channels(hex)).h;
 const upper = (hex: string) => hex.toUpperCase();
 
@@ -174,7 +179,7 @@ function decodePng(file: string): { width: number; height: number; pixels: Uint8
 
 describe('identité couleur officielle', () => {
   it('les couleurs officielles sont exactement celles de la charte (v4.2.0 : + violet clair)', () => {
-    expect(BRAND).toEqual({ black: '#0A0A0A', white: '#FFFFFF', violet: '#0A63F5', violetLight: '#DCE8FE', lightGray: '#F2F2F2', secondaryBlue: '#0B57CF' });
+    expect(BRAND).toEqual({ black: '#0A0A0A', white: '#FFFFFF', violet: '#0A63F5', violetLight: '#DCE8FE', lightGray: '#F2F2F2', secondaryBlue: '#0B57CF', yellow: LOGO_YELLOW });
   });
 
   it('le violet est ramené de 10 % à un repère global de 3 % (2 % + 1 % clair), les autres parts sont inchangées', () => {
@@ -396,37 +401,40 @@ describe('plus d’orange dans l’application', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('app.json : couleur principale violette, ouverture noire (Z zébré v7), aucune couleur orangée', () => {
+  it('app.json : couleur principale violette, ouverture noire (« Za. » v9, version sombre), aucune couleur orangée', () => {
     const config = JSON.parse(fs.readFileSync(path.join(ROOT, 'app.json'), 'utf8')).expo;
     expect(config.primaryColor).toBe(BRAND.violet);
-    expect(config.backgroundColor).toBe(BRAND.white); // la toile de l'app, la même que l'ouverture
-    // Logo v7 (14/11) : icône BLANCHE — Z zébré encre sur blanc plat, identique dans les deux thèmes.
-    expect(config.android.adaptiveIcon.backgroundColor).toBe(BRAND.white);
+    expect(config.backgroundColor).toBe(BRAND.white); // la toile de l'app
+    // Logo v9 (18/11) : icône et ouverture NOIRES — la version officielle sur fond noir, dans les deux thèmes.
+    expect(config.android.adaptiveIcon.backgroundColor).toBe(BRAND.black);
     const splash = config.plugins.find((plugin: unknown) => Array.isArray(plugin) && plugin[0] === 'expo-splash-screen')[1];
-    expect(splash.backgroundColor).toBe(BRAND.white);
-    expect(splash.dark.backgroundColor).toBe(BRAND.white);
+    expect(splash.backgroundColor).toBe(BRAND.black);
+    expect(splash.dark.backgroundColor).toBe(BRAND.black);
     expect(hexesIn(config).filter(isOrange)).toEqual([]);
   });
 
-  it('icône, icône adaptative, favicon et écrans de démarrage : zéro pixel orange, zéro violet, zéro bleu — Z encre (v7, icône blanche)', () => {
+  it('icône, icône adaptative, favicon et écrans de démarrage : zéro pixel orange, zéro violet, zéro bleu — seul le jaune du logo', () => {
     const report: string[] = [];
     for (const name of ['icon.png', 'adaptive-icon.png', 'favicon.png', 'splash-icon.png', 'splash-icon-dark.png']) {
       const { pixels } = decodePng(path.join(ROOT, 'assets/images', name));
       let orange = 0;
       let violet = 0;
-      let white = 0; let blue = 0; let ink = 0;
+      let white = 0; let blue = 0; let ink = 0; let yellow = 0;
       for (let i = 0; i < pixels.length; i += 4) {
         if (pixels[i + 3] < 16) continue;
         const [r, g, b] = [pixels[i], pixels[i + 1], pixels[i + 2]];
-        if (isOrangeRgb(r, g, b)) orange += 1;
+        if (isLogoYellowRgb(r, g, b)) yellow += 1;
+        else if (isOrangeRgb(r, g, b)) orange += 1;
         const { h, s } = hsv(r, g, b);
         if (s > 0.5 && h > 245 && h < 265) violet += 1;
         if (r < 15 && g >= 140 && g <= 158 && b >= 235) blue += 1;
         if (r > 240 && g > 240 && b > 240) white += 1;
         if (r < 40 && g < 40 && b < 40) ink += 1;
       }
-      // White zebra Z (v7): no orange, no primary-action violet, and the retired blue symbol is gone.
-      if (orange > 0 || violet > 0 || blue > 0 || ink === 0) report.push(`${name}: orange=${orange} violet=${violet} encre=${ink} bleu=${blue}`);
+      // « Za. » v9: the logo's yellow is present, no other warm hue, no primary-action violet, no retired blue symbol.
+      // `ink` = the black tile or the black z (favicon: transparent mark, so no ink is required there).
+      if (orange > 0 || violet > 0 || blue > 0 || yellow === 0 || (ink === 0 && name !== 'favicon.png' && name !== 'adaptive-icon.png' && !name.startsWith('splash')))
+        report.push(`${name}: orange=${orange} violet=${violet} encre=${ink} bleu=${blue} jaune=${yellow}`);
     }
     expect(report).toEqual([]);
   });

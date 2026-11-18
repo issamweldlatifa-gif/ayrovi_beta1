@@ -3,108 +3,138 @@ import { render } from "@testing-library/react-native";
 import Svg, { Path } from "react-native-svg";
 import type { ReactTestInstance } from "react-test-renderer";
 import {
+  BrandLogo,
   BrandMark,
   BrandSymbol,
-  BRAND_SYMBOL_SOLID_BELOW,
+  LOGO_SIZE,
+  brandLogoWidth,
   brandSymbolWidthForRadius,
+  brandToneForInk,
 } from "../../src/design/BrandMark";
 import { BrandLoadingIndicator, RING } from "../../src/design/LoadingScreen";
-import {
-  BRAND_SYMBOL,
-  BRAND_SYMBOL_MAX_RADIUS,
-  BRAND_SYMBOL_SOLID,
-} from "../../src/design/brandSymbol";
+import { BRAND_LOGO, BRAND_MARK } from "../../src/design/brandSymbol";
+import { BRAND } from "../../src/design/tokens.generated";
 import { ReelPublisher } from "../../src/features/reels/ReelPublisher";
-import { BRAND_WORDMARK } from "../../src/design/brandWordmark";
 
 const mockReduceMotion = jest.fn(() => false);
+let mockMode: "light" | "dark" = "light";
 jest.mock("../../src/design/motion", () => ({
   useReduceMotion: () => mockReduceMotion(),
 }));
 jest.mock("../../src/design/theme", () => ({
   useTheme: () => ({
+    mode: mockMode,
     colors: { ink: "#0A0A0A", muted: "#666666", line: "#E5E5E5", surface: "#FFFFFF", onMedia: "#FFFFFF" },
     text: () => ({}),
     isRTL: false,
   }),
 }));
 
-/** The <Svg> that draws the given contour (its width is the rendered symbol width). */
+/** The <Svg> that draws the given contour. */
 const svgDrawing = (root: ReturnType<typeof render>, d: string): ReactTestInstance =>
   root.UNSAFE_getAllByType(Svg).find((s) => s.findAll((n) => n.type === Path && n.props.d === d).length > 0)!;
+const fills = (root: ReturnType<typeof render>) =>
+  root.UNSAFE_getAllByType(Path).map((p) => [p.props.d, p.props.fill]);
 
 afterEach(() => {
   jest.restoreAllMocks();
   mockReduceMotion.mockReturnValue(false);
+  mockMode = "light";
 });
 
-describe("new zayrovi identity and grey loading", () => {
-  it("renders the new symbol and lowercase outline, and supports a symbol-only avatar", () => {
-    const result = render(<BrandMark size={30} />);
-    expect(result.UNSAFE_getAllByType(Path).map((p) => p.props.d)).toEqual([
-      BRAND_SYMBOL.d,
-      BRAND_WORDMARK.d,
+describe("official « Za. » logo (v9)", () => {
+  it("draws the light master on light surfaces: yellow circle with the z cut out, ink a, yellow dot", () => {
+    const result = render(<BrandLogo height={32} />);
+    expect(fills(result)).toEqual([
+      [BRAND_LOGO.ring, BRAND.yellow],
+      [BRAND_LOGO.a, BRAND.black],
+      [BRAND_LOGO.dot, BRAND.yellow],
     ]);
-    result.rerender(<BrandMark size={30} withName={false} />);
-    expect(result.UNSAFE_getAllByType(Path).map((p) => p.props.d)).toEqual([
-      BRAND_SYMBOL.d,
+    expect(BRAND.yellow).toBe("#F2AE00");
+  });
+
+  it("draws the dark master (white a) in the dark theme or on demand — circle and dot stay yellow", () => {
+    mockMode = "dark";
+    const themed = render(<BrandLogo />);
+    expect(fills(themed)[1]).toEqual([BRAND_LOGO.a, BRAND.white]);
+    mockMode = "light";
+    const forced = render(<BrandLogo tone="dark" />);
+    expect(fills(forced)).toEqual([
+      [BRAND_LOGO.ring, BRAND.yellow],
+      [BRAND_LOGO.a, BRAND.white],
+      [BRAND_LOGO.dot, BRAND.yellow],
     ]);
   });
 
-  it("uses a stationary grey new symbol while its arc animates, and stops on unmount", () => {
+  it("never distorts the logo: width always follows the master ratio", () => {
+    for (const h of [LOGO_SIZE.min, LOGO_SIZE.header, LOGO_SIZE.home, LOGO_SIZE.auth]) {
+      const svg = svgDrawing(render(<BrandLogo height={h} />), BRAND_LOGO.a);
+      expect(svg.props.height).toBe(h);
+      expect(svg.props.width).toBeCloseTo((h * BRAND_LOGO.width) / BRAND_LOGO.height, 1);
+      expect(svg.props.viewBox).toBe(BRAND_LOGO.viewBox);
+    }
+    expect(brandLogoWidth(1000)).toBeCloseTo(BRAND_LOGO.width, 1);
+    expect(LOGO_SIZE.home).toBeGreaterThan(LOGO_SIZE.header);
+  });
+
+  it("keeps the z open: one contour whose lower bar crosses the circle's edge (never closed inside it)", () => {
+    expect(BRAND_LOGO.ring).toBe(BRAND_MARK.d);
+    expect(BRAND_LOGO.ring.match(/M/g)).toHaveLength(1); // single subpath: no second closed z inside the disc
+    const [x, y] = BRAND_LOGO.ring.slice(1).split("A")[0].split(" ").map(Number);
+    expect(Math.hypot(x - 500, y - 500)).toBeCloseTo(500, 0); // the bar starts ON the circle
+  });
+
+  it("picks the rendering from the surface's ink", () => {
+    expect(brandToneForInk("#FFFFFF")).toBe("dark");
+    expect(brandToneForInk("#fff")).toBe("dark");
+    expect(brandToneForInk("#0A0A0A")).toBe("light");
+    expect(brandToneForInk("currentColor")).toBe("light");
+  });
+
+  it("BrandMark keeps the full logo by default and the symbol alone without the name", () => {
+    const result = render(<BrandMark size={30} />);
+    expect(result.UNSAFE_getAllByType(Path)).toHaveLength(3);
+    result.rerender(<BrandMark size={30} withName={false} />);
+    expect(fills(result)).toEqual([[BRAND_MARK.d, BRAND.yellow]]);
+  });
+});
+
+describe("loading and avatar", () => {
+  it("shows the stationary yellow symbol while the arc turns, and stops on unmount", () => {
     const animation = { start: jest.fn(), stop: jest.fn(), reset: jest.fn() };
     const loop = jest.spyOn(Animated, "loop").mockReturnValue(animation);
     const result = render(<BrandLoadingIndicator size={64} />);
-    const symbol = result
-      .UNSAFE_getAllByType(Path)
-      .find((p) => p.props.d === BRAND_SYMBOL.d);
-    expect(symbol?.props.fill).toBe("#666666");
+    expect(result.UNSAFE_getAllByType(Path).find((p) => p.props.d === BRAND_MARK.d)?.props.fill).toBe(BRAND.yellow);
     expect(loop).toHaveBeenCalledTimes(1);
     expect(animation.start).toHaveBeenCalledTimes(1);
     result.unmount();
     expect(animation.stop).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps the grey identity visible without starting an animation under reduced motion", () => {
+  it("keeps the symbol visible without animating under reduced motion", () => {
     mockReduceMotion.mockReturnValue(true);
     const loop = jest.spyOn(Animated, "loop");
     const result = render(<BrandLoadingIndicator size={64} />);
-    expect(
-      result.UNSAFE_getAllByType(Path).find((p) => p.props.d === BRAND_SYMBOL.d)
-        ?.props.fill
-    ).toBe("#666666");
+    expect(result.UNSAFE_getAllByType(Path).some((p) => p.props.d === BRAND_MARK.d)).toBe(true);
     expect(loop).not.toHaveBeenCalled();
   });
 
-  it("draws the striped Z from 24 dp and the solid Z below, where stripes would blur", () => {
-    const at = (width: number) =>
-      render(<BrandSymbol width={width} color="#0A0A0A" />).UNSAFE_getByType(Path).props.d;
-    expect(at(BRAND_SYMBOL_SOLID_BELOW)).toBe(BRAND_SYMBOL.d);
-    expect(at(BRAND_SYMBOL_SOLID_BELOW - 1)).toBe(BRAND_SYMBOL_SOLID.d);
-    expect(
-      render(<BrandSymbol width={16} color="#0A0A0A" variant="striped" />).UNSAFE_getByType(Path).props.d
-    ).toBe(BRAND_SYMBOL.d);
-  });
-
-  it("fits the Z inside the loading ring by its farthest point, not by its width", () => {
+  it("keeps the symbol's circle clear of the loading arc", () => {
     const result = render(<BrandLoadingIndicator />);
-    const svg = svgDrawing(result, BRAND_SYMBOL.d);
-    const width = brandSymbolWidthForRadius(RING.symbolRadius);
-    expect(svg.props.width).toBe(width);
-    const farthest = (width / BRAND_SYMBOL.width) * BRAND_SYMBOL_MAX_RADIUS;
-    // Ring centre line is at 65 with a 6 dp arc: keep at least 8 dp between the Z and the arc's inner edge.
-    expect(farthest).toBeLessThanOrEqual(RING.size / 2 - RING.arc - 8 + 0.1);
+    const width = svgDrawing(result, BRAND_MARK.d).props.width as number;
+    expect(width).toBe(brandSymbolWidthForRadius(RING.symbolRadius));
+    expect(width / 2).toBeLessThanOrEqual(RING.size / 2 - RING.arc - 6);
+    expect(render(<BrandSymbol width={40} />).UNSAFE_getByType(Svg).props.height).toBe(40);
   });
 
-  it("shows the official Reel avatar as the white zebra Z on a black disc (striped even at 28 dp), never a blue symbol", () => {
+  it("shows the official Reel avatar as the yellow symbol on a black disc, never a blue symbol", () => {
     const result = render(<ReelPublisher />);
     const path = result.UNSAFE_getByType(Path);
-    expect(path.props.d).toBe(BRAND_SYMBOL.d);
-    expect(path.props.fill).toBe("#FFFFFF");
+    expect(path.props.d).toBe(BRAND_MARK.d);
+    expect(path.props.fill).toBe(BRAND.yellow);
     const disc = result.getByTestId("reel-publisher-avatar", { includeHiddenElements: true });
-    expect(disc.props.style).toMatchObject({ width: 28, height: 28, borderRadius: 14, backgroundColor: "#0A0A0A" });
-    const width = svgDrawing(result, BRAND_SYMBOL.d).props.width as number;
-    // The Z's outline fits 80 % of the disc: radius ≤ 11.2 dp inside the 14 dp circle.
-    expect((width / BRAND_SYMBOL.width) * BRAND_SYMBOL_MAX_RADIUS).toBeLessThanOrEqual(11.25);
+    expect(disc.props.style).toMatchObject({ width: 28, height: 28, borderRadius: 14, backgroundColor: BRAND.black });
+    // Yellow circle = 84 % of the disc: a black ring stays around it.
+    expect(svgDrawing(result, BRAND_MARK.d).props.width).toBeCloseTo(28 * 0.84, 1);
   });
 });

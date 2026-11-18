@@ -4,7 +4,7 @@ import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, usePathname } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { BrandWordmark } from '@/design/BrandMark';
+import { BrandLogo, LOGO_SIZE, brandToneForInk } from '@/design/BrandMark';
 import { AppImage } from '@/design/appImage';
 import { RADIUS } from '@/design/tokens.mobile';
 import { STORE_BAR } from '@/design/tokens.mobile';
@@ -127,7 +127,7 @@ export function AppHeader({ scrolled, heroBackground = null, heroTint = null, br
       <Pressable testID={brand === 'aywebs' ? 'aywebs-header-wordmark' : 'main-header-wordmark'} accessibilityRole="button" accessibilityLabel={t('nav.home')} onPress={brand === 'aywebs' ? () => router.push('/') : openHome} style={styles.wordmark}>
         {brand === 'aywebs' ? <AppImage localSource={require('../../../assets/aywebs/aywebs-wordmark-white.png')}
           contentFit="contain" tintColor={STORE_BAR.ink} decorative background={null} style={styles.aywebsWordmark} />
-          : <BrandWordmark height={25} color={ink} />}
+          : <BrandLogo testID="main-header-logo" height={pathname === '/' ? LOGO_SIZE.home : LOGO_SIZE.header} tone={brandToneForInk(ink)} />}
       </Pressable>
     )}
     <View style={{ flexDirection: row, alignItems: 'center', gap: 0, flexShrink: 0 }}>

@@ -1,127 +1,168 @@
 /** Canonical identity master -> web/native vectors and icons. No database writes.
  *
- * v7 (14 Nov 2026) — zebra-striped Z. One master (assets/brand/zayrovi-2026-11/logo.json), two renderings:
- *  - light : ink stripes on flat #FFFFFF    -> launcher icons, adaptive icon, splash, PWA/apple-touch icons
- *            (owner, 14/11: "the app icon has a WHITE background"), in-app/CRM/site surfaces, lockups, loading;
- *  - dark  : white stripes on flat #0A0A0A  -> the official account avatar (Publication, Reels, Stories).
- * `symbolSolid` (the Z silhouette, no stripes) is used where stripes cannot survive: Android notification and
- * themed (monochrome) icons, which are alpha masks, and the 16–64 px favicons.
- * Every placement is centred on the Z's own box; circular placements fit `symbolSolid.maxRadius`.
+ * v9 (18 Nov 2026) — « Za. » : yellow circle, knocked-out z, a, yellow dot. One master
+ * (assets/brand/zayrovi-2026-11/logo.json), two official renderings supplied by the owner:
+ *  - dark  : on black  -> a WHITE  (splash, app icon, PWA icons, email/footer bands, dark headers);
+ *  - light : on white  -> a INK    (site and app headers, auth screens, documents).
+ * The z is ALWAYS a knockout: it takes the colour of whatever is behind the logo (black on black, white on white),
+ * and its lower bar always runs out of the circle. The circle and the dot are always ZAYROVI yellow, except on
+ * alpha masks (Android notification + themed icons), where everything is one colour.
+ * `mark` (circle + z) replaces the full logo where the a and the dot would be too small: favicon, round avatars,
+ * notification icon, loading ring, tab icon.
  */
 import fs from 'node:fs';
 import sharp from 'sharp';
 
 const dir = 'assets/brand/zayrovi-2026-11';
-const logo = JSON.parse(fs.readFileSync(`${dir}/logo.json`, 'utf8'));
-const { symbol, symbolSolid: solid, wordmark } = logo;
-export const VERSION = logo.version; // cache-busting query for every public logo URL: ?v=<version>
-const INK = '#0A0A0A', WHITE = '#FFFFFF', LOADING_GREY = '#666666';
+const master = JSON.parse(fs.readFileSync(`${dir}/logo.json`, 'utf8'));
+const { logo, mark, colors } = master;
+export const VERSION = master.version; // cache-busting query for every public logo URL: ?v=<version>
+const { yellow: YELLOW, ink: INK, white: WHITE } = colors;
+const TRACK = '#E5E5E5';
 const num = (n, digits = 4) => Number(n.toFixed(digits));
 
-/** Transform placing a symbol-unit shape centred in a box, scaled so its outline fits a circle of `radius`. */
-const fitCircle = (box, radius) => {
-  const scale = radius / solid.maxRadius;
-  return `translate(${num((box - symbol.width * scale) / 2)} ${num((box - symbol.height * scale) / 2)}) scale(${num(scale, 9)})`;
+// ---- Placement helpers -----------------------------------------------------------------------------------
+/** Transform centring the full logo in a w×h box, the logo being `share` of the box width (or height if taller). */
+const fitLogo = (w, h, share) => {
+  const scale = Math.min((w * share) / logo.width, (h * share) / logo.height);
+  return { scale, transform: `translate(${num((w - logo.width * scale) / 2)} ${num((h - logo.height * scale) / 2)}) scale(${num(scale, 9)})` };
 };
-/** Transform centring the Z in a square box with its height = `share` of the box. */
-const fitHeight = (box, share) => {
-  const scale = (box * share) / symbol.height;
-  return `translate(${num((box - symbol.width * scale) / 2)} ${num((box - symbol.height * scale) / 2)}) scale(${num(scale, 9)})`;
+/** Transform centring the mark (circle r = 500) so that its circle has radius `radius`. */
+const fitMark = (box, radius) => `translate(${num(box / 2 - radius)} ${num(box / 2 - radius)}) scale(${num(radius / 500, 9)})`;
+
+/** The logo body. tone: 'light' (a ink) | 'dark' (a white) | a colour string (single-colour silhouette). */
+const logoBody = (tone, transform = '') => {
+  const mono = tone !== 'light' && tone !== 'dark' ? tone : null;
+  const a = mono ?? (tone === 'dark' ? WHITE : INK);
+  const disc = mono ?? YELLOW;
+  return `<g${transform ? ` transform="${transform}"` : ''}><path fill="${disc}" d="${logo.ring}"/>`
+    + `<path fill="${a}" d="${logo.a}"/><path fill="${disc}" d="${logo.dot}"/></g>`;
 };
+const markBody = (color = YELLOW, transform = '') =>
+  `<path fill="${color}" d="${mark.d}"${transform ? ` transform="${transform}"` : ''}/>`;
 
-// Native splash (expo-splash-screen): the image is `imageWidth` dp square and the Z is SPLASH_SHARE of its height.
-// The JS entrance (apps/mobile/src/design/BrandEntrance.tsx) redraws the Z at exactly this size for a seamless handoff.
-const SPLASH_SHARE = 0.7;
-const appJson = JSON.parse(fs.readFileSync('apps/mobile/app.json', 'utf8'));
-const splashPlugin = appJson.expo.plugins.find((p) => Array.isArray(p) && p[0] === 'expo-splash-screen')[1];
-// The native splash, the adaptive icon and the JS redraw (BRAND.white token) must be the same flat white.
-for (const bg of [splashPlugin.backgroundColor, splashPlugin.dark?.backgroundColor, appJson.expo.android.adaptiveIcon.backgroundColor])
-  if (String(bg).toUpperCase() !== WHITE) throw new Error(`app.json: launch background ${bg} must be ${WHITE} (BRAND.white)`);
-const splashHeight = splashPlugin.imageWidth * SPLASH_SHARE;
-const SPLASH = { imageWidth: splashPlugin.imageWidth, share: SPLASH_SHARE,
-  width: num((splashHeight * symbol.width) / symbol.height, 2), height: num(splashHeight, 2) };
+const svg = (w, h, body, title = 'ZAYROVI') => `<svg xmlns="http://www.w3.org/2000/svg" width="${num(w, 2)}" height="${num(h, 2)}" viewBox="0 0 ${num(w, 2)} ${num(h, 2)}" role="img" aria-label="ZAYROVI"><title>${title}</title>${body}</svg>\n`;
+const rect = (w, h, color, rx = 0) => (color ? `<rect width="${w}" height="${h}"${rx ? ` rx="${rx}"` : ''} fill="${color}"/>` : '');
+const disc = (size, color) => `<circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="${color}"/>`;
+/** Square tile with the full logo: background (or transparent) + centred logo at `share` of the width. */
+const logoTile = (size, { share, background = null, tone = 'dark', rx = 0 }) =>
+  svg(size, size, rect(size, size, background, rx) + logoBody(tone, fitLogo(size, size, share).transform), 'Za.');
+/** Square tile with the mark: the circle has radius `radius` × size. */
+const markTile = (size, { radius, background = null, color = YELLOW, round = false, rx = 0 }) =>
+  svg(size, size, (round ? disc(size, background) : rect(size, size, background, rx)) + markBody(color, fitMark(size, radius * size)), 'Za.');
 
-// Loading ring: 136 box, ring r = 65 (stroke 4–6). The Z fits a 52 radius circle -> ~9 px clear of the ring.
-const BOOT_TRANSFORM = fitCircle(136, 52);
-const data = ({ width, height, viewBox, d }) => ({ width, height, viewBox, d });
-const ts = `/** GENERATED from the supplied zebra-striped Z (logo.json v${VERSION}) by npm run brand:build. */
-export const BRAND_SYMBOL = ${JSON.stringify(data(symbol), null, 2)} as const;
-/** The same Z without stripes: alpha-mask surfaces and very small sizes. */
-export const BRAND_SYMBOL_SOLID = ${JSON.stringify(data(solid), null, 2)} as const;
-/** Farthest outline point from the box centre, in symbol units (fit the Z inside circles). */
-export const BRAND_SYMBOL_MAX_RADIUS = ${solid.maxRadius};
-export const BOOT_SYMBOL_TRANSFORM = '${BOOT_TRANSFORM}';
-/** Native splash geometry (app.json expo-splash-screen, background BRAND.white, ink Z), in dp: the Z drawn by the startup handoff. */
-export const SPLASH_SYMBOL = ${JSON.stringify(SPLASH)} as const;
-`;
-for (const file of ['client/src/design/brandSymbol.ts', 'apps/mobile/src/design/brandSymbol.ts']) fs.writeFileSync(file, ts);
-fs.writeFileSync('apps/mobile/src/design/brandWordmark.ts', `/** GENERATED supplied lowercase zayrovi contours; no font dependency. */\nexport const BRAND_WORDMARK = ${JSON.stringify(data(wordmark), null, 2)} as const;\n`);
-
-const svg = (w, h, body) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="ZAYROVI"><title>zayrovi — Z</title>${body}</svg>\n`;
-const path = (shape, color, transform = '') => `<path fill="${color}" d="${shape.d}"${transform ? ` transform="${transform}"` : ''}/>`;
-const rect = (size, color) => (color ? `<rect width="${size}" height="${size}" fill="${color}"/>` : '');
-/** Square tile: flat background (or transparent) + centred Z. */
-const tile = (size, { share, radius, background = null, color = WHITE, shape = symbol, round = false }) =>
-  svg(size, size, (round ? `<circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="${background}"/>` : rect(size, background)) + path(shape, color, radius ? fitCircle(size, radius * size) : fitHeight(size, share)));
-// Lockup: symbol 1000 high; wordmark 660 high, optically centred; 240 clear-space units. No divider.
-const lockupWidth = num(symbol.width + 240 + wordmark.width * 0.66, 2);
-const lockup = (color) => svg(lockupWidth, 1000, path(symbol, color) + path(wordmark, color, `translate(${symbol.width + 240} 170) scale(0.66)`));
 const writePng = async (file, input, width, height = width) => {
   fs.mkdirSync(file.substring(0, file.lastIndexOf('/')), { recursive: true });
   await sharp(Buffer.from(input), { density: 72 }).resize(width, height, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png({ compressionLevel: 9 }).toFile(file);
 };
 
-// ---- Web (client/public/media) -------------------------------------------------------------------------
+// ---- Native splash geometry --------------------------------------------------------------------------------
+// expo-splash-screen draws a square `imageWidth` dp image centred on a flat black background; the logo spans
+// SPLASH_SHARE of that square's width. BrandEntrance redraws it at exactly this size for a seamless handoff.
+const SPLASH_SHARE = 0.86;
+const appJson = JSON.parse(fs.readFileSync('apps/mobile/app.json', 'utf8'));
+const splashPlugin = appJson.expo.plugins.find((p) => Array.isArray(p) && p[0] === 'expo-splash-screen')[1];
+for (const bg of [splashPlugin.backgroundColor, splashPlugin.dark?.backgroundColor, appJson.expo.android.adaptiveIcon.backgroundColor])
+  if (String(bg).toUpperCase() !== INK) throw new Error(`app.json: launch background ${bg} must be ${INK} (BRAND.black, the dark master)`);
+const splashWidth = num(splashPlugin.imageWidth * SPLASH_SHARE, 2);
+const SPLASH = { imageWidth: splashPlugin.imageWidth, share: SPLASH_SHARE, width: splashWidth, height: num((splashWidth * logo.height) / logo.width, 2) };
+
+// Loading ring: 136 box, ring r = 65 (track 4, arc 6). The mark's circle has radius 52 -> 10 px clear of the arc.
+const BOOT_MARK_RADIUS = 52;
+const BOOT_TRANSFORM = fitMark(136, BOOT_MARK_RADIUS);
+
+// ---- Generated TypeScript (client + native share one file) -------------------------------------------------
+const ts = `/** GENERATED from assets/brand/zayrovi-2026-11/logo.json (v${VERSION}, « Za. ») by npm run brand:build — do not edit.
+ * Geometry only: the colours live in the design tokens (ZAYROVI yellow, ink, white).
+ * ring = ONE contour: the circle with the z cut out and open to the outside (its lower bar crosses the edge). */
+export const BRAND_LOGO = ${JSON.stringify({ width: logo.width, height: logo.height, viewBox: logo.viewBox, ring: logo.ring, a: logo.a, dot: logo.dot }, null, 2)} as const;
+/** The symbol alone (circle + knocked-out z), for small and round placements. Circle: centre 500,500, r 500. */
+export const BRAND_MARK = ${JSON.stringify({ width: mark.width, height: mark.height, viewBox: mark.viewBox, d: mark.d }, null, 2)} as const;
+/** Loading ring (136 box): the mark's circle has radius ${BOOT_MARK_RADIUS}. */
+export const BOOT_MARK_TRANSFORM = '${BOOT_TRANSFORM}';
+/** Native splash geometry (app.json expo-splash-screen, black background, dark logo), in dp. */
+export const SPLASH_LOGO = ${JSON.stringify(SPLASH)} as const;
+`;
+for (const file of ['client/src/design/brandSymbol.ts', 'apps/mobile/src/design/brandSymbol.ts']) fs.writeFileSync(file, ts);
+fs.rmSync('apps/mobile/src/design/brandWordmark.ts', { force: true }); // v8 lowercase wordmark: retired
+
+// ---- Web (client/public/media) -----------------------------------------------------------------------------
 const media = 'client/public/media';
-// Retired v6 file: the official avatar no longer uses a blue symbol.
-fs.rmSync(`${media}/logo-zayrovi-symbol-blue.svg`, { force: true });
-fs.writeFileSync(`${media}/logo-zayrovi-mark.svg`, svg(symbol.width, symbol.height, path(symbol, INK)));
-for (const [tone, ink] of [['black', INK], ['white', WHITE]]) {
-  fs.writeFileSync(`${media}/logo-zayrovi-wordmark-${tone}.svg`, svg(wordmark.width, wordmark.height, path(wordmark, ink)));
-  // `-violet` names are historical URLs kept by stored interface configs; same monochrome lockup.
-  for (const suffix of ['', '-violet']) fs.writeFileSync(`${media}/logo-zayrovi-lockup-${tone}${suffix}.svg`, lockup(ink));
-  await writePng(`${media}/logo-zayrovi-lockup-${tone}-violet.png`, lockup(ink), 1200, Math.round((1200 / lockupWidth) * 1000));
+const logoSvg = (tone) => svg(logo.width, logo.height, logoBody(tone), 'Za.');
+fs.writeFileSync(`${media}/logo-zayrovi-logo-light.svg`, logoSvg('light'));
+fs.writeFileSync(`${media}/logo-zayrovi-logo-dark.svg`, logoSvg('dark'));
+fs.writeFileSync(`${media}/logo-zayrovi-mark.svg`, svg(mark.width, mark.height, markBody(), 'Za.'));
+// Historical file names (stored interface configs, old pages): same official logo, by surface tone.
+// -black = for LIGHT surfaces (a ink); -white = for DARK surfaces (a white).
+for (const [tone, surface] of [['black', 'light'], ['white', 'dark']]) {
+  fs.writeFileSync(`${media}/logo-zayrovi-wordmark-${tone}.svg`, logoSvg(surface));
+  for (const suffix of ['', '-violet']) fs.writeFileSync(`${media}/logo-zayrovi-lockup-${tone}${suffix}.svg`, logoSvg(surface));
+  await writePng(`${media}/logo-zayrovi-lockup-${tone}-violet.png`, logoSvg(surface), 1200, Math.round((1200 / logo.width) * 1000));
 }
-// Official account avatar (round): white stripes on a black disc, fitted inside the circle (owner, 14/11).
-fs.writeFileSync(`${media}/logo-zayrovi-avatar.svg`, tile(512, { radius: 0.4, background: INK, color: WHITE, round: true }));
-// Browser tab favicon: white tile, solid ink Z (stripes do not survive 16–32 px).
-fs.writeFileSync(`${media}/logo-zayrovi-icon.svg`, tile(512, { share: 0.64, background: WHITE, color: INK, shape: solid }));
+// Official account avatar (round): black disc, the mark's circle at 84 % — the z bar runs out into the black.
+export const AVATAR_FIT = 0.42;
+fs.writeFileSync(`${media}/logo-zayrovi-avatar.svg`, markTile(512, { radius: AVATAR_FIT, background: INK, round: true }));
+// Browser tab favicon: the mark alone, transparent (the knocked-out z shows the tab colour).
+fs.writeFileSync(`${media}/logo-zayrovi-icon.svg`, markTile(512, { radius: 0.5 }));
 fs.writeFileSync(`${media}/logo-zayrovi-loading.svg`, svg(136, 136,
-  `<style>.arc{transform-origin:68px 68px;animation:turn 1100ms linear infinite}@keyframes turn{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.arc{animation:none}}</style><circle cx="68" cy="68" r="65" fill="none" stroke="#E5E5E5" stroke-width="4"/><path class="arc" d="M 68 3 A 65 65 0 0 1 129.08 45.77" fill="none" stroke="${LOADING_GREY}" stroke-width="6" stroke-linecap="round"/>` + path(symbol, LOADING_GREY, BOOT_TRANSFORM)));
-// Light symbol (ink stripes, transparent) for headers/avatars/og:image; white stripes for dark surfaces.
-await writePng(`${media}/logo-zayrovi.png`, tile(512, { share: 0.86, color: INK }), 512);
-await writePng(`${media}/logo-zayrovi-light.png`, tile(512, { share: 0.86, color: WHITE }), 512);
-// PWA + apple-touch: white tile, ink stripes (same as the launcher icon).
-for (const [name, size] of [['192', 192], ['512', 512], ['apple-touch', 180]]) {
-  await writePng(`${media}/logo-zayrovi-${name}.png`, tile(size, { share: 0.62, background: WHITE, color: INK }), size);
-}
+  `<style>.arc{transform-origin:68px 68px;animation:turn 1100ms linear infinite}@keyframes turn{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.arc{animation:none}}</style><circle cx="68" cy="68" r="65" fill="none" stroke="${TRACK}" stroke-width="4"/><path class="arc" d="M 68 3 A 65 65 0 0 1 129.08 45.77" fill="none" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>` + markBody(YELLOW, BOOT_TRANSFORM)));
+// Small square symbol (account, assistant, app header fallback): the mark, transparent.
+await writePng(`${media}/logo-zayrovi.png`, markTile(512, { radius: 0.47 }), 512);
+await writePng(`${media}/logo-zayrovi-light.png`, markTile(512, { radius: 0.47 }), 512);
+// PWA + apple-touch: the app icon (black tile, dark logo).
+for (const [name, size] of [['192', 192], ['512', 512], ['apple-touch', 180]])
+  await writePng(`${media}/logo-zayrovi-${name}.png`, logoTile(size, { share: 0.7, background: INK }), size);
+// Social share card (og:image / twitter:image): 1200 × 630, black, dark logo.
+const og = svg(1200, 630, rect(1200, 630, INK) + logoBody('dark', fitLogo(1200, 630, 0.42).transform), 'ZAYROVI');
+await writePng(`${media}/og-zayrovi.png`, og, 1200, 630);
 
-// ---- Expo (apps/mobile/assets/images) ------------------------------------------------------------------
+// E-mail header band (black): the dark master, background baked in (mail clients strip SVG and some recolour
+// transparent images). Shown at 40 px high -> drawn at 3x.
+const mailH = 120, mailW = Math.round((mailH * logo.width) / logo.height);
+await writePng(`${media}/logo-zayrovi-email-dark.png`, svg(mailW, mailH, rect(mailW, mailH, INK) + logoBody('dark', fitLogo(mailW, mailH, 1).transform), 'ZAYROVI'), mailW, mailH);
+
+// ---- Server documents (invoices): inline SVG strings, no network, printable --------------------------------
+const inline = (tone, height) => svg((height * logo.width) / logo.height, height, '', 'ZAYROVI')
+  .replace(/viewBox="[^"]*"/, `viewBox="${logo.viewBox}"`).replace('</svg>', `${logoBody(tone)}</svg>`).trim();
+fs.writeFileSync('shared/brandLogo.generated.ts', `// GENERATED from assets/brand/zayrovi-2026-11/logo.json (v${VERSION}, « Za. ») by npm run brand:build — do not edit.
+/** Official logo as inline SVG for server documents. light = on white (ink a), dark = on black (white a). */
+export const BRAND_LOGO_VERSION = ${JSON.stringify(VERSION)};
+export const BRAND_LOGO_SVG = ${JSON.stringify({ light: inline('light', 40), dark: inline('dark', 40) }, null, 2)} as const;
+/** Public path of the e-mail header image (black band, dark master), 40 px high in the template. */
+export const BRAND_LOGO_EMAIL = ${JSON.stringify({ path: `/media/logo-zayrovi-email-dark.png?v=${VERSION}`, width: num((40 * logo.width) / logo.height, 1), height: 40 })} as const;
+`);
+
+// ---- Expo (apps/mobile/assets/images) ----------------------------------------------------------------------
 const expo = 'apps/mobile/assets/images';
-// Android adaptive icon: 108 dp canvas, launcher masks keep the central 72 dp, the guaranteed safe zone is the
-// 66 dp circle. The Z outline fits a 60 dp circle (radius 30/108): inside the safe zone with 3 dp of air, so no
-// launcher mask (circle, squircle, teardrop) ever touches it. Background colour lives in app.json.
-export const ADAPTIVE_FIT = 30 / 108;
-const SAFE_ZONE = ADAPTIVE_FIT;
-for (const [name, size, options] of [
-  ['icon', 1024, { share: 0.62, background: WHITE, color: INK }],         // iOS / store: flat white tile
-  ['adaptive-icon', 1024, { radius: SAFE_ZONE, color: INK }],             // foreground, transparent (bg #FFFFFF)
-  ['adaptive-icon-monochrome', 1024, { radius: SAFE_ZONE, shape: solid }], // Android 13 themed icon (alpha)
-  ['notification-icon', 96, { share: 0.7, shape: solid }],                // status bar: alpha-only, white
-  ['favicon', 64, { share: 0.68, background: WHITE, color: INK, shape: solid }],
-  ['splash-icon', 1024, { share: SPLASH_SHARE, color: INK }],             // on #FFFFFF (app.json)
-  ['splash-icon-dark', 1024, { share: SPLASH_SHARE, color: INK }],
-]) await writePng(`${expo}/${name}.png`, tile(size, options), size);
+// Android adaptive icon: 108 dp canvas, the guaranteed safe zone is the 66 dp circle (radius 33). The full logo's
+// farthest point from the centre stays inside a 31 dp radius: no launcher mask ever touches it. Background in app.json.
+export const ADAPTIVE_RADIUS = 31 / 108;
+const farthest = (scale) => { // farthest painted point of the centred logo, in logo units × scale
+  const cx = logo.width / 2, cy = logo.height / 2;
+  const dotC = master.logo.dotCircle;
+  const toCircle = Math.hypot(500 - cx, 500 - cy) + 500;
+  const toDot = Math.hypot(dotC.cx - cx, dotC.cy - cy) + dotC.r;
+  return Math.max(toCircle, toDot) * scale;
+};
+const adaptiveShare = (ADAPTIVE_RADIUS * logo.width) / farthest(1); // logo width share of the canvas
+for (const [name, size, body] of [
+  ['icon', 1024, logoTile(1024, { share: 0.7, background: INK })],                        // iOS / store: black tile
+  ['adaptive-icon', 1024, logoTile(1024, { share: adaptiveShare })],                     // foreground, transparent (bg #0A0A0A)
+  ['adaptive-icon-monochrome', 1024, logoTile(1024, { share: adaptiveShare, tone: WHITE })], // Android 13 themed icon (alpha)
+  ['notification-icon', 96, markTile(96, { radius: 0.42, color: WHITE })],                 // status bar: alpha-only, white
+  ['favicon', 64, markTile(64, { radius: 0.5 })],
+  ['splash-icon', 1024, logoTile(1024, { share: SPLASH_SHARE })],                        // on #0A0A0A (app.json)
+  ['splash-icon-dark', 1024, logoTile(1024, { share: SPLASH_SHARE })],
+]) await writePng(`${expo}/${name}.png`, body, size);
 
-// ---- Capacitor inputs (android/ is generated from these by npm run android:assets) ---------------------
-await writePng('assets/icon.png', tile(1024, { share: 0.62, background: WHITE, color: INK }), 1024);
-for (const name of ['splash', 'splash-dark']) await writePng(`assets/${name}.png`, tile(2732, { share: 0.22, background: WHITE, color: INK }), 2732);
+// ---- Capacitor inputs (android/ is generated from these by npm run android:assets) -------------------------
+await writePng('assets/icon.png', logoTile(1024, { share: 0.7, background: INK }), 1024);
+for (const name of ['splash', 'splash-dark']) await writePng(`assets/${name}.png`, logoTile(2732, { share: 0.3, background: INK }), 2732);
 
-// ---- Static boot loader in client/index.html (same contour + centring as main.tsx) ---------------------
+// ---- Static boot loader in client/index.html (same mark + placement as main.tsx) ---------------------------
 const htmlPath = 'client/index.html';
 let html = fs.readFileSync(htmlPath, 'utf8');
-html = html.replace(/<path class="ay-boot-(?:z|symbol)"[^>]*\/>/, () => `<path class="ay-boot-symbol" transform="${BOOT_TRANSFORM}" d="${symbol.d}" />`);
-html = html.replaceAll('.ay-boot-z', '.ay-boot-symbol');
+html = html.replace(/<path class="ay-boot-symbol"[^>]*\/>/, () => `<path class="ay-boot-symbol" transform="${BOOT_TRANSFORM}" d="${mark.d}" />`);
 fs.writeFileSync(htmlPath, html);
-console.log(`zayrovi v${VERSION}: zebra Z (light icons + splash, dark official avatar), solid Z for alpha/small surfaces, lockups, web/native icons and splash inputs generated.`);
+console.log(`zayrovi v${VERSION} « Za. »: logo (light/dark), mark, avatar, favicon, loading, PWA + og, Expo icons/splash and Capacitor inputs generated.`);

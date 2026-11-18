@@ -12,7 +12,7 @@ import { SheetRise, SHEET_MODAL_ANIMATION } from '@/design/sheet/SheetRise';
 import { Modal, Pressable, StyleSheet, View } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BrandWordmark } from "@/design/BrandMark";
+import { BrandLogo, LOGO_SIZE } from "@/design/BrandMark";
 import { AppText } from "@/design/ui";
 import { PUBLICATION_THEME as P, RADIUS, veil } from "@/design/tokens.mobile";
 import { useI18n } from "@/i18n";
@@ -84,7 +84,7 @@ function AuthContent({
         style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 20) }]}
       >
         <View style={styles.handle} />
-        <BrandWordmark height={28} color={P.ink} />
+        <BrandLogo height={LOGO_SIZE.auth} tone="light" />
         <AppText variant="h3" color={P.ink} align="center">
           {ar ? "كون جزء من الحكاية" : "Faites partie de l’inspiration"}
         </AppText>

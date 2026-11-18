@@ -1,18 +1,18 @@
 /** One startup presentation only. Never delays the app behind an unbounded animation callback.
  *
- * v7 handoff (white icon + white splash, owner 14/11): the first frame is the native splash redrawn exactly —
- * flat white, ink zebra Z at the app.json size (SPLASH_SYMBOL is generated from it) — so hiding the native splash
- * is invisible. The Z then settles: it eases back a little (scale 1 → SETTLE_SCALE) while fading out, and the
- * app's white canvas is simply there. No colour flash: splash, entrance and app share the same white. */
+ * v9 handoff (« Za. », 18/11): the native splash is the owner's DARK master — flat #0A0A0A, yellow circle, black z,
+ * white a, yellow dot — at the app.json size (SPLASH_LOGO is generated from it). The first frame redraws it exactly,
+ * so hiding the native splash is invisible. The logo then settles (scale 1 → SETTLE_SCALE while fading out) and the
+ * black cover dissolves into the app's canvas: one soft cross-fade, never a cut. */
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, type LayoutChangeEvent } from 'react-native';
-import { BrandSymbol } from './BrandMark';
+import { BrandLogo } from './BrandMark';
 import { BrandLoadingIndicator } from './LoadingScreen';
-import { SPLASH_SYMBOL } from './brandSymbol';
+import { SPLASH_LOGO } from './brandSymbol';
 import { useReduceMotion } from './motion';
 import { BRAND } from './tokens.generated';
 
-/** Final scale of the splash Z as it fades (a gentle step back, not a zoom). */
+/** Final scale of the splash logo as it fades (a gentle step back, not a zoom). */
 export const SETTLE_SCALE = 0.86;
 
 export function BrandEntrance({ ready, onShown, onDone }: { ready: boolean; onShown: () => void; onDone: () => void }) {
@@ -38,7 +38,7 @@ export function BrandEntrance({ ready, onShown, onDone }: { ready: boolean; onSh
       Animated.delay(140),
       Animated.timing(settle, { toValue: 1, duration: 420, easing: Easing.inOut(Easing.cubic), useNativeDriver: true }),
       Animated.delay(80),
-      Animated.timing(cover, { toValue: 0, duration: 180, useNativeDriver: true }),
+      Animated.timing(cover, { toValue: 0, duration: 240, easing: Easing.out(Easing.quad), useNativeDriver: true }),
     ]);
     const deadline = setTimeout(complete, 1000);
     sequence.start(complete);
@@ -59,9 +59,9 @@ export function BrandEntrance({ ready, onShown, onDone }: { ready: boolean; onSh
   };
   return <Animated.View onLayout={onLayout} testID="brand-entrance" accessibilityRole="progressbar" style={[StyleSheet.absoluteFill, { zIndex: 1000, backgroundColor: BRAND.white, alignItems: 'center', justifyContent: 'center', opacity: fade }]}>
     {waiting ? <BrandLoadingIndicator /> : null}
-    <Animated.View testID="brand-splash-cover" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: BRAND.white, alignItems: 'center', justifyContent: 'center', opacity: cover }]}>
+    <Animated.View testID="brand-splash-cover" pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: BRAND.black, alignItems: 'center', justifyContent: 'center', opacity: cover }]}>
       <Animated.View testID="brand-splash-mark" style={markStyle}>
-        <BrandSymbol width={SPLASH_SYMBOL.width} color={BRAND.black} variant="striped" />
+        <BrandLogo height={SPLASH_LOGO.height} tone="dark" />
       </Animated.View>
     </Animated.View>
   </Animated.View>;

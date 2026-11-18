@@ -9,7 +9,7 @@ import { NavigationHistoryProvider } from './navigation/NavigationHistory';
 import { CustomerIdentity } from './design/editorial/CustomerIdentity';
 import { LocaleProvider } from './i18n/LocaleContext';
 import { RouteMeta } from './navigation/RouteMeta';
-import { BOOT_SYMBOL_TRANSFORM, BRAND_SYMBOL } from './design/brandSymbol';
+import { BOOT_MARK_TRANSFORM, BRAND_MARK } from './design/brandSymbol';
 
 // التطبيق الأصلي: سطر واحد يوحّد المسار — كل طلب نسبي يوجّه إلى أصل الـ API.
 // على الويب: no-op مطلق (same-origin).
@@ -23,7 +23,7 @@ const AdminApp = lazy(() => import('./admin/AdminApp').then((module) => ({ defau
 
 /**
  * Écran de chargement ZAYROVI — même dessin que le chargeur statique de index.html :
- * le Z zébré (v7) au centre d'un anneau clair, un arc plus foncé tourne pendant que les modules
+ * le symbole « Za. » (v9 : cercle jaune, z évidé) au centre d'un anneau clair, un arc plus foncé tourne pendant que les modules
  * se chargent. React remplace le contenu statique de #root au premier rendu ; ce
  * fallback prend le relais sans page blanche ni saut visuel (les styles vivent dans
  * index.html — couleurs comprises —, le tracé du symbole dans `design/brandSymbol`).
@@ -33,7 +33,7 @@ const loading = (
     <svg className="ay-boot-svg" viewBox="0 0 136 136" aria-hidden="true" focusable="false" data-brand="zayrovi-loader">
       <circle className="ay-boot-track" cx="68" cy="68" r="65" />
       <path className="ay-boot-arc" d="M 68 3 A 65 65 0 0 1 129.08 45.77" />
-      <path className="ay-boot-symbol" transform={BOOT_SYMBOL_TRANSFORM} d={BRAND_SYMBOL.d} />
+      <path className="ay-boot-symbol" transform={BOOT_MARK_TRANSFORM} d={BRAND_MARK.d} />
     </svg>
   </div>
 );
