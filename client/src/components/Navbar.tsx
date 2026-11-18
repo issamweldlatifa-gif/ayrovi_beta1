@@ -103,7 +103,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             title={tr('Mon panier', 'سلّتي')}
           >
             <ShoppingBag className="h-6 w-6" />
-            {cartCount > 0 && <span className="absolute bottom-1.5 end-1.5 min-w-4 rounded-full border-2 border-white bg-ink px-1 text-center text-micro font-black leading-4 text-white" aria-hidden="true">{cartCount}</span>}
+            {cartCount > 0 && <span className="absolute bottom-1.5 end-1.5 min-w-4 rounded-full border-2 border-white bg-[var(--zayrovi-cart-badge)] px-1 text-center text-micro font-black leading-4 text-white" data-testid="cart-badge" aria-hidden="true">{cartCount}</span>}
           </Button>
         </div>
       </div>

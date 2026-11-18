@@ -27,8 +27,14 @@ import { memo, useCallback, useMemo } from 'react';
  *     porte le « Prix conseillé ~~x~~ » du CRM quand il existe, sinon UNIQUEMENT
  *     un état de stock qui mérite d'être dit (limité, épuisé, non confirmé) ;
  *   • marque grasse, nom gris, prix gras.
+ *
+ * ── 18/11/2026 : maquette v2 approuvée (« Ok نفذ ») ──
+ *   • un « + » JAUNE rond en bout de ligne prix (`onAdd`) : le geste d'achat de la
+ *     carte, seul élément jaune de la grille (≈ 0,4 % de l'écran par carte).
  */
-import { useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
+import { COMMERCE } from '@/design/tokens.mobile';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -53,7 +59,12 @@ export interface ProductCardProps {
   hasCombinations?: boolean;
   /** Promotion donnée par le serveur (jamais déduite ici) : repère « Promo ». */
   promo?: boolean;
+  /** « + » jaune : ajouter au panier depuis la carte (la fiche ouvre le choix de taille si besoin). */
+  onAdd?: (product: CatalogProduct) => void;
 }
+
+/** Diamètre du « + » d'achat (maquette : 34 px ; 30 dp pour tenir dans la ligne prix de 24). */
+export const QUICK_ADD_SIZE = 30;
 
 /**
  * نصّ المخزون اللي يستاهل يتقال : محدود، فارغ، أو غير مؤكّد. «En stock» ما
@@ -73,7 +84,7 @@ export function stockLabel(status: string, t: Translate): { text: string; tone: 
 }
 
 export const ProductCard = memo(function ProductCard({
-  product, onOpen, metrics, hasCombinations = false, promo = false,
+  product, onOpen, metrics, hasCombinations = false, promo = false, onAdd,
 }: ProductCardProps) {
   const theme = useTheme();
   const t = useT();
@@ -146,6 +157,22 @@ export const ProductCard = memo(function ProductCard({
       )}
       badges={badges}
       onOpen={open}
+      trailing={onAdd && hasPrice && normalizeStockStatus(product.stockStatus) !== 'OUT_OF_STOCK' ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${t('catalog.addToCart')} — ${product.name}`}
+          hitSlop={8}
+          onPress={() => onAdd(product)}
+          testID={`product-card-add-${product.id}`}
+          style={({ pressed }) => [styles.add, { backgroundColor: pressed ? COMMERCE.actionPressed : COMMERCE.action }]}
+        >
+          <Ionicons name="add-outline" size={theme.iconSize.sm} color={COMMERCE.onAction} accessibilityElementsHidden />
+        </Pressable>
+      ) : undefined}
     />
   );
+});
+
+const styles = StyleSheet.create({
+  add: { width: QUICK_ADD_SIZE, height: QUICK_ADD_SIZE, borderRadius: QUICK_ADD_SIZE / 2, alignItems: 'center', justifyContent: 'center' },
 });

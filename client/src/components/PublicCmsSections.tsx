@@ -219,6 +219,10 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
             const product = catalog.find(item => item.id === view.id);
             if (product) onOpenProduct?.(catalogProductToScraped(product));
           }}
+          onQuickAdd={onOpenProduct ? (view) => {
+            const product = catalog.find(item => item.id === view.id);
+            if (product) onOpenProduct(catalogProductToScraped(product));
+          } : undefined}
         />
       );
     }

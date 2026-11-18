@@ -26,7 +26,7 @@ import {
   captureMatchesPageUrl, decideWebNavigation, isFatalMainPageLoadError, isSilentAppDeepLink, isSpaInPageProductSwitch, isWebPageUrl,
 } from '@/features/aywebs/webNavigation';
 
-import { AppText, Button } from '@/design/ui';
+import { AppText, PurchaseBar } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -778,15 +778,13 @@ export default function AyWebsBrowserScreen() {
               hitSlop={10}
               onPress={() => { setCartAddedAt(0); router.push('/panier'); }}
             >
-              <AppText variant="label" color={theme.colors.action} style={styles.addedLink}>{t('aywebs.goToCart')}</AppText>
+              <AppText variant="label" color={theme.colors.ink} style={styles.addedLink}>{t('aywebs.goToCart')}</AppText>
             </Pressable>
           </View>
         ) : null}
 
-        <Button
+        <PurchaseBar
           label={busy ? t('aywebs.loading') : cartAddedAt ? t('aywebs.added') : t('aywebs.selectOptions')}
-          tone="main"
-          block
           onPress={addToCart}
           busy={busy}
           disabled={!addEnabled}

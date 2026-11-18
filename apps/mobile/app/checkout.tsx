@@ -24,7 +24,7 @@ import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as WebBrowser from 'expo-web-browser';
 
-import { AppText, Button, Card, Field, KeyValue } from '@/design/ui';
+import { AppText, Button, PurchaseBar, Card, Field, KeyValue } from '@/design/ui';
 import { SubScreen } from '@/design/subScreen';
 import { JourneyProgress, type JourneyStep } from '@/features/checkout/JourneyProgress';
 import { resolveJourneyStep, journeyCompletion } from '@/features/checkout/journey';
@@ -462,11 +462,11 @@ export default function CheckoutScreen() {
           style={[styles.terms, { flexDirection: rowDirectionFor(theme.isRTL), minHeight: theme.geometry.minTarget }]}
         >
           <View style={[styles.box, {
-            borderColor: terms ? theme.colors.action : theme.colors.line,
-            backgroundColor: terms ? theme.colors.action : 'transparent',
+            borderColor: terms ? theme.colors.ink : theme.colors.lineControl,
+            backgroundColor: terms ? theme.colors.ink : 'transparent',
             borderRadius: theme.radius.control,
           }]}>
-            {terms ? <AppText variant="caption" color={theme.colors.onAction}>✓</AppText> : null}
+            {terms ? <AppText variant="caption" color={theme.colors.canvas}>✓</AppText> : null}
           </View>
           <AppText variant="caption" style={styles.termsText}>{t('checkout.terms')}</AppText>
         </Pressable>
@@ -475,9 +475,11 @@ export default function CheckoutScreen() {
           <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">{note}</AppText>
         ) : null}
 
-        <Button
+        {/* 18/11 : Commander = bouton d'achat jaune court, total à gauche. */}
+        <PurchaseBar
+          amount={cart ? formatMoney(cart.totalTND) : null}
+          caption={t('checkout.total')}
           label={t('checkout.submit')}
-          tone="main"
           onPress={() => submit.mutate()}
           busy={submit.isPending}
           disabled={!canSubmit || submit.isPending}

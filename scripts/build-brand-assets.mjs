@@ -72,6 +72,21 @@ const SPLASH = { imageWidth: splashPlugin.imageWidth, share: SPLASH_SHARE, width
 const BOOT_MARK_RADIUS = 52;
 const BOOT_TRANSFORM = fitMark(136, BOOT_MARK_RADIUS);
 
+// ---- Social icon (owner's drawing, 18/11/2026) ---------------------------------------------------------------
+// Black rounded tile; the mark (yellow circle, knocked-out z whose bar runs out into the black) + the yellow dot,
+// brought closer than in the full logo: gap between the circle's edge (at the dot's height) and the dot = the dot's
+// diameter. The group spans SOCIAL.content of the tile width, centred; corner radius = SOCIAL.radius × size.
+const DOT = (() => { const m = /^M([\d.]+) ([\d.]+)A([\d.]+)/.exec(logo.dot); return { r: Number(m[3]), cy: Number(m[2]) }; })();
+const SOCIAL_EDGE = 500 + Math.sqrt(500 ** 2 - (DOT.cy - 500) ** 2);
+const SOCIAL_DOT_X = SOCIAL_EDGE + 2 * DOT.r + DOT.r;
+export const SOCIAL = { content: 0.74, radius: 0.2, width: num(SOCIAL_DOT_X + DOT.r, 1), height: 1000, dot: { cx: num(SOCIAL_DOT_X, 1), cy: DOT.cy, r: DOT.r } };
+const socialTile = (size) => {
+  const scale = (size * SOCIAL.content) / SOCIAL.width;
+  const transform = `translate(${num((size - SOCIAL.width * scale) / 2)} ${num((size - SOCIAL.height * scale) / 2)}) scale(${num(scale, 9)})`;
+  return svg(size, size, rect(size, size, INK, num(size * SOCIAL.radius, 2))
+    + `<g transform="${transform}"><path fill="${YELLOW}" d="${mark.d}"/><circle cx="${SOCIAL.dot.cx}" cy="${SOCIAL.dot.cy}" r="${SOCIAL.dot.r}" fill="${YELLOW}"/></g>`, 'Za.');
+};
+
 // ---- Generated TypeScript (client + native share one file) -------------------------------------------------
 const ts = `/** GENERATED from assets/brand/zayrovi-2026-11/logo.json (v${VERSION}, « Za. ») by npm run brand:build — do not edit.
  * Geometry only: the colours live in the design tokens (ZAYROVI yellow, ink, white).
@@ -81,6 +96,9 @@ export const BRAND_LOGO = ${JSON.stringify({ width: logo.width, height: logo.hei
 export const BRAND_MARK = ${JSON.stringify({ width: mark.width, height: mark.height, viewBox: mark.viewBox, d: mark.d }, null, 2)} as const;
 /** Loading ring (136 box): the mark's circle has radius ${BOOT_MARK_RADIUS}. */
 export const BOOT_MARK_TRANSFORM = '${BOOT_TRANSFORM}';
+/** Social icon (account avatar in Publication, Reels, Stories): black rounded tile, mark + closer dot. Units = the
+ * mark's (circle r 500); the group is \`content\` × tile width, centred; corner radius = \`radius\` × tile size. */
+export const SOCIAL_ICON = ${JSON.stringify(SOCIAL)} as const;
 /** Native splash geometry (app.json expo-splash-screen, black background, dark logo), in dp. */
 export const SPLASH_LOGO = ${JSON.stringify(SPLASH)} as const;
 `;
@@ -100,9 +118,8 @@ for (const [tone, surface] of [['black', 'light'], ['white', 'dark']]) {
   for (const suffix of ['', '-violet']) fs.writeFileSync(`${media}/logo-zayrovi-lockup-${tone}${suffix}.svg`, logoSvg(surface));
   await writePng(`${media}/logo-zayrovi-lockup-${tone}-violet.png`, logoSvg(surface), 1200, Math.round((1200 / logo.width) * 1000));
 }
-// Official account avatar (round): black disc, the mark's circle at 84 % — the z bar runs out into the black.
-export const AVATAR_FIT = 0.42;
-fs.writeFileSync(`${media}/logo-zayrovi-avatar.svg`, markTile(512, { radius: AVATAR_FIT, background: INK, round: true }));
+// Official account avatar = the social icon (owner's drawing, 18/11): black rounded tile, mark + closer yellow dot.
+fs.writeFileSync(`${media}/logo-zayrovi-avatar.svg`, socialTile(512));
 // Browser tab favicon: the mark alone, transparent (the knocked-out z shows the tab colour).
 fs.writeFileSync(`${media}/logo-zayrovi-icon.svg`, markTile(512, { radius: 0.5 }));
 fs.writeFileSync(`${media}/logo-zayrovi-loading.svg`, svg(136, 136,

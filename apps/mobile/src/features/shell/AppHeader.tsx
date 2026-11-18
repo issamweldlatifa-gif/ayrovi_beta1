@@ -145,8 +145,6 @@ export function AppHeader({ scrolled, heroBackground = null, heroTint = null, br
           onPress={() => router.push('/panier' as never)}
           color={ink}
           ringColor={aywebs ? STORE_BAR.background : onHero && heroBackground ? heroBackground : theme.colors.canvas}
-          badgeColor={aywebs ? STORE_BAR.pill : undefined}
-          badgeTextColor={aywebs ? STORE_BAR.background : undefined}
           hitStyle={styles.hit}
         />
       ) : null}

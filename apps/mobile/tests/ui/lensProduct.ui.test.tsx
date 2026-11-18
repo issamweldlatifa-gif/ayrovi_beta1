@@ -370,7 +370,9 @@ describe('fiche produit Lens native', () => {
 
     fireEvent.press(screen.getByTestId('lens-option-selector'));
     fireEvent.press(await screen.findByText('M'));
-    expect(await screen.findByText('99.00 TND')).toBeOnTheScreen();
+    // 18/11 : le prix est rappelé à côté du bouton d’achat jaune (barre d’achat) — deux occurrences voulues.
+    expect((await screen.findAllByText('99.00 TND')).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByTestId('lens-add-to-cart-bar')).toBeOnTheScreen();
 
     const heroMedia = screen.getByTestId('lens-product-image-media', { includeHiddenElements: true });
     expect(JSON.stringify(heroMedia.props.source)).toContain(encodeURIComponent('https://images.example/red.jpg'));

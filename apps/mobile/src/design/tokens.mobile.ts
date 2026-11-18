@@ -1,13 +1,13 @@
 import HERO_PHOTO_EDGES from '../../assets/hero/palette.json';
-import { PUBLICATION_SOCIAL_SURFACE, PUBLICATION_LIKE, PUBLICATION_DISLIKE, PUBLICATION_DISCOVERY_BLUE } from '../../../../shared/publicationPresentation';
+import { PUBLICATION_SOCIAL_SURFACE, PUBLICATION_LIKE, PUBLICATION_DISLIKE, PUBLICATION_DISCOVERY_INK } from '../../../../shared/publicationPresentation';
 /**
  * Jetons propres à React Native — écrits à la main, et c'est volontaire.
  *
  * ── Pourquoi un fichier séparé plutôt que `tokens.generated.ts` ─────────────
  * `tokens.generated.ts` est GÉNÉRÉ (voir `scripts/gen-tokens.mjs`) :
  *   • ses COULEURS viennent de `src/design/brand.json` — l'identité couleur
- *     officielle de l'application (noir #0A0A0A, blanc #FFFFFF, violet
- *     électrique #0A63F5, gris clair #F2F2F2) ;
+ *     officielle de l'application (noir #0A0A0A, blanc #FFFFFF, gris clair
+ *     #F2F2F2, jaune « Za. » #F2AE00 réservé à l'achat — v5.0.0, 18/11) ;
  *   • sa STRUCTURE (espaces, typo, géométrie, durées) vient de
  *     `client/src/design/editorial/identity.json`, partagé avec le site.
  * L'éditer à la main serait une violation (écrasé au build, `tokens:check`
@@ -74,11 +74,18 @@ export const SPACE_ALL: readonly number[] = [...SPACE, ...SPACE_EXTENDED].sort((
 /* ── Rythme : le système d'espacement (14/11/2026) — voir `rhythm.ts` ──── */
 export { RHYTHM, type RhythmRole } from './rhythm';
 
-/** CTA d'achat propre à AYWEBs — jaune fixe, isolé des actions de marque globales. */
+/**
+ * CTA d'ACHAT — jaune « Za. » (maquette v2 approuvée le 18/11/2026). Le SEUL bouton coloré de
+ * l'application : barre d'achat (« Ajouter au panier »), « + » des cartes produit, Commander /
+ * paiement / confirmation. Libellé NOIR (blanc sur jaune ≈ 2:1). Toute autre action est encre.
+ * Le jaune reste ≤ 4 % d'un écran : un bouton court posé à côté du prix, jamais pleine largeur.
+ */
 export const COMMERCE = {
-  action: '#FFD60A',
-  actionPressed: '#E6C200',
+  action: BRAND.yellow,
+  actionPressed: BRAND.yellowPressed,
   onAction: BRAND.black,
+  /** Largeur du bouton d'achat court (maquette : 176 px à côté du prix). */
+  compactWidth: 176,
 } as const;
 
 /* ── Ratios des médias (un seul endroit : pas de nombre en dur dans les écrans) ─ */
@@ -127,7 +134,10 @@ export const VIDEO_BACKDROP = BRAND.black;
  *    (banni de l'application depuis le 15/10) : un avis négatif reste discret.
  */
 export const REACTION_COLORS = {
-  like: BRAND.violet,
+  /** 18/11 : plus de bleu — pouce posé à l'ENCRE sur papier (le plein du glyphe dit l'état). */
+  like: BRAND.black,
+  /** Pouce posé sur média / feuille sombre : blanc plein. */
+  likeOnMedia: BRAND.white,
   love: '#F02849',
   /**
    * 16/11 (référence « like / dislike » du propriétaire) : pouce bas PLEIN ROUGE, pendant du
@@ -159,19 +169,18 @@ const PRICE_DROP_RED = '#CF1322';
  * commercial fixe, pas une surface du thème.
  */
 /**
- * 15/11 — barre du navigateur AYWEBs (référence Walmart 003723) : fond bleu
- * d'action, icônes blanches, pilule blanche à encre noire. Fixe dans les deux
- * modes : c'est la signature de la boutique, comme la barre de Walmart.
+ * Barre du navigateur AYWEBs : fond NOIR (maquette v2 du 18/11 — plus de bleu),
+ * icônes blanches, pilule blanche à encre noire. Fixe dans les deux modes.
  */
 export const STORE_BAR = {
-  background: BRAND.violet,
+  background: BRAND.black,
   ink: BRAND.white,
   pill: BRAND.white,
   pillInk: BRAND.black,
   /** Cadenas et adresse dans la pilule blanche — gris fixe (le `muted` du mode sombre serait illisible sur blanc). */
   pillMuted: NEUTRALS.textSecondary,
-  /** 16/11 (Walmart 030411) : rond de recherche bleu nuit au bout de la pilule blanche. */
-  searchButton: '#0B2D72',
+  /** Rond de recherche au bout de la pilule blanche : encre (18/11, plus de bleu nuit). */
+  searchButton: BRAND.black,
 } as const;
 
 /**
@@ -188,6 +197,12 @@ export const BROWSER_BAR = {
   progressHeight: 3,
 } as const;
 
+/** Compteur du panier : pastille ROUGE, chiffre blanc (maquette v2 du 18/11/2026) — partout, AYWEBs compris. */
+export const CART_BADGE = {
+  background: '#D92D20',
+  text: BRAND.white,
+} as const;
+
 export const SALE_BADGE = {
   background: PRICE_DROP_RED,
   text: BRAND.white,
@@ -195,10 +210,12 @@ export const SALE_BADGE = {
 
 export const LENS_COLORS = {
   sale: PRICE_DROP_RED,
-  /** Élément actif d'une surface Lens blanche (favori coché). */
-  active: BRAND.violet,
-  /** Fond d'un choix actif (mode caméra choisi) : violet clair, libellé noir (10,4:1). */
-  activeSoft: BRAND.violetLight,
+  /** Élément actif d'une surface Lens blanche (favori coché, progression) : encre (18/11). */
+  active: BRAND.black,
+  /** Élément actif posé sur la caméra / une photo (arcs, point « détecté », mode choisi) : blanc. */
+  activeOnMedia: BRAND.white,
+  /** Fond d'un choix actif sur surface claire : gris clair, libellé noir. */
+  activeSoft: BRAND.lightGray,
   star: BRAND.black,
   /** Squelette : le gris clair officiel (§ « Skeleton Loading » de l'identité). */
   skeleton: BRAND.lightGray,
@@ -276,10 +293,10 @@ export const FICHE_COLORS = {
   ink: BRAND.black,
   /** Texte secondaire (description, dates de livraison) — #808080 sur la maquette. */
   muted: '#808080',
-  /** Dalle lavande de la recommandation de taille (#EEECF7 sur la maquette). */
-  recommendation: mix(BRAND.white, BRAND.violet, 0.07),
+  /** Dalle de la recommandation de taille : gris clair neutre (18/11, plus de lavande). */
+  recommendation: BRAND.lightGray,
   /** Violet de la maquette : accent des libellés d'état et du soulignement de vignette. */
-  accent: BRAND.violet,
+  accent: BRAND.black,
   /** Texte blanc lisible posé sur les pastilles `accent` ou `success` de la fiche. */
   onAccent: BRAND.white,
   /** Surface blanche fixe de la pastille compte à rebours posée sur la photo. */
@@ -362,10 +379,10 @@ export const REEL_TILE = {
  * Mot-symbole AYWEBs (en-tête, barre du bas, feuille d'ajout) : teinte
  * appliquée nativement par `expo-image` (`tintColor`) en plus des pixels sRGB
  * du PNG afin d'éliminer tout écart d'espace colorimétrique (Display-P3 / OLED)
- * et de garantir le violet officiel `#0A63F5` exact.
+ * et de garantir l'encre officielle `#0A0A0A` exacte (18/11 : en-tête AYWEBs noir).
  */
 export const AYWEBS_WORDMARK_TINT = {
-  light: BRAND.violet,
+  light: BRAND.black,
   dark: BRAND.white,
 } as const;
 
@@ -519,8 +536,8 @@ export const duration = {
  *                        action est destructrice.
  *                        « فشل الدفع » · « المنتوج محظور » · « حذف نهائي »
  *
- *   🟣 VIOLET info     = INFORMATION / ÉTAT ACTIF. Le violet de marque, dans sa
- *                        version lisible en texte : étape en cours, élément non
+ *   ⬛ ENCRE info      = INFORMATION / ÉTAT ACTIF. L'accent de marque (encre ;
+ *                        blanc en sombre) : étape en cours, élément non
  *                        lu, adresse par défaut, catégorie éditoriale.
  *                        « قيد المعالجة » · « الشحن خلال 48 ساعة »
  *
@@ -532,9 +549,8 @@ export const duration = {
  *
  * Règle qui tranche la plupart des hésitations : « est-ce que je SIGNALE un
  * succès, une erreur ou un avertissement ? » — oui ⇒ palette de statut ; non ⇒
- * structure (noir/gris) ou marque (violet). Les CTA sont normalement de marque ;
- * AYWEBs possède une exception de commerce à jaune, isolée à son navigateur et à
- * sa feuille d'options. « التوفّر غير مؤكّد » reste un statut : jaune.
+ * structure (noir/gris) ou marque (encre). Les CTA sont à l'encre ; seul le
+ * bouton d'ACHAT est jaune « Za. » (barre d'achat / ton commerce). « التوفّر غير مؤكّد » reste un statut : jaune.
  *
  * ── Valeurs MESURÉES, pas choisies au goût ───────────────────────────────────
  * Chaque `fg` a été vérifié au ratio WCAG sur les deux fonds qu'il rencontre
@@ -545,8 +561,8 @@ export const duration = {
  *            #CF1322  5,57 sur blanc   · 5,0  sur #F2F2F2   (clair)
  *   warning  #FFD60A 14,02 sur #0A0A0A · 12,70 sur #171717
  *            #6B5A00  6,80 sur blanc   · 6,08 sur #F2F2F2
- *   info     #78A9FA  5,45 sur #0A0A0A · 4,93 sur #171717   (violet éclairci)
- *            #0A63F5  7,19 sur blanc   · 6,42 sur #F2F2F2   (violet de marque)
+ *   info     #FFFFFF 19,8  sur #0A0A0A · 18,1 sur #171717   (accent inversé)
+ *            #0A0A0A 19,8  sur blanc   · 17,9 sur #F2F2F2   (encre de marque)
  *   success  #52C41A  8,74 sur #0A0A0A · 7,91 sur #171717
  *            #237804  5,59 sur blanc   · 4,99 sur #F2F2F2
  *
@@ -556,7 +572,7 @@ export const duration = {
  */
 const WARNING_YELLOW = '#FFD60A';
 const WARNING_TEXT_ON_LIGHT = '#6B5A00';
-/** Violet lisible en texte : celui de la palette sémantique (`accentText`), mode par mode. */
+/** Accent lisible en texte : celui de la palette sémantique (`accentText`), mode par mode. */
 const VIOLET_ON_DARK = COLORS.dark.accentText;
 const VIOLET_ON_LIGHT = COLORS.light.accentText;
 
@@ -625,7 +641,7 @@ function alpha(hex: string, opacity: number): string {
 /**
  * Seules les clés RÉELLEMENT nécessaires au calcul. Typer ce paramètre avec
  * la palette entière du mode clair la rendait inutilisable avec le mode sombre
- * (les littéraux diffèrent : `#78A9FA` contre `#0A63F5`) — l'union des deux
+ * (les littéraux diffèrent : `#FFFFFF` contre `#0A0A0A`) — l'union des deux
  * palettes n'est pas assignable à l'une d'elles.
  *
  * Décrire le BESOIN plutôt que la SOURCE rend la fonction utilisable par les
@@ -737,10 +753,9 @@ export function derivedColors(colors: DerivablePalette) {
      */
     /**
      * Accent de la feuille sombre (envoi actif, barre de défilement). Ex-orange
-     * #FF9000 du 10/11, RETIRÉ par la refonte des interactions (14/11/2026) :
-     * l'action reste le « Bleu Z » — une seule couleur d'action partout.
+     * Accent des surfaces Reel, toujours sombres : BLANC (18/11, plus de bleu).
      */
-    reelAccent: BRAND.violet,
+    reelAccent: BRAND.white,
     /**
      * ═══ Z-Reactions (11/11) — famille OFFICIELLE d'interaction ═══
      * Un seul bouton partout (Reel, vidéo, publication, story) : J'aime ·
@@ -752,9 +767,9 @@ export function derivedColors(colors: DerivablePalette) {
     /** Je n'aime pas — ardoise, distinct du rouge de J'adore. */
     reactionDislike: REACTION_COLORS.dislike,
     /** Pouce « j'aime » du RAIL, posé — le Bleu Z (ex-vert #29B057, refonte 14/11). */
-    reelLike: REACTION_COLORS.like,
+    reelLike: REACTION_COLORS.likeOnMedia,
     /** Pouce « j'aime » d'un commentaire, posé — le Bleu Z (ex-#3080E8, refonte 14/11). */
-    commentLike: REACTION_COLORS.like,
+    commentLike: REACTION_COLORS.likeOnMedia,
     /** Pouce « je n'aime pas » — commentaire ET rail (rouge mesuré #F15243 ≈ même teinte). */
     commentDislike: '#F05040',
     /** Surface de la feuille de commentaires — sombre quel que soit le thème. */
@@ -903,13 +918,13 @@ export const PUBLICATION_THEME = {
   socialSurface: PUBLICATION_SOCIAL_SURFACE, like: PUBLICATION_LIKE, dislike: PUBLICATION_DISLIKE,
   commentPaper: '#F4F5F8', reactionError: '#A61B36', dotInactive: '#747474', dotSurface: '#F0F0F0',
   /** Publisher verification seal, distinct from the primary action blue. */
-  verified: PUBLICATION_DISCOVERY_BLUE, discovery: PUBLICATION_DISCOVERY_BLUE,
+  verified: PUBLICATION_DISCOVERY_INK, discovery: PUBLICATION_DISCOVERY_INK,
   paper: BRAND.white, ink: BRAND.black, muted: NEUTRALS.textSecondary,
-  line: NEUTRALS.border, neutral: BRAND.lightGray, accent: BRAND.violet,
+  line: NEUTRALS.border, neutral: BRAND.lightGray, accent: BRAND.black,
   /** 16/11 : « notre blanc » est un blanc PUR — plus de voile violet de 1,8 %. */
   canvas: BRAND.white,
-  cardLine: alpha(BRAND.violet, .05), pill: alpha(BRAND.violet, .08), pillLine: alpha(BRAND.violet, .06),
-  splitPaper: alpha(BRAND.violet, .025), glass: alpha(BRAND.violet, .035),
+  cardLine: alpha(BRAND.black, .05), pill: alpha(BRAND.black, .06), pillLine: alpha(BRAND.black, .06),
+  splitPaper: alpha(BRAND.black, .025), glass: alpha(BRAND.black, .035),
   glassLine: frost(.6), campaignPaper: PUBLICATION_EDITORIAL_PAPER,
   /** 16/11 (référence 003723) : en-tête Publication NOIR #262626, flèche, titre et profil blancs. */
   headerBar: '#262626', headerInk: BRAND.white,

@@ -106,8 +106,8 @@ describe('identité visuelle AYWEBs — nouveau mot-symbole et nouvelle icône d
   const iconViolet = decodePng(path.join(ROOT, 'assets/aywebs/aywebs-icon-violet.png'));
   const iconWhite = decodePng(path.join(ROOT, 'assets/aywebs/aywebs-icon-white.png'));
 
-  it('le violet du mot-symbole et de l’icône est EXACTEMENT le violet officiel (#0A63F5)', () => {
-    expect(officialViolet()).toBe('#0A63F5');
+  it('le mot-symbole et l’icône sont EXACTEMENT l’encre officielle (#0A0A0A, 18/11)', () => {
+    expect(officialViolet()).toBe('#0A0A0A'); // 18/11 : plus de bleu — le mot-symbole est à l'encre
 
     for (const asset of [violet, iconViolet]) {
       const counts = new Map<string, number>();

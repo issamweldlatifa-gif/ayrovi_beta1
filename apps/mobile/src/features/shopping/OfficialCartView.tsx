@@ -22,7 +22,7 @@ import { rowDirectionFor } from '@/design/layoutLogic';
 import { SheetHeader } from '@/design/sheet/SheetHeader';
 import { useTheme } from '@/design/theme';
 import { RADIUS, veil } from '@/design/tokens.mobile';
-import { AppText, Button, KeyValue } from '@/design/ui';
+import { AppText, Button, PurchaseBar, KeyValue } from '@/design/ui';
 import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { TabCleanIcon } from '@/design/TabNavIcons';
@@ -412,23 +412,14 @@ export function OfficialCartStickySummary({
         </View>
       ) : null}
 
-      {totalTnd != null ? (
-        <View style={[styles.summaryRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <View style={[styles.totalTitleGroup, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-            <AppText variant="h3" color={theme.colors.ink}>{t('cart.total')}</AppText>
-            <AppText variant="caption" color={theme.colors.muted}>{t('cart.vatIncluded')}</AppText>
-          </View>
-          <AppText variant="h3" color={theme.colors.ink}>{formatMoney(totalTnd)}</AppText>
-        </View>
-      ) : null}
-
       {extraAboveButton}
 
-      {/* 14/11 — Valider la commande : CTA principal BLEU (seul bouton plein bleu de l'écran). */}
-      <Button
+      {/* 18/11 (maquette v2) — total à gauche, « Commander » : bouton d'achat jaune court à droite. */}
+      <PurchaseBar
+        amount={totalTnd != null ? formatMoney(totalTnd) : null}
+        caption={t('cart.total')}
+        note={t('cart.vatIncluded')}
         label={checkoutLabel}
-        tone="main"
-        block
         busy={checkoutBusy}
         disabled={checkoutDisabled}
         onPress={onCheckout}

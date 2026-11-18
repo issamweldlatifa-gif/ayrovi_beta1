@@ -16,7 +16,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 
-import { AppText, Button } from '@/design/ui';
+import { AppText, Button, PurchaseBar } from '@/design/ui';
 import { CloseButton } from '@/design/CloseButton';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { AppImage } from '@/design/appImage';
@@ -1256,14 +1256,14 @@ export function LensProductView({
             {message}
           </AppText>
         ) : null}
-        <Button
+        {/* 18/11 : barre d'achat — prix à gauche, bouton jaune court à droite. */}
+        <PurchaseBar
+          aside={<LensPriceBlock candidate={displayCandidate} compact />}
           label={actionLabel}
-          tone="main"
           onPress={() => { void submitOrder(); }}
           disabled={!sessionId || Boolean(actionableBlock) || orderAdded}
           busy={orderBusy}
           testID="lens-add-to-cart"
-          block
         />
       </View>
 

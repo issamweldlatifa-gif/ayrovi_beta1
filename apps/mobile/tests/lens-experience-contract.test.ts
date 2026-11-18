@@ -111,11 +111,11 @@ describe('chargement et résultats Lens', () => {
     // Palette Lens fermée, entièrement dérivée de la marque (sauf le rouge de prix).
     expect(nativeTokens).toContain("const PRICE_DROP_RED = '#CF1322'");
     expect(nativeTokens).toContain('sale: PRICE_DROP_RED');
-    expect(nativeTokens).toContain('active: BRAND.violet');
+    expect(nativeTokens).toContain('active: BRAND.black'); // 18/11 : plus de bleu — l'actif est à l'encre
     expect(nativeTokens).toContain('star: BRAND.black');
     expect(nativeTokens).toContain('skeleton: BRAND.lightGray');
     expect(contrastWithWhite('#CF1322')).toBeGreaterThanOrEqual(4.5);
-    expect(contrastWithWhite('#0A63F5')).toBeGreaterThanOrEqual(4.5);
+    expect(contrastWithWhite('#0A0A0A')).toBeGreaterThanOrEqual(4.5);
     // Plus aucun dégradé d'attente : l'attente est le cercle en pointillés (LoadingSpinner).
     expect(nativeTokens).not.toContain('ACTION_GRADIENT');
     expect(nativeTokens).not.toContain('WAITING_GRADIENTS');
@@ -136,10 +136,11 @@ describe('chargement et résultats Lens', () => {
     expect(product).not.toContain('countdownExpired ? LENS_COLORS.sale : LENS_COLORS.active');
     expect(product).toContain('color={theme.colors.ink} accessibilityElementsHidden');
     // 16/11 : mode caméra choisi au BLEU D'ACTION, libellé blanc (plus de violet clair).
-    expect(nativeTokens).toContain('active: BRAND.violet');
-    expect(lens).toContain('modeActive: { backgroundColor: LENS_COLORS.active }');
+    // 18/11 : sur la caméra, l'état actif est BLANC (libellé noir) ; sur blanc, il est à l'encre.
+    expect(nativeTokens).toContain('activeOnMedia: BRAND.white');
+    expect(lens).toContain('modeActive: { backgroundColor: LENS_COLORS.activeOnMedia }');
     expect(lens).not.toContain('LENS_COLORS.activeSoft');
-    expect(read('../src/features/lens/LensSelectionView.tsx')).toContain("arc: { position: 'absolute', borderColor: LENS_COLORS.active }");
+    expect(read('../src/features/lens/LensSelectionView.tsx')).toContain("arc: { position: 'absolute', borderColor: LENS_COLORS.activeOnMedia }");
     // Le viseur reste sombre dans les DEUX modes : `ink` devient blanc en mode sombre
     // et rendait l'en-tête blanc illisible.
     expect(lens).not.toContain('backgroundColor: theme.colors.ink');

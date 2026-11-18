@@ -43,15 +43,15 @@ describe('Publication-only visual model, not a second commerce or social core', 
   it('uses local neutrals, separate badge/link blues and a single original content icon renderer', () => {
     const s = read(dir + 'publicationTokens.ts');
     expect(s).toContain('verified: BRAND_ACCENT');
-    // 14/11 : le badge vérifié prend le bleu d'action unique (Bleu Z) — plus deux bleus voisins.
-    expect(JSON.parse(fs.readFileSync(path.join(root, '../../assets/brand/appearance.json'), 'utf8')).accent).toBe('#0A63F5');
+    // 18/11 : plus de bleu — le badge vérifié et les liens sont à l'encre.
+    expect(JSON.parse(fs.readFileSync(path.join(root, '../../assets/brand/appearance.json'), 'utf8')).accent).toBe('#0A0A0A');
     for (const hex of [
       '#FFFFFF',
       '#101010',
       '#454545',
       '#666666',
       '#E8E8E8',
-      '#0A63F5',
+      '#0A0A0A',
       '#000000',
     ])
       expect(s).toContain(hex);

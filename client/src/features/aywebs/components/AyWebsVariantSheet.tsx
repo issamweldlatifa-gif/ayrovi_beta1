@@ -461,7 +461,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
 
             <button
               type="button"
-              className="ayw-cta"
+              className="ayw-cta ayw-cta--buy"
               disabled={!quoteEvidenceComplete || missingRequired || selectedVariantUnknown || selectedVariantUnavailable || selectedAvailabilityUnconfirmed || displayedPrice <= 0 || displayedPricingTnd == null || adding}
               onClick={() => void submit()}
             >
@@ -503,7 +503,7 @@ export const AyWebsVariantSheet: React.FC<AyWebsVariantSheetProps> = ({ url, sto
                 )}
               </div>
             </div>
-            <button type="button" className="ayw-cta" onClick={onCheckout}>
+            <button type="button" className="ayw-cta ayw-cta--buy" onClick={onCheckout}>
               {tr('Proceed to Checkout', 'متابعة الدفع')}
             </button>
             <button type="button" className="ayw-cta-outline" onClick={onClose}>

@@ -1,34 +1,33 @@
-/** Official account avatar (v9 « Za. », 18/11/2026): the symbol — yellow circle, knocked-out z — on a BLACK disc,
- * the dark master's colours, reserved for the account's face in Publication, Reels and Stories. Same drawing and fit
- * as client/public/media/logo-zayrovi-avatar.svg. Constant in both themes: identity, not chrome. The yellow circle
- * spans 84 % of the disc; the z's bar opens into the black ring. The full logo would be illegible at 28 dp, so the
- * symbol stands alone here. Decorative: the publisher's name is always written next to it. */
+/** Official account avatar = the SOCIAL ICON (owner's drawing, 18/11/2026): a BLACK rounded tile, the yellow circle
+ * with the knocked-out z (its lower bar runs out into the black) and the yellow dot, brought closer than in the full
+ * logo (gap = the dot's diameter). Same drawing and fit as client/public/media/logo-zayrovi-avatar.svg — both read
+ * SOCIAL_ICON, generated from the master by `npm run brand:build`. Constant in both themes: identity, not chrome.
+ * Decorative: the publisher's name is always written next to it. The header logo is NOT this icon (unchanged). */
 import { View } from 'react-native';
-import { BrandSymbol, brandSymbolWidthForRadius } from './BrandMark';
+import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
+import { BRAND_MARK, SOCIAL_ICON } from './brandSymbol';
 import { BRAND } from './tokens.generated';
 
-/** Diameters in dp. */
+/** Tile sizes in dp. */
 export const OFFICIAL_AVATAR = { reel: 28, publication: 32 } as const;
-/** Radius of the yellow circle, as a share of the disc's diameter. */
-export const OFFICIAL_AVATAR_FIT = 0.42;
+
+/** Placement of the mark + dot group inside a `size` tile (centred, `SOCIAL_ICON.content` of the width). */
+export function socialIconTransform(size: number) {
+  const scale = (size * SOCIAL_ICON.content) / SOCIAL_ICON.width;
+  return { scale, x: (size - SOCIAL_ICON.width * scale) / 2, y: (size - SOCIAL_ICON.height * scale) / 2 };
+}
 
 export function OfficialAvatar({ size, testID }: { size: number; testID?: string }) {
+  const { scale, x, y } = socialIconTransform(size);
   return (
-    <View
-      testID={testID}
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: BRAND.black,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-      }}
-    >
-      <BrandSymbol width={brandSymbolWidthForRadius(size * OFFICIAL_AVATAR_FIT)} />
+    <View testID={testID} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ width: size, height: size }}>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <Rect width={size} height={size} rx={size * SOCIAL_ICON.radius} fill={BRAND.black} />
+        <G transform={`translate(${x} ${y}) scale(${scale})`}>
+          <Path d={BRAND_MARK.d} fill={BRAND.yellow} />
+          <Circle cx={SOCIAL_ICON.dot.cx} cy={SOCIAL_ICON.dot.cy} r={SOCIAL_ICON.dot.r} fill={BRAND.yellow} />
+        </G>
+      </Svg>
     </View>
   );
 }

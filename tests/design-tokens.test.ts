@@ -133,7 +133,7 @@ describe('couche back-office — plus aucune valeur de couleur en dur', () => {
       '--admin-line': '#d9d9d9',
       '--admin-ink-strong': '#0a0a0a',
       '--admin-ink-black': '#0a0a0a',
-      '--admin-warm-accent': '#78a9fa',
+      '--admin-warm-accent': '#ffffff', // 18/11 : accent inversé (blanc) sur le rail noir
       '--admin-ink-muted': '#595959',
       '--admin-surface-page': '#ffffff',
       '--admin-surface-card': '#ffffff',
@@ -337,9 +337,12 @@ describe('accent — une seule source', () => {
       return alias && depth < 4 ? resolve(alias[1], depth + 1) : raw;
     };
     expect(cta![2].trim().toLowerCase()).toBe('var(--zayrovi-color-brand-accent)');
-    expect(resolve('--zayrovi-cta')).toBe('#0a63f5');
-    expect(resolve('--zayrovi-color-brand-accent')).toBe('#0a63f5');
-    // texte posé sur l'action : blanc (7,19:1), jamais l'encre noire de l'ancien orange
+    // 18/11 (v5.0.0) : l'action est à l'encre ; le jaune « Za. » ne sert qu'au bouton d'achat.
+    expect(resolve('--zayrovi-cta')).toBe('#0a0a0a');
+    expect(resolve('--zayrovi-color-brand-accent')).toBe('#0a0a0a');
+    expect(resolve('--zayrovi-buy')).toBe('#f2ae00');
+    expect(resolve('--zayrovi-on-buy')).toBe('#0a0a0a');
+    // texte posé sur l'action : blanc
     expect(resolve('--zayrovi-cta-ink')).toBe('#ffffff');
     for (const file of SYSTEM_SHEETS) {
       const body = withoutComments(read(file));

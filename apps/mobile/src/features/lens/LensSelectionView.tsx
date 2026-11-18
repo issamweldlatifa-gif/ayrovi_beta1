@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   dim: { backgroundColor: veil(FOCUS_DIM) },
   frame: { position: 'absolute' },
   crop: { overflow: 'hidden' },
-  // 16/11 (« من الألوان القديمة إلى لون الأكشن ») : arcs au bleu d'action de la marque.
-  arc: { position: 'absolute', borderColor: LENS_COLORS.active },
+  // 18/11 : plus de bleu — arcs BLANCS sur la photo (lisibles sous le voile).
+  arc: { position: 'absolute', borderColor: LENS_COLORS.activeOnMedia },
   notice: { alignSelf: 'center', padding: 12 },
 });

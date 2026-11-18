@@ -1393,7 +1393,7 @@ export default function LensScreen() {
 
         {mode === 'live' && showCamera ? (
           <View style={[styles.livePill, { bottom: panelHeight + 12, backgroundColor: veil(0.62) }]} pointerEvents="none" accessibilityLiveRegion="polite" testID="lens-live-status">
-            <View style={[styles.livePillDot, { backgroundColor: live.status === 'detected' ? LENS_COLORS.active : frost(0.6) }]} />
+            <View style={[styles.livePillDot, { backgroundColor: live.status === 'detected' ? LENS_COLORS.activeOnMedia : frost(0.6) }]} />
             <AppText variant="captionStrong" color={LENS_COLORS.white} numberOfLines={1}>{livePill}</AppText>
           </View>
         ) : null}
@@ -1497,8 +1497,8 @@ export default function LensScreen() {
                   style={[styles.mode, active ? styles.modeActive : null]}
                   testID={`lens-mode-${value}`}
                 >
-                  <Ionicons name={icon} size={theme.iconSize.sm} color={LENS_COLORS.white} accessibilityElementsHidden />
-                  <AppText variant="captionStrong" color={LENS_COLORS.white} align="center" numberOfLines={1}>{t(label)}</AppText>
+                  <Ionicons name={icon} size={theme.iconSize.sm} color={active ? LENS_COLORS.black : LENS_COLORS.white} accessibilityElementsHidden />
+                  <AppText variant="captionStrong" color={active ? LENS_COLORS.black : LENS_COLORS.white} align="center" numberOfLines={1}>{t(label)}</AppText>
                 </Pressable>
               );
             })}
@@ -1573,8 +1573,8 @@ const styles = StyleSheet.create({
   // Barre posée sur la caméra : voile sombre translucide (la caméra se devine derrière).
   modePicker: { minHeight: 64, borderRadius: RADIUS.full, padding: 4, backgroundColor: LENS_COLORS.cameraControl },
   mode: { flex: 1, minHeight: 56, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center', gap: 2, paddingHorizontal: 4 },
-  // Mode choisi = état actif : pastille violet clair, libellé noir (10,4:1).
-  modeActive: { backgroundColor: LENS_COLORS.active },
+  // Mode choisi = état actif : pastille BLANCHE sur la barre sombre, libellé noir (18/11, plus de bleu).
+  modeActive: { backgroundColor: LENS_COLORS.activeOnMedia },
   permissionCenter: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
   permissionCard: { width: '100%', maxWidth: 420, gap: 16, alignItems: 'center', padding: 24 },
   textSearch: { gap: 10, padding: 16 },

@@ -273,10 +273,11 @@ export interface ButtonProps {
   busy?: boolean;
   disabled?: boolean;
   /**
-   * `main`     : CTA principal BLEU (Bleu Z) — ajouter au panier, valider,
-   *              payer, se connecter. UN SEUL bouton plein bleu par écran.
-   * `commerce` : CTA d'achat AYWEBs (jaune, texte encre), uniquement dans
-   *              l'expérience boutique demandée.
+   * `main`     : CTA principal ENCRE (`action`, noir — blanc en mode sombre) :
+   *              se connecter, valider un formulaire, continuer. Plus de bleu (18/11).
+   * `commerce` : CTA d'ACHAT jaune « Za. » #F2AE00, libellé noir — ajouter au
+   *              panier, Commander, payer, confirmer la commande. Toujours COURT
+   *              (voir `PurchaseBar`) : le jaune reste ≤ 4 % de l'écran.
    * `solid`    : bouton plein encre (défaut).
    * `quiet`    : bouton secondaire à contour.
    * `danger`   : action destructrice (supprimer, retirer, se déconnecter) —
@@ -306,15 +307,14 @@ export interface ButtonProps {
 export const BUTTON_OUTLINE_WIDTH = 2;
 
 /**
- * Quatre rôles — le bleu reste rare (un seul bouton plein bleu par écran) :
- *   • `main`     : BLEU plein (`action`, #0A63F5, refonte 14/11), réservé au CTA
- *                  principal : ajouter au panier, valider la commande, payer, se connecter.
- *   • `commerce` : jaune #FFD60A, texte encre, CTA d'achat isolé à AYWEBs.
+ * Rôles (maquette v2 approuvée le 18/11/2026 — plus aucun bleu) :
+ *   • `main`     : ENCRE pleine (`action`), CTA principal hors achat : se connecter, valider.
+ *   • `commerce` : JAUNE #F2AE00, libellé noir — UNIQUEMENT l'achat (panier, Commander, payer).
  *   • `solid`    : défaut — fond encre (`ink`), libellé `canvas` (noir/blanc,
  *                  inversés en mode sombre), `secondary` quand on appuie.
  *   • `quiet`    : bouton secondaire — fond `canvas`, contour et libellé `ink`.
  *   • `danger`   : même gabarit que `quiet`, contour et libellé ROUGES (14/11) —
- *                  jamais plein : le seul bouton plein coloré reste le bleu.
+ *                  jamais plein : le seul bouton plein coloré reste le jaune d'achat.
  * Désactivé : même forme, opacité réduite. Occupé : le cercle d'attente prend
  * la place du pictogramme de tête, dans la couleur du libellé.
  */
@@ -382,6 +382,38 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
         </AppText>
       )}
     </Pressable>
+  );
+}
+
+/**
+ * Barre d'ACHAT (maquette v2 du 18/11/2026) : le montant à gauche (légende discrète
+ * + prix en gras), un bouton jaune COURT à droite (`COMMERCE.compactWidth`). Un CTA
+ * jaune pleine largeur couvrait ≈ 6 % de l'écran ; ce gabarit le garde sous 4 %.
+ * Sans montant, le bouton reste court et se cale en fin de ligne.
+ */
+export function PurchaseBar({ amount, caption, note, aside, style, testID, ...button }: Omit<ButtonProps, 'tone' | 'block' | 'size'> & {
+  /** Montant déjà formaté (jamais inventé : absent ⇒ rien à gauche). */
+  amount?: string | null;
+  /** Légende au-dessus du montant (« Total »). */
+  caption?: string;
+  /** Mention sous le montant (« TVA incluse »). */
+  note?: string;
+  /** Contenu libre à gauche à la place du montant (ex. bloc prix Lens). */
+  aside?: ReactNode;
+}) {
+  const theme = useTheme();
+  const left = aside ?? (amount ? (
+    <View style={styles.buyAmount}>
+      {caption ? <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{caption}</AppText> : null}
+      <AppText variant="h3" color={theme.colors.ink} numberOfLines={1} maxFontSizeMultiplier={1.15} testID={testID ? `${testID}-amount` : undefined}>{amount}</AppText>
+      {note ? <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{note}</AppText> : null}
+    </View>
+  ) : null);
+  return (
+    <View style={[styles.buyBar, { flexDirection: rowDirectionFor(theme.isRTL) }, style]} testID={testID ? `${testID}-bar` : undefined}>
+      <View style={styles.buyLeft}>{left}</View>
+      <Button {...button} testID={testID} tone="commerce" size="lg" style={styles.buyButton} />
+    </View>
   );
 }
 
@@ -564,6 +596,10 @@ export function Field(props: TextInputProps & { label?: string }) {
 
 const styles = StyleSheet.create({
   leadingRow: { alignItems: 'center', justifyContent: 'center', gap: 8 },
+  buyBar: { alignItems: 'center', justifyContent: 'space-between', gap: 16 },
+  buyLeft: { flex: 1, minWidth: 0 },
+  buyAmount: { gap: 2 },
+  buyButton: { minWidth: COMMERCE.compactWidth, paddingHorizontal: 20 },
   drawerScrim: { flex: 1, backgroundColor: veil(0.45) },
   drawerPanel: {
     position: 'absolute', top: 0, bottom: 0,

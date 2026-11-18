@@ -11,6 +11,7 @@ import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 
 import { AppText } from './ui';
 import { useTheme } from './theme';
+import { CART_BADGE } from './tokens.mobile';
 import { cartBadgeText } from '@/features/shopping/cartUnits';
 
 export const CART_GLYPH = {
@@ -32,7 +33,7 @@ export function CartGlyph({
   count: number;
   /** Trait du sac. */
   color: string;
-  /** Fond du badge (défaut : encre — le bleu plein reste réservé au bouton principal). */
+  /** Fond du badge (défaut : rouge `CART_BADGE`, 18/11). */
   badgeColor?: string;
   badgeTextColor?: string;
   /** Couleur du fond sous l'icône (cercle autour du badge). */
@@ -51,13 +52,13 @@ export function CartGlyph({
           style={[
             styles.badge,
             {
-              backgroundColor: badgeColor ?? theme.colors.ink,
+              backgroundColor: badgeColor ?? CART_BADGE.background,
               borderColor: ringColor ?? theme.colors.canvas,
             },
             theme.isRTL ? styles.badgeRTL : styles.badgeLTR,
           ]}
         >
-          <AppText variant="captionStrong" color={badgeTextColor ?? theme.colors.canvas} numberOfLines={1} maxFontSizeMultiplier={1.1}>
+          <AppText variant="captionStrong" color={badgeTextColor ?? CART_BADGE.text} numberOfLines={1} maxFontSizeMultiplier={1.1}>
             {text}
           </AppText>
         </View>

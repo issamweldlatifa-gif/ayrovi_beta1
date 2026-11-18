@@ -23,6 +23,8 @@ export interface ProductGridProps {
   direction?: 'ltr' | 'rtl';
   onOpen: (product: ProductView) => void;
   onFavorite?: (product: ProductView) => void;
+  /** 18/11 (maquette v2) : petit « + » JAUNE d'achat sur la carte (ouvre la fiche pour choisir les options). */
+  onQuickAdd?: (product: ProductView) => void;
   favorites?: Set<string>;
   /** Présent seulement là où une lecture live a un sens (résultats Lens). */
   onVerifyStock?: (product: ProductView) => void;
@@ -66,7 +68,7 @@ const FallbackProductImage: React.FC<{
 };
 
 export const ProductGrid: React.FC<ProductGridProps> = ({
-  products, tr, formatMoney, direction = 'ltr', onOpen, onFavorite, favorites, onVerifyStock, stockChecks,
+  products, tr, formatMoney, direction = 'ltr', onOpen, onFavorite, onQuickAdd, favorites, onVerifyStock, stockChecks,
 }) => (
   <div className="s-root" dir={direction} data-ay-design="editorial">
     <div className="s-grid">
@@ -108,6 +110,19 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
                   onClick={() => onFavorite(product)}
                 >
                   <EditorialIcon name={saved ? 'HeartFilled' : 'Heart'} size={18} fill={saved ? 'currentColor' : undefined} />
+                </button>
+              )}
+
+              {onQuickAdd && (
+                <button
+                  type="button"
+                  className="s-card__add"
+                  data-testid={`product-card-add-${product.id}`}
+                  aria-label={tr(`Ajouter au panier : ${product.title}`, `زيد للسلة: ${product.title}`)}
+                  title={tr('Ajouter au panier', 'زيد للسلة')}
+                  onClick={() => onQuickAdd(product)}
+                >
+                  <EditorialIcon name="Plus" size={16} />
                 </button>
               )}
 

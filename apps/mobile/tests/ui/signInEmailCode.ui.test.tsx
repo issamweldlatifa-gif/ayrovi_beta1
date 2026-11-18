@@ -511,7 +511,7 @@ describe('page d’accueil de la connexion — modal fort (référence Zalando 0
 
   // 14/11 (refonte approuvée) : « Se connecter / Continuer » est le CTA principal
   // BLEU plein (Bleu Z, `action`) — jamais une teinte lavande dérivée.
-  it('Continuer est un bouton plein BLEU (Bleu Z), jamais une lavande dérivée', async () => {
+  it('Continuer est un bouton plein ENCRE (18/11), jamais une lavande dérivée', async () => {
     let theme: ReturnType<typeof useTheme> | null = null;
     const Probe = () => { theme = useTheme(); return null; };
     const view = render(
@@ -522,7 +522,7 @@ describe('page d’accueil de la connexion — modal fort (référence Zalando 0
     await act(async () => { await Promise.resolve(); });
     const style = StyleSheet.flatten(screen.getByTestId('auth-email-continue').props.style);
     expect(style.backgroundColor).toBe(theme!.colors.action);
-    expect(String(style.backgroundColor).toUpperCase()).toBe('#0A63F5');
+    expect(String(style.backgroundColor).toUpperCase()).toBe('#0A0A0A'); // 18/11 : action principale à l’encre
     expect(view.toJSON()).toBeTruthy();
     view.unmount();
   });

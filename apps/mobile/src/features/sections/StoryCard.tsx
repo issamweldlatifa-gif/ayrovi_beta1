@@ -18,8 +18,8 @@ import { mediaUrl } from '@/api/client';
 import type { StoryItem } from '@/api/sections';
 
 /**
- * النصّ فوق البنفسجي ZAYROVI (`accent` = #0A63F5): أبيض (`onAccent`) — تباين
- * 7.19:1 في الوضعين. السبب مكتوب هنا باش ما يتحوّلش لقيمة سحرية.
+ * النصّ فوق الـ accent متاع ZAYROVI (`accent` = #0A0A0A، 18/11): `onAccent` — تباين
+ * ≥ 4.5:1 في الوضعين. السبب مكتوب هنا باش ما يتحوّلش لقيمة سحرية.
  */
 
 

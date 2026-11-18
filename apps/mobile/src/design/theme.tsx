@@ -67,9 +67,8 @@ export interface Theme {
    * tons : `fg` (texte/icône), `soft` (fond de pastille), `border` (liseré).
    *
    * À utiliser pour tout SIGNAL. La marque, elle, reste noir/blanc/gris +
-   * violet (#0A63F5) et violet clair (#DCE8FE) : c'est cette séparation qui
-   * garde le violet rare (repère global ≈ 3 % = 2 % + 1 %, pas un quota par
-   * écran) et chaque statut lisible (§2.10).
+   * le jaune « Za. » (#F2AE00) réservé au bouton d'achat (v5.0.0, 18/11) :
+   * c'est cette séparation qui garde chaque statut lisible (§2.10).
    */
   status: StatusSet;
   space: readonly number[];

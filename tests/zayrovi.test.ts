@@ -1166,9 +1166,9 @@ describe('ZAYROVI platform', () => {
     expect(row).toBeTruthy();
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer', 'announcement']);
     expect(row.setting_value.typography.preset).toBe('zayrovi-a');
-    // Palette officielle (2026-10-15) : la graine garde l'ancien orange en base, la lecture le rend en violet.
-    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#0a0a0a', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#0a63f5' }); // DS v1.0
-    expect(row.setting_value.icons).toMatchObject({ library: 'zayrovi', activeColor: '#0a63f5' });
+    // La graine garde l'ancien orange en base, la lecture le rend à l'encre (18/11 : plus de bleu).
+    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#0a0a0a', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#0a0a0a' }); // DS v1.0
+    expect(row.setting_value.icons).toMatchObject({ library: 'zayrovi', activeColor: '#0a0a0a' });
     expect(row.setting_value.sections.find((section: any) => section.id === 'announcement').backgroundColor).toBe('#0a0a0a');
     expect(row.setting_value.navigation.color).toBe('#111111'); // DS v1.0
 

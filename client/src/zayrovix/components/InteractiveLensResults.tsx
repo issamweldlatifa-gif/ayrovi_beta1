@@ -120,6 +120,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
         stockChecks={stockChecks}
         onOpen={(product) => { const candidate = byId.get(product.id); if (candidate) onChoose(candidate); }}
         onFavorite={(product) => { const candidate = byId.get(product.id); if (candidate) void favorites.toggle(candidate); }}
+        onQuickAdd={(product) => { const candidate = byId.get(product.id); if (candidate) onChoose(candidate); }}
       />
     );
   };

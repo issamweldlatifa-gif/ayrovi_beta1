@@ -8,7 +8,7 @@ describe('approved navigation reference scope', () => {
     expect(read('apps/mobile/src/features/reels/ReelPublisher.tsx')).toContain('<OfficialAvatar size={OFFICIAL_AVATAR.reel} testID="reel-publisher-avatar" />');
     for (const file of ['StoryFeed', 'ReelsViewer', 'FullscreenMediaHeader']) {
       const s = read(`client/src/social/components/${file}.tsx`);
-      expect(s).toContain('official ? <img src="/media/logo-zayrovi-avatar.svg?v=9.0"');
+      expect(s).toContain('official ? <img src="/media/logo-zayrovi-avatar.svg?v=9.1"');
     }
   });
   it('uses the same Clean vector contours and approved local colors on web and native', () => {

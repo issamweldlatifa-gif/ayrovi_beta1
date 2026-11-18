@@ -96,7 +96,7 @@ export default function ProductScreen() {
   const theme = useTheme();
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
-  const { id, photo: photoParam } = useLocalSearchParams<{ id: string; photo?: string }>();
+  const { id, photo: photoParam, add: addParam } = useLocalSearchParams<{ id: string; photo?: string; add?: string }>();
   /**
    * Photo d'arrivée (13/11/2026) : la carte de la grille passe la photo que le
    * client regardait (`?photo=2`) ; la fiche s'ouvre dessus au lieu de revenir à
@@ -506,6 +506,19 @@ export default function ProductScreen() {
         />
       ) : null}
 
+      {/* 18/11 : arrivée par le « + » jaune d'une carte ⇒ l'ajout démarre (taille d'abord si besoin). */}
+      <ArrivalQuickAdd
+        ready={addParam === '1' && settled && !byId.isPending && Boolean(sessionId)}
+        onArrive={() => {
+          if (!purchasable) return;
+          if (needsSizePickFirst) {
+            setPendingAddOnSize(true);
+            setSizeSheet(true);
+          } else if (choice.ready) {
+            addToCart.mutate({ size: chosenSize, color: chosenColor });
+          }
+        }}
+      />
       <GalleryViewer items={items} index={viewer} onClose={() => setViewer(null)} />
       <MakerSheet visible={makerSheet} onClose={() => setMakerSheet(false)} rows={makerRows} />
       <SizeSheet
@@ -549,3 +562,16 @@ const styles = StyleSheet.create({
   restPlaceholder: { height: FICHE.imageHeight },
   description: { fontSize: FICHE.infoBody, lineHeight: FICHE.infoLine + 4 },
 });
+
+/** Déclenche UNE fois l'ajout demandé par le « + » d'une carte, dès que la fiche est prête. */
+function ArrivalQuickAdd({ ready, onArrive }: { ready: boolean; onArrive: () => void }) {
+  const done = useRef(false);
+  const arrive = useRef(onArrive);
+  arrive.current = onArrive;
+  useEffect(() => {
+    if (!ready || done.current) return;
+    done.current = true;
+    arrive.current();
+  }, [ready]);
+  return null;
+}

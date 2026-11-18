@@ -9,7 +9,7 @@ import { installPublicationShowcase } from '../services/publicationShowcase';
 import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../shared/publicationFeed';
 import { seedOfficialStories } from '../services/officialStories';
 import { FONT_STACK } from '../../shared/brand.generated';
-import { RETIRED_BRAND_PURPLES } from '../../shared/identityPolicy';
+import { RETIRED_BRAND_COLORS, RETIRED_BRAND_PURPLES } from '../../shared/identityPolicy';
 import { REBRAND_V1_LENS_FRAGMENTS, REBRAND_V1_SEED_VALUES } from '../../shared/formerBrand';
 import { markFormerBrandMigrated, migrateFormerBrandIdentifiers } from './formerBrandMigration';
 import Database from 'better-sqlite3';
@@ -401,6 +401,7 @@ export class QatafoDatabase {
     this.installPublicationEditorialLaunch();
     this.runOnceDataMigration('publication_visible_showcase_v1', () => { installPublicationShowcase(this); });
     this.rebrandBlueV1();
+    this.rebrandInkV1();
     this.runOnceDataMigration('publication_media_presentation_v1', () => { upgradePublicationMediaPresentation(this); });
     this.runOnceDataMigration('publication_publisher_team_v1', () => {
       this.run("UPDATE story_publishers SET name='Zayrovi Team' WHERE id='pub_zayrovi' AND official=1 AND lower(trim(name)) IN ('zayrovi','zayrovi official')");
@@ -478,6 +479,33 @@ export class QatafoDatabase {
       for (const [table, column] of [['lens_hero_settings', 'accent_color'], ['lens_hero_settings', 'bg_color'], ['hero_slides', 'bg_color']]) {
         for (const [retired, blue] of Object.entries(replacements)) {
           this.run(`UPDATE ${table} SET ${column}=?,updated_at=? WHERE lower(${column})=?`, blue, now, retired);
+        }
+      }
+    });
+  }
+
+  /** v5.0.0 (18/11/2026): the brand blue (and any purple left) is retired -> ink family. Same scope as v1:
+   * persisted brand configuration only, never merchandise, media or copy (only whole colour values change). */
+  private rebrandInkV1(): void {
+    this.runOnceDataMigration('rebrand_ink_v1', () => {
+      const replacements = RETIRED_BRAND_COLORS;
+      const pattern = new RegExp(`(?:${Object.keys(replacements).join('|')})\\b`, 'i');
+      const migrate = (value: any): any => {
+        if (Array.isArray(value)) return value.map(migrate);
+        if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, migrate(item)]));
+        return typeof value === 'string' ? replacements[value.toLowerCase()] ?? value : value;
+      };
+      const now = new Date().toISOString();
+      for (const row of this.all<any>('SELECT id,setting_value FROM settings')) {
+        const raw = String(row.setting_value ?? '');
+        if (!pattern.test(raw)) continue;
+        let next = replacements[raw.toLowerCase()] ?? raw;
+        try { next = JSON.stringify(migrate(JSON.parse(raw))); } catch { /* Plain configuration value, not JSON. */ }
+        if (next !== raw) this.run('UPDATE settings SET setting_value=?,updated_at=? WHERE id=?', next, now, row.id);
+      }
+      for (const [table, column] of [['lens_hero_settings', 'accent_color'], ['lens_hero_settings', 'bg_color'], ['hero_slides', 'bg_color']]) {
+        for (const [retired, ink] of Object.entries(replacements)) {
+          this.run(`UPDATE ${table} SET ${column}=?,updated_at=? WHERE lower(${column})=?`, ink, now, retired);
         }
       }
     });

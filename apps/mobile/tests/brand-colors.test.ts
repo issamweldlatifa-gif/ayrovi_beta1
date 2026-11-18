@@ -1,19 +1,14 @@
 /**
- * Identité couleur officielle de l'application (décision produit du 15/10/2026).
+ * Identité couleur officielle de l'application — v5.0.0 « Za. » (maquette v2 approuvée le 18/11/2026).
  *
- *   NOIR  #0A0A0A (≈ 35 %) · BLANC #FFFFFF (≈ 50 %) · GRIS CLAIR #F2F2F2 (≈ 5 %)
- *   VIOLET ÉLECTRIQUE #0A63F5 + VIOLET CLAIR #DCE8FE : repère global ≈ 3 % (2 % + 1 %)
- *   depuis la v4.2.0 — il était de 10 %. Repère d'ensemble, jamais un quota par écran.
+ *   NOIR #0A0A0A (≈ 35 %) · BLANC #FFFFFF (≈ 50 %) · GRIS CLAIR #F2F2F2 (≈ 5 %)
+ *   JAUNE #F2AE00 : logo + boutons d'ACHAT uniquement, ≤ 4 % d'un écran. PLUS AUCUN BLEU.
  *
  * Ce fichier verrouille trois choses vérifiables :
  *   1. les valeurs officielles et leur rôle sémantique (fond blanc, texte noir,
- *      action/focus/actif violets, chargement gris clair) ;
+ *      action/focus/actif ENCRE, achat jaune à libellé noir, chargement gris clair) ;
  *   2. la LISIBILITÉ réelle — ratios WCAG mesurés, pas supposés ;
- *   3. la disparition de l'orange : jetons, code, app.json ET images.
- *
- * Les proportions (50/35/5 + 2/1) sont un objectif d'ensemble : elles se jugent à
- * l'écran, pas dans le code — ce test ne prétend pas les mesurer. Il verrouille en
- * revanche OÙ le violet plein est permis (section « violet au minimum »).
+ *   3. la disparition de l'orange (et du bleu) : jetons, code, app.json ET images.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -52,13 +47,6 @@ function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-/** Même formule que `mix()` de tokens.mobile (ratio = part de la seconde couleur). */
-function mix(from: string, to: string, ratio: number): string {
-  const a = channels(from);
-  const b = channels(to);
-  return `#${a.map((v, i) => Math.round(v + (b[i] - v) * ratio).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
-}
-
 function hsv(r: number, g: number, b: number): { h: number; s: number; v: number } {
   const [rn, gn, bn] = [r / 255, g / 255, b / 255];
   const max = Math.max(rn, gn, bn);
@@ -89,7 +77,9 @@ function isOrangeRgb(r: number, g: number, b: number): boolean {
 const LOGO_YELLOW = '#F2AE00';
 const LOGO_YELLOW_HUE = hsv(...channels(LOGO_YELLOW)).h;
 const isLogoYellowRgb = (r: number, g: number, b: number) => Math.abs(hsv(r, g, b).h - LOGO_YELLOW_HUE) <= 3;
-const isOrange = (hex: string) => hex.toUpperCase() !== LOGO_YELLOW && isOrangeRgb(...channels(hex));
+/** Achat (18/11) : le jaune du logo et sa teinte « appuyé » — la même famille, jamais un orange de marque. */
+const BUY_YELLOWS = new Set([LOGO_YELLOW, '#D99A00']);
+const isOrange = (hex: string) => !BUY_YELLOWS.has(hex.toUpperCase()) && isOrangeRgb(...channels(hex));
 const hue = (hex: string) => hsv(...channels(hex)).h;
 const upper = (hex: string) => hex.toUpperCase();
 
@@ -178,42 +168,40 @@ function decodePng(file: string): { width: number; height: number; pixels: Uint8
 /* ── 1. Valeurs officielles et rôles ──────────────────────────────────────── */
 
 describe('identité couleur officielle', () => {
-  it('les couleurs officielles sont exactement celles de la charte (v4.2.0 : + violet clair)', () => {
-    expect(BRAND).toEqual({ black: '#0A0A0A', white: '#FFFFFF', violet: '#0A63F5', violetLight: '#DCE8FE', lightGray: '#F2F2F2', secondaryBlue: '#0B57CF', yellow: LOGO_YELLOW });
+  it('les couleurs officielles sont exactement celles de la charte v5.0.0 (plus de bleu)', () => {
+    expect(BRAND).toEqual({ black: '#0A0A0A', white: '#FFFFFF', lightGray: '#F2F2F2', yellow: LOGO_YELLOW, yellowPressed: '#D99A00' });
   });
 
-  it('le violet est ramené de 10 % à un repère global de 3 % (2 % + 1 % clair), les autres parts sont inchangées', () => {
-    expect(BRAND_SHARE).toEqual({ white: 0.5, black: 0.35, violet: 0.02, violetLight: 0.01, lightGray: 0.05 });
-    expect(BRAND_SHARE.violet + BRAND_SHARE.violetLight).toBeCloseTo(0.03, 10);
-    // Les 7 points rendus par le violet reviennent au bloc neutre (blanc, noir, gris) sans
-    // nouvelle couleur : tout ce qui n'est pas violet couvre 97 % de l'ensemble.
-    expect(1 - (BRAND_SHARE.violet + BRAND_SHARE.violetLight)).toBeCloseTo(0.97, 10);
+  it('le jaune est un repère de ≤ 4 % (achat + logo), le reste est neutre', () => {
+    expect(BRAND_SHARE).toEqual({ white: 0.5, black: 0.35, lightGray: 0.05, yellow: 0.04 });
   });
 
-  it('le violet clair est un fond secondaire : texte noir dessus, jamais blanc, et identique dans les deux modes', () => {
+  it('aucune valeur bleue ni violette dans les deux modes', () => {
+    const retired = ['#0A63F5', '#0A53CB', '#0B57CF', '#DCE8FE', '#78A9FA', '#571EF6', '#C5B2F4'];
     for (const mode of ['light', 'dark'] as const) {
-      expect(COLORS[mode].accentSoft).toBe(BRAND.violetLight);
-      expect(COLORS[mode].onAccentSoft).toBe(BRAND.black);
+      for (const value of Object.values(COLORS[mode])) expect(retired).not.toContain(upper(value));
+    }
+  });
+
+  it('le fond d’une option choisie est gris clair (sombre : #2A2A2A), texte lisible dessus', () => {
+    expect(COLORS.light.accentSoft).toBe(BRAND.lightGray);
+    expect(COLORS.light.onAccentSoft).toBe(BRAND.black);
+    expect(COLORS.dark.accentSoft).toBe('#2A2A2A');
+    expect(COLORS.dark.onAccentSoft).toBe(BRAND.white);
+    for (const mode of ['light', 'dark'] as const) {
       expect(contrast(COLORS[mode].onAccentSoft, COLORS[mode].accentSoft)).toBeGreaterThanOrEqual(7);
     }
-    // Blanc sur violet clair : 1,9:1 — interdit pour du texte.
-    expect(contrast(BRAND.white, BRAND.violetLight)).toBeLessThan(3);
-    // Le violet clair ne suffit pas seul à signaler un état sur blanc : il faut un contour violet.
-    expect(contrast(BRAND.violetLight, BRAND.white)).toBeLessThan(3);
-    expect(contrast(BRAND.violet, BRAND.white)).toBeGreaterThanOrEqual(3);
   });
 
-  it('fond blanc, texte noir, action et focus violets, gris clair secondaire (mode clair)', () => {
+  it('fond blanc, texte noir, action et focus ENCRE (mode clair)', () => {
     const light = COLORS.light;
     expect(light.canvas).toBe(BRAND.white);
-    // 17/10/2026 — décision client n° 1 : plus aucun fond gris. La surface et
-    // les blocs d'information sont BLANCS ; seules les lignes (« line »)
-    // séparent les sections. Le gris clair reste au squelette de chargement.
+    // 17/10/2026 — décision client n° 1 : plus aucun fond gris.
     expect(light.surface).toBe(BRAND.white);
     expect(light.infoSoft).toBe(BRAND.white);
     expect(light.line).not.toBe(BRAND.white);
     expect(light.ink).toBe(BRAND.black);
-    for (const key of ['action', 'accent', 'accentText', 'focus'] as const) expect(light[key]).toBe(BRAND.violet);
+    for (const key of ['action', 'accent', 'accentText', 'focus', 'secondaryAction'] as const) expect(light[key]).toBe(BRAND.black);
     expect(light.onAction).toBe(BRAND.white);
     expect(light.onAccent).toBe(BRAND.white);
     expect(light.line).toBe(NEUTRALS.border);
@@ -222,32 +210,24 @@ describe('identité couleur officielle', () => {
     expect(NEUTRALS).toMatchObject({ border: '#E5E5E5', textSecondary: '#666666' });
   });
 
-  it('le mode sombre garde le même violet pour agir et un violet éclairci pour lire', () => {
+  it('le mode sombre inverse l’encre : action, accent et focus BLANCS, libellé noir', () => {
     const dark = COLORS.dark;
     expect(dark.canvas).toBe(BRAND.black);
     expect(dark.ink).toBe(BRAND.white);
-    expect(dark.action).toBe(BRAND.violet);
-    expect(dark.accent).toBe(BRAND.violet);
-    expect(dark.onAction).toBe(BRAND.white);
-    expect(dark.onAccent).toBe(BRAND.white);
-    expect(dark.accentText).toBe(dark.focus);
+    for (const key of ['action', 'accent', 'accentText', 'focus', 'secondaryAction'] as const) expect(dark[key]).toBe(BRAND.white);
+    expect(dark.onAction).toBe(BRAND.black);
+    expect(dark.onAccent).toBe(BRAND.black);
   });
 
-  it('les teintes dérivées sont CALCULÉES depuis le violet, jamais choisies au goût', () => {
-    expect(COLORS.light.actionHover).toBe(mix(BRAND.violet, BRAND.black, 0.18));
-    expect(COLORS.dark.actionHover).toBe(COLORS.light.actionHover);
-    expect(COLORS.dark.accentText).toBe(mix(BRAND.violet, BRAND.white, 0.45));
+  it('l’ACHAT est jaune à libellé noir, identique dans les deux modes', () => {
+    for (const mode of ['light', 'dark'] as const) {
+      expect(COLORS[mode].buy).toBe(LOGO_YELLOW);
+      expect(COLORS[mode].buyPressed).toBe(BRAND.yellowPressed);
+      expect(COLORS[mode].onBuy).toBe(BRAND.black);
+    }
+    expect(COMMERCE).toMatchObject({ action: LOGO_YELLOW, actionPressed: BRAND.yellowPressed, onAction: BRAND.black });
     expect(veil(0.5)).toBe('#0A0A0A80');
     expect(frost(0.9)).toBe('#FFFFFFe6');
-  });
-
-  it('le bleu secondaire SONIM reste distinct et lisible, sans remplacer l’action principale', () => {
-    expect(BRAND.secondaryBlue).toBe('#0B57CF');
-    for (const c of [COLORS.light, COLORS.dark]) {
-      expect(c.secondaryAction).toBe(BRAND.secondaryBlue);
-      expect(c.secondaryAction).not.toBe(c.action);
-      expect(contrast(c.onSecondaryAction, c.secondaryAction)).toBeGreaterThanOrEqual(4.5);
-    }
   });
 
   it('les deux modes portent exactement les mêmes jetons', () => {
@@ -274,16 +254,17 @@ describe('contraste (WCAG)', () => {
     expect(failures).toEqual([]);
   });
 
-  it('le libellé des boutons bleus (Bleu Z) reste lisible, au repos comme à l’appui', () => {
+  it('le libellé des boutons (encre, et jaune d’achat) reste lisible, au repos comme à l’appui', () => {
     for (const mode of modes) {
       const c = COLORS[mode];
       expect(contrast(c.onAction, c.action)).toBeGreaterThanOrEqual(4.5);
       expect(contrast(c.onAction, c.actionHover)).toBeGreaterThanOrEqual(4.5);
       expect(contrast(c.onAccent, c.accent)).toBeGreaterThanOrEqual(4.5);
+      // Texte NOIR sur jaune (≈ 10:1) ; le blanc y ferait ≈ 2:1 — interdit.
+      expect(contrast(c.onBuy, c.buy)).toBeGreaterThanOrEqual(7);
+      expect(contrast(c.onBuy, c.buyPressed)).toBeGreaterThanOrEqual(4.5);
     }
-    // Bleu Z #0A63F5 (14/11) : blanc 5,10:1 au repos, 6,75:1 à l'appui (#0A53CB).
-    expect(contrast(BRAND.white, BRAND.violet)).toBeCloseTo(5.1, 1);
-    expect(contrast(BRAND.white, COLORS.light.actionHover)).toBeCloseTo(6.75, 1);
+    expect(contrast(BRAND.white, LOGO_YELLOW)).toBeLessThan(3);
   });
 
   it('le focus et le contour des champs restent visibles (≥ 3:1)', () => {
@@ -298,7 +279,7 @@ describe('contraste (WCAG)', () => {
     expect(LENS_COLORS.skeleton).toBe(BRAND.lightGray);
   });
 
-  it('le violet posé sur un média est la version éclaircie (≥ 4,5:1 sur noir)', () => {
+  it('l’accent posé sur un média est blanc (≥ 4,5:1 sur noir)', () => {
     const onMedia = derivedColors(COLORS.light).accentOnMedia;
     expect(onMedia).toBe(COLORS.dark.accentText);
     expect(contrast(onMedia, BRAND.black)).toBeGreaterThanOrEqual(4.5);
@@ -339,8 +320,10 @@ describe('couleurs de statut', () => {
     expect(contrast(LENS_COLORS.sale, BRAND.white)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('Lens : violet pour l’élément actif, noir pour les étoiles, gris pour le chargement', () => {
-    expect(LENS_COLORS.active).toBe(BRAND.violet);
+  it('Lens : encre pour l’élément actif (blanc sur la caméra), noir pour les étoiles, gris pour le chargement', () => {
+    expect(LENS_COLORS.active).toBe(BRAND.black);
+    expect(LENS_COLORS.activeOnMedia).toBe(BRAND.white);
+    expect(LENS_COLORS.activeSoft).toBe(BRAND.lightGray);
     expect(LENS_COLORS.star).toBe(BRAND.black);
     expect(LENS_COLORS.black).toBe(BRAND.black);
     expect(LENS_COLORS.white).toBe(BRAND.white);
@@ -401,9 +384,9 @@ describe('plus d’orange dans l’application', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('app.json : couleur principale violette, ouverture noire (« Za. » v9, version sombre), aucune couleur orangée', () => {
+  it('app.json : couleur principale encre, ouverture noire (« Za. » v9, version sombre), aucune couleur orangée', () => {
     const config = JSON.parse(fs.readFileSync(path.join(ROOT, 'app.json'), 'utf8')).expo;
-    expect(config.primaryColor).toBe(BRAND.violet);
+    expect(config.primaryColor).toBe(BRAND.black);
     expect(config.backgroundColor).toBe(BRAND.white); // la toile de l'app
     // Logo v9 (18/11) : icône et ouverture NOIRES — la version officielle sur fond noir, dans les deux thèmes.
     expect(config.android.adaptiveIcon.backgroundColor).toBe(BRAND.black);
@@ -440,9 +423,9 @@ describe('plus d’orange dans l’application', () => {
   });
 });
 
-/* ── 5. Violet au minimum (v4.2.0) ────────────────────────────────────────── */
+/* ── 5. Maquette v2 (18/11/2026) : jaune = achat, tout le reste à l'encre ─── */
 
-describe('violet au minimum : le violet plein est réservé à l’action principale', () => {
+describe('jaune réservé à l’achat, tout le reste à l’encre', () => {
   const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
   const walkSources = (dir: string, out: string[] = []): string[] => {
     for (const entry of fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })) {
@@ -453,54 +436,61 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
     return out;
   };
 
-  it('le bouton par défaut n’est plus violet : `main` est une décision explicite', () => {
+  it('le bouton par défaut est encre : `main` et `commerce` sont des décisions explicites', () => {
     const ui = read('src/design/ui.tsx');
     expect(ui).toMatch(/tone = 'solid'/);
     expect(ui).toMatch(/tone\?: 'main' \| 'commerce' \| 'solid' \| 'quiet'/);
   });
 
-  it('seules les actions d’achat et de connexion portent tone="main"', () => {
+  it('les boutons d’ACHAT passent par la barre d’achat jaune (bouton court) ou le ton commerce', () => {
+    const buy: Record<string, number> = {};
+    for (const rel of [...walkSources('app'), ...walkSources('src')]) {
+      const text = read(rel);
+      const n = (text.match(/<PurchaseBar\b/g) ?? []).length + (text.match(/tone="commerce"/g) ?? []).length;
+      if (n) buy[rel] = n;
+    }
+    expect(buy).toEqual({
+      'app/checkout.tsx': 1,                            // Commander
+      'app/aywebs/browser.tsx': 1,                      // choisir les options / ajouter
+      'src/features/aywebs/AddToCartSheet.tsx': 1,      // ajouter au panier (feuille)
+      'src/features/lens/LensProductView.tsx': 1,       // ajouter au panier (Lens)
+      'src/features/lens/ocerex/OcerexFlow.tsx': 1,     // confirmer la commande OCEREX
+      'src/features/product/ProductFiche.tsx': 1,       // ajouter au panier (fiche)
+      'src/features/shopping/OfficialCartView.tsx': 1,  // Commander (panier)
+      'src/design/ui.tsx': 1,                           // PurchaseBar elle-même (ton commerce)
+    });
+  });
+
+  it('la connexion et les autres CTA restent à l’encre (tone="main" = encre)', () => {
     const counts: Record<string, number> = {};
     for (const rel of [...walkSources('app'), ...walkSources('src')]) {
       const n = (read(rel).match(/tone="main"/g) ?? []).length;
       if (n) counts[rel] = n;
     }
-    // Refonte des interactions (14/11/2026, approuvée) : le CTA principal est
-    // BLEU — ajouter au panier, valider la commande, payer, se connecter. Cela
-    // remplace le CTA noir de la fiche/du panier (13/11) et la connexion
-    // tout-encre (10/11). Un seul bleu par écran : voir one-blue-button.
-    expect(counts).toEqual({
-      'app/checkout.tsx': 1,               // valider la commande
-      'app/forgot.tsx': 1,                 // envoyer le lien de récupération
-      'app/sign-in.tsx': 4,                // continuer | se connecter | créer le compte | vérifier le code — étapes exclusives
-      'src/features/lens/LensProductView.tsx': 1, // ajouter au panier (voir le panier -> tone="solid" dans la feuille compacte)
-      'src/features/lens/ocerex/OcerexFlow.tsx': 1, // confirmer la commande OCEREX
-      'src/features/product/ProductFiche.tsx': 1,   // ajouter au panier (fiche)
-      'src/features/shopping/OfficialCartView.tsx': 1, // valider la commande (panier)
-      // 15/11 : AYWEBs passe au bleu au moment de la capture (« Choisir les options »)
-      // puis dans la feuille (« Ajouter au panier ») — deux écrans, un bleu chacun.
-      'app/aywebs/browser.tsx': 1,
-      'src/features/aywebs/AddToCartSheet.tsx': 1,
-    });
+    expect(counts).toEqual({ 'app/forgot.tsx': 1, 'app/sign-in.tsx': 4 });
   });
 
-  it('15/11 : AYWEBs quitte le jaune — CTA bleus, choix au bleu clair + contour bleu', () => {
-    const browser = read('app/aywebs/browser.tsx');
-    const sheet = read('src/features/aywebs/AddToCartSheet.tsx');
+  it('le jaune reste COURT : la barre d’achat pose un bouton de largeur fixe à côté du prix', () => {
+    const ui = read('src/design/ui.tsx');
+    expect(ui).toContain('buyButton: { minWidth: COMMERCE.compactWidth, paddingHorizontal: 20 }');
+    expect(COMMERCE.compactWidth).toBe(176);
+    // 176 × 48 dp sur un écran de 390 × 844 dp : ≈ 2,6 % — sous le plafond de 4 %.
+    expect((176 * 48) / (390 * 844)).toBeLessThan(0.04);
+  });
+
+  it('AYWEBs : choix au gris clair + contour encre, aucun jaune hors achat', () => {
     const choices = read('src/features/aywebs/ChoiceField.tsx');
     const chips = read('src/features/aywebs/VariantOptionChips.tsx');
-    for (const src of [browser, sheet, choices, chips]) {
+    for (const src of [choices, chips]) {
       expect(src).not.toContain('tone="commerce"');
       expect(src).not.toContain('COMMERCE.');
       expect(src).not.toContain('warning.soft');
     }
     expect(choices).toContain('theme.colors.action');
     expect(chips).toMatch(/backgroundColor: active \? theme\.colors\.accentSoft/);
-    // Le jeton reste défini (ton `commerce` du bouton), mais plus aucun écran ne l'emploie.
-    expect(COMMERCE.action).toBe('#FFD60A');
   });
 
-  it('choix sélectionnés : violet clair + contour violet + texte noir (plus de pastille violette pleine)', () => {
+  it('choix sélectionnés : gris clair + contour encre + texte noir', () => {
     for (const rel of ['app/checkout.tsx', 'app/orders/[id].tsx']) {
       const src = read(rel);
       expect(src, rel).toMatch(/backgroundColor: active \? theme\.colors\.accentSoft : theme\.colors\.canvas/);
@@ -509,7 +499,7 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
     }
   });
 
-  it('aucun violet décoratif : remises, codes promo, cartes story, pied de page, notices légales', () => {
+  it('aucun accent décoratif : remises, codes promo, cartes story, pied de page, notices légales', () => {
     const promo = read('src/features/sections/PromotionCard.tsx');
     expect(promo).not.toMatch(/colors\.accent\b|colors\.accentText/);
     const story = read('src/features/sections/StoryCard.tsx');
@@ -517,5 +507,11 @@ describe('violet au minimum : le violet plein est réservé à l’action princi
     expect(read('src/features/shell/Footer.tsx')).not.toMatch(/accentText/);
     expect(read('src/features/legal/LegalScreen.tsx')).not.toMatch(/accentText/);
     expect(read('src/features/home/HeroCarousel.tsx')).not.toMatch(/colors\.action\b/);
+  });
+
+  it('le compteur du panier est ROUGE à chiffre blanc, partout', () => {
+    expect(read('src/design/CartGlyph.tsx')).toContain('backgroundColor: badgeColor ?? CART_BADGE.background');
+    expect(read('src/design/tokens.mobile.ts')).toContain("background: '#D92D20'");
+    expect(read('src/features/shell/AppHeader.tsx')).not.toContain('badgeColor=');
   });
 });

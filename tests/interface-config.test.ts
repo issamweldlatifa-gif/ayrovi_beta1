@@ -4,16 +4,16 @@ import {
 } from '../client/src/config/interfaceConfig';
 
 describe('واجهتي full interface configuration', () => {
-  test('locks the official ZAYROVI palette (white / black / electric violet) on public defaults', () => {
+  test('locks the official ZAYROVI palette (white / black ink / buy yellow, 18/11) on public defaults', () => {
     expect(DEFAULT_INTERFACE_CONFIG.colors).toMatchObject({
       pageBackground: '#ffffff',
       primary: '#000000',
-      accent: '#0a63f5',
+      accent: '#0a0a0a',
       announcementBackground: '#000000',
       announcementText: '#ffffff',
       heroBackground: '#000000',
     });
-    expect(DEFAULT_INTERFACE_CONFIG.icons.activeColor).toBe('#0a63f5');
+    expect(DEFAULT_INTERFACE_CONFIG.icons.activeColor).toBe('#0a0a0a');
     // la section « annonce » (masquée par défaut) n'est plus un aplat orange : noir officiel
     expect(DEFAULT_INTERFACE_CONFIG.sections.find((section) => section.id === 'announcement')?.backgroundColor).toBe('#0a0a0a');
     expect(DEFAULT_INTERFACE_CONFIG.navigation).toMatchObject({ background: '#ffffff', color: '#000000' });
@@ -53,16 +53,16 @@ describe('واجهتي full interface configuration', () => {
     expect(normalized.colors.pageBackground).toBe('#ffffff');
     expect(normalized.buttons.secondaryColor).toBe('#000000');
     // Les anciennes valeurs de bibliothèque (lucide…) sont recentrées sur le système ZAYROVI.
-    expect(normalized.icons).toMatchObject({ library: 'zayrovi', color: '#654321', activeColor: '#0a63f5' });
+    expect(normalized.icons).toMatchObject({ library: 'zayrovi', color: '#654321', activeColor: '#0a0a0a' });
     expect(normalized.layout).toMatchObject({ sectionGap: 24, maxWidth: 1320, cardRadius: 16, shadow: 'soft' });
   });
 
-  test('reads the retired brand oranges as the official violet, and keeps any other admin colour', () => {
+  test('reads the retired brand oranges as the official ink accent, and keeps any other admin colour', () => {
     for (const orange of ['#ff6900', '#FF7900', '#fe7003', '#ff7a00']) {
       const normalized = normalizeInterfaceConfig({ colors: { accent: orange }, icons: { activeColor: orange },
         sections: [{ id: 'announcement', visible: true, backgroundColor: orange, textColor: '#ffffff' }] });
-      expect(normalized.colors.accent).toBe('#0a63f5');
-      expect(normalized.icons.activeColor).toBe('#0a63f5');
+      expect(normalized.colors.accent).toBe('#0a0a0a');
+      expect(normalized.icons.activeColor).toBe('#0a0a0a');
       // une grande surface n'est jamais violette : l'ancien bandeau orange devient noir
       expect(normalized.sections.find((section) => section.id === 'announcement')?.backgroundColor).toBe('#0a0a0a');
     }

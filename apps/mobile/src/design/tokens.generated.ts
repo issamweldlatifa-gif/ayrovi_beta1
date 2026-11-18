@@ -2,46 +2,43 @@
  * GÉNÉRÉ — ne pas modifier à la main.
  *
  * Couleurs   : apps/mobile/src/design/brand.json
- *              ZAYROVI App — Official Brand Colors · version 4.5.0
- *              sha256 : 048943e0538e363f1712745f141383628bbaec63ad4885375fe30cf6b0e72cdc
+ *              ZAYROVI App — Official Brand Colors · version 5.0.0
+ *              sha256 : f956ea975fd0c644923e6831cd5b3495aae4748daefb94f31335f3511a62edb7
  * Structure  : client/src/design/editorial/identity.json
- *              ZAYROVI A — Official Identity · version 4.5.0
- *              sha256 : 04244374e09fc574ac108ac352e48b0ef211829b521082c955745011dff5c64d
+ *              ZAYROVI A — Official Identity · version 5.0.0
+ *              sha256 : cba3d6aa5629929275f33723a929e2f2a93c923c9e6abaacf846637bfc44d1ed
  *
  * Régénérer : npm run tokens:build   ·   vérifier : npm run tokens:check
  */
 /** Provenance de ces jetons (couleurs de l’application + structure partagée avec le site). */
 export const IDENTITY = {
   name: "ZAYROVI App — Official Brand Colors",
-  sha256: "048943e0538e363f1712745f141383628bbaec63ad4885375fe30cf6b0e72cdc",
+  sha256: "f956ea975fd0c644923e6831cd5b3495aae4748daefb94f31335f3511a62edb7",
   source: "apps/mobile/src/design/brand.json",
   structure: {
     name: "ZAYROVI A — Official Identity",
-    sha256: "04244374e09fc574ac108ac352e48b0ef211829b521082c955745011dff5c64d",
+    sha256: "cba3d6aa5629929275f33723a929e2f2a93c923c9e6abaacf846637bfc44d1ed",
     source: "client/src/design/editorial/identity.json",
-    version: "4.5.0",
+    version: "5.0.0",
   },
-  version: "4.5.0",
+  version: "5.0.0",
 } as const;
 
 /** Les quatre couleurs officielles de la marque — la seule source des valeurs dérivées. */
 export const BRAND = {
   black: "#0A0A0A",
   lightGray: "#F2F2F2",
-  secondaryBlue: "#0B57CF",
-  violet: "#0A63F5",
-  violetLight: "#DCE8FE",
   white: "#FFFFFF",
   yellow: "#F2AE00",
+  yellowPressed: "#D99A00",
 } as const;
 
 /** Part visuelle visée par couleur (objectif d’ensemble, pas une contrainte par écran). */
 export const BRAND_SHARE = {
   black: 0.35,
   lightGray: 0.05,
-  violet: 0.02,
-  violetLight: 0.01,
   white: 0.5,
+  yellow: 0.04,
 } as const;
 
 /** Gris d’appui : bordure légère, texte secondaire, texte appuyé, contour de champ. */
@@ -55,41 +52,46 @@ export const NEUTRALS = {
 /** Palette sémantique, mode clair et mode sombre. */
 export const COLORS = {
   dark: {
-    accent: "#0A63F5",
-    accentSoft: "#DCE8FE",
-    accentText: "#78A9FA",
-    action: "#0A63F5",
-    actionHover: "#0A53CB",
+    accent: "#FFFFFF",
+    accentSoft: "#2A2A2A",
+    accentText: "#FFFFFF",
+    action: "#FFFFFF",
+    actionHover: "#E5E5E5",
     brandYellow: "#F2AE00",
+    buy: "#F2AE00",
+    buyPressed: "#D99A00",
     canvas: "#0A0A0A",
     danger: "#FFABAB",
-    focus: "#78A9FA",
+    focus: "#FFFFFF",
     info: "#BDBDBD",
     infoSoft: "#171717",
     ink: "#FFFFFF",
     line: "#525252",
     lineControl: "#6E6E6E",
     muted: "#BDBDBD",
-    onAccent: "#FFFFFF",
-    onAccentSoft: "#0A0A0A",
-    onAction: "#FFFFFF",
-    onSecondaryAction: "#FFFFFF",
+    onAccent: "#0A0A0A",
+    onAccentSoft: "#FFFFFF",
+    onAction: "#0A0A0A",
+    onBuy: "#0A0A0A",
+    onSecondaryAction: "#0A0A0A",
     secondary: "#E5E5E5",
-    secondaryAction: "#0B57CF",
+    secondaryAction: "#FFFFFF",
     shimmer: "#171717",
     success: "#90D6AF",
     surface: "#171717",
   },
   light: {
-    accent: "#0A63F5",
-    accentSoft: "#DCE8FE",
-    accentText: "#0A63F5",
-    action: "#0A63F5",
-    actionHover: "#0A53CB",
+    accent: "#0A0A0A",
+    accentSoft: "#F2F2F2",
+    accentText: "#0A0A0A",
+    action: "#0A0A0A",
+    actionHover: "#333333",
     brandYellow: "#F2AE00",
+    buy: "#F2AE00",
+    buyPressed: "#D99A00",
     canvas: "#FFFFFF",
     danger: "#D92D20",
-    focus: "#0A63F5",
+    focus: "#0A0A0A",
     info: "#666666",
     infoSoft: "#FFFFFF",
     ink: "#0A0A0A",
@@ -99,9 +101,10 @@ export const COLORS = {
     onAccent: "#FFFFFF",
     onAccentSoft: "#0A0A0A",
     onAction: "#FFFFFF",
+    onBuy: "#0A0A0A",
     onSecondaryAction: "#FFFFFF",
     secondary: "#333333",
-    secondaryAction: "#0B57CF",
+    secondaryAction: "#0A0A0A",
     shimmer: "#F2F2F2",
     success: "#236044",
     surface: "#FFFFFF",

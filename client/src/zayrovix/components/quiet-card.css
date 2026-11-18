@@ -169,7 +169,15 @@
   transition: transform 0.16s ease, opacity 0.16s ease;
 }
 
-.ay-quiet-actions__primary:hover { opacity: 0.88; }
+/* 18/11 (maquette v2) : seul le vrai ajout au panier est jaune « Za. », libellé noir. */
+.ay-quiet-actions__primary--buy {
+  border-color: var(--zayrovi-buy, #f2ae00);
+  background: var(--zayrovi-buy, #f2ae00);
+  color: var(--zayrovi-on-buy, #0a0a0a);
+}
+.ay-quiet-actions__primary--buy:hover { opacity: 1; border-color: var(--zayrovi-buy-hover, #d99a00); background: var(--zayrovi-buy-hover, #d99a00); }
+
+.ay-quiet-actions__primary:not(.ay-quiet-actions__primary--buy):hover { opacity: 0.88; }
 .ay-quiet-actions__primary:active { transform: scale(0.98); }
 .ay-quiet-actions__primary:disabled { cursor: not-allowed; opacity: 0.45; transform: none; }
 

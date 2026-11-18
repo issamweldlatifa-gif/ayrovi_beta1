@@ -142,7 +142,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
           <EditorialIcon name="Shield" size={16} />
           <span>{tr('Tous les paiements sont cryptés et sécurisés', 'جميع وسائل الدفع مشفرة وآمنة')}</span>
         </div>
-        <button type="button" className="s-cta" onClick={onConfirm} disabled={!selected || !onConfirm || policyStatus !== 'ready'}>
+        <button type="button" className="s-cta s-cta--buy" onClick={onConfirm} disabled={!selected || !onConfirm || policyStatus !== 'ready'}>
           {tr('Confirmer et payer', 'أكّد وخلّص')}
         </button>
       </div>

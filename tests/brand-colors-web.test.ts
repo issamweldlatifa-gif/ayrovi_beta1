@@ -2,13 +2,13 @@
  * ZAYROVI — palette officielle (2026-10-15) appliquée au SITE, au back-office, aux courriels
  * et à la coquille Android Capacitor.
  *
- *   noir #0A0A0A (≈ 35 %) · blanc #FFFFFF (≈ 50 %) · gris clair #F2F2F2 (≈ 5 %) · violet
- *   électrique #0A63F5 + violet clair #DCE8FE : repère global ≈ 3 % (2 % + 1 %) depuis la
- *   v4.2.0 (il était de 10 %). L'orange des chartes précédentes disparaît partout.
+ *   noir #0A0A0A (≈ 35 %) · blanc #FFFFFF (≈ 50 %) · gris clair #F2F2F2 (≈ 5 %) · jaune
+ *   « Za. » #F2AE00 (≈ 4 %), RÉSERVÉ au bouton d'achat depuis le 18/11 (maquette v2). Le bleu
+ *   d'action #0A63F5 est retiré : toutes les autres actions sont à l'encre. L'orange disparaît partout.
  *
  * Ce fichier verrouille quatre choses que les autres tests ne voient pas ensemble :
  *   1. le site et l'application parlent la MÊME palette (identity.json ≡ brand.json) ;
- *   2. les réglages CMS déjà persistés en orange sont relus en violet, sans écrire en base ;
+ *   2. les réglages CMS déjà persistés en orange (ou bleu) sont relus à l'encre, sans écrire en base ;
  *   3. aucun littéral d'un orange retiré ne survit dans les sources produit (code, pages,
  *      SVG, XML Android) — les seules exceptions sont nommées ici, avec leur raison ;
  *   4. aucun pixel orange ne survit dans les logos, icônes et écrans de démarrage.
@@ -30,7 +30,10 @@ const read = (rel: string) => fs.readFileSync(path.resolve(ROOT, rel), 'utf8');
 const identity = JSON.parse(read('client/src/design/editorial/identity.json'));
 const brand = JSON.parse(read('apps/mobile/src/design/brand.json'));
 
-const OFFICIAL = { black: '#0A0A0A', white: '#FFFFFF', violet: '#0A63F5', lightGray: '#F2F2F2', yellow: '#F2AE00' };
+// 18/11 (maquette v2 approuvée) : plus de bleu. L'action est à l'encre ; le jaune « Za. » est réservé à l'ACHAT.
+const OFFICIAL = { black: '#0A0A0A', white: '#FFFFFF', lightGray: '#F2F2F2', yellow: '#F2AE00', buyPressed: '#D99A00' };
+/** Bleu Z retiré le 18/11 — ne doit plus apparaître dans les logos ni l'écran de chargement. */
+const RETIRED_BLUE = '#0A63F5';
 
 /** Oranges retirés : #FF6900 (« Zalando »), #FF7900 / #A74700 / #FFAE69 (ZAYROVI A v3), #F18902
  *  (AyWebs), #F97316 / #9A3412 / #FFF7ED (coquille Android), #FFB070 / #FFB173 / #E85F00 / #FFF3EA
@@ -61,10 +64,9 @@ describe('1. une seule palette pour le site et l’application', () => {
       }
     }
     expect(identity.version).toBe(brand.version);
-    // v4.2.0 : repère GLOBAL de l'application (pas un quota par écran) — 2 % violet + 1 % violet clair.
-    expect(identity.accentShare).toEqual({ scope: 'app', total: 0.03, violet: brand.share.violet, violetLight: brand.share.violetLight });
-    expect(identity.accentShare.violet + identity.accentShare.violetLight).toBeCloseTo(identity.accentShare.total, 10);
-    // Le plafond par écran est un garde-fou contre les grandes surfaces violettes, pas l'objectif.
+    // 18/11 : la seule couleur d'accent est le jaune d'achat (≈ 4 % d'un écran : un bouton court).
+    expect(identity.accentShare).toEqual({ scope: 'screen', total: 0.04, yellow: brand.share.yellow });
+    // Le plafond par écran est un garde-fou contre les grandes surfaces jaunes, pas l'objectif.
     expect(identity.accentAreaLimit).toBeGreaterThan(identity.accentShare.total);
   });
 
@@ -76,11 +78,17 @@ describe('1. une seule palette pour le site et l’application', () => {
     // blanche ; seuls les filets (« line ») séparent les sections. Le gris clair
     // survit uniquement dans le rôle `shimmer` (squelette de chargement).
     expect(hex(c.surface)).toBe(OFFICIAL.white);
-    for (const role of ['action', 'accent', 'accentText', 'focus']) expect(hex(c[role]), role).toBe(OFFICIAL.violet);
+    for (const role of ['action', 'accent', 'accentText', 'focus']) expect(hex(c[role]), role).toBe(OFFICIAL.black);
     expect(hex(c.onAction)).toBe(OFFICIAL.white);
+    expect(hex(c.buy)).toBe(OFFICIAL.yellow);
+    expect(hex(c.buyPressed)).toBe(OFFICIAL.buyPressed);
+    expect(hex(c.onBuy)).toBe(OFFICIAL.black);
     expect(hex(identity.darkColors.canvas)).toBe(OFFICIAL.black);
-    expect(hex(identity.darkColors.action)).toBe(OFFICIAL.violet);
-    expect(hex(identity.darkColors.accentText)).toBe('#78A9FA');
+    // thème sombre : l'action s'inverse (blanc, libellé noir) ; l'achat reste jaune.
+    expect(hex(identity.darkColors.action)).toBe(OFFICIAL.white);
+    expect(hex(identity.darkColors.accentText)).toBe(OFFICIAL.white);
+    expect(hex(identity.darkColors.buy)).toBe(OFFICIAL.yellow);
+    expect(JSON.stringify(identity).toUpperCase()).not.toContain(RETIRED_BLUE);
     // le vocabulaire « orange » a quitté l'identité
     expect(JSON.stringify(identity)).not.toMatch(/orange/i);
   });
@@ -88,16 +96,17 @@ describe('1. une seule palette pour le site et l’application', () => {
   test('les fichiers générés suivent la source (pas de copie à la main)', () => {
     for (const rel of ['client/src/design/editorial/tokens.generated.css', 'client/public/identity.css']) {
       const css = read(rel);
-      expect(css).toContain('--ay-e-action: #0A63F5;');
+      expect(css).toContain('--ay-e-action: #0A0A0A;');
+      expect(css).toContain('--ay-e-buy: #F2AE00;');
       expect(css).toContain('--ay-e-ink: #0A0A0A;');
       expect(css).not.toMatch(RETIRED);
     }
-    expect(BRAND.colors.accent).toBe(OFFICIAL.violet);
+    expect(BRAND.colors.accent).toBe(OFFICIAL.black);
     expect(BRAND.version).toBe(identity.version);
   });
 });
 
-describe('2. réglages persistés en orange : relus en violet, jamais réécrits', () => {
+describe('2. réglages persistés en orange (ou en bleu) : relus à l’encre, jamais réécrits', () => {
   const persisted = {
     colors: { accent: '#ff6900', heroBackground: '#0a0a0a' },
     icons: { library: 'zayrovi', color: '#000000', activeColor: '#ff6900', size: 28, style: 'outline' },
@@ -108,11 +117,11 @@ describe('2. réglages persistés en orange : relus en violet, jamais réécrits
     price: { amount: 189.9 },
   };
 
-  test('accent, icône active et bandeau orange deviennent violet / noir', () => {
+  test('accent, icône active et bandeau orange deviennent encre / noir', () => {
     const snapshot = structuredClone(persisted);
     const result = enforceBrandIdentity(persisted) as typeof persisted;
-    expect(result.colors.accent).toBe('#0a63f5');
-    expect(result.icons.activeColor).toBe('#0a63f5');
+    expect(result.colors.accent).toBe('#0a0a0a');
+    expect(result.icons.activeColor).toBe('#0a0a0a');
     expect(result.sections[1].backgroundColor).toBe('#0a0a0a'); // jamais une grande surface violette
     expect(result.sections[0]).toEqual(persisted.sections[0]); // contenu intact
     expect(result.price).toEqual(persisted.price);
@@ -130,18 +139,19 @@ describe('2. réglages persistés en orange : relus en violet, jamais réécrits
   });
 
   test('accent de la section LENS et ancien thème du site', () => {
-    expect(brandAccentColor('#FF6900')).toBe(OFFICIAL.violet);
-    expect(brandAccentColor('')).toBe(OFFICIAL.violet);
-    expect(brandAccentColor(null)).toBe(OFFICIAL.violet);
+    expect(brandAccentColor('#FF6900')).toBe(OFFICIAL.black);
+    expect(brandAccentColor('#0A63F5')).toBe(OFFICIAL.black);
+    expect(brandAccentColor('')).toBe(OFFICIAL.black);
+    expect(brandAccentColor(null)).toBe(OFFICIAL.black);
     expect(brandAccentColor('#2e7d32')).toBe('#2e7d32');
-    expect(enforceLegacyTheme({ preset: 'noir', accent: '#ff6900' })).toMatchObject({ accent: '#0a63f5' });
+    expect(enforceLegacyTheme({ preset: 'noir', accent: '#ff6900' })).toMatchObject({ accent: '#0a0a0a' });
     expect(enforceLegacyTheme({ preset: 'custom', accent: '#db2777' })).toMatchObject({ accent: '#db2777' });
   });
 
   test('le client normalise de la même façon (même adaptateur partagé)', () => {
     const normalized = normalizeInterfaceConfig(persisted);
-    expect(normalized.colors.accent).toBe('#0a63f5');
-    expect(normalized.icons.activeColor).toBe('#0a63f5');
+    expect(normalized.colors.accent).toBe('#0a0a0a');
+    expect(normalized.icons.activeColor).toBe('#0a0a0a');
     expect(normalized.sections.find((section) => section.id === 'announcement')?.backgroundColor).toBe('#0a0a0a');
   });
 
@@ -219,7 +229,7 @@ describe('3. aucun orange retiré dans les sources produit', () => {
       expect(svg, rel).toContain(`fill="${OFFICIAL.yellow}" d="${BRAND_LOGO.ring}"`);
       expect(svg, rel).toContain(`fill="${a}" d="${BRAND_LOGO.a}"`);
       expect(svg, rel).toContain('aria-label="ZAYROVI"');
-      expect(svg.toUpperCase(), rel).not.toContain(OFFICIAL.violet);
+      expect(svg.toUpperCase(), rel).not.toContain(RETIRED_BLUE);
     }
     // onglet du navigateur (16–32 px) : le symbole seul (cercle jaune + z évidé), fond transparent
     const icon = read('client/public/media/logo-zayrovi-icon.svg');
@@ -253,7 +263,8 @@ describe('3. aucun orange retiré dans les sources produit', () => {
     // « pas de logo personnalisé », '/media/logo-zayrovi.png', comparée telle quelle et jamais affichée)
     const stale = [...walk('client/src', /\.(tsx?)$/), ...walk('client/public', /\.(html|webmanifest)$/)]
       .flatMap((rel) => [...read(rel).matchAll(/\/media\/logo-zayrovi[a-z0-9-]*\.(?:svg|png)(\?v=[0-9.]+)?/g)]
-        .filter((m) => m[1] !== '?v=9.0' && m[0] !== '/media/logo-zayrovi.png')
+        // 18/11 : seul l'avatar social a été redessiné (tuile noire arrondie) → ?v=9.1.
+        .filter((m) => m[1] !== (m[0].startsWith('/media/logo-zayrovi-avatar.svg') ? '?v=9.1' : '?v=9.0') && m[0] !== '/media/logo-zayrovi.png')
         .map((m) => `${rel}: ${m[0]}`));
     expect(stale).toEqual([]);
   });
@@ -275,7 +286,7 @@ describe('3. aucun orange retiré dans les sources produit', () => {
       expect(main).toContain(piece);
     }
     expect(html).toContain('<path class="ay-boot-arc" d="M 68 3 A 65 65 0 0 1 129.08 45.77" />');
-    expect(html.toUpperCase()).not.toContain(OFFICIAL.violet);
+    expect(html.toUpperCase()).not.toContain(RETIRED_BLUE);
   });
 
   test('courriels et facture : bandeau et filets noirs, seul le CTA est violet', () => {
@@ -290,9 +301,9 @@ describe('3. aucun orange retiré dans les sources produit', () => {
     expect(read('src/services/invoice.ts')).not.toMatch(/BRAND\.colors\.accent/);
   });
 
-  test('coquille Android : boutons d’action violets, portés par une seule ressource', () => {
+  test('coquille Android : boutons d’action à l’encre, portés par une seule ressource', () => {
     const colors = read('android/app/src/main/res/values/colors.xml');
-    expect(colors).toContain('<color name="aywebs_accent">#FF571EF6</color>');
+    expect(colors).toContain('<color name="aywebs_accent">#FF0A0A0A</color>');
     const layouts = walk('android/app/src/main/res/layout', /^.*aywebs.*\.xml$/);
     expect(layouts.length).toBeGreaterThanOrEqual(6);
     const buttons = layouts.filter((rel) => read(rel).includes('android:background="@color/aywebs_accent"'));
@@ -369,11 +380,11 @@ describe('5. violet au minimum (v4.2.0) : seule l’action principale est violet
     }
   });
 
-  test('bouton primaire générique = encre ; le violet plein est réservé au CTA principal', () => {
+  test('bouton primaire générique = encre ; le CTA principal est encre aussi (18/11), accent doux gris', () => {
     expect(hex(theme['--zayrovi-button-bg'])).toBe(OFFICIAL.black);
     expect(hex(theme['--zayrovi-button-color'])).toBe(OFFICIAL.white);
-    expect(hex(theme['--zayrovi-cta'])).toBe(OFFICIAL.violet);
-    expect(hex(theme['--zayrovi-accent-soft'])).toBe('#DCE8FE');
+    expect(hex(theme['--zayrovi-cta'])).toBe(OFFICIAL.black);
+    expect(hex(theme['--zayrovi-accent-soft'])).toBe(OFFICIAL.lightGray);
     expect(hex(theme['--zayrovi-on-accent-soft'])).toBe(OFFICIAL.black);
     const runtime = withoutComments(read('client/src/styles/interface-runtime.css'));
     expect(runtime).toMatch(/\.ay-runtime-button--primary,\.ay-btn-primary\{[^}]*background:var\(--zayrovi-button-bg,var\(--zayrovi-primary\)\)/);

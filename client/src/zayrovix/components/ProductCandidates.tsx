@@ -81,6 +81,7 @@ export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates
                     primaryLabel={canQuickAdd && onQuickAdd ? tr('Ajouter au panier', 'زيد للسلة') : candidate.kind === 'external' ? tr('Vérifier le prix', 'تحقق من السعر') : tr('Voir les détails', 'عرض التفاصيل')}
                     primaryTitle={canQuickAdd && onQuickAdd ? tr('Ajouter directement au panier — le prix sera vérifié par l’équipe', 'إضافة مباشرة إلى السلة — سيتحقق الفريق من السعر') : tr('Ouvrir les détails, confirmer le prix et choisir les options', 'فتح التفاصيل وتأكيد السعر واختيار المواصفات')}
                     primaryIcon={canQuickAdd && onQuickAdd ? ShoppingBag : undefined}
+                    primaryTone={canQuickAdd && onQuickAdd ? 'buy' : 'ink'}
                     primaryBusy={quickAddBusy}
                     onPrimary={() => (canQuickAdd && onQuickAdd ? onQuickAdd(candidate) : onChoose(candidate))}
                     icons={[

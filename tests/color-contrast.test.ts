@@ -92,15 +92,13 @@ describe('contraste — les valeurs de l\'identité tiennent les seuils', () => 
     }
   });
 
-  test('le violet porte du texte dans les deux sens ; sur fond sombre, sa version éclaircie', () => {
-    // L'ancien orange (2,63:1 sur blanc) ne pouvait pas porter de texte. Le violet électrique
-    // #0A63F5 tient 7,19:1 : texte violet sur blanc ET texte blanc sur violet (boutons primaires).
+  test('l’accent (encre) porte du texte dans les deux sens ; en sombre il s’inverse en blanc', () => {
+    // 18/11 : l'accent est l'encre #0A0A0A (19,8:1 sur blanc) ; le thème sombre l'inverse en blanc.
     expect(contrast(plain(light.accent), '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
     expect(contrast(plain(light.accentText), '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
     expect(contrast(plain(light.onAccent), plain(light.accent))).toBeGreaterThanOrEqual(4.5);
     expect(contrast(plain(dark.onAction), plain(dark.action))).toBeGreaterThanOrEqual(4.5);
-    // Le violet plein sur noir (2,9:1) n'est PAS du texte : le thème sombre a son violet clair.
-    expect(contrast(plain(dark.accent), plain(dark.canvas))).toBeLessThan(4.5);
+    expect(contrast(plain(dark.accent), plain(dark.canvas))).toBeGreaterThanOrEqual(4.5);
     expect(contrast(plain(dark.accentText), plain(dark.canvas))).toBeGreaterThanOrEqual(4.5);
     expect(contrast(plain(dark.focus), plain(dark.canvas))).toBeGreaterThanOrEqual(3);
   });

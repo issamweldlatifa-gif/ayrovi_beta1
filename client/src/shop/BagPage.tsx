@@ -171,7 +171,7 @@ export const BagPage: React.FC<BagPageProps> = ({
           {stalePriceLines.length > 0 && <p className="s-bag-blocked" role="status">
             {tr('Le prix vérifié d’un article a expiré. Relancez la vérification du prix (Lens), puis validez la commande.', 'صلاحية تثبّت سعر منتج انتهت. أعد التحقّق من السعر ثم واصل الطلب.')}
           </p>}
-          <button type="button" className="s-cta s-bag-checkout" onClick={onCheckout} disabled={blocked || !onCheckout}>
+          <button type="button" className="s-cta s-cta--buy s-bag-checkout" onClick={onCheckout} disabled={blocked || !onCheckout}>
             {tr('Continuer vers le paiement', 'المواصلة إلى الدفع')}
           </button>
 

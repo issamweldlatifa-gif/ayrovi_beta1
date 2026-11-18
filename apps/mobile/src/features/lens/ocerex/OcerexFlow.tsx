@@ -14,7 +14,7 @@ import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { AppText, Button, Card, Field, Segmented } from '@/design/ui';
+import { AppText, Button, PurchaseBar, Card, Field, Segmented } from '@/design/ui';
 import { LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useT, type TranslationKey } from '@/i18n';
@@ -290,7 +290,12 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
           <KeyRow label={t('ocerex.summary.referencePrice')} value={formatReference(extraction)} />
           <KeyRow label={t('ocerex.summary.zayroviPrice')} value={formatMoney(extraction.zayroviPrice)} />
           <AppText variant="caption" color={theme.colors.muted}>{t('ocerex.summary.payNote')}</AppText>
-          <Button label={t('ocerex.summary.confirm')} tone="main" onPress={onConfirmOrder} block disabled={busy} testID="ocerex-confirm" />
+          <PurchaseBar
+            label={t('ocerex.summary.confirm')}
+            onPress={onConfirmOrder}
+            disabled={busy}
+            testID="ocerex-confirm"
+          />
         </Card>
       ) : null}
 

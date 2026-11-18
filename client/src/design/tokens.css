@@ -2,8 +2,8 @@
    CustomerIdentity (notably the admin). Customer-facing v3.1 values are authored
    in editorial/identity.json and injected by customerTheme.ts. The legacy aliases
    below must not override that customer-scoped identity.
-   Charte : palette officielle du 2026-10-15 — noir #0A0A0A, blanc #FFFFFF, violet électrique
-   #0A63F5, gris clair #F2F2F2 (« Monochrome Premium × Violet d'action »).
+   Charte v5.0.0 (« Za. », maquette v2 approuvée le 18/11/2026) — noir #0A0A0A, blanc #FFFFFF,
+   gris clair #F2F2F2, jaune #F2AE00. PLUS AUCUN BLEU (app, site, pied de page, AYWEBs).
 
    1. UNE SEULE ÉCHELLE NEUTRE (P0 de P4/T2, exécuté) :
       #FFFFFF canvas · #F8F9FA surface · #EAEAEA filet · #111111 encre ·
@@ -11,19 +11,12 @@
       élément doux sur sombre. Toute l'échelle slate héritée
       (#111318/#1d2130/#6b7280/#f8f9fe/#e2e8f0/#5b6472/#050505) est absorbée ;
       les anciens noms survivent UNIQUEMENT comme alias sans valeur propre.
-   2. Le VIOLET ÉLECTRIQUE (#0A63F5, point du logo) n'est jamais décoratif : il est
-      réservé à l'action principale (ajout au panier, caisse, paiement, connexion),
-      aux liens importants, à l'onglet / l'élément de navigation actif, au contour
-      d'une option choisie et au focus. Texte sur violet : #FFFFFF (7,19:1, AAA).
-      Le VIOLET CLAIR (#DCE8FE) est secondaire : fond d'une option choisie ou d'un
-      état actif, toujours avec un texte #0A0A0A (10,4:1) et jamais seul pour
-      signaler l'état. Jamais de grande surface violette.
-      Repère global (v4.2.0) : ≈ 3 % de l'application (2 % violet + 1 % violet
-      clair) — un repère d'ensemble, pas un quota par écran (identity.json →
-      accentShare). Plafond de sécurité par écran : identity.json → accentAreaLimit.
-      L'orange des chartes précédentes (#FF6900, #FF7900) est retiré partout ;
-      les réglages CMS qui le portent encore sont relus en violet
-      (shared/identityPolicy.ts).
+   2. L'ACTION est ENCRE : boutons, liens (soulignés), onglet actif, contour d'une
+      option choisie, focus, interrupteurs et cases. Fond d'une option choisie :
+      gris clair #F2F2F2. Le JAUNE (--zayrovi-buy) est réservé aux boutons d'ACHAT
+      (ajouter au panier, Commander, payer), libellé NOIR, et reste ≤ 4 % d'un écran
+      (identity.json → accentShare). Les anciens violet, bleu et orange relus dans
+      les réglages CMS deviennent l'encre (shared/identityPolicy.ts).
    3. Le NOIR (#0A0A0A) est l'encre premium des SURFACES : hero, announcement
       bar, coquille Lens, rails. Jamais une dixième nuance de noir.
    4. États : vert (#15803D) succès, rouge (#DC2626) erreur, neutre sinon.
@@ -146,8 +139,13 @@ html[data-theme='dark'] {
     --zayrovi-border-soft: #e5e5e5;          /* Filets 1px, séparateurs fins */
     --zayrovi-text-primary: #0a0a0a;         /* Noir officiel : titres, marques, prix, texte */
     --zayrovi-text-secondary: #666666;       /* Encre secondaire : légendes, méta */
-    --zayrovi-color-brand-accent: #0a63f5;   /* Violet électrique officiel (point du logo) — déclencheur d'action UNIQUE */
-    --zayrovi-color-brand-accent-soft: #dce8fe; /* Violet clair (secondaire) : fond d'une option choisie, jamais une grande surface */
+    --zayrovi-color-brand-accent: #0a0a0a;   /* v5.0.0 (18/11) : l'action est ENCRE — plus aucun bleu */
+    --zayrovi-color-brand-accent-soft: #f2f2f2; /* Gris clair : fond d'une option choisie, jamais une grande surface */
+    /* — ACHAT : le jaune « Za. », réservé aux boutons d'achat (panier, Commander, payer), ≤ 4 % d'un écran — */
+    --zayrovi-buy: #f2ae00;
+    --zayrovi-buy-hover: #d99a00;
+    --zayrovi-cart-badge: #d92d20;           /* 18/11 : pastille du panier ROUGE, chiffres blancs (4,9:1) */
+    --zayrovi-on-buy: #0a0a0a;               /* texte NOIR sur jaune (le blanc n'y fait que ≈ 2:1) */
 
     /* — surfaces sombres premium : la SEULE famille de noir — */
     --zayrovi-ink-deep: #0a0a0a;             /* Hero, announcement, coquille Lens, rails */
@@ -157,12 +155,12 @@ html[data-theme='dark'] {
     --zayrovi-cta: var(--zayrovi-color-brand-accent);
     --zayrovi-accent: var(--zayrovi-color-brand-accent);
     --zayrovi-accent-soft: var(--zayrovi-color-brand-accent-soft);
-    --zayrovi-on-accent-soft: #0a0a0a;                  /* texte SUR violet clair : 10,4:1 ; le blanc y est interdit (1,9:1) */
-    --zayrovi-on-accent: #ffffff;                       /* texte SUR violet : 7,19:1, AAA */
-    --zayrovi-accent-on-dark: #78a9fa;                  /* violet SUR noir (panneaux sombres) : 5,45:1 */
+    --zayrovi-on-accent-soft: #0a0a0a;                  /* texte SUR gris clair */
+    --zayrovi-on-accent: #ffffff;                       /* texte SUR encre : 19,8:1, AAA */
+    --zayrovi-accent-on-dark: #ffffff;                  /* accent SUR noir (panneaux sombres) : blanc */
     --zayrovi-cta-ink: var(--zayrovi-on-accent);
-    --zayrovi-cta-hover: color-mix(in srgb, var(--zayrovi-color-brand-accent) 87%, var(--zayrovi-text-primary));
-    --zayrovi-cta-active: color-mix(in srgb, var(--zayrovi-color-brand-accent) 72%, var(--zayrovi-text-primary));
+    --zayrovi-cta-hover: #333333;                        /* survol de l'encre (actionHover) */
+    --zayrovi-cta-active: #000000;
     --zayrovi-cta-dark: var(--zayrovi-cta-hover);        /* alias compat (hover) */
     --zayrovi-accent-dark: var(--zayrovi-cta-hover);     /* alias compat */
     --zayrovi-accent-deep: var(--zayrovi-cta-active);    /* alias compat (pressé) */
@@ -330,7 +328,7 @@ html[data-theme='dark'] {
      ───────────────────────────────────────────────────────────────────────── */
   --admin-ink-strong:var(--admin-ink); /* c'est un noir, pas un violet */
   --admin-ink-black:var(--admin-ink); /* noir profond du rail et des dégradés */
-  --admin-warm-accent:var(--zayrovi-accent-on-dark); /* violet clair (accent officiel éclairci, 5,45:1 sur le noir) : marqueurs actifs du rail sombre et des cartes ; remplace la pêche orangée */
+  --admin-warm-accent:var(--zayrovi-accent-on-dark); /* 18/11 : blanc (accent inversé sur le noir) : marqueurs actifs du rail sombre et des cartes */
   --admin-ink-muted:#595959; /* encre atténuée, pas une couleur « muette » */
   --admin-surface-page:var(--admin-surface-card); /* surface de page */
   --admin-surface-card:var(--zayrovi-white); /* surface de carte */

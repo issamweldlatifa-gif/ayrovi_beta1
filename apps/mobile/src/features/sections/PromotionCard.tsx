@@ -18,8 +18,8 @@ import type { Promotion } from '@/api/sections';
 import { formatAmount } from '@/format/money';
 
 /**
- * النصّ فوق البنفسجي ZAYROVI (نفس قرار `StoryCard`): أبيض (`onAccent`) — تباين
- * 7.19:1 على `#0A63F5`.
+ * النصّ فوق لون الـ accent متاع ZAYROVI (نفس قرار `StoryCard`): أبيض (`onAccent`) — تباين
+ * 19.8:1 على `#0A0A0A` (18/11: ما عادش فمّا أزرق).
  */
 
 

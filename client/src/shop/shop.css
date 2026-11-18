@@ -29,8 +29,12 @@
   --s-control-radius: var(--ay-e-control-radius, 12px);
   --s-card-radius: var(--ay-e-card-radius, 16px);
   --s-sheet-radius: var(--ay-e-sheet-radius, 32px);
-  --s-action: var(--ay-e-action, #0a63f5);
+  --s-action: var(--ay-e-action, #0a0a0a);
   --s-on-action: var(--ay-e-on-action, #fff);
+  /* ACHAT (18/11, maquette v2) : jaune « Za. », libellé noir — seuls les boutons d'achat. */
+  --s-buy: var(--ay-e-buy, #f2ae00);
+  --s-buy-pressed: var(--ay-e-buy-pressed, #d99a00);
+  --s-on-buy: var(--ay-e-on-buy, #0a0a0a);
   --s-danger: var(--ay-e-danger, #d92d20);
   --s-success: var(--ay-e-success, #236044);
   --s-target: 44px;
@@ -85,6 +89,16 @@
 }
 
 .s-card__media img { display: block; width: 100%; height: 100%; object-fit: contain; }
+/* 18/11 (maquette v2) : « + » d'achat — jaune « Za. », signe noir, 30 px (zone tactile 44 px). */
+.s-card__add {
+  position: absolute; inset-inline-end: 8px; bottom: 8px; z-index: 2;
+  display: grid; place-items: center; width: 30px; height: 30px; border-radius: 999px;
+  background: var(--zayrovi-buy, #f2ae00); color: var(--zayrovi-on-buy, #0a0a0a);
+  box-shadow: 0 1px 4px rgba(10, 10, 10, 0.18);
+}
+.s-card__add::before { content: ''; position: absolute; inset: -7px; }
+.s-card__add:hover { background: var(--zayrovi-buy-hover, #d99a00); }
+.s-card__add:focus-visible { outline: 2px solid var(--s-ink); outline-offset: 2px; }
 
 .s-card__flags {
   position: absolute;
@@ -342,6 +356,10 @@
    contenu (`minmax(0, 1fr) auto`) — sans elle, le libellé toucherait les bords de
    la capsule. Le bouton fantôme (`.s-cta--ghost`) n'est pas concerné. */
 .s-root button.s-cta:not(.s-cta--ghost) { padding-inline: 16px; background: var(--s-action); color: var(--s-on-action); }
+/* Bouton d'ACHAT (ajouter au panier, Commander, confirmer le paiement) : le seul jaune de la boutique. */
+.s-root button.s-cta.s-cta--buy:not(.s-cta--ghost) { background: var(--s-buy); color: var(--s-on-buy); }
+.s-root button.s-cta.s-cta--buy:not(.s-cta--ghost):hover:not(:disabled),
+.s-root button.s-cta.s-cta--buy:not(.s-cta--ghost):active:not(:disabled) { background: var(--s-buy-pressed); }
 .s-cta:active { transform: scale(0.99); }
 .s-cta:disabled { opacity: 0.35; cursor: not-allowed; }
 .s-cta[data-done="true"],

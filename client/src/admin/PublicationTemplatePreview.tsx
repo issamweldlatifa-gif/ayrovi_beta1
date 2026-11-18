@@ -5,7 +5,7 @@ import {
   mediaRatio,
   tileRatio,
   showsPublicationTitle,
-  PUBLICATION_DISCOVERY_BLUE,
+  PUBLICATION_DISCOVERY_INK,
 } from '../../../shared/publicationPresentation';
 import {
   resolvePublicationTemplate,
@@ -213,7 +213,7 @@ export function PublicationTemplatePreview({ form }: { form: any }) {
       {form.action_label ? (
         <div
           style={{
-            color: PUBLICATION_DISCOVERY_BLUE,
+            color: PUBLICATION_DISCOVERY_INK,
             minHeight: 44,
             display: 'flex',
             alignItems: 'center',

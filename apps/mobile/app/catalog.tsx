@@ -84,6 +84,10 @@ export default function CatalogScreen() {
       params: photo > 0 ? { id: product.id, photo: String(photo) } : { id: product.id },
     });
   }, []);
+  /** « + » jaune de la carte : la fiche s'ouvre et lance l'ajout (taille demandée d'abord si besoin). */
+  const add = useCallback((product: CatalogProduct) => {
+    router.push({ pathname: '/product/[id]', params: { id: product.id, add: '1' } });
+  }, []);
 
   // «الكل» + وصولة واحدة لكل وصولة معلنة في الخادم — ما نخترعش تبويبات.
   const tabs = useMemo(() => {
@@ -134,7 +138,7 @@ export default function CatalogScreen() {
         columnWrapperStyle={metrics.columns > 1
           ? [styles.grid, { flexDirection: rowDirectionFor(theme.isRTL) }]
           : undefined}
-        renderItem={({ item }) => <ProductCard product={item} onOpen={open} metrics={metrics} />}
+        renderItem={({ item }) => <ProductCard product={item} onOpen={open} onAdd={add} metrics={metrics} />}
       />
     </SubScreen>
   );

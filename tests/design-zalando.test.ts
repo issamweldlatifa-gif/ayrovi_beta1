@@ -69,44 +69,45 @@ describe('jetons canoniques — la charte tient en six variables', () => {
       '--zayrovi-border-soft': '#e5e5e5',
       '--zayrovi-text-primary': '#0a0a0a',
       '--zayrovi-text-secondary': '#666666',
-      '--zayrovi-color-brand-accent': '#0a63f5',
+      '--zayrovi-color-brand-accent': '#0a0a0a', // 18/11 : encre — plus de bleu
     };
     for (const [name, value] of Object.entries(canonical)) {
       expect(declared.get(name), `${name} doit être déclaré dans tokens.css`).toBe(value);
     }
   });
 
-  test('le violet n’a qu’un seul porteur : les autres noms ne sont que des alias', () => {
+  test('l’accent n’a qu’un seul porteur : les autres noms ne sont que des alias', () => {
     const declared = new Map(declarations(read(TOKENS)).map(([, n, v]) => [n, v.trim().toLowerCase()]));
     const resolve = (name: string, depth = 0): string => {
       const raw = declared.get(name) ?? '';
       const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
       return alias && depth < 6 ? resolve(alias[1], depth + 1) : raw;
     };
-    expect(resolve('--zayrovi-color-brand-accent')).toBe('#0a63f5');
+    expect(resolve('--zayrovi-color-brand-accent')).toBe('#0a0a0a');
     for (const alias of ['--zayrovi-cta', '--zayrovi-accent']) {
-      expect(resolve(alias), `${alias} doit résoudre le violet canonique`).toBe('#0a63f5');
+      expect(declared.get(alias), `${alias} est un alias`).toBe('var(--zayrovi-color-brand-accent)');
+      expect(resolve(alias), `${alias} doit résoudre l'accent canonique`).toBe('#0a0a0a');
     }
     // l'ancien nom « orange » ne survit pas, même comme alias : il mentirait sur la couleur
     expect(declared.has('--zayrovi-color-brand-orange')).toBe(false);
     expect(declared.has('--zayrovi-orange')).toBe(false);
-    // et un seul jeton porte réellement la valeur : deux porteurs = deux vérités
-    const bearers = [...declared.entries()].filter(([, v]) => v === '#0a63f5').map(([n]) => n);
-    expect(bearers).toEqual(['--zayrovi-color-brand-accent']);
-    // texte sur violet : blanc (l'ancien orange portait du noir)
+    // plus aucun jeton ne porte le bleu retiré ; le jaune d'achat a un seul porteur
+    expect([...declared.values()].filter((v) => v === '#0a63f5')).toEqual([]);
+    expect([...declared.entries()].filter(([, v]) => v === '#f2ae00').map(([n]) => n)).toEqual(['--zayrovi-buy']);
+    // texte sur l'action : blanc
     expect(resolve('--zayrovi-cta-ink')).toBe('#ffffff');
   });
 
-  test('l’accent « soft » est le violet clair officiel (#DCE8FE), porté par un seul jeton, texte noir dessus', () => {
+  test('l’accent « soft » est le gris clair officiel (#F2F2F2, 18/11), porté par un seul jeton d’accent, texte noir dessus', () => {
     const declared = new Map(declarations(read(TOKENS)).map(([, n, v]) => [n, v.trim().toLowerCase()]));
     const resolve = (name: string, depth = 0): string => {
       const raw = declared.get(name) ?? '';
       const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
       return alias && depth < 6 ? resolve(alias[1], depth + 1) : raw;
     };
-    expect(resolve('--zayrovi-accent-soft')).toBe('#dce8fe');
-    const bearers = [...declared.entries()].filter(([, v]) => v === '#dce8fe').map(([n]) => n);
-    expect(bearers).toEqual(['--zayrovi-color-brand-accent-soft']);
+    expect(resolve('--zayrovi-accent-soft')).toBe('#f2f2f2');
+    expect(declared.get('--zayrovi-accent-soft')).toBe('var(--zayrovi-color-brand-accent-soft)');
+    expect([...declared.values()].filter((v) => v === '#dce8fe')).toEqual([]);
     expect(resolve('--zayrovi-on-accent-soft')).toBe('#0a0a0a');
   });
 });
@@ -172,7 +173,7 @@ describe('purge — plus aucun littéral orange hérité', () => {
     expect(read('src/db/database.ts')).toMatch(/rebrand_zalando_orange_v1/);
   });
 
-  test('les graines persistées (encore orange) sont relues en violet, sans réécrire la base', () => {
+  test('les graines persistées (encore orange) sont relues à l’encre, sans réécrire la base', () => {
     // La base n'est pas migrée (aucune écriture en production) : chaque lecture passe par
     // l'adaptateur d'identité partagé par le serveur ET le client. On rejoue donc les graines.
     const database = read('src/db/database.ts');
@@ -181,8 +182,8 @@ describe('purge — plus aucun littéral orange hérité', () => {
     expect(seededAccent).toBeTruthy();
     expect(seededActive).toBeTruthy();
     const read1 = enforceBrandIdentity({ colors: { accent: seededAccent }, icons: { activeColor: seededActive } }) as { colors: { accent: string }; icons: { activeColor: string } };
-    expect(read1.colors.accent).toBe('#0a63f5');
-    expect(read1.icons.activeColor).toBe('#0a63f5');
+    expect(read1.colors.accent).toBe('#0a0a0a');
+    expect(read1.icons.activeColor).toBe('#0a0a0a');
     // Le défaut `accent_color` du contenu Hero (table hero_content_settings) a été supprimé avec l’ancien Hero (2026-10-10).
   });
 });

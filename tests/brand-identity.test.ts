@@ -17,7 +17,7 @@ import { authMailTemplate } from '../src/customer/accountMail';
 describe('ZAYROVI A — enforceable identity', () => {
   test('has only the two approved local families and the official palette', () => {
     expect(BRAND.fonts.map(f => f.family)).toEqual(['Zayrovi Extracted Sans', 'Noto Sans Arabic']);
-    // Palette officielle du 2026-10-15 : noir #0A0A0A · blanc · violet électrique #0A63F5 · gris clair #F2F2F2.
+    // Palette officielle (18/11) : noir #0A0A0A · blanc · gris clair #F2F2F2 · jaune « Za. » #F2AE00 (achat seulement).
     // Décision client n° 1 du 17/10/2026 : la SURFACE passe au blanc — plus aucun
     // fond gris, les sections se séparent par un filet (`line`). Le gris clair
     // ne subsiste que dans le rôle `shimmer` (squelette de chargement).
@@ -25,8 +25,9 @@ describe('ZAYROVI A — enforceable identity', () => {
     expect(BRAND.colors.ink).toBe('#0A0A0A');
     expect(BRAND.colors.surface).toBe('#FFFFFF');
     expect(BRAND.colors.shimmer).toBe('#F2F2F2');
-    expect(BRAND.colors.accent).toBe('#0A63F5'); // L'orange #FF7900 est retiré.
-    expect(BRAND.colors.action).toBe('#0A63F5');
+    expect(BRAND.colors.accent).toBe('#0A0A0A'); // 18/11 : orange puis bleu retirés — action à l'encre.
+    expect(BRAND.colors.action).toBe('#0A0A0A');
+    expect(BRAND.colors.buy).toBe('#F2AE00'); // le jaune « Za. » est réservé à l'achat
     expect(BRAND.colors.onAction).toBe('#FFFFFF');
     expect(auditBrand()).toEqual([]);
   });

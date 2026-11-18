@@ -83,19 +83,19 @@ export function auditBrand(root=process.cwd()) {
   const identity=JSON.parse(fs.readFileSync(path.join(root,'client/src/design/editorial/identity.json'),'utf8'));
   if (identity.typography.stack !== "'Zayrovi Extracted Sans', 'Noto Sans Arabic', sans-serif") errors.push('official stack changed');
   if (identity.fonts.length!==2 || identity.fonts.map(f=>f.family).join('|')!=='Zayrovi Extracted Sans|Noto Sans Arabic') errors.push('official family allowlist changed');
-  // Palette officielle (2026-10-15) : noir #0A0A0A · blanc #FFFFFF · gris clair #F2F2F2 + couleur d'action.
-  // v4.4.0 (décision du propriétaire, 14/11/2026) : la couleur d'action devient le « Bleu Z » électrique #0A63F5
-  // (ex-#0113B5) — boutons d'achat, liens, focus, badge vérifié, pouce posé — sur l'app, le CRM ET le site.
-  // v4.2.0 : violet clair #DCE8FE (secondaire, texte #0A0A0A) ; repère global ≈ 3 % (2 % + 1 %), pas un quota par écran.
-  // Décision client n° 1 (17/10/2026) : la SURFACE devient BLANCHE — plus aucun
-  // fond gris, les sections se séparent par un filet (`line`). Le gris clair
-  // garde un seul rôle, `shimmer` : le squelette de chargement, qui n'existerait
-  // pas sur fond blanc.
-  const official={canvas:'#FFFFFF',ink:'#0A0A0A',surface:'#FFFFFF',shimmer:'#F2F2F2',action:'#0A63F5',accent:'#0A63F5',onAction:'#FFFFFF',accentSoft:'#DCE8FE',onAccentSoft:'#0A0A0A',secondaryAction:'#0B57CF',onSecondaryAction:'#FFFFFF'};
+  // Palette officielle v5.0.0 (« Za. », décision du propriétaire 18/11/2026, maquette v2 approuvée) :
+  // noir #0A0A0A · blanc #FFFFFF · gris clair #F2F2F2 · jaune #F2AE00.
+  // Plus AUCUN bleu : toute action, lien, focus, interrupteur ou case est ENCRE (blanc en mode sombre).
+  // Le jaune est réservé au logo et aux actions d'ACHAT (barre d'achat, « + » produit, Commander),
+  // libellé noir (blanc sur jaune ≈ 2:1), et reste ≤ 4 % d'un écran.
+  const official={canvas:'#FFFFFF',ink:'#0A0A0A',surface:'#FFFFFF',shimmer:'#F2F2F2',action:'#0A0A0A',accent:'#0A0A0A',onAction:'#FFFFFF',accentSoft:'#F2F2F2',onAccentSoft:'#0A0A0A',secondaryAction:'#0A0A0A',onSecondaryAction:'#FFFFFF',focus:'#0A0A0A',brandYellow:'#F2AE00',buy:'#F2AE00',onBuy:'#0A0A0A'};
   for(const [role,value] of Object.entries(official)) if(identity.colors[role]!==value) errors.push(`official palette changed: ${role}`);
-  for(const role of ['accentSoft','onAccentSoft','secondaryAction','onSecondaryAction']) if(identity.darkColors[role]!==official[role]) errors.push(`official palette changed: dark ${role}`);
+  const officialDark={canvas:'#0A0A0A',ink:'#FFFFFF',action:'#FFFFFF',accent:'#FFFFFF',onAction:'#0A0A0A',focus:'#FFFFFF',brandYellow:'#F2AE00',buy:'#F2AE00',onBuy:'#0A0A0A'};
+  for(const [role,value] of Object.entries(officialDark)) if(identity.darkColors[role]!==value) errors.push(`official palette changed: dark ${role}`);
+  const BLUE=/^#(?:0A63F5|0A53CB|0B57CF|DCE8FE|78A9FA)$/i;
+  for(const mode of ['colors','darkColors']) for(const [role,value] of Object.entries(identity[mode])) if(BLUE.test(String(value))) errors.push(`blue is retired: ${mode}.${role}`);
   const share=identity.accentShare||{};
-  if(share.scope!=='app'||share.violet!==0.02||share.violetLight!==0.01||Math.abs(share.total-(share.violet+share.violetLight))>1e-9) errors.push('violet share changed (app-level guide: 2 % + 1 % = 3 %)');
+  if(share.scope!=='screen'||share.yellow!==0.04||share.total!==0.04) errors.push('yellow share changed (≤ 4 % of a screen, buy actions only)');
   const walk=relative=>{
     for (const entry of fs.readdirSync(path.join(root,relative),{withFileTypes:true})) {
       const file=path.posix.join(relative,entry.name);

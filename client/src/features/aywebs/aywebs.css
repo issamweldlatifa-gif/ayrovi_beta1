@@ -130,7 +130,7 @@
   cursor: pointer;
 }
 
-.ayw-fav.is-on { color: var(--zayrovi-cta, #0a63f5); background: var(--zayrovi-bg-surface, #f2f2f2); }
+.ayw-fav.is-on { color: var(--zayrovi-cta, #0a0a0a); background: var(--zayrovi-bg-surface, #f2f2f2); }
 
 .ayw-storedesc {
   margin-top: .5rem;
@@ -170,7 +170,7 @@
   cursor: pointer;
 }
 
-.ayw-tab.is-active { color: var(--zayrovi-cta, #0a63f5); }
+.ayw-tab.is-active { color: var(--zayrovi-cta, #0a0a0a); }
 
 .ayw-tab-icon { position: relative; }
 
@@ -181,7 +181,7 @@
   min-width: 1rem;
   height: 1rem;
   border-radius: 999px;
-  background: var(--zayrovi-text-primary, #0a0a0a);
+  background: var(--zayrovi-cart-badge, #d92d20); /* 18/11 : pastille panier rouge, chiffres blancs */
   color: #fff;
   font-size: .68rem;
   line-height: 1rem;
@@ -238,7 +238,7 @@
 
 .ayw-cond { border: 0; padding: 0; margin: 0; }
 .ayw-radio { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; color: var(--zayrovi-ink, #101828); }
-.ayw-radio input { accent-color: var(--zayrovi-cta, #0a63f5); width: 1.15rem; height: 1.15rem; }
+.ayw-radio input { accent-color: var(--zayrovi-cta, #0a0a0a); width: 1.15rem; height: 1.15rem; }
 
 .ayw-selectwrap { display: block; }
 
@@ -262,7 +262,7 @@
   min-height: 3.1rem;
   border: 0;
   border-radius: .4rem;
-  background: var(--zayrovi-cta, #0a63f5);
+  background: var(--zayrovi-cta, #0a0a0a);
   color: #fff;
   font: inherit;
   font-size: 1.02rem;
@@ -275,6 +275,9 @@
 }
 
 .ayw-cta:disabled { opacity: .55; cursor: not-allowed; }
+/* ACHAT (18/11, maquette v2) : jaune « Za. », libellé noir — ajouter au panier et passer commande uniquement. */
+.ayw-cta.ayw-cta--buy { background: var(--zayrovi-buy, #f2ae00); color: var(--zayrovi-on-buy, #0a0a0a); }
+.ayw-cta.ayw-cta--buy:hover:not(:disabled), .ayw-cta.ayw-cta--buy:active:not(:disabled) { background: var(--zayrovi-buy-hover, #d99a00); }
 
 .ayw-cta-outline {
   width: 100%;
@@ -493,7 +496,7 @@
   box-shadow: 0 1px 3px rgb(16 24 40 / .18);
   cursor: pointer;
 }
-.ayw-prodfav.is-on { color: var(--zayrovi-cta, #0a63f5); }
+.ayw-prodfav.is-on { color: var(--zayrovi-cta, #0a0a0a); }
 
 /* Écran « Wish List » interne — même liste que « Mon compte ». */
 .ayw-wishlist { display: flex; flex-direction: column; gap: .8rem; padding: 0 1rem; }

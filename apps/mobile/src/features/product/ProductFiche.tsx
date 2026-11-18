@@ -874,13 +874,13 @@ export function BuyBar({
           </AppText>
         </View>
         {/*
-          14/11 — « Ajouter au panier » est le CTA principal BLEU de la famille de
-          l'app (`Button` ton principal, taille lg : Bleu Z #0A63F5, 48 dp, rayon
-          plein, libellé blanc). Seule la largeur vient de `FICHE`.
+          18/11 (maquette v2) — « Ajouter au panier » est le bouton d'ACHAT jaune « Za. »
+          (`Button` ton commerce, taille lg : #F2AE00, 48 dp, rayon plein, libellé noir),
+          COURT et posé à côté du prix : le jaune reste sous 4 % de l'écran.
         */}
         <Button
           label={label}
-          tone="main"
+          tone="commerce"
           size="lg"
           busy={busy}
           disabled={disabled}

@@ -36,7 +36,7 @@ describe('jetons générés', () => {
     expect(NEUTRALS).toEqual(brand.neutrals);
   });
 
-  it('partagent la palette officielle du site (même violet, même violet clair)', () => {
+  it('partagent la palette officielle du site (même encre, même jaune d’achat)', () => {
     // Depuis le 15/10/2026 le site applique la même palette officielle que l'application ;
     // les deux sources restent distinctes (brand.json / identity.json) mais doivent concorder.
     for (const role of ['accent', 'action', 'onAction', 'accentSoft', 'onAccentSoft', 'canvas', 'ink', 'surface'] as const) {

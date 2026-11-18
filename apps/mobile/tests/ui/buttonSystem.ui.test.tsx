@@ -59,11 +59,11 @@ describe('système de boutons', () => {
     expect(label.fontWeight).toBe('normal');
   });
 
-  it('le CTA commerce est jaune, avec un libellé encre lisible', () => {
+  it('le CTA d’achat (commerce) est le jaune « Za. », avec un libellé encre lisible', () => {
     render(wrap(<Button label="Ajouter au panier" onPress={() => {}} tone="commerce" />));
     const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Ajouter au panier' }).props.style);
-    expect(btn.backgroundColor).toBe('#FFD60A');
-    expect(btn.borderColor).toBe('#FFD60A');
+    expect(btn.backgroundColor).toBe('#F2AE00');
+    expect(btn.borderColor).toBe('#F2AE00');
     expect(StyleSheet.flatten(screen.getByText('Ajouter au panier').props.style).color).toBe('#0A0A0A');
   });
 
@@ -75,12 +75,12 @@ describe('système de boutons', () => {
   });
 });
 
-describe('couleurs de l’identité (violet · blanc · noir)', () => {
-  it('l’action principale (tone="main") est violet plein, libellé blanc', () => {
+describe('couleurs de l’identité (encre · blanc · jaune d’achat)', () => {
+  it('l’action principale (tone="main") est ENCRE pleine, libellé blanc (18/11 : plus de bleu)', () => {
     let theme: ReturnType<typeof useTheme> | null = null;
     render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Button label="Commander" tone="main" onPress={() => {}} /></>));
     const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Commander' }).props.style);
-    expect(theme!.colors.action).toBe('#0A63F5');
+    expect(theme!.colors.action).toBe('#0A0A0A');
     expect(btn.backgroundColor).toBe(theme!.colors.action);
     expect(btn.borderColor).toBe(theme!.colors.action);
     expect(StyleSheet.flatten(screen.getByText('Commander').props.style).color).toBe('#FFFFFF');
@@ -108,14 +108,14 @@ describe('couleurs de l’identité (violet · blanc · noir)', () => {
   it('le bouton désactivé garde sa couleur et baisse son opacité', () => {
     render(wrap(<Button label="Payer" tone="main" onPress={() => {}} disabled />));
     const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Payer' }).props.style);
-    expect(btn.backgroundColor).toBe('#0A63F5');
+    expect(btn.backgroundColor).toBe('#0A0A0A');
     // 27/10/2026 : l'opacité d'un élément désactivé vient de `OPACITY.disabled`
     // (0.4) et non plus d'un 0.5 posé dans le bouton — le stepper du panier,
     // l'option de variante et le bouton disaient trois choses différentes.
     expect(btn.opacity).toBe(OPACITY.disabled);
   });
 
-  it('le champ est blanc, contour gris au repos, contour violet épaissi au focus', () => {
+  it('le champ est blanc, contour gris au repos, contour ENCRE épaissi au focus', () => {
     let theme: ReturnType<typeof useTheme> | null = null;
     render(wrap(<><ThemeProbe onTheme={(t) => { theme = t; }} /><Field accessibilityLabel="Nom" value="" onChangeText={() => {}} /></>));
     const idle = StyleSheet.flatten(screen.getByLabelText('Nom').props.style);
@@ -123,7 +123,7 @@ describe('couleurs de l’identité (violet · blanc · noir)', () => {
     expect(idle.borderColor).toBe(theme!.colors.lineControl);
     fireEvent(screen.getByLabelText('Nom'), 'focus');
     const focused = StyleSheet.flatten(screen.getByLabelText('Nom').props.style);
-    expect(focused.borderColor).toBe('#0A63F5');
+    expect(focused.borderColor).toBe('#0A0A0A');
     expect(focused.borderWidth).toBe(FIELD_FOCUS_WIDTH);
     // La taille extérieure ne bouge pas : le contour épaissi est pris sur le padding.
     expect(focused.paddingHorizontal + focused.borderWidth).toBeCloseTo(idle.paddingHorizontal + idle.borderWidth, 5);
@@ -141,7 +141,7 @@ describe('couleurs de l’identité (violet · blanc · noir)', () => {
 });
 
 describe('sélecteur segmenté (v4.2.0)', () => {
-  it('le segment choisi : fond violet clair, libellé noir en gras, filet violet ; les autres restent neutres', () => {
+  it('le segment choisi : fond gris clair, libellé noir en gras, filet encre ; les autres restent neutres', () => {
     render(wrap(
       <Segmented
         options={[{ value: 'shop', label: 'Boutique' }, { value: 'arrival', label: 'Arrivage' }]}
@@ -152,14 +152,14 @@ describe('sélecteur segmenté (v4.2.0)', () => {
     const [chosen, other] = screen.getAllByRole('button');
     const chosenStyle = StyleSheet.flatten(chosen.props.style);
     const otherStyle = StyleSheet.flatten(other.props.style);
-    expect(chosenStyle.backgroundColor).toBe('#DCE8FE');
+    expect(chosenStyle.backgroundColor).toBe('#F2F2F2');
     expect(otherStyle.backgroundColor).toBe('transparent');
     expect(chosen.props.accessibilityState).toMatchObject({ selected: true });
     const label = StyleSheet.flatten(screen.getByText('Boutique').props.style);
     expect(label.color).toBe('#0A0A0A');
     expect(String(label.fontFamily)).toMatch(/Bold/);
     const indicator = StyleSheet.flatten(screen.getByTestId('segment-indicator-shop').props.style);
-    expect(indicator.backgroundColor).toBe('#0A63F5');
+    expect(indicator.backgroundColor).toBe('#0A0A0A');
     expect(indicator.position).toBe('absolute');
     expect(screen.queryByTestId('segment-indicator-arrival')).toBeNull();
   });

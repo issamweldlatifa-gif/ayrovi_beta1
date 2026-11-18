@@ -17,7 +17,7 @@ export const PUBLICATION_PALETTE = {
   campaignPaper: '#FFFFFF',
   socialSurface: '#F3F3F3',
   verified: BRAND_ACCENT,
-  discovery: '#0A63F5',
+  discovery: '#0A0A0A',
   like: '#F02849',
   accent: '#101010',
   backdrop: '#000000',

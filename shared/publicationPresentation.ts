@@ -39,9 +39,9 @@ export function showsPublicationTitle(template: string) {
     'shoppable',
   ].includes(template);
 }
-/** 14/11: links, verified badge and active like share ONE action blue (Bleu Z, 5.1:1 under white text). */
-export const PUBLICATION_DISCOVERY_BLUE = '#0A63F5';
-export const PUBLICATION_SOCIAL_SURFACE = '#F0F1FC';
+/** 18/11 (v5.0.0): links and verified badge are INK — no blue anywhere (white text on it: 19.8:1). */
+export const PUBLICATION_DISCOVERY_INK = '#0A0A0A';
+export const PUBLICATION_SOCIAL_SURFACE = '#F2F2F2'; // 18/11 : gris clair officiel (plus de lavande bleutée)
 /** "J'adore" red, legible on white (4.1:1) and on black (4.8:1). */
 export const PUBLICATION_LIKE = '#F02849';
 export const PUBLICATION_DISLIKE = '#E8B323';

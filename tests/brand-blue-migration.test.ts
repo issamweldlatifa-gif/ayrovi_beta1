@@ -7,12 +7,15 @@ import { brandAccentColor, enforceBrandIdentity, enforceLegacyTheme } from '../s
 
 describe('blue brand 4.3 — existing installations', () => {
   test('read adapters migrate the retired purple family while preserving business content and custom colours', () => {
-    expect(brandAccentColor('#571EF6')).toBe('#0A63F5');
-    expect(brandAccentColor('#C5B2F4')).toBe('#DCE8FE');
+    // 18/11 (maquette v2) : le bleu Z est retiré à son tour — violet ET bleu sont relus à l'encre.
+    expect(brandAccentColor('#571EF6')).toBe('#0A0A0A');
+    expect(brandAccentColor('#C5B2F4')).toBe('#F2F2F2');
+    expect(brandAccentColor('#0A63F5')).toBe('#0A0A0A');
+    expect(brandAccentColor('#DCE8FE')).toBe('#F2F2F2');
     expect(brandAccentColor('#123456')).toBe('#123456');
-    expect(enforceLegacyTheme({ accent: '#571EF6' })).toMatchObject({ accent: '#0A63F5' });
+    expect(enforceLegacyTheme({ accent: '#571EF6' })).toMatchObject({ accent: '#0A0A0A' });
     const input = { sections: [{ backgroundColor: '#C5B2F4', title: 'Produit violet #571EF6', enabled: false }] };
-    expect(enforceBrandIdentity(input).sections).toEqual([{ backgroundColor: '#DCE8FE', title: 'Produit violet #571EF6', enabled: false }]);
+    expect(enforceBrandIdentity(input).sections).toEqual([{ backgroundColor: '#F2F2F2', title: 'Produit violet #571EF6', enabled: false }]);
     expect(input.sections[0].backgroundColor).toBe('#C5B2F4');
   });
 
@@ -33,6 +36,26 @@ describe('blue brand 4.3 — existing installations', () => {
       db.run("UPDATE settings SET setting_value='admin-edited' WHERE id='blue-probe'");
       db.close(); db = new QatafoDatabase(file);
       expect(db.get<any>("SELECT setting_value FROM settings WHERE id='blue-probe'").setting_value).toBe('admin-edited');
+    } finally { db?.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+
+  test('18/11 — rebrand_ink_v1 relit une seule fois la palette bleue persistée à l’encre, sans toucher au texte ni aux retouches admin', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'zayrovi-ink-'));
+    const file = path.join(dir, 'brand.sqlite');
+    let db: QatafoDatabase | undefined;
+    try {
+      db = new QatafoDatabase(file);
+      const old = JSON.stringify({ accent: '#0A63F5', nested: [{ focus: '#78A9FA', soft: '#DCE8FE', hover: '#0A53CB' }], title: 'Bleu #0A63F5', custom: '#123456', enabled: false });
+      db.run("INSERT INTO settings (id,category,setting_key,setting_value,value_type,label,updated_at) VALUES ('ink-probe','DESIGN','ink_probe',?,'JSON','Palette probe','old')", old);
+      db.run("UPDATE lens_hero_settings SET accent_color='#0A63F5',bg_color='#DCE8FE' WHERE id='global'");
+      db.run("DELETE FROM applied_data_migrations WHERE key='rebrand_ink_v1'");
+      db.close(); db = new QatafoDatabase(file);
+      expect(JSON.parse(db.get<any>("SELECT setting_value FROM settings WHERE id='ink-probe'").setting_value)).toEqual({ accent: '#0A0A0A', nested: [{ focus: '#FFFFFF', soft: '#F2F2F2', hover: '#333333' }], title: 'Bleu #0A63F5', custom: '#123456', enabled: false });
+      expect(db.get<any>("SELECT accent_color FROM lens_hero_settings WHERE id='global'").accent_color).toBe('#0A0A0A');
+      expect(db.get<any>("SELECT bg_color FROM lens_hero_settings WHERE id='global'").bg_color).toBe('#F2F2F2');
+      db.run("UPDATE settings SET setting_value='admin-edited' WHERE id='ink-probe'");
+      db.close(); db = new QatafoDatabase(file);
+      expect(db.get<any>("SELECT setting_value FROM settings WHERE id='ink-probe'").setting_value).toBe('admin-edited');
     } finally { db?.close(); fs.rmSync(dir, { recursive: true, force: true }); }
   });
 });

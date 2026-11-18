@@ -42,7 +42,7 @@ const EXCLUSIVE_STEPS: Record<string, number> = {
   'app/sign-in.tsx': 4,
 };
 
-describe('un seul bouton plein bleu par écran (14/11)', () => {
+describe('un seul bouton plein principal par écran (14/11 ; encre depuis le 18/11)', () => {
   it('chaque fichier porte au plus un <Button tone="main"> (hors étapes exclusives documentées)', () => {
     const offenders: string[] = [];
     let total = 0;
@@ -63,13 +63,14 @@ describe('un seul bouton plein bleu par écran (14/11)', () => {
     expect((signIn.match(/\?\s*\(\s*\n\s*<>/g) ?? []).length).toBeGreaterThanOrEqual(3);
   });
 
-  it('les CTA principaux approuvés sont BLEUS (tone="main")', () => {
+  it('18/11 (maquette v2) : les CTA d’ACHAT sont JAUNES (ton commerce / barre d’achat), plus aucun bleu', () => {
     const fiche = stripComments(fs.readFileSync(path.join(ROOT, 'src/features/product/ProductFiche.tsx'), 'utf8'));
     const cart = stripComments(fs.readFileSync(path.join(ROOT, 'src/features/shopping/OfficialCartView.tsx'), 'utf8'));
     const checkout = stripComments(fs.readFileSync(path.join(ROOT, 'app/checkout.tsx'), 'utf8'));
-    expect(fiche).toMatch(/label=\{label\}\s*tone="main"/);
-    expect(cart).toMatch(/label=\{checkoutLabel\}\s*tone="main"/);
-    expect(checkout).toMatch(/tone="main"/);
+    expect(fiche).toMatch(/label=\{label\}\s*tone="commerce"/);
+    expect(cart).toMatch(/<PurchaseBar[\s\S]*label=\{checkoutLabel\}/);
+    expect(checkout).toMatch(/<PurchaseBar[\s\S]*label=\{t\('checkout\.submit'\)\}/);
+    expect(stripComments(fs.readFileSync(path.join(ROOT, 'src/design/ui.tsx'), 'utf8'))).toMatch(/tone="commerce" size="lg"/);
   });
 
   it('aucun autre élément ne se peint en bleu plein comme un bouton (fond `action` réservé au Button)', () => {

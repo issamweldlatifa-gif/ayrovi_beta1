@@ -74,7 +74,7 @@ describe('badge du panier — nombre d’articles partout', () => {
     expect(read('app/aywebs/browser.tsx')).toContain('<CartGlyph');
     expect(read('src/features/shopping/LiveCartGlyph.tsx')).toContain('<CartGlyph');
     // Le badge n'est pas un second bouton bleu plein.
-    expect(read('src/design/CartGlyph.tsx')).toContain('backgroundColor: badgeColor ?? theme.colors.ink');
+    expect(read('src/design/CartGlyph.tsx')).toContain('backgroundColor: badgeColor ?? CART_BADGE.background'); // 18/11 : compteur rouge
   });
 });
 
@@ -131,7 +131,7 @@ describe('mise en page du 15/11', () => {
     expect(browser).toContain('<TabCleanIcon');
     expect(browser).toContain('aywebs-store-added-strip');
     const tokens = read('src/design/tokens.mobile.ts');
-    expect(tokens).toMatch(/export const STORE_BAR = \{\s*background: BRAND\.violet,/);
+    expect(tokens).toMatch(/export const STORE_BAR = \{\s*background: BRAND\.black,/); // 18/11 : barre AYWEBs NOIRE
   });
 
   it('panier : le logo Clean remplace « Examiner » — 16/11 : sur chaque carte, noir avec son reflet', () => {

@@ -18,5 +18,8 @@ export const BRAND_MARK = {
 } as const;
 /** Loading ring (136 box): the mark's circle has radius 52. */
 export const BOOT_MARK_TRANSFORM = 'translate(16 16) scale(0.104)';
+/** Social icon (account avatar in Publication, Reels, Stories): black rounded tile, mark + closer dot. Units = the
+ * mark's (circle r 500); the group is `content` × tile width, centred; corner radius = `radius` × tile size. */
+export const SOCIAL_ICON = {"content":0.74,"radius":0.2,"width":1208.7,"height":1000,"dot":{"cx":1150.5,"cy":653.3,"r":58.2}} as const;
 /** Native splash geometry (app.json expo-splash-screen, black background, dark logo), in dp. */
 export const SPLASH_LOGO = {"imageWidth":160,"share":0.86,"width":137.6,"height":86.73} as const;

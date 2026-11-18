@@ -8,7 +8,7 @@
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
     "backgroundColor": "#FFFFFF",
-    "primaryColor": "#0A63F5",
+    "primaryColor": "#0A0A0A",
     "android": {
       "package": "app.zayrovi.mobile",
       "versionCode": 15,

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 277,
-    "customerAndSharedFiles": 209,
-    "controls": 487,
+    "files": 278,
+    "customerAndSharedFiles": 210,
+    "controls": 488,
     "iconAliases": 104,
     "uniqueGlyphs": 101
   },
@@ -430,7 +430,7 @@
     {
       "file": "client/src/admin/admin.css",
       "domain": "admin",
-      "sha256": "ee5d7154f555f773a0e584e74d99a4d36ac3ce6968d2d10617b1a018050a946c",
+      "sha256": "64423dfb69f526f4eae4c684b37fda5cd8a2c6f3a863d936eb0c966510de5a8d",
       "lines": 1526,
       "imports": [],
       "exports": [],
@@ -453,7 +453,7 @@
     {
       "file": "client/src/admin/AdminApp.tsx",
       "domain": "admin",
-      "sha256": "2ae6892421153f65740533472fea4fcb31ce01744322f243910e8dc9f83dee09",
+      "sha256": "daa144471fb3913433b76bf565cc9c4852c6f6db3660d7e40a0c823876d0f6f9",
       "lines": 1052,
       "imports": [
         "../../../shared/brand.generated",
@@ -1679,7 +1679,7 @@
         "#050505",
         "#059669",
         "#064e3b",
-        "#0a63f5",
+        "#0a0a0a",
         "#0b1e4b",
         "#0f172a",
         "#111318",
@@ -2452,7 +2452,7 @@
     {
       "file": "client/src/admin/api.ts",
       "domain": "admin",
-      "sha256": "b24c7fba157f3f8d6d6ff51bf7e3f45ba37c671ee93dfc6a2028b7ad25a58f1a",
+      "sha256": "b58201c8f37c624790275c619ea9dc699d6757ae86a35bececb2b0f53761dcb0",
       "lines": 82,
       "imports": [],
       "exports": [
@@ -3455,7 +3455,7 @@
     {
       "file": "client/src/admin/ArrivalShipments.tsx",
       "domain": "admin",
-      "sha256": "35b9d6f4af34f1fb5ce7dfaaad09880ef324abe901a15ab116cc26f41fd0f71f",
+      "sha256": "64d4ebeda21bec89b5702fb864a3b054db0a92972582de05126f30b6fa3926f5",
       "lines": 309,
       "imports": [
         "../components/QatafoIcons",
@@ -4195,7 +4195,7 @@
     {
       "file": "client/src/admin/back-office/BackOfficeShell.tsx",
       "domain": "admin",
-      "sha256": "ef65c1b4daa12f617026eccdfafc09db3ac7699fd42059e5f03ff8cec0551195",
+      "sha256": "116cdf714933baf95151caf8d7232329634128c53d0f821d7b20dcf8c7d985e0",
       "lines": 461,
       "imports": [
         "react",
@@ -4553,7 +4553,7 @@
     {
       "file": "client/src/admin/back-office/resource-ui.tsx",
       "domain": "admin",
-      "sha256": "6c44e78ba32edd470e1fe29229ac841aaf54435f1eb18b715ca10e1ddcb1679d",
+      "sha256": "3d254ba86077128afad084b025b3aa8ff3bf2ec569646d3883458b97623c5f00",
       "lines": 96,
       "imports": [
         "../../../../shared/heroDestinations",
@@ -4647,7 +4647,7 @@
     {
       "file": "client/src/admin/back-office/ResourceWorkspace.tsx",
       "domain": "admin",
-      "sha256": "d2a8505d98c4657e709bac34645076d0cfc3c8abb6e4f9acb8ba9c9fc1a8bf1b",
+      "sha256": "adf02ae0133be92b8b028808278eb750d572c760d482fd0cb116bcc580eb1bba",
       "lines": 281,
       "imports": [
         "react",
@@ -7902,7 +7902,7 @@
     {
       "file": "client/src/admin/InterfaceStudio.tsx",
       "domain": "admin",
-      "sha256": "4f7d818e25f596ebd5a75f5fa7c810e0356cf3c64808fbc94c5a4bcc73bf0013",
+      "sha256": "69fb5e20181013e4ad5ce5f5228212ddb039c099d26a7e527ff67850df711a31",
       "lines": 307,
       "imports": [
         "react",
@@ -9897,7 +9897,7 @@
     {
       "file": "client/src/admin/MagazineAgentPage.tsx",
       "domain": "admin",
-      "sha256": "3ee1fcc418a41557e997f6545a26bb20cf50e246b6285087ed4ea267156655c2",
+      "sha256": "39122d85e5dd21bb73734431083a98744a8aae1e4d97ff9666711783824c3ceb",
       "lines": 263,
       "imports": [
         "react",
@@ -10075,7 +10075,7 @@
     {
       "file": "client/src/admin/MagazineDraftsPanel.tsx",
       "domain": "admin",
-      "sha256": "b6965fe8b34ce867140eac732e17c1e43d865b43418c139317501043ff3d7664",
+      "sha256": "14588bb0088e4d35a8ed8a28cc455382b73c7c766a9d8773c4305769bcb97e69",
       "lines": 138,
       "imports": [
         "react",
@@ -10252,7 +10252,7 @@
     {
       "file": "client/src/admin/OpsCapacityPanel.tsx",
       "domain": "admin",
-      "sha256": "0ed176a8c081579e9ba350ba4c4e8600288f7d7eb52e9996b7d79a657122961a",
+      "sha256": "1995348cdd00a6c695c62e785a3e3643e4a1bea1f1f2c3b20a7829d2fb4bf085",
       "lines": 149,
       "imports": [
         "react",
@@ -10773,7 +10773,7 @@
     {
       "file": "client/src/admin/ProductIntegration.tsx",
       "domain": "admin",
-      "sha256": "4a978de8c9443f3b73f3035fc3b33c32ce43adce53242a18b64e97701ea19036",
+      "sha256": "66d5022b935c097b3bc896093939b3f924075f69e7c927f07446ac00262ef67f",
       "lines": 489,
       "imports": [
         "react",
@@ -10997,8 +10997,8 @@
     {
       "file": "client/src/admin/PublicationBlocksTab.tsx",
       "domain": "admin",
-      "sha256": "e30aba973da96bcc209ee6e52e353367391bf476ccd34cf72cda00025b095bbc",
-      "lines": 584,
+      "sha256": "f3545c06beb2f2dac8f6f16c080179c0ef29556ea88c9acd58aadb212efd1e46",
+      "lines": 612,
       "imports": [
         "react",
         "../components/QatafoIcons",
@@ -11020,7 +11020,7 @@
       "controls": [
         {
           "tag": "input",
-          "line": 263,
+          "line": 289,
           "className": null,
           "type": "\"color\"",
           "role": null,
@@ -11030,7 +11030,7 @@
         },
         {
           "tag": "input",
-          "line": 264,
+          "line": 290,
           "className": null,
           "type": null,
           "role": null,
@@ -11040,7 +11040,7 @@
         },
         {
           "tag": "Button",
-          "line": 265,
+          "line": 291,
           "className": null,
           "type": null,
           "role": null,
@@ -11050,7 +11050,7 @@
         },
         {
           "tag": "button",
-          "line": 269,
+          "line": 295,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -11060,7 +11060,7 @@
         },
         {
           "tag": "input",
-          "line": 291,
+          "line": 317,
           "className": null,
           "type": null,
           "role": null,
@@ -11070,7 +11070,7 @@
         },
         {
           "tag": "input",
-          "line": 300,
+          "line": 326,
           "className": null,
           "type": "\"file\"",
           "role": null,
@@ -11080,7 +11080,7 @@
         },
         {
           "tag": "Button",
-          "line": 366,
+          "line": 392,
           "className": null,
           "type": null,
           "role": null,
@@ -11090,7 +11090,7 @@
         },
         {
           "tag": "Button",
-          "line": 367,
+          "line": 393,
           "className": null,
           "type": null,
           "role": null,
@@ -11100,7 +11100,7 @@
         },
         {
           "tag": "Button",
-          "line": 369,
+          "line": 395,
           "className": null,
           "type": null,
           "role": null,
@@ -11110,7 +11110,7 @@
         },
         {
           "tag": "input",
-          "line": 376,
+          "line": 402,
           "className": null,
           "type": null,
           "role": null,
@@ -11120,7 +11120,7 @@
         },
         {
           "tag": "Button",
-          "line": 383,
+          "line": 409,
           "className": null,
           "type": null,
           "role": null,
@@ -11130,7 +11130,7 @@
         },
         {
           "tag": "Button",
-          "line": 499,
+          "line": 527,
           "className": null,
           "type": null,
           "role": null,
@@ -11140,7 +11140,7 @@
         },
         {
           "tag": "Modal",
-          "line": 523,
+          "line": 551,
           "className": null,
           "type": null,
           "role": null,
@@ -11150,7 +11150,7 @@
         },
         {
           "tag": "Button",
-          "line": 524,
+          "line": 552,
           "className": null,
           "type": null,
           "role": null,
@@ -11160,7 +11160,7 @@
         },
         {
           "tag": "Button",
-          "line": 524,
+          "line": 552,
           "className": null,
           "type": null,
           "role": null,
@@ -11170,7 +11170,7 @@
         },
         {
           "tag": "Button",
-          "line": 533,
+          "line": 561,
           "className": null,
           "type": null,
           "role": "\"radio\"",
@@ -11180,7 +11180,7 @@
         },
         {
           "tag": "Field",
-          "line": 537,
+          "line": 565,
           "className": null,
           "type": null,
           "role": null,
@@ -11190,7 +11190,7 @@
         },
         {
           "tag": "input",
-          "line": 537,
+          "line": 565,
           "className": null,
           "type": null,
           "role": null,
@@ -11200,7 +11200,7 @@
         },
         {
           "tag": "Field",
-          "line": 538,
+          "line": 566,
           "className": null,
           "type": null,
           "role": null,
@@ -11210,7 +11210,7 @@
         },
         {
           "tag": "input",
-          "line": 538,
+          "line": 566,
           "className": null,
           "type": null,
           "role": null,
@@ -11220,7 +11220,7 @@
         },
         {
           "tag": "Button",
-          "line": 548,
+          "line": 576,
           "className": null,
           "type": null,
           "role": "\"radio\"",
@@ -11244,7 +11244,7 @@
     {
       "file": "client/src/admin/PublicationTemplatePreview.tsx",
       "domain": "admin",
-      "sha256": "f8a38ef6a4d75a05e9fc1ceb2990ecd62afedf9db3140551e494e07dfbf72ea8",
+      "sha256": "e4f478461950179cdb1f0be75f526696ed273fb65fc4a6779472fd9864405ca5",
       "lines": 245,
       "imports": [
         "../components/QatafoIcons",
@@ -12333,7 +12333,7 @@
     {
       "file": "client/src/App.tsx",
       "domain": "shell-content",
-      "sha256": "9b72ddbcfc610a5500da9cae918267f921d59b984c2d4ae4d60f5cf5b3062416",
+      "sha256": "3e050b99adfaea4adf54ca2f972d68d6d2f4305c51f7d54502a3d5a186cd5d2b",
       "lines": 749,
       "imports": [
         "./design/editorial/customerTheme",
@@ -12453,1594 +12453,6 @@
       ]
     },
     {
-      "file": "client/src/zayrovix/components/InteractiveLensResults.tsx",
-      "domain": "lens",
-      "sha256": "0a0fbf8b24ea0e9bd87ca96d0d1c11416e3b0683381be1440c62e0bbb37d62d5",
-      "lines": 294,
-      "imports": [
-        "./useLensFavorites",
-        "../../types",
-        "react",
-        "../../components/QatafoIcons",
-        "../types",
-        "../services/resultPolicy",
-        "../../i18n/LocaleContext",
-        "../../shop/ProductGrid",
-        "../services/lensApi",
-        "../../shop/adapter",
-        "../services/lensStream",
-        "../services/lensSelectionGeometry",
-        "./useLensResultsSheet",
-        "./lens-results.css"
-      ],
-      "exports": [
-        "InteractiveLensResults"
-      ],
-      "controls": [
-        {
-          "tag": "button",
-          "line": 72,
-          "className": "\"ay-btn-secondary text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onRetry}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 73,
-          "className": "\"ay-btn-secondary text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onCancel}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 204,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Retour à la caméra', 'العودة إلى الكاميرا')}",
-          "onClick": "{onReset}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 216,
-          "className": "{`lens-selection-corner lens-corner-${corner}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{cornerLabel(corner)}",
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 224,
-          "className": "\"lens-product-dot\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr(`Sélectionner : ${product.name}`, `تحديد: ${product.name}`)}",
-          "onClick": "{() => void search(product.box)}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 232,
-          "className": "\"lens-sheet-handle\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{drawer.full ? tr('Revenir à l’image', 'العودة إلى الصورة') : tr('Afficher tous les résultats', 'عرض كل النتائج')}",
-          "onClick": "{() => { if (drawer.skipClick.current) { drawer.skipClick.current = false; return; } drawer.snap(!drawer.full); }}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 275,
-          "className": "\"rounded-control bg-ink px-5 py-2 text-xs font-bold text-white\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => { clearSelection(); onReset(); }}",
-          "disabled": null
-        }
-      ],
-      "icons": [
-        {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{ ArrowLeft, ScanSearch, Loader2, Image as ImageIcon, Check }",
-          "line": 4
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [
-        "#f2f2f2"
-      ],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/components/lens-camera.css",
-      "domain": "lens",
-      "sha256": "23a54501cf17526888fb626a4409a4ae81f2ab2739a8a30ddcb351fb0e9415d7",
-      "lines": 70,
-      "imports": [],
-      "exports": [],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [
-        "#000",
-        "#0009",
-        "#595959",
-        "#fff"
-      ],
-      "fontDeclarations": [
-        "font-family:var(--ay-font-stack)",
-        "font-family:inherit",
-        "font-family:var(--ay-font-stack)"
-      ],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/components/lens-results.css",
-      "domain": "lens",
-      "sha256": "b932d515079dda16c798d31276350583dbb933eeedf842ede31dd5ee35a0ae23",
-      "lines": 50,
-      "imports": [],
-      "exports": [],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [
-        "#000",
-        "#0006",
-        "#0009",
-        "#595959",
-        "#bdbdbd",
-        "#d9d9d9",
-        "#f5f5f5",
-        "#fff",
-        "#fff3"
-      ],
-      "fontDeclarations": [
-        "font-family:var(--ay-font-stack)",
-        "font-family:inherit"
-      ],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/components/LensCamera.tsx",
-      "domain": "lens",
-      "sha256": "d0d05a642c680dae3a28521e3c6e35b278cb910e929f9264a25db8b1d9109654",
-      "lines": 49,
-      "imports": [
-        "react",
-        "../../components/QatafoIcons",
-        "../../i18n/LocaleContext"
-      ],
-      "exports": [
-        "LensCamera"
-      ],
-      "controls": [
-        {
-          "tag": "input",
-          "line": 19,
-          "className": "\"hidden\"",
-          "type": "\"file\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 33,
-          "className": "\"ay-btn-primary h-auto w-full justify-start gap-4 rounded-card p-4 text-start shadow-card\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => inputRef.current?.click()}",
-          "disabled": null
-        }
-      ],
-      "icons": [
-        {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{ Camera }",
-          "line": 2
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/components/LensHelp.tsx",
-      "domain": "lens",
-      "sha256": "0395a9734f5802e19a5ecc53cf6473e471d63cfcf42b90fdbd765b3d2e3cd13a",
-      "lines": 66,
-      "imports": [
-        "react",
-        "../../components/QatafoIcons",
-        "../../i18n/LocaleContext",
-        "../../hooks/useDialogFocus",
-        "./lens-camera.css"
-      ],
-      "exports": [
-        "LENS_CONSENT_KEY",
-        "readLensConsent",
-        "rememberLensConsent",
-        "LensDialog",
-        "LensGuide",
-        "LensAccess"
-      ],
-      "controls": [
-        {
-          "tag": "button",
-          "line": 25,
-          "className": "\"lens-panel-icon\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Fermer cette fenêtre', 'إغلاق هذه النافذة')}",
-          "onClick": "{onClose}",
-          "disabled": null
-        },
-        {
-          "tag": "summary",
-          "line": 35,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "summary",
-          "line": 41,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "summary",
-          "line": 47,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 47,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 57,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 59,
-          "className": null,
-          "type": "\"checkbox\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 59,
-          "className": null,
-          "type": "\"checkbox\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 59,
-          "className": null,
-          "type": "\"checkbox\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 61,
-          "className": "\"lens-panel-primary\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onAccept}",
-          "disabled": "{!adult || !agreed || !privacyAccepted}"
-        },
-        {
-          "tag": "button",
-          "line": 62,
-          "className": "\"lens-panel-secondary\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onClose}",
-          "disabled": null
-        }
-      ],
-      "icons": [
-        {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{ Info, X }",
-          "line": 2
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/components/LensHistory.tsx",
-      "domain": "lens",
-      "sha256": "09a6d92cd5e2f953629b88d46e805eb49e88fc6afa73b60e1a34c8a05b0608f8",
-      "lines": 122,
-      "imports": [
-        "react",
-        "../types",
-        "../services/history",
-        "../../components/QatafoIcons",
-        "../../i18n/LocaleContext"
-      ],
-      "exports": [
-        "LensHistory"
-      ],
-      "controls": [
-        {
-          "tag": "button",
-          "line": 59,
-          "className": "\"inline-flex min-h-[44px] w-fit items-center gap-1 rounded-xl px-2 text-xs font-extrabold text-ink\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Retour à ZAYROVIX Lens', 'العودة إلى عدسة ZAYROVIX')}",
-          "onClick": "{onClose}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 86,
-          "className": "\"ay-btn-primary mt-4 text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onNewScan}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 106,
-          "className": "\"ay-btn-primary min-h-11 px-3 py-1.5 text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => onRepeat(item)}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 108,
-          "className": "\"ay-btn-secondary min-h-11 px-3 py-1.5 text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onNewScan}",
-          "disabled": null
-        }
-      ],
-      "icons": [
-        {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{ Loader2, ArrowLeft, History, LensBox }",
-          "line": 4
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/components/LensLauncher.tsx",
-      "domain": "lens",
-      "sha256": "0f4ac387a28f81e93301f2efbfa7c6e15a1b2ea91e644ff8f2c627d3b9405c45",
-      "lines": 1036,
-      "imports": [
-        "../../types",
-        "./LensHelp",
-        "../services/productSelection",
-        "../services/productEnrichment",
-        "../../design/AppHeader",
-        "react",
-        "../../hooks/useBodyScrollLock",
-        "../types",
-        "../services/lensApi",
-        "../services/lensStream",
-        "../services/imagePrep",
-        "../services/history",
-        "../../services/publicApi",
-        "../../services/nativeShell",
-        "../../i18n/LocaleContext",
-        "./LiveCamera",
-        "./LensHistory",
-        "./LensCamera",
-        "./LensUpload",
-        "./ProductCandidates",
-        "../../shop",
-        "../../shop",
-        "../../navigation/NavigationHistory",
-        "../services/resultPolicy",
-        "./LensNavigation",
-        "./InteractiveLensResults",
-        "../../components/QatafoIcons",
-        "../services/productAttributes",
-        "./useLensFavorites"
-      ],
-      "exports": [
-        "LensLauncher"
-      ],
-      "controls": [
-        {
-          "tag": "AppHeader",
-          "line": 773,
-          "className": "{stage === 'product' ? 'border-b-0 bg-transparent' : ''}",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 779,
-          "className": "\"relative grid h-11 w-11 place-items-center rounded-full bg-transparent text-ink hover:bg-surface transition\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr(`Ouvrir le panier (${cartCount} articles)`, `فتح السلة (${cartCount} منتج)`)}",
-          "onClick": "{onOpenCart}",
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 795,
-          "className": "\"hidden\"",
-          "type": "\"file\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 821,
-          "className": "\"lens-drop\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => dropInputRef.current?.click()}",
-          "disabled": null
-        },
-        {
-          "tag": "form",
-          "line": 839,
-          "className": "\"bg-white p-4\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": "{tr('Recherche par nom de produit', 'بحث باسم المنتج')}",
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 855,
-          "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
-          "type": "\"search\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 867,
-          "className": "\"ay-btn-primary flex-none text-xs disabled:opacity-40\"",
-          "type": "\"submit\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{textQuery.trim().length < 2}"
-        },
-        {
-          "tag": "form",
-          "line": 872,
-          "className": "\"bg-white p-4\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 887,
-          "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
-          "type": "\"url\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 889,
-          "className": "\"ay-btn-primary flex-none text-xs\"",
-          "type": "\"submit\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 898,
-          "className": "\"text-xs font-bold text-ink underline\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{openHistory}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 902,
-          "className": "\"max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-left text-xs font-semibold text-ink hover:border-line/30\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => repeatHistoryItem(item)}",
-          "disabled": null
-        },
-        {
-          "tag": "ShopProductScreen",
-          "line": 963,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 993,
-          "className": "\"ay-btn-secondary text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{copyBarcode}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 996,
-          "className": "\"ay-btn-primary text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{reset}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 1015,
-          "className": "\"ay-btn-secondary text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => void runImageAnalysis()}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 1018,
-          "className": "\"ay-btn-secondary text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=> { reset(); setTimeout(()=> urlInputRef.current?.focus(), 120); }}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 1021,
-          "className": "\"ay-btn-secondary text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=> { reset(); setTimeout(()=> textInputRef.current?.focus(), 120); }}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 1023,
-          "className": "\"ay-btn-secondary text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{retryLast}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 1024,
-          "className": "\"ay-btn-primary text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{reset}",
-          "disabled": null
-        }
-      ],
-      "icons": [
-        {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{ Type, ExternalLink, Barcode, Image as GalleryIcon, Percent, Search, ShieldCheck, ShoppingBag }",
-          "line": 30
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": [
-        "/api/zayrovix/analyze-url"
-      ]
-    },
-    {
-      "file": "client/src/zayrovix/components/LensNavigation.tsx",
-      "domain": "lens",
-      "sha256": "f6a9b81da479f5b79340641d700f19bff20e141bed46326d39bc3d3f225df755",
-      "lines": 167,
-      "imports": [
-        "react",
-        "../../components/QatafoIcons",
-        "../../i18n/LocaleContext"
-      ],
-      "exports": [
-        "LensContextHeader",
-        "LensMoreMenu"
-      ],
-      "controls": [
-        {
-          "tag": "button",
-          "line": 42,
-          "className": "{`grid h-11 w-11 place-items-center rounded-full ${control}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Quitter ZAYROVIX Lens', 'مغادرة عدسة ZAYROVIX')}",
-          "onClick": "{onExit}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 46,
-          "className": "{`grid h-11 w-11 place-items-center rounded-full ${control}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Retour', 'رجوع')}",
-          "onClick": "{onBack}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 55,
-          "className": "{`relative grid h-11 w-11 place-items-center rounded-full ${control}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr(`Panier, ${count} article(s)`, `السلة، ${count} منتج`)}",
-          "onClick": "{onCart}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 60,
-          "className": "{`grid h-11 w-11 place-items-center rounded-full ${control}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Menu ZAYROVIX Lens', 'قائمة عدسة ZAYROVIX')}",
-          "onClick": "{onMenu}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 78,
-          "className": "\"flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-start text-sm font-extrabold transition hover:bg-surface\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onClick}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 101,
-          "className": "\"absolute inset-0 bg-ink/65 backdrop-blur-sm\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Fermer le menu', 'إغلاق القائمة')}",
-          "onClick": "{onClose}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 105,
-          "className": "\"grid h-11 w-11 place-items-center rounded-full hover:bg-surface\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Retour au menu', 'العودة إلى القائمة')}",
-          "onClick": "{() => setSection('menu')}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 108,
-          "className": "\"grid h-11 w-11 place-items-center rounded-full hover:bg-surface\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Fermer', 'إغلاق')}",
-          "onClick": "{onClose}",
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 154,
-          "className": "\"block rounded-xl border border-line p-3 font-bold hover:border-line\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 155,
-          "className": "\"block rounded-xl border border-line p-3 font-bold hover:border-line\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 156,
-          "className": "\"block rounded-xl border border-line p-3 font-bold hover:border-line\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 161,
-          "className": "\"ay-btn-secondary mt-6 w-full text-sm\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onClose}",
-          "disabled": null
-        }
-      ],
-      "icons": [
-        {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{\n  ArrowLeft, FileText, History, Info, MoreVertical, Moon, ShoppingBag, X,\n}",
-          "line": 2
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/components/LensUpload.tsx",
-      "domain": "lens",
-      "sha256": "66d43ec05793990c15e258f09e9f50aad7795a0e1eb51fdf5ff9d5b9518df074",
-      "lines": 44,
-      "imports": [
-        "react",
-        "../../components/QatafoIcons",
-        "../../i18n/LocaleContext"
-      ],
-      "exports": [
-        "LensUpload"
-      ],
-      "controls": [
-        {
-          "tag": "input",
-          "line": 15,
-          "className": "\"hidden\"",
-          "type": "\"file\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 28,
-          "className": "\"ay-btn-secondary h-auto w-full justify-start gap-4 rounded-card p-4 text-start\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => inputRef.current?.click()}",
-          "disabled": null
-        }
-      ],
-      "icons": [
-        {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{ Image as ImageIcon }",
-          "line": 2
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/components/LiveCamera.tsx",
-      "domain": "lens",
-      "sha256": "afcd3296faf314d2211bde71e208d942f97b472e116f8afec3d9126b50c0a51f",
-      "lines": 439,
-      "imports": [
-        "react",
-        "../services/qr",
-        "../../components/QatafoIcons",
-        "../../i18n/LocaleContext",
-        "./LensHelp",
-        "../../navigation/NavigationHistory",
-        "../../hooks/useDialogFocus",
-        "./lens-camera.css",
-        "../services/liveVisionRuntime"
-      ],
-      "exports": [
-        "LiveCamera"
-      ],
-      "controls": [
-        {
-          "tag": "button",
-          "line": 264,
-          "className": "\"lens-camera-icon\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{photoUrl || panel === 'scan' ? tr('Retour à la caméra', 'العودة إلى الكاميرا') : tr('Quitter Lens', 'مغادرة Lens')}",
-          "onClick": "{panel === 'scan' ? closePanel : photoUrl && onPhotoClose ? onPhotoClose : onClose}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 270,
-          "className": "\"lens-camera-icon\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{!torchAvailable ? tr('Flash indisponible sur cet appareil', 'الفلاش غير متاح على هذا الجهاز') : torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}",
-          "onClick": "{toggleTorch}",
-          "disabled": "{!torchAvailable || torchBusy}"
-        },
-        {
-          "tag": "button",
-          "line": 273,
-          "className": "\"lens-camera-icon\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')}",
-          "onClick": "{() => openPanel('help')}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 299,
-          "className": "{`pointer-events-auto absolute rounded-[14px] border-2 transition-all ${isSel ? 'border-white bg-white/20 ring-2 ring-white' : 'border-white/90 hover:border-white hover:bg-white/10'}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{o.label}",
-          "onClick": "{() => setSelected((s) => ({ ...s, [o.trackingId]: !s[o.trackingId] }))}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 317,
-          "className": "\"pointer-events-auto absolute -bottom-10 left-1/2 z-10 flex w-[105%] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-black/75 p-2 text-start backdrop-blur border border-white/10 shadow-lg\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => openLiveResults(selectedObjects.length ? selectedObjects : [active])}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 344,
-          "className": "{`flex flex-none items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-bold ${selected[obj.trackingId] ? 'border-white bg-white/20 text-white' : 'border-white/20 bg-white/10 text-white/70'}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => setSelected((s) => ({ ...s, [obj.trackingId]: !s[obj.trackingId] }))}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 351,
-          "className": "\"bg-ink text-white hover:bg-ink/90 mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-extrabold\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => openLiveResults(selectedObjects)}",
-          "disabled": "{!selectedObjects.length}"
-        },
-        {
-          "tag": "button",
-          "line": 377,
-          "className": "{`lens-camera-tab rounded-full px-4 py-2 text-sm font-semibold transition-colors ${selected ? 'is-selected bg-white text-ink' : 'text-white/85'} ${disabled ? 'opacity-40' : ''}`}",
-          "type": "\"button\"",
-          "role": "\"tab\"",
-          "ariaLabel": null,
-          "onClick": "{() => { if (mode === 'code') closePanel(); setCamMode(m); setNotice(null); }}",
-          "disabled": "{disabled}"
-        },
-        {
-          "tag": "button",
-          "line": 384,
-          "className": "{`lens-camera-tab rounded-full px-4 py-2 text-sm font-semibold ${mode === 'code' ? 'is-selected bg-white text-ink' : 'text-white/85'}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => openPanel('methods', mode === 'code')}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 395,
-          "className": "\"lens-gallery-button\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Importer une image depuis la galerie', 'استيراد صورة من المعرض')}",
-          "onClick": "{pickFromGallery}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 400,
-          "className": "{`lens-camera-shutter grid h-[78px] w-[78px] place-items-center rounded-full border-[3px] border-white/90 bg-transparent transition active:scale-95 ${capturing ? 'scale-90 bg-white/80' : ''}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{isVideo ? tr('Capturer le résultat live', 'التقاط النتيجة الحالية') : tr('Photographier', 'التقاط صورة')}",
-          "onClick": "{handleCentralAction}",
-          "disabled": "{!cameraReady || capturing}"
-        },
-        {
-          "tag": "button",
-          "line": 409,
-          "className": "\"lens-ocerex-button\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr('Ouvrir OCEREX — prix depuis une image', 'فتح OCEREX — السعر من صورة')}",
-          "onClick": "{onOpenOcerex}",
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 419,
-          "className": "\"hidden\"",
-          "type": "\"file\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 425,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => openPanel('scan', true)}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 426,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => openPanel('link')}",
-          "disabled": null
-        },
-        {
-          "tag": "form",
-          "line": 428,
-          "className": "\"lens-link-form\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 430,
-          "className": null,
-          "type": "\"url\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 433,
-          "className": "\"lens-panel-primary\"",
-          "type": "\"submit\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!linkInput.trim()}"
-        }
-      ],
-      "icons": [
-        {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{ ArrowLeft, X, Zap, ArrowRight, Barcode, Check, Image as ImageIcon, ScanSearch, ShoppingBag, Info, Search, Link2 }",
-          "line": 3
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": [
-        "/api/zayrovix/live-events"
-      ]
-    },
-    {
-      "file": "client/src/zayrovix/components/MerchantRating.tsx",
-      "domain": "lens",
-      "sha256": "d818c6219bcba4a87bb81b0df86e89e22a4e3c3a1ad2072a2b4d36c28e331016",
-      "lines": 24,
-      "imports": [
-        "react",
-        "../../components/QatafoIcons",
-        "../../i18n/LocaleContext",
-        "../services/resultPolicy"
-      ],
-      "exports": [
-        "MerchantRating"
-      ],
-      "controls": [],
-      "icons": [
-        {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{ Star }",
-          "line": 2
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/components/ProductCandidates.tsx",
-      "domain": "lens",
-      "sha256": "e699b367ac312912900dd37289bd442c12fa66211a2b86163cd14dc55546fa77",
-      "lines": 109,
-      "imports": [
-        "./MerchantRating",
-        "react",
-        "motion/react",
-        "../../components/QatafoIcons",
-        "../types",
-        "../services/resultPolicy",
-        "../../i18n/LocaleContext",
-        "./quiet-card"
-      ],
-      "exports": [
-        "ProductCandidates"
-      ],
-      "controls": [
-        {
-          "tag": "button",
-          "line": 45,
-          "className": "\"relative w-[92px] flex-none self-start\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{tr(`Voir le produit : ${candidate.title}`, `عرض المنتج: ${candidate.title}`)}",
-          "onClick": "{() => onChoose(candidate)}",
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 92,
-          "className": "\"ay-readable-label mt-2 inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": "{tr(`Ouvrir ${candidate.title} chez ${candidate.source}`, `فتح ${candidate.title} لدى ${candidate.source}`)}",
-          "onClick": null,
-          "disabled": null
-        }
-      ],
-      "icons": [
-        {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{ ArrowUpRight, MessageCircle, ArrowRightLeft, ShoppingBag }",
-          "line": 4
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/components/quiet-card.css",
-      "domain": "lens",
-      "sha256": "372d8cc66072c969e5cbcc640d33d3033608ed887a2423be6e91126663c39468",
-      "lines": 216,
-      "imports": [],
-      "exports": [],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [
-        "#000",
-        "#595959",
-        "#dc2626",
-        "#e5e5e5",
-        "#fff"
-      ],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/components/quiet-card.tsx",
-      "domain": "lens",
-      "sha256": "14f14c8fa594ede7e4fad566ad03c60c0c6dc48b427f63e31d1b40d5db41bd84",
-      "lines": 195,
-      "imports": [
-        "react",
-        "../../components/QatafoIcons",
-        "../types",
-        "../services/mediaIsolation",
-        "../../i18n/LocaleContext",
-        "./quiet-card.css"
-      ],
-      "exports": [
-        "StudioImageFrame",
-        "QuietPromoPrice",
-        "QuietCardActions"
-      ],
-      "controls": [
-        {
-          "tag": "button",
-          "line": 164,
-          "className": "\"ay-quiet-actions__primary\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onPrimary}",
-          "disabled": "{primaryBusy || primaryDisabled}"
-        },
-        {
-          "tag": "button",
-          "line": 179,
-          "className": "\"ay-quiet-actions__icon\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{label}",
-          "onClick": "{onClick}",
-          "disabled": "{busy || disabled}"
-        }
-      ],
-      "icons": [
-        {
-          "module": "../../components/QatafoIcons",
-          "bindings": "{ Image as ImageIcon, Loader2 }",
-          "line": 15
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/components/useLensFavorites.ts",
-      "domain": "lens",
-      "sha256": "e6c8732abb27197f1fb9c792ef4a44a7346b5120603d1ca55c8a270affc68d02",
-      "lines": 68,
-      "imports": [
-        "react",
-        "../../customer/api",
-        "../../types",
-        "../types"
-      ],
-      "exports": [
-        "useLensFavorites"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": [
-        "/api/customer/account/favorites",
-        "/api/customer/account/favorites",
-        "/api/customer/account/favorites"
-      ]
-    },
-    {
-      "file": "client/src/zayrovix/components/useLensResultsSheet.ts",
-      "domain": "lens",
-      "sha256": "0dcbff51f7a69808df27d6ed371beccb2bbca6e3921aa9a6cbefc3529d84bbe2",
-      "lines": 107,
-      "imports": [
-        "react"
-      ],
-      "exports": [
-        "useLensResultsSheet"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/services/history.ts",
-      "domain": "lens",
-      "sha256": "eeddbe11bad9f65a6686158c7659506166010002edc03ada43287c073ffa7b69",
-      "lines": 87,
-      "imports": [
-        "../types"
-      ],
-      "exports": [
-        "readLocalZayrovixHistory",
-        "rememberZayrovixHistory",
-        "loadZayrovixHistory"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": [
-        "/api/zayrovix/history?limit=30"
-      ]
-    },
-    {
-      "file": "client/src/zayrovix/services/imagePrep.ts",
-      "domain": "lens",
-      "sha256": "15bcbb6b74e31c6ea0843c90c4e04a6bf55551067f480316b958084b860b23a8",
-      "lines": 49,
-      "imports": [],
-      "exports": [
-        "prepareImage"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/services/lensApi.ts",
-      "domain": "lens",
-      "sha256": "4104b626ef5809e2f2544a8748909be67c2356fc43e77f28ccb2eef849ac462d",
-      "lines": 259,
-      "imports": [
-        "../types",
-        "../../utils/session",
-        "./lensStream"
-      ],
-      "exports": [
-        "ZayrovixApiError",
-        "LENS_STREAM_IDLE_MS",
-        "LENS_JSON_TIMEOUT_MS",
-        "analyzeImage",
-        "analyzeUrl",
-        "requestManualReview",
-        "getManualReview",
-        "refreshLiveStock",
-        "markChosen",
-        "analyzeCode",
-        "analyzeBarcode",
-        "analyzeText"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": [
-        "/api/zayrovix/analyze-image",
-        "/api/zayrovix/analyze-url",
-        "/api/zayrovix/review-request",
-        "/api/zayrovix/live-stock",
-        "/api/zayrovix/choose",
-        "/api/zayrovix/analyze-code",
-        "/api/zayrovix/analyze-barcode",
-        "/api/zayrovix/analyze-text"
-      ]
-    },
-    {
-      "file": "client/src/zayrovix/services/lensSelectionGeometry.ts",
-      "domain": "lens",
-      "sha256": "ad18de9370a639ccf17757fc744499ab9fbbf715713db1f87ef22f83ec03439d",
-      "lines": 38,
-      "imports": [],
-      "exports": [
-        "containedImageRect",
-        "pointInImage",
-        "detectedBox",
-        "selectionForPoint",
-        "resizeSelection"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/services/lensStream.ts",
-      "domain": "lens",
-      "sha256": "3fe80052a035ab89fd3e7d817c3105b397740da7e099c0343f67c4203bc9fdbe",
-      "lines": 46,
-      "imports": [],
-      "exports": [
-        "parseLensSseBlock"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/services/liveScanner.ts",
-      "domain": "lens",
-      "sha256": "2048ffd578e8d3a04c4634111064e51d8774fe0614ca9db41f3ad06753cd7f9e",
-      "lines": 61,
-      "imports": [
-        "../types"
-      ],
-      "exports": [
-        "frameSignature",
-        "signatureDistance",
-        "liveObjectId"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/services/liveVisionRuntime.ts",
-      "domain": "lens",
-      "sha256": "74fe95ce17623ad883ee05f51c8659028ec2c2e2a1f42243d963717c38bc54ca",
-      "lines": 470,
-      "imports": [
-        "./lensApi",
-        "./liveScanner",
-        "../types"
-      ],
-      "exports": [
-        "LOCK_THRESHOLD",
-        "REDETECT_THRESHOLD",
-        "MAX_MISSES",
-        "PREDICT_FRAMES",
-        "computeCropRect",
-        "grayToFeatures",
-        "computeVisualFeatures",
-        "iou",
-        "adaptiveNextInterval",
-        "trackObjects",
-        "LiveVisionRuntime"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/services/mediaIsolation.ts",
-      "domain": "lens",
-      "sha256": "8f89cad40e08efb10553f58c0290281d58eb7e5b9896bd6f7730cc01eed5c22d",
-      "lines": 99,
-      "imports": [],
-      "exports": [
-        "isolatedMediaUrl",
-        "COMPOSED_PREFIX",
-        "composedMediaUrl",
-        "isComposedUrl",
-        "proxiedMediaUrl",
-        "withIsolation",
-        "isolatedSrc",
-        "productMediaChain",
-        "productMediaSrc",
-        "hasMediaFallback"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [
-        "#F0F2F2"
-      ],
-      "fontDeclarations": [],
-      "apiReferences": [
-        "/api/public/media/card"
-      ]
-    },
-    {
-      "file": "client/src/zayrovix/services/productAttributes.ts",
-      "domain": "lens",
-      "sha256": "e3be179ac9954f432d5d76f26fffddde26e130d330d063de7135734926133974",
-      "lines": 150,
-      "imports": [],
-      "exports": [
-        "classifyProduct",
-        "productClassLabel",
-        "extractCapacity",
-        "pricePer100",
-        "usesCapacity",
-        "presentSizes"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/services/productEnrichment.ts",
-      "domain": "lens",
-      "sha256": "26b68675d029a9f78c475ee2a186d0be4baf4b25ee0a497bd4d054eecc2a3888",
-      "lines": 73,
-      "imports": [
-        "../types"
-      ],
-      "exports": [
-        "mergeProductEnrichment"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/services/productSelection.ts",
-      "domain": "lens",
-      "sha256": "3e3b9fd2b7901b97054bb2af9d3b66a99898a5ec59ddf1414785c72224d5cd7c",
-      "lines": 58,
-      "imports": [
-        "../../../../shared/variantPolicy",
-        "../types"
-      ],
-      "exports": [
-        "resolveProductSelection",
-        "completeProductOffer",
-        "productSelectionLabels"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/services/qr.ts",
-      "domain": "lens",
-      "sha256": "a08fef39ada3a046e1b12358ca3e7ac7d09980ac4e034f300a49b079a1970202",
-      "lines": 138,
-      "imports": [
-        "@zxing/library"
-      ],
-      "exports": [
-        "extractUrl",
-        "startCodeScan"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/services/resultPolicy.ts",
-      "domain": "lens",
-      "sha256": "94f5966c5429fb77bd23d781ea574f13a4ea1b902ab4c3f766a0850d0aa4ea54",
-      "lines": 47,
-      "imports": [
-        "../types"
-      ],
-      "exports": [
-        "validProductUrl",
-        "displayRating",
-        "isDisplayableCandidate",
-        "isLenientCandidate",
-        "isDisplayableOrPending",
-        "isDisplayableProduct"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/zayrovix/types.ts",
-      "domain": "lens",
-      "sha256": "d7ad9d4a35fef46d025b6b2d8fdfd19f859e2a601cbdc516aa39182efd0afddb",
-      "lines": 273,
-      "imports": [],
-      "exports": [],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
       "file": "client/src/commerce/catalogProduct.ts",
       "domain": "shell-content",
       "sha256": "4711a9a12c14c2dd7c96e02aa2cc5a59e9bd4688429c0be7d7727c29795a9404",
@@ -14156,7 +12568,7 @@
     {
       "file": "client/src/components/AboutSection.tsx",
       "domain": "shell-content",
-      "sha256": "e6215fa38cf91d1578b80c810c2860f669775cd49cfe7297d031f0066dc85dba",
+      "sha256": "6c20e5cacf1dbdc8b12de94cb42c370f40582a61dff9d35a5568752f5e43a10f",
       "lines": 27,
       "imports": [
         "react",
@@ -14274,7 +12686,7 @@
     {
       "file": "client/src/components/account/AccountHome.tsx",
       "domain": "account-auth",
-      "sha256": "4a96acd864e85f56db4f6434e081e68143d61512e93853a7014d0e68ae1c21a3",
+      "sha256": "736a1777cd8003be8a28887ac853a29710ff2a9f9ff891b244f4d7055c6a7023",
       "lines": 50,
       "imports": [
         "react",
@@ -14376,7 +12788,7 @@
     {
       "file": "client/src/components/account/AccountSettings.tsx",
       "domain": "account-auth",
-      "sha256": "141661f95c0b12a545e23b400124a190d5380af6aed057727bf0e1b185d1a3b5",
+      "sha256": "ed2cddd0a85e3010f584339d9101772f53ca4eec72d2ec02e080eb708cb1c994",
       "lines": 122,
       "imports": [
         "react",
@@ -14586,7 +12998,7 @@
     {
       "file": "client/src/components/account/model.ts",
       "domain": "account-auth",
-      "sha256": "8e53db0215ef930d7ca4271193131bbbd6499fbe4b30c16297f20989aa578dfe",
+      "sha256": "3a16253daec4b3b9d647f801d33149857a48eb9ed858cb648c4be68c606be731",
       "lines": 24,
       "imports": [
         "../QatafoIcons"
@@ -14641,7 +13053,7 @@
     {
       "file": "client/src/components/assistant/AiAssistantDrawer.tsx",
       "domain": "sonim",
-      "sha256": "05b6d503bd60c651ca8da6a75fce28e1a849e4f3cf3b9261dbd8b6474c5c075b",
+      "sha256": "159d694ce7b0641170c5b6da73338a8cf87fc7089f8b2e863fa5686e781facb5",
       "lines": 1040,
       "imports": [
         "./CleanCameraPanel",
@@ -14733,7 +13145,7 @@
     {
       "file": "client/src/components/assistant/assistantApi.ts",
       "domain": "sonim",
-      "sha256": "8dc106f537b4946ed6da7babe1ded95813ed50ddf92ceb9b207f74efac1f3b33",
+      "sha256": "3942ff083e3bf085699b4f3cee05cf13d034434be6ec0708f3fae0ca4cd454bb",
       "lines": 132,
       "imports": [
         "../../utils/session",
@@ -14847,7 +13259,7 @@
     {
       "file": "client/src/components/assistant/AssistantBrandMark.tsx",
       "domain": "sonim",
-      "sha256": "0a1848a96885f197ce8c8fb72189e583f274a8d542cbba273a1841f99be01d3f",
+      "sha256": "b8208729f70836b82ab4ad6b54e57cdf0093ce3651a0297fd78037f23e09face",
       "lines": 29,
       "imports": [
         "react",
@@ -15253,7 +13665,7 @@
     {
       "file": "client/src/components/assistant/AssistantMessages.tsx",
       "domain": "sonim",
-      "sha256": "cd2537e74a24bf74f19bcc825126c8199abbeb3592759e2fc5bafb27715be30a",
+      "sha256": "79dc8adb1aae30452b1b21a5893469408ab002ccf28537c4d20626bd89bb5d19",
       "lines": 180,
       "imports": [
         "./CleanVisuals",
@@ -15351,7 +13763,7 @@
     {
       "file": "client/src/components/assistant/AssistantSideMenu.tsx",
       "domain": "sonim",
-      "sha256": "0966c0bf4767c3c69f1b68a5d2ba80cfc197eb2ee99d762ae243352b42f11609",
+      "sha256": "d355b08ec0bb11552536501727ba266bea6eea92680ea4c8e3f2abe95bf5d3f0",
       "lines": 121,
       "imports": [
         "./AssistantHistoryNotice",
@@ -15493,7 +13905,7 @@
     {
       "file": "client/src/components/assistant/AssistantVoiceModeScreen.tsx",
       "domain": "sonim",
-      "sha256": "5482752d00f0290df2deba574aabfa9f4e92cb176244728ff52f1d871c18fe8e",
+      "sha256": "93499367f6111d755f25f54f1b6a9f46511aed7f5426f3b742892f247dbc22af",
       "lines": 143,
       "imports": [
         "./AssistantMediaPending",
@@ -15858,7 +14270,7 @@
     {
       "file": "client/src/components/assistant/conversationCodec.ts",
       "domain": "sonim",
-      "sha256": "e412e9e9e32082da8371200c865c6c76d2e76e338f635ffc8b422be695c691b3",
+      "sha256": "905ea736ae8fba649f0e6bd29233943585750023e6dfe1edd15c263ce6a3274d",
       "lines": 108,
       "imports": [
         "../../../../shared/variantPolicy",
@@ -15879,7 +14291,7 @@
     {
       "file": "client/src/components/assistant/conversationHistory.ts",
       "domain": "sonim",
-      "sha256": "a33bb838694472b587f344b387eae497783629c9aebac13e19ef858a1a4b3b46",
+      "sha256": "b5da097bb2904f994802e72a9365e56b4a387216c12a9ed7d6bd13aef39a28f4",
       "lines": 73,
       "imports": [
         "./conversationCodec"
@@ -16015,7 +14427,7 @@
     {
       "file": "client/src/components/assistant/types.ts",
       "domain": "sonim",
-      "sha256": "63e06b97867fc17e5928f82f41b4c1d86ed854641c03dbfc4dac798b84f929bf",
+      "sha256": "9fc6786c624c0397bfa15354d0a4f5b48839b8104df6b9bd4087701d3279ef95",
       "lines": 59,
       "imports": [],
       "exports": [],
@@ -16170,34 +14582,9 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/components/ZayroviMotion.tsx",
-      "domain": "shell-content",
-      "sha256": "2c1ff5c5a8ff827c61aee30b2b0b0d69e6fd6957c5242d77cb1452c3f5ea382e",
-      "lines": 32,
-      "imports": [
-        "react",
-        "./QatafoIcons"
-      ],
-      "exports": [
-        "ZayroviMotion"
-      ],
-      "controls": [],
-      "icons": [
-        {
-          "module": "./QatafoIcons",
-          "bindings": "{ Sonim }",
-          "line": 2
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
       "file": "client/src/components/BottomNavBar.tsx",
       "domain": "shell-content",
-      "sha256": "1c1aa220e20976627d06f2743ee3f4077d73b0a8f6864926b21213460c5ecae0",
+      "sha256": "003ae3fbc0cd177475bb7d339ba576c546ff01abfc51a0b42092e0ac4b571fc1",
       "lines": 93,
       "imports": [
         "react",
@@ -16288,7 +14675,7 @@
     {
       "file": "client/src/components/CustomerAccountPage.tsx",
       "domain": "account-auth",
-      "sha256": "58a4d0d0e3368849072bf9476da783d298c7de5d91ede8f967d83a47c4d2c10a",
+      "sha256": "c351378a15a87c99a397e667a6171bef30ff075aa060bda55e5fc2c8cc901a6c",
       "lines": 976,
       "imports": [
         "react",
@@ -17206,7 +15593,7 @@
     {
       "file": "client/src/components/CustomerPasswordRecovery.tsx",
       "domain": "account-auth",
-      "sha256": "3c7f80f73789ac9d4c4d935d0916d3281c26ac7136de397cb209982f5601fee3",
+      "sha256": "b1f62315e9e1b1bbe1f8f3f8df456c798562302393a3e2b97191c04d8c4ec1b1",
       "lines": 122,
       "imports": [
         "react",
@@ -17371,8 +15758,8 @@
     {
       "file": "client/src/components/Footer.tsx",
       "domain": "shell-content",
-      "sha256": "7c6e904c97b982950a7a88985482e61394493c1d700f14672a601547451d559d",
-      "lines": 109,
+      "sha256": "8030103093b1c7e8a91779f8a1fc68cbc002825a43608d103037da4a5d7397c3",
+      "lines": 110,
       "imports": [
         "react",
         "../design/BrandIcon",
@@ -17390,7 +15777,7 @@
       "controls": [
         {
           "tag": "a",
-          "line": 84,
+          "line": 85,
           "className": null,
           "type": null,
           "role": null,
@@ -17400,7 +15787,7 @@
         },
         {
           "tag": "button",
-          "line": 94,
+          "line": 95,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -17410,7 +15797,7 @@
         },
         {
           "tag": "button",
-          "line": 95,
+          "line": 96,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -17420,22 +15807,12 @@
         },
         {
           "tag": "button",
-          "line": 97,
+          "line": 98,
           "className": null,
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{onOpenAbout}",
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 103,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
           "disabled": null
         },
         {
@@ -17451,6 +15828,16 @@
         {
           "tag": "a",
           "line": 105,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 106,
           "className": null,
           "type": null,
           "role": null,
@@ -17559,34 +15946,9 @@
       ]
     },
     {
-      "file": "client/src/components/icons/zayrovi/ZayroviIcon.tsx",
-      "domain": "shared-design",
-      "sha256": "719d10a0159ab3000a48c731dcdbe406e57e5571d95727b3e41a275d54ec7226",
-      "lines": 26,
-      "imports": [
-        "react",
-        "../../../design/editorial/IconDirection",
-        "../../../design/editorial/Icon",
-        "../../../design/editorial/identity.json",
-        "../../../design/editorial/glyphs.json"
-      ],
-      "exports": [
-        "ZAYROVI_ICON_SIZE",
-        "ZAYROVI_STROKE",
-        "ZAYROVI_CORNER",
-        "createZayroviIcon"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
       "file": "client/src/components/icons/zayrovi/catalog.tsx",
       "domain": "shared-design",
-      "sha256": "25d895c6daa27a0d63ecd4e7884d9f425e726ede4d964f25b6fa6f3c9f8be953",
+      "sha256": "0de1092f7f2812c894c58121409b94fbdf03e14030de0c35261d25c5baf5ba04",
       "lines": 107,
       "imports": [
         "./ZayroviIcon"
@@ -17704,10 +16066,35 @@
     {
       "file": "client/src/components/icons/zayrovi/index.ts",
       "domain": "shared-design",
-      "sha256": "51bc0373abfd482100d8d4f0ed1256577f30b29a7f533cdbdff2aea43ad03340",
+      "sha256": "6102ddc91d92349193f4ea297bf0814ee7569261486d3f020cb8e4de506cadfb",
       "lines": 4,
       "imports": [],
       "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/components/icons/zayrovi/ZayroviIcon.tsx",
+      "domain": "shared-design",
+      "sha256": "7223195404508ca34c1cb0d0eda8e451d3d2a308171f70eef792d9e8182e083a",
+      "lines": 26,
+      "imports": [
+        "react",
+        "../../../design/editorial/IconDirection",
+        "../../../design/editorial/Icon",
+        "../../../design/editorial/identity.json",
+        "../../../design/editorial/glyphs.json"
+      ],
+      "exports": [
+        "ZAYROVI_ICON_SIZE",
+        "ZAYROVI_STROKE",
+        "ZAYROVI_CORNER",
+        "createZayroviIcon"
+      ],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
@@ -17744,7 +16131,7 @@
     {
       "file": "client/src/components/LensFeature.tsx",
       "domain": "lens",
-      "sha256": "6b3b31a57c8cd2f4f37fb2c5351ed6e1b0b7f27ef56df971d606efceae47c690",
+      "sha256": "7ae328872eefdd0925d163668804f08f4c255af22f7e837660073f7074f3fc2b",
       "lines": 158,
       "imports": [
         "../i18n/LocaleContext",
@@ -17786,7 +16173,7 @@
     {
       "file": "client/src/components/MenuDrawer.tsx",
       "domain": "shell-content",
-      "sha256": "94138554f339f67da6f4f391646119b336de81127ba807f6961457bd67dabf7c",
+      "sha256": "4dc8347b0e66d6a8c06cf387a6b8bbae720ed9796f89561e24b1a89dfe24d10c",
       "lines": 132,
       "imports": [
         "react",
@@ -17911,7 +16298,7 @@
     {
       "file": "client/src/components/Navbar.tsx",
       "domain": "shell-content",
-      "sha256": "ec2493318cd2902135c476912bab7f6b639d79be31d9b4e2330114bf5f30f159",
+      "sha256": "41e2db5dfbb051eecf81463c565cc08212cacbc99bed86e0e7f0bebcd7c5d0d7",
       "lines": 113,
       "imports": [
         "react",
@@ -18010,7 +16397,7 @@
     {
       "file": "client/src/components/OrderConfirmationShell.tsx",
       "domain": "shell-content",
-      "sha256": "f02f67e44219d42e3c013fac559c6ddc31e00789758981b2ca56302a5adfad0e",
+      "sha256": "ce413726fd16064c0ded6a4164d9efbcfe36a0104e3b5096584663a4fcee1ce2",
       "lines": 28,
       "imports": [
         "react"
@@ -18028,7 +16415,7 @@
     {
       "file": "client/src/components/OrderSuccessModal.tsx",
       "domain": "commerce",
-      "sha256": "a2e8c3df1a4c9242075a09c26bc20f0c6b81035e11f503744da33c7c8b35f912",
+      "sha256": "a0440e14e449407ec3f07afb8372753b8741871da7d47ba86107d96e44182d3e",
       "lines": 191,
       "imports": [
         "react",
@@ -18166,7 +16553,7 @@
     {
       "file": "client/src/components/ProductDrawer.tsx",
       "domain": "commerce",
-      "sha256": "1bc3faf1f3addc63bb7b7fc1fee78a2bae2b8b894c0051a6b76fbb67f6ecef65",
+      "sha256": "7790cde8c7cedde972dad05e00cc5e6a627093d21b68d56010823866b926097c",
       "lines": 462,
       "imports": [
         "react",
@@ -18292,8 +16679,8 @@
     {
       "file": "client/src/components/PublicCmsSections.tsx",
       "domain": "shell-content",
-      "sha256": "effda04a8b6697fb4173fc9edefa4d6a7d12b970c9a938f6fc50101417729176",
-      "lines": 300,
+      "sha256": "220116dbbf13ee55439bf666e3747d4d329b0bf2bed78b5a863e2d0ecff42aab",
+      "lines": 304,
       "imports": [
         "react",
         "../assets/hero-homme.jpg",
@@ -18340,7 +16727,7 @@
         },
         {
           "tag": "ContentCard",
-          "line": 228,
+          "line": 232,
           "className": null,
           "type": null,
           "role": null,
@@ -18350,7 +16737,7 @@
         },
         {
           "tag": "ContentCard",
-          "line": 238,
+          "line": 242,
           "className": null,
           "type": null,
           "role": null,
@@ -18360,7 +16747,7 @@
         },
         {
           "tag": "a",
-          "line": 246,
+          "line": 250,
           "className": "\"public-page-back\"",
           "type": null,
           "role": null,
@@ -18370,7 +16757,7 @@
         },
         {
           "tag": "button",
-          "line": 267,
+          "line": 271,
           "className": "\"min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-xs font-black text-ink transition-colors hover:text-ink focus-visible:text-ink sm:text-lg\"",
           "type": "\"button\"",
           "role": null,
@@ -18432,7 +16819,7 @@
     {
       "file": "client/src/components/QatafoIcons.tsx",
       "domain": "shared-design",
-      "sha256": "cf24ee1ef45926120c621464c1ef97b8b9a486d0d38e22767d6120b238332236",
+      "sha256": "36b326cbe79c966349f2b05b14d7db45d7c7efe28dd64e78ab5576af2df9fa32",
       "lines": 132,
       "imports": [
         "./icons/zayrovi",
@@ -18641,9 +17028,34 @@
       ]
     },
     {
+      "file": "client/src/components/ZayroviMotion.tsx",
+      "domain": "shell-content",
+      "sha256": "bcaa22b3844ed024afd4b4d368b53dd606a14703add4aa1b1094ba7d63a95115",
+      "lines": 32,
+      "imports": [
+        "react",
+        "./QatafoIcons"
+      ],
+      "exports": [
+        "ZayroviMotion"
+      ],
+      "controls": [],
+      "icons": [
+        {
+          "module": "./QatafoIcons",
+          "bindings": "{ Sonim }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/config/buildStamp.ts",
       "domain": "shell-content",
-      "sha256": "b8d878a3ca68c024a0d914436636d1b97814802aed1f5ac3d9f86c82e24bd160",
+      "sha256": "a255244f4b2727c44efac13f5a5ad3232ac4784dd1f6fc5908ae1e022afeea56",
       "lines": 14,
       "imports": [],
       "exports": [
@@ -18659,7 +17071,7 @@
     {
       "file": "client/src/config/interfaceConfig.ts",
       "domain": "shell-content",
-      "sha256": "d4f347d2e9f5dd2e43ad7fc66c13ddbb127a43b9972cecc552e04618e3e45e80",
+      "sha256": "fee64ef3fd5725ba5adcb4a71412d45f784d1ed0ae4958c62294c1fbd42bdb8e",
       "lines": 332,
       "imports": [
         "../../../shared/brand.generated",
@@ -18681,7 +17093,6 @@
       "colors": [
         "#000000",
         "#0a0a0a",
-        "#0a63f5",
         "#15803d",
         "#3f3f46",
         "#666666",
@@ -18714,7 +17125,7 @@
     {
       "file": "client/src/customer/nativeOAuth.ts",
       "domain": "account-auth",
-      "sha256": "a6eb8428ca8dd9ba6e18d536c20df1a18d4e655aba5421afbb0bd9cce7061cdb",
+      "sha256": "e8c1318a65bf91d648db5f1899adf3e2de25c72f47f2cff30c5de194592d0c36",
       "lines": 190,
       "imports": [
         "@capacitor/core",
@@ -19459,8 +17870,8 @@
     {
       "file": "client/src/design/AppHeader.tsx",
       "domain": "shared-design",
-      "sha256": "5c46114f6d952ed130afc9df94b68c76f9a646eacc022e71b1a04ca1186e5a92",
-      "lines": 76,
+      "sha256": "86dc5b4af642bb1121563e9f972df10fa0453dc0ea82c44b6fdd37d221c194d1",
+      "lines": 78,
       "imports": [
         "react",
         "../components/QatafoIcons",
@@ -19473,7 +17884,7 @@
       "controls": [
         {
           "tag": "Button",
-          "line": 44,
+          "line": 46,
           "className": "{tone === 'dark' ? 'text-white hover:bg-white/10' : ''}",
           "type": null,
           "role": null,
@@ -19483,7 +17894,7 @@
         },
         {
           "tag": "button",
-          "line": 55,
+          "line": 57,
           "className": "\"shrink-0 bg-transparent\"",
           "type": "\"button\"",
           "role": null,
@@ -19550,7 +17961,7 @@
     {
       "file": "client/src/design/BrandLoadingIndicator.tsx",
       "domain": "shared-design",
-      "sha256": "8bd65d741fcb283d3522cbab2195302a5c83871eb18bb6ded307d051fa772348",
+      "sha256": "8bf83f9251bec9001056e4845fbbe6d9c679eb5e0d7463e88e888e64d0a874b1",
       "lines": 17,
       "imports": [
         "react"
@@ -19568,15 +17979,15 @@
     {
       "file": "client/src/design/brandSymbol.ts",
       "domain": "shared-design",
-      "sha256": "b1cbc247804cd32cf8ac7c1129dbc5fc4dee4755900254cd56f2bc7e048dd297",
-      "lines": 20,
+      "sha256": "618b84c4eb2e447d450a76e8963e3195d4f476be89fdc66b3ca3560728be1633",
+      "lines": 26,
       "imports": [],
       "exports": [
-        "BRAND_SYMBOL",
-        "BRAND_SYMBOL_SOLID",
-        "BRAND_SYMBOL_MAX_RADIUS",
-        "BOOT_SYMBOL_TRANSFORM",
-        "SPLASH_SYMBOL"
+        "BRAND_LOGO",
+        "BRAND_MARK",
+        "BOOT_MARK_TRANSFORM",
+        "SOCIAL_ICON",
+        "SPLASH_LOGO"
       ],
       "controls": [],
       "icons": [],
@@ -19634,7 +18045,7 @@
     {
       "file": "client/src/design/editorial/customer.css",
       "domain": "account-auth",
-      "sha256": "15423f26d042ca5429691dfea2ad487e3ddb1f8e095f730ad84191853791985a",
+      "sha256": "a5c57954eba9ceae69a714fb96f53feb96138b866719df864910c9d407d3c0f6",
       "lines": 62,
       "imports": [],
       "exports": [],
@@ -19675,7 +18086,7 @@
     {
       "file": "client/src/design/editorial/customerTheme.ts",
       "domain": "account-auth",
-      "sha256": "17cbc958df825ea439f70ff19e44b8ff7cce5fa4dcea1d943c270cff914e9ba4",
+      "sha256": "f79bb2dcfa55bd1ab4908e35a738f7137f3564420410353ea821f4042c158c6d",
       "lines": 72,
       "imports": [
         "../../../../shared/brand.generated",
@@ -19772,8 +18183,8 @@
     {
       "file": "client/src/design/editorial/tokens.generated.css",
       "domain": "shared-design",
-      "sha256": "50708daf0ccd7080fbb00d9ad027ef81c1da24f800cc852f39b1389fc534efbb",
-      "lines": 160,
+      "sha256": "d9a8433616f3578d96c27886962f4ced1a4bb01330963904972f3edaa91ace89",
+      "lines": 168,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -19781,22 +18192,20 @@
       "inlineSvg": [],
       "colors": [
         "#0A0A0A",
-        "#0A53CB",
-        "#0A63F5",
-        "#0B57CF",
         "#171717",
         "#236044",
+        "#2A2A2A",
         "#333333",
         "#525252",
         "#666666",
         "#6E6E6E",
-        "#78A9FA",
         "#888888",
         "#90D6AF",
         "#BDBDBD",
         "#D92D20",
-        "#DCE8FE",
+        "#D99A00",
         "#E5E5E5",
+        "#F2AE00",
         "#F2F2F2",
         "#FFABAB",
         "#FFFFFF"
@@ -19846,22 +18255,21 @@
     {
       "file": "client/src/design/tokens.css",
       "domain": "shared-design",
-      "sha256": "37be6db234bd9312562046e191d8fe9779af5f433771fa12ffb46a1a6fe3b8be",
-      "lines": 641,
+      "sha256": "97836b86194cf076f72d2f374731ffc77c5c993f8ab8cbd511a3676719b55245",
+      "lines": 639,
       "imports": [],
       "exports": [],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
       "colors": [
+        "#000000",
         "#008735",
         "#047857",
         "#050505",
         "#059669",
         "#0A0A0A",
-        "#0A63F5",
         "#0a0a0a",
-        "#0a63f5",
         "#0b7044",
         "#0f7147",
         "#10164f",
@@ -19892,6 +18300,7 @@
         "#2c2100",
         "#2e3040",
         "#303ca4",
+        "#333333",
         "#34d399",
         "#3730a3",
         "#374151",
@@ -19930,7 +18339,6 @@
         "#757788",
         "#77798b",
         "#787a89",
-        "#78a9fa",
         "#795400",
         "#7c2d12",
         "#7d7f91",
@@ -19956,12 +18364,10 @@
         "#9d9faf",
         "#9f1239",
         "#DC2626",
-        "#DCE8FE",
         "#EAEAEA",
+        "#F2AE00",
         "#F2F2F2",
         "#F8F9FA",
-        "#FF6900",
-        "#FF7900",
         "#FFFFFF",
         "#a0a2b4",
         "#a12a21",
@@ -20009,12 +18415,13 @@
         "#d7d8e3",
         "#d8d9e6",
         "#d8daec",
+        "#d92d20",
         "#d97706",
+        "#d99a00",
         "#d9d6dc",
         "#d9d9d9",
         "#dbdce4",
         "#dc2626",
-        "#dce8fe",
         "#dddeea",
         "#dfe0e4",
         "#dfe0e7",
@@ -20046,6 +18453,7 @@
         "#f1f1f3",
         "#f1f2ff",
         "#f1f5f9",
+        "#f2ae00",
         "#f2f2f2",
         "#f2f3fa",
         "#f3d9c4",
@@ -20459,7 +18867,7 @@
     {
       "file": "client/src/features/aywebs/api.ts",
       "domain": "shell-content",
-      "sha256": "93b59cc49ce708bbbfe49503f6f57ef044863fa4710e73c62c201a6472fab5b5",
+      "sha256": "627e3a6a641f495438dc0c8779b95fcf62d771a6251ef46ebfa266c54d670294",
       "lines": 657,
       "imports": [
         "../../../../shared/aywebsStores",
@@ -20513,8 +18921,8 @@
     {
       "file": "client/src/features/aywebs/aywebs.css",
       "domain": "shell-content",
-      "sha256": "757090fd724f9ef980a0a6cde2222bdf15f11998c95cbb2068494dd4e336f130",
-      "lines": 559,
+      "sha256": "496d1021472900c23b30784badbc70e7c6830d62c59e4da8136dcdb09a7f218d",
+      "lines": 562,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -20522,15 +18930,17 @@
       "inlineSvg": [],
       "colors": [
         "#0a0a0a",
-        "#0a63f5",
         "#101828",
         "#1d3f8f",
         "#344054",
         "#475467",
         "#667085",
         "#d0d5dd",
+        "#d92d20",
+        "#d99a00",
         "#e4e4e4",
         "#ececec",
+        "#f2ae00",
         "#f2f2f2",
         "#f2f4f7",
         "#f5f5f5",
@@ -20545,7 +18955,7 @@
     {
       "file": "client/src/features/aywebs/AyWebsApp.tsx",
       "domain": "shell-content",
-      "sha256": "d4b1ac8a84c7f46914642f060c7d9f0524c4b797c3f2ef5f9b7067ec9108b146",
+      "sha256": "1b2c09b3231b57605139b7cd13e685924399d2da15ad24ae90e21159b4a95920",
       "lines": 157,
       "imports": [
         "react",
@@ -20625,7 +19035,7 @@
     {
       "file": "client/src/features/aywebs/components/AyWebsCartScreen.tsx",
       "domain": "commerce",
-      "sha256": "1fe7855cea2138e68be4a3a10cbfd1ad22e91ab963058528da702479a0673e48",
+      "sha256": "578c55fe1faadefa8bfff3c46162beb98f99e80cbef6171d139b11e9a07ccb83",
       "lines": 239,
       "imports": [
         "react",
@@ -20672,7 +19082,7 @@
         {
           "tag": "button",
           "line": 218,
-          "className": "\"ayw-cta\"",
+          "className": "\"ayw-cta ayw-cta--buy\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -20890,7 +19300,7 @@
     {
       "file": "client/src/features/aywebs/components/AyWebsVariantSheet.tsx",
       "domain": "shell-content",
-      "sha256": "3f8d28dd8e9c15a89e7bfa5d41a9fd3a3fd33bd935dc6ce3159d3656009ab6f4",
+      "sha256": "1b590061d1bb2633ed96d7a50a808fda9aa76c497583bb5297d1a0e593341dc0",
       "lines": 518,
       "imports": [
         "react",
@@ -21005,7 +19415,7 @@
         {
           "tag": "button",
           "line": 462,
-          "className": "\"ayw-cta\"",
+          "className": "\"ayw-cta ayw-cta--buy\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -21015,7 +19425,7 @@
         {
           "tag": "button",
           "line": 506,
-          "className": "\"ayw-cta\"",
+          "className": "\"ayw-cta ayw-cta--buy\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -21158,7 +19568,7 @@
     {
       "file": "client/src/features/ocerex/OcerexScreen.tsx",
       "domain": "shell-content",
-      "sha256": "42a64ac2c22a5b5e4b5ffd04bdb56b6b663e0fb35d01eef7eda28eeecf07c123",
+      "sha256": "b5a34ec6c7251e9450aa85cc550f1f28299345fe9d94085f498f829072f01ad8",
       "lines": 167,
       "imports": [
         "react",
@@ -21482,7 +19892,7 @@
     {
       "file": "client/src/features/ocerex/screens/OcerexResult.tsx",
       "domain": "shell-content",
-      "sha256": "c8d9e054772f7ec1a90bfa4ca36c5c79637a0cdbfc67594dc8311995c49315f6",
+      "sha256": "f3858dd94683e83a1b69129f4a66f42eb14b5e1c4dd0659b1ffc731e4e7f9762",
       "lines": 51,
       "imports": [
         "react",
@@ -21543,7 +19953,7 @@
     {
       "file": "client/src/features/ocerex/screens/OcerexSummary.tsx",
       "domain": "shell-content",
-      "sha256": "22dce1d796558300dd63aa4817be95ba1ea07fd1cf03e475be603750d87b3152",
+      "sha256": "ab006b115e79adf0c64e410b92f7e4ebeb1a5fa3b8fd38b9dca51d7d1c069344",
       "lines": 42,
       "imports": [
         "react",
@@ -21620,7 +20030,7 @@
     {
       "file": "client/src/features/ocerex/types.ts",
       "domain": "shell-content",
-      "sha256": "0d690051c65d6645145e3b56cb6c7d679c6147193d83675390f2d566ba016835",
+      "sha256": "3e2f44e6a0256bcb633e6ef4bf2973df7db3a12494b148a2eaca34c74842efe5",
       "lines": 44,
       "imports": [],
       "exports": [],
@@ -21634,7 +20044,7 @@
     {
       "file": "client/src/features/ocerex/utils/preferences.ts",
       "domain": "shell-content",
-      "sha256": "c8ff41bfe63d1e2cb383564c5e93aa971030faff6c8135adb454e7a8173ec37f",
+      "sha256": "ddd7bd558fd36afae3c294dcb3a16c2f122d2e5ede608312fa311a0e315b1782",
       "lines": 33,
       "imports": [],
       "exports": [
@@ -21706,7 +20116,7 @@
     {
       "file": "client/src/i18n/LocaleContext.tsx",
       "domain": "shell-content",
-      "sha256": "33650517d4465e84a4a1fe1fa49ef3bea6a941e17954d1f128566136a1b6718f",
+      "sha256": "f8670e6c52d762a2c87f471e5bede2238fe7d52254f0dde12db33a182ef35784",
       "lines": 62,
       "imports": [
         "react"
@@ -21725,7 +20135,7 @@
     {
       "file": "client/src/index.css",
       "domain": "shell-content",
-      "sha256": "0e43b5431bcd9b20395718f3a1f884db71b195ad37478bd5460ce12147bfc945",
+      "sha256": "23137a25d1ae840c8530cd6e56d0fe3f60d8adf6e3de18ae47afe279061741d3",
       "lines": 1257,
       "imports": [],
       "exports": [],
@@ -21741,9 +20151,10 @@
     {
       "file": "client/src/main.tsx",
       "domain": "shell-content",
-      "sha256": "b459a5966ef6291af8ebb0bffd2a54a0fb5dd21b135e4a2e54fb1d2c8e927670",
-      "lines": 51,
+      "sha256": "7d68ae0cbb4a62067315cb45d83a2163827512033775cbf6ea306f66609dcf77",
+      "lines": 53,
       "imports": [
+        "./services/formerBrandStorage",
         "react",
         "react-dom/client",
         "./index.css",
@@ -21760,7 +20171,7 @@
       "icons": [],
       "inlineSvg": [
         {
-          "line": 31,
+          "line": 33,
           "viewBox": "\"0 0 136 136\""
         }
       ],
@@ -21771,7 +20182,7 @@
     {
       "file": "client/src/navigation/NavigationHistory.tsx",
       "domain": "shell-content",
-      "sha256": "03cf06b216b0bb34f6920e3e7d461d57ea6edf8fda2c5da4de1f932aab91689b",
+      "sha256": "3a2e7f415383f1ed6f4fb007999ad987e7464654e57eb2ac859a1b1218bdbae0",
       "lines": 198,
       "imports": [
         "react"
@@ -21811,7 +20222,7 @@
     {
       "file": "client/src/navigation/routeMeta.ts",
       "domain": "shell-content",
-      "sha256": "8ff3862b1a4aaec7ea2c6fc441d8d457bbc78491dd9a3dc8c0874b3e31220ccf",
+      "sha256": "9e8d4cdf19539dda57311ab5bb7b11ba2d58ab5dcfbf164b6d346b28c234e47e",
       "lines": 80,
       "imports": [
         "../../../shared/publicSeo"
@@ -21829,7 +20240,7 @@
     {
       "file": "client/src/navigation/RouteMeta.tsx",
       "domain": "shell-content",
-      "sha256": "7aa93f3a86fd21b8b1ef8ef67d56c316a371c3f1a5be0f2afa583bb31762e1e4",
+      "sha256": "b472689ec362616b9461cf6d28e44d6d4b121c19cc376b2e4820eed0dbb9f380",
       "lines": 27,
       "imports": [
         "react",
@@ -21849,7 +20260,7 @@
     {
       "file": "client/src/services/apiOrigin.ts",
       "domain": "shell-content",
-      "sha256": "97bd6802eb3cea9183dda5a8aa5db851d0b0746e799b7b1b5b17f203ad6b91b4",
+      "sha256": "69c821804ce591899f7c42bca6322606e3fed3492ed981763c573dbe4cd0bd76",
       "lines": 81,
       "imports": [],
       "exports": [
@@ -21864,9 +20275,27 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/services/formerBrandStorage.ts",
+      "domain": "shell-content",
+      "sha256": "950928869ad25cf5200897167da8df90af41488e1b9ed1a8fdeb6796daf75ede",
+      "lines": 36,
+      "imports": [
+        "../../../shared/formerBrand"
+      ],
+      "exports": [
+        "migrateFormerBrandStorage"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/services/nativeApiOrigin.ts",
       "domain": "shell-content",
-      "sha256": "e902b9912da505f5c65aa4be7985d6cf4432c3c061fa1d8f9dd286430e8f8ad4",
+      "sha256": "fbc7ad354a41579d49d61cea0d1374dc359ee3dadb8d7f1616042bb1bd1838d9",
       "lines": 49,
       "imports": [
         "./nativeShell",
@@ -21886,7 +20315,7 @@
     {
       "file": "client/src/services/nativeShell.ts",
       "domain": "shell-content",
-      "sha256": "a7af0a686fa8af84af1e4e0cd57c8f53c8640160a0727c4d94819d551a7443d4",
+      "sha256": "cec241ca24ab1fab5962a250065c808ea4ad8278d8f553e5747b5bb0e9d1787c",
       "lines": 97,
       "imports": [
         "@capacitor/core",
@@ -21932,7 +20361,7 @@
     {
       "file": "client/src/shop/adapter.ts",
       "domain": "shell-content",
-      "sha256": "d7d250469528024c09b2da767ea4012ab23ac1e8c92245961d043038d40d9042",
+      "sha256": "6f201a020c6f1fd36ce81765a1000edf364b72ad60a4409495074c8bc6b91adf",
       "lines": 260,
       "imports": [
         "../zayrovix/types",
@@ -22096,7 +20525,7 @@
     {
       "file": "client/src/shop/BagPage.tsx",
       "domain": "shell-content",
-      "sha256": "bcc526d39741273b71e73311995669a182a2ac02e5e29f2237085649e432f40c",
+      "sha256": "ae10564cc50ad2e176bccd310da80bf602528962ebbbb5d816ed58a72f94e7d9",
       "lines": 200,
       "imports": [
         "react",
@@ -22180,7 +20609,7 @@
         {
           "tag": "button",
           "line": 174,
-          "className": "\"s-cta s-bag-checkout\"",
+          "className": "\"s-cta s-cta--buy s-bag-checkout\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -22253,7 +20682,7 @@
     {
       "file": "client/src/shop/PaymentPage.tsx",
       "domain": "shell-content",
-      "sha256": "63a8c2b4708df412db850d3754f9dbf8ca7da3b984ab9853eafd5f9584742dee",
+      "sha256": "283dc95f87ffc4c83fba59071b5b2c046f9a23e03e20d56db5813fc75fb4288b",
       "lines": 152,
       "imports": [
         "react",
@@ -22296,7 +20725,7 @@
         {
           "tag": "button",
           "line": 145,
-          "className": "\"s-cta\"",
+          "className": "\"s-cta s-cta--buy\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -22313,8 +20742,8 @@
     {
       "file": "client/src/shop/ProductGrid.tsx",
       "domain": "shell-content",
-      "sha256": "d1f5612360050b0fbde7c824307fa50122dde2425c36bfa4e26d7069275698b3",
-      "lines": 165,
+      "sha256": "feb64c0c33f1b9062e6860a3f030d648d83d3fa4d78927b4fda6ee325654b7a5",
+      "lines": 180,
       "imports": [
         "react",
         "../design/editorial/Icon",
@@ -22326,7 +20755,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 90,
+          "line": 92,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -22336,7 +20765,7 @@
         },
         {
           "tag": "button",
-          "line": 102,
+          "line": 104,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -22346,7 +20775,17 @@
         },
         {
           "tag": "button",
-          "line": 146,
+          "line": 117,
+          "className": "\"s-card__add\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr(`Ajouter au panier : ${product.title}`, `زيد للسلة: ${product.title}`)}",
+          "onClick": "{() => onQuickAdd(product)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 161,
           "className": "\"s-card__stock\"",
           "type": "\"button\"",
           "role": null,
@@ -22364,7 +20803,7 @@
     {
       "file": "client/src/shop/ProductPage.tsx",
       "domain": "shell-content",
-      "sha256": "99564cd0fbd92d26018979063448d99beaaeefed1935381e53cd2a62b32c7144",
+      "sha256": "074ea78205f42334180e0818259fa6ebb064673023c3542f430c6c382a7e5b94",
       "lines": 349,
       "imports": [
         "react",
@@ -22549,7 +20988,7 @@
         {
           "tag": "button",
           "line": 331,
-          "className": "\"s-cta\"",
+          "className": "\"s-cta s-cta--buy\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -22590,8 +21029,8 @@
     {
       "file": "client/src/shop/shop.css",
       "domain": "shell-content",
-      "sha256": "8c31f7495665add3c4c84e16b7f68b76086400d5cd13dd6f79abe8d676287bc5",
-      "lines": 732,
+      "sha256": "e9f7df926f9b59b9513395e0aff93ef33ab5833a0a523658681b5810080c82aa",
+      "lines": 750,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -22599,13 +21038,14 @@
       "inlineSvg": [],
       "colors": [
         "#0a0a0a",
-        "#0a63f5",
         "#236044",
         "#666666",
         "#888888",
         "#a6a6a6",
         "#d92d20",
+        "#d99a00",
         "#e5e5e5",
+        "#f2ae00",
         "#f2f2f2",
         "#fff"
       ],
@@ -22617,7 +21057,7 @@
     {
       "file": "client/src/shop/ShopBagScreen.tsx",
       "domain": "shell-content",
-      "sha256": "86a4772cf21d4526c5917d8d584fe130c831ed2fc1ec6131599bf132081cad1a",
+      "sha256": "ed9cb4298075a9df5b42699086ed5ab795535f1ba9f65f3c19232d8715902c95",
       "lines": 139,
       "imports": [
         "react",
@@ -22684,7 +21124,7 @@
     {
       "file": "client/src/shop/ShopProductScreen.tsx",
       "domain": "shell-content",
-      "sha256": "d064a12e3b145d8b3817c32c645796dacc9c0cc81fc7d45c3932e4882cff267a",
+      "sha256": "7e94d2b5a8e78d3cc2817c4ed7ce3f28671257d331ca678f0ac7d4a1e3383fd6",
       "lines": 275,
       "imports": [
         "react",
@@ -22773,7 +21213,7 @@
     {
       "file": "client/src/shop/types.ts",
       "domain": "shell-content",
-      "sha256": "7196146f85efd9e4c59d7ea877288352050e4a0a9871b21fe106a5bba73d78f4",
+      "sha256": "340b18d27c525404359d57291b9d55c17650442309d3ad9f08be765602f2e8c3",
       "lines": 145,
       "imports": [],
       "exports": [
@@ -22920,7 +21360,7 @@
     {
       "file": "client/src/social/components/FullscreenMediaHeader.tsx",
       "domain": "discovery-social",
-      "sha256": "f1edd59c75b755d6fd381d24ebff732b7cbc3dd83961237c2c112bf6ba7c356d",
+      "sha256": "19640396b89b13ed6a306fd8f95fd205f611026b3274d3cc29e33c5fc011fbf5",
       "lines": 33,
       "imports": [
         "react",
@@ -22967,7 +21407,7 @@
     {
       "file": "client/src/social/components/ReelsViewer.tsx",
       "domain": "discovery-social",
-      "sha256": "19d64c71a877106b329c1cbb092f491118d0fb105eb73c7fbea6b60ddb601979",
+      "sha256": "a41d3c6e3a21067d492c1a7c8a420c2b207c391b8042aaceebda20f6380b2ff2",
       "lines": 165,
       "imports": [
         "../../components/QatafoIcons",
@@ -22999,7 +21439,7 @@
     {
       "file": "client/src/social/components/StoryCircles.tsx",
       "domain": "discovery-social",
-      "sha256": "be094948d8c004f5c48131936e32d970eeae193f326fd98c72830711a8a52537",
+      "sha256": "70af50468209df46f4cce05bd5d328b8765f2a90211bbaa87776576dbdb1bf32",
       "lines": 58,
       "imports": [
         "react",
@@ -23032,7 +21472,7 @@
     {
       "file": "client/src/social/components/StoryFeed.tsx",
       "domain": "discovery-social",
-      "sha256": "ff57e32bd1a0dca6c648db4fa44299facf1905654db9a4124988042e477de7c1",
+      "sha256": "b0d85b4bb6f1b7022b037a4b0c9e7ea4858af7dc8d7c29f8b062264e41d10a42",
       "lines": 188,
       "imports": [
         "react",
@@ -23153,7 +21593,7 @@
     {
       "file": "client/src/social/components/StoryViewer.tsx",
       "domain": "discovery-social",
-      "sha256": "4bbb357e89f3f04cbe51fc3430d81acc7737803d02fc69b79ef6da6f27ca30d0",
+      "sha256": "719d5395d9b055fc77f387252f4a35daf2f7f1e78fd709ac2b86733bc8e4c4ec",
       "lines": 226,
       "imports": [
         "react",
@@ -23216,7 +21656,7 @@
     {
       "file": "client/src/social/storyService.ts",
       "domain": "discovery-social",
-      "sha256": "360ac56d776cc2a55386a1040d8ad0c4b8d30a22e76a09674cffc4bae09525cd",
+      "sha256": "0c42f2efc3c592fdac7810a9cc23167ee84c264cf17fc5ec04d01b3804a71c8d",
       "lines": 337,
       "imports": [
         "./types",
@@ -23304,8 +21744,8 @@
     {
       "file": "client/src/styles/admin-console.css",
       "domain": "shell-content",
-      "sha256": "4e5d4d80d2e1a297a4aa056f5b18af46d1c7fa7851e058a29c729e3e01964afb",
-      "lines": 624,
+      "sha256": "3e1a8c73ceb4199eee8e58b3d056cfe20bd0b7023452ea319bf20971a0d24a46",
+      "lines": 621,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -23313,8 +21753,6 @@
       "inlineSvg": [],
       "colors": [
         "#0A0A0A",
-        "#0A53CB",
-        "#0A63F5",
         "#0E7C4A",
         "#0F0F0F",
         "#111110",
@@ -23329,6 +21767,7 @@
         "#2A1816",
         "#2A2314",
         "#2C2C2C",
+        "#333333",
         "#383838",
         "#3A3018",
         "#3B4148",
@@ -23336,7 +21775,6 @@
         "#5A5F66",
         "#6B4A00",
         "#6B7076",
-        "#78A9FA",
         "#946200",
         "#A0A0A0",
         "#A3A3A3",
@@ -23345,7 +21783,6 @@
         "#B4B4B4",
         "#D5D9D9",
         "#D6D6D6",
-        "#DCE8FE",
         "#E3E5E7",
         "#E8C98A",
         "#EAF1FA",
@@ -23353,6 +21790,7 @@
         "#EDEDED",
         "#EFF0F1",
         "#F0DCB4",
+        "#F2AE00",
         "#F2F2F2",
         "#F2F3F4",
         "#F3F3F4",
@@ -23366,60 +21804,9 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/styles/zayrovi-extracted-typography.css",
-      "domain": "shell-content",
-      "sha256": "b50c94515ba65a7e432422ca537358e241e92484a777aafe588a9c86d79e727a",
-      "lines": 224,
-      "imports": [],
-      "exports": [],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [
-        "--font-weight-regular: 400",
-        "--font-weight-medium: 520",
-        "--font-weight-semibold: 650",
-        "--font-weight-bold: 700",
-        "--font-weight-light: 400",
-        "font-family: var(--font-primary)",
-        "font-family: var(--font-primary)",
-        "font-family: var(--font-primary)",
-        "font-family: var(--font-primary)",
-        "font-family: var(--font-primary)",
-        "font-family: var(--font-primary)",
-        "font-family: var(--font-primary)",
-        "font-family: var(--font-primary)",
-        "font-family: var(--font-primary)",
-        "font-family: var(--ay-font-stack) !important",
-        "font-family: var(--ay-font-stack) !important",
-        "font-family: var(--ay-font-stack) !important",
-        "font-family: var(--ay-font-stack) !important",
-        "font-family: var(--ay-font-stack) !important",
-        "font-family: var(--ay-font-stack) !important",
-        "font-family: var(--ay-font-stack) !important",
-        "font-family: var(--ay-font-stack) !important"
-      ],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/styles/zayrovix-theme.css",
-      "domain": "shell-content",
-      "sha256": "4efca60e9d465b7c9e61a84106aee741516be373e6fba44de70af2f458b0820a",
-      "lines": 94,
-      "imports": [],
-      "exports": [],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
       "file": "client/src/styles/customer-account.css",
       "domain": "account-auth",
-      "sha256": "f6f2c43aefb1338eff84e262bae37f76b22997c5db7aa88ccc8022e7c508d595",
+      "sha256": "aeeaa82c6781a43e950432f71bb3022b69b381e170b32e5ffd0a179d2da86222",
       "lines": 38,
       "imports": [],
       "exports": [],
@@ -23456,7 +21843,7 @@
     {
       "file": "client/src/styles/customer-auth.css",
       "domain": "account-auth",
-      "sha256": "8848367547b67bd461f95f5cc304238b965d984715e5346dbc478daff2d2f16f",
+      "sha256": "933856bc7d4acad117249398d350e10c04ccb5c6ece31354fabe8a4641139fea",
       "lines": 171,
       "imports": [],
       "exports": [],
@@ -23474,7 +21861,7 @@
     {
       "file": "client/src/styles/drawers.css",
       "domain": "shell-content",
-      "sha256": "56021ac6ec1a023e9b187b4d5ea5ab10f43a6767ba32de593f9cbe6c84877cc9",
+      "sha256": "fddb02e05eb0d9b4b07a57d3ec286ffaa2f664de520312415540dd5bc6009f86",
       "lines": 75,
       "imports": [],
       "exports": [],
@@ -23492,7 +21879,7 @@
     {
       "file": "client/src/styles/editorial-voice.css",
       "domain": "shell-content",
-      "sha256": "4d9eab293688174b703360e2002801161cb2a52831c4dbe5cdcb4d492e2b58e0",
+      "sha256": "a156929e946696b204cac0d4ea9f8322860ab1a237d275d8b2a4de84238b2285",
       "lines": 60,
       "imports": [],
       "exports": [],
@@ -23509,7 +21896,7 @@
     {
       "file": "client/src/styles/interface-runtime.css",
       "domain": "shell-content",
-      "sha256": "05946f38ed4af0ed5033c2480d59673060144e5233bb758ba22a5113c7d04138",
+      "sha256": "c2da0f48c753658625a4014d463593ecac865137edd125e797aaf0ffc1120bfd",
       "lines": 60,
       "imports": [],
       "exports": [],
@@ -23525,7 +21912,7 @@
     {
       "file": "client/src/styles/journey.css",
       "domain": "shell-content",
-      "sha256": "cba9bc28c3e1d23309e0bae389d3e16c2fd5315212bceb81732c2f9a098ddc0b",
+      "sha256": "a24804189e798b70b654e1bba1cd2efd1b5b8323866211e49f0cf3f75fbf7c9c",
       "lines": 3,
       "imports": [],
       "exports": [],
@@ -23539,7 +21926,7 @@
     {
       "file": "client/src/styles/order-confirmation.css",
       "domain": "shell-content",
-      "sha256": "97c191c35294bd9147f0136a04c316846f832fe2d2e2b2bbfd5efe6c659f9da2",
+      "sha256": "ba095479d3c1a7e9093f9d3c78b97823cd950bc1d994585e7546a294d8867040",
       "lines": 100,
       "imports": [],
       "exports": [],
@@ -23553,8 +21940,8 @@
     {
       "file": "client/src/styles/public-discovery.css",
       "domain": "discovery-social",
-      "sha256": "77146a0e4b8e8b0dcc455b020d027e928e8bd98698f8fca04968ebe193c9443b",
-      "lines": 106,
+      "sha256": "9ea35cdf1c20720cf85b043ecfa00b6cb29b4ad1d67fb4a2f3ad3e0d54794dca",
+      "lines": 107,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -23577,7 +21964,7 @@
     {
       "file": "client/src/styles/typography.css",
       "domain": "shell-content",
-      "sha256": "84f111f6d35c543a0f1daab6bc3cb39785ccded9106066f0400fcf14da99f185",
+      "sha256": "590101704a617fadac215f3a4b24767deb890873e550fbfa755f989d9bfea6a2",
       "lines": 107,
       "imports": [],
       "exports": [],
@@ -23600,8 +21987,8 @@
     {
       "file": "client/src/styles/zalando-ui.css",
       "domain": "shell-content",
-      "sha256": "f320bae1a0bcd1e86729c822e2567e654377e2973f16d316186a2d819954cdcf",
-      "lines": 201,
+      "sha256": "1b473f5f9cbfcf8d9b59d376d35957a47015784398a29a45041659e88222b61d",
+      "lines": 198,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -23609,9 +21996,62 @@
       "inlineSvg": [],
       "colors": [
         "#0A0A0A",
-        "#0A63F5",
-        "#DCE8FE"
+        "#333333",
+        "#D99A00",
+        "#F2AE00",
+        "#F2F2F2"
       ],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/styles/zayrovi-extracted-typography.css",
+      "domain": "shell-content",
+      "sha256": "14d6b8ff72f122c8b58b1b45cb9f41186fe696f98e54ba5e51a9b17553328ef3",
+      "lines": 224,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [
+        "--font-weight-regular: 400",
+        "--font-weight-medium: 520",
+        "--font-weight-semibold: 650",
+        "--font-weight-bold: 700",
+        "--font-weight-light: 400",
+        "font-family: var(--font-primary)",
+        "font-family: var(--font-primary)",
+        "font-family: var(--font-primary)",
+        "font-family: var(--font-primary)",
+        "font-family: var(--font-primary)",
+        "font-family: var(--font-primary)",
+        "font-family: var(--font-primary)",
+        "font-family: var(--font-primary)",
+        "font-family: var(--font-primary)",
+        "font-family: var(--ay-font-stack) !important",
+        "font-family: var(--ay-font-stack) !important",
+        "font-family: var(--ay-font-stack) !important",
+        "font-family: var(--ay-font-stack) !important",
+        "font-family: var(--ay-font-stack) !important",
+        "font-family: var(--ay-font-stack) !important",
+        "font-family: var(--ay-font-stack) !important",
+        "font-family: var(--ay-font-stack) !important"
+      ],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/styles/zayrovix-theme.css",
+      "domain": "shell-content",
+      "sha256": "1a8145aedb5171e131a3cad7b538f4d46cf84451ee6eb969fe02606568c51757",
+      "lines": 94,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
       "fontDeclarations": [],
       "apiReferences": []
     },
@@ -23632,7 +22072,7 @@
     {
       "file": "client/src/utils/publicLinks.ts",
       "domain": "shell-content",
-      "sha256": "317d90e631b92134c0317786e139b4cc9020159f8b7142c80f01b5c4bff423f9",
+      "sha256": "7163fa7c24ce00f7c8a8df12e42f1f8cb97cb7cdf507ca76b38d9f305f420059",
       "lines": 13,
       "imports": [],
       "exports": [
@@ -23648,12 +22088,1603 @@
     {
       "file": "client/src/utils/session.ts",
       "domain": "shell-content",
-      "sha256": "0b4519b7a935af798dc50371078cdc46d24714c86fc649fb5c6e3dc070395739",
+      "sha256": "01f64e3bb77b62ca70d4a1b4b502a4461b558e4084a7d0337dd9b43291046501",
       "lines": 22,
       "imports": [],
       "exports": [
         "getSessionId"
       ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/InteractiveLensResults.tsx",
+      "domain": "lens",
+      "sha256": "ab8fb732e4087f18e44b2165fc91132c98c2dba33343529e043def2e466716e3",
+      "lines": 295,
+      "imports": [
+        "./useLensFavorites",
+        "../../types",
+        "react",
+        "../../components/QatafoIcons",
+        "../types",
+        "../services/resultPolicy",
+        "../../i18n/LocaleContext",
+        "../../shop/ProductGrid",
+        "../services/lensApi",
+        "../../shop/adapter",
+        "../services/lensStream",
+        "../services/lensSelectionGeometry",
+        "./useLensResultsSheet",
+        "./lens-results.css"
+      ],
+      "exports": [
+        "InteractiveLensResults"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 72,
+          "className": "\"ay-btn-secondary text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onRetry}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 73,
+          "className": "\"ay-btn-secondary text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onCancel}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 205,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Retour à la caméra', 'العودة إلى الكاميرا')}",
+          "onClick": "{onReset}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 217,
+          "className": "{`lens-selection-corner lens-corner-${corner}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{cornerLabel(corner)}",
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 225,
+          "className": "\"lens-product-dot\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr(`Sélectionner : ${product.name}`, `تحديد: ${product.name}`)}",
+          "onClick": "{() => void search(product.box)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 233,
+          "className": "\"lens-sheet-handle\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{drawer.full ? tr('Revenir à l’image', 'العودة إلى الصورة') : tr('Afficher tous les résultats', 'عرض كل النتائج')}",
+          "onClick": "{() => { if (drawer.skipClick.current) { drawer.skipClick.current = false; return; } drawer.snap(!drawer.full); }}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 276,
+          "className": "\"rounded-control bg-ink px-5 py-2 text-xs font-bold text-white\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { clearSelection(); onReset(); }}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ ArrowLeft, ScanSearch, Loader2, Image as ImageIcon, Check }",
+          "line": 4
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [
+        "#f2f2f2"
+      ],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/lens-camera.css",
+      "domain": "lens",
+      "sha256": "23a54501cf17526888fb626a4409a4ae81f2ab2739a8a30ddcb351fb0e9415d7",
+      "lines": 70,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [
+        "#000",
+        "#0009",
+        "#595959",
+        "#fff"
+      ],
+      "fontDeclarations": [
+        "font-family:var(--ay-font-stack)",
+        "font-family:inherit",
+        "font-family:var(--ay-font-stack)"
+      ],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/lens-results.css",
+      "domain": "lens",
+      "sha256": "b932d515079dda16c798d31276350583dbb933eeedf842ede31dd5ee35a0ae23",
+      "lines": 50,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [
+        "#000",
+        "#0006",
+        "#0009",
+        "#595959",
+        "#bdbdbd",
+        "#d9d9d9",
+        "#f5f5f5",
+        "#fff",
+        "#fff3"
+      ],
+      "fontDeclarations": [
+        "font-family:var(--ay-font-stack)",
+        "font-family:inherit"
+      ],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/LensCamera.tsx",
+      "domain": "lens",
+      "sha256": "d0d05a642c680dae3a28521e3c6e35b278cb910e929f9264a25db8b1d9109654",
+      "lines": 49,
+      "imports": [
+        "react",
+        "../../components/QatafoIcons",
+        "../../i18n/LocaleContext"
+      ],
+      "exports": [
+        "LensCamera"
+      ],
+      "controls": [
+        {
+          "tag": "input",
+          "line": 19,
+          "className": "\"hidden\"",
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 33,
+          "className": "\"ay-btn-primary h-auto w-full justify-start gap-4 rounded-card p-4 text-start shadow-card\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => inputRef.current?.click()}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Camera }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/LensHelp.tsx",
+      "domain": "lens",
+      "sha256": "f81cc8b5d9cafaf802480b953e22e115a521da46aa924b55804dc7da9a4892e9",
+      "lines": 66,
+      "imports": [
+        "react",
+        "../../components/QatafoIcons",
+        "../../i18n/LocaleContext",
+        "../../hooks/useDialogFocus",
+        "./lens-camera.css"
+      ],
+      "exports": [
+        "LENS_CONSENT_KEY",
+        "readLensConsent",
+        "rememberLensConsent",
+        "LensDialog",
+        "LensGuide",
+        "LensAccess"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 25,
+          "className": "\"lens-panel-icon\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Fermer cette fenêtre', 'إغلاق هذه النافذة')}",
+          "onClick": "{onClose}",
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 35,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 41,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 47,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 47,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 57,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 59,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 59,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 59,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 61,
+          "className": "\"lens-panel-primary\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onAccept}",
+          "disabled": "{!adult || !agreed || !privacyAccepted}"
+        },
+        {
+          "tag": "button",
+          "line": 62,
+          "className": "\"lens-panel-secondary\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onClose}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Info, X }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/LensHistory.tsx",
+      "domain": "lens",
+      "sha256": "a3b59a3ad30bad9aea2146292d4f21a6c5291c8757a854fae8716d62b930f501",
+      "lines": 122,
+      "imports": [
+        "react",
+        "../types",
+        "../services/history",
+        "../../components/QatafoIcons",
+        "../../i18n/LocaleContext"
+      ],
+      "exports": [
+        "LensHistory"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 59,
+          "className": "\"inline-flex min-h-[44px] w-fit items-center gap-1 rounded-xl px-2 text-xs font-extrabold text-ink\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Retour à ZAYROVIX Lens', 'العودة إلى عدسة ZAYROVIX')}",
+          "onClick": "{onClose}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 86,
+          "className": "\"ay-btn-primary mt-4 text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onNewScan}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 106,
+          "className": "\"ay-btn-primary min-h-11 px-3 py-1.5 text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onRepeat(item)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 108,
+          "className": "\"ay-btn-secondary min-h-11 px-3 py-1.5 text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onNewScan}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Loader2, ArrowLeft, History, LensBox }",
+          "line": 4
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/LensLauncher.tsx",
+      "domain": "lens",
+      "sha256": "0bd91fc2338c84d9ceb3833c04e1bc65d5f1ef64228dd3f3e2c8939d133a6a89",
+      "lines": 1036,
+      "imports": [
+        "../../types",
+        "./LensHelp",
+        "../services/productSelection",
+        "../services/productEnrichment",
+        "../../design/AppHeader",
+        "react",
+        "../../hooks/useBodyScrollLock",
+        "../types",
+        "../services/lensApi",
+        "../services/lensStream",
+        "../services/imagePrep",
+        "../services/history",
+        "../../services/publicApi",
+        "../../services/nativeShell",
+        "../../i18n/LocaleContext",
+        "./LiveCamera",
+        "./LensHistory",
+        "./LensCamera",
+        "./LensUpload",
+        "./ProductCandidates",
+        "../../shop",
+        "../../shop",
+        "../../navigation/NavigationHistory",
+        "../services/resultPolicy",
+        "./LensNavigation",
+        "./InteractiveLensResults",
+        "../../components/QatafoIcons",
+        "../services/productAttributes",
+        "./useLensFavorites"
+      ],
+      "exports": [
+        "LensLauncher"
+      ],
+      "controls": [
+        {
+          "tag": "AppHeader",
+          "line": 773,
+          "className": "{stage === 'product' ? 'border-b-0 bg-transparent' : ''}",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 779,
+          "className": "\"relative grid h-11 w-11 place-items-center rounded-full bg-transparent text-ink hover:bg-surface transition\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr(`Ouvrir le panier (${cartCount} articles)`, `فتح السلة (${cartCount} منتج)`)}",
+          "onClick": "{onOpenCart}",
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 795,
+          "className": "\"hidden\"",
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 821,
+          "className": "\"lens-drop\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => dropInputRef.current?.click()}",
+          "disabled": null
+        },
+        {
+          "tag": "form",
+          "line": 839,
+          "className": "\"bg-white p-4\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Recherche par nom de produit', 'بحث باسم المنتج')}",
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 855,
+          "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
+          "type": "\"search\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 867,
+          "className": "\"ay-btn-primary flex-none text-xs disabled:opacity-40\"",
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{textQuery.trim().length < 2}"
+        },
+        {
+          "tag": "form",
+          "line": 872,
+          "className": "\"bg-white p-4\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 887,
+          "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
+          "type": "\"url\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 889,
+          "className": "\"ay-btn-primary flex-none text-xs\"",
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 898,
+          "className": "\"text-xs font-bold text-ink underline\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{openHistory}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 902,
+          "className": "\"max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-left text-xs font-semibold text-ink hover:border-line/30\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => repeatHistoryItem(item)}",
+          "disabled": null
+        },
+        {
+          "tag": "ShopProductScreen",
+          "line": 963,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 993,
+          "className": "\"ay-btn-secondary text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{copyBarcode}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 996,
+          "className": "\"ay-btn-primary text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{reset}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 1015,
+          "className": "\"ay-btn-secondary text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void runImageAnalysis()}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 1018,
+          "className": "\"ay-btn-secondary text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=> { reset(); setTimeout(()=> urlInputRef.current?.focus(), 120); }}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 1021,
+          "className": "\"ay-btn-secondary text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=> { reset(); setTimeout(()=> textInputRef.current?.focus(), 120); }}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 1023,
+          "className": "\"ay-btn-secondary text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{retryLast}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 1024,
+          "className": "\"ay-btn-primary text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{reset}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Type, ExternalLink, Barcode, Image as GalleryIcon, Percent, Search, ShieldCheck, ShoppingBag }",
+          "line": 30
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": [
+        "/api/zayrovix/analyze-url"
+      ]
+    },
+    {
+      "file": "client/src/zayrovix/components/LensNavigation.tsx",
+      "domain": "lens",
+      "sha256": "466585e696386e561ff6eee3700e38868a9f7c21f4927815d7bb8547222e7b1a",
+      "lines": 167,
+      "imports": [
+        "react",
+        "../../components/QatafoIcons",
+        "../../i18n/LocaleContext"
+      ],
+      "exports": [
+        "LensContextHeader",
+        "LensMoreMenu"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 42,
+          "className": "{`grid h-11 w-11 place-items-center rounded-full ${control}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Quitter ZAYROVIX Lens', 'مغادرة عدسة ZAYROVIX')}",
+          "onClick": "{onExit}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 46,
+          "className": "{`grid h-11 w-11 place-items-center rounded-full ${control}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Retour', 'رجوع')}",
+          "onClick": "{onBack}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 55,
+          "className": "{`relative grid h-11 w-11 place-items-center rounded-full ${control}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr(`Panier, ${count} article(s)`, `السلة، ${count} منتج`)}",
+          "onClick": "{onCart}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 60,
+          "className": "{`grid h-11 w-11 place-items-center rounded-full ${control}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Menu ZAYROVIX Lens', 'قائمة عدسة ZAYROVIX')}",
+          "onClick": "{onMenu}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 78,
+          "className": "\"flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-start text-sm font-extrabold transition hover:bg-surface\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onClick}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 101,
+          "className": "\"absolute inset-0 bg-ink/65 backdrop-blur-sm\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Fermer le menu', 'إغلاق القائمة')}",
+          "onClick": "{onClose}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 105,
+          "className": "\"grid h-11 w-11 place-items-center rounded-full hover:bg-surface\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Retour au menu', 'العودة إلى القائمة')}",
+          "onClick": "{() => setSection('menu')}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 108,
+          "className": "\"grid h-11 w-11 place-items-center rounded-full hover:bg-surface\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Fermer', 'إغلاق')}",
+          "onClick": "{onClose}",
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 154,
+          "className": "\"block rounded-xl border border-line p-3 font-bold hover:border-line\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 155,
+          "className": "\"block rounded-xl border border-line p-3 font-bold hover:border-line\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 156,
+          "className": "\"block rounded-xl border border-line p-3 font-bold hover:border-line\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 161,
+          "className": "\"ay-btn-secondary mt-6 w-full text-sm\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onClose}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{\n  ArrowLeft, FileText, History, Info, MoreVertical, Moon, ShoppingBag, X,\n}",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/LensUpload.tsx",
+      "domain": "lens",
+      "sha256": "66d43ec05793990c15e258f09e9f50aad7795a0e1eb51fdf5ff9d5b9518df074",
+      "lines": 44,
+      "imports": [
+        "react",
+        "../../components/QatafoIcons",
+        "../../i18n/LocaleContext"
+      ],
+      "exports": [
+        "LensUpload"
+      ],
+      "controls": [
+        {
+          "tag": "input",
+          "line": 15,
+          "className": "\"hidden\"",
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 28,
+          "className": "\"ay-btn-secondary h-auto w-full justify-start gap-4 rounded-card p-4 text-start\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => inputRef.current?.click()}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Image as ImageIcon }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/LiveCamera.tsx",
+      "domain": "lens",
+      "sha256": "18a29be2c5b949622f9341f5d18a73e287426d8d217d9b1f2edc29b1c05235ac",
+      "lines": 439,
+      "imports": [
+        "react",
+        "../services/qr",
+        "../../components/QatafoIcons",
+        "../../i18n/LocaleContext",
+        "./LensHelp",
+        "../../navigation/NavigationHistory",
+        "../../hooks/useDialogFocus",
+        "./lens-camera.css",
+        "../services/liveVisionRuntime"
+      ],
+      "exports": [
+        "LiveCamera"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 264,
+          "className": "\"lens-camera-icon\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{photoUrl || panel === 'scan' ? tr('Retour à la caméra', 'العودة إلى الكاميرا') : tr('Quitter Lens', 'مغادرة Lens')}",
+          "onClick": "{panel === 'scan' ? closePanel : photoUrl && onPhotoClose ? onPhotoClose : onClose}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 270,
+          "className": "\"lens-camera-icon\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{!torchAvailable ? tr('Flash indisponible sur cet appareil', 'الفلاش غير متاح على هذا الجهاز') : torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}",
+          "onClick": "{toggleTorch}",
+          "disabled": "{!torchAvailable || torchBusy}"
+        },
+        {
+          "tag": "button",
+          "line": 273,
+          "className": "\"lens-camera-icon\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')}",
+          "onClick": "{() => openPanel('help')}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 299,
+          "className": "{`pointer-events-auto absolute rounded-[14px] border-2 transition-all ${isSel ? 'border-white bg-white/20 ring-2 ring-white' : 'border-white/90 hover:border-white hover:bg-white/10'}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{o.label}",
+          "onClick": "{() => setSelected((s) => ({ ...s, [o.trackingId]: !s[o.trackingId] }))}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 317,
+          "className": "\"pointer-events-auto absolute -bottom-10 left-1/2 z-10 flex w-[105%] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-black/75 p-2 text-start backdrop-blur border border-white/10 shadow-lg\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openLiveResults(selectedObjects.length ? selectedObjects : [active])}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 344,
+          "className": "{`flex flex-none items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-bold ${selected[obj.trackingId] ? 'border-white bg-white/20 text-white' : 'border-white/20 bg-white/10 text-white/70'}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setSelected((s) => ({ ...s, [obj.trackingId]: !s[obj.trackingId] }))}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 351,
+          "className": "\"bg-ink text-white hover:bg-ink/90 mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-extrabold\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openLiveResults(selectedObjects)}",
+          "disabled": "{!selectedObjects.length}"
+        },
+        {
+          "tag": "button",
+          "line": 377,
+          "className": "{`lens-camera-tab rounded-full px-4 py-2 text-sm font-semibold transition-colors ${selected ? 'is-selected bg-white text-ink' : 'text-white/85'} ${disabled ? 'opacity-40' : ''}`}",
+          "type": "\"button\"",
+          "role": "\"tab\"",
+          "ariaLabel": null,
+          "onClick": "{() => { if (mode === 'code') closePanel(); setCamMode(m); setNotice(null); }}",
+          "disabled": "{disabled}"
+        },
+        {
+          "tag": "button",
+          "line": 384,
+          "className": "{`lens-camera-tab rounded-full px-4 py-2 text-sm font-semibold ${mode === 'code' ? 'is-selected bg-white text-ink' : 'text-white/85'}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openPanel('methods', mode === 'code')}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 395,
+          "className": "\"lens-gallery-button\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Importer une image depuis la galerie', 'استيراد صورة من المعرض')}",
+          "onClick": "{pickFromGallery}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 400,
+          "className": "{`lens-camera-shutter grid h-[78px] w-[78px] place-items-center rounded-full border-[3px] border-white/90 bg-transparent transition active:scale-95 ${capturing ? 'scale-90 bg-white/80' : ''}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{isVideo ? tr('Capturer le résultat live', 'التقاط النتيجة الحالية') : tr('Photographier', 'التقاط صورة')}",
+          "onClick": "{handleCentralAction}",
+          "disabled": "{!cameraReady || capturing}"
+        },
+        {
+          "tag": "button",
+          "line": 409,
+          "className": "\"lens-ocerex-button\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Ouvrir OCEREX — prix depuis une image', 'فتح OCEREX — السعر من صورة')}",
+          "onClick": "{onOpenOcerex}",
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 419,
+          "className": "\"hidden\"",
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 425,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openPanel('scan', true)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 426,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openPanel('link')}",
+          "disabled": null
+        },
+        {
+          "tag": "form",
+          "line": 428,
+          "className": "\"lens-link-form\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 430,
+          "className": null,
+          "type": "\"url\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 433,
+          "className": "\"lens-panel-primary\"",
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!linkInput.trim()}"
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ ArrowLeft, X, Zap, ArrowRight, Barcode, Check, Image as ImageIcon, ScanSearch, ShoppingBag, Info, Search, Link2 }",
+          "line": 3
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": [
+        "/api/zayrovix/live-events"
+      ]
+    },
+    {
+      "file": "client/src/zayrovix/components/MerchantRating.tsx",
+      "domain": "lens",
+      "sha256": "d818c6219bcba4a87bb81b0df86e89e22a4e3c3a1ad2072a2b4d36c28e331016",
+      "lines": 24,
+      "imports": [
+        "react",
+        "../../components/QatafoIcons",
+        "../../i18n/LocaleContext",
+        "../services/resultPolicy"
+      ],
+      "exports": [
+        "MerchantRating"
+      ],
+      "controls": [],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Star }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/ProductCandidates.tsx",
+      "domain": "lens",
+      "sha256": "833c068fdcc007f38e056633bcc426c7f5f8adc918cb571534bedb39c3a0718b",
+      "lines": 110,
+      "imports": [
+        "./MerchantRating",
+        "react",
+        "motion/react",
+        "../../components/QatafoIcons",
+        "../types",
+        "../services/resultPolicy",
+        "../../i18n/LocaleContext",
+        "./quiet-card"
+      ],
+      "exports": [
+        "ProductCandidates"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 45,
+          "className": "\"relative w-[92px] flex-none self-start\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr(`Voir le produit : ${candidate.title}`, `عرض المنتج: ${candidate.title}`)}",
+          "onClick": "{() => onChoose(candidate)}",
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 93,
+          "className": "\"ay-readable-label mt-2 inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr(`Ouvrir ${candidate.title} chez ${candidate.source}`, `فتح ${candidate.title} لدى ${candidate.source}`)}",
+          "onClick": null,
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ ArrowUpRight, MessageCircle, ArrowRightLeft, ShoppingBag }",
+          "line": 4
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/quiet-card.css",
+      "domain": "lens",
+      "sha256": "3295fd66bd79de35d320a45cfc5fb19a3a3f6e89f1835243b132aa3d5ab4f1d3",
+      "lines": 224,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [
+        "#000",
+        "#0a0a0a",
+        "#595959",
+        "#d99a00",
+        "#dc2626",
+        "#e5e5e5",
+        "#f2ae00",
+        "#fff"
+      ],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/quiet-card.tsx",
+      "domain": "lens",
+      "sha256": "d4d92a594827a8a93b2efa203a14441c7ccf39da6f65b16c0dbad55d7d80c2aa",
+      "lines": 197,
+      "imports": [
+        "react",
+        "../../components/QatafoIcons",
+        "../types",
+        "../services/mediaIsolation",
+        "../../i18n/LocaleContext",
+        "./quiet-card.css"
+      ],
+      "exports": [
+        "StudioImageFrame",
+        "QuietPromoPrice",
+        "QuietCardActions"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 166,
+          "className": "{primaryTone === 'buy' ? 'ay-quiet-actions__primary ay-quiet-actions__primary--buy' : 'ay-quiet-actions__primary'}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onPrimary}",
+          "disabled": "{primaryBusy || primaryDisabled}"
+        },
+        {
+          "tag": "button",
+          "line": 181,
+          "className": "\"ay-quiet-actions__icon\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{label}",
+          "onClick": "{onClick}",
+          "disabled": "{busy || disabled}"
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Image as ImageIcon, Loader2 }",
+          "line": 15
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/components/useLensFavorites.ts",
+      "domain": "lens",
+      "sha256": "b651d43a8a2ee76d7bd4e5b3012fc5913c6f3ef44f803d1e404c720f0de2640b",
+      "lines": 68,
+      "imports": [
+        "react",
+        "../../customer/api",
+        "../../types",
+        "../types"
+      ],
+      "exports": [
+        "useLensFavorites"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": [
+        "/api/customer/account/favorites",
+        "/api/customer/account/favorites",
+        "/api/customer/account/favorites"
+      ]
+    },
+    {
+      "file": "client/src/zayrovix/components/useLensResultsSheet.ts",
+      "domain": "lens",
+      "sha256": "0dcbff51f7a69808df27d6ed371beccb2bbca6e3921aa9a6cbefc3529d84bbe2",
+      "lines": 107,
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "useLensResultsSheet"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/services/history.ts",
+      "domain": "lens",
+      "sha256": "94d6ec604b9f1103917f3ceb7b962f55122474c0eb37be3ebd49eff706e0975b",
+      "lines": 87,
+      "imports": [
+        "../types"
+      ],
+      "exports": [
+        "readLocalZayrovixHistory",
+        "rememberZayrovixHistory",
+        "loadZayrovixHistory"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": [
+        "/api/zayrovix/history?limit=30"
+      ]
+    },
+    {
+      "file": "client/src/zayrovix/services/imagePrep.ts",
+      "domain": "lens",
+      "sha256": "aed968578da623455fabda43e52e2b09c8b36e435b7e58e3a24490179cf3692f",
+      "lines": 49,
+      "imports": [],
+      "exports": [
+        "prepareImage"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/services/lensApi.ts",
+      "domain": "lens",
+      "sha256": "c78f99eba347ea997fa7d820cefef619314523d28abd86df5d77499269ffd705",
+      "lines": 259,
+      "imports": [
+        "../types",
+        "../../utils/session",
+        "./lensStream"
+      ],
+      "exports": [
+        "ZayrovixApiError",
+        "LENS_STREAM_IDLE_MS",
+        "LENS_JSON_TIMEOUT_MS",
+        "analyzeImage",
+        "analyzeUrl",
+        "requestManualReview",
+        "getManualReview",
+        "refreshLiveStock",
+        "markChosen",
+        "analyzeCode",
+        "analyzeBarcode",
+        "analyzeText"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": [
+        "/api/zayrovix/analyze-image",
+        "/api/zayrovix/analyze-url",
+        "/api/zayrovix/review-request",
+        "/api/zayrovix/live-stock",
+        "/api/zayrovix/choose",
+        "/api/zayrovix/analyze-code",
+        "/api/zayrovix/analyze-barcode",
+        "/api/zayrovix/analyze-text"
+      ]
+    },
+    {
+      "file": "client/src/zayrovix/services/lensSelectionGeometry.ts",
+      "domain": "lens",
+      "sha256": "ad18de9370a639ccf17757fc744499ab9fbbf715713db1f87ef22f83ec03439d",
+      "lines": 38,
+      "imports": [],
+      "exports": [
+        "containedImageRect",
+        "pointInImage",
+        "detectedBox",
+        "selectionForPoint",
+        "resizeSelection"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/services/lensStream.ts",
+      "domain": "lens",
+      "sha256": "3ac77275a0e554ebb6849d23219fc9b1787778e5470ffff9f977b91a577592df",
+      "lines": 46,
+      "imports": [],
+      "exports": [
+        "parseLensSseBlock"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/services/liveScanner.ts",
+      "domain": "lens",
+      "sha256": "f49da7fef7c102b8fd90b815c169bdd400ab92537c2ad2ae3aae9c9f8ba1dfbb",
+      "lines": 61,
+      "imports": [
+        "../types"
+      ],
+      "exports": [
+        "frameSignature",
+        "signatureDistance",
+        "liveObjectId"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/services/liveVisionRuntime.ts",
+      "domain": "lens",
+      "sha256": "bcda3a7acceb5eb19b15ad2af6ee58f23d2930cec65a376456331dd2def02f53",
+      "lines": 470,
+      "imports": [
+        "./lensApi",
+        "./liveScanner",
+        "../types"
+      ],
+      "exports": [
+        "LOCK_THRESHOLD",
+        "REDETECT_THRESHOLD",
+        "MAX_MISSES",
+        "PREDICT_FRAMES",
+        "computeCropRect",
+        "grayToFeatures",
+        "computeVisualFeatures",
+        "iou",
+        "adaptiveNextInterval",
+        "trackObjects",
+        "LiveVisionRuntime"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/services/mediaIsolation.ts",
+      "domain": "lens",
+      "sha256": "8f89cad40e08efb10553f58c0290281d58eb7e5b9896bd6f7730cc01eed5c22d",
+      "lines": 99,
+      "imports": [],
+      "exports": [
+        "isolatedMediaUrl",
+        "COMPOSED_PREFIX",
+        "composedMediaUrl",
+        "isComposedUrl",
+        "proxiedMediaUrl",
+        "withIsolation",
+        "isolatedSrc",
+        "productMediaChain",
+        "productMediaSrc",
+        "hasMediaFallback"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [
+        "#F0F2F2"
+      ],
+      "fontDeclarations": [],
+      "apiReferences": [
+        "/api/public/media/card"
+      ]
+    },
+    {
+      "file": "client/src/zayrovix/services/productAttributes.ts",
+      "domain": "lens",
+      "sha256": "e3be179ac9954f432d5d76f26fffddde26e130d330d063de7135734926133974",
+      "lines": 150,
+      "imports": [],
+      "exports": [
+        "classifyProduct",
+        "productClassLabel",
+        "extractCapacity",
+        "pricePer100",
+        "usesCapacity",
+        "presentSizes"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/services/productEnrichment.ts",
+      "domain": "lens",
+      "sha256": "c99cf0ef146bfd3bcbcc986a1004678c67a66a18996b3ba18ef0c8e9680cee02",
+      "lines": 73,
+      "imports": [
+        "../types"
+      ],
+      "exports": [
+        "mergeProductEnrichment"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/services/productSelection.ts",
+      "domain": "lens",
+      "sha256": "998062ddc82038eddb5dae5b947e4b55e32da59b4f3b0ecc3f7fbfc4a0be738a",
+      "lines": 58,
+      "imports": [
+        "../../../../shared/variantPolicy",
+        "../types"
+      ],
+      "exports": [
+        "resolveProductSelection",
+        "completeProductOffer",
+        "productSelectionLabels"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/services/qr.ts",
+      "domain": "lens",
+      "sha256": "de53efd1ccf03c81f5b1d20dd9b2e082243ce2d9d479609128681779e5811603",
+      "lines": 138,
+      "imports": [
+        "@zxing/library"
+      ],
+      "exports": [
+        "extractUrl",
+        "startCodeScan"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/services/resultPolicy.ts",
+      "domain": "lens",
+      "sha256": "2b207e50778fa6a8299016823bdb4a7ba2f10e34982807e1794382ee03eb0884",
+      "lines": 47,
+      "imports": [
+        "../types"
+      ],
+      "exports": [
+        "validProductUrl",
+        "displayRating",
+        "isDisplayableCandidate",
+        "isLenientCandidate",
+        "isDisplayableOrPending",
+        "isDisplayableProduct"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/zayrovix/types.ts",
+      "domain": "lens",
+      "sha256": "ca5d1fc44632e3a014935d47855f0d13b5faea42019fdf0490c6fd34687849a2",
+      "lines": 273,
+      "imports": [],
+      "exports": [],
       "controls": [],
       "icons": [],
       "inlineSvg": [],

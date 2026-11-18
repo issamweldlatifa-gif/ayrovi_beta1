@@ -151,7 +151,7 @@ describe('feuille d’ajout AYWEBs', () => {
     expect(screen.queryByTestId('aywebs-sheet-go-to-bag')).toBeNull();
   });
 
-  it('15/11 (Cdiscount) : carte produit compacte sur bande grise, mot-symbole bleu, pilule bleue 48 dp', async () => {
+  it('15/11 (Cdiscount) : carte produit compacte sur bande grise, mot-symbole noir, pilule d’achat jaune 48 dp', async () => {
     renderSheet();
     await waitFor(() => expect(screen.getByTestId('aywebs-sheet-add')).toBeTruthy(), { timeout: 5000 });
     const band = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-product-band').props.style);
@@ -160,9 +160,9 @@ describe('feuille d’ajout AYWEBs', () => {
     expect(card.backgroundColor).toBe('#FFFFFF');
     const thumb = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-product-image').props.style);
     expect(thumb.width).toBe(88);
-    expect(screen.getByTestId('aywebs-sheet-wordmark', { includeHiddenElements: true }).props.tintColor).toBe(processColor('#0A63F5'));
+    expect(screen.getByTestId('aywebs-sheet-wordmark', { includeHiddenElements: true }).props.tintColor).toBe(processColor('#0A0A0A'));
     const cta = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-add').props.style);
     expect(cta.minHeight).toBe(48);
-    expect(cta.backgroundColor).toBe('#0A63F5');
+    expect(cta.backgroundColor).toBe('#F2AE00');
   });
 });

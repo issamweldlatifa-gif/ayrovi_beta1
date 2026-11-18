@@ -128,6 +128,7 @@ it.each([
     expect(html.indexOf('src="/source.jpg"')).toBeLessThan(
       html.indexOf('Explorer la sélection')
     );
-    expect(html).toContain('#0A63F5');
+    expect(html).toContain('#0A0A0A'); // 18/11 : accent à l’encre
+    expect(html).not.toContain('#0A63F5');
   }
 );

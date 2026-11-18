@@ -19,8 +19,8 @@ import { ReelGlyph } from '@/features/reels/ReelIcons';
 export const FAVORITE_DISC = {
   ink: BRAND.black,
   surface: BRAND.white,
-  /** Le rond reste blanc en mode sombre : le bleu coché est donc le bleu de marque fixe. */
-  active: BRAND.violet,
+  /** Le rond reste blanc en mode sombre : le cœur coché est un cœur PLEIN à l'encre (18/11, plus de bleu). */
+  active: BRAND.black,
 } as const;
 
 export function FavoriteDiscGlyph({ active, size = CARD_SYSTEM.heartIcon, disc = CARD_SYSTEM.heartDisc, testID }: {

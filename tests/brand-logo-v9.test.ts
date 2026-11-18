@@ -13,7 +13,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import sharp from "sharp";
 import { describe, expect, test } from "vitest";
-import { BRAND_LOGO, BRAND_MARK, BOOT_MARK_TRANSFORM, SPLASH_LOGO } from "../client/src/design/brandSymbol";
+import { BRAND_LOGO, BRAND_MARK, BOOT_MARK_TRANSFORM, SOCIAL_ICON, SPLASH_LOGO } from "../client/src/design/brandSymbol";
 import { BRAND_LOGO_EMAIL, BRAND_LOGO_SVG } from "../shared/brandLogo.generated";
 
 const masterDir = "assets/brand/zayrovi-2026-11";
@@ -278,16 +278,25 @@ describe("v9 « Za. » — shipped pixels", () => {
     expect(read("package.json")).toContain("--iconBackgroundColor '#0A0A0A' --iconBackgroundColorDark '#0A0A0A' --splashBackgroundColor '#0A0A0A' --splashBackgroundColorDark '#0A0A0A'");
   });
 
-  test("official avatars (site + app): the yellow symbol on a black disc, its z opening into the black", () => {
+  test("official avatars (site + app) = the social icon: black rounded tile, mark + yellow dot closer (gap = dot diameter)", () => {
     for (const file of ["StoryFeed", "ReelsViewer", "FullscreenMediaHeader", "StoryCircles"])
-      expect(read(`client/src/social/components/${file}.tsx`)).toContain('src="/media/logo-zayrovi-avatar.svg?v=9.0"');
+      expect(read(`client/src/social/components/${file}.tsx`)).toContain('src="/media/logo-zayrovi-avatar.svg?v=9.1"');
     const avatar = read("client/public/media/logo-zayrovi-avatar.svg");
-    expect(avatar).toContain(`<circle cx="256" cy="256" r="256" fill="${INK}"/>`);
+    expect(avatar).toContain(`<rect width="512" height="512" rx="${512 * SOCIAL_ICON.radius}" fill="${INK}"/>`);
     expect(avatar).toContain(`fill="${YELLOW}" d="${BRAND_MARK.d}"`);
+    expect(avatar).toContain(`<circle cx="${SOCIAL_ICON.dot.cx}" cy="${SOCIAL_ICON.dot.cy}" r="${SOCIAL_ICON.dot.r}" fill="${YELLOW}"/>`);
+    // The dot: same radius and height as the logo's; the gap to the circle's edge (at that height) = its diameter.
+    const [, dotY, dotR] = BRAND_LOGO.dot.match(/^M[\d.]+ ([\d.]+)A([\d.]+)/)!.map(Number);
+    expect(SOCIAL_ICON.dot.r).toBe(dotR);
+    expect(SOCIAL_ICON.dot.cy).toBe(dotY);
+    const edge = 500 + Math.sqrt(500 ** 2 - (dotY - 500) ** 2);
+    expect(SOCIAL_ICON.dot.cx - dotR - edge).toBeCloseTo(2 * dotR, 0);
     const scale = Number(avatar.match(/scale\(([\d.]+)\)/)![1]);
-    expect(500 * scale).toBeCloseTo(512 * 0.42, 1);
-    expect(read("apps/mobile/src/design/OfficialAvatar.tsx")).toContain("backgroundColor: BRAND.black");
-    expect(read("apps/mobile/src/design/OfficialAvatar.tsx")).toContain("export const OFFICIAL_AVATAR_FIT = 0.42;");
+    expect(SOCIAL_ICON.width * scale).toBeCloseTo(512 * SOCIAL_ICON.content, 1);
+    const native = read("apps/mobile/src/design/OfficialAvatar.tsx");
+    expect(native).toContain("rx={size * SOCIAL_ICON.radius} fill={BRAND.black}");
+    expect(native).toContain("<Path d={BRAND_MARK.d} fill={BRAND.yellow} />");
+    expect(native).toContain("<Circle cx={SOCIAL_ICON.dot.cx} cy={SOCIAL_ICON.dot.cy} r={SOCIAL_ICON.dot.r} fill={BRAND.yellow} />");
     expect(read("apps/mobile/src/features/reels/ReelPublisher.tsx")).toContain("<OfficialAvatar size={OFFICIAL_AVATAR.reel}");
   });
 });

@@ -36,8 +36,8 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
     const data = response.body.data;
     expect(data.eyebrow).toBe('LENS');
     expect(data.title).toBe('Voyez-le.\nLENS le trouve.\nOn s’occupe du reste.');
-    // la graine garde l'ancien orange en base ; l'API publie le violet officiel
-    expect(data.accentColor).toBe('#0A63F5');
+    // la graine garde l'ancien orange en base ; l'API publie l'accent officiel (encre depuis le 18/11)
+    expect(data.accentColor).toBe('#0A0A0A');
     // النموذج الجديد: المحتوى الموسّع كله من الـ DB (sections)
     expect(data.sections.miniFeatures).toHaveLength(4);
     expect(data.sections.steps.items).toHaveLength(4);

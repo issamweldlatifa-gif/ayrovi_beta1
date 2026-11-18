@@ -1,6 +1,6 @@
 import { Animated } from "react-native";
 import { render } from "@testing-library/react-native";
-import Svg, { Path } from "react-native-svg";
+import Svg, { Circle, Path, Rect } from "react-native-svg";
 import type { ReactTestInstance } from "react-test-renderer";
 import {
   BrandLogo,
@@ -127,14 +127,17 @@ describe("loading and avatar", () => {
     expect(render(<BrandSymbol width={40} />).UNSAFE_getByType(Svg).props.height).toBe(40);
   });
 
-  it("shows the official Reel avatar as the yellow symbol on a black disc, never a blue symbol", () => {
+  it("shows the official Reel avatar as the social icon: black rounded tile, yellow mark + closer yellow dot", () => {
     const result = render(<ReelPublisher />);
     const path = result.UNSAFE_getByType(Path);
     expect(path.props.d).toBe(BRAND_MARK.d);
     expect(path.props.fill).toBe(BRAND.yellow);
-    const disc = result.getByTestId("reel-publisher-avatar", { includeHiddenElements: true });
-    expect(disc.props.style).toMatchObject({ width: 28, height: 28, borderRadius: 14, backgroundColor: BRAND.black });
-    // Yellow circle = 84 % of the disc: a black ring stays around it.
-    expect(svgDrawing(result, BRAND_MARK.d).props.width).toBeCloseTo(28 * 0.84, 1);
+    const tile = result.getByTestId("reel-publisher-avatar", { includeHiddenElements: true });
+    expect(tile.props.style).toMatchObject({ width: 28, height: 28 });
+    const rect = result.UNSAFE_getByType(Rect);
+    expect(rect.props).toMatchObject({ width: 28, height: 28, fill: BRAND.black });
+    expect(rect.props.rx).toBeCloseTo(28 * 0.2, 5);
+    const dot = result.UNSAFE_getByType(Circle);
+    expect(dot.props.fill).toBe(BRAND.yellow);
   });
 });

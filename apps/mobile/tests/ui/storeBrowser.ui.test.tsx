@@ -148,7 +148,7 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     expect(screen.getByText('Article ajouté')).toBeTruthy();
   });
 
-  it('16/11 : vraie barre de navigateur — fond blanc, pilule grise, logo Clean, CTA bleu', async () => {
+  it('16/11 : vraie barre de navigateur — fond blanc, pilule grise, logo Clean, CTA d’achat jaune', async () => {
     renderBrowser();
     const header = StyleSheet.flatten(screen.getByTestId('aywebs-store-header').props.style);
     expect(header.backgroundColor).toBe('#FFFFFF');
@@ -156,7 +156,7 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     expect(pill.backgroundColor).toBe('#ECECF0');
     expect(screen.getByTestId('aywebs-ask-clean-logo')).toBeTruthy();
     const cta = StyleSheet.flatten(screen.getByTestId('aywebs-store-add-to-cart').props.style);
-    expect([cta.backgroundColor, cta.borderColor]).toContain('#0A63F5');
+    expect([cta.backgroundColor, cta.borderColor]).toContain('#F2AE00');
   });
 
   it('16/11 : adresse = domaine de la page ouverte, suit les liens, NON modifiable ; ligne de progression', async () => {

@@ -328,7 +328,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             <span aria-live="polite">{quantity}</span>
             <button type="button" className="s-iconbtn" aria-label={tr('Augmenter la quantité', 'زيد الكمية')} onClick={() => setQuantity((value) => Math.min(99, value + 1))}><EditorialIcon name="Plus" size={18} /></button>
           </div>
-          <button type="button" className="s-cta" data-done={added || undefined} onClick={add} disabled={adding || sizeMissing || colorMissing || availabilityBlocked || !canAdd || !actions?.onAddToBag}>
+          <button type="button" className="s-cta s-cta--buy" data-done={added || undefined} onClick={add} disabled={adding || sizeMissing || colorMissing || availabilityBlocked || !canAdd || !actions?.onAddToBag}>
             {added ? <><EditorialIcon name="Check" size={18} />{duplicateUpdated ? tr('Déjà au panier · quantité mise à jour', 'موجود في السلة · تم تحديث الكمية') : tr('Ajouté au panier', 'تزاد للسلة')}</> : adding ? tr('Ajout…', 'جارٍ الإضافة…') : tr('Ajouter au panier', 'أضف إلى السلة')}
           </button>
           {duplicateUpdated && <p className="s-refusal" role="status">{tr('Aucune ligne en double n’a été créée.', 'لم تتم إضافة سطر مكرر إلى السلة.')}</p>}

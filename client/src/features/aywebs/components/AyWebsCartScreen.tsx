@@ -215,7 +215,7 @@ export const AyWebsCartScreen: React.FC<AyWebsCartScreenProps> = ({ tab, onTab, 
               {cart.blockers.map((blocker) => <p key={`${blocker.itemId}:${blocker.code}`}>{blocker.message}</p>)}
             </div>
           ) : null}
-          <button type="button" className="ayw-cta" disabled={bridging} onClick={() => void proceed()}>
+          <button type="button" className="ayw-cta ayw-cta--buy" disabled={bridging} onClick={() => void proceed()}>
             {bridging ? <Loader2 className="animate-spin" size={18} aria-hidden="true" /> : tr('Verify and proceed', 'التحقق والمتابعة')}
           </button>
           {/* Rester dans le parcours : retour aux boutiques, sans quitter AYWEBs. */}

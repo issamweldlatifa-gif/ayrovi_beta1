@@ -152,13 +152,15 @@ export interface QuietCardActionsProps {
   primaryBusy?: boolean;
   primaryDisabled?: boolean;
   primaryIcon?: React.ComponentType<{ size?: number | string; className?: string }>;
+  /** 18/11 (maquette v2) : `buy` = vrai ajout au panier → bouton d'ACHAT jaune « Za. ». */
+  primaryTone?: 'ink' | 'buy';
   icons?: QuietCardAction[];
   className?: string;
 }
 
 export const QuietCardActions: React.FC<QuietCardActionsProps> = ({
   primaryLabel, primaryTitle, onPrimary, primaryBusy, primaryDisabled,
-  primaryIcon: PrimaryIcon, icons, className = '',
+  primaryIcon: PrimaryIcon, primaryTone = 'ink', icons, className = '',
 }) => (
   <div className={`ay-quiet-actions ${className}`.trim()}>
     <button
@@ -166,7 +168,7 @@ export const QuietCardActions: React.FC<QuietCardActionsProps> = ({
       onClick={onPrimary}
       disabled={primaryBusy || primaryDisabled}
       title={primaryTitle}
-      className="ay-quiet-actions__primary"
+      className={primaryTone === 'buy' ? 'ay-quiet-actions__primary ay-quiet-actions__primary--buy' : 'ay-quiet-actions__primary'}
     >
       {primaryBusy
         ? <Loader2 className="ay-quiet-actions__spin" size={16} />

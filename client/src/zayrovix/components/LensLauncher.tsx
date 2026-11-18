@@ -783,7 +783,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 className="relative grid h-11 w-11 place-items-center rounded-full bg-transparent text-ink hover:bg-surface transition"
               >
                 <ShoppingBag size={22} />
-                {cartCount > 0 && <span className="absolute -top-1 end-0 min-w-4 rounded-full border-2 border-white bg-ink px-1 text-center text-micro font-black leading-4 text-white" aria-hidden="true">{cartCount}</span>}
+                {cartCount > 0 && <span className="absolute -top-1 end-0 min-w-4 rounded-full border-2 border-white bg-[var(--zayrovi-cart-badge)] px-1 text-center text-micro font-black leading-4 text-white" data-testid="cart-badge" aria-hidden="true">{cartCount}</span>}
               </button>
             )}
           />
