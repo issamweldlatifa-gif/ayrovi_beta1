@@ -475,7 +475,7 @@ describe('page d’accueil de la connexion — modal fort (référence Zalando 0
 
   it('la marque ouvre la page : mot-symbole posé au-dessus du titre, sans sous-titre', async () => {
     await renderScreen();
-    expect(screen.getByLabelText('zayrovi')).toBeTruthy();
+    expect(screen.getByLabelText('ZAYROVI')).toBeTruthy();
     expect(screen.getByText("Se connecter ou s'inscrire")).toBeTruthy();
     // L'ancien sous-titre a disparu de la page d'accueil (le titre suffit).
     expect(screen.queryByText('Utilisez votre adresse e-mail pour continuer. Un compte est créé automatiquement si besoin.')).toBeNull();

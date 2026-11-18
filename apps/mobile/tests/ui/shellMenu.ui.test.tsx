@@ -49,7 +49,7 @@ describe('icône compte et menu', () => {
     await renderHeader();
     expect(screen.queryByRole('button', { name: 'Notifications' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Panier ZAYROVI' })).toBeNull();
-    expect(screen.queryByLabelText('zayrovi')).toBeNull();
+    expect(screen.queryByLabelText('ZAYROVI')).toBeNull();
     // Le visiteur ne voit pas Plus Light non plus (demande du 10/11).
     expect(screen.queryByTestId('plus-light')).toBeNull();
     fireEvent.press(screen.getByTestId('guest-header-signin'));
@@ -59,7 +59,7 @@ describe('icône compte et menu', () => {
   it('connecté : la cloche ouvre directement les notifications', async () => {
     (globalThis as any).__testStatus = 'signedIn';
     await renderHeader();
-    expect(screen.getByLabelText('zayrovi')).toBeTruthy();
+    expect(screen.getByLabelText('ZAYROVI')).toBeTruthy();
     expect(screen.queryByTestId('guest-header-signin')).toBeNull();
     fireEvent.press(screen.getByRole('button', { name: 'Notifications' }));
     expect(router.push).toHaveBeenCalledWith('/account/notifications');
