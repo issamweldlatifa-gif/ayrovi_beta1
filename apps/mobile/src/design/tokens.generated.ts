@@ -5,8 +5,8 @@
  *              ZAYROVI App — Official Brand Colors · version 4.5.0
  *              sha256 : 048943e0538e363f1712745f141383628bbaec63ad4885375fe30cf6b0e72cdc
  * Structure  : client/src/design/editorial/identity.json
- *              ZAYROVI A — Official Identity · version 4.4.0
- *              sha256 : 094c0e82369dde2d3cfd648a0f465a27f46045159e7683876d5e1a4b9286fe51
+ *              ZAYROVI A — Official Identity · version 4.5.0
+ *              sha256 : 04244374e09fc574ac108ac352e48b0ef211829b521082c955745011dff5c64d
  *
  * Régénérer : npm run tokens:build   ·   vérifier : npm run tokens:check
  */
@@ -17,9 +17,9 @@ export const IDENTITY = {
   source: "apps/mobile/src/design/brand.json",
   structure: {
     name: "ZAYROVI A — Official Identity",
-    sha256: "094c0e82369dde2d3cfd648a0f465a27f46045159e7683876d5e1a4b9286fe51",
+    sha256: "04244374e09fc574ac108ac352e48b0ef211829b521082c955745011dff5c64d",
     source: "client/src/design/editorial/identity.json",
-    version: "4.4.0",
+    version: "4.5.0",
   },
   version: "4.5.0",
 } as const;
