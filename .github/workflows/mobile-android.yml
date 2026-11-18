@@ -86,7 +86,8 @@ jobs:
         run: npm ci
 
       - name: Block high-severity dependency advisories
-        run: npm audit --audit-level=high
+        # High/critical advisories block; only reviewed, expiring exceptions in security/audit-allowlist.json pass.
+        run: node ../../scripts/audit-gate.mjs
 
       - name: Design tokens à jour
         run: npm run tokens:check

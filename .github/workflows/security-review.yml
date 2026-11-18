@@ -33,13 +33,13 @@ jobs:
       - name: Verify Node pin against Render and workflows
         run: node scripts/check-node-security.cjs
       - name: Audit server dependencies
-        run: npm audit --audit-level=high
+        run: node scripts/audit-gate.mjs
       - name: Install mobile dependencies and security backports
         working-directory: apps/mobile
         run: npm ci --no-audit --no-fund
       - name: Audit mobile dependencies
         working-directory: apps/mobile
-        run: npm audit --audit-level=high
+        run: node ../../scripts/audit-gate.mjs
       - name: Verify mobile security patches and compatibility
         working-directory: apps/mobile
         run: npx vitest run tests/security-dependency-bridge.test.ts

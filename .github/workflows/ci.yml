@@ -36,7 +36,8 @@ jobs:
         run: npm ci --prefix apps/mobile --ignore-scripts --no-audit --no-fund
 
       - name: Audit dependency advisories
-        run: npm audit --audit-level=high
+        # High/critical advisories block; only reviewed, expiring exceptions in security/audit-allowlist.json pass.
+        run: node scripts/audit-gate.mjs
 
       - name: Check generated identity and source inventory
         run: npm run design:check

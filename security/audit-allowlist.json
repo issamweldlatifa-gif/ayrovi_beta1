@@ -1,0 +1,14 @@
+{
+  "$comment": "High/critical npm advisories the CI audit gate (scripts/audit-gate.mjs) tolerates — ONLY when no patched release exists and the vulnerable code never handles untrusted input. Each entry expires: past that date the gate fails again and the entry must be re-reviewed. If the advisory's vulnerable range changes (a fix is published), the gate fails so the dependency gets upgraded instead.",
+  "advisories": [
+    {
+      "id": "GHSA-fc5q-39xc-vjpf",
+      "package": "picomatch",
+      "range": "<=4.0.7",
+      "title": "picomatch vulnerable to ReDoS through single-branch repeated extglobs",
+      "reviewed": "2026-11-18",
+      "expires": "2026-12-31",
+      "reason": "No patched version exists (4.0.7 is the latest release and is inside the vulnerable range). picomatch is only reached through build/test tooling — Vite, Vitest, Jest (anymatch, jest-util), Metro (micromatch, metro-file-map), Expo CLI and tinyglobby — matching glob patterns written in the repository's own config. It is not bundled into the web client or the app, and the server never imports it (no vite/picomatch/tinyglobby import under src/, shared/, client/src/, apps/mobile/src, apps/mobile/app). The ReDoS needs an attacker-controlled glob pattern, which none of these call sites accept."
+    }
+  ]
+}
