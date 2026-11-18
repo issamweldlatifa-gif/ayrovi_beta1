@@ -125,6 +125,7 @@ await writePng(`${media}/logo-zayrovi-email-dark.png`, svg(mailW, mailH, rect(ma
 // ---- Server documents (invoices): inline SVG strings, no network, printable --------------------------------
 const inline = (tone, height) => svg((height * logo.width) / logo.height, height, '', 'ZAYROVI')
   .replace(/viewBox="[^"]*"/, `viewBox="${logo.viewBox}"`).replace('</svg>', `${logoBody(tone)}</svg>`).trim();
+fs.mkdirSync('shared', { recursive: true });
 fs.writeFileSync('shared/brandLogo.generated.ts', `// GENERATED from assets/brand/zayrovi-2026-11/logo.json (v${VERSION}, « Za. ») by npm run brand:build — do not edit.
 /** Official logo as inline SVG for server documents. light = on white (ink a), dark = on black (white a). */
 export const BRAND_LOGO_VERSION = ${JSON.stringify(VERSION)};
