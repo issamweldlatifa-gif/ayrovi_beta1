@@ -652,6 +652,14 @@ export function AddToCartSheet({
    * RÈGLE STRICTE : si la variante choisie n'a pas de prix vérifié, on n'affiche
    * JAMAIS le prix marchand d'une autre variante (`product.price`) comme prix actuel.
    */
+  /** Prix publié par la boutique pour le choix capté (texte de la page, sinon montant serveur). */
+  const confirmMerchantPrice = useMemo(() => {
+    if (merchantPrice.amount) return merchantPrice.amount;
+    const amount = pageQuote?.sourcePrice ?? null;
+    const currency = pageQuote?.sourceCurrency || product.currency || '';
+    return amount != null && amount > 0 ? `${amount.toFixed(2)} ${currency}`.trim() : '';
+  }, [merchantPrice.amount, pageQuote?.sourceCurrency, pageQuote?.sourcePrice, product.currency]);
+
   const availabilityLabel = useCallback((state: AvailabilityState): string => {
     if (state === 'AVAILABLE') return t('aywebs.avail.AVAILABLE');
     if (state === 'LOW_STOCK') return t('aywebs.avail.LOW_STOCK');
@@ -1245,6 +1253,19 @@ export function AddToCartSheet({
                 </View>
               ))}
 
+              {/* Confirmation (19/11/2026) : le prix publié par la boutique pour CE choix,
+                  et une disponibilité non confirmée dite telle quelle — jamais « disponible ». */}
+              {confirmMerchantPrice ? (
+                <AppText variant="caption" color={theme.colors.muted} testID="aywebs-confirm-merchant-price">
+                  {t('aywebs.merchantPriceLine', { price: confirmMerchantPrice })}
+                </AppText>
+              ) : null}
+              {quote.availability === 'UNKNOWN' && confirmMerchantPrice ? (
+                <AppText variant="caption" color={theme.colors.muted} testID="aywebs-confirm-availability-unconfirmed">
+                  {t('aywebs.availUnconfirmed')}
+                </AppText>
+              ) : null}
+
               {missing.length > 0 ? (
                 <View style={styles.missingNotice}>
                   <AppText variant="captionStrong" color={theme.status.danger.fg}>
@@ -1266,7 +1287,7 @@ export function AddToCartSheet({
               >
                 <Ionicons name="return-up-back-outline" size={theme.iconSize.xs} color={theme.colors.muted} />
                 <AppText variant="caption" color={theme.colors.muted} style={styles.changeOnStoreLabel}>
-                  {t('aywebs.changeOnStore')}
+                  {t('aywebs.changeOnPage')}
                 </AppText>
               </Pressable>
             </View>

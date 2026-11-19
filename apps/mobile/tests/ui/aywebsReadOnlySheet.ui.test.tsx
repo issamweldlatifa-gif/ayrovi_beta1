@@ -199,7 +199,10 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
     expect(screen.getByTestId('aywebs-captured-selection-box')).toBeTruthy();
     expect(screen.getByText('Douane et livraison incluses')).toBeTruthy();
     expect(screen.queryByText(/Sélection capturée depuis la boutique/)).toBeNull();
-    expect(screen.queryByText(/Prix boutique/)).toBeNull();
+    /* Confirmation (19/11/2026) : le prix publié par la boutique pour CE choix est rappelé. */
+    expect(screen.getByTestId('aywebs-confirm-merchant-price')).toBeTruthy();
+    expect(screen.getByText(/Prix sur la boutique : .*18[.,]71/)).toBeTruthy();
+    expect(screen.getByText('Changer sur la page')).toBeTruthy();
     expect(screen.getByText('Couleur : Jean clair')).toBeTruthy();
     expect(screen.getByText('Taille : 4Y (98-104 cm)')).toBeTruthy();
     expect(screen.getByText('Ajouter au panier')).toBeTruthy();
@@ -262,5 +265,29 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
     expect(screen.getByText(/Veuillez d’abord choisir sur la boutique : Taille/)).toBeTruthy();
     expect(screen.queryByText(/Détail technique/)).toBeNull();
     expect(screen.getByTestId('aywebs-sheet-add').props.accessibilityState?.disabled).toBe(true);
+  });
+
+  it('pré-remplit la quantité affichée sur la page du marchand (mode sélection)', async () => {
+    const { product, capture } = buildLocalProduct('4Y (98-104 cm)');
+    mockResolveWithCapture.mockResolvedValue({
+      product: { ...product, price: 18.71, currency: 'USD', priceVerified: true, currencyVerified: true,
+        availability: { ...product.availability, state: 'UNKNOWN' },
+        zayroviPricing: { unitPriceTnd: 79.4, totalTnd: 79.4, currency: 'TND', breakdown: {} } },
+      quoteToken: 'quote_qty', status: 'READY',
+      capture: { used: true, fingerprint: 'fp_q', priceSource: 'dom', corroborated: true, rejection: null },
+      priceRejection: null,
+      capturedSelection: { mode: 'selection', attributes: {}, variantId: null, variantIdSource: null, availability: 'UNKNOWN', availabilityReason: null, pageQuantity: 3, image: null },
+    });
+    render(
+      <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
+        <PrefsProvider><I18nProvider><ThemeProvider>
+          <AddToCartSheet visible local readOnlySelection sessionId="mob_readonly_session_qty" product={product}
+            capture={{ ...capture, captureMode: 'selection', pageQuantity: 3 }} onClose={() => undefined} />
+        </ThemeProvider></I18nProvider></PrefsProvider>
+      </SafeAreaProvider>,
+    );
+    await waitFor(() => expect(screen.getAllByText(/238[.,]20/).length).toBeGreaterThan(0));
+    /* Disponibilité non confirmée : dite telle quelle, jamais « disponible ». */
+    expect(screen.getByTestId('aywebs-confirm-availability-unconfirmed')).toBeTruthy();
   });
 });

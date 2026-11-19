@@ -6061,8 +6061,24 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
         }
       }
 
+      /* Mode sélection (19/11/2026) : le SKU de la combinaison COCHÉE sur la page
+         (toutes les dimensions choisies) — il lie le prix au choix du client. */
+      var temuSelectedSkuId = null;
+      try {
+        if (temuMulti && temuMulti.length && temuNormSkus && temuNormSkus.length) {
+          for (var tss = 0; tss < temuNormSkus.length && !temuSelectedSkuId; tss++) {
+            var tssMatch = true;
+            for (var tsd = 0; tsd < temuMulti.length; tsd++) {
+              var tsdWant = String(temuMulti[tsd].selected || '').toLowerCase();
+              if (!tsdWant || String(temuNormSkus[tss].attributes[temuMulti[tsd].name] || '').toLowerCase() !== tsdWant) { tssMatch = false; break; }
+            }
+            if (tssMatch && temuNormSkus[tss].variantId) temuSelectedSkuId = String(temuNormSkus[tss].variantId).replace(/^temu:/, '').slice(0, 48);
+          }
+        }
+      } catch (e) {}
       out.temu = {
         readerVersion: 2,
+        selectedSkuId: temuSelectedSkuId,
         pageGoodsId: (TEMU_STATE && TEMU_STATE.goodsId) || TEMU_GOODS_ID || null,
         salePrice: (TEMU_STATE && TEMU_STATE.salePrice) || null,
         retailPrice: (TEMU_STATE && TEMU_STATE.retailPrice) || null
