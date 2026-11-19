@@ -657,7 +657,7 @@ export function AddToCartSheet({
     if (merchantPrice.amount) return merchantPrice.amount;
     const amount = pageQuote?.sourcePrice ?? null;
     const currency = pageQuote?.sourceCurrency || product.currency || '';
-    return amount != null && amount > 0 ? `${amount.toFixed(2)} ${currency}`.trim() : '';
+    return amount != null && amount > 0 ? `${formatAmount(amount)} ${currency}`.trim() : '';
   }, [merchantPrice.amount, pageQuote?.sourceCurrency, pageQuote?.sourcePrice, product.currency]);
 
   const availabilityLabel = useCallback((state: AvailabilityState): string => {
