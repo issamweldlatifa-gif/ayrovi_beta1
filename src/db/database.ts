@@ -86,6 +86,13 @@ export function resolveAcceptedPaymentMethods(rawSetting: unknown): SelectablePa
   const valid = [...new Set(candidate.map((value) => String(value).trim().toUpperCase()).filter((value) => selectable.has(value)))];
   return valid.length ? (valid as SelectablePaymentMethodCode[]) : [...DEFAULT_PAYMENT_METHODS];
 }
+/** New ZAYROVI checkout is prepaid; historic COD orders and the separate AYWEBs policy are unchanged. */
+export function resolvePrepaidCheckoutMethods(rawSetting: unknown): Exclude<SelectablePaymentMethodCode, 'COD'>[] {
+  const prepaid = resolveAcceptedPaymentMethods(rawSetting).filter(method => method !== 'COD');
+  // COD-only settings are now invalid for this checkout: use the prepaid defaults,
+  // whose technical availability (gateway or transfer coordinates) is checked separately.
+  return prepaid.length ? prepaid : DEFAULT_PAYMENT_METHODS.filter(method => method !== 'COD');
+}
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
 
 export interface CheckoutInput {

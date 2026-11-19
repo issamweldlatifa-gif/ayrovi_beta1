@@ -18,6 +18,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, Heart, Pencil, Plus, Trash2, X } from '../components/QatafoIcons';
 import { adminApi } from './api';
+import { SocialCommerceEditionPanel } from './SocialCommerceEditionPanel';
 import { Button, DataTable, Field, Modal, StatusBadge, Switch } from './components';
 import { uploadMediaFile } from './mediaUpload';
 import { normalizeMediaLink } from '../../../shared/mediaLinks';
@@ -522,6 +523,7 @@ export const PublicationBlocksTab: React.FC<{ canWrite: boolean }> = ({ canWrite
 
   return (
     <section className="admin-card">
+      <SocialCommerceEditionPanel canWrite={canWrite} />
       {error ? <div className="admin-error">{error}</div> : null}
       <div className="admin-actions" style={{ marginTop: 0 }}>
         <Button disabled={!canWrite} onClick={() => { setFormError(''); setForm(emptyBlock()); }}><Plus size={15} />Ajouter un bloc</Button>

@@ -3,7 +3,7 @@ import { availableProductParams, availableProductSql } from '../catalogue/conten
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { SmartLinkScraper } from '../scraper/scraper';
-import { QatafoDatabase as ZayroviDatabase, PAYMENT_METHOD_CODES, resolveAcceptedPaymentMethods } from '../db/database';
+import { QatafoDatabase as ZayroviDatabase, PAYMENT_METHOD_CODES, resolvePrepaidCheckoutMethods } from '../db/database';
 import type { PaymentMethodCode } from '../db/database';
 import { VisualProductExtractor } from '../services/vision';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
@@ -635,7 +635,7 @@ export function createApiRouter(
     // La même fonction que celle publiée au client par /api/public/commerce-config :
     // le moyen annoncé dans la caisse est donc toujours un moyen que cette route
     // accepte. Les deux lectures séparées avaient fini par diverger.
-    const configuredPayments = resolveAcceptedPaymentMethods(paymentSetting?.setting_value);
+    const configuredPayments = resolvePrepaidCheckoutMethods(paymentSetting?.setting_value);
     let configuredGovernorates: string[] = [];
     try {
       const parsedGovernorates = JSON.parse(governorateSetting?.setting_value || '[]');
@@ -649,7 +649,7 @@ export function createApiRouter(
     }
     // `PENDING_SELECTION` n'est pas un moyen : il décrit une commande dont le
     // paiement reste à choisir, et ne se compare donc jamais à la liste configurée.
-    if (requestedMethod !== 'PENDING_SELECTION' && !configuredPayments.includes(requestedMethod)) {
+    if (requestedMethod === 'COD' || (requestedMethod !== 'PENDING_SELECTION' && !configuredPayments.includes(requestedMethod))) {
       return res.status(400).json({ success: false, error: 'Ce moyen de paiement n’est pas disponible.' });
     }
     if (configuredGovernorates.length && !configuredGovernorates.includes(city.trim())) {

@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
+import { socialHref } from '@/features/social-commerce/navigation';
 import { useReels } from '@/api/hooks';
 import { AppText } from '@/design/ui';
 import { AppImage } from '@/design/appImage';
@@ -63,6 +64,10 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
       <View ref={section} collapsable={false}>
         <View style={[styles.section, { paddingBottom: theme.space[2] }]}>
           <ReelsShopMark />
+          {rows.length > 0 ? <Pressable onPress={() => router.navigate(socialHref('reels'))} accessibilityRole="button"
+            style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: gutter }}>
+            <AppText variant="label" color={theme.colors.ink}>{t('socialCommerce.explore')}</AppText>
+          </Pressable> : null}
         </View>
         <FullBleed>
           <FlatList

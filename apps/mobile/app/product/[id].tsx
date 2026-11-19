@@ -463,6 +463,9 @@ export default function ProductScreen() {
           iconColor={theme.status.success.fg}
           lines={deliveryLines}
         />
+        {policy.data && !policy.data.paymentMethods.includes('COD') ? (
+          <InfoRow icon="card-outline" title={t('product.prepaid')} lines={[t('product.noCod')]} />
+        ) : null}
         {returnLines.length > 0 ? (
           <InfoRow icon="arrow-undo-outline" title={t('product.freeReturns')} lines={returnLines} />
         ) : null}

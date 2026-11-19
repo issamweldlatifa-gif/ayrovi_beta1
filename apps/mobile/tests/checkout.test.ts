@@ -75,7 +75,7 @@ describe('وسائل الخلاص', () => {
   it('ما تتاحش وسيلة بلا بوابة: FLOUCI/D17 مقفولين بالسبب', () => {
     const choices = paymentChoices(parseCommercePolicy(CONFIG));
     const byId = Object.fromEntries(choices.map((choice) => [choice.id, choice]));
-    expect(byId.COD.available).toBe(true);
+    expect(byId.COD).toBeUndefined();
     expect(byId.FLOUCI.available).toBe(false);
     expect(byId.D17.available).toBe(false);
     expect(byId.CARD.available).toBe(false); // البوابة موش مركّبة
@@ -86,11 +86,11 @@ describe('وسائل الخلاص', () => {
   it('قائمة الخادم تحكم: وسيلة متاحة تقنياً وماشي في القائمة ما تتاحش', () => {
     const choices = paymentChoices(parseCommercePolicy({ ...CONFIG, paymentMethods: ['CARD'] }));
     const byId = Object.fromEntries(choices.map((choice) => [choice.id, choice]));
-    expect(byId.COD.available).toBe(false);
+    expect(byId.COD).toBeUndefined();
     expect(byId.BANK_TRANSFER.available).toBe(false);
     // قائمة فارغة = ما نضيّقوش (نفس الويب)
     const open = paymentChoices(parseCommercePolicy({ ...CONFIG, paymentMethods: [] }));
-    expect(open.find((choice) => choice.id === 'COD')?.available).toBe(true);
+    expect(open.some((choice) => choice.id === 'COD')).toBe(false);
   });
 
   it('بلا وسيلة متاحة: الطلب يتخلق والعربون يتأجّل (`PENDING_SELECTION`)', () => {
@@ -102,12 +102,12 @@ describe('وسائل الخلاص', () => {
     expect(resolvePaymentMethod('CARD', { anyAvailable: true, isAvailable: (id) => id === 'COD' }))
       .toEqual({ refusal: 'PAYMENT_UNAVAILABLE' });
     expect(resolvePaymentMethod('COD', { anyAvailable: true, isAvailable: (id) => id === 'COD' }))
-      .toEqual({ method: 'COD', deferred: false });
+      .toEqual({ refusal: 'PAYMENT_UNAVAILABLE' });
   });
 
   it('المتاح فعلاً يتعرض وحده', () => {
     const available = availablePaymentChoices(parseCommercePolicy(CONFIG)).map((choice) => choice.id);
-    expect(available).toEqual(['COD', 'BANK_TRANSFER']);
+    expect(available).toEqual(['BANK_TRANSFER']);
   });
 });
 

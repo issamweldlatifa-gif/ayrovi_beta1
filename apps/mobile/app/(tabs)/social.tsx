@@ -1,2 +1,2 @@
-/** Same Publication core, exposed as a real selectable Social destination. */
-export { default, ErrorBoundary } from '../publications';
+export { default } from '@/features/social-commerce/SocialCommerceScreen';
+export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';

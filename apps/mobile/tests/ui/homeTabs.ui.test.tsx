@@ -13,7 +13,7 @@ import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
 
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn() },
+  router: { navigate: jest.fn() },
 }));
 
 async function renderTabs() {
@@ -34,10 +34,11 @@ async function renderTabs() {
 describe('HomeTabs', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('affiche trois onglets texte, sans icône', async () => {
+  it('affiche quatre onglets texte, sans icône', async () => {
     await renderTabs();
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(3);
+    expect(tabs).toHaveLength(4);
+    expect(tabs[0].props.accessibilityLabel).toBe('Social');
     // Texte seul : aucune icône Ionicons rendue dans la rangée.
     expect(screen.UNSAFE_queryAllByType(require('@expo/vector-icons/Ionicons').default)).toHaveLength(0);
   });
@@ -55,11 +56,13 @@ describe('HomeTabs', () => {
 
   it('chaque onglet ouvre une route de l’application (pas une URL de site)', async () => {
     await renderTabs();
+    fireEvent.press(screen.getByRole('tab', { name: 'Social' }));
+    expect(router.navigate).toHaveBeenNthCalledWith(1, { pathname: '/(tabs)/social', params: { filter: 'all' } });
     fireEvent.press(screen.getByRole('tab', { name: 'Nouveautés' }));
     fireEvent.press(screen.getByRole('tab', { name: 'Promotions' }));
     fireEvent.press(screen.getByRole('tab', { name: 'Magazine' }));
-    expect(router.push).toHaveBeenNthCalledWith(1, '/catalog');
-    expect(router.push).toHaveBeenNthCalledWith(2, '/promotions');
-    expect(router.push).toHaveBeenNthCalledWith(3, '/publications');
+    expect(router.navigate).toHaveBeenNthCalledWith(2, '/catalog');
+    expect(router.navigate).toHaveBeenNthCalledWith(3, '/promotions');
+    expect(router.navigate).toHaveBeenNthCalledWith(4, '/publications');
   });
 });

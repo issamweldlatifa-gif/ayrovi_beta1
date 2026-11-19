@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '@/api/config';
+import { parseSocialFilter } from '@/features/social-commerce/navigation';
 import { DEEP_LINK_SCHEME } from '@/config/deepLinks';
 /**
  * Liens profonds — traduction d'une URL du site en écran de l'application.
@@ -112,15 +113,16 @@ export function resolveDeepLink(rawUrl: string | null | undefined): string | nul
     // Schéma propre à l'application : l'hôte n'est pas un hôte, c'est parfois
     // le début du chemin (`zayrovi://orders/42` ⇒ host « orders »).
     const path = url.host ? `/${url.host}${normalizePathname(url)}` : normalizePathname(url);
-    return matchRoute(path.replace(/\/{2,}/g, '/'));
+    return matchRoute(path.replace(/\/{2,}/g, '/').replace(/\/$/, '') || '/', url.searchParams);
   }
   if (scheme !== 'http' && scheme !== 'https') return null;
   if (!deepLinkHosts().includes(url.hostname.toLowerCase())) return null;
 
-  return matchRoute(normalizePathname(url));
+  return matchRoute(normalizePathname(url), url.searchParams);
 }
 
-function matchRoute(path: string): string | null {
+function matchRoute(path: string, params: URLSearchParams): string | null {
+  if (path === '/social') return `/(tabs)/social?filter=${parseSocialFilter(params.get('filter'))}`;
   if (path === '/' || path === '') return '/(tabs)';
 
   // Le PLUS LONG préfixe gagne, et pas « le premier de la liste » : s'en

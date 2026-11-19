@@ -103,3 +103,13 @@ describe('hôtes déclarés', () => {
     }
   });
 });
+
+describe('Social Commerce', () => {
+  it('préserve uniquement les filtres publics autorisés', () => {
+    expect(resolveDeepLink('zayrovi://social?filter=stories')).toBe('/(tabs)/social?filter=stories');
+    expect(resolveDeepLink('https://zayrovi.com/social/?filter=reels')).toBe('/(tabs)/social?filter=reels');
+    expect(resolveDeepLink('https://zayrovi.com/social?filter=%2Fcheckout')).toBe('/(tabs)/social?filter=all');
+    expect(resolveDeepLink('https://zayrovi.com/social-other')).toBeNull();
+    expect(resolveDeepLink('https://other.example/social?filter=stories')).toBeNull();
+  });
+});

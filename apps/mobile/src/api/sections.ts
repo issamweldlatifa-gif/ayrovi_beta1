@@ -117,7 +117,10 @@ export async function fetchPromotions(options: RequestOptions = {}): Promise<Pro
 }
 
 export async function fetchStories(options: RequestOptions = {}): Promise<StoryItem[]> {
-  const payload = await apiGet('/api/public/stories', options);
+  return parseStories(await apiGet('/api/public/stories', options));
+}
+
+export function parseStories(payload: unknown): StoryItem[] {
   return rows(payload).flatMap((entry) => {
     const id = str(entry.id);
     if (!id) return [];

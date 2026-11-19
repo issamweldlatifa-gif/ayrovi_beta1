@@ -107,13 +107,12 @@ interface PaymentDefinition {
 
 /**
  * التعريفات كما في الويب بالحرف:
- *  • `COD` دايماً متاح (ما يستحقّش بوابة).
+ *  • `COD` يبقى في قراءة الطلبات القديمة، ما عادش وسيلة للطلب الجديد.
  *  • `CARD` كان البوابة مركّبة فعلاً في الخادم.
  *  • `BANK_TRANSFER` كان RIB منشور، و`POSTE` كان حساب بريدي منشور.
  *  • `FLOUCI` / `D17` **ما يتاحوش** بلا بوابة: رقم وحدو ما يصنعش خلاصاً.
  */
 export const PAYMENT_DEFINITIONS: PaymentDefinition[] = [
-  { id: 'COD', labelKey: 'pay.COD', hintKey: 'pay.COD.hint', blockedKey: 'pay.COD.blocked', available: () => true },
   { id: 'CARD', labelKey: 'pay.CARD', hintKey: 'pay.CARD.hint', blockedKey: 'pay.CARD.blocked', available: (policy) => policy.cardGateway },
   { id: 'BANK_TRANSFER', labelKey: 'pay.BANK_TRANSFER', hintKey: 'pay.BANK_TRANSFER.hint', blockedKey: 'pay.BANK_TRANSFER.blocked', available: (policy) => Boolean(policy.deposit.bankRib.trim()) },
   { id: 'POSTE', labelKey: 'pay.POSTE', hintKey: 'pay.POSTE.hint', blockedKey: 'pay.POSTE.blocked', available: (policy) => Boolean(policy.deposit.posteAccount.trim()) },
@@ -153,8 +152,9 @@ export function resolvePaymentMethod(
   selected: string,
   availability: { anyAvailable: boolean; isAvailable: (method: string) => boolean },
 ): { method: string; deferred: boolean } | { refusal: 'PAYMENT_UNAVAILABLE' } {
+  const method = String(selected || '').trim().toUpperCase();
+  if (method === 'COD') return { refusal: 'PAYMENT_UNAVAILABLE' };
   if (!availability.anyAvailable) return { method: 'PENDING_SELECTION', deferred: true };
-  const method = String(selected || '').toUpperCase();
   if (!method || !availability.isAvailable(method)) return { refusal: 'PAYMENT_UNAVAILABLE' };
   return { method, deferred: false };
 }

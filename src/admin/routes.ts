@@ -2,6 +2,7 @@ import { releaseCatalogueReservations } from '../catalogue/localSale';
 import { isGeneratedPublicationEditorialAsset } from '../../shared/publicationLayouts';
 import { normalizePublicationContent } from '../../shared/publicationContent';
 import { normalizePublicationFeedSettings } from '../../shared/publicationFeed';
+import { readEditionState, updateEditionState } from '../social-commerce/editions';
 import { readPublicationFeedSettings } from '../services/publicationFeedSettings';
 import { createBlock, deleteBlock, listAdminBlocks, readAdminBlock, reorderBlocks, updateBlock, validatePublicationBlock } from '../services/publicationBlocks';
 import { PUBLICATION_CATEGORIES } from '../../shared/publicationFeed';
@@ -1436,6 +1437,17 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   });
 
   /* ===== Page Publication : modèles de blocs (13/11) — remplace l'ancien onglet Publication ===== */
+  router.get('/social-commerce/edition', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: readEditionState(db) });
+  });
+  router.put('/social-commerce/edition', requireAdmin(db, 'content:write'), (req, res) => {
+    const result = updateEditionState(db, req.body?.action, req.body?.revision, req.body?.draft, new Date().toISOString());
+    if (result.status !== 200) return res.status(result.status).json({ success: false, error: result.error });
+    audit(db, req, 'UPDATE', 'SOCIAL_COMMERCE_EDITION', 'global', null, { action: req.body.action, revision: result.state.revision });
+    res.json({ success: true, data: result.state });
+  });
+
   router.get('/publication-blocks', requireAdmin(db, 'content:read'), (_req, res) => {
     res.json({ success: true, data: listAdminBlocks(db) });
   });
@@ -2493,6 +2505,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const current = db.get<any>('SELECT * FROM settings WHERE id=?', req.params.id);
     if (!current) return res.status(404).json({ success: false, error: 'Paramètre introuvable.' });
     let received = req.body?.value;
+    if (current.setting_key === 'social_commerce_editions_v1') return res.status(409).json({ success: false, error: 'Utilisez l’éditeur Social Commerce.' });
     if (current.setting_key === 'payment_methods') {
       // The accepted codes come from the shared list, NOT from a copy written here.
       // A local list had drifted below the ones the checkout understands, so this

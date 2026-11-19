@@ -1,9 +1,10 @@
 import { memo } from 'react';
 /** Official Stories extension: editorial gallery only. No legacy circles or viewer.
  * Geometry is shared with Hero; section spacing is owned by AppScreen/SectionBreak (no rules since 15/11).
- * The Explore label is deliberately non-interactive until its destination is specified.
  */
-import { FlatList, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { router } from 'expo-router';
+import { socialHref } from '@/features/social-commerce/navigation';
+import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStories, useStoriesShowcase } from '@/api/hooks';
 import { mediaUrl } from '@/api/client';
@@ -36,9 +37,9 @@ export const StoriesSection = memo(function StoriesSection() {
       <View style={[styles.heading, { paddingHorizontal: gutter }]}>
         {settings.title ? <AppText variant="h2" color={FOOTER_THEME.paper}>{local(settings.title, settings.titleAr)}</AppText> : null}
         {settings.subtitle ? <AppText variant="h2" color={FOOTER_THEME.paper}>{local(settings.subtitle, settings.subtitleAr)}</AppText> : null}
-        {settings.ctaLabel ? <View testID="stories-explore-placeholder" accessible accessibilityState={{ disabled: true }} style={styles.cta}>
+        {settings.ctaLabel ? <Pressable testID="stories-explore" accessibilityRole="button" onPress={() => router.navigate(socialHref('stories'))} style={styles.cta}>
           <AppText variant="body" color={FOOTER_THEME.paper}>{local(settings.ctaLabel, settings.ctaLabelAr)} {theme.isRTL ? '←' : '→'}</AppText>
-        </View> : null}
+        </Pressable> : null}
       </View>
       <FlatList horizontal data={rows} keyExtractor={item => item.id}
         testID="stories-editorial-rail" accessibilityLabel={t('sections.stories')}

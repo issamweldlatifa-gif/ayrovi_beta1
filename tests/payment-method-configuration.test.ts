@@ -28,7 +28,7 @@ import {
   DEFAULT_PAYMENT_METHODS,
   PAYMENT_METHOD_CODES,
   SELECTABLE_PAYMENT_METHODS,
-  resolveAcceptedPaymentMethods,
+  resolveAcceptedPaymentMethods, resolvePrepaidCheckoutMethods,
 } from '../src/db/database';
 import { parseCommercePolicy } from '../client/src/commerce/policy';
 import { availableAtCheckout } from '../client/src/commerce/paymentMethods';
@@ -77,13 +77,13 @@ describe('moyens de paiement — une seule liste, aucune dérive', () => {
     const checkout = readSource('src/api/routes.ts');
     expect(checkout).toContain('new Set<PaymentMethodCode>(PAYMENT_METHOD_CODES)');
     // Le checkout résout la configuration par la fonction partagée, pas à la main.
-    expect(checkout).toContain('resolveAcceptedPaymentMethods(paymentSetting?.setting_value)');
+    expect(checkout).toContain('resolvePrepaidCheckoutMethods(paymentSetting?.setting_value)');
     expect(checkout).not.toMatch(/'PENDING_SELECTION'\s*,\s*'COD'/);
 
     // Ce qui est PUBLIÉ au client est résolu par la même fonction : la caisse ne
     // peut donc pas annoncer un moyen que le checkout refusera.
     const publicRoutes = readSource('src/public/routes.ts');
-    expect(publicRoutes).toContain('paymentMethods: resolveAcceptedPaymentMethods(facts.payment_methods)');
+    expect(publicRoutes).toContain('paymentMethods: resolvePrepaidCheckoutMethods(facts.payment_methods)');
 
     const admin = readSource('src/admin/routes.ts');
     expect(admin).toContain('SELECTABLE_PAYMENT_METHODS');
@@ -109,10 +109,10 @@ describe('moyens de paiement — une seule liste, aucune dérive', () => {
     expect(JSON.parse(row.setting_value)).toEqual([...DEFAULT_PAYMENT_METHODS]);
   });
 
-  test('ce que le client voit est ce qui est enregistré, dans le même ordre', async () => {
+  test('la politique publique conserve l’ordre des choix prépayés', async () => {
     const config = await request(app).get('/api/public/commerce-config');
     expect(config.status).toBe(200);
-    expect(config.body.data.paymentMethods).toEqual([...DEFAULT_PAYMENT_METHODS]);
+    expect(config.body.data.paymentMethods).toEqual(resolvePrepaidCheckoutMethods(DEFAULT_PAYMENT_METHODS));
   });
 
   test('l’Admin peut enregistrer la valeur par défaut de la plateforme (régression d’origine)', async () => {
@@ -156,63 +156,17 @@ describe('moyens de paiement — une seule liste, aucune dérive', () => {
     expect(pending.body.code).toBe('PAYMENT_METHODS_INVALID');
   });
 
-  test('la caisse n’offre QUE ce que le serveur accepte — le cas du paiement à la livraison', async () => {
-    /*
-     * Le défaut le plus coûteux trouvé le 01/10/2026 : la caisse décidait seule,
-     * à partir des passerelles configurées. Le paiement à la livraison ne dépend
-     * d'AUCUNE passerelle, donc il était toujours proposé — alors que le réglage
-     * semé par défaut ne le contenait pas. Le client remplissait adresse, e-mail
-     * et téléphone, puis lisait « Ce moyen de paiement n'est pas disponible ».
-     * La commande était perdue à la dernière étape.
-     */
+  test('la caisse ne propose jamais la livraison contre remboursement, même avec une ancienne configuration', async () => {
     const { agent, csrf } = await loginSuperAdmin();
-
-    const offeredNow = async () => {
+    for (const methods of [['COD'], ['COD', 'CARD', 'BANK_TRANSFER'], ['CARD', 'BANK_TRANSFER']]) {
+      expect((await savePaymentMethods(agent, csrf, methods)).status).toBe(200);
       const config = await request(app).get('/api/public/commerce-config');
       const policy = parseCommercePolicy(config.body.data);
-      const offered = availableAtCheckout(policy).map((method) => method.id);
-      // L'invariant, quelle que soit la configuration : ce que la caisse propose
-      // appartient toujours à ce que le serveur déclare accepter.
-      for (const id of offered) expect(policy.acceptedPaymentMethods).toContain(id);
-      return offered;
-    };
-
-    // Le paiement à la livraison ne dépend d'AUCUNE passerelle : il doit donc
-    // apparaître exactement quand le serveur le déclare accepté.
-    expect((await savePaymentMethods(agent, csrf, ['COD', 'CARD', 'BANK_TRANSFER'])).status).toBe(200);
-    expect(await offeredNow()).toContain('COD');
-
-    expect((await savePaymentMethods(agent, csrf, ['CARD', 'BANK_TRANSFER'])).status).toBe(200);
-    const withoutCod = await offeredNow();
-    expect(withoutCod).not.toContain('COD');
-
-    // Sans passerelle carte ni RIB publié dans l'environnement de test, rien
-    // d'autre ne peut être honnêtement proposé — et la caisse le dit au lieu
-    // d'afficher un bouton qui échouerait.
-    expect(withoutCod).toEqual([]);
-
-    // Le retour du paiement à la livraison est immédiat, sans redéploiement.
-    expect((await savePaymentMethods(agent, csrf, ['COD'])).status).toBe(200);
-    expect(await offeredNow()).toEqual(['COD']);
-  });
-
-  test('toute politique enregistrable laisse au client au moins un moyen de payer', async () => {
-    // Le test parcourt chaque moyen configurable, l'enregistre seul, et vérifie
-    // que la caisse n'est jamais vide : une politique refusée à la dernière étape
-    // est exactement ce que ce fichier existe pour empêcher.
-    const { agent, csrf } = await loginSuperAdmin();
-    for (const method of SELECTABLE_PAYMENT_METHODS) {
-      expect((await savePaymentMethods(agent, csrf, [method])).status, method).toBe(200);
-      const config = await request(app).get('/api/public/commerce-config');
-      const policy = parseCommercePolicy(config.body.data);
-      // COD est le seul moyen qui ne dépend d'aucune configuration externe :
-      // c'est donc lui qui garantit qu'une boutique neuve peut encaisser.
-      const offered = availableAtCheckout(policy).map((entry) => entry.id);
-      // COD est le seul moyen qui ne dépend d'aucune configuration externe :
-      // c'est donc lui qui garantit qu'une boutique neuve peut encaisser.
-      if (method === 'COD') expect(offered, 'COD seul doit rester payable').toContain('COD');
-      // Et ce qui est offert appartient bien à ce qui est configuré.
-      for (const id of offered) expect(policy.acceptedPaymentMethods).toContain(id);
+      expect(policy.acceptedPaymentMethods).toEqual(resolvePrepaidCheckoutMethods(methods));
+      expect(policy.acceptedPaymentMethods).not.toContain('COD');
+      const offered = availableAtCheckout(policy).map(method => method.id);
+      expect(offered).not.toContain('COD');
+      for (const method of offered) expect(policy.acceptedPaymentMethods).toContain(method);
     }
   });
 
@@ -225,7 +179,7 @@ describe('moyens de paiement — une seule liste, aucune dérive', () => {
 
     const config = await request(app).get('/api/public/commerce-config');
     expect(config.body.data.paymentMethods).toContain('CARD');
-    expect(config.body.data.paymentMethods).toContain('COD');
+    expect(config.body.data.paymentMethods).not.toContain('COD');
     expect(config.body.data.paymentMethods).not.toContain('FLOUCI');
   });
 });

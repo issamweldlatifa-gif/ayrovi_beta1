@@ -8,6 +8,7 @@ import { readPublishedSocial } from '../magazine/publicSocialReads';
 import { imageWork, writeImageCache } from '../services/imageWork';
 import { readPublicationFeedSettings } from '../services/publicationFeedSettings';
 import { readPublicBlocks } from '../services/publicationBlocks';
+import { readSocialFeed, SocialFeedRequestError } from '../social-commerce/feed';
 import { PUBLICATION_CATEGORIES } from '../../shared/publicationFeed';
 import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { readFicheLabels } from '../catalogue/products';
@@ -16,7 +17,7 @@ import { publicNavDestination } from '../../shared/publicNavigation';
 import { createHash, randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { cardGatewayAvailable } from '../services/paymentGateway';
-import { QatafoDatabase, resolveAcceptedPaymentMethods } from '../db/database';
+import { QatafoDatabase, resolvePrepaidCheckoutMethods } from '../db/database';
 import { calculatePrice } from '../services/pricing';
 import { quoteCartLine } from '../services/cartQuote';
 import { resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
@@ -182,7 +183,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       // la caisse affiche est exactement ce que POST /api/checkout acceptera.
       // Publier la valeur brute laissait le client deviner, et proposer un moyen
       // que le serveur refusait ensuite — une commande perdue à la dernière étape.
-      paymentMethods: resolveAcceptedPaymentMethods(facts.payment_methods),
+      paymentMethods: resolvePrepaidCheckoutMethods(facts.payment_methods),
       deliveryDelay: String(facts.delivery_delay || ''),
       /**
        * Fenêtre de RETOUR, en jours après la livraison, réglée dans le CRM
@@ -763,6 +764,17 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       promo: (() => { const day = resolvePromoForQuote(db); return day ? { percent: day.percent, label: day.label, day: tunisIsoDay() } : null; })(),
       facts, arrivals, promotions, brands, knowledge,
     } });
+  });
+
+  router.get('/social/commerce-feed', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      res.json({ success: true, data: readSocialFeed(db, req.query.filter, req.query.cursor) });
+    } catch (error) {
+      if (!(error instanceof SocialFeedRequestError)) return next(error);
+      return res.status(error.code === 'SOCIAL_FEED_CHANGED' ? 409 : 400)
+        .json({ success: false, code: error.code, error: 'Rechargez le fil Social.' });
+    }
   });
 
   // Page Publication (13/11) : blocs composés dans le CRM, produits lus dans le catalogue.

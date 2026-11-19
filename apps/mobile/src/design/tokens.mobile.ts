@@ -822,6 +822,11 @@ export const PUBLICATION_PUBLISHER = { font: 'PublicationPublisher-Bold', nameSi
 /** 15/11 : `actionIcon` 28 — icônes de la barre J'aime · Commenter · Partager · Enregistrer « un peu plus grandes » (24 → 28, rangée Instagram). */
 export const PUBLICATION_METRICS = { icon: 22, actionIcon: 28, verified: 16, avatar: 36, productGap: 8 } as const;
 
+/** Social Commerce's approved editorial media treatment, never applied to shared action/status tokens. */
+export const SOCIAL_EDITORIAL = {
+  cover: ['#8E2A40', '#6B1A2B', '#3B0D17'],
+} as const;
+
 export const ICON_SIZE = {
   xs: 14,
   sm: 18,

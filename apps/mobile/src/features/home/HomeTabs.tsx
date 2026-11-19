@@ -1,5 +1,5 @@
 /**
- * Les trois onglets d’accueil — وصل حديثاً · عروض · مجلة
+ * Les onglets d’accueil — وصل حديثاً · عروض · مجلة
  *
  * Présentation : une rangée de libellés en gras, sur fond blanc, sans icône ni
  * icône (façon barre de catégories d’une grande boutique). Le texte est dans la
@@ -9,7 +9,8 @@
  * « Nouveautés » → catalogue, « Promotions » et « Magazine » → leurs écrans publiés.
  */
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
+import { socialHref } from '@/features/social-commerce/navigation';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { FullBleed, useResponsive } from '@/design/layout';
@@ -17,12 +18,13 @@ import { useT } from '@/i18n';
 
 type HomeTab = {
   /** Clé de libellé — jamais de texte écrit en dur. */
-  labelKey: 'home.tab.arrivals' | 'home.tab.promotions' | 'home.tab.magazine';
+  labelKey: 'tabs.social' | 'home.tab.arrivals' | 'home.tab.promotions' | 'home.tab.magazine';
   /** Destination : une route de l’APPLICATION, pas une URL de site. */
-  href: string;
+  href: Href;
 };
 
 const TABS: readonly HomeTab[] = [
+  { labelKey: 'tabs.social', href: socialHref() },
   { labelKey: 'home.tab.arrivals', href: '/catalog' },
   { labelKey: 'home.tab.promotions', href: '/promotions' },
   { labelKey: 'home.tab.magazine', href: '/publications' },
@@ -47,10 +49,10 @@ export function HomeTabs() {
       ]}
       accessibilityRole="tablist"
     >
-      {TABS.map((tab, index) => (
+      {TABS.map((tab) => (
         <Pressable
           key={tab.labelKey}
-          onPress={() => { router.push(tab.href as never); }}
+          onPress={() => { router.navigate(tab.href); }}
           accessibilityRole="tab"
           accessibilityLabel={t(tab.labelKey)}
           style={({ pressed }) => [styles.tab, { opacity: pressed ? theme.opacity.subtle : 1 }]}
@@ -58,7 +60,7 @@ export function HomeTabs() {
           <AppText variant="subtitle" color={theme.colors.ink} numberOfLines={1} style={[styles.label, { fontFamily: theme.text('h3').fontFamily }]}>
             {t(tab.labelKey)}
           </AppText>
-          {index === 0 ? <View testID="home-tab-underline" style={[styles.underline, { backgroundColor: theme.colors.ink }]} /> : null}
+          {tab.labelKey === 'home.tab.arrivals' ? <View testID="home-tab-underline" style={[styles.underline, { backgroundColor: theme.colors.ink }]} /> : null}
         </Pressable>
       ))}
     </ScrollView>

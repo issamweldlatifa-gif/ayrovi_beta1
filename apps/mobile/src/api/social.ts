@@ -137,7 +137,7 @@ function rowsOf(payload: unknown): Record<string, unknown>[] {
   });
 }
 
-function parseReels(payload: unknown): Reel[] {
+export function parseReels(payload: unknown): Reel[] {
   return rowsOf(payload).flatMap((entry) => {
     const id = str(entry.id);
     if (!id) return [];
