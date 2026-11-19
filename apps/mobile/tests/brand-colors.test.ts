@@ -2,7 +2,7 @@
  * Identité couleur officielle de l'application — v5.0.0 « Za. » (maquette v2 approuvée le 18/11/2026).
  *
  *   NOIR #0A0A0A (≈ 35 %) · BLANC #FFFFFF (≈ 50 %) · GRIS CLAIR #F2F2F2 (≈ 5 %)
- *   JAUNE #F2AE00 : logo + boutons d'ACHAT uniquement, ≤ 4 % d'un écran. PLUS AUCUN BLEU.
+ *   JAUNE #F2AE00 : logo + achat ; les en-têtes AYWEBs utilisent une teinte plus foncée dédiée.
  *
  * Ce fichier verrouille trois choses vérifiables :
  *   1. les valeurs officielles et leur rôle sémantique (fond blanc, texte noir,
@@ -21,7 +21,7 @@ vi.mock('react-native', () => ({ Platform: { OS: 'android' } }));
 
 import { BRAND, BRAND_SHARE, COLORS, NEUTRALS } from '../src/design/tokens.generated';
 import {
-  COMMERCE, GOOGLE_BRAND, LENS_COLORS, STATUS, derivedColors, frost, veil,
+  BROWSER_BAR, COMMERCE, GOOGLE_BRAND, LENS_COLORS, STATUS, STORE_BAR, derivedColors, frost, veil,
 } from '../src/design/tokens.mobile';
 
 const ROOT = path.resolve(__dirname, '..');
@@ -347,6 +347,14 @@ describe('plus d’orange dans l’application', () => {
     // refonte des interactions du 14/11 : l'accent de la feuille est le Bleu Z.
     expect(all.filter((hex) => isOrange(hex))).toEqual([]);
     expect(all.map(upper)).not.toContain('#FF9000');
+  });
+
+  it('AYWEBs : même jaune de marque assombri pour le texte blanc lisible dans les deux en-têtes', () => {
+    expect(Math.abs(hue(STORE_BAR.background) - LOGO_YELLOW_HUE)).toBeLessThan(3);
+    expect(contrast(STORE_BAR.background, STORE_BAR.ink)).toBeGreaterThanOrEqual(4.5);
+    expect(STORE_BAR.ink).toBe(BRAND.white);
+    expect(STORE_BAR.searchBand).toBe(STORE_BAR.background);
+    expect(BROWSER_BAR).toMatchObject({ background: STORE_BAR.background, ink: STORE_BAR.ink });
   });
 
   it('aucune couleur orangée écrite dans le code (exception : le logo Google imposé par Google)', () => {

@@ -209,13 +209,13 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
 
   return (
     <View testID="aywebs-home-content" style={styles.content}>
-      {/* ── Recherche — 16/11 (référence Walmart 030411) : la barre BLEUE de l'en-tête se
-          prolonge ici, bord à bord ; pilule BLANCHE, rond de recherche bleu nuit au bout. ── */}
+      {/* La recherche blanche prolonge le même en-tête jaune, bord à bord. */}
       <View
         testID="aywebs-home-search-band"
         style={[styles.searchBand, { backgroundColor: STORE_BAR.searchBand, marginHorizontal: -gutter, paddingHorizontal: gutter }]}
       >
       <View
+        testID="aywebs-home-search-field"
         style={[
           styles.search,
           {
@@ -556,11 +556,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     minHeight: 48,
-    borderRadius: RADIUS.full,
-    paddingStart: 16,
-    paddingEnd: 4,
+    borderRadius: RADIUS.md,
+    overflow: 'hidden',
+    paddingStart: 12,
   },
-  searchGo: { width: 40, height: 40, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
+  searchGo: { width: 48, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
   searchInput: { flex: 1, minHeight: 46, paddingVertical: TEXT_FRAME.inputVertical },
   searchClear: { padding: 2 },
   section: { gap: 12 },

@@ -10,7 +10,8 @@ import AyWebsScreen from '../../app/(tabs)/aywebs';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
-import { MEDIA_RATIO } from '@/design/tokens.mobile';
+import { MEDIA_RATIO, STORE_BAR } from '@/design/tokens.mobile';
+import { BRAND } from '@/design/tokens.generated';
 
 jest.mock('expo-router', () => {
   const React = jest.requireActual('react');
@@ -98,6 +99,8 @@ describe('onglet AYWEBs — accueil en trois sections', () => {
 
     expect(screen.getByTestId('aywebs-home-content')).toBeTruthy();
     expect(screen.getByTestId('aywebs-home-search')).toBeTruthy();
+    expect(StyleSheet.flatten(screen.getByTestId('aywebs-home-search-band').props.style).backgroundColor).toBe(STORE_BAR.background);
+    expect(StyleSheet.flatten(screen.getByTestId('aywebs-home-search-field').props.style).backgroundColor).toBe(BRAND.white);
 
     // 1 — catégories : les SIX tuiles de la référence, avec leur photo.
     expect(screen.getByTestId('aywebs-home-section-categories')).toBeTruthy();

@@ -159,6 +159,7 @@ describe('AYWEBs AliExpress WebView — zéro « Lecture impossible » et zéro 
   it('résiste aux deep-links aliexpress://, aux messages WindVane/Aplus, aux redirections m./fr. et ouvre la feuille', async () => {
     renderAliExpressBrowser();
 
+    await act(async () => mockLatestWebViewProps.onNavigationStateChange?.({ url: mockInitialAeUrl, loading: false, canGoBack: false }));
     const button = await screen.findByTestId('aywebs-store-add-to-cart');
     await waitFor(() => expect(button.props.accessibilityState?.disabled).toBe(false));
 

@@ -1,19 +1,5 @@
 import { BackButton } from '@/design/BackButton';
-/**
- * AYWEBs — P3، الشريحتان 2 و3: صفحة المتجر داخل WebView + الكابتشر + «Add to Cart».
- *
- * الرحلة: الصفحة الحقيقية للمتجر تبان كاملة (بلا شريط عنوان ولا زر قراءة).
- * الشريط العلوي: الرجوع، اسم المتجر، وأيقونة السلة. الشريط السفلي يبقي زر
- * «Add to Cart» فقط، مع سطر حالة صغير وقت القراءة؛ ما عادش فيه شريط متصفح أو CTA إضافي.
- *
- *  • «Add to Cart» — يقرا الصفحة (كابتشر + قراءة من الخادم بالتوازي)، ثم **ورقة
- *    الاختيار فوق هذه الصفحة**، ثم إضافة حقيقية في سلّة AYWEBs على الخادم. المستعمل
- *    **ما يخرجش** من المتجر، والصفحة (HTML) **ما تتبعثش أبداً**، ولا سعر ولا حالة
- *    تخرج من الجهاز.
- *
- * شرط تفعيل «Add to Cart» هو نفسه في العقد: **الخادم** صنّف الصفحة كصفحة
- * منتوج. قبل التصنيف الزرّ معطّل والسبب مكتوب — زر ما ينجمش ينجح ما يتفعّلش.
- */
+/** AYWEBs merchant WebView: fixed native header and capture only on a product surface. */
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type Ref } from 'react';
 import { goBack } from '@/design/navigation';
 import { Alert, BackHandler, Pressable, StyleSheet, View } from 'react-native';
@@ -30,7 +16,7 @@ import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { mediaUrl } from '@/api/client';
-import { browserChromeDirection, BROWSER_CHROME_IDLE_MS } from '@/features/aywebs/browserChrome';
+import { canShowProductCapture, parseProductSurfaceMessage, productSurfaceProbe, STOP_PRODUCT_SURFACE_PROBE } from '@/features/aywebs/productSurface';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CartGlyph } from '@/design/CartGlyph';
@@ -101,34 +87,11 @@ export default function AyWebsBrowserScreen() {
   const queryClient = useQueryClient();
   const cartQueryKey = useMemo(() => ['store-sheet', 'aywebs-cart', sessionId] as const, [sessionId]);
   const [added, setAdded] = useState<{ item: AyWebsCartItem } | null>(null);
-  const [headerVisible, setHeaderVisible] = useState(true);
-  const [footerVisible, setFooterVisible] = useState(true);
-  const scrollAnchor = useRef(0);
-  const scrollIdle = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const resetChrome = useCallback(() => {
-    if (scrollIdle.current) clearTimeout(scrollIdle.current);
-    scrollIdle.current = null;
-    scrollAnchor.current = 0;
-    setHeaderVisible(true);
-    setFooterVisible(true);
-  }, []);
-  useEffect(() => () => { if (scrollIdle.current) clearTimeout(scrollIdle.current); }, []);
-  const updateChrome = (offset: number) => {
-    const direction = browserChromeDirection(scrollAnchor.current, offset);
-    if (direction === 'top') { resetChrome(); return; }
-    if (direction) {
-      scrollAnchor.current = offset;
-      setHeaderVisible(direction === 'up');
-      setFooterVisible(false);
-    }
-    if (direction || scrollIdle.current) {
-      if (scrollIdle.current) clearTimeout(scrollIdle.current);
-      scrollIdle.current = setTimeout(() => {
-        scrollIdle.current = null;
-        setFooterVisible(true);
-      }, BROWSER_CHROME_IDLE_MS);
-    }
-  };
+  const [documentLoading, setDocumentLoading] = useState(true);
+  const [documentFailed, setDocumentFailed] = useState(false);
+  const [surface, setSurface] = useState<{ nonce: number; url: string } | null>(null);
+  const probeNonce = useRef(0);
+  const activeProbe = useRef<number | null>(null);
 
   useEffect(() => {
     if (!added) return undefined;
@@ -253,7 +216,6 @@ export default function AyWebsBrowserScreen() {
     // 15/11 : pas de seconde feuille — on ferme celle des options, la barre confirme.
     setSheet(null);
     setAdded({ item });
-    setFooterVisible(true);
   }, [cartQueryKey, queryClient, sessionId]);
   /** Persist the real last page locally; invalid/non-web URLs are ignored. */
   useEffect(() => {
@@ -270,14 +232,21 @@ export default function AyWebsBrowserScreen() {
   const captureAllowed = currentPageAnalysis
     ? (currentPageAnalysis.captureAllowed || currentPageAnalysis.externalCaptureAllowed)
     : captureAllowedParam;
-  /**
-   * Le SERVEUR décide page par page :
-   * `product_page` = lecture automatique possible ; `on_demand` = seulement
-   * après appui ; `never` = aucune injection. Sans analyse de l'URL courante,
-   * on ne lit rien et on ne devine pas depuis la page précédente.
-   */
-  const injection = currentPageAnalysis?.captureInjection;
-  const capturePage = injection ? injection !== 'never' : false;
+  const capturePage = !documentLoading && !documentFailed && canShowProductCapture(currentPageAnalysis,
+    Boolean(surface && surface.nonce === activeProbe.current && surface.url === pageUrl));
+  const probeOnDemand = captureAllowed && currentPageAnalysis?.captureInjection === 'on_demand';
+  const probeStoreId = currentPageAnalysis?.storeId;
+  useEffect(() => {
+    if (!probeOnDemand || documentLoading || documentFailed || !webRef.current) return;
+    const web = webRef.current;
+    const nonce = ++probeNonce.current;
+    activeProbe.current = nonce;
+    web.injectJavaScript(productSurfaceProbe(nonce, probeStoreId === 'aliexpress'));
+    return () => {
+      if (activeProbe.current === nonce) activeProbe.current = null;
+      web.injectJavaScript(STOP_PRODUCT_SURFACE_PROBE);
+    };
+  }, [documentFailed, documentLoading, pageUrl, probeOnDemand, probeStoreId]);
   /** الورقة: المنتوج + الكابتشر اللي بعثناه (باش الإضافة ما تعاودش تقرا التاجر). */
   const [sheet, setSheet] = useState<{
     product: AyWebsResolvedProduct; options: AyWebsVariantOption[]; capture?: unknown; quoteToken?: string; local: boolean;
@@ -356,7 +325,7 @@ export default function AyWebsBrowserScreen() {
       })
       .catch(() => {
         if (!alive) return;
-        // ما نعرفوش: الزرّ يبقى معطّلاً والسبب يظهر — موش نفعّلوه بالتخمين.
+        // Sans analyse valide : ne pas présenter de bouton de capture.
         captureStoreIdRef.current = '';
         setPageAnalysis(null);
       });
@@ -618,6 +587,13 @@ export default function AyWebsBrowserScreen() {
     /* Les pages marchandes (AliExpress WindVane/AEHybrid/aplus, SHEIN…) envoient
        souvent leurs propres messages au pont `ReactNativeWebView` : on les ignore
        sans toucher au lecteur en cours ni afficher « Lecture de la page impossible ». */
+    const hint = parseProductSurfaceMessage(event.nativeEvent.data);
+    if (hint) {
+      if (hint.nonce === activeProbe.current && hint.url === pageUrlRef.current && !pageLoadingRef.current) {
+        setSurface(hint.product ? { nonce: hint.nonce, url: hint.url } : null);
+      }
+      return;
+    }
     if (!isAyWebsBridgeMessage(event.nativeEvent.data)) return;
     const pending = waiter.current;
     const parsed = parseAyWebsCaptureMessage(event.nativeEvent.data);
@@ -658,17 +634,16 @@ export default function AyWebsBrowserScreen() {
     pending?.resolve(parsed.capture);
   }, [t]);
 
-  const addEnabled = capturePage && !busy && Boolean(sessionId);
+  const showCapture = pageOk && capturePage && Boolean(sessionId);
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingTop: headerVisible ? 0 : insets.top }]}>
+    <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingBottom: !showCapture && !note && !added ? insets.bottom : 0 }]}>
       {/* Identité AYWEBs et domaine marchand non modifiable. */}
-      <StatusBar style={!headerVisible && theme.mode === "dark" ? "light" : "dark"} />
+      <StatusBar style="light" />
       <View
         testID="aywebs-store-header"
         style={[
           styles.header,
-          !headerVisible && styles.hiddenChrome,
           {
             flexDirection: rowDirectionFor(theme.isRTL),
             backgroundColor: BROWSER_BAR.background,
@@ -678,18 +653,15 @@ export default function AyWebsBrowserScreen() {
       >
         <BackButton onPress={() => goBack('/(tabs)/aywebs')} testID="aywebs-store-header-back" label={t('common.back')} color={BROWSER_BAR.ink} />
         <View
-          testID="aywebs-store-header-pill"
+          testID="aywebs-store-header-title"
           accessibilityRole="header"
           accessibilityLabel={`AYWEBs · ${t('aywebs.addressA11y', { host: headerHost || headerStoreName })}`}
-          style={[styles.titlePill, { backgroundColor: BROWSER_BAR.pill, flexDirection: rowDirectionFor(theme.isRTL) }]}
+          style={styles.titleText}
         >
-          <Ionicons name="shield-checkmark-outline" size={theme.iconSize.sm} color={BROWSER_BAR.pillInk} accessibilityElementsHidden />
-          <View style={styles.titleText}>
-            <AppText variant="captionStrong" color={BROWSER_BAR.pillInk}>AYWEBs</AppText>
-            <AppText testID="aywebs-store-header-address" variant="body" color={BROWSER_BAR.pillInk} numberOfLines={1}>
-              {headerHost || headerStoreName}
-            </AppText>
-          </View>
+          <AppText variant="bodyStrong" color={BROWSER_BAR.ink} numberOfLines={1}>AYWEBs</AppText>
+          <AppText testID="aywebs-store-header-address" variant="caption" color={BROWSER_BAR.ink} numberOfLines={1}>
+            {headerHost || headerStoreName}
+          </AppText>
         </View>
         <Pressable
           testID="aywebs-ask-sonim"
@@ -708,7 +680,7 @@ export default function AyWebsBrowserScreen() {
         >
           {/* 15/11 : Le logo Clean reste dans les commandes AYWEBs. */}
           <View testID="aywebs-ask-clean-logo" style={styles.cleanDisc}>
-            <TabCleanIcon color={BROWSER_BAR.pillInk} size={CLEAN_LOGO_SIZE} />
+            <TabCleanIcon color={BROWSER_BAR.ink} size={CLEAN_LOGO_SIZE} />
           </View>
         </Pressable>
         <Pressable
@@ -763,11 +735,22 @@ export default function AyWebsBrowserScreen() {
         allowsBackForwardNavigationGestures
         injectedJavaScriptBeforeContentLoaded={AYWEBS_NETWORK_OBSERVER_SCRIPT}
         setSupportMultipleWindows={false}
-        onLoadStart={() => { resetChrome(); setLoadProgress(0); }}
-        onScroll={(event) => updateChrome(event.nativeEvent.contentOffset.y)}
+        onLoadStart={(event) => {
+          const nextUrl = event.nativeEvent.url;
+          if (isWebPageUrl(nextUrl) && pageUrlRef.current !== nextUrl) {
+            pageUrlRef.current = nextUrl;
+            setPageUrl(nextUrl);
+          }
+          pageLoadingRef.current = true;
+          setDocumentLoading(true);
+          setDocumentFailed(false);
+          setSurface(null);
+          setLoadProgress(0);
+        }}
         onLoadProgress={(event) => setLoadProgress(event.nativeEvent.progress >= 1 ? 1 : event.nativeEvent.progress)}
         onNavigationStateChange={(state) => {
           pageLoadingRef.current = state.loading === true;
+          setDocumentLoading(state.loading === true);
           if (state.loading === false) setLoadProgress(1);
           setWebCanGoBack((prev) => (prev === state.canGoBack ? prev : state.canGoBack));
           if (!state.url || !isWebPageUrl(state.url)) return;
@@ -777,12 +760,15 @@ export default function AyWebsBrowserScreen() {
           }
         }}
         onLoadEnd={() => {
+          pageLoadingRef.current = false;
+          setDocumentLoading(false);
           const failedLabel = t('aywebs.captureFailed');
           setNote((current) => (current === failedLabel ? '' : current));
         }}
         onMessage={onMessage}
         onError={(event) => {
           if (!isFatalMainPageLoadError(event.nativeEvent, pageUrlRef.current)) return;
+          setDocumentFailed(true);
           setNote(t('aywebs.captureFailed'));
         }}
         startInLoadingState
@@ -794,12 +780,13 @@ export default function AyWebsBrowserScreen() {
         />
       </View>
       ) : (
-        <View style={[styles.web, styles.loading, { backgroundColor: theme.colors.canvas }]}>
+        <View style={[styles.web, styles.invalidPage]}>
           <AppText variant="body" color={theme.status.danger.fg}>{t('aywebs.badUrl')}</AppText>
         </View>
       )}
 
-      <View style={[styles.footer, !footerVisible && !busy && !note && !added && styles.hiddenChrome, { borderTopColor: theme.colors.line, paddingBottom: insets.bottom + theme.space[2] }]}>
+      {showCapture || note || added ? (
+      <View testID="aywebs-store-footer" style={[styles.footer, { borderTopColor: theme.colors.line, paddingBottom: insets.bottom + theme.space[2] }]}>
         {/* Le client ne lit PAS notre cuisine : aucun journal de lecture, aucune
             ligne « lecture serveur ». Le bouton qui tourne dit ce qu'il fait, et
             une erreur réelle s'écrit en clair (23/10/2026). */}
@@ -824,17 +811,18 @@ export default function AyWebsBrowserScreen() {
           </View>
         ) : null}
 
-        {!added ? <Button
+        {showCapture && !added ? <Button
           label={busy ? t('aywebs.loading') : t('aywebs.captureProduct')}
           tone="commerce"
           block
           onPress={addToCart}
           busy={busy}
-          disabled={!addEnabled}
+          disabled={busy}
           testID="aywebs-store-add-to-cart"
         /> : null}
 
       </View>
+      ) : null}
 
       {sheet ? (
         <AddToCartSheet
@@ -875,18 +863,17 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { alignItems: 'center', gap: 4, paddingHorizontal: 4, paddingBottom: 8 },
   headerHit: { minHeight: 44, minWidth: 44, justifyContent: 'center', alignItems: 'center' },
-  titlePill: { flex: 1, minHeight: 40, borderRadius: RADIUS.full, paddingHorizontal: 12, alignItems: 'center', gap: 8 },
-  titleText: { flex: 1, justifyContent: 'center' },
+  titleText: { flex: 1, minWidth: 0, justifyContent: 'center' },
   cleanDisc: { width: 34, height: 34, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   progressTrack: { position: 'absolute', bottom: 0, height: BROWSER_BAR.progressHeight, overflow: 'hidden' },
   web: { flex: 1 },
-  hiddenChrome: { display: 'none' },
   addedStrip: { alignItems: 'center', gap: 12, paddingVertical: 8 },
   addedImage: { width: 72, height: 80 },
   addedText: { flex: 1, minWidth: 0, gap: 4 },
   addedTitle: { alignItems: 'center', gap: 4 },
   addedAction: { alignSelf: 'flex-start', minHeight: 44 },
   webFill: { flex: 1 },
+  invalidPage: { alignItems: 'center', justifyContent: 'center' },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 10, gap: 6 },
 });

@@ -7,6 +7,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View } from 'react-native';
 
+import { fetchAyWebsCaptureScript } from '@/api/aywebs';
+import { STORE_BAR } from '@/design/tokens.mobile';
+import { BRAND } from '@/design/tokens.generated';
 import StoreBrowserScreen from '../../app/aywebs/browser';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
@@ -14,6 +17,10 @@ import { PrefsProvider } from '@/state/prefs';
 
 const mockBack = jest.fn();
 const mockPush = jest.fn();
+const mockInjectJavaScript = jest.fn();
+const PDP = 'https://www.amazon.com/dp/B012345678';
+const ON_DEMAND = 'https://www.amazon.com/on-demand';
+const STOREFRONT = 'https://www.amazon.com/';
 
 jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args), back: (...args: unknown[]) => mockBack(...args), replace: jest.fn(), canGoBack: () => true },
@@ -31,8 +38,8 @@ jest.mock('react-native-webview', () => {
   const { View: RNView } = jest.requireActual('react-native');
   const React = jest.requireActual('react');
   const WebView = React.forwardRef((_props: Record<string, unknown>, ref: unknown) => {
-    React.useImperativeHandle(ref, () => ({ goBack: () => undefined, goForward: () => undefined, injectJavaScript: () => undefined }));
-    return React.createElement(RNView, { testID: 'webview', onNavigationStateChange: _props.onNavigationStateChange, onLoadProgress: _props.onLoadProgress, onScroll: _props.onScroll });
+    React.useImperativeHandle(ref, () => ({ goBack: () => undefined, goForward: () => undefined, injectJavaScript: mockInjectJavaScript }));
+    return React.createElement(RNView, { testID: 'webview', onNavigationStateChange: _props.onNavigationStateChange, onLoadProgress: _props.onLoadProgress, onScroll: _props.onScroll, onMessage: _props.onMessage, onLoadStart: _props.onLoadStart, onLoadEnd: _props.onLoadEnd, onError: _props.onError });
   });
   return { WebView, __esModule: true, default: WebView };
 });
@@ -72,11 +79,13 @@ jest.mock('@/api/aywebs', () => {
   const actual = jest.requireActual('@/api/aywebs');
   return {
     ...actual,
-    analyzeAyWebsPage: jest.fn(async () => ({
-      url: 'https://www.amazon.com/', storeId: 'amazon', storeName: 'Amazon', registered: true,
-      browseAllowed: true, captureAllowed: false, externalCaptureAllowed: false, isProductPage: false,
-      captureInjection: 'on_demand', fallback: '',
+    analyzeAyWebsPage: jest.fn(async (url: string) => ({
+      url, storeId: 'amazon', storeName: 'Amazon', registered: true,
+      browseAllowed: true, captureAllowed: true, externalCaptureAllowed: false,
+      isProductPage: /\/dp\//.test(url),
+      captureInjection: url.endsWith('/on-demand') ? 'on_demand' : /\/dp\//.test(url) ? 'product_page' : 'never', fallback: '',
     })),
+    fetchAyWebsCaptureScript: jest.fn(async () => 'true;'),
     fetchAyWebsCart: jest.fn(async () => ({
       hasCart: false, items: [], groups: [],
       totals: { units: 0, productSubtotalTnd: null, currency: 'TND', blockedItems: 0, checkoutReady: false, unlinkedUnits: 0 },
@@ -85,23 +94,15 @@ jest.mock('@/api/aywebs', () => {
   };
 });
 
-jest.mock('@/features/aywebs/captureFlow', () => {
-  const actual = jest.requireActual('@/features/aywebs/captureFlow');
-  return {
-    ...actual,
-    resolveAddToCart: jest.fn(async () => ({
-      decision: { kind: 'sheet' },
-      outcome: {
-        product: {
-          storeId: 'amazon', storeName: 'Amazon', title: 'Test product',
-          price: 12, currency: 'EUR', sourceUrl: 'https://www.amazon.com/dp/test',
-        },
-        capture: null, priceRejection: null, missing: [], quoteToken: 'test-quote',
-      },
-      capture: undefined,
-    })),
-  };
-});
+function navigate(url: string, loading = false) {
+  return act(async () => {
+    fireEvent(screen.getByTestId('webview'), 'navigationStateChange', { url, loading, canGoBack: true });
+  });
+}
+
+function message(payload: Record<string, unknown>) {
+  fireEvent(screen.getByTestId('webview'), 'message', { nativeEvent: { data: JSON.stringify(payload) } });
+}
 
 function renderBrowser() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
@@ -123,20 +124,26 @@ function renderBrowser() {
 }
 
 describe('page boutique — actions intégrées AYWEBs', () => {
-  beforeEach(() => mockBack.mockClear());
+  beforeEach(() => jest.clearAllMocks());
 
-  it('affiche la WebView et le bouton jaune de sélection des options', () => {
+  it('affiche la WebView sans bouton ni barre sur accueil, recherche et rayon', async () => {
     renderBrowser();
     expect(screen.getByTestId('webview')).toBeTruthy();
-    expect(screen.getByText('Capturer cet article')).toBeTruthy();
+    for (const url of [STOREFRONT, 'https://www.amazon.com/s?k=cafe', 'https://www.amazon.com/gp/browse.html']) {
+      await navigate(url);
+      expect(screen.queryByTestId('aywebs-store-footer')).toBeNull();
+    }
+    expect(fetchAyWebsCaptureScript).not.toHaveBeenCalled();
   });
 
   it('15/11 : après l’ajout, la feuille se ferme, le badge grimpe et une ligne confirme (pas de seconde feuille)', async () => {
     renderBrowser();
+    await navigate(PDP);
     const button = await screen.findByTestId('aywebs-store-add-to-cart');
     await waitFor(() => expect(button.props.accessibilityState?.disabled).toBe(false));
     fireEvent.press(button);
-
+    await waitFor(() => expect(mockInjectJavaScript).toHaveBeenCalled());
+    message({ v: 1, url: PDP, title: 'Eau de parfum', priceCandidates: [{ text: '12,00 €', source: 'dom' }], currencyText: 'EUR' });
     fireEvent.press(await screen.findByTestId('aywebs-sheet-confirm-add'));
     await waitFor(() => {
       const badge = screen.getByTestId('aywebs-store-header-cart-icon-badge');
@@ -153,21 +160,22 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     expect(mockPush).toHaveBeenCalledWith('/panier');
   });
 
-  it('16/11 : vraie barre de navigateur — fond blanc, pilule jaune, logo Clean, CTA d’achat jaune', async () => {
+  it('en-tête jaune jusqu’au titre blanc et CTA jaune sur la fiche seulement', async () => {
     renderBrowser();
     const header = StyleSheet.flatten(screen.getByTestId('aywebs-store-header').props.style);
-    expect(header.backgroundColor).toBe('#FFFFFF');
-    const pill = StyleSheet.flatten(screen.getByTestId('aywebs-store-header-pill').props.style);
-    expect(pill.backgroundColor).toBe('#F2AE00');
+    expect(header.backgroundColor).toBe(STORE_BAR.background);
+    expect(StyleSheet.flatten(screen.getByText('AYWEBs').props.style).color).toBe(BRAND.white);
+    expect(StyleSheet.flatten(screen.getByTestId('aywebs-store-header-address').props.style).color).toBe(BRAND.white);
     expect(screen.getByTestId('aywebs-ask-clean-logo')).toBeTruthy();
-    const cta = StyleSheet.flatten(screen.getByTestId('aywebs-store-add-to-cart').props.style);
-    expect([cta.backgroundColor, cta.borderColor]).toContain('#F2AE00');
+    await navigate(PDP);
+    const cta = StyleSheet.flatten((await screen.findByTestId('aywebs-store-add-to-cart')).props.style);
+    expect([cta.backgroundColor, cta.borderColor]).toContain(BRAND.yellow);
   });
 
   it('16/11 : adresse = domaine de la page ouverte, suit les liens, NON modifiable ; ligne de progression', async () => {
     renderBrowser();
     expect(screen.getByTestId('aywebs-store-header-address').props.children).toBe('amazon.com');
-    expect(screen.getByTestId('aywebs-store-header-pill').findAllByType(TextInput)).toHaveLength(0);
+    expect(screen.getByTestId('aywebs-store-header-title').findAllByType(TextInput)).toHaveLength(0);
     // Filet décoratif, masqué aux lecteurs d'écran : on le cherche donc parmi les éléments cachés.
     expect(screen.getByTestId('aywebs-store-progress', { includeHiddenElements: true })).toBeTruthy();
     await act(async () => {
@@ -197,16 +205,34 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     expect(screen.queryByLabelText('Fermer')).toBeNull();
   });
 
-  it('masque les commandes au défilement, puis réaffiche le bas au repos et le haut en remontant', async () => {
+  it('garde l’en-tête et la capture fixes pendant le scroll, puis retire la capture à la navigation', async () => {
     renderBrowser();
-    const webview = screen.getByTestId('webview');
-    fireEvent.scroll(webview, { nativeEvent: { contentOffset: { y: 50 } } });
-    expect(screen.queryByTestId('aywebs-store-header')).toBeNull();
+    await navigate(PDP);
+    await screen.findByTestId('aywebs-store-add-to-cart');
+    for (const y of [50, 350, 25, 0]) {
+      fireEvent.scroll(screen.getByTestId('webview'), { nativeEvent: { contentOffset: { y } } });
+      expect(screen.getByTestId('aywebs-store-header')).toBeTruthy();
+      expect(screen.getByText('Capturer cet article')).toBeTruthy();
+    }
+    await navigate(STOREFRONT, true);
     expect(screen.queryByTestId('aywebs-store-add-to-cart')).toBeNull();
-    await waitFor(() => expect(screen.getByTestId('aywebs-store-add-to-cart')).toBeTruthy());
-    expect(screen.queryByTestId('aywebs-store-header')).toBeNull();
-    fireEvent.scroll(webview, { nativeEvent: { contentOffset: { y: 25 } } });
     expect(screen.getByTestId('aywebs-store-header')).toBeTruthy();
+  });
+
+  it('reconnaît un produit sur une page à la demande sans lancer le lecteur avant le clic', async () => {
+    renderBrowser();
+    await navigate(ON_DEMAND);
+    await waitFor(() => expect(mockInjectJavaScript).toHaveBeenCalled());
+    const data = { type: 'aywebs-product-surface', nonce: 1, url: ON_DEMAND, product: true };
+    expect(screen.queryByTestId('aywebs-store-add-to-cart')).toBeNull();
+    message({ ...data, url: STOREFRONT });
+    message({ ...data, nonce: 0 });
+    expect(screen.queryByTestId('aywebs-store-add-to-cart')).toBeNull();
+    message(data);
+    expect(screen.getByTestId('aywebs-store-add-to-cart')).toBeTruthy();
+    expect(fetchAyWebsCaptureScript).not.toHaveBeenCalled();
+    message({ ...data, product: false });
+    expect(screen.queryByTestId('aywebs-store-add-to-cart')).toBeNull();
   });
 
   it('la flèche de l’en-tête revient à l’écran précédent', () => {

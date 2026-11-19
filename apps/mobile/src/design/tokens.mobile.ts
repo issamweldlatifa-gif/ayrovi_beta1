@@ -168,26 +168,24 @@ const PRICE_DROP_RED = '#CF1322';
  * même rouge dans les deux modes (5,9:1 avec le blanc), car c'est un repère
  * commercial fixe, pas une surface du thème.
  */
-/** AYWEBs uses a white header and search controls on a yellow band. */
+/** AA contrast for white labels; the brighter commerce yellow stays on purchase CTAs. */
+const AYWEBS_HEADER_YELLOW = mix(BRAND.yellow, BRAND.black, 0.4);
 export const STORE_BAR = {
-  background: BRAND.white,
-  ink: BRAND.black,
-  searchBand: BRAND.yellow,
+  background: AYWEBS_HEADER_YELLOW,
+  ink: BRAND.white,
+  searchBand: AYWEBS_HEADER_YELLOW,
   pill: BRAND.white,
   pillInk: BRAND.black,
   pillMuted: NEUTRALS.textSecondary,
-  searchButton: BRAND.white,
+  searchButton: BRAND.lightGray,
   searchIcon: BRAND.black,
-  statusBar: 'dark',
+  statusBar: 'light',
 } as const;
 
-/** Merchant chrome is white with the AYWEBs brand yellow. Dark glyphs keep contrast. */
 export const BROWSER_BAR = {
-  background: BRAND.white,
-  ink: BRAND.black,
-  pill: BRAND.yellow,
-  pillInk: BRAND.black,
-  progress: [BRAND.yellow, BRAND.white] as const,
+  background: STORE_BAR.background,
+  ink: STORE_BAR.ink,
+  progress: [BRAND.white, BRAND.yellow] as const,
   progressHeight: 3,
 } as const;
 
