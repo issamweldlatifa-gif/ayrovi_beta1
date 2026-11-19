@@ -429,7 +429,7 @@ export default function SignInScreen() {
           leading={
             provider.id === 'google' ? <GoogleLogo size={20} />
               : provider.id === 'facebook' ? <FacebookLogo size={20} />
-                : <AppleLogo size={20} />
+                : <AppleLogo size={20} onDark={theme.mode === 'dark'} />
           }
           busy={waiting === provider.id}
           disabled={busy && waiting !== provider.id}

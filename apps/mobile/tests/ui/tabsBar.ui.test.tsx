@@ -232,6 +232,7 @@ describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille
     );
     const root = toJSON() as { children?: Array<{ props?: { style?: { width?: number; height?: number } } }> };
     expect(root.children).toHaveLength(5);
+    expect(JSON.stringify(root).match(/tab-selection-indicator/g)).toHaveLength(1);
     for (const slot of root.children ?? []) {
       expect(slot.props?.style?.width).toBe(24);
       expect(slot.props?.style?.height).toBe(24);

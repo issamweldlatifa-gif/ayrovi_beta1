@@ -20,7 +20,7 @@
  *
  * ── Les trois règles qu'on en tire ──────────────────────────────────────────
  *  1. **Des lignes fixes.** Chaque carte a EXACTEMENT les mêmes lignes, à la
- *     même hauteur : points · marque · nom · ligne d'info · prix. Une ligne vide
+ *     même hauteur : points · marque · nom · prix · ligne d'info. Une ligne vide
  *     garde sa place (jamais de carte plus courte que sa voisine), un texte
  *     trop long est coupé sur une ligne. Toutes les cartes ont donc la même
  *     hauteur, et les marques, noms et prix de deux voisines sont alignés.
@@ -85,6 +85,7 @@ export const PRODUCT_TILE = {
   /* Pastille posée au ras du bord, en bas de la photo (« Dernières pièces ») */
   badgeHeight: 20,    // 552 → 584 px sur la fiche = 32 px
   badgeBottom: 12,
+  badgeInset: 8,
 
   /** Plafond du grossissement système : les lignes grandissent ensemble, sans couper la grille. */
   maxFontScale: 1.2,

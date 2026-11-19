@@ -19,6 +19,7 @@ import { rowDirectionFor, screenContentGap } from './layoutLogic';
 import { goBack } from './navigation';
 import { useResponsive } from './layout';
 import { KeyboardAvoider } from './keyboard';
+import { RHYTHM } from './rhythm';
 
 export function SubScreen({
   title, subtitle, children, onRefresh, refreshing = false, fallback = '/',
@@ -55,8 +56,8 @@ export function SubScreen({
   const header = (<View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         <BackButton onPress={() => goBack(fallback)} label={t('common.back')} color={theme.colors.ink} />
         <View style={styles.headerText}>
-          <AppText variant="h2">{title}</AppText>
-          {subtitle ? <AppText variant="caption" color={theme.colors.muted}>{subtitle}</AppText> : null}
+          <AppText variant="h2" accessibilityRole="header">{title}</AppText>
+          {subtitle ? <AppText variant="body" color={theme.colors.muted}>{subtitle}</AppText> : null}
         </View>
       </View>);
   // Clavier (11/11/2026) : en edge-to-edge, Android ne réduit plus la fenêtre ;
@@ -114,6 +115,6 @@ export function SubScreen({
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   screen: { flexGrow: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  headerText: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: RHYTHM.tight },
+  headerText: { flex: 1, minWidth: 0, gap: RHYTHM.inline },
 });

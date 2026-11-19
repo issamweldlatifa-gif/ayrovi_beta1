@@ -221,7 +221,8 @@ describe('branchements', () => {
     expect(catalog).toContain('numColumns={metrics.columns}');
     expect(catalog).toContain('key={`catalog-grid-${metrics.columns}`}');
     expect(catalog).toContain('<ProductGridBar');
-    expect(catalog).toContain('marginHorizontal: -gutter');
+    expect(catalog).toContain('<FullBleed style={styles.list}>');
+    expect(catalog).not.toContain('marginHorizontal: -gutter');
     expect(catalog).toContain("photo: String(photo)");
   });
 

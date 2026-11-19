@@ -23,7 +23,7 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { SubScreen } from '@/design/subScreen';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
-import { useResponsive } from '@/design/layout';
+import { FullBleed } from '@/design/layout';
 import { ProductGridBar, useProductDensity } from '@/design/ProductGridBar';
 import { PRODUCT_TILE, productTileInitialRows, productTileMetrics } from '@/design/productTile';
 import { useT } from '@/i18n';
@@ -45,7 +45,6 @@ export default function CatalogScreen() {
   const theme = useTheme();
   const t = useT();
   const window = useWindowDimensions();
-  const { gutter } = useResponsive();
   const { density, toggle } = useProductDensity();
   // عرض الشبكة الحقيقي (بلا هوامش الشاشة) — التقدير الأوّل هو عرض الشاشة.
   const [gridWidth, setGridWidth] = useState(window.width);
@@ -121,25 +120,27 @@ export default function CatalogScreen() {
       ) : null}
 
       {/* السعر المعروض في كل كارت هو سعر الخادم: التطبيق ما يحسبش ديناراً واحداً. */}
-      <FlatList
-        // numColumns ما يتبدّلش على قائمة مركّبة : مفتاح جديد لكل عدد أعمدة.
-        key={`catalog-grid-${metrics.columns}`}
-        testID="catalog-list"
-        data={rows}
-        keyExtractor={product => product.id}
-        numColumns={metrics.columns}
-        initialNumToRender={productTileInitialRows(metrics.columns)}
-        maxToRenderPerBatch={2}
-        windowSize={5}
-        onLayout={onGridLayout}
-        style={[styles.list, { marginHorizontal: -gutter }]}
-        onRefresh={reload}
-        refreshing={products.isFetching || arrivals.isFetching}
-        columnWrapperStyle={metrics.columns > 1
-          ? [styles.grid, { flexDirection: rowDirectionFor(theme.isRTL) }]
-          : undefined}
-        renderItem={({ item }) => <ProductCard product={item} onOpen={open} onAdd={add} metrics={metrics} />}
-      />
+      <FullBleed style={styles.list}>
+        <FlatList
+          // numColumns ما يتبدّلش على قائمة مركّبة : مفتاح جديد لكل عدد أعمدة.
+          key={`catalog-grid-${metrics.columns}`}
+          testID="catalog-list"
+          data={rows}
+          keyExtractor={product => product.id}
+          numColumns={metrics.columns}
+          initialNumToRender={productTileInitialRows(metrics.columns)}
+          maxToRenderPerBatch={2}
+          windowSize={5}
+          onLayout={onGridLayout}
+          style={styles.list}
+          onRefresh={reload}
+          refreshing={products.isFetching || arrivals.isFetching}
+          columnWrapperStyle={metrics.columns > 1
+            ? [styles.grid, { flexDirection: rowDirectionFor(theme.isRTL) }]
+            : undefined}
+          renderItem={({ item }) => <ProductCard product={item} onOpen={open} onAdd={add} metrics={metrics} />}
+        />
+      </FullBleed>
     </SubScreen>
   );
 }

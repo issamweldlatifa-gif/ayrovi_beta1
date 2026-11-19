@@ -41,12 +41,12 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 
 import { AppText, Button } from '@/design/ui';
 import { AppSheet } from '@/design/sheet/AppSheet';
-import { rowDirectionFor } from '@/design/layoutLogic';
+import { BREAKPOINTS, rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
-import { ficheColorsFor, RADIUS, VIDEO_BACKDROP } from '@/design/tokens.mobile';
+import { FICHE_COLORS, ficheColorsFor, RADIUS, RHYTHM, VIDEO_BACKDROP } from '@/design/tokens.mobile';
 import { FONTS, MOTION } from '@/design/tokens.generated';
 import { FicheGlyph, type FicheGlyphName } from '@/design/FicheGlyph';
 import {
@@ -116,7 +116,7 @@ export function FicheHeader({
       <Animated.View
         pointerEvents="none"
         testID="product-header-surface"
-        style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.canvas, opacity: solid }]}
+        style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.canvas, opacity: theme.mode === 'dark' ? 1 : solid }]}
       />
       <Animated.View pointerEvents="none" testID="product-header-shadow" style={[styles.headerShadow, { opacity: solid }]}>
         <LinearGradient colors={[fc.sheetShadow, fc.sheetShadowClear]} style={styles.fill} />
@@ -450,7 +450,8 @@ export function SheetEdgeShadow({ testID }: { testID?: string }) {
  */
 export function FichePhotoChrome({ count, active }: { count: number; active: number }) {
   const theme = useTheme();
-  const fc = ficheColorsFor(theme.mode);
+  // Product photos keep the same light studio backing in both themes.
+  const fc = FICHE_COLORS;
   return (
     <>
       {count > 1 ? (
@@ -464,7 +465,7 @@ export function FichePhotoChrome({ count, active }: { count: number; active: num
                     width: size,
                     height: size,
                     borderRadius: size / 2,
-                    backgroundColor: position === active ? theme.colors.ink : fc.dotIdle,
+                    backgroundColor: position === active ? fc.ink : fc.dotIdle,
                   }}
                 />
               </View>
@@ -473,7 +474,7 @@ export function FichePhotoChrome({ count, active }: { count: number; active: num
         </View>
       ) : null}
       <View pointerEvents="none" style={[styles.expand, theme.isRTL ? styles.expandRTL : styles.expandLTR]}>
-        <FicheGlyph name="expand" size={FICHE_DETAIL.expandIcon} color={theme.colors.ink} testID="product-photo-expand" />
+        <FicheGlyph name="expand" size={FICHE_DETAIL.expandIcon} color={fc.ink} testID="product-photo-expand" />
       </View>
     </>
   );
@@ -501,17 +502,19 @@ export function FicheIdentity({
   const theme = useTheme();
   const fc = ficheColorsFor(theme.mode);
   const t = useT();
+  const { width, fontScale } = useWindowDimensions();
+  const stacked = width / Math.max(fontScale, 1) < BREAKPOINTS.wideMin;
   const title = brand?.trim() || name;
   const fullName = brand?.trim() ? name : '';
   return (
     <View style={styles.identity}>
-      <View style={styles.identityTop}>
-        <View style={styles.identityStart}>
+      <View style={[styles.identityTop, !stacked && { flexDirection: rowDirectionFor(theme.isRTL), alignItems: 'flex-start' }]}>
+        <View style={!stacked && styles.identityStart}>
           {/* Le filet fait exactement la largeur du mot : la boîte se rétrécit au texte. */}
-          <View style={[styles.nameBox, { borderBottomColor: theme.colors.ink }]}>
+          <View style={[styles.nameBox, { borderBottomColor: theme.colors.line, alignSelf: theme.isRTL ? 'flex-end' : 'flex-start' }]}>
             <AppText
               testID="product-fiche-title"
-              numberOfLines={fullName ? 1 : undefined}
+              accessibilityRole="header"
               style={[styles.name, { color: theme.colors.ink, fontFamily: theme.isRTL ? theme.font('bold') : FONTS.latin.heading }]}
             >
               {title}
@@ -527,7 +530,7 @@ export function FicheIdentity({
           ) : null}
         </View>
         {price ? (
-          <View style={styles.priceColumn}>
+          <View style={!stacked && styles.priceColumn}>
             <AppText testID="product-fiche-price" style={[styles.price, { color: theme.colors.ink, fontFamily: theme.font('bold') }]}>
               {price}
             </AppText>
@@ -859,7 +862,7 @@ export function BuyBar({
           {error}
         </AppText>
       ) : null}
-      <View style={styles.buyRow}>
+      <View style={[styles.buyRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         <View style={styles.buyPrice}>
           {/* 13/11 : UNE ligne, rétrécie plutôt que coupée, et 16 dp d'air avant le bouton. */}
           <AppText
@@ -1257,11 +1260,11 @@ const styles = StyleSheet.create({
   dotSlot: { width: FICHE.dotPitch, alignItems: 'center', justifyContent: 'center' },
 
   identity: { paddingHorizontal: FICHE.gutter, paddingTop: FICHE.nameTop, paddingBottom: FICHE.gutter },
-  identityTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
-  identityStart: { flex: 1, alignItems: 'flex-start', marginEnd: 12 },
-  nameBox: { maxWidth: '100%', borderBottomWidth: FICHE.underlineWidth, paddingBottom: FICHE.underlineGap },
+  identityTop: { gap: RHYTHM.related },
+  identityStart: { flex: 1, minWidth: 0 },
+  nameBox: { alignSelf: 'flex-start', maxWidth: '100%', borderBottomWidth: FICHE.underlineWidth, paddingBottom: FICHE.underlineGap },
   name: { fontSize: FICHE.nameSize, lineHeight: FICHE.nameLine },
-  priceColumn: { alignItems: 'flex-end', flexShrink: 0 },
+  priceColumn: { flexShrink: 1, maxWidth: '45%' },
   price: { fontSize: FICHE.priceSize, lineHeight: FICHE.nameLine },
   reference: { fontSize: FICHE_DETAIL.referenceSize, lineHeight: FICHE_DETAIL.fullNameLine },
   struck: { textDecorationLine: 'line-through' },
@@ -1329,7 +1332,7 @@ const styles = StyleSheet.create({
   buyError: { paddingStart: FICHE.gutter, paddingEnd: FICHE.gutter, paddingTop: 4 },
   buyPrice: { flex: 1, minWidth: 0, justifyContent: 'center' },
   buyPriceText: { fontSize: FICHE_DETAIL.barPriceSize, lineHeight: FICHE_DETAIL.barPriceLine },
-  buyButton: { width: FICHE.barButtonWidth, height: FICHE.barButtonHeight, paddingHorizontal: 12 },
+  buyButton: { width: FICHE.barButtonWidth, maxWidth: '56%', minHeight: FICHE.barButtonHeight, paddingHorizontal: RHYTHM.related },
 
   sheetHeaderRow: {
     alignItems: 'center',

@@ -14,7 +14,7 @@ import { revealChrome } from '@/design/chrome';
 import { ErrorBlock, LoadingBlock, EmptyBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { BRAND } from '@/design/tokens.generated';
-import { RADIUS, SOCIAL_EDITORIAL, veil } from '@/design/tokens.mobile';
+import { RADIUS, RHYTHM, SOCIAL_EDITORIAL, veil } from '@/design/tokens.mobile';
 import { AppText } from '@/design/ui';
 import { useI18n } from '@/i18n';
 import type { CatalogueLookInput } from '@/api/cart';
@@ -148,7 +148,7 @@ export default function SocialCommerceScreen() {
     <View testID="social-commerce" style={{ flex: 1, paddingTop: top, backgroundColor: theme.colors.canvas }}>
       <View style={[styles.header, { borderColor: theme.colors.line, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
         <BrandSymbol width={34} />
-        <AppText variant="h3" accessibilityRole="header" style={{ flex: 1 }}>{t('tabs.social')}</AppText>
+        <AppText variant="h3" accessibilityRole="header" style={{ flex: 1, minWidth: 0 }}>{t('tabs.social')}</AppText>
         <Pressable accessibilityRole="button" accessibilityLabel={t('socialCommerce.lens')} onPress={() => router.push('/z-lens')} style={styles.hit}>
           <Ionicons name="search-outline" color={theme.colors.ink} size={theme.iconSize.md} />
         </Pressable>
@@ -185,7 +185,7 @@ export default function SocialCommerceScreen() {
           {cached && items.length ? <View style={styles.group}><AppText variant="caption" accessibilityLiveRegion="polite">{t('socialCommerce.cached')}</AppText></View> : null}
           {(filter === 'all' || filter === 'stories') && storyRows.length ? <View style={styles.group}>
             <AppText variant="h3" accessibilityRole="header">{t('socialCommerce.storiesNow')}</AppText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.storyRail}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.storyRail, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
               {storyRows.slice(0, 8).map(story => (
                 <Pressable key={story.id} accessibilityRole="button" accessibilityLabel={storyLabel(story)} style={styles.story} disabled={cached} onPress={() => openStory(story.id)}>
                   <View style={[styles.storyRing, { borderColor: seen.has(story.id) ? theme.colors.line : COVER_COLORS[1] }]}>
@@ -199,7 +199,7 @@ export default function SocialCommerceScreen() {
           </View> : null}
         </View>}
         renderItem={({ item, index }) => item.kind === 'filters' ? <View style={{ backgroundColor: theme.colors.canvas, borderBottomColor: theme.colors.line, borderBottomWidth: StyleSheet.hairlineWidth }}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.filters, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
             {SOCIAL_FILTERS.map(value => <Pressable accessibilityRole="tab" accessibilityState={{ selected: filter === value }} key={value}
               onPress={() => { router.setParams({ filter: value }); goToFilter(); }}
               style={[styles.chip, { borderColor: filter === value ? theme.colors.ink : theme.colors.line, backgroundColor: filter === value ? theme.colors.ink : theme.colors.canvas }]}>
@@ -248,9 +248,9 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', gap: 6, paddingHorizontal: 16, minHeight: 56, borderBottomWidth: StyleSheet.hairlineWidth },
   hit: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   cover: { aspectRatio: 4 / 5, minHeight: 280, justifyContent: 'flex-end' },
-  coverCopy: { padding: 24, gap: 10 },
+  coverCopy: { padding: RHYTHM.block, gap: RHYTHM.related },
   coverButton: { alignSelf: 'flex-start', justifyContent: 'center', minHeight: 44, borderRadius: RADIUS.full, paddingHorizontal: 20, backgroundColor: BRAND.white },
-  group: { paddingHorizontal: 16, paddingVertical: 12, gap: 16 },
+  group: { paddingHorizontal: RHYTHM.group, paddingVertical: RHYTHM.related, gap: RHYTHM.group },
   storyRail: { gap: 16 },
   story: { width: 68, alignItems: 'center', gap: 4 },
   storyRing: { width: 68, height: 68, borderWidth: 2, borderRadius: 34, alignItems: 'center', justifyContent: 'center' },

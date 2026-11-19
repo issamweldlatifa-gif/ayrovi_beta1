@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   error: { marginTop: 4 },
-  input: { flex: 1, padding: 0, backgroundColor: 'transparent', borderWidth: 0, textAlignVertical: 'center' },
-  trailing: { minHeight: 44, paddingHorizontal: 8, justifyContent: 'center' },
+  input: { flex: 1, minWidth: 0, padding: 0, backgroundColor: 'transparent', borderWidth: 0, textAlignVertical: 'center' },
+  trailing: { minHeight: 44, flexShrink: 1, maxWidth: '45%', paddingHorizontal: 8, justifyContent: 'center' },
   trailingLabel: { textDecorationLine: 'underline' },
 });

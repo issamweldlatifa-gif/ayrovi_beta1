@@ -21,7 +21,7 @@ import { AppImage } from '@/design/appImage';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { SheetHeader } from '@/design/sheet/SheetHeader';
 import { useTheme } from '@/design/theme';
-import { RADIUS, veil } from '@/design/tokens.mobile';
+import { RADIUS, RHYTHM, veil } from '@/design/tokens.mobile';
 import { AppText, Button, PurchaseBar, KeyValue } from '@/design/ui';
 import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
@@ -474,7 +474,7 @@ export function OfficialCartScaffold({
         {onBack ? (
           <BackButton onPress={onBack} label={t('common.back')} color={theme.colors.ink} />
         ) : null}
-        <AppText variant="h3" numberOfLines={1} style={styles.topBarTitle}>
+        <AppText variant="h3" accessibilityRole="header" style={styles.topBarTitle}>
           {headerLabel}
         </AppText>
       </View>
@@ -519,11 +519,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  topBarTitle: { flex: 1 },
+  topBarTitle: { flex: 1, minWidth: 0 },
   scrollArea: { flex: 1 },
   scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingHorizontal: RHYTHM.group,
+    paddingBottom: RHYTHM.block,
   },
   itemRow: {
     paddingVertical: 16,
@@ -534,7 +534,7 @@ const styles = StyleSheet.create({
   itemThumb: {
     width: 96,
     height: 128,
-    borderRadius: RADIUS.xs,
+    borderRadius: RADIUS.md,
   },
   itemThumbPlaceholder: {
     borderWidth: StyleSheet.hairlineWidth,
@@ -543,7 +543,8 @@ const styles = StyleSheet.create({
   },
   itemMeta: {
     flex: 1,
-    gap: 4,
+    minWidth: 0,
+    gap: RHYTHM.inline,
   },
   itemTopLine: {
     alignItems: 'center',
@@ -592,9 +593,9 @@ const styles = StyleSheet.create({
   },
   stickySummary: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    gap: 10,
+    paddingHorizontal: RHYTHM.group,
+    paddingTop: RHYTHM.related,
+    gap: RHYTHM.tight,
   },
   modalBackdrop: {
     flex: 1,
@@ -605,6 +606,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   summaryRow: {
+    flexWrap: 'wrap',
     alignItems: 'baseline',
     justifyContent: 'space-between',
     gap: 8,

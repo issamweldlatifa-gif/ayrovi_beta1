@@ -1,4 +1,4 @@
-import { TEXT_FRAME } from '@/design/tokens.mobile';
+import { RHYTHM, TEXT_FRAME } from '@/design/tokens.mobile';
 /**
  * Lens — le filtre des résultats : LE TITRE, rien d'autre (28/10/2026).
  *
@@ -12,6 +12,7 @@ import { TEXT_FRAME } from '@/design/tokens.mobile';
  * affiche — et non le titre de la page du site : « zalando » ne ramène donc
  * plus toutes les cartes, et « robe » ramène les robes.
  */
+import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -35,6 +36,7 @@ export function LensTitleFilter({
   const theme = useTheme();
   const t = useT();
   const active = value.trim().length > 0;
+  const [focused, setFocused] = useState(false);
 
   return (
     <View style={styles.wrap} testID="lens-title-filter">
@@ -42,24 +44,27 @@ export function LensTitleFilter({
         style={[
           styles.field,
           {
-            borderColor: active ? theme.colors.ink : theme.colors.lineControl,
+            flexDirection: theme.isRTL ? 'row-reverse' : 'row',
+            borderColor: focused ? LENS_COLORS.black : LENS_COLORS.resultMuted,
             borderRadius: theme.radius.full,
             backgroundColor: LENS_COLORS.white,
           },
         ]}
       >
-        <Ionicons name="search-outline" size={theme.iconSize.sm} color={theme.colors.muted} accessibilityElementsHidden />
+        <Ionicons name="search-outline" size={theme.iconSize.sm} color={LENS_COLORS.resultMuted} accessibilityElementsHidden />
         <TextInput
           testID="lens-title-filter-input"
           value={value}
           onChangeText={onChange}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           placeholder={t('lens.filters.title')}
-          placeholderTextColor={theme.colors.muted}
+          placeholderTextColor={LENS_COLORS.resultMuted}
           accessibilityLabel={t('lens.filters.title')}
           returnKeyType="search"
           autoCorrect={false}
           autoCapitalize="none"
-          style={[styles.input, theme.text('label'), { color: theme.colors.ink }]}
+          style={[styles.input, theme.text('body'), { color: LENS_COLORS.black, textAlign: theme.isRTL ? 'right' : 'left' }]}
         />
         {active ? (
           <Pressable
@@ -67,17 +72,16 @@ export function LensTitleFilter({
             accessibilityRole="button"
             accessibilityLabel={t('lens.filters.clear')}
             testID="lens-title-filter-clear"
-            hitSlop={8}
             style={({ pressed }) => [styles.clear, { opacity: pressed ? theme.opacity.subtle : 1 }]}
           >
-            <Ionicons name="close-circle" size={theme.iconSize.sm} color={theme.colors.muted} />
+            <Ionicons name="close-circle" size={theme.iconSize.sm} color={LENS_COLORS.resultMuted} />
           </Pressable>
         ) : null}
       </View>
       {active ? (
         <AppText
           variant="caption"
-          color={theme.colors.muted}
+          color={LENS_COLORS.resultMuted}
           accessibilityLiveRegion="polite"
           testID="lens-title-filter-count"
         >
@@ -90,15 +94,15 @@ export function LensTitleFilter({
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: 6 },
+  wrap: { gap: RHYTHM.inline },
   field: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     minHeight: 44,
-    paddingHorizontal: 12,
+    paddingHorizontal: RHYTHM.related,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  input: { flex: 1, minHeight: 44, paddingVertical: TEXT_FRAME.inputVertical, paddingHorizontal: 0 },
-  clear: { alignItems: 'center', justifyContent: 'center' },
+  input: { flex: 1, minWidth: 0, minHeight: 44, paddingVertical: TEXT_FRAME.inputVertical, paddingHorizontal: 0 },
+  clear: { width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
 });

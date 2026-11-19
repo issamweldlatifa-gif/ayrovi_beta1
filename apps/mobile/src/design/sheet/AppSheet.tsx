@@ -272,7 +272,7 @@ export function AppSheet({
             onContentSizeChange={(_, height) => setContentHeight(height)}
             scrollEventThrottle={16}
             keyboardShouldPersistTaps="handled"
-            contentContainerStyle={[styles.body, { paddingBottom: footer ? 12 : bottomSafe + 20 }]}
+            contentContainerStyle={[styles.body, { paddingBottom: footer ? RHYTHM.related : bottomSafe + RHYTHM.block }]}
           >
             {children}
           </ScrollView>
@@ -294,7 +294,7 @@ export function AppSheet({
           ) : null}
         </View>
         {footer ? (
-          <View style={[styles.footer, { backgroundColor: footerSurfaceColor ?? theme.colors.canvas, borderTopColor: footerLineColor ?? theme.colors.line, paddingBottom: bottomSafe + 12 }]}>
+          <View style={[styles.footer, { backgroundColor: footerSurfaceColor ?? theme.colors.canvas, borderTopColor: footerLineColor ?? theme.colors.line, paddingBottom: bottomSafe + RHYTHM.related }]}>
             {footer}
           </View>
         ) : null}

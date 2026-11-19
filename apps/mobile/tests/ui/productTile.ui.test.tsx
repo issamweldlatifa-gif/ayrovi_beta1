@@ -110,6 +110,22 @@ describe('ProductTile — navigation entre les photos', () => {
     expect(screen.getByTestId('t-gallery').props.accessibilityValue).toEqual({ text: 'Photo 8 sur 8' });
   });
 
+  it('places current price before metadata and keeps the quick-add target independent', async () => {
+    const onOpen = jest.fn();
+    const onAdd = jest.fn();
+    const item = product({ compareAtPrice: 79.9 });
+    const tree = render(wrap(<ProductCard product={item} metrics={metrics} onOpen={onOpen} onAdd={onAdd} />));
+    await act(async () => {});
+    const copy = JSON.stringify(tree.toJSON());
+    expect(copy).toContain('product-card-reference-p1');
+    expect(copy.indexOf('product-card-p1-price')).toBeLessThan(copy.indexOf('product-card-reference-p1'));
+    const add = screen.getByTestId('product-card-add-p1');
+    expect(flat(add)).toMatchObject({ width: 44, height: 44 });
+    fireEvent.press(add, { stopPropagation: jest.fn() });
+    expect(onAdd).toHaveBeenCalledWith(item);
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
   it('un appui ouvre la fiche SUR la photo regardée (photo ou texte)', async () => {
     const onOpen = jest.fn();
     render(wrap(<ProductTile testID="t" metrics={metrics} images={photos(4)} accessibilityLabel="Puma" imageLabel="Puma" name="X" onOpen={onOpen} />));

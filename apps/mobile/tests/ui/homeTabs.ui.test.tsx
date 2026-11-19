@@ -43,11 +43,11 @@ describe('HomeTabs', () => {
     expect(screen.UNSAFE_queryAllByType(require('@expo/vector-icons/Ionicons').default)).toHaveLength(0);
   });
 
-  it('garde une bande compacte, bordée et un soulignement fin', async () => {
+  it('garde une bande compacte avec un seul séparateur discret et un soulignement fin', async () => {
     await renderTabs();
     const strip = StyleSheet.flatten(screen.getByTestId('home-tabs').props.style);
-    expect(strip.borderTopWidth).toBe(1);
-    expect(strip.borderBottomWidth).toBe(1);
+    expect(strip.borderTopWidth).toBeUndefined();
+    expect(strip.borderBottomWidth).toBe(StyleSheet.hairlineWidth);
     expect(StyleSheet.flatten(screen.getByTestId('home-tab-underline').props.style).height).toBe(1);
     for (const tab of screen.getAllByRole('tab')) {
       expect(StyleSheet.flatten(tab.props.style).minHeight).toBeGreaterThanOrEqual(44);

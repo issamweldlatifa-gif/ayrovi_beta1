@@ -38,8 +38,8 @@ export function ProductSkeleton({ index, metrics }: { index: number; metrics?: P
       <View style={[styles.copy, { height: tile.textHeight, paddingHorizontal: tile.inset }]}>
         {bar('brand', tile.lines.brand, 12, '45%')}
         {bar('name', tile.lines.name, 10, '88%')}
-        {bar('meta', tile.lines.meta, 10, '58%')}
         {bar('price', tile.lines.price, 14, '40%')}
+        {bar('meta', tile.lines.meta, 10, '58%')}
       </View>
     </View>
   );

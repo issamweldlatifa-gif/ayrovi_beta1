@@ -59,6 +59,13 @@ describe('système de boutons', () => {
     expect(label.fontWeight).toBe('normal');
   });
 
+  it('keeps shared actions at the touch minimum and gives fields a default accessible name', () => {
+    render(wrap(<><Button label="Confirmer" onPress={() => {}} /><Field label="Nom complet" /><Field label="Ville" accessibilityLabel="Ville de livraison" /></>));
+    expect(StyleSheet.flatten(screen.getByRole('button', { name: 'Confirmer' }).props.style).minHeight).toBeGreaterThanOrEqual(44);
+    expect(screen.getByLabelText('Nom complet')).toBeTruthy();
+    expect(screen.getByLabelText('Ville de livraison')).toBeTruthy();
+  });
+
   it('le CTA d’achat (commerce) est le jaune « Za. », avec un libellé encre lisible', () => {
     render(wrap(<Button label="Ajouter au panier" onPress={() => {}} tone="commerce" />));
     const btn = StyleSheet.flatten(screen.getByRole('button', { name: 'Ajouter au panier' }).props.style);

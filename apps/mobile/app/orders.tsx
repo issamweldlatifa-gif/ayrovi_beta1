@@ -1,4 +1,3 @@
-import { BackButton } from '@/design/BackButton';
 /**
  * Mes commandes — la liste complète, telle que le serveur la connaît.
  *
@@ -7,7 +6,6 @@ import { BackButton } from '@/design/BackButton';
  * Aucune commande n'est inventée ni dupliquée depuis la page d'accueil.
  */
 import { useCallback } from 'react';
-import { goBack } from '@/design/navigation';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -16,12 +14,12 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { rowDirectionFor } from '@/design/layoutLogic';
-import { useResponsive } from '@/design/layout';
+import { SubScreen } from '@/design/subScreen';
+import { RHYTHM } from '@/design/rhythm';
 import { useI18n } from '@/i18n';
 import { fetchOrders } from '@/api/account';
 import { statusText } from '@/api/labels';
 import { mediaUrl } from '@/api/client';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { formatMoney } from '@/format/money';
 
 /**
@@ -34,9 +32,7 @@ export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function OrdersScreen() {
   const theme = useTheme();
-  const { gutter } = useResponsive();
   const t = useI18n().t;
-  const insets = useSafeAreaInsets();
   const query = useQuery({
     queryKey: ['account', 'orders'],
     queryFn: ({ signal }) => fetchOrders({ signal }),
@@ -46,24 +42,14 @@ export default function OrdersScreen() {
   const retry = useCallback(() => query.refetch(), [query]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingTop: insets.top + theme.space[2] }]}>
-      <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-        <BackButton onPress={() => goBack('/')} label={t('common.back')} color={theme.colors.ink} />
-        <View style={styles.headerText}>
-          <AppText variant="h2">{t('orders.title')}</AppText>
-          <AppText variant="caption" color={theme.colors.muted}>{t('orders.subtitle')}</AppText>
-        </View>
-      </View>
-
+    <SubScreen scroll={false} title={t('orders.title')} subtitle={t('orders.subtitle')}>
       {/* Liste virtualisée : l'historique de commandes n'a pas de plafond. */}
       <FlatList
         style={styles.list}
         data={query.data ?? []}
         keyExtractor={(order) => order.id}
         contentContainerStyle={{
-          paddingHorizontal: gutter,
-          paddingBottom: insets.bottom + theme.space[4],
-          gap: theme.space[2],
+          gap: RHYTHM.related,
           flexGrow: 1,
         }}
         ListHeaderComponent={
@@ -88,11 +74,11 @@ export default function OrdersScreen() {
             testID={`order-${order.id}`}
           >
             <Card>
-              <View style={styles.row}>
+              <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
                 <AppText variant="label" style={styles.orderNumber}>
                   {order.orderNumber || order.id}
                 </AppText>
-                <AppText variant="caption" color={theme.colors.ink}>
+                <AppText variant="caption" color={theme.colors.ink} style={styles.status}>
                   {statusText('order', order.status, t)}
                 </AppText>
               </View>
@@ -115,16 +101,14 @@ export default function OrdersScreen() {
           </Pressable>
         )}
       />
-    </View>
+    </SubScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  header: { alignItems: 'center', paddingHorizontal: 8, gap: 4 },
   list: { flex: 1 },
-  headerText: { flex: 1 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  orderNumber: { flex: 1 },
+  row: { justifyContent: 'space-between', alignItems: 'baseline', gap: RHYTHM.tight },
+  orderNumber: { flex: 1, minWidth: 0 },
+  status: { flexShrink: 1, maxWidth: '50%' },
   thumb: { width: 56, height: 56, borderWidth: StyleSheet.hairlineWidth, marginTop: 6 },
 });

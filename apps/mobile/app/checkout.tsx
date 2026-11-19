@@ -30,6 +30,7 @@ import { JourneyProgress, type JourneyStep } from '@/features/checkout/JourneyPr
 import { resolveJourneyStep, journeyCompletion } from '@/features/checkout/journey';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
+import { RHYTHM } from '@/design/rhythm';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
@@ -305,7 +306,8 @@ export default function CheckoutScreen() {
                 accessibilityState={{ selected: active }}
                 onPress={() => pickAddress(address)}
                 style={[styles.address, {
-                  borderColor: active ? theme.colors.action : theme.colors.line,
+                  borderColor: active ? theme.colors.action : theme.colors.lineControl,
+                  backgroundColor: active ? theme.colors.surface : theme.colors.canvas,
                   borderRadius: theme.radius.control,
                   minHeight: theme.geometry.minTarget,
                 }]}
@@ -402,7 +404,8 @@ export default function CheckoutScreen() {
                 disabled={!choice.available}
                 onPress={() => setMethod(choice.id)}
                 style={[styles.choice, {
-                  borderColor: active ? theme.colors.action : theme.colors.line,
+                  borderColor: active ? theme.colors.action : theme.colors.lineControl,
+                  backgroundColor: active ? theme.colors.surface : theme.colors.canvas,
                   borderRadius: theme.radius.control,
                   minHeight: theme.geometry.minTarget,
                   opacity: choice.available ? 1 : 0.6,
@@ -492,11 +495,11 @@ export default function CheckoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  address: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, gap: 2, marginTop: 6, justifyContent: 'center' },
+  address: { borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: RHYTHM.related, paddingVertical: RHYTHM.tight, gap: RHYTHM.inline, justifyContent: 'center' },
   chips: { flexWrap: 'wrap', gap: 8, marginTop: 6 },
   chip: { borderWidth: 1, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center', minWidth: 72 },
-  choice: { borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, gap: 2, marginTop: 6, justifyContent: 'center' },
-  terms: { alignItems: 'center', gap: 10, marginTop: 4 },
-  termsText: { flex: 1 },
+  choice: { borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: RHYTHM.related, paddingVertical: RHYTHM.tight, gap: RHYTHM.inline, justifyContent: 'center' },
+  terms: { alignItems: 'center', gap: RHYTHM.related, marginTop: RHYTHM.inline },
+  termsText: { flex: 1, minWidth: 0 },
   box: { width: 22, height: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });

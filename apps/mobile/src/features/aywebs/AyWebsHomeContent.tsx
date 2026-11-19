@@ -35,7 +35,7 @@ import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
-import { MEDIA_RATIO, RADIUS, STORE_BAR } from '@/design/tokens.mobile';
+import { MEDIA_RATIO, RADIUS, RHYTHM, STORE_BAR } from '@/design/tokens.mobile';
 import { useResponsive } from '@/design/layout';
 import { AppImage } from '@/design/appImage';
 import { FavoriteDiscGlyph } from '@/design/FavoriteDisc';
@@ -242,7 +242,6 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
             accessibilityRole="button"
             accessibilityLabel={t('aywebs.stores.clear')}
             onPress={() => { setSearch(''); setSelectedCategoryId(null); }}
-            hitSlop={8}
             style={styles.searchClear}
             testID="aywebs-home-search-clear"
           >
@@ -550,7 +549,7 @@ function StoreTile({ store, categories, saved, onOpen, onToggle }: {
 
 const styles = StyleSheet.create({
   // Les sections respirent : 32 entre elles, 12 à l'intérieur (échelle officielle).
-  content: { gap: 32, paddingBottom: 24 },
+  content: { gap: RHYTHM.cluster, paddingBottom: RHYTHM.block },
   searchBand: { paddingTop: 4, paddingBottom: 12 },
   search: {
     alignItems: 'center',
@@ -561,9 +560,9 @@ const styles = StyleSheet.create({
     paddingStart: 12,
   },
   searchGo: { width: 48, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center' },
-  searchInput: { flex: 1, minHeight: 46, paddingVertical: TEXT_FRAME.inputVertical },
-  searchClear: { padding: 2 },
-  section: { gap: 12 },
+  searchInput: { flex: 1, minWidth: 0, minHeight: 46, paddingVertical: TEXT_FRAME.inputVertical },
+  searchClear: { width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  section: { gap: RHYTHM.related },
   sectionTitle: { alignItems: 'center', justifyContent: 'space-between', minHeight: 36, gap: 8 },
   sectionTitleText: { flexShrink: 1 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: GRID_GAP },

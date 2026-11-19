@@ -34,6 +34,8 @@ import { FavoriteDiscGlyph } from '@/design/FavoriteDisc';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 
+import { CARD_SYSTEM } from '@/design/cardSystem';
+import { PRODUCT_TILE } from '@/design/productTile';
 import { AppImage } from '@/design/appImage';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -42,7 +44,7 @@ import { mediaUrl } from '@/api/client';
 import { ARTICLE_CARD, articleCardSize } from '@/design/articleCard';
 import type { LinkedProduct } from '@/api/linkedProduct';
 import { formatAmount } from '@/format/money';
-import { RADIUS, SOCIAL_EDITORIAL } from '@/design/tokens.mobile';
+import { RADIUS, RHYTHM, SOCIAL_EDITORIAL, ficheColorsFor } from '@/design/tokens.mobile';
 
 export interface LinkedProductCardProps {
   product: LinkedProduct;
@@ -83,13 +85,14 @@ export function LinkedProductCard({
         <Pressable testID={testID ?? `linked-product-${id}`} accessibilityRole="link" accessibilityLabel={label}
           accessibilityHint={t('shopping.discover')} onPress={open}
           style={({ pressed }) => [styles.editorialLink, { opacity: pressed ? theme.opacity.dimmed : 1 }]}>
-          <View style={[styles.editorialImage, { backgroundColor: theme.colors.surface }]}>
+          <View style={[styles.editorialImage, { backgroundColor: ficheColorsFor(theme.mode).photo }]}>
             {product.image ? <AppImage uri={mediaUrl(product.image)} contentFit="contain" decorative style={StyleSheet.absoluteFill} /> : null}
             {product.isNew ? <View style={[styles.editorialBadge, { backgroundColor: theme.colors.canvas }]}>
               <AppText variant="caption">{t('publication.newBadge')}</AppText>
             </View> : null}
           </View>
-          <AppText variant="caption" numberOfLines={2}>{product.name}</AppText>
+          {brand ? <AppText variant="captionStrong" numberOfLines={1}>{brand}</AppText> : null}
+          <AppText variant="caption" color={theme.colors.muted} numberOfLines={2}>{product.name}</AppText>
           <AppText variant="captionStrong">{price}</AppText>
           {product.available === false ? <AppText variant="caption" color={theme.colors.muted}>{t('shopping.unavailable')}</AppText> : null}
         </Pressable>
@@ -172,9 +175,9 @@ export function LinkedProductCard({
 
 const styles = StyleSheet.create({
   editorial: { width: SOCIAL_EDITORIAL.productWidth },
-  editorialLink: { gap: 4 },
-  editorialImage: { aspectRatio: 1, borderRadius: RADIUS.lg, overflow: 'hidden' },
-  editorialFavorite: { position: 'absolute', top: 0, end: 0, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  editorialLink: { gap: RHYTHM.inline },
+  editorialImage: { aspectRatio: PRODUCT_TILE.mediaRatio, borderRadius: CARD_SYSTEM.radius, marginBottom: RHYTHM.inline, overflow: 'hidden' },
+  editorialFavorite: { position: 'absolute', top: CARD_SYSTEM.heartInset, end: CARD_SYSTEM.heartInset, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   editorialBadge: { position: 'absolute', bottom: 6, start: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: RADIUS.sm },
   card: {
     // La largeur et la hauteur viennent de `articleCardSize(écran)` : aucune cote

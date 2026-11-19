@@ -12,8 +12,8 @@
  *   │ ● ○ ○ ○ ○ ○          │  ← points SOUS la photo (rangée gardée même sans galerie)
  *   │ Marque               │  ← 1 ligne, gras
  *   │ NOM DU PRODUIT…      │  ← 1 ligne
- *   │ ligne d'info         │  ← 1 ligne (« Prix conseillé ~~x~~ », stock…) — gardée vide sinon
  *   │ 30,90 TND            │  ← prix gras (+ action éventuelle)
+ *   │ ligne d'info         │  ← prix conseillé ou stock, gardée vide si absente
  *
  * 14/11/2026 (planche Privé) : photo ENTIÈRE en `contain` sur le gris des photos,
  * marque grasse, nom GRIS, prix gras.
@@ -43,7 +43,7 @@ import { AppImage } from './appImage';
 import { AppText } from './ui';
 import { useTheme } from './theme';
 import { rowDirectionFor } from './layoutLogic';
-import { FICHE_COLORS, LENS_COLORS, ficheColorsFor } from './tokens.mobile';
+import { FICHE_COLORS, LENS_COLORS, RADIUS, ficheColorsFor } from './tokens.mobile';
 import {
   PRODUCT_TILE,
   productTileDotWindow,
@@ -86,7 +86,7 @@ export interface ProductTileProps {
   meta?: ReactNode;
   /** Prix (texte simple ou contenu composé). Absent = ligne vide gardée. */
   price?: ReactNode;
-  /** Action posée en bout de ligne prix (ex. panier). */
+  /** Action à côté du groupe prix / information (ex. panier). */
   trailing?: ReactNode;
   badges?: ProductTileBadge[];
   favorite?: ProductTileFavorite;
@@ -285,7 +285,7 @@ function ProductTileComponent({
       </View>
 
         {badges && badges.length > 0 ? (
-          <View pointerEvents="none" style={[styles.badges, theme.isRTL ? styles.badgesRTL : styles.badgesLTR, { flexDirection: direction }]}>
+          <View pointerEvents="none" style={[styles.badges, { flexDirection: direction }]}>
             {badges.map((badge) => (
               <View
                 key={`${badge.tone}-${badge.label}`}
@@ -293,7 +293,7 @@ function ProductTileComponent({
                   styles.badge,
                   badge.tone === 'sale'
                     ? { backgroundColor: palette.sale }
-                    : { backgroundColor: palette.canvas, borderColor: palette.ink, borderWidth: StyleSheet.hairlineWidth },
+                    : { backgroundColor: palette.canvas },
                 ]}
               >
                 <AppText
@@ -381,31 +381,35 @@ function ProductTileComponent({
           </AppText>
         </View>
 
-        <View style={[styles.line, { height: lines.meta, flexDirection: direction }]} testID={`${testID}-meta`}>
-          {typeof meta === 'string' ? (
-            <AppText
-              numberOfLines={1}
-              color={palette.muted}
-              {...textStyle}
-              style={[styles.meta, { lineHeight: lines.meta, fontFamily: theme.font('regular') }]}
-            >
-              {meta}
-            </AppText>
-          ) : meta ?? null}
-        </View>
-
-        <View style={[styles.line, styles.priceLine, { height: lines.price, flexDirection: direction }]} testID={`${testID}-price`}>
+        <View style={[styles.priceGroup, { flexDirection: direction }]}>
           <View style={styles.priceText}>
-            {typeof price === 'string' ? (
-              <AppText
-                numberOfLines={1}
-                color={palette.ink}
-                {...textStyle}
-                style={[styles.price, { lineHeight: lines.price, fontFamily: theme.font('bold') }]}
-              >
-                {price}
-              </AppText>
-            ) : price ?? null}
+            <View style={[styles.line, { height: lines.price }]} testID={`${testID}-price`}>
+              {typeof price === 'string' ? (
+                <AppText
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.85}
+                  color={palette.ink}
+                  {...textStyle}
+                  style={[styles.price, { lineHeight: lines.price, fontFamily: theme.font('bold') }]}
+                >
+                  {price}
+                </AppText>
+              ) : price ?? null}
+            </View>
+
+            <View style={[styles.line, { height: lines.meta, flexDirection: direction }]} testID={`${testID}-meta`}>
+              {typeof meta === 'string' ? (
+                <AppText
+                  numberOfLines={1}
+                  color={palette.muted}
+                  {...textStyle}
+                  style={[styles.meta, { lineHeight: lines.meta, fontFamily: theme.font('regular') }]}
+                >
+                  {meta}
+                </AppText>
+              ) : meta ?? null}
+            </View>
           </View>
           {trailing ?? null}
         </View>
@@ -430,10 +434,8 @@ const styles = StyleSheet.create({
   card: { overflow: 'hidden' },
   media: { width: '100%', overflow: 'hidden' },
   center: { alignItems: 'center', justifyContent: 'center' },
-  badges: { position: 'absolute', bottom: PRODUCT_TILE.badgeBottom, gap: 4, maxWidth: '100%' },
-  badgesLTR: { left: 0 },
-  badgesRTL: { right: 0 },
-  badge: { height: PRODUCT_TILE.badgeHeight, paddingHorizontal: 8, justifyContent: 'center', maxWidth: '100%' },
+  badges: { position: 'absolute', bottom: PRODUCT_TILE.badgeBottom, gap: 4, left: PRODUCT_TILE.badgeInset, right: PRODUCT_TILE.badgeInset, alignItems: 'flex-start', flexWrap: 'wrap' },
+  badge: { height: PRODUCT_TILE.badgeHeight, paddingHorizontal: 8, borderRadius: RADIUS.sm, justifyContent: 'center', maxWidth: '100%' },
   // Cœur NU sur la vignette (décision du 17/10/2026) : aucune pastille blanche.
   /* 13/11 — le cœur du système de cartes (`cardSystem.ts`) : le même partout dans l'app. */
   favorite: { position: 'absolute', top: CARD_SYSTEM.heartInset, width: CARD_SYSTEM.heartTarget, height: CARD_SYSTEM.heartTarget, alignItems: 'center', justifyContent: 'center' },
@@ -452,7 +454,7 @@ const styles = StyleSheet.create({
   brand: { fontSize: PRODUCT_TILE.brandSize },
   name: { fontSize: PRODUCT_TILE.nameSize },
   meta: { fontSize: PRODUCT_TILE.metaSize },
-  priceLine: { alignItems: 'center', gap: 8 },
+  priceGroup: { alignItems: 'center', gap: 4 },
   priceText: { flex: 1, minWidth: 0 },
   price: { fontSize: PRODUCT_TILE.priceSize },
 });

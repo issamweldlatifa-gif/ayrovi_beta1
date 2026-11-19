@@ -12,6 +12,7 @@ import { StyleSheet, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AppText, Button } from "./ui";
 import { BrandLoadingIndicator } from "./LoadingScreen";
+import { RHYTHM } from "./rhythm";
 import { useTheme } from "./theme";
 import { useI18n, useT, type TranslationKey } from "@/i18n";
 import { isApiError, userMessage } from "@/api/errors";
@@ -28,10 +29,8 @@ export function LoadingBlock({ labelKey }: { labelKey?: TranslationKey }) {
       accessibilityRole="progressbar"
       style={[
         styles.block,
-        // 17/10/2026 — décision n° 1 : plus de bloc gris, un filet le détache.
         {
           backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.line,
           borderRadius: theme.radius.card,
         },
       ]}
@@ -76,7 +75,6 @@ export function ErrorBlock({
         {
           backgroundColor: theme.colors.surface,
           borderRadius: theme.radius.card,
-          borderColor: theme.colors.line,
         },
       ]}
     >
@@ -105,6 +103,7 @@ export function OfflineBlock({ onRetry }: { onRetry?: () => void }) {
           backgroundColor: theme.colors.surface,
           borderRadius: theme.radius.card,
           borderColor: theme.status.warning.border,
+          borderWidth: StyleSheet.hairlineWidth,
         },
       ]}
     >
@@ -142,7 +141,6 @@ export function EmptyBlock({ children }: { children: ReactNode }) {
         styles.block,
         {
           backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.line,
           borderRadius: theme.radius.card,
         },
       ]}
@@ -156,10 +154,10 @@ export function EmptyBlock({ children }: { children: ReactNode }) {
 
 const styles = StyleSheet.create({
   block: {
-    gap: 10,
+    gap: RHYTHM.related,
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
-    borderWidth: StyleSheet.hairlineWidth, // le gris ne sépare plus : le filet sépare.
+    paddingHorizontal: RHYTHM.group,
+    paddingVertical: RHYTHM.block,
   },
 });

@@ -125,7 +125,7 @@ export function Card({ children, title, hint, onLayout }: {
  * libre ». Avant ce composant, chaque écran fabriquait le sien : une taille,
  * une graisse et une marge différentes à chaque fois.
  *
- * Le niveau typographique est FIGÉ dans le composant : `title` (label, gras)
+ * Le niveau typographique est FIGÉ dans le composant : `title` (h3)
  * au-dessus, `hint` (caption) en dessous. Un appelant ne choisit pas la
  * hiérarchie, sinon ce n'est plus un système.
  *
@@ -162,7 +162,7 @@ export function SectionHeader({
     >
       {/* 14/11 (rythme) : titre ↔ phrase d'intention = `RHYTHM.inline` (était 2, collé). */}
       <View style={{ flex: 1, gap: RHYTHM.inline }}>
-        <AppText variant="label" color={theme.colors.ink}>
+        <AppText variant="h3" accessibilityRole="header" color={theme.colors.ink}>
           {title}
         </AppText>
         {hint ? (
@@ -171,7 +171,7 @@ export function SectionHeader({
           </AppText>
         ) : null}
       </View>
-      {action ?? null}
+      {action ? <View style={{ flexShrink: 1, maxWidth: '45%' }}>{action}</View> : null}
     </View>
   );
 }
@@ -351,7 +351,7 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
         styles.button,
         block ? { alignSelf: 'stretch' } : null,
         {
-          minHeight: large ? theme.geometry.controlHeight : theme.chrome.button,
+          minHeight: large ? theme.geometry.controlHeight : Math.max(theme.chrome.button, theme.geometry.minTarget),
           // Système de boutons : pastille compacte (CTA), contour encre épais en mode « quiet ».
           borderRadius: theme.radius.cta,
           borderWidth: quiet ? BUTTON_OUTLINE_WIDTH : StyleSheet.hairlineWidth,
@@ -372,12 +372,12 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
         // Pictogramme (ex. logo Google) posé avant le libellé, dans le sens de lecture.
         <View style={[styles.leadingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
           {lead}
-          <AppText variant={labelVariant} color={labelColor} maxFontSizeMultiplier={labelScale}>
+          <AppText variant={labelVariant} color={labelColor} align="center" maxFontSizeMultiplier={labelScale}>
             {label}
           </AppText>
         </View>
       ) : (
-        <AppText variant={labelVariant} color={labelColor} maxFontSizeMultiplier={labelScale}>
+        <AppText variant={labelVariant} color={labelColor} align="center" maxFontSizeMultiplier={labelScale}>
           {label}
         </AppText>
       )}
@@ -592,6 +592,7 @@ export function Field(props: TextInputProps & { label?: string }) {
       <TextInput
         {...chrome.inputProps}
         {...rest}
+        accessibilityLabel={rest.accessibilityLabel ?? label}
         style={[
           theme.text('body'),
           {
@@ -611,7 +612,7 @@ export function Field(props: TextInputProps & { label?: string }) {
 }
 
 const styles = StyleSheet.create({
-  leadingRow: { alignItems: 'center', justifyContent: 'center', gap: 8 },
+  leadingRow: { alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: RHYTHM.tight },
   buyStack: { gap: 8 },
   buyTotalRow: { flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   buyTotalTitle: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: 6 },

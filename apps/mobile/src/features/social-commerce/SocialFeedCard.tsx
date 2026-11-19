@@ -1,5 +1,5 @@
 import { reelCaption } from '@/features/reels/reelCaption';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,7 +10,7 @@ import type { DiscoveryItem } from '@/api/socialCommerce';
 import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
 import { BRAND } from '@/design/tokens.generated';
-import { RADIUS, SOCIAL_EDITORIAL, veil } from '@/design/tokens.mobile';
+import { RADIUS, RHYTHM, SOCIAL_EDITORIAL, veil } from '@/design/tokens.mobile';
 import { AppText, Button } from '@/design/ui';
 import { useI18n } from '@/i18n';
 import { ReelPreview } from '@/features/reels/ReelPreview';
@@ -70,10 +70,10 @@ export function SocialFeedCard({ item, active, square, onOpenStory, cached, favo
     </View>;
   }
   if (item.kind === 'article') return <View style={styles.group}>
-    <Pressable disabled={cached} accessibilityRole="link" style={[styles.article, { borderColor: theme.colors.line }]}
+    <Pressable disabled={cached} accessibilityRole="link" style={[styles.article, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}
       onPress={() => router.push({ pathname: '/news/[id]', params: { id: item.newsId } })}>
       <View style={styles.articleCopy}>
-        <AppText variant="label" color={theme.colors.muted}>{t('socialCommerce.editorial')}</AppText>
+        <AppText variant="captionStrong" color={theme.colors.muted}>{t('socialCommerce.editorial')}</AppText>
         <AppText variant="h3">{item.title}</AppText>
         {item.description ? <AppText variant="body" numberOfLines={3}>{item.description}</AppText> : null}
         {item.author ? <AppText variant="caption" color={theme.colors.muted}>{item.author}</AppText> : null}
@@ -82,13 +82,13 @@ export function SocialFeedCard({ item, active, square, onOpenStory, cached, favo
     </Pressable>
   </View>;
   if (item.kind === 'pick') return <View style={styles.group}>
-    <AppText variant="label" color={theme.colors.muted}>{t('socialCommerce.pick')}</AppText>
+    <AppText variant="captionStrong" color={theme.colors.muted}>{t('socialCommerce.pick')}</AppText>
     <AppText variant="h3">{item.title}</AppText>
     {item.description ? <AppText>{item.description}</AppText> : null}
     <EditorialProduct product={item.product} favourites={favourites} />
   </View>;
   return <View style={styles.group}>
-    <AppText variant="label" color={theme.colors.muted}>{t('socialCommerce.look')}</AppText>
+    <AppText variant="captionStrong" color={theme.colors.muted}>{t('socialCommerce.look')}</AppText>
     <AppText variant="h2">{item.title}</AppText>
     {item.description ? <AppText>{item.description}</AppText> : null}
     <View style={[styles.look, { backgroundColor: theme.colors.surface }] }>
@@ -104,18 +104,18 @@ export function SocialFeedCard({ item, active, square, onOpenStory, cached, favo
 }
 
 const styles = StyleSheet.create({
-  section: { marginVertical: 16, gap: 12 },
+  section: { marginVertical: RHYTHM.block, gap: RHYTHM.group },
   squareInset: { marginHorizontal: 16 },
-  group: { marginVertical: 16, paddingHorizontal: 16, gap: 8 },
+  group: { marginVertical: RHYTHM.block, paddingHorizontal: RHYTHM.group, gap: RHYTHM.tight },
   media: { backgroundColor: SOCIAL_EDITORIAL.cover[2], overflow: 'hidden' },
   caption: { flex: 1, justifyContent: 'flex-end', padding: 16, gap: 4 },
   rail: { gap: SOCIAL_EDITORIAL.productGap, paddingHorizontal: 4 },
   story: { minHeight: 230, aspectRatio: 5 / 4, justifyContent: 'flex-end', borderRadius: RADIUS.xl },
   storyCopy: { gap: 4, padding: 16 },
-  article: { borderTopWidth: 2, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 16, paddingVertical: 16 },
-  articleCopy: { flex: 1, gap: 4 },
+  article: { gap: RHYTHM.group, alignItems: 'flex-start' },
+  articleCopy: { flex: 1, minWidth: 0, gap: RHYTHM.inline },
   thumbnail: { width: 96, aspectRatio: 3 / 4, borderRadius: RADIUS.md },
-  look: { aspectRatio: 4 / 5, borderRadius: RADIUS.xl, overflow: 'hidden', direction: 'ltr' },
+  look: { aspectRatio: 4 / 5, borderRadius: RADIUS.xl, overflow: 'hidden', ...(Platform.OS !== 'web' ? { direction: 'ltr' as const } : {}) },
   pin: { position: 'absolute', width: 44, height: 44, transform: [{ translateX: -22 }, { translateY: -22 }], alignItems: 'center', justifyContent: 'center' },
   dot: { width: 24, height: 24, borderRadius: 12, borderWidth: 6, borderColor: BRAND.white, backgroundColor: SOCIAL_EDITORIAL.cover[1] },
 });

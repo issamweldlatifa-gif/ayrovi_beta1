@@ -13,6 +13,7 @@ import { socialHref } from '@/features/social-commerce/navigation';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { FullBleed, useResponsive } from '@/design/layout';
+import { RHYTHM } from '@/design/rhythm';
 import { useT } from '@/i18n';
 
 type HomeTab = {
@@ -68,15 +69,15 @@ export function HomeTabs() {
 }
 
 const styles = StyleSheet.create({
-  strip: { borderTopWidth: 1, borderBottomWidth: 1, flexGrow: 0 },
+  strip: { borderBottomWidth: StyleSheet.hairlineWidth, flexGrow: 0 },
   row: {
     alignItems: 'center',
-    gap: 12,
+    gap: RHYTHM.group,
   },
   tab: {
     minHeight: 44,
     justifyContent: 'center',
-    paddingVertical: 4,
+    paddingVertical: RHYTHM.inline,
   },
   underline: { height: 1, marginTop: 2 },
   label: {

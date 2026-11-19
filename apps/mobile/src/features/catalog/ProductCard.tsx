@@ -32,7 +32,7 @@ import { memo, useCallback, useMemo } from 'react';
  *   • un « + » JAUNE rond en bout de ligne prix (`onAdd`) : le geste d'achat de la
  *     carte, seul élément jaune de la grille (≈ 0,4 % de l'écran par carte).
  */
-import { Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { COMMERCE } from '@/design/tokens.mobile';
 
@@ -63,7 +63,7 @@ export interface ProductCardProps {
   onAdd?: (product: CatalogProduct) => void;
 }
 
-/** Diamètre du « + » d'achat (maquette : 34 px ; 30 dp pour tenir dans la ligne prix de 24). */
+/** Diamètre visuel du « + » d’achat ; la cible de 44 dp est indépendante. */
 export const QUICK_ADD_SIZE = 30;
 
 /**
@@ -119,7 +119,7 @@ export const ProductCard = memo(function ProductCard({
       testID={`product-card-${product.id}`}
       metrics={tile}
       images={images}
-      accessibilityLabel={`${product.name}${hasPrice ? ` — ${formatMoney(product.finalPrice)}` : ''}`}
+      accessibilityLabel={[brand, product.name, hasPrice ? formatMoney(product.finalPrice) : t('catalog.noPrice'), reference ? `${t('product.referencePrice')} ${reference}` : null, stock?.text].filter(Boolean).join(' — ')}
       imageLabel={product.name}
       brand={brand}
       name={product.name}
@@ -131,8 +131,8 @@ export const ProductCard = memo(function ProductCard({
           style={metaStyle}
           testID={`product-card-reference-${product.id}`}
         >
-          {`${t('product.referencePrice')} `}
           <AppText color={theme.colors.muted} style={[metaStyle, { textDecorationLine: 'line-through' }]}>{reference}</AppText>
+          {` · ${t('product.referencePrice')}`}
         </AppText>
       ) : stock ? (
         <AppText
@@ -161,12 +161,13 @@ export const ProductCard = memo(function ProductCard({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${t('catalog.addToCart')} — ${product.name}`}
-          hitSlop={8}
-          onPress={() => onAdd(product)}
+          onPress={(event) => { event.stopPropagation(); onAdd(product); }}
           testID={`product-card-add-${product.id}`}
-          style={({ pressed }) => [styles.add, { backgroundColor: pressed ? COMMERCE.actionPressed : COMMERCE.action }]}
+          style={styles.addTarget}
         >
-          <Ionicons name="add-outline" size={theme.iconSize.sm} color={COMMERCE.onAction} accessibilityElementsHidden />
+          {({ pressed }) => <View pointerEvents="none" style={[styles.add, { backgroundColor: pressed ? COMMERCE.actionPressed : COMMERCE.action }]}>
+            <Ionicons name="add-outline" size={theme.iconSize.sm} color={COMMERCE.onAction} accessibilityElementsHidden />
+          </View>}
         </Pressable>
       ) : undefined}
     />
@@ -174,5 +175,6 @@ export const ProductCard = memo(function ProductCard({
 });
 
 const styles = StyleSheet.create({
+  addTarget: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   add: { width: QUICK_ADD_SIZE, height: QUICK_ADD_SIZE, borderRadius: QUICK_ADD_SIZE / 2, alignItems: 'center', justifyContent: 'center' },
 });

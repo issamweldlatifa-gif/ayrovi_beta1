@@ -83,7 +83,7 @@ export function LensResultsGrid({
           <Ionicons name="search-outline" size={theme.iconSize.lg} color={theme.colors.ink} accessibilityElementsHidden />
         </View>
         <AppText variant="h3" align="center">{t('lens.emptyTitle')}</AppText>
-        <AppText color={theme.colors.muted} align="center">{t('lens.empty')}</AppText>
+        <AppText color={LENS_COLORS.resultMuted} align="center">{t('lens.empty')}</AppText>
         <Button label={t('lens.retake')} onPress={onNewSearch} block />
       </View>
     );
@@ -114,21 +114,21 @@ export function LensResultsGrid({
         <View style={styles.header}>
           <View style={[styles.headerRow, { flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
             <View style={styles.headerCopy}>
-              <AppText variant="h3" numberOfLines={2}>{title || t('lens.resultsTitle')}</AppText>
-              <AppText variant="caption" color={theme.colors.muted}>
+              <AppText variant="h3" color={LENS_COLORS.black} accessibilityRole="header" numberOfLines={2}>{title || t('lens.resultsTitle')}</AppText>
+              <AppText variant="caption" color={LENS_COLORS.resultMuted}>
                 {t(candidates.length === 1 ? 'lens.resultsCountOne' : 'lens.resultsCountMany', { count: openable.length })}
               </AppText>
             </View>
             <ProductDensityToggle density={density} onToggle={toggle} color={LENS_COLORS.black} testID="lens-density-toggle" />
-            <Pressable accessibilityRole="button" accessibilityLabel={t('lens.filters.title')} accessibilityState={{ expanded: filterOpen }} testID="lens-toggle-filter" onPress={() => setFilterOpen(value => !value)} style={styles.newSearch}><Ionicons name="options-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden /></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel={t('lens.filters.title')} accessibilityState={{ expanded: filterOpen }} testID="lens-toggle-filter" onPress={() => setFilterOpen(value => !value)} style={styles.iconTarget}><Ionicons name="options-outline" size={theme.iconSize.md} color={LENS_COLORS.black} accessibilityElementsHidden /></Pressable>
             <Pressable
               onPress={onNewSearch}
               accessibilityRole="button"
               accessibilityLabel={t('lens.newSearch')}
-              style={({ pressed }) => [styles.newSearch, { borderColor: theme.colors.lineControl, opacity: pressed ? theme.opacity.subtle : 1 }]}
+              style={({ pressed }) => [styles.newSearch, { borderColor: LENS_COLORS.resultMuted, opacity: pressed ? theme.opacity.subtle : 1 }]}
               testID="lens-new-search"
             >
-              <Ionicons name="camera-outline" size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+              <Ionicons name="camera-outline" size={theme.iconSize.md} color={LENS_COLORS.black} accessibilityElementsHidden />
             </Pressable>
           </View>
           {favoriteNote ? (
@@ -137,7 +137,7 @@ export function LensResultsGrid({
           {filterOpen ? <LensTitleFilter value={query} onChange={setQuery} shown={shown.length} total={openable.length} /> : null}
           {shown.length === 0 ? (
             <View style={styles.filteredEmpty} testID="lens-filters-empty">
-              <AppText color={theme.colors.muted} align="center">{t('lens.filters.empty')}</AppText>
+              <AppText color={LENS_COLORS.resultMuted} align="center">{t('lens.filters.empty')}</AppText>
               <Button label={t('lens.filters.clear')} tone="quiet" onPress={() => setQuery('')} block />
             </View>
           ) : null}
@@ -153,7 +153,7 @@ export function LensResultsGrid({
         />
       )}
       ListFooterComponent={loading ? <View style={styles.pending} testID="lens-stream-pending"><ProductSkeleton index={4} metrics={metrics} /><ProductSkeleton index={5} metrics={metrics} /></View> : filteredOut && shown.length > 0 ? (
-        <AppText variant="caption" color={theme.colors.muted} align="center" style={styles.footer} testID="lens-filters-active">
+        <AppText variant="caption" color={LENS_COLORS.resultMuted} align="center" style={styles.footer} testID="lens-filters-active">
           {t('lens.resultsCountMany', { count: shown.length })} / {openable.length}
         </AppText>
       ) : null}
@@ -169,7 +169,8 @@ const styles = StyleSheet.create({
   row: { gap: PRODUCT_TILE.columnGap, backgroundColor: LENS_COLORS.white },
   header: { backgroundColor: LENS_COLORS.white, gap: 8, paddingHorizontal: 8, paddingTop: 2, paddingBottom: 12 },
   headerRow: { alignItems: 'center', gap: 12 },
-  headerCopy: { flex: 1, gap: 2 },
+  headerCopy: { flex: 1, minWidth: 0, gap: 4 },
+  iconTarget: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   newSearch: { width: 48, height: 48, borderRadius: 24, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
   filteredEmpty: { gap: 8, paddingVertical: 24, paddingHorizontal: 16 },
   footer: { paddingVertical: 8 },
