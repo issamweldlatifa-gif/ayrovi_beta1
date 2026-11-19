@@ -285,3 +285,24 @@ export async function addExternalToCart(
     serverNow: str(data.serverNow),
   };
 }
+
+export interface CatalogueLookInput {
+  lookId: string;
+  editionNumber: number;
+  requestId: string;
+  selections: { productId: string; size: string; color: string; price: number }[];
+}
+
+export async function addCatalogLook(input: CatalogueLookInput, sessionId: string, options: RequestOptions = {}) {
+  const payload = await apiSendEnvelope<Record<string, unknown>>('POST', '/api/cart/catalog/look', {
+    ...options,
+    headers: { 'x-session-id': sessionId, ...(options.headers ?? {}) },
+    body: input,
+  });
+  const count = num(payload.addedCount);
+  const total = num(payload.totalItemsCount);
+  if (count !== input.selections.length || total == null || total < 0 || typeof payload.replay !== 'boolean') {
+    throw new ApiError('malformed', 'Invalid look cart response');
+  }
+  return { addedCount: count, totalItemsCount: total, replay: payload.replay };
+}

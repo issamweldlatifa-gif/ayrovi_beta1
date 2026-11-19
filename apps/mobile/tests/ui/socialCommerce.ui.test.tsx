@@ -24,6 +24,8 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 jest.mock('@/api/socialCommerce', () => ({ useSocialCommerce: (filter: string) => mockQuery(filter), socialCommerceKey: (filter: string) => [filter] }));
 jest.mock('@/features/reels/ReelPreview', () => ({ ReelPreview: () => null }));
 jest.mock('@/design/appImage', () => ({ AppImage: () => null }));
+jest.mock('@/session/session', () => ({ useSessionId: () => 'test-session' }));
+jest.mock('@/features/product/ProductFiche', () => ({ CartReservedSheet: () => null }));
 jest.mock('@/state/session', () => ({ useSession: () => mockSignedIn ? { status: 'signedIn', account: { id: 'buyer-1' } } : { status: 'guest' } }));
 jest.mock('@/features/reels/useProductFavorites', () => ({ useProductFavorites: () => ({ isFavorite: () => false, toggle: mockToggle }) }));
 jest.mock('@/features/reels/reelVisibility', () => ({ useHiddenReels: () => [] }));

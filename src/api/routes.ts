@@ -1,5 +1,6 @@
 import { CatalogueSaleError, inspectCatalogueSale, catalogId } from '../catalogue/localSale';
-import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
+import { addCatalogueLine, CartCatalogueError } from '../catalogue/cartAdd';
+import { addPublishedLook } from '../social-commerce/cart';
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { SmartLinkScraper } from '../scraper/scraper';
@@ -367,63 +368,18 @@ export function createApiRouter(
       return res.status(400).json({ success: false, code: 'INVALID_PRODUCT', error: 'Produit invalide.' });
     }
 
-    // Même règle de disponibilité que la fiche produit : un produit temporaire n'entre au
-    // panier que s'il est lié à un contenu publié (voir catalogue/contentProducts.ts).
-    const product = db.get<any>(
-      `SELECT * FROM products WHERE id=? AND ${availableProductSql('products')}`, productId,
-      ...availableProductParams(new Date().toISOString()),
-    ) as Record<string, any> | null;
-    if (!product) {
-      return res.status(404).json({ success: false, code: 'PRODUCT_NOT_FOUND', error: 'Produit introuvable.' });
-    }
-
-    // Pas de prix publié ⇒ pas de panier. Un « 0.00 TND » dans un panier est
-    // un mensonge imprimé, et un article non commandable est un échec au
-    // dernier écran. On refuse AVANT, avec le bon mot.
-    const finalPrice = Number(product.final_price);
-    if (!Number.isFinite(finalPrice) || finalPrice <= 0) {
-      return res.status(409).json({ success: false, code: 'NO_PRICE', error: 'Produit sans prix publié.' });
-    }
-    if (String(product.stock_status || '').toLowerCase() === 'out_of_stock') {
-      return res.status(409).json({ success: false, code: 'OUT_OF_STOCK', error: 'Produit épuisé.' });
-    }
-
     const quantity = Math.min(99, Math.max(1, Math.trunc(Number(req.body?.quantity ?? 1)) || 1));
     const requestedSize = String(req.body?.requestedSize || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100);
     const requestedColor = String(req.body?.requestedColor || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100);
     const customerNote = String(req.body?.customerNote || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1000);
 
-    const sourcePrice = Number(product.original_price) > 0 ? Number(product.original_price) : finalPrice;
-    const sourceCurrency = String(product.currency || 'TND').toUpperCase();
-    const store = String(product.source_platform || 'zayrovi').toLowerCase().replace(/[^a-z0-9._-]/g, '') || 'zayrovi';
-
-    const item: AddToCartRequest = {
-      store,
-      externalId: `catalog-${product.id}`,
-      url: String(product.source_url || '').trim() || `https://catalog.local/${product.id}`,
-      title: String(product.name || '').trim().slice(0, 500) || 'Produit',
-      imageUrl: String(product.image || '').trim().slice(0, 4096),
-      sourcePrice,
-      sourceCurrency,
-      priceTND: finalPrice,
-      requestedSize,
-      requestedColor,
-      customerNote,
-      priceVerificationStatus: 'VERIFIED',
-      quantity,
-    };
-
     try {
-      const accountId = cartAccountId(req, sessionId);
-      const choice = inspectCatalogueSale(db, productId, requestedSize, requestedColor, quantity);
-      const existing = db.getItems(sessionId, accountId).filter(line => catalogId(line.externalId) === productId);
-      let totalQuantity = quantity;
-      for (const line of existing) {
-        const previous = inspectCatalogueSale(db, productId, line.requestedSize, line.requestedColor, 0);
-        if (previous.variant?.id === choice.variant?.id) totalQuantity += line.quantity;
-      }
-      inspectCatalogueSale(db, productId, requestedSize, requestedColor, totalQuantity);
-      const cartItem = db.addItem(sessionId, item, accountId);
+      const { accountId, cartItem } = db.transaction(() => {
+        const accountId = cartAccountId(req, sessionId);
+        return { accountId, cartItem: addCatalogueLine(db, {
+          sessionId, accountId, productId, now: new Date().toISOString(), quantity, requestedSize, requestedColor, customerNote,
+        }) };
+      });
       recordFunnelEvent(db, 'cart_item_added', { locale: null, visitorKey: funnelVisitorKey(sessionId) });
       const summary = cartSummary()(db.getItems(sessionId, accountId));
       return res.status(201).json({
@@ -435,12 +391,33 @@ export function createApiRouter(
         deliveryTND: summary.deliveryTND,
       });
     } catch (err: any) {
+      if (err instanceof CartCatalogueError) return res.status(err.status).json({ success: false, code: err.code, error: err.message });
       if (err instanceof CatalogueSaleError) return res.status(409).json({ success: false, code: err.code, error: err.message });
       if (err instanceof RangeError && err.message === 'CART_QUANTITY_LIMIT') {
         return res.status(400).json({ success: false, error: 'La quantité maximale par article est de 99.' });
       }
       console.error('[Cart Catalog Add Error]', err);
       return res.status(500).json({ success: false, error: 'Erreur lors de l\'enregistrement dans le panier.' });
+    }
+  });
+
+  /** A published look is a single atomic operation on the existing catalogue cart. */
+  router.post('/cart/catalog/look', protectAuthenticatedCart, (req: Request, res: Response) => {
+    const sessionId = requireSessionId(req, res);
+    if (!sessionId) return;
+    try {
+      const result = db.transaction(() => {
+        const { accountId, addedCount, replay } = addPublishedLook(db, sessionId, () => cartAccountId(req, sessionId), req.body);
+        const summary = cartSummary()(db.getItems(sessionId, accountId));
+        return { addedCount, replay, totalItemsCount: summary.items.reduce((sum, item) => sum + item.quantity, 0), totalTND: summary.totalTND, deliveryTND: summary.deliveryTND };
+      });
+      return res.status(result.replay ? 200 : 201).json({ success: true, ...result });
+    } catch (error) {
+      if (error instanceof CartCatalogueError) return res.status(error.status).json({ success: false, code: error.code, error: error.message });
+      if (error instanceof CatalogueSaleError) return res.status(409).json({ success: false, code: error.code, error: error.message });
+      if (error instanceof RangeError && error.message === 'CART_QUANTITY_LIMIT') return res.status(409).json({ success: false, code: error.message, error: 'Quantité maximale dépassée.' });
+      console.error('[Cart Look Add Error]', error);
+      return res.status(500).json({ success: false, error: 'Le look n’a pas pu être ajouté.' });
     }
   });
 

@@ -17,6 +17,10 @@ import { BRAND } from '@/design/tokens.generated';
 import { RADIUS, SOCIAL_EDITORIAL, veil } from '@/design/tokens.mobile';
 import { AppText } from '@/design/ui';
 import { useI18n } from '@/i18n';
+import type { CatalogueLookInput } from '@/api/cart';
+import { useSessionId } from '@/session/session';
+import { CartReservedSheet } from '@/features/product/ProductFiche';
+import { touchCartReservation, useCartReservation } from '@/features/shopping/cartReservation';
 import { useSession } from '@/state/session';
 import { useProductFavorites } from '@/features/reels/useProductFavorites';
 import { useHiddenReels } from '@/features/reels/reelVisibility';
@@ -27,6 +31,7 @@ import type { StoryItem } from '@/api/sections';
 import { parseSocialFilter, SOCIAL_FILTERS } from './navigation';
 import { SocialFeedCard } from './SocialFeedCard';
 import { useEditorialSnapshot } from './useEditorialSnapshot';
+import { LookSelectionSheet, type FeedLook } from './LookSelectionSheet';
 
 type FeedRow = DiscoveryItem | { kind: 'filters'; id: 'filters' };
 const filters: FeedRow = { kind: 'filters', id: 'filters' };
@@ -53,12 +58,24 @@ export default function SocialCommerceScreen() {
   const filter = parseSocialFilter(useLocalSearchParams<{ filter?: string }>().filter);
   const feed = useSocialCommerce(filter);
   const queryClient = useQueryClient();
+  const sessionId = useSessionId();
+  const attempts = useRef(new Map<string, { current: CatalogueLookInput | null }>());
+  const [look, setLook] = useState<{ item: FeedLook; editionNumber: number; owner: string; attempt: { current: CatalogueLookInput | null } } | null>(null);
+  const [confirmation, setConfirmation] = useState<number | null>(null);
+  const [receipt, setReceipt] = useState<number | null>(null);
+  const reservation = useCartReservation(confirmation ?? 0);
+  useEffect(() => {
+    if (receipt === null) return;
+    const timer = setTimeout(() => setReceipt(null), 2400);
+    return () => clearTimeout(timer);
+  }, [receipt]);
   const hidden = useHiddenReels();
   const autoplay = useAutoplay();
   const first = feed.data?.pages[0];
   const snapshot = useEditorialSnapshot(filter, first, feed.dataUpdatedAt);
   const cached = !first || feed.isError || feed.isPaused;
   const session = useSession();
+  const owner = `${session.account?.id ?? ''}:${sessionId}`;
   const signedIn = session.status === 'signedIn' && Boolean(session.account?.id);
   const favourites = useProductFavorites(signedIn && !cached, session.account?.id);
   const [now, setNow] = useState(Date.now);
@@ -119,6 +136,13 @@ export default function SocialCommerceScreen() {
   };
   const reload = () => void queryClient.resetQueries({ queryKey: socialCommerceKey(filter), exact: true });
   const loadMore = () => { if (!cached && feed.hasNextPage && !feed.isFetching && !feed.isFetchNextPageError) void feed.fetchNextPage(); };
+  const openLook = (item: FeedLook, editionNumber: number) => {
+    for (const [key, value] of attempts.current) if (!value.current) attempts.current.delete(key);
+    const key = JSON.stringify([owner, editionNumber, item.id]);
+    const attempt = attempts.current.get(key) ?? { current: null };
+    attempts.current.set(key, attempt);
+    setLook({ item, editionNumber, owner, attempt });
+  };
   const storyLabel = (story: StoryItem) => (locale === 'ar' ? story.titleAr : undefined) || story.title || t('sections.stories');
   return (
     <View testID="social-commerce" style={{ flex: 1, paddingTop: top, backgroundColor: theme.colors.canvas }}>
@@ -131,6 +155,9 @@ export default function SocialCommerceScreen() {
         <LiveCartButton label={t('cart.title')} countLabel={(count) => t('cart.unitsA11y', { count })}
           onPress={() => router.push('/panier')} color={theme.colors.ink} ringColor={theme.colors.canvas} hitStyle={styles.hit} />
       </View>
+      {receipt !== null ? <View style={[styles.receipt, { backgroundColor: theme.status.success.soft }]}>
+        <AppText accessibilityLiveRegion="polite" variant="captionStrong" color={theme.status.success.fg}>{t('socialCommerce.lookAdded', { count: receipt })}</AppText>
+      </View> : null}
       <FlatList ref={list} data={data} stickyHeaderIndices={[1]} keyExtractor={item => `${item.kind}:${item.id}`}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: theme.chrome.tabBar + bottom + 24 }}
         windowSize={5} initialNumToRender={3} maxToRenderPerBatch={4} onEndReachedThreshold={0.35} onEndReached={loadMore}
@@ -180,7 +207,8 @@ export default function SocialCommerceScreen() {
             </Pressable>)}
           </ScrollView>
         </View> :
-          <SocialFeedCard item={item} cached={cached} favourites={signedIn && !cached ? favourites : undefined} onOpenStory={openStory} active={!cached && autoplay && !viewer && item.kind === 'reel' && item.id === preview} square={index % 2 === 0} />}
+          <SocialFeedCard item={item} cached={cached} favourites={signedIn && !cached ? favourites : undefined}
+            onAddLook={!cached && item.kind === 'look' && edition ? () => openLook(item, edition.number) : undefined} onOpenStory={openStory} active={!cached && autoplay && !viewer && !look && !confirmation && item.kind === 'reel' && item.id === preview} square={index % 2 === 0} />}
         ListFooterComponent={<View style={styles.group}>
           {feed.isPending || feed.isFetchingNextPage ? <LoadingBlock /> : null}
           {feed.isError ? <ErrorBlock error={feed.error} onRetry={feed.isFetchNextPageError ? reload : () => void feed.refetch()} /> : null}
@@ -195,6 +223,19 @@ export default function SocialCommerceScreen() {
           </Pressable> : null}
         </View>}
       />
+      {look?.owner === owner ? <LookSelectionSheet look={look.item} editionNumber={look.editionNumber} sessionId={sessionId} attempt={look.attempt}
+        onClose={() => setLook(null)} onFeedChanged={() => { setLook(null); reload(); }}
+        onAdded={(units, added) => {
+          setLook(null);
+          void queryClient.invalidateQueries({ queryKey: ['cart'] });
+          if (units > 0) {
+            touchCartReservation();
+            setReceipt(added);
+            setConfirmation(units);
+          }
+        }} /> : null}
+      {confirmation ? <CartReservedSheet visible countdown={reservation.countdown} onClose={() => setConfirmation(null)}
+        onViewCart={() => { setConfirmation(null); router.push('/panier'); }} /> : null}
       {viewer && !cached ? <StoryViewer visible stories={viewer.rows} initialIndex={viewer.index} onClose={() => setViewer(null)}
         onStorySeen={({ id }) => setSeen(previous => previous.has(id) ? previous : new Set([...previous, id]))}
         onOpenTarget={story => { setViewer(null); openStoryTarget(story); }} /> : null}
@@ -203,6 +244,7 @@ export default function SocialCommerceScreen() {
 }
 
 const styles = StyleSheet.create({
+  receipt: { paddingHorizontal: 16, paddingVertical: 8 },
   header: { alignItems: 'center', gap: 6, paddingHorizontal: 16, minHeight: 56, borderBottomWidth: StyleSheet.hairlineWidth },
   hit: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   cover: { aspectRatio: 4 / 5, minHeight: 280, justifyContent: 'flex-end' },

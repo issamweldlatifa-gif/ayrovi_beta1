@@ -875,6 +875,15 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_customer_accounts_phone ON customer_accounts(phone);
       CREATE INDEX IF NOT EXISTS idx_customer_accounts_email ON customer_accounts(email);
 
+      CREATE TABLE IF NOT EXISTS social_cart_requests (
+        owner_hash TEXT NOT NULL,
+        request_id TEXT NOT NULL,
+        input_hash TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        PRIMARY KEY (owner_hash, request_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_social_cart_requests_expiry ON social_cart_requests(expires_at);
+
       CREATE TABLE IF NOT EXISTS cart_items (
         id TEXT PRIMARY KEY,
         session_id TEXT NOT NULL,

@@ -10,7 +10,7 @@ import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
 import { BRAND } from '@/design/tokens.generated';
 import { RADIUS, SOCIAL_EDITORIAL, veil } from '@/design/tokens.mobile';
-import { AppText } from '@/design/ui';
+import { AppText, Button } from '@/design/ui';
 import { useI18n } from '@/i18n';
 import { ReelPreview } from '@/features/reels/ReelPreview';
 import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
@@ -29,8 +29,8 @@ function ProductRail({ products, favourites }: { products: LinkedProduct[]; favo
   </ScrollView>;
 }
 
-export function SocialFeedCard({ item, active, square, onOpenStory, cached, favourites }: {
-  item: DiscoveryItem; active: boolean; square: boolean; cached: boolean; favourites?: ProductFavorites; onOpenStory: (id: string) => void;
+export function SocialFeedCard({ item, active, square, onOpenStory, cached, favourites, onAddLook }: {
+  item: DiscoveryItem; active: boolean; square: boolean; cached: boolean; onAddLook?: () => void; favourites?: ProductFavorites; onOpenStory: (id: string) => void;
 }) {
   const theme = useTheme();
   const { t, locale } = useI18n();
@@ -97,6 +97,7 @@ export function SocialFeedCard({ item, active, square, onOpenStory, cached, favo
       </Pressable>)}
     </View>
     {item.pins.length ? <ProductRail products={item.pins.map(pin => pin.product)} favourites={favourites} /> : null}
+    {onAddLook && !cached && item.pins.length ? <Button label={t('socialCommerce.lookSelect')} onPress={onAddLook} tone="quiet" /> : null}
   </View>;
 }
 
