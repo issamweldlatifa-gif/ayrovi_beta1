@@ -1108,11 +1108,8 @@ describe('ZAYROVI platform', () => {
     const commerce = await request(app).get('/api/public/commerce-config');
     expect(commerce.status).toBe(200);
     expect(commerce.body.data.governorates).toHaveLength(24);
-    // Assertion adossée à la source unique : une boutique neuve publie EXACTEMENT
-    // la valeur par défaut de la plateforme. Écrire la liste à la main ici est ce
-    // qui avait laissé passer un défaut sans le paiement à la livraison — donc une
-    // commande refusée après saisie complète de l'adresse.
-    expect(commerce.body.data.paymentMethods).toEqual([...DEFAULT_PAYMENT_METHODS]);
+    // Admin defaults may still include COD, but the public checkout only publishes prepaid methods.
+    expect(commerce.body.data.paymentMethods).toEqual(DEFAULT_PAYMENT_METHODS.filter(method => method !== 'COD'));
     expect(commerce.body.data.deposit.percent).toBe(20);
     expect(commerce.body.data.deposit.companyName).toBeTruthy();
     expect(commerce.body.data.deposit).toHaveProperty('bankRib');
