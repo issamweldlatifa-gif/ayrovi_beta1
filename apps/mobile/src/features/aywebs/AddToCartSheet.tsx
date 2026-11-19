@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { AppText, PurchaseBar } from '@/design/ui';
+import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { AYWEBS_WORDMARK_TINT, RADIUS, RHYTHM, veil } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
@@ -1105,7 +1105,7 @@ export function AddToCartSheet({
    *   en-tête   : mot-symbole AYWEBs au bleu d'action · ✕
    *   bande grise : carte blanche [vignette | titre · prix rouge · -45 % · origine barrée]
    *   options   : couleur / taille / … puis quantité
-   *   pied      : « Ajouter au panier », bouton d'achat jaune court 48 dp (18/11)
+   *   pied      : « Ajouter au panier », pilule d'achat jaune pleine largeur 48 dp (19/11)
    * L'ajout réussi ferme la feuille (pas de seconde feuille).
    */
   return (
@@ -1114,11 +1114,15 @@ export function AddToCartSheet({
       onDismiss={onClose}
       presentation="bottom"
       footer={(
-        <PurchaseBar
+        // 19/11 : bouton pleine largeur d'origine (48 dp), couleur d'achat jaune.
+        <Button
           label={busy ? t('aywebs.adding') : (readOnlySelection ? t('aywebs.confirmAddCta') : t('aywebs.addToCart'))}
+          tone="commerce"
           onPress={confirm}
           busy={busy}
           disabled={Boolean(blockedCode) || !sessionId}
+          block
+          style={styles.addButton}
           testID="aywebs-sheet-add"
         />
       )}
@@ -1410,5 +1414,7 @@ const styles = StyleSheet.create({
   quantityDialog: { width: '72%', maxWidth: 360, maxHeight: '70%', borderRadius: RADIUS.xs, overflow: 'hidden' },
   quantityHeader: { minHeight: 56, paddingHorizontal: 20, alignItems: 'center', justifyContent: 'space-between' },
   quantityOption: { minHeight: 48, borderTopWidth: StyleSheet.hairlineWidth, justifyContent: 'center', paddingHorizontal: 20 },
+  // Pilule d'achat jaune 48 dp, pleine largeur — le seul bouton principal de la feuille.
+  addButton: { minHeight: 48, borderRadius: RADIUS.full },
   // Pilule bleue 48 dp (Zalando / Cdiscount) — le seul bouton principal de la feuille.
 });

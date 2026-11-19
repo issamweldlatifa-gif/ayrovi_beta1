@@ -278,9 +278,15 @@ describe("v9 « Za. » — shipped pixels", () => {
     expect(read("package.json")).toContain("--iconBackgroundColor '#0A0A0A' --iconBackgroundColorDark '#0A0A0A' --splashBackgroundColor '#0A0A0A' --splashBackgroundColorDark '#0A0A0A'");
   });
 
-  test("official avatars (site + app) = the social icon: black rounded tile, mark + yellow dot closer (gap = dot diameter)", () => {
+  test("official avatars (site + app) = the social icon: black DISC (19/11, no white ring), mark + yellow dot closer (gap = dot diameter)", () => {
+    expect(SOCIAL_ICON.radius).toBe(0.5); // a circle
+    // the farthest point of mark + dot stays inside the disc, with a black margin (≤ 85 % of the radius)
+    const scale512 = (512 * SOCIAL_ICON.content) / SOCIAL_ICON.width;
+    const cx = SOCIAL_ICON.width / 2;
+    const reach = Math.max(cx - 500 + 500, Math.hypot(SOCIAL_ICON.dot.cx - cx, SOCIAL_ICON.dot.cy - 500) + SOCIAL_ICON.dot.r) * scale512;
+    expect(reach).toBeLessThanOrEqual(256 * 0.85);
     for (const file of ["StoryFeed", "ReelsViewer", "FullscreenMediaHeader", "StoryCircles"])
-      expect(read(`client/src/social/components/${file}.tsx`)).toContain('src="/media/logo-zayrovi-avatar.svg?v=9.1"');
+      expect(read(`client/src/social/components/${file}.tsx`)).toContain('src="/media/logo-zayrovi-avatar.svg?v=9.2"');
     const avatar = read("client/public/media/logo-zayrovi-avatar.svg");
     expect(avatar).toContain(`<rect width="512" height="512" rx="${512 * SOCIAL_ICON.radius}" fill="${INK}"/>`);
     expect(avatar).toContain(`fill="${YELLOW}" d="${BRAND_MARK.d}"`);

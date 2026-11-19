@@ -17,14 +17,15 @@
   align-items: center;
   justify-content: center;
   min-height: 3.25rem;
-  background: var(--zayrovi-surface, #fff);
-  border-bottom: 1px solid var(--zayrovi-line, #e4e4e4);
+  /* 19/11 : en-tête AYWEBs JAUNE « Za. », titre noir (9,6:1) — comme l'application. */
+  background: var(--zayrovi-buy, #f2ae00);
+  border-bottom: 1px solid rgba(10, 10, 10, .12);
 }
 
 .ayw-title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--zayrovi-ink, #101828);
+  color: var(--zayrovi-on-buy, #0a0a0a);
 }
 
 /* --- recherche + chip boutique (capture 2) --- */

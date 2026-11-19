@@ -61,8 +61,12 @@ describe('parcours ZAYROVIX Lens unifié', () => {
     expect(lens).toContain('testID="lens-search-sheet-handle"');
     // 16/11 : plus de tiroir à squelettes pendant la recherche — l'attente vit dans la barre du haut.
     expect(lens).not.toContain('<LensSearchSkeleton');
-    expect(lens).toContain('{searchingTop ? null : (');
-    expect(lens).toContain('loading={searchingTop}');
+    // 19/11 : avant le premier résultat, un écran d'attente dédié (photo floutée, carte, étape, Annuler).
+    expect(lens).toContain('if (searchingTop) {');
+    expect(lens).toContain('<LensSearchingView');
+    const searching = read('../src/features/lens/LensSearchingView.tsx');
+    expect(searching).toContain('blurRadius={LENS_SEARCHING.blur}');
+    expect(searching).toContain("t('common.cancel')");
     expect(lens).toContain('removePrivateCapture');
     expect(lens).toContain('if (file.exists) file.delete()');
   });

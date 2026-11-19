@@ -84,7 +84,7 @@ export function AppHeader({ scrolled, heroBackground = null, heroTint = null, br
     borderBottomWidth: scrolled && !aywebs ? StyleSheet.hairlineWidth : 0,
     borderBottomColor: theme.colors.line,
   }]}>
-    {aywebs && pathname === '/aywebs' ? <StatusBar style="light" /> : null}
+    {aywebs && pathname === '/aywebs' ? <StatusBar style={STORE_BAR.statusBar} /> : null}
     {hasTint ? (
       <Animated.View
         testID="main-app-header-tint"

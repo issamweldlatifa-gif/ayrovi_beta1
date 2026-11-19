@@ -20,8 +20,8 @@ export const FullscreenMediaHeader: React.FC<FullscreenMediaHeaderProps> = ({ ti
     <div className={`absolute inset-x-0 z-40 flex items-center gap-2.5 bg-gradient-to-b from-black/60 to-transparent px-3 pb-8 ${offsetForProgress ? 'top-3 pt-[max(1.25rem,env(safe-area-inset-top))]' : 'top-0 pt-[max(.75rem,env(safe-area-inset-top))]'}`} dir={direction}>
       <button type="button" onClick={onBack} aria-label={tr('Retour', 'رجوع')} className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white transition hover:bg-white/10 active:scale-90"><ArrowLeft className={`h-7 w-7 ${direction === 'rtl' ? 'rotate-180' : ''}`} /></button>
       {title && <>
-        <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full border border-white/40 bg-white">
-          {official ? <img src="/media/logo-zayrovi-avatar.svg?v=9.1" alt="" className="h-full w-full object-contain" /> : avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : <span className="text-xs font-black text-ink">{title.slice(0, 2).toUpperCase()}</span>}
+        <span className={`grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full ${official ? 'bg-ink' : 'border border-white/40 bg-white'}`}>
+          {official ? <img src="/media/logo-zayrovi-avatar.svg?v=9.2" alt="" className="h-full w-full object-contain" /> : avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : <span className="text-xs font-black text-ink">{title.slice(0, 2).toUpperCase()}</span>}
         </span>
         <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold text-white">{title}{verified && <CheckCircle2 className="ms-1 inline h-3.5 w-3.5 text-white" />}</p>{subtitle && <p className="truncate text-xs font-semibold text-white/75">{subtitle}</p>}</div>
       </>}

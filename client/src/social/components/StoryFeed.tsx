@@ -12,8 +12,8 @@ const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, ligh
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   return (
     <div className="flex items-center gap-2.5 px-4 pb-3 pt-4 sm:px-5">
-      <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
-        {post.publisher.official ? <img src="/media/logo-zayrovi-avatar.svg?v=9.1" alt="" className="h-10 w-10 object-contain" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-ink">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
+      <span className={`grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full ${post.publisher.official ? 'bg-ink' : 'bg-white'}`}>
+        {post.publisher.official ? <img src="/media/logo-zayrovi-avatar.svg?v=9.2" alt="" className="h-10 w-10 object-contain" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-ink">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
       </span>
       <div className="min-w-0 flex-1 leading-tight">
         <p className={`flex items-center gap-1 text-sm font-extrabold ${light ? 'text-white' : 'text-ink'}`}>

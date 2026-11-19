@@ -59,6 +59,7 @@ import { LensRulesView } from '@/features/lens/LensRulesView';
 import { LensMenu, type LensMenuItem } from '@/features/lens/LensMenu';
 import { LensLiveOverlay } from '@/features/lens/LensLiveOverlay';
 import { LensSelectionView, type SelectionCommit } from '@/features/lens/LensSelectionView';
+import { LensSearchingView } from '@/features/lens/LensSearchingView';
 import { LENS_COLORS } from '@/features/lens/lensPalette';
 import { shrinkImage } from '@/features/lens/lensImage';
 import { FULL_BOX, biggestProductIndex, isFullFrame, padBox, selectionKey, toRoi } from '@/features/lens/lensSelection';
@@ -1165,6 +1166,23 @@ export default function LensScreen() {
   }
 
   const resultScene = stage.kind === 'busy' || stage.kind === 'results' || stage.kind === 'error' || session !== null;
+  // 19/11 (capture du site) : AVANT le premier résultat, un écran d'attente plein cadre —
+  // photo floutée derrière, carte arrondie de ce qu'on cherche, étape + « Annuler ».
+  if (searchingTop) {
+    return (
+      <View style={[styles.scene, { backgroundColor: LENS_COLORS.black }]}>
+        <StatusBar style="light" />
+        <LensSearchingView
+          uri={sessionPhoto?.uri ?? previewUri ?? null}
+          photo={sessionPhoto ? { width: sessionPhoto.width, height: sessionPhoto.height } : null}
+          selection={sessionPhoto && sessionPhoto.detection !== 'pending' ? sessionPhoto.selection : null}
+          screen={{ width, height }}
+          label={barLabel}
+          onCancel={cancelSearch}
+        />
+      </View>
+    );
+  }
   if (resultScene) {
     const errorCopy = stage.kind === 'error' ? errorCopyKey(stage.error) : null;
     const deviceError = stage.kind === 'error' && isApiError(stage.error) && stage.error.kind === 'device';
@@ -1237,18 +1255,16 @@ export default function LensScreen() {
           <BackButton onPress={reset} label={t('common.back')} color={LENS_COLORS.white} />
           {/* Barre flottante : elle remplace le titre quand une photo est
               analysée — la photo, son cadre et l'étape restent visibles. */}
-          {sessionPhoto || searchingTop ? (
-            <LensSearchBar uri={sessionPhoto?.uri ?? previewUri ?? null} label={barLabel} onCancel={cancelSearch} busy={stage.kind === 'busy'} loading={searchingTop} />
+          {sessionPhoto ? (
+            <LensSearchBar uri={sessionPhoto.uri} label={barLabel} onCancel={cancelSearch} busy={stage.kind === 'busy'} />
           ) : (
             <AppText variant="h3" color={LENS_COLORS.white} align="center" style={styles.resultTitle}>{t('lens.title')}</AppText>
           )}
-          {/* 16/11 : pendant la recherche, la barre prend TOUTE la largeur (plus de réserve à droite). */}
-          {searchingTop ? null : <View style={styles.headerSpacer} />}
+          <View style={styles.headerSpacer} />
         </View>
 
-        {/* 16/11 : plus de tiroir « Produits similaires » à squelettes pendant la recherche — la barre du
-            haut porte l'attente ; le tiroir monte avec les premiers résultats. */}
-        {searchingTop ? null : (
+        {/* 16/11 : plus de tiroir à squelettes pendant la recherche ; depuis le 19/11 l'attente a son
+            propre écran (LensSearchingView, plus haut) et le tiroir monte avec les premiers résultats. */}
         <SearchSheet geometry={sheet}>
           {stage.kind === 'busy' && stage.cards.length > 0 ? <LensProgressLine progress={stage.progress} /> : null}
           {stage.kind === 'results' || (stage.kind === 'busy' && stage.cards.length > 0) ? (
@@ -1278,7 +1294,6 @@ export default function LensScreen() {
             </View>
           ) : null}
         </SearchSheet>
-        )}
       </View>
     );
   }

@@ -1,4 +1,5 @@
-/** Official account avatar = the SOCIAL ICON (owner's drawing, 18/11/2026): a BLACK rounded tile, the yellow circle
+/** Official account avatar = the SOCIAL ICON (owner's drawing, 18/11/2026; ROUND since 19/11, no white ring): a BLACK
+ * disc, the yellow circle
  * with the knocked-out z (its lower bar runs out into the black) and the yellow dot, brought closer than in the full
  * logo (gap = the dot's diameter). Same drawing and fit as client/public/media/logo-zayrovi-avatar.svg — both read
  * SOCIAL_ICON, generated from the master by `npm run brand:build`. Constant in both themes: identity, not chrome.
@@ -8,7 +9,7 @@ import Svg, { Circle, G, Path, Rect } from 'react-native-svg';
 import { BRAND_MARK, SOCIAL_ICON } from './brandSymbol';
 import { BRAND } from './tokens.generated';
 
-/** Tile sizes in dp. */
+/** Disc diameters in dp. */
 export const OFFICIAL_AVATAR = { reel: 28, publication: 32 } as const;
 
 /** Placement of the mark + dot group inside a `size` tile (centred, `SOCIAL_ICON.content` of the width). */
@@ -22,6 +23,7 @@ export function OfficialAvatar({ size, testID }: { size: number; testID?: string
   return (
     <View testID={testID} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ width: size, height: size }}>
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* SOCIAL_ICON.radius = 0.5 → a disc. */}
         <Rect width={size} height={size} rx={size * SOCIAL_ICON.radius} fill={BRAND.black} />
         <G transform={`translate(${x} ${y}) scale(${scale})`}>
           <Path d={BRAND_MARK.d} fill={BRAND.yellow} />

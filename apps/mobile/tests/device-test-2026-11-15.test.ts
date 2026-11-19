@@ -131,7 +131,7 @@ describe('mise en page du 15/11', () => {
     expect(browser).toContain('<TabCleanIcon');
     expect(browser).toContain('aywebs-store-added-strip');
     const tokens = read('src/design/tokens.mobile.ts');
-    expect(tokens).toMatch(/export const STORE_BAR = \{\s*background: BRAND\.black,/); // 18/11 : barre AYWEBs NOIRE
+    expect(tokens).toMatch(/export const STORE_BAR = \{\s*background: BRAND\.yellow,\s*ink: BRAND\.black,/); // 19/11 : en-tête AYWEBs JAUNE, encre noire
   });
 
   it('panier : le logo Clean remplace « Examiner » — 16/11 : sur chaque carte, noir avec son reflet', () => {

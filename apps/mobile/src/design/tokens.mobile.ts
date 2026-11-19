@@ -169,18 +169,21 @@ const PRICE_DROP_RED = '#CF1322';
  * commercial fixe, pas une surface du thème.
  */
 /**
- * Barre du navigateur AYWEBs : fond NOIR (maquette v2 du 18/11 — plus de bleu),
- * icônes blanches, pilule blanche à encre noire. Fixe dans les deux modes.
+ * En-tête AYWEBs : fond JAUNE « Za. » (demande du 19/11), mot-symbole et icônes
+ * NOIRS (9,6:1 sur le jaune), pilule blanche à encre noire. Fixe dans les deux modes.
  */
 export const STORE_BAR = {
-  background: BRAND.black,
-  ink: BRAND.white,
+  background: BRAND.yellow,
+  ink: BRAND.black,
   pill: BRAND.white,
   pillInk: BRAND.black,
   /** Cadenas et adresse dans la pilule blanche — gris fixe (le `muted` du mode sombre serait illisible sur blanc). */
   pillMuted: NEUTRALS.textSecondary,
-  /** Rond de recherche au bout de la pilule blanche : encre (18/11, plus de bleu nuit). */
+  /** Rond de recherche au bout de la pilule blanche : encre, loupe blanche. */
   searchButton: BRAND.black,
+  searchIcon: BRAND.white,
+  /** Barre d'état au-dessus du jaune : icônes sombres. */
+  statusBar: 'dark',
 } as const;
 
 /**

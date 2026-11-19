@@ -263,8 +263,8 @@ describe('3. aucun orange retiré dans les sources produit', () => {
     // « pas de logo personnalisé », '/media/logo-zayrovi.png', comparée telle quelle et jamais affichée)
     const stale = [...walk('client/src', /\.(tsx?)$/), ...walk('client/public', /\.(html|webmanifest)$/)]
       .flatMap((rel) => [...read(rel).matchAll(/\/media\/logo-zayrovi[a-z0-9-]*\.(?:svg|png)(\?v=[0-9.]+)?/g)]
-        // 18/11 : seul l'avatar social a été redessiné (tuile noire arrondie) → ?v=9.1.
-        .filter((m) => m[1] !== (m[0].startsWith('/media/logo-zayrovi-avatar.svg') ? '?v=9.1' : '?v=9.0') && m[0] !== '/media/logo-zayrovi.png')
+        // 18/11 : seul l'avatar social a été redessiné (disque noir, 19/11) → ?v=9.2.
+        .filter((m) => m[1] !== (m[0].startsWith('/media/logo-zayrovi-avatar.svg') ? '?v=9.2' : '?v=9.0') && m[0] !== '/media/logo-zayrovi.png')
         .map((m) => `${rel}: ${m[0]}`));
     expect(stale).toEqual([]);
   });

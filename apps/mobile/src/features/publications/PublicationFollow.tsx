@@ -25,7 +25,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/design/theme';
-import { RADIUS, veil } from '@/design/tokens.mobile';
+import { veil } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
 import { PublicationAuthSheet } from './PublicationAuthSheet';
 import { PUBLICATION_PALETTE as P, PUBLICATION_TYPE, PublicationIcon, PublicationText } from './publicationDesign';
@@ -84,10 +84,10 @@ export function PublicationFollow({
     ? { textShadowColor: FOLLOW_ON_MEDIA.textShadow, textShadowRadius: FOLLOW_ON_MEDIA.textShadowRadius, textShadowOffset: { width: 0, height: 1 } }
     : null;
 
-  // Visage du compte officiel devant son nom (Z zébré blanc sur disque noir) ;
-  // sur média / bloc il est cerclé de blanc comme sur Instagram. Jamais d'avatar emprunté.
+  // Visage du compte officiel devant son nom : disque noir, « Za. » jaune.
+  // 19/11 : plus de cercle blanc autour (ni sur média, ni sur panneau). Jamais d'avatar emprunté.
   const avatar = official ? (
-    <View testID={`${testID}-avatar-ring`} style={white ? [styles.ring, { borderColor: lineInk }] : null}>
+    <View testID={`${testID}-avatar-ring`}>
       <OfficialAvatar size={OFFICIAL_AVATAR.publication} testID={`${testID}-avatar`} />
     </View>
   ) : null;
@@ -180,7 +180,6 @@ export function PublicationFollow({
 const styles = StyleSheet.create({
   row: { alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   identity: { alignItems: 'center', gap: 8, flexShrink: 1 },
-  ring: { borderWidth: 1.5, borderRadius: RADIUS.full, padding: 1 },
   name: { flexShrink: 1 },
   pill: {
     borderWidth: PUBLICATION_TYPE.followBorder,

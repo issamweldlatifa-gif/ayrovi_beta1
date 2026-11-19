@@ -116,11 +116,13 @@ describe('caméra Lens directe', () => {
     await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
     fireEvent.press(capture);
 
-    // 16/11 : la recherche s'affiche dans la barre du haut (anneau + halo), sans tiroir à squelettes.
-    expect(await screen.findByTestId('lens-search-bar-loading')).toBeTruthy();
+    // 19/11 : écran d'attente dédié (photo floutée, carte, étape, « Annuler »), sans tiroir à squelettes.
+    expect(await screen.findByTestId('lens-searching')).toBeTruthy();
+    expect(screen.getByTestId('lens-search-bar-loading', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByTestId('lens-searching-card')).toBeTruthy();
     expect(screen.queryByTestId('lens-search-skeleton')).toBeNull();
     expect(screen.queryByTestId('lens-search-sheet-handle')).toBeNull();
-    expect(screen.getByTestId('lens-captured-preview')).toBeTruthy();
+    expect(screen.getByTestId('lens-captured-preview', { includeHiddenElements: true })).toBeTruthy();
     expect(shutterCalls()).toHaveLength(1);
     // The grounded item, not the entire scene, is sent to merchant search.
     await waitFor(() => expect(mockAnalyzeImage).toHaveBeenCalledTimes(1));
@@ -156,7 +158,7 @@ describe('caméra Lens directe', () => {
     expect(screen.queryByTestId('lens-product-dot-0')).toBeNull();
   });
 
-  it('pendant la recherche, le produit est encadré (voile + deux arcs qui respirent), puis l’attente se retire', async () => {
+  it('19/11 : pendant la recherche, écran d’attente (carte + étape + Annuler) ; il se retire au résultat', async () => {
     let resolveSearch!: (value: typeof EMPTY_RESULT) => void;
     mockAnalyzeImage.mockReturnValue(new Promise((resolve) => { resolveSearch = resolve; }));
 
@@ -165,17 +167,18 @@ describe('caméra Lens directe', () => {
     await waitFor(() => expect(capture.props.accessibilityState.disabled).toBe(false));
     fireEvent.press(capture);
 
-    // Style Pinterest Lens : photo voilée, cadre arrondi, deux arcs — plus de couronne de points.
-    await waitFor(() => expect(screen.getByTestId('lens-selected-product').props.accessibilityState.busy).toBe(true));
-    expect(screen.getByTestId('lens-focus-dim')).toBeTruthy();
-    expect(screen.getByTestId('lens-focus-arc-top')).toBeTruthy();
-    expect(screen.getByTestId('lens-focus-arc-bottom')).toBeTruthy();
-    expect(screen.queryByTestId('lens-search-ring')).toBeNull();
-    expect(screen.queryByTestId('lens-search-dot-0')).toBeNull();
+    // Le produit repéré est montré seul dans la carte (recadrage), la photo floutée derrière.
+    await waitFor(() => expect(mockAnalyzeImage).toHaveBeenCalledTimes(1));
+    expect(screen.getByTestId('lens-searching')).toBeTruthy();
+    expect(screen.getByTestId('lens-searching-backdrop', { includeHiddenElements: true })).toBeTruthy();
+    expect(screen.getByTestId('lens-search-bar-cancel')).toBeTruthy();
+    expect(screen.getByText('Annuler')).toBeTruthy();
+    expect(screen.queryByTestId('lens-selected-product')).toBeNull();
 
-    // Résultat rendu : plus aucune attente affichée.
+    // Résultat rendu : l'attente se retire, la sélection reprend la main (sans état « occupé »).
     resolveSearch(EMPTY_RESULT);
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 50)); });
+    await waitFor(() => expect(screen.queryByTestId('lens-searching')).toBeNull());
     await waitFor(() => expect(screen.getByTestId('lens-selected-product').props.accessibilityState.busy).toBe(false));
   });
 

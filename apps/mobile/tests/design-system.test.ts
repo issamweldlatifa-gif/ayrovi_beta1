@@ -219,6 +219,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/design/CartGlyph.tsx', // 15/11 : pastille du nombre d'articles posée SUR l'angle du sac (partout où un panier s'affiche)
       'src/features/publications/templates/CinemaTemplate.tsx', // 16/11 Anker : titre centré et ligne « nom · Suivre » posés SUR la vidéo bord à bord, sur des voiles
       'src/features/publications/templates/MediaTemplate.tsx', // 15/11 Instagram : ligne « nom · Suivre » posée en haut DU média, sur un voile
+      'src/features/lens/LensSearchingView.tsx', // 19/11 : attente Lens — photo recadrée DANS la carte (image décalée sous un masque arrondi)
       'src/features/product/ProductFiche.tsx', // grande fiche : photo FIXE derrière la feuille qui monte, en-tête et barre d'achat posés dessus (planche mockup-sticky)
     ]);
     const offenders: string[] = [];

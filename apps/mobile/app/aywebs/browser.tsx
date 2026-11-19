@@ -26,7 +26,7 @@ import {
   captureMatchesPageUrl, decideWebNavigation, isFatalMainPageLoadError, isSilentAppDeepLink, isSpaInPageProductSwitch, isWebPageUrl,
 } from '@/features/aywebs/webNavigation';
 
-import { AppText, PurchaseBar } from '@/design/ui';
+import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -783,8 +783,11 @@ export default function AyWebsBrowserScreen() {
           </View>
         ) : null}
 
-        <PurchaseBar
+        {/* 19/11 : « Choisir les options » garde sa taille d'origine (pleine largeur) — seule la couleur passe au jaune d'achat. */}
+        <Button
           label={busy ? t('aywebs.loading') : cartAddedAt ? t('aywebs.added') : t('aywebs.selectOptions')}
+          tone="commerce"
+          block
           onPress={addToCart}
           busy={busy}
           disabled={!addEnabled}

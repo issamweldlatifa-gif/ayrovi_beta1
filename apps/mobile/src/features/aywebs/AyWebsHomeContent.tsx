@@ -256,7 +256,7 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
           testID="aywebs-home-search-go"
           style={({ pressed }) => [styles.searchGo, { backgroundColor: STORE_BAR.searchButton, opacity: pressed ? theme.opacity.subtle : 1 }]}
         >
-          <Ionicons name="search-outline" size={theme.iconSize.sm} color={STORE_BAR.ink} accessibilityElementsHidden />
+          <Ionicons name="search-outline" size={theme.iconSize.sm} color={STORE_BAR.searchIcon} accessibilityElementsHidden />
         </Pressable>
       </View>
       </View>
