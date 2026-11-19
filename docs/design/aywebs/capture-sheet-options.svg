@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1280 980" width="1280" height="980" font-family="DejaVu Sans, sans-serif">
+<defs>
+  <linearGradient id="scene" x2="0.8" y2="1"><stop stop-color="#F9F1DF"/><stop offset="1" stop-color="#EBD4AD"/></linearGradient>
+  <linearGradient id="glass"><stop stop-color="#AA754D"/><stop offset=".14" stop-color="#EDD3A0"/><stop offset=".38" stop-color="#F6E4C4"/><stop offset=".72" stop-color="#DEB784"/><stop offset="1" stop-color="#A87142"/></linearGradient>
+  <linearGradient id="cap"><stop stop-color="#252421"/><stop offset=".46" stop-color="#5D5144"/><stop offset=".8" stop-color="#3A3129"/><stop offset="1" stop-color="#221D1A"/></linearGradient>
+  <linearGradient id="liquid" x2="0" y2="1"><stop stop-color="#D49B59" stop-opacity=".55"/><stop offset="1" stop-color="#963D17" stop-opacity=".65"/></linearGradient>
+  <radialGradient id="halo"><stop stop-color="#FFF8E6" stop-opacity=".94"/><stop offset="1" stop-color="#FFF8E6" stop-opacity="0"/></radialGradient>
+  <filter id="shadow" x="-20%" y="-10%" width="150%" height="130%"><feDropShadow dx="0" dy="6" stdDeviation="9" flood-color="#4A3C20" flood-opacity=".15"/></filter>
+  <symbol id="bottle" viewBox="0 0 230 214">
+    <ellipse cx="115" cy="98" rx="105" ry="96" fill="url(#halo)"/>
+    <ellipse cx="117" cy="194" rx="76" ry="10" fill="#855635" opacity=".17"/>
+    <rect x="92" y="29" width="46" height="51" rx="6" fill="url(#cap)"/>
+    <path d="M99 35h33m-34 5h33m-33 5h33m-33 5h33m-33 5h33" stroke="#B08D6D" opacity=".29"/>
+    <rect x="97" y="74" width="36" height="16" fill="#A97847"/>
+    <path d="M68 95l18-12h58l18 12 7 12v68a17 17 0 0 1-17 17H78a17 17 0 0 1-17-17v-68z" fill="url(#glass)" stroke="#A97248" stroke-width="2"/>
+    <rect x="69" y="124" width="92" height="57" rx="11" fill="url(#liquid)"/>
+    <path d="M73 109v59m83-59v59M82 184h65" stroke="#FFF1D5" opacity=".58" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <rect x="82" y="111" width="66" height="47" rx="2" fill="#FFF7E4" stroke="#D4B68A"/>
+    <path d="M92 122h46m-46 26h46" stroke="#D6BC94" stroke-width=".8"/>
+    <text x="115" y="135" text-anchor="middle" fill="#34261B" font-size="8" font-weight="700" letter-spacing=".7">EAU INTENSE</text>
+    <text x="115" y="143" text-anchor="middle" fill="#6C5137" font-size="5" letter-spacing="1">EAU DE PARFUM</text>
+  </symbol>
+  <clipPath id="clipA"><rect x="55" y="225" width="368" height="612" rx="26"/></clipPath>
+  <clipPath id="clipB"><rect x="456" y="225" width="368" height="612" rx="26"/></clipPath>
+  <clipPath id="clipC"><rect x="857" y="225" width="368" height="612" rx="26"/></clipPath>
+</defs>
+<rect x="0" y="0" width="1280" height="980" rx="0" fill="#F6F3EB" />
+<rect x="0" y="0" width="1280" height="8" rx="0" fill="#F2AE00" />
+<rect x="48" y="40" width="99" height="34" rx="17" fill="#F2AE00" />
+<text x="65" y="62" font-size="16" font-weight="750" fill="#20201E" >AYWEBs</text>
+<text x="165" y="62" font-size="12" font-weight="700" fill="#665E4F" letter-spacing="1.6">DESIGN MOBILE  /  CAPTURE MARCHAND</text>
+<text x="48" y="122" font-size="40" font-weight="750" fill="#20201E" >Quelle feuille après la capture ?</text>
+<text x="50" y="155" font-size="17" font-weight="500" fill="#5E574A" >Même produit, même prix, trois façons de confirmer avant l’ajout au panier.</text>
+<text x="48" y="201" font-size="22" font-weight="750" fill="#20201E" >A   Compacte</text>
+<rect x="48" y="218" width="382" height="626" rx="33" fill="#26241F" filter="url(#shadow)"/>
+<g clip-path="url(#clipA)">
+<rect x="55" y="225" width="368" height="612" rx="0" fill="#FDFBF6" />
+<text x="74" y="251" font-size="12" font-weight="700" fill="#20201E" >9:41</text>
+<text x="380" y="251" font-size="13" font-weight="700" fill="#20201E" >▰</text>
+<rect x="95" y="266" width="265" height="33" rx="16" fill="#F8DB85" />
+<text x="109" y="287" font-size="12" font-weight="700" fill="#20201E" >AYWEBs  ·  Boutique</text>
+<text x="75" y="286" font-size="23" font-weight="650" fill="#20201E" >‹</text>
+<rect x="69" y="318" width="340" height="226" rx="16" fill="url(#scene)" />
+<use xlink:href="#bottle" x="132" y="320" width="212" height="214"/>
+<text x="75" y="572" font-size="21" font-weight="700" fill="#20201E" >Eau Intense</text>
+<text x="75" y="594" font-size="12" font-weight="500" fill="#615546" >Eau de parfum</text>
+<rect x="55" y="225" width="368" height="331" rx="0" fill="#191711" opacity=".47"/>
+<rect x="55" y="526" width="368" height="346" rx="24" fill="#FFFFFF" />
+<rect x="220" y="535" width="38" height="4" rx="2" fill="#D6D0C4" />
+<text x="73" y="573" font-size="17" font-weight="750" fill="#20201E" >Article capturé</text>
+<rect x="372" y="550" width="36" height="36" rx="18" fill="#F5F1E9" />
+<text x="390" y="575" font-size="23" font-weight="500" fill="#20201E" text-anchor="middle">×</text>
+<rect x="73" y="593" width="94" height="98" rx="10" fill="url(#scene)" />
+<use xlink:href="#bottle" x="77" y="599" width="86" height="81"/>
+<text x="182" y="616" font-size="18" font-weight="750" fill="#20201E" >Eau Intense</text>
+<text x="182" y="637" font-size="12" font-weight="500" fill="#5E574A" >Eau de parfum</text>
+<rect x="182" y="649" width="63" height="26" rx="13" fill="#F5F2EA" />
+<text x="194" y="667" font-size="11" font-weight="650" fill="#20201E" >50 ml</text>
+<path d="M73 711h332" stroke="#E8E3D8"/>
+<text x="73" y="733" font-size="13" font-weight="650" fill="#50493D" >Prix final</text>
+<text x="405" y="735" font-size="22" font-weight="750" fill="#20201E" text-anchor="end">149,90 TND</text>
+<text x="73" y="754" font-size="11" font-weight="500" fill="#5E574A" >Douane et livraison incluses</text>
+<rect x="73" y="767" width="332" height="46" rx="23" fill="#F2AE00" />
+<text x="239" y="796" font-size="15" font-weight="750" fill="#20201E" text-anchor="middle">Ajouter au panier</text>
+<rect x="187" y="827" width="104" height="4" rx="2" fill="#DAD5CB" />
+</g>
+<text x="48" y="879" font-size="16" font-weight="730" fill="#20201E" >Confirmation express</text>
+<text x="48" y="904" font-size="13" font-weight="500" fill="#635A4B" >Laisse plus de place à la boutique.</text>
+<text x="449" y="201" font-size="22" font-weight="750" fill="#20201E" >B   Équilibrée</text>
+<rect x="626" y="180" width="124" height="27" rx="13" fill="#F9E3A3" />
+<text x="637" y="198" font-size="10" font-weight="750" fill="#20201E" letter-spacing=".7">RECOMMANDÉE</text>
+<rect x="449" y="218" width="382" height="626" rx="33" fill="#26241F" stroke="#C18A00" stroke-width="3" filter="url(#shadow)"/>
+<g clip-path="url(#clipB)">
+<rect x="456" y="225" width="368" height="612" rx="0" fill="#FDFBF6" />
+<text x="475" y="251" font-size="12" font-weight="700" fill="#20201E" >9:41</text>
+<text x="781" y="251" font-size="13" font-weight="700" fill="#20201E" >▰</text>
+<rect x="496" y="266" width="265" height="33" rx="16" fill="#F8DB85" />
+<text x="510" y="287" font-size="12" font-weight="700" fill="#20201E" >AYWEBs  ·  Boutique</text>
+<text x="476" y="286" font-size="23" font-weight="650" fill="#20201E" >‹</text>
+<rect x="470" y="318" width="340" height="226" rx="16" fill="url(#scene)" />
+<use xlink:href="#bottle" x="533" y="320" width="212" height="214"/>
+<text x="476" y="572" font-size="21" font-weight="700" fill="#20201E" >Eau Intense</text>
+<text x="476" y="594" font-size="12" font-weight="500" fill="#615546" >Eau de parfum</text>
+<rect x="456" y="225" width="368" height="207" rx="0" fill="#191711" opacity=".47"/>
+<rect x="456" y="402" width="368" height="470" rx="24" fill="#FFFFFF" />
+<rect x="621" y="411" width="38" height="4" rx="2" fill="#D6D0C4" />
+<text x="474" y="449" font-size="17" font-weight="750" fill="#20201E" >Article capturé</text>
+<rect x="773" y="426" width="36" height="36" rx="18" fill="#F5F1E9" />
+<text x="791" y="451" font-size="23" font-weight="500" fill="#20201E" text-anchor="middle">×</text>
+<rect x="474" y="469" width="332" height="153" rx="13" fill="url(#scene)" />
+<use xlink:href="#bottle" x="559.0" y="465" width="162" height="154"/>
+<text x="474" y="653" font-size="21" font-weight="750" fill="#20201E" >Eau Intense</text>
+<text x="474" y="676" font-size="13" font-weight="500" fill="#5E574A" >Eau de parfum</text>
+<rect x="740" y="638" width="66" height="28" rx="14" fill="#F5F2EA" />
+<text x="754" y="657" font-size="11" font-weight="650" fill="#20201E" >50 ml</text>
+<path d="M474 697h332" stroke="#E8E3D8"/>
+<text x="474" y="719" font-size="13" font-weight="650" fill="#50493D" >Prix final</text>
+<text x="806" y="721" font-size="22" font-weight="750" fill="#20201E" text-anchor="end">149,90 TND</text>
+<text x="474" y="740" font-size="11" font-weight="500" fill="#5E574A" >Douane et livraison incluses</text>
+<rect x="474" y="767" width="332" height="46" rx="23" fill="#F2AE00" />
+<text x="640" y="796" font-size="15" font-weight="750" fill="#20201E" text-anchor="middle">Ajouter au panier</text>
+<rect x="588" y="827" width="104" height="4" rx="2" fill="#DAD5CB" />
+</g>
+<text x="449" y="879" font-size="16" font-weight="730" fill="#20201E" >Photo et prix au premier plan</text>
+<text x="449" y="904" font-size="13" font-weight="500" fill="#635A4B" >Bon équilibre sur un petit écran.</text>
+<text x="850" y="201" font-size="22" font-weight="750" fill="#20201E" >C   Immersive</text>
+<rect x="850" y="218" width="382" height="626" rx="33" fill="#26241F" filter="url(#shadow)"/>
+<g clip-path="url(#clipC)">
+<rect x="857" y="225" width="368" height="612" rx="0" fill="#FDFBF6" />
+<text x="876" y="251" font-size="12" font-weight="700" fill="#20201E" >9:41</text>
+<text x="1182" y="251" font-size="13" font-weight="700" fill="#20201E" >▰</text>
+<rect x="897" y="266" width="265" height="33" rx="16" fill="#F8DB85" />
+<text x="911" y="287" font-size="12" font-weight="700" fill="#20201E" >AYWEBs  ·  Boutique</text>
+<text x="877" y="286" font-size="23" font-weight="650" fill="#20201E" >‹</text>
+<rect x="871" y="318" width="340" height="226" rx="16" fill="url(#scene)" />
+<use xlink:href="#bottle" x="934" y="320" width="212" height="214"/>
+<text x="877" y="572" font-size="21" font-weight="700" fill="#20201E" >Eau Intense</text>
+<text x="877" y="594" font-size="12" font-weight="500" fill="#615546" >Eau de parfum</text>
+<rect x="857" y="225" width="368" height="115" rx="0" fill="#191711" opacity=".47"/>
+<rect x="857" y="310" width="368" height="562" rx="24" fill="#FFFFFF" />
+<rect x="1022" y="319" width="38" height="4" rx="2" fill="#D6D0C4" />
+<text x="875" y="357" font-size="17" font-weight="750" fill="#20201E" >Article capturé</text>
+<rect x="1174" y="334" width="36" height="36" rx="18" fill="#F5F1E9" />
+<text x="1192" y="359" font-size="23" font-weight="500" fill="#20201E" text-anchor="middle">×</text>
+<rect x="875" y="377" width="332" height="241" rx="13" fill="url(#scene)" />
+<use xlink:href="#bottle" x="917.0" y="375" width="248" height="242"/>
+<text x="875" y="649" font-size="21" font-weight="750" fill="#20201E" >Eau Intense</text>
+<text x="875" y="672" font-size="13" font-weight="500" fill="#5E574A" >Eau de parfum</text>
+<rect x="1141" y="634" width="66" height="28" rx="14" fill="#F5F2EA" />
+<text x="1155" y="653" font-size="11" font-weight="650" fill="#20201E" >50 ml</text>
+<path d="M875 693h332" stroke="#E8E3D8"/>
+<text x="875" y="715" font-size="13" font-weight="650" fill="#50493D" >Prix final</text>
+<text x="1207" y="717" font-size="22" font-weight="750" fill="#20201E" text-anchor="end">149,90 TND</text>
+<text x="875" y="736" font-size="11" font-weight="500" fill="#5E574A" >Douane et livraison incluses</text>
+<rect x="875" y="767" width="332" height="46" rx="23" fill="#F2AE00" />
+<text x="1041" y="796" font-size="15" font-weight="750" fill="#20201E" text-anchor="middle">Ajouter au panier</text>
+<rect x="989" y="827" width="104" height="4" rx="2" fill="#DAD5CB" />
+</g>
+<text x="850" y="879" font-size="16" font-weight="730" fill="#20201E" >Grande photo, écran presque plein</text>
+<text x="850" y="904" font-size="13" font-weight="500" fill="#635A4B" >Utile quand l’image décide de l’achat.</text>
+<path d="M48 930h1184" stroke="#E8E3D8"/>
+<text x="48" y="955" font-size="12" font-weight="500" fill="#625A4E" >Maquette comparative · Produit fictif et prix illustratif · Aucun changement dans l’application</text>
+</svg>
