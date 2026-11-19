@@ -392,3 +392,14 @@ describe('de bout en bout — Amazon en mode sélection', () => {
     expect(String(response.body.error)).toMatch(/page du marchand/);
   });
 });
+
+describe('quantité affichée par la page = quantité par défaut (resolve + ajout panier)', () => {
+  it('capturedPageQuantity : entier 1…99 seulement', async () => {
+    const { capturedPageQuantity } = await import('../src/aywebs/routes');
+    expect(capturedPageQuantity({ pageQuantity: 3 })).toBe(3);
+    expect(capturedPageQuantity({ pageQuantity: 0 })).toBeNull();
+    expect(capturedPageQuantity({ pageQuantity: 2.5 })).toBeNull();
+    expect(capturedPageQuantity({ pageQuantity: '4' })).toBeNull();
+    expect(capturedPageQuantity(null)).toBeNull();
+  });
+});

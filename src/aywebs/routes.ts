@@ -631,7 +631,7 @@ export function createAyWebsRouter(db: ZayroviDatabase, scraper: SmartLinkScrape
     const requestedStoreId = req.body?.store_id ?? req.body?.store;
     const storeId = requestedStoreId == null ? null : String(requestedStoreId).slice(0, 40);
     const variantAttributes = normalizeAttributes(req.body?.variant || req.body?.variant_attributes);
-    const quantity = Number(req.body?.quantity ?? 1);
+    const quantity = Number(req.body?.quantity ?? capturedPageQuantity(req.body?.capture) ?? 1);
     rejectProvidedPage(req.body?.page);
 
     trackAyWebsFunnel(ctx, 'capture_started', { store: storeId || undefined }, identity.sessionId);
@@ -979,7 +979,7 @@ export function createAyWebsRouter(db: ZayroviDatabase, scraper: SmartLinkScrape
       sourceUrl: req.body?.source_url ? String(req.body.source_url) : null,
       storeId: req.body?.store_id ? String(req.body.store_id) : null,
       variantAttributes: normalizeAttributes(req.body?.variant || req.body?.variant_attributes),
-      quantity: Number(req.body?.quantity ?? 1),
+      quantity: Number(req.body?.quantity ?? capturedPageQuantity(req.body?.capture) ?? 1),
       customerNote: req.body?.customer_note ? String(req.body.customer_note) : '',
       idempotencyKey,
       requestId: requestIdOf(req),
@@ -1832,4 +1832,15 @@ function storeRequestPayload(request: ReturnType<typeof listAyWebsStoreRequests>
     promoted_store_id: request.promotedStoreId,
     created_at: request.createdAt,
   };
+}
+
+/**
+ * Quantité affichée par la page du marchand (mode sélection, 19/11/2026) :
+ * quantité par défaut quand le client n'en envoie aucune. Même confiance que
+ * `quantity` elle-même (saisie client), bornée 1…99.
+ */
+export function capturedPageQuantity(capture: unknown): number | null {
+  if (!capture || typeof capture !== 'object') return null;
+  const raw = (capture as { pageQuantity?: unknown }).pageQuantity;
+  return typeof raw === 'number' && Number.isInteger(raw) && raw >= 1 && raw <= 99 ? raw : null;
 }

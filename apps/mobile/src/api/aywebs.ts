@@ -520,6 +520,46 @@ export interface AyWebsCaptureVerdict {
   rejection: string;
 }
 
+/**
+ * Ce que le client a CHOISI sur la page du marchand (principe 19/11/2026) :
+ * « le client choisit → AYWEBs capte → ZAYROVI calcule → le client confirme ».
+ * La feuille ne fait que le confirmer ; le changement se fait sur la page.
+ */
+export interface AyWebsCapturedSelection {
+  mode: string;
+  attributes: Record<string, string>;
+  variantId: string | null;
+  variantIdSource: string | null;
+  /** `AVAILABLE` (affiché en stock) · `UNKNOWN` (non confirmé — jamais « disponible »). */
+  availability: string;
+  availabilityReason: string | null;
+  /** Quantité affichée sur la page (pré-remplit la quantité de la feuille). */
+  pageQuantity: number | null;
+  image: string | null;
+}
+
+export function parseCapturedSelection(raw: unknown): AyWebsCapturedSelection | null {
+  if (!isRecord(raw)) return null;
+  const attributes: Record<string, string> = {};
+  if (isRecord(raw.attributes)) {
+    for (const [key, value] of Object.entries(raw.attributes)) {
+      if (typeof value === 'string' && value.trim()) attributes[key] = value;
+    }
+  }
+  const quantity = typeof raw.page_quantity === 'number' && Number.isInteger(raw.page_quantity)
+    && raw.page_quantity >= 1 && raw.page_quantity <= 99 ? raw.page_quantity : null;
+  return {
+    mode: str(raw.mode) || 'selection',
+    attributes,
+    variantId: str(raw.variant_id) || null,
+    variantIdSource: str(raw.variant_id_source) || null,
+    availability: str(raw.availability) || 'UNKNOWN',
+    availabilityReason: str(raw.availability_reason) || null,
+    pageQuantity: quantity,
+    image: str(raw.image) || null,
+  };
+}
+
 export interface AyWebsResolveOutcome {
   product: AyWebsResolvedProduct;
   /** قرار الخادم في الكابتشر — `null` كي ما تجاش كابتشر مع الطلب. */
@@ -537,6 +577,8 @@ export interface AyWebsResolveOutcome {
    * فاتورة باطلة ولا قديمة ⇒ قراءة كاملة من جديد.
    */
   quoteToken: string;
+  /** Choix capté sur la page (mode sélection) — `null` sur l'ancien chemin. */
+  capturedSelection?: AyWebsCapturedSelection | null;
 }
 
 /**
@@ -603,6 +645,7 @@ export async function resolveAyWebsProductWithCapture(
     priceRejection: typeof envelope.price_rejection === 'string' ? envelope.price_rejection : null,
     missing: strList(envelope.missing),
     quoteToken: str(envelope.quote_token),
+    capturedSelection: parseCapturedSelection(envelope.captured_selection),
   };
 }
 

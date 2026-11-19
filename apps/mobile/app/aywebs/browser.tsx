@@ -54,7 +54,7 @@ import { captureIsProductCard } from '@/features/aywebs/pageKind';
 import { VariantReader, type VariantReaderHandle } from '@/features/aywebs/VariantReader';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
-  AYWEBS_CAPTURE_WATCHDOG_MS, canReusePrefetch, priceCandidatesOf, priceRetryDelayMs, readDecision, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
+  AYWEBS_CAPTURE_WATCHDOG_MS, canReusePrefetch, prefetchIsSelectionSnapshot, priceCandidatesOf, priceRetryDelayMs, selectionConfirmDelayMs, readDecision, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
   type ReadIntent,
 } from '@/features/aywebs/captureFlow';
 import { useSessionId } from '@/session/session';
@@ -391,6 +391,7 @@ export default function AyWebsBrowserScreen() {
       };
       /* Prix absent de la capture ⇒ relance bornée (fc3cce38 / captureFlow.ts). */
       const requestedUrl = pageUrlRef.current;
+      let selectionConfirms = 0;
       const onCaptured = (capture: Record<string, unknown>) => {
         const script = lastScript.current;
         if (script && shouldRetryAyWebsCaptureForPrice(priceCandidatesOf(capture), captureRetries.current)) {
@@ -398,6 +399,16 @@ export default function AyWebsBrowserScreen() {
           waiter.current = { resolve: onCaptured, reject, quiet, requestedUrl: pageUrlRef.current || requestedUrl };
           stopTimer();
           setTimeout(() => inject(script), priceRetryDelayMs(captureRetries.current - 1));
+          return;
+        }
+        /* Mode sélection : relecture de confirmation (~400 ms) — le serveur exige
+           deux lectures identiques du choix affiché (captureFlow.ts). */
+        const confirmDelay = script ? selectionConfirmDelayMs(capture, selectionConfirms) : null;
+        if (script && confirmDelay !== null) {
+          selectionConfirms += 1;
+          waiter.current = { resolve: onCaptured, reject, quiet, requestedUrl: pageUrlRef.current || requestedUrl };
+          stopTimer();
+          setTimeout(() => inject(script), confirmDelay);
           return;
         }
         resolve(capture);
@@ -463,7 +474,10 @@ export default function AyWebsBrowserScreen() {
         setBusy(true);
         setNote('');
         try {
-          return await entry.promise;
+          const prefetched = await entry.promise;
+          /* Pré-lecture « sélection » : le choix a pu changer depuis — on relit au clic. */
+          if (!prefetchIsSelectionSnapshot(prefetched)) return prefetched;
+          prefetch.current = null;
         } catch {
           prefetch.current = null;
           if (controller.signal.aborted) throw new ApiError('aborted', 'Requête interrompue.');
@@ -805,7 +819,7 @@ export default function AyWebsBrowserScreen() {
           capture={sheet.capture}
           quoteToken={sheet.quoteToken}
           local={sheet.local}
-          readOnlySelection={readOnlyStoreSelection(sheet.product.storeId)}
+          readOnlySelection={readOnlyStoreSelection(sheet.product.storeId, sheet.capture)}
           readVariant={(url: string) => (variantReader.current
             ? variantReader.current.read(url)
             : Promise.reject(new ApiError('device', 'Lecteur de variante indisponible.')))}

@@ -44,6 +44,7 @@ import {
   splitMerchantPrice, valueStatesFromCapture,
   type LocalValueStates,
 } from '@/features/aywebs/localProduct';
+import { initialSheetQuantity, pageQuantityOf } from '@/features/aywebs/storeSheetMode';
 import { choiceGroupKind, choiceGroupKey } from '@/features/aywebs/choiceGroup';
 import { ChoiceField, type ChoiceOption } from '@/features/aywebs/ChoiceField';
 import { VariantOptionChips } from '@/features/aywebs/VariantOptionChips';
@@ -136,6 +137,8 @@ export function AddToCartSheet({
   const [selection, setSelection] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
   const [quantityOpen, setQuantityOpen] = useState(false);
+  /* Le client a choisi la quantité DANS la feuille : la page ne la remplace plus. */
+  const quantityTouched = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [, setDiagnostic] = useState('');
@@ -242,6 +245,10 @@ export function AddToCartSheet({
             refresh: attempt.refresh,
           });
           if (!alive.current) return;
+          const pageQuantity = pageQuantityOf(read);
+          if (pageQuantity !== null) {
+            setQuantity((current) => initialSheetQuantity(pageQuantity, 99, quantityTouched.current, current));
+          }
           diagnostics.push(
             read.capture?.rejection ? `capture:${read.capture.rejection}` : '',
             read.priceRejection ? `price:${read.priceRejection}` : '',
@@ -340,7 +347,8 @@ export function AddToCartSheet({
     requestId.current = newAyWebsRequestId();
     const initial = local && capture ? defaultSelectionFromCapture(capture as Record<string, unknown>, groupsRef.current) : {};
     setSelection(initial);
-    setQuantity(1);
+    quantityTouched.current = false;
+    setQuantity(pageQuantityOf(capture) ?? 1);
     setQuantityOpen(false);
     setError('');
     setDiagnostic('');
@@ -1319,7 +1327,7 @@ export function AddToCartSheet({
                 <ScrollView keyboardShouldPersistTaps="handled" testID="aywebs-quantity-list">
                   {Array.from({ length: maxQuantity }, (_, index) => index + 1).map((value) => (
                     <Pressable key={value} accessibilityRole="radio" accessibilityState={{ selected: value === quantity }}
-                      onPress={() => { setQuantity(Math.min(value, maxQuantity)); setQuantityOpen(false); }}
+                      onPress={() => { quantityTouched.current = true; setQuantity(Math.min(value, maxQuantity)); setQuantityOpen(false); }}
                       testID={`aywebs-quantity-${value}`}
                       style={[styles.quantityOption, { borderTopColor: theme.colors.line, backgroundColor: value === quantity ? theme.colors.accentSoft : theme.colors.surface }]}>
                       <AppText variant="body" color={value === quantity ? theme.colors.onAccentSoft : theme.colors.ink}>{String(value)}</AppText>
