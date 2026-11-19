@@ -43,3 +43,28 @@ test("a missing view cannot turn a retry into a false success", async () => {
     "not mounted"
   );
 });
+
+
+test("falls back to muted playback only for a current audible autoplay block", async () => {
+  const failure = vi.fn(), onMuted = vi.fn(), p = player();
+  const blocked = Object.assign(new Error("blocked"), { name: "NotAllowedError" });
+  const video = { muted: false, play: vi.fn().mockRejectedValueOnce(blocked).mockResolvedValue(undefined) };
+  playReelVideo(p, view(video), failure, onMuted);
+  await vi.waitFor(() => expect(video.play).toHaveBeenCalledTimes(2));
+  expect(video.muted).toBe(true);
+  expect(p.muted).toBe(true);
+  expect(onMuted).toHaveBeenCalledOnce();
+  expect(failure).not.toHaveBeenCalled();
+});
+
+test("does not change the audio choice after the active reel has changed", async () => {
+  const failure = vi.fn(), onMuted = vi.fn();
+  const blocked = Object.assign(new Error("blocked"), { name: "NotAllowedError" });
+  const video = { muted: false, play: vi.fn().mockRejectedValue(blocked) };
+  playReelVideo(player(), view(video), failure, onMuted, () => false);
+  await Promise.resolve();
+  expect(video.play).toHaveBeenCalledOnce();
+  expect(video.muted).toBe(false);
+  expect(onMuted).not.toHaveBeenCalled();
+  expect(failure).not.toHaveBeenCalled();
+});

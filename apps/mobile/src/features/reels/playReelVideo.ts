@@ -6,7 +6,9 @@ import type { VideoPlayer, VideoView } from "expo-video";
 export function playReelVideo(
   player: VideoPlayer,
   view: VideoView | null,
-  onFailure: () => void
+  onFailure: () => void,
+  onAutoplayMuted?: () => void,
+  isCurrent = () => true
 ) {
   try {
     if (Platform.OS === "web") {
@@ -15,8 +17,19 @@ export function playReelVideo(
         | null
         | undefined;
       if (!video) return;
+      const fail = (error: unknown) => {
+        if (isCurrent() && (error as { name?: string })?.name !== "AbortError") onFailure();
+      };
       void video.play().catch((error: unknown) => {
-        if ((error as { name?: string })?.name !== "AbortError") onFailure();
+        if (!isCurrent()) return;
+        if ((error as { name?: string })?.name === "NotAllowedError" && !video.muted && onAutoplayMuted) {
+          // Browsers can block audible autoplay even though native allows it.
+          player.muted = true;
+          video.muted = true;
+          onAutoplayMuted();
+          return video.play().catch(fail);
+        }
+        fail(error);
       });
     } else player.play();
   } catch {

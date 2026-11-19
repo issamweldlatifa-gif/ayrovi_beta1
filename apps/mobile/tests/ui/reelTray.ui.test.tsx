@@ -206,6 +206,36 @@ describe('Reel — tiroir des articles', () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
+  it('starts the fullscreen Reel with sound and lets the customer mute or unmute', () => {
+    renderCard({}, { width: 360, height: 800 });
+    const sound = () => screen.getByTestId('reel-rail-sound-r1');
+    expect(sound().props.accessibilityLabel).toBe('Couper le son');
+    fireEvent.press(sound());
+    expect(sound().props.accessibilityLabel).toBe('Activer le son');
+    fireEvent.press(sound());
+    expect(sound().props.accessibilityLabel).toBe('Couper le son');
+  });
+
+  it('shares the viewer sound choice across cards without resetting it', () => {
+    const first = reel({ id: 'first' }), second = reel({ id: 'next' });
+    const fill = { width: 360, height: 800 }, onOpenComments = jest.fn();
+    function ViewerAudio() {
+      const [soundOn, setSoundOn] = React.useState(true);
+      return <>
+        <ReelCard reel={first} active fill={fill} onOpenComments={onOpenComments} soundOn={soundOn} onSoundChange={setSoundOn} />
+        <ReelCard reel={second} active={false} preload fill={fill} onOpenComments={onOpenComments} soundOn={soundOn} onSoundChange={setSoundOn} />
+      </>;
+    }
+    render(wrap(<ViewerAudio />));
+    const firstSound = () => screen.getByTestId('reel-rail-sound-first');
+    const nextSound = () => screen.getByTestId('reel-rail-sound-next');
+    fireEvent.press(firstSound());
+    expect(firstSound().props.accessibilityLabel).toBe('Activer le son');
+    expect(nextSound().props.accessibilityLabel).toBe('Activer le son');
+    fireEvent.press(firstSound());
+    expect(nextSound().props.accessibilityLabel).toBe('Couper le son');
+  });
+
   it('keeps share, sound and options available on a fullscreen Reel with no products', () => {
     renderCard({ product: null, products: [] }, { width: 320, height: 640 });
     expect(screen.queryByTestId('reel-tray-toggle-r1')).toBeNull();

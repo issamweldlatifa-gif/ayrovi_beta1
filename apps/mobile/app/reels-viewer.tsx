@@ -70,6 +70,8 @@ export default function ReelsViewerScreen() {
   const [activeId, setActiveId] = useState<string | null>(id ?? null);
   const [commentsFor, setCommentsFor] = useState<Reel | null>(null);
   const [infoFor, setInfoFor] = useState<Reel | null>(null);
+  // A fresh fullscreen visit starts audible; muting applies to this whole visit.
+  const [soundOn, setSoundOn] = useState(true);
   // Cold links / removed or unknown IDs still select the first available real Reel.
   const playingId = rows.some((reel) => reel.id === activeId)
     ? activeId
@@ -108,9 +110,9 @@ export default function ReelsViewerScreen() {
   const renderItem = useCallback(({ item, index }: { item: Reel; index: number }) => (
     <ReelCard reel={item} active={live && playingId === item.id}
       preload={live && index === visibleIndex + 1}
-      suspended={Boolean(commentsFor || infoFor)}
+      suspended={Boolean(commentsFor || infoFor)} soundOn={soundOn} onSoundChange={setSoundOn}
       counts={counts.data?.[item.id]} onOpenComments={setCommentsFor} fill={fill} />
-  ), [live, commentsFor, infoFor, playingId, visibleIndex, counts.data, fill]);
+  ), [live, commentsFor, infoFor, playingId, visibleIndex, counts.data, fill, soundOn]);
   useEffect(() => {
     if (previousHeight.current !== height) {
       previousHeight.current = height;
@@ -143,7 +145,7 @@ export default function ReelsViewerScreen() {
         // (mémoire et composition GPU allégées). iOS garde son rendu : le
         // détachement y peut laisser un VideoView noir au retour.
         removeClippedSubviews={Platform.OS === "android"}
-        extraData={{ playingId, focused, commentsFor, infoFor, visibleIndex }}
+        extraData={{ playingId, focused, commentsFor, infoFor, visibleIndex, soundOn }}
         onEndReached={() => { if (reels.hasNextPage && !reels.isFetching && !reels.isFetchNextPageError) void reels.fetchNextPage(); }}
         onEndReachedThreshold={0.5}
         ListFooterComponent={<ReelPageFooter query={reels} onMedia />}

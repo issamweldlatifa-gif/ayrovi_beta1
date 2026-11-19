@@ -63,6 +63,8 @@ export interface ReelCardProps {
    * met seulement en pause — fermer la feuille ne recharge plus la vidéo.
    */
   suspended?: boolean;
+  soundOn?: boolean;
+  onSoundChange?: (on: boolean) => void;
   counts?: { likes: number; loves?: number; comments: number; views: number; shares: number };
   onOpenComments: (reel: Reel) => void;
   /**
@@ -77,6 +79,8 @@ export const ReelCard = memo(function ReelCard({
   active,
   preload = false,
   suspended = false,
+  soundOn: viewerSoundOn,
+  onSoundChange,
   counts,
   onOpenComments,
   fill,
@@ -116,7 +120,10 @@ export const ReelCard = memo(function ReelCard({
   const [auth, setAuth] = useState(false);
   const [error, setError] = useState("");
   const [paused, setPaused] = useState(false);
-  const [soundOn, setSoundOn] = useState(false);
+  const [localSoundOn, setLocalSoundOn] = useState(Boolean(fill));
+  const soundOn = viewerSoundOn ?? localSoundOn;
+  const setSoundOn = onSoundChange ?? setLocalSoundOn;
+  const muteAfterAutoplayBlock = useCallback(() => setSoundOn(false), [setSoundOn]);
   const favourites = useProductFavorites(
     fill ? signedIn : false,
     session.account?.id || ""
@@ -176,6 +183,7 @@ export const ReelCard = memo(function ReelCard({
           paused={paused}
           onPausedChange={setPaused}
           soundOn={soundOn}
+          onAutoplayMuted={fill ? muteAfterAutoplayBlock : undefined}
           showPauseGlyph={Boolean(fill)}
           blocked={options || auth || suspended}
           preload={!active}
@@ -341,7 +349,7 @@ export const ReelCard = memo(function ReelCard({
           viewportWidth={fill.width}
           rail={{
             muted: !soundOn,
-            onToggleMute: () => setSoundOn((value) => !value),
+            onToggleMute: () => setSoundOn(!soundOn),
             onShare: shareWithFeedback,
             onOptions: () => setOptions(true),
           }}
@@ -383,6 +391,8 @@ export const ReelCard = memo(function ReelCard({
   && previous.active === next.active
   && previous.preload === next.preload
   && previous.suspended === next.suspended
+  && previous.soundOn === next.soundOn
+  && previous.onSoundChange === next.onSoundChange
   && previous.onOpenComments === next.onOpenComments
   && Boolean(previous.fill) === Boolean(next.fill)
   && previous.fill?.width === next.fill?.width

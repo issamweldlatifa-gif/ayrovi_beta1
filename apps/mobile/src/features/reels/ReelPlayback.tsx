@@ -23,9 +23,10 @@ import { REEL_LOAD_DEADLINE_MS, useReelPlaybackStatus } from './useReelPlaybackS
 /** Attente RÉELLE avant de montrer quoi que ce soit : un chargement normal reste invisible. */
 export const REEL_BUFFER_HINT_MS = 700;
 
-export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked, contentFit = 'contain', onVideoViewReady, preload = false, onDoubleTap, showPauseGlyph = false }: {
+export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked, contentFit = 'contain', onVideoViewReady, preload = false, onDoubleTap, onAutoplayMuted, showPauseGlyph = false }: {
   id: string; uri: string; paused: boolean; onPausedChange: (paused: boolean) => void;
   showPauseGlyph?: boolean;
+  onAutoplayMuted?: () => void;
   soundOn: boolean; blocked: boolean; contentFit?: 'cover' | 'contain';
   /** Expose la VideoView à l'appelant (plein écran natif, mesures). */
   onVideoViewReady?: (view: VideoView | null) => void;
@@ -73,13 +74,16 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
     const timer = setTimeout(playback.reportError, REEL_LOAD_DEADLINE_MS);
     return () => clearTimeout(timer);
   }, [firstFrame, paused, blocked, foreground, playback.status, playback.reportError]);
+  // Keep preloads silent, and apply the active mute state before the first play().
+  useEffect(() => { if (player) player.muted = preload || !soundOn; }, [player, soundOn, preload]);
   useEffect(() => {
     if (!player) return;
+    let current = true;
     if (!preload && playback.status === 'readyToPlay' && !paused && foreground && !blocked)
-      playReelVideo(player, view.current, playback.reportError);
+      playReelVideo(player, view.current, playback.reportError, onAutoplayMuted, () => current);
     else player.pause();
-  }, [player, playback.status, playback.reportError, paused, foreground, blocked, preload]);
-  useEffect(() => { if (player) player.muted = !soundOn; }, [player, soundOn]);
+    return () => { current = false; };
+  }, [player, playback.status, playback.reportError, paused, foreground, blocked, preload, onAutoplayMuted]);
   const waiting = !preload && foreground && !paused && !blocked && (playback.status === 'loading' || playback.status === 'idle' || (!firstFrame && playback.status === 'readyToPlay'));
   useEffect(() => {
     setShowLoading(false);
