@@ -158,7 +158,7 @@ jest.mock('@/api/aywebs', () => {
 });
 
 function Providers({ children }: { children: React.ReactNode }) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } });
   return (
     <SafeAreaProvider
       initialMetrics={{
@@ -258,6 +258,8 @@ describe('Refonte du 29/10/2026 — Panier officiel, Fiche réservation 20 min e
     );
 
     await waitFor(() => expect(screen.getByTestId('product-add-to-cart')).toBeTruthy());
+    // Une réponse commerciale ancienne ne doit ni faire planter la fiche, ni annoncer un moyen non confirmé.
+    expect(screen.queryByText('Pas de paiement à la livraison.')).toBeNull();
 
     // Clic sur « Ajouter au panier » sans taille choisie -> ouvre automatiquement la feuille Taille
     await act(async () => {

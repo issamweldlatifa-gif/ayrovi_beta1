@@ -88,7 +88,7 @@ jest.mock('../../src/api/checkout', () => ({
     deliveryDelay: '5 à 8 jours ouvrés',
     returnWindowDays: 31,
     governorates: [],
-    paymentMethods: [],
+    paymentMethods: ['CARD'],
     depositPercent: 0,
     depositReviewDelayDays: 0,
     unavailableRefundPolicy: '',
@@ -141,6 +141,12 @@ describe('écran produit — aucun plantage au montage', () => {
     expect(screen.getByTestId('product-photo-window')).toBeTruthy();
     expect(screen.getByTestId('product-size-row')).toBeTruthy();
     view.unmount();
+  });
+
+  it('annonce le prépaiement lorsque les moyens publiés excluent le paiement à la livraison', async () => {
+    require('./productFixture').setProduct(product);
+    const view = await mount();
+    expect(await view.findByText('Pas de paiement à la livraison.')).toBeTruthy();
   });
 
   it('demande une variante compatible, ajoute une fois et ouvre le panier réservé existant', async () => {

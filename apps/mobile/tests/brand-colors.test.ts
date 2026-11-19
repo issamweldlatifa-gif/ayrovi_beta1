@@ -457,6 +457,7 @@ describe('jaune réservé à l’achat, tout le reste à l’encre', () => {
       'src/features/lens/ocerex/OcerexFlow.tsx': 1,     // confirmer la commande OCEREX
       'src/features/product/ProductFiche.tsx': 1,       // ajouter au panier (fiche)
       'src/features/shopping/OfficialCartView.tsx': 1,  // Commander (panier)
+      'src/features/social-commerce/LookSelectionSheet.tsx': 1, // confirmer l’ajout des articles du look
       'src/design/ui.tsx': 1,                           // PurchaseBar elle-même (ton commerce)
     });
   });

@@ -347,6 +347,8 @@ export default function ProductScreen() {
   /** Livraison : la date est calculée à partir du délai publié par le CRM. */
   const deliveryDates = policy.data ? deliveryWindow(policy.data.deliveryDelay, new Date(), locale) : null;
   const deliveryLines = deliveryDates ? [`${deliveryDates.from} - ${deliveryDates.to}`] : [];
+  const paymentMethods = policy.data?.paymentMethods;
+  const prepaidOnly = Array.isArray(paymentMethods) && paymentMethods.length > 0 && !paymentMethods.includes('COD');
   const returnLines = policy.data?.returnsDays
     ? [t('product.returnsWindow', { days: policy.data.returnsDays })]
     : [];
@@ -475,7 +477,7 @@ export default function ProductScreen() {
           iconColor={theme.status.success.fg}
           lines={deliveryLines}
         />
-        {policy.data && !policy.data.paymentMethods.includes('COD') ? (
+        {prepaidOnly ? (
           <InfoRow icon="card-outline" title={t('product.prepaid')} lines={[t('product.noCod')]} />
         ) : null}
         {returnLines.length > 0 ? (

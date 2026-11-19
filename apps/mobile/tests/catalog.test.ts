@@ -124,7 +124,8 @@ describe('صفحة المنتوج — قرار موثّق', () => {
     expect(source).toContain('requestedSize: selection.size || undefined');
     expect(source).toContain('requestedColor: selection.color || undefined');
     // L'écran envoie EXACTEMENT le choix affiché (taille unique comprise).
-    expect(source).toContain('mutate({ size: chosenSize, color: chosenColor })');
+    expect(source).toContain('addOnce({ size: chosenSize, color: chosenColor })');
+    expect(source).toContain('addToCart.mutate(selection)');
     expect(source).toContain('variantChoiceState');
   });
 
