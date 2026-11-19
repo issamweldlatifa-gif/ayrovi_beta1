@@ -66,11 +66,11 @@ describe('phase 4 — barre Publication et feuille de commentaires', () => {
     expect(screen).toMatch(/rows\.map\(\(row\) => row\.id\)/);
   });
 
-  it('15/11 : rangée d’icônes 28 (« un peu plus grandes ») + signet, cibles ≥ 44 dp, rangée miroir en arabe', () => {
+  it('rangée avec option compacte + signet, cibles ≥ 44 dp, rangée miroir en arabe', () => {
     expect(engagement).toMatch(/export const PUBLICATION_BAR_HEIGHT = 52;/);
     expect(engagement).toMatch(/const BAR_TARGET_PAD = 8;/);
     expect(engagement).toMatch(/action: \{ minWidth: 44, minHeight: 44/);
-    expect(engagement).toContain('const icon = PUBLICATION_METRICS.actionIcon;');
+    expect(engagement).toContain('const icon = compact ? 20 : PUBLICATION_METRICS.actionIcon;');
     expect(code('src/design/tokens.mobile.ts')).toMatch(/PUBLICATION_METRICS = \{[^}]*actionIcon: 28/);
     expect(engagement).toContain('rowDirectionFor(theme.isRTL)');
     for (const id of ['publication-like-', 'publication-comment-', 'publication-share-', 'publication-save-']) expect(engagement).toContain(id);

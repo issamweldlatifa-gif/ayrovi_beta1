@@ -1,4 +1,5 @@
 /** Publication-only visual model. Never import from product/cart/payment features. */
+import { EDITORIAL_FEED } from '../../../../../shared/publicationEditorial';
 import type { ComponentProps } from 'react';
 import { Platform, StyleSheet, View, type TextStyle } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -160,8 +161,7 @@ export function PublicationSponsored({ color, testID }: { color: string; testID?
   const t = useT();
   const { locale } = useI18n();
   return (
-    <View testID={testID} style={sponsoredStyles.row}>
-      {/* 14/11 GBox : « Sponsored » 14/20 en Zalando Sans régulier. */}
+    <View testID={testID} style={[sponsoredStyles.row, locale === 'ar' && sponsoredStyles.rtl]}>
       <PublicationText
         variant="caption"
         color={color}
@@ -177,5 +177,6 @@ export function PublicationSponsored({ color, testID }: { color: string; testID?
 
 const sponsoredStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  text: { fontSize: PUBLICATION_TYPE.cardSponsoredSize, lineHeight: PUBLICATION_TYPE.cardSponsoredLine },
+  rtl: { flexDirection: 'row-reverse' },
+  text: { fontSize: EDITORIAL_FEED.sponsor, lineHeight: EDITORIAL_FEED.sponsorLine },
 });

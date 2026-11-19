@@ -1,25 +1,6 @@
-/**
- * Carte produit des blocs Publication — planches GBox du 14/11 (Vans 224048,
- * WE Fashion 224107), relevées au pixel (720 px = 360 dp) :
- *
- *   ╭────────────────────╮
- *   │                 ♡  │  ← 13/11 : cœur NU (trait fin 18 dp, cible 40) — plus de rond blanc sur la photo
- *   │     photo ENTIÈRE  │  ← cadre gris clair, rayon 12, photo en `contain`
- *   │ [Nouveau]          │  ← pastille blanche (produit récent du CRM seulement)
- *   ╰────────────────────╯
- *   Sponsorisé ⓘ           14/20, encre secondaire
- *   Marque                 16/20 GRAS
- *   NOM DU PRODUIT…        16/18 régulier, une ligne
- *   26,00 TND              16/22 régulier
- *   ̶3̶2̶,̶0̶0̶ ̶T̶N̶D̶             13/11 : l'ancien prix sur SA ligne (14/18, gris barré) —
- *                          il ne colle plus au prix et n'est plus coupé « 1357.… »
- *
- * Le même composant sert les TROIS modèles (container, media, duo) : une seule
- * carte, largeur du système de cartes (`src/design/cardSystem.ts`). Le cœur est réel
- * (`PublicationFavorites`) ; sans fournisseur (aperçu isolé) il n'est pas dessiné.
- */
+import { EDITORIAL_FEED, EDITORIAL_CAMPAIGN } from '../../../../../../shared/publicationEditorial';
 import { memo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { mediaUrl } from '@/api/client';
 import type { LinkedProduct } from '@/api/linkedProduct';
@@ -71,6 +52,8 @@ function BlockProductCardComponent({
   testID,
   reserveReference = false,
   compact = false,
+  photoOnly = false,
+  railTileStyle,
 }: {
   product: LinkedProduct;
   width: number;
@@ -82,6 +65,8 @@ function BlockProductCardComponent({
   /** Une voisine a un ancien prix : la ligne est réservée pour garder les cartes alignées. */
   reserveReference?: boolean;
   compact?: boolean;
+  photoOnly?: boolean;
+  railTileStyle?: ViewStyle;
 }) {
   const theme = useTheme();
   const t = useT();
@@ -91,17 +76,17 @@ function BlockProductCardComponent({
   const label = t('publication.productLabel', { brand: product.brand || '', name: product.name, price }).trim();
   const regular = publicationBlockFont(locale, 'regular');
   return (
-    <View style={{ width }}>
+    <View style={[{ width }, railTileStyle]}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={label}
+        accessibilityLabel={photoOnly ? [product.brand, product.name].filter(Boolean).join(' ') : label}
         testID={testID}
         onPress={() => onOpen(product.id)}
         style={({ pressed }) => (pressed ? { opacity: theme.opacity.subtle } : null)}
       >
-        <View testID={`${testID}-frame`} style={[styles.frame, { height: imageHeight }]}>
+        <View testID={`${testID}-frame`} style={[styles.frame, { height: imageHeight, borderRadius: photoOnly ? EDITORIAL_FEED.radius : EDITORIAL_CAMPAIGN.radius }]}>
           <AppImage uri={mediaUrl(product.image)} decorative background={P.neutral} contentFit="contain" style={styles.fill} />
-          {product.isNew ? (
+          {product.isNew && !photoOnly ? (
             <View testID={`${testID}-new`} style={[styles.badge, theme.isRTL ? styles.badgeRTL : styles.badgeLTR]}>
               <PublicationText variant="body" color={P.ink} numberOfLines={1} style={[styles.badgeText, { fontFamily: regular }]}>
                 {t('publication.newBadge')}
@@ -109,7 +94,7 @@ function BlockProductCardComponent({
             </View>
           ) : null}
         </View>
-        <View style={styles.text}>
+        {!photoOnly ? <View style={styles.text}>
           {sponsored ? <PublicationSponsored color={inks.muted} /> : null}
           {product.brand ? (
             <PublicationText
@@ -141,7 +126,7 @@ function BlockProductCardComponent({
           ) : reserveReference ? (
             <View testID={`${testID}-reference-slot`} style={[styles.referenceSlot, compact && styles.compactReferenceSlot]} />
           ) : null}
-        </View>
+        </View> : null}
       </Pressable>
       <BlockHeart product={product} testID={`${testID}-heart`} />
     </View>

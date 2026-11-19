@@ -32,7 +32,7 @@ describe('1 — système d’espacement RHYTHM', () => {
   it('Publication : la barre colle à son bloc, le blanc sépare les blocs (proximité)', async () => {
     const { PUBLICATION_TEMPLATE: T } = await import('../src/features/publications/templates/templateMetrics');
     expect(T.barTop).toBe(4);
-    expect(T.blockSpacing).toBe(32);
+    expect(T.blockSpacing).toBe(24);
     expect(T.blockSpacing).toBeGreaterThan(T.barTop * 4);
     expect(read('src/features/publications/publicationTokens.ts')).toMatch(/cardTextTop: 12,/);
   });

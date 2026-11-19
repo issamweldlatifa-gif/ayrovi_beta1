@@ -1,3 +1,4 @@
+import { publicationImageFormat } from '../../../../shared/publicationEditorial';
 /**
  * Blocs de la page Publication (modèles composés dans le CRM, 13/11/2026).
  * Contrat : `shared/publicationBlocks.ts` — lecture `GET /api/public/social/publication-blocks`.
@@ -36,7 +37,7 @@ export function parsePublicationBlock(value: unknown): PublicationBlock | null {
   const rawMedia = row.media as Record<string, unknown> | null | undefined;
   const mediaUrl = str(rawMedia?.url).trim();
   const mediaType: 'image' | 'video' | null = rawMedia?.type === 'video' ? 'video' : rawMedia?.type === 'image' ? 'image' : null;
-  const media = mediaUrl && mediaType ? { type: mediaType, url: mediaUrl, poster: str(rawMedia?.poster).trim() } : null;
+  const media = mediaUrl && mediaType ? { type: mediaType, url: mediaUrl, poster: str(rawMedia?.poster).trim(), ...(rawMedia?.format ? { format: publicationImageFormat(rawMedia.format) } : {}) } : null;
   const products = (Array.isArray(row.products) ? row.products : [])
     .map(parseLinkedProduct)
     .filter((product): product is LinkedProduct => product !== null);
@@ -45,6 +46,8 @@ export function parsePublicationBlock(value: unknown): PublicationBlock | null {
     kind,
     title,
     subtitle: str(row.subtitle).trim(),
+    ...(typeof row.updatedAt === 'string' && Number.isFinite(Date.parse(row.updatedAt)) ? { updatedAt: row.updatedAt } : {}),
+    ...(typeof row.description === 'string' ? { description: row.description.trim() } : {}),
     bgColor,
     panelColor: normalizeHexColor(row.panelColor) ?? bgColor,
     sponsored: row.sponsored === true,
@@ -73,4 +76,10 @@ export function parsePublicationBlocks(value: unknown): PublicationBlock[] {
 
 export async function fetchPublicationBlocks(options?: RequestOptions): Promise<PublicationBlock[]> {
   return parsePublicationBlocks(await apiGetData<unknown>('/api/public/social/publication-blocks', options));
+}
+
+export async function fetchPublicationCollection(id: string, options?: RequestOptions): Promise<PublicationBlock> {
+  const block = parsePublicationBlock(await apiGetData<unknown>(`/api/public/social/publication-blocks/${encodeURIComponent(id)}`, options));
+  if (!block || block.kind !== 'media') throw new ApiError('malformed', 'Invalid publication collection');
+  return block;
 }

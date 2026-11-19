@@ -6,18 +6,18 @@
  * Module PUR : l'encre et le papier sont passés par l'appelant (jetons
  * Publication), aucune couleur n'est écrite ici.
  */
-import { isNearWhite, mixColor, readableInk } from '../../../../../../shared/publicationBlocks';
+import { isNearWhite, publicationMutedInk, readableInk } from '../../../../../../shared/publicationBlocks';
 
 export interface BlockInks {
   /** Texte principal (titre, marque, prix). */
   ink: string;
-  /** Texte secondaire (« Sponsorisé », éditeur) : 35 % du fond dans l'encre. */
+  /** Texte secondaire (« Sponsorisé », éditeur) : contraste AA maintenu. */
   muted: string;
 }
 
 export function blockInks(background: string, ink: string, paper: string): BlockInks {
   const main = readableInk(background, ink, paper);
-  return { ink: main, muted: mixColor(main, background, 0.35) };
+  return { ink: main, muted: publicationMutedInk(background, main) };
 }
 
 /** Un fond blanc n'ajoute pas de marge colorée autour du bloc. */

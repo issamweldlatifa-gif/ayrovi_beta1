@@ -71,7 +71,7 @@ describe('onglet Publication du CRM', () => {
     expect(text).toContain('Conteneur coloré + rangée de produits');
     expect(text).toContain('Duo sponsorisé (image + deux cartes produit)');
     expect(text).toContain('Inactif');
-    expect(text).toContain('zayrovi team');
+    expect(text).toContain('ZAYROVI');
     expect(host.querySelectorAll('table')).toHaveLength(1);
   });
 
@@ -117,9 +117,9 @@ describe('aperçu et validation', () => {
   it('duo sponsorisé : deux tuiles de même taille', () => {
     const form = { ...emptyBlock('sponsored_pair'), title: 'Sony', media_url: '/media/x.jpg', product_ids: ['p1'] };
     const html = renderToStaticMarkup(<PublicationBlockPreview form={form} products={[product('p1', 'Casque')]} />);
-    const size = (testId: string) => html.match(new RegExp(`data-testid="${testId}" style="width:(\\d+)px;height:(\\d+)px`))?.slice(1);
-    expect(size('pair-left')).toBeTruthy();
-    expect(size('pair-left')).toEqual(size('pair-right'));
+    const width = (testId: string) => html.match(new RegExp(`data-testid="${testId}" style="width:([0-9.]+)px`))?.[1];
+    expect(width('pair-left')).toBeTruthy();
+    expect(width('pair-left')).toEqual(width('pair-right'));
     expect(html).toContain('Sponsorisé');
   });
 

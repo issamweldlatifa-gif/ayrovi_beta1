@@ -790,6 +790,14 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, data: readPublicBlocks(db) });
   });
+  router.get('/social/publication-blocks/:id', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const id = req.params.id;
+    const block = /^[\w-]{1,120}$/.test(id) ? readPublicBlocks(db, new Date(), id)[0] : null;
+    if (!block || block.kind !== 'media') return res.status(404).json({ success: false, error: 'Collection introuvable.' });
+    res.json({ success: true, data: block });
+  });
+
   router.get('/social/publication-feed-settings', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, data: readPublicationFeedSettings(db) });

@@ -1,3 +1,4 @@
+import type { PublicationImageFormat } from './publicationEditorial';
 /**
  * MODÈLES DE PUBLICATION (refonte du 13/11/2026).
  *
@@ -47,6 +48,7 @@ export const PUBLICATION_PUBLISHER_ID = 'pub_zayrovi';
 export const PUBLICATION_BLOCK_LIMITS = {
   title: 80,
   subtitle: 120,
+  description: 2400,
   /** Nombre maximal de blocs actifs renvoyés par la lecture publique. */
   publicBlocks: 40,
   products: {
@@ -60,6 +62,7 @@ export const PUBLICATION_BLOCK_LIMITS = {
 } as const satisfies {
   title: number;
   subtitle: number;
+  description: number;
   publicBlocks: number;
   products: Record<PublicationBlockKind, { min: number; max: number }>;
 };
@@ -151,6 +154,16 @@ export function readableInk(background: string, dark: string, light: string): st
   return contrastRatio(background, dark) >= contrastRatio(background, light) ? dark : light;
 }
 
+/** Preserve WCAG AA contrast for small campaign copy on arbitrary CRM colors. */
+export function publicationMutedInk(background: string, ink: string): string {
+  for (const amount of [0.35, 0.25, 0.15, 0.05]) {
+    const tone = mixColor(ink, background, amount);
+    if (contrastRatio(tone, background) >= 4.5) return tone;
+  }
+  return ink;
+}
+
+
 /**
  * Panneau du modèle `container` quand le CRM ne fixe pas sa couleur : même
  * teinte que le bandeau, éclaircie sur un fond clair (planche Vans : #F2AD11 →
@@ -178,6 +191,8 @@ export interface PublicationBlockInput {
   panel_color: string;
   sponsored: boolean;
   media_type: PublicationBlockMediaType | '';
+  image_format?: PublicationImageFormat;
+  collection_description?: string;
   media_url: string;
   poster_url: string;
   product_ids: string[];
@@ -235,6 +250,7 @@ export function normalizePublicationBlockInput(
   const title = text(pick('title'), PUBLICATION_BLOCK_LIMITS.title);
   if (title.length < 2) return { ok: false, error: 'Le titre est obligatoire (2 caractères minimum).' };
   const subtitle = text(pick('subtitle'), PUBLICATION_BLOCK_LIMITS.subtitle);
+  const description = pick('collection_description');
 
   const rawColor = pick('bg_color');
   const bg = rawColor === undefined || rawColor === '' ? PUBLICATION_BLOCK_DEFAULT_COLOR[kind] : normalizeHexColor(rawColor);
@@ -262,6 +278,8 @@ export function normalizePublicationBlockInput(
   if ((kind === 'media' || kind === 'sponsored_pair' || kind === 'cinema') && !mediaUrl) {
     return { ok: false, error: kind === 'media' ? 'Ajoutez une image ou une vidéo.' : kind === 'cinema' ? 'Ajoutez la vidéo du bloc.' : 'Ajoutez l’image de la carte sponsorisée.' };
   }
+  const format = kind === 'media' && mediaType === 'image' ? pick('image_format') : undefined;
+  if (format !== undefined && format !== 'cover' && format !== 'wide') return { ok: false, error: 'Format d’image inconnu.' };
   let posterUrl = '';
   const posterInput = mediaType === 'video' ? pick('poster_url') : '';
   if (posterInput !== undefined && posterInput !== null && String(posterInput).trim()) {
@@ -287,10 +305,12 @@ export function normalizePublicationBlockInput(
       kind,
       title,
       subtitle,
+      collection_description: kind === 'media' ? (typeof description === 'string' ? description.trim().slice(0, PUBLICATION_BLOCK_LIMITS.description) : '') : '',
       bg_color: bg,
       panel_color: panel,
       sponsored: bool(pick('sponsored'), kind === 'sponsored_pair'),
       media_type: mediaType,
+      image_format: format === 'wide' ? 'wide' : 'cover',
       media_url: mediaUrl,
       poster_url: posterUrl,
       product_ids: productIds,
@@ -326,7 +346,9 @@ export interface PublicationBlockPublic {
   /** Panneau du `container` (déjà résolu : saisi ou calculé). */
   panelColor: string;
   sponsored: boolean;
-  media: { type: PublicationBlockMediaType; url: string; poster: string } | null;
+  updatedAt?: string;
+  description?: string;
+  media: { type: PublicationBlockMediaType; url: string; poster: string; format?: PublicationImageFormat } | null;
   products: PublicationBlockProduct[];
   publisher: { id: string; name: string };
 }

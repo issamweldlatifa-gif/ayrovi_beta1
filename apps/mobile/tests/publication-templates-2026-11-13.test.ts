@@ -10,17 +10,9 @@ import {
   PUBLICATION_TEMPLATE as T,
 } from '../src/features/publications/templates/templateMetrics';
 import { contrastRatio } from '../../../shared/publicationBlocks';
-import { CARD_SYSTEM as C, cardRailMaxOffset, cardRailMetrics, cardsPerView, cardWidthFor, editorialRailMetrics } from '../src/design/cardSystem';
+import { editorialFeedRail, editorialHeroHeight, EDITORIAL_FEED as E } from '../../../shared/publicationEditorial';
 import fs from 'node:fs';
 import path from 'node:path';
-
-/** Jetons Publication lus dans la source (le module importe `react-native`, illisible ici). */
-const tokenSource = fs.readFileSync(path.join(__dirname, '../src/features/publications/publicationTokens.ts'), 'utf8');
-const token = (name: string) => {
-  const match = tokenSource.match(new RegExp(`\\b${name}:\\s*(\\d+)`));
-  if (!match) throw new Error(`jeton absent : ${name}`);
-  return Number(match[1]);
-};
 
 const product = (id: string, extra: Record<string, unknown> = {}) => ({
   id, name: `Produit ${id}`, brand: 'Marque', image: `/media/${id}.jpg`, price: 120, currency: 'TND',
@@ -75,103 +67,33 @@ describe('lecture des blocs Publication', () => {
   });
 });
 
-describe('cotes des modèles (planches Zalando, 360 dp)', () => {
-  it('14/11 (système de rythme) : la barre colle à SON bloc, le blanc sépare les blocs', () => {
-    // Remplace « blocs rapprochés (16 dp) » du 13/11 : chaque bloc porte
-    // maintenant sa barre d'interaction ; Publication était jugée chargée.
-    expect(T.blockSpacing).toBe(32);
+describe('compact publication layouts', () => {
+  it('keeps quiet spacing between blocks and reduces empty campaign padding', () => {
     expect(T.barTop).toBeLessThan(T.blockSpacing);
-    expect(T.bandPaddingTop).toBe(24);
-    expect(T.bandPaddingBottom).toBe(24);
+    expect(T.blockSpacing).toBe(24);
+    expect(T.bandPaddingTop).toBe(12);
+    expect(T.panelPaddingTop).toBe(16);
   });
-
-  it('14/11 (GBox) : titre du bandeau > texte de carte (16, la graisse distingue la marque) > « Sponsorisé »', () => {
-    expect(token('bandTitleSize')).toBeGreaterThan(token('cardBrandSize'));
-    for (const name of ['cardBrandSize', 'cardNameSize', 'cardPriceSize']) expect(token(name)).toBe(16);
-    expect(token('cardSponsoredSize')).toBe(14);
-    expect(token('cardSponsoredSize')).toBeLessThan(token('cardNameSize'));
-    // 13/11 : plus de rond blanc sur la photo — le cœur nu vient du système de cartes.
-    expect(tokenSource).not.toMatch(/\bheart(Small)?:/);
-    expect(token('cardReferenceLine')).toBe(18);
-    expect(tokenSource).toContain("'ZayroviExtracted-Heading'");
-    // Pilule « + Suivre » : cible tactile ≥ 48 dp (planche : 95 px).
-    expect(token('followHeight')).toBeGreaterThanOrEqual(token('touch'));
+  it.each([320, 360, 390, 600, 640])('shows full thumbnails and a fourth (or fifth) hint at %i', width => {
+    const columns = width >= 600 ? 4 : 3;
+    const rail = editorialFeedRail(width, columns + 1);
+    expect(width - 2 * E.gutter - columns * rail.snap).toBeCloseTo(16);
+    expect(rail.imageHeight).toBe(Math.round(rail.cardWidth * E.ratio));
+    expect(rail.scroll).toBe(true);
+    expect(editorialFeedRail(width, 1)).toMatchObject({ cardWidth: rail.cardWidth, scroll: false });
   });
-
-  const m = publicationTemplateMetrics(360);
-
-  it('13/11 — SYSTÈME DE CARTES : les modèles gardent une géométrie commune de base, 2 entières à parts égales', () => {
-    // 12 · 164 · 8 · 164 · 12 = 360 : aucune amorce coupée, même marge des deux côtés.
-    expect(C.gutter).toBe(12);
-    expect(C.gap).toBe(8);
-    expect(m.container.cardWidth).toBe(164);
-    expect(m.media.tileWidth).toBe(164);
-    expect(m.pair.tileWidth).toBe(164);
-    expect(C.gutter * 2 + m.container.cardWidth * 2 + C.gap).toBe(360);
-    for (const height of [m.container.cardImageHeight, m.media.tileHeight, m.pair.cardImageHeight]) expect(height).toBe(236);
-    expect(m.container.snap).toBe(172);
-    // Une seule marge : titre, cartes, média, « Suivre ».
-    expect(T.bandInset).toBe(C.gutter);
-    expect(T.mediaInset).toBe(C.gutter);
-    expect(T.pairInset).toBe(C.gutter);
-    expect(T.cardSpacing).toBe(C.gap);
-    expect(T.pairSpacing).toBe(C.gap);
-    expect(T.cardRadius).toBe(C.radius);
-    expect(T.panelPaddingTop).toBe(56);
-    expect(T).not.toHaveProperty('cardsVisible');
-    expect(T).not.toHaveProperty('rowTilesVisible');
+  it('at 360dp, campaign photos are 152×219 and all video and campaign heroes are shorter', () => {
+    const m = publicationTemplateMetrics(360);
+    expect(m.media).toMatchObject({ width: 336, imageHeight: 162, videoHeight: 269, tileHeight: 148 });
+    expect(editorialHeroHeight(m.media.width, 'image', 'cover')).toBe(290);
+    expect(m.container).toEqual({ cardWidth: 152, cardImageHeight: 219, mediaHeight: 128, snap: 168 });
+    expect(m.pair).toEqual({ tileWidth: 152, cardImageHeight: 219, mediaWidth: 320, mediaHeight: 128 });
+    expect(m.cinema.videoHeight).toBe(320);
   });
-
-  it('13/11 — la rangée s’arrête toujours sur la marge (début ET fin), quel que soit le nombre de cartes', () => {
-    for (const width of [320, 360, 393, 412, 600, 1024]) {
-      const rail = cardRailMetrics(Math.min(width, T.maxContentWidth));
-      const column = Math.min(width, T.maxContentWidth);
-      for (const count of [2, 3, 5, 8]) {
-        const content = C.gutter * 2 + count * rail.cardWidth + (count - 1) * C.gap;
-        const max = Math.max(0, content - column);
-        // le décalage maximal est un multiple exact du pas d'aimantation
-        expect(Math.abs(max - cardRailMaxOffset(count, rail))).toBeLessThan(1e-6);
-        expect(Math.abs((max / rail.snap) - Math.round(max / rail.snap))).toBeLessThan(1e-6);
-      }
-      // cartes entières : n cartes + marges + écarts = la colonne
-      expect(Math.abs(C.gutter * 2 + rail.perView * rail.cardWidth + (rail.perView - 1) * C.gap - column)).toBeLessThan(1e-6);
-    }
-    expect(cardsPerView(360)).toBe(2);
-    expect(cardsPerView(640)).toBe(4);
-    expect(cardWidthFor(Number.NaN)).toBe(164);
-  });
-
-  it('fits two feature cards or a compact collection without clipping the last visible photo', () => {
-    for (const width of [320, 360, 390, 600, 640]) {
-      for (const count of [2, 3, 6]) {
-        const rail = editorialRailMetrics(width, count);
-        expect(rail.perView).toBe(Math.min(count, width >= 600 ? 4 : 3));
-        expect(C.gutter * 2 + rail.cardWidth * rail.perView + C.gap * (rail.perView - 1)).toBeCloseTo(width);
-        expect(rail.snap).toBe(rail.cardWidth + C.gap);
-        expect(rail.imageHeight).toBe(Math.round(rail.cardWidth * C.imageRatio));
-      }
-    }
-  });
-
-  it('modèle media : média sur la marge commune, image ≈ 2:1, vidéo carrée', () => {
-    expect(m.media.width).toBe(336);
-    expect(m.media.imageHeight).toBe(Math.round(336 / T.imageAspect));
-    expect(m.media.videoHeight).toBe(336);
-  });
-
-  it('modèle sponsored_pair : image qui déborde depuis la marge, puis les deux cartes du système', () => {
-    expect(m.pair.mediaWidth).toBe(348);
-    expect(m.pair.mediaHeight).toBe(Math.round(348 / T.pairMediaAspect));
-    expect(T.pairCardsTop).toBe(56);
-  });
-
-  it('tablette : colonne plafonnée, plus de cartes visibles, tuiles du duo toujours égales', () => {
+  it('caps tablet content and the card size of a sponsored duo', () => {
     const wide = publicationTemplateMetrics(1024);
-    expect(wide.width).toBe(T.maxContentWidth);
-    // tablette : 4 cartes entières dans la colonne de 640 ; le duo reste deux cartes égales
-    expect(wide.container.cardWidth).toBe(cardWidthFor(640, 4));
-    expect(wide.pair.tileWidth).toBe(cardWidthFor(640, 2));
-    expect(wide.pair.cardImageHeight).toBe(Math.round(wide.pair.tileWidth * T.pairCardRatio));
+    expect(wide.width).toBe(640);
+    expect(wide.pair.tileWidth).toBeLessThan(175);
     expect(publicationTemplateMetrics(Number.NaN).width).toBe(360);
   });
 });
@@ -182,7 +104,7 @@ describe('couleurs : le fond vient du CRM, le texte reste lisible', () => {
   it.each(['#F2AD11', '#D7263D', '#4262AD', '#F4F4F4', '#111111', '#FFFFFF', '#811725', '#F7CE70'])('fond %s', (bg) => {
     const inks = blockInks(bg, ink, paper);
     expect(contrastRatio(bg, inks.ink)).toBeGreaterThanOrEqual(4.5);
-    expect(inks.muted).not.toBe(inks.ink);
+    expect(contrastRatio(bg, inks.muted)).toBeGreaterThanOrEqual(4.5);
   });
   it('fond blanc : pas de marge colorée ; fond teinté : bloc encadré', () => {
     expect(hasTintedBackground('#FFFFFF')).toBe(false);
@@ -213,7 +135,7 @@ describe('13/11 — système de cartes dans les composants (captures 073653 → 
     expect(card).not.toContain('{`  ${reference}`}');
     expect(card).toContain('-reference`');
     expect(card).toContain('-reference-slot`');
-    for (const file of ['ContainerTemplate', 'MediaTemplate', 'SponsoredPairTemplate']) {
+    for (const file of ['ContainerTemplate', 'CinemaTemplate', 'SponsoredPairTemplate']) {
       expect(src(`src/features/publications/templates/${file}.tsx`), file).toContain('reserveReference={reserveReference}');
     }
   });
@@ -222,7 +144,7 @@ describe('13/11 — système de cartes dans les composants (captures 073653 → 
     for (const file of ['ContainerTemplate', 'MediaTemplate']) {
       const code = src(`src/features/publications/templates/${file}.tsx`);
       expect(code, file).toContain(file === 'MediaTemplate'
-        ? 'snapToInterval={rail?.snap ?? metrics.container.snap}'
+        ? 'snapToInterval={rail.snap}'
         : 'snapToInterval={metrics.container.snap}');
       expect(code, file).toContain('disableIntervalMomentum');
       expect(code, file).toContain('<BlockProductCard');

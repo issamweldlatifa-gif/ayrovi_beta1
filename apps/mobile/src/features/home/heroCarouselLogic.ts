@@ -19,17 +19,17 @@
  *   Revenir à la première créerait un saut visible à travers toutes les cartes.
  */
 
-/** Ratio d'affichage des cartes (5:8 : hauteur = largeur × 1,6), proche de la carte Amazon de référence. */
-export const CARD_ASPECT = 5 / 8;
+/** Compact portrait cards: the standard image card is about 333dp tall at a 360dp viewport. */
+export const CARD_ASPECT = 0.8;
 /** Espace entre deux cartes (proportions Amazon : serrées). */
 export const CARD_GAP = 8;
 /** Gouttière aux bords de l'écran : la MÊME valeur que l'espace entre cartes. */
 export const EDGE_GUTTER = CARD_GAP;
 /** Part de l'écran occupée par la carte active. Les voisines se devinent sur les côtés. */
-export const CARD_WIDTH_RATIO = 0.76;
-/** Bornes : sur téléphone étroit (240) et sur tablette (400 — le 4:5 géant n'a pas de sens). */
-export const CARD_MIN_WIDTH = 240;
-export const CARD_MAX_WIDTH = 400;
+export const CARD_WIDTH_RATIO = 0.74;
+/** Bornes : sur téléphone étroit (220) et sur tablette (360). */
+export const CARD_MIN_WIDTH = 220;
+export const CARD_MAX_WIDTH = 360;
 
 export interface CarouselGeometry {
   /** Largeur de la carte. */

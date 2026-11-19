@@ -1,37 +1,17 @@
-/**
- * Modèle `container` — planches « Nike Hybrid RN », « Vans », « The North Face ».
- *
- *   ┌───────────── bandeau (couleur du CRM) ─────────────┐
- *   │ Sponsorisé ⓘ                                        │
- *   │ Titre                       (gros, gras, 2 lignes)  │
- *   │ Sous-titre                                          │
- *   ├────────── image large facultative (même fond) ──────┤
- *   ├──── panneau (teinte voisine, calculée ou du CRM) ───┤
- *   │  [carte][carte][▌    ← rangée de cartes produit     │
- *   │  (Z) zayrovi team                       ( Suivre )  │  ← 15/11 : blanc, pilule transparente
- *   └─────────────────────────────────────────────────────┘
- *
- * 13/11 : « + Suivre » ajouté (consigne du propriétaire), titre agrandi et en
- * gras, bandeau resserré.
- * 14/11 (planche GBox Vans) : cartes `BlockProductCard` — cadre gris arrondi,
- * photo ENTIÈRE, rond blanc du cœur, texte sous le cadre ; titre du bandeau en
- * Zalando Sans « Heading » ; la rangée s'aimante carte par carte.
- * 13/11 (captures 073653/073658) : SYSTÈME DE CARTES — deux cartes ENTIÈRES qui
- * se partagent l'écran à parts égales (12 · carte · 8 · carte · 12) ; titre,
- * cartes et « Suivre » sur la même marge ; la rangée s'arrête toujours sur la
- * marge (aimantation d'une carte, sans élan qui saute une carte).
- */
+import { distinctPublicationSubtitle, EDITORIAL_CAMPAIGN as C } from '../../../../../../shared/publicationEditorial';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { mediaUrl } from '@/api/client';
 import type { PublicationBlock } from '@/api/publicationBlocks';
 import { AppImage } from '@/design/appImage';
+import { useTheme } from '@/design/theme';
 import { useI18n, useT } from '@/i18n';
 import { PublicationFollow } from '../PublicationFollow';
-import { PUBLICATION_PALETTE as P, PUBLICATION_TYPE, PublicationSponsored, PublicationText } from '../publicationDesign';
+import { PUBLICATION_PALETTE as P, PublicationSponsored, PublicationText } from '../publicationDesign';
 import { publicationBlockFont } from '../publicationTokens';
 import { blockInks } from './blockColors';
 import { BlockProductCard } from './BlockProductCard';
+import { publicationRailDirection } from './railDirection';
 import { PUBLICATION_TEMPLATE as T, type PublicationTemplateMetrics } from './templateMetrics';
 
 export function ContainerTemplate({
@@ -44,10 +24,12 @@ export function ContainerTemplate({
   onOpenProduct: (id: string) => void;
 }) {
   const t = useT();
+  const orientation = publicationRailDirection(useTheme().isRTL);
   const { locale } = useI18n();
   const heading = { fontFamily: publicationBlockFont(locale, 'heading') };
   const band = blockInks(block.bgColor, P.ink, P.paper);
   const panel = blockInks(block.panelColor, P.ink, P.paper);
+  const subtitle = distinctPublicationSubtitle(block.title, block.subtitle);
   const label = block.subtitle ? `${block.title}. ${block.subtitle}` : block.title;
   const reserveReference = block.products.some((product) => product.compareAtPrice != null && product.compareAtPrice > product.price);
   return (
@@ -58,15 +40,15 @@ export function ContainerTemplate({
           <PublicationText testID={`publication-block-${block.id}-title`} variant="h2" color={band.ink} numberOfLines={2} style={[styles.title, heading]}>
             {block.title}
           </PublicationText>
-          {block.subtitle ? (
-            <PublicationText variant="h2" color={band.ink} numberOfLines={2} style={[styles.title, heading]}>{block.subtitle}</PublicationText>
+          {subtitle ? (
+            <PublicationText variant="body" color={band.muted} numberOfLines={2} style={styles.subtitle}>{subtitle}</PublicationText>
           ) : null}
         </View>
       </View>
 
       {block.media ? (
         <View style={[styles.mediaBand, { backgroundColor: block.bgColor }]}>
-          <View testID={`publication-block-${block.id}-media`} style={{ height: metrics.container.mediaHeight }}>
+          <View testID={`publication-block-${block.id}-media`} style={[styles.banner, { height: metrics.container.mediaHeight }]}>
             <AppImage uri={mediaUrl(block.media.url)} accessibilityLabel={label} contentFit="cover" style={styles.fill} />
           </View>
         </View>
@@ -78,6 +60,7 @@ export function ContainerTemplate({
           showsHorizontalScrollIndicator={false}
           accessibilityLabel={t('publication.products', { title: block.title })}
           testID={`publication-block-${block.id}-row`}
+          style={orientation.viewport}
           contentContainerStyle={styles.rowContent}
           decelerationRate="fast"
           snapToInterval={metrics.container.snap}
@@ -90,7 +73,9 @@ export function ContainerTemplate({
               product={product}
               width={metrics.container.cardWidth}
               imageHeight={metrics.container.cardImageHeight}
-              sponsored={block.sponsored}
+              railTileStyle={orientation.tile}
+              compact
+              sponsored={false}
               inks={panel}
               reserveReference={reserveReference}
               onOpen={onOpenProduct}
@@ -100,7 +85,7 @@ export function ContainerTemplate({
         </ScrollView>
         <View style={styles.footer}>
           <PublicationFollow
-            look="block"
+            look="inline"
             publisherId={block.publisher.id}
             publisherName={block.publisher.name}
             ink={panel.ink}
@@ -116,9 +101,11 @@ export function ContainerTemplate({
 const styles = StyleSheet.create({
   block: { width: '100%' },
   band: { paddingHorizontal: T.bandInset, paddingTop: T.bandPaddingTop, paddingBottom: T.bandPaddingBottom },
-  titles: { paddingTop: 8 },
-  title: { fontSize: PUBLICATION_TYPE.bandTitleSize, lineHeight: PUBLICATION_TYPE.bandTitleLine },
+  titles: { gap: 2 },
+  subtitle: { fontSize: C.description, lineHeight: C.descriptionLine },
+  title: { fontSize: C.title, lineHeight: C.titleLine },
   mediaBand: { paddingHorizontal: T.bandInset, paddingBottom: T.bandPaddingBottom },
+  banner: { borderRadius: T.mediaRadius, overflow: 'hidden' },
   fill: { width: '100%', height: '100%' },
   panel: { paddingTop: T.panelPaddingTop, paddingBottom: T.panelPaddingBottom },
   rowContent: { paddingHorizontal: T.bandInset, gap: T.cardSpacing },

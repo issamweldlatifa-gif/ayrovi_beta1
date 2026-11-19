@@ -441,6 +441,13 @@ export class QatafoDatabase {
     this.db.exec(PUBLICATION_BLOCKS_SCHEMA);
     // Modèle `cinema` (16/11) : une base plus ancienne voit sa contrainte CHECK élargie (table reconstruite une fois).
     if (allowCinemaPublicationBlocks(this.db)) console.log('[database] publication_blocks : modèle « cinema » autorisé');
+    const blockColumns = new Set((this.db.prepare('PRAGMA table_info(publication_blocks)').all() as Array<{ name: string }>).map(column => column.name));
+    if (!blockColumns.has('image_format')) {
+      this.db.exec("ALTER TABLE publication_blocks ADD COLUMN image_format TEXT NOT NULL DEFAULT 'wide' CHECK(image_format IN ('cover','wide'))");
+    }
+    if (!blockColumns.has('collection_description')) {
+      this.db.exec("ALTER TABLE publication_blocks ADD COLUMN collection_description TEXT NOT NULL DEFAULT ''");
+    }
     if (relaxCustomerFavoritesSourceUnique(this.db)) console.log('[database] customer_favorites : unicité de l’adresse limitée aux favoris externes');
     // Catalogue officiel (12/11) : l'ancien catalogue est retiré EN ENTIER et remplacé
     // par les vingt produits fournis par le propriétaire (`catalogue/installOfficialCatalogue.ts`).

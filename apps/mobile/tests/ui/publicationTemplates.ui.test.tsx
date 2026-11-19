@@ -1,21 +1,13 @@
-/**
- * Page Publication refondue (13/11/2026) — rendu réel des trois modèles.
- *  • l'en-tête reste (retour, titre, compte) ; le corps = les blocs du CRM ;
- *  • « Suivre » (13/11), le cœur des cartes relié aux vrais favoris (14/11, GBox) et,
- *    depuis la refonte des interactions du 14/11, la barre J'aime · Commenter ·
- *    Partager sous chaque bloc NON sponsorisé (+ sa feuille de commentaires) ;
- *  • le duo sponsorisé : une image puis deux cartes de MÊME taille ;
- *  • l'appui sur un produit ouvre la fiche de l'application ;
- *  • la vidéo ne tourne que pour le bloc actif, avec pause et son.
- */
+/** Publication feed, collection detail, live product links, and engagement UI. */
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
 import { PublicationTemplatesScreen, PublicationBlockView } from '@/features/publications/PublicationTemplatesScreen';
+import { PublicationCollectionScreen } from '@/features/publications/PublicationCollectionScreen';
 import { parsePublicationBlocks, type PublicationBlock } from '@/api/publicationBlocks';
-import { editorialRailMetrics } from '@/design/cardSystem';
+import { editorialFeedRail } from '../../../../shared/publicationEditorial';
 import { publicationTemplateMetrics } from '@/features/publications/templates/templateMetrics';
 import { publicationSoundOn, resetPublicationSound } from '@/features/publications/publicationSound';
 
@@ -32,16 +24,18 @@ jest.mock('expo-video', () => ({
   VideoView: 'VideoView',
 }));
 const mockPush = jest.fn();
+const mockRouteParams = { id: 'collection' };
 jest.mock('expo-router', () => ({
   router: { push: (...args: unknown[]) => mockPush(...args), canGoBack: () => false, replace: jest.fn(), back: jest.fn() },
   useFocusEffect: jest.fn(),
-  useLocalSearchParams: () => ({}),
+  useLocalSearchParams: () => mockRouteParams,
 }));
 jest.mock('expo-status-bar', () => ({ setStatusBarStyle: jest.fn() }));
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 const mockQuery = jest.fn();
+const mockCollectionQuery = jest.fn();
 /** Engagement (14/11) : compteurs + réaction du compte, par bloc. */
 const mockEngagement = { counts: {} as Record<string, any>, mine: {} as Record<string, string> };
 const mockComments = jest.fn(() => ({ data: [], isPending: false, isError: false, refetch: jest.fn() }));
@@ -49,6 +43,7 @@ const mockInvalidate = jest.fn();
 jest.mock('@tanstack/react-query', () => ({
   useQuery: ({ queryKey }: { queryKey: readonly unknown[] }) => {
     if (queryKey[0] === 'publication-blocks') return mockQuery();
+    if (queryKey[0] === 'publication-collection') return mockCollectionQuery();
     if (queryKey[1] === 'engagement') return { data: mockEngagement, dataUpdatedAt: 1 };
     return mockComments();
   },
@@ -150,34 +145,36 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     expect(screen.getByTestId('publication-block-box-band')).toBeTruthy();
   });
 
-  it('pairs a taller editorial photo with three compact, tappable product cards', () => {
+  it('pairs the collection cover with three compact photo-only product links', () => {
     const metrics = publicationTemplateMetrics(360);
-    const rail = editorialRailMetrics(metrics.width, 3);
+    const rail = editorialFeedRail(metrics.width, 3);
     const block: PublicationBlock = { ...BLOCKS[0], id: 'collection', media: BLOCKS[2].media };
     wrap(<PublicationBlockView block={block} metrics={metrics} active />);
     const style = (id: string) => StyleSheet.flatten(screen.getByTestId(`publication-block-collection-${id}`).props.style);
-    expect(style('media').height).toBe(252);
+    expect(style('media').height).toBe(290);
     expect(style('product-p1-frame').height).toBe(rail.imageHeight);
-    expect(style('product-p1-brand').fontSize).toBe(14);
+    expect(screen.queryByTestId('publication-block-collection-product-p1-brand')).toBeNull();
+    expect(screen.queryByTestId('publication-block-collection-product-p1-price')).toBeNull();
+    fireEvent.press(screen.getByTestId('publication-block-collection-cover'));
+    expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/publication-collection/[id]', params: { id: 'collection' } }));
     expect(screen.getByTestId('publication-block-collection-row').props.snapToInterval).toBe(rail.snap);
     fireEvent.press(screen.getByTestId('publication-block-collection-product-p3'));
     expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/product/[id]', params: { id: 'p3' } }));
   });
 
-  it('éditeur « zayrovi team » sur les blocs ; « Sponsorisé » seulement si coché', () => {
+  it('publisher ZAYROVI and one sponsor disclosure per sponsored block', () => {
     wrap(<PublicationTemplatesScreen />);
-    expect(screen.getAllByText('zayrovi team').length).toBeGreaterThanOrEqual(2);
-    // « Sponsorisé ⓘ » : bandeau + chaque carte du container, bandeau + chaque carte du duo.
+    expect(screen.getAllByText('ZAYROVI').length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId('publication-block-box-sponsored')).toBeTruthy();
     expect(screen.getByTestId('publication-block-pair-sponsored')).toBeTruthy();
     expect(screen.queryByTestId('publication-block-video-sponsored')).toBeNull();
-    expect(screen.getAllByText('Sponsorisé').length).toBe(1 + 2 + 1 + 2);
+    expect(screen.getAllByText('Sponsorisé').length).toBe(2);
   });
 
-  it('« Suivre » (13/11) : pilule sous le container, en ligne dans l’en-tête media ; rien d’autre', () => {
+  it('uses the same compact follow line, with the real publisher identity and engagement', () => {
     wrap(<PublicationTemplatesScreen />);
     const pill = screen.getByTestId('publication-block-box-follow');
-    expect(pill.props.accessibilityLabel).toBe('Suivre zayrovi team');
+    expect(pill.props.accessibilityLabel).toBe('Suivre ZAYROVI');
     expect(screen.getByTestId('publication-block-box-follow-name')).toBeTruthy();
     expect(screen.getByTestId('publication-block-video-follow')).toBeTruthy();
     // 16/11 : « chaque publication » a son éditeur — le duo aussi (« zayrovi team • Suivre » sur le bandeau).
@@ -199,11 +196,11 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
   it('« Suivi » une fois l’éditeur suivi, libellé d’accessibilité inversé', () => {
     mockFollow.state = 'following';
     wrap(<PublicationTemplatesScreen />);
-    expect(screen.getByTestId('publication-block-box-follow').props.accessibilityLabel).toBe('Ne plus suivre zayrovi team');
+    expect(screen.getByTestId('publication-block-box-follow').props.accessibilityLabel).toBe('Ne plus suivre ZAYROVI');
     expect(screen.getAllByText('Suivi').length).toBe(3);
   });
 
-  it('carte du container (GBox) : photo ENTIÈRE, cœur nu, marque grasse, texte 16 sous le cadre', () => {
+  it('keeps the entire photo, compact copy, price and favorite on campaign cards', () => {
     wrap(<PublicationTemplatesScreen />);
     const frame = screen.getByTestId('publication-block-box-product-p4-frame');
     const photo = Array.isArray(frame.props.children) ? frame.props.children[0] : frame.props.children;
@@ -212,7 +209,8 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     const metrics = publicationTemplateMetrics(750);
     expect(StyleSheet.flatten(frame.props.style).height).toBe(metrics.container.cardImageHeight);
     const style = (id: string) => StyleSheet.flatten(screen.getByTestId(`publication-block-box-product-p4-${id}`).props.style);
-    for (const id of ['brand', 'name', 'price']) expect(style(id).fontSize).toBe(16);
+    expect(style('name').fontSize).toBe(12);
+    for (const id of ['brand', 'price']) expect(style(id).fontSize).toBe(14);
     expect(style('brand').fontFamily).toBe('ZayroviExtracted-Bold');
     expect(style('name').fontFamily).toBe('ZayroviExtracted-Regular');
     const heart = StyleSheet.flatten(screen.getByTestId('publication-block-box-product-p4-heart').props.style);
@@ -262,13 +260,13 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     expect(StyleSheet.flatten(screen.getByTestId('publication-block-pair-band').props.style).backgroundColor).toBe('#4262AD');
   });
 
-  it('duo sponsorisé (GBox) : image qui déborde (2,09:1), puis deux cartes de même taille', () => {
+  it('uses a short inset banner and two equal tiles for the sponsored duo', () => {
     wrap(<PublicationTemplatesScreen />);
     // Fenêtre de test 750 dp : mêmes formules qu'à 360 dp (336 × 161, cartes 160 × 230 — verrouillé côté vitest).
     const metrics = publicationTemplateMetrics(750);
     const media = StyleSheet.flatten(screen.getByTestId('publication-block-pair-sponsor').props.style);
     expect([media.width, media.height]).toEqual([metrics.pair.mediaWidth, metrics.pair.mediaHeight]);
-    expect(media.width / media.height).toBeCloseTo(2.09, 1);
+    expect(media.width / media.height).toBeCloseTo(2.5, 1);
     const left = StyleSheet.flatten(screen.getByTestId('publication-block-pair-product-p6-frame').props.style);
     const right = StyleSheet.flatten(screen.getByTestId('publication-block-pair-product-p7-frame').props.style);
     expect(left.height).toBe(metrics.pair.cardImageHeight);
@@ -306,7 +304,7 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     resetPublicationSound();
   });
 
-  it('16/11 : modèle cinema — vidéo BORD À BORD 4:5, titre blanc pur centré, panneau noir, deux cartes', () => {
+  it('cinema keeps an edge-to-edge dark panel and centered headline in a shorter frame', () => {
     const [cinema] = parsePublicationBlocks([{
       id: 'cine', kind: 'cinema', title: 'Vivez chargé.', subtitle: 'Regarder la vidéo', bgColor: '#000000', panelColor: '',
       sponsored: false, media: { type: 'video', url: '/media/reels-owned/accessories-v1.mp4', poster: '/media/reels-owned/accessories-v1.jpg' },
@@ -317,7 +315,7 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     const metrics = publicationTemplateMetrics(750);
     const media = StyleSheet.flatten(screen.getByTestId('publication-block-cine-media').props.style);
     expect(media.width).toBe('100%');
-    expect(media.height).toBe(Math.round(metrics.width / 0.8));
+    expect(media.height).toBe(metrics.cinema.videoHeight);
     const title = StyleSheet.flatten(screen.getByTestId('publication-block-cine-title').props.style);
     expect(title.color).toBe('#FFFFFF');
     expect(title.textAlign).toBe('center');
@@ -347,9 +345,9 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     const light = StyleSheet.flatten(screen.getByTestId('publication-block-box-follow-name').props.style);
     expect(light.color).not.toBe('#FFFFFF');
     expect(light.textShadowColor).toBeUndefined();
-    // sur la vidéo : blanc pur
+    // le compte est au-dessus de la vidéo éditoriale, sur fond clair
     const onMedia = StyleSheet.flatten(screen.getByTestId('publication-block-video-follow-name').props.style);
-    expect(onMedia.color).toBe('#FFFFFF');
+    expect(onMedia.color).not.toBe('#FFFFFF');
   });
 
   it('états : chargement, erreur avec réessai, liste vide', () => {
@@ -437,5 +435,29 @@ describe('barre Publication (redessinée après l’essai sur appareil, 14/11)',
     expect(screen.getByText('Plus récents')).toBeTruthy();
     // Envoi désactivé tant que le champ est vide.
     expect(screen.getByTestId('publication-comment-send').props.accessibilityState).toMatchObject({ disabled: true });
+  });
+});
+
+
+describe('collection detail', () => {
+  it('shows the full CRM copy, filters the actual products, and links list rows to product pages', () => {
+    mockCollectionQuery.mockReturnValue(query({ data: {
+      ...BLOCKS[0], id: 'collection', media: BLOCKS[2].media,
+      description: 'Description complète depuis le CRM.', updatedAt: '2026-11-19T00:00:00.000Z',
+      products: [BLOCKS[0].products[0], ...BLOCKS[2].products],
+    } }));
+    wrap(<PublicationCollectionScreen />);
+    expect(screen.getByText('Description complète depuis le CRM.')).toBeTruthy();
+    expect(screen.getByText(/Mis à jour le/)).toBeTruthy();
+    expect(screen.getByTestId('collection-products-grid')).toBeTruthy();
+    expect(screen.getByText('Produits : 3')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('collection-filters'));
+    fireEvent.press(screen.getByText('Calvin Klein Jeans'));
+    expect(screen.getByText('Produits : 1')).toBeTruthy();
+    expect(screen.queryByTestId('collection-product-p1')).toBeNull();
+    fireEvent.press(screen.getByTestId('collection-list'));
+    expect(screen.queryByTestId('collection-products-grid')).toBeNull();
+    fireEvent.press(screen.getByTestId('collection-product-p6'));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/product/[id]', params: { id: 'p6' } });
   });
 });

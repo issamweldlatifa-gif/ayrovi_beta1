@@ -30,14 +30,15 @@ import {
   PUBLICATION_BLOCK_SWATCHES,
   PUBLICATION_PREVIEW_INK,
   PUBLICATION_PREVIEW_PAPER,
-  PUBLICATION_PUBLISHER_NAME,
   containerPanelColor,
-  isNearWhite,
   mixColor,
   normalizeHexColor,
   readableInk,
+  publicationMutedInk,
   type PublicationBlockKind,
 } from '../../../shared/publicationBlocks';
+
+import { distinctPublicationSubtitle, EDITORIAL_CAMPAIGN as C, EDITORIAL_FEED as E, editorialHeroHeight, publicationImageFormat, type PublicationImageFormat, publicationTemplateMetrics, PUBLICATION_TEMPLATE as T } from '../../../shared/publicationEditorial';
 
 export interface PublicationBlockForm {
   id?: string;
@@ -48,6 +49,8 @@ export interface PublicationBlockForm {
   panel_color: string;
   sponsored: boolean;
   media_type: '' | 'image' | 'video';
+  image_format?: PublicationImageFormat;
+  collection_description?: string;
   media_url: string;
   poster_url: string;
   product_ids: string[];
@@ -63,6 +66,7 @@ export interface BlockCatalogueProduct {
   final_price: number | null;
   currency: string | null;
   brand_name?: string | null;
+  compare_at_price?: number | null;
 }
 
 /* Encres de l'aperçu : constantes de l'écran public simulé (pas du chrome admin). */
@@ -70,15 +74,11 @@ const INK = PUBLICATION_PREVIEW_INK;
 const PAPER = PUBLICATION_PREVIEW_PAPER;
 const PREVIEW_WIDTH = 320;
 const SCALE = PREVIEW_WIDTH / 360;
-/**
- * 13/11 — SYSTÈME DE CARTES de l'app (`apps/mobile/src/design/cardSystem.ts`) :
- * marge 12, écart 8, deux cartes ENTIÈRES à parts égales, rapport 1,44, rayon 12,
- * cœur nu (sans rond blanc). Les trois modèles utilisent la même carte.
- */
-export const PREVIEW_CARD = { gutter: 12, gap: 8, ratio: 1.44, radius: 12, heart: 18 } as const;
-export const previewCardWidth = (perView = 2) =>
-  Math.round((PREVIEW_WIDTH - PREVIEW_CARD.gutter * SCALE * 2 - PREVIEW_CARD.gap * SCALE * (perView - 1)) / perView);
-const G = PREVIEW_CARD.gutter * SCALE;
+const G = E.gutter * SCALE;
+const CG = C.gutter * SCALE;
+const METRICS = publicationTemplateMetrics(360);
+export const PREVIEW_CARD = { gutter: C.gutter, gap: C.gap, ratio: C.ratio, radius: C.radius, heart: 18 } as const;
+export const previewCardWidth = (perView = 2) => (PREVIEW_WIDTH - 2 * CG - (perView - 1) * C.gap * SCALE) / perView;
 
 export const emptyBlock = (kind: PublicationBlockKind = 'container'): PublicationBlockForm => ({
   kind,
@@ -87,6 +87,8 @@ export const emptyBlock = (kind: PublicationBlockKind = 'container'): Publicatio
   bg_color: PUBLICATION_BLOCK_DEFAULT_COLOR[kind],
   panel_color: '',
   sponsored: kind === 'sponsored_pair',
+  image_format: 'cover',
+  collection_description: '',
   media_type: kind === 'media' ? 'image' : kind === 'cinema' ? 'video' : '',
   media_url: '',
   poster_url: '',
@@ -114,34 +116,37 @@ export function blockFormError(form: PublicationBlockForm): string {
 
 /* ── Aperçu téléphone (même anatomie que l'application) ─────────────────── */
 
-/**
- * LA carte produit des blocs (système de cartes, 13/11) : cadre gris arrondi,
- * photo ENTIÈRE (`contain`), cœur NU en haut à droite (il ne cache pas la
- * photo) ; le texte passe SOUS le cadre (Sponsorisé, marque grasse, nom, prix).
- */
-function PreviewProduct({ product, width, ink = INK, sponsored = '', testId }: {
-  product?: BlockCatalogueProduct; width: number; ink?: string; sponsored?: string; testId?: string;
+function PreviewProduct({ product, width, imageHeight, ink = INK, photoOnly = false, testId }: {
+  product?: BlockCatalogueProduct; width: number; imageHeight: number; ink?: string; photoOnly?: boolean; testId?: string;
 }) {
-  const height = Math.round(width * PREVIEW_CARD.ratio);
-  const heart = Math.round(PREVIEW_CARD.heart * SCALE);
   return (
-    <div data-testid={testId} style={{ width, height: height + 72, flex: '0 0 auto' }}>
-      <div style={{ width, height, background: mixColor(INK, PAPER, 0.95), borderRadius: PREVIEW_CARD.radius * SCALE, overflow: 'hidden', position: 'relative' }}>
+    <div data-testid={testId} style={{ width, flex: '0 0 auto' }}>
+      <div style={{ width, height: imageHeight, background: mixColor(INK, PAPER, 0.95), borderRadius: (photoOnly ? E.radius : C.radius) * SCALE, overflow: 'hidden', position: 'relative' }}>
         {product?.image ? <img src={product.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} /> : null}
-        <span data-testid="preview-heart" aria-hidden="true" style={{ position: 'absolute', top: 11 * SCALE, right: 11 * SCALE, color: INK, display: 'flex' }}>
-          <Heart size={heart} aria-hidden="true" />
+        <span data-testid="preview-heart" aria-hidden="true" style={{ position: 'absolute', top: 8 * SCALE, right: 8 * SCALE, width: 32 * SCALE, height: 32 * SCALE, borderRadius: '50%', background: PAPER, color: INK, display: 'grid', placeItems: 'center' }}>
+          <Heart size={18 * SCALE} aria-hidden="true" />
         </span>
       </div>
-      {product ? (
-        <div style={{ paddingTop: 6, color: ink, fontSize: 11, lineHeight: 1.3 }}>
-          {sponsored ? <div style={{ opacity: 0.7 }}>{sponsored}</div> : null}
-          <div style={{ fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.brand_name || ' '}</div>
-          <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</div>
+      {!photoOnly && product ? (
+        <div style={{ paddingTop: 4 * SCALE, color: ink, fontSize: 13 * SCALE, lineHeight: 1.35 }}>
+          {product.brand_name ? <div style={{ fontWeight: 700, ...clamp(1) }}>{product.brand_name}</div> : null}
+          <div style={clamp(1)}>{product.name}</div>
           <div>{price(product)}</div>
+          {product.compare_at_price != null && product.final_price != null && product.compare_at_price > product.final_price ? <del style={{ opacity: 0.8 }}>{price({ ...product, final_price: product.compare_at_price })}</del> : null}
         </div>
       ) : null}
     </div>
   );
+}
+
+const clamp = (lines: number): React.CSSProperties => ({ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: lines, overflow: 'hidden' });
+function PreviewPublisher({ ink }: { ink: string }) {
+  return <div style={{ display: 'flex', alignItems: 'center', gap: 6 * SCALE, minHeight: 44 * SCALE, color: ink }}>
+    <span aria-hidden="true" style={{ width: 32 * SCALE, height: 32 * SCALE, borderRadius: '50%', display: 'grid', placeItems: 'center', background: INK }}>
+      <img src="/media/logo-zayrovi-lockup-white.svg" alt="" style={{ height: 15 * SCALE }} />
+    </span>
+    <strong style={{ fontSize: E.publisher * SCALE }}>ZAYROVI</strong><span>·</span><strong style={{ fontSize: E.follow * SCALE }}>Suivre</strong>
+  </div>;
 }
 
 function PreviewMedia({ form, height }: { form: PublicationBlockForm; height: number }) {
@@ -162,113 +167,71 @@ function PreviewMedia({ form, height }: { form: PublicationBlockForm; height: nu
 export function PublicationBlockPreview({ form, products }: { form: PublicationBlockForm; products: BlockCatalogueProduct[] }) {
   const bg = normalizeHexColor(form.bg_color) ?? PUBLICATION_BLOCK_DEFAULT_COLOR[form.kind];
   const ink = readableInk(bg, INK, PAPER);
-  const muted = mixColor(ink, bg, 0.35);
+  const muted = publicationMutedInk(bg, ink);
   const sponsored = form.sponsored ? 'Sponsorisé' : '';
   const title = form.title || 'Titre du bloc';
   const frame: React.CSSProperties = { width: PREVIEW_WIDTH, border: '1px solid var(--admin-line)', borderRadius: 16, overflow: 'hidden', background: PAPER };
 
-  if (form.kind === 'container') {
-    const panel = normalizeHexColor(form.panel_color) ?? containerPanelColor(bg);
-    const panelInk = readableInk(panel, INK, PAPER);
-    // 13/11 — système de cartes : deux cartes entières à parts égales, tout sur la marge 12.
-    const cardWidth = previewCardWidth();
-    return (
-      <div style={frame} data-testid="block-preview" data-kind="container">
-        <div style={{ background: bg, color: ink, padding: `${16 * SCALE}px ${G}px ${16 * SCALE}px` }}>
-          {sponsored ? <div style={{ color: muted, fontSize: 11 }}>{sponsored}</div> : null}
-          <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.2, marginTop: 6 }}>{title}</div>
-          {form.subtitle ? <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.2 }}>{form.subtitle}</div> : null}
-        </div>
-        {form.media_url ? <div style={{ background: bg, padding: `0 ${G}px ${16 * SCALE}px` }}><PreviewMedia form={{ ...form, media_type: 'image' }} height={Math.round((PREVIEW_WIDTH - 2 * G) / 2.07)} /></div> : null}
-        <div style={{ background: panel, padding: `${56 * SCALE}px ${G}px ${16 * SCALE}px` }}>
-          <div data-testid="preview-row" style={{ display: 'flex', gap: PREVIEW_CARD.gap * SCALE, overflow: 'hidden' }}>
-            {(products.length ? products : [undefined, undefined]).map((product, index) => (
-              <PreviewProduct key={product?.id ?? index} product={product} width={cardWidth} ink={panelInk} sponsored={sponsored} />
-            ))}
-          </div>
-          <div style={{ color: panelInk, fontSize: 11, marginTop: 16 * SCALE }}>{PUBLICATION_PUBLISHER_NAME}</div>
-        </div>
+  const subtitle = distinctPublicationSubtitle(title, form.subtitle);
+  const sponsor = sponsored ? <div style={{ color: muted, fontSize: E.sponsor * SCALE, lineHeight: `${E.sponsorLine * SCALE}px` }}>{sponsored} ⓘ</div> : null;
+  const caption = (size: number, line: number, sub: number, subLine: number, lines: number, color = muted) => <>
+    <div style={{ ...clamp(2), fontSize: size * SCALE, fontWeight: 650, lineHeight: `${line * SCALE}px` }}>{title}</div>
+    {subtitle ? <div style={{ ...clamp(lines), color, fontSize: sub * SCALE, lineHeight: `${subLine * SCALE}px` }}>{subtitle}</div> : null}
+  </>;
+  const row = (width: number, height: number, tint: string, photoOnly = false, pair = false) => (
+    <div data-testid="preview-row" style={{ display: 'flex', gap: (photoOnly ? E.gap : C.gap) * SCALE, overflowX: pair ? 'hidden' : 'auto', scrollbarWidth: 'none' }}>
+      {(products.length ? (pair ? products.slice(0, 2) : products) : photoOnly ? [undefined, undefined, undefined] : [undefined, undefined]).map((product, index) => (
+        <PreviewProduct key={product?.id ?? index} testId={pair ? (index === 0 ? 'pair-left' : 'pair-right') : `preview-product-${index}`}
+          product={product} width={width * SCALE} imageHeight={height * SCALE} ink={tint} photoOnly={photoOnly} />
+      ))}
+      {pair && products.length === 1 ? <div data-testid="pair-right" style={{ width: width * SCALE, height: height * SCALE }} /> : null}
+    </div>
+  );
+
+  if (form.kind === 'media') {
+    const m = METRICS.media;
+    return <div style={{ ...frame, background: bg, color: ink, padding: `${2 * SCALE}px ${G}px 0`, boxSizing: 'content-box', width: m.width * SCALE }} data-testid="block-preview" data-kind="media">
+      <div style={{ paddingBottom: 4 * SCALE }}><PreviewPublisher ink={ink} />{sponsor}</div>
+      <PreviewMedia form={form} height={editorialHeroHeight(m.width, form.media_type, form.image_format) * SCALE} />
+      <div style={{ marginTop: E.gap * SCALE }}>{row(m.tileWidth, m.tileHeight, ink, true)}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 * SCALE, minHeight: 44 * SCALE, paddingBlock: 6 * SCALE, boxSizing: 'border-box' }}>
+        <div style={{ minWidth: 0, flex: 1 }}>{caption(E.title, E.titleLine, E.description, E.descriptionLine, 1)}</div><span aria-hidden="true">›</span>
       </div>
-    );
+    </div>;
   }
 
   if (form.kind === 'cinema') {
-    // 16/11 (référence Anker) : vidéo BORD À BORD au format 4:5, titre blanc centré dessus,
-    // puis le panneau noir profond : deux cartes entières, ou une rangée défilante.
-    const panelInk = readableInk(bg, INK, PAPER);
-    const cardWidth = previewCardWidth();
-    return (
-      <div style={{ ...frame, background: bg }} data-testid="block-preview" data-kind="cinema">
-        <div style={{ position: 'relative', height: Math.round(PREVIEW_WIDTH * 1.25), background: INK }}>
-          {form.poster_url
-            ? <img src={form.poster_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-            : form.media_url ? <video src={form.media_url} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: G, textAlign: 'center', color: PAPER, background: 'rgba(0,0,0,0.28)' }}>
-            <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.1, textShadow: '0 1px 6px rgba(0,0,0,0.55)' }}>{title}</div>
-            {form.subtitle ? <div style={{ fontSize: 14, fontWeight: 600, textShadow: '0 1px 4px rgba(0,0,0,0.55)' }}>{form.subtitle}</div> : null}
-          </div>
-          <span style={{ position: 'absolute', left: G, top: G, color: PAPER, fontSize: 11, fontWeight: 700 }}>{PUBLICATION_PUBLISHER_NAME}</span>
+    const m = METRICS.cinema;
+    return <div style={{ ...frame, background: bg }} data-testid="block-preview" data-kind="cinema">
+      <div style={{ position: 'relative', height: m.videoHeight * SCALE, background: INK, color: PAPER }}>
+        {form.poster_url ? <img src={form.poster_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          : form.media_url ? <video src={form.media_url} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : null}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 * SCALE, paddingInline: 2 * CG, textAlign: 'center', background: 'linear-gradient(transparent 20%, rgba(0,0,0,.38) 50%, transparent 80%)' }}>
+          {caption(T.cinemaTitleSize, T.cinemaTitleLine, E.description, E.descriptionLine, 2, PAPER)}
         </div>
-        <div data-testid="preview-row" style={{ display: 'flex', gap: PREVIEW_CARD.gap * SCALE, padding: `${24 * SCALE}px ${G}px`, overflow: 'hidden' }}>
-          {(products.length ? products : [undefined, undefined]).map((product, index) => (
-            <PreviewProduct key={product?.id ?? index} product={product} width={cardWidth} ink={panelInk} sponsored={sponsored} />
-          ))}
+        <div style={{ position: 'absolute', inset: '0 0 auto', padding: `${8 * SCALE}px ${CG}px ${32 * SCALE}px`, background: 'linear-gradient(rgba(0,0,0,.5),transparent)' }}>
+          <PreviewPublisher ink={PAPER} />{sponsored ? <span style={{ fontSize: E.sponsor * SCALE }}>{sponsored} ⓘ</span> : null}
         </div>
       </div>
-    );
+      <div style={{ padding: `${T.cinemaPanelTop * SCALE}px ${CG}px ${T.cinemaPanelBottom * SCALE}px` }}>{row(m.cardWidth, m.cardImageHeight, ink)}</div>
+    </div>;
   }
 
-  if (form.kind === 'media') {
-    const width = PREVIEW_WIDTH - 2 * G;
-    const cardWidth = previewCardWidth();
-    const tinted = !isNearWhite(bg);
-    return (
-      <div style={{ ...frame, background: bg, color: ink, padding: `${tinted ? 16 * SCALE : 8}px ${G}px` }} data-testid="block-preview" data-kind="media">
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8 }}>
-          <span>{PUBLICATION_PUBLISHER_NAME}</span>
-          {sponsored ? <span style={{ color: muted }}>{sponsored}</span> : null}
-        </div>
-        <PreviewMedia form={form} height={Math.round(width / (form.media_type === 'video' ? 1 : 2.07))} />
-        {/* 13/11 : le titre passe sous le média, puis LA carte commune (deux entières). */}
-        <div style={{ fontWeight: 700, fontSize: 14, marginTop: 12 * SCALE }}>{title}</div>
-        {form.subtitle ? <div style={{ fontSize: 14 }}>{form.subtitle}</div> : null}
-        <div data-testid="preview-row" style={{ display: 'flex', gap: PREVIEW_CARD.gap * SCALE, marginTop: 12 * SCALE, overflow: 'hidden' }}>
-          {(products.length ? products : [undefined, undefined]).map((product, index) => (
-            <PreviewProduct key={product?.id ?? index} product={product} width={cardWidth} ink={ink} />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Duo sponsorisé (planche GBox « WE Fashion ») : bandeau + image qui déborde à
-  // droite, puis les DEUX cartes du système (marge 12, écart 8, rapport 1,44).
-  const tileWidth = previewCardWidth();
-  const cards = products.length ? products.slice(0, 2) : [undefined];
-  return (
-    <div style={frame} data-testid="block-preview" data-kind="sponsored_pair">
-      <div style={{ background: bg, color: ink, padding: `${16 * SCALE}px 0 0 ${G}px` }}>
-        {sponsored ? <div style={{ color: muted, fontSize: 11 }}>{sponsored}</div> : null}
-        <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.2, marginTop: 6, paddingRight: G }}>{title}</div>
-        {form.subtitle ? <div style={{ fontSize: 18, fontWeight: 700, lineHeight: 1.2, paddingRight: G }}>{form.subtitle}</div> : null}
-        <div style={{ height: Math.round((PREVIEW_WIDTH - G) / 2.09), marginTop: 16 * SCALE, background: mixColor(INK, PAPER, 0.9) }}>
-          {form.media_url ? <img src={form.media_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : null}
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: PREVIEW_CARD.gap * SCALE, padding: `${56 * SCALE}px ${G}px ${16 * SCALE}px` }}>
-        {cards.map((product, index) => (
-          <PreviewProduct
-            key={product?.id ?? index}
-            testId={index === 0 ? 'pair-left' : 'pair-right'}
-            product={product}
-            width={tileWidth}
-            sponsored={sponsored}
-          />
-        ))}
-        {cards.length === 1 ? <div data-testid="pair-right" style={{ width: tileWidth, height: Math.round(tileWidth * PREVIEW_CARD.ratio) + 72 }} /> : null}
-      </div>
+  const isPair = form.kind === 'sponsored_pair';
+  const panel = isPair ? PAPER : normalizeHexColor(form.panel_color) ?? containerPanelColor(bg);
+  const panelInk = readableInk(panel, INK, PAPER);
+  return <div style={frame} data-testid="block-preview" data-kind={form.kind}>
+    <div style={{ background: bg, color: ink, padding: `${T.bandPaddingTop * SCALE}px ${CG}px ${T.bandPaddingBottom * SCALE}px` }}>
+      {isPair ? <PreviewPublisher ink={ink} /> : null}
+      {sponsor}
+      {caption(C.title, C.titleLine, C.description, C.descriptionLine, 2)}
+      {isPair || form.media_url ? <div style={{ marginTop: isPair ? T.pairTitleGap * SCALE : 0 }}><PreviewMedia form={{ ...form, media_type: 'image' }} height={(isPair ? METRICS.pair.mediaHeight : METRICS.container.mediaHeight) * SCALE} /></div> : null}
     </div>
-  );
+    <div style={{ background: panel, padding: `${(isPair ? T.pairCardsTop : T.panelPaddingTop) * SCALE}px ${CG}px ${T.panelPaddingBottom * SCALE}px` }}>
+      {isPair ? row(METRICS.pair.tileWidth, METRICS.pair.cardImageHeight, panelInk, false, true) : row(METRICS.container.cardWidth, METRICS.container.cardImageHeight, panelInk)}
+      {!isPair ? <div style={{ marginTop: T.followTop * SCALE }}><PreviewPublisher ink={panelInk} /></div> : null}
+    </div>
+  </div>;
 }
 
 /* ── Champs spécialisés ─────────────────────────────────────────────────── */
@@ -429,6 +392,8 @@ const toForm = (row: any): PublicationBlockForm => ({
   panel_color: row.panel_color || '',
   sponsored: Boolean(row.sponsored),
   media_type: row.media_type || '',
+  image_format: publicationImageFormat(row.image_format),
+  collection_description: row.collection_description || '',
   media_url: row.media_url || '',
   poster_url: row.poster_url || '',
   product_ids: Array.isArray(row.product_ids) ? row.product_ids : [],
@@ -527,7 +492,7 @@ export const PublicationBlocksTab: React.FC<{ canWrite: boolean }> = ({ canWrite
       {error ? <div className="admin-error">{error}</div> : null}
       <div className="admin-actions" style={{ marginTop: 0 }}>
         <Button disabled={!canWrite} onClick={() => { setFormError(''); setForm(emptyBlock()); }}><Plus size={15} />Ajouter un bloc</Button>
-        <span className="admin-block-small">La page Publication de l’application affiche ces blocs dans cet ordre, sous l’en-tête. Éditeur affiché : « {PUBLICATION_PUBLISHER_NAME} ».</span>
+        <span className="admin-block-small">La page Publication de l’application affiche ces blocs dans cet ordre, sous l’en-tête. Éditeur affiché : « ZAYROVI ».</span>
       </div>
       <DataTable
         minWidth={760}
@@ -580,9 +545,22 @@ export const PublicationBlocksTab: React.FC<{ canWrite: boolean }> = ({ canWrite
                   </div>
                 </div>
               ) : null}
+              {form.kind === 'media' && form.media_type !== 'video' ? (
+                <Field label="Format du visuel">
+                  <select value={form.image_format ?? 'cover'} onChange={(e) => patch({ image_format: publicationImageFormat(e.target.value) })}>
+                    <option value="cover">Couverture (presque carrée)</option>
+                    <option value="wide">Bannière panoramique</option>
+                  </select>
+                </Field>
+              ) : null}
+              {form.kind === 'media' ? (
+                <Field label="Description complète de la collection">
+                  <textarea rows={4} maxLength={PUBLICATION_BLOCK_LIMITS.description} value={form.collection_description ?? ''} onChange={(e) => patch({ collection_description: e.target.value })} />
+                </Field>
+              ) : null}
               <MediaInput
                 key={`${form.kind}-${form.media_type}`}
-                label={form.kind === 'cinema' ? 'Vidéo bord à bord (portrait 4:5 conseillé — mp4, webm, mov)' : form.kind === 'media' ? (form.media_type === 'video' ? 'Vidéo (mp4, webm, mov)' : 'Image (format paysage conseillé)') : form.kind === 'sponsored_pair' ? 'Image de la carte sponsorisée (portrait 2:3)' : 'Image large (facultative)'}
+                label={form.kind === 'cinema' ? 'Vidéo bord à bord (format compact 9:8 conseillé — mp4, webm, mov)' : form.kind === 'media' ? (form.media_type === 'video' ? 'Vidéo (mp4, webm, mov)' : 'Visuel de couverture') : form.kind === 'sponsored_pair' ? 'Image de la carte sponsorisée (bannière 5:2)' : 'Image large (facultative)'}
                 kind={form.kind === 'cinema' || (form.kind === 'media' && form.media_type === 'video') ? 'video' : 'image'}
                 value={form.media_url}
                 onChange={(media_url) => patch({ media_url, media_type: form.kind === 'cinema' ? 'video' : form.kind === 'media' ? (form.media_type || 'image') : media_url ? 'image' : '' })}

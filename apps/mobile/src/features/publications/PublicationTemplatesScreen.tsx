@@ -56,7 +56,7 @@ export function PublicationBlockView({
   if (block.kind === 'container') return <ContainerTemplate block={block} metrics={metrics} onOpenProduct={openProduct} />;
   if (block.kind === 'sponsored_pair') return <SponsoredPairTemplate block={block} metrics={metrics} onOpenProduct={openProduct} />;
   if (block.kind === 'cinema') return <CinemaTemplate block={block} metrics={metrics} active={active} onOpenProduct={openProduct} />;
-  return <MediaTemplate block={block} metrics={metrics} active={active} onOpenProduct={openProduct} />;
+  return <MediaTemplate block={block} metrics={metrics} active={active} onOpenProduct={openProduct} onOpenCollection={(id) => router.push({ pathname: '/publication-collection/[id]', params: { id } })} />;
 }
 
 const hasVideo = (block: PublicationBlock) => block.media?.type === 'video';
@@ -125,6 +125,7 @@ export function PublicationTemplatesScreen() {
           <View style={[styles.column, { width: metrics.width }]}>
             <PublicationBlockView block={item} metrics={metrics} active={focused && activeId === item.id} />
             <PublicationBar
+              compact
               blockId={item.id}
               title={item.title}
               counts={engagement.data?.counts?.[item.id] ?? ZERO_COUNTS}

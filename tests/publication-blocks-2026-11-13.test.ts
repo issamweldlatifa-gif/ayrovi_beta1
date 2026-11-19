@@ -120,6 +120,37 @@ describe('routes CRM et lecture publique', () => {
     expect((await admin.delete(`/api/admin/publication-blocks/${id}`).set('x-csrf-token', csrf)).status).toBe(404);
   });
 
+  test('collection : format et description persistés, mêmes vrais produits, mise à jour et retrait', async () => {
+    const productIds = [P('bose-quietcomfort'), P('jbl-go-4')];
+    const description = 'Une description complète de la sélection.\nAvec une deuxième ligne.';
+    const body = {
+      kind: 'media', title: 'Collection du CRM', subtitle: 'Une ligne dans le fil', collection_description: description,
+      media_type: 'image', media_url: '/media/couverture.jpg', image_format: 'wide', product_ids: productIds,
+    };
+    const invalidFormat = await admin.post('/api/admin/publication-blocks').set('x-csrf-token', csrf).send({ ...body, image_format: 'unknown' });
+    expect(invalidFormat.status).toBe(400);
+    const created = await admin.post('/api/admin/publication-blocks').set('x-csrf-token', csrf).send(body);
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    const id = created.body.data.id;
+    const endpoint = `/api/public/social/publication-blocks/${id}`;
+    const updated = await admin.put(`/api/admin/publication-blocks/${id}`).set('x-csrf-token', csrf).send({ subtitle: 'Nouvelle accroche' });
+    expect(updated.body.data).toMatchObject({ collection_description: description, image_format: 'wide' });
+    const detail = await request(app).get(endpoint);
+    expect(detail.status).toBe(200);
+    expect(detail.headers['cache-control']).toContain('no-store');
+    expect(detail.body.data).toMatchObject({ id, description, subtitle: 'Nouvelle accroche', media: { type: 'image', format: 'wide' } });
+    expect(detail.body.data.updatedAt).toBe(updated.body.data.updated_at);
+    expect(detail.body.data.products.map((item: { id: string }) => item.id)).toEqual(productIds);
+    const feed = (await request(app).get('/api/public/social/publication-blocks')).body.data.find((item: { id: string }) => item.id === id);
+    expect(feed.media.format).toBe('wide');
+    expect(feed).not.toHaveProperty('description');
+    await admin.put(`/api/admin/publication-blocks/${id}`).set('x-csrf-token', csrf).send({ image_format: 'cover' });
+    expect((await request(app).get(endpoint)).body.data.media.format).toBe('cover');
+    await admin.put(`/api/admin/publication-blocks/${id}`).set('x-csrf-token', csrf).send({ active: false });
+    expect((await request(app).get(endpoint)).status).toBe(404);
+    await admin.delete(`/api/admin/publication-blocks/${id}`).set('x-csrf-token', csrf);
+  });
+
   test('ordre refusé s’il ne cite pas exactement les blocs existants', async () => {
     const response = await admin.put('/api/admin/publication-blocks/order').set('x-csrf-token', csrf).send({ ids: ['inconnu'] });
     expect(response.status).toBe(400);

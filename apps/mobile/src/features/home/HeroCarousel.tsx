@@ -363,12 +363,12 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
       pointerEvents="none"
     >
       {title ? (
-        <AppText variant="h2" color={copyColor} numberOfLines={2} style={{ fontFamily: theme.font('bold') }}>
+        <AppText variant="h3" color={copyColor} numberOfLines={2} style={{ fontFamily: theme.font('bold') }}>
           {title}
         </AppText>
       ) : null}
       {subtitle ? (
-        <AppText variant="bodySmall" color={copyColor} numberOfLines={2} style={styles.cardSubtitle}>
+        <AppText variant="bodySmall" color={copyColor} numberOfLines={1} style={styles.cardSubtitle}>
           {subtitle}
         </AppText>
       ) : null}

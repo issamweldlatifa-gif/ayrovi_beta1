@@ -143,6 +143,7 @@ async function shareBlock(blockId: string, title: string) {
 }
 
 export interface PublicationBarProps {
+  compact?: boolean;
   blockId: string;
   title: string;
   counts: SocialCounts;
@@ -164,7 +165,7 @@ export interface PublicationBarProps {
  * plein cerné de blanc (jamais tout bleu, compteur à l'encre) ; Enregistré =
  * signet plein à l'encre.
  */
-export function PublicationBar({ blockId, title, counts, mine, engagementKey }: PublicationBarProps) {
+export function PublicationBar({ blockId, title, counts, mine, engagementKey, compact }: PublicationBarProps) {
   const theme = useTheme();
   const t = useT();
   const session = useSession();
@@ -185,7 +186,7 @@ export function PublicationBar({ blockId, title, counts, mine, engagementKey }: 
   });
   const badges = summaryBadges(counts, mine, reaction.reaction);
   const direction = rowDirectionFor(theme.isRTL);
-  const icon = PUBLICATION_METRICS.actionIcon;
+  const icon = compact ? 20 : PUBLICATION_METRICS.actionIcon;
   const isSaved = saved?.isSaved(blockId) ?? false;
   const commentsLabel = [t('social.comment'), ...publicationSummaryParts({ comments: counts.comments, shares: 0 }, t)].join(', ');
   const shareLabel = [t('social.share'), ...publicationSummaryParts({ comments: 0, shares: counts.shares }, t)].join(', ');

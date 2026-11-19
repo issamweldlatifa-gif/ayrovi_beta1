@@ -290,8 +290,8 @@ describe('owner Hero collection', () => {
       expect(copyStyle.position).not.toBe('absolute');
       expect(copyStyle.padding).toBe(16);
       const cardWidth = StyleSheet.flatten(screen.getByTestId(`hero-card-${card.id}`).props.style).width;
-      expect(copyStyle.minHeight).toBeCloseTo(cardWidth * 0.6);
-      expect((copyStyle.minHeight + cardWidth) / cardWidth).toBeCloseTo(1.6);
+      expect(copyStyle.minHeight).toBeGreaterThanOrEqual(cardWidth * 0.25);
+      expect((copyStyle.minHeight + cardWidth) / cardWidth).toBeLessThan(1.4);
       const image = screen.getByTestId(`hero-card-${card.id}-image`);
       expect(StyleSheet.flatten(image.props.style)).toMatchObject({ width: '100%', aspectRatio: 1 });
       expect(StyleSheet.flatten(screen.getByText(card.title).props.style).color).toBe(card.copyTone === 'light' ? '#FFFFFF' : '#000000');

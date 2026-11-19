@@ -1,26 +1,3 @@
-/**
- * « Suivre » des blocs Publication.
- *
- * 15/11 (référence Instagram 002046 / 002058, demande du propriétaire) — même
- * traitement partout : l'éditeur à gauche (avatar cerclé + nom en BLANC), la
- * pilule « Suivre » à droite, TRANSPARENTE, détourée de blanc.
- *
- *  • `media` — posé EN HAUT de la vidéo / de la photo du modèle `media`,
- *              sur un léger voile dégradé pour rester lisible ;
- *  • `block` — modèle `container` : en bas du panneau coloré, pilule plus haute
- *              (44 dp) pour rester bien présente ;
- *  • `inline` — modèle `media` SANS média : rien sur quoi poser du blanc, la
- *              ligne reprend l'encre du bloc (« zayrovi team • Suivre »).
- *
- * 16/11 (capture 031932 : « zayrovi team / Suivre » blancs, illisibles sur le
- * panneau menthe) : sur un PANNEAU (`block`), l'encre suit le fond — blanc pur
- * sur panneau sombre, encre noire sur panneau clair (`blockInks`). Le blanc
- * n'est gardé tel quel que sur l'image / la vidéo (`media`), où il est rendu
- * ÉCLATANT : #FFFFFF plein, ombre nette et voile plus dense derrière.
- *
- * La relation est celle des Reels (`usePublisherFollow`) : une seule vérité
- * côté serveur. Un invité voit la feuille de connexion de Publication.
- */
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -30,7 +7,8 @@ import { useT } from '@/i18n';
 import { PublicationAuthSheet } from './PublicationAuthSheet';
 import { PUBLICATION_PALETTE as P, PUBLICATION_TYPE, PublicationIcon, PublicationText } from './publicationDesign';
 import { usePublisherFollow } from './usePublisherFollow';
-import { OFFICIAL_AVATAR, OfficialAvatar } from '@/design/OfficialAvatar';
+import { BrandLogo } from '@/design/BrandMark';
+import { EDITORIAL_FEED } from '../../../../../shared/publicationEditorial';
 import { PUBLICATION_PUBLISHER_ID } from '../../../../../shared/publicationBlocks';
 
 export type PublicationFollowLook = 'media' | 'block' | 'inline';
@@ -70,12 +48,13 @@ export function PublicationFollow({
     : following
       ? t('publication.following')
       : t('publication.follow');
+  const official = publisherId === PUBLICATION_PUBLISHER_ID;
+  const name = official ? 'ZAYROVI' : publisherName;
   const a11y = following
-    ? t('publication.unfollowLabel', { name: publisherName })
-    : t('publication.followLabel', { name: publisherName });
+    ? t('publication.unfollowLabel', { name })
+    : t('publication.followLabel', { name });
   const pressedStyle = { opacity: theme.opacity.subtle };
   const busyStyle = follow.state === 'pending' ? { opacity: theme.opacity.disabled } : null;
-  const official = publisherId === PUBLICATION_PUBLISHER_ID;
   const white = look !== 'inline';
   // Encre de la ligne « posée » : blanc pur sur média ; sur panneau, celle que le fond supporte.
   const lineInk = look === 'media' ? FOLLOW_ON_MEDIA.ink : ink;
@@ -87,8 +66,8 @@ export function PublicationFollow({
   // Visage du compte officiel devant son nom : disque noir, « Za. » jaune.
   // 19/11 : plus de cercle blanc autour (ni sur média, ni sur panneau). Jamais d'avatar emprunté.
   const avatar = official ? (
-    <View testID={`${testID}-avatar-ring`}>
-      <OfficialAvatar size={OFFICIAL_AVATAR.publication} testID={`${testID}-avatar`} />
+    <View testID={`${testID}-avatar-ring`} style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <BrandLogo height={15} tone="dark" testID={`${testID}-avatar`} />
     </View>
   ) : null;
 
@@ -107,7 +86,7 @@ export function PublicationFollow({
               numberOfLines={1}
               style={[styles.name, textShadow]}
             >
-              {publisherName}
+              {name}
             </PublicationText>
           </View>
           <Pressable
@@ -122,7 +101,7 @@ export function PublicationFollow({
               styles.pill,
               {
                 minHeight: look === 'media' ? PUBLICATION_TYPE.followHeightOnMedia : PUBLICATION_TYPE.followHeight,
-                paddingHorizontal: look === 'media' ? 16 : 24,
+                paddingHorizontal: 12,
                 borderColor: lineInk,
                 borderRadius: theme.radius.full,
                 flexDirection: direction,
@@ -138,7 +117,7 @@ export function PublicationFollow({
               variant="bodyStrong"
               color={lineInk}
               numberOfLines={1}
-              style={[look === 'block' ? styles.pillText : null, textShadow]}
+              style={[styles.pillText, textShadow]}
             >
               {text}
             </PublicationText>
@@ -148,7 +127,7 @@ export function PublicationFollow({
         <View style={[styles.inlineRow, { flexDirection: direction }]}>
           {avatar}
           <PublicationText testID={`${testID}-name`} variant="bodyStrong" color={ink} numberOfLines={1} style={styles.inlineName}>
-            {publisherName}
+            {name}
           </PublicationText>
           <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
             <PublicationText variant="bodyStrong" color={muted}>•</PublicationText>
@@ -160,10 +139,9 @@ export function PublicationFollow({
             accessibilityState={{ disabled: follow.disabled, selected: following }}
             disabled={follow.disabled}
             onPress={follow.press}
-            hitSlop={12}
-            style={({ pressed }) => [busyStyle, pressed ? pressedStyle : null]}
+            style={({ pressed }) => [styles.inlineButton, busyStyle, pressed ? pressedStyle : null]}
           >
-            <PublicationText variant="bodyStrong" color={following ? muted : ink} numberOfLines={1}>{text}</PublicationText>
+            <PublicationText variant="bodyStrong" color={following ? muted : ink} numberOfLines={1} style={styles.pillText}>{text}</PublicationText>
           </Pressable>
         </View>
       )}
@@ -180,14 +158,16 @@ export function PublicationFollow({
 const styles = StyleSheet.create({
   row: { alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   identity: { alignItems: 'center', gap: 8, flexShrink: 1 },
-  name: { flexShrink: 1 },
+  name: { flexShrink: 1, fontSize: EDITORIAL_FEED.publisher, lineHeight: EDITORIAL_FEED.publisherLine },
+  avatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: P.ink, alignItems: 'center', justifyContent: 'center' },
+  inlineButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 2 },
   pill: {
     borderWidth: PUBLICATION_TYPE.followBorder,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   },
-  pillText: { fontSize: PUBLICATION_TYPE.followSize, lineHeight: PUBLICATION_TYPE.followLine },
+  pillText: { fontSize: EDITORIAL_FEED.follow, lineHeight: EDITORIAL_FEED.followLine },
   inlineRow: { alignItems: 'center', gap: 6, minHeight: PUBLICATION_TYPE.touch },
-  inlineName: { flexShrink: 1 },
+  inlineName: { fontSize: EDITORIAL_FEED.publisher, lineHeight: EDITORIAL_FEED.publisherLine, flexShrink: 1 },
 });

@@ -28,6 +28,7 @@ import {
   TabLensIcon,
   TabProfileIcon,
   TabSonimIcon,
+  TabSocialIcon,
 } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
 import { TAB_BAR_SURFACE } from '@/design/tokens.mobile';
@@ -224,7 +225,7 @@ export default function TabsLayout() {
         }}
       />
       {/* Social entry hidden only; existing Publication and deep links remain valid. */}
-      <Tabs.Screen name="social" options={{ href: null, title: t('tabs.social') }} />
+      <Tabs.Screen name="social" options={{ href: null, title: t('tabs.social'), tabBarIcon: ({ color }) => <TabSocialIcon size={NAV_ICON_SIZE} color={color} /> }} />
       {/* Panier conservé comme route valide pour les liens directs, sans barre d'onglets. */}
       <Tabs.Screen name="cart" options={{ href: null, tabBarStyle: { display: 'none' }, title: t('tabs.cart') }} />
     </Tabs>

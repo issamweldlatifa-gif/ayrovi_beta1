@@ -1,3 +1,4 @@
+import { publicationImageFormat, type PublicationImageFormat } from '../../shared/publicationEditorial';
 /**
  * Blocs de la page Publication (modèles pilotés par le CRM, 13/11/2026).
  * Contrat et règles : `shared/publicationBlocks.ts`.
@@ -35,10 +36,12 @@ export const PUBLICATION_BLOCKS_SCHEMA = `
     kind TEXT NOT NULL CHECK(kind IN ('container','media','sponsored_pair','cinema')),
     title TEXT NOT NULL,
     subtitle TEXT NOT NULL DEFAULT '',
+    collection_description TEXT NOT NULL DEFAULT '',
     bg_color TEXT NOT NULL DEFAULT '#FFFFFF',
     panel_color TEXT NOT NULL DEFAULT '',
     sponsored INTEGER NOT NULL DEFAULT 0,
     media_type TEXT NOT NULL DEFAULT '' CHECK(media_type IN ('','image','video')),
+    image_format TEXT NOT NULL DEFAULT 'cover' CHECK(image_format IN ('cover','wide')),
     media_url TEXT NOT NULL DEFAULT '',
     poster_url TEXT NOT NULL DEFAULT '',
     product_ids TEXT NOT NULL DEFAULT '[]',
@@ -64,7 +67,7 @@ export function allowCinemaPublicationBlocks(db: { prepare: (sql: string) => { g
     db.exec('DROP INDEX IF EXISTS idx_publication_blocks_order');
     db.exec('ALTER TABLE publication_blocks RENAME TO publication_blocks_before_cinema');
     db.exec(PUBLICATION_BLOCKS_SCHEMA);
-    db.exec(`INSERT INTO publication_blocks (${columns}) SELECT ${columns} FROM publication_blocks_before_cinema`);
+    db.exec(`INSERT INTO publication_blocks (${columns},image_format) SELECT ${columns},'wide' FROM publication_blocks_before_cinema`);
     db.exec('DROP TABLE publication_blocks_before_cinema');
   })();
   return true;
@@ -75,10 +78,12 @@ export interface PublicationBlockRow {
   kind: PublicationBlockKind;
   title: string;
   subtitle: string;
+  collection_description: string;
   bg_color: string;
   panel_color: string;
   sponsored: number;
   media_type: '' | 'image' | 'video';
+  image_format: PublicationImageFormat;
   media_url: string;
   poster_url: string;
   product_ids: string;
@@ -146,19 +151,19 @@ export function createBlock(db: Store, value: PublicationBlockInput, now = new D
   const last = db.get<{ n: number | null }>('SELECT MAX(sort_order) n FROM publication_blocks');
   const order = Number.isFinite(Number(last?.n)) && last?.n !== null ? Number(last!.n) + 1 : 0;
   db.run(
-    `INSERT INTO publication_blocks (id,kind,title,subtitle,bg_color,panel_color,sponsored,media_type,media_url,poster_url,product_ids,sort_order,active,created_at,updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-    id, value.kind, value.title, value.subtitle, value.bg_color, value.panel_color, value.sponsored ? 1 : 0,
-    value.media_type, value.media_url, value.poster_url, JSON.stringify(value.product_ids), order, value.active ? 1 : 0, now, now,
+    `INSERT INTO publication_blocks (id,kind,title,subtitle,collection_description,bg_color,panel_color,sponsored,media_type,image_format,media_url,poster_url,product_ids,sort_order,active,created_at,updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+    id, value.kind, value.title, value.subtitle, value.collection_description ?? '', value.bg_color, value.panel_color, value.sponsored ? 1 : 0,
+    value.media_type, publicationImageFormat(value.image_format), value.media_url, value.poster_url, JSON.stringify(value.product_ids), order, value.active ? 1 : 0, now, now,
   );
   return id;
 }
 
 export function updateBlock(db: Store, id: string, value: PublicationBlockInput, now = new Date().toISOString()): void {
   db.run(
-    `UPDATE publication_blocks SET kind=?,title=?,subtitle=?,bg_color=?,panel_color=?,sponsored=?,media_type=?,media_url=?,poster_url=?,product_ids=?,active=?,updated_at=? WHERE id=?`,
-    value.kind, value.title, value.subtitle, value.bg_color, value.panel_color, value.sponsored ? 1 : 0,
-    value.media_type, value.media_url, value.poster_url, JSON.stringify(value.product_ids), value.active ? 1 : 0, now, id,
+    `UPDATE publication_blocks SET kind=?,title=?,subtitle=?,collection_description=?,bg_color=?,panel_color=?,sponsored=?,media_type=?,image_format=?,media_url=?,poster_url=?,product_ids=?,active=?,updated_at=? WHERE id=?`,
+    value.kind, value.title, value.subtitle, value.collection_description ?? '', value.bg_color, value.panel_color, value.sponsored ? 1 : 0,
+    value.media_type, publicationImageFormat(value.image_format), value.media_url, value.poster_url, JSON.stringify(value.product_ids), value.active ? 1 : 0, now, id,
   );
 }
 
@@ -221,10 +226,10 @@ export function isRecentProduct(createdAt: unknown, now: Date): boolean {
   return age >= 0 && age <= NEW_PRODUCT_DAYS * 86_400_000;
 }
 
-export function readPublicBlocks(db: Store, now: Date = new Date()): PublicationBlockPublic[] {
+export function readPublicBlocks(db: Store, now: Date = new Date(), id?: string): PublicationBlockPublic[] {
   const rows = db.all<PublicationBlockRow>(
-    'SELECT * FROM publication_blocks WHERE active=1 ORDER BY sort_order, created_at, id LIMIT ?',
-    PUBLICATION_BLOCK_LIMITS.publicBlocks,
+    `SELECT * FROM publication_blocks WHERE active=1 ${id ? 'AND id=?' : ''} ORDER BY sort_order, created_at, id LIMIT ?`,
+    ...(id ? [id] : []), id ? 1 : PUBLICATION_BLOCK_LIMITS.publicBlocks,
   );
   const wanted = [...new Set(rows.flatMap((row) => parseProductIds(row.product_ids)))];
   const products = new Map<string, Record<string, any>>();
@@ -248,7 +253,8 @@ export function readPublicBlocks(db: Store, now: Date = new Date()): Publication
       bgColor: row.bg_color,
       panelColor: row.kind === 'container' ? row.panel_color || containerPanelColor(row.bg_color) : '',
       sponsored: !!row.sponsored,
-      media: row.media_url && row.media_type ? { type: row.media_type, url: row.media_url, poster: row.poster_url || '' } : null,
+      ...(id ? { updatedAt: row.updated_at, description: row.collection_description || '' } : {}),
+      media: row.media_url && row.media_type ? { type: row.media_type, url: row.media_url, poster: row.poster_url || '', ...(row.kind === 'media' && row.media_type === 'image' ? { format: publicationImageFormat(row.image_format) } : {}) } : null,
       products: cards,
       publisher: { id: PUBLICATION_PUBLISHER_ID, name: PUBLICATION_PUBLISHER_NAME },
     };

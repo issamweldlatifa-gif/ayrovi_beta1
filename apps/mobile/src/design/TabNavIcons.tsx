@@ -80,8 +80,10 @@ export function TabCleanIcon({ size, focused, tone = 'brand' }: TabNavIconProps 
 }
 export const TabSonimIcon = TabCleanIcon;
 export const TabBrandIcon = TabHomeIcon;
-/** Kept for compatibility; never added back to the five-tab bar. */
+/** The small Social glyph uses just the original yellow Z symbol, never the full lockup. */
 export function TabSocialIcon({ size }: TabNavIconProps) {
-  const { dim, ink } = useIcon(size);
-  return <View style={{ width: dim, height: dim, alignItems: 'center', justifyContent: 'center' }}><BrandSymbol width={brandSymbolWidthForRadius(dim / 2)} color={ink} /></View>;
+  const { dim } = useIcon(size);
+  return <View style={[styles.slot, { width: dim, height: dim }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+    <BrandSymbol width={brandSymbolWidthForRadius(dim / 2)} color={BRAND.yellow} />
+  </View>;
 }

@@ -33,6 +33,7 @@ export function PublicationVideo({
   active,
   label,
   testID,
+  fit = 'cover',
 }: {
   uri: string;
   poster: string;
@@ -40,6 +41,7 @@ export function PublicationVideo({
   active: boolean;
   label: string;
   testID: string;
+  fit?: 'cover' | 'contain';
 }) {
   const theme = useTheme();
   const t = useT();
@@ -74,7 +76,7 @@ export function PublicationVideo({
   return (
     <View testID={testID} style={styles.fill}>
       {poster ? (
-        <AppImage uri={mediaUrl(poster)} accessibilityLabel={label} contentFit="cover" style={StyleSheet.absoluteFill} />
+        <AppImage uri={mediaUrl(poster)} accessibilityLabel={label} contentFit={fit} style={StyleSheet.absoluteFill} />
       ) : null}
       {player ? (
         <VideoView
@@ -84,7 +86,7 @@ export function PublicationVideo({
           surfaceType="textureView"
           player={player}
           nativeControls={false}
-          contentFit="cover"
+          contentFit={fit}
           style={[StyleSheet.absoluteFill, { opacity: ready ? 1 : 0 }]}
         />
       ) : null}

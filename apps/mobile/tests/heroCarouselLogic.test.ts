@@ -9,18 +9,18 @@ import {
 } from '../src/features/home/heroCarouselLogic';
 
 describe('carouselGeometry — dimensions selon l’écran', () => {
-  it('utilise un ratio vertical proche de la carte Amazon de référence (5:8)', () => {
-    expect(CARD_ASPECT).toBe(5 / 8);
-    expect(1 / CARD_ASPECT).toBe(1.6);
+  it('utilise un ratio vertical compact (4:5) en gardant le format portrait', () => {
+    expect(CARD_ASPECT).toBe(4 / 5);
+    expect(1 / CARD_ASPECT).toBe(1.25);
   });
 
   it('la gouttière d’écran VAUT l’espace entre cartes', () => {
     expect(EDGE_GUTTER).toBe(CARD_GAP);
   });
 
-  it.each([360, 390, 412, 430])('téléphone %i px : carte = 76 %, gouttière = espace inter-cartes', (screen) => {
+  it.each([360, 390, 412, 430])('téléphone %i px : carte = 74 %, gouttière = espace inter-cartes', (screen) => {
     const g = carouselGeometry(screen, 13);
-    expect(g.cardWidth).toBe(Math.round(screen * 0.76));
+    expect(g.cardWidth).toBe(Math.round(screen * 0.74));
     expect(g.startInset).toBe(CARD_GAP);
     expect(g.endInset).toBe(CARD_GAP);
     expect(g.centerInset).toBe((screen - g.cardWidth) / 2);

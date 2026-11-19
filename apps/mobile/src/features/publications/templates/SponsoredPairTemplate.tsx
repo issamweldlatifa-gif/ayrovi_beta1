@@ -1,28 +1,4 @@
-/**
- * Modèle `sponsored_pair` — planche GBox « WE Fashion » (14/11, 224107).
- *
- *   ┌──────── bandeau (couleur du CRM) ────────┐
- *   │ Sponsorisé ⓘ                              │
- *   │ Titre                 (gros, gras, 3 l.)  │
- *   │ Sous-titre                                │
- *   │   ┌──────────────────────────────────────── ← image : x = 24 dp, DÉBORDE à droite
- *   │   │  image (rapport 2,09)                    (« une image puis deux cartes »)
- *   └───┴────────────────────────────────────────
- *                   56 dp de blanc
- *   ╭──────────╮ ╭──────────╮
- *   │      ♡   │ │      ♡   │  ← 13/11 : deux cartes du système (164 dp, marge 12, écart 8), cœur nu
- *   │ [Nouveau]│ │          │
- *   ╰──────────╯ ╰──────────╯
- *   Sponsorisé   Sponsorisé
- *   Marque       Marque
- *   Nom          Nom
- *   Prix         Prix
- *
- * Avant le 14/11, le duo posait l'image et UNE carte côte à côte : le
- * propriétaire a signalé que « le modèle avec une image et deux cartes dessous »
- * ne correspondait pas. Le CRM accepte désormais 1 ou 2 produits ; avec un seul,
- * la carte garde sa largeur (jamais étirée).
- */
+import { distinctPublicationSubtitle, EDITORIAL_CAMPAIGN as C } from '../../../../../../shared/publicationEditorial';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { mediaUrl } from '@/api/client';
@@ -31,7 +7,7 @@ import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
 import { useI18n, useT } from '@/i18n';
 import { PublicationFollow } from '../PublicationFollow';
-import { PUBLICATION_PALETTE as P, PUBLICATION_TYPE, PublicationSponsored, PublicationText } from '../publicationDesign';
+import { PUBLICATION_PALETTE as P, PublicationSponsored, PublicationText } from '../publicationDesign';
 import { publicationBlockFont } from '../publicationTokens';
 import { blockInks } from './blockColors';
 import { BlockProductCard } from './BlockProductCard';
@@ -55,6 +31,7 @@ export function SponsoredPairTemplate({
   const band = blockInks(block.bgColor, P.ink, P.paper);
   const paper = blockInks(P.paper, P.ink, P.paper);
   const heading = { fontFamily: publicationBlockFont(locale, 'heading') };
+  const subtitle = distinctPublicationSubtitle(block.title, block.subtitle);
   const label = [block.sponsored ? t('publication.sponsored') : '', block.title, block.subtitle].filter(Boolean).join('. ');
   const direction = theme.isRTL ? 'row-reverse' : 'row';
   const reserveReference = products.some((product) => product.compareAtPrice != null && product.compareAtPrice > product.price);
@@ -81,8 +58,8 @@ export function SponsoredPairTemplate({
             <PublicationText testID={`publication-block-${block.id}-title`} variant="h2" color={band.ink} numberOfLines={2} style={[styles.title, heading]}>
               {block.title}
             </PublicationText>
-            {block.subtitle ? (
-              <PublicationText variant="h2" color={band.ink} numberOfLines={3} style={[styles.title, heading]}>{block.subtitle}</PublicationText>
+            {subtitle ? (
+              <PublicationText variant="body" color={band.muted} numberOfLines={2} style={styles.subtitle}>{subtitle}</PublicationText>
             ) : null}
           </View>
         </View>
@@ -93,7 +70,6 @@ export function SponsoredPairTemplate({
           onPress={() => onOpenProduct(first.id)}
           style={({ pressed }) => [
             styles.media,
-            theme.isRTL ? styles.mediaRTL : styles.mediaLTR,
             { width: metrics.pair.mediaWidth, height: metrics.pair.mediaHeight },
             pressed ? { opacity: theme.opacity.subtle } : null,
           ]}
@@ -109,7 +85,8 @@ export function SponsoredPairTemplate({
             product={product}
             width={metrics.pair.tileWidth}
             imageHeight={metrics.pair.cardImageHeight}
-            sponsored={block.sponsored}
+            compact
+            sponsored={false}
             inks={paper}
             reserveReference={reserveReference}
             onOpen={onOpenProduct}
@@ -125,12 +102,11 @@ const styles = StyleSheet.create({
   block: { width: '100%' },
   band: { paddingTop: T.bandPaddingTop },
   bandText: { paddingHorizontal: T.bandInset },
-  publisher: { paddingBottom: 8 },
-  titles: { paddingTop: 8 },
-  title: { fontSize: PUBLICATION_TYPE.bandTitleSize, lineHeight: PUBLICATION_TYPE.bandTitleLine },
-  media: { marginTop: T.pairTitleGap, backgroundColor: P.neutral, overflow: 'hidden' },
-  mediaLTR: { alignSelf: 'flex-end' },
-  mediaRTL: { alignSelf: 'flex-start' },
+  publisher: { paddingBottom: 2 },
+  titles: { gap: 2 },
+  subtitle: { fontSize: C.description, lineHeight: C.descriptionLine },
+  title: { fontSize: C.title, lineHeight: C.titleLine },
+  media: { marginTop: T.pairTitleGap, marginBottom: T.bandPaddingBottom, alignSelf: 'center', borderRadius: T.mediaRadius, backgroundColor: P.neutral, overflow: 'hidden' },
   fill: { width: '100%', height: '100%' },
   cards: { paddingHorizontal: T.pairInset, paddingTop: T.pairCardsTop, gap: T.pairSpacing },
 });
