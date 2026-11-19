@@ -251,7 +251,7 @@ describe('taux de change secondaires (live, jamais codés en dur)', () => {
     expect(snapshot?.extraRates?.CAD).toBeCloseTo(3.4 / 1.5, 5);
     expect(snapshot?.extraRates?.PLN).toBeCloseTo(3.4 / 4.3, 5);
     expect(snapshot?.extraRates?.XXX).toBeUndefined();
-    const rules = { rateEUR: 3.4, rateUSD: 3.1, rateGBP: 4, rateJPY: 0.02, extraRates: { CAD: 2.26 } } as PricingRules;
+    const rules = { ...pricingRules(), extraRates: { CAD: 2.26 } };
     expect(getExchangeRate(rules, 'CAD')).toBe(2.26);
     expect(getExchangeRate(rules, 'SEK')).toBeNull();
   });
