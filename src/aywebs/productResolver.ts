@@ -132,7 +132,7 @@ export interface AyWebsCapturedSelectionSummary {
   variantIdSource: AyWebsSelectionVerdict['variantIdSource'];
   availability: AyWebsAvailabilityState;
   availabilityReason: string;
-  /** Quantité affichée par la page, pour pré-remplir la quantité AYROVI. */
+  /** Quantité affichée par la page, pour pré-remplir la quantité ZAYROVI. */
   pageQuantity: number | null;
   image: string | null;
 }
@@ -567,7 +567,7 @@ export async function resolveAyWebsProduct(
     : capturedSelectionGroups;
   /* Mode sélection : le choix du client EST celui de la page. Un choix envoyé par
      l'application qui le contredit (ancienne feuille à choix) est refusé : on
-     change d'option sur la page du marchand, jamais dans AYROVI. */
+     change d'option sur la page du marchand, jamais dans ZAYROVI. */
   if (selectionVerdict && input.selectedVariant && Object.keys(input.selectedVariant).length > 0) {
     const pageNames = Object.keys(selectionVerdict.attributes);
     const { aligned } = ayWebsAlignAttributes(pageNames, input.selectedVariant);

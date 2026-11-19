@@ -1,9 +1,9 @@
 /**
  * AYWEBs — CAPTURE DE LA SÉLECTION DU CLIENT (principe du 19/11/2026).
  *
- *   « الحريف يختار ← AYWEBs يلتقط ← AYROVI تسعّر ← الحريف يؤكد »
+ *   « الحريف يختار ← AYWEBs يلتقط ← ZAYROVI تسعّر ← الحريف يؤكد »
  *   Le client choisit sur la page du marchand → AYWEBs capte CE choix →
- *   AYROVI calcule le prix final → le client confirme.
+ *   ZAYROVI calcule le prix final → le client confirme.
  *
  * Ce module juge UNIQUEMENT la combinaison affichée par la page au moment du
  * tap — jamais la matrice des tailles, couleurs, stocks et options non choisies.

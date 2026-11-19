@@ -1,9 +1,9 @@
 /**
- * AYWEBs — « الحريف يختار ← AYWEBs يلتقط ← AYROVI تسعّر ← الحريف يؤكد » (19/11/2026).
+ * AYWEBs — « الحريف يختار ← AYWEBs يلتقط ← ZAYROVI تسعّر ← الحريف يؤكد » (19/11/2026).
  *
  * Le client choisit taille / couleur / version / quantité SUR LA PAGE du
  * marchand ; AYWEBs capte CE choix (deux lectures concordantes), jamais la
- * matrice des combinaisons ; AYROVI calcule le prix ; le client confirme.
+ * matrice des combinaisons ; ZAYROVI calcule le prix ; le client confirme.
  *
  * Couvre aussi les correctifs de l'audit du 19/11 :
  *   P1-1 « $ » préfixé / marché TEMU ≠ USD · P1-2 identité SHEIN/TEMU ·

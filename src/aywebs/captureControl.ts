@@ -278,7 +278,7 @@ export function ayWebsCaptureHealth(
 }
 
 /* ── PRINCIPE DE CAPTURE PAR BOUTIQUE (19/11/2026) ─────────────────────────────
-   « Le client choisit → AYWEBs capte → AYROVI calcule → le client confirme ».
+   « Le client choisit → AYWEBs capte → ZAYROVI calcule → le client confirme ».
 
      • `selection` — on ne lit QUE le choix affiché (taille, couleur, version,
                      quantité), deux lectures concordantes, jamais la matrice ;
