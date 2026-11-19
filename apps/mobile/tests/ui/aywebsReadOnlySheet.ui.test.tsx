@@ -201,6 +201,8 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
     expect(fallback.props.contentFit).toBe('contain');
     const footer = within(screen.getByTestId('aywebs-sheet-purchase-footer'));
     expect(footer.getByText(/79[.,]40/)).toBeTruthy();
+    expect(footer.getByTestId('aywebs-sheet-price-provenance')).toHaveTextContent(/Devis vérifié pour ce choix/);
+    expect(footer.getByTestId('aywebs-confirm-merchant-price')).toHaveTextContent(/USD/);
     expect(footer.getByRole('button', { name: 'Ajouter au panier' })).toBeTruthy();
     expect(screen.getByTestId('aywebs-captured-selection-box')).toBeTruthy();
     expect(screen.getByText('Douane et livraison incluses')).toBeTruthy();

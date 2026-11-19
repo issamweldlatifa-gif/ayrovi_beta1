@@ -833,9 +833,13 @@ export function Hairline() {
 /* ── 8. Barre d'achat FIXE (prix à gauche, bouton noir à droite) ───────────── */
 
 export function BuyBar({
-  price, label, disabled, busy, onPress, testID, error,
+  price, label, disabled, busy, onPress, testID, error, selection, delivery, onSelectionPress, onHeight,
 }: {
   price: string;
+  selection?: string;
+  delivery?: string;
+  onSelectionPress?: () => void;
+  onHeight?: (height: number) => void;
   label: string;
   disabled: boolean;
   busy: boolean;
@@ -849,6 +853,7 @@ export function BuyBar({
   return (
     <View
       testID="product-buy-bar"
+      onLayout={onHeight ? event => onHeight(event.nativeEvent.layout.height) : undefined}
       style={[
         styles.buyBar,
         {
@@ -857,6 +862,14 @@ export function BuyBar({
         },
       ]}
     >
+      {selection || delivery ? <View style={styles.buyMeta}>
+        {selection ? onSelectionPress ? (
+          <Pressable style={styles.buySelection} accessibilityRole="button" onPress={onSelectionPress} testID="product-buy-selection">
+            <AppText variant="captionStrong">{selection}</AppText>
+          </Pressable>
+        ) : <AppText variant="captionStrong" testID="product-buy-selection">{selection}</AppText> : null}
+        {delivery ? <AppText variant="caption" color={theme.colors.muted} testID="product-buy-delivery">{delivery}</AppText> : null}
+      </View> : null}
       {error ? (
         <AppText accessibilityRole="alert" variant="caption" color={theme.status.danger.fg} style={styles.buyError}>
           {error}
@@ -1319,6 +1332,8 @@ const styles = StyleSheet.create({
 
   band: { height: FICHE.band },
 
+  buyMeta: { paddingHorizontal: RHYTHM.group, paddingTop: RHYTHM.tight },
+  buySelection: { minHeight: 44, justifyContent: 'center' },
   buyBar: { position: 'absolute', start: 0, end: 0, bottom: 0 },
   buyRow: {
     height: FICHE.barHeight,

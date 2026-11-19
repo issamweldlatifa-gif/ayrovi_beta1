@@ -1,3 +1,4 @@
+import { foldCatalogSearch } from '../../shared/catalogSearch';
 import { allowCinemaPublicationBlocks, completeDemoSponsoredPairs, installCinemaDemo, installPublicationBlocksDemo, PUBLICATION_BLOCKS_SCHEMA } from '../services/publicationBlocks';
 import { installOwnerReels } from '../magazine/installOwnerReels';
 import { schemaStatements } from './schemaStatements';
@@ -350,6 +351,7 @@ export class QatafoDatabase {
     this.databasePath = resolvedPath;
     const existingDatabase = resolvedPath !== ':memory:' && fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).size > 0;
     this.db = new Database(resolvedPath);
+    this.db.function('catalog_search_fold', { deterministic: true }, foldCatalogSearch);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
     this.db.pragma('busy_timeout = 5000');

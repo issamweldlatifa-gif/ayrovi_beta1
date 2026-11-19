@@ -9,7 +9,9 @@
  * (`''` / `0` / قائمة فارغة)، ولا استثناء يطيّح الشاشة كلها. والسعر المعروض
  * هو **سعر الخادم** (`finalPrice`) وحده: التطبيق ما يحسبش ديناراً واحداً.
  */
-import { apiGet } from './client';
+import type { CatalogSearchFacets, CatalogSearchFilters } from '../../../../shared/catalogSearch';
+import { ApiError } from './errors';
+import { apiGet, apiGetData } from './client';
 import type { RequestOptions } from './client';
 import { CURRENCY } from '@/format/money';
 
@@ -351,4 +353,33 @@ export async function fetchCatalogBrands(options?: RequestOptions): Promise<stri
   const { data } = await apiGet<unknown>('/api/public/brands', options);
   if (!Array.isArray(data)) return [];
   return data.map((entry) => text((entry as Record<string, unknown>)?.name)).filter(Boolean);
+}
+
+export interface CatalogSearchPage {
+  items: CatalogProduct[];
+  total: number;
+  nextOffset: number | null;
+  facets: CatalogSearchFacets | null;
+}
+
+export async function searchCatalog(input: CatalogSearchFilters & { q?: string; arrivalId?: string; offset?: number; suggest?: boolean }, options?: RequestOptions): Promise<CatalogSearchPage> {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(input)) {
+    if (value === true) query.set(key, '1');
+    else if (typeof value === 'number' || (typeof value === 'string' && value)) query.set(key, String(value));
+  }
+  const data = await apiGetData<CatalogSearchPage>(`/api/public/catalog-search?${query}`, options);
+  if (!data || !Array.isArray(data.items) || !Number.isSafeInteger(data.total) || data.total < 0
+    || (data.nextOffset !== null && (!Number.isSafeInteger(data.nextOffset) || data.nextOffset <= (input.offset ?? 0)))) {
+    throw new ApiError('malformed', 'Invalid catalog search page');
+  }
+  const facetRows = (value: unknown) => Array.isArray(value) ? value.filter((row): row is { id: string; label: string } => (
+    typeof row?.id === 'string' && Boolean(row.id) && typeof row.label === 'string' && Boolean(row.label)
+  )) : [];
+  const facets = data.facets ? {
+    categories: facetRows(data.facets.categories),
+    brands: facetRows(data.facets.brands),
+    sizes: Array.isArray(data.facets.sizes) ? data.facets.sizes.filter((size): size is string => typeof size === 'string' && Boolean(size.trim())) : [],
+  } : null;
+  return { ...data, facets, items: data.items.map(parseProduct).filter((item): item is CatalogProduct => item !== null) };
 }

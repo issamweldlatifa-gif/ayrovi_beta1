@@ -487,7 +487,8 @@ describe('fiche — contrat d’écran', () => {
     const afterScroll = screen.slice(screen.indexOf('</Animated.ScrollView>'));
     expect(afterScroll).toContain('<BuyBar');
     // Et la page réserve sa hauteur en bas du contenu.
-    expect(screen).toContain('paddingBottom: FICHE.ctaHeight + insets.bottom');
+    expect(screen).toContain('buyBarHeight || FICHE.ctaHeight + insets.bottom');
+    expect(afterScroll).toContain('onHeight={setBuyBarHeight}');
   });
 
   it('13/11 — aucune saccade à l’ouverture : le bas de la fiche attend la fin du glissement', () => {

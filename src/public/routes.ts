@@ -1,3 +1,4 @@
+import { parsePublicCatalogSearch, readCatalogSearch } from '../catalogue/publicSearch';
 import { readSocialCounts, readSocialComments } from '../magazine/socialEngagementReads';
 import { viewerContentReactions, writeSocialInteraction } from '../magazine/socialInteractions';
 import { readPublisherFollow, writePublisherFollow, writePublicationPreference } from '../magazine/publicationPreferences';
@@ -582,6 +583,13 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const rows = db.all<any>(`SELECT * FROM arrivals WHERE status IN ('ACTIVE','SCHEDULED')
       ORDER BY CASE type WHEN 'EXPRESS' THEN 0 ELSE 1 END,expected_arrival_at`);
     res.json({ success: true, data: rows.map(mapArrival), serverTime: new Date().toISOString() });
+  });
+
+  router.get('/catalog-search', (req, res) => {
+    const search = parsePublicCatalogSearch(req.query);
+    if (!search) return res.status(400).json({ success: false, error: 'Filtres invalides.' });
+    const result = readCatalogSearch(db, search);
+    res.json({ success: true, data: { ...result, items: result.items.map(mapProduct) } });
   });
 
   router.get('/products', (req, res) => {

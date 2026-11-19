@@ -18,6 +18,7 @@ export interface SocialEdition {
 export type SocialEditionHeader = Omit<SocialEdition, 'entries'>;
 export interface SocialProduct {
   id: string; name: string; brand: string; image: string; price: number;
+  compareAtPrice?: number | null;
   currency: 'TND'; available: true; isNew?: boolean; stockStatus: 'AVAILABLE' | 'LIMITED';
 }
 export type SocialEditorialCard =

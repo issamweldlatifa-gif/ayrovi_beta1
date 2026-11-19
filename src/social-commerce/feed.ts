@@ -47,7 +47,7 @@ function parsePage(rawFilter: unknown, rawCursor: unknown, now: string, edition:
 function catalogueCards(db: QatafoDatabase, ids: string[], now: string): Map<string, SocialProduct> {
   if (!ids.length) return new Map();
   const rows = db.all<Omit<SocialProduct, 'available' | 'currency' | 'isNew'> & { created_at: string }>(`SELECT p.id,p.name,COALESCE(p.brand_name,'') brand,COALESCE(p.image,'') image,
-    p.final_price price,p.stock_status stockStatus,p.created_at FROM products p
+    p.final_price price,CASE WHEN p.compare_at_price>p.final_price THEN p.compare_at_price END compareAtPrice,p.stock_status stockStatus,p.created_at FROM products p
     WHERE p.id IN (${ids.map(() => '?').join(',')}) AND p.status='ACTIVE' AND p.final_price>0
       AND p.stock_status IN ('AVAILABLE','LIMITED')
       AND (

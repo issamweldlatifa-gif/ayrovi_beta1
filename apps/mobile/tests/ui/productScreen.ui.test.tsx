@@ -140,6 +140,8 @@ describe('écran produit — aucun plantage au montage', () => {
     expect(screen.getByTestId('product-fiche-scroll')).toBeTruthy();
     expect(screen.getByTestId('product-photo-window')).toBeTruthy();
     expect(screen.getByTestId('product-size-row')).toBeTruthy();
+    expect(screen.getByTestId('product-buy-selection')).toHaveTextContent(/Choisir/);
+    expect(screen.getByTestId('product-buy-delivery')).toHaveTextContent(/Livraison estimée|Délai de livraison non confirmé/);
     view.unmount();
   });
 

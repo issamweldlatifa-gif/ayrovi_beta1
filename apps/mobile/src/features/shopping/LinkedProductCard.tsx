@@ -76,8 +76,10 @@ export function LinkedProductCard({
   };
 
   const price = `${formatAmount(product.price)} ${product.currency}`;
+  const reference = typeof product.compareAtPrice === 'number' && Number.isFinite(product.compareAtPrice) && product.compareAtPrice > product.price
+    ? `${formatAmount(product.compareAtPrice)} ${product.currency}` : null;
   const brand = (product.brand || '').trim();
-  const label = [brand, product.name, price].filter(Boolean).join(' — ');
+  const label = [brand, product.name, price, variant === 'editorial' && reference ? `${t('cart.originally')} ${reference}` : ''].filter(Boolean).join(' — ');
 
   if (variant === 'editorial') {
     return (
@@ -93,7 +95,9 @@ export function LinkedProductCard({
           </View>
           {brand ? <AppText variant="captionStrong" numberOfLines={1}>{brand}</AppText> : null}
           <AppText variant="caption" color={theme.colors.muted} numberOfLines={2}>{product.name}</AppText>
-          <AppText variant="captionStrong">{price}</AppText>
+          <AppText variant="captionStrong" numberOfLines={1}>{price}</AppText>
+          {reference ? <AppText variant="caption" color={theme.colors.muted} numberOfLines={1} style={styles.editorialReference}
+            testID={`linked-product-reference-${id}`}>{reference}</AppText> : null}
           {product.available === false ? <AppText variant="caption" color={theme.colors.muted}>{t('shopping.unavailable')}</AppText> : null}
         </Pressable>
         {onToggleFavorite ? <Pressable testID={`linked-product-fav-${id}`} accessibilityRole="button"
@@ -174,6 +178,7 @@ export function LinkedProductCard({
 }
 
 const styles = StyleSheet.create({
+  editorialReference: { textDecorationLine: 'line-through' },
   editorialLink: { gap: RHYTHM.inline },
   editorialImage: { aspectRatio: 1 / CARD_SYSTEM.imageRatio, borderRadius: CARD_SYSTEM.radius, marginBottom: RHYTHM.inline, overflow: 'hidden' },
   editorialFavorite: { position: 'absolute', top: CARD_SYSTEM.heartInset, end: CARD_SYSTEM.heartInset, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },

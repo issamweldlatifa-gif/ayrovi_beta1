@@ -664,19 +664,14 @@ export function AddToCartSheet({
     () => (merchantShown ? splitMerchantPrice(merchantShown.text) : { amount: '', note: '' }),
     [merchantShown],
   );
-  /**
-   * سطر المتجر: المبلغ المنشور على الصفحة (دولار/أورو…) — دليل على الثمن، موش
-   * الثمن اللي يخلّصو المستعمل. « à partir de » تتكتب كيف ما هي.
-   * RÈGLE STRICTE : si la variante choisie n'a pas de prix vérifié, on n'affiche
-   * JAMAIS le prix marchand d'une autre variante (`product.price`) comme prix actuel.
-   */
-  /** Prix publié par la boutique pour le choix capté (texte de la page, sinon montant serveur). */
-  const confirmMerchantPrice = useMemo(() => {
-    const amount = pageQuote?.sourcePrice ?? null;
-    const currency = pageQuote?.sourceCurrency || product.currency || '';
-    const verified = amount != null && amount > 0 ? `${formatAmount(amount)} ${currency}`.trim() : '';
-    return selectionCapture ? verified || merchantPrice.amount : merchantPrice.amount || verified;
-  }, [merchantPrice.amount, pageQuote?.sourceCurrency, pageQuote?.sourcePrice, product.currency, selectionCapture]);
+  // Only the current selection may supply a merchant amount; a "from" price is not exact.
+  const exactPageQuote = pageQuote && selectionKeyOf(pageQuote.selection) === selectionKeyOf(selection) ? pageQuote : null;
+  const merchantAmount = exactPageQuote?.sourcePrice;
+  const merchantCurrency = exactPageQuote?.sourceCurrency;
+  const exactMerchantPrice = merchantAmount != null && merchantAmount > 0 && merchantCurrency
+    ? `${formatAmount(merchantAmount)} ${merchantCurrency}` : '';
+  const observedMerchantPrice = merchantShown?.priceFrom ? '' : merchantPrice.amount;
+  const confirmMerchantPrice = missing.length ? '' : exactMerchantPrice || observedMerchantPrice;
 
   const availabilityLabel = useCallback((state: AvailabilityState): string => {
     if (state === 'AVAILABLE') return t('aywebs.avail.AVAILABLE');
@@ -1083,6 +1078,8 @@ export function AddToCartSheet({
   const resolvedTotalTnd = useMemo(() => resolveQuantityTotalTnd(quote, quantity), [quantity, quote]);
   const totalLine = resolvedTotalTnd != null ? tndText(resolvedTotalTnd) : '';
   const displayedTndLine = quantity > 1 && totalLine ? totalLine : sourceLine;
+  const signedSelectionPrice = Boolean(exactPageQuote?.quoteToken && exactPageQuote.unitTnd != null && exactPageQuote.unitTnd === quote.unitTnd
+    && !missing.length && (quantity === 1 || (resolvedTotalTnd !== null && exactPageQuote.quantityTotalsTnd?.[quantity - 1] === resolvedTotalTnd)));
   const title = product.title;
   const exactImage = pageQuote?.image || quote.image;
   const imageUri = readOnlySelection
@@ -1145,13 +1142,18 @@ export function AddToCartSheet({
   const priceBlock = (
     <View style={styles.priceStack}>
       {displayedTndLine ? (
-        <SalePrice
-          testID="aywebs-sheet-price"
-          price={displayedTndLine}
-          percent={discountMeta?.pct ?? null}
-          original={regularUnitTnd || undefined}
-          originalPrefix={t('cart.originally')}
-        />
+        <>
+          <AppText variant="captionStrong" testID="aywebs-sheet-price-provenance">
+            {signedSelectionPrice ? t('aywebs.priceVerifiedTnd') : t('aywebs.priceEstimateTnd')}
+          </AppText>
+          <SalePrice
+            testID="aywebs-sheet-price"
+            price={displayedTndLine}
+            percent={discountMeta?.pct ?? null}
+            original={regularUnitTnd || undefined}
+            originalPrefix={t('cart.originally')}
+          />
+        </>
       ) : quoting ? (
         <View style={[styles.pendingRow, { flexDirection: row }]}>
           <LoadingSpinner size="sm" color={theme.colors.muted} testID="aywebs-sheet-price-pending" />
@@ -1172,6 +1174,11 @@ export function AddToCartSheet({
       presentation="bottom"
       footer={(
         <View style={styles.purchaseFooter} testID="aywebs-sheet-purchase-footer">
+          {readOnlySelection && confirmMerchantPrice ? (
+            <AppText variant="caption" color={theme.colors.muted} testID="aywebs-confirm-merchant-price">
+              {t('aywebs.merchantPriceLine', { price: confirmMerchantPrice })}
+            </AppText>
+          ) : null}
           {readOnlySelection ? priceBlock : null}
           <Button
             label={busy ? t('aywebs.adding') : (readOnlySelection ? t('aywebs.confirmAddCta') : t('aywebs.addToCart'))}
@@ -1295,13 +1302,6 @@ export function AddToCartSheet({
                 </View>
               ))}
 
-              {/* Confirmation (19/11/2026) : le prix publié par la boutique pour CE choix,
-                  et une disponibilité non confirmée dite telle quelle — jamais « disponible ». */}
-              {confirmMerchantPrice ? (
-                <AppText variant="caption" color={theme.colors.muted} testID="aywebs-confirm-merchant-price">
-                  {t('aywebs.merchantPriceLine', { price: confirmMerchantPrice })}
-                </AppText>
-              ) : null}
               {quote.availability === 'UNKNOWN' && confirmMerchantPrice ? (
                 <AppText variant="caption" color={theme.colors.muted} testID="aywebs-confirm-availability-unconfirmed">
                   {t('aywebs.availUnconfirmed')}

@@ -111,6 +111,7 @@ export default function ProductScreen() {
    * المقاس واللون اللي اختارهم المستعمل — يتبعثوا مع السلّة
    * (`requestedSize` / `requestedColor`). وينتبدّلو كي يتبدّل المنتوج.
    */
+  const [buyBarHeight, setBuyBarHeight] = useState(0);
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
   /** الصورة المعروضة: تتبدّل كي يختار couleur عندها صورة (ميديا المتغيّر). */
@@ -346,7 +347,18 @@ export default function ProductScreen() {
 
   /** Livraison : la date est calculée à partir du délai publié par le CRM. */
   const deliveryDates = policy.data ? deliveryWindow(policy.data.deliveryDelay, new Date(), locale) : null;
-  const deliveryLines = deliveryDates ? [`${deliveryDates.from} - ${deliveryDates.to}`] : [];
+  const estimate = deliveryDates ? t('product.buy.deliveryEstimate', { from: deliveryDates.from, to: deliveryDates.to }) : '';
+  const deliveryLines = estimate ? [estimate] : [];
+  const selectedOptions = [chosenSize && `${sizeLabel} : ${chosenSize}`, chosenColor && `${colorLabel} : ${chosenColor}`].filter(Boolean).join(' · ');
+  // A selected variant uses its own tracked stock, not the product total.
+  const trackedStock = choice.variant ? choice.variant.stock : (sheet?.variants.length ? null : sheet?.stock.quantity ?? null);
+  let stockMessage = '';
+  if (outOfStock || (!choice.ready && !choice.missing)) stockMessage = t('product.buy.unavailable');
+  else if (!choice.missing) {
+    if (trackedStock !== null && trackedStock > 0) stockMessage = t('product.buy.inStock');
+    else stockMessage = t('product.buy.stockUnknown');
+  }
+  const selectionMessage = [choice.missing === 'size' ? t('product.buy.pickSize', { size: sizeLabel }) : selectedOptions, stockMessage].filter(Boolean).join(' · ');
   const paymentMethods = policy.data?.paymentMethods;
   const prepaidOnly = Array.isArray(paymentMethods) && paymentMethods.length > 0 && !paymentMethods.includes('COD');
   const returnLines = policy.data?.returnsDays
@@ -379,7 +391,7 @@ export default function ProductScreen() {
         overScrollMode="never"
         scrollEventThrottle={16}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
-        contentContainerStyle={{ paddingBottom: FICHE.ctaHeight + insets.bottom }}
+        contentContainerStyle={{ paddingBottom: purchasable && hasPrice ? (buyBarHeight || FICHE.ctaHeight + insets.bottom) : insets.bottom }}
         showsVerticalScrollIndicator={false}
       >
         {/* النافذة الشفافة: من هنا تبان الصورة الثابتة؛ تتقلّب بالإصبع والضغطة تفتح الفولسكرين */}
@@ -406,6 +418,8 @@ export default function ProductScreen() {
           price={hasPrice ? priceLabel : null}
           referencePrice={referencePrice}
         />
+
+        {outOfStock ? <AppText variant="label" color={theme.status.danger.fg}>{t('product.buy.unavailable')}</AppText> : null}
 
         {/* 3. خطّ رقيق ثمّ سطر Taille (réglet, comme Privé) */}
         <Hairline />
@@ -505,6 +519,10 @@ export default function ProductScreen() {
       {purchasable && hasPrice ? (
         <BuyBar
           price={priceLabel}
+          selection={selectionMessage}
+          onSelectionPress={chooseSize ? () => { setPendingAddOnSize(false); setSizeSheet(true); } : undefined}
+          delivery={estimate || t('product.buy.deliveryUnknown')}
+          onHeight={setBuyBarHeight}
           label={justAddedAt > 0 ? t('catalog.added') : t('catalog.addToCart')}
           busy={addToCart.isPending}
           disabled={!sessionId || !canOrder}

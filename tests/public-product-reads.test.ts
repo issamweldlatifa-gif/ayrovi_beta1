@@ -64,3 +64,43 @@ it('rejects invalid internal read options before executing SQL', () => {
   for (const limit of [0,51,1.5,NaN,Infinity]) expect(() => publicProductQuery({ scope: 'catalog', limit })).toThrow(RangeError);
   expect(() => publicProductQuery({ scope: 'unknown' as 'catalog', limit: 12 })).toThrow(RangeError);
 });
+
+it('searches beyond the first page with canonical category, brand, sizes, budget and confirmed inventory', async () => {
+  db.run('SAVEPOINT catalog_search_fixture');
+  const at = '2026-11-19T12:00:00.000Z';
+  try {
+    for (const [id, label, status] of [['search_cat', 'Écharpes', 'ACTIVE'], ['search_hidden_cat', 'Privée', 'ARCHIVED']]) {
+      db.run('INSERT INTO catalogue_categories(id,name,slug,status,created_at,updated_at) VALUES (?,?,?,?,?,?)', id, label, id, status, at, at);
+    }
+    db.run(`INSERT INTO brands(id,name,category,created_at,updated_at) VALUES ('search_brand','Atelier Démo','FASHION',?,?)`, at, at);
+    db.run(`INSERT INTO arrivals(id,name,type,status,expected_arrival_at,created_at,updated_at) VALUES ('search_arr','Search','STANDARD','ACTIVE',?,?,?)`, at, at, at);
+    for (let i = 0; i < 68; i++) {
+      const id = `search_${String(i).padStart(2, '0')}`;
+      db.run(`INSERT INTO products(id,name,status,visibility,category_id,brand_id,final_price,stock_status,created_at,updated_at)
+        VALUES (?,?,?,?,?,'search_brand',?,?,?,?)`, id, i === 64 ? 'Écharpe légère unique  مُخَطَّط' : 'Écharpe légère motif',
+        i === 66 ? 'DRAFT' : 'ACTIVE', i === 67 ? 'CONTENT' : 'CATALOG', i === 65 ? 'search_hidden_cat' : 'search_cat',
+        i === 64 ? 98.501 : 125, i === 63 ? 'OUT_OF_STOCK' : 'AVAILABLE', at, at);
+      db.run(`INSERT INTO product_arrivals(product_id,arrival_id) VALUES (?,'search_arr')`, id);
+    }
+    for (const [n, size, variantStatus, stock] of [
+      [60, 'L', 'ACTIVE', null], [61, 'M', 'ARCHIVED', 4], [62, 'L', 'ACTIVE', 0], [63, 'L', 'ACTIVE', 4], [64, 'L', 'ACTIVE', 4], [66, 'XXL', 'ACTIVE', 5], [67, 'XS', 'ACTIVE', 6],
+    ] as const) {
+      db.run('INSERT INTO catalogue_variants(id,product_id,sku,size,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?)', `sv${n}`, `search_${n}`, `SKU_${n}`, size, variantStatus, at, at);
+      if (stock !== null) db.run(`INSERT INTO inventory_stock_items(id,product_id,variant_id,quantity,created_at,updated_at) VALUES (?,?,?,?,?,?)`, `ss${n}`, `search_${n}`, `sv${n}`, stock, at, at);
+    }
+    const search = (query: Record<string, string | number> = {}) => request(app).get('/api/public/catalog-search').query({ arrivalId: 'search_arr', q: 'echarpe ATELIER', ...query });
+    const first = await search();
+    expect(first.status).toBe(200);
+    expect(first.body.data).toMatchObject({ total: 66, nextOffset: 30, facets: { categories: [{ id: 'search_cat', label: 'Écharpes' }], brands: [{ id: 'search_brand', label: 'Atelier Démo' }], sizes: ['L'] } });
+    expect(first.body.data.items).toHaveLength(30);
+    const tail = await search({ offset: 60 });
+    expect(tail.body.data.items.map((p: { id: string }) => p.id)).toEqual([60, 61, 62, 63, 64, 65].map(n => `search_${n}`));
+    expect(tail.body.data.nextOffset).toBeNull();
+    expect((await search({ size: 'L', available: '1' })).body.data.items.map((p: { id: string }) => p.id)).toEqual(['search_64']);
+    expect((await search({ categoryId: 'search_hidden_cat' })).body.data.total).toBe(0);
+    expect((await search({ categoryId: 'search_cat', brandId: 'search_brand', min: 98.501, max: 99 })).body.data.total).toBe(1);
+    expect((await search({ q: 'مخطط ECHARPE', suggest: '1' })).body.data).toMatchObject({ items: [{ id: 'search_64', finalPrice: 98.501 }], facets: null });
+    expect((await search({ q: "x' OR 1=1 --" })).body.data.total).toBe(0);
+    for (const query of [{ min: 100, max: 90 }, { offset: -1 }, { available: 'x' }, { q: 'a'.repeat(101) }]) expect((await search(query)).status).toBe(400);
+  } finally { db.run('ROLLBACK TO catalog_search_fixture'); db.run('RELEASE catalog_search_fixture'); }
+});

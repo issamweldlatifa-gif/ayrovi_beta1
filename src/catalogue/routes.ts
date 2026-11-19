@@ -1,3 +1,4 @@
+import { publicCatalogStockConfirmed } from './publicSearch';
 /**
  * ZAYROVI Catalogue (P2.1) — back-office API.
  *
@@ -108,6 +109,7 @@ export function createCatalogueRouter(db: QatafoDatabase): Router {
       success: true,
       data: {
         ...product,
+        public_catalog_stock_confirmed: publicCatalogStockConfirmed(db, product.id),
         variants: listVariants(db, product.id).map((variant) => ({
           ...variant, attributes: readAttributes(db, product.id, variant.id),
         })),

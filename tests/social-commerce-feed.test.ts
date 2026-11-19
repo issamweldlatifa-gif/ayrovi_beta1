@@ -66,10 +66,12 @@ describe('Social Commerce: bounded cursor, live content and checkout policy', ()
     product('p1'); product('p2', 'OUT_OF_STOCK'); product('p3');
     db.run(`INSERT INTO catalogue_variants (id,product_id,sku,size,status,created_at,updated_at)
       VALUES ('v1','p3','test-sku','L','ACTIVE',?,?)`, past, past);
+    db.run(`UPDATE products SET compare_at_price=79.9 WHERE id='p1'`);
+    db.run(`UPDATE products SET compare_at_price=30 WHERE id='p3'`);
     reel('r50', 'p1'); reel('r49', 'p2'); reel('r48', 'p3');
     for (let i = 30; i >= 20; i--) reel(`r${i}`, 'p1');
     const first = readSocialFeed(db, 'reels', undefined, now);
-    expect(first.items[0]).toMatchObject({ id: 'r50', products: [{ id: 'p1', price: 49.9, currency: 'TND', isNew: false }] });
+    expect(first.items[0]).toMatchObject({ id: 'r50', products: [{ id: 'p1', price: 49.9, compareAtPrice: 79.9, currency: 'TND', isNew: false }] });
     expect(first.items.slice(1).every(row => row.kind === 'reel' && row.products.length === 0)).toBe(true);
     const next = readSocialFeed(db, 'reels', first.nextCursor, now);
     expect(next.items.slice(0, 2).every(row => row.kind === 'reel' && row.products.length === 0)).toBe(true);
@@ -78,7 +80,7 @@ describe('Social Commerce: bounded cursor, live content and checkout policy', ()
     expect(publish().status).toBe(200);
     expect(readSocialFeed(db, 'magazine', undefined, now).items).toEqual([]);
     db.run(`INSERT INTO inventory_stock_items (id,product_id,variant_id,quantity,created_at,updated_at) VALUES ('inv','p3','v1',2,?,?)`, past, past);
-    expect(readSocialFeed(db, 'magazine', undefined, now).items[0]).toMatchObject({ product: { id: 'p3', available: true } });
+    expect(readSocialFeed(db, 'magazine', undefined, now).items[0]).toMatchObject({ product: { id: 'p3', available: true, compareAtPrice: null } });
   });
 
   it('validates eligibility and scheduling, prevents lost edits, supports rollback and resets a stale cursor', () => {

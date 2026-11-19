@@ -372,11 +372,25 @@ const rows0 = (value: any): any[] => (Array.isArray(value) ? value : []);
 
 const ProductDetail: React.FC<{ product: any; can: (resource: string, action: string) => boolean; onChanged: () => void; onToast: (value: ToastValue) => void }> = ({ product, can, onChanged, onToast }) => {
   const [tab, setTab] = useState<'variants' | 'media' | 'apercu'>('variants');
-  const [variantDraft, setVariantDraft] = useState({ sku: '', barcode: '', size: '', color: '', status: 'ACTIVE', position: '100' });
+  const blankVariant = { sku: '', barcode: '', size: '', color: '', status: 'ACTIVE', position: '100' };
+  const [variantDraft, setVariantDraft] = useState(blankVariant);
+  const [editingVariant, setEditingVariant] = useState<string | null>(null);
+  const [variantError, setVariantError] = useState('');
   const [mediaDraft, setMediaDraft] = useState({ media_type: 'IMAGE', url: '', alt_text: '', sort_order: '0', variant_id: '' });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [byField, setByField] = useState<Record<string, string>>({});
+
+  const saveVariant = async (event: React.FormEvent) => {
+    event.preventDefault(); setBusy(true); setVariantError(''); setByField({});
+    try {
+      await adminApi(editingVariant ? `/catalogue/variants/${editingVariant}` : `/catalogue/products/${product.id}/variants`, {
+        method: editingVariant ? 'PUT' : 'POST', body: JSON.stringify({ ...variantDraft, position: Number(variantDraft.position) }),
+      });
+      setEditingVariant(null); setVariantDraft(blankVariant); onChanged();
+    } catch (e: any) { const parsed = fieldErrors(e); setVariantError(parsed.message); setByField(parsed.byField); }
+    finally { setBusy(false); }
+  };
 
   const submit = async (path: string, body: Record<string, unknown>) => {
     setBusy(true); setError('');
@@ -397,10 +411,22 @@ const ProductDetail: React.FC<{ product: any; can: (resource: string, action: st
       <div><span>Statut</span><strong><StatusBadge status={product.status} /></strong></div>
       <div><span>Marque</span><strong>{product.brand?.name || product.brand_name || '—'}</strong></div>
       <div><span>Catégorie</span><strong>{product.category?.name || product.category || '—'}</strong></div>
-      <div><span>Prix affiché</span><strong>{Number(product.final_price || 0).toFixed(3)} {product.currency || 'TND'}<small className="admin-block-small">calculé par le moteur de tarification</small></strong></div>
+      <div><span>Prix affiché</span><strong>{Number(product.final_price) > 0 ? `${Number(product.final_price).toFixed(3)} TND` : 'Non renseigné'}<small className="admin-block-small">Prix de vente local calculé</small></strong></div>
+      <div><span>Prix marchand d’origine</span><strong>{Number(product.original_price) > 0 && product.currency ? `${Number(product.original_price).toFixed(3)} ${product.currency}` : 'Non renseigné'}</strong></div>
       <div><span>Créé par</span><strong>{product.created_by || '—'}</strong></div>
       <div><span>Modifié par</span><strong>{product.updated_by || '—'}</strong></div>
     </div>
+    <section aria-label="Découverte dans la boutique" className="admin-detail-grid">
+      <div><span>Recherche boutique</span><strong>{product.visibility === 'CONTENT' ? 'Réservé aux contenus' : product.status === 'ACTIVE' ? 'Visible dans la recherche' : 'Non publié'}</strong></div>
+      <div><span>Facettes</span><strong>{[
+        product.category?.status === 'ACTIVE' ? null : 'Catégorie active à lier',
+        product.brand?.status === 'ACTIVE' ? null : 'Marque active à lier',
+        rows0(product.variants).some((row: any) => row.status === 'ACTIVE' && String(row.size ?? '').trim()) ? null : 'Aucune taille active (si applicable)',
+      ].filter(Boolean).join(' · ') || 'Catégorie, marque et tailles renseignées'}</strong></div>
+      {typeof product.public_catalog_stock_confirmed === 'boolean' && product.visibility !== 'CONTENT' && product.status === 'ACTIVE' ? (
+        <div><span>Filtre « Stock confirmé »</span><strong>{product.public_catalog_stock_confirmed ? 'Inclus' : 'Non inclus'}<small className="admin-block-small">Vérifier le prix de vente, le statut public et les lignes actives dans Inventaire → Stock.</small></strong></div>
+      ) : null}
+    </section>
     {rows0(product.attributes ? Object.entries(product.attributes) : []).length > 0 && (
       <p className="admin-block-small">Attributs produit: {Object.entries<string>(product.attributes || {}).map(([key, value]) => <code key={key}>{key}={value}</code>)} </p>
     )}
@@ -422,20 +448,27 @@ const ProductDetail: React.FC<{ product: any; can: (resource: string, action: st
           { key: 'color', label: 'Couleur', render: (row: any) => row.color || '—' },
           { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={row.status} /> },
           { key: 'attributes', label: 'Attributs', render: (row: any) => <small>{Object.entries<string>(row.attributes || {}).map(([key, value]) => `${key}=${value}`).join(' · ') || '—'}</small> },
-          { key: 'action', label: '', render: (row: any) => (row.status !== 'ARCHIVED' && can('variant', 'delete')
-            ? <Button variant="ghost" onClick={() => act('DELETE', `/catalogue/variants/${row.id}`, 'Variante archivée — le SKU reste réservé, il ne sera jamais réattribué.')}>Retirer</Button>
-            : <small className="admin-block-small">—</small>) },
+          { key: 'action', label: '', render: (row: any) => row.status !== 'ARCHIVED' ? <>
+            {can('variant', 'update') && <Button variant="ghost" onClick={() => {
+              setEditingVariant(row.id); setVariantError(''); setByField({});
+              setVariantDraft({ sku: row.sku, barcode: row.barcode ?? '', size: row.size ?? '', color: row.color ?? '', status: row.status, position: String(row.sort_order ?? 100) });
+            }}>Modifier</Button>}
+            {can('variant', 'delete') && <Button variant="ghost" onClick={() => act('DELETE', `/catalogue/variants/${row.id}`, 'Variante archivée — le SKU reste réservé, il ne sera jamais réattribué.')}>Retirer</Button>}
+          </> : null },
         ]}
       />
-      {can('variant', 'create') && (
-        <Form className="admin-inline-form" onSubmit={(event) => { event.preventDefault(); submit(`/catalogue/products/${product.id}/variants`, { ...variantDraft, position: Number(variantDraft.position), sku: variantDraft.sku }).then(() => setVariantDraft({ sku: '', barcode: '', size: '', color: '', status: 'ACTIVE', position: '100' })); }}>
+      {(editingVariant ? can('variant', 'update') : can('variant', 'create')) && (
+        <Form className="admin-inline-form" onSubmit={saveVariant}>
+          {editingVariant ? <p className="admin-block-small">Modifier : {variantDraft.sku}</p> : null}
+          {variantError ? <p className="admin-field-error" role="alert">{variantError}</p> : null}
           <Field label="SKU" required error={byField.sku} hint="unique en base, insensitive à la casse"><input value={variantDraft.sku} onChange={(event) => setVariantDraft({ ...variantDraft, sku: event.target.value.toUpperCase() })} required /></Field>
           <Field label="Code-barres" error={byField.barcode}><input value={variantDraft.barcode} onChange={(event) => setVariantDraft({ ...variantDraft, barcode: event.target.value })} /></Field>
           <Field label="Taille" error={byField.size}><input value={variantDraft.size} onChange={(event) => setVariantDraft({ ...variantDraft, size: event.target.value })} /></Field>
           <Field label="Couleur" error={byField.color}><input value={variantDraft.color} onChange={(event) => setVariantDraft({ ...variantDraft, color: event.target.value })} /></Field>
-          <Field label="Statut" error={byField.status}><Select value={variantDraft.status} onChange={(event) => setVariantDraft({ ...variantDraft, status: event.target.value })} options={options(['DRAFT', 'ACTIVE', 'INACTIVE'])} /></Field>
+          <Field label="Statut" error={byField.status}><Select value={variantDraft.status} onChange={(event) => setVariantDraft({ ...variantDraft, status: event.target.value })} options={options(['DRAFT', 'ACTIVE'])} /></Field>
           <Field label="Position" error={byField.position}><input type="number" min={0} max={9999} value={variantDraft.position} onChange={(event) => setVariantDraft({ ...variantDraft, position: event.target.value })} /></Field>
-          <Button type="submit" busy={busy}>Ajouter la variante</Button>
+          <Button type="submit" busy={busy}>{editingVariant ? 'Enregistrer la variante' : 'Ajouter la variante'}</Button>
+          {editingVariant ? <Button type="button" variant="ghost" onClick={() => { setEditingVariant(null); setVariantDraft(blankVariant); setVariantError(''); setByField({}); }}>Annuler</Button> : null}
         </Form>
       )}
       <p className="admin-block-small">Les valeurs d’attribut d’une variante se lisent ici et s’écrivent par l’API (<code>attributes</code> dans la charge utile de la variante) —

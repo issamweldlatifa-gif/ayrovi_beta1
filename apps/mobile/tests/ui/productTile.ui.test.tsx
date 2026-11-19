@@ -10,7 +10,7 @@
  * pas de points pour une photo seule, fenêtre bornée, page suivie au défilement.
  */
 import React from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { FlatList, StyleSheet } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -40,6 +40,7 @@ jest.mock('../../src/session/session', () => ({ useSessionId: () => 'sess_test' 
 jest.mock('../../src/api/catalog', () => ({
   ...jest.requireActual('../../src/api/catalog'),
   fetchCatalogProducts: jest.fn(async () => []),
+  searchCatalog: jest.fn(async () => ({ items: [], total: 0, nextOffset: null, facets: null })),
   fetchCatalogArrivals: jest.fn(async () => []),
 }));
 
@@ -48,6 +49,7 @@ jest.mock('../../src/api/catalog', () => ({
 import { ProductCard } from '../../src/features/catalog/ProductCard';
 // eslint-disable-next-line import/first
 import CatalogScreen from '../../app/catalog';
+import { searchCatalog } from '../../src/api/catalog';
 
 /** Les points sont cachés aux lecteurs d'écran (la galerie annonce « photo 2 sur 6 ») : on les cherche quand même. */
 const HIDDEN = { includeHiddenElements: true } as const;
@@ -246,10 +248,41 @@ describe('ProductCard — boutique', () => {
 });
 
 describe('Boutique — grille et bascule grandes / petites photos', () => {
+  it('proposes a catalogue suggestion, applies filters, and preserves the current results on product open', async () => {
+    const mockedSearch = jest.mocked(searchCatalog);
+    const sample = product({ id: 'p_search', name: 'Veste Écrue' });
+    const facets = { categories: [{ id: 'cat_vest', label: 'Vestes' }], brands: [], sizes: ['S', 'M'] };
+    mockedSearch.mockImplementation(async input => ({ items: [sample], total: 1, nextOffset: null, facets: input.suggest ? null : facets }));
+    try {
+      const AsyncStorage = require('@react-native-async-storage/async-storage');
+      await AsyncStorage.removeItem('zayrovi.catalog.recent.v1');
+      const client = newClient();
+      const view = render(wrap(<CatalogScreen />, client));
+      const input = view.getByTestId('catalog-search-input');
+      fireEvent.changeText(input, 'veste');
+      expect(await view.findByTestId('catalog-suggestion-p_search')).toBeTruthy();
+      fireEvent.press(view.getByTestId('catalog-search-submit'));
+      await waitFor(() => expect(mockedSearch).toHaveBeenCalledWith(expect.objectContaining({ q: 'veste', offset: 0 }), expect.anything()));
+      expect(JSON.parse(await AsyncStorage.getItem('zayrovi.catalog.recent.v1'))).toEqual(['veste']);
+      fireEvent.press(view.getByTestId('catalog-filters'));
+      fireEvent.press(await view.findByText('Stock confirmé', { exact: true }));
+      fireEvent.press(view.getByTestId('catalog-filters-apply'));
+      await waitFor(() => expect(mockedSearch).toHaveBeenCalledWith(expect.objectContaining({ q: 'veste', offset: 0, available: true }), expect.anything()));
+      expect(await view.findByText('Stock confirmé ×')).toBeTruthy();
+      fireEvent.press(await view.findByTestId('product-card-p_search-photo-0'));
+      expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/product/[id]', params: { id: 'p_search' } });
+      expect(view.getByTestId('catalog-search-input').props.value).toBe('veste');
+      fireEvent.press(view.getByText('Stock confirmé ×'));
+      expect(view.queryByText('Stock confirmé ×')).toBeNull();
+    } finally {
+      mockedSearch.mockImplementation(async () => ({ items: [], total: 0, nextOffset: null, facets: null }));
+    }
+  });
+
   it('compteur, bascule enregistrée, colonnes qui changent, fiche ouverte sur la photo', async () => {
     mockPush.mockClear();
     const client = newClient();
-    client.setQueryData(['catalog', 'products', ''], [product(), product({ id: 'p2', name: 'Autre' }), product({ id: 'p3', name: 'Encore' })]);
+    client.setQueryData(['catalog', 'search', '', '', {}], { pages: [{ items: [product(), product({ id: 'p2', name: 'Autre' }), product({ id: 'p3', name: 'Encore' })], total: 3, nextOffset: null, facets: null }], pageParams: [0] });
     client.setQueryData(['catalog', 'arrivals'], []);
     render(wrap(<CatalogScreen />, client));
     await act(async () => {});
