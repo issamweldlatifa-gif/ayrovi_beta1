@@ -1,3 +1,4 @@
+import { publicShareUrl } from '@/features/links/shareLinks';
 /**
  * صفحة المنتوج — **الفيش الكاملة** (إعادة بناء 25/10/2026، الموكاب
  * `docs/design/cardproduit/mockup-complet-25-10.png`).
@@ -208,10 +209,12 @@ export default function ProductScreen() {
    */
   const shareName = product?.name ?? '';
   const sharePrice = product && product.finalPrice > 0 ? `${formatMoney(product.finalPrice)}` : '';
+  const shareUrl = publicShareUrl('p', product?.id, locale);
   const share = useCallback(() => {
     if (!shareName) return;
-    Share.share({ message: sharePrice ? `${shareName} — ${sharePrice}` : shareName }).catch(() => null);
-  }, [shareName, sharePrice]);
+    const message = shareUrl ? `${shareName}\n${shareUrl}` : sharePrice ? `${shareName} — ${sharePrice}` : shareName;
+    Share.share({ message }).catch(() => null);
+  }, [shareName, sharePrice, shareUrl]);
 
   /**
    * « زيد للسلّة » — `/api/cart/catalog` يستعمل `final_price` المنشور ⇒ سعر واحد.

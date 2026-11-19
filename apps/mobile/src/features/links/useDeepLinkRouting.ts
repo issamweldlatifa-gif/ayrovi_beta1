@@ -1,8 +1,8 @@
 /** Subscribe before readiness so links arriving during startup are not lost. */
 import { useEffect, useRef } from 'react';
-import { Linking } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { resolveDeepLink } from './resolve';
+import { resolveDeepLink, resolveHttpsShareLink } from './resolve';
 
 export function useDeepLinkRouting(enabled: boolean): void {
   const pending = useRef<string | null>(null);
@@ -22,6 +22,12 @@ export function useDeepLinkRouting(enabled: boolean): void {
     let receivedWarmLink = false;
     const deliver = (raw: string | null) => {
       if (!alive || !raw) return false;
+      // Expo +native-intent rewrites HTTPS item shares at the router entrance.
+      // Do not push them again on top of the screen the router already opened.
+      if (Platform.OS !== 'web' && resolveHttpsShareLink(raw)) {
+        pending.current = null;
+        return true;
+      }
       const route = resolveDeepLink(raw);
       if (!route) return false; // Keep the existing host/path allowlist, even while queued.
       if (ready.current) router.push(route as never);

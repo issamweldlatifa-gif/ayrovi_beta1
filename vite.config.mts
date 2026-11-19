@@ -10,28 +10,34 @@ const fromProjectRoot = (relativePath: string) => fileURLToPath(new URL(relative
 const buildStamp = (process.env.GITHUB_SHA || '').slice(0, 7)
   || new Date().toISOString().slice(0, 10);
 
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  define: {
-    __ZAYROVI_BUILD_STAMP__: JSON.stringify(buildStamp),
-    /* Origine de l'API injectée à la construction (04/10/2026) : le paquet
-     * Android embarque la valeur, on ne peut donc pas la changer après coup.
-     *   VITE_ZAYROVI_API_ORIGIN=https://mon-serveur.example npx vite build
-     * Vide ⇒ repli sur l'origine de production (apiOrigin.ts). */
-    __ZAYROVI_API_ORIGIN__: JSON.stringify(String(process.env.VITE_ZAYROVI_API_ORIGIN || '').trim()),
-  },
-  root: fromProjectRoot('./client'),
-  build: {
-    outDir: fromProjectRoot('./public'),
-    emptyOutDir: true,
-  },
-  server: {
-    port: 5173,
-    host: '0.0.0.0',
-    allowedHosts: true,
-    proxy: {
-      '/api': 'http://localhost:3000',
-      '/uploads': 'http://localhost:3000',
+export default defineConfig(({ mode }) => {
+  const admin = mode === 'admin';
+  return {
+    base: admin ? '/admin-build/' : '/',
+    publicDir: admin ? false : undefined,
+    plugins: [react(), tailwindcss()],
+    define: {
+      __ZAYROVI_BUILD_STAMP__: JSON.stringify(buildStamp),
+      /* Origine de l'API injectée à la construction (04/10/2026) : le paquet
+       * Android embarque la valeur, on ne peut donc pas la changer après coup.
+       *   VITE_ZAYROVI_API_ORIGIN=https://mon-serveur.example npx vite build
+       * Vide ⇒ repli sur l'origine de production (apiOrigin.ts). */
+      __ZAYROVI_API_ORIGIN__: JSON.stringify(String(process.env.VITE_ZAYROVI_API_ORIGIN || '').trim()),
     },
-  },
+    root: fromProjectRoot('./client'),
+    build: {
+      outDir: fromProjectRoot(admin ? './dist/admin' : './public'),
+      ...(admin ? { rollupOptions: { input: fromProjectRoot('./client/admin.html') } } : {}),
+      emptyOutDir: true,
+    },
+    server: {
+      port: 5173,
+      host: '0.0.0.0',
+      allowedHosts: true,
+      proxy: {
+        '/api': 'http://localhost:3000',
+        '/uploads': 'http://localhost:3000',
+      },
+    },
+  };
 });

@@ -1,0 +1,47 @@
+name: Verify published public homepage
+on:
+  push:
+    branches: ['arena/6b1f5276-ayrovi-beta1']
+    paths: ['src/public/homepage.ts', 'web/landing/**', '.github/workflows/public-home-verification.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Check the existing public origins without changing either service
+        shell: bash
+        run: |
+          probe() {
+            local base="$1" ready failed=0
+            ready=$(curl -fsS --max-time 5 "$base/api/ready" 2>/dev/null || true)
+            local commit branch
+            commit=$(jq -r '.commit // "unknown"' <<<"${ready:-null}" 2>/dev/null || true)
+            branch=$(jq -r '.branch // "unknown"' <<<"${ready:-null}" 2>/dev/null || true)
+            local home="${RUNNER_TEMP}/home-body" alias="${RUNNER_TEMP}/home-alias"
+            curl -fsS --max-time 8 "$base/" -o "$home" && grep -Fq '/site-assets/site.css' "$home" || failed=1
+            curl -fsS --max-time 8 "$base/ar/" -o "$home" && grep -Fq 'lang="ar" dir="rtl"' "$home" || failed=1
+            curl -sS --max-time 8 -o /dev/null -D "$alias" "$base/index.html" && tr -d '\r' < "$alias" | grep -qi '^location: /$' || failed=1
+            curl -fsS --max-time 8 "$base/?customerAuth=error" -o "$home" && ! grep -Fq '/site-assets/site.css' "$home" || failed=1
+            curl -fsS --max-time 8 "$base/site-assets/site.css" -o /dev/null || failed=1
+            printf '%s commit=%s branch=%s homepage-contract=%s\n' "$base" "${commit:-unknown}" "${branch:-unknown}" "$failed"
+            return "$failed"
+          }
+          primary=https://ayrovi-beta1-moo8.onrender.com
+          domain=https://zayrovi.com
+          for attempt in {1..10}; do
+            if detail=$(probe "$primary" 2>/dev/null); then
+              echo "::notice title=Existing Render origin verified::$detail"
+              if custom=$(probe "$domain" 2>/dev/null); then echo "::notice title=Custom domain verified::$custom"
+              else echo "::warning title=Custom domain not verified::$custom"; fi
+              exit 0
+            fi
+            echo "$detail (attempt $attempt)"
+            sleep 9
+          done
+          echo "::error title=Live rollout not verified::$detail"
+          custom=$(probe "$domain" 2>/dev/null) || true
+          echo "::notice title=Custom domain observation::$custom"
+          exit 1

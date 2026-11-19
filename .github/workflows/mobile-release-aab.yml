@@ -28,6 +28,10 @@ on:
         description: "Origine de l'API gravée dans l'application"
         required: true
         default: "https://ayrovi-beta1-moo8.onrender.com"
+      share_web_origin:
+        description: "Origine HTTPS du site public (facultatif; laisser vide tant que le site n'est pas validé)"
+        required: false
+        type: string
       version_name:
         description: "Nom de version publié (ex. 2.0.0)"
         required: true
@@ -47,6 +51,8 @@ jobs:
   bundle:
     name: Bundle signé (.aab)
     runs-on: ubuntu-latest
+    env:
+      EXPO_PUBLIC_SHARE_WEB_ORIGIN: ${{ inputs.share_web_origin }}
     defaults:
       run:
         working-directory: apps/mobile

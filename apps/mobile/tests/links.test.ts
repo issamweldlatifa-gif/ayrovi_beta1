@@ -5,6 +5,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { DEEP_LINK_HOSTS, resolveDeepLink } from '../src/features/links/resolve';
+import { publicShareUrl } from "../src/features/links/shareLinks";
+import { redirectSystemPath } from "../app/+native-intent";
 
 describe('traduction des URL du site', () => {
   it('ouvre un produit, une commande, un article', () => {
@@ -112,4 +114,40 @@ describe('Social Commerce', () => {
     expect(resolveDeepLink('https://zayrovi.com/social-other')).toBeNull();
     expect(resolveDeepLink('https://other.example/social?filter=stories')).toBeNull();
   });
+});
+
+describe('per-item share links', () => {
+  it('resolves exact item IDs with both locales and preserves the scheme fallback', () => {
+    expect(resolveDeepLink('https://zayrovi.com/p/product_1')).toBe('/product/product_1');
+    expect(resolveDeepLink('https://zayrovi.com/ar/r/reel_1')).toBe('/reels-viewer?id=reel_1&shared=1');
+    expect(resolveDeepLink('https://zayrovi.com/ar/s/story_1')).toBe('/stories?id=story_1');
+    expect(resolveDeepLink('zayrovi://reels-viewer?id=reel_1&shared=1')).toBe('/reels-viewer?id=reel_1&shared=1');
+    expect(resolveDeepLink('zayrovi://stories?id=story_1')).toBe('/stories?id=story_1');
+    expect(resolveDeepLink('zayrovi://lens')).toBe('/lens');
+  });
+  it('rejects unknown hosts, invalid IDs and unsafe query payloads', () => {
+    expect(resolveDeepLink('https://thirdparty.example/ar/p/a')).toBeNull();
+    expect(resolveDeepLink('http://zayrovi.com/p/a')).toBeNull();
+    expect(resolveDeepLink('https://zayrovi.com:8443/p/a')).toBeNull();
+    expect(resolveDeepLink('https://zayrovi.com/p/a/b')).toBeNull();
+    expect(resolveDeepLink('https://zayrovi.com/r/%2Fa')).toBeNull();
+    expect(resolveDeepLink('zayrovi://reels-viewer?id=%2Faccounts')).toBeNull();
+  });
+});
+
+it('creates HTTPS share links only with an explicit separate website origin', () => {
+  expect(publicShareUrl('s', 'story_1', 'ar', 'https://public.example')).toBe('https://public.example/ar/s/story_1');
+  expect(publicShareUrl('p', 'product_1', 'fr', null)).toBeNull();
+  expect(publicShareUrl('p', '../product_1', 'fr', 'https://public.example')).toBeNull();
+  expect(publicShareUrl('p', 'product_1', 'fr', 'https://public.example/unsafe')).toBeNull();
+});
+
+it('rewrites short system links before Expo routing, without taking over OAuth or scheme links', () => {
+  for (const initial of [true, false]) {
+    expect(redirectSystemPath({ path: 'https://zayrovi.com/ar/s/story_1', initial })).toBe('/stories?id=story_1');
+    expect(redirectSystemPath({ path: 'https://zayrovi.com/r/reel_1?shared=0', initial })).toBe('/reels-viewer?id=reel_1&shared=1');
+    for (const path of ['https://unknown.example/p/item', 'https://zayrovi.com/r/%2Fa', 'zayrovi://lens', 'https://zayrovi.com/auth/native-done.html']) {
+      expect(redirectSystemPath({ path, initial })).toBe(path);
+    }
+  }
 });

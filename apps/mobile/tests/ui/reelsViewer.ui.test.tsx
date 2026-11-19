@@ -7,7 +7,8 @@ import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
 const mockReels: { data: unknown; isPending: boolean; isPlaceholderData?: boolean } = { data: undefined, isPending: true };
-jest.mock('expo-router', () => ({ useIsFocused: () => true, useLocalSearchParams: () => ({ id: 'r2' }) }));
+let mockShared: string | undefined;
+jest.mock('expo-router', () => ({ useIsFocused: () => true, useLocalSearchParams: () => ({ id: 'r2', shared: mockShared }) }));
 jest.mock('../../src/api/hooks', () => ({ useReels: () => mockReels, useSocialCounts: () => ({ data: {} }) }));
 jest.mock('../../src/features/reels/reelVisibility', () => ({ useHiddenReels: () => [] }));
 jest.mock('../../src/features/social/ReelCard', () => ({ ReelCard: () => null }));
@@ -55,4 +56,15 @@ it('plays the visible Reel, preloads ONLY the next one, and never unmounts on co
   expect(card(2)).toMatchObject({ active: false, preload: true });
   expect(card(0)).toMatchObject({ active: false, preload: false });
   expect(card(3)).toMatchObject({ active: false, preload: false });
+});
+
+
+it('does not autoplay a different Reel when an exact shared link is no longer available', () => {
+  mockShared = '1';
+  mockReels.data = [{ id: 'r1' }]; mockReels.isPending = false; mockReels.isPlaceholderData = false;
+  try {
+    render(wrap());
+    expect(screen.queryByTestId('reels-viewer-list')).toBeNull();
+    expect(screen.getByTestId('reels-viewer-empty')).toBeTruthy();
+  } finally { mockShared = undefined; }
 });

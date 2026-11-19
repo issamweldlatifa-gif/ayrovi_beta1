@@ -1,3 +1,4 @@
+import { readShareCard } from '../magazine/publicShare';
 import { parsePublicCatalogSearch, readCatalogSearch } from '../catalogue/publicSearch';
 import { readSocialCounts, readSocialComments } from '../magazine/socialEngagementReads';
 import { viewerContentReactions, writeSocialInteraction } from '../magazine/socialInteractions';
@@ -227,6 +228,16 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       footerAbout: String(facts.footer_about || ''),
     };
   };
+
+  router.get('/share/:kind/:id', (req, res) => {
+    const { kind, id } = req.params;
+    res.setHeader('Cache-Control', 'no-store');
+    if ((kind !== 'product' && kind !== 'reel' && kind !== 'story') || !/^[A-Za-z0-9_-]{1,150}$/.test(id))
+      return res.status(404).json({ success: false, error: 'Contenu introuvable.' });
+    const card = readShareCard(db, kind, id, new Date().toISOString());
+    if (!card) return res.status(404).json({ success: false, error: 'Contenu introuvable.' });
+    return res.json({ success: true, data: card });
+  });
 
   router.get('/commerce-config', (_req, res) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');

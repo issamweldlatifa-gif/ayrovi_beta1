@@ -150,7 +150,7 @@ export const ReelCard = memo(function ReelCard({
     if (reaction.love()) hearts.current?.burst(x, y);
   }, [reaction]);
   const visibleError = error || (reaction.error ? t("common.retry") : "");
-  const share = useCallback(() => shareReel(reel, title), [reel, title]);
+  const share = useCallback(() => shareReel(reel, title, locale), [reel, title, locale]);
   const shareWithFeedback = () => {
     setError("");
     share().catch(() => setError(t("common.retry")));

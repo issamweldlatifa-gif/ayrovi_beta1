@@ -8,7 +8,7 @@
     "dev": "npm run build && node dist/server.js",
     "build:client": "vite build",
     "build:server": "node -e 'require(\"esbuild\").buildSync({entryPoints:[\"src/server.ts\"],bundle:true,platform:\"node\",target:\"node20\",outfile:\"dist/server.js\",external:[\"better-sqlite3\",\"jsdom\",\"express\",\"compression\",\"cors\",\"dotenv\",\"multer\",\"sharp\",\"pdf-to-img\",\"tesseract.js\",\"mailparser\"]})'",
-    "build": "npm run build:client && npm run build:server",
+    "build": "npm run build:client && npm run build:landing && npm run build:server",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit",
     "test": "vitest run",
     "gate": "bash scripts/prepush-gate.sh",
@@ -68,7 +68,12 @@
     "test:security:local": "vitest run tests/adversarial-customer-isolation.test.ts tests/adversarial-inputs.test.ts tests/authenticated-rate-key.test.ts tests/rate-limit.test.ts tests/customer-mobile-session.test.ts tests/customer-account-settings.test.ts tests/customer-native-oauth-handoff.test.ts tests/customer-password-recovery.test.ts tests/assistant-tool-security.test.ts tests/quote-security.test.ts tests/public-upload-policy.test.ts tests/safe-url.test.ts tests/admin-bootstrap-security.test.ts tests/hardening.test.ts tests/social-interaction-boundary.test.ts tests/publication-preference-boundary.test.ts tests/push.test.ts",
     "loadtest": "node scripts/load-test.mjs",
     "sql:capture": "node scripts/sql-capture.cjs",
-    "pg:bench": "node scripts/pg-capacity-bench.mjs"
+    "pg:bench": "node scripts/pg-capacity-bench.mjs",
+    "build:landing": "node web/landing/build.mjs",
+    "serve:landing": "node web/runtime/start.mjs landing",
+    "build:admin": "vite build --mode admin",
+    "serve:admin": "node web/runtime/start.mjs admin",
+    "verify:public-cutover": "node verify/public-cutover.mjs"
   },
   "keywords": [
     "zayrovi",

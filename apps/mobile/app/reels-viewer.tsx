@@ -54,14 +54,17 @@ export default function ReelsViewerScreen() {
   const [{ width, height }, setViewport] = useState({ width: window.width, height: window.height });
   const listRef = useRef<FlatList<Reel>>(null);
   const previousHeight = useRef(height);
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, shared } = useLocalSearchParams<{ id?: string; shared?: string }>();
 
   const reels = useReels(true, id);
   const hidden = useHiddenReels();
+  const sharedMissing = shared === "1" && !!id && !!reels.data &&
+    (!reels.data.some(reel => reel.id === id) || hidden.includes(id));
   const rows = useMemo(() => {
+    if (sharedMissing) return [];
     const excluded = new Set(hidden);
     return (reels.data ?? []).filter(reel => !excluded.has(reel.id));
-  }, [reels.data, hidden]);
+  }, [reels.data, hidden, sharedMissing]);
 
   const initialIndex = Math.max(
     0,
@@ -86,9 +89,9 @@ export default function ReelsViewerScreen() {
 
   useEffect(() => {
     // Hidden items must not make the viewer claim there is no content while more pages exist.
-    if (focused && rows.length === 0 && reels.hasNextPage && !reels.isFetching && !reels.isFetchNextPageError)
+    if (focused && !sharedMissing && rows.length === 0 && reels.hasNextPage && !reels.isFetching && !reels.isFetchNextPageError)
       void reels.fetchNextPage();
-  }, [focused, rows.length, reels.hasNextPage, reels.isFetching, reels.isFetchNextPageError, reels.fetchNextPage]);
+  }, [focused, sharedMissing, rows.length, reels.hasNextPage, reels.isFetching, reels.isFetchNextPageError, reels.fetchNextPage]);
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
   const onViewableItemsChanged = useRef(
@@ -158,7 +161,7 @@ export default function ReelsViewerScreen() {
         renderItem={renderItem}
       /> : null}
 
-      {reels.isPending || reels.isPlaceholderData || (rows.length === 0 && reels.hasNextPage && !reels.isFetchNextPageError) ? (
+      {reels.isPending || reels.isPlaceholderData || (!sharedMissing && rows.length === 0 && reels.hasNextPage && !reels.isFetchNextPageError) ? (
         <View testID="reels-viewer-loading" style={styles.feedback}>
           <BrandLoadingIndicator />
         </View>
@@ -168,7 +171,7 @@ export default function ReelsViewerScreen() {
           <ErrorBlock error={reels.error} onRetry={() => reels.refetch()} />
         </View>
       ) : null}
-      {!reels.isPending && !reels.isError && !reels.hasNextPage && rows.length === 0 ? (
+      {!reels.isPending && !reels.isError && (!reels.hasNextPage || sharedMissing) && rows.length === 0 ? (
         <View testID="reels-viewer-empty" style={styles.feedback}>
           <AppText color={theme.colors.onMedia}>{t("social.empty")}</AppText>
         </View>

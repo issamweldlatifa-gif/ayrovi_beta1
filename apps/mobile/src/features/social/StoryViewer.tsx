@@ -14,7 +14,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated, Image, Modal, Pressable, StatusBar, StyleSheet, View,
+  Animated, Image, Modal, Pressable, Share, StatusBar, StyleSheet, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -22,7 +22,8 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { useT } from '@/i18n';
+import { useI18n } from '@/i18n';
+import { publicShareUrl } from '@/features/links/shareLinks';
 import { mediaUrl } from '@/api/client';
 import { useSession } from '@/state/session';
 import { fetchSocialEngagement, sendInteraction } from '@/api/social';
@@ -35,7 +36,7 @@ import { useDoubleTap } from '@/design/reactions/useDoubleTap';
 import { DoubleTapHearts, type DoubleTapHeartsHandle } from '@/design/reactions/DoubleTapHearts';
 import type { ContentReaction } from '@/design/reactions/reactionModel';
 import { formatRailCount } from '@/features/reels/reelTray';
-import { RADIUS } from '@/design/tokens.mobile';
+import { RADIUS, veil } from '@/design/tokens.mobile';
 
 /** مدّة الستوري الواحد: صورة 6 ثوانٍ، فيديو مدّته من الخادم. */
 const IMAGE_DURATION_MS = 6_000;
@@ -52,7 +53,7 @@ export interface StoryViewerProps {
 
 export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpenTarget, onStorySeen }: StoryViewerProps) {
   const theme = useTheme();
-  const t = useT();
+  const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const session = useSession();
   const guestSession = useSessionId();
@@ -166,6 +167,9 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
   const bars = useMemo(() => stories.map((_, position) => position), [stories]);
 
   if (!current) return null;
+  const shareUrl = publicShareUrl('s', current.id, locale);
+  const title = (locale === 'ar' && current.titleAr) || current.title;
+  const description = (locale === 'ar' && current.descriptionAr) || current.description;
 
   return (
     <Modal visible={visible} animationType="fade" statusBarTranslucent onRequestClose={onClose}>
@@ -190,12 +194,19 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
         </View>
 
         {/* رأس: الإغلاق */}
-        <View style={styles.topRow}>
+        <View style={styles.topRow} pointerEvents="box-none">
+          {shareUrl ? <Pressable accessibilityRole="button" accessibilityLabel={t('social.share')}
+            onPress={() => {
+              setPaused(true);
+              void Share.share({ message: `${title || t('sections.stories')}\n${shareUrl}` }).catch(() => null).finally(() => setPaused(false));
+            }} style={[styles.headerButton, { backgroundColor: veil(0.66) }]}>
+            <Ionicons name="share-outline" size={theme.iconSize.md} color={theme.colors.onMedia} />
+          </Pressable> : null}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={t('social.close')}
             onPress={onClose}
-            style={styles.close}
+            style={[styles.headerButton, { backgroundColor: veil(0.66) }]}
           >
             <Ionicons name="close" size={theme.iconSize.md} color={theme.colors.onMedia} />
           </Pressable>
@@ -241,16 +252,16 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
             <Image source={{ uri: mediaUrl(current.mediaUrl) }} style={StyleSheet.absoluteFill} resizeMode="cover" />
           ) : (
             <View style={[StyleSheet.absoluteFill, styles.emptyMedia, { backgroundColor: theme.colors.surface }]}>
-              <AppText variant="label" color={theme.colors.muted}>{current.title || t('sections.stories')}</AppText>
+              <AppText variant="label" color={theme.colors.muted}>{title || t('sections.stories')}</AppText>
             </View>
           )}
         </View>
 
         {/* التذييل: العنوان + الإجراءات */}
         <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
-          {current.title ? <AppText variant="h3" color={theme.colors.onMedia}>{current.title}</AppText> : null}
-          {current.description ? (
-            <AppText variant="caption" color={theme.colors.onMedia} numberOfLines={3}>{current.description}</AppText>
+          {title ? <AppText variant="h3" color={theme.colors.onMedia}>{title}</AppText> : null}
+          {description ? (
+            <AppText variant="caption" color={theme.colors.onMedia} numberOfLines={3}>{description}</AppText>
           ) : null}
 
           {current.product ? (
@@ -302,8 +313,8 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   bars: { flexDirection: 'row', gap: 4, paddingHorizontal: 10, paddingTop: 8 },
   barTrack: { flex: 1, height: 3, borderRadius: RADIUS.full, overflow: 'hidden' },
-  topRow: { flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 10, paddingTop: 8 },
-  close: { padding: 4 },
+  topRow: { zIndex: 3, flexDirection: 'row', justifyContent: 'flex-end', gap: 8, paddingHorizontal: 10, paddingTop: 8 },
+  headerButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: RADIUS.full },
   tapZone: { position: 'absolute', top: 0, bottom: 0, width: '33%', zIndex: 2 },
   tapLeft: { left: 0 },
   tapRight: { right: 0 },

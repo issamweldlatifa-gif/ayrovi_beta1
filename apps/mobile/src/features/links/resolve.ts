@@ -1,3 +1,4 @@
+import { SHARE_WEB_ORIGIN, isShareId } from './shareLinks';
 import { API_BASE_URL } from '@/api/config';
 import { parseSocialFilter } from '@/features/social-commerce/navigation';
 import { DEEP_LINK_SCHEME } from '@/config/deepLinks';
@@ -116,12 +117,33 @@ export function resolveDeepLink(rawUrl: string | null | undefined): string | nul
     return matchRoute(path.replace(/\/{2,}/g, '/').replace(/\/$/, '') || '/', url.searchParams);
   }
   if (scheme !== 'http' && scheme !== 'https') return null;
-  if (!deepLinkHosts().includes(url.hostname.toLowerCase())) return null;
+  const sharePath = /^\/(?:ar\/)?[prs]\//.test(normalizePathname(url));
+  if (sharePath && (scheme !== 'https' || url.username || url.password || url.port)) return null;
+  const shareHost = url.origin === SHARE_WEB_ORIGIN && sharePath;
+  if (!shareHost && !deepLinkHosts().includes(url.hostname.toLowerCase())) return null;
 
   return matchRoute(normalizePathname(url), url.searchParams);
 }
 
+/** The exact HTTPS item paths Expo Router handles before mounting a screen. */
+export function resolveHttpsShareLink(raw: string): string | null {
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'https:' || url.username || url.password || url.port ||
+      !/^\/(?:ar\/)?[prs]\/[A-Za-z0-9_-]{1,150}\/?$/.test(url.pathname)) return null;
+    return resolveDeepLink(raw);
+  } catch { return null; }
+}
+
 function matchRoute(path: string, params: URLSearchParams): string | null {
+  const shared = /^\/(?:ar\/)?([prs])\/([^/]+)$/.exec(path);
+  if (shared && isShareId(shared[2])) {
+    const [, kind, id] = shared;
+    return kind === 'p' ? `/product/${id}` : kind === 'r' ? `/reels-viewer?id=${id}&shared=1` : `/stories?id=${id}`;
+  }
+  const itemId = params.get('id');
+  if (path === '/reels-viewer') return isShareId(itemId) ? `/reels-viewer?id=${itemId}${params.get('shared') === '1' ? '&shared=1' : ''}` : null;
+  if (path === '/stories' && isShareId(itemId)) return `/stories?id=${itemId}`;
   if (path === '/social') return `/(tabs)/social?filter=${parseSocialFilter(params.get('filter'))}`;
   if (path === '/' || path === '') return '/(tabs)';
 

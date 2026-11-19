@@ -33,3 +33,12 @@ it('retains cold links, rejects foreign hosts, and ignores late OS replies after
   await act(async () => resolveInitial('https://zayrovi.com/catalog'));
   expect(router.push).toHaveBeenCalledTimes(1);
 });
+
+it('leaves exact HTTPS item shares to Expo Router and drops any older queued navigation', async () => {
+  const hook = renderHook<void, { enabled: boolean }>(({ enabled }) => useDeepLinkRouting(enabled), { initialProps: { enabled: false } });
+  act(() => receive({ url: 'https://zayrovi.com/catalog' }));
+  act(() => receive({ url: 'https://zayrovi.com/ar/r/reel_1' }));
+  hook.rerender({ enabled: true });
+  await act(async () => resolveInitial('https://zayrovi.com/orders'));
+  expect(router.push).not.toHaveBeenCalled();
+});

@@ -11,6 +11,7 @@ import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
 import { KNOWN_PAGE_PATHS, isKnownPagePath, sitemapRoutes } from '../shared/publicSeo';
+import { appleAppLinksForHost } from '../shared/appleAppLinks';
 import { ANDROID_APP_LINK_ENV, appLinksDiagnostics, appLinksForDeployment } from '../shared/appLinks';
 import { deploymentIdentity } from './services/deploymentIdentity';
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
@@ -26,6 +27,7 @@ import { createZayrovixRouter } from './zayrovix/routes';
 import { createAdminRouter } from './admin/routes';
 import { requireAdmin } from './admin/auth';
 import { createPublicRouter } from './public/routes';
+import { isLegacyReturn, publicHomepageRouter } from './public/homepage';
 import { createCustomerRouter } from './customer/routes';
 import { processCustomerAuthMail } from './customer/accountMail';
 import { startFxRatesScheduler } from './services/fxRates';
@@ -424,6 +426,25 @@ app.use('/reset-password', (_req, res, next) => {
   res.setHeader('X-Robots-Tag', 'noindex, nofollow');
   next();
 });
+// Keep the historical SPA handling for auth/payment returns, but keep their
+// query strings out of indexing, shared caches, and referrer headers.
+app.use((req, res, next) => {
+  if (['/', '/index.html'].includes(req.path) && isLegacyReturn(req.originalUrl)) {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  }
+  next();
+});
+// Use the existing Render service for the approved homepage cutover. The
+// standalone site/Admin artifacts remain available for a future ingress split.
+const publishHomepage = process.env.ZAYROVI_PUBLIC_SITE === 'landing' ||
+  (process.env.ZAYROVI_PUBLIC_SITE !== 'legacy' && process.env.NODE_ENV === 'production' && Boolean(process.env.RENDER));
+if (publishHomepage) {
+  app.use(publicHomepageRouter(process.env.ZAYROVI_WEB_ORIGIN || process.env.PUBLIC_BASE_URL || 'https://zayrovi.com',
+    path.resolve(process.cwd(), 'dist/landing')));
+}
+
 // Sitemap : engendré depuis le contrat partagé `shared/publicSeo.ts`, jamais depuis un fichier
 // statique recopié à la main (l'ancien `public/sitemap.xml` ne listait qu'une seule URL et
 // pouvait diverger sans que rien ne le signale).
@@ -462,6 +483,16 @@ app.get('/.well-known/assetlinks.json', (_req, res) => {
   }
   res.setHeader('Cache-Control', 'public, max-age=300');
   res.json(statement);
+});
+
+// iOS fetches a JSON file without an extension. Do not let the legacy SPA
+// claim this path or advertise a synthetic App ID when signing is unconfigured.
+app.get(['/.well-known/apple-app-site-association', '/apple-app-site-association'], (req, res) => {
+  const statement = appleAppLinksForHost(process.env, req.get('host'));
+  res.setHeader('X-Robots-Tag', 'noindex');
+  res.setHeader('Cache-Control', statement ? 'public, max-age=300' : 'no-store');
+  if (!statement) return res.status(404).json({ error: 'IOS_APP_LINK_NOT_CONFIGURED' });
+  return res.json(statement);
 });
 
 app.use(express.static(publicDir, {
