@@ -78,10 +78,10 @@ describe('phase 4 — barre Publication et feuille de commentaires', () => {
     expect(engagement).not.toMatch(/third:|publication-summary-/);
   });
 
-  it('J’aime : bouton officiel Z-Reactions ; posé = liseré blanc, compteur à l’encre (jamais tout bleu)', () => {
+  it('J’aime et J’adore : glyphes pleins sur Publication, compteur à l’encre', () => {
     expect(engagement).toMatch(/<ReactionButton[\s\S]*?strongCount[\s\S]*?ink=\{P\.ink\}/);
     expect(engagement).not.toContain('tintLabel');
-    expect(code('src/design/reactions/ReactionButton.tsx')).toMatch(/rim=\{reaction !== null \? \(media \? theme\.colors\.onMedia : theme\.colors\.surface\) : undefined\}/);
+    expect(code('src/design/reactions/ReactionButton.tsx')).toContain('<ReactionMark reaction={reaction} size={size} color={media ? undefined : color} />');
   });
 
   it('feuille : AUCUN autocollant, GIF, émoji ni appareil photo', () => {

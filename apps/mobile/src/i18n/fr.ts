@@ -287,7 +287,7 @@ export const fr = {
   'socialCommerce.lens': 'Rechercher avec Z Lens',
   'reel.captionMore': 'Voir plus',
   'reel.captionLess': 'Voir moins',
-  'reel.followConfirmed': 'Vous suivez cette marque',
+  'reel.followConfirmed': 'Vous suivez cette marque ! Retrouvez ses nouveautés dans ses publications et ses Reels.',
   'social.reels': 'Reels',
   'social.comments': 'Commentaires',
   'social.like': 'J’aime',

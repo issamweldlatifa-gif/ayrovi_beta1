@@ -24,7 +24,8 @@ import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
 import { useReduceMotion } from '@/design/motion';
-import { MEDIA_GLYPH_SHADOW, RADIUS, elevation, veil } from '@/design/tokens.mobile';
+import { MEDIA_GLYPH_SHADOW, RADIUS, REACTION_COLORS, elevation } from '@/design/tokens.mobile';
+import { ReactionMark } from './ReactionMark';
 import { LikeSparks, ReelGlyph } from '@/features/reels/ReelIcons';
 import {
   REACTION_LONG_PRESS_MS,
@@ -76,10 +77,10 @@ const MINI_HEARTS = [
   { x: 0, y: -13, size: 6, rotate: '0deg' },
   { x: 10, y: -22, size: 12, rotate: '14deg' },
 ] as const;
-/** Une case du sélecteur : glyphe 28 + libellé « Je n’aime pas » lisible sur une ligne. */
-const PICKER_ITEM_WIDTH = 76;
-const PICKER_ITEM_HEIGHT = 60;
-const PICKER_PAD = 6;
+// Icon-only white pill as in the reference; each reaction retains an accessible name.
+const PICKER_ITEM_WIDTH = 48;
+const PICKER_ITEM_HEIGHT = 48;
+const PICKER_PAD = 4;
 const PICKER_WIDTH = PICKER_ITEM_WIDTH * REACTION_ORDER.length + PICKER_PAD * 2;
 const PICKER_HEIGHT = PICKER_ITEM_HEIGHT + PICKER_PAD * 2;
 const EDGE = 8;
@@ -97,7 +98,7 @@ function ReactionGlyph({ reaction, ink, size, media = false }: { reaction: Conte
   const reduce = useReduceMotion();
   const tilt = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
-  const sparks = useRef(new Animated.Value(reaction === 'like' ? 1 : 0)).current;
+  const sparks = useRef(new Animated.Value(0)).current;
   const minis = useRef(new Animated.Value(0)).current;
   const miniFade = useRef(new Animated.Value(0)).current;
   const previous = useRef(reaction);
@@ -110,13 +111,16 @@ function ReactionGlyph({ reaction, ink, size, media = false }: { reaction: Conte
     tilt.setValue(0);
     scale.setValue(1);
     miniFade.setValue(0);
-    sparks.setValue(reaction === 'like' && reduce ? 1 : 0);
+    sparks.setValue(0);
     if (reduce || reaction === null) return;
     if (reaction === 'like') {
       tilt.setValue(-TILT_DEG);
       Animated.parallel([
         Animated.spring(tilt, { toValue: 0, friction: 5, tension: 160, useNativeDriver: true }),
-        Animated.timing(sparks, { toValue: 1, duration: 160, delay: 110, useNativeDriver: true }),
+        Animated.sequence([
+          Animated.timing(sparks, { toValue: 1, duration: 160, delay: 110, useNativeDriver: true }),
+          Animated.timing(sparks, { toValue: 0, duration: 180, useNativeDriver: true }),
+        ]),
       ]).start();
     } else if (reaction === 'dislike') {
       tilt.setValue(TILT_DEG);
@@ -159,22 +163,16 @@ function ReactionGlyph({ reaction, ink, size, media = false }: { reaction: Conte
           ],
         }}
       >
-        {/* Sur vidéo (option A, 14/11) : pouce blanc PLEIN au repos, ombre douce.
-            Sur carte : contour au repos, plein coloré une fois posé.
-            Posé (retour du 14/11, « pas tout bleu ») : liseré BLANC + contour
-            défini, comme le pouce de Facebook — jamais une tache de couleur. */}
-        <ReelGlyph
-          name={reactionGlyph(reaction)}
-          size={size}
-          color={color}
-          filled={media || reaction !== null}
-          shadow={media ? MEDIA_GLYPH_SHADOW : undefined}
-          rim={reaction !== null ? (media ? theme.colors.onMedia : theme.colors.surface) : undefined}
-        />
+        {reaction === 'like' || reaction === 'love' ? (
+          <ReactionMark reaction={reaction} size={size} color={media ? undefined : color} />
+        ) : (
+          <ReelGlyph name={reactionGlyph(reaction)} size={size} color={color}
+            filled={media || reaction !== null} shadow={media ? MEDIA_GLYPH_SHADOW : undefined} />
+        )}
       </Animated.View>
       {reaction === 'like' ? (
         <Animated.View pointerEvents="none" style={[styles.sparks, { opacity: sparks, transform: [{ scale: sparks }] }]}>
-          <LikeSparks size={size} color={ink} />
+          <LikeSparks size={size} color={theme.colors.reactionLike} />
         </Animated.View>
       ) : null}
       {reaction === 'love'
@@ -205,7 +203,7 @@ function ReactionGlyph({ reaction, ink, size, media = false }: { reaction: Conte
   );
 }
 
-/** Position du sélecteur : à gauche du rail (sur la vidéo) ou au-dessus du bouton (rangée). */
+/** Position the pill above its trigger, aligning it to the rail edge on video. */
 export function reactionPickerPosition(
   anchor: { x: number; y: number; width: number; height: number },
   variant: 'rail' | 'inline',
@@ -214,19 +212,16 @@ export function reactionPickerPosition(
 ): { left: number; top: number } {
   const clampX = (x: number) => Math.max(EDGE, Math.min(screen.width - PICKER_WIDTH - EDGE, x));
   const clampY = (y: number) => Math.max(EDGE, Math.min(screen.height - PICKER_HEIGHT - EDGE, y));
-  if (variant === 'rail') {
-    const beside = rtl ? anchor.x + anchor.width + EDGE : anchor.x - PICKER_WIDTH - EDGE;
-    return { left: clampX(beside), top: clampY(anchor.y + anchor.height / 2 - PICKER_HEIGHT / 2) };
-  }
-  const start = rtl ? anchor.x + anchor.width - PICKER_WIDTH : anchor.x;
+  const alignRight = variant === 'rail' ? !rtl : rtl;
+  const start = alignRight ? anchor.x + anchor.width - PICKER_WIDTH : anchor.x;
   const above = anchor.y - PICKER_HEIGHT - EDGE;
   return { left: clampX(start), top: above >= EDGE ? above : clampY(anchor.y + anchor.height + EDGE) };
 }
 
-function ReactionPicker({ current, position, surface, onPick, onClose }: {
+function ReactionPicker({ current, position, variant, onPick, onClose }: {
   current: ContentReaction | null;
+  variant: 'rail' | 'inline';
   position: { left: number; top: number };
-  surface: 'media' | 'card';
   onPick: (choice: ContentReaction) => void;
   onClose: () => void;
 }) {
@@ -242,8 +237,6 @@ function ReactionPicker({ current, position, surface, onPick, onClose }: {
       Animated.stagger(40, items.map((value) => Animated.spring(value, { toValue: 1, friction: 6, tension: 240, useNativeDriver: true }))),
     ]).start();
   }, [reduce, enter, items]);
-  const onMedia = surface === 'media';
-  const label = onMedia ? theme.colors.onMedia : theme.colors.ink;
   return (
     <Modal transparent visible animationType="none" statusBarTranslucent onRequestClose={onClose}>
       <Pressable testID="reaction-picker-dismiss" accessibilityLabel={t('social.close')} style={StyleSheet.absoluteFill} onPress={onClose} />
@@ -253,11 +246,12 @@ function ReactionPicker({ current, position, surface, onPick, onClose }: {
         accessibilityLabel={t('social.reactionPicker')}
         style={[
           styles.picker,
-          onMedia ? { backgroundColor: veil(0.78) } : [{ backgroundColor: theme.colors.surface }, elevation.high],
+          { backgroundColor: REACTION_COLORS.picker }, elevation.high,
           {
             left: position.left,
             top: position.top,
-            flexDirection: theme.isRTL ? 'row-reverse' : 'row',
+            // The thumb sits closest to the trigger on a rail, and at the reading start on a card.
+            flexDirection: theme.isRTL !== (variant === 'rail') ? 'row-reverse' : 'row',
             opacity: enter,
             transform: [{ scale: enter.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1] }) }],
           },
@@ -265,7 +259,6 @@ function ReactionPicker({ current, position, surface, onPick, onClose }: {
       >
         {REACTION_ORDER.map((choice, index) => {
           const selected = current === choice;
-          const color = reactionColor(choice, theme.colors, label);
           return (
             <Animated.View
               key={choice}
@@ -282,14 +275,12 @@ function ReactionPicker({ current, position, surface, onPick, onClose }: {
                 onPress={() => onPick(choice)}
                 style={({ pressed }) => [
                   styles.pickerItem,
-                  selected ? { backgroundColor: onMedia ? veil(0.35) : theme.colors.divider, borderColor: color, borderWidth: 1.5 } : null,
                   { transform: [{ scale: pressed ? 1.18 : 1 }] },
                 ]}
               >
-                <ReelGlyph name={reactionGlyph(choice)} size={28} color={color} filled />
-                <AppText variant="caption" color={label} numberOfLines={1}>
-                  {t(reactionLabelKey(choice))}
-                </AppText>
+                {choice === 'like' || choice === 'love'
+                  ? <ReactionMark reaction={choice} size={40} />
+                  : <ReelGlyph name="dislike" size={28} color={theme.colors.reactionDislike} filled />}
               </Pressable>
             </Animated.View>
           );
@@ -379,7 +370,7 @@ export function ReactionButton({
         <ReactionPicker
           current={reaction}
           position={picker}
-          surface={surface}
+          variant={variant}
           onClose={() => setPicker(null)}
           onPick={(choice) => {
             setPicker(null);
@@ -394,13 +385,13 @@ export function ReactionButton({
 const styles = StyleSheet.create({
   rail: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   inline: { minWidth: 44, minHeight: 44, alignItems: 'center', gap: 4 },
-  // Trois éclats du pouce vert, au-dessus de la pointe (décalée à droite).
+  // Trois éclats au-dessus du pouce, décalés à droite.
   sparks: { position: 'absolute', top: -6, start: 12 },
   mini: { position: 'absolute' },
   picker: {
     position: 'absolute',
     padding: PICKER_PAD,
-    borderRadius: RADIUS.xl,
+    borderRadius: RADIUS.full,
     alignItems: 'center',
   },
   pickerItem: {
@@ -409,6 +400,5 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
   },
 });

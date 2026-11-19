@@ -286,7 +286,7 @@ export const ar = {
   'socialCommerce.lens': 'لوّج مع Z Lens',
   'reel.captionMore': 'عرض المزيد',
   'reel.captionLess': 'عرض أقل',
-  'reel.followConfirmed': 'أنت تتابع هذه العلامة الآن',
+  'reel.followConfirmed': 'ولّيت تتابع العلامة هاذي! تنجّم تشوف جديدها في منشوراتها والريلز متاعها.',
   'social.reels': 'الريلز',
   'social.comments': 'التعليقات',
   'social.like': 'إعجاب',

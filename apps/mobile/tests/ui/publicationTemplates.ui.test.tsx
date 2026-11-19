@@ -372,7 +372,7 @@ describe('barre Publication (redessinée après l’essai sur appareil, 14/11)',
     expect(screen.queryByTestId('publication-summary-video')).toBeNull();
   });
 
-  it('J’aime posé : compteur à l’ENCRE (jamais tout bleu) ; visiteur : la connexion s’ouvre', () => {
+  it('J’aime posé : pouce plein bleu, compteur à l’encre ; visiteur : la connexion s’ouvre', () => {
     mockEngagement.counts = { video: { likes: 1, loves: 0, comments: 0, views: 0, shares: 0 } };
     mockEngagement.mine = { video: 'like' };
     const view = wrap(<PublicationTemplatesScreen />);

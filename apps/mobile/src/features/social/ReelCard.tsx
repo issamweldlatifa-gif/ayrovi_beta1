@@ -3,6 +3,7 @@ import { ReelMediaCaption } from "@/features/reels/ReelMediaCaption";
 import { reelCaption } from "@/features/reels/reelCaption";
 import { PublicationAuthSheet } from "@/features/publications/PublicationAuthSheet";
 import { ReelFollow } from "@/features/reels/ReelFollow";
+import { useReduceMotion } from "@/design/motion";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { rowDirectionFor } from "@/design/layoutLogic";
 import { ReelPublisher } from "@/features/reels/ReelPublisher";
@@ -20,7 +21,7 @@ import { shareReel } from "@/features/reels/shareReel";
  * وقاعدة الصدق: **الإعجاب يحتاج حساباً** ⇒ الزر معطّل بسبب مكتوب.
  */
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Animated, Pressable, StyleSheet, View } from "react-native";
+import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { ReelGlyph } from "@/features/reels/ReelIcons";
 import { ReelPlayback } from "@/features/reels/ReelPlayback";
@@ -34,7 +35,7 @@ import { useTheme } from "@/design/theme";
 import { useI18n } from "@/i18n";
 import {
   MEDIA_RATIO,
-  FICHE_COLORS,
+  REEL_FOLLOW_SURFACE,
   RADIUS,
   VIDEO_BACKDROP,
   veil,
@@ -92,14 +93,21 @@ export const ReelCard = memo(function ReelCard({
 
   const insets = useSafeAreaInsets();
   const [followFeedback, setFollowFeedback] = useState(0);
+  const followSlide = useRef(new Animated.Value(0)).current;
+  const reduceMotion = useReduceMotion();
   useEffect(() => {
-    if (!active) setFollowFeedback(0);
+    setFollowFeedback(0);
   }, [active, reel.id]);
   useEffect(() => {
     if (!followFeedback) return;
-    const timeout = setTimeout(() => setFollowFeedback(0), 3200);
-    return () => clearTimeout(timeout);
-  }, [followFeedback]);
+    followSlide.setValue(reduceMotion ? 1 : 0);
+    const rise = Animated.timing(followSlide, {
+      toValue: 1, duration: reduceMotion ? 0 : 220, easing: Easing.out(Easing.cubic), useNativeDriver: true,
+    });
+    rise.start();
+    const timeout = setTimeout(() => setFollowFeedback(0), 4200);
+    return () => { rise.stop(); clearTimeout(timeout); };
+  }, [followFeedback, followSlide, reduceMotion]);
   const confirmFollow = useCallback(() => setFollowFeedback(count => count + 1), []);
 
   const [options, setOptions] = useState(false);
@@ -362,12 +370,17 @@ export const ReelCard = memo(function ReelCard({
           </ReelShopTray>
         </>
       )}
-      {active && followFeedback > 0 ? (
-        <View accessibilityLiveRegion="polite" pointerEvents="none" testID="reel-follow-confirmation"
-          style={[styles.followConfirmation, { paddingBottom: insets.bottom + 12, flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <Ionicons name="checkmark-circle" size={theme.iconSize.sm} color={theme.colors.onMedia} accessibilityElementsHidden />
-          <AppText variant="label" color={theme.colors.onMedia} style={styles.followMessage}>{t('reel.followConfirmed')}</AppText>
-        </View>
+      {fill && active && followFeedback > 0 ? (
+        <Animated.View accessibilityLiveRegion="polite" testID="reel-follow-confirmation"
+          style={[styles.followConfirmation, {
+            paddingBottom: insets.bottom + 16,
+            flexDirection: rowDirectionFor(theme.isRTL),
+            opacity: followSlide,
+            transform: [{ translateY: followSlide.interpolate({ inputRange: [0, 1], outputRange: [120, 0] }) }],
+          }]}>
+          <Ionicons name="checkmark-circle" size={theme.iconSize.sm} color={REEL_FOLLOW_SURFACE.ink} accessibilityElementsHidden />
+          <AppText variant="body" color={REEL_FOLLOW_SURFACE.ink} style={styles.followMessage}>{t('reel.followConfirmed')}</AppText>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -428,7 +441,7 @@ const styles = StyleSheet.create({
   },
   publisherRow: { alignItems: 'center', gap: 6 },
   captionScrim: { position: 'absolute', top: -34, bottom: -96, start: 0, end: 0 },
-  followConfirmation: { position: 'absolute', bottom: 0, start: 0, end: 0, alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 12, backgroundColor: FICHE_COLORS.success },
+  followConfirmation: { position: 'absolute', bottom: 0, start: 0, end: 0, alignItems: 'flex-start', gap: 10, paddingHorizontal: 16, paddingTop: 16, backgroundColor: REEL_FOLLOW_SURFACE.background },
   followMessage: { flexShrink: 1 },
   body: { padding: 12, gap: 4 },
   actions: {

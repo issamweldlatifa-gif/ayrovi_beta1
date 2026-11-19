@@ -33,6 +33,7 @@ import { DEFAULT_API_BASE_URL } from '@/api/config';
 import { fetchComments, sendInteraction, type SocialComment, type SocialCounts } from '@/api/social';
 import { isApiError, userMessage } from '@/api/errors';
 import { LoadingSpinner } from '@/design/LoadingSpinner';
+import { ReactionMark } from '@/design/reactions/ReactionMark';
 import { ReactionButton } from '@/design/reactions/ReactionButton';
 import type { ContentReaction } from '@/design/reactions/reactionModel';
 import { useContentReaction, type ContentReactionState } from '@/design/reactions/useContentReaction';
@@ -112,14 +113,13 @@ function ReactionBadges({ badges }: { badges: Array<'like' | 'love'> }) {
           style={[
             styles.badge,
             {
-              backgroundColor: badge === 'like' ? theme.colors.reactionLike : theme.colors.reactionLove,
               borderColor: P.paper,
               marginStart: index === 0 ? 0 : -4,
               zIndex: badges.length - index,
             },
           ]}
         >
-          <ReelGlyph name={badge === 'like' ? 'like' : 'heart'} size={SUMMARY_BADGE - 8} color={P.paper} filled />
+          <ReactionMark reaction={badge} size={SUMMARY_BADGE - 3} />
         </View>
       ))}
     </View>

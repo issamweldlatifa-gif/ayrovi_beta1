@@ -125,26 +125,21 @@ export const MEDIA_RATIO = {
 /** Fond derrière une vidéo plein écran (la vidéo ne couvre pas toujours l'écran entier). */
 export const VIDEO_BACKDROP = BRAND.black;
 
-/**
- * Z-Reactions — les trois teintes de la famille officielle d'interaction.
- *  • like    : le BLEU D'ACTION (Bleu Z, décision du 14/11 : « le pouce prend la couleur d'action ») —
- *              le vert du 11/11 est retiré ;
- *  • love    : rouge « J'adore » #F02849 (lisible sur blanc 4,1:1 ET sur noir 4,8:1) ;
- *  • dislike : ardoise (gris bleuté) — ni rouge (réservé à J'adore), ni orange
- *    (banni de l'application depuis le 15/10) : un avis négatif reste discret.
- */
+/** Reference colors scoped to social reaction marks. Main action ink is unchanged. */
 export const REACTION_COLORS = {
-  /** 18/11 : plus de bleu — pouce posé à l'ENCRE sur papier (le plein du glyphe dit l'état). */
-  like: BRAND.black,
-  /** Pouce posé sur média / feuille sombre : blanc plein. */
+  like: '#0866D8',
   likeOnMedia: BRAND.white,
-  love: '#F02849',
-  /**
-   * 16/11 (référence « like / dislike » du propriétaire) : pouce bas PLEIN ROUGE, pendant du
-   * pouce haut plein bleu. Le rouge « danger » de la palette (4,9:1 sur blanc), pas le rouge des cœurs.
-   */
+  love: '#E82148',
   dislike: '#D92D20',
+  // Gradient endpoints sampled from the supplied reaction close-up.
+  likeDisc: ['#34A6FE', '#185EF1'],
+  loveDisc: ['#FD6281', '#E51934'],
+  onDisc: BRAND.white,
+  picker: BRAND.white,
 } as const;
+
+/** Full-width Reel follow confirmation, not a theme or bottom-navigation color. */
+export const REEL_FOLLOW_SURFACE = { background: '#008759', ink: BRAND.white } as const;
 
 /**
  * Rouge des prix soldés : le MÊME rouge que `STATUS.danger.light.fg` (5,57:1

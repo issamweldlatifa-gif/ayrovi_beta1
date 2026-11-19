@@ -38,16 +38,13 @@ export function ReelFollow({
         onPress={follow.press}
         style={{
           minHeight: 44,
-          borderWidth: onMedia ? 0 : 1,
-          borderColor: ink,
-          borderRadius: theme.radius.full,
-          paddingHorizontal: onMedia ? 4 : 12,
+          paddingHorizontal: 4,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
         <AppText variant="label" color={ink} numberOfLines={onMedia ? 1 : undefined}>
-          {onMedia ? `· ${label}` : follow.state === 'idle' ? `+ ${label}` : label}
+          {`· ${label}`}
         </AppText>
       </Pressable>
       {follow.writeFailed ? (

@@ -14,6 +14,7 @@ import { Animated, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
+import { REEL_FOLLOW_SURFACE } from '../../src/design/tokens.mobile';
 import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
@@ -241,14 +242,15 @@ it('confirme le suivi en bas seulement après une écriture serveur acceptée', 
   try {
     renderCard({ channelId: 'real-publisher' }, { width: 390, height: 844 });
     const follow = await screen.findByRole('button', { name: 'Suivre' });
-    expect(StyleSheet.flatten(follow.props.style).borderWidth).toBe(0);
+    expect(StyleSheet.flatten(follow.props.style).borderWidth ?? 0).toBe(0);
     expect(screen.getByText('· Suivre')).toBeTruthy();
     fireEvent.press(screen.getByTestId('reel-follow'));
     await screen.findByRole('alert');
     expect(screen.queryByTestId('reel-follow-confirmation')).toBeNull();
     fireEvent.press(screen.getByTestId('reel-follow'));
     const banner = await screen.findByTestId('reel-follow-confirmation');
-    expect(StyleSheet.flatten(banner.props.style)).toMatchObject({ bottom: 0, start: 0, end: 0 });
+    expect(StyleSheet.flatten(banner.props.style)).toMatchObject({ bottom: 0, start: 0, end: 0, backgroundColor: REEL_FOLLOW_SURFACE.background });
+    expect(screen.getByText('Vous suivez cette marque ! Retrouvez ses nouveautés dans ses publications et ses Reels.')).toBeTruthy();
     expect(followPublisher).toHaveBeenLastCalledWith('real-publisher', true);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Suivi' })).toBeTruthy());
   } finally {
