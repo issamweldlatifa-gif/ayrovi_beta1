@@ -44,7 +44,7 @@ import {
   splitMerchantPrice, valueStatesFromCapture,
   type LocalValueStates,
 } from '@/features/aywebs/localProduct';
-import { initialSheetQuantity, pageQuantityOf } from '@/features/aywebs/storeSheetMode';
+import { initialSheetQuantity, isSelectionCapture, pageQuantityOf } from '@/features/aywebs/storeSheetMode';
 import { choiceGroupKind, choiceGroupKey } from '@/features/aywebs/choiceGroup';
 import { ChoiceField, type ChoiceOption } from '@/features/aywebs/ChoiceField';
 import { VariantOptionChips } from '@/features/aywebs/VariantOptionChips';
@@ -126,6 +126,8 @@ interface PageQuote {
       source que les cartes du web ; `total_tnd` محسوب في الخادم. */
   details: AyWebsVariantOption[];
   quoteToken: string;
+  productId?: string;
+  image?: string | null;
 }
 
 export function AddToCartSheet({
@@ -171,17 +173,19 @@ export function AddToCartSheet({
     () => (effectiveCapture && typeof effectiveCapture === 'object' ? effectiveCapture as Record<string, unknown> : null),
     [effectiveCapture],
   );
+  const selectionCapture = isSelectionCapture(capture);
   const activeCaptureVariants = useMemo(
-    () => (local && activeCapture && activeCapture !== capture && typeof activeCapture === 'object'
+    () => (!selectionCapture && local && activeCapture && activeCapture !== capture && typeof activeCapture === 'object'
       ? localVariantsFromCapture(activeCapture as Record<string, unknown>)
       : []),
-    [activeCapture, capture, local],
+    [activeCapture, capture, local, selectionCapture],
   );
 
   /* Les choix affichés = union des deux lectures, sous le NOM DU SERVEUR : c'est
      lui qui juge l'ajout, et une sélection partielle (« taille » seule alors que
      la page publie aussi la couleur) était refusée (26/10/2026). */
   const groups = useMemo<AyWebsVariantGroup[]>(() => {
+    if (selectionCapture && local) return realChoiceGroups(product.variantGroups);
     const baseLocal = product.variantGroups.length ? product.variantGroups : (fetchedGroups ?? []);
     const siblingGroups = activeCaptureVariants.length && captureRecord
       ? groupsFromCapture(captureRecord, activeCaptureVariants)
@@ -194,7 +198,7 @@ export function AddToCartSheet({
     // In read-only mode only the current merchant capture may define choices;
     // a server fallback can contain unrelated or stale product dimensions.
     return realChoiceGroups(readOnlySelection && local ? mergedLocal : mergeVariantGroups(mergedLocal, serverGroups));
-  }, [activeCaptureVariants, captureRecord, fetchedGroups, local, product.variantGroups, readOnlySelection, serverGroups]);
+  }, [activeCaptureVariants, captureRecord, fetchedGroups, local, product.variantGroups, readOnlySelection, selectionCapture, serverGroups]);
   const groupsRef = useRef(groups);
   groupsRef.current = groups;
   const variantOptions = useMemo<AyWebsVariantOption[]>(() => {
@@ -219,6 +223,7 @@ export function AddToCartSheet({
    */
   const loadQuote = useCallback(async (captureToUse: unknown, picked: Record<string, string>) => {
     if (!sessionId || !captureToUse) return;
+    const exactCapture = isSelectionCapture(captureToUse);
     setQuoting(true);
     try {
       /* Devis en dinars : on suit le PLAN (`quoteReadPlan`) — capture + variante,
@@ -227,13 +232,14 @@ export function AddToCartSheet({
          tentée : sur Zalando elle ne rendait aucun devis, et l'application
          affichait « Prix en dinars calculé à l'ajout. » là où le web écrivait
          « ≈ 411.69 DT » pour la même fiche (26/10/2026). */
-      const plan = quoteReadPlan({
+      const plan = exactCapture ? [{ capture: true, withVariant: false, refresh: false }] : quoteReadPlan({
         hasCapture: Boolean(captureToUse),
         hasSelection: Object.keys(picked).length > 0,
       });
       let productForQuote: AyWebsResolvedProduct | null = null;
       let pageSelection: Record<string, string> = {};
       let quoteTokenForQuote = '';
+      let capturedImage: string | null = null;
       const diagnostics: string[] = [];
       for (const attempt of plan) {
         try {
@@ -245,6 +251,7 @@ export function AddToCartSheet({
             refresh: attempt.refresh,
           });
           if (!alive.current) return;
+          if (exactCapture && !read.capturedSelection) continue;
           const pageQuantity = pageQuantityOf(read);
           if (pageQuantity !== null) {
             setQuantity((current) => initialSheetQuantity(pageQuantity, 99, quantityTouched.current, current));
@@ -264,6 +271,11 @@ export function AddToCartSheet({
              sans capture/variante décrit juste le produit — son prix de page
              ne doit PAS être attribué à un autre choix. `variant_details`
              pourra tout de même fournir le prix exact de la combinaison. */
+          if (exactCapture && read.capturedSelection) {
+            capturedImage = read.capturedSelection.image;
+            picked = alignSelection(groupsRef.current, read.capturedSelection.attributes);
+            setSelection(picked);
+          }
           pageSelection = attempt.capture || attempt.withVariant ? { ...picked } : {};
           if (!lacksServerQuote(read.product)) {
             quoteTokenForQuote = read.quoteToken;
@@ -276,6 +288,8 @@ export function AddToCartSheet({
           const code = error && typeof error === 'object' && 'code' in error
             ? String((error as { code?: unknown }).code || 'failed')
             : 'failed';
+          if (!alive.current) return;
+          if (exactCapture) setError(addErrorMessage(error, locale, t));
           diagnostics.push(`${attempt.capture ? 'capture' : 'server'}:${code}`);
         }
       }
@@ -309,7 +323,7 @@ export function AddToCartSheet({
       if (pickedQuote.unitTnd == null) diagnostics.push('quote:unavailable');
       setDiagnostic(diagnostics.filter(Boolean).filter((value, index, all) => all.indexOf(value) === index).join(' · '));
       setServerGroups(productForQuote.variantGroups || []);
-      const mergedMatrix = upsertVariantMatrixCache({
+      const mergedMatrix = exactCapture ? productForQuote : upsertVariantMatrixCache({
         matrixKey,
         product: productForQuote,
         selection: pageSelection,
@@ -328,6 +342,8 @@ export function AddToCartSheet({
         quotes: mergedMatrix.variantQuotes,
         details: mergedMatrix.variantDetails,
         quoteToken: quoteTokenForQuote,
+        image: capturedImage,
+        productId: exactCapture ? productForQuote.productId : undefined,
       });
     } catch {
       /* أفضل جهد: بلا خادم، الورقة تعرض ثمن الصفحة وتقول إن الدينار يجي وقت الإضافة. */
@@ -335,7 +351,7 @@ export function AddToCartSheet({
     } finally {
       if (alive.current) setQuoting(false);
     }
-  }, [matrixKey, product.sourceUrl, product.storeId, sessionId]);
+  }, [locale, matrixKey, product.sourceUrl, product.storeId, sessionId, t]);
 
   /**
    * كل فتح للورقة = نيّة إضافة جديدة: مفتاح جديد، كمية 1، واختيار = **اللي
@@ -358,7 +374,7 @@ export function AddToCartSheet({
     setServerGroups([]);
     setActiveCapture(capture);
     setActiveUrl(product.sourceUrl);
-    const cachedSnapshot = readVariantMatrixCache(matrixKey);
+    const cachedSnapshot = selectionCapture ? null : readVariantMatrixCache(matrixKey);
     if (!local && (product.zayroviPricing?.totalTnd != null || product.variantDetails.length > 0 || product.variantQuotes.length > 0)) {
       const seeded = upsertVariantMatrixCache({
         matrixKey,
@@ -488,7 +504,7 @@ export function AddToCartSheet({
    */
   useEffect(() => {
     const key = selectionKeyOf(selection);
-    if (!visible || !pageQuote || !sessionId || !groups.length) return;
+    if (selectionCapture || !visible || !pageQuote || !sessionId || !groups.length) return;
     if (!selectionComplete || !key) {
       setQuoting(false);
       return;
@@ -624,7 +640,7 @@ export function AddToCartSheet({
       if (selectionQuoteRequest.current === requestNumber) selectionQuoteRequest.current += 1;
     };
   }, [effectiveCapture, effectiveUrl, groups.length, local, matrixKey, pageQuote, product.storeId, quote.availability, quote.missingVariantUrl, quote.unitTnd,
-    readVariant, selection, selectionComplete, sessionId, variantOptions, visible]);
+    readVariant, selection, selectionCapture, selectionComplete, sessionId, variantOptions, visible]);
 
   /**
    * سقف الكمية: اللي تنشرو الصفحة هو السقف — منتوج فيه 5 ما نخلّيوش 20.
@@ -654,11 +670,11 @@ export function AddToCartSheet({
    */
   /** Prix publié par la boutique pour le choix capté (texte de la page, sinon montant serveur). */
   const confirmMerchantPrice = useMemo(() => {
-    if (merchantPrice.amount) return merchantPrice.amount;
     const amount = pageQuote?.sourcePrice ?? null;
     const currency = pageQuote?.sourceCurrency || product.currency || '';
-    return amount != null && amount > 0 ? `${formatAmount(amount)} ${currency}`.trim() : '';
-  }, [merchantPrice.amount, pageQuote?.sourceCurrency, pageQuote?.sourcePrice, product.currency]);
+    const verified = amount != null && amount > 0 ? `${formatAmount(amount)} ${currency}`.trim() : '';
+    return selectionCapture ? verified || merchantPrice.amount : merchantPrice.amount || verified;
+  }, [merchantPrice.amount, pageQuote?.sourceCurrency, pageQuote?.sourcePrice, product.currency, selectionCapture]);
 
   const availabilityLabel = useCallback((state: AvailabilityState): string => {
     if (state === 'AVAILABLE') return t('aywebs.avail.AVAILABLE');
@@ -730,6 +746,16 @@ export function AddToCartSheet({
         swatchHex: isColor ? colourForOption(chosen) : null,
         swatchOutline: isColor ? needsOutline(chosen) : false,
       });
+    }
+    if (selectionCapture) {
+      for (const [rawAttr, value] of Object.entries(selection)) {
+        if (!value || badges.some(badge => sameAttribute(badge.rawAttr, rawAttr))) continue;
+        const gKey = choiceGroupKey(rawAttr);
+        const isColor = choiceGroupKind(rawAttr) === 'color';
+        badges.push({ key: rawAttr, rawAttr, label: gKey ? t(gKey) : rawAttr, value, swatchImage: '',
+          swatchHex: isColor ? colourForOption(value) : null, swatchOutline: isColor && needsOutline(value) });
+      }
+      return badges;
     }
     if (captureRecord) {
       const sheinRec = typeof captureRecord.shein === 'object' && captureRecord.shein !== null
@@ -809,7 +835,7 @@ export function AddToCartSheet({
       }
     }
     return badges;
-  }, [captureRecord, fields, groups.length, selection, t]);
+  }, [captureRecord, fields, groups.length, selection, selectionCapture, t]);
 
   const missingFieldLabels = useMemo(
     () => missing.map((attr) => {
@@ -869,7 +895,7 @@ export function AddToCartSheet({
     setBusy(true);
     setError('');
     try {
-      const variant = groups.length ? selection : null;
+      const variant = Object.keys(selection).length ? selection : null;
       /* Le premier jugement porte sur la page que la capture décrit — jamais sur
          une autre URL : sinon la preuve et l'adresse ne parlent pas du même
          article. Les pages des autres valeurs sont lues ensuite, une par une. */
@@ -916,7 +942,7 @@ export function AddToCartSheet({
         : '';
       if (readyToken && !missing.length) {
         const direct = await addAyWebsCartItem({
-          productId: product.productId,
+          productId: pageQuote?.productId || product.productId,
           sourceUrl: target,
           storeId: product.storeId || undefined,
           variant,
@@ -954,7 +980,7 @@ export function AddToCartSheet({
          وحدة بعد الأخرى (زوز كحدّ أقصى)، وكل مرّة الخادم يعاود يحكم. */
       let reads = 0;
       let seenUrl = target;
-      while (reads < 2 && local && readVariant && resolved
+      while (reads < 2 && !selectionCapture && local && readVariant && resolved
         && (resolved.product.availability.state === 'UNKNOWN' || resolved.product.zayroviPricing?.totalTnd == null)) {
         const optionsNow = optionsFromVariants(localVariantsFromCapture(
           (captureToUse && typeof captureToUse === 'object' ? captureToUse : {}) as Record<string, unknown>,
@@ -1048,7 +1074,7 @@ export function AddToCartSheet({
     } finally {
       if (alive.current) setBusy(false);
     }
-  }, [busy, chosenUnavailable, effectiveCapture, effectiveUrl, groups.length, local, locale, matrixKey, missing.length, finishAdd, pageQuote, product.productId, readOnlySelection,
+  }, [busy, chosenUnavailable, effectiveCapture, effectiveUrl, groups.length, local, locale, matrixKey, missing.length, finishAdd, pageQuote, product.productId, readOnlySelection, selectionCapture,
     product.sourceUrl, product.storeId, quantity, quoteToken, readVariant, selection, selectionComplete, sessionId, t]);
 
   const sourceLine = tndText(quote.unitTnd);
@@ -1057,12 +1083,10 @@ export function AddToCartSheet({
   const displayedTndLine = quantity > 1 && totalLine ? totalLine : sourceLine;
   const title = product.title;
   // Prefer the exact combination's published image over a color swatch thumbnail.
-  const selectedColorImage = preferredVariantImage(quote.image, fields, selection) || '';
+  const selectedColorImage = preferredVariantImage(pageQuote?.image || quote.image, fields, selection) || '';
   /* الصورة الرئيسية تتبع لون المنتج المختار داخل نفس الورقة؛ fallback للصورة
      الأصلية فقط إذا التاجر ما نشرش صورة مرتبطة باللون. */
-  const imageUri = readOnlySelection
-    ? product.images[0] || selectedColorImage
-    : selectedColorImage || product.images[0] || '';
+  const imageUri = selectedColorImage || product.images[0] || '';
 
   const discountMeta = useMemo(() => {
     if (!captureRecord) return null;
@@ -1277,19 +1301,6 @@ export function AddToCartSheet({
                 </View>
               ) : null}
 
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t('aywebs.changeOnStore')}
-                onPress={onClose}
-                hitSlop={6}
-                testID="aywebs-change-on-store"
-                style={[styles.changeOnStoreBtn, { flexDirection: rowDirectionFor(theme.isRTL) }]}
-              >
-                <Ionicons name="return-up-back-outline" size={theme.iconSize.xs} color={theme.colors.muted} />
-                <AppText variant="caption" color={theme.colors.muted} style={styles.changeOnStoreLabel}>
-                  {t('aywebs.changeOnPage')}
-                </AppText>
-              </Pressable>
             </View>
           ) : (
             fields.map((field) => field.kind === 'color' ? (
@@ -1435,8 +1446,6 @@ const styles = StyleSheet.create({
   capturedAttributeRow: { alignItems: 'center', gap: 8 },
   capturedSwatch: { width: 16, height: 16, borderRadius: RADIUS.full },
   missingNotice: { gap: 2 },
-  changeOnStoreBtn: { alignItems: 'center', gap: 6, paddingVertical: 2 },
-  changeOnStoreLabel: { textDecorationLine: 'underline' },
   quantityControl: { minHeight: 48, borderWidth: 1, borderRadius: RADIUS.xs, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'space-between' },
   quantityOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: veil(0.35) },
   quantityBackdrop: { flex: 1, alignSelf: 'stretch' },

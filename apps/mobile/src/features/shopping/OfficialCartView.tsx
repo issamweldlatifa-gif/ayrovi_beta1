@@ -372,6 +372,7 @@ export function OfficialCartRow({
 export function OfficialCartStickySummary({
   deliveryTnd,
   totalTnd,
+  subtotalOnly = false,
   checkoutLabel,
   checkoutDisabled = false,
   checkoutBusy = false,
@@ -382,6 +383,7 @@ export function OfficialCartStickySummary({
 }: {
   deliveryTnd: number | null;
   totalTnd: number | null;
+  subtotalOnly?: boolean;
   checkoutLabel: string;
   checkoutDisabled?: boolean;
   checkoutBusy?: boolean;
@@ -414,11 +416,12 @@ export function OfficialCartStickySummary({
 
       {extraAboveButton}
 
-      {/* 18/11 (maquette v2) — total à gauche, « Commander » : bouton d'achat jaune court à droite. */}
+      {/* Total et CTA ne se disputent plus la largeur sur les petits écrans. */}
       <PurchaseBar
+        stacked
         amount={totalTnd != null ? formatMoney(totalTnd) : null}
-        caption={t('cart.total')}
-        note={t('cart.vatIncluded')}
+        caption={t(subtotalOnly ? 'checkout.subtotalProducts' : 'cart.total')}
+        note={subtotalOnly ? undefined : t('cart.vatIncluded')}
         label={checkoutLabel}
         busy={checkoutBusy}
         disabled={checkoutDisabled}

@@ -202,7 +202,7 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
     /* Confirmation (19/11/2026) : le prix publié par la boutique pour CE choix est rappelé. */
     expect(screen.getByTestId('aywebs-confirm-merchant-price')).toBeTruthy();
     expect(screen.getByText(/Prix sur la boutique : .*18[.,]71/)).toBeTruthy();
-    expect(screen.getByText('Changer sur la page')).toBeTruthy();
+    expect(screen.queryByText('Changer sur la page')).toBeNull();
     expect(screen.getByText('Couleur : Jean clair')).toBeTruthy();
     expect(screen.getByText('Taille : 4Y (98-104 cm)')).toBeTruthy();
     expect(screen.getByText('Ajouter au panier')).toBeTruthy();
@@ -212,9 +212,6 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
     expect(screen.queryByTestId('aywebs-color-swatch-0')).toBeNull();
     expect(screen.queryByText('Bleu jean')).toBeNull();
 
-    /* Le bouton retour referme la feuille pour modifier le choix sur la boutique */
-    fireEvent.press(screen.getByTestId('aywebs-change-on-store'));
-    expect(onClose).toHaveBeenCalledTimes(1);
 
     /* Quantité = 2 -> total estimé mis à jour + ajout au panier avec les options capturées */
     fireEvent.press(screen.getByTestId('aywebs-quantity-control'));

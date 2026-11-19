@@ -165,3 +165,61 @@ describe('de bout en bout : choix incomplet ou épuisé ⇒ refus clair, jamais 
     expect(response.body.code).toBe('VARIANT_UNAVAILABLE');
   });
 });
+
+describe('la capture reste liée à la fiche et à ses véritables dimensions', () => {
+  const first = { url: 'https://www.sephora.com/product/eau-intense-P456123', sku: '2518959', name: 'Eau Intense', price: '23.00' };
+  const second = { url: 'https://www.sephora.com/product/eau-fraiche-P456124', sku: '2518960', name: 'Eau Fraîche', price: '41.50' };
+  const imageFor = (sku: string) => `https://www.sephora.com/productimages/sku/s${sku}-main-zoom.jpg`;
+  function capturePerfume(item: typeof first, groups: object[]) {
+    const product = {
+      '@context': 'https://schema.org', '@type': 'Product', name: item.name, sku: item.sku,
+      image: imageFor(item.sku),
+      offers: { '@type': 'Offer', price: item.price, priceCurrency: 'USD', availability: 'https://schema.org/InStock', sku: item.sku },
+    };
+    const snapshot = readTwice('sephora', `<!doctype html><html><head><title>${item.name}</title>
+      <script type="application/ld+json">${JSON.stringify(product)}</script></head><body><main>
+      <h1>${item.name}</h1><span>$${item.price}</span><button>Add to Basket</button>
+      </main></body></html>`, item.url);
+    return { ...snapshot, variantGroups: groups };
+  }
+
+  it('capture sans taille ni couleur, et garde deux produits distincts de la même boutique et session', async () => {
+    const { server, scraper } = app();
+    const cases = [
+      { item: first, groups: [{ name: 'Taille', values: ['Taille', 'Votre taille', 'Choisir une taille'], selected: ['Taille'] }], attributes: {} },
+      { item: second, groups: [{ name: 'Contenance', values: ['30 ml', '50 ml'], selected: ['50 ml'], options: [{ value: '50 ml', image: imageFor(second.sku) }] }], attributes: { Contenance: '50 ml' } },
+    ];
+    const ids: string[] = [];
+    for (const { item, groups, attributes } of cases) {
+      const capture = capturePerfume(item, groups);
+      const response = await resolve(server, item.url, 'sephora', capture, 'sel-sephora-two-products');
+      expect(response.status, JSON.stringify(response.body).slice(0, 600)).toBe(201);
+      expect(response.body.captured_selection.attributes).toEqual(attributes);
+      expect(response.body.data.title).toContain(item.name);
+      expect(response.body.data.price).toBe(Number(item.price));
+      expect(response.body.data.images[0]).toBe(imageFor(item.sku));
+      expect(response.body.quote_token).toBeTruthy();
+      ids.push(response.body.data.product_id);
+      const added = await request(server).post('/api/v1/aywebs/cart/items')
+        .set({ 'x-session-id': 'sel-sephora-two-products' })
+        .send({ product_id: response.body.data.product_id, source_url: item.url, store_id: 'sephora',
+          variant: attributes, quote_token: response.body.quote_token, quantity: 1, capture });
+      expect(added.status, JSON.stringify(added.body).slice(0, 600)).toBe(201);
+      expect(added.body.data.item).toMatchObject({ images: [imageFor(item.sku)], unit_price: Number(item.price),
+        currency: 'USD', product_id: response.body.data.product_id });
+      expect(added.body.data.item.variant_snapshot?.attributes ?? {}).toEqual(attributes);
+    }
+    expect(ids.every(Boolean)).toBe(true);
+    expect(new Set(ids).size).toBe(2);
+    expect(scraper.scrapeProduct).not.toHaveBeenCalled();
+  });
+
+  it('ne choisit pas une contenance non cochée, même lorsqu’il n’y a plus qu’une valeur proposée', async () => {
+    const { server } = app();
+    const response = await resolve(server, first.url, 'sephora', capturePerfume(first, [
+      { name: 'Contenance', values: ['Choisir une contenance', '50 ml'], selected: ['Choisir une contenance'] },
+    ]), 'sel-sephora-unselected');
+    expect(response.status, JSON.stringify(response.body).slice(0, 600)).toBe(422);
+    expect(response.body.code).toBe('VARIANT_REQUIRED');
+  });
+});

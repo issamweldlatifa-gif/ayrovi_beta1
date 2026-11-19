@@ -299,7 +299,9 @@ export async function resolveAyWebsProduct(
           corroborated: captureValidation?.corroborated === true,
           title: captureValidation?.scraped?.title || '',
         }
-        : undefined,
+        : captureValidation?.selectionPageProof
+          ? { accepted: true, ...captureValidation.selectionPageProof }
+          : undefined,
     });
 
   if (input.storeId) {
@@ -454,8 +456,8 @@ export async function resolveAyWebsProduct(
           }]
           : [],
       };
-      if (selectionVerdict.image && !sourceProduct.images.includes(selectionVerdict.image)) {
-        const nextImages = [selectionVerdict.image, ...sourceProduct.images];
+      if (selectionVerdict.image && sourceProduct.images[0] !== selectionVerdict.image) {
+        const nextImages = [selectionVerdict.image, ...sourceProduct.images.filter(image => image !== selectionVerdict.image)];
         sourceProduct = {
           ...sourceProduct,
           images: nextImages,
@@ -575,7 +577,7 @@ export async function resolveAyWebsProduct(
       && String(aligned[name]).trim().toLowerCase() !== String(selectionVerdict.attributes[name]).trim().toLowerCase());
     if (conflict) {
       throw new AyWebsDomainError('VARIANT_UNKNOWN', {
-        userMessage: 'Changez l’option directement sur la page du marchand, puis touchez de nouveau « Ajouter ».',
+        userMessage: 'Changez l’option directement sur la page du marchand, puis touchez de nouveau « Capturer cet article ».',
         technicalMessage: `selection_conflicts_with_page:${conflict}`.slice(0, 200),
       });
     }
@@ -1055,7 +1057,7 @@ function ayWebsSelectionRejectionError(rejection: string, notes: string[]): AyWe
   if (rejection === 'SELECTION_INCOMPLETE') {
     const what = missing.length ? missing.join(', ') : 'l’option';
     return new AyWebsDomainError('VARIANT_REQUIRED', {
-      userMessage: `Choisissez ${what} sur la page du marchand, puis touchez de nouveau « Ajouter ».`,
+      userMessage: `Choisissez ${what} sur la page du marchand, puis touchez de nouveau « Capturer cet article ».`,
       technicalMessage: `selection_incomplete:${missing.join('|')}`.slice(0, 200),
     });
   }

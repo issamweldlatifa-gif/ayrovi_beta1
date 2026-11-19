@@ -13,9 +13,10 @@ import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
 
 const mockBack = jest.fn();
+const mockPush = jest.fn();
 
 jest.mock('expo-router', () => ({
-  router: { push: jest.fn(), back: (...args: unknown[]) => mockBack(...args), replace: jest.fn(), canGoBack: () => true },
+  router: { push: (...args: unknown[]) => mockPush(...args), back: (...args: unknown[]) => mockBack(...args), replace: jest.fn(), canGoBack: () => true },
   useRouter: () => ({ push: jest.fn(), back: jest.fn(), replace: jest.fn(), canGoBack: () => true }),
   useLocalSearchParams: () => ({
     url: 'https://www.amazon.com/',
@@ -31,7 +32,7 @@ jest.mock('react-native-webview', () => {
   const React = jest.requireActual('react');
   const WebView = React.forwardRef((_props: Record<string, unknown>, ref: unknown) => {
     React.useImperativeHandle(ref, () => ({ goBack: () => undefined, goForward: () => undefined, injectJavaScript: () => undefined }));
-    return React.createElement(RNView, { testID: 'webview', onNavigationStateChange: _props.onNavigationStateChange, onLoadProgress: _props.onLoadProgress });
+    return React.createElement(RNView, { testID: 'webview', onNavigationStateChange: _props.onNavigationStateChange, onLoadProgress: _props.onLoadProgress, onScroll: _props.onScroll });
   });
   return { WebView, __esModule: true, default: WebView };
 });
@@ -60,7 +61,7 @@ jest.mock('@/features/aywebs/AddToCartSheet', () => {
     AddToCartSheet: ({ visible, onAdded }: { visible: boolean; onAdded: (item: unknown, cart: unknown) => void }) => (
       visible ? React.createElement(Pressable, {
         testID: 'aywebs-sheet-confirm-add',
-        onPress: () => onAdded({ id: 'added-item' }, addedCart),
+        onPress: () => onAdded({ id: 'added-item', images: ['https://img.example/perfume.png'], title: 'Eau de parfum', variantLabel: 'Contenance : 50 ml' }, addedCart),
       }, React.createElement(Text, null, 'Confirm add')) : null
     ),
   };
@@ -103,7 +104,7 @@ jest.mock('@/features/aywebs/captureFlow', () => {
 });
 
 function renderBrowser() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity } } });
   return render(
     <QueryClientProvider client={client}>
       <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 24, left: 0, right: 0, bottom: 16 } }}>
@@ -127,7 +128,7 @@ describe('page boutique — actions intégrées AYWEBs', () => {
   it('affiche la WebView et le bouton jaune de sélection des options', () => {
     renderBrowser();
     expect(screen.getByTestId('webview')).toBeTruthy();
-    expect(screen.getByText('Choisir les options')).toBeTruthy();
+    expect(screen.getByText('Capturer cet article')).toBeTruthy();
   });
 
   it('15/11 : après l’ajout, la feuille se ferme, le badge grimpe et une ligne confirme (pas de seconde feuille)', async () => {
@@ -145,15 +146,19 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     expect(screen.queryByTestId('aywebs-sheet-confirm-add')).toBeNull();
     expect(screen.getByTestId('aywebs-store-added-strip')).toBeTruthy();
     expect(screen.getByText('Ajouté au panier')).toBeTruthy();
-    expect(screen.getByText('Article ajouté')).toBeTruthy();
+    expect(screen.getByText('Eau de parfum')).toBeTruthy();
+    expect(screen.getByText('Contenance : 50 ml')).toBeTruthy();
+    expect(screen.getByTestId('aywebs-store-added-image', { includeHiddenElements: true })).toBeTruthy();
+    fireEvent.press(screen.getByTestId('aywebs-store-added-go-to-cart'));
+    expect(mockPush).toHaveBeenCalledWith('/panier');
   });
 
-  it('16/11 : vraie barre de navigateur — fond blanc, pilule grise, logo Clean, CTA d’achat jaune', async () => {
+  it('16/11 : vraie barre de navigateur — fond blanc, pilule jaune, logo Clean, CTA d’achat jaune', async () => {
     renderBrowser();
     const header = StyleSheet.flatten(screen.getByTestId('aywebs-store-header').props.style);
     expect(header.backgroundColor).toBe('#FFFFFF');
     const pill = StyleSheet.flatten(screen.getByTestId('aywebs-store-header-pill').props.style);
-    expect(pill.backgroundColor).toBe('#ECECF0');
+    expect(pill.backgroundColor).toBe('#F2AE00');
     expect(screen.getByTestId('aywebs-ask-clean-logo')).toBeTruthy();
     const cta = StyleSheet.flatten(screen.getByTestId('aywebs-store-add-to-cart').props.style);
     expect([cta.backgroundColor, cta.borderColor]).toContain('#F2AE00');
@@ -171,7 +176,7 @@ describe('page boutique — actions intégrées AYWEBs', () => {
       });
     });
     expect(screen.getByTestId('aywebs-store-header-address').props.children).toBe('amazon.fr');
-    expect(screen.getByLabelText('Adresse de la page : amazon.fr')).toBeTruthy();
+    expect(screen.getByLabelText('AYWEBs · Adresse de la page : amazon.fr')).toBeTruthy();
     expect(screen.queryByTestId('aywebs-store-progress', { includeHiddenElements: true })).toBeNull();
   });
 
@@ -190,6 +195,18 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     fireEvent.press(screen.getByTestId('aywebs-store-header-cart'));
     expect(screen.getByTestId('aywebs-store-cart-sheet')).toBeTruthy();
     expect(screen.queryByLabelText('Fermer')).toBeNull();
+  });
+
+  it('masque les commandes au défilement, puis réaffiche le bas au repos et le haut en remontant', async () => {
+    renderBrowser();
+    const webview = screen.getByTestId('webview');
+    fireEvent.scroll(webview, { nativeEvent: { contentOffset: { y: 50 } } });
+    expect(screen.queryByTestId('aywebs-store-header')).toBeNull();
+    expect(screen.queryByTestId('aywebs-store-add-to-cart')).toBeNull();
+    await waitFor(() => expect(screen.getByTestId('aywebs-store-add-to-cart')).toBeTruthy());
+    expect(screen.queryByTestId('aywebs-store-header')).toBeNull();
+    fireEvent.scroll(webview, { nativeEvent: { contentOffset: { y: 25 } } });
+    expect(screen.getByTestId('aywebs-store-header')).toBeTruthy();
   });
 
   it('la flèche de l’en-tête revient à l’écran précédent', () => {

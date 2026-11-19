@@ -23,6 +23,7 @@ export function ReelOptions({
   onShare,
   onLike,
   onComment,
+  onFollowed,
   liked = false,
   canLike = true,
   interactionError = '',
@@ -32,6 +33,7 @@ export function ReelOptions({
   onShare: () => Promise<unknown>;
   onLike?: () => void;
   onComment?: () => void;
+  onFollowed?: () => void;
   liked?: boolean;
   canLike?: boolean;
   interactionError?: string;
@@ -157,6 +159,7 @@ export function ReelOptions({
                 <ReelFollow
                   publisherId={reel.channelId}
                   onAuth={() => setAuth(true)}
+                  onFollowed={onFollowed}
                 />
               </View>
               {actions.map((action) => (

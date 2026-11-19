@@ -194,7 +194,7 @@ describe('Refonte du 29/10/2026 — Panier officiel, Fiche réservation 20 min e
           stickyFooter={
             <OfficialCartStickySummary
               deliveryTnd={8}
-              totalTnd={168}
+              totalTnd={6708.35}
               checkoutLabel="Continuer vers la commande"
               onCheckout={onCheckout}
               bottomPadding={16}
@@ -240,6 +240,10 @@ describe('Refonte du 29/10/2026 — Panier officiel, Fiche réservation 20 min e
     // Résumé inférieur fixe + moyens de paiement
     expect(screen.getByTestId('cart-sticky-summary')).toBeTruthy();
     expect(screen.getByText('TVA incluse')).toBeTruthy();
+    const fullTotal = screen.getByTestId('cart-checkout-amount');
+    expect(fullTotal.props.numberOfLines).toBeUndefined();
+    expect(String(fullTotal.props.children)).toMatch(/6\s?708[.,]35/);
+    expect(screen.getByText('Livraison')).toBeTruthy();
     expect(screen.getByTestId('cart-payment-badges')).toBeTruthy();
     expect(screen.getByLabelText('Visa')).toBeTruthy();
     expect(screen.getByLabelText('Mastercard')).toBeTruthy();

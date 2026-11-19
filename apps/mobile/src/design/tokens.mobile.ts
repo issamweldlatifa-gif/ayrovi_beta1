@@ -168,35 +168,26 @@ const PRICE_DROP_RED = '#CF1322';
  * même rouge dans les deux modes (5,9:1 avec le blanc), car c'est un repère
  * commercial fixe, pas une surface du thème.
  */
-/**
- * En-tête AYWEBs : fond JAUNE « Za. » (demande du 19/11), mot-symbole et icônes
- * NOIRS (9,6:1 sur le jaune), pilule blanche à encre noire. Fixe dans les deux modes.
- */
+/** AYWEBs uses a white header and search controls on a yellow band. */
 export const STORE_BAR = {
-  background: BRAND.yellow,
+  background: BRAND.white,
   ink: BRAND.black,
+  searchBand: BRAND.yellow,
   pill: BRAND.white,
   pillInk: BRAND.black,
-  /** Cadenas et adresse dans la pilule blanche — gris fixe (le `muted` du mode sombre serait illisible sur blanc). */
   pillMuted: NEUTRALS.textSecondary,
-  /** Rond de recherche au bout de la pilule blanche : encre, loupe blanche. */
-  searchButton: BRAND.black,
-  searchIcon: BRAND.white,
-  /** Barre d'état au-dessus du jaune : icônes sombres. */
+  searchButton: BRAND.white,
+  searchIcon: BRAND.black,
   statusBar: 'dark',
 } as const;
 
-/**
- * 16/11 (référence 025233) — barre d'adresse du navigateur de boutique : fond blanc pur,
- * pilule gris clair en LECTURE SEULE (bouclier + domaine de la page ouverte), fine ligne
- * de progression dégradée violet → rose sous la barre pendant le chargement.
- */
+/** Merchant chrome is white with the AYWEBs brand yellow. Dark glyphs keep contrast. */
 export const BROWSER_BAR = {
   background: BRAND.white,
   ink: BRAND.black,
-  pill: '#ECECF0',
-  pillInk: '#1C1B22',
-  progress: ['#9B6CF2', '#E46FA3'] as const,
+  pill: BRAND.yellow,
+  pillInk: BRAND.black,
+  progress: [BRAND.yellow, BRAND.white] as const,
   progressHeight: 3,
 } as const;
 

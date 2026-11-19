@@ -24,7 +24,7 @@
  * (options · son · partage) reste affiché ; commentaires et cœur restent
  * disponibles dans les options, même sans article.
  */
-import { MEDIA_GLYPH_SHADOW, MEDIA_RAIL_GLYPH, RADIUS, VIDEO_BACKDROP } from '@/design/tokens.mobile';
+import { MEDIA_GLYPH_SHADOW, MEDIA_RAIL_GLYPH, RADIUS, VIDEO_BACKDROP, veil } from '@/design/tokens.mobile';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -186,19 +186,18 @@ export function ReelShopTray({
       style={({ pressed }) => [
         styles.pill,
         overlay
-          // Ouvert : encre de la marque. Fermé : la surface de l'écran.
-          ? { backgroundColor: open ? VIDEO_BACKDROP : onMedia }
+          ? { backgroundColor: open ? VIDEO_BACKDROP : veil(0.58), borderColor: onMedia, borderWidth: StyleSheet.hairlineWidth }
           : [styles.pillInline, { borderColor: theme.colors.line, backgroundColor: theme.colors.ink }],
         { opacity: pressed ? theme.opacity.dimmed : 1 },
       ]}
     >
-      <AppText variant="label" color={!overlay ? surface : open ? onMedia : VIDEO_BACKDROP}>
+      <AppText variant="label" color={!overlay ? surface : onMedia}>
         {t(reelTrayLabelKey(open))}
       </AppText>
       <Ionicons
         name={open ? 'chevron-up' : 'chevron-down'}
         size={theme.iconSize.sm}
-        color={!overlay ? surface : open ? onMedia : VIDEO_BACKDROP}
+        color={!overlay ? surface : onMedia}
         accessibilityElementsHidden
       />
     </Pressable>

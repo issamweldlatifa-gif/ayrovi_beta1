@@ -8,7 +8,8 @@
  *  • ouvrir/fermer ne démonte pas le lecteur : la vidéo ne repart pas de zéro.
  */
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Animated, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -17,6 +18,10 @@ import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
 import { SessionProvider } from '../../src/state/session';
+import * as session from '../../src/state/session';
+import { fetchPublisherFollow, followPublisher } from '../../src/api/publisherFollow';
+
+jest.mock('../../src/api/publisherFollow', () => ({ fetchPublisherFollow: jest.fn(), followPublisher: jest.fn() }));
 import { useVideoPlayer } from 'expo-video';
 import { ReelCard } from '../../src/features/social/ReelCard';
 import type { LinkedProduct } from '../../src/api/linkedProduct';
@@ -49,7 +54,9 @@ const METRICS = {
 };
 
 function wrap(node: React.ReactNode) {
+  const client = new QueryClient({ defaultOptions: { queries: { gcTime: Infinity } } });
   return (
+    <QueryClientProvider client={client}>
     <SafeAreaProvider initialMetrics={METRICS}>
       <PrefsProvider>
         <SessionProvider>
@@ -59,6 +66,7 @@ function wrap(node: React.ReactNode) {
         </SessionProvider>
       </PrefsProvider>
     </SafeAreaProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -68,6 +76,15 @@ const renderCard = (over: Partial<Reel> = {}, fill?: { width: number; height: nu
   ));
 
 describe('Reel — tiroir des articles', () => {
+  it('affiche le titre et la légende sous l’éditeur et développe le texte à la demande', () => {
+    renderCard({ description: 'Une description détaillée' }, { width: 390, height: 844 });
+    expect(screen.getByText('Essai')).toBeTruthy();
+    expect(screen.getByText('Une description détaillée').props.numberOfLines).toBe(2);
+    fireEvent.press(screen.getByRole('button', { name: 'Voir plus' }));
+    expect(screen.getByText('Une description détaillée').props.numberOfLines).toBeUndefined();
+    expect(screen.getByRole('button', { name: 'Voir moins' }).props.accessibilityState.expanded).toBe(true);
+  });
+
   it('un seul bouton, ouvert par défaut, qui annonce son état', () => {
     renderCard();
     const toggle = screen.getByTestId('reel-tray-toggle-r1');
@@ -184,4 +201,23 @@ it('does not re-render a stable player when only equal parent objects change', (
   expect((useVideoPlayer as jest.Mock).mock.calls.length).toBe(renders);
   card.rerender(node(2));
   expect((useVideoPlayer as jest.Mock).mock.calls.length).toBeGreaterThan(renders);
+});
+
+it('confirme le suivi en bas seulement après une écriture serveur acceptée', async () => {
+  const sessionSpy = jest.spyOn(session, 'useSession').mockReturnValue({ status: 'signedIn', account: { id: 'buyer' } } as ReturnType<typeof session.useSession>);
+  jest.mocked(fetchPublisherFollow).mockResolvedValue({ following: false });
+  jest.mocked(followPublisher).mockRejectedValueOnce(new Error('Offline')).mockResolvedValueOnce({ following: true });
+  try {
+    renderCard({ channelId: 'real-publisher' }, { width: 390, height: 844 });
+    await screen.findByRole('button', { name: '+ Suivre' });
+    fireEvent.press(screen.getByTestId('reel-follow'));
+    await screen.findByRole('alert');
+    expect(screen.queryByTestId('reel-follow-confirmation')).toBeNull();
+    fireEvent.press(screen.getByTestId('reel-follow'));
+    expect(await screen.findByTestId('reel-follow-confirmation')).toBeTruthy();
+    expect(followPublisher).toHaveBeenLastCalledWith('real-publisher', true);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Suivi' })).toBeTruthy());
+  } finally {
+    sessionSpy.mockRestore();
+  }
 });

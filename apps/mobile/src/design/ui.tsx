@@ -391,17 +391,33 @@ export function Button({ label, onPress, busy = false, disabled = false, tone = 
  * jaune pleine largeur couvrait ≈ 6 % de l'écran ; ce gabarit le garde sous 4 %.
  * Sans montant, le bouton reste court et se cale en fin de ligne.
  */
-export function PurchaseBar({ amount, caption, note, aside, style, testID, ...button }: Omit<ButtonProps, 'tone' | 'block' | 'size'> & {
+const CART_PURCHASE_TONE = "commerce" as const;
+
+export function PurchaseBar({ amount, caption, note, aside, stacked = false, style, testID, ...button }: Omit<ButtonProps, 'tone' | 'block' | 'size'> & {
   /** Montant déjà formaté (jamais inventé : absent ⇒ rien à gauche). */
   amount?: string | null;
   /** Légende au-dessus du montant (« Total »). */
   caption?: string;
   /** Mention sous le montant (« TVA incluse »). */
   note?: string;
+  /** Le panier met le montant et le CTA sur deux rangées pour éviter la troncature. */
+  stacked?: boolean;
   /** Contenu libre à gauche à la place du montant (ex. bloc prix Lens). */
   aside?: ReactNode;
 }) {
   const theme = useTheme();
+  if (stacked) return (
+    <View style={[styles.buyStack, style]} testID={testID ? `${testID}-bar` : undefined}>
+      {aside ?? (amount ? <View style={[styles.buyTotalRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+        <View style={styles.buyTotalTitle}>
+          {caption ? <AppText variant="bodyStrong">{caption}</AppText> : null}
+          {note ? <AppText variant="caption" color={theme.colors.muted}>{note}</AppText> : null}
+        </View>
+        <AppText variant="h3" color={theme.colors.ink} testID={testID ? `${testID}-amount` : undefined}>{amount}</AppText>
+      </View> : null)}
+      <Button {...button} testID={testID} tone={CART_PURCHASE_TONE} size="lg" block />
+    </View>
+  );
   const left = aside ?? (amount ? (
     <View style={styles.buyAmount}>
       {caption ? <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>{caption}</AppText> : null}
@@ -412,7 +428,7 @@ export function PurchaseBar({ amount, caption, note, aside, style, testID, ...bu
   return (
     <View style={[styles.buyBar, { flexDirection: rowDirectionFor(theme.isRTL) }, style]} testID={testID ? `${testID}-bar` : undefined}>
       <View style={styles.buyLeft}>{left}</View>
-      <Button {...button} testID={testID} tone="commerce" size="lg" style={styles.buyButton} />
+      <Button {...button} testID={testID} tone={CART_PURCHASE_TONE} size="lg" style={styles.buyButton} />
     </View>
   );
 }
@@ -596,6 +612,9 @@ export function Field(props: TextInputProps & { label?: string }) {
 
 const styles = StyleSheet.create({
   leadingRow: { alignItems: 'center', justifyContent: 'center', gap: 8 },
+  buyStack: { gap: 8 },
+  buyTotalRow: { flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  buyTotalTitle: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: 6 },
   buyBar: { alignItems: 'center', justifyContent: 'space-between', gap: 16 },
   buyLeft: { flex: 1, minWidth: 0 },
   buyAmount: { gap: 2 },

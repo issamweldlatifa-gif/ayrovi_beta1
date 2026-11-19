@@ -1,3 +1,4 @@
+import { observedAyWebsChoice } from '../../../../../shared/aywebsObservedChoice';
 /**
  * ورقة الاختيار من **القراءة المحلية** (20/10/2026) — بلا أي نداء للخادم عند الفتح.
  *
@@ -466,6 +467,19 @@ export function defaultSelectionFromCapture(
   groups: AyWebsVariantGroup[],
 ): Record<string, string> {
   if (!groups.length) return {};
+  if (capture.captureMode === 'selection') {
+    const observed = groups.map(group => {
+      const entry = Array.isArray(capture.variantGroups) ? capture.variantGroups.find(raw => isRecord(raw)
+        && text(raw.name).toLowerCase() === group.attribute.toLowerCase()) : null;
+      return { name: group.attribute, values: group.values, selected: isRecord(entry) && Array.isArray(entry.selected) ? entry.selected.map(text) : [] };
+    });
+    const texts = Array.isArray(capture.selectedVariantTexts) ? capture.selectedVariantTexts.map(text) : [];
+    return Object.fromEntries(observed.flatMap(group => {
+      const value = observedAyWebsChoice(group, observed, texts);
+      return value ? [[group.name.toLowerCase(), value]] : [];
+    }));
+  }
+
   const amazon = isRecord(capture.amazon) ? capture.amazon : null;
   const selection: Record<string, string> = {};
   if (amazon) {

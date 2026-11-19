@@ -124,14 +124,15 @@ describe('mise en page du 15/11', () => {
     expect(reels).not.toMatch(/publisher(Row|Name|Avatar)/);
   });
 
-  it('navigateur AYWEBs façon Walmart : barre bleue, pilule blanche, logo Clean, ligne « Ajouté au panier »', () => {
+  it('navigateur AYWEBs : chrome blanc et jaune, logo Clean, confirmation d’ajout', () => {
     const browser = read('app/aywebs/browser.tsx');
-    expect(browser).toContain('BROWSER_BAR.background'); // 16/11 : barre d'adresse claire (réf. 025233)
+    expect(browser).toContain('BROWSER_BAR.background');
     expect(browser).toContain('aywebs-store-header-pill');
     expect(browser).toContain('<TabCleanIcon');
     expect(browser).toContain('aywebs-store-added-strip');
     const tokens = read('src/design/tokens.mobile.ts');
-    expect(tokens).toMatch(/export const STORE_BAR = \{\s*background: BRAND\.yellow,\s*ink: BRAND\.black,/); // 19/11 : en-tête AYWEBs JAUNE, encre noire
+    expect(tokens).toMatch(/export const STORE_BAR = \{\s*background: BRAND\.white,\s*ink: BRAND\.black,\s*searchBand: BRAND\.yellow,/);
+    expect(tokens).toMatch(/export const BROWSER_BAR = \{\s*background: BRAND\.white,\s*ink: BRAND\.black,\s*pill: BRAND\.yellow,/);
   });
 
   it('panier : le logo Clean remplace « Examiner » — 16/11 : sur chaque carte, noir avec son reflet', () => {

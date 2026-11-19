@@ -27,7 +27,7 @@ export function publisherFollowKey(owner: string, publisherId: string) {
   return ['publisher-follow', owner, publisherId] as const;
 }
 
-export function usePublisherFollow(publisherId: string, onAuth: () => void): PublisherFollow {
+export function usePublisherFollow(publisherId: string, onAuth: () => void, onFollowed?: () => void): PublisherFollow {
   const session = useSession();
   const client = useQueryClient();
   const owner = session.account?.id || 'guest';
@@ -48,7 +48,7 @@ export function usePublisherFollow(publisherId: string, onAuth: () => void): Pub
     mutationKey,
     mutationFn: async (following: boolean) => {
       const value = await followPublisher(publisherId, following);
-      if (typeof value.following !== 'boolean') throw new Error('Unconfirmed follow');
+      if (value.following !== following) throw new Error('Unconfirmed follow');
       return value;
     },
     onSuccess: async (value) => {
@@ -65,7 +65,8 @@ export function usePublisherFollow(publisherId: string, onAuth: () => void): Pub
     if (lock.current || busy || !relation.data) return;
     lock.current = true;
     try {
-      await mutation.mutateAsync(!relation.data.following);
+      const value = await mutation.mutateAsync(!relation.data.following);
+      if (value.following) onFollowed?.();
     } catch {
       /* L'erreur reste visible et l'action peut être relancée. */
     } finally {

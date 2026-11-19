@@ -261,6 +261,7 @@ export default function AyWebsCartScreen() {
             <OfficialCartStickySummary
               deliveryTnd={null}
               totalTnd={cart.totals.productSubtotalTnd}
+              subtotalOnly
               checkoutLabel={unlinkedUnits > 0 ? t('aywebs.cartBridge') : t('aywebs.cartBridgeOpen')}
               checkoutBusy={linkToZayrovi.isPending}
               onCheckout={() => {

@@ -1,8 +1,7 @@
 /**
- * Les onglets d’accueil — وصل حديثاً · عروض · مجلة
+ * Les onglets d’accueil — Social · وصل حديثاً · عروض · مجلة
  *
- * Présentation : une rangée de libellés en gras, sur fond blanc, sans icône ni
- * icône (façon barre de catégories d’une grande boutique). Le texte est dans la
+ * Présentation : une rangée de libellés en gras, sans icônes (façon barre de catégories d’une grande boutique). Le texte est dans la
  * police principale de l’application, au même poids (gras) que la référence.
  *
  * Chaque onglet ouvre un écran NATIF de l’application (jamais une page du site) :
@@ -57,7 +56,7 @@ export function HomeTabs() {
           accessibilityLabel={t(tab.labelKey)}
           style={({ pressed }) => [styles.tab, { opacity: pressed ? theme.opacity.subtle : 1 }]}
         >
-          <AppText variant="subtitle" color={theme.colors.ink} numberOfLines={1} style={[styles.label, { fontFamily: theme.text('h3').fontFamily }]}>
+          <AppText variant="label" color={theme.colors.ink} numberOfLines={1} style={styles.label}>
             {t(tab.labelKey)}
           </AppText>
           {tab.labelKey === 'home.tab.arrivals' ? <View testID="home-tab-underline" style={[styles.underline, { backgroundColor: theme.colors.ink }]} /> : null}
@@ -73,7 +72,6 @@ const styles = StyleSheet.create({
   row: {
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 12,
   },
   tab: {
     minHeight: 44,

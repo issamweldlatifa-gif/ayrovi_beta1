@@ -28,6 +28,9 @@ import {
 
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { AppImage } from '@/design/appImage';
+import { mediaUrl } from '@/api/client';
+import { browserChromeDirection, BROWSER_CHROME_IDLE_MS } from '@/features/aywebs/browserChrome';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CartGlyph } from '@/design/CartGlyph';
@@ -45,7 +48,7 @@ import {
   type AyWebsCart, type AyWebsCartItem, type AyWebsPageAnalysis, type AyWebsResolvedProduct, type AyWebsVariantOption,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
-import { readOnlyStoreSelection } from '@/features/aywebs/storeSheetMode';
+import { isSelectionCapture, readOnlyStoreSelection } from '@/features/aywebs/storeSheetMode';
 import { AYWEBS_NETWORK_OBSERVER_SCRIPT } from '@/features/aywebs/networkObserverScript';
 import {
   groupsFromCapture, localVariantsFromCapture, optionsFromVariants, productFromCapture,
@@ -84,9 +87,9 @@ const WebView = RNWebView as unknown as ComponentType<
  */
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
-/** Durée de la ligne « Ajouté au panier · Voir le panier » après un ajout. */
-const ADDED_STRIP_MS = 4000;
-/** Logo Clean dans son rond blanc de 34 dp. */
+/** Durée de la ligne « Ajouté au panier · Aller au panier » après un ajout. */
+const ADDED_STRIP_MS = 10000;
+/** Logo Clean dans une cible de 44 dp. */
 const CLEAN_LOGO_SIZE = 24;
 
 export default function AyWebsBrowserScreen() {
@@ -97,13 +100,41 @@ export default function AyWebsBrowserScreen() {
   const { account, status } = useSession();
   const queryClient = useQueryClient();
   const cartQueryKey = useMemo(() => ['store-sheet', 'aywebs-cart', sessionId] as const, [sessionId]);
-  const [cartAddedAt, setCartAddedAt] = useState(0);
+  const [added, setAdded] = useState<{ item: AyWebsCartItem } | null>(null);
+  const [headerVisible, setHeaderVisible] = useState(true);
+  const [footerVisible, setFooterVisible] = useState(true);
+  const scrollAnchor = useRef(0);
+  const scrollIdle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resetChrome = useCallback(() => {
+    if (scrollIdle.current) clearTimeout(scrollIdle.current);
+    scrollIdle.current = null;
+    scrollAnchor.current = 0;
+    setHeaderVisible(true);
+    setFooterVisible(true);
+  }, []);
+  useEffect(() => () => { if (scrollIdle.current) clearTimeout(scrollIdle.current); }, []);
+  const updateChrome = (offset: number) => {
+    const direction = browserChromeDirection(scrollAnchor.current, offset);
+    if (direction === 'top') { resetChrome(); return; }
+    if (direction) {
+      scrollAnchor.current = offset;
+      setHeaderVisible(direction === 'up');
+      setFooterVisible(false);
+    }
+    if (direction || scrollIdle.current) {
+      if (scrollIdle.current) clearTimeout(scrollIdle.current);
+      scrollIdle.current = setTimeout(() => {
+        scrollIdle.current = null;
+        setFooterVisible(true);
+      }, BROWSER_CHROME_IDLE_MS);
+    }
+  };
 
   useEffect(() => {
-    if (!cartAddedAt) return undefined;
-    const timerId = setTimeout(() => setCartAddedAt(0), ADDED_STRIP_MS);
+    if (!added) return undefined;
+    const timerId = setTimeout(() => setAdded(null), ADDED_STRIP_MS);
     return () => clearTimeout(timerId);
-  }, [cartAddedAt]);
+  }, [added]);
 
   const storeCart = useQuery({
     queryKey: cartQueryKey,
@@ -213,7 +244,7 @@ export default function AyWebsBrowserScreen() {
   const cartAccessibilityLabel = cartUnits > 0
     ? t('aywebs.bar.cartCount', { count: cartUnits })
     : t('aywebs.bar.cart');
-  const handleCartAdded = useCallback((_item: AyWebsCartItem, cart: AyWebsCart) => {
+  const handleCartAdded = useCallback((item: AyWebsCartItem, cart: AyWebsCart) => {
     void queryClient.cancelQueries({ queryKey: cartQueryKey, exact: true });
     queryClient.setQueryData(cartQueryKey, cart);
     // Les autres icônes panier (en-têtes principal et AYWEBs) lisent ces paniers-là.
@@ -221,7 +252,8 @@ export default function AyWebsBrowserScreen() {
     void queryClient.invalidateQueries({ queryKey: ['cart'] });
     // 15/11 : pas de seconde feuille — on ferme celle des options, la barre confirme.
     setSheet(null);
-    setCartAddedAt(Date.now());
+    setAdded({ item });
+    setFooterVisible(true);
   }, [cartQueryKey, queryClient, sessionId]);
   /** Persist the real last page locally; invalid/non-web URLs are ignored. */
   useEffect(() => {
@@ -505,7 +537,7 @@ export default function AyWebsBrowserScreen() {
           return;
         }
         const liveUrl = pageUrlRef.current || activePageUrl;
-        const variants = localVariantsFromCapture(captured);
+        const variants = isSelectionCapture(captured) ? [] : localVariantsFromCapture(captured);
         const localProduct: AyWebsResolvedProduct = {
           ...productFromCapture(captured, liveUrl, currentStoreId, currentStoreName),
           /* Les groupes viennent de la TABLE DES VARIANTES, et à défaut des
@@ -629,16 +661,14 @@ export default function AyWebsBrowserScreen() {
   const addEnabled = capturePage && !busy && Boolean(sessionId);
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.canvas }]}>
-      {/* 16/11 (référence 025233) : une VRAIE barre de navigateur — fond blanc, pilule gris
-          clair avec bouclier + domaine de la page réellement ouverte (mis à jour à chaque lien
-          suivi), en LECTURE SEULE : ce n'est pas un champ, le client ne peut rien y taper.
-          Ligne de progression dégradée violet → rose sous la barre pendant le chargement. */}
-      <StatusBar style="dark" />
+    <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingTop: headerVisible ? 0 : insets.top }]}>
+      {/* Identité AYWEBs et domaine marchand non modifiable. */}
+      <StatusBar style={!headerVisible && theme.mode === "dark" ? "light" : "dark"} />
       <View
         testID="aywebs-store-header"
         style={[
           styles.header,
+          !headerVisible && styles.hiddenChrome,
           {
             flexDirection: rowDirectionFor(theme.isRTL),
             backgroundColor: BROWSER_BAR.background,
@@ -650,11 +680,12 @@ export default function AyWebsBrowserScreen() {
         <View
           testID="aywebs-store-header-pill"
           accessibilityRole="header"
-          accessibilityLabel={t('aywebs.addressA11y', { host: headerHost || headerStoreName })}
+          accessibilityLabel={`AYWEBs · ${t('aywebs.addressA11y', { host: headerHost || headerStoreName })}`}
           style={[styles.titlePill, { backgroundColor: BROWSER_BAR.pill, flexDirection: rowDirectionFor(theme.isRTL) }]}
         >
           <Ionicons name="shield-checkmark-outline" size={theme.iconSize.sm} color={BROWSER_BAR.pillInk} accessibilityElementsHidden />
           <View style={styles.titleText}>
+            <AppText variant="captionStrong" color={BROWSER_BAR.pillInk}>AYWEBs</AppText>
             <AppText testID="aywebs-store-header-address" variant="body" color={BROWSER_BAR.pillInk} numberOfLines={1}>
               {headerHost || headerStoreName}
             </AppText>
@@ -675,9 +706,9 @@ export default function AyWebsBrowserScreen() {
           }}
           style={({ pressed }) => [styles.headerHit, pressed ? { opacity: theme.opacity.subtle } : null]}
         >
-          {/* 15/11 : le LOGO Clean (et non une bulle générique), posé dans un rond blanc pour rester net sur le bleu. */}
+          {/* 15/11 : Le logo Clean reste dans les commandes AYWEBs. */}
           <View testID="aywebs-ask-clean-logo" style={styles.cleanDisc}>
-            <TabCleanIcon color={BROWSER_BAR.ink} size={CLEAN_LOGO_SIZE} />
+            <TabCleanIcon color={BROWSER_BAR.pillInk} size={CLEAN_LOGO_SIZE} />
           </View>
         </Pressable>
         <Pressable
@@ -732,7 +763,8 @@ export default function AyWebsBrowserScreen() {
         allowsBackForwardNavigationGestures
         injectedJavaScriptBeforeContentLoaded={AYWEBS_NETWORK_OBSERVER_SCRIPT}
         setSupportMultipleWindows={false}
-        onLoadStart={() => setLoadProgress(0)}
+        onLoadStart={() => { resetChrome(); setLoadProgress(0); }}
+        onScroll={(event) => updateChrome(event.nativeEvent.contentOffset.y)}
         onLoadProgress={(event) => setLoadProgress(event.nativeEvent.progress >= 1 ? 1 : event.nativeEvent.progress)}
         onNavigationStateChange={(state) => {
           pageLoadingRef.current = state.loading === true;
@@ -767,7 +799,7 @@ export default function AyWebsBrowserScreen() {
         </View>
       )}
 
-      <View style={[styles.footer, { borderTopColor: theme.colors.line, paddingBottom: insets.bottom + theme.space[2] }]}>
+      <View style={[styles.footer, !footerVisible && !busy && !note && !added && styles.hiddenChrome, { borderTopColor: theme.colors.line, paddingBottom: insets.bottom + theme.space[2] }]}>
         {/* Le client ne lit PAS notre cuisine : aucun journal de lecture, aucune
             ligne « lecture serveur ». Le bouton qui tourne dit ce qu'il fait, et
             une erreur réelle s'écrit en clair (23/10/2026). */}
@@ -775,38 +807,32 @@ export default function AyWebsBrowserScreen() {
 
         {/* 15/11 : plus de seconde feuille après l'ajout — la feuille se ferme, le
             badge du sac grimpe, et cette ligne confirme avec un lien vers le panier. */}
-        {cartAddedAt ? (
-          <View
-            testID="aywebs-store-added-strip"
-            accessibilityLiveRegion="polite"
-            style={[styles.addedStrip, { flexDirection: rowDirectionFor(theme.isRTL) }]}
-          >
-            <Ionicons name="checkmark-circle-outline" size={theme.iconSize.sm} color={theme.status.success.fg} accessibilityElementsHidden />
-            <AppText variant="label" color={theme.colors.ink} numberOfLines={1} style={styles.addedText}>
-              {t('aywebs.addedBanner')}
-            </AppText>
-            <Pressable
-              testID="aywebs-store-added-go-to-cart"
-              accessibilityRole="link"
-              accessibilityLabel={t('aywebs.goToCart')}
-              hitSlop={10}
-              onPress={() => { setCartAddedAt(0); router.push('/panier'); }}
-            >
-              <AppText variant="label" color={theme.colors.ink} style={styles.addedLink}>{t('aywebs.goToCart')}</AppText>
-            </Pressable>
+        {added ? (
+          <View testID="aywebs-store-added-strip" accessibilityLiveRegion="polite"
+            style={[styles.addedStrip, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+            {added.item.images[0] ? <AppImage uri={mediaUrl(added.item.images[0])} contentFit="contain" decorative testID="aywebs-store-added-image" style={styles.addedImage} /> : null}
+            <View style={styles.addedText}>
+              <View style={[styles.addedTitle, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+                <Ionicons name="checkmark-circle-outline" size={theme.iconSize.sm} color={theme.status.success.fg} accessibilityElementsHidden />
+                <AppText variant="label" color={theme.status.success.fg}>{t('aywebs.addedBanner')}</AppText>
+              </View>
+              <AppText variant="caption" numberOfLines={2}>{added.item.title}</AppText>
+              {added.item.variantLabel ? <AppText variant="caption" color={theme.colors.muted} numberOfLines={2}>{added.item.variantLabel}</AppText> : null}
+              <Button size="md" tone="quiet" label={t('aywebs.goToCart')} testID="aywebs-store-added-go-to-cart"
+                onPress={() => { setAdded(null); router.push('/panier'); }} style={styles.addedAction} />
+            </View>
           </View>
         ) : null}
 
-        {/* 19/11 : « Choisir les options » garde sa taille d'origine (pleine largeur) — seule la couleur passe au jaune d'achat. */}
-        <Button
-          label={busy ? t('aywebs.loading') : cartAddedAt ? t('aywebs.added') : t('aywebs.selectOptions')}
+        {!added ? <Button
+          label={busy ? t('aywebs.loading') : t('aywebs.captureProduct')}
           tone="commerce"
           block
           onPress={addToCart}
           busy={busy}
           disabled={!addEnabled}
           testID="aywebs-store-add-to-cart"
-        />
+        /> : null}
 
       </View>
 
@@ -854,9 +880,12 @@ const styles = StyleSheet.create({
   cleanDisc: { width: 34, height: 34, borderRadius: RADIUS.full, alignItems: 'center', justifyContent: 'center' },
   progressTrack: { position: 'absolute', bottom: 0, height: BROWSER_BAR.progressHeight, overflow: 'hidden' },
   web: { flex: 1 },
-  addedStrip: { alignItems: 'center', gap: 8, minHeight: 32 },
-  addedText: { flex: 1 },
-  addedLink: { textDecorationLine: 'underline' },
+  hiddenChrome: { display: 'none' },
+  addedStrip: { alignItems: 'center', gap: 12, paddingVertical: 8 },
+  addedImage: { width: 72, height: 80 },
+  addedText: { flex: 1, minWidth: 0, gap: 4 },
+  addedTitle: { alignItems: 'center', gap: 4 },
+  addedAction: { alignSelf: 'flex-start', minHeight: 44 },
   webFill: { flex: 1 },
   loading: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   footer: { borderTopWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingTop: 10, gap: 6 },

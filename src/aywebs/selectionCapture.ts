@@ -1,3 +1,4 @@
+import { isAyWebsPickerPlaceholder, observedAyWebsChoice } from '../../shared/aywebsObservedChoice';
 /**
  * AYWEBs — CAPTURE DE LA SÉLECTION DU CLIENT (principe du 19/11/2026).
  *
@@ -130,18 +131,13 @@ export function evaluateAyWebsSelection(payload: AyWebsCapturedPage, input: AyWe
   if (payload.selection?.stable === true) notes.push('selection_double_read_ok');
 
   /* 2. Chaque groupe à choix doit avoir SA valeur choisie, prise dans ses valeurs. */
-  const selectedTexts = input.selectedVariantTexts.map((text) => text.toLowerCase());
   const attributes: Record<string, string> = {};
   const missingGroups: string[] = [];
   let image: string | null = null;
   for (const group of input.variantGroups) {
-    const values = (group.values || []).map((value) => clean(value)).filter(Boolean);
+    const values = (group.values || []).map((value) => clean(value)).filter(value => !isAyWebsPickerPlaceholder(group.name, value));
     if (!values.length) continue;
-    let chosen = clean(group.selected?.[0]);
-    if (chosen && !values.some((value) => value.toLowerCase() === chosen.toLowerCase())) chosen = '';
-    /* Le lecteur n'a pas marqué la valeur mais l'a lue comme « choisie » ailleurs. */
-    if (!chosen) chosen = values.find((value) => selectedTexts.includes(value.toLowerCase())) || '';
-    if (!chosen && values.length === 1) chosen = values[0];
+    const chosen = observedAyWebsChoice({ ...group, values }, input.variantGroups, input.selectedVariantTexts);
     if (!chosen) {
       missingGroups.push(group.name);
       continue;

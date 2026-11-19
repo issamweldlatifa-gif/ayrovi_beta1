@@ -70,7 +70,7 @@ describe('un seul bouton plein principal par écran (14/11 ; encre depuis le 18/
     expect(fiche).toMatch(/label=\{label\}\s*tone="commerce"/);
     expect(cart).toMatch(/<PurchaseBar[\s\S]*label=\{checkoutLabel\}/);
     expect(checkout).toMatch(/<PurchaseBar[\s\S]*label=\{t\('checkout\.submit'\)\}/);
-    expect(stripComments(fs.readFileSync(path.join(ROOT, 'src/design/ui.tsx'), 'utf8'))).toMatch(/tone="commerce" size="lg"/);
+    expect(stripComments(fs.readFileSync(path.join(ROOT, 'src/design/ui.tsx'), 'utf8'))).toMatch(/tone=\{CART_PURCHASE_TONE\} size="lg"/);
   });
 
   it('aucun autre élément ne se peint en bleu plein comme un bouton (fond `action` réservé au Button)', () => {

@@ -449,6 +449,9 @@ describe('jaune réservé à l’achat, tout le reste à l’encre', () => {
       const n = (text.match(/<PurchaseBar\b/g) ?? []).length + (text.match(/tone="commerce"/g) ?? []).length;
       if (n) buy[rel] = n;
     }
+    const purchaseBar = read('src/design/ui.tsx');
+    expect(purchaseBar).toContain('const CART_PURCHASE_TONE = "commerce"');
+    expect(purchaseBar.match(/tone=\{CART_PURCHASE_TONE\}/g)).toHaveLength(2);
     expect(buy).toEqual({
       'app/checkout.tsx': 1,                            // Commander
       'app/aywebs/browser.tsx': 1,                      // choisir les options / ajouter
@@ -458,7 +461,6 @@ describe('jaune réservé à l’achat, tout le reste à l’encre', () => {
       'src/features/product/ProductFiche.tsx': 1,       // ajouter au panier (fiche)
       'src/features/shopping/OfficialCartView.tsx': 1,  // Commander (panier)
       'src/features/social-commerce/LookSelectionSheet.tsx': 1, // confirmer l’ajout des articles du look
-      'src/design/ui.tsx': 1,                           // PurchaseBar elle-même (ton commerce)
     });
   });
 

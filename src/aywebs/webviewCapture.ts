@@ -1,3 +1,4 @@
+import { isAyWebsPickerPlaceholder } from '../../shared/aywebsObservedChoice';
 /**
  * AYWEBs — VALIDATION D'UNE CAPTURE WebView (Phase 2.1, 06/10/2026).
  *
@@ -365,7 +366,7 @@ function cleanImageUrls(raw: unknown): string[] {
  */
 const NOT_A_VARIANT_GROUP = /^(sort|sort by|sortby|trier|tri|order by|orderby|quantit\w*|quantity|qty|nombre|view|view by|affichage|filter|filtre|page|pages|lang|langue|language|devise|currency|pays|country|region|région|per page|items per page|afficher)\b/i;
 
-function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
+function cleanVariantGroups(raw: unknown, selectionMode: boolean): AyWebsCapturedVariantGroup[] {
   if (!Array.isArray(raw)) return [];
   const out: AyWebsCapturedVariantGroup[] = [];
   const seen = new Set<string>();
@@ -386,7 +387,8 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
        client ne pouvait pas choisir sa taille. */
     const numericChoiceGroup = /(size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس|colour|color|couleur|farbe|colore|cor|kleur|لون|shade|teinte|nuance|style|model|modèle|modele|type|pattern|motif|length|longueur|voltage|watt|capacity|capacit|pieces|pcs|pack|lot|pin|port|gauge|calibre)/i.test(name);
     const values = cleanTextArray((entry as { values?: unknown }).values, AYWEBS_CAPTURE_LIMITS.maxVariantGroupValues, 60)
-      .filter((value) => numericChoiceGroup || /^0\d+$/.test(value) || !/^\d{1,3}$/.test(value));
+      .filter((value) => !isAyWebsPickerPlaceholder(name, value)
+        && (numericChoiceGroup || /^0\d+$/.test(value) || !/^\d{1,3}$/.test(value)));
     if (values.length < 1) continue;
     const selected = cleanTextArray((entry as { selected?: unknown }).selected, AYWEBS_CAPTURE_LIMITS.maxVariantGroupValues, 60)
       .filter((value) => values.some((known) => known.toLowerCase() === value.toLowerCase()));
@@ -435,7 +437,7 @@ function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
       }
     }
     seen.add(key);
-    out.push({ name, values, selected: selected.slice(0, 1), ...(options.length ? { options } : {}) });
+    out.push({ name, values, selected: selected.slice(0, selectionMode ? 2 : 1), ...(options.length ? { options } : {}) });
   }
   return out;
 }
@@ -503,6 +505,8 @@ export interface AyWebsCaptureValidation {
    * prix et devise validés par `checkPriceText`.
    */
   skuCombinations: AyWebsSourceProduct['variants'];
+  /** Positive page evidence on a rejected selection; never used to quote. */
+  selectionPageProof?: { title: string; corroborated: boolean };
   /** Verdict du mode `selection` (choix du client, identifiant, quantité), sinon null. */
   selection?: AyWebsSelectionVerdict | null;
   /** Piste d'audit lisible : quels candidats ont été vus, lesquels ont gagné. */
@@ -1045,12 +1049,19 @@ export function validateAyWebsCapturedPage(
   /* Deux lecteurs, un seul contrat : le générique (boutiques sans adaptateur) et
      le dédié Amazon (pastilles + ASIN). Les groupes génériques gagnent ; ceux
      d'Amazon complètent les dimensions qu'ils n'ont pas nommées. */
-  const genericGroups = cleanVariantGroups(payload.variantGroups);
+  const genericGroups = cleanVariantGroups(payload.variantGroups, options.selectionMode === true);
   const amazonGroups = variantGroupsFromAmazonOptions(payload.amazon);
   const variantGroups = [...genericGroups];
   for (const group of amazonGroups) {
-    if (variantGroups.some((known) => known.name.toLowerCase() === group.name.toLowerCase())) continue;
-    variantGroups.push(group);
+    const known = variantGroups.find((entry) => entry.name.toLowerCase() === group.name.toLowerCase());
+    if (!known) {
+      variantGroups.push(group);
+    } else if (options.selectionMode && !known.selected?.length && group.selected?.length === 1) {
+      // The dedicated Amazon twister may carry the selected value more clearly
+      // than the DOM. Only use a value that is also published in this dimension.
+      const selected = known.values.find(value => value.toLowerCase() === group.selected![0].toLowerCase());
+      if (selected) known.selected = [selected];
+    }
   }
   variantGroups.splice(AYWEBS_CAPTURE_LIMITS.maxVariantGroups);
 
@@ -1067,7 +1078,10 @@ export function validateAyWebsCapturedPage(
     notes.push('capture_mode:selection', ...selection.notes);
     if (!selection.ok) {
       if (selection.missingGroups.length) notes.push(`selection_missing:${selection.missingGroups.join('|').slice(0, 120)}`);
-      return rejected(selection.rejection || 'SELECTION_NOT_PROVEN', '', notes);
+      return {
+        ...rejected(selection.rejection || 'SELECTION_NOT_PROVEN', '', notes),
+        selectionPageProof: { title, corroborated },
+      };
     }
     availability = selection.availability;
     availabilityReason = selection.availabilityReason;

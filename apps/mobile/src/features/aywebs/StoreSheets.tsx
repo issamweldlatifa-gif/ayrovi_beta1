@@ -12,7 +12,7 @@
  */
 import { RADIUS } from '@/design/tokens.mobile';
 import { useMemo, useState, type ComponentProps } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-native';
 import { NavigationIcon as Ionicons } from '@/design/NavigationIcon';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -36,7 +36,7 @@ import {
   type OfficialCartItemModel,
 } from '@/features/shopping/OfficialCartView';
 import {
-  STORE_CART_SEGMENTS, storeCartSections, type StoreCartSegment,
+  STORE_CART_SEGMENTS, type StoreCartSegment,
 } from './storeShopping';
 
 const SEGMENT_LABEL: Record<StoreCartSegment, TranslationKey> = {
@@ -71,12 +71,6 @@ export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCa
   });
 
   const active = segment === 'zayrovi' ? zayrovi : aywebs;
-  const sections = storeCartSections(segment, {
-    aywebs: aywebs.data ?? null,
-    zayrovi: zayrovi.data ?? null,
-    storeId,
-  });
-
   const unifiedRows = useMemo<OfficialCartItemModel[]>(() => {
     if (segment === 'zayrovi') {
       return (zayrovi.data?.items ?? []).map((line) => {
@@ -100,7 +94,7 @@ export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCa
       });
     }
     const items = (aywebs.data?.items ?? []).filter(
-      (item) => segment !== 'thisStore' || !storeId || item.storeId === storeId,
+      (item) => segment !== 'thisStore' || item.storeId === storeId,
     );
     return items.map((item) => {
       const parsed = splitCartVariantLabels({ variant: item.variantLabel });
@@ -121,75 +115,83 @@ export function StoreCartSheet({ visible, onClose, sessionId, storeId }: StoreCa
   const totalUnits = unifiedRows.reduce((sum, item) => sum + item.quantity, 0);
   const summaryTotalTnd = segment === 'zayrovi'
     ? (zayrovi.data?.totalTND ?? null)
-    : (aywebs.data?.totals?.productSubtotalTnd ?? zayrovi.data?.totalTND ?? null);
+    : segment === 'thisStore'
+      ? (unifiedRows.length && unifiedRows.every(row => row.lineTotalTnd != null)
+        ? unifiedRows.reduce((sum, row) => sum + (row.lineTotalTnd ?? 0), 0) : null)
+      : (aywebs.data?.totals?.productSubtotalTnd ?? null);
   const summaryDeliveryTnd = segment === 'zayrovi' ? (zayrovi.data?.deliveryTND ?? null) : null;
 
   return (
-    <AppSheet
-      open={visible}
-      onDismiss={onClose}
-      header={(
-        <SheetHeader
-          title={totalUnits > 0 ? `${t('tabs.cart')} (${totalUnits})` : t('aywebs.cart.title')}
-          onClose={onClose}
-        />
-      )}
-      footer={(
-        <OfficialCartStickySummary
-          deliveryTnd={summaryDeliveryTnd}
-          totalTnd={summaryTotalTnd}
-          checkoutLabel={t('aywebs.cart.openFull')}
-          onCheckout={() => {
-            onClose();
-            router.push('/panier');
-          }}
-          checkoutTestID="aywebs-store-cart-open-full"
-          bottomPadding={4}
-        />
-      )}
-    >
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <View style={[styles.segments, { flexDirection: rowDirectionFor(theme.isRTL) }]} accessibilityRole="tablist">
-          {STORE_CART_SEGMENTS.map((candidate) => {
-            const selected = candidate === segment;
-            return (
-              <Pressable
-                key={candidate}
-                accessibilityRole="tab"
-                accessibilityState={{ selected }}
-                onPress={() => setSegment(candidate)}
-                style={[
-                  styles.segment,
-                  {
-                    borderColor: selected ? theme.colors.ink : theme.colors.line,
-                    backgroundColor: selected ? theme.colors.ink : 'transparent',
-                    minHeight: theme.chrome.button,
-                  },
-                ]}
-              >
-                <AppText variant="captionStrong" color={selected ? theme.colors.canvas : theme.colors.ink}>
-                  {t(SEGMENT_LABEL[candidate])}
-                </AppText>
-              </Pressable>
-            );
-          })}
-        </View>
+    <Modal visible={visible} onRequestClose={onClose} animationType="none" statusBarTranslucent navigationBarTranslucent>
+      <View style={[styles.cartModal, { backgroundColor: theme.colors.canvas }]}>
+        <AppSheet
+          open={visible}
+          onDismiss={onClose}
+          header={(
+            <SheetHeader
+              title={totalUnits > 0 ? `${t('tabs.cart')} (${totalUnits})` : t('aywebs.cart.title')}
+              onClose={onClose}
+            />
+          )}
+          footer={(
+            <OfficialCartStickySummary
+              deliveryTnd={summaryDeliveryTnd}
+              totalTnd={summaryTotalTnd}
+              subtotalOnly={segment !== 'zayrovi'}
+              checkoutLabel={t('aywebs.cart.openFull')}
+              onCheckout={() => {
+                onClose();
+                router.push('/panier');
+              }}
+              checkoutTestID="aywebs-store-cart-open-full"
+              bottomPadding={4}
+            />
+          )}
+        >
+          <View style={styles.body}>
+            <View style={[styles.segments, { flexDirection: rowDirectionFor(theme.isRTL) }]} accessibilityRole="tablist">
+              {STORE_CART_SEGMENTS.map((candidate) => {
+                const selected = candidate === segment;
+                return (
+                  <Pressable
+                    key={candidate}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected }}
+                    onPress={() => setSegment(candidate)}
+                    style={[
+                      styles.segment,
+                      {
+                        borderColor: selected ? theme.colors.ink : theme.colors.line,
+                        backgroundColor: selected ? theme.colors.ink : 'transparent',
+                        minHeight: theme.chrome.button,
+                      },
+                    ]}
+                  >
+                    <AppText variant="captionStrong" color={selected ? theme.colors.canvas : theme.colors.ink}>
+                      {t(SEGMENT_LABEL[candidate])}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </View>
 
-        {active.isLoading ? <ActivityIndicator color={theme.colors.ink} /> : null}
-        {active.isError ? (
-          <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>
-            {addErrorMessage(active.error, locale, t)}
-          </AppText>
-        ) : null}
-        {!active.isLoading && !active.isError && sections.length === 0 && unifiedRows.length === 0 ? (
-          <AppText variant="body" color={theme.colors.muted}>{t('aywebs.cart.empty')}</AppText>
-        ) : null}
+            {active.isLoading ? <ActivityIndicator color={theme.colors.ink} /> : null}
+            {active.isError ? (
+              <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>
+                {addErrorMessage(active.error, locale, t)}
+              </AppText>
+            ) : null}
+            {!active.isLoading && !active.isError && unifiedRows.length === 0 ? (
+              <AppText variant="body" color={theme.colors.muted}>{t('aywebs.cart.empty')}</AppText>
+            ) : null}
 
-        {unifiedRows.map((row) => (
-          <OfficialCartRow key={row.id} item={row} />
-        ))}
-      </ScrollView>
-    </AppSheet>
+            {unifiedRows.map((row) => (
+              <OfficialCartRow key={row.id} item={row} />
+            ))}
+          </View>
+        </AppSheet>
+      </View>
+    </Modal>
   );
 }
 
@@ -309,6 +311,7 @@ export function StoreFavoriteSheet({ visible, onClose, sourceUrl, title, saved }
 }
 
 const styles = StyleSheet.create({
+  cartModal: { flex: 1 },
   body: { padding: 20, gap: 12 },
   segments: { flexWrap: 'wrap', gap: 8 },
   segment: { borderWidth: 1, borderRadius: RADIUS.full, paddingHorizontal: 16, justifyContent: 'center' },

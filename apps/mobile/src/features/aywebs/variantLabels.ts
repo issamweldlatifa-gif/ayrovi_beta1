@@ -29,6 +29,7 @@
  * lettre.
  */
 import type { AyWebsVariantGroup } from '@/api/aywebs';
+import { isAyWebsPickerPlaceholder } from '../../../../../shared/aywebsObservedChoice';
 
 /**
  * Libellés d'interface, toutes langues des boutiques du catalogue.
@@ -61,7 +62,7 @@ export function isRealChoiceValue(group: string, value: unknown): boolean {
   const text = String(value ?? '').trim();
   if (!text) return false;
   if (isUiChoiceLabel(text)) return false;
-  return choiceKey(text) !== choiceKey(group);
+  return !isAyWebsPickerPlaceholder(group, text) && choiceKey(text) !== choiceKey(group);
 }
 
 /**

@@ -8,13 +8,18 @@ import { usePublisherFollow } from '@/features/publications/usePublisherFollow';
 export function ReelFollow({
   publisherId,
   onAuth,
+  onFollowed,
+  onMedia = false,
 }: {
   publisherId: string;
   onAuth: () => void;
+  onFollowed?: () => void;
+  onMedia?: boolean;
 }) {
   const theme = useTheme();
   const t = useT();
-  const follow = usePublisherFollow(publisherId, onAuth);
+  const follow = usePublisherFollow(publisherId, onAuth, onFollowed);
+  const ink = onMedia ? theme.colors.onMedia : theme.colors.ink;
   const label = follow.state === 'error'
     ? t('publication.followRetry')
     : follow.state === 'pending'
@@ -25,6 +30,7 @@ export function ReelFollow({
   return (
     <View style={{ gap: 4, maxWidth: '48%', flexShrink: 1 }}>
       <Pressable
+        testID="reel-follow"
         accessibilityRole="button"
         accessibilityState={{ disabled: follow.disabled }}
         disabled={follow.disabled}
@@ -32,17 +38,17 @@ export function ReelFollow({
         style={{
           minHeight: 44,
           borderWidth: 1,
-          borderColor: theme.colors.ink,
+          borderColor: ink,
           borderRadius: theme.radius.full,
-          paddingHorizontal: 16,
+          paddingHorizontal: 12,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <AppText variant="body">{label}</AppText>
+        <AppText variant="label" color={ink}>{label}</AppText>
       </Pressable>
       {follow.writeFailed ? (
-        <AppText accessibilityRole="alert" variant="caption">
+        <AppText accessibilityRole="alert" variant="caption" color={ink}>
           {t('publication.followError')}
         </AppText>
       ) : null}

@@ -1,4 +1,7 @@
 import { PublicationAuthSheet } from "@/features/publications/PublicationAuthSheet";
+import { ReelFollow } from "@/features/reels/ReelFollow";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { rowDirectionFor } from "@/design/layoutLogic";
 import { ReelPublisher } from "@/features/reels/ReelPublisher";
 import { ReelOptions } from "@/features/reels/ReelOptions";
 import { shareReel } from "@/features/reels/shareReel";
@@ -13,8 +16,8 @@ import { shareReel } from "@/features/reels/shareReel";
  *
  * وقاعدة الصدق: **الإعجاب يحتاج حساباً** ⇒ الزر معطّل بسبب مكتوب.
  */
-import { memo, useCallback, useRef, useState } from "react";
-import { Animated, Pressable, StyleSheet, View } from "react-native";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { Animated, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { ReelGlyph } from "@/features/reels/ReelIcons";
 import { ReelPlayback } from "@/features/reels/ReelPlayback";
@@ -80,6 +83,19 @@ export const ReelCard = memo(function ReelCard({
   // En plein écran le texte est posé sur la vidéo : blanc, pas la couleur de carte.
   const ink = fill ? theme.colors.onMedia : theme.colors.ink;
   const muted = fill ? theme.colors.onMedia : theme.colors.muted;
+
+  const insets = useSafeAreaInsets();
+  const [captionExpanded, setCaptionExpanded] = useState(false);
+  const [followFeedback, setFollowFeedback] = useState(0);
+  useEffect(() => {
+    if (!active) { setCaptionExpanded(false); setFollowFeedback(0); }
+  }, [active, reel.id]);
+  useEffect(() => {
+    if (!followFeedback) return;
+    const timeout = setTimeout(() => setFollowFeedback(0), 3200);
+    return () => clearTimeout(timeout);
+  }, [followFeedback]);
+  const confirmFollow = useCallback(() => setFollowFeedback(count => count + 1), []);
 
   const [options, setOptions] = useState(false);
   const [auth, setAuth] = useState(false);
@@ -174,6 +190,11 @@ export const ReelCard = memo(function ReelCard({
    * sortent, la légende et les actions montent avec eux au lieu de passer
    * dessous. `bottom` est calculé par le tiroir — une seule géométrie.
    */
+  const caption = <>
+    {reel.title ? <AppText variant="label" color={ink} numberOfLines={captionExpanded ? undefined : 1}>{reel.title}</AppText> : null}
+    {reel.description ? <AppText variant="caption" color={muted} numberOfLines={captionExpanded ? undefined : 2}>{reel.description}</AppText> : null}
+  </>;
+
   const body = (bottom?: number, lift?: Animated.AnimatedInterpolation<number>) => (
     <Animated.View
       pointerEvents="box-none"
@@ -183,17 +204,22 @@ export const ReelCard = memo(function ReelCard({
         fill && lift ? { transform: [{ translateY: lift }] } : null,
       ]}
     >
-      {fill ? <ReelPublisher onMedia /> : null}
-      {!fill && reel.title ? (
-        <AppText variant="label" color={ink} numberOfLines={1}>
-          {reel.title}
-        </AppText>
+      {fill ? (
+        <View style={[styles.publisherRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          <ReelPublisher onMedia />
+          {active && reel.channelId ? <ReelFollow key={reel.channelId} publisherId={reel.channelId}
+            onAuth={requireAccount} onFollowed={confirmFollow} onMedia /> : null}
+        </View>
       ) : null}
-      {!fill && reel.description ? (
-        <AppText variant="caption" color={muted} numberOfLines={2}>
-          {reel.description}
-        </AppText>
-      ) : null}
+      <View style={fill && (reel.title || reel.description) ? styles.mediaCaption : undefined}>
+        {fill && captionExpanded ? <ScrollView nestedScrollEnabled style={styles.expandedCaption}>{caption}</ScrollView> : caption}
+        {fill && (reel.description || reel.title) ? (
+          <Pressable accessibilityRole="button" accessibilityState={{ expanded: captionExpanded }}
+            style={styles.captionButton} onPress={() => setCaptionExpanded(value => !value)}>
+            <AppText variant="captionStrong" color={ink}>{t(captionExpanded ? 'reel.captionLess' : 'reel.captionMore')}</AppText>
+          </Pressable>
+        ) : null}
+      </View>
 
       {visibleError ? (
         <AppText accessibilityRole="alert" variant="caption" color={muted}>
@@ -282,6 +308,7 @@ export const ReelCard = memo(function ReelCard({
           reel={reel}
           onClose={() => setOptions(false)}
           onShare={share}
+          onFollowed={() => { setOptions(false); confirmFollow(); }}
           onLike={reaction.tap}
           onComment={() => onOpenComments(reel)}
           liked={reaction.reaction !== null}
@@ -333,6 +360,14 @@ export const ReelCard = memo(function ReelCard({
           </ReelShopTray>
         </>
       )}
+      {active && followFeedback > 0 ? (
+        <View accessibilityLiveRegion="polite" pointerEvents="none" testID="reel-follow-confirmation"
+          style={[styles.followConfirmation, { bottom: insets.bottom + 66, backgroundColor: theme.colors.canvas, borderColor: theme.status.success.border }]}>
+          <View style={[styles.followMessage, { backgroundColor: theme.status.success.soft }]}>
+            <AppText variant="label" color={theme.status.success.fg}>{t('reel.followConfirmed')}</AppText>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 }, (previous, next) => previous.reel === next.reel
@@ -391,6 +426,12 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     backgroundColor: veil(0.55),
   },
+  publisherRow: { alignItems: 'center', gap: 10 },
+  mediaCaption: { backgroundColor: veil(0.58), borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingTop: 6 },
+  expandedCaption: { maxHeight: 112 },
+  captionButton: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center' },
+  followConfirmation: { position: 'absolute', alignSelf: 'center', maxWidth: '90%', borderRadius: RADIUS.full, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  followMessage: { paddingHorizontal: 16, paddingVertical: 10 },
   body: { padding: 12, gap: 4 },
   actions: {
     flexDirection: "row",

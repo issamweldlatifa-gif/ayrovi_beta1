@@ -35,11 +35,7 @@ export function AppHeader({ scrolled, heroBackground = null, heroTint = null, br
   const theme = useTheme(), t = useT(), insets = useSafeAreaInsets();
   const { status } = useSession();
   const pathname = usePathname();
-  /**
-   * 16/11 (référence Walmart 030411) : l'accueil AYWEBs porte une barre BLEUE d'action —
-   * jusque sous la barre d'état, dans les deux thèmes —, mot-symbole, cœur et sac en
-   * BLANC ; la bande bleue se prolonge sous l'en-tête autour de la recherche.
-   */
+  // AYWEBs keeps its own yellow/white chrome independently of the theme.
   const aywebs = brand === 'aywebs';
   const onHero = !aywebs && !scrolled && heroBackground !== null;
   const ink = aywebs ? STORE_BAR.ink : onHero ? adaptiveInk(heroBackground, theme.colors) : theme.colors.ink;

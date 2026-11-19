@@ -213,7 +213,7 @@ export function AyWebsHomeContent({ catalog }: { catalog: StoresCatalogQuery }) 
           prolonge ici, bord à bord ; pilule BLANCHE, rond de recherche bleu nuit au bout. ── */}
       <View
         testID="aywebs-home-search-band"
-        style={[styles.searchBand, { backgroundColor: STORE_BAR.background, marginHorizontal: -gutter, paddingHorizontal: gutter }]}
+        style={[styles.searchBand, { backgroundColor: STORE_BAR.searchBand, marginHorizontal: -gutter, paddingHorizontal: gutter }]}
       >
       <View
         style={[
