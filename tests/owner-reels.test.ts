@@ -7,14 +7,16 @@ import express from 'express';
 import request from 'supertest';
 import { expect, it, vi } from 'vitest';
 import { QatafoDatabase } from '../src/db/database';
-import { installOwnerReels, OWNER_REELS_MIGRATION } from '../src/magazine/installOwnerReels';
+import { installOwnerReelsV2, OWNER_REELS_V2_MIGRATION } from '../src/magazine/installOwnerReels';
 import { readPublishedSocial } from '../src/magazine/publicSocialReads';
-import manifest from '../assets/media/reels-owned/manifest.json';
-it('ships exactly five hashed full-duration owner clips with posters, faststart and byte ranges',async()=>{
-  expect(manifest.entries).toHaveLength(5);
-  const directory=path.resolve('assets/media/reels-owned');const app=express().use('/media/reels-owned',express.static(directory));
-  expect(fs.readdirSync(directory).filter(name=>name.endsWith('.mp4'))).toHaveLength(5);
+import manifest from '../assets/media/reels-owned-v2/manifest.json';
+it('ships exactly fifteen distinct hashed full-duration owner clips with posters, faststart and byte ranges',async()=>{
+  expect(manifest.entries).toHaveLength(15);
+  const directory=path.resolve('assets/media/reels-owned-v2');const app=express().use('/media/reels-owned-v2',express.static(directory));
+  expect(fs.readdirSync(directory).filter(name=>name.endsWith('.mp4'))).toHaveLength(15);
+  expect(new Set(manifest.entries.map(entry=>entry.sha256)).size).toBe(15);
   for(const entry of manifest.entries) {
+    expect(entry).toMatchObject({ width:720,height:1280,audio:true });
     const bytes=fs.readFileSync(path.join(directory,entry.file));
     expect(createHash('sha256').update(bytes).digest('hex')).toBe(entry.sha256);
     expect(createHash('sha256').update(fs.readFileSync(path.join(directory,entry.poster))).digest('hex')).toBe(entry.posterSha256);
@@ -30,7 +32,7 @@ it('replaces the collection on an existing file DB after a verified snapshot, pr
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'owner-reels-'));const file=path.join(root,'db.sqlite');let db:QatafoDatabase|undefined;
   try {
     db=new QatafoDatabase(file);
-    db.run('DELETE FROM applied_data_migrations WHERE key=?',OWNER_REELS_MIGRATION);
+    db.run('DELETE FROM applied_data_migrations WHERE key=?',OWNER_REELS_V2_MIGRATION);
     const publisher=db.get<any>('SELECT id FROM story_publishers LIMIT 1').id;
     const now=new Date().toISOString();
     for(const id of ['old_reel','shared_target']) db.run("INSERT INTO reels(id,title,channel_id,video_url,publish_at,status,created_at,updated_at) VALUES (?,'Old',?,'/uploads/old.mp4',?,'publie',?,?)",id,publisher,now,now,now);
@@ -39,16 +41,19 @@ it('replaces the collection on an existing file DB after a verified snapshot, pr
     db.run("INSERT INTO social_comment_replies(comment_id,parent_id) VALUES ('old_reply','old_comment')");
     const product=db.get<any>('SELECT id FROM products LIMIT 1').id;
     db.run("INSERT INTO content_products(content_kind,content_id,product_id,created_at) VALUES ('reel','old_reel',?,?)",product,now);
+    const preservedBlocks=db.all('SELECT id,media_url,poster_url FROM publication_blocks ORDER BY id');
     const before=db.all('SELECT * FROM reels ORDER BY id');const preservedPost=db.get("SELECT * FROM publications WHERE id='shared_target'");
     db.close();db=new QatafoDatabase(file);
     expect(db.all<any>('SELECT id FROM reels ORDER BY id').map(row=>row.id)).toEqual(manifest.entries.map(row=>row.id).sort());
-    expect(readPublishedSocial(db,'reel',new Date().toISOString(),{limit:12}).items).toHaveLength(5);
+    expect(readPublishedSocial(db,'reel',new Date().toISOString(),{limit:24}).items).toHaveLength(15);
     expect(db.all('SELECT * FROM content_products WHERE content_kind=?','reel')).toEqual([]);
     expect(db.all("SELECT * FROM story_interactions WHERE target_id='old_reel'")).toEqual([]);
     expect(db.get("SELECT * FROM social_comment_replies WHERE comment_id='old_reply'")).toBeUndefined();
     expect(db.get("SELECT * FROM publications WHERE id='shared_target'")).toEqual(preservedPost);
+    expect(db.all('SELECT id,media_url,poster_url FROM publication_blocks ORDER BY id')).toEqual(preservedBlocks);
+    expect(db.socialTotalsDrift()).toEqual([]);
     expect(db.get("SELECT text FROM story_interactions WHERE id='shared_comment'")).toEqual({text:'Preserved'});
-    const backups=fs.readdirSync(path.join(root,'backups')).filter(name=>name.startsWith('pre-owner-reels-'));expect(backups).toHaveLength(2);
+    const backups=fs.readdirSync(path.join(root,'backups')).filter(name=>name.startsWith('pre-owner-reels-'));expect(backups).toHaveLength(3);
     const snapshots=backups.map(name=>{const raw=new Database(path.join(root,'backups',name),{readonly:true});try{return raw.prepare('SELECT * FROM reels ORDER BY id').all();}finally{raw.close();}});
     expect(snapshots).toContainEqual(before);
     const first=manifest.entries[0].id;db.run("UPDATE reels SET title='Owner edited',status='brouillon' WHERE id=?",first);db.run('DELETE FROM reels WHERE id=?',manifest.entries[1].id);
@@ -56,20 +61,20 @@ it('replaces the collection on an existing file DB after a verified snapshot, pr
     expect(db.get('SELECT title,status FROM reels WHERE id=?',first)).toEqual({title:'Owner edited',status:'brouillon'});
     expect(db.get('SELECT id FROM reels WHERE id=?',manifest.entries[1].id)).toBeUndefined();
     expect(db.all('PRAGMA foreign_key_check')).toEqual([]);
-    expect(fs.readdirSync(path.join(root,'backups')).filter(name=>name.startsWith('pre-owner-reels-'))).toHaveLength(2);
+    expect(fs.readdirSync(path.join(root,'backups')).filter(name=>name.startsWith('pre-owner-reels-'))).toHaveLength(3);
   }finally{db?.close();fs.rmSync(root,{recursive:true,force:true});}
 },20_000);
 it('leaves rows and migration marker unchanged when media, backup or a post-delete write fails',()=>{
   const db=new QatafoDatabase(':memory:');const empty=fs.mkdtempSync(path.join(os.tmpdir(),'owner-empty-'));
   try {
-    db.run('DELETE FROM applied_data_migrations WHERE key=?',OWNER_REELS_MIGRATION);
+    db.run('DELETE FROM applied_data_migrations WHERE key=?',OWNER_REELS_V2_MIGRATION);
     const before=db.all('SELECT * FROM reels ORDER BY id');const backup=vi.fn();
-    expect(()=>installOwnerReels(db,backup,empty)).toThrow();expect(backup).not.toHaveBeenCalled();
-    expect(()=>installOwnerReels(db,()=>{throw Error('backup');})).toThrow('backup');
+    expect(()=>installOwnerReelsV2(db,backup,empty)).toThrow();expect(backup).not.toHaveBeenCalled();
+    expect(()=>installOwnerReelsV2(db,()=>{throw Error('backup');})).toThrow('backup');
     const store={get:db.get.bind(db),all:db.all.bind(db),transaction:db.transaction.bind(db),run:(sql:string,...args:any[])=>{const r=db.run(sql,...args);if(sql==='DELETE FROM reels')throw Error('after delete');return r;}};
-    expect(()=>installOwnerReels(store,()=>{})).toThrow('after delete');
+    expect(()=>installOwnerReelsV2(store,()=>{})).toThrow('after delete');
     expect(db.all('SELECT * FROM reels ORDER BY id')).toEqual(before);
-    expect(db.get('SELECT 1 FROM applied_data_migrations WHERE key=?',OWNER_REELS_MIGRATION)).toBeUndefined();
-    expect(installOwnerReels(db,()=>{})).toBe(true);
+    expect(db.get('SELECT 1 FROM applied_data_migrations WHERE key=?',OWNER_REELS_V2_MIGRATION)).toBeUndefined();
+    expect(installOwnerReelsV2(db,()=>{})).toBe(true);
   }finally{db.close();fs.rmSync(empty,{recursive:true,force:true});}
 });

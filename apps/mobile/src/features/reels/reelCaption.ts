@@ -1,3 +1,4 @@
+import { REEL_DRIVE_TITLES } from '../../../../../shared/reelDriveTitles';
 import type { Reel } from '@/api/social';
 import type { Locale } from '@/i18n/keys';
 
@@ -31,8 +32,10 @@ export function reelCaption(reel: Pick<Reel, 'id' | 'title' | 'description'>, lo
   const description = reel.description?.trim() ?? '';
   const owner = Object.prototype.hasOwnProperty.call(OWNER_COPY, reel.id) ? OWNER_COPY[reel.id] : undefined;
   const seeded = owner && (title === owner.ar || title === owner.fr || !title) ? owner : undefined;
+  const drive = Object.prototype.hasOwnProperty.call(REEL_DRIVE_TITLES, reel.id) ? REEL_DRIVE_TITLES[reel.id] : undefined;
+  const driveTitle = drive && (title === drive.ar || title === drive.fr || !title) ? drive[locale] : title;
   return {
-    title: seeded ? seeded[locale] : title,
+    title: seeded ? seeded[locale] : driveTitle,
     description: description || seeded?.description[locale] || '',
   };
 }

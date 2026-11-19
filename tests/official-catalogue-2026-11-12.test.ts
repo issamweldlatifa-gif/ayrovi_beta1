@@ -77,14 +77,11 @@ describe('catalogue officiel — base neuve', () => {
     for (const pair of blocks.filter((b) => b.kind === 'sponsored_pair')) expect(pair.products).toHaveLength(2);
   });
 
-  test('Reels du propriétaire : le défilé et les baskets portent des produits officiels', () => {
-    const links = db.all<any>("SELECT content_id, product_id FROM content_products WHERE content_kind='reel' ORDER BY content_id, sort_order");
-    expect(links.filter((l) => l.content_id === 'reel_owner_shoes_v1').map((l) => l.product_id)).toEqual([
-      officialProductId('converse-chuck-taylor-hi'),
-      officialProductId('new-balance-574-core'),
-    ]);
-    expect(links.filter((l) => l.content_id === 'reel_owner_clothing_v1')).toHaveLength(4);
-    expect(links.every((l) => l.product_id.startsWith('product_official_'))).toBe(true);
+  test('les nouveaux Reels éditoriaux ne récupèrent pas les anciens liens produits', () => {
+    const rows = db.all<any>("SELECT id FROM reels WHERE status='publie'");
+    expect(rows).toHaveLength(15);
+    expect(rows.every(row => row.id.startsWith('reel_drive_'))).toBe(true);
+    expect(db.all("SELECT content_id FROM content_products WHERE content_kind='reel'")).toEqual([]);
   });
 });
 

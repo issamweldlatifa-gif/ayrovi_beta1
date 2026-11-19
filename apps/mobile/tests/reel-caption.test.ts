@@ -23,3 +23,11 @@ describe('copy for the published owner Reels', () => {
     expect(reelCaption(other, 'ar')).toEqual({ title: other.title, description: other.description });
   });
 });
+
+
+it('localizes the new Drive collection without overriding CRM edits', () => {
+  const id = 'reel_drive_capsule_wardrobe_v2';
+  expect(reelCaption({ id, title: 'خزانة ملابس أساسية', description: '' }, 'fr').title).toBe('Une garde-robe capsule');
+  expect(reelCaption({ id, title: 'Une garde-robe capsule', description: '' }, 'ar').title).toBe('خزانة ملابس أساسية');
+  expect(reelCaption({ id, title: 'Titre CRM', description: 'Extrait CRM' }, 'ar')).toEqual({ title: 'Titre CRM', description: 'Extrait CRM' });
+});

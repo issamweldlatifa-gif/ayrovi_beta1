@@ -1,6 +1,6 @@
 import { foldCatalogSearch } from '../../shared/catalogSearch';
 import { allowCinemaPublicationBlocks, completeDemoSponsoredPairs, installCinemaDemo, installPublicationBlocksDemo, PUBLICATION_BLOCKS_SCHEMA } from '../services/publicationBlocks';
-import { installOwnerReels } from '../magazine/installOwnerReels';
+import { installOwnerReels, installOwnerReelsV2 } from '../magazine/installOwnerReels';
 import { schemaStatements } from './schemaStatements';
 import { ensureSocialTotals, socialTotalsDrift } from './socialTotals';
 import { upgradePublicationMediaPresentation } from '../catalogue/upgradePublicationMediaPresentation';
@@ -416,21 +416,21 @@ export class QatafoDatabase {
       this.run("UPDATE story_publishers SET name='Zayrovi Team' WHERE id='pub_zayrovi' AND official=1 AND lower(trim(name)) IN ('zayrovi','zayrovi official')");
     });
     // Owner approved replacing all prior Reels with five supplied clips (once).
+    const backupReelContent = () => {
+      if (this.databasePath === ':memory:') return;
+      const backupDir = path.join(path.dirname(path.resolve(this.databasePath)), 'backups');
+      fs.mkdirSync(backupDir, { recursive: true, mode: 0o700 });
+      const backup = path.join(backupDir, `pre-owner-reels-${randomUUID()}.sqlite`);
+      this.db.prepare('VACUUM INTO ?').run(backup);
+      fs.chmodSync(backup, 0o600);
+      const copy = new Database(backup, { readonly: true, fileMustExist: true });
+      try {
+        const integrity = copy.pragma('integrity_check') as Array<{integrity_check: string}>;
+        if (integrity.length !== 1 || integrity[0].integrity_check !== 'ok' || (copy.pragma('foreign_key_check') as unknown[]).length)
+          throw new Error('OWNER_REEL_BACKUP_INVALID');
+      } finally { copy.close(); }
+    };
     try {
-      const backupReelContent = () => {
-        if (this.databasePath === ':memory:') return;
-        const backupDir = path.join(path.dirname(path.resolve(this.databasePath)), 'backups');
-        fs.mkdirSync(backupDir, { recursive: true, mode: 0o700 });
-        const backup = path.join(backupDir, `pre-owner-reels-${randomUUID()}.sqlite`);
-        this.db.prepare('VACUUM INTO ?').run(backup);
-        fs.chmodSync(backup, 0o600);
-        const copy = new Database(backup, { readonly: true, fileMustExist: true });
-        try {
-          const integrity = copy.pragma('integrity_check') as Array<{integrity_check: string}>;
-          if (integrity.length !== 1 || integrity[0].integrity_check !== 'ok' || (copy.pragma('foreign_key_check') as unknown[]).length)
-            throw new Error('OWNER_REEL_BACKUP_INVALID');
-        } finally { copy.close(); }
-      };
       installOwnerReels(this, backupReelContent);
     } catch {
       // Old bundled URLs are removed in this release: do not serve a half-replaced collection.
@@ -465,6 +465,12 @@ export class QatafoDatabase {
     this.runOnceDataMigration('publication_pair_two_cards_v1', () => { completeDemoSponsoredPairs(this); });
     // Bloc « vidéo bord à bord + fond noir » de démonstration (16/11), en tête de page, une seule fois.
     this.runOnceDataMigration('publication_cinema_demo_v1', () => { installCinemaDemo(this); });
+    // The new Drive collection replaces only Reels; the Publication blocks above keep their own media.
+    try {
+      installOwnerReelsV2(this, backupReelContent);
+    } catch (cause) {
+      throw new Error('OWNER_REEL_V2_REPLACEMENT_FAILED', { cause });
+    }
     // Compteurs sociaux matérialisés (audit d'architecture 12/11) : posés EN DERNIER,
     // après toutes les migrations qui suppriment ou réinstallent des interactions.
     if (ensureSocialTotals(this.db).installed) console.log('[database] social totals: table + triggers installed');
