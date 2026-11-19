@@ -1,12 +1,4 @@
-/**
- * Reel — tiroir « articles » (24/10/2026).
- *
- *  • un Reel avec un produit : un SEUL bouton, ouvert par défaut, qui bascule
- *    « Masquer les articles » ⇄ « Voir les articles » sans changer d'écran ;
- *  • les articles sont dans un carrousel horizontal (une carte par produit) ;
- *  • un Reel sans produit : aucun bouton (pas de porte qui n'ouvre rien) ;
- *  • ouvrir/fermer ne démonte pas le lecteur : la vidéo ne repart pas de zéro.
- */
+/** Reel inline and fullscreen viewer interaction contracts. */
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
@@ -125,9 +117,7 @@ describe('Reel — tiroir des articles', () => {
   });
 
   it('bascule vers « Voir les articles » et masque le tiroir sans quitter l’écran', () => {
-    // Plein écran : le tiroir reste monté (il glisse), donc on peut vérifier son état.
     renderCard({}, { width: 390, height: 844 });
-    fireEvent.press(screen.getByTestId('reel-tray-toggle-r1'));
     const toggle = screen.getByTestId('reel-tray-toggle-r1');
     expect(toggle.props.accessibilityLabel).toBe('Voir les articles');
     expect(toggle.props.accessibilityState).toMatchObject({ expanded: false });
@@ -141,6 +131,8 @@ describe('Reel — tiroir des articles', () => {
     fireEvent.press(toggle);
     expect(screen.getByTestId('reel-tray-toggle-r1').props.accessibilityState).toMatchObject({ expanded: true });
     expect(router.push).not.toHaveBeenCalled();
+    fireEvent.press(screen.getByTestId('reel-product-r1-p1'));
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/product/[id]', params: { id: 'p1' } });
   });
 
   it('« Masquer » fait réellement DESCENDRE les cartes, et la pastille reste au-dessus (régression 12/11)', () => {
@@ -159,6 +151,8 @@ describe('Reel — tiroir des articles', () => {
         return style.transform?.find((entry) => 'translateY' in entry)?.translateY;
       };
       // Une View simple garderait l'objet d'interpolation : la carte ne bougerait jamais.
+      expect(translateY()).toBeGreaterThan(150);
+      fireEvent.press(screen.getByTestId('reel-tray-toggle-r1'));
       expect(translateY()).toBe(0);
       fireEvent.press(screen.getByTestId('reel-tray-toggle-r1'));
       expect(screen.getByText('Essai')).toBeTruthy();
@@ -196,6 +190,29 @@ describe('Reel — tiroir des articles', () => {
     expect(scroll.props.horizontal).toBe(true);
     expect(screen.getByTestId('reel-product-r1-p1')).toBeTruthy();
     expect(screen.getByTestId('reel-product-r1-p2')).toBeTruthy();
+  });
+
+  it('uses a white closed CTA, black open CTA, real prices and an independent favorite', () => {
+    (router.push as jest.Mock).mockClear();
+    renderCard({ product: { ...product('p1', 'Pantalon large'), compareAtPrice: 120 } }, { width: 360, height: 800 });
+    const toggle = () => screen.getByTestId('reel-tray-toggle-r1');
+    const color = () => StyleSheet.flatten(toggle().props.style).backgroundColor;
+    expect(color()).toBe('#FFFFFF');
+    fireEvent.press(toggle());
+    expect(color()).toBe('#000000');
+    expect(screen.getByTestId('reel-product-r1-p1-price').props.children).toContain('89');
+    expect(screen.getByTestId('reel-product-r1-p1-reference').props.children).toContain('120');
+    fireEvent.press(screen.getByTestId('linked-product-fav-p1'));
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('keeps share, sound and options available on a fullscreen Reel with no products', () => {
+    renderCard({ product: null, products: [] }, { width: 320, height: 640 });
+    expect(screen.queryByTestId('reel-tray-toggle-r1')).toBeNull();
+    for (const key of ['share', 'sound', 'options']) expect(screen.getByTestId(`reel-rail-${key}-r1`)).toBeTruthy();
+    fireEvent.press(screen.getByTestId('reel-rail-options-r1'));
+    expect(screen.getByTestId('reel-menu-reaction')).toBeTruthy();
+    expect(screen.getByText('Commentaires')).toBeTruthy();
   });
 
   it('sans produit : aucun bouton, aucun tiroir', () => {

@@ -1,3 +1,5 @@
+import { ReelViewerText } from './ReelViewerChrome';
+import { REEL_VIEWER as V } from './reelViewerStyle';
 import { View, StyleSheet } from "react-native";
 import { AppText } from "@/design/ui";
 import { OFFICIAL_AVATAR, OfficialAvatar } from "@/design/OfficialAvatar";
@@ -10,15 +12,9 @@ export function ReelPublisher({ onMedia = false }: { onMedia?: boolean }) {
   return (
     <View testID="reel-publisher" style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
       {/* Official avatar (14/11): white zebra Z on a black disc, the same in both themes and on video. */}
-      <OfficialAvatar size={OFFICIAL_AVATAR.reel} testID="reel-publisher-avatar" />
-      <AppText
-        variant="body"
-        numberOfLines={1}
-        color={onMedia ? theme.colors.onMedia : theme.colors.ink}
-        style={styles.name}
-      >
-        Zayrovi Team
-      </AppText>
+      <OfficialAvatar size={onMedia ? V.avatar : OFFICIAL_AVATAR.reel} testID="reel-publisher-avatar" />
+      {onMedia ? <ReelViewerText tone="publisher" numberOfLines={1} color={V.paper} style={styles.name}>Zayrovi Team</ReelViewerText>
+        : <AppText variant="body" numberOfLines={1} color={theme.colors.ink} style={styles.name}>Zayrovi Team</AppText>}
     </View>
   );
 }

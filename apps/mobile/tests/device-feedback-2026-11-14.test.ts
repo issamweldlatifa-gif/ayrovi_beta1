@@ -109,12 +109,10 @@ describe('4–6, 8 — famille de glyphes', () => {
     expect(icons).toMatch(/glyphBody\(name, color, true, 0, rim, REEL_GLYPH_RIM\)/);
   });
 
-  it('rail Reels : glyphes de 30 sur vidéo, bouton de réaction compris', async () => {
-    const { MEDIA_RAIL_GLYPH, ICON_SIZE } = await import('../src/design/tokens.mobile');
-    expect(MEDIA_RAIL_GLYPH).toBe(30);
-    expect(MEDIA_RAIL_GLYPH).toBeGreaterThan(ICON_SIZE.md);
-    expect(MEDIA_RAIL_GLYPH).toBeLessThan(ICON_SIZE.lg);
-    expect(code('src/features/reels/ReelShopTray.tsx')).toMatch(/ink=\{onMedia\}\s*size=\{MEDIA_RAIL_GLYPH\}/);
+  it('the fullscreen rail uses the measured 24 dp optical glyph and 44 dp touch target', async () => {
+    const { REEL_VIEWER } = await import('../src/features/reels/reelViewerStyle');
+    expect(REEL_VIEWER.railGlyph).toBe(24);
+    expect(REEL_VIEWER.railTarget).toBe(44);
   });
 
   it('la vidéo d’un bloc Publication utilise le même haut-parleur plein', () => {

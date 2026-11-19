@@ -1,15 +1,13 @@
 import { ReelPageFooter } from '@/features/reels/ReelPageFooter';
 import { useHiddenReels } from "@/features/reels/reelVisibility";
-import { BackButton } from "@/design/BackButton";
+import { ReelViewerHeaderButton } from "@/features/reels/ReelViewerChrome";
+import { ReelOptions } from "@/features/reels/ReelOptions";
+import { REEL_VIEWER as V } from "@/features/reels/reelViewerStyle";
 /**
  * Visionneuse Reels plein écran (ouverte depuis l'accueil).
  *
  * • Une vidéo par page, défilement vertical « page par page » (style Facebook).
- * • En-tête TRANSPARENT et FIXE, au-dessus de la liste : il ne défile pas avec les
- *   Reels. Il ne porte plus que le grand bouton retour — le libellé
- *   « ▶ Reels • Shop » a été retiré de la visionneuse (demande du propriétaire,
- *   24/10/2026) : sur une vidéo plein écran, le titre de section ne fait que
- *   manger l'image ; la marque reste sur l'accueil, au-dessus de la section.
+ * • En-tête fixe par-dessus la vidéo : retour, informations du Reel actif.
  * • Deux lecteurs vivants au plus : la page réellement visible (`viewabilityConfig`)
  *   qui joue, et la SUIVANTE qui précharge en pause (11/11). Les autres attendent.
  */
@@ -25,7 +23,6 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useIsFocused } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { LinearGradient } from "expo-linear-gradient";
 
 import { useReels, useSocialCounts } from "@/api/hooks";
 import { useTheme } from "@/design/theme";
@@ -36,10 +33,8 @@ import { ErrorBlock } from "@/design/states";
 import { BrandLoadingIndicator } from "@/design/LoadingScreen";
 import { ReelCard } from "@/features/social/ReelCard";
 import { ReelCommentsModal } from "@/features/social/ReelCommentsModal";
-import { VIDEO_BACKDROP, veil } from "@/design/tokens.mobile";
+import { VIDEO_BACKDROP } from "@/design/tokens.mobile";
 import type { Reel } from "@/api/social";
-
-const BACK_HIT = 48;
 
 /**
  * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
@@ -74,10 +69,12 @@ export default function ReelsViewerScreen() {
   );
   const [activeId, setActiveId] = useState<string | null>(id ?? null);
   const [commentsFor, setCommentsFor] = useState<Reel | null>(null);
+  const [infoFor, setInfoFor] = useState<Reel | null>(null);
   // Cold links / removed or unknown IDs still select the first available real Reel.
   const playingId = rows.some((reel) => reel.id === activeId)
     ? activeId
     : rows[initialIndex]?.id;
+  const infoTarget = rows.find(reel => reel.id === playingId);
   const visibleIndex = Math.max(0, rows.findIndex(reel => reel.id === playingId));
   const counts = useSocialCounts(rows.slice(Math.max(0, visibleIndex - 1), visibleIndex + 3).map(reel => reel.id));
 
@@ -111,9 +108,9 @@ export default function ReelsViewerScreen() {
   const renderItem = useCallback(({ item, index }: { item: Reel; index: number }) => (
     <ReelCard reel={item} active={live && playingId === item.id}
       preload={live && index === visibleIndex + 1}
-      suspended={Boolean(commentsFor)}
+      suspended={Boolean(commentsFor || infoFor)}
       counts={counts.data?.[item.id]} onOpenComments={setCommentsFor} fill={fill} />
-  ), [live, commentsFor, playingId, visibleIndex, counts.data, fill]);
+  ), [live, commentsFor, infoFor, playingId, visibleIndex, counts.data, fill]);
   useEffect(() => {
     if (previousHeight.current !== height) {
       previousHeight.current = height;
@@ -146,7 +143,7 @@ export default function ReelsViewerScreen() {
         // (mémoire et composition GPU allégées). iOS garde son rendu : le
         // détachement y peut laisser un VideoView noir au retour.
         removeClippedSubviews={Platform.OS === "android"}
-        extraData={{ playingId, focused, commentsFor, visibleIndex }}
+        extraData={{ playingId, focused, commentsFor, infoFor, visibleIndex }}
         onEndReached={() => { if (reels.hasNextPage && !reels.isFetching && !reels.isFetchNextPageError) void reels.fetchNextPage(); }}
         onEndReachedThreshold={0.5}
         ListFooterComponent={<ReelPageFooter query={reels} onMedia />}
@@ -179,37 +176,13 @@ export default function ReelsViewerScreen() {
         <ReelPageFooter query={reels} onMedia />
       </View> : null}
 
-      {/* Barre d'état claire et translucide : les icônes (heure, réseau, batterie) restent lisibles sur la vidéo. */}
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor="transparent"
-      />
-
-      {/* Dégradé discret sous la barre d'état et l'en-tête : lisibilité sans bandeau opaque. */}
-      <LinearGradient
-        pointerEvents="none"
-        colors={[veil(0.55), veil(0)]}
-        style={[styles.scrim, { height: insets.top + 96 }]}
-      />
-
-      {/* En-tête fixe et transparent : par-dessus la liste, il ne bouge pas au défilement. */}
-      <View
-        pointerEvents="box-none"
-        style={[
-          styles.header,
-          {
-            paddingTop: insets.top,
-            flexDirection: rowDirectionFor(theme.isRTL),
-          },
-        ]}
-      >
-        <BackButton
-          onPress={back}
-          label={t("common.back")}
-          color={theme.colors.onMedia}
-        />
+      {focused ? <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" /> : null}
+      <View pointerEvents="none" style={[styles.statusBar, { height: insets.top }]} />
+      <View pointerEvents="box-none" style={[styles.header, { top: insets.top, flexDirection: rowDirectionFor(theme.isRTL) }]}>
+        <ReelViewerHeaderButton kind="back" label={t('common.back')} onPress={back} />
+        {infoTarget ? <ReelViewerHeaderButton kind="info" label={t('reel.viewerInfo')} onPress={() => setInfoFor(infoTarget)} /> : null}
       </View>
+      {infoFor ? <ReelOptions reel={infoFor} informationOnly onClose={() => setInfoFor(null)} /> : null}
 
       {commentsFor ? (
         <ReelCommentsModal reel={commentsFor} onClose={closeComments} />
@@ -230,22 +203,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 24,
   },
-  header: {
-    position: "absolute",
-    top: 0,
-    start: 0,
-    end: 0,
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 8,
-    paddingBottom: 8,
-    backgroundColor: "transparent",
-  },
-  back: {
-    width: BACK_HIT,
-    height: BACK_HIT,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  scrim: { position: "absolute", top: 0, start: 0, end: 0 },
+  statusBar: { position: 'absolute', top: 0, start: 0, end: 0, backgroundColor: V.paper },
+  header: { position: 'absolute', start: 0, end: 0, alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: V.inset, paddingTop: 10 },
 });

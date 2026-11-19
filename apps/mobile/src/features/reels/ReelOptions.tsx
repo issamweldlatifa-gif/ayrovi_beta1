@@ -1,3 +1,6 @@
+import { ReactionButton } from '@/design/reactions/ReactionButton';
+import type { ContentReaction } from '@/design/reactions/reactionModel';
+import { formatRailCount } from './reelTray';
 import { reelCaption } from './reelCaption';
 import { ReelFollow } from './ReelFollow';
 import { SheetRise, SHEET_MODAL_ANIMATION } from '@/design/sheet/SheetRise';
@@ -11,7 +14,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
-import { useI18n } from '@/i18n';
+import { useI18n, useT } from '@/i18n';
 import { veil } from '@/design/tokens.mobile';
 import type { Reel } from '@/api/social';
 import { ReelPublisher } from './ReelPublisher';
@@ -28,20 +31,29 @@ export function ReelOptions({
   liked = false,
   canLike = true,
   interactionError = '',
+  informationOnly = false,
+  onReactionPick,
+  reaction = null,
+  reactionCount = 0,
 }: {
   reel: Reel;
   onClose: () => void;
-  onShare: () => Promise<unknown>;
+  onShare?: () => Promise<unknown>;
   onLike?: () => void;
   onComment?: () => void;
   onFollowed?: () => void;
   liked?: boolean;
   canLike?: boolean;
   interactionError?: string;
+  informationOnly?: boolean;
+  onReactionPick?: (choice: ContentReaction) => void;
+  reaction?: ContentReaction | null;
+  reactionCount?: number;
 }) {
   const theme = useTheme(),
     { locale } = useI18n(),
     insets = useSafeAreaInsets();
+  const t = useT();
   const ar = locale === 'ar';
   const { title, description } = reelCaption(reel, locale);
   const [auth, setAuth] = useState(false);
@@ -66,12 +78,12 @@ export function ReelOptions({
     }
   }
   const actions = [
-    {
+    ...(onShare ? [{
       icon: 'share-social-outline',
       label: ar ? 'مشاركة' : 'Partager',
       action: () => run(onShare),
-    },
-    ...(onLike
+    }] : []),
+    ...(onLike && !onReactionPick
       ? [
           {
             // Z-Reactions : même sens que le toucher du bouton officiel —
@@ -140,7 +152,7 @@ export function ReelOptions({
             />
             <View style={styles.heading}>
               <AppText variant="h3">
-                {ar ? 'خيارات الفيديو' : 'Options de la vidéo'}
+                {informationOnly ? t('reel.viewerInfo') : t('reel.viewerOptions')}
               </AppText>
               <Pressable
                 accessibilityRole="button"
@@ -158,13 +170,18 @@ export function ReelOptions({
             <ScrollView>
               <View style={styles.publisher}>
                 <ReelPublisher />
-                <ReelFollow
+                {!informationOnly ? <ReelFollow
                   publisherId={reel.channelId}
                   onAuth={() => setAuth(true)}
                   onFollowed={onFollowed}
-                />
+                /> : null}
               </View>
-              {actions.map((action) => (
+              {!informationOnly && onLike && onReactionPick ? <View style={[styles.action, { borderTopColor: theme.colors.line }]}>
+                <ReactionButton testID="reel-menu-reaction" variant="inline" surface="card" reaction={reaction}
+                  count={reactionCount > 0 ? formatRailCount(reactionCount) : null} onTap={canLike ? onLike : () => setAuth(true)}
+                  onPick={onReactionPick} guest={!canLike} ink={theme.colors.ink} />
+              </View> : null}
+              {!informationOnly && actions.map((action) => (
                 <Pressable
                   key={action.icon}
                   accessibilityRole="button"
@@ -182,7 +199,7 @@ export function ReelOptions({
                   </AppText>
                 </Pressable>
               ))}
-              {info ? (
+              {info || informationOnly ? (
                 <View style={styles.info}>
                   {title ? <AppText variant="label">{title}</AppText> : null}
                   {description ? <AppText variant="body">{description}</AppText> : null}

@@ -51,6 +51,7 @@ const SPACE_EXTENDED = tokenFileNumbers('SPACE_EXTENDED');
 
 /** Là où les valeurs ont le DROIT d'être littérales : c'est leur définition. */
 const TOKEN_FILES = new Set([
+  'src/features/reels/reelViewerStyle.ts', // Measured palette and type, scoped to the fullscreen Reel.
   // User-approved independent Publication theme; guarded by publication-visual-scope tests.
   'src/features/publications/publicationTokens.ts',
   'src/design/tokens.generated.ts', // généré depuis brand.json + identity.json

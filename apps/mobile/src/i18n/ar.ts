@@ -308,6 +308,8 @@ export const ar = {
   'socialCommerce.empty': 'ما فماش محتوى في الفلتر هذا.',
   'socialCommerce.publications': 'اكتشف المنشورات والمنتوجات المرتبطة بيها',
   'socialCommerce.lens': 'لوّج مع Z Lens',
+  'reel.viewerOptions': 'خيارات الفيديو',
+  'reel.viewerInfo': 'حول هذا الفيديو',
   'reel.captionMore': 'عرض المزيد',
   'reel.captionLess': 'عرض أقل',
   'reel.followConfirmed': 'ولّيت تتابع العلامة هاذي! تنجّم تشوف جديدها في منشوراتها والريلز متاعها.',

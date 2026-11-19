@@ -34,10 +34,10 @@ describe('phase 3 — glyphes v1 et option A sur vidéo', () => {
     expect(read('src/design/tokens.mobile.ts')).toMatch(/export const MEDIA_GLYPH_SHADOW = veil\(0\.32\);/);
   });
 
-  it('rail Reels : icônes BLANCHES pleines, nues, avec ombre — pas de pastille', () => {
+  it('fullscreen rail uses light viewer glyphs without filled backgrounds', () => {
     const tray = code('src/features/reels/ReelShopTray.tsx');
-    // 14/11 (retour sur appareil) : glyphes plus grands sur vidéo (`MEDIA_RAIL_GLYPH`).
-    expect(tray).toMatch(/<ReelGlyph name=\{action\.glyph\} size=\{MEDIA_RAIL_GLYPH\} color=\{onMedia\} filled shadow=\{MEDIA_GLYPH_SHADOW\} \/>/);
+    expect(tray).toContain('<ReelViewerGlyph name={action.glyph} size={V.railGlyph} color={V.paper} />');
+    expect(tray).not.toContain('MEDIA_GLYPH_SHADOW');
   });
 
   it('le bouton de réaction est plein + ombré sur média, au trait au repos sur carte', () => {

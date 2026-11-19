@@ -1,4 +1,5 @@
-import { LinearGradient } from "expo-linear-gradient";
+import { REEL_VIEWER as V, reelViewerAnchors, reelViewerCardSize } from "@/features/reels/reelViewerStyle";
+import { reelTrayIsAvailable } from "@/features/reels/reelTray";
 import { ReelMediaCaption } from "@/features/reels/ReelMediaCaption";
 import { reelCaption } from "@/features/reels/reelCaption";
 import { PublicationAuthSheet } from "@/features/publications/PublicationAuthSheet";
@@ -21,7 +22,7 @@ import { shareReel } from "@/features/reels/shareReel";
  * وقاعدة الصدق: **الإعجاب يحتاج حساباً** ⇒ الزر معطّل بسبب مكتوب.
  */
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
+import { Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { ReelGlyph } from "@/features/reels/ReelIcons";
 import { ReelPlayback } from "@/features/reels/ReelPlayback";
@@ -92,6 +93,7 @@ export const ReelCard = memo(function ReelCard({
   const muted = fill ? theme.colors.onMedia : theme.colors.muted;
 
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   const [followFeedback, setFollowFeedback] = useState(0);
   const followSlide = useRef(new Animated.Value(0)).current;
   const reduceMotion = useReduceMotion();
@@ -174,6 +176,7 @@ export const ReelCard = memo(function ReelCard({
           paused={paused}
           onPausedChange={setPaused}
           soundOn={soundOn}
+          showPauseGlyph={Boolean(fill)}
           blocked={options || auth || suspended}
           preload={!active}
           onDoubleTap={active ? loveFromDoubleTap : undefined}
@@ -203,26 +206,25 @@ export const ReelCard = memo(function ReelCard({
    * sortent, la légende et les actions montent avec eux au lieu de passer
    * dessous. `bottom` est calculé par le tiroir — une seule géométrie.
    */
-  const body = (bottom?: number, lift?: Animated.AnimatedInterpolation<number>) => (
+  const body = (bottom?: number, lift?: Animated.AnimatedInterpolation<number>, trayOpen = false) => (
     <Animated.View
       pointerEvents="box-none"
       style={[
         fill ? styles.fillBody : styles.body,
-        fill && bottom !== undefined ? { bottom } : null,
+        fill && bottom !== undefined ? { bottom, ...(theme.isRTL ? styles.captionRTL : styles.captionLTR) } : null,
         fill && lift ? { transform: [{ translateY: lift }] } : null,
       ]}
     >
       {fill ? (
         <>
-          <LinearGradient pointerEvents="none" colors={[veil(0), veil(0.52), veil(0.66)]}
-            locations={[0, 0.48, 1]} style={styles.captionScrim} />
           <View style={[styles.publisherRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             <ReelPublisher onMedia />
             {active && reel.channelId ? <ReelFollow key={reel.channelId} publisherId={reel.channelId}
               onAuth={requireAccount} onFollowed={confirmFollow} onMedia /> : null}
           </View>
           <ReelMediaCaption key={JSON.stringify([reel.id, locale, mediaCopy, active])}
-            text={mediaCopy} />
+            text={mediaCopy} maxExpandedHeight={Math.min(212, Math.max(48, fill.height - insets.top -
+              reelViewerAnchors(reelViewerCardSize(fill.width, fontScale).height, insets.bottom, reelTrayIsAvailable(reel), trayOpen, fontScale).captionBottom - 150))} />
         </>
       ) : (
         <View>
@@ -320,6 +322,9 @@ export const ReelCard = memo(function ReelCard({
           onShare={share}
           onFollowed={() => { setOptions(false); confirmFollow(); }}
           onLike={reaction.tap}
+          reaction={reaction.reaction}
+          onReactionPick={reaction.pick}
+          reactionCount={reaction.count}
           onComment={() => onOpenComments(reel)}
           liked={reaction.reaction !== null}
           canLike={signedIn}
@@ -333,21 +338,12 @@ export const ReelCard = memo(function ReelCard({
           reel={reel}
           mode="overlay"
           surface={theme.colors.canvas}
-          onMedia={theme.colors.onMedia}
+          viewportWidth={fill.width}
           rail={{
             muted: !soundOn,
             onToggleMute: () => setSoundOn((value) => !value),
             onShare: shareWithFeedback,
-            onComment: () => onOpenComments(reel),
             onOptions: () => setOptions(true),
-            // Z-Reactions (11/11) : un bouton unique remplace pouces + cœur ;
-            // le plein écran est retiré du rail.
-            reaction: reaction.reaction,
-            reactionsCount: reaction.count,
-            onReactionTap: reaction.tap,
-            onReactionPick: reaction.pick,
-            reactionEnabled: signedIn,
-            commentsCount: counts?.comments ?? 0,
           }}
           favourites={
             signedIn
@@ -355,7 +351,7 @@ export const ReelCard = memo(function ReelCard({
               : { isFavorite: () => false, toggle: () => setAuth(true) }
           }
         >
-          {({ bottom, lift }) => body(bottom, lift)}
+          {({ bottom, lift, open }) => body(bottom, lift, open)}
         </ReelShopTray>
       ) : (
         <>
@@ -364,7 +360,6 @@ export const ReelCard = memo(function ReelCard({
             reel={reel}
             mode="inline"
             surface={theme.colors.canvas}
-            onMedia={theme.colors.onMedia}
           >
             {() => null}
           </ReelShopTray>
@@ -425,9 +420,7 @@ const styles = StyleSheet.create({
     start: 0,
     end: 0,
     bottom: 0,
-    paddingStart: 12,
-    paddingEnd: 64,
-    gap: 2,
+    gap: 4,
   },
   poster: { alignItems: "center", justifyContent: "center" },
   duration: {
@@ -440,7 +433,8 @@ const styles = StyleSheet.create({
     backgroundColor: veil(0.55),
   },
   publisherRow: { alignItems: 'center', gap: 6 },
-  captionScrim: { position: 'absolute', top: -34, bottom: -96, start: 0, end: 0 },
+  captionLTR: { paddingLeft: V.inset, paddingRight: V.railReserve },
+  captionRTL: { paddingRight: V.inset, paddingLeft: V.railReserve },
   followConfirmation: { position: 'absolute', bottom: 0, start: 0, end: 0, alignItems: 'flex-start', gap: 10, paddingHorizontal: 16, paddingTop: 16, backgroundColor: REEL_FOLLOW_SURFACE.background },
   followMessage: { flexShrink: 1 },
   body: { padding: 12, gap: 4 },

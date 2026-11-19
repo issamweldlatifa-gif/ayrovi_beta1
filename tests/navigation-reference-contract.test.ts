@@ -5,7 +5,7 @@ describe('approved navigation reference scope', () => {
   it('shows official Publication/Reel brand avatars as the white zebra Z on a black disc, fitted inside their circle', () => {
     // 14/11 : l'avatar du compte officiel revient devant « zayrovi team » (Publication) et dans les Reels.
     expect(read('shared/publicationBlocks.ts')).toContain("PUBLICATION_PUBLISHER_NAME = 'zayrovi team'");
-    expect(read('apps/mobile/src/features/reels/ReelPublisher.tsx')).toContain('<OfficialAvatar size={OFFICIAL_AVATAR.reel} testID="reel-publisher-avatar" />');
+    expect(read('apps/mobile/src/features/reels/ReelPublisher.tsx')).toContain('<OfficialAvatar size={onMedia ? V.avatar : OFFICIAL_AVATAR.reel} testID="reel-publisher-avatar" />');
     for (const file of ['StoryFeed', 'ReelsViewer', 'FullscreenMediaHeader']) {
       const s = read(`client/src/social/components/${file}.tsx`);
       expect(s).toContain('official ? <img src="/media/logo-zayrovi-avatar.svg?v=9.2"');

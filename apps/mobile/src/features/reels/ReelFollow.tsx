@@ -1,3 +1,4 @@
+import { ReelViewerText } from './ReelViewerChrome';
 import { Pressable, View } from 'react-native';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -43,9 +44,8 @@ export function ReelFollow({
           justifyContent: 'center',
         }}
       >
-        <AppText variant="label" color={ink} numberOfLines={onMedia ? 1 : undefined}>
-          {`· ${label}`}
-        </AppText>
+        {onMedia ? <ReelViewerText tone="publisher" color={ink} numberOfLines={1}>{`· ${label}`}</ReelViewerText>
+          : <AppText variant="label" color={ink}>{`· ${label}`}</AppText>}
       </Pressable>
       {follow.writeFailed ? (
         <AppText accessibilityRole="alert" variant="caption" color={ink}>

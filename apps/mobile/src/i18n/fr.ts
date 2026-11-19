@@ -309,6 +309,8 @@ export const fr = {
   'socialCommerce.empty': 'Aucun contenu pour ce filtre.',
   'socialCommerce.publications': 'Découvrir les publications et les produits associés',
   'socialCommerce.lens': 'Rechercher avec Z Lens',
+  'reel.viewerOptions': 'Options de la vidéo',
+  'reel.viewerInfo': 'À propos de cette vidéo',
   'reel.captionMore': 'Voir plus',
   'reel.captionLess': 'Voir moins',
   'reel.followConfirmed': 'Vous suivez cette marque ! Retrouvez ses nouveautés dans ses publications et ses Reels.',

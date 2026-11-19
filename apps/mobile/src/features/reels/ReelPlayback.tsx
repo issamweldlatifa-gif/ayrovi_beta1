@@ -1,3 +1,5 @@
+import { ReelViewerGlyph } from './ReelViewerChrome';
+import { REEL_VIEWER as V } from './reelViewerStyle';
 /**
  * Lecteur d'un Reel. Monté pour la carte ACTIVE et pour la SUIVANTE (`preload`) :
  * au plus deux lecteurs natifs vivants. La suivante charge sa source et son
@@ -21,8 +23,9 @@ import { REEL_LOAD_DEADLINE_MS, useReelPlaybackStatus } from './useReelPlaybackS
 /** Attente RÉELLE avant de montrer quoi que ce soit : un chargement normal reste invisible. */
 export const REEL_BUFFER_HINT_MS = 700;
 
-export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked, contentFit = 'contain', onVideoViewReady, preload = false, onDoubleTap }: {
+export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked, contentFit = 'contain', onVideoViewReady, preload = false, onDoubleTap, showPauseGlyph = false }: {
   id: string; uri: string; paused: boolean; onPausedChange: (paused: boolean) => void;
+  showPauseGlyph?: boolean;
   soundOn: boolean; blocked: boolean; contentFit?: 'cover' | 'contain';
   /** Expose la VideoView à l'appelant (plein écran natif, mesures). */
   onVideoViewReady?: (view: VideoView | null) => void;
@@ -91,7 +94,11 @@ export function ReelPlayback({ id, uri, paused, onPausedChange, soundOn, blocked
       style={[StyleSheet.absoluteFill, { width: '100%', height: '100%', backgroundColor: VIDEO_BACKDROP }]} contentFit={contentFit} nativeControls={false} /></View> : null}
     {preload ? null : <Pressable testID={`reel-tap-${id}`} accessibilityRole="button" accessibilityLabel={paused ? t('social.play') : t('social.pause')}
       accessibilityHint={onDoubleTap ? t('social.doubleTapLove') : undefined}
-      onPress={onTap} style={StyleSheet.absoluteFill} />}
+      onPress={onTap} style={[StyleSheet.absoluteFill, styles.center]}>
+      {paused && !blocked && showPauseGlyph && playback.status !== 'error' ? <View testID={`reel-play-disc-${id}`} pointerEvents="none" style={styles.playDisc}>
+        <ReelViewerGlyph name="play" size={V.playGlyph} color={V.ink} />
+      </View> : null}
+    </Pressable>}
     {waiting && showLoading && <ReelBufferLine testID={`reel-loading-${id}`} color={theme.colors.onMedia} />}
     {playback.status === 'error' && <View testID={`reel-playback-error-${id}`}
       style={[StyleSheet.absoluteFill, styles.center, { padding: 24, gap: 16, backgroundColor: veil(0.75) }]}>
@@ -136,6 +143,7 @@ function ReelBufferLine({ testID, color }: { testID: string; color: string }) {
   </View>;
 }
 const styles = StyleSheet.create({
+  playDisc: { width: V.playDisc, height: V.playDisc, borderRadius: V.playDisc / 2, backgroundColor: V.paper, alignItems: 'center', justifyContent: 'center' },
   center: { alignItems: 'center', justifyContent: 'center' },
   bufferTrack: { position: 'absolute', start: 0, end: 0, bottom: 0, height: 2, overflow: 'hidden' },
   bufferLine: { height: 2, width: '100%' },
