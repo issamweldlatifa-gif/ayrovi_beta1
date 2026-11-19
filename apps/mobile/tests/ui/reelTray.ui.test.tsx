@@ -76,13 +76,42 @@ const renderCard = (over: Partial<Reel> = {}, fill?: { width: number; height: nu
   ));
 
 describe('Reel — tiroir des articles', () => {
-  it('affiche le titre et la légende sous l’éditeur et développe le texte à la demande', () => {
-    renderCard({ description: 'Une description détaillée' }, { width: 390, height: 844 });
+  it('colle la légende au-dessus du tiroir sans carte, avec « Voir plus » inline seulement si elle déborde', () => {
+    const description = 'Une longue description publiée pour accompagner cette vidéo.';
+    renderCard({ description }, { width: 390, height: 844 });
+    const caption = screen.getByTestId('reel-media-caption');
+    expect(StyleSheet.flatten(caption.props.style)?.backgroundColor).toBeUndefined();
+    expect(screen.queryByText('Essai')).toBeNull();
+    expect(screen.getByText(description).props.numberOfLines).toBe(1);
+    expect(screen.queryByText('Voir plus')).toBeNull();
+    fireEvent(screen.getByTestId('reel-measure-caption', { includeHiddenElements: true }), 'textLayout', {
+      nativeEvent: { lines: [{ text: 'Une longue description publiée' }, { text: 'pour accompagner cette vidéo.' }] },
+    });
+    fireEvent.press(screen.getByRole('button', { name: `${description} — Voir plus` }));
+    expect(screen.getByText(description).props.numberOfLines).toBeUndefined();
+    const less = screen.getByRole('button', { name: 'Voir moins' });
+    expect(less.props.accessibilityState.expanded).toBe(true);
+    fireEvent.press(less);
+    expect(screen.getByText(description).props.numberOfLines).toBe(1);
+  });
+
+  it('montre la description française du Reel Chaussures sans titre séparé', () => {
+    renderCard({ id: 'reel_owner_shoes_v1', title: 'أحذية' }, { width: 390, height: 844 });
+    expect(screen.queryByText('Chaussures')).toBeNull();
+    expect(screen.getByText('Des baskets pour les petits pas du quotidien.')).toBeTruthy();
+    expect(screen.queryByText('أحذية')).toBeNull();
+  });
+
+  it('ne montre pas « Voir plus » pour un titre court sans description', () => {
+    renderCard({}, { width: 390, height: 844 });
+    fireEvent(screen.getByTestId('reel-measure-caption', { includeHiddenElements: true }), 'textLayout', { nativeEvent: { lines: [{ text: 'Essai' }] } });
     expect(screen.getByText('Essai')).toBeTruthy();
-    expect(screen.getByText('Une description détaillée').props.numberOfLines).toBe(2);
-    fireEvent.press(screen.getByRole('button', { name: 'Voir plus' }));
-    expect(screen.getByText('Une description détaillée').props.numberOfLines).toBeUndefined();
-    expect(screen.getByRole('button', { name: 'Voir moins' }).props.accessibilityState.expanded).toBe(true);
+    expect(screen.queryByText('Voir plus')).toBeNull();
+  });
+
+  it('ne laisse aucune légende vide sans titre ni description', () => {
+    renderCard({ title: ' ', description: '' }, { width: 390, height: 844 });
+    expect(screen.queryByTestId('reel-media-caption')).toBeNull();
   });
 
   it('un seul bouton, ouvert par défaut, qui annonce son état', () => {
@@ -131,12 +160,14 @@ describe('Reel — tiroir des articles', () => {
       // Une View simple garderait l'objet d'interpolation : la carte ne bougerait jamais.
       expect(translateY()).toBe(0);
       fireEvent.press(screen.getByTestId('reel-tray-toggle-r1'));
+      expect(screen.getByText('Essai')).toBeTruthy();
       const closed = translateY();
       expect(typeof closed).toBe('number');
       // Fermé : la carte sort entièrement par le bas (hauteur carte + vide + zone sûre).
       expect(closed as number).toBeGreaterThan(150);
       fireEvent.press(screen.getByTestId('reel-tray-toggle-r1'));
       expect(translateY()).toBe(0);
+      expect(screen.getByText('Essai')).toBeTruthy();
 
       // Ordre de dessin : les cartes AVANT la pastille (sinon elles la recouvrent).
       const json = JSON.stringify(screen.toJSON());
@@ -209,12 +240,15 @@ it('confirme le suivi en bas seulement après une écriture serveur acceptée', 
   jest.mocked(followPublisher).mockRejectedValueOnce(new Error('Offline')).mockResolvedValueOnce({ following: true });
   try {
     renderCard({ channelId: 'real-publisher' }, { width: 390, height: 844 });
-    await screen.findByRole('button', { name: '+ Suivre' });
+    const follow = await screen.findByRole('button', { name: 'Suivre' });
+    expect(StyleSheet.flatten(follow.props.style).borderWidth).toBe(0);
+    expect(screen.getByText('· Suivre')).toBeTruthy();
     fireEvent.press(screen.getByTestId('reel-follow'));
     await screen.findByRole('alert');
     expect(screen.queryByTestId('reel-follow-confirmation')).toBeNull();
     fireEvent.press(screen.getByTestId('reel-follow'));
-    expect(await screen.findByTestId('reel-follow-confirmation')).toBeTruthy();
+    const banner = await screen.findByTestId('reel-follow-confirmation');
+    expect(StyleSheet.flatten(banner.props.style)).toMatchObject({ bottom: 0, start: 0, end: 0 });
     expect(followPublisher).toHaveBeenLastCalledWith('real-publisher', true);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Suivi' })).toBeTruthy());
   } finally {

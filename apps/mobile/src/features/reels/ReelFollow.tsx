@@ -26,26 +26,29 @@ export function ReelFollow({
       ? '…'
       : follow.state === 'following'
         ? t('publication.following')
-        : `+ ${t('publication.follow')}`;
+        : t('publication.follow');
   return (
     <View style={{ gap: 4, maxWidth: '48%', flexShrink: 1 }}>
       <Pressable
         testID="reel-follow"
         accessibilityRole="button"
+        accessibilityLabel={label}
         accessibilityState={{ disabled: follow.disabled }}
         disabled={follow.disabled}
         onPress={follow.press}
         style={{
           minHeight: 44,
-          borderWidth: 1,
+          borderWidth: onMedia ? 0 : 1,
           borderColor: ink,
           borderRadius: theme.radius.full,
-          paddingHorizontal: 12,
+          paddingHorizontal: onMedia ? 4 : 12,
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
-        <AppText variant="label" color={ink}>{label}</AppText>
+        <AppText variant="label" color={ink} numberOfLines={onMedia ? 1 : undefined}>
+          {onMedia ? `· ${label}` : follow.state === 'idle' ? `+ ${label}` : label}
+        </AppText>
       </Pressable>
       {follow.writeFailed ? (
         <AppText accessibilityRole="alert" variant="caption" color={ink}>

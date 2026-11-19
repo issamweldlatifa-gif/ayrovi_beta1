@@ -1,3 +1,4 @@
+import { reelCaption } from './reelCaption';
 import { ReelFollow } from './ReelFollow';
 import { SheetRise, SHEET_MODAL_ANIMATION } from '@/design/sheet/SheetRise';
 import {
@@ -42,6 +43,7 @@ export function ReelOptions({
     { locale } = useI18n(),
     insets = useSafeAreaInsets();
   const ar = locale === 'ar';
+  const { title, description } = reelCaption(reel, locale);
   const [auth, setAuth] = useState(false);
   const [info, setInfo] = useState(false),
     [busy, setBusy] = useState(false),
@@ -182,8 +184,8 @@ export function ReelOptions({
               ))}
               {info ? (
                 <View style={styles.info}>
-                  <AppText variant="label">{reel.title}</AppText>
-                  <AppText variant="body">{reel.description}</AppText>
+                  {title ? <AppText variant="label">{title}</AppText> : null}
+                  {description ? <AppText variant="body">{description}</AppText> : null}
                   <AppText variant="caption" color={theme.colors.muted}>
                     {ar
                       ? 'فيديوهات Zayrovi Team مرتبة حسب تاريخ النشر. الإخفاء يخص هذا الجهاز فقط، ويمكن إلغاؤه من قسم Reels في الرئيسية.'

@@ -172,7 +172,7 @@ export function ReelShopTray({
   }, [open, reduce, progress]);
   const pillBottom = reelTrayPillBottom(false, insetBottom, trayHeight);
   const pillLift = Animated.multiply(progress, -(reelTrayPillBottom(true, insetBottom, trayHeight) - pillBottom));
-  const captionBottom = reelTrayContentBottom(false, 'caption', trayHeight, insetBottom);
+  const captionBottom = products.length ? reelTrayContentBottom(false, 'caption', trayHeight, insetBottom) : insetBottom + 24;
   const captionLift = Animated.multiply(progress, -(reelTrayContentBottom(true, 'caption', trayHeight, insetBottom) - captionBottom));
   const trayClosed = reelTrayOffset(false, trayHeight, insetBottom);
 

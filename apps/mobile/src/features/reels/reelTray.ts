@@ -160,5 +160,5 @@ export function reelTrayContentBottom(
 ): number {
   if (kind === 'pill') return reelTrayPillBottom(open, insetBottom, trayHeight);
   // La légende se pose juste au-dessus de la pastille, sans jamais la toucher.
-  return reelTrayPillBottom(open, insetBottom, trayHeight) + REEL_TRAY.pillHeight + 14;
+  return reelTrayPillBottom(open, insetBottom, trayHeight) + REEL_TRAY.pillHeight + 8;
 }

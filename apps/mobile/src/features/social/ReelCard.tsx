@@ -1,3 +1,6 @@
+import { LinearGradient } from "expo-linear-gradient";
+import { ReelMediaCaption } from "@/features/reels/ReelMediaCaption";
+import { reelCaption } from "@/features/reels/reelCaption";
 import { PublicationAuthSheet } from "@/features/publications/PublicationAuthSheet";
 import { ReelFollow } from "@/features/reels/ReelFollow";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -17,7 +20,7 @@ import { shareReel } from "@/features/reels/shareReel";
  * وقاعدة الصدق: **الإعجاب يحتاج حساباً** ⇒ الزر معطّل بسبب مكتوب.
  */
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { Animated, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Animated, Pressable, StyleSheet, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { ReelGlyph } from "@/features/reels/ReelIcons";
 import { ReelPlayback } from "@/features/reels/ReelPlayback";
@@ -28,9 +31,10 @@ import { formatRailCount } from "@/features/reels/reelTray";
 
 import { AppText } from "@/design/ui";
 import { useTheme } from "@/design/theme";
-import { useT } from "@/i18n";
+import { useI18n } from "@/i18n";
 import {
   MEDIA_RATIO,
+  FICHE_COLORS,
   RADIUS,
   VIDEO_BACKDROP,
   veil,
@@ -76,7 +80,9 @@ export const ReelCard = memo(function ReelCard({
   fill,
 }: ReelCardProps) {
   const theme = useTheme();
-  const t = useT();
+  const { t, locale } = useI18n();
+  const { title, description } = reelCaption(reel, locale);
+  const mediaCopy = description || title;
   const session = useSession();
   const guestSession = useSessionId();
   const signedIn = session.status === "signedIn";
@@ -85,10 +91,9 @@ export const ReelCard = memo(function ReelCard({
   const muted = fill ? theme.colors.onMedia : theme.colors.muted;
 
   const insets = useSafeAreaInsets();
-  const [captionExpanded, setCaptionExpanded] = useState(false);
   const [followFeedback, setFollowFeedback] = useState(0);
   useEffect(() => {
-    if (!active) { setCaptionExpanded(false); setFollowFeedback(0); }
+    if (!active) setFollowFeedback(0);
   }, [active, reel.id]);
   useEffect(() => {
     if (!followFeedback) return;
@@ -128,7 +133,7 @@ export const ReelCard = memo(function ReelCard({
     if (reaction.love()) hearts.current?.burst(x, y);
   }, [reaction]);
   const visibleError = error || (reaction.error ? t("common.retry") : "");
-  const share = useCallback(() => shareReel(reel), [reel]);
+  const share = useCallback(() => shareReel(reel, title), [reel, title]);
   const shareWithFeedback = () => {
     setError("");
     share().catch(() => setError(t("common.retry")));
@@ -190,11 +195,6 @@ export const ReelCard = memo(function ReelCard({
    * sortent, la légende et les actions montent avec eux au lieu de passer
    * dessous. `bottom` est calculé par le tiroir — une seule géométrie.
    */
-  const caption = <>
-    {reel.title ? <AppText variant="label" color={ink} numberOfLines={captionExpanded ? undefined : 1}>{reel.title}</AppText> : null}
-    {reel.description ? <AppText variant="caption" color={muted} numberOfLines={captionExpanded ? undefined : 2}>{reel.description}</AppText> : null}
-  </>;
-
   const body = (bottom?: number, lift?: Animated.AnimatedInterpolation<number>) => (
     <Animated.View
       pointerEvents="box-none"
@@ -205,21 +205,23 @@ export const ReelCard = memo(function ReelCard({
       ]}
     >
       {fill ? (
-        <View style={[styles.publisherRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <ReelPublisher onMedia />
-          {active && reel.channelId ? <ReelFollow key={reel.channelId} publisherId={reel.channelId}
-            onAuth={requireAccount} onFollowed={confirmFollow} onMedia /> : null}
+        <>
+          <LinearGradient pointerEvents="none" colors={[veil(0), veil(0.52), veil(0.66)]}
+            locations={[0, 0.48, 1]} style={styles.captionScrim} />
+          <View style={[styles.publisherRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+            <ReelPublisher onMedia />
+            {active && reel.channelId ? <ReelFollow key={reel.channelId} publisherId={reel.channelId}
+              onAuth={requireAccount} onFollowed={confirmFollow} onMedia /> : null}
+          </View>
+          <ReelMediaCaption key={JSON.stringify([reel.id, locale, mediaCopy, active])}
+            text={mediaCopy} />
+        </>
+      ) : (
+        <View>
+          {title ? <AppText variant="label" color={ink} numberOfLines={1}>{title}</AppText> : null}
+          {description ? <AppText variant="caption" color={muted} numberOfLines={2}>{description}</AppText> : null}
         </View>
-      ) : null}
-      <View style={fill && (reel.title || reel.description) ? styles.mediaCaption : undefined}>
-        {fill && captionExpanded ? <ScrollView nestedScrollEnabled style={styles.expandedCaption}>{caption}</ScrollView> : caption}
-        {fill && (reel.description || reel.title) ? (
-          <Pressable accessibilityRole="button" accessibilityState={{ expanded: captionExpanded }}
-            style={styles.captionButton} onPress={() => setCaptionExpanded(value => !value)}>
-            <AppText variant="captionStrong" color={ink}>{t(captionExpanded ? 'reel.captionLess' : 'reel.captionMore')}</AppText>
-          </Pressable>
-        ) : null}
-      </View>
+      )}
 
       {visibleError ? (
         <AppText accessibilityRole="alert" variant="caption" color={muted}>
@@ -362,10 +364,9 @@ export const ReelCard = memo(function ReelCard({
       )}
       {active && followFeedback > 0 ? (
         <View accessibilityLiveRegion="polite" pointerEvents="none" testID="reel-follow-confirmation"
-          style={[styles.followConfirmation, { bottom: insets.bottom + 66, backgroundColor: theme.colors.canvas, borderColor: theme.status.success.border }]}>
-          <View style={[styles.followMessage, { backgroundColor: theme.status.success.soft }]}>
-            <AppText variant="label" color={theme.status.success.fg}>{t('reel.followConfirmed')}</AppText>
-          </View>
+          style={[styles.followConfirmation, { paddingBottom: insets.bottom + 12, flexDirection: rowDirectionFor(theme.isRTL) }]}>
+          <Ionicons name="checkmark-circle" size={theme.iconSize.sm} color={theme.colors.onMedia} accessibilityElementsHidden />
+          <AppText variant="label" color={theme.colors.onMedia} style={styles.followMessage}>{t('reel.followConfirmed')}</AppText>
         </View>
       ) : null}
     </View>
@@ -411,10 +412,9 @@ const styles = StyleSheet.create({
     start: 0,
     end: 0,
     bottom: 0,
-    padding: 16,
+    paddingStart: 12,
     paddingEnd: 64,
-    paddingBottom: 20,
-    gap: 6,
+    gap: 2,
   },
   poster: { alignItems: "center", justifyContent: "center" },
   duration: {
@@ -426,12 +426,10 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.full,
     backgroundColor: veil(0.55),
   },
-  publisherRow: { alignItems: 'center', gap: 10 },
-  mediaCaption: { backgroundColor: veil(0.58), borderRadius: RADIUS.sm, paddingHorizontal: 8, paddingTop: 6 },
-  expandedCaption: { maxHeight: 112 },
-  captionButton: { minHeight: 44, alignSelf: 'flex-start', justifyContent: 'center' },
-  followConfirmation: { position: 'absolute', alignSelf: 'center', maxWidth: '90%', borderRadius: RADIUS.full, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
-  followMessage: { paddingHorizontal: 16, paddingVertical: 10 },
+  publisherRow: { alignItems: 'center', gap: 6 },
+  captionScrim: { position: 'absolute', top: -34, bottom: -96, start: 0, end: 0 },
+  followConfirmation: { position: 'absolute', bottom: 0, start: 0, end: 0, alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingTop: 12, backgroundColor: FICHE_COLORS.success },
+  followMessage: { flexShrink: 1 },
   body: { padding: 12, gap: 4 },
   actions: {
     flexDirection: "row",

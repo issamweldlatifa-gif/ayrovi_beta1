@@ -1,3 +1,4 @@
+import { reelCaption } from '@/features/reels/reelCaption';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -36,7 +37,8 @@ export function SocialFeedCard({ item, active, square, onOpenStory, cached, favo
   const { t, locale } = useI18n();
   if (item.kind === 'reel') {
     const reel = item.reel;
-    const title = reel.title || t('socialCommerce.filter.reels');
+    const copy = reelCaption(reel, locale);
+    const title = copy.title || t('socialCommerce.filter.reels');
     return <View style={[styles.section, square ? styles.squareInset : null]}>
       <View style={[styles.media, { aspectRatio: square ? 1 : 9 / 13, borderRadius: square ? RADIUS.xl : 0 }]}>
         {reel.posterUrl ? <AppImage uri={mediaUrl(reel.posterUrl)} decorative contentFit="cover" style={StyleSheet.absoluteFill} /> : null}
@@ -46,7 +48,7 @@ export function SocialFeedCard({ item, active, square, onOpenStory, cached, favo
           onPress={() => router.push({ pathname: '/reels-viewer', params: { id: item.id } })}>
           <Ionicons name="play-circle-outline" size={theme.iconSize.lg} color={BRAND.white} />
           <AppText color={BRAND.white} variant="h3" numberOfLines={2}>{title}</AppText>
-          {reel.description ? <AppText color={BRAND.white} variant="body" numberOfLines={2}>{reel.description}</AppText> : null}
+          {copy.description ? <AppText color={BRAND.white} variant="body" numberOfLines={2}>{copy.description}</AppText> : null}
         </Pressable>
       </View>
       {item.products.length ? <ProductRail products={item.products} favourites={favourites} /> : null}
