@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DiscoveryPage } from '@/api/socialCommerce';
 import { editorialSnapshot, readEditorialSnapshot } from '@/api/socialCommerceCache';
@@ -17,5 +17,5 @@ export function useEditorialSnapshot(filter: SocialFilter, page: DiscoveryPage |
     const raw = JSON.stringify({ savedAt: updatedAt, page: editorialSnapshot(page, updatedAt) });
     void AsyncStorage.setItem(key, raw).catch(() => {});
   }, [key, page, updatedAt]);
-  return stored?.key === key ? readEditorialSnapshot(stored.raw) : null;
+  return useMemo(() => stored?.key === key ? readEditorialSnapshot(stored.raw) : null, [key, stored]);
 }

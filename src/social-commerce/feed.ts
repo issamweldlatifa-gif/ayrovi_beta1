@@ -4,6 +4,7 @@ import { readPublishedSocial } from '../magazine/publicSocialReads';
 import { publicProductsByContent } from '../services/contentProducts';
 import { linkedProductFromJoin, LINKED_PRODUCT_JOIN_SELECT } from '../services/shoppableContent';
 import { isSocialFilter, isSocialId, type SocialEdition, type SocialFeedItem, type SocialFeedFilter, type SocialFeedPage, type SocialProduct } from '../../shared/socialCommerce';
+import { isRecentProduct } from '../services/publicationBlocks';
 import { activeEdition, readEditionState } from './editions';
 
 const PAGE_SIZE = 8;
@@ -43,10 +44,10 @@ function parsePage(rawFilter: unknown, rawCursor: unknown, now: string, edition:
   }
 }
 
-function catalogueCards(db: QatafoDatabase, ids: string[]): Map<string, SocialProduct> {
+function catalogueCards(db: QatafoDatabase, ids: string[], now: string): Map<string, SocialProduct> {
   if (!ids.length) return new Map();
-  const rows = db.all<Omit<SocialProduct, 'available' | 'currency'>>(`SELECT p.id,p.name,COALESCE(p.brand_name,'') brand,COALESCE(p.image,'') image,
-    p.final_price price,p.stock_status stockStatus FROM products p
+  const rows = db.all<Omit<SocialProduct, 'available' | 'currency' | 'isNew'> & { created_at: string }>(`SELECT p.id,p.name,COALESCE(p.brand_name,'') brand,COALESCE(p.image,'') image,
+    p.final_price price,p.stock_status stockStatus,p.created_at FROM products p
     WHERE p.id IN (${ids.map(() => '?').join(',')}) AND p.status='ACTIVE' AND p.final_price>0
       AND p.stock_status IN ('AVAILABLE','LIMITED')
       AND (
@@ -56,7 +57,7 @@ function catalogueCards(db: QatafoDatabase, ids: string[]): Map<string, SocialPr
         OR EXISTS (SELECT 1 FROM catalogue_variants v JOIN inventory_stock_items i ON i.product_id=v.product_id AND i.variant_id=v.id
           WHERE v.product_id=p.id AND v.status='ACTIVE' AND i.status='ACTIVE' AND i.quantity>0)
       )`, ...ids);
-  return new Map(rows.map((row) => [row.id, { ...row, available: true, currency: 'TND' }]));
+  return new Map(rows.map(({ created_at, ...row }) => [row.id, { ...row, available: true, currency: 'TND', isNew: isRecentProduct(created_at, new Date(now)) }]));
 }
 
 const brandKeys = (products: SocialProduct[]) => [...new Set(products.map(({ brand }) => brand.trim().toLowerCase()).filter(Boolean))].slice(0, 6)
@@ -90,7 +91,7 @@ export function readSocialFeed(db: QatafoDatabase, rawFilter: unknown, rawCursor
     else if (entry.kind === 'look') for (const pin of entry.pins) ids.add(pin.productId);
     else ids.add(entry.productId);
   }
-  const productMap = catalogueCards(db, [...ids]);
+  const productMap = catalogueCards(db, [...ids], now);
   const news = new Map<string, { id: string; title: string; summary: string; image: string; author: string }>();
   if (articles.size) for (const row of db.all<{ id: string; title: string; summary: string; image: string; author: string }>(
     `SELECT id,title,summary,image,author FROM news_items WHERE status='PUBLISHED' AND published_at<=? AND id IN (${[...articles].map(() => '?').join(',')})`, now, ...articles)) news.set(row.id, row);

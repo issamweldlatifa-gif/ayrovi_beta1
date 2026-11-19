@@ -3,6 +3,8 @@ import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { mediaUrl } from '@/api/client';
+import type { LinkedProduct } from '@/api/linkedProduct';
+import type { ProductFavorites } from '@/features/reels/useProductFavorites';
 import type { DiscoveryItem } from '@/api/socialCommerce';
 import { AppImage } from '@/design/appImage';
 import { useTheme } from '@/design/theme';
@@ -15,8 +17,20 @@ import { LinkedProductCard } from '@/features/shopping/LinkedProductCard';
 
 const openProduct = (id: string) => router.push({ pathname: '/product/[id]', params: { id } });
 
-export function SocialFeedCard({ item, active, square, onOpenStory, cached }: {
-  item: DiscoveryItem; active: boolean; square: boolean; cached: boolean; onOpenStory: (id: string) => void;
+function EditorialProduct({ product, favourites }: { product: LinkedProduct; favourites?: ProductFavorites }) {
+  return <LinkedProductCard product={product} variant="editorial" favourite={favourites?.isFavorite(product.id)}
+    onToggleFavorite={favourites ? () => favourites.toggle(product.id) : undefined} />;
+}
+
+function ProductRail({ products, favourites }: { products: LinkedProduct[]; favourites?: ProductFavorites }) {
+  return <ScrollView horizontal showsHorizontalScrollIndicator={false} decelerationRate="fast"
+    snapToInterval={SOCIAL_EDITORIAL.productWidth + SOCIAL_EDITORIAL.productGap} snapToAlignment="start" contentContainerStyle={styles.rail}>
+    {products.map(product => <EditorialProduct key={product.id} product={product} favourites={favourites} />)}
+  </ScrollView>;
+}
+
+export function SocialFeedCard({ item, active, square, onOpenStory, cached, favourites }: {
+  item: DiscoveryItem; active: boolean; square: boolean; cached: boolean; favourites?: ProductFavorites; onOpenStory: (id: string) => void;
 }) {
   const theme = useTheme();
   const { t, locale } = useI18n();
@@ -35,9 +49,7 @@ export function SocialFeedCard({ item, active, square, onOpenStory, cached }: {
           {reel.description ? <AppText color={BRAND.white} variant="body" numberOfLines={2}>{reel.description}</AppText> : null}
         </Pressable>
       </View>
-      {item.products.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>
-        {item.products.map((product) => <LinkedProductCard key={product.id} product={product} />)}
-      </ScrollView> : null}
+      {item.products.length ? <ProductRail products={item.products} favourites={favourites} /> : null}
     </View>;
   }
   if (item.kind === 'story') {
@@ -71,7 +83,7 @@ export function SocialFeedCard({ item, active, square, onOpenStory, cached }: {
     <AppText variant="label" color={theme.colors.muted}>{t('socialCommerce.pick')}</AppText>
     <AppText variant="h3">{item.title}</AppText>
     {item.description ? <AppText>{item.description}</AppText> : null}
-    <LinkedProductCard product={item.product} />
+    <EditorialProduct product={item.product} favourites={favourites} />
   </View>;
   return <View style={styles.group}>
     <AppText variant="label" color={theme.colors.muted}>{t('socialCommerce.look')}</AppText>
@@ -84,9 +96,7 @@ export function SocialFeedCard({ item, active, square, onOpenStory, cached }: {
         <View style={styles.dot} />
       </Pressable>)}
     </View>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>
-      {item.pins.map(({ product }) => <LinkedProductCard key={product.id} product={product} />)}
-    </ScrollView>
+    {item.pins.length ? <ProductRail products={item.pins.map(pin => pin.product)} favourites={favourites} /> : null}
   </View>;
 }
 
@@ -96,7 +106,7 @@ const styles = StyleSheet.create({
   group: { marginVertical: 16, paddingHorizontal: 16, gap: 8 },
   media: { backgroundColor: SOCIAL_EDITORIAL.cover[2], overflow: 'hidden' },
   caption: { flex: 1, justifyContent: 'flex-end', padding: 16, gap: 4 },
-  rail: { gap: 8, paddingHorizontal: 4 },
+  rail: { gap: SOCIAL_EDITORIAL.productGap, paddingHorizontal: 4 },
   story: { minHeight: 230, aspectRatio: 5 / 4, justifyContent: 'flex-end', borderRadius: RADIUS.xl },
   storyCopy: { gap: 4, padding: 16 },
   article: { borderTopWidth: 2, borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 16, paddingVertical: 16 },

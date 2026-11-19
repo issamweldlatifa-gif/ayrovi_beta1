@@ -215,6 +215,7 @@ export default function ProductScreen() {
   /**
    * « زيد للسلّة » — `/api/cart/catalog` يستعمل `final_price` المنشور ⇒ سعر واحد.
    */
+  const adding = useRef(false);
   const addToCart = useMutation({
     mutationFn: (selection: { size: string; color: string }) => addCatalogToCart({
       productId: String(id),
@@ -232,7 +233,13 @@ export default function ProductScreen() {
       setReservedSheetOpen(true);
       queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
+    onSettled: () => { adding.current = false; },
   });
+  const addOnce = (selection: { size: string; color: string }) => {
+    if (adding.current) return;
+    adding.current = true;
+    addToCart.mutate(selection);
+  };
 
   const handleHeaderCartPress = useCallback(() => {
     if (effectiveCartUnits > 0 && reservation.active) {
@@ -279,7 +286,6 @@ export default function ProductScreen() {
   const shownPhoto = Math.max(0, Math.min(photo, items.length - 1));
 
   const sizes = sizeChoices(sheet?.dimensions);
-  const rows = sizeRows(sizes);
   const tiles = colorTiles(sheet);
   /** مقاس واحد معلن ⇒ سطر معلوماتي، بلا ورقة وبلا اختيار. */
   const onlySize = singleSize(sizes);
@@ -294,13 +300,18 @@ export default function ProductScreen() {
     || (tiles.length > 0 ? tiles[0]?.color ?? '' : singleDimensionValue(sheet?.dimensions, 'color'));
 
   const choice = variantChoiceState(sheet, { size: chosenSize, color: chosenColor });
+  const rows = sizeRows(sizes.map(entry => {
+    if (!sheet?.variants.length) return entry;
+    const option = variantChoiceState(sheet, { size: entry.value, color: chosenColor });
+    return { ...entry, available: option.ready, stock: option.variant?.stock ?? null };
+  }));
 
   const outOfStock = normalizeStockStatus(product.stockStatus) === 'OUT_OF_STOCK'
     || sheet?.stock.status === 'OUT_OF_STOCK';
   /** الخادم يحسم `purchasable` (سعر + حالة + مخزون)؛ بلا ورقة، القاعدة القديمة. */
   const purchasable = sheet ? sheet.purchasable : product.finalPrice > 0 && !outOfStock;
   /** إذا فمّة مقاسات وما اختارش بعد، الضغط يفتح ورقة المقاسات مباشرة (كيما Privé / Zalando). */
-  const needsSizePickFirst = chooseSize && !chosenSize;
+  const needsSizePickFirst = chooseSize && !chosenSize && rows.some(row => row.available);
   const canOrder = purchasable && (needsSizePickFirst || choice.ready);
   const hasPrice = product.finalPrice > 0;
   const priceLabel = hasPrice ? `${formatMoney(product.finalPrice)}` : '';
@@ -342,6 +353,7 @@ export default function ProductScreen() {
 
   const pickColor = (tile: ColorTile) => {
     setColor(tile.color);
+    if (chooseSize && chosenSize && !variantChoiceState(sheet, { size: chosenSize, color: tile.color }).ready) setSize('');
     if (tile.image) {
       const position = items.findIndex((item) => item.url === tile.image);
       if (position >= 0) {
@@ -500,7 +512,7 @@ export default function ProductScreen() {
               setSizeSheet(true);
               return;
             }
-            addToCart.mutate({ size: chosenSize, color: chosenColor });
+            addOnce({ size: chosenSize, color: chosenColor });
           }}
           error={addToCart.isError
             ? (isApiError(addToCart.error) && addToCart.error.code ? addToCart.error.code : t('catalog.retry'))
@@ -518,7 +530,7 @@ export default function ProductScreen() {
             setPendingAddOnSize(true);
             setSizeSheet(true);
           } else if (choice.ready) {
-            addToCart.mutate({ size: chosenSize, color: chosenColor });
+            addOnce({ size: chosenSize, color: chosenColor });
           }
         }}
       />
@@ -537,7 +549,7 @@ export default function ProductScreen() {
           setSizeSheet(false);
           if (pendingAddOnSize) {
             setPendingAddOnSize(false);
-            addToCart.mutate({ size: value, color: chosenColor });
+            if (variantChoiceState(sheet, { size: value, color: chosenColor }).ready) addOnce({ size: value, color: chosenColor });
           }
         }}
       />

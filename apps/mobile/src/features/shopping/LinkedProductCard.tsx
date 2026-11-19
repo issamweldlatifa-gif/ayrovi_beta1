@@ -42,11 +42,12 @@ import { mediaUrl } from '@/api/client';
 import { ARTICLE_CARD, articleCardSize } from '@/design/articleCard';
 import type { LinkedProduct } from '@/api/linkedProduct';
 import { formatAmount } from '@/format/money';
+import { RADIUS, SOCIAL_EDITORIAL } from '@/design/tokens.mobile';
 
 export interface LinkedProductCardProps {
   product: LinkedProduct;
   /** `overlay` = posée sur la vidéo d'un Reel (même cotes, aucun fond autour). */
-  variant?: 'row' | 'overlay';
+  variant?: 'row' | 'overlay' | 'editorial';
   onOpen?: (product: LinkedProduct) => void;
   /** Fourni seulement si l'écran sait gérer les favoris ; sinon aucun cœur. */
   onToggleFavorite?: (product: LinkedProduct) => void;
@@ -75,6 +76,31 @@ export function LinkedProductCard({
   const price = `${formatAmount(product.price)} ${product.currency}`;
   const brand = (product.brand || '').trim();
   const label = [brand, product.name, price].filter(Boolean).join(' — ');
+
+  if (variant === 'editorial') {
+    return (
+      <View style={styles.editorial}>
+        <Pressable testID={testID ?? `linked-product-${id}`} accessibilityRole="link" accessibilityLabel={label}
+          accessibilityHint={t('shopping.discover')} onPress={open}
+          style={({ pressed }) => [styles.editorialLink, { opacity: pressed ? theme.opacity.dimmed : 1 }]}>
+          <View style={[styles.editorialImage, { backgroundColor: theme.colors.surface }]}>
+            {product.image ? <AppImage uri={mediaUrl(product.image)} contentFit="contain" decorative style={StyleSheet.absoluteFill} /> : null}
+            {product.isNew ? <View style={[styles.editorialBadge, { backgroundColor: theme.colors.canvas }]}>
+              <AppText variant="caption">{t('publication.newBadge')}</AppText>
+            </View> : null}
+          </View>
+          <AppText variant="caption" numberOfLines={2}>{product.name}</AppText>
+          <AppText variant="captionStrong">{price}</AppText>
+          {product.available === false ? <AppText variant="caption" color={theme.colors.muted}>{t('shopping.unavailable')}</AppText> : null}
+        </Pressable>
+        {onToggleFavorite ? <Pressable testID={`linked-product-fav-${id}`} accessibilityRole="button"
+          accessibilityState={{ selected: favourite }} accessibilityLabel={favourite ? t('shopping.favouriteRemove') : t('shopping.favouriteAdd')}
+          onPress={() => onToggleFavorite(product)} style={styles.editorialFavorite}>
+          <FavoriteDiscGlyph active={favourite} />
+        </Pressable> : null}
+      </View>
+    );
+  }
 
   return (
     <Pressable
@@ -145,6 +171,11 @@ export function LinkedProductCard({
 }
 
 const styles = StyleSheet.create({
+  editorial: { width: SOCIAL_EDITORIAL.productWidth },
+  editorialLink: { gap: 4 },
+  editorialImage: { aspectRatio: 1, borderRadius: RADIUS.lg, overflow: 'hidden' },
+  editorialFavorite: { position: 'absolute', top: 0, end: 0, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  editorialBadge: { position: 'absolute', bottom: 6, start: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: RADIUS.sm },
   card: {
     // La largeur et la hauteur viennent de `articleCardSize(écran)` : aucune cote
     // figée ne peut plus faire flotter la carte au milieu d'une bande vide.

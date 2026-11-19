@@ -18,7 +18,7 @@ export interface SocialEdition {
 export type SocialEditionHeader = Omit<SocialEdition, 'entries'>;
 export interface SocialProduct {
   id: string; name: string; brand: string; image: string; price: number;
-  currency: 'TND'; available: true; stockStatus: 'AVAILABLE' | 'LIMITED';
+  currency: 'TND'; available: true; isNew?: boolean; stockStatus: 'AVAILABLE' | 'LIMITED';
 }
 export type SocialEditorialCard =
   | { kind: 'article'; id: string; newsId: string; title: string; description: string; image: string; author: string }

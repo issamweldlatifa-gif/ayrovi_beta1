@@ -69,7 +69,7 @@ describe('Social Commerce: bounded cursor, live content and checkout policy', ()
     reel('r50', 'p1'); reel('r49', 'p2'); reel('r48', 'p3');
     for (let i = 30; i >= 20; i--) reel(`r${i}`, 'p1');
     const first = readSocialFeed(db, 'reels', undefined, now);
-    expect(first.items[0]).toMatchObject({ id: 'r50', products: [{ id: 'p1', price: 49.9, currency: 'TND' }] });
+    expect(first.items[0]).toMatchObject({ id: 'r50', products: [{ id: 'p1', price: 49.9, currency: 'TND', isNew: false }] });
     expect(first.items.slice(1).every(row => row.kind === 'reel' && row.products.length === 0)).toBe(true);
     const next = readSocialFeed(db, 'reels', first.nextCursor, now);
     expect(next.items.slice(0, 2).every(row => row.kind === 'reel' && row.products.length === 0)).toBe(true);

@@ -825,6 +825,8 @@ export const PUBLICATION_METRICS = { icon: 22, actionIcon: 28, verified: 16, ava
 /** Social Commerce's approved editorial media treatment, never applied to shared action/status tokens. */
 export const SOCIAL_EDITORIAL = {
   cover: ['#8E2A40', '#6B1A2B', '#3B0D17'],
+  productWidth: 132,
+  productGap: 10,
 } as const;
 
 export const ICON_SIZE = {

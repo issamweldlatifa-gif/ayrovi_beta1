@@ -9,7 +9,7 @@
  * pas dans la poche de quelqu'un.
  */
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -115,7 +115,7 @@ jest.mock('../../src/api/cart', () => ({
 describe('écran produit — aucun plantage au montage', () => {
   const mount = async () => {
     const ProductScreen = require('../../app/product/[id]').default;
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: Infinity }, mutations: { gcTime: Infinity } } });
     const view = render(
       <PrefsProvider>
         <I18nProvider>
@@ -141,6 +141,27 @@ describe('écran produit — aucun plantage au montage', () => {
     expect(screen.getByTestId('product-photo-window')).toBeTruthy();
     expect(screen.getByTestId('product-size-row')).toBeTruthy();
     view.unmount();
+  });
+
+  it('demande une variante compatible, ajoute une fois et ouvre le panier réservé existant', async () => {
+    require('./productFixture').setProduct(product);
+    const add = require('../../src/api/cart').addCatalogToCart as jest.Mock;
+    add.mockClear();
+    let finish!: (result: { totalItemsCount: number }) => void;
+    add.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const view = await mount();
+    const button = view.getByTestId('product-add-to-cart');
+    fireEvent.press(button);
+    expect(add).not.toHaveBeenCalled();
+    const size = await view.findByRole('button', { name: '40' });
+    const unavailable = view.getByRole('button', { name: /^41 — /, disabled: true });
+    fireEvent.press(unavailable);
+    expect(add).not.toHaveBeenCalled();
+    act(() => { fireEvent.press(size); fireEvent.press(size); });
+    await waitFor(() => expect(add).toHaveBeenCalledTimes(1));
+    expect(add).toHaveBeenCalledWith({ productId: product.id, sessionId: 'sess_test', requestedSize: '40', requestedColor: 'Gris' });
+    await act(async () => finish({ totalItemsCount: 1 }));
+    expect(await view.findByTestId('product-reserved-sheet')).toBeTruthy();
   });
 
   it('identité façon Veepee : marque soulignée à côté du prix, nom complet dessous (jamais coupé)', async () => {

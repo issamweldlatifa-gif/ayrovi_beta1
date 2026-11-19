@@ -17,6 +17,8 @@ import { BRAND } from '@/design/tokens.generated';
 import { RADIUS, SOCIAL_EDITORIAL, veil } from '@/design/tokens.mobile';
 import { AppText } from '@/design/ui';
 import { useI18n } from '@/i18n';
+import { useSession } from '@/state/session';
+import { useProductFavorites } from '@/features/reels/useProductFavorites';
 import { useHiddenReels } from '@/features/reels/reelVisibility';
 import { LiveCartButton } from '@/features/shopping/LiveCartGlyph';
 import { StoryViewer } from '@/features/social/StoryViewer';
@@ -56,12 +58,15 @@ export default function SocialCommerceScreen() {
   const first = feed.data?.pages[0];
   const snapshot = useEditorialSnapshot(filter, first, feed.dataUpdatedAt);
   const cached = !first || feed.isError || feed.isPaused;
+  const session = useSession();
+  const signedIn = session.status === 'signedIn' && Boolean(session.account?.id);
+  const favourites = useProductFavorites(signedIn && !cached, session.account?.id);
   const [now, setNow] = useState(Date.now);
   const [viewer, setViewer] = useState<{ rows: StoryItem[]; index: number } | null>(null);
-  const edition = first?.edition ?? (cached ? snapshot?.edition : null);
   const candidates = useMemo(() => cached
-    ? (feed.data?.pages.map(page => editorialSnapshot(page, now)) ?? (snapshot ? [snapshot] : []))
+    ? (feed.data?.pages.map(page => editorialSnapshot(page, now)) ?? (snapshot ? [editorialSnapshot(snapshot, now)] : []))
     : (feed.data?.pages ?? []), [cached, feed.data, snapshot, now]);
+  const edition = candidates[0]?.edition;
   const items = useMemo(() => {
     const ids = new Set<string>();
     return candidates.flatMap(page => page.items).filter(row => {
@@ -175,7 +180,7 @@ export default function SocialCommerceScreen() {
             </Pressable>)}
           </ScrollView>
         </View> :
-          <SocialFeedCard item={item} cached={cached} onOpenStory={openStory} active={!cached && autoplay && !viewer && item.kind === 'reel' && item.id === preview} square={index % 2 === 0} />}
+          <SocialFeedCard item={item} cached={cached} favourites={signedIn && !cached ? favourites : undefined} onOpenStory={openStory} active={!cached && autoplay && !viewer && item.kind === 'reel' && item.id === preview} square={index % 2 === 0} />}
         ListFooterComponent={<View style={styles.group}>
           {feed.isPending || feed.isFetchingNextPage ? <LoadingBlock /> : null}
           {feed.isError ? <ErrorBlock error={feed.error} onRetry={feed.isFetchNextPageError ? reload : () => void feed.refetch()} /> : null}
