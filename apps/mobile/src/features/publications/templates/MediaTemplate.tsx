@@ -8,15 +8,11 @@
  *   └──────────────────────────────┘
  *   Titre                              ← gras, 2 lignes max
  *   Sous-titre                         ← régulier, 2 lignes max
- *   [ carte ][ carte ]                 ← 13/11 : les cartes du système (2 entières, parts égales)
+ *   [ carte ][ carte ] ou [ carte ][ carte ][ carte ]
  *
- * 13/11 : « Suivre » ajouté (consigne du propriétaire).
- * 14/11 (planche GBox The Ordinary) : photos ENTIÈRES (`contain`) sur gris clair,
- * 103 × 148 dp, rond blanc du cœur (32 dp) relié aux vrais favoris. Pas de « ⋯ » :
- * aucune action réelle derrière.
- * 13/11 (captures 073720) : les vignettes de 103 dp coupées au bord sont
- * remplacées par LA carte commune (`BlockProductCard`, 164 dp à 360) ; le titre
- * passe sous le média, avant les cartes ; marge commune 12.
+ * 19/11 : une collection de 3+ produits utilise une rangée compacte et un
+ * visuel photo 4:3 ; les vidéos restent carrées et les petites sélections
+ * gardent la carte large. Les photos produit restent entières (`contain`).
  */
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,7 +20,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { mediaUrl } from '@/api/client';
 import type { PublicationBlock } from '@/api/publicationBlocks';
 import { AppImage } from '@/design/appImage';
-import { veil } from '@/design/tokens.mobile';
+import { editorialRailMetrics } from '@/design/cardSystem';
+import { RHYTHM, veil } from '@/design/tokens.mobile';
 import { FOLLOW_ON_MEDIA, PublicationFollow } from '../PublicationFollow';
 import { PUBLICATION_PALETTE as P, PublicationSponsored, PublicationText } from '../publicationDesign';
 import { blockInks, hasTintedBackground } from './blockColors';
@@ -49,7 +46,10 @@ export function MediaTemplate({
   const tinted = hasTintedBackground(block.bgColor);
   const media = block.media;
   const video = media?.type === 'video';
-  const height = video ? metrics.media.videoHeight : metrics.media.imageHeight;
+  const collection = block.products.length >= 3;
+  const rail = collection ? editorialRailMetrics(metrics.width, block.products.length) : null;
+  const height = video ? metrics.media.videoHeight
+    : collection ? Math.round(metrics.media.width / T.collectionImageAspect) : metrics.media.imageHeight;
   const label = block.subtitle ? `${block.title}. ${block.subtitle}` : block.title;
   const reserveReference = block.products.some((product) => product.compareAtPrice != null && product.compareAtPrice > product.price);
 
@@ -111,9 +111,9 @@ export function MediaTemplate({
       ) : null}
 
       <View style={styles.caption}>
-        <PublicationText variant="bodyStrong" color={inks.ink} numberOfLines={2}>{block.title}</PublicationText>
+        <PublicationText variant={collection ? "h3" : "bodyStrong"} color={inks.ink} numberOfLines={2}>{block.title}</PublicationText>
         {block.subtitle ? (
-          <PublicationText variant="body" color={inks.ink} numberOfLines={2}>{block.subtitle}</PublicationText>
+          <PublicationText variant="body" color={inks.muted} numberOfLines={2}>{block.subtitle}</PublicationText>
         ) : null}
       </View>
 
@@ -122,10 +122,10 @@ export function MediaTemplate({
         showsHorizontalScrollIndicator={false}
         accessibilityLabel={t('publication.products', { title: block.title })}
         testID={`publication-block-${block.id}-row`}
-        style={styles.row}
-        contentContainerStyle={styles.rowContent}
+        style={[styles.row, collection && styles.collectionViewport]}
+        contentContainerStyle={collection ? styles.collectionTrack : styles.rowContent}
         decelerationRate="fast"
-        snapToInterval={metrics.container.snap}
+        snapToInterval={rail?.snap ?? metrics.container.snap}
         snapToAlignment="start"
         disableIntervalMomentum
       >
@@ -133,8 +133,9 @@ export function MediaTemplate({
           <BlockProductCard
             key={product.id}
             product={product}
-            width={metrics.media.tileWidth}
-            imageHeight={metrics.media.tileHeight}
+            width={rail?.cardWidth ?? metrics.media.tileWidth}
+            imageHeight={rail?.imageHeight ?? metrics.media.tileHeight}
+            compact={collection}
             sponsored={false}
             inks={inks}
             reserveReference={reserveReference}
@@ -167,8 +168,10 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 24,
   },
-  // 13/11 — système de cartes : la rangée part de la marge commune, deux cartes entières à parts égales.
+  // La rangée part de la même marge que le média et la légende.
   row: { marginTop: T.rowSpacing, flexGrow: 0 },
+  collectionViewport: { marginHorizontal: T.mediaInset },
+  collectionTrack: { gap: T.cardSpacing },
   rowContent: { paddingHorizontal: T.mediaInset, gap: T.cardSpacing },
-  caption: { paddingHorizontal: T.mediaInset, paddingTop: 12 },
+  caption: { paddingHorizontal: T.mediaInset, paddingTop: RHYTHM.related, gap: RHYTHM.inline },
 });

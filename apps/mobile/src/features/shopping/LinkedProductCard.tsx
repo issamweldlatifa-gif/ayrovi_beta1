@@ -34,8 +34,7 @@ import { FavoriteDiscGlyph } from '@/design/FavoriteDisc';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { router } from 'expo-router';
 
-import { CARD_SYSTEM } from '@/design/cardSystem';
-import { PRODUCT_TILE } from '@/design/productTile';
+import { CARD_SYSTEM, cardWidthFor } from '@/design/cardSystem';
 import { AppImage } from '@/design/appImage';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
@@ -44,7 +43,7 @@ import { mediaUrl } from '@/api/client';
 import { ARTICLE_CARD, articleCardSize } from '@/design/articleCard';
 import type { LinkedProduct } from '@/api/linkedProduct';
 import { formatAmount } from '@/format/money';
-import { RADIUS, RHYTHM, SOCIAL_EDITORIAL, ficheColorsFor } from '@/design/tokens.mobile';
+import { RADIUS, RHYTHM, ficheColorsFor } from '@/design/tokens.mobile';
 
 export interface LinkedProductCardProps {
   product: LinkedProduct;
@@ -57,10 +56,11 @@ export interface LinkedProductCardProps {
   testID?: string;
   /** Compact Reel-only presentation; other commerce consumers retain their typography. */
   reelPresentation?: boolean;
+  editorialWidth?: number;
 }
 
 export function LinkedProductCard({
-  product, variant = 'row', onOpen, onToggleFavorite, favourite = false, testID, reelPresentation = false,
+  product, variant = 'row', onOpen, onToggleFavorite, favourite = false, testID, reelPresentation = false, editorialWidth,
 }: LinkedProductCardProps) {
   const theme = useTheme();
   const t = useT();
@@ -81,7 +81,7 @@ export function LinkedProductCard({
 
   if (variant === 'editorial') {
     return (
-      <View style={styles.editorial}>
+      <View style={{ width: editorialWidth ?? cardWidthFor(viewport) }}>
         <Pressable testID={testID ?? `linked-product-${id}`} accessibilityRole="link" accessibilityLabel={label}
           accessibilityHint={t('shopping.discover')} onPress={open}
           style={({ pressed }) => [styles.editorialLink, { opacity: pressed ? theme.opacity.dimmed : 1 }]}>
@@ -174,9 +174,8 @@ export function LinkedProductCard({
 }
 
 const styles = StyleSheet.create({
-  editorial: { width: SOCIAL_EDITORIAL.productWidth },
   editorialLink: { gap: RHYTHM.inline },
-  editorialImage: { aspectRatio: PRODUCT_TILE.mediaRatio, borderRadius: CARD_SYSTEM.radius, marginBottom: RHYTHM.inline, overflow: 'hidden' },
+  editorialImage: { aspectRatio: 1 / CARD_SYSTEM.imageRatio, borderRadius: CARD_SYSTEM.radius, marginBottom: RHYTHM.inline, overflow: 'hidden' },
   editorialFavorite: { position: 'absolute', top: CARD_SYSTEM.heartInset, end: CARD_SYSTEM.heartInset, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   editorialBadge: { position: 'absolute', bottom: 6, start: 6, paddingHorizontal: 6, paddingVertical: 2, borderRadius: RADIUS.sm },
   card: {

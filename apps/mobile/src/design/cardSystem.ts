@@ -98,3 +98,11 @@ export function cardRailMetrics(width: number, perView: number = cardsPerView(wi
 export function cardRailMaxOffset(count: number, metrics: CardRailMetrics): number {
   return Math.max(0, count - metrics.perView) * metrics.snap;
 }
+
+/** Discovery rails: three compact portraits for a collection, two for a showcase.
+ * Keep whole cards in view and use the same photo ratio, gutters and snap math.
+ */
+export function editorialRailMetrics(width: number, productCount: number): CardRailMetrics {
+  const max = width >= CARD_SYSTEM.wideFrom ? 4 : 3;
+  return cardRailMetrics(width, Math.min(max, Math.max(2, productCount)));
+}

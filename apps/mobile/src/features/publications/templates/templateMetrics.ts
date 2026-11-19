@@ -38,6 +38,8 @@ import { RHYTHM } from '../../../design/rhythm';
  * UNE carte de largeur égale (2 entières sur téléphone : 164 dp à 360 dp). Les anciennes
  * cotes « 1,96 carte » (container) et « 3,15 vignettes » (media) laissaient des
  * marges inégales et des cartes coupées au bord : elles sont retirées.
+ * 19/11 : `MediaTemplate` peut utiliser le rail compact de découverte pour
+ * une collection (3+ produits), avec la même marge et des cartes entières.
  */
 export const PUBLICATION_TEMPLATE = {
   /** Largeur de l'écran de référence (720 px ÷ 2). */
@@ -60,10 +62,12 @@ export const PUBLICATION_TEMPLATE = {
   /** 13/11 : la marge commune des cartes et de l'app (12). */
   mediaInset: CARD_SYSTEM.gutter,
   imageAspect: 2.07,
+  /** Editorial photo posts with a compact product rail have a taller, 4:3 lead image. */
+  collectionImageAspect: 4 / 3,
   videoAspect: 1,
-  mediaRadius: 8,
+  mediaRadius: CARD_SYSTEM.radius,
   /** Espace entre le média et la rangée de cartes. */
-  rowSpacing: 12,
+  rowSpacing: RHYTHM.related,
 
   /* Modèle `container` */
   /** 13/11 : titre, cartes et « Suivre » partent de la MÊME marge (était 24 pour le texte). */

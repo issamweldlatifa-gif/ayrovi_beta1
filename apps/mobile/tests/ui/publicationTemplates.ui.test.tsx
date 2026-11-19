@@ -15,6 +15,7 @@ import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
 import { PublicationTemplatesScreen, PublicationBlockView } from '@/features/publications/PublicationTemplatesScreen';
 import { parsePublicationBlocks, type PublicationBlock } from '@/api/publicationBlocks';
+import { editorialRailMetrics } from '@/design/cardSystem';
 import { publicationTemplateMetrics } from '@/features/publications/templates/templateMetrics';
 import { publicationSoundOn, resetPublicationSound } from '@/features/publications/publicationSound';
 
@@ -147,6 +148,20 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     for (const id of ['video', 'box', 'pair']) expect(screen.getByTestId(`publication-block-${id}`)).toBeTruthy();
     expect(screen.getByTestId('publication-block-video-video')).toBeTruthy();
     expect(screen.getByTestId('publication-block-box-band')).toBeTruthy();
+  });
+
+  it('pairs a taller editorial photo with three compact, tappable product cards', () => {
+    const metrics = publicationTemplateMetrics(360);
+    const rail = editorialRailMetrics(metrics.width, 3);
+    const block: PublicationBlock = { ...BLOCKS[0], id: 'collection', media: BLOCKS[2].media };
+    wrap(<PublicationBlockView block={block} metrics={metrics} active />);
+    const style = (id: string) => StyleSheet.flatten(screen.getByTestId(`publication-block-collection-${id}`).props.style);
+    expect(style('media').height).toBe(252);
+    expect(style('product-p1-frame').height).toBe(rail.imageHeight);
+    expect(style('product-p1-brand').fontSize).toBe(14);
+    expect(screen.getByTestId('publication-block-collection-row').props.snapToInterval).toBe(rail.snap);
+    fireEvent.press(screen.getByTestId('publication-block-collection-product-p3'));
+    expect(mockPush).toHaveBeenCalledWith(expect.objectContaining({ pathname: '/product/[id]', params: { id: 'p3' } }));
   });
 
   it('éditeur « zayrovi team » sur les blocs ; « Sponsorisé » seulement si coché', () => {

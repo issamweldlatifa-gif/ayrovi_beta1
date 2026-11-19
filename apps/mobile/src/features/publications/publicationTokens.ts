@@ -85,6 +85,10 @@ export const PUBLICATION_TYPE = {
   cardPriceTop: 4,
   cardTextTop: 12,     // 14/11 (rythme, Zalando photo → marque ≈ 12 dp) : 6 → 12 = RHYTHM.related
   // 13/11 : le cœur (rond blanc 40 / 32 dp) est remplacé par le cœur nu du système de cartes (`cardSystem.ts`).
+  cardCompactStrongSize: 14,
+  cardCompactStrongLine: 18,
+  cardCompactCopySize: 12,
+  cardCompactCopyLine: 16,
   cardReferenceLine: 18, // ancien prix, sur sa ligne (corps = « Sponsorisé »)
   badgeSize: 14,       // pastille « Nouveau » : blanche, en bas à gauche
   badgeLine: 18,

@@ -70,6 +70,7 @@ function BlockProductCardComponent({
   onOpen,
   testID,
   reserveReference = false,
+  compact = false,
 }: {
   product: LinkedProduct;
   width: number;
@@ -80,6 +81,7 @@ function BlockProductCardComponent({
   testID: string;
   /** Une voisine a un ancien prix : la ligne est réservée pour garder les cartes alignées. */
   reserveReference?: boolean;
+  compact?: boolean;
 }) {
   const theme = useTheme();
   const t = useT();
@@ -115,15 +117,15 @@ function BlockProductCardComponent({
               variant="bodyStrong"
               color={inks.ink}
               numberOfLines={1}
-              style={[styles.brand, { fontFamily: publicationBlockFont(locale, 'bold') }]}
+              style={[styles.brand, compact && styles.compactStrong, { fontFamily: publicationBlockFont(locale, 'bold') }]}
             >
               {product.brand}
             </PublicationText>
           ) : null}
-          <PublicationText testID={`${testID}-name`} variant="body" color={inks.ink} numberOfLines={1} style={[styles.name, { fontFamily: regular }]}>
+          <PublicationText testID={`${testID}-name`} variant="body" color={inks.ink} numberOfLines={1} style={[styles.name, compact && styles.compactCopy, { fontFamily: regular }]}>
             {product.name}
           </PublicationText>
-          <PublicationText testID={`${testID}-price`} variant="body" color={inks.ink} numberOfLines={1} style={[styles.price, { fontFamily: regular }]}>
+          <PublicationText testID={`${testID}-price`} variant="body" color={inks.ink} numberOfLines={1} style={[styles.price, compact && styles.compactStrong, { fontFamily: regular }]}>
             {price}
           </PublicationText>
           {reference ? (
@@ -132,12 +134,12 @@ function BlockProductCardComponent({
               variant="caption"
               color={inks.muted}
               numberOfLines={1}
-              style={[styles.reference, styles.struck, { fontFamily: regular }]}
+              style={[styles.reference, compact && styles.compactCopy, styles.struck, { fontFamily: regular }]}
             >
               {reference}
             </PublicationText>
           ) : reserveReference ? (
-            <View testID={`${testID}-reference-slot`} style={styles.referenceSlot} />
+            <View testID={`${testID}-reference-slot`} style={[styles.referenceSlot, compact && styles.compactReferenceSlot]} />
           ) : null}
         </View>
       </Pressable>
@@ -157,6 +159,7 @@ const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
     bottom: TYPE.badgeInset,
+    maxWidth: '90%',
     height: TYPE.badgeHeight,
     paddingHorizontal: 8,
     borderRadius: TYPE.badgeRadius,
@@ -172,5 +175,8 @@ const styles = StyleSheet.create({
   price: { fontSize: TYPE.cardPriceSize, lineHeight: TYPE.cardPriceLine, paddingTop: TYPE.cardPriceTop },
   reference: { fontSize: TYPE.cardSponsoredSize, lineHeight: TYPE.cardReferenceLine },
   referenceSlot: { height: TYPE.cardReferenceLine },
+  compactStrong: { fontSize: TYPE.cardCompactStrongSize, lineHeight: TYPE.cardCompactStrongLine },
+  compactCopy: { fontSize: TYPE.cardCompactCopySize, lineHeight: TYPE.cardCompactCopyLine },
+  compactReferenceSlot: { height: TYPE.cardCompactCopyLine },
   struck: { textDecorationLine: 'line-through' },
 });

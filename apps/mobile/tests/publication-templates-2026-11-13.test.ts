@@ -10,7 +10,7 @@ import {
   PUBLICATION_TEMPLATE as T,
 } from '../src/features/publications/templates/templateMetrics';
 import { contrastRatio } from '../../../shared/publicationBlocks';
-import { CARD_SYSTEM as C, cardRailMaxOffset, cardRailMetrics, cardsPerView, cardWidthFor } from '../src/design/cardSystem';
+import { CARD_SYSTEM as C, cardRailMaxOffset, cardRailMetrics, cardsPerView, cardWidthFor, editorialRailMetrics } from '../src/design/cardSystem';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -100,7 +100,7 @@ describe('cotes des modèles (planches Zalando, 360 dp)', () => {
 
   const m = publicationTemplateMetrics(360);
 
-  it('13/11 — SYSTÈME DE CARTES : les trois modèles partagent la même carte, 2 entières à parts égales', () => {
+  it('13/11 — SYSTÈME DE CARTES : les modèles gardent une géométrie commune de base, 2 entières à parts égales', () => {
     // 12 · 164 · 8 · 164 · 12 = 360 : aucune amorce coupée, même marge des deux côtés.
     expect(C.gutter).toBe(12);
     expect(C.gap).toBe(8);
@@ -139,6 +139,18 @@ describe('cotes des modèles (planches Zalando, 360 dp)', () => {
     expect(cardsPerView(360)).toBe(2);
     expect(cardsPerView(640)).toBe(4);
     expect(cardWidthFor(Number.NaN)).toBe(164);
+  });
+
+  it('fits two feature cards or a compact collection without clipping the last visible photo', () => {
+    for (const width of [320, 360, 390, 600, 640]) {
+      for (const count of [2, 3, 6]) {
+        const rail = editorialRailMetrics(width, count);
+        expect(rail.perView).toBe(Math.min(count, width >= 600 ? 4 : 3));
+        expect(C.gutter * 2 + rail.cardWidth * rail.perView + C.gap * (rail.perView - 1)).toBeCloseTo(width);
+        expect(rail.snap).toBe(rail.cardWidth + C.gap);
+        expect(rail.imageHeight).toBe(Math.round(rail.cardWidth * C.imageRatio));
+      }
+    }
   });
 
   it('modèle media : média sur la marge commune, image ≈ 2:1, vidéo carrée', () => {
@@ -209,7 +221,9 @@ describe('13/11 — système de cartes dans les composants (captures 073653 → 
   it('les rangées s’aimantent d’une carte, sans élan qui saute une carte ; le modèle media utilise LA carte commune', () => {
     for (const file of ['ContainerTemplate', 'MediaTemplate']) {
       const code = src(`src/features/publications/templates/${file}.tsx`);
-      expect(code, file).toContain('snapToInterval={metrics.container.snap}');
+      expect(code, file).toContain(file === 'MediaTemplate'
+        ? 'snapToInterval={rail?.snap ?? metrics.container.snap}'
+        : 'snapToInterval={metrics.container.snap}');
       expect(code, file).toContain('disableIntervalMomentum');
       expect(code, file).toContain('<BlockProductCard');
     }
