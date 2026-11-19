@@ -23,6 +23,7 @@
     <string name="aywebs_select_item">اختر منتجك</string>
     <string name="aywebs_quote_unavailable">تعذّر حساب سعر ZAYROVI لهذا المنتج. أعد فتح المنتج بعد استعادة التسعير.</string>
     <string name="aywebs_choose_option">— اختر —</string>
+    <string name="aywebs_change_on_page">بدّل في الصفحة</string>
     <string name="aywebs_choose_variants">اختر جميع الخيارات للتحقق من السعر والتوفر لهذه التهيئة.</string>
     <string name="aywebs_variant_not_found">هذا الاختيار المركّب غير منشور من المتجر.</string>
     <string name="aywebs_price_fallback">لم ينشر المتجر سعراً منفصلاً لهذا الخيار؛ سيُستخدم سعر المنتج.</string>

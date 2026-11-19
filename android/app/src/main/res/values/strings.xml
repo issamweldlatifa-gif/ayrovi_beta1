@@ -39,6 +39,7 @@
     <string name="aywebs_select_item">Select your desired item</string>
     <string name="aywebs_quote_unavailable">Le devis ZAYROVI est indisponible pour cet article. L’ajout reste bloqué jusqu’au rétablissement du prix.</string>
     <string name="aywebs_choose_option">— Choisir —</string>
+    <string name="aywebs_change_on_page">Changer sur la page</string>
     <string name="aywebs_choose_variants">Choisissez toutes les options pour vérifier le prix et le stock de cette configuration.</string>
     <string name="aywebs_variant_not_found">Cette combinaison exacte n’est pas publiée par la boutique.</string>
     <string name="aywebs_price_fallback">La boutique n’a pas publié de prix distinct pour cette option ; le prix produit est utilisé.</string>

@@ -8,6 +8,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -164,23 +166,32 @@ public class AyWebsBrowseActivity extends Activity {
   private volatile boolean purchaseSupportPage = false;
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-  // ── PRÉ-RÉSOLUTION (05/10/2026) ───────────────────────────────────────────
-  // Plainte client : « le produit ajouté avec son prix met plus de vingt
-  // secondes à apparaître ». La lecture marchande est le seul poste coûteux du
-  // parcours ; or, dès que le serveur classe la page en fiche produit, on sait
-  // que l'utilisateur peut appuyer sur « Add to Cart » à tout moment. La
-  // résolution est donc payée PENDANT qu'il lit la fiche (agent d'exécution
-  // unique : elle ne concurrence aucun autre appel de la coque), et l'appui
-  // ouvre la feuille immédiatement.
-  //
-  // Fenêtre courte et honnête : le résultat pré-résolu n'est réutilisé que pour
-  // la MÊME URL et moins de deux minutes ; au-delà, la coque redemande la
-  // résolution (le serveur applique alors son propre cache de lecture et
-  // recalcule toujours le prix ZAYROVI, §45).
-  private static final long PREFETCH_FRESH_MS = 120_000L;
-  private volatile JSONObject prefetchedProduct;
-  private volatile String prefetchedUrl = "";
-  private volatile long prefetchedAtMs = 0L;
+  // ── CAPTURE AU MOMENT DE L'APPUI (19/11/2026, audit P2-4) ─────────────────
+  // Avant : une résolution faite à l'OUVERTURE de la fiche était réutilisée
+  // pendant 120 s. Or le client choisit sa taille / sa couleur APRÈS
+  // l'ouverture : la feuille montrait l'ancien choix. Principe « le client
+  // choisit sur la page → AYWEBs capte → ZAYROVI calcule → le client
+  // confirme » : la page est lue À L'APPUI. À l'ouverture on ne fait que
+  // précharger le lecteur (aucune résolution réutilisée).
+
+  /**
+   * Boutique de la page analysée, telle que le SERVEUR la reconnaît
+   * (`store_id` de /page/analyze, issu de shared/aywebsStores.ts). Remplace
+   * les listes de domaines recopiées en dur dans la coque (audit P2-1 / P3-2) :
+   * SHEIN, TEMU et AliExpress n'y figuraient pas et recevaient le lecteur
+   * générique.
+   */
+  private volatile String analyzedStoreId = "";
+  private volatile String analyzedUrl = "";
+
+  /** Borne du lecteur téléchargé. Au-delà : ERREUR explicite, jamais un script tronqué (P2-2). */
+  static final int CAPTURE_SCRIPT_MAX_BYTES = 1_048_576;
+  /** Relances quand la capture revient sans prix (mêmes délais que l'application RN, P2-3). */
+  private static final long[] CAPTURE_PRICE_RETRY_DELAYS_MS = {450L, 1200L, 1600L};
+  /** Mode sélection : relecture de confirmation ~400 ms après la première, au plus 2. */
+  private static final long SELECTION_CONFIRM_DELAY_MS = 400L;
+  private static final int SELECTION_CONFIRM_MAX_READS = 2;
+  private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
   @SuppressLint("SetJavaScriptEnabled")
   @Override
@@ -416,6 +427,8 @@ public class AyWebsBrowseActivity extends Activity {
         JSONObject reply = post(apiOrigin + ANALYZE_PATH, body);
         JSONObject data = reply.optJSONObject("data");
         if (data == null) { setAddUnavailable(true); return; }
+        analyzedStoreId = data.isNull("store_id") ? "" : data.optString("store_id", "");
+        analyzedUrl = url;
 
         /* Phase 2.1 : deux chemins mènent à la feuille —
              • boutique du REGISTRE  : `is_product_page` + `capture_allowed` ;
@@ -502,30 +515,17 @@ public class AyWebsBrowseActivity extends Activity {
     if (!productPage) return;
     final String url = currentUrl;
 
-    // 1) Pré-résolution fraîche pour CETTE url : la feuille s'ouvre tout de
-    //    suite, aucun aller-retour marchand n'est payé au moment de l'appui.
-    JSONObject ready = prefetchedProductFor(url);
-    if (ready != null) {
-      showVariantSheet(ready);
-      return;
-    }
-
     runOnUiThread(() -> addButton.setText(R.string.aywebs_loading));
-    /* URL + CAPTURE de la page affichée. Jamais le DOM marchand, les scripts,
-       le compte ni un prix fourni : des textes bornés, criblés par le serveur. */
+    /* URL + CAPTURE de la page affichée, prise À L'APPUI (P2-4). Jamais le DOM
+       marchand, les scripts, le compte ni un prix fourni : des textes bornés,
+       criblés par le serveur. */
     withPageCapture(capture -> executor.execute(() -> {
       try {
-        // 2) L'agent d'exécution est unique : la pré-résolution lancée pendant
-        //    la navigation a pu aboutir entre-temps. On la réutilise (même url,
-        //    moins de deux minutes) au lieu de relancer une lecture.
-        JSONObject product = prefetchedProductFor(url);
-        if (product == null) {
-          JSONObject body = new JSONObject().put("url", url);
-          if (capture != null) body.put("capture", capture);
-          JSONObject reply = post(apiOrigin + RESOLVE_PATH, body);
-          product = reply.optJSONObject("data");
-        }
-        final JSONObject resolved = product;
+        JSONObject body = new JSONObject().put("url", url);
+        if (!analyzedStoreId.isEmpty() && url.equals(analyzedUrl)) body.put("store_id", analyzedStoreId);
+        if (capture != null) body.put("capture", capture);
+        final JSONObject reply = post(apiOrigin + RESOLVE_PATH, body);
+        final JSONObject resolved = reply.optJSONObject("data");
         runOnUiThread(() -> {
           if (resolved == null) {
             // Le serveur répond mais ne reconnaît pas le produit : c'est un cas
@@ -534,7 +534,8 @@ public class AyWebsBrowseActivity extends Activity {
             toast(R.string.aywebs_product_not_resolved);
             return;
           }
-          showVariantSheet(resolved);
+          addButton.setText(R.string.aywebs_add_to_cart);
+          showVariantSheet(resolved, reply.optJSONObject("captured_selection"), reply.optString("quote_token", ""));
         });
       } catch (Exception error) {
         runOnUiThread(() -> addButton.setText(R.string.aywebs_add_to_cart));
@@ -544,29 +545,12 @@ public class AyWebsBrowseActivity extends Activity {
   }
 
   /**
-   * Résolution anticipée d'une fiche produit, exécutée sur l'agent unique de la
-   * coque pendant que l'utilisateur lit la page. Silencieuse et non bloquante :
-   * un échec ne change rien au parcours, l'appui refera la demande normalement.
-   * Aucune donnée marchande n'est transmise : seulement l'URL (même contrat que
-   * `onAddToCart`), et le prix reste calculé par le serveur.
+   * Préchargement du LECTEUR de page à l'ouverture d'une fiche (aucune
+   * résolution réutilisée, P2-4) : l'appui n'attend plus le téléchargement.
    */
   private void prefetchResolve(final String url) {
     if (apiOrigin.isEmpty() || url == null || url.isEmpty()) return;
-    if (prefetchedProductFor(url) != null) return;
-    withPageCapture(capture -> executor.execute(() -> {
-      try {
-        JSONObject body = new JSONObject().put("url", url);
-        if (capture != null) body.put("capture", capture);
-        JSONObject reply = post(apiOrigin + RESOLVE_PATH, body);
-        JSONObject product = reply.optJSONObject("data");
-        if (product == null) return;
-        prefetchedProduct = product;
-        prefetchedUrl = url;
-        prefetchedAtMs = System.currentTimeMillis();
-      } catch (Exception ignored) {
-        /* la pré-résolution est un confort, jamais une condition */
-      }
-    }));
+    runOnUiThread(() -> ensureCaptureScript(() -> { }));
   }
 
   /**
@@ -575,7 +559,7 @@ public class AyWebsBrowseActivity extends Activity {
    * et le serveur retombe sur sa propre lecture (ou sur « Order with URL »).
    */
   private void ensureCaptureScript(final Runnable next) {
-    final String storeId = captureStoreIdForUrl(currentUrl);
+    final String storeId = captureStoreIdFor(currentUrl);
     final String cacheKey = storeId == null ? "" : storeId;
     if (!captureScript.isEmpty() && cacheKey.equals(captureScriptStoreId)) {
       runOnUiThread(next);
@@ -599,31 +583,16 @@ public class AyWebsBrowseActivity extends Activity {
     });
   }
 
-  /** Only map domains explicitly registered for the four dedicated readers. */
-  private static String captureStoreIdForUrl(String value) {
-    if (value == null || value.isEmpty()) return null;
-    String host = Uri.parse(value).getHost();
-    if (host == null) return null;
-    host = host.toLowerCase(java.util.Locale.ROOT);
-    if (matchesAnyDomain(host, new String[] {
-      "amazon.com", "amazon.fr", "amazon.co.uk", "amazon.de", "amazon.it", "amazon.es",
-      "amazon.co.jp", "amazon.ca", "amazon.com.au", "amazon.nl", "amazon.se", "amazon.pl",
-      "amazon.com.tr", "amazon.ae", "amazon.sa", "amazon.in", "amazon.sg", "amazon.com.mx",
-      "amazon.com.br", "amazon.eg", "amazon.be"
-    })) return "amazon";
-    if (matchesAnyDomain(host, new String[] {
-      "zalando.com", "zalando.de", "zalando.fr", "zalando.it", "zalando.es", "zalando.nl", "zalando.be", "zalando.at"
-    })) return "zalando";
-    if (matchesAnyDomain(host, new String[] {"sephora.com"})) return "sephora";
-    if (matchesAnyDomain(host, new String[] {"primark.com"})) return "primark";
-    return null;
-  }
-
-  private static boolean matchesAnyDomain(String host, String[] domains) {
-    for (String domain : domains) {
-      if (host.equals(domain) || host.endsWith("." + domain)) return true;
-    }
-    return false;
+  /**
+   * Profil de lecteur pour cette page : la boutique reconnue par le SERVEUR à
+   * l'analyse (registre unique shared/aywebsStores.ts). Aucune liste de
+   * domaines dans la coque (P2-1 / P3-2). Page pas encore analysée ⇒ lecteur
+   * générique (le serveur choisit), jamais le lecteur d'une autre boutique.
+   */
+  private String captureStoreIdFor(String url) {
+    String storeId = analyzedStoreId;
+    if (storeId == null || storeId.isEmpty() || url == null || !url.equals(analyzedUrl)) return null;
+    return storeId.matches("[a-z0-9_-]{2,40}") ? storeId : null;
   }
 
   /**
@@ -635,13 +604,56 @@ public class AyWebsBrowseActivity extends Activity {
     final String script = captureScript;
     final WebView view = webView;
     if (script.isEmpty() || view == null) { onCapture.accept(null); return; }
-    runOnUiThread(() -> {
-      try {
-        view.evaluateJavascript(script, value -> onCapture.accept(capturePayload(value)));
-      } catch (Exception error) {
-        onCapture.accept(null);
-      }
-    });
+    runOnUiThread(() -> captureAttempt(view, script, 0, 0, onCapture));
+  }
+
+  /**
+   * Une lecture, puis (P2-3) relance bornée si la page n'a pas encore rendu
+   * son prix, et (mode sélection) relecture de confirmation ~400 ms plus tard :
+   * le serveur exige deux lectures identiques du choix affiché.
+   */
+  private void captureAttempt(final WebView view, final String script, final int priceRetries,
+      final int confirmReads, final java.util.function.Consumer<String> onCapture) {
+    try {
+      view.evaluateJavascript(script, value -> {
+        String json = capturePayload(value);
+        long delay = nextCaptureDelayMs(json, priceRetries, confirmReads);
+        if (delay < 0) { onCapture.accept(json); return; }
+        boolean priceRetry = !hasPriceCandidate(json);
+        mainHandler.postDelayed(() -> captureAttempt(view, script,
+            priceRetry ? priceRetries + 1 : priceRetries,
+            priceRetry ? confirmReads : confirmReads + 1, onCapture), delay);
+      });
+    } catch (Exception error) {
+      onCapture.accept(null);
+    }
+  }
+
+  /** Délai avant la lecture suivante, ou -1 quand la capture est prête. */
+  static long nextCaptureDelayMs(String json, int priceRetries, int confirmReads) {
+    if (!hasPriceCandidate(json)) {
+      return priceRetries < CAPTURE_PRICE_RETRY_DELAYS_MS.length ? CAPTURE_PRICE_RETRY_DELAYS_MS[priceRetries] : -1L;
+    }
+    try {
+      JSONObject capture = new JSONObject(json);
+      if (!"selection".equals(capture.optString("captureMode", ""))) return -1L;
+      if (confirmReads >= SELECTION_CONFIRM_MAX_READS) return -1L;
+      JSONObject proof = capture.optJSONObject("selection");
+      if (proof != null && proof.optInt("reads", 1) >= 2 && proof.optBoolean("stable", false)) return -1L;
+      return SELECTION_CONFIRM_DELAY_MS;
+    } catch (Exception error) {
+      return -1L;
+    }
+  }
+
+  private static boolean hasPriceCandidate(String json) {
+    if (json == null) return false;
+    try {
+      JSONArray candidates = new JSONObject(json).optJSONArray("priceCandidates");
+      return candidates != null && candidates.length() > 0;
+    } catch (Exception error) {
+      return false;
+    }
   }
 
   /**
@@ -700,19 +712,16 @@ public class AyWebsBrowseActivity extends Activity {
       byte[] chunk = new byte[8192];
       int read;
       while ((read = stream.read(chunk)) > 0) {
-        if (buffer.size() + read > 512_000) break;   // borne : le lecteur pèse ~10 Ko
+        if (buffer.size() + read > CAPTURE_SCRIPT_MAX_BYTES) {
+          // P2-2 : un lecteur tronqué est un script cassé qui échoue en silence.
+          connection.disconnect();
+          throw new java.io.IOException("CAPTURE_SCRIPT_TOO_LARGE");
+        }
         buffer.write(chunk, 0, read);
       }
     }
     connection.disconnect();
     return new String(buffer.toByteArray(), StandardCharsets.UTF_8);
-  }
-
-  /** Produit pré-résolu réutilisable pour cette url, ou null si trop ancien. */
-  private JSONObject prefetchedProductFor(String url) {
-    JSONObject product = prefetchedProduct;
-    if (product == null || url == null || !url.equals(prefetchedUrl)) return null;
-    return System.currentTimeMillis() - prefetchedAtMs <= PREFETCH_FRESH_MS ? product : null;
   }
 
   /** Toast avec un texte venu du serveur (repli : message générique). */
@@ -791,7 +800,15 @@ public class AyWebsBrowseActivity extends Activity {
    * panneau de sélection de la référence, sans quitter le magasin : contenu en
    * ligne image/titre, options publiées, quantité et ajout.
    */
-  private void showVariantSheet(JSONObject product) {
+  /**
+   * Feuille de CONFIRMATION (19/11/2026). En mode sélection (`selection` non
+   * nul : `captured_selection` de /product/resolve), le choix vient de la page
+   * du marchand : aucune liste déroulante, des lignes en lecture seule, la
+   * quantité affichée par la page pré-remplie, et « بدّل في الصفحة » qui
+   * referme la feuille pour changer l'option SUR la page.
+   */
+  private void showVariantSheet(JSONObject product, JSONObject selection, String quoteToken) {
+    final boolean selectionMode = selection != null && "selection".equals(selection.optString("mode", ""));
     // A new sheet is a new user intention. A failed post keeps this id in the
     // sheet so a manual retry can replay the first result instead of adding twice.
     pendingAddRequestId = "";
@@ -828,6 +845,10 @@ public class AyWebsBrowseActivity extends Activity {
 
     qty.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item,
         new String[] {"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}));
+    if (selectionMode) {
+      int pageQuantity = selection.optInt("page_quantity", 0);
+      if (pageQuantity >= 1 && pageQuantity <= 10) qty.setSelection(pageQuantity - 1);
+    }
     qty.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
       @Override public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
         pendingAddRequestId = "";
@@ -876,6 +897,16 @@ public class AyWebsBrowseActivity extends Activity {
       }
     }
 
+    if (selectionMode) {
+      TextView changeOnPage = new TextView(this);
+      changeOnPage.setText(R.string.aywebs_change_on_page);
+      changeOnPage.setPadding(0, 16, 0, 8);
+      changeOnPage.setTextColor(0xFF0A0A0A);
+      changeOnPage.setPaintFlags(changeOnPage.getPaintFlags() | android.graphics.Paint.UNDERLINE_TEXT_FLAG);
+      changeOnPage.setOnClickListener(v -> dialog.dismiss());
+      groupsBox.addView(changeOnPage);
+    }
+
     refreshVariantQuote(product, groupSpinners, priceLine, availabilityLine, errorLine, confirm, quoteReady);
     close.setOnClickListener(v -> dialog.dismiss());
     confirm.setOnClickListener(v -> {
@@ -891,6 +922,7 @@ public class AyWebsBrowseActivity extends Activity {
             .put("store_id", product.optString("store_id", ""))
             .put("variant_attributes", attributes)
             .put("quantity", quantity);
+        if (quoteToken != null && !quoteToken.isEmpty()) body.put("quote_token", quoteToken);
         confirm.setEnabled(false);
         confirm.setText(R.string.aywebs_loading);
         errorLine.setVisibility(View.GONE);
