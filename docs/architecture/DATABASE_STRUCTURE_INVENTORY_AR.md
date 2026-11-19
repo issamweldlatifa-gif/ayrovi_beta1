@@ -223,3 +223,7 @@ npx vitest run tests/schema-inspection.test.ts tests/schema-review.test.ts tests
 ## دفعة حماية المخطط والاسترجاع المنفّذة
 
 `runSchema` لم يعد يبتلع الأخطاء، ودفعاته ذرية مع تقسيم يحترم التعليقات والنصوص. أُضيف تحقق FK للنسخ وأمر استرجاع معزول واختبار إعادة فتح النسخة بطبقة بيانات التطبيق. انظر [الضمانات وحدود تجربة الاسترجاع](SQLITE_SCHEMA_AND_RESTORE_SAFETY_AR.md): التجربة اصطناعية وليست إثباتًا لاسترجاع الإنتاج أو الملفات المرفوعة.
+
+## دفعة Connected والشحن
+
+أضيف `admin_sessions.mfa_verified` بقيمة ترقية آمنة `0`، وجدولا `team_connection_members` و`team_connection_requests` بإنشاء قابل للإعادة. مفتاح `(user_id, team)` يغطّي وصول العضوية وفهرسة المفتاح الخارجي على `admin_users`؛ لا أسرار في الجدولين. لفحص API والصلاحيات وفتح القاعدة، راجع [Connected والشحن](CONNECTED_SECURITY_AND_SHIPPING_AR.md).

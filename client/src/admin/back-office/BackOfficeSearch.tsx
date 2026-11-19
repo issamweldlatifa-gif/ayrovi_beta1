@@ -8,6 +8,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Search as SearchIcon, Sparkles } from '../../components/QatafoIcons';
+import { useOfficeText } from './OfficeLocale';
 import { runGlobalSearch, useBackOffice, type BackOfficeNavItem, type SearchHit } from './framework';
 
 export interface PaletteEntry {
@@ -39,6 +40,7 @@ function highlight(text: string, term: string) {
 
 /** Champ de recherche de l'entête : 5 lignes par ressource permise, deep-link en résultat. */
 export const GlobalSearch: React.FC<{ onNavigate: (section: string, target?: string) => void }> = ({ onNavigate }) => {
+  const t = useOfficeText();
   const [term, setTerm] = useState('');
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [open, setOpen] = useState(false);
@@ -73,7 +75,7 @@ export const GlobalSearch: React.FC<{ onNavigate: (section: string, target?: str
   return <div className="bo-search" ref={boxRef}>
     <SearchIcon size={17} />
     <input value={term} onChange={(event) => { setTerm(event.target.value); setOpen(true); }} onFocus={() => setOpen(true)}
-      placeholder="Rechercher un produit, une commande, un client…" aria-label="Recherche globale" />
+      placeholder={t('Rechercher une commande, un produit, un client…', 'ابحث على طلب، منتج أو حريف…')} aria-label={t('Recherche globale', 'البحث العام')} />
     {open && term.trim().length >= 2 && (
       <div className="bo-search-panel" role="listbox" aria-label="Résultats de recherche">
         {state === 'loading' && <p className="bo-search-state">Recherche dans les ressources autorisées…</p>}

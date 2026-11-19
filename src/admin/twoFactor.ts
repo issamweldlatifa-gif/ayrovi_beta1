@@ -12,7 +12,7 @@
  */
 import type { Request, Response, Router } from 'express';
 import type { QatafoDatabase } from '../db/database';
-import { requireAdmin, verifyPassword } from './auth';
+import { requireAdmin, revokeOtherAdminSessions, verifyPassword } from './auth';
 import {
   consumeRecoveryCode,
   generateRecoveryCodes,
@@ -84,6 +84,7 @@ export function twoFactorStatus(row: Pick<TotpRow, 'totp_enabled' | 'totp_pendin
 type Audit = (req: Request, action: string, entityId: string) => void;
 
 export function registerTwoFactorRoutes(router: Router, db: QatafoDatabase, audit: Audit) {
+  router.use('/auth/2fa', (_req, res, next) => { res.set('Cache-Control', 'private, no-store'); next(); });
   const actorRow = (req: Request): TotpRow | null => {
     const actor = (req as any).admin as { id: string } | undefined;
     return actor ? db.get<TotpRow>('SELECT * FROM admin_users WHERE id=? AND active=1', actor.id) ?? null : null;
@@ -119,11 +120,14 @@ export function registerTwoFactorRoutes(router: Router, db: QatafoDatabase, audi
     const step = verifyTotp(secret, suppliedCode(req.body), 0);
     if (step === null) return fail(res, 400, 'TOTP_INVALID', 'Code incorrect. Vérifiez l’heure du téléphone et réessayez.');
     const codes = generateRecoveryCodes();
-    db.run(
-      'UPDATE admin_users SET totp_enabled=1, totp_secret=?, totp_pending=NULL, totp_last_step=?, totp_recovery=?, updated_at=? WHERE id=?',
-      sealTotpSecret(secret), step, JSON.stringify(codes.map(hashRecoveryCode)), new Date().toISOString(), row.id,
-    );
-    audit(req, 'ENABLE_2FA', row.id);
+    db.transaction(() => {
+      db.run(
+        'UPDATE admin_users SET totp_enabled=1, totp_secret=?, totp_pending=NULL, totp_last_step=?, totp_recovery=?, updated_at=? WHERE id=?',
+        sealTotpSecret(secret), step, JSON.stringify(codes.map(hashRecoveryCode)), new Date().toISOString(), row.id,
+      );
+      revokeOtherAdminSessions(db, req, row.id);
+      audit(req, 'ENABLE_2FA', row.id);
+    });
     res.json({ success: true, data: { enabled: true, recoveryCodes: codes } });
   });
 
@@ -153,8 +157,12 @@ export function registerTwoFactorRoutes(router: Router, db: QatafoDatabase, audi
     }
     if (!passwordOk(row, req)) return fail(res, 400, 'PASSWORD_INVALID', 'Mot de passe incorrect.');
     if (!verifyCurrentFactor(row, req)) return fail(res, 400, 'TOTP_INVALID', 'Code de vérification incorrect ou expiré.');
-    db.run("UPDATE admin_users SET totp_enabled=0, totp_secret=NULL, totp_pending=NULL, totp_last_step=0, totp_recovery='[]', updated_at=? WHERE id=?", new Date().toISOString(), row.id);
-    audit(req, 'DISABLE_2FA', row.id);
+    db.transaction(() => {
+      db.run("UPDATE admin_users SET totp_enabled=0, totp_secret=NULL, totp_pending=NULL, totp_last_step=0, totp_recovery='[]', updated_at=? WHERE id=?", new Date().toISOString(), row.id);
+      db.run('UPDATE admin_sessions SET mfa_verified=0 WHERE user_id=?', row.id);
+      revokeOtherAdminSessions(db, req, row.id);
+      audit(req, 'DISABLE_2FA', row.id);
+    });
     res.json({ success: true, data: { enabled: false, pending: false, recoveryRemaining: 0 } });
   });
 }

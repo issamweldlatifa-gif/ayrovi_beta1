@@ -1,3 +1,4 @@
+import { TRACKING_CARRIERS, carrierTrackingUrl, trackingCarrier } from '../../../shared/shippingTracking';
 import { FONT_STACK } from '../../../shared/brand.generated';
 import { HERO_DESTINATION_TYPES } from '../../../shared/heroDestinations';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -16,7 +17,17 @@ import './admin.css';
 // Modèle A « Console opérationnelle » (2026-09-22) : couche additive chargée APRÈS admin.css.
 // Elle ne supprime aucune règle — elle redéfinit la densité, les filets, les rayons et le chrome
 // pour que les écrans existants héritent du modèle retenu sans être réécrits un par un.
-import '../styles/admin-console.css';;
+import '../styles/admin-console.css';
+import '../design/admin/office-tokens.css';
+import '../styles/admin-unified.css';
+import { OfficeIcon } from '../design/admin/OfficeIcon';
+import { OfficeListToolbar } from '../design/admin/OfficeListToolbar';
+import { OfficeViewSwitch } from '../design/admin/OfficeViewSwitch';
+import { RevenueChart, OrderStatusChart } from './back-office/OverviewCharts';
+import { useOfficeText } from './back-office/OfficeLocale';
+import { StatusBoard } from './back-office/StatusBoard';
+import { DhlTrackingCheck } from './DhlTrackingCheck';
+import { FinanceWorkspace } from './FinanceWorkspace';
 import { LensLabPage, AiDiscoveryPage } from './AiLabPages';
 import { StoriesStudioPage } from './StoriesStudio';
 import { SocialAdminPage } from './SocialAdminPage';
@@ -147,18 +158,18 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
   const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [show, setShow] = useState(false);
   // Double authentification (12/11/2026) : le champ n'apparaît que si le compte l'exige.
   const [otpNeeded, setOtpNeeded] = useState(false); const [otp, setOtp] = useState('');
-  const [health, setHealth] = useState<{ state: 'checking' | 'ok' | 'down'; version?: string }>({ state: 'checking' });
+  const [health, setHealth] = useState<{ state: 'checking' | 'ok' | 'down' }>({ state: 'checking' });
   const probe = useCallback(async () => {
     setHealth({ state: 'checking' });
     try {
       const response = await fetch('/api/health', { credentials: 'omit' });
       const data = await response.json();
-      setHealth(data?.status === 'ok' ? { state: 'ok', version: typeof data.version === 'string' ? data.version : undefined } : { state: 'down' });
+      setHealth(data?.status === 'ok' ? { state: 'ok' } : { state: 'down' });
     } catch { setHealth({ state: 'down' }); }
   }, []);
   useEffect(() => { void probe(); }, [probe]);
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault(); setBusy(true); setError('');
+    event.preventDefault(); if (busy) return; setShow(false); setBusy(true); setError('');
     try { onAuthenticated(await login(email, password, otpNeeded ? otp : undefined)); }
     catch (reason: any) {
       if (reason instanceof ApiError && (reason.code === 'TOTP_REQUIRED' || reason.code === 'TOTP_INVALID')) {
@@ -169,32 +180,32 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
     } finally { setBusy(false); }
   };
   return (
-    <main className="admin-login">
-      {/*
+    <main className="admin-login admin-login--secure">
       {/* Identité : le verrou A.ROVI porte le nom une seule fois (emblème + « YROVI »), ici en
           version blanche puisque le panneau est en encre. La ligne de service dit ce qu'on ouvre. */}
       <section className="admin-login-brand">
         <img src="/media/logo-zayrovi-logo-dark.svg?v=9.0" alt="ZAYROVI" className="admin-login-brand__lockup" />
         <span>CONSOLE D’EXPLOITATION</span>
-        <h1>Le commerce mondial,<br />piloté depuis Tunis.</h1>
-        <p>Contenu, arrivages, commandes, tarification et assistance — une seule source de vérité, la même que le site public.</p>
+        <div className="admin-login-orb" aria-hidden="true" />
+        <h1>Toute votre activité.<br />Une seule console.</h1>
+        <p>Clients, opérations, finance et création : votre espace de travail vous attend.</p>
         <div className="admin-login-grid">
-          <article><strong>24</strong><span>gouvernorats</span></article>
-          <article><strong>4</strong><span>rôles sécurisés</span></article>
-          <article><strong>100%</strong><span>backend-driven</span></article>
+          <article><strong>01</strong><span>Identité</span></article>
+          <article><strong>02</strong><span>Vérification 2FA</span></article>
+          <article><strong>03</strong><span>Espace autorisé</span></article>
         </div>
         <div className="admin-login-foot">
-          <div><b>v{health.version ?? '—'}</b><i>·</i><span>Console d’exploitation</span></div>
-          <div><span>Session chiffrée</span><i>·</i><span>CSRF</span><i>·</i><span>Droits par rôle</span></div>
+          <div><b>Accès interne</b><i>·</i><span>Console d’exploitation</span></div>
+          <div><span>Session privée</span><i>·</i><span>CSRF</span><i>·</i><span>Droits par rôle</span></div>
         </div>
       </section>
       <section className="admin-login-panel">
         <div className="admin-login-box">
-          <div className="admin-login-mobile-logo"><img src="/media/logo-zayrovi-logo-light.svg?v=9.0" alt="ZAYROVI" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /></div>
+          <div className="admin-login-mobile-logo"><img src="/media/logo-zayrovi-logo-light.svg?v=9.0" alt="ZAYROVI" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /><span>CONSOLE D’EXPLOITATION</span></div>
           {/* Cartouche d'état : la sonde est réelle, donc le chiffre affiché est celui du serveur en face. */}
           <div className="admin-login-status" data-state={health.state} role="status" aria-live="polite">
             <i aria-hidden="true" />
-            {health.state === 'ok' && <span><b>Serveur opérationnel</b>{health.version ? ` · v${health.version}` : ''}</span>}
+            {health.state === 'ok' && <span><b>Serveur opérationnel</b></span>}
             {health.state === 'checking' && <span><b>Vérification du serveur…</b></span>}
             {health.state === 'down' && <span><b>Serveur injoignable</b> — la connexion échouera tant que l’API ne répond pas.</span>}
             {health.state === 'down' && <button type="button" onClick={() => void probe()}>Réessayer</button>}
@@ -204,11 +215,11 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
           <p>Connectez-vous avec le compte administrateur configuré sur le serveur.</p>
           <Form onSubmit={submit}>
             <Field label="Adresse email" required full>
-              <input type="email" name="email" value={email} autoComplete="username" inputMode="email" autoFocus aria-describedby="admin-login-email-help" onChange={(e) => setEmail(e.target.value)} placeholder="admin@zayrovi.com" required />
+              <input type="email" name="email" readOnly={busy} value={email} autoComplete="username" inputMode="email" autoFocus aria-describedby="admin-login-email-help" onChange={(e) => { setEmail(e.target.value); setOtpNeeded(false); setOtp(''); setError(''); }} placeholder="nom@entreprise.tn" required />
             </Field>
             <Field label="Mot de passe" required full>
               <div className="admin-password">
-                <input type={show ? 'text' : 'password'} name="password" value={password} autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} required />
+                <input type={show ? 'text' : 'password'} name="password" readOnly={busy} value={password} autoComplete="current-password" onChange={(e) => { setPassword(e.target.value); setOtpNeeded(false); setOtp(''); setError(''); }} required />
                 <button
                   type="button"
                   onClick={() => setShow(!show)}
@@ -221,7 +232,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
             </Field>
             {otpNeeded && (
               <Field label="Code de vérification" required full hint="6 chiffres de votre application d’authentification — ou un code de secours abcd-efgh.">
-                <input name="otp" value={otp} autoFocus autoComplete="one-time-code" inputMode="text" maxLength={12}
+                <input name="otp" readOnly={busy} value={otp} autoFocus autoComplete="one-time-code" inputMode="text" maxLength={12}
                   data-testid="admin-login-otp" onChange={(e) => setOtp(e.target.value)} placeholder="123 456" required />
               </Field>
             )}
@@ -275,15 +286,18 @@ const queueReviewCount = async (): Promise<number | null> => {
  * section correspondante, pré-filtrée quand la section le supporte.
  */
 const WorkbenchQueues: React.FC<{ navigate: (section: string, request?: string) => void }> = ({ navigate }) => {
+  const t = useOfficeText();
+  const { navigation } = useBackOffice();
+  const visibleSections = useMemo(() => new Set(navigation?.groups.flatMap(group => group.items.map(item => item.section))), [navigation]);
   const [queues, setQueues] = useState<Array<{ key: string; label: string; sub: string; count: number | null; section: string; request?: string; icon: React.ComponentType<{ size?: number | string }> }>>([]);
   useEffect(() => {
     let alive = true;
     (async () => {
       const [deposits, fresh, support, arrivals] = await Promise.all([
-        queueTotal('/orders?status=AWAITING_PAYMENT_VERIFICATION&pageSize=1'),
-        queueTotal('/orders?status=AWAITING_DEPOSIT&pageSize=1'),
-        queueTotal('/assistant-support?status=PENDING&pageSize=1'),
-        queueReviewCount(),
+        visibleSections.has('orders') ? queueTotal('/orders?status=AWAITING_PAYMENT_VERIFICATION&pageSize=1') : null,
+        visibleSections.has('orders') ? queueTotal('/orders?status=AWAITING_DEPOSIT&pageSize=1') : null,
+        visibleSections.has('assistant-support') ? queueTotal('/assistant-support?status=PENDING&pageSize=1') : null,
+        visibleSections.has('arrival-ingestion') ? queueReviewCount() : null,
       ]);
       if (!alive) return;
       setQueues([
@@ -294,15 +308,17 @@ const WorkbenchQueues: React.FC<{ navigate: (section: string, request?: string) 
       ]);
     })();
     return () => { alive = false; };
-  }, []);
-  if (!queues.length) return null;
+  }, [visibleSections]);
+  const allowedQueues = queues.filter(item => visibleSections.has(item.section));
+  if (!allowedQueues.length) return null;
+  const copy: Record<string, [string, string]> = { deposits: ['تثبّت من العربون', 'إثباتات في انتظار المراجعة'], fresh: ['طلبات جديدة', 'في انتظار العربون'], support: ['طلبات الدعم', 'في انتظار الردّ'], arrivals: ['شحنات للمراجعة', 'ملفات في انتظار المصادقة'] };
   return <section className="admin-queues">
-    <header><strong>À traiter</strong><span>Files du jour, calculées en direct</span></header>
+    <header><strong>{t('À traiter', 'في انتظار المعالجة')}</strong><span>{t('Priorités opérationnelles', 'أولويات الخدمة')}</span></header>
     <div className="admin-queues-grid">
-      {queues.map(({ key, label, sub, count, section, request, icon: Icon }) => (
+      {allowedQueues.map(({ key, label, sub, count, section, request, icon: Icon }) => (
         <button key={key} type="button" className={`admin-queue-card ${count ? 'is-pending' : ''}`} onClick={() => navigate(section, request)}>
           <Icon size={18} />
-          <div><span>{label}</span><small>{sub}</small></div>
+          <div><span>{t(label, copy[key][0])}</span><small>{t(sub, copy[key][1])}</small></div>
           <strong>{count ?? '—'}</strong>
         </button>
       ))}
@@ -310,35 +326,66 @@ const WorkbenchQueues: React.FC<{ navigate: (section: string, request?: string) 
   </section>;
 };
 
-const DashboardPage: React.FC<{ navigate: (section: string, request?: string) => void }> = ({ navigate }) => {
-  const [data, setData] = useState<any>(null); const [days, setDays] = useState(30); const [error, setError] = useState('');
-  useEffect(() => { setData(null); adminApi<any>(`/dashboard?days=${days}`).then((result) => setData(result.data)).catch((reason) => setError(reason.message)); }, [days]);
-  const maxRevenue = Math.max(...(data?.daily || []).map((row: any) => Number(row.revenue)), 1);
-  const maxStatus = Math.max(...(data?.statuses || []).map((row: any) => Number(row.count)), 1);
-  if (!data) return <PageLoading error={error} />;
-  const cards = [
-    { label: 'Commandes', value: data.metrics.orders, change: data.metrics.changes.orders, icon: Package },
-    { label: 'Chiffre d’affaires', value: formatMoney(data.metrics.revenue), change: data.metrics.changes.revenue, icon: CreditCard },
-    { label: 'Clients actifs', value: data.metrics.customers, change: data.metrics.changes.customers, icon: User },
-    { label: 'Panier moyen', value: formatMoney(data.metrics.averageBasket), change: data.metrics.changes.averageBasket, icon: ShoppingBag },
-  ];
-  return <>
-    <PageHeader title="Tableau de bord" description="L’activité ZAYROVI consolidée en temps réel depuis SQLite." action={<Select value={days} onChange={(event) => setDays(Number(event.target.value))} options={[{value:'7',label:'7 jours'},{value:'30',label:'30 jours'},{value:'90',label:'90 jours'},{value:'365',label:'12 mois'}]} />} />
-    <WorkbenchQueues navigate={navigate} />
-    <div className="admin-metrics">{cards.map(({ label, value, change }) => <article key={label} className="admin-metric"><div><span>{label}</span><strong>{value}</strong><small className={change >= 0 ? 'positive' : 'negative'}>{change >= 0 ? '+' : ''}{change}% vs période précédente</small></div></article>)}</div>
-    <div className="admin-arrival-summary"><article><span>Arrivages Standard actifs</span><strong>{data.metrics.activeStandardArrivals}</strong><Calendar /></article><article><span>Arrivages Express actifs</span><strong>{data.metrics.activeExpressArrivals}</strong><Truck /></article></div>
-    <div className="admin-dashboard-grid">
-      <section className="admin-card admin-chart-card"><CardTitle title="Revenu journalier" subtitle={`Sur ${days} jours`} /><div className="admin-bar-chart">{data.daily.length ? data.daily.map((row: any) => <div key={row.date} title={`${formatDate(row.date)} · ${formatMoney(row.revenue)}`}><span style={{ height: `${Math.max((Number(row.revenue) / maxRevenue) * 100, 3)}%` }} /><small>{row.date.slice(5)}</small></div>) : <ChartEmpty />}</div></section>
-      <section className="admin-card"><CardTitle title="Statuts des commandes" subtitle="Répartition actuelle" /><div className="admin-status-chart">{data.statuses.length ? data.statuses.map((row: any) => <div key={row.status}><span><StatusBadge status={row.status} /><b>{row.count}</b></span><i><em style={{ width: `${(Number(row.count) / maxStatus) * 100}%` }} /></i></div>) : <ChartEmpty />}</div></section>
-      <section className="admin-card"><CardTitle title="Plateformes sources" subtitle="Commandes & revenu" /><div className="admin-source-list">{data.sources.length ? data.sources.map((row: any) => <div key={row.source}><span>{row.source}</span><strong>{row.orders} commande{row.orders === 1 ? '' : 's'}</strong><b>{formatMoney(row.revenue)}</b></div>) : <ChartEmpty />}</div></section>
-      <FunnelCard funnel={data.funnel} days={days} />
-      <AyWebsOperationsCard summary={data.aywebs} days={days} />
-      <section className="admin-card admin-card--wide"><CardTitle title="Dernières commandes" subtitle="Flux opérationnel" /><DataTable rows={data.recentOrders} columns={[
-        { key: 'order_number', label: 'Référence', render: (row: any) => <strong>{row.order_number}</strong> }, { key: 'customer_name', label: 'Client' }, { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={row.status} /> },
-        { key: 'total_tnd', label: 'Total', render: (row: any) => formatMoney(row.total_tnd) }, { key: 'created_at', label: 'Date', render: (row: any) => formatDate(row.created_at, true) },
-      ]} /></section>
-    </div>
-  </>;
+const DashboardPage: React.FC<{ navigate: BackOfficeRenderContext['navigate'] }> = ({ navigate }) => {
+  const t = useOfficeText();
+  const { navigation } = useBackOffice();
+  const canOpenOrders = navigation?.groups.some(group => group.items.some(item => item.permitted && item.section === 'orders'));
+  const [data, setData] = useState<any>(null);
+  const [days, setDays] = useState(30);
+  const [error, setError] = useState('');
+  const [revision, retry] = useState(0);
+  const [view, setView] = useState<'overview' | 'analysis'>('overview');
+  useEffect(() => {
+    let active = true;
+    setError(''); setData(null);
+    adminApi<any>(`/dashboard?days=${days}`).then(result => { if (active) setData(result.data); })
+      .catch(reason => { if (active) setError(reason.message); });
+    return () => { active = false; };
+  }, [days, revision]);
+  if (data?.scope === 'workspace') return <div className="bo-overview">
+    <PageHeader eyebrow="ZAYROVI" title={t('Tableau de bord', 'لوحة القيادة')} description={t('Ouvrez les espaces attribués à votre rôle depuis le menu.', 'افتح المساحات المسموح بيها لدورك من القائمة.')} />
+  </div>;
+  const cards = data ? [
+    { label: t('Chiffre d’affaires', 'رقم المعاملات'), value: formatMoney(data.metrics.revenue), change: data.metrics.changes.revenue, icon: CreditCard, color: 'blue' },
+    { label: t('Commandes', 'الطلبات'), value: data.metrics.orders, change: data.metrics.changes.orders, icon: Package, color: 'violet' },
+    { label: t('Clients actifs', 'الحرفاء النشطون'), value: data.metrics.customers, change: data.metrics.changes.customers, icon: User, color: 'green' },
+    { label: t('Panier moyen', 'متوسّط قيمة السلّة'), value: formatMoney(data.metrics.averageBasket), change: data.metrics.changes.averageBasket, icon: ShoppingBag, color: 'amber' },
+  ] : [];
+  return <div className="bo-overview">
+    <PageHeader eyebrow={t('PILOTAGE ZAYROVI', 'إدارة أعمال ZAYROVI')} title={t('Tableau de bord', 'لوحة القيادة')} description={t('Suivez les ventes, les commandes et les actions prioritaires.', 'تابع المبيعات والطلبات والمهام ذات الأولوية.')} action={<Select aria-label={t('Période', 'الفترة')} value={days} onChange={event => setDays(Number(event.target.value))} options={[7, 30, 90, 365].map(value => ({ value: String(value), label: value === 365 ? t('12 mois', '12 شهر') : t(`${value} jours`, `${value} يوم`) }))} />} />
+    <OfficeViewSwitch label={t('Vues du tableau de bord', 'طرق عرض لوحة القيادة')} value={view} onChange={setView} options={[
+      { value: 'overview', label: t('Vue d’ensemble', 'نظرة عامة'), icon: 'overview' },
+      { value: 'analysis', label: t('Analyses détaillées', 'تحليلات مفصّلة'), icon: 'analytics' },
+    ]} />
+    {!data ? <><PageLoading error={error} />{error && <Button variant="secondary" onClick={() => retry(revision + 1)}>{t('Réessayer', 'عاود المحاولة')}</Button>}</> : <>
+      <div className="admin-metrics bo-overview-metrics">{cards.map(({ label, value, change, icon: Icon, color }) => (
+        <article key={label} className="admin-metric" data-color={color}>
+          <div><span className="bo-metric-title"><i><Icon size={17} /></i>{label}</span><strong dir="auto">{value}</strong>
+          <small><b className={change > 0 ? 'positive' : change < 0 ? 'negative' : ''} dir="ltr">{change > 0 ? '+' : ''}{change}%</b> {t('vs période précédente', 'مقارنة بالفترة السابقة')}</small></div>
+        </article>
+      ))}</div>
+      {view === 'overview' ? <>
+        <div className="admin-dashboard-grid bo-chart-grid">
+          <RevenueChart daily={data.daily} total={data.metrics.revenue} days={days} />
+          <OrderStatusChart statuses={data.statuses} />
+        </div>
+        <WorkbenchQueues navigate={navigate} />
+        <div className="admin-arrival-summary"><article><span>{t('Arrivages Standard actifs', 'شحنات Standard النشطة')}</span><strong>{data.metrics.activeStandardArrivals}</strong><Calendar /></article><article><span>{t('Arrivages Express actifs', 'شحنات Express النشطة')}</span><strong>{data.metrics.activeExpressArrivals}</strong><Truck /></article></div>
+        <section className="admin-card bo-recent-orders"><div className="bo-recent-header"><CardTitle title={t('Dernières commandes', 'آخر الطلبات')} subtitle={t('Flux opérationnel', 'متابعة العمليات')} />{canOpenOrders && <Button variant="secondary" onClick={() => navigate('orders')}>{t('Toutes les commandes', 'الطلبات الكل')}</Button>}</div>
+          <DataTable rows={data.recentOrders} emptyText={t('Aucune commande récente.', 'ما فماش طلبات حديثة.')} rowActions={canOpenOrders ? [{ key: 'open', label: t('Voir la commande', 'شوف الطلب'), icon: <Eye size={16} />, onRun: (row: any) => navigate('orders', undefined, row.id) }] : undefined} columns={[
+            { key: 'order_number', label: t('Référence', 'المرجع') }, { key: 'customer_name', label: t('Client', 'الحريف') },
+            { key: 'status', label: t('Statut', 'الحالة'), render: (row: any) => <StatusBadge status={row.status} /> },
+            { key: 'total_tnd', label: t('Total', 'المجموع'), render: (row: any) => formatMoney(row.total_tnd) },
+            { key: 'created_at', label: t('Date', 'التاريخ'), render: (row: any) => formatDate(row.created_at, true) },
+          ]} />
+        </section>
+      </> : <div className="admin-dashboard-grid bo-analytics">
+        <section className="admin-card admin-card--wide"><CardTitle title={t('Plateformes sources', 'منصّات المصدر')} subtitle={t('Commandes & revenu', 'الطلبات والمداخيل')} /><div className="admin-source-list">{data.sources.length ? data.sources.map((row: any) => <div key={row.source}><span>{row.source}</span><strong>{row.orders} {t('commandes', 'طلب')}</strong><b>{formatMoney(row.revenue)}</b></div>) : <ChartEmpty />}</div></section>
+        <FunnelCard funnel={data.funnel} days={days} />
+        <AyWebsOperationsCard summary={data.aywebs} days={days} />
+      </div>}
+    </>}
+  </div>;
 };
 
 const AyWebsOperationsCard: React.FC<{ summary: any; days: number }> = ({ summary, days }) => {
@@ -419,6 +466,7 @@ const ContentPage: React.FC<{ resource: string; canWrite: boolean }> = ({ resour
   const definition = resources[resource]; const [rows, setRows] = useState<any[]>([]); const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [loading, setLoading] = useState(true); const [modal, setModal] = useState(false);
   const [sort, setSort] = useState<{ key: string; direction: 'asc' | 'desc' } | undefined>(undefined);
+  const [isBoard, setBoard] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [editing, setEditing] = useState<any>(null); const [form, setForm] = useState<Record<string, any>>({ ...definition.defaults }); const [busy, setBusy] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<any>(null); const [toast, setToast] = useState<{ message: string; tone: 'success' | 'error' } | null>(null);
@@ -436,7 +484,7 @@ const ContentPage: React.FC<{ resource: string; canWrite: boolean }> = ({ resour
     finally { setLoading(false); }
   }, [definition.endpoint, pagination.page, search, status, sort]);
   const toggleSort = (key: string) => setSort((current) => (current?.key === key ? { key, direction: current.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' }));
-  useEffect(() => { const timer = window.setTimeout(() => load(1), 250); return () => clearTimeout(timer); }, [search, status]);
+  useEffect(() => { const timer = window.setTimeout(() => load(1), 250); return () => clearTimeout(timer); }, [resource, search, status, sort]);
   const openCreate = () => { setEditing(null); setForm({ ...definition.defaults }); setModal(true); };
   const openEdit = (row: any) => { setEditing(row); setForm({ ...definition.defaults, ...row }); setModal(true); };
   const save = async () => {
@@ -463,10 +511,17 @@ const ContentPage: React.FC<{ resource: string; canWrite: boolean }> = ({ resour
   const statusOptions = definition.fields.find((field) => field.key === 'status')?.options || [];
   return <>
     <PageHeader title={definition.title} description={definition.description} action={creatable ? <Button onClick={openCreate}><Plus size={18} />Nouveau</Button> : undefined} />
+    {resource === 'news' && <OfficeViewSwitch label="Vues de publication" value={isBoard ? 'board' : 'table'} onChange={view => setBoard(view === 'board')} options={[
+      { value: 'table', label: 'Tableau', icon: 'table' }, { value: 'board', label: 'Kanban de publication', icon: 'kanban' },
+    ]} />}
     <section className="admin-list-card"><div className="admin-list-toolbar"><Search value={search} onChange={setSearch} /><Filters>{statusOptions.length > 0 && <Select value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: '', label: 'Tous les statuts' }, ...options(statusOptions)]} />}</Filters></div>
-      <DataTable columns={columns.map((column) => ({ ...column, sortable: sortableOf(column.key) }))} rows={rows} loading={loading}
+      {resource === 'news' && isBoard ? <div className="bo-editorial-board"><StatusBoard rows={rows} loading={loading} error={loadError} onRetry={() => void load()} paged
+        lanes={options(statusOptions)} statusOf={row => String(displayStatus(row))} rowKey={row => String(row.id)} renderCard={row => <>
+          <strong>{row[definition.keyField]}</strong><p>{formatDate(row.updated_at, true)}</p>
+          {writable && <Button variant="secondary" onClick={() => openEdit(row)}><Pencil size={14} /> Modifier</Button>}
+        </>} /></div> : <DataTable columns={columns.map((column) => ({ ...column, sortable: sortableOf(column.key) }))} rows={rows} loading={loading}
         error={loadError || undefined} onRetry={() => void load()} onSortChange={toggleSort} sort={sort}
-        emptyText={`Aucun ${definition.singular} pour le moment.`} onRowClick={writable ? openEdit : undefined} />
+        emptyText={`Aucun ${definition.singular} pour le moment.`} onRowClick={writable ? openEdit : undefined} />}
       <Pagination {...pagination} onChange={(page) => load(page)} />
     </section>
     <Modal open={modal} title={`${editing ? 'Modifier' : 'Créer'} ${definition.singular}`} onClose={() => setModal(false)} wide><ResourceForm definition={definition} value={form} onChange={setForm} onSubmit={save} busy={busy} /></Modal>
@@ -558,10 +613,28 @@ const OrderPipeline: React.FC<{ status: string }> = ({ status }) => {
 
 const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean; initialStatus?: string; focusedId?: string }> = ({ canWrite, canPay, initialStatus, focusedId }) => {
   const [rows, setRows] = useState<any[]>([]); const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 }); const [search, setSearch] = useState(''); const [status, setStatus] = useState(initialStatus || ''); const [paymentStatus, setPaymentStatus] = useState('');
+  const t = useOfficeText();
+  const [ordersView, setOrdersView] = useState<'orders' | 'invoices'>('orders');
+  const [days, setDays] = useState('');
+  const sequence = useRef(0);
   const [loading, setLoading] = useState(true); const [selected, setSelected] = useState<any>(null); const [detailLoading, setDetailLoading] = useState(false); const [toast, setToast] = useState<any>(null); const [busy, setBusy] = useState(false);
   const [deliveryDraft,setDeliveryDraft]=useState({status:'PENDING',carrier:'',tracking_number:'',tracking_url:''});
-  const load = useCallback(async (page = 1) => { setLoading(true); try { const result = await adminApi<any>(`/orders?${queryString({ page, pageSize: 20, search, status, payment_status:paymentStatus })}`); setRows(result.data); setPagination(result.pagination); } catch (e: any) { setToast({message:e.message,tone:'error'}); } finally { setLoading(false); } }, [search,status,paymentStatus]);
-  useEffect(() => { const timer = setTimeout(() => load(), 250); return () => clearTimeout(timer); }, [search,status,paymentStatus]);
+  const load = useCallback(async (page = 1) => {
+    const ticket = ++sequence.current;
+    setLoading(true);
+    try {
+      const result = await adminApi<any>(`/orders?${queryString({ page, pageSize: 20, search, status, payment_status: paymentStatus, days, invoice: ordersView === 'invoices' ? 'issued' : '' })}`);
+      if (ticket === sequence.current) { setRows(result.data); setPagination(result.pagination); }
+    } catch (e: any) {
+      if (ticket === sequence.current) { setRows([]); setToast({ message: e.message, tone: 'error' }); }
+    } finally { if (ticket === sequence.current) setLoading(false); }
+  }, [search, status, paymentStatus, days, ordersView]);
+  useEffect(() => {
+    setLoading(true);
+    const timer = window.setTimeout(() => void load(), 250);
+    return () => { ++sequence.current; window.clearTimeout(timer); };
+  }, [load]);
+  useEffect(() => { setStatus(initialStatus || ''); if (initialStatus) setOrdersView('orders'); }, [initialStatus]);
   const open = async (row: any) => { setSelected(row); setDetailLoading(true); try { const detail=(await adminApi<any>(`/orders/${row.id}`)).data; setSelected(detail); setDeliveryDraft({status:detail.delivery?.status||'PENDING',carrier:detail.delivery?.carrier||'',tracking_number:detail.delivery?.tracking_number||'',tracking_url:detail.delivery?.tracking_url||''}); } catch (e: any) { setToast({message:e.message,tone:'error'}); } finally { setDetailLoading(false); } };
   // Notification « Nouvelle commande » (12/11) : `?focus=<id>` ouvre la fiche de la commande.
   const focusedOnce = useRef('');
@@ -570,13 +643,20 @@ const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean; initialStatus?:
   const changePayment = async (next: string) => { if (!selected) return; setBusy(true); try { await adminApi(`/orders/${selected.id}/payment`, {method:'PUT',body:JSON.stringify({status:next})}); await open(selected); await load(pagination.page); setToast({message:'Paiement mis à jour.',tone:'success'}); }catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);} };
   const [reviewNote, setReviewNote] = useState('');
   const reviewDeposit = async (decision: 'approve' | 'reject') => { if (!selected || busy) return; setBusy(true); try { await adminApi<any>(`/orders/${selected.id}/deposit/review`, { method:'POST', body: JSON.stringify({ decision, note: reviewNote }) }); await open(selected); await load(pagination.page); setReviewNote(''); setToast({ message: decision === 'approve' ? 'Justificatif validé — paiement et commande confirmés.' : 'Justificatif refusé — le client peut le renvoyer.', tone:'success'}); } catch(e:any){setToast({message:e.message,tone:'error'});} finally{setBusy(false);} };
-  const updateDelivery=async()=>{if(!selected||busy)return;setBusy(true);try{await adminApi(`/orders/${selected.id}/delivery`,{method:'PUT',body:JSON.stringify(deliveryDraft)});await open(selected);await load(pagination.page);setToast({message:'Livraison et suivi synchronisés.',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
-  const issueInvoice=async()=>{if(!selected||busy)return;setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/issue`,{method:'POST'});await open(selected);setToast({message:`Facture ${r.data?.invoiceNumber} émise.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
+  const updateDelivery=async()=>{if(!selected||busy)return;setBusy(true);try{await adminApi(`/orders/${selected.id}/delivery`,{method:'PUT',body:JSON.stringify(trackingCarrier(deliveryDraft.carrier) ? { status: deliveryDraft.status, carrier: deliveryDraft.carrier, tracking_number: deliveryDraft.tracking_number } : deliveryDraft)});await open(selected);await load(pagination.page);setToast({message:'Livraison et suivi synchronisés.',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
+  const issueInvoice=async()=>{if(!selected||busy)return;setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/issue`,{method:'POST'});await open(selected);await load(pagination.page);setToast({message:`Facture ${r.data?.invoiceNumber} émise.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
   return <>
-    <PageHeader title="Commandes" description="OMS persistant : clients, articles, paiements, livraisons et historique immuable." action={<a className="admin-button admin-button--secondary" href="/api/admin/reports/orders.csv" target="_blank" rel="noopener noreferrer">Exporter CSV</a>} />
-    <OrderKpis active={status} onSelect={setStatus} />
-    <section className="admin-list-card"><div className="admin-list-toolbar"><Search value={search} onChange={setSearch} placeholder="Référence, client ou téléphone…"/><Select value={status} onChange={(e)=>setStatus(e.target.value)} options={[{value:'',label:'Tous les statuts'},...options(['CREATED','AWAITING_DEPOSIT','AWAITING_PAYMENT_VERIFICATION','CONFIRMED','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','CANCELLED'])]} /><Select value={paymentStatus} onChange={(e)=>setPaymentStatus(e.target.value)} options={[{value:'',label:'Tous les paiements'},...options(['PENDING','PENDING_VERIFICATION','PAID','PARTIALLY_PAID','FAILED','REJECTED','REFUNDED'])]} /></div>
-      <DataTable rows={rows} loading={loading} onRowClick={open} columns={[
+    <PageHeader title={t('Commandes & factures', 'الطلبات والفواتير')} description={t('Suivez les commandes, les paiements et les factures émises.', 'تابع الطلبات والدفوعات والفواتير الصادرة.')} action={ordersView === 'orders' && <a className="admin-button admin-button--secondary" href="/api/admin/reports/orders.csv" target="_blank" rel="noopener noreferrer">{t('Exporter les commandes (CSV)', 'صدّر الطلبات (CSV)')}</a>} />
+    <OfficeViewSwitch label={t('Vues des commandes', 'طرق عرض الطلبات')} value={ordersView} onChange={view => { setOrdersView(view); if (view === 'invoices') { setStatus(''); setPaymentStatus(''); } }} options={[
+      { value: 'orders', label: t('Commandes', 'الطلبات'), icon: 'table' }, { value: 'invoices', label: t('Factures émises', 'الفواتير الصادرة'), icon: 'pdf' },
+    ]} />
+    {ordersView === 'orders' && <OrderKpis active={status} onSelect={setStatus} />}
+    <section className="admin-list-card"><OfficeListToolbar label={t('Filtrer la liste', 'فلترة القائمة')} trailing={Boolean(search || status || paymentStatus || days) && <Button variant="ghost" onClick={() => { setSearch(''); setStatus(''); setPaymentStatus(''); setDays(''); }}>{t('Réinitialiser', 'صفّر الفلاتر')}</Button>}><Search value={search} onChange={setSearch} placeholder={t('Référence, facture, client ou téléphone…', 'ابحث بالمرجع أو الفاتورة أو الهاتف…')}/><Select value={status} onChange={(e)=>setStatus(e.target.value)} options={[{value:'',label:'Tous les statuts'},...options(['CREATED','AWAITING_DEPOSIT','AWAITING_PAYMENT_VERIFICATION','CONFIRMED','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','CANCELLED'])]} /><Select value={paymentStatus} onChange={(e)=>setPaymentStatus(e.target.value)} options={[{value:'',label:'Tous les paiements'},...options(['PENDING','PENDING_VERIFICATION','PAID','PARTIALLY_PAID','FAILED','REJECTED','REFUNDED'])]} /><Select value={days} onChange={event => setDays(event.target.value)} options={[{value:'',label:t('Toutes les dates', 'كل التواريخ')}, ...['7','30','90'].map(value => ({ value, label: t(`${value} derniers jours`, `آخر ${value} يوم`) }))]} /></OfficeListToolbar>
+      <DataTable rows={rows} loading={loading} onRowClick={open} emptyText={ordersView === 'invoices' ? t('Aucune facture émise pour ces filtres.', 'ما فماش فواتير صادرة بالفلاتر هاذم.') : undefined} rowActions={[
+        { key: 'open', label: t('Voir la commande', 'شوف الطلب'), icon: <OfficeIcon name="view" />, hideLabel: true, onRun: open },
+        ...(ordersView === 'invoices' ? [{ key: 'pdf', label: t('PDF de la facture', 'فاتورة PDF'), icon: <OfficeIcon name="pdf" />, hideLabel: true, show: (row: any) => Boolean(row.invoice_pdf_ready), onRun: (row: any) => window.open(`/api/admin/orders/${encodeURIComponent(row.id)}/invoice`, '_blank', 'noopener,noreferrer') }] : []),
+      ]} columns={[
+        ...(ordersView === 'invoices' ? [{ key: 'invoice_number', label: t('N° de facture', 'رقم الفاتورة') }, { key: 'invoice_issued_at', label: t('Émise le', 'تاريخ الإصدار'), render: (row: any) => formatDate(row.invoice_issued_at) }] : []),
         {key:'order_number',label:'Commande',render:(row)=><div><strong>{row.order_number}</strong><small className="admin-block-small">{formatDate(row.created_at,true)}</small></div>},
         {key:'customer_name',label:'Client',render:(row)=><div><strong>{row.customer_name}</strong><small className="admin-block-small">{row.customer_phone}</small></div>},
         {key:'source',label:'Source'}, {key:'status',label:'Statut',render:(row)=><StatusBadge status={row.status}/>}, {key:'payment_status',label:'Paiement',render:(row)=><StatusBadge status={row.payment_status}/>},
@@ -617,16 +697,17 @@ const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean; initialStatus?:
         </div>}
         {selected.payment_status==='PAID'&&<div style={{marginTop:12,display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
           <p className="admin-block-small" style={{margin:0}}>Facture : {selected.invoice?.invoice_number||'non émise'}</p>
+          {selected.invoice?.status === 'ISSUED' && selected.invoice?.pdf_ready && <a className="admin-button admin-button--secondary" href={`/api/admin/orders/${encodeURIComponent(selected.id)}/invoice`} target="_blank" rel="noopener noreferrer"><OfficeIcon name="pdf" /> PDF de la facture</a>}
           {canPay&&!selected.invoice&&<button className="admin-button admin-button--primary" disabled={busy} onClick={issueInvoice}>Émettre la facture</button>}
           {canPay&&selected.invoice&&<button className="admin-button admin-button--secondary" disabled={busy} onClick={async()=>{setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/resend`,{method:'POST'});setToast({message:`Facture ${r.data?.invoiceNumber} ${r.data?.mail?.delivered?'renvoyée par e-mail':'régénérée'}.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}}}><RefreshCw size={16}/> Régénérer / renvoyer</button>}
         </div>}
       </section>}
-      <section className="admin-list-card" style={{marginBottom:16}}><h3>Expédition & suivi</h3><div className="admin-order-controls">
-        <Field label="Étape"><Select disabled={!canWrite||busy} value={deliveryDraft.status} onChange={(e)=>setDeliveryDraft({...deliveryDraft,status:e.target.value})} options={options(['PENDING','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED'])}/></Field>
-        <Field label="Transporteur"><input value={deliveryDraft.carrier} onChange={(e)=>setDeliveryDraft({...deliveryDraft,carrier:e.target.value})} placeholder="Transporteur réel"/></Field>
-        <Field label="N° de suivi"><input value={deliveryDraft.tracking_number} onChange={(e)=>setDeliveryDraft({...deliveryDraft,tracking_number:e.target.value})} placeholder="Numéro fourni par le transporteur"/></Field>
-        <Field label="URL HTTPS (optionnelle)"><input value={deliveryDraft.tracking_url} onChange={(e)=>setDeliveryDraft({...deliveryDraft,tracking_url:e.target.value})} placeholder="https://…"/></Field>
-      </div><button className="admin-button admin-button--primary" disabled={!canWrite||busy} onClick={updateDelivery}>Enregistrer la livraison</button><p className="admin-block-small">Le suivi client n’apparaît qu’après SHIPPED. Transporteur et numéro sont alors obligatoires.</p></section>
+      <section className="admin-list-card office-shipping" style={{marginBottom:16}}><h3>{t('Expédition & suivi', 'الشحن والتتبّع')}</h3><p className="admin-muted">{t('Le suivi du transporteur ne modifie pas la commande et ne crée pas d’étiquette.', 'التتبّع عند الناقل ما يبدّلش الطلب وما يصدرش ملصق.')}</p><div className="admin-order-controls">
+        <Field label="Étape"><Select aria-label="Étape de livraison" disabled={!canWrite||busy} value={deliveryDraft.status} onChange={(e)=>setDeliveryDraft({...deliveryDraft,status:e.target.value})} options={options(['PENDING','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED'])}/></Field>
+        <Field label="Transporteur"><input list="delivery-carriers" disabled={!canWrite||busy} maxLength={100} value={deliveryDraft.carrier} onChange={(e)=>setDeliveryDraft({...deliveryDraft,carrier:e.target.value,tracking_url:''})} placeholder="Transporteur réel"/><datalist id="delivery-carriers">{TRACKING_CARRIERS.map(carrier => <option key={carrier} value={carrier} />)}</datalist></Field>
+        <Field label="N° de suivi"><input disabled={!canWrite||busy} maxLength={100} value={deliveryDraft.tracking_number} onChange={(e)=>setDeliveryDraft({...deliveryDraft,tracking_number:e.target.value})} placeholder="Numéro fourni par le transporteur"/></Field>
+        {trackingCarrier(deliveryDraft.carrier) ? <Field label="Lien officiel généré"><input readOnly value={carrierTrackingUrl(deliveryDraft.carrier, deliveryDraft.tracking_number) || ''} placeholder="Saisissez la référence du transporteur" /></Field> : <Field label="URL HTTPS (optionnelle)"><input disabled={!canWrite||busy} maxLength={1000} value={deliveryDraft.tracking_url} onChange={(e)=>setDeliveryDraft({...deliveryDraft,tracking_url:e.target.value})} placeholder="https://…"/></Field>}
+      </div><button className="admin-button admin-button--primary" disabled={!canWrite||busy} onClick={updateDelivery}>Enregistrer la livraison</button><p className="admin-block-small">Le suivi client n’apparaît qu’après SHIPPED. Transporteur et numéro sont alors obligatoires.</p>{selected.dhlTrackingAvailable && <DhlTrackingCheck key={`${selected.id}-${selected.delivery?.tracking_number}`} orderId={selected.id} />}</section>
       <h3>Articles</h3><DataTable<any> rows={selected.items||[]} columns={[
         {key:'product_name',label:'Produit',render:(row)=><div><strong>{row.product_name}</strong>{(row.requested_size||row.requested_color)&&<small className="admin-block-small">{[row.requested_size&&`Taille : ${row.requested_size}`,row.requested_color&&`Couleur : ${row.requested_color}`].filter(Boolean).join(' · ')}</small>}{row.customer_note&&<small className="admin-block-small">Note client : {row.customer_note}</small>}</div>},
         {key:'source_url',label:'Lien client',render:(row)=><div>{/^https?:\/\//i.test(row.source_url||'')?<a href={row.source_url} target="_blank" rel="noreferrer" className="admin-link">Ouvrir le produit <ExternalLink size={14}/></a>:<span>—</span>}{/^https?:\/\//i.test(row.reference_url||'')&&row.reference_url!==row.source_url&&<a href={row.reference_url} target="_blank" rel="noreferrer" className="admin-block-small">Référence Lens <ExternalLink size={14}/></a>}{(row.reference_url||row.price_verification_status==='PENDING_MANUAL')&&<small className="admin-block-small"><StatusBadge status={row.price_verification_status||'VERIFIED'}/></small>}</div>},
@@ -819,20 +900,19 @@ const AssistantSupportPage: React.FC<{ canWrite: boolean; requestedId?: string }
 const CustomersPage: React.FC<{ canWrite?: boolean }> = ({canWrite=false}) => {
   const [tab,setTab]=useState<'accounts'|'files'>('accounts');
   const [rows,setRows]=useState<any[]>([]); const [page,setPage]=useState({page:1,totalPages:1,total:0}); const [search,setSearch]=useState(''); const [loading,setLoading]=useState(true); const [selected,setSelected]=useState<any>(null);
-  const [accRows,setAccRows]=useState<any[]>([]); const [accPage,setAccPage]=useState({page:1,totalPages:1,total:0}); const [accSearch,setAccSearch]=useState(''); const [accLoading,setAccLoading]=useState(true); const [accSelected,setAccSelected]=useState<any>(null); const [statusBusy,setStatusBusy]=useState(false);
+  const [accRows,setAccRows]=useState<any[]>([]); const [accPage,setAccPage]=useState({page:1,totalPages:1,total:0}); const [accSearch,setAccSearch]=useState(''); const [accStatus,setAccStatus]=useState(''); const [accLoading,setAccLoading]=useState(true); const [accSelected,setAccSelected]=useState<any>(null); const [statusBusy,setStatusBusy]=useState(false);
   const load=useCallback(async(p=1)=>{setLoading(true);try{const r=await adminApi<any>(`/customers?${queryString({page:p,pageSize:20,search})}`);setRows(r.data);setPage(r.pagination);}finally{setLoading(false);}},[search]);
-  const loadAccounts=useCallback(async(p=1)=>{setAccLoading(true);try{const r=await adminApi<any>(`/customer-accounts?${queryString({page:p,pageSize:20,search:accSearch})}`);setAccRows(r.data);setAccPage(r.pagination);}finally{setAccLoading(false);}},[accSearch]);
+  const loadAccounts=useCallback(async(p=1)=>{setAccLoading(true);try{const r=await adminApi<any>(`/customer-accounts?${queryString({page:p,pageSize:20,search:accSearch,status:accStatus})}`);setAccRows(r.data);setAccPage(r.pagination);}finally{setAccLoading(false);}},[accSearch,accStatus]);
   useEffect(()=>{const t=setTimeout(()=>load(),250);return()=>clearTimeout(t);},[search]);
-  useEffect(()=>{const t=setTimeout(()=>loadAccounts(),250);return()=>clearTimeout(t);},[accSearch]);
+  useEffect(()=>{const t=setTimeout(()=>loadAccounts(),250);return()=>clearTimeout(t);},[accSearch,accStatus]);
   const open=async(row:any)=>setSelected((await adminApi<any>(`/customers/${row.id}`)).data);
   const openAccount=async(row:any)=>setAccSelected((await adminApi<any>(`/customer-accounts/${row.id}`)).data);
   const changeAccountStatus=async(status:'ACTIVE'|'BLOCKED')=>{if(!accSelected||statusBusy)return;setStatusBusy(true);try{const r=await adminApi<any>(`/customer-accounts/${accSelected.id}/status`,{method:'PUT',body:JSON.stringify({status})});setAccSelected({...accSelected,status:r.data.status});loadAccounts(accPage.page||1);}finally{setStatusBusy(false);}};
   return <><PageHeader title="Clients" description="Comptes enregistrés (Google / SMS) et fiches historiques de commande, réunis dans un seul espace."/>
-    <div style={{display:'flex',gap:8,marginBottom:16}}>
-      <button type="button" className="admin-button admin-button--secondary" aria-pressed={tab==='accounts'} onClick={()=>setTab('accounts')}>Comptes enregistrés</button>
-      <button type="button" className="admin-button admin-button--secondary" aria-pressed={tab==='files'} onClick={()=>setTab('files')}>Fiches de commande</button>
-    </div>
-    {tab==='accounts'&&<><section className="admin-list-card"><div className="admin-list-toolbar"><Search value={accSearch} onChange={setAccSearch} placeholder="Nom, e-mail ou téléphone…"/></div><DataTable rows={accRows} loading={accLoading} onRowClick={openAccount} columns={[
+    <OfficeViewSwitch label="Vues des clients" value={tab} onChange={setTab} options={[
+      { value: 'accounts', label: 'Comptes enregistrés', icon: 'crm' }, { value: 'files', label: 'Fiches de commande', icon: 'table' },
+    ]} />
+    {tab==='accounts'&&<><section className="admin-list-card"><div className="admin-list-toolbar"><Search value={accSearch} onChange={setAccSearch} placeholder="Nom, e-mail ou téléphone…"/><Select value={accStatus} onChange={event => setAccStatus(event.target.value)} options={[{value:'',label:'Tous les statuts'},{value:'ACTIVE',label:'Actifs'},{value:'BLOCKED',label:'Bloqués'}]}/></div><DataTable rows={accRows} loading={accLoading} onRowClick={openAccount} rowActions={[{key:'view',label:'Voir le compte',icon:<OfficeIcon name="view"/>,hideLabel:true,onRun:openAccount}]} columns={[
       {key:'display_name',label:'Identité',render:(r)=><div><strong>{r.display_name}</strong><small className="admin-block-small">{r.email||'Compte SMS'}</small></div>},
       {key:'phone',label:'Téléphone',render:(r)=><div>{r.phone||'—'}<small className="admin-block-small">{r.phone_verified?'Vérifié par SMS':'Non vérifié'}</small></div>},
       {key:'status',label:'Statut',render:(r)=><StatusBadge status={r.status}/>},
@@ -843,7 +923,7 @@ const CustomersPage: React.FC<{ canWrite?: boolean }> = ({canWrite=false}) => {
       {canWrite&&<div style={{display:'flex',gap:8,margin:'14px 0'}}>{accSelected.status==='ACTIVE'?<button className="admin-button admin-button--danger" disabled={statusBusy} onClick={()=>changeAccountStatus('BLOCKED')}>Bloquer le compte</button>:<button className="admin-button admin-button--primary" disabled={statusBusy} onClick={()=>changeAccountStatus('ACTIVE')}>Réactiver le compte</button>}</div>}
       <h3>Adresses enregistrées</h3>{(accSelected.addresses||[]).length?<DataTable<any> rows={accSelected.addresses} columns={[{key:'label',label:'Libellé'},{key:'recipient_name',label:'Destinataire'},{key:'phone',label:'Téléphone'},{key:'governorate',label:'Gouvernorat'},{key:'address_line',label:'Adresse'}]}/>:<div className="admin-empty"><User size={26}/><strong>Aucune adresse</strong><span>Le client n’a pas encore enregistré d’adresse.</span></div>}
       <h3>Commandes du compte</h3><DataTable<any> rows={accSelected.orders||[]} columns={[{key:'order_number',label:'Commande'},{key:'status',label:'Statut',render:(r)=><StatusBadge status={r.status}/>},{key:'payment_status',label:'Paiement',render:(r)=><StatusBadge status={r.payment_status}/>},{key:'total_tnd',label:'Total',render:(r)=>formatMoney(r.total_tnd)},{key:'created_at',label:'Date',render:(r)=>formatDate(r.created_at,true)}]}/></>}</Modal></>}
-    {tab==='files'&&<><section className="admin-list-card"><div className="admin-list-toolbar"><Search value={search} onChange={setSearch} placeholder="Nom ou téléphone…"/></div><DataTable rows={rows} loading={loading} onRowClick={open} columns={[
+    {tab==='files'&&<><section className="admin-list-card"><div className="admin-list-toolbar"><Search value={search} onChange={setSearch} placeholder="Nom ou téléphone…"/></div><DataTable rows={rows} loading={loading} onRowClick={open} rowActions={[{key:'view',label:'Voir la fiche',icon:<OfficeIcon name="view"/>,hideLabel:true,onRun:open}]} columns={[
     {key:'name',label:'Client',render:(r)=><div><strong>{r.name}</strong><small className="admin-block-small">{r.phone}</small></div>},
     {key:'account_id',label:'Compte client',render:(r)=><div>{r.account_id?<><StatusBadge status={r.phone_verified_at?'VERIFIED':'ACTIVE'}/><small className="admin-block-small">{r.account_email||'Connexion SMS'}</small></>:<><StatusBadge status="UNLINKED"/><small className="admin-block-small">Aucun compte lié</small></>}</div>},
     {key:'governorate',label:'Gouvernorat'},{key:'order_count',label:'Commandes'},{key:'lifetime_value',label:'Valeur client',render:(r)=>formatMoney(r.lifetime_value)},{key:'registered_at',label:'Client depuis',render:(r)=>formatDate(r.registered_at)}]}/><Pagination {...page} onChange={load}/></section>
@@ -920,15 +1000,15 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const add=async()=>{setBusy(true);try{await adminApi('/expenses',{method:'POST',body:JSON.stringify({...form,amountTnd:Number(form.amountTnd)})});setForm({label:'',category:'OTHER',amountTnd:'',expenseDate:today,notes:''});await load();setToast({message:'Dépense enregistrée.',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
   const remove=async(id:string)=>{try{await adminApi(`/expenses/${id}`,{method:'DELETE'});await load();}catch(e:any){setToast({message:e.message,tone:'error'});}};
   const maxMonthly=Math.max(1,...((report?.monthly||[]) as any[]).flatMap(m=>[m.income,m.expenses]));
-  return <><PageHeader title="Rapports financiers" description="Revenus encaissés (acomptes confirmés), dépenses et bénéfice net — calculés depuis la base." action={<div className="admin-report-range"><input type="date" value={from} aria-label="Début de la période" title="Début de la période" onChange={e=>setFrom(e.target.value)}/><span>→</span><input type="date" value={to} aria-label="Fin de la période" title="Fin de la période" onChange={e=>setTo(e.target.value)}/></div>}/>
+  return <><PageHeader title="Rapports financiers" description="Indicateurs opérationnels : paiements confirmés et dépenses saisies. Ce rapport n’est pas un résultat comptable." action={<div className="admin-report-range"><input type="date" value={from} aria-label="Début de la période" title="Début de la période" onChange={e=>setFrom(e.target.value)}/><span>→</span><input type="date" value={to} aria-label="Fin de la période" title="Fin de la période" onChange={e=>setTo(e.target.value)}/></div>}/>
   {report&&<div className="admin-kpi-grid">
-    <section className="admin-kpi"><span>Revenus encaissés</span><strong className="is-income">{formatMoney(report.income)}</strong><small>{report.incomeCount} acompte(s) confirmé(s)</small></section>
+    <section className="admin-kpi"><span>Paiements confirmés</span><strong className="is-income">{formatMoney(report.income)}</strong><small>{report.incomeCount} paiement(s) enregistré(s)</small></section>
     <section className="admin-kpi"><span>Dépenses</span><strong className="is-expense">{formatMoney(report.expenses)}</strong><small>{report.expensesCount} ligne(s)</small></section>
-    <section className="admin-kpi"><span>Bénéfice net</span><strong className={report.profit>=0?'is-income':'is-expense'}>{formatMoney(report.profit)}</strong><small>Revenus − dépenses</small></section>
+    <section className="admin-kpi"><span>Écart opérationnel</span><strong className={report.profit>=0?'is-income':'is-expense'}>{formatMoney(report.profit)}</strong><small>Paiements confirmés − dépenses saisies</small></section>
     <section className="admin-kpi"><span>Acomptes en attente</span><strong>{formatMoney(report.pendingDeposits?.total)}</strong><small>{report.pendingDeposits?.count} commande(s) non confirmée(s)</small></section>
   </div>}
   <div className="admin-report-grid">
-    <section className="admin-card"><CardTitle title="6 derniers mois" subtitle="Revenus vs dépenses (TND)"/><div className="admin-chart">{((report?.monthly||[]) as any[]).map(m=><div key={m.month} className="admin-chart-col"><div className="admin-chart-bars"><i className="is-income" style={{height:`${Math.max(2,Math.round((m.income/maxMonthly)*110))}px`}} title={`Revenus ${formatMoney(m.income)}`}/><i className="is-expense" style={{height:`${Math.max(2,Math.round((m.expenses/maxMonthly)*110))}px`}} title={`Dépenses ${formatMoney(m.expenses)}`}/></div><span>{m.month.slice(5)}/{m.month.slice(2,4)}</span></div>)}<div className="admin-chart-legend"><i className="is-income"/>Revenus<i className="is-expense"/>Dépenses</div></div></section>
+    <section className="admin-card"><CardTitle title="6 derniers mois" subtitle="Paiements confirmés et dépenses saisies (TND)"/><div className="admin-chart">{((report?.monthly||[]) as any[]).map(m=><div key={m.month} className="admin-chart-col"><div className="admin-chart-bars"><i className="is-income" style={{height:`${Math.max(2,Math.round((m.income/maxMonthly)*110))}px`}} title={`Revenus ${formatMoney(m.income)}`}/><i className="is-expense" style={{height:`${Math.max(2,Math.round((m.expenses/maxMonthly)*110))}px`}} title={`Dépenses ${formatMoney(m.expenses)}`}/></div><span>{m.month.slice(5)}/{m.month.slice(2,4)}</span></div>)}<div className="admin-chart-legend"><i className="is-income"/>Revenus<i className="is-expense"/>Dépenses</div></div></section>
       <section className="admin-card"><CardTitle title="Dépenses par catégorie" subtitle="Période sélectionnée"/><div className="admin-settings-list">{((report?.expensesByCategory||[]) as any[]).length===0&&<p className="admin-block-small">Aucune dépense sur la période.</p>}{((report?.expensesByCategory||[]) as any[]).map(row=><div key={row.category} className="admin-cat-row"><span>{({ADS:'Publicité',SHIPPING:'Transport',STOCK:'Stock',SERVICES:'Services',SALARIES:'Salaires',FEES:'Frais',OTHER:'Autres'} as any)[row.category]||row.category}</span><strong>{formatMoney(row.total)}</strong></div>)}</div></section>
       {ayx&&<section className="admin-card"><CardTitle title="ZAYROVIX Lens · 7 derniers jours" subtitle="Usage du scan produit (image / lien / QR) — données anonymes"/>
         {ayx.providers&&<div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
@@ -1004,7 +1084,7 @@ const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout
   const { descriptorFor } = useBackOffice();
   const renderSection=(ctx:BackOfficeRenderContext)=>{
     const {section,requestedReview,focusedRecord,pendingMagazineDraft,openMagazineDraft,clearPendingMagazineDraft,can:has}=ctx;
-  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage navigate={ctx.navigate}/>;else if(section==='news')page=<MagazinePage canWrite={has('content:write')} pendingDraftId={pendingMagazineDraft||undefined} onPendingHandled={clearPendingMagazineDraft}/>;else if(section==='magazine-agent')page=<MagazineAgentPage canWrite={has('content:write')} onOpenMagazine={openMagazineDraft}/>;else if(section==='hero')page=<HeroSlidesManagePage canWrite={has('content:write')}/>;else if(section==='stories')page=<StoriesStudioPage canWrite={has('content:write')}/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='arrival-ingestion')page=<ArrivalIngestionPage canWrite={has('orders:write')} canManageStores={has('settings:write')}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')} initialStatus={requestedReview||undefined} focusedId={focusedRecord||undefined}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='lens-section')page=<LensSectionPage canWrite={has('content:write')}/>;else if(section==='home-sections')page=<HomeSectionsPage canWrite={has('content:write')}/>;else if(section==='home-featured')page=<HomeFeaturedPage canWrite={has('content:write')}/>;else if(section==='social')page=<SocialAdminPage canWrite={has('content:write')}/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='promos')page=<PromosPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='interface')page=<InterfaceStudio canWrite={has('settings:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;else if(section==='catalogue-products')page=<CatalogueProductsPage/>;else if(section==='catalogue-categories')page=<CatalogueCategoriesPage/>;else if(section==='catalogue-brands')page=<CatalogueBrandsPage/>;else if(section==='erp-employees')page=<ErpEmployeesPage canManage={has('users:write')}/>;else if(section==='erp-organization')page=<ErpOrganizationPage canManage={has('users:write')}/>;else if(section==='erp-permissions')page=<ErpPermissionsPage canManage={has('users:write')} role={user.role}/>;else if(section==='erp-audit')page=<ErpAuditPage onOpenLegacy={()=>ctx.navigate('audit')}/>;else if(section==='erp-events')page=<ErpEventsPage/>;else if(section==='erp-environment')page=<ErpEnvironmentPage/>;
+  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage navigate={ctx.navigate}/>;else if(section==='news')page=<MagazinePage canWrite={has('content:write')} pendingDraftId={pendingMagazineDraft||undefined} onPendingHandled={clearPendingMagazineDraft}/>;else if(section==='magazine-agent')page=<MagazineAgentPage canWrite={has('content:write')} onOpenMagazine={openMagazineDraft}/>;else if(section==='hero')page=<HeroSlidesManagePage canWrite={has('content:write')}/>;else if(section==='stories')page=<StoriesStudioPage canWrite={has('content:write')}/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='arrival-ingestion')page=<ArrivalIngestionPage canWrite={has('orders:write')} canManageStores={has('settings:write')}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')} initialStatus={requestedReview||undefined} focusedId={focusedRecord||undefined}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='lens-section')page=<LensSectionPage canWrite={has('content:write')}/>;else if(section==='home-sections')page=<HomeSectionsPage canWrite={has('content:write')}/>;else if(section==='home-featured')page=<HomeFeaturedPage canWrite={has('content:write')}/>;else if(section==='social')page=<SocialAdminPage canWrite={has('content:write')}/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='promos')page=<PromosPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<FinanceWorkspace navigate={ctx.navigate} canRead={has('reports:read')} renderReports={() => <ReportsPage canWrite={has('reports:write')}/>}/>;else if(section==='interface')page=<InterfaceStudio canWrite={has('settings:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;else if(section==='catalogue-products')page=<CatalogueProductsPage/>;else if(section==='catalogue-categories')page=<CatalogueCategoriesPage/>;else if(section==='catalogue-brands')page=<CatalogueBrandsPage/>;else if(section==='erp-employees')page=<ErpEmployeesPage canManage={has('users:write')}/>;else if(section==='erp-organization')page=<ErpOrganizationPage canManage={has('users:write')}/>;else if(section==='erp-permissions')page=<ErpPermissionsPage canManage={has('users:write')} role={user.role}/>;else if(section==='erp-audit')page=<ErpAuditPage onOpenLegacy={()=>ctx.navigate('audit')}/>;else if(section==='erp-events')page=<ErpEventsPage/>;else if(section==='erp-environment')page=<ErpEnvironmentPage/>;
     else if(section==='inventory')page=<InventoryStockPage/>;
     else if(section==='inventory-movements')page=<InventoryMovementsPage/>;
     else if(section==='inventory-stocktakes')page=<InventoryStocktakesPage/>;

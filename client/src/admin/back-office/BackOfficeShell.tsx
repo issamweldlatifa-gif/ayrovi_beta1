@@ -1,40 +1,7 @@
-/**
- * P2.0 — BackOfficeShell : la coquille unique de /admin.
- *
- * Elle s'ENROULE autour des écrans existants, elle ne les remplace pas :
- *  • la navigation vient de `/api/admin/back-office/navigation` (registre + permissions + statut
- *    de module) — plus aucune liste de modules écrite à la main dans le client ;
- *  • l'état `?section=` (deep links, bouton retour, `request=`/`tab=`) est conservé à
- *    l'identique : `pushUrlPreservingNavigation` et le `popstate` d'avant sont rejoués ici ;
- *  • la recherche globale et la palette ⌘K sont branchées sur le framework ;
- *  • si le framework ne répond pas, la coquille prévient et laisse travailler : aucune page
- *    n'est condamnée par un méta-endpoint indisponible.
- *
- * ── Modèle A « Console opérationnelle » (retenu le 2026-09-22) ────────────────────────────────
- * La coquille a été recomposée selon les conventions d'Amazon Seller Central, en gardant le
- * même contrat serveur (aucune section, aucun droit, aucun deep link n'a bougé) :
- *   1. BARRE 1 (encre) : identité, recherche globale, préférences, cloche, compte.
- *   2. BARRE 2 : les SERVICES — les groupes de la navigation serveur. Choisir un service ne
- *      change pas de contrat, il change de vue : c'est le même payload, filtré.
- *   3. RAIL (blanc) : uniquement les écrans du service actif. L'ancienne liste de 49 entrées
- *      obligeait à faire défiler un menu pour trouver un écran ; ici, trouver c'est lire une
- *      liste de 1 à 15 lignes.
- *   4. FIL D'ARIANE mince : le titre reste la propriété de l'écran (il n'est plus affiché deux
- *      fois — c'était l'un des défauts relevés).
- *   5. FILTRE DE DOMAINE : rendu seulement quand le service mélange réellement plusieurs
- *      domaines (Commerce, Contenu, Système). Ailleurs, c'est un contrôle qui ne filtre rien :
- *      il est retiré, et le filtre est remis à « Tous » pour ne jamais masquer un écran.
- *
- * Ce qui a été retiré, parce que c'était en trop (décision de revue, 2026-09-22) :
- *   • le bloc « Au quotidien », qui recopiait 4 écrans déjà présents en dessous (doublons visibles
- *     dans le rail : « Tableau de bord » et « Commandes » apparaissaient deux fois) ;
- *   • les pastilles « legacy » et « doublon » : vocabulaire d'atelier affiché à l'opérateur. La
- *     même information reste disponible — infobulle de l'entrée, et bandeau « ancienne surface »
- *     de l'écran concerné, qui dit quoi faire.
- */
+/** Shared Admin shell — the server provides destinations; the workspace rail organizes them. */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, Clipboard, Eye, FileText, Gift, Globe2, Grid, History, Home, Image, LayoutGrid, LensBox,
+  Bell, Calculator, Calendar, Camera, ChartLine, ChevronDown, CheckCircle2, Clipboard, Eye, FileText, Gift, Globe2, Grid, History, Home, Image, LayoutGrid, LensBox,
   LogOut, MapPin, Menu, MessageSquare, Package, PackageCheck, Palette, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X, Zap,
 } from '../../components/QatafoIcons';
 import { pushUrlPreservingNavigation } from '../../navigation/NavigationHistory';
@@ -44,6 +11,11 @@ import { AccountSecurity } from './AccountSecurity';
 import { CommandPalette, GlobalSearch } from './BackOfficeSearch';
 import { sectionFromAdminPath, useBackOffice, type BackOfficeNavItem } from './framework';
 import { availableGoShortcuts, resolveShortcut } from './shortcuts';
+import { buildOfficeWorkspaces, officeItemLabel, officeText } from './workspaces';
+import { OfficeIcon } from '../../design/admin/OfficeIcon';
+import { ConnectedButton, TeamConnections, useConnectedAccess } from './TeamConnections';
+import type { ConnectedTeam } from '../../../../shared/teamConnections';
+import { OfficeLanguageContext } from './OfficeLocale';
 
 export type BackOfficeRenderContext = {
   section: string;
@@ -96,9 +68,7 @@ export const BackOfficeShell: React.FC<{
   // `?focus=` ; les anciens liens « Nouvelle commande » portent `?order=`.
   const [focusedRecord, setFocusedRecord] = useState(initialParams.get('focus') || initialParams.get('order') || '');
   const [pendingMagazineDraft, setPendingMagazineDraft] = useState('');
-  const [domain, setDomain] = useState<string>('ALL');
-  /** Service choisi explicitement : `null` = on suit l'écran courant (deep links, palette, popstate). */
-  const [service, setService] = useState<string | null>(null);
+  const [workspaceChoice, setWorkspaceChoice] = useState<{ section: string; key: string | null } | null>(null);
   const [mobile, setMobile] = useState(false);
   const [profile, setProfile] = useState(false);
   const [security, setSecurity] = useState(false);
@@ -127,9 +97,12 @@ export const BackOfficeShell: React.FC<{
     try { return window.localStorage.getItem('zayrovi.bo.dir') === 'rtl' ? 'rtl' : 'ltr'; } catch { return 'ltr'; }
   });
 
+  const lang = dir === 'rtl' ? 'ar' : 'fr';
+  const t = (fr: string, ar: string) => officeText(lang, fr, ar);
+
   const can = useCallback((permission: string) => identity.permissions.includes(permission as never), [identity.permissions]);
   const navigate = useCallback((id: string, request?: string, focus?: string) => {
-    setSection(id); setRequestedReview(request || ''); setFocusedRecord(focus || ''); setMobile(false);
+    setWorkspaceChoice(null); setSection(id); setRequestedReview(request || ''); setFocusedRecord(focus || ''); setMobile(false);
     const params = new URLSearchParams({ section: id });
     if (request) params.set('request', request);
     if (focus) params.set('focus', focus);
@@ -141,6 +114,7 @@ export const BackOfficeShell: React.FC<{
 
   useEffect(() => {
     const onPop = () => {
+      setWorkspaceChoice(null);
       const params = new URLSearchParams(location.search);
       setSection(params.get('section') || sectionFromAdminPath(location.pathname) || 'dashboard');
       setRequestedReview(params.get('request') || '');
@@ -179,9 +153,9 @@ export const BackOfficeShell: React.FC<{
     try { window.localStorage.setItem('zayrovi.bo.theme', theme); } catch { /* idem */ }
   }, [theme]);
   useEffect(() => {
-    if (typeof document !== 'undefined') document.documentElement.setAttribute('dir', dir);
+    if (typeof document !== 'undefined') { document.documentElement.setAttribute('dir', dir); document.documentElement.lang = lang; }
     try { window.localStorage.setItem('zayrovi.bo.dir', dir); } catch { /* idem */ }
-  }, [dir]);
+  }, [dir, lang]);
 
   // En quittant /admin, on retire les attributs posés sur <html> : le site public
   // redevient LTR par défaut et ne porte pas un data-theme sans son thème sombre.
@@ -189,11 +163,11 @@ export const BackOfficeShell: React.FC<{
     if (typeof document === 'undefined') return;
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.removeAttribute('dir');
+    document.documentElement.lang = 'fr';
   }, []);
 
-  /** Services = groupes de la navigation serveur (aucun regroupement inventé côté client). */
-  const services = useMemo(() => navigation?.groups ?? [], [navigation]);
-  const allItems = useMemo(() => services.flatMap((group) => group.items), [services]);
+  const workspaces = useMemo(() => buildOfficeWorkspaces(navigation?.groups ?? []), [navigation]);
+  const allItems = useMemo(() => workspaces.flatMap(group => group.items), [workspaces]);
   const activeItem = allItems.find((item) => item.section === section || (item as any).aliases?.includes(section));
 
   // Raccourcis clavier (11/11) : `g`+lettre, `/` recherche, `?` aide, Échap.
@@ -205,7 +179,7 @@ export const BackOfficeShell: React.FC<{
       const { action, armedAt: next } = resolveShortcut(event as any, armedAt.current, Date.now(), allowedSections);
       armedAt.current = next;
       if (!action || action.type === 'arm') return;
-      if (action.type === 'close') { setShortcutHelp(false); return; }
+      if (action.type === 'close') { setShortcutHelp(false); setMobile(false); return; }
       event.preventDefault();
       if (action.type === 'go') navigate(action.section);
       else if (action.type === 'search') (document.querySelector('.bo-search input') as HTMLInputElement | null)?.focus();
@@ -214,35 +188,12 @@ export const BackOfficeShell: React.FC<{
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [allowedSections, navigate]);
-  // Le service affiché suit l'écran courant, sauf si l'utilisateur a choisi un service explicitement.
-  const activeService = services.find((group) => group.label === service)
-    ?? services.find((group) => group.label === activeItem?.group)
-    ?? services[0];
-
-  const domainOf = useCallback((item: BackOfficeNavItem) => item.domain, []);
-  const serviceItems = useMemo(
-    () => (activeService?.items ?? []).filter((item) => domain === 'ALL' || domainOf(item) === domain),
-    [activeService, domain, domainOf],
-  );
-  /** Le filtre de domaine n'a de sens que si le service mélange plusieurs domaines. */
-  const mixesDomains = useMemo(
-    () => new Set((activeService?.items ?? []).map((item) => item.domain)).size > 1,
-    [activeService],
-  );
-  /**
-   * Un service homogène remet le filtre à « Tous » : sinon le filtre disparaît de l'écran mais
-   * reste actif en mémoire, et le rail peut se retrouver vide sans que rien ne l'explique.
-   */
-  useEffect(() => { if (!mixesDomains && domain !== 'ALL') setDomain('ALL'); }, [mixesDomains, domain]);
-
-  const selectService = useCallback((label: string) => {
-    setService(label);
-    // Comme dans une console de service : choisir un service ouvre son premier écran.
-    const first = navigation?.groups.find((group) => group.label === label)?.items[0];
-    if (first && first.section !== section) navigate(first.section);
-  }, [navigation, navigate, section]);
+  const activeWorkspace = activeItem ? workspaces.find(group => group.items.includes(activeItem)) : undefined;
+  const openWorkspace = workspaceChoice?.section === section ? workspaceChoice.key : activeWorkspace?.key;
 
   const descriptor = descriptorFor(section);
+  const connectedAccess = useConnectedAccess();
+  const [connectedTeam, setConnectedTeam] = useState<ConnectedTeam | null>(null);
   const canonicalSection = (() => {
     const key = descriptor?.canonicalOf;
     if (!key) return undefined;
@@ -250,9 +201,9 @@ export const BackOfficeShell: React.FC<{
     if (!target) return undefined;
     return allItems.find((item) => item.section === target.section);
   })();
-  const title = descriptor?.label || activeItem?.label || 'Administration';
+  const title = officeItemLabel({ section: activeItem?.section ?? section, label: activeItem?.label ?? descriptor?.label ?? t('Administration', 'الإدارة') }, lang);
   const employee = context?.employee;
-  const domains = context?.domains ?? [];
+
 
   /**
    * Une entrée du rail. L'état technique du module (`legacy`, doublon) ne s'affiche plus comme une
@@ -262,8 +213,8 @@ export const BackOfficeShell: React.FC<{
     const hints = [item.description];
     if (item.moduleStatus === 'legacy') hints.push('ancienne surface conservée');
     if (item.canonicalOf) hints.push(`maître : ${item.canonicalOf}`);
-    return <button key={item.section}
-      className={`${section === item.section ? 'is-active' : ''} ${item.section === 'news' ? 'is-magazine-drop-target' : ''}`.trim()}
+    return <button key={item.section} type="button" aria-current={activeItem === item ? 'page' : undefined}
+      className={`${activeItem === item ? 'is-active' : ''} ${item.section === 'news' ? 'is-magazine-drop-target' : ''}`.trim()}
       onClick={() => navigate(item.section)}
       onDragOver={item.section === 'news' ? (event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } : undefined}
       onDrop={item.section === 'news' ? (event) => {
@@ -272,33 +223,34 @@ export const BackOfficeShell: React.FC<{
         if (draftId.startsWith('mag_draft_')) openMagazineDraft(draftId);
       } : undefined}
       title={hints.join(' · ')}>
-      <NavIcon name={item.icon} />
-      <span>{item.label}</span>
-      {section === item.section && <i />}
+      {item.section === 'dashboard' ? <OfficeIcon name="overview" size="navigation" /> : <NavIcon name={item.icon} />}
+      <span>{officeItemLabel(item, lang)}</span>
+      {activeItem === item && <i />}
     </button>;
   };
 
-  return <div className={`admin-shell bo-shell ${density === 'compact' ? 'is-compact' : ''}`.trim()} data-device-target="desktop">
-    {/* Barre 1 — identité, recherche globale, préférences, compte */}
+  const brand = <div className="bo-topbar-brand">
+    <img src="/media/logo-zayrovi-logo-dark.svg?v=9.0" alt="ZAYROVI" />
+    <div><strong>ZAYROVI</strong><span>{t('BUSINESS SUITE', 'منصّة إدارة الأعمال')}</span></div>
+  </div>;
+
+  return <OfficeLanguageContext.Provider value={lang}><div className={`admin-shell bo-shell bo-unified ${density === 'compact' ? 'is-compact' : ''}`}>
     <header className="bo-topbar bo-header">
-      <div className="bo-topbar-brand">
-        <img src="/media/logo-zayrovi-logo-dark.svg?v=9.0" alt="ZAYROVI" style={{ width: 'auto', height: 22 }} />
-        <div><span>CONSOLE DE GESTION</span></div>
-      </div>
+      <div className="bo-mobile-brand">{brand}</div>
       <div className="bo-topbar-search"><GlobalSearch onNavigate={navigate} /></div>
       <div className="bo-topbar-actions admin-header-actions">
-        <button className="admin-mobile-menu admin-icon-button" onClick={() => setMobile(true)} aria-label="Ouvrir le menu"><Menu /></button>
+        <button className="admin-mobile-menu admin-icon-button" onClick={() => setMobile(true)} aria-expanded={mobile} aria-controls="office-navigation" aria-label={t('Ouvrir le menu', 'افتح القائمة')}><Menu /></button>
         <button className="admin-icon-button" onClick={() => setPalette(true)} title="Palette de commandes (⌘K)" aria-label="Palette de commandes"><Sparkles /></button>
         <button className="admin-icon-button bo-shortcut-button" onClick={() => setShortcutHelp(true)} title="Raccourcis clavier (?)" aria-label="Raccourcis clavier"><kbd>?</kbd></button>
-        <button className="admin-icon-button" onClick={() => setDensity(density === 'compact' ? 'comfortable' : 'compact')}
-          title={density === 'compact' ? 'Densité confortable' : 'Densité compacte'} aria-label="Changer la densité"><Zap /></button>
+        <button className="admin-icon-button office-density-control" onClick={() => setDensity(density === 'compact' ? 'comfortable' : 'compact')}
+          title={density === 'compact' ? 'Densité confortable' : 'Densité compacte'} aria-pressed={density === 'compact'} aria-label={t('Changer la densité', 'بدّل كثافة العرض')}><OfficeIcon name="density" size="navigation" /></button>
         <button className="admin-icon-button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          title={theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'} aria-label="Basculer le thème sombre / clair"><Palette /></button>
-        <button className="admin-icon-button" onClick={() => setDir(dir === 'rtl' ? 'ltr' : 'rtl')}
-          title={dir === 'rtl' ? 'Basculer en français (LTR)' : 'Basculer en arabe (RTL)'} aria-label="Basculer la direction droite-à-gauche"><Globe2 /></button>
-        <NotificationsBell onNavigate={navigate} />
+          title={theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'} aria-pressed={theme === 'dark'} aria-label={t('Basculer le thème sombre / clair', 'بدّل الوضع الفاتح أو الداكن')}><OfficeIcon name={theme === 'dark' ? 'light' : 'dark'} size="navigation" /></button>
+        <button className="admin-icon-button bo-language" onClick={() => setDir(dir === 'rtl' ? 'ltr' : 'rtl')}
+          title={dir === 'rtl' ? 'Français (LTR)' : 'العربية (RTL)'} aria-label={dir === 'rtl' ? 'Français (LTR)' : 'العربية (RTL)'}><Globe2 /><b>{lang === 'ar' ? 'FR' : 'ع'}</b></button>
+        {can('commerce:read') && <NotificationsBell onNavigate={navigate} />}
         <div className="admin-profile">
-          <button onClick={() => setProfile(!profile)}>
+          <button type="button" aria-expanded={profile} onClick={() => setProfile(!profile)}>
             <i>{identity.name.slice(0, 2).toUpperCase()}</i>
             <span><strong>{identity.name}</strong><small>{labels[identity.role] || identity.role}</small></span>
           </button>
@@ -314,100 +266,42 @@ export const BackOfficeShell: React.FC<{
       </div>
     </header>
 
-    {/* Barre 2 — services : les groupes du registre serveur, rien d'autre */}
-    <nav className="bo-servicebar" aria-label="Services de la console">
-      {services.map((group) => (
-        <button key={group.label} type="button"
-          className={`bo-service ${activeService?.label === group.label ? 'is-active' : ''}`.trim()}
-          aria-current={activeService?.label === group.label ? 'page' : undefined}
-          onClick={() => selectService(group.label)}>
-          <span>{group.label}</span>
-          <small>{group.items.length}</small>
-        </button>
-      ))}
-      {(context?.roadmap?.length ?? 0) > 0 && <span className="bo-service-placeholder" aria-hidden="true" />}
-    </nav>
-
     <div className="bo-body">
-      <aside className={`admin-sidebar ${mobile ? 'is-open' : ''}`}>
-        <div className="bo-rail-head">
-          <div>
-            <strong>{activeService?.label ?? 'Console'}</strong>
-            <span>{serviceItems.length} écran{serviceItems.length > 1 ? 's' : ''}{domain !== 'ALL' ? ` · ${domain}` : ''}</span>
-          </div>
-          <button onClick={() => setMobile(false)} aria-label="Fermer le menu"><X /></button>
+      <aside id="office-navigation" className={`admin-sidebar ${mobile ? 'is-open' : ''}`}>
+        <div className="bo-unified-brand">
+          {brand}
+          <button type="button" className="bo-rail-close" onClick={() => setMobile(false)} aria-label={t('Fermer le menu', 'اغلق القائمة')}><X size={20} /></button>
         </div>
-
-        {/* Filtre de domaine : seulement quand le service mélange les domaines */}
-        {(mixesDomains || domain !== 'ALL') && domains.length > 1 && (
-          <div className="bo-domains" role="tablist" aria-label="Domaine du back office">
-            <button role="tab" aria-selected={domain === 'ALL'} onClick={() => setDomain('ALL')}>
-              <span>Tous</span><small>{activeService?.items.length ?? 0}</small>
-            </button>
-            {domains.map((entry) => {
-              const count = (activeService?.items ?? []).filter((item) => item.domain === entry.key).length;
-              if (!count) return null;
-              return <button key={entry.key} role="tab" aria-selected={domain === entry.key}
-                onClick={() => setDomain(entry.key)} title={entry.description}>
-                <span>{entry.label}</span><small>{count}</small>
-              </button>;
-            })}
-          </div>
-        )}
-
-        <nav aria-label={`Écrans — ${activeService?.label ?? 'console'}`}>
-          {loading && <p className="bo-nav-state">Chargement de la navigation…</p>}
-          {error && (
-            <p className="bo-nav-state is-error">
-              Navigation indisponible ({error}). <button type="button" onClick={retry}>Réessayer</button>
-            </p>
-          )}
-          {!loading && !error && serviceItems.length === 0 && (
-            <p className="bo-nav-state">
-              Aucun écran dans ce domaine.
-              <button type="button" onClick={() => setDomain('ALL')}> Voir tous les écrans du service</button>
-            </p>
-          )}
-          {serviceItems.map(renderNavButton)}
-
-          {/* La feuille de route n'appartient pas à un service : elle reste en bas du rail. */}
-          {(context?.roadmap?.length ?? 0) > 0 && (
-            <div className="bo-roadmap">
-              <span>Modules à venir</span>
-              {context!.roadmap.map((module) => (
-                <div key={module.key} className="bo-roadmap-item" title={module.description}>
-                  <strong>{module.label}</strong><em>{module.status}</em>
-                </div>
-              ))}
+        <nav aria-label={t('Écrans — espaces de travail', 'أقسام الإدارة')}>
+          <p className="bo-rail-caption">{t('ESPACE DE TRAVAIL', 'مساحة العمل')}</p>
+          {loading && <p className="bo-nav-state">{t('Chargement de la navigation…', 'جاري تحميل القائمة…')}</p>}
+          {error && <p className="bo-nav-state is-error">{t('Navigation indisponible', 'القائمة غير متاحة')} · <button type="button" onClick={retry}>{t('Réessayer', 'عاود المحاولة')}</button></p>}
+          {workspaces.map(group => group.key === 'overview' ? <div className="bo-office-overview" key={group.key}>{group.items.map(renderNavButton)}</div> : (
+            <div className="bo-office-group" key={group.key} data-active={activeWorkspace?.key === group.key}>
+              <button type="button" className="bo-office-module" aria-expanded={openWorkspace === group.key} aria-controls={`bo-group-${group.key}`}
+                onClick={() => setWorkspaceChoice({ section, key: openWorkspace === group.key ? null : group.key })}>
+                <OfficeIcon name={group.key} size="navigation" /><span>{t(group.fr, group.ar)}{['crm', 'erp', 'cms'].includes(group.key) && <> <small>{group.key.toUpperCase()}</small></>}</span><ChevronDown size={14} />
+              </button>
+              <ul id={`bo-group-${group.key}`} hidden={openWorkspace !== group.key}>{group.items.map(item => <li key={item.section}>{renderNavButton(item)}</li>)}{connectedAccess?.teams.some(team => team === group.key) && <li><ConnectedButton onClick={() => { setConnectedTeam(group.key as ConnectedTeam); setMobile(false); }} /></li>}</ul>
             </div>
-          )}
-
-          {/* Accès rapide aux autres services : le rail ne les affiche plus en entier, mais on ne
-              perd pas le « où aller ensuite » (même donnée serveur, aucun doublon d'écran). */}
-          {services.filter((group) => group.label !== activeService?.label).length > 0 && (
-            <div className="bo-rail-services">
-              <span>Autres services</span>
-              {services.filter((group) => group.label !== activeService?.label).map((group) => (
-                <button key={group.label} type="button" className="bo-rail-service" onClick={() => selectService(group.label)}>
-                  <span>{group.label}</span><small>{group.items.length}</small>
-                </button>
-              ))}
-            </div>
-          )}
+          ))}
+          {context?.roadmap?.length ? <details className="bo-roadmap">
+            <summary>{t('Modules à venir', 'وحدات قادمة')}</summary>
+            {context.roadmap.map(module => <div key={module.key} className="bo-roadmap-item" title={module.description}><strong>{module.label}</strong></div>)}
+          </details> : null}
         </nav>
-
         <div className="admin-sidebar-foot">
-          <a href="/" target="_blank" rel="noopener noreferrer">Voir le site public</a>
-          <span>ZAYROVI v3.10.4 · Tunis · framework {context?.frameworkVersion ?? '—'}</span>
+          <a href="/" target="_blank" rel="noopener noreferrer"><Globe2 size={16} />{t('Voir le site public', 'شوف الموقع العام')}</a>
+          <span>© ZAYROVI · framework {context?.frameworkVersion ?? '—'}</span>
         </div>
       </aside>
-      {mobile && <button className="admin-sidebar-overlay" onClick={() => setMobile(false)} aria-label="Fermer le menu" />}
+      {mobile && <button className="admin-sidebar-overlay" onClick={() => setMobile(false)} aria-label={t('Fermer le menu', 'اغلق القائمة')} />}
 
       <div className="admin-workspace">
         {/* Fil d'Ariane : le titre de l'écran n'est plus écrit ici (il l'était deux fois). */}
         <div className="bo-screenbar">
-          <nav aria-label="Fil d'Ariane">
-            <b>{activeService?.label ?? 'Console'}</b>
+          <nav aria-label={t("Fil d’Ariane", "مسار التنقّل")}>
+            <b>{activeWorkspace ? t(activeWorkspace.fr, activeWorkspace.ar) : t('Console', 'الإدارة')}</b>
             <span aria-hidden="true">/</span>
             <strong>{title}</strong>
             {descriptor?.moduleStatus === 'legacy' && <><span aria-hidden="true">·</span><span>ancienne surface</span></>}
@@ -434,6 +328,7 @@ export const BackOfficeShell: React.FC<{
       </div>
     </div>
 
+    {connectedTeam && connectedAccess && <TeamConnections key={connectedTeam} team={connectedTeam} access={connectedAccess} onClose={() => setConnectedTeam(null)} />}
     <CommandPalette open={palette} onClose={() => setPalette(false)} onNavigate={navigate} />
     {shortcutHelp && (
       <div className="bo-shortcuts-backdrop" onClick={() => setShortcutHelp(false)}>
@@ -456,5 +351,5 @@ export const BackOfficeShell: React.FC<{
         </section>
       </div>
     )}
-  </div>;
+  </div></OfficeLanguageContext.Provider>;
 };

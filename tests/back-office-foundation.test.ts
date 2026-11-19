@@ -50,6 +50,12 @@ describe('back office shell (P2.0)', () => {
     orders = await loginAs('ORDER_MANAGER', superAdmin.agent, superAdmin.csrf);
   });
 
+  test('le PDF administratif est protégé par les mêmes droits que la lecture de commande', async () => {
+    expect((await request(app).get('/api/admin/orders/nonexistent/invoice')).status).toBe(401);
+    expect((await content.agent.get('/api/admin/orders/nonexistent/invoice')).status).toBe(403);
+    expect((await orders.agent.get('/api/admin/orders/nonexistent/invoice')).status).toBe(404);
+  });
+
   describe('le registre de ressources est la source unique', () => {
     test('les 10 ressources du moteur générique sont dérivées, pas recopiées', () => {
       const descriptors = resourceDescriptors().filter((descriptor) => descriptor.surface === 'framework');

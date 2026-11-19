@@ -127,7 +127,7 @@ describe('CRM 360 — rendu des six écrans (E7-bis)', () => {
     await act(async () => { root!.render(React.createElement(CrmPartiesPage)); });
     await flush();
     const text = host!.textContent ?? '';
-    expect(text).toContain('Timeline 360°');
+    expect(text).toContain('Historique 360°');
     expect(text).toContain('CUS-000001'); // code de la fiche dans le titre du modal
     window.history.replaceState(null, '', '/');
   });

@@ -113,19 +113,14 @@ const renderShell = (renderPage: (ctx: any) => React.ReactNode) => renderToStati
 );
 
 describe('BackOfficeShell — navigation pilotée par le registre', () => {
-  it('affiche les services du serveur dans la barre de service et le rail du modèle A', () => {
+  it('présente une seule navigation et classe les écrans fournis par le serveur', () => {
     const markup = renderShell(() => <div>page</div>);
-    // Barre 2 : les services = les groupes de la navigation serveur, avec leur nombre d'écrans.
-    expect(markup).toContain('Services de la console');
-    expect(markup).toContain('Vue générale');
-    expect(markup).toContain('Catalogue');
-    // Rail : uniquement les écrans du service actif (ici « Vue générale »), donc pas de « Produits ».
-    expect(markup).toContain('Écrans — Vue générale');
+    expect(markup).not.toContain('bo-servicebar');
+    expect(markup).toContain('Écrans — espaces de travail');
     expect(markup).toContain('Tableau de bord');
-    expect(markup).toContain('Utilisateurs');
-    expect(markup).not.toContain('>Produits<');
-    // L'écran actif est marqué, et le pied de rail garde la version du framework.
-    expect(markup).toContain('is-active');
+    expect(markup).toContain('bo-group-cms');
+    expect(markup).toContain('bo-group-admin');
+    expect(markup).toContain('aria-current="page"');
     expect(markup).toContain('framework p2.0');
   });
 
@@ -153,14 +148,10 @@ describe('BackOfficeShell — navigation pilotée par le registre', () => {
     });
   });
 
-  it('expose le filtre de domaine quand le service mélange les domaines, avec les compteurs du service', () => {
-    const markup = renderShell(() => <div>page</div>);
-    expect(markup).toContain('Domaine du back office');
-    expect(markup).toContain('Commerce');
-    expect(markup).toContain('Tous');
-    // Le compteur est celui du service affiché, pas un total global trompeur.
-    expect(markup).toContain('>ERP</span><small>1</small>');
-    expect(markup).toContain('>Commerce</span><small>1</small>');
+  it('ouvre directement l’espace parent d’un deep link sans filtre de domaine secondaire', () => {
+    const markup = withLocation('?section=products', () => renderShell(() => <div>page</div>));
+    expect(markup).toContain('aria-expanded="true" aria-controls="bo-group-cms"');
+    expect(markup).not.toContain('Domaine du back office');
   });
 
   it('place les modules planifiés hors navigation : visibles comme roadmap, jamais cliquables', () => {
@@ -174,11 +165,11 @@ describe('BackOfficeShell — navigation pilotée par le registre', () => {
     expect(markup).toContain('bo-roadmap-item');
   });
 
-  it('garde le « où aller ensuite » sans dupliquer les écrans : les autres services sont listés', () => {
+  it('ne montre ni groupe vide ni seconde liste de services', () => {
     const markup = renderShell(() => <div>page</div>);
-    const rail = markup.match(/<nav aria-label="Écrans[^"]*"[\s\S]*?<\/nav>/)?.[0] ?? '';
-    expect(rail).toContain('Autres services');
-    expect(rail).toContain('Catalogue');
+    expect(markup).not.toContain('Autres services');
+    expect(markup).not.toContain('bo-group-crm');
+    expect(markup).not.toContain('bo-group-erp');
   });
 
   it('garde le deep-link ?section=…&request=… et le transmet à la page', () => {
@@ -549,8 +540,8 @@ describe('E8/E9 — thème sombre & direction RTL', () => {
     const markup = renderShell(() => <div>contenu</div>);
     expect(markup).toContain('aria-label="Basculer le thème sombre / clair"');
     expect(markup).toContain('title="Passer au thème sombre"');
-    expect(markup).toContain('aria-label="Basculer la direction droite-à-gauche"');
-    expect(markup).toContain('title="Basculer en arabe (RTL)"');
+    expect(markup).toContain('aria-label="العربية (RTL)"');
+    expect(markup).toContain('title="العربية (RTL)"');
   });
 
   it('tokens.css porte un bloc sombre scopé ≥ 15 rôles et la feuille reste sans littéral actif', () => {

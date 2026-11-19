@@ -5,6 +5,7 @@ import {
 } from '../components/QatafoIcons';
 import { adminApi } from './api';
 import { Button, Modal, Toast } from './components';
+import { downloadEditorialBrief } from './editorialBrief';
 
 interface MagazineAgentPageProps {
   canWrite: boolean;
@@ -253,7 +254,7 @@ export const MagazineAgentPage: React.FC<MagazineAgentPageProps> = ({ canWrite, 
           </div>
         </section>
       </div>
-      <Modal open={Boolean(selected)} title={selected?.title || 'تفاصيل المسودة'} onClose={() => setSelected(null)} wide footer={selected ? <><Button variant="ghost" onClick={() => setSelected(null)}>إغلاق</Button><Button onClick={() => onOpenMagazine(selected.id)}><ArrowUp />نقل إلى مجلتي</Button></> : undefined}>{selected && <DraftDetails draft={selected} />}</Modal>
+      <Modal open={Boolean(selected)} title={selected?.title || 'تفاصيل المسودة'} onClose={() => setSelected(null)} wide footer={selected ? <><Button variant="ghost" onClick={() => setSelected(null)}>إغلاق</Button><Button variant="secondary" onClick={() => downloadEditorialBrief(selected)}><FileText />تنزيل موجز الإنتاج</Button><Button disabled={!canWrite} onClick={() => onOpenMagazine(selected.id)}><ArrowUp />نقل إلى مجلتي</Button></> : undefined}>{selected && <><p className="admin-muted" dir="rtl">موجز الإنتاج ملف نصّي للمراجعة والاستعمال اليدوي في Canva أو CapCut؛ التنزيل لا ينقل الملف لأيّ خدمة ولا ينشر المسودة.</p><DraftDetails draft={selected} /></>}</Modal>
       {toast && <Toast {...toast} />}
     </div>
   );

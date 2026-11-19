@@ -23,6 +23,12 @@
       "attribute": "data-brand",
       "value": "clean-composer-state",
       "reason": "User-approved orange Clean speech-bubble mark with state-dependent waveform, send, response and stop inset; localized brand control, not a global icon family replacement."
+    },
+    "client/src/admin/back-office/OverviewCharts.tsx": {
+      "count": 1,
+      "attribute": "data-visualization",
+      "value": "sales-trend",
+      "reason": "Data visualization of daily sales from the dashboard API. No UI icon geometry."
     }
   },
   "brandModule": "client/src/design/BrandIcon.tsx",

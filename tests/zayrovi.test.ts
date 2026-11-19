@@ -885,13 +885,36 @@ describe('ZAYROVI platform', () => {
     expect(invoice.status).toBe(200);
     expect(invoice.headers['content-type']).toContain('application/pdf');
 
+    const pdfUrl = `/api/admin/orders/${orderId}/invoice`;
+    expect((await request(app).get(pdfUrl)).status).toBe(401);
+    expect((await customerAgent.get(pdfUrl)).status).toBe(401);
+    const adminPdf = await reviewer.get(pdfUrl);
+    expect(adminPdf.status).toBe(200);
+    expect(adminPdf.headers['content-type']).toContain('application/pdf');
+    expect(adminPdf.headers['cache-control']).toContain('no-store');
+    expect((await reviewer.get('/api/admin/orders?invoice=issued&days=7').query({ search: issue.body.data.invoiceNumber })).body.data).toEqual([
+      expect.objectContaining({ id: orderId, invoice_pdf_ready: 1, invoice_issued_at: expect.any(String) }),
+    ]);
+
     expect((await customerAgent.get('/api/customer/account/tracking')).body.data.some((item:any)=>item.order_id===orderId)).toBe(false);
     expect((await reviewer.put(`/api/admin/orders/${orderId}/status`).set('x-csrf-token',reviewerCsrf).send({status:'PREPARING'})).status).toBe(200);
+    const deliveryUrl = `/api/admin/orders/${orderId}/delivery`;
+    expect((await reviewer.put(deliveryUrl).set('x-csrf-token',reviewerCsrf)
+      .send({status:'SHIPPED',carrier:'Manual',tracking_number:'TRACK-001',tracking_url:'https://127.0.0.1/track'})).status).toBe(400);
+    expect((await reviewer.put(deliveryUrl).set('x-csrf-token',reviewerCsrf)
+      .send({carrier:{ invalid: true }})).status).toBe(400);
     const shipped=await reviewer.put(`/api/admin/orders/${orderId}/delivery`).set('x-csrf-token',reviewerCsrf)
-      .send({status:'SHIPPED',carrier:'Rapid Poste',tracking_number:'TRACK-REAL-001',tracking_url:'https://tracking.example/REAL-001'});
+      .send({status:'SHIPPED',carrier:'Rapid Poste',tracking_number:'TRACK-REAL-001',tracking_url:'https://tracking.example.com/REAL-001'});
     expect(shipped.status).toBe(200);
     const tracking=await customerAgent.get('/api/customer/account/tracking');
     expect(tracking.body.data.find((item:any)=>item.order_id===orderId)).toMatchObject({carrier:'Rapid Poste',tracking_number:'TRACK-REAL-001'});
+
+    const corrected = await reviewer.put(deliveryUrl).set('x-csrf-token',reviewerCsrf)
+      .send({ status:'SHIPPED', carrier:'UPS', tracking_number:'TRACK-REAL-002' });
+    expect(corrected.status).toBe(200);
+    expect(corrected.body.data).toMatchObject({ tracking_url:'https://www.ups.com/track?tracknum=TRACK-REAL-002', shipped_at: shipped.body.data.shipped_at });
+    expect((await reviewer.put(deliveryUrl).set('x-csrf-token',reviewerCsrf).send({status:'PREPARING'})).status).toBe(409);
+    expect((await customerAgent.get('/api/customer/account/tracking')).body.data.find((item:any)=>item.order_id===orderId)).toMatchObject({carrier:'UPS',tracking_number:'TRACK-REAL-002'});
 
     // Reject → reason → re-upload → approve while retaining both proof records.
     const retrySession=uniqueSession('proof-retry');

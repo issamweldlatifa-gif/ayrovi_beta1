@@ -247,7 +247,9 @@ export function writeAuditEvent(db: QatafoDatabase, event: ErpAuditEvent): strin
     scalarText(change.old), scalarText(change.new), change.kind, now);
   }
 
-  emitDerivedEvents(db, event, resourceType, resourceId, now, safeChanges);
+  if (event.action.toUpperCase() !== 'ACCESS' && event.action.toUpperCase() !== 'ACCESS_DENIED') {
+    emitDerivedEvents(db, event, resourceType, resourceId, now, safeChanges);
+  }
   return id;
 }
 

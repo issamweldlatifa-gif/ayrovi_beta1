@@ -14,6 +14,9 @@ import {
   Button, DataTable, Field, MetricStrip, Modal, PageHeader, Pagination, Search, Select, Toast,
   type TableRowAction,
 } from './components';
+import { OfficeViewSwitch } from '../design/admin/OfficeViewSwitch';
+import { CrmPartyHistory } from './CrmPartyHistory';
+import { StatusBoard } from './back-office/StatusBoard';
 import { formatDate } from './back-office/resource-ui';
 
 type Page = { page: number; pageSize: number; total: number; totalPages: number };
@@ -50,6 +53,7 @@ type CrmStatuses = {
   partyTypes: string[]; partyKinds: string[]; partyStatuses: string[]; partySources: string[];
   contactStatuses: string[]; activityKinds: string[]; activityStatuses: string[];
   taskStatuses: string[]; taskPriorities: string[]; issueStatuses: string[]; issuePriorities: string[];
+  commChannels: string[]; commDirections: string[];
 };
 type CrmMeta = { capabilities: Record<string, Record<string, boolean>>; statuses: CrmStatuses };
 
@@ -201,7 +205,6 @@ export const CrmPartiesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [detail, setDetail] = useState<Row | null>(null);
-  const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<Row>({ partyType: 'INDIVIDUAL', kind: 'CUSTOMER', name: '', email: '', phone: '', governorate: '' });
   const [busy, setBusy] = useState(false);
@@ -226,8 +229,6 @@ export const CrmPartiesPage: React.FC = () => {
     try {
       const result = await adminApi<Envelope<Row>>(`/crm/parties/${row.id}`);
       setDetail(result.data);
-      const timelineResult = await adminApi<Envelope<TimelineItem[]>>(`/crm/parties/${row.id}/timeline?pageSize=25`);
-      setTimeline(timelineResult.data ?? []);
     } catch (reason: any) {
       setToast({ message: reason?.message || 'Vue 360° indisponible.', tone: 'error' });
     }
@@ -343,13 +344,11 @@ export const CrmPartiesPage: React.FC = () => {
               { key: 'title', label: 'Fonction' }, { key: 'email', label: 'E-mail' }, { key: 'phone', label: 'Téléphone' },
               { key: 'is_primary', label: 'Principal', render: (row: Row) => yesNo(row.is_primary) },
             ]} rows={detail.contacts ?? []} minWidth={620} emptyText="Aucun contact enregistré." />
-            <h4 style={{ margin: '12px 0 6px' }}>Timeline 360°</h4>
-            <DataTable columns={[
-              { key: 'at', label: 'Quand', render: (item: TimelineItem) => formatDate(item.at) },
-              { key: 'type', label: 'Type', render: (item: TimelineItem) => <Chip value={String(item.type).toUpperCase()} label={String(item.type)} /> },
-              { key: 'title', label: 'Événement' },
-              { key: 'summary', label: 'Détail' },
-            ]} rows={timeline} minWidth={760} emptyText="Aucun événement pour l’instant." />
+            {(may('timeline', 'view') || (may('communication', 'create') && detail.party.status !== 'ARCHIVED')) && (
+              <CrmPartyHistory key={detail.party.id} partyId={detail.party.id} canRead={may('timeline', 'view')}
+                canRecord={may('communication', 'create') && detail.party.status !== 'ARCHIVED'}
+                channels={meta?.statuses.commChannels ?? []} directions={meta?.statuses.commDirections ?? []} />
+            )}
             <div className="admin-form-actions">
               <Button variant="ghost" onClick={() => setDetail(null)}>Fermer</Button>
             </div>
@@ -598,6 +597,8 @@ export const CrmTasksPage: React.FC = () => {
   const [status, setStatus] = useState('');
   const [due, setDue] = useState('');
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<'table' | 'board'>('table');
+  const states = ['OPEN', 'IN_PROGRESS', 'WAITING', 'COMPLETED', 'CANCELLED'];
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState<Row>({ partyId: '', title: '', description: '', isFollowUp: false, priority: 'NORMAL', dueAt: '' });
@@ -655,15 +656,15 @@ export const CrmTasksPage: React.FC = () => {
   ];
   const rowActions: TableRowAction<Row>[] = [
     {
-      key: 'complete', label: 'Terminer', icon: <CheckCircle2 size={15} />, show: (row) => active(row) && may('task', 'edit'),
+      key: 'complete', label: 'Terminer', icon: <CheckCircle2 size={15} />, show: (row) => active(row) && may('task', 'edit'), disabled: busy,
       onRun: (row) => void transition(row, 'COMPLETED'),
     },
     {
-      key: 'cancel', label: 'Annuler', tone: 'danger', show: (row) => active(row) && may('task', 'edit'),
+      key: 'cancel', label: 'Annuler', tone: 'danger', show: (row) => active(row) && may('task', 'edit'), disabled: busy,
       onRun: (row) => void transition(row, 'CANCELLED'),
     },
     {
-      key: 'reopen', label: 'Rouvrir', show: (row) => !active(row) && may('task', 'edit'),
+      key: 'reopen', label: 'Rouvrir', show: (row) => !active(row) && may('task', 'edit'), disabled: busy,
       onRun: (row) => void transition(row, 'OPEN'),
     },
   ];
@@ -673,14 +674,22 @@ export const CrmTasksPage: React.FC = () => {
       <CrmHeader title="Tâches & suivis" description="Les prochaines actions : un propriétaire, une échéance, un statut — le retard se calcule, jamais ne se devine."
         action={may('task', 'create') ? <Button onClick={() => setCreating(true)}><Plus size={14} /> Nouvelle tâche</Button>
           : <Button disabled title="Créer une tâche exige le grant « crm360:create »."><Plus size={14} /> Nouvelle tâche</Button>} />
+      <OfficeViewSwitch label="Vues des tâches CRM" value={view} onChange={setView} options={[
+        { value: 'table', label: 'Tableau', icon: 'table' }, { value: 'board', label: 'Kanban', icon: 'kanban' },
+      ]} />
       <div className="admin-toolbar">
         <Search value={search} onChange={setSearch} placeholder="Titre, fiche…" />
         <Select value={status} onChange={(event) => setStatus(event.target.value)}
-            options={[{ value: '', label: 'Tous statuts' }, ...['OPEN', 'IN_PROGRESS', 'WAITING', 'COMPLETED', 'CANCELLED'].map((value) => ({ value, label: label(value) }))]} />
+            options={[{ value: '', label: 'Tous statuts' }, ...states.map((value) => ({ value, label: label(value) }))]} />
         <Select value={due} onChange={(event) => setDue(event.target.value)} options={[{ value: '', label: 'Toutes échéances' }, { value: 'overdue', label: 'En retard' }, { value: 'today', label: 'Aujourd’hui' }, { value: 'upcoming', label: 'À venir' }]} />
       </div>
-      <DataTable columns={columns} rows={rows} loading={loading} error={error || undefined} onRetry={() => void load()}
-        rowActions={rowActions} emptyText="Aucune tâche." />
+      {view === 'table' ? <DataTable columns={columns} rows={rows} loading={loading} error={error || undefined} onRetry={() => void load()}
+        rowActions={rowActions} emptyText="Aucune tâche." /> : <StatusBoard rows={rows} loading={loading} error={error} onRetry={() => void load()} paged
+        lanes={states.map(value => ({ value, label: label(value) }))} statusOf={row => String(row.status)} rowKey={row => String(row.id)} renderCard={row => <>
+          <span className="admin-code">{row.task_no}</span><strong>{row.title}</strong><Chip value={String(row.priority)} />
+          <p>{row.owner_name || '—'} · {formatDate(row.due_at)}</p>
+          {rowActions.filter(action => action.show?.(row)).map(action => <Button key={action.key} variant={action.tone === 'danger' ? 'danger' : 'secondary'} disabled={busy} onClick={() => action.onRun(row)}>{action.label}</Button>)}
+        </>} />}
       <Pagination {...pagination} onChange={(page) => void load(page)} />
       <Modal open={creating} title="Nouvelle tâche" eyebrow="ZAYROVI CRM 360" onClose={() => setCreating(false)}>
         <div className="admin-form-grid">

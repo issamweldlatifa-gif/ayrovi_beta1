@@ -244,28 +244,28 @@ export class OpenAIResponsesAdapter implements AiResponsesProviderAdapter {
     }).catch((error: any) => {
       if (error?.name === 'AbortError' || error?.name === 'TimeoutError') {
         throw new AiProviderError('PROVIDER_TIMEOUT', this.id, 'OpenAI request timed out.', {
-          retryable: true, diagnostic: String(error?.message || ''),
+          retryable: true,
         });
       }
       throw new AiProviderError('PROVIDER_UNAVAILABLE', this.id, 'OpenAI request failed.', {
-        retryable: true, diagnostic: String(error?.message || ''),
+        retryable: true,
       });
     });
     if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      console.warn(`[AI Core OpenAI] HTTP ${response.status} ${detail.slice(0, 280)}`);
+      void response.body?.cancel().catch(() => undefined);
+      console.warn(`[AI Core OpenAI] HTTP ${response.status}`);
       if (response.status === 400 && request.outputSchema && request.webSearch?.enabled) {
         throw new AiProviderError(
           'PROVIDER_CAPABILITY_UNSUPPORTED',
           this.id,
           'AI provider does not support this capability combination.',
-          { status: 400, retryable: false, diagnostic: detail.slice(0, 2_000) },
+          { status: 400, retryable: false },
         );
       }
       throw providerErrorFromHttp(
         this.id,
         response.status,
-        detail.slice(0, 2_000),
+        undefined,
         retryAtFromHeader(response.headers.get('retry-after')),
       );
     }

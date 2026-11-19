@@ -679,6 +679,10 @@ describe('CRM 360 (E1/E2)', () => {
       expect(list.status).toBe(200);
       expect(list.body.pagination.total).toBeGreaterThanOrEqual(1);
       expect(list.body.data[0].subject).toContain(SUFFIX);
+      const timeline = await admin.get(`/api/admin/crm/parties/${left}/timeline`);
+      expect(timeline.body.data).toContainEqual(expect.objectContaining({ type: 'communication', id: comm.body.data.communication.id }));
+      expect((await admin.post('/api/admin/crm/communications').unset('x-csrf-token').send({ partyId: left, subject: 'Sans CSRF' })).status).toBe(403);
+
 
       // un canal inconnu est refusé en validation, jamais en 500
       const bad = await admin
@@ -687,6 +691,18 @@ describe('CRM 360 (E1/E2)', () => {
         .send({ partyId: left, channel: 'FAX', direction: 'OUTBOUND', subject: 'x' });
       expect(bad.status).toBe(400);
       expect(bad.body.code).toBe('CRM_VALIDATION');
+    });
+
+    test('refuse une écriture sur une fiche archivée', async () => {
+      const created = await admin.post('/api/admin/crm/parties').set('x-csrf-token', adminCsrf)
+        .send({ partyType: 'INDIVIDUAL', kind: 'CUSTOMER', name: `Historique archivé ${SUFFIX}` });
+      const id = created.body.data.party.id;
+      expect((await admin.post(`/api/admin/crm/parties/${id}/archive`).set('x-csrf-token', adminCsrf)).status).toBe(200);
+      const denied = await admin.post('/api/admin/crm/communications').set('x-csrf-token', adminCsrf)
+        .send({ partyId: id, channel: 'PHONE', subject: 'Ne doit pas être enregistré' });
+      expect(denied.status).toBe(409);
+      expect(denied.body.code).toBe('CRM_IMMUTABLE');
+      expect((await admin.get(`/api/admin/crm/communications?partyId=${id}`)).body.data).toEqual([]);
     });
   });
 

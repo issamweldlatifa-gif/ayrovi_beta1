@@ -1,3 +1,4 @@
+import { readBoundedResponse } from '../../../services/boundedResponse';
 import type {
   AiCompletionRequest,
   AiCompletionResult,
@@ -356,16 +357,17 @@ export class AnthropicAdapter implements AiResponsesProviderAdapter {
     }).catch((error: any) => {
       if (error?.name === 'AbortError' || error?.name === 'TimeoutError') {
         throw new AiProviderError('PROVIDER_TIMEOUT', this.id, 'Anthropic request timed out.', {
-          retryable: true, diagnostic: String(error?.message || ''),
+          retryable: true,
         });
       }
       throw new AiProviderError('PROVIDER_UNAVAILABLE', this.id, 'Anthropic request failed.', {
-        retryable: true, diagnostic: String(error?.message || ''),
+        retryable: true,
       });
     });
     if (response.ok) return response;
-    const detail = await response.text().catch(() => '');
-    console.warn(`[AI Core Anthropic] HTTP ${response.status} ${detail.slice(0, 280)}`);
+    const detail = response.status === 400 ? await readBoundedResponse(response, 4_096, true).catch(() => '') : '';
+    if (response.status !== 400) void response.body?.cancel().catch(() => undefined);
+    console.warn(`[AI Core Anthropic] HTTP ${response.status}`);
     if (
       response.status === 400
       && 'output_config' in body
@@ -375,13 +377,13 @@ export class AnthropicAdapter implements AiResponsesProviderAdapter {
         'PROVIDER_CAPABILITY_UNSUPPORTED',
         this.id,
         'AI provider does not support this capability combination.',
-        { status: 400, retryable: false, diagnostic: detail.slice(0, 2_000) },
+        { status: 400, retryable: false },
       );
     }
     throw providerErrorFromHttp(
       this.id,
       response.status,
-      detail.slice(0, 2_000),
+      undefined,
       retryAtFromHeader(response.headers.get('retry-after')),
     );
   }

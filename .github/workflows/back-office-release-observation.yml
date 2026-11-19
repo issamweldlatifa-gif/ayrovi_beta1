@@ -1,0 +1,40 @@
+name: Verify Back Office rollout
+on:
+  push:
+    branches: ['arena/6b1f5276-ayrovi-beta1']
+    paths:
+      - 'src/**'
+      - 'client/src/admin/**'
+      - 'shared/teamConnections.ts'
+      - '.github/workflows/back-office-release-observation.yml'
+permissions:
+  contents: read
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    env:
+      BASE: https://ayrovi-beta1-moo8.onrender.com
+    steps:
+      - name: Wait for this exact release, then check public and unauthenticated contracts
+        shell: bash
+        run: |
+          for attempt in {1..42}; do
+            ready=$(curl -fsS --max-time 6 "$BASE/api/ready" || true)
+            commit=$(jq -r '.commit // "unknown"' <<<"${ready:-null}" 2>/dev/null || true)
+            if [[ "$commit" == "${GITHUB_SHA:0:12}" ]]; then
+              curl -fsS --max-time 8 "$BASE/admin" -o /dev/null
+              curl -fsS --max-time 8 "$BASE/ar/" -o "$RUNNER_TEMP/ar.html"
+              grep -Fq 'lang="ar" dir="rtl"' "$RUNNER_TEMP/ar.html"
+              for path in /api/admin/connections/access /api/admin/auth/me /api/admin/orders/release-probe/invoice; do
+                status=$(curl -sS --max-time 8 -o /dev/null -w '%{http_code}' "$BASE$path")
+                [[ "$status" == '401' ]] || { echo "::error::$path expected 401, got $status"; exit 1; }
+              done
+              echo "::notice::Render verified at $commit (public Arabic, admin page, unauthenticated API gates)."
+              exit 0
+            fi
+            echo "Waiting for $GITHUB_SHA, observed ${commit:-unknown} ($attempt/42)."
+            sleep 10
+          done
+          echo "::error::Render did not report the requested revision."
+          exit 1

@@ -42,7 +42,7 @@ import { analyzeOcrText } from '../zayrovix/services/ocrPrices';
 import { ocrRecognize } from '../services/vision';
 import { discoveryAggregates, recordLensEvaluation } from '../assistant/learning';
 import { calculatePrice } from '../services/pricing';
-import { generateInvoicePdf, invoiceEmailHtml, proofRoots } from '../services/invoice';
+import { generateInvoicePdf, invoiceAbsolutePath, invoiceEmailHtml, invoiceRoots, proofRoots } from '../services/invoice';
 import { writeAuditEvent, finalizeRequestAudit } from '../erp-core/audit';
 import { auditContextFromAdminRequest } from './audit';
 import { servePrivateDocument } from '../documents/fileAccess';
@@ -61,13 +61,19 @@ import {
   setAdminCookie,
   verifyPassword,
 } from './auth';
-import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
+import { AdminPermission, AdminRole, hasPermission, permissionsForRole } from './permissions';
 import { checkLoginSecondFactor, registerTwoFactorRoutes, resetTwoFactor } from './twoFactor';
 import { requireErpPermission } from '../erp-core/permissions';
 import { createCatalogueRouter } from '../catalogue/routes';
 import { createInventoryRouter } from '../inventory/routes';
 import { createPurchasingRouter } from '../purchasing/routes';
 import { createCrmRouter } from '../crm/routes';
+import { canOfferDhlTracking, registerDhlTrackingRoute } from '../shipping/dhlRoutes';
+import { normalizeTracking } from '../shipping/tracking';
+import { trackingCarrier } from '../../shared/shippingTracking';
+import { createLoginThrottle } from './loginThrottle';
+import { createConnectionsRouter } from '../connections/routes';
+import { createFinanceRouter } from '../finance/routes';
 import { createBackOfficeRouter } from '../back-office/routes';
 import { registerFrameworkResources } from '../back-office/resources';
 import { PUBLIC_NAV_DESTINATION_IDS } from '../../shared/publicNavigation';
@@ -240,13 +246,8 @@ const paymentStatuses = ['PENDING','PENDING_VERIFICATION','PAID','PARTIALLY_PAID
 const deliveryStatuses = ['PENDING','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','FAILED','RETURNED'];
 const adminRoles: AdminRole[] = ['SUPER_ADMIN','ADMIN','CONTENT_MANAGER','ORDER_MANAGER'];
 const zayrovixReviewStatuses: ZayrovixReviewStatus[] = ['PENDING','IN_REVIEW','QUOTED','REJECTED','CANCELLED'];
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
-const MAX_LOGIN_ATTEMPT_BUCKETS = 50_000;
-const loginAttemptSweeper = setInterval(() => {
-  const now = Date.now();
-  for (const [key, attempt] of loginAttempts) if (attempt.resetAt <= now) loginAttempts.delete(key);
-}, 5 * 60_000);
-loginAttemptSweeper.unref?.();
+// Fixed dummy hash has normal scrypt cost. Its result is ignored for nonexistent users.
+const dummyLoginHash = `scrypt$${'0'.repeat(32)}$${'0'.repeat(128)}`;
 const magazineGenerationInFlight = new Set<string>();
 
 function parsePositiveInteger(value: unknown, fallback: number, max: number): number {
@@ -542,40 +543,33 @@ export function createAdminRouter(
   ensureBootstrapAdmin(db);
   cleanupExpiredSessions(db);
 
+  const loginThrottle = createLoginThrottle();
   router.post('/auth/login', (req, res) => {
+    res.set('Cache-Control', 'private, no-store');
+    const fetchSite = req.get('Sec-Fetch-Site');
+    if (fetchSite && fetchSite !== 'same-origin' && fetchSite !== 'none') {
+      return res.status(403).json({ success: false, error: 'Connexion refusée depuis cette origine.' });
+    }
     const key = req.ip || 'unknown';
-    const nowTime = Date.now();
-    let attempt = loginAttempts.get(key);
-    if (attempt && attempt.resetAt > nowTime && attempt.count >= 8) {
-      return res.status(429).json({ success: false, error: 'Trop de tentatives. Réessayez dans 15 minutes.' });
-    }
-    if (!attempt && loginAttempts.size >= MAX_LOGIN_ATTEMPT_BUCKETS) {
-      for (const [storedKey, storedAttempt] of loginAttempts) if (storedAttempt.resetAt <= nowTime) loginAttempts.delete(storedKey);
-      if (loginAttempts.size >= MAX_LOGIN_ATTEMPT_BUCKETS) {
-        return res.status(503).json({ success: false, error: 'Service momentanément occupé.' });
-      }
-    }
     const rawEmail = typeof req.body?.email === 'string' ? req.body.email : '';
     const email = rawEmail.length <= 254 ? rawEmail.trim().toLowerCase() : '';
     const password = typeof req.body?.password === 'string' && req.body.password.length <= 1024 ? req.body.password : '';
+    const retry = loginThrottle.wait(key, email);
+    if (retry) return res.set('Retry-After', String(retry)).status(429)
+      .json({ success: false, error: 'Trop de tentatives. Réessayez dans quelques minutes.' });
     const user = email && password ? db.get<any>('SELECT * FROM admin_users WHERE email=? AND active=1', email) : null;
-    if (!user || !verifyPassword(password, user.password_hash)) {
-      const current = attempt && attempt.resetAt > nowTime ? attempt : { count: 0, resetAt: nowTime + 15 * 60 * 1000 };
-      current.count += 1;
-      loginAttempts.set(key, current);
+    const valid = password ? verifyPassword(password, user?.password_hash ?? dummyLoginHash) : false;
+    if (!user || !valid) {
+      loginThrottle.failure(key, email);
       return res.status(401).json({ success: false, error: 'Email ou mot de passe incorrect.' });
     }
-    // Double authentification (12/11/2026) : sans 2FA active, rien ne change.
     const second = checkLoginSecondFactor(db, user, req.body);
     if ('code' in second) {
-      if (second.code === 'TOTP_INVALID') {
-        const current = attempt && attempt.resetAt > nowTime ? attempt : { count: 0, resetAt: nowTime + 15 * 60 * 1000 };
-        current.count += 1;
-        loginAttempts.set(key, current);
-      }
+      // A challenge also consumes the network budget to bound password verification work.
+      loginThrottle.failure(key, second.code === 'TOTP_INVALID' ? email : '');
       return res.status(401).json({ success: false, code: second.code, error: second.error });
     }
-    loginAttempts.delete(key);
+    loginThrottle.success(key, email);
     if ('method' in second && second.method === 'recovery') {
       writeAuditEvent(db, {
         actor: { id: user.id, name: user.name, ipAddress: req.ip || null },
@@ -583,7 +577,7 @@ export function createAdminRouter(
         oldValues: null, newValues: null, context: auditContextFromAdminRequest(req),
       });
     }
-    const session = createAdminSession(db, user);
+    const session = createAdminSession(db, user, Number(user.totp_enabled) === 1);
     setAdminCookie(res, session.token);
     res.json({
       success: true,
@@ -602,6 +596,7 @@ export function createAdminRouter(
   });
 
   router.get('/auth/me', (req, res) => {
+    res.set('Cache-Control', 'private, no-store');
     const identity = resolveAdmin(db, req);
     if (!identity) {
       clearAdminCookie(res);
@@ -630,6 +625,8 @@ export function createAdminRouter(
   // follow-ups, notes, issues/support, communications, timeline et tableau de bord —
   // surface additive `/api/admin/crm/*`, gardée par la matrice `crm360:*`.
   router.use('/crm', createCrmRouter(db));
+  router.use('/finance', createFinanceRouter(db));
+  router.use('/connections', createConnectionsRouter(db));
   // Back Office (P2.0): coquille + framework de ressources. Uniquement de la LECTURE : la
   // coquille décrit l'espace de travail (navigation, descripteurs, recherche, capacités) et ne
   // déplace aucune écriture. Le moteur générique s'y enregistre lui-même, source unique.
@@ -1201,6 +1198,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   });
 
   router.get('/dashboard', requireAdmin(db, 'dashboard:read'), (req, res) => {
+    res.set('Cache-Control', 'private, no-store');
+    if (!hasPermission(admin(req).role, 'commerce:read')) return res.json({ success: true, data: { scope: 'workspace' } });
     const range = Math.min(Math.max(Number(req.query.days) || 30, 7), 365);
     const since = new Date(Date.now() - range * 86400000).toISOString();
     const previousSince = new Date(Date.now() - range * 2 * 86400000).toISOString();
@@ -1930,30 +1929,41 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const search = String(req.query.search || '').trim().slice(0, 100);
     const filters: string[] = [];
     const params: any[] = [];
-    if (search) { filters.push('(o.order_number LIKE ? OR c.name LIKE ? OR c.phone LIKE ?)'); params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
+    if (search) { filters.push('(o.order_number LIKE ? OR c.name LIKE ? OR c.phone LIKE ? OR o.invoice_number LIKE ?)'); params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`); }
     if (typeof req.query.status === 'string' && orderStatuses.includes(req.query.status)) { filters.push('o.status=?'); params.push(req.query.status); }
     if (typeof req.query.payment_status === 'string' && paymentStatuses.includes(req.query.payment_status)) { filters.push('o.payment_status=?'); params.push(req.query.payment_status); }
+    const issued = req.query.invoice === 'issued';
+    const timeColumn = issued ? 'i.issued_at' : 'o.created_at';
+    const since = typeof req.query.days === 'string' ? Number(req.query.days) : 0;
+    if ([7, 30, 90].includes(since)) { filters.push(`${timeColumn}>=?`); params.push(new Date(Date.now() - since * 86400000).toISOString()); }
+    const join = issued ? "JOIN invoices i ON i.order_id=o.id AND i.status='ISSUED'" : '';
+    const fields = issued ? ",i.issued_at invoice_issued_at,(i.file_path <> '') invoice_pdf_ready" : '';
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
-    const count = db.get<any>(`SELECT COUNT(*) count FROM orders o JOIN customers c ON c.id=o.customer_id ${where}`, ...params)?.count || 0;
-    const rows = db.all<any>(`SELECT o.*,c.name customer_name,c.phone customer_phone FROM orders o JOIN customers c ON c.id=o.customer_id
-      ${where} ORDER BY o.created_at DESC LIMIT ? OFFSET ?`, ...params, pageSize, (page - 1) * pageSize);
+    const count = db.get<any>(`SELECT COUNT(*) count FROM orders o JOIN customers c ON c.id=o.customer_id ${join} ${where}`, ...params)?.count || 0;
+    const rows = db.all<any>(`SELECT o.id,o.order_number,o.invoice_number,o.source,o.status,o.payment_status,o.deposit_status,
+      o.deposit_amount_tnd,o.total_tnd,o.created_at,c.name customer_name,c.phone customer_phone${fields} FROM orders o JOIN customers c ON c.id=o.customer_id ${join}
+      ${where} ORDER BY ${timeColumn} DESC, o.id DESC LIMIT ? OFFSET ?`, ...params, pageSize, (page - 1) * pageSize);
     res.json({ success: true, data: rows, pagination: { page, pageSize, total: Number(count), totalPages: Math.max(1, Math.ceil(Number(count) / pageSize)) } });
   });
 
+  registerDhlTrackingRoute(router, db);
   router.get('/orders/:id', requireAdmin(db, 'commerce:read'), (req, res) => {
     const order = db.get<any>(`SELECT o.*,c.name customer_name,c.registered_at customer_since FROM orders o JOIN customers c ON c.id=o.customer_id WHERE o.id=?`, req.params.id);
     if (!order) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+    const delivery = db.get<any>('SELECT * FROM deliveries WHERE order_id=?', order.id);
+    res.set('Cache-Control', 'private, no-store');
     res.json({ success: true, data: {
-      ...order,
+      ...Object.fromEntries(Object.entries(order).filter(([key]) => key !== 'invoice_path' && key !== 'deposit_proof_path')),
       pricing_snapshot: JSON.parse(order.pricing_snapshot),
       items: db.all<any>('SELECT * FROM order_items WHERE order_id=? ORDER BY created_at', order.id).map((item) => ({ ...item, pricing_snapshot: JSON.parse(item.pricing_snapshot) })),
       history: db.all<any>('SELECT * FROM order_status_history WHERE order_id=? ORDER BY created_at DESC', order.id),
-      payment: db.get<any>('SELECT * FROM payments WHERE order_id=?', order.id),
-      transactions: db.all<any>('SELECT * FROM payment_transactions WHERE order_id=? ORDER BY created_at DESC', order.id),
+      payment: db.get<any>('SELECT id,payment_number,method,status,amount_tnd,currency,confirmed_at FROM payments WHERE order_id=?', order.id),
+      transactions: db.all<any>('SELECT id,transaction_number,provider,status,amount_tnd,currency,created_at,confirmed_at FROM payment_transactions WHERE order_id=? ORDER BY created_at DESC,id DESC LIMIT 100', order.id),
       proofs: db.all<any>(`SELECT id,original_name,mime_type,size_bytes,transfer_reference,status,submitted_at,reviewed_at,reviewed_by,rejection_reason
         FROM payment_proofs WHERE order_id=? ORDER BY submitted_at DESC`, order.id),
-      invoice: db.get<any>('SELECT * FROM invoices WHERE order_id=?', order.id) || null,
-      delivery: db.get<any>('SELECT * FROM deliveries WHERE order_id=?', order.id),
+      invoice: db.get<any>("SELECT id,invoice_number,status,issued_at,(file_path <> '') AS pdf_ready FROM invoices WHERE order_id=?", order.id) || null,
+      delivery,
+      dhlTrackingAvailable: Boolean(delivery && canOfferDhlTracking(db, req, order.status, delivery.carrier)),
     } });
   });
 
@@ -2064,17 +2074,34 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const order = db.get<any>('SELECT * FROM orders WHERE id=?', req.params.id);
     if (!existing || !order) return res.status(404).json({ success: false, error: 'Livraison introuvable.' });
     const allowed = ['governorate','address','phone','status','expected_at','notes','carrier','tracking_number','tracking_url'];
-    const payload: Record<string, any> = {};
-    for (const field of allowed) if (req.body?.[field] !== undefined) payload[field] = typeof req.body[field] === 'string' ? req.body[field].trim().slice(0, 1000) : req.body[field];
-    if (payload.status && !deliveryStatuses.includes(payload.status)) return res.status(400).json({ success: false, error: 'Statut de livraison invalide.' });
+    const payload: Record<string, string> = {};
+    for (const field of allowed) {
+      const value: unknown = req.body?.[field];
+      if (value === undefined) continue;
+      const limit = field === 'tracking_number' || field === 'carrier' ? 100 : 1000;
+      if (typeof value !== 'string' || value.length > limit) return res.status(400).json({ success: false, error: 'Champ de livraison invalide.' });
+      payload[field] = value.trim();
+    }
+    if (payload.status !== undefined && !deliveryStatuses.includes(payload.status)) return res.status(400).json({ success: false, error: 'Statut de livraison invalide.' });
     if (payload.expected_at && Number.isNaN(new Date(payload.expected_at).getTime())) return res.status(400).json({ success: false, error: 'Date prévue invalide.' });
-    if (payload.tracking_url && !/^https:\/\/[\w.-]+(?:[/:?#][^\s]*)?$/i.test(payload.tracking_url)) return res.status(400).json({ success: false, error: 'URL de suivi HTTPS invalide.' });
     if (!Object.keys(payload).length) return res.status(400).json({ success: false, error: 'Aucune modification reçue.' });
+    if (order.status === 'CANCELLED') return res.status(409).json({ success: false, error: 'Commande annulée.' });
     const now = new Date().toISOString();
-    const nextStatus = String(payload.status || existing.status);
-    const carrier = String(payload.carrier ?? existing.carrier ?? '').trim();
-    const trackingNumber = String(payload.tracking_number ?? existing.tracking_number ?? '').trim();
-    if (nextStatus === 'SHIPPED') {
+    const nextStatus = payload.status ?? String(existing.status);
+    const changedStage = nextStatus !== existing.status;
+    const carrier = payload.carrier ?? String(existing.carrier || '');
+    const trackingNumber = payload.tracking_number ?? String(existing.tracking_number || '');
+    const trackingChanged = ['carrier','tracking_number','tracking_url'].some(field => payload[field] !== undefined && payload[field] !== String(existing[field] || ''));
+    if (trackingChanged || (changedStage && nextStatus === 'SHIPPED')) {
+      try {
+        // Never carry an unrelated old link to a newly selected carrier.
+        const fallback = payload.carrier !== undefined && payload.carrier !== existing.carrier ? '' : String(existing.tracking_url || '');
+        const normalized = normalizeTracking(carrier, trackingNumber, payload.tracking_url ?? fallback);
+        payload.carrier = normalized.carrier;
+        payload.tracking_url = normalized.url;
+      } catch (error) { return res.status(400).json({ success: false, error: (error as Error).message }); }
+    }
+    if (changedStage && nextStatus === 'SHIPPED') {
       if (order.status !== 'PREPARING') return res.status(409).json({ success: false, error: 'La commande doit être en préparation avant l’expédition.' });
       if (!carrier || !trackingNumber) return res.status(400).json({ success: false, error: 'Transporteur et numéro de suivi sont obligatoires pour expédier.' });
       payload.shipped_at = now;
@@ -2085,14 +2112,17 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const expectedOrderStatus: Record<string, string[]> = {
       IN_TRANSIT: ['SHIPPED'], OUT_FOR_DELIVERY: ['IN_TRANSIT'], DELIVERED: ['OUT_FOR_DELIVERY'],
     };
-    if (expectedOrderStatus[nextStatus] && !expectedOrderStatus[nextStatus].includes(String(order.status))) {
+    if (changedStage && expectedOrderStatus[nextStatus] && !expectedOrderStatus[nextStatus].includes(String(order.status))) {
       return res.status(409).json({ success: false, error: 'Terminez l’étape de livraison précédente.' });
     }
-    if (nextStatus === 'DELIVERED') payload.delivered_at = now;
+    if (changedStage && nextStatus === 'DELIVERED') payload.delivered_at = now;
+    if (changedStage && orderStatusForDelivery[existing.status] && ['PENDING','PREPARING'].includes(nextStatus)) return res.status(409).json({ success: false, error: 'Une expédition ne peut pas revenir en préparation.' });
+    if (trackingChanged && orderStatusForDelivery[nextStatus] && (!trackingNumber || !carrier)) return res.status(400).json({ success: false, error: 'Conservez un transporteur et une référence pour un colis expédié.' });
     db.transaction(() => {
       db.run(`UPDATE deliveries SET ${Object.keys(payload).map((key) => `${key}=?`).join(',')},updated_at=? WHERE order_id=?`, ...Object.values(payload), now, req.params.id);
       const nextOrderStatus = orderStatusForDelivery[nextStatus];
-      if (nextOrderStatus && nextOrderStatus !== order.status) {
+      if (trackingChanged && nextOrderStatus && !changedStage) db.run('UPDATE orders SET tracking_code=?,updated_at=? WHERE id=?', trackingNumber, now, order.id);
+      if (changedStage && nextOrderStatus && nextOrderStatus !== order.status) {
         db.run('UPDATE orders SET status=?,tracking_code=?,updated_at=? WHERE id=?', nextOrderStatus, trackingNumber, now, order.id);
         db.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at) VALUES (?,?,?,?,?,?,?)`,
           `history_${randomUUID()}`, order.id, order.status, nextOrderStatus,
@@ -2102,21 +2132,25 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         nextOrderStatus === 'SHIPPED' ? `La commande ${order.order_number} est expédiée par ${carrier}. Suivi : ${trackingNumber}.`
           : `La livraison de ${order.order_number} est maintenant ${nextOrderStatus}.`, `/compte/suivi`, now);
       }
+      const safeBefore = { status: existing.status, carrier: trackingCarrier(String(existing.carrier || '')) ?? (existing.carrier ? 'MANUAL' : null), hasTracking: Boolean(existing.tracking_number) };
+      const safeAfter = { status: nextStatus, carrier: trackingCarrier(carrier) ?? (carrier ? 'MANUAL' : null), hasTracking: Boolean(trackingNumber), fields: Object.keys(payload).sort() };
+      audit(db, req, changedStage ? 'STATUS_CHANGE' : 'UPDATE', 'DELIVERIES', existing.id, safeBefore, safeAfter);
     });
-    audit(db, req, 'UPDATE', 'DELIVERIES', existing.id, existing, payload);
     res.json({ success: true, data: db.get<any>('SELECT * FROM deliveries WHERE order_id=?', req.params.id) });
   });
 
   // ===== إشعارات الإدارة (وصل جديد / طلب جديد …) =====
-  router.get('/notifications', requireAdmin(db, 'dashboard:read'), (req, res) => {
+  router.get('/notifications', requireAdmin(db, 'commerce:read'), (req, res) => {
     const limit = parsePositiveInteger(req.query.limit, 30, 100);
-    res.json({ success: true, data: db.listAdminNotifications(limit), unread: db.unreadAdminNotificationsCount() });
+    res.set('Cache-Control', 'private, no-store');
+    const rows = db.listAdminNotifications(limit).map(({ id, type, title, message, action_url, created_at, read_at }) => ({ id, type, title, message, action_url, created_at, read_at }));
+    res.json({ success: true, data: rows, unread: db.unreadAdminNotificationsCount() });
   });
-  router.post('/notifications/:id/read', requireAdmin(db, 'dashboard:read'), (req, res) => {
+  router.post('/notifications/:id/read', requireAdmin(db, 'orders:write'), (req, res) => {
     db.markAdminNotificationRead(String(req.params.id).slice(0, 80));
     res.json({ success: true, unread: db.unreadAdminNotificationsCount() });
   });
-  router.post('/notifications/read-all', requireAdmin(db, 'dashboard:read'), (_req, res) => {
+  router.post('/notifications/read-all', requireAdmin(db, 'orders:write'), (_req, res) => {
     db.markAllAdminNotificationsRead();
     res.json({ success: true, unread: 0 });
   });
@@ -2172,6 +2206,18 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   });
 
   // Invoice issuance is an explicit admin event, independent from payment approval.
+  router.get('/orders/:id/invoice', requireAdmin(db, 'commerce:read'), (req, res) => {
+    const invoice = db.get<{ id: string; invoice_number: string; file_path: string }>(
+      "SELECT id,invoice_number,file_path FROM invoices WHERE order_id=? AND status='ISSUED'", req.params.id);
+    if (!invoice?.invoice_number || !invoice.file_path) return res.status(404).json({ success: false, error: 'Le PDF de la facture n’est pas encore disponible.' });
+    const result = servePrivateDocument(db, req, res, {
+      filePath: invoiceAbsolutePath(invoice.invoice_number), allowedRoots: invoiceRoots(), module: 'INVOICES',
+      resourceType: 'invoice', resourceId: invoice.id, contentType: 'application/pdf',
+      filename: `${invoice.invoice_number.replace(/[^A-Z0-9-]/gi, '')}.pdf`,
+    });
+    if (!result.served) return res.status(result.status).json({ success: false, code: result.code, error: result.message });
+  });
+
   router.post('/orders/:id/invoice/issue', requireAdmin(db, 'payments:write'), async (req, res) => {
     try {
       const invoice = db.issueOrderInvoice(req.params.id, admin(req).id);
@@ -2193,8 +2239,9 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (!order) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
     const invoiceEntity = db.get<any>("SELECT * FROM invoices WHERE order_id=? AND status='ISSUED'", order.id);
     if (!invoiceEntity) return res.status(409).json({ success: false, error: 'Aucune facture émise — utilisez d’abord « Émettre la facture ».' });
+    let pdfPath: string;
     try {
-      await generateInvoicePdf(db, order.id);
+      pdfPath = await generateInvoicePdf(db, order.id);
     } catch (error: any) {
       return res.status(500).json({ success: false, error: 'La facture n’a pas pu être régénérée.' });
     }
@@ -2202,23 +2249,22 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const deliveryEmail = String(order.contact_email || account?.email || '');
     let mail: { delivered: boolean; provider: string } = { delivered: false, provider: 'no-email' };
     if (deliveryEmail) {
-      const updated = db.get<any>('SELECT * FROM orders WHERE id=?', order.id);
       const total = Number(order.total_tnd), dep = Number(order.deposit_amount_tnd);
       const balance = Math.max(0, Math.round((total - dep) * 1000) / 1000);
       const result = await sendMail({
         to: deliveryEmail,
         subject: `Facture ${order.invoice_number} — commande ${order.order_number}`,
         html: invoiceEmailHtml({
-          customerName: String(account.display_name || 'Client ZAYROVI'),
+          customerName: String(account?.display_name || 'Client ZAYROVI'),
           orderNumber: String(order.order_number),
           invoiceNumber: String(order.invoice_number),
-          trackingCode: String(updated?.tracking_code || ''),
+          trackingCode: String(order.tracking_code || ''),
           totalLabel: `${total.toFixed(3)} DT`,
           depositLabel: `${dep.toFixed(3)} DT`,
           balanceLabel: `${balance.toFixed(3)} DT`,
           company: String(db.get<any>("SELECT setting_value FROM settings WHERE setting_key='company_legal_name'")?.setting_value || 'ZAYROVI'),
         }),
-        attachments: updated?.invoice_path && fs.existsSync(String(updated.invoice_path)) ? [{ filename: `${order.invoice_number}.pdf`, path: String(updated.invoice_path) }] : [],
+        attachments: [{ filename: `${invoiceEntity.invoice_number}.pdf`, path: pdfPath }],
       });
       mail = { delivered: result.delivered, provider: result.provider };
     }
@@ -2243,11 +2289,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   });
 
   router.get('/customers/:id', requireAdmin(db, 'commerce:read'), (req, res) => {
+    res.set('Cache-Control', 'private, no-store');
     const customer = db.get<any>('SELECT * FROM customers WHERE id=?', req.params.id);
     if (!customer) return res.status(404).json({ success: false, error: 'Client introuvable.' });
-    const account = db.get<any>(`SELECT a.* FROM customer_accounts a JOIN orders o ON o.account_id=a.id
+    const account = db.get<any>(`SELECT a.id,a.display_name,a.email,a.phone,a.status,a.phone_verified_at,a.email_verified_at,a.last_login_at FROM customer_accounts a JOIN orders o ON o.account_id=a.id
       WHERE o.customer_id=? ORDER BY o.created_at DESC LIMIT 1`, customer.id);
-    res.json({ success: true, data: { ...customer, account: account || null, orders: db.all<any>('SELECT * FROM orders WHERE customer_id=? ORDER BY created_at DESC', customer.id) } });
+    res.json({ success: true, data: { ...customer, account: account || null, orders: db.all<any>('SELECT id,order_number,account_id,status,total_tnd,created_at FROM orders WHERE customer_id=? ORDER BY created_at DESC LIMIT 100', customer.id) } });
   });
 
   // ===== Comptes clients enregistrés (connexion Google/SMS) — visibles même avant toute commande =====
@@ -2256,8 +2303,11 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const page = parsePositiveInteger(req.query.page, 1, 100000);
     const pageSize = parsePositiveInteger(req.query.pageSize, 20, 100);
     const search = String(req.query.search || '').trim().slice(0, 100);
-    const params = search ? [`%${search}%`, `%${search}%`, `%${search}%`] : [];
-    const where = search ? 'WHERE a.display_name LIKE ? OR a.email LIKE ? OR a.phone LIKE ?' : '';
+    const params: string[] = [];
+    const filters: string[] = [];
+    if (search) { filters.push('(a.display_name LIKE ? OR a.email LIKE ? OR a.phone LIKE ?)'); params.push(`%${search}%`, `%${search}%`, `%${search}%`); }
+    if (req.query.status === 'ACTIVE' || req.query.status === 'BLOCKED') { filters.push('a.status=?'); params.push(req.query.status); }
+    const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
     const count = db.get<any>(`SELECT COUNT(*) count FROM customer_accounts a ${where}`, ...params)?.count || 0;
     const rows = db.all<any>(`SELECT a.id,a.display_name,a.email,a.phone,a.status,a.locale,a.marketing_opt_in,a.created_at,a.last_login_at,
       (a.phone_verified_at IS NOT NULL) phone_verified,(a.email_verified_at IS NOT NULL) email_verified,
@@ -2597,9 +2647,13 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     }
     if (existing.id === admin(req).id && (payload.active === 0 || (payload.role && payload.role !== 'SUPER_ADMIN'))) return res.status(400).json({ success: false, error: 'Vous ne pouvez pas désactiver ou rétrograder votre propre compte.' });
     if (!Object.keys(payload).length) return res.status(400).json({ success: false, error: 'Aucune modification reçue.' });
-    db.run(`UPDATE admin_users SET ${Object.keys(payload).map((field) => `${field}=?`).join(',')},updated_at=? WHERE id=?`, ...Object.values(payload), new Date().toISOString(), existing.id);
-    if (payload.active === 0 || payload.password_hash) db.run('DELETE FROM admin_sessions WHERE user_id=?', existing.id);
-    audit(db, req, 'UPDATE', 'USERS', existing.id, { name: existing.name, role: existing.role, active: existing.active }, { ...payload, password_hash: payload.password_hash ? '[MODIFIÉ]' : undefined });
+    db.transaction(() => {
+      db.run(`UPDATE admin_users SET ${Object.keys(payload).map((field) => `${field}=?`).join(',')},updated_at=? WHERE id=?`, ...Object.values(payload), new Date().toISOString(), existing.id);
+      const roleChanged = payload.role !== undefined && payload.role !== existing.role;
+      if (payload.active === 0 || roleChanged) db.run('DELETE FROM team_connection_members WHERE user_id=?', existing.id);
+      if (payload.active === 0 || payload.password_hash || roleChanged) db.run('DELETE FROM admin_sessions WHERE user_id=?', existing.id);
+      audit(db, req, 'UPDATE', 'USERS', existing.id, { name: existing.name, role: existing.role, active: existing.active }, { ...payload, password_hash: payload.password_hash ? '[MODIFIÉ]' : undefined });
+    });
     res.json({ success: true });
   });
 

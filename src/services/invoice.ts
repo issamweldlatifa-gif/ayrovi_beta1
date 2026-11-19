@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { FONT_STACK, BRAND, documentIdentityCss, mailIdentityStyle } from './brandDocuments';
 import { invoiceQrSvg } from './invoiceQr';
 import { BRAND_LOGO_SVG } from '../../shared/brandLogo.generated';
@@ -215,7 +216,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   ${order.tracking_code ? `<div class="tracking">Code de suivi de votre commande<br><b>${escapeHtml(order.tracking_code)}</b></div>` : ''}
 
   <footer>
-    Facture électronique générée automatiquement par ${escapeHtml(company.name)} — ${escapeHtml(company.address)}.<br>
+    Facture PDF générée automatiquement par ${escapeHtml(company.name)} — ${escapeHtml(company.address)}.<br>
     Cet acompte confirme votre commande. Le solde est payable à la livraison. Merci de votre confiance.
   </footer>
 </body></html>`;
@@ -287,7 +288,13 @@ export async function generateInvoicePdf(db: QatafoDatabase, orderId: string): P
   db.run('UPDATE orders SET invoice_number=? WHERE id=?', invoice.invoice_number, orderId);
   const target = path.join(invoiceWriteDir(), `${String(invoice.invoice_number).replace(/[^A-Z0-9-]/gi, '')}.pdf`);
 
-  await writeSimplePdf(buildInvoiceLines(db, orderId), target);
+  const temporary = `${target}.${randomUUID()}.tmp`;
+  try {
+    await writeSimplePdf(buildInvoiceLines(db, orderId), temporary);
+    await fs.promises.rename(temporary, target);
+  } finally {
+    await fs.promises.rm(temporary, { force: true }).catch(() => undefined);
+  }
   const now = new Date().toISOString();
   db.transaction(() => {
     db.run('UPDATE invoices SET file_path=?,updated_at=? WHERE id=?', target, now, invoice.id);
@@ -302,7 +309,7 @@ export function invoiceEmailHtml(input: { customerName: string; orderNumber: str
   <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid ${BRAND.colors.line};">
     <div style="background:#000000;padding:22px 26px;color:#fff;">
       <strong style="font-size:20px;">${e(input.company)}</strong>
-      <p style="margin:4px 0 0;font-size:12px;opacity:.85;">Confirmation d'acompte & facture électronique</p>
+      <p style="margin:4px 0 0;font-size:12px;opacity:.85;">Confirmation d'acompte & facture PDF</p>
     </div>
     <div style="padding:26px;">
       <p>Bonjour <strong>${e(input.customerName)}</strong>,</p>
@@ -314,7 +321,7 @@ export function invoiceEmailHtml(input: { customerName: string; orderNumber: str
         <tr><td style="padding:8px 0;color:${BRAND.colors.muted};">Solde à la livraison</td><td style="text-align:right;font-weight:700;">${e(input.balanceLabel)}</td></tr>
         ${input.trackingCode ? `<tr><td style="padding:8px 0;color:${BRAND.colors.muted};">Code de suivi</td><td style="text-align:right;font-weight:700;color:#000000;font-family:${FONT_STACK};font-variant-numeric:tabular-nums;">${e(input.trackingCode)}</td></tr>` : ''}
       </table>
-      <p style="line-height:1.6;color:${BRAND.colors.secondary};">Votre facture électronique est jointe à cet e-mail en PDF. Vous pouvez aussi la télécharger à tout moment depuis votre espace client ZAYROVI (Commandes → ${e(input.orderNumber)}).</p>
+      <p style="line-height:1.6;color:${BRAND.colors.secondary};">Votre facture PDF est jointe à cet e-mail. Vous pouvez aussi la télécharger à tout moment depuis votre espace client ZAYROVI (Commandes → ${e(input.orderNumber)}).</p>
       <p style="margin-top:22px;font-size:12px;color:${BRAND.colors.muted};">Merci de votre confiance — l'équipe ${e(input.company)}</p>
     </div>
   </div>

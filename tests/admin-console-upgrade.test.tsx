@@ -258,8 +258,9 @@ describe('6. Chaque état de la coquille reste lisible', () => {
     const scrims = [...css.matchAll(/([^{};]+)\{[^}]*100vmax[^}]*\}/g)].map((match) => match[1].trim());
     expect(scrims).toEqual(['.bo-shell .admin-sidebar.is-open']);
     // `is-open` et le fond cliquable suivent le même état que le bouton « Ouvrir le menu »
-    expect(shell).toContain("<aside className={`admin-sidebar ${mobile ? 'is-open' : ''}`}>");
+    expect(shell).toContain("<aside id=\"office-navigation\" className={`admin-sidebar ${mobile ? 'is-open' : ''}`}>");
     expect(shell).toContain('{mobile && <button className="admin-sidebar-overlay" onClick={() => setMobile(false)}');
+    expect(read('client/src/styles/admin-unified.css')).toMatch(/\.bo-unified \.admin-sidebar\.is-open \{visibility:visible;box-shadow:none\}/);
   });
 
   it('pastille de domaine choisie : encre inversée lisible dans les deux thèmes (plus de blanc sur blanc en sombre)', () => {

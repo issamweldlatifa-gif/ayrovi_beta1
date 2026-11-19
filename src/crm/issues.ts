@@ -218,24 +218,28 @@ export function recordCommunication(
   const subject = cleanText(raw.subject, CRM_LIMITS.SUBJECT_MAX);
   if (!subject && !cleanText(raw.body, 200)) issues.push({ field: 'subject', reason: 'Objet ou corps requis.' });
   if (issues.length) return { ok: false, code: CRM_ERRORS.VALIDATION, message: 'Communication invalide.', details: issues };
-  if (partyId && !db.get<{ id: string }>('SELECT id FROM crm360_parties WHERE id=?', partyId)) {
-    return { ok: false, code: CRM_ERRORS.PARTY_NOT_FOUND, message: 'Fiche relationnelle introuvable.' };
+  if (partyId) {
+    const party = db.get<{ status: string }>('SELECT status FROM crm360_parties WHERE id=?', partyId);
+    if (!party) return { ok: false, code: CRM_ERRORS.PARTY_NOT_FOUND, message: 'Fiche relationnelle introuvable.' };
+    if (party.status === 'ARCHIVED') return { ok: false, code: CRM_ERRORS.IMMUTABLE, message: 'Une fiche archivée est en lecture seule.' };
   }
-  const id = `comm_${randomUUID()}`;
-  const now = new Date().toISOString();
-  db.run(`INSERT INTO crm360_communications
-    (id,party_id,contact_id,direction,channel,subject,body,external_id,sent_at,created_by,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-  id, partyId, contactId, direction, channel, subject, cleanMultiline(raw.body, CRM_LIMITS.DESCRIPTION_MAX),
-  cleanText(raw.externalId, CRM_LIMITS.CODE_MAX), parseDateOrNull(raw.sentAt) ?? now, actor.id ?? null, now);
-  recordCrmMutation(db, {
-    actor, action: 'CREATE', resourceType: 'communication', resourceId: id,
-    after: { party_id: partyId, channel, direction, subject }, context: context as never,
-    statusEvent: partyId
-      ? { entityType: 'party', entityId: partyId, verb: 'COMMUNICATION', toValue: `${direction}:${channel}`, note: subject, actorEmployeeId: actor.id, at: now }
-      : undefined,
+  return db.transaction(() => {
+    const id = `comm_${randomUUID()}`;
+    const now = new Date().toISOString();
+    db.run(`INSERT INTO crm360_communications
+      (id,party_id,contact_id,direction,channel,subject,body,external_id,sent_at,created_by,created_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    id, partyId, contactId, direction, channel, subject, cleanMultiline(raw.body, CRM_LIMITS.DESCRIPTION_MAX),
+    cleanText(raw.externalId, CRM_LIMITS.CODE_MAX), parseDateOrNull(raw.sentAt) ?? now, actor.id ?? null, now);
+    recordCrmMutation(db, {
+      actor, action: 'CREATE', resourceType: 'communication', resourceId: id,
+      after: { party_id: partyId, channel, direction, subject }, context: context as never,
+      statusEvent: partyId
+        ? { entityType: 'party', entityId: partyId, verb: 'COMMUNICATION', toValue: `${direction}:${channel}`, note: subject, actorEmployeeId: actor.id, at: now }
+        : undefined,
+    });
+    return { ok: true, value: { communication: db.get<any>('SELECT * FROM crm360_communications WHERE id=?', id) } };
   });
-  return { ok: true, value: { communication: db.get<any>('SELECT * FROM crm360_communications WHERE id=?', id) } };
 }
 
 export function listCommunications(db: QatafoDatabase, query: { partyId?: unknown; page?: unknown; pageSize?: unknown; channel?: unknown }) {

@@ -28,6 +28,7 @@ import { ensureErpCoreSchema } from '../erp-core/bootstrap';
 import { ensureCatalogueSchema } from '../catalogue/bootstrap';
 import { ensureInventorySchema } from '../inventory/bootstrap';
 import { ensurePurchasingSchema } from '../purchasing/bootstrap';
+import { ensureConnectionsSchema } from '../connections/schema';
 import { ensureCrmSchema } from '../crm/bootstrap';
 import { relaxCustomerFavoritesSourceUnique } from './customerFavoritesMigration';
 
@@ -372,6 +373,7 @@ export class QatafoDatabase {
       totp_secret: 'TEXT', totp_pending: 'TEXT', totp_enabled: 'INTEGER NOT NULL DEFAULT 0',
       totp_last_step: 'INTEGER NOT NULL DEFAULT 0', totp_recovery: "TEXT NOT NULL DEFAULT '[]'",
     })) this.ensureColumn('admin_users', name, definition);
+    this.ensureColumn('admin_sessions', 'mfa_verified', 'INTEGER NOT NULL DEFAULT 0 CHECK(mfa_verified IN (0,1))');
     this.ensureColumn('publications', 'category', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('publications', 'media_origin', "TEXT NOT NULL DEFAULT 'uploaded'");
     for (const [name, definition] of Object.entries({
@@ -717,6 +719,7 @@ export class QatafoDatabase {
   private initErpCoreSchema(): void {
     try {
       ensureErpCoreSchema(this);
+      ensureConnectionsSchema(this);
     } catch (error: any) {
       // A foundation-table problem must never prevent the store from booting;
       // it is surfaced in the log and stays visible in /api/admin/core/environment.
@@ -2607,6 +2610,7 @@ export class QatafoDatabase {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       );
+      CREATE INDEX IF NOT EXISTS idx_transactions_register_date ON payment_transactions(created_at DESC, id DESC);
       CREATE INDEX IF NOT EXISTS idx_transactions_account ON payment_transactions(account_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_transactions_payment ON payment_transactions(payment_id, created_at DESC);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_provider_ref ON payment_transactions(provider, provider_reference)

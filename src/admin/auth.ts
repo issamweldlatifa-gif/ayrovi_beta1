@@ -15,6 +15,7 @@ export interface AdminIdentity {
   role: AdminRole;
   permissions: AdminPermission[];
   csrfToken: string;
+  mfaVerified: boolean;
 }
 
 function hashToken(token: string): string {
@@ -136,13 +137,13 @@ export function ensureBootstrapAdmin(db: QatafoDatabase) {
   if (forceReset) console.info(`[Admin] Compte administrateur créé en mode reset pour ${email}.`);
 }
 
-export function createAdminSession(db: QatafoDatabase, user: any) {
+export function createAdminSession(db: QatafoDatabase, user: any, mfaVerified = false) {
   const token = randomBytes(32).toString('base64url');
   const csrfToken = randomBytes(24).toString('base64url');
   const now = new Date();
   const expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
-  db.run(`INSERT INTO admin_sessions (id,user_id,csrf_token,expires_at,created_at,last_seen_at)
-    VALUES (?,?,?,?,?,?)`, hashToken(token), user.id, hashToken(csrfToken), expiresAt.toISOString(), now.toISOString(), now.toISOString());
+  db.run(`INSERT INTO admin_sessions (id,user_id,csrf_token,expires_at,created_at,last_seen_at,mfa_verified)
+    VALUES (?,?,?,?,?,?,?)`, hashToken(token), user.id, hashToken(csrfToken), expiresAt.toISOString(), now.toISOString(), now.toISOString(), mfaVerified ? 1 : 0);
   db.run('UPDATE admin_users SET last_login_at=?, updated_at=? WHERE id=?', now.toISOString(), now.toISOString(), user.id);
   return { token, csrfToken, expiresAt: expiresAt.toISOString() };
 }
@@ -167,7 +168,7 @@ export function clearAdminCookie(res: Response) {
 export function resolveAdmin(db: QatafoDatabase, req: Request): AdminIdentity | null {
   const token = parseCookie(req.headers.cookie, COOKIE_NAME);
   if (!token) return null;
-  const session = db.get<any>(`SELECT s.*,u.email,u.name,u.role,u.active
+  const session = db.get<any>(`SELECT s.*,u.email,u.name,u.role,u.active,u.totp_enabled
     FROM admin_sessions s JOIN admin_users u ON u.id=s.user_id
     WHERE s.id=? AND s.expires_at>?`, hashToken(token), new Date().toISOString());
   if (!session || !session.active) return null;
@@ -180,6 +181,7 @@ export function resolveAdmin(db: QatafoDatabase, req: Request): AdminIdentity | 
     role: session.role,
     permissions: permissionsForRole(session.role),
     csrfToken,
+    mfaVerified: session.mfa_verified === 1 && session.totp_enabled === 1,
   };
 }
 
@@ -204,6 +206,12 @@ export function requireAdmin(db: QatafoDatabase, permission?: AdminPermission) {
     (req as any).admin = admin;
     next();
   };
+}
+
+/** An MFA change must not leave password-only sessions on other devices active. */
+export function revokeOtherAdminSessions(db: QatafoDatabase, req: Request, userId: string) {
+  const token = parseCookie(req.headers.cookie, COOKIE_NAME);
+  db.run('DELETE FROM admin_sessions WHERE user_id=? AND id<>?', userId, hashToken(token));
 }
 
 export function destroySession(db: QatafoDatabase, req: Request) {

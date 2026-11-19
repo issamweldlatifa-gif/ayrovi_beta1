@@ -1,0 +1,127 @@
+/* Admin roles: neutral/blue values live here, components consume roles, not hex values.
+   The --bo aliases keep earlier CRM/ERP/CMS screens on the same theme during migration. */
+.bo-shell.bo-unified {
+  --office-surface-toolbar: #fff;
+  --office-text-toolbar: #222e43;
+  --office-text-toolbar-muted: #576780;
+  --office-surface-navigation: #121d34;
+  --office-text-navigation: #ebf0ff;
+  --office-text-navigation-muted: #a5b2ce;
+  --office-surface-navigation-selected: #2354cf;
+  --office-surface-canvas: #f2f5fb;
+  --office-surface-card: #fff;
+  --office-border-default: #e0e7f2;
+  --office-border-subtle: #e9edf5;
+  --office-border-emphasis: #d2dceb;
+  --office-text-primary: #16213a;
+  --office-text-secondary: #50617c;
+  --office-text-caption: #596b84;
+  --office-surface-inset: #f5f7fc;
+  --office-surface-hover: #ecf2ff;
+  --office-action-primary: #2354d0;
+  --office-action-hover: #1745b6;
+  --office-text-on-action: #fff;
+  --office-surface-accent-soft: #e9efff;
+  --office-size-toolbar: 62px;
+  --office-size-navigation: 252px;
+  --office-radius-panel: 15px;
+  --office-radius-control: 8px;
+  --office-chart-series-1: #2f61e5;
+  --office-chart-series-2: #1b9c8b;
+  --office-chart-series-3: #7756dc;
+  --office-chart-series-4: #cb8219;
+  --office-chart-series-5: #6981a5;
+  --office-space-1: 4px;
+  --office-space-2: 8px;
+  --office-space-3: 12px;
+  --office-space-4: 16px;
+  --office-space-5: 24px;
+  --office-type-caption: .75rem;
+  --office-type-label: .8125rem;
+  --office-type-body: .875rem;
+  --office-type-section: 1.125rem;
+  --office-type-title: clamp(1.625rem, 2.1vw + .25rem, 2.125rem);
+  --office-leading-caption: 1.45;
+  --office-leading-body: 1.55;
+  --office-leading-title: 1.22;
+  --office-tracking-title: -.025em;
+  --office-tracking-label: .075em;
+  --office-font-width: 100%;
+  --office-focus-outer: #2354d0;
+  --office-navigator-focus: #b8cdff;
+  --office-control-height: 36px;
+  --office-hit-touch: 44px;
+  --office-elevation-panel: 0 1px 2px #11224a0b;
+  --office-elevation-popover: 0 10px 26px #132a5526;
+}
+html[data-theme='dark'] .bo-shell.bo-unified {
+  --office-surface-toolbar: #171f30;
+  --office-text-toolbar: #ebf0fd;
+  --office-text-toolbar-muted: #aab8d1;
+  --office-surface-navigation: #111725;
+  --office-text-navigation: #eef2ff;
+  --office-text-navigation-muted: #aab7d0;
+  --office-surface-navigation-selected: #2852b9;
+  --office-surface-canvas: #111726;
+  --office-surface-card: #192235;
+  --office-border-default: #2d3950;
+  --office-border-subtle: #28334a;
+  --office-border-emphasis: #3d4c68;
+  --office-text-primary: #eef2ff;
+  --office-text-secondary: #bac7df;
+  --office-text-caption: #aab9d5;
+  --office-surface-inset: #131c2f;
+  --office-surface-hover: #263454;
+  --office-action-primary: #9ab5ff;
+  --office-action-hover: #bbcdff;
+  --office-text-on-action: #10224a;
+  --office-surface-accent-soft: #233760;
+  --office-chart-series-1: #8aaaff;
+  --office-chart-series-2: #58d9c3;
+  --office-chart-series-3: #b4a1ff;
+  --office-chart-series-4: #ffc06d;
+  --office-chart-series-5: #828ead;
+  --office-focus-outer: #adc4ff;
+  --office-elevation-panel: 0 1px 2px #070c1780;
+  --office-elevation-popover: 0 10px 30px #080b1466;
+}
+
+.bo-shell.bo-unified:lang(ar) {
+  --office-leading-caption: 1.65;
+  --office-leading-body: 1.8;
+  --office-leading-title: 1.48;
+  --office-tracking-title: 0;
+  --office-tracking-label: 0;
+}
+.bo-shell.bo-unified {
+  --bo-bar: var(--office-surface-toolbar);
+  --bo-bar-ink: var(--office-text-toolbar);
+  --bo-bar-muted: var(--office-text-toolbar-muted);
+  --bo-rail: var(--office-surface-navigation);
+  --bo-rail-ink: var(--office-text-navigation);
+  --bo-rail-muted: var(--office-text-navigation-muted);
+  --bo-rail-active: var(--office-surface-navigation-selected);
+  --bo-canvas: var(--office-surface-canvas);
+  --bo-card: var(--office-surface-card);
+  --bo-line: var(--office-border-default);
+  --bo-line-soft: var(--office-border-subtle);
+  --bo-line-firm: var(--office-border-emphasis);
+  --bo-ink: var(--office-text-primary);
+  --bo-muted: var(--office-text-secondary);
+  --bo-soft: var(--office-text-caption);
+  --bo-sunken: var(--office-surface-inset);
+  --bo-hover: var(--office-surface-hover);
+  --bo-accent: var(--office-action-primary);
+  --bo-accent-hover: var(--office-action-hover);
+  --bo-on-accent: var(--office-text-on-action);
+  --bo-accent-soft: var(--office-surface-accent-soft);
+  --bo-bar-h: var(--office-size-toolbar);
+  --bo-rail-w: var(--office-size-navigation);
+  --bo-radius: var(--office-radius-panel);
+  --bo-radius-sm: var(--office-radius-control);
+  --bo-chart-blue: var(--office-chart-series-1);
+  --bo-chart-teal: var(--office-chart-series-2);
+  --bo-chart-violet: var(--office-chart-series-3);
+  --bo-chart-amber: var(--office-chart-series-4);
+  --bo-chart-extra: var(--office-chart-series-5);
+}
