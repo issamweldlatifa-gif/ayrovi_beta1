@@ -56,10 +56,11 @@ describe('devise locale par domaine Amazon', () => {
     expect(result.currency).toBe('USD');
   });
 
-  it('`$` nu sur amazon.ca reste ambigu (CAD ou USD) : aucune preuve sans code publié', () => {
+  it('`$` nu sur amazon.ca = CAD (P2-5, 19/11/2026) : jamais USD', () => {
     const url = 'https://www.amazon.ca/dp/B0TESTCA02';
     const result = validateAyWebsCapturedPage(payloadFor(url, '$49.99'), url);
-    expect(result.currencyVerified).toBe(false);
+    expect(result.currencyVerified).toBe(true);
+    expect(result.currency).toBe('CAD');
     expect(result.notes.join(' ')).toContain('currency_symbol_host_ambiguous:USD');
   });
 

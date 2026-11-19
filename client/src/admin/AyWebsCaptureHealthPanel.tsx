@@ -6,12 +6,18 @@
  * servi (lot + empreinte) et un levier par boutique :
  *   • Normal (`auto`) · Retour au script complet (`core`) · Capture suspendue (`paused`).
  * Toute bascule exige une raison et passe au journal d'audit AYWEBs.
+ *
+ * Principe de capture (19/11/2026) : `selection` (le client choisit sur la page,
+ * AYWEBs capte ce choix) ou `matrix` (ancien chemin, retour arrière). Les deux
+ * chemins ont leur ligne de santé (`selection:<boutique>` / `registre:<boutique>`)
+ * pour comparer les taux d'acceptation avant de retirer l'ancien.
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi, ApiError } from './api';
 import { Button, CardTitle, DataTable, Select, Toast } from './components';
 
 type Mode = 'auto' | 'core' | 'paused';
+type Principle = 'selection' | 'matrix';
 
 interface HealthRow {
   store_key: string;
@@ -25,7 +31,7 @@ interface HealthRow {
   control: Mode;
 }
 
-interface ScriptRow { store_id: string; control: Mode; bundle: string; hash: string; bytes: number }
+interface ScriptRow { store_id: string; control: Mode; principle?: Principle; bundle: string; hash: string; bytes: number }
 
 interface Health {
   window_hours: number;
@@ -41,6 +47,11 @@ const MODE_LABELS: Record<Mode, string> = {
   auto: 'Normal',
   core: 'Retour au script complet',
   paused: 'Capture suspendue',
+};
+
+const PRINCIPLE_LABELS: Record<Principle, string> = {
+  selection: 'Sélection du client',
+  matrix: 'Matrice (ancien chemin)',
 };
 
 function percent(rate: number | null): string {
@@ -60,6 +71,7 @@ export const AyWebsCaptureHealthPanel: React.FC<{ canControl: boolean }> = ({ ca
   const [mode, setMode] = useState<Mode>('paused');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const [principle, setPrinciple] = useState<Principle>('selection');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,6 +100,21 @@ export const AyWebsCaptureHealthPanel: React.FC<{ canControl: boolean }> = ({ ca
     try {
       await adminApi(`/aywebs/capture/controls/${encodeURIComponent(storeId)}`, { method: 'PUT', body: JSON.stringify({ mode, note: note.trim() }) });
       setToast({ message: `${storeId} : ${MODE_LABELS[mode]}.`, tone: 'success' });
+      setNote('');
+      await load();
+    } catch (err) {
+      setToast({ message: errorMessage(err), tone: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const applyPrinciple = async () => {
+    if (!storeId) return;
+    setBusy(true);
+    try {
+      await adminApi(`/aywebs/capture/principles/${encodeURIComponent(storeId)}`, { method: 'PUT', body: JSON.stringify({ principle, note: note.trim() }) });
+      setToast({ message: `${storeId} : ${PRINCIPLE_LABELS[principle]}.`, tone: 'success' });
       setNote('');
       await load();
     } catch (err) {
@@ -149,6 +176,10 @@ export const AyWebsCaptureHealthPanel: React.FC<{ canControl: boolean }> = ({ ca
                 return script ? `${script.bundle} · ${script.hash.slice(0, 8)}` : '—';
               } },
               { key: 'control', label: 'Mode', render: (row) => MODE_LABELS[row.control] },
+              { key: 'principle', label: 'Principe', render: (row) => {
+                const script = row.store_id ? scriptOf.get(row.store_id) : undefined;
+                return script?.principle ? PRINCIPLE_LABELS[script.principle] : '—';
+              } },
             ]}
           />
 
@@ -197,6 +228,23 @@ export const AyWebsCaptureHealthPanel: React.FC<{ canControl: boolean }> = ({ ca
               Appliquer
             </Button>
             <Button variant="secondary" onClick={() => void load()} disabled={loading}>Actualiser</Button>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', marginTop: 8 }}>
+            <Select
+              aria-label="Principe de capture"
+              value={principle}
+              onChange={(event) => setPrinciple(event.target.value as Principle)}
+              options={(['selection', 'matrix'] as Principle[]).map((value) => ({ value, label: PRINCIPLE_LABELS[value] }))}
+              disabled={!canControl || busy}
+            />
+            <Button
+              onClick={() => void applyPrinciple()}
+              disabled={!canControl || busy || !storeId || note.trim().length < 3}
+              busy={busy}
+              title={canControl ? undefined : 'Droit insuffisant'}
+            >
+              Appliquer le principe
+            </Button>
           </div>
         </>
       )}

@@ -31,7 +31,7 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
         if (list.length < max)
             list.push(v);
     }
-    var CURRENCY_HINT = /[$\u20ac\u00a3\u00a5]|\b(EUR|USD|GBP|JPY|TND|DT|MAD|AED|SAR)\b|\bd\.?t\b/i;
+    var CURRENCY_HINT = /[$\u20ac\u00a3\u00a5\u20b9\u20ba]|z\u0142|\u0631\u064a\u0627\u0644|\u0631\.\u0633|\u062c\u0646\u064a\u0647|(?:^|[^A-Za-z])(EUR|USD|GBP|JPY|TND|DT|MAD|AED|SAR|CAD|AUD|SGD|BRL|MXN|PLN|TRY|TL|CHF|SEK|INR|EGP|Rs|kr)(?=$|[^A-Za-z])|\bd\.?t\b/i;
     var HAS_DIGIT = /[0-9]/;
     /* ── LECTEUR AMAZON (07/10/2026) — pourquoi un lecteur à part ──────────────
        Amazon ne publie AUCUN JSON-LD de prix (mesuré 04/10 et 06/10/2026) : son
@@ -2494,7 +2494,8 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
     }
     /* Amazon-only per-ASIN matrix: facts remain scoped to their exact ASIN.
        Conflicting prices and unknown variants never inherit the active price. */
-    try {
+    /* Mode « sélection » (19/11/2026) : seule l'option choisie est lue — pas de matrice. */
+    if (!(typeof window !== 'undefined' && window.__AYWEBS_CAPTURE_READER__ && window.__AYWEBS_CAPTURE_READER__.mode === 'selection')) try {
       var matrixSeen = {};
       var ambiguousMatrix = {};
     var pushMatrixEntry = function (entry) {

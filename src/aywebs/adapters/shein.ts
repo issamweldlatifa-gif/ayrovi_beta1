@@ -3,6 +3,7 @@ import type { ScrapeOptions } from '../../scraper/scraper';
 import type { AyWebsPageClassification, AyWebsSourceProduct } from './contract';
 import { AyWebsCaptureError } from './contract';
 import { BaseStoreAdapter } from './base';
+import { ayWebsMarketReadUrl } from './marketUrl';
 
 /**
  * SHEIN — identité, reconnaissance et clé de cache (26/10/2026).
@@ -102,7 +103,8 @@ export class SheinAdapter extends BaseStoreAdapter {
     if (!this.isProductPage(parsed)) {
       throw new AyWebsCaptureError('PRODUCT_PAGE_REQUIRED', 'Lien SHEIN : la fiche produit est requise (…-p-<id>.html).');
     }
-    const product = await super.resolveProduct(this.canonicalUrl(url) ?? url, options);
+    /* P1-3 : lecture sur le lien du MARCHÉ du client ; la forme canonique ne sert qu'au cache. */
+    const product = await super.resolveProduct(ayWebsMarketReadUrl(url), options);
     // L'identité publiée par la page gagne ; le goods_id de l'URL prend le relais.
     if (!product.sourceProductId) product.sourceProductId = this.sourceProductId(parsed);
     return product;

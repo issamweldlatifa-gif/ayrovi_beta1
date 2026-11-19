@@ -26,6 +26,7 @@
  * montant ne peut sortir que du parseur du serveur. Les textes sont bornés,
  * normalisés (espaces insécables, longueur) et journalisés.
  */
+import { evaluateAyWebsSelection, type AyWebsSelectionVerdict } from './selectionCapture';
 import { createHash } from 'node:crypto';
 import type { ScrapedProduct } from '../types';
 import type { AyWebsSourceProduct } from './adapters/contract';
@@ -90,7 +91,14 @@ interface AyWebsSymbolCurrencyRule {
 }
 
 const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
-  { iso: 'EUR', pattern: /€/, stores: ['amazon', 'shein', 'temu', 'aliexpress', 'primark'] },
+  /* Zalando ajouté le 19/11/2026 (audit P1-1) : sans lui, « 89,99 € » lu hors JSON-LD
+     n'était jamais prouvé. Les domaines Zalando hors zone euro sont exclus. */
+  {
+    iso: 'EUR',
+    pattern: /€/,
+    stores: ['amazon', 'shein', 'temu', 'aliexpress', 'primark', 'zalando'],
+    hostsExcluded: ['zalando.ch', 'zalando.pl', 'zalando.se', 'zalando.dk', 'zalando.no', 'zalando.co.uk', 'zalando.cz'],
+  },
   /* E£ (livre égyptienne) porte le même signe : amazon.eg est exclu. */
   { iso: 'GBP', pattern: /£/, stores: ['amazon', 'shein', 'temu', 'aliexpress', 'primark'], hostsExcluded: ['amazon.eg'] },
   /* ¥ = JPY sur amazon.co.jp, mais CNY ailleurs : réservé à Amazon. */
@@ -117,7 +125,26 @@ const AYWEBS_SYMBOL_CURRENCIES: readonly AyWebsSymbolCurrencyRule[] = [
   { iso: 'SGD', pattern: /\bSG\$|S\$/, stores: ['amazon'], hostsOnly: ['amazon.sg'] },
   { iso: 'MXN', pattern: /\bMX\$/, stores: ['amazon'], hostsOnly: ['amazon.com.mx'] },
   { iso: 'BRL', pattern: /R\$/, stores: ['amazon'], hostsOnly: ['amazon.com.br'] },
+  /* P2-5 (audit 19/11/2026) : devises nationales des domaines Amazon dont le symbole
+     n'était reconnu nulle part. Chaque règle ne vaut QUE pour son domaine : sur
+     amazon.ca, la devise affichée est toujours le dollar canadien. */
+  { iso: 'CAD', pattern: /\$/, stores: ['amazon'], hostsOnly: ['amazon.ca'] },
+  { iso: 'PLN', pattern: /zł/i, stores: ['amazon'], hostsOnly: ['amazon.pl'] },
+  { iso: 'SEK', pattern: /(?:^|[^A-Za-z])kr(?=$|[^A-Za-z])/i, stores: ['amazon'], hostsOnly: ['amazon.se'] },
+  { iso: 'TRY', pattern: /₺|(?:^|[^A-Za-z])TL(?=$|[^A-Za-z])/, stores: ['amazon'], hostsOnly: ['amazon.com.tr'] },
+  { iso: 'INR', pattern: /₹|(?:^|[^A-Za-z])Rs\.?(?=$|[^A-Za-z])/, stores: ['amazon'], hostsOnly: ['amazon.in'] },
+  { iso: 'EGP', pattern: /E£|جنيه|ج\.م/, stores: ['amazon'], hostsOnly: ['amazon.eg'] },
+  { iso: 'SAR', pattern: /ريال|ر\.س/, stores: ['amazon'], hostsOnly: ['amazon.sa'] },
 ];
+
+/**
+ * P1-1 (audit 19/11/2026) : un `$` PRÉFIXÉ (« C$ », « CA$ », « AU $ », « MX$ »,
+ * « NZ$ », « S$ », « HK$ », « R$ ») n'est JAMAIS un dollar américain. Avant, la
+ * règle « `$` nu = USD » le prouvait USD sur TEMU et AliExpress.
+ */
+const AYWEBS_PREFIXED_DOLLAR = /(?:^|[^A-Za-z])(?:C|CA|A|AU|NZ|S|SG|HK|MX|R|NT|CL|COL|AR)\s?\$/;
+/** Préfixe de pays dans le chemin (`temu.com/au/…`, `m.shein.com/mx/…`) d'un marché sans USD. */
+const AYWEBS_NON_USD_PATH_LOCALE = /^\/(?:ca|au|nz|sg|hk|mx|br|cl|co|ar|pe)(?:[-_][a-z]{2})?(?:\/|$)/;
 
 function hostMatchesAny(host: string, suffixes: readonly string[] | undefined): boolean {
   if (!suffixes?.length) return false;
@@ -476,6 +503,8 @@ export interface AyWebsCaptureValidation {
    * prix et devise validés par `checkPriceText`.
    */
   skuCombinations: AyWebsSourceProduct['variants'];
+  /** Verdict du mode `selection` (choix du client, identifiant, quantité), sinon null. */
+  selection?: AyWebsSelectionVerdict | null;
   /** Piste d'audit lisible : quels candidats ont été vus, lesquels ont gagné. */
   notes: string[];
   outcome: AyWebsCaptureOutcome;
@@ -671,6 +700,12 @@ export interface AyWebsCaptureValidationOptions {
    * prix sur une bannière n'est pas un article : refus `NOT_A_PRODUCT_PAGE`.
    */
   requireProductPage?: boolean;
+  /**
+   * Principe « le client choisit » (19/11/2026) : la capture ne décrit que la
+   * combinaison affichée. Sélection incomplète, lectures divergentes ou choix
+   * indisponible ⇒ refus ; aucune matrice de combinaisons n'est reconstruite.
+   */
+  selectionMode?: boolean;
 }
 
 /**
@@ -913,7 +948,7 @@ export function validateAyWebsCapturedPage(
   const currencyTexts = `${currencyEvidence} ${candidateCurrencyEvidence}`;
   const publishedIsos = new Set<string>();
   (currencyEvidence.toUpperCase().match(/\b[A-Z]{3}\b/g) || []).forEach((code) => publishedIsos.add(code));
-  for (const match of candidateCurrencyEvidence.matchAll(/(?:^|[^A-Za-z])(EUR|USD|GBP|JPY|TND|MAD|SAR|AED|CAD|AUD|SGD|BRL|MXN|PLN|TRY|CHF|SEK)(?=$|[^A-Za-z])/g)) {
+  for (const match of candidateCurrencyEvidence.matchAll(/(?:^|[^A-Za-z])(EUR|USD|GBP|JPY|TND|MAD|SAR|AED|CAD|AUD|SGD|BRL|MXN|PLN|TRY|CHF|SEK|INR|EGP|NZD|HKD|KWD|QAR)(?=$|[^A-Za-z])/g)) {
     publishedIsos.add(match[1]);
   }
   const publishedIso = [...publishedIsos][0] || '';
@@ -923,8 +958,13 @@ export function validateAyWebsCapturedPage(
   const symbolSeen = AYWEBS_SYMBOL_CURRENCIES.some((entry) => entry.pattern.test(currencyTexts));
   let contradiction = publishedIsos.size > 1;
   if (!contradiction && publishedIso && symbolSeen) {
-    /* Le symbole et le code publié doivent désigner la même devise. */
-    contradiction = !(hintSet.size > 0 && hintSet.has(publishedIso));
+    /* Le symbole et le code publié doivent désigner la même devise. Un symbole
+       local de la liste fermée (zł, kr, ريال…) absent de la table de la Phase 0
+       vaut accord s'il désigne justement ce code. */
+    const ruleIsos = new Set(AYWEBS_SYMBOL_CURRENCIES
+      .filter((entry) => entry.pattern.test(currencyTexts) && (!entry.hostsOnly || hostMatchesAny(requestHost, entry.hostsOnly)))
+      .map((entry) => entry.iso));
+    contradiction = !((hintSet.size > 0 && hintSet.has(publishedIso)) || ruleIsos.has(publishedIso));
     if (contradiction) notes.push(`currency_symbol_contradicts_published:${publishedIso}`);
   }
   let symbolIso = '';
@@ -932,14 +972,18 @@ export function validateAyWebsCapturedPage(
     const store = detectAyWebsStore(requestUrl);
     let effectivePath = '';
     try { effectivePath = new URL(pageUrl || requestUrl).pathname.toLowerCase(); } catch { effectivePath = ''; }
-    const sheinMobileNonUsdLocale = store?.id === 'shein' && /^\/(?:ca|au|sg|mx|br)(?:\/|$)/.test(effectivePath);
+    /* SHEIN mobile ET TEMU (P1-1) : le marché est dans le chemin (`/au/`, `/mx/`). */
+    const sheinMobileNonUsdLocale = (store?.id === 'shein' || store?.id === 'temu')
+      && AYWEBS_NON_USD_PATH_LOCALE.test(effectivePath);
+    const prefixedDollar = AYWEBS_PREFIXED_DOLLAR.test(currencyTexts);
     if (store) {
       for (const entry of AYWEBS_SYMBOL_CURRENCIES) {
         if (!entry.stores.includes(store.id)) continue;
         if (!entry.pattern.test(currencyTexts)) continue;
         if (entry.hostsOnly && !hostMatchesAny(requestHost, entry.hostsOnly)) continue;
         if (hostMatchesAny(requestHost, entry.hostsExcluded)
-          || (sheinMobileNonUsdLocale && entry.iso === 'USD' && entry.pattern.source === '\\$')) {
+          || (sheinMobileNonUsdLocale && entry.iso === 'USD' && entry.pattern.source === '\\$')
+          || (prefixedDollar && entry.iso === 'USD' && entry.pattern.source === '\\$')) {
           notes.push(`currency_symbol_host_ambiguous:${entry.iso}`);
           continue;
         }
@@ -1010,6 +1054,25 @@ export function validateAyWebsCapturedPage(
   }
   variantGroups.splice(AYWEBS_CAPTURE_LIMITS.maxVariantGroups);
 
+  /* ── MODE SÉLECTION (19/11/2026) : seul le choix affiché compte ────────── */
+  let selection: AyWebsSelectionVerdict | null = null;
+  if (options.selectionMode === true) {
+    selection = evaluateAyWebsSelection(payload, {
+      storeId: storeForPrice?.id ?? null,
+      variantGroups,
+      selectedVariantTexts,
+      availability,
+      availabilityReason,
+    });
+    notes.push('capture_mode:selection', ...selection.notes);
+    if (!selection.ok) {
+      if (selection.missingGroups.length) notes.push(`selection_missing:${selection.missingGroups.join('|').slice(0, 120)}`);
+      return rejected(selection.rejection || 'SELECTION_NOT_PROVEN', '', notes);
+    }
+    availability = selection.availability;
+    availabilityReason = selection.availabilityReason;
+  }
+
   const fingerprint = fingerprintOf({
     url: pageUrl,
     canonical: canonicalUrl,
@@ -1022,6 +1085,8 @@ export function validateAyWebsCapturedPage(
     availabilityEvidence,
     condition,
     selectedVariantTexts,
+    /* Mode sélection : le prix est LIÉ à l'option choisie (identifiant + valeurs). */
+    ...(selection ? { selectionVariantId: selection.variantId, selectionAttributes: selection.attributes } : {}),
     capturedAt: String(payload.capturedAt),
   });
 
@@ -1029,12 +1094,32 @@ export function validateAyWebsCapturedPage(
     ? `${title} — ${condition} — ${selectedVariantTexts.join(' / ')}`
     : title;
 
+  /* ── IDENTITÉ SHEIN / TEMU (P1-2, audit 19/11/2026) ──────────────────────
+     Avant : l'identifiant publié par la page gagnait TOUJOURS sur celui de l'URL —
+     un état SPA périmé (fiche précédente encore en mémoire) donnait le prix
+     d'un AUTRE article sous l'identité de la page lue. Maintenant :
+       • page = URL, ou URL sans identifiant ⇒ identité de la page ;
+       • SHEIN, changement de COULEUR : chaque couleur est une fiche (goods_id
+         propre) et l'URL ne suit pas toujours. Accepté SEULEMENT si l'id de la
+         page est celui d'une pastille couleur publiée sur cette même fiche ;
+       • sinon ⇒ PRODUCT_IDENTITY_MISMATCH (comme AliExpress). */
   let externalId: string | null = null;
   if (storeForPrice?.id === 'shein') {
     const rawSheinId = collapse(payload.shein?.pageGoodsId, 32).replace(/^SHEIN-/i, '');
     let urlSheinId: string | null = null;
     try { urlSheinId = sheinGoodsId(new URL(pageUrl || requestUrl)); } catch { urlSheinId = null; }
-    const resolvedGoodsId = /^\d{5,16}$/.test(rawSheinId) ? rawSheinId : urlSheinId;
+    const pageSheinId = /^\d{5,16}$/.test(rawSheinId) ? rawSheinId : null;
+    if (pageSheinId && urlSheinId && pageSheinId !== urlSheinId) {
+      const colourSiblings = new Set<string>();
+      for (const group of variantGroups) {
+        for (const option of group.options || []) if (option.goodsId) colourSiblings.add(option.goodsId);
+      }
+      if (!(colourSiblings.has(pageSheinId) && colourSiblings.has(urlSheinId))) {
+        return rejected('PRODUCT_IDENTITY_MISMATCH', '', [...notes, `shein_goods_mismatch:${pageSheinId}!=${urlSheinId}`]);
+      }
+      notes.push(`shein_color_switch:${urlSheinId}->${pageSheinId}`);
+    }
+    const resolvedGoodsId = pageSheinId || urlSheinId;
     if (resolvedGoodsId) externalId = `SHEIN-${resolvedGoodsId}`;
   } else if (storeForPrice?.id === 'aliexpress') {
     const rawAeId = collapse(payload.aliexpress?.pageItemId, 32).replace(/^AE-/i, '');
@@ -1046,7 +1131,11 @@ export function validateAyWebsCapturedPage(
     const rawTemuId = collapse(payload.temu?.pageGoodsId, 32).replace(/^TEMU-/i, '');
     let urlTemuId: string | null = null;
     try { urlTemuId = temuGoodsId(new URL(pageUrl || requestUrl)); } catch { urlTemuId = null; }
-    const resolvedTemuId = /^\d{8,24}$/.test(rawTemuId) ? rawTemuId : urlTemuId;
+    const pageTemuId = /^\d{8,24}$/.test(rawTemuId) ? rawTemuId : null;
+    if (pageTemuId && urlTemuId && pageTemuId !== urlTemuId) {
+      return rejected('PRODUCT_IDENTITY_MISMATCH', '', [...notes, `temu_goods_mismatch:${pageTemuId}!=${urlTemuId}`]);
+    }
+    const resolvedTemuId = pageTemuId || urlTemuId;
     if (resolvedTemuId) externalId = `TEMU-${resolvedTemuId}`;
   }
 
@@ -1090,7 +1179,8 @@ export function validateAyWebsCapturedPage(
     return null;
   };
 
-  if (variantGroups.length > 0) {
+  /* Mode sélection : AUCUNE matrice — on ne reconstruit pas les combinaisons non choisies. */
+  if (variantGroups.length > 0 && !selection) {
     const rawEntries: AyWebsCapturedMatrixEntry[] = [];
     if (Array.isArray(payload.variantMatrix)) {
       for (const item of payload.variantMatrix.slice(0, AYWEBS_CAPTURE_LIMITS.maxMatrixEntries)) {
@@ -1317,6 +1407,7 @@ export function validateAyWebsCapturedPage(
     selectedVariantTexts,
     variantGroups,
     skuCombinations,
+    selection,
     notes,
     outcome: {
       used: true,
@@ -1395,7 +1486,13 @@ export function ayWebsCaptureRejectionErrorCode(rejection: string | null | undef
     case 'NOT_A_PRODUCT_PAGE':
       return 'PRODUCT_PAGE_REQUIRED';
     case 'VARIANT_NOT_PROVEN':
+    case 'SELECTION_NOT_PROVEN':
       return 'VARIANT_UNKNOWN';
+    /* Mode sélection : le client complète son choix SUR LA PAGE du marchand. */
+    case 'SELECTION_INCOMPLETE':
+      return 'VARIANT_REQUIRED';
+    case 'SELECTION_UNAVAILABLE':
+      return 'VARIANT_UNAVAILABLE';
     case 'STALE_CAPTURE':
     case 'FUTURE_CAPTURE':
     case 'URL_HOST_MISMATCH':

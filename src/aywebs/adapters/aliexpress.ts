@@ -3,6 +3,7 @@ import type { ScrapeOptions } from '../../scraper/scraper';
 import type { AyWebsPageClassification, AyWebsSourceProduct } from './contract';
 import { AyWebsCaptureError } from './contract';
 import { BaseStoreAdapter } from './base';
+import { ayWebsMarketReadUrl } from './marketUrl';
 
 /**
  * AliExpress v2 — identité, reconnaissance de fiche et clé de cache (28/10/2026).
@@ -86,7 +87,8 @@ export class AliExpressAdapter extends BaseStoreAdapter {
     if (!this.isProductPage(parsed)) {
       throw new AyWebsCaptureError('PRODUCT_PAGE_REQUIRED', 'Lien AliExpress : la fiche produit est requise (…/item/<id>.html).');
     }
-    const product = await super.resolveProduct(this.canonicalUrl(url) ?? url, options);
+    /* P1-3 : lecture sur le lien du MARCHÉ du client ; la forme canonique ne sert qu'au cache. */
+    const product = await super.resolveProduct(ayWebsMarketReadUrl(url), options);
     if (!product.sourceProductId) product.sourceProductId = this.sourceProductId(parsed);
     return product;
   }

@@ -2850,6 +2850,8 @@ export class QatafoDatabase {
     // Provenance des taux (audit 23/09/2026) : seed | live (API) | manual (saisie admin).
     this.ensureColumn('pricing_config', 'fx_source', "TEXT NOT NULL DEFAULT 'seed'");
     this.ensureColumn('pricing_config', 'fx_updated_at', "TEXT NOT NULL DEFAULT ''");
+    /* Taux live des devises secondaires (JSON `{CAD: 2.1, …}`), voir fxRates.ts. */
+    this.ensureColumn('pricing_config', 'fx_extra_rates', "TEXT NOT NULL DEFAULT '{}'");
     this.db.exec(`CREATE TABLE IF NOT EXISTS customs_categories (
       id TEXT PRIMARY KEY,
       label TEXT NOT NULL,
@@ -3441,6 +3443,7 @@ export class QatafoDatabase {
       categories: this.getCustomsCategories(),
       fxSource: String(row.fx_source || 'seed'),
       fxUpdatedAt: String(row.fx_updated_at || ''),
+      extraRates: parseExtraRates(row.fx_extra_rates),
       updatedAt: row.updated_at,
     };
   }
@@ -3453,7 +3456,7 @@ export class QatafoDatabase {
    * un job de fond ne doit jamais être bloqué par une seule fiche sale.
    */
   public applyLiveFxRates(
-    snapshot: { rateEUR: number; rateUSD: number; rateGBP: number; rateJPY: number; fetchedAt: string },
+    snapshot: { rateEUR: number; rateUSD: number; rateGBP: number; rateJPY: number; fetchedAt: string; extraRates?: Record<string, number> },
     updatedBy: string,
   ): { before: PricingRules; after: PricingRules; repriced: number; skipped: number } {
     return this.transaction(() => {
@@ -3463,6 +3466,9 @@ export class QatafoDatabase {
         snapshot.rateEUR, snapshot.rateUSD, snapshot.rateGBP, snapshot.rateJPY,
         snapshot.fetchedAt, snapshot.fetchedAt, updatedBy,
       );
+      if (snapshot.extraRates && Object.keys(snapshot.extraRates).length) {
+        this.run(`UPDATE pricing_config SET fx_extra_rates=? WHERE id='default'`, JSON.stringify(parseExtraRates(snapshot.extraRates)));
+      }
       const after = this.getPricingRules();
       const products = this.all<any>('SELECT id,original_price,currency,name FROM products');
       let repriced = 0;
@@ -4154,4 +4160,21 @@ export class QatafoDatabase {
     });
   }
 
+}
+
+
+/** Taux secondaires lus de la base : seulement des codes ISO-3 et des montants > 0. */
+function parseExtraRates(raw: unknown): Record<string, number> {
+  let value: unknown = raw;
+  if (typeof raw === 'string') {
+    try { value = JSON.parse(raw); } catch { return {}; }
+  }
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out: Record<string, number> = {};
+  for (const [code, rate] of Object.entries(value as Record<string, unknown>)) {
+    const iso = String(code).trim().toUpperCase();
+    const amount = Number(rate);
+    if (/^[A-Z]{3}$/.test(iso) && Number.isFinite(amount) && amount > 0) out[iso] = amount;
+  }
+  return out;
 }

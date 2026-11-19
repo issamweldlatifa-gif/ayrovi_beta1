@@ -33,6 +33,13 @@ export interface PricingRules {
    * 'manual' = saisie admin — la synchronisation automatique se suspend.
    */
   fxSource?: string;
+  /**
+   * Taux LIVE des devises secondaires (TND par unité) — CAD, AUD, PLN, SEK, TRY,
+   * INR, EGP, SAR, AED… Remplis UNIQUEMENT par la synchronisation de marché
+   * (`fxRates.ts`), jamais par une valeur codée en dur : sans taux de marché, la
+   * devise reste non cotée (pas de devis) plutôt que mal convertie.
+   */
+  extraRates?: Record<string, number>;
   fxUpdatedAt?: string;
   updatedAt: string;
 }
@@ -221,7 +228,9 @@ export function getExchangeRate(rules: PricingRules, currency: string): number |
     GBP: rules.rateGBP,
     JPY: rules.rateJPY,
   };
-  return Number.isFinite(rates[normalized]) && rates[normalized] > 0 ? rates[normalized] : null;
+  if (Number.isFinite(rates[normalized]) && rates[normalized] > 0) return rates[normalized];
+  const extra = Number(rules.extraRates?.[normalized]);
+  return Number.isFinite(extra) && extra > 0 ? extra : null;
 }
 
 export function getEffectiveExchangeRate(rules: PricingRules, currency: string): number | null {

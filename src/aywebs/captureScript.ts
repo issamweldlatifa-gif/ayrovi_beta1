@@ -57,6 +57,9 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   try { GLOBAL_WIN = (typeof document !== 'undefined' && document && document.defaultView) ? document.defaultView : (typeof window !== 'undefined' ? window : null); } catch (e) { GLOBAL_WIN = null; }
   var READER_PROFILE = null;
   try { READER_PROFILE = (GLOBAL_WIN && GLOBAL_WIN.__AYWEBS_CAPTURE_READER__) || (typeof window !== 'undefined' && window.__AYWEBS_CAPTURE_READER__) || null; } catch (e) { READER_PROFILE = null; }
+  /* Principe « le client choisit » (19/11/2026) : en mode sélection, on lit le
+     choix affiché et rien d'autre — aucune matrice de combinaisons. */
+  var SELECTION_ONLY = !!(READER_PROFILE && READER_PROFILE.mode === 'selection');
   var out = {
     v: 1, url: '', canonicalUrl: null, title: null, brand: null,
     priceCandidates: [], currencyText: null, availabilityText: null,
@@ -81,7 +84,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
     for (var i = 0; i < list.length; i++) { if (list[i].toLowerCase() === v.toLowerCase()) return; }
     if (list.length < max) list.push(v);
   }
-  var CURRENCY_HINT = /[$\u20ac\u00a3\u00a5\u20ba]|(?:^|[^A-Za-z])(EUR|USD|GBP|JPY|TND|DT|MAD|AED|SAR|CAD|AUD|SGD|BRL|MXN|PLN|TRY|CHF|SEK)(?=$|[^A-Za-z])|\bd\.?t\b/i;
+  var CURRENCY_HINT = /[$\u20ac\u00a3\u00a5\u20b9\u20ba]|z\u0142|(?:^|[^A-Za-z])(EUR|USD|GBP|JPY|TND|DT|MAD|AED|SAR|CAD|AUD|SGD|BRL|MXN|PLN|TRY|CHF|SEK|INR|EGP|NZD|HKD)(?=$|[^A-Za-z])|\bd\.?t\b/i;
   var HAS_DIGIT = /[0-9]/;
 
   /* ── LECTEUR AMAZON (07/10/2026) — pourquoi un lecteur à part ──────────────
@@ -6652,8 +6655,9 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
        4. Preuves DOM des cartes de variantes ([data-asin], pastilles avec prix).
      RÈGLE STRICTE : on n'extrapole JAMAIS le prix de base aux autres variantes.
      Une combinaison dont le prix n'est pas prouvé porte price = null (plus son
-     variantUrl / variantId si disponible pour une lecture delta ciblée). */
-  try {
+     variantUrl / variantId si disponible pour une lecture delta ciblée).
+     Mode sélection : section entièrement sautée. */
+  if (!SELECTION_ONLY) try {
     var matrixSeen = {};
     var matrixGroupNames = { color: null, size: null };
     for (var mgi = 0; mgi < out.variantGroups.length; mgi++) {
@@ -7304,11 +7308,16 @@ const servedCache = new Map<string, AyWebsServedCaptureScript>();
  * Sans store_id (ou boutique inconnue) : le bundle historique complet, pour les
  * anciennes versions de l'app.
  */
-export function describeAyWebsCaptureScript(storeId?: string | null): AyWebsServedCaptureScript {
-  const key = String(storeId ?? '').trim().toLowerCase();
+export function describeAyWebsCaptureScript(
+  storeId?: string | null,
+  options: { mode?: 'selection' | 'matrix' } = {},
+): AyWebsServedCaptureScript {
+  const id = String(storeId ?? '').trim().toLowerCase();
+  const mode = options.mode === 'selection' ? 'selection' : 'matrix';
+  const key = mode === 'selection' && id ? `${id}#selection` : id;
   const cached = servedCache.get(key);
   if (cached) return cached;
-  const served = computeServedScript(key);
+  const served = computeServedScript(id, mode);
   // Seules les boutiques connues sont mémorisées : un store_id arbitraire ne fait pas grossir la table.
   if (served.reader) servedCache.set(key, served);
   else if (!servedCache.has('')) servedCache.set('', served);
@@ -7319,19 +7328,21 @@ function servedScript(text: string, reader: AyWebsCaptureReaderDefinition | null
   return { text, reader, bundle, sha256: createHash('sha256').update(text).digest('hex') };
 }
 
-function computeServedScript(storeId: string): AyWebsServedCaptureScript {
+function computeServedScript(storeId: string, mode: 'selection' | 'matrix' = 'matrix'): AyWebsServedCaptureScript {
   const reader = resolveAyWebsCaptureReader(storeId);
   const store = reader ? findAyWebsStore(reader.storeId) : null;
   if (!reader || !store) return servedScript(AYWEBS_CAPTURE_SCRIPT, null, 'legacy');
+  const envelope = { mode };
+  const suffix = mode === 'selection' ? '+selection' : '';
   if (reader.integration === 'dedicated') {
     const dedicated = AYWEBS_DEDICATED_CAPTURE_SCRIPTS[reader.storeId];
     if (!dedicated) return servedScript(AYWEBS_CAPTURE_SCRIPT, null, 'legacy');
-    return servedScript(wrapAyWebsCaptureIntegration(reader, store.domains, dedicated), reader, `dedicated:${reader.storeId}`);
+    return servedScript(wrapAyWebsCaptureIntegration(reader, store.domains, dedicated, envelope), reader, `dedicated:${reader.storeId}${suffix}`);
   }
   const bundle = ayWebsCaptureBundleFor(reader);
-  return servedScript(wrapAyWebsCaptureIntegration(reader, store.domains, AYWEBS_CAPTURE_BUNDLES[bundle].text), reader, bundle);
+  return servedScript(wrapAyWebsCaptureIntegration(reader, store.domains, AYWEBS_CAPTURE_BUNDLES[bundle].text, envelope), reader, `${bundle}${suffix}`);
 }
 
-export function buildAyWebsCaptureScript(storeId?: string | null): string {
-  return describeAyWebsCaptureScript(storeId).text;
+export function buildAyWebsCaptureScript(storeId?: string | null, options: { mode?: 'selection' | 'matrix' } = {}): string {
+  return describeAyWebsCaptureScript(storeId, options).text;
 }

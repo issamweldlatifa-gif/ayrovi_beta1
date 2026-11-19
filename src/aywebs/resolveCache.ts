@@ -153,6 +153,38 @@ export function ayWebsResolveCacheKey(storeId: string, rawUrl: string): string {
 }
 
 /**
+ * MARCHÉ d'un lien (P1-3, audit 19/11/2026) : l'hôte régional (`fr.shein.com`,
+ * `amazon.co.uk`) et, le cas échéant, le préfixe de pays du chemin (`temu.com/uk/`,
+ * `shein.com/mx/`). Les formes canoniques des adaptateurs effacent ce marché
+ * (`www.temu.com/-g-<id>.html`) : sans lui dans la clé, un client britannique
+ * pouvait recevoir la lecture américaine d'un autre client.
+ */
+/* Préfixes de marché vus dans les chemins TEMU / SHEIN / AliExpress — liste fermée :
+   un segment comme `dp` (Amazon) ou `gp` n'est jamais un marché. */
+const MARKET_PATH_SEGMENT = /^(?:uk|us|fr|de|it|es|nl|be|at|ch|pl|se|dk|no|fi|pt|ie|cz|ro|hu|gr|sk|bg|hr|si|lt|lv|ee|au|nz|ca|mx|br|cl|co|ar|pe|sg|hk|tw|jp|kr|ae|sa|kw|qa|bh|om|il|tr|za|ma|eg|tn|in|ph|my|th|vn|id|roe|eur)(?:[-_][a-z]{2})?$/;
+
+export function ayWebsMarketOf(rawUrl: string): string {
+  try {
+    const url = new URL(String(rawUrl || '').trim());
+    const host = url.hostname.toLowerCase().replace(/^(?:www\d*|m\d*|mobile|wap|touch)\./, '');
+    const first = url.pathname.split('/').filter(Boolean)[0]?.toLowerCase() || '';
+    const locale = MARKET_PATH_SEGMENT.test(first) ? first : '';
+    return locale ? `${host}/${locale}` : host;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Clé de cache d'une résolution : forme canonique (même produit sous deux liens
+ * = une entrée) + marché du lien ORIGINAL (deux marchés = deux entrées).
+ */
+export function ayWebsResolveMarketCacheKey(storeId: string, canonicalUrl: string, originalUrl: string): string {
+  const market = ayWebsMarketOf(originalUrl);
+  return `${ayWebsResolveCacheKey(storeId, canonicalUrl)}${market ? `|market=${market}` : ''}`;
+}
+
+/**
  * Lecture en cache, ou null si absent/expiré/désactivé.
  * `allowStale: true` autorise la fenêtre de rattrapage SWR (voir
  * `ayWebsResolveStaleMs`) : la valeur est rendue avec `stale: true` au lieu

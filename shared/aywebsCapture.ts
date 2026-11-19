@@ -182,6 +182,8 @@ export interface AyWebsAliExpressEvidence {
 export interface AyWebsTemuEvidence {
   readerVersion?: number;
   pageGoodsId?: string | null;
+  /** sku_id de la combinaison affichée (mode `selection`), si la page le publie. */
+  selectedSkuId?: string | null;
   salePrice?: string | null;
   retailPrice?: string | null;
 }
@@ -307,6 +309,31 @@ export interface AyWebsCapturedPage {
   capturedAt: string;
   /** Langue de la page, si disponible (diagnostic de la lecture de prix). */
   pageLang?: string | null;
+  /**
+   * Principe « LE CLIENT CHOISIT » (AYWEBs v2) : posé par l'enveloppe du lecteur
+   * quand le serveur a servi le script en mode `selection`. La capture décrit
+   * alors UNIQUEMENT le choix affiché (taille, couleur, version, quantité) —
+   * jamais la matrice des combinaisons ni le stock du marchand.
+   */
+  captureMode?: 'selection' | null;
+  /** Quantité affichée par le sélecteur du marchand (1..99), si la page en publie un. */
+  pageQuantity?: number | null;
+  /** Mode `selection` : preuve de stabilité posée par l'enveloppe (deux lectures). */
+  selection?: AyWebsCapturedSelectionProof | null;
+}
+
+/**
+ * Preuve « deux lectures » du mode `selection` (19/11/2026). L'enveloppe relit la
+ * page et compare prix + choix + identifiant de l'option : la capture n'est
+ * acceptée que si les deux lectures disent la même chose.
+ */
+export interface AyWebsCapturedSelectionProof {
+  /** `false` = les deux lectures divergent ; la capture est refusée. */
+  stable?: boolean;
+  /** Nombre de lectures comparées (2). */
+  reads?: number;
+  /** Identifiant de l'option lu par l'enveloppe (repli si la boutique n'en publie pas ailleurs). */
+  variantId?: string | null;
 }
 
 /** Résumé de ce qui a été retenu — renvoyé au client et journalisé. */
@@ -364,6 +391,16 @@ export const AYWEBS_CAPTURE_REJECTIONS = [
    * redirection pays. Refus explicite : ce n'est pas « un prix illisible ».
    */
   'NOT_A_PRODUCT_PAGE',
+  /**
+   * Mode `selection` : la page publie un groupe à choix (taille, couleur…) sans
+   * valeur choisie. AYWEBs ne choisit JAMAIS à la place du client : il lui
+   * demande de compléter son choix sur la page du marchand.
+   */
+  'SELECTION_INCOMPLETE',
+  /** Mode `selection` : le choix affiché est explicitement indisponible (rupture, bouton désactivé). */
+  'SELECTION_UNAVAILABLE',
+  /** Mode `selection` : le choix affiché n'est pas prouvé par l'état du contrôle (Amazon : ASIN choisi ≠ fiche). */
+  'SELECTION_NOT_PROVEN',
 ] as const;
 
 /**

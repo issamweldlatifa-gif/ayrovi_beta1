@@ -8,7 +8,16 @@ import { AYWEBS_ADAPTER_DESCRIPTORS } from './adapters/registry';
 import { ayWebsAnalyticsSummary } from './analytics';
 import { ayWebsMetrics, listAyWebsAudit, listAyWebsDomainEvents } from './events';
 import { ensureAyWebsSchema } from './schema';
-import { AYWEBS_CAPTURE_CONTROL_MODES, ayWebsCaptureHealth, isAyWebsCaptureControlMode, setAyWebsCaptureControl } from './captureControl';
+import {
+  AYWEBS_CAPTURE_CONTROL_MODES,
+  AYWEBS_CAPTURE_PRINCIPLES,
+  ayWebsCaptureHealth,
+  ayWebsCapturePrinciple,
+  isAyWebsCaptureControlMode,
+  isAyWebsCapturePrinciple,
+  setAyWebsCaptureControl,
+  setAyWebsCapturePrinciple,
+} from './captureControl';
 import { describeAyWebsCaptureScript } from './captureScript';
 import { ayWebsOrderMachine, ayWebsPurchaseRequestMachine } from './stateMachines';
 import {
@@ -177,11 +186,13 @@ export function createAyWebsAdminRouter(db: QatafoDatabase): Router {
       data: {
         ...health,
         modes: AYWEBS_CAPTURE_CONTROL_MODES,
-        /** Ce que chaque boutique du registre reçoit réellement (lot + empreinte). */
+        principles: AYWEBS_CAPTURE_PRINCIPLES,
+        /** Ce que chaque boutique du registre reçoit réellement (lot + empreinte + principe). */
         scripts: AYWEBS_STORES.map((store) => {
           const control = health.controls.find((entry) => entry.storeId === store.id)?.mode ?? 'auto';
-          const served = describeAyWebsCaptureScript(control === 'core' ? null : store.id);
-          return { store_id: store.id, control, bundle: served.bundle, hash: served.sha256.slice(0, 16), bytes: served.text.length };
+          const principle = ayWebsCapturePrinciple(db, store.id);
+          const served = describeAyWebsCaptureScript(control === 'core' ? null : store.id, { mode: principle });
+          return { store_id: store.id, control, principle, bundle: served.bundle, hash: served.sha256.slice(0, 16), bytes: served.text.length };
         }),
       },
     });
@@ -211,6 +222,34 @@ export function createAyWebsAdminRouter(db: QatafoDatabase): Router {
       requestId: String((req as any).requestId || ''),
     });
     res.json({ success: true, data: { store_id: control.storeId, mode: control.mode, note: control.note, updated_by: control.updatedBy, updated_at: control.updatedAt } });
+  }));
+
+  /* Principe de capture par boutique (19/11/2026) : `selection` (le client choisit
+     sur la page, AYWEBs capte ce choix) ou `matrix` (ancien chemin, retour arrière). */
+  router.put('/capture/principles/:storeId', ...requireAyWebsAdmin(db, 'approve', 'store_adapter'), wrap((req, res) => {
+    const storeId = String(req.params.storeId || '').trim().toLowerCase();
+    if (!AYWEBS_STORES.some((store) => store.id === storeId)) {
+      res.status(404).json({ success: false, code: 'STORE_UNKNOWN', error: 'Boutique inconnue du registre AyWebs.' });
+      return;
+    }
+    const principle = req.body?.principle;
+    if (!isAyWebsCapturePrinciple(principle)) {
+      res.status(400).json({ success: false, code: 'INVALID_CAPTURE_PRINCIPLE', error: `Principe attendu : ${AYWEBS_CAPTURE_PRINCIPLES.join(', ')}.` });
+      return;
+    }
+    const note = String(req.body?.note || '').trim();
+    if (note.length < 3) {
+      res.status(400).json({ success: false, code: 'NOTE_REQUIRED', error: 'Indiquez la raison (visible dans le journal d’audit).' });
+      return;
+    }
+    const row = setAyWebsCapturePrinciple(db, {
+      storeId,
+      principle,
+      note,
+      actorId: String((req as AyWebsAdminRequest).admin?.id || ''),
+      requestId: String((req as any).requestId || ''),
+    });
+    res.json({ success: true, data: { store_id: row.storeId, principle: row.principle, note: row.note, updated_by: row.updatedBy, updated_at: row.updatedAt } });
   }));
 
   router.get('/adapters', ...requireAyWebsAdmin(db, 'read'), wrap((_req, res) => {

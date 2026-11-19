@@ -29,6 +29,8 @@ export interface FxSnapshot {
   rateUSD: number;
   rateGBP: number;
   rateJPY: number;
+  /** TND par unité pour les devises secondaires des boutiques AYWEBs (Amazon CA, PL, SE, TR, IN, EG, SA…). */
+  extraRates?: Record<string, number>;
   provider: string;
   fetchedAt: string;
 }
@@ -58,6 +60,18 @@ const SANITY_BANDS: Array<[keyof Pick<FxSnapshot, 'rateEUR' | 'rateUSD' | 'rateG
 const round6 = (value: number) => Math.round(value * 1e6) / 1e6;
 
 /**
+ * Devises secondaires cotées pour AYWEBs (boutiques dont la devise n'est ni EUR,
+ * ni USD, ni GBP, ni JPY). Le taux vient de la MÊME réponse de marché que les
+ * quatre principales ; une devise absente ou aberrante est simplement omise.
+ */
+export const FX_EXTRA_CURRENCIES = [
+  'CAD', 'AUD', 'NZD', 'SGD', 'MXN', 'BRL', 'PLN', 'SEK', 'TRY', 'INR', 'EGP', 'SAR', 'AED', 'CHF',
+] as const;
+
+/** Bande large (TND par unité) : écarte un zéro, un infini ou une inversion de cotation. */
+const EXTRA_SANITY_BAND: [number, number] = [0.001, 20];
+
+/**
  * Convertit une réponse `{"result":"success","rates":{"TND":…,"USD":…,…}}` (base EUR)
  * en snapshot TND par devise. Pur et synchrone → testable sans réseau.
  */
@@ -76,6 +90,16 @@ export function parseFxSnapshot(payload: unknown): FxSnapshot | null {
     rateUSD: round6(tnd / usd),
     rateGBP: round6(tnd / gbp),
     rateJPY: round6(tnd / jpy),
+    extraRates: (() => {
+      const extra: Record<string, number> = {};
+      for (const code of FX_EXTRA_CURRENCIES) {
+        const perEur = Number(rates[code]);
+        if (!Number.isFinite(perEur) || perEur <= 0) continue;
+        const tndPerUnit = round6(tnd / perEur);
+        if (tndPerUnit >= EXTRA_SANITY_BAND[0] && tndPerUnit <= EXTRA_SANITY_BAND[1]) extra[code] = tndPerUnit;
+      }
+      return extra;
+    })(),
     provider: String(body.provider || 'exchange-rate-api').slice(0, 120),
     fetchedAt: new Date().toISOString(),
   };

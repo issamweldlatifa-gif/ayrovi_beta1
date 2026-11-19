@@ -892,7 +892,8 @@ export const ZALANDO_MOBILE_CAPTURE_SCRIPT = String.raw`(function() {
             width && width < 200 || pushUnique(out.images, images[g].getAttribute("src"), 4, 600);
         }
     } catch (e) {}
-    try {
+    /* Mode « sélection » (19/11/2026) : seule la taille choisie est lue — pas de matrice. */
+    if (!(typeof window !== 'undefined' && window.__AYWEBS_CAPTURE_READER__ && window.__AYWEBS_CAPTURE_READER__.mode === 'selection')) try {
         for (var matrixSeen = {}, matrixGroupNames = {
             color: null,
             size: null

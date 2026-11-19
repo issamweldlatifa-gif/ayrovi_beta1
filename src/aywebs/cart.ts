@@ -921,7 +921,14 @@ export function selectVariant(
   const hasMeaningfulGroups = groups.some((group) => group.values.length > 0);
   // Les attributs PUBLIÉS identifient la variante ; le reste (ex. `condition`)
   // est conservé comme métadonnée d'affichage, jamais comme critère d'identité.
-  const { matching, metadata } = ayWebsSplitVariantSelection(product, attributes);
+  /* Mode sélection (19/11/2026) : chaque groupe ne porte que la valeur CHOISIE
+     sur la page. Un groupe à une seule valeur n'est pas un choix : sans attribut
+     envoyé, la combinaison captée s'applique telle quelle. */
+  const hasAttributes = Boolean(attributes && Object.keys(attributes).length);
+  const implied = !hasAttributes && groups.length > 0 && groups.every((group) => group.values.length === 1)
+    ? Object.fromEntries(groups.map((group) => [group.attribute, group.values[0]]))
+    : null;
+  const { matching, metadata } = ayWebsSplitVariantSelection(product, hasAttributes ? attributes : implied);
 
   if (!matching) {
     if (hasMeaningfulGroups) {
