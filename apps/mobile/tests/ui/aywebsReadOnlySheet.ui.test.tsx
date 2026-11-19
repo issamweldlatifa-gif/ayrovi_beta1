@@ -294,6 +294,6 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
     );
     await waitFor(() => expect(screen.getAllByText(/238[.,]20/).length).toBeGreaterThan(0));
     /* Disponibilité non confirmée : dite telle quelle, jamais « disponible ». */
-    expect(screen.getByTestId('aywebs-confirm-availability-unconfirmed')).toBeTruthy();
+    expect(await screen.findByTestId('aywebs-confirm-availability-unconfirmed')).toBeTruthy();
   });
 });

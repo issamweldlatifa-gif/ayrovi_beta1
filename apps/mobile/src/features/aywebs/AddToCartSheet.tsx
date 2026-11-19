@@ -1302,7 +1302,7 @@ export function AddToCartSheet({
                 </View>
               ))}
 
-              {quote.availability === 'UNKNOWN' && confirmMerchantPrice ? (
+              {quote.availability === 'UNKNOWN' && !quoting ? (
                 <AppText variant="caption" color={theme.colors.muted} testID="aywebs-confirm-availability-unconfirmed">
                   {t('aywebs.availUnconfirmed')}
                 </AppText>
