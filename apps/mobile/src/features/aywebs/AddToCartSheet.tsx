@@ -17,7 +17,7 @@
  *     والزرّ يقول شنوّة لازم يصير — موش «La demande n'a pas abouti».
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { AppText, Button } from '@/design/ui';
@@ -134,6 +134,8 @@ export function AddToCartSheet({
   visible, sessionId, product, options, capture, quoteToken, readVariant, local = false, readOnlySelection = false, onClose, onAdded,
 }: AddToCartSheetProps) {
   const theme = useTheme();
+  const { height: windowHeight } = useWindowDimensions();
+  const photoHeight = Math.max(84, Math.min(160, Math.round(windowHeight * 0.20)));
   const { t, locale } = useI18n();
 
   const [selection, setSelection] = useState<Record<string, string>>({});
@@ -1082,11 +1084,11 @@ export function AddToCartSheet({
   const totalLine = resolvedTotalTnd != null ? tndText(resolvedTotalTnd) : '';
   const displayedTndLine = quantity > 1 && totalLine ? totalLine : sourceLine;
   const title = product.title;
-  // Prefer the exact combination's published image over a color swatch thumbnail.
-  const selectedColorImage = preferredVariantImage(pageQuote?.image || quote.image, fields, selection) || '';
-  /* الصورة الرئيسية تتبع لون المنتج المختار داخل نفس الورقة؛ fallback للصورة
-     الأصلية فقط إذا التاجر ما نشرش صورة مرتبطة باللون. */
-  const imageUri = selectedColorImage || product.images[0] || '';
+  const exactImage = pageQuote?.image || quote.image;
+  const imageUri = readOnlySelection
+    ? exactImage || product.images[0] || ''
+    : preferredVariantImage(exactImage, fields, selection) || product.images[0] || '';
+  const imageFallbacks = product.images.map(uri => mediaUrl(uri));
 
   const discountMeta = useMemo(() => {
     if (!captureRecord) return null;
@@ -1133,117 +1135,133 @@ export function AddToCartSheet({
       accessibilityRole="button"
       accessibilityLabel={t('sheet.close')}
       onPress={onClose}
-      hitSlop={8}
       style={styles.close}
     >
       <Ionicons name="close-outline" size={theme.iconSize.md} color={theme.colors.ink} />
     </Pressable>
   );
 
-  /*
-   * 15/11 — feuille « propre » sur le modèle Cdiscount (005006) :
-   *   en-tête   : mot-symbole AYWEBs au bleu d'action · ✕
-   *   bande grise : carte blanche [vignette | titre · prix rouge · -45 % · origine barrée]
-   *   options   : couleur / taille / … puis quantité
-   *   pied      : « Ajouter au panier », pilule d'achat jaune pleine largeur 48 dp (19/11)
-   * L'ajout réussi ferme la feuille (pas de seconde feuille).
-   */
+  const row = rowDirectionFor(theme.isRTL);
+  const priceBlock = (
+    <View style={styles.priceStack}>
+      {displayedTndLine ? (
+        <SalePrice
+          testID="aywebs-sheet-price"
+          price={displayedTndLine}
+          percent={discountMeta?.pct ?? null}
+          original={regularUnitTnd || undefined}
+          originalPrefix={t('cart.originally')}
+        />
+      ) : quoting ? (
+        <View style={[styles.pendingRow, { flexDirection: row }]}>
+          <LoadingSpinner size="sm" color={theme.colors.muted} testID="aywebs-sheet-price-pending" />
+          <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.pricePending')}</AppText>
+        </View>
+      ) : (
+        <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.priceAtAddShort')}</AppText>
+      )}
+      {displayedTndLine ? (
+        <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.customsShippingIncluded')}</AppText>
+      ) : null}
+    </View>
+  );
   return (
     <AppSheet
       open={visible}
       onDismiss={onClose}
       presentation="bottom"
       footer={(
-        // 19/11 : bouton pleine largeur d'origine (48 dp), couleur d'achat jaune.
-        <Button
-          label={busy ? t('aywebs.adding') : (readOnlySelection ? t('aywebs.confirmAddCta') : t('aywebs.addToCart'))}
-          tone="commerce"
-          onPress={confirm}
-          busy={busy}
-          disabled={Boolean(blockedCode) || !sessionId}
-          block
-          style={styles.addButton}
-          testID="aywebs-sheet-add"
-        />
+        <View style={styles.purchaseFooter} testID="aywebs-sheet-purchase-footer">
+          {readOnlySelection ? priceBlock : null}
+          <Button
+            label={busy ? t('aywebs.adding') : (readOnlySelection ? t('aywebs.confirmAddCta') : t('aywebs.addToCart'))}
+            tone="commerce"
+            onPress={confirm}
+            busy={busy}
+            disabled={Boolean(blockedCode) || !sessionId}
+            block
+            style={styles.addButton}
+            testID="aywebs-sheet-add"
+          />
+        </View>
       )}
       header={(
         <View
           accessibilityLabel={readOnlySelection ? t('aywebs.confirmTitle') : t('aywebs.pickTitle')}
-          style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}
+          style={[styles.header, readOnlySelection && styles.captureHeader, { flexDirection: row }]}
         >
-          <View style={styles.headerSide} />
-          <View style={styles.headerCenter}>
-            <AppImage
-              localSource={
-                theme.mode === 'dark'
+          {!readOnlySelection ? <View style={styles.headerSide} /> : null}
+          <View style={readOnlySelection ? styles.captureHeaderTitle : styles.headerCenter}>
+            {readOnlySelection ? (
+              <AppText variant="h3" accessibilityRole="header">{t('aywebs.confirmTitle')}</AppText>
+            ) : (
+              <AppImage
+                localSource={theme.mode === 'dark'
                   ? require('../../../assets/aywebs/aywebs-wordmark-white.png')
-                  : require('../../../assets/aywebs/aywebs-wordmark-violet.png')
-              }
-              contentFit="contain"
-              tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}
-              decorative
-              background={null}
-              style={styles.headerWordmark}
-              testID="aywebs-sheet-wordmark"
-            />
+                  : require('../../../assets/aywebs/aywebs-wordmark-violet.png')}
+                contentFit="contain"
+                tintColor={AYWEBS_WORDMARK_TINT[theme.mode]}
+                decorative
+                background={null}
+                style={styles.headerWordmark}
+                testID="aywebs-sheet-wordmark"
+              />
+            )}
           </View>
           <View style={styles.headerSide}>{closeButton}</View>
         </View>
       )}
     >
-      <View testID="aywebs-sheet-product-band" style={[styles.productBand, { backgroundColor: theme.colors.shimmer }]}>
-        <View
-          testID="aywebs-sheet-product-card"
-          style={[styles.productCard, { backgroundColor: theme.colors.surface, flexDirection: rowDirectionFor(theme.isRTL) }]}
-        >
+      {readOnlySelection ? (
+        <View testID="aywebs-sheet-capture-card" style={styles.captureCard}>
           {imageUri ? (
-            <AppImage
-              uri={mediaUrl(imageUri)}
-              fallbackUris={[mediaUrl(product.images[0] || '')]}
-              highRes
-              style={[styles.productThumb, { backgroundColor: theme.colors.skeleton }]}
-              contentFit="cover"
-              accessibilityLabel={title}
-              testID="aywebs-sheet-product-image"
-            />
-          ) : (
-            <View style={[styles.productThumb, styles.productThumbEmpty, { backgroundColor: theme.colors.skeleton }]}>
-              <Ionicons name="image-outline" size={theme.iconSize.lg} color={theme.colors.muted} />
-            </View>
-          )}
-
-          <View style={styles.productText}>
-            <AppText variant="body" color={theme.colors.ink} numberOfLines={2}>
-              {title}
-            </AppText>
-            {displayedTndLine ? (
-              <SalePrice
-                testID="aywebs-sheet-price"
-                price={displayedTndLine}
-                percent={discountMeta?.pct ?? null}
-                original={regularUnitTnd || undefined}
-                originalPrefix={t('cart.originally')}
+            // Padding keeps every edge of the image inside the rounded frame.
+            <View testID="aywebs-sheet-photo-frame" style={[styles.capturePhotoFrame, { height: photoHeight, backgroundColor: theme.colors.shimmer }]}>
+              <AppImage
+                uri={mediaUrl(imageUri)}
+                fallbackUris={imageFallbacks}
+                highRes
+                style={styles.capturePhoto}
+                background={null}
+                contentFit="contain"
+                contentPosition="center"
+                accessibilityLabel={title}
+                testID="aywebs-sheet-product-image"
               />
-            ) : quoting ? (
-              <View style={[styles.pendingRow, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                <LoadingSpinner size="sm" color={theme.colors.muted} testID="aywebs-sheet-price-pending" />
-                <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.pricePending')}</AppText>
-              </View>
+            </View>
+          ) : null}
+          <AppText variant="h3" color={theme.colors.ink} testID="aywebs-sheet-captured-title">{title}</AppText>
+        </View>
+      ) : (
+        <View testID="aywebs-sheet-product-band" style={[styles.productBand, { backgroundColor: theme.colors.shimmer }]}>
+          <View
+            testID="aywebs-sheet-product-card"
+            style={[styles.productCard, { backgroundColor: theme.colors.surface, flexDirection: row }]}
+          >
+            {imageUri ? (
+              <AppImage
+                uri={mediaUrl(imageUri)}
+                fallbackUris={imageFallbacks}
+                style={styles.productThumb}
+                background={theme.colors.skeleton}
+                contentFit="contain"
+                accessibilityLabel={title}
+                testID="aywebs-sheet-product-image"
+              />
             ) : (
-              <AppText variant="caption" color={theme.colors.muted}>
-                {t('aywebs.priceAtAddShort')}
-              </AppText>
+              <View style={[styles.productThumb, styles.productThumbEmpty, { backgroundColor: theme.colors.skeleton }]}>
+                <Ionicons name="image-outline" size={theme.iconSize.lg} color={theme.colors.muted} />
+              </View>
             )}
-            {displayedTndLine ? (
-              <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
-                {t('aywebs.customsShippingIncluded')}
-              </AppText>
-            ) : null}
+            <View style={styles.productText}>
+              <AppText variant="body" color={theme.colors.ink} numberOfLines={2}>{title}</AppText>
+              {priceBlock}
+            </View>
           </View>
         </View>
-      </View>
+      )}
 
-        <View testID="aywebs-sheet-options" style={styles.optionsSection}>
+        <View testID="aywebs-sheet-options" style={[styles.optionsSection, readOnlySelection && styles.captureOptions]}>
           {readOnlySelection ? (
             <View testID="aywebs-captured-selection-box" style={styles.capturedCleanStack}>
               {capturedBadges.map((badge, index) => (
@@ -1430,10 +1448,18 @@ function variantAvailability(
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingBottom: 4 },
-  headerSide: { width: 40, alignItems: 'flex-end' },
+  captureHeader: { paddingHorizontal: RHYTHM.group },
+  captureHeaderTitle: { flex: 1, minWidth: 0 },
+  headerSide: { width: 44, alignItems: 'flex-end' },
   headerCenter: { flex: 1, alignItems: 'center' },
   headerWordmark: { width: 69, height: 24 },
-  close: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  close: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  captureCard: { gap: 10 },
+  capturePhotoFrame: { borderRadius: RADIUS.md, paddingHorizontal: 8, paddingVertical: 6 },
+  capturePhoto: { flex: 1, width: '100%' },
+  captureOptions: { paddingTop: 0 },
+  priceStack: { gap: 4 },
+  purchaseFooter: { gap: 8 },
   // Bande grise pleine largeur de la feuille + carte blanche (Cdiscount 005006).
   productBand: { marginHorizontal: -RHYTHM.group, marginTop: -RHYTHM.related, paddingHorizontal: RHYTHM.group, paddingVertical: RHYTHM.related },
   productCard: { borderRadius: RADIUS.md, padding: 12, gap: 12, alignItems: 'flex-start' },
@@ -1454,5 +1480,4 @@ const styles = StyleSheet.create({
   quantityOption: { minHeight: 48, borderTopWidth: StyleSheet.hairlineWidth, justifyContent: 'center', paddingHorizontal: 20 },
   // Pilule d'achat jaune 48 dp, pleine largeur — le seul bouton principal de la feuille.
   addButton: { minHeight: 48, borderRadius: RADIUS.full },
-  // Pilule bleue 48 dp (Zalando / Cdiscount) — le seul bouton principal de la feuille.
 });

@@ -263,12 +263,13 @@ describe('Zayrovi Extracted Sans — parité de la source web et du mobile', () 
     expect(existsSync(path.join(ROOT, 'assets/fonts/NotoSansArabic-Bold.ttf'))).toBe(true);
   });
 
-  it('15/11 (Cdiscount 005006) : AddToCartSheet = carte produit compacte sur bande grise, puis options ; le panier s’ouvre depuis le navigateur', () => {
+  it('AYWEBs garde la carte compacte pour le mode interactif et l’image pleine largeur pour la confirmation', () => {
     const src = readFileSync(path.join(ROOT, 'src/features/aywebs/AddToCartSheet.tsx'), 'utf8');
     expect(src).toContain('productBand:');
     expect(src).toContain('productCard:');
     expect(src).toMatch(/productThumb:\s*\{\s*width:\s*88,\s*height:\s*88/);
-    expect(src).not.toContain('productHero:');
+    expect(src).toContain('capturePhoto:');
+    expect(src).toContain('aywebs-sheet-purchase-footer');
     expect(src).toContain('<SalePrice');
     // Plus de seconde feuille : la feuille se ferme, le navigateur propose « Voir le panier ».
     expect(src).not.toContain('aywebs-sheet-success');

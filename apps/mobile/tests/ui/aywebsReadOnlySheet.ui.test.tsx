@@ -1,20 +1,6 @@
-/**
- * Modèle #2 — Feuille de confirmation AYWEBs en lecture seule (`readOnlySelection`)
- * au-dessus du WebView marchand (29/10/2026).
- *
- * Vérifie que :
- *   1. L'en-tête affiche le mot-symbole officiel AYWEBs + « Confirmation de votre article » ;
- *   2. La carte produit affiche la photo réelle, le titre, « SHEIN · Prix boutique : 18,71 USD »
- *      et le prix converti en dinars (« 79,40 TND ») ;
- *   3. Le bloc « Sélection capturée depuis la boutique » affiche les badges verrouillés
- *      (`Couleur : Jean clair` avec pastille denim, `Taille : 4Y (98-104 cm)`), SANS sélecteur
- *      interactif de variantes dans la feuille ;
- *   4. Le bouton « Changer la taille ou la couleur sur la boutique » referme immédiatement
- *      la feuille (`onClose`) pour laisser le client modifier son choix sur la boutique ;
- *   5. Si une option requise (`Taille`) n'a pas encore été choisie sur la boutique, la feuille
- *      l'indique clairement sans jargon technique (`quote:...`) et désactive l'ajout.
- */
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+/** Read-only merchant confirmation: full image, exact attributes and a pinned quote/action. */
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import type { AyWebsCart, AyWebsResolvedProduct } from '@/api/aywebs';
@@ -114,9 +100,10 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
     mockAddCartItem.mockReset();
   });
 
-  it('affiche les badges verrouillés, le prix boutique + TND, renvoie à la boutique sur clic retour et ajoute au panier', async () => {
+  it('affiche le choix exact et la photo entière dans la mise en page B, puis ajoute au panier', async () => {
     const { product, capture } = buildLocalProduct('4Y (98-104 cm)');
     const onClose = jest.fn();
+    const exactPhoto = 'https://img.ltwebstatic.com/images3_pi/2026/10/29/jean_clair_portrait.jpg';
 
     mockResolveWithCapture.mockResolvedValue({
       product: {
@@ -136,6 +123,8 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
       status: 'READY',
       capture: { used: true, fingerprint: 'fp_ro', priceSource: 'dom', corroborated: true, rejection: null },
       priceRejection: null,
+      capturedSelection: { mode: 'selection', attributes: { Couleur: 'Jean clair', Taille: '4Y (98-104 cm)' },
+        availability: 'AVAILABLE', pageQuantity: null, image: exactPhoto },
     });
 
     mockAddCartItem.mockImplementation(async (payload: Record<string, unknown>) => {
@@ -184,7 +173,7 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
                 readOnlySelection
                 sessionId="mob_readonly_session_01"
                 product={product}
-                capture={capture}
+                capture={{ ...capture, captureMode: 'selection' }}
                 onClose={onClose}
               />
             </ThemeProvider>
@@ -196,6 +185,23 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
     await waitFor(() => expect(screen.getAllByText(/79[.,]40/).length).toBeGreaterThan(0));
 
     expect(screen.getByLabelText('Confirmation de votre article')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Confirmation de votre article' })).toBeTruthy();
+    const image = within(screen.getByTestId('aywebs-sheet-capture-card')).getByTestId('aywebs-sheet-product-image');
+    expect(JSON.stringify(image.props.source)).toContain(exactPhoto);
+    expect(image.props.contentFit).toBe('contain');
+    expect(image.props.contentPosition).toEqual({ left: '50%', top: '50%' });
+    expect(StyleSheet.flatten(image.props.style).width).toBe('100%');
+    const frame = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-photo-frame').props.style);
+    expect(frame.paddingHorizontal).toBeGreaterThan(0);
+    expect(frame.height).toBeGreaterThanOrEqual(84);
+    expect(frame.height).toBeLessThanOrEqual(160);
+    fireEvent(image, 'error', { nativeEvent: { error: 'Missing merchant photo' } });
+    const fallback = screen.getByTestId('aywebs-sheet-product-image');
+    expect(JSON.stringify(fallback.props.source)).toContain(product.images[0]);
+    expect(fallback.props.contentFit).toBe('contain');
+    const footer = within(screen.getByTestId('aywebs-sheet-purchase-footer'));
+    expect(footer.getByText(/79[.,]40/)).toBeTruthy();
+    expect(footer.getByRole('button', { name: 'Ajouter au panier' })).toBeTruthy();
     expect(screen.getByTestId('aywebs-captured-selection-box')).toBeTruthy();
     expect(screen.getByText('Douane et livraison incluses')).toBeTruthy();
     expect(screen.queryByText(/Sélection capturée depuis la boutique/)).toBeNull();
@@ -203,6 +209,7 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
     expect(screen.getByTestId('aywebs-confirm-merchant-price')).toBeTruthy();
     expect(screen.getByText(/Prix sur la boutique : .*18[.,]71/)).toBeTruthy();
     expect(screen.queryByText('Changer sur la page')).toBeNull();
+    expect(within(screen.getByLabelText('Confirmation de votre article')).getByRole('button', { name: 'Fermer' })).toBeTruthy();
     expect(screen.getByText('Couleur : Jean clair')).toBeTruthy();
     expect(screen.getByText('Taille : 4Y (98-104 cm)')).toBeTruthy();
     expect(screen.getByText('Ajouter au panier')).toBeTruthy();
