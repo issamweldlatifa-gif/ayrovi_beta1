@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { VideoView, useVideoPlayer } from 'expo-video';
 import { router } from 'expo-router';
 import { mediaUrl } from '@/api/client';
 import type { ReferencePublication } from '@/api/referencePublications';
@@ -12,38 +11,27 @@ import { PUBLICATION_THEME, veil } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
 import type { ProductFavorites } from '@/features/reels/useProductFavorites';
 import { OFFICIAL_PUBLISHER_ID, OFFICIAL_PUBLISHER_NAME, OFFICIAL_PUBLISHER_ROUTE } from './officialPublisher';
+import { openPublicationProduct } from './publicationProductNavigation';
 import { PublicationIcon, PublicationText } from './publicationDesign';
 import { PUBLICATION_REFERENCE as R, referenceMeasurements } from './referencePublicationLayout';
+import { PublicationInlineVideo } from './PublicationInlineVideo';
+import type { PublicationPlayback } from './PublicationFullscreenVideo';
 import { usePublisherFollow } from './usePublisherFollow';
 
-function ActiveVideo({ url, inset, muted, paused }: { url: string; inset: boolean; muted: boolean; paused: boolean }) {
-  const t = useT();
-  const [ready, setReady] = useState(false);
-  const [failed, setFailed] = useState(false);
-  const player = useVideoPlayer({ uri: mediaUrl(url) }, instance => { instance.loop = true; instance.muted = true; });
-  useEffect(() => {
-    const sub = player.addListener('statusChange', ({ status }) => setFailed(status === 'error'));
-    return () => sub.remove();
-  }, [player]);
-  useEffect(() => {
-    player.muted = muted;
-    if (paused) player.pause(); else player.play();
-  }, [player, muted, paused]);
-  return <>
-    <VideoView player={player} style={[StyleSheet.absoluteFill, !ready ? styles.buffering : null]} surfaceType="textureView"
-      pointerEvents="none" nativeControls={false} contentFit={inset ? 'contain' : 'cover'} onFirstFrameRender={() => setReady(true)} />
-    {failed ? <View pointerEvents="none" style={styles.videoError}><PublicationText variant="caption" color={PUBLICATION_THEME.paper}>{t('publication.videoError')}</PublicationText></View> : null}
-  </>;
-}
-
-function PublicationMedia({ post, width, height, active, autoplay, onActivate }: {
+function PublicationMedia({ post, width, height, active, autoplay, onActivate, onVideo, onPhoto, playback }: {
   post: ReferencePublication; width: number; height: number; active: boolean; autoplay: boolean; onActivate: () => void;
+  onPhoto?: () => void; onVideo?: (state: PublicationPlayback) => void; playback: RefObject<PublicationPlayback>;
 }) {
   const t = useT();
   const [intent, setIntent] = useState<'play' | 'pause' | null>(null);
   const [muted, setMuted] = useState(true);
   // Sound is always reset when the card leaves the viewport/background.
-  useEffect(() => { if (!active) setMuted(true); }, [active]);
+  useEffect(() => {
+    if (!active) {
+      setMuted(true);
+      playback.current = { ...playback.current, muted: true };
+    }
+  }, [active, playback]);
   const { media } = post;
   if (!media) return null;
   const isVideo = media.type === 'video';
@@ -52,13 +40,21 @@ function PublicationMedia({ post, width, height, active, autoplay, onActivate }:
   const focal = media.focalX !== undefined || media.focalY !== undefined
     ? { left: `${media.focalX ?? 50}%` as const, top: `${media.focalY ?? 50}%` as const } : undefined;
   return <View testID={`reference-media-${post.layout}`} style={[styles.media, { width, height }]}>
-    {!isVideo ? <AppImage uri={mediaUrl(media.url)} style={StyleSheet.absoluteFill} contentFit={media.fit ?? 'cover'}
-      contentPosition={focal} accessibilityLabel={media.alt || post.title || undefined} decorative={!media.alt && !post.title} /> : <>
+    {!isVideo ? <>
+      <AppImage uri={mediaUrl(media.url)} style={StyleSheet.absoluteFill} contentFit={media.fit ?? 'cover'}
+      contentPosition={focal} accessibilityLabel={media.alt || post.title || undefined} decorative={Boolean(onPhoto) || (!media.alt && !post.title)} />
+      {onPhoto ? <Pressable testID="reference-photo-open" accessibilityRole="button"
+        accessibilityLabel={t('publication.photoOpen')} accessibilityHint={media.alt || post.title || undefined}
+        style={StyleSheet.absoluteFill} onPress={onPhoto} /> : null}
+    </> : <>
       {inset && media.poster ? <AppImage uri={mediaUrl(media.poster)} decorative contentFit="cover" blurRadius={28} style={StyleSheet.absoluteFill} /> : null}
       <View style={[styles.videoFrame, inset ? { width: '50%' } : styles.fullWidth]}>
         {media.poster ? <AppImage uri={mediaUrl(media.poster)} decorative contentFit={inset ? 'contain' : 'cover'} style={StyleSheet.absoluteFill} /> : null}
-        {active ? <ActiveVideo key={media.url} url={media.url} inset={inset} muted={muted} paused={!playing} /> : null}
+        {active ? <PublicationInlineVideo key={media.url} url={media.url} fit={inset ? 'contain' : 'cover'} muted={muted}
+          paused={!playing} position={onVideo ? playback : undefined} /> : null}
       </View>
+      {onVideo ? <Pressable testID="reference-video-fullscreen" accessibilityRole="button" accessibilityLabel={t('publication.playerOpen')}
+        style={StyleSheet.absoluteFill} onPress={() => onVideo(playback.current)} /> : null}
       <View style={styles.controls}>
         <Pressable accessibilityRole="button" accessibilityLabel={t(playing ? 'social.pause' : 'social.play')}
           testID="reference-video-play" style={styles.videoTouch} onPress={() => { setIntent(playing ? 'pause' : 'play'); if (!playing) onActivate(); }}>
@@ -66,7 +62,10 @@ function PublicationMedia({ post, width, height, active, autoplay, onActivate }:
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel={t(muted || !active ? 'publication.unmute' : 'publication.mute')}
           testID="reference-video-mute" style={styles.videoTouch} onPress={() => {
-            if (!active) { setIntent('play'); setMuted(false); onActivate(); } else setMuted(value => !value);
+            const next = active ? !muted : false;
+            if (onVideo) playback.current = { ...playback.current, muted: next };
+            setMuted(next);
+            if (!active) { setIntent('play'); onActivate(); }
           }}>
           <View style={styles.videoDisc}><PublicationIcon name={muted || !active ? 'volume-mute-outline' : 'volume-high-outline'} color={PUBLICATION_THEME.paper} /></View>
         </Pressable>
@@ -75,11 +74,12 @@ function PublicationMedia({ post, width, height, active, autoplay, onActivate }:
   </View>;
 }
 
-export function ReferencePublicationCard({ post, viewport, active, autoplay, onActivate, onMore, onOptions, onSponsor, favorites, signedIn, onAuth }: {
+export function ReferencePublicationCard({ post, viewport, active, autoplay, onActivate, onVideo, onPhoto, onMore, onCaption, onOptions, onSponsor, favorites, signedIn, onAuth }: {
   post: ReferencePublication; viewport: number; active: boolean; autoplay: boolean;
-  onActivate: () => void; onMore: () => void; onOptions: () => void; onSponsor: () => void;
+  onActivate: () => void; onPhoto?: () => void; onVideo?: (state: PublicationPlayback, resumeAt: (state: PublicationPlayback) => void) => void; onMore: () => void; onCaption?: () => void; onOptions: () => void; onSponsor: () => void;
   favorites: ProductFavorites; signedIn: boolean; onAuth: () => void;
 }) {
+  const playback = useRef<PublicationPlayback>({ time: 0, muted: true });
   const t = useT();
   const { isRTL } = useTheme();
   const direction = rowDirectionFor(isRTL);
@@ -109,14 +109,15 @@ export function ReferencePublicationCard({ post, viewport, active, autoplay, onA
       <PublicationText variant="caption" color={PUBLICATION_THEME.muted}>{t('publication.sponsored')}</PublicationText>
       <PublicationIcon name="information-circle-outline" size={14} color={PUBLICATION_THEME.muted} />
     </Pressable> : null}
-    <PublicationMedia post={post} width={width} height={mediaHeight} active={active} autoplay={autoplay} onActivate={onActivate} />
+    <PublicationMedia post={post} width={width} height={mediaHeight} active={active} autoplay={autoplay} onActivate={onActivate} playback={playback} onPhoto={onPhoto}
+      onVideo={onVideo && (state => onVideo(state, resume => { playback.current = { ...resume, muted: true }; }))} />
     <ScrollView horizontal showsHorizontalScrollIndicator={false} testID={`reference-products-${post.id}`}
       style={styles.rail} contentContainerStyle={[styles.railContent, { direction: isRTL ? 'rtl' : 'ltr' }]}>
       {post.products.map(product => {
         const saved = signedIn && favorites.isFavorite(product.id);
         return <View key={product.id} style={[styles.tile, tileSize]} testID="reference-product-tile">
           <Pressable style={styles.fullHeight} accessibilityRole="link" accessibilityLabel={product.name}
-            onPress={() => router.push({ pathname: '/product/[id]', params: { id: product.id } })}>
+            onPress={() => openPublicationProduct(product.id)}>
             <AppImage uri={mediaUrl(product.image)} decorative contentFit="contain" style={StyleSheet.absoluteFill} />
           </Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel={t(saved ? 'publisher.unsave' : 'publisher.save', { name: product.name })}
@@ -132,7 +133,7 @@ export function ReferencePublicationCard({ post, viewport, active, autoplay, onA
       </Pressable>
     </ScrollView>
     <View style={[styles.caption, { flexDirection: direction }]} testID="reference-publication-caption">
-      <Pressable onPress={onMore} accessibilityRole="button" accessibilityLabel={post.title || post.subtitle || t('reel.captionMore')} style={styles.captionText}>
+      <Pressable onPress={onCaption ?? onMore} accessibilityRole="button" accessibilityLabel={post.title || post.subtitle || t('reel.captionMore')} style={styles.captionText}>
         {post.title ? <PublicationText variant="bodyStrong" style={styles.headline}>{post.title}</PublicationText> : null}
         {post.subtitle ? <PublicationText variant="bodyStrong" style={styles.headline}>{post.subtitle}</PublicationText> : null}
       </Pressable>
@@ -154,8 +155,6 @@ const styles = StyleSheet.create({
   media: { overflow: 'hidden', borderRadius: R.cardRadius, backgroundColor: PUBLICATION_THEME.neutral, alignItems: 'center' },
   videoFrame: { height: '100%' },
   fullWidth: { width: '100%' },
-  buffering: { opacity: 0 },
-  videoError: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 8, backgroundColor: PUBLICATION_THEME.viewerDarkSurface },
   controls: { position: 'absolute', end: R.videoControlInset - 2, bottom: R.videoControlInset - 2, gap: R.videoControlGap - 4 },
   videoTouch: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   videoDisc: { width: R.videoControlDiameter, height: R.videoControlDiameter, borderRadius: R.videoControlDiameter / 2,

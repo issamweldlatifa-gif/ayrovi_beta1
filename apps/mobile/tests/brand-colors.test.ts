@@ -377,8 +377,8 @@ describe('plus d’orange dans l’application', () => {
       for (const match of text.matchAll(HEX)) {
         const value = upper(match[0]);
         if (rel === 'src/design/tokens.mobile.ts' && allowed.has(value)) continue;
-        // Owner-approved reference pixels: editorial campaign backgrounds, never a global brand palette.
-        if (rel === 'src/features/publications/publicationTokens.ts' && ['#F2631F', '#F6A178'].includes(value)) continue;
+        // Owner-approved reference pixels: editorial campaign backgrounds and the fullscreen seek bar, never a global brand palette.
+        if (rel === 'src/features/publications/publicationTokens.ts' && ['#F2631F', '#F6A178', '#FF4C01'].includes(value)) continue;
         if (isOrange(value)) offenders.push(`${rel} → ${value}`);
       }
     }

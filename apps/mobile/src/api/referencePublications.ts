@@ -1,14 +1,14 @@
 import { isPublicationCampaign, type PublicationCampaignLayout } from '../../../../shared/publicationCampaign';
 import { normalizeMediaLink } from '../../../../shared/mediaLinks';
 import { referenceLayout, type ReferenceLayout, type ReferenceMedia } from '@/features/publications/referencePublicationLayout';
-import { apiGetData, type RequestOptions } from './client';
+import { apiGetData, apiSend, type RequestOptions } from './client';
 import { ApiError } from './errors';
 import { parseLinkedProduct, type LinkedProduct } from './linkedProduct';
 
 export interface ReferencePublication {
   id: string; title: string; subtitle: string; description: string;
   channelId: string; channelName: string; channelAvatar: string;
-  sponsored: boolean; sponsorName: string; actionLabel: string;
+  saved: boolean; sponsored: boolean; sponsorName: string; actionLabel: string;
   media: ReferenceMedia | null; layout: ReferenceLayout | PublicationCampaignLayout; products: LinkedProduct[];
 }
 
@@ -64,7 +64,7 @@ export function parseReferencePublicationPage(value: unknown): ReferencePublicat
     return [{ id, title: row.show_title === false || row.show_title === 0 ? '' : text(row.title),
       subtitle: text(row.subtitle), description: text(row.description),
       channelId: text(row.channel_id), channelName: text(row.channel_name), channelAvatar: safeMedia(row.channel_avatar, 'image'),
-      sponsored: yes(row.sponsored), sponsorName: text(row.sponsor_name), actionLabel: text(row.action_label),
+      saved: yes(row.saved), sponsored: yes(row.sponsored), sponsorName: text(row.sponsor_name), actionLabel: text(row.action_label),
       media, layout, products: [...products.values()] }];
   });
   return { items, nextCursor: page.nextCursor };
@@ -75,4 +75,21 @@ export async function fetchReferencePublications(cursor: string | null, options?
   const query = new URLSearchParams({ limit: '12' });
   if (cursor) query.set('cursor', cursor);
   return parseReferencePublicationPage(await apiGetData<unknown>(`/api/public/social/publication-feed?${query}`, options));
+}
+
+export function publicationLookKey(owner: string, id: string) {
+  return ['publication-look', owner, id] as const;
+}
+
+export async function fetchPublicationLook(id: string, options?: RequestOptions) {
+  if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) return null;
+  const query = new URLSearchParams({ post: id, limit: '1' });
+  const page = parseReferencePublicationPage(await apiGetData<unknown>(`/api/public/social/publication-feed?${query}`, options));
+  return page.items.find(item => item.id === id && !isPublicationCampaign(item.layout) && item.media !== null) ?? null;
+}
+
+export async function savePublicationLook(id: string, saved: boolean) {
+  const { data } = await apiSend<{ saved: boolean }>('PUT', `/api/public/social/publications/${encodeURIComponent(id)}/preferences`, { body: { saved } });
+  if (data.saved !== saved) throw new ApiError('malformed', 'Unconfirmed Publication preference');
+  return data.saved;
 }

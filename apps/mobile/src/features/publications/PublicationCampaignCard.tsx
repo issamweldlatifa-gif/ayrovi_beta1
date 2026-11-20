@@ -13,6 +13,7 @@ import { formatMoney } from '@/format/money';
 import { useI18n } from '@/i18n';
 import type { ProductFavorites } from '@/features/reels/useProductFavorites';
 import { OFFICIAL_PUBLISHER_ID, OFFICIAL_PUBLISHER_NAME, OFFICIAL_PUBLISHER_ROUTE } from './officialPublisher';
+import { openPublicationProduct } from './publicationProductNavigation';
 import { PublicationIcon, PublicationText } from './publicationDesign';
 import { PUBLICATION_CAMPAIGN_TONES as C } from './publicationTokens';
 import { usePublisherFollow } from './usePublisherFollow';
@@ -86,7 +87,7 @@ export function PublicationCampaignCard({ post, layout, viewport, query, favorit
           // Derived *only* from the explicit published compare-at price, never called a 30-day low.
           const percent = compare ? Math.round((1 - product.price / compare) * 100) : 0;
           return <View key={product.id} testID={`publication-campaign-product-${product.id}`} style={{ width: tile.width }}>
-            <Pressable accessibilityRole="link" accessibilityLabel={product.name} onPress={() => router.push({ pathname: '/product/[id]', params: { id: product.id } })}>
+            <Pressable accessibilityRole="link" accessibilityLabel={product.name} onPress={() => openPublicationProduct(product.id)}>
               <View style={[styles.photo, tile]} testID="publication-campaign-photo">
                 <AppImage uri={mediaUrl(product.image)} contentFit={layout === 'campaign_red' ? 'cover' : 'contain'} decorative style={StyleSheet.absoluteFill} />
                 {(post.sponsored && post.actionLabel && post.actionLabel.length <= 20) || compare ? <View style={styles.badges} pointerEvents="none">

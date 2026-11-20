@@ -22,3 +22,15 @@ No retired block endpoint, admin composer or legacy demo example is reactivated.
 `campaign_orange` and `campaign_red` are two additional, opt-in templates on the same authored Publication API. They use the actual linked items in their existing order. Set `template_id` to one of those values and provide `title`, `channel_id`, and `product_ids`; `subtitle` is the second headline and the image is optional for these layouts. `sponsored: true` enables the disclosure on the headline and products; a short authored `action_label` may appear as the campaign tag. Nothing is seeded or published automatically.
 
 At 360 dp, the title is inset 24 dp, the rail starts 54 dp after the heading panel, and portrait product photos are about 152 × 219 dp (16 dp radius and inter-card gap; 20 dp outer inset). The Follow button is 128 × 48 dp, outlined, with its publisher alongside. Orange panels are `#F2631F` / `#F6A178`; red panels are `#DB2436` / `#831520`, sampled from unobstructed reference pixels. The toolbar exposes search within the campaign, saved products and the cart; the filter works on the actual linked brands and discounts. Promo pricing appears only if the catalogue publishes a valid compare-at price; it is not labelled as a 30-day low.
+
+## Publication entry points
+
+| Template | Tap media | Final **Voir plus** | Tap a product |
+| --- | --- | --- | --- |
+| `image-cover`, `image-panoramic` | `/publication-look/[id]`: large photo, title, publisher/Follow and linked product rows | Same post, `view=collection`: inset panorama, title, **Découvrir**, publisher/Follow and two-column product grid | Canonical `/product/[id]` |
+| `video-inset`, `video-panoramic` | Black, letterboxed fullscreen player with play/pause, seek, sound, speed, settings and exit | `/publication-look/[id]`: original video, publisher/Follow and linked product rows | Canonical `/product/[id]` |
+| `campaign_orange`, `campaign_red` | — | — | Canonical `/product/[id]` |
+
+The large presentation uses the 720:1107 reference aspect (≈554 dp at 360 dp). The compact photo is ≈336 × 162 dp at the same viewport, and grid photos are ≈164 × 233 dp. **Découvrir** in the compact view opens that same post's large view. A return-to-top button appears while browsing products. Play and sound controls in the video feed remain separate from the fullscreen entry; fullscreen uses the original source with `contain` fit and reports automatic quality and the actual decoder resolution, not fabricated selections. The player is paused in the background and the feed preview does not play underneath it.
+
+All three detail presentations reuse the same authorized, account-keyed public feed read (`post=…&limit=1`); follow, look saves and product favorites use existing endpoints. Prices and optional discount/new badges come only from actual catalogue fields; no reference campaign data, historical-price labels, demo assets, or retired collections were added. Captions and options retain their existing action paths.

@@ -61,3 +61,6 @@ export const PUBLICATION_CAMPAIGN_TONES = {
   promo: '#D50012',
   photo: '#F1F1F1',
 } as const;
+
+/** Black fullscreen player and the seek accent sampled from the video reference. */
+export const PUBLICATION_PLAYER = { menu: '#191919', track: '#595959', progress: '#FF4C01' } as const;

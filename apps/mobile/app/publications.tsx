@@ -1,12 +1,12 @@
 import { isPublicationCampaign } from '../../../shared/publicationCampaign';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { router, useIsFocused } from 'expo-router';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { AppState, BackHandler, FlatList, Pressable, StyleSheet, View, useWindowDimensions, type ViewToken } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { fetchReferencePublications, type ReferencePublication } from '@/api/referencePublications';
+import { fetchReferencePublications, publicationLookKey, type ReferencePublication } from '@/api/referencePublications';
 import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
 import { Field } from '@/design/ui';
@@ -18,8 +18,10 @@ import { rowDirectionFor } from '@/design/layoutLogic';
 import { PUBLICATION_THEME } from '@/design/tokens.mobile';
 import { PublicationCampaignCard } from '@/features/publications/PublicationCampaignCard';
 import { PublicationCampaignHeader } from '@/features/publications/PublicationCampaignHeader';
+import { PublicationFullscreenVideo, type PublicationPlayback } from '@/features/publications/PublicationFullscreenVideo';
 import { PublicationHeader } from '@/features/publications/PublicationHeader';
 import { PublicationAuthSheet } from '@/features/publications/PublicationAuthSheet';
+import { openPublicationProduct } from '@/features/publications/publicationProductNavigation';
 import { PublicationIcon, PublicationText } from '@/features/publications/publicationDesign';
 import { ReferencePublicationCard } from '@/features/publications/ReferencePublicationCard';
 import { PUBLICATION_REFERENCE as R } from '@/features/publications/referencePublicationLayout';
@@ -40,6 +42,8 @@ export default function PublicationsScreen() {
   const reducedMotion = useReduceMotion();
   const { width } = useWindowDimensions();
   const session = useSession();
+  const client = useQueryClient();
+  const owner = session.account?.id || 'guest';
   const signedIn = session.status === 'signedIn';
   const favorites = useProductFavorites(signedIn, session.account?.id);
   const [visiblePost, setVisiblePost] = useState<string | null>(null);
@@ -47,6 +51,7 @@ export default function PublicationsScreen() {
   const [auth, setAuth] = useState(false);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const [fullscreen, setFullscreen] = useState<{ url: string; poster: string; start: PublicationPlayback; resumeAt: (state: PublicationPlayback) => void } | null>(null);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
   const viewability = useRef({ itemVisiblePercentThreshold: 45, minimumViewTime: 160 }).current;
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<ReferencePublication>[] }) => {
@@ -64,7 +69,7 @@ export default function PublicationsScreen() {
     return () => listener.remove();
   }, [Boolean(selection)]);
   const feed = useInfiniteQuery({
-    queryKey: ['publication-feed', session.account?.id || 'guest', 'reference-layouts'],
+    queryKey: ['publication-feed', owner, 'reference-layouts'],
     queryFn: ({ pageParam, signal }) => fetchReferencePublications(pageParam, { signal }),
     initialPageParam: null as string | null,
     getNextPageParam: (last, _, __, cursors) => last.nextCursor && !cursors.includes(last.nextCursor) ? last.nextCursor : undefined,
@@ -77,7 +82,11 @@ export default function PublicationsScreen() {
   }, [feed.data]);
   const next = () => { if (feed.hasNextPage && !feed.isFetching) void feed.fetchNextPage(); };
   const open = (post: ReferencePublication, mode: Selection['mode']) => setSelection({ post, mode, open: true });
-  const blocked = Boolean(selection) || auth;
+  const openLook = (post: ReferencePublication, collection = false) => {
+    client.setQueryData(publicationLookKey(owner, post.id), post);
+    router.push({ pathname: '/publication-look/[id]', params: { id: post.id, ...(collection ? { view: 'collection' } : {}) } });
+  };
+  const blocked = Boolean(selection) || auth || Boolean(fullscreen);
   const playingAllowed = focused && foreground && !blocked;
   const direction = rowDirectionFor(theme.isRTL);
   const current = posts.find(post => post.id === visiblePost) ?? posts[0];
@@ -104,7 +113,11 @@ export default function PublicationsScreen() {
           viewport={width} query={search?.id === item.id ? search.query : ''} favorites={favorites} signedIn={signedIn}
           onAuth={() => setAuth(true)} onSponsor={() => open(item, 'sponsor')} /> : <ReferencePublicationCard post={item} viewport={width}
           active={playingAllowed && activeVideo === item.id} autoplay={!reducedMotion} onActivate={() => setActiveVideo(item.id)}
-          onMore={() => open(item, 'details')} onOptions={() => open(item, 'options')} onSponsor={() => open(item, 'sponsor')}
+          onPhoto={item.media?.type === 'image' ? () => openLook(item) : undefined}
+          onVideo={item.media?.type === 'video' ? (start, resumeAt) => {
+            if (item.media) setFullscreen({ url: item.media.url, poster: item.media.poster, start, resumeAt });
+          } : undefined}
+          onMore={() => openLook(item, item.media?.type === 'image')} onCaption={() => open(item, 'details')} onOptions={() => open(item, 'options')} onSponsor={() => open(item, 'sponsor')}
           favorites={favorites} signedIn={signedIn} onAuth={() => setAuth(true)} />}
         ListEmptyComponent={feed.isPending ? <LoadingBlock /> : feed.isError && !feed.data ?
           <ErrorBlock error={feed.error} onRetry={() => void feed.refetch()} /> :
@@ -127,7 +140,7 @@ export default function PublicationsScreen() {
             {selection.post.subtitle && selection.post.subtitle !== selection.post.title ? <PublicationText>{selection.post.subtitle}</PublicationText> : null}
             {selection.post.description ? <PublicationText>{selection.post.description}</PublicationText> : null}
             {selection.post.products.map(product => <Pressable key={product.id} accessibilityRole="link" accessibilityLabel={product.name} style={[styles.product, { flexDirection: direction }]}
-              onPress={() => { setSelection(null); router.push({ pathname: '/product/[id]', params: { id: product.id } }); }}>
+              onPress={() => { setSelection(null); openPublicationProduct(product.id); }}>
               <AppImage uri={mediaUrl(product.image)} decorative contentFit="contain" style={styles.thumbnail} />
               <PublicationText numberOfLines={2} style={styles.content}>{product.name}</PublicationText>
               <PublicationIcon name={theme.isRTL ? 'arrow-back' : 'arrow-forward'} color={PUBLICATION_THEME.ink} />
@@ -135,6 +148,8 @@ export default function PublicationsScreen() {
           </>}
       </View>
     </AppSheet> : null}
+    {fullscreen ? <PublicationFullscreenVideo url={fullscreen.url} poster={fullscreen.poster} start={fullscreen.start}
+      onClose={state => { fullscreen.resumeAt(state); setFullscreen(null); }} /> : null}
     {auth ? <PublicationAuthSheet visible onClose={() => setAuth(false)} /> : null}
   </View>;
 }

@@ -74,7 +74,10 @@ const drawings: Record<string, string> = {
   'send-outline': 'm3 3 18 9-18 9 3.5-9L3 3Zm3.5 9H21',
   'bookmark-outline': 'M6 3h12v18l-6-4-6 4V3Z',
   'thumbs-down-outline': 'M14 4H5L3 14h6v6c4 0 4-6 5-7V4Zm4 0h3v10h-3Z',
+  'chevron-back': 'm15 4-8 8 8 8',
+  'chevron-forward': 'm9 4 8 8-8 8',
   'chevron-down': 'm7 10 5 5 5-5',
+  'arrow-up-outline': 'M12 21V3m-7 7 7-7 7 7',
   'add-outline': 'M12 5v14M5 12h14',
   'information-circle-outline': 'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18ZM12 11v5.5M12 7.6v.2',
   'checkmark-outline': 'm5 12 4 4L19 6',
@@ -89,6 +92,9 @@ const drawings: Record<string, string> = {
   'volume-high-outline':
     'm3 9 4 0 5-5v16l-5-5H3V9Zm12-1c3 2 3 6 0 8m3-11c5 4 5 10 0 14',
   'play-outline': 'm7 4 13 8-13 8V4Z',
+  'settings-outline': 'M9 3h6l.7 3 2.3 1.3 2.9-.8 2 3.5-2.2 2v2l2.2 2-2 3.5-2.9-.8-2.3 1.3-.7 3H9l-.7-3L6 18.7l-2.9.8-2-3.5 2.2-2v-2L1.1 10l2-3.5 2.9.8L8.3 6 9 3Zm6 10a3 3 0 1 0-6 0 3 3 0 0 0 6 0Z',
+  'speedometer-outline': 'M4 20a10 10 0 1 1 16 0M12 15l5-5M12 15v.3',
+  'contract-outline': 'M3 8h5V3m0 5L3 3m18 5h-5V3m0 5 5-5M3 16h5v5m0-5-5 5m18-5h-5v5m0-5 5 5',
   'pause-outline': 'M8 4v16M16 4v16',
   play: 'm7 4 13 8-13 8V4Z',
 };
@@ -99,7 +105,7 @@ export function PublicationIcon(props: ComponentProps<typeof NavigationIcon>) {
     color = PUBLICATION_PALETTE.icon,
     style,
   } = props;
-  if (/^(arrow|chevron)-(back|forward)/.test(String(name)))
+  if (/^arrow-(back|forward)/.test(String(name)))
     return <NavigationIcon {...props} />;
   const key =
     name === 'heart'
