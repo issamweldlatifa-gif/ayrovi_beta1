@@ -9,19 +9,11 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import type { AyWebsCartItem } from '@/api/aywebs';
 import { saleBadgeLabel, saleSummary } from '@/design/saleLogic';
 import { cartBadgeText, totalCartUnits } from '@/features/shopping/cartUnits';
-import {
-  PUBLICATION_SOUND_DEFAULT_ON,
-  publicationSoundOn,
-  resetPublicationSound,
-  setPublicationSoundOn,
-  subscribePublicationSound,
-  togglePublicationSound,
-} from '@/features/publications/publicationSound';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel: string) => readFileSync(path.join(ROOT, rel), 'utf8');
@@ -75,37 +67,6 @@ describe('badge du panier — nombre d’articles partout', () => {
     expect(read('src/features/shopping/LiveCartGlyph.tsx')).toContain('<CartGlyph');
     // Le badge n'est pas un second bouton bleu plein.
     expect(read('src/design/CartGlyph.tsx')).toContain('backgroundColor: badgeColor ?? CART_BADGE.background'); // 18/11 : compteur rouge
-  });
-});
-
-describe('son des vidéos de Publication (« actif à l’ouverture, le client peut le couper »)', () => {
-  afterEach(() => resetPublicationSound());
-
-  it('démarre AVEC le son', () => {
-    expect(PUBLICATION_SOUND_DEFAULT_ON).toBe(true);
-    expect(publicationSoundOn()).toBe(true);
-  });
-
-  it('couper le son vaut pour toutes les vidéos de la session et prévient les lecteurs', () => {
-    const listener = vi.fn();
-    const unsubscribe = subscribePublicationSound(listener);
-    expect(togglePublicationSound()).toBe(false);
-    expect(publicationSoundOn()).toBe(false);
-    expect(listener).toHaveBeenCalledTimes(1);
-    setPublicationSoundOn(false); // même valeur : aucun rendu inutile
-    expect(listener).toHaveBeenCalledTimes(1);
-    expect(togglePublicationSound()).toBe(true);
-    expect(listener).toHaveBeenCalledTimes(2);
-    unsubscribe();
-    togglePublicationSound();
-    expect(listener).toHaveBeenCalledTimes(2);
-  });
-
-  it('le lecteur lit l’état partagé (pas un état local muet par défaut)', () => {
-    const video = read('src/features/publications/templates/PublicationVideo.tsx');
-    expect(video).toContain('useSyncExternalStore');
-    expect(video).toContain('togglePublicationSound');
-    expect(video).toContain('instance.muted = !publicationSoundOn()');
   });
 });
 

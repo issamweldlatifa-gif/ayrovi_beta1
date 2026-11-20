@@ -23,23 +23,11 @@ export const PUBLICATION_PALETTE = {
   backdrop: '#000000',
   input: '#F1F1F1',
 } as const;
-/** Native Android Roboto is a closer reference match; do not override other features. */
-export function publicationLatinFont(strong: boolean, os: string = Platform.OS): string {
-  if (os === 'android') return strong ? 'sans-serif-medium' : 'sans-serif';
+function publicationLatinFont(strong: boolean): string {
+  if (Platform.OS === 'android') return strong ? 'sans-serif-medium' : 'sans-serif';
   return strong ? 'Publication-SemiBold' : 'Publication-Regular';
 }
-/**
- * 14/11 — police des BLOCS (cartes, bandeaux) : la planche GBox est composée en
- * Zalando Sans, la famille d'où viennent les fichiers `ZayroviExtracted-*` déjà
- * embarqués ; le titre du bandeau prend la coupe « Heading » (plus large). L'arabe
- * garde Noto Sans Arabic. Le reste de Publication (en-tête) ne change pas.
- */
-export type BlockFace = 'regular' | 'bold' | 'heading';
-export function publicationBlockFont(locale: string, face: BlockFace): string {
-  if (locale === 'ar') return face === 'regular' ? 'NotoSansArabic-Regular' : 'NotoSansArabic-Bold';
-  if (face === 'heading') return 'ZayroviExtracted-Heading';
-  return face === 'bold' ? 'ZayroviExtracted-Bold' : 'ZayroviExtracted-Regular';
-}
+
 export const PUBLICATION_TYPE = {
   // Android reference: native Roboto; keep the licensed bundled face elsewhere.
   regular: publicationLatinFont(false),
@@ -64,42 +52,4 @@ export const PUBLICATION_TYPE = {
   touch: 44,
   countSize: 15,
   countLine: 20,
-  /*
-   * Blocs Publication (planches Zalando du 13/11, écran 360 dp) — une échelle
-   * à niveaux DISTINCTS : titre du bandeau > prix > marque > nom > « Sponsorisé ».
-   */
-  bandTitleSize: 22,   // « Vans / Ready for the plot twist? » : capitales de 31 px ⇒ corps 22
-  bandTitleLine: 27,   // 55 px entre deux lignes du titre
-  /*
-   * 14/11 — texte SOUS les cartes (planches GBox Vans 224048, WE Fashion 224107) :
-   * Sponsorisé 790 px → marque 830 → nom 865 → prix 915 (pas de 20 / 18 / 25 dp).
-   */
-  cardSponsoredSize: 14,
-  cardSponsoredLine: 20,
-  cardBrandSize: 16,   // marque, GRASSE
-  cardBrandLine: 20,
-  cardNameSize: 16,    // nom du produit, régulier, une ligne avec « … »
-  cardNameLine: 18,
-  cardPriceSize: 16,   // prix, RÉGULIER sur la planche (« €26.00 »)
-  cardPriceLine: 22,
-  cardPriceTop: 4,
-  cardTextTop: 12,     // 14/11 (rythme, Zalando photo → marque ≈ 12 dp) : 6 → 12 = RHYTHM.related
-  // 13/11 : le cœur (rond blanc 40 / 32 dp) est remplacé par le cœur nu du système de cartes (`cardSystem.ts`).
-  cardCompactStrongSize: 14,
-  cardCompactStrongLine: 18,
-  cardCompactCopySize: 12,
-  cardCompactCopyLine: 16,
-  cardReferenceLine: 18, // ancien prix, sur sa ligne (corps = « Sponsorisé »)
-  badgeSize: 14,       // pastille « Nouveau » : blanche, en bas à gauche
-  badgeLine: 18,
-  badgeHeight: 22,
-  badgeInset: 8,
-  badgeRadius: 4,
-  followSize: 16,      // « Suivre » de la pilule
-  followLine: 22,
-  followHeight: 44,    // 15/11 (Instagram 002046) : pilule détourée blanche, 44 dp dans un bloc (= cible tactile)
-  followHeightOnMedia: 32, // sur la vidéo / la photo : pilule basse comme Instagram, cible complétée à 44 par hitSlop
-  followBorder: 1.5,   // trait blanc assez franc pour rester visible sur un fond clair
-  followIcon: 18,
-  infoIcon: 14,        // « ⓘ » après « Sponsorisé »
 } as const;

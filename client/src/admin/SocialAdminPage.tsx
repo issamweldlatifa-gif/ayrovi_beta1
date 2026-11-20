@@ -1,6 +1,3 @@
-import { PUBLICATION_TEMPLATES, publicationTypeForTemplate } from '../../../shared/publicationContent';
-import { PublicationTemplatePreview } from './PublicationTemplatePreview';
-import { PublicationBlocksTab } from './PublicationBlocksTab';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowUp, Pencil, Plus, Trash2 } from '../components/QatafoIcons';
 import { adminApi } from './api';
@@ -10,12 +7,12 @@ import { CatalogueProductsPage } from './CataloguePages';
 import { uploadMediaFile } from './mediaUpload';
 import { normalizeMediaLink, type MediaLinkKind } from '../../../shared/mediaLinks';
 
-const TABS = ['Publication', 'Reel', 'Produits temporaires'] as const;
+const TABS = ['Reel', 'Produits temporaires'] as const;
 type Tab = typeof TABS[number];
 
 const st = (s: string) => s === 'publie' ? 'PUBLISHED' : s === 'archive' ? 'ARCHIVED' : 'DRAFT';
 
-/** Suppression avec confirmation — un seul chemin pour les onglets social (publication, reel). */
+/** Suppression avec confirmation — un seul chemin pour les reels. */
 const removeWithConfirm = async (path: string, message: string, reload: () => void) => {
   if (!window.confirm(message)) return;
   try { await adminApi(path, { method: 'DELETE' }); reload(); } catch { reload(); }
@@ -132,12 +129,8 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
             </div>
             {form.poster_url && <img src={form.poster_url} alt="" style={{ width: 120, aspectRatio: '9 / 16', objectFit: 'cover', borderRadius: 12, marginTop: 8 }} />}
           </Field>
-          <Field label="Modèle visuel"><select aria-label="Modèle visuel" value={form.template_id || 'auto'} onChange={e => setForm({ ...form, template_id: e.target.value, post_type: publicationTypeForTemplate(e.target.value, form.post_type) })}>
-            {PUBLICATION_TEMPLATES.slice(0, 6).map(value => <option key={value} value={value}>{({ auto: 'Automatique (compatibilité)', photo: 'Photo éditoriale', split: 'Éditorial — image puis texte', campaign: 'Éditorial — grand titre & encart crème', carousel: 'Carousel — grande galerie & fiche produit', video: 'Vidéo immersive', social_mosaic: 'Album — mosaïque 2 + 3', shoppable: 'Shopping — photo & cartes produits', caption_photo: 'Social — description puis grande photo', social_strip: 'Album — rangée de 3 photos', social_pair: 'Album — duo de photos' })[value]}</option>)}
-          </select></Field>
           <Field label="Libellé du bouton (facultatif)"><input maxLength={40} value={form.action_label || ''} placeholder="Découvrir" onChange={e => setForm({ ...form, action_label: e.target.value })} /></Field>
           <Field label="Action du bouton"><select value={form.action_target || 'detail'} onChange={e => setForm({ ...form, action_target: e.target.value })}><option value="detail">Ouvrir la publication</option><option value="products">Ouvrir le premier produit associé</option></select></Field>
-          <Field label="Aperçu de composition" full><PublicationTemplatePreview form={form} /></Field>
           <Field label="Description" full><textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
           <ProductIntegration kind="reel" value={form} onChange={(v) => setForm({ ...form, ...v })} />
           <Field label="Statut"><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="brouillon">Brouillon</option><option value="publie">Publié</option><option value="archive">Archivé</option></select></Field>
@@ -147,9 +140,9 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
   );
 };
 
-/* ---------------- Page Social (3 onglets) ---------------- */
+/* ---------------- Page Social ---------------- */
 export const SocialAdminPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
-  const [tab, setTab] = useState<Tab>('Publication');
+  const [tab, setTab] = useState<Tab>('Reel');
   const [channels, setChannels] = useState<any[]>([]);
   useEffect(() => { adminApi<any>('/story-publishers').then((r) => setChannels(r.data || [])).catch(() => undefined); }, []);
 
@@ -159,7 +152,7 @@ export const SocialAdminPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
         <div>
           <span className="admin-eyebrow">Contenu → Social</span>
           <h2>Social Zayrovi</h2>
-          <p>Page Publication (blocs), reels vidéo et produits temporaires. Les Stories se gèrent dans Contenu → Stories officielles.</p>
+          <p>Reels vidéo et produits temporaires. Les Stories se gèrent dans Contenu → Stories officielles.</p>
         </div>
       </header>
       <div className="admin-actions" style={{ marginTop: 0 }}>
@@ -167,7 +160,6 @@ export const SocialAdminPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
           <Button key={t} variant="secondary" aria-pressed={tab === t} onClick={() => setTab(t)}>{t}</Button>
         ))}
       </div>
-      {tab === 'Publication' && <PublicationBlocksTab canWrite={canWrite} />}
       <fieldset disabled={!canWrite} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
       {tab === 'Reel' && <ReelsTab channels={channels} />}
       {tab === 'Produits temporaires' && <CatalogueProductsPage scope="content" />}

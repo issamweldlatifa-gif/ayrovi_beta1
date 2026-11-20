@@ -1,4 +1,4 @@
-/** White Publication navigation bar; the screen owns the system inset and scroll animation. */
+/** White Publication navigation bar; the screen owns the system inset. */
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 

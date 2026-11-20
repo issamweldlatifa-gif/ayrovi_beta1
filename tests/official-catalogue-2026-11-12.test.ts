@@ -7,7 +7,7 @@
  *     photo locale (fichier présent), variantes et stock d'ouverture ;
  *   • la purge retire un produit ET ses attaches (stock, mouvements, médias, liens
  *     de contenu, favoris) sans casser une commande ni un contenu qui le citait ;
- *   • la page Publication (blocs) et les Reels utilisent le nouveau catalogue ;
+ *   • les anciens blocs Publication ne sont plus semés et les Reels restent indépendants ;
  *   • l'API publique sert la fiche d'un produit officiel.
  */
 import fs from 'node:fs';
@@ -21,7 +21,6 @@ import {
   officialProductId,
   purgeCatalogueProducts,
 } from '../src/catalogue/installOfficialCatalogue';
-import { readPublicBlocks, PUBLICATION_BLOCKS_DEMO } from '../src/services/publicationBlocks';
 
 const fresh = () => new QatafoDatabase(':memory:');
 
@@ -63,18 +62,8 @@ describe('catalogue officiel — base neuve', () => {
     }
   });
 
-  test('page Publication : douze blocs de démonstration + le bloc cinema (16/11) en tête, tous avec des produits officiels', () => {
-    const blocks = readPublicBlocks(db as any);
-    expect(blocks).toHaveLength(PUBLICATION_BLOCKS_DEMO.length + 1);
-    expect(blocks[0]).toMatchObject({ id: 'pubblock_demo_cinema', kind: 'cinema', bgColor: '#000000' });
-    expect(new Set(blocks.map((b) => b.kind))).toEqual(new Set(['cinema', 'media', 'container', 'sponsored_pair']));
-    for (const block of blocks) {
-      expect(block.publisher.name).toBe('zayrovi team');
-      for (const product of block.products) expect(product.id.startsWith('product_official_')).toBe(true);
-    }
-    expect(blocks.filter((b) => b.media?.type === 'video')).toHaveLength(5);
-    // 14/11 : le duo montre deux cartes sous l'image (planche GBox « WE Fashion »).
-    for (const pair of blocks.filter((b) => b.kind === 'sponsored_pair')) expect(pair.products).toHaveLength(2);
+  test('ne sème aucun bloc Publication retiré', () => {
+    expect(db.all('SELECT id FROM publication_blocks')).toEqual([]);
   });
 
   test('les nouveaux Reels éditoriaux ne récupèrent pas les anciens liens produits', () => {
@@ -101,7 +90,6 @@ describe('purge de l’ancien catalogue', () => {
     for (const table of ['catalogue_variants', 'catalogue_media', 'catalogue_attribute_values', 'inventory_stock_items', 'content_products']) {
       expect(db.get<any>(`SELECT COUNT(*) n FROM ${table} WHERE product_id LIKE 'product_official_%'`).n, table).toBe(0);
     }
-    expect(db.get<any>("SELECT COUNT(*) n FROM publication_blocks WHERE id LIKE 'pubblock_demo_%'").n).toBe(0);
     expect((db as any).db.pragma('foreign_key_check')).toEqual([]);
 
     // Réinstallation idempotente : vingt produits, une seconde fois rien.

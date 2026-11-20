@@ -55,46 +55,19 @@ describe('Publication-only visual model, not a second commerce or social core', 
       '#000000',
     ])
       expect(s).toContain(hex);
-    for (const file of [
-      'PublicationHeader',
-      'PublicationTemplatesScreen',
-      'templates/MediaTemplate',
-      'templates/ContainerTemplate',
-      'templates/SponsoredPairTemplate',
-      'templates/PublicationVideo',
-    ])
-      expect(read(dir + file + '.tsx')).not.toContain('@expo/vector-icons');
+    expect(read(dir + 'PublicationHeader.tsx')).not.toContain('@expo/vector-icons');
     expect(read(dir + 'publicationDesign.tsx')).toContain(
       'strokeWidth={PUBLICATION_TYPE.stroke}'
     );
   });
-  it('refonte 13/11 : en-tête seul + blocs du CRM ; seul « Suivre » est permis', () => {
-    const page = read(dir + 'PublicationTemplatesScreen.tsx');
+  it('keeps the Publication route without the retired layouts or data client', () => {
+    const page = read('app/publications.tsx');
     expect(page).toContain('<PublicationHeader />');
-    expect(page).toContain('fetchPublicationBlocks');
-    const templates = walk(dir + 'templates').filter((f) => f.endsWith('.tsx'));
-    expect(templates.length).toBeGreaterThanOrEqual(5);
-    for (const file of [...templates, dir + 'PublicationTemplatesScreen.tsx', dir + 'PublicationHeader.tsx']) {
-      const source = read(file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-      // Ni réaction, ni commentaire, ni partage, ni favori. « Suivre » est permis
-      // depuis le 13/11 (« نسيت زر Follow »), mais seulement via `PublicationFollow`.
-      // 14/11 (planches GBox) : le cœur des cartes est permis, mais SEULEMENT dans
-      // `BlockProductCard` (seul lieu du rond blanc) et branché sur les vrais favoris.
-      const hearts = file.endsWith('templates/BlockProductCard.tsx') ? /ReactionButton|sendInteraction|Comments|share-outline|followPublisher/ : /ReactionButton|sendInteraction|Comments|share-outline|heart-outline|'heart'|favorite=|followPublisher/;
-      expect(source, file).not.toMatch(hearts);
+    expect(page).toContain("t('publication.empty')");
+    expect(page).not.toMatch(/useQuery|FlatList|fetchPublication/);
+    for (const file of [dir + 'templates', dir + 'PublicationTemplatesScreen.tsx', 'src/api/publicationBlocks.ts']) {
+      expect(fs.existsSync(path.join(root, file))).toBe(false);
     }
-    expect(read(dir + 'templates/BlockProductCard.tsx')).toContain('usePublicationFavorites');
-    expect(read(dir + 'PublicationFavorites.tsx')).toContain('useProductFavorites');
-    expect(read(dir + 'PublicationTemplatesScreen.tsx')).toContain('<PublicationFavoritesProvider>');
-    expect(read(dir + 'templates/ContainerTemplate.tsx')).toContain('look="inline"');
-    expect(read(dir + 'templates/MediaTemplate.tsx')).toContain('look="inline"');
-    expect(read(dir + 'templates/MediaTemplate.tsx')).not.toContain('follow-overlay');
-    expect(read(dir + 'templates/CinemaTemplate.tsx')).toContain('look="media"');
-    // Une seule relation « suivre » : Reels et Publication partagent le même hook.
-    expect(read(dir + 'PublicationFollow.tsx')).toContain('usePublisherFollow');
     expect(read('src/features/reels/ReelFollow.tsx')).toContain('usePublisherFollow');
-    // L'ancien fil (posts, visionneuse, commentaires) a disparu du dossier.
-    for (const gone of ['PublicationFeedScreen', 'PublicationViewer', 'PublicationCard', 'PublicationActions', 'PublicationCommentsSheet'])
-      expect(fs.existsSync(path.join(root, dir + gone + '.tsx'))).toBe(false);
   });
 });

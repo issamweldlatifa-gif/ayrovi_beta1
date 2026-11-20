@@ -1,5 +1,5 @@
 import { foldCatalogSearch } from '../../shared/catalogSearch';
-import { allowCinemaPublicationBlocks, completeDemoSponsoredPairs, installCinemaDemo, installPublicationBlocksDemo, PUBLICATION_BLOCKS_SCHEMA } from '../services/publicationBlocks';
+import { RETIRED_PUBLICATION_BLOCKS_SCHEMA } from './retiredPublicationBlocks';
 import { installOwnerReels, installOwnerReelsV2 } from '../magazine/installOwnerReels';
 import { schemaStatements } from './schemaStatements';
 import { ensureSocialTotals, socialTotalsDrift } from './socialTotals';
@@ -438,18 +438,8 @@ export class QatafoDatabase {
       // Old bundled URLs are removed in this release: do not serve a half-replaced collection.
       throw new Error('OWNER_REEL_REPLACEMENT_FAILED');
     }
-    // Page Publication refondue (13/11) : blocs composés dans le CRM. La démonstration
-    // reprend les produits et les vidéos déjà installés (Reels), une seule fois.
-    this.db.exec(PUBLICATION_BLOCKS_SCHEMA);
-    // Modèle `cinema` (16/11) : une base plus ancienne voit sa contrainte CHECK élargie (table reconstruite une fois).
-    if (allowCinemaPublicationBlocks(this.db)) console.log('[database] publication_blocks : modèle « cinema » autorisé');
-    const blockColumns = new Set((this.db.prepare('PRAGMA table_info(publication_blocks)').all() as Array<{ name: string }>).map(column => column.name));
-    if (!blockColumns.has('image_format')) {
-      this.db.exec("ALTER TABLE publication_blocks ADD COLUMN image_format TEXT NOT NULL DEFAULT 'wide' CHECK(image_format IN ('cover','wide'))");
-    }
-    if (!blockColumns.has('collection_description')) {
-      this.db.exec("ALTER TABLE publication_blocks ADD COLUMN collection_description TEXT NOT NULL DEFAULT ''");
-    }
+    // Storage compatibility only; retired Publication blocks are not republished.
+    this.db.exec(RETIRED_PUBLICATION_BLOCKS_SCHEMA);
     if (relaxCustomerFavoritesSourceUnique(this.db)) console.log('[database] customer_favorites : unicité de l’adresse limitée aux favoris externes');
     // Catalogue officiel (12/11) : l'ancien catalogue est retiré EN ENTIER et remplacé
     // par les vingt produits fournis par le propriétaire (`catalogue/installOfficialCatalogue.ts`).
@@ -459,15 +449,8 @@ export class QatafoDatabase {
       linkOfficialReelProducts(this);
       console.log(`[database] catalogue officiel : ${report.products} produit(s) retiré(s), ${created} installé(s)`);
     });
-    // v2 : la démonstration reprend le catalogue officiel (la v1 citait l'ancien).
-    this.runOnceDataMigration('publication_blocks_demo_v2', () => { installPublicationBlocksDemo(this); });
     // Photos officielles au format unique 2:3 (13/11) : adresses versionnées → caches rafraîchis.
     this.runOnceDataMigration('official_catalogue_images_v2', () => { versionOfficialImages(this); });
-    // Duo sponsorisé à deux cartes (14/11) : les blocs de démonstration reçoivent leur seconde carte.
-    this.runOnceDataMigration('publication_pair_two_cards_v1', () => { completeDemoSponsoredPairs(this); });
-    // Bloc « vidéo bord à bord + fond noir » de démonstration (16/11), en tête de page, une seule fois.
-    this.runOnceDataMigration('publication_cinema_demo_v1', () => { installCinemaDemo(this); });
-    // The new Drive collection replaces only Reels; the Publication blocks above keep their own media.
     try {
       installOwnerReelsV2(this, backupReelContent);
     } catch (cause) {

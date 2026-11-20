@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import { translate } from '../src/i18n/keys';
 
 /**
  * Refonte des interactions (14/11/2026, approuvée) — phases 3 et 4.
@@ -52,62 +51,5 @@ describe('phase 3 — glyphes v1 et option A sur vidéo', () => {
     expect(card).not.toMatch(/chatbubble-outline|share-social-outline/);
     expect(card).toMatch(/<ReelGlyph name="comment"/);
     expect(card).toMatch(/<ReelGlyph name="share"/);
-  });
-});
-
-describe('phase 4 — barre Publication et feuille de commentaires', () => {
-  const engagement = code('src/features/publications/PublicationEngagement.tsx');
-  const screen = code('src/features/publications/PublicationTemplatesScreen.tsx');
-
-  it('16/11 : la barre vit sous CHAQUE bloc (sponsorisé compris), branchée sur l’engagement serveur', () => {
-    expect(screen).not.toMatch(/!item\.sponsored \? \(\s*<PublicationBar/);
-    expect(screen).toContain('<PublicationBar');
-    expect(screen).toContain('fetchSocialEngagement(socialIds');
-    expect(screen).toMatch(/rows\.map\(\(row\) => row\.id\)/);
-  });
-
-  it('rangée avec glyphes 30 dp et signet, cibles ≥ 48 dp, rangée miroir en arabe', () => {
-    expect(engagement).toMatch(/export const PUBLICATION_BAR_HEIGHT = 56;/);
-    expect(engagement).toMatch(/const BAR_TARGET_PAD = 8;/);
-    expect(engagement).toMatch(/action: \{ minWidth: 48, minHeight: 48/);
-    expect(engagement).toContain('const icon = PUBLICATION_METRICS.actionIcon;');
-    expect(code('src/design/tokens.mobile.ts')).toMatch(/PUBLICATION_METRICS = \{[^}]*actionIcon: 30/);
-    expect(engagement).toContain('rowDirectionFor(theme.isRTL)');
-    for (const id of ['publication-like-', 'publication-comment-', 'publication-share-', 'publication-save-']) expect(engagement).toContain(id);
-    // Plus de tiers à libellés ni de résumé séparé au-dessus d’un filet.
-    expect(engagement).not.toMatch(/third:|publication-summary-/);
-  });
-
-  it('J’aime et J’adore : glyphes pleins sur Publication, compteur à l’encre', () => {
-    expect(engagement).toMatch(/<ReactionButton[\s\S]*?strongCount[\s\S]*?ink=\{P\.ink\}/);
-    expect(engagement).not.toContain('tintLabel');
-    expect(code('src/design/reactions/ReactionButton.tsx')).toContain('<ReactionMark reaction={reaction} size={size} color={media ? undefined : color} />');
-  });
-
-  it('feuille : AUCUN autocollant, GIF, émoji ni appareil photo', () => {
-    expect(engagement).not.toMatch(/sticker|autocollant|\bgif\b|emoji|camera|appareil photo|ImagePicker/i);
-  });
-
-  it('feuille : en-tête réactions + pouce, tri, état vide, champ, envoi BLEU', () => {
-    for (const id of ['publication-comments-reactions', 'publication-comments-first', 'publication-comments-like', 'publication-comments-sort', 'publication-comments-empty', 'publication-comment-input', 'publication-comment-send']) {
-      expect(engagement).toContain(id);
-    }
-    expect(engagement).toMatch(/color=\{canSend \? theme\.colors\.action : P\.muted\}/);
-  });
-
-  it('les libellés de la référence existent en français et en arabe', () => {
-    expect(translate('fr', 'publication.comments.firstLike')).toBe('Soyez la première personne à aimer ça');
-    expect(translate('fr', 'publication.comments.relevant')).toBe('Plus pertinents');
-    expect(translate('fr', 'publication.comments.emptyTitle')).toBe('Aucun commentaire pour l’instant');
-    expect(translate('fr', 'publication.comments.emptyBody')).toBe('Soyez le premier à commenter.');
-    expect(translate('fr', 'publication.comments.placeholder')).toBe('Rédigez un commentaire…');
-    expect(translate('fr', 'publication.bar.comments', { value: 3 })).toBe('3 commentaires');
-    for (const key of ['publication.comments.firstLike', 'publication.comments.placeholder', 'publication.bar.shares'] as const) {
-      expect(translate('ar', key)).not.toBe(translate('fr', key));
-    }
-  });
-
-  it('le partage ne fabrique jamais de lien mort', () => {
-    expect(engagement).not.toContain('publications?block=');
   });
 });

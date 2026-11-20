@@ -47,7 +47,7 @@ export function officialImageUrl(url: string): string {
 
 /**
  * Migration (une fois) : les bases déjà installées reçoivent les adresses
- * versionnées — produits, galerie, blocs Publication. Idempotente.
+ * versionnées — produits et galerie. Idempotente.
  */
 export function versionOfficialImages(db: QatafoDatabase): number {
   const version = (value: unknown) => (typeof value === 'string' ? officialImageUrl(value) : value);
@@ -63,14 +63,6 @@ export function versionOfficialImages(db: QatafoDatabase): number {
   }
   for (const row of db.all<{ id: string; url: string }>(`SELECT id, url FROM catalogue_media WHERE url LIKE '${OFFICIAL_IMAGE_PREFIX}%'`)) {
     db.run('UPDATE catalogue_media SET url=? WHERE id=?', officialImageUrl(row.url), row.id);
-  }
-  const blocks = db.get<{ n: number }>("SELECT COUNT(*) n FROM sqlite_master WHERE type='table' AND name='publication_blocks'");
-  if (blocks?.n) {
-    for (const row of db.all<{ id: string; media_url: string; poster_url: string }>(
-      `SELECT id, media_url, poster_url FROM publication_blocks WHERE media_url LIKE '${OFFICIAL_IMAGE_PREFIX}%' OR poster_url LIKE '${OFFICIAL_IMAGE_PREFIX}%'`,
-    )) {
-      db.run('UPDATE publication_blocks SET media_url=?, poster_url=? WHERE id=?', officialImageUrl(row.media_url), officialImageUrl(row.poster_url), row.id);
-    }
   }
   return changed;
 }
@@ -159,9 +151,6 @@ export function purgeCatalogueProducts(db: Db, now = new Date().toISOString()): 
   if (tableExists(db, 'cart_items') && columnInfo(db, 'cart_items', 'external_id')) {
     db.run(`UPDATE cart_items SET external_id=NULL WHERE store='catalog' AND external_id IN ${inList}`);
   }
-  // Blocs Publication de démonstration : réinstallés avec le nouveau catalogue.
-  if (tableExists(db, 'publication_blocks')) db.run("DELETE FROM publication_blocks WHERE id LIKE 'pubblock_demo_%'");
-
   db.run('DELETE FROM products');
 
   // Catégories et marques créées pour l'ancienne sélection, désormais vides.

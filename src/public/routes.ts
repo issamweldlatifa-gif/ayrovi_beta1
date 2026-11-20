@@ -9,7 +9,6 @@ import { socialPage } from './socialPaging';
 import { readPublishedSocial } from '../magazine/publicSocialReads';
 import { imageWork, writeImageCache } from '../services/imageWork';
 import { readPublicationFeedSettings } from '../services/publicationFeedSettings';
-import { readPublicBlocks } from '../services/publicationBlocks';
 import { readSocialFeed, SocialFeedRequestError } from '../social-commerce/feed';
 import { PUBLICATION_CATEGORIES } from '../../shared/publicationFeed';
 import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
@@ -796,17 +795,14 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     }
   });
 
-  // Page Publication (13/11) : blocs composés dans le CRM, produits lus dans le catalogue.
+  // Compatibility for installed APKs: an empty feed, never archived rows.
   router.get('/social/publication-blocks', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, data: readPublicBlocks(db) });
+    res.json({ success: true, data: [] });
   });
-  router.get('/social/publication-blocks/:id', (req, res) => {
+  router.get('/social/publication-blocks/:id', (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
-    const id = req.params.id;
-    const block = /^[\w-]{1,120}$/.test(id) ? readPublicBlocks(db, new Date(), id)[0] : null;
-    if (!block || block.kind !== 'media') return res.status(404).json({ success: false, error: 'Collection introuvable.' });
-    res.json({ success: true, data: block });
+    res.status(404).json({ success: false, error: 'Collection introuvable.' });
   });
 
   router.get('/social/publication-feed-settings', (_req, res) => {

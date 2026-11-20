@@ -4,8 +4,14 @@ import { readPublishedSocial } from '../magazine/publicSocialReads';
 import { publicProductsByContent } from '../services/contentProducts';
 import { linkedProductFromJoin, LINKED_PRODUCT_JOIN_SELECT } from '../services/shoppableContent';
 import { isSocialFilter, isSocialId, type SocialEdition, type SocialFeedItem, type SocialFeedFilter, type SocialFeedPage, type SocialProduct } from '../../shared/socialCommerce';
-import { isRecentProduct } from '../services/publicationBlocks';
 import { activeEdition, readEditionState } from './editions';
+
+const NEW_PRODUCT_DAYS = 30;
+function isRecentProduct(createdAt: unknown, now: Date): boolean {
+  const created = Date.parse(String(createdAt ?? ''));
+  const age = now.getTime() - created;
+  return age >= 0 && age <= NEW_PRODUCT_DAYS * 86_400_000;
+}
 
 const PAGE_SIZE = 8;
 const SOURCE_LIMIT = 24;

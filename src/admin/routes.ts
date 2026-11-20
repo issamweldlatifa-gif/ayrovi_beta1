@@ -4,7 +4,6 @@ import { normalizePublicationContent } from '../../shared/publicationContent';
 import { normalizePublicationFeedSettings } from '../../shared/publicationFeed';
 import { readEditionState, updateEditionState } from '../social-commerce/editions';
 import { readPublicationFeedSettings } from '../services/publicationFeedSettings';
-import { createBlock, deleteBlock, listAdminBlocks, readAdminBlock, reorderBlocks, updateBlock, validatePublicationBlock } from '../services/publicationBlocks';
 import { PUBLICATION_CATEGORIES } from '../../shared/publicationFeed';
 import { FONT_STACK } from '../../shared/brand.generated';
 import { brandAccentColor, enforceBrandIdentity, enforceLegacyTheme, hasForbiddenFontSelection } from '../../shared/identityPolicy';
@@ -1445,41 +1444,6 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (result.status !== 200) return res.status(result.status).json({ success: false, error: result.error });
     audit(db, req, 'UPDATE', 'SOCIAL_COMMERCE_EDITION', 'global', null, { action: req.body.action, revision: result.state.revision });
     res.json({ success: true, data: result.state });
-  });
-
-  router.get('/publication-blocks', requireAdmin(db, 'content:read'), (_req, res) => {
-    res.json({ success: true, data: listAdminBlocks(db) });
-  });
-  router.post('/publication-blocks', requireAdmin(db, 'content:write'), (req, res) => {
-    const checked = validatePublicationBlock(db, req.body);
-    if (checked.ok === false) return res.status(400).json({ success: false, error: checked.error });
-    const id = createBlock(db, checked.value);
-    audit(db, req, 'CREATE', 'PUBLICATION_BLOCKS', id, null, readAdminBlock(db, id));
-    res.status(201).json({ success: true, data: readAdminBlock(db, id) });
-  });
-  // Déclaré AVANT `/:id` : « order » n'est pas un identifiant de bloc.
-  router.put('/publication-blocks/order', requireAdmin(db, 'content:write'), (req, res) => {
-    const before = listAdminBlocks(db).map((block) => block.id);
-    const result = reorderBlocks(db, req.body?.ids);
-    if (result.ok === false) return res.status(400).json({ success: false, error: result.error });
-    audit(db, req, 'UPDATE', 'PUBLICATION_BLOCKS', 'order', { ids: before }, { ids: req.body.ids });
-    res.json({ success: true, data: listAdminBlocks(db) });
-  });
-  router.put('/publication-blocks/:id', requireAdmin(db, 'content:write'), (req, res) => {
-    const existing = readAdminBlock(db, req.params.id);
-    if (!existing) return res.status(404).json({ success: false, error: 'Bloc introuvable.' });
-    const checked = validatePublicationBlock(db, req.body, existing);
-    if (checked.ok === false) return res.status(400).json({ success: false, error: checked.error });
-    updateBlock(db, existing.id, checked.value);
-    const after = readAdminBlock(db, existing.id);
-    audit(db, req, 'UPDATE', 'PUBLICATION_BLOCKS', existing.id, existing, after);
-    res.json({ success: true, data: after });
-  });
-  router.delete('/publication-blocks/:id', requireAdmin(db, 'content:write'), (req, res) => {
-    const existing = readAdminBlock(db, req.params.id);
-    if (!existing || !deleteBlock(db, existing.id)) return res.status(404).json({ success: false, error: 'Bloc introuvable.' });
-    audit(db, req, 'DELETE', 'PUBLICATION_BLOCKS', existing.id, { kind: existing.kind, title: existing.title }, null);
-    res.json({ success: true });
   });
 
   router.get('/publications', requireAdmin(db, 'content:read'), (_req, res) => socialList('publications', res));

@@ -30,7 +30,7 @@ export const GO_SHORTCUTS: readonly GoShortcut[] = [
   { key: 'i', section: 'inventory', label: 'Stock' },
   { key: 'r', section: 'crm-dashboard', label: 'CRM' },
   { key: 't', section: 'crm-tasks', label: 'Tâches CRM' },
-  { key: 's', section: 'social', label: 'Social (Reels, publications)' },
+  { key: 's', section: 'social', label: 'Social (Reels, produits temporaires)' },
   { key: 'm', section: 'news', label: 'Magazine' },
   { key: 'h', section: 'assistant-support', label: 'Support assistant' },
   { key: 'u', section: 'users', label: 'Utilisateurs' },

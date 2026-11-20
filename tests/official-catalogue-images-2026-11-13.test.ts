@@ -62,7 +62,7 @@ describe('adresses versionnées (les téléphones rechargent la nouvelle photo)'
     expect(officialImageUrl('https://cdn.example/x.jpg')).toBe('https://cdn.example/x.jpg');
   });
 
-  it('installation neuve : produits, galerie et blocs pointent vers ?v=2', () => {
+  it('installation neuve : produits et galerie pointent vers ?v=2', () => {
     const db = new QatafoDatabase(':memory:');
     const products = db.all<{ image: string; additional_images: string }>("SELECT image, additional_images FROM products WHERE id LIKE 'product_official_%'");
     expect(products.length).toBe(20);
@@ -73,12 +73,7 @@ describe('adresses versionnées (les téléphones rechargent la nouvelle photo)'
     const media = db.all<{ url: string }>("SELECT url FROM catalogue_media WHERE url LIKE '/media/catalogue/official/%'");
     expect(media.length).toBeGreaterThan(20);
     for (const row of media) expect(row.url).toMatch(/\?v=2$/);
-    const posters = db.all<{ media_url: string; poster_url: string }>('SELECT media_url, poster_url FROM publication_blocks');
-    for (const row of posters) {
-      for (const url of [row.media_url, row.poster_url]) {
-        if (url.startsWith('/media/catalogue/official/')) expect(url).toMatch(/\?v=2$/);
-      }
-    }
+
   });
 
   it('base déjà installée (adresses sans version) : mise à jour, puis rien à refaire', () => {
@@ -86,12 +81,10 @@ describe('adresses versionnées (les téléphones rechargent la nouvelle photo)'
     // Simule une base du 12/11 : adresses nues.
     db.run("UPDATE products SET image=replace(image,'?v=2',''), additional_images=replace(additional_images,'?v=2','') WHERE id LIKE 'product_official_%'");
     db.run("UPDATE catalogue_media SET url=replace(url,'?v=2','')");
-    db.run("UPDATE publication_blocks SET media_url=replace(media_url,'?v=2',''), poster_url=replace(poster_url,'?v=2','')");
     expect(db.get<{ n: number }>("SELECT COUNT(*) n FROM products WHERE image LIKE '%?v=2'").n).toBe(0);
     expect(versionOfficialImages(db)).toBe(20);
     expect(db.get<{ n: number }>("SELECT COUNT(*) n FROM products WHERE id LIKE 'product_official_%' AND image NOT LIKE '%?v=2'").n).toBe(0);
     expect(db.get<{ n: number }>("SELECT COUNT(*) n FROM catalogue_media WHERE url LIKE '/media/catalogue/official/%' AND url NOT LIKE '%?v=2'").n).toBe(0);
-    expect(db.get<{ n: number }>("SELECT COUNT(*) n FROM publication_blocks WHERE media_url LIKE '/media/catalogue/official/%' AND media_url NOT LIKE '%?v=2'").n).toBe(0);
     const before = db.all('SELECT id, image, additional_images FROM products ORDER BY id');
     versionOfficialImages(db);
     expect(db.all('SELECT id, image, additional_images FROM products ORDER BY id')).toEqual(before);

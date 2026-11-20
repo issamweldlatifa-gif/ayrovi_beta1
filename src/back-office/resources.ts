@@ -761,12 +761,12 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     columns: [], fields: [], actions: ['view', 'export'], audit: { module: 'REPORTS', resourceType: 'financial_report' },
   },
   {
-    key: 'content.social', label: 'Social', singular: 'publication', module: 'cms', domain: 'CONTENT',
-    description: 'Publications et reels. Les Stories officielles ont leur propre espace.',
+    key: 'content.social', label: 'Social', singular: 'reel', module: 'cms', domain: 'CONTENT',
+    description: 'Reels et produits temporaires. Les Stories officielles ont leur propre espace.',
     navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
     section: 'social', nav: { group: 'Contenu', order: 22, icon: 'ChartLine' },
-    surface: 'custom', component: 'SocialAdminPage', api: { prefix: '/publications', kind: 'generic' },
-    columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'SOCIAL', resourceType: 'publication' },
+    surface: 'custom', component: 'SocialAdminPage', api: { prefix: '/reels', kind: 'generic' },
+    columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'SOCIAL', resourceType: 'reel' },
   },
   {
     key: 'content.magazine-agent', label: 'وكيل مجلتي', singular: 'brouillon', module: 'cms', domain: 'CONTENT',

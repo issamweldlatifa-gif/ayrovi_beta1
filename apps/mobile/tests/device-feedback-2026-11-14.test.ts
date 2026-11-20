@@ -29,62 +29,10 @@ describe('1 — système d’espacement RHYTHM', () => {
     expect(RHYTHM).toMatchObject({ inline: 4, tight: 8, related: 12, group: 16, block: 24, cluster: 32, section: 48, chapter: 64 });
   });
 
-  it('Publication : la barre colle à son bloc, le blanc sépare les blocs (proximité)', async () => {
-    const { PUBLICATION_TEMPLATE: T } = await import('../src/features/publications/templates/templateMetrics');
-    expect(T.barTop).toBe(4);
-    expect(T.blockSpacing).toBe(24);
-    expect(T.blockSpacing).toBeGreaterThan(T.barTop * 4);
-    expect(read('src/features/publications/publicationTokens.ts')).toMatch(/cardTextTop: 12,/);
-  });
-
   it('les propriétaires globaux passent au rythme (écrans, en-têtes de section, feuilles)', () => {
     expect(code('src/design/layoutLogic.ts')).toContain('const gap = space[3];');
     expect(code('src/design/ui.tsx')).toContain('gap: RHYTHM.inline');
     expect(code('src/design/sheet/AppSheet.tsx')).toMatch(/body: \{ paddingHorizontal: RHYTHM\.group, paddingVertical: RHYTHM\.related, gap: RHYTHM\.related \}/);
-  });
-});
-
-describe('2–3 — barre redessinée, signet, feuille en portail', () => {
-  const engagement = code('src/features/publications/PublicationEngagement.tsx');
-  const screen = code('src/features/publications/PublicationTemplatesScreen.tsx');
-
-  it('la feuille de commentaires est rendue par le portail, l’hôte à la racine de l’écran', () => {
-    expect(engagement).toMatch(/<SheetPortal>\s*<PublicationCommentsSheet/);
-    expect(screen).toMatch(/<SheetPortalHost>[\s\S]*<FlatList[\s\S]*<\/SheetPortalHost>/);
-    const portal = code('src/design/sheet/SheetPortal.tsx');
-    expect(portal).toContain("pointerEvents=\"box-none\" style={StyleSheet.absoluteFill}");
-    // Hors hôte : rendu sur place (aperçus, tests isolés).
-    expect(portal).toContain('return store ? null : <>{children}</>;');
-  });
-
-  it('signet : fournisseur à l’écran, invité ⇒ connexion, état lisible au lecteur d’écran', () => {
-    expect(screen).toMatch(/<PublicationSavedProvider>[\s\S]*<FlatList/);
-    expect(engagement).toMatch(/<ReelGlyph name="bookmark" size=\{icon\} color=\{P\.ink\} filled=\{isSaved\} \/>/);
-    expect(engagement).toContain('accessibilityState={{ selected: isSaved }}');
-    expect(code('src/features/publications/PublicationSaved.tsx')).toMatch(/if \(!owner\) \{ setAuth\(true\); return; \}/);
-  });
-
-  it('mémoire des enregistrements : lecture tolérante, bascule, plafond, clé par compte', async () => {
-    vi.doMock('@react-native-async-storage/async-storage', () => ({ default: {} }));
-    vi.doMock('@/state/session', () => ({ useSession: () => ({ status: 'guest' }) }));
-    vi.doMock('../src/features/publications/PublicationAuthSheet', () => ({ PublicationAuthSheet: () => null }));
-    const saved = await import('../src/features/publications/PublicationSaved');
-    expect(saved.parseSavedBlocks(null)).toEqual([]);
-    expect(saved.parseSavedBlocks('oops')).toEqual([]);
-    expect(saved.parseSavedBlocks('{"a":1}')).toEqual([]);
-    expect(saved.parseSavedBlocks('["a", 3, "", "b", "a"]')).toEqual(['a', 'b']);
-    expect(saved.toggleSavedBlock(['a'], 'b')).toEqual(['a', 'b']);
-    expect(saved.toggleSavedBlock(['a', 'b'], 'a')).toEqual(['b']);
-    const many = Array.from({ length: saved.PUBLICATION_SAVED_LIMIT }, (_, i) => `id${i}`);
-    const next = saved.toggleSavedBlock(many, 'new');
-    expect(next).toHaveLength(saved.PUBLICATION_SAVED_LIMIT);
-    expect(next.at(-1)).toBe('new');
-    expect(saved.publicationSavedKey('acc-1')).toBe('publication-saved:acc-1');
-  });
-
-  it('icônes de la barre : 24 (au lieu de 18), à l’encre, au trait', () => {
-    expect(engagement).toMatch(/<ReelGlyph name="comment" size=\{icon\} color=\{P\.ink\} \/>/);
-    expect(engagement).toMatch(/<ReelGlyph name="share" size=\{icon\} color=\{P\.ink\} mirrored=\{theme\.isRTL\} \/>/);
   });
 });
 
@@ -115,9 +63,6 @@ describe('4–6, 8 — famille de glyphes', () => {
     expect(REEL_VIEWER.railTarget).toBe(44);
   });
 
-  it('la vidéo d’un bloc Publication utilise le même haut-parleur plein', () => {
-    expect(code('src/features/publications/templates/PublicationVideo.tsx')).toMatch(/<ReelGlyph name=\{muted \? 'muted' : 'sound'\}[^>]*filled \/>/);
-  });
 });
 
 describe('7 — cœurs du double-tap', () => {
@@ -144,9 +89,7 @@ describe('9 — tons d’interaction', () => {
 
   it('J’aime sonne quand on POSE une réaction (jamais au retrait) ; le commentaire au succès serveur', () => {
     expect(code('src/design/reactions/useContentReaction.ts')).toMatch(/if \(next === 'like' \|\| next === 'love'\) playInteractionSound\('like'\);/);
-    for (const rel of ['src/features/publications/PublicationEngagement.tsx', 'src/features/social/ReelCommentsModal.tsx']) {
-      expect(code(rel)).toMatch(/onSuccess: \(result\) => \{\s*playInteractionSound\('comment'\);/);
-    }
+    expect(code('src/features/social/ReelCommentsModal.tsx')).toMatch(/onSuccess: \(result\) => \{\s*playInteractionSound\('comment'\);/);
   });
 
   it('sans module natif : muet, ne lève jamais ; rafale bornée', async () => {

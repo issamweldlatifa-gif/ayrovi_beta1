@@ -1,13 +1,12 @@
 /** Publication-only visual model. Never import from product/cart/payment features. */
-import { EDITORIAL_FEED } from '../../../../../shared/publicationEditorial';
 import type { ComponentProps } from 'react';
-import { Platform, StyleSheet, View, type TextStyle } from 'react-native';
+import { Platform, type TextStyle } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { AppText, type AppTextProps } from '@/design/ui';
 import { NavigationIcon } from '@/design/NavigationIcon';
-import { useI18n, useT } from '@/i18n';
+import { useI18n } from '@/i18n';
 
-import { PUBLICATION_PALETTE, PUBLICATION_TYPE, publicationBlockFont } from './publicationTokens';
+import { PUBLICATION_PALETTE, PUBLICATION_TYPE } from './publicationTokens';
 export { PUBLICATION_PALETTE, PUBLICATION_TYPE } from './publicationTokens';
 export function publicationTextStyle(
   locale: string,
@@ -152,31 +151,3 @@ export function PublicationIcon(props: ComponentProps<typeof NavigationIcon>) {
     </Svg>
   );
 }
-
-/**
- * « Sponsorisé ⓘ » des blocs (planches Zalando) : la mention, puis le petit
- * « i » cerclé, sur une ligne, dans l'encre secondaire du fond.
- */
-export function PublicationSponsored({ color, testID }: { color: string; testID?: string }) {
-  const t = useT();
-  const { locale } = useI18n();
-  return (
-    <View testID={testID} style={[sponsoredStyles.row, locale === 'ar' && sponsoredStyles.rtl]}>
-      <PublicationText
-        variant="caption"
-        color={color}
-        numberOfLines={1}
-        style={[sponsoredStyles.text, { fontFamily: publicationBlockFont(locale, 'regular') }]}
-      >
-        {t('publication.sponsored')}
-      </PublicationText>
-      <PublicationIcon name="information-circle-outline" size={PUBLICATION_TYPE.infoIcon} color={color} />
-    </View>
-  );
-}
-
-const sponsoredStyles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  rtl: { flexDirection: 'row-reverse' },
-  text: { fontSize: EDITORIAL_FEED.sponsor, lineHeight: EDITORIAL_FEED.sponsorLine },
-});

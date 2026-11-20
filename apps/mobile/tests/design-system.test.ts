@@ -190,8 +190,6 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'app/aywebs/browser.tsx', // AYWEBs : voile de chargement posé au-dessus de la page du magasin (WebView)
       'src/features/sections/PromotionCard.tsx', // badge de réduction posé sur la vignette
       'src/features/social/ReelCard.tsx', // durée posée sur la vignette vidéo
-      'src/features/publications/PublicationTemplatesScreen.tsx', // en-tête escamotable superposé au flux sans changer sa géométrie
-      'src/features/publications/templates/PublicationVideo.tsx', // Publication (13/11) : affiche sous la vidéo + commandes pause/son posées SUR le média
       'src/features/social/CommentSortMenu.tsx', // menu de tri ancré sous l'icône, dans un Modal par-dessus la feuille (référence 10/11)
       'src/features/shopping/LinkedProductCard.tsx', // pastille favori posée dans l'angle de la carte article
       'src/features/aywebs/AyWebsHomeContent.tsx', // cœur posé dans l'angle de la grande carte boutique (même motif que la carte article)
@@ -209,7 +207,6 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'app/lens.tsx', // caméra plein écran : commandes, cadre et feuille au-dessus du flux vidéo
       'src/features/lens/LensProductView.tsx', // galerie : en-tête fixe, badges et aide zoom au-dessus des images
       'src/design/ProductTile.tsx', // carte produit de grille (13/11) : pastilles au ras du bord et cœur posés SUR la photo qui défile
-      'src/features/publications/templates/BlockProductCard.tsx', // 14/11 GBox : rond du cœur et pastille « Nouveau » posés SUR la photo
       'src/features/lens/LensSelectionView.tsx', // Z Lens : photo, voile, cadre de sélection et arcs posés les uns sur les autres
       'src/features/lens/LensLiveOverlay.tsx', // Z Lens Live : cadre et points posés sur l'aperçu caméra plein écran
       'src/features/lens/LensSearchBar.tsx', // 16/11 : halo qui respire et anneau qui tourne posés SUR la vignette ronde pendant la recherche
@@ -220,8 +217,6 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/design/reactions/ReactionButton.tsx', // Z-Reactions : éclats/petits cœurs autour du glyphe + sélecteur ancré au bouton dans un Modal
       'src/design/reactions/DoubleTapHearts.tsx', // Z-Reactions : cœurs rouges du double-tap posés sous le doigt, au-dessus du média
       'src/design/CartGlyph.tsx', // 15/11 : pastille du nombre d'articles posée SUR l'angle du sac (partout où un panier s'affiche)
-      'src/features/publications/templates/CinemaTemplate.tsx', // 16/11 Anker : titre centré et ligne « nom · Suivre » posés SUR la vidéo bord à bord, sur des voiles
-      'src/features/publications/templates/MediaTemplate.tsx', // 15/11 Instagram : ligne « nom · Suivre » posée en haut DU média, sur un voile
       'src/features/lens/LensSearchingView.tsx', // 19/11 : attente Lens — photo recadrée DANS la carte (image décalée sous un masque arrondi)
       'src/features/product/ProductFiche.tsx', // grande fiche : photo FIXE derrière la feuille qui monte, en-tête et barre d'achat posés dessus (planche mockup-sticky)
     ]);
