@@ -5,7 +5,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View, type ColorValue } from 'react-native';
 import Svg, { Circle, G, Path } from 'react-native-svg';
-import { BrandSymbol, brandSymbolWidthForRadius } from './BrandMark';
+import { OfficialAvatar } from './OfficialAvatar';
 import { BRAND } from './tokens.generated';
 import { CLEAN_INK_SHADE } from './tokens.mobile';
 import { useTheme } from './theme';
@@ -80,10 +80,10 @@ export function TabCleanIcon({ size, focused, tone = 'brand' }: TabNavIconProps 
 }
 export const TabSonimIcon = TabCleanIcon;
 export const TabBrandIcon = TabHomeIcon;
-/** The small Social glyph uses just the original yellow Z symbol, never the full lockup. */
+/** The Social glyph uses the same official identity as the publisher. */
 export function TabSocialIcon({ size }: TabNavIconProps) {
   const { dim } = useIcon(size);
   return <View style={[styles.slot, { width: dim, height: dim }]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-    <BrandSymbol width={brandSymbolWidthForRadius(dim / 2)} color={BRAND.yellow} />
+    <OfficialAvatar size={dim} />
   </View>;
 }

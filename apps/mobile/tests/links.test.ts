@@ -117,6 +117,11 @@ describe('Social Commerce', () => {
 });
 
 describe('per-item share links', () => {
+  it('opens a shared publication by exact ID, not the publisher catalogue', () => {
+    expect(resolveDeepLink('zayrovi://publication-look/publication_1')).toBe('/publication-look/publication_1');
+    expect(resolveDeepLink('zayrovi://publication-look/publication_1/extra')).toBeNull();
+    expect(resolveDeepLink('zayrovi://publication-look/%2Fcheckout')).toBeNull();
+  });
   it('resolves exact item IDs with both locales and preserves the scheme fallback', () => {
     expect(resolveDeepLink('https://zayrovi.com/p/product_1')).toBe('/product/product_1');
     expect(resolveDeepLink('https://zayrovi.com/ar/r/reel_1')).toBe('/reels-viewer?id=reel_1&shared=1');

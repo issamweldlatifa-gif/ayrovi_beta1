@@ -8,6 +8,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { type CatalogProduct, fetchCatalogArrivals, normalizeStockStatus, searchCatalog } from '@/api/catalog';
 import { mediaUrl } from '@/api/client';
+import type { ReferencePublication } from '@/api/referencePublications';
 import { DEEP_LINK_SCHEME } from '@/config/deepLinks';
 import { AppImage } from '@/design/appImage';
 import { BackButton } from '@/design/BackButton';
@@ -47,19 +48,33 @@ function IconAction({ icon, label, color, onPress, selected }: {
   </Pressable>;
 }
 
+type PublisherProduct = Pick<CatalogProduct, 'id' | 'name' | 'image' | 'finalPrice' | 'stockStatus'>
+  & Partial<Pick<CatalogProduct, 'additionalImages' | 'brandName' | 'category' | 'compareAtPrice'>>
+  & { available?: boolean };
+
 export function OfficialPublisherScreen() {
+  const route = useLocalSearchParams<{ arrivalId?: string }>();
+  return <PublisherShowcase arrivalId={typeof route.arrivalId === 'string' ? route.arrivalId : ''} />;
+}
+
+/** The same publisher shell, with an exact publication instead of a catalogue source. */
+export function PublisherShowcase({ arrivalId = '', publication, refreshing, onRefresh, onSavePublication, publicationSaveError }: {
+  arrivalId?: string; publication?: ReferencePublication; refreshing?: boolean;
+  onRefresh?: () => void; onSavePublication?: () => void; publicationSaveError?: boolean;
+}) {
   const theme = useTheme();
   const { t, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const [gridWidth, setGridWidth] = useState(width);
-  const route = useLocalSearchParams<{ arrivalId?: string }>();
-  const arrivalId = typeof route.arrivalId === 'string' ? route.arrivalId : '';
   const session = useSession();
   const signedIn = session.status === 'signedIn';
   const favorites = useProductFavorites(signedIn, session.account?.id);
   const [authOpen, setAuthOpen] = useState(false);
-  const follow = usePublisherFollow(OFFICIAL_PUBLISHER_ID, () => setAuthOpen(true));
+  const publisherId = publication ? publication.channelId : OFFICIAL_PUBLISHER_ID;
+  const official = publisherId === OFFICIAL_PUBLISHER_ID;
+  const publisherName = official ? OFFICIAL_PUBLISHER_NAME : publication?.channelName || '';
+  const follow = usePublisherFollow(publisherId, () => setAuthOpen(true));
   const [display, setDisplay] = useState({ list: false, offset: { x: 0, y: 0 } });
   const listMode = display.list;
   const [compact, setCompact] = useState(false);
@@ -83,8 +98,9 @@ export function OfficialPublisherScreen() {
     setDisplay({ list: next, offset: { x: 0, y: Math.max(0, scrollY.current) } });
   };
   const [filters, setFilters] = useState<CatalogSearchFilters>({});
-  const list = useRef<FlatList<CatalogProduct>>(null);
+  const list = useRef<FlatList<PublisherProduct>>(null);
   const products = useInfiniteQuery({
+    enabled: !publication,
     queryKey: ['publisher-products', OFFICIAL_PUBLISHER_ID, arrivalId, filters],
     queryFn: ({ signal, pageParam }) => searchCatalog({ ...filters, arrivalId, offset: pageParam }, { signal }),
     initialPageParam: 0,
@@ -94,40 +110,61 @@ export function OfficialPublisherScreen() {
   const arrivals = useQuery({
     queryKey: ['catalog', 'arrivals'],
     queryFn: ({ signal }) => fetchCatalogArrivals({ signal }),
-    enabled: Boolean(arrivalId),
+    enabled: !publication && Boolean(arrivalId),
     staleTime: 120_000,
   });
   const arrival = arrivals.data?.find(entry => entry.id === arrivalId);
-  const firstPage = products.data?.pages[0];
-  const rows = useMemo(() => {
+  const publicationFacets = useMemo(() => publication ? {
+    categories: [], sizes: [],
+    brands: [...new Set(publication.products.map(product => product.brand).filter((brand): brand is string => Boolean(brand)))].map(brand => ({ id: brand, label: brand })),
+  } : undefined, [publication]);
+  const firstPage = publication ? undefined : products.data?.pages[0];
+  const rows = useMemo<PublisherProduct[]>(() => {
+    if (publication) return publication.products.filter(product => {
+      const stock = normalizeStockStatus(product.stockStatus);
+      return (!filters.brandId || filters.brandId === product.brand)
+        && (filters.min === undefined || product.price >= filters.min)
+        && (filters.max === undefined || product.price <= filters.max)
+        && (!filters.available || (product.available && (stock === 'AVAILABLE' || stock === 'LIMITED')));
+    }).map(product => ({ id: product.id, name: product.name, image: product.image, brandName: product.brand,
+      finalPrice: product.price, compareAtPrice: product.compareAtPrice, stockStatus: product.stockStatus, available: product.available }));
     const unique = new Map<string, CatalogProduct>();
     for (const page of products.data?.pages ?? []) {
       for (const product of page.items) if (!unique.has(product.id)) unique.set(product.id, product);
     }
     return [...unique.values()];
-  }, [products.data]);
+  }, [products.data, publication, filters]);
   const columns = listMode ? 1 : GRID_COLUMNS;
   const itemWidth = Math.max(0, (gridWidth - (columns - 1) * GAP) / columns);
   const direction = rowDirectionFor(theme.isRTL);
   const ink = theme.colors.ink;
   const coverInk = theme.colors.onMedia;
   const followLabel = t(follow.state === 'following' ? 'publication.following' : follow.state === 'error' ? 'publication.followRetry' : 'publication.follow');
-  const title = arrival?.name || t('publisher.title');
-  const count = firstPage ? t('publisher.count', { count: firstPage.total }) : null;
-  const updatedAt = firstPage?.updatedAt ? new Date(firstPage.updatedAt) : null;
+  const title = publication ? publication.detailTitle || publication.title || publication.subtitle || t('publication.lookTitle') : arrival?.name || t('publisher.title');
+  const publisherSubtitle = t('publisher.subtitle');
+  const description = publication ? [publication.subtitle, publication.description]
+    .filter((value, index, values) => value && value !== title && values.indexOf(value) === index).join('\n\n') : publisherSubtitle;
+  const total = publication ? rows.length : firstPage?.total;
+  const count = total === undefined ? null : t(publication && total === 1 ? 'publication.photoOneProduct' : 'publisher.count', { count: total });
+  const updatedRaw = publication ? publication.updatedAt : firstPage?.updatedAt;
+  const updatedAt = updatedRaw ? new Date(updatedRaw) : null;
+  const coverFocal = publication?.media && (publication.media.focalX !== undefined || publication.media.focalY !== undefined)
+    ? { left: `${publication.media.focalX ?? 50}%` as const, top: `${publication.media.focalY ?? 50}%` as const } : undefined;
+  const backTo = publication ? '/publications' : '/(tabs)';
   const updated = updatedAt && Number.isFinite(updatedAt.getTime()) ? t('publisher.updated', {
     date: new Intl.DateTimeFormat(locale === 'ar' ? 'ar-TN' : 'fr-TN', { dateStyle: 'medium' }).format(updatedAt),
   }) : null;
   const info = () => setInfoState('open');
   const share = () => {
-    const url = `${DEEP_LINK_SCHEME}://${OFFICIAL_PUBLISHER_ROUTE.slice(1)}`;
-    void Share.share({ message: `${OFFICIAL_PUBLISHER_NAME}\n${url}` }).catch(() => Alert.alert(t('publisher.shareError')));
+    const path = publication ? `/publication-look/${publication.id}` : OFFICIAL_PUBLISHER_ROUTE;
+    const url = `${DEEP_LINK_SCHEME}://${path.slice(1)}`;
+    void Share.share({ message: `${publication ? title : publisherName}\n${url}` }).catch(() => Alert.alert(t('publisher.shareError')));
   };
   const loadMore = () => {
-    if (products.hasNextPage && !products.isFetching) void products.fetchNextPage();
+    if (!publication && products.hasNextPage && !products.isFetching) void products.fetchNextPage();
   };
 
-  const followButton = (compactMode: boolean) => <Pressable testID={compactMode ? 'publisher-compact-follow' : 'publisher-follow'}
+  const followButton = (compactMode: boolean) => publisherId ? <Pressable testID={compactMode ? 'publisher-compact-follow' : 'publisher-follow'}
     accessibilityRole="button" accessibilityLabel={followLabel}
     accessibilityState={{ disabled: follow.disabled, selected: follow.state === 'following' }}
     disabled={follow.disabled} onPress={follow.press} style={[styles.follow, { flexDirection: direction }, compactMode
@@ -135,7 +172,7 @@ export function OfficialPublisherScreen() {
       : { backgroundColor: coverInk }] }>
     <Ionicons name={follow.state === 'following' ? 'checkmark-outline' : 'add-outline'} color={compactMode ? ink : theme.colors.scrim} size={theme.iconSize.md} />
     <AppText variant="label" numberOfLines={1} color={compactMode ? ink : theme.colors.scrim}>{follow.state === 'pending' ? '…' : followLabel}</AppText>
-  </Pressable>;
+  </Pressable> : null;
   const openProduct = (id: string, add = false) => router.push({ pathname: '/product/[id]', params: add ? { id, add: '1' } : { id } });
 
   const header = <>
@@ -144,28 +181,33 @@ export function OfficialPublisherScreen() {
         coverHeight.current = event.nativeEvent.layout.height;
         setCompact(coverHeight.current > 0 && scrollY.current >= coverHeight.current);
       }}>
-      <AppImage localSource={COVER} decorative contentFit="cover" style={StyleSheet.absoluteFill} />
+      {publication ? <AppImage uri={mediaUrl(publication.media?.url)} contentPosition={coverFocal} decorative contentFit="cover" style={StyleSheet.absoluteFill} /> :
+        <AppImage localSource={COVER} decorative contentFit="cover" style={StyleSheet.absoluteFill} />}
       <LinearGradient colors={[veil(0.48), 'transparent', veil(0.12), veil(0.9)]} locations={[0, 0.25, 0.49, 1]} style={StyleSheet.absoluteFill} />
       <View style={[styles.coverInner, { minHeight: Math.max(288, Math.min(gridWidth, 560) * 0.96) }]}>
         <View style={[styles.toolbar, { flexDirection: direction }]}>
-          <BackButton label={t('common.back')} color={coverInk} onPress={() => goBack('/(tabs)')} />
+          <BackButton label={t('common.back')} color={coverInk} onPress={() => goBack(backTo)} />
           <View style={[styles.actions, { flexDirection: direction }]}>
-            <IconAction icon="share-social-outline" label={t('publisher.share')} color={coverInk} onPress={share} />
-            <IconAction icon="ellipsis-horizontal" label={t('publisher.options')} color={coverInk} onPress={() => Alert.alert(OFFICIAL_PUBLISHER_NAME, undefined, [
-              { text: t('publisher.share'), onPress: share }, { text: t('publisher.about'), onPress: info }, { text: t('common.close'), style: 'cancel' },
+            <IconAction icon="share-social-outline" label={t(publication ? 'social.share' : 'publisher.share')} color={coverInk} onPress={share} />
+            <IconAction icon="ellipsis-horizontal" label={t('publisher.options')} color={coverInk} onPress={() => Alert.alert(publication ? title : publisherName, undefined, [
+              { text: t(publication ? 'social.share' : 'publisher.share'), onPress: share }, { text: t('publisher.about'), onPress: info },
+              ...(onSavePublication ? [{ text: t(publication?.saved ? 'publication.lookUnsave' : 'publication.lookSave'), onPress: onSavePublication }] : []),
+              { text: t('common.close'), style: 'cancel' },
             ])} />
           </View>
         </View>
         <View style={styles.coverCopy}>
           <View style={[styles.identity, { flexDirection: direction }]}>
-            <OfficialAvatar size={theme.iconSize.lg} testID="publisher-avatar" />
-            <AppText variant="bodyStrong" color={coverInk}>{OFFICIAL_PUBLISHER_NAME}</AppText>
+            {official ? <OfficialAvatar size={theme.iconSize.lg} testID="publisher-avatar" /> : publication?.channelAvatar ?
+              <AppImage uri={mediaUrl(publication.channelAvatar)} decorative style={{ width: theme.iconSize.lg, height: theme.iconSize.lg, borderRadius: theme.radius.full }} /> : null}
+            {publisherName ? <AppText variant="bodyStrong" color={coverInk}>{publisherName}</AppText> : null}
           </View>
           <View style={[styles.coverTitle, { flexDirection: direction }]}>
             <AppText accessibilityRole="header" variant="h1" color={coverInk} style={styles.fill}>{title}</AppText>
             {followButton(false)}
           </View>
-          <AppText variant="body" color={coverInk}>{t('publisher.subtitle')}</AppText>
+          {publicationSaveError ? <AppText accessibilityRole="alert" variant="caption" color={coverInk}>{t('publication.lookSaveError')}</AppText> : null}
+          {description ? <AppText variant="body" color={coverInk}>{description}</AppText> : null}
           {follow.writeFailed ? <AppText variant="caption" accessibilityRole="alert" color={coverInk}>{t('publication.followError')}</AppText> : null}
         </View>
       </View>
@@ -183,7 +225,7 @@ export function OfficialPublisherScreen() {
     </View>
   </>;
 
-  return <View testID="official-publisher" style={[styles.fill, { paddingTop: insets.top, backgroundColor: theme.colors.canvas }]}
+  return <View testID={publication ? "publication-photo-collection" : "official-publisher"} style={[styles.fill, { paddingTop: insets.top, backgroundColor: theme.colors.canvas }]}
     onLayout={event => { if (event.nativeEvent.layout.width > 0) setGridWidth(event.nativeEvent.layout.width); }}>
     <View style={styles.fill} accessibilityElementsHidden={infoState !== 'closed' || filterOpen}
       importantForAccessibility={infoState !== 'closed' || filterOpen ? 'no-hide-descendants' : 'auto'}>
@@ -197,11 +239,11 @@ export function OfficialPublisherScreen() {
       initialNumToRender={listMode ? 6 : 2} maxToRenderPerBatch={listMode ? 6 : 2} windowSize={5}
       columnWrapperStyle={listMode ? undefined : [styles.gridRow, { flexDirection: direction }]}
       ListHeaderComponent={header} contentContainerStyle={{ paddingBottom: insets.bottom + 72 }}
-      refreshing={products.isRefetching} onRefresh={() => void products.refetch()}
-      onEndReachedThreshold={0.45} onEndReached={products.isFetchNextPageError ? undefined : loadMore}
-      ListEmptyComponent={products.isPending ? <LoadingBlock /> : products.isError ?
+      refreshing={publication ? Boolean(refreshing) : products.isRefetching} onRefresh={publication ? onRefresh : () => void products.refetch()}
+      onEndReachedThreshold={0.45} onEndReached={publication || products.isFetchNextPageError ? undefined : loadMore}
+      ListEmptyComponent={publication ? <EmptyBlock>{t(publication.products.length ? 'publication.photoFilteredEmpty' : 'publication.lookNoProducts')}</EmptyBlock> : products.isPending ? <LoadingBlock /> : products.isError ?
         <ErrorBlock error={products.error} onRetry={() => void products.refetch()} /> : <EmptyBlock>{t('catalog.search.empty')}</EmptyBlock>}
-      ListFooterComponent={products.isFetchingNextPage ? <LoadingBlock /> : products.isFetchNextPageError ?
+      ListFooterComponent={publication ? null : products.isFetchingNextPage ? <LoadingBlock /> : products.isFetchNextPageError ?
         <Button label={t('common.retry')} tone="quiet" onPress={loadMore} /> : null}
       renderItem={({ item }) => {
         const saved = signedIn && favorites.isFavorite(item.id);
@@ -243,7 +285,7 @@ export function OfficialPublisherScreen() {
               onPress={() => Alert.alert(item.name, undefined, [{ text: t('publisher.itemOpen'), onPress: () => openProduct(item.id) }, { text: t('common.close'), style: 'cancel' }])} />
             <View style={styles.fill} />
             {favorite}
-            {item.finalPrice > 0 && normalizeStockStatus(item.stockStatus) !== 'OUT_OF_STOCK' ? <Pressable accessibilityRole="button"
+            {item.finalPrice > 0 && item.available !== false && normalizeStockStatus(item.stockStatus) !== 'OUT_OF_STOCK' ? <Pressable accessibilityRole="button"
               accessibilityLabel={t('publisher.itemAdd', { name: item.name })} onPress={() => openProduct(item.id, true)}
               style={[styles.touch, { backgroundColor: ink, borderRadius: theme.radius.full }]}>
               <Ionicons name="bag-outline" size={theme.iconSize.lg} color={theme.colors.canvas} />
@@ -252,12 +294,12 @@ export function OfficialPublisherScreen() {
         </View>;
       }} />
     {compact ? <View testID="publisher-compact-header" style={[styles.compactHeader, { flexDirection: direction, backgroundColor: theme.colors.canvas, borderColor: theme.colors.line }]}>
-      <BackButton label={t('common.back')} color={ink} onPress={() => goBack('/(tabs)')} />
+      <BackButton label={t('common.back')} color={ink} onPress={() => goBack(backTo)} />
       <AppText accessibilityRole="header" variant="bodyStrong" numberOfLines={1} style={styles.fill}>{title}</AppText>
       {followButton(true)}
-      <IconAction icon="share-social-outline" label={t('publisher.share')} color={ink} onPress={share} />
+      <IconAction icon="share-social-outline" label={t(publication ? 'social.share' : 'publisher.share')} color={ink} onPress={share} />
     </View> : null}
-    {firstPage ? <View pointerEvents="box-none" style={[styles.floating, { bottom: insets.bottom + 8 }]}>
+    {(firstPage || Boolean(publication?.products.length)) ? <View pointerEvents="box-none" style={[styles.floating, { bottom: insets.bottom + 8 }]}>
       <Pressable testID="publisher-filter" accessibilityRole="button" accessibilityState={{ selected: Object.keys(filters).length > 0 }} onPress={() => setFilterOpen(true)}
         style={[styles.filter, { flexDirection: direction, backgroundColor: theme.colors.canvas, shadowColor: ink, borderRadius: theme.radius.full }]}>
         <Ionicons name="options-outline" size={theme.iconSize.lg} color={ink} />
@@ -265,8 +307,8 @@ export function OfficialPublisherScreen() {
       </Pressable>
     </View> : null}
     </View>
-    {infoState !== 'closed' ? <PublisherInfoSheet open={infoState === 'open'} close={() => setInfoState('closing')} onClosed={() => setInfoState('closed')} /> : null}
-    {filterOpen ? <CatalogFilterSheet arrivalId={arrivalId} q="" filters={filters} facets={firstPage?.facets}
+    {infoState !== 'closed' ? <PublisherInfoSheet scoped={Boolean(publication)} open={infoState === 'open'} close={() => setInfoState('closing')} onClosed={() => setInfoState('closed')} /> : null}
+    {filterOpen ? <CatalogFilterSheet localFacetsOnly={Boolean(publication)} arrivalId={arrivalId} q="" filters={filters} facets={publicationFacets ?? firstPage?.facets}
       close={() => setFilterOpen(false)} apply={next => {
         setFilters(next); setFilterOpen(false); list.current?.scrollToOffset({ offset: 0, animated: false });
       }} /> : null}

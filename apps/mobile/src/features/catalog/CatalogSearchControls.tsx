@@ -109,7 +109,7 @@ export function catalogPriceInput(value: string): number | undefined {
   return clean ? /^\d{1,9}(?:\.\d{1,3})?$/.test(clean) ? Number(clean) : NaN : undefined;
 }
 
-export function CatalogFilterSheet({ arrivalId, q, filters, facets, close, apply }: { arrivalId: string; q: string; filters: CatalogSearchFilters; facets?: CatalogSearchFacets | null; close: () => void; apply: (value: CatalogSearchFilters) => void }) {
+export function CatalogFilterSheet({ arrivalId, q, filters, facets, close, apply, localFacetsOnly = false }: { localFacetsOnly?: boolean; arrivalId: string; q: string; filters: CatalogSearchFilters; facets?: CatalogSearchFacets | null; close: () => void; apply: (value: CatalogSearchFilters) => void }) {
   const t = useT(), theme = useTheme();
   const [value, setValue] = useState(filters);
   const [min, setMin] = useState(filters.min?.toString() ?? '');
@@ -127,7 +127,7 @@ export function CatalogFilterSheet({ arrivalId, q, filters, facets, close, apply
       }))} />)}</View>
     </View> : null;
   };
-  const sameScope = value.categoryId === filters.categoryId && value.brandId === filters.brandId;
+  const sameScope = localFacetsOnly || value.categoryId === filters.categoryId && value.brandId === filters.brandId;
   const scoped = useQuery({
     queryKey: ['catalog', 'size-facets', q, arrivalId, value.categoryId, value.brandId],
     queryFn: ({ signal }) => searchCatalog({ q, arrivalId, categoryId: value.categoryId, brandId: value.brandId }, { signal }),

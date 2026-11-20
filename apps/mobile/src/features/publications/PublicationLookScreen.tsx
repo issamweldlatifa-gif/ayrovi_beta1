@@ -1,3 +1,4 @@
+import { isPublicationCampaign } from '../../../../../shared/publicationCampaign';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, FlatList, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +12,6 @@ import { AppImage } from '@/design/appImage';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useReduceMotion } from '@/design/motion';
 import { goBack } from '@/design/navigation';
-import { OfficialAvatar } from '@/design/OfficialAvatar';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { PUBLICATION_THEME as P, RADIUS } from '@/design/tokens.mobile';
@@ -25,11 +25,13 @@ import { PublicationFullscreenVideo, type PublicationPlayback } from './Publicat
 import { PublicationLookProduct } from './PublicationLookProduct';
 import { PublicationInlineVideo } from './PublicationInlineVideo';
 import { usePublisherFollow } from './usePublisherFollow';
+import { PublicationCampaignDetail } from './PublicationCampaignDetail';
+import { PublisherShowcase } from './OfficialPublisherScreen';
 import { PUBLICATION_VIDEO_TYPE as T } from './publicationTokens';
 
-const LOOK = { heroAspect: 720 / 1107, avatar: 56, heart: 40, handle: 76, handleGap: 3, identityTop: 28, identityBottom: 34, maxWidth: 600, titleSize: 26, titleLine: 30 } as const;
+const LOOK = { heroAspect: 720 / 1107, heart: 40, maxWidth: 600 } as const;
 
-export function PublicationLookScreen({ id, collection = false }: { id: string; collection?: boolean }) {
+export function PublicationLookScreen({ id }: { id: string }) {
   const t = useT();
   const theme = useTheme();
   const focused = useIsFocused();
@@ -44,9 +46,9 @@ export function PublicationLookScreen({ id, collection = false }: { id: string; 
   const look = useQuery({ queryKey: cacheKey, queryFn: ({ signal }) => fetchPublicationLook(id, { signal }), staleTime: 15_000 });
   const post = look.data;
   const media = post?.media;
-  const isVideo = media?.type === 'video';
-  const grid = collection && media?.type === 'image';
-  const productGrid = grid || isVideo;
+  const isCampaign = Boolean(post && isPublicationCampaign(post.layout));
+  const isVideo = !isCampaign && media?.type === 'video';
+  const productGrid = isVideo;
   const list = useRef<FlatList<LinkedProduct>>(null);
   const [auth, setAuth] = useState(false);
   const [fullscreen, setFullscreen] = useState<PublicationPlayback | null>(null);
@@ -54,8 +56,8 @@ export function PublicationLookScreen({ id, collection = false }: { id: string; 
   const [heroVisible, setHeroVisible] = useState(true);
   const [showTop, setShowTop] = useState(false);
   const position = useRef<PublicationPlayback>({ time: 0, muted: true });
-  const follow = usePublisherFollow(post?.channelId ?? '', () => setAuth(true));
-  const favorites = useProductFavorites(signedIn, session.account?.id);
+  const follow = usePublisherFollow((isVideo ? post?.channelId : undefined) ?? '', () => setAuth(true));
+  const favorites = useProductFavorites(signedIn && isVideo, session.account?.id);
   const favoriteLook = useMutation({
     mutationFn: (saved: boolean) => savePublicationLook(id, saved),
     onSuccess: saved => {
@@ -70,10 +72,8 @@ export function PublicationLookScreen({ id, collection = false }: { id: string; 
 
   const direction = rowDirectionFor(theme.isRTL);
   const pageWidth = Math.min(width, LOOK.maxWidth);
-  const heroHeight = grid ? (pageWidth - 24) * 318 / 658 : pageWidth / LOOK.heroAspect;
+  const heroHeight = pageWidth / LOOK.heroAspect;
   const tileWidth = (pageWidth - (isVideo ? 48 : 24) - 8) / 2;
-  const focal = media?.focalX !== undefined || media?.focalY !== undefined
-    ? { left: `${media.focalX ?? 50}%` as const, top: `${media.focalY ?? 50}%` as const } : undefined;
   const videoFit = post?.layout === 'video-panoramic' ? 'contain' : 'cover';
   const preview = focused && foreground && !fullscreen && !auth && heroVisible && !reducedMotion;
   const official = post?.channelId === OFFICIAL_PUBLISHER_ID;
@@ -97,13 +97,21 @@ export function PublicationLookScreen({ id, collection = false }: { id: string; 
   const message = follow.writeFailed || favoriteLook.isError ? <PublicationText accessibilityRole="alert" variant="caption">
     {t(favoriteLook.isError ? 'publication.lookSaveError' : 'publication.followError')}
   </PublicationText> : null;
+  if (post && isCampaign) return <PublicationCampaignDetail post={post} refreshing={look.isRefetching}
+    onRefresh={() => void look.refetch()} />;
+  if (post && media?.type === 'image') return <>
+    <PublisherShowcase publication={post} refreshing={look.isRefetching} onRefresh={() => void look.refetch()}
+      onSavePublication={favoriteLook.isPending ? undefined : () => signedIn ? favoriteLook.mutate(!saved) : setAuth(true)}
+      publicationSaveError={favoriteLook.isError} />
+    {auth ? <PublicationAuthSheet visible onClose={() => setAuth(false)} /> : null}
+  </>;
   return <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]} testID="publication-look-page">
     {focused ? <StatusBar style="dark" /> : null}
     <View style={styles.content} accessibilityElementsHidden={Boolean(fullscreen) || auth} importantForAccessibility={fullscreen || auth ? 'no-hide-descendants' : 'auto'}>
       {!post || !media ? <>{back}{look.isPending ? <LoadingBlock /> : look.isError ?
         <ErrorBlock error={look.error} onRetry={() => void look.refetch()} /> : <PublicationText style={styles.notice}>{t('publication.lookMissing')}</PublicationText>}</> :
         <FlatList key={productGrid ? 'grid' : 'list'} ref={list} data={post.products} keyExtractor={product => product.id}
-          testID={grid ? 'publication-collection-products' : 'publication-look-products'} numColumns={productGrid ? 2 : 1}
+          testID="publication-look-products" numColumns={productGrid ? 2 : 1}
           columnWrapperStyle={productGrid ? [styles.columns, isVideo && styles.videoColumns, { flexDirection: direction }] : undefined}
           style={styles.list} contentContainerStyle={styles.listContent} initialNumToRender={5}
           onScroll={event => {
@@ -113,8 +121,8 @@ export function PublicationLookScreen({ id, collection = false }: { id: string; 
           }} scrollEventThrottle={64}
           ListHeaderComponent={<>
             {!isVideo ? back : null}
-            <View style={[styles.hero, grid && styles.compactHero, isVideo && videoFit === 'contain' && styles.videoMatte, { height: heroHeight }]}
-              testID={grid ? 'publication-collection-hero' : 'publication-look-hero'}>
+            <View style={[styles.hero, isVideo && videoFit === 'contain' && styles.videoMatte, { height: heroHeight }]}
+              testID="publication-look-hero">
               {isVideo ? <>
                 {media.poster ? <AppImage uri={mediaUrl(media.poster)} contentFit={videoFit} decorative style={StyleSheet.absoluteFill} /> : null}
                 {preview ? <PublicationInlineVideo key={media.url} url={media.url} muted paused={false} fit={videoFit} position={position} /> : null}
@@ -122,13 +130,12 @@ export function PublicationLookScreen({ id, collection = false }: { id: string; 
                   testID="publication-look-video" style={StyleSheet.absoluteFill}>
                   {reducedMotion ? <View style={styles.playHint}><PublicationIcon name="play-outline" color={P.paper} /></View> : null}
                 </Pressable>
-              </> : <AppImage uri={mediaUrl(media.url)} contentFit="cover" contentPosition={focal}
-                accessibilityLabel={media.alt || post.title || undefined} decorative={!media.alt && !post.title} style={StyleSheet.absoluteFill} />}
-              {!grid ? <Pressable accessibilityRole="button" accessibilityState={{ selected: saved, disabled: favoriteLook.isPending }}
+              </> : null}
+              <Pressable accessibilityRole="button" accessibilityState={{ selected: saved, disabled: favoriteLook.isPending }}
                 accessibilityLabel={t(saved ? 'publication.lookUnsave' : 'publication.lookSave')} disabled={favoriteLook.isPending}
                 onPress={() => signedIn ? favoriteLook.mutate(!saved) : setAuth(true)} testID="publication-look-save" style={styles.heroHeart}>
                 <View style={styles.heroHeartDisc}><PublicationIcon name={saved ? 'heart' : 'heart-outline'} size={28} color={P.ink} /></View>
-              </Pressable> : null}
+              </Pressable>
             </View>
             {isVideo ? <View testID="publication-video-information" style={styles.videoIntro}>
               {publisher ? <PublicationText variant="bodyStrong" style={styles.videoTitle}>{publisher}</PublicationText> : null}
@@ -139,28 +146,7 @@ export function PublicationLookScreen({ id, collection = false }: { id: string; 
                 {official ? <Pressable accessibilityRole="link" onPress={() => router.push(OFFICIAL_PUBLISHER_ROUTE)}>{publisherName}</Pressable> : publisherName}
                 {followButton}
               </View>{message}
-            </View> : grid ? <View style={styles.collectionIntro}>
-              <PublicationText accessibilityRole="header" variant="h1" style={styles.collectionTitle}>{title}</PublicationText>
-              {post.subtitle && post.subtitle !== title ? <PublicationText variant="h1" style={styles.collectionTitle}>{post.subtitle}</PublicationText> : null}
-              <Pressable testID="publication-collection-discover" accessibilityRole="link" style={[styles.discover, { flexDirection: direction }]}
-                onPress={() => router.push({ pathname: '/publication-look/[id]', params: { id } })}>
-                <PublicationText variant="bodyStrong">{t('shopping.discover')}</PublicationText>
-                <PublicationIcon name={theme.isRTL ? 'arrow-back' : 'arrow-forward'} color={P.ink} />
-              </Pressable>
-              <View style={[styles.collectionPublisher, { flexDirection: direction }]}>{followButton}{publisherName}</View>{message}
-            </View> : <>
-              <View style={styles.handle} />
-              <View style={[styles.identity, { flexDirection: direction }]}>
-                {official ? <Pressable accessibilityRole="link" accessibilityLabel={publisher} onPress={() => router.push(OFFICIAL_PUBLISHER_ROUTE)}>
-                  <OfficialAvatar size={LOOK.avatar} />
-                </Pressable> : post.channelAvatar ? <AppImage uri={mediaUrl(post.channelAvatar)} decorative contentFit="cover" style={styles.avatar} /> : null}
-                <View style={styles.identityText}>
-                  <PublicationText accessibilityRole="header" variant="h2">{title}</PublicationText>
-                  {!isVideo && post.subtitle && post.subtitle !== title ? <PublicationText>{post.subtitle}</PublicationText> : null}
-                  <View style={[styles.byline, { flexDirection: direction }]}>{publisherName}{followButton}</View>{message}
-                </View>
-              </View>
-            </>}
+            </View> : null}
           </>}
           ListEmptyComponent={<PublicationText style={styles.notice}>{t('publication.lookNoProducts')}</PublicationText>}
           renderItem={({ item }) => <PublicationLookProduct item={item} tileWidth={productGrid ? tileWidth : undefined}
@@ -189,17 +175,11 @@ const styles = StyleSheet.create({
   back: { minHeight: 50, paddingHorizontal: 12, gap: 2, alignItems: 'flex-start', paddingTop: 4, alignSelf: 'stretch' },
   hero: { backgroundColor: P.neutral, overflow: 'hidden', borderBottomStartRadius: RADIUS.md, borderBottomEndRadius: RADIUS.md },
   videoMatte: { backgroundColor: P.ink },
-  compactHero: { marginHorizontal: 12, borderRadius: RADIUS.md },
   heroHeart: { position: 'absolute', top: 3, end: 3, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   heroHeartDisc: { width: LOOK.heart, height: LOOK.heart, borderRadius: LOOK.heart / 2,
     alignItems: 'center', justifyContent: 'center', backgroundColor: P.paper },
   playHint: { position: 'absolute', alignSelf: 'center', top: '45%', width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center', backgroundColor: P.viewerDarkSurface },
-  handle: { width: LOOK.handle, height: 4, marginTop: LOOK.handleGap, alignSelf: 'center', backgroundColor: P.ink },
-  identity: { paddingHorizontal: 12, paddingTop: LOOK.identityTop, paddingBottom: LOOK.identityBottom, alignItems: 'center', gap: 12 },
-  avatar: { width: LOOK.avatar, height: LOOK.avatar, borderRadius: RADIUS.md, backgroundColor: P.neutral },
-  identityText: { flex: 1 },
-  byline: { alignItems: 'center', gap: 6 },
   publisher: { flexShrink: 1 },
   follow: { minHeight: 44, alignItems: 'center', gap: 4 },
   videoClose: { position: 'absolute', start: 24, top: 8, width: 40, height: 40, borderRadius: 20,
@@ -210,10 +190,6 @@ const styles = StyleSheet.create({
   videoPublisher: { marginTop: 32, marginHorizontal: 12, gap: 12, alignItems: 'center' },
   videoFollow: { minWidth: 98, minHeight: 34 },
   videoColumns: { paddingHorizontal: 24 },
-  collectionIntro: { paddingTop: 16, paddingBottom: 48, paddingHorizontal: 12 },
-  collectionTitle: { fontSize: LOOK.titleSize, lineHeight: LOOK.titleLine },
-  discover: { minHeight: 44, gap: 6, alignItems: 'center', alignSelf: 'flex-start', marginTop: 8 },
-  collectionPublisher: { marginTop: 8, alignItems: 'center', justifyContent: 'center', gap: 12 },
   outlinedFollow: { minWidth: 128, justifyContent: 'center', borderWidth: 1, borderColor: P.ink, minHeight: 48, borderRadius: RADIUS.full, paddingHorizontal: 12 },
   columns: { paddingHorizontal: 12, gap: 8, marginBottom: 32 },
   toTop: { position: 'absolute', bottom: 16, end: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: P.ink,

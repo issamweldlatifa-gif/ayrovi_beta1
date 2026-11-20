@@ -22,7 +22,7 @@ import { usePublisherFollow } from './usePublisherFollow';
 export const CAMPAIGN = {
   titleInset: 24, railInset: 20, gap: 16, radius: 16, photoAspect: 298 / 430,
   beforeRail: 54, afterRail: 36, followWidth: 128, followHeight: 48,
-  heartDiameter: 40, filterHeight: 58, redFilterHeight: 72, headingSize: 23, headingLine: 27,
+  heartDiameter: 40, filterHeight: 48, headingHeight: 128, productCopyHeight: 140, headingSize: 23, headingLine: 27,
 } as const;
 
 export function campaignTileSize(viewport: number) {
@@ -30,9 +30,9 @@ export function campaignTileSize(viewport: number) {
   return { width: cardWidth, height: cardWidth / CAMPAIGN.photoAspect };
 }
 
-export function PublicationCampaignCard({ post, layout, viewport, query, favorites, signedIn, onAuth, onSponsor }: {
+export function PublicationCampaignCard({ post, layout, viewport, query, favorites, signedIn, onAuth, onSponsor, onOpen }: {
   post: ReferencePublication; layout: PublicationCampaignLayout; viewport: number; query: string;
-  favorites: ProductFavorites; signedIn: boolean; onAuth: () => void; onSponsor: () => void;
+  favorites: ProductFavorites; signedIn: boolean; onAuth: () => void; onSponsor: () => void; onOpen: () => void;
 }) {
   const { t, locale } = useI18n();
   const { isRTL } = useTheme();
@@ -48,8 +48,10 @@ export function PublicationCampaignCard({ post, layout, viewport, query, favorit
   const terms = foldCatalogSearch(query).split(' ').filter(Boolean);
   const products = post.products.filter(product => {
     const search = foldCatalogSearch(`${product.name} ${product.brand ?? ''}`);
-    return terms.every(term => search.includes(term)) && (!brand || product.brand === brand) && (!promosOnly || product.compareAtPrice != null);
+    return terms.every(term => search.includes(term)) && (!brand || product.brand === brand) && (!promosOnly || (product.compareAtPrice != null && product.compareAtPrice > product.price));
   });
+  const filterCount = Number(promosOnly) + Number(Boolean(brand));
+  const headline = post.title || post.subtitle || t('publication.lookTitle');
   const tile = campaignTileSize(viewport);
   const followText = t(follow.state === 'following' ? 'publication.following' : follow.state === 'error' ? 'publication.followRetry' : 'publication.follow');
   const sponsor = (color: string) => <Pressable accessibilityRole="button" accessibilityLabel={t('publication.sponsored')} onPress={onSponsor}
@@ -62,10 +64,11 @@ export function PublicationCampaignCard({ post, layout, viewport, query, favorit
     <PublicationText variant="captionStrong" color={selected ? P.paper : P.ink}>{label}</PublicationText>
   </Pressable>;
   return <View testID={layout}>
-    <View style={[styles.filterArea, layout === 'campaign_red' && styles.redFilterArea]}>
-      <Pressable accessibilityRole="button" accessibilityState={{ expanded: filterOpen, selected: promosOnly || Boolean(brand) }}
-        testID="publication-campaign-filters" onPress={() => setFilterOpen(value => !value)} style={[styles.filterButton, isRTL && styles.rtlFilterButton]}>
-        <PublicationText style={styles.underline}>{t('publication.campaignFilters')}</PublicationText>
+    <View testID="publication-campaign-filter-area" style={styles.filterArea}>
+      <Pressable accessibilityRole="button" accessibilityLabel={t('publication.campaignFilters')} accessibilityState={{ expanded: filterOpen, selected: filterCount > 0 }}
+        testID="publication-campaign-filters" onPress={() => setFilterOpen(value => !value)} style={[styles.filterButton, { flexDirection: dir }]}>
+        <PublicationText variant="bodyStrong" style={styles.underline}>{t('publication.campaignFilters')}</PublicationText>
+        {filterCount ? <View style={styles.filterBadge}><PublicationText variant="captionStrong" color={P.paper}>{filterCount}</PublicationText></View> : null}
       </Pressable>
       {filterOpen ? <View style={[styles.filterOptions, { flexDirection: dir }]}>
         {toggle(t('publication.campaignReset'), !promosOnly && !brand, () => { setPromosOnly(false); setBrand(''); })}
@@ -75,8 +78,10 @@ export function PublicationCampaignCard({ post, layout, viewport, query, favorit
     </View>
     <View testID="publication-campaign-headline" style={[styles.headlinePanel, { backgroundColor: colors.headline }]}>
       {post.sponsored ? sponsor(colors.ink) : null}
-      {post.title ? <PublicationText color={colors.ink} accessibilityRole="header" variant="h1" style={styles.headline}>{post.title}</PublicationText> : null}
-      {post.subtitle ? <PublicationText color={colors.ink} variant="h1" style={styles.headline}>{post.subtitle}</PublicationText> : null}
+      <Pressable testID="publication-campaign-open" accessibilityRole="link" accessibilityLabel={headline} onPress={onOpen} style={styles.headingLink}>
+        <PublicationText color={colors.ink} variant="h1" style={styles.headline}>{headline}</PublicationText>
+        {post.subtitle && post.subtitle !== headline ? <PublicationText color={colors.ink} variant="h1" style={styles.headline}>{post.subtitle}</PublicationText> : null}
+      </Pressable>
     </View>
     <View testID="publication-campaign-body" style={[styles.body, { backgroundColor: colors.body }]}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" testID="publication-campaign-products"
@@ -89,21 +94,23 @@ export function PublicationCampaignCard({ post, layout, viewport, query, favorit
           return <View key={product.id} testID={`publication-campaign-product-${product.id}`} style={{ width: tile.width }}>
             <Pressable accessibilityRole="link" accessibilityLabel={product.name} onPress={() => openPublicationProduct(product.id)}>
               <View style={[styles.photo, tile]} testID="publication-campaign-photo">
-                <AppImage uri={mediaUrl(product.image)} contentFit={layout === 'campaign_red' ? 'cover' : 'contain'} decorative style={StyleSheet.absoluteFill} />
+                <AppImage uri={mediaUrl(product.image)} contentFit="contain" decorative style={StyleSheet.absoluteFill} />
                 {(post.sponsored && post.actionLabel && post.actionLabel.length <= 20) || compare ? <View style={styles.badges} pointerEvents="none">
                   {post.sponsored && post.actionLabel && post.actionLabel.length <= 20 ? <PublicationText variant="captionStrong" color={colors.heartInk} style={[styles.badge, { backgroundColor: colors.heart }]}>{post.actionLabel}</PublicationText> : null}
                   {compare ? <PublicationText variant="captionStrong" color={P.paper} style={styles.promo}>{t('publisher.promo')}</PublicationText> : null}
                 </View> : null}
               </View>
-              {post.sponsored ? <View style={styles.sponsorSpace} /> : null}
-              {product.brand ? <PublicationText variant="bodyStrong" color={colors.ink} numberOfLines={1}>{product.brand}</PublicationText> : null}
-              <PublicationText color={colors.ink} numberOfLines={1}>{product.name}</PublicationText>
-              <View style={styles.prices}>
-                <PublicationText color={colors.ink}>{formatMoney(product.price)}</PublicationText>
-                {compare ? <PublicationText variant="caption" color={colors.ink}>
-                  {t('publication.campaignCompare')}{' '}<PublicationText variant="caption" color={colors.ink} style={styles.compare}>{formatMoney(compare)}</PublicationText>
-                  {percent > 0 ? `\n−${new Intl.NumberFormat(locale === 'ar' ? 'ar-TN' : 'fr-TN', { style: 'percent' }).format(percent / 100)}` : ''}
-                </PublicationText> : null}
+              <View style={styles.productCopy}>
+                {post.sponsored ? <View style={styles.sponsorSpace} /> : null}
+                {product.brand ? <PublicationText variant="bodyStrong" color={colors.ink} numberOfLines={1}>{product.brand}</PublicationText> : null}
+                <PublicationText color={colors.ink} numberOfLines={1}>{product.name}</PublicationText>
+                <View style={styles.prices}>
+                  <PublicationText color={colors.ink}>{formatMoney(product.price)}</PublicationText>
+                  {compare ? <PublicationText variant="caption" color={colors.ink}>
+                    {t('publication.campaignCompare')}{' '}<PublicationText variant="caption" color={colors.ink} style={styles.compare}>{formatMoney(compare)}</PublicationText>
+                    {percent > 0 ? `\n−${new Intl.NumberFormat(locale === 'ar' ? 'ar-TN' : 'fr-TN', { style: 'percent' }).format(percent / 100)}` : ''}
+                  </PublicationText> : null}
+                </View>
               </View>
             </Pressable>
             {post.sponsored ? <View pointerEvents="box-none" style={[styles.sponsorOverlay, { top: tile.height }]}>{sponsor(colors.ink)}</View> : null}
@@ -114,7 +121,7 @@ export function PublicationCampaignCard({ post, layout, viewport, query, favorit
             </Pressable>
           </View>;
         })}
-        {!products.length ? <PublicationText color={colors.ink}>{t('catalog.search.empty')}</PublicationText> : null}
+        {!products.length ? <PublicationText color={colors.ink}>{t(post.products.length ? 'publication.photoFilteredEmpty' : 'publication.lookNoProducts')}</PublicationText> : null}
       </ScrollView>
       {publisher ? <View style={[styles.footer, { flexDirection: dir }]}>
         {post.channelId ? <Pressable testID="publication-campaign-follow" accessibilityRole="button" accessibilityLabel={followText}
@@ -133,14 +140,14 @@ export function PublicationCampaignCard({ post, layout, viewport, query, favorit
 
 const styles = StyleSheet.create({
   filterArea: { minHeight: CAMPAIGN.filterHeight, paddingTop: 2, paddingHorizontal: CAMPAIGN.railInset, backgroundColor: P.paper },
-  redFilterArea: { minHeight: CAMPAIGN.redFilterHeight },
-  filterButton: { alignSelf: 'flex-end', minHeight: 44, justifyContent: 'center' },
-  rtlFilterButton: { alignSelf: 'flex-start' },
+  filterButton: { alignSelf: 'flex-end', minHeight: 44, alignItems: 'center', gap: 12 },
+  filterBadge: { minWidth: 20, minHeight: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: P.ink },
   underline: { textDecorationLine: 'underline' },
   filterOptions: { flexWrap: 'wrap', gap: 8, paddingBottom: 12 },
   filterChip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, backgroundColor: P.neutral, borderRadius: RADIUS.xl },
   selectedFilter: { backgroundColor: P.ink },
-  headlinePanel: { paddingHorizontal: CAMPAIGN.titleInset, paddingVertical: 12 },
+  headlinePanel: { minHeight: CAMPAIGN.headingHeight, justifyContent: 'center', paddingHorizontal: CAMPAIGN.titleInset, paddingTop: 8, paddingBottom: 12 },
+  headingLink: { minHeight: 44, justifyContent: 'center' },
   headline: { fontSize: CAMPAIGN.headingSize, lineHeight: CAMPAIGN.headingLine },
   sponsor: { alignItems: 'center', gap: 8, minHeight: 28, alignSelf: 'flex-start' },
   sponsorSpace: { height: 28 },
@@ -153,6 +160,7 @@ const styles = StyleSheet.create({
   promo: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: RADIUS.xs, backgroundColor: C.promo },
   heartTouch: { position: 'absolute', top: 6, end: 6, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   heart: { width: CAMPAIGN.heartDiameter, height: CAMPAIGN.heartDiameter, borderRadius: CAMPAIGN.heartDiameter / 2, alignItems: 'center', justifyContent: 'center' },
+  productCopy: { minHeight: CAMPAIGN.productCopyHeight, paddingTop: 4 },
   prices: { marginTop: 8 },
   compare: { textDecorationLine: 'line-through' },
   footer: { marginTop: CAMPAIGN.afterRail, paddingHorizontal: CAMPAIGN.titleInset, gap: 16, alignItems: 'center' },

@@ -6,7 +6,7 @@ import { ApiError } from './errors';
 import { parseLinkedProduct, type LinkedProduct } from './linkedProduct';
 
 export interface ReferencePublication {
-  id: string; title: string; subtitle: string; description: string;
+  id: string; title: string; detailTitle?: string; updatedAt?: string; coverImage?: string; subtitle: string; description: string;
   channelId: string; channelName: string; channelAvatar: string;
   saved: boolean; sponsored: boolean; sponsorName: string; actionLabel: string;
   media: ReferenceMedia | null; layout: ReferenceLayout | PublicationCampaignLayout; products: LinkedProduct[];
@@ -63,7 +63,7 @@ export function parseReferencePublicationPage(value: unknown): ReferencePublicat
       if (product && !products.has(product.id)) products.set(product.id, product);
     }
     return [{ id, title: row.show_title === false || row.show_title === 0 ? '' : text(row.title),
-      subtitle: text(row.subtitle), description: text(row.description),
+      detailTitle: text(row.title), updatedAt: text(row.updated_at), coverImage: cover, subtitle: text(row.subtitle), description: text(row.description),
       channelId: text(row.channel_id), channelName: text(row.channel_name), channelAvatar: safeMedia(row.channel_avatar, 'image'),
       saved: yes(row.saved), sponsored: yes(row.sponsored), sponsorName: text(row.sponsor_name), actionLabel: text(row.action_label),
       media, layout, products: [...products.values()] }];
@@ -86,7 +86,7 @@ export async function fetchPublicationLook(id: string, options?: RequestOptions)
   if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) return null;
   const query = new URLSearchParams({ post: id, limit: '1' });
   const page = parseReferencePublicationPage(await apiGetData<unknown>(`/api/public/social/publication-feed?${query}`, options));
-  return page.items.find(item => item.id === id && !isPublicationCampaign(item.layout) && item.media !== null) ?? null;
+  return page.items.find(item => item.id === id && (isPublicationCampaign(item.layout) || item.media !== null)) ?? null;
 }
 
 export async function savePublicationLook(id: string, saved: boolean) {

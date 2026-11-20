@@ -22,8 +22,12 @@ describe('publication look', () => {
     expect(apiGetData).not.toHaveBeenCalled();
     vi.mocked(apiGetData).mockResolvedValueOnce({ nextCursor: null, items: [video('post-1', 1280, 720)] });
     await expect(fetchPublicationLook('post-1')).resolves.toMatchObject({ layout: 'video-panoramic' });
-    vi.mocked(apiGetData).mockResolvedValueOnce({ nextCursor: null, items: [{ ...video('post-1'), template_id: 'campaign_red' }] });
-    await expect(fetchPublicationLook('post-1')).resolves.toBeNull();
+  });
+  it.each(['campaign_orange', 'campaign_red'])('reads %s even without authored media, keeping only its published product links', async template => {
+    vi.mocked(apiGetData).mockResolvedValueOnce({ nextCursor: null, items: [video('other'), {
+      id: 'post-1', template_id: template, title: 'Édition du jour', products: [{ id: 'b', name: 'Body', price: 52 }],
+    }] });
+    await expect(fetchPublicationLook('post-1')).resolves.toMatchObject({ layout: template, media: null, detailTitle: 'Édition du jour', products: [{ id: 'b' }] });
   });
   it('uses the account preference endpoint and only reports a confirmed save', async () => {
     vi.mocked(apiSend).mockResolvedValueOnce({ data: { saved: true } } as Awaited<ReturnType<typeof apiSend>>);

@@ -79,6 +79,7 @@ const ROUTES: { prefix: string; route: string | ((rest: string) => string | null
   { prefix: '/news', route: '/news' },
   { prefix: '/reels', route: '/reels' },
   { prefix: '/stories', route: '/stories' },
+  { prefix: '/publication-look/', route: rest => /^[A-Za-z0-9_-]{1,120}$/.test(rest) ? `/publication-look/${rest}` : null },
   { prefix: '/publications', route: '/publications' },
   { prefix: '/sign-in', route: '/sign-in' },
 ];

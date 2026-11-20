@@ -9,7 +9,7 @@ import { socialCommerceKey, useSocialCommerce, type DiscoveryItem } from '@/api/
 import { editorialSnapshot } from '@/api/socialCommerceCache';
 import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
-import { BrandSymbol } from '@/design/BrandMark';
+import { OfficialAvatar } from '@/design/OfficialAvatar';
 import { revealChrome } from '@/design/chrome';
 import { ErrorBlock, LoadingBlock, EmptyBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
@@ -147,7 +147,7 @@ export default function SocialCommerceScreen() {
   return (
     <View testID="social-commerce" style={{ flex: 1, paddingTop: top, backgroundColor: theme.colors.canvas }}>
       <View style={[styles.header, { borderColor: theme.colors.line, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
-        <BrandSymbol width={34} />
+        <OfficialAvatar size={34} testID="social-brand-icon" />
         <AppText variant="h3" accessibilityRole="header" style={{ flex: 1, minWidth: 0 }}>{t('tabs.social')}</AppText>
         <Pressable accessibilityRole="button" accessibilityLabel={t('socialCommerce.lens')} onPress={() => router.push('/z-lens')} style={styles.hit}>
           <Ionicons name="search-outline" color={theme.colors.ink} size={theme.iconSize.md} />

@@ -4,7 +4,6 @@ import { PublicationLookScreen } from '@/features/publications/PublicationLookSc
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function PublicationLookRoute() {
-  const { id, view } = useLocalSearchParams<{ id: string; view?: string }>();
-  const collection = view === 'collection';
-  return <PublicationLookScreen key={`${id}:${collection}`} collection={collection} id={typeof id === 'string' ? id : ''} />;
+  const { id } = useLocalSearchParams<{ id: string }>();
+  return <PublicationLookScreen key={id} id={typeof id === 'string' ? id : ''} />;
 }

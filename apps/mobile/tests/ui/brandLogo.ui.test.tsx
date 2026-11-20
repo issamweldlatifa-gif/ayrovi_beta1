@@ -1,6 +1,6 @@
 import { Animated } from "react-native";
 import { render } from "@testing-library/react-native";
-import Svg, { Circle, Path, Rect } from "react-native-svg";
+import Svg, { Path } from "react-native-svg";
 import type { ReactTestInstance } from "react-test-renderer";
 import {
   BrandLogo,
@@ -129,17 +129,13 @@ describe("loading and avatar", () => {
     expect(render(<BrandSymbol width={40} />).UNSAFE_getByType(Svg).props.height).toBe(40);
   });
 
-  it("shows the official Reel avatar as the social icon: black DISC, yellow mark + closer yellow dot", () => {
+  it("uses the full yellow and black Za. on white for the official social avatar", () => {
     const result = render(<ReelPublisher />);
-    const path = result.UNSAFE_getByType(Path);
-    expect(path.props.d).toBe(BRAND_MARK.d);
-    expect(path.props.fill).toBe(BRAND.yellow);
+    const paths = result.UNSAFE_getAllByType(Path);
+    expect(paths.map(path => [path.props.d, path.props.fill])).toEqual([
+      [BRAND_LOGO.ring, BRAND.yellow], [BRAND_LOGO.a, BRAND.black], [BRAND_LOGO.dot, BRAND.yellow],
+    ]);
     const tile = result.getByTestId("reel-publisher-avatar", { includeHiddenElements: true });
-    expect(tile.props.style).toMatchObject({ width: 28, height: 28 });
-    const rect = result.UNSAFE_getByType(Rect);
-    expect(rect.props).toMatchObject({ width: 28, height: 28, fill: BRAND.black });
-    expect(rect.props.rx).toBeCloseTo(14, 5); // 19/11 : disque (rayon = moitié du côté)
-    const dot = result.UNSAFE_getByType(Circle);
-    expect(dot.props.fill).toBe(BRAND.yellow);
+    expect(tile.props.style).toMatchObject({ width: 28, height: 28, backgroundColor: BRAND.white });
   });
 });

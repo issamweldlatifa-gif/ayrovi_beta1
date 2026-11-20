@@ -859,7 +859,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       } catch { return res.status(400).json({ success: false, error: 'Curseur Publication invalide.' }); }
     }
     const accountId = (req as any).customer?.id || '';
-    const rows = db.all<any>(`SELECT pub.id,pub.title,pub.subtitle,pub.image_url,pub.channel_id,pub.category,pub.media_origin,pub.publish_at,pub.content_mode,
+    const rows = db.all<any>(`SELECT pub.id,pub.title,pub.subtitle,pub.image_url,pub.channel_id,pub.category,pub.media_origin,pub.publish_at,pub.updated_at,pub.content_mode,
       channel.name channel_name,channel.avatar channel_avatar,channel.official channel_official,
       pub.show_title,pub.template_id,pub.action_label,pub.action_target,pub.post_type,pub.media_json,pub.description,pub.description_position,pub.sponsored,pub.sponsor_name,pub.audience,pub.topic,
       EXISTS(SELECT 1 FROM publication_follows f WHERE f.publisher_id=pub.channel_id AND f.account_id=?) following,

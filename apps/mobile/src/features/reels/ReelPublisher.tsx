@@ -14,7 +14,6 @@ export function ReelPublisher({ onMedia = false, onOpen }: { onMedia?: boolean; 
   return (
     <Pressable testID="reel-publisher" accessibilityRole="link" accessibilityLabel={OFFICIAL_PUBLISHER_NAME}
       onPress={onOpen ?? (() => router.push(OFFICIAL_PUBLISHER_ROUTE))} style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-      {/* Official avatar (14/11): white zebra Z on a black disc, the same in both themes and on video. */}
       <OfficialAvatar size={onMedia ? V.avatar : OFFICIAL_AVATAR.reel} testID="reel-publisher-avatar" />
       {onMedia ? <ReelViewerText tone="publisher" numberOfLines={1} color={V.paper} style={styles.name}>{OFFICIAL_PUBLISHER_NAME}</ReelViewerText>
         : <AppText variant="body" numberOfLines={1} color={theme.colors.ink} style={styles.name}>{OFFICIAL_PUBLISHER_NAME}</AppText>}

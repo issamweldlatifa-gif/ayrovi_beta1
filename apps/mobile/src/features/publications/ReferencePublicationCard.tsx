@@ -89,7 +89,7 @@ export function ReferencePublicationCard({ post, viewport, active, autoplay, onA
   const railInset = squareRail ? width * 38 / 658 : 0;
   const adaptedTileWidth = squareRail ? (width - railInset - 2 * R.railGap) / 3 : tileWidth;
   const tileSize = { width: adaptedTileWidth, height: squareRail ? adaptedTileWidth / R.tileAspect : tileHeight };
-  const moreLabel = t(post.media?.type === 'video' ? 'publication.learnMore' : 'reel.captionMore');
+  const moreLabel = t('publication.learnMore');
   const official = post.channelId === OFFICIAL_PUBLISHER_ID;
   const publisher = official ? OFFICIAL_PUBLISHER_NAME : post.channelName;
   const follow = usePublisherFollow(post.channelId, onAuth);

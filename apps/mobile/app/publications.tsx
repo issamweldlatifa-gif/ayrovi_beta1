@@ -82,9 +82,9 @@ export default function PublicationsScreen() {
   }, [feed.data]);
   const next = () => { if (feed.hasNextPage && !feed.isFetching) void feed.fetchNextPage(); };
   const open = (post: ReferencePublication, mode: Selection['mode']) => setSelection({ post, mode, open: true });
-  const openLook = (post: ReferencePublication, collection = false) => {
+  const openLook = (post: ReferencePublication) => {
     client.setQueryData(publicationLookKey(owner, post.id), post);
-    router.push({ pathname: '/publication-look/[id]', params: { id: post.id, ...(collection ? { view: 'collection' } : {}) } });
+    router.push({ pathname: '/publication-look/[id]', params: { id: post.id } });
   };
   const blocked = Boolean(selection) || auth || Boolean(fullscreen);
   const playingAllowed = focused && foreground && !blocked;
@@ -111,13 +111,13 @@ export default function PublicationsScreen() {
         onRefresh={() => void feed.refetch()} refreshing={feed.isRefetching}
         renderItem={({ item }) => isPublicationCampaign(item.layout) ? <PublicationCampaignCard post={item} layout={item.layout}
           viewport={width} query={search?.id === item.id ? search.query : ''} favorites={favorites} signedIn={signedIn}
-          onAuth={() => setAuth(true)} onSponsor={() => open(item, 'sponsor')} /> : <ReferencePublicationCard post={item} viewport={width}
+          onAuth={() => setAuth(true)} onSponsor={() => open(item, 'sponsor')} onOpen={() => openLook(item)} /> : <ReferencePublicationCard post={item} viewport={width}
           active={playingAllowed && activeVideo === item.id} autoplay={!reducedMotion} onActivate={() => setActiveVideo(item.id)}
           onPhoto={item.media?.type === 'image' ? () => openLook(item) : undefined}
           onVideo={item.media?.type === 'video' ? (start, resumeAt) => {
             if (item.media) setFullscreen({ post: item, url: item.media.url, poster: item.media.poster, start, resumeAt });
           } : undefined}
-          onMore={() => openLook(item, item.media?.type === 'image')} onCaption={() => open(item, 'details')} onOptions={() => open(item, 'options')} onSponsor={() => open(item, 'sponsor')}
+          onMore={() => openLook(item)} onCaption={() => open(item, 'details')} onOptions={() => open(item, 'options')} onSponsor={() => open(item, 'sponsor')}
           favorites={favorites} signedIn={signedIn} onAuth={() => setAuth(true)} />}
         ListEmptyComponent={feed.isPending ? <LoadingBlock /> : feed.isError && !feed.data ?
           <ErrorBlock error={feed.error} onRetry={() => void feed.refetch()} /> :
