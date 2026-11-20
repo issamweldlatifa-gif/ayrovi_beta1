@@ -17,6 +17,8 @@
  *   • l'URL source est invalide.
  */
 
+import { amazonAsinFromUrl } from '../../../../../shared/aywebsAmazonIdentity';
+
 export interface VariantPageInput {
   sourceUrl: string;
   storeId: string | null | undefined;
@@ -25,7 +27,6 @@ export interface VariantPageInput {
 }
 
 const ASIN_SHAPE = /^(?:asin:)?([A-Z0-9]{10})$/i;
-const AMAZON_URL_ASIN_SHAPE = /(?:\/dp\/|\/gp\/(?:product|aw\/d)\/|\/product\/|\/d\/[^/]+\/)([A-Z0-9]{10})(?=[/?&#]|$)/i;
 const SHEIN_VARIANT_ID_SHAPE = /^(?:shein:|SHEIN-)(\d{5,16})(?::.*)?$/i;
 const SHEIN_HOST_SHAPE = /(?:^|\.)shein\.(?:com|co\.uk|fr|de|es|it|ca|com\.mx|com\.br)$/i;
 const AE_VARIANT_ID_SHAPE = /^(?:ae:|AE-)(\d{5,24})$/i;
@@ -147,7 +148,7 @@ export function variantPageUrlFor(input: VariantPageInput): string | null {
 
   if (input.storeId !== 'amazon') return null;
 
-  const pageAsin = AMAZON_URL_ASIN_SHAPE.exec(input.sourceUrl)?.[1]?.toUpperCase() ?? null;
+  const pageAsin = amazonAsinFromUrl(input.sourceUrl);
 
   /* Nombre de dimensions choisies que cette option couvre, avec la MÊME valeur.
      La page COURANTE est écartée des candidates : la relire ne prouverait rien

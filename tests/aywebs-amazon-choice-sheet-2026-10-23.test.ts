@@ -248,6 +248,33 @@ describe('parcours réel — la capture CORROBORE le prix et l’ajout passe', (
     void scraper;
   });
 
+  it.each([
+    ['T-shirt coton', '12', '99', 12.99],
+    ['Bracelet Swan', '77', '09', 77.09],
+    ['Ordinateur portable', '1 299', '90', 1299.90],
+  ])('signs the FR mobile buybox offer for %s with its gallery image', async (title, whole, cents, amount) => {
+    const { server } = app();
+    const url = 'https://www.amazon.fr/d/produit/B0GYM3V9H5';
+    const photo = 'https://m.media-amazon.com/images/I/product.jpg';
+    const capture = run(page(`
+      <meta property="og:image" content="https://m.media-amazon.com/images/I/banner.jpg">
+      <h1 id="productTitle">${title}</h1>
+      <div id="imageBlockContainer" class="a-carousel-container"><img data-src="${photo}"></div>
+      <div id="price_feature_div"><span class="a-price">
+        <span class="a-offscreen">${whole},${cents} €</span>
+        <span aria-hidden="true"><span class="a-price-whole">${whole},</span>
+          <span class="a-price-fraction">${cents}</span><span class="a-price-symbol">€</span></span>
+      </span><span class="a-price a-text-price">1 499,99 €</span></div>
+      <div id="availability">En stock</div>
+    `), url);
+    expect(capture).toMatchObject({ amazon: { pageAsin: 'B0GYM3V9H5' }, images: [photo] });
+    const response = await request(server).post('/api/v1/aywebs/product/resolve').set(SESSION).send({ url, capture });
+    expect(response.status, JSON.stringify(response.body)).toBe(201);
+    expect(response.body.data).toMatchObject({ price: amount, currency: 'EUR', price_verified: true });
+    expect(response.body.capture).toMatchObject({ used: true, corroborated: true });
+    expect(response.body.quote_token).toBeTruthy();
+  });
+
   it('POST /cart/items : la combinaison choisie part avec sa quantité', async () => {
     const { server } = app();
     const capture = run(FIXTURE);

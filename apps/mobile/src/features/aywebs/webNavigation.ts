@@ -11,6 +11,9 @@
  * وكل ما عداها يُمنع بلا أي فتح خارجي.
  */
 
+import { amazonAsinFromUrl } from '../../../../../shared/aywebsAmazonIdentity';
+import { ayWebsComparableHost, detectAyWebsStore } from '../../../../../shared/aywebsStores';
+
 /** صفحة ويب: `http://` أو `https://` مع مضيف. يرفض المسافات ومخطط أي شيء آخر. */
 export function isWebPageUrl(raw: string): boolean {
   return /^https?:\/\/[^\s/?#]+(?:[/?#]\S*)?$/i.test(String(raw ?? '').trim());
@@ -98,6 +101,14 @@ function documentIdentity(raw: string): string | null {
   try {
     const url = new URL(String(raw || '').trim());
     if (!isWebPageUrl(url.toString())) return null;
+    const asin = detectAyWebsStore(url.href)?.id === 'amazon' ? amazonAsinFromUrl(url) : null;
+    if (asin) {
+      url.hostname = ayWebsComparableHost(url.hostname);
+      url.pathname = `/dp/${asin}`;
+      for (const key of [...url.searchParams.keys()]) {
+        if (/^(?:tag|ref_?|pd_rd_.*|crid|dib|dib_tag|qid|sprefix)$/i.test(key)) url.searchParams.delete(key);
+      }
+    }
     const aeId = aliexpressDocumentIdentity(url);
     if (aeId) return aeId;
     const sheinId = sheinDocumentIdentity(url);

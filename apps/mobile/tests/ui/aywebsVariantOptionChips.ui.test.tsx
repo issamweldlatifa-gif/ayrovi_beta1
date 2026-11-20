@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { I18nProvider } from '@/i18n';
 import { ThemeProvider } from '@/design/theme';
@@ -29,6 +29,19 @@ describe('AYWEBs product variant controls', () => {
     expect(screen.getByRole('button', { name: 'Couleur: Rose' }).props.accessibilityState.disabled).toBe(true);
     fireEvent.press(screen.getByRole('button', { name: 'Couleur: Noir' }));
     expect(onSelect).toHaveBeenCalledWith('Noir');
+  });
+
+  it('renders Amazon colors as rectangular product photos or labelled cards, never swatches', () => {
+    render(wrap(<VariantOptionChips kind="color" label="Couleur" value="Argile" photoCards
+      options={[{ value: 'Argile', image: 'https://images.example/argile.jpg' }, { value: 'Gris' }]}
+      onSelect={() => undefined} />));
+    const photo = screen.UNSAFE_getByType(require('expo-image').Image);
+    expect(photo.props.testID).toBe('aywebs-color-image-0');
+    expect(photo.props.contentFit).toBe('contain');
+    expect(screen.getByTestId('aywebs-color-text-1').props.children).toBe('Gris');
+    expect(screen.queryByTestId('aywebs-color-swatch-1')).toBeNull();
+    act(() => photo.props.onError());
+    expect(screen.getByTestId('aywebs-color-text-0').props.children).toBe('Argile');
   });
 
   it('renders size values as selectable pills', () => {

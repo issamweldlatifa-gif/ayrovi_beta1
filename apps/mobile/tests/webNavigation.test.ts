@@ -3,6 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { captureMatchesPageUrl, decideWebNavigation, isWebPageUrl } from '@/features/aywebs/webNavigation';
 
 describe('AYWEBs WebView navigation', () => {
+  it('follows Amazon short links and tracking redirects only for the same storefront and ASIN', () => {
+    const page = 'https://m.amazon.fr/d/bracelet/B0GYM3V9H5?tag=example';
+    expect(captureMatchesPageUrl('https://www.amazon.fr/dp/B0GYM3V9H5/ref=abc', page)).toBe(true);
+    expect(captureMatchesPageUrl('https://www.amazon.fr/dp/B0GYM3TFH2', page)).toBe(false);
+    expect(captureMatchesPageUrl('https://www.amazon.de/dp/B0GYM3V9H5', page)).toBe(false);
+  });
+
   it('يبقي صفحات الويب داخل التطبيق', () => {
     expect(decideWebNavigation('https://www.amazon.com/dp/B000')).toBe('allow');
     expect(decideWebNavigation('http://shop.example.jp/item/1')).toBe('allow');

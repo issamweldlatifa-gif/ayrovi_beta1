@@ -78,3 +78,11 @@ The standalone Amazon reader now carries a bounded per-ASIN variant matrix, join
 The first comprehensive root run identified four failures: two stale reader-version/profile assertions, and the Amazon banner regression, plus the previously fixed version assertion. All affected suites were rerun successfully after correction. Mobile typecheck, 1,117 mobile unit tests and 174 component tests passed; Jest needed force exit and emitted React act/open-handle warnings. These results do not prove live device behavior, end-to-end latency, or the cause of the user's TND error. Amazon and Zalando are individually isolated; other merchants and old store-less clients still use the legacy script.
 
 Final local root regression rerun after the fixes: 253 suites, 3,240 passed and 17 skipped. Root typecheck and server build passed. This is not live-merchant or production verification.
+
+### Amazon reader v8: French mobile links, buybox and product photos
+
+The app, adapter and injected reader now agree on desktop and short mobile ASIN routes. The resolver rejects a capture from another ASIN even when the marketplace is the same. The mobile buybox can corroborate the complete accessibility amount against its visible fragments in the named price widget; disagreement still blocks the quote. Tests run the actual injected reader and resolve signed EUR offers against local fixtures for clothing, jewelry and electronics.
+
+The Amazon gallery is permitted to be a carousel, but photos must come from named PDP image containers or ASIN-matched structured product data. No generic page-image or Open Graph fallback. Color option photos survive independently of price/stock, and the mobile v6 sheet renders Amazon photo cards with a text label when the merchant has no usable image. Other merchants retain their existing controls. Amazon quote reads have time limits; a manual retry can obtain a fresh WebView capture rather than only resubmit the old payload.
+
+These tests do not establish live behavior for the products shown in the customer's screenshots; test on an Android build connected to a server serving reader v8.

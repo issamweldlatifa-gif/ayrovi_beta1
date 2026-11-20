@@ -35,8 +35,9 @@ const RING = 56;
 const SWATCH = 48;
 
 export function VariantOptionChips({
-  kind, label, value, options, onSelect,
+  kind, label, value, options, onSelect, photoCards = false,
 }: {
+  photoCards?: boolean;
   kind: 'color' | 'size';
   label: string;
   value: string;
@@ -52,6 +53,7 @@ export function VariantOptionChips({
           <Option
             key={option.value}
             kind={kind}
+            photoCard={photoCards}
             label={label}
             option={option}
             index={index}
@@ -64,17 +66,19 @@ export function VariantOptionChips({
   );
 }
 
-function Option({ kind, label, option, index, active, onSelect }: {
+function Option({ kind, label, option, index, active, onSelect, photoCard }: {
   kind: 'color' | 'size';
   label: string;
   option: ChoiceOption;
   index: number;
   active: boolean;
+  photoCard: boolean;
   onSelect: (value: string) => void;
 }) {
   const theme = useTheme();
   const disabled = option.unavailable === true;
-  const [imageFailed, setImageFailed] = useState(false);
+  const [failedImage, setFailedImage] = useState<string>();
+  const imageFailed = failedImage === option.image;
   const spoken = `${label}: ${option.value}${option.price ? `, ${option.price}` : ''}`;
 
   return (
@@ -89,23 +93,31 @@ function Option({ kind, label, option, index, active, onSelect }: {
     >
       {kind === 'color' ? (
         <>
-          <View style={styles.ringWrap}>
+          <View style={[styles.ringWrap, photoCard && styles.photoFrame]}>
             <View
               style={[
                 styles.imageRing,
+                photoCard && [styles.photoFrame, { backgroundColor: theme.colors.surface }],
                 { borderColor: active ? theme.colors.action : theme.colors.line, opacity: disabled ? theme.opacity.disabled : 1 },
               ]}
             >
-              <Swatch
+              {photoCard ? (option.image && !imageFailed ? (
+                <AppImage uri={mediaUrl(option.image)} contentFit="contain" decorative
+                  testID={`aywebs-color-image-${index}`} style={styles.photo}
+                  onError={() => setFailedImage(option.image)} />
+              ) : (
+                <AppText variant="caption" align="center" numberOfLines={3} color={theme.colors.muted}
+                  testID={`aywebs-color-text-${index}`}>{option.value}</AppText>
+              )) : <Swatch
                 option={option}
                 index={index}
                 failed={imageFailed}
-                onFailed={() => setImageFailed(true)}
-              />
+                onFailed={() => setFailedImage(option.image)}
+              />}
             </View>
             {active ? <SelectedBadge index={index} /> : null}
           </View>
-          <AppText
+          {!photoCard || (option.image && !imageFailed) ? <AppText
             variant="caption"
             align="center"
             numberOfLines={2}
@@ -113,7 +125,7 @@ function Option({ kind, label, option, index, active, onSelect }: {
             style={styles.colorLabel}
           >
             {option.value}
-          </AppText>
+          </AppText> : null}
         </>
       ) : (
         <View
@@ -227,6 +239,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  photoFrame: { width: RING + 8, height: RING + 16, borderRadius: RADIUS.sm },
+  photo: { width: '100%', height: '100%' },
   swatch: { width: SWATCH, height: SWATCH, borderRadius: SWATCH / 2 },
   neutralSwatch: { alignItems: 'center', justifyContent: 'center' },
   selectedBadge: {

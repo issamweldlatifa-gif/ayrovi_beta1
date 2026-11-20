@@ -4,6 +4,7 @@ import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 import { buildAyWebsCaptureScript } from '../src/aywebs/captureScript';
 import { AmazonAdapter } from '../src/aywebs/adapters/amazon';
+import { validateAyWebsCapturedPage } from '../src/aywebs/webviewCapture';
 
 function capture(html: string, url: string, script = buildAyWebsCaptureScript('amazon'), payloads: unknown[] = []): any {
   const dom = new JSDOM(html, { url });
@@ -28,6 +29,14 @@ describe('shared product-offer engine on Amazon mobile pages', () => {
     expect(result.priceCandidates).toEqual(expect.arrayContaining([
       expect.objectContaining({ text: '$109.00', source: 'dom' }),
     ]));
+  });
+
+  it('rejects another ASIN on the same storefront, but accepts the same ASIN via a short link', () => {
+    const url = `https://www.amazon.com/dp/${asin}`;
+    const current = capture(product, url);
+    expect(validateAyWebsCapturedPage(current, `https://m.amazon.com/d/${asin}`).ok).toBe(true);
+    expect(validateAyWebsCapturedPage(current, 'https://www.amazon.com/dp/B0GYM3TFH2').rejection)
+      .toBe('PRODUCT_IDENTITY_MISMATCH');
   });
 
   it('reads mobile twister sizes, the selected value and unavailable option without guessing', () => {
@@ -59,6 +68,24 @@ describe('shared product-offer engine on Amazon mobile pages', () => {
       data-a-dynamic-image='{ "https://img.example/thumb.jpg": [100, 100] }'></div></body></html>`;
     const result = capture(html, `https://m.amazon.fr/dp/${asin}`);
     expect(result.images[0]).toBe('https://img.example/full.jpg');
+  });
+
+  it('never uses branding or a recommendation as a product photo while the gallery is absent', () => {
+    const html = `<meta property="og:image" content="https://img.example/promo.jpg">
+      <img src="https://img.example/brand.jpg"><div id="dp-container">
+        <div class="recommendation-carousel"><div id="imageBlock"><img src="https://img.example/other-item.jpg"></div></div>
+      </div>`;
+    expect(capture(html, `https://m.amazon.fr/d/${asin}`).images).toEqual([]);
+  });
+
+  it('passes a named lazy-loaded color photo to the sheet even without a price or stock', () => {
+    const html = `<div id="dp-container"><div id="variation_color_name"><ul>
+      <li data-asin="${asin}" title="Argile"><img src="https://img.example/transparent-pixel.gif" data-src="https://img.example/argile.jpg"></li>
+      <li data-asin="B0GYM3TFH2" title="Gris"><img src="https://img.example/logo.jpg" alt="Brand logo"></li>
+      </ul></div></div>`;
+    const colors = capture(html, `https://m.amazon.fr/d/${asin}`).variantGroups.find((g: any) => g.name === 'color');
+    expect(colors.values).toEqual(['Argile', 'Gris']);
+    expect(colors.options).toEqual([expect.objectContaining({ value: 'Argile', image: 'https://img.example/argile.jpg' })]);
   });
 
   it('does not mistake the purchase quantity for a selected variant', () => {
@@ -109,7 +136,7 @@ describe('shared product-offer engine on Amazon mobile pages', () => {
     const url = `https://m.amazon.com/dp/${asin}`;
     const direct = capture(product, url);
     const legacy = capture(product, url, buildAyWebsCaptureScript());
-    expect(legacy.contract).toMatchObject({ store: 'amazon', readerVersion: 7, matched: true });
+    expect(legacy.contract).toMatchObject({ store: 'amazon', readerVersion: 8, matched: true });
     expect({ ...legacy, capturedAt: null }).toEqual({ ...direct, capturedAt: null });
   });
 

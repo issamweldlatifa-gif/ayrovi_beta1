@@ -3,27 +3,8 @@ import type { ScrapeOptions } from '../../scraper/scraper';
 import { BaseStoreAdapter } from './base';
 import type { AyWebsPageClassification, AyWebsSourceProduct } from './contract';
 
-/**
- * Motif de fiche produit Amazon : `/dp/`, `/gp/product/`, `/gp/aw/d/`, `/product/`,
- * le lien court mobile `/d/<slug>/<ASIN>` ou `/d/<ASIN>`, et l'ancien
- * `/exec/obidos/ASIN/`, suivi d'un ASIN de 10 caractères.
- */
-const ASIN_PATH = /\/(?:dp|gp\/(?:product|aw\/d)|product|exec\/obidos\/ASIN|d(?:\/[^/]+)?)\/([A-Z0-9]{10})(?:[/?]|$)/i;
-
-/**
- * ASIN d'une URL Amazon, ou `null`. Lu sur le CHEMIN seul : le slug (titre du
- * produit) et les paramètres de suivi (`ref_`, `pd_rd_*`) ne comptent pas.
- */
-export function amazonAsinFromUrl(url: string | URL): string | null {
-  let parsed: URL;
-  try {
-    parsed = typeof url === 'string' ? new URL(url) : url;
-  } catch {
-    return null;
-  }
-  const match = parsed.pathname.match(ASIN_PATH);
-  return match ? match[1].toUpperCase() : null;
-}
+import { AMAZON_ASIN_PATH, amazonAsinFromUrl } from '../../../shared/aywebsAmazonIdentity';
+export { amazonAsinFromUrl } from '../../../shared/aywebsAmazonIdentity';
 
 /**
  * Forme canonique d'une fiche : `https://<même hôte>/dp/<ASIN>`.
@@ -53,7 +34,7 @@ export class AmazonAdapter extends BaseStoreAdapter {
   readonly id: AyWebsAdapterId = 'amazon';
 
   isProductPage(url: URL): boolean {
-    return ASIN_PATH.test(url.pathname);
+    return AMAZON_ASIN_PATH.test(url.pathname);
   }
 
   classifyPage(url: string | URL): AyWebsPageClassification {

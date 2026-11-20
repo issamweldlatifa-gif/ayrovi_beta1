@@ -119,7 +119,7 @@ describe('coupe-circuit et retour arrière', () => {
     app.use('/api/v1/aywebs', createAyWebsRouter(db, {} as never));
     setAyWebsCaptureControl(db, { storeId: 'amazon', mode: 'core', note: 'old override', actorId: 'adm_1' });
     const response = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=amazon&flow=catalogue');
-    expect(response.headers['x-aywebs-capture-reader-version']).toBe('7');
+    expect(response.headers['x-aywebs-capture-reader-version']).toBe('8');
     expect(response.headers['x-aywebs-capture-bundle']).toBe('dedicated:amazon');
     expect(response.text).toBe(describeAyWebsCaptureScript('amazon').text);
     expect(response.text).not.toContain('asinToPrice');

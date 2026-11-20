@@ -32,6 +32,7 @@ import type { ScrapedProduct } from '../types';
 import type { AyWebsSourceProduct } from './adapters/contract';
 import { checkPriceText } from '../scraper/priceIntegrity';
 import { ayWebsComparableHost, detectAyWebsStore } from '../../shared/aywebsStores';
+import { amazonAsinFromUrl } from '../../shared/aywebsAmazonIdentity';
 import { aliexpressItemId } from './adapters/aliexpress';
 import { sheinGoodsId } from './adapters/shein';
 import { temuGoodsId } from './adapters/temu';
@@ -825,13 +826,21 @@ export function validateAyWebsCapturedPage(
   if (options.requireProductPage === true && pageKind.kind !== 'PRODUCT_CARD') {
     return rejected('NOT_A_PRODUCT_PAGE', '', [`page_kind:${pageKind.kind}`, `page_reason:${pageKind.reason}`]);
   }
-
   /* ── VARIANTE AMAZON (contrat Phase 1 — derrière AYWEBS_AMAZON_VARIANT_CONTRACT=1) ──
      Quand la fiche a plusieurs variantes, le prix de la zone d'achat ne vaut que pour
      l'option CHOISIE. On la refuse si elle n'est pas prouvée. */
   if (variantContractEnabled() && isAmazonHost(requestUrl)) {
     const variantRefusal = amazonVariantRefusal(payload);
     if (variantRefusal) return rejected('VARIANT_NOT_PROVEN', '', [`variant:${variantRefusal}`]);
+  }
+
+  if (detectAyWebsStore(requestUrl)?.id === 'amazon') {
+    const requestedAsin = amazonAsinFromUrl(requestUrl);
+    const captureAsin = amazonAsinFromUrl(pageUrl);
+    const declaredAsin = collapse(payload.amazon?.pageAsin, 10).toUpperCase();
+    if (requestedAsin && (captureAsin !== requestedAsin || (declaredAsin && declaredAsin !== requestedAsin))) {
+      return rejected('PRODUCT_IDENTITY_MISMATCH', '', ['amazon_page_asin_mismatch']);
+    }
   }
 
   /* ── IDENTITÉ FICHE ALIEXPRESS (anti-état SPA périmé) ──────────────────── */
@@ -866,7 +875,9 @@ export function validateAyWebsCapturedPage(
   // A visible conflicting mobile widget or a buybox belonging to another ASIN
   // is not rescued by stale metadata from the product shell.
   if (isAmazon && clientDiagnostics.includes('price:buybox_asin_mismatch')) return rejected('BUYBOX_ASIN_MISMATCH', '', notes);
-  if (isAmazon && clientDiagnostics.includes('price:mobile_offer_conflict')) return rejected('AMBIGUOUS_PRICE', '', notes);
+  if (isAmazon && clientDiagnostics.some((code) => code === 'price:mobile_offer_conflict' || code.startsWith('price:ambiguous_buybox:'))) {
+    return rejected('AMBIGUOUS_PRICE', '', notes);
+  }
   const candidates: Array<{ text: string; source: AyWebsCaptureSource; value: number; rank: number; index: number; hints: string[] }> = [];
   const rawCandidates = Array.isArray(payload.priceCandidates) ? payload.priceCandidates.slice(0, AYWEBS_CAPTURE_LIMITS.maxPriceCandidates) : [];
   rawCandidates.forEach((candidate: AyWebsCapturedPriceCandidate, index: number) => {

@@ -31,6 +31,7 @@ import { SalePrice } from '@/design/SalePrice';
 import { saleSummary } from '@/design/saleLogic';
 import { useI18n } from '@/i18n';
 import { mediaUrl } from '@/api/client';
+import { isApiError } from '@/api/errors';
 import { addErrorMessage } from '@/features/aywebs/addError';
 import {
   addAyWebsCartItem, fetchAyWebsVariants, resolveAyWebsProductWithCapture,
@@ -255,7 +256,8 @@ export function AddToCartSheet({
             ...(attempt.withVariant && Object.keys(picked).length ? { variant: picked } : {}),
             refresh: attempt.refresh,
           });
-          const read = exactCapture || retry ? await withExactQuoteDeadline(resolve, signal) : await resolve(signal);
+          const read = exactCapture || retry || product.storeId === 'amazon'
+            ? await withExactQuoteDeadline(resolve, signal) : await resolve(signal);
           if (!isActive()) return;
           if (exactCapture && !read.capturedSelection) continue;
           const pageQuantity = pageQuantityOf(read);
@@ -298,12 +300,19 @@ export function AddToCartSheet({
           if (!isActive()) return;
           if (exactCapture) setError(addErrorMessage(error, locale, t));
           diagnostics.push(`${attempt.capture ? 'capture' : 'server'}:${code}`);
+          if (product.storeId === 'amazon' && isApiError(error) && error.kind === 'timeout') break;
         }
       }
       if (!productForQuote) {
         diagnostics.push('quote:unavailable');
         setDiagnostic(diagnostics.filter(Boolean).filter((value, index, all) => all.indexOf(value) === index).join(' · '));
-        setPageQuote(null);
+        // Keep Amazon's exact-choice reader available when the opening ASIN
+        // had no quote. Selecting a different ASIN can still produce one.
+        if (product.storeId === 'amazon' && !exactCapture) lastSelectionQuoteKey.current = selectionKeyOf(picked);
+        setPageQuote(product.storeId === 'amazon' && !exactCapture ? {
+          selection: {}, unitTnd: null, availability: 'UNKNOWN', stock: null,
+          sourcePrice: null, sourceCurrency: '', quotes: [], details: [], quoteToken: '',
+        } : null);
         return;
       }
       const pickedQuote = selectionQuote({
@@ -535,6 +544,7 @@ export function AddToCartSheet({
     lastSelectionQuoteKey.current = key;
     const requestNumber = ++selectionQuoteRequest.current;
     const picked = { ...selection };
+    const quoteController = new AbortController();
     setQuoting(true);
     const timer = setTimeout(() => {
       void (async () => {
@@ -567,7 +577,8 @@ export function AddToCartSheet({
             }
           }
         }
-        const read = await resolveAyWebsProductWithCapture(targetUrl, {
+        const resolve = (signal?: AbortSignal) => resolveAyWebsProductWithCapture(targetUrl, {
+          signal,
           sessionId,
           storeId: product.storeId || undefined,
           /* La capture n'est jointe que si elle décrit cette page ; sinon on
@@ -576,6 +587,8 @@ export function AddToCartSheet({
           variant: picked,
           refresh: false,
         });
+        const read = product.storeId === 'amazon'
+          ? await withExactQuoteDeadline(resolve, quoteController.signal) : await resolve();
         if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
         if (siblingCaptureRead) {
           setActiveUrl(targetUrl);
@@ -626,6 +639,7 @@ export function AddToCartSheet({
     return () => {
       clearTimeout(timer);
       if (selectionQuoteRequest.current === requestNumber) selectionQuoteRequest.current += 1;
+      quoteController.abort();
     };
   }, [effectiveCapture, effectiveUrl, groups.length, local, matrixKey, pageQuote, product.storeId, quote.availability, quote.missingVariantUrl, quote.unitTnd,
     readVariant, selection, selectionCapture, selectionComplete, sessionId, variantOptions, visible]);
@@ -682,7 +696,7 @@ export function AddToCartSheet({
       const serverQuote = pageQuote?.quotes.find((entry) => sameAttribute(entry.group, groupName)
         && entry.value.trim().toLowerCase() === value.trim().toLowerCase());
       const optionImage = variantOptions.find((option) => Object.entries(option.attributes).some(([attribute, optionValue]) =>
-        sameAttribute(attribute, groupName) && optionValue.trim().toLowerCase() === value.trim().toLowerCase()))?.image;
+        sameAttribute(attribute, groupName) && optionValue.trim().toLowerCase() === value.trim().toLowerCase()) && (product.storeId !== 'amazon' || Boolean(option.image)))?.image;
       const availability = variantAvailability(groupName, value, selection, variantOptions);
       const unavailable = published?.state === 'OUT_OF_STOCK'
         || serverQuote?.availability === 'OUT_OF_STOCK'
@@ -698,7 +712,7 @@ export function AddToCartSheet({
       };
     });
     return { key, groupName, label, kind: choiceGroupKind(groupName), values };
-  }), [groups, pageQuote, selection, t, valueStates, variantOptions]);
+  }), [groups, pageQuote, selection, t, valueStates, variantOptions, product.storeId]);
 
   /**
    * Badges verrouillés du modèle en lecture seule (Modèle #2) : reflètent
@@ -1069,11 +1083,16 @@ export function AddToCartSheet({
   const signedSelectionPrice = Boolean(exactPageQuote?.quoteToken && exactPageQuote.unitTnd != null && exactPageQuote.unitTnd === quote.unitTnd
     && !missing.length && (quantity === 1 || (resolvedTotalTnd !== null && exactPageQuote.quantityTotalsTnd?.[quantity - 1] === resolvedTotalTnd)));
   const title = product.title;
-  const exactImage = pageQuote?.image || quote.image;
+  const amazonColorField = product.storeId === 'amazon' ? fields.find((field) => field.kind === 'color') : null;
+  const pickedColor = amazonColorField ? selection[amazonColorField.key] : '';
+  const capturedColor = amazonColorField && capture && typeof capture === 'object'
+    ? defaultSelectionFromCapture(capture as Record<string, unknown>, groups)[amazonColorField.key] : '';
+  const canUseOriginalGallery = !pickedColor || pickedColor === capturedColor;
+  const exactImage = (product.storeId === 'amazon' ? exactPageQuote?.image : pageQuote?.image) || quote.image;
   const imageUri = readOnlySelection
     ? exactImage || product.images[0] || ''
-    : preferredVariantImage(exactImage, fields, selection) || product.images[0] || '';
-  const imageFallbacks = product.images.map(uri => mediaUrl(uri));
+    : preferredVariantImage(exactImage, fields, selection) || (canUseOriginalGallery ? product.images[0] : '') || '';
+  const imageFallbacks = canUseOriginalGallery ? product.images.map(uri => mediaUrl(uri)) : [];
 
   const discountMeta = useMemo(() => {
     if (!captureRecord) return null;
@@ -1130,7 +1149,21 @@ export function AddToCartSheet({
     const ctl = new AbortController();
     retryController.current?.abort();
     retryController.current = ctl;
-    void loadQuote(retryUrl === effectiveUrl ? effectiveCapture : undefined, { ...selection }, ctl.signal, retryUrl, true);
+    const picked = { ...selection };
+    if (product.storeId === 'amazon' && local && readVariant) {
+      setQuoting(true);
+      // A retry must be able to recover from a partially rendered Amazon page,
+      // not just resubmit the same rejected payload.
+      void (async () => {
+        let fresh: unknown;
+        try { fresh = await withExactQuoteDeadline(() => readVariant(retryUrl), ctl.signal); }
+        catch { /* Resolve using the available evidence. */ }
+        if (ctl.signal.aborted || !alive.current) return;
+        await loadQuote(fresh || (retryUrl === effectiveUrl ? effectiveCapture : undefined), picked, ctl.signal, retryUrl, true);
+      })();
+      return;
+    }
+    void loadQuote(retryUrl === effectiveUrl ? effectiveCapture : undefined, picked, ctl.signal, retryUrl, true);
   };
   const soldOut = quote.availability === 'OUT_OF_STOCK' || chosenUnavailable;
   const priceTicketAmount = soldOut || (quantity > 1 && !totalLine) ? '' : displayedTndLine;
@@ -1437,6 +1470,7 @@ export function AddToCartSheet({
               <VariantOptionChips
                 key={field.key}
                 kind="color"
+                photoCards={product.storeId === 'amazon'}
                 label={field.label}
                 value={selection[field.key] ?? ''}
                 options={field.values}
