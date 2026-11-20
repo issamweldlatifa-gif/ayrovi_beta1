@@ -863,6 +863,10 @@ export function validateAyWebsCapturedPage(
   if (readerNote) notes.push(...readerNote);
   const storeForPrice = detectAyWebsStore(requestUrl);
   const isAmazon = storeForPrice?.id === 'amazon';
+  // A visible conflicting mobile widget or a buybox belonging to another ASIN
+  // is not rescued by stale metadata from the product shell.
+  if (isAmazon && clientDiagnostics.includes('price:buybox_asin_mismatch')) return rejected('BUYBOX_ASIN_MISMATCH', '', notes);
+  if (isAmazon && clientDiagnostics.includes('price:mobile_offer_conflict')) return rejected('AMBIGUOUS_PRICE', '', notes);
   const candidates: Array<{ text: string; source: AyWebsCaptureSource; value: number; rank: number; index: number; hints: string[] }> = [];
   const rawCandidates = Array.isArray(payload.priceCandidates) ? payload.priceCandidates.slice(0, AYWEBS_CAPTURE_LIMITS.maxPriceCandidates) : [];
   rawCandidates.forEach((candidate: AyWebsCapturedPriceCandidate, index: number) => {

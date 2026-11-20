@@ -722,7 +722,7 @@ describe('AYWEBs 2.1 — le script est servi par le serveur (pas de version d’
     const amazon = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=amazon');
     expect(amazon.status).toBe(200);
     expect(amazon.headers['x-aywebs-capture-reader']).toBe('amazon');
-    expect(amazon.headers['x-aywebs-capture-reader-version']).toBe('6');
+    expect(amazon.headers['x-aywebs-capture-reader-version']).toBe('7');
     expect(amazon.text).toBe(buildAyWebsCaptureScript('amazon'));
     expect(amazon.text).not.toBe(AYWEBS_CAPTURE_SCRIPT);
     const zalando = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=zalando');
@@ -739,7 +739,7 @@ describe('AYWEBs 2.1 — le script est servi par le serveur (pas de version d’
     const sephora = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=sephora');
     expect(sephora.status).toBe(200);
     expect(sephora.headers['x-aywebs-capture-reader']).toBe('sephora');
-    expect(sephora.headers['x-aywebs-capture-reader-version']).toBe('1');
+    expect(sephora.headers['x-aywebs-capture-reader-version']).toBe('2');
     expect(sephora.text).toContain('"priceMode":"structured_only"');
 
     const primark = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=primark');
@@ -750,10 +750,10 @@ describe('AYWEBs 2.1 — le script est servi par le serveur (pas de version d’
     /* Enveloppe unique (12/11/2026) : toute boutique capturable a son lecteur. */
     const walmart = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=walmart');
     expect(walmart.headers['x-aywebs-capture-reader']).toBe('walmart');
-    expect(walmart.headers['x-aywebs-capture-integration']).toBe('generic');
+    expect(walmart.headers['x-aywebs-capture-integration']).toBe('dedicated');
     expect(walmart.headers['x-aywebs-capture-contract']).toBe('1');
     expect(walmart.text).toBe(buildAyWebsCaptureScript('walmart'));
     expect(amazon.headers['x-aywebs-capture-integration']).toBe('dedicated');
-    expect(sephora.headers['x-aywebs-capture-integration']).toBe('shared_core');
+    expect(sephora.headers['x-aywebs-capture-integration']).toBe('dedicated');
   });
 });

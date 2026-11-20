@@ -38,7 +38,7 @@ describe('capture readers : versions et bundles distincts', () => {
       ['primark', 'https://www.primark.com/en-gb/product/item'],
     ]) {
       const result = run(buildAyWebsCaptureScript(id), url, html);
-      expect(result.reader).toEqual({ id, version: 1 });
+      expect(result.reader).toEqual({ id, version: 2 });
       expect(result.priceCandidates).toEqual([]);
       expect(result.diagnostics).toContain('price:structured_only_no_candidate');
     }
@@ -68,8 +68,7 @@ describe('capture readers : versions et bundles distincts', () => {
   it('profile mismatch sur un autre domaine ne s’applique pas', () => {
     const html = '<!doctype html><html><head><title>Product</title></head><body><h1>Item</h1><div class="product-price">$19.99</div></body></html>';
     const result = run(buildAyWebsCaptureScript('sephora'), 'https://example.test/product', html);
-    expect(result.reader).toBeNull();
-    expect(result.priceCandidates).toContainEqual(expect.objectContaining({ text: '$19.99', source: 'dom' }));
+    expect(result).toBeNull();
   });
 
   it('script sans store_id reste compatible avec les anciennes versions', () => {

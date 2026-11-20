@@ -13,9 +13,9 @@ export const AMAZON_OFFER_SOURCE = String.raw`function () {
         }
     }
     // Scope price and ASIN evidence to the merchant’s product shell.
-    var AMAZON_STRICT = (hasSelector('#dp-container') || hasSelector('#dp') || hasSelector('#ppd') || hasSelector('#centerCol')
+    var AMAZON_STRICT = (hasSelector('#dp-container') || hasSelector('#mobile_dp_container') || hasSelector('#dp') || hasSelector('#ppd') || hasSelector('#centerCol')
         || hasSelector('#buybox') || hasSelector('#desktop_buybox') || hasSelector('#mobile_buybox') || hasSelector('#apex_desktop') || hasSelector('#apex_mobile')
-        || hasSelector('#corePriceDisplay_desktop_feature_div') || hasSelector('#corePrice_desktop')
+        || hasSelector('#corePriceDisplay_desktop_feature_div') || hasSelector('#corePriceDisplay_mobile_feature_div') || hasSelector('#corePrice_desktop')
         || hasSelector('#corePrice_feature_div') || hasSelector('#corePrice_mobile_feature_div'));
     var AMAZON_ASIN = '';
     if (AMAZON_STRICT) {
@@ -741,11 +741,16 @@ export const AMAZON_OFFER_SOURCE = String.raw`function () {
         catch (e) {
             return false;
         }
-        for (var i = 0; i < fields.length && i < 4; i++) {
+        for (var i = 0; i < fields.length && i < 8; i++) {
+            if (!amazonInsideProductRoot(fields[i]) || amazonBlocked(fields[i].parentElement)) continue;
             var inBuybox = false;
             for (var n = fields[i]; n && n.nodeType === 1; n = n.parentNode) {
                 var nodeId = String(n.id || '');
-                if (String(n.tagName || '').toUpperCase() === 'FORM' || /^(buybox|desktop_buybox|apex_desktop|corePrice_feature_div|corePriceDisplay_desktop_feature_div|addToCart)/.test(nodeId)) {
+                var tag = String(n.tagName || '').toUpperCase();
+                var formAction = tag === 'FORM' ? String(n.getAttribute('action') || '') : '';
+                if (/^(?:buybox|desktop_buybox|mobile_buybox|apex_desktop|apex_mobile|corePrice_feature_div|addToCart|add-to-cart)/i.test(nodeId)
+                    || (tag === 'FORM' && (/\/(?:cart|handle-buy-box)(?:[/?]|$)/i.test(formAction)
+                        || n.querySelector('#add-to-cart-button, #buy-now-button, [name="submit.add-to-cart"]')))) {
                     inBuybox = true;
                     break;
                 }
@@ -899,6 +904,30 @@ export const AMAZON_OFFER_SOURCE = String.raw`function () {
             node = node.parentNode;
         }
         return 'dom';
+    }
+    function amazonPriceEvidenceKey(value) {
+        var compact = value.replace(/[\s\u00a0\u202f]+/g, '');
+        // Mobile labels and visible fragments can place the same symbol on
+        // opposite sides and use a different decimal separator.
+        var decimal = compact.match(/^(\D*)(\d+)[.,](\d{2})(\D*)$/);
+        return decimal ? (decimal[1] + decimal[4]).toUpperCase() + ':' + decimal[2] + '.' + decimal[3] : compact;
+    }
+    // Some FR mobile layouts have no separate apex label: the price widget
+    // publishes a complete .a-offscreen label and separate visible fragments.
+    function amazonMobilePricePair(element) {
+        if (!AMAZON_ASIN || !amazonInsideProductRoot(element) || !element.querySelector || !element.closest ||
+            !element.closest('#corePrice_mobile_feature_div, #corePriceDisplay_mobile_feature_div, #apex_mobile, #mobile_buybox')) return null;
+        var off = element.querySelector('.a-offscreen');
+        var wholeNode = element.querySelector('.a-price-whole');
+        var fractionNode = element.querySelector('.a-price-fraction');
+        var symbolNode = element.querySelector('.a-price-symbol');
+        if (!off || !wholeNode || !fractionNode || !symbolNode) return null;
+        var label = amazonAccessibilityAmount(text(off.textContent));
+        var whole = text(wholeNode.textContent).replace(/[.,]$/, '').replace(/\s+/g, '');
+        var fraction = text(fractionNode.textContent);
+        var symbol = text(symbolNode.textContent);
+        if (!label || !/^\d{1,6}$/.test(whole) || !/^\d{2}$/.test(fraction) || !/^[€$£]$/.test(symbol)) return null;
+        return { label: label, visible: symbol + whole + '.' + fraction };
     }
     /** Prix d'un élément Amazon : «.a-offscreen» s'il est rempli, sinon reconstruction
         à partir des spans (le cas MESURÉ : «.a-offscreen» vide dans le bloc). */
@@ -1098,16 +1127,14 @@ export const AMAZON_OFFER_SOURCE = String.raw`function () {
             '#outOfStock'
         ];
         for (var i = 0; i < selectors.length; i++) {
-            var el = null;
-            try {
-                el = document.querySelector(selectors[i]);
+            var nodes = [];
+            try { nodes = document.querySelectorAll(selectors[i]); } catch (e) { continue; }
+            for (var j = 0; j < nodes.length && j < 4; j++) {
+                var el = nodes[j];
+                if (amazonBlocked(el) || !amazonInsideProductRoot(el)) continue;
+                var value = text(el.textContent);
+                if (value && value.length <= LIMITS.text) return value;
             }
-            catch (e) {
-                continue;
-            }
-            var value = text(el && el.textContent);
-            if (value && value.length <= LIMITS.text)
-                return value;
         }
         return '';
     }
@@ -1448,17 +1475,20 @@ export const AMAZON_OFFER_SOURCE = String.raw`function () {
                         continue;
                     }
                     amazonNodes.push(el);
-                    amazonReadings.push(value);
-                    amazonSources.push(amazonReadingSource(el));
+                    var mobilePair = elSource === 'dom' && amazonSources.indexOf('a11y_label') < 0
+                        ? amazonMobilePricePair(el) : null;
+                    amazonReadings.push(mobilePair ? mobilePair.visible : value);
+                    amazonSources.push(elSource);
+                    if (mobilePair && amazonReadings.length < 6) {
+                        if (amazonPriceEvidenceKey(mobilePair.visible) !== amazonPriceEvidenceKey(mobilePair.label)) diag('price:mobile_offer_conflict');
+                        amazonReadings.push(mobilePair.label);
+                        amazonSources.push('a11y_label');
+                    }
                 }
             }
             var amazonDistinct = {};
             for (var d = 0; d < amazonReadings.length; d++) {
-                var keyText = amazonReadings[d].replace(/[\s\u00a0\u202f]+/g, '');
-                // The same mobile price can use comma in the label and dot in reconstructed spans.
-                // Normalize a decimal separator only, never collapse a range or change currency.
-                var decimalMatch = keyText.match(/^(\D*)(\d+)[.,](\d{2})(\D*)$/);
-                if (decimalMatch) keyText = (decimalMatch[1] + decimalMatch[4]).toUpperCase() + ':' + decimalMatch[2] + '.' + decimalMatch[3];
+                var keyText = amazonPriceEvidenceKey(amazonReadings[d]);
                 amazonDistinct[keyText] = true;
             }
             var amazonDistinctCount = 0;
@@ -1930,7 +1960,7 @@ export const AMAZON_OFFER_SOURCE = String.raw`function () {
           if (!slot.price && !slot.conflict) {
             slot.price = info.price;
             if (info.source) slot.source = info.source;
-          } else if (slot.price && slot.price !== info.price) {
+          } else if (slot.price && amazonPriceEvidenceKey(slot.price) !== amazonPriceEvidenceKey(info.price)) {
             slot.price = null;
             slot.conflict = true;
           }
@@ -1942,17 +1972,20 @@ export const AMAZON_OFFER_SOURCE = String.raw`function () {
       };
       var joinedStockText = out.availabilityText || '';
       var activeAvail = null;
-      if (/currently unavailable|out of stock|temporarily out of stock|actuellement indisponible|derzeit nicht verfügbar|nicht auf lager|non disponibile|sin stock|agotado/i.test(joinedStockText)) {
+      var activeStock = null;
+      if (/currently unavailable|out of stock|temporarily out of stock|actuellement indisponible|rupture de stock|[ée]puis[ée]|derzeit nicht verfügbar|nicht auf lager|non disponibile|sin stock|agotado/i.test(joinedStockText)) {
         activeAvail = false;
-      } else if (out.addToCartText || /\bin stock\b|en stock|auf lager|disponibilité immédiate|disponibilità immediata/i.test(joinedStockText)) {
-        activeAvail = true;
+      } else {
+        var limitedStock = /(?:plus que|only|nur noch)\s+(\d{1,2})\s+(?:exemplaires?\b|left\b|st[üu]ck\b)/i.exec(joinedStockText);
+        if (limitedStock && Number(limitedStock[1]) > 0) activeStock = Number(limitedStock[1]);
+        if (activeStock !== null || out.addToCartText || /\bin stock\b|en stock|auf lager|disponibilité immédiate|disponibilità immediata/i.test(joinedStockText)) activeAvail = true;
       }
       if (activeAsin && (activeBuyboxPrice || activeAvail !== null)) {
         recordAsinFact(activeAsin, {
           price: activeBuyboxPrice,
           priceFrom: false,
           available: activeAvail,
-          stock: null,
+          stock: activeStock,
           image: (out.images && out.images[0]) || null,
           source: 'dom'
         });

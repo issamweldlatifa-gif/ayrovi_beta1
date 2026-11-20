@@ -9,12 +9,12 @@ export function buildProductOfferCapture(
   reader: AyWebsCaptureReaderDefinition,
   domains: readonly string[],
   source: string,
-  { strictOfferIdentity = false }: { strictOfferIdentity?: boolean } = {},
+  { strictOfferIdentity = false, runtimeProfile = false }: { strictOfferIdentity?: boolean; runtimeProfile?: boolean } = {},
 ): string {
-  const profile = JSON.stringify({ storeId: reader.storeId, version: reader.version, priceMode: reader.priceMode });
+  const profile = runtimeProfile ? 'hostOfferProfile' : JSON.stringify({ storeId: reader.storeId, version: reader.version, priceMode: reader.priceMode });
   return String.raw`(function () {
     var READER_PROFILE = ${profile};
-    var domains = ${JSON.stringify(domains)};
+    var domains = ${runtimeProfile ? 'hostOfferProfile.domains' : JSON.stringify(domains)};
     var host = String(typeof location !== 'undefined' && location.hostname || '').toLowerCase().replace(/^(?:www\d*|m\d*|mobile|wap|touch|smile)\./, '');
     var matched = false;
     for (var di = 0; di < domains.length; di++) {

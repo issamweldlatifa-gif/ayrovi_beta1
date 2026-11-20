@@ -24,16 +24,10 @@ export function ayWebsCaptureReader(storeId: unknown): AyWebsCaptureReaderDefini
   return AYWEBS_CAPTURE_READERS[id] ?? null;
 }
 
-/** Version du profil générique (boutique enregistrée sans lecteur mesuré). */
-export const AYWEBS_GENERIC_CAPTURE_READER_VERSION = 1;
+/** Version of the shared product-offer engine for catalogue storefronts. */
+export const AYWEBS_CATALOGUE_OFFER_READER_VERSION = 2;
 
-/**
- * Lecteur EFFECTIF d'une boutique — point d'entrée unique du service de script.
- * Lecteur dédié s'il existe ; sinon, pour toute boutique enregistrée, activée
- * et capturable, un profil `generic` (cœur partagé en mode `standard` : même
- * comportement qu'avant, mais identifié, versionné et limité à ses domaines).
- * `null` pour une boutique inconnue / désactivée : le bundle historique sert.
- */
+/** All registered, capturable storefronts get a domain-bound reader. */
 export function resolveAyWebsCaptureReader(storeId: unknown): AyWebsCaptureReaderDefinition | null {
   const dedicated = ayWebsCaptureReader(storeId);
   if (dedicated) return dedicated;
@@ -41,10 +35,10 @@ export function resolveAyWebsCaptureReader(storeId: unknown): AyWebsCaptureReade
   if (!store || !store.enabled || !store.captureSupported || !store.domains.length) return null;
   return {
     storeId: store.id,
-    version: AYWEBS_GENERIC_CAPTURE_READER_VERSION,
+    version: AYWEBS_CATALOGUE_OFFER_READER_VERSION,
     priceMode: 'standard',
-    integration: 'generic',
-    note: 'Registered store without measured fixtures: shared core, standard heuristics, store-scoped profile.',
+    integration: 'dedicated',
+    note: 'Domain-bound product-offer engine; reads published product and platform evidence.',
   };
 }
 

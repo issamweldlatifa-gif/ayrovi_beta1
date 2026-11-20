@@ -3,7 +3,7 @@
  *
  *  1. compteurs horaires DURABLES et alerte « < 80 % sur 24 h » (échantillon minimal) ;
  *  2. coupe-circuit `paused` : même effet que AYWEBS_<BOUTIQUE>_CAPTURE_ENABLED=false ;
- *  3. retour arrière `core` : la boutique reçoit le cœur partagé complet ;
+ *  3. `core` ne restaure pas les collecteurs retirés ;
  *  4. chaque capture jugée par le résolveur est comptée pour SA boutique ;
  *  5. endpoints CRM (santé, contrôle, audit) derrière la permission d'approbation.
  */
@@ -119,25 +119,24 @@ describe('coupe-circuit et retour arrière', () => {
     app.use('/api/v1/aywebs', createAyWebsRouter(db, {} as never));
     setAyWebsCaptureControl(db, { storeId: 'amazon', mode: 'core', note: 'old override', actorId: 'adm_1' });
     const response = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=amazon&flow=catalogue');
-    expect(response.headers['x-aywebs-capture-reader-version']).toBe('6');
+    expect(response.headers['x-aywebs-capture-reader-version']).toBe('7');
     expect(response.headers['x-aywebs-capture-bundle']).toBe('dedicated:amazon');
     expect(response.text).toBe(describeAyWebsCaptureScript('amazon').text);
     expect(response.text).not.toContain('asinToPrice');
   });
 
-  it('« core » : le script servi devient le cœur partagé complet (en-têtes compris)', async () => {
+  it('« core » : le lecteur Sephora retiré reste indisponible', async () => {
     const db = fresh();
     const app = express();
     app.use('/api/v1/aywebs', createAyWebsRouter(db, {} as never));
-    const before = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=shein');
-    expect(before.headers['x-aywebs-capture-bundle']).toBe('shein');
+    const before = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=sephora');
+    expect(before.headers['x-aywebs-capture-bundle']).toBe('dedicated:sephora');
     expect(before.headers['x-aywebs-capture-control']).toBe('auto');
-    setAyWebsCaptureControl(db, { storeId: 'shein', mode: 'core', note: 'lot shein suspect', actorId: 'adm_1' });
-    const after = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=shein');
-    expect(after.headers['x-aywebs-capture-bundle']).toBe('legacy');
+    setAyWebsCaptureControl(db, { storeId: 'sephora', mode: 'core', note: 'lot sephora suspect', actorId: 'adm_1' });
+    const after = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=sephora');
+    expect(after.headers['x-aywebs-capture-bundle']).toBe('dedicated:sephora');
     expect(after.headers['x-aywebs-capture-control']).toBe('core');
-    expect(after.text).toBe(describeAyWebsCaptureScript(null).text);
-    expect(after.text).toBe(AYWEBS_CAPTURE_SCRIPT);
+    expect(after.text).toBe(before.text);
     const other = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=temu');
     expect(other.headers['x-aywebs-capture-bundle']).toBe('temu');
   });

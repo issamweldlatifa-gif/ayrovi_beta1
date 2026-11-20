@@ -1,5 +1,5 @@
 {
-  "served": "kernel",
+  "served": "dedicated:etsy",
   "detectedStore": "etsy",
   "ok": true,
   "rejection": null,

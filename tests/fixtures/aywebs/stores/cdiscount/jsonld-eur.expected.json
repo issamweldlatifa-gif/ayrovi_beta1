@@ -1,5 +1,5 @@
 {
-  "served": "kernel",
+  "served": "dedicated:cdiscount",
   "detectedStore": "cdiscount",
   "ok": true,
   "rejection": null,

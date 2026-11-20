@@ -1,5 +1,5 @@
 {
-  "served": "kernel",
+  "served": "dedicated:h-m",
   "detectedStore": "h-m",
   "ok": true,
   "rejection": null,

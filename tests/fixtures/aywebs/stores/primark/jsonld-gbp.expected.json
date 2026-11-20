@@ -1,5 +1,5 @@
 {
-  "served": "kernel",
+  "served": "dedicated:primark",
   "detectedStore": "primark",
   "ok": true,
   "rejection": null,

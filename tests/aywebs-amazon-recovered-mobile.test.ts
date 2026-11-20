@@ -109,7 +109,7 @@ describe('shared product-offer engine on Amazon mobile pages', () => {
     const url = `https://m.amazon.com/dp/${asin}`;
     const direct = capture(product, url);
     const legacy = capture(product, url, buildAyWebsCaptureScript());
-    expect(legacy.contract).toMatchObject({ store: 'amazon', readerVersion: 6, matched: true });
+    expect(legacy.contract).toMatchObject({ store: 'amazon', readerVersion: 7, matched: true });
     expect({ ...legacy, capturedAt: null }).toEqual({ ...direct, capturedAt: null });
   });
 

@@ -26,8 +26,7 @@ export const AYWEBS_CAPTURE_CONTRACT_VERSION = 1;
  * Intégration propre à chaque boutique :
  *   • `dedicated`   — lot d’offres (`storeScripts/`), sources DOM propres au marchand ;
  *   • `shared_core` — cœur partagé (`captureScript.ts`) piloté par `priceMode` ;
- *   • `generic`     — boutique enregistrée sans lecteur mesuré : cœur partagé en
- *                     mode `standard`, mais profil/version/garde de domaine à elle.
+ *   • `generic`     — anciens messages de capture reçus de clients en cache.
  */
 export type AyWebsCaptureIntegration = 'dedicated' | 'shared_core' | 'generic';
 

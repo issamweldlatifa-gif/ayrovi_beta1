@@ -1,5 +1,5 @@
 {
-  "served": "kernel",
+  "served": "dedicated:asos",
   "detectedStore": "asos",
   "ok": true,
   "rejection": null,

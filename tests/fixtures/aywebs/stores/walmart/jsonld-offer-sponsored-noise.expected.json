@@ -1,5 +1,5 @@
 {
-  "served": "kernel",
+  "served": "dedicated:walmart",
   "detectedStore": "walmart",
   "ok": true,
   "rejection": null,

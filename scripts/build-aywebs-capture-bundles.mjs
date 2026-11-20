@@ -67,7 +67,7 @@ export async function loadAyWebsCaptureCore() {
       setup(build) {
         build.onResolve({ filter: /captureBundles\.generated$/ }, () => ({ path: 'generated', namespace: 'stub' }));
         build.onLoad({ filter: /.*/, namespace: 'stub' }, () => ({
-          contents: 'export const AYWEBS_CAPTURE_BUNDLES = {}; export const AYWEBS_CAPTURE_BUNDLE_SOURCE_SHA256 = "";',
+          contents: 'export const AYWEBS_CAPTURE_BUNDLES = {}; export const AYWEBS_CAPTURE_BUNDLE_SOURCE_SHA256 = ""; export const AYWEBS_OFFER_EVIDENCE = {};',
           loader: 'js',
         }));
       },
@@ -330,6 +330,30 @@ export function specializeAyWebsCaptureCore(core, falseFlags) {
   return code;
 }
 
+// The offer engine supplies the WebView envelope, output object, bounds,
+// common helpers and variant writers. Compile only the evidence-reading body
+// from the proven sources; no old reader invocation, JSON round-trip or fallback.
+function compileOfferEvidence(core, falseFlags) {
+  function without(begin, end, includeEnd = false) {
+    const start = core.indexOf(begin);
+    const stop = core.indexOf(end, start + begin.length);
+    if (start === -1 || stop === -1) throw new Error(`Offer evidence boundary not found: ${begin}`);
+    core = core.slice(0, start) + core.slice(stop + (includeEnd ? end.length : 0));
+  }
+  without('  var LIMITS =', '  var CURRENCY_HINT =');
+  without('  function cleanCaptureUrl', '  /* ── 1. JSON-LD');
+  without('  function pushVariantGroup', '  function isIndexValue');
+  without('  var DOM_OPTIONS = {}', ';', true);
+  without('    var matrixSeen = {}', ';', true);
+  without('    var pushMatrixEntry = function', '\n    };', true);
+  const tail = core.indexOf('  /* ── 9. Bornes finales');
+  if (tail === -1) throw new Error('Offer evidence output boundary not found');
+  const specialized = specializeAyWebsCaptureCore(core.slice(0, tail) + '})();', falseFlags);
+  const source = specialized.match(/^\(function\s*\(\)\s*\{([\s\S]*)\}\)\(\)$/);
+  if (!source) throw new Error('Offer evidence must compile to an ES5 function');
+  return `function () {${source[1]}}`;
+}
+
 export async function buildAyWebsCaptureBundles() {
   const core = await loadAyWebsCaptureCore();
   const bundles = {};
@@ -337,7 +361,9 @@ export async function buildAyWebsCaptureBundles() {
     const text = specializeAyWebsCaptureCore(core, flags);
     bundles[id] = { sha256: sha256(text), bytes: Buffer.byteLength(text), falseFlags: flags, text };
   }
-  return { sourceSha256: sha256(core), esbuild: esbuild.version, coreBytes: Buffer.byteLength(core), bundles };
+  return { sourceSha256: sha256(core), esbuild: esbuild.version, coreBytes: Buffer.byteLength(core), bundles, offerEvidence: {
+    kernel: compileOfferEvidence(core, AYWEBS_CAPTURE_BUNDLE_FLAGS.kernel),
+  } };
 }
 
 export function renderGeneratedModule(result) {
@@ -363,7 +389,9 @@ export function renderGeneratedModule(result) {
     lines.push(`    text: ${JSON.stringify(bundle.text)},`);
     lines.push('  },');
   }
-  lines.push('};', '');
+  lines.push('};', '', 'export const AYWEBS_OFFER_EVIDENCE = {');
+  for (const [id, source] of Object.entries(result.offerEvidence)) lines.push(`  ${id}: ${JSON.stringify(source)},`);
+  lines.push('} as const;', '');
   return lines.join('\n');
 }
 

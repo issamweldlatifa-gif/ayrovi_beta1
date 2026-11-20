@@ -1,0 +1,16 @@
+{
+  "served": "dedicated:newegg",
+  "detectedStore": "newegg",
+  "ok": true,
+  "rejection": null,
+  "price": 54.99,
+  "currency": "USD",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "USB-C dock",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 0,
+  "firstImage": null
+}

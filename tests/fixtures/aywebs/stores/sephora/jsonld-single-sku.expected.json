@@ -1,5 +1,5 @@
 {
-  "served": "kernel",
+  "served": "dedicated:sephora",
   "detectedStore": "sephora",
   "ok": true,
   "rejection": null,

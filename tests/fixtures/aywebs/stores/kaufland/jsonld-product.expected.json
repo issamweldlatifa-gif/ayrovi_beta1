@@ -1,0 +1,16 @@
+{
+  "served": "dedicated:kaufland",
+  "detectedStore": "kaufland",
+  "ok": true,
+  "rejection": null,
+  "price": 24.95,
+  "currency": "EUR",
+  "priceSource": "json_ld",
+  "corroborated": true,
+  "availability": "AVAILABLE",
+  "title": "Küchenwaage",
+  "variantGroups": [],
+  "skuCombinations": 0,
+  "images": 0,
+  "firstImage": null
+}

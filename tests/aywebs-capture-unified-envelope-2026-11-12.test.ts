@@ -3,8 +3,7 @@
  *
  * Chaque boutique enregistrée et capturable reçoit le même emballage
  * (profil, garde de domaine, tampon `contract`), avec son intégration propre :
- * script dédié (Amazon, Zalando), cœur partagé piloté par `priceMode`
- * (SHEIN, TEMU, AliExpress, Sephora, Primark) ou profil `generic` (les autres).
+ * moteur d’offres dédié, ou lot indépendant pour Temu/AliExpress.
  */
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
@@ -15,15 +14,17 @@ import {
   AYWEBS_CAPTURE_READERS,
   resolveAyWebsCaptureReader,
 } from '../src/aywebs/captureReaders/registry';
-import { AYWEBS_DEDICATED_CAPTURE_SCRIPTS } from '../src/aywebs/storeScripts';
+import { AYWEBS_DEDICATED_CAPTURE_SCRIPTS, usesMigratedOfferReader } from '../src/aywebs/storeScripts';
 import { captureReaderNote } from '../src/aywebs/webviewCapture';
 import { AYWEBS_STORES } from '../shared/aywebsStores';
 
 function run(script: string, url: string, html: string): Record<string, any> | null {
   const dom = new JSDOM(html, { url });
-  const evaluate = new Function('document', 'location', 'window', `return ${script}`);
-  const raw = evaluate(dom.window.document, dom.window.location, dom.window) as string | null;
-  return raw == null ? null : JSON.parse(raw);
+  try {
+    const evaluate = new Function('document', 'location', 'window', `return ${script}`);
+    const raw = evaluate(dom.window.document, dom.window.location, dom.window) as string | null;
+    return raw == null ? null : JSON.parse(raw);
+  } finally { dom.window.close(); }
 }
 
 const capturable = AYWEBS_STORES.filter((store) => store.enabled && store.captureSupported && store.domains.length);
@@ -42,7 +43,7 @@ describe('enveloppe unique : chaque boutique a son intégration', () => {
       expect(reader, store.id).not.toBeNull();
       expect(reader!.storeId).toBe(store.id);
       expect(reader!.version).toBeGreaterThan(0);
-      const expected = AYWEBS_CAPTURE_READERS[store.id]?.integration ?? 'generic';
+      const expected = AYWEBS_CAPTURE_READERS[store.id]?.integration ?? 'dedicated';
       expect(reader!.integration).toBe(expected);
       const script = buildAyWebsCaptureScript(store.id);
       expect(script).not.toBe(AYWEBS_CAPTURE_SCRIPT);
@@ -51,33 +52,59 @@ describe('enveloppe unique : chaque boutique a son intégration', () => {
     }
   });
 
-  it('scripts dédiés ⇔ définitions `dedicated` (aucun orphelin)', () => {
-    const dedicated = Object.values(AYWEBS_CAPTURE_READERS)
-      .filter((reader) => reader.integration === 'dedicated')
-      .map((reader) => reader.storeId)
-      .sort();
-    expect(Object.keys(AYWEBS_DEDICATED_CAPTURE_SCRIPTS).sort()).toEqual(dedicated);
+  it('un moteur dédié est effectivement servi pour chaque boutique migrée', () => {
+    const unchanged = ['amazon', 'zalando', 'temu', 'aliexpress', 'shein'];
+    for (const store of capturable) {
+      expect(usesMigratedOfferReader(store.id), store.id).toBe(!unchanged.includes(store.id));
+      if (!usesMigratedOfferReader(store.id)) continue;
+      const script = buildAyWebsCaptureScript(store.id);
+      expect(script).toContain('ambiguousMatrix'); // strict offer publication in Zalando's engine
+      expect(run(script, 'https://unrelated.example/product', productHtml('99.00'))).toBeNull();
+      const parsed = run(script, store.homeUrl, productHtml('19.99'))!;
+      expect(parsed.contract).toMatchObject({ store: store.id, matched: true, integration: 'dedicated' });
+      expect(run(AYWEBS_CAPTURE_SCRIPT, store.homeUrl, productHtml('19.99'))?.reader).toEqual(parsed.reader);
+    }
+    expect(Object.keys(AYWEBS_DEDICATED_CAPTURE_SCRIPTS).sort()).toEqual(['amazon', 'zalando']);
   });
 
-  it('inconnu / sans store_id : bundle historique inchangé', () => {
+  it('inconnu / sans store_id : répartiteur de compatibilité', () => {
     expect(resolveAyWebsCaptureReader('nope')).toBeNull();
     expect(buildAyWebsCaptureScript('nope')).toBe(AYWEBS_CAPTURE_SCRIPT);
     expect(buildAyWebsCaptureScript(null)).toBe(AYWEBS_CAPTURE_SCRIPT);
   });
 
-  it('boutique générique (Walmart) : profil standard, tampon contract, prix structuré lu', () => {
+  it('moteur d’offres (Walmart) : profil standard, tampon contract, prix structuré lu', () => {
     const out = run(buildAyWebsCaptureScript('walmart'), 'https://www.walmart.com/ip/item/123', productHtml('19.99'))!;
-    expect(out.reader).toEqual({ id: 'walmart', version: 1 });
+    expect(out.reader).toEqual({ id: 'walmart', version: 2 });
     expect(out.contract).toEqual({
-      v: AYWEBS_CAPTURE_CONTRACT_VERSION, store: 'walmart', readerVersion: 1, integration: 'generic', matched: true,
+      v: AYWEBS_CAPTURE_CONTRACT_VERSION, store: 'walmart', readerVersion: 2, integration: 'dedicated', matched: true,
     });
     expect(out.priceCandidates).toContainEqual(expect.objectContaining({ source: 'json_ld' }));
   });
 
-  it('intégration partagée (Sephora) : structured_only conservé + tampon', () => {
+  it('moteur d’offres (Sephora) : structured_only conservé + tampon', () => {
     const out = run(buildAyWebsCaptureScript('sephora'), 'https://www.sephora.com/product/item', productHtml('42.00'))!;
-    expect(out.reader).toEqual({ id: 'sephora', version: 1 });
-    expect(out.contract).toMatchObject({ store: 'sephora', integration: 'shared_core', matched: true });
+    expect(out.reader).toEqual({ id: 'sephora', version: 2 });
+    expect(out.contract).toMatchObject({ store: 'sephora', integration: 'dedicated', matched: true });
+  });
+
+  it('ASOS garde le prix et le stock de chaque taille sans extrapoler le prix courant', () => {
+    const url = 'https://www.asos.com/fr/test/robe/prd/204512345';
+    const group = {
+      '@context': 'https://schema.org', '@type': 'ProductGroup', name: 'Robe satin', productGroupID: '204512345',
+      hasVariant: [
+        { '@type': 'Product', sku: '204512346', size: '34', offers: { '@type': 'Offer', price: 35.99, priceCurrency: 'EUR', availability: 'https://schema.org/InStock' } },
+        { '@type': 'Product', sku: '204512347', size: '36', offers: { '@type': 'Offer', price: 39.99, priceCurrency: 'EUR', availability: 'https://schema.org/OutOfStock' } },
+      ],
+    };
+    const html = `<!doctype html><html lang="fr"><head><title>Robe satin</title>
+      <script type="application/ld+json">${JSON.stringify(group)}</script></head>
+      <body><main><h1>Robe satin</h1><div data-testid="current-price">35,99 €</div></main></body></html>`;
+    const out = run(buildAyWebsCaptureScript('asos'), url, html)!;
+    expect(out.variantMatrix).toEqual(expect.arrayContaining([
+      expect.objectContaining({ variantId: '204512346', price: '35.99 EUR', available: true }),
+      expect.objectContaining({ variantId: '204512347', price: '39.99 EUR', available: false }),
+    ]));
   });
 
   it('intégration dédiée (Zalando) : même enveloppe, tampon dedicated', () => {
@@ -95,9 +122,9 @@ describe('enveloppe unique : chaque boutique a son intégration', () => {
   });
 
   it('cœur partagé hors domaine : générique, profil nul, matched=false', () => {
-    const out = run(buildAyWebsCaptureScript('walmart'), 'https://example.test/product', productHtml('5.00'))!;
+    const out = run(buildAyWebsCaptureScript('temu'), 'https://example.test/product', productHtml('5.00'))!;
     expect(out.reader).toBeNull();
-    expect(out.contract).toMatchObject({ store: 'walmart', matched: false });
+    expect(out.contract).toMatchObject({ store: 'temu', matched: false });
   });
 
   it('sous-domaine mobile reconnu (m.asos.com)', () => {

@@ -25,6 +25,7 @@ import {
 } from '../scripts/build-aywebs-capture-bundles.mjs';
 import { AYWEBS_CAPTURE_BUNDLES, AYWEBS_CAPTURE_BUNDLE_SOURCE_SHA256 } from '../src/aywebs/captureBundles.generated';
 import { AYWEBS_CAPTURE_CORE, AYWEBS_CAPTURE_SCRIPT, buildAyWebsCaptureScript, describeAyWebsCaptureScript } from '../src/aywebs/captureScript';
+import { setAyWebsCaptureControl } from '../src/aywebs/captureControl';
 import { createAyWebsRouter } from '../src/aywebs/routes';
 import { QatafoDatabase } from '../src/db/database';
 
@@ -97,7 +98,6 @@ describe('rayon d’impact — une retouche d’une boutique ne touche pas les a
 describe('service — chaque boutique reçoit son lot, le reste ne bouge pas', () => {
   it.each([
     ['shein', 'shein'], ['temu', 'temu'], ['aliexpress', 'aliexpress'],
-    ['sephora', 'kernel'], ['primark', 'kernel'], ['walmart', 'kernel'], ['asos', 'kernel'],
   ])('%s → lot %s, dans l’enveloppe commune', (storeId, bundle) => {
     const served = describeAyWebsCaptureScript(storeId);
     expect(served.bundle).toBe(bundle);
@@ -118,13 +118,17 @@ describe('service — chaque boutique reçoit son lot, le reste ne bouge pas', (
   it('GET /capture/script.js annonce le lot et son empreinte', async () => {
     const app = express();
     app.use((req, _res, next) => { (req as any).requestId = 'bundle-headers'; next(); });
-    app.use('/api/v1/aywebs', createAyWebsRouter(new QatafoDatabase(':memory:'), {} as any));
+    const db = new QatafoDatabase(':memory:');
+    app.use('/api/v1/aywebs', createAyWebsRouter(db, {} as any));
     const sephora = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=sephora');
     expect(sephora.status).toBe(200);
-    expect(sephora.headers['x-aywebs-capture-bundle']).toBe('kernel');
+    expect(sephora.headers['x-aywebs-capture-bundle']).toBe('dedicated:sephora');
     expect(sephora.headers['x-aywebs-capture-hash']).toBe(sha(sephora.text).slice(0, 16));
     const shein = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=shein');
     expect(shein.headers['x-aywebs-capture-bundle']).toBe('shein');
+    setAyWebsCaptureControl(db, { storeId: 'sephora', mode: 'core' });
+    const forcedCore = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=sephora');
+    expect(forcedCore.text).toBe(sephora.text);
     const legacy = await request(app).get('/api/v1/aywebs/capture/script.js');
     expect(legacy.headers['x-aywebs-capture-bundle']).toBe('legacy');
     expect(legacy.text).toBe(AYWEBS_CAPTURE_SCRIPT);

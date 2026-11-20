@@ -213,6 +213,70 @@ it('Amazon.it : le lecteur servi par défaut lie XS au prix en euros et produit 
   } finally { vi.unstubAllEnvs(); }
 });
 
+// Synthetic Amazon.fr mobile layout matching the screenshot's color-picker shape.
+// The screenshot itself does not establish the actual price or stock.
+function amazonFrMobile({ label = '59,99 €', soldOut = false, purchaseAsin = 'B0GRAPHITE' } = {}) {
+  return AMAZON_PAGE('Graphite Black', '1')
+    .replace('lang="en"', 'lang="fr"').replaceAll('Casque Bluetooth', 'Sac à dos de test')
+    .replace('id="dp"', 'id="mobile_dp_container"')
+    .replace('corePriceDisplay_desktop_feature_div', 'corePriceDisplay_mobile_feature_div')
+    .replace(/<span id="apex-pricetopay-accessibility-label"[^>]*>[^<]*<\/span>/, '')
+    .replace('<span class="a-offscreen"> </span>', `<span class="a-offscreen">${label}</span>`)
+    .replace('>$</span>', '>€</span>').replace('>89<span', '>59<span')
+    .replace('<div id="availability">', '<div id="availability" hidden>Actuellement indisponible</div><div id="availability">')
+    .replace('In Stock', soldOut ? 'En rupture de stock' : 'Il ne reste plus que 2 exemplaires en stock')
+    .replace('Graphite Black', 'Noir').replace('Ruby Red', 'Black Denim')
+    .replace('$89.99', '€59.99').replace('$94.50', '67,50 €')
+    .replace('</div></body>', `<form id="addToCart"><input name="ASIN" value="${purchaseAsin}"><input id="add-to-cart-button" value="Ajouter au panier" ${soldOut ? 'disabled' : ''}></form></div></body>`);
+}
+
+it.each([false, true])('Amazon.fr mobile: active color quote and exact availability (sold out: %s)', async (soldOut) => {
+  const url = 'https://www.amazon.fr/dp/B0GRAPHITE';
+  const { server } = app();
+  const script = await request(server).get('/api/v1/aywebs/capture/script.js?store_id=amazon');
+  const dom = new JSDOM(amazonFrMobile({ soldOut }), { url });
+  let capture;
+  try { capture = JSON.parse(String(new Function('window', 'document', 'location', 'URL', `return ${script.text}`)(
+      dom.window, dom.window.document, dom.window.location, URL,
+    ))); } finally { dom.window.close(); }
+  expect(capture.priceCandidates).toEqual(expect.arrayContaining([
+    expect.objectContaining({ source: 'dom', text: '€59.99' }),
+    expect.objectContaining({ source: 'a11y_label', text: '59,99 €' }),
+  ]));
+  const current = capture.variantMatrix.find((entry: any) => entry.variantId === 'asin:B0GRAPHITE');
+  expect(current).toMatchObject({ price: '59,99 €', available: !soldOut, stock: soldOut ? null : 2 });
+  expect(capture.variantMatrix.find((entry: any) => entry.variantId === 'asin:B0RED00001')).toMatchObject({ stock: null });
+  const { name } = capture.variantGroups[0];
+  const response = await request(server).post('/api/v1/aywebs/product/resolve')
+    .set({ 'x-session-id': `aywebs-amazon-fr-mobile-${soldOut}` })
+    .send({ url, store_id: 'amazon', capture, variant: { [name]: 'Noir' } });
+  expect(response.status, JSON.stringify(response.body).slice(0, 650)).toBe(201);
+  expect(response.body.data.price).toBe(59.99);
+  expect(response.body.data.currency).toBe('EUR');
+  if (soldOut) expect(response.body.data.availability.state).toBe('OUT_OF_STOCK');
+  else {
+    expect(response.body.data.zayrovi_pricing.breakdown.converted_source_price).toBeCloseTo(59.99 * 4 * 1.03, 2);
+    expect(response.body.quote_token).toBeTruthy();
+  }
+});
+
+it.each([
+  [{ label: '69,99 €' }, 'AMBIGUOUS_PRICE'],
+  [{ purchaseAsin: 'B0RED00001' }, 'BUYBOX_ASIN_MISMATCH'],
+] as const)('Amazon.fr refuses a conflicting label or purchase identity: %s', async (options, rejection) => {
+  const url = 'https://www.amazon.fr/dp/B0GRAPHITE';
+  const { server } = app();
+  const script = await request(server).get('/api/v1/aywebs/capture/script.js?store_id=amazon');
+  const html = amazonFrMobile(options).replace('</head>', '<meta property="product:price:amount" content="59.99"><meta property="product:price:currency" content="EUR"></head>');
+  const dom = new JSDOM(html, { url });
+  try {
+    const capture = JSON.parse(String(new Function('window', 'document', 'location', 'URL', `return ${script.text}`)(
+      dom.window, dom.window.document, dom.window.location, URL,
+    )));
+    expect(validateAyWebsCapturedPage(capture, url, { requireCorroboration: true }).rejection).toBe(rejection);
+  } finally { dom.window.close(); }
+});
+
 describe('quantité affichée par la page = quantité par défaut (resolve + ajout panier)', () => {
   it('capturedPageQuantity : entier 1…99 seulement', async () => {
     const { capturedPageQuantity } = await import('../src/aywebs/routes');

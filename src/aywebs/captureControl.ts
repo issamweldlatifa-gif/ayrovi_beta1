@@ -6,9 +6,9 @@ import { writeAyWebsAudit } from './events';
  *
  * Trois leviers, sans redéploiement ni publication d'application :
  *
- *  • `auto`   — comportement normal : script dédié, lot de la boutique ou noyau.
- *  • `core`   — RETOUR ARRIÈRE : les boutiques concernées reçoivent le cœur de
- *               compatibilité. Amazon reste sur le moteur d’offres partagé.
+ *  • `auto`   — comportement normal : moteur d’offres ou lot de la boutique.
+ *  • `core`   — compatibilité pour les lecteurs non migrés. Les collecteurs
+ *               retirés des boutiques sur le moteur d’offres restent retirés.
  *               Effet sous 5 minutes (cache du script côté application).
  *  • `paused` — COUPE-CIRCUIT : la capture de cette boutique est arrêtée, la
  *               navigation reste ouverte. Même sémantique que le drapeau

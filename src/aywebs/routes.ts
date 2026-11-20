@@ -594,7 +594,7 @@ export function createAyWebsRouter(db: ZayroviDatabase, scraper: SmartLinkScrape
    */
   router.get('/capture/script.js', (req, res) => {
     const storeId = String(req.query.store_id || '').trim().toLowerCase().slice(0, 40);
-    /* `core` ne peut pas restaurer le collecteur Amazon retiré. */
+    /* Un réglage `core` ne réactive pas les collecteurs déjà remplacés. */
     const control = ayWebsCaptureControlMode(db, storeId || null);
     const served = describeAyWebsCaptureScript(storeId || null, { preferCore: control === 'core' });
     const script = served.text;

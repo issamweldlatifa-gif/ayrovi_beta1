@@ -1,5 +1,5 @@
 {
-  "served": "kernel",
+  "served": "dedicated:otto",
   "detectedStore": "otto",
   "ok": false,
   "rejection": "PRICE_NOT_CORROBORATED",

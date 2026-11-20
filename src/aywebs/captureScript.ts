@@ -28,9 +28,8 @@
  * `GET …/capture/script.js?store_id=<id>` → `buildAyWebsCaptureScript(id)` :
  *   1. lecteur effectif `resolveAyWebsCaptureReader` (captureReaders/registry) :
  *      version, `priceMode`, et INTÉGRATION propre à la boutique —
- *      `dedicated` (amazon, zalando : storeScripts/), `shared_core` (sephora,
- *      primark, shein, temu, aliexpress : profil injecté dans ce cœur) ou
- *      `generic` (les autres boutiques enregistrées : ce cœur, profil v1) ;
+ *      `dedicated` (moteur d’offres dans storeScripts/) ou `shared_core`
+ *      (lots indépendants préservés pour SHEIN, Temu et AliExpress) ;
  *   2. enveloppe commune `wrapAyWebsCaptureIntegration` (captureEnvelope.ts) :
  *      profil publié seulement sur un domaine de la boutique, global restauré,
  *      tampon `contract` ajouté à la sortie (diagnostic, jamais une preuve) ;
@@ -41,7 +40,7 @@
  */
 
 import { findAyWebsStore } from '../../shared/aywebsStores';
-import { AYWEBS_DEDICATED_CAPTURE_SCRIPTS } from './storeScripts';
+import { AYWEBS_DEDICATED_CAPTURE_SCRIPTS, buildMigratedOfferDispatch, buildMigratedOfferReader, usesMigratedOfferReader } from './storeScripts';
 import { resolveAyWebsCaptureReader } from './captureReaders/registry';
 import { wrapAyWebsCaptureIntegration } from './captureEnvelope';
 import { AYWEBS_CAPTURE_BUNDLES, type AyWebsCaptureBundleId } from './captureBundles.generated';
@@ -5963,7 +5962,7 @@ export const AYWEBS_CAPTURE_CORE = String.raw`(function () {
   } catch (e) { return '{}'; }
 })();`;
 
-/** Pre-store-ID clients still get the new Amazon reader based on the document host. */
+/** Pre-store-ID clients select the migrated offer readers by document host. */
 const amazonStore = findAyWebsStore('amazon')!;
 const amazonCapture = wrapAyWebsCaptureIntegration(
   resolveAyWebsCaptureReader('amazon')!, amazonStore.domains, AYWEBS_DEDICATED_CAPTURE_SCRIPTS.amazon,
@@ -5975,6 +5974,7 @@ export const AYWEBS_CAPTURE_SCRIPT = `(function () {
     var domain = domains[i];
     if (host === domain || host.slice(-(domain.length + 1)) === '.' + domain) return (${amazonCapture});
   }
+  ${buildMigratedOfferDispatch()}
   return (${AYWEBS_CAPTURE_CORE.trim().replace(/[\s;]+$/, '')});
 })();`;
 
@@ -6101,19 +6101,17 @@ const servedCache = new Map<string, AyWebsServedCaptureScript>();
  * lecteur effectif (`resolveAyWebsCaptureReader`) → intégration propre à la
  * boutique → enveloppe commune (`wrapAyWebsCaptureIntegration`).
  *
- * Intégration (12/11/2026) : script dédié (`dedicated`) OU LOT du cœur partagé
- * (`kernel` / `shein` / `temu` / `aliexpress`) — plus jamais le cœur complet à une
- * boutique enregistrée : une retouche SHEIN ne peut plus atteindre Sephora.
- * Sans store_id (ou boutique inconnue) : le bundle historique complet, pour les
- * anciennes versions de l'app.
+ * Intégration : moteur d’offres dédié ou lot protégé de SHEIN/Temu/AliExpress.
+ * Sans store_id : répartiteur de compatibilité par domaine ; les domaines
+ * externes gardent le lecteur générique historique.
  */
 export function describeAyWebsCaptureScript(
   storeId?: string | null,
   options?: { preferCore?: boolean },
 ): AyWebsServedCaptureScript {
   const requested = String(storeId ?? '').trim().toLowerCase();
-  // The retired Amazon core cannot be restored by a previously saved control.
-  const id = options?.preferCore && requested !== 'amazon' ? '' : requested;
+  // Retired collectors cannot be restored by a previously saved control.
+  const id = options?.preferCore && requested !== 'amazon' && !usesMigratedOfferReader(requested) ? '' : requested;
   const cached = servedCache.get(id);
   if (cached) return cached;
   const served = computeServedScript(id);
@@ -6132,7 +6130,9 @@ function computeServedScript(storeId: string): AyWebsServedCaptureScript {
   const store = reader ? findAyWebsStore(reader.storeId) : null;
   if (!reader || !store) return servedScript(AYWEBS_CAPTURE_SCRIPT, null, 'legacy');
   if (reader.integration === 'dedicated') {
-    const dedicated = AYWEBS_DEDICATED_CAPTURE_SCRIPTS[reader.storeId];
+    const dedicated = usesMigratedOfferReader(reader.storeId)
+      ? buildMigratedOfferReader(reader, store.domains)
+      : AYWEBS_DEDICATED_CAPTURE_SCRIPTS[reader.storeId];
     if (!dedicated) return servedScript(AYWEBS_CAPTURE_SCRIPT, null, 'legacy');
     return servedScript(wrapAyWebsCaptureIntegration(reader, store.domains, dedicated), reader, `dedicated:${reader.storeId}`);
   }
