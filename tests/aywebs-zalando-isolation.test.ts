@@ -1,7 +1,9 @@
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 import { buildAyWebsCaptureScript, AYWEBS_CAPTURE_SCRIPT } from '../src/aywebs/captureScript';
-import { ZALANDO_MOBILE_CAPTURE_SCRIPT } from '../src/aywebs/storeScripts/zalando';
+import { AYWEBS_DEDICATED_CAPTURE_SCRIPTS } from '../src/aywebs/storeScripts';
+
+const ZALANDO_MOBILE_CAPTURE_SCRIPT = AYWEBS_DEDICATED_CAPTURE_SCRIPTS.zalando;
 
 function run(url: string): unknown {
   const dom = new JSDOM('<html><head><title>Coat</title></head><body><h1>Coat</h1></body></html>', { url, runScripts: 'outside-only' });

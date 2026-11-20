@@ -187,7 +187,7 @@ export function createAyWebsAdminRouter(db: QatafoDatabase): Router {
         /** Ce que chaque boutique du registre reçoit réellement (lot + empreinte + principe). */
         scripts: AYWEBS_STORES.map((store) => {
           const control = health.controls.find((entry) => entry.storeId === store.id)?.mode ?? 'auto';
-          const served = describeAyWebsCaptureScript(control === 'core' ? null : store.id);
+          const served = describeAyWebsCaptureScript(store.id, { preferCore: control === 'core' });
           return { store_id: store.id, control, principle: AYWEBS_CAPTURE_PRINCIPLE, bundle: served.bundle, hash: served.sha256.slice(0, 16), bytes: served.text.length };
         }),
       },

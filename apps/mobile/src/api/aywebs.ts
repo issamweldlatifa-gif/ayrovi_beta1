@@ -391,10 +391,11 @@ export async function fetchAyWebsCaptureScript(
   const now = Date.now();
   if (cached && now - cached.fetchedAt < CAPTURE_SCRIPT_TTL_MS) return cached.text;
   const { storeId: _storeId, ...requestOptions } = options;
-  // Use a distinct HTTP cache key from builds that could receive selection-only readers.
+  // Keep HTTP caches of the retired v5 Amazon reader (including legacy clients) separate.
+  const flow = `flow=catalogue${!storeId || storeId === 'amazon' ? '&reader=offers' : ''}`;
   const path = storeId
-    ? `${AYWEBS_CAPTURE_SCRIPT_PATH}?store_id=${encodeURIComponent(storeId)}&flow=catalogue`
-    : `${AYWEBS_CAPTURE_SCRIPT_PATH}?flow=catalogue`;
+    ? `${AYWEBS_CAPTURE_SCRIPT_PATH}?store_id=${encodeURIComponent(storeId)}&${flow}`
+    : `${AYWEBS_CAPTURE_SCRIPT_PATH}?${flow}`;
   const text = await apiGetText(path, requestOptions);
   captureScriptCache.set(storeId, { text, fetchedAt: Date.now() });
   return text;

@@ -594,10 +594,9 @@ export function createAyWebsRouter(db: ZayroviDatabase, scraper: SmartLinkScrape
    */
   router.get('/capture/script.js', (req, res) => {
     const storeId = String(req.query.store_id || '').trim().toLowerCase().slice(0, 40);
-    /* Retour arrière du CRM (12/11/2026) : mode `core` ⇒ le cœur partagé
-       complet, celui d'avant le découpage par boutique. */
+    /* `core` ne peut pas restaurer le collecteur Amazon retiré. */
     const control = ayWebsCaptureControlMode(db, storeId || null);
-    const served = describeAyWebsCaptureScript(control === 'core' ? null : (storeId || null));
+    const served = describeAyWebsCaptureScript(storeId || null, { preferCore: control === 'core' });
     const script = served.text;
     const reader = served.reader;
     res.type('application/javascript');

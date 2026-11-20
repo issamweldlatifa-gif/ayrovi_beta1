@@ -1,13 +1,12 @@
-import { AMAZON_MOBILE_CAPTURE_SCRIPT } from './amazon';
-import { ZALANDO_MOBILE_CAPTURE_SCRIPT } from './zalando';
+import { findAyWebsStore } from '../../../shared/aywebsStores';
+import { amazonCaptureReader } from '../captureReaders/amazon';
+import { zalandoCaptureReader } from '../captureReaders/zalando';
+import { AMAZON_OFFER_SOURCE } from './amazonOfferSource';
+import { ZALANDO_OFFER_SOURCE } from './zalando';
+import { buildProductOfferCapture } from './productOfferCapture';
 
-/**
- * Scripts AUTONOMES des lecteurs `integration: 'dedicated'`. Une entrée ici ⇔
- * une définition `dedicated` dans `captureReaders/` (vérifié par les tests).
- * Chaque script est une expression ES5 qui rend la chaîne JSON de capture, ou
- * `null` hors de ses domaines.
- */
+/** Same product-offer engine, with the source and domains for each merchant. */
 export const AYWEBS_DEDICATED_CAPTURE_SCRIPTS: Readonly<Record<string, string>> = {
-  amazon: AMAZON_MOBILE_CAPTURE_SCRIPT,
-  zalando: ZALANDO_MOBILE_CAPTURE_SCRIPT,
+  amazon: buildProductOfferCapture(amazonCaptureReader, findAyWebsStore('amazon')!.domains, AMAZON_OFFER_SOURCE, { strictOfferIdentity: true }),
+  zalando: buildProductOfferCapture(zalandoCaptureReader, findAyWebsStore('zalando')!.domains, ZALANDO_OFFER_SOURCE),
 };

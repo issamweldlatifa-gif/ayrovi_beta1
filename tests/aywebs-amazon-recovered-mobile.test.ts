@@ -2,21 +2,23 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
-import { AMAZON_MOBILE_CAPTURE_SCRIPT } from '../src/aywebs/storeScripts/amazon';
+import { buildAyWebsCaptureScript } from '../src/aywebs/captureScript';
 import { AmazonAdapter } from '../src/aywebs/adapters/amazon';
 
-function capture(html: string, url: string): any {
+function capture(html: string, url: string, script = buildAyWebsCaptureScript('amazon'), payloads: unknown[] = []): any {
   const dom = new JSDOM(html, { url });
   try {
-    const run = new Function('document', 'location', 'URL', `return ${AMAZON_MOBILE_CAPTURE_SCRIPT}`);
-    return JSON.parse(run(dom.window.document, dom.window.location, URL));
+    Object.assign(dom.window, { __aywebsNetPayloads: payloads });
+    const run = new Function('document', 'location', 'URL', `return ${script}`);
+    const raw = run(dom.window.document, dom.window.location, URL);
+    return raw === null ? null : JSON.parse(raw);
   } finally { dom.window.close(); }
 }
 
 const asin = 'B0GYM3V9H5';
 const product = readFileSync(join(__dirname, 'fixtures', 'amazon-product-page.html'), 'utf8');
 
-describe('isolated Amazon mobile reader', () => {
+describe('shared product-offer engine on Amazon mobile pages', () => {
   it('reads the product price on mobile hostname through its Amazon adapter', () => {
     const url = `https://m.amazon.com/dp/${asin}`;
     const adapter = new AmazonAdapter({} as never);
@@ -103,9 +105,30 @@ describe('isolated Amazon mobile reader', () => {
     expect(row.variantUrl).toBeNull();
   });
 
+  it('serves the same Amazon result to clients without a store ID', () => {
+    const url = `https://m.amazon.com/dp/${asin}`;
+    const direct = capture(product, url);
+    const legacy = capture(product, url, buildAyWebsCaptureScript());
+    expect(legacy.contract).toMatchObject({ store: 'amazon', readerVersion: 6, matched: true });
+    expect({ ...legacy, capturedAt: null }).toEqual({ ...direct, capturedAt: null });
+  });
+
+  it('does not turn a legacy network price map into an available variant offer', () => {
+    const sibling = 'B0GYM3TFH2';
+    const html = `<div id="dp-container"><div id="corePrice_feature_div"><span class="a-price"><span class="a-offscreen">$109.00</span></span></div>
+      <script>var twister = {"variationDisplayLabels":{"size_name":"Size"},
+      "dimensionValuesDisplayData":{"${asin}":["XL"],"${sibling}":["XXL"]}};</script></div>`;
+    const result = capture(html, `https://www.amazon.com/dp/${asin}`, buildAyWebsCaptureScript('amazon'), [
+      { body: { asinToPrice: { [sibling]: '$0.01' } } },
+    ]);
+    expect(result.variantMatrix.find((value: any) => value.variantId === `asin:${sibling}`)).toMatchObject({
+      attributes: { size: 'XXL' }, price: null, available: null, stock: null,
+    });
+  });
+
   it('does not read another merchant or a deceptive hostname', () => {
     for (const url of ['https://www.zalando.fr/product', 'https://amazon.com.example.org/dp/B0GYM3V9H5']) {
-      expect(capture(product, url)).toEqual({});
+      expect(capture(product, url)).toBeNull();
     }
   });
 });

@@ -296,7 +296,7 @@ describe('سكريبت الكابتشر', () => {
     expect(second).toBe(SCRIPT);
     expect(spy).toHaveBeenCalledTimes(1); // الطلب الثاني من الذاكرة
     const [url] = spy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`${API_BASE_URL}/api/v1/aywebs/capture/script.js?flow=catalogue`);
+    expect(url).toBe(`${API_BASE_URL}/api/v1/aywebs/capture/script.js?flow=catalogue&reader=offers`);
   });
 
   it('يحافظ على cache مستقل لكل متجر ويرسل store_id للخادم', async () => {
@@ -309,7 +309,7 @@ describe('سكريبت الكابتشر', () => {
     expect(amazonCached).toBe(SCRIPT);
     expect(spy).toHaveBeenCalledTimes(2);
     const urls = spy.mock.calls.map((call) => String(call[0]));
-    expect(urls).toContain(`${API_BASE_URL}/api/v1/aywebs/capture/script.js?store_id=amazon&flow=catalogue`);
+    expect(urls).toContain(`${API_BASE_URL}/api/v1/aywebs/capture/script.js?store_id=amazon&flow=catalogue&reader=offers`);
     expect(urls).toContain(`${API_BASE_URL}/api/v1/aywebs/capture/script.js?store_id=zalando&flow=catalogue`);
   });
 

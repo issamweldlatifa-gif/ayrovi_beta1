@@ -1,60 +1,9 @@
-/**
- * Isolated Amazon mobile reader, derived from ecaff12 (26 October).
- * Non-Amazon branches removed; host guard and mobile fixes added.
- * This module owns the executable reader and does not import other stores.
+/** Amazon-specific inputs to the shared product-offer capture engine.
+ * No independent capture lifecycle, result format or pricing path.
  */
-export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
-    var LIMITS = { priceCandidates: 4, variantTexts: 30, selectedTexts: 5, images: 4, label: 60, text: 300, variantGroups: 4, variantValues: 20, matrixEntries: 120 };
-    var out = {
-        v: 1, url: '', canonicalUrl: null, title: null, brand: null,
-        priceCandidates: [], currencyText: null, availabilityText: null,
-        addToCartText: null, conditionText: null, selectedVariantTexts: [], variantTexts: [], variantGroups: [], variantMatrix: [],
-        images: [], capturedAt: null, pageLang: null, amazon: null, reader: { id: 'amazon', version: 5 }, diagnostics: []
-    };
-    /* Diagnostic BORNÉ : code court (ex. « price:buybox_asin_mismatch »), jamais de texte de page. */
-    function diag(code) { if (out.diagnostics.length < 16)
-        out.diagnostics.push(code); }
-    function text(value) {
-        if (value === null || value === undefined)
-            return '';
-        return String(value).replace(/[\u00a0\u202f]/g, ' ').replace(/\s+/g, ' ').trim();
-    }
-    function cut(value, max) { return text(value).slice(0, max); }
-    function pushUnique(list, value, max, size) {
-        var v = cut(value, size);
-        if (!v)
-            return;
-        for (var i = 0; i < list.length; i++) {
-            if (list[i].toLowerCase() === v.toLowerCase())
-                return;
-        }
-        if (list.length < max)
-            list.push(v);
-    }
+export const AMAZON_OFFER_SOURCE = String.raw`function () {
     var CURRENCY_HINT = /[$\u20ac\u00a3\u00a5\u20b9\u20ba]|z\u0142|\u0631\u064a\u0627\u0644|\u0631\.\u0633|\u062c\u0646\u064a\u0647|(?:^|[^A-Za-z])(EUR|USD|GBP|JPY|TND|DT|MAD|AED|SAR|CAD|AUD|SGD|BRL|MXN|PLN|TRY|TL|CHF|SEK|INR|EGP|Rs|kr)(?=$|[^A-Za-z])|\bd\.?t\b/i;
     var HAS_DIGIT = /[0-9]/;
-    /* ── LECTEUR AMAZON (07/10/2026) — pourquoi un lecteur à part ──────────────
-       Amazon ne publie AUCUN JSON-LD de prix (mesuré 04/10 et 06/10/2026) : son
-       prix est éclaté en spans («a-price-symbol» + «a-price-whole» +
-       «a-price-fraction») et le «.a-offscreen» DANS le bloc de prix est vide. La
-       page est par ailleurs constellée de prix de PUBLICITÉ (carrousels
-       sponsorisés, « Similar items ») : le lecteur générique y a déjà pris 6,99
-       au lieu du prix vendu (audit Phase 0).
-
-       Sur une page qui a la coquille produit d'Amazon, on lit donc UNIQUEMENT la
-       zone d'achat (buybox / core price), on exclut les contextes publicitaires,
-       et s'il reste plus d'un montant DISTINCT on ne publie RIEN : le serveur
-       relira. Ne rien publier est un résultat honnête ; choisir au hasard ne
-       l'est pas. */
-    var host = '';
-    try {
-        host = String(location.hostname || '').toLowerCase().replace(/^(?:www\d*|m\d*|mobile|wap|touch|smile)\./, '');
-    }
-    catch (e) {
-        host = '';
-    }
-    var IS_AMAZON = /^amazon\.[a-z]{2,3}(?:\.[a-z]{2})?$/.test(host);
-    if (!IS_AMAZON) return '{}';
     function hasSelector(selector) {
         try {
             return !!document.querySelector(selector);
@@ -63,10 +12,8 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
             return false;
         }
     }
-    /* La coquille produit : une vraie fiche /dp en a toujours au moins un marqueur.
-       Une page amazon.com qui n'en a aucun n'est pas une fiche produit (page de
-       recherche, page de test) : elle garde le lecteur générique. */
-    var AMAZON_STRICT = IS_AMAZON && (hasSelector('#dp-container') || hasSelector('#dp') || hasSelector('#ppd') || hasSelector('#centerCol')
+    // Scope price and ASIN evidence to the merchant’s product shell.
+    var AMAZON_STRICT = (hasSelector('#dp-container') || hasSelector('#dp') || hasSelector('#ppd') || hasSelector('#centerCol')
         || hasSelector('#buybox') || hasSelector('#desktop_buybox') || hasSelector('#mobile_buybox') || hasSelector('#apex_desktop') || hasSelector('#apex_mobile')
         || hasSelector('#corePriceDisplay_desktop_feature_div') || hasSelector('#corePrice_desktop')
         || hasSelector('#corePrice_feature_div') || hasSelector('#corePrice_mobile_feature_div'));
@@ -625,7 +572,7 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
                        prix de cette couleur. La feuille l'affiche comme « à partir de » et
                        ne le présente jamais comme le prix de l'article. */
                     if (cardPrice)
-                        addedOption.priceFrom = isFromPrice(item);
+                        addedOption.priceFrom = amazonFromPrice(item, item.textContent);
                     var cardStock = amazonCardStock(item);
                     if (cardStock) {
                         if (!addedOption.stock)
@@ -1164,22 +1111,6 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
         }
         return '';
     }
-    try {
-        out.url = cut(location && location.href, 600);
-    }
-    catch (e) {
-        out.url = '';
-    }
-    try {
-        out.capturedAt = new Date().toISOString();
-    }
-    catch (e) {
-        out.capturedAt = null;
-    }
-    try {
-        out.pageLang = cut(document.documentElement && document.documentElement.getAttribute('lang'), 20) || null;
-    }
-    catch (e) { }
     /* ── 1. JSON-LD : la seule donnée MACHINE publiée par le marchand ───────── */
     var jsonLd = null;
     var jsonProducts = [];
@@ -1646,10 +1577,10 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
                Son libellé dit « Add to Cart » — un texte qui, lu seul, prouverait un
                stock qui n'existe pas. L'état vient de «#availability» ou du JSON-LD,
                jamais d'un bouton qu'on ne peut pas utiliser. */
-            var amazonControls = document.querySelectorAll('#add-to-cart-button, input[name="submit.add-to-cart"], #buy-now-button, #buybox button, #buybox input[type="submit"], #desktop_buybox button, #desktop_buybox input[type="submit"], button, input[type="submit"], input[type="button"]');
+            var amazonControls = document.querySelectorAll('#add-to-cart-button, input[name="submit.add-to-cart"], #buy-now-button, #buybox button, #buybox input[type="submit"], #desktop_buybox button, #desktop_buybox input[type="submit"], #mobile_buybox button, #mobile_buybox input[type="submit"]');
             for (var i3 = 0; i3 < amazonControls.length && !out.addToCartText; i3++) {
                 var amazonControl = amazonControls[i3];
-                if (isInNavigation(amazonControl))
+                if (amazonBlocked(amazonControl) || !amazonInsideProductRoot(amazonControl))
                     continue;
                 var amazonLabel = text(amazonControl.value) || text(amazonControl.textContent) || text(amazonControl.getAttribute && amazonControl.getAttribute('aria-label'));
                 if (!amazonLabel || !ADD_TEXT.test(amazonLabel) || NOT_ADD_TEXT.test(amazonLabel))
@@ -1689,12 +1620,6 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
        mesuré le 06/10/2026, un sélecteur trop large rapportait « All Departments »
        et « Search Amazon » comme options de produit. Un libellé de barre de
        recherche n'est pas un choix de produit. */
-    var NOT_A_CHOICE = /^(select|choose|choisir|sélectionner|please|اختر|--)|search|department|store name|catégorie|category/i;
-    /* Actions et liens d'aide : ce ne sont PAS des valeurs de variante. Mesuré le
-       26/10/2026 sur une fiche Zalando : le lien « Taille & coupe » et le bouton
-       « Ajouter au panier » se retrouvaient dans la liste des TAILLES, et la
-       feuille du client affichait « Taille : Taille & coupe ». */
-    var ACTION_NOT_A_VALUE = /^(?:add|ajouter|acheter|buy|commander|checkout|panier|cart|sac|bag|wishlist|favoris|partager|share|guide|voir|see|learn|en\s+savoir\s+plus|taille\s*(?:&|et|\+)\s*coupe|size\s*(?:&|and|\+)\s*fit|size\s*guide|guide\s*des\s*tailles)\b/i;
     // Quantity is a purchase control, not a product variant. Preserve numeric sizes.
     function amazonQuantityOption(node) {
         var control = node;
@@ -1800,177 +1725,6 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
         }
         catch (e) { }
     }
-    /* ── 7 ter. GROUPES DE VARIANTES (hors Amazon) — 23/10/2026 ───────────────
-       Les boutiques du catalogue (vague 1) n'ont pas d'adaptateur : c'est cette
-       lecture qui remplit la FEUILLE DE CHOIX. On lit des GROUPES nommés — le nom
-       vient d'un <legend>, d'un <label for>, d'un aria-label ou du name du champ —
-       et les VALEURS telles qu'affichées, plus celle qui est CHOISIE.
-
-       Bornes et refus, dans l'esprit du reste du script :
-         • 4 groupes, 20 valeurs par groupe, 60 caractères par libellé ;
-         • un <select> à une seule option n'est pas un choix (quantité, tri) ;
-         • les valeurs d'index (« 0 », « 1 ») et les libellés de navigation sont
-           écartés : un indice n'est jamais un nom d'option ;
-         • aucun clic, aucune requête : uniquement ce que la page affiche. */
-    /* Noms de groupes qui ne sont JAMAIS des variantes de produit : tri, quantité,
-       filtre, langue… Les publier ferait envoyer une valeur que la page n'affiche
-       pas comme choix, et le serveur refuserait l'ajout (« sélection non prouvée »)
-       pour une raison qui n'a rien à voir avec le produit. */
-    var NOT_A_VARIANT_GROUP = /^(sort|sort by|sortby|trier|tri|order by|orderby|quantit\w*|quantity|qty|nombre|view|view by|affichage|filter|filtre|page|pages|lang|langue|language|devise|currency|pays|country|region|région|per page|items per page|afficher)\b/i;
-    /**
-     * Prix écrit SUR une valeur (« 88,00 € », « 12,95 € TVA incluse »).
-     *
-     * On ne compose rien : on prend le texte de l'élément de prix s'il existe,
-     * sinon la première séquence « nombre + devise » du libellé. Un texte sans
-     * devise ou sans chiffre n'est pas un prix.
-     */
-    function priceOnValue(node) {
-        if (!node)
-            return '';
-        try {
-            var priceNodes = node.querySelectorAll('[class*="price" i], [data-testid*="price" i], [itemprop="price"]');
-            for (var pn = 0; pn < priceNodes.length && pn < 3; pn++) {
-                var priceText = text(priceNodes[pn].getAttribute && priceNodes[pn].getAttribute('content')) || text(priceNodes[pn].textContent);
-                if (priceText && HAS_DIGIT.test(priceText) && CURRENCY_HINT.test(priceText))
-                    return cut(priceText, LIMITS.label);
-            }
-        }
-        catch (e) { }
-        var raw = text(node.getAttribute && (node.getAttribute('aria-label') || node.getAttribute('title'))) || text(node.textContent);
-        if (!raw || raw.length > 120)
-            return '';
-        var match = /([0-9][0-9\s.,\u00a0]*)\s*([$\u20ac\u00a3\u00a5]|\b(?:EUR|USD|GBP|TND|DT|MAD|AED|SAR)\b|\bd\.?t\b)/i.exec(raw);
-        return match ? cut(match[0], LIMITS.label) : '';
-    }
-    /* Le libellé d'une pastille contient souvent son prix (« 150 ml 12,95 € »).
-       On retire le prix du libellé quand on le publie à part — sinon la feuille
-       l'écrirait deux fois. */
-    function labelWithoutPrice(label, price) {
-        if (!label || !price)
-            return label;
-        if (label.indexOf(price) < 0)
-            return label;
-        return text(label.replace(price, ' '));
-    }
-    /* « à partir de 56,32 $ » : le prix n'est pas encore celui de la valeur. */
-    function isFromPrice(node) {
-        var raw = text(node && node.textContent);
-        return /\bfrom\b|\bà\s+partir\s+de\b|\bab\s|\bstart(?:ing)?\s+(?:at|from)\b/i.test(raw);
-    }
-    /* État publié pour UNE valeur : false seulement si la page la désactive. */
-    function valueAvailability(node) {
-        if (!node)
-            return null;
-        if (node.disabled === true)
-            return false;
-        var ariaDisabled = node.getAttribute && node.getAttribute('aria-disabled');
-        if (ariaDisabled === 'true')
-            return false;
-        var descriptor = String((node.className && String(node.className)) || '');
-        var dataState = (node.getAttribute && (node.getAttribute('data-state') || node.getAttribute('data-availability'))) || '';
-        if (/disabled|unavailable|out[-_ ]?of[-_ ]?stock|sold[-_ ]?out|rupture|epuise/i.test(descriptor + ' ' + String(dataState)))
-            return false;
-        return null;
-    }
-    /* Doublon EXACT (casse ignoree). Un test en sous-chaine (indexOf sur un
-       join) supprimait a tort une valeur reelle : « S » etait jugee duplicate de
-       « XS », donc une taille valide disparaissait de la feuille. */
-    function ciExactContains(list, candidate) {
-        var needle = String(candidate === null || candidate === undefined ? '' : candidate).toLowerCase();
-        for (var ci = 0; ci < list.length; ci++) {
-            if (String(list[ci]).toLowerCase() === needle)
-                return true;
-        }
-        return false;
-    }
-    function pushVariantGroup(name, values, selected, options) {
-        if (!name || !values.length)
-            return;
-        var label = cut(name, LIMITS.label);
-        if (!label || NOT_A_CHOICE.test(label) || NOT_A_VARIANT_GROUP.test(label))
-            return;
-        /* Options TELLES QUE LUES, avant tout crible : la fusion avec le JSON-LD se
-           fait après la boucle DOM et a besoin des valeurs que le DOM a nommées sans
-           rien publier (une pointure désactivée n'a ni prix ni état). */
-        DOM_OPTIONS[label.toLowerCase()] = (options || []).slice();
-        /* Le DOM nomme les valeurs et dit laquelle est cochée ; le JSON-LD apporte ce
-           que le DOM ne publie pas (prix / état par taille). La fusion se fait APRÈS
-           la boucle DOM (voir plus bas) : la couleur affichée, qui décide quelles
-           variantes prouvent quelque chose, n'est connue qu'à ce moment-là. */
-        /* On publie TOUJOURS les choix que la page presente (au moins 2 valeurs
-           distinctes), meme sans selection reperee : sans eux, la feuille mobile
-           n'offrait aucune taille/couleur (cas Zalando, choix en input checkbox dans
-           un label). L'integrite ne depend pas de cette presence : selected reste
-           vide quand rien n'est prouve, donc aucune combinaison courante n'est
-           affirmee a tort. Le serveur ne tire une preuve que des options/selected. */
-        for (var g = 0; g < out.variantGroups.length; g++) {
-            if (out.variantGroups[g].name.toLowerCase() === label.toLowerCase())
-                return;
-        }
-        if (out.variantGroups.length >= LIMITS.variantGroups)
-            return;
-        var publishedValues = values.slice(0, LIMITS.variantValues);
-        var publishedOptions = [];
-        if (options && options.length) {
-            for (var po = 0; po < options.length && publishedOptions.length < LIMITS.variantValues; po++) {
-                var option = options[po];
-                if (!option || !option.value)
-                    continue;
-                var known = false;
-                for (var pv = 0; pv < publishedValues.length; pv++) {
-                    if (publishedValues[pv].toLowerCase() === String(option.value).toLowerCase()) {
-                        known = true;
-                        break;
-                    }
-                }
-                if (!known)
-                    continue;
-                var optionPrice = option.price ? cut(option.price, LIMITS.label) : null;
-                var optionState = option.available === true ? true : option.available === false ? false : null;
-                var optionStock = typeof option.stock === 'number' && option.stock > 0 && option.stock <= 999 ? option.stock : null;
-                /* Rien de publié pour cette valeur (ni état, ni prix, ni stock) = pas de
-                   ligne. Un état « inconnu » n'est pas un fait : le publier encombrerait
-                   la capture sans rien prouver. */
-                if (optionState === null && !optionPrice && optionStock === null)
-                    continue;
-                publishedOptions.push({
-                    value: cut(option.value, LIMITS.label),
-                    available: optionState,
-                    price: optionPrice,
-                    priceFrom: option.priceFrom === true,
-                    stock: optionStock,
-                });
-            }
-        }
-        var groupEntry = {
-            name: label,
-            values: publishedValues,
-            selected: selected.slice(0, LIMITS.variantValues),
-        };
-        /* Absent quand la page ne publie rien de plus que les libellés : un tableau
-           vide ferait croire à une lecture qui n'a rien trouvé. */
-        if (publishedOptions.length)
-            groupEntry.options = publishedOptions;
-        out.variantGroups.push(groupEntry);
-        /* La valeur affichée entre dans l'ÉVIDENCE des options choisies : le serveur
-           vérifie que la combinaison demandée a bien été VUE sur la page, et les
-           boutons radio natifs n'ont pas d'aria-checked pour l'alimenter. */
-        for (var q = 0; q < selected.length && out.selectedVariantTexts.length < LIMITS.selectedTexts; q++) {
-            pushUnique(out.selectedVariantTexts, selected[q], LIMITS.selectedTexts, LIMITS.label);
-        }
-    }
-    /* ── 7 quater. GROUPES DE VARIANTES AMAZON (26/10/2026) ───────────────────
-       Le bloc 7 ter est sauté sur Amazon (le DOM y est plein de prix de
-       publicité), donc "variantGroups" restait VIDE : le serveur ne pouvait
-       publier aucun devis PAR VALEUR, et changer de couleur ou de taille dans la
-       feuille affichait « Prix en dinars calculé à l'ajout. » — alors que la
-       combinaison affichée par la page, elle, avait son devis.
-
-       Ici on ne relit PAS le DOM : on traduit en groupes ce que le lecteur
-       Amazon a déjà établi pour chaque valeur (ASIN, état publié, prix de la
-       carte, stock annoncé). Rien n'est ajouté : une valeur sans fait publié
-       reste listée comme valeur, sans ligne d'option, et deux prix différents
-       pour la même valeur ne publient aucun prix (on ne choisit pas). */
     function amazonVariantGroups(evidence) {
         var groups = [];
         if (!evidence || Object.prototype.toString.call(evidence.options) !== '[object Array]')
@@ -2039,350 +1793,8 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
         }
         return groups;
     }
-    function isIndexValue(value) { return /^\d{1,3}$/.test(String(value)); }
-    /* ── 7 ter-0. CE QUE LE JSON-LD PUBLIE POUR CHAQUE VALEUR (26/10/2026) ────
-       Zalando (et les "ProductGroup" en général) ne publient NI prix NI état par
-       taille dans le DOM : tout est dans "hasVariant[].offers" (prix, devise,
-       availability). Sans cette lecture, le client choisissait une taille que le
-       serveur ne pouvait prouver ni en prix ni en stock ⇒ "PRICE_UNAVAILABLE"
-       (« Pas de devis serveur en dinars »), et l'ajout était impossible alors que
-       la page publiait tout.
-
-       On ne devine rien : "size" / "color" et "offers.*" sont des champs NORME.
-       Les options servent de preuve PAR VALEUR ; "selected" reste vide (un
-       "ProductGroup" ne dit pas quelle variante est affichée). */
-    function ldOfferOf(variant) {
-        if (!variant || typeof variant !== 'object')
-            return null;
-        var offers = variant.offers;
-        var list = Object.prototype.toString.call(offers) === '[object Array]' ? offers : (offers ? [offers] : []);
-        for (var i = 0; i < list.length && i < 4; i++) {
-            var offer = list[i];
-            if (!offer || typeof offer !== 'object')
-                continue;
-            if (/aggregateoffer/i.test(String(offer['@type'] || '')))
-                continue;
-            return offer;
-        }
-        return null;
-    }
-    /** "availability" schema.org ⇒ true (en stock) / false (épuisé) / null (rien). */
-    function ldAvailability(offer) {
-        var raw = String(offerField(offer, ['availability']) || '').toLowerCase();
-        if (!raw)
-            return null;
-        if (/outofstock|soldout|out_of_stock|discontinued/.test(raw))
-            return false;
-        if (/instock|limitedavailability|onlineonly|instoreonly|backorder|preorder|madeorder/.test(raw))
-            return true;
-        return null;
-    }
-    /** Toutes les variantes publiées, TELLES QUELLES (aucun choix encore). */
-    function ldRows(product) {
-        var rows = [];
-        if (!product || typeof product !== 'object')
-            return rows;
-        var variants = Object.prototype.toString.call(product.hasVariant) === '[object Array]'
-            ? product.hasVariant : (product.hasVariant ? [product.hasVariant] : []);
-        for (var v = 0; v < variants.length && v < 120; v++) {
-            var variant = variants[v];
-            if (!variant || typeof variant !== 'object')
-                continue;
-            var offer = ldOfferOf(variant);
-            var priceText = offer ? offerField(offer, ['price', 'lowPrice']) : '';
-            var currencyText = offer ? offerField(offer, ['priceCurrency', 'currency']) : '';
-            var stockNumber = offer ? Number(offerField(offer, ['inventoryLevel'])) : NaN;
-            var url = variant.url || variant['@id'] || (offer && offer.url) || '';
-            if (url && typeof url === 'object')
-                url = url.url || url['@id'] || '';
-            rows.push({
-                size: cut(variant.size, LIMITS.label),
-                color: cut(variant.color, LIMITS.label),
-                amount: priceText && HAS_DIGIT.test(priceText) ? cut(priceText, 40) : '',
-                currency: String(currencyText || '').trim().toUpperCase().slice(0, 8),
-                available: offer ? ldAvailability(offer) : null,
-                stock: isFinite(stockNumber) && stockNumber > 0 && stockNumber <= 999 ? Math.floor(stockNumber) : null,
-                url: String(url || ''),
-            });
-        }
-        return rows;
-    }
-    function ldNormUrl(value) {
-        var url = String(value || '').trim().toLowerCase();
-        if (!url)
-            return '';
-        var mark = url.search(/[?#]/);
-        if (mark >= 0)
-            url = url.slice(0, mark);
-        if (url.slice(-1) === '/')
-            url = url.slice(0, -1);
-        return url;
-    }
-    function ldPageHref() {
-        try {
-            return ldNormUrl(location.href);
-        }
-        catch (e) {
-            return '';
-        }
-    }
-    /**
-     * COULEUR DE LA PAGE — la seule dimension qui, sur un "ProductGroup", sépare
-     * des variantes de PRIX différents. Sans elle, prendre la première variante de
-     * chaque taille MÉLANGE deux couleurs : fiche affichée à 139.99 EUR dont la
-     * pointure 35.5 était annoncée 149.95 (mesuré le 26/10/2026 sur deux fiches
-     * Zalando, dont une seule fonctionnait). Trois preuves, dans cet ordre, et
-     * jamais une supposition :
-     *   1. la pastille couleur réellement cochée dans le DOM ;
-     *   2. la variante dont l'URL EST la page ouverte ;
-     *   3. la couleur écrite dans le nom publié du produit (JSON-LD / titre).
-     */
-    function ldPageColor(rows) {
-        try {
-            for (var g = 0; g < out.variantGroups.length; g++) {
-                var groupName = String(out.variantGroups[g].name || '');
-                if (!/colour|color|couleur|farbe|colore|kleur|لون/i.test(groupName))
-                    continue;
-                var chosen = out.variantGroups[g].selected || [];
-                if (chosen.length)
-                    return String(chosen[0]);
-            }
-        }
-        catch (e) { }
-        var href = ldPageHref();
-        if (href) {
-            for (var r = 0; r < rows.length; r++) {
-                if (rows[r].color && ldNormUrl(rows[r].url) === href)
-                    return rows[r].color;
-            }
-        }
-        var name = String((jsonLd && jsonLd.name) || out.title || '').toLowerCase();
-        var best = '';
-        if (name) {
-            for (var i = 0; i < rows.length; i++) {
-                var color = String(rows[i].color || '');
-                if (color.length < 3 || name.indexOf(color.toLowerCase()) < 0)
-                    continue;
-                if (color.length > best.length)
-                    best = color;
-            }
-        }
-        return best;
-    }
-    /**
-     * Ce que TOUTES les variantes d'une même valeur disent. Un désaccord = aucun
-     * fait : deux montants (ou un "en stock" et un "épuisé") pour la même taille
-     * signifient que la valeur décrit plusieurs articles — on ne choisit pas à la
-     * place du marchand et on ne publie ni prix ni état.
-     */
-    function ldConsensus(rows) {
-        var fact = { available: null, price: null, currency: '', stock: null, conflict: false };
-        if (!rows || !rows.length)
-            return fact;
-        var amounts = [];
-        var currencies = [];
-        var states = [];
-        var stocks = [];
-        for (var i = 0; i < rows.length; i++) {
-            var row = rows[i];
-            if (row.amount)
-                pushUnique(amounts, row.amount, 8, 40);
-            if (row.amount && row.currency)
-                pushUnique(currencies, row.currency, 4, 8);
-            if (row.available === true || row.available === false)
-                states.push(row.available);
-            if (typeof row.stock === 'number' && row.stock > 0)
-                stocks.push(row.stock);
-        }
-        if (currencies.length === 1)
-            fact.currency = currencies[0];
-        if (amounts.length === 1)
-            fact.price = amounts[0] + (currencies.length === 1 ? ' ' + currencies[0] : '');
-        else if (amounts.length > 1)
-            fact.conflict = true;
-        if (states.length) {
-            var allTrue = true;
-            var allFalse = true;
-            for (var s = 0; s < states.length; s++) {
-                if (states[s] !== true)
-                    allTrue = false;
-                if (states[s] !== false)
-                    allFalse = false;
-            }
-            fact.available = allTrue ? true : (allFalse ? false : null);
-            if (!allTrue && !allFalse)
-                fact.conflict = true;
-        }
-        if (stocks.length) {
-            var lowest = stocks[0];
-            for (var k = 1; k < stocks.length; k++)
-                if (stocks[k] < lowest)
-                    lowest = stocks[k];
-            fact.stock = lowest;
-        }
-        if (fact.conflict) {
-            fact.price = null;
-            fact.stock = null;
-        }
-        return fact;
-    }
-    /**
-     * Le groupe publie-t-il plusieurs couleurs ? Si la couleur de la page n'est pas
-     * prouvable ET que plusieurs couleurs coexistent, aucun fait ne peut être
-     * attribué à cette fiche : on publie les valeurs (le DOM nomme les choix) mais
-     * NI prix NI état — jamais le prix d'une autre couleur.
-     */
-    function ldColorsMany(rows) {
-        var colors = [];
-        for (var i = 0; i < rows.length; i++) {
-            if (rows[i].color)
-                pushUnique(colors, rows[i].color, 12, 60);
-        }
-        return colors.length > 1;
-    }
-    /** Groupes (taille / couleur) construits sur les seules variantes RETENUES. */
-    function groupsFromRows(rows, withFacts) {
-        var groups = [];
-        var dimensions = [{ key: 'size', name: 'Taille' }, { key: 'color', name: 'Couleur' }];
-        for (var d = 0; d < dimensions.length; d++) {
-            var values = [];
-            var buckets = {};
-            for (var r = 0; r < rows.length && values.length < LIMITS.variantValues; r++) {
-                var value = String(rows[r][dimensions[d].key] || '').trim();
-                if (!value || NOT_A_CHOICE.test(value) || ACTION_NOT_A_VALUE.test(value))
-                    continue;
-                var key = value.toLowerCase();
-                if (!buckets[key]) {
-                    buckets[key] = [];
-                    values.push(value);
-                }
-                buckets[key].push(rows[r]);
-            }
-            var options = [];
-            for (var v = 0; withFacts && v < values.length; v++) {
-                var fact = ldConsensus(buckets[values[v].toLowerCase()] || []);
-                if (fact.available === null && !fact.price && fact.stock === null)
-                    continue;
-                options.push({ value: values[v], available: fact.available, price: fact.price, priceFrom: false, stock: fact.stock });
-            }
-            if (values.length > 1)
-                groups.push({ name: dimensions[d].name, values: values, selected: [], options: options });
-        }
-        return groups;
-    }
-    /**
-     * Variantes retenues : celles de la couleur AFFICHÉE. Les variantes des autres
-     * couleurs du même "ProductGroup" ne prouvent rien sur cette fiche — c'est
-     * exactement ce qui affichait 149.95 EUR sur une pointure d'une fiche à 139.99.
-     */
-    function ldScopedRows(product) {
-        var rows = ldRows(product);
-        var pageColor = ldPageColor(rows);
-        if (!pageColor)
-            return { rows: rows, withFacts: !ldColorsMany(rows) };
-        var scoped = [];
-        for (var i = 0; i < rows.length; i++) {
-            var color = String(rows[i].color || '');
-            if (color && color.toLowerCase() !== pageColor.toLowerCase())
-                continue;
-            scoped.push(rows[i]);
-        }
-        return { rows: scoped.length ? scoped : rows, withFacts: true };
-    }
-    /* Index construit APRÈS la boucle DOM : la couleur cochée n'est connue qu'à ce
-       moment-là. Les options servent de preuve PAR VALEUR ; "selected" reste vide
-       (un "ProductGroup" ne dit pas quelle variante est affichée). */
-    var LD_GROUPS = [];
-    var LD_OPTIONS = {};
-    var DOM_OPTIONS = {};
-    function ldBuild() {
-        if (!jsonLd || IS_AMAZON)
-            return;
-        try {
-            var scoped = ldScopedRows(jsonLd);
-            LD_GROUPS = groupsFromRows(scoped.rows, scoped.withFacts);
-            LD_OPTIONS = {};
-            for (var i = 0; i < LD_GROUPS.length; i++) {
-                LD_OPTIONS[LD_GROUPS[i].name.toLowerCase()] = LD_GROUPS[i].options;
-            }
-        }
-        catch (e) {
-            LD_GROUPS = [];
-            LD_OPTIONS = {};
-        }
-    }
-    /** Options publiées pour cette valeur par le JSON-LD (jamais pour une autre). */
-    function ldOptionsFor(name) {
-        var key = String(name || '').toLowerCase();
-        var rows = LD_OPTIONS[key];
-        /* Le groupe DOM peut porter son nom dans la langue de la page (« Größe ») :
-           on retombe alors sur la dimension, jamais sur un autre attribut. */
-        if (!rows && /size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس/i.test(key))
-            rows = LD_OPTIONS['taille'];
-        if (!rows && /colour|color|couleur|farbe|colore|kleur|لون/i.test(key))
-            rows = LD_OPTIONS['couleur'];
-        return Object.prototype.toString.call(rows) === '[object Array]' ? rows : [];
-    }
-    /**
-     * Fusionne, POUR UNE MÊME VALEUR, ce que dit le DOM et ce que dit le JSON-LD.
-     *   • le NÉGATIF gagne : une valeur désactivée dans le DOM reste indisponible
-     *     même si une offre dit « InStock » (la page a le dernier mot) ;
-     *   • le prix vient du JSON-LD quand il existe (le DOM n'en publie pas par
-     *     taille chez Zalando) ;
-     *   • une ligne sans aucun fait (ni état, ni prix, ni stock) n'est pas publiée.
-     */
-    function mergeVariantOptions(domOptions, ldOptions) {
-        var rows = Object.prototype.toString.call(domOptions) === '[object Array]' ? domOptions : [];
-        var published = Object.prototype.toString.call(ldOptions) === '[object Array]' ? ldOptions : [];
-        var out2 = [];
-        var i;
-        for (i = 0; i < rows.length; i++) {
-            var row = rows[i];
-            if (!row || !row.value)
-                continue;
-            var extra = null;
-            for (var l = 0; l < published.length; l++) {
-                if (String(published[l].value).toLowerCase() === String(row.value).toLowerCase()) {
-                    extra = published[l];
-                    break;
-                }
-            }
-            var available = row.available === false || (extra && extra.available === false)
-                ? false
-                : (extra && extra.available === true) ? true
-                    : (row.available === true ? true : null);
-            var price = (extra && extra.price) || row.price || null;
-            var stock = (extra && typeof extra.stock === 'number' && extra.stock > 0) ? extra.stock
-                : (typeof row.stock === 'number' && row.stock > 0 ? row.stock : null);
-            if (available === null && !price && stock === null)
-                continue;
-            out2.push({
-                value: row.value,
-                available: available,
-                price: price,
-                priceFrom: (extra && extra.priceFrom === true) || row.priceFrom === true,
-                stock: stock,
-            });
-        }
-        return out2;
-    }
-    function ldGroupAlreadyCovered(name) {
-        var key = String(name || '').toLowerCase();
-        var size = /size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس/i.test(key);
-        var color = /colour|color|couleur|farbe|colore|kleur|لون/i.test(key);
-        for (var gi = 0; gi < out.variantGroups.length; gi++) {
-            var known = String(out.variantGroups[gi].name || '').toLowerCase();
-            if (size && /size|taille|talla|taglia|gr(ö|oe)(ß|ss)e|misura|maat|размер|مقاس|قياس/i.test(known))
-                return true;
-            if (color && /colour|color|couleur|farbe|colore|kleur|لون/i.test(known))
-                return true;
-        }
-        return false;
-    }
-    ;
-    /* ── 8. Titre de secours et images visibles ─────────────────────────────── */
     /* Amazon : le titre VISIBLE de la fiche (#productTitle) est lu en premier — c'est le produit de cette page. */
-    if (IS_AMAZON) {
+    {
         try {
             var amazonTitleEl = document.querySelector('#productTitle, h1#title, #title_feature_div h1, [data-hook="product-title"]');
             var amazonTitle = amazonTitleEl ? cut(amazonTitleEl.textContent, LIMITS.text) : '';
@@ -2492,71 +1904,10 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
         }
         out.images = productImageOnly;
     }
-    /* Amazon-only per-ASIN matrix: facts remain scoped to their exact ASIN.
-       Conflicting prices and unknown variants never inherit the active price. */
-    /* Mode « sélection » (19/11/2026) : seule l'option choisie est lue — pas de matrice. */
-    try {
-      var matrixSeen = {};
-      var ambiguousMatrix = {};
-    var pushMatrixEntry = function (entry) {
-      if (!entry || !entry.attributes || out.variantMatrix.length >= LIMITS.matrixEntries) return;
-      var keys = [];
-      for (var k in entry.attributes) {
-        if (Object.prototype.hasOwnProperty.call(entry.attributes, k) && entry.attributes[k]) keys.push(k);
-      }
-      if (!keys.length) return;
-      keys.sort();
-      var sigParts = [];
-      for (var si = 0; si < keys.length; si++) {
-        sigParts.push(keys[si].toLowerCase() + '=' + String(entry.attributes[keys[si]]).toLowerCase());
-      }
-      var sig = sigParts.join('|');
-      var existingIdx = matrixSeen[sig];
-      if (existingIdx !== undefined) {
-        var prev = out.variantMatrix[existingIdx];
-        // The same displayed combination tied to different ASINs is ambiguous.
-        // Never attach either product's price, availability, identity or image.
-        if (ambiguousMatrix[sig] || (prev.variantId && entry.variantId && prev.variantId !== entry.variantId)) {
-          ambiguousMatrix[sig] = true;
-          prev.price = null; prev.available = null; prev.stock = null;
-          prev.variantId = null; prev.variantUrl = null; prev.image = null;
-          prev.evidenceSource = null;
-          return;
-        }
-        if (!prev.price && entry.price && !entry.priceFrom) {
-          prev.price = cut(entry.price, 60);
-          prev.priceFrom = false;
-          if (entry.evidenceSource) prev.evidenceSource = entry.evidenceSource;
-        }
-        if (prev.available === null && entry.available !== null && entry.available !== undefined) prev.available = entry.available;
-        if (!prev.stock && typeof entry.stock === 'number' && entry.stock > 0) prev.stock = entry.stock;
-        if (!prev.image && entry.image) prev.image = entry.image;
-        if (!prev.variantUrl && entry.variantUrl) prev.variantUrl = entry.variantUrl;
-        if (!prev.variantId && entry.variantId) prev.variantId = entry.variantId;
-        if ((!prev.quantityTiers || !prev.quantityTiers.length) && entry.quantityTiers && entry.quantityTiers.length) {
-          prev.quantityTiers = entry.quantityTiers;
-        }
-        return;
-      }
-      matrixSeen[sig] = out.variantMatrix.length;
-      out.variantMatrix.push({
-        variantId: entry.variantId ? cut(entry.variantId, 80) : null,
-        variantUrl: entry.variantUrl && /^https?:\/\//i.test(String(entry.variantUrl)) ? String(entry.variantUrl).slice(0, 600) : null,
-        attributes: entry.attributes,
-        price: entry.price && !entry.priceFrom ? cut(entry.price, 60) : null,
-        priceFrom: Boolean(entry.priceFrom),
-        available: entry.available === true ? true : (entry.available === false ? false : null),
-        stock: typeof entry.stock === 'number' && entry.stock > 0 && entry.stock <= 999 ? Math.floor(entry.stock) : null,
-        image: entry.image && /^https?:\/\//i.test(String(entry.image)) ? String(entry.image).slice(0, 600) : null,
-        evidenceSource: entry.evidenceSource || null,
-        quantityTiers: entry.quantityTiers && entry.quantityTiers.length ? entry.quantityTiers : undefined
-      });
-    };
-
-    /* ── D. Amazon : jointure dimensionValuesDisplayData x prix ASIN prouvés (buybox / cartes [data-asin] / réseau) ── */
+    /* ── D. Amazon : jointure dimensionValuesDisplayData x prix ASIN prouvés (buybox / cartes [data-asin]) ── */
     if (AMAZON_STRICT && out.amazon) {
       var pageAsinForPrice = out.amazon.pageAsin || AMAZON_ASIN || '';
-      var activeAsin = (!out.amazon.selectedAsin || out.amazon.selectedAsin === pageAsinForPrice) ? pageAsinForPrice : '';
+      var activeAsin = (!buyboxMismatch && (!out.amazon.selectedAsin || out.amazon.selectedAsin === pageAsinForPrice)) ? pageAsinForPrice : '';
       var activeBuyboxPrice = null;
       if (out.priceCandidates && out.priceCandidates.length > 0) {
         for (var apci = 0; apci < out.priceCandidates.length; apci++) {
@@ -2589,12 +1940,11 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
         if (!slot.stock && typeof info.stock === 'number' && info.stock > 0) slot.stock = info.stock;
         if (!slot.image && info.image) slot.image = info.image;
       };
-      var joinedStockText = [out.availabilityText || ''].concat(out.stockTexts || []).join(' | ');
+      var joinedStockText = out.availabilityText || '';
       var activeAvail = null;
-      if (/currently unavailable|out of stock|temporarily out of stock|actuellement indisponible|derzeit nicht verfügbar|nicht auf lager/i.test(joinedStockText)) {
+      if (/currently unavailable|out of stock|temporarily out of stock|actuellement indisponible|derzeit nicht verfügbar|nicht auf lager|non disponibile|sin stock|agotado/i.test(joinedStockText)) {
         activeAvail = false;
-      } else if ((out.purchaseAction && out.purchaseAction.present && !out.purchaseAction.disabled)
-        || /\bin stock\b|en stock|auf lager|disponible|disponibilità immediata/i.test(joinedStockText)) {
+      } else if (out.addToCartText || /\bin stock\b|en stock|auf lager|disponibilité immédiate|disponibilità immediata/i.test(joinedStockText)) {
         activeAvail = true;
       }
       if (activeAsin && (activeBuyboxPrice || activeAvail !== null)) {
@@ -2623,28 +1973,6 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
           });
         }
       }
-      /* Réponses réseau twister / ajax déjà reçues par la page Amazon (Source #3) */
-      try {
-        var amzWin = (typeof document !== 'undefined' && document.defaultView) || (typeof window !== 'undefined' ? window : null);
-        var amzNet = amzWin && amzWin.__aywebsNetPayloads;
-        if (Object.prototype.toString.call(amzNet) === '[object Array]') {
-          for (var ani = 0; ani < amzNet.length && ani < 25; ani++) {
-            var aBody = amzNet[ani] && amzNet[ani].body;
-            if (!aBody || typeof aBody !== 'object') continue;
-            var priceMap = aBody.asinToPrice || aBody.priceMap || (aBody.Value && aBody.Value.content && aBody.Value.content.twisterSlotJson) || null;
-            if (priceMap && typeof priceMap === 'object') {
-              for (var pmAsin in priceMap) {
-                if (!Object.prototype.hasOwnProperty.call(priceMap, pmAsin) || !/^[A-Z0-9]{10}$/i.test(pmAsin)) continue;
-                var pmVal = priceMap[pmAsin];
-                var pmStr = typeof pmVal === 'string' ? text(pmVal) : text(pmVal && (pmVal.displayPrice || pmVal.price || pmVal.priceAmount) || '');
-                if (pmStr && HAS_DIGIT.test(pmStr) && CURRENCY_HINT.test(pmStr)) {
-                  recordAsinFact(pmAsin, { price: pmStr, priceFrom: false, available: true, stock: null, image: null, source: 'network_cache' });
-                }
-              }
-            }
-          }
-        }
-      } catch (e) {}
       var amzOrigin = '';
       try { amzOrigin = String(location.origin || ''); } catch (e) { amzOrigin = ''; }
       if (out.amazon.variants && out.amazon.variants.length) {
@@ -2691,24 +2019,4 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
       }
     }
 
-    } catch (e) { out.variantMatrix = []; }
-    /* ── 9. Bornes finales + sortie JSON ────────────────────────────────────── */
-    if (out.priceCandidates.length > LIMITS.priceCandidates)
-        out.priceCandidates = out.priceCandidates.slice(0, LIMITS.priceCandidates);
-    if (!out.title)
-        out.title = null;
-    if (!out.capturedAt)
-        out.capturedAt = new Date().toISOString();
-    try {
-        var serialized = JSON.stringify(out);
-        while (serialized.length > 56000 && out.variantMatrix.length) {
-            out.variantMatrix.pop();
-            serialized = JSON.stringify(out);
-        }
-        return serialized;
-    }
-    catch (e) {
-        return '{}';
-    }
-})();
-`;
+}`;

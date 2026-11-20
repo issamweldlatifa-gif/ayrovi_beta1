@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -94,6 +95,7 @@ public class AyWebsBrowseActivity extends Activity {
    * marchand, les scripts, les cookies et les données de compte ne sortent pas.
    */
   private static final String CAPTURE_SCRIPT_PATH = "/api/v1/aywebs/capture/script.js";
+  private static final long CAPTURE_SCRIPT_TTL_MS = 300_000L;
   private static final String CART_ITEMS_PATH = "/api/v1/aywebs/cart/items";
   private static final String PURCHASE_REQUESTS_PATH = "/api/v1/aywebs/purchase-requests";
   /** Lecture du panier proxy pour le tiroir interne (04/10/2026). */
@@ -131,6 +133,7 @@ public class AyWebsBrowseActivity extends Activity {
   private volatile String captureScript = "";
   /** Store profile used by `captureScript`; empty means the legacy default. */
   private volatile String captureScriptStoreId = "";
+  private volatile long captureScriptFetchedAt = 0L;
   private TextView urlText;
   private Button addButton;
   private Button cartButton;
@@ -558,7 +561,8 @@ public class AyWebsBrowseActivity extends Activity {
   private void ensureCaptureScript(final Runnable next) {
     final String storeId = captureStoreIdFor(currentUrl);
     final String cacheKey = storeId == null ? "" : storeId;
-    if (!captureScript.isEmpty() && cacheKey.equals(captureScriptStoreId)) {
+    if (!captureScript.isEmpty() && cacheKey.equals(captureScriptStoreId)
+        && SystemClock.elapsedRealtime() - captureScriptFetchedAt < CAPTURE_SCRIPT_TTL_MS) {
       runOnUiThread(next);
       return;
     }
@@ -568,10 +572,12 @@ public class AyWebsBrowseActivity extends Activity {
     executor.execute(() -> {
       try {
         String path = CAPTURE_SCRIPT_PATH + (storeId == null ? "?flow=catalogue" : "?store_id=" + storeId + "&flow=catalogue");
+        if (storeId == null || "amazon".equals(storeId)) path += "&reader=offers";
         String script = getText(apiOrigin + path);
         if (script != null && !script.trim().isEmpty()) {
           captureScript = script;
           captureScriptStoreId = cacheKey;
+          captureScriptFetchedAt = SystemClock.elapsedRealtime();
         }
       } catch (Exception ignored) {
         /* sans lecteur : chemin historique (URL seule), jamais un faux succès */

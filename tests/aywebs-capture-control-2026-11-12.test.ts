@@ -113,6 +113,18 @@ describe('coupe-circuit et retour arrière', () => {
     expect(() => setAyWebsCaptureControl(db, { storeId: 'sephora', mode: 'off' as never })).toThrow('INVALID_CAPTURE_MODE');
   });
 
+  it('does not restore the retired Amazon reader when a saved control is core', async () => {
+    const db = fresh();
+    const app = express();
+    app.use('/api/v1/aywebs', createAyWebsRouter(db, {} as never));
+    setAyWebsCaptureControl(db, { storeId: 'amazon', mode: 'core', note: 'old override', actorId: 'adm_1' });
+    const response = await request(app).get('/api/v1/aywebs/capture/script.js?store_id=amazon&flow=catalogue');
+    expect(response.headers['x-aywebs-capture-reader-version']).toBe('6');
+    expect(response.headers['x-aywebs-capture-bundle']).toBe('dedicated:amazon');
+    expect(response.text).toBe(describeAyWebsCaptureScript('amazon').text);
+    expect(response.text).not.toContain('asinToPrice');
+  });
+
   it('« core » : le script servi devient le cœur partagé complet (en-têtes compris)', async () => {
     const db = fresh();
     const app = express();

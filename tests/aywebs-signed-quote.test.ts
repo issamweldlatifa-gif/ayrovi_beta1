@@ -18,7 +18,7 @@
  */
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
-import { AMAZON_MOBILE_CAPTURE_SCRIPT } from '../src/aywebs/storeScripts/amazon';
+import { buildAyWebsCaptureScript } from '../src/aywebs/captureScript';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -406,13 +406,13 @@ describe('AYWEBs Phase 1 — porte de lecture', () => {
 });
 
 
-describe('Amazon fast quote — exact captured combination on the real server', () => {
+describe('Shared offer capture — exact Amazon combination on the real server', () => {
   it('prices and signs the chosen matrix row, not the price currently on the page', async () => {
     process.env.AYWEBS_WEBVIEW_VERIFY_SAMPLE = '0';
     const h = harness();
     const html = readFileSync(join(__dirname, 'fixtures', 'amazon-product-page.html'), 'utf8');
     const dom = new JSDOM(html, { url: AMAZON_URL });
-    const evaluate = new Function('document', 'location', 'URL', `return ${AMAZON_MOBILE_CAPTURE_SCRIPT}`);
+    const evaluate = new Function('document', 'location', 'URL', `return ${buildAyWebsCaptureScript('amazon')}`);
     const capture = JSON.parse(evaluate(dom.window.document, dom.window.location, URL));
     dom.window.close();
     capture.variantGroups = [{ name: 'size', values: ['Small', 'Medium'], selected: ['Small'], options: [

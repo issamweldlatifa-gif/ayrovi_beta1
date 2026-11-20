@@ -2,7 +2,7 @@
  * AYWEBs — MODE DIFFÉRENTIEL DES LOTS DE CAPTURE (12/11/2026).
  *
  * Inactif par défaut. Avec `AYWEBS_BUNDLE_DIFF=1`, chaque exécution du cœur
- * complet faite par un test (`new Function(…, 'return ' + AYWEBS_CAPTURE_SCRIPT)`)
+ * complet faite par un test (`new Function(…, 'return ' + AYWEBS_CAPTURE_CORE)`)
  * est REJOUÉE avec le lot spécialisé que le serveur servirait pour l'hôte de la
  * page (`shein`, `temu`, `aliexpress`, sinon `kernel`), sur le MÊME document.
  * Toute différence de sortie (hors horodatage) fait échouer le test.
@@ -77,9 +77,9 @@ if (process.env.AYWEBS_BUNDLE_DIFF === '1') {
 }
 
 async function installDifferential(): Promise<void> {
-  const { AYWEBS_CAPTURE_SCRIPT } = await import('../../src/aywebs/captureScript');
+  const { AYWEBS_CAPTURE_CORE } = await import('../../src/aywebs/captureScript');
   const { AYWEBS_CAPTURE_BUNDLES } = await import('../../src/aywebs/captureBundles.generated');
-  const core = AYWEBS_CAPTURE_SCRIPT.trim().replace(/[\s;]+$/, '');
+  const core = AYWEBS_CAPTURE_CORE.trim().replace(/[\s;]+$/, '');
   const stats: Record<string, number> = {};
   const Original = globalThis.Function;
 

@@ -11,7 +11,6 @@
  */
 export type AyWebsCapturePriceMode =
   | 'standard'
-  | 'amazon_buy_box'
   | 'named_containers'
   | 'structured_only';
 
@@ -25,7 +24,7 @@ export const AYWEBS_CAPTURE_CONTRACT_VERSION = 1;
 
 /**
  * Intégration propre à chaque boutique :
- *   • `dedicated`   — script autonome (`storeScripts/<id>.ts`), sa propre logique DOM ;
+ *   • `dedicated`   — lot d’offres (`storeScripts/`), sources DOM propres au marchand ;
  *   • `shared_core` — cœur partagé (`captureScript.ts`) piloté par `priceMode` ;
  *   • `generic`     — boutique enregistrée sans lecteur mesuré : cœur partagé en
  *                     mode `standard`, mais profil/version/garde de domaine à elle.

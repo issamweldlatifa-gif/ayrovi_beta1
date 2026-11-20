@@ -2,8 +2,8 @@
 /**
  * AYWEBs — LOTS DE CAPTURE SPÉCIALISÉS PAR BOUTIQUE (12/11/2026).
  *
- * Problème : le cœur partagé (`AYWEBS_CAPTURE_SCRIPT`, ~6 900 lignes) contient
- * dans la MÊME fermeture le code de SHEIN, TEMU, AliExpress et Amazon à côté du
+ * Problème : le cœur partagé (`AYWEBS_CAPTURE_CORE`, ~6 900 lignes) contient
+ * dans la MÊME fermeture le code de SHEIN, TEMU, AliExpress à côté du
  * code commun. Toute retouche « SHEIN » était servie aussi à Sephora, Primark et
  * aux boutiques génériques — et pouvait les casser.
  *
@@ -15,14 +15,14 @@
  *      (déclaration unique et jamais réaffectée, sinon le générateur refuse) ;
  *   2. pliage des constantes par esbuild (`minifySyntax`, cible ES5, AUCUN
  *      renommage) : `if (false) {…}`, `false && x`, `x || false`… disparaissent ;
- *   3. les booléens littéraux devenus constants (`AMAZON_STRICT = false`) sont
+ *   3. les booléens littéraux devenus constants (`SHEIN_STRICT = false`) sont
  *      repliés à leur tour, jusqu'au point fixe ;
  *   4. suppression des déclarations de premier niveau qui ne sont PLUS
  *      référencées NULLE PART (fonctions, `var` à initialisation pure) —
  *      jusqu'au point fixe. Une référence restante, même dans une branche morte,
  *      garde la déclaration : on ne peut pas créer de ReferenceError.
  *
- * Le cœur complet reste servi tel quel aux appels sans boutique (compatibilité).
+ * Les appels sans boutique passent par un répartiteur de compatibilité.
  *
  *   node scripts/build-aywebs-capture-bundles.mjs          → régénère
  *   node scripts/build-aywebs-capture-bundles.mjs --check  → échoue si périmé
@@ -42,7 +42,7 @@ export const GENERATED_PATH = path.join(ROOT, 'src/aywebs/captureBundles.generat
  * `IS_SHOPIFY` : détection de plateforme à l'exécution ; inutile (et retirée)
  * dans les lots des places de marché qui ne tournent pas sur Shopify.
  */
-const STORE_FLAGS = ['IS_AMAZON', 'IS_SHEIN', 'IS_TEMU', 'IS_ALIEXPRESS', 'IS_ZALANDO'];
+const STORE_FLAGS = ['IS_SHEIN', 'IS_TEMU', 'IS_ALIEXPRESS', 'IS_ZALANDO'];
 /* Lecteurs de PLATEFORME (Shopify, WooCommerce) : détectés à l'exécution, ils
    restent dans le noyau (boutiques génériques) et sortent des lots des places
    de marché, qui ne tournent jamais sur ces plateformes. */
@@ -74,8 +74,8 @@ export async function loadAyWebsCaptureCore() {
     }],
   });
   const mod = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString('base64')}`);
-  if (typeof mod.AYWEBS_CAPTURE_SCRIPT !== 'string' || !mod.AYWEBS_CAPTURE_SCRIPT) throw new Error('AYWEBS_CAPTURE_SCRIPT introuvable');
-  return mod.AYWEBS_CAPTURE_SCRIPT;
+  if (typeof mod.AYWEBS_CAPTURE_CORE !== 'string' || !mod.AYWEBS_CAPTURE_CORE) throw new Error('AYWEBS_CAPTURE_CORE introuvable');
+  return mod.AYWEBS_CAPTURE_CORE;
 }
 
 function parse(code) {

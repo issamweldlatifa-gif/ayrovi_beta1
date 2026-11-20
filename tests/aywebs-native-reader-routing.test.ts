@@ -45,6 +45,8 @@ describe('AYWEBs Android — profil de lecteur issu du registre serveur (P2-1 / 
 
   it('ne réutilise pas le bundle d’un autre magasin après un changement de profil', () => {
     expect(activitySource).toContain('captureScriptStoreId = cacheKey');
+    expect(activitySource).toContain('SystemClock.elapsedRealtime() - captureScriptFetchedAt < CAPTURE_SCRIPT_TTL_MS');
+    expect(activitySource).toContain('&reader=offers');
     expect(activitySource).toContain('captureScript = "";');
   });
 });

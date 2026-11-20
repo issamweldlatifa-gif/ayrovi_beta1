@@ -24,7 +24,7 @@ import {
   specializeAyWebsCaptureCore,
 } from '../scripts/build-aywebs-capture-bundles.mjs';
 import { AYWEBS_CAPTURE_BUNDLES, AYWEBS_CAPTURE_BUNDLE_SOURCE_SHA256 } from '../src/aywebs/captureBundles.generated';
-import { AYWEBS_CAPTURE_SCRIPT, buildAyWebsCaptureScript, describeAyWebsCaptureScript } from '../src/aywebs/captureScript';
+import { AYWEBS_CAPTURE_CORE, AYWEBS_CAPTURE_SCRIPT, buildAyWebsCaptureScript, describeAyWebsCaptureScript } from '../src/aywebs/captureScript';
 import { createAyWebsRouter } from '../src/aywebs/routes';
 import { QatafoDatabase } from '../src/db/database';
 
@@ -40,7 +40,7 @@ const MARKERS = {
 
 describe('génération — une seule source, des lots dérivés et à jour', () => {
   it('le fichier généré correspond EXACTEMENT au cœur actuel (sinon : npm run aywebs:bundles)', async () => {
-    expect(AYWEBS_CAPTURE_BUNDLE_SOURCE_SHA256).toBe(sha(AYWEBS_CAPTURE_SCRIPT));
+    expect(AYWEBS_CAPTURE_BUNDLE_SOURCE_SHA256).toBe(sha(AYWEBS_CAPTURE_CORE));
     const fresh = await buildAyWebsCaptureBundles();
     expect(renderGeneratedModule(fresh)).toBe(readFileSync(join(process.cwd(), 'src/aywebs/captureBundles.generated.ts'), 'utf8'));
   }, 60_000);
@@ -50,15 +50,15 @@ describe('génération — une seule source, des lots dérivés et à jour', () 
       expect(bundle.text, id).not.toMatch(/\bconst\b|\blet\b|=>/);
       expect(bundle.text, id).not.toContain('`');
       expect(bundle.sha256, id).toBe(sha(bundle.text));
-      expect(bundle.bytes, id).toBeLessThan(AYWEBS_CAPTURE_SCRIPT.length * 0.6);
+      expect(bundle.bytes, id).toBeLessThan(AYWEBS_CAPTURE_CORE.length * 0.6);
     }
-    // Le noyau (Sephora, Primark, boutiques génériques) : moins d'un quart du cœur.
-    expect(AYWEBS_CAPTURE_BUNDLES.kernel.bytes).toBeLessThan(AYWEBS_CAPTURE_SCRIPT.length * 0.25);
+    // Le noyau (Sephora, Primark, boutiques génériques) : moins de 30 % du cœur sans Amazon.
+    expect(AYWEBS_CAPTURE_BUNDLES.kernel.bytes).toBeLessThan(AYWEBS_CAPTURE_CORE.length * 0.30);
   });
 
   it('chaque lot n’embarque QUE le code de sa boutique', () => {
     const presence = (text: string) => Object.fromEntries(Object.entries(MARKERS).map(([id, marker]) => [id, text.includes(marker)]));
-    expect(presence(AYWEBS_CAPTURE_SCRIPT)).toEqual({ shein: true, temu: true, aliexpress: true, amazon: true });
+    expect(presence(AYWEBS_CAPTURE_CORE)).toEqual({ shein: true, temu: true, aliexpress: true, amazon: false });
     expect(presence(AYWEBS_CAPTURE_BUNDLES.kernel.text)).toEqual({ shein: false, temu: false, aliexpress: false, amazon: false });
     expect(presence(AYWEBS_CAPTURE_BUNDLES.shein.text)).toEqual({ shein: true, temu: false, aliexpress: false, amazon: false });
     expect(presence(AYWEBS_CAPTURE_BUNDLES.temu.text)).toEqual({ shein: false, temu: true, aliexpress: false, amazon: false });
@@ -107,7 +107,7 @@ describe('service — chaque boutique reçoit son lot, le reste ne bouge pas', (
     expect(served.sha256).toBe(sha(served.text));
   });
 
-  it('Amazon et Zalando gardent leur script dédié ; sans boutique, le bundle historique complet', () => {
+  it('Amazon et Zalando servent leurs sources séparément ; sans boutique, le répartiteur de compatibilité', () => {
     expect(describeAyWebsCaptureScript('amazon').bundle).toBe('dedicated:amazon');
     expect(describeAyWebsCaptureScript('zalando').bundle).toBe('dedicated:zalando');
     expect(buildAyWebsCaptureScript()).toBe(AYWEBS_CAPTURE_SCRIPT);

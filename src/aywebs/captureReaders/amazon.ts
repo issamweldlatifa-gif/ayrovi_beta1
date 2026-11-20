@@ -1,10 +1,10 @@
 import type { AyWebsCaptureReaderDefinition } from './contract';
 
-/** Amazon's independently versioned, standalone mobile reader. */
+/** Amazon facts for the shared Zalando-style product-offer engine. */
 export const amazonCaptureReader: AyWebsCaptureReaderDefinition = {
   storeId: 'amazon',
-  version: 5,
-  priceMode: 'amazon_buy_box',
+  version: 6,
+  priceMode: 'named_containers',
   integration: 'dedicated',
-  note: 'Amazon buy-box only; sponsored and recommendation prices are excluded.',
+  note: 'Shared product-offer capture with ASIN-scoped Amazon evidence.',
 };

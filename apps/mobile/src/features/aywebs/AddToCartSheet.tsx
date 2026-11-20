@@ -50,7 +50,6 @@ import { ChoiceField, type ChoiceOption } from '@/features/aywebs/ChoiceField';
 import { VariantOptionChips } from '@/features/aywebs/VariantOptionChips';
 import { colourForOption, needsOutline } from '@/features/aywebs/optionColour';
 import { preferredVariantImage } from '@/features/aywebs/variantImage';
-import { amazonCaptureHasPricedSelection } from '@/features/aywebs/amazonFastQuote';
 import { quantityLimit, selectionQuote, type AvailabilityState } from '@/features/aywebs/selectionQuote';
 import { lacksServerQuote, preferServerQuote, quoteReadPlan, withExactQuoteDeadline } from '@/features/aywebs/priceFallback';
 import { ayWebsSameAttribute as sameAttribute } from '@/features/aywebs/attributeKeys';
@@ -534,40 +533,9 @@ export function AddToCartSheet({
     setQuoting(true);
     const timer = setTimeout(() => {
       void (async () => {
-        let targetUrl = quote.missingVariantUrl || effectiveUrl;
+        let targetUrl = effectiveUrl;
         let captureForResolve: unknown = local ? effectiveCapture : undefined;
         let siblingCaptureRead: unknown = null;
-        // If the current Amazon capture already contains this exact priced,
-        // available combination, let the server verify it before opening a
-        // second WebView. Any inconclusive response falls back to the old path.
-        if (local && product.storeId === 'amazon' && amazonCaptureHasPricedSelection(effectiveCapture, picked)) {
-          try {
-            const fast = await resolveAyWebsProductWithCapture(effectiveUrl, {
-              sessionId, storeId: product.storeId, capture: effectiveCapture, variant: picked, refresh: false,
-            });
-            if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
-            const amount = fast.product.zayroviPricing?.totalTnd ?? null;
-            const availability = stateOf(fast.product.availability.state);
-            if (fast.capture?.used && !fast.priceRejection && !fast.missing.length && fast.quoteToken
-              && fast.product.priceVerified && fast.product.currencyVerified
-              && amount != null && Number.isFinite(amount) && amount > 0
-              && (availability === 'AVAILABLE' || availability === 'LOW_STOCK')) {
-              setServerGroups(fast.product.variantGroups || []);
-              const cached = upsertVariantMatrixCache({ matrixKey, product: fast.product, selection: picked,
-                capture: effectiveCapture as Record<string, unknown>, quoteToken: fast.quoteToken, sourceUrl: effectiveUrl });
-              setPageQuote({ selection: picked, unitTnd: amount,
-                quantityTotalsTnd: fast.product.zayroviPricing?.quantityTotalsTnd ?? null,
-                availability, stock: fast.product.availability.quantityHint ?? null,
-                sourcePrice: fast.product.price, sourceCurrency: fast.product.currency,
-                quotes: cached.variantQuotes, details: cached.variantDetails, quoteToken: fast.quoteToken });
-              setDiagnostic('');
-              return;
-            }
-          } catch {
-            // Preserve the existing sibling-reading fallback when verification fails.
-          }
-          if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
-        }
         if (local && readVariant) {
           const currentLocalOptions = optionsFromVariants(localVariantsFromCapture(
             (effectiveCapture && typeof effectiveCapture === 'object' ? effectiveCapture : {}) as Record<string, unknown>,
@@ -580,11 +548,12 @@ export function AddToCartSheet({
             options: mergedForUrl,
           });
           if (siblingUrl && siblingUrl !== effectiveUrl) {
+            targetUrl = siblingUrl;
+            captureForResolve = undefined;
             try {
               const freshSibling = await readVariant(siblingUrl);
               if (!alive.current || selectionQuoteRequest.current !== requestNumber) return;
               if (freshSibling && typeof freshSibling === 'object') {
-                targetUrl = siblingUrl;
                 captureForResolve = freshSibling;
                 siblingCaptureRead = freshSibling;
               }

@@ -27,9 +27,7 @@ describe('capture readers : versions et bundles distincts', () => {
       expect(reader?.storeId).toBe(id);
       expect(reader?.version).toBeGreaterThan(0);
       expect(buildAyWebsCaptureScript(id)).not.toBe(AYWEBS_CAPTURE_SCRIPT);
-      if (id === 'amazon') expect(buildAyWebsCaptureScript(id)).toContain("reader: { id: 'amazon'");
-      else if (id === 'zalando') expect(buildAyWebsCaptureScript(id)).toMatch(/storeId:\s*["']zalando["']/);
-      else expect(buildAyWebsCaptureScript(id)).toContain(`"storeId":"${id}"`);
+      expect(buildAyWebsCaptureScript(id)).toContain(`"storeId":"${id}","version":${reader!.version}`);
     }
   });
 
