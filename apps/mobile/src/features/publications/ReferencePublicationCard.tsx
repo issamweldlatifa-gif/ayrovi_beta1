@@ -35,7 +35,8 @@ function PublicationMedia({ post, width, height, active, autoplay, onActivate, o
   const { media } = post;
   if (!media) return null;
   const isVideo = media.type === 'video';
-  const inset = post.layout === 'video-inset';
+  const square = post.layout === 'video-square';
+  const inset = post.layout === 'video-inset' || (square && media.fit !== 'cover');
   const playing = active && (intent === 'play' || (intent !== 'pause' && autoplay));
   const focal = media.focalX !== undefined || media.focalY !== undefined
     ? { left: `${media.focalX ?? 50}%` as const, top: `${media.focalY ?? 50}%` as const } : undefined;
@@ -48,7 +49,7 @@ function PublicationMedia({ post, width, height, active, autoplay, onActivate, o
         style={StyleSheet.absoluteFill} onPress={onPhoto} /> : null}
     </> : <>
       {inset && media.poster ? <AppImage uri={mediaUrl(media.poster)} decorative contentFit="cover" blurRadius={28} style={StyleSheet.absoluteFill} /> : null}
-      <View style={[styles.videoFrame, inset ? { width: '50%' } : styles.fullWidth]}>
+      <View style={[styles.videoFrame, inset ? { width: square ? '56%' : '50%' } : styles.fullWidth]}>
         {media.poster ? <AppImage uri={mediaUrl(media.poster)} decorative contentFit={inset ? 'contain' : 'cover'} style={StyleSheet.absoluteFill} /> : null}
         {active ? <PublicationInlineVideo key={media.url} url={media.url} fit={inset ? 'contain' : 'cover'} muted={muted}
           paused={!playing} position={onVideo ? playback : undefined} /> : null}
@@ -84,7 +85,11 @@ export function ReferencePublicationCard({ post, viewport, active, autoplay, onA
   const { isRTL } = useTheme();
   const direction = rowDirectionFor(isRTL);
   const { width, tileWidth, tileHeight, mediaHeight } = referenceMeasurements(viewport, post.layout);
-  const tileSize = { width: tileWidth, height: tileHeight };
+  const squareRail = post.layout === 'video-square' && post.products.length === 2;
+  const railInset = squareRail ? width * 38 / 658 : 0;
+  const adaptedTileWidth = squareRail ? (width - railInset - 2 * R.railGap) / 3 : tileWidth;
+  const tileSize = { width: adaptedTileWidth, height: squareRail ? adaptedTileWidth / R.tileAspect : tileHeight };
+  const moreLabel = t(post.media?.type === 'video' ? 'publication.learnMore' : 'reel.captionMore');
   const official = post.channelId === OFFICIAL_PUBLISHER_ID;
   const publisher = official ? OFFICIAL_PUBLISHER_NAME : post.channelName;
   const follow = usePublisherFollow(post.channelId, onAuth);
@@ -112,7 +117,7 @@ export function ReferencePublicationCard({ post, viewport, active, autoplay, onA
     <PublicationMedia post={post} width={width} height={mediaHeight} active={active} autoplay={autoplay} onActivate={onActivate} playback={playback} onPhoto={onPhoto}
       onVideo={onVideo && (state => onVideo(state, resume => { playback.current = { ...resume, muted: true }; }))} />
     <ScrollView horizontal showsHorizontalScrollIndicator={false} testID={`reference-products-${post.id}`}
-      style={styles.rail} contentContainerStyle={[styles.railContent, { direction: isRTL ? 'rtl' : 'ltr' }]}>
+      style={styles.rail} contentContainerStyle={[styles.railContent, { direction: isRTL ? 'rtl' : 'ltr', paddingStart: railInset }]}>
       {post.products.map(product => {
         const saved = signedIn && favorites.isFavorite(product.id);
         return <View key={product.id} style={[styles.tile, tileSize]} testID="reference-product-tile">
@@ -126,10 +131,10 @@ export function ReferencePublicationCard({ post, viewport, active, autoplay, onA
           </Pressable>
         </View>;
       })}
-      <Pressable testID="reference-more-tile" accessibilityRole="button" accessibilityLabel={t('reel.captionMore')}
+      <Pressable testID="reference-more-tile" accessibilityRole="button" accessibilityLabel={moreLabel}
         onPress={onMore} style={[styles.tile, styles.more, tileSize]}>
         <View style={styles.moreDisc}><PublicationIcon name={isRTL ? 'arrow-back' : 'arrow-forward'} size={26} color={PUBLICATION_THEME.ink} /></View>
-        <PublicationText variant="captionStrong" align="center">{t('reel.captionMore')}</PublicationText>
+        <PublicationText variant="captionStrong" align="center">{moreLabel}</PublicationText>
       </Pressable>
     </ScrollView>
     <View style={[styles.caption, { flexDirection: direction }]} testID="reference-publication-caption">

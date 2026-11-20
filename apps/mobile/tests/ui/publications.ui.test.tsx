@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AppState, Dimensions, FlatList, StyleSheet } from 'react-native';
+import { AppState, Dimensions, FlatList, Share, StyleSheet } from 'react-native';
 import { fetchFavorites } from '@/api/account';
 import { fetchPublisherFollow, followPublisher } from '@/api/publisherFollow';
 import { PublicationLookScreen } from '@/features/publications/PublicationLookScreen';
@@ -162,6 +162,8 @@ it('keeps the three entry points of the first video template independent', async
   fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
   const player = within(screen.getByTestId('publication-fullscreen-player'));
   expect(router.push).not.toHaveBeenCalled();
+  expect(player.queryByTestId('publication-player-play')).toBeNull();
+  fireEvent.press(player.getByTestId('publication-player-options'));
   fireEvent.press(player.getByTestId('publication-player-play'));
   expect(mockPlayer.pause).toHaveBeenCalled();
   fireEvent.press(player.getByTestId('publication-player-mute'));
@@ -175,6 +177,7 @@ it('keeps the three entry points of the first video template independent', async
   fireEvent.press(player.getByTestId('publication-player-speed'));
   fireEvent.press(player.getByRole('button', { name: '1.5×' }));
   expect(mockPlayer.playbackRate).toBe(1.5);
+  fireEvent.press(player.getByTestId('publication-player-options'));
   fireEvent.press(player.getByTestId('publication-player-hide'));
   expect(player.queryByTestId('publication-player-play')).toBeNull();
   fireEvent.press(player.getByTestId('publication-player-surface'));
@@ -187,21 +190,48 @@ it('keeps the three entry points of the first video template independent', async
   expect(client.getQueryData(publicationLookKey('guest', 'publication_1'))).toMatchObject({ id: 'publication_1' });
 });
 
-it('renders the look as a full page with the original video above the real linked product rows', async () => {
-  jest.mocked(fetchPublicationLook).mockResolvedValueOnce(fixture('video', 500, 900).items[0]!);
+it('renders the original video above editorial information and a two-column product grid', async () => {
+  jest.mocked(fetchPublicationLook).mockResolvedValueOnce({ ...fixture('video', 500, 900).items[0]!, description: 'Un texte éditorial complet.' });
   mount(<PublicationLookScreen id="publication_1" />);
   const hero = await screen.findByTestId('publication-look-hero');
   expect(StyleSheet.flatten(hero.props.style).height).toBeGreaterThan(500);
   fireEvent.press(within(hero).getByTestId('publication-look-video'));
   expect(screen.getByTestId('publication-fullscreen-player')).toBeTruthy();
   fireEvent.press(screen.getByTestId('publication-player-exit'));
-  expect(screen.getByRole('header', { name: 'Adoptez le look' })).toBeTruthy();
+  expect(screen.getByRole('header', { name: 'Sélection week-end' })).toBeTruthy();
+  expect(within(screen.getByTestId('publication-video-information')).getByText('Un texte éditorial complet.')).toBeTruthy();
+  expect(screen.UNSAFE_getByType(FlatList).props.numColumns).toBe(2);
   expect(screen.getAllByText('80.00 TND')).toHaveLength(4);
   fireEvent.press(screen.getByRole('link', { name: 'Produit b' }));
   expect(router.push).toHaveBeenLastCalledWith({ pathname: '/product/[id]', params: { id: 'b' } });
   fireEvent.press(screen.getByTestId('publication-look-save'));
   expect(screen.getByTestId('publication-auth-sheet')).toBeTruthy();
   expect(savePublicationLook).not.toHaveBeenCalled();
+});
+
+it('renders the added large square with two real products and opens its detail from fullscreen', async () => {
+  const post = { ...fixture('video', 500, 900).items[0]!, layout: 'video-square' as const, description: 'Description de la vidéo.' };
+  post.products = post.products.slice(0, 2);
+  const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
+  jest.mocked(fetchReferencePublications).mockResolvedValueOnce({ items: [post], nextCursor: null });
+  mount();
+  const media = await screen.findByTestId('reference-media-video-square');
+  const { width, height } = StyleSheet.flatten(media.props.style);
+  expect(height).toBe(width);
+  const rail = screen.getByTestId('reference-products-publication_1');
+  expect(within(rail).getAllByTestId('reference-product-tile')).toHaveLength(2);
+  expect(within(rail).getByRole('button', { name: 'En savoir plus' })).toBeTruthy();
+  fireEvent.press(screen.getByTestId('reference-video-fullscreen'));
+  const player = within(screen.getByTestId('publication-fullscreen-player'));
+  const caption = player.getByTestId('publication-player-caption');
+  fireEvent.press(caption);
+  expect(caption.props.accessibilityState.expanded).toBe(true);
+  await act(async () => fireEvent.press(player.getByTestId('publication-player-share')));
+  expect(share).toHaveBeenCalledWith({ message: expect.stringContaining('/media/video.mp4') });
+  fireEvent.press(player.getByTestId('publication-player-learn-more'));
+  expect(router.push).toHaveBeenLastCalledWith({ pathname: '/publication-look/[id]', params: { id: 'publication_1' } });
+  expect(screen.queryByTestId('publication-fullscreen-player')).toBeNull();
+  share.mockRestore();
 });
 
 it('reports an unpublished look as unavailable instead of showing an unrelated post', async () => {
@@ -216,7 +246,7 @@ it('reports an unpublished look as unavailable instead of showing an unrelated p
 
 it('writes look saves and publisher follows through their existing account APIs', async () => {
   mockSession.mockReturnValue({ status: 'signedIn', account: { id: 'owner' } });
-  jest.mocked(fetchPublicationLook).mockResolvedValueOnce(fixture('video', 500, 900).items[0]!);
+  jest.mocked(fetchPublicationLook).mockResolvedValueOnce({ ...fixture('video', 500, 900).items[0]!, description: 'Un texte éditorial complet.' });
   jest.mocked(fetchFavorites).mockResolvedValueOnce([]);
   jest.mocked(fetchPublisherFollow).mockResolvedValueOnce({ following: false });
   jest.mocked(followPublisher).mockResolvedValueOnce({ following: true });

@@ -1,4 +1,4 @@
-# Publication mobile: four reference templates
+# Publication mobile: reference templates
 
 The 720 px reference screenshots were normalized to a 360 dp viewport. The media silhouette is independent of how many products are attached. The existing fixed white Publication navigation remains in place; measurements apply to the posts below it.
 
@@ -9,6 +9,7 @@ The 720 px reference screenshots were normalized to a 360 dp viewport. The media
 | Image · panoramic | about 336 × 162 dp (658:318 reference) |
 | Video · inset | 336 × 162 dp frame; video centered at half frame width over a blurred poster |
 | Video · panoramic | 336 × 162 dp frame; video fills the frame |
+| Video · square | 336 × 336 dp frame; default centered portrait at 56% width with blurred sides; 2-product edition and matching CTA |
 | Product strip | 4 dp below media; tiles ≈103 × 148 dp, 4 dp gaps, 16 dp fourth-card peek if available |
 | Favourite / Voir plus | 32 dp heart disc inset 8 dp from top and end; same-size terminal tile with centered 48 dp arrow disc |
 | Text and controls | 6 dp below the rail; left-aligned title/subtitle (mirrored in Arabic), 16/20 dp; overflow at the trailing edge; video controls 40 dp in discs stacked at the lower trailing corner |
@@ -28,13 +29,15 @@ At 360 dp, the title is inset 24 dp, the rail starts 54 dp after the heading pan
 | Template | Tap media | Final **Voir plus** | Tap a product |
 | --- | --- | --- | --- |
 | `image-cover`, `image-panoramic` | `/publication-look/[id]`: large photo, title, publisher/Follow and linked product rows | Same post, `view=collection`: inset panorama, title, **Découvrir**, publisher/Follow and two-column product grid | Canonical `/product/[id]` |
-| `video-inset`, `video-panoramic` | Black, letterboxed fullscreen player with play/pause, seek, sound, speed, settings and exit | `/publication-look/[id]`: original video, publisher/Follow and linked product rows | Canonical `/product/[id]` |
+| `video-inset`, `video-panoramic`, `video-square` | Edge-filling video, back, share, sound, expandable description, and playback tools under overflow | **En savoir plus** on either surface → `/publication-look/[id]`: video, title/description, publisher and Follow, then linked product grid | Canonical `/product/[id]` |
 | `campaign_orange`, `campaign_red` | — | — | Canonical `/product/[id]` |
 
-The large presentation uses the 720:1107 reference aspect (≈554 dp at 360 dp). The compact photo is ≈336 × 162 dp at the same viewport, and grid photos are ≈164 × 233 dp. **Découvrir** in the compact view opens that same post's large view. A return-to-top button appears while browsing products. Play and sound controls in the video feed remain separate from the fullscreen entry; fullscreen uses the original source with `contain` fit and reports automatic quality and the actual decoder resolution, not fabricated selections. The player is paused in the background and the feed preview does not play underneath it.
+The large presentation uses the 720:1107 reference aspect (≈554 dp at 360 dp). The compact photo is ≈336 × 162 dp at the same viewport, and grid photos are ≈164 × 233 dp. **Découvrir** in the compact view opens that same post's large view. A return-to-top button appears while browsing products. Play and sound controls in the video feed remain separate from the fullscreen entry; fullscreen uses the original source with `cover` fit and reports automatic quality and the actual decoder resolution, not fabricated selections. The player is paused in the background and the feed preview does not play underneath it.
 
 All three detail presentations reuse the same authorized, account-keyed public feed read (`post=…&limit=1`); follow, look saves and product favorites use existing endpoints. Prices and optional discount/new badges come only from actual catalogue fields; no reference campaign data, historical-price labels, demo assets, or retired collections were added. Captions and options retain their existing action paths.
 
 ## Initial Zayrovi Team content
 
 On a database with the current 24-product selection and the two chosen published owner Reels, `catalogue_publications_v1` adds six editable Zayrovi Team publications (four linked catalogue IDs each, no duplicates). Image covers use catalogue product photos. Video layouts reuse the existing Capsule Wardrobe and Classic Outfits video URLs and posters (`contain` and `cover` respectively); no copies and no changes to the Reels themselves. Product data is read at request time. This one-shot insertion does not recreate or overwrite edits, and waits if any of the sources are unavailable. To undo it, unpublish the six `publication_catalogue_v1_*` posts in the CRM; do not delete the migration marker. The mobile-only `presentation=reference` list skips the old starter artwork and past showcase examples, without deleting, unpublishing or changing legacy direct reads.
+
+The square frame is explicit video media metadata (`frame: "square"`), not an inference about the Reel’s aspect ratio. The additive `catalogue_publication_square_video_v1` installation reuses the published Workwear Reel and two existing catalogue products; it does not alter the original six publications, their assignments, or the Reel. At 360 dp the new reference gives a ≈20 dp rail inset for this two-product edition, 4 dp gaps, and 40 dp preview control discs. The fullscreen caption and outlined CTA are independent actions; only the CTA opens the video detail.

@@ -32,6 +32,7 @@ export interface PublicationMedia extends MediaPresentation {
   poster: string;
   alt: string;
   fit?: 'contain' | 'cover';
+  frame?: 'square';
 }
 export interface PublicationContent {
   showTitle?: boolean;
@@ -74,6 +75,7 @@ export function normalizePublicationContent(
       'image'
     );
     if (!link.ok || !link.url || !poster.ok) return null;
+    if (item.frame !== undefined && (item.type !== 'video' || item.frame !== 'square')) return null;
     if (item.fit !== undefined && !['contain', 'cover'].includes(item.fit))
       return null;
     if (
@@ -110,6 +112,7 @@ export function normalizePublicationContent(
       ),
       ...(original?.ok && original.url ? { originalUrl: original.url } : {}),
       ...(item.fit ? { fit: item.fit } : {}),
+      ...(item.frame ? { frame: item.frame } : {}),
       type: item.type,
       url: link.url,
       poster: poster.url,

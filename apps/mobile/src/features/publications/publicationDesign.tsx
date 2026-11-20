@@ -70,6 +70,7 @@ const drawings: Record<string, string> = {
     'M12 21S2 15 2 8.5C2 2.5 9 1.5 12 6c3-4.5 10-3.5 10 2.5C22 15 12 21 12 21Z',
   'chatbubble-outline':
     'M21 11.5a9 9 0 0 1-9 9 10 10 0 0 1-4-.9L3 21l1.3-4.7A9 9 0 1 1 21 11.5Z',
+  'share-social-outline': 'M8 11l8-5m-8 7 8 5M8 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm14-7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm0 14a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
   'share-outline': 'm3 3 18 9-18 9 3.5-9L3 3Zm3.5 9H21',
   'send-outline': 'm3 3 18 9-18 9 3.5-9L3 3Zm3.5 9H21',
   'bookmark-outline': 'M6 3h12v18l-6-4-6 4V3Z',

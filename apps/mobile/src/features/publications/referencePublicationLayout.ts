@@ -10,15 +10,17 @@ export const PUBLICATION_REFERENCE = {
   captionGap: 6, postGap: 28, startGap: 16,
 } as const;
 
-export type ReferenceLayout = 'image-cover' | 'image-panoramic' | 'video-inset' | 'video-panoramic';
+export type ReferenceLayout = 'image-cover' | 'image-panoramic' | 'video-inset' | 'video-panoramic' | 'video-square';
 export interface ReferenceMedia {
   type: 'image' | 'video'; url: string; poster: string; alt: string;
+  frame?: 'square';
   width?: number; height?: number; fit?: 'contain' | 'cover'; focalX?: number; focalY?: number;
 }
 
 export function referenceLayout(media: ReferenceMedia, template: string): ReferenceLayout {
   const landscape = Boolean(media.width && media.height && media.width / media.height >= 1.55);
   if (media.type === 'video') {
+    if (media.frame === 'square') return 'video-square';
     return (media.fit === 'cover' || (media.fit !== 'contain' && landscape)) ? 'video-panoramic' : 'video-inset';
   }
   // Older authored campaigns can lack dimensions; do not let product count drive the media height.
@@ -30,6 +32,6 @@ export function referenceMeasurements(viewport: number, layout: ReferenceLayout 
   const r = PUBLICATION_REFERENCE;
   const width = Math.max(0, Math.min(600, viewport - 2 * r.inset));
   const tileWidth = Math.max(0, (width - r.peek - 3 * r.railGap) / 3);
-  const mediaHeight = width / (layout === 'image-cover' ? r.imageCoverAspect : r.panoramicAspect);
+  const mediaHeight = layout === 'video-square' ? width : width / (layout === 'image-cover' ? r.imageCoverAspect : r.panoramicAspect);
   return { width, tileWidth, tileHeight: tileWidth / r.tileAspect, mediaHeight };
 }

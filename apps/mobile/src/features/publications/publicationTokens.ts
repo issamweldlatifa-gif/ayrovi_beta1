@@ -64,3 +64,6 @@ export const PUBLICATION_CAMPAIGN_TONES = {
 
 /** Black fullscreen player and the seek accent sampled from the video reference. */
 export const PUBLICATION_PLAYER = { menu: '#191919', track: '#595959', progress: '#FF4C01' } as const;
+
+/** Editorial video chrome, measured from the mobile video references. */
+export const PUBLICATION_VIDEO_TYPE = { overlaySize: 14, overlayLine: 20, infoTitleSize: 22, infoTitleLine: 28, infoBodyLine: 24 } as const;

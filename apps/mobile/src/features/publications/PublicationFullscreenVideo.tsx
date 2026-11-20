@@ -1,30 +1,48 @@
-import { useEffect, useRef, useState } from 'react';
-import { AppState, Modal, Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { StatusBar } from 'expo-status-bar';
-import { VideoView, useVideoPlayer } from 'expo-video';
-import { mediaUrl } from '@/api/client';
-import { AppImage } from '@/design/appImage';
-import { RADIUS } from '@/design/tokens.mobile';
-import { useT } from '@/i18n';
-import { PublicationIcon, PublicationText } from './publicationDesign';
-import { PUBLICATION_PALETTE as P, PUBLICATION_PLAYER as C } from './publicationTokens';
+import { useEffect, useRef, useState } from "react";
+import { Alert, AppState, Modal, Pressable, Share, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
+import { VideoView, useVideoPlayer } from "expo-video";
+import { mediaUrl } from "@/api/client";
+import { AppImage } from "@/design/appImage";
+import { rowDirectionFor } from "@/design/layoutLogic";
+import { useTheme } from "@/design/theme";
+import { RADIUS, veil } from "@/design/tokens.mobile";
+import { useT } from "@/i18n";
+import { PublicationIcon, PublicationText } from "./publicationDesign";
+import { PUBLICATION_PALETTE as P, PUBLICATION_PLAYER as C, PUBLICATION_VIDEO_TYPE as T } from "./publicationTokens";
 
 export type PublicationPlayback = { time: number; muted: boolean };
 const SPEEDS = [0.5, 1, 1.25, 1.5, 2];
 const clamp = (value: number, max: number) => Math.min(Math.max(0, value), max);
 
-export function PublicationFullscreenVideo({ url, poster, start, onClose }: {
-  url: string; poster: string; start: PublicationPlayback; onClose: (state: PublicationPlayback) => void;
+export function PublicationFullscreenVideo({
+  url,
+  poster,
+  start,
+  caption,
+  onClose,
+  onLearnMore,
+}: {
+  url: string;
+  poster: string;
+  start: PublicationPlayback;
+  caption: string;
+  onClose: (state: PublicationPlayback) => void;
+  onLearnMore: (state: PublicationPlayback) => void;
 }) {
   const t = useT();
-  const { bottom, left, right } = useSafeAreaInsets();
+  const { isRTL } = useTheme();
+  const { top, bottom, left, right } = useSafeAreaInsets();
   const [ready, setReady] = useState(false);
-  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const [foreground, setForeground] = useState(AppState.currentState === "active");
   const [paused, setPaused] = useState(false);
   const [muted, setMuted] = useState(start.muted);
   const [visible, setVisible] = useState(true);
-  const [menu, setMenu] = useState<'settings' | 'quality' | 'diagnostics' | 'speed' | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [menu, setMenu] = useState<"controls" | "settings" | "quality" | "diagnostics" | "speed" | null>(null);
   const [time, setTime] = useState(start.time);
   const [duration, setDuration] = useState(0);
   const [resolution, setResolution] = useState(0);
@@ -32,8 +50,8 @@ export function PublicationFullscreenVideo({ url, poster, start, onClose }: {
   const [dragProgress, setDragProgress] = useState<number | null>(null);
   const seekPageStart = useRef(0);
   const [speed, setSpeed] = useState(1);
-  const [status, setStatus] = useState('idle');
-  const player = useVideoPlayer({ uri: mediaUrl(url) }, instance => {
+  const [status, setStatus] = useState("idle");
+  const player = useVideoPlayer({ uri: mediaUrl(url) }, (instance) => {
     instance.muted = start.muted;
     instance.currentTime = start.time;
     instance.loop = true;
@@ -49,109 +67,360 @@ export function PublicationFullscreenVideo({ url, poster, start, onClose }: {
     setStatus(player.status);
     refresh();
     const subs = [
-      AppState.addEventListener('change', value => setForeground(value === 'active')),
-      player.addListener('statusChange', ({ status: next }) => { setStatus(next); refresh(); }),
-      player.addListener('sourceLoad', refresh),
-      player.addListener('videoTrackChange', refresh),
-      player.addListener('timeUpdate', ({ currentTime }) => setTime(currentTime)),
+      AppState.addEventListener("change", (value) => setForeground(value === "active")),
+      player.addListener("statusChange", ({ status: next }) => {
+        setStatus(next);
+        refresh();
+      }),
+      player.addListener("sourceLoad", refresh),
+      player.addListener("videoTrackChange", refresh),
+      player.addListener("timeUpdate", ({ currentTime }) => setTime(currentTime)),
     ];
-    return () => subs.forEach(item => item.remove());
+    return () => subs.forEach((item) => item.remove());
   }, [player]);
-  useEffect(() => { if (foreground && !paused) player.play(); else player.pause(); }, [foreground, paused, player]);
-  useEffect(() => { player.muted = muted; }, [muted, player]);
-  useEffect(() => { player.playbackRate = speed; }, [speed, player]);
+  useEffect(() => {
+    if (foreground && !paused && !sharing) player.play();
+    else player.pause();
+  }, [foreground, paused, player, sharing]);
+  useEffect(() => {
+    player.muted = muted;
+  }, [muted, player]);
+  useEffect(() => {
+    player.playbackRate = speed;
+  }, [speed, player]);
   const seek = (position: number) => {
     if (!duration || !Number.isFinite(position)) return;
     player.currentTime = clamp(position, duration);
     setTime(player.currentTime);
   };
-  const close = () => onClose({ time: Number.isFinite(player.currentTime) ? player.currentTime : 0, muted });
-  const back = () => menu ? setMenu(menu === 'quality' || menu === 'diagnostics' ? 'settings' : null) : close();
-  const toggleControls = () => { setMenu(null); setVisible(value => menu ? true : !value); };
-  const quality = resolution ? `${resolution}p` : t('publication.playerAuto');
+  const playback = () => ({
+    time: Number.isFinite(player.currentTime) ? player.currentTime : 0,
+    muted,
+  });
+  const close = () => onClose(playback());
+  const back = () => (menu ? setMenu(menu === "quality" || menu === "diagnostics" ? "settings" : menu === "controls" ? null : "controls") : close());
+  const share = async () => {
+    setSharing(true);
+    try {
+      await Share.share({
+        message: [caption, mediaUrl(url)].filter(Boolean).join("\n"),
+      });
+    } catch {
+      Alert.alert(t("publication.videoShareError"));
+    } finally {
+      setSharing(false);
+    }
+  };
+  const toggleControls = () => {
+    setMenu(null);
+    setVisible((value) => (menu ? true : !value));
+  };
+  const quality = resolution ? `${resolution}p` : t("publication.playerAuto");
   const progress = dragProgress ?? (duration ? clamp(time, duration) / duration : 0);
-  const fraction = (x: number) => trackWidth ? clamp(x / trackWidth, 1) : 0;
-  const button = (name: Parameters<typeof PublicationIcon>[0]['name'], label: string, press: () => void, id: string) =>
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={press} testID={id} style={[styles.button, id === 'publication-player-play' && styles.play]}>
+  const fraction = (x: number) => (trackWidth ? clamp(x / trackWidth, 1) : 0);
+  const button = (name: Parameters<typeof PublicationIcon>[0]["name"], label: string, press: () => void, id: string) => (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={press}
+      testID={id}
+      style={[styles.button, id === "publication-player-play" && styles.play]}
+    >
       <PublicationIcon name={name} color={P.paper} size={22} />
-    </Pressable>;
+    </Pressable>
+  );
 
-  return <Modal animationType="none" statusBarTranslucent navigationBarTranslucent supportedOrientations={['portrait', 'landscape']}
-    onRequestClose={back}>
-    <View style={styles.screen} testID="publication-fullscreen-player">
-      <StatusBar hidden />
-      {poster && !ready ? <AppImage uri={mediaUrl(poster)} decorative contentFit="contain" style={StyleSheet.absoluteFill} /> : null}
-      <VideoView player={player} style={[StyleSheet.absoluteFill, !ready && styles.buffering]} surfaceType="textureView"
-        nativeControls={false} contentFit="contain" onFirstFrameRender={() => setReady(true)} />
-      <Pressable onPress={toggleControls} accessibilityRole="button" accessibilityLabel={t(visible ? 'publication.playerHide' : 'publication.playerShow')}
-        style={StyleSheet.absoluteFill} testID="publication-player-surface" />
-      {status === 'error' ? <PublicationText accessibilityRole="alert" color={P.paper} style={styles.error}>{t('publication.videoError')}</PublicationText> : null}
-      {visible ? <View pointerEvents="box-none" style={[styles.footer, { paddingBottom: bottom + 6, paddingLeft: left + 8, paddingRight: right + 8 }]}>
-        {menu ? <View style={styles.menu} testID={`publication-player-menu-${menu}`}>
-          {menu === 'settings' ? <>
-            <Pressable style={[styles.menuRow, styles.divider]} accessibilityRole="button" onPress={() => setMenu('quality')}>
-              <PublicationText color={P.paper} style={styles.grow}>{t('publication.playerQuality')}</PublicationText>
-              <PublicationText color={P.paper}>{quality}</PublicationText>
-              <PublicationIcon name="chevron-forward" size={16} color={P.paper} />
-            </Pressable>
-            <Pressable style={styles.menuRow} accessibilityRole="button" onPress={() => setMenu('diagnostics')}>
-              <PublicationIcon name="information-circle-outline" size={16} color={P.paper} />
-              <PublicationText color={P.paper}>{t('publication.playerDiagnostics')}</PublicationText>
-            </Pressable>
-          </> : menu === 'speed' ? SPEEDS.map(value => <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: speed === value }}
-            style={styles.speedRow} onPress={() => { setSpeed(value); setMenu(null); }}>
-            <PublicationText color={P.paper}>{`${value}×`}</PublicationText>
-            {speed === value ? <PublicationIcon name="checkmark-outline" size={18} color={P.paper} /> : null}
-          </Pressable>) : <>
-            <Pressable style={[styles.menuRow, styles.divider]} accessibilityRole="button" onPress={() => setMenu('settings')}>
-              <PublicationIcon name="chevron-back" size={16} color={P.paper} />
-              <PublicationText color={P.paper}>{t(menu === 'quality' ? 'publication.playerQuality' : 'publication.playerDiagnostics')}</PublicationText>
-            </Pressable>
-            <View style={styles.menuRow}><PublicationText color={P.paper}>{menu === 'quality'
-              ? `${t('publication.playerAuto')}${resolution ? ` · ${quality}` : ''}` : `${status} · ${quality} · ${speed}×`}</PublicationText></View>
-          </>}
-        </View> : null}
-        <View style={styles.bar}>
-          {button(paused ? 'play-outline' : 'pause-outline', t(paused ? 'social.play' : 'social.pause'), () => setPaused(value => !value), 'publication-player-play')}
-          <View style={styles.seek} onLayout={event => setTrackWidth(event.nativeEvent.layout.width)}
-            onStartShouldSetResponder={() => Boolean(duration && trackWidth)}
-            onResponderGrant={({ nativeEvent: event }) => {
-              seekPageStart.current = event.pageX - event.locationX;
-              setDragProgress(fraction(event.locationX));
-            }}
-            onResponderMove={event => setDragProgress(fraction(event.nativeEvent.pageX - seekPageStart.current))}
-            onResponderRelease={event => { seek(fraction(event.nativeEvent.pageX - seekPageStart.current) * duration); setDragProgress(null); }}
-            onResponderTerminate={() => setDragProgress(null)} accessible accessibilityRole="adjustable"
-            accessibilityLabel={t('publication.playerProgress')} accessibilityState={{ disabled: !duration }} accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}
-            accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-            onAccessibilityAction={event => seek(time + (event.nativeEvent.actionName === 'increment' ? 5 : -5))} testID="publication-player-seek">
-            <View pointerEvents="none" style={styles.track}><View style={[styles.progress, { width: `${progress * 100}%` }]} /></View>
-          </View>
-          {button(muted ? 'volume-mute-outline' : 'volume-high-outline', t(muted ? 'publication.unmute' : 'publication.mute'), () => setMuted(value => !value), 'publication-player-mute')}
-          {button('settings-outline', t('publication.playerSettings'), () => setMenu(value => value ? null : 'settings'), 'publication-player-settings')}
-          {button('speedometer-outline', t('publication.playerSpeed'), () => setMenu(value => value === 'speed' ? null : 'speed'), 'publication-player-speed')}
-          {button('contract-outline', t('publication.playerExit'), close, 'publication-player-exit')}
-          {button('chevron-forward', t('publication.playerHide'), toggleControls, 'publication-player-hide')}
+  return (
+    <Modal animationType="none" statusBarTranslucent navigationBarTranslucent supportedOrientations={["portrait", "landscape"]} onRequestClose={back}>
+      <View style={[styles.shell, { paddingTop: top }]}>
+        <StatusBar style="dark" />
+        <View style={styles.screen} testID="publication-fullscreen-player">
+          {poster && !ready ? <AppImage uri={mediaUrl(poster)} decorative contentFit="cover" style={StyleSheet.absoluteFill} /> : null}
+          <VideoView
+            player={player}
+            style={[StyleSheet.absoluteFill, !ready && styles.buffering]}
+            surfaceType="textureView"
+            nativeControls={false}
+            contentFit="cover"
+            onFirstFrameRender={() => setReady(true)}
+          />
+          <Pressable
+            onPress={toggleControls}
+            accessibilityRole="button"
+            accessibilityLabel={t(visible ? "publication.playerHide" : "publication.playerShow")}
+            style={StyleSheet.absoluteFill}
+            testID="publication-player-surface"
+          />
+          {status === "error" ? (
+            <PublicationText accessibilityRole="alert" color={P.paper} style={styles.error}>
+              {t("publication.videoError")}
+            </PublicationText>
+          ) : null}
+          {visible ? (
+            <>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t("publication.playerExit")}
+                testID="publication-player-exit"
+                onPress={close}
+                style={[styles.back, { start: (isRTL ? right : left) + 12 }]}
+              >
+                <PublicationIcon name={isRTL ? "chevron-forward" : "chevron-back"} color={P.paper} size={24} />
+              </Pressable>
+              <View
+                pointerEvents="box-none"
+                style={[
+                  styles.footer,
+                  {
+                    paddingBottom: bottom + 12,
+                    paddingLeft: left + 12,
+                    paddingRight: right + 12,
+                  },
+                ]}
+              >
+                <LinearGradient pointerEvents="none" colors={[veil(0), veil(0.46), veil(0.94)]} style={StyleSheet.absoluteFill} />
+                <View style={[styles.editorial, { flexDirection: rowDirectionFor(isRTL) }]}>
+                  <View style={styles.editorialCopy}>
+                    {caption ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={caption}
+                        accessibilityState={{ expanded }}
+                        testID="publication-player-caption"
+                        onPress={() => setExpanded((value) => !value)}
+                        style={[styles.captionLine, { flexDirection: rowDirectionFor(isRTL) }]}
+                      >
+                        <PublicationText color={P.paper} numberOfLines={expanded ? 5 : 1} style={styles.captionText}>
+                          {caption}
+                        </PublicationText>
+                        <PublicationText color={P.paper} variant="caption">
+                          {t(expanded ? "publication.captionLess" : "reel.captionMore")}
+                        </PublicationText>
+                      </Pressable>
+                    ) : null}
+                    <Pressable
+                      accessibilityRole="link"
+                      testID="publication-player-learn-more"
+                      onPress={() => onLearnMore(playback())}
+                      style={styles.cta}
+                    >
+                      <PublicationText color={P.paper} style={styles.ctaText}>
+                        {t("publication.learnMore")}
+                      </PublicationText>
+                    </Pressable>
+                  </View>
+                  <View style={styles.actions}>
+                    {button("share-social-outline", t("social.share"), () => void share(), "publication-player-share")}
+                    {button(
+                      muted ? "volume-mute-outline" : "volume-high-outline",
+                      t(muted ? "publication.unmute" : "publication.mute"),
+                      () => setMuted((value) => !value),
+                      "publication-player-mute"
+                    )}
+                    {button(
+                      "ellipsis-horizontal-outline",
+                      t("publication.postOptions"),
+                      () => setMenu((value) => (value ? null : "controls")),
+                      "publication-player-options"
+                    )}
+                  </View>
+                </View>
+                {menu && menu !== "controls" ? (
+                  <View style={styles.menu} testID={`publication-player-menu-${menu}`}>
+                    {menu === "settings" ? (
+                      <>
+                        <Pressable style={[styles.menuRow, styles.divider]} accessibilityRole="button" onPress={() => setMenu("quality")}>
+                          <PublicationText color={P.paper} style={styles.grow}>
+                            {t("publication.playerQuality")}
+                          </PublicationText>
+                          <PublicationText color={P.paper}>{quality}</PublicationText>
+                          <PublicationIcon name="chevron-forward" size={16} color={P.paper} />
+                        </Pressable>
+                        <Pressable style={styles.menuRow} accessibilityRole="button" onPress={() => setMenu("diagnostics")}>
+                          <PublicationIcon name="information-circle-outline" size={16} color={P.paper} />
+                          <PublicationText color={P.paper}>{t("publication.playerDiagnostics")}</PublicationText>
+                        </Pressable>
+                      </>
+                    ) : menu === "speed" ? (
+                      SPEEDS.map((value) => (
+                        <Pressable
+                          key={value}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: speed === value }}
+                          style={styles.speedRow}
+                          onPress={() => {
+                            setSpeed(value);
+                            setMenu(null);
+                          }}
+                        >
+                          <PublicationText color={P.paper}>{`${value}×`}</PublicationText>
+                          {speed === value ? <PublicationIcon name="checkmark-outline" size={18} color={P.paper} /> : null}
+                        </Pressable>
+                      ))
+                    ) : (
+                      <>
+                        <Pressable style={[styles.menuRow, styles.divider]} accessibilityRole="button" onPress={() => setMenu("settings")}>
+                          <PublicationIcon name="chevron-back" size={16} color={P.paper} />
+                          <PublicationText color={P.paper}>
+                            {t(menu === "quality" ? "publication.playerQuality" : "publication.playerDiagnostics")}
+                          </PublicationText>
+                        </Pressable>
+                        <View style={styles.menuRow}>
+                          <PublicationText color={P.paper}>
+                            {menu === "quality"
+                              ? `${t("publication.playerAuto")}${resolution ? ` · ${quality}` : ""}`
+                              : `${status} · ${quality} · ${speed}×`}
+                          </PublicationText>
+                        </View>
+                      </>
+                    )}
+                  </View>
+                ) : null}
+                {menu ? (
+                  <View style={styles.bar}>
+                    {button(
+                      paused ? "play-outline" : "pause-outline",
+                      t(paused ? "social.play" : "social.pause"),
+                      () => setPaused((value) => !value),
+                      "publication-player-play"
+                    )}
+                    <View
+                      style={styles.seek}
+                      onLayout={(event) => setTrackWidth(event.nativeEvent.layout.width)}
+                      onStartShouldSetResponder={() => Boolean(duration && trackWidth)}
+                      onResponderGrant={({ nativeEvent: event }) => {
+                        seekPageStart.current = event.pageX - event.locationX;
+                        setDragProgress(fraction(event.locationX));
+                      }}
+                      onResponderMove={(event) => setDragProgress(fraction(event.nativeEvent.pageX - seekPageStart.current))}
+                      onResponderRelease={(event) => {
+                        seek(fraction(event.nativeEvent.pageX - seekPageStart.current) * duration);
+                        setDragProgress(null);
+                      }}
+                      onResponderTerminate={() => setDragProgress(null)}
+                      accessible
+                      accessibilityRole="adjustable"
+                      accessibilityLabel={t("publication.playerProgress")}
+                      accessibilityState={{ disabled: !duration }}
+                      accessibilityValue={{
+                        min: 0,
+                        max: 100,
+                        now: Math.round(progress * 100),
+                      }}
+                      accessibilityActions={[{ name: "increment" }, { name: "decrement" }]}
+                      onAccessibilityAction={(event) => seek(time + (event.nativeEvent.actionName === "increment" ? 5 : -5))}
+                      testID="publication-player-seek"
+                    >
+                      <View pointerEvents="none" style={styles.track}>
+                        <View style={[styles.progress, { width: `${progress * 100}%` }]} />
+                      </View>
+                    </View>
+                    {button(
+                      "settings-outline",
+                      t("publication.playerSettings"),
+                      () => setMenu((value) => (value === "settings" ? "controls" : "settings")),
+                      "publication-player-settings"
+                    )}
+                    {button(
+                      "speedometer-outline",
+                      t("publication.playerSpeed"),
+                      () => setMenu((value) => (value === "speed" ? "controls" : "speed")),
+                      "publication-player-speed"
+                    )}
+                    {button("chevron-forward", t("publication.playerHide"), () => { setMenu(null); setVisible(false); }, "publication-player-hide")}
+                  </View>
+                ) : null}
+              </View>
+            </>
+          ) : null}
         </View>
-      </View> : null}
-    </View>
-  </Modal>;
+      </View>
+    </Modal>
+  );
 }
 
 const styles = StyleSheet.create({
+  shell: { flex: 1, backgroundColor: P.paper },
+  back: {
+    position: "absolute",
+    top: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: veil(0.65),
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  editorial: { alignItems: "flex-end", gap: 8 },
+  editorialCopy: { flex: 1, gap: 10 },
+  captionLine: { gap: 6, alignItems: "center", minHeight: 44 },
+  captionText: { flexShrink: 1, fontSize: T.overlaySize, lineHeight: T.overlayLine },
+  cta: {
+    alignSelf: "flex-start",
+    minHeight: 38,
+    paddingHorizontal: 16,
+    justifyContent: "center",
+    borderRadius: RADIUS.xs,
+    borderWidth: 1,
+    borderColor: P.paper,
+    marginBottom: 4,
+  },
+  ctaText: { fontSize: T.overlaySize, lineHeight: T.overlayLine },
+  actions: { alignItems: "center", gap: 8 },
   screen: { flex: 1, backgroundColor: P.backdrop },
   buffering: { opacity: 0 },
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0 },
-  bar: { flexDirection: 'row', direction: 'ltr', alignItems: 'center' },
-  button: { width: 30, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0 },
+  bar: { flexDirection: "row", direction: "ltr", alignItems: "center" },
+  button: {
+    width: 44,
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   play: { width: 56 },
-  seek: { flex: 1, height: 44, marginLeft: 20, marginRight: 4, justifyContent: 'center' },
-  track: { height: 4, backgroundColor: C.track, borderRadius: 2, overflow: 'hidden' },
-  progress: { height: '100%', backgroundColor: C.progress },
-  menu: { borderRadius: RADIUS.sm, backgroundColor: C.menu, overflow: 'hidden' },
-  menuRow: { minHeight: 56, paddingHorizontal: 20, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  divider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.track },
-  speedRow: { minHeight: 44, paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  seek: {
+    flex: 1,
+    height: 44,
+    marginLeft: 20,
+    marginRight: 4,
+    justifyContent: "center",
+  },
+  track: {
+    height: 4,
+    backgroundColor: C.track,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progress: { height: "100%", backgroundColor: C.progress },
+  menu: {
+    borderRadius: RADIUS.sm,
+    backgroundColor: C.menu,
+    overflow: "hidden",
+  },
+  menuRow: {
+    minHeight: 56,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  divider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.track,
+  },
+  speedRow: {
+    minHeight: 44,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   grow: { flex: 1 },
-  error: { alignSelf: 'center', marginTop: 48, padding: 8, backgroundColor: C.menu },
+  error: {
+    alignSelf: "center",
+    marginTop: 48,
+    padding: 8,
+    backgroundColor: C.menu,
+  },
 });

@@ -3,7 +3,7 @@ import request from 'supertest';
 import { app, db } from '../src/server';
 import { QatafoDatabase } from '../src/db/database';
 import { ZALANDO_DEMO, zalandoDemoProductId } from '../src/catalogue/installZalandoDemoCatalogue';
-import { CATALOGUE_PUBLICATIONS_MIGRATION, CATALOGUE_PUBLICATIONS_PREFIX, installCataloguePublications } from '../src/magazine/cataloguePublications';
+import { CATALOGUE_PUBLICATIONS_MIGRATION, CATALOGUE_PUBLICATIONS_PREFIX, installCataloguePublications, installSquareVideoPublication, SQUARE_VIDEO_PUBLICATION_ID } from '../src/magazine/cataloguePublications';
 
 const feed = () => request(app).get('/api/public/social/publication-feed');
 
@@ -35,6 +35,22 @@ test('native Publication lists six populated templates and links the 24 live cat
     await request(app).get(reel.video_url).set('Range', 'bytes=0-31').expect(206).expect('Content-Type', /video\/mp4/);
     await request(app).head(reel.poster_url).expect(200).expect('Content-Type', /image\/jpeg/);
   }
+});
+
+test('publishes the additional square video with two existing products and does not overwrite it', async () => {
+  const res = await feed().query({ post: SQUARE_VIDEO_PUBLICATION_ID }).expect(200);
+  const post = res.body.data.items[0];
+  expect(post).toMatchObject({ id: SQUARE_VIDEO_PUBLICATION_ID, channel_name: 'Zayrovi Team', description: expect.any(String) });
+  expect(post.products.map((item: any) => item.id)).toEqual(['zalando-p001', 'zalando-p004'].map(zalandoDemoProductId));
+  const reel = db.get<{ video_url: string; poster_url: string }>("SELECT video_url,poster_url FROM reels WHERE id='reel_drive_workwear_v2'")!;
+  expect(JSON.parse(post.media_json)).toEqual([expect.objectContaining({ type: 'video', frame: 'square', url: reel.video_url, poster: reel.poster_url })]);
+  await request(app).get(reel.video_url).set('Range', 'bytes=0-31').expect(206);
+  const isolated = new QatafoDatabase(':memory:');
+  try {
+    isolated.run("UPDATE publications SET title='Edited by CRM' WHERE id=?", SQUARE_VIDEO_PUBLICATION_ID);
+    expect(installSquareVideoPublication(isolated)).toBe(false);
+    expect(isolated.get('SELECT title FROM publications WHERE id=?', SQUARE_VIDEO_PUBLICATION_ID)).toEqual({ title: 'Edited by CRM' });
+  } finally { isolated.close(); }
 });
 
 test('legacy content is retained and hiding starter art is limited to the native reference list', async () => {

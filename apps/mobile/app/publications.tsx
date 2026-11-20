@@ -51,7 +51,7 @@ export default function PublicationsScreen() {
   const [auth, setAuth] = useState(false);
   const [selection, setSelection] = useState<Selection | null>(null);
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
-  const [fullscreen, setFullscreen] = useState<{ url: string; poster: string; start: PublicationPlayback; resumeAt: (state: PublicationPlayback) => void } | null>(null);
+  const [fullscreen, setFullscreen] = useState<{ post: ReferencePublication; url: string; poster: string; start: PublicationPlayback; resumeAt: (state: PublicationPlayback) => void } | null>(null);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
   const viewability = useRef({ itemVisiblePercentThreshold: 45, minimumViewTime: 160 }).current;
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken<ReferencePublication>[] }) => {
@@ -115,7 +115,7 @@ export default function PublicationsScreen() {
           active={playingAllowed && activeVideo === item.id} autoplay={!reducedMotion} onActivate={() => setActiveVideo(item.id)}
           onPhoto={item.media?.type === 'image' ? () => openLook(item) : undefined}
           onVideo={item.media?.type === 'video' ? (start, resumeAt) => {
-            if (item.media) setFullscreen({ url: item.media.url, poster: item.media.poster, start, resumeAt });
+            if (item.media) setFullscreen({ post: item, url: item.media.url, poster: item.media.poster, start, resumeAt });
           } : undefined}
           onMore={() => openLook(item, item.media?.type === 'image')} onCaption={() => open(item, 'details')} onOptions={() => open(item, 'options')} onSponsor={() => open(item, 'sponsor')}
           favorites={favorites} signedIn={signedIn} onAuth={() => setAuth(true)} />}
@@ -149,6 +149,8 @@ export default function PublicationsScreen() {
       </View>
     </AppSheet> : null}
     {fullscreen ? <PublicationFullscreenVideo url={fullscreen.url} poster={fullscreen.poster} start={fullscreen.start}
+      caption={fullscreen.post.description || fullscreen.post.subtitle || fullscreen.post.title}
+      onLearnMore={state => { fullscreen.resumeAt(state); setFullscreen(null); openLook(fullscreen.post); }}
       onClose={state => { fullscreen.resumeAt(state); setFullscreen(null); }} /> : null}
     {auth ? <PublicationAuthSheet visible onClose={() => setAuth(false)} /> : null}
   </View>;

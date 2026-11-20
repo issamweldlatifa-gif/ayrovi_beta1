@@ -70,3 +70,33 @@ export function installCataloguePublications(db: QatafoDatabase, now = new Date(
     return true;
   });
 }
+
+export const SQUARE_VIDEO_PUBLICATION_ID = 'publication_catalogue_square_workwear';
+const SQUARE_VIDEO_MIGRATION = 'catalogue_publication_square_video_v1';
+
+/** A new authored post, independent from the six existing posts and their CRM state. */
+export function installSquareVideoPublication(db: QatafoDatabase, now = new Date().toISOString()): boolean {
+  return db.transaction(() => {
+    if (db.get('SELECT 1 FROM applied_data_migrations WHERE key=?', SQUARE_VIDEO_MIGRATION)) return false;
+    if (!db.get("SELECT 1 FROM story_publishers WHERE id='pub_zayrovi' AND official=1")) return false;
+    const reel = db.get<{ video_url: string; poster_url: string }>(`SELECT video_url,poster_url FROM reels
+      WHERE id='reel_drive_workwear_v2' AND channel_id='pub_zayrovi' AND status='publie' AND publish_at<=?`, now);
+    const url = link(reel?.video_url || '', 'video');
+    const poster = link(reel?.poster_url || '', 'image');
+    const ids = [1, 4].map(productId);
+    if (!url || !poster || !ids.every(id => {
+      const product = db.get<{ image: string }>("SELECT image FROM products WHERE id=? AND visibility='CATALOG' AND status='ACTIVE' AND final_price>0", id);
+      return link(product?.image || '', 'image');
+    })) return false;
+    const title = 'Des idées de tenues pour le travail';
+    const description = 'Quelques idées pour composer une tenue de travail. Retrouvez sous la vidéo la sélection Zayrovi Team : un haut noir et un pantalon classique à jambes larges, deux pièces à associer ou à porter séparément.';
+    const result = db.run(`INSERT OR IGNORE INTO publications
+      (id,title,description,channel_id,image_url,publish_at,status,created_at,updated_at,category,media_origin,template_id,post_type,media_json,content_mode,product_id)
+      VALUES (?,?,?,'pub_zayrovi',?,?,'publie',?,?,'fashion','uploaded','video','video',?,'shoppable',?)`,
+    SQUARE_VIDEO_PUBLICATION_ID, title, description, poster, now, now, now,
+    JSON.stringify([{ type: 'video', url, poster, fit: 'contain', frame: 'square', alt: title }]), ids[0]);
+    if (result.changes) setContentProducts(db, 'publication', SQUARE_VIDEO_PUBLICATION_ID, ids, now);
+    db.run('INSERT INTO applied_data_migrations(key,applied_at) VALUES (?,?)', SQUARE_VIDEO_MIGRATION, now);
+    return Boolean(result.changes);
+  });
+}

@@ -11,6 +11,7 @@ describe('reference publication layout', () => {
     const cover = referenceMeasurements(360, 'image-cover');
     const panorama = referenceMeasurements(360, 'image-panoramic');
     expect(cover.width).toBe(336);
+    expect(referenceMeasurements(360, 'video-square').mediaHeight).toBe(336);
     expect(cover.mediaHeight).toBeCloseTo(323.745, 2);
     expect(panorama.mediaHeight).toBeCloseTo(162.383, 2);
     expect(panorama.tileWidth).toBeCloseTo(102.667, 2);
@@ -31,6 +32,13 @@ describe('reference publication layout', () => {
     ] });
     expect(actual.nextCursor).toBe('safeCursor');
     expect(actual.items.map(({ layout }) => layout)).toEqual(['image-cover', 'image-panoramic', 'video-inset', 'video-panoramic']);
+  });
+  it('only promotes video with an explicit square frame', () => {
+    const { items } = parseReferencePublicationPage({ nextCursor: null, items: [
+      { id: 'square', media_json: [{ type: 'video', url: '/media/video.mp4', fit: 'contain', frame: 'square' }] },
+      { id: 'photo', media_json: [{ type: 'image', url: '/media/image.jpg', frame: 'square' }] },
+    ] });
+    expect(items.map(item => item.layout)).toEqual(['video-square', 'image-cover']);
   });
   it('keeps truthful sponsorship, author order and only valid linked products', () => {
     const p = (id: string, price: number) => ({ id, name: id, price });
