@@ -5,7 +5,7 @@
  * Contrat d'affichage :
  *  • chargement ⇒ squelette de la forme attendue, JAMAIS un trou blanc ;
  *  • module désactivé / erreur API / aucune carte ⇒ rien (il n'existe plus d'ancien hero) ;
- *  • carte = titre + photo carrée (collection locale), visuel 5:8 pour CMS ; toute la carte ouvre sa destination ;
+ *  • carte = titre + photo carrée (collection locale), visuel 5:8 pour CMS ; seules les destinations actives sont cliquables ;
  *  • le fond de la section reprend la palette de la photo active puis se fond
  *    progressivement dans le fond de page, en fondu enchaîné QUI SUIT LE DOIGT
  *    (12/11/2026 : piloté par la position de défilement sur le fil natif, plus
@@ -40,9 +40,10 @@ import {
 } from '@/api/public';
 import { heroBackdropColors, mixHex, pickHeroText, withAlpha } from './heroPalette';
 import { isDemoSlide } from './heroDemo';
+import { heroDestination } from '@/features/publications/officialPublisher';
 import { HERO_COPY } from '@/design/tokens.mobile';
 import {
-  carouselSnapOffsets, backdropLayerRange, backdropProgressRange, CARD_ASPECT, CARD_GAP, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
+  carouselSnapOffsets, backdropLayerRange, backdropProgressRange, CARD_GAP, HERO_CARD_ASPECT, carouselGeometry, indexForOffset, isStillAfterDrag, nextIndex,
   scrollOffsetForIndex, shouldAutoplayAdvance,
 } from './heroCarouselLogic';
 
@@ -73,13 +74,20 @@ export interface HeroTint {
 }
 
 export function HeroCarousel({ settings, slides, onActiveBackgroundChange, onTintChange }: HeroCarouselProps) {
-  // 1. Chargement ⇒ squelette, jamais un indicateur indéfini ni un trou blanc.
-  if (settings.isPending || slides.isPending) return <HeroCarouselSkeleton />;
+  const { width } = useResponsive();
+  // 1. Le squelette réserve le même format portrait que la carte chargée.
+  if (settings.isPending || slides.isPending) {
+    const { cardWidth, startInset } = carouselGeometry(width);
+    return (
+      <View style={[styles.section, { paddingStart: startInset }]}>
+        <HeroCarouselSkeleton width={cardWidth} height={cardWidth / HERO_CARD_ASPECT} />
+      </View>
+    );
+  }
   // 2. Erreur de réglages ⇒ défauts sûrs (module actif, sobre, sans autoplay).
   const config = settings.data ?? parseHeroCarouselSettings(null);
   const cards = slides.data ?? [];
-  // 3. Désactivé / erreur slides / aucune carte ⇒ repli sur l'ancien hero.
-  if (slides.isPending) return <HeroCarouselSkeleton />;
+  // 3. Désactivé / erreur slides / aucune carte ⇒ pas de carrousel.
   if (!config.enabled || slides.isError || cards.length === 0) return null;
   return (
     <HeroCarouselView
@@ -246,10 +254,11 @@ function HeroCarouselView({
   }, [slides.length, stride, centeringOffset]);
 
   const onPressCard = useCallback((card: HeroSlide) => {
+    const href = heroDestination(card.href, card.destinationType);
+    if (!href) return;
     if (!isDemoSlide(card.id)) trackHeroEvent(card.id, 'click', card.destinationType, locale);
-    if (!card.href) return;
-    if (card.href.startsWith('/')) router.push(card.href as never);
-    else Linking.openURL(card.href).catch(() => {});
+    if (href.startsWith('/')) router.push(href as never);
+    else Linking.openURL(href).catch(() => {});
   }, [locale]);
 
   return (
@@ -326,7 +335,7 @@ function HeroCarouselView({
           <HeroCard
             card={item}
             width={cardWidth}
-            onPress={onPressCard}
+            onActivate={onPressCard}
           />
         )}
       />
@@ -339,14 +348,14 @@ function HeroCarouselView({
 interface HeroCardProps {
   card: HeroSlide;
   width: number;
-  onPress: (card: HeroSlide) => void;
+  onActivate: (card: HeroSlide) => void;
 }
 
 /**
  * Carte « façon Amazon » : le titre et le sous-titre sont POSÉS SUR le visuel,
  * sur un voile sombre en haut. Le visuel occupe toute la largeur de la carte.
  */
-const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps) {
+const HeroCard = memo(function HeroCard({ card, width, onActivate }: HeroCardProps) {
   const theme = useTheme();
   const { locale } = useI18n();
   const isArabic = locale === 'ar';
@@ -358,11 +367,13 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
   const copyColor = ownedArtwork ? (darkCopy ? HERO_COPY.black : HERO_COPY.white) : theme.colors.onMedia;
   // La carte entière est le lien : aucun bouton CTA séparé sous le visuel.
   const label = [title, subtitle].filter(Boolean).join(' · ');
+  const actionable = Boolean(heroDestination(card.href, card.destinationType));
+  const CardContainer = actionable ? Pressable : View;
 
   const copy = title || subtitle ? (
     <View
       testID={`hero-card-${card.id}-copy`}
-      style={ownedArtwork ? [styles.ownedCopy, { minHeight: Math.max(HERO_COPY.minHeight, width * (1 / CARD_ASPECT - 1)) }] : styles.cardCopy}
+      style={ownedArtwork ? [styles.ownedCopy, { minHeight: Math.max(HERO_COPY.minHeight, width * (1 / HERO_CARD_ASPECT - 1)) }] : styles.cardCopy}
       pointerEvents="none"
     >
       {title ? (
@@ -379,12 +390,12 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
   ) : null;
 
   return (
-    <Pressable
+    <CardContainer
       testID={`hero-card-${card.id}`}
       style={[styles.card, { width }]}
-      onPress={() => onPress(card)}
-      accessibilityRole="link"
-      accessibilityLabel={label || undefined}
+      onPress={actionable ? () => onActivate(card) : undefined}
+      accessibilityRole={actionable ? 'link' : undefined}
+      accessibilityLabel={actionable ? label || undefined : undefined}
     >
       {/* Liseré + ombre : la limite entre la carte et le fond dérivé reste
           nettement visible, même quand le fond reprend la teinte de la photo. */}
@@ -419,7 +430,7 @@ const HeroCard = memo(function HeroCard({ card, width, onPress }: HeroCardProps)
         /> : null}
         {!ownedArtwork ? copy : null}
       </View>
-    </Pressable>
+    </CardContainer>
   );
 });
 
@@ -441,7 +452,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 },
     elevation: 7,
   },
-  cardImage: { width: '100%', aspectRatio: CARD_ASPECT },
+  cardImage: { width: '100%', aspectRatio: HERO_CARD_ASPECT },
   ownedImage: { width: '100%', aspectRatio: 1 },
   // 16/11 (« عناوين الهيرو في الفوق موش في الوسط ») : le titre part du HAUT du bandeau, plus centré verticalement.
   ownedCopy: { padding: HERO_COPY.inset, minHeight: HERO_COPY.minHeight, justifyContent: 'flex-start' },

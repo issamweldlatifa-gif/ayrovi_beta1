@@ -5,7 +5,6 @@ import { StoriesSection } from '@/features/home/StoriesSection';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
-import { CARD_ASPECT } from '@/features/home/heroCarouselLogic';
 
 jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }));
 
@@ -33,7 +32,7 @@ describe('official editorial Stories gallery', () => {
     await mount();
     expect(screen.getByText(block.title)).toBeTruthy();
     expect(screen.getByText(block.subtitle)).toBeTruthy();
-    expect(StyleSheet.flatten(screen.getByTestId('editorial-story-s1').props.style).aspectRatio).toBeCloseTo(CARD_ASPECT / 1.08);
+    expect(StyleSheet.flatten(screen.getByTestId('editorial-story-s1').props.style).aspectRatio).toBeCloseTo((5 / 8) / 1.08);
     fireEvent.press(screen.getByRole('button', { name: /Explorez toutes les stories/ }));
     expect(router.navigate).toHaveBeenCalledWith({ pathname: '/(tabs)/social', params: { filter: 'stories' } });
   });

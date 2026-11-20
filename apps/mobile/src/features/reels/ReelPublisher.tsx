@@ -1,21 +1,24 @@
+import { router } from 'expo-router';
+import { OFFICIAL_PUBLISHER_NAME, OFFICIAL_PUBLISHER_ROUTE } from '@/features/publications/officialPublisher';
 import { ReelViewerText } from './ReelViewerChrome';
 import { REEL_VIEWER as V } from './reelViewerStyle';
-import { View, StyleSheet } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 import { AppText } from "@/design/ui";
 import { OFFICIAL_AVATAR, OfficialAvatar } from "@/design/OfficialAvatar";
 import { rowDirectionFor } from "@/design/layoutLogic";
 import { useTheme } from "@/design/theme";
 
 /** Publishing is currently first-party only. Never borrow a reference creator's identity. */
-export function ReelPublisher({ onMedia = false }: { onMedia?: boolean }) {
+export function ReelPublisher({ onMedia = false, onOpen }: { onMedia?: boolean; onOpen?: () => void }) {
   const theme = useTheme();
   return (
-    <View testID="reel-publisher" style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+    <Pressable testID="reel-publisher" accessibilityRole="link" accessibilityLabel={OFFICIAL_PUBLISHER_NAME}
+      onPress={onOpen ?? (() => router.push(OFFICIAL_PUBLISHER_ROUTE))} style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
       {/* Official avatar (14/11): white zebra Z on a black disc, the same in both themes and on video. */}
       <OfficialAvatar size={onMedia ? V.avatar : OFFICIAL_AVATAR.reel} testID="reel-publisher-avatar" />
-      {onMedia ? <ReelViewerText tone="publisher" numberOfLines={1} color={V.paper} style={styles.name}>Zayrovi Team</ReelViewerText>
-        : <AppText variant="body" numberOfLines={1} color={theme.colors.ink} style={styles.name}>Zayrovi Team</AppText>}
-    </View>
+      {onMedia ? <ReelViewerText tone="publisher" numberOfLines={1} color={V.paper} style={styles.name}>{OFFICIAL_PUBLISHER_NAME}</ReelViewerText>
+        : <AppText variant="body" numberOfLines={1} color={theme.colors.ink} style={styles.name}>{OFFICIAL_PUBLISHER_NAME}</AppText>}
+    </Pressable>
   );
 }
 const styles = StyleSheet.create({

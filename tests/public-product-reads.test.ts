@@ -91,11 +91,12 @@ it('searches beyond the first page with canonical category, brand, sizes, budget
     const search = (query: Record<string, string | number> = {}) => request(app).get('/api/public/catalog-search').query({ arrivalId: 'search_arr', q: 'echarpe ATELIER', ...query });
     const first = await search();
     expect(first.status).toBe(200);
-    expect(first.body.data).toMatchObject({ total: 66, nextOffset: 30, facets: { categories: [{ id: 'search_cat', label: 'Écharpes' }], brands: [{ id: 'search_brand', label: 'Atelier Démo' }], sizes: ['L'] } });
+    expect(first.body.data).toMatchObject({ total: 66, nextOffset: 30, updatedAt: at, facets: { categories: [{ id: 'search_cat', label: 'Écharpes' }], brands: [{ id: 'search_brand', label: 'Atelier Démo' }], sizes: ['L'] } });
     expect(first.body.data.items).toHaveLength(30);
     const tail = await search({ offset: 60 });
     expect(tail.body.data.items.map((p: { id: string }) => p.id)).toEqual([60, 61, 62, 63, 64, 65].map(n => `search_${n}`));
     expect(tail.body.data.nextOffset).toBeNull();
+    expect(tail.body.data.updatedAt).toBeNull();
     expect((await search({ size: 'L', available: '1' })).body.data.items.map((p: { id: string }) => p.id)).toEqual(['search_64']);
     expect((await search({ categoryId: 'search_hidden_cat' })).body.data.total).toBe(0);
     expect((await search({ categoryId: 'search_cat', brandId: 'search_brand', min: 98.501, max: 99 })).body.data.total).toBe(1);

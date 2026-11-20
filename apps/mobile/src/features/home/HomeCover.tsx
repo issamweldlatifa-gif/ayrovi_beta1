@@ -1,3 +1,4 @@
+import { OFFICIAL_PUBLISHER_ROUTE } from '@/features/publications/officialPublisher';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 /**
  * « Cover » d'accueil — le NOUVEAU bloc d'entrée, plein écran sous les onglets.
@@ -40,7 +41,7 @@ export const COVER_ASPECT = 10 / 15;
 /** Destination fermée : des pages de l'APPLICATION, jamais du site. */
 const DESTINATION_ROUTES = {
   publications: '/publications',
-  catalog: '/catalog',
+  catalog: OFFICIAL_PUBLISHER_ROUTE,
   promotions: '/promotions',
 } as const;
 

@@ -1,3 +1,4 @@
+import { PUBLICATION_CAMPAIGN_LAYOUTS } from './publicationCampaign';
 import type { MediaPresentation } from './publicationPresentation';
 import { normalizeMediaLink } from './mediaLinks';
 export const PUBLICATION_TYPES = [
@@ -20,6 +21,7 @@ export const PUBLICATION_TEMPLATES = [
   'caption_photo',
   'social_strip',
   'social_pair',
+  ...PUBLICATION_CAMPAIGN_LAYOUTS,
 ] as const;
 export type PublicationTemplate = (typeof PUBLICATION_TEMPLATES)[number];
 export type PublicationType = (typeof PUBLICATION_TYPES)[number];

@@ -166,7 +166,7 @@ describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille
     expect(router.push).not.toHaveBeenCalled();
     registerScrollToTopHandler(null);
     // Premier tap depuis une autre page : navigation normale, aucun intercepteur.
-    mockPathname = '/catalog';
+    mockPathname = '/publisher/zayrovi-team';
     renderTabsBar();
     const fresh = mockCapturedScreens.find((s) => s.name === 'index')?.listeners as {
       tabPress: (event: { preventDefault: jest.Mock }) => void;

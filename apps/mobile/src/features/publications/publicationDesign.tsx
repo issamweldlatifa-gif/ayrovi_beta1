@@ -79,6 +79,7 @@ const drawings: Record<string, string> = {
   'information-circle-outline': 'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18ZM12 11v5.5M12 7.6v.2',
   'checkmark-outline': 'm5 12 4 4L19 6',
   close: 'm5 5 14 14M19 5 5 19',
+  'bag-outline': 'M4 7h16l1.5 14h-19L4 7Zm4 2V6a4 4 0 0 1 8 0v3',
   'search-outline': 'M20 20l-5-5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z',
   'person-outline': 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM3 21c0-9 18-9 18 0H3Z',
   'volume-mute': 'm3 9 4 0 5-5v16l-5-5H3V9Zm13 0 5 6m0-6-5 6',

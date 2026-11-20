@@ -19,8 +19,10 @@
  *   Revenir à la première créerait un saut visible à travers toutes les cartes.
  */
 
-/** Compact portrait cards: the standard image card is about 333dp tall at a 360dp viewport. */
-export const CARD_ASPECT = 0.8;
+/** Width / height, from the Amazon reference (~536 × 857 px). */
+export const HERO_CARD_ASPECT = 5 / 8;
+/** Editorial Stories keep their existing 8% extra height over Hero. */
+export const STORY_CARD_ASPECT = HERO_CARD_ASPECT / 1.08;
 /** Espace entre deux cartes (proportions Amazon : serrées). */
 export const CARD_GAP = 8;
 /** Gouttière aux bords de l'écran : la MÊME valeur que l'espace entre cartes. */

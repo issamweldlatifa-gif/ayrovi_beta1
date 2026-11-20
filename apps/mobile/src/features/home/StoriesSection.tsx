@@ -14,7 +14,7 @@ import { FullBleed, useResponsive } from '@/design/layout';
 import { useTheme } from '@/design/theme';
 import { FOOTER_THEME, veil } from '@/design/tokens.mobile';
 import { useI18n } from '@/i18n';
-import { CARD_ASPECT, CARD_GAP, carouselGeometry, carouselSnapOffsets } from './heroCarouselLogic';
+import { CARD_GAP, STORY_CARD_ASPECT, carouselGeometry, carouselSnapOffsets } from './heroCarouselLogic';
 
 export const StoriesSection = memo(function StoriesSection() {
   const theme = useTheme();
@@ -48,7 +48,7 @@ export const StoriesSection = memo(function StoriesSection() {
         decelerationRate="fast" disableIntervalMomentum
         contentContainerStyle={{ paddingStart: startInset, paddingEnd: endInset, gap: CARD_GAP }}
         renderItem={({ item }) => <View testID={`editorial-story-${item.id}`}
-          style={[styles.card, { width: cardWidth, aspectRatio: CARD_ASPECT / 1.08, borderRadius: theme.radius.card }]}>
+          style={[styles.card, { width: cardWidth, aspectRatio: STORY_CARD_ASPECT, borderRadius: theme.radius.card }]}>
           <AppImage uri={mediaUrl(item.mediaUrl)} contentFit="cover" style={StyleSheet.absoluteFill}
             accessibilityLabel={local(item.title, item.titleAr)} />
           <LinearGradient colors={['transparent', veil(0.76)]} style={styles.caption}>

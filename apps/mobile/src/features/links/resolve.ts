@@ -1,3 +1,4 @@
+import { isRetiredBoutiquePath, OFFICIAL_PUBLISHER_ROUTE } from '@/features/publications/officialPublisher';
 import { SHARE_WEB_ORIGIN, isShareId } from './shareLinks';
 import { API_BASE_URL } from '@/api/config';
 import { parseSocialFilter } from '@/features/social-commerce/navigation';
@@ -60,7 +61,6 @@ const ROUTES: { prefix: string; route: string | ((rest: string) => string | null
   { prefix: '/orders/', route: (rest) => (rest ? `/orders/${rest}` : null) },
   { prefix: '/news/', route: (rest) => (rest ? `/news/${rest}` : null) },
   { prefix: '/produit/', route: (rest) => (rest ? `/product/${rest}` : null) },
-  { prefix: '/catalog', route: '/catalog' },
   { prefix: '/orders', route: '/orders' },
   { prefix: '/commandes', route: '/orders' },
   { prefix: '/checkout', route: '/checkout' },
@@ -125,6 +125,13 @@ export function resolveDeepLink(rawUrl: string | null | undefined): string | nul
   return matchRoute(normalizePathname(url), url.searchParams);
 }
 
+/** Mobile compatibility: let Expo open the publisher before the retired route mounts. */
+export function resolvePublisherSystemLink(raw: string): string | null {
+  const input = raw.startsWith('/') && !raw.startsWith('//') ? `${DEEP_LINK_SCHEME}://${raw}` : raw;
+  const resolved = resolveDeepLink(input);
+  return resolved?.split('?', 1)[0] === OFFICIAL_PUBLISHER_ROUTE ? resolved : null;
+}
+
 /** The exact HTTPS item paths Expo Router handles before mounting a screen. */
 export function resolveHttpsShareLink(raw: string): string | null {
   try {
@@ -140,6 +147,10 @@ function matchRoute(path: string, params: URLSearchParams): string | null {
   if (shared && isShareId(shared[2])) {
     const [, kind, id] = shared;
     return kind === 'p' ? `/product/${id}` : kind === 'r' ? `/reels-viewer?id=${id}&shared=1` : `/stories?id=${id}`;
+  }
+  if (path === OFFICIAL_PUBLISHER_ROUTE || isRetiredBoutiquePath(path)) {
+    const arrival = params.get('arrivalId');
+    return isShareId(arrival) ? `${OFFICIAL_PUBLISHER_ROUTE}?arrivalId=${encodeURIComponent(arrival)}` : OFFICIAL_PUBLISHER_ROUTE;
   }
   const itemId = params.get('id');
   if (path === '/reels-viewer') return isShareId(itemId) ? `/reels-viewer?id=${itemId}${params.get('shared') === '1' ? '&shared=1' : ''}` : null;

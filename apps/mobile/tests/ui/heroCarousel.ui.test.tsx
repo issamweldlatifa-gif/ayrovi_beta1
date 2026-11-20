@@ -53,8 +53,8 @@ function slide(id: string, index: number): HeroSlide {
 
 const SLIDES = [slide('a', 0), slide('b', 1), slide('c', 2)];
 
-function query<T>(data: T) {
-  return { isPending: false, isError: false, data } as never;
+function query<T>(data: T, isPending = false) {
+  return { isPending, isError: false, data } as never;
 }
 
 const SETTINGS = {
@@ -66,14 +66,14 @@ const SETTINGS = {
   paginationVisible: true,
 };
 
-async function renderCarousel(settings = SETTINGS, slides = SLIDES, onTintChange?: (tint: HeroTint | null) => void) {
+async function renderCarousel(settings = SETTINGS, slides = SLIDES, onTintChange?: (tint: HeroTint | null) => void, isPending = false) {
   const view = render(
     <PrefsProvider>
       <I18nProvider>
         <ThemeProvider>
           <HeroCarousel
             settings={query(settings)}
-            slides={query(slides)}
+            slides={query(slides, isPending)}
             onTintChange={onTintChange}
           />
         </ThemeProvider>
@@ -174,6 +174,14 @@ describe('défilement manuel', () => {
 });
 
 describe('action de la carte Hero', () => {
+  it('conserve les cartes Boutique en lecture seule, sans clic ni navigation', async () => {
+    await renderCarousel(SETTINGS, [{ ...slide('a', 0), href: '/catalog?arrivalId=a1', destinationType: 'PAGE' }]);
+    expect(screen.getByText('Titre 1')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Titre 1' })).toBeNull();
+    fireEvent.press(screen.getByTestId('hero-card-a'));
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
   it('supprime le bouton CTA séparé et garde toute la carte cliquable', async () => {
     await renderCarousel({ ...SETTINGS, autoplay: false });
     expect(screen.queryByTestId('hero-card-a-cta')).toBeNull();
@@ -206,6 +214,18 @@ describe('géométrie et fond', () => {
     const g = carouselGeometry(360, 3);
     const layout = list().props.getItemLayout(null, 1);
     expect(layout.offset).toBe(g.startInset + g.stride);
+  });
+
+  it('réserve le nouveau format du visuel CMS dès le chargement', async () => {
+    const pending = await renderCarousel(SETTINGS, [], undefined, true);
+    const skeleton = StyleSheet.flatten(screen.getByTestId('skeleton-hero-carousel', { includeHiddenElements: true }).props.style);
+    pending.unmount();
+    await renderCarousel();
+    const card = StyleSheet.flatten(screen.getByTestId('hero-card-a').props.style);
+    const image = StyleSheet.flatten(screen.getByTestId('hero-card-a-image').props.style);
+    expect(image.aspectRatio).toBe(5 / 8);
+    expect(skeleton.width).toBe(card.width);
+    expect(skeleton.height).toBeCloseTo(card.width / image.aspectRatio);
   });
 
   it('la carte garde une limite visible : liseré et élévation sur le visuel', async () => {
@@ -295,8 +315,7 @@ describe('owner Hero collection', () => {
       expect(copyStyle.position).not.toBe('absolute');
       expect(copyStyle.padding).toBe(16);
       const cardWidth = StyleSheet.flatten(screen.getByTestId(`hero-card-${card.id}`).props.style).width;
-      expect(copyStyle.minHeight).toBeGreaterThanOrEqual(cardWidth * 0.25);
-      expect((copyStyle.minHeight + cardWidth) / cardWidth).toBeLessThan(1.4);
+      expect((copyStyle.minHeight + cardWidth) / cardWidth).toBeCloseTo(8 / 5);
       const image = screen.getByTestId(`hero-card-${card.id}-image`);
       expect(StyleSheet.flatten(image.props.style)).toMatchObject({ width: '100%', aspectRatio: 1 });
       expect(StyleSheet.flatten(screen.getByText(card.title).props.style).color).toBe(card.copyTone === 'light' ? '#FFFFFF' : '#000000');

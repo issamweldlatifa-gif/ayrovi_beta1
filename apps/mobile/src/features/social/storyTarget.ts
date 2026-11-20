@@ -5,6 +5,7 @@
  * والشاشة في `app/`. ثلاثة أماكن تحتاج **نفس القرار** — تكراره ثلاث مرّات
  * يعني ثلاث نسخ تتباعد. والأسوأ: استيراد `src/` من `app/` (دورة معكوسة).
  */
+import { OFFICIAL_PUBLISHER_ROUTE } from '@/features/publications/officialPublisher';
 import { router } from 'expo-router';
 import { Linking } from 'react-native';
 
@@ -27,7 +28,7 @@ export function openStoryTarget(story: StoryItem): void {
     return;
   }
   if (story.arrivalId) {
-    router.push({ pathname: '/catalog', params: { arrivalId: story.arrivalId } });
+    router.push({ pathname: OFFICIAL_PUBLISHER_ROUTE, params: { arrivalId: story.arrivalId } });
     return;
   }
   if (story.targetUrl) Linking.openURL(story.targetUrl).catch(() => null);

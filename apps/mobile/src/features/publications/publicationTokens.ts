@@ -53,3 +53,11 @@ export const PUBLICATION_TYPE = {
   countSize: 15,
   countLine: 20,
 } as const;
+
+/** Campaign backgrounds sampled in flat regions of both 720 px references, not brand colors. */
+export const PUBLICATION_CAMPAIGN_TONES = {
+  campaign_orange: { headline: '#F2631F', body: '#F6A178', ink: '#19100C', heart: PUBLICATION_THEME.paper, heartInk: PUBLICATION_THEME.ink },
+  campaign_red: { headline: '#DB2436', body: '#831520', ink: PUBLICATION_THEME.paper, heart: PUBLICATION_THEME.ink, heartInk: PUBLICATION_THEME.paper },
+  promo: '#D50012',
+  photo: '#F1F1F1',
+} as const;

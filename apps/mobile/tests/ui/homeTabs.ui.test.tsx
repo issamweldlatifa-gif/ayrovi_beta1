@@ -60,7 +60,7 @@ describe('HomeTabs', () => {
     expect(tint.props.pointerEvents).toBe('none');
     expect(StyleSheet.flatten(tint.props.children[0].props.style).backgroundColor).toBe('#FFE1B0');
     fireEvent.press(screen.getByRole('tab', { name: 'Nouveautés' }));
-    expect(router.navigate).toHaveBeenCalledWith('/catalog');
+    expect(router.navigate).toHaveBeenCalledWith('/publisher/zayrovi-team');
   });
 
   it('chaque onglet ouvre une route de l’application (pas une URL de site)', async () => {
@@ -70,7 +70,7 @@ describe('HomeTabs', () => {
     fireEvent.press(screen.getByRole('tab', { name: 'Nouveautés' }));
     fireEvent.press(screen.getByRole('tab', { name: 'Promotions' }));
     fireEvent.press(screen.getByRole('tab', { name: 'Publications' }));
-    expect(router.navigate).toHaveBeenNthCalledWith(2, '/catalog');
+    expect(router.navigate).toHaveBeenNthCalledWith(2, '/publisher/zayrovi-team');
     expect(router.navigate).toHaveBeenNthCalledWith(3, '/promotions');
     expect(router.navigate).toHaveBeenNthCalledWith(4, '/publications');
   });

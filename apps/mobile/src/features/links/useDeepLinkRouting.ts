@@ -2,7 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { Linking, Platform } from 'react-native';
 import { router } from 'expo-router';
-import { resolveDeepLink, resolveHttpsShareLink } from './resolve';
+import { resolveDeepLink, resolveHttpsShareLink, resolvePublisherSystemLink } from './resolve';
 
 export function useDeepLinkRouting(enabled: boolean): void {
   const pending = useRef<string | null>(null);
@@ -22,9 +22,9 @@ export function useDeepLinkRouting(enabled: boolean): void {
     let receivedWarmLink = false;
     const deliver = (raw: string | null) => {
       if (!alive || !raw) return false;
-      // Expo +native-intent rewrites HTTPS item shares at the router entrance.
+      // Expo +native-intent rewrites item shares and publisher links at the router entrance.
       // Do not push them again on top of the screen the router already opened.
-      if (Platform.OS !== 'web' && resolveHttpsShareLink(raw)) {
+      if (Platform.OS !== 'web' && (resolveHttpsShareLink(raw) || resolvePublisherSystemLink(raw))) {
         pending.current = null;
         return true;
       }

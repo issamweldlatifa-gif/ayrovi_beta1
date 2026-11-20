@@ -1,3 +1,5 @@
+import { router } from 'expo-router';
+import { OFFICIAL_PUBLISHER_ROUTE } from '@/features/publications/officialPublisher';
 import { ReactionButton } from '@/design/reactions/ReactionButton';
 import type { ContentReaction } from '@/design/reactions/reactionModel';
 import { formatRailCount } from './reelTray';
@@ -169,7 +171,7 @@ export function ReelOptions({
             </View>
             <ScrollView>
               <View style={styles.publisher}>
-                <ReelPublisher />
+                <ReelPublisher onOpen={() => { onClose(); router.push(OFFICIAL_PUBLISHER_ROUTE); }} />
                 {!informationOnly ? <ReelFollow
                   publisherId={reel.channelId}
                   onAuth={() => setAuth(true)}

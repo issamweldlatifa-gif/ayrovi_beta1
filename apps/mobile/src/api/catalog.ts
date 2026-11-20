@@ -359,6 +359,7 @@ export interface CatalogSearchPage {
   items: CatalogProduct[];
   total: number;
   nextOffset: number | null;
+  updatedAt?: string | null;
   facets: CatalogSearchFacets | null;
 }
 
@@ -381,5 +382,5 @@ export async function searchCatalog(input: CatalogSearchFilters & { q?: string; 
     brands: facetRows(data.facets.brands),
     sizes: Array.isArray(data.facets.sizes) ? data.facets.sizes.filter((size): size is string => typeof size === 'string' && Boolean(size.trim())) : [],
   } : null;
-  return { ...data, facets, items: data.items.map(parseProduct).filter((item): item is CatalogProduct => item !== null) };
+  return { ...data, updatedAt: typeof data.updatedAt === 'string' ? data.updatedAt : null, facets, items: data.items.map(parseProduct).filter((item): item is CatalogProduct => item !== null) };
 }

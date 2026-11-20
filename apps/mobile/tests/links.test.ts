@@ -21,14 +21,14 @@ describe('traduction des URL du site', () => {
   });
 
   it('les listes et les onglets', () => {
-    expect(resolveDeepLink('https://zayrovi.com/catalog')).toBe('/catalog');
+    expect(resolveDeepLink('https://zayrovi.com/catalog')).toBe('/publisher/zayrovi-team');
     expect(resolveDeepLink('https://zayrovi.com/orders')).toBe('/orders');
     expect(resolveDeepLink('https://zayrovi.com/panier')).toBe('/(tabs)/cart');
   });
 
   it('barre oblique finale : même écran, pas deux routes', () => {
     expect(resolveDeepLink('https://zayrovi.com/orders/')).toBe('/orders');
-    expect(resolveDeepLink('https://zayrovi.com/catalog/')).toBe('/catalog');
+    expect(resolveDeepLink('https://zayrovi.com/catalog/')).toBe('/publisher/zayrovi-team');
   });
 
   it('tous les anciens liens Lens reviennent au parcours caméra canonique', () => {
@@ -150,4 +150,15 @@ it('rewrites short system links before Expo routing, without taking over OAuth o
       expect(redirectSystemPath({ path, initial })).toBe(path);
     }
   }
+});
+
+it('opens the official publisher and preserves valid legacy arrival bookmarks', () => {
+  for (const path of ['/catalog?arrivalId=arr_1', 'https://zayrovi.com/catalog?arrivalId=arr_1', 'zayrovi://boutique?arrivalId=arr_1']) {
+    expect(redirectSystemPath({ path, initial: true })).toBe('/publisher/zayrovi-team?arrivalId=arr_1');
+  }
+  for (const path of ['zayrovi://publisher/zayrovi-team', 'https://zayrovi.com/catalog?arrivalId=../private']) {
+    expect(redirectSystemPath({ path, initial: false })).toBe('/publisher/zayrovi-team');
+  }
+  const foreign = 'https://other.example/catalog';
+  expect(redirectSystemPath({ path: foreign, initial: false })).toBe(foreign);
 });

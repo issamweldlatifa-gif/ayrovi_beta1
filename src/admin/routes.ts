@@ -1,3 +1,4 @@
+import { isPublicationCampaign } from '../../shared/publicationCampaign';
 import { releaseCatalogueReservations } from '../catalogue/localSale';
 import { isGeneratedPublicationEditorialAsset } from '../../shared/publicationLayouts';
 import { normalizePublicationContent } from '../../shared/publicationContent';
@@ -1454,18 +1455,19 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (category && !PUBLICATION_CATEGORIES.includes(category as any)) return res.status(400).json({ success: false, error: 'Catégorie Publication invalide.' });
     const imageUrl = linkOrReject(res, req.body?.image_url, 'image');
     if (imageUrl === null) return;
-    if (!title || !imageUrl || !db.get('SELECT id FROM story_publishers WHERE id=?', channelId)) {
-      return res.status(400).json({ success: false, error: 'Titre, image et canal obligatoires.' });
-    }
     const content = normalizePublicationContent(req.body, undefined);
     if (!content) return res.status(400).json({ success: false, error: 'Type, médias ou options de publication invalides.' });
+    if (!title || (!imageUrl && !isPublicationCampaign(content.template)) || !db.get('SELECT id FROM story_publishers WHERE id=?', channelId)) {
+      return res.status(400).json({ success: false, error: 'Titre, image et canal obligatoires (image facultative pour les campagnes colorées).' });
+    }
     const extraProducts = productIdsOrReject(res, db, req.body?.product_ids);
     if (extraProducts === null) return;
     // Tiroir à plusieurs articles : pas de « produit principal » à choisir en plus.
     // Le premier article de la liste fait foi pour `product_id` (compatibilité).
     const primaryProductId = String(req.body?.product_id ?? '').trim() || extraProducts[0] || '';
-    const shoppable = decideShoppable(req.body?.content_mode, primaryProductId, (pid) => catalogueProductSnapshot(db, pid));
+    const shoppable = decideShoppable(req.body?.content_mode ?? (isPublicationCampaign(content.template) ? 'shoppable' : undefined), primaryProductId, (pid) => catalogueProductSnapshot(db, pid));
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
+    if (isPublicationCampaign(content.template) && shoppable.mode !== 'shoppable') return res.status(400).json({ success: false, error: 'Associez au moins un produit à la campagne.' });
     if (content.actionLabel && content.actionTarget === 'products' && !shoppable.productId && !extraProducts.length) return res.status(400).json({ success: false, error: 'Associez un produit avant d’activer ce bouton.' });
     if ((content.type === 'product' && !shoppable.productId && !extraProducts.length) || (content.type === 'collection' && !shoppable.productId && !extraProducts.length && content.media.length < 2)) return res.status(400).json({ success: false, error: 'Produit ou collection de médias obligatoire.' });
     const now = new Date().toISOString();
@@ -1495,10 +1497,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const primaryProductId = String(req.body?.product_id ?? '').trim()
       || extraProducts[0]
       || (req.body?.product_id === undefined ? row.product_id : '');
-    const shoppable = decideShoppable(req.body?.content_mode ?? row.content_mode, primaryProductId,
+    const shoppable = decideShoppable(req.body?.content_mode ?? (isPublicationCampaign(content.template) ? 'shoppable' : row.content_mode), primaryProductId,
       (pid) => catalogueProductSnapshot(db, pid));
     if (shoppable.ok === false) return res.status(400).json({ success: false, code: shoppable.code, error: shoppable.error });
     const linkedCount = req.body?.product_ids !== undefined ? extraProducts.length : Number(db.get<any>("SELECT COUNT(*) n FROM content_products WHERE content_kind='publication' AND content_id=?", row.id)?.n || 0);
+    if (isPublicationCampaign(content.template) && shoppable.mode !== 'shoppable') return res.status(400).json({ success: false, error: 'Associez au moins un produit à la campagne.' });
+    if (!isPublicationCampaign(content.template) && isPublicationCampaign(row.template_id) && !imageUrl) return res.status(400).json({ success: false, error: 'Ajoutez un visuel pour ce modèle.' });
     if (content.actionLabel && content.actionTarget === 'products' && !shoppable.productId && !linkedCount) return res.status(400).json({ success: false, error: 'Associez un produit avant d’activer ce bouton.' });
     if ((content.type === 'product' && !shoppable.productId && !linkedCount) || (content.type === 'collection' && !shoppable.productId && !linkedCount && content.media.length < 2)) return res.status(400).json({ success: false, error: 'Produit ou collection de médias obligatoire.' });
     db.run(`UPDATE publications SET title=?, subtitle=?, image_url=?, remark=?, publish_at=?, status=?, content_mode=?, product_id=?, updated_at=?, category=?, media_origin=? WHERE id=?`,

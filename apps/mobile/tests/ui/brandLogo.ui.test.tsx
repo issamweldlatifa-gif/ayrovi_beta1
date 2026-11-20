@@ -16,6 +16,8 @@ import { BRAND_LOGO, BRAND_MARK } from "../../src/design/brandSymbol";
 import { BRAND } from "../../src/design/tokens.generated";
 import { ReelPublisher } from "../../src/features/reels/ReelPublisher";
 
+jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
+
 const mockReduceMotion = jest.fn(() => false);
 let mockMode: "light" | "dark" = "light";
 jest.mock("../../src/design/motion", () => ({

@@ -4,14 +4,14 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  carouselSnapOffsets, backdropLayerRange, CARD_ASPECT, CARD_GAP, CARD_MAX_WIDTH, CARD_MIN_WIDTH, EDGE_GUTTER, carouselGeometry, indexForOffset,
+  carouselSnapOffsets, backdropLayerRange, CARD_GAP, HERO_CARD_ASPECT, STORY_CARD_ASPECT, CARD_MAX_WIDTH, CARD_MIN_WIDTH, EDGE_GUTTER, carouselGeometry, indexForOffset,
   isStillAfterDrag, nextIndex, scrollOffsetForIndex, shouldAutoplayAdvance,
 } from '../src/features/home/heroCarouselLogic';
 
 describe('carouselGeometry — dimensions selon l’écran', () => {
-  it('utilise un ratio vertical compact (4:5) en gardant le format portrait', () => {
-    expect(CARD_ASPECT).toBe(4 / 5);
-    expect(1 / CARD_ASPECT).toBe(1.25);
+  it('adopte le portrait Amazon 5:8 pour le Hero et garde les Stories 8 % plus hautes', () => {
+    expect(HERO_CARD_ASPECT).toBe(5 / 8);
+    expect(HERO_CARD_ASPECT / STORY_CARD_ASPECT).toBeCloseTo(1.08);
   });
 
   it('la gouttière d’écran VAUT l’espace entre cartes', () => {

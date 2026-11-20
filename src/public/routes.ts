@@ -599,7 +599,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const search = parsePublicCatalogSearch(req.query);
     if (!search) return res.status(400).json({ success: false, error: 'Filtres invalides.' });
     const result = readCatalogSearch(db, search);
-    res.json({ success: true, data: { ...result, items: result.items.map(mapProduct) } });
+    res.json({ success: true, data: { ...result, updatedAt: search.offset === 0 ? result.items[0]?.updated_at ?? null : null, items: result.items.map(mapProduct) } });
   });
 
   router.get('/products', (req, res) => {

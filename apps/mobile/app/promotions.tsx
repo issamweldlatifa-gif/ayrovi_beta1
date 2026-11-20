@@ -5,6 +5,7 @@
  * بعد الخصم**، لأنّ السعر النهائي (`finalPrice`) قرار الخادم وحدو، وعرض سعر
  * نحسبوه نحنا = سعر ثانٍ لنفس المنتوج.
  */
+import { OFFICIAL_PUBLISHER_ROUTE } from '@/features/publications/officialPublisher';
 import { StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 
@@ -38,7 +39,7 @@ export default function PromotionsScreen() {
       return;
     }
     if (promotion.arrivalIds.length > 0) {
-      router.push({ pathname: '/catalog', params: { arrivalId: promotion.arrivalIds[0]! } });
+      router.push({ pathname: OFFICIAL_PUBLISHER_ROUTE, params: { arrivalId: promotion.arrivalIds[0]! } });
     }
   };
 

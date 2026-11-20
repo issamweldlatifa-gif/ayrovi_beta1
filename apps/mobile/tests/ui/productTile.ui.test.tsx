@@ -10,8 +10,8 @@
  * pas de points pour une photo seule, fenêtre bornée, page suivie au défilement.
  */
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { FlatList, StyleSheet } from 'react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -47,13 +47,9 @@ jest.mock('../../src/api/catalog', () => ({
 // Importés APRÈS les mocks (ils tirent `api/cart` et `expo-router`).
 // eslint-disable-next-line import/first
 import { ProductCard } from '../../src/features/catalog/ProductCard';
-// eslint-disable-next-line import/first
-import CatalogScreen from '../../app/catalog';
-import { searchCatalog } from '../../src/api/catalog';
 
 /** Les points sont cachés aux lecteurs d'écran (la galerie annonce « photo 2 sur 6 ») : on les cherche quand même. */
 const HIDDEN = { includeHiddenElements: true } as const;
-const grid = () => screen.UNSAFE_getAllByType(FlatList).find((list) => list.props.testID === 'catalog-list')!;
 const flat = (node: { props: { style?: unknown } }) => StyleSheet.flatten(node.props.style as never) as Record<string, unknown>;
 
 /** Clients créés par les tests : vidés après chaque cas (sinon leurs minuteries gardent Jest en vie). */
@@ -244,71 +240,5 @@ describe('ProductCard — boutique', () => {
     await act(async () => {});
     expect(screen.getByText('Promo')).toBeTruthy();
     expect(flat(screen.getByTestId('product-card-p1')).height).toBe(metrics.height);
-  });
-});
-
-describe('Boutique — grille et bascule grandes / petites photos', () => {
-  it('proposes a catalogue suggestion, applies filters, and preserves the current results on product open', async () => {
-    const mockedSearch = jest.mocked(searchCatalog);
-    const sample = product({ id: 'p_search', name: 'Veste Écrue' });
-    const facets = { categories: [{ id: 'cat_vest', label: 'Vestes' }], brands: [], sizes: ['S', 'M'] };
-    mockedSearch.mockImplementation(async input => ({ items: [sample], total: 1, nextOffset: null, facets: input.suggest ? null : facets }));
-    try {
-      const AsyncStorage = require('@react-native-async-storage/async-storage');
-      await AsyncStorage.removeItem('zayrovi.catalog.recent.v1');
-      const client = newClient();
-      const view = render(wrap(<CatalogScreen />, client));
-      const input = view.getByTestId('catalog-search-input');
-      fireEvent.changeText(input, 'veste');
-      expect(await view.findByTestId('catalog-suggestion-p_search')).toBeTruthy();
-      fireEvent.press(view.getByTestId('catalog-search-submit'));
-      await waitFor(() => expect(mockedSearch).toHaveBeenCalledWith(expect.objectContaining({ q: 'veste', offset: 0 }), expect.anything()));
-      expect(JSON.parse(await AsyncStorage.getItem('zayrovi.catalog.recent.v1'))).toEqual(['veste']);
-      fireEvent.press(view.getByTestId('catalog-filters'));
-      fireEvent.press(await view.findByText('Stock confirmé', { exact: true }));
-      fireEvent.press(view.getByTestId('catalog-filters-apply'));
-      await waitFor(() => expect(mockedSearch).toHaveBeenCalledWith(expect.objectContaining({ q: 'veste', offset: 0, available: true }), expect.anything()));
-      expect(await view.findByText('Stock confirmé ×')).toBeTruthy();
-      fireEvent.press(await view.findByTestId('product-card-p_search-photo-0'));
-      expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/product/[id]', params: { id: 'p_search' } });
-      expect(view.getByTestId('catalog-search-input').props.value).toBe('veste');
-      fireEvent.press(view.getByText('Stock confirmé ×'));
-      expect(view.queryByText('Stock confirmé ×')).toBeNull();
-    } finally {
-      mockedSearch.mockImplementation(async () => ({ items: [], total: 0, nextOffset: null, facets: null }));
-    }
-  });
-
-  it('compteur, bascule enregistrée, colonnes qui changent, fiche ouverte sur la photo', async () => {
-    mockPush.mockClear();
-    const client = newClient();
-    client.setQueryData(['catalog', 'search', '', '', {}], { pages: [{ items: [product(), product({ id: 'p2', name: 'Autre' }), product({ id: 'p3', name: 'Encore' })], total: 3, nextOffset: null, facets: null }], pageParams: [0] });
-    client.setQueryData(['catalog', 'arrivals'], []);
-    render(wrap(<CatalogScreen />, client));
-    await act(async () => {});
-
-    expect(screen.getByTestId('product-grid-bar-count').props.children).toBe('3 articles');
-    // Fenêtre de test : 750 dp (tablette) ⇒ 3 colonnes en petites photos, 2 en grandes.
-    expect(grid().props.numColumns).toBe(3);
-    const toggle = screen.getByTestId('product-density-toggle');
-    expect(toggle.props.accessibilityLabel).toBe('Afficher en grandes photos');
-    await act(async () => { fireEvent.press(toggle); });
-    expect(grid().props.numColumns).toBe(2);
-    expect(screen.getByTestId('product-density-toggle').props.accessibilityLabel).toBe('Afficher en petites photos');
-    const AsyncStorage = require('@react-native-async-storage/async-storage');
-    const saved = JSON.parse((await AsyncStorage.getItem('zayrovi.prefs.v1')) ?? '{}');
-    expect(saved.productDensity).toBe('large');
-
-    // Toutes les cartes de la grille ont la même hauteur.
-    const heights = ['p1', 'p2', 'p3'].map((id) => flat(screen.getByTestId(`product-card-${id}`)).height);
-    expect(new Set(heights).size).toBe(1);
-
-    fireEvent.press(screen.getByTestId('product-card-p1-photo-0'));
-    expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/product/[id]', params: { id: 'p1' } });
-    fireEvent.press(screen.getByTestId('product-card-p2-photo-1'));
-    expect(mockPush).toHaveBeenLastCalledWith({ pathname: '/product/[id]', params: { id: 'p2', photo: '1' } });
-
-    await act(async () => { fireEvent.press(screen.getByTestId('product-density-toggle')); });
-    expect(grid().props.numColumns).toBe(3);
   });
 });

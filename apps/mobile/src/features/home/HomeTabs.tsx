@@ -5,8 +5,9 @@
  * police principale de l’application, au même poids (gras) que la référence.
  *
  * Chaque onglet ouvre un écran NATIF de l’application (jamais une page du site) :
- * « Nouveautés » → catalogue, « Promotions » et « Magazine » → leurs écrans publiés.
+ * « Nouveautés » → sélection de Zayrovi Team, « Promotions » et « Magazine » → leurs écrans publiés.
  */
+import { OFFICIAL_PUBLISHER_ROUTE } from '@/features/publications/officialPublisher';
 import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { socialHref } from '@/features/social-commerce/navigation';
@@ -27,7 +28,7 @@ type HomeTab = {
 
 const TABS: readonly HomeTab[] = [
   { labelKey: 'tabs.social', href: socialHref() },
-  { labelKey: 'home.tab.arrivals', href: '/catalog' },
+  { labelKey: 'home.tab.arrivals', href: OFFICIAL_PUBLISHER_ROUTE },
   { labelKey: 'home.tab.promotions', href: '/promotions' },
   { labelKey: 'home.tab.publications', href: '/publications' },
 ];

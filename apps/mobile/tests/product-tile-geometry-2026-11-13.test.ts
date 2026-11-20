@@ -186,7 +186,6 @@ describe('navigation dans la carte', () => {
 
 describe('branchements', () => {
   const card = read('../src/features/catalog/ProductCard.tsx');
-  const catalog = read('../app/catalog.tsx');
   const product = read('../app/product/[id].tsx');
   const prefs = read('../src/state/prefs.tsx');
   const tile = read('../src/design/ProductTile.tsx');
@@ -214,16 +213,6 @@ describe('branchements', () => {
     for (const line of ['lines.brand', 'lines.name', 'lines.meta', 'lines.price']) {
       expect(tile).toContain(`height: ${line}`);
     }
-  });
-
-  it('la grille boutique calcule une seule mesure et suit la bascule', () => {
-    expect(catalog).toContain('productTileMetrics(');
-    expect(catalog).toContain('numColumns={metrics.columns}');
-    expect(catalog).toContain('key={`catalog-grid-${metrics.columns}`}');
-    expect(catalog).toContain('<ProductGridBar');
-    expect(catalog).toContain('<FullBleed style={styles.list}>');
-    expect(catalog).not.toContain('marginHorizontal: -gutter');
-    expect(catalog).toContain("photo: String(photo)");
   });
 
   it('la fiche s’ouvre sur la photo regardée dans la carte', () => {

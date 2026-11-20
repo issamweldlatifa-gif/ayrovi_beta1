@@ -29,6 +29,28 @@ describe('Publication media and preferences', () => {
     for (const body of [{ template_id: 'unknown' }, { template_id: 'video' }, { template_id: 'carousel' }, { action_target: 'javascript:bad' }]) expect(normalizePublicationContent(body)).toBeNull();
     expect(normalizePublicationContent({ template_id: 'split', action_label: 'Découvrir', action_target: 'products' })).toMatchObject({ template: 'split', actionLabel: 'Découvrir', actionTarget: 'products' });
   });
+  test('supports opted-in orange and red campaigns without requiring placeholder media', async () => {
+    const admin = request.agent(app);
+    const auth = await admin.post('/api/admin/auth/login').send({ email: process.env.ADMIN_EMAIL, password: process.env.ADMIN_PASSWORD });
+    const headers = { 'x-csrf-token': auth.body.data.csrfToken };
+    const linked = db.get<any>("SELECT id FROM products WHERE status='ACTIVE' AND visibility='CATALOG' AND final_price>0 LIMIT 1");
+    expect(linked).toBeTruthy();
+    for (const template of ['campaign_orange', 'campaign_red']) {
+      expect(normalizePublicationContent({ template_id: template })).toMatchObject({ template, media: [] });
+      const payload = { title: 'Campaign QA', subtitle: 'Linked items', channel_id: channel, status: 'publie', template_id: template, sponsored: true };
+      await admin.post('/api/admin/publications').set(headers).send(payload).expect(400);
+      const created = await admin.post('/api/admin/publications').set(headers).send({ ...payload, product_ids: [linked.id] }).expect(201);
+      const campaignId = created.body.data.id;
+      try {
+        const current = await request(app).get('/api/public/social/publication-feed').query({ post: campaignId }).expect(200);
+        expect(current.body.data.items[0]).toMatchObject({ template_id: template, image_url: '', sponsored: 1, products: [{ id: linked.id }] });
+        await admin.put(`/api/admin/publications/${campaignId}`).set(headers).send({ template_id: 'photo' }).expect(400);
+      } finally {
+        db.run("DELETE FROM content_products WHERE content_kind='publication' AND content_id=?", campaignId);
+        db.run('DELETE FROM publications WHERE id=?', campaignId);
+      }
+    }
+  });
   test('filters are real intersections and expose authored sponsorship', async () => {
     expect((await feed({ type: 'carousel', audience: 'women', topic: 'accessories' })).body.data.items[0]).toMatchObject({ sponsored: 1, description: 'Long content' });
     for (const filter of [{ type: 'video' }, { audience: 'men' }, { topic: 'shoes' }, { saved: 1 }, { following: 1 }, { hasProducts: 1 }]) expect((await feed(filter)).body.data.items).toEqual([]);

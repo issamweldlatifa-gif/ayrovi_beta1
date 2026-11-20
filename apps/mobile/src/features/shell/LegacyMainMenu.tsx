@@ -207,7 +207,6 @@ export function LegacyMainMenu({
         </View>
         <View style={styles.drawerNav}>
           <DrawerItem icon="home-outline" label={t('tabs.home')} onPress={() => go('/')} />
-          <DrawerItem icon="compass-outline" label={t('catalog.title')} onPress={() => go('/catalog')} />
           <DrawerItem icon="receipt-outline" label={t('orders.title')} onPress={() => go('/orders')} />
           <DrawerItem icon="person-outline" label={t('tabs.account')} onPress={() => go(accountHref)} />
         </View>

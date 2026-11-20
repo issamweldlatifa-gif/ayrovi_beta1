@@ -4,6 +4,7 @@
  * والروابط الموجودة هي اللي **موجودة حقيقة**: خبر مربوط بمنتوج ⇒ زر المنتوج؛
  * مربوط بوصولة ⇒ زر الوصولة. وما فمّاش ⇒ ما فمّاش زر (موّش زر يفتح والو).
  */
+import { OFFICIAL_PUBLISHER_ROUTE } from '@/features/publications/officialPublisher';
 import { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -47,7 +48,7 @@ export default function NewsDetailScreen() {
   }, [item?.productId]);
 
   const openArrival = useCallback(() => {
-    if (item?.arrivalId) router.push({ pathname: '/catalog', params: { arrivalId: item.arrivalId } });
+    if (item?.arrivalId) router.push({ pathname: OFFICIAL_PUBLISHER_ROUTE, params: { arrivalId: item.arrivalId } });
   }, [item?.arrivalId]);
 
   if (news.isPending) {

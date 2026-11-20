@@ -60,11 +60,13 @@ describe('Publication-only visual model, not a second commerce or social core', 
       'strokeWidth={PUBLICATION_TYPE.stroke}'
     );
   });
-  it('keeps the Publication route without the retired layouts or data client', () => {
+  it('uses the authored feed, without reviving retired layouts or the block data client', () => {
     const page = read('app/publications.tsx');
-    expect(page).toContain('<PublicationHeader />');
+    expect(page).toContain('<PublicationHeader');
     expect(page).toContain("t('publication.empty')");
-    expect(page).not.toMatch(/useQuery|FlatList|fetchPublication/);
+    expect(page).toContain('fetchReferencePublications');
+    expect(read('src/api/referencePublications.ts')).toContain('/api/public/social/publication-feed');
+    expect(page).not.toContain('publication-blocks');
     for (const file of [dir + 'templates', dir + 'PublicationTemplatesScreen.tsx', 'src/api/publicationBlocks.ts']) {
       expect(fs.existsSync(path.join(root, file))).toBe(false);
     }

@@ -359,7 +359,7 @@ describe('plus d’orange dans l’application', () => {
     expect(BROWSER_BAR).toMatchObject({ background: STORE_BAR.background, ink: STORE_BAR.ink });
   });
 
-  it('aucune couleur orangée écrite dans le code (exception : le logo Google imposé par Google)', () => {
+  it('aucun orange de marque ; seules les teintes de la campagne de référence et du logo Google sont permises', () => {
     const allowed = new Set(Object.values(GOOGLE_BRAND).map(upper));
     /**
      * DONNÉES, pas palette : `optionColour.ts` traduit le nom de couleur d'un
@@ -377,6 +377,8 @@ describe('plus d’orange dans l’application', () => {
       for (const match of text.matchAll(HEX)) {
         const value = upper(match[0]);
         if (rel === 'src/design/tokens.mobile.ts' && allowed.has(value)) continue;
+        // Owner-approved reference pixels: editorial campaign backgrounds, never a global brand palette.
+        if (rel === 'src/features/publications/publicationTokens.ts' && ['#F2631F', '#F6A178'].includes(value)) continue;
         if (isOrange(value)) offenders.push(`${rel} → ${value}`);
       }
     }
