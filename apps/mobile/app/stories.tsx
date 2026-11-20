@@ -4,11 +4,11 @@ import { useLocalSearchParams } from 'expo-router';
 import { SubScreen } from '@/design/subScreen';
 import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/design/states';
 import { goBack } from '@/design/navigation';
-import { StoriesSection } from '@/features/home/StoriesSection';
+import { StoriesGallery } from '@/features/stories/StoriesGallery';
 import { openStoryTarget } from '@/features/social/storyTarget';
 import { StoryViewer } from '@/features/social/StoryViewer';
 import { isShareId } from '@/features/links/shareLinks';
-import { useStories, useStoriesShowcase } from '@/api/hooks';
+import { useStories } from '@/api/hooks';
 import { useT } from '@/i18n';
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
@@ -38,17 +38,7 @@ function SharedStory({ id }: { id: string }) {
   </SubScreen>;
 }
 
-function StoriesGallery() {
-  const t = useT();
-  const stories = useStories();
-  const settings = useStoriesShowcase();
-  return <SubScreen title={t('sections.stories')} fallback="/(tabs)"
-    onRefresh={() => { void stories.refetch(); void settings.refetch(); }} refreshing={stories.isFetching || settings.isFetching}>
-    <StoriesSection />
-  </SubScreen>;
-}
-
 export default function StoriesScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
-  return isShareId(id) ? <SharedStory key={id} id={id} /> : <StoriesGallery />;
+  const { id, focus } = useLocalSearchParams<{ id?: string; focus?: string }>();
+  return isShareId(id) ? <SharedStory key={id} id={id} /> : <StoriesGallery key={isShareId(focus) ? focus : 'gallery'} focus={isShareId(focus) ? focus : undefined} />;
 }

@@ -1,9 +1,8 @@
 import { memo } from 'react';
-/** Official Stories extension: editorial gallery only. No legacy circles or viewer.
+/** Official Stories extension: opens the dedicated editorial gallery.
  * Geometry is shared with Hero; section spacing is owned by AppScreen/SectionBreak (no rules since 15/11).
  */
 import { router } from 'expo-router';
-import { socialHref } from '@/features/social-commerce/navigation';
 import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStories, useStoriesShowcase } from '@/api/hooks';
@@ -37,7 +36,7 @@ export const StoriesSection = memo(function StoriesSection() {
       <View style={[styles.heading, { paddingHorizontal: gutter }]}>
         {settings.title ? <AppText variant="h3" color={FOOTER_THEME.paper}>{local(settings.title, settings.titleAr)}</AppText> : null}
         {settings.subtitle ? <AppText variant="h3" color={FOOTER_THEME.paper}>{local(settings.subtitle, settings.subtitleAr)}</AppText> : null}
-        {settings.ctaLabel ? <Pressable testID="stories-explore" accessibilityRole="button" onPress={() => router.navigate(socialHref('stories'))} style={styles.cta}>
+        {settings.ctaLabel ? <Pressable testID="stories-explore" accessibilityRole="button" onPress={() => router.push('/stories')} style={styles.cta}>
           <AppText variant="body" color={FOOTER_THEME.paper}>{local(settings.ctaLabel, settings.ctaLabelAr)} {theme.isRTL ? '←' : '→'}</AppText>
         </Pressable> : null}
       </View>
@@ -47,15 +46,17 @@ export const StoriesSection = memo(function StoriesSection() {
         snapToOffsets={carouselSnapOffsets(rows.length, stride, centeringOffset, maxScroll)}
         decelerationRate="fast" disableIntervalMomentum
         contentContainerStyle={{ paddingStart: startInset, paddingEnd: endInset, gap: CARD_GAP }}
-        renderItem={({ item }) => <View testID={`editorial-story-${item.id}`}
+        renderItem={({ item }) => <Pressable testID={`editorial-story-${item.id}`} accessibilityRole="link"
+          accessibilityLabel={local(item.title, item.titleAr) || t('sections.stories')}
+          onPress={() => router.push({ pathname: '/stories', params: { focus: item.id } })}
           style={[styles.card, { width: cardWidth, aspectRatio: STORY_CARD_ASPECT, borderRadius: theme.radius.card }]}>
           <AppImage uri={mediaUrl(item.mediaUrl)} contentFit="cover" style={StyleSheet.absoluteFill}
-            accessibilityLabel={local(item.title, item.titleAr)} />
+            decorative />
           <LinearGradient colors={['transparent', veil(0.76)]} style={styles.caption}>
             <AppText variant="bodyStrong" color={FOOTER_THEME.paper} numberOfLines={2}>{local(item.title, item.titleAr)}</AppText>
             {item.description ? <AppText variant="body" color={FOOTER_THEME.paper} numberOfLines={3}>{local(item.description, item.descriptionAr)}</AppText> : null}
           </LinearGradient>
-        </View>} />
+        </Pressable>} />
     </View>
   </FullBleed>;
 });

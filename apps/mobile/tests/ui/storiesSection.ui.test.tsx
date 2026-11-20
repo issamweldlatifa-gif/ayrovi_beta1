@@ -6,7 +6,7 @@ import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
 
-jest.mock('expo-router', () => ({ router: { navigate: jest.fn() } }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 
 const mockStories = { data: [] as any[], isError: false };
 const mockSettings = { data: null as any, isError: false };
@@ -27,14 +27,16 @@ describe('official editorial Stories gallery', () => {
     mockStories.data = [card(1)]; mockSettings.data = { ...block, enabled: false };
     await mount(); expect(screen.queryAllByTestId('home-stories')).toHaveLength(0);
   });
-  it('uses taller cards than Hero and opens Social filtered to Stories', async () => {
+  it('uses taller cards than Hero and opens the dedicated gallery from both entry points', async () => {
     mockStories.data = [card(1), card(2)];
     await mount();
     expect(screen.getByText(block.title)).toBeTruthy();
     expect(screen.getByText(block.subtitle)).toBeTruthy();
     expect(StyleSheet.flatten(screen.getByTestId('editorial-story-s1').props.style).aspectRatio).toBeCloseTo((5 / 8) / 1.08);
     fireEvent.press(screen.getByRole('button', { name: /Explorez toutes les stories/ }));
-    expect(router.navigate).toHaveBeenCalledWith({ pathname: '/(tabs)/social', params: { filter: 'stories' } });
+    expect(router.push).toHaveBeenLastCalledWith('/stories');
+    fireEvent.press(screen.getByTestId('editorial-story-s2'));
+    expect(router.push).toHaveBeenLastCalledWith({ pathname: '/stories', params: { focus: 's2' } });
   });
   it('honours the CMS card limit and renders text over each image', async () => {
     mockSettings.data = { ...block, cardCount: 1 }; mockStories.data = [card(1), card(2)];
