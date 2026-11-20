@@ -21,9 +21,9 @@ export function RevenueChart({ daily, total, days }: { daily: { date: string; re
   const active = series[index];
   const dayLabel = (date: string) => date.split('-').reverse().slice(0, 2).join('/');
   const valueText = `${dayLabel(active.date)} · ${formatMoney(active.value)}`;
-  const title = t('Évolution des ventes', 'تطوّر المبيعات');
+  const title = t('Évolution de la valeur commandée', 'تطوّر قيمة الطلبات');
   return <section className="admin-card bo-chart">
-    <CardTitle title={title} subtitle={t('Chiffre d’affaires par jour · TND · UTC', 'رقم المعاملات حسب اليوم · د.ت · UTC')} />
+    <CardTitle title={title} subtitle={t('Commandes non annulées · TND · UTC', 'الطلبات غير الملغاة · د.ت · UTC')} />
     <div className="office-chart-heading"><p className="bo-chart-value"><bdi dir="ltr">{formatMoney(total)}</bdi></p>
       {daily.length > 0 && <p className="office-chart-readout" title={t('Montant sur la journée sélectionnée', 'مبلغ النهار المختار')}><time dateTime={active.date}>{dayLabel(active.date)}</time><bdi dir="ltr">{formatMoney(active.value)}</bdi></p>}
     </div>

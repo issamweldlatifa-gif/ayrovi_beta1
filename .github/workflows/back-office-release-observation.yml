@@ -9,6 +9,7 @@ on:
       - 'client/src/styles/admin-*.css'
       - 'assets/media/zayrovi-admin-liquid-glass.jpg'
       - 'verify/admin-login-render.mjs'
+      - 'verify/admin-workbench.cjs'
       - 'shared/teamConnections.ts'
       - '.github/workflows/back-office-release-observation.yml'
 permissions:
@@ -53,3 +54,7 @@ jobs:
         env:
           ADMIN_VERIFY_ORIGIN: ${{ env.BASE }}
         run: node verify/admin-login-render.mjs
+      - name: Build for the isolated authenticated workbench test
+        run: npm run build
+      - name: Verify authenticated Workbench interactions and role boundaries
+        run: node verify/admin-workbench.cjs

@@ -1,28 +1,26 @@
 /**
  * P2.0 — recherche globale et palette de commandes.
  *
- * Une seule abstraction pour les deux : la même liste de ressources permises sert à trouver un
- * enregistrement (recherche serveur, une requête groupée) et à atteindre un écran / déclencher une
- * action (palette, résolue depuis la navigation + les descripteurs). Aucun écran n'ajoute son
- * propre launcher, et aucune action n'apparaît si la permission la refuse.
+ * La recherche trouve des enregistrements; le lanceur ouvre uniquement des écrans autorisés.
+ * Une entrée ne se présente pas comme une création quand elle ne fait que naviguer.
  */
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Search as SearchIcon, Sparkles } from '../../components/QatafoIcons';
-import { useOfficeText } from './OfficeLocale';
+import { OfficeLanguageContext, useOfficeText } from './OfficeLocale';
+import { officeItemLabel } from './workspaces';
 import { runGlobalSearch, useBackOffice, type BackOfficeNavItem, type SearchHit } from './framework';
 
 export interface PaletteEntry {
   key: string;
   label: string;
   hint: string;
-  /** Navigation simple, ou action sur un écran (le deep-link reste la seule voie autorisée). */
   section: string;
-  kind: 'écran' | 'ressource';
+  kind: 'écran';
 }
 
 /** Entrées de la palette : uniquement ce que la navigation a rendu visible pour ce rôle. */
 export function buildPaletteEntries(items: BackOfficeNavItem[]): PaletteEntry[] {
-  return items.map((item) => ({
+  return items.filter(item => item.permitted).map((item) => ({
     key: `screen:${item.section}`,
     label: item.label,
     hint: `${item.group} · ${item.moduleKey}`,
@@ -99,56 +97,61 @@ export const GlobalSearch: React.FC<{ onNavigate: (section: string, target?: str
   </div>;
 };
 
-/** Palette ⌘K : navigation + actions permises uniquement, au clavier, sans souris obligatoire. */
+/** Search and open a permitted page, with keyboard navigation scoped to the dialog. */
 export const CommandPalette: React.FC<{ open: boolean; onClose: () => void; onNavigate: (section: string) => void }> = ({ open, onClose, onNavigate }) => {
-  const { navigation, resources } = useBackOffice();
+  const { navigation } = useBackOffice();
+  const lang = useContext(OfficeLanguageContext);
+  const t = useOfficeText();
   const [term, setTerm] = useState('');
   const [cursor, setCursor] = useState(0);
-
+  const dialog = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLInputElement>(null);
   const items = useMemo(() => {
+    const normalized = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase();
     const visible = (navigation?.groups ?? []).flatMap((group) => group.items);
-    const entries: Array<PaletteEntry | { key: string; label: string; hint: string; section: string; kind: 'ressource' }> = buildPaletteEntries(visible);
-    // Une ressource du framework ajoute « Créer » quand la capacité serveur le permet.
-    for (const descriptor of resources.filter((item) => item.visible !== false)) {
-      if (descriptor.capabilities?.create === false) continue;
-      if (!descriptor.actions.includes('create')) continue;
-      entries.push({ key: `create:${descriptor.key}`, label: `Créer un·e ${descriptor.singular}`, hint: descriptor.api.prefix || descriptor.module, section: descriptor.section, kind: 'ressource' });
-    }
-    const query = term.trim().toLowerCase();
-    const filtered = query ? entries.filter((entry) => `${entry.label} ${entry.hint}`.toLowerCase().includes(query)) : entries;
-    return filtered.slice(0, 12);
-  }, [navigation, resources, term]);
+    const labels = new Map(visible.map(item => [item.section, officeItemLabel(item, lang)]));
+    const entries = buildPaletteEntries(visible).map(entry => ({ ...entry, label: labels.get(entry.section) ?? entry.label }));
+    const query = normalized(term.trim());
+    return entries.filter(entry => normalized(`${entry.label} ${entry.hint} ${entry.section}`).includes(query)).slice(0, 12);
+  }, [lang, navigation, term]);
+  const run = (entry: PaletteEntry) => { onNavigate(entry.section); onClose(); };
 
-  const run = useCallback((entry: PaletteEntry) => { onNavigate(entry.section); onClose(); }, [onNavigate, onClose]);
-
-  useEffect(() => { if (open) { setTerm(''); setCursor(0); } }, [open]);
   useEffect(() => {
     if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { onClose(); return; }
-      if (event.key === 'ArrowDown') { event.preventDefault(); setCursor((value) => Math.min(value + 1, Math.max(items.length - 1, 0))); return; }
-      if (event.key === 'ArrowUp') { event.preventDefault(); setCursor((value) => Math.max(value - 1, 0)); return; }
-      if (event.key === 'Enter' && items[cursor]) { event.preventDefault(); run(items[cursor]); }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, items, cursor, run, onClose]);
-
+    setTerm(''); setCursor(0);
+    const previous = document.activeElement;
+    input.current?.focus();
+    return () => { if (previous instanceof HTMLElement && previous.isConnected) previous.focus(); };
+  }, [open]);
+  useEffect(() => {
+    if (open) dialog.current?.querySelector('[data-active=true]')?.scrollIntoView?.({ block: 'nearest' });
+  }, [open, cursor]);
   if (!open) return null;
   return <div className="bo-palette-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-    <div className="bo-palette" role="dialog" aria-modal="true" aria-label="Palette de commandes">
-      <header><Sparkles size={17} /><input autoFocus value={term} onChange={(event) => { setTerm(event.target.value); setCursor(0); }} placeholder="Aller à… ou créer…" aria-label="Commande" /><kbd>esc</kbd></header>
+    <div ref={dialog} className="bo-palette" role="dialog" aria-modal="true" aria-label={t('Palette de commandes', 'قائمة الاختصارات')} onKeyDown={event => {
+      if (event.key === 'Escape') { event.stopPropagation(); onClose(); return; }
+      if (event.key === 'Tab' && dialog.current) {
+        const focusable = dialog.current.querySelectorAll<HTMLElement>('input,button');
+        if (event.shiftKey && document.activeElement === focusable[0]) { event.preventDefault(); focusable[focusable.length - 1]?.focus(); }
+        else if (!event.shiftKey && document.activeElement === focusable[focusable.length - 1]) { event.preventDefault(); focusable[0]?.focus(); }
+      }
+      if (event.target !== input.current) return;
+      if (event.key === 'ArrowDown') { event.preventDefault(); setCursor(value => Math.min(value + 1, Math.max(items.length - 1, 0))); }
+      if (event.key === 'ArrowUp') { event.preventDefault(); setCursor(value => Math.max(value - 1, 0)); }
+      if (event.key === 'Enter' && items[cursor]) { event.preventDefault(); run(items[cursor]); }
+    }}>
+      <header><Sparkles size={17} /><input ref={input} value={term} onChange={(event) => { setTerm(event.target.value); setCursor(0); }} placeholder={t('Rechercher un écran…', 'لوّج على شاشة…')} aria-label={t('Commande', 'الاختصار')} /><button type="button" className="office-palette-escape" onClick={onClose} aria-label={t('Fermer', 'سكّر')}><kbd>Esc</kbd></button></header>
       <ul>
-        {items.length === 0 && <li className="bo-palette-empty">Aucune commande permise pour ce texte.</li>}
+        {items.length === 0 && <li className="bo-palette-empty">{t('Aucune commande permise pour ce texte.', 'ما فماش نتائج مسموحة للبحث هذا.')}</li>}
         {items.map((entry, index) => (
           <li key={entry.key}>
             <button type="button" data-active={index === cursor ? 'true' : undefined} onMouseEnter={() => setCursor(index)} onClick={() => run(entry)}>
-              <span>{entry.label}</span><small>{entry.kind}</small><code>{entry.hint}</code>
+              <span>{entry.label}</span><small>{t('Écran', 'شاشة')}</small><code>{entry.hint}</code>
             </button>
           </li>
         ))}
       </ul>
-      <footer>{items.length} commande{items.length > 1 ? 's' : ''} · seules les actions autorisées apparaissent</footer>
+      <footer><span><kbd>↑</kbd> <kbd>↓</kbd> {t('Parcourir', 'تنقّل')}</span><span><kbd>↵</kbd> {t('Ouvrir', 'افتح')}</span></footer>
     </div>
   </div>;
 };

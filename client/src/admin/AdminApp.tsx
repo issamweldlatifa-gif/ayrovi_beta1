@@ -3,7 +3,7 @@ import { FONT_STACK } from '../../../shared/brand.generated';
 import { HERO_DESTINATION_TYPES } from '../../../shared/heroDestinations';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Check, RefreshCw, ExternalLink, AlertCircle, Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, CreditCard, Eye, Gift, Globe2, Grid,
+  ArrowUpRight, Check, RefreshCw, ExternalLink, AlertCircle, Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, CreditCard, Eye, Gift, Globe2, Grid,
   History, Home, Image, Info, LayoutGrid, LensBox, Link2, LogOut, Menu, MessageSquare, Package, Palette, Pencil, Percent, Plus, Search as SearchIcon,
   Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X,
 } from '../components/QatafoIcons';
@@ -21,9 +21,14 @@ import '../styles/admin-console.css';
 import '../design/admin/office-tokens.css';
 import '../styles/admin-unified.css';
 import '../styles/admin-login.css';
+import '../styles/admin-workspace.css';
 import { OfficeIcon } from '../design/admin/OfficeIcon';
 import { OfficeListToolbar } from '../design/admin/OfficeListToolbar';
 import { OfficeViewSwitch } from '../design/admin/OfficeViewSwitch';
+import { OrderVolumeChart } from './back-office/OrderVolumeChart';
+import { isSecondaryOfficeScreen } from './back-office/workTabs';
+import { buildOfficeWorkspaces, officeItemLabel } from './back-office/workspaces';
+import { OfficeLanguageContext } from './back-office/OfficeLocale';
 import { RevenueChart, OrderStatusChart } from './back-office/OverviewCharts';
 import { useOfficeText } from './back-office/OfficeLocale';
 import { StatusBoard } from './back-office/StatusBoard';
@@ -239,14 +244,6 @@ const queueTotal = async (path: string): Promise<number | null> => {
   } catch { return null; }
 };
 
-const queueReviewCount = async (): Promise<number | null> => {
-  try {
-    const result = await adminApi<any>('/arrival-ingestion/arrivals?pageSize=100');
-    const rows = Array.isArray(result?.rows) ? result.rows : Array.isArray(result?.data) ? result.data : [];
-    return rows.filter((row: any) => String(row.status) === 'REVIEW').length;
-  } catch { return null; }
-};
-
 /**
  * Poste de travail (Model C) — les files d'action du jour, calculées en direct
  * depuis le backend (aucune donnée copiée côté client). Chaque carte ouvre la
@@ -255,7 +252,7 @@ const queueReviewCount = async (): Promise<number | null> => {
 const WorkbenchQueues: React.FC<{ navigate: (section: string, request?: string) => void }> = ({ navigate }) => {
   const t = useOfficeText();
   const { navigation } = useBackOffice();
-  const visibleSections = useMemo(() => new Set(navigation?.groups.flatMap(group => group.items.map(item => item.section))), [navigation]);
+  const visibleSections = useMemo(() => new Set(navigation?.groups.flatMap(group => group.items.filter(item => item.permitted).map(item => item.section))), [navigation]);
   const [queues, setQueues] = useState<Array<{ key: string; label: string; sub: string; count: number | null; section: string; request?: string; icon: React.ComponentType<{ size?: number | string }> }>>([]);
   useEffect(() => {
     let alive = true;
@@ -264,14 +261,14 @@ const WorkbenchQueues: React.FC<{ navigate: (section: string, request?: string) 
         visibleSections.has('orders') ? queueTotal('/orders?status=AWAITING_PAYMENT_VERIFICATION&pageSize=1') : null,
         visibleSections.has('orders') ? queueTotal('/orders?status=AWAITING_DEPOSIT&pageSize=1') : null,
         visibleSections.has('assistant-support') ? queueTotal('/assistant-support?status=PENDING&pageSize=1') : null,
-        visibleSections.has('arrival-ingestion') ? queueReviewCount() : null,
+        visibleSections.has('arrival-ingestion') ? queueTotal('/arrival-ingestion/arrivals?status=REVIEW&pageSize=1') : null,
       ]);
       if (!alive) return;
       setQueues([
         { key: 'deposits', label: 'Acomptes à vérifier', sub: 'Justificatifs reçus, en attente de votre décision', count: deposits, section: 'orders', request: 'AWAITING_PAYMENT_VERIFICATION', icon: ShieldCheck },
         { key: 'fresh', label: 'Nouvelles commandes', sub: 'Acompte en attente de paiement client', count: fresh, section: 'orders', request: 'AWAITING_DEPOSIT', icon: Package },
-        { key: 'support', label: 'Questions support', sub: 'Tickets en attente de réponse', count: support, section: 'assistant-support', icon: MessageSquare },
-        { key: 'arrivals', label: 'Arrivages à valider', sub: 'Cartes CRM en révision', count: arrivals, section: 'arrival-ingestion', icon: Truck },
+        { key: 'support', label: 'Questions support', sub: 'Tickets en attente de réponse', count: support, section: 'assistant-support', request: 'PENDING', icon: MessageSquare },
+        { key: 'arrivals', label: 'Arrivages à valider', sub: 'Cartes CRM en révision', count: arrivals, section: 'arrival-ingestion', request: 'REVIEW', icon: Truck },
       ]);
     })();
     return () => { alive = false; };
@@ -280,13 +277,13 @@ const WorkbenchQueues: React.FC<{ navigate: (section: string, request?: string) 
   if (!allowedQueues.length) return null;
   const copy: Record<string, [string, string]> = { deposits: ['تثبّت من العربون', 'إثباتات في انتظار المراجعة'], fresh: ['طلبات جديدة', 'في انتظار العربون'], support: ['طلبات الدعم', 'في انتظار الردّ'], arrivals: ['شحنات للمراجعة', 'ملفات في انتظار المصادقة'] };
   return <section className="admin-queues">
-    <header><strong>{t('À traiter', 'في انتظار المعالجة')}</strong><span>{t('Priorités opérationnelles', 'أولويات الخدمة')}</span></header>
+    <CardTitle title={t('File d’action', 'المهام المستعجلة')} subtitle={t('Ouvrez une priorité pour la traiter.', 'افتح المهمة باش تعالجها.')} />
     <div className="admin-queues-grid">
       {allowedQueues.map(({ key, label, sub, count, section, request, icon: Icon }) => (
         <button key={key} type="button" className={`admin-queue-card ${count ? 'is-pending' : ''}`} onClick={() => navigate(section, request)}>
           <Icon size={18} />
           <div><span>{t(label, copy[key][0])}</span><small>{t(sub, copy[key][1])}</small></div>
-          <strong>{count ?? '—'}</strong>
+          <strong title={count === null ? t('Donnée indisponible', 'العدد موش متاح') : undefined}>{count ?? '—'}</strong>
         </button>
       ))}
     </div>
@@ -309,38 +306,48 @@ const DashboardPage: React.FC<{ navigate: BackOfficeRenderContext['navigate'] }>
       .catch(reason => { if (active) setError(reason.message); });
     return () => { active = false; };
   }, [days, revision]);
+  const lang = React.useContext(OfficeLanguageContext);
   if (data?.scope === 'workspace') return <div className="bo-overview">
-    <PageHeader eyebrow="ZAYROVI" title={t('Tableau de bord', 'لوحة القيادة')} description={t('Ouvrez les espaces attribués à votre rôle depuis le menu.', 'افتح المساحات المسموح بيها لدورك من القائمة.')} />
+    <PageHeader eyebrow="ZAYROVI" title={t('Mon espace de travail', 'مساحة خدمتي')} description={t('Retrouvez les outils disponibles pour votre rôle.', 'تلقى هنا الأدوات المتاحة لدورك.')} />
+    <div className="office-role-home">{buildOfficeWorkspaces(navigation?.groups ?? []).filter(group => group.key !== 'overview').map(group =>
+      <section className="admin-card" key={group.key}>
+        <OfficeIcon name={group.key} size="feature" /><h2>{t(group.fr, group.ar)}</h2>
+        {group.items.filter(item => !isSecondaryOfficeScreen(item.section, item.canonicalOf)).slice(0, 4).map(item => <button type="button" key={item.section} onClick={() => navigate(item.section)}>{officeItemLabel(item, lang)}<ArrowUpRight size={15} /></button>)}
+      </section>)}</div>
   </div>;
   const cards = data ? [
-    { label: t('Chiffre d’affaires', 'رقم المعاملات'), value: formatMoney(data.metrics.revenue), change: data.metrics.changes.revenue, icon: CreditCard, color: 'blue' },
+    { label: t('Valeur commandée', 'قيمة الطلبات'), value: formatMoney(data.metrics.revenue), change: data.metrics.changes.revenue, icon: CreditCard, color: 'blue' },
     { label: t('Commandes', 'الطلبات'), value: data.metrics.orders, change: data.metrics.changes.orders, icon: Package, color: 'violet' },
     { label: t('Clients actifs', 'الحرفاء النشطون'), value: data.metrics.customers, change: data.metrics.changes.customers, icon: User, color: 'green' },
     { label: t('Panier moyen', 'متوسّط قيمة السلّة'), value: formatMoney(data.metrics.averageBasket), change: data.metrics.changes.averageBasket, icon: ShoppingBag, color: 'amber' },
   ] : [];
   return <div className="bo-overview">
-    <PageHeader eyebrow={t('PILOTAGE ZAYROVI', 'إدارة أعمال ZAYROVI')} title={view === 'overview' ? t('À traiter maintenant', 'الأولويات توا') : t('Analyses détaillées', 'تحليلات مفصّلة')} description={view === 'overview' ? t('Les tâches prioritaires et les dernières commandes, au même endroit.', 'المهام ذات الأولوية وآخر الطلبات، في نفس البلاصة.') : t('Suivez les ventes et les tendances par période.', 'تابع المبيعات والتوجّهات حسب الفترة.')} action={view === 'analysis' && <Select aria-label={t('Période', 'الفترة')} value={days} onChange={event => setDays(Number(event.target.value))} options={[7, 30, 90, 365].map(value => ({ value: String(value), label: value === 365 ? t('12 mois', '12 شهر') : t(`${value} jours`, `${value} يوم`) }))} />} />
+    <PageHeader eyebrow={t('PILOTAGE ZAYROVI', 'إدارة أعمال ZAYROVI')} title={view === 'overview' ? t('Centre de pilotage', 'مركز القيادة') : t('Analyses détaillées', 'تحليلات مفصّلة')} description={view === 'overview' ? t('Activité récente, tendances et tâches à traiter.', 'النشاط الأخير، المؤشرات والمهام اللي تستنّى.') : t('Explorez les tendances et les sources par période.', 'استعرض التوجّهات والمصادر حسب الفترة.')} action={<Select aria-label={t('Période', 'الفترة')} value={days} onChange={event => setDays(Number(event.target.value))} options={[7, 30, 90, 365].map(value => ({ value: String(value), label: value === 365 ? t('12 mois', '12 شهر') : t(`${value} jours`, `${value} يوم`) }))} />} />
     <OfficeViewSwitch label={t('Vues du tableau de bord', 'طرق عرض لوحة القيادة')} value={view} onChange={setView} options={[
       { value: 'overview', label: t('Opérations', 'العمليات'), icon: 'overview' },
       { value: 'analysis', label: t('Analyses détaillées', 'تحليلات مفصّلة'), icon: 'analytics' },
     ]} />
     {!data ? <><PageLoading error={error} />{error && <Button variant="secondary" onClick={() => retry(revision + 1)}>{t('Réessayer', 'عاود المحاولة')}</Button>}</> : <>
-      {view === 'analysis' && <div className="admin-metrics bo-overview-metrics">{cards.map(({ label, value, change, icon: Icon, color }) => (
+      <div className="admin-metrics bo-overview-metrics office-kpi-grid">{cards.map(({ label, value, change, icon: Icon, color }) => (
         <article key={label} className="admin-metric" data-color={color}>
           <div><span className="bo-metric-title"><i><Icon size={17} /></i>{label}</span><strong dir="auto">{value}</strong>
-          <small><b className={change > 0 ? 'positive' : change < 0 ? 'negative' : ''} dir="ltr">{change > 0 ? '+' : ''}{change}%</b> {t('vs période précédente', 'مقارنة بالفترة السابقة')}</small></div>
+          <small title={t('Par rapport à la période précédente', 'بالمقارنة مع الفترة السابقة')}><b className={change > 0 ? 'positive' : change < 0 ? 'negative' : ''} dir="ltr">{change === null ? '—' : `${change > 0 ? '+' : ''}${change}%`}</b> {change === null ? t('Pas de base de comparaison', 'ما فماش أساس للمقارنة') : t('vs période précédente', 'مقارنة بالفترة السابقة')}</small></div>
         </article>
-      ))}</div>}
+      ))}</div>
       {view === 'overview' ? <>
-        <WorkbenchQueues navigate={navigate} />
+        <div className="office-command-grid">
+          <OrderVolumeChart daily={data.daily} days={days} />
+          <WorkbenchQueues navigate={navigate} />
+          <OrderStatusChart statuses={data.statuses} />
         <section className="admin-card bo-recent-orders"><div className="bo-recent-header"><CardTitle title={t('Dernières commandes', 'آخر الطلبات')} subtitle={t('Flux opérationnel', 'متابعة العمليات')} />{canOpenOrders && <Button variant="secondary" onClick={() => navigate('orders')}>{t('Toutes les commandes', 'الطلبات الكل')}</Button>}</div>
-          <DataTable rows={data.recentOrders} emptyText={t('Aucune commande récente.', 'ما فماش طلبات حديثة.')} rowActions={canOpenOrders ? [{ key: 'open', label: t('Voir la commande', 'شوف الطلب'), icon: <Eye size={16} />, onRun: (row: any) => navigate('orders', undefined, row.id) }] : undefined} columns={[
+          <DataTable rows={data.recentOrders} emptyText={t('Aucune commande récente.', 'ما فماش طلبات حديثة.')} rowActions={canOpenOrders ? [{ key: 'open', label: t('Ouvrir', 'افتح'), icon: <Eye size={16} />, onRun: (row: any) => navigate('orders', undefined, row.id) }] : undefined} columns={[
             { key: 'order_number', label: t('Référence', 'المرجع') }, { key: 'customer_name', label: t('Client', 'الحريف') },
             { key: 'status', label: t('Statut', 'الحالة'), render: (row: any) => <StatusBadge status={row.status} /> },
             { key: 'total_tnd', label: t('Total', 'المجموع'), render: (row: any) => formatMoney(row.total_tnd) },
-            { key: 'created_at', label: t('Date', 'التاريخ'), render: (row: any) => formatDate(row.created_at, true) },
+            { key: 'created_at', label: t('Date', 'التاريخ'), render: (row: any) => formatDate(row.created_at) },
           ]} />
         </section>
+        </div>
       </> : <>
         <div className="admin-dashboard-grid bo-chart-grid">
           <RevenueChart daily={data.daily} total={data.metrics.revenue} days={days} />
@@ -348,7 +355,7 @@ const DashboardPage: React.FC<{ navigate: BackOfficeRenderContext['navigate'] }>
         </div>
         <div className="admin-arrival-summary"><article><span>{t('Arrivages Standard actifs', 'شحنات Standard النشطة')}</span><strong>{data.metrics.activeStandardArrivals}</strong><Calendar /></article><article><span>{t('Arrivages Express actifs', 'شحنات Express النشطة')}</span><strong>{data.metrics.activeExpressArrivals}</strong><Truck /></article></div>
         <div className="admin-dashboard-grid bo-analytics">
-        <section className="admin-card admin-card--wide"><CardTitle title={t('Plateformes sources', 'منصّات المصدر')} subtitle={t('Commandes & revenu', 'الطلبات والمداخيل')} /><div className="admin-source-list">{data.sources.length ? data.sources.map((row: any) => <div key={row.source}><span>{row.source}</span><strong>{row.orders} {t('commandes', 'طلب')}</strong><b>{formatMoney(row.revenue)}</b></div>) : <ChartEmpty />}</div></section>
+        <section className="admin-card admin-card--wide"><CardTitle title={t('Plateformes sources', 'منصّات المصدر')} subtitle={t('Volume et valeur commandée', 'عدد الطلبات وقيمتها')} /><div className="admin-source-list">{data.sources.length ? data.sources.map((row: any) => <div key={row.source}><span>{row.source}</span><strong>{row.orders} {t('commandes', 'طلب')}</strong><b>{formatMoney(row.revenue)}</b></div>) : <ChartEmpty />}</div></section>
         <FunnelCard funnel={data.funnel} days={days} />
         <AyWebsOperationsCard summary={data.aywebs} days={days} />
       </div></>}
@@ -806,11 +813,12 @@ const LensRequestsPage: React.FC<{ canWrite: boolean; requestedId?: string }> = 
   </>;
 };
 
-const AssistantSupportPage: React.FC<{ canWrite: boolean; requestedId?: string }> = ({ canWrite, requestedId }) => {
+const AssistantSupportPage: React.FC<{ canWrite: boolean; requestedId?: string; initialStatus?: string }> = ({ canWrite, requestedId, initialStatus }) => {
   const [rows, setRows] = useState<any[]>([]);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState(initialStatus ?? '');
+  useEffect(() => { setStatus(initialStatus ?? ''); }, [initialStatus]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<any>(null);
   const [busy, setBusy] = useState(false);
@@ -1052,7 +1060,7 @@ const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout
   const { descriptorFor } = useBackOffice();
   const renderSection=(ctx:BackOfficeRenderContext)=>{
     const {section,requestedReview,focusedRecord,pendingMagazineDraft,openMagazineDraft,clearPendingMagazineDraft,can:has}=ctx;
-  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage navigate={ctx.navigate}/>;else if(section==='news')page=<MagazinePage canWrite={has('content:write')} pendingDraftId={pendingMagazineDraft||undefined} onPendingHandled={clearPendingMagazineDraft}/>;else if(section==='magazine-agent')page=<MagazineAgentPage canWrite={has('content:write')} onOpenMagazine={openMagazineDraft}/>;else if(section==='hero')page=<HeroSlidesManagePage canWrite={has('content:write')}/>;else if(section==='stories')page=<StoriesStudioPage canWrite={has('content:write')}/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='arrival-ingestion')page=<ArrivalIngestionPage canWrite={has('orders:write')} canManageStores={has('settings:write')}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')} initialStatus={requestedReview||undefined} focusedId={focusedRecord||undefined}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='lens-section')page=<LensSectionPage canWrite={has('content:write')}/>;else if(section==='home-sections')page=<HomeSectionsPage canWrite={has('content:write')}/>;else if(section==='home-featured')page=<HomeFeaturedPage canWrite={has('content:write')}/>;else if(section==='social')page=<SocialAdminPage canWrite={has('content:write')}/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='promos')page=<PromosPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<FinanceWorkspace navigate={ctx.navigate} canRead={has('reports:read')} renderReports={() => <ReportsPage canWrite={has('reports:write')}/>}/>;else if(section==='interface')page=<InterfaceStudio canWrite={has('settings:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;else if(section==='catalogue-products')page=<CatalogueProductsPage/>;else if(section==='catalogue-categories')page=<CatalogueCategoriesPage/>;else if(section==='catalogue-brands')page=<CatalogueBrandsPage/>;else if(section==='erp-employees')page=<ErpEmployeesPage canManage={has('users:write')}/>;else if(section==='erp-organization')page=<ErpOrganizationPage canManage={has('users:write')}/>;else if(section==='erp-permissions')page=<ErpPermissionsPage canManage={has('users:write')} role={user.role}/>;else if(section==='erp-audit')page=<ErpAuditPage onOpenLegacy={()=>ctx.navigate('audit')}/>;else if(section==='erp-events')page=<ErpEventsPage/>;else if(section==='erp-environment')page=<ErpEnvironmentPage/>;
+  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage navigate={ctx.navigate}/>;else if(section==='news')page=<MagazinePage canWrite={has('content:write')} pendingDraftId={pendingMagazineDraft||undefined} onPendingHandled={clearPendingMagazineDraft}/>;else if(section==='magazine-agent')page=<MagazineAgentPage canWrite={has('content:write')} onOpenMagazine={openMagazineDraft}/>;else if(section==='hero')page=<HeroSlidesManagePage canWrite={has('content:write')}/>;else if(section==='stories')page=<StoriesStudioPage canWrite={has('content:write')}/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='arrival-ingestion')page=<ArrivalIngestionPage canWrite={has('orders:write')} canManageStores={has('settings:write')} initialStatus={requestedReview}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')} initialStatus={requestedReview||undefined} focusedId={focusedRecord||undefined}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={focusedRecord || (requestedReview !== 'PENDING' ? requestedReview : undefined)} initialStatus={requestedReview === 'PENDING' ? 'PENDING' : undefined}/>;else if(section==='lens-section')page=<LensSectionPage canWrite={has('content:write')}/>;else if(section==='home-sections')page=<HomeSectionsPage canWrite={has('content:write')}/>;else if(section==='home-featured')page=<HomeFeaturedPage canWrite={has('content:write')}/>;else if(section==='social')page=<SocialAdminPage canWrite={has('content:write')}/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='promos')page=<PromosPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<FinanceWorkspace navigate={ctx.navigate} canRead={has('reports:read')} renderReports={() => <ReportsPage canWrite={has('reports:write')}/>}/>;else if(section==='interface')page=<InterfaceStudio canWrite={has('settings:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;else if(section==='catalogue-products')page=<CatalogueProductsPage/>;else if(section==='catalogue-categories')page=<CatalogueCategoriesPage/>;else if(section==='catalogue-brands')page=<CatalogueBrandsPage/>;else if(section==='erp-employees')page=<ErpEmployeesPage canManage={has('users:write')}/>;else if(section==='erp-organization')page=<ErpOrganizationPage canManage={has('users:write')}/>;else if(section==='erp-permissions')page=<ErpPermissionsPage canManage={has('users:write')} role={user.role}/>;else if(section==='erp-audit')page=<ErpAuditPage onOpenLegacy={()=>ctx.navigate('audit')}/>;else if(section==='erp-events')page=<ErpEventsPage/>;else if(section==='erp-environment')page=<ErpEnvironmentPage canInspect={has('settings:read')} onNavigate={ctx.navigate}/>;
     else if(section==='inventory')page=<InventoryStockPage/>;
     else if(section==='inventory-movements')page=<InventoryMovementsPage/>;
     else if(section==='inventory-stocktakes')page=<InventoryStocktakesPage/>;

@@ -1217,7 +1217,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       WHERE created_at>=? AND status!='CANCELLED' GROUP BY source ORDER BY orders DESC`, since);
     const recentOrders = db.all<any>(`SELECT o.id,o.order_number,o.status,o.payment_status,o.total_tnd,o.created_at,c.name customer_name
       FROM orders o JOIN customers c ON c.id=o.customer_id ORDER BY o.created_at DESC LIMIT 8`);
-    const ratio = (current: number, before: number) => before ? Math.round(((current - before) / before) * 1000) / 10 : current ? 100 : 0;
+    const ratio = (current: number, before: number) => before ? Math.round(((current - before) / before) * 1000) / 10 : null;
     res.json({ success: true, data: {
       range,
       metrics: {

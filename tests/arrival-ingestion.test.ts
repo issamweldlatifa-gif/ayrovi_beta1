@@ -182,6 +182,22 @@ describe('Administration CRM Arrival AI ingestion', () => {
     expect(harness.db.get<any>("SELECT id FROM crm_arrivals WHERE name='Atomic rollback check'")).toBeUndefined();
   });
 
+  test('filters the arrivals work queue before pagination without weakening the API gate', async () => {
+    const harness = createHarness();
+    const now = new Date().toISOString();
+    for (const [id, name, status] of [['status-a', 'Queue A', 'DRAFT'], ['status-b', 'Queue B', 'REVIEW'], ['status-c', 'Queue C', 'REVIEW']]) {
+      harness.db.run('INSERT INTO crm_arrivals (id,name,status,created_at,updated_at) VALUES (?,?,?,?,?)', id, name, status, now, now);
+    }
+    const path = '/api/admin/arrival-ingestion/arrivals?status=REVIEW&pageSize=1';
+    const response = await read(harness, path);
+    expect(response.status).toBe(200);
+    expect(response.headers['cache-control']).toBe('private, no-store');
+    expect(response.body.pagination.total).toBe(2);
+    expect(response.body.data).toEqual([expect.objectContaining({ status: 'REVIEW' })]);
+    expect((await read(harness, `${path}&search=Queue%20C`)).body.pagination.total).toBe(1);
+    expect((await request(harness.app).get(path)).status).toBe(401);
+  });
+
   test('creates a canonical CRM customer inline, normalizes and reuses a duplicate phone, then links the Arrival atomically', async () => {
     const harness = createHarness();
     const firstArrival = await mutation(harness, 'post', '/api/admin/arrival-ingestion/arrivals').send({ name: 'Inline customer A' });

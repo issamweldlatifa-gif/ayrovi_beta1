@@ -55,12 +55,12 @@ const arabic: Record<string, string> = {
   arrivals: 'الشحنات المنشورة', promotions: 'العروض المنشورة', interface: 'واجهتي', design: 'التصميم',
   products: 'المنتجات (الشاشة السابقة)', brands: 'العلامات (الشاشة السابقة)', users: 'حسابات المستخدمين',
   'erp-permissions': 'الأدوار والصلاحيات', 'erp-audit': 'التدقيق الإداري', audit: 'سجل التدقيق', 'erp-events': 'الأحداث',
-  'erp-environment': 'الوحدات والبيئة', settings: 'الإعدادات', assistant: 'المساعد الذكي', 'discovery-sources': 'مصادر الاكتشاف',
+  'erp-environment': 'مركز الوحدات', settings: 'الإعدادات', assistant: 'المساعد الذكي', 'discovery-sources': 'مصادر الاكتشاف',
   'discovery-markets': 'الأسواق', 'lens-lab': 'مختبر Lens', 'ai-discovery': 'الاكتشاف الذكي',
 };
 
 const french: Record<string, string> = {
-  orders: 'Commandes & factures', reports: 'Rapports & transactions', 'home-sections': 'Sections de l’accueil historique', 'public-nav': 'Navigation de l’interface historique',
+  'erp-environment': 'Centre des modules', orders: 'Commandes & factures', reports: 'Rapports & transactions', 'home-sections': 'Sections de l’accueil historique', 'public-nav': 'Navigation de l’interface historique',
 };
 
 export function officeItemLabel(item: Pick<BackOfficeNavItem, 'section' | 'label'>, lang: OfficeLanguage) {

@@ -5,7 +5,7 @@ import { EditorialIcon, type EditorialIconName } from '../editorial/Icon';
 export const officeGlyphs = {
   overview: 'OfficeOverview', crm: 'OfficeRelations', erp: 'OfficeOperations', cms: 'OfficeContent',
   admin: 'Shield', finance: 'Bank', other: 'Grid', table: 'OfficeRows', kanban: 'OfficeBoard', analytics: 'Chart',
-  pdf: 'OfficePdf', view: 'Eye', density: 'OfficeDensity', light: 'OfficeSun', dark: 'Moon',
+  rail: 'OfficeRail', command: 'OfficeCommand', pdf: 'OfficePdf', view: 'Eye', density: 'OfficeDensity', light: 'OfficeSun', dark: 'Moon',
 } as const satisfies Record<string, EditorialIconName>;
 
 export type OfficeIconName = keyof typeof officeGlyphs;

@@ -158,7 +158,8 @@ export function createArrivalIngestionModule(
   });
 
   router.get('/arrivals', requireAdmin(db, 'commerce:read'), (req, res) => {
-    const result = arrivals.list({ search: String(req.query.search || ''), page: Number(req.query.page), pageSize: Number(req.query.pageSize) });
+    res.set('Cache-Control', 'private, no-store');
+    const result = arrivals.list({ search: String(req.query.search || ''), status: typeof req.query.status === 'string' ? req.query.status : undefined, page: Number(req.query.page), pageSize: Number(req.query.pageSize) });
     res.json({ success: true, ...result });
   });
 

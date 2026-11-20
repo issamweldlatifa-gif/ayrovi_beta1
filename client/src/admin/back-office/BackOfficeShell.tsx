@@ -15,6 +15,8 @@ import { buildOfficeWorkspaces, officeItemLabel, officeText } from './workspaces
 import { OfficeIcon } from '../../design/admin/OfficeIcon';
 import { ConnectedButton, TeamConnections, useConnectedAccess } from './TeamConnections';
 import type { ConnectedTeam } from '../../../../shared/teamConnections';
+import { WorkTabStrip } from './WorkTabStrip';
+import { closeWorkTab, HOME_TAB, isSecondaryOfficeScreen, visitWorkTab, type WorkTab } from './workTabs';
 import { OfficeLanguageContext } from './OfficeLocale';
 
 export type BackOfficeRenderContext = {
@@ -70,6 +72,8 @@ export const BackOfficeShell: React.FC<{
   const [pendingMagazineDraft, setPendingMagazineDraft] = useState('');
   const [workspaceChoice, setWorkspaceChoice] = useState<{ section: string; key: string | null } | null>(null);
   const [mobile, setMobile] = useState(false);
+  const [compactRail, setCompactRail] = useState(false);
+  const [workTabs, setWorkTabs] = useState<WorkTab[]>([{ section: HOME_TAB }]);
   const [profile, setProfile] = useState(false);
   const [security, setSecurity] = useState(false);
   const [palette, setPalette] = useState(false);
@@ -173,6 +177,20 @@ export const BackOfficeShell: React.FC<{
   // Raccourcis clavier (11/11) : `g`+lettre, `/` recherche, `?` aide, Échap.
   // Seuls les écrans présents dans la navigation SERVEUR de l'opérateur sont joignables.
   const allowedSections = useMemo(() => new Set(allItems.map((item) => item.section)), [allItems]);
+  const allowedTabs = useMemo(() => workTabs.filter(tab => allowedSections.has(tab.section)), [workTabs, allowedSections]);
+  const visibleTabs = allowedSections.has(HOME_TAB) && !allowedTabs.some(tab => tab.section === HOME_TAB)
+    ? [{ section: HOME_TAB }, ...allowedTabs] : allowedTabs;
+  const tabSection = activeItem?.section;
+  useEffect(() => {
+    if (!tabSection) return;
+    setWorkTabs(tabs => visitWorkTab(tabs.filter(tab => allowedSections.has(tab.section)), { section: tabSection, request: requestedReview || undefined, focus: focusedRecord || undefined }));
+  }, [allowedSections, tabSection, requestedReview, focusedRecord]);
+  const openTab = (tab: WorkTab) => navigate(tab.section, tab.request, tab.focus);
+  const closeTab = (id: string) => {
+    const next = closeWorkTab(visibleTabs, id);
+    setWorkTabs(next.tabs);
+    if (tabSection === id && next.fallback) openTab(next.fallback);
+  };
   const armedAt = useRef<number | null>(null);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -222,7 +240,7 @@ export const BackOfficeShell: React.FC<{
         const draftId = event.dataTransfer.getData('application/x-zayrovi-magazine-draft') || event.dataTransfer.getData('text/plain');
         if (draftId.startsWith('mag_draft_')) openMagazineDraft(draftId);
       } : undefined}
-      title={hints.join(' · ')}>
+      aria-label={officeItemLabel(item, lang)} title={hints.join(' · ')}>
       {item.section === 'dashboard' ? <OfficeIcon name="overview" size="navigation" /> : <NavIcon name={item.icon} />}
       <span>{officeItemLabel(item, lang)}</span>
       {activeItem === item && <i />}
@@ -234,16 +252,14 @@ export const BackOfficeShell: React.FC<{
     <div><strong>ZAYROVI</strong><span>{t('BUSINESS SUITE', 'منصّة إدارة الأعمال')}</span></div>
   </div>;
 
-  return <OfficeLanguageContext.Provider value={lang}><div data-workspace={activeWorkspace?.key} className={`admin-shell bo-shell bo-unified ${density === 'compact' ? 'is-compact' : ''}`}>
+  return <OfficeLanguageContext.Provider value={lang}><div data-workspace={activeWorkspace?.key} className={`admin-shell bo-shell bo-unified ${compactRail ? 'office-rail-compact' : ''} ${density === 'compact' ? 'is-compact' : ''}`}>
     <header className="bo-topbar bo-header">
       <div className="bo-mobile-brand">{brand}</div>
+      <button type="button" className="admin-icon-button office-rail-toggle" aria-controls="office-navigation" aria-expanded={!compactRail} onClick={() => setCompactRail(!compactRail)} aria-label={t(compactRail ? 'Développer la navigation' : 'Réduire la navigation', compactRail ? 'وسّع القائمة' : 'صغّر القائمة')}><OfficeIcon name="rail" size="navigation" /></button>
       <div className="bo-topbar-search"><GlobalSearch onNavigate={navigate} /></div>
       <div className="bo-topbar-actions admin-header-actions">
         <button className="admin-mobile-menu admin-icon-button" onClick={() => setMobile(true)} aria-expanded={mobile} aria-controls="office-navigation" aria-label={t('Ouvrir le menu', 'افتح القائمة')}><Menu /></button>
-        <button className="admin-icon-button" onClick={() => setPalette(true)} title="Palette de commandes (⌘K)" aria-label="Palette de commandes"><Sparkles /></button>
-        <button className="admin-icon-button bo-shortcut-button" onClick={() => setShortcutHelp(true)} title="Raccourcis clavier (?)" aria-label="Raccourcis clavier"><kbd>?</kbd></button>
-        <button className="admin-icon-button office-density-control" onClick={() => setDensity(density === 'compact' ? 'comfortable' : 'compact')}
-          title={density === 'compact' ? 'Densité confortable' : 'Densité compacte'} aria-pressed={density === 'compact'} aria-label={t('Changer la densité', 'بدّل كثافة العرض')}><OfficeIcon name="density" size="navigation" /></button>
+        <button className="admin-icon-button" onClick={() => setPalette(true)} title={t('Palette de commandes (Ctrl/⌘ K)', 'قائمة الاختصارات (Ctrl/⌘ K)')} aria-label={t('Palette de commandes', 'قائمة الاختصارات')}><OfficeIcon name="command" size="navigation" /></button>
         <button className="admin-icon-button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           title={theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'} aria-pressed={theme === 'dark'} aria-label={t('Basculer le thème sombre / clair', 'بدّل الوضع الفاتح أو الداكن')}><OfficeIcon name={theme === 'dark' ? 'light' : 'dark'} size="navigation" /></button>
         <button className="admin-icon-button bo-language" onClick={() => setDir(dir === 'rtl' ? 'ltr' : 'rtl')}
@@ -258,6 +274,8 @@ export const BackOfficeShell: React.FC<{
             <span>{identity.email}</span>
             {employee && <span className="bo-profile-employee">{employee.label ?? '—'} · <code>{employee.code}</code>{employee.branch ? ` · ${employee.branch}` : ''}</span>}
             {!employee && <span className="bo-profile-employee muted">Aucune fiche employée rattachée à ce compte</span>}
+            <button type="button" aria-pressed={density === 'compact'} onClick={() => setDensity(density === 'compact' ? 'comfortable' : 'compact')}><OfficeIcon name="density" />{t(density === 'compact' ? 'Densité confortable' : 'Densité compacte', 'بدّل كثافة العرض')}</button>
+            <button type="button" onClick={() => { setProfile(false); setShortcutHelp(true); }}>{t('Raccourcis clavier', 'اختصارات لوحة المفاتيح')}</button>
             <button onClick={() => { setProfile(false); setSecurity(true); }} data-testid="bo-account-security">Sécurité du compte (2FA)</button>
             <button onClick={onLogout}><LogOut />Se déconnecter</button>
           </div>}
@@ -279,16 +297,20 @@ export const BackOfficeShell: React.FC<{
           {workspaces.map(group => group.key === 'overview' ? <div className="bo-office-overview" key={group.key}>{group.items.map(renderNavButton)}</div> : (
             <div className="bo-office-group" key={group.key} data-active={activeWorkspace?.key === group.key}>
               <button type="button" className="bo-office-module" aria-expanded={openWorkspace === group.key} aria-controls={`bo-group-${group.key}`}
-                onClick={() => setWorkspaceChoice({ section, key: openWorkspace === group.key ? null : group.key })}>
+                aria-label={t(group.fr, group.ar)} title={t(group.fr, group.ar)} onClick={() => { if (compactRail) setCompactRail(false); setWorkspaceChoice({ section, key: compactRail || openWorkspace !== group.key ? group.key : null }); }}>
                 <OfficeIcon name={group.key} size="navigation" /><span>{t(group.fr, group.ar)}{['crm', 'erp', 'cms'].includes(group.key) && <> <small>{group.key.toUpperCase()}</small></>}</span><ChevronDown size={14} />
               </button>
-              <ul id={`bo-group-${group.key}`} hidden={openWorkspace !== group.key}>{group.items.map(item => <li key={item.section}>{renderNavButton(item)}</li>)}{connectedAccess?.teams.some(team => team === group.key) && <li><ConnectedButton onClick={() => { setConnectedTeam(group.key as ConnectedTeam); setMobile(false); }} /></li>}</ul>
+              <ul id={`bo-group-${group.key}`} hidden={openWorkspace !== group.key}>
+                {group.items.filter(item => !isSecondaryOfficeScreen(item.section, item.canonicalOf)).map(item => <li key={item.section}>{renderNavButton(item)}</li>)}
+                {group.items.some(item => isSecondaryOfficeScreen(item.section, item.canonicalOf)) && <li><details className="office-legacy" key={section} open={group.items.some(item => item.section === activeItem?.section && isSecondaryOfficeScreen(item.section, item.canonicalOf)) || undefined}>
+                  <summary>{t('Outils historiques', 'أدوات قديمة')}</summary>
+                  <ul>{group.items.filter(item => isSecondaryOfficeScreen(item.section, item.canonicalOf)).map(item => <li key={item.section}>{renderNavButton(item)}</li>)}</ul>
+                </details></li>}
+                {connectedAccess?.teams.some(team => team === group.key) && <li><ConnectedButton onClick={() => { setConnectedTeam(group.key as ConnectedTeam); setMobile(false); }} /></li>}
+              </ul>
             </div>
           ))}
-          {context?.roadmap?.length ? <details className="bo-roadmap">
-            <summary>{t('Modules à venir', 'وحدات قادمة')}</summary>
-            {context.roadmap.map(module => <div key={module.key} className="bo-roadmap-item" title={module.description}><strong>{module.label}</strong></div>)}
-          </details> : null}
+
         </nav>
         <div className="admin-sidebar-foot">
           <a href="/" target="_blank" rel="noopener noreferrer"><Globe2 size={16} />{t('Voir le site public', 'شوف الموقع العام')}</a>
@@ -298,6 +320,10 @@ export const BackOfficeShell: React.FC<{
       {mobile && <button className="admin-sidebar-overlay" onClick={() => setMobile(false)} aria-label={t('Fermer le menu', 'اغلق القائمة')} />}
 
       <div className="admin-workspace">
+        {visibleTabs.length > 0 && <WorkTabStrip tabs={visibleTabs} active={tabSection ?? section} go={openTab} close={closeTab} open={() => setPalette(true)}
+          label={id => { const item = allItems.find(candidate => candidate.section === id); return item ? officeItemLabel(item, lang) : id; }}
+          icon={id => id === HOME_TAB ? <OfficeIcon name="overview" /> : <NavIcon name={allItems.find(item => item.section === id)?.icon ?? 'Grid'} />} />}
+
         {/* Fil d'Ariane : le titre de l'écran n'est plus écrit ici (il l'était deux fois). */}
         <div className="bo-screenbar">
           <nav aria-label={t("Fil d’Ariane", "مسار التنقّل")}>

@@ -29,12 +29,16 @@ export class ArrivalService {
     private readonly classifier?: CategoryClassificationService,
   ) {}
 
-  list(input: { search?: string; page?: number; pageSize?: number } = {}) {
+  list(input: { search?: string; status?: string; page?: number; pageSize?: number } = {}) {
     const page = Math.max(1, Math.floor(Number(input.page) || 1));
     const pageSize = Math.min(100, Math.max(1, Math.floor(Number(input.pageSize) || 20)));
     const search = String(input.search || '').trim().slice(0, 100);
-    const where = search ? 'WHERE a.name LIKE ?' : '';
-    const params = search ? [`%${search}%`] : [];
+    const status = ['DRAFT', 'PROCESSING', 'REVIEW', 'CONFIRMED'].includes(input.status ?? '') ? input.status : '';
+    const filters: string[] = [];
+    const params: string[] = [];
+    if (search) { filters.push('a.name LIKE ?'); params.push(`%${search}%`); }
+    if (status) { filters.push('a.status = ?'); params.push(status); }
+    const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
     const total = Number(this.db.get<any>(`SELECT COUNT(*) count FROM crm_arrivals a ${where}`, ...params)?.count || 0);
     const rows = this.db.all<any>(`SELECT a.*,
       COUNT(DISTINCT ac.id) customer_count,

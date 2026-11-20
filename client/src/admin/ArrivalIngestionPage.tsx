@@ -535,13 +535,15 @@ function SourceModal({
   );
 }
 
-export function ArrivalIngestionPage({ canWrite, canManageStores = false }: { canWrite: boolean; canManageStores?: boolean }) {
+export function ArrivalIngestionPage({ canWrite, canManageStores = false, initialStatus }: { canWrite: boolean; canManageStores?: boolean; initialStatus?: string }) {
   const [arrivalId, setArrivalId] = useState(currentArrivalParam());
   const [arrivals, setArrivals] = useState<ArrivalListItem[]>([]);
   const [detail, setDetail] = useState<ArrivalDetail | null>(null);
   const [stores, setStores] = useState<StoreProfile[]>([]);
   const [aiStatus, setAiStatus] = useState<ArrivalAiStatus | null>(null);
   const [search, setSearch] = useState('');
+  const [status, setStatus] = useState(initialStatus === 'REVIEW' ? 'REVIEW' : '');
+  useEffect(() => { setStatus(initialStatus === 'REVIEW' ? 'REVIEW' : ''); setPage(1); }, [initialStatus]);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [loading, setLoading] = useState(true);
@@ -623,12 +625,12 @@ export function ArrivalIngestionPage({ canWrite, canManageStores = false }: { ca
   const loadList = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const query = new URLSearchParams({ page: String(page), pageSize: '20' }); if (search) query.set('search', search);
+      const query = new URLSearchParams({ page: String(page), pageSize: '20' }); if (search) query.set('search', search); if (status) query.set('status', status);
       const result = await adminApi<{ data: ArrivalListItem[]; pagination: typeof pagination }>(`/arrival-ingestion/arrivals?${query}`);
       setArrivals(result.data); setPagination(result.pagination);
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Chargement impossible.'); }
     finally { setLoading(false); }
-  }, [page, search]);
+  }, [page, search, status]);
   const loadDetail = useCallback(async (quiet = false) => {
     if (!arrivalId) return;
     if (!quiet) setLoading(true); setError('');
@@ -809,7 +811,7 @@ export function ArrivalIngestionPage({ canWrite, canManageStores = false }: { ca
   if (!arrivalId) return <>
     <header className="arrival-page-header"><div><span>ZAYROVI ADMIN · CRM</span><h1>Arrivals</h1><p>Un client Arrival peut regrouper plusieurs Stores, chacun avec ses propres Sources et extractions.</p></div><div className="arrival-header-actions">{canManageStores && <Button variant="secondary" onClick={() => setStoreManagerOpen(true)}><Package />Gérer les Stores</Button>}{canWrite && <Button onClick={() => setCreateOpen(true)}><Plus />Create Arrival</Button>}</div></header>
     {aiStatus && <div className={`arrival-ai-readiness is-${aiStatus.state.toLowerCase()}`}><Sparkles /><div><strong>AI Extraction · {aiStatus.state}</strong><span>{aiStatus.message}{aiStatus.retryAt ? ` Réessai après ${formatDate(aiStatus.retryAt, true)}.` : ''}</span></div></div>}
-    <div className="arrival-list-toolbar"><Search value={search} onChange={(value) => { setSearch(value); setPage(1); }} placeholder="Rechercher un Arrival…" /></div>
+    <div className="arrival-list-toolbar"><Search value={search} onChange={(value) => { setSearch(value); setPage(1); }} placeholder="Rechercher un Arrival…" /><Select aria-label="Statut des arrivages" value={status} onChange={event => { setStatus(event.target.value); setPage(1); }} options={[{ value: '', label: 'Tous les statuts' }, ...['DRAFT', 'PROCESSING', 'REVIEW', 'CONFIRMED'].map((value, index) => ({ value, label: ['Brouillon', 'En cours', 'À valider', 'Confirmés'][index] }))]} /></div>
     {error && <div className="arrival-error" role="alert"><AlertCircle />{error}</div>}
     {arrivals.length === 0 ? <section className="arrival-empty"><Package /><h2>Aucun Arrival opérationnel</h2><p>Créez le premier lot CRM. Les Arrivages publics existants restent séparés.</p>{canWrite && <Button onClick={() => setCreateOpen(true)}><Plus />Create Arrival</Button>}</section> : <div className="arrival-list-grid">{arrivals.map((arrival) => <button key={arrival.id} type="button" className="arrival-list-card" onClick={() => openDetail(arrival.id)}><div><span>{formatDate(arrival.createdAt)}</span><StatusBadge status={arrival.status} /></div><h2>{arrival.name}</h2><dl><div><dt>Clients</dt><dd>{arrival.summary.customers}</dd></div><div><dt>Produits</dt><dd>{arrival.summary.products}</dd></div></dl><strong>Ouvrir l’Arrival →</strong></button>)}</div>}
     <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onChange={setPage} />

@@ -12,7 +12,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi, queryString } from './api';
 import { Button, CardTitle, DataTable, Field, Filters, Form, Modal, PageHeader, Pagination, Search, Select, StatusBadge, Toast } from './components';
 import { OpsCapacityPanel } from './OpsCapacityPanel';
-import { useOfficeText } from './back-office/OfficeLocale';
+import { OfficeLanguageContext, useOfficeText } from './back-office/OfficeLocale';
+import { useBackOffice } from './back-office/framework';
+import { officeItemLabel } from './back-office/workspaces';
+import { OfficeViewSwitch } from '../design/admin/OfficeViewSwitch';
 
 type ToastValue = { message: string; tone: 'success' | 'error' } | null;
 
@@ -292,7 +295,7 @@ export const ErpPermissionsPage: React.FC<{ canManage: boolean; role: string }> 
 
 interface RegistrySection { section: string; modules: { key: string; label: string; status: string; basePermission: string; adminSection: string | null; description: string }[] }
 
-export const ErpEnvironmentPage: React.FC = () => {
+export const ErpEnvironmentPage: React.FC<{ canInspect: boolean; onNavigate: (section: string) => void }> = ({ canInspect, onNavigate }) => {
   const t = useOfficeText();
   const registry = useAsync<{ sections: RegistrySection[]; total: number }>(() => adminApi<{ data: { sections: RegistrySection[]; total: number } }>('/core/modules').then((r) => r.data), []);
   const modulePresentation: Record<string, { label: string; tone: 'success' | 'warning' | 'neutral' }> = {
@@ -300,24 +303,50 @@ export const ErpEnvironmentPage: React.FC = () => {
     legacy: { label: t('En service · historique', 'في الخدمة · واجهة سابقة'), tone: 'success' },
     planned: { label: t('Planifié · indisponible', 'مبرمج · موش متاح'), tone: 'warning' },
   };
+  const lang = React.useContext(OfficeLanguageContext);
+  const { navigation } = useBackOffice();
+  const entries = navigation?.groups.flatMap(group => group.items.filter(item => item.permitted)) ?? [];
+  const [view, setView] = useState<'everything' | 'planned'>('everything');
+  const [search, setSearch] = useState('');
+  const matches = (item: RegistrySection['modules'][number]) => (view === 'everything' || item.status === 'planned')
+    && `${item.label} ${item.key}`.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase());
+  const filtered = (registry.data?.sections ?? []).map(group => ({ ...group, modules: group.modules.filter(matches) })).filter(group => group.modules.length > 0);
+  return <>
+    <ErpHeader title={t('Centre des modules', 'مركز الوحدات')} description={t('Retrouvez les modules déclarés et ouvrez les écrans accessibles à votre rôle. Un module planifié n’est pas installé.', 'تلقى الوحدات المسجّلة وتفتح الشاشات المتاحة لدورك. الوحدة المبرمجة مازالت موش مركّبة.')} />
+    <div className="office-module-tools">
+      <OfficeViewSwitch label={t('Filtrer les modules', 'فرز الوحدات')} value={view} onChange={setView} options={[
+        { value: 'everything', label: t('Tous les modules', 'الوحدات الكل'), icon: 'overview' },
+        { value: 'planned', label: t('Planifiés', 'مبرمجة'), icon: 'table' },
+      ]} />
+      <Search value={search} onChange={setSearch} placeholder={t('Rechercher un module…', 'لوّج على وحدة…')} />
+    </div>
+    {registry.loading && <p role="status">{t('Chargement des modules…', 'جاري تحميل الوحدات…')}</p>}
+    {registry.error && <p role="alert">{registry.error} <Button variant="secondary" onClick={registry.reload}>{t('Réessayer', 'عاود المحاولة')}</Button></p>}
+    {!registry.loading && !registry.error && !filtered.length && <p>{t('Aucun module ne correspond.', 'ما فماش وحدة تطابق البحث.')}</p>}
+    <div className="office-module-directory">{filtered.map(group => <section key={group.section} className="admin-card">
+      <CardTitle title={group.section} subtitle={t(`${group.modules.length} module(s)`, `${group.modules.length} وحدة`)} />
+      {group.modules.map(module => {
+        const presentation = modulePresentation[module.status] ?? { label: t('Statut inconnu', 'الحالة مجهولة'), tone: 'neutral' };
+        const direct = entries.find(item => item.section === module.adminSection && item.moduleKey === module.key);
+        const target = module.status !== 'planned' ? direct ?? entries.find(item => item.moduleKey === module.key && !item.canonicalOf) : undefined;
+        return <article key={module.key} data-module={module.key} className="office-module-entry">
+          <div><strong>{module.label}</strong><span className={`status-badge status-badge--${presentation.tone}`}>{presentation.label}</span></div>
+          {module.description && <p>{module.description}</p>}
+          {target && <Button variant="secondary" onClick={() => onNavigate(target.section)}>{t('Ouvrir', 'افتح')} · {officeItemLabel(target, lang)}</Button>}
+        </article>;
+      })}
+    </section>)}</div>
+    {canInspect && <EnvironmentDetails />}
+  </>;
+};
+
+const EnvironmentDetails: React.FC = () => {
   const environment = useAsync<any>(() => adminApi<any>('/core/environment').then((r) => r.data), []);
   const selfTest = useAsync<any>(() => adminApi<any>('/core/environment/self-test').then((r) => r.data), []);
   const env = environment.data;
 
   return <>
-    <ErpHeader title="Modules & environnement" description="Registre des modules (actif / hérité / planifié), politique de stockage des fichiers, auto-test de sécurité, séquences de numérotation et capacité du serveur." />
-    {registry.error && <p className="admin-block-small">{registry.error}</p>}
-    <div className="admin-report-grid">
-      <section className="admin-card"><CardTitle title="Registre des modules" subtitle={registry.data ? `${registry.data.total} ${t('modules déclarés', 'وحدة مسجّلة')}` : ''} />
-        <div className="admin-settings-list">{(registry.data?.sections || []).map((group) => <div key={group.section}>
-          <p className="admin-block-small"><strong>{group.section}</strong></p>
-          {group.modules.map((module) => {
-            const presentation = modulePresentation[module.status] ?? { label: t('Statut inconnu', 'الحالة مجهولة'), tone: 'neutral' };
-            return <div key={module.key} className="admin-cat-row" data-module={module.key}><span><strong>{module.label}</strong>
-            <small className="admin-block-small">{module.description || '—'}{module.adminSection ? ` · écran : ${module.adminSection}` : ''} · {module.basePermission}</small></span>
-            <span className={`status-badge status-badge--${presentation.tone}`}>{presentation.label}</span></div>; })}
-        </div>)}</div>
-      </section>
+    <div className="admin-report-grid office-environment-details">
       <section className="admin-card"><CardTitle title="Stockage des fichiers" subtitle="Médias publics vs documents privés" />
         <div className="admin-settings-list">
           <div className="admin-cat-row"><span><strong>Public</strong><small className="admin-block-small">{env?.publicUploads?.root || '—'} · {(env?.policy?.publicSubDirectories || []).join(', ') || '—'}</small></span><StatusBadge status="ACTIVE" /></div>

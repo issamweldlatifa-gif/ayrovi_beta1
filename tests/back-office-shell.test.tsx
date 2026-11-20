@@ -129,7 +129,7 @@ describe('BackOfficeShell — navigation pilotée par le registre', () => {
     const rail = markup.match(/<nav aria-label="Écrans[^"]*"[\s\S]*?<\/nav>/)?.[0] ?? '';
     expect(rail, 'le rail doit être identifiable').not.toBe('');
     for (const label of ['Tableau de bord', 'Utilisateurs']) {
-      expect((rail.match(new RegExp(label, 'g')) ?? []).length, `${label} ne doit apparaître qu'une fois`).toBe(1);
+      expect((rail.match(new RegExp(`aria-label="${label}"`, 'g')) ?? []).length, `${label} ne doit apparaître qu'une fois`).toBe(1);
     }
     // L'ancien bloc « Au quotidien » recopiait quatre écrans déjà présents : il a été retiré.
     expect(markup).not.toContain('Au quotidien');
@@ -154,15 +154,11 @@ describe('BackOfficeShell — navigation pilotée par le registre', () => {
     expect(markup).not.toContain('Domaine du back office');
   });
 
-  it('place les modules planifiés hors navigation : visibles comme roadmap, jamais cliquables', () => {
+  it('ne pollue pas le rail actif avec les modules planifiés', () => {
     const markup = renderShell(() => <div>page</div>);
-    const rail = markup.match(/<nav aria-label="Écrans[^"]*"[\s\S]*?<\/nav>/)?.[0] ?? '';
-    expect(rail).toContain('Modules à venir');
-    expect(rail).toContain('Comptabilité');
-    // L'entrée de navigation doit rester absente : un module sans écran n'est pas une route.
-    const links = [...NAVIGATION.groups.flatMap((group) => group.items)].map((item) => item.section);
-    expect(links).not.toContain('accounting');
-    expect(markup).toContain('bo-roadmap-item');
+    expect(markup).not.toContain('Modules à venir');
+    expect(markup).not.toContain('Comptabilité');
+    expect(markup).toContain('Onglets de travail');
   });
 
   it('ne montre ni groupe vide ni seconde liste de services', () => {
@@ -279,20 +275,11 @@ describe('CommandPalette — uniquement des commandes permises', () => {
     expect(entries.every((entry) => entry.kind === 'écran')).toBe(true);
   });
 
-  it('propose une création permise et passe celle qui est refusée', () => {
-    const allowed = renderToStaticMarkup(<CommandPalette open onClose={vi.fn()} onNavigate={vi.fn()} />);
-    expect(allowed).toContain('Créer un·e produit');
-    const previous = store;
-    store = {
-      ...previous,
-      resources: [{ ...PRODUCTS_DESCRIPTOR, capabilities: { ...PRODUCTS_DESCRIPTOR.capabilities, create: false } }],
-    };
-    try {
-      const denied = renderToStaticMarkup(<CommandPalette open onClose={vi.fn()} onNavigate={vi.fn()} />);
-      expect(denied).not.toContain('Créer un·e produit');
-      // Les écrans autorisés restent accessibles : seuls les gestes refusés disparaissent.
-      expect(denied).toContain('Tableau de bord');
-    } finally { store = previous; }
+  it('n’annonce pas une fausse création qui ne ferait qu’ouvrir un écran', () => {
+    const markup = renderToStaticMarkup(<CommandPalette open onClose={vi.fn()} onNavigate={vi.fn()} />);
+    expect(markup).not.toContain('Créer un·e produit');
+    expect(markup).toContain('Tableau de bord');
+    expect(buildPaletteEntries([{ ...NAVIGATION.groups[0].items[0], permitted: false }])).toEqual([]);
   });
 
   it('n’invente aucune commande quand le framework n’a pas répondu', () => {
