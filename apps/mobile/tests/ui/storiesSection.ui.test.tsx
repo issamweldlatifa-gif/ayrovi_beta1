@@ -28,12 +28,12 @@ describe('official editorial Stories gallery', () => {
     mockStories.data = [card(1)]; mockSettings.data = { ...block, enabled: false };
     await mount(); expect(screen.queryAllByTestId('home-stories')).toHaveLength(0);
   });
-  it('uses Hero card geometry and opens Social filtered to Stories', async () => {
+  it('uses taller cards than Hero and opens Social filtered to Stories', async () => {
     mockStories.data = [card(1), card(2)];
     await mount();
     expect(screen.getByText(block.title)).toBeTruthy();
     expect(screen.getByText(block.subtitle)).toBeTruthy();
-    expect(StyleSheet.flatten(screen.getByTestId('editorial-story-s1').props.style).aspectRatio).toBe(CARD_ASPECT);
+    expect(StyleSheet.flatten(screen.getByTestId('editorial-story-s1').props.style).aspectRatio).toBeCloseTo(CARD_ASPECT / 1.08);
     fireEvent.press(screen.getByRole('button', { name: /Explorez toutes les stories/ }));
     expect(router.navigate).toHaveBeenCalledWith({ pathname: '/(tabs)/social', params: { filter: 'stories' } });
   });

@@ -64,10 +64,11 @@ interface HeroCarouselProps {
 
 /**
  * Teinte du haut de chaque carte et avancement « en cartes » (0 → n−1) lu sur
- * le défilement. Partagé avec l'en-tête : un seul mouvement, deux surfaces.
+ * le défilement. Partagé avec l’en-tête et les onglets.
  */
 export interface HeroTint {
   colors: string[];
+  tabColors: string[];
   progress: Animated.AnimatedInterpolation<number> | null;
 }
 
@@ -181,9 +182,12 @@ function HeroCarouselView({
     () => (theme.mode === 'dark' ? [] : edges.map((edge) => edge.top)),
     [edges, theme.mode],
   );
+  const tabColors = useMemo(() => slides.map(card => mixHex(
+    heroBackdropColors(card, theme.colors.surface).bottom, theme.colors.canvas, theme.mode === 'dark' ? 0.78 : 0.55,
+  )), [slides, theme.colors.surface, theme.colors.canvas, theme.mode]);
   useEffect(() => {
-    onTintChange?.(lightTops.length > 0 ? { colors: lightTops, progress } : null);
-  }, [lightTops, progress, onTintChange]);
+    onTintChange?.(tabColors.length > 0 ? { colors: lightTops, tabColors, progress } : null);
+  }, [lightTops, tabColors, progress, onTintChange]);
   useEffect(() => () => onTintChange?.(null), [onTintChange]);
 
   const onScroll = useMemo(
@@ -276,14 +280,13 @@ function HeroCarouselView({
           >
             <LinearGradient
               // La teinte de la photo TIENT sur toute la hauteur (haut puis bas
-              // de sa photo) ; un court fondu final rejoint le fond de page sous
-              // les cartes — les flancs ne blanchissent plus.
+              // de sa photo) ; le fondu final rejoint exactement la teinte des onglets.
               colors={[
                 edge.top,
                 edge.top,
                 edge.bottom,
                 mixHex(edge.bottom, theme.colors.canvas, 0.45),
-                theme.colors.canvas,
+                tabColors[index] ?? theme.colors.canvas,
               ]}
               locations={EDGE_LOCATIONS}
               style={StyleSheet.absoluteFill}

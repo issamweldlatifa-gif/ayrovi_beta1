@@ -16,12 +16,12 @@ jest.mock('expo-router', () => ({
   router: { navigate: jest.fn() },
 }));
 
-async function renderTabs() {
+async function renderTabs(tint?: Parameters<typeof HomeTabs>[0]['tint']) {
   const view = render(
     <PrefsProvider>
       <I18nProvider>
         <ThemeProvider>
-          <HomeTabs />
+          <HomeTabs tint={tint} />
         </ThemeProvider>
       </I18nProvider>
     </PrefsProvider>,
@@ -54,13 +54,22 @@ describe('HomeTabs', () => {
     }
   });
 
+  it('places the Hero tint behind the strip without consuming navigation taps', async () => {
+    await renderTabs({ colors: ['#DDEEFF'], tabColors: ['#FFE1B0', '#DDEEFF'], progress: null });
+    const tint = screen.getByTestId('home-tabs-hero-tint', { includeHiddenElements: true });
+    expect(tint.props.pointerEvents).toBe('none');
+    expect(StyleSheet.flatten(tint.props.children[0].props.style).backgroundColor).toBe('#FFE1B0');
+    fireEvent.press(screen.getByRole('tab', { name: 'Nouveautés' }));
+    expect(router.navigate).toHaveBeenCalledWith('/catalog');
+  });
+
   it('chaque onglet ouvre une route de l’application (pas une URL de site)', async () => {
     await renderTabs();
     fireEvent.press(screen.getByRole('tab', { name: 'Social' }));
     expect(router.navigate).toHaveBeenNthCalledWith(1, { pathname: '/(tabs)/social', params: { filter: 'all' } });
     fireEvent.press(screen.getByRole('tab', { name: 'Nouveautés' }));
     fireEvent.press(screen.getByRole('tab', { name: 'Promotions' }));
-    fireEvent.press(screen.getByRole('tab', { name: 'Magazine' }));
+    fireEvent.press(screen.getByRole('tab', { name: 'Publications' }));
     expect(router.navigate).toHaveBeenNthCalledWith(2, '/catalog');
     expect(router.navigate).toHaveBeenNthCalledWith(3, '/promotions');
     expect(router.navigate).toHaveBeenNthCalledWith(4, '/publications');

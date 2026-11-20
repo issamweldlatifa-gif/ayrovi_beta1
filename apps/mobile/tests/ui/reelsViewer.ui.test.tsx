@@ -1,6 +1,7 @@
 import ReelsScreen from '../../app/reels';
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { FlatList } from 'react-native';
+import { FlatList, processColor, StyleSheet } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import ReelsViewerScreen from '../../app/reels-viewer';
 import { ThemeProvider } from '../../src/design/theme';
@@ -26,6 +27,12 @@ it('opens a cold-link Reel after loading, and pages by the actual available view
   const list = screen.UNSAFE_getByType(FlatList);
   expect(list.props.initialScrollIndex).toBe(1);
   expect(list.props.initialNumToRender).toBe(2);
+  expect(list.props.contentInsetAdjustmentBehavior).toBe('never');
+  expect(list.props.automaticallyAdjustContentInsets).toBe(false);
+  expect(screen.UNSAFE_getByType(StatusBar).props.style).toBe('light');
+  const scrim = screen.getByTestId('reel-status-scrim');
+  expect(StyleSheet.flatten(scrim.props.style)).toMatchObject({ top: 0, height: 54 });
+  expect(scrim.props.colors.at(-1)).toBe(processColor('transparent'));
   expect(list.props.windowSize).toBe(5);
   const reposition = jest.spyOn(list.instance, 'scrollToIndex');
   fireEvent(screen.getByTestId('reels-viewer'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 360, height: 700 } } });

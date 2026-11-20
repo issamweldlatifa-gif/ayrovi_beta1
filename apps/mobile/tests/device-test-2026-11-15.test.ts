@@ -4,7 +4,7 @@
  *  • remise : prix rouge + pastille « -45% » seulement si la remise est réelle ;
  *  • panier : un badge du nombre d'articles sur CHAQUE icône panier ;
  *  • son des vidéos de Publication : actif à l'ouverture, coupé pour la session ;
- *  • lignes de section retirées, cartes Reels nues, navigateur AYWEBs bleu.
+ *  • lignes de section retirées, cartes Reels nues, navigateur AYWEBs aux couleurs de la marque.
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -131,7 +131,7 @@ describe('mise en page du 15/11', () => {
     expect(browser).toContain('<TabCleanIcon');
     expect(browser).toContain('aywebs-store-added-strip');
     const tokens = read('src/design/tokens.mobile.ts');
-    expect(tokens).toMatch(/export const STORE_BAR = \{\s*background: AYWEBS_HEADER_YELLOW,\s*ink: BRAND\.white,\s*searchBand: AYWEBS_HEADER_YELLOW,/);
+    expect(tokens).toMatch(/export const STORE_BAR = \{\s*background: AYWEBS_HEADER_YELLOW,\s*ink: BRAND\.black,\s*searchBand: AYWEBS_HEADER_YELLOW,/);
     expect(tokens).toMatch(/export const BROWSER_BAR = \{\s*background: STORE_BAR\.background,\s*ink: STORE_BAR\.ink,/);
   });
 

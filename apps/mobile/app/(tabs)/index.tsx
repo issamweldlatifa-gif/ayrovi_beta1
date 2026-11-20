@@ -125,7 +125,7 @@ export default function HomeScreen() {
 
         {/* التبويبات تظهر على نفس لون نهاية تدرّج الهيرو لانتقال بصري متصل. */}
         {/* التبويبات الثلاث — يفتحو جوّا التطبيق */}
-        <HomeTabs />
+        <HomeTabs tint={heroTint} />
       </View>
 
       {/* Cover d'accueil — médias CRM plein écran, texte et bouton posés dessus. */}

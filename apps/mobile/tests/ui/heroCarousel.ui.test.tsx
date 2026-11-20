@@ -11,7 +11,7 @@ import { AppState, processColor, StyleSheet } from 'react-native';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
-import { HeroCarousel } from '../../src/features/home/HeroCarousel';
+import { HeroCarousel, type HeroTint } from '../../src/features/home/HeroCarousel';
 import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
@@ -66,7 +66,7 @@ const SETTINGS = {
   paginationVisible: true,
 };
 
-async function renderCarousel(settings = SETTINGS, slides = SLIDES) {
+async function renderCarousel(settings = SETTINGS, slides = SLIDES, onTintChange?: (tint: HeroTint | null) => void) {
   const view = render(
     <PrefsProvider>
       <I18nProvider>
@@ -74,6 +74,7 @@ async function renderCarousel(settings = SETTINGS, slides = SLIDES) {
           <HeroCarousel
             settings={query(settings)}
             slides={query(slides)}
+            onTintChange={onTintChange}
           />
         </ThemeProvider>
       </I18nProvider>
@@ -235,13 +236,14 @@ describe('géométrie et fond', () => {
 });
 
 describe('fondu du fond Hero vers la page', () => {
-  it('chaque carte pose sa couche ; le dégradé se termine exactement sur le canevas de page', async () => {
+  it('chaque carte pose sa couche ; le dégradé se termine exactement sur la teinte des onglets', async () => {
     const withEdges = SLIDES.map((card, index) => ({
       ...card,
       edgeTop: ['#433F39', '#274546', '#E0C3A0'][index],
       edgeBottom: ['#3D3C39', '#20272A', '#8E877E'][index],
     }));
-    await renderCarousel(SETTINGS, withEdges);
+    const onTintChange = jest.fn();
+    await renderCarousel(SETTINGS, withEdges, onTintChange);
     const background = StyleSheet.flatten(screen.getByTestId('hero-carousel').props.style).backgroundColor;
     expect(background).toBe(heroBackdropColors(withEdges[0], COLORS.light.surface).top);
     expect(background).not.toBe(withEdges[0].edgeTop);
@@ -251,7 +253,10 @@ describe('fondu du fond Hero vers la page', () => {
     const gradient = screen.getByTestId('hero-carousel-backdrop-0', { includeHiddenElements: true });
     expect(gradient.props.locations).toEqual([0, 0.62, 0.92, 0.985, 1]);
     expect(gradient.props.colors).toHaveLength(5);
-    expect([COLORS.light.canvas, COLORS.dark.canvas].map(processColor)).toContain(gradient.props.colors.at(-1));
+    const tint = onTintChange.mock.lastCall?.[0] as HeroTint;
+    expect(tint.progress).not.toBeNull();
+    expect(new Set(tint.tabColors).size).toBe(withEdges.length);
+    expect(gradient.props.colors.at(-1)).toBe(processColor(tint.tabColors[0]));
   });
 });
 

@@ -25,7 +25,7 @@ export const StoriesSection = memo(function StoriesSection() {
   const showcase = useStoriesShowcase();
   const settings = showcase.data;
   const rows = (stories.data ?? []).filter(row => row.mediaType === 'IMAGE' && row.mediaUrl).slice(0, settings?.cardCount ?? 0);
-  // Même géométrie que le Hero : gouttière d'écran = espace entre cartes,
+  // Même rythme horizontal que le Hero : gouttière d'écran = espace entre cartes,
   // cartes intérieures centrées à chaque arrêt.
   const { cardWidth, stride, startInset, endInset, centeringOffset, maxScroll } = carouselGeometry(width, rows.length);
   const local = (fr: string, ar?: string) => locale === 'ar' && ar ? ar : fr;
@@ -35,8 +35,8 @@ export const StoriesSection = memo(function StoriesSection() {
   return <FullBleed>
     <View testID="home-stories" style={styles.section}>
       <View style={[styles.heading, { paddingHorizontal: gutter }]}>
-        {settings.title ? <AppText variant="h2" color={FOOTER_THEME.paper}>{local(settings.title, settings.titleAr)}</AppText> : null}
-        {settings.subtitle ? <AppText variant="h2" color={FOOTER_THEME.paper}>{local(settings.subtitle, settings.subtitleAr)}</AppText> : null}
+        {settings.title ? <AppText variant="h3" color={FOOTER_THEME.paper}>{local(settings.title, settings.titleAr)}</AppText> : null}
+        {settings.subtitle ? <AppText variant="h3" color={FOOTER_THEME.paper}>{local(settings.subtitle, settings.subtitleAr)}</AppText> : null}
         {settings.ctaLabel ? <Pressable testID="stories-explore" accessibilityRole="button" onPress={() => router.navigate(socialHref('stories'))} style={styles.cta}>
           <AppText variant="body" color={FOOTER_THEME.paper}>{local(settings.ctaLabel, settings.ctaLabelAr)} {theme.isRTL ? '←' : '→'}</AppText>
         </Pressable> : null}
@@ -48,11 +48,11 @@ export const StoriesSection = memo(function StoriesSection() {
         decelerationRate="fast" disableIntervalMomentum
         contentContainerStyle={{ paddingStart: startInset, paddingEnd: endInset, gap: CARD_GAP }}
         renderItem={({ item }) => <View testID={`editorial-story-${item.id}`}
-          style={[styles.card, { width: cardWidth, aspectRatio: CARD_ASPECT, borderRadius: theme.radius.card }]}>
+          style={[styles.card, { width: cardWidth, aspectRatio: CARD_ASPECT / 1.08, borderRadius: theme.radius.card }]}>
           <AppImage uri={mediaUrl(item.mediaUrl)} contentFit="cover" style={StyleSheet.absoluteFill}
             accessibilityLabel={local(item.title, item.titleAr)} />
           <LinearGradient colors={['transparent', veil(0.76)]} style={styles.caption}>
-            <AppText variant="h3" color={FOOTER_THEME.paper} numberOfLines={2}>{local(item.title, item.titleAr)}</AppText>
+            <AppText variant="bodyStrong" color={FOOTER_THEME.paper} numberOfLines={2}>{local(item.title, item.titleAr)}</AppText>
             {item.description ? <AppText variant="body" color={FOOTER_THEME.paper} numberOfLines={3}>{local(item.description, item.descriptionAr)}</AppText> : null}
           </LinearGradient>
         </View>} />

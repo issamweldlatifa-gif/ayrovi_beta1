@@ -639,7 +639,7 @@ export default function AyWebsBrowserScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingBottom: !showCapture && !note && !added ? insets.bottom : 0 }]}>
       {/* Identité AYWEBs et domaine marchand non modifiable. */}
-      <StatusBar style="light" />
+      <StatusBar style={BROWSER_BAR.statusBar} />
       <View
         testID="aywebs-store-header"
         style={[

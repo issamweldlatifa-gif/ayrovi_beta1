@@ -163,24 +163,25 @@ const PRICE_DROP_RED = '#CF1322';
  * même rouge dans les deux modes (5,9:1 avec le blanc), car c'est un repère
  * commercial fixe, pas une surface du thème.
  */
-/** AA contrast for white labels; the brighter commerce yellow stays on purchase CTAs. */
-const AYWEBS_HEADER_YELLOW = mix(BRAND.yellow, BRAND.black, 0.4);
+/** Brand yellow with dark ink for legibility in both AYWEBs headers. */
+const AYWEBS_HEADER_YELLOW = BRAND.yellow;
 export const STORE_BAR = {
   background: AYWEBS_HEADER_YELLOW,
-  ink: BRAND.white,
+  ink: BRAND.black,
   searchBand: AYWEBS_HEADER_YELLOW,
   pill: BRAND.white,
   pillInk: BRAND.black,
   pillMuted: NEUTRALS.textSecondary,
   searchButton: BRAND.lightGray,
   searchIcon: BRAND.black,
-  statusBar: 'light',
+  statusBar: 'dark',
 } as const;
 
 export const BROWSER_BAR = {
   background: STORE_BAR.background,
   ink: STORE_BAR.ink,
-  progress: [BRAND.white, BRAND.yellow] as const,
+  statusBar: STORE_BAR.statusBar,
+  progress: [mix(BRAND.yellow, BRAND.black, 0.62), BRAND.black] as const,
   progressHeight: 3,
 } as const;
 
@@ -803,8 +804,8 @@ export type DerivedColors = ReturnType<typeof derivedColors>;
 export const PUBLICATION_SPACING = { group: 4, section: 8, inset: 12, post: 12, rule: 4 } as const;
 /** Authorized publisher-only visual exception; global type and primary stay unchanged. */
 export const PUBLICATION_PUBLISHER = { font: 'PublicationPublisher-Bold', nameSize: 18, lineHeight: 24, avatar: 44, mark: 24, sealEdge: 1, follow: 24 } as const;
-/** 15/11 : `actionIcon` 28 — icônes de la barre J'aime · Commenter · Partager · Enregistrer « un peu plus grandes » (24 → 28, rangée Instagram). */
-export const PUBLICATION_METRICS = { icon: 22, actionIcon: 28, verified: 16, avatar: 36, productGap: 8 } as const;
+/** Icônes Publication : navigation 22 dp, interactions 30 dp. */
+export const PUBLICATION_METRICS = { icon: 22, actionIcon: 30, verified: 16, avatar: 36, productGap: 8 } as const;
 
 /** Social Commerce's approved editorial media treatment, never applied to shared action/status tokens. */
 export const SOCIAL_EDITORIAL = {
@@ -921,8 +922,8 @@ export const PUBLICATION_THEME = {
   cardLine: alpha(BRAND.black, .05), pill: alpha(BRAND.black, .06), pillLine: alpha(BRAND.black, .06),
   splitPaper: alpha(BRAND.black, .025), glass: alpha(BRAND.black, .035),
   glassLine: frost(.6), campaignPaper: PUBLICATION_EDITORIAL_PAPER,
-  /** 16/11 (référence 003723) : en-tête Publication NOIR #262626, flèche, titre et profil blancs. */
-  headerBar: '#262626', headerInk: BRAND.white,
+  /** White editorial header, with dark status and navigation icons. */
+  headerBar: BRAND.white, headerInk: BRAND.black,
 } as const;
 
 /** Owner-approved Clean-only composer contrast and reference sizing; not commerce defaults. */

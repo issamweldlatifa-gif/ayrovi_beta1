@@ -190,6 +190,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'app/aywebs/browser.tsx', // AYWEBs : voile de chargement posé au-dessus de la page du magasin (WebView)
       'src/features/sections/PromotionCard.tsx', // badge de réduction posé sur la vignette
       'src/features/social/ReelCard.tsx', // durée posée sur la vignette vidéo
+      'src/features/publications/PublicationTemplatesScreen.tsx', // en-tête escamotable superposé au flux sans changer sa géométrie
       'src/features/publications/templates/PublicationVideo.tsx', // Publication (13/11) : affiche sous la vidéo + commandes pause/son posées SUR le média
       'src/features/social/CommentSortMenu.tsx', // menu de tri ancré sous l'icône, dans un Modal par-dessus la feuille (référence 10/11)
       'src/features/shopping/LinkedProductCard.tsx', // pastille favori posée dans l'angle de la carte article

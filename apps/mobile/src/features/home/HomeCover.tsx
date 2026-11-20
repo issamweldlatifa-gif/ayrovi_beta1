@@ -72,7 +72,7 @@ const CoverVideo = memo(function CoverVideo({
 
 export const HomeCover = memo(function HomeCover() {
   const theme = useTheme();
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const { gutter } = useResponsive();
   const { width: windowWidth } = useWindowDimensions();
   const isFocused = useIsFocused();
@@ -139,7 +139,8 @@ export const HomeCover = memo(function HomeCover() {
   // Masquée par le CRM (ou réponse vide) ⇒ rien, jamais un bloc vide.
   if (cover.isPending || !cover.data || !cover.data.enabled) return null;
 
-  const title = cover.data.title;
+  const isPublicationEntry = cover.data.destination === 'publications';
+  const title = cover.data.title || (isPublicationEntry ? t('home.publicationsEntry.title') : '');
   const ctaLabel = cover.data.ctaLabel || (locale === 'ar' ? 'اكتشف' : 'Je découvre');
   const route = DESTINATION_ROUTES[cover.data.destination] ?? '/publications';
   const pauseLabel = userPaused
@@ -205,6 +206,10 @@ export const HomeCover = memo(function HomeCover() {
           pointerEvents="none"
         />
         <View style={styles.overlay} pointerEvents="box-none">
+          {isPublicationEntry && title !== t('home.publicationsEntry.title') ? (
+            <AppText testID="home-publications-entry-label" variant="captionStrong" color={theme.colors.onMedia}
+              style={styles.title}>{t('home.publicationsEntry.title')}</AppText>
+          ) : null}
           {title ? (
             <AppText
               testID="home-cover-title"
@@ -219,7 +224,7 @@ export const HomeCover = memo(function HomeCover() {
           <Pressable
             testID="home-cover-cta"
             accessibilityRole="button"
-            accessibilityLabel={ctaLabel}
+            accessibilityLabel={isPublicationEntry ? t('home.publicationsEntry.open') : ctaLabel}
             onPress={() => router.push(route as never)}
             style={[styles.cta, { borderColor: theme.colors.onMedia }]}
           >

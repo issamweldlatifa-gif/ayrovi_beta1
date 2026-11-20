@@ -58,9 +58,7 @@ import { PUBLICATION_PALETTE as P, PublicationText } from './publicationDesign';
 const COMMENT_LIMIT = 500;
 /** Hauteur fixe de la feuille, comme Facebook : elle ne saute pas à chaque message. */
 export const PUBLICATION_COMMENTS_HEIGHT = 0.82;
-/** Hauteur de la barre (15/11 : rangée d'icônes 28, cibles ≥ 44 dp). */
-export const PUBLICATION_BAR_HEIGHT = 52;
-/** Marge intérieure d'une cible de la barre : (44 − 28) / 2. */
+export const PUBLICATION_BAR_HEIGHT = 56;
 const BAR_TARGET_PAD = 8;
 /** Pastille d'une réaction dans le résumé (👍 bleu, ❤️ rouge), chevauchée de 4 dp. */
 const SUMMARY_BADGE = 18;
@@ -143,7 +141,6 @@ async function shareBlock(blockId: string, title: string) {
 }
 
 export interface PublicationBarProps {
-  compact?: boolean;
   blockId: string;
   title: string;
   counts: SocialCounts;
@@ -165,7 +162,7 @@ export interface PublicationBarProps {
  * plein cerné de blanc (jamais tout bleu, compteur à l'encre) ; Enregistré =
  * signet plein à l'encre.
  */
-export function PublicationBar({ blockId, title, counts, mine, engagementKey, compact }: PublicationBarProps) {
+export function PublicationBar({ blockId, title, counts, mine, engagementKey }: PublicationBarProps) {
   const theme = useTheme();
   const t = useT();
   const session = useSession();
@@ -186,7 +183,7 @@ export function PublicationBar({ blockId, title, counts, mine, engagementKey, co
   });
   const badges = summaryBadges(counts, mine, reaction.reaction);
   const direction = rowDirectionFor(theme.isRTL);
-  const icon = compact ? 20 : PUBLICATION_METRICS.actionIcon;
+  const icon = PUBLICATION_METRICS.actionIcon;
   const isSaved = saved?.isSaved(blockId) ?? false;
   const commentsLabel = [t('social.comment'), ...publicationSummaryParts({ comments: counts.comments, shares: 0 }, t)].join(', ');
   const shareLabel = [t('social.share'), ...publicationSummaryParts({ comments: 0, shares: counts.shares }, t)].join(', ');
@@ -552,7 +549,7 @@ export function PublicationCommentsSheet({ blockId, reaction, badges, engagement
 const styles = StyleSheet.create({
   // Les icônes s'alignent sur la marge des blocs (12) : cible 44 − glyphe 24 = 10 de chaque côté.
   bar: { alignItems: 'center', minHeight: PUBLICATION_BAR_HEIGHT, paddingHorizontal: CARD_SYSTEM.gutter - BAR_TARGET_PAD, marginTop: T.barTop },
-  action: { minWidth: 44, minHeight: 44, paddingHorizontal: BAR_TARGET_PAD, alignItems: 'center', justifyContent: 'center', gap: RHYTHM.inline + 2 },
+  action: { minWidth: 48, minHeight: 48, paddingHorizontal: BAR_TARGET_PAD, alignItems: 'center', justifyContent: 'center', gap: RHYTHM.inline + 2 },
   summarySide: { alignItems: 'center', gap: 6 },
   badges: { alignItems: 'center' },
   badge: {

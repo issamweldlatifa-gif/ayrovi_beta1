@@ -84,6 +84,7 @@ describe('HomeCover — le nouveau bloc d’entrée', () => {
     await renderCover();
     expect(screen.getByTestId('home-cover')).toBeTruthy();
     expect(screen.getByTestId('home-cover-title')).toBeTruthy();
+    expect(screen.queryByTestId('home-publications-entry-label')).toBeNull();
     expect(screen.getByText('NOUVEAUTÉS\nVOTRE DOSE HEBDOMADAIRE')).toBeTruthy();
     // Plein écran : marge négative sur la section, média sans marge interne.
     const section = StyleSheet.flatten(screen.getByTestId('home-cover').props.style);
@@ -96,6 +97,15 @@ describe('HomeCover — le nouveau bloc d’entrée', () => {
     // Plus d'ancien libellé « À la une » ni d'ancien bouton bloc sous l'image.
     expect(screen.queryByText('À la une')).toBeNull();
     expect(screen.queryByTestId('home-featured-cta')).toBeNull();
+  });
+
+  it('nomme la destination Publications sans remplacer le titre CRM', async () => {
+    mockCover.data = { ...coverData(), destination: 'publications' };
+    await renderCover();
+    expect(screen.getByText('Publications ZAYROVI')).toBeTruthy();
+    expect(screen.getByTestId('home-cover-title')).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Voir les publications ZAYROVI' }));
+    expect(router.push).toHaveBeenCalledWith('/publications');
   });
 
   it('le bouton contour ouvre la destination choisie dans le CRM', async () => {

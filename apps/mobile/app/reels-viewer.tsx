@@ -16,12 +16,13 @@ import { goBack } from "@/design/navigation";
 import {
   FlatList,
   Platform,
-  StatusBar,
   StyleSheet,
   View,
   useWindowDimensions,
 } from "react-native";
 import { useLocalSearchParams, useIsFocused } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useReels, useSocialCounts } from "@/api/hooks";
@@ -33,7 +34,7 @@ import { ErrorBlock } from "@/design/states";
 import { BrandLoadingIndicator } from "@/design/LoadingScreen";
 import { ReelCard } from "@/features/social/ReelCard";
 import { ReelCommentsModal } from "@/features/social/ReelCommentsModal";
-import { VIDEO_BACKDROP } from "@/design/tokens.mobile";
+import { VIDEO_BACKDROP, veil } from "@/design/tokens.mobile";
 import type { Reel } from "@/api/social";
 
 /**
@@ -137,6 +138,8 @@ export default function ReelsViewerScreen() {
         ref={listRef}
         testID="reels-viewer-list"
         accessibilityLabel={t("social.reels")}
+        contentInsetAdjustmentBehavior="never"
+        automaticallyAdjustContentInsets={false}
         refreshing={Boolean(reels.isRefetching)}
         onRefresh={() => { void reels.refetch(); void counts.refetch(); }}
         data={rows}
@@ -181,8 +184,9 @@ export default function ReelsViewerScreen() {
         <ReelPageFooter query={reels} onMedia />
       </View> : null}
 
-      {focused ? <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" /> : null}
-      <View pointerEvents="none" style={[styles.statusBar, { height: insets.top }]} />
+      {focused ? <StatusBar style="light" /> : null}
+      <LinearGradient pointerEvents="none" testID="reel-status-scrim"
+        colors={[veil(0.52), 'transparent']} style={[styles.statusScrim, { height: insets.top + 30 }]} />
       <View pointerEvents="box-none" style={[styles.header, { top: insets.top, flexDirection: rowDirectionFor(theme.isRTL) }]}>
         <ReelViewerHeaderButton kind="back" label={t('common.back')} onPress={back} />
         {infoTarget ? <ReelViewerHeaderButton kind="info" label={t('reel.viewerInfo')} onPress={() => setInfoFor(infoTarget)} /> : null}
@@ -208,7 +212,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 24,
   },
-  statusBar: { position: 'absolute', top: 0, start: 0, end: 0, backgroundColor: V.paper },
+  statusScrim: { position: 'absolute', top: 0, start: 0, end: 0 },
   header: { position: 'absolute', start: 0, end: 0, alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: V.inset, paddingTop: 10 },
 });

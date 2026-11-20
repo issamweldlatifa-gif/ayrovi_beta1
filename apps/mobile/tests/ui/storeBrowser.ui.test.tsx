@@ -160,12 +160,12 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     expect(mockPush).toHaveBeenCalledWith('/panier');
   });
 
-  it('en-tête jaune jusqu’au titre blanc et CTA jaune sur la fiche seulement', async () => {
+  it('en-tête jaune jusqu’au titre sombre et CTA jaune sur la fiche seulement', async () => {
     renderBrowser();
     const header = StyleSheet.flatten(screen.getByTestId('aywebs-store-header').props.style);
     expect(header.backgroundColor).toBe(STORE_BAR.background);
-    expect(StyleSheet.flatten(screen.getByText('AYWEBs').props.style).color).toBe(BRAND.white);
-    expect(StyleSheet.flatten(screen.getByTestId('aywebs-store-header-address').props.style).color).toBe(BRAND.white);
+    expect(StyleSheet.flatten(screen.getByText('AYWEBs').props.style).color).toBe(BRAND.black);
+    expect(StyleSheet.flatten(screen.getByTestId('aywebs-store-header-address').props.style).color).toBe(BRAND.black);
     expect(screen.getByTestId('aywebs-ask-clean-logo')).toBeTruthy();
     await navigate(PDP);
     const cta = StyleSheet.flatten((await screen.findByTestId('aywebs-store-add-to-cart')).props.style);

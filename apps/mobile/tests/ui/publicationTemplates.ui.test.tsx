@@ -30,7 +30,7 @@ jest.mock('expo-router', () => ({
   useFocusEffect: jest.fn(),
   useLocalSearchParams: () => mockRouteParams,
 }));
-jest.mock('expo-status-bar', () => ({ setStatusBarStyle: jest.fn() }));
+jest.mock('expo-status-bar', () => ({ StatusBar: 'StatusBar' }));
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
@@ -143,6 +143,27 @@ describe('page Publication : en-tête seul + modèles du CRM', () => {
     for (const id of ['video', 'box', 'pair']) expect(screen.getByTestId(`publication-block-${id}`)).toBeTruthy();
     expect(screen.getByTestId('publication-block-video-video')).toBeTruthy();
     expect(screen.getByTestId('publication-block-box-band')).toBeTruthy();
+  });
+
+  it('hides the white header on descent and restores it on ascent without changing list insets', () => {
+    wrap(<PublicationTemplatesScreen />);
+    const list = () => screen.getByTestId('publication-blocks');
+    const header = () => screen.getByTestId('publication-scroll-header', { includeHiddenElements: true });
+    const scroll = (y: number) => fireEvent.scroll(list(), { nativeEvent: {
+      contentOffset: { x: 0, y }, contentSize: { width: 360, height: 2000 }, layoutMeasurement: { width: 360, height: 600 },
+    } });
+    const before = list().props.contentContainerStyle.paddingTop;
+    expect(StyleSheet.flatten(screen.getByTestId('publication-header-bar').props.style).backgroundColor).toBe('#FFFFFF');
+    scroll(18); scroll(28);
+    expect(header().props.accessibilityElementsHidden).toBe(false);
+    scroll(53); scroll(64);
+    expect(header().props.accessibilityElementsHidden).toBe(true);
+    expect(header().props.pointerEvents).toBe('none');
+    scroll(60);
+    expect(header().props.accessibilityElementsHidden).toBe(true);
+    scroll(35);
+    expect(header().props.accessibilityElementsHidden).toBe(false);
+    expect(list().props.contentContainerStyle.paddingTop).toBe(before);
   });
 
   it('pairs the collection cover with three compact photo-only product links', () => {
