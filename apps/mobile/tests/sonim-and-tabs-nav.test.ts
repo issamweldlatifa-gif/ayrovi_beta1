@@ -267,7 +267,7 @@ describe('Zayrovi Extracted Sans — parité de la source web et du mobile', () 
     const src = readFileSync(path.join(ROOT, 'src/features/aywebs/AddToCartSheet.tsx'), 'utf8');
     expect(src).toContain('productBand:');
     expect(src).toContain('productCard:');
-    expect(src).toMatch(/productThumb:\s*\{\s*width:\s*88,\s*height:\s*88/);
+    expect(src).toMatch(/productThumb:\s*\{\s*width:\s*92,\s*height:\s*92/);
     expect(src).toContain('capturePhoto:');
     expect(src).toContain('aywebs-sheet-purchase-footer');
     expect(src).toContain('<SalePrice');

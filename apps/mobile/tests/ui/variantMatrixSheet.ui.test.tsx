@@ -332,6 +332,14 @@ describe('AddToCartSheet — Matrice de Prix des Variantes en mémoire', () => {
     /* 1. Lecture initiale unique : Noir + 4-5Y + Standard => 82.40 TND */
     await waitFor(() => expect(screen.getAllByText(/82[.,]40/).length).toBeGreaterThan(0));
     expect(mockResolveWithCapture.mock.calls.length).toBe(1);
+    expect(screen.getByTestId('aywebs-sheet-price-ticket')).toBeTruthy();
+    fireEvent.press(screen.getByTestId('aywebs-sheet-price-details-toggle'));
+    expect(screen.getByTestId('aywebs-sheet-price-details')).toBeTruthy();
+    expect(screen.getByText(/49[.,]39/)).toBeTruthy();
+    fireEvent.press(screen.getByTestId('aywebs-quantity-plus'));
+    expect(screen.getAllByText(/152[.,]10/).length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('aywebs-sheet-price-details')).toBeNull(); // no multiplied breakdown
+    fireEvent.press(screen.getByTestId('aywebs-quantity-minus'));
 
     /* 2. Bascule Âge -> 8-9Y puis Type -> Doublé Polaire : mise à jour 0 ms vers 118.90 TND et ZÉRO requête réseau ! */
     fireEvent.press(screen.getByTestId('aywebs-choice-âge'));

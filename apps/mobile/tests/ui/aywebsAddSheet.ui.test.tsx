@@ -117,20 +117,11 @@ function renderSheet(handlers: { onClose?: () => void; onAdded?: (item: unknown,
 }
 
 describe('feuille d’ajout AYWEBs', () => {
-  it('sans devis en dinars : une ligne discrète, pas un titre de 28 pt', async () => {
+  it('sans devis en dinars : ticket indisponible avec relance, sans montant inventé', async () => {
     renderSheet();
-    await waitFor(() => expect(screen.getByTestId('aywebs-sheet-add')).toBeTruthy(), { timeout: 5000 });
-
-    // Le libellé COURT est affiché (carte produit + pied), en corps secondaire.
-    const short = screen.getAllByText('Prix à l’ajout');
-    expect(short.length).toBeGreaterThan(0);
-    for (const node of short) {
-      const size = Number(node.props.style?.fontSize ?? 0);
-      expect(size).toBeLessThanOrEqual(12);
-    }
-
-    // La phrase longue en corps de titre a disparu de la feuille.
-    expect(screen.queryByText('Prix en dinars calculé à l’ajout.')).toBeNull();
+    await waitFor(() => expect(screen.getByTestId('aywebs-sheet-retry-price')).toBeTruthy());
+    expect(screen.getByText('Prix non calculé. Aucun montant n’est affiché.')).toBeTruthy();
+    expect(screen.queryByTestId('aywebs-sheet-price')).toBeNull();
   });
 
   it('15/11 : après ajout, AUCUNE seconde feuille — la ligne et le panier remontent, la feuille se ferme', async () => {
@@ -151,15 +142,13 @@ describe('feuille d’ajout AYWEBs', () => {
     expect(screen.queryByTestId('aywebs-sheet-go-to-bag')).toBeNull();
   });
 
-  it('15/11 (Cdiscount) : carte produit compacte sur bande grise, mot-symbole noir, pilule d’achat jaune 48 dp', async () => {
+  it('v6 : aperçu compact, ticket gris séparé, mot-symbole noir et CTA jaune 48 dp', async () => {
     renderSheet();
     await waitFor(() => expect(screen.getByTestId('aywebs-sheet-add')).toBeTruthy(), { timeout: 5000 });
-    const band = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-product-band').props.style);
-    expect(band.backgroundColor).toBe('#F2F2F2');
-    const card = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-product-card').props.style);
-    expect(card.backgroundColor).toBe('#FFFFFF');
+    const ticket = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-price-ticket').props.style);
+    expect(ticket.backgroundColor).toBe('#F2F2F2');
     const thumb = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-product-image').props.style);
-    expect(thumb.width).toBe(88);
+    expect(thumb.width).toBe(92);
     expect(screen.getByTestId('aywebs-sheet-wordmark', { includeHiddenElements: true }).props.tintColor).toBe(processColor('#0A0A0A'));
     const cta = StyleSheet.flatten(screen.getByTestId('aywebs-sheet-add').props.style);
     expect(cta.minHeight).toBe(48);

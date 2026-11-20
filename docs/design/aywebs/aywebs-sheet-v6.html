@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AYWEBs – Feuille produit v6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#111111;--yellow:#f0ad00;--yellow-d:#d99b00;--paper:#fff;--chalk:#f1f1f1;--line:#e1e1e1;--muted:#666;
+  --jasmine:#f0ad00;--ok:#14764a;--ok-bg:#dff2e8;--warn:#8f5a08;--warn-bg:#fdeccb;--bad:#b3261e;--bad-bg:#fbe0dd;
+  --stage:#d9dee6;--stage-ink:#111111;
+  --font:Roboto,"SF Pro Text",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{--stage:#10141b;--stage-ink:#e6eaf0}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--stage);color:var(--stage-ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px 12px 30px;-webkit-font-smoothing:antialiased;font-feature-settings:"tnum" 1}
+button,select{font-family:inherit}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* contrôles de démo */
+.ctl{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;max-width:430px}
+.seg{display:inline-flex;flex-wrap:wrap;justify-content:center;background:rgba(127,127,127,.2);border-radius:10px;padding:3px}
+.seg button{font-size:12.5px;font-weight:600;border:0;background:transparent;color:inherit;padding:7px 11px;border-radius:8px;cursor:pointer;opacity:.7}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff;opacity:1}
+@media (prefers-color-scheme:dark){.seg button[aria-pressed="true"]{background:#e6eaf0;color:#111111}}
+
+/* maquette téléphone */
+.phone{width:100%;max-width:392px;height:800px;border-radius:34px;overflow:hidden;position:relative;background:#7d8aa0;box-shadow:0 0 0 8px #0a0f18,0 28px 60px rgba(0,0,0,.35)}
+.page{position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,27,51,.25),rgba(12,27,51,.6)),#8b97ab}
+.appbar{position:absolute;top:0;left:0;right:0;height:136px;background:var(--yellow);padding:30px 14px 0;color:var(--ink)}
+.ab-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.logo{font-family:"Permanent Marker","Brush Script MT",cursive;font-size:34px;line-height:1;letter-spacing:-1px;color:#111}
+.ab-ic{display:flex;gap:18px;align-items:center}
+.search{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:16px;height:46px;padding:0 0 0 16px;font-size:15px;color:#777;overflow:hidden}
+.search i{width:46px;height:100%;background:#f1f1f1;display:grid;place-items:center;color:#111}
+.cart{position:relative;width:34px;height:34px;display:grid;place-items:center}
+.cart em{position:absolute;top:-5px;right:-7px;min-width:19px;height:19px;border-radius:10px;background:#111;color:#fff;font:700 11px/19px var(--font);text-align:center;font-style:normal;padding:0 5px}
+.cart em.pop{animation:pop .4s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(.6)}100%{transform:scale(1)}}
+
+/* feuille */
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:92%;display:flex;flex-direction:column;background:var(--paper);color:var(--ink);border-radius:28px 28px 0 0;animation:rise .38s cubic-bezier(.2,.85,.25,1)}
+@keyframes rise{from{transform:translateY(48px);opacity:0}to{transform:none;opacity:1}}
+.scroll{overflow-y:auto;padding:8px 18px 14px;overscroll-behavior:contain}
+.grab{width:36px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 12px}
+.hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.hd-l{display:flex;align-items:center;gap:12px}
+.brand{font-family:"Permanent Marker","Brush Script MT",cursive;font-size:26px;line-height:1;color:var(--ink)}
+.store{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500;color:var(--muted)}
+.store svg{color:var(--ok)}
+.x{width:34px;height:34px;border-radius:50%;border:0;background:var(--chalk);display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+
+/* produit */
+.hero{display:flex;gap:14px;align-items:flex-start;margin-bottom:16px}
+.tile{width:92px;height:92px;flex:none;border-radius:16px;background:var(--chalk);position:relative;overflow:hidden;display:grid;place-items:center}
+.tile>span:first-child{display:contents}
+.tile svg{width:86%;height:86%;transition:color .3s}
+.tile .cnt{position:absolute;right:5px;bottom:5px;font-size:10.5px;font-weight:600;background:rgba(12,27,51,.75);color:#fff;border-radius:5px;padding:1px 6px}
+.tile::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.7) 50%,transparent 70%);background-size:220% 100%;animation:sh 1.3s linear infinite;display:none}
+.sheet[data-s="calc"] .tile::after{display:block}
+@keyframes sh{from{background-position:120% 0}to{background-position:-120% 0}}
+.hero .br{display:inline-block;font-size:14px;font-weight:500;border-bottom:1.5px solid var(--ink);padding-bottom:1px;margin-bottom:7px;line-height:1.2}
+.hero h2{font-size:17px;font-weight:600;line-height:1.3;letter-spacing:-.1px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.hero p{font-size:13px;color:var(--muted);margin-top:6px}
+
+/* prix : bandeau pleine largeur */
+.ticket{margin:0 -18px 22px;padding:18px 18px 8px;background:var(--chalk);border-top:1px solid var(--line);border-bottom:1px solid var(--line);color:var(--ink)}
+.tk-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.tk-label{font-size:13.5px;color:var(--muted);margin-bottom:4px}
+.tk-amt{font-size:46px;font-weight:750;letter-spacing:-2px;line-height:1.02;font-variant-numeric:tabular-nums}
+.tk-amt em{font-style:normal;font-size:15px;font-weight:600;letter-spacing:0;color:var(--muted);margin-left:7px}
+.badge{font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding-top:2px}
+.badge i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.b-ok{color:var(--ok)}.b-est{color:var(--warn)}.b-bad{color:var(--bad)}
+.bar{display:flex;gap:2px;height:6px;margin:16px 0 0;border-radius:3px;overflow:hidden}
+.bar span{display:block;transition:flex-grow .4s}
+.tk-note{font-size:13px;color:var(--muted);margin-top:9px}
+.more{margin:4px 0 2px;background:none;border:0;color:var(--ink);text-decoration:underline;text-underline-offset:3px;font-size:14px;font-weight:600;cursor:pointer;padding:8px 0;display:inline-flex;gap:6px;align-items:center}
+.more svg{transition:transform .25s}
+.more[aria-expanded="true"] svg{transform:rotate(180deg)}
+.detail{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s ease}
+.detail.open{grid-template-rows:1fr}
+.detail>div{overflow:hidden}
+.detail ul{list-style:none;margin-top:2px}
+.detail li{display:flex;align-items:baseline;gap:9px;font-size:14px;padding:8px 0}
+.detail li i{width:8px;height:8px;border-radius:2px;flex:none;align-self:center}
+.detail li span{flex:1;display:flex;align-items:baseline;color:var(--ink)}
+.detail li span::after{content:"";flex:1;margin:0 6px;border-bottom:1.5px dotted #aaa;transform:translateY(-3px)}
+.detail li b{font-weight:650;font-variant-numeric:tabular-nums}
+.detail li:last-child{border-top:1.5px solid var(--ink);margin-top:4px;padding-top:10px;font-size:15px}
+.detail li:last-child span::after{display:none}
+.detail small{display:block;font-size:12px;color:var(--muted);padding:6px 0 10px}
+.skel,.err{display:none}
+.skel i{display:block;border-radius:6px;background:linear-gradient(90deg,#e4e8ee,#f6f7f9,#e4e8ee);background-size:200% 100%;animation:sk 1.2s linear infinite}
+@keyframes sk{to{background-position:-200% 0}}
+.err p{font-size:14px;line-height:1.45}
+.retry{margin:10px 0 10px;background:var(--ink);color:#fff;border:0;border-radius:10px;font-weight:650;font-size:14px;padding:10px 16px;cursor:pointer}
+.ticket[data-s="calc"] .live,.ticket[data-s="err"] .live{display:none}
+.ticket[data-s="calc"] .skel{display:block;padding:0 0 10px}
+.ticket[data-s="err"] .err{display:block}
+.ticket[data-s="out"] .tk-amt{opacity:.3;text-decoration:line-through;text-decoration-thickness:2px}
+.ticket[data-s="out"] .bar,.ticket[data-s="out"] .more,.ticket[data-s="out"] .detail{display:none}
+
+/* options */
+.grp{margin-bottom:22px}
+.lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;gap:10px}
+.lab b{font-size:15px;font-weight:650}
+.lab span{font-size:13px;color:var(--muted);text-align:right}
+.lab.inl{justify-content:flex-start;gap:6px;margin-bottom:12px}
+.lab.inl b{font-weight:400}
+.lab.inl span{color:var(--ink);font-weight:650;font-size:15px;text-align:left}
+.opts{--n:3}
+.conv{font-size:12.5px;color:var(--muted);margin-top:8px}
+
+/* couleurs */
+.k-color{display:flex;gap:10px;overflow-x:auto;margin:0 -18px;padding:4px 18px 8px;scrollbar-width:none}
+.k-color::-webkit-scrollbar{display:none}
+.sw{flex:none;width:74px;background:none;border:0;cursor:pointer}
+.sw .nm{display:none}
+.sw .sq{width:74px;height:104px;border-radius:14px;background:var(--chalk);border:2.5px solid transparent;display:grid;place-items:center;position:relative;transition:border-color .15s}
+.sw .sq svg{width:84%;height:84%}
+.sw[aria-checked="true"] .sq{border-color:var(--ink);box-shadow:inset 0 0 0 3px var(--paper)}
+.sw .sq::before{content:"";position:absolute;left:0;right:0;bottom:-6px;height:3px;background:var(--jasmine);border-radius:2px;transform:scaleX(0);transition:transform .2s}
+.sw[aria-checked="true"] .sq::before{transform:scaleX(1)}
+.sw.na .sq{opacity:.5}
+.sw.na .sq::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:#888;transform:rotate(30deg)}
+.sw.na[aria-checked="true"] .sq{border-color:var(--bad)}
+
+/* tailles : menu déroulant */
+.dd{width:100%;height:52px;border:1.5px solid var(--ink);border-radius:14px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111111' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8l8 8 8-8'/%3E%3C/svg%3E") right 14px center/20px no-repeat;-webkit-appearance:none;appearance:none;padding:0 46px 0 16px;font:550 16.5px var(--font);color:var(--ink);cursor:pointer}
+.dd:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.reco{display:flex;gap:13px;align-items:center;background:var(--chalk);border-radius:14px;padding:13px 15px;font-size:14px;line-height:1.4;margin-bottom:10px;color:var(--ink)}
+.reco svg{flex:none}
+
+/* cartes d'option (contenance, RAM, tension…) */
+.k-cards{display:grid;grid-template-columns:repeat(var(--n),1fr);gap:8px}
+.card{border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:14px;padding:12px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:3px;transition:border-color .15s}
+.card .t{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.card .s{font-size:12px;color:var(--muted);line-height:1.25}
+.card .p{font-size:12.5px;font-weight:600;margin-top:5px;font-variant-numeric:tabular-nums}
+.card[aria-checked="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.card.na{background:var(--chalk);color:#9a9a9a;border-style:dashed}
+.card.na .s,.card.na .p{color:#aaa}
+.card.na[aria-checked="true"]{border-style:solid;border-color:var(--bad);background:var(--bad-bg);box-shadow:none}
+.tag{display:inline-block;font-size:11px;font-weight:650;border-radius:5px;padding:2px 6px;margin-top:6px;align-self:flex-start;line-height:1.3}
+.tg-ok{background:var(--ok-bg);color:var(--ok)}.tg-warn{background:var(--warn-bg);color:var(--warn)}.tg-bad{background:var(--bad-bg);color:var(--bad)}
+
+/* lignes (modèle, concentration) */
+.k-rows{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:14px;padding:12px 14px;text-align:left;cursor:pointer}
+.row .rd{width:20px;height:20px;border-radius:50%;border:2px solid #bbb;flex:none;position:relative}
+.row .tx{flex:1;display:flex;flex-direction:column;gap:2px}
+.row .tx b{font-size:15px;font-weight:650}
+.row .tx small{font-size:12.5px;color:var(--muted)}
+.row .p{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.row[aria-checked="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.row[aria-checked="true"] .rd{border-color:var(--ink)}
+.row[aria-checked="true"] .rd::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--ink)}
+.row.na{border-style:dashed;background:var(--chalk);color:#9a9a9a}
+.row.na .tx small{color:#aaa}
+.row.na[aria-checked="true"]{border-style:solid;border-color:var(--bad);background:var(--bad-bg);box-shadow:none}
+
+.alert{display:none;align-items:center;justify-content:space-between;gap:10px;background:var(--bad-bg);color:#6e1a15;border-radius:8px;padding:10px 12px;font-size:13.5px;line-height:1.35;margin-bottom:16px}
+.alert.show{display:flex}
+.alert button{flex:none;border:0;background:var(--ink);color:#fff;border-radius:7px;font-weight:650;font-size:13px;padding:8px 12px;cursor:pointer}
+.noopt{display:none;align-items:center;gap:10px;background:var(--chalk);border-radius:8px;padding:12px 14px;font-size:13.5px;color:var(--muted);margin-bottom:16px;line-height:1.4}
+
+/* pied : action */
+.foot{padding:12px 18px 18px;border-top:1px solid var(--line);background:var(--paper)}
+.trust{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted);margin-bottom:11px}
+.trust svg{color:var(--ok);flex:none}
+.act{display:flex;gap:8px}
+.step{display:inline-flex;align-items:center;border:1.5px solid var(--line);border-radius:999px;height:54px;flex:none}
+.step button{width:38px;height:100%;border:0;background:transparent;font-size:20px;cursor:pointer;color:var(--ink);border-radius:999px}
+.step button:disabled{color:#c4c4c4;cursor:not-allowed}
+.step output{min-width:20px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.cta{flex:1;height:54px;border:0;border-radius:999px;background:var(--yellow);color:#111;font-weight:700;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;padding:0 14px;transition:background .2s,transform .1s}
+.cta:hover:not(:disabled){background:var(--yellow-d)}
+.cta:active:not(:disabled){transform:scale(.985)}
+.cta .pr{display:none}
+.cta:disabled{background:var(--chalk);color:#999;cursor:not-allowed}
+.cta.done{background:var(--ok);color:#fff}
+.cta .ck{display:none}.cta.done .ck{display:block}
+.fav{flex:none;width:54px;height:54px;border-radius:50%;border:1.5px solid var(--line);background:#fff;display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+.fav[aria-pressed="true"]{color:var(--bad);border-color:var(--bad)}
+.fav[aria-pressed="true"] svg{fill:currentColor}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="ctl">
+  <div class="seg" id="segProd" role="group" aria-label="Type de produit"></div>
+  <div class="seg" id="segState" role="group" aria-label="État du prix">
+    <button data-m="ok" aria-pressed="true">Vérifié</button>
+    <button data-m="est" aria-pressed="false">Estimation</button>
+    <button data-m="calc" aria-pressed="false">Calcul</button>
+    <button data-m="err" aria-pressed="false">Erreur</button>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="page"></div>
+  <div class="appbar">
+    <div class="ab-top">
+      <span class="logo">AYWEBS</span>
+      <div class="ab-ic">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.5S3.5 15 3.5 8.9A4.4 4.4 0 0112 7a4.4 4.4 0 018.5 1.9C20.5 15 12 20.5 12 20.5z"/></svg>
+        <div class="cart" aria-label="Panier">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8a3 3 0 016 0"/></svg>
+          <em id="cartN">3</em>
+        </div>
+      </div>
+    </div>
+    <div class="search"><span id="pgStore"></span><i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg></i></div>
+  </div>
+  <section class="sheet" id="sheet" data-s="x" aria-label="Options du produit">
+    <div class="scroll">
+      <div class="grab"></div>
+      <div class="hd">
+        <div class="hd-l">
+          <span class="brand">AYWEBS</span>
+          <span class="store">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v4"/></svg>
+            <span id="storeTxt"></span>
+          </span>
+        </div>
+        <button class="x" aria-label="Fermer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+      </div>
+
+      <div class="hero">
+        <div class="tile" id="tile" role="img" aria-label="Aperçu du produit"><span id="art"></span><span class="cnt" id="cnt"></span></div>
+        <div><span class="br" id="brand"></span><h2 id="title"></h2><p id="note"></p></div>
+      </div>
+
+      <div class="ticket" id="ticket" data-s="ok" aria-live="polite">
+        <div class="live">
+          <div class="tk-row">
+            <div>
+              <div class="tk-label">Prix final, tout compris</div>
+              <div class="tk-amt"><span id="amt"></span><em>TND</em></div>
+            </div>
+            <span class="badge b-ok" id="badge"><i></i><span id="badgeTxt"></span></span>
+          </div>
+          <div class="bar" id="bar" aria-hidden="true"></div>
+          <p class="tk-note" id="tkNote"></p>
+          <button class="more" id="more" aria-expanded="false" aria-controls="detail">Détail du prix
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="detail" id="detail"><div><ul id="lines"></ul><small id="rate"></small></div></div>
+        </div>
+        <div class="skel" aria-hidden="true">
+          <i style="width:80px;height:12px"></i>
+          <i style="width:170px;height:36px;margin-top:10px"></i>
+          <i style="width:100%;height:8px;margin-top:18px"></i>
+          <i style="width:200px;height:12px;margin-top:14px"></i>
+        </div>
+        <div class="err">
+          <p><b>Prix non calculé.</b><br>La boutique n'a pas répondu. Aucun montant n'est affiché pour éviter une erreur.</p>
+          <button class="retry" id="retry">Réessayer</button>
+        </div>
+      </div>
+
+      <div id="groups"></div>
+      <div class="alert" id="alert" role="status"><span id="alertTxt"></span><button id="alertBtn"></button></div>
+      <div class="noopt" id="noopt">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.1"/></svg>
+        Ce produit n'a qu'un seul modèle : rien à choisir, ajoutez-le directement.
+      </div>
+    </div>
+
+    <div class="foot">
+      <p class="trust">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>
+        <span id="trust"></span>
+      </p>
+      <div class="act">
+        <div class="step">
+          <button id="minus" aria-label="Diminuer la quantité">−</button>
+          <output id="qty" aria-label="Quantité">1</output>
+          <button id="plus" aria-label="Augmenter la quantité">+</button>
+        </div>
+        <button class="cta" id="cta">
+          <svg class="ck" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l5 5 9-11"/></svg>
+          <span id="ctaTxt">Ajouter au panier</span>
+          <span class="pr" id="ctaPr"></span>
+        </button>
+        <button class="fav" id="fav" aria-label="Ajouter aux favoris" aria-pressed="false"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20.5S3.5 15 3.5 8.9A4.4 4.4 0 0112 7a4.4 4.4 0 018.5 1.9C20.5 15 12 20.5 12 20.5z"/></svg></button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+/* ---------- illustrations (teintables avec currentColor) ---------- */
+const ART={
+ tee:'<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient></defs><path fill="currentColor" d="M30 20 43 14Q50 25 57 14L70 20 88 36 78 47 69 40V88H31V40L22 47 12 36Z"/><path fill="url(#g1)" d="M30 20 43 14Q50 25 57 14L70 20 88 36 78 47 69 40V88H31V40L22 47 12 36Z"/><path d="M43 14Q50 25 57 14" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="2.2"/></svg>',
+ shoe:'<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g3" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient></defs><path fill="currentColor" d="M8 64Q8 52 18 50L34 46Q43 42 49 34L57 30Q66 37 76 45Q91 49 93 61V67H8Z"/><path fill="url(#g3)" d="M8 64Q8 52 18 50L34 46Q43 42 49 34L57 30Q66 37 76 45Q91 49 93 61V67H8Z"/><path d="M8 66H93V73Q93 77 88 77H13Q8 77 8 73Z" fill="#f6f5f2" stroke="rgba(0,0,0,.18)"/><path d="M47 40l6 4M52 36l6 4M57 33l6 4M62 36l5 4" stroke="rgba(255,255,255,.75)" stroke-width="2" stroke-linecap="round"/></svg>',
+ laptop:'<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g4" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient></defs><rect x="17" y="20" width="66" height="45" rx="5" fill="currentColor"/><rect x="21" y="24" width="58" height="37" rx="2.5" fill="#0f1218"/><path d="M21 24h58v10L21 52z" fill="rgba(255,255,255,.07)"/><path d="M8 68H92L86 77H14Z" fill="currentColor"/><path d="M8 68H92L86 77H14Z" fill="url(#g4)"/><rect x="42" y="68" width="16" height="3" rx="1.5" fill="rgba(0,0,0,.25)"/></svg>',
+ perfume:'<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="g5" x1="0" x2="1"><stop offset="0" stop-color="#f4d9a8"/><stop offset="1" stop-color="#d9a860"/></linearGradient></defs><rect x="40" y="12" width="20" height="20" rx="4" fill="#1d1d1f"/><rect x="45" y="32" width="10" height="8" fill="#9b9aa0"/><rect x="26" y="40" width="48" height="48" rx="10" fill="url(#g5)"/><rect x="34" y="55" width="32" height="18" rx="3" fill="rgba(255,255,255,.78)"/><path d="M38 61h24M38 67h16" stroke="#6b6458" stroke-width="2" stroke-linecap="round"/><path d="M32 48v28" stroke="rgba(255,255,255,.55)" stroke-width="3" stroke-linecap="round"/></svg>',
+ iron:'<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(-38 50 52)"><rect x="8" y="38" width="84" height="11" rx="5.5" fill="#1b1b1d"/><rect x="8" y="51" width="84" height="11" rx="5.5" fill="#2c2c30"/><rect x="62" y="34" width="30" height="32" rx="9" fill="#d8d2c4"/><circle cx="76" cy="44" r="2.4" fill="#1b1b1d"/><circle cx="76" cy="52" r="2.4" fill="#1b1b1d"/><circle cx="76" cy="60" r="2.4" fill="#e39f00"/></g></svg>',
+ power:'<svg viewBox="0 0 100 100" aria-hidden="true"><rect x="30" y="14" width="40" height="72" rx="11" fill="#2b2f36"/><rect x="30" y="14" width="40" height="72" rx="11" fill="url(#g1)"/><rect x="40" y="22" width="20" height="4" rx="2" fill="#0f1218"/><circle cx="41" cy="42" r="2.6" fill="#ffb400"/><circle cx="50" cy="42" r="2.6" fill="#ffb400"/><circle cx="59" cy="42" r="2.6" fill="#ffb400"/><rect x="37" y="56" width="26" height="14" rx="4" fill="rgba(255,255,255,.1)"/></svg>'
+};
+
+/* ---------- données de démo : chaque produit déclare ses groupes d'options ---------- */
+const o=(v,sub,ok=1,d=0,x={})=>({v,sub,ok,d,...x});
+const COL=(n,h,ok=1)=>o(n,"",ok,0,{h});
+const P={
+ tee:{label:"T-shirt",brand:"SHEIN",host:"m.shein.com",store:"shein.com",art:"tee",cnt:"1/9",
+  title:"T-shirt gris délavé pour adolescent, imprimé lapin aux longues oreilles",note:"Vendu par Shein · 4,90 $ affiché",
+  parts:[["Prix boutique (4,90 $)",15.2,"#111111"],["Douane et TVA",21.4,"#7a7a7a"],["Service Zayrovi",9.9,"#c8c8c8"],["Livraison internationale",23,"#ffb400"]],
+  rate:"Taux du jour : 1 $ = 3,10 TND",eta:"10 à 14 jours",
+  groups:[
+   {id:"size",label:"Taille",kind:"size",def:"5Y",opts:[o("3Y","3 ans"),o("4Y","4 ans"),o("5Y","5 ans"),o("6Y","6 ans"),o("7Y","7 ans",0),o("8Y","8 ans",0)]},
+   {id:"color",label:"Couleur",kind:"color",opts:[COL("Noir","#151515"),COL("Bleu azur","#1f4fd8"),COL("Tabac","#b08d57")]}
+  ]},
+ shoe:{label:"Chaussures",brand:"adidas Performance",host:"zalando.fr",store:"zalando.fr",art:"shoe",cnt:"1/7",
+  title:"F50 HYPERFAST LEAGUE TF - Chaussures de football sur gazon - core black/lucid ray blue",note:"Vendu par Zalando · 49,45 € affiché",
+  parts:[["Prix boutique (49,45 €)",168.1,"#111111"],["Douane et TVA",62,"#7a7a7a"],["Service Zayrovi",24.2,"#c8c8c8"],["Livraison internationale",22,"#ffb400"]],
+  rate:"Taux du jour : 1 € = 3,40 TND",eta:"7 à 10 jours",
+  groups:[
+   {id:"size",label:"Pointure (EU)",kind:"shoe",def:"42",opts:["38","39","40","41","42","43","44","45","46"].map(v=>o(v,"",["40","45"].includes(v)?0:1))},
+   {id:"color",label:"Couleur",kind:"color",opts:[COL("Core Black / Lucid Ray Blue","#151515"),COL("Blanc / Rose solaire","#e8566f"),COL("Vert menthe","#5fe0a8"),COL("Gris","#8a8d93",0)]}
+  ]},
+ perfume:{label:"Parfum",brand:"Sephora Collection",host:"sephora.fr",store:"sephora.fr",art:"perfume",cnt:"1/6",
+  title:"Eau de parfum pour femme, notes florales et boisées",note:"Vendu par Sephora · 69,00 € affiché",
+  parts:[["Prix boutique (69,00 €)",234.6,"#111111"],["Douane et TVA",70.4,"#7a7a7a"],["Service Zayrovi",21,"#c8c8c8"],["Livraison internationale",12,"#ffb400"]],
+  rate:"Taux du jour : 1 € = 3,40 TND",eta:"7 à 10 jours",
+  groups:[
+   {id:"vol",label:"Contenance",kind:"cards",def:"50 ml",opts:[o("30 ml","Format voyage",1,-120),o("50 ml","Standard",1,0),o("100 ml","Grand format",1,160)]},
+   {id:"type",label:"Concentration",kind:"rows",def:"Eau de parfum",opts:[o("Eau de parfum","Tenue longue durée",1,0),o("Eau de toilette","Plus légère, plus fraîche",1,-45),o("Coffret cadeau","Avec lait corps 100 ml",0,90)]}
+  ]},
+ laptop:{label:"Ordinateur",brand:"Lenovo",host:"amazon.fr",store:"amazon.fr",art:"laptop",cnt:"1/8",
+  title:"Ordinateur portable 15,6 pouces, écran Full HD, clavier rétroéclairé",note:"Vendu par Amazon · 549,00 € affiché",
+  parts:[["Prix boutique (549,00 €)",1866.6,"#111111"],["Douane et TVA",560,"#7a7a7a"],["Service Zayrovi",140,"#c8c8c8"],["Livraison internationale",75,"#ffb400"]],
+  rate:"Taux du jour : 1 € = 3,40 TND",eta:"7 à 10 jours",
+  groups:[
+   {id:"ram",label:"Mémoire RAM",kind:"cards",def:"8 Go",opts:[o("8 Go","DDR4",1,0),o("16 Go","DDR4",1,160),o("32 Go","DDR5",0,420)]},
+   {id:"ssd",label:"Stockage",kind:"cards",def:"256 Go",opts:[o("256 Go","SSD",1,0),o("512 Go","SSD",1,130),o("1 To","SSD",1,310)]},
+   {id:"color",label:"Couleur",kind:"color",opts:[COL("Gris sidéral","#6c7078"),COL("Argent","#c9ccd2"),COL("Bleu nuit","#1e2a4a")]}
+  ]},
+ iron:{label:"Appareil",brand:"Remington",host:"amazon.fr",store:"amazon.fr",art:"iron",cnt:"1/5",
+  title:"Remington lisseur cheveux, plaques céramique, chauffe ultra rapide",note:"Vendu par Amazon · 49,99 € affiché",
+  parts:[["Prix boutique (49,99 €)",170,"#111111"],["Douane et TVA",48,"#7a7a7a"],["Service Zayrovi",15,"#c8c8c8"],["Livraison internationale",18,"#ffb400"]],
+  rate:"Taux du jour : 1 € = 3,40 TND",eta:"7 à 10 jours",
+  groups:[
+   {id:"model",label:"Modèle",kind:"rows",def:"Lisseur (New)",opts:[o("Lisseur (New)","Plaques céramique, 235 °C",1,0),o("Lisseur Pro","Plaques titane, écran numérique",1,60)]},
+   {id:"volt",label:"Tension",kind:"cards",def:"230 V",opts:[o("230 V","Prise européenne",1,0,{tag:["Compatible Tunisie","ok"]}),o("110 V","Prise US",1,0,{tag:["Adaptateur requis","warn"]})]}
+  ]},
+ simple:{label:"Sans option",brand:"Anker",host:"amazon.fr",store:"amazon.fr",art:"power",cnt:"1/4",
+  title:"Batterie externe 20 000 mAh, charge rapide, deux ports USB",note:"Vendu par Amazon · 34,90 € affiché",
+  parts:[["Prix boutique (34,90 €)",119,"#111111"],["Douane et TVA",33,"#7a7a7a"],["Service Zayrovi",12,"#c8c8c8"],["Livraison internationale",14,"#ffb400"]],
+  rate:"Taux du jour : 1 € = 3,40 TND",eta:"7 à 10 jours",groups:[]}
+};
+const SHOE_CONV={"38":"UK 5 · US 6 · 24 cm","39":"UK 6 · US 7 · 24,8 cm","40":"UK 6,5 · US 7,5 · 25,4 cm","41":"UK 7,5 · US 8,5 · 26 cm","42":"UK 8 · US 9 · 26,7 cm","43":"UK 9 · US 10 · 27,3 cm","44":"UK 9,5 · US 10,5 · 28 cm","45":"UK 10,5 · US 11,5 · 28,6 cm","46":"UK 11 · US 12 · 29,3 cm"};
+const SPLIT=[.6,.3,.1,0];
+
+let prod="tee",mode="ok",qty=1,cart=3,sel={};
+const $=id=>document.getElementById(id);
+const cur=()=>P[prod];
+const r1=n=>{const s=Math.round(n*10)/10;return(s%1===0?String(s):s.toFixed(1)).replace(".",",")};
+const r2=n=>n.toFixed(2).replace(".",",");
+const dtxt=d=>d===0?"Inclus":(d>0?"+":"−")+Math.abs(d)+" TND";
+const find=(g,v)=>g.opts.find(x=>x.v===v);
+
+/* ---------- construction des groupes (une seule fois par produit) ---------- */
+function innerFor(g,op,c){
+  if(g.kind==="size"||g.kind==="shoe") return '<b>'+op.v+'</b>'+(op.sub?'<small>'+op.sub+'</small>':'');
+  if(g.kind==="color") return '<span class="sq" style="color:'+op.h+'">'+ART[c.art]+'</span><span class="nm">'+op.v+'</span>';
+  if(g.kind==="cards") return '<span class="t">'+op.v+'</span><span class="s">'+op.sub+'</span>'+(op.tag?'<span class="tag tg-'+op.tag[1]+'">'+op.tag[0]+'</span>':'')+'<span class="p">'+(op.ok?dtxt(op.d):'Épuisé')+'</span>';
+  return '<span class="rd"></span><span class="tx"><b>'+op.v+'</b><small>'+op.sub+'</small></span><span class="p">'+(op.ok?dtxt(op.d):'Épuisé')+'</span>';
+}
+const CLS={size:"chip",shoe:"chip",color:"sw",cards:"card",rows:"row"};
+function build(){
+  const c=cur();const box=$("groups");box.innerHTML="";
+  c.groups.forEach(g=>{
+    const wrap=document.createElement("div");wrap.className="grp";
+    wrap.innerHTML='<div class="lab'+(g.kind==="color"?' inl':'')+'"><b>'+g.label+(g.kind==="color"?' :':'')+'</b><span id="v_'+g.id+'"></span></div>';
+    const list=document.createElement("div");
+    list.className="opts k-"+g.kind;list.setAttribute("role","radiogroup");list.setAttribute("aria-label",g.label);
+    if(g.kind==="cards")list.style.setProperty("--n",Math.min(g.opts.length,3));
+    if(g.kind==="size"||g.kind==="shoe"){
+      if(g.kind==="shoe"){const r=document.createElement("div");r.className="reco";r.innerHTML='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="9" r="1.6"/><circle cx="19" cy="9" r="1.6"/><circle cx="8" cy="20" r="1.6"/><circle cx="16" cy="20" r="1.6"/><path d="M11 7L8 18M13 7l3 11"/></svg><span>Nous vous recommandons de choisir une taille au-dessus de celle habituelle.</span>';wrap.appendChild(r)}
+      const sl=document.createElement("select");sl.className="dd";sl.dataset.dd=g.id;sl.setAttribute("aria-label",g.label);
+      g.opts.forEach(op=>{const e=document.createElement("option");e.value=op.v;e.textContent=op.v+(op.sub?" · "+op.sub:"")+(op.ok?"":" — indisponible");sl.appendChild(e)});
+      sl.onchange=()=>{sel[g.id]=sl.value;update()};
+      wrap.appendChild(sl);
+      if(g.kind==="shoe"){const p=document.createElement("p");p.className="conv";p.id="conv";wrap.appendChild(p)}
+      box.appendChild(wrap);return;
+    }
+    g.opts.forEach(op=>{
+      const b=document.createElement("button");
+      b.dataset.g=g.id;b.dataset.v=op.v;b.setAttribute("role","radio");
+      b.className=CLS[g.kind]+(op.ok?"":" na");
+      if(!op.ok)b.setAttribute("aria-label",op.v+", indisponible");
+      b.title=op.v;if(g.kind==="color"&&op.ok)b.setAttribute("aria-label",op.v);
+      b.innerHTML=innerFor(g,op,c);
+      b.onclick=()=>{sel[g.id]=op.v;update()};
+      list.appendChild(b);
+    });
+    wrap.appendChild(list);
+    if(g.kind==="shoe"){const p=document.createElement("p");p.className="conv";p.id="conv";wrap.appendChild(p)}
+    box.appendChild(wrap);
+  });
+  $("noopt").style.display=c.groups.length?"none":"flex";
+}
+function setProduct(p){
+  prod=p;const c=cur();qty=1;sel={};
+  c.groups.forEach(g=>{sel[g.id]=g.def||g.opts.find(x=>x.ok).v});
+  document.querySelectorAll("#segProd button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.p===p)));
+  $("pgStore").textContent=c.host;$("storeTxt").textContent=c.store;
+  $("title").textContent=c.title;$("brand").textContent=c.brand;$("note").textContent=c.note;$("cnt").textContent=c.cnt;
+  $("art").innerHTML=ART[c.art];
+  $("trust").textContent="Stock vérifié à l'ajout. Livraison estimée en "+c.eta+".";
+  build();update();
+}
+
+/* ---------- mise à jour ---------- */
+function nearestOk(g){
+  const i=g.opts.findIndex(x=>x.v===sel[g.id]);let best=null,d=99;
+  g.opts.forEach((x,j)=>{if(x.ok&&Math.abs(j-i)<d){d=Math.abs(j-i);best=x}});return best;
+}
+function update(){
+  const c=cur();
+  let badG=null;
+  c.groups.forEach(g=>{if(!badG&&!find(g,sel[g.id]).ok)badG=g});
+  const eff=(mode==="calc"||mode==="err")?mode:(badG?"out":mode);
+  $("sheet").dataset.s=eff==="calc"?"calc":"x";
+  $("ticket").dataset.s=eff;
+
+  /* sélection visuelle + libellés */
+  document.querySelectorAll("#groups [data-g]").forEach(b=>b.setAttribute("aria-checked",String(sel[b.dataset.g]===b.dataset.v)));
+  document.querySelectorAll("#groups select").forEach(x=>x.value=sel[x.dataset.dd]);
+  c.groups.forEach(g=>{
+    const op=find(g,sel[g.id]);
+    $("v_"+g.id).textContent=op.v+(op.sub&&(g.kind==="size")?" · "+op.sub:"");
+    if(g.kind==="shoe")$("conv").textContent="Équivalences indicatives : "+(SHOE_CONV[op.v]||"");
+  });
+  const cg=c.groups.find(g=>g.kind==="color");
+  $("tile").style.color=cg?find(cg,sel[cg.id]).h:"";
+
+  /* prix */
+  const delta=c.groups.reduce((a,g)=>a+find(g,sel[g.id]).d,0);
+  const parts=c.parts.map((p,i)=>[p[0],(p[1]+delta*SPLIT[i]),p[2]]);
+  const sum=parts.reduce((a,p)=>a+p[1],0);const total=sum*qty;
+  $("amt").textContent=r1(total);
+  $("bar").innerHTML=parts.map(p=>'<span style="flex-grow:'+Math.max(p[1],1)+';background:'+p[2]+'"></span>').join("");
+  $("lines").innerHTML=parts.map(p=>'<li><i style="background:'+p[2]+'"></i><span>'+p[0]+'</span><b>'+r2(p[1]*qty)+'</b></li>').join("")
+    +'<li style="border-bottom:0"><i style="background:transparent"></i><span><b>Total</b></span><b>'+r2(total)+' TND</b></li>';
+  $("rate").textContent=c.rate+". Montants en TND.";
+  $("qty").textContent=qty;$("minus").disabled=qty<=1;$("plus").disabled=qty>=5;
+
+  const bd=$("badge"),bt=$("badgeTxt"),note=$("tkNote");
+  if(eff==="out"){bd.className="badge b-bad";bt.textContent="Indisponible";note.textContent="Plus de stock pour ce choix.";}
+  else if(eff==="est"){bd.className="badge b-est";bt.textContent="Estimation";note.textContent="Le prix final est confirmé avant votre paiement.";}
+  else{bd.className="badge b-ok";bt.textContent="Prix vérifié";note.textContent="Douane et livraison incluses.";}
+
+  /* alerte indisponibilité + suggestion */
+  const al=$("alert");al.classList.remove("show");
+  if(badG){
+    const alt=nearestOk(badG);
+    $("alertTxt").textContent=sel[badG.id]+" n'est plus disponible."+(alt?" Option la plus proche : "+alt.v+".":"");
+    const ab=$("alertBtn");
+    if(alt){ab.style.display="";ab.textContent="Choisir "+alt.v;ab.onclick=()=>{sel[badG.id]=alt.v;update()}}else{ab.style.display="none"}
+    al.classList.add("show");
+  }
+
+  /* bouton */
+  const cta=$("cta");cta.classList.remove("done");$("ctaTxt").textContent="Ajouter au panier";
+  const ready=(eff==="ok"||eff==="est");
+  cta.disabled=!ready;$("ctaPr").textContent=ready?r1(total)+" TND":"";
+  if(eff==="calc")$("ctaTxt").textContent="Calcul du prix…";
+  if(eff==="err")$("ctaTxt").textContent="Prix indisponible";
+  if(eff==="out")$("ctaTxt").textContent="Choix indisponible";
+}
+
+/* ---------- contrôles de démo ---------- */
+Object.keys(P).forEach(k=>{
+  const b=document.createElement("button");b.dataset.p=k;b.textContent=P[k].label;b.setAttribute("aria-pressed","false");
+  b.onclick=()=>setProduct(k);$("segProd").appendChild(b);
+});
+function syncSeg(){document.querySelectorAll("#segState button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.m===mode)))}
+document.querySelectorAll("#segState button").forEach(b=>b.onclick=()=>{mode=b.dataset.m;syncSeg();update()});
+$("plus").onclick=()=>{if(qty<5){qty++;update()}};
+$("minus").onclick=()=>{if(qty>1){qty--;update()}};
+$("more").onclick=()=>{const op=$("detail").classList.toggle("open");$("more").setAttribute("aria-expanded",String(op))};
+$("retry").onclick=()=>{mode="calc";syncSeg();update();setTimeout(()=>{mode="ok";syncSeg();update()},1300)};
+$("cta").onclick=()=>{
+  const b=$("cta");if(b.disabled)return;
+  b.classList.add("done");$("ctaTxt").textContent="Ajouté au panier";
+  cart+=qty;const n=$("cartN");n.textContent=cart;n.classList.remove("pop");void n.offsetWidth;n.classList.add("pop");
+  setTimeout(update,1700);
+};
+$("fav").onclick=()=>{const f=$("fav");f.setAttribute("aria-pressed",String(f.getAttribute("aria-pressed")!=="true"))};
+setProduct("tee");
+</script>
+</body>
+</html>
