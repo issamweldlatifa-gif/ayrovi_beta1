@@ -1,0 +1,104 @@
+/* The signed-out console has its own palette; never changes the authenticated shell theme. */
+html .admin-login.admin-login--secure {
+  color-scheme: dark;
+  --bo-canvas: #0a0a0e;
+  --bo-card: #17171e;
+  --bo-sunken: #101016;
+  --bo-ink: #faf8ff;
+  --bo-muted: #c5c2d1;
+  --bo-soft: #b1aebd;
+  --bo-line: #363541;
+  --bo-line-firm: #51505e;
+  --bo-line-soft: #30303a;
+  --bo-accent: #e5dcff;
+  --bo-accent-hover: #f3edff;
+  --bo-on-accent: #20182f;
+  --bo-accent-soft: #bba3ff40;
+  --bo-ok: #6ee6ae;
+  --bo-ok-soft: #6ee6ae25;
+  --bo-danger: #ffb1b1;
+  --bo-danger-soft: #351c27;
+  --admin-line-control: var(--bo-line-firm);
+  --admin-ink-strong: var(--bo-ink);
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(380px, 1fr);
+  grid-template-rows: auto 1fr;
+  column-gap: clamp(0px, 4vw, 60px);
+  min-height: 100dvh;
+  padding: 0 clamp(20px, 5vw, 88px);
+  color: var(--bo-ink);
+  background: var(--bo-canvas);
+}
+.admin-login--secure .admin-login-masthead {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-height: 76px;
+  padding-block: 12px;
+  border-block-end: 1px solid var(--bo-line-soft);
+}
+.admin-login-identity { display: flex; align-items: center; gap: 14px; font-size: .75rem; color: var(--bo-muted); }
+.admin-login-identity img { width: auto; height: 30px; }
+.admin-login--secure .admin-login-status { margin: 0; border-radius: 20px; padding: 7px 12px; }
+.admin-login--secure .admin-login-brand {
+  display: grid;
+  align-items: center;
+  justify-content: stretch;
+  padding: 0;
+  background: none;
+  color: var(--bo-ink);
+}
+.admin-login-art {
+  position: absolute;
+  z-index: -1;
+  inset-inline-end: -6%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 106%;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+  mask-image: radial-gradient(ellipse at center, #000 48%, transparent 75%);
+}
+.admin-login-intro { padding: 56px 0; }
+.admin-login-kicker { font-size: .75rem; font-weight: 650; letter-spacing: .13em; text-transform: uppercase; }
+.admin-login--secure .admin-login-intro h1 {
+  margin-block: 17px 16px;
+  font-size: clamp(42px, 4.8vw, 80px);
+  line-height: 1.01;
+  letter-spacing: -.058em;
+  text-shadow: 0 1px 16px #09090e, 0 2px 4px #09090e;
+}
+.admin-login-intro em { font-style: normal; font-weight: 460; }
+.admin-login-intro p { color: var(--bo-ink); font-size: .95rem; margin: 0; text-shadow: 0 1px 10px #09090e, 0 1px 3px #09090e; }
+.admin-login--secure .admin-login-panel { min-height: auto; padding: 32px 0; background: transparent; }
+.admin-login--secure .admin-login-box {
+  border-radius: 20px;
+  padding: clamp(20px, 3vw, 38px);
+  box-shadow: 0 24px 64px #0006;
+}
+.admin-login--secure .admin-login-box h2 { font-size: clamp(30px, 3vw, 42px); }
+.admin-login--secure .admin-login-box .admin-field input:not([type='checkbox']) { height: 48px; font-size: 1rem; border-radius: 8px; background: var(--bo-sunken); color: var(--bo-ink); }
+.admin-login--secure .admin-login-box .admin-field input::placeholder { color: var(--bo-soft); }
+.admin-login--secure .admin-password button { min-height: 40px; }
+.admin-login--secure .admin-login-submit { border-radius: 8px; min-height: 48px; width: 100%; }
+.admin-login--secure .admin-login-error { border-radius: 8px; background: var(--bo-danger-soft); color: var(--bo-danger); }
+.admin-login--secure .admin-login-box > .admin-login-help { margin: 20px 0 0; }
+.admin-login--secure :is(button, input):focus-visible { outline: 2px solid var(--bo-accent); outline-offset: 3px; }
+@media (max-width: 880px) {
+  html .admin-login.admin-login--secure { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr; }
+  .admin-login--secure .admin-login-brand { width: min(100%, 452px); margin-inline: auto; }
+  .admin-login-intro { padding: 26px 0; }
+  .admin-login--secure .admin-login-intro h1 { font-size: clamp(31px, 7.4vw, 45px); margin: 8px 0; }
+  .admin-login-intro p { font-size: .85rem; }
+  .admin-login-art { width: auto; height: 147%; max-height: none; inset-inline-end: -16%; opacity: .58; }
+  .admin-login--secure .admin-login-panel { padding: 0 0 24px; align-items: start; }
+}
+@media (max-width: 360px) {
+  .admin-login-identity { gap: 8px; }
+  .admin-login-identity img { height: 24px; }
+  .admin-login--secure .admin-login-masthead { column-gap: 6px; }
+}

@@ -29,3 +29,9 @@ npx vitest run tests/admin-unified-workspaces.test.ts tests/back-office-shell.te
   tests/admin-console-upgrade.test.tsx tests/admin-sidebar-wrap-2026-11-13.test.ts \
   tests/public-upload-policy.test.ts tests/zayrovi.test.ts
 ```
+
+### Alignement sur les premiers modèles
+
+Les [premières maquettes](../concepts/images/index.html) sont des références visuelles, pas des données ni des routes à reproduire à l’identique. Le modèle A se traduit par le rail encre/bordeaux et l’accueil opérationnel (files autorisées, dernières commandes), avec les chiffres et graphiques dans « Analyses détaillées ». Le modèle C se traduit par la surface plus chaude de l’espace éditorial, sans créer de workflow de publication fictif. La connexion est une surface sombre séparée, inspirée de la référence en verre irisé, indépendante de la préférence de thème après connexion. La sonde `verify/admin-login-render.mjs` vérifie le rendu réel et l’image, pas seulement le statut HTTP.
+
+Dans **Administration → Modules & environnement**, « En service · historique » indique un module existant porté par l’ancien écran, pas une désactivation. « Planifié · indisponible » indique que le registre annonce le module sans fournir une fonctionnalité (notamment comptabilité et automatisation). Ces étiquettes ne sont ni une autorisation par utilisateur, ni le résultat d’un test de service externe. Les intégrations restent soumises aux contrôles de Connected.

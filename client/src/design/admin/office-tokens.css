@@ -1,27 +1,27 @@
-/* Admin roles: neutral/blue values live here, components consume roles, not hex values.
+/* Admin roles: ink/burgundy values live here, components consume roles, not hex values.
    The --bo aliases keep earlier CRM/ERP/CMS screens on the same theme during migration. */
 .bo-shell.bo-unified {
   --office-surface-toolbar: #fff;
-  --office-text-toolbar: #222e43;
-  --office-text-toolbar-muted: #576780;
-  --office-surface-navigation: #121d34;
-  --office-text-navigation: #ebf0ff;
-  --office-text-navigation-muted: #a5b2ce;
-  --office-surface-navigation-selected: #2354cf;
-  --office-surface-canvas: #f2f5fb;
+  --office-text-toolbar: #211922;
+  --office-text-toolbar-muted: #605361;
+  --office-surface-navigation: #201820;
+  --office-text-navigation: #fff4fa;
+  --office-text-navigation-muted: #d0bccb;
+  --office-surface-navigation-selected: #63324b;
+  --office-surface-canvas: #eeeff1;
   --office-surface-card: #fff;
-  --office-border-default: #e0e7f2;
-  --office-border-subtle: #e9edf5;
-  --office-border-emphasis: #d2dceb;
-  --office-text-primary: #16213a;
-  --office-text-secondary: #50617c;
-  --office-text-caption: #596b84;
-  --office-surface-inset: #f5f7fc;
-  --office-surface-hover: #ecf2ff;
-  --office-action-primary: #2354d0;
-  --office-action-hover: #1745b6;
+  --office-border-default: #dedde2;
+  --office-border-subtle: #ece9ed;
+  --office-border-emphasis: #d5cdd4;
+  --office-text-primary: #201923;
+  --office-text-secondary: #584e5b;
+  --office-text-caption: #655969;
+  --office-surface-inset: #f6f4f6;
+  --office-surface-hover: #f7edf3;
+  --office-action-primary: #7c2047;
+  --office-action-hover: #651837;
   --office-text-on-action: #fff;
-  --office-surface-accent-soft: #e9efff;
+  --office-surface-accent-soft: #f8e9f0;
   --office-size-toolbar: 62px;
   --office-size-navigation: 252px;
   --office-radius-panel: 15px;
@@ -47,41 +47,41 @@
   --office-tracking-title: -.025em;
   --office-tracking-label: .075em;
   --office-font-width: 100%;
-  --office-focus-outer: #2354d0;
-  --office-navigator-focus: #b8cdff;
+  --office-focus-outer: #7c2047;
+  --office-navigator-focus: #ffc5dd;
   --office-control-height: 36px;
   --office-hit-touch: 44px;
   --office-elevation-panel: 0 1px 2px #11224a0b;
   --office-elevation-popover: 0 10px 26px #132a5526;
 }
 html[data-theme='dark'] .bo-shell.bo-unified {
-  --office-surface-toolbar: #171f30;
+  --office-surface-toolbar: #211a22;
   --office-text-toolbar: #ebf0fd;
   --office-text-toolbar-muted: #aab8d1;
-  --office-surface-navigation: #111725;
+  --office-surface-navigation: #1b151c;
   --office-text-navigation: #eef2ff;
   --office-text-navigation-muted: #aab7d0;
-  --office-surface-navigation-selected: #2852b9;
-  --office-surface-canvas: #111726;
-  --office-surface-card: #192235;
+  --office-surface-navigation-selected: #673047;
+  --office-surface-canvas: #18141a;
+  --office-surface-card: #251e27;
   --office-border-default: #2d3950;
   --office-border-subtle: #28334a;
   --office-border-emphasis: #3d4c68;
   --office-text-primary: #eef2ff;
   --office-text-secondary: #bac7df;
   --office-text-caption: #aab9d5;
-  --office-surface-inset: #131c2f;
-  --office-surface-hover: #263454;
-  --office-action-primary: #9ab5ff;
-  --office-action-hover: #bbcdff;
-  --office-text-on-action: #10224a;
-  --office-surface-accent-soft: #233760;
+  --office-surface-inset: #1b161e;
+  --office-surface-hover: #352734;
+  --office-action-primary: #ffc2dd;
+  --office-action-hover: #ffd5e8;
+  --office-text-on-action: #401128;
+  --office-surface-accent-soft: #462337;
   --office-chart-series-1: #8aaaff;
   --office-chart-series-2: #58d9c3;
   --office-chart-series-3: #b4a1ff;
   --office-chart-series-4: #ffc06d;
   --office-chart-series-5: #828ead;
-  --office-focus-outer: #adc4ff;
+  --office-focus-outer: #ffd2e7;
   --office-elevation-panel: 0 1px 2px #070c1780;
   --office-elevation-popover: 0 10px 30px #080b1466;
 }
@@ -124,4 +124,11 @@ html[data-theme='dark'] .bo-shell.bo-unified {
   --bo-chart-violet: var(--office-chart-series-3);
   --bo-chart-amber: var(--office-chart-series-4);
   --bo-chart-extra: var(--office-chart-series-5);
+}
+
+/* The editorial studio uses the warmer surface from the chosen content concept. */
+html:not([data-theme='dark']) .bo-shell.bo-unified[data-workspace='cms'] {
+  --office-surface-canvas: #f5eeee;
+  --office-surface-inset: #f9f2f3;
+  --office-border-default: #e7d7df;
 }

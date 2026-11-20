@@ -12,6 +12,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi, queryString } from './api';
 import { Button, CardTitle, DataTable, Field, Filters, Form, Modal, PageHeader, Pagination, Search, Select, StatusBadge, Toast } from './components';
 import { OpsCapacityPanel } from './OpsCapacityPanel';
+import { useOfficeText } from './back-office/OfficeLocale';
 
 type ToastValue = { message: string; tone: 'success' | 'error' } | null;
 
@@ -292,23 +293,29 @@ export const ErpPermissionsPage: React.FC<{ canManage: boolean; role: string }> 
 interface RegistrySection { section: string; modules: { key: string; label: string; status: string; basePermission: string; adminSection: string | null; description: string }[] }
 
 export const ErpEnvironmentPage: React.FC = () => {
-  const registry = useAsync<RegistrySection[]>(() => adminApi<any>('/core/modules').then((r) => r.data?.sections || []), []);
+  const t = useOfficeText();
+  const registry = useAsync<{ sections: RegistrySection[]; total: number }>(() => adminApi<{ data: { sections: RegistrySection[]; total: number } }>('/core/modules').then((r) => r.data), []);
+  const modulePresentation: Record<string, { label: string; tone: 'success' | 'warning' | 'neutral' }> = {
+    active: { label: t('En service', 'في الخدمة'), tone: 'success' },
+    legacy: { label: t('En service · historique', 'في الخدمة · واجهة سابقة'), tone: 'success' },
+    planned: { label: t('Planifié · indisponible', 'مبرمج · موش متاح'), tone: 'warning' },
+  };
   const environment = useAsync<any>(() => adminApi<any>('/core/environment').then((r) => r.data), []);
   const selfTest = useAsync<any>(() => adminApi<any>('/core/environment/self-test').then((r) => r.data), []);
-  const [total, setTotal] = useState(0);
-  useEffect(() => { adminApi<any>('/core/modules').then((r) => setTotal(r.data?.total || 0)).catch(() => setTotal(0)); }, []);
   const env = environment.data;
 
   return <>
     <ErpHeader title="Modules & environnement" description="Registre des modules (actif / hérité / planifié), politique de stockage des fichiers, auto-test de sécurité, séquences de numérotation et capacité du serveur." />
     {registry.error && <p className="admin-block-small">{registry.error}</p>}
     <div className="admin-report-grid">
-      <section className="admin-card"><CardTitle title="Registre des modules" subtitle={`${total} module(s) déclarés`} />
-        <div className="admin-settings-list">{(registry.data || []).map((group) => <div key={group.section}>
+      <section className="admin-card"><CardTitle title="Registre des modules" subtitle={registry.data ? `${registry.data.total} ${t('modules déclarés', 'وحدة مسجّلة')}` : ''} />
+        <div className="admin-settings-list">{(registry.data?.sections || []).map((group) => <div key={group.section}>
           <p className="admin-block-small"><strong>{group.section}</strong></p>
-          {group.modules.map((module) => <div key={module.key} className="admin-cat-row"><span><strong>{module.label}</strong>
+          {group.modules.map((module) => {
+            const presentation = modulePresentation[module.status] ?? { label: t('Statut inconnu', 'الحالة مجهولة'), tone: 'neutral' };
+            return <div key={module.key} className="admin-cat-row" data-module={module.key}><span><strong>{module.label}</strong>
             <small className="admin-block-small">{module.description || '—'}{module.adminSection ? ` · écran : ${module.adminSection}` : ''} · {module.basePermission}</small></span>
-            <StatusBadge status={module.status === 'active' ? 'ACTIVE' : module.status === 'planned' ? 'PENDING' : 'INACTIVE'} /></div>)}
+            <span className={`status-badge status-badge--${presentation.tone}`}>{presentation.label}</span></div>; })}
         </div>)}</div>
       </section>
       <section className="admin-card"><CardTitle title="Stockage des fichiers" subtitle="Médias publics vs documents privés" />

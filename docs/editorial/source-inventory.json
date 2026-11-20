@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 295,
-    "customerAndSharedFiles": 212,
+    "files": 296,
+    "customerAndSharedFiles": 213,
     "controls": 488,
     "iconAliases": 104,
     "uniqueGlyphs": 101
@@ -453,8 +453,8 @@
     {
       "file": "client/src/admin/AdminApp.tsx",
       "domain": "admin",
-      "sha256": "423aa3478e27648e21b48d8896a2d04a67e708e8b141f7604108df3695e5e8fe",
-      "lines": 1132,
+      "sha256": "c6492faa4ed2b03654d5bc147422fb779bc8994f3c6a07698a3ef52137e571a1",
+      "lines": 1100,
       "imports": [
         "../../../shared/shippingTracking",
         "../../../shared/brand.generated",
@@ -468,6 +468,7 @@
         "../styles/admin-console.css",
         "../design/admin/office-tokens.css",
         "../styles/admin-unified.css",
+        "../styles/admin-login.css",
         "../design/admin/OfficeIcon",
         "../design/admin/OfficeListToolbar",
         "../design/admin/OfficeViewSwitch",
@@ -508,12 +509,62 @@
       "controls": [
         {
           "tag": "button",
-          "line": 211,
+          "line": 184,
           "className": null,
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => void probe()}",
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 201,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 202,
+          "className": null,
+          "type": "\"email\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 204,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 206,
+          "className": null,
+          "type": "{show ? 'text' : 'password'}",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 207,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}",
+          "onClick": "{() => setShow(!show)}",
           "disabled": null
         },
         {
@@ -530,56 +581,6 @@
           "tag": "input",
           "line": 218,
           "className": null,
-          "type": "\"email\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 220,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 222,
-          "className": null,
-          "type": "{show ? 'text' : 'password'}",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 223,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}",
-          "onClick": "{() => setShow(!show)}",
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 234,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 235,
-          "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
@@ -588,7 +589,7 @@
         },
         {
           "tag": "Button",
-          "line": 240,
+          "line": 223,
           "className": "\"admin-login-submit\"",
           "type": "\"submit\"",
           "role": null,
@@ -597,18 +598,8 @@
           "disabled": null
         },
         {
-          "tag": "summary",
-          "line": 250,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
           "tag": "button",
-          "line": 319,
+          "line": 286,
           "className": "{`admin-queue-card ${count ? 'is-pending' : ''}`}",
           "type": "\"button\"",
           "role": null,
@@ -618,7 +609,7 @@
         },
         {
           "tag": "Button",
-          "line": 360,
+          "line": 327,
           "className": null,
           "type": null,
           "role": null,
@@ -628,7 +619,7 @@
         },
         {
           "tag": "Button",
-          "line": 374,
+          "line": 336,
           "className": null,
           "type": null,
           "role": null,
@@ -638,7 +629,7 @@
         },
         {
           "tag": "FunnelCard",
-          "line": 384,
+          "line": 352,
           "className": null,
           "type": null,
           "role": null,
@@ -648,7 +639,7 @@
         },
         {
           "tag": "AyWebsOperationsCard",
-          "line": 385,
+          "line": 353,
           "className": null,
           "type": null,
           "role": null,
@@ -658,7 +649,7 @@
         },
         {
           "tag": "button",
-          "line": 509,
+          "line": 477,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -668,7 +659,7 @@
         },
         {
           "tag": "button",
-          "line": 509,
+          "line": 477,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -678,7 +669,7 @@
         },
         {
           "tag": "Button",
-          "line": 513,
+          "line": 481,
           "className": null,
           "type": null,
           "role": null,
@@ -688,7 +679,7 @@
         },
         {
           "tag": "Button",
-          "line": 521,
+          "line": 489,
           "className": null,
           "type": null,
           "role": null,
@@ -698,7 +689,7 @@
         },
         {
           "tag": "Modal",
-          "line": 527,
+          "line": 495,
           "className": null,
           "type": null,
           "role": null,
@@ -708,7 +699,7 @@
         },
         {
           "tag": "button",
-          "line": 579,
+          "line": 547,
           "className": "{`admin-order-kpi ${active === value ? 'is-active' : ''}`}",
           "type": "\"button\"",
           "role": null,
@@ -718,7 +709,7 @@
         },
         {
           "tag": "a",
-          "line": 649,
+          "line": 617,
           "className": "\"admin-button admin-button--secondary\"",
           "type": null,
           "role": null,
@@ -728,7 +719,7 @@
         },
         {
           "tag": "Button",
-          "line": 654,
+          "line": 622,
           "className": null,
           "type": null,
           "role": null,
@@ -738,7 +729,7 @@
         },
         {
           "tag": "Modal",
-          "line": 666,
+          "line": 634,
           "className": null,
           "type": null,
           "role": null,
@@ -748,7 +739,7 @@
         },
         {
           "tag": "Field",
-          "line": 680,
+          "line": 648,
           "className": null,
           "type": null,
           "role": null,
@@ -758,7 +749,7 @@
         },
         {
           "tag": "Field",
-          "line": 680,
+          "line": 648,
           "className": null,
           "type": null,
           "role": null,
@@ -768,7 +759,7 @@
         },
         {
           "tag": "a",
-          "line": 691,
+          "line": 659,
           "className": "\"admin-button admin-button--secondary\"",
           "type": null,
           "role": null,
@@ -778,7 +769,7 @@
         },
         {
           "tag": "Field",
-          "line": 694,
+          "line": 662,
           "className": null,
           "type": null,
           "role": null,
@@ -788,7 +779,7 @@
         },
         {
           "tag": "input",
-          "line": 694,
+          "line": 662,
           "className": null,
           "type": null,
           "role": null,
@@ -798,7 +789,7 @@
         },
         {
           "tag": "button",
-          "line": 695,
+          "line": 663,
           "className": "\"admin-button admin-button--primary\"",
           "type": null,
           "role": null,
@@ -808,7 +799,7 @@
         },
         {
           "tag": "button",
-          "line": 696,
+          "line": 664,
           "className": "\"admin-button admin-button--danger\"",
           "type": null,
           "role": null,
@@ -818,7 +809,7 @@
         },
         {
           "tag": "a",
-          "line": 700,
+          "line": 668,
           "className": "\"admin-button admin-button--secondary\"",
           "type": null,
           "role": null,
@@ -828,7 +819,7 @@
         },
         {
           "tag": "button",
-          "line": 701,
+          "line": 669,
           "className": "\"admin-button admin-button--primary\"",
           "type": null,
           "role": null,
@@ -838,7 +829,7 @@
         },
         {
           "tag": "button",
-          "line": 702,
+          "line": 670,
           "className": "\"admin-button admin-button--secondary\"",
           "type": null,
           "role": null,
@@ -848,7 +839,7 @@
         },
         {
           "tag": "Field",
-          "line": 706,
+          "line": 674,
           "className": null,
           "type": null,
           "role": null,
@@ -858,7 +849,7 @@
         },
         {
           "tag": "Field",
-          "line": 707,
+          "line": 675,
           "className": null,
           "type": null,
           "role": null,
@@ -868,7 +859,7 @@
         },
         {
           "tag": "input",
-          "line": 707,
+          "line": 675,
           "className": null,
           "type": null,
           "role": null,
@@ -878,7 +869,7 @@
         },
         {
           "tag": "Field",
-          "line": 708,
+          "line": 676,
           "className": null,
           "type": null,
           "role": null,
@@ -888,7 +879,7 @@
         },
         {
           "tag": "input",
-          "line": 708,
+          "line": 676,
           "className": null,
           "type": null,
           "role": null,
@@ -898,7 +889,7 @@
         },
         {
           "tag": "Field",
-          "line": 709,
+          "line": 677,
           "className": null,
           "type": null,
           "role": null,
@@ -908,7 +899,7 @@
         },
         {
           "tag": "input",
-          "line": 709,
+          "line": 677,
           "className": null,
           "type": null,
           "role": null,
@@ -918,7 +909,7 @@
         },
         {
           "tag": "Field",
-          "line": 709,
+          "line": 677,
           "className": null,
           "type": null,
           "role": null,
@@ -928,7 +919,7 @@
         },
         {
           "tag": "input",
-          "line": 709,
+          "line": 677,
           "className": null,
           "type": null,
           "role": null,
@@ -938,7 +929,7 @@
         },
         {
           "tag": "button",
-          "line": 710,
+          "line": 678,
           "className": "\"admin-button admin-button--primary\"",
           "type": null,
           "role": null,
@@ -948,7 +939,7 @@
         },
         {
           "tag": "a",
-          "line": 713,
+          "line": 681,
           "className": "\"admin-link\"",
           "type": null,
           "role": null,
@@ -958,7 +949,7 @@
         },
         {
           "tag": "a",
-          "line": 713,
+          "line": 681,
           "className": "\"admin-block-small\"",
           "type": null,
           "role": null,
@@ -968,7 +959,7 @@
         },
         {
           "tag": "Modal",
-          "line": 811,
+          "line": 779,
           "className": null,
           "type": null,
           "role": null,
@@ -978,7 +969,7 @@
         },
         {
           "tag": "Button",
-          "line": 812,
+          "line": 780,
           "className": null,
           "type": null,
           "role": null,
@@ -988,7 +979,7 @@
         },
         {
           "tag": "Button",
-          "line": 812,
+          "line": 780,
           "className": null,
           "type": null,
           "role": null,
@@ -998,7 +989,7 @@
         },
         {
           "tag": "a",
-          "line": 822,
+          "line": 790,
           "className": "\"admin-button admin-button--secondary\"",
           "type": null,
           "role": null,
@@ -1008,7 +999,7 @@
         },
         {
           "tag": "Field",
-          "line": 826,
+          "line": 794,
           "className": null,
           "type": null,
           "role": null,
@@ -1018,7 +1009,7 @@
         },
         {
           "tag": "Field",
-          "line": 827,
+          "line": 795,
           "className": null,
           "type": null,
           "role": null,
@@ -1028,7 +1019,7 @@
         },
         {
           "tag": "input",
-          "line": 827,
+          "line": 795,
           "className": null,
           "type": "\"number\"",
           "role": null,
@@ -1038,7 +1029,7 @@
         },
         {
           "tag": "Field",
-          "line": 828,
+          "line": 796,
           "className": null,
           "type": null,
           "role": null,
@@ -1048,7 +1039,7 @@
         },
         {
           "tag": "Field",
-          "line": 829,
+          "line": 797,
           "className": null,
           "type": null,
           "role": null,
@@ -1058,7 +1049,7 @@
         },
         {
           "tag": "input",
-          "line": 829,
+          "line": 797,
           "className": null,
           "type": null,
           "role": null,
@@ -1068,7 +1059,7 @@
         },
         {
           "tag": "Field",
-          "line": 830,
+          "line": 798,
           "className": null,
           "type": null,
           "role": null,
@@ -1078,7 +1069,7 @@
         },
         {
           "tag": "input",
-          "line": 830,
+          "line": 798,
           "className": null,
           "type": "\"url\"",
           "role": null,
@@ -1088,7 +1079,7 @@
         },
         {
           "tag": "Field",
-          "line": 831,
+          "line": 799,
           "className": null,
           "type": null,
           "role": null,
@@ -1098,7 +1089,7 @@
         },
         {
           "tag": "textarea",
-          "line": 831,
+          "line": 799,
           "className": null,
           "type": null,
           "role": null,
@@ -1108,7 +1099,7 @@
         },
         {
           "tag": "Field",
-          "line": 832,
+          "line": 800,
           "className": null,
           "type": null,
           "role": null,
@@ -1118,7 +1109,7 @@
         },
         {
           "tag": "textarea",
-          "line": 832,
+          "line": 800,
           "className": null,
           "type": null,
           "role": null,
@@ -1128,7 +1119,7 @@
         },
         {
           "tag": "Modal",
-          "line": 890,
+          "line": 858,
           "className": null,
           "type": null,
           "role": null,
@@ -1138,7 +1129,7 @@
         },
         {
           "tag": "Button",
-          "line": 890,
+          "line": 858,
           "className": null,
           "type": null,
           "role": null,
@@ -1148,7 +1139,7 @@
         },
         {
           "tag": "Button",
-          "line": 890,
+          "line": 858,
           "className": null,
           "type": null,
           "role": null,
@@ -1158,7 +1149,7 @@
         },
         {
           "tag": "Field",
-          "line": 894,
+          "line": 862,
           "className": null,
           "type": null,
           "role": null,
@@ -1168,7 +1159,7 @@
         },
         {
           "tag": "Field",
-          "line": 894,
+          "line": 862,
           "className": null,
           "type": null,
           "role": null,
@@ -1178,7 +1169,7 @@
         },
         {
           "tag": "Field",
-          "line": 894,
+          "line": 862,
           "className": null,
           "type": null,
           "role": null,
@@ -1188,7 +1179,7 @@
         },
         {
           "tag": "textarea",
-          "line": 894,
+          "line": 862,
           "className": null,
           "type": null,
           "role": null,
@@ -1198,7 +1189,7 @@
         },
         {
           "tag": "Modal",
-          "line": 922,
+          "line": 890,
           "className": null,
           "type": null,
           "role": null,
@@ -1208,7 +1199,7 @@
         },
         {
           "tag": "button",
-          "line": 923,
+          "line": 891,
           "className": "\"admin-button admin-button--danger\"",
           "type": null,
           "role": null,
@@ -1218,7 +1209,7 @@
         },
         {
           "tag": "button",
-          "line": 923,
+          "line": 891,
           "className": "\"admin-button admin-button--primary\"",
           "type": null,
           "role": null,
@@ -1228,7 +1219,7 @@
         },
         {
           "tag": "Modal",
-          "line": 930,
+          "line": 898,
           "className": null,
           "type": null,
           "role": null,
@@ -1238,7 +1229,7 @@
         },
         {
           "tag": "Field",
-          "line": 940,
+          "line": 908,
           "className": null,
           "type": null,
           "role": null,
@@ -1248,7 +1239,7 @@
         },
         {
           "tag": "textarea",
-          "line": 940,
+          "line": 908,
           "className": null,
           "type": null,
           "role": null,
@@ -1258,7 +1249,7 @@
         },
         {
           "tag": "input",
-          "line": 940,
+          "line": 908,
           "className": null,
           "type": "{row.value_type==='NUMBER'?'number':'text'}",
           "role": null,
@@ -1268,7 +1259,7 @@
         },
         {
           "tag": "Button",
-          "line": 940,
+          "line": 908,
           "className": null,
           "type": null,
           "role": null,
@@ -1278,7 +1269,7 @@
         },
         {
           "tag": "Button",
-          "line": 949,
+          "line": 917,
           "className": null,
           "type": null,
           "role": null,
@@ -1288,7 +1279,7 @@
         },
         {
           "tag": "Button",
-          "line": 949,
+          "line": 917,
           "className": null,
           "type": null,
           "role": null,
@@ -1298,7 +1289,7 @@
         },
         {
           "tag": "Button",
-          "line": 949,
+          "line": 917,
           "className": null,
           "type": null,
           "role": null,
@@ -1308,7 +1299,7 @@
         },
         {
           "tag": "Modal",
-          "line": 950,
+          "line": 918,
           "className": null,
           "type": null,
           "role": null,
@@ -1318,7 +1309,7 @@
         },
         {
           "tag": "Field",
-          "line": 950,
+          "line": 918,
           "className": null,
           "type": null,
           "role": null,
@@ -1328,7 +1319,7 @@
         },
         {
           "tag": "input",
-          "line": 950,
+          "line": 918,
           "className": null,
           "type": null,
           "role": null,
@@ -1338,7 +1329,7 @@
         },
         {
           "tag": "Field",
-          "line": 950,
+          "line": 918,
           "className": null,
           "type": null,
           "role": null,
@@ -1348,7 +1339,7 @@
         },
         {
           "tag": "input",
-          "line": 950,
+          "line": 918,
           "className": null,
           "type": "\"email\"",
           "role": null,
@@ -1358,7 +1349,7 @@
         },
         {
           "tag": "Field",
-          "line": 950,
+          "line": 918,
           "className": null,
           "type": null,
           "role": null,
@@ -1368,7 +1359,7 @@
         },
         {
           "tag": "input",
-          "line": 950,
+          "line": 918,
           "className": null,
           "type": "\"password\"",
           "role": null,
@@ -1378,7 +1369,7 @@
         },
         {
           "tag": "Field",
-          "line": 950,
+          "line": 918,
           "className": null,
           "type": null,
           "role": null,
@@ -1388,7 +1379,7 @@
         },
         {
           "tag": "Button",
-          "line": 950,
+          "line": 918,
           "className": null,
           "type": "\"submit\"",
           "role": null,
@@ -1398,7 +1389,7 @@
         },
         {
           "tag": "Button",
-          "line": 975,
+          "line": 943,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -1408,7 +1399,7 @@
         },
         {
           "tag": "Button",
-          "line": 976,
+          "line": 944,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -1418,7 +1409,7 @@
         },
         {
           "tag": "input",
-          "line": 1003,
+          "line": 971,
           "className": null,
           "type": "\"date\"",
           "role": null,
@@ -1428,7 +1419,7 @@
         },
         {
           "tag": "input",
-          "line": 1003,
+          "line": 971,
           "className": null,
           "type": "\"date\"",
           "role": null,
@@ -1438,7 +1429,7 @@
         },
         {
           "tag": "Field",
-          "line": 1032,
+          "line": 1000,
           "className": null,
           "type": null,
           "role": null,
@@ -1448,7 +1439,7 @@
         },
         {
           "tag": "input",
-          "line": 1032,
+          "line": 1000,
           "className": null,
           "type": null,
           "role": null,
@@ -1458,7 +1449,7 @@
         },
         {
           "tag": "Field",
-          "line": 1032,
+          "line": 1000,
           "className": null,
           "type": null,
           "role": null,
@@ -1468,7 +1459,7 @@
         },
         {
           "tag": "Field",
-          "line": 1032,
+          "line": 1000,
           "className": null,
           "type": null,
           "role": null,
@@ -1478,7 +1469,7 @@
         },
         {
           "tag": "input",
-          "line": 1032,
+          "line": 1000,
           "className": null,
           "type": "\"number\"",
           "role": null,
@@ -1488,7 +1479,7 @@
         },
         {
           "tag": "Field",
-          "line": 1032,
+          "line": 1000,
           "className": null,
           "type": null,
           "role": null,
@@ -1498,7 +1489,7 @@
         },
         {
           "tag": "input",
-          "line": 1032,
+          "line": 1000,
           "className": null,
           "type": "\"date\"",
           "role": null,
@@ -1508,7 +1499,7 @@
         },
         {
           "tag": "Field",
-          "line": 1032,
+          "line": 1000,
           "className": null,
           "type": null,
           "role": null,
@@ -1518,7 +1509,7 @@
         },
         {
           "tag": "input",
-          "line": 1032,
+          "line": 1000,
           "className": null,
           "type": null,
           "role": null,
@@ -1528,7 +1519,7 @@
         },
         {
           "tag": "Button",
-          "line": 1032,
+          "line": 1000,
           "className": null,
           "type": "\"submit\"",
           "role": null,
@@ -1538,7 +1529,7 @@
         },
         {
           "tag": "Button",
-          "line": 1033,
+          "line": 1001,
           "className": null,
           "type": null,
           "role": null,
@@ -1548,7 +1539,7 @@
         },
         {
           "tag": "Button",
-          "line": 1062,
+          "line": 1030,
           "className": null,
           "type": null,
           "role": null,
@@ -1558,7 +1549,7 @@
         },
         {
           "tag": "button",
-          "line": 1064,
+          "line": 1032,
           "className": "{`admin-theme-card ${theme.preset===preset.id?'is-active':''}`}",
           "type": "\"button\"",
           "role": null,
@@ -1568,7 +1559,7 @@
         },
         {
           "tag": "Field",
-          "line": 1065,
+          "line": 1033,
           "className": null,
           "type": null,
           "role": null,
@@ -1578,7 +1569,7 @@
         },
         {
           "tag": "input",
-          "line": 1065,
+          "line": 1033,
           "className": null,
           "type": "\"color\"",
           "role": null,
@@ -1588,7 +1579,7 @@
         },
         {
           "tag": "Field",
-          "line": 1065,
+          "line": 1033,
           "className": null,
           "type": null,
           "role": null,
@@ -1598,7 +1589,7 @@
         },
         {
           "tag": "input",
-          "line": 1065,
+          "line": 1033,
           "className": null,
           "type": "\"color\"",
           "role": null,
@@ -1608,7 +1599,7 @@
         },
         {
           "tag": "Field",
-          "line": 1065,
+          "line": 1033,
           "className": null,
           "type": null,
           "role": null,
@@ -1618,7 +1609,7 @@
         },
         {
           "tag": "button",
-          "line": 1066,
+          "line": 1034,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -1628,7 +1619,7 @@
         },
         {
           "tag": "Field",
-          "line": 1068,
+          "line": 1036,
           "className": null,
           "type": null,
           "role": null,
@@ -1638,7 +1629,7 @@
         },
         {
           "tag": "input",
-          "line": 1068,
+          "line": 1036,
           "className": null,
           "type": null,
           "role": null,
@@ -1648,7 +1639,7 @@
         },
         {
           "tag": "Field",
-          "line": 1069,
+          "line": 1037,
           "className": null,
           "type": null,
           "role": null,
@@ -1658,7 +1649,7 @@
         },
         {
           "tag": "input",
-          "line": 1069,
+          "line": 1037,
           "className": null,
           "type": null,
           "role": null,
@@ -1668,7 +1659,7 @@
         },
         {
           "tag": "Field",
-          "line": 1070,
+          "line": 1038,
           "className": null,
           "type": null,
           "role": null,
@@ -1678,7 +1669,7 @@
         },
         {
           "tag": "input",
-          "line": 1070,
+          "line": 1038,
           "className": null,
           "type": null,
           "role": null,
@@ -1688,7 +1679,7 @@
         },
         {
           "tag": "Field",
-          "line": 1071,
+          "line": 1039,
           "className": null,
           "type": null,
           "role": null,
@@ -1698,7 +1689,7 @@
         },
         {
           "tag": "input",
-          "line": 1071,
+          "line": 1039,
           "className": null,
           "type": null,
           "role": null,
@@ -1708,7 +1699,7 @@
         },
         {
           "tag": "Field",
-          "line": 1072,
+          "line": 1040,
           "className": null,
           "type": null,
           "role": null,
@@ -1718,7 +1709,7 @@
         },
         {
           "tag": "textarea",
-          "line": 1072,
+          "line": 1040,
           "className": null,
           "type": null,
           "role": null,
@@ -4267,7 +4258,7 @@
     {
       "file": "client/src/admin/back-office/BackOfficeShell.tsx",
       "domain": "admin",
-      "sha256": "ddd20689918d78e67051af9ca018e8c65f864d104578b264302bdcda1dc52397",
+      "sha256": "91706dcb950e247012d1706a4a658ee43de318ee8d4c355b5be118398e1e6301",
       "lines": 356,
       "imports": [
         "react",
@@ -7187,13 +7178,14 @@
     {
       "file": "client/src/admin/ErpCorePages.tsx",
       "domain": "admin",
-      "sha256": "fe10b1fe6ed96885bd81f657bc10fcfdce235ef92e8483ede47fcef69e6d8374",
-      "lines": 462,
+      "sha256": "b260f0709ee2d7c6fef9e5537ee7bdce7dc1d1114a8becc4967b9010aedb037e",
+      "lines": 469,
       "imports": [
         "react",
         "./api",
         "./components",
-        "./OpsCapacityPanel"
+        "./OpsCapacityPanel",
+        "./back-office/OfficeLocale"
       ],
       "exports": [
         "ErpEmployeesPage",
@@ -7206,7 +7198,7 @@
       "controls": [
         {
           "tag": "Button",
-          "line": 122,
+          "line": 123,
           "className": null,
           "type": null,
           "role": null,
@@ -7216,33 +7208,13 @@
         },
         {
           "tag": "Modal",
-          "line": 127,
+          "line": 128,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": null,
           "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 131,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 131,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canManage}"
         },
         {
           "tag": "Field",
@@ -7266,7 +7238,7 @@
         },
         {
           "tag": "Field",
-          "line": 134,
+          "line": 133,
           "className": null,
           "type": null,
           "role": null,
@@ -7276,7 +7248,7 @@
         },
         {
           "tag": "input",
-          "line": 134,
+          "line": 133,
           "className": null,
           "type": null,
           "role": null,
@@ -7286,13 +7258,23 @@
         },
         {
           "tag": "Field",
-          "line": 136,
+          "line": 135,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": null,
           "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 135,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canManage}"
         },
         {
           "tag": "Field",
@@ -7305,24 +7287,24 @@
           "disabled": null
         },
         {
+          "tag": "Field",
+          "line": 138,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "input",
-          "line": 137,
+          "line": 138,
           "className": null,
           "type": "\"date\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
           "disabled": "{!canManage}"
-        },
-        {
-          "tag": "Field",
-          "line": 140,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
         },
         {
           "tag": "Field",
@@ -7336,7 +7318,7 @@
         },
         {
           "tag": "Field",
-          "line": 144,
+          "line": 142,
           "className": null,
           "type": null,
           "role": null,
@@ -7355,8 +7337,18 @@
           "disabled": null
         },
         {
+          "tag": "Field",
+          "line": 146,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "Button",
-          "line": 147,
+          "line": 148,
           "className": null,
           "type": "\"submit\"",
           "role": null,
@@ -7366,7 +7358,7 @@
         },
         {
           "tag": "Button",
-          "line": 182,
+          "line": 183,
           "className": null,
           "type": null,
           "role": null,
@@ -7376,27 +7368,7 @@
         },
         {
           "tag": "Modal",
-          "line": 199,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 201,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 201,
+          "line": 200,
           "className": null,
           "type": null,
           "role": null,
@@ -7435,6 +7407,16 @@
           "disabled": null
         },
         {
+          "tag": "input",
+          "line": 203,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "Field",
           "line": 204,
           "className": null,
@@ -7445,8 +7427,18 @@
           "disabled": null
         },
         {
+          "tag": "Field",
+          "line": 205,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "Button",
-          "line": 206,
+          "line": 207,
           "className": null,
           "type": "\"submit\"",
           "role": null,
@@ -7456,32 +7448,12 @@
         },
         {
           "tag": "Button",
-          "line": 252,
+          "line": 253,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": "{reseed}",
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 259,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 259,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
           "disabled": null
         },
         {
@@ -7495,8 +7467,28 @@
           "disabled": null
         },
         {
+          "tag": "input",
+          "line": 260,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "Field",
-          "line": 262,
+          "line": 261,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 263,
           "className": null,
           "type": null,
           "role": null,
@@ -7506,7 +7498,7 @@
         },
         {
           "tag": "input",
-          "line": 262,
+          "line": 263,
           "className": null,
           "type": null,
           "role": null,
@@ -7516,7 +7508,7 @@
         },
         {
           "tag": "Button",
-          "line": 263,
+          "line": 264,
           "className": null,
           "type": null,
           "role": null,
@@ -7526,7 +7518,7 @@
         },
         {
           "tag": "SequencesCard",
-          "line": 327,
+          "line": 334,
           "className": null,
           "type": null,
           "role": null,
@@ -7536,7 +7528,7 @@
         },
         {
           "tag": "Button",
-          "line": 350,
+          "line": 357,
           "className": null,
           "type": null,
           "role": null,
@@ -7546,7 +7538,7 @@
         },
         {
           "tag": "button",
-          "line": 379,
+          "line": 386,
           "className": "\"admin-link-button\"",
           "type": "\"button\"",
           "role": null,
@@ -7556,7 +7548,7 @@
         },
         {
           "tag": "input",
-          "line": 384,
+          "line": 391,
           "className": null,
           "type": "\"date\"",
           "role": null,
@@ -7566,7 +7558,7 @@
         },
         {
           "tag": "input",
-          "line": 385,
+          "line": 392,
           "className": null,
           "type": "\"date\"",
           "role": null,
@@ -18780,8 +18772,8 @@
     {
       "file": "client/src/design/admin/office-tokens.css",
       "domain": "admin",
-      "sha256": "a7846d2cbb6c24c020eaefc1160c4e542f1e147638929dfea224c783e419bafd",
-      "lines": 128,
+      "sha256": "c4fb2c41cd3a7ad35e0880953cb80a57fe18ea67fd7ffe0abd853078063e57f1",
+      "lines": 135,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -18790,59 +18782,62 @@
       "colors": [
         "#070c1780",
         "#080b1466",
-        "#10224a",
-        "#111725",
-        "#111726",
         "#11224a0b",
-        "#121d34",
-        "#131c2f",
         "#132a5526",
-        "#16213a",
-        "#171f30",
-        "#1745b6",
-        "#192235",
+        "#18141a",
+        "#1b151c",
+        "#1b161e",
         "#1b9c8b",
-        "#222e43",
-        "#233760",
-        "#2354cf",
-        "#2354d0",
-        "#263454",
+        "#201820",
+        "#201923",
+        "#211922",
+        "#211a22",
+        "#251e27",
         "#28334a",
-        "#2852b9",
         "#2d3950",
         "#2f61e5",
+        "#352734",
         "#3d4c68",
-        "#50617c",
-        "#576780",
+        "#401128",
+        "#462337",
+        "#584e5b",
         "#58d9c3",
-        "#596b84",
+        "#605361",
+        "#63324b",
+        "#651837",
+        "#655969",
+        "#673047",
         "#6981a5",
         "#7756dc",
+        "#7c2047",
         "#828ead",
         "#8aaaff",
-        "#9ab5ff",
-        "#a5b2ce",
         "#aab7d0",
         "#aab8d1",
         "#aab9d5",
-        "#adc4ff",
         "#b4a1ff",
-        "#b8cdff",
         "#bac7df",
-        "#bbcdff",
         "#cb8219",
-        "#d2dceb",
-        "#e0e7f2",
-        "#e9edf5",
-        "#e9efff",
+        "#d0bccb",
+        "#d5cdd4",
+        "#dedde2",
+        "#e7d7df",
         "#ebf0fd",
-        "#ebf0ff",
-        "#ecf2ff",
+        "#ece9ed",
+        "#eeeff1",
         "#eef2ff",
-        "#f2f5fb",
-        "#f5f7fc",
+        "#f5eeee",
+        "#f6f4f6",
+        "#f7edf3",
+        "#f8e9f0",
+        "#f9f2f3",
         "#ffc06d",
-        "#fff"
+        "#ffc2dd",
+        "#ffc5dd",
+        "#ffd2e7",
+        "#ffd5e8",
+        "#fff",
+        "#fff4fa"
       ],
       "fontDeclarations": [
         "--office-font-width: 100%"
@@ -23119,38 +23114,54 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/styles/admin-unified.css",
+      "file": "client/src/styles/admin-login.css",
       "domain": "shell-content",
-      "sha256": "8b99e560c9cf349960d6a6ce8d19ec954c252e02c43a8e4fc3df67035e8528b0",
-      "lines": 197,
+      "sha256": "3fe8c6d15b8d9746851168e5569e7d1a38f8f7854c7149ec72abe2b2c338d5bf",
+      "lines": 105,
       "imports": [],
       "exports": [],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
       "colors": [
-        "#092136",
+        "#000",
+        "#0006",
+        "#09090e",
+        "#0a0a0e",
+        "#101016",
+        "#17171e",
+        "#20182f",
+        "#30303a",
+        "#351c27",
+        "#363541",
+        "#51505e",
+        "#6ee6ae",
+        "#6ee6ae25",
+        "#b1aebd",
+        "#bba3ff40",
+        "#c5c2d1",
+        "#e5dcff",
+        "#f3edff",
+        "#faf8ff",
+        "#ffb1b1"
+      ],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/styles/admin-unified.css",
+      "domain": "shell-content",
+      "sha256": "8e9d8a9ef52e94928bf3854bbae4c8908619dc73ff0e737f71f73156cd218f5d",
+      "lines": 190,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [
         "#0e15247f",
-        "#10121e",
         "#111",
-        "#181329",
-        "#27d9f0",
-        "#379bae",
-        "#47d6d7",
-        "#563caa66",
         "#566781",
-        "#6d3ed7",
-        "#7d9af4",
-        "#a0b0cd55",
-        "#a57bfc",
-        "#a6e4fa",
-        "#b5c9ff",
-        "#c5d5ff",
-        "#c7d3ee",
-        "#e5c5fc",
-        "#e9eafa",
-        "#ebd6ff",
-        "#ff9dc9",
         "#fff",
         "#ffffff10",
         "#ffffff13",

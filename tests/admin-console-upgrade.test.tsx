@@ -176,13 +176,18 @@ describe('4. Écran de connexion aligné sur le modèle A', () => {
   });
 
   it('la connexion porte le verrou A.ROVI une seule fois (identité 2026-09-22)', () => {
-    expect(login).toContain('/media/logo-zayrovi-logo-dark.svg');
-    expect(login).toContain('/media/logo-zayrovi-logo-light.svg');
+    const signedOut = login.slice(login.indexOf('const LoginPage:'), login.indexOf('const queueTotal'));
+    expect(signedOut.match(/\/media\/logo-zayrovi-logo-(?:dark|light)\.svg/g)).toEqual(['/media/logo-zayrovi-logo-dark.svg']);
+    expect(signedOut).toContain('data-admin-login="liquid-glass"');
+    expect(signedOut).toContain('/media/zayrovi-admin-liquid-glass.jpg');
     // Le nom n'est plus écrit une seconde fois à côté du verrou.
     expect(login).not.toContain('<strong>ZAYROVI</strong>');
   });
 
-  it('l’action forte de la connexion est bien le violet du modèle A, texte blanc', () => {
+  it('l’action forte de la connexion garde les rôles sémantiques et une palette indépendante', () => {
+    const loginCss = read('client/src/styles/admin-login.css');
+    expect(loginCss).toContain('color-scheme: dark');
+    expect(loginCss).toContain('--bo-on-accent: #20182f');
     expect(css).toContain(':is(.bo-shell, .admin-login) .admin-button--primary');
     expect(css).toMatch(/--bo-accent:\s*var\(--zayrovi-color-brand-accent\)/);
     expect(css).toMatch(/\.admin-button--primary \{\s*background: var\(--bo-accent\); border-color: var\(--bo-accent\); color: var\(--bo-on-accent\);/);

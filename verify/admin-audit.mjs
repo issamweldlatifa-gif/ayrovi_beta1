@@ -235,7 +235,7 @@ await mobilePage.goto(`${base}/admin`, { waitUntil: 'domcontentloaded' });
 await mobilePage.waitForTimeout(1200);
 await mobilePage.screenshot({ path: `${output}/login-mobile.png` });
 loginScreen.mobileScreenshot = `${output}/login-mobile.png`;
-loginScreen.mobileBrandHidden = await mobilePage.evaluate(() => getComputedStyle(document.querySelector('.admin-login-brand')).display === 'none');
+loginScreen.mobileArtVisible = await mobilePage.locator('.admin-login-art').isVisible();
 await mobileContext.close();
 
 await browser.close();
@@ -263,7 +263,7 @@ lines.push(`- champs : ${loginScreen.fields} (dont ${loginScreen.passwordType} m
 lines.push(`- autocomplete : ${loginScreen.hasAutocomplete} champ(s) · titre : ${loginScreen.title}`);
 lines.push(`- étiquettes : ${JSON.stringify(loginScreen.labels)}`);
 lines.push(`- cartouche d’état : ${loginScreen.status} · œil du mot de passe : « ${loginScreen.passwordToggle} »`);
-lines.push(`- captures : ${loginScreen.screenshots?.join(', ')} · mobile (marque masquée : ${loginScreen.mobileBrandHidden}) : ${loginScreen.mobileScreenshot}`, '');
+lines.push(`- captures : ${loginScreen.screenshots?.join(', ')} · mobile (visuel présent : ${loginScreen.mobileArtVisible}) : ${loginScreen.mobileScreenshot}`, '');
 lines.push('## Sécurité — sondes en contexte ANONYME (aucun cookie)', '');
 const anon = security.anonymous || {};
 const anonOk = Object.values(anon).every((status) => status === 401 || status === 400 || status === 403);

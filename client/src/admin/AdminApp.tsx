@@ -20,6 +20,7 @@ import './admin.css';
 import '../styles/admin-console.css';
 import '../design/admin/office-tokens.css';
 import '../styles/admin-unified.css';
+import '../styles/admin-login.css';
 import { OfficeIcon } from '../design/admin/OfficeIcon';
 import { OfficeListToolbar } from '../design/admin/OfficeListToolbar';
 import { OfficeViewSwitch } from '../design/admin/OfficeViewSwitch';
@@ -143,17 +144,6 @@ const resources: Record<string, ResourceDefinition> = {
 
 
 
-/**
- * Porte d'entrée de la console — modèle A.
- *
- * Elle porte les MÊMES rôles de couleur, les mêmes filets de 1 px et le même rayon de 4 px que la
- * coquille (voir `admin-console.css` §12) : la connexion n'est plus un écran « d'avant ».
- *
- * Trois éléments de cet écran sont VIVANTS, et c'est vérifiable :
- *  1. le cartouche d'état est alimenté par `/api/health` — il affiche la version réelle du serveur ;
- *  2. le bouton « Réessayer » rejoue la sonde sur place, sans recharger la page ;
- *  3. l'œil du mot de passe porte un état accessible (`aria-pressed`) et pas seulement une icône.
- */
 const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = ({ onAuthenticated }) => {
   const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [show, setShow] = useState(false);
   // Double authentification (12/11/2026) : le champ n'apparaît que si le compte l'exige.
@@ -180,42 +170,36 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
     } finally { setBusy(false); }
   };
   return (
-    <main className="admin-login admin-login--secure">
-      {/* Identité : le verrou A.ROVI porte le nom une seule fois (emblème + « YROVI »), ici en
-          version blanche puisque le panneau est en encre. La ligne de service dit ce qu'on ouvre. */}
-      <section className="admin-login-brand">
-        <img src="/media/logo-zayrovi-logo-dark.svg?v=9.0" alt="ZAYROVI" className="admin-login-brand__lockup" />
-        <span>CONSOLE D’EXPLOITATION</span>
-        <div className="admin-login-orb" aria-hidden="true" />
-        <h1>Toute votre activité.<br />Une seule console.</h1>
-        <p>Clients, opérations, finance et création : votre espace de travail vous attend.</p>
-        <div className="admin-login-grid">
-          <article><strong>01</strong><span>Identité</span></article>
-          <article><strong>02</strong><span>Vérification 2FA</span></article>
-          <article><strong>03</strong><span>Espace autorisé</span></article>
+    <main className="admin-login admin-login--secure" data-admin-login="liquid-glass">
+      <header className="admin-login-masthead">
+        <div className="admin-login-identity">
+          <img src="/media/logo-zayrovi-logo-dark.svg?v=9.0" alt="ZAYROVI" />
+          <span>Console d’exploitation</span>
         </div>
-        <div className="admin-login-foot">
-          <div><b>Accès interne</b><i>·</i><span>Console d’exploitation</span></div>
-          <div><span>Session privée</span><i>·</i><span>CSRF</span><i>·</i><span>Droits par rôle</span></div>
+        <div className="admin-login-status" data-state={health.state} role="status" aria-live="polite">
+          <i aria-hidden="true" />
+          {health.state === 'ok' && <span>Serveur opérationnel</span>}
+          {health.state === 'checking' && <span>Vérification du serveur…</span>}
+          {health.state === 'down' && <span>Serveur injoignable</span>}
+          {health.state === 'down' && <button type="button" onClick={() => void probe()}>Réessayer</button>}
+        </div>
+      </header>
+      <section className="admin-login-brand" aria-labelledby="admin-login-title">
+        <img className="admin-login-art" src="/media/zayrovi-admin-liquid-glass.jpg" alt="" width={1200} height={896} />
+        <div className="admin-login-intro">
+          <span className="admin-login-kicker">Espace de travail interne</span>
+          <h1 id="admin-login-title">Toute votre activité.<br /><em>Une seule console.</em></h1>
+          <p>Clients, opérations, finance et création.</p>
         </div>
       </section>
-      <section className="admin-login-panel">
+      <section className="admin-login-panel" aria-labelledby="admin-login-form-title">
         <div className="admin-login-box">
-          <div className="admin-login-mobile-logo"><img src="/media/logo-zayrovi-logo-light.svg?v=9.0" alt="ZAYROVI" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /><span>CONSOLE D’EXPLOITATION</span></div>
-          {/* Cartouche d'état : la sonde est réelle, donc le chiffre affiché est celui du serveur en face. */}
-          <div className="admin-login-status" data-state={health.state} role="status" aria-live="polite">
-            <i aria-hidden="true" />
-            {health.state === 'ok' && <span><b>Serveur opérationnel</b></span>}
-            {health.state === 'checking' && <span><b>Vérification du serveur…</b></span>}
-            {health.state === 'down' && <span><b>Serveur injoignable</b> — la connexion échouera tant que l’API ne répond pas.</span>}
-            {health.state === 'down' && <button type="button" onClick={() => void probe()}>Réessayer</button>}
-          </div>
           <span className="admin-eyebrow">Accès sécurisé</span>
-          <h2>Bienvenue.</h2>
-          <p>Connectez-vous avec le compte administrateur configuré sur le serveur.</p>
+          <h2 id="admin-login-form-title">Bienvenue.</h2>
+          <p>Connectez-vous pour accéder à votre espace de travail.</p>
           <Form onSubmit={submit}>
             <Field label="Adresse email" required full>
-              <input type="email" name="email" readOnly={busy} value={email} autoComplete="username" inputMode="email" autoFocus aria-describedby="admin-login-email-help" onChange={(e) => { setEmail(e.target.value); setOtpNeeded(false); setOtp(''); setError(''); }} placeholder="nom@entreprise.tn" required />
+              <input type="email" name="email" readOnly={busy} value={email} autoComplete="username" inputMode="email" onChange={(e) => { setEmail(e.target.value); setOtpNeeded(false); setOtp(''); setError(''); }} placeholder="nom@entreprise.tn" required />
             </Field>
             <Field label="Mot de passe" required full>
               <div className="admin-password">
@@ -228,7 +212,6 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
                   title={show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
                 >{show ? 'Masquer' : 'Afficher'}</button>
               </div>
-              <small id="admin-login-email-help">Le mot de passe n’est jamais stocké en clair : le serveur ne compare qu’une empreinte.</small>
             </Field>
             {otpNeeded && (
               <Field label="Code de vérification" required full hint="6 chiffres de votre application d’authentification — ou un code de secours abcd-efgh.">
@@ -239,23 +222,7 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
             {error && <div className="admin-login-error" role="alert"><AlertCircle size={18} />{error}</div>}
             <Button busy={busy} className="admin-login-submit" type="submit">Se connecter</Button>
           </Form>
-          {/* Pas d'auto-réinitialisation publique côté console — c'est un choix de sécurité, pas un
-              oubli. On remplace donc l'impasse par la procédure réelle du serveur (`src/admin/auth.ts`). */}
-          <div className="admin-login-help">
-            <Info size={16} />
-            <span>
-              Première connexion ou mot de passe perdu ? La console n’expose <b>aucune</b> réinitialisation publique.
-              {' '}
-              <details style={{ display: 'inline' }}>
-                <summary style={{ display: 'inline', cursor: 'pointer', fontWeight: 700 }}>Voir la procédure serveur</summary>
-                <span style={{ display: 'block', marginTop: 6 }}>
-                  Sur la machine du serveur, définissez <code>ADMIN_EMAIL</code> et <code>ADMIN_PASSWORD</code> (12 caractères minimum) puis redémarrez :
-                  le compte est créé au premier démarrage. Si un administrateur existe déjà et que son mot de passe est inconnu,
-                  ajoutez <code>ADMIN_BOOTSTRAP_RESET=yes</code> le temps d’un démarrage — le couple est alors ré-appliqué — puis retirez la variable.
-                </span>
-              </details>
-            </span>
-          </div>
+          <p className="admin-login-help"><Info size={16} /><span>Accès perdu ? Contactez le responsable de votre console.</span></p>
           <div className="admin-login-security"><ShieldCheck size={18} /><span>Session HttpOnly, protection CSRF et permissions par rôle.</span></div>
         </div>
       </section>
@@ -352,25 +319,20 @@ const DashboardPage: React.FC<{ navigate: BackOfficeRenderContext['navigate'] }>
     { label: t('Panier moyen', 'متوسّط قيمة السلّة'), value: formatMoney(data.metrics.averageBasket), change: data.metrics.changes.averageBasket, icon: ShoppingBag, color: 'amber' },
   ] : [];
   return <div className="bo-overview">
-    <PageHeader eyebrow={t('PILOTAGE ZAYROVI', 'إدارة أعمال ZAYROVI')} title={t('Tableau de bord', 'لوحة القيادة')} description={t('Suivez les ventes, les commandes et les actions prioritaires.', 'تابع المبيعات والطلبات والمهام ذات الأولوية.')} action={<Select aria-label={t('Période', 'الفترة')} value={days} onChange={event => setDays(Number(event.target.value))} options={[7, 30, 90, 365].map(value => ({ value: String(value), label: value === 365 ? t('12 mois', '12 شهر') : t(`${value} jours`, `${value} يوم`) }))} />} />
+    <PageHeader eyebrow={t('PILOTAGE ZAYROVI', 'إدارة أعمال ZAYROVI')} title={view === 'overview' ? t('À traiter maintenant', 'الأولويات توا') : t('Analyses détaillées', 'تحليلات مفصّلة')} description={view === 'overview' ? t('Les tâches prioritaires et les dernières commandes, au même endroit.', 'المهام ذات الأولوية وآخر الطلبات، في نفس البلاصة.') : t('Suivez les ventes et les tendances par période.', 'تابع المبيعات والتوجّهات حسب الفترة.')} action={view === 'analysis' && <Select aria-label={t('Période', 'الفترة')} value={days} onChange={event => setDays(Number(event.target.value))} options={[7, 30, 90, 365].map(value => ({ value: String(value), label: value === 365 ? t('12 mois', '12 شهر') : t(`${value} jours`, `${value} يوم`) }))} />} />
     <OfficeViewSwitch label={t('Vues du tableau de bord', 'طرق عرض لوحة القيادة')} value={view} onChange={setView} options={[
-      { value: 'overview', label: t('Vue d’ensemble', 'نظرة عامة'), icon: 'overview' },
+      { value: 'overview', label: t('Opérations', 'العمليات'), icon: 'overview' },
       { value: 'analysis', label: t('Analyses détaillées', 'تحليلات مفصّلة'), icon: 'analytics' },
     ]} />
     {!data ? <><PageLoading error={error} />{error && <Button variant="secondary" onClick={() => retry(revision + 1)}>{t('Réessayer', 'عاود المحاولة')}</Button>}</> : <>
-      <div className="admin-metrics bo-overview-metrics">{cards.map(({ label, value, change, icon: Icon, color }) => (
+      {view === 'analysis' && <div className="admin-metrics bo-overview-metrics">{cards.map(({ label, value, change, icon: Icon, color }) => (
         <article key={label} className="admin-metric" data-color={color}>
           <div><span className="bo-metric-title"><i><Icon size={17} /></i>{label}</span><strong dir="auto">{value}</strong>
           <small><b className={change > 0 ? 'positive' : change < 0 ? 'negative' : ''} dir="ltr">{change > 0 ? '+' : ''}{change}%</b> {t('vs période précédente', 'مقارنة بالفترة السابقة')}</small></div>
         </article>
-      ))}</div>
+      ))}</div>}
       {view === 'overview' ? <>
-        <div className="admin-dashboard-grid bo-chart-grid">
-          <RevenueChart daily={data.daily} total={data.metrics.revenue} days={days} />
-          <OrderStatusChart statuses={data.statuses} />
-        </div>
         <WorkbenchQueues navigate={navigate} />
-        <div className="admin-arrival-summary"><article><span>{t('Arrivages Standard actifs', 'شحنات Standard النشطة')}</span><strong>{data.metrics.activeStandardArrivals}</strong><Calendar /></article><article><span>{t('Arrivages Express actifs', 'شحنات Express النشطة')}</span><strong>{data.metrics.activeExpressArrivals}</strong><Truck /></article></div>
         <section className="admin-card bo-recent-orders"><div className="bo-recent-header"><CardTitle title={t('Dernières commandes', 'آخر الطلبات')} subtitle={t('Flux opérationnel', 'متابعة العمليات')} />{canOpenOrders && <Button variant="secondary" onClick={() => navigate('orders')}>{t('Toutes les commandes', 'الطلبات الكل')}</Button>}</div>
           <DataTable rows={data.recentOrders} emptyText={t('Aucune commande récente.', 'ما فماش طلبات حديثة.')} rowActions={canOpenOrders ? [{ key: 'open', label: t('Voir la commande', 'شوف الطلب'), icon: <Eye size={16} />, onRun: (row: any) => navigate('orders', undefined, row.id) }] : undefined} columns={[
             { key: 'order_number', label: t('Référence', 'المرجع') }, { key: 'customer_name', label: t('Client', 'الحريف') },
@@ -379,11 +341,17 @@ const DashboardPage: React.FC<{ navigate: BackOfficeRenderContext['navigate'] }>
             { key: 'created_at', label: t('Date', 'التاريخ'), render: (row: any) => formatDate(row.created_at, true) },
           ]} />
         </section>
-      </> : <div className="admin-dashboard-grid bo-analytics">
+      </> : <>
+        <div className="admin-dashboard-grid bo-chart-grid">
+          <RevenueChart daily={data.daily} total={data.metrics.revenue} days={days} />
+          <OrderStatusChart statuses={data.statuses} />
+        </div>
+        <div className="admin-arrival-summary"><article><span>{t('Arrivages Standard actifs', 'شحنات Standard النشطة')}</span><strong>{data.metrics.activeStandardArrivals}</strong><Calendar /></article><article><span>{t('Arrivages Express actifs', 'شحنات Express النشطة')}</span><strong>{data.metrics.activeExpressArrivals}</strong><Truck /></article></div>
+        <div className="admin-dashboard-grid bo-analytics">
         <section className="admin-card admin-card--wide"><CardTitle title={t('Plateformes sources', 'منصّات المصدر')} subtitle={t('Commandes & revenu', 'الطلبات والمداخيل')} /><div className="admin-source-list">{data.sources.length ? data.sources.map((row: any) => <div key={row.source}><span>{row.source}</span><strong>{row.orders} {t('commandes', 'طلب')}</strong><b>{formatMoney(row.revenue)}</b></div>) : <ChartEmpty />}</div></section>
         <FunnelCard funnel={data.funnel} days={days} />
         <AyWebsOperationsCard summary={data.aywebs} days={days} />
-      </div>}
+      </div></>}
     </>}
   </div>;
 };

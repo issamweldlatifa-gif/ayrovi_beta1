@@ -26,17 +26,17 @@
 .bo-unified .admin-sidebar nav > :is(.bo-office-group,.bo-office-overview) {margin-block:0 5px}
 .bo-unified .admin-sidebar nav button {min-height:39px;color:var(--bo-rail-ink);border-radius:9px;padding-inline:10px}
 .bo-unified .admin-sidebar nav button:hover {color:#fff;background:#ffffff13}
-.bo-unified .admin-sidebar nav button:focus-visible {outline:2px solid #b5c9ff;outline-offset:-2px}
+.bo-unified .admin-sidebar nav button:focus-visible {outline:2px solid var(--office-navigator-focus);outline-offset:-2px}
 .bo-unified .admin-sidebar nav button.is-active {color:#fff;background:var(--bo-rail-active)}
 .bo-unified .admin-sidebar nav button.is-active i {display:none}
 .bo-office-module > span {flex:1;display:flex;align-items:center;justify-content:space-between;gap:4px}
-.bo-office-module small {font-size:9px;font-weight:750;color:#c5d5ff;border:1px solid #a0b0cd55;border-radius:5px;padding:2px 4px}
+.bo-office-module small {font-size:9px;font-weight:750;color:var(--office-text-navigation);border:1px solid currentColor;border-radius:5px;padding:2px 4px}
 .bo-unified .bo-office-module > svg:last-child {width:13px;opacity:.75}
 .bo-office-module[aria-expanded='true'] > svg:last-child {transform:rotate(180deg)}
 .bo-unified .admin-sidebar .bo-office-group[data-active='true'] > button {background:#ffffff10;font-weight:750}
 .bo-office-group ul {margin:4px 0 8px;margin-inline-start:5px;padding:0;padding-inline-start:8px;list-style:none;border-inline-start:1px solid #ffffff2b}
 .bo-unified .admin-sidebar .bo-office-group li button {min-height:35px;font-size:12px;margin-block:2px}
-.bo-unified .admin-sidebar .bo-office-group li button:not(.is-active) {color:#c7d3ee}
+.bo-unified .admin-sidebar .bo-office-group li button:not(.is-active) {color:var(--office-text-navigation-muted)}
 .bo-unified .bo-roadmap {margin-block-start:16px;color:var(--bo-rail-muted);font-size:12px}
 .bo-unified .bo-roadmap summary {cursor:pointer;padding:6px 9px}
 .bo-unified .bo-roadmap-item {color:var(--bo-rail-ink);padding-inline:13px}
@@ -186,11 +186,4 @@
 .bo-connected-grid header {display:flex;align-items:center;gap:var(--office-space-2)}
 .bo-connected-grid .admin-form-actions {justify-content:flex-start;margin-top:var(--office-space-3)}
 .office-shipping .admin-order-controls {margin-block:var(--office-space-3)}
-.admin-login--secure .admin-login-brand {background:#10121e;justify-content:center;min-height:100dvh}
-.admin-login--secure .admin-login-brand h1,.admin-login--secure .admin-login-brand > p,.admin-login--secure .admin-login-grid {position:relative;z-index:1;text-shadow:0 2px 14px #10121e}
-.admin-login-orb {position:absolute;z-index:-1;inset-inline-end:-5%;top:18%;width:min(34vw,560px);aspect-ratio:1.12;border-radius:48% 52% 58% 42% / 53% 39% 61% 47%;opacity:.76;transform:rotate(-23deg);background:radial-gradient(ellipse at 30% 27%,#ebd6ff 0%,#a57bfc 12%,transparent 34%),radial-gradient(ellipse at 70% 66%,#092136 18%,#27d9f0 38%,transparent 59%),radial-gradient(ellipse at 41% 53%,#181329 21%,#6d3ed7 52%,#ff9dc9 72%,#379bae);box-shadow:inset -.5vw -.6vw 2vw #a6e4fa,0 0 8vw #563caa66}
 @media(max-width:650px){.bo-connected-grid {grid-template-columns:1fr}}
-
-.admin-login--secure .admin-login-brand > p,.admin-login--secure .admin-login-grid span{color:#e9eafa}
-.admin-login--secure .admin-login-mobile-logo{font-size:.625rem;font-weight:750;letter-spacing:.08em;isolation:isolate;position:relative}
-.admin-login--secure .admin-login-mobile-logo::after{content:'';position:absolute;z-index:-1;inset-inline-end:12px;width:38px;height:38px;border-radius:48% 52% 58% 42%;background:linear-gradient(145deg,#e5c5fc,#7d9af4 53%,#47d6d7);opacity:.7}

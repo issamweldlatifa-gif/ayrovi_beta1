@@ -5,6 +5,10 @@ on:
     paths:
       - 'src/**'
       - 'client/src/admin/**'
+      - 'client/src/design/admin/**'
+      - 'client/src/styles/admin-*.css'
+      - 'assets/media/zayrovi-admin-liquid-glass.jpg'
+      - 'verify/admin-login-render.mjs'
       - 'shared/teamConnections.ts'
       - '.github/workflows/back-office-release-observation.yml'
 permissions:
@@ -12,7 +16,7 @@ permissions:
 jobs:
   observe:
     runs-on: ubuntu-latest
-    timeout-minutes: 9
+    timeout-minutes: 15
     env:
       BASE: https://ayrovi-beta1-moo8.onrender.com
     steps:
@@ -38,3 +42,14 @@ jobs:
           done
           echo "::error::Render did not report the requested revision."
           exit 1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --include=dev
+      - run: npx playwright install --with-deps chromium
+      - name: Verify the rendered signed-out Admin on desktop and mobile
+        env:
+          ADMIN_VERIFY_ORIGIN: ${{ env.BASE }}
+        run: node verify/admin-login-render.mjs

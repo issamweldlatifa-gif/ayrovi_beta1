@@ -234,7 +234,7 @@ export const BackOfficeShell: React.FC<{
     <div><strong>ZAYROVI</strong><span>{t('BUSINESS SUITE', 'منصّة إدارة الأعمال')}</span></div>
   </div>;
 
-  return <OfficeLanguageContext.Provider value={lang}><div className={`admin-shell bo-shell bo-unified ${density === 'compact' ? 'is-compact' : ''}`}>
+  return <OfficeLanguageContext.Provider value={lang}><div data-workspace={activeWorkspace?.key} className={`admin-shell bo-shell bo-unified ${density === 'compact' ? 'is-compact' : ''}`}>
     <header className="bo-topbar bo-header">
       <div className="bo-mobile-brand">{brand}</div>
       <div className="bo-topbar-search"><GlobalSearch onNavigate={navigate} /></div>
