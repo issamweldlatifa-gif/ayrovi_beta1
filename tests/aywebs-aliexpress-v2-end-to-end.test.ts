@@ -297,11 +297,11 @@ describe('AYWEBs — AliExpress v2 : activation, capture avancée, matrice SKU e
     vi.restoreAllMocks();
   });
 
-  it('Statut opérationnel, lecteur v2 dédié et reconnaissance complète des domaines/URLs AliExpress', async () => {
+  it('Statut opérationnel, profil de capture AliExpress et reconnaissance complète des domaines/URLs AliExpress', async () => {
     const { app } = createHarness();
 
     const reader = ayWebsCaptureReader('aliexpress');
-    expect(reader).toMatchObject({ storeId: 'aliexpress', version: 2, priceMode: 'named_containers' });
+    expect(reader).toMatchObject({ storeId: 'aliexpress', version: 3, priceMode: 'named_containers' });
 
     const storesRes = await request(app).get('/api/v1/aywebs/stores').expect(200);
     const aeStore = storesRes.body.data.find((s: any) => s.id === 'aliexpress');
@@ -314,7 +314,7 @@ describe('AYWEBs — AliExpress v2 : activation, capture avancée, matrice SKU e
       .get('/api/v1/aywebs/capture/script.js?store_id=aliexpress')
       .expect(200);
     expect(scriptRes.headers['x-aywebs-capture-reader']).toBe('aliexpress');
-    expect(scriptRes.headers['x-aywebs-capture-reader-version']).toBe('2');
+    expect(scriptRes.headers['x-aywebs-capture-reader-version']).toBe('3');
 
     const adapter = new AliExpressAdapter({} as any);
     const productUrls = [

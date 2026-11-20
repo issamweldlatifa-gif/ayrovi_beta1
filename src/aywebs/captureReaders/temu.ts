@@ -2,9 +2,9 @@ import type { AyWebsCaptureReaderDefinition } from './contract';
 
 export const temuCaptureReader: AyWebsCaptureReaderDefinition = {
   storeId: 'temu',
-  version: 1,
+  version: 2,
   priceMode: 'named_containers',
   integration: 'shared_core',
   bundle: 'temu',
-  note: 'Product-bound named price containers with market-price filtering and unanimity.',
+  note: 'Product-bound currency and price evidence, including explicit Tunisian dinar labels.',
 };

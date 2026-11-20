@@ -325,6 +325,7 @@ export const AYWEBS_CAPTURE_CORE = String.raw`(function () {
         if (struckNode(nodes[n])) continue;
         var value = scopeText(nodes[n]);
         if (IS_SHEIN || IS_TEMU || IS_ALIEXPRESS) value = aeNormalizeSplitPrice(value);
+        if (IS_TEMU) value = temuNormalizeScopedPrice(value, nodes[n]);
         if (!value || value.length > 80) continue;
         if (!HAS_DIGIT.test(value) || !CURRENCY_HINT.test(value)) continue;
         if (amountCount(value) !== 1) continue; /* vente + barré collés : on ne tranche pas */
@@ -1544,6 +1545,18 @@ export const AYWEBS_CAPTURE_CORE = String.raw`(function () {
     if (CURRENCY_HINT.test(s)) return cut(s, LIMITS.label);
     return iso ? cut(s + ' ' + iso, LIMITS.label) : '';
   }
+  function aeSkuActivityPrice(value) {
+    return value.skuActivityAmount || value.actSkuMultiCurrencyCalPrice || value.actSkuMultiCurrencyDisplayPrice
+      || value.actSkuCalPrice || value.activityPrice || value.salePrice || '';
+  }
+  function aeSkuBasePrice(value) {
+    return value.skuAmount || value.skuMultiCurrencyCalPrice || value.skuMultiCurrencyDisplayPrice || value.skuCalPrice || value.price || '';
+  }
+  function aeSkuQuantity(value) {
+    if (value.availQuantity !== undefined) return value.availQuantity;
+    if (value.stock !== undefined) return value.stock;
+    return value.inventory;
+  }
   function aeFindComponent(root, patterns, maxDepth) {
     if (!root || typeof root !== 'object' || maxDepth < 0) return null;
     for (var k in root) {
@@ -1705,16 +1718,24 @@ export const AYWEBS_CAPTURE_CORE = String.raw`(function () {
       }
     }
 
-    /* Matrice SKU (skuPriceList / skuPaths / priceList) */
-    var rawSkus = skuComp.skuPriceList || skuComp.skuPaths || skuComp.skuList || (root.sku && (root.sku.skuPaths || root.sku.skuPriceList || root.sku.skuList)) || [];
-    var priceBySkuId = {};
-    var extraPriceList = priceComp.skuPriceList || skuComp.priceList || (root.price && root.price.skuPriceList) || [];
+    /* Variant paths are the primary keys; some layouts publish the offer table separately. */
+    var hasSkuPaths = Array.isArray(skuComp.skuPaths) && skuComp.skuPaths.slice(0, 12).some(function (row) {
+      return row && (row.skuAttr || row.path || row.skuPropIds);
+    });
+    var rawSkus = (hasSkuPaths ? skuComp.skuPaths : skuComp.skuPriceList) || skuComp.skuList
+      || (root.sku && (root.sku.skuPaths || root.sku.skuPriceList || root.sku.skuList)) || [];
+    var priceBySkuId = Object.create(null);
+    var extraPriceList = [priceComp.skuPriceList, hasSkuPaths && skuComp.skuPriceList, skuComp.priceList, root.price && root.price.skuPriceList]
+      .filter(function (list) { return Array.isArray(list) && list.length; })[0] || [];
     if (Object.prototype.toString.call(extraPriceList) === '[object Array]') {
       for (var ep = 0; ep < extraPriceList.length && ep < 120; ep++) {
         var epRow = extraPriceList[ep];
         if (!epRow || typeof epRow !== 'object') continue;
         var epId = text(epRow.skuIdStr || epRow.skuId || '');
-        if (epId) priceBySkuId[epId] = epRow;
+        if (/^\d{5,24}$/.test(epId)) {
+          // A duplicated supplement is ambiguous; never use whichever row came last.
+          priceBySkuId[epId] = priceBySkuId[epId] === undefined ? epRow : null;
+        }
       }
     }
     var skus = [];
@@ -1724,7 +1745,8 @@ export const AYWEBS_CAPTURE_CORE = String.raw`(function () {
         if (!sRow || typeof sRow !== 'object') continue;
         var sId = text(sRow.skuIdStr || sRow.skuId || '');
         var extraRow = (sId && priceBySkuId[sId]) ? priceBySkuId[sId] : null;
-        var sVal = sRow.skuVal || (extraRow && extraRow.skuVal) || extraRow || sRow;
+        var sVal = sRow.skuVal || sRow;
+        var extraVal = (extraRow && (extraRow.skuVal || extraRow)) || {};
         var propStr = text(sRow.skuAttr || sRow.path || sRow.skuPropIds || '');
         var attrs = {};
         var attrCount = 0;
@@ -1751,10 +1773,11 @@ export const AYWEBS_CAPTURE_CORE = String.raw`(function () {
             }
           }
         }
-        var rawAvailQty = sVal.availQuantity !== undefined ? sVal.availQuantity
-          : (sVal.stock !== undefined ? sVal.stock
-            : (sVal.inventory !== undefined ? sVal.inventory
-              : (sRow.salable === false ? 0 : null)));
+        var rawAvailQty = aeSkuQuantity(sVal);
+        var extraQty = aeSkuQuantity(extraVal);
+        if (rawAvailQty === undefined || rawAvailQty === null || rawAvailQty === '') rawAvailQty = extraQty;
+        if (sRow.salable === false || sVal.salable === false || extraVal.salable === false
+          || (extraQty !== undefined && String(extraQty).trim() === '0')) rawAvailQty = 0;
         var sAvail = null;
         var sStock = null;
         if (rawAvailQty !== null && rawAvailQty !== undefined && rawAvailQty !== '') {
@@ -1763,18 +1786,26 @@ export const AYWEBS_CAPTURE_CORE = String.raw`(function () {
             sAvail = sq > 0;
             sStock = sq > 0 && sq <= 999 ? sq : null;
           }
-        } else if (sRow.salable === true || sVal.salable === true) {
+        } else if (sRow.salable === true || sVal.salable === true || extraVal.salable === true) {
           sAvail = true;
-        } else if (sRow.salable === false || sVal.salable === false) {
-          sAvail = false;
         }
         if (!currency) {
           var skuCur = text(sVal.currency || (sVal.skuAmount && sVal.skuAmount.currency) || (sVal.skuActivityAmount && sVal.skuActivityAmount.currency) || '').toUpperCase();
           if (/^[A-Z]{3}$/.test(skuCur)) currency = skuCur;
         }
-        var skuPriceRaw = sVal.skuActivityAmount || sVal.actSkuMultiCurrencyCalPrice || sVal.actSkuMultiCurrencyDisplayPrice || sVal.actSkuCalPrice || sVal.activityPrice || sVal.salePrice
-          || sVal.skuAmount || sVal.skuMultiCurrencyCalPrice || sVal.skuMultiCurrencyDisplayPrice || sVal.skuCalPrice || sVal.price || '';
-        var skuPriceStr = aeFormatPrice(skuPriceRaw, currency);
+        var extraCurrency = text(extraVal.currencyCode || extraVal.currency || '').toUpperCase() || currency;
+        var rowCurrency = text(sVal.currencyCode || sVal.currency || '').toUpperCase() || currency;
+        var activityPrice = aeSkuActivityPrice(sVal);
+        var extraActivityPrice = aeSkuActivityPrice(extraVal);
+        var skuPriceStr = (activityPrice || extraActivityPrice)
+          ? (activityPrice ? aeFormatPrice(activityPrice, rowCurrency) : aeFormatPrice(extraActivityPrice, extraCurrency))
+          : (aeFormatPrice(aeSkuBasePrice(sVal), rowCurrency) || aeFormatPrice(aeSkuBasePrice(extraVal), extraCurrency));
+        // Do not publish a base price instead of an ambiguous active offer.
+        if (sId && priceBySkuId[sId] === null) skuPriceStr = '';
+        if (activityPrice && extraActivityPrice) {
+          var otherActivity = aeFormatPrice(extraActivityPrice, extraCurrency);
+          if (!otherActivity || otherActivity !== skuPriceStr) skuPriceStr = '';
+        }
         if (!attrCount && rawSkus.length === 1 && (skuPriceStr || sAvail !== null)) {
           if (!salePrice && skuPriceStr) salePrice = skuPriceStr;
           if (inStock === null && sAvail !== null) inStock = sAvail;
@@ -2009,8 +2040,32 @@ export const AYWEBS_CAPTURE_CORE = String.raw`(function () {
      [role="radio"]). Tout est vérifié contre TEMU_GOODS_ID. */
   var TEMU_STATE = null;
   var TEMU_STATE_CHECKED = false;
+  /* A local display label proves TND only when attached to a single amount.
+     Other marketplace symbols and the shared currency rules are untouched. */
+  function temuDinarPriceText(raw) {
+    var value = text(raw);
+    var dinar = '(?:DT|D\\.T\\.?|د\\.ت\\.?)';
+    var amount = '(\\d+(?:[.,]\\d{1,2})?)';
+    var local = value.match(new RegExp('^' + amount + '\\s*' + dinar + '$', 'i'))
+      || value.match(new RegExp('^' + dinar + '\\s*' + amount + '$', 'i'));
+    return local ? local[1] + ' TND' : value;
+  }
+  function temuNormalizeScopedPrice(raw, node) {
+    var value = temuDinarPriceText(raw);
+    // Bare amounts need a named purchase node and explicit currency for this item.
+    if (node.id === 'goods_price' && /^\d+(?:[.,]\d{1,2})?$/.test(value)) {
+      var state = temuEnsureState();
+      if (state && state.boundPriceCurrency) return value + ' ' + state.boundPriceCurrency;
+    }
+    return value;
+  }
+  function temuCurrencyCode(value) {
+    var code = text(value).toUpperCase();
+    if (/^(?:DT|D\.T\.?|د\.ت\.?)$/.test(code)) return 'TND';
+    return /^[A-Z]{3}$/.test(code) ? code : '';
+  }
   function temuFormatPriceVal(rawStr, centsVal, currencyIso, currencySym) {
-    var s = text(rawStr);
+    var s = temuDinarPriceText(rawStr);
     if (s && HAS_DIGIT.test(s)) {
       if (CURRENCY_HINT.test(s)) return cut(s, LIMITS.variantPrice);
       if (currencyIso) return cut(s + ' ' + currencyIso, LIMITS.variantPrice);
@@ -2033,10 +2088,9 @@ export const AYWEBS_CAPTURE_CORE = String.raw`(function () {
     }
     var gId = text(g.goodsId || g.goods_id || st.goodsId || st.goods_id || '');
     if (TEMU_GOODS_ID && gId && /^\d{6,}$/.test(gId) && gId !== TEMU_GOODS_ID) return null;
-    var curIso = text(
-      (st.localInfo && st.localInfo.currency) || st.currency || raw.currency || g.currency || ''
-    ).toUpperCase();
-    if (!/^[A-Z]{3}$/.test(curIso)) curIso = '';
+    // Prefer currency attached to this item's offer, not locale/default values.
+    var offerIso = temuCurrencyCode(g.currency || g.currencyCode || (g.priceInfo && (g.priceInfo.currencyCode || g.priceInfo.currency)));
+    var curIso = offerIso || temuCurrencyCode((st.localInfo && st.localInfo.currency) || st.currency || raw.currency);
     var curSym = text(
       (st.localInfo && st.localInfo.currencySymbol) || st.currencySymbol || g.currencySymbol || ''
     );
@@ -2132,6 +2186,7 @@ export const AYWEBS_CAPTURE_CORE = String.raw`(function () {
     if (!title && !salePrice && !skus.length) return null;
     return {
       goodsId: gId || TEMU_GOODS_ID || null,
+      boundPriceCurrency: gId && gId === TEMU_GOODS_ID ? offerIso : '',
       currency: curIso,
       currencySymbol: curSym,
       title: title,

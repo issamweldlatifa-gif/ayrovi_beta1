@@ -87,6 +87,60 @@ describe('merchant-specific readers, one capture/quote flow', () => {
     expect(response.body.quote_token).toBeTruthy();
   });
 
+  it.each(['14,49 DT', '14,49 د.ت'])('Temu verifies a price already displayed in dinars (%s)', async (price) => {
+    const { server } = app();
+    const variant = { Couleur: 'Noir', Taille: 'L' };
+    const html = buildTemuSelectionPage({ color: 'Noir', size: 'L', price }).replace(',"currency":"EUR"', '');
+    // No ISO metadata: only the merchant's local price label proves the currency.
+    const capture = await read(server, 'temu', html, TEMU_URL);
+    const response = await resolve(server, TEMU_URL, 'temu', capture, variant);
+    expect(response.status, JSON.stringify(response.body).slice(0, 500)).toBe(201);
+    expect(response.body.data).toMatchObject({ price: 14.49, currency: 'TND', currency_verified: true });
+    expect(response.body.data.zayrovi_pricing.breakdown.converted_source_price).toBe(14.49);
+    expect(response.body.quote_token).toBeTruthy();
+  });
+
+  it('Temu converts the exact SKU using its published priceInfo currency even when the amount has no symbol', async () => {
+    const { server } = app();
+    const html = buildTemuSelectionPage({ color: 'Noir', size: 'L', price: '14.49' })
+      .replace('"currency":"EUR"', '"priceInfo":{"currencyCode":"EUR","priceStr":"14.49"}');
+    const capture = await read(server, 'temu', html, TEMU_URL);
+    const response = await resolve(server, TEMU_URL, 'temu', capture, { Couleur: 'Noir', Taille: 'L' });
+    expect(response.status, JSON.stringify(response.body).slice(0, 500)).toBe(201);
+    expect(response.body.data).toMatchObject({ price: 14.49, currency: 'EUR', currency_verified: true });
+    expect(response.body.data.zayrovi_pricing.breakdown.converted_source_price).toBeCloseTo(14.49 * 3.4 * 1.03, 3);
+    expect(response.body.quote_token).toBeTruthy();
+  });
+
+  it('Temu does not convert bare amounts with no item-bound currency', async () => {
+    const { server } = app();
+    const html = buildTemuSelectionPage({ color: 'Noir', size: 'L', price: '14.49' }).replace(',"currency":"EUR"', '');
+    const capture = await read(server, 'temu', html, TEMU_URL);
+    expect(capture.priceCandidates).toEqual([]);
+  });
+
+  it('AliExpress joins separate SKU prices and stock by exact SKU ID, never by list position', async () => {
+    const { server } = app();
+    const html = buildAliExpressCometPage({ selectedColor: 'Black', selectedPlug: 'EU Plug', splitSkuOffers: true });
+    const capture = await read(server, 'aliexpress', html, AE_URL);
+    expect(capture.aliexpress.skus).toEqual(expect.arrayContaining([
+      expect.objectContaining({ skuId: '12000039003', price: '23.99 USD', stock: 3, available: true }),
+      expect.objectContaining({ skuId: '12000039004', price: null, available: false }),
+    ]));
+    const variant = { Color: 'Red', 'Plug Type': 'EU Plug' };
+    const quote = await resolve(server, AE_URL, 'aliexpress', capture, variant);
+    expect(quote.status, JSON.stringify(quote.body).slice(0, 500)).toBe(201);
+    expect(quote.body.data).toMatchObject({ price: 23.99, currency: 'USD' });
+    expect(quote.body.data.zayrovi_pricing.breakdown.converted_source_price).toBeCloseTo(23.99 * 3.1 * 1.03, 3);
+    expect(quote.body.quote_token).toBeTruthy();
+    const outOfStock = await request(server).post('/api/v1/aywebs/cart/items')
+      .set({ 'x-session-id': 'matrix-aliexpress-test' })
+      .send({ source_url: AE_URL, store_id: 'aliexpress', product_id: quote.body.data.product_id,
+        variant: { Color: 'Red', 'Plug Type': 'US Plug' }, quantity: 1, capture, quote_token: quote.body.quote_token });
+    expect(outOfStock.status, JSON.stringify(outOfStock.body).slice(0, 500)).toBe(409);
+    expect(outOfStock.body.code).toMatch(/VARIANT_UNAVAILABLE|OUT_OF_STOCK/);
+  });
+
   it('recalculates a changed size and refuses adding an out-of-stock size', async () => {
     const { server } = app();
     const capture = await read(server, 'shein', buildSheinSpaPage({ selectedSize: 'XL', displayedPrice: '24,90 €' }), SHEIN_URL);

@@ -162,6 +162,7 @@ export function buildAliExpressCometPage(opts: {
   quantityTip?: string;
   canonicalHref?: string;
   includeSingleShipFrom?: boolean;
+  splitSkuOffers?: boolean;
 }): string {
   const itemId = opts.itemId ?? '1005008811223344';
   const stateItemId = opts.stateItemId ?? itemId;
@@ -278,6 +279,22 @@ export function buildAliExpressCometPage(opts: {
     },
   };
 
+  const renderedData = opts.splitSkuOffers ? {
+    ...runParamsData,
+    priceComponent: {
+      ...runParamsData.priceComponent,
+      skuPriceList: runParamsData.skuComponent.skuPriceList.map(({ skuIdStr, skuVal }) => ({
+        skuIdStr, skuVal: { actSkuMultiCurrencyCalPrice: skuVal.actSkuMultiCurrencyCalPrice },
+      })).reverse(),
+    },
+    skuComponent: {
+      productSKUPropertyList: properties,
+      skuPaths: runParamsData.skuComponent.skuPriceList.map(({ skuIdStr, skuAttr, skuVal }) => ({
+        skuIdStr, skuAttr, skuVal: { availQuantity: skuVal.availQuantity, skuMultiCurrencyCalPrice: skuVal.skuMultiCurrencyCalPrice },
+      })),
+    },
+  } : runParamsData;
+
   const defaultDomPrice = isEur
     ? '<span>24</span> <span>,</span> <span>90</span> <span>€</span> <span>/ pièce</span>'
     : '<span>US $</span> <span>19</span> <span>.</span> <span>99</span> <span>/ piece</span>';
@@ -289,7 +306,7 @@ export function buildAliExpressCometPage(opts: {
   ${opts.canonicalHref ? `<link rel="canonical" href="${opts.canonicalHref}" />` : ''}
   <meta property="product:price:amount" content="${isEur ? '18.90' : '18.50'}" />
   <meta property="product:price:currency" content="${currency}" />
-  <script>window.runParams = { data: ${JSON.stringify(runParamsData)} };</script>
+  <script>window.runParams = { data: ${JSON.stringify(renderedData)} };</script>
 </head>
 <body>
   <main class="pdp-body">
