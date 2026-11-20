@@ -72,7 +72,7 @@ export function parseReferencePublicationPage(value: unknown): ReferencePublicat
 
 /** The current authored feed, not the retired, intentionally empty block endpoints. */
 export async function fetchReferencePublications(cursor: string | null, options?: RequestOptions) {
-  const query = new URLSearchParams({ limit: '12' });
+  const query = new URLSearchParams({ limit: '12', presentation: 'reference' });
   if (cursor) query.set('cursor', cursor);
   return parseReferencePublicationPage(await apiGetData<unknown>(`/api/public/social/publication-feed?${query}`, options));
 }

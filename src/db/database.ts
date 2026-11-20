@@ -1,3 +1,4 @@
+import { installCataloguePublications } from '../magazine/cataloguePublications';
 import { foldCatalogSearch } from '../../shared/catalogSearch';
 import { RETIRED_PUBLICATION_BLOCKS_SCHEMA } from './retiredPublicationBlocks';
 import { installOwnerReels, installOwnerReelsV2 } from '../magazine/installOwnerReels';
@@ -457,6 +458,7 @@ export class QatafoDatabase {
         console.info('[database] Zalando demo catalogue:', report);
       });
     }
+    installCataloguePublications(this);
     // Compteurs sociaux matérialisés (audit d'architecture 12/11) : posés EN DERNIER,
     // après toutes les migrations qui suppriment ou réinstallent des interactions.
     if (ensureSocialTotals(this.db).installed) console.log('[database] social totals: table + triggers installed');

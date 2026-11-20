@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiGetData, apiSend } from '../src/api/client';
-import { fetchPublicationLook, savePublicationLook } from '../src/api/referencePublications';
+import { fetchPublicationLook, fetchReferencePublications, savePublicationLook } from '../src/api/referencePublications';
 
 vi.mock('../src/api/client', () => ({ apiGetData: vi.fn(), apiSend: vi.fn() }));
 beforeEach(() => vi.resetAllMocks());
@@ -32,4 +32,10 @@ describe('publication look', () => {
     vi.mocked(apiSend).mockResolvedValueOnce({ data: { saved: false } } as Awaited<ReturnType<typeof apiSend>>);
     await expect(savePublicationLook('post-1', true)).rejects.toThrow('Unconfirmed');
   });
+});
+
+it('asks the server for the native reference feed on every cursor page', async () => {
+  vi.mocked(apiGetData).mockResolvedValueOnce({ nextCursor: null, items: [] });
+  await fetchReferencePublications('nextPage');
+  expect(apiGetData).toHaveBeenCalledWith('/api/public/social/publication-feed?limit=12&presentation=reference&cursor=nextPage', undefined);
 });

@@ -1,3 +1,4 @@
+import { legacyReferenceArtworkFilter } from '../magazine/cataloguePublications';
 import { readShareCard } from '../magazine/publicShare';
 import { parsePublicCatalogSearch, readCatalogSearch } from '../catalogue/publicSearch';
 import { readSocialCounts, readSocialComments } from '../magazine/socialEngagementReads';
@@ -838,6 +839,11 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     if (req.query.hasProducts === '1') where.push("EXISTS(SELECT 1 FROM content_products cp WHERE cp.content_kind='publication' AND cp.content_id=pub.id)");
     for (const [key, value] of Object.entries(filters)) if (value) { where.push(`pub.${key === 'type' ? 'post_type' : key}=?`); args.push(value); }
 
+    if (req.query.presentation === 'reference' && !post) {
+      const legacy = legacyReferenceArtworkFilter();
+      where.push(legacy.sql);
+      args.push(...legacy.args);
+    }
     if (category) { where.push('pub.category=?'); args.push(category); }
     if (post) { where.push('pub.id=?'); args.push(post); }
     if (q) { where.push('(instr(lower(pub.title),lower(?))>0 OR instr(lower(pub.subtitle),lower(?))>0)'); args.push(q, q); }
