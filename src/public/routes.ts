@@ -1,3 +1,4 @@
+import { STORY_CARD_COLUMNS, readPublishedStoryEditorial } from '../services/storyEditorial';
 import { legacyReferenceArtworkFilter } from '../magazine/cataloguePublications';
 import { readShareCard } from '../magazine/publicShare';
 import { parsePublicCatalogSearch, readCatalogSearch } from '../catalogue/publicSearch';
@@ -703,7 +704,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
   router.get('/stories', (_req, res) => {
     const now = new Date().toISOString();
-    const rows = db.all<any>(`SELECT s.*,${LINKED_PRODUCT_JOIN_SELECT} FROM stories s LEFT JOIN products p ON p.id=s.product_id
+    const rows = db.all<any>(`SELECT ${STORY_CARD_COLUMNS.map(key => `s.${key}`).join(',')},${LINKED_PRODUCT_JOIN_SELECT} FROM stories s LEFT JOIN products p ON p.id=s.product_id
       WHERE s.status='PUBLISHED' AND s.publish_at<=?
       AND (s.expires_at IS NULL OR s.expires_at>?) ORDER BY s.priority DESC,s.publish_at DESC`, now, now).map(withLinkedProduct)
       // Story shoppable dont le produit n'est plus vendable : on coupe le lien, pour que le CTA
@@ -711,6 +712,14 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       .map((story) => (story.content_mode === 'shoppable' && !story.product ? { ...story, product_id: null } : story));
     attachContentProducts(db, 'story', rows);
     res.json({ success: true, data: rows, serverTime: now });
+  });
+
+  router.get('/stories/:id/editorial', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const now = new Date().toISOString();
+    const story = readPublishedStoryEditorial(db, req.params.id, now);
+    if (!story) return res.status(404).json({ success: false, error: 'Story indisponible.' });
+    return res.json({ success: true, data: story, serverTime: now });
   });
 
   /** Bloc « Stories » de la page d'accueil — réglages du conteneur (Admin → Stories). */

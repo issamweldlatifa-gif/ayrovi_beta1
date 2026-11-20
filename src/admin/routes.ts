@@ -1,6 +1,8 @@
 import { isPublicationCampaign } from '../../shared/publicationCampaign';
 import { releaseCatalogueReservations } from '../catalogue/localSale';
 import { isGeneratedPublicationEditorialAsset } from '../../shared/publicationLayouts';
+import { readStoryEditorial } from '../../shared/storyEditorial';
+import { STORY_CARD_COLUMNS, prepareStoryEditorial } from '../services/storyEditorial';
 import { normalizePublicationContent } from '../../shared/publicationContent';
 import { normalizePublicationFeedSettings } from '../../shared/publicationFeed';
 import { readEditionState, updateEditionState } from '../social-commerce/editions';
@@ -22,6 +24,8 @@ import { normalizeMediaLink, type MediaLinkKind } from '../../shared/mediaLinks'
 import {
   invalidLinkedProducts,
   normalizeContentProductIds,
+  readContentProductIds,
+  effectiveProductIds,
   setContentProducts,
   syncContentProductsFromLegacy,
 } from '../services/contentProducts';
@@ -486,6 +490,10 @@ function withRelations(db: QatafoDatabase, resource: string, row: any) {
   if (resource === 'promotions') {
     result.arrival_ids = db.all<any>('SELECT arrival_id FROM promotion_arrivals WHERE promotion_id=?', row.id).map((link) => link.arrival_id);
     result.product_ids = db.all<any>('SELECT product_id FROM promotion_products WHERE promotion_id=?', row.id).map((link) => link.product_id);
+  }
+  if (resource === 'stories' && row.editorial_json !== undefined) {
+    result.editorial = readStoryEditorial(row.editorial_json);
+    delete result.editorial_json;
   }
   if (resource === 'news' && result.published_at) {
     const future = new Date(result.published_at).getTime() > Date.now();
@@ -1817,7 +1825,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       if (req.query.active !== undefined && config.fields.includes('active')) { filters.push('active=?'); params.push(String(req.query.active) === 'true' || String(req.query.active) === '1' ? 1 : 0); }
       const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
       const count = db.get<any>(`SELECT COUNT(*) count FROM ${config.table} ${where}`, ...params)?.count || 0;
-      const rows = db.all<any>(`SELECT * FROM ${config.table} ${where} ORDER BY ${sort} ${direction} LIMIT ? OFFSET ?`, ...params, pageSize, (page - 1) * pageSize)
+      const columns = resource === 'stories' ? STORY_CARD_COLUMNS.join(',') : '*';
+      const rows = db.all<any>(`SELECT ${columns} FROM ${config.table} ${where} ORDER BY ${sort} ${direction} LIMIT ? OFFSET ?`, ...params, pageSize, (page - 1) * pageSize)
         .map((row) => withRelations(db, resource, row));
       res.json({ success: true, data: rows, pagination: { page, pageSize, total: Number(count), totalPages: Math.max(1, Math.ceil(Number(count) / pageSize)) } });
     });
@@ -1825,7 +1834,9 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     router.get(`/${resource}/:id`, requireAdmin(db, readPermission), (req, res) => {
       const row = db.get<any>(`SELECT * FROM ${config.table} WHERE id=?`, req.params.id);
       if (!row) return res.status(404).json({ success: false, error: 'Élément introuvable.' });
-      res.json({ success: true, data: withRelations(db, resource, row) });
+      const data = withRelations(db, resource, row);
+      if (resource === 'stories') data.product_ids = effectiveProductIds(readContentProductIds(db, 'story', row.id), row.product_id);
+      res.json({ success: true, data });
     });
 
     router.post(`/${resource}`, requireAdmin(db, config.permission), (req, res) => {
@@ -1833,6 +1844,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         const payload = sanitizePayload(req.body, config);
         normalizePublicationLifecycle(resource, payload);
         validateResourceDates(resource, payload);
+        const storyIds = resource === 'stories' ? prepareStoryEditorial(db, req.body, payload) : undefined;
         validateResourcePayload(db, resource, payload);
         if (resource === 'products') recomputeProductPricing(db, payload);
         const id = `${config.prefix}_${randomUUID()}`;
@@ -1842,6 +1854,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         db.transaction(() => {
           db.run(`INSERT INTO ${config.table} (${columns.join(',')}) VALUES (${columns.map(() => '?').join(',')})`, ...values);
           addRelations(db, resource, id, req.body);
+          if (storyIds) setContentProducts(db, 'story', id, storyIds, now);
         });
         const created = withRelations(db, resource, db.get<any>(`SELECT * FROM ${config.table} WHERE id=?`, id));
         config.afterSave?.(db, created, null);
@@ -1860,6 +1873,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         const payload = sanitizePayload(req.body, config, true);
         normalizePublicationLifecycle(resource, payload, existing);
         validateResourceDates(resource, payload, existing);
+        const storyIds = resource === 'stories' ? prepareStoryEditorial(db, req.body, payload, existing) : undefined;
         validateResourcePayload(db, resource, payload, existing);
         if (resource === 'products') recomputeProductPricing(db, payload, existing);
         if (Object.keys(payload).length === 0 && !req.body.arrival_ids && !req.body.product_ids) return res.status(400).json({ success: false, error: 'Aucune modification reçue.' });
@@ -1870,6 +1884,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
             db.run(`UPDATE ${config.table} SET ${assignments.join(',')} WHERE id=?`, ...Object.values(payload), now, req.params.id);
           }
           addRelations(db, resource, req.params.id, req.body);
+          if (storyIds) setContentProducts(db, 'story', req.params.id, storyIds, now);
         });
         const updated = withRelations(db, resource, db.get<any>(`SELECT * FROM ${config.table} WHERE id=?`, req.params.id));
         config.afterSave?.(db, updated, existing);

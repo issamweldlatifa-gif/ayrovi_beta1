@@ -198,6 +198,8 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/reels/ReelShopTray.tsx', // tiroir « articles » qui sort PAR-DESSUS la vidéo du Reel + bouton posé sur le média (le Reel continue de tourner dessous)
       'src/features/social-commerce/SocialFeedCard.tsx', // coordonnées des points interactifs par-dessus la photo du Look
       'src/features/stories/StoriesGallery.tsx', // return-to-top button floats above the editorial cards
+      'src/features/stories/StoryArticleScreen.tsx', // return-to-top button above the article scroll view
+      'src/features/stories/StoryEditorialProduct.tsx', // favorite button above the article rail photo
       'src/features/social/StoryViewer.tsx', // zones de tape + pied, au-dessus du média
       'src/features/home/ReelsShopSection.tsx', // aperçu vidéo + zone de toucher empilés sur l'affiche (15/11 : plus de pastille ni ligne éditeur)
       'src/features/home/HeroCarousel.tsx', // couches de fond (le fond de chaque photo) et voile du titre (§5.4)

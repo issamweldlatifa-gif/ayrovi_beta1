@@ -24,12 +24,14 @@ describe('Publication media and preferences', () => {
     expect(normalizePublicationContent({ post_type: 'video', image_url: '/media/poster.jpg', media: [{ type: 'video', url: 'https://example.com/clip.mp4' }] })?.media[0].poster).toBe('/media/poster.jpg');
     for (const body of [{ post_type: 'unknown' }, { sponsored: 'yes' }, { description_position: 'middle' }, { audience: 'unknown' }, { media: [null] }, { media: [{ type: 'image', url: 'javascript:alert(1)' }] }, { post_type: 'video', media: [{ type: 'video', url: 'https://youtube.com/watch?v=x' }] }]) expect(normalizePublicationContent(body)).toBeNull();
   });
-  test('keeps the square video frame in authored media and rejects it for photos', () => {
+  test('keeps explicit video and photo frames, with panoramic restricted to photos', () => {
     const video = { type: 'video', url: '/media/clip.mp4', poster: '/media/poster.jpg' };
     expect(normalizePublicationContent({ template_id: 'video', media: [{ ...video, frame: 'square' }] })?.media[0])
       .toMatchObject({ type: 'video', frame: 'square' });
     expect(normalizePublicationContent({ media: [{ ...video, frame: 'random' }] })).toBeNull();
-    expect(normalizePublicationContent({ media: [{ type: 'image', url: '/media/poster.jpg', frame: 'square' }] })).toBeNull();
+    expect(normalizePublicationContent({ media: [{ ...video, frame: 'panoramic' }] })).toBeNull();
+    expect(normalizePublicationContent({ media: [{ type: 'image', url: '/media/poster.jpg', frame: 'square' }] })?.media[0]?.frame).toBe('square');
+    expect(normalizePublicationContent({ media: [{ type: 'image', url: '/media/poster.jpg', frame: 'panoramic' }] })?.media[0]?.frame).toBe('panoramic');
   });
   test('visual template validation is independent from media type and never accepts broken video/carousel combinations', () => {
     for (const template of ['auto','photo','split','campaign']) expect(normalizePublicationContent({ template_id: template })).toMatchObject({ template });

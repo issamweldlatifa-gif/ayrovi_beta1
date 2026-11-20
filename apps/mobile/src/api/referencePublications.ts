@@ -30,7 +30,7 @@ function parseMedia(raw: unknown, cover: string): ReferenceMedia | null {
   return {
     type: item.type, url, poster: safeMedia(item.poster, 'image') || cover, alt: text(item.alt),
     width: number(item.width, 1, 50000), height: number(item.height, 1, 50000),
-    frame: item.type === 'video' && item.frame === 'square' ? 'square' : undefined,
+    frame: item.frame === 'square' ? 'square' : item.type === 'image' && item.frame === 'panoramic' ? 'panoramic' : undefined,
     fit: item.fit === 'cover' || item.fit === 'contain' ? item.fit : undefined,
     focalX: number(item.focalX, 0, 100), focalY: number(item.focalY, 0, 100),
   };

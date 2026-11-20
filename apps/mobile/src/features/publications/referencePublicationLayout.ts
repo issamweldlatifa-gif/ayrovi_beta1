@@ -13,7 +13,7 @@ export const PUBLICATION_REFERENCE = {
 export type ReferenceLayout = 'image-cover' | 'image-panoramic' | 'video-inset' | 'video-panoramic' | 'video-square';
 export interface ReferenceMedia {
   type: 'image' | 'video'; url: string; poster: string; alt: string;
-  frame?: 'square';
+  frame?: 'square' | 'panoramic';
   width?: number; height?: number; fit?: 'contain' | 'cover'; focalX?: number; focalY?: number;
 }
 
@@ -23,6 +23,7 @@ export function referenceLayout(media: ReferenceMedia, template: string): Refere
     if (media.frame === 'square') return 'video-square';
     return (media.fit === 'cover' || (media.fit !== 'contain' && landscape)) ? 'video-panoramic' : 'video-inset';
   }
+  if (media.frame) return media.frame === 'panoramic' ? 'image-panoramic' : 'image-cover';
   // Older authored campaigns can lack dimensions; do not let product count drive the media height.
   return (media.width && media.height ? landscape : template === 'campaign' || template === 'split')
     ? 'image-panoramic' : 'image-cover';

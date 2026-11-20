@@ -11,7 +11,7 @@ jest.mock('expo-router', () => ({ useIsFocused: () => true, useLocalSearchParams
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 24, bottom: 16, left: 0, right: 0 }) }));
 jest.mock('@/design/motion', () => ({ ...jest.requireActual('@/design/motion'), useReduceMotion: () => true }));
 jest.mock('@/features/publications/usePublisherFollow', () => ({ usePublisherFollow: (_id: string, onAuth: () => void) => ({ state: 'idle', press: onAuth }) }));
-jest.mock('@/features/social/StoryViewer', () => ({ StoryViewer: 'StoryViewer' }));
+jest.mock('@/features/stories/EditorialStoryScreen', () => ({ EditorialStoryScreen: 'EditorialStoryScreen' }));
 const mockStory = (i: number) => ({ id: `story-${i}`, mediaType: 'IMAGE', mediaUrl: `/media/stories/${i}.jpg`, title: `Story ${i}`, description: 'Description' });
 const mockStories = { data: Array.from({ length: 12 }, (_, i) => mockStory(i + 1)), refetch: jest.fn(), isPending: false, isError: false, isRefetching: false };
 const mockSettings = { data: { cardCount: 1, enabled: true }, refetch: jest.fn(), isRefetching: false };
@@ -20,7 +20,7 @@ jest.mock('@/api/hooks', () => ({ useStories: () => mockStories, useStoriesShowc
 const wrap = (child: React.ReactElement) => <PrefsProvider><I18nProvider><ThemeProvider>{child}</ThemeProvider></I18nProvider></PrefsProvider>;
 beforeEach(() => { jest.clearAllMocks(); mockParams.id = undefined; mockParams.focus = undefined; });
 
-it('opens a pure-black gallery, leads with the selected story, and opens its existing viewer from the gallery', async () => {
+it('opens a pure-black gallery, leads with the selected story, and opens its editorial viewer from the gallery', async () => {
   mockParams.focus = 'story-3';
   render(wrap(<StoriesScreen />));
   expect(StyleSheet.flatten(screen.getByTestId('stories-gallery-page').props.style)).toMatchObject({ backgroundColor: '#000000', paddingTop: 24, paddingBottom: 16 });

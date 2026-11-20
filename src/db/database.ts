@@ -2391,6 +2391,7 @@ export class QatafoDatabase {
     this.ensureColumn('stories', 'secondary_images', "TEXT NOT NULL DEFAULT '[]'");
     this.ensureColumn('stories', 'title_ar', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('stories', 'description_ar', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('stories', 'editorial_json', "TEXT NOT NULL DEFAULT 'null'");
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM story_publishers').get() as any).count === 0) {
       const ins = this.db.prepare(`INSERT INTO story_publishers (id,slug,name,subtitle,avatar,official,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`);
       const nowP = new Date().toISOString();

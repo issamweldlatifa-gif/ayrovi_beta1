@@ -33,12 +33,13 @@ describe('reference publication layout', () => {
     expect(actual.nextCursor).toBe('safeCursor');
     expect(actual.items.map(({ layout }) => layout)).toEqual(['image-cover', 'image-panoramic', 'video-inset', 'video-panoramic']);
   });
-  it('only promotes video with an explicit square frame', () => {
+  it('honors explicit authored frames over source dimensions', () => {
     const { items } = parseReferencePublicationPage({ nextCursor: null, items: [
       { id: 'square', media_json: [{ type: 'video', url: '/media/video.mp4', fit: 'contain', frame: 'square' }] },
-      { id: 'photo', media_json: [{ type: 'image', url: '/media/image.jpg', frame: 'square' }] },
+      { id: 'photo', media_json: [{ type: 'image', url: '/media/image.jpg', width: 1200, height: 600, frame: 'square' }] },
+      { id: 'wide', media_json: [{ type: 'image', url: '/media/image.jpg', width: 600, height: 1200, frame: 'panoramic' }] },
     ] });
-    expect(items.map(item => item.layout)).toEqual(['video-square', 'image-cover']);
+    expect(items.map(item => item.layout)).toEqual(['video-square', 'image-cover', 'image-panoramic']);
   });
   it('keeps truthful sponsorship, author order and only valid linked products', () => {
     const p = (id: string, price: number) => ({ id, name: id, price });

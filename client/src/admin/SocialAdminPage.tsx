@@ -1,3 +1,4 @@
+import { PublicationStudio } from './PublicationStudio';
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowUp, Pencil, Plus, Trash2 } from '../components/QatafoIcons';
 import { adminApi } from './api';
@@ -7,7 +8,7 @@ import { CatalogueProductsPage } from './CataloguePages';
 import { uploadMediaFile } from './mediaUpload';
 import { normalizeMediaLink, type MediaLinkKind } from '../../../shared/mediaLinks';
 
-const TABS = ['Reel', 'Produits temporaires'] as const;
+const TABS = ['Reel', 'Publications', 'Produits temporaires'] as const;
 type Tab = typeof TABS[number];
 
 const st = (s: string) => s === 'publie' ? 'PUBLISHED' : s === 'archive' ? 'ARCHIVED' : 'DRAFT';
@@ -152,7 +153,7 @@ export const SocialAdminPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
         <div>
           <span className="admin-eyebrow">Contenu → Social</span>
           <h2>Social Zayrovi</h2>
-          <p>Reels vidéo et produits temporaires. Les Stories se gèrent dans Contenu → Stories officielles.</p>
+          <p>Reels vidéo, publications mobiles et produits temporaires. Les Stories se gèrent dans Contenu → Stories officielles.</p>
         </div>
       </header>
       <div className="admin-actions" style={{ marginTop: 0 }}>
