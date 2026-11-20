@@ -18,7 +18,7 @@ export function PublicationCampaignHeader({ title, onSearch }: { title: string; 
     </Pressable>;
   return <View testID="publication-campaign-header" style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
     <BackButton onPress={() => goBack('/(tabs)')} label={t('common.back')} color={ink} />
-    <PublicationText variant="bodyStrong" numberOfLines={1} style={styles.title}>{title}</PublicationText>
+    <PublicationText accessibilityRole="header" variant="bodyStrong" numberOfLines={1} style={styles.title}>{title || t('publication.title')}</PublicationText>
     {icon('search-outline', t('catalog.search'), onSearch)}
     {icon('heart-outline', t('account.menu.favorites'), () => router.push('/account/favorites'))}
     {icon('bag-outline', t('tabs.cart'), () => router.push('/(tabs)/cart'))}

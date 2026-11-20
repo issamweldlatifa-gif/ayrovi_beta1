@@ -8,8 +8,8 @@
  *             glisse jamais (c'est ce qui donne l'impression « lourde ») ;
  *  • moins de mouvement (réglage système) : aucune animation.
  *
- * Durées courtes (iOS ; Android suit la courbe native du système) : 260 ms
- * pour pousser, 220 ms pour un fondu — la référence des applications sociales.
+ * Durées courtes (iOS ; Android suit la courbe native du système) : 240 ms
+ * pour pousser, 170 ms pour un fondu — la référence des applications sociales.
  */
 export type StackAnimation = 'slide_from_right' | 'slide_from_left' | 'slide_from_bottom' | 'fade' | 'none';
 
@@ -21,8 +21,8 @@ export interface StackMotionOptions {
   animationMatchesGesture?: boolean;
 }
 
-export const NAV_PUSH_MS = 260;
-export const NAV_FADE_MS = 220;
+export const NAV_PUSH_MS = 240;
+export const NAV_FADE_MS = 170;
 
 export function stackMotion(rtl: boolean, reduce: boolean): {
   push: StackMotionOptions; sheet: StackMotionOptions; media: StackMotionOptions;
@@ -49,7 +49,7 @@ export function stackMotion(rtl: boolean, reduce: boolean): {
  * applications sociales : l'onglet ne « saute » plus, sans glissement latéral
  * (les onglets sont des destinations, pas une pile). Moins de mouvement ⇒ rien.
  */
-export const NAV_TAB_MS = 150;
+export const NAV_TAB_MS = 140;
 
 export interface TabMotionOptions {
   animation: 'fade' | 'none';

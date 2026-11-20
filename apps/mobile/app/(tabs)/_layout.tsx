@@ -39,8 +39,8 @@ import { tabMotion } from '@/design/navigationMotion';
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 /** Glissement de la barre : court à la sortie, un peu plus doux au retour. */
-export const TAB_BAR_HIDE_MS = 200;
-export const TAB_BAR_SHOW_MS = 240;
+export const TAB_BAR_HIDE_MS = 180;
+export const TAB_BAR_SHOW_MS = 200;
 
 /**
  * Barre d'onglets qui GLISSE (12/11/2026). La barre de React Navigation est
@@ -77,6 +77,8 @@ export function SlidingTabBar(props: BottomTabBarProps) {
       testID="tab-bar-slider"
       onLayout={onLayout}
       pointerEvents={hidden ? 'none' : 'box-none'}
+      accessibilityElementsHidden={hidden}
+      importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'}
       style={[
         styles.slider,
         { transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [0, height + 1] }) }] },

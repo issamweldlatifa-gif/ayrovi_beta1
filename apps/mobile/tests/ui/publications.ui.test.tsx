@@ -236,8 +236,11 @@ it('renders the original video above editorial information and a two-column prod
   mount(<PublicationLookScreen id="publication_1" />);
   const hero = await screen.findByTestId('publication-look-hero');
   expect(StyleSheet.flatten(hero.props.style).height).toBeGreaterThan(500);
-  fireEvent.press(within(hero).getByTestId('publication-look-video'));
+  expect(within(hero).getByTestId('publication-look-back')).toBeTruthy();
+  fireEvent.press(within(hero).getByTestId('publication-look-mute'));
+  fireEvent.press(within(hero).getByTestId('publication-look-expand'));
   expect(screen.getByTestId('publication-fullscreen-player')).toBeTruthy();
+  expect(StyleSheet.flatten(screen.getByTestId('publication-player-edge-to-edge').props.style)).not.toHaveProperty('paddingTop');
   fireEvent.press(screen.getByTestId('publication-player-exit'));
   expect(screen.getByRole('header', { name: 'Sélection week-end' })).toBeTruthy();
   expect(within(screen.getByTestId('publication-video-information')).getByText('Un texte éditorial complet.')).toBeTruthy();

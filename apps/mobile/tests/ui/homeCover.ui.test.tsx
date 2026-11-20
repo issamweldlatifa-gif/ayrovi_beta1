@@ -102,7 +102,7 @@ describe('HomeCover — le nouveau bloc d’entrée', () => {
   it('nomme la destination Publications sans remplacer le titre CRM', async () => {
     mockCover.data = { ...coverData(), destination: 'publications' };
     await renderCover();
-    expect(screen.getByText('Publications ZAYROVI')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Publications ZAYROVI' })).toBeTruthy();
     expect(screen.getByTestId('home-cover-title')).toBeTruthy();
     fireEvent.press(screen.getByRole('button', { name: 'Voir les publications ZAYROVI' }));
     expect(router.push).toHaveBeenCalledWith('/publications');

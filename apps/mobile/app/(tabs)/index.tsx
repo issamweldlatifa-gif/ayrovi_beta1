@@ -27,8 +27,10 @@ import { HeroCarousel, type HeroTint } from '@/features/home/HeroCarousel';
 import { HomeTabs } from '@/features/home/HomeTabs';
 import { HomeCover } from '@/features/home/HomeCover';
 import { StoriesSection } from '@/features/home/StoriesSection';
-import { useStories, useStoriesShowcase } from '@/api/hooks';
-import { LensHomeBlock } from '@/features/home/LensHomeBlock';
+import { usePromotions, useStories, useStoriesShowcase } from '@/api/hooks';
+import { useAywebsUpcoming } from '@/api/aywebsUpcoming';
+import { UpcomingStoresSection } from '@/features/home/UpcomingStoresSection';
+import { BlackFridaySection } from '@/features/home/BlackFridaySection';
 import { ReelsShopSection } from '@/features/home/ReelsShopSection';
 import { SectionBreak } from '@/design/SectionRule';
 import { Footer } from '@/features/shell/Footer';
@@ -84,6 +86,8 @@ export default function HomeScreen() {
     return () => registerScrollToTopHandler(null);
   }, []);
 
+  const upcoming = useAywebsUpcoming();
+  const promotions = usePromotions();
   const stories = useStories();
   const storiesShowcase = useStoriesShowcase();
   const heroSlides = useHeroSlides();
@@ -92,9 +96,9 @@ export default function HomeScreen() {
   const reload = useCallback(() => {
     setRefreshing(true);
     Promise.allSettled([
-      heroSlides.refetch(), heroCarouselSettings.refetch(), stories.refetch(), storiesShowcase.refetch(),
+      heroSlides.refetch(), heroCarouselSettings.refetch(), stories.refetch(), storiesShowcase.refetch(), upcoming.refetch(), promotions.refetch(),
     ]).finally(() => setRefreshing(false));
-  }, [heroSlides, heroCarouselSettings, stories, storiesShowcase]);
+  }, [heroSlides, heroCarouselSettings, stories, storiesShowcase, upcoming, promotions]);
 
   return (
     <AppScreen
@@ -137,8 +141,9 @@ export default function HomeScreen() {
 
       <SectionBreak />
 
-      {/* Lens — même contenu que le site (Admin → LENS) ; le bouton ouvre Lens dans l'app. */}
-      <LensHomeBlock />
+      <UpcomingStoresSection data={upcoming.data} />
+
+      <BlackFridaySection promotions={promotions.data ?? []} />
 
       <SectionBreak />
 

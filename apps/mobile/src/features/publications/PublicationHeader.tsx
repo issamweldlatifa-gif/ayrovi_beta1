@@ -27,7 +27,7 @@ export function PublicationHeader() {
         <BackButton onPress={() => goBack('/(tabs)')} label={t('common.back')} color={ink} />
       </View>
       <View style={styles.title}>
-        <PublicationText testID="publication-header-title" numberOfLines={1} variant="label" color={ink}>
+        <PublicationText testID="publication-header-title" accessibilityRole="header" numberOfLines={1} variant="label" color={ink}>
           {t('publication.title')}
         </PublicationText>
       </View>

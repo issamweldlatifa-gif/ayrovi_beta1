@@ -1,3 +1,4 @@
+import { seedAywebsUpcoming } from '../services/aywebsUpcoming';
 import { installCataloguePublications, installSquareVideoPublication } from '../magazine/cataloguePublications';
 import { foldCatalogSearch } from '../../shared/catalogSearch';
 import { RETIRED_PUBLICATION_BLOCKS_SCHEMA } from './retiredPublicationBlocks';
@@ -2941,6 +2942,8 @@ export class QatafoDatabase {
    * sans jamaisécraser un choix fait ensuite depuis le Dashboard.
    */
   private seedStoriesShowcasePosition(): void {
+    this.runOnceDataMigration('mobile_aywebs_upcoming_v1', () => seedAywebsUpcoming(this, new Date()));
+
     this.runOnceDataMigration('stories_showcase_position_v1', () => {
       const now = new Date().toISOString();
       this.run("UPDATE stories_showcase_settings SET sort_order=1, updated_at=? WHERE id='global' AND sort_order=0", now);

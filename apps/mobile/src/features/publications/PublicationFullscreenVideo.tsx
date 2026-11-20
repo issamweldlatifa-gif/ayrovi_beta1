@@ -7,6 +7,7 @@ import { VideoView, useVideoPlayer } from "expo-video";
 import { mediaUrl } from "@/api/client";
 import { AppImage } from "@/design/appImage";
 import { rowDirectionFor } from "@/design/layoutLogic";
+import { useReduceMotion } from "@/design/motion";
 import { useTheme } from "@/design/theme";
 import { RADIUS, veil } from "@/design/tokens.mobile";
 import { useT } from "@/i18n";
@@ -33,6 +34,7 @@ export function PublicationFullscreenVideo({
   onLearnMore: (state: PublicationPlayback) => void;
 }) {
   const t = useT();
+  const reduceMotion = useReduceMotion();
   const { isRTL } = useTheme();
   const { top, bottom, left, right } = useSafeAreaInsets();
   const [ready, setReady] = useState(false);
@@ -131,9 +133,9 @@ export function PublicationFullscreenVideo({
   );
 
   return (
-    <Modal animationType="none" statusBarTranslucent navigationBarTranslucent supportedOrientations={["portrait", "landscape"]} onRequestClose={back}>
-      <View style={[styles.shell, { paddingTop: top }]}>
-        <StatusBar style="dark" />
+    <Modal animationType={reduceMotion ? "none" : "fade"} presentationStyle="fullScreen" statusBarTranslucent navigationBarTranslucent supportedOrientations={["portrait", "landscape"]} onRequestClose={back}>
+      <View testID="publication-player-edge-to-edge" style={styles.shell}>
+        <StatusBar style="light" />
         <View style={styles.screen} testID="publication-fullscreen-player">
           {poster && !ready ? <AppImage uri={mediaUrl(poster)} decorative contentFit="cover" style={StyleSheet.absoluteFill} /> : null}
           <VideoView
@@ -163,7 +165,7 @@ export function PublicationFullscreenVideo({
                 accessibilityLabel={t("publication.playerExit")}
                 testID="publication-player-exit"
                 onPress={close}
-                style={[styles.back, { start: (isRTL ? right : left) + 12 }]}
+                style={[styles.back, { top: top + 12, start: (isRTL ? right : left) + 12 }]}
               >
                 <PublicationIcon name={isRTL ? "chevron-forward" : "chevron-back"} color={P.paper} size={24} />
               </Pressable>
@@ -340,10 +342,9 @@ export function PublicationFullscreenVideo({
 }
 
 const styles = StyleSheet.create({
-  shell: { flex: 1, backgroundColor: P.paper },
+  shell: { flex: 1, backgroundColor: P.backdrop },
   back: {
     position: "absolute",
-    top: 12,
     width: 40,
     height: 40,
     borderRadius: 20,

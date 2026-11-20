@@ -14,7 +14,7 @@ import { useReduceMotion } from '@/design/motion';
 import { goBack } from '@/design/navigation';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
-import { PUBLICATION_THEME as P, RADIUS } from '@/design/tokens.mobile';
+import { HERO_COPY, PUBLICATION_THEME as P, RADIUS } from '@/design/tokens.mobile';
 import { useProductFavorites } from '@/features/reels/useProductFavorites';
 import { useT } from '@/i18n';
 import { useSession } from '@/state/session';
@@ -29,7 +29,7 @@ import { PublicationCampaignDetail } from './PublicationCampaignDetail';
 import { PublisherShowcase } from './OfficialPublisherScreen';
 import { PUBLICATION_VIDEO_TYPE as T } from './publicationTokens';
 
-const LOOK = { heroAspect: 720 / 1107, heart: 40, maxWidth: 600 } as const;
+const LOOK = { heroAspect: 9 / 16, control: 40, maxWidth: 600 } as const;
 
 export function PublicationLookScreen({ id }: { id: string }) {
   const t = useT();
@@ -53,6 +53,8 @@ export function PublicationLookScreen({ id }: { id: string }) {
   const [auth, setAuth] = useState(false);
   const [fullscreen, setFullscreen] = useState<PublicationPlayback | null>(null);
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const [muted, setMuted] = useState(true);
+  const [allowReducedPlayback, setAllowReducedPlayback] = useState(false);
   const [heroVisible, setHeroVisible] = useState(true);
   const [showTop, setShowTop] = useState(false);
   const position = useRef<PublicationPlayback>({ time: 0, muted: true });
@@ -74,13 +76,25 @@ export function PublicationLookScreen({ id }: { id: string }) {
   const pageWidth = Math.min(width, LOOK.maxWidth);
   const heroHeight = pageWidth / LOOK.heroAspect;
   const tileWidth = (pageWidth - (isVideo ? 48 : 24) - 8) / 2;
-  const videoFit = post?.layout === 'video-panoramic' ? 'contain' : 'cover';
-  const preview = focused && foreground && !fullscreen && !auth && heroVisible && !reducedMotion;
+  const videoFit = 'cover' as const;
+  const preview = focused && foreground && !fullscreen && !auth && heroVisible && (!reducedMotion || allowReducedPlayback);
   const official = post?.channelId === OFFICIAL_PUBLISHER_ID;
   const publisher = official ? OFFICIAL_PUBLISHER_NAME : post?.channelName;
   const followLabel = t(follow.state === 'following' ? 'publication.following' : follow.state === 'error' ? 'publication.followRetry' : 'publication.follow');
   const saved = signedIn && Boolean(post?.saved);
-  const openPlayer = () => setFullscreen({ ...position.current });
+  const openPlayer = () => setFullscreen({ ...position.current, muted });
+  const closePlayer = (state: PublicationPlayback, learnMore = false) => {
+    const next = { ...state, muted: learnMore || state.muted };
+    position.current = next;
+    setMuted(next.muted);
+    setFullscreen(null);
+    if (learnMore) list.current?.scrollToOffset({ offset: heroHeight, animated: !reducedMotion });
+  };
+  const updateAudio = () => {
+    setAllowReducedPlayback(true);
+    setMuted(!muted);
+    position.current = { ...position.current, muted: !muted };
+  };
   const back = <Pressable onPress={() => goBack('/publications')} accessibilityRole="button" accessibilityLabel={t('common.back')}
     testID="publication-look-back" style={[styles.back, { flexDirection: direction }]}>
     <PublicationIcon name={theme.isRTL ? 'chevron-forward' : 'chevron-back'} size={18} color={P.ink} />
@@ -90,11 +104,11 @@ export function PublicationLookScreen({ id }: { id: string }) {
   const followButton = post?.channelId ? <Pressable testID="publication-look-follow" accessibilityRole="button" accessibilityLabel={followLabel}
     accessibilityState={{ selected: follow.state === 'following', disabled: follow.disabled }} disabled={follow.disabled}
     onPress={follow.press} style={[styles.follow, productGrid && styles.outlinedFollow, isVideo && styles.videoFollow, { flexDirection: direction }]}>
-    <PublicationIcon name={follow.state === 'following' ? 'checkmark-outline' : 'add-outline'} size={productGrid ? 24 : 18} color={P.ink} />
-    <PublicationText variant="bodyStrong">{follow.state === 'pending' ? '…' : followLabel}</PublicationText>
+    <PublicationIcon name={follow.state === 'following' ? 'checkmark-outline' : 'add-outline'} size={productGrid ? 24 : 18} color={P.paper} />
+    <PublicationText variant="bodyStrong" color={P.paper}>{follow.state === 'pending' ? '…' : followLabel}</PublicationText>
   </Pressable> : null;
-  const publisherName = publisher ? <PublicationText numberOfLines={1} style={styles.publisher}>{publisher}</PublicationText> : null;
-  const message = follow.writeFailed || favoriteLook.isError ? <PublicationText accessibilityRole="alert" variant="caption">
+  const publisherName = publisher ? <PublicationText color={P.paper} numberOfLines={1} style={styles.publisher}>{publisher}</PublicationText> : null;
+  const message = follow.writeFailed || favoriteLook.isError ? <PublicationText accessibilityRole="alert" variant="caption" color={P.paper}>
     {t(favoriteLook.isError ? 'publication.lookSaveError' : 'publication.followError')}
   </PublicationText> : null;
   if (post && isCampaign) return <PublicationCampaignDetail post={post} refreshing={look.isRefetching}
@@ -105,8 +119,8 @@ export function PublicationLookScreen({ id }: { id: string }) {
       publicationSaveError={favoriteLook.isError} />
     {auth ? <PublicationAuthSheet visible onClose={() => setAuth(false)} /> : null}
   </>;
-  return <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]} testID="publication-look-page">
-    {focused ? <StatusBar style="dark" /> : null}
+  return <View style={[styles.screen, isVideo && styles.videoPage, { paddingTop: insets.top, paddingBottom: insets.bottom }]} testID="publication-look-page">
+    {focused ? <StatusBar style={isVideo ? "light" : "dark"} /> : null}
     <View style={styles.content} accessibilityElementsHidden={Boolean(fullscreen) || auth} importantForAccessibility={fullscreen || auth ? 'no-hide-descendants' : 'auto'}>
       {!post || !media ? <>{back}{look.isPending ? <LoadingBlock /> : look.isError ?
         <ErrorBlock error={look.error} onRetry={() => void look.refetch()} /> : <PublicationText style={styles.notice}>{t('publication.lookMissing')}</PublicationText>}</> :
@@ -121,48 +135,56 @@ export function PublicationLookScreen({ id }: { id: string }) {
           }} scrollEventThrottle={64}
           ListHeaderComponent={<>
             {!isVideo ? back : null}
-            <View style={[styles.hero, isVideo && videoFit === 'contain' && styles.videoMatte, { height: heroHeight }]}
+            <View style={[styles.hero, { height: heroHeight }]}
               testID="publication-look-hero">
               {isVideo ? <>
                 {media.poster ? <AppImage uri={mediaUrl(media.poster)} contentFit={videoFit} decorative style={StyleSheet.absoluteFill} /> : null}
-                {preview ? <PublicationInlineVideo key={media.url} url={media.url} muted paused={false} fit={videoFit} position={position} /> : null}
+                {preview ? <PublicationInlineVideo key={media.url} url={media.url} muted={muted} paused={false} fit={videoFit} position={position} /> : null}
                 <Pressable accessibilityRole="button" accessibilityLabel={t('publication.playerOpen')} onPress={openPlayer}
-                  testID="publication-look-video" style={StyleSheet.absoluteFill}>
+                  testID="publication-look-video" accessible={false} importantForAccessibility="no" style={StyleSheet.absoluteFill}>
                   {reducedMotion ? <View style={styles.playHint}><PublicationIcon name="play-outline" color={P.paper} /></View> : null}
                 </Pressable>
               </> : null}
-              <Pressable accessibilityRole="button" accessibilityState={{ selected: saved, disabled: favoriteLook.isPending }}
-                accessibilityLabel={t(saved ? 'publication.lookUnsave' : 'publication.lookSave')} disabled={favoriteLook.isPending}
-                onPress={() => signedIn ? favoriteLook.mutate(!saved) : setAuth(true)} testID="publication-look-save" style={styles.heroHeart}>
-                <View style={styles.heroHeartDisc}><PublicationIcon name={saved ? 'heart' : 'heart-outline'} size={28} color={P.ink} /></View>
+              <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} testID="publication-look-back" hitSlop={4}
+                onPress={() => goBack('/publications')} style={[styles.videoDisc, styles.videoClose]}>
+                <PublicationIcon name="close" color={P.ink} size={26} />
+              </Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel={t(muted ? 'publication.unmute' : 'publication.mute')}
+                onPress={updateAudio} testID="publication-look-mute" hitSlop={4} style={[styles.videoDisc, styles.videoMute]}>
+                <PublicationIcon name={muted ? 'volume-mute-outline' : 'volume-high-outline'} color={P.ink} size={22} />
+              </Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel={t('publication.playerOpen')} onPress={openPlayer}
+                testID="publication-look-expand" hitSlop={4} style={[styles.videoDisc, styles.videoExpand]}>
+                <PublicationIcon name="scan-outline" color={P.ink} size={22} />
               </Pressable>
             </View>
             {isVideo ? <View testID="publication-video-information" style={styles.videoIntro}>
-              {publisher ? <PublicationText variant="bodyStrong" style={styles.videoTitle}>{publisher}</PublicationText> : null}
-              <PublicationText accessibilityRole="header" variant="h1" style={styles.videoTitle}>{title}</PublicationText>
-              {post.subtitle && post.subtitle !== title ? <PublicationText style={styles.videoTitle}>{post.subtitle}</PublicationText> : null}
-              {post.description ? <PublicationText style={styles.videoDescription}>{post.description}</PublicationText> : null}
+              {publisher ? <PublicationText color={P.paper} variant="bodyStrong" style={styles.videoTitle}>{publisher}</PublicationText> : null}
+              <PublicationText color={P.paper} accessibilityRole="header" variant="h1" style={styles.videoTitle}>{title}</PublicationText>
+              {post.subtitle && post.subtitle !== title ? <PublicationText color={P.paper} style={styles.videoTitle}>{post.subtitle}</PublicationText> : null}
+              {post.description ? <PublicationText color={P.paper} style={styles.videoDescription}>{post.description}</PublicationText> : null}
               <View style={[styles.videoPublisher, { flexDirection: direction }]}>
                 {official ? <Pressable accessibilityRole="link" onPress={() => router.push(OFFICIAL_PUBLISHER_ROUTE)}>{publisherName}</Pressable> : publisherName}
                 {followButton}
+                <Pressable accessibilityRole="button" accessibilityState={{ selected: saved, disabled: favoriteLook.isPending }}
+                  accessibilityLabel={t(saved ? 'publication.lookUnsave' : 'publication.lookSave')} disabled={favoriteLook.isPending}
+                  onPress={() => signedIn ? favoriteLook.mutate(!saved) : setAuth(true)} testID="publication-look-save" style={styles.saveLook}>
+                  <PublicationIcon name={saved ? 'heart' : 'heart-outline'} size={24} color={P.paper} />
+                </Pressable>
               </View>{message}
             </View> : null}
           </>}
-          ListEmptyComponent={<PublicationText style={styles.notice}>{t('publication.lookNoProducts')}</PublicationText>}
-          renderItem={({ item }) => <PublicationLookProduct item={item} tileWidth={productGrid ? tileWidth : undefined}
+          ListEmptyComponent={<PublicationText color={isVideo ? P.paper : P.ink} style={styles.notice}>{t('publication.lookNoProducts')}</PublicationText>}
+          renderItem={({ item }) => <PublicationLookProduct item={item} dark={isVideo} tileWidth={productGrid ? tileWidth : undefined}
             saved={signedIn && favorites.isFavorite(item.id)} onFavorite={() => signedIn ? favorites.toggle(item.id) : setAuth(true)} />} />}
-      {isVideo ? <Pressable accessibilityRole="button" accessibilityLabel={t('common.close')} testID="publication-look-back"
-        onPress={() => goBack('/publications')} style={styles.videoClose}>
-        <PublicationIcon name="close" color={P.ink} size={26} />
-      </Pressable> : null}
       {showTop && post && media ? <Pressable accessibilityRole="button" accessibilityLabel={t('publication.scrollTop')}
         testID="publication-look-top" style={styles.toTop} onPress={() => list.current?.scrollToOffset({ offset: 0, animated: !reducedMotion })}>
         <PublicationIcon name="arrow-up-outline" color={P.paper} size={20} />
       </Pressable> : null}
     </View>
     {fullscreen && media?.type === 'video' ? <PublicationFullscreenVideo start={fullscreen} url={media.url} poster={media.poster} caption={post?.description || post?.subtitle || post?.title || ''}
-      onLearnMore={state => { position.current = { ...state, muted: true }; setFullscreen(null); list.current?.scrollToOffset({ offset: Math.max(0, heroHeight - 48), animated: !reducedMotion }); }}
-      onClose={state => { position.current = { ...state, muted: true }; setFullscreen(null); }} /> : null}
+      onLearnMore={state => closePlayer(state, true)}
+      onClose={closePlayer} /> : null}
     {auth ? <PublicationAuthSheet visible onClose={() => setAuth(false)} /> : null}
   </View>;
 }
@@ -173,24 +195,25 @@ const styles = StyleSheet.create({
   list: { width: '100%', maxWidth: LOOK.maxWidth, alignSelf: 'center' },
   listContent: { paddingBottom: 24 },
   back: { minHeight: 50, paddingHorizontal: 12, gap: 2, alignItems: 'flex-start', paddingTop: 4, alignSelf: 'stretch' },
-  hero: { backgroundColor: P.neutral, overflow: 'hidden', borderBottomStartRadius: RADIUS.md, borderBottomEndRadius: RADIUS.md },
-  videoMatte: { backgroundColor: P.ink },
-  heroHeart: { position: 'absolute', top: 3, end: 3, width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  heroHeartDisc: { width: LOOK.heart, height: LOOK.heart, borderRadius: LOOK.heart / 2,
+  videoPage: { backgroundColor: HERO_COPY.black },
+  hero: { backgroundColor: HERO_COPY.black, overflow: 'hidden' },
+  videoDisc: { position: 'absolute', width: LOOK.control, height: LOOK.control, borderRadius: RADIUS.full,
     alignItems: 'center', justifyContent: 'center', backgroundColor: P.paper },
+  videoClose: { start: 24, top: 36 },
+  videoMute: { start: 16, bottom: 16 },
+  videoExpand: { end: 16, bottom: 16 },
+  saveLook: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   playHint: { position: 'absolute', alignSelf: 'center', top: '45%', width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center', backgroundColor: P.viewerDarkSurface },
   publisher: { flexShrink: 1 },
   follow: { minHeight: 44, alignItems: 'center', gap: 4 },
-  videoClose: { position: 'absolute', start: 24, top: 8, width: 40, height: 40, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: P.paper },
   videoIntro: { paddingTop: 24, paddingHorizontal: 12, paddingBottom: 24 },
   videoTitle: { fontSize: T.infoTitleSize, lineHeight: T.infoTitleLine },
   videoDescription: { marginTop: 16, lineHeight: T.infoBodyLine },
   videoPublisher: { marginTop: 32, marginHorizontal: 12, gap: 12, alignItems: 'center' },
   videoFollow: { minWidth: 98, minHeight: 34 },
   videoColumns: { paddingHorizontal: 24 },
-  outlinedFollow: { minWidth: 128, justifyContent: 'center', borderWidth: 1, borderColor: P.ink, minHeight: 48, borderRadius: RADIUS.full, paddingHorizontal: 12 },
+  outlinedFollow: { minWidth: 128, justifyContent: 'center', borderWidth: 1, borderColor: P.paper, minHeight: 48, borderRadius: RADIUS.full, paddingHorizontal: 12 },
   columns: { paddingHorizontal: 12, gap: 8, marginBottom: 32 },
   toTop: { position: 'absolute', bottom: 16, end: 20, width: 44, height: 44, borderRadius: 22, backgroundColor: P.ink,
     alignItems: 'center', justifyContent: 'center' },
