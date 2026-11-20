@@ -7,8 +7,7 @@
  *    recevaient le lecteur générique faute d'être dans la liste en dur.
  *  • P2-2 : un lecteur trop gros est une ERREUR explicite (jamais tronqué), et
  *    chaque script servi tient sous la borne de la coque — vérifié ici, en CI.
- *  • P2-3 : relance bornée quand la capture revient sans prix + relecture de
- *    confirmation du mode sélection (mêmes délais que l'application RN).
+ *  • P2-3 : relance bornée quand la capture revient sans prix.
  *  • P2-4 : la page est lue À L'APPUI ; plus de résolution réutilisée 120 s.
  */
 import { readFileSync } from 'node:fs';
@@ -56,24 +55,22 @@ describe('AYWEBs Android — taille du lecteur (P2-2)', () => {
     expect(activitySource).not.toMatch(/> 512_000\) break;/);
   });
 
-  it('chaque script servi (toutes boutiques, matrice ET sélection) tient sous la borne Android', () => {
+  it('chaque script servi (toutes boutiques) tient sous la borne Android', () => {
     const cap = androidScriptCap();
     const ids: Array<string | null> = [null, ...AYWEBS_STORES.map((store) => store.id)];
     let largest = { id: '', bytes: 0 };
     for (const id of ids) {
-      for (const mode of ['matrix', 'selection'] as const) {
-        const served = describeAyWebsCaptureScript(id, { mode });
-        const bytes = Buffer.byteLength(served.text, 'utf8');
-        if (bytes > largest.bytes) largest = { id: `${id ?? 'legacy'}#${mode}`, bytes };
-        expect(bytes, `${id ?? 'legacy'} (${mode}) : ${bytes} octets`).toBeLessThan(cap);
-      }
+      const served = describeAyWebsCaptureScript(id);
+      const bytes = Buffer.byteLength(served.text, 'utf8');
+      if (bytes > largest.bytes) largest = { id: id ?? 'legacy', bytes };
+      expect(bytes, `${id ?? 'legacy'} : ${bytes} octets`).toBeLessThan(cap);
     }
     // Marge de 25 % : une croissance du lecteur se voit ici avant de casser les téléphones.
     expect(largest.bytes, `plus gros script : ${largest.id}`).toBeLessThan(cap * 0.75);
   });
 });
 
-describe('AYWEBs Android — relance et double lecture (P2-3)', () => {
+describe('AYWEBs Android — relance du prix (P2-3)', () => {
   it('mêmes délais de relance « sans prix » que l’application RN', () => {
     const rn = RN_CAPTURE_FLOW.match(/AYWEBS_CAPTURE_PRICE_RETRY_DELAYS_MS = \[([^\]]+)\]/);
     const android = activitySource.match(/CAPTURE_PRICE_RETRY_DELAYS_MS = \{([^}]+)\}/);
@@ -82,11 +79,9 @@ describe('AYWEBs Android — relance et double lecture (P2-3)', () => {
     expect(norm(android![1])).toEqual(norm(rn![1]));
   });
 
-  it('mode sélection : relecture de confirmation à 400 ms, au plus deux', () => {
-    expect(activitySource).toContain('SELECTION_CONFIRM_DELAY_MS = 400L');
-    expect(activitySource).toContain('SELECTION_CONFIRM_MAX_READS = 2');
-    expect(RN_CAPTURE_FLOW).toContain('AYWEBS_SELECTION_CONFIRM_DELAY_MS = 400');
-    expect(activitySource).toContain('"selection".equals(capture.optString("captureMode", ""))');
+  it('les deux clients ne déclenchent plus la double lecture héritée', () => {
+    expect(activitySource).not.toContain('SELECTION_CONFIRM_DELAY_MS');
+    expect(RN_CAPTURE_FLOW).not.toContain('AYWEBS_SELECTION_CONFIRM_DELAY_MS');
   });
 });
 

@@ -2,7 +2,6 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import type { AyWebsResolvedProduct } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
-import { readOnlyStoreSelection } from '@/features/aywebs/storeSheetMode';
 import { clearVariantMatrixCache } from '@/features/aywebs/variantMatrixCache';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
@@ -18,9 +17,16 @@ jest.mock('@/api/aywebs', () => {
     addAyWebsCartItem: (...args: unknown[]) => mockAdd(...args) };
 });
 
-function setup(storeId: 'amazon' | 'zalando', fastMatrix = false, rejectFast = false) {
+function setup(storeId: 'amazon' | 'zalando' | 'shein' | 'temu' | 'aliexpress' | 'sephora', fastMatrix = false, rejectFast = false) {
   const readVariant = jest.fn(() => new Promise<Record<string, unknown>>(() => {}));
-  const url = storeId === 'amazon' ? 'https://www.amazon.fr/dp/B012345678' : 'https://www.zalando.fr/running-shoe-ni121d0a2-q11.html';
+  const url = {
+    amazon: 'https://www.amazon.fr/dp/B012345678',
+    zalando: 'https://www.zalando.fr/running-shoe-ni121d0a2-q11.html',
+    shein: 'https://m.shein.com/fr/Robe-fleurie-p-382460229.html',
+    temu: 'https://www.temu.com/fr/sweat-capuche-homme-g-601099512345678.html',
+    aliexpress: 'https://www.aliexpress.com/item/1005008811223344.html',
+    sephora: 'https://www.sephora.fr/p/soin-P123456.html',
+  }[storeId];
   const product: AyWebsResolvedProduct = {
     productId: 'test-product', storeId, storeName: storeId, sourceUrl: url,
     sourceDomain: new URL(url).hostname, title: 'Chaussure', brand: '', images: [],
@@ -46,13 +52,13 @@ function setup(storeId: 'amazon' | 'zalando', fastMatrix = false, rejectFast = f
   });
   render(<SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } }}>
     <PrefsProvider><I18nProvider><ThemeProvider>
-      <AddToCartSheet visible local readOnlySelection={readOnlyStoreSelection(storeId)} sessionId="mob_interactive_session_123" product={product} capture={fastCapture} readVariant={readVariant} onClose={() => undefined} />
+      <AddToCartSheet visible local sessionId="mob_interactive_session_123" product={product} capture={fastCapture} readVariant={readVariant} onClose={() => undefined} />
     </ThemeProvider></I18nProvider></PrefsProvider>
   </SafeAreaProvider>);
   return readVariant;
 }
 
-describe.each(['amazon', 'zalando'] as const)('%s interactive sheet', (storeId) => {
+describe.each(['amazon', 'zalando', 'shein', 'temu', 'aliexpress', 'sephora'] as const)('%s interactive sheet', (storeId) => {
   beforeEach(() => { mockResolve.mockReset(); mockAdd.mockReset(); clearVariantMatrixCache(); });
   it('shows published sizes, disables sold out, sends the chosen size to server', async () => {
     setup(storeId);

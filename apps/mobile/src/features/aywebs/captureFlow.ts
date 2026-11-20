@@ -35,36 +35,6 @@ export function priceRetryDelayMs(retryCount: number): number {
 }
 
 /**
- * Mode SÉLECTION (19/11/2026) — « le client choisit → AYWEBs capte ».
- *
- * Le serveur n'accepte un choix que s'il est STABLE : deux lectures de la page
- * à quelques centaines de millisecondes doivent porter le même prix, la même
- * option et le même identifiant (sinon `SELECTION_NOT_PROVEN` — la page bougeait
- * encore, ex. le prix de la nouvelle taille pas encore affiché). Le script
- * servi garde la signature de la lecture précédente ; l'application relit donc
- * une fois ~400 ms après la première, et une seconde fois au plus si les deux
- * lectures diffèrent.
- */
-export const AYWEBS_SELECTION_CONFIRM_DELAY_MS = 400;
-export const AYWEBS_SELECTION_CONFIRM_MAX_READS = 2;
-
-/** Délai avant la relecture de confirmation, ou `null` quand la capture est prête. */
-export function selectionConfirmDelayMs(capture: Record<string, unknown>, confirmReads: number): number | null {
-  if (capture.captureMode !== 'selection') return null;
-  if (confirmReads >= AYWEBS_SELECTION_CONFIRM_MAX_READS) return null;
-  const proof = capture.selection && typeof capture.selection === 'object'
-    ? capture.selection as { reads?: unknown; stable?: unknown }
-    : null;
-  if (proof && Number(proof.reads) >= 2 && proof.stable === true) return null;
-  return AYWEBS_SELECTION_CONFIRM_DELAY_MS;
-}
-
-/** Une pré-lecture en mode sélection ne vaut pas choix : le client a pu changer d'option depuis. */
-export function prefetchIsSelectionSnapshot(capture: unknown): boolean {
-  return Boolean(capture && typeof capture === 'object' && (capture as Record<string, unknown>).captureMode === 'selection');
-}
-
-/**
  * Budget de la PRÉ-LECTURE silencieuse (à l'ouverture d'une fiche).
  *
  * Elle ne doit jamais tenir l'écran : c'est un accélérateur, pas une condition.

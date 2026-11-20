@@ -59,7 +59,6 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
   try { READER_PROFILE = (GLOBAL_WIN && GLOBAL_WIN.__AYWEBS_CAPTURE_READER__) || (typeof window !== 'undefined' && window.__AYWEBS_CAPTURE_READER__) || null; } catch (e) { READER_PROFILE = null; }
   /* Principe « le client choisit » (19/11/2026) : en mode sélection, on lit le
      choix affiché et rien d'autre — aucune matrice de combinaisons. */
-  var SELECTION_ONLY = !!(READER_PROFILE && READER_PROFILE.mode === 'selection');
   var out = {
     v: 1, url: '', canonicalUrl: null, title: null, brand: null,
     priceCandidates: [], currencyText: null, availabilityText: null,
@@ -6673,7 +6672,7 @@ export const AYWEBS_CAPTURE_SCRIPT = String.raw`(function () {
      Une combinaison dont le prix n'est pas prouvé porte price = null (plus son
      variantUrl / variantId si disponible pour une lecture delta ciblée).
      Mode sélection : section entièrement sautée. */
-  if (!SELECTION_ONLY) try {
+  try {
     var matrixSeen = {};
     var matrixGroupNames = { color: null, size: null };
     for (var mgi = 0; mgi < out.variantGroups.length; mgi++) {
@@ -7326,16 +7325,13 @@ const servedCache = new Map<string, AyWebsServedCaptureScript>();
  */
 export function describeAyWebsCaptureScript(
   storeId?: string | null,
-  options: { mode?: 'selection' | 'matrix' } = {},
 ): AyWebsServedCaptureScript {
   const id = String(storeId ?? '').trim().toLowerCase();
-  const mode = options.mode === 'selection' ? 'selection' : 'matrix';
-  const key = mode === 'selection' && id ? `${id}#selection` : id;
-  const cached = servedCache.get(key);
+  const cached = servedCache.get(id);
   if (cached) return cached;
-  const served = computeServedScript(id, mode);
+  const served = computeServedScript(id);
   // Seules les boutiques connues sont mémorisées : un store_id arbitraire ne fait pas grossir la table.
-  if (served.reader) servedCache.set(key, served);
+  if (served.reader) servedCache.set(id, served);
   else if (!servedCache.has('')) servedCache.set('', served);
   return served.reader ? served : (servedCache.get('') as AyWebsServedCaptureScript);
 }
@@ -7344,21 +7340,19 @@ function servedScript(text: string, reader: AyWebsCaptureReaderDefinition | null
   return { text, reader, bundle, sha256: createHash('sha256').update(text).digest('hex') };
 }
 
-function computeServedScript(storeId: string, mode: 'selection' | 'matrix' = 'matrix'): AyWebsServedCaptureScript {
+function computeServedScript(storeId: string): AyWebsServedCaptureScript {
   const reader = resolveAyWebsCaptureReader(storeId);
   const store = reader ? findAyWebsStore(reader.storeId) : null;
   if (!reader || !store) return servedScript(AYWEBS_CAPTURE_SCRIPT, null, 'legacy');
-  const envelope = { mode };
-  const suffix = mode === 'selection' ? '+selection' : '';
   if (reader.integration === 'dedicated') {
     const dedicated = AYWEBS_DEDICATED_CAPTURE_SCRIPTS[reader.storeId];
     if (!dedicated) return servedScript(AYWEBS_CAPTURE_SCRIPT, null, 'legacy');
-    return servedScript(wrapAyWebsCaptureIntegration(reader, store.domains, dedicated, envelope), reader, `dedicated:${reader.storeId}${suffix}`);
+    return servedScript(wrapAyWebsCaptureIntegration(reader, store.domains, dedicated), reader, `dedicated:${reader.storeId}`);
   }
   const bundle = ayWebsCaptureBundleFor(reader);
-  return servedScript(wrapAyWebsCaptureIntegration(reader, store.domains, AYWEBS_CAPTURE_BUNDLES[bundle].text, envelope), reader, `${bundle}${suffix}`);
+  return servedScript(wrapAyWebsCaptureIntegration(reader, store.domains, AYWEBS_CAPTURE_BUNDLES[bundle].text), reader, bundle);
 }
 
-export function buildAyWebsCaptureScript(storeId?: string | null, options: { mode?: 'selection' | 'matrix' } = {}): string {
-  return describeAyWebsCaptureScript(storeId, options).text;
+export function buildAyWebsCaptureScript(storeId?: string | null): string {
+  return describeAyWebsCaptureScript(storeId).text;
 }

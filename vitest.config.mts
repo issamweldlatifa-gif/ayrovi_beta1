@@ -37,10 +37,7 @@ export default defineConfig({
       GOOGLE_API_KEY: '',
       OPENAI_API_KEY: '',
       ZAYROVIX_AI_WEB_SEARCH: 'false',
-      // AYWEBs : la suite historique couvre le chemin « matrice » (retour arrière).
-      // Le mode « sélection » (défaut en production) a ses propres tests, qui
-      // posent AYWEBS_SELECTION_CAPTURE eux-mêmes.
-      AYWEBS_SELECTION_CAPTURE: 'off',
+
     },
   },
 });

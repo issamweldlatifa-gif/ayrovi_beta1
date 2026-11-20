@@ -154,9 +154,9 @@ describe('Zalando — la feuille reçoit des TAILLES, pas des liens ni des bouto
     const payload = run(html);
     expect(groups(payload).find(group => group.name === 'Taille')?.selected).toEqual(selected);
     if (selected.length) {
-      const verdict = validateAyWebsCapturedPage(payload, PAGE_URL, { selectionMode: true });
+      const verdict = validateAyWebsCapturedPage(payload, PAGE_URL);
       expect(verdict.ok).toBe(true);
-      expect(verdict.selection?.attributes).toEqual({ Taille: '36' });
+      expect(verdict.variantGroups.find(group => group.name === 'Taille')?.selected).toEqual(['36']);
       expect(verdict.price).toBeCloseTo(129.95);
     }
   });

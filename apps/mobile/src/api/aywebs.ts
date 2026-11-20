@@ -391,9 +391,10 @@ export async function fetchAyWebsCaptureScript(
   const now = Date.now();
   if (cached && now - cached.fetchedAt < CAPTURE_SCRIPT_TTL_MS) return cached.text;
   const { storeId: _storeId, ...requestOptions } = options;
+  // Use a distinct HTTP cache key from builds that could receive selection-only readers.
   const path = storeId
-    ? `${AYWEBS_CAPTURE_SCRIPT_PATH}?store_id=${encodeURIComponent(storeId)}`
-    : AYWEBS_CAPTURE_SCRIPT_PATH;
+    ? `${AYWEBS_CAPTURE_SCRIPT_PATH}?store_id=${encodeURIComponent(storeId)}&flow=catalogue`
+    : `${AYWEBS_CAPTURE_SCRIPT_PATH}?flow=catalogue`;
   const text = await apiGetText(path, requestOptions);
   captureScriptCache.set(storeId, { text, fetchedAt: Date.now() });
   return text;

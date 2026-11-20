@@ -1,5 +1,4 @@
-import { ayWebsCapturePrinciple, recordAyWebsCaptureOutcome } from './captureControl';
-import type { AyWebsSelectionVerdict } from './selectionCapture';
+import { recordAyWebsCaptureOutcome } from './captureControl';
 import { randomUUID } from 'node:crypto';
 import { ayWebsAlignAttributes } from '../../shared/aywebsAttributes';
 import type { QatafoDatabase } from '../db/database';
@@ -124,22 +123,7 @@ export interface AyWebsResolveInput {
   capture?: unknown;
 }
 
-/** Choix du client capté sur la page (mode `selection`) — renvoyé tel quel à la feuille de confirmation. */
-export interface AyWebsCapturedSelectionSummary {
-  mode: 'selection';
-  attributes: Record<string, string>;
-  variantId: string | null;
-  variantIdSource: AyWebsSelectionVerdict['variantIdSource'];
-  availability: AyWebsAvailabilityState;
-  availabilityReason: string;
-  /** Quantité affichée par la page, pour pré-remplir la quantité ZAYROVI. */
-  pageQuantity: number | null;
-  image: string | null;
-}
-
 export interface AyWebsResolveResult {
-  /** Mode `selection` : le choix capté (jamais la matrice). `null` en mode matrice. */
-  capturedSelection?: AyWebsCapturedSelectionSummary | null;
   captureId: string;
   productId: string;
   product: AyWebsResolvedProduct;
@@ -246,11 +230,15 @@ export async function resolveAyWebsProduct(
      aucun de ces marchands n'a d'adaptateur écrit à la main pour rattraper une
      lecture solitaire. */
   const captureRecognition = ayWebsStoreRecognition(preliminaryStore) !== 'url';
-  /* Principe « le client choisit » (19/11/2026), activé par boutique depuis le
-     CRM (`ayweb_capture_principles`) ou par `AYWEBS_SELECTION_CAPTURE`. */
-  const selectionMode = captureProvided
-    && Boolean(preliminary.storeId)
-    && ayWebsCapturePrinciple(deps.db, preliminary.storeId) === 'selection';
+  if (captureProvided && typeof input.capture === 'object'
+    && (input.capture as { captureMode?: unknown }).captureMode === 'selection') {
+    // Cached captures from the retired reader are not complete matrices.
+    // Never turn a selection-only payload into evidence for a different option.
+    throw new AyWebsDomainError('CAPTURE_INCOMPLETE', {
+      userMessage: 'Rouvrez la page du marchand et capturez de nouveau cet article.',
+      technicalMessage: 'retired_selection_capture',
+    });
+  }
   const captureValidation = captureProvided
     ? validateAyWebsCapturedPage(input.capture, preliminary.normalizedUrl, {
         requireCorroboration: !preliminary.registered || captureRecognition,
@@ -260,15 +248,12 @@ export async function resolveAyWebsProduct(
            nature de la page seulement là où l'URL ne dit rien évite de refuser
            une fiche Amazon dont le prix est momentanément illisible. */
         requireProductPage: !preliminary.registered || captureRecognition,
-        selectionMode,
       })
     : null;
   if (captureValidation) {
-    /* Mesure durable par boutique (alerte < 80 % sur 24 h, voir captureControl.ts).
-       Le mode `selection` a sa propre ligne (`selection:<boutique>`) : on compare
-       les taux d'acceptation des deux chemins avant de retirer l'ancien. */
+    /* Mesure durable par boutique (voir captureControl.ts). */
     recordAyWebsCaptureOutcome(deps.db, {
-      storeKey: selectionMode ? `selection:${preliminary.storeId}` : ayWebsCaptureStoreKey(preliminary.normalizedUrl),
+      storeKey: ayWebsCaptureStoreKey(preliminary.normalizedUrl),
       accepted: captureValidation.ok,
       rejection: captureValidation.rejection,
     });
@@ -299,9 +284,7 @@ export async function resolveAyWebsProduct(
           corroborated: captureValidation?.corroborated === true,
           title: captureValidation?.scraped?.title || '',
         }
-        : captureValidation?.selectionPageProof
-          ? { accepted: true, ...captureValidation.selectionPageProof }
-          : undefined,
+        : undefined,
     });
 
   if (input.storeId) {
@@ -313,15 +296,6 @@ export async function resolveAyWebsProduct(
       });
     }
   }
-
-  /* Mode sélection : un choix incomplet, indisponible ou instable se corrige SUR
-     LA PAGE du marchand. Pas de relecture serveur de secours : elle ignorerait
-     le choix du client et coterait une autre combinaison. */
-  if (selectionMode && captureValidation && !captureValidation.ok
-    && String(captureValidation.rejection || '').startsWith('SELECTION_')) {
-    throw ayWebsSelectionRejectionError(captureValidation.rejection!, captureValidation.notes);
-  }
-  const selectionVerdict = selectionMode && captureValidation?.ok ? captureValidation.selection ?? null : null;
 
   const adapter = createAyWebsAdapter(store, deps.scraper);
 
@@ -431,40 +405,7 @@ export async function resolveAyWebsProduct(
       captureValidation!.scraped!,
       store.displayName || store.name || store.id,
     );
-    if (selectionVerdict) {
-      /* Mode sélection : UNE seule combinaison — celle que le client a choisie.
-         Les groupes ne gardent que la valeur choisie : aucune option non choisie
-         n'est exposée, la feuille ne peut que CONFIRMER. */
-      const chosen = selectionVerdict.attributes;
-      const names = Object.keys(chosen);
-      const scraped = captureValidation!.scraped!;
-      sourceProduct = {
-        ...sourceProduct,
-        variantGroups: names.map((name) => ({ attribute: name, values: [chosen[name]] })),
-        variants: names.length
-          ? [{
-            sourceVariantId: selectionVerdict.variantId,
-            attributes: { ...chosen },
-            label: names.map((name) => chosen[name]).join(' / '),
-            price: scraped.sourcePrice,
-            currency: scraped.sourceCurrency || null,
-            available: selectionVerdict.availability === 'AVAILABLE' || selectionVerdict.availability === 'LOW_STOCK' ? true : null,
-            availability: selectionVerdict.availability,
-            availabilityReason: selectionVerdict.availabilityReason,
-            image: selectionVerdict.image,
-            evidenceSource: 'dom',
-          }]
-          : [],
-      };
-      if (selectionVerdict.image && sourceProduct.images[0] !== selectionVerdict.image) {
-        const nextImages = [selectionVerdict.image, ...sourceProduct.images.filter(image => image !== selectionVerdict.image)];
-        sourceProduct = {
-          ...sourceProduct,
-          images: nextImages,
-          scrapedProduct: { ...sourceProduct.scrapedProduct, images: nextImages, mainImage: nextImages[0] },
-        };
-      }
-    } else if (captureValidation!.skuCombinations.length > 0) {
+    if (captureValidation!.skuCombinations.length > 0) {
       sourceProduct = {
         ...sourceProduct,
         variants: captureValidation!.skuCombinations,
@@ -567,23 +508,7 @@ export async function resolveAyWebsProduct(
   const groupsForSelection = sourceProduct.variantGroups.length
     ? sourceProduct.variantGroups
     : capturedSelectionGroups;
-  /* Mode sélection : le choix du client EST celui de la page. Un choix envoyé par
-     l'application qui le contredit (ancienne feuille à choix) est refusé : on
-     change d'option sur la page du marchand, jamais dans ZAYROVI. */
-  if (selectionVerdict && input.selectedVariant && Object.keys(input.selectedVariant).length > 0) {
-    const pageNames = Object.keys(selectionVerdict.attributes);
-    const { aligned } = ayWebsAlignAttributes(pageNames, input.selectedVariant);
-    const conflict = pageNames.find((name) => aligned[name] != null
-      && String(aligned[name]).trim().toLowerCase() !== String(selectionVerdict.attributes[name]).trim().toLowerCase());
-    if (conflict) {
-      throw new AyWebsDomainError('VARIANT_UNKNOWN', {
-        userMessage: 'Changez l’option directement sur la page du marchand, puis touchez de nouveau « Capturer cet article ».',
-        technicalMessage: `selection_conflicts_with_page:${conflict}`.slice(0, 200),
-      });
-    }
-  }
   const pageCompleteSelection: Record<string, string> | null = (() => {
-    if (selectionVerdict) return Object.keys(selectionVerdict.attributes).length ? { ...selectionVerdict.attributes } : null;
     if (input.selectedVariant && Object.keys(input.selectedVariant).length > 0) return null;
     if (!captureUsed || !captureValidation!.variantGroups.length) return null;
     const derived: Record<string, string> = {};
@@ -596,7 +521,7 @@ export async function resolveAyWebsProduct(
   })();
   const { matching: matchingAttributes, metadata: variantMetadata } = ayWebsSplitVariantSelection(
     { variantGroups: groupsForSelection, variants: sourceProduct.variants },
-    selectionVerdict ? pageCompleteSelection : (input.selectedVariant || pageCompleteSelection || null),
+    input.selectedVariant || pageCompleteSelection || null,
   );
   let availability = await adapter.checkAvailability(sourceProduct, matchingAttributes);
 
@@ -607,21 +532,7 @@ export async function resolveAyWebsProduct(
   let merchantPrice = sourceProduct.price;
   let merchantPriceFromValue = false;
 
-  if (captureUsed && selectionVerdict) {
-    /* Mode sélection — disponibilité à TROIS états, prix de la page :
-       la combinaison cotée est celle affichée, par construction. */
-    availability = {
-      ...ayWebsAvailabilityRecord(
-        selectionVerdict.availability,
-        selectionVerdict.availabilityReason,
-        'webview_client',
-        new Date().toISOString(),
-        null,
-      ),
-      variantAvailable: selectionVerdict.availability === 'AVAILABLE' || selectionVerdict.availability === 'LOW_STOCK' ? true : null,
-    };
-    captureValidation!.notes.push('selection_priced_from_page');
-  } else if (captureUsed) {
+  if (captureUsed) {
     /* La capture prouve, pour CHAQUE valeur publiée, son état et parfois son
        prix. La combinaison demandée est résolue valeur par valeur : on ne
        transporte jamais l'état du bouton d'achat d'une couleur vers une autre. */
@@ -858,8 +769,6 @@ export async function resolveAyWebsProduct(
       brand: sourceProduct.brand,
       variantCount: sourceProduct.variants.length,
       groupCount: sourceProduct.variantGroups.length,
-      /* Mode sélection : le prix est lié à l'option choisie (ASIN, sku_id, goods_id). */
-      ...(selectionVerdict?.variantId ? { sourceVariantId: selectionVerdict.variantId } : {}),
     },
   });
 
@@ -910,7 +819,7 @@ export async function resolveAyWebsProduct(
     evidenceHash,
     captureId,
     selection,
-    capturedVariantGroups: captureUsed && !selectionVerdict ? captureValidation!.variantGroups : undefined,
+    capturedVariantGroups: captureUsed ? captureValidation!.variantGroups : undefined,
   });
 
   emitAyWebsEvent(deps.db, {
@@ -1031,46 +940,8 @@ export async function resolveAyWebsProduct(
     capture: captureValidation
       ? { ...captureValidation.outcome, used: captureUsed }
       : null,
-    capturedVariantGroups: captureUsed && !selectionVerdict ? (captureValidation!.variantGroups || []) : [],
-    capturedSelection: selectionVerdict
-      ? {
-        mode: 'selection',
-        attributes: { ...selectionVerdict.attributes },
-        variantId: selectionVerdict.variantId,
-        variantIdSource: selectionVerdict.variantIdSource,
-        availability: selectionVerdict.availability,
-        availabilityReason: selectionVerdict.availabilityReason,
-        pageQuantity: selectionVerdict.pageQuantity,
-        image: selectionVerdict.image,
-      }
-      : null,
+    capturedVariantGroups: captureUsed ? (captureValidation!.variantGroups || []) : [],
   };
-}
-
-/** Message client d'un refus du mode sélection : la correction se fait SUR LA PAGE. */
-function ayWebsSelectionRejectionError(rejection: string, notes: string[]): AyWebsDomainError {
-  const missing = (notes.find((note) => note.startsWith('selection_missing:')) || '')
-    .slice('selection_missing:'.length)
-    .split('|')
-    .map((name) => name.trim())
-    .filter(Boolean);
-  if (rejection === 'SELECTION_INCOMPLETE') {
-    const what = missing.length ? missing.join(', ') : 'l’option';
-    return new AyWebsDomainError('VARIANT_REQUIRED', {
-      userMessage: `Choisissez ${what} sur la page du marchand, puis touchez de nouveau « Capturer cet article ».`,
-      technicalMessage: `selection_incomplete:${missing.join('|')}`.slice(0, 200),
-    });
-  }
-  if (rejection === 'SELECTION_UNAVAILABLE') {
-    return new AyWebsDomainError('VARIANT_UNAVAILABLE', {
-      userMessage: 'Cette option est indisponible chez le marchand. Choisissez-en une autre sur la page.',
-      technicalMessage: 'selection_unavailable',
-    });
-  }
-  return new AyWebsDomainError('VARIANT_UNKNOWN', {
-    userMessage: 'La page changeait encore pendant la lecture. Patientez une seconde puis réessayez.',
-    technicalMessage: `selection_not_proven:${(notes.find((note) => note.startsWith('selection_refused:')) || '').slice(0, 120)}`,
-  });
 }
 
 /**

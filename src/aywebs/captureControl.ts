@@ -205,8 +205,8 @@ export interface AyWebsCaptureHealthRow {
   top_rejections: Array<{ code: string; count: number }>;
   alert: boolean;
   control: AyWebsCaptureControlMode;
-  /** Principe effectif (`selection` / `matrix`) — pour comparer les deux chemins. */
-  principle: AyWebsCapturePrinciple;
+  /** Historical rows keep their original mode. */
+  principle: 'selection' | typeof AYWEBS_CAPTURE_PRINCIPLE;
 }
 
 export interface AyWebsCaptureHealth {
@@ -262,7 +262,7 @@ export function ayWebsCaptureHealth(
         .slice(0, 5),
       alert: entry.validated >= minSamples && rate !== null && rate < threshold,
       control: ayWebsCaptureControlMode(db, storeId),
-      principle: ayWebsCapturePrinciple(db, storeId),
+      principle: storeKey.startsWith('selection:') ? 'selection' : AYWEBS_CAPTURE_PRINCIPLE,
     };
   });
   stores.sort((a, b) => Number(b.alert) - Number(a.alert) || (a.acceptance_rate ?? 1) - (b.acceptance_rate ?? 1) || b.validated - a.validated);
@@ -277,111 +277,11 @@ export function ayWebsCaptureHealth(
   };
 }
 
-/* ── PRINCIPE DE CAPTURE PAR BOUTIQUE (19/11/2026) ─────────────────────────────
-   « Le client choisit → AYWEBs capte → ZAYROVI calcule → le client confirme ».
-
-     • `selection` — on ne lit QUE le choix affiché (taille, couleur, version,
-                     quantité), deux lectures concordantes, jamais la matrice ;
-     • `matrix`    — ancien chemin (matrice des combinaisons + feuille à choix),
-                     gardé comme RETOUR ARRIÈRE tant que les taux d'acceptation
-                     des deux chemins n'ont pas été comparés.
-
-   Défaut : variable `AYWEBS_SELECTION_CAPTURE` (`shein,temu,aliexpress` par défaut, `all`, `off`, ou une
-   liste `amazon,zalando`). Une ligne du CRM l'emporte toujours sur le défaut. */
-export const AYWEBS_CAPTURE_PRINCIPLES = ['selection', 'matrix'] as const;
-export type AyWebsCapturePrinciple = (typeof AYWEBS_CAPTURE_PRINCIPLES)[number];
-
-export function isAyWebsCapturePrinciple(value: unknown): value is AyWebsCapturePrinciple {
-  return typeof value === 'string' && (AYWEBS_CAPTURE_PRINCIPLES as readonly string[]).includes(value);
-}
-
-const principleSchemaReady = new WeakSet<object>();
-const principleCache = new WeakMap<object, { loadedAt: number; byStore: Map<string, AyWebsCapturePrinciple> }>();
-
-function ensurePrincipleSchema(db: QatafoDatabase): void {
-  if (principleSchemaReady.has(db)) return;
-  db.run(`CREATE TABLE IF NOT EXISTS ayweb_capture_principles (
-    store_id TEXT PRIMARY KEY,
-    principle TEXT NOT NULL CHECK(principle IN (${AYWEBS_CAPTURE_PRINCIPLES.map((value) => `'${value}'`).join(',')})),
-    note TEXT NOT NULL DEFAULT '',
-    updated_by TEXT NOT NULL DEFAULT '',
-    updated_at TEXT NOT NULL
-  )`);
-  principleSchemaReady.add(db);
-}
-
-/** Défaut d'environnement : `all` (toutes les boutiques), `off`, ou une liste d'identifiants. */
-export function ayWebsSelectionCaptureDefault(storeId: string | null | undefined): AyWebsCapturePrinciple {
-  // Amazon and Zalando need their established variant quote and fallback paths.
-  // Only the merchants covered by the dedicated selection rollout opt in by default.
-  const raw = (process.env.AYWEBS_SELECTION_CAPTURE?.trim() || 'shein,temu,aliexpress').toLowerCase();
-  if (raw === 'all' || raw === 'on' || raw === 'true' || raw === '1') return 'selection';
-  if (raw === 'off' || raw === 'false' || raw === '0' || raw === 'none') return 'matrix';
-  const list = raw.split(/[\s,;]+/).filter(Boolean);
-  return storeId && list.includes(String(storeId).toLowerCase()) ? 'selection' : 'matrix';
-}
-
-/** Principe effectif d'une boutique : ligne CRM, sinon défaut d'environnement. Ne lève jamais. */
-export function ayWebsCapturePrinciple(db: QatafoDatabase | null | undefined, storeId: string | null | undefined): AyWebsCapturePrinciple {
-  if (ayWebsCaptureControlMode(db, storeId) === 'core') return 'matrix';
-  const fallback = ayWebsSelectionCaptureDefault(storeId);
-  if (!db || !storeId) return fallback;
-  try {
-    const now = Date.now();
-    let cached = principleCache.get(db);
-    if (!cached || now - cached.loadedAt >= CONTROL_CACHE_TTL_MS) {
-      ensurePrincipleSchema(db);
-      const byStore = new Map<string, AyWebsCapturePrinciple>();
-      for (const row of db.all<{ store_id: string; principle: string }>('SELECT store_id, principle FROM ayweb_capture_principles')) {
-        if (isAyWebsCapturePrinciple(row.principle)) byStore.set(row.store_id, row.principle);
-      }
-      cached = { loadedAt: now, byStore };
-      principleCache.set(db, cached);
-    }
-    return cached.byStore.get(String(storeId).toLowerCase()) ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-export function setAyWebsCapturePrinciple(
-  db: QatafoDatabase,
-  input: { storeId: string; principle: AyWebsCapturePrinciple; note?: string; actorId?: string | null; requestId?: string | null },
-): { storeId: string; principle: AyWebsCapturePrinciple; note: string; updatedBy: string; updatedAt: string } {
-  const storeId = String(input.storeId || '').trim().toLowerCase();
-  if (!STORE_ID_PATTERN.test(storeId)) throw new Error('INVALID_STORE_ID');
-  if (!isAyWebsCapturePrinciple(input.principle)) throw new Error('INVALID_CAPTURE_PRINCIPLE');
-  ensurePrincipleSchema(db);
-  const before = ayWebsCapturePrinciple(db, storeId);
-  const row = {
-    storeId,
-    principle: input.principle,
-    note: String(input.note || '').trim().slice(0, 300),
-    updatedBy: String(input.actorId || '').slice(0, 80),
-    updatedAt: new Date().toISOString(),
-  };
-  db.run(
-    `INSERT INTO ayweb_capture_principles (store_id, principle, note, updated_by, updated_at) VALUES (?,?,?,?,?)
-     ON CONFLICT(store_id) DO UPDATE SET principle=excluded.principle, note=excluded.note, updated_by=excluded.updated_by, updated_at=excluded.updated_at`,
-    row.storeId, row.principle, row.note, row.updatedBy, row.updatedAt,
-  );
-  principleCache.delete(db);
-  writeAyWebsAudit(db, {
-    actorType: 'admin',
-    actorId: input.actorId ?? null,
-    action: 'capture_principle.set',
-    resourceType: 'store',
-    resourceId: storeId,
-    beforeState: before,
-    afterState: row.principle,
-    detail: { note: row.note },
-    requestId: input.requestId ?? null,
-  });
-  return row;
-}
+/** One live purchase flow, regardless of historical database rows or env flags. */
+export const AYWEBS_CAPTURE_PRINCIPLE = 'matrix' as const;
 
 /** Pour les tests : oublie le cache des contrôles (une autre instance a écrit). */
 export function resetAyWebsCaptureControlCache(db?: QatafoDatabase): void {
-  if (db) { controlCache.delete(db); principleCache.delete(db); }
+  if (db) controlCache.delete(db);
   lastPrune = 0;
 }

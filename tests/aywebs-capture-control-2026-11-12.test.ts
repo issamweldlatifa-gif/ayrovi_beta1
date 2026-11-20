@@ -168,7 +168,12 @@ describe('endpoints CRM', () => {
     expect(health.body.data.alerts.map((row: { store_key: string }) => row.store_key)).toContain('registre:primark');
     expect(health.body.data.modes).toEqual(['auto', 'core', 'paused']);
     const sheinScript = health.body.data.scripts.find((row: { store_id: string }) => row.store_id === 'shein');
-    expect(sheinScript).toMatchObject({ control: 'auto', bundle: 'shein' });
+    expect(sheinScript).toMatchObject({ control: 'auto', bundle: 'shein', principle: 'matrix' });
+    expect(health.body.data.principles).toEqual(['matrix']);
+    const retired = await agent.put('/api/admin/aywebs/capture/principles/shein').set('x-csrf-token', csrf)
+      .send({ principle: 'selection', note: 'ancienne interface' });
+    expect(retired.status).toBe(410);
+    expect(retired.body.code).toBe('CAPTURE_PRINCIPLE_RETIRED');
 
     const noNote = await agent.put('/api/admin/aywebs/capture/controls/primark').set('x-csrf-token', csrf).send({ mode: 'paused' });
     expect(noNote.status).toBe(400);

@@ -1,21 +1,4 @@
-/**
- * Principe de capture (19/11/2026) : « le client choisit sur la page du
- * marchand → AYWEBs capte ce choix → ZAYROVI calcule → le client confirme ».
- *
- * Capture faite en mode SÉLECTION (`captureMode: 'selection'`, décidé par le
- * serveur boutique par boutique) ⇒ la feuille ne propose plus de choisir
- * taille/couleur, pour AUCUNE boutique : elle affiche le choix capté et renvoie
- * vers la page pour le changer (« بدّل في الصفحة »).
- *
- * Retour arrière (`matrix` dans le CRM) : le script servi ne marque pas la
- * capture, et Amazon / Zalando retrouvent leur choix dans la feuille.
- */
-export function readOnlyStoreSelection(storeId: string | null | undefined, capture?: unknown): boolean {
-  if (isSelectionCapture(capture)) return true;
-  const id = String(storeId ?? '').trim().toLowerCase();
-  return id !== 'amazon' && id !== 'zalando';
-}
-
+/** Identifies invalid snapshots still cached by the retired merchant reader. */
 export function isSelectionCapture(capture: unknown): boolean {
   return Boolean(capture && typeof capture === 'object' && (capture as Record<string, unknown>).captureMode === 'selection');
 }

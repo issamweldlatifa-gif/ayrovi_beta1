@@ -2495,7 +2495,7 @@ export const AMAZON_MOBILE_CAPTURE_SCRIPT = String.raw`(function () {
     /* Amazon-only per-ASIN matrix: facts remain scoped to their exact ASIN.
        Conflicting prices and unknown variants never inherit the active price. */
     /* Mode « sélection » (19/11/2026) : seule l'option choisie est lue — pas de matrice. */
-    if (!(typeof window !== 'undefined' && window.__AYWEBS_CAPTURE_READER__ && window.__AYWEBS_CAPTURE_READER__.mode === 'selection')) try {
+    try {
       var matrixSeen = {};
       var ambiguousMatrix = {};
     var pushMatrixEntry = function (entry) {

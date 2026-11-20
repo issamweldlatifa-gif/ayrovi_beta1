@@ -27,7 +27,6 @@ import { isAyWebsPickerPlaceholder } from '../../shared/aywebsObservedChoice';
  * montant ne peut sortir que du parseur du serveur. Les textes sont bornés,
  * normalisés (espaces insécables, longueur) et journalisés.
  */
-import { evaluateAyWebsSelection, type AyWebsSelectionVerdict } from './selectionCapture';
 import { createHash } from 'node:crypto';
 import type { ScrapedProduct } from '../types';
 import type { AyWebsSourceProduct } from './adapters/contract';
@@ -366,7 +365,7 @@ function cleanImageUrls(raw: unknown): string[] {
  */
 const NOT_A_VARIANT_GROUP = /^(sort|sort by|sortby|trier|tri|order by|orderby|quantit\w*|quantity|qty|nombre|view|view by|affichage|filter|filtre|page|pages|lang|langue|language|devise|currency|pays|country|region|région|per page|items per page|afficher)\b/i;
 
-function cleanVariantGroups(raw: unknown, selectionMode: boolean): AyWebsCapturedVariantGroup[] {
+function cleanVariantGroups(raw: unknown): AyWebsCapturedVariantGroup[] {
   if (!Array.isArray(raw)) return [];
   const out: AyWebsCapturedVariantGroup[] = [];
   const seen = new Set<string>();
@@ -437,7 +436,7 @@ function cleanVariantGroups(raw: unknown, selectionMode: boolean): AyWebsCapture
       }
     }
     seen.add(key);
-    out.push({ name, values, selected: selected.slice(0, selectionMode ? 2 : 1), ...(options.length ? { options } : {}) });
+    out.push({ name, values, selected: selected.slice(0, 1), ...(options.length ? { options } : {}) });
   }
   return out;
 }
@@ -505,10 +504,6 @@ export interface AyWebsCaptureValidation {
    * prix et devise validés par `checkPriceText`.
    */
   skuCombinations: AyWebsSourceProduct['variants'];
-  /** Positive page evidence on a rejected selection; never used to quote. */
-  selectionPageProof?: { title: string; corroborated: boolean };
-  /** Verdict du mode `selection` (choix du client, identifiant, quantité), sinon null. */
-  selection?: AyWebsSelectionVerdict | null;
   /** Piste d'audit lisible : quels candidats ont été vus, lesquels ont gagné. */
   notes: string[];
   outcome: AyWebsCaptureOutcome;
@@ -704,12 +699,7 @@ export interface AyWebsCaptureValidationOptions {
    * prix sur une bannière n'est pas un article : refus `NOT_A_PRODUCT_PAGE`.
    */
   requireProductPage?: boolean;
-  /**
-   * Principe « le client choisit » (19/11/2026) : la capture ne décrit que la
-   * combinaison affichée. Sélection incomplète, lectures divergentes ou choix
-   * indisponible ⇒ refus ; aucune matrice de combinaisons n'est reconstruite.
-   */
-  selectionMode?: boolean;
+
 }
 
 /**
@@ -1049,43 +1039,16 @@ export function validateAyWebsCapturedPage(
   /* Deux lecteurs, un seul contrat : le générique (boutiques sans adaptateur) et
      le dédié Amazon (pastilles + ASIN). Les groupes génériques gagnent ; ceux
      d'Amazon complètent les dimensions qu'ils n'ont pas nommées. */
-  const genericGroups = cleanVariantGroups(payload.variantGroups, options.selectionMode === true);
+  const genericGroups = cleanVariantGroups(payload.variantGroups);
   const amazonGroups = variantGroupsFromAmazonOptions(payload.amazon);
   const variantGroups = [...genericGroups];
   for (const group of amazonGroups) {
     const known = variantGroups.find((entry) => entry.name.toLowerCase() === group.name.toLowerCase());
     if (!known) {
       variantGroups.push(group);
-    } else if (options.selectionMode && !known.selected?.length && group.selected?.length === 1) {
-      // The dedicated Amazon twister may carry the selected value more clearly
-      // than the DOM. Only use a value that is also published in this dimension.
-      const selected = known.values.find(value => value.toLowerCase() === group.selected![0].toLowerCase());
-      if (selected) known.selected = [selected];
     }
   }
   variantGroups.splice(AYWEBS_CAPTURE_LIMITS.maxVariantGroups);
-
-  /* ── MODE SÉLECTION (19/11/2026) : seul le choix affiché compte ────────── */
-  let selection: AyWebsSelectionVerdict | null = null;
-  if (options.selectionMode === true) {
-    selection = evaluateAyWebsSelection(payload, {
-      storeId: storeForPrice?.id ?? null,
-      variantGroups,
-      selectedVariantTexts,
-      availability,
-      availabilityReason,
-    });
-    notes.push('capture_mode:selection', ...selection.notes);
-    if (!selection.ok) {
-      if (selection.missingGroups.length) notes.push(`selection_missing:${selection.missingGroups.join('|').slice(0, 120)}`);
-      return {
-        ...rejected(selection.rejection || 'SELECTION_NOT_PROVEN', '', notes),
-        selectionPageProof: { title, corroborated },
-      };
-    }
-    availability = selection.availability;
-    availabilityReason = selection.availabilityReason;
-  }
 
   const fingerprint = fingerprintOf({
     url: pageUrl,
@@ -1099,8 +1062,6 @@ export function validateAyWebsCapturedPage(
     availabilityEvidence,
     condition,
     selectedVariantTexts,
-    /* Mode sélection : le prix est LIÉ à l'option choisie (identifiant + valeurs). */
-    ...(selection ? { selectionVariantId: selection.variantId, selectionAttributes: selection.attributes } : {}),
     capturedAt: String(payload.capturedAt),
   });
 
@@ -1194,7 +1155,7 @@ export function validateAyWebsCapturedPage(
   };
 
   /* Mode sélection : AUCUNE matrice — on ne reconstruit pas les combinaisons non choisies. */
-  if (variantGroups.length > 0 && !selection) {
+  if (variantGroups.length > 0) {
     const rawEntries: AyWebsCapturedMatrixEntry[] = [];
     if (Array.isArray(payload.variantMatrix)) {
       for (const item of payload.variantMatrix.slice(0, AYWEBS_CAPTURE_LIMITS.maxMatrixEntries)) {
@@ -1421,7 +1382,6 @@ export function validateAyWebsCapturedPage(
     selectedVariantTexts,
     variantGroups,
     skuCombinations,
-    selection,
     notes,
     outcome: {
       used: true,

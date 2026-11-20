@@ -30,11 +30,11 @@ import { StoreCartSheet } from '@/features/aywebs/StoreSheets';
 import { rememberAyWebsVisit } from '@/features/aywebs/lastVisitedStore';
 import {
   analyzeAyWebsPage, buildAyWebsCaptureInjection, fetchAyWebsCart, fetchAyWebsCaptureScript,
-  isAyWebsBridgeMessage, parseAyWebsCaptureMessage, resolveAyWebsProductWithCapture,
+  isAyWebsBridgeMessage, parseAyWebsCaptureMessage, resetAyWebsCaptureScriptCache, resolveAyWebsProductWithCapture,
   type AyWebsCart, type AyWebsCartItem, type AyWebsPageAnalysis, type AyWebsResolvedProduct, type AyWebsVariantOption,
 } from '@/api/aywebs';
 import { AddToCartSheet } from '@/features/aywebs/AddToCartSheet';
-import { isSelectionCapture, readOnlyStoreSelection } from '@/features/aywebs/storeSheetMode';
+import { isSelectionCapture } from '@/features/aywebs/storeSheetMode';
 import { AYWEBS_NETWORK_OBSERVER_SCRIPT } from '@/features/aywebs/networkObserverScript';
 import {
   groupsFromCapture, localVariantsFromCapture, optionsFromVariants, productFromCapture,
@@ -43,7 +43,7 @@ import { captureIsProductCard } from '@/features/aywebs/pageKind';
 import { VariantReader, type VariantReaderHandle } from '@/features/aywebs/VariantReader';
 import { waitForPageIdle } from '@/features/aywebs/captureFallback';
 import {
-  AYWEBS_CAPTURE_WATCHDOG_MS, canReusePrefetch, prefetchIsSelectionSnapshot, priceCandidatesOf, priceRetryDelayMs, selectionConfirmDelayMs, readDecision, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
+  AYWEBS_CAPTURE_WATCHDOG_MS, canReusePrefetch, priceCandidatesOf, priceRetryDelayMs, readDecision, resolveAddToCart, shouldRetryAyWebsCaptureForPrice,
   type ReadIntent,
 } from '@/features/aywebs/captureFlow';
 import { useSessionId } from '@/session/session';
@@ -398,24 +398,19 @@ export default function AyWebsBrowserScreen() {
       };
       /* Prix absent de la capture ⇒ relance bornée (fc3cce38 / captureFlow.ts). */
       const requestedUrl = pageUrlRef.current;
-      let selectionConfirms = 0;
       const onCaptured = (capture: Record<string, unknown>) => {
+        if (isSelectionCapture(capture)) {
+          // A stale reader from before the deployment cannot prove a variant matrix.
+          resetAyWebsCaptureScriptCache();
+          reject(new ApiError('http', 'Relancez la capture sur la page du marchand.', { status: 422, code: 'CAPTURE_INCOMPLETE' }));
+          return;
+        }
         const script = lastScript.current;
         if (script && shouldRetryAyWebsCaptureForPrice(priceCandidatesOf(capture), captureRetries.current)) {
           captureRetries.current += 1;
           waiter.current = { resolve: onCaptured, reject, quiet, requestedUrl: pageUrlRef.current || requestedUrl };
           stopTimer();
           setTimeout(() => inject(script), priceRetryDelayMs(captureRetries.current - 1));
-          return;
-        }
-        /* Mode sélection : relecture de confirmation (~400 ms) — le serveur exige
-           deux lectures identiques du choix affiché (captureFlow.ts). */
-        const confirmDelay = script ? selectionConfirmDelayMs(capture, selectionConfirms) : null;
-        if (script && confirmDelay !== null) {
-          selectionConfirms += 1;
-          waiter.current = { resolve: onCaptured, reject, quiet, requestedUrl: pageUrlRef.current || requestedUrl };
-          stopTimer();
-          setTimeout(() => inject(script), confirmDelay);
           return;
         }
         resolve(capture);
@@ -484,10 +479,7 @@ export default function AyWebsBrowserScreen() {
         setBusy(true);
         setNote('');
         try {
-          const prefetched = await entry.promise;
-          /* Pré-lecture « sélection » : le choix a pu changer depuis — on relit au clic. */
-          if (!prefetchIsSelectionSnapshot(prefetched)) return prefetched;
-          prefetch.current = null;
+          return await entry.promise;
         } catch {
           prefetch.current = null;
           if (controller.signal.aborted) throw new ApiError('aborted', 'Requête interrompue.');
@@ -515,7 +507,7 @@ export default function AyWebsBrowserScreen() {
           return;
         }
         const liveUrl = pageUrlRef.current || activePageUrl;
-        const variants = isSelectionCapture(captured) ? [] : localVariantsFromCapture(captured);
+        const variants = localVariantsFromCapture(captured);
         const localProduct: AyWebsResolvedProduct = {
           ...productFromCapture(captured, liveUrl, currentStoreId, currentStoreName),
           /* Les groupes viennent de la TABLE DES VARIANTES, et à défaut des
@@ -844,7 +836,6 @@ export default function AyWebsBrowserScreen() {
           capture={sheet.capture}
           quoteToken={sheet.quoteToken}
           local={sheet.local}
-          readOnlySelection={readOnlyStoreSelection(sheet.product.storeId, sheet.capture)}
           readVariant={readVariant}
           onClose={() => {
             invalidatePrefetchOnTouch();

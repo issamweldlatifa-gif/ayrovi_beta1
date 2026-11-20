@@ -8,7 +8,7 @@ import { ayWebsReadGateStats } from './readGate';
 import { readerFingerprintReport } from '../scraper/readerFingerprint';
 import { AYWEBS_CAPTURE_LIMITS, AYWEBS_CAPTURE_VERSION, type AyWebsCapturedVariantGroup } from '../../shared/aywebsCapture';
 import { describeAyWebsCaptureScript } from './captureScript';
-import { ayWebsCaptureControlMode, ayWebsCapturePrinciple } from './captureControl';
+import { AYWEBS_CAPTURE_PRINCIPLE, ayWebsCaptureControlMode } from './captureControl';
 import { AYWEBS_CAPTURE_CONTRACT_VERSION } from './captureReaders/registry';
 import { AYWEBS_CAPTURE_TRACKED_STORES, ayWebsWebviewCaptureStats, ayWebsWebviewVerifySample } from './webviewCapture';
 import { getZayroviAiCore } from '../ai-core/core';
@@ -597,10 +597,7 @@ export function createAyWebsRouter(db: ZayroviDatabase, scraper: SmartLinkScrape
     /* Retour arrière du CRM (12/11/2026) : mode `core` ⇒ le cœur partagé
        complet, celui d'avant le découpage par boutique. */
     const control = ayWebsCaptureControlMode(db, storeId || null);
-    /* Principe par boutique (19/11/2026) : `selection` = le lecteur ne capte que le
-       choix du client (deux lectures, quantité affichée, jamais la matrice). */
-    const principle = storeId ? ayWebsCapturePrinciple(db, storeId) : 'matrix';
-    const served = describeAyWebsCaptureScript(control === 'core' ? null : (storeId || null), { mode: principle === 'selection' ? 'selection' : 'matrix' });
+    const served = describeAyWebsCaptureScript(control === 'core' ? null : (storeId || null));
     const script = served.text;
     const reader = served.reader;
     res.type('application/javascript');
@@ -608,7 +605,7 @@ export function createAyWebsRouter(db: ZayroviDatabase, scraper: SmartLinkScrape
     res.setHeader('X-AyWebs-Capture-Bundle', served.bundle);
     res.setHeader('X-AyWebs-Capture-Hash', served.sha256.slice(0, 16));
     res.setHeader('X-AyWebs-Capture-Control', control);
-    res.setHeader('X-AyWebs-Capture-Principle', principle);
+    res.setHeader('X-AyWebs-Capture-Principle', AYWEBS_CAPTURE_PRINCIPLE);
     if (reader) {
       res.setHeader('X-AyWebs-Capture-Reader', reader.storeId);
       res.setHeader('X-AyWebs-Capture-Reader-Version', String(reader.version));
@@ -701,21 +698,8 @@ export function createAyWebsRouter(db: ZayroviDatabase, scraper: SmartLinkScrape
            verdict d'intégrité (« $6.99$6.99 » → montant dupliqué), le client et
            le support voient pourquoi. Rien n'est publié à la place du prix. */
         price_rejection: result.scrapedProduct?.priceRejection ?? null,
-        /* Principe « le client choisit » (19/11/2026) : le choix capté sur la page
-           (valeurs, identifiant d'option, disponibilité à trois états, quantité
-           affichée). La feuille de l'application ne fait que le CONFIRMER. */
-        captured_selection: result.capturedSelection
-          ? {
-            mode: result.capturedSelection.mode,
-            attributes: result.capturedSelection.attributes,
-            variant_id: result.capturedSelection.variantId,
-            variant_id_source: result.capturedSelection.variantIdSource,
-            availability: result.capturedSelection.availability,
-            availability_reason: result.capturedSelection.availabilityReason,
-            page_quantity: result.capturedSelection.pageQuantity,
-            image: result.capturedSelection.image,
-          }
-          : null,
+        // Kept in the response schema for older versions of the app.
+        captured_selection: null,
         /* Phase 1 — devis signé : à renvoyer tel quel à POST /cart/items
            (`quote_token`) pour un ajout sans relecture marchande. */
         quote_token: result.quoteToken,

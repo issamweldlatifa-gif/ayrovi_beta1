@@ -188,9 +188,6 @@ public class AyWebsBrowseActivity extends Activity {
   static final int CAPTURE_SCRIPT_MAX_BYTES = 1_048_576;
   /** Relances quand la capture revient sans prix (mêmes délais que l'application RN, P2-3). */
   private static final long[] CAPTURE_PRICE_RETRY_DELAYS_MS = {450L, 1200L, 1600L};
-  /** Mode sélection : relecture de confirmation ~400 ms après la première, au plus 2. */
-  private static final long SELECTION_CONFIRM_DELAY_MS = 400L;
-  private static final int SELECTION_CONFIRM_MAX_READS = 2;
   private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
   @SuppressLint("SetJavaScriptEnabled")
@@ -570,7 +567,7 @@ public class AyWebsBrowseActivity extends Activity {
     if (apiOrigin.isEmpty()) { runOnUiThread(next); return; }
     executor.execute(() -> {
       try {
-        String path = CAPTURE_SCRIPT_PATH + (storeId == null ? "" : "?store_id=" + storeId);
+        String path = CAPTURE_SCRIPT_PATH + (storeId == null ? "?flow=catalogue" : "?store_id=" + storeId + "&flow=catalogue");
         String script = getText(apiOrigin + path);
         if (script != null && !script.trim().isEmpty()) {
           captureScript = script;
@@ -604,25 +601,18 @@ public class AyWebsBrowseActivity extends Activity {
     final String script = captureScript;
     final WebView view = webView;
     if (script.isEmpty() || view == null) { onCapture.accept(null); return; }
-    runOnUiThread(() -> captureAttempt(view, script, 0, 0, onCapture));
+    runOnUiThread(() -> captureAttempt(view, script, 0, onCapture));
   }
 
-  /**
-   * Une lecture, puis (P2-3) relance bornée si la page n'a pas encore rendu
-   * son prix, et (mode sélection) relecture de confirmation ~400 ms plus tard :
-   * le serveur exige deux lectures identiques du choix affiché.
-   */
+  /** One capture, with bounded retries only if the merchant price is not ready. */
   private void captureAttempt(final WebView view, final String script, final int priceRetries,
-      final int confirmReads, final java.util.function.Consumer<String> onCapture) {
+      final java.util.function.Consumer<String> onCapture) {
     try {
       view.evaluateJavascript(script, value -> {
         String json = capturePayload(value);
-        long delay = nextCaptureDelayMs(json, priceRetries, confirmReads);
+        long delay = nextCaptureDelayMs(json, priceRetries);
         if (delay < 0) { onCapture.accept(json); return; }
-        boolean priceRetry = !hasPriceCandidate(json);
-        mainHandler.postDelayed(() -> captureAttempt(view, script,
-            priceRetry ? priceRetries + 1 : priceRetries,
-            priceRetry ? confirmReads : confirmReads + 1, onCapture), delay);
+        mainHandler.postDelayed(() -> captureAttempt(view, script, priceRetries + 1, onCapture), delay);
       });
     } catch (Exception error) {
       onCapture.accept(null);
@@ -630,20 +620,9 @@ public class AyWebsBrowseActivity extends Activity {
   }
 
   /** Délai avant la lecture suivante, ou -1 quand la capture est prête. */
-  static long nextCaptureDelayMs(String json, int priceRetries, int confirmReads) {
-    if (!hasPriceCandidate(json)) {
-      return priceRetries < CAPTURE_PRICE_RETRY_DELAYS_MS.length ? CAPTURE_PRICE_RETRY_DELAYS_MS[priceRetries] : -1L;
-    }
-    try {
-      JSONObject capture = new JSONObject(json);
-      if (!"selection".equals(capture.optString("captureMode", ""))) return -1L;
-      if (confirmReads >= SELECTION_CONFIRM_MAX_READS) return -1L;
-      JSONObject proof = capture.optJSONObject("selection");
-      if (proof != null && proof.optInt("reads", 1) >= 2 && proof.optBoolean("stable", false)) return -1L;
-      return SELECTION_CONFIRM_DELAY_MS;
-    } catch (Exception error) {
-      return -1L;
-    }
+  static long nextCaptureDelayMs(String json, int priceRetries) {
+    if (hasPriceCandidate(json) || priceRetries >= CAPTURE_PRICE_RETRY_DELAYS_MS.length) return -1L;
+    return CAPTURE_PRICE_RETRY_DELAYS_MS[priceRetries];
   }
 
   private static boolean hasPriceCandidate(String json) {
