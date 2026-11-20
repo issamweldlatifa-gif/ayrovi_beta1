@@ -51,6 +51,8 @@ export default function ReelsViewerScreen() {
   const theme = useTheme();
   const t = useT();
   const insets = useSafeAreaInsets();
+  const statusScrimHeight = insets.top + 30;
+  const statusScrimColor = veil(0.58);
   const window = useWindowDimensions();
   const [{ width, height }, setViewport] = useState({ width: window.width, height: window.height });
   const listRef = useRef<FlatList<Reel>>(null);
@@ -185,8 +187,13 @@ export default function ReelsViewerScreen() {
       </View> : null}
 
       {focused ? <StatusBar style="light" /> : null}
-      <LinearGradient pointerEvents="none" testID="reel-status-scrim"
-        colors={[veil(0.52), 'transparent']} style={[styles.statusScrim, { height: insets.top + 30 }]} />
+      <LinearGradient
+        pointerEvents="none"
+        testID="reel-status-scrim"
+        colors={[statusScrimColor, statusScrimColor, 'transparent']}
+        locations={[0, insets.top / statusScrimHeight, 1]}
+        style={[styles.statusScrim, { height: statusScrimHeight }]}
+      />
       <View pointerEvents="box-none" style={[styles.header, { top: insets.top, flexDirection: rowDirectionFor(theme.isRTL) }]}>
         <ReelViewerHeaderButton kind="back" label={t('common.back')} onPress={back} />
         {infoTarget ? <ReelViewerHeaderButton kind="info" label={t('reel.viewerInfo')} onPress={() => setInfoFor(infoTarget)} /> : null}

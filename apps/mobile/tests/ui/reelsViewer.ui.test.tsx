@@ -32,6 +32,8 @@ it('opens a cold-link Reel after loading, and pages by the actual available view
   expect(screen.UNSAFE_getByType(StatusBar).props.style).toBe('light');
   const scrim = screen.getByTestId('reel-status-scrim');
   expect(StyleSheet.flatten(scrim.props.style)).toMatchObject({ top: 0, height: 54 });
+  expect(scrim.props.locations).toEqual([0, 24 / 54, 1]);
+  expect(scrim.props.colors[0]).toBe(scrim.props.colors[1]);
   expect(scrim.props.colors.at(-1)).toBe(processColor('transparent'));
   expect(list.props.windowSize).toBe(5);
   const reposition = jest.spyOn(list.instance, 'scrollToIndex');
