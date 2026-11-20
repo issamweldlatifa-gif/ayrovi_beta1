@@ -13,7 +13,7 @@ import Database from 'better-sqlite3';
 import request from 'supertest';
 import { describe, expect, test } from 'vitest';
 import { app, db } from '../src/server';
-import { officialProductId } from '../src/catalogue/installOfficialCatalogue';
+import { ZALANDO_DEMO, zalandoDemoProductId } from '../src/catalogue/installZalandoDemoCatalogue';
 import { relaxCustomerFavoritesSourceUnique } from '../src/db/customerFavoritesMigration';
 
 async function signIn(phone: string) {
@@ -31,7 +31,7 @@ async function signIn(phone: string) {
 describe('cœurs des produits officiels', () => {
   test('chaque produit officiel devient favori — plus de 500 après le premier', async () => {
     const { agent, csrf } = await signIn('92 416 116');
-    const ids = ['adidas-essentials-hoodie', 'nike-dri-fit-legend', 'levis-501-original', 'jbl-go-4'].map(officialProductId);
+    const ids = ZALANDO_DEMO.products.slice(0, 4).map(item => zalandoDemoProductId(item.key));
     const created: string[] = [];
     for (const productId of ids) {
       const response = await agent.post('/api/customer/account/favorites').set('x-csrf-token', csrf).send({ productId });

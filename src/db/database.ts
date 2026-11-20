@@ -5,7 +5,7 @@ import { schemaStatements } from './schemaStatements';
 import { ensureSocialTotals, socialTotalsDrift } from './socialTotals';
 import { upgradePublicationMediaPresentation } from '../catalogue/upgradePublicationMediaPresentation';
 import { reserveCatalogueSale, catalogId } from '../catalogue/localSale';
-import { installOfficialCatalogue, linkOfficialReelProducts, purgeCatalogueProducts, versionOfficialImages } from '../catalogue/installOfficialCatalogue';
+import { checkZalandoDemoSelection, installZalandoDemoCatalogue, ZALANDO_DEMO_MIGRATION } from '../catalogue/installZalandoDemoCatalogue';
 import { installPublicationShowcase } from '../services/publicationShowcase';
 import { DEFAULT_PUBLICATION_FEED_SETTINGS } from '../../shared/publicationFeed';
 import { seedOfficialStories } from '../services/officialStories';
@@ -418,20 +418,21 @@ export class QatafoDatabase {
       this.run("UPDATE story_publishers SET name='Zayrovi Team' WHERE id='pub_zayrovi' AND official=1 AND lower(trim(name)) IN ('zayrovi','zayrovi official')");
     });
     // Owner approved replacing all prior Reels with five supplied clips (once).
-    const backupReelContent = () => {
+    const backupBeforeReplacement = (prefix: string) => {
       if (this.databasePath === ':memory:') return;
       const backupDir = path.join(path.dirname(path.resolve(this.databasePath)), 'backups');
       fs.mkdirSync(backupDir, { recursive: true, mode: 0o700 });
-      const backup = path.join(backupDir, `pre-owner-reels-${randomUUID()}.sqlite`);
+      const backup = path.join(backupDir, `${prefix}-${randomUUID()}.sqlite`);
       this.db.prepare('VACUUM INTO ?').run(backup);
       fs.chmodSync(backup, 0o600);
       const copy = new Database(backup, { readonly: true, fileMustExist: true });
       try {
         const integrity = copy.pragma('integrity_check') as Array<{integrity_check: string}>;
         if (integrity.length !== 1 || integrity[0].integrity_check !== 'ok' || (copy.pragma('foreign_key_check') as unknown[]).length)
-          throw new Error('OWNER_REEL_BACKUP_INVALID');
+          throw new Error(`INVALID_REPLACEMENT_BACKUP:${prefix}`);
       } finally { copy.close(); }
     };
+    const backupReelContent = () => backupBeforeReplacement('pre-owner-reels');
     try {
       installOwnerReels(this, backupReelContent);
     } catch {
@@ -441,20 +442,20 @@ export class QatafoDatabase {
     // Storage compatibility only; retired Publication blocks are not republished.
     this.db.exec(RETIRED_PUBLICATION_BLOCKS_SCHEMA);
     if (relaxCustomerFavoritesSourceUnique(this.db)) console.log('[database] customer_favorites : unicité de l’adresse limitée aux favoris externes');
-    // Catalogue officiel (12/11) : l'ancien catalogue est retiré EN ENTIER et remplacé
-    // par les vingt produits fournis par le propriétaire (`catalogue/installOfficialCatalogue.ts`).
-    this.runOnceDataMigration('official_catalogue_v1', () => {
-      const report = purgeCatalogueProducts(this);
-      const created = installOfficialCatalogue(this);
-      linkOfficialReelProducts(this);
-      console.log(`[database] catalogue officiel : ${report.products} produit(s) retiré(s), ${created} installé(s)`);
-    });
-    // Photos officielles au format unique 2:3 (13/11) : adresses versionnées → caches rafraîchis.
-    this.runOnceDataMigration('official_catalogue_images_v2', () => { versionOfficialImages(this); });
     try {
       installOwnerReelsV2(this, backupReelContent);
     } catch (cause) {
       throw new Error('OWNER_REEL_V2_REPLACEMENT_FAILED', { cause });
+    }
+    if (!this.get('SELECT 1 FROM applied_data_migrations WHERE key=?', ZALANDO_DEMO_MIGRATION)) {
+      checkZalandoDemoSelection();
+      if (existingDatabase && this.get("SELECT 1 FROM products WHERE visibility='CATALOG' LIMIT 1")) {
+        backupBeforeReplacement('pre-zalando-demo-catalogue');
+      }
+      this.runOnceDataMigration(ZALANDO_DEMO_MIGRATION, () => {
+        const report = installZalandoDemoCatalogue(this);
+        console.info('[database] Zalando demo catalogue:', report);
+      });
     }
     // Compteurs sociaux matérialisés (audit d'architecture 12/11) : posés EN DERNIER,
     // après toutes les migrations qui suppriment ou réinstallent des interactions.

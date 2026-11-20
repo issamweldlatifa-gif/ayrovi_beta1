@@ -33,7 +33,7 @@ await check('/site-assets/missing.webp', 404);
 await check('/ar/r/unknown_share_item', 404);
 if (process.env.ZAYROVI_TEST_WEB_FIXTURES === '1') {
   const fixtures = [
-    ['/p/product_official_converse-chuck-taylor-hi', /Chuck Taylor All Star/, 'zayrovi://product/product_official_converse-chuck-taylor-hi'],
+    ['/p/product_official_zalando-p001', /SALSA JEANS LANGARM-SHIRTS SLIM/, 'zayrovi://product/product_official_zalando-p001'],
     ['/ar/r/reel_drive_capsule_wardrobe_v2', /خزانة ملابس أساسية/, 'zayrovi://reels-viewer?id=reel_drive_capsule_wardrobe_v2&amp;shared=1'],
     ['/s/official_story_everyday', /og:image/, 'zayrovi://stories?id=official_story_everyday'],
   ];

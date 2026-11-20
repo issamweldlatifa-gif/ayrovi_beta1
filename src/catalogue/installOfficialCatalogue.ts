@@ -1,5 +1,6 @@
 /**
- * CATALOGUE OFFICIEL (12/11/2026) — remplace TOUT le catalogue précédent.
+ * Ancienne édition du catalogue officiel (12/11/2026).
+ * Conservée pour les tests historiques et les liens médias, plus au démarrage.
  *
  * Demande du propriétaire : « احذفهم نهائيا وعوضهم بالكاتالوج الجديد ». Les
  * vingt produits viennent du fichier `products_official.json` fourni (pages

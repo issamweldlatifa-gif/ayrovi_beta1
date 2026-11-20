@@ -13,7 +13,7 @@ import path from 'node:path';
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { QatafoDatabase } from '../src/db/database';
-import { officialImageUrl, versionOfficialImages } from '../src/catalogue/installOfficialCatalogue';
+import { officialImageUrl, versionOfficialImages, purgeCatalogueProducts, installOfficialCatalogue } from '../src/catalogue/installOfficialCatalogue';
 
 const dir = path.join(__dirname, '..', 'assets', 'media', 'catalogue', 'official');
 const raw = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'src', 'catalogue', 'officialCatalogue.json'), 'utf8'));
@@ -64,6 +64,8 @@ describe('adresses versionnées (les téléphones rechargent la nouvelle photo)'
 
   it('installation neuve : produits et galerie pointent vers ?v=2', () => {
     const db = new QatafoDatabase(':memory:');
+    purgeCatalogueProducts(db);
+    installOfficialCatalogue(db);
     const products = db.all<{ image: string; additional_images: string }>("SELECT image, additional_images FROM products WHERE id LIKE 'product_official_%'");
     expect(products.length).toBe(20);
     for (const row of products) {
@@ -78,6 +80,8 @@ describe('adresses versionnées (les téléphones rechargent la nouvelle photo)'
 
   it('base déjà installée (adresses sans version) : mise à jour, puis rien à refaire', () => {
     const db = new QatafoDatabase(':memory:');
+    purgeCatalogueProducts(db);
+    installOfficialCatalogue(db);
     // Simule une base du 12/11 : adresses nues.
     db.run("UPDATE products SET image=replace(image,'?v=2',''), additional_images=replace(additional_images,'?v=2','') WHERE id LIKE 'product_official_%'");
     db.run("UPDATE catalogue_media SET url=replace(url,'?v=2','')");

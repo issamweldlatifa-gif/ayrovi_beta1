@@ -1,0 +1,687 @@
+{
+  "source": "Zalando.fr — pages produit officielles",
+  "sourceDate": "2026-11-19",
+  "fxRateTndPerEur": 3.355458,
+  "fxRateSource": "ZAYROVI commerce-config, live rate version 2",
+  "stockPerProduct": 20,
+  "products": [
+    {
+      "id": "P001",
+      "key": "zalando-p001",
+      "title": "SALSA JEANS LANGARM-SHIRTS SLIM - Pullover - noir",
+      "description": "Composition : 90 % coton, 10 % élasthanne. Col bateau, motif uni, coupe slim, silhouette droite, longueur standard, manches longues et coupe asymétrique.",
+      "brand": "Salsa Jeans",
+      "reference": "SZ021I07F-Q11",
+      "category": "Vêtements",
+      "audience": "Femme",
+      "color": "noir",
+      "sizes": [
+        "XS",
+        "S"
+      ],
+      "volumes": [],
+      "priceEurCents": 3995,
+      "sourceUrl": "https://www.zalando.fr/salsa-jeans-pullover-noir-sz021i07f-q11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p001-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p001-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p001-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p001-4.jpg"
+      ]
+    },
+    {
+      "id": "P002",
+      "key": "zalando-p002",
+      "title": "SUPERDRY EVEREST HOODED BOMBER JACKET - Veste d'hiver - black",
+      "description": "Veste d'hiver noire à capuche et fermeture éclair, poche intérieure et poches dans les coutures, poignets côtelés et capuche doublée avec fausse fourrure amovible. Composition : 100 % polyester; empiècement 100 % nylon; rembourrage 100 % polyester. Coupe regular, longueur standard et manches longues.",
+      "brand": "Superdry & Co",
+      "reference": "SU221U0MU-Q11",
+      "category": "Vêtements",
+      "audience": "Femme",
+      "color": "black",
+      "sizes": [],
+      "volumes": [],
+      "priceEurCents": 17999,
+      "sourceUrl": "https://www.zalando.fr/superdry-everest-hooded-veste-dhiver-black-su221u0mu-q11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p002-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p002-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p002-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p002-4.jpg"
+      ]
+    },
+    {
+      "id": "P003",
+      "key": "zalando-p003",
+      "title": "SALSA LOS ANGELES LANGARM-SHIRTS REGULAR - Pullover - braun",
+      "description": "Pull marron à rayures avec col bateau, boutons décoratifs et patte de boutonnage. 100 % coton; coupe regular, silhouette droite, longueur standard, manches longues. Lavage en machine à 30 °C.",
+      "brand": "Salsa Jeans",
+      "reference": "SZ021I06Y-O11",
+      "category": "Vêtements",
+      "audience": "Femme",
+      "color": "braun/marron",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "volumes": [],
+      "priceEurCents": 3995,
+      "sourceUrl": "https://www.zalando.fr/salsa-jeans-salsa-los-angeles-langarm-shirts-regular-pullover-braun-sz021i06y-o11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p003-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p003-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p003-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p003-4.jpg"
+      ]
+    },
+    {
+      "id": "P004",
+      "key": "zalando-p004",
+      "title": "WIDE-LEG TAILORED - TROUSERS 00145450 - Pantalon classique - black",
+      "description": "Pantalon noir taille haute, coupe regular et jambe large, longueur longue. Plis, fermeture avant dissimulée, poches latérales, motif uni. Composition : 62 % polyester, 33 % viscose, 5 % élasthanne.",
+      "brand": "Bershka",
+      "reference": "BEJ21A0SW-Q11",
+      "category": "Vêtements",
+      "audience": "Femme",
+      "color": "black",
+      "sizes": [
+        "FR 34",
+        "FR 36",
+        "FR 38",
+        "FR 40",
+        "FR 42",
+        "FR 44"
+      ],
+      "volumes": [],
+      "priceEurCents": 2799,
+      "sourceUrl": "https://www.zalando.fr/bershka-wide-leg-tailored-pantalon-classique-black-bej21a0sw-q11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p004-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p004-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p004-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p004-4.jpg"
+      ]
+    },
+    {
+      "id": "P005",
+      "key": "zalando-p005",
+      "title": "WIDE-LEG SMART TROUSERS WITH BUTTONS 04536428 - Pantalon classique - brown",
+      "description": "Pantalon long à coupe droite et décontractée, taille haute, zip dissimulé, poches latérales et arrière, boutons décoratifs. Composition : 78 % polyester, 16 % viscose, 6 % élasthanne.",
+      "brand": "Stradivarius",
+      "reference": "STH21A0WH-O12",
+      "category": "Vêtements",
+      "audience": "Femme",
+      "color": "brown",
+      "sizes": [
+        "34",
+        "36",
+        "40",
+        "42",
+        "44"
+      ],
+      "volumes": [],
+      "priceEurCents": 2999,
+      "sourceUrl": "https://www.zalando.fr/stradivarius-wide-leg-smart-trousers-with-buttons-04536428-pantalon-classique-brown-sth21a0wh-o12.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p005-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p005-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p005-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p005-4.jpg"
+      ]
+    },
+    {
+      "id": "P006",
+      "key": "zalando-p006",
+      "title": "Salopette denim - black/noir",
+      "description": "Salopette en denim 100 % coton; doublure 100 % coton, non doublée. Braguette boutonnée, poches latérales et arrière, boutons décoratifs. Coupe regular, silhouette droite, longueur longue, sans manches. Lavage à la main; ne pas blanchir, repasser, sécher en machine ni laver en machine.",
+      "brand": "Vans",
+      "reference": "VA221T00E-Q11",
+      "category": "Vêtements",
+      "audience": "Femme",
+      "color": "black",
+      "sizes": [
+        "34",
+        "36",
+        "38",
+        "40",
+        "42",
+        "44",
+        "46"
+      ],
+      "volumes": [],
+      "priceEurCents": 9500,
+      "sourceUrl": "https://www.zalando.fr/vans-chore-overall-salopette-en-jean-black-va221t00e-q11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p006-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p006-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p006-3.jpg"
+      ]
+    },
+    {
+      "id": "P007",
+      "key": "zalando-p007",
+      "title": "STRETCH LOGO FULL ZIP. UNISEX - Sweat zippé - dark grey",
+      "description": "Sweat à capuche zippé avec poche kangourou et cordon de serrage. Molleton chiné, non doublé. Composition : 57 % coton, 43 % polyester. Coupe loose, silhouette droite, longueur standard, manches longues.",
+      "brand": "Vans",
+      "reference": "VA221000W-C11",
+      "category": "Vêtements",
+      "audience": "Femme (fiche UNISEX)",
+      "color": "dark grey",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "volumes": [],
+      "priceEurCents": 6000,
+      "sourceUrl": "https://www.zalando.fr/vans-sweat-zippe-dark-grey-va221000w-c11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p007-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p007-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p007-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p007-4.jpg"
+      ]
+    },
+    {
+      "id": "P008",
+      "key": "zalando-p008",
+      "title": "MILLIKEN VARSITY. - Veste mi-saison - rust copper",
+      "description": "Velours côtelé, 100 % coton; doublure textile 100 % coton, indiquée non doublée. Col à revers, fermeture à boutons et poches dans les coutures. Coupe regular, silhouette droite, manches longues.",
+      "brand": "Vans",
+      "reference": "VA221U02N-G11",
+      "category": "Vêtements",
+      "audience": "Femme",
+      "color": "rust copper",
+      "sizes": [
+        "36",
+        "38",
+        "40",
+        "42",
+        "46"
+      ],
+      "volumes": [],
+      "priceEurCents": 10400,
+      "sourceUrl": "https://www.zalando.fr/vans-milliken-varsity-veste-mi-saison-rust-copper-va221u02n-g11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p008-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p008-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p008-3.jpg"
+      ]
+    },
+    {
+      "id": "P009",
+      "key": "zalando-p009",
+      "title": "Y2K STAR FULL ZIP. - Sweat zippé - black",
+      "description": "Sweat à capuche zippé en molleton non doublé, 75 % coton et 25 % polyester. Coupe ample droite, longueur standard; fermeture bidirectionnelle, poche kangourou séparée et taille élastique.",
+      "brand": "Vans",
+      "reference": "VA221J0DK-Q11",
+      "category": "Vêtements",
+      "audience": "Femme",
+      "color": "black",
+      "sizes": [
+        "34",
+        "36",
+        "38",
+        "40",
+        "42",
+        "44",
+        "46"
+      ],
+      "volumes": [],
+      "priceEurCents": 7200,
+      "sourceUrl": "https://www.zalando.fr/vans-sweat-zippe-black-va221j0dk-q11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p009-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p009-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p009-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p009-4.jpg"
+      ]
+    },
+    {
+      "id": "P010",
+      "key": "zalando-p010",
+      "title": "SALTON FULL-ZIP. - Sweat zippé - natural",
+      "description": "Sweat à capuche zippé, poche kangourou séparée et cordon de serrage. Motif uni, taille élastique. Composition : 62 % coton, 38 % polyester.",
+      "brand": "Vans",
+      "reference": "VA221J0DJ-A11",
+      "category": "Vêtements",
+      "audience": "Femme",
+      "color": "natural",
+      "sizes": [
+        "34",
+        "36",
+        "38",
+        "40",
+        "42",
+        "44",
+        "46"
+      ],
+      "volumes": [],
+      "priceEurCents": 7500,
+      "sourceUrl": "https://www.zalando.fr/vans-sweat-zippe-natural-va221j0dj-a11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p010-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p010-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p010-3.jpg"
+      ]
+    },
+    {
+      "id": "P011",
+      "key": "zalando-p011",
+      "title": "AUTHENTIC - Minijupe - black",
+      "description": "Minijupe noire, motif uni, fermeture à boutons, poches latérales et passants de ceinture. 98 % coton, 2 % élasthanne. Coupe regular, silhouette évasée, longueur extra courte. Zalando conseille une taille en dessous de la taille habituelle.",
+      "brand": "Vans",
+      "reference": "VA221B00K-Q11",
+      "category": "Vêtements",
+      "audience": "Femme",
+      "color": "black",
+      "sizes": [],
+      "volumes": [],
+      "priceEurCents": 4200,
+      "sourceUrl": "https://www.zalando.fr/vans-authentic-jupe-plissee-black-va221b00k-q11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p011-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p011-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p011-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p011-4.jpg"
+      ]
+    },
+    {
+      "id": "P012",
+      "key": "zalando-p012",
+      "title": "CAMERON. - T-shirt basique - dark red",
+      "description": "100 % coton, jersey, col rond, motif uni, coupe regular droite, longueur standard et manches courtes.",
+      "brand": "Vans",
+      "reference": "VA221D0MY-G11",
+      "category": "Vêtements",
+      "audience": "Femme",
+      "color": "black",
+      "sizes": [
+        "34",
+        "36",
+        "38",
+        "40",
+        "42",
+        "44",
+        "46"
+      ],
+      "volumes": [],
+      "priceEurCents": 2800,
+      "sourceUrl": "https://www.zalando.fr/vans-t-shirt-basique-dark-red-va221d0my-g11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p012-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p012-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p012-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p012-4.jpg"
+      ]
+    },
+    {
+      "id": "P013",
+      "key": "zalando-p013",
+      "title": "ANTARES BABY. - T-shirt imprimé - medium pink",
+      "description": "T-shirt imprimé en jersey 100 % coton, col rond, coupe regular, silhouette droite, longueur standard et manches courtes.",
+      "brand": "Vans",
+      "reference": "VA221D0ML-J11",
+      "category": "Vêtements",
+      "audience": "Femme",
+      "color": "medium pink",
+      "sizes": [
+        "34",
+        "36",
+        "38",
+        "40",
+        "42",
+        "44",
+        "46"
+      ],
+      "volumes": [],
+      "priceEurCents": 2800,
+      "sourceUrl": "https://www.zalando.fr/vans-t-shirt-imprime-medium-pink-va221d0ml-j11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p013-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p013-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p013-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p013-4.jpg"
+      ]
+    },
+    {
+      "id": "P014",
+      "key": "zalando-p014",
+      "title": "ADVENT CALENDAR - THE PREMIUM BEAUTY VAULT - Calendrier Beauté de l'Avent",
+      "description": "Calendrier beauté de 24 jours contenant 27 produits, formats standard et miniatures. La page cite notamment Beauty of Joseon, Anua, Biodance, ELEMIS, Shiseido, Babor, MAC, Pixi, Sweed, Kérastase, Sol de Janeiro et Rituals; valeur annoncée supérieure à 645 €.",
+      "brand": "Zalando Beauty",
+      "reference": "ZAH34M006-S11",
+      "category": "Beauté",
+      "audience": "Non indiqué",
+      "color": "",
+      "sizes": [
+        "Taille unique"
+      ],
+      "volumes": [],
+      "priceEurCents": 10295,
+      "sourceUrl": "https://www.zalando.fr/zalando-beauty-advent-calendar-2026-calendrier-beaute-de-lavent-zah34m006-s11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p014-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p014-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p014-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p014-4.jpg"
+      ]
+    },
+    {
+      "id": "P015",
+      "key": "zalando-p015",
+      "title": "GENESIS Sérum fortifiant anti-chute - Sérum capillaire — 30 ml",
+      "description": "Sérum quotidien de soin du cuir chevelu et de la fibre capillaire, présenté pour cheveux fins et sujets à la chute ou à la casse. Texture sérum; actifs cités : caféine et niacinamide.",
+      "brand": "Kérastase",
+      "reference": "KEH34H01S-S11",
+      "category": "Beauté",
+      "audience": "Femme",
+      "color": "",
+      "sizes": [
+        "30 ml"
+      ],
+      "volumes": [
+        {
+          "label": "30 ml",
+          "priceEurCents": 2485
+        },
+        {
+          "label": "90 ml",
+          "priceEurCents": 3895
+        }
+      ],
+      "priceEurCents": 2485,
+      "sourceUrl": "https://www.zalando.fr/kerastase-genesis-serum-anti-chute-fortifiant-daily-anti-hair-fall-scalp-serum-soin-des-cheveux-keh34h01s-s11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p015-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p015-2.jpg"
+      ]
+    },
+    {
+      "id": "P016",
+      "key": "zalando-p016",
+      "title": "CHEIROSA 62 PERFUME MIST - Spray corporel — 90 ml",
+      "description": "La description présente une fragrance chaude et ensoleillée, décrite comme l'expression de l'esprit brésilien.",
+      "brand": "Sol de Janeiro",
+      "reference": "SVX31I006-S11",
+      "category": "Beauté",
+      "audience": "Femme",
+      "color": "",
+      "sizes": [
+        "90 ml"
+      ],
+      "volumes": [
+        {
+          "label": "90 ml",
+          "priceEurCents": 1995
+        },
+        {
+          "label": "240 ml",
+          "priceEurCents": 2935
+        }
+      ],
+      "priceEurCents": 1995,
+      "sourceUrl": "https://www.zalando.fr/sol-de-janeiro-cheirosa-62-mist-spray-pour-le-corps-svx31i006-s11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p016-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p016-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p016-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p016-4.jpg"
+      ]
+    },
+    {
+      "id": "P017",
+      "key": "zalando-p017",
+      "title": "GLYCOLIC ACID 7% EXFOLIATING TONER - Lotion tonique — 100 ml",
+      "description": "Tonique exfoliant à base d'eau avec 7 % d'acide glycolique (AHA), destiné à exfolier et contribuer à une texture de peau plus lisse et uniforme et à un teint éclatant.",
+      "brand": "The Ordinary",
+      "reference": "THR34L002-S11",
+      "category": "Beauté",
+      "audience": "Femme",
+      "color": "",
+      "sizes": [
+        "100 ml"
+      ],
+      "volumes": [
+        {
+          "label": "100 ml",
+          "priceEurCents": 800
+        },
+        {
+          "label": "240 ml",
+          "priceEurCents": 1120
+        }
+      ],
+      "priceEurCents": 800,
+      "sourceUrl": "https://www.zalando.fr/the-ordinary-glycolic-acid-7-exfoliating-toner-lotion-visage-thr34l002-s11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p017-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p017-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p017-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p017-4.jpg"
+      ]
+    },
+    {
+      "id": "P018",
+      "key": "zalando-p018",
+      "title": "2 PACK COTTON GRAPHIC T-SHIRT - ORIGINAL - white/black",
+      "description": "Lot de deux t-shirts en jersey 100 % coton, col rond classique et logo mis en valeur; motif uni.",
+      "brand": "Tommy Hilfiger",
+      "reference": "TO122O17W-A12",
+      "category": "Vêtements",
+      "audience": "Homme",
+      "color": "white/black",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L"
+      ],
+      "volumes": [],
+      "priceEurCents": 3765,
+      "sourceUrl": "https://www.zalando.fr/tommy-hilfiger-2-pack-tee-haut-de-pyja-white-black-to122o17w-a12.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p018-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p018-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p018-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p018-4.jpg"
+      ]
+    },
+    {
+      "id": "P019",
+      "key": "zalando-p019",
+      "title": "AMERICAN CLASSIC - Chino - elmwood",
+      "description": "Composition : 97 % coton et 3 % élasthanne. Fermeture zippée et bouton, poches latérales et arrière, poche plaquée. Coupe regular, silhouette fuselée, longueur cheville, extensibilité élevée.",
+      "brand": "PME Legend",
+      "reference": "PG322E012-B11",
+      "category": "Vêtements",
+      "audience": "Homme",
+      "color": "elmwood",
+      "sizes": [
+        "28x30",
+        "28x32",
+        "29x30",
+        "29x32",
+        "30x30",
+        "30x32",
+        "30x34",
+        "31x30",
+        "31x32",
+        "31x34",
+        "32x30",
+        "32x32",
+        "32x34",
+        "32x36",
+        "33x30",
+        "33x32",
+        "33x34",
+        "33x36",
+        "34x30",
+        "34x32",
+        "34x34",
+        "34x36",
+        "35x30",
+        "35x32",
+        "35x34",
+        "35x36",
+        "36x30",
+        "36x32",
+        "36x34",
+        "36x36",
+        "38x30",
+        "38x32",
+        "38x34",
+        "38x36"
+      ],
+      "volumes": [],
+      "priceEurCents": 9999,
+      "sourceUrl": "https://www.zalando.fr/pme-legend-american-classics-chino-elmwood-pg322e012-b11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p019-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p019-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p019-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p019-4.jpg"
+      ]
+    },
+    {
+      "id": "P020",
+      "key": "zalando-p020",
+      "title": "AMERICAN CLASSIC - Sweatshirt - sky captain",
+      "description": "95 % coton, 5 % élasthanne; molleton, col rond, poignets côtelés, motif uni. Coupe regular, silhouette droite, longueur standard et manches longues.",
+      "brand": "PME Legend",
+      "reference": "PG322S017-K11",
+      "category": "Vêtements",
+      "audience": "Homme",
+      "color": "sky captain",
+      "sizes": [
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL",
+        "3XL"
+      ],
+      "volumes": [],
+      "priceEurCents": 6999,
+      "sourceUrl": "https://www.zalando.fr/pme-legend-airstrip-sweatshirt-sky-captain-pg322s017-k11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p020-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p020-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p020-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p020-4.jpg"
+      ]
+    },
+    {
+      "id": "P021",
+      "key": "zalando-p021",
+      "title": "3 PACK — Slip en jersey — black",
+      "description": "Lot de trois, jersey 95 % coton et 5 % élasthanne. Taille normale, motif camouflage, coupe skinny près du corps. Lavage en machine à 30 °C programme délicat.",
+      "brand": "Calvin Klein Underwear",
+      "reference": "C1182O0BT-Q14",
+      "category": "Vêtements",
+      "audience": "Homme",
+      "color": "black",
+      "sizes": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "volumes": [],
+      "priceEurCents": 3595,
+      "sourceUrl": "https://www.zalando.fr/calvin-klein-underwear-relaxed-fit-trunk-3-pack-icon-cotton-stretch-shorty-black-c1182o0bt-q14.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p021-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p021-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p021-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p021-4.jpg"
+      ]
+    },
+    {
+      "id": "P022",
+      "key": "zalando-p022",
+      "title": "EVERYDAY CUSH CREW 3 PACK UNISEX - Chaussettes de sport - white/black",
+      "description": "Chaussettes côtelées blanches avec logo Nike noir. Article respirant pour fitness et entraînement, hauteur standard. Composition : 69 % coton, 28 % polyester, 2 % élasthanne, 1 % nylon. Lavage machine à 40 °C; ne pas repasser.",
+      "brand": "Nike Performance",
+      "reference": "N1244D06L-A11",
+      "category": "Accessoires",
+      "audience": "Homme (fiche UNISEX)",
+      "color": "white/black",
+      "sizes": [
+        "34-38",
+        "38-42",
+        "42-46",
+        "46-50"
+      ],
+      "volumes": [],
+      "priceEurCents": 1495,
+      "sourceUrl": "https://www.zalando.fr/nike-performance-everyday-cush-crew-3-pack-chaussettes-de-sport-whiteblack-n1244d06l-a11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p022-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p022-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p022-3.jpg"
+      ]
+    },
+    {
+      "id": "P023",
+      "key": "zalando-p023",
+      "title": "STWD BOXY HOODIE - Sweat à capuche - black",
+      "description": "Capuche, poche kangourou, motif uni, taille élastique. Coupe loose, silhouette droite, longueur standard et manches longues. Molleton 83 % coton, 16 % polyester et 1 % élasthanne; doublure 80 % coton, 20 % polyester.",
+      "brand": "PULL&BEAR",
+      "reference": "PUC22S15M-Q11",
+      "category": "Vêtements",
+      "audience": "Homme",
+      "color": "black",
+      "sizes": [
+        "XXS",
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "volumes": [],
+      "priceEurCents": 3599,
+      "sourceUrl": "https://www.zalando.fr/pullandbear-stwd-boxy-hoodie-sweat-a-capuche-black-puc22s15m-q11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p023-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p023-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p023-3.jpg"
+      ]
+    },
+    {
+      "id": "P024",
+      "key": "zalando-p024",
+      "title": "Sweat zippé - black",
+      "description": "Sweat zippé à capuche, poche kangourou séparée et cordon de serrage. Motif uni, tissu molleton; composition 100 % coton, doublure textile 100 % coton, modèle indiqué comme non doublé.",
+      "brand": "Vans",
+      "reference": "VA222S0H2-Q11",
+      "category": "Vêtements",
+      "audience": "Homme",
+      "color": "black",
+      "sizes": [
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "volumes": [],
+      "priceEurCents": 13000,
+      "sourceUrl": "https://www.zalando.fr/vans-sweat-zippe-black-va222s0h2-q11.html",
+      "images": [
+        "/media/catalogue/zalando-demo-v1/p024-1.jpg",
+        "/media/catalogue/zalando-demo-v1/p024-2.jpg",
+        "/media/catalogue/zalando-demo-v1/p024-3.jpg",
+        "/media/catalogue/zalando-demo-v1/p024-4.jpg"
+      ]
+    }
+  ]
+}

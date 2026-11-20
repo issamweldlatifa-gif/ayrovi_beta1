@@ -8,11 +8,9 @@
  *   • la purge retire un produit ET ses attaches (stock, mouvements, médias, liens
  *     de contenu, favoris) sans casser une commande ni un contenu qui le citait ;
  *   • les anciens blocs Publication ne sont plus semés et les Reels restent indépendants ;
- *   • l'API publique sert la fiche d'un produit officiel.
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import request from 'supertest';
 import { describe, expect, test } from 'vitest';
 import { QatafoDatabase } from '../src/db/database';
 import {
@@ -22,9 +20,14 @@ import {
   purgeCatalogueProducts,
 } from '../src/catalogue/installOfficialCatalogue';
 
-const fresh = () => new QatafoDatabase(':memory:');
+const fresh = () => {
+  const db = new QatafoDatabase(':memory:');
+  purgeCatalogueProducts(db);
+  installOfficialCatalogue(db);
+  return db;
+};
 
-describe('catalogue officiel — base neuve', () => {
+describe('catalogue officiel — ancienne édition en fixture', () => {
   const db = fresh();
 
   test('exactement les vingt produits officiels, rien de l’ancien catalogue', () => {
@@ -95,16 +98,5 @@ describe('purge de l’ancien catalogue', () => {
     // Réinstallation idempotente : vingt produits, une seconde fois rien.
     expect(installOfficialCatalogue(db, now)).toBe(20);
     expect(installOfficialCatalogue(db, now)).toBe(0);
-  });
-});
-
-describe('API publique', () => {
-  test('la fiche d’un produit officiel est servie avec son prix en dinars', async () => {
-    const { app } = await import('../src/server');
-    const response = await request(app).get(`/api/public/products/${officialProductId('nike-dri-fit-legend')}`);
-    expect(response.status).toBe(200);
-    expect(response.body.data.name).toContain('Dri-FIT Legend');
-    expect(response.body.data.finalPrice).toBe(94);
-    expect((await request(app).get(response.body.data.image)).status).toBe(200);
   });
 });
