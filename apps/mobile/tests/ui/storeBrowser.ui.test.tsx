@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View } from 'react-native';
 
-import { fetchAyWebsCaptureScript } from '@/api/aywebs';
+import { analyzeAyWebsPage, fetchAyWebsCaptureScript } from '@/api/aywebs';
 import { STORE_BAR } from '@/design/tokens.mobile';
 import { BRAND } from '@/design/tokens.generated';
 import StoreBrowserScreen from '../../app/aywebs/browser';
@@ -123,15 +123,19 @@ function renderBrowser() {
   );
 }
 
+const captureAction = () => screen.getByTestId('aywebs-store-add-to-cart');
+
 describe('page boutique — actions intégrées AYWEBs', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('affiche la WebView sans bouton ni barre sur accueil, recherche et rayon', async () => {
+  it('garde la capture visible mais inactive sur accueil, recherche et rayon', async () => {
     renderBrowser();
     expect(screen.getByTestId('webview')).toBeTruthy();
     for (const url of [STOREFRONT, 'https://www.amazon.com/s?k=cafe', 'https://www.amazon.com/gp/browse.html']) {
       await navigate(url);
-      expect(screen.queryByTestId('aywebs-store-footer')).toBeNull();
+      expect(screen.getByTestId('aywebs-store-footer')).toBeTruthy();
+      expect(captureAction().props.accessibilityState?.disabled).toBe(true);
+      fireEvent.press(captureAction());
     }
     expect(fetchAyWebsCaptureScript).not.toHaveBeenCalled();
   });
@@ -154,6 +158,7 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     expect(screen.getByTestId('aywebs-store-added-strip')).toBeTruthy();
     expect(screen.getByText('Ajouté au panier')).toBeTruthy();
     expect(screen.getByText('Eau de parfum')).toBeTruthy();
+    expect(captureAction().props.accessibilityState?.disabled).toBe(false);
     expect(screen.getByText('Contenance : 50 ml')).toBeTruthy();
     expect(screen.getByTestId('aywebs-store-added-image', { includeHiddenElements: true })).toBeTruthy();
     fireEvent.press(screen.getByTestId('aywebs-store-added-go-to-cart'));
@@ -168,7 +173,8 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     expect(StyleSheet.flatten(screen.getByTestId('aywebs-store-header-address').props.style).color).toBe(BRAND.black);
     expect(screen.getByTestId('aywebs-ask-clean-logo')).toBeTruthy();
     await navigate(PDP);
-    const cta = StyleSheet.flatten((await screen.findByTestId('aywebs-store-add-to-cart')).props.style);
+    await waitFor(() => expect(captureAction().props.accessibilityState?.disabled).toBe(false));
+    const cta = StyleSheet.flatten(captureAction().props.style);
     expect([cta.backgroundColor, cta.borderColor]).toContain(BRAND.yellow);
   });
 
@@ -205,7 +211,7 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     expect(screen.queryByLabelText('Fermer')).toBeNull();
   });
 
-  it('garde l’en-tête et la capture fixes pendant le scroll, puis retire la capture à la navigation', async () => {
+  it('garde l’en-tête et la capture fixes pendant le scroll, puis désactive la capture à la navigation', async () => {
     renderBrowser();
     await navigate(PDP);
     await screen.findByTestId('aywebs-store-add-to-cart');
@@ -215,7 +221,7 @@ describe('page boutique — actions intégrées AYWEBs', () => {
       expect(screen.getByText('Capturer cet article')).toBeTruthy();
     }
     await navigate(STOREFRONT, true);
-    expect(screen.queryByTestId('aywebs-store-add-to-cart')).toBeNull();
+    expect(captureAction().props.accessibilityState?.disabled).toBe(true);
     expect(screen.getByTestId('aywebs-store-header')).toBeTruthy();
   });
 
@@ -224,15 +230,25 @@ describe('page boutique — actions intégrées AYWEBs', () => {
     await navigate(ON_DEMAND);
     await waitFor(() => expect(mockInjectJavaScript).toHaveBeenCalled());
     const data = { type: 'aywebs-product-surface', nonce: 1, url: ON_DEMAND, product: true };
-    expect(screen.queryByTestId('aywebs-store-add-to-cart')).toBeNull();
+    expect(captureAction().props.accessibilityState?.disabled).toBe(true);
     message({ ...data, url: STOREFRONT });
     message({ ...data, nonce: 0 });
-    expect(screen.queryByTestId('aywebs-store-add-to-cart')).toBeNull();
+    expect(captureAction().props.accessibilityState?.disabled).toBe(true);
     message(data);
-    expect(screen.getByTestId('aywebs-store-add-to-cart')).toBeTruthy();
+    expect(captureAction().props.accessibilityState?.disabled).toBe(false);
     expect(fetchAyWebsCaptureScript).not.toHaveBeenCalled();
     message({ ...data, product: false });
-    expect(screen.queryByTestId('aywebs-store-add-to-cart')).toBeNull();
+    expect(captureAction().props.accessibilityState?.disabled).toBe(true);
+  });
+
+  it('retente une analyse transitoirement en échec sans autoriser la capture entre temps', async () => {
+    renderBrowser();
+    await waitFor(() => expect(analyzeAyWebsPage).toHaveBeenCalled());
+    jest.mocked(analyzeAyWebsPage).mockRejectedValueOnce(new Error('transient failure'));
+    await navigate(PDP);
+    expect(captureAction().props.accessibilityState?.disabled).toBe(true);
+    await waitFor(() => expect(captureAction().props.accessibilityState?.disabled).toBe(false), { timeout: 2000 });
+    expect(fetchAyWebsCaptureScript).not.toHaveBeenCalled();
   });
 
   it('la flèche de l’en-tête revient à l’écran précédent', () => {

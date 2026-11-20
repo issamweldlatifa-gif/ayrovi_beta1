@@ -1,5 +1,5 @@
 import { BackButton } from '@/design/BackButton';
-/** AYWEBs merchant WebView: fixed native header and capture only on a product surface. */
+/** AYWEBs merchant WebView: fixed native chrome; capture is enabled only on a product surface. */
 import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType, type Ref } from 'react';
 import { goBack } from '@/design/navigation';
 import { Alert, BackHandler, Pressable, StyleSheet, View } from 'react-native';
@@ -274,7 +274,6 @@ export default function AyWebsBrowserScreen() {
     inFlightRead.current = null;
     setBusy(false);
     setSheet(null);
-    setPageAnalysis(null);
     setNote('');
   }, [pageUrl]);
 
@@ -315,21 +314,27 @@ export default function AyWebsBrowserScreen() {
   /** تصنيف الصفحة — شرط تفعيل «Add to Cart» (لا تخمين من الرابط). */
   useEffect(() => {
     if (!sessionId || !pageUrl || !isWebPageUrl(pageUrl)) return;
-    if (pageAnalysis && captureMatchesPageUrl(pageAnalysis.url, pageUrl)) return;
-    let alive = true;
-    analyzeAyWebsPage(pageUrl, { sessionId })
-      .then((analysis) => {
-        if (!alive || !captureMatchesPageUrl(analysis.url, pageUrlRef.current)) return;
-        captureStoreIdRef.current = analysis.storeId;
-        setPageAnalysis(analysis);
-      })
-      .catch(() => {
-        if (!alive) return;
-        // Sans analyse valide : ne pas présenter de bouton de capture.
-        captureStoreIdRef.current = '';
-        setPageAnalysis(null);
-      });
-    return () => { alive = false; };
+    if (pageAnalysis && captureMatchesPageUrl(pageAnalysis.url, pageUrl)) {
+      captureStoreIdRef.current = pageAnalysis.storeId;
+      return;
+    }
+    const controller = new AbortController();
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    const classify = (canRetry: boolean) => {
+      void analyzeAyWebsPage(pageUrl, { sessionId, signal: controller.signal })
+        .then((analysis) => {
+          if (controller.signal.aborted || !captureMatchesPageUrl(analysis.url, pageUrlRef.current)) return;
+          captureStoreIdRef.current = analysis.storeId;
+          setPageAnalysis(analysis);
+        })
+        .catch(() => {
+          if (controller.signal.aborted) return;
+          // Fail closed while the same URL is retried after a transient failure.
+          if (canRetry) retry = setTimeout(() => classify(false), 800);
+        });
+    };
+    classify(true);
+    return () => { controller.abort(); clearTimeout(retry); };
   }, [pageAnalysis, sessionId, pageUrl]);
 
   /**
@@ -386,6 +391,7 @@ export default function AyWebsBrowserScreen() {
         }, AYWEBS_CAPTURE_WATCHDOG_MS);
       };
       const inject = (script: string) => {
+        if (settled || signal?.aborted || waiter.current?.reject !== reject) return;
         if (!quiet) startWaiting('reading');
         armWatchdog();
         webRef.current?.injectJavaScript(buildAyWebsCaptureInjection(script));
@@ -415,12 +421,13 @@ export default function AyWebsBrowserScreen() {
         resolve(capture);
       };
       waiter.current = { resolve: onCaptured, reject, quiet, requestedUrl };
-      fetchAyWebsCaptureScript({ storeId: captureStoreIdRef.current })
+      fetchAyWebsCaptureScript({ storeId: captureStoreIdRef.current, signal })
         /* الصفحة لازم تكمّل تحميلها قبل القراءة (Amazon يعطي DOM ناقص ⇒ NO_PRICE_TEXT).
            مرّة واحدة لكل صفحة: موقع SHEIN/TEMU (تطبيق mono-page) يحافظ على طلب
            مفتوح، فـ`onNavigationStateChange` يبقى "يحمّل" — الانتظار في كل قراءة
            كان يعني 8 ثوانٍ إضافية مضروبة في عدد المحاولات. */
         .then(async (script) => {
+          if (settled) return script;
           if (!idleWaitedUrl.current || !captureMatchesPageUrl(idleWaitedUrl.current, pageUrlRef.current)) {
             idleWaitedUrl.current = pageUrlRef.current;
             await waitForPageIdle(() => pageLoadingRef.current);
@@ -428,11 +435,13 @@ export default function AyWebsBrowserScreen() {
           return script;
         })
         .then((script) => {
+          if (settled) return;
           // الحقن هو المنعرج الثاني: من توّا الكلمة صارت للصفحة.
           lastScript.current = script;
           inject(script);
         })
         .catch((error) => {
+          if (settled) return;
           if (waiter.current?.reject === reject) waiter.current = null;
           if (!quiet) setBusy(false);
           reject(error);
@@ -596,6 +605,7 @@ export default function AyWebsBrowserScreen() {
     }
     if (!isAyWebsBridgeMessage(event.nativeEvent.data)) return;
     const pending = waiter.current;
+    if (!pending) return;
     const parsed = parseAyWebsCaptureMessage(event.nativeEvent.data);
     if (!parsed.ok) {
       stopTimer();
@@ -630,14 +640,17 @@ export default function AyWebsBrowserScreen() {
     }
     stopTimer();
     waiter.current = null;
-    setBusy(false);
-    pending?.resolve(parsed.capture);
+    pending.resolve(parsed.capture);
   }, [t]);
 
-  const showCapture = pageOk && capturePage && Boolean(sessionId);
+  const readVariant = useCallback((url: string) => variantReader.current
+    ? variantReader.current.read(url)
+    : Promise.reject(new ApiError('device', 'Lecteur de variante indisponible.')), []);
+
+  const captureEnabled = pageOk && capturePage && Boolean(sessionId);
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.colors.canvas, paddingBottom: !showCapture && !note && !added ? insets.bottom : 0 }]}>
+    <View style={[styles.screen, { backgroundColor: theme.colors.canvas }]}>
       {/* Identité AYWEBs et domaine marchand non modifiable. */}
       <StatusBar style={BROWSER_BAR.statusBar} />
       <View
@@ -785,7 +798,6 @@ export default function AyWebsBrowserScreen() {
         </View>
       )}
 
-      {showCapture || note || added ? (
       <View testID="aywebs-store-footer" style={[styles.footer, { borderTopColor: theme.colors.line, paddingBottom: insets.bottom + theme.space[2] }]}>
         {/* Le client ne lit PAS notre cuisine : aucun journal de lecture, aucune
             ligne « lecture serveur ». Le bouton qui tourne dit ce qu'il fait, et
@@ -811,18 +823,17 @@ export default function AyWebsBrowserScreen() {
           </View>
         ) : null}
 
-        {showCapture && !added ? <Button
+        <Button
           label={busy ? t('aywebs.loading') : t('aywebs.captureProduct')}
           tone="commerce"
           block
           onPress={addToCart}
           busy={busy}
-          disabled={busy}
+          disabled={!captureEnabled || busy}
           testID="aywebs-store-add-to-cart"
-        /> : null}
+        />
 
       </View>
-      ) : null}
 
       {sheet ? (
         <AddToCartSheet
@@ -834,9 +845,7 @@ export default function AyWebsBrowserScreen() {
           quoteToken={sheet.quoteToken}
           local={sheet.local}
           readOnlySelection={readOnlyStoreSelection(sheet.product.storeId, sheet.capture)}
-          readVariant={(url: string) => (variantReader.current
-            ? variantReader.current.read(url)
-            : Promise.reject(new ApiError('device', 'Lecteur de variante indisponible.')))}
+          readVariant={readVariant}
           onClose={() => {
             invalidatePrefetchOnTouch();
             setSheet(null);

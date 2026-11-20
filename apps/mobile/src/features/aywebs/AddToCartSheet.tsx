@@ -52,7 +52,7 @@ import { colourForOption, needsOutline } from '@/features/aywebs/optionColour';
 import { preferredVariantImage } from '@/features/aywebs/variantImage';
 import { amazonCaptureHasPricedSelection } from '@/features/aywebs/amazonFastQuote';
 import { quantityLimit, selectionQuote, type AvailabilityState } from '@/features/aywebs/selectionQuote';
-import { lacksServerQuote, preferServerQuote, quoteReadPlan } from '@/features/aywebs/priceFallback';
+import { lacksServerQuote, preferServerQuote, quoteReadPlan, withExactQuoteDeadline } from '@/features/aywebs/priceFallback';
 import { ayWebsSameAttribute as sameAttribute } from '@/features/aywebs/attributeKeys';
 import { alignSelection, mergeVariantGroups, missingAttributes } from '@/features/aywebs/groupMerge';
 import { isRealChoiceValue, realChoiceGroups } from '@/features/aywebs/variantLabels';
@@ -223,8 +223,9 @@ export function AddToCartSheet({
    * وثمن القيم وحالتها. إذا تركيبة مختارة لاحقاً ما عندهاش دفي ثابت، effect
    * منفصل يطلب دفيها من الخادم ويرفض الردود القديمة.
    */
-  const loadQuote = useCallback(async (captureToUse: unknown, picked: Record<string, string>) => {
+  const loadQuote = useCallback(async (captureToUse: unknown, picked: Record<string, string>, signal: AbortSignal) => {
     if (!sessionId || !captureToUse) return;
+    const isActive = () => alive.current && !signal.aborted;
     const exactCapture = isSelectionCapture(captureToUse);
     setQuoting(true);
     try {
@@ -245,14 +246,16 @@ export function AddToCartSheet({
       const diagnostics: string[] = [];
       for (const attempt of plan) {
         try {
-          const read = await resolveAyWebsProductWithCapture(product.sourceUrl, {
+          const resolve = (requestSignal: AbortSignal) => resolveAyWebsProductWithCapture(product.sourceUrl, {
+            signal: requestSignal,
             sessionId,
             storeId: product.storeId || undefined,
             ...(attempt.capture ? { capture: captureToUse } : {}),
             ...(attempt.withVariant && Object.keys(picked).length ? { variant: picked } : {}),
             refresh: attempt.refresh,
           });
-          if (!alive.current) return;
+          const read = exactCapture ? await withExactQuoteDeadline(resolve, signal) : await resolve(signal);
+          if (!isActive()) return;
           if (exactCapture && !read.capturedSelection) continue;
           const pageQuantity = pageQuantityOf(read);
           if (pageQuantity !== null) {
@@ -278,7 +281,8 @@ export function AddToCartSheet({
             picked = alignSelection(groupsRef.current, read.capturedSelection.attributes);
             setSelection(picked);
           }
-          pageSelection = attempt.capture || attempt.withVariant ? { ...picked } : {};
+          pageSelection = attempt.withVariant || (attempt.capture && read.capture?.used) || read.capturedSelection
+            ? { ...picked } : {};
           if (!lacksServerQuote(read.product)) {
             quoteTokenForQuote = read.quoteToken;
             break;
@@ -290,7 +294,7 @@ export function AddToCartSheet({
           const code = error && typeof error === 'object' && 'code' in error
             ? String((error as { code?: unknown }).code || 'failed')
             : 'failed';
-          if (!alive.current) return;
+          if (!isActive()) return;
           if (exactCapture) setError(addErrorMessage(error, locale, t));
           diagnostics.push(`${attempt.capture ? 'capture' : 'server'}:${code}`);
         }
@@ -349,9 +353,9 @@ export function AddToCartSheet({
       });
     } catch {
       /* أفضل جهد: بلا خادم، الورقة تعرض ثمن الصفحة وتقول إن الدينار يجي وقت الإضافة. */
-      if (alive.current) setPageQuote(null);
+      if (isActive()) setPageQuote(null);
     } finally {
-      if (alive.current) setQuoting(false);
+      if (isActive()) setQuoting(false);
     }
   }, [locale, matrixKey, product.sourceUrl, product.storeId, sessionId, t]);
 
@@ -417,7 +421,9 @@ export function AddToCartSheet({
     lastSelectionQuoteKey.current = '';
     selectionQuoteRequest.current += 1;
     setOpenGroup(null);
-    if (local && capture) void loadQuote(capture, initial);
+    const controller = new AbortController();
+    if (local && capture) void loadQuote(capture, initial, controller.signal);
+    return () => controller.abort();
     // القصد: إعادة الضبط عند **كل فتح** فقط.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
@@ -516,7 +522,12 @@ export function AddToCartSheet({
       setQuoting(false);
       return;
     }
-    if (lastSelectionQuoteKey.current === key) return;
+    if (lastSelectionQuoteKey.current === key) {
+      // React cleaned up the previous attempt before re-running this effect.
+      // That request can no longer clear the spinner in its finally block.
+      setQuoting(false);
+      return;
+    }
     lastSelectionQuoteKey.current = key;
     const requestNumber = ++selectionQuoteRequest.current;
     const picked = { ...selection };
@@ -886,9 +897,11 @@ export function AddToCartSheet({
     onClose();
   }, [onAdded, onClose]);
 
+  const exactPriceReady = Boolean(exactPageQuote?.quoteToken && exactPageQuote.unitTnd != null && exactPageQuote.unitTnd > 0);
+  const exactPriceBlocked = selectionCapture && (quoting || !exactPriceReady);
   const confirm = useCallback(async () => {
     if (!sessionId || !requestId.current || busy) return;
-    if (!selectionComplete || chosenUnavailable) return;
+    if (!selectionComplete || chosenUnavailable || exactPriceBlocked) return;
     setBusy(true);
     setError('');
     try {
@@ -1071,7 +1084,7 @@ export function AddToCartSheet({
     } finally {
       if (alive.current) setBusy(false);
     }
-  }, [busy, chosenUnavailable, effectiveCapture, effectiveUrl, groups.length, local, locale, matrixKey, missing.length, finishAdd, pageQuote, product.productId, readOnlySelection, selectionCapture,
+  }, [busy, chosenUnavailable, exactPriceBlocked, effectiveCapture, effectiveUrl, groups.length, local, locale, matrixKey, missing.length, finishAdd, pageQuote, product.productId, readOnlySelection, selectionCapture,
     product.sourceUrl, product.storeId, quantity, quoteToken, readVariant, selection, selectionComplete, sessionId, t]);
 
   const sourceLine = tndText(quote.unitTnd);
@@ -1160,7 +1173,7 @@ export function AddToCartSheet({
           <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.pricePending')}</AppText>
         </View>
       ) : (
-        <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.priceAtAddShort')}</AppText>
+        <AppText variant="caption" color={theme.colors.muted}>{t(selectionCapture ? 'aywebs.block.PRICE_UNAVAILABLE' : 'aywebs.priceAtAddShort')}</AppText>
       )}
       {displayedTndLine ? (
         <AppText variant="caption" color={theme.colors.muted}>{t('aywebs.customsShippingIncluded')}</AppText>
@@ -1185,7 +1198,7 @@ export function AddToCartSheet({
             tone="commerce"
             onPress={confirm}
             busy={busy}
-            disabled={Boolean(blockedCode) || !sessionId}
+            disabled={Boolean(blockedCode) || !sessionId || exactPriceBlocked}
             block
             style={styles.addButton}
             testID="aywebs-sheet-add"

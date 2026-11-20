@@ -608,7 +608,7 @@ export function createAyWebsRouter(db: ZayroviDatabase, scraper: SmartLinkScrape
     res.setHeader('X-AyWebs-Capture-Bundle', served.bundle);
     res.setHeader('X-AyWebs-Capture-Hash', served.sha256.slice(0, 16));
     res.setHeader('X-AyWebs-Capture-Control', control);
-    res.setHeader('X-AyWebs-Capture-Principle', control === 'core' ? 'matrix' : principle);
+    res.setHeader('X-AyWebs-Capture-Principle', principle);
     if (reader) {
       res.setHeader('X-AyWebs-Capture-Reader', reader.storeId);
       res.setHeader('X-AyWebs-Capture-Reader-Version', String(reader.version));

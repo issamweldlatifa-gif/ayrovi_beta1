@@ -25,6 +25,7 @@ import {
   ayWebsSelectionCaptureDefault,
   resetAyWebsCaptureControlCache,
   setAyWebsCapturePrinciple,
+  setAyWebsCaptureControl,
 } from '../src/aywebs/captureControl';
 import { QatafoDatabase } from '../src/db/database';
 import { createAyWebsRouter } from '../src/aywebs/routes';
@@ -261,6 +262,14 @@ describe('principe de capture par boutique (CRM)', () => {
   const previous = process.env.AYWEBS_SELECTION_CAPTURE;
   afterAll(() => { process.env.AYWEBS_SELECTION_CAPTURE = previous; });
 
+  it('le défaut restaure la matrice hors des boutiques qui ont leur propre parcours de sélection', () => {
+    vi.stubEnv('AYWEBS_SELECTION_CAPTURE', undefined);
+    try {
+      for (const store of ['amazon', 'zalando', 'sephora']) expect(ayWebsSelectionCaptureDefault(store)).toBe('matrix');
+      for (const store of ['shein', 'temu', 'aliexpress']) expect(ayWebsSelectionCaptureDefault(store)).toBe('selection');
+    } finally { vi.unstubAllEnvs(); }
+  });
+
   it('défaut d’environnement, puis une ligne CRM l’emporte', () => {
     process.env.AYWEBS_SELECTION_CAPTURE = 'amazon,zalando';
     expect(ayWebsSelectionCaptureDefault('amazon')).toBe('selection');
@@ -273,6 +282,8 @@ describe('principe de capture par boutique (CRM)', () => {
     setAyWebsCapturePrinciple(db, { storeId: 'shein', principle: 'matrix', note: 'retour arrière test' });
     expect(ayWebsCapturePrinciple(db, 'shein')).toBe('matrix');
     expect(ayWebsCapturePrinciple(db, 'amazon')).toBe('selection');
+    setAyWebsCaptureControl(db, { storeId: 'amazon', mode: 'core' });
+    expect(ayWebsCapturePrinciple(db, 'amazon')).toBe('matrix');
   });
 });
 
@@ -326,6 +337,35 @@ function app() {
   server.use('/api/v1/aywebs', createAyWebsRouter(db, scraper as never));
   return { server, scraper };
 }
+
+it('Amazon.it : le lecteur servi par défaut lie XS au prix en euros et produit un devis signé', async () => {
+  vi.stubEnv('AYWEBS_SELECTION_CAPTURE', undefined);
+  try {
+    const url = 'https://www.amazon.it/dp/B0GRAPHITE';
+    const html = AMAZON_PAGE('Graphite Black')
+      .replace('lang="en"', 'lang="it"').replace('Casque Bluetooth', 'Giacca di prova')
+      .replaceAll('color_name', 'size_name').replaceAll('Graphite Black', 'XS').replaceAll('Ruby Red', 'S')
+      .replaceAll('$89.99', '89,99 €').replaceAll('$94.50', '94,50 €').replace('>$</span>', '>€</span>')
+      .replace('>89<span class="a-price-decimal">.</span>', '>89<span class="a-price-decimal">,</span>')
+      .replace('In Stock', 'Disponibilità immediata');
+    const { server } = app();
+    const script = await request(server).get('/api/v1/aywebs/capture/script.js?store_id=amazon');
+    expect(script.headers['x-aywebs-capture-principle']).toBe('matrix');
+    const dom = new JSDOM(html, { url });
+    const evaluate = new Function('window', 'document', 'location', 'URL', `return ${script.text}`);
+    const capture = JSON.parse(String(evaluate(dom.window, dom.window.document, dom.window.location, URL)));
+    expect(capture.selectedVariantTexts).toContain('XS');
+    const group = capture.amazon.options.find((option: { value: string }) => option.value === 'XS').name;
+    const response = await request(server).post('/api/v1/aywebs/product/resolve')
+      .set({ 'x-session-id': 'aywebs-amazon-it-matrix' })
+      .send({ url, store_id: 'amazon', capture, variant: { [group]: 'XS' } });
+    expect(response.status, JSON.stringify(response.body)).toBe(201);
+    expect(response.body.data).toMatchObject({ price: 89.99, currency: 'EUR' });
+    expect(response.body.quote_token).toBeTruthy();
+    expect(response.body.capture).toMatchObject({ used: true, corroborated: true });
+    expect(response.body.data.zayrovi_pricing?.total_tnd).toBeGreaterThan(0);
+  } finally { vi.unstubAllEnvs(); }
+});
 
 describe('de bout en bout — Amazon en mode sélection', () => {
   const previous = process.env.AYWEBS_SELECTION_CAPTURE;

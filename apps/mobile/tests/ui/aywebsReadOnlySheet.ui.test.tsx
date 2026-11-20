@@ -273,6 +273,29 @@ describe('AddToCartSheet — Modèle #2 (Confirmation en lecture seule depuis la
     expect(screen.getByTestId('aywebs-sheet-add').props.accessibilityState?.disabled).toBe(true);
   });
 
+  it('quitte le chargement si le réseau ne répond jamais et ne confirme pas un prix non vérifié', async () => {
+    jest.useFakeTimers();
+    try {
+      const { product, capture } = buildLocalProduct('4Y (98-104 cm)');
+      mockResolveWithCapture.mockReturnValueOnce(new Promise(() => {}));
+      render(
+        <SafeAreaProvider initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 24, left: 0, right: 0, bottom: 0 } }}>
+          <PrefsProvider><I18nProvider><ThemeProvider>
+            <AddToCartSheet visible local readOnlySelection sessionId="mob_readonly_session_timeout" product={product}
+              capture={{ ...capture, captureMode: 'selection' }} onClose={() => undefined} />
+          </ThemeProvider></I18nProvider></PrefsProvider>
+        </SafeAreaProvider>,
+      );
+      expect(screen.getByTestId('aywebs-sheet-price-pending', { includeHiddenElements: true })).toBeTruthy();
+      expect(screen.getByTestId('aywebs-sheet-add').props.accessibilityState?.disabled).toBe(true);
+      await act(async () => { jest.advanceTimersByTime(12_000); });
+      expect(screen.queryByTestId('aywebs-sheet-price-pending', { includeHiddenElements: true })).toBeNull();
+      expect(screen.getByTestId('aywebs-sheet-add').props.accessibilityState?.disabled).toBe(true);
+      fireEvent.press(screen.getByTestId('aywebs-sheet-add'));
+      expect(mockAddCartItem).not.toHaveBeenCalled();
+    } finally { jest.useRealTimers(); }
+  });
+
   it('pré-remplit la quantité affichée sur la page du marchand (mode sélection)', async () => {
     const { product, capture } = buildLocalProduct('4Y (98-104 cm)');
     mockResolveWithCapture.mockResolvedValue({

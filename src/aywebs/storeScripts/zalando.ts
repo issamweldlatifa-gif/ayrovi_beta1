@@ -846,6 +846,39 @@ export const ZALANDO_MOBILE_CAPTURE_SCRIPT = String.raw`(function() {
             var groupKey = String(out.variantGroups[gm].name || "").toLowerCase(), mergedOptions = mergeVariantOptions(DOM_OPTIONS[groupKey] || out.variantGroups[gm].options || [], ldOptionsFor(out.variantGroups[gm].name));
             mergedOptions.length && (out.variantGroups[gm].options = mergedOptions);
         }
+        // A closed size picker may keep its selected value on the trigger and
+        // unmount its popup. Only accept an explicitly labelled size control,
+        // and only an exact value published for this product/color.
+        for (var ldp = 0; ldp < LD_GROUPS.length && out.variantGroups.length < 4; ldp++) {
+            if (!ldGroupAlreadyCovered(LD_GROUPS[ldp].name)) pushVariantGroup(LD_GROUPS[ldp].name, LD_GROUPS[ldp].values, [], LD_GROUPS[ldp].options);
+        }
+        var sizeName = /^(?:taille|size|talla|taglia|gr(?:ö|oe)(?:ß|ss)e|maat|misura)$/i;
+        var sizeTriggers = document.querySelectorAll('main button[aria-haspopup="listbox"][aria-controls], main [role="combobox"][aria-controls]');
+        for (var sg = 0; sg < out.variantGroups.length; sg++) {
+            var sizeGroup = out.variantGroups[sg];
+            if (!sizeName.test(ciKey(sizeGroup.name)) || sizeGroup.selected.length) continue;
+            var observed = [];
+            for (var st = 0; st < sizeTriggers.length && st < 12; st++) {
+                var trigger = sizeTriggers[st];
+                if (isInNavigation(trigger) || trigger.closest('aside, dialog, [role="dialog"], [hidden], [aria-hidden="true"], [inert]')) continue;
+                if (GLOBAL_WIN && GLOBAL_WIN.getComputedStyle) {
+                    var triggerStyle = GLOBAL_WIN.getComputedStyle(trigger);
+                    if (!trigger.getClientRects().length || /hidden|collapse/.test(triggerStyle.visibility)) continue;
+                }
+                var triggerName = text(trigger.getAttribute('aria-label'));
+                var split = triggerName.indexOf(':');
+                var name = split < 0 ? triggerName : triggerName.slice(0, split);
+                var value = split < 0 ? text(trigger.value || trigger.textContent) : text(triggerName.slice(split + 1));
+                if (!sizeName.test(ciKey(name)) || !value) continue;
+                for (var sv = 0; sv < sizeGroup.values.length; sv++) {
+                    if (ciKey(sizeGroup.values[sv]) === ciKey(value)) pushUnique(observed, sizeGroup.values[sv], 2, 60);
+                }
+            }
+            if (observed.length === 1) {
+                sizeGroup.selected = observed;
+                pushUnique(out.selectedVariantTexts, observed[0], 5, 60);
+            }
+        }
         try {
             var ldPriceRows = ldScopedRows(jsonLd);
             if (ldPriceRows.withFacts && ldPriceRows.rows.length) {
@@ -879,7 +912,6 @@ export const ZALANDO_MOBILE_CAPTURE_SCRIPT = String.raw`(function() {
                 }
             }
         } catch (e) {}
-        for (var ldp = 0; ldp < LD_GROUPS.length && out.variantGroups.length < 4; ldp++) ldGroupAlreadyCovered(LD_GROUPS[ldp].name) || pushVariantGroup(LD_GROUPS[ldp].name, LD_GROUPS[ldp].values, LD_GROUPS[ldp].selected, LD_GROUPS[ldp].options);
     } catch (e) {}
     if (!out.title) try {
         var docTitle = cut(document.title, 300);

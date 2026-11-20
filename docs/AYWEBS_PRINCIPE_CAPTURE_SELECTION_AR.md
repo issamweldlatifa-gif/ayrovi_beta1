@@ -29,7 +29,7 @@ _19/11/2026 — قرار معتمد («موافق علي دفعات الكل ن�
 
 ## 4. كيفاش يتشعل (بلا نشر جديد)
 
-- **افتراضياً**: `AYWEBS_SELECTION_CAPTURE=all` (ولا `off`، ولا قائمة `amazon,zalando`).
+- **افتراضياً**: `AYWEBS_SELECTION_CAPTURE=shein,temu,aliexpress`. أما Amazon وZalando يرجعوا افتراضياً لمسار المتغيرات (`matrix`) والتسعير والتحقق لكل مقاس. `all` أو `off` أو قائمة متاجر تبقى خيارات صريحة، و`core` يستعمل `matrix` في القارئ والخادم معاً.
 - **من الـCRM** (لوحة «Capture des boutiques» ← «Principe de capture»): `selection` ولا `matrix` لكل متجر. سطر الـCRM ديما يغلب.
 - **الطريق القديم (`matrix`) يبقى رجوع للخلف**. القياس منفصل: `selection:<متجر>` مقابل `registre:<متجر>` في لوحة الصحّة؛ ما نفسخو القديم كان بعد ما نقارنو نسب القبول.
 

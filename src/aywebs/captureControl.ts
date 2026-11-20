@@ -286,7 +286,7 @@ export function ayWebsCaptureHealth(
                      gardé comme RETOUR ARRIÈRE tant que les taux d'acceptation
                      des deux chemins n'ont pas été comparés.
 
-   Défaut : variable `AYWEBS_SELECTION_CAPTURE` (`all` par défaut, `off`, ou une
+   Défaut : variable `AYWEBS_SELECTION_CAPTURE` (`shein,temu,aliexpress` par défaut, `all`, `off`, ou une
    liste `amazon,zalando`). Une ligne du CRM l'emporte toujours sur le défaut. */
 export const AYWEBS_CAPTURE_PRINCIPLES = ['selection', 'matrix'] as const;
 export type AyWebsCapturePrinciple = (typeof AYWEBS_CAPTURE_PRINCIPLES)[number];
@@ -312,8 +312,10 @@ function ensurePrincipleSchema(db: QatafoDatabase): void {
 
 /** Défaut d'environnement : `all` (toutes les boutiques), `off`, ou une liste d'identifiants. */
 export function ayWebsSelectionCaptureDefault(storeId: string | null | undefined): AyWebsCapturePrinciple {
-  const raw = String(process.env.AYWEBS_SELECTION_CAPTURE ?? 'all').trim().toLowerCase();
-  if (!raw || raw === 'all' || raw === 'on' || raw === 'true' || raw === '1') return 'selection';
+  // Amazon and Zalando need their established variant quote and fallback paths.
+  // Only the merchants covered by the dedicated selection rollout opt in by default.
+  const raw = (process.env.AYWEBS_SELECTION_CAPTURE?.trim() || 'shein,temu,aliexpress').toLowerCase();
+  if (raw === 'all' || raw === 'on' || raw === 'true' || raw === '1') return 'selection';
   if (raw === 'off' || raw === 'false' || raw === '0' || raw === 'none') return 'matrix';
   const list = raw.split(/[\s,;]+/).filter(Boolean);
   return storeId && list.includes(String(storeId).toLowerCase()) ? 'selection' : 'matrix';
@@ -321,6 +323,7 @@ export function ayWebsSelectionCaptureDefault(storeId: string | null | undefined
 
 /** Principe effectif d'une boutique : ligne CRM, sinon défaut d'environnement. Ne lève jamais. */
 export function ayWebsCapturePrinciple(db: QatafoDatabase | null | undefined, storeId: string | null | undefined): AyWebsCapturePrinciple {
+  if (ayWebsCaptureControlMode(db, storeId) === 'core') return 'matrix';
   const fallback = ayWebsSelectionCaptureDefault(storeId);
   if (!db || !storeId) return fallback;
   try {

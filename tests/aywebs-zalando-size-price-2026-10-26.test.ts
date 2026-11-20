@@ -37,6 +37,10 @@ const PAGE_URL = 'https://www.zalando.fr/nike-giannis-freak-8-basket-ni315d0a2-a
 
 function run(html: string): Record<string, unknown> {
   const dom = new JSDOM(html, { url: PAGE_URL });
+  // JSDOM does not calculate layout; only visible fixture controls get a box.
+  for (const button of dom.window.document.querySelectorAll('main button')) {
+    Object.defineProperty(button, 'getClientRects', { value: () => [{ width: 80, height: 30 }] });
+  }
   const evaluate = new Function('document', 'location', 'URL', `return ${buildAyWebsCaptureScript('zalando')}`);
   return JSON.parse(String(evaluate(dom.window.document, dom.window.location, PAGE_URL)));
 }
@@ -138,6 +142,23 @@ describe('Zalando — la feuille reçoit des TAILLES, pas des liens ni des bouto
     expect(size).toBeTruthy();
     expect(size!.values).toEqual(expect.arrayContaining(['35.5', '36', '51.5', '52.5']));
     expect(size!.selected).toEqual([]);
+  });
+
+  it.each([
+    ['<button aria-label="Taille : 36" aria-haspopup="listbox" aria-controls="sizes">36</button>', ['36']],
+    ['<button aria-label="Taille" aria-haspopup="listbox" aria-controls="sizes">Choisir votre taille</button>', []],
+    ['<button hidden aria-label="Taille : 36" aria-haspopup="listbox" aria-controls="sizes">36</button>', []],
+    ['<button aria-label="Taille : 99" aria-haspopup="listbox" aria-controls="sizes">99</button>', []],
+  ])('retient uniquement une taille publiée sur le bouton de la fiche : %s', (button, selected) => {
+    const html = zalandoPage({ withSizeForm: false }).replace('</body>', `<main>${button}</main></body>`);
+    const payload = run(html);
+    expect(groups(payload).find(group => group.name === 'Taille')?.selected).toEqual(selected);
+    if (selected.length) {
+      const verdict = validateAyWebsCapturedPage(payload, PAGE_URL, { selectionMode: true });
+      expect(verdict.ok).toBe(true);
+      expect(verdict.selection?.attributes).toEqual({ Taille: '36' });
+      expect(verdict.price).toBeCloseTo(129.95);
+    }
   });
 
   it('sans JSON-LD, un lien guide ne devient jamais une taille', () => {

@@ -24,6 +24,38 @@
  */
 import type { AyWebsResolvedProduct } from '@/api/aywebs';
 
+import { ApiError } from '@/api/errors';
+
+export const EXACT_SELECTION_QUOTE_TIMEOUT_MS = 12_000;
+
+/** Bound the UI even if the native networking bridge does not settle on abort. */
+export async function withExactQuoteDeadline<T>(read: (signal: AbortSignal) => Promise<T>, signal: AbortSignal): Promise<T> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let cancel = () => {};
+  const deadline = new Promise<never>((_, reject) => {
+    cancel = () => {
+      reject(new ApiError('aborted', 'Calcul du prix interrompu.'));
+      controller.abort();
+    };
+    signal.addEventListener('abort', cancel, { once: true });
+    timer = setTimeout(() => {
+      reject(new ApiError('timeout', 'Le calcul du prix a pris trop de temps.'));
+      controller.abort();
+    }, EXACT_SELECTION_QUOTE_TIMEOUT_MS);
+  });
+  try {
+    if (signal.aborted) {
+      cancel();
+      return await deadline;
+    }
+    return await Promise.race([deadline, read(controller.signal)]);
+  } finally {
+    clearTimeout(timer);
+    signal.removeEventListener('abort', cancel);
+  }
+}
+
 /** Le devis en dinars est-il absent de cette résolution ? */
 export function lacksServerQuote(product: Pick<AyWebsResolvedProduct, 'zayroviPricing'> | null | undefined): boolean {
   const total = product?.zayroviPricing?.totalTnd;
