@@ -1,4 +1,4 @@
-import { DEFAULT_HIGHLIGHTS, normalizeHighlights, ZAYROVI_HIGHLIGHTS_KEY, type HighlightSettings } from '../../shared/zayroviHighlights';
+import { DEFAULT_HIGHLIGHTS, HIGHLIGHT_LIMIT, normalizeHighlights, ZAYROVI_HIGHLIGHTS_KEY, type HighlightSettings } from '../../shared/zayroviHighlights';
 import type { QatafoDatabase } from '../db/database';
 import { socialTotalSql } from '../db/socialTotals';
 import { publicProductsByContent, type ContentForProducts } from './contentProducts';
@@ -46,15 +46,28 @@ export function saveHighlightsSettings(db: QatafoDatabase, raw: unknown, now: st
   return settings;
 }
 export function readPublicHighlights(db: QatafoDatabase, accountId: string, now = new Date().toISOString()) {
+  const configured = db.get<{ setting_value: string }>('SELECT setting_value FROM settings WHERE setting_key=?', ZAYROVI_HIGHLIGHTS_KEY);
   const settings = readHighlightsSettings(db);
-  if (!settings.enabled) return [];
+  if (!settings.enabled) return { highlightsEnabled: false, data: [] };
   const reels = new Map(readReels(db, now, settings.slots.map(slot => slot.reelId)).map(row => [row.id, row]));
-  const mine = accountId && reels.size ? viewerContentReactions(db, accountId, [...reels.keys()]) : {};
-  return settings.slots.flatMap(slot => {
+  const selected = settings.slots.flatMap(slot => {
     const reel = reels.get(slot.reelId);
     if (!reel) return [];
     const product = reel.products.find(item => eligibleProduct(item) && (!slot.productId || slot.productId === item.id));
-    // If the featured item is withdrawn, do not advertise its price or substitute another item.
-    return [{ ...reel, product: product ?? null, ...(accountId ? { my_reaction: mine[reel.id] ?? null } : {}) }];
+    return [{ ...reel, product: product ?? null }];
   });
+  // On an unconfigured installation, seed the shelf from real public official Reels.
+  // An explicit CRM selection is never replaced behind the editor's back.
+  let data = selected;
+  if (!configured && selected.filter(row => row.product).length < HIGHLIGHT_LIMIT) {
+    const eligible = selected.filter(row => row.product);
+    const ids = new Set(eligible.map(row => row.id));
+    const alternatives = readReels(db, now).flatMap(reel => {
+      const product = reel.products.find(eligibleProduct);
+      return product && !ids.has(reel.id) ? [{ ...reel, product }] : [];
+    });
+    data = [...eligible, ...alternatives].slice(0, HIGHLIGHT_LIMIT);
+  }
+  const mine = accountId && data.length ? viewerContentReactions(db, accountId, data.map(row => row.id)) : {};
+  return { highlightsEnabled: true, data: data.map(reel => ({ ...reel, ...(accountId ? { my_reaction: mine[reel.id] ?? null } : {}) })) };
 }

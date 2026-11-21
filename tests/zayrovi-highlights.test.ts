@@ -74,8 +74,13 @@ it('curates ordered official Reels with live product data, account-isolated reac
     expect((await getPublic()).body.data.map((row: { id: string }) => row.id)).not.toContain(chosen.id);
     db.run("UPDATE reels SET status=?, poster_url='' WHERE id=?", originalReel.status, chosen.id);
     await save(draft).expect(400);
+    db.run('DELETE FROM settings WHERE setting_key=?', ZAYROVI_HIGHLIGHTS_KEY);
+    const fallback = (await getPublic()).body;
+    expect(fallback.highlightsEnabled).toBe(true);
+    expect(fallback.data).toHaveLength(4);
+    expect(fallback.data.every((row: { id: string; product: unknown }) => row.id !== chosen.id && row.product)).toBe(true);
     await save({ ...draft, enabled: false }).expect(200);
-    expect((await getPublic()).body.data).toEqual([]);
+    expect((await getPublic()).body).toMatchObject({ highlightsEnabled: false, data: [] });
   } finally {
     db.run('DELETE FROM story_interactions WHERE account_id=?', customer.id);
     db.run('DELETE FROM customer_accounts WHERE id=?', customer.id);

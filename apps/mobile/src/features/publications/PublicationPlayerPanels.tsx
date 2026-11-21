@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useState } from 'react';
 import { Animated, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import type { ReferencePublication } from '@/api/referencePublications';
@@ -21,14 +22,14 @@ export function PublicationPlayerActions({ panel, hasProducts, showVideos, onPan
   onPanel: (panel: PlayerPanel) => void; onLearnMore: () => void;
 }) {
   const t = useT();
-  const { isRTL } = useTheme();
-  const action = (id: string, name: Parameters<typeof PublicationIcon>[0]['name'], label: string, press: () => void, expanded?: boolean) => (
+  const { isRTL, iconSize } = useTheme();
+  const action = (id: string, name: keyof typeof Ionicons.glyphMap, label: string, press: () => void, expanded?: boolean) => (
     <Pressable testID={`publication-player-${id}`} accessibilityRole={expanded === undefined ? 'link' : 'button'} accessibilityLabel={label}
       accessibilityState={expanded === undefined ? undefined : { expanded }} style={styles.action} onPress={press}>
       <View testID={`publication-player-${id}-icon`} style={styles.actionIcon}>
-        <PublicationIcon halo name={name} color={P.paper} size={20} />
+        <Ionicons name={name} color={P.paper} size={iconSize.md} accessibilityElementsHidden />
       </View>
-      <PublicationText variant="caption" align="center" color={P.paper} style={PUBLICATION_OVERLAY_TEXT}>{label}</PublicationText>
+      <PublicationText variant="captionStrong" align="center" color={P.paper} style={PUBLICATION_OVERLAY_TEXT}>{label}</PublicationText>
     </Pressable>
   );
   return <View style={[styles.actions, { flexDirection: rowDirectionFor(isRTL) }]}>

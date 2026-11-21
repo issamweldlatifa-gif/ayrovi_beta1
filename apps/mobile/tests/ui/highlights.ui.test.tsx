@@ -18,7 +18,7 @@ const reel = (id: string): Reel => ({ id, title: `Le look ${id}`, channelId: 'pu
 let mockId = 'r2';
 let mockFocused = true;
 let mockHidden: string[] = [];
-const mockQuery: { data?: Reel[]; isPending: boolean } = { isPending: false };
+const mockQuery: { data?: { enabled: boolean; reels: Reel[] }; isPending: boolean } = { isPending: false };
 const mockPlayback = jest.fn(({ id, blocked }: { id: string; blocked: boolean }) => <View testID={`playback-${id}-${blocked}`} />);
 jest.mock('expo-router', () => ({ useIsFocused: () => mockFocused, useLocalSearchParams: () => ({ id: mockId }),
   router: { push: jest.fn(), back: jest.fn(), canGoBack: () => true } }));
@@ -47,7 +47,7 @@ function wrap(node: ReactNode, client = new QueryClient()) {
 beforeEach(() => {
   jest.clearAllMocks();
   mockId = 'r2'; mockFocused = true; mockHidden = [];
-  mockQuery.data = ['r1', 'r2', 'r3', 'r4'].map(reel);
+  mockQuery.data = { enabled: true, reels: ['r1', 'r2', 'r3', 'r4'].map(reel) };
 });
 
 it('renders four poster/product pairs without starting playback; both touch targets open the chosen video', () => {
@@ -85,9 +85,20 @@ it('Explore omits hidden videos without leaving the gallery empty when other sel
   expect(screen.getAllByTestId(/^watch-shop-frame-/)).toHaveLength(3);
 });
 
-it('does not show an incomplete shopping template or override hidden videos', () => {
+it('shows the remaining eligible tiles rather than hiding Watshis Shop', () => {
   mockHidden = ['r1'];
   render(wrap(<HighlightsSection />));
+  expect(screen.getByTestId('home-highlights')).toBeTruthy();
+  expect(screen.getAllByTestId(/^highlight-tile-/)).toHaveLength(3);
+});
+
+it('shows a truthful empty section but honours explicit CRM disable', () => {
+  mockQuery.data = { enabled: true, reels: [] };
+  const result = render(wrap(<HighlightsSection />));
+  expect(screen.getByTestId('watch-shop-explore')).toBeTruthy();
+  expect(screen.getByText('Aucune vidéo à découvrir pour le moment.')).toBeTruthy();
+  mockQuery.data = { enabled: false, reels: [] };
+  result.rerender(wrap(<HighlightsSection />));
   expect(screen.queryByTestId('home-highlights')).toBeNull();
 });
 
@@ -105,7 +116,7 @@ it('opens one selected player, with official publisher and an Acheter card but n
 });
 
 it('shows only additional sellable linked cards on demand, without pausing or changing the selected video', () => {
-  mockQuery.data![1]!.products = [product('extra'), product('r2'), product('hidden', false), product('extra2')];
+  mockQuery.data!.reels[1]!.products = [product('extra'), product('r2'), product('hidden', false), product('extra2')];
   render(wrap(<HighlightScreen />));
   expect(screen.getByText('+2 articles')).toBeTruthy();
   expect(screen.queryByTestId('highlight-buy-extra')).toBeNull();

@@ -24,7 +24,7 @@ export default function WatchShopScreen() {
   const t = useT();
   const query = useZayroviHighlights(focused);
   const hidden = useHiddenReels();
-  const reels = watchShopReels(query.data ?? [], hidden);
+  const reels = watchShopReels(query.data?.reels ?? [], hidden);
   const refresh = () => void query.refetch();
   return <View style={styles.screen} testID="watch-shop">
     {focused ? <StatusBar style="light" /> : null}
@@ -36,7 +36,7 @@ export default function WatchShopScreen() {
       refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={refresh} tintColor={BRAND.white} />}>
       {reels.length ? <WatchShopGrid reels={reels} edgeToEdge /> : <View style={styles.state}>
         {query.isPending ? <BrandLoadingIndicator size={60} /> : query.isError ? <ErrorBlock error={query.error} onRetry={refresh} />
-          : <AppText color={BRAND.white} align="center">{t('sections.empty')}</AppText>}
+          : <AppText color={BRAND.white} align="center">{t('highlights.empty')}</AppText>}
       </View>}
     </ScrollView>
   </View>;

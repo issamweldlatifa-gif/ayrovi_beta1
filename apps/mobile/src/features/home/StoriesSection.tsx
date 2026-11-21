@@ -32,10 +32,11 @@ export const StoriesSection = memo(function StoriesSection() {
 
   if (!settings?.enabled || !rows.length || showcase.isError || stories.isError) return null;
 
-  return <FullBleed>
+  return <View style={styles.block}>
+    <MediaSectionMark lead="Storie" suffix="Shop" />
+    <FullBleed>
     <View testID="home-stories" style={styles.section}>
       <View style={[styles.heading, { paddingHorizontal: gutter }]}>
-        <MediaSectionMark lead="Storie" suffix="Shop" tone="onMedia" />
         {local(settings.title, settings.titleAr) ? <AppText variant="bodyStrong" color={FOOTER_THEME.paper}>{local(settings.title, settings.titleAr)}</AppText> : null}
         {settings.subtitle ? <AppText variant="body" color={FOOTER_THEME.paper}>{local(settings.subtitle, settings.subtitleAr)}</AppText> : null}
         {settings.ctaLabel ? <Pressable testID="stories-explore" accessibilityRole="button" onPress={() => router.push('/stories')} style={styles.cta}>
@@ -60,10 +61,12 @@ export const StoriesSection = memo(function StoriesSection() {
           </LinearGradient>
         </Pressable>} />
     </View>
-  </FullBleed>;
+    </FullBleed>
+  </View>;
 });
 
 const styles = StyleSheet.create({
+  block: { gap: 12 },
   section: { backgroundColor: FOOTER_THEME.ink, paddingVertical: 24, gap: 24 },
   heading: { gap: 2 },
   cta: { marginTop: 16, minHeight: 44, justifyContent: 'center' },

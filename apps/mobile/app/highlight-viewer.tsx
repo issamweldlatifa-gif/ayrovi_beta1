@@ -22,7 +22,7 @@ export default function HighlightViewerScreen() {
   const t = useT();
   const hidden = useHiddenReels();
   const query = useZayroviHighlights(focused);
-  const reel = query.data?.find(row => row.id === id && row.videoUrl && !hidden.includes(row.id));
+  const reel = query.data?.reels.find(row => row.id === id && row.videoUrl && !hidden.includes(row.id));
   return <View style={styles.screen}>
     {focused ? <StatusBar style="light" /> : null}
     {reel ? <HighlightViewer key={reel.id} reel={reel} focused={focused} onClose={() => goBack(WATCH_SHOP_PATH)} /> : <>

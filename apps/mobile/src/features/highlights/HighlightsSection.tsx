@@ -1,7 +1,6 @@
 import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, type Href } from 'expo-router';
-import { HIGHLIGHT_LIMIT } from '../../../../../shared/zayroviHighlights';
 import { useZayroviHighlights } from '@/api/zayroviHighlights';
 import { MediaSectionMark } from '@/design/MediaSectionMark';
 import { AppText } from '@/design/ui';
@@ -21,10 +20,10 @@ export function HighlightsSection() {
   const hidden = useHiddenReels();
   const t = useT();
   const { isRTL, opacity } = useTheme();
-  const reels = watchShopReels(query.data ?? [], hidden);
+  const reels = watchShopReels(query.data?.reels ?? [], hidden);
   return <View>
     <View ref={anchor} collapsable={false} style={styles.anchor} />
-    {reels.length === HIGHLIGHT_LIMIT ? <View testID="home-highlights" style={styles.section}>
+    {query.data?.enabled !== false ? <View testID="home-highlights" style={styles.section}>
       <View style={[styles.heading, { flexDirection: rowDirectionFor(isRTL) }]}>
         <View style={styles.mark}><MediaSectionMark lead="Watshis" suffix="Shop" tone="onMedia" /></View>
         <Pressable testID="watch-shop-explore" accessibilityRole="link" onPress={() => router.push(WATCH_SHOP_PATH as Href)}
@@ -32,7 +31,8 @@ export function HighlightsSection() {
           <AppText variant="label" color={BRAND.white}>{t('socialCommerce.explore')}</AppText>
         </Pressable>
       </View>
-      <WatchShopGrid reels={reels} />
+      {reels.length ? <WatchShopGrid reels={reels} /> : !query.isPending ?
+        <AppText variant="caption" color={BRAND.white}>{t(query.isError ? 'highlights.loadError' : 'highlights.empty')}</AppText> : null}
     </View> : null}
   </View>;
 }

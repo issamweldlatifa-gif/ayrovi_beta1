@@ -16,7 +16,7 @@ export function PublicationVideoSession({ post, start, onClose, onLearnMore, onP
 }) {
   const owner = useSession().account?.id || 'guest';
   const reduceMotion = useReduceMotion();
-  const [clip, setClip] = useState(() => ({ post, start: { ...start, muted: false }, sequence: 0 }));
+  const [clip, setClip] = useState(() => ({ post, start, sequence: 0 }));
   const [visited, setVisited] = useState(() => new Set([post.id]));
   const originPlayback = useRef(start);
   const back = useRef<() => void>(null);
@@ -29,7 +29,7 @@ export function PublicationVideoSession({ post, start, onClose, onLearnMore, onP
   });
   const videos = relatedPublicationVideos(clip.post, related.data ?? []);
   const next = !reduceMotion ? videos.find(item => !visited.has(item.id)) : undefined;
-  const resumeOrigin = (state: PublicationPlayback) => clip.post.id === post.id ? state : originPlayback.current;
+  const resumeOrigin = (state: PublicationPlayback) => clip.post.id === post.id ? state : { ...originPlayback.current, muted: state.muted };
   const select = useCallback((item: ReferencePublication, state: PublicationPlayback) => {
     if (clip.post.id === post.id) originPlayback.current = state;
     setVisited(value => new Set(value).add(item.id));
@@ -41,6 +41,7 @@ export function PublicationVideoSession({ post, start, onClose, onLearnMore, onP
     supportedOrientations={['portrait', 'landscape']} onRequestClose={() => back.current?.()}>
     <PublicationFullscreenVideo key={clip.sequence} back={back} post={clip.post} media={clip.post.media} start={clip.start}
       videos={videos} relatedStatus={related.isLoading ? 'loading' : related.isError ? 'error' : 'ready'}
+      onRetryPlayback={muted => setClip(value => ({ ...value, start: { time: 0, muted }, sequence: value.sequence + 1 }))}
       onRetryRelated={() => void related.refetch()} next={next} onSelectVideo={select}
       onClose={state => onClose(resumeOrigin(state))}
       onLearnMore={state => onLearnMore(clip.post, resumeOrigin(state))}

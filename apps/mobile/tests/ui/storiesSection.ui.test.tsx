@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import { StoriesSection } from '@/features/home/StoriesSection';
@@ -32,6 +32,7 @@ describe('official editorial Stories gallery', () => {
     await mount();
     expect(screen.getByText(block.title)).toBeTruthy();
     expect(screen.getByRole('header', { name: 'Storie, Shop' })).toBeTruthy();
+    expect(within(screen.getByTestId('home-stories')).queryByRole('header', { name: 'Storie, Shop' })).toBeNull();
     expect(screen.getByText(block.subtitle)).toBeTruthy();
     expect(StyleSheet.flatten(screen.getByTestId('editorial-story-s1').props.style).aspectRatio).toBeCloseTo((5 / 8) / 1.08);
     fireEvent.press(screen.getByRole('button', { name: /Explorez toutes les stories/ }));

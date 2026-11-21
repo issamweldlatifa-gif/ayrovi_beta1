@@ -750,7 +750,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
   router.get('/zayrovi-highlights', optionalCustomer(db), (req, res) => {
     res.setHeader('Cache-Control', 'private, no-store');
-    res.json({ success: true, data: readPublicHighlights(db, (req as any).customer?.id || '') });
+    res.json({ success: true, ...readPublicHighlights(db, (req as any).customer?.id || '') });
   });
 
   router.get('/zayrovi-news', (req, res) => {

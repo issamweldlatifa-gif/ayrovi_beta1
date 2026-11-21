@@ -82,7 +82,7 @@ export function PublicationLookScreen({ id }: { id: string }) {
   const publisher = official ? OFFICIAL_PUBLISHER_NAME : post?.channelName;
   const followLabel = t(follow.state === 'following' ? 'publication.following' : follow.state === 'error' ? 'publication.followRetry' : 'publication.follow');
   const saved = signedIn && Boolean(post?.saved);
-  const openPlayer = () => setFullscreen({ ...position.current });
+  const openPlayer = () => setFullscreen({ ...position.current, muted: false });
   const back = <Pressable onPress={() => goBack('/publications')} accessibilityRole="button" accessibilityLabel={t('common.back')}
     testID="publication-look-back" style={[styles.back, { flexDirection: direction }]}>
     <PublicationIcon name={theme.isRTL ? 'chevron-forward' : 'chevron-back'} size={18} color={P.ink} />

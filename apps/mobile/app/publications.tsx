@@ -51,7 +51,8 @@ export default function PublicationsScreen() {
   const [search, setSearch] = useState<{ id: string; query: string } | null>(null);
   const [auth, setAuth] = useState(false);
   const [selection, setSelection] = useState<Selection | null>(null);
-  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  const [foreground, setForeground] = useState(AppState.currentState == null || AppState.currentState === 'active');
+  const [feedMuted, setFeedMuted] = useState(false);
   const [fullscreen, setFullscreen] = useState<{ post: ReferencePublication; start: PublicationPlayback; resumeAt: (state: PublicationPlayback) => void } | null>(null);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
   const viewability = useRef({ itemVisiblePercentThreshold: 45, minimumViewTime: 160 }).current;
@@ -113,7 +114,8 @@ export default function PublicationsScreen() {
         renderItem={({ item }) => isPublicationCampaign(item.layout) ? <PublicationCampaignCard post={item} layout={item.layout}
           viewport={width} query={search?.id === item.id ? search.query : ''} favorites={favorites} signedIn={signedIn}
           onAuth={() => setAuth(true)} onSponsor={() => open(item, 'sponsor')} onOpen={() => openLook(item)} /> : <ReferencePublicationCard post={item} viewport={width}
-          active={playingAllowed && activeVideo === item.id} autoplay={!reducedMotion} onActivate={() => setActiveVideo(item.id)}
+          preview={playingAllowed && !reducedMotion && activeVideo === item.id} muted={feedMuted}
+          onToggleMute={() => setFeedMuted(value => !value)}
           onPhoto={item.media?.type === 'image' ? () => openLook(item) : undefined}
           onVideo={item.media?.type === 'video' ? (start, resumeAt) => {
             if (item.media) setFullscreen({ post: item, start, resumeAt });
@@ -150,9 +152,9 @@ export default function PublicationsScreen() {
       </View>
     </AppSheet> : null}
     {fullscreen ? <PublicationVideoSession post={fullscreen.post} start={fullscreen.start}
-      onLearnMore={(post, state) => { fullscreen.resumeAt(state); setFullscreen(null); openLook(post); }}
-      onProduct={(id, state) => { fullscreen.resumeAt(state); setFullscreen(null); openPublicationProduct(id); }}
-      onClose={state => { fullscreen.resumeAt(state); setFullscreen(null); }} /> : null}
+      onLearnMore={(post, state) => { fullscreen.resumeAt(state); setFeedMuted(state.muted); setFullscreen(null); openLook(post); }}
+      onProduct={(id, state) => { fullscreen.resumeAt(state); setFeedMuted(state.muted); setFullscreen(null); openPublicationProduct(id); }}
+      onClose={state => { fullscreen.resumeAt(state); setFeedMuted(state.muted); setFullscreen(null); }} /> : null}
     {auth ? <PublicationAuthSheet visible onClose={() => setAuth(false)} /> : null}
   </View>;
 }

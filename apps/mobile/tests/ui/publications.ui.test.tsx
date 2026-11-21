@@ -45,6 +45,7 @@ beforeEach(() => {
   jest.mocked(fetchRelatedPublicationVideos).mockResolvedValue([]);
   mockReduce.mockReturnValue(true);
   mockSession.mockReturnValue({ status: 'signedOut', account: null });
+  mockPlayer.status = 'readyToPlay';
   mockPlayer.videoTrack = undefined;
   mockPlayer.currentTime = 0;
   mockPlayer.muted = true;
@@ -107,36 +108,52 @@ it.each([
   expect(screen.queryByTestId('reference-publication-sheet-details')).toBeNull();
 });
 
-it('plays only the active video, starts muted and honors pause and deselection', async () => {
+it('plays sound while browsing only the visible video and remembers mute across cards and fullscreen', async () => {
   mockReduce.mockReturnValue(false);
-  const data = fixture('video', 500, 900);
-  jest.mocked(fetchReferencePublications).mockResolvedValueOnce(data);
+  const first = fixture('video', 500, 900).items[0]!;
+  const second = relatedVideo('second', 'Second clip', []);
+  jest.mocked(fetchReferencePublications).mockResolvedValueOnce({ items: [first, second], nextCursor: null });
   mount();
-  await screen.findByTestId('reference-video-play');
+  await screen.findByTestId('reference-publication-second');
   const feed = screen.UNSAFE_getByType(FlatList);
+  const view = (item?: typeof first) => act(() => feed.props.onViewableItemsChanged({ viewableItems: item ? [{ item, isViewable: true }] : [] }));
+  const frame = () => act(() => screen.getByTestId('publication-inline-video').props.onFirstFrameRender());
   expect(mockPlayer.play).not.toHaveBeenCalled();
-  act(() => feed.props.onViewableItemsChanged({ viewableItems: [{ item: data.items[0], isViewable: true }] }));
+  view(first);
   expect(mockPlayer.play).toHaveBeenCalledTimes(1);
   expect(mockPlayer.muted).toBe(true);
-  fireEvent.press(screen.getByTestId('reference-video-mute'));
+  frame();
   expect(mockPlayer.muted).toBe(false);
-  fireEvent.press(screen.getByTestId('reference-video-play'));
-  expect(mockPlayer.pause).toHaveBeenCalled();
-  act(() => feed.props.onViewableItemsChanged({ viewableItems: [] }));
-  expect(screen.getByTestId('reference-video-play').props.accessibilityLabel).toBe('Lire');
+  fireEvent.press(screen.getByTestId('reference-video-mute'));
+  expect(mockPlayer.muted).toBe(true);
+  view(second);
+  expect(screen.getAllByTestId('publication-inline-video')).toHaveLength(1);
+  expect(within(screen.getByTestId('reference-publication-second')).getByTestId('publication-inline-video')).toBeTruthy();
+  frame();
+  expect(mockPlayer.muted).toBe(true);
+  fireEvent.press(within(screen.getByTestId('reference-publication-second')).getByTestId('reference-video-play'));
+  expect(screen.queryByTestId('publication-inline-video')).toBeNull();
+  act(() => screen.getByTestId('publication-player-video').props.onFirstFrameRender());
+  expect(mockPlayer.muted).toBe(true);
+  fireEvent.press(screen.getByTestId('publication-player-exit'));
+  frame();
+  expect(mockPlayer.muted).toBe(true);
+  view();
+  expect(screen.queryByTestId('publication-inline-video')).toBeNull();
 });
 
-it('starts an intentional inline Play with sound and keeps a subsequent mute choice', async () => {
+it('opens fullscreen from the visible play button and queues playback on the first tap', async () => {
+  mockPlayer.status = 'loading';
   jest.mocked(fetchReferencePublications).mockResolvedValueOnce(fixture('video', 500, 900));
   mount();
-  const play = await screen.findByTestId('reference-video-play');
-  fireEvent.press(play);
-  expect(mockPlayer.play).toHaveBeenCalled();
-  expect(mockPlayer.muted).toBe(false);
-  fireEvent.press(screen.getByTestId('reference-video-mute'));
-  fireEvent.press(play);
-  fireEvent.press(play);
+  fireEvent.press(await screen.findByTestId('reference-video-play'));
+  expect(screen.getByTestId('publication-fullscreen-player')).toBeTruthy();
+  expect(mockPlayer.play).toHaveBeenCalledTimes(1);
+  expect(mockPlayer.pause).not.toHaveBeenCalled();
   expect(mockPlayer.muted).toBe(true);
+  emit('statusChange', { status: 'readyToPlay' });
+  act(() => screen.getByTestId('publication-player-video').props.onFirstFrameRender());
+  expect(mockPlayer.muted).toBe(false);
 });
 
 it('continues to redirect bookmarks to the retired block collection', () => {
@@ -245,7 +262,7 @@ it('keeps landscape video uncropped on the full canvas without a reserved contro
   expect(StyleSheet.flatten(layer.props.style)).toMatchObject({ top: 0, bottom: 0, left: 0, right: 0 });
   expect(player.queryByTestId('publication-player-footer')).toBeNull();
   expect(player.queryByTestId('publication-player-play')).toBeNull();
-  expect(StyleSheet.flatten(player.getByTestId('publication-player-exit').props.style).top).toBe(36);
+  expect(StyleSheet.flatten(player.getByTestId('publication-player-exit').props.style).top).toBe(28);
   expect(player.queryByTestId('publication-player-cc')).toBeNull();
   fireEvent.press(player.getByTestId('publication-player-surface'));
   expect(player.getByTestId('publication-player-play')).toBeTruthy();
@@ -262,9 +279,12 @@ it('reveals transparent controls and the official mark on tap, and a down swipe 
   try {
     fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
     const player = within(screen.getByTestId('publication-fullscreen-player'));
+    expect(mockPlayer.muted).toBe(true);
+    act(() => screen.getByTestId('publication-player-video').props.onFirstFrameRender());
     expect(mockPlayer.muted).toBe(false);
     expect(player.queryByTestId('publication-player-play')).toBeNull();
     const editorial = player.getByTestId('publication-player-editorial');
+    expect(StyleSheet.flatten(editorial.props.style)).toMatchObject({ top: 72 });
     expect(StyleSheet.flatten(editorial.props.style).backgroundColor).toBeUndefined();
     expect(within(editorial).getByText('Sélection week-end')).toBeTruthy();
     expect(within(editorial).getByText('Zayrovi Team')).toBeTruthy();
@@ -290,6 +310,8 @@ it('reveals transparent controls and the official mark on tap, and a down swipe 
     expect(router.push).not.toHaveBeenCalled();
     fireEvent.press(screen.getByTestId('reference-video-fullscreen'));
     expect(mockPlayer.currentTime).toBe(7.5);
+    expect(mockPlayer.muted).toBe(true);
+    act(() => screen.getByTestId('publication-player-video').props.onFirstFrameRender());
     expect(mockPlayer.muted).toBe(false);
   } finally { pan.mockRestore(); }
 });
@@ -518,6 +540,7 @@ it.each([true, false])('ends with a cancellable countdown (cancel=%s) and never 
   mount();
   fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
   await waitFor(() => expect(client.getQueryData(['publication-related-videos', 'guest', ['a', 'b', 'c', 'd']])).toBeDefined());
+  act(() => screen.getByTestId('publication-player-video').props.onFirstFrameRender());
   emit('playToEnd');
   const player = within(screen.getByTestId('publication-fullscreen-player'));
   expect(player.getByTestId('publication-player-up-next')).toBeTruthy();
@@ -531,10 +554,36 @@ it.each([true, false])('ends with a cancellable countdown (cancel=%s) and never 
     expect(current.queryByTestId('publication-player-play')).toBeNull();
     fireEvent.press(current.getByTestId('publication-player-surface'));
     expect(current.getByText(target.title)).toBeTruthy();
+    act(() => current.getByTestId('publication-player-video').props.onFirstFrameRender());
     emit('playToEnd');
     expect(current.queryByTestId('publication-player-up-next')).toBeNull();
   }
 });
+
+it('does not play audio if there is no picture and allows a fresh player retry', async () => {
+  jest.mocked(fetchReferencePublications).mockResolvedValueOnce(fixture('video', 500, 900));
+  mount();
+  fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
+  expect(mockPlayer.muted).toBe(true);
+  expect(StyleSheet.flatten(screen.getByTestId('publication-player-video').props.style).opacity).toBeUndefined();
+  emit('playToEnd');
+  expect(mockPlayer.pause).toHaveBeenCalled();
+  expect(screen.getByTestId('publication-player-retry')).toBeTruthy();
+  expect(screen.queryByTestId('publication-player-up-next')).toBeNull();
+  fireEvent.press(screen.getByTestId('publication-player-retry'));
+  act(() => screen.getByTestId('publication-player-video').props.onFirstFrameRender());
+  expect(mockPlayer.muted).toBe(false);
+});
+
+it('exposes a retry rather than waiting indefinitely for the first Android frame', async () => {
+  jest.mocked(fetchReferencePublications).mockResolvedValueOnce(fixture('video', 500, 900));
+  mount();
+  fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
+  expect(await screen.findByText('Chargement de la vidéo…')).toBeTruthy();
+  expect(mockPlayer.muted).toBe(true);
+  expect(await screen.findByTestId('publication-player-retry', {}, { timeout: 9_000 })).toBeTruthy();
+  expect(within(screen.getByTestId('publication-player-editorial')).getByText('Zayrovi Team')).toBeTruthy();
+}, 12_000);
 
 it('reports an unpublished look as unavailable instead of showing an unrelated post', async () => {
   jest.mocked(fetchPublicationLook).mockResolvedValueOnce(null);
