@@ -11,6 +11,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import { HomeCover } from '../../src/features/home/HomeCover';
+import { demoHomeCover } from '../../src/features/home/homeCoverDemo';
 import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
@@ -102,6 +103,15 @@ describe('HomeCover — le nouveau bloc d’entrée', () => {
   it('remplace la cover Publications par une image Social Shopping et ouvre le fil natif', async () => {
     mockCover.data = { ...coverData(), destination: 'publications' };
     await renderCover();
+    expect(screen.queryByTestId('home-cover-list')).toBeNull();
+    fireEvent.press(screen.getByRole('link', { name: 'Social Shopping' }));
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/(tabs)/social', params: { filter: 'all' } });
+  });
+
+  it('affiche la cover Social Shopping localisée sans média CRM dans la démo', async () => {
+    mockCover.data = demoHomeCover();
+    await renderCover();
+    expect(screen.getByText('Découvrir le fil')).toBeTruthy();
     expect(screen.queryByTestId('home-cover-list')).toBeNull();
     fireEvent.press(screen.getByRole('link', { name: 'Social Shopping' }));
     expect(router.push).toHaveBeenCalledWith({ pathname: '/(tabs)/social', params: { filter: 'all' } });
