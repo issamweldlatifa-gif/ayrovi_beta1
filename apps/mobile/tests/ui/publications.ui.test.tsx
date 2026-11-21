@@ -365,7 +365,6 @@ it('renders the original video above editorial information and a two-column prod
 it('renders the added large square with two real products and opens its detail from fullscreen', async () => {
   const post = { ...fixture('video', 500, 900).items[0]!, layout: 'video-square' as const, description: 'Description de la vidéo.' };
   post.products = post.products.slice(0, 2);
-  const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
   jest.mocked(fetchReferencePublications).mockResolvedValueOnce({ items: [post], nextCursor: null });
   mount();
   const media = await screen.findByTestId('reference-media-video-square');
@@ -379,15 +378,20 @@ it('renders the added large square with two real products and opens its detail f
   const caption = player.getByTestId('publication-player-caption');
   fireEvent.press(caption);
   expect(caption.props.accessibilityState.expanded).toBe(true);
-  await act(async () => fireEvent.press(player.getByTestId('publication-player-share')));
-  expect(share).toHaveBeenCalledWith({ message: expect.stringContaining('/publications?post=publication_1') });
-  fireEvent.press(player.getByTestId('publication-player-learn-more'));
+  const shopAction = player.getByRole('button', { name: 'Shop Products' });
+  const detailsAction = player.getByRole('link', { name: 'En savoir plus' });
+  const videosAction = player.getByRole('button', { name: 'Plus de vidéos' });
+  expect(player.queryByRole('button', { name: 'Partager' })).toBeNull();
+  for (const action of [shopAction, detailsAction, videosAction]) {
+    expect(StyleSheet.flatten(action.props.style)?.backgroundColor).toBeUndefined();
+    expect(StyleSheet.flatten(within(action).getByTestId(`${action.props.testID}-icon`).props.style)?.backgroundColor).toBeUndefined();
+  }
+  fireEvent.press(detailsAction);
   expect(router.push).toHaveBeenLastCalledWith({ pathname: '/publication-look/[id]', params: { id: 'publication_1' } });
   expect(screen.queryByTestId('publication-fullscreen-player')).toBeNull();
-  share.mockRestore();
 });
 
-it('opens Boutique in place and navigates only from a linked product card', async () => {
+it('opens Shop Products in place and navigates only from a linked product card', async () => {
   jest.mocked(fetchReferencePublications).mockResolvedValueOnce(fixture('video', 1200, 600));
   mount();
   fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
@@ -395,6 +399,9 @@ it('opens Boutique in place and navigates only from a linked product card', asyn
   fireEvent.press(player.getByTestId('publication-player-shop'));
   const shop = within(player.getByTestId('publication-player-panel-shop'));
   expect(router.push).not.toHaveBeenCalled();
+  expect(shop.getByRole('header', { name: 'Shop Products' })).toBeTruthy();
+  const shopAction = player.getByRole('button', { name: 'Shop Products', expanded: true });
+  expect(StyleSheet.flatten(within(shopAction).getByTestId('publication-player-shop-icon').props.style)?.backgroundColor).toBeUndefined();
   expect(shop.getAllByRole('link')).toHaveLength(4);
   expect(shop.getAllByText('80.00 TND')).toHaveLength(4);
   fireEvent.press(shop.getByRole('link', { name: 'Produit b' }));
@@ -410,7 +417,8 @@ it('hides commerce actions and does not query related videos when no product is 
   const player = within(screen.getByTestId('publication-fullscreen-player'));
   expect(player.queryByTestId('publication-player-shop')).toBeNull();
   expect(player.queryByTestId('publication-player-more-videos')).toBeNull();
-  expect(player.getByTestId('publication-player-share')).toBeTruthy();
+  expect(player.getByRole('link', { name: 'En savoir plus' })).toBeTruthy();
+  expect(player.queryByTestId('publication-player-share')).toBeNull();
   expect(fetchRelatedPublicationVideos).not.toHaveBeenCalled();
 });
 

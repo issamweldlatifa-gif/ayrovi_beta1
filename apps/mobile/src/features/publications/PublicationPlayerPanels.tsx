@@ -16,24 +16,24 @@ import { videoClock } from './publicationVideoQueue';
 export type PlayerPanel = 'shop' | 'videos';
 export type RelatedStatus = 'loading' | 'error' | 'ready';
 
-export function PublicationPlayerActions({ panel, hasProducts, showVideos, onPanel, onShare }: {
+export function PublicationPlayerActions({ panel, hasProducts, showVideos, onPanel, onLearnMore }: {
   panel: PlayerPanel | null; hasProducts: boolean; showVideos: boolean;
-  onPanel: (panel: PlayerPanel) => void; onShare: () => void;
+  onPanel: (panel: PlayerPanel) => void; onLearnMore: () => void;
 }) {
   const t = useT();
   const { isRTL } = useTheme();
   const action = (id: string, name: Parameters<typeof PublicationIcon>[0]['name'], label: string, press: () => void, expanded?: boolean) => (
-    <Pressable testID={`publication-player-${id}`} accessibilityRole="button" accessibilityLabel={label}
+    <Pressable testID={`publication-player-${id}`} accessibilityRole={expanded === undefined ? 'link' : 'button'} accessibilityLabel={label}
       accessibilityState={expanded === undefined ? undefined : { expanded }} style={styles.action} onPress={press}>
-      <View style={[styles.actionIcon, expanded && styles.actionOn]}>
-        <PublicationIcon name={name} color={expanded ? P.ink : P.paper} size={20} />
+      <View testID={`publication-player-${id}-icon`} style={styles.actionIcon}>
+        <PublicationIcon name={name} color={P.paper} size={20} />
       </View>
       <PublicationText variant="caption" align="center" color={P.paper}>{label}</PublicationText>
     </Pressable>
   );
   return <View style={[styles.actions, { flexDirection: rowDirectionFor(isRTL) }]}>
     {hasProducts ? action('shop', 'bag-outline', t('publication.playerShop'), () => onPanel('shop'), panel === 'shop') : null}
-    {action('share', 'share-social-outline', t('social.share'), onShare)}
+    {action('learn-more', 'information-circle-outline', t('publication.learnMore'), onLearnMore)}
     {showVideos ? action('more-videos', 'videocam-outline', t('publication.playerMoreVideos'), () => onPanel('videos'), panel === 'videos') : null}
   </View>;
 }
@@ -96,8 +96,7 @@ export function PublicationPlayerPanel({ panel, post, videos, status, compact, o
 const styles = StyleSheet.create({
   actions: { justifyContent: 'space-evenly', alignItems: 'flex-start', paddingVertical: 4 },
   action: { flex: 1, minHeight: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
-  actionIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  actionOn: { backgroundColor: P.paper },
+  actionIcon: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   sheet: { backgroundColor: C.menu, borderTopLeftRadius: RADIUS.md, borderTopRightRadius: RADIUS.md, paddingBottom: 8 },
   heading: { alignItems: 'center', paddingStart: 12, paddingEnd: 4 },
   headingTitle: { flex: 1 },

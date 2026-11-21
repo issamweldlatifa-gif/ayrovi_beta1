@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useEffectEvent, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
-import { Alert, AppState, PanResponder, Pressable, Share, StyleSheet, View, useWindowDimensions } from "react-native";
+import { AppState, PanResponder, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoView, useVideoPlayer } from "expo-video";
-import { apiUrl, mediaUrl } from "@/api/client";
+import { mediaUrl } from "@/api/client";
 import type { ReferencePublication } from "@/api/referencePublications";
 import { AppImage } from "@/design/appImage";
 import { OFFICIAL_AVATAR, OfficialAvatar } from "@/design/OfficialAvatar";
@@ -55,7 +55,6 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
   const [muted, setMuted] = useState(start.muted);
   const [visible, setVisible] = useState(true);
   const [expanded, setExpanded] = useState(false);
-  const [sharing, setSharing] = useState(false);
   const [panel, setPanel] = useState<PlayerPanel | null>(null);
   const [menu, setMenu] = useState<PlayerMenu | null>(null);
   const [time, setTime] = useState(start.time);
@@ -125,9 +124,9 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
   }, [player]);
   useEffect(() => { player.muted = muted; }, [muted, player]);
   useEffect(() => {
-    if (foreground && !paused && !sharing && !ended) player.play();
+    if (foreground && !paused && !ended) player.play();
     else player.pause();
-  }, [foreground, paused, player, sharing, ended]);
+  }, [foreground, paused, player, ended]);
   useEffect(() => { player.playbackRate = speed; }, [speed, player]);
 
   const playback = useCallback((): PublicationPlayback => ({ time: playhead.current, muted }), [muted]);
@@ -137,16 +136,16 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
     onSelectVideo(item, playback());
   };
   const advanceIfActive = useEffectEvent(() => {
-    if (!advanceBlocked.current && AppState.currentState === "active" && upNext && !panel && !menu && !sharing) advance(upNext);
+    if (!advanceBlocked.current && AppState.currentState === "active" && upNext && !panel && !menu) advance(upNext);
   });
   useEffect(() => {
-    if (!upNext?.id || !foreground || sharing || panel || menu) return;
+    if (!upNext?.id || !foreground || panel || menu) return;
     const started = Date.now();
     setCountdown(1);
     const interval = setInterval(() => setCountdown(clamp(1 - (Date.now() - started) / UP_NEXT_MS, 1)), 100);
     const timer = setTimeout(() => advanceIfActive(), UP_NEXT_MS);
     return () => { clearTimeout(timer); clearInterval(interval); };
-  }, [upNext?.id, foreground, sharing, panel, menu]);
+  }, [upNext?.id, foreground, panel, menu]);
 
   const seek = (position: number) => {
     if (!duration || !Number.isFinite(position)) return;
@@ -184,12 +183,6 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
     else if (upNext) cancelNext();
     else close();
   });
-  const share = async () => {
-    setSharing(true);
-    try { await Share.share({ message: [title || caption, apiUrl(`/publications?post=${encodeURIComponent(post.id)}`)].filter(Boolean).join("\n") }); }
-    catch { Alert.alert(t("publication.videoShareError")); }
-    finally { setSharing(false); }
-  };
   const toggleControls = () => {
     if (panel) { setPanel(null); return; }
     if (menu) { setMenu(null); return; }
@@ -334,15 +327,12 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
               onPress={() => setMuted(value => !value)} style={styles.button} testID="publication-player-mute">
               <PublicationIcon name={muted ? "volume-mute-outline" : "volume-high-outline"} color={P.paper} size={20} />
             </Pressable>
-            <Pressable accessibilityRole="link" onPress={() => exitWith(onLearnMore)} style={styles.button} testID="publication-player-learn-more">
-              <PublicationText color={P.paper} variant="caption">{t("publication.learnMore")}</PublicationText>
-            </Pressable>
           </View>
         </> : null}
         {panel ? <PublicationPlayerPanel key={panel} panel={panel} post={post} videos={videos} status={relatedStatus} compact={compact}
           onDismiss={() => setPanel(null)} onRetry={onRetryRelated} onVideo={advance} onProduct={id => exitWith(state => onProduct(id, state))} /> : null}
         <PublicationPlayerActions panel={panel} hasProducts={hasProducts} showVideos={canFindRelated}
-          onPanel={togglePanel} onShare={() => void share()} />
+          onPanel={togglePanel} onLearnMore={() => exitWith(onLearnMore)} />
       </View>
     </View>
   </View>;
