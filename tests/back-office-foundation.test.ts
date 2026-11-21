@@ -163,7 +163,8 @@ describe('back office shell (P2.0)', () => {
       expect(sections.has('hero-visuals'), 'section hero-visuals doit être supprimée').toBe(false);
       // 2026-10-10 : + la section « à la une » (accueil mobile).
       expect(sections.has('home-featured'), 'section home-featured absente').toBe(true);
-      expect(sections.size).toBe(55); // + « Achats AYWEBs » (2026-10-19)
+      expect(sections.has('zayrovi-news'), 'section zayrovi-news absente').toBe(true);
+      expect(sections.size).toBe(56);
     });
 
     test('la navigation serveur couvre exactement les entrées de la barre latérale legacy', () => {
@@ -206,12 +207,13 @@ describe('back office shell (P2.0)', () => {
       const aywebsPurchaseAdditions = ['aywebs-purchases'];
       // 2026-11-06 : Stories officielles dispose de son éditeur navigable dédié.
       const officialStoriesAdditions = ['stories'];
+      const newsroomAdditions = ['zayrovi-news'];
       const navigable = backOfficeSections();
       const sections = resourceDescriptors()
         .filter((descriptor) => descriptor.nav && navigable.includes(descriptor.section))
         .map((descriptor) => descriptor.section)
         .sort();
-      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions, ...globalDiscoveryAdditions, ...promoEngineAdditions, ...heroSlidesAdditions, ...homeFeaturedAdditions, ...aywebsPurchaseAdditions, ...officialStoriesAdditions].sort()]);
+      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions, ...globalDiscoveryAdditions, ...promoEngineAdditions, ...heroSlidesAdditions, ...homeFeaturedAdditions, ...aywebsPurchaseAdditions, ...officialStoriesAdditions, ...newsroomAdditions].sort()]);
       // 3) et le client ne réintroduit aucune copie de cette liste.
       const adminApp = fs.readFileSync(path.resolve(process.cwd(), 'client/src/admin/AdminApp.tsx'), 'utf8');
       expect(adminApp, 'le client ne doit plus porter de liste de navigation').not.toContain('const navGroups');
@@ -228,20 +230,20 @@ describe('back office shell (P2.0)', () => {
   });
 
   describe('navigation dérivée du registre + permissions + statut de module', () => {
-    test('SUPER_ADMIN voit les 34 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5) + la barre publique + la section promos + le carrousel Hero + la gestion des cartes Hero + la section à la une + les Stories officielles', async () => {
+    test('SUPER_ADMIN voit les 34 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5) + la barre publique + la section promos + le carrousel Hero + la gestion des cartes Hero + la section à la une + les Stories officielles et Zayrovi News', async () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       expect(result.status).toBe(200);
       const items = result.body.data.groups.flatMap((group: any) => group.items);
-      expect(items.length).toBe(54);
-      expect(result.body.data.counts).toMatchObject({ sections: 54, visible: 54 });
+      expect(items.length).toBe(55);
+      expect(result.body.data.counts).toMatchObject({ sections: 55, visible: 55 });
       expect(result.body.data.groups.map((group: any) => group.label)).toEqual(
         ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'CRM', 'ERP', 'Système']);
     });
 
     test('un rôle ne voit que ce que la permission autorise — sans jamais enlever davantage', async () => {
       const cases: Array<[Session, string[], string[]]> = [
-        [content, ['products', 'news', 'public-nav'], ['users', 'erp-permissions', 'lens-lab', 'erp-employees', 'customers']],
-        [orders, ['orders', 'arrival-ingestion'], ['users', 'settings', 'products', 'erp-audit']],
+        [content, ['products', 'news', 'public-nav', 'zayrovi-news'], ['users', 'erp-permissions', 'lens-lab', 'erp-employees', 'customers']],
+        [orders, ['orders', 'arrival-ingestion'], ['users', 'settings', 'products', 'erp-audit', 'zayrovi-news']],
         [admin, ['reports', 'products', 'arrival-ingestion'], ['users', 'erp-permissions', 'erp-employees']],
       ];
       for (const [session, allowed, denied] of cases) {
@@ -485,7 +487,7 @@ describe('back office shell (P2.0)', () => {
       // 2026-10-10 : le Hero unique est l’entrée « Hero » (icône LayoutGrid) ; les entrées
       // « Visuels d’accueil » et « Carrousel Hero » sont supprimées.
       // 2026-10-10 : la section « à la une » (icône Sparkles) ajoute son entrée.
-      expect(declared.length).toBe(54); // + Stories officielles (2026-11-06).
+      expect(declared.length).toBe(55); // + Zayrovi News (Bell).
       const missing = [...new Set(declared)].filter((name) => !card.has(name));
       expect(missing, 'noms d\u2019icône sans clé dans ICONS').toEqual([]);
     });

@@ -148,8 +148,9 @@ export function parseStories(payload: unknown): StoryItem[] {
   });
 }
 
-export async function fetchNews(options: RequestOptions = {}): Promise<NewsItem[]> {
-  const payload = await apiGet('/api/public/news', options);
+export async function fetchNews(options: RequestOptions = {}, item?: string): Promise<NewsItem[]> {
+  const path = item ? `/api/public/news?item=${encodeURIComponent(item)}` : '/api/public/news';
+  const payload = await apiGet(path, options);
   return rows(payload).flatMap((entry) => {
     const id = str(entry.id);
     if (!id) return [];

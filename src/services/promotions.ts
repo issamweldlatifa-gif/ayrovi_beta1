@@ -112,7 +112,7 @@ export function promoDiscountTnd(convertedPriceTND: number, percent: number, mil
 /** Résolution raccourcie pour un devis (catégorie connue après calcul). */
 export function resolvePromoForQuote(
   db: QatafoDatabase,
-  context: { categoryId?: string | null; productId?: string | null } = {},
+  context: Parameters<typeof resolvePromo>[1] = {},
 ): ResolvedPromo | null {
   const resolved = resolvePromo(db.getPromoRules(), context);
   if (!resolved) return null;

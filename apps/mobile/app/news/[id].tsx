@@ -17,7 +17,9 @@ import { AppImage } from '@/design/appImage';
 import { useT } from '@/i18n';
 import { mediaUrl } from '@/api/client';
 import { newsCategoryText } from '@/api/labels';
-import { useNews } from '@/api/hooks';
+import { useQuery } from '@tanstack/react-query';
+import { fetchNews } from '@/api/sections';
+import { isShareId } from '@/features/links/shareLinks';
 import { RADIUS } from '@/design/tokens.mobile';
 
 function longDate(iso: string): string {
@@ -39,7 +41,8 @@ export default function NewsDetailScreen() {
   const theme = useTheme();
   const t = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const news = useNews();
+  const news = useQuery({ queryKey: ['news-article', id], queryFn: ({ signal }) => fetchNews({ signal }, id),
+    enabled: isShareId(id) });
 
   const item = (news.data ?? []).find((entry) => entry.id === id) ?? null;
 
@@ -51,7 +54,7 @@ export default function NewsDetailScreen() {
     if (item?.arrivalId) router.push({ pathname: OFFICIAL_PUBLISHER_ROUTE, params: { arrivalId: item.arrivalId } });
   }, [item?.arrivalId]);
 
-  if (news.isPending) {
+  if (isShareId(id) && news.isPending) {
     return (
       <SubScreen title={t('sections.news')} fallback="/news">
         <LoadingBlock />

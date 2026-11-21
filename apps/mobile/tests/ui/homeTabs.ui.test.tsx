@@ -34,10 +34,10 @@ async function renderTabs(tint?: Parameters<typeof HomeTabs>[0]['tint']) {
 describe('HomeTabs', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('affiche quatre onglets texte, sans icône', async () => {
+  it('affiche cinq onglets texte, sans icône', async () => {
     await renderTabs();
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(4);
+    expect(tabs).toHaveLength(5);
     expect(tabs[0].props.accessibilityLabel).toBe('Social');
     // Texte seul : aucune icône Ionicons rendue dans la rangée.
     expect(screen.UNSAFE_queryAllByType(require('@expo/vector-icons/Ionicons').default)).toHaveLength(0);
@@ -73,5 +73,7 @@ describe('HomeTabs', () => {
     expect(router.navigate).toHaveBeenNthCalledWith(2, '/publisher/zayrovi-team');
     expect(router.navigate).toHaveBeenNthCalledWith(3, '/promotions');
     expect(router.navigate).toHaveBeenNthCalledWith(4, '/publications');
+    fireEvent.press(screen.getByRole('tab', { name: 'Zayrovi News' }));
+    expect(router.navigate).toHaveBeenNthCalledWith(5, '/zayrovi-news');
   });
 });

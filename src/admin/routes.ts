@@ -1,3 +1,5 @@
+import { ZAYROVI_NEWS_KEY, readZayroviNews, saveZayroviNews, searchZayroviNewsSources } from '../services/zayroviNews';
+import { isNewsSource } from '../../shared/zayroviNews';
 import { BLACK_FRIDAY_KEY, blackFridayAdminOffers, readBlackFridaySettings, saveBlackFridaySettings, searchBlackFridayOffers, updateBlackFridayCataloguePrice } from '../catalogue/blackFriday';
 import { isPublicationCampaign } from '../../shared/publicationCampaign';
 import { releaseCatalogueReservations } from '../catalogue/localSale';
@@ -820,6 +822,26 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       new Date().toISOString());
     audit(db, req, 'UPDATE', 'LENS_HERO', 'global', null, null);
     res.json({ success: true, data: lensRowForApi(db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'")) });
+  });
+
+  router.get('/zayrovi-news', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: readZayroviNews(db) });
+  });
+  router.get('/zayrovi-news/sources', requireAdmin(db, 'content:read'), (req, res) => {
+    const { kind, q } = req.query;
+    if (!isNewsSource(kind)) return res.status(400).json({ success: false, error: 'Type de contenu inconnu.' });
+    res.json({ success: true, data: searchZayroviNewsSources(db, kind, typeof q === 'string' ? q : '') });
+  });
+  router.put('/zayrovi-news', requireAdmin(db, 'content:write'), (req, res) => {
+    const data = db.transaction(() => {
+      const before = readZayroviNews(db);
+      const saved = saveZayroviNews(db, req.body, new Date().toISOString());
+      if (saved) audit(db, req, 'UPDATE', 'ZAYROVI_NEWS', 'global', before, saved);
+      return saved;
+    });
+    if (!data) return res.status(400).json({ success: false, error: 'Vérifiez les textes FR/AR, les images et les références sans doublon.' });
+    res.json({ success: true, data });
   });
 
   router.get('/home-black-friday', requireAdmin(db, 'content:read'), (_req, res) => {
@@ -2559,13 +2581,14 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   router.get('/settings', requireAdmin(db, 'settings:read'), (req, res) => {
     const category = typeof req.query.category === 'string' ? req.query.category : '';
     const rows = category ? db.all<any>('SELECT * FROM settings WHERE category=? ORDER BY label', category) : db.all<any>('SELECT * FROM settings ORDER BY category,label');
-    res.json({ success: true, data: rows.filter(row => row.setting_key !== BLACK_FRIDAY_KEY).map((row) => ({ ...row, setting_value: row.value_type === 'JSON' ? (row.setting_key === 'interface_config' ? enforceBrandIdentity(JSON.parse(row.setting_value)) : row.setting_key === 'site_theme' ? enforceLegacyTheme(JSON.parse(row.setting_value)) : JSON.parse(row.setting_value)) : row.value_type === 'NUMBER' ? Number(row.setting_value) : row.value_type === 'BOOLEAN' ? row.setting_value === 'true' : row.setting_value })) });
+    res.json({ success: true, data: rows.filter(row => row.setting_key !== BLACK_FRIDAY_KEY && row.setting_key !== ZAYROVI_NEWS_KEY).map((row) => ({ ...row, setting_value: row.value_type === 'JSON' ? (row.setting_key === 'interface_config' ? enforceBrandIdentity(JSON.parse(row.setting_value)) : row.setting_key === 'site_theme' ? enforceLegacyTheme(JSON.parse(row.setting_value)) : JSON.parse(row.setting_value)) : row.value_type === 'NUMBER' ? Number(row.setting_value) : row.value_type === 'BOOLEAN' ? row.setting_value === 'true' : row.setting_value })) });
   });
 
   router.put('/settings/:id', requireAdmin(db, 'settings:write'), (req, res) => {
     const current = db.get<any>('SELECT * FROM settings WHERE id=?', req.params.id);
     if (!current) return res.status(404).json({ success: false, error: 'Paramètre introuvable.' });
     let received = req.body?.value;
+    if (current.setting_key === ZAYROVI_NEWS_KEY) return res.status(409).json({ success: false, error: 'Utilisez l’éditeur Zayrovi News.' });
     if (current.setting_key === BLACK_FRIDAY_KEY) return res.status(409).json({ success: false, error: 'Utilisez l’éditeur Black Friday Week.' });
     if (current.setting_key === 'social_commerce_editions_v1') return res.status(409).json({ success: false, error: 'Utilisez l’éditeur Social Commerce.' });
     if (current.setting_key === 'payment_methods') {

@@ -942,3 +942,6 @@ export const TEXT_FRAME = { horizontal: 16, vertical: 12, inputHorizontal: 12, i
 
 /** Local Hero copy is outside the square photo, never a bleaching overlay. */
 export const HERO_COPY = { black: '#000000', white: '#FFFFFF', inset: 16, minHeight: 104 } as const;
+
+// Editorial promotion banner (independent of pricing and Black Friday).
+export const DAILY_OFFER = { gradient: ['#A3321F', '#980D0B'] as const, bar: '#750900', ink: BRAND.white } as const;

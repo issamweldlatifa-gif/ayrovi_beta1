@@ -1,3 +1,4 @@
+import { readHomeDailyOffer, readPublicZayroviNews } from '../services/zayroviNews';
 import { readPublicBlackFriday } from '../catalogue/blackFriday';
 import { STORY_CARD_COLUMNS, readPublishedStoryEditorial } from '../services/storyEditorial';
 import { legacyReferenceArtworkFilter } from '../magazine/cataloguePublications';
@@ -745,11 +746,21 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     } : null });
   });
 
+  router.get('/zayrovi-news', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: req.query.view === 'home' ? readHomeDailyOffer(db) : readPublicZayroviNews(db) });
+  });
+
   router.get('/news', (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 50);
     const now = new Date().toISOString();
+    const { item } = req.query;
+    if (item !== undefined && (typeof item !== 'string' || !/^[A-Za-z0-9_-]{1,150}$/.test(item))) {
+      return res.status(400).json({ success: false, error: 'Référence d’article invalide.' });
+    }
+    if (item) res.setHeader('Cache-Control', 'no-store');
     const rows = db.all<any>(`SELECT * FROM news_items WHERE status IN ('PUBLISHED','SCHEDULED') AND published_at<=?
-      ORDER BY published_at DESC LIMIT ?`, now, limit);
+      ${item ? 'AND id=?' : ''} ORDER BY published_at DESC LIMIT ?`, now, ...(item ? [item, 1] : [limit]));
     res.json({ success: true, data: rows, serverTime: now });
   });
 

@@ -791,6 +791,13 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HOME_SECTIONS', resourceType: 'home_block' },
   },
   {
+    key: 'content.zayrovi-news', label: 'Zayrovi News', singular: 'carte', module: 'cms', domain: 'CONTENT',
+    description: 'Actualités et contenus sélectionnés pour le mobile, et carte de l’offre du jour.', navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
+    section: 'zayrovi-news', nav: { group: 'Contenu', order: 33, icon: 'Bell' },
+    surface: 'custom', component: 'ZayroviNewsStudio', api: { prefix: '/zayrovi-news', kind: 'generic' },
+    columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'ZAYROVI_NEWS', resourceType: 'settings' },
+  },
+  {
     key: 'content.home-featured', label: 'Cover d’accueil', singular: 'section', module: 'cms', domain: 'CONTENT',
     description: 'Le nouveau bloc d’entrée de l’accueil mobile : médias, texte et bouton posés dessus.', navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
     section: 'home-featured', nav: { group: 'Contenu', order: 31, icon: 'Sparkles' },

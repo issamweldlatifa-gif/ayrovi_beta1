@@ -24,6 +24,8 @@ import { useIsFocused } from 'expo-router';
 import { AppScreen, FullBleed } from '@/design/layout';
 import { AppHeader } from '@/features/shell/AppHeader';
 import { HeroCarousel, type HeroTint } from '@/features/home/HeroCarousel';
+import { DailyOfferCard } from '@/features/home/DailyOfferCard';
+import { useHomeDailyOffer } from '@/api/zayroviNews';
 import { HomeTabs } from '@/features/home/HomeTabs';
 import { HomeCover } from '@/features/home/HomeCover';
 import { StoriesSection } from '@/features/home/StoriesSection';
@@ -87,6 +89,7 @@ export default function HomeScreen() {
   }, []);
 
   const blackFriday = useBlackFriday();
+  const dailyOffer = useHomeDailyOffer();
   const stories = useStories();
   const storiesShowcase = useStoriesShowcase();
   const heroSlides = useHeroSlides();
@@ -95,9 +98,9 @@ export default function HomeScreen() {
   const reload = useCallback(() => {
     setRefreshing(true);
     Promise.allSettled([
-      heroSlides.refetch(), heroCarouselSettings.refetch(), stories.refetch(), storiesShowcase.refetch(), blackFriday.refetch(),
+      heroSlides.refetch(), heroCarouselSettings.refetch(), stories.refetch(), storiesShowcase.refetch(), blackFriday.refetch(), dailyOffer.refetch(),
     ]).finally(() => setRefreshing(false));
-  }, [heroSlides, heroCarouselSettings, stories, storiesShowcase, blackFriday]);
+  }, [heroSlides, heroCarouselSettings, stories, storiesShowcase, blackFriday, dailyOffer]);
 
   return (
     <AppScreen
@@ -127,9 +130,11 @@ export default function HomeScreen() {
         />
 
         {/* التبويبات تظهر على نفس لون نهاية تدرّج الهيرو لانتقال بصري متصل. */}
-        {/* التبويبات الثلاث — يفتحو جوّا التطبيق */}
+        {/* التبويبات يفتحو جوّا التطبيق */}
         <HomeTabs tint={heroTint} />
       </View>
+
+      {dailyOffer.data?.showHome ? <DailyOfferCard daily={dailyOffer.data} /> : null}
 
       {/* Cover d'accueil — médias CRM plein écran, texte et bouton posés dessus. */}
       <HomeCover />

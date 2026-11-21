@@ -1,12 +1,13 @@
 /**
- * Les onglets d’accueil — Social · وصل حديثاً · عروض · مجلة
+ * Les onglets d’accueil — Social · Nouveautés · Promotions · Publications · Zayrovi News
  *
  * Présentation : une rangée de libellés en gras, sans icônes (façon barre de catégories d’une grande boutique). Le texte est dans la
  * police principale de l’application, au même poids (gras) que la référence.
  *
  * Chaque onglet ouvre un écran NATIF de l’application (jamais une page du site) :
- * « Nouveautés » → sélection de Zayrovi Team, « Promotions » et « Magazine » → leurs écrans publiés.
+ * « Nouveautés » → Zayrovi Team ; « Zayrovi News » → le fil éditorial du mobile.
  */
+import { ZAYROVI_NEWS_ROUTE } from './DailyOfferCard';
 import { OFFICIAL_PUBLISHER_ROUTE } from '@/features/publications/officialPublisher';
 import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, type Href } from 'expo-router';
@@ -21,7 +22,7 @@ import { backdropLayerRange } from './heroCarouselLogic';
 
 type HomeTab = {
   /** Clé de libellé — jamais de texte écrit en dur. */
-  labelKey: 'tabs.social' | 'home.tab.arrivals' | 'home.tab.promotions' | 'home.tab.publications';
+  labelKey: 'tabs.social' | 'home.tab.arrivals' | 'home.tab.promotions' | 'home.tab.publications' | 'zNews.title';
   /** Destination : une route de l’APPLICATION, pas une URL de site. */
   href: Href;
 };
@@ -31,6 +32,7 @@ const TABS: readonly HomeTab[] = [
   { labelKey: 'home.tab.arrivals', href: OFFICIAL_PUBLISHER_ROUTE },
   { labelKey: 'home.tab.promotions', href: '/promotions' },
   { labelKey: 'home.tab.publications', href: '/publications' },
+  { labelKey: 'zNews.title', href: ZAYROVI_NEWS_ROUTE },
 ];
 
 export function HomeTabs({ tint }: { tint?: HeroTint | null }) {
