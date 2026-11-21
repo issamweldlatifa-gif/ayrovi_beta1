@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AppState, FlatList, Share, StyleSheet } from 'react-native';
+import { AppState, FlatList, Modal, Share, StyleSheet } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import type { SubtitleTrack } from 'expo-video';
 import { searchCatalog, fetchCatalogArrivals } from '@/api/catalog';
 import { AppImage } from '@/design/appImage';
 import { fetchFavorites } from '@/api/account';
@@ -24,7 +26,7 @@ jest.mock('@/api/account', () => ({ ...jest.requireActual('@/api/account'), fetc
 jest.mock('@/api/publisherFollow');
 jest.mock('@/api/catalog', () => ({ ...jest.requireActual('@/api/catalog'), searchCatalog: jest.fn(), fetchCatalogArrivals: jest.fn() }));
 jest.mock('@/api/referencePublications', () => ({ ...jest.requireActual('@/api/referencePublications'), fetchReferencePublications: jest.fn(), fetchPublicationLook: jest.fn(), savePublicationLook: jest.fn() }));
-const mockPlayer = { play: jest.fn(), pause: jest.fn(), muted: true, currentTime: 0, duration: 20, status: 'readyToPlay', videoTrack: { size: { width: 720, height: 1280 } }, playbackRate: 1, addListener: jest.fn(() => ({ remove: jest.fn() })) };
+const mockPlayer = { play: jest.fn(), pause: jest.fn(), muted: true, currentTime: 0, duration: 20, status: 'readyToPlay', videoTrack: { size: { width: 720, height: 1280 } }, playbackRate: 1, subtitleTrack: null as SubtitleTrack | null, availableSubtitleTracks: [] as SubtitleTrack[], addListener: jest.fn((_event: string, _listener: (payload: unknown) => void) => ({ remove: jest.fn() })) };
 jest.mock('expo-video', () => ({ useVideoPlayer: () => mockPlayer, VideoView: 'VideoView' }));
 
 const product = (id: string) => ({ id, name: `Produit ${id}`, price: 80, image: `/media/${id}.jpg` });
@@ -39,6 +41,8 @@ beforeEach(() => {
   mockReduce.mockReturnValue(true);
   mockSession.mockReturnValue({ status: 'signedOut', account: null });
   mockPlayer.currentTime = 0;
+  mockPlayer.subtitleTrack = null;
+  mockPlayer.availableSubtitleTracks = [];
   (AppState as unknown as { currentState: string }).currentState = 'active';
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
 });
@@ -196,6 +200,54 @@ it('uses the campaign toolbar for search, favorites and cart and filters only li
   expect(screen.queryByTestId('publication-campaign-product-b')).toBeNull();
 });
 
+
+it('fills the fullscreen window with black and fits landscape video without cropping', async () => {
+  jest.mocked(fetchReferencePublications).mockResolvedValueOnce(fixture('video', 1200, 600));
+  mount();
+  fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
+  const modal = screen.UNSAFE_getByType(Modal);
+  expect(modal.props).toMatchObject({ presentationStyle: 'fullScreen', statusBarTranslucent: true, navigationBarTranslucent: true });
+  const window = within(screen.getByTestId('publication-player-window'));
+  expect(StyleSheet.flatten(screen.getByTestId('publication-player-window').props.style)).toEqual({ flex: 1, backgroundColor: '#000000' });
+  expect(window.UNSAFE_getByType(StatusBar).props.hidden).toBe(true);
+  const player = within(window.getByTestId('publication-fullscreen-player'));
+  expect(player.getByTestId('publication-player-video').props.contentFit).toBe('contain');
+  expect(StyleSheet.flatten(player.getByTestId('publication-player-exit').props.style).top).toBe(36);
+  expect(player.queryByTestId('publication-player-cc')).toBeNull();
+  fireEvent.press(player.getByTestId('publication-player-surface'));
+  fireEvent.press(player.getByTestId('publication-player-exit'));
+  expect(screen.queryByTestId('publication-fullscreen-player')).toBeNull();
+});
+
+it('offers CC only when tracks are available and toggles the matching native track', async () => {
+  jest.mocked(fetchReferencePublications).mockResolvedValueOnce(fixture('video', 1200, 600));
+  mount();
+  fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
+  const player = within(screen.getByTestId('publication-fullscreen-player'));
+  const emit = (event: string, payload: unknown) => {
+    const listener = mockPlayer.addListener.mock.calls.find(([registered]) => registered === event)?.[1];
+    if (!listener) throw new Error(`No player listener for ${event}`);
+    act(() => listener(payload));
+  };
+  expect(player.queryByTestId('publication-player-cc')).toBeNull();
+  const fr = { language: 'fr-FR', label: 'Français' };
+  mockPlayer.availableSubtitleTracks = [{ language: 'en', label: 'English', isDefault: true }, fr];
+  emit('availableSubtitleTracksChange', { availableSubtitleTracks: mockPlayer.availableSubtitleTracks });
+  const cc = player.getByRole('togglebutton', { name: 'Sous-titres' });
+  expect(cc.props.accessibilityState.checked).toBe(false);
+  fireEvent.press(cc);
+  expect(mockPlayer.subtitleTrack).toBe(fr);
+  emit('subtitleTrackChange', { subtitleTrack: fr });
+  expect(cc.props.accessibilityState.checked).toBe(true);
+  fireEvent.press(player.getByTestId('publication-player-surface'));
+  expect(player.queryByTestId('publication-player-cc')).toBeNull();
+  expect(mockPlayer.subtitleTrack).toBe(fr);
+  fireEvent.press(player.getByTestId('publication-player-surface'));
+  fireEvent.press(player.getByTestId('publication-player-cc'));
+  expect(mockPlayer.subtitleTrack).toBeNull();
+  emit('subtitleTrackChange', { subtitleTrack: null });
+  expect(player.getByTestId('publication-player-cc').props.accessibilityState.checked).toBe(false);
+});
 
 it('keeps the three entry points of the first video template independent', async () => {
   jest.mocked(fetchReferencePublications).mockResolvedValueOnce(fixture('video', 500, 900));

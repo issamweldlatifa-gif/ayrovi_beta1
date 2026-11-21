@@ -9,11 +9,12 @@ import { AppImage } from "@/design/appImage";
 import { rowDirectionFor } from "@/design/layoutLogic";
 import { useTheme } from "@/design/theme";
 import { RADIUS, veil } from "@/design/tokens.mobile";
-import { useT } from "@/i18n";
+import { useI18n } from "@/i18n";
 import { PublicationIcon, PublicationText } from "./publicationDesign";
 import { PUBLICATION_PALETTE as P, PUBLICATION_PLAYER as C, PUBLICATION_VIDEO_TYPE as T } from "./publicationTokens";
 
 export type PublicationPlayback = { time: number; muted: boolean };
+const TOP_BUTTON_SIZE = 44;
 const SPEEDS = [0.5, 1, 1.25, 1.5, 2];
 const clamp = (value: number, max: number) => Math.min(Math.max(0, value), max);
 
@@ -32,7 +33,7 @@ export function PublicationFullscreenVideo({
   onClose: (state: PublicationPlayback) => void;
   onLearnMore: (state: PublicationPlayback) => void;
 }) {
-  const t = useT();
+  const { t, locale } = useI18n();
   const { isRTL } = useTheme();
   const { top, bottom, left, right } = useSafeAreaInsets();
   const [ready, setReady] = useState(false);
@@ -46,6 +47,8 @@ export function PublicationFullscreenVideo({
   const [time, setTime] = useState(start.time);
   const [duration, setDuration] = useState(0);
   const [resolution, setResolution] = useState(0);
+  const [hasSubtitles, setHasSubtitles] = useState(false);
+  const [subtitlesOn, setSubtitlesOn] = useState(false);
   const [trackWidth, setTrackWidth] = useState(0);
   const [dragProgress, setDragProgress] = useState<number | null>(null);
   const seekPageStart = useRef(0);
@@ -64,15 +67,25 @@ export function PublicationFullscreenVideo({
       const size = player.videoTrack?.size;
       setResolution(size ? Math.min(size.width, size.height) : 0);
     };
+    const refreshSubtitles = () => {
+      setHasSubtitles(player.availableSubtitleTracks.length > 0);
+      setSubtitlesOn(Boolean(player.subtitleTrack));
+    };
     setStatus(player.status);
     refresh();
+    refreshSubtitles();
     const subs = [
       AppState.addEventListener("change", (value) => setForeground(value === "active")),
       player.addListener("statusChange", ({ status: next }) => {
         setStatus(next);
         refresh();
       }),
-      player.addListener("sourceLoad", refresh),
+      player.addListener("sourceLoad", () => {
+        refresh();
+        refreshSubtitles();
+      }),
+      player.addListener("availableSubtitleTracksChange", ({ availableSubtitleTracks }) => setHasSubtitles(availableSubtitleTracks.length > 0)),
+      player.addListener("subtitleTrackChange", ({ subtitleTrack }) => setSubtitlesOn(Boolean(subtitleTrack))),
       player.addListener("videoTrackChange", refresh),
       player.addListener("timeUpdate", ({ currentTime }) => setTime(currentTime)),
     ];
@@ -115,6 +128,17 @@ export function PublicationFullscreenVideo({
     setMenu(null);
     setVisible((value) => (menu ? true : !value));
   };
+  const toggleSubtitles = () => {
+    if (player.subtitleTrack) {
+      player.subtitleTrack = null;
+      return;
+    }
+    const tracks = player.availableSubtitleTracks;
+    const preferred = tracks.find(({ language }) => language.toLowerCase().split(/[-_]/)[0] === locale);
+    const track = preferred ?? tracks.find(({ isDefault }) => isDefault) ?? tracks[0];
+    if (track) player.subtitleTrack = track;
+  };
+  const topEdge = { top: top + 12, end: (isRTL ? left : right) + 12 };
   const quality = resolution ? `${resolution}p` : t("publication.playerAuto");
   const progress = dragProgress ?? (duration ? clamp(time, duration) / duration : 0);
   const fraction = (x: number) => (trackWidth ? clamp(x / trackWidth, 1) : 0);
@@ -131,17 +155,18 @@ export function PublicationFullscreenVideo({
   );
 
   return (
-    <Modal animationType="none" statusBarTranslucent navigationBarTranslucent supportedOrientations={["portrait", "landscape"]} onRequestClose={back}>
-      <View style={[styles.shell, { paddingTop: top }]}>
-        <StatusBar style="dark" />
+    <Modal animationType="none" presentationStyle="fullScreen" statusBarTranslucent navigationBarTranslucent supportedOrientations={["portrait", "landscape"]} onRequestClose={back}>
+      <View style={styles.screen} testID="publication-player-window">
         <View style={styles.screen} testID="publication-fullscreen-player">
-          {poster && !ready ? <AppImage uri={mediaUrl(poster)} decorative contentFit="cover" style={StyleSheet.absoluteFill} /> : null}
+          <StatusBar hidden style="light" />
+          {poster && !ready ? <AppImage uri={mediaUrl(poster)} decorative contentFit="contain" style={StyleSheet.absoluteFill} /> : null}
           <VideoView
             player={player}
             style={[StyleSheet.absoluteFill, !ready && styles.buffering]}
             surfaceType="textureView"
             nativeControls={false}
-            contentFit="cover"
+            contentFit="contain"
+            testID="publication-player-video"
             onFirstFrameRender={() => setReady(true)}
           />
           <Pressable
@@ -152,21 +177,33 @@ export function PublicationFullscreenVideo({
             testID="publication-player-surface"
           />
           {status === "error" ? (
-            <PublicationText accessibilityRole="alert" color={P.paper} style={styles.error}>
+            <PublicationText accessibilityRole="alert" color={P.paper} style={[styles.error, { marginTop: top + 60 }]}>
               {t("publication.videoError")}
             </PublicationText>
           ) : null}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("publication.playerExit")}
+            testID="publication-player-exit"
+            onPress={close}
+            style={[styles.topButton, topEdge]}
+          >
+            <PublicationIcon name="close" color={P.paper} size={24} />
+          </Pressable>
           {visible ? (
             <>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={t("publication.playerExit")}
-                testID="publication-player-exit"
-                onPress={close}
-                style={[styles.back, { start: (isRTL ? right : left) + 12 }]}
-              >
-                <PublicationIcon name={isRTL ? "chevron-forward" : "chevron-back"} color={P.paper} size={24} />
-              </Pressable>
+              {hasSubtitles ? (
+                <Pressable
+                  accessibilityRole="togglebutton"
+                  accessibilityLabel={t("publication.playerSubtitles")}
+                  accessibilityState={{ checked: subtitlesOn }}
+                  testID="publication-player-cc"
+                  onPress={toggleSubtitles}
+                  style={[styles.topButton, topEdge, { end: topEdge.end + TOP_BUTTON_SIZE + 4 }, subtitlesOn && styles.ccOn]}
+                >
+                  <PublicationText color={subtitlesOn ? P.ink : P.paper} variant="caption">CC</PublicationText>
+                </Pressable>
+              ) : null}
               <View
                 pointerEvents="box-none"
                 style={[
@@ -340,17 +377,17 @@ export function PublicationFullscreenVideo({
 }
 
 const styles = StyleSheet.create({
-  shell: { flex: 1, backgroundColor: P.paper },
-  back: {
+  topButton: {
     position: "absolute",
-    top: 12,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    zIndex: 1,
+    width: TOP_BUTTON_SIZE,
+    height: TOP_BUTTON_SIZE,
+    borderRadius: TOP_BUTTON_SIZE / 2,
     backgroundColor: veil(0.65),
     justifyContent: "center",
     alignItems: "center",
   },
+  ccOn: { backgroundColor: P.paper },
   editorial: { alignItems: "flex-end", gap: 8 },
   editorialCopy: { flex: 1, gap: 10 },
   captionLine: { gap: 6, alignItems: "center", minHeight: 44 },
@@ -419,7 +456,6 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   error: {
     alignSelf: "center",
-    marginTop: 48,
     padding: 8,
     backgroundColor: C.menu,
   },

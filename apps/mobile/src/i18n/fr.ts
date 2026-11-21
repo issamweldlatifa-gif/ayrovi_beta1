@@ -1150,6 +1150,7 @@ export const fr = {
   'publication.videoShareError': 'Impossible de partager cette vidéo.',
   'publication.captionLess': 'Réduire la description',
   'publication.playerOpen': 'Ouvrir la vidéo en plein écran',
+  'publication.playerSubtitles': 'Sous-titres',
   'publication.playerExit': 'Quitter le plein écran',
   'publication.playerShow': 'Afficher les commandes',
   'publication.playerHide': 'Masquer les commandes',

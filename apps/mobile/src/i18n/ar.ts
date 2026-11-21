@@ -1149,6 +1149,7 @@ export const ar = {
   'publication.videoShareError': 'تعذّرت مشاركة هذا الفيديو.',
   'publication.captionLess': 'طيّ الوصف',
   'publication.playerOpen': 'فتح الفيديو بملء الشاشة',
+  'publication.playerSubtitles': 'الترجمة النصية',
   'publication.playerExit': 'الخروج من ملء الشاشة',
   'publication.playerShow': 'إظهار أدوات التشغيل',
   'publication.playerHide': 'إخفاء أدوات التشغيل',
