@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiGetData, apiSend } from '../src/api/client';
-import { fetchPublicationLook, fetchReferencePublications, savePublicationLook } from '../src/api/referencePublications';
+import { fetchPublicationLook, fetchReferencePublications, fetchRelatedPublicationVideos, savePublicationLook } from '../src/api/referencePublications';
 
 vi.mock('../src/api/client', () => ({ apiGetData: vi.fn(), apiSend: vi.fn() }));
 beforeEach(() => vi.resetAllMocks());
@@ -42,4 +42,14 @@ it('asks the server for the native reference feed on every cursor page', async (
   vi.mocked(apiGetData).mockResolvedValueOnce({ nextCursor: null, items: [] });
   await fetchReferencePublications('nextPage');
   expect(apiGetData).toHaveBeenCalledWith('/api/public/social/publication-feed?limit=12&presentation=reference&cursor=nextPage', undefined);
+});
+
+it('looks up bounded related product IDs once, with cancellation and known video durations', async () => {
+  const options = { signal: new AbortController().signal };
+  await expect(fetchRelatedPublicationVideos([''], options)).resolves.toEqual([]);
+  expect(apiGetData).not.toHaveBeenCalled();
+  const post = video('related');
+  vi.mocked(apiGetData).mockResolvedValueOnce({ nextCursor: null, items: [{ ...post, media_json: [{ ...post.media_json[0], durationSeconds: 15 }] }] });
+  await expect(fetchRelatedPublicationVideos(['p1', '../bad', 'p1', 'p2'], options)).resolves.toMatchObject([{ id: 'related', media: { durationSeconds: 15 } }]);
+  expect(apiGetData).toHaveBeenCalledWith('/api/public/social/publication-feed?limit=30&presentation=reference&type=video&linkedProducts=p1%2Cp2', options);
 });

@@ -13,7 +13,7 @@ export const PUBLICATION_REFERENCE = {
 export type ReferenceLayout = 'image-cover' | 'image-panoramic' | 'video-inset' | 'video-panoramic' | 'video-square';
 export interface ReferenceMedia {
   type: 'image' | 'video'; url: string; poster: string; alt: string;
-  frame?: 'square' | 'panoramic';
+  frame?: 'square' | 'panoramic'; durationSeconds?: number;
   width?: number; height?: number; fit?: 'contain' | 'cover'; focalX?: number; focalY?: number;
 }
 

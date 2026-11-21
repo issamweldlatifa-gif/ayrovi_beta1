@@ -14,7 +14,7 @@ import RetiredPublicationCollection from '../../app/publication-collection/[id]'
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
-import { fetchReferencePublications, fetchPublicationLook, savePublicationLook, parseReferencePublicationPage, publicationLookKey } from '@/api/referencePublications';
+import { fetchReferencePublications, fetchPublicationLook, fetchRelatedPublicationVideos, savePublicationLook, parseReferencePublicationPage, publicationLookKey } from '@/api/referencePublications';
 
 jest.mock('expo-router', () => ({ useIsFocused: () => true, Redirect: 'Redirect', router: { push: jest.fn(), canGoBack: () => true, back: jest.fn() } }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 24, bottom: 16, left: 0, right: 0 }) }));
@@ -24,8 +24,9 @@ const mockReduce = jest.fn(() => true);
 jest.mock('@/design/motion', () => ({ ...jest.requireActual('@/design/motion'), useReduceMotion: () => mockReduce() }));
 jest.mock('@/api/account', () => ({ ...jest.requireActual('@/api/account'), fetchFavorites: jest.fn() }));
 jest.mock('@/api/publisherFollow');
+jest.mock('@/features/publications/publicationVideoQueue', () => ({ ...jest.requireActual('@/features/publications/publicationVideoQueue'), UP_NEXT_MS: 150 }));
 jest.mock('@/api/catalog', () => ({ ...jest.requireActual('@/api/catalog'), searchCatalog: jest.fn(), fetchCatalogArrivals: jest.fn() }));
-jest.mock('@/api/referencePublications', () => ({ ...jest.requireActual('@/api/referencePublications'), fetchReferencePublications: jest.fn(), fetchPublicationLook: jest.fn(), savePublicationLook: jest.fn() }));
+jest.mock('@/api/referencePublications', () => ({ ...jest.requireActual('@/api/referencePublications'), fetchReferencePublications: jest.fn(), fetchPublicationLook: jest.fn(), fetchRelatedPublicationVideos: jest.fn(), savePublicationLook: jest.fn() }));
 const mockPlayer = { play: jest.fn(), pause: jest.fn(), muted: true, currentTime: 0, duration: 20, status: 'readyToPlay', videoTrack: { size: { width: 720, height: 1280 } }, playbackRate: 1, subtitleTrack: null as SubtitleTrack | null, availableSubtitleTracks: [] as SubtitleTrack[], addListener: jest.fn((_event: string, _listener: (payload: unknown) => void) => ({ remove: jest.fn() })) };
 jest.mock('expo-video', () => ({ useVideoPlayer: () => mockPlayer, VideoView: 'VideoView' }));
 
@@ -38,6 +39,7 @@ const fixture = (type: 'image' | 'video', width: number, height: number) => pars
 let client: QueryClient;
 beforeEach(() => {
   jest.clearAllMocks();
+  jest.mocked(fetchRelatedPublicationVideos).mockResolvedValue([]);
   mockReduce.mockReturnValue(true);
   mockSession.mockReturnValue({ status: 'signedOut', account: null });
   mockPlayer.currentTime = 0;
@@ -47,6 +49,14 @@ beforeEach(() => {
   client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
 });
 afterEach(() => client.clear());
+const emit = (event: string, payload?: unknown) => {
+  const listener = [...mockPlayer.addListener.mock.calls].reverse().find(([registered]) => registered === event)?.[1];
+  if (!listener) throw new Error(`No player listener for ${event}`);
+  act(() => listener(payload));
+};
+const relatedVideo = (id: string, title: string, products: string[]) => parseReferencePublicationPage({ nextCursor: null, items: [{
+  id, title, channel_name: 'Zayrovi Team', media_json: [{ type: 'video', url: `/media/${id}.mp4`, poster: `/media/${id}.jpg`, durationSeconds: 13 }], products: products.map(product),
+}] }).items[0]!;
 const mount = (screen = <PublicationsScreen />) => render(<QueryClientProvider client={client}><PrefsProvider><I18nProvider><ThemeProvider>{screen}</ThemeProvider></I18nProvider></PrefsProvider></QueryClientProvider>);
 
 it('keeps the white safe-area header and shows the empty state when no publication is live', async () => {
@@ -224,15 +234,11 @@ it('offers CC only when tracks are available and toggles the matching native tra
   mount();
   fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
   const player = within(screen.getByTestId('publication-fullscreen-player'));
-  const emit = (event: string, payload: unknown) => {
-    const listener = mockPlayer.addListener.mock.calls.find(([registered]) => registered === event)?.[1];
-    if (!listener) throw new Error(`No player listener for ${event}`);
-    act(() => listener(payload));
-  };
   expect(player.queryByTestId('publication-player-cc')).toBeNull();
   const fr = { language: 'fr-FR', label: 'Français' };
   mockPlayer.availableSubtitleTracks = [{ language: 'en', label: 'English', isDefault: true }, fr];
   emit('availableSubtitleTracksChange', { availableSubtitleTracks: mockPlayer.availableSubtitleTracks });
+  fireEvent.press(player.getByTestId('publication-player-surface'));
   const cc = player.getByRole('togglebutton', { name: 'Sous-titres' });
   expect(cc.props.accessibilityState.checked).toBe(false);
   fireEvent.press(cc);
@@ -256,24 +262,32 @@ it('keeps the three entry points of the first video template independent', async
   const player = within(screen.getByTestId('publication-fullscreen-player'));
   expect(router.push).not.toHaveBeenCalled();
   expect(player.queryByTestId('publication-player-play')).toBeNull();
-  fireEvent.press(player.getByTestId('publication-player-options'));
+  fireEvent.press(player.getByTestId('publication-player-surface'));
+  expect(player.getByText('Ce contenu est sponsorisé par Partenaire.')).toBeTruthy();
   fireEvent.press(player.getByTestId('publication-player-play'));
   expect(mockPlayer.pause).toHaveBeenCalled();
   fireEvent.press(player.getByTestId('publication-player-mute'));
   expect(mockPlayer.muted).toBe(false);
+  fireEvent.press(player.getByTestId('publication-player-forward'));
+  expect(mockPlayer.currentTime).toBe(10);
+  fireEvent.press(player.getByTestId('publication-player-rewind'));
+  fireEvent.press(player.getByTestId('publication-player-rewind'));
+  expect(mockPlayer.currentTime).toBe(0);
   act(() => player.getByTestId('publication-player-seek').props.onAccessibilityAction({ nativeEvent: { actionName: 'increment' } }));
-  expect(mockPlayer.currentTime).toBe(5);
-  fireEvent.press(player.getByTestId('publication-player-settings'));
+  expect(mockPlayer.currentTime).toBe(10);
+  emit('timeUpdate', { currentTime: 17 });
+  fireEvent.press(player.getByTestId('publication-player-forward'));
+  expect(mockPlayer.currentTime).toBe(20);
+  fireEvent.press(player.getByTestId('publication-player-options'));
   expect(player.getByText('720p')).toBeTruthy();
   fireEvent.press(player.getByText('Qualité'));
   expect(player.getByText('Automatique · 720p')).toBeTruthy();
+  fireEvent.press(player.getByText('Qualité'));
   fireEvent.press(player.getByTestId('publication-player-speed'));
   fireEvent.press(player.getByRole('button', { name: '1.5×' }));
   expect(mockPlayer.playbackRate).toBe(1.5);
-  fireEvent.press(player.getByTestId('publication-player-options'));
-  fireEvent.press(player.getByTestId('publication-player-hide'));
-  expect(player.queryByTestId('publication-player-play')).toBeNull();
   fireEvent.press(player.getByTestId('publication-player-surface'));
+  expect(player.queryByTestId('publication-player-play')).toBeNull();
   fireEvent.press(player.getByTestId('publication-player-exit'));
   expect(screen.queryByTestId('publication-fullscreen-player')).toBeNull();
   fireEvent.press(screen.getByRole('link', { name: 'Produit a' }));
@@ -316,15 +330,98 @@ it('renders the added large square with two real products and opens its detail f
   expect(within(rail).getByRole('button', { name: 'En savoir plus' })).toBeTruthy();
   fireEvent.press(screen.getByTestId('reference-video-fullscreen'));
   const player = within(screen.getByTestId('publication-fullscreen-player'));
+  fireEvent.press(player.getByTestId('publication-player-surface'));
   const caption = player.getByTestId('publication-player-caption');
   fireEvent.press(caption);
   expect(caption.props.accessibilityState.expanded).toBe(true);
   await act(async () => fireEvent.press(player.getByTestId('publication-player-share')));
-  expect(share).toHaveBeenCalledWith({ message: expect.stringContaining('/media/video.mp4') });
+  expect(share).toHaveBeenCalledWith({ message: expect.stringContaining('/publications?post=publication_1') });
   fireEvent.press(player.getByTestId('publication-player-learn-more'));
   expect(router.push).toHaveBeenLastCalledWith({ pathname: '/publication-look/[id]', params: { id: 'publication_1' } });
   expect(screen.queryByTestId('publication-fullscreen-player')).toBeNull();
   share.mockRestore();
+});
+
+it('opens Boutique in place and navigates only from a linked product card', async () => {
+  jest.mocked(fetchReferencePublications).mockResolvedValueOnce(fixture('video', 1200, 600));
+  mount();
+  fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
+  const player = within(screen.getByTestId('publication-fullscreen-player'));
+  fireEvent.press(player.getByTestId('publication-player-shop'));
+  const shop = within(player.getByTestId('publication-player-panel-shop'));
+  expect(router.push).not.toHaveBeenCalled();
+  expect(shop.getAllByRole('link')).toHaveLength(4);
+  expect(shop.getAllByText('80.00 TND')).toHaveLength(4);
+  fireEvent.press(shop.getByRole('link', { name: 'Produit b' }));
+  expect(router.push).toHaveBeenLastCalledWith({ pathname: '/product/[id]', params: { id: 'b' } });
+  expect(screen.queryByTestId('publication-fullscreen-player')).toBeNull();
+});
+
+it('hides commerce actions and does not query related videos when no product is linked', async () => {
+  const post = { ...fixture('video', 500, 900).items[0]!, products: [] };
+  jest.mocked(fetchReferencePublications).mockResolvedValueOnce({ items: [post], nextCursor: null });
+  mount();
+  fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
+  const player = within(screen.getByTestId('publication-fullscreen-player'));
+  expect(player.queryByTestId('publication-player-shop')).toBeNull();
+  expect(player.queryByTestId('publication-player-more-videos')).toBeNull();
+  expect(player.getByTestId('publication-player-share')).toBeTruthy();
+  expect(fetchRelatedPublicationVideos).not.toHaveBeenCalled();
+});
+
+it('lists only videos with shared products and switches source without reopening the modal', async () => {
+  const origin = fixture('video', 500, 900).items[0]!;
+  const target = relatedVideo('related', 'Autre vidéo du produit', ['b', 'only_related']);
+  jest.mocked(fetchPublicationLook).mockResolvedValueOnce(origin);
+  jest.mocked(fetchRelatedPublicationVideos).mockResolvedValue([origin, relatedVideo('unrelated', 'Vidéo sans lien', ['x']), target]);
+  mount(<PublicationLookScreen id={origin.id} />);
+  fireEvent.press(await screen.findByTestId('publication-look-video'));
+  const modal = screen.UNSAFE_getByType(Modal);
+  const player = within(screen.getByTestId('publication-fullscreen-player'));
+  fireEvent.press(player.getByTestId('publication-player-more-videos'));
+  const panel = within(player.getByTestId('publication-player-panel-videos'));
+  const choice = await panel.findByRole('button', { name: 'Autre vidéo du produit' });
+  expect(panel.getByText('0:13')).toBeTruthy();
+  expect(panel.queryByText('Vidéo sans lien')).toBeNull();
+  const unsub = mockPlayer.addListener.mock.results.find((_, idx) => mockPlayer.addListener.mock.calls[idx]?.[0] === 'playToEnd')?.value.remove;
+  fireEvent.press(choice);
+  expect(unsub).toHaveBeenCalled();
+  expect(screen.UNSAFE_getByType(Modal)).toBe(modal);
+  const current = within(screen.getByTestId('publication-fullscreen-player'));
+  fireEvent.press(current.getByTestId('publication-player-shop'));
+  const shop = within(current.getByTestId('publication-player-panel-shop'));
+  expect(shop.getByRole('link', { name: 'Produit only_related' })).toBeTruthy();
+  expect(shop.queryByRole('link', { name: 'Produit a' })).toBeNull();
+  fireEvent.press(current.getByTestId('publication-player-surface'));
+  fireEvent.press(current.getByTestId('publication-player-surface'));
+  fireEvent.press(current.getByTestId('publication-player-learn-more'));
+  expect(router.push).toHaveBeenLastCalledWith({ pathname: '/publication-look/[id]', params: { id: target.id } });
+});
+
+it.each([true, false])('ends with a cancellable countdown (cancel=%s) and never loops back', async cancel => {
+  mockReduce.mockReturnValue(false);
+  const origin = fixture('video', 500, 900).items[0]!;
+  const target = relatedVideo('related', 'La prochaine vidéo', ['b']);
+  jest.mocked(fetchReferencePublications).mockResolvedValueOnce({ items: [origin], nextCursor: null });
+  jest.mocked(fetchRelatedPublicationVideos).mockResolvedValue([origin, target]);
+  mount();
+  fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
+  await waitFor(() => expect(client.getQueryData(['publication-related-videos', 'guest', ['a', 'b', 'c', 'd']])).toBeDefined());
+  emit('playToEnd');
+  const player = within(screen.getByTestId('publication-fullscreen-player'));
+  expect(player.getByTestId('publication-player-up-next')).toBeTruthy();
+  if (cancel) fireEvent.press(player.getByTestId('publication-player-cancel-next'));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 200)); });
+  const current = within(screen.getByTestId('publication-fullscreen-player'));
+  if (cancel) {
+    expect(current.getByRole('button', { name: 'Revoir la vidéo' })).toBeTruthy();
+    expect(current.getByText(origin.title)).toBeTruthy();
+  } else {
+    fireEvent.press(current.getByTestId('publication-player-surface'));
+    expect(current.getByText(target.title)).toBeTruthy();
+    emit('playToEnd');
+    expect(current.queryByTestId('publication-player-up-next')).toBeNull();
+  }
 });
 
 it('reports an unpublished look as unavailable instead of showing an unrelated post', async () => {

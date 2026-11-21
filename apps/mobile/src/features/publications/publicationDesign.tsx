@@ -92,6 +92,8 @@ const drawings: Record<string, string> = {
     'm3 9 4 0 5-5v16l-5-5H3V9Zm12-1c3 2 3 6 0 8m3-11c5 4 5 10 0 14',
   'volume-high-outline':
     'm3 9 4 0 5-5v16l-5-5H3V9Zm12-1c3 2 3 6 0 8m3-11c5 4 5 10 0 14',
+  'videocam-outline': 'M2 5h20v14H2zM10 9l5 3-5 3V9Z',
+  'refresh-outline': 'M20 11a8 8 0 1 0-2 6M20 4v7h-7',
   'play-outline': 'm7 4 13 8-13 8V4Z',
   'settings-outline': 'M9 3h6l.7 3 2.3 1.3 2.9-.8 2 3.5-2.2 2v2l2.2 2-2 3.5-2.9-.8-2.3 1.3-.7 3H9l-.7-3L6 18.7l-2.9.8-2-3.5 2.2-2v-2L1.1 10l2-3.5 2.9.8L8.3 6 9 3Zm6 10a3 3 0 1 0-6 0 3 3 0 0 0 6 0Z',
   'speedometer-outline': 'M4 20a10 10 0 1 1 16 0M12 15l5-5M12 15v.3',

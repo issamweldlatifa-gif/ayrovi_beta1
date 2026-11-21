@@ -33,6 +33,7 @@ export interface PublicationMedia extends MediaPresentation {
   alt: string;
   fit?: 'contain' | 'cover';
   frame?: 'square' | 'panoramic';
+  durationSeconds?: number;
 }
 export interface PublicationContent {
   showTitle?: boolean;
@@ -99,6 +100,7 @@ export function normalizePublicationContent(
       )
         return null;
     }
+    if (item.durationSeconds !== undefined && (item.type !== 'video' || typeof item.durationSeconds !== 'number' || !Number.isFinite(item.durationSeconds) || item.durationSeconds < 0.1 || item.durationSeconds > 86400)) return null;
     const original =
       item.originalUrl === undefined
         ? null
@@ -113,6 +115,7 @@ export function normalizePublicationContent(
       ...(original?.ok && original.url ? { originalUrl: original.url } : {}),
       ...(item.fit ? { fit: item.fit } : {}),
       ...(item.frame ? { frame: item.frame } : {}),
+      ...(item.durationSeconds !== undefined ? { durationSeconds: item.durationSeconds } : {}),
       type: item.type,
       url: link.url,
       poster: poster.url,

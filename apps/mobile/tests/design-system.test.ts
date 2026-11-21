@@ -205,6 +205,7 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
       'src/features/home/HeroCarousel.tsx', // couches de fond (le fond de chaque photo) et voile du titre (§5.4)
       'src/features/publications/OfficialPublisherScreen.tsx', // cœur sur la photo, filtre et en-tête épinglés au-dessus de la grille
       'src/features/publications/PublicationFullscreenVideo.tsx', // transport over the full-bleed video
+      'src/features/publications/PublicationPlayerPanels.tsx', // known clip duration over the thumbnail, not in the text flow
       'src/features/publications/PublicationLookScreen.tsx', // hero controls and floating scroll-to-top
       'src/features/publications/PublicationLookProduct.tsx', // badges and favorite above the product photo
       'src/features/publications/ReferencePublicationCard.tsx', // vraie superposition : commandes vidéo et favoris placés sur le média

@@ -1,6 +1,7 @@
 import { readPublicBlackFriday } from '../catalogue/blackFriday';
 import { STORY_CARD_COLUMNS, readPublishedStoryEditorial } from '../services/storyEditorial';
 import { legacyReferenceArtworkFilter } from '../magazine/cataloguePublications';
+import { linkedPublicationProductFilter, parseLinkedPublicationProducts, publicationMediaWithDuration } from '../magazine/publicationVideoRelated';
 import { readShareCard } from '../magazine/publicShare';
 import { parsePublicCatalogSearch, readCatalogSearch } from '../catalogue/publicSearch';
 import { readSocialCounts, readSocialComments } from '../magazine/socialEngagementReads';
@@ -832,8 +833,10 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const category = String(req.query.category || '');
     const q = String(req.query.q || '').trim();
     const post = String(req.query.post || '').trim();
+    const linkedIds = parseLinkedPublicationProducts(req.query.linkedProducts);
     const limit = Number(req.query.limit || 12);
     if ((category && !PUBLICATION_CATEGORIES.includes(category as any)) || q.length > 100
+        || linkedIds === null
         || (post && !/^[A-Za-z0-9_-]{1,120}$/.test(post)) || !Number.isInteger(limit) || limit < 1 || limit > 30) {
       return res.status(400).json({ success: false, error: 'Filtre Publication invalide.' });
     }
@@ -853,6 +856,12 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     if (req.query.following === '1') { where.push('EXISTS(SELECT 1 FROM publication_follows f WHERE f.account_id=? AND f.publisher_id=pub.channel_id)'); args.push(account); }
     if (req.query.hasProducts === '1') where.push("EXISTS(SELECT 1 FROM content_products cp WHERE cp.content_kind='publication' AND cp.content_id=pub.id)");
     for (const [key, value] of Object.entries(filters)) if (value) { where.push(`pub.${key === 'type' ? 'post_type' : key}=?`); args.push(value); }
+
+    if (linkedIds.length) {
+      const filter = linkedPublicationProductFilter(linkedIds);
+      where.push(filter.sql);
+      args.push(...filter.args);
+    }
 
     if (req.query.presentation === 'reference' && !post) {
       const legacy = legacyReferenceArtworkFilter();
@@ -895,7 +904,10 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const items = rows.slice(0, limit).map(withLinkedProduct);
     attachContentProducts(db, 'publication', items);
     const last = items[items.length - 1];
-    res.json({ success: true, data: { items, nextCursor: hasMore && last
+    const linkedSet = new Set(linkedIds);
+    const result = linkedIds.length ? items.filter(item => item.products.some((product: { id: string; available: boolean }) => product.available && linkedSet.has(product.id))) : items;
+    if (linkedIds.length) for (const item of result) item.media_json = publicationMediaWithDuration(item.media_json);
+    res.json({ success: true, data: { items: result, nextCursor: hasMore && last
       ? Buffer.from(JSON.stringify([last.publish_at, last.id])).toString('base64url') : null } });
   });
 

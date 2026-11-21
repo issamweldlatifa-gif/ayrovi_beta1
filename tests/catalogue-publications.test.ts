@@ -77,3 +77,19 @@ test('re-running the installer preserves CRM edits and missing sources never mar
     expect(isolated.get('SELECT 1 FROM publications WHERE id=?', `${CATALOGUE_PUBLICATIONS_PREFIX}beaute`)).toBeUndefined();
   } finally { isolated.close(); }
 });
+
+test('related video lookup matches secondary links, returns real durations and keeps the normal feed unchanged', async () => {
+  const product = zalandoDemoProductId('zalando-p004'); // secondary on both videos
+  const query = { linkedProducts: product, type: 'video', presentation: 'reference' };
+  const related = await feed().query(query).expect(200);
+  expect(related.headers['cache-control']).toContain('private');
+  const results = related.body.data.items;
+  expect(results.map((row: any) => row.id)).toEqual([SQUARE_VIDEO_PUBLICATION_ID, `${CATALOGUE_PUBLICATIONS_PREFIX}capsule`]);
+  expect(results.map((row: any) => JSON.parse(row.media_json)[0].durationSeconds)).toEqual([15, 8]);
+  expect((await feed().query({ ...query, linkedProducts: 'not-a-product' }).expect(200)).body.data.items).toEqual([]);
+  const normal = await feed().query({ post: SQUARE_VIDEO_PUBLICATION_ID }).expect(200);
+  expect(JSON.parse(normal.body.data.items[0].media_json)[0]).not.toHaveProperty('durationSeconds');
+  for (const linkedProducts of ['', 'has spaces', 'p,', Array.from({ length: 21 }, (_, i) => `p${i}`).join(',')]) {
+    await feed().query({ ...query, linkedProducts }).expect(400);
+  }
+});

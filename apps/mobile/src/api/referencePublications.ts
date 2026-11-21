@@ -27,9 +27,11 @@ function parseMedia(raw: unknown, cover: string): ReferenceMedia | null {
   if (!item || (item.type !== 'video' && item.type !== 'image')) return null;
   const url = safeMedia(item.url, item.type);
   if (!url) return null;
+  const durationSeconds = item.type === 'video' ? number(item.durationSeconds, 0.1, 86400) : undefined;
   return {
     type: item.type, url, poster: safeMedia(item.poster, 'image') || cover, alt: text(item.alt),
     width: number(item.width, 1, 50000), height: number(item.height, 1, 50000),
+    ...(durationSeconds !== undefined ? { durationSeconds } : {}),
     frame: item.frame === 'square' ? 'square' : item.type === 'image' && item.frame === 'panoramic' ? 'panoramic' : undefined,
     fit: item.fit === 'cover' || item.fit === 'contain' ? item.fit : undefined,
     focalX: number(item.focalX, 0, 100), focalY: number(item.focalY, 0, 100),
@@ -76,6 +78,14 @@ export async function fetchReferencePublications(cursor: string | null, options?
   const query = new URLSearchParams({ limit: '12', presentation: 'reference' });
   if (cursor) query.set('cursor', cursor);
   return parseReferencePublicationPage(await apiGetData<unknown>(`/api/public/social/publication-feed?${query}`, options));
+}
+
+/** Bounded product-matched discovery; the player still checks actual public product overlap. */
+export async function fetchRelatedPublicationVideos(productIds: readonly string[], options?: RequestOptions) {
+  const ids = [...new Set(productIds.filter(id => /^[A-Za-z0-9_.:-]{1,120}$/.test(id)))].slice(0, 20);
+  if (!ids.length) return [];
+  const query = new URLSearchParams({ limit: '30', presentation: 'reference', type: 'video', linkedProducts: ids.join(',') });
+  return parseReferencePublicationPage(await apiGetData<unknown>(`/api/public/social/publication-feed?${query}`, options)).items;
 }
 
 export function publicationLookKey(owner: string, id: string) {

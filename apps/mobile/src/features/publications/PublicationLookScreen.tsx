@@ -21,7 +21,9 @@ import { useSession } from '@/state/session';
 import { OFFICIAL_PUBLISHER_ID, OFFICIAL_PUBLISHER_NAME, OFFICIAL_PUBLISHER_ROUTE } from './officialPublisher';
 import { PublicationAuthSheet } from './PublicationAuthSheet';
 import { PublicationIcon, PublicationText } from './publicationDesign';
-import { PublicationFullscreenVideo, type PublicationPlayback } from './PublicationFullscreenVideo';
+import type { PublicationPlayback } from './PublicationFullscreenVideo';
+import { PublicationVideoSession } from './PublicationVideoSession';
+import { openPublicationProduct } from './publicationProductNavigation';
 import { PublicationLookProduct } from './PublicationLookProduct';
 import { PublicationInlineVideo } from './PublicationInlineVideo';
 import { usePublisherFollow } from './usePublisherFollow';
@@ -160,8 +162,17 @@ export function PublicationLookScreen({ id }: { id: string }) {
         <PublicationIcon name="arrow-up-outline" color={P.paper} size={20} />
       </Pressable> : null}
     </View>
-    {fullscreen && media?.type === 'video' ? <PublicationFullscreenVideo start={fullscreen} url={media.url} poster={media.poster} caption={post?.description || post?.subtitle || post?.title || ''}
-      onLearnMore={state => { position.current = { ...state, muted: true }; setFullscreen(null); list.current?.scrollToOffset({ offset: Math.max(0, heroHeight - 48), animated: !reducedMotion }); }}
+    {fullscreen && post && media?.type === 'video' ? <PublicationVideoSession post={post} start={fullscreen}
+      onLearnMore={(selected, state) => {
+        position.current = { ...state, muted: true };
+        setFullscreen(null);
+        if (selected.id === post.id) list.current?.scrollToOffset({ offset: Math.max(0, heroHeight - 48), animated: !reducedMotion });
+        else {
+          client.setQueryData(publicationLookKey(owner, selected.id), selected);
+          router.push({ pathname: '/publication-look/[id]', params: { id: selected.id } });
+        }
+      }}
+      onProduct={(id, state) => { position.current = { ...state, muted: true }; setFullscreen(null); openPublicationProduct(id); }}
       onClose={state => { position.current = { ...state, muted: true }; setFullscreen(null); }} /> : null}
     {auth ? <PublicationAuthSheet visible onClose={() => setAuth(false)} /> : null}
   </View>;
