@@ -105,3 +105,16 @@ test('authenticated push-device mutations require CSRF, while guest registration
  expect(db.get<any>('SELECT enabled FROM customer_push_devices WHERE token=?',token).enabled).toBe(0);
  expect((await request(app).post('/api/customer/account/devices').send({token:'guest-push-security-token'})).status).toBe(200);
 });
+
+test('newsletter uses an owner-scoped partial write without modifying login identity', async () => {
+ const path='/api/customer/account/profile';
+ const {agent,csrf,id}=await register();const other=await register('other@example.com');
+ expect((await request(app).patch(path).send({marketingOptIn:true})).status).toBe(401);
+ expect((await agent.patch(path).send({marketingOptIn:true})).status).toBe(403);
+ expect((await agent.patch(path).set('x-csrf-token',csrf).send({marketingOptIn:'false'})).status).toBe(400);
+ const saved=await agent.patch(path).set('x-csrf-token',csrf).send({marketingOptIn:true,email:'not-my-email@example.com',displayName:'Not my name',id:other.id});
+ expect(saved.status).toBe(200);
+ expect(saved.body.data).toMatchObject({id,marketingOptIn:true,email:'customer@example.com',displayName:'Test Customer'});
+ expect((await other.agent.get('/api/customer/auth/me')).body.data.account.marketingOptIn).toBe(false);
+ expect((await agent.patch(path).set('x-csrf-token',csrf).send({marketingOptIn:false})).body.data.marketingOptIn).toBe(false);
+});

@@ -21,6 +21,7 @@ jest.mock('@/api/account', () => ({
   changePassword: jest.fn(), fetchSecurity: jest.fn(async () => ({ hasPassword: true })), deleteCustomerAccount: jest.fn(),
   fetchNotifications: jest.fn(), markNotificationsRead: jest.fn(),
 }));
+jest.mock('@/api/checkout', () => ({ ...jest.requireActual('@/api/checkout'), fetchCommercePolicy: jest.fn(async () => ({ governorates: ['Tunis'] })) }));
 jest.mock('expo-image-picker', () => ({}));
 jest.mock('@/api/hooks', () => ({ useFooterInfo: () => ({ data: { channels: [] } }) }));
 jest.mock('@/design/appImage', () => ({ AppImage: () => null }));
@@ -76,11 +77,12 @@ it('saves the actual identity fields and leaves the verified phone read-only', a
 
 it('edits only the selected account address, preserves the default flag and submits the postal code', async () => {
   mockParams.mockReturnValue({ id: address.id });
+  jest.mocked(updateAddress).mockResolvedValue(address);
   jest.mocked(fetchAddresses).mockResolvedValue([address]);
   await mount(<AddressEdit />);
-  expect((await screen.findByLabelText('Adresse complète')).props.value).toBe(address.addressLine);
+  expect((await screen.findByLabelText('Rue et numéro')).props.value).toBe(address.addressLine);
   fireEvent.changeText(screen.getByLabelText('Code postal (facultatif)'), '1001');
-  fireEvent.press(screen.getByRole('button', { name: 'Enregistrer' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Enregistrer l’adresse' }));
   await waitFor(() => expect(updateAddress).toHaveBeenCalledWith(address.id, expect.objectContaining({ postalCode: '1001', isDefault: true })));
   expect(router.back).toHaveBeenCalled();
 });

@@ -1,90 +1,45 @@
-/**
- * Préférences de notification — ce que le compte accepte de recevoir.
- *
- * Volontairement SANS le thème : le thème de l'application est un réglage local
- * (`state/prefs`), le `dark_mode` du serveur pilote le site. Exposer les deux au
- * même endroit ferait croire à un seul réglage partagé.
- *
- * Chaque interrupteur envoie UN SEUL champ : le serveur complète les autres avec
- * la valeur déjà enregistrée, donc un envoi partiel ne remet rien à zéro.
- */
-import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AppText, Card, ToggleRow } from '@/design/ui';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { AppText } from '@/design/ui';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
-import { fetchPreferences, savePreferences, type Preferences } from '@/api/account';
+import { savePreferences, type Preferences } from '@/api/account';
 import { userMessage } from '@/api/errors';
-import { SubScreen } from '@/design/subScreen';
+import { PersonalGuest, PersonalLayout } from '@/features/personal/PersonalLayout';
+import { SettingsSwitch } from '@/features/settings/SettingsRows';
+import { notificationChannels, notificationKey, useNotificationSettings } from '@/features/settings/notificationSettings';
+import { useSession } from '@/state/session';
 
-const CHANNELS: Array<{ key: keyof Preferences; label: string }> = [
-  { key: 'orderUpdates', label: 'preferences.order' },
-  { key: 'paymentUpdates', label: 'preferences.payment' },
-  { key: 'shippingUpdates', label: 'preferences.shipping' },
-  { key: 'invoiceUpdates', label: 'preferences.invoice' },
-];
-
-/**
- * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
- * (arabe + français, bouton « عاود ») à la place de l'écran — l'application
- * reste ouverte, l'utilisateur peut revenir. Voir `src/design/AppErrorBoundary.tsx`
- * et la cause du 25/10/2026 (ordre des hooks). Toute route en a un : c'est
- * vérifié par `tests/error-boundary-coverage.test.ts`.
- */
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function PreferencesScreen() {
+  const { t } = useI18n();
+  const { status, account } = useSession();
+  return <PersonalLayout title={t('preferences.title')} fallback="/account/settings">
+    {status === 'signedIn' && account?.id ? <NotificationSettings key={account.id} owner={account.id} /> : <PersonalGuest loading={status === 'loading'} />}
+  </PersonalLayout>;
+}
+
+function NotificationSettings({ owner }: { owner: string }) {
+  const { t, locale } = useI18n();
   const theme = useTheme();
-  const t = useI18n().t;
-  const { locale } = useI18n();
-  const queryClient = useQueryClient();
-  const [failure, setFailure] = useState('');
-
-  const preferences = useQuery({ queryKey: ['account', 'preferences'], queryFn: ({ signal }) => fetchPreferences({ signal }) });
-
+  const client = useQueryClient();
+  const preferences = useNotificationSettings(owner);
   const update = useMutation({
     mutationFn: (patch: Partial<Preferences>) => savePreferences(patch),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['account'] }),
-    onError: (error) => setFailure(userMessage(error)[locale]),
+    onSuccess: (_result, patch) => {
+      client.setQueryData<Preferences>(notificationKey(owner), previous => previous ? { ...previous, ...patch } : undefined);
+      void client.invalidateQueries({ queryKey: notificationKey(owner) });
+    },
   });
-
-  return (
-    <SubScreen
-      title={t('preferences.title')}
-      subtitle={t('preferences.subtitle')}
-      onRefresh={() => preferences.refetch()}
-      refreshing={preferences.isRefetching}
-    >
-      {failure ? (
-        <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
-      ) : null}
-      {preferences.isLoading ? <LoadingBlock /> : null}
-      {preferences.isError ? <ErrorBlock error={preferences.error} onRetry={() => preferences.refetch()} /> : null}
-
-      {preferences.data ? (
-        <Card title={t('preferences.channels')}>
-          {CHANNELS.map((channel) => (
-            <ToggleRow
-              key={channel.key}
-              label={t(channel.label as 'preferences.order')}
-              value={preferences.data![channel.key]}
-              disabled={update.isPending}
-              onChange={(value) => {
-                setFailure('');
-                // Mise à jour optimiste : l'interrupteur doit suivre le doigt,
-                // et l'écriture part immédiatement derrière.
-                queryClient.setQueryData<Preferences>(['account', 'preferences'], {
-                  ...preferences.data!,
-                  [channel.key]: value,
-                });
-                update.mutate({ [channel.key]: value } as Partial<Preferences>);
-              }}
-            />
-          ))}
-          <AppText variant="caption" color={theme.colors.muted}>{t('preferences.note')}</AppText>
-        </Card>
-      ) : null}
-    </SubScreen>
-  );
+  if (preferences.isPending) return <LoadingBlock />;
+  if (preferences.isError) return <ErrorBlock error={preferences.error} onRetry={() => void preferences.refetch()} />;
+  return <>
+    <AppText>{t('preferences.subtitle')}</AppText>
+    <AppText variant="h3" accessibilityRole="header">{t('preferences.channels')}</AppText>
+    {notificationChannels.map(channel => <SettingsSwitch key={channel.key} title={t(channel.label)}
+      value={preferences.data[channel.key]} disabled={update.isPending} onChange={value => update.mutate({ [channel.key]: value })} />)}
+    {update.isError ? <AppText accessibilityRole="alert" color={theme.status.danger.fg}>{userMessage(update.error)[locale]}</AppText> : null}
+    <AppText variant="caption" color={theme.colors.muted}>{t('preferences.note')}</AppText>
+  </>;
 }

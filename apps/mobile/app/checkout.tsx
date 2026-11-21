@@ -34,7 +34,9 @@ import { RHYTHM } from '@/design/rhythm';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useI18n } from '@/i18n';
 import { isApiError, userMessage } from '@/api/errors';
-import { fetchAddresses, type Address } from '@/api/account';
+import { createAddress, fetchAddresses, type Address } from '@/api/account';
+import { DeliveryFields, DeliveryMethod } from '@/features/personal/DeliveryFields';
+import { checkoutDeliverySelection, deliveryDraft, isDeliveryComplete, orderAddress, ORDER_ADDRESS_MAX, type DeliveryDraft } from '@/features/personal/deliveryAddress';
 import { zayroviCartReadiness, fetchZayroviCart } from '@/api/cart';
 import {
   availablePaymentChoices, checkoutRefusalText, fetchCommercePolicy, initiateCardPayment, paymentChoices,
@@ -53,10 +55,14 @@ import { formatMoney } from '@/format/money';
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function CheckoutScreen() {
+  const session = useSession();
+  return <CheckoutForViewer key={session.status === 'signedIn' ? session.account?.id ?? 'guest' : 'guest'} session={session} />;
+}
+
+function CheckoutForViewer({ session }: { session: ReturnType<typeof useSession> }) {
   const theme = useTheme();
   const { t, locale } = useI18n();
   const sessionId = useSessionId();
-  const session = useSession();
   const queryClient = useQueryClient();
 
   const account = session.account;
@@ -80,13 +86,8 @@ export default function CheckoutScreen() {
     staleTime: 60_000,
   });
 
-  const [addressId, setAddressId] = useState('');
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [addressSelection, setAddressSelection] = useState<ReturnType<typeof checkoutDeliverySelection> | null>(null);
   const [billingEmail, setBillingEmail] = useState<{ accountId: string; value: string } | null>(null);
-  const [governorate, setGovernorate] = useState('');
-  const [addressLine, setAddressLine] = useState('');
-  const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState(false);
   const [method, setMethod] = useState('');
   const [note, setNote] = useState('');
@@ -129,14 +130,33 @@ export default function CheckoutScreen() {
   const contactEmail = !emailLocked && billingEmail && billingEmail.accountId === account?.id
     ? billingEmail.value : account?.email ?? '';
 
-  const pickAddress = useCallback((address: Address) => {
-    setAddressId(address.id);
-    setName(address.recipientName);
-    setPhone(address.phone);
-    setGovernorate(address.governorate || '');
-    setAddressLine([address.addressLine, address.city, address.postalCode].filter(Boolean).join(', '));
-    setNotes(address.deliveryNotes);
-  }, []);
+  const contact = { recipientName: authenticated ? account?.displayName : '', phone: authenticated ? account?.phone : '' };
+  const { draft, addressId } = addressSelection ?? checkoutDeliverySelection(addresses, contact);
+  const changeDelivery = (field: keyof DeliveryDraft, value: string) => {
+    saveAddress.reset();
+    setAddressSelection(previous => ({ addressId: '', draft: { ...(previous?.draft ?? draft), [field]: value } }));
+  };
+  const pickAddress = (address: Address) => {
+    saveAddress.reset();
+    setAddressSelection({ addressId: address.id, draft: deliveryDraft(address) });
+  };
+  const name = draft.recipientName;
+  const phone = draft.phone;
+  const governorate = draft.governorate;
+  const addressLine = orderAddress(draft);
+  const saveAddress = useMutation({
+    mutationFn: async () => {
+      if (!authenticated || !account?.id || !isDeliveryComplete(draft)) throw new Error('Address is incomplete');
+      const address = await createAddress({ ...draft, label: t('addresses.home') });
+      if (!address) throw new Error('Malformed address');
+      return address;
+    },
+    onSuccess: (address) => {
+      setAddressSelection({ addressId: address.id, draft: deliveryDraft(address) });
+      queryClient.setQueryData<Address[]>(['account', 'addresses', account?.id], rows => [address, ...(rows ?? []).filter(row => row.id !== address.id)]);
+      void queryClient.invalidateQueries({ queryKey: ['account', 'addresses', account?.id] });
+    },
+  });
 
   const submit = useMutation({
     mutationFn: async () => {
@@ -198,8 +218,8 @@ export default function CheckoutScreen() {
    * لخطأ `PAYMENT_UNAVAILABLE` بعد الضغطة هو كذبة أسوء. الحلّ: الشروط تتكتب
    * مرّة وحدة، وتُستعمل في **المؤشّر والزرّ** معاً.
    */
-  const addressValid = name.trim().length > 1 && phone.trim().length > 5
-    && addressLine.trim().length > 3 && Boolean(governorate.trim());
+  const addressValid = isDeliveryComplete(draft) && draft.addressLine.trim().length > 3
+    && addressLine.length <= ORDER_ADDRESS_MAX && (!policy?.governorates.length || policy.governorates.includes(governorate));
   /** هل الدفع **جاهز**؟ موش «مكتمل»: ما فمّاش بوّابة ⇒ الخادم يأجّل الدفع (`PENDING_SELECTION`) موش يرفضو. */
   const paymentChosen = Boolean(method) && available.some((choice) => choice.id === method);
   const paymentReady = available.length > 0 ? paymentChosen : true;
@@ -211,6 +231,7 @@ export default function CheckoutScreen() {
     && identityReady
     && addressValid
     && paymentReady
+    && !saveAddress.isPending
     && terms;
 
   /* ── شاشة التأكيد: كل رقم من الخادم ───────────────────────────────────── */
@@ -297,102 +318,37 @@ export default function CheckoutScreen() {
         </Card>
       ) : null}
 
-      {addresses.length ? (
-        <Card title={t('checkout.savedAddresses')}>
-          {addresses.map((address) => {
-            const active = addressId === address.id;
-            return (
-              <Pressable
-                key={address.id}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                onPress={() => pickAddress(address)}
-                style={[styles.address, {
-                  borderColor: active ? theme.colors.action : theme.colors.lineControl,
-                  backgroundColor: active ? theme.colors.surface : theme.colors.canvas,
-                  borderRadius: theme.radius.control,
-                  minHeight: theme.geometry.minTarget,
-                }]}
-              >
-                <AppText variant="label" >{address.label || address.recipientName}</AppText>
-                <AppText variant="caption" color={theme.colors.muted}>
-                  {[address.addressLine, address.city, address.governorate].filter(Boolean).join(' · ')}
-                </AppText>
-              </Pressable>
-            );
-          })}
-        </Card>
-      ) : null}
-
       <Card title={t('checkout.addressTitle')} hint={t('checkout.addressHint')} onLayout={remember('address')}>
-        <Field label={t('checkout.name')} accessibilityLabel={t('checkout.name')} value={name} onChangeText={setName} autoCapitalize="words" />
-        <Field
-          label={t('checkout.phone')}
-          accessibilityLabel={t('checkout.phone')}
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-          inputMode="tel"
-          placeholder="98 123 456"
-        />
-        {account?.phoneVerified && account?.phone ? null : (
-          <AppText variant="caption" color={theme.colors.muted}>{t('checkout.phoneHint')}</AppText>
-        )}
-        <Field
-          label={t('checkout.email')}
-          accessibilityLabel={t('checkout.email')}
-          value={contactEmail}
-          onChangeText={(value) => { if (account && !emailLocked) setBillingEmail({ accountId: account.id, value }); }}
-          editable={!emailLocked}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        {emailLocked ? (
-          <AppText variant="caption" color={theme.colors.muted}>{t('checkout.emailLocked')}</AppText>
-        ) : null}
-
-        {policy && policy.governorates.length ? (
-          <>
-            <AppText variant="caption" color={theme.colors.muted}>{t('checkout.governorate')}</AppText>
-            <View style={[styles.chips, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-              {policy.governorates.map((city) => {
-                const active = governorate === city;
-                return (
-                  <Pressable
-                    key={city}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    onPress={() => setGovernorate(city)}
-                    style={[styles.chip, {
-                      borderColor: active ? theme.colors.action : theme.colors.line,
-                      backgroundColor: active ? theme.colors.accentSoft : theme.colors.canvas,
-                      borderRadius: theme.radius.control,
-                      minHeight: theme.geometry.minTarget,
-                    }]}
-                  >
-                    <AppText variant="label" color={active ? theme.colors.onAccentSoft : theme.colors.ink}>{city}</AppText>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </>
-        ) : (
-          <Field
-            label={t('checkout.governorate')}
-            accessibilityLabel={t('checkout.governorate')}
-            value={governorate}
-            onChangeText={setGovernorate}
-            autoCapitalize="words"
-          />
-        )}
-
-        <Field label={t('checkout.addressLine')} accessibilityLabel={t('checkout.addressLine')} value={addressLine} onChangeText={setAddressLine} />
-        <Field label={t('checkout.notes')} accessibilityLabel={t('checkout.notes')} value={notes} onChangeText={setNotes} />
-        {policy?.deliveryDelay ? (
-          <AppText variant="caption" color={theme.colors.muted}>
-            {t('checkout.deliveryDelay', { delay: policy.deliveryDelay })}
-          </AppText>
-        ) : null}
+        <DeliveryMethod />
+        {addresses.length ? <>
+          <AppText variant="bodyStrong" accessibilityRole="header">{t('checkout.savedAddresses')}</AppText>
+          {addresses.map(address => {
+            const active = addressId === address.id;
+            return <Pressable key={address.id} accessibilityRole="radio" accessibilityState={{ checked: active }}
+              disabled={submit.isPending || saveAddress.isPending} onPress={() => pickAddress(address)}
+              style={[styles.address, { borderColor: active ? theme.colors.action : theme.colors.lineControl,
+                backgroundColor: active ? theme.colors.accentSoft : theme.colors.canvas,
+                borderRadius: theme.radius.control, minHeight: theme.geometry.minTarget }]}>
+              <AppText variant="label" color={active ? theme.colors.onAccentSoft : theme.colors.ink}>{address.label || address.recipientName}</AppText>
+              <AppText variant="caption" color={theme.colors.muted}>
+                {[address.addressLine, address.city, address.governorate].filter(Boolean).join(' · ')}
+              </AppText>
+            </Pressable>;
+          })}
+          <Button label={t('addresses.new')} tone="quiet" disabled={submit.isPending || saveAddress.isPending}
+            onPress={() => { saveAddress.reset(); setAddressSelection({ addressId: '', draft: deliveryDraft(contact) }); }} />
+        </> : null}
+        <DeliveryFields draft={draft} change={changeDelivery} governorates={policy?.governorates} disabled={submit.isPending || saveAddress.isPending} />
+        {addressLine.length > ORDER_ADDRESS_MAX ? <AppText accessibilityRole="alert" color={theme.status.danger.fg}>{t('addresses.tooLong')}</AppText> : null}
+        {authenticated && !addressId && addressValid ? <Button label={t('addresses.saveForLater')} tone="quiet" busy={saveAddress.isPending}
+          disabled={submit.isPending} onPress={() => saveAddress.mutate()} /> : null}
+        {saveAddress.isError ? <AppText accessibilityRole="alert" color={theme.status.danger.fg}>{userMessage(saveAddress.error)[locale]}</AppText> : null}
+        {saveAddress.isSuccess ? <AppText accessibilityLiveRegion="polite">{t('addresses.saved')}</AppText> : null}
+        <Field label={t('checkout.email')} value={contactEmail} autoCapitalize="none" keyboardType="email-address" maxLength={254}
+          editable={authenticated && !emailLocked && !submit.isPending}
+          onChangeText={value => { if (account && !emailLocked) setBillingEmail({ accountId: account.id, value }); }} />
+        {emailLocked ? <AppText variant="caption" color={theme.colors.muted}>{t('checkout.emailLocked')}</AppText> : null}
+        {policy?.deliveryDelay ? <AppText variant="caption" color={theme.colors.muted}>{t('checkout.deliveryDelay', { delay: policy.deliveryDelay })}</AppText> : null}
       </Card>
 
       {policy ? (
@@ -499,8 +455,6 @@ export default function CheckoutScreen() {
 
 const styles = StyleSheet.create({
   address: { borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: RHYTHM.related, paddingVertical: RHYTHM.tight, gap: RHYTHM.inline, justifyContent: 'center' },
-  chips: { flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  chip: { borderWidth: 1, paddingHorizontal: 12, justifyContent: 'center', alignItems: 'center', minWidth: 72 },
   choice: { borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: RHYTHM.related, paddingVertical: RHYTHM.tight, gap: RHYTHM.inline, justifyContent: 'center' },
   terms: { alignItems: 'center', gap: RHYTHM.related, marginTop: RHYTHM.inline },
   termsText: { flex: 1, minWidth: 0 },

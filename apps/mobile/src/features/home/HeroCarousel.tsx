@@ -1,3 +1,4 @@
+import { useOptionalAnalytics } from '@/state/prefs';
 /**
  * Carrousel Hero de l'accueil — piloté par l'Admin (`hero_slides`), servi par
  * `/api/public/hero-slides`, fond adaptatif extrait côté serveur (§5).
@@ -111,6 +112,7 @@ function HeroCarouselView({
 }) {
   const theme = useTheme();
   const t = useT();
+  const trackEnabled = useOptionalAnalytics();
   const { locale } = useI18n();
   const { gutter, width } = useResponsive();
   const isFocused = useIsFocused();
@@ -213,11 +215,11 @@ function HeroCarouselView({
   // Impression : une seule fois par carte réellement affichée.
   const trackedRef = useRef(-1);
   useEffect(() => {
-    if (trackedRef.current === activeIndex) return;
+    if (!trackEnabled || trackedRef.current === activeIndex) return;
     trackedRef.current = activeIndex;
     const card = slides[activeIndex];
     if (card && !isDemoSlide(card.id)) trackHeroEvent(card.id, 'impression', card.destinationType, locale);
-  }, [activeIndex, slides, locale]);
+  }, [activeIndex, slides, locale, trackEnabled]);
 
   // Autoplay : en pause au toucher, hors foyer, ou application en arrière-plan.
   const paused = interacting || !isFocused || !appActive;
@@ -256,10 +258,10 @@ function HeroCarouselView({
   const onPressCard = useCallback((card: HeroSlide) => {
     const href = heroDestination(card.href, card.destinationType);
     if (!href) return;
-    if (!isDemoSlide(card.id)) trackHeroEvent(card.id, 'click', card.destinationType, locale);
+    if (trackEnabled && !isDemoSlide(card.id)) trackHeroEvent(card.id, 'click', card.destinationType, locale);
     if (href.startsWith('/')) router.push(href as never);
     else Linking.openURL(href).catch(() => {});
-  }, [locale]);
+  }, [locale, trackEnabled]);
 
   return (
     <View

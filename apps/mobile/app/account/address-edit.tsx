@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createAddress, deleteAddress, updateAddress, type Address } from '@/api/account';
+import { fetchCommercePolicy } from '@/api/checkout';
+import { DeliveryFields, DeliveryMethod } from '@/features/personal/DeliveryFields';
+import { deliveryDraft, isDeliveryComplete } from '@/features/personal/deliveryAddress';
 import { userMessage } from '@/api/errors';
 import { goBack } from '@/design/navigation';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
@@ -40,29 +43,30 @@ function AddressForm({ item, title, name = '', phone = '' }: { item?: Address; t
   const theme = useTheme();
   const client = useQueryClient();
   const [confirm, setConfirm] = useState(false);
-  const [form, setForm] = useState(() => ({ label: item?.label ?? '', recipientName: item?.recipientName ?? name, phone: item?.phone ?? phone,
-    governorate: item?.governorate ?? '', city: item?.city ?? '', postalCode: item?.postalCode ?? '', addressLine: item?.addressLine ?? '',
-    deliveryNotes: item?.deliveryNotes ?? '', isDefault: item?.isDefault ?? false }));
+  const policy = useQuery({ queryKey: ['commerce', 'policy'], queryFn: ({ signal }) => fetchCommercePolicy({ signal }), staleTime: 5 * 60_000 });
+  const [form, setForm] = useState(() => ({ ...deliveryDraft(item ?? { recipientName: name, phone }), label: item?.label ?? '', isDefault: item?.isDefault ?? false }));
   const mutation = useMutation({ mutationFn: async (action: 'save' | 'delete') => {
     if (action === 'delete' && item) return deleteAddress(item.id);
     const input = { ...form, label: form.label.trim() || t('addresses.home') };
-    return item ? updateAddress(item.id, input) : createAddress(input);
+    const saved = await (item ? updateAddress(item.id, input) : createAddress(input));
+    if (!saved) throw new Error('Malformed address');
+    return saved;
   }, onSuccess: () => { void client.invalidateQueries({ queryKey: ['account', 'addresses'] }); } });
   const finish = () => goBack('/account/addresses');
-  const fields = [
-    ['label', 'addresses.label', 40], ['recipientName', 'addresses.recipient', 100], ['phone', 'auth.phone.label', 24],
-    ['addressLine', 'addresses.line', 500], ['deliveryNotes', 'addresses.notes', 500], ['postalCode', 'addresses.postal', 20],
-    ['city', 'addresses.city', 100], ['governorate', 'addresses.governorate', 80],
-  ] as const;
-  const complete = Boolean(form.recipientName.trim() && form.phone.trim() && form.governorate.trim() && form.addressLine.trim());
-  return <PersonalLayout title={title} fallback="/account/addresses" footer={<Button label={t('common.save')} block size="lg"
-    busy={mutation.isPending && mutation.variables === 'save'} disabled={!complete || mutation.isPending || confirm} onPress={() => mutation.mutate('save', { onSuccess: finish })} />}>
-    {fields.map(([field, label, max]) => <Field key={field} label={t(label)} value={form[field]} maxLength={max} editable={!mutation.isPending}
-      keyboardType={field === 'phone' ? 'phone-pad' : 'default'} multiline={field === 'addressLine' || field === 'deliveryNotes'}
-      onChangeText={value => setForm(previous => ({ ...previous, [field]: value }))} />)}
-    <Field label={t('addresses.country')} value={t('addresses.tunisia')} editable={false} />
+  const regions = policy.data?.governorates;
+  const complete = isDeliveryComplete(form) && (!regions?.length || regions.includes(form.governorate));
+  return <PersonalLayout title={title} fallback="/account/addresses">
+    <DeliveryMethod />
+    <AppText variant="h3" accessibilityRole="header">{title}</AppText>
+    <DeliveryFields draft={form} disabled={mutation.isPending} governorates={regions}
+      change={(field, value) => setForm(previous => ({ ...previous, [field]: value }))} />
+    <Field label={t('addresses.label')} value={form.label} maxLength={40} editable={!mutation.isPending}
+      onChangeText={label => setForm(previous => ({ ...previous, label }))} />
     <ToggleRow label={t('addresses.default')} value={form.isDefault} disabled={item?.isDefault || mutation.isPending}
       onChange={value => setForm(previous => ({ ...previous, isDefault: value }))} />
+    <Button label={t('addresses.save')} block size="lg" busy={mutation.isPending && mutation.variables === 'save'}
+      disabled={!complete || mutation.isPending || confirm} onPress={() => mutation.mutate('save', { onSuccess: finish })} />
+    <Button label={t('common.cancel')} tone="quiet" block size="lg" disabled={mutation.isPending || confirm} onPress={finish} />
     {item ? <Button label={t('addresses.deleteAction')} tone="danger" disabled={mutation.isPending || confirm} onPress={() => { mutation.reset(); setConfirm(true); }} /> : null}
     {confirm ? <>
       <AppText>{t('addresses.confirmDelete')}</AppText>

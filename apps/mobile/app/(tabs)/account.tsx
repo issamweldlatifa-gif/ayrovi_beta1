@@ -36,7 +36,7 @@ const groups = [
   ] },
   { id: 'preferences', title: 'account.hub.preferences', items: [
     { id: 'favorites', label: 'account.menu.favorites', icon: 'heart-outline', route: '/account/favorites' },
-    { id: 'preferences', label: 'preferences.title', icon: 'options-outline', route: '/account/preferences' },
+    { id: 'settings', label: 'settings.title', icon: 'settings-outline', route: '/account/settings' as Href, public: true },
   ] },
   { id: 'more', title: 'account.hub.more', items: [
     { id: 'about', label: 'account.menu.about', icon: 'information-circle-outline', route: '/account/about', public: true },

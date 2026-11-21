@@ -1499,6 +1499,16 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
     return res.json({ success: true, data: publicAccount(accountRow(db, account.id)) });
   });
 
+  // The newsletter setting is a partial account write; never overwrite a name or email from a stale client.
+  router.patch('/account/profile', requireCustomer(db), (req, res) => {
+    const account = customerFromRequest(req);
+    res.set('Cache-Control', 'private, no-store');
+    const consent = req.body?.marketingOptIn;
+    if (typeof consent !== 'boolean') return res.status(400).json({ success: false, error: 'Préférence non valide.' });
+    db.run('UPDATE customer_accounts SET marketing_opt_in=?,updated_at=? WHERE id=?', consent ? 1 : 0, new Date().toISOString(), account.id);
+    return res.json({ success: true, data: publicAccount(accountRow(db, account.id)) });
+  });
+
   router.get('/account/addresses', requireCustomer(db), (req, res) => {
     const account = customerFromRequest(req);
     return res.json({ success: true, data: db.all<any>('SELECT * FROM customer_addresses WHERE account_id=? ORDER BY is_default DESC,created_at DESC', account.id) });

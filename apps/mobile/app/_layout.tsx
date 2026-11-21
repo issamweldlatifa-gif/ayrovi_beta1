@@ -13,7 +13,7 @@ import { shouldRetryQuery, queryRetryDelay } from '@/api/queryRetry';
 import { useState, type ReactNode } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useNetworkState } from 'expo-network';
+import { NetworkStateType, useNetworkState } from 'expo-network';
 import { View } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
@@ -22,7 +22,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FONT_SOURCES } from '@/config/app';
 import { ThemeProvider, useTheme } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
-import { PrefsProvider, usePrefs } from '@/state/prefs';
+import { PlaybackWifiProvider, PrefsProvider, usePrefs } from '@/state/prefs';
 import { LoyaltyDemoProvider } from '@/features/loyalty/LoyaltyDemoProvider';
 import { SessionProvider, useSession } from '@/state/session';
 import { useDeepLinkRouting } from '@/features/links/useDeepLinkRouting';
@@ -86,6 +86,7 @@ function Navigation() {
   usePushNotifications(sessionId, locale);
 
   const content = readyToPaint ? (
+    <PlaybackWifiProvider connected={network.type === NetworkStateType.WIFI && network.isConnected === true}>
     <View style={{ flex: 1, backgroundColor: theme.colors.canvas }}>
       <StatusBar style={theme.mode === 'dark' ? 'light' : 'dark'} />
       {/* Hors ligne : bandeau DANS LE FLUX — le contenu est poussé, jamais
@@ -120,6 +121,7 @@ function Navigation() {
         </Stack>
       </View>
     </View>
+    </PlaybackWifiProvider>
   ) : null;
   return <View style={{ flex: 1 }}>{content}{!bootDone ? <BrandEntrance ready={readyToPaint}
     onShown={() => { SplashScreen.hideAsync().catch(() => {}); }} onDone={() => setBootDone(true)} /> : null}</View>;

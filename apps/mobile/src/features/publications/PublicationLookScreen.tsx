@@ -1,3 +1,4 @@
+import { useVideoAutoplay } from '@/state/prefs';
 import { isPublicationCampaign } from '../../../../../shared/publicationCampaign';
 import { useEffect, useRef, useState } from 'react';
 import { AppState, FlatList, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -37,6 +38,7 @@ export function PublicationLookScreen({ id }: { id: string }) {
   const t = useT();
   const theme = useTheme();
   const focused = useIsFocused();
+  const autoplay = useVideoAutoplay();
   const reducedMotion = useReduceMotion();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -77,7 +79,7 @@ export function PublicationLookScreen({ id }: { id: string }) {
   const heroHeight = pageWidth / LOOK.heroAspect;
   const tileWidth = (pageWidth - (isVideo ? 48 : 24) - 8) / 2;
   const videoFit = post?.layout === 'video-panoramic' ? 'contain' : 'cover';
-  const preview = focused && foreground && !fullscreen && !auth && heroVisible && !reducedMotion;
+  const preview = autoplay && focused && foreground && !fullscreen && !auth && heroVisible && !reducedMotion;
   const official = post?.channelId === OFFICIAL_PUBLISHER_ID;
   const publisher = official ? OFFICIAL_PUBLISHER_NAME : post?.channelName;
   const followLabel = t(follow.state === 'following' ? 'publication.following' : follow.state === 'error' ? 'publication.followRetry' : 'publication.follow');
@@ -130,7 +132,7 @@ export function PublicationLookScreen({ id }: { id: string }) {
                 {preview ? <PublicationInlineVideo key={media.url} url={media.url} muted paused={false} fit={videoFit} position={position} /> : null}
                 <Pressable accessibilityRole="button" accessibilityLabel={t('publication.playerOpen')} onPress={openPlayer}
                   testID="publication-look-video" style={StyleSheet.absoluteFill}>
-                  {reducedMotion ? <View style={styles.playHint}><PublicationIcon name="play-outline" color={P.paper} /></View> : null}
+                  {(!autoplay || reducedMotion) ? <View style={styles.playHint}><PublicationIcon name="play-outline" color={P.paper} /></View> : null}
                 </Pressable>
               </> : null}
               <Pressable accessibilityRole="button" accessibilityState={{ selected: saved, disabled: favoriteLook.isPending }}

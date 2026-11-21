@@ -1,3 +1,4 @@
+import { useVideoAutoplay } from '@/state/prefs';
 import { useCallback, useRef, useState } from 'react';
 import { Modal } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
@@ -15,6 +16,7 @@ export function PublicationVideoSession({ post, start, onClose, onLearnMore, onP
   onProduct: (id: string, state: PublicationPlayback) => void;
 }) {
   const owner = useSession().account?.id || 'guest';
+  const autoplay = useVideoAutoplay();
   const reduceMotion = useReduceMotion();
   const [clip, setClip] = useState(() => ({ post, start, sequence: 0 }));
   const [visited, setVisited] = useState(() => new Set([post.id]));
@@ -28,7 +30,7 @@ export function PublicationVideoSession({ post, start, onClose, onLearnMore, onP
     staleTime: 60_000,
   });
   const videos = relatedPublicationVideos(clip.post, related.data ?? []);
-  const next = !reduceMotion ? videos.find(item => !visited.has(item.id)) : undefined;
+  const next = autoplay && !reduceMotion ? videos.find(item => !visited.has(item.id)) : undefined;
   const resumeOrigin = (state: PublicationPlayback) => clip.post.id === post.id ? state : { ...originPlayback.current, muted: state.muted };
   const select = useCallback((item: ReferencePublication, state: PublicationPlayback) => {
     if (clip.post.id === post.id) originPlayback.current = state;

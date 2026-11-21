@@ -1,3 +1,4 @@
+import { useVideoAutoplay } from '@/state/prefs';
 import { isPublicationCampaign } from '../../../shared/publicationCampaign';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { router, useIsFocused } from 'expo-router';
@@ -40,6 +41,7 @@ export default function PublicationsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const focused = useIsFocused();
+  const autoplay = useVideoAutoplay();
   const reducedMotion = useReduceMotion();
   const { width } = useWindowDimensions();
   const session = useSession();
@@ -114,7 +116,7 @@ export default function PublicationsScreen() {
         renderItem={({ item }) => isPublicationCampaign(item.layout) ? <PublicationCampaignCard post={item} layout={item.layout}
           viewport={width} query={search?.id === item.id ? search.query : ''} favorites={favorites} signedIn={signedIn}
           onAuth={() => setAuth(true)} onSponsor={() => open(item, 'sponsor')} onOpen={() => openLook(item)} /> : <ReferencePublicationCard post={item} viewport={width}
-          preview={playingAllowed && !reducedMotion && activeVideo === item.id} muted={feedMuted}
+          preview={autoplay && playingAllowed && !reducedMotion && activeVideo === item.id} muted={feedMuted}
           onToggleMute={() => setFeedMuted(value => !value)}
           onPhoto={item.media?.type === 'image' ? () => openLook(item) : undefined}
           onVideo={item.media?.type === 'video' ? (start, resumeAt) => {

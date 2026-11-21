@@ -1,3 +1,4 @@
+import { useOptionalAnalytics } from '@/state/prefs';
 /**
  * OCEREX داخل Lens — السبع شاشات (وظائف ونصوص الموقع، بمكونات التطبيق وأيقوناته).
  *
@@ -57,9 +58,10 @@ export function OcerexFlow({ onClose }: { onClose: () => void }) {
   const [urlError, setUrlError] = useState(false);
   const [busy, setBusy] = useState(false);
   const sessionId = useSessionId();
+  const trackEnabled = useOptionalAnalytics();
   const track = useCallback((event: string, extra?: { type?: string; confidenceLevel?: string }) => {
-    void trackOcerexEvent(event, sessionId, extra);
-  }, [sessionId]);
+    if (trackEnabled) void trackOcerexEvent(event, sessionId, extra);
+  }, [sessionId, trackEnabled]);
 
   useEffect(() => { track('ocerex_opened'); }, [track]);
 

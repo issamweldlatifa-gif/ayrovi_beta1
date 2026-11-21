@@ -19,7 +19,7 @@
  * Le jeton (`session_token`) n'est présent que si le client s'est déclaré avec
  * `x-zayrovi-client` — c'est la couche réseau qui le pose (client.ts).
  */
-import { apiGet, apiGetData, apiSend, apiSendForm, type RequestOptions } from './client';
+import { apiGet, apiGetData, apiSend, apiSendData, apiSendForm, type RequestOptions } from './client';
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
@@ -640,6 +640,10 @@ export async function updateProfile(
 ): Promise<CustomerAccount> {
   const { data } = await apiSend<unknown>('PUT', '/api/customer/account/profile', { ...options, body: input });
   return parseAccount(data);
+}
+
+export async function saveNewsletterPreference(marketingOptIn: boolean, options?: RequestOptions): Promise<CustomerAccount> {
+  return parseAccount(await apiSendData<unknown>('PATCH', '/api/customer/account/profile', { ...options, body: { marketingOptIn } }));
 }
 
 export async function fetchAddresses(options?: RequestOptions): Promise<Address[]> {

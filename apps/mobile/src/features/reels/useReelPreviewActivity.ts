@@ -1,3 +1,4 @@
+import { useVideoAutoplay } from '@/state/prefs';
 import { useEffect, useState, type RefObject } from 'react';
 import {
   AccessibilityInfo,
@@ -9,6 +10,7 @@ import { useIsFocused } from 'expo-router';
 
 /** Also observes vertical home scrolling, not just horizontal FlatList viewability. */
 export function useReelPreviewActivity(ref: RefObject<View | null>) {
+  const autoplay = useVideoAutoplay();
   const focused = useIsFocused();
   const { height } = useWindowDimensions();
   const [foreground, setForeground] = useState(
@@ -58,5 +60,5 @@ export function useReelPreviewActivity(ref: RefObject<View | null>) {
       clearInterval(timer);
     };
   }, [focused, foreground, height, ref]);
-  return { visible: focused && foreground && visible, autoplay: !reduced };
+  return { visible: focused && foreground && visible, autoplay: autoplay && !reduced };
 }

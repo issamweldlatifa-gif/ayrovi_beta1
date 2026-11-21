@@ -7,12 +7,15 @@ import { BackButton } from '@/design/BackButton';
  * l’écran précédent (la connexion, par exemple). Police et couleurs = celles de
  * l’application, sens de lecture selon la langue.
  */
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Modal, ScrollView, StyleSheet, View } from 'react-native';
 import { goBack } from '@/design/navigation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AppText } from '@/design/ui';
+import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
+import { useReduceMotion } from '@/design/motion';
+import { SettingsRow } from '@/features/settings/SettingsRows';
 import { usePrefs } from '@/state/prefs';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { LEGAL_DOCS, type LegalBlock, type LegalDocId } from '@/legal/legalDocs';
@@ -21,7 +24,7 @@ function Block({ block }: { block: LegalBlock }) {
   const theme = useTheme();
   if (block.kind === 'h2') {
     return (
-      <AppText variant="h3" style={styles.heading}>{block.text}</AppText>
+      <AppText variant="h3" accessibilityRole="header" style={styles.heading}>{block.text}</AppText>
     );
   }
   if (block.kind === 'notice') {
@@ -56,6 +59,12 @@ export function LegalScreen({ docId }: { docId: LegalDocId }) {
   const t = useT();
   const { locale } = usePrefs();
   const insets = useSafeAreaInsets();
+  const reduced = useReduceMotion();
+  const scroll = useRef<ScrollView>(null);
+  const offsets = useRef<Record<number, number>>({});
+  const [chaptersOpen, setChaptersOpen] = useState(false);
+  const [awayFromTop, setAwayFromTop] = useState(false);
+  const privacy = docId === 'privacy';
 
   const versions = LEGAL_DOCS[docId];
   const wantsArabic = locale === 'ar';
@@ -86,23 +95,42 @@ export function LegalScreen({ docId }: { docId: LegalDocId }) {
         </AppText>
       </View>
 
-      <ScrollView
+      <ScrollView ref={scroll} scrollEventThrottle={32}
+        onScroll={privacy ? event => setAwayFromTop(event.nativeEvent.contentOffset.y > 280) : undefined}
         contentContainerStyle={[
           styles.content,
           { paddingBottom: insets.bottom + theme.space[6], paddingHorizontal: theme.space[4] },
         ]}
       >
-        <AppText variant="h3" style={styles.docTitle}>{version.title}</AppText>
+        <AppText variant="h2" accessibilityRole="header" style={styles.docTitle}>{version.title}</AppText>
         {version.meta ? (
           <AppText variant="caption" color={theme.colors.muted}>{version.meta}</AppText>
         ) : null}
         {fallbackToFrench ? (
           <AppText variant="caption" color={theme.colors.muted}>{t('legal.frenchOnly')}</AppText>
         ) : null}
-        {version.blocks.map((block, index) => (
-          <Block key={index} block={block} />
-        ))}
+        {privacy && version.blocks.some(block => block.kind === 'h2') ?
+          <Button label={t('legal.chooseChapter')} tone="quiet" onPress={() => setChaptersOpen(true)} /> : null}
+        {version.blocks.map((block, index) => block.kind === 'h2' && privacy ?
+          <View key={index} onLayout={event => { offsets.current[index] = event.nativeEvent.layout.y; }}><Block block={block} /></View> :
+          <Block key={index} block={block} />)}
       </ScrollView>
+      {privacy && awayFromTop ? <View style={[styles.readerAction, { paddingBottom: insets.bottom + theme.space[2], borderColor: theme.colors.line }]}>
+        <Button label={t('legal.backToTop')} tone="quiet" onPress={() => scroll.current?.scrollTo({ y: 0, animated: !reduced })} />
+      </View> : null}
+      {privacy && chaptersOpen ? <Modal visible animationType={reduced ? 'none' : 'slide'} onRequestClose={() => setChaptersOpen(false)}>
+        <View accessibilityViewIsModal style={[styles.screen, styles.chapterList, { paddingTop: insets.top + theme.space[3],
+          paddingBottom: insets.bottom + theme.space[3], backgroundColor: theme.colors.canvas }]}>
+          <AppText variant="h3" accessibilityRole="header">{t('legal.chooseChapter')}</AppText>
+          <ScrollView>{version.blocks.map((block, index) => block.kind === 'h2' ?
+            <SettingsRow key={index} title={block.text} divided onPress={() => {
+              const y = offsets.current[index];
+              setChaptersOpen(false);
+              if (typeof y === 'number') scroll.current?.scrollTo({ y, animated: !reduced });
+            }} /> : null)}</ScrollView>
+          <Button label={t('common.close')} tone="quiet" block onPress={() => setChaptersOpen(false)} />
+        </View>
+      </Modal> : null}
     </View>
   );
 }
@@ -116,6 +144,8 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
+  readerAction: { paddingHorizontal: 16, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth },
+  chapterList: { paddingHorizontal: 16, gap: 12 },
   back: { alignItems: 'center', justifyContent: 'center' },
   barTitle: { flex: 1 },
   content: { gap: 12, paddingTop: 16 },

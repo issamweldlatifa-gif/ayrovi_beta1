@@ -43,6 +43,8 @@ test('shows the new section layout without audience chips and labels the loyalty
   expect(router.push).toHaveBeenLastCalledWith('/sign-in');
   fireEvent.press(screen.getByTestId('account-link-privacy'));
   expect(router.push).toHaveBeenLastCalledWith('/legal/privacy');
+  fireEvent.press(screen.getByTestId('account-link-settings'));
+  expect(router.push).toHaveBeenLastCalledWith('/account/settings');
   expect(fetchOverview).not.toHaveBeenCalled();
 });
 
