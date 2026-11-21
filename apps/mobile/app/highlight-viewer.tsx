@@ -10,6 +10,7 @@ import { BRAND } from '@/design/tokens.generated';
 import { AppText } from '@/design/ui';
 import { useT } from '@/i18n';
 import { HighlightOverlayButton, HighlightViewer } from '@/features/highlights/HighlightViewer';
+import { WATCH_SHOP_PATH } from '@/features/highlights/WatchShopGrid';
 import { useHiddenReels } from '@/features/reels/reelVisibility';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
@@ -24,9 +25,9 @@ export default function HighlightViewerScreen() {
   const reel = query.data?.find(row => row.id === id && row.videoUrl && !hidden.includes(row.id));
   return <View style={styles.screen}>
     {focused ? <StatusBar style="light" /> : null}
-    {reel ? <HighlightViewer key={reel.id} reel={reel} focused={focused} onClose={() => goBack()} /> : <>
+    {reel ? <HighlightViewer key={reel.id} reel={reel} focused={focused} onClose={() => goBack(WATCH_SHOP_PATH)} /> : <>
       <View style={{ paddingTop: safe.top + 8, paddingLeft: safe.left + 12, alignSelf: 'flex-start' }}>
-        <HighlightOverlayButton icon="close" label={t('common.close')} onPress={() => goBack()} testID="highlight-close" />
+        <HighlightOverlayButton icon="close" label={t('common.close')} onPress={() => goBack(WATCH_SHOP_PATH)} testID="highlight-close" />
       </View>
       <View style={styles.state}>
         {query.isPending ? <BrandLoadingIndicator size={60} /> : query.isError ? <ErrorBlock error={query.error} onRetry={() => void query.refetch()} />

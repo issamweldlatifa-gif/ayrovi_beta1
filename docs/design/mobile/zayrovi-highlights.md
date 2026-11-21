@@ -16,3 +16,7 @@
 Les réglages vivent dans `settings` (`mobile_zayrovi_highlights`), sans changer le schéma. Les écritures passent par les permissions de contenu et l’audit CRM. La sélection ne copie ni média, ni prix, ni stock, ni compteurs ; elle référence des Reels publiés et leurs articles catalogue. La réponse mobile est privée et non stockable en cache HTTP, car elle peut inclure la réaction du compte connecté. Les Reels ordinaires et les Publications gardent leurs écrans.
 
 **Recette Android/iOS** : ouverture par les deux cibles de chaque carte, rendu sous les zones système, lecture et son, Retour depuis une fiche, réactions/commentaires, et balayage horizontal sur un Highlight multi-articles. Vérifier aussi un Highlight mono-article, puis désactiver/réactiver depuis le CRM et rafraîchir l’accueil.
+
+### Watshis Shop (nom sur mobile)
+
+L’accueil présente quatre sélections avec un prix et la photo de l’article en bas à droite de chaque affiche. **Explorer** ouvre `/watch-shop` : grille pleine largeur sans coins arrondis, sans lecture simultanée, avec les mêmes sélections publiées dans le CRM (pas de mélange avec le fil Reels). Une affiche ou sa carte ouvre la vidéo exacte, plein écran. Le lecteur conserve le produit principal, Acheter, les réactions et les commentaires ; `+N articles` n’existe que pour les vidéos multi-produits et ne change pas de vidéo. Le nom et les contrats existants du studio/API Zayrovi Highlights restent inchangés.

@@ -1,57 +1,38 @@
 import { useRef } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, type Href } from 'expo-router';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { HIGHLIGHT_LIMIT } from '../../../../../shared/zayroviHighlights';
-import { mediaUrl } from '@/api/client';
-import type { Reel } from '@/api/social';
 import { useZayroviHighlights } from '@/api/zayroviHighlights';
-import { AppImage } from '@/design/appImage';
 import { MediaSectionMark } from '@/design/MediaSectionMark';
 import { AppText } from '@/design/ui';
 import { BRAND } from '@/design/tokens.generated';
-import { MEDIA_RATIO, RADIUS, veil } from '@/design/tokens.mobile';
+import { RADIUS } from '@/design/tokens.mobile';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
-import { useI18n } from '@/i18n';
-import { reelCaption } from '@/features/reels/reelCaption';
+import { useT } from '@/i18n';
 import { useHiddenReels } from '@/features/reels/reelVisibility';
 import { useReelPreviewActivity } from '@/features/reels/useReelPreviewActivity';
-import { HighlightProductCard } from './HighlightProductCard';
-import { hasHighlightImage } from './highlightProducts';
+import { WATCH_SHOP_PATH, WatchShopGrid, watchShopReels } from './WatchShopGrid';
 
-const openHighlight = ({ id }: Reel) => router.push(`/highlight-viewer?id=${encodeURIComponent(id)}` as Href);
-
-/** Posters only: a player is created in the modal, never for the Home tiles. */
 export function HighlightsSection() {
   const anchor = useRef<View>(null);
   const { visible } = useReelPreviewActivity(anchor);
   const query = useZayroviHighlights(visible);
   const hidden = useHiddenReels();
-  const { t, locale } = useI18n();
-  const { isRTL, iconSize } = useTheme();
-  const reels = (query.data ?? []).filter(reel => !hidden.includes(reel.id) && reel.videoUrl && reel.posterUrl && hasHighlightImage(reel.product));
-  const row = { flexDirection: rowDirectionFor(isRTL) };
+  const t = useT();
+  const { isRTL, opacity } = useTheme();
+  const reels = watchShopReels(query.data ?? [], hidden);
   return <View>
     <View ref={anchor} collapsable={false} style={styles.anchor} />
     {reels.length === HIGHLIGHT_LIMIT ? <View testID="home-highlights" style={styles.section}>
-      <MediaSectionMark lead="Zayrovi" suffix="Highlights" tone="onMedia" />
-      <AppText variant="body" color={BRAND.white}>{t('highlights.title')}</AppText>
-      <View style={styles.grid}>
-        {[reels.slice(0, 2), reels.slice(2, 4)].map((items, index) => <View key={index} style={[styles.gridRow, row]}>
-          {items.map(reel => <View style={styles.tile} key={reel.id}>
-            <AppImage uri={mediaUrl(reel.posterUrl)} contentFit="cover" decorative style={StyleSheet.absoluteFill} />
-            <Pressable testID={`highlight-tile-${reel.id}`} onPress={() => openHighlight(reel)} accessibilityRole="button"
-              accessibilityLabel={`${t('highlights.watch')} · ${reelCaption(reel, locale).title}`}
-              style={[StyleSheet.absoluteFill, styles.tileButton]}>
-              <View style={styles.play}><Ionicons name="play" size={iconSize.sm} color={BRAND.white} accessibilityElementsHidden /></View>
-            </Pressable>
-            <View style={styles.productPin} pointerEvents="box-none">
-              {reel.product ? <HighlightProductCard compact testID={`highlight-overlay-${reel.id}`} product={reel.product} onPress={() => openHighlight(reel)} /> : null}
-            </View>
-          </View>)}
-        </View>)}
+      <View style={[styles.heading, { flexDirection: rowDirectionFor(isRTL) }]}>
+        <View style={styles.mark}><MediaSectionMark lead="Watshis" suffix="Shop" tone="onMedia" /></View>
+        <Pressable testID="watch-shop-explore" accessibilityRole="link" onPress={() => router.push(WATCH_SHOP_PATH as Href)}
+          style={({ pressed }) => [styles.explore, pressed && { opacity: opacity.subtle }]}>
+          <AppText variant="label" color={BRAND.white}>{t('socialCommerce.explore')}</AppText>
+        </Pressable>
       </View>
+      <WatchShopGrid reels={reels} />
     </View> : null}
   </View>;
 }
@@ -59,10 +40,6 @@ export function HighlightsSection() {
 const styles = StyleSheet.create({
   anchor: { height: 1 },
   section: { width: '100%', maxWidth: 600, alignSelf: 'center', backgroundColor: BRAND.black, borderRadius: RADIUS.md, padding: 12, gap: 6 },
-  grid: { gap: 8, marginTop: 6 },
-  gridRow: { gap: 8 },
-  tile: { flex: 1, aspectRatio: MEDIA_RATIO.reel, borderRadius: RADIUS.md, backgroundColor: veil(0.8), overflow: 'hidden' },
-  tileButton: { alignItems: 'flex-start', padding: 8 },
-  play: { width: 30, height: 30, borderRadius: RADIUS.full, backgroundColor: veil(0.65), alignItems: 'center', justifyContent: 'center' },
-  productPin: { ...StyleSheet.absoluteFill, alignItems: 'flex-end', justifyContent: 'flex-end', padding: 6 },
+  heading: { alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  mark: { flex: 1 }, explore: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 },
 });

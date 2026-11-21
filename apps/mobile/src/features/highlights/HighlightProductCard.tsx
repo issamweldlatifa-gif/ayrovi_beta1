@@ -31,8 +31,8 @@ export function HighlightProductCard({ product, onPress, compact = false, testID
 const styles = StyleSheet.create({
   card: { backgroundColor: BRAND.white, borderRadius: RADIUS.md, overflow: 'hidden', gap: 4 },
   shop: { padding: 6, width: '100%' },
-  compact: { padding: 4, width: 72 },
+  compact: { padding: 4, width: 76 },
   photo: { height: 62, backgroundColor: BRAND.lightGray, overflow: 'hidden', borderRadius: RADIUS.sm },
-  compactPhoto: { height: 42 },
+  compactPhoto: { height: 52 },
   buy: { borderRadius: RADIUS.full, backgroundColor: BRAND.black, minHeight: 28, justifyContent: 'center', paddingHorizontal: 4 },
 });

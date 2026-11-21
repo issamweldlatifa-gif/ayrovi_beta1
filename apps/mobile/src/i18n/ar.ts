@@ -18,7 +18,6 @@ export const ar = {
   "home.clean.title": "مساعدك للتسوّق.",
   "home.clean.body": "عندك سؤال على منتج أو سومه؟ اسأل Clean.",
   "home.clean.cta": "افتح Clean",
-  'highlights.title': 'أكثر من فيديو',
   'highlights.watch': 'تفرّج في الفيديو',
   'highlights.buy': 'اشري',
   'highlights.more': '+{count} منتجات',
