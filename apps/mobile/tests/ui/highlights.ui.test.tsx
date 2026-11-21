@@ -52,6 +52,7 @@ beforeEach(() => {
 it('renders four poster/product pairs without starting playback; both touch targets open the chosen video', () => {
   render(wrap(<HighlightsSection />));
   expect(screen.getByTestId('home-highlights')).toBeTruthy();
+  expect(screen.getByRole('header', { name: 'Zayrovi, Highlights' })).toBeTruthy();
   expect(screen.getAllByTestId(/^highlight-tile-/)).toHaveLength(4);
   expect(screen.getAllByTestId(/^highlight-overlay-/)).toHaveLength(4);
   fireEvent.press(screen.getByTestId('highlight-tile-r2'));

@@ -7,6 +7,7 @@ import { mediaUrl } from '@/api/client';
 import type { Reel } from '@/api/social';
 import { useZayroviHighlights } from '@/api/zayroviHighlights';
 import { AppImage } from '@/design/appImage';
+import { MediaSectionMark } from '@/design/MediaSectionMark';
 import { AppText } from '@/design/ui';
 import { BRAND } from '@/design/tokens.generated';
 import { MEDIA_RATIO, RADIUS, veil } from '@/design/tokens.mobile';
@@ -34,11 +35,8 @@ export function HighlightsSection() {
   return <View>
     <View ref={anchor} collapsable={false} style={styles.anchor} />
     {reels.length === HIGHLIGHT_LIMIT ? <View testID="home-highlights" style={styles.section}>
-      <View style={[styles.eyebrow, row]}>
-        <Ionicons name="sparkles-outline" size={iconSize.xs} color={BRAND.yellow} accessibilityElementsHidden />
-        <AppText variant="captionStrong" color={BRAND.yellow}>ZAYROVI HIGHLIGHTS</AppText>
-      </View>
-      <AppText variant="h2" accessibilityRole="header" color={BRAND.white}>{t('highlights.title')}</AppText>
+      <MediaSectionMark lead="Zayrovi" suffix="Highlights" tone="onMedia" />
+      <AppText variant="body" color={BRAND.white}>{t('highlights.title')}</AppText>
       <View style={styles.grid}>
         {[reels.slice(0, 2), reels.slice(2, 4)].map((items, index) => <View key={index} style={[styles.gridRow, row]}>
           {items.map(reel => <View style={styles.tile} key={reel.id}>
@@ -61,7 +59,6 @@ export function HighlightsSection() {
 const styles = StyleSheet.create({
   anchor: { height: 1 },
   section: { width: '100%', maxWidth: 600, alignSelf: 'center', backgroundColor: BRAND.black, borderRadius: RADIUS.md, padding: 12, gap: 6 },
-  eyebrow: { alignItems: 'center', gap: 6 },
   grid: { gap: 8, marginTop: 6 },
   gridRow: { gap: 8 },
   tile: { flex: 1, aspectRatio: MEDIA_RATIO.reel, borderRadius: RADIUS.md, backgroundColor: veil(0.8), overflow: 'hidden' },

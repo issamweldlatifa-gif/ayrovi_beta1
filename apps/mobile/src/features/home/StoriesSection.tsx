@@ -7,6 +7,7 @@ import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'reac
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStories, useStoriesShowcase } from '@/api/hooks';
 import { mediaUrl } from '@/api/client';
+import { MediaSectionMark } from '@/design/MediaSectionMark';
 import { AppText } from '@/design/ui';
 import { AppImage } from '@/design/appImage';
 import { FullBleed, useResponsive } from '@/design/layout';
@@ -34,7 +35,8 @@ export const StoriesSection = memo(function StoriesSection() {
   return <FullBleed>
     <View testID="home-stories" style={styles.section}>
       <View style={[styles.heading, { paddingHorizontal: gutter }]}>
-        <AppText variant="h3" accessibilityRole="header" color={FOOTER_THEME.paper}>{local(settings.title, settings.titleAr) || t('sections.stories')}</AppText>
+        <MediaSectionMark lead="Storie" suffix="Shop" tone="onMedia" />
+        {local(settings.title, settings.titleAr) ? <AppText variant="bodyStrong" color={FOOTER_THEME.paper}>{local(settings.title, settings.titleAr)}</AppText> : null}
         {settings.subtitle ? <AppText variant="body" color={FOOTER_THEME.paper}>{local(settings.subtitle, settings.subtitleAr)}</AppText> : null}
         {settings.ctaLabel ? <Pressable testID="stories-explore" accessibilityRole="button" onPress={() => router.push('/stories')} style={styles.cta}>
           <AppText variant="body" color={FOOTER_THEME.paper}>{local(settings.ctaLabel, settings.ctaLabelAr)} {theme.isRTL ? '←' : '→'}</AppText>

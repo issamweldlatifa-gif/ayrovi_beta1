@@ -31,6 +31,7 @@ describe('official editorial Stories gallery', () => {
     mockStories.data = [card(1), card(2)];
     await mount();
     expect(screen.getByText(block.title)).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Storie, Shop' })).toBeTruthy();
     expect(screen.getByText(block.subtitle)).toBeTruthy();
     expect(StyleSheet.flatten(screen.getByTestId('editorial-story-s1').props.style).aspectRatio).toBeCloseTo((5 / 8) / 1.08);
     fireEvent.press(screen.getByRole('button', { name: /Explorez toutes les stories/ }));

@@ -433,7 +433,6 @@ export const ar = {
   'shopping.favouriteAdd': 'إضافة إلى المفضّلة',
   'shopping.favouriteRemove': 'إزالة من المفضّلة',
   'home.reelsShop.open': 'فتح الريل',
-  'home.reelsShop.label': 'Reels، Shop',
   'home.hero.slideOf': 'الشريحة {current} من {total}',
   'home.hero.swipeHint': 'اسحب لاستعراض الحملات',
 
