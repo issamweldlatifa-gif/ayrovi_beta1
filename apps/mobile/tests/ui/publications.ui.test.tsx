@@ -263,8 +263,16 @@ it('reveals transparent controls and the official mark on tap, and a down swipe 
     fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
     const player = within(screen.getByTestId('publication-fullscreen-player'));
     expect(mockPlayer.muted).toBe(false);
+    expect(player.queryByTestId('publication-player-play')).toBeNull();
+    const editorial = player.getByTestId('publication-player-editorial');
+    expect(StyleSheet.flatten(editorial.props.style).backgroundColor).toBeUndefined();
+    expect(within(editorial).getByText('Sélection week-end')).toBeTruthy();
+    expect(within(editorial).getByText('Zayrovi Team')).toBeTruthy();
+    expect(within(editorial).getByText('Les nouveautés')).toBeTruthy();
+    expect(within(editorial).getByTestId('publication-player-official-avatar', { includeHiddenElements: true })).toBeTruthy();
     fireEvent.press(player.getByTestId('publication-player-surface'));
-    expect(player.getByTestId('publication-player-official-avatar', { includeHiddenElements: true })).toBeTruthy();
+    expect(player.getByTestId('publication-player-editorial')).toBe(editorial);
+    expect(within(editorial).getByText('Zayrovi Team')).toBeTruthy();
     expect(StyleSheet.flatten(player.getByTestId('publication-player-play').props.style).backgroundColor).toBeUndefined();
     const title = StyleSheet.flatten(player.getByTestId('publication-player-title').props.style);
     const description = StyleSheet.flatten(player.getByTestId('publication-player-description').props.style);
@@ -284,6 +292,24 @@ it('reveals transparent controls and the official mark on tap, and a down swipe 
     expect(mockPlayer.currentTime).toBe(7.5);
     expect(mockPlayer.muted).toBe(false);
   } finally { pan.mockRestore(); }
+});
+
+it('shows the original publisher and a real linked product when there is no description', async () => {
+  const post = { ...fixture('video', 500, 900).items[0]!, channelId: 'other', channelName: 'Atelier', description: ' ', subtitle: '' };
+  jest.mocked(fetchReferencePublications).mockResolvedValueOnce({ items: [post], nextCursor: null });
+  mount();
+  fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
+  const player = within(screen.getByTestId('publication-fullscreen-player'));
+  const editorial = within(player.getByTestId('publication-player-editorial'));
+  expect(editorial.getByText('Atelier')).toBeTruthy();
+  expect(editorial.getByText('Produit a')).toBeTruthy();
+  expect(editorial.queryByTestId('publication-player-official-avatar', { includeHiddenElements: true })).toBeNull();
+  fireEvent.press(player.getByTestId('publication-player-surface'));
+  expect(editorial.getByText('Produit a')).toBeTruthy();
+  expect(player.queryByTestId('publication-player-caption')).toBeNull();
+  fireEvent.press(player.getByTestId('publication-player-surface'));
+  expect(player.queryByTestId('publication-player-play')).toBeNull();
+  expect(editorial.getByText('Atelier')).toBeTruthy();
 });
 
 it('offers CC only when tracks are available and toggles the matching native track', async () => {

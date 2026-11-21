@@ -75,8 +75,9 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
   // use their poster (when authored) behind any space due to the aspect ratio.
   const fit = width <= height && videoWidth > 0 && videoHeight > videoWidth ? "cover" : "contain";
   const resolution = trackSize ? Math.min(trackSize.width, trackSize.height) : 0;
-  const title = post.title || post.subtitle;
-  const caption = post.description || (post.subtitle !== title ? post.subtitle : "");
+  const title = post.title.trim() || post.subtitle.trim();
+  const description = [post.description, post.subtitle].map(value => value?.trim()).find(value => value && value !== title);
+  const caption = description || post.products.find(product => product.name.trim() && product.name.trim() !== title)?.name.trim();
   const official = post.channelId === OFFICIAL_PUBLISHER_ID;
   const publisher = official ? OFFICIAL_PUBLISHER_NAME : post.channelName;
   const hasProducts = post.products.length > 0;
@@ -252,8 +253,9 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
           <PublicationIcon halo name="ellipsis-horizontal-outline" color={P.paper} size={22} />
         </Pressable>
       </> : null}
-      {controls && !menu && !compact && status !== "error" ? <View pointerEvents="box-none" style={[styles.info, { top: top + 56, left: left + 12, right: right + 12 }]}>
-        {title ? <PublicationText testID="publication-player-title" color={P.paper} variant="h2" style={PUBLICATION_OVERLAY_TEXT} numberOfLines={2}>{title}</PublicationText> : null}
+      {status !== "error" && (title || publisher || post.sponsored || caption) ? <View pointerEvents="box-none"
+        testID="publication-player-editorial" style={[styles.info, compact && styles.compactInfo, { top: top + 56, left: left + 12, right: right + 12 }]}>
+        {title ? <PublicationText testID="publication-player-title" color={P.paper} variant="h2" style={PUBLICATION_OVERLAY_TEXT} numberOfLines={compact ? 1 : 2}>{title}</PublicationText> : null}
         {publisher ? <View style={[styles.byline, { flexDirection: direction }]}>
           {official ? <OfficialAvatar size={OFFICIAL_AVATAR.publication} testID="publication-player-official-avatar" /> : post.channelAvatar ?
             <AppImage uri={mediaUrl(post.channelAvatar)} decorative contentFit="cover" style={styles.avatar} /> : null}
@@ -262,11 +264,13 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
             {post.sponsored ? <PublicationText color={P.paper} variant="caption" style={PUBLICATION_OVERLAY_TEXT} numberOfLines={2}>{post.sponsorName ? t("publication.sponsoredBy", { name: post.sponsorName }) : t("publication.sponsoredInfo")}</PublicationText> : null}
           </View>
         </View> : post.sponsored ? <PublicationText color={P.paper} variant="caption" style={PUBLICATION_OVERLAY_TEXT} numberOfLines={2}>{post.sponsorName ? t("publication.sponsoredBy", { name: post.sponsorName }) : t("publication.sponsoredInfo")}</PublicationText> : null}
-        {caption ? <Pressable accessibilityRole="button" accessibilityLabel={caption} accessibilityState={{ expanded }}
-          testID="publication-player-caption" onPress={() => setExpanded(value => !value)} style={styles.caption}>
+        {caption ? controls && description && !menu && !compact ? <Pressable accessibilityRole="button"
+          accessibilityLabel={caption} accessibilityState={{ expanded }} testID="publication-player-caption"
+          onPress={() => setExpanded(value => !value)} style={styles.caption}>
           <PublicationText testID="publication-player-description" color={P.paper} variant="caption" style={PUBLICATION_OVERLAY_TEXT} numberOfLines={expanded ? 5 : 1}>{caption}</PublicationText>
           <PublicationText color={P.paper} variant="caption" style={PUBLICATION_OVERLAY_TEXT}>{t(expanded ? "publication.captionLess" : "reel.captionMore")}</PublicationText>
-        </Pressable> : null}
+        </Pressable> : <PublicationText testID="publication-player-description" color={P.paper} variant="caption"
+          style={PUBLICATION_OVERLAY_TEXT} numberOfLines={1}>{caption}</PublicationText> : null}
       </View> : null}
       {controls && !menu && status !== "error" ? <View pointerEvents="box-none" style={[styles.middle, { top: top + TOP_BUTTON_SIZE, bottom, left, right }]}>
         {upNext ? <View style={styles.upNext} testID="publication-player-up-next">
@@ -351,7 +355,8 @@ const styles = StyleSheet.create({
     borderRadius: TOP_BUTTON_SIZE / 2, justifyContent: "center", alignItems: "center" },
   ccBadge: { borderWidth: 1, borderColor: P.paper, borderRadius: RADIUS.xs, paddingHorizontal: 4 },
   ccOn: { backgroundColor: P.paper },
-  info: { position: "absolute", gap: 8 },
+  info: { position: "absolute", gap: 6 },
+  compactInfo: { gap: 2 },
   byline: { alignItems: "flex-start", gap: 8 },
   publisherCopy: { flex: 1, gap: 2 },
   avatar: { width: 30, height: 30, borderRadius: 15 },
