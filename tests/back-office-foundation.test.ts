@@ -164,7 +164,8 @@ describe('back office shell (P2.0)', () => {
       // 2026-10-10 : + la section « à la une » (accueil mobile).
       expect(sections.has('home-featured'), 'section home-featured absente').toBe(true);
       expect(sections.has('zayrovi-news'), 'section zayrovi-news absente').toBe(true);
-      expect(sections.size).toBe(56);
+      expect(sections.has('zayrovi-highlights')).toBe(true);
+      expect(sections.size).toBe(57);
     });
 
     test('la navigation serveur couvre exactement les entrées de la barre latérale legacy', () => {
@@ -207,7 +208,7 @@ describe('back office shell (P2.0)', () => {
       const aywebsPurchaseAdditions = ['aywebs-purchases'];
       // 2026-11-06 : Stories officielles dispose de son éditeur navigable dédié.
       const officialStoriesAdditions = ['stories'];
-      const newsroomAdditions = ['zayrovi-news'];
+      const newsroomAdditions = ['zayrovi-news', 'zayrovi-highlights'];
       const navigable = backOfficeSections();
       const sections = resourceDescriptors()
         .filter((descriptor) => descriptor.nav && navigable.includes(descriptor.section))
@@ -234,16 +235,16 @@ describe('back office shell (P2.0)', () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       expect(result.status).toBe(200);
       const items = result.body.data.groups.flatMap((group: any) => group.items);
-      expect(items.length).toBe(55);
-      expect(result.body.data.counts).toMatchObject({ sections: 55, visible: 55 });
+      expect(items.length).toBe(56);
+      expect(result.body.data.counts).toMatchObject({ sections: 56, visible: 56 });
       expect(result.body.data.groups.map((group: any) => group.label)).toEqual(
         ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'CRM', 'ERP', 'Système']);
     });
 
     test('un rôle ne voit que ce que la permission autorise — sans jamais enlever davantage', async () => {
       const cases: Array<[Session, string[], string[]]> = [
-        [content, ['products', 'news', 'public-nav', 'zayrovi-news'], ['users', 'erp-permissions', 'lens-lab', 'erp-employees', 'customers']],
-        [orders, ['orders', 'arrival-ingestion'], ['users', 'settings', 'products', 'erp-audit', 'zayrovi-news']],
+        [content, ['products', 'news', 'public-nav', 'zayrovi-news', 'zayrovi-highlights'], ['users', 'erp-permissions', 'lens-lab', 'erp-employees', 'customers']],
+        [orders, ['orders', 'arrival-ingestion'], ['users', 'settings', 'products', 'erp-audit', 'zayrovi-news', 'zayrovi-highlights']],
         [admin, ['reports', 'products', 'arrival-ingestion'], ['users', 'erp-permissions', 'erp-employees']],
       ];
       for (const [session, allowed, denied] of cases) {
@@ -487,7 +488,7 @@ describe('back office shell (P2.0)', () => {
       // 2026-10-10 : le Hero unique est l’entrée « Hero » (icône LayoutGrid) ; les entrées
       // « Visuels d’accueil » et « Carrousel Hero » sont supprimées.
       // 2026-10-10 : la section « à la une » (icône Sparkles) ajoute son entrée.
-      expect(declared.length).toBe(55); // + Zayrovi News (Bell).
+      expect(declared.length).toBe(56); // + Zayrovi News et Zayrovi Highlights.
       const missing = [...new Set(declared)].filter((name) => !card.has(name));
       expect(missing, 'noms d\u2019icône sans clé dans ICONS').toEqual([]);
     });

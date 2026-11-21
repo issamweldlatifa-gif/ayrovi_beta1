@@ -1,3 +1,4 @@
+import { readPublicHighlights } from '../services/zayroviHighlights';
 import { readHomeDailyOffer, readPublicZayroviNews } from '../services/zayroviNews';
 import { readPublicBlackFriday } from '../catalogue/blackFriday';
 import { STORY_CARD_COLUMNS, readPublishedStoryEditorial } from '../services/storyEditorial';
@@ -744,6 +745,11 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       enabled: Boolean(row.enabled),
       sortOrder: Number(row.sort_order ?? 0),
     } : null });
+  });
+
+  router.get('/zayrovi-highlights', optionalCustomer(db), (req, res) => {
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.json({ success: true, data: readPublicHighlights(db, (req as any).customer?.id || '') });
   });
 
   router.get('/zayrovi-news', (req, res) => {

@@ -21,7 +21,7 @@ const workspaces: Array<{ key: OfficeWorkspaceKey; fr: string; ar: string; secti
   ] },
   { key: 'finance', fr: 'Finance & contrôle', ar: 'المالية والرقابة', sections: ['reports'] },
   { key: 'cms', fr: 'Contenus & apparence', ar: 'المحتوى والمظهر', sections: [
-    'zayrovi-news', 'news', 'magazine-agent', 'social', 'stories', 'hero', 'home-featured', 'home-sections', 'public-nav',
+    'zayrovi-news', 'zayrovi-highlights', 'news', 'magazine-agent', 'social', 'stories', 'hero', 'home-featured', 'home-sections', 'public-nav',
     'lens-section', 'arrivals', 'promotions', 'interface', 'design', 'products', 'brands',
   ] },
   { key: 'admin', fr: 'Administration', ar: 'الإدارة والصلاحيات', sections: [

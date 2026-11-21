@@ -108,6 +108,7 @@ function Navigation() {
           <Stack.Screen name="z-lens" options={motion.media} />
           <Stack.Screen name="lens" options={motion.media} />
           <Stack.Screen name="reels-viewer" options={motion.media} />
+          <Stack.Screen name="highlight-viewer" options={{ ...motion.media, presentation: 'fullScreenModal' }} />
           <Stack.Screen name="reels" options={motion.media} />
           <Stack.Screen name="stories" options={motion.media} />
           {/* Connexion : présentée par-dessus l'onglet courant, refermée au succès. */}

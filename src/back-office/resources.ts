@@ -798,6 +798,14 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'ZAYROVI_NEWS', resourceType: 'settings' },
   },
   {
+    key: 'content.zayrovi-highlights', label: 'Zayrovi Highlights', singular: 'vidéo', module: 'cms', domain: 'CONTENT',
+    description: 'Sélection des quatre vidéos et de leurs produits vedettes sur l’accueil mobile.',
+    navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
+    section: 'zayrovi-highlights', nav: { group: 'Contenu', order: 35, icon: 'LayoutGrid' },
+    surface: 'custom', component: 'ZayroviHighlightsStudio', api: { prefix: '/zayrovi-highlights', kind: 'generic' },
+    columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'ZAYROVI_HIGHLIGHTS', resourceType: 'settings' },
+  },
+  {
     key: 'content.home-featured', label: 'Cover d’accueil', singular: 'section', module: 'cms', domain: 'CONTENT',
     description: 'Le nouveau bloc d’entrée de l’accueil mobile : médias, texte et bouton posés dessus.', navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
     section: 'home-featured', nav: { group: 'Contenu', order: 31, icon: 'Sparkles' },

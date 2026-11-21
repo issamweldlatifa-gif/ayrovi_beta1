@@ -1,3 +1,5 @@
+import { ZAYROVI_HIGHLIGHTS_KEY } from '../../shared/zayroviHighlights';
+import { pickHighlightReels, readHighlightsSettings, saveHighlightsSettings } from '../services/zayroviHighlights';
 import { ZAYROVI_NEWS_KEY, readZayroviNews, saveZayroviNews, searchZayroviNewsSources } from '../services/zayroviNews';
 import { isNewsSource } from '../../shared/zayroviNews';
 import { BLACK_FRIDAY_KEY, blackFridayAdminOffers, readBlackFridaySettings, saveBlackFridaySettings, searchBlackFridayOffers, updateBlackFridayCataloguePrice } from '../catalogue/blackFriday';
@@ -822,6 +824,24 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       new Date().toISOString());
     audit(db, req, 'UPDATE', 'LENS_HERO', 'global', null, null);
     res.json({ success: true, data: lensRowForApi(db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'")) });
+  });
+
+  router.get('/zayrovi-highlights', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: readHighlightsSettings(db) });
+  });
+  router.get('/zayrovi-highlights/reels', requireAdmin(db, 'content:read'), (req, res) => {
+    res.json({ success: true, data: pickHighlightReels(db, typeof req.query.q === 'string' ? req.query.q : '') });
+  });
+  router.put('/zayrovi-highlights', requireAdmin(db, 'content:write'), (req, res) => {
+    const data = db.transaction(() => {
+      const before = readHighlightsSettings(db);
+      const saved = saveHighlightsSettings(db, req.body, new Date().toISOString());
+      if (saved) audit(db, req, 'UPDATE', 'ZAYROVI_HIGHLIGHTS', 'global', before, saved);
+      return saved;
+    });
+    if (!data) return res.status(400).json({ success: false, error: 'Choisissez quatre Reels publiés distincts avec une couverture et un article disponible déjà lié à chaque Reel.' });
+    res.json({ success: true, data });
   });
 
   router.get('/zayrovi-news', requireAdmin(db, 'content:read'), (_req, res) => {
@@ -2581,13 +2601,14 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   router.get('/settings', requireAdmin(db, 'settings:read'), (req, res) => {
     const category = typeof req.query.category === 'string' ? req.query.category : '';
     const rows = category ? db.all<any>('SELECT * FROM settings WHERE category=? ORDER BY label', category) : db.all<any>('SELECT * FROM settings ORDER BY category,label');
-    res.json({ success: true, data: rows.filter(row => row.setting_key !== BLACK_FRIDAY_KEY && row.setting_key !== ZAYROVI_NEWS_KEY).map((row) => ({ ...row, setting_value: row.value_type === 'JSON' ? (row.setting_key === 'interface_config' ? enforceBrandIdentity(JSON.parse(row.setting_value)) : row.setting_key === 'site_theme' ? enforceLegacyTheme(JSON.parse(row.setting_value)) : JSON.parse(row.setting_value)) : row.value_type === 'NUMBER' ? Number(row.setting_value) : row.value_type === 'BOOLEAN' ? row.setting_value === 'true' : row.setting_value })) });
+    res.json({ success: true, data: rows.filter(row => row.setting_key !== BLACK_FRIDAY_KEY && row.setting_key !== ZAYROVI_NEWS_KEY && row.setting_key !== ZAYROVI_HIGHLIGHTS_KEY).map((row) => ({ ...row, setting_value: row.value_type === 'JSON' ? (row.setting_key === 'interface_config' ? enforceBrandIdentity(JSON.parse(row.setting_value)) : row.setting_key === 'site_theme' ? enforceLegacyTheme(JSON.parse(row.setting_value)) : JSON.parse(row.setting_value)) : row.value_type === 'NUMBER' ? Number(row.setting_value) : row.value_type === 'BOOLEAN' ? row.setting_value === 'true' : row.setting_value })) });
   });
 
   router.put('/settings/:id', requireAdmin(db, 'settings:write'), (req, res) => {
     const current = db.get<any>('SELECT * FROM settings WHERE id=?', req.params.id);
     if (!current) return res.status(404).json({ success: false, error: 'Paramètre introuvable.' });
     let received = req.body?.value;
+    if (current.setting_key === ZAYROVI_HIGHLIGHTS_KEY) return res.status(409).json({ success: false, error: 'Utilisez l’éditeur Zayrovi Highlights.' });
     if (current.setting_key === ZAYROVI_NEWS_KEY) return res.status(409).json({ success: false, error: 'Utilisez l’éditeur Zayrovi News.' });
     if (current.setting_key === BLACK_FRIDAY_KEY) return res.status(409).json({ success: false, error: 'Utilisez l’éditeur Black Friday Week.' });
     if (current.setting_key === 'social_commerce_editions_v1') return res.status(409).json({ success: false, error: 'Utilisez l’éditeur Social Commerce.' });

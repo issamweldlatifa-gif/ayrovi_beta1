@@ -1,3 +1,6 @@
+import { useQueryClient } from '@tanstack/react-query';
+import { highlightsKey } from '@/api/zayroviHighlights';
+import { HighlightsSection } from '@/features/highlights/HighlightsSection';
 /**
  * Accueil — باب الدخول للتطبيق.
  *
@@ -90,6 +93,7 @@ export default function HomeScreen() {
 
   const blackFriday = useBlackFriday();
   const dailyOffer = useHomeDailyOffer();
+  const client = useQueryClient();
   const stories = useStories();
   const storiesShowcase = useStoriesShowcase();
   const heroSlides = useHeroSlides();
@@ -99,8 +103,9 @@ export default function HomeScreen() {
     setRefreshing(true);
     Promise.allSettled([
       heroSlides.refetch(), heroCarouselSettings.refetch(), stories.refetch(), storiesShowcase.refetch(), blackFriday.refetch(), dailyOffer.refetch(),
+      client.invalidateQueries({ queryKey: highlightsKey }),
     ]).finally(() => setRefreshing(false));
-  }, [heroSlides, heroCarouselSettings, stories, storiesShowcase, blackFriday, dailyOffer]);
+  }, [heroSlides, heroCarouselSettings, stories, storiesShowcase, blackFriday, dailyOffer, client]);
 
   return (
     <AppScreen
@@ -154,6 +159,8 @@ export default function HomeScreen() {
 
       {/* Reels • Shop — vignettes verticales ; un toucher ouvre la visionneuse plein écran. */}
       <ReelsShopSection />
+
+      <HighlightsSection />
 
       {/*
         الفوتر — خلفية سوداء عرض كامل.
