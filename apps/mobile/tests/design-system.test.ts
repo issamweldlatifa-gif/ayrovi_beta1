@@ -105,7 +105,8 @@ describe('Design System — aucune valeur en dur là où un jeton existe', () =>
      * photo de produit n'existe. Ces teintes ne peignent jamais un bouton, un
      * fond ou un texte — le design system reste la seule source pour l'UI.
      */
-    const DATA_COLOUR_MODULES = new Set(['src/features/aywebs/optionColour.ts']);
+    // GiftArt est une illustration du produit imprimé, pas une palette UI.
+    const DATA_COLOUR_MODULES = new Set(['src/features/aywebs/optionColour.ts', 'src/features/giftCards/GiftArt.tsx']);
     const offenders: string[] = [];
     for (const rel of FILES) {
       if (TOKEN_FILES.has(rel) || DATA_COLOUR_MODULES.has(rel)) continue;

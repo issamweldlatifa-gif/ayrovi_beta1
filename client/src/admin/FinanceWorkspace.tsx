@@ -3,6 +3,7 @@ import { AlertCircle, CreditCard } from '../components/QatafoIcons';
 import { OfficeIcon } from '../design/admin/OfficeIcon';
 import { OfficeListToolbar } from '../design/admin/OfficeListToolbar';
 import { OfficeViewSwitch } from '../design/admin/OfficeViewSwitch';
+import { FinanceGiftCardLab } from './FinanceGiftCardLab';
 import { adminApi, queryString } from './api';
 import { Button, DataTable, Field, PageHeader, Pagination, Select, StatusBadge } from './components';
 import { useOfficeText } from './back-office/OfficeLocale';
@@ -10,16 +11,17 @@ import { formatDate, formatMoney, options } from './back-office/resource-ui';
 import type { BackOfficeRenderContext } from './back-office/BackOfficeShell';
 import { FINANCE_REGISTER_PERIODS, FINANCE_TRANSACTION_STATUSES, type FinanceRegisterResult, type FinanceRegisterRow } from '../../../shared/financeTransactionRegister';
 
-export function FinanceWorkspace({ navigate, canRead, renderReports }: { navigate: BackOfficeRenderContext['navigate']; canRead: boolean; renderReports: () => React.ReactNode }) {
+export function FinanceWorkspace({ navigate, canRead, canWrite, renderReports }: { navigate: BackOfficeRenderContext['navigate']; canRead: boolean; canWrite: boolean; renderReports: () => React.ReactNode }) {
   const t = useOfficeText();
-  const [view, setView] = useState<'reports' | 'register'>('reports');
+  const [view, setView] = useState<'reports' | 'register' | 'gifts'>('reports');
   if (!canRead) return <p role="alert">{t('Ce module exige le droit de lecture des rapports.', 'القسم هذا يلزمو صلاحية قراءة التقارير.')}</p>;
   return <>
     <OfficeViewSwitch label={t('Vues de la finance', 'طرق عرض المالية')} value={view} onChange={setView} options={[
       { value: 'reports', icon: 'analytics', label: t('Rapports et dépenses', 'التقارير والمصاريف') },
       { value: 'register', icon: 'table', label: t('Registre des transactions', 'سجل المعاملات') },
+      { value: 'gifts', icon: 'finance', label: t('Cartes cadeaux', 'بطاقات الهدايا') },
     ]} />
-    {view === 'register' ? <TransactionRegister navigate={navigate} /> : renderReports()}
+    {view === 'register' ? <TransactionRegister navigate={navigate} /> : view === 'gifts' ? <FinanceGiftCardLab canWrite={canWrite} /> : renderReports()}
   </>;
 }
 

@@ -3,10 +3,12 @@ import { auditActorFromRequest, auditContextFromAdminRequest, recordAdminAudit }
 import { hasPermission } from '../admin/permissions';
 import { requireAdmin, type AdminIdentity } from '../admin/auth';
 import type { QatafoDatabase } from '../db/database';
+import { createGiftCardLabRouter } from './giftCardLab';
 import { parseRegisterQuery, readRegister } from './transactionRegister';
 
 export function createFinanceRouter(db: QatafoDatabase) {
   const router = Router();
+  router.use('/gift-card-specimens', createGiftCardLabRouter(db));
   router.get('/transactions', (req, res, next) => {
     res.set('Cache-Control', 'private, no-store');
     next();

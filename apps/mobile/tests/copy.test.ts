@@ -90,18 +90,9 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
       for (const match of file.text.matchAll(/<Screen[^>]*\btab="([^"]+)"/g)) tabs.add(match[1]);
       for (const match of file.text.matchAll(/<Tabs\.Screen[^>]*\bname="([^"]+)"/g)) tabs.add(match[1]);
     }
-    /**
-     * Modèle de navigation en vigueur :
-     *   • la barre du bas ne porte plus que le profil ;
-     *   • `index` (l’accueil), `account` et `cart` restent des ROUTES — l’en-tête
-     *     et le tiroir pointent dessus — mais sont retirés de la barre
-     *     (`href: null`). Un onglet masqué n’est pas un onglet supprimé : on ne
-     *     casse pas les liens existants pour un changement de navigation.
-     * Ce test ne fige donc pas une liste décorative : il garantit que tout
-     * onglet déclaré — visible ou non — possède ses textes dans les deux langues.
-     */
+    // Même masqué, un onglet garde sa route et son libellé accessible.
     expect([...tabs].sort()).toEqual([
-      'account', 'aywebs', 'cart', 'index', 'lens', 'social', 'sonim',
+      'account', 'aywebs', 'cart', 'gift-cards', 'index', 'lens', 'social', 'sonim',
     ]);
     /**
      * ── Ce que ce contrat exigeait, et pourquoi il a changé ───────────────

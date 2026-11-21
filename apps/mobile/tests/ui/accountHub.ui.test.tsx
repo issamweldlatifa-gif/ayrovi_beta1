@@ -55,6 +55,8 @@ test('retains functional account links, real unread count and sign-out', async (
   expect(await within(screen.getByTestId('account-link-notifications')).findByText('3')).toBeTruthy();
   fireEvent.press(screen.getByTestId('account-link-orders'));
   expect(router.push).toHaveBeenLastCalledWith('/orders');
+  fireEvent.press(screen.getByTestId('account-link-gifts'));
+  expect(router.push).toHaveBeenLastCalledWith('/account/gift-cards');
   fireEvent.press(screen.getByTestId('account-link-returns'));
   expect(router.push).toHaveBeenLastCalledWith('/returns');
   fireEvent.press(screen.getByTestId('account-link-profile'));

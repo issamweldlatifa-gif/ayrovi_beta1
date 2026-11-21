@@ -1,9 +1,9 @@
 /**
- * Barre d'onglets principale — 5 destinations visibles dans une barre opaque
+ * Barre d'onglets principale — 6 destinations visibles dans une barre opaque
  * pleine largeur posée bord à bord en bas de l'écran (aucune transparence,
  * aucun vide sous la barre) :
  *
- *   `Accueil` · `Lens` · `Clean` · `AYWEBs` · `Profil`
+ *   `Accueil` · `Lens` · `Clean` · `AYWEBs` · `Gift Cards` · `Profil`
  *
  *   • Aucun libellé visuel; les noms accessibles sont conservés.
  *   • Accueil utilise notre symbole (noir/blanc même actif). Les autres icônes appartiennent à la famille unique officielle (`Ionicons`
@@ -25,6 +25,7 @@ import {
   TabAywebsPawIcon,
   NAV_ICON_SIZE,
   TabHomeIcon,
+  TabGiftIcon,
   TabLensIcon,
   TabProfileIcon,
   TabSonimIcon,
@@ -199,6 +200,10 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="gift-cards" options={{
+        title: t('tabs.gift-cards'), tabBarAccessibilityLabel: t('tabs.gift-cards'), tabBarIconStyle: standardIconSlot,
+        tabBarIcon: ({ color, focused }) => <TabGiftIcon size={NAV_ICON_SIZE} color={color} focused={focused} />,
+      }} />
       <Tabs.Screen
         name="account"
         listeners={{

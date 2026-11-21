@@ -99,7 +99,7 @@ export function keyPrefixes(dictionary: Dictionary): Set<string> {
   return prefixes;
 }
 
-const KEY_SHAPE = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$/;
+const KEY_SHAPE = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+(?:-[A-Za-z0-9_]+)*)+$/;
 
 /**
  * كل الحرفيات في المصدر اللي **تشبه مفتاح ترجمة معروف**: الشكل `a.b` وأوّل

@@ -1,4 +1,4 @@
-/** Five icon-only destinations. Source-traced official camera/search and matching profile;
+/** Icon-only destinations. Source-traced official camera/search and matching profile;
  * Approved thin-outline Home contour; master brand assets untouched. Clean is the sole approved multicolor exception.
  * Legacy export names are compatibility APIs, not visible product names/routes.
  */
@@ -16,7 +16,7 @@ export type TabNavIconProps = { color: ColorValue; size?: number; focused?: bool
 export const TAB_ICON_STROKE = 1.5;
 export const NAV_ICON_SIZE = 28;
 
-// A shape cue works even when the five approved glyphs remain monochrome.
+// A shape cue works even when the approved glyphs remain monochrome.
 function TabGlyphFrame({ children, dim, focused = false, ink }: {
   children: ReactNode; dim: number; focused?: boolean; ink: string;
 }) {
@@ -52,6 +52,14 @@ export function ReferenceNavigationGlyph({ kind, size: dim, color: ink }: { kind
 export function TabHomeIcon({ size, focused }: TabNavIconProps) {
   const { dim, ink } = useIcon(size);
   return <TabGlyphFrame dim={dim} focused={focused} ink={ink}><Svg width={dim} height={dim} viewBox="0 0 24 24" fill="none" stroke={ink} strokeWidth={TAB_ICON_STROKE} strokeLinecap="round" strokeLinejoin="round"><Path d="M3 10.5L12 3L21 10.5V21H15V14H9V21H3Z" /></Svg></TabGlyphFrame>;
+}
+export function TabGiftIcon({ size, focused }: TabNavIconProps) {
+  const { dim, ink } = useIcon(size);
+  return <TabGlyphFrame dim={dim} focused={focused} ink={ink}>
+    <Svg width={dim} height={dim} viewBox="0 0 24 24" fill="none" stroke={ink} strokeWidth={TAB_ICON_STROKE} strokeLinecap="round" strokeLinejoin="round">
+      <Path d="M4 10h16v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Zm-1-4h18v4H3Zm9 0v15M12 6c-4.4 0-6.5-.3-6.5-2A2 2 0 0 1 7.7 2C9.6 2 11 4 12 6Zm0 0c4.4 0 6.5-.3 6.5-2a2 2 0 0 0-2.2-2C14.4 2 13 4 12 6Z" />
+    </Svg>
+  </TabGlyphFrame>;
 }
 export function TabLensIcon(props: TabNavIconProps) { return <StrokeGlyph {...props} kind="lens" />; }
 export function TabAyWebsIcon(props: TabNavIconProps) { return <StrokeGlyph {...props} kind="search" />; }

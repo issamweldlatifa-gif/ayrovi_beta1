@@ -1,10 +1,9 @@
 /**
- * Verrou de la barre de navigation transparente à 5 onglets (style Zalando) et de Sonim.
+ * Contrat des six onglets de navigation et de Sonim.
  *
  * Garantit :
- *   1. l'ordre exact `index` · `lens` · `aywebs` · `social` · `sonim` · `account` (+ `cart` masqué) ;
- *   2. le style flottant haute transparence à coins arrondis compacts (`TAB_BAR_GLASS`,
- *      `theme.radius.md`, `tabBarBackground`, `theme.elevation.none` sans ombre interne Android) ;
+ *   1. l'ordre exact `index` · `lens` · `sonim` · `aywebs` · `gift-cards` · `account` (+ `social` et `cart` masqués) ;
+ *   2. la surface opaque bord à bord, sans ombre interne Android ;
  *   3. les icônes vectorielles officielles intégrées (`TabNavIcons`, `react-native-svg`)
  *      de taille égale (`24 × 24` pt) et le médaillon `AYWEBs` `24 × 24` sans fond gris (`background={null}`) ;
  *   4. la normalisation des outils Sonim (`get_order_status`, `calculate_price`,
@@ -26,14 +25,14 @@ import {
 
 const ROOT = path.resolve(__dirname, '..');
 
-describe('barre du bas transparente à coins arrondis compacts (5 onglets — style Zalando)', () => {
+describe('barre du bas opaque et bord à bord (six onglets)', () => {
   const layout = readFileSync(path.join(ROOT, 'app/(tabs)/_layout.tsx'), 'utf8');
   const navIcons = readFileSync(path.join(ROOT, 'src/design/TabNavIcons.tsx'), 'utf8');
   const tokensMobile = readFileSync(path.join(ROOT, 'src/design/tokens.mobile.ts'), 'utf8');
 
-  it('respecte l’ordre exact Accueil · Lens · Clean · AYWEBs · Profil (+ cart masqué) et masque la barre sur Lens, Sonim et Panier', () => {
+  it('respecte l’ordre exact Accueil · Lens · Clean · AYWEBs · Cartes cadeaux · Profil (+ cart masqué) et masque la barre sur Lens, Sonim et Panier', () => {
     const names = Array.from(layout.matchAll(/<Tabs\.Screen[\s\S]*?\bname="([^"]+)"/g), (m) => m[1]);
-    expect(names).toEqual(['index', 'lens', 'sonim', 'aywebs', 'account', 'social', 'cart']);
+    expect(names).toEqual(['index', 'lens', 'sonim', 'aywebs', 'gift-cards', 'account', 'social', 'cart']);
     expect(layout).toMatch(/name="cart"\s+options=\{\{\s*href:\s*null,\s*tabBarStyle:\s*\{\s*display:\s*'none'\s*\}/);
     expect(layout).toContain('backBehavior="history"');
     const lensBlock = /<Tabs\.Screen\s+name="lens"[\s\S]*?\/>/.exec(layout)?.[0] ?? '';

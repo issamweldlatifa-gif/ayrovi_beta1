@@ -2,8 +2,8 @@
  * Barre de navigation principale — correction officielle (29/10/2026) :
  * - Surface pleine opaque (`TAB_BAR_SURFACE`), zéro translucidité
  * - Posée bord à bord tout en bas de l'écran (`bottom: 0`, aucun espace sous la barre)
- * - 5 icônes vectorielles à trait fin de la même famille (`TabHomeIcon`, `TabLensIcon`,
- *   `TabAyWebsIcon` recherche monochrome, `TabSonimIcon` (Clean), `TabProfileIcon`) `24 × 24` pt
+ * - 6 icônes vectorielles à trait fin de la même famille (`TabHomeIcon`, `TabLensIcon`,
+ *   `TabAyWebsIcon` recherche monochrome, `TabSonimIcon` (Clean), `TabGiftIcon`, `TabProfileIcon`) `24 × 24` pt
  */
 import React from 'react';
 import { render } from '@testing-library/react-native';
@@ -16,6 +16,7 @@ import { registerScrollToTopHandler } from '../../src/features/shell/scrollToTop
 import {
   TabAyWebsIcon,
   TabHomeIcon,
+  TabGiftIcon,
   TabLensIcon,
   TabProfileIcon,
   TabSonimIcon,
@@ -102,7 +103,7 @@ function renderTabsBar() {
 }
 
 describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille d’icônes unifiée', () => {
-  it('applique une surface pleine opaque collée tout en bas (zéro espace dessous) et 5 icônes 28×28 de la même famille', () => {
+  it('applique une surface pleine opaque collée tout en bas (zéro espace dessous) et 6 icônes 28×28 de la même famille', () => {
     const tree = renderTabsBar();
     expect(mockCapturedScreenOptions).not.toBeNull();
 
@@ -119,11 +120,12 @@ describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille
       'lens',
       'sonim',
       'aywebs',
+      'gift-cards',
       'account',
       'social',
       'cart',
     ]);
-    for (const tabName of ['index', 'lens', 'sonim', 'aywebs', 'account']) {
+    for (const tabName of ['index', 'lens', 'sonim', 'aywebs', 'gift-cards', 'account']) {
       const entry = mockCapturedScreens.find((s) => s.name === tabName);
       const iconSlot = entry?.options.tabBarIconStyle as { width: number; height: number };
       expect(iconSlot.width).toBe(28);
@@ -132,8 +134,8 @@ describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille
 
     expect(mockCapturedScreenOptions?.tabBarShowLabel).toBe(false);
     expect(mockCapturedScreens.find(s => s.name === 'social')?.options.href).toBeNull();
-    expect(mockCapturedScreens.filter(s => s.options.href !== null)).toHaveLength(5);
-    for (const name of ['index', 'lens', 'sonim', 'aywebs', 'account']) {
+    expect(mockCapturedScreens.filter(s => s.options.href !== null)).toHaveLength(6);
+    for (const name of ['index', 'lens', 'sonim', 'aywebs', 'gift-cards', 'account']) {
       expect(mockCapturedScreens.find(s => s.name === name)?.options.tabBarAccessibilityLabel).toBeTruthy();
     }
     const aywebsEntry = mockCapturedScreens.find((s) => s.name === 'aywebs');
@@ -216,7 +218,7 @@ describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille
     (globalThis as any).__testSessionStatus = undefined;
   });
 
-  it('rend les 5 icônes vectorielles à trait fin sur une boîte 24×24 identique', () => {
+  it('rend les 6 icônes vectorielles à trait fin sur une boîte 24×24 identique', () => {
     const { toJSON } = render(
       <PrefsProvider>
         <ThemeProvider>
@@ -225,13 +227,14 @@ describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille
             <TabLensIcon color="#0A0A0A" size={24} />
             <TabAyWebsIcon color={AYWEBS_WORDMARK_TINT.light} size={24} />
             <TabSonimIcon color="#0A0A0A" size={24} focused />
+            <TabGiftIcon color="#0A0A0A" size={24} />
             <TabProfileIcon color="#0A0A0A" size={24} />
           </View>
         </ThemeProvider>
       </PrefsProvider>,
     );
     const root = toJSON() as { children?: Array<{ props?: { style?: { width?: number; height?: number } } }> };
-    expect(root.children).toHaveLength(5);
+    expect(root.children).toHaveLength(6);
     expect(JSON.stringify(root).match(/tab-selection-indicator/g)).toHaveLength(1);
     for (const slot of root.children ?? []) {
       expect(slot.props?.style?.width).toBe(24);
