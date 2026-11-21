@@ -34,8 +34,6 @@ export const ar = {
   'common.language': 'اللغة',
   'common.theme': 'المظهر',
 
-  'screen.account.subtitle': 'حسابك',
-  'screen.account.body': 'ملفك الشخصي وعناوينك ومفضّلاتك وطلباتك في مكان واحد.',
 
   'theme.system': 'تلقائي',
   'theme.light': 'فاتح',
@@ -98,21 +96,10 @@ export const ar = {
   'auth.error.register': 'يرجى التحقّق من الاسم والبريد الإلكتروني وكلمة المرور (8 أحرف على الأقل).',
   'auth.error.noSession': 'لم يفتح الخادم جلسة للتطبيق لأن نسخته الحالية أقدم من التطبيق. يجب تحديث الخادم قبل إتمام تسجيل الدخول.',
 
-  'account.guest.title': 'لم يتم تسجيل الدخول',
   'account.guest.body': 'سجّل الدخول للاطلاع على طلباتك وعناوينك ومفضّلاتك المرتبطة بحسابك.',
   'account.signIn': 'تسجيل الدخول',
   'account.signOut': 'تسجيل الخروج',
-  'account.signedInAs': 'مسجّل الدخول باسم',
   'account.unverified': 'تعذّر تأكيد الجلسة حالياً — يرجى التحقّق من اتصالك.',
-  'account.stats.orders': 'الطلبات',
-  'account.stats.favorites': 'المفضّلة',
-  'account.stats.addresses': 'العناوين',
-  'account.stats.cart': 'في السلّة',
-  'account.stats.spent': 'إجمالي المشتريات (د.ت)',
-  'account.recentOrders': 'أحدث الطلبات',
-  'account.allOrders': 'جميع طلباتي',
-  'account.phone.verified': 'الهاتف موثّق',
-  'account.phone.unverified': 'الهاتف غير موثّق',
 
   'orders.title': 'طلباتي',
   'orders.subtitle': 'سجل جميع طلباتك ومتابعتها.',
@@ -132,13 +119,19 @@ export const ar = {
 
   'loading.server': 'جارٍ التحميل…',
 
-  'account.menu.profile': 'ملفي الشخصي',
+  'account.hub.title': 'حسابي',
+  'account.hub.loyalty': 'برنامج الولاء',
+  'account.hub.soon': 'قريبًا',
+  'account.hub.overview': 'ملخّص',
+  'account.hub.personal': 'بياناتي الشخصية',
+  'account.hub.preferences': 'تفضيلاتي',
+  'account.hub.more': 'المزيد',
+  'account.hub.privacy': 'البيانات والخصوصية',
   'account.menu.addresses': 'عناويني',
   'account.menu.favorites': 'مفضّلتي',
   'account.menu.notifications': 'الإشعارات',
   'account.menu.security': 'الأمان',
   'account.menu.orders': 'طلباتي',
-  'account.menu.title': 'إدارة حسابي',
 
   'profile.title': 'ملفي الشخصي',
   'profile.subtitle': 'البيانات الشخصية والبريد الإلكتروني وتفضيلات العروض.',
@@ -511,7 +504,6 @@ export const ar = {
   'order.payFailed': 'تعذّر إتمام عملية الدفع.',
   'order.history': 'سجل التحديثات',
 
-  'account.menu.preferences': 'التفضيلات',
   'preferences.title': 'التفضيلات',
   'preferences.subtitle': 'إعدادات الإشعارات والمظهر المرتبطة بحسابك.',
   'preferences.channels': 'إشعارات الحساب',

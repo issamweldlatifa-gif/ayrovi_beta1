@@ -1,175 +1,120 @@
-/**
- * Onglet Compte — l'état RÉEL de la session, puis les réglages.
- *
- * Trois situations affichées différemment, parce qu'elles ne veulent pas dire
- * la même chose :
- *   1. pas de session  → invitation à se connecter, avec ce qu'on y gagne ;
- *   2. session valide  → profil, chiffres du compte, dernières commandes ;
- *   3. session non confirmée par le serveur (réseau coupé) → on le dit, au lieu
- *      d'afficher des commandes vides qui laisseraient croire à un compte neuf.
- */
-import { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useQuery } from '@tanstack/react-query';
+import { fetchOverview } from '@/api/account';
+import { AppImage } from '@/design/appImage';
 import { AppScreen } from '@/design/layout';
-import { AppHeader } from '@/features/shell/AppHeader';
-import { AppText, Button, Card, KeyValue, LinkRow, SectionHeader } from '@/design/ui';
-import { ErrorBlock } from '@/design/states';
-import { ListSkeleton } from '@/design/skeleton';
 import { rowDirectionFor } from '@/design/layoutLogic';
+import { LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
-import { useI18n } from '@/i18n';
-import { fetchOverview, type AccountOverview, type RecentOrder } from '@/api/account';
+import { BRAND } from '@/design/tokens.generated';
+import { RADIUS } from '@/design/tokens.mobile';
+import { AppText, Button } from '@/design/ui';
+import { useI18n, type TranslationKey } from '@/i18n';
 import { useSession } from '@/state/session';
-import { formatAmount, formatMoney } from '@/format/money';
 
-/** Ligne compacte d'une commande récente (les détails vivent dans /orders). */
-function OrderRow({ order }: { order: RecentOrder }) {
-  const theme = useTheme();
-  const t = useI18n().t;
-  return (
-    <View style={[styles.order, { borderTopColor: theme.colors.line }]}>
-      <View style={styles.orderHead}>
-        <AppText variant="label" >{order.orderNumber || order.id}</AppText>
-        <AppText variant="caption" color={theme.status.info.fg}>{order.status}</AppText>
-      </View>
-      <AppText variant="caption" color={theme.colors.muted}>
-        {t('orders.items', { count: order.itemCount })} · {t('orders.total')} {formatMoney(order.totalTnd)}
-      </AppText>
-      {order.createdAt ? (
-        <AppText variant="caption" color={theme.colors.muted}>{order.createdAt.slice(0, 10)}</AppText>
-      ) : null}
-    </View>
-  );
-}
-
-function SignedIn({ overview, pending }: { overview: AccountOverview | null; pending: boolean }) {
-  const theme = useTheme();
-  const t = useI18n().t;
-  const { signOut, account, verified, notice } = useSession();
-  const [busy, setBusy] = useState(false);
-  const unread = overview?.counts.unreadNotifications ?? 0;
-  const shown = overview?.account ?? account;
-
-  return (
-    <>
-      <Card
-        title={t('account.signedInAs')}
-        hint={verified ? undefined : t('account.unverified')}
-      >
-        <View style={[styles.identity, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-          <Ionicons name="person-circle-outline" size={theme.iconSize.xl} color={theme.colors.muted} accessibilityElementsHidden />
-          <View style={styles.identityText}>
-            <AppText variant="h3" >{shown?.displayName || '—'}</AppText>
-            <AppText variant="caption" color={theme.colors.muted}>{shown?.email || shown?.phone || ''}</AppText>
-            <AppText variant="caption" color={shown?.phoneVerified ? theme.status.success.fg : theme.colors.muted}>
-              {shown?.phoneVerified ? t('account.phone.verified') : t('account.phone.unverified')}
-            </AppText>
-          </View>
-        </View>
-        {notice ? <AppText variant="caption" color={theme.status.danger.fg}>{notice}</AppText> : null}
-        <Button
-          label={t('account.signOut')}
-          tone="danger"
-          busy={busy}
-          onPress={() => { setBusy(true); signOut().finally(() => setBusy(false)); }}
-        />
-      </Card>
-
-      {/* Le menu du compte : chaque ligne ouvre un écran réel, aucune n'est morte. */}
-      <Card title={t('account.menu.title')}>
-        <LinkRow icon="person-outline" label={t('account.menu.profile')} onPress={() => router.push('/account/profile')} />
-        <LinkRow icon="cube-outline" label={t('account.menu.orders')} onPress={() => router.push('/orders')} />
-        <LinkRow icon="location-outline" label={t('account.menu.addresses')}
-          value={overview ? String(overview.counts.addresses) : undefined}
-          onPress={() => router.push('/account/addresses')} />
-        <LinkRow icon="heart-outline" label={t('account.menu.favorites')}
-          value={overview ? String(overview.counts.favorites) : undefined}
-          onPress={() => router.push('/account/favorites')} />
-        <LinkRow icon="notifications-outline" label={t('account.menu.notifications')}
-          value={unread > 0 ? String(unread) : undefined}
-          onPress={() => router.push('/account/notifications')} />
-        <LinkRow icon="options-outline" label={t('account.menu.preferences')} onPress={() => router.push('/account/preferences')} />
-        <LinkRow icon="lock-closed-outline" label={t('account.menu.security')} onPress={() => router.push('/account/security')} />
-        <LinkRow icon="information-circle-outline" label={t('account.menu.about')} onPress={() => router.push('/account/about')} />
-      </Card>
-
-      {pending ? <ListSkeleton count={3} /> : null}
-      {overview ? (
-        <Card title={t('account.stats.orders')}>
-          <KeyValue label={t('account.stats.orders')} value={String(overview.counts.orders)} />
-          <KeyValue label={t('account.stats.favorites')} value={String(overview.counts.favorites)} />
-          <KeyValue label={t('account.stats.addresses')} value={String(overview.counts.addresses)} />
-          <KeyValue label={t('account.stats.cart')} value={String(overview.counts.cartItems)} />
-          <KeyValue label={t('account.stats.spent')} value={formatAmount(overview.totalSpent)} />
-        </Card>
-      ) : null}
-
-      {overview && overview.recentOrders.length > 0 ? (
-        <Card title={t('account.recentOrders')}>
-          {overview.recentOrders.map((order) => <OrderRow key={order.id} order={order} />)}
-          <Button label={t('account.allOrders')} tone="quiet" onPress={() => router.push('/orders')} />
-        </Card>
-      ) : null}
-    </>
-  );
-}
-
-/**
- * Filet de sécurité de l'écran : si le rendu de le compte lève, expo-router
- * affiche le repli (arabe + français, bouton « عاود ») à la place de l'écran —
- * l'application reste ouverte, l'utilisateur peut revenir. Voir
- * `src/design/AppErrorBoundary.tsx` et la cause du 25/10/2026 (ordre des hooks).
- */
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
+
+const loyaltyImage = require('../../assets/images/account-loyalty-banner.jpg');
+type MenuItem = { id: string; label: TranslationKey; icon: keyof typeof Ionicons.glyphMap; route: Href; public?: boolean };
+const groups = [
+  { id: 'overview', title: 'account.hub.overview', items: [
+    { id: 'notifications', label: 'account.menu.notifications', icon: 'notifications-outline', route: '/account/notifications' },
+    { id: 'orders', label: 'account.menu.orders', icon: 'cube-outline', route: '/orders' },
+    { id: 'profile', label: 'account.hub.personal', icon: 'person-outline', route: '/account/profile' },
+    { id: 'addresses', label: 'account.menu.addresses', icon: 'location-outline', route: '/account/addresses' },
+  ] },
+  { id: 'preferences', title: 'account.hub.preferences', items: [
+    { id: 'favorites', label: 'account.menu.favorites', icon: 'heart-outline', route: '/account/favorites' },
+    { id: 'preferences', label: 'preferences.title', icon: 'options-outline', route: '/account/preferences' },
+  ] },
+  { id: 'more', title: 'account.hub.more', items: [
+    { id: 'about', label: 'account.menu.about', icon: 'information-circle-outline', route: '/account/about', public: true },
+  ] },
+  { id: 'privacy', title: 'account.hub.privacy', items: [
+    { id: 'security', label: 'account.menu.security', icon: 'lock-closed-outline', route: '/account/security' },
+    { id: 'privacy', label: 'auth.legal.privacy', icon: 'shield-checkmark-outline', route: '/legal/privacy', public: true },
+  ] },
+] satisfies ReadonlyArray<{ id: string; title: TranslationKey; items: MenuItem[] }>;
 
 export default function AccountScreen() {
   const { t, locale } = useI18n();
-  const { status, account } = useSession();
+  const theme = useTheme();
+  const { left, right } = useSafeAreaInsets();
+  const { status, account, verified, notice, signOut } = useSession();
+  const [busy, setBusy] = useState(false);
   const signedIn = status === 'signedIn';
-
-  const overviewQuery = useQuery({
-    queryKey: ['account', 'overview', account?.id ?? 'anon'],
+  const overview = useQuery({
+    queryKey: ['account', 'overview', account?.id ?? 'anon', locale],
     queryFn: ({ signal }) => fetchOverview({ signal, headers: { 'Accept-Language': locale } }),
-    enabled: signedIn,
+    enabled: signedIn && Boolean(account?.id),
     staleTime: 30_000,
   });
+  const unread = signedIn && verified ? overview.data?.counts.unreadNotifications : undefined;
+  const direction = rowDirectionFor(theme.isRTL);
+  const surface = theme.colors.surface;
+  const open = (item: MenuItem) => router.push(item.public || signedIn ? item.route : '/sign-in');
 
-  const refresh = useCallback(() => { if (signedIn) overviewQuery.refetch(); }, [signedIn, overviewQuery]);
-
-  return (
-    <AppScreen
-      overlayHeader={({ scrolled }) => <AppHeader scrolled={scrolled} />}
-      hasBottomBar
-      chrome onRefresh={refresh} refreshing={overviewQuery.isRefetching}>
-
-      {/*
-        رسالة القسم — هاذا النصّ كان يعيش في هيدر `Screen` القديم.
-        صار `SectionHeader` (§18.2-3): نفس المحتوى، بمكوّن موحّد.
-      */}
-      <SectionHeader title={t('screen.account.subtitle')} hint={t('screen.account.body')} />
-      {!signedIn ? (
-        <Card title={t('account.guest.title')} hint={t('account.guest.body')}>
+  return <AppScreen testID="account-hub" hasBottomBar padded={false} keyboard={false} chrome={false}
+    onRefresh={signedIn ? () => { void overview.refetch(); } : undefined} refreshing={overview.isRefetching}
+    contentStyle={styles.scroll} style={{ backgroundColor: surface, paddingLeft: left, paddingRight: right }}>
+    <View style={styles.frame}>
+      <View testID="account-loyalty-banner" style={[styles.banner, { flexDirection: direction }]}>
+        <AppImage localSource={loyaltyImage} decorative background={BRAND.lightGray} contentPosition={{ left: '50%', top: '32%' }}
+          style={[StyleSheet.absoluteFill, theme.isRTL && styles.flip]} />
+        <View style={styles.bannerCopy}>
+          <AppText variant="captionStrong" color={BRAND.black}>ZAYROVI</AppText>
+          <AppText variant="subtitle" color={BRAND.black}>{t('account.hub.loyalty')}</AppText>
+          <AppText variant="captionStrong" color={BRAND.black} style={styles.loyaltyStatus}>{t('account.hub.soon')}</AppText>
+        </View>
+      </View>
+      <View style={styles.identity}>
+        <AppText accessibilityRole="header" variant="h2">{t('account.hub.title')}</AppText>
+        {status === 'loading' ? <LoadingBlock /> : signedIn ? <>
+          {account?.displayName ? <AppText variant="bodyStrong">{account.displayName}</AppText> : null}
+          {!verified ? <AppText variant="caption" color={theme.colors.muted}>{t('account.unverified')}</AppText> : null}
+          {notice ? <AppText variant="caption" accessibilityRole="alert" color={theme.status.danger.fg}>{notice}</AppText> : null}
+        </> : <>
+          <AppText variant="bodySmall" color={theme.colors.muted}>{t('account.guest.body')}</AppText>
           <Button label={t('account.signIn')} onPress={() => router.push('/sign-in')} />
-        </Card>
-      ) : overviewQuery.isError ? (
-        <>
-          <ErrorBlock error={overviewQuery.error} onRetry={() => overviewQuery.refetch()} />
-          <SignedIn overview={null} pending={false} />
-        </>
-      ) : (
-        <SignedIn overview={overviewQuery.data ?? null} pending={overviewQuery.isLoading} />
-      )}
-
-    </AppScreen>
-  );
+        </>}
+      </View>
+      {status === 'loading' ? null : groups.map(group => <View key={group.id} testID={`account-group-${group.id}`}>
+        <View style={[styles.sectionTitle, { backgroundColor: theme.mode === 'dark' ? theme.colors.canvas : BRAND.lightGray }]}>
+          <AppText variant="subtitle" accessibilityRole="header">{t(group.title)}</AppText>
+        </View>
+        <View style={styles.rows}>
+          {group.items.map((item, index) => <Pressable key={item.id} testID={`account-link-${item.id}`} accessibilityRole="link"
+            onPress={() => open(item)} style={({ pressed }) => [styles.row, { flexDirection: direction, borderTopColor: theme.colors.line },
+              index > 0 && styles.divider, pressed && { opacity: theme.opacity.subtle }]}>
+            <Ionicons name={item.icon} size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden />
+            <AppText variant="bodyStrong" style={styles.label}>{t(item.label)}</AppText>
+            {item.id === 'notifications' && unread && unread > 0 ? <AppText variant="captionStrong" color={theme.colors.muted}>{unread}</AppText> : null}
+            <Ionicons name={theme.isRTL ? 'chevron-back' : 'chevron-forward'} size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
+          </Pressable>)}
+        </View>
+      </View>)}
+      {signedIn ? <View style={styles.signOut}>
+        <Button label={t('account.signOut')}
+          tone="danger" testID="account-sign-out" busy={busy} onPress={() => { setBusy(true); void signOut().finally(() => setBusy(false)); }} />
+      </View> : null}
+    </View>
+  </AppScreen>;
 }
 
 const styles = StyleSheet.create({
-  identity: { alignItems: 'center', gap: 12, paddingVertical: 8 },
-  identityText: { flex: 1, gap: 2 },
-  order: { borderTopWidth: StyleSheet.hairlineWidth, paddingVertical: 8, gap: 2 },
-  orderHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  scroll: { gap: 0 }, frame: { width: '100%', maxWidth: 640, alignSelf: 'center' },
+  banner: { minHeight: 112, alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, overflow: 'hidden', backgroundColor: BRAND.lightGray },
+  flip: { transform: [{ scaleX: -1 }] },
+  bannerCopy: { width: '58%', gap: 4, alignItems: 'flex-start' },
+  loyaltyStatus: { backgroundColor: BRAND.white, paddingHorizontal: 8, paddingVertical: 2, borderRadius: RADIUS.full },
+  identity: { paddingHorizontal: 20, paddingVertical: 20, gap: 8, alignItems: 'stretch' },
+  sectionTitle: { paddingHorizontal: 20, paddingVertical: 10 },
+  rows: { paddingHorizontal: 20 },
+  row: { minHeight: 56, alignItems: 'center', gap: 16, paddingVertical: 10 },
+  divider: { borderTopWidth: StyleSheet.hairlineWidth },
+  label: { flex: 1, minWidth: 0 }, signOut: { paddingHorizontal: 20, paddingTop: 20 },
 });

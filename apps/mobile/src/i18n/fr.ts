@@ -34,8 +34,6 @@ export const fr = {
   'common.language': 'Langue',
   'common.theme': 'Thème',
 
-  'screen.account.subtitle': 'Votre compte',
-  'screen.account.body': 'Retrouvez votre profil, vos adresses, vos favoris et vos commandes.',
 
 
 
@@ -101,21 +99,10 @@ export const fr = {
   'auth.error.register': 'Vérifiez le nom, l’adresse e-mail et le mot de passe (8 caractères minimum).',
   'auth.error.noSession': 'Le serveur n’a pas ouvert de session pour l’application : sa version ne connaît pas l’application. Le serveur doit être mis à jour avant que la connexion fonctionne.',
 
-  'account.guest.title': 'Aucun compte connecté',
   'account.guest.body': 'Connectez-vous pour retrouver vos commandes, vos adresses et vos favoris — les mêmes que sur le site.',
   'account.signIn': 'Se connecter',
   'account.signOut': 'Se déconnecter',
-  'account.signedInAs': 'Connecté en tant que',
   'account.unverified': 'Session non confirmée par le serveur — vérifiez votre connexion.',
-  'account.stats.orders': 'Commandes',
-  'account.stats.favorites': 'Favoris',
-  'account.stats.addresses': 'Adresses',
-  'account.stats.cart': 'Articles au panier',
-  'account.stats.spent': 'Total dépensé (TND)',
-  'account.recentOrders': 'Dernières commandes',
-  'account.allOrders': 'Toutes mes commandes',
-  'account.phone.verified': 'Téléphone vérifié',
-  'account.phone.unverified': 'Téléphone non vérifié',
 
   'orders.title': 'Mes commandes',
   'orders.subtitle': 'Le même historique que sur le site.',
@@ -136,13 +123,19 @@ export const fr = {
   /* ── États de chargement — un seul texte par langue, plus d’objets {fr, ar} en dur ── */
   'loading.server': 'Chargement…',
 
-  'account.menu.profile': 'Mon profil',
+  'account.hub.title': 'Mon compte',
+  'account.hub.loyalty': 'Programme de fidélité',
+  'account.hub.soon': 'Bientôt',
+  'account.hub.overview': 'Résumé',
+  'account.hub.personal': 'Données personnelles',
+  'account.hub.preferences': 'Mes préférences',
+  'account.hub.more': 'Plus',
+  'account.hub.privacy': 'Données et confidentialité',
   'account.menu.addresses': 'Mes adresses',
   'account.menu.favorites': 'Mes favoris',
   'account.menu.notifications': 'Notifications',
   'account.menu.security': 'Sécurité',
   'account.menu.orders': 'Mes commandes',
-  'account.menu.title': 'Gérer mon compte',
 
   'profile.title': 'Mon profil',
   'profile.subtitle': 'Nom, e-mail et offres — le même compte que sur le site.',
@@ -511,7 +504,6 @@ export const fr = {
   'order.payFailed': 'L’opération de paiement n’a pas abouti.',
 'order.history': 'Historique',
 
-  'account.menu.preferences': 'Préférences',
   'preferences.title': 'Préférences',
   'preferences.subtitle': 'Ce que vous acceptez de recevoir — réglage du compte, pas de l’appareil.',
   'preferences.channels': 'Notifications du compte',
