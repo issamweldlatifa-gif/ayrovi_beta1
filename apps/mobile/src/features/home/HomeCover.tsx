@@ -141,8 +141,7 @@ export const HomeCover = memo(function HomeCover() {
   if (cover.isPending || !cover.data || !cover.data.enabled) return null;
 
   const isPublicationEntry = cover.data.destination === 'publications';
-  const sectionTitle = isPublicationEntry ? t('home.publicationsEntry.title') : '';
-  const title = cover.data.title === sectionTitle ? '' : cover.data.title;
+  const title = cover.data.title || (isPublicationEntry ? t('home.publicationsEntry.title') : '');
   const ctaLabel = cover.data.ctaLabel || (locale === 'ar' ? 'اكتشف' : 'Je découvre');
   const route = DESTINATION_ROUTES[cover.data.destination] ?? '/publications';
   const pauseLabel = userPaused
@@ -154,10 +153,8 @@ export const HomeCover = memo(function HomeCover() {
       testID="home-cover"
       onLayout={onLayout}
       style={[styles.section, { marginHorizontal: -gutter }]}
-      accessibilityLabel={title || sectionTitle || undefined}
+      accessibilityLabel={title || undefined}
     >
-      {sectionTitle ? <AppText testID="home-publications-entry-label" accessibilityRole="header" variant="h2"
-        color={theme.colors.ink} style={[styles.heading, { paddingHorizontal: gutter }]}>{sectionTitle}</AppText> : null}
       {/* Plein écran, bords FRANCS (référence splash) : aucun rayon, aucune bande. */}
       <View style={[styles.media, { aspectRatio: COVER_ASPECT }]}>
         <FlatList
@@ -210,6 +207,10 @@ export const HomeCover = memo(function HomeCover() {
           pointerEvents="none"
         />
         <View style={styles.overlay} pointerEvents="box-none">
+          {isPublicationEntry && title !== t('home.publicationsEntry.title') ? (
+            <AppText testID="home-publications-entry-label" variant="captionStrong" color={theme.colors.onMedia}
+              style={styles.title}>{t('home.publicationsEntry.title')}</AppText>
+          ) : null}
           {title ? (
             <AppText
               testID="home-cover-title"
@@ -256,7 +257,6 @@ const styles = StyleSheet.create({
   // Marge négative = celle de l'écran : le média vit PLEIN ÉCRAN, bords francs,
   // collé sous les onglets comme le splash de référence.
   section: { paddingTop: 0, paddingBottom: 16 },
-  heading: { paddingVertical: 12 },
   media: { width: '100%', overflow: 'hidden' },
   fill: { ...StyleSheet.absoluteFill },
   veil: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '48%' },

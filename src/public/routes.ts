@@ -1,4 +1,3 @@
-import { publicAywebsUpcoming } from '../services/aywebsUpcoming';
 import { STORY_CARD_COLUMNS, readPublishedStoryEditorial } from '../services/storyEditorial';
 import { legacyReferenceArtworkFilter } from '../magazine/cataloguePublications';
 import { readShareCard } from '../magazine/publicShare';
@@ -721,11 +720,6 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const story = readPublishedStoryEditorial(db, req.params.id, now);
     if (!story) return res.status(404).json({ success: false, error: 'Story indisponible.' });
     return res.json({ success: true, data: story, serverTime: now });
-  });
-
-  router.get('/aywebs-upcoming', (_req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, data: publicAywebsUpcoming(db, new Date()) });
   });
 
   /** Bloc « Stories » de la page d'accueil — réglages du conteneur (Admin → Stories). */

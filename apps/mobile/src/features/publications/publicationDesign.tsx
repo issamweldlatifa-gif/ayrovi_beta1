@@ -86,7 +86,6 @@ const drawings: Record<string, string> = {
   'bag-outline': 'M4 7h16l1.5 14h-19L4 7Zm4 2V6a4 4 0 0 1 8 0v3',
   'search-outline': 'M20 20l-5-5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z',
   'person-outline': 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM3 21c0-9 18-9 18 0H3Z',
-  'scan-outline': 'M3 9V5a2 2 0 0 1 2-2h4m6 0h4a2 2 0 0 1 2 2v4m0 6v4a2 2 0 0 1-2 2h-4m-6 0H5a2 2 0 0 1-2-2v-4',
   'volume-mute': 'm3 9 4 0 5-5v16l-5-5H3V9Zm13 0 5 6m0-6-5 6',
   'volume-mute-outline': 'm3 9 4 0 5-5v16l-5-5H3V9Zm13 0 5 6m0-6-5 6',
   'volume-high':

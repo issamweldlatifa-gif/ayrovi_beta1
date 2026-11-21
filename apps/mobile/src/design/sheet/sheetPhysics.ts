@@ -7,12 +7,13 @@
 
 /**
  * نابض الفتح والإغلاق: سريع، بلا ارتداد زائد، فيبدو ثابتاً.
- * Léger et sans rebond, partagé entre les feuilles et les modales historiques.
+ * 11/11 : أخفّ (stiffness 420، mass 0.8) — الدرج يستقرّ في ~280ms بدل ~360ms،
+ * كيف إنستغرام/فيسبوك ؛ damping مرفوع شويّة باش يبقى بلا ارتداد.
  */
 export const SHEET_SPRING = {
-  damping: 34,
-  stiffness: 480,
-  mass: 0.7,
+  damping: 32,
+  stiffness: 420,
+  mass: 0.8,
   overshootClamping: true,
 } as const;
 

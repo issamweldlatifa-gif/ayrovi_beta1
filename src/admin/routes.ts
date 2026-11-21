@@ -1,4 +1,3 @@
-import { AYWEBS_UPCOMING_KEY, readAywebsUpcoming, writeAywebsUpcoming, upcomingStoreChoices } from '../services/aywebsUpcoming';
 import { isPublicationCampaign } from '../../shared/publicationCampaign';
 import { releaseCatalogueReservations } from '../catalogue/localSale';
 import { isGeneratedPublicationEditorialAsset } from '../../shared/publicationLayouts';
@@ -820,18 +819,6 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       new Date().toISOString());
     audit(db, req, 'UPDATE', 'LENS_HERO', 'global', null, null);
     res.json({ success: true, data: lensRowForApi(db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'")) });
-  });
-
-  router.get('/aywebs-upcoming', requireAdmin(db, 'content:read'), (_req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, data: readAywebsUpcoming(db), choices: upcomingStoreChoices() });
-  });
-  router.put('/aywebs-upcoming', requireAdmin(db, 'content:write'), (req, res) => {
-    const previous = readAywebsUpcoming(db);
-    const next = writeAywebsUpcoming(db, req.body, new Date());
-    if (!next) return res.status(400).json({ success: false, error: 'Liste, date, image ou boutique non compatible.' });
-    audit(db, req, 'UPDATE', 'AYWEBS_UPCOMING', 'global', previous, next);
-    res.json({ success: true, data: next });
   });
 
   /* ==================== STORIES — بلوك الصفحة الرئيسية (مرجع Zalando) ==================== */
@@ -2544,13 +2531,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   router.get('/settings', requireAdmin(db, 'settings:read'), (req, res) => {
     const category = typeof req.query.category === 'string' ? req.query.category : '';
     const rows = category ? db.all<any>('SELECT * FROM settings WHERE category=? ORDER BY label', category) : db.all<any>('SELECT * FROM settings ORDER BY category,label');
-    res.json({ success: true, data: rows.filter(row => row.setting_key !== AYWEBS_UPCOMING_KEY).map((row) => ({ ...row, setting_value: row.value_type === 'JSON' ? (row.setting_key === 'interface_config' ? enforceBrandIdentity(JSON.parse(row.setting_value)) : row.setting_key === 'site_theme' ? enforceLegacyTheme(JSON.parse(row.setting_value)) : JSON.parse(row.setting_value)) : row.value_type === 'NUMBER' ? Number(row.setting_value) : row.value_type === 'BOOLEAN' ? row.setting_value === 'true' : row.setting_value })) });
+    res.json({ success: true, data: rows.map((row) => ({ ...row, setting_value: row.value_type === 'JSON' ? (row.setting_key === 'interface_config' ? enforceBrandIdentity(JSON.parse(row.setting_value)) : row.setting_key === 'site_theme' ? enforceLegacyTheme(JSON.parse(row.setting_value)) : JSON.parse(row.setting_value)) : row.value_type === 'NUMBER' ? Number(row.setting_value) : row.value_type === 'BOOLEAN' ? row.setting_value === 'true' : row.setting_value })) });
   });
 
   router.put('/settings/:id', requireAdmin(db, 'settings:write'), (req, res) => {
     const current = db.get<any>('SELECT * FROM settings WHERE id=?', req.params.id);
     if (!current) return res.status(404).json({ success: false, error: 'Paramètre introuvable.' });
-    if (current.setting_key === AYWEBS_UPCOMING_KEY) return res.status(409).json({ success: false, error: 'Utilisez l’éditeur AYWEBs Prochainement.' });
     let received = req.body?.value;
     if (current.setting_key === 'social_commerce_editions_v1') return res.status(409).json({ success: false, error: 'Utilisez l’éditeur Social Commerce.' });
     if (current.setting_key === 'payment_methods') {

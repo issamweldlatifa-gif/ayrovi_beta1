@@ -15,7 +15,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import {
   Animated,
-  Easing,
   PanResponder,
   ScrollView,
   StyleSheet,
@@ -174,7 +173,6 @@ export function AppSheet({
     Animated.timing(translate, {
       toValue: sheetHeight,
       duration: MOTION.fast,
-      easing: Easing.in(Easing.cubic),
       useNativeDriver: true,
     }).start(({ finished }) => {
       if (finished) onClosedRef.current?.();

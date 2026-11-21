@@ -32,15 +32,15 @@ export const StoriesSection = memo(function StoriesSection() {
   if (!settings?.enabled || !rows.length || showcase.isError || stories.isError) return null;
 
   return <FullBleed>
-    <View testID="home-stories" style={styles.group}>
+    <View testID="home-stories" style={styles.section}>
       <View style={[styles.heading, { paddingHorizontal: gutter }]}>
-        <AppText variant="h2" accessibilityRole="header" color={theme.colors.ink}>{local(settings.title, settings.titleAr) || t('sections.stories')}</AppText>
-        {settings.subtitle ? <AppText color={theme.colors.secondary}>{local(settings.subtitle, settings.subtitleAr)}</AppText> : null}
+        {settings.title ? <AppText variant="h3" color={FOOTER_THEME.paper}>{local(settings.title, settings.titleAr)}</AppText> : null}
+        {settings.subtitle ? <AppText variant="h3" color={FOOTER_THEME.paper}>{local(settings.subtitle, settings.subtitleAr)}</AppText> : null}
         {settings.ctaLabel ? <Pressable testID="stories-explore" accessibilityRole="button" onPress={() => router.push('/stories')} style={styles.cta}>
-          <AppText variant="body" color={theme.colors.ink}>{local(settings.ctaLabel, settings.ctaLabelAr)} {theme.isRTL ? '←' : '→'}</AppText>
+          <AppText variant="body" color={FOOTER_THEME.paper}>{local(settings.ctaLabel, settings.ctaLabelAr)} {theme.isRTL ? '←' : '→'}</AppText>
         </Pressable> : null}
       </View>
-      <View style={styles.section}><FlatList horizontal data={rows} keyExtractor={item => item.id}
+      <FlatList horizontal data={rows} keyExtractor={item => item.id}
         testID="stories-editorial-rail" accessibilityLabel={t('sections.stories')}
         showsHorizontalScrollIndicator={false} inverted={theme.isRTL}
         snapToOffsets={carouselSnapOffsets(rows.length, stride, centeringOffset, maxScroll)}
@@ -56,16 +56,15 @@ export const StoriesSection = memo(function StoriesSection() {
             <AppText variant="bodyStrong" color={FOOTER_THEME.paper} numberOfLines={2}>{local(item.title, item.titleAr)}</AppText>
             {item.description ? <AppText variant="body" color={FOOTER_THEME.paper} numberOfLines={3}>{local(item.description, item.descriptionAr)}</AppText> : null}
           </LinearGradient>
-        </Pressable>} /></View>
+        </Pressable>} />
     </View>
   </FullBleed>;
 });
 
 const styles = StyleSheet.create({
-  group: { gap: 12 },
-  section: { backgroundColor: FOOTER_THEME.ink, paddingVertical: 16 },
+  section: { backgroundColor: FOOTER_THEME.ink, paddingVertical: 24, gap: 24 },
   heading: { gap: 2 },
-  cta: { minHeight: 44, justifyContent: 'center' },
+  cta: { marginTop: 16, minHeight: 44, justifyContent: 'center' },
   card: { overflow: 'hidden', justifyContent: 'flex-end' },
   caption: { paddingTop: 64, paddingHorizontal: 12, paddingBottom: 12, gap: 4 },
 });

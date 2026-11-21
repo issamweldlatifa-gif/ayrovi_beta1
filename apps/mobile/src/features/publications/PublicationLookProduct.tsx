@@ -10,8 +10,8 @@ import { useT } from '@/i18n';
 import { PUBLICATION_TYPE, PublicationIcon, PublicationText } from './publicationDesign';
 import { openPublicationProduct } from './publicationProductNavigation';
 
-export function PublicationLookProduct({ item, tileWidth, saved, onFavorite, dark = false }: {
-  item: LinkedProduct; tileWidth?: number; saved: boolean; dark?: boolean; onFavorite: () => void;
+export function PublicationLookProduct({ item, tileWidth, saved, onFavorite }: {
+  item: LinkedProduct; tileWidth?: number; saved: boolean; onFavorite: () => void;
 }) {
   const t = useT();
   const { isRTL } = useTheme();
@@ -19,25 +19,23 @@ export function PublicationLookProduct({ item, tileWidth, saved, onFavorite, dar
   const direction = rowDirectionFor(isRTL);
   const compare = item.compareAtPrice && item.compareAtPrice > item.price ? item.compareAtPrice : null;
   const discount = compare ? Math.round(100 * (1 - item.price / compare)) : 0;
-  const sale = STATUS.danger[dark ? 'dark' : 'light'].fg;
-  const ink = dark ? P.paper : P.ink;
-  const muted = dark ? P.paper : P.muted;
+  const sale = STATUS.danger.light.fg;
   return <View testID={`publication-look-product-${item.id}`} style={grid ? { width: tileWidth } : styles.row}>
     <Pressable accessibilityRole="link" accessibilityLabel={item.name} onPress={() => openPublicationProduct(item.id)}
       style={grid ? null : [styles.rowLink, { flexDirection: direction }]}>
       <View testID="publication-look-product-image" style={[styles.image, grid ? { height: tileWidth * 458 / 322 } : styles.rowImage]}>
         <AppImage uri={mediaUrl(item.image)} decorative contentFit="contain" style={StyleSheet.absoluteFill} />
         {grid && (compare || item.isNew) ? <View style={styles.badges} pointerEvents="none">
-          {compare ? <PublicationText variant="captionStrong" color={P.paper} style={[styles.badge, { backgroundColor: STATUS.danger.light.fg }]}>{t('publisher.promo')}</PublicationText> : null}
+          {compare ? <PublicationText variant="captionStrong" color={P.paper} style={[styles.badge, { backgroundColor: sale }]}>{t('publisher.promo')}</PublicationText> : null}
           {item.isNew ? <PublicationText variant="captionStrong" style={styles.badge}>{t('publication.productNew')}</PublicationText> : null}
         </View> : null}
       </View>
       <View style={grid ? styles.gridCopy : styles.rowCopy}>
-        {item.brand ? <PublicationText variant="bodyStrong" color={ink} numberOfLines={1}>{item.brand}</PublicationText> : null}
-        <PublicationText color={ink} numberOfLines={grid ? 2 : 3}>{item.name}</PublicationText>
-        <PublicationText style={styles.price} variant={compare ? 'bodyStrong' : 'body'} color={compare ? sale : ink}>{formatMoney(item.price)}</PublicationText>
-        {compare ? <PublicationText variant="caption" color={muted}>{t('publication.campaignCompare')}{' '}
-          <PublicationText variant="caption" color={muted} style={styles.compare}>{formatMoney(compare)}</PublicationText>
+        {item.brand ? <PublicationText variant="bodyStrong" numberOfLines={1}>{item.brand}</PublicationText> : null}
+        <PublicationText numberOfLines={grid ? 2 : 3}>{item.name}</PublicationText>
+        <PublicationText style={styles.price} variant={compare ? 'bodyStrong' : 'body'} color={compare ? sale : P.ink}>{formatMoney(item.price)}</PublicationText>
+        {compare ? <PublicationText variant="caption" color={P.muted}>{t('publication.campaignCompare')}{' '}
+          <PublicationText variant="caption" color={P.muted} style={styles.compare}>{formatMoney(compare)}</PublicationText>
           {discount > 0 ? <PublicationText variant="caption" color={sale}>{`  −${discount}%`}</PublicationText> : null}
         </PublicationText> : null}
       </View>

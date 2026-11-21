@@ -7,7 +7,7 @@ export const PUBLICATION_REFERENCE = {
   heartDiameter: 32, heartInset: 8, moreDiameter: 48,
   videoControlDiameter: 40, videoControlInset: 8, videoControlGap: 8,
   headingSize: 16, headingLine: 20, publisherSize: 14, publisherLine: 18,
-  captionGap: 6, postGap: 28, startGap: 8,
+  captionGap: 6, postGap: 28, startGap: 16,
 } as const;
 
 export type ReferenceLayout = 'image-cover' | 'image-panoramic' | 'video-inset' | 'video-panoramic' | 'video-square';

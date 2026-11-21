@@ -10,7 +10,6 @@ import { RADIUS } from '@/design/tokens.mobile';
 import { STORE_BAR } from '@/design/tokens.mobile';
 import { StatusBar } from 'expo-status-bar';
 import { AppText } from '@/design/ui';
-import { useReduceMotion } from '@/design/motion';
 import { useSession } from '@/state/session';
 import { useTheme } from '@/design/theme';
 import { useT } from '@/i18n';
@@ -21,7 +20,7 @@ import type { HeroTint } from '@/features/home/HeroCarousel';
 import { LiveCartButton } from '@/features/shopping/LiveCartGlyph';
 
 /** Passage teinte Hero ↔ fond de page quand la page défile : fondu court, jamais une coupure. */
-export const HEADER_TINT_FADE_MS = 160;
+export const HEADER_TINT_FADE_MS = 180;
 
 export function AppHeader({ scrolled, heroBackground = null, heroTint = null, brand = 'zayrovi', showNotifications = true }: {
   scrolled: boolean; heroBackground?: string | null;
@@ -43,18 +42,17 @@ export function AppHeader({ scrolled, heroBackground = null, heroTint = null, br
   const barBackground = aywebs ? STORE_BAR.background : theme.colors.canvas;
   // Calque « teinte Hero » au-dessus du fond de page : seule son opacité bouge.
   const hasTint = heroBackground !== null || (heroTint?.colors.length ?? 0) > 0;
-  const reduceMotion = useReduceMotion();
   const tintFade = useRef(new Animated.Value(onHero ? 1 : 0)).current;
   useEffect(() => {
     const animation = Animated.timing(tintFade, {
       toValue: onHero ? 1 : 0,
-      duration: reduceMotion ? 0 : HEADER_TINT_FADE_MS,
+      duration: HEADER_TINT_FADE_MS,
       easing: Easing.out(Easing.quad),
       useNativeDriver: true,
     });
     animation.start();
     return () => animation.stop();
-  }, [onHero, reduceMotion, tintFade]);
+  }, [onHero, tintFade]);
   const row = theme.isRTL ? 'row-reverse' : 'row';
   /**
    * Visiteur (référence Zalando 085451) : sur l'en-tête PRINCIPAL, le
