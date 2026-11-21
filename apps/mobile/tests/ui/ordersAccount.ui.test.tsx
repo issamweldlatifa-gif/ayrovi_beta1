@@ -113,3 +113,13 @@ test('does not expose configured bank instructions in an order awaiting card pay
   expect(screen.queryByTestId('order-transfer-details')).toBeNull();
   expect(screen.queryByText('RIB-TEST')).toBeNull();
 });
+
+
+test('opens the dedicated return flow and FAQ from orders', async () => {
+  jest.mocked(fetchOrders).mockResolvedValueOnce([]);
+  await mount(<OrdersScreen />);
+  fireEvent.press(screen.getByRole('button', { name: 'Retourner un article' }));
+  expect(router.push).toHaveBeenLastCalledWith('/returns/request');
+  fireEvent.press(screen.getByRole('link', { name: 'Politique de retour et conditions' }));
+  expect(router.push).toHaveBeenLastCalledWith('/returns/policy');
+});

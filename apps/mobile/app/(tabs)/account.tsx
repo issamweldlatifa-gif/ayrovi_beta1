@@ -14,6 +14,7 @@ import { BRAND } from '@/design/tokens.generated';
 import { RADIUS } from '@/design/tokens.mobile';
 import { AppText, Button } from '@/design/ui';
 import { useI18n, type TranslationKey } from '@/i18n';
+import { returnsPaths } from '@/features/returns/paths';
 import { useSession } from '@/state/session';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
@@ -26,6 +27,7 @@ const groups = [
     { id: 'loyalty', label: 'account.hub.loyalty', icon: 'star-outline', route: loyaltyRoute, public: true },
     { id: 'notifications', label: 'account.menu.notifications', icon: 'notifications-outline', route: '/account/notifications' },
     { id: 'orders', label: 'account.menu.orders', icon: 'cube-outline', route: '/orders' },
+    { id: 'returns', label: 'returns.title', icon: 'return-down-back-outline', route: returnsPaths.home, public: true },
     { id: 'profile', label: 'account.hub.personal', icon: 'person-outline', route: '/account/profile' },
     { id: 'addresses', label: 'account.menu.addresses', icon: 'location-outline', route: '/account/addresses' },
   ] },

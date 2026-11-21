@@ -16,7 +16,8 @@ import { statusText } from '@/api/labels';
 import { mediaUrl } from '@/api/client';
 import { useSession } from '@/state/session';
 import { formatMoney } from '@/format/money';
-import { OrderFact, OrderHelp, OrderShell } from '@/features/orders/OrderLayout';
+import { OrderFact, OrderShell } from '@/features/orders/OrderLayout';
+import { returnsPaths } from '@/features/returns/paths';
 import { formatOrderDate, orderDate, orderMonth, orderPeriods, sixMonthsBefore, type OrderPeriod } from '@/features/orders/orderPresentation';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
@@ -27,7 +28,6 @@ export default function OrdersScreen() {
   const { bottom } = useSafeAreaInsets();
   const { status, account } = useSession();
   const accountId = status === 'signedIn' ? account?.id : undefined;
-  const [helpFor, setHelpFor] = useState<string | null>(null);
   const [period, setPeriod] = useState<OrderPeriod>('recent');
   const [choosing, setChoosing] = useState(false);
   const query = useQuery({
@@ -51,8 +51,8 @@ export default function OrdersScreen() {
         refreshing={query.isRefetching} onRefresh={retry}
         contentContainerStyle={[styles.content, { paddingBottom: bottom + 24 }]}
         ListHeaderComponent={<View style={styles.tools}>
-          <Button label={t('orders.returnItem')} block size="lg" onPress={() => setHelpFor(accountId)} />
-          <Pressable accessibilityRole="link" style={styles.link} onPress={() => router.push('/legal/terms')}>
+          <Button label={t('orders.returnItem')} block size="lg" onPress={() => router.push(returnsPaths.request)} />
+          <Pressable accessibilityRole="link" style={styles.link} onPress={() => router.push(returnsPaths.policy)}>
             <AppText variant="bodyStrong" style={styles.underlined}>{t('orders.returnPolicy')}</AppText>
           </Pressable>
           <AppText variant="h2" accessibilityRole="header">{t('orders.title')}</AppText>
@@ -113,7 +113,6 @@ export default function OrdersScreen() {
             </Pressable>
           </View>;
         }} />
-      {helpFor === accountId ? <OrderHelp title={t('orders.returnItem')} onClose={() => setHelpFor(null)} /> : null}
     </>}
   </OrderShell>;
 }

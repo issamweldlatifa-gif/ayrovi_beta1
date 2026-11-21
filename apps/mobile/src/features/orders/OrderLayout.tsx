@@ -11,6 +11,7 @@ import { useTheme } from '@/design/theme';
 import { FOOTER_THEME, RADIUS } from '@/design/tokens.mobile';
 import { AppText, Button } from '@/design/ui';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
+import { returnsPaths } from '@/features/returns/paths';
 import { useT } from '@/i18n';
 
 export function OrderShell({ title, fallback, children }: { title: string; fallback: string; children: ReactNode }) {
@@ -38,18 +39,21 @@ export function OrderFact({ label, value }: { label: string; value: string }) {
   return <View style={styles.fact}><AppText variant="captionStrong">{label}</AppText><AppText>{value || '—'}</AppText></View>;
 }
 
-export function OrderHelp({ title, orderNumber, onClose }: { title: string; orderNumber?: string; onClose: () => void }) {
+export function OrderHelp({ title, orderNumber, onClose, hint, context, showPolicy = true }: {
+  title: string; orderNumber?: string; onClose: () => void; hint?: string; context?: ReactNode; showPolicy?: boolean;
+}) {
   const theme = useTheme();
   const t = useT();
   const footer = useFooterInfo();
   const [linkError, setLinkError] = useState(false);
   return <Modal transparent animationType="fade" onRequestClose={onClose}>
     <View style={styles.scrim}>
-      <View style={[styles.dialog, { backgroundColor: theme.colors.canvas }]} accessibilityViewIsModal>
+      <View testID="order-help-dialog" style={[styles.dialog, { backgroundColor: theme.colors.canvas }]} accessibilityViewIsModal>
         <ScrollView contentContainerStyle={styles.dialogContent}>
           <AppText variant="h3" accessibilityRole="header">{title}</AppText>
-          <AppText variant="bodySmall">{t('orders.contactHint')}</AppText>
+          <AppText variant="bodySmall">{hint ?? t('orders.contactHint')}</AppText>
           {orderNumber ? <OrderFact label={t('orders.number')} value={orderNumber} /> : null}
+          {context}
           {footer.isPending ? <LoadingBlock /> : footer.isError && !footer.data ? <ErrorBlock error={footer.error} onRetry={() => void footer.refetch()} /> : <>
             {footer.data?.channels.length ? footer.data.channels.map(channel => <Pressable key={channel.id} accessibilityRole="link" style={styles.contact}
               onPress={() => { setLinkError(false); void Linking.openURL(channel.href).catch(() => setLinkError(true)); }}>
@@ -57,7 +61,7 @@ export function OrderHelp({ title, orderNumber, onClose }: { title: string; orde
             </Pressable>) : <AppText>{t('footer.noContact')}</AppText>}
           </>}
           {linkError ? <AppText accessibilityRole="alert">{t('footer.linkError')}</AppText> : null}
-          <Button label={t('orders.returnPolicy')} tone="quiet" onPress={() => { onClose(); router.push('/legal/terms'); }} />
+          {showPolicy ? <Button label={t('orders.returnPolicy')} tone="quiet" onPress={() => { onClose(); router.push(returnsPaths.policy); }} /> : null}
           <Button label={t('common.close')} onPress={onClose} />
         </ScrollView>
       </View>
