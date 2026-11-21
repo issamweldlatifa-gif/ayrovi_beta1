@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { NEWS_SOURCES, ZAYROVI_NEWS_LIMIT, normalizeZayroviNews, type NewsCopy, type NewsEntry, type NewsSource, type ZayroviNewsSettings } from '../../../shared/zayroviNews';
+import { NEWS_SECTIONS, NEWS_TOOLS, NEWS_SOURCES, ZAYROVI_NEWS_LIMIT, normalizeZayroviNews, type NewsCopy, type NewsEntry, type NewsSource, type ZayroviNewsSettings } from '../../../shared/zayroviNews';
 import { adminApi } from './api';
 import { uploadMediaFile } from './mediaUpload';
 import { Button, Field } from './components';
 import { StudioMediaField } from './StudioMediaField';
 
 const labels = { notice: 'Actualité originale', story: 'Story', reel: 'Reel / vidéo', publication: 'Publication', article: 'Article du magazine' } as const;
+const sectionLabel = { news: 'Dernières actualités', tools: 'Nos outils', about: 'À propos de Zayrovi' };
+const toolLabel = { lens: 'Z Lens', clean: 'Clean', aywebs: 'AYWEBs' };
 const blank = () => ({ fr: '', ar: '' });
 function CopyFields({ label, value, max, multiline, onChange }: { label: string; value: NewsCopy; max: number; multiline?: boolean; onChange: (value: NewsCopy) => void }) {
   return <>{(['fr', 'ar'] as const).map(locale => {
@@ -88,19 +90,27 @@ export function ZayroviNewsStudio({ canWrite }: { canWrite: boolean }) {
       <CopyFields label="Bouton" value={draft.daily.cta} max={48} onChange={cta => updateDaily({ cta })} />
       <CopyFields label="Explication complète" value={draft.daily.body} max={1800} multiline onChange={body => updateDaily({ body })} />
       <div>
+        <Field label="Afficher les guides Z Lens, Clean, AYWEBs et À propos fournis par Zayrovi"><input type="checkbox" checked={draft.showGuides !== false} onChange={e => setDraft({ ...draft, showGuides: e.target.checked })} /></Field>
         <h4>Fil éditorial ({draft.entries.length}/{ZAYROVI_NEWS_LIMIT})</h4>
         <p>Une carte liée n’apparaît que si le contenu source est lui-même public. L’ordre ci-dessous est celui du fil.</p>
         {draft.entries.map((entry, index) => <details key={entry.id} className="admin-card">
           <summary>{index + 1}. {entry.kind === 'notice' ? entry.title.fr || labels.notice : `${labels[entry.kind]} · ${entry.targetId || 'À sélectionner'}`}{entry.published ? '' : ' · Brouillon'}</summary>
           <Field label="Type"><select value={entry.kind} onChange={e => {
             const kind = e.target.value as NewsEntry['kind'];
-            const base = { id: entry.id, published: entry.published };
+            const base = { id: entry.id, published: entry.published, section: entry.section };
             updateEntry(kind === 'notice' ? { ...base, kind, title: blank(), body: blank(), image: '' } : { ...base, kind, targetId: '' });
           }}><option value="notice">{labels.notice}</option>{NEWS_SOURCES.map(kind => <option key={kind} value={kind}>{labels[kind]}</option>)}</select></Field>
+          <Field label="Rubrique"><select value={entry.section ?? 'news'} onChange={e => updateEntry({ ...entry, section: e.target.value as NewsEntry['section'] })}>
+            {NEWS_SECTIONS.map(section => <option key={section} value={section}>{sectionLabel[section]}</option>)}
+          </select></Field>
           <Field label="Publier dans le fil"><input type="checkbox" checked={entry.published} onChange={e => updateEntry({ ...entry, published: e.target.checked })} /></Field>
           {entry.kind === 'notice' ? <>
             <CopyFields label="Titre" value={entry.title} max={120} onChange={title => updateEntry({ ...entry, title })} />
-            <CopyFields label="Texte" value={entry.body} max={2400} multiline onChange={body => updateEntry({ ...entry, body })} />
+            <CopyFields label="Accroche (facultative)" value={entry.summary ?? blank()} max={240} onChange={summary => updateEntry({ ...entry, summary: summary.fr || summary.ar ? summary : undefined })} />
+            <CopyFields label="Article complet (## pour un intertitre)" value={entry.body} max={6000} multiline onChange={body => updateEntry({ ...entry, body })} />
+            <Field label="Bouton vers un outil (facultatif)"><select value={entry.tool ?? ''} onChange={e => updateEntry({ ...entry, tool: (e.target.value || undefined) as typeof entry.tool })}>
+              <option value="">Aucun</option>{NEWS_TOOLS.map(tool => <option key={tool} value={tool}>{toolLabel[tool]}</option>)}
+            </select></Field>
             <StudioMediaField label="Photo (facultative)" value={entry.image} onChange={image => updateEntry({ ...entry, image })} upload={(file, apply) => void upload(file, apply)} />
           </> : <SourcePicker key={entry.kind} kind={entry.kind} selected={entry.targetId} onChange={targetId => updateEntry({ ...entry, targetId })} />}
           <div className="admin-actions">

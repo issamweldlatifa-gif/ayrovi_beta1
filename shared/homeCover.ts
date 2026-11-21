@@ -17,7 +17,7 @@ export const COVER_SLIDE_TYPES = ['image', 'video'] as const;
 export type CoverSlideType = (typeof COVER_SLIDE_TYPES)[number];
 
 /** Destinations fermées : des pages DE L'APPLICATION, jamais du site web. */
-export const COVER_DESTINATIONS = ['publications', 'catalog', 'promotions'] as const;
+export const COVER_DESTINATIONS = ['social', 'publications', 'catalog', 'promotions'] as const;
 export type CoverDestination = (typeof COVER_DESTINATIONS)[number];
 
 export interface CoverSlide {
@@ -147,4 +147,13 @@ export interface CoverPublic extends CoverSettings {
 export function resolveCoverPublic(settings: CoverSettings, slides: CoverSlide[]): CoverPublic | null {
   if (!settings.enabled || !slides.length) return null;
   return { ...settings, slides };
+}
+
+/** Mobile uses the former Publications slot for Social Shopping; the original
+ * settings and media remain in CRM. The app supplies an editorial fallback image. */
+export function resolveMobileCover(settings: CoverSettings, slides: CoverSlide[]): CoverPublic | null {
+  if (!settings.enabled) return { ...settings, title: '', ctaLabel: '', slides: [] };
+  if (settings.destination === 'publications') return { ...settings, title: '', ctaLabel: '', destination: 'social', slides: [] };
+  if (settings.destination === 'social') return { ...settings, slides };
+  return resolveCoverPublic(settings, slides);
 }

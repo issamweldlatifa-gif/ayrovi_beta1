@@ -39,7 +39,7 @@ import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { liveValues, publishedRows, toPublicCards } from '../services/heroSlideDrafts';
 import {
   COVER_DESTINATIONS, DEFAULT_COVER_SETTINGS, MAX_COVER_INTERVAL_MS, MIN_COVER_INTERVAL_MS,
-  resolveCoverPublic, type CoverSettings, type CoverSlide,
+  resolveCoverPublic, resolveMobileCover, type CoverSettings, type CoverSlide,
 } from '../../shared/homeCover';
 import { UnsafeUrlError } from '../services/safeUrl';
 import { pruneDiskCache } from '../services/diskCache';
@@ -465,7 +465,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
   /* « Cover » d'accueil : le nouveau bloc d'entrée piloté par le CRM — médias,
      grand texte posé dessus, bouton contour transparent. Rien si désactivé. */
-  router.get('/home-cover', (_req, res) => {
+  router.get('/home-cover', (req, res) => {
     const row = db.get<any>("SELECT * FROM home_cover_settings WHERE id='global'");
     const settings: CoverSettings = row ? {
       enabled: row.enabled !== 0,
@@ -482,7 +482,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         poster: String(slide.poster || ''),
         alt: String(slide.alt || ''),
       }));
-    res.json({ success: true, data: resolveCoverPublic(settings, slides) });
+    res.json({ success: true, data: req.query.surface === 'mobile' ? resolveMobileCover(settings, slides) : resolveCoverPublic(settings, slides) });
   });
 
   router.get('/hero-carousel-settings', (_req, res) => {

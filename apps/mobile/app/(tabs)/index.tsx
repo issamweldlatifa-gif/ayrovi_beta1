@@ -34,7 +34,7 @@ import { HomeCover } from '@/features/home/HomeCover';
 import { StoriesSection } from '@/features/home/StoriesSection';
 import { BlackFridaySection } from '@/features/home/BlackFridaySection';
 import { useBlackFriday } from '@/api/blackFriday';
-import { useStories, useStoriesShowcase } from '@/api/hooks';
+import { queryKeys, useStories, useStoriesShowcase } from '@/api/hooks';
 import { LensHomeBlock } from '@/features/home/LensHomeBlock';
 import { ReelsShopSection } from '@/features/home/ReelsShopSection';
 import { SectionBreak } from '@/design/SectionRule';
@@ -103,7 +103,7 @@ export default function HomeScreen() {
     setRefreshing(true);
     Promise.allSettled([
       heroSlides.refetch(), heroCarouselSettings.refetch(), stories.refetch(), storiesShowcase.refetch(), blackFriday.refetch(), dailyOffer.refetch(),
-      client.invalidateQueries({ queryKey: highlightsKey }),
+      client.invalidateQueries({ queryKey: highlightsKey }), client.invalidateQueries({ queryKey: queryKeys.homeCover }),
     ]).finally(() => setRefreshing(false));
   }, [heroSlides, heroCarouselSettings, stories, storiesShowcase, blackFriday, dailyOffer, client]);
 

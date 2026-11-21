@@ -236,7 +236,7 @@ export interface HomeCoverSlide {
 }
 
 /** Destination fermée : des pages DE L'APPLICATION (clé CRM, sans barre oblique). */
-export type HomeCoverDestinationKey = 'publications' | 'catalog' | 'promotions';
+export type HomeCoverDestinationKey = 'social' | 'publications' | 'catalog' | 'promotions';
 
 /** `data` = `null` (désactivé ou sans média) ⇒ la section ne s'affiche pas du tout. */
 export interface HomeCover {
@@ -270,11 +270,11 @@ export function parseHomeCover(payload: unknown): HomeCover | null {
     })
     .filter((row): row is HomeCoverSlide => row !== null)
     .slice(0, 10);
-  if (!slides.length) return null;
   const destination = typeof payload.destination === 'string'
-    && ['publications', 'catalog', 'promotions'].includes(payload.destination)
+    && ['social', 'publications', 'catalog', 'promotions'].includes(payload.destination)
     ? payload.destination as HomeCoverDestinationKey
     : 'publications';
+  if (!slides.length && destination !== 'social' && payload.enabled !== false) return null;
   const interval = Math.round(Number(payload.autoplayIntervalMs));
   return {
     enabled: payload.enabled !== false,
@@ -287,7 +287,7 @@ export function parseHomeCover(payload: unknown): HomeCover | null {
 }
 
 export async function fetchHomeCover(options?: RequestOptions): Promise<HomeCover | null> {
-  const { data } = await apiGet<unknown>('/api/public/home-cover', options);
+  const { data } = await apiGet<unknown>('/api/public/home-cover?surface=mobile', options);
   return parseHomeCover(data);
 }
 

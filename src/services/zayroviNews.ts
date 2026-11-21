@@ -1,3 +1,4 @@
+import { ZAYROVI_NEWS_GUIDES } from '../../shared/zayroviNewsGuides';
 import type { QatafoDatabase } from '../db/database';
 import { DEFAULT_ZAYROVI_NEWS, NEWS_SOURCES, ZAYROVI_NEWS_LIMIT, normalizeZayroviNews, type NewsCard, type NewsSource, type ZayroviDailyOffer, type ZayroviNewsFeed } from '../../shared/zayroviNews';
 import { normalizeMediaLink } from '../../shared/mediaLinks';
@@ -58,14 +59,16 @@ export function readPublicZayroviNews(db: QatafoDatabase, now = new Date()): Zay
     for (const row of sourceRows(db, kind, nowIso, ids)) rows.set(`${kind}:${row.id}`, row);
   }
   const entries = active.flatMap((entry): NewsCard[] => {
-    if (entry.kind === 'notice') return [{ id: entry.id, kind: entry.kind, title: entry.title, body: entry.body, image: entry.image }];
+    if (entry.kind === 'notice') return [{ id: entry.id, kind: entry.kind, title: entry.title, body: entry.body, image: entry.image, section: entry.section, summary: entry.summary, tool: entry.tool }];
     const source = rows.get(`${entry.kind}:${entry.targetId}`);
     if (!source) return [];
     const title = source.title || source.title_ar || '';
     if (!title) return [];
     const image = normalizeMediaLink(source.image || '', 'image');
-    return [{ id: entry.id, kind: entry.kind, targetId: entry.targetId, title: { fr: title.slice(0, 140), ar: source.title_ar?.slice(0, 140) || '' },
+    return [{ id: entry.id, kind: entry.kind, section: entry.section, targetId: entry.targetId, title: { fr: title.slice(0, 140), ar: source.title_ar?.slice(0, 140) || '' },
       body: { fr: source.body?.slice(0, 240) || '', ar: source.body_ar?.slice(0, 240) || '' }, image: image.ok ? image.url : '' }];
   });
-  return { daily: dayOffer(db, settings, now), entries };
+  const authoredIds = new Set(settings.entries.map(entry => entry.id));
+  const guides = settings.showGuides === false ? [] : ZAYROVI_NEWS_GUIDES.filter(guide => !authoredIds.has(guide.id));
+  return { daily: dayOffer(db, settings, now), entries, guides };
 }

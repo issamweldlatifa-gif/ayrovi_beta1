@@ -1,3 +1,4 @@
+import { SocialShoppingCover } from './SocialShoppingCover';
 import { OFFICIAL_PUBLISHER_ROUTE } from '@/features/publications/officialPublisher';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 /**
@@ -41,6 +42,7 @@ export const COVER_ASPECT = 10 / 15;
 /** Destination fermée : des pages de l'APPLICATION, jamais du site. */
 const DESTINATION_ROUTES = {
   publications: '/publications',
+  social: '/(tabs)/social',
   catalog: OFFICIAL_PUBLISHER_ROUTE,
   promotions: '/promotions',
 } as const;
@@ -109,7 +111,8 @@ export const HomeCover = memo(function HomeCover() {
     return () => subscription.remove();
   }, []);
 
-  const slides = cover.data?.slides ?? [];
+  const social = cover.data?.destination === 'social' || cover.data?.destination === 'publications';
+  const slides = social ? [] : cover.data?.slides ?? [];
   const paused = interacting || !isFocused || !appActive || userPaused;
   const hasVideo = slides.some((slide) => slide.type === 'video');
 
@@ -140,10 +143,11 @@ export const HomeCover = memo(function HomeCover() {
   // Masquée par le CRM (ou réponse vide) ⇒ rien, jamais un bloc vide.
   if (cover.isPending || !cover.data || !cover.data.enabled) return null;
 
-  const isPublicationEntry = cover.data.destination === 'publications';
-  const title = cover.data.title || (isPublicationEntry ? t('home.publicationsEntry.title') : '');
+  if (social) return <SocialShoppingCover settings={cover.data} />;
+
+  const title = cover.data.title || t('home.featured.title');
   const ctaLabel = cover.data.ctaLabel || (locale === 'ar' ? 'اكتشف' : 'Je découvre');
-  const route = DESTINATION_ROUTES[cover.data.destination] ?? '/publications';
+  const route = DESTINATION_ROUTES[cover.data.destination];
   const pauseLabel = userPaused
     ? (locale === 'ar' ? 'تشغيل التمرير' : 'Reprendre le défilement')
     : (locale === 'ar' ? 'إيقاف التمرير مؤقتًا' : 'Mettre le défilement en pause');
@@ -207,14 +211,10 @@ export const HomeCover = memo(function HomeCover() {
           pointerEvents="none"
         />
         <View style={styles.overlay} pointerEvents="box-none">
-          {isPublicationEntry && title !== t('home.publicationsEntry.title') ? (
-            <AppText testID="home-publications-entry-label" variant="captionStrong" color={theme.colors.onMedia}
-              style={styles.title}>{t('home.publicationsEntry.title')}</AppText>
-          ) : null}
           {title ? (
             <AppText
               testID="home-cover-title"
-              variant="h1"
+              variant="h2"
               color={theme.colors.onMedia}
               numberOfLines={3}
               style={[styles.title, { fontFamily: theme.font('bold') }]}
@@ -225,7 +225,7 @@ export const HomeCover = memo(function HomeCover() {
           <Pressable
             testID="home-cover-cta"
             accessibilityRole="button"
-            accessibilityLabel={isPublicationEntry ? t('home.publicationsEntry.open') : ctaLabel}
+            accessibilityLabel={ctaLabel}
             onPress={() => router.push(route as never)}
             style={[styles.cta, { borderColor: theme.colors.onMedia }]}
           >

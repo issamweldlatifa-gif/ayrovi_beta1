@@ -31,7 +31,8 @@ interface CoverAdmin {
 const CTA_DEFAULT = 'Je découvre';
 
 const DESTINATION_LABELS: Record<string, string> = {
-  publications: 'Page Publications',
+  social: 'Social Shopping (cover mobile)',
+  publications: 'Publications (ancien réglage → cover Social Shopping mobile)',
   catalog: 'Catalogue',
   promotions: 'Promotions',
 };
@@ -46,7 +47,7 @@ export const HomeFeaturedPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) 
   const [enabled, setEnabled] = useState(true);
   const [title, setTitle] = useState('');
   const [ctaLabel, setCtaLabel] = useState('');
-  const [destination, setDestination] = useState('publications');
+  const [destination, setDestination] = useState('social');
   const [autoplayIntervalMs, setAutoplayIntervalMs] = useState(5000);
   const [slides, setSlides] = useState<CoverSlide[]>([]);
   const [uploading, setUploading] = useState(false);

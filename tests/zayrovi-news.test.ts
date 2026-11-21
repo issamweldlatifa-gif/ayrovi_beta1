@@ -53,8 +53,8 @@ it('protects CRM writes and only publishes enabled cards pointing to currently p
       VALUES (?,'Retirée','IMAGE','/media/stories/winter.jpg','PUBLISHED',?,?,?,?)`,
     archivedStory, '2025-01-01T00:00:00.000Z', '2025-02-01T00:00:00.000Z', now, now);
     bindings(live, '2025-01-01T00:00:00.000Z'); bindings(future, '2099-01-01T00:00:00.000Z');
-    const draft = { daily: { ...DEFAULT_ZAYROVI_NEWS.daily, showHome: false }, entries: [
-      { id: 'real', kind: 'article', published: true, targetId: live },
+    const draft = { daily: { ...DEFAULT_ZAYROVI_NEWS.daily, showHome: false }, showGuides: false, entries: [
+      { id: 'real', kind: 'article', published: true, targetId: live, section: 'about' },
       { id: 'future', kind: 'article', published: true, targetId: future },
       { id: 'video', kind: 'reel', published: true, targetId: 'reel_drive_workwear_v2' },
       { id: 'story', kind: 'story', published: true, targetId: 'official_story_winter' },
@@ -74,7 +74,8 @@ it('protects CRM writes and only publishes enabled cards pointing to currently p
     const { body } = await request(app).get(publicPath).expect(200).expect('Cache-Control', 'no-store');
     expect(body.data.daily).toMatchObject({ showHome: false, showNews: true });
     expect(body.data.entries.map((item: { id: string }) => item.id)).toEqual(['real', 'video', 'story']);
-    expect(body.data.entries[0]).toMatchObject({ title: { fr: 'Test actualité' }, body: { fr: 'Intro' } });
+    expect(body.data.guides).toEqual([]);
+    expect(body.data.entries[0]).toMatchObject({ section: 'about', title: { fr: 'Test actualité' }, body: { fr: 'Intro' } });
     expect((await request(app).get(`${publicPath}?view=home`).expect(200)).body.data).not.toHaveProperty('entries');
     expect((await request(app).get('/api/public/news').query({ item: live }).expect(200)).body.data[0].content).toBe('Contenu authentique');
     expect((await request(app).get('/api/public/news').query({ item: future }).expect(200)).body.data).toEqual([]);
@@ -87,4 +88,15 @@ it('protects CRM writes and only publishes enabled cards pointing to currently p
     if (snapshot) db.run('UPDATE settings SET setting_value=?,updated_at=? WHERE setting_key=?', snapshot.setting_value, snapshot.updated_at, ZAYROVI_NEWS_KEY);
     else db.run('DELETE FROM settings WHERE setting_key=?', ZAYROVI_NEWS_KEY);
   }
+});
+
+it('supports themed newsroom sections, full articles and only native tool references', () => {
+  const guide = { id: 'test-guide', kind: 'notice', published: true, section: 'tools', tool: 'lens', image: '',
+    title: { fr: 'Utiliser Z Lens', ar: 'استعمل Z Lens' }, summary: { fr: 'Guide photo', ar: 'دليل الصور' },
+    body: { fr: '## Étapes\n' + 'Lire le guide complet. '.repeat(150), ar: '## الخطوات\nاستعمل صورة واضحة.' } };
+  const draft = { ...DEFAULT_ZAYROVI_NEWS, entries: [guide], showGuides: false };
+  expect(normalizeZayroviNews(draft)).toMatchObject({ entries: [{ section: 'tools', tool: 'lens', summary: guide.summary }], showGuides: false });
+  expect(normalizeZayroviNews({ ...draft, entries: [{ ...guide, section: 'other' }] })).toBeNull();
+  expect(normalizeZayroviNews({ ...draft, entries: [{ ...guide, tool: 'https://example.com' }] })).toBeNull();
+  expect(readPublicZayroviNews(db).guides?.map(guide => guide.section)).toEqual(['tools', 'tools', 'tools', 'about']);
 });

@@ -148,7 +148,7 @@ export default function SocialCommerceScreen() {
     <View testID="social-commerce" style={{ flex: 1, paddingTop: top, backgroundColor: theme.colors.canvas }}>
       <View style={[styles.header, { borderColor: theme.colors.line, flexDirection: theme.isRTL ? 'row-reverse' : 'row' }]}>
         <OfficialAvatar size={34} testID="social-brand-icon" />
-        <AppText variant="h3" accessibilityRole="header" style={{ flex: 1, minWidth: 0 }}>{t('tabs.social')}</AppText>
+        <AppText variant="h3" accessibilityRole="header" style={{ flex: 1, minWidth: 0 }}>{t('socialCommerce.title')}</AppText>
         <Pressable accessibilityRole="button" accessibilityLabel={t('socialCommerce.lens')} onPress={() => router.push('/z-lens')} style={styles.hit}>
           <Ionicons name="search-outline" color={theme.colors.ink} size={theme.iconSize.md} />
         </Pressable>
@@ -174,8 +174,8 @@ export default function SocialCommerceScreen() {
               <LinearGradient colors={['transparent', veil(0.88)]} style={StyleSheet.absoluteFill} />
             </> : null}
             <View style={styles.coverCopy}>
-              <AppText variant="label" color={BRAND.white}>{edition ? t('socialCommerce.edition', { number: edition.number }) : `ZAYROVI / ${t('tabs.social')}`}</AppText>
-              <AppText variant="h1" accessibilityRole="header" color={BRAND.white}>{edition?.title || t('socialCommerce.coverTitle')}</AppText>
+              <AppText variant="label" color={BRAND.white}>{edition ? t('socialCommerce.edition', { number: edition.number }) : `ZAYROVI / ${t('socialCommerce.title')}`}</AppText>
+              <AppText variant="h2" accessibilityRole="header" color={BRAND.white}>{edition?.title || t('socialCommerce.coverTitle')}</AppText>
               <AppText variant="body" color={BRAND.white}>{edition?.subtitle || t('socialCommerce.coverSubtitle')}</AppText>
               <Pressable accessibilityRole="button" style={styles.coverButton} onPress={goToFilter}>
                 <AppText variant="label" color={BRAND.black}>{t('socialCommerce.coverAction')}</AppText>

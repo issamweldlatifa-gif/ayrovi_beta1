@@ -99,13 +99,19 @@ describe('HomeCover — le nouveau bloc d’entrée', () => {
     expect(screen.queryByTestId('home-featured-cta')).toBeNull();
   });
 
-  it('nomme la destination Publications sans remplacer le titre CRM', async () => {
+  it('remplace la cover Publications par une image Social Shopping et ouvre le fil natif', async () => {
     mockCover.data = { ...coverData(), destination: 'publications' };
     await renderCover();
-    expect(screen.getByText('Publications ZAYROVI')).toBeTruthy();
-    expect(screen.getByTestId('home-cover-title')).toBeTruthy();
-    fireEvent.press(screen.getByRole('button', { name: 'Voir les publications ZAYROVI' }));
-    expect(router.push).toHaveBeenCalledWith('/publications');
+    expect(screen.queryByTestId('home-cover-list')).toBeNull();
+    fireEvent.press(screen.getByRole('link', { name: 'Social Shopping' }));
+    expect(router.push).toHaveBeenCalledWith({ pathname: '/(tabs)/social', params: { filter: 'all' } });
+  });
+
+  it('utilise le titre et le bouton éditoriaux pour une cover Social Shopping configurée', async () => {
+    mockCover.data = { ...coverData(), destination: 'social', title: 'Le look de la semaine', slides: [] };
+    await renderCover();
+    expect(screen.getByRole('link', { name: 'Le look de la semaine' })).toBeTruthy();
+    expect(screen.getByText('Je découvre')).toBeTruthy();
   });
 
   it('le bouton contour ouvre la destination choisie dans le CRM', async () => {

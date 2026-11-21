@@ -9,7 +9,7 @@ import { describe, expect, test } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/server';
 import {
-  DEFAULT_COVER_SETTINGS, MAX_COVER_SLIDES, normalizeCoverInput, normalizeCoverSlidesInput, resolveCoverPublic,
+  DEFAULT_COVER_SETTINGS, MAX_COVER_SLIDES, normalizeCoverInput, normalizeCoverSlidesInput, resolveCoverPublic, resolveMobileCover,
 } from '../shared/homeCover';
 
 describe('contrat partagé — normalizeCoverSlidesInput', () => {
@@ -51,6 +51,14 @@ describe('contrat partagé — normalizeCoverInput & sortie publique', () => {
     const next = normalizeCoverInput({ autoplayIntervalMs: 12, title: 'Nouveautés\nvotre dose' }, DEFAULT_COVER_SETTINGS);
     expect(next?.settings.autoplayIntervalMs).toBe(2000);
     expect(next?.settings.title).toBe('Nouveautés\nvotre dose');
+  });
+
+  test('mobile remplace uniquement la cover Publications, sans modifier le réglage historique', () => {
+    const slides = normalizeCoverSlidesInput([{ type: 'image', url: '/uploads/legacy.jpg' }])!;
+    expect(resolveMobileCover(DEFAULT_COVER_SETTINGS, slides)).toMatchObject({ enabled: true, destination: 'social', slides: [] });
+    expect(resolveCoverPublic(DEFAULT_COVER_SETTINGS, slides)).toMatchObject({ destination: 'publications', slides });
+    expect(resolveMobileCover({ ...DEFAULT_COVER_SETTINGS, destination: 'social' }, slides)).toMatchObject({ enabled: true, destination: 'social', slides });
+    expect(resolveMobileCover({ ...DEFAULT_COVER_SETTINGS, enabled: false }, slides)).toMatchObject({ enabled: false, slides: [] });
   });
 
   test('rien ne sort vers l’application si masqué ou sans média', () => {

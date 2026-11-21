@@ -1,14 +1,4 @@
-/**
- * Les onglets d’accueil — Social · Nouveautés · Promotions · Publications · Zayrovi News
- *
- * Présentation : une rangée de libellés en gras, sans icônes (façon barre de catégories d’une grande boutique). Le texte est dans la
- * police principale de l’application, au même poids (gras) que la référence.
- *
- * Chaque onglet ouvre un écran NATIF de l’application (jamais une page du site) :
- * « Nouveautés » → Zayrovi Team ; « Zayrovi News » → le fil éditorial du mobile.
- */
 import { ZAYROVI_NEWS_ROUTE } from './DailyOfferCard';
-import { OFFICIAL_PUBLISHER_ROUTE } from '@/features/publications/officialPublisher';
 import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { socialHref } from '@/features/social-commerce/navigation';
@@ -22,17 +12,14 @@ import { backdropLayerRange } from './heroCarouselLogic';
 
 type HomeTab = {
   /** Clé de libellé — jamais de texte écrit en dur. */
-  labelKey: 'tabs.social' | 'home.tab.arrivals' | 'home.tab.promotions' | 'home.tab.publications' | 'zNews.title';
+  labelKey: 'socialCommerce.title' | 'zNews.title';
   /** Destination : une route de l’APPLICATION, pas une URL de site. */
   href: Href;
 };
 
 const TABS: readonly HomeTab[] = [
-  { labelKey: 'tabs.social', href: socialHref() },
-  { labelKey: 'home.tab.arrivals', href: OFFICIAL_PUBLISHER_ROUTE },
-  { labelKey: 'home.tab.promotions', href: '/promotions' },
-  { labelKey: 'home.tab.publications', href: '/publications' },
   { labelKey: 'zNews.title', href: ZAYROVI_NEWS_ROUTE },
+  { labelKey: 'socialCommerce.title', href: socialHref() },
 ];
 
 export function HomeTabs({ tint }: { tint?: HeroTint | null }) {
@@ -76,7 +63,6 @@ export function HomeTabs({ tint }: { tint?: HeroTint | null }) {
               <AppText variant="label" color={theme.colors.ink} numberOfLines={1} style={styles.label}>
                 {t(tab.labelKey)}
               </AppText>
-              {tab.labelKey === 'home.tab.arrivals' ? <View testID="home-tab-underline" style={[styles.underline, { backgroundColor: theme.colors.ink }]} /> : null}
             </Pressable>
           ))}
         </ScrollView>
@@ -89,6 +75,8 @@ const styles = StyleSheet.create({
   strip: { borderBottomWidth: StyleSheet.hairlineWidth, flexGrow: 0 },
   row: {
     alignItems: 'center',
+    justifyContent: 'center',
+    flexGrow: 1,
     gap: RHYTHM.group,
   },
   tab: {
@@ -96,7 +84,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: RHYTHM.inline,
   },
-  underline: { height: 1, marginTop: 2 },
   label: {
     // Une seule ligne : un libellé plus long ne doit pas passer à la ligne.
     flexShrink: 0,

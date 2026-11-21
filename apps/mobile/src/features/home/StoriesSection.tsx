@@ -34,8 +34,8 @@ export const StoriesSection = memo(function StoriesSection() {
   return <FullBleed>
     <View testID="home-stories" style={styles.section}>
       <View style={[styles.heading, { paddingHorizontal: gutter }]}>
-        {settings.title ? <AppText variant="h3" color={FOOTER_THEME.paper}>{local(settings.title, settings.titleAr)}</AppText> : null}
-        {settings.subtitle ? <AppText variant="h3" color={FOOTER_THEME.paper}>{local(settings.subtitle, settings.subtitleAr)}</AppText> : null}
+        <AppText variant="h3" accessibilityRole="header" color={FOOTER_THEME.paper}>{local(settings.title, settings.titleAr) || t('sections.stories')}</AppText>
+        {settings.subtitle ? <AppText variant="body" color={FOOTER_THEME.paper}>{local(settings.subtitle, settings.subtitleAr)}</AppText> : null}
         {settings.ctaLabel ? <Pressable testID="stories-explore" accessibilityRole="button" onPress={() => router.push('/stories')} style={styles.cta}>
           <AppText variant="body" color={FOOTER_THEME.paper}>{local(settings.ctaLabel, settings.ctaLabelAr)} {theme.isRTL ? '←' : '→'}</AppText>
         </Pressable> : null}

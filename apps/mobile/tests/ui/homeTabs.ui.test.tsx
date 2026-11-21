@@ -34,21 +34,20 @@ async function renderTabs(tint?: Parameters<typeof HomeTabs>[0]['tint']) {
 describe('HomeTabs', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('affiche cinq onglets texte, sans icône', async () => {
+  it('affiche deux onglets texte, sans icône', async () => {
     await renderTabs();
     const tabs = screen.getAllByRole('tab');
-    expect(tabs).toHaveLength(5);
-    expect(tabs[0].props.accessibilityLabel).toBe('Social');
+    expect(tabs).toHaveLength(2);
+    expect(tabs.map(tab => tab.props.accessibilityLabel)).toEqual(['Zayrovi News', 'Social Shopping']);
     // Texte seul : aucune icône Ionicons rendue dans la rangée.
     expect(screen.UNSAFE_queryAllByType(require('@expo/vector-icons/Ionicons').default)).toHaveLength(0);
   });
 
-  it('garde une bande compacte avec un seul séparateur discret et un soulignement fin', async () => {
+  it('garde une bande compacte avec un seul séparateur discret', async () => {
     await renderTabs();
     const strip = StyleSheet.flatten(screen.getByTestId('home-tabs').props.style);
     expect(strip.borderTopWidth).toBeUndefined();
     expect(strip.borderBottomWidth).toBe(StyleSheet.hairlineWidth);
-    expect(StyleSheet.flatten(screen.getByTestId('home-tab-underline').props.style).height).toBe(1);
     for (const tab of screen.getAllByRole('tab')) {
       expect(StyleSheet.flatten(tab.props.style).minHeight).toBeGreaterThanOrEqual(44);
     }
@@ -59,21 +58,15 @@ describe('HomeTabs', () => {
     const tint = screen.getByTestId('home-tabs-hero-tint', { includeHiddenElements: true });
     expect(tint.props.pointerEvents).toBe('none');
     expect(StyleSheet.flatten(tint.props.children[0].props.style).backgroundColor).toBe('#FFE1B0');
-    fireEvent.press(screen.getByRole('tab', { name: 'Nouveautés' }));
-    expect(router.navigate).toHaveBeenCalledWith('/publisher/zayrovi-team');
+    fireEvent.press(screen.getByRole('tab', { name: 'Zayrovi News' }));
+    expect(router.navigate).toHaveBeenCalledWith('/zayrovi-news');
   });
 
   it('chaque onglet ouvre une route de l’application (pas une URL de site)', async () => {
     await renderTabs();
-    fireEvent.press(screen.getByRole('tab', { name: 'Social' }));
+    fireEvent.press(screen.getByRole('tab', { name: 'Social Shopping' }));
     expect(router.navigate).toHaveBeenNthCalledWith(1, { pathname: '/(tabs)/social', params: { filter: 'all' } });
-    fireEvent.press(screen.getByRole('tab', { name: 'Nouveautés' }));
-    fireEvent.press(screen.getByRole('tab', { name: 'Promotions' }));
-    fireEvent.press(screen.getByRole('tab', { name: 'Publications' }));
-    expect(router.navigate).toHaveBeenNthCalledWith(2, '/publisher/zayrovi-team');
-    expect(router.navigate).toHaveBeenNthCalledWith(3, '/promotions');
-    expect(router.navigate).toHaveBeenNthCalledWith(4, '/publications');
     fireEvent.press(screen.getByRole('tab', { name: 'Zayrovi News' }));
-    expect(router.navigate).toHaveBeenNthCalledWith(5, '/zayrovi-news');
+    expect(router.navigate).toHaveBeenNthCalledWith(2, '/zayrovi-news');
   });
 });
