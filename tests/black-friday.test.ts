@@ -6,7 +6,7 @@ import { expect, it } from 'vitest';
 import { app, db } from '../src/server';
 import { createAdminSession, setAdminCookie } from '../src/admin/auth';
 import { QatafoDatabase } from '../src/db/database';
-import { BLACK_FRIDAY_DEMO, BLACK_FRIDAY_DEMO_MIGRATION, BLACK_FRIDAY_KEY, readBlackFridaySettings } from '../src/catalogue/blackFriday';
+import { BLACK_FRIDAY_DEMO, BLACK_FRIDAY_DEMO_MIGRATION, BLACK_FRIDAY_KEY, readBlackFridaySettings, installBlackFridayCollections, readPublicBlackFriday } from '../src/catalogue/blackFriday';
 import { demoTnd, ZALANDO_DEMO, zalandoDemoProductId } from '../src/catalogue/installZalandoDemoCatalogue';
 import { addCatalogueLine } from '../src/catalogue/cartAdd';
 import { DEFAULT_BLACK_FRIDAY, normalizeBlackFriday } from '../shared/blackFriday';
@@ -19,6 +19,14 @@ it('publishes nine real demo discounts from the catalogue in authored order', as
   const response = await request(app).get(publicUrl).expect(200).expect('Cache-Control', 'no-store');
   const block = response.body.data;
   expect(block.maxDiscount).toBe(30);
+  expect(block.collections.map((item: { id: string }) => item.id)).toEqual(['vans', 'streetwear', 'casual', 'beauty']);
+  const links = block.collections.flatMap((item: { productIds: string[]; demo: boolean; endsAt: string; cover: string }) => {
+    expect(item.demo).toBe(true);
+    expect(Date.parse(item.endsAt)).toBeGreaterThan(Date.now());
+    expect(fs.existsSync(path.join(process.cwd(), 'assets', item.cover))).toBe(true);
+    return item.productIds;
+  });
+  expect(new Set(links)).toEqual(new Set(BLACK_FRIDAY_DEMO.map(([key]) => zalandoDemoProductId(key))));
   expect(block.cover).toBe('/media/catalogue/zalando-demo-v1/p016-2.jpg');
   expect(block.products.map((p: { id: string }) => p.id)).toEqual(BLACK_FRIDAY_DEMO.map(([key]) => zalandoDemoProductId(key)));
   for (const [i, [key, percent]] of BLACK_FRIDAY_DEMO.entries()) {
@@ -45,13 +53,17 @@ it('secures CRM writes, rejects ineligible products and filters later stock/pric
   const authorized = (req: request.Test) => req.set('Cookie', cookie).set('x-csrf-token', session.csrfToken);
   await request(app).put(admin).send(before).expect(401);
   const id = demoId(0), second = demoId(1);
-  const update = { ...before, title: 'Black Friday\nTest', productIds: [second, id], cover: '/media/special.jpg', featureCover: '/media/feature.jpg',
+  const update = { ...before, collections: [], title: 'Black Friday\nTest', productIds: [second, id], cover: '/media/special.jpg', featureCover: '/media/feature.jpg',
     backgroundColor: '#deaf99', surfaceColor: '#101010', landingTitle: 'Black Friday Démo', featureTitleFr: 'Offres du week-end', featureCtaFr: 'Voir la sélection' };
   const searched = await authorized(request(app).get(`${admin}/products`).query({ q: 'Vans' })).expect(200);
   expect(searched.body.data.some((item: { id: string }) => item.id === id)).toBe(true);
   try {
     await authorized(request(app).put(admin)).send({ ...update, productIds: [zalandoDemoProductId('zalando-p001')] }).expect(400);
     await authorized(request(app).put(admin)).send({ ...update, backgroundColor: 'transparent' }).expect(400);
+    const selection = { id: 'test-edited', titleFr: 'Sélection', titleAr: 'مجموعة', cover: '', demo: true, endsAt: '', productIds: [id] };
+    await authorized(request(app).put(admin)).send({ ...update, collections: [{ ...selection, productIds: [demoId(2)] }] }).expect(400);
+    await authorized(request(app).put(admin)).send({ ...update, collections: [selection] }).expect(200);
+    expect((await request(app).get(publicUrl)).body.data).toMatchObject({ collections: [selection], products: [{ id }] });
     await authorized(request(app).put(admin)).send(update).expect(200);
     expect((await request(app).get(publicUrl)).body.data).toMatchObject({ cover: '/media/special.jpg', featureCover: '/media/feature.jpg', backgroundColor: '#DEAF99', surfaceColor: '#101010',
       landingTitle: 'Black Friday Démo', featureCtaFr: 'Voir la sélection', products: [{ id: second }, { id }] });
@@ -138,4 +150,17 @@ it('hides scheduled campaigns when ended without touching the actual catalogue p
     expect((await request(app).get(publicUrl).expect(200)).body.data).toBeNull();
     expect(db.get('SELECT final_price,compare_at_price FROM products WHERE id=?', id)).toEqual(price);
   } finally { db.run('UPDATE settings SET setting_value=? WHERE setting_key=?', JSON.stringify(before), BLACK_FRIDAY_KEY); }
+});
+
+
+it('uses fixed per-selection deadlines and cannot re-seed them over an existing campaign', () => {
+  const before = readBlackFridaySettings(db);
+  const vans = before.collections[0]!;
+  const advanceTo = Date.parse(vans.endsAt);
+  const live = readPublicBlackFriday(db, advanceTo)!;
+  expect(live.collections.map(item => item.id)).not.toContain(vans.id);
+  expect(live.products.some(offer => vans.productIds.includes(offer.id))).toBe(false);
+  installBlackFridayCollections(db, new Date(advanceTo + 5000).toISOString());
+  expect(readBlackFridaySettings(db).collections).toEqual(before.collections);
+  expect(readPublicBlackFriday(db, Math.max(...before.collections.map(item => Date.parse(item.endsAt))))).toBeNull();
 });

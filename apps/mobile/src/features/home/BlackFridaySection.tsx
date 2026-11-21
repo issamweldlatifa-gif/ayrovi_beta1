@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { router, type Href } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import type { BlackFridayCampaign, BlackFridayOffer } from '@/api/blackFriday';
+import { blackFridayCollections, type BlackFridayCampaign, type BlackFridaySelection } from '@/api/blackFriday';
 import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
 import { FullBleed } from '@/design/layout';
@@ -11,11 +11,12 @@ import { AppText } from '@/design/ui';
 import { useI18n } from '@/i18n';
 import { blackFridayGeometry } from './blackFridayGeometry';
 import { BlackFridayBadge } from './BlackFridayBadge';
-import { blackFridayBannerInk } from '../../../../../shared/blackFriday';
+import { BLACK_FRIDAY_RAIL_COLLECTIONS, blackFridayBannerInk } from '../../../../../shared/blackFriday';
 
 export const openBlackFridayDeals = () => router.push('/black-friday' as Href);
 export const openBlackFridayProduct = (id: string) => router.push({ pathname: '/product/[id]', params: { id } });
-type RailItem = { kind: 'product'; offer: BlackFridayOffer } | { kind: 'all' };
+export const openBlackFridayCollection = (id: string) => router.push(`/black-friday?view=products&collection=${encodeURIComponent(id)}` as Href);
+type RailItem = { kind: 'collection'; selection: BlackFridaySelection } | { kind: 'all' };
 
 export const BlackFridaySection = memo(function BlackFridaySection({ campaign }: { campaign: BlackFridayCampaign }) {
   const { locale, t } = useI18n();
@@ -24,21 +25,24 @@ export const BlackFridaySection = memo(function BlackFridaySection({ campaign }:
   const ink = blackFridayBannerInk(campaign.backgroundColor);
   const surfaceInk = blackFridayBannerInk(campaign.surfaceColor);
   const cta = locale === 'ar' ? campaign.ctaAr : campaign.ctaFr;
-  const items: RailItem[] = [...campaign.products.map(offer => ({ kind: 'product' as const, offer })), { kind: 'all' }];
+  const selections = blackFridayCollections(campaign);
+  if (!selections.length) return null;
+  const items: RailItem[] = [...selections.slice(0, BLACK_FRIDAY_RAIL_COLLECTIONS).map(selection => ({ kind: 'collection' as const, selection })), { kind: 'all' }];
   return <FullBleed>
     <View testID="home-black-friday" style={[styles.section, { backgroundColor: campaign.surfaceColor }]}>
       <View style={[styles.banner, { minHeight: g.bannerHeight, paddingBottom: g.overlap, backgroundColor: campaign.backgroundColor }]} testID="black-friday-banner">
         <AppText testID="black-friday-title" accessibilityRole="header" variant="display" align="center" color={ink}
           style={{ fontFamily: font('regular') }}>{campaign.title}</AppText>
-        <AppText variant="label" align="center" color={ink}>{t('blackFriday.max', { percent: campaign.maxDiscount })}</AppText>
+        <AppText variant="label" align="center" color={ink}>{t('blackFriday.max', { percent: Math.max(...selections.map(item => item.maxDiscount)) })}</AppText>
+        {selections.some(item => item.demo) ? <AppText variant="caption" align="center" color={ink}>{t('blackFriday.demo')}</AppText> : null}
       </View>
       <FlatList testID="black-friday-rail" data={items} horizontal inverted={isRTL} showsHorizontalScrollIndicator={false}
-        keyExtractor={item => item.kind === 'all' ? 'all-deals' : item.offer.id} initialNumToRender={3} maxToRenderPerBatch={4} windowSize={5}
+        keyExtractor={item => item.kind === 'all' ? 'all-deals' : item.selection.id} initialNumToRender={BLACK_FRIDAY_RAIL_COLLECTIONS + 1} maxToRenderPerBatch={4} windowSize={5}
         accessibilityLabel={t('blackFriday.offers')}
         style={[styles.rail, { width: g.width, marginTop: -g.overlap }]}
         contentContainerStyle={{ paddingHorizontal: g.inset, gap: g.gap, minHeight: g.terminalHeight }}
-        renderItem={({ item }) => item.kind === 'product'
-          ? <BlackFridayTile offer={item.offer} width={g.tile} ink={surfaceInk} />
+        renderItem={({ item }) => item.kind === 'collection'
+          ? <BlackFridayTile selection={item.selection} width={g.tile} ink={surfaceInk} />
           : <Pressable testID="black-friday-terminal" accessibilityRole="link" accessibilityLabel={cta} onPress={openBlackFridayDeals}
               style={[styles.terminal, { width: g.tile, height: g.terminalHeight }]}>
               <AppImage testID="black-friday-terminal-image" uri={mediaUrl(campaign.cover)} decorative contentFit="cover" blurRadius={1} style={StyleSheet.absoluteFill} />
@@ -56,15 +60,16 @@ export const BlackFridaySection = memo(function BlackFridaySection({ campaign }:
   </FullBleed>;
 });
 
-function BlackFridayTile({ offer, width, ink }: { offer: BlackFridayOffer; width: number; ink: string }) {
-  const { t } = useI18n();
-  return <Pressable testID={`black-friday-product-${offer.id}`} accessibilityRole="link" accessibilityLabel={offer.name}
-    onPress={() => openBlackFridayProduct(offer.id)} style={{ width }}>
-    <AppImage uri={mediaUrl(offer.image)} decorative contentFit="cover" style={styles.photo} />
+function BlackFridayTile({ selection, width, ink }: { selection: BlackFridaySelection; width: number; ink: string }) {
+  const { t, locale } = useI18n();
+  const title = locale === 'ar' ? selection.titleAr : selection.titleFr;
+  return <Pressable testID={`black-friday-rail-${selection.id}`} accessibilityRole="link" accessibilityLabel={title}
+    onPress={() => openBlackFridayCollection(selection.id)} style={{ width }}>
+    <AppImage uri={mediaUrl(selection.cover)} decorative contentFit="cover" style={styles.photo} />
     <View style={styles.copy}>
-      <AppText variant="captionStrong" numberOfLines={1} color={ink}>{offer.name}</AppText>
+      <AppText variant="captionStrong" numberOfLines={1} color={ink}>{title}</AppText>
       <AppText variant="caption" color={ink}>
-        {t('blackFriday.savings')}{' '}<AppText variant="captionStrong" color={ink}>{offer.discountPercent}%</AppText>
+        {t('blackFriday.saveUpTo')}{' '}<AppText variant="captionStrong" color={ink}>{selection.maxDiscount}%</AppText>
       </AppText>
     </View>
   </Pressable>;

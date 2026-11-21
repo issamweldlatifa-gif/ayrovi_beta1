@@ -1,5 +1,5 @@
 import type { QatafoDatabase } from '../db/database';
-import { BLACK_FRIDAY_MAX_PRODUCTS, DEFAULT_BLACK_FRIDAY, blackFridayDiscount, normalizeBlackFriday, type BlackFridaySettings } from '../../shared/blackFriday';
+import { BLACK_FRIDAY_MAX_PRODUCTS, DEFAULT_BLACK_FRIDAY, blackFridayDiscount, normalizeBlackFriday, resolveBlackFridayCollections, type BlackFridaySettings } from '../../shared/blackFriday';
 import { publicLinkedProduct } from '../services/shoppableContent';
 import { demoTnd, ZALANDO_DEMO, zalandoDemoProductId } from './installZalandoDemoCatalogue';
 
@@ -62,12 +62,39 @@ export function saveBlackFridaySettings(db: QatafoDatabase, raw: unknown, now: s
   db.run('UPDATE settings SET setting_value=?,updated_at=? WHERE setting_key=?', JSON.stringify(settings), now, BLACK_FRIDAY_KEY);
   return settings;
 }
-export function readPublicBlackFriday(db: QatafoDatabase) {
-  const { enabled, productIds, ...display } = readBlackFridaySettings(db);
-  if (!enabled || (display.endsAt && Date.parse(display.endsAt) <= Date.now())) return null;
-  const products = blackFridayOffers(db, productIds);
+export function readPublicBlackFriday(db: QatafoDatabase, now = Date.now()) {
+  const { enabled, productIds, collections, ...display } = readBlackFridaySettings(db);
+  if (!enabled || (display.endsAt && Date.parse(display.endsAt) <= now)) return null;
+  const offers = blackFridayOffers(db, productIds);
+  const eligible = new Set(offers.map(offer => offer.id));
+  // Links in the public payload must point only to eligible catalogue offers.
+  const active = resolveBlackFridayCollections(collections, offers, display.endsAt, now);
+  const visible = new Set(active.flatMap(collection => collection.products.map(offer => offer.id)));
+  const products = collections.length ? offers.filter(offer => visible.has(offer.id)) : offers;
   if (!products.length) return null;
-  return { ...display, cover: display.cover || products.at(-1)!.image, featureCover: display.featureCover || display.cover || products[0]!.image, products, maxDiscount: Math.max(...products.map(p => p.discountPercent)) };
+  const publicCollections = collections.filter(collection => active.some(item => item.id === collection.id))
+    .map(collection => ({ ...collection, productIds: collection.productIds.filter(id => eligible.has(id)) }));
+  return { ...display, collections: publicCollections, cover: display.cover || products.at(-1)!.image,
+    featureCover: display.featureCover || display.cover || products[0]!.image, products, maxDiscount: Math.max(...products.map(p => p.discountPercent)) };
+}
+
+export const BLACK_FRIDAY_COLLECTIONS_MIGRATION = 'mobile_black_friday_collections_v1';
+export function installBlackFridayCollections(db: QatafoDatabase, now: string) {
+  const settings = readBlackFridaySettings(db);
+  if (!settings.enabled || settings.collections.length || settings.featureCover ||
+    settings.featureTitleFr !== DEFAULT_BLACK_FRIDAY.featureTitleFr || settings.featureTitleAr !== DEFAULT_BLACK_FRIDAY.featureTitleAr ||
+    settings.featureCtaFr !== DEFAULT_BLACK_FRIDAY.featureCtaFr || settings.featureCtaAr !== DEFAULT_BLACK_FRIDAY.featureCtaAr || settings.productIds.length !== BLACK_FRIDAY_DEMO.length ||
+    !BLACK_FRIDAY_DEMO.every(([key]) => settings.productIds.includes(zalandoDemoProductId(key)))) return;
+  const demo = [
+    ['vans', 'Vans – Vestiaire street', 'فانس – ستايل الشارع', 7, ['p008', 'p006', 'p011']],
+    ['streetwear', 'Basiques urbains', 'أساسيات يومية', 9, ['p018', 'p005']],
+    ['casual', 'Le vestiaire casual', 'إطلالات كاجوال', 8, ['p002', 'p023']],
+    ['beauty', 'Beauté & soins', 'جمال وعناية', 10, ['p016', 'p014']],
+  ] as const;
+  settings.collections = demo.map(([id, titleFr, titleAr, days, skus]) => ({ id, titleFr, titleAr, demo: true,
+    cover: `/media/catalogue/black-friday-demo-v1/${id}.jpg`, endsAt: new Date(Date.parse(now) + days * 86_400_000).toISOString(),
+    productIds: skus.map(sku => zalandoDemoProductId(`zalando-${sku}`)) }));
+  db.run('UPDATE settings SET setting_value=?,updated_at=? WHERE setting_key=?', JSON.stringify(settings), now, BLACK_FRIDAY_KEY);
 }
 
 /** One-time, price-guarded demo repricing. Editing/pausing the section never modifies catalogue prices. */
