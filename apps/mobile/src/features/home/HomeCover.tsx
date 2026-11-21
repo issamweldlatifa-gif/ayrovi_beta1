@@ -42,7 +42,6 @@ export const COVER_ASPECT = 10 / 15;
 /** Destination fermée : des pages de l'APPLICATION, jamais du site. */
 const DESTINATION_ROUTES = {
   publications: '/publications',
-  social: '/(tabs)/social',
   catalog: OFFICIAL_PUBLISHER_ROUTE,
   promotions: '/promotions',
 } as const;
@@ -111,7 +110,7 @@ export const HomeCover = memo(function HomeCover() {
     return () => subscription.remove();
   }, []);
 
-  const social = cover.data?.destination === 'social' || cover.data?.destination === 'publications';
+  const social = cover.data?.destination === 'social';
   const slides = social ? [] : cover.data?.slides ?? [];
   const paused = interacting || !isFocused || !appActive || userPaused;
   const hasVideo = slides.some((slide) => slide.type === 'video');
@@ -143,9 +142,11 @@ export const HomeCover = memo(function HomeCover() {
   // Masquée par le CRM (ou réponse vide) ⇒ rien, jamais un bloc vide.
   if (cover.isPending || !cover.data || !cover.data.enabled) return null;
 
-  if (social) return <SocialShoppingCover settings={cover.data} />;
+  if (cover.data.destination === 'social') return <SocialShoppingCover settings={cover.data} />;
+  if (!slides.length) return null;
 
-  const title = cover.data.title || t('home.featured.title');
+  const isPublicationEntry = cover.data.destination === 'publications';
+  const title = cover.data.title || t(isPublicationEntry ? 'home.publicationsEntry.title' : 'home.featured.title');
   const ctaLabel = cover.data.ctaLabel || (locale === 'ar' ? 'اكتشف' : 'Je découvre');
   const route = DESTINATION_ROUTES[cover.data.destination];
   const pauseLabel = userPaused
@@ -211,10 +212,14 @@ export const HomeCover = memo(function HomeCover() {
           pointerEvents="none"
         />
         <View style={styles.overlay} pointerEvents="box-none">
+          {isPublicationEntry && title !== t('home.publicationsEntry.title') ? (
+            <AppText testID="home-publications-entry-label" variant="captionStrong" color={theme.colors.onMedia}
+              style={styles.title}>{t('home.publicationsEntry.title')}</AppText>
+          ) : null}
           {title ? (
             <AppText
               testID="home-cover-title"
-              variant="h2"
+              variant={isPublicationEntry ? 'h1' : 'h2'}
               color={theme.colors.onMedia}
               numberOfLines={3}
               style={[styles.title, { fontFamily: theme.font('bold') }]}
@@ -225,7 +230,7 @@ export const HomeCover = memo(function HomeCover() {
           <Pressable
             testID="home-cover-cta"
             accessibilityRole="button"
-            accessibilityLabel={ctaLabel}
+            accessibilityLabel={isPublicationEntry ? t('home.publicationsEntry.open') : ctaLabel}
             onPress={() => router.push(route as never)}
             style={[styles.cta, { borderColor: theme.colors.onMedia }]}
           >

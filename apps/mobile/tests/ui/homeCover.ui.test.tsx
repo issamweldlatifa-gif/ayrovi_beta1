@@ -100,21 +100,24 @@ describe('HomeCover — le nouveau bloc d’entrée', () => {
     expect(screen.queryByTestId('home-featured-cta')).toBeNull();
   });
 
-  it('remplace la cover Publications par une image Social Shopping et ouvre le fil natif', async () => {
+  it('conserve le carrousel et le titre CRM sur la cover Publications', async () => {
     mockCover.data = { ...coverData(), destination: 'publications' };
     await renderCover();
-    expect(screen.queryByTestId('home-cover-list')).toBeNull();
-    fireEvent.press(screen.getByRole('link', { name: 'Social Shopping' }));
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/(tabs)/social', params: { filter: 'all' } });
+    expect(screen.getByTestId('home-cover-list')).toBeTruthy();
+    expect(screen.getByText('Publications ZAYROVI')).toBeTruthy();
+    expect(screen.getByText('NOUVEAUTÉS\nVOTRE DOSE HEBDOMADAIRE')).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Voir les publications ZAYROVI' }));
+    expect(router.push).toHaveBeenCalledWith('/publications');
   });
 
-  it('affiche la cover Social Shopping localisée sans média CRM dans la démo', async () => {
+  it('affiche la cover Publications et son contrôle de lecture sans média CRM dans la démo', async () => {
     mockCover.data = demoHomeCover();
     await renderCover();
-    expect(screen.getByText('Découvrir le fil')).toBeTruthy();
-    expect(screen.queryByTestId('home-cover-list')).toBeNull();
-    fireEvent.press(screen.getByRole('link', { name: 'Social Shopping' }));
-    expect(router.push).toHaveBeenCalledWith({ pathname: '/(tabs)/social', params: { filter: 'all' } });
+    expect(screen.getByText('Je découvre')).toBeTruthy();
+    expect(screen.getByTestId('home-cover-list').props.accessibilityLabel).toBe('1/2');
+    expect(screen.getByRole('button', { name: 'Mettre le défilement en pause' })).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Voir les publications ZAYROVI' }));
+    expect(router.push).toHaveBeenCalledWith('/publications');
   });
 
   it('utilise le titre et le bouton éditoriaux pour une cover Social Shopping configurée', async () => {

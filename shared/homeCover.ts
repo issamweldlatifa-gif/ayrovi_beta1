@@ -149,11 +149,9 @@ export function resolveCoverPublic(settings: CoverSettings, slides: CoverSlide[]
   return { ...settings, slides };
 }
 
-/** Mobile uses the former Publications slot for Social Shopping; the original
- * settings and media remain in CRM. The app supplies an editorial fallback image. */
+/** Preserve the published destination; Social Shopping can use bundled artwork. */
 export function resolveMobileCover(settings: CoverSettings, slides: CoverSlide[]): CoverPublic | null {
   if (!settings.enabled) return { ...settings, title: '', ctaLabel: '', slides: [] };
-  if (settings.destination === 'publications') return { ...settings, title: '', ctaLabel: '', destination: 'social', slides: [] };
   if (settings.destination === 'social') return { ...settings, slides };
   return resolveCoverPublic(settings, slides);
 }

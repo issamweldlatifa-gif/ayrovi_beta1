@@ -287,7 +287,7 @@ export function parseHomeCover(payload: unknown): HomeCover | null {
 }
 
 export async function fetchHomeCover(options?: RequestOptions): Promise<HomeCover | null> {
-  const { data } = await apiGet<unknown>('/api/public/home-cover?surface=mobile', options);
+  const { data } = await apiGet<unknown>('/api/public/home-cover?surface=mobile-v2', options);
   return parseHomeCover(data);
 }
 

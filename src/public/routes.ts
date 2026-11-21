@@ -482,7 +482,8 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         poster: String(slide.poster || ''),
         alt: String(slide.alt || ''),
       }));
-    res.json({ success: true, data: req.query.surface === 'mobile' ? resolveMobileCover(settings, slides) : resolveCoverPublic(settings, slides) });
+    res.json({ success: true, data: req.query.surface === 'mobile-v2' || req.query.surface === 'mobile'
+      ? resolveMobileCover(settings, slides) : resolveCoverPublic(settings, slides) });
   });
 
   router.get('/hero-carousel-settings', (_req, res) => {

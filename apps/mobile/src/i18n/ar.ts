@@ -334,6 +334,8 @@ export const ar = {
   'brand.plusLight': 'Plus Light',
   'tabs.social': 'المجتمع',
   'socialCommerce.title': 'Social Shopping',
+  'home.publicationsEntry.title': 'منشورات ZAYROVI',
+  'home.publicationsEntry.open': 'شوف منشورات ZAYROVI',
   'home.featured.title': 'في الواجهة',
   'zNews.latest': 'آخر الأخبار',
   'zNews.tools': 'أدواتنا',

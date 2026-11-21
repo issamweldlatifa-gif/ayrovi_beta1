@@ -1,17 +1,16 @@
-/** The demo delegates its artwork and localized copy to the Social Shopping card. */
+/** The APK demo should restore the Publications carousel without CRM media. */
 process.env.EXPO_PUBLIC_HERO_DEMO = '1';
 const { COVER_DEMO_ENABLED } = require('../../src/features/home/heroDemo');
 const { demoHomeCover } = require('../../src/features/home/homeCoverDemo');
 
-describe('cover de démo (APK démonstration)', () => {
-  it('active le fallback Social Shopping sans imposer de texte ni de média distant', () => {
-    expect(COVER_DEMO_ENABLED).toBe(true);
-    expect(demoHomeCover()).toMatchObject({
-      enabled: true,
-      destination: 'social',
-      title: '', // Laisser le composant utiliser la langue de l’application.
-      ctaLabel: '',
-      slides: [], // Laisser le composant choisir le visuel embarqué.
-    });
-  });
+test('uses the two bundled Publications covers and the original headline', () => {
+  expect(COVER_DEMO_ENABLED).toBe(true);
+  const demo = demoHomeCover();
+  expect(demo).toMatchObject({ enabled: true, destination: 'publications',
+    title: 'NOUVEAUTÉS\nVOTRE DOSE HEBDOMADAIRE', ctaLabel: 'Je découvre' });
+  expect(demo.slides).toHaveLength(2);
+  for (const slide of demo.slides) {
+    expect(slide.localImage).toBeTruthy();
+    expect(slide.url).toBe('');
+  }
 });

@@ -53,9 +53,9 @@ describe('contrat partagé — normalizeCoverInput & sortie publique', () => {
     expect(next?.settings.title).toBe('Nouveautés\nvotre dose');
   });
 
-  test('mobile remplace uniquement la cover Publications, sans modifier le réglage historique', () => {
+  test('mobile conserve la cover Publications et les destinations explicites', () => {
     const slides = normalizeCoverSlidesInput([{ type: 'image', url: '/uploads/legacy.jpg' }])!;
-    expect(resolveMobileCover(DEFAULT_COVER_SETTINGS, slides)).toMatchObject({ enabled: true, destination: 'social', slides: [] });
+    expect(resolveMobileCover(DEFAULT_COVER_SETTINGS, slides)).toMatchObject({ enabled: true, destination: 'publications', slides });
     expect(resolveCoverPublic(DEFAULT_COVER_SETTINGS, slides)).toMatchObject({ destination: 'publications', slides });
     expect(resolveMobileCover({ ...DEFAULT_COVER_SETTINGS, destination: 'social' }, slides)).toMatchObject({ enabled: true, destination: 'social', slides });
     expect(resolveMobileCover({ ...DEFAULT_COVER_SETTINGS, enabled: false }, slides)).toMatchObject({ enabled: false, slides: [] });
@@ -142,6 +142,16 @@ describe('routes /api/public/home-cover et /api/admin/home-cover', () => {
     expect(hidden.status).toBe(200);
     expect((await request(app).get('/api/public/home-cover')).body.data).toBeNull();
     expect(hidden.body.data.slides).toHaveLength(1);
+    await reset();
+  });
+
+  test('le nouveau client mobile reçoit la cover Publications avec ses médias CRM', async () => {
+    await admin.put('/api/admin/home-cover').set('x-csrf-token', csrf).send({
+      enabled: true, destination: 'publications', title: 'Nouveautés', slides: [{ type: 'image', url: '/uploads/cover.jpg' }],
+    }).expect(200);
+    const path = '/api/public/home-cover';
+    const restored = await request(app).get(path).query({ surface: 'mobile-v2' }).expect(200);
+    expect(restored.body.data).toMatchObject({ enabled: true, destination: 'publications', title: 'Nouveautés', slides: [{ url: '/uploads/cover.jpg' }] });
     await reset();
   });
 

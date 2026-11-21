@@ -335,6 +335,8 @@ export const fr = {
   'brand.plusLight': 'Plus Light',
   'tabs.social': 'Social',
   'socialCommerce.title': 'Social Shopping',
+  'home.publicationsEntry.title': 'Publications ZAYROVI',
+  'home.publicationsEntry.open': 'Voir les publications ZAYROVI',
   'home.featured.title': 'À la une',
   'zNews.latest': 'Dernières actualités',
   'zNews.tools': 'Nos outils',
