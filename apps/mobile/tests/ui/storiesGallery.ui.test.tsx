@@ -30,7 +30,7 @@ it('opens a pure-black gallery, leads with the selected story, and opens its edi
   fireEvent.press(screen.getAllByTestId('stories-gallery-card-story-3')[0]!);
   expect(router.push).toHaveBeenLastCalledWith({ pathname: '/stories', params: { id: 'story-3' } });
   expect(within(screen.getByTestId('stories-gallery-new')).getByText('NOUVEAU !')).toBeTruthy();
-  fireEvent.press(screen.getByRole('button', { name: 'Suivre Zayrovi Team' }));
+  fireEvent.press(screen.getByRole('button', { name: 'Abonnez-moi' }));
   expect(router.push).toHaveBeenLastCalledWith('/sign-in');
   fireEvent.press(screen.getByTestId('stories-gallery-back'));
   expect(router.back).toHaveBeenCalled();

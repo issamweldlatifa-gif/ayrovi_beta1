@@ -37,7 +37,7 @@ export default function ProfileScreen() {
 
   const overview = useQuery({
     queryKey: ['account', 'overview', session.account?.id ?? 'anon'],
-    queryFn: ({ signal }) => fetchOverview({ signal }),
+    queryFn: ({ signal }) => fetchOverview({ signal, headers: { 'Accept-Language': locale } }),
     // Le profil affiché est celui du SERVEUR : on ne pré-remplit pas avec un
     // cache local qui pourrait dater.
     staleTime: 0,

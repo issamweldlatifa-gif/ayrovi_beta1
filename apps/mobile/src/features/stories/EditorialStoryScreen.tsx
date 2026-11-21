@@ -7,7 +7,7 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import { router, useIsFocused } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import type { StoryEditorial, StoryMedia } from '../../../../../shared/storyEditorial';
+import { storySlideProductIds, type StoryEditorial, type StoryMedia } from '../../../../../shared/storyEditorial';
 import { storyPresentation, useEditorialStory, type EditorialStory } from '@/api/storyEditorial';
 import { mediaUrl } from '@/api/client';
 import { sendInteraction } from '@/api/social';
@@ -128,11 +128,11 @@ export function StorySlides({ story, composition }: { story: EditorialStory; com
   const local = (value: { text: string; textAr?: string }) => (locale === 'ar' && value.textAr) || value.text;
   const title = local(slide.title) || (step === 0 ? (locale === 'ar' && story.titleAr) || story.title : ''), caption = local(slide.caption);
   const inset = slide.layout === 'inset';
-  const product = slide.layout === 'product' ? story.products.find(row => row.id === slide.productId) : undefined;
+  const products = storySlideProductIds(slide).flatMap(id => { const product = story.products.find(row => row.id === id); return product ? [product] : []; });
   const direction = rowDirectionFor(isRTL);
-  const openArticle = () => router.push({ pathname: '/story-article/[id]', params: { id: story.id, ...(slide.action === 'discover' ? { mode: 'discover' } : {}) } });
+  const openArticle = () => router.push({ pathname: '/story-article/[id]', params: { id: story.id } });
   const cta = composition.article && slide.action ? <Pressable testID="editorial-story-cta" accessibilityRole="link" onPress={openArticle} style={styles.cta}>
-    <AppText color={BRAND.white}>{t(slide.action === 'read' ? 'storiesEditorial.read' : 'shopping.discover')}</AppText>
+    <AppText color={BRAND.white}>{t(slide.action === 'read' ? 'storiesEditorial.read' : slide.action === 'explore' ? 'storiesEditorial.explore' : 'shopping.discover')}</AppText>
   </Pressable> : null;
   const showMedia = (fit: 'cover' | 'contain' = 'cover') => slide.media.kind === 'video' ?
     <StoryVideo key={`${step}:${slide.media.url}`} media={slide.media} playing={playing} muted={muted} fit={fit} onDuration={onDuration} /> :
@@ -176,7 +176,13 @@ export function StorySlides({ story, composition }: { story: EditorialStory; com
       <View style={inset ? styles.insetFooter : styles.fullFooter}>
         {!inset && title ? <AppText accessibilityRole="header" color={BRAND.white} style={slide.layout === 'product' ? undefined : styles.title} numberOfLines={3}>{title}</AppText> : null}
         {!inset && caption ? <AppText color={BRAND.white} style={styles.caption} numberOfLines={4}>{caption}</AppText> : null}
-        {product ? <StoryEditorialProduct item={product} saved={favorites.isFavorite(product.id)} onFavorite={() => favorites.toggle(product.id)} /> : null}
+        {products.length === 1 ? <StoryEditorialProduct item={products[0]!} saved={favorites.isFavorite(products[0]!.id)} onFavorite={() => favorites.toggle(products[0]!.id)} /> : null}
+        {products.length > 1 ? <ScrollView testID="editorial-story-product-rail" horizontal showsHorizontalScrollIndicator={false}
+          snapToInterval={page - 2 * STORY.fullInset - 24 + 8} decelerationRate="fast" contentContainerStyle={[styles.productRail, { direction: isRTL ? 'rtl' : 'ltr' }]}>
+          {products.map(product => <View key={product.id} style={{ width: page - 2 * STORY.fullInset - 24 }}>
+            <StoryEditorialProduct item={product} saved={favorites.isFavorite(product.id)} onFavorite={() => favorites.toggle(product.id)} />
+          </View>)}
+        </ScrollView> : null}
         {cta}
       </View>
     </View>
@@ -198,6 +204,7 @@ const styles = StyleSheet.create({
   insetScroll: { flex: 1 },
   insetCopy: { paddingHorizontal: STORY.inset, paddingTop: 12, paddingBottom: 12, gap: 16 },
   insetMedia: { width: '100%', borderRadius: RADIUS.lg, overflow: 'hidden' },
+  productRail: { gap: 8 },
   fullFooter: { paddingHorizontal: STORY.fullInset, gap: 12 },
   insetFooter: { paddingHorizontal: STORY.inset },
   cta: { minHeight: 48, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: BRAND.white, borderRadius: RADIUS.full },

@@ -4,6 +4,7 @@ import { router, useIsFocused } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useStories } from '@/api/hooks';
 import { storyPresentation, useEditorialStory, type EditorialStory } from '@/api/storyEditorial';
 import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
@@ -17,22 +18,21 @@ import { ICON_SIZE, RADIUS, PUBLICATION_THEME as P } from '@/design/tokens.mobil
 import { BRAND } from '@/design/tokens.generated';
 import { AppText } from '@/design/ui';
 import { useI18n } from '@/i18n';
-import { OFFICIAL_PUBLISHER_NAME, OFFICIAL_PUBLISHER_ID } from '@/features/publications/officialPublisher';
-import { usePublisherFollow } from '@/features/publications/usePublisherFollow';
+import { FollowStories, StoryCard } from './StoriesGallery';
 import type { StoryArticle } from '../../../../../shared/storyEditorial';
 import { StoryEditorialProduct, useStoryFavorites } from './StoryEditorialProduct';
 
 const ARTICLE = { maxWidth: 640, heading: 26, headingLine: 30, bodyLine: 24, heroAspect: 2 / 3, imageAspect: 4 / 5, railInset: 12, railGap: 8, railPeek: 28 } as const;
-export function StoryArticleScreen({ id, discover }: { id: string; discover: boolean }) {
+export function StoryArticleScreen({ id }: { id: string }) {
   const query = useEditorialStory(id);
   const story = query.story;
   const article = story && storyPresentation(story)?.article;
-  return <StoryArticlePage id={id} discover={discover} story={story ?? null} article={article ?? null}
+  return <StoryArticlePage id={id} story={story ?? null} article={article ?? null}
     pending={query.isPending} error={query.error} onRetry={() => void query.refetch()} />;
 }
 
-function StoryArticlePage({ id, discover, story, article, pending, error, onRetry }: {
-  id: string; discover: boolean; story: EditorialStory | null; article: StoryArticle | null;
+function StoryArticlePage({ id, story, article, pending, error, onRetry }: {
+  id: string; story: EditorialStory | null; article: StoryArticle | null;
   pending: boolean; error: unknown; onRetry: () => void;
 }) {
   const { t, locale } = useI18n();
@@ -42,8 +42,8 @@ function StoryArticlePage({ id, discover, story, article, pending, error, onRetr
   const { width } = useWindowDimensions();
   const reduce = useReduceMotion();
   const favorites = useStoryFavorites();
-  const follow = usePublisherFollow(discover ? OFFICIAL_PUBLISHER_ID : '', () => router.push('/sign-in'));
-  const followLabel = t(follow.state === 'following' ? 'publication.following' : follow.state === 'error' ? 'publication.followRetry' : 'publication.follow');
+  const stories = useStories();
+  const related = (stories.data ?? []).filter(item => item.id !== id && item.mediaType === 'IMAGE' && item.mediaUrl).slice(0, 4);
   const scroll = useRef<ScrollView>(null);
   const [showTop, setShowTop] = useState(false);
   const back = () => goBack(`/stories?id=${encodeURIComponent(id)}`);
@@ -56,23 +56,15 @@ function StoryArticlePage({ id, discover, story, article, pending, error, onRetr
   const tileWidth = Math.max(0, (pageWidth - 2 * ARTICLE.railInset - ARTICLE.railGap - (hasMoreTiles ? ARTICLE.railPeek : 0)) / 2);
   const title = article && (local(article.title) || (locale === 'ar' && story?.titleAr) || story?.title);
   const intro = article && local(article.intro);
-  const words = article ? [intro, ...article.blocks.flatMap(block => block.type === 'text' ? [local(block.content)] : [])]
+  const words = article ? [intro, ...article.blocks.flatMap(block => block.type !== 'image' ? [local(block.content)] : [])]
     .join(' ').match(/[\p{L}\p{N}]+/gu)?.length ?? 0 : 0;
   const readTime = words >= 30 ? t('storiesEditorial.readTime', { minutes: Math.ceil(words / 200) }) : '';
   const cover = article?.cover || (story?.legacyMedia?.kind !== 'video' ? story?.legacyMedia?.url : undefined);
   const selectionTitle = article && (local(article.selectionTitle) || t('storiesEditorial.selection'));
-  return <View testID="editorial-story-article" style={[styles.page, { paddingTop: insets.top, backgroundColor: discover ? BRAND.black : BRAND.white }]}>
-    {focused ? <StatusBar style={discover ? 'light' : 'dark'} /> : null}
-    <View style={[styles.toolbar, { flexDirection: direction }, discover && styles.discovery]}>
-      <BackButton onPress={back} label={t('common.back')} color={discover ? BRAND.white : P.ink} />
-      {discover ? <>
-        <AppText variant="bodyStrong" color={BRAND.white} numberOfLines={1} style={styles.flex}>{OFFICIAL_PUBLISHER_NAME}</AppText>
-        {article && story ? <Pressable accessibilityRole="button" accessibilityLabel={followLabel} disabled={follow.disabled} onPress={follow.press}
-          accessibilityState={{ selected: follow.state === 'following', disabled: follow.disabled }} style={[styles.follow, { flexDirection: direction }]}>
-          <Ionicons name={follow.state === 'following' ? 'checkmark-outline' : 'add-outline'} color={BRAND.white} size={ICON_SIZE.md} />
-          <AppText color={BRAND.white}>{follow.state === 'pending' ? '…' : followLabel}</AppText>
-        </Pressable> : null}
-      </> : null}
+  return <View testID="editorial-story-article" style={[styles.page, { paddingTop: insets.top }]}>
+    {focused ? <StatusBar style="dark" /> : null}
+    <View style={[styles.toolbar, { flexDirection: direction }]}>
+      <BackButton onPress={back} label={t('common.back')} color={P.ink} />
     </View>
     {pending ? <LoadingBlock /> : error ? <ErrorBlock error={error} onRetry={onRetry} /> : !article || !story ? <EmptyBlock>{t('social.empty')}</EmptyBlock> :
       <ScrollView testID="story-article-scroll" style={{ width: pageWidth, backgroundColor: BRAND.white }} ref={scroll}
@@ -80,18 +72,13 @@ function StoryArticlePage({ id, discover, story, article, pending, error, onRetr
         {cover ? <AppImage testID="story-article-cover" uri={mediaUrl(cover)} decorative style={styles.hero} /> : null}
         <View style={styles.heading}>
           {title ? <AppText accessibilityRole="header" color={P.ink} style={styles.title}>{title}</AppText> : null}
-          {intro ? <AppText color={P.ink} style={styles.body}>{intro}</AppText> : null}
         </View>
         <View style={styles.byline}>
           {article.author ? <AppText color={P.ink}>{t('storiesEditorial.by', { name: article.author })}</AppText> : null}
           {dateLabel ? <AppText color={P.ink}>{dateLabel}</AppText> : null}
           {readTime ? <AppText color={P.ink}>{readTime}</AppText> : null}
-          {discover && follow.writeFailed ? <AppText accessibilityRole="alert" color={P.ink}>{t('publication.followError')}</AppText> : null}
         </View>
-        {article.blocks.length ? <View style={styles.blocks}>
-          {article.blocks.map((block, index) => block.type === 'text' ? <AppText key={index} color={P.ink} style={styles.body}>{local(block.content)}</AppText>
-            : <AppImage key={index} uri={mediaUrl(block.url)} accessibilityLabel={local(block.alt)} decorative={!local(block.alt)} style={styles.articleImage} />)}
-        </View> : null}
+        {intro ? <AppText color={P.ink} style={[styles.body, styles.intro]}>{intro}</AppText> : null}
         {story.products.length ? <View style={styles.selection}>
           <View style={[styles.selectionHeading, { flexDirection: direction }]}>
             <AppText accessibilityRole="header" color={P.ink} style={[styles.title, styles.flex]}>{selectionTitle}</AppText>
@@ -103,6 +90,32 @@ function StoryArticlePage({ id, discover, story, article, pending, error, onRetr
             {story.products.map(item => <StoryEditorialProduct key={item.id} item={item} width={tileWidth} saved={favorites.isFavorite(item.id)} onFavorite={() => favorites.toggle(item.id)} />)}
           </ScrollView>
         </View> : null}
+        {article.blocks.length ? <View style={styles.blocks}>
+          {article.blocks.map((block, index) => {
+            if (block.type === 'text') return <AppText key={index} color={P.ink} style={styles.body}>{local(block.content)}</AppText>;
+            if (block.type === 'image') return <AppImage key={index} uri={mediaUrl(block.url)} accessibilityLabel={local(block.alt)} decorative={!local(block.alt)} style={styles.articleImage} />;
+            const product = story.products.find(item => item.id === block.productId);
+            if (!product) return null;
+            const image = block.image || product.image;
+            return <View key={index} style={styles.productFocus} testID={`story-article-focus-${product.id}`}>
+              <AppText accessibilityRole="header" color={P.ink} style={styles.title}>{local(block.title) || product.name}</AppText>
+              <AppText color={P.ink} style={styles.body}>{local(block.content)}</AppText>
+              {image ? <AppImage uri={mediaUrl(image)} decorative contentFit="contain" style={styles.articleImage} /> : null}
+              <StoryEditorialProduct item={product} width={tileWidth} saved={favorites.isFavorite(product.id)} onFavorite={() => favorites.toggle(product.id)} />
+            </View>;
+          })}
+        </View> : null}
+        <View style={styles.moreStories} testID="story-article-more">
+          <AppText accessibilityRole="header" color={BRAND.white} style={styles.title}>{t('storiesEditorial.moreStories')}</AppText>
+          <Pressable accessibilityRole="link" onPress={() => router.dismissTo({ pathname: '/stories', params: { id: '', focus: '' } })} style={[styles.moreLink, { flexDirection: direction }]}>
+            <AppText color={BRAND.white}>{t('storiesEditorial.allStories')}</AppText>
+            <Ionicons name={isRTL ? 'arrow-back-outline' : 'arrow-forward-outline'} color={BRAND.white} size={ICON_SIZE.md} />
+          </Pressable>
+          {related.length ? <View style={[styles.relatedCards, { flexDirection: direction }]}>
+            {related.map(item => <StoryCard key={item.id} story={item} width={(pageWidth - 2 * ARTICLE.railInset - ARTICLE.railGap) / 2} small />)}
+          </View> : null}
+        </View>
+        <FollowStories light />
       </ScrollView>}
     {showTop ? <Pressable accessibilityRole="button" accessibilityLabel={t('storiesGallery.top')} style={[styles.top, { bottom: insets.bottom + 16 }]}
       onPress={() => scroll.current?.scrollTo({ y: 0, animated: !reduce })}><Ionicons name="arrow-up-outline" size={ICON_SIZE.md} color={BRAND.white} /></Pressable> : null}
@@ -112,13 +125,16 @@ function StoryArticlePage({ id, discover, story, article, pending, error, onRetr
 const styles = StyleSheet.create({
   page: { flex: 1, alignItems: 'center', backgroundColor: BRAND.white },
   toolbar: { alignSelf: 'stretch', alignItems: 'center', minHeight: 48, paddingHorizontal: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: P.line },
-  discovery: { backgroundColor: BRAND.black, borderColor: BRAND.black },
   flex: { flex: 1 },
-  follow: { minHeight: 44, alignItems: 'center', paddingHorizontal: 8, gap: 4 },
   hero: { width: '100%', aspectRatio: ARTICLE.heroAspect, borderRadius: RADIUS.lg, overflow: 'hidden' },
   heading: { padding: 24, gap: 24 },
   title: { fontSize: ARTICLE.heading, lineHeight: ARTICLE.headingLine },
   body: { lineHeight: ARTICLE.bodyLine },
+  intro: { paddingHorizontal: ARTICLE.railInset, paddingTop: 32 },
+  productFocus: { gap: 20 },
+  moreStories: { marginTop: 48, paddingHorizontal: ARTICLE.railInset, paddingVertical: 24, gap: 16, backgroundColor: BRAND.black },
+  moreLink: { minHeight: 44, alignItems: 'center', gap: 8, alignSelf: 'flex-start' },
+  relatedCards: { gap: ARTICLE.railGap, flexWrap: 'wrap' },
   byline: { gap: 4, paddingHorizontal: 24, paddingVertical: 16, borderTopWidth: StyleSheet.hairlineWidth, borderColor: P.line },
   blocks: { paddingHorizontal: ARTICLE.railInset, paddingTop: 48, gap: 32 },
   articleImage: { width: '100%', aspectRatio: ARTICLE.imageAspect, borderRadius: RADIUS.lg, overflow: 'hidden' },

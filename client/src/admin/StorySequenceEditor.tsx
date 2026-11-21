@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { STORY_EDITORIAL_LIMITS as LIMITS, type StoryArticle, type StoryArticleBlock, type StoryEditorial, type StoryLocalizedText, type StorySlide } from '../../../shared/storyEditorial';
+import { STORY_EDITORIAL_LIMITS as LIMITS, storySlideProductIds, type StoryArticle, type StoryArticleBlock, type StoryEditorial, type StoryLocalizedText, type StorySlide } from '../../../shared/storyEditorial';
 import { StudioMediaField } from './StudioMediaField';
 import { Button, Field } from './components';
 
@@ -42,14 +42,14 @@ export function StorySequenceEditor({ value, cover, productIds, onChange, upload
   </div>;
   return <section aria-label="Parcours Stories (nouveau format)">
     <h3>Parcours Stories</h3>
-    <p>Une carte ouvre ces écrans dans l’ordre. Les boutons Lire et Découvrir ouvrent l’article de cette carte. Un écran Produit présente un article associé ci-dessus.</p>
+    <p>Une carte ouvre ces écrans dans l’ordre. Lire, Découvrir et Explorer ouvrent le même article. Un écran Produit peut présenter plusieurs produits associés ci-dessus.</p>
     {value.slides.map((slide, i) => <section key={i} className="admin-card">
       <h4>Écran {i + 1}</h4>
       {controls(i, value.slides.length, offset => onChange({ ...value, slides: move(value.slides, i, offset) }),
         () => onChange({ ...value, slides: value.slides.filter((_, index) => index !== i) }), value.slides.length > 1)}
       <Field label="Mise en page"><select value={slide.layout} onChange={e => {
         const layout = e.target.value as StorySlide['layout'];
-        update(i, { ...slide, layout, action: layout === 'product' ? undefined : slide.action, productId: layout === 'product' ? productIds[0] : undefined });
+        update(i, { ...slide, layout, action: layout === 'product' ? undefined : slide.action, productId: undefined, productIds: layout === 'product' && productIds.length ? [productIds[0]!] : undefined });
       }}><option value="cover">Plein écran</option><option value="inset">Média encadré + texte</option><option value="product">Plein écran + produit</option></select></Field>
       <Field label="Média"><select value={slide.media.kind} onChange={e => update(i, { ...slide, media: { kind: e.target.value as StorySlide['media']['kind'], url: '' } })}>
         <option value="image">Photo</option><option value="video">Vidéo</option><option value="gif">GIF animé</option>
@@ -61,12 +61,15 @@ export function StorySequenceEditor({ value, cover, productIds, onChange, upload
       <Localized label="Texte" value={slide.caption} max={420} multiline onChange={caption => update(i, { ...slide, caption })} />
       <Field label="Durée (secondes, facultative)"><input type="number" min={3} max={60} value={slide.seconds ?? ''}
         onChange={e => update(i, { ...slide, seconds: e.target.value ? Number(e.target.value) : undefined })} /></Field>
-      {slide.layout === 'product' ? <Field label="Produit de cet écran"><select value={slide.productId || ''} onChange={e => update(i, { ...slide, productId: e.target.value })}>
-        <option value="">Choisir un produit associé</option>{productIds.map(id => <option key={id} value={id}>{id}</option>)}
-      </select></Field> : <Field label="Bouton"><select value={slide.action || ''} onChange={e => {
+      {slide.layout === 'product' ? <Field label="Produits de cet écran (dans l’ordre de sélection)"><>
+        {productIds.map(id => <label key={id}><input type="checkbox" checked={storySlideProductIds(slide).includes(id)} onChange={event => {
+          const selected = storySlideProductIds(slide);
+          update(i, { ...slide, productId: undefined, productIds: event.target.checked ? [...selected, id] : selected.filter(item => item !== id) });
+        }} /> {id}</label>)}
+      </></Field> : <Field label="Bouton"><select value={slide.action || ''} onChange={e => {
         const action = (e.target.value || undefined) as StorySlide['action'];
         onChange({ ...value, slides: value.slides.map((entry, index) => index === i ? { ...slide, action } : entry), article: selection || (action ? article(cover) : undefined) });
-      }}><option value="">Aucun</option><option value="read">Lire</option><option value="discover">Découvrir</option></select></Field>}
+      }}><option value="">Aucun</option><option value="read">Lire</option><option value="discover">Découvrir</option><option value="explore">Explorer</option></select></Field>}
     </section>)}
     <Button type="button" disabled={value.slides.length >= LIMITS.slides} onClick={() => onChange({ ...value, slides: [...value.slides, frame(cover)] })}>Ajouter un écran</Button>
     {selection ? <section className="admin-card">
@@ -77,10 +80,17 @@ export function StorySequenceEditor({ value, cover, productIds, onChange, upload
       <Field label="Auteur (facultatif)"><input maxLength={100} value={selection.author} onChange={e => updateArticle({ ...selection, author: e.target.value })} /></Field>
       <Localized label="Titre de la sélection de produits" value={selection.selectionTitle} max={150} onChange={selectionTitle => updateArticle({ ...selection, selectionTitle })} />
       {selection.blocks.map((block, index) => <section className="admin-card" key={index}>
-        <h5>{index + 1}. {block.type === 'image' ? 'Image' : 'Paragraphe'}</h5>
+        <h5>{index + 1}. {block.type === 'image' ? 'Image' : block.type === 'product' ? 'Focus produit' : 'Paragraphe'}</h5>
         {controls(index, selection.blocks.length, offset => updateArticle({ ...selection, blocks: move(selection.blocks, index, offset) }),
           () => updateArticle({ ...selection, blocks: selection.blocks.filter((_, i) => i !== index) }))}
-        {block.type === 'text' ? <Localized label="Paragraphe" value={block.content} max={3000} multiline onChange={content => updateBlock(index, { ...block, content })} /> : <>
+        {block.type === 'product' ? <>
+          <Field label="Produit du bloc"><select value={block.productId} onChange={e => updateBlock(index, { ...block, productId: e.target.value })}>
+            <option value="">Choisir un produit</option>{productIds.map(id => <option key={id} value={id}>{id}</option>)}
+          </select></Field>
+          <Localized label="Titre du focus" value={block.title} onChange={title => updateBlock(index, { ...block, title })} />
+          <Localized label="Description du produit" max={3000} multiline value={block.content} onChange={content => updateBlock(index, { ...block, content })} />
+          <StudioMediaField label="Image éditoriale (facultative)" value={block.image} upload={upload} onChange={image => updateBlock(index, { ...block, image })} />
+        </> : block.type === 'text' ? <Localized label="Paragraphe" value={block.content} max={3000} multiline onChange={content => updateBlock(index, { ...block, content })} /> : <>
           <StudioMediaField label="Photo du paragraphe" value={block.url} upload={upload} onChange={url => updateBlock(index, { ...block, url })} />
           <Localized label="Description de l’image" value={block.alt} onChange={alt => updateBlock(index, { ...block, alt })} />
         </>}
@@ -88,6 +98,8 @@ export function StorySequenceEditor({ value, cover, productIds, onChange, upload
       <div className="admin-actions">
         <Button type="button" disabled={selection.blocks.length >= LIMITS.blocks} onClick={() => updateArticle({ ...selection, blocks: [...selection.blocks, { type: 'text', content: empty() }] })}>Ajouter un paragraphe</Button>
         <Button type="button" disabled={selection.blocks.length >= LIMITS.blocks} onClick={() => updateArticle({ ...selection, blocks: [...selection.blocks, { type: 'image', url: '', alt: empty() }] })}>Ajouter une image</Button>
+        <Button type="button" disabled={!productIds.length || selection.blocks.length >= LIMITS.blocks} onClick={() => updateArticle({ ...selection, blocks: [...selection.blocks,
+          { type: 'product', productId: productIds[0]!, title: empty(), content: empty(), image: '' }] })}>Ajouter un focus produit</Button>
         <Button type="button" variant="danger" onClick={() => onChange({ ...value, article: undefined, slides: value.slides.map(slide => ({ ...slide, action: undefined })) })}>Retirer l’article</Button>
       </div>
     </section> : null}

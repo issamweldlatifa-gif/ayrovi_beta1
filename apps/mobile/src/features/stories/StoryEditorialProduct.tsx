@@ -24,7 +24,7 @@ export function useStoryFavorites() {
 export function StoryEditorialProduct({ item, width, saved, onFavorite }: {
   item: LinkedProduct; width?: number; saved: boolean; onFavorite: () => void;
 }) {
-  const { isRTL } = useTheme();
+  const { isRTL, status } = useTheme();
   const t = useT();
   const tile = width !== undefined;
   const direction = rowDirectionFor(isRTL);
@@ -40,7 +40,8 @@ export function StoryEditorialProduct({ item, width, saved, onFavorite }: {
       <View style={tile ? styles.tileCopy : styles.copy}>
         {item.brand ? <AppText color={P.ink} variant="bodyStrong" numberOfLines={1}>{item.brand}</AppText> : null}
         <AppText color={P.ink} numberOfLines={tile ? 2 : 1}>{item.name}</AppText>
-        <AppText color={P.ink} variant={tile ? 'bodyStrong' : 'body'}>{price}</AppText>
+        <AppText color={tile && discounted ? status.danger.fg : P.ink} variant={tile ? 'bodyStrong' : 'body'}>{price}</AppText>
+        {!item.available ? <AppText variant="caption" color={P.muted}>{t('catalog.stock.out_of_stock')}</AppText> : null}
         {tile && discounted ? <AppText variant="caption" color={P.ink} style={styles.compare}>{formatAmount(item.compareAtPrice!)} {item.currency}</AppText> : null}
       </View>
     </Pressable>

@@ -25,7 +25,7 @@ const ARCHIVE_BATCH = 9;
 type ArchiveRow = ReturnType<typeof storyArchiveRows>[number];
 type Row = { kind: 'feature'; story: StoryItem } | { kind: 'archive'; row: ArchiveRow } | { kind: 'new' | 'follow' | 'archive-title' };
 
-function StoryCard({ story, width, height, small = false }: { story: StoryItem; width: number; height?: number; small?: boolean }) {
+export function StoryCard({ story, width, height, small = false }: { story: StoryItem; width: number; height?: number; small?: boolean }) {
   const { locale, t } = useI18n();
   const title = (locale === 'ar' && story.titleAr) || story.title;
   const subtitle = (locale === 'ar' && story.descriptionAr) || story.description;
@@ -41,20 +41,21 @@ function StoryCard({ story, width, height, small = false }: { story: StoryItem; 
   </Pressable>;
 }
 
-function FollowStories() {
+export function FollowStories({ light = false }: { light?: boolean }) {
   const { t } = useI18n();
   const { isRTL } = useTheme();
   const follow = usePublisherFollow(OFFICIAL_PUBLISHER_ID, () => router.push('/sign-in'));
-  const label = t(follow.state === 'following' ? 'publication.following' : follow.state === 'error' ? 'publication.followRetry' : 'storiesGallery.follow');
-  return <View style={styles.followSection}>
-    <AppText accessibilityRole="header" color={C.white} style={styles.title}>{t('storiesGallery.latest')}</AppText>
-    <AppText color={C.white} style={styles.subtitle}>{t('storiesGallery.followHint')}</AppText>
+  const label = t(follow.state === 'following' ? 'storiesGallery.alertsOn' : follow.state === 'error' ? 'publication.followRetry' : 'storiesGallery.follow');
+  const ink = light ? C.black : C.white;
+  return <View style={styles.followSection} testID="stories-alerts">
+    <AppText accessibilityRole="header" color={ink} style={styles.title}>{t('storiesGallery.latest')}</AppText>
+    <AppText color={ink} style={styles.subtitle}>{t('storiesGallery.followHint')}</AppText>
     <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={follow.disabled} onPress={follow.press}
-      accessibilityState={{ selected: follow.state === 'following', disabled: follow.disabled }} style={[styles.follow, { flexDirection: rowDirectionFor(isRTL) }]}>
-      <NavigationIcon name={follow.state === 'following' ? 'checkmark-outline' : 'person-add-outline'} size={20} color={C.white} />
-      <AppText color={C.white}>{follow.state === 'pending' ? '…' : label}</AppText>
+      accessibilityState={{ selected: follow.state === 'following', disabled: follow.disabled }} style={[styles.follow, { flexDirection: rowDirectionFor(isRTL), borderColor: ink }]}>
+      <NavigationIcon name={follow.state === 'following' ? 'checkmark-outline' : 'notifications-outline'} size={20} color={ink} />
+      <AppText color={ink}>{follow.state === 'pending' ? '…' : label}</AppText>
     </Pressable>
-    {follow.writeFailed ? <AppText accessibilityRole="alert" color={C.white}>{t('publication.followError')}</AppText> : null}
+    {follow.writeFailed ? <AppText accessibilityRole="alert" color={ink}>{t('publication.followError')}</AppText> : null}
   </View>;
 }
 

@@ -1,5 +1,5 @@
 import type { QatafoDatabase } from '../db/database';
-import { isStoryId, normalizeStoryEditorial, readStoryEditorial } from '../../shared/storyEditorial';
+import { isStoryId, normalizeStoryEditorial, readStoryEditorial, storyEditorialProductIds } from '../../shared/storyEditorial';
 import { effectiveProductIds, invalidLinkedProducts, MAX_CONTENT_PRODUCTS, normalizeContentProductIds, publicProductsForContent, readContentProductIds } from './contentProducts';
 
 /** Public and CRM list projection: neither list needs all article blocks. */
@@ -20,11 +20,12 @@ export function prepareStoryEditorial(db: QatafoDatabase, raw: Record<string, un
   }
   const editorial = raw.editorial === undefined ? readStoryEditorial(existing?.editorial_json) : normalizeStoryEditorial(raw.editorial);
   if (raw.editorial !== undefined) payload.editorial_json = JSON.stringify(editorial);
-  if (editorial?.slides.some(slide => slide.productId)) {
+  const references = editorial ? storyEditorialProductIds(editorial) : new Set<string>();
+  if (references.size) {
     const ids = newIds ?? effectiveProductIds(existing ? readContentProductIds(db, 'story', existing.id) : [],
       payload.product_id === undefined ? existing?.product_id : payload.product_id);
-    if ((payload.content_mode ?? existing?.content_mode) !== 'shoppable' || editorial.slides.some(slide => slide.productId && !ids.includes(slide.productId))) {
-      throw new Error('Associez à la Story le produit utilisé sur chaque écran Produit.');
+    if ((payload.content_mode ?? existing?.content_mode) !== 'shoppable' || [...references].some(id => !ids.includes(id))) {
+      throw new Error('Associez à la Story les produits utilisés dans ses écrans ou son article.');
     }
   }
   return newIds;
@@ -37,5 +38,14 @@ export function readPublishedStoryEditorial(db: QatafoDatabase, id: unknown, now
     WHERE id=? AND status='PUBLISHED' AND publish_at<=? AND (expires_at IS NULL OR expires_at>?)`, id, now, now) : null;
   if (!row) return null;
   const { editorial_json, content_mode: _mode, product_id: _product, ...story } = row;
-  return { ...story, editorial: readStoryEditorial(editorial_json), products: publicProductsForContent(db, 'story', row) };
+  const products = publicProductsForContent(db, 'story', row);
+  const references = products.length ? db.all<{ id: string; compare_at_price: number }>(
+    `SELECT id,compare_at_price FROM products WHERE id IN (${products.map(() => '?').join(',')}) AND compare_at_price>final_price`,
+    ...products.map(product => product.id),
+  ) : [];
+  const prices = new Map(references.map(item => [item.id, item.compare_at_price]));
+  return { ...story, editorial: readStoryEditorial(editorial_json), products: products.map(product => {
+    const compareAtPrice = prices.get(product.id);
+    return compareAtPrice ? { ...product, compareAtPrice } : product;
+  }) };
 }

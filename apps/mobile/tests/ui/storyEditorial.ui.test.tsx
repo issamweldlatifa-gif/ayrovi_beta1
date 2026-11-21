@@ -9,11 +9,12 @@ import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
 
-jest.mock('expo-router', () => ({ useIsFocused: () => true, router: { push: jest.fn(), back: jest.fn(), canGoBack: () => true } }));
+jest.mock('expo-router', () => ({ useIsFocused: () => true, router: { push: jest.fn(), dismissTo: jest.fn(), back: jest.fn(), canGoBack: () => true } }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 24, bottom: 16, left: 0, right: 0 }) }));
 jest.mock('@/state/session', () => ({ useSession: () => ({ status: 'signedOut', account: null }) }));
 jest.mock('@/session/session', () => ({ useSessionId: () => 'story-guest' }));
 jest.mock('@/api/social', () => ({ sendInteraction: jest.fn(async () => ({})) }));
+jest.mock('@/api/hooks', () => ({ useStories: () => ({ data: [{ id: 'story-a', mediaType: 'IMAGE', mediaUrl: '/media/a.jpg' }, { id: 'related-story', title: 'Une autre histoire', mediaType: 'IMAGE', mediaUrl: '/media/related.jpg' }] }) }));
 jest.mock('@/api/storyEditorial', () => ({ ...jest.requireActual('@/api/storyEditorial'), useEditorialStory: jest.fn() }));
 jest.mock('@/features/publications/usePublisherFollow', () => ({ usePublisherFollow: (_id: string, press: () => void) => ({ state: 'idle', press }) }));
 const mockReduced = jest.fn(() => true);
@@ -59,7 +60,7 @@ it('shows black full-screen, then an exact linked product, then an inset GIF wit
   expect(screen.getByText('Le texte')).toBeTruthy();
   expect(screen.getByTestId('editorial-story-cta')).toHaveTextContent('Découvrir');
   fireEvent.press(screen.getByTestId('editorial-story-cta'));
-  expect(router.push).toHaveBeenLastCalledWith({ pathname: '/story-article/[id]', params: { id: 'story-a', mode: 'discover' } });
+  expect(router.push).toHaveBeenLastCalledWith({ pathname: '/story-article/[id]', params: { id: 'story-a' } });
 });
 
 it('lets the viewer turn sound on or off even on silent slides, and keeps Close independent', () => {
@@ -110,14 +111,52 @@ it('pauses timed advancement and continues from the same progress on resume', ()
 });
 
 it('lays out the editorial cover and copy before the linked selection, with native product navigation', () => {
-  mount(<StoryArticleScreen id={story.id} discover />);
+  mount(<StoryArticleScreen id={story.id} />);
   expect(screen.getByTestId('story-article-cover', { includeHiddenElements: true })).toBeTruthy();
   expect(screen.getByRole('header', { name: 'Notre article' })).toBeTruthy();
   expect(screen.getByText('Introduction')).toBeTruthy();
   expect(screen.getByText('Par Équipe créative')).toBeTruthy();
   expect(screen.getByText('Paragraphe un')).toBeTruthy();
   expect(screen.getByLabelText('Image éditoriale')).toBeTruthy();
-  expect(screen.getAllByRole('link')).toHaveLength(2);
+  expect(within(screen.getByTestId('story-article-more')).getByRole('link', { name: 'Une autre histoire' })).toBeTruthy();
+  expect(screen.queryByTestId('stories-gallery-card-story-a')).toBeNull();
   fireEvent.press(within(screen.getByTestId('editorial-story-product-sku-a')).getByRole('link'));
   expect(router.push).toHaveBeenLastCalledWith({ pathname: '/product/[id]', params: { id: 'sku-a' } });
+});
+
+
+it('uses identical compact cards for a multi-product slide and routes Explorer to the same article', () => {
+  const composition: StoryEditorial = { ...editorial, slides: [
+    { ...editorial.slides[0]!, action: 'explore' },
+    { ...editorial.slides[1]!, productId: undefined, productIds: ['sku-b', 'sku-a'] },
+  ] };
+  jest.mocked(useEditorialStory).mockReturnValue({ story: { ...story, editorial: composition }, isPending: false } as ReturnType<typeof useEditorialStory>);
+  mount(<EditorialStoryScreen id={story.id} />);
+  expect(screen.getByTestId('editorial-story-cta')).toHaveTextContent('Explorer');
+  fireEvent.press(screen.getByTestId('editorial-story-cta'));
+  expect(router.push).toHaveBeenLastCalledWith({ pathname: '/story-article/[id]', params: { id: story.id } });
+  fireEvent.press(screen.getByRole('button', { name: 'Suivant' }));
+  const rail = within(screen.getByTestId('editorial-story-product-rail'));
+  const cards = rail.getAllByTestId(/^editorial-story-product-sku-/);
+  expect(cards.map(card => card.props.testID)).toEqual(['editorial-story-product-sku-b', 'editorial-story-product-sku-a']);
+  expect(StyleSheet.flatten(cards[0]!.props.style).minHeight).toBe(StyleSheet.flatten(cards[1]!.props.style).minHeight);
+});
+
+it('renders authored product write-ups and cards, followed by related Stories and alert signup', () => {
+  const composition: StoryEditorial = { ...editorial, article: { ...editorial.article!, blocks: [
+    { type: 'product', productId: 'sku-b', image: '', title: { text: 'En détail' }, content: { text: 'Pourquoi on aime cette pièce.' } },
+    { type: 'product', productId: 'no-longer-available', image: '', title: { text: 'Produit retiré' }, content: { text: 'Hors catalogue' } },
+  ] } };
+  jest.mocked(useEditorialStory).mockReturnValue({ story: { ...story, editorial: composition }, isPending: false } as ReturnType<typeof useEditorialStory>);
+  mount(<StoryArticleScreen id={story.id} />);
+  const section = within(screen.getByTestId('story-article-focus-sku-b'));
+  expect(section.getByRole('header', { name: 'En détail' })).toBeTruthy();
+  expect(section.getByText('Pourquoi on aime cette pièce.')).toBeTruthy();
+  expect(screen.queryByText('Produit retiré')).toBeNull();
+  fireEvent.press(section.getByRole('link'));
+  expect(router.push).toHaveBeenLastCalledWith({ pathname: '/product/[id]', params: { id: 'sku-b' } });
+  fireEvent.press(screen.getByRole('link', { name: 'Explorez toutes les stories' }));
+  expect(router.dismissTo).toHaveBeenCalledWith({ pathname: '/stories', params: { id: '', focus: '' } });
+  fireEvent.press(within(screen.getByTestId('stories-alerts')).getByRole('button', { name: 'Abonnez-moi' }));
+  expect(router.push).toHaveBeenLastCalledWith('/sign-in');
 });

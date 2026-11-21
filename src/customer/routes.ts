@@ -1,3 +1,4 @@
+import { syncStoryAlerts } from '../services/storyAlerts';
 import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
 import { createSign, randomBytes, randomInt, randomUUID } from 'node:crypto';
 import path from 'node:path';
@@ -1462,6 +1463,8 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
 
   router.get('/account/overview', requireCustomer(db), (req, res) => {
     const account = customerFromRequest(req);
+    res.setHeader('Cache-Control', 'private, no-store');
+    syncStoryAlerts(db, account.id, new Date().toISOString(), req.get('Accept-Language')?.startsWith('ar') ? 'ar' : 'fr');
     const summary = db.get<any>(`SELECT COUNT(*) order_count,COALESCE(SUM(CASE WHEN status!='CANCELLED' THEN total_tnd ELSE 0 END),0) total_spent
       FROM orders WHERE account_id=?`, account.id);
     const unread = Number(db.get<any>('SELECT COUNT(*) count FROM customer_notifications WHERE account_id=? AND read_at IS NULL', account.id)?.count || 0);
@@ -1869,6 +1872,8 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
 
   router.get('/account/notifications', requireCustomer(db), (req, res) => {
     const account = customerFromRequest(req);
+    res.setHeader('Cache-Control', 'private, no-store');
+    syncStoryAlerts(db, account.id, new Date().toISOString(), req.get('Accept-Language')?.startsWith('ar') ? 'ar' : 'fr');
     return res.json({ success: true, data: db.all<any>('SELECT * FROM customer_notifications WHERE account_id=? ORDER BY created_at DESC LIMIT 100', account.id) });
   });
 

@@ -1,3 +1,4 @@
+import { EDITORIAL_CATALOGUE_DEMO_MIGRATION, installEditorialCatalogueDemo } from '../services/editorialCatalogueDemo';
 import { BLACK_FRIDAY_COLLECTIONS_MIGRATION, BLACK_FRIDAY_DEMO_MIGRATION, installBlackFridayCollections, installBlackFridayDemo } from '../catalogue/blackFriday';
 import { installCataloguePublications, installSquareVideoPublication } from '../magazine/cataloguePublications';
 import { foldCatalogSearch } from '../../shared/catalogSearch';
@@ -464,6 +465,7 @@ export class QatafoDatabase {
       this.runOnceDataMigration(BLACK_FRIDAY_DEMO_MIGRATION, () => installBlackFridayDemo(this, new Date().toISOString()));
     }
     this.runOnceDataMigration(BLACK_FRIDAY_COLLECTIONS_MIGRATION, () => installBlackFridayCollections(this, new Date().toISOString()));
+    this.runOnceDataMigration(EDITORIAL_CATALOGUE_DEMO_MIGRATION, () => installEditorialCatalogueDemo(this, new Date().toISOString()));
     installCataloguePublications(this);
     installSquareVideoPublication(this);
     // Compteurs sociaux matérialisés (audit d'architecture 12/11) : posés EN DERNIER,

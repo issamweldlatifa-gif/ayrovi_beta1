@@ -126,13 +126,13 @@ function SignedIn({ overview, pending }: { overview: AccountOverview | null; pen
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function AccountScreen() {
-  const t = useI18n().t;
+  const { t, locale } = useI18n();
   const { status, account } = useSession();
   const signedIn = status === 'signedIn';
 
   const overviewQuery = useQuery({
     queryKey: ['account', 'overview', account?.id ?? 'anon'],
-    queryFn: ({ signal }) => fetchOverview({ signal }),
+    queryFn: ({ signal }) => fetchOverview({ signal, headers: { 'Accept-Language': locale } }),
     enabled: signedIn,
     staleTime: 30_000,
   });

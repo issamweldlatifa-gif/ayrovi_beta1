@@ -4,6 +4,7 @@
  * Le serveur en renvoie jusqu'à 100, les plus récentes d'abord. « Tout marquer
  * comme lu » est une écriture : elle exige le jeton CSRF, comme le reste.
  */
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +14,7 @@ import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { fetchNotifications, markNotificationsRead } from '@/api/account';
 import { userMessage } from '@/api/errors';
+import { useSession } from '@/state/session';
 import { SubScreen } from '@/design/subScreen';
 
 /**
@@ -29,11 +31,13 @@ export default function NotificationsScreen() {
   const t = useI18n().t;
   const { locale } = useI18n();
   const queryClient = useQueryClient();
+  const session = useSession();
   const [failure, setFailure] = useState('');
 
   const notifications = useQuery({
-    queryKey: ['account', 'notifications'],
-    queryFn: ({ signal }) => fetchNotifications({ signal }),
+    queryKey: ['account', 'notifications', session.account?.id ?? 'guest'],
+    enabled: session.status === 'signedIn',
+    queryFn: ({ signal }) => fetchNotifications({ signal, headers: { 'Accept-Language': locale } }),
   });
 
   const markAll = useMutation({
@@ -42,6 +46,10 @@ export default function NotificationsScreen() {
     onError: (error) => setFailure(userMessage(error)[locale]),
   });
 
+  const markOne = useMutation({
+    mutationFn: (id: string) => markNotificationsRead(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['account'] }),
+  });
   const unread = notifications.data?.filter((item) => !item.readAt).length ?? 0;
 
   return (
@@ -64,19 +72,26 @@ export default function NotificationsScreen() {
         <Button label={t('notifications.markAll', { count: unread })} onPress={() => { setFailure(''); markAll.mutate(); }} busy={markAll.isPending} />
       ) : null}
 
-      {notifications.data?.map((item) => (
-        <Card key={item.id} title={item.title || item.type}>
-          <View style={styles.head}>
-            <AppText variant="caption" color={item.readAt ? theme.colors.muted : theme.status.info.fg}>
-              {item.readAt ? t('notifications.read') : t('notifications.unread')}
-            </AppText>
-            {item.createdAt ? (
-              <AppText variant="caption" color={theme.colors.muted}>{item.createdAt.slice(0, 10)}</AppText>
-            ) : null}
-          </View>
-          {item.message ? <AppText variant="body">{item.message}</AppText> : null}
-        </Card>
-      ))}
+      {notifications.data?.map((item) => {
+        const storyId = item.id.startsWith('story_alert_') ? /^\/stories\?id=([a-zA-Z0-9_-]{1,150})$/.exec(item.actionUrl)?.[1] : undefined;
+        return (
+          <Card key={item.id} title={item.title || item.type}>
+            <View style={styles.head}>
+              <AppText variant="caption" color={item.readAt ? theme.colors.muted : theme.status.info.fg}>
+                {item.readAt ? t('notifications.read') : t('notifications.unread')}
+              </AppText>
+              {item.createdAt ? (
+                <AppText variant="caption" color={theme.colors.muted}>{item.createdAt.slice(0, 10)}</AppText>
+              ) : null}
+            </View>
+            {item.message ? <AppText variant="body">{item.message}</AppText> : null}
+            {storyId ? <Button label={t('storiesEditorial.openAlert')} onPress={() => {
+              if (!item.readAt) markOne.mutate(item.id);
+              router.push({ pathname: '/stories', params: { id: storyId } });
+            }} /> : null}
+          </Card>
+        );
+      })}
     </SubScreen>
   );
 }

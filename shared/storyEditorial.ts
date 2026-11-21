@@ -1,16 +1,17 @@
 import { normalizeMediaLink } from './mediaLinks';
 
-export const STORY_EDITORIAL_LIMITS = { slides: 12, blocks: 20, secondsMin: 3, secondsMax: 60, json: 100_000 } as const;
+export const STORY_EDITORIAL_LIMITS = { slides: 12, blocks: 20, productsPerSlide: 8, secondsMin: 3, secondsMax: 60, json: 100_000 } as const;
 export type StoryMediaKind = 'image' | 'video' | 'gif';
 export type StorySlideLayout = 'cover' | 'inset' | 'product';
-export type StoryArticleAction = 'read' | 'discover';
+export type StoryArticleAction = 'read' | 'discover' | 'explore';
 export interface StoryMedia { kind: StoryMediaKind; url: string; poster?: string }
 export interface StoryLocalizedText { text: string; textAr?: string }
 export interface StorySlide {
   layout: StorySlideLayout; media: StoryMedia; title: StoryLocalizedText; caption: StoryLocalizedText;
-  seconds?: number; action?: StoryArticleAction; productId?: string;
+  seconds?: number; action?: StoryArticleAction; productId?: string; productIds?: string[];
 }
-export type StoryArticleBlock = { type: 'text'; content: StoryLocalizedText } | { type: 'image'; url: string; alt: StoryLocalizedText };
+export type StoryArticleBlock = { type: 'text'; content: StoryLocalizedText } | { type: 'image'; url: string; alt: StoryLocalizedText }
+  | { type: 'product'; productId: string; title: StoryLocalizedText; content: StoryLocalizedText; image: string };
 export interface StoryArticle {
   cover: string; title: StoryLocalizedText; intro: StoryLocalizedText; author: string;
   blocks: StoryArticleBlock[]; selectionTitle: StoryLocalizedText;
@@ -45,6 +46,12 @@ const url = (x: unknown, kind: 'image' | 'video', required = true): string => {
 };
 export const isStoryId = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9_-]{1,150}$/.test(value);
 
+export const storySlideProductIds = (slide: StorySlide) => slide.productIds ?? (slide.productId ? [slide.productId] : []);
+export function storyEditorialProductIds(editorial: StoryEditorial) {
+  return new Set([...editorial.slides.flatMap(storySlideProductIds),
+    ...(editorial.article?.blocks.flatMap(block => block.type === 'product' ? [block.productId] : []) ?? [])]);
+}
+
 /** Parse the same bounded document in Admin, storage and the mobile API. No HTML or external CTA targets. */
 export function normalizeStoryEditorial(input: unknown): StoryEditorial | null {
   if (input == null || input === '') return null;
@@ -70,6 +77,12 @@ export function normalizeStoryEditorial(input: unknown): StoryEditorial | null {
           return { type: 'text', content };
         }
         if (block.type === 'image') return { type: 'image', url: url(block.url, 'image'), alt: localized(block.alt, 180) };
+        if (block.type === 'product') {
+          const { productId } = block;
+          const content = localized(block.content, 3000);
+          if (!isStoryId(productId) || (!content.text && !content.textAr)) throw new Error('Choisissez un produit associé et ajoutez sa description.');
+          return { type: 'product', productId, title: localized(block.title, 180), content, image: url(block.image, 'image', false) };
+        }
         throw new Error('Type de bloc d’article invalide.');
       }) };
   }
@@ -78,16 +91,21 @@ export function normalizeStoryEditorial(input: unknown): StoryEditorial | null {
     const { layout, action, seconds } = slide;
     if (layout !== 'cover' && layout !== 'inset' && layout !== 'product') throw new Error('Mise en page d’écran inconnue.');
     if (media.kind !== 'image' && media.kind !== 'gif' && media.kind !== 'video') throw new Error('Format de média inconnu.');
-    if ((action != null && action !== 'read' && action !== 'discover') || (action && (!article || layout === 'product'))) throw new Error('Ce bouton nécessite un article et un écran éditorial.');
+    if ((action != null && action !== 'read' && action !== 'discover' && action !== 'explore') || (action && (!article || layout === 'product'))) throw new Error('Ce bouton nécessite un article et un écran éditorial.');
     const productId = text(slide.productId, 150);
-    if (layout === 'product' ? !isStoryId(productId) : Boolean(productId)) throw new Error('Choisissez un produit pour chaque écran Produit.');
+    const productIds = slide.productIds;
+    if (productIds != null && (!Array.isArray(productIds) || !productIds.length || productIds.length > STORY_EDITORIAL_LIMITS.productsPerSlide ||
+      productIds.some(id => !isStoryId(id)) || new Set(productIds).size !== productIds.length)) throw new Error('Liste de produits de l’écran invalide.');
+    if (layout === 'product' ? (productIds ? Boolean(productId) : !isStoryId(productId)) : Boolean(productId || productIds)) {
+      throw new Error('Choisissez les produits utilisés sur chaque écran Produit.');
+    }
     if (seconds != null && (typeof seconds !== 'number' || !Number.isInteger(seconds) || seconds < STORY_EDITORIAL_LIMITS.secondsMin || seconds > STORY_EDITORIAL_LIMITS.secondsMax)) throw new Error('Durée : entre 3 et 60 secondes.');
     const poster = url(media.poster, 'image', false);
     return { layout, media: { kind: media.kind, url: url(media.url, media.kind === 'video' ? 'video' : 'image'), ...(poster ? { poster } : {}) },
       title: localized(slide.title, 180), caption: localized(slide.caption, 420), ...(typeof seconds === 'number' ? { seconds } : {}),
-      ...(action === 'read' || action === 'discover' ? { action } : {}), ...(productId ? { productId } : {}) };
+      ...(action === 'read' || action === 'discover' || action === 'explore' ? { action } : {}), ...(productId ? { productId } : {}), ...(Array.isArray(productIds) ? { productIds } : {}) };
   });
-  if (article && !slides.some(slide => slide.action)) throw new Error('Ajoutez un bouton Lire ou Découvrir pour ouvrir l’article.');
+  if (article && !slides.some(slide => slide.action)) throw new Error('Ajoutez un bouton Lire, Découvrir ou Explorer pour ouvrir l’article.');
   const output: StoryEditorial = { version: 1, slides, ...(article ? { article } : {}) };
   if (JSON.stringify(output).length > STORY_EDITORIAL_LIMITS.json) throw new Error('Composition Story trop longue.');
   return output;
