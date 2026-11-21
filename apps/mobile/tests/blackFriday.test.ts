@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseBlackFriday } from '../src/api/blackFriday';
 import { blackFridayGeometry } from '../src/features/home/blackFridayGeometry';
-import { DEFAULT_BLACK_FRIDAY } from '../../../shared/blackFriday';
+import { blackFridayBannerInk, blackFridayTimeRemaining, DEFAULT_BLACK_FRIDAY, normalizeBlackFriday } from '../../../shared/blackFriday';
 
 const offer = (id: string, price: number, compareAtPrice: number) => ({
   id, name: id, image: '/media/product.jpg', price, compareAtPrice,
@@ -20,4 +20,16 @@ describe('Black Friday layout contract', () => {
     expect(parseBlackFriday(payload)).toMatchObject({ maxDiscount: 30, products: [{ id: 'b', discountPercent: 20 }, { id: 'a', discountPercent: 30 }] });
     expect(parseBlackFriday({ ...payload, products: [] })).toBeNull();
   });
+});
+
+
+it('upgrades previous campaign JSON without losing authored fields and validates color and dates', () => {
+  const old = { enabled: true, title: 'Black Friday\nDémo', ctaFr: 'Offres', ctaAr: 'عروض', cover: '/media/old.jpg', productIds: ['p1'] };
+  expect(normalizeBlackFriday(old)).toMatchObject({ ...old, backgroundColor: '#121E2A', surfaceColor: '#FFFFFF', badge: 'Black Friday Week' });
+  expect(normalizeBlackFriday({ ...old, featureCover: '/media/%2e%2e/private.jpg' })).toBeNull();
+  expect(normalizeBlackFriday({ ...old, endsAt: '2026-02-31T00:00:00.000Z' })).toBeNull();
+  expect(blackFridayBannerInk('#000000')).toBe('#FFFFFF');
+  expect(blackFridayBannerInk('#FBF5E8')).toBe('#000000');
+  expect(blackFridayTimeRemaining('2026-11-20T01:02:00.000Z', Date.parse('2026-11-19T00:00:00.000Z'))).toEqual({ days: 1, hours: 1, minutes: 2 });
+  expect(blackFridayTimeRemaining('', 0)).toBeNull();
 });

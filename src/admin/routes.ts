@@ -1,4 +1,4 @@
-import { BLACK_FRIDAY_KEY, blackFridayOffers, readBlackFridaySettings, saveBlackFridaySettings, searchBlackFridayOffers } from '../catalogue/blackFriday';
+import { BLACK_FRIDAY_KEY, blackFridayAdminOffers, readBlackFridaySettings, saveBlackFridaySettings, searchBlackFridayOffers, updateBlackFridayCataloguePrice } from '../catalogue/blackFriday';
 import { isPublicationCampaign } from '../../shared/publicationCampaign';
 import { releaseCatalogueReservations } from '../catalogue/localSale';
 import { isGeneratedPublicationEditorialAsset } from '../../shared/publicationLayouts';
@@ -825,18 +825,28 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   router.get('/home-black-friday', requireAdmin(db, 'content:read'), (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     const data = readBlackFridaySettings(db);
-    res.json({ success: true, data, products: blackFridayOffers(db, data.productIds) });
+    res.json({ success: true, data, products: blackFridayAdminOffers(db, data.productIds) });
   });
   router.get('/home-black-friday/products', requireAdmin(db, 'content:read'), (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.json({ success: true, data: searchBlackFridayOffers(db, typeof req.query.q === 'string' ? req.query.q : '') });
+  });
+  router.put('/home-black-friday/products/:id/price', requireAdmin(db, 'pricing:write'), (req, res) => {
+    const result = db.transaction(() => {
+      const update = updateBlackFridayCataloguePrice(db, req.params.id, req.body, new Date().toISOString());
+      if (update.status === 'saved') audit(db, req, 'UPDATE', 'PRODUCTS', req.params.id, update.before, update.offer);
+      return update;
+    });
+    if (result.status === 'conflict') return res.status(409).json({ success: false, error: 'Le prix a changé. Rechargez la fiche avant de réessayer.' });
+    if (result.status !== 'saved') return res.status(400).json({ success: false, error: 'Choisissez un produit à prix direct TND et une remise d’au moins 1 %.' });
+    res.json({ success: true, data: result.offer });
   });
   router.put('/home-black-friday', requireAdmin(db, 'content:write'), (req, res) => {
     const before = readBlackFridaySettings(db);
     const data = saveBlackFridaySettings(db, req.body, new Date().toISOString());
     if (!data) return res.status(400).json({ success: false, error: 'Vérifiez les champs et choisissez des produits actifs, avec photo et prix remisé.' });
     audit(db, req, 'UPDATE', 'HOME_BLACK_FRIDAY', 'global', before, data);
-    res.json({ success: true, data, products: blackFridayOffers(db, data.productIds) });
+    res.json({ success: true, data, products: blackFridayAdminOffers(db, data.productIds) });
   });
 
   /* ==================== STORIES — بلوك الصفحة الرئيسية (مرجع Zalando) ==================== */

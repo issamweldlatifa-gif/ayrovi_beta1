@@ -11,26 +11,45 @@ export const BLACK_FRIDAY_DEMO = [
   ['zalando-p005', 20], ['zalando-p023', 25], ['zalando-p011', 20], ['zalando-p014', 15],
 ] as const;
 
-type CatalogueRow = { id: string; name: string; brand: string; image: string; status: string; stock_status: string; final_price: number; compare_at_price: number | null };
-const columns = 'id,name,brand_name AS brand,image,status,stock_status,final_price,compare_at_price';
-const where = `visibility='CATALOG' AND status='ACTIVE' AND stock_status<>'OUT_OF_STOCK' AND final_price>0 AND compare_at_price>final_price AND TRIM(image)<>''`;
+type CatalogueRow = { id: string; name: string; brand: string; image: string; status: string; stock_status: string; final_price: number; compare_at_price: number | null; original_price: number; currency: string };
+const columns = 'id,name,brand_name AS brand,image,status,stock_status,final_price,compare_at_price,original_price,currency';
+const eligible = `visibility='CATALOG' AND status='ACTIVE' AND stock_status<>'OUT_OF_STOCK' AND final_price>0 AND TRIM(image)<>''`;
+const directPrice = (row: CatalogueRow) => row.currency === 'TND' && row.original_price === 0;
+const adminOffer = (row: CatalogueRow) => ({ id: row.id, name: row.name, image: row.image, price: row.final_price, compareAtPrice: row.compare_at_price,
+  discountPercent: blackFridayDiscount(row.final_price, Number(row.compare_at_price)), canEditPrice: directPrice(row) });
 const toOffer = (row: CatalogueRow) => {
   const product = publicLinkedProduct('shoppable', row);
   const discountPercent = blackFridayDiscount(row.final_price, Number(row.compare_at_price));
   return product?.available && discountPercent > 0 ? { ...product, compareAtPrice: Number(row.compare_at_price), discountPercent } : null;
 };
-export function blackFridayOffers(db: QatafoDatabase, ids: readonly string[]) {
-  if (!ids.length) return [];
+function campaignRows(db: QatafoDatabase, ids: readonly string[]) {
   const bounded = ids.slice(0, BLACK_FRIDAY_MAX_PRODUCTS);
-  const rows = new Map(db.all<CatalogueRow>(`SELECT ${columns} FROM products WHERE ${where} AND id IN (${bounded.map(() => '?').join(',')})`, ...bounded)
-    .map(row => [row.id, toOffer(row)]));
-  return bounded.flatMap(id => { const offer = rows.get(id); return offer ? [offer] : []; });
+  if (!bounded.length) return [];
+  const rows = new Map(db.all<CatalogueRow>(`SELECT ${columns} FROM products WHERE ${eligible} AND id IN (${bounded.map(() => '?').join(',')})`, ...bounded)
+    .map(row => [row.id, row]));
+  return bounded.flatMap(id => { const row = rows.get(id); return row ? [row] : []; });
 }
+export function blackFridayOffers(db: QatafoDatabase, ids: readonly string[]) {
+  return campaignRows(db, ids).flatMap(row => { const offer = toOffer(row); return offer ? [offer] : []; });
+}
+export const blackFridayAdminOffers = (db: QatafoDatabase, ids: readonly string[]) => campaignRows(db, ids).map(adminOffer);
 export function searchBlackFridayOffers(db: QatafoDatabase, query: string) {
   const pattern = `%${query.trim().slice(0, 100).replace(/[\\%_]/g, '\\$&')}%`;
-  return db.all<CatalogueRow>(`SELECT ${columns} FROM products WHERE ${where}
-    AND (name LIKE ? ESCAPE '\\' OR brand_name LIKE ? ESCAPE '\\' OR product_code LIKE ? ESCAPE '\\') ORDER BY updated_at DESC,id LIMIT 12`,
-    pattern, pattern, pattern).flatMap(row => { const offer = toOffer(row); return offer ? [offer] : []; });
+  return db.all<CatalogueRow>(`SELECT ${columns} FROM products WHERE ${eligible}
+    AND (name LIKE ? ESCAPE '\\' OR brand_name LIKE ? ESCAPE '\\' OR product_code LIKE ? ESCAPE '\\')
+    ORDER BY (compare_at_price>final_price) DESC,updated_at DESC,id LIMIT 12`, pattern, pattern, pattern).map(adminOffer);
+}
+const validPrice = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value >= 0.001 && value <= 1_000_000 && Math.abs(value * 1000 - Math.round(value * 1000)) < 0.000001;
+export function updateBlackFridayCataloguePrice(db: QatafoDatabase, id: string, input: unknown, now: string) {
+  if (!input || typeof input !== 'object' || !/^[A-Za-z0-9_-]{1,150}$/.test(id)) return { status: 'invalid' } as const;
+  const { price, compareAtPrice, expectedPrice, expectedCompareAtPrice } = input as Record<string, unknown>;
+  if (!validPrice(price) || !validPrice(compareAtPrice) || !blackFridayDiscount(price, compareAtPrice) || !validPrice(expectedPrice) ||
+      (expectedCompareAtPrice !== null && !validPrice(expectedCompareAtPrice))) return { status: 'invalid' } as const;
+  const row = campaignRows(db, [id])[0];
+  if (!row || !directPrice(row)) return { status: 'invalid' } as const;
+  if (row.final_price !== expectedPrice || row.compare_at_price !== expectedCompareAtPrice) return { status: 'conflict' } as const;
+  db.run('UPDATE products SET final_price=?,compare_at_price=?,updated_at=? WHERE id=?', price, compareAtPrice, now, id);
+  return { status: 'saved', before: adminOffer(row), offer: adminOffer({ ...row, final_price: price, compare_at_price: compareAtPrice }) } as const;
 }
 export function readBlackFridaySettings(db: QatafoDatabase): BlackFridaySettings {
   const raw = db.get<{ setting_value: string }>('SELECT setting_value FROM settings WHERE setting_key=?', BLACK_FRIDAY_KEY)?.setting_value;
@@ -45,10 +64,10 @@ export function saveBlackFridaySettings(db: QatafoDatabase, raw: unknown, now: s
 }
 export function readPublicBlackFriday(db: QatafoDatabase) {
   const { enabled, productIds, ...display } = readBlackFridaySettings(db);
-  if (!enabled) return null;
+  if (!enabled || (display.endsAt && Date.parse(display.endsAt) <= Date.now())) return null;
   const products = blackFridayOffers(db, productIds);
   if (!products.length) return null;
-  return { ...display, cover: display.cover || products.at(-1)!.image, products, maxDiscount: Math.max(...products.map(p => p.discountPercent)) };
+  return { ...display, cover: display.cover || products.at(-1)!.image, featureCover: display.featureCover || display.cover || products[0]!.image, products, maxDiscount: Math.max(...products.map(p => p.discountPercent)) };
 }
 
 /** One-time, price-guarded demo repricing. Editing/pausing the section never modifies catalogue prices. */

@@ -45,13 +45,16 @@ it('secures CRM writes, rejects ineligible products and filters later stock/pric
   const authorized = (req: request.Test) => req.set('Cookie', cookie).set('x-csrf-token', session.csrfToken);
   await request(app).put(admin).send(before).expect(401);
   const id = demoId(0), second = demoId(1);
-  const update = { ...before, title: 'Black Friday\nTest', productIds: [second, id], cover: '/media/special.jpg' };
+  const update = { ...before, title: 'Black Friday\nTest', productIds: [second, id], cover: '/media/special.jpg', featureCover: '/media/feature.jpg',
+    backgroundColor: '#deaf99', surfaceColor: '#101010', landingTitle: 'Black Friday Démo', featureTitleFr: 'Offres du week-end', featureCtaFr: 'Voir la sélection' };
   const searched = await authorized(request(app).get(`${admin}/products`).query({ q: 'Vans' })).expect(200);
   expect(searched.body.data.some((item: { id: string }) => item.id === id)).toBe(true);
   try {
     await authorized(request(app).put(admin)).send({ ...update, productIds: [zalandoDemoProductId('zalando-p001')] }).expect(400);
+    await authorized(request(app).put(admin)).send({ ...update, backgroundColor: 'transparent' }).expect(400);
     await authorized(request(app).put(admin)).send(update).expect(200);
-    expect((await request(app).get(publicUrl)).body.data).toMatchObject({ cover: '/media/special.jpg', products: [{ id: second }, { id }] });
+    expect((await request(app).get(publicUrl)).body.data).toMatchObject({ cover: '/media/special.jpg', featureCover: '/media/feature.jpg', backgroundColor: '#DEAF99', surfaceColor: '#101010',
+      landingTitle: 'Black Friday Démo', featureCtaFr: 'Voir la sélection', products: [{ id: second }, { id }] });
     db.run("UPDATE products SET stock_status='OUT_OF_STOCK' WHERE id=?", id);
     expect((await request(app).get(publicUrl)).body.data.products.map((item: { id: string }) => item.id)).toEqual([second]);
     await authorized(request(app).put(admin)).send({ ...update, enabled: false }).expect(200);
@@ -82,4 +85,57 @@ it('preserves edited prices and creates a backup on upgrade, without reapplying 
     store.close(); store = new QatafoDatabase(file);
     expect(store.get('SELECT final_price FROM products WHERE id=?', second)).toEqual({ final_price: 99 });
   } finally { store.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+
+it('limits inline price writes to pricing users and direct TND products, with canonical checkout and stale edit protection', async () => {
+  const user = db.get('SELECT id FROM admin_users WHERE email=?', process.env.ADMIN_EMAIL);
+  const login = createAdminSession(db, user, true);
+  let cookie = '';
+  setAdminCookie({ setHeader: (_name: string, value: string) => { cookie = value.split(';')[0]!; } } as any, login.token);
+  const id = demoId(0);
+  const url = `${admin}/products/${id}/price`;
+  const row = db.get<{ final_price: number; compare_at_price: number; converted_price: number; updated_at: string }>('SELECT final_price,compare_at_price,converted_price,updated_at FROM products WHERE id=?', id)!;
+  const patch = { price: 125.551, compareAtPrice: 150, expectedPrice: row.final_price, expectedCompareAtPrice: row.compare_at_price };
+  const put = () => request(app).put(url).set('Cookie', cookie).set('x-csrf-token', login.csrfToken);
+  await request(app).put(url).send(patch).expect(401);
+  await request(app).put(url).set('Cookie', cookie).send(patch).expect(403);
+  const editor = { email: 'bf-content-editor@test.zayrovi.com', password: 'TestCampaignPricing2026!' };
+  await request(app).post('/api/admin/users').set('Cookie', cookie).set('x-csrf-token', login.csrfToken)
+    .send({ ...editor, name: 'BF Content Editor', role: 'CONTENT_MANAGER' }).expect(201);
+  const content = request.agent(app);
+  const contentLogin = await content.post('/api/admin/auth/login').send(editor).expect(200);
+  await content.put(url).set('x-csrf-token', contentLogin.body.data.csrfToken).send(patch).expect(403);
+  await put().send({ ...patch, price: 151 }).expect(400);
+  await put().send({ ...patch, price: 12.3456 }).expect(400);
+  try {
+    const result = await put().send(patch).expect(200);
+    expect(result.body.data).toMatchObject({ price: 125.551, compareAtPrice: 150, discountPercent: 16 });
+    await put().send(patch).expect(409);
+    expect(db.get('SELECT converted_price FROM products WHERE id=?', id)).toEqual({ converted_price: row.converted_price });
+    const detail = await request(app).get(`/api/public/products/${id}`).expect(200);
+    expect(detail.body.data).toMatchObject({ finalPrice: 125.551, compareAtPrice: 150 });
+    const live = await request(app).get(publicUrl).expect(200);
+    expect(live.body.data.products.find((p: { id: string }) => p.id === id)).toMatchObject({ price: 125.551, compareAtPrice: 150 });
+    const sessionId = 'bf-crm-direct-price';
+    const variant = db.get<{ size: string; color: string }>("SELECT size,color FROM catalogue_variants WHERE product_id=? AND status='ACTIVE' LIMIT 1", id)!;
+    addCatalogueLine(db, { sessionId, accountId: null, productId: id, now: new Date().toISOString(), quantity: 1,
+      requestedSize: variant.size, requestedColor: variant.color, customerNote: '', expectedPrice: 125.551 });
+    expect(db.getItems(sessionId, null)).toMatchObject([{ priceTND: 125.551 }]);
+    db.run('UPDATE products SET original_price=1 WHERE id=?', id);
+    await put().send({ ...patch, expectedPrice: patch.price, expectedCompareAtPrice: patch.compareAtPrice }).expect(400);
+  } finally {
+    db.run('UPDATE products SET final_price=?,compare_at_price=?,original_price=0,updated_at=? WHERE id=?', row.final_price, row.compare_at_price, row.updated_at, id);
+  }
+});
+
+it('hides scheduled campaigns when ended without touching the actual catalogue prices', async () => {
+  const before = readBlackFridaySettings(db);
+  const id = demoId(0);
+  const price = db.get('SELECT final_price,compare_at_price FROM products WHERE id=?', id);
+  try {
+    db.run('UPDATE settings SET setting_value=? WHERE setting_key=?', JSON.stringify({ ...before, endsAt: '2000-01-01T00:00:00.000Z' }), BLACK_FRIDAY_KEY);
+    expect((await request(app).get(publicUrl).expect(200)).body.data).toBeNull();
+    expect(db.get('SELECT final_price,compare_at_price FROM products WHERE id=?', id)).toEqual(price);
+  } finally { db.run('UPDATE settings SET setting_value=? WHERE setting_key=?', JSON.stringify(before), BLACK_FRIDAY_KEY); }
 });
