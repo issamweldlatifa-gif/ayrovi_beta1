@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Checkout from '../../app/checkout';
 import { createAddress, fetchAddresses, type Address } from '@/api/account';
@@ -32,7 +32,9 @@ async function mount() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
   const tree = () => <QueryClientProvider client={client}><PrefsProvider><I18nProvider><ThemeProvider><Checkout /></ThemeProvider></I18nProvider></PrefsProvider></QueryClientProvider>;
   const view = render(tree());
-  await act(async () => {});
+  // React Query notifies on a timer. Wait for the rendered default before editing
+  // so slower workers cannot turn a saved-address edit into an empty manual draft.
+  await waitFor(() => expect(screen.getByLabelText('Rue et numéro').props.value).toBe(home.addressLine));
   return () => view.rerender(tree());
 }
 
@@ -44,7 +46,8 @@ it('prefills the saved default but sends current order details without saving si
   fireEvent.changeText(screen.getByLabelText(/Instructions de livraison/), 'Sonner 1');
   expect(screen.getByRole('radio', { name: /Maison test/ }).props.accessibilityState.checked).toBe(false);
   fireEvent.press(screen.getByRole('checkbox'));
-  fireEvent.press(screen.getByTestId('checkout-submit'));
+  const submit = await screen.findByRole('button', { name: 'Confirmer la commande', disabled: false });
+  fireEvent.press(submit);
   await waitFor(() => expect(submitCheckout).toHaveBeenCalledWith(expect.objectContaining({ name: 'Sami Test', city: 'Tunis', address: '10 Rue Test, 1000 Tunis, Sonner 1', deliveryMode: 'home' }), { sessionId: 'test-session' }));
   expect(createAddress).not.toHaveBeenCalled();
 });
