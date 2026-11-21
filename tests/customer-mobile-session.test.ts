@@ -233,3 +233,28 @@ describe('anti-régression', () => {
     expect(logged.body.data.session_token).not.toBe(created.body.data.session_token);
   });
 });
+
+
+test('CRM account block revokes existing mobile sessions and preserves normal sign-in after reactivation', async () => {
+  const phone = uniquePhone();
+  const mobileHeaders = { 'x-zayrovi-client': MOBILE };
+  const login = await mobileLogin(phone, mobileHeaders);
+  const accountId = login.body.data.account.id;
+  const admin = request.agent(app);
+  const auth = await admin.post('/api/admin/auth/login').send({ email: 'admin@zayrovi.com', password: 'ZayroviBeta2026!' });
+  expect(auth.status).toBe(200);
+  const statusUrl = `/api/admin/customer-accounts/${accountId}/status`;
+  const csrf = auth.body.data.csrfToken;
+  const detail = await admin.get(`/api/admin/customer-accounts/${accountId}`).expect(200);
+  expect(detail.headers['cache-control']).toBe('private, no-store');
+  expect(detail.body.data.password_hash).toBeUndefined();
+  await admin.put(statusUrl).set('x-csrf-token', csrf).send({ status: 'BLOCKED' }).expect(200);
+  expect(db.get<{ count: number }>('SELECT COUNT(*) count FROM customer_sessions WHERE account_id=?', accountId)?.count).toBe(0);
+  await admin.put(statusUrl).set('x-csrf-token', csrf).send({ status: 'ACTIVE' }).expect(200);
+  const me = await request(app).get('/api/customer/auth/me').set(mobileHeaders)
+    .set('Authorization', `Bearer ${login.body.data.session_token}`);
+  expect(me.status).toBe(401);
+  const fresh = await mobileLogin(phone, mobileHeaders);
+  expect(fresh.body.data.account.id).toBe(accountId);
+  expect(fresh.body.data.session_token).not.toBe(login.body.data.session_token);
+});

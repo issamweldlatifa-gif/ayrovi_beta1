@@ -99,7 +99,7 @@ export default function ForgotPasswordScreen() {
     }
   };
 
-  const backToSignIn = () => goBack('/(tabs)/account');
+  const backToSignIn = () => goBack('/sign-in');
 
   return (
     <AuthLayout

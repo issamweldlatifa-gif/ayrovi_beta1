@@ -34,10 +34,9 @@ import { fetchAuthConfig } from '@/api/account';
 import { ApiError, isApiError } from '@/api/errors';
 import {
   clearSession, isExpired, loadSession, openSecureBackend, saveSession,
-  type SecureBackend,
+  PENDING_REVOKE_KEY, type SecureBackend,
 } from './sessionStore';
 
-const PENDING_REVOKE_KEY = 'zayrovi.session.pending-revoke.v1';
 
 export type SessionStatus = 'loading' | 'signedOut' | 'signedIn';
 

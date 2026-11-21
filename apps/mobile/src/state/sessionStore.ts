@@ -6,13 +6,9 @@
  * automatique du système. Il va dans le trousseau de l'appareil
  * (`expo-secure-store` : Keychain sur iOS, Keystore sur Android).
  *
- * Trois situations réelles à couvrir sans mentir :
- *   1. appareil normal   → SecureStore, lecture/écriture réelles ;
- *   2. aperçu web (dev)  → SecureStore n'existe pas ; on le DIT (`isSecure:
- *      false`) et on range dans AsyncStorage, uniquement parce qu'un aperçu de
- *      développement ne contient aucune donnée client réelle ;
- *   3. stockage HS       → on ne bloque pas la connexion en cours ; la session
- *      vit en mémoire jusqu'à la fermeture, et l'appelant sait pourquoi.
+ * Sans trousseau (appareil ou aperçu web), la connexion reste en mémoire
+ * uniquement. Elle n'est pas restaurée au redémarrage et `isSecure: false`
+ * permet de l'indiquer à l'interface.
  *
  * Le module est écrit pour être testé sans moteur React Native : le support est
  * injecté (`backend`).
@@ -31,6 +27,7 @@ export interface StoredSession {
 }
 
 export const SESSION_STORAGE_KEY = 'zayrovi.session.v1';
+export const PENDING_REVOKE_KEY = 'zayrovi.session.pending-revoke.v1';
 
 /** Ce que le trousseau doit savoir faire. `null` = lecture demandée, rien stocké. */
 export interface SecureBackend {
@@ -42,8 +39,7 @@ export interface SecureBackend {
 export interface LoadedSession {
   session: StoredSession | null;
   /**
-   * `false` quand le jeton est rangé ailleurs que dans le trousseau (aperçu web)
-   * ou nulle part (stockage indisponible) : l'interface peut le signaler.
+   * `false` si aucun stockage sécurisé persistant n'est disponible.
    */
   isSecure: boolean;
   /** Horodatage de la dernière écriture, si le backend en fournit un. */
@@ -117,6 +113,13 @@ export async function clearSession(backend: SecureBackend): Promise<void> {
  */
 export async function openSecureBackend(): Promise<{ backend: SecureBackend; isSecure: boolean }> {
   try {
+    // Remove credentials from previous builds without reading or migrating them.
+    const { default: storage } = await import('@react-native-async-storage/async-storage');
+    await storage.multiRemove([SESSION_STORAGE_KEY, PENDING_REVOKE_KEY]);
+  } catch {
+    // Cleanup is best effort; storage failure must not block sign-in.
+  }
+  try {
     const SecureStore = await import('expo-secure-store');
     const available = await SecureStore.isAvailableAsync();
     if (available) {
@@ -130,19 +133,9 @@ export async function openSecureBackend(): Promise<{ backend: SecureBackend; isS
       };
     }
   } catch {
-    // SecureStore absent (aperçu web) : on continue vers le repli.
+    // Keep login usable without persisting credentials in unencrypted storage.
   }
-  const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-  return {
-    // Repli assumé : l'aperçu web n'a pas de trousseau. Il n'est jamais livré
-    // comme application — `isSecure: false` remonte jusqu'à l'écran Compte.
-    isSecure: false,
-    backend: {
-      get: (key) => AsyncStorage.getItem(key),
-      set: (key, value) => AsyncStorage.setItem(key, value),
-      remove: (key) => AsyncStorage.removeItem(key),
-    },
-  };
+  return { backend: memoryBackend(), isSecure: false };
 }
 
 /** Trousseau en mémoire — pour les tests et le cas « stockage indisponible ». */

@@ -2326,6 +2326,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   });
 
   router.get('/customers', requireAdmin(db, 'commerce:read'), (req, res) => {
+    res.set('Cache-Control', 'private, no-store');
     const page = parsePositiveInteger(req.query.page, 1, 100000);
     const pageSize = parsePositiveInteger(req.query.pageSize, 20, 100);
     const search = String(req.query.search || '').trim().slice(0, 100);
@@ -2353,6 +2354,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   // ===== Comptes clients enregistrés (connexion Google/SMS) — visibles même avant toute commande =====
 
   router.get('/customer-accounts', requireAdmin(db, 'commerce:read'), (req, res) => {
+    res.set('Cache-Control', 'private, no-store');
     const page = parsePositiveInteger(req.query.page, 1, 100000);
     const pageSize = parsePositiveInteger(req.query.pageSize, 20, 100);
     const search = String(req.query.search || '').trim().slice(0, 100);
@@ -2372,6 +2374,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   });
 
   router.get('/customer-accounts/:id', requireAdmin(db, 'commerce:read'), (req, res) => {
+    res.set('Cache-Control', 'private, no-store');
     const account = db.get<any>(`SELECT id,display_name,email,phone,avatar_url,status,locale,marketing_opt_in,
       email_verified_at,phone_verified_at,created_at,updated_at,last_login_at FROM customer_accounts WHERE id=?`, req.params.id);
     if (!account) return res.status(404).json({ success: false, error: 'Compte client introuvable.' });
@@ -2385,8 +2388,17 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     if (!['ACTIVE', 'BLOCKED'].includes(status)) return res.status(400).json({ success: false, error: 'Statut invalide (ACTIVE ou BLOCKED).' });
     const account = db.get<any>('SELECT id,status FROM customer_accounts WHERE id=?', req.params.id);
     if (!account) return res.status(404).json({ success: false, error: 'Compte client introuvable.' });
-    db.run('UPDATE customer_accounts SET status=?,updated_at=? WHERE id=?', status, new Date().toISOString(), account.id);
-    audit(db, req, 'UPDATE', 'CUSTOMER_ACCOUNT', account.id, { status: account.status }, { status });
+    db.transaction(() => {
+      const now = new Date().toISOString();
+      db.run('UPDATE customer_accounts SET status=?,updated_at=? WHERE id=?', status, now, account.id);
+      if (status === 'BLOCKED') {
+        // Reactivating an account must require a fresh login, not restore old credentials.
+        db.run('DELETE FROM customer_sessions WHERE account_id=?', account.id);
+        db.run('UPDATE customer_password_resets SET consumed_at=? WHERE account_id=? AND consumed_at IS NULL', now, account.id);
+        db.run("UPDATE customer_auth_mail_jobs SET status='CANCELLED',payload='' WHERE account_id=? AND kind='PASSWORD_RESET' AND status IN ('PENDING','SENDING')", account.id);
+      }
+      audit(db, req, 'UPDATE', 'CUSTOMER_ACCOUNT', account.id, { status: account.status }, { status });
+    });
     res.json({ success: true, data: { id: account.id, status } });
   });
 

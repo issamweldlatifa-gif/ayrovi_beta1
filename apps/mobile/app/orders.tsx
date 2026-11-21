@@ -9,7 +9,7 @@ import { useCallback } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { AppText, Card } from '@/design/ui';
+import { AppText, Button, Card } from '@/design/ui';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
@@ -20,6 +20,7 @@ import { useI18n } from '@/i18n';
 import { fetchOrders } from '@/api/account';
 import { statusText } from '@/api/labels';
 import { mediaUrl } from '@/api/client';
+import { useSession } from '@/state/session';
 import { formatMoney } from '@/format/money';
 
 /**
@@ -33,8 +34,11 @@ export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 export default function OrdersScreen() {
   const theme = useTheme();
   const t = useI18n().t;
+  const { status, account } = useSession();
+  const accountId = status === 'signedIn' ? account?.id : undefined;
   const query = useQuery({
-    queryKey: ['account', 'orders'],
+    queryKey: ['account', 'orders', accountId],
+    enabled: Boolean(accountId),
     queryFn: ({ signal }) => fetchOrders({ signal }),
     staleTime: 30_000,
   });
@@ -43,9 +47,14 @@ export default function OrdersScreen() {
 
   return (
     <SubScreen scroll={false} title={t('orders.title')} subtitle={t('orders.subtitle')}>
-      {/* Liste virtualisée : l'historique de commandes n'a pas de plafond. */}
+      {status === 'loading' ? <LoadingBlock /> : !accountId ? (
+        <Button label={t('account.signIn')} onPress={() => router.push('/sign-in')} />
+      ) : (
+      /* Liste virtualisée : l'historique de commandes n'a pas de plafond. */
       <FlatList
         style={styles.list}
+        refreshing={query.isRefetching}
+        onRefresh={retry}
         data={query.data ?? []}
         keyExtractor={(order) => order.id}
         contentContainerStyle={{
@@ -101,6 +110,7 @@ export default function OrdersScreen() {
           </Pressable>
         )}
       />
+      )}
     </SubScreen>
   );
 }

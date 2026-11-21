@@ -11,8 +11,8 @@ import { BackButton } from '@/design/BackButton';
  */
 import { useCallback, useState } from 'react';
 import { goBack } from '@/design/navigation';
-import { Linking, Pressable, StyleSheet, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { Linking, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
 import * as WebBrowser from 'expo-web-browser';
@@ -31,6 +31,7 @@ import { initiateCardPayment } from '@/api/checkout';
 import { depositActionable, selectDepositMethod, uploadDepositProof, type DepositMethod } from '@/api/payments';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScrollView } from 'react-native';
+import { useSession } from '@/state/session';
 import { formatAmount, formatMoney } from '@/format/money';
 
 /**
@@ -53,10 +54,12 @@ export default function OrderDetailScreen() {
   const [payNote, setPayNote] = useState('');
   const [reference, setReference] = useState('');
 
+  const { account, status } = useSession();
+  const accountId = status === 'signedIn' ? account?.id : undefined;
   const order = useQuery({
-    queryKey: ['account', 'order', id],
+    queryKey: ['account', 'order', accountId, id],
     queryFn: ({ signal }) => fetchOrderDetail(id, { signal }),
-    enabled: id.length > 0,
+    enabled: Boolean(accountId && id),
   });
 
   const reload = useCallback(() => { order.refetch(); }, [order]);
@@ -112,6 +115,7 @@ export default function OrderDetailScreen() {
 
   return (
     <ScrollView
+      refreshControl={accountId && id ? <RefreshControl refreshing={order.isRefetching} onRefresh={reload} /> : undefined}
       style={{ backgroundColor: theme.colors.canvas }}
       contentContainerStyle={[
         styles.screen,
@@ -122,18 +126,20 @@ export default function OrderDetailScreen() {
       <View style={[styles.header, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
         <BackButton onPress={() => goBack('/orders')} label={t('common.back')} color={theme.colors.ink} />
         <AppText variant="h3" style={styles.headerTitle}>
-          {order.data?.orderNumber || t('order.title')}
+          {(accountId && order.data?.orderNumber) || t('order.title')}
         </AppText>
       </View>
 
-      {order.isLoading ? <LoadingBlock /> : null}
-      {order.isError ? <ErrorBlock error={order.error} onRetry={() => order.refetch()} /> : null}
+      {status === 'loading' || order.isLoading ? <LoadingBlock /> : !accountId ? (
+        <Button label={t('account.signIn')} onPress={() => router.push('/sign-in')} />
+      ) : null}
+      {accountId && order.isError ? <ErrorBlock error={order.error} onRetry={() => order.refetch()} /> : null}
 
-      {order.data ? (
+      {accountId && order.data ? (
         <>
           <Card title={t('order.summary')}>
             <KeyValue label={t('order.status')} value={statusText('order', order.data.status, t)} />
-            <KeyValue label={t('order.paymentStatus')} value={order.data.paymentStatus || '—'} />
+            <KeyValue label={t('order.paymentStatus')} value={order.data.paymentStatus ? statusText('payment', order.data.paymentStatus, t) : '—'} />
             {order.data.paymentMethod ? <KeyValue label={t('order.method')} value={order.data.paymentMethod} /> : null}
             <KeyValue label={t('orders.createdAt')} value={order.data.createdAt.slice(0, 10)} />
           </Card>
@@ -209,7 +215,7 @@ export default function OrderDetailScreen() {
             if (!gate.canSelectMethod && !gate.canUploadProof && !gate.canPayByCard) return null;
             return (
               <Card title={t('order.payment')} hint={t('order.paymentHint')}>
-                <KeyValue label={t('order.paymentStatus')} value={order.data.paymentStatus || '—'} />
+                <KeyValue label={t('order.paymentStatus')} value={order.data.paymentStatus ? statusText('payment', order.data.paymentStatus, t) : '—'} />
                 {order.data.remainderTnd > 0 ? (
                   <KeyValue label={t('order.remainder')} value={`${formatMoney(order.data.remainderTnd)}`} />
                 ) : null}

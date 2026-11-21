@@ -83,6 +83,7 @@ export default function CheckoutScreen() {
   const [addressId, setAddressId] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [billingEmail, setBillingEmail] = useState<{ accountId: string; value: string } | null>(null);
   const [governorate, setGovernorate] = useState('');
   const [addressLine, setAddressLine] = useState('');
   const [notes, setNotes] = useState('');
@@ -123,9 +124,10 @@ export default function CheckoutScreen() {
   const available = useMemo(() => (policy ? availablePaymentChoices(policy) : []), [policy]);
   const addresses = addressesQuery.data ?? [];
 
-  const contactEmail = account?.email ?? '';
   /* نفس حكم الخادم: كان الإيميل موثّق والتلفون لا، الإيميل يتقفل على المؤكّد. */
   const emailLocked = Boolean(account?.emailVerified) && !account?.phoneVerified;
+  const contactEmail = !emailLocked && billingEmail && billingEmail.accountId === account?.id
+    ? billingEmail.value : account?.email ?? '';
 
   const pickAddress = useCallback((address: Address) => {
     setAddressId(address.id);
@@ -340,6 +342,7 @@ export default function CheckoutScreen() {
           label={t('checkout.email')}
           accessibilityLabel={t('checkout.email')}
           value={contactEmail}
+          onChangeText={(value) => { if (account && !emailLocked) setBillingEmail({ accountId: account.id, value }); }}
           editable={!emailLocked}
           autoCapitalize="none"
           keyboardType="email-address"
