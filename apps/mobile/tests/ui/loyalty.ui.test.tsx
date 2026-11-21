@@ -1,3 +1,4 @@
+import { LoyaltyDemoProvider } from '@/features/loyalty/LoyaltyDemoProvider';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import LoyaltyScreen from '../../app/account/loyalty';
@@ -10,7 +11,7 @@ jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({
 jest.mock('@/design/appImage', () => ({ AppImage: () => null }));
 
 async function mount() {
-  render(<PrefsProvider><I18nProvider><ThemeProvider><LoyaltyScreen /></ThemeProvider></I18nProvider></PrefsProvider>);
+  render(<PrefsProvider><I18nProvider><ThemeProvider><LoyaltyDemoProvider><LoyaltyScreen /></LoyaltyDemoProvider></ThemeProvider></I18nProvider></PrefsProvider>);
   await act(async () => {});
 }
 const press = (id: string) => fireEvent.press(screen.getByTestId(id));

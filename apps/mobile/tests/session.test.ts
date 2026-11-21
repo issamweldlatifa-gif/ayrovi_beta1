@@ -20,7 +20,7 @@ import {
 } from '../src/api/client';
 import { CLIENT_HEADER, CLIENT_VERSION, API_BASE_URL } from '../src/api/config';
 import {
-  emailLogin, emailRegister, fetchMe, fetchOrders, fetchOverview, logout, parseAccount,
+  deleteCustomerAccount, emailLogin, emailRegister, fetchMe, fetchOrders, fetchOverview, logout, parseAccount,
   parseAuthConfig, parseEmailCodeChallenge, parseOtpChallenge, parseOverview, parseRecentOrder, parseSessionIssue,
   requestOtp, verifyOtp,
 } from '../src/api/account';
@@ -428,4 +428,20 @@ describe('messages d’erreur', () => {
     expect(source).toContain("code: 'SESSION_NOT_ISSUED'");
     expect(source).not.toContain("new Error('Le serveur n’a pas ouvert de session");
   });
+});
+
+
+it('requires server confirmation and submits the account deletion through authenticated CSRF transport', async () => {
+  setAuthContext({ token: 'demo-session', csrfToken: 'demo-csrf' });
+  const mock = respond(() => json({ success: true, data: { deleted: true } }));
+  vi.stubGlobal('fetch', mock);
+  await deleteCustomerAccount();
+  const { url, init, headers } = lastCall(mock);
+  expect(url.endsWith('/api/customer/account')).toBe(true);
+  expect(init.method).toBe('DELETE');
+  expect(JSON.parse(String(init.body))).toEqual({ confirmation: 'SUPPRIMER' });
+  expect(headers.Authorization).toBe('Bearer demo-session');
+  expect(headers['x-csrf-token']).toBe('demo-csrf');
+  vi.stubGlobal('fetch', respond(() => json({ success: true, data: {} })));
+  await expect(deleteCustomerAccount()).rejects.toThrow('Suppression de compte non confirmée.');
 });

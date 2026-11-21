@@ -10,7 +10,7 @@ import { shouldRetryQuery, queryRetryDelay } from '@/api/queryRetry';
  * AVANT la navigation : au premier rendu, l'application sait déjà si elle
  * parle en tant que visiteur ou en tant que client connecté.
  */
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useNetworkState } from 'expo-network';
@@ -23,7 +23,8 @@ import { FONT_SOURCES } from '@/config/app';
 import { ThemeProvider, useTheme } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider, usePrefs } from '@/state/prefs';
-import { SessionProvider } from '@/state/session';
+import { LoyaltyDemoProvider } from '@/features/loyalty/LoyaltyDemoProvider';
+import { SessionProvider, useSession } from '@/state/session';
 import { useDeepLinkRouting } from '@/features/links/useDeepLinkRouting';
 import { usePushNotifications } from '@/features/notifications/usePush';
 import { useSessionId } from '@/session/session';
@@ -124,6 +125,11 @@ function Navigation() {
     onShown={() => { SplashScreen.hideAsync().catch(() => {}); }} onDone={() => setBootDone(true)} /> : null}</View>;
 }
 
+function AccountLoyaltyScope({ children }: { children: ReactNode }) {
+  const { status, account } = useSession();
+  return <LoyaltyDemoProvider owner={status === 'signedIn' && account?.id ? `account:${account.id}` : 'guest'}>{children}</LoyaltyDemoProvider>;
+}
+
 export default function RootLayout() {
   return (
     <>
@@ -133,9 +139,11 @@ export default function RootLayout() {
             <ThemeProvider>
               <QueryClientProvider client={queryClient}>
                 <SessionProvider>
-                  <AppErrorBoundary resetKey="root">
-                    <Navigation />
-                  </AppErrorBoundary>
+                  <AccountLoyaltyScope>
+                    <AppErrorBoundary resetKey="root">
+                      <Navigation />
+                    </AppErrorBoundary>
+                  </AccountLoyaltyScope>
                 </SessionProvider>
               </QueryClientProvider>
             </ThemeProvider>

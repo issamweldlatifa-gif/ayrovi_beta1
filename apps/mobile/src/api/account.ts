@@ -612,6 +612,11 @@ export async function logout(options?: RequestOptions): Promise<void> {
   await apiSend<unknown>('POST', '/api/customer/auth/logout', options);
 }
 
+export async function deleteCustomerAccount(options?: RequestOptions): Promise<void> {
+  const { data } = await apiSend<unknown>('DELETE', '/api/customer/account', { ...options, body: { confirmation: 'SUPPRIMER' } });
+  if (!isRecord(data) || data.deleted !== true) throw new Error('Suppression de compte non confirmée.');
+}
+
 export async function fetchOverview(options?: RequestOptions): Promise<AccountOverview> {
   return parseOverview(await apiGetData<unknown>('/api/customer/account/overview', options));
 }
@@ -708,7 +713,7 @@ export async function addCatalogFavorite(productId: string, options?: RequestOpt
 
 export async function fetchNotifications(options?: RequestOptions): Promise<NotificationItem[]> {
   const data = await apiGetData<unknown>('/api/customer/account/notifications', options);
-  if (!Array.isArray(data)) return [];
+  if (!Array.isArray(data)) throw new Error('Notifications illisibles.');
   return data.flatMap((row) => {
     const parsed = parseNotification(row);
     return parsed ? [parsed] : [];

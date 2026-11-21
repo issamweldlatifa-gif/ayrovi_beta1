@@ -1,4 +1,5 @@
-import { useReducer, useRef, useState, type ReactNode } from 'react';
+import { useLoyaltyDemo } from '@/features/loyalty/LoyaltyDemoProvider';
+import { useRef, useState, type ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -13,7 +14,7 @@ import { BRAND, NEUTRALS } from '@/design/tokens.generated';
 import { RADIUS } from '@/design/tokens.mobile';
 import { AppText, Button } from '@/design/ui';
 import { useT } from '@/i18n';
-import { emptyDemo, levels, loyaltyProgress, missions, privateRewards, rewards, sampleBoosterPoints, updateDemo, type Mission, type Reward } from '@/features/loyalty/loyaltyDemo';
+import { levels, loyaltyProgress, missions, privateRewards, rewards, sampleBoosterPoints, type Mission, type Reward } from '@/features/loyalty/loyaltyDemo';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
@@ -54,7 +55,7 @@ export default function LoyaltyScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const reduceMotion = useReduceMotion();
-  const [demo, dispatch] = useReducer(updateDemo, emptyDemo);
+  const [demo, dispatch] = useLoyaltyDemo();
   const [detail, setDetail] = useState<Detail | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [history, setHistory] = useState(false);

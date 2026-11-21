@@ -1,11 +1,4 @@
-/**
- * Sécurité — état réel du compte, et changement de mot de passe.
- *
- * Le changement de mot de passe a une conséquence que l'utilisateur ne devine
- * pas : le serveur ferme TOUTES les sessions du compte (y compris celle-ci) et
- * en ouvre une seule, neuve. L'écran adopte ce nouveau jeton immédiatement —
- * sinon « ça a marché » se transformerait en « je suis déconnecté ».
- */
+/** Sécurité du compte : vérification du contact, sessions actives et accès au formulaire de mot de passe. */
 import { useState } from 'react';
 import { AppText, Button, Card, Field, KeyValue } from '@/design/ui';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
@@ -13,13 +6,13 @@ import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  changePassword, confirmEmailVerification, fetchDeviceSessions, fetchSecurity, logoutOtherDevices,
+  confirmEmailVerification, fetchDeviceSessions, fetchSecurity, logoutOtherDevices,
   requestEmailVerification, revokeDeviceSession,
 } from '@/api/account';
 import { relativeTimeLabel } from '@/format/relativeTime';
 import { authMessage } from '@/api/authMessages';
 import { SubScreen } from '@/design/subScreen';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useSession } from '@/state/session';
 
 /**
@@ -39,34 +32,6 @@ export default function SecurityScreen() {
   const session = useSession();
 
   const security = useQuery({ queryKey: ['account', 'security'], queryFn: ({ signal }) => fetchSecurity({ signal }) });
-
-  const [current, setCurrent] = useState('');
-  const [next, setNext] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [failure, setFailure] = useState('');
-  const [done, setDone] = useState(false);
-
-  const submit = async () => {
-    setBusy(true);
-    setFailure('');
-    setDone(false);
-    try {
-      const issue = await changePassword(current, next);
-      // Nouvelle session : on la garde AVANT tout autre appel.
-      await session.adoptSession(issue);
-      setCurrent('');
-      setNext('');
-      setDone(true);
-      await queryClient.invalidateQueries({ queryKey: ['account'] });
-    } catch (error) {
-      const message = authMessage(error);
-      setFailure('key' in message ? t(message.key) : message[locale]);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const canSubmit = current.length > 0 && next.length >= 8 && next !== current;
 
   // Appareils connectés (12/11/2026) : la liste réelle du serveur, pas un compteur.
   const devices = useQuery({ queryKey: ['account', 'sessions'], queryFn: ({ signal }) => fetchDeviceSessions({ signal }) });
@@ -218,31 +183,10 @@ export default function SecurityScreen() {
         {deviceMessage ? <AppText accessibilityRole="alert" variant="label" color={theme.colors.secondary}>{deviceMessage}</AppText> : null}
       </Card>
 
-      {security.data?.hasPassword ? (
-        <Card title={t('security.change')} hint={t('security.changeHint')}>
-          <Field label={t('security.current')} value={current} onChangeText={setCurrent} secureTextEntry editable={!busy} />
-          <Field label={t('security.next')} value={next} onChangeText={setNext} secureTextEntry editable={!busy} />
-          {next.length > 0 && next.length < 8 ? (
-            <AppText variant="caption" color={theme.status.danger.fg}>{t('security.tooShort')}</AppText>
-          ) : null}
-          {next.length > 0 && next === current ? (
-            <AppText variant="caption" color={theme.status.danger.fg}>{t('security.same')}</AppText>
-          ) : null}
-          {failure ? (
-            <AppText accessibilityRole="alert" variant="label" color={theme.status.danger.fg}>{failure}</AppText>
-          ) : null}
-          {done ? (
-            <AppText accessibilityRole="alert" variant="label" color={theme.status.success.fg}>
-              {t('security.changed')}
-            </AppText>
-          ) : null}
-          <Button label={t('security.submit')} onPress={submit} busy={busy} disabled={!canSubmit} />
-        </Card>
-      ) : (
-        <Card title={t('security.change')}>
-          <AppText variant="body" color={theme.colors.muted}>{t('security.noPassword')}</AppText>
-        </Card>
-      )}
+      {security.data ? <Card title={t('security.change')}>
+        {security.data.hasPassword ? <Button label={t('security.submit')} onPress={() => router.push('/account/password' as Href)} /> :
+          <AppText variant="body" color={theme.colors.muted}>{t('security.noPassword')}</AppText>}
+      </Card> : null}
     </SubScreen>
   );
 }

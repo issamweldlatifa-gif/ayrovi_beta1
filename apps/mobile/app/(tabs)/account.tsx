@@ -1,3 +1,5 @@
+import { useLoyaltyDemo } from '@/features/loyalty/LoyaltyDemoProvider';
+import { loyaltyProgress } from '@/features/loyalty/loyaltyDemo';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -5,7 +7,6 @@ import { router, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useQuery } from '@tanstack/react-query';
 import { fetchOverview } from '@/api/account';
-import { AppImage } from '@/design/appImage';
 import { AppScreen } from '@/design/layout';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { LoadingBlock } from '@/design/states';
@@ -20,7 +21,7 @@ import { useSession } from '@/state/session';
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 const loyaltyRoute = '/account/loyalty' as Href;
-const loyaltyImage = require('../../assets/images/account-loyalty-banner.jpg');
+
 type MenuItem = { id: string; label: TranslationKey; icon: keyof typeof Ionicons.glyphMap; route: Href; public?: boolean };
 const groups = [
   { id: 'overview', title: 'account.hub.overview', items: [
@@ -40,6 +41,7 @@ const groups = [
   ] },
   { id: 'privacy', title: 'account.hub.privacy', items: [
     { id: 'security', label: 'account.menu.security', icon: 'lock-closed-outline', route: '/account/security' },
+    { id: 'data', label: 'personal.dataTitle', icon: 'folder-outline', route: '/account/data' as Href },
     { id: 'privacy', label: 'auth.legal.privacy', icon: 'shield-checkmark-outline', route: '/legal/privacy', public: true },
   ] },
 ] satisfies ReadonlyArray<{ id: string; title: TranslationKey; items: MenuItem[] }>;
@@ -50,6 +52,8 @@ export default function AccountScreen() {
   const { left, right } = useSafeAreaInsets();
   const { status, account, verified, notice, signOut } = useSession();
   const [busy, setBusy] = useState(false);
+  const [demo] = useLoyaltyDemo();
+  const { points, pending, level, next } = loyaltyProgress(demo);
   const signedIn = status === 'signedIn';
   const overview = useQuery({
     queryKey: ['account', 'overview', account?.id ?? 'anon', locale],
@@ -66,15 +70,17 @@ export default function AccountScreen() {
     onRefresh={signedIn ? () => { void overview.refetch(); } : undefined} refreshing={overview.isRefetching}
     contentStyle={styles.scroll} style={{ backgroundColor: surface, paddingLeft: left, paddingRight: right }}>
     <View style={styles.frame}>
-      <Pressable testID="account-loyalty-banner" accessibilityRole="link" accessibilityLabel={t('loyalty.brand')}
-        onPress={() => router.push(loyaltyRoute)} style={[styles.banner, { flexDirection: direction }]}>
-        <AppImage localSource={loyaltyImage} decorative background={BRAND.lightGray} contentPosition={{ left: '50%', top: '32%' }}
-          style={[StyleSheet.absoluteFill, theme.isRTL && styles.flip]} />
-        <View style={styles.bannerCopy}>
-          <AppText variant="captionStrong" color={BRAND.black}>ZAYROVI PLUS</AppText>
-          <AppText variant="subtitle" color={BRAND.black}>{t('account.hub.loyalty')}</AppText>
-          <AppText variant="captionStrong" color={BRAND.black} style={styles.loyaltyStatus}>{t('loyalty.demo')}</AppText>
+      <Pressable testID="account-loyalty-banner" accessibilityRole="link"
+        accessibilityLabel={`${t('loyalty.brand')} · ${t('loyalty.demo')} · ${t('loyalty.points', { points })}`}
+        onPress={() => router.push(loyaltyRoute)} style={styles.banner}>
+        <View style={[styles.bannerRow, { flexDirection: direction }]}>
+          <AppText variant="captionStrong" color={BRAND.black} style={styles.loyaltyStatus}>{t('loyalty.brand')} · {t(`loyalty.level.${level.id}`)}</AppText>
+          <AppText testID="account-loyalty-points" variant="captionStrong" color={BRAND.black} style={styles.loyaltyStatus}>{t('loyalty.points', { points })}</AppText>
+          <Ionicons name={theme.isRTL ? 'chevron-back' : 'chevron-forward'} size={theme.iconSize.sm} color={BRAND.white} />
         </View>
+        <AppText variant="captionStrong" color={BRAND.yellow}>{t('loyalty.demo')}</AppText>
+        <AppText variant="bodySmall" color={BRAND.white}>{next ? t('loyalty.profileNext', { count: next.minimum - points, level: t(`loyalty.level.${next.id}`) }) : t('loyalty.profileTop')}</AppText>
+        {pending > 0 ? <AppText variant="caption" color={BRAND.white}>{t('loyalty.pending', { points: pending })}</AppText> : null}
       </Pressable>
       <View style={styles.identity}>
         <AppText accessibilityRole="header" variant="h2">{t('account.hub.title')}</AppText>
@@ -112,9 +118,8 @@ export default function AccountScreen() {
 
 const styles = StyleSheet.create({
   scroll: { gap: 0 }, frame: { width: '100%', maxWidth: 640, alignSelf: 'center' },
-  banner: { minHeight: 112, alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, overflow: 'hidden', backgroundColor: BRAND.lightGray },
-  flip: { transform: [{ scaleX: -1 }] },
-  bannerCopy: { width: '58%', gap: 4, alignItems: 'flex-start' },
+  banner: { gap: 8, paddingHorizontal: 20, paddingVertical: 16, backgroundColor: BRAND.black },
+  bannerRow: { alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
   loyaltyStatus: { backgroundColor: BRAND.white, paddingHorizontal: 8, paddingVertical: 2, borderRadius: RADIUS.full },
   identity: { paddingHorizontal: 20, paddingVertical: 20, gap: 8, alignItems: 'stretch' },
   sectionTitle: { paddingHorizontal: 20, paddingVertical: 10 },

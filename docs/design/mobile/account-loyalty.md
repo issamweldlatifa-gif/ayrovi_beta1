@@ -10,7 +10,7 @@
 
 ## What works in the mobile preview
 
-Account banner and row → ZAYROVI Plus → balance gauge, mission/details rail, optional Booster, purchase simulator, tier comparison and reward details, FAQ and reset. One sample purchase contributes 40 pending points (+20 if its Booster was activated beforehand); these only become confirmed after the simulated end of the return period. A return instead cancels both. One reward per mission; tiers in the preview: Light 0 / Shine 100 / Star 200. Preview state is local to the screen and starts over on exit or reset. No checkout, data collection, consent change, coupon, monetary conversion, real reward, real balance or membership activation is wired up.
+Account banner and row → ZAYROVI Plus → balance gauge, mission/details rail, optional Booster, purchase simulator, tier comparison and reward details, FAQ and reset. One sample purchase contributes 40 pending points (+20 if its Booster was activated beforehand); these only become confirmed after the simulated end of the return period. A return instead cancels both. One reward per mission; tiers in the preview: Light 0 / Shine 100 / Star 200. Preview state is held only in app memory and shared with the black strip at the top of the profile. It survives navigation back to the profile, but is reset explicitly, on account changes/sign-out or on app restart. Confirmed and pending points are displayed separately. No checkout, data collection, consent change, coupon, monetary conversion, real reward, real balance or membership activation is wired up.
 
 ## Production design to approve before connecting the programme
 

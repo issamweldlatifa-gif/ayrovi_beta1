@@ -74,7 +74,7 @@ export default function CheckoutScreen() {
     staleTime: 5 * 60_000,
   });
   const addressesQuery = useQuery({
-    queryKey: ['account', 'addresses'],
+    queryKey: ['account', 'addresses', authenticated ? account?.id : undefined],
     enabled: authenticated,
     queryFn: ({ signal }) => fetchAddresses({ signal }),
     staleTime: 60_000,
@@ -122,7 +122,7 @@ export default function CheckoutScreen() {
   const cartGate = useMemo(() => zayroviCartReadiness(cart), [cart]);
   const choices = useMemo(() => (policy ? paymentChoices(policy) : []), [policy]);
   const available = useMemo(() => (policy ? availablePaymentChoices(policy) : []), [policy]);
-  const addresses = addressesQuery.data ?? [];
+  const addresses = authenticated ? addressesQuery.data ?? [] : [];
 
   /* نفس حكم الخادم: كان الإيميل موثّق والتلفون لا، الإيميل يتقفل على المؤكّد. */
   const emailLocked = Boolean(account?.emailVerified) && !account?.phoneVerified;

@@ -9,13 +9,15 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppText, Button, Card } from '@/design/ui';
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
+import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
 import { fetchNotifications, markNotificationsRead } from '@/api/account';
 import { userMessage } from '@/api/errors';
 import { useSession } from '@/state/session';
-import { SubScreen } from '@/design/subScreen';
+import { PersonalGuest, PersonalLayout } from '@/features/personal/PersonalLayout';
+import { NotificationsEmpty } from '@/features/personal/NotificationsEmpty';
+import { rowDirectionFor } from '@/design/layoutLogic';
 
 /**
  * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
@@ -27,36 +29,41 @@ import { SubScreen } from '@/design/subScreen';
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function NotificationsScreen() {
+  const { status, account } = useSession();
+  const t = useI18n().t;
+  if (status !== 'signedIn' || !account?.id) return <PersonalLayout title={t('notifications.title')} fallback="/(tabs)/account"><PersonalGuest loading={status === 'loading'} /></PersonalLayout>;
+  return <Inbox key={account.id} owner={account.id} />;
+}
+
+function Inbox({ owner }: { owner: string }) {
   const theme = useTheme();
   const t = useI18n().t;
   const { locale } = useI18n();
   const queryClient = useQueryClient();
-  const session = useSession();
   const [failure, setFailure] = useState('');
 
   const notifications = useQuery({
-    queryKey: ['account', 'notifications', session.account?.id ?? 'guest'],
-    enabled: session.status === 'signedIn',
+    queryKey: ['account', 'notifications', owner, locale],
     queryFn: ({ signal }) => fetchNotifications({ signal, headers: { 'Accept-Language': locale } }),
   });
 
   const markAll = useMutation({
     mutationFn: () => markNotificationsRead(),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['account'] }),
+    onSuccess: () => Promise.all([queryClient.invalidateQueries({ queryKey: ['account', 'notifications', owner] }), queryClient.invalidateQueries({ queryKey: ['account', 'overview', owner] })]),
     onError: (error) => setFailure(userMessage(error)[locale]),
   });
 
   const markOne = useMutation({
     mutationFn: (id: string) => markNotificationsRead(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['account'] }),
+    onSuccess: () => Promise.all([queryClient.invalidateQueries({ queryKey: ['account', 'notifications', owner] }), queryClient.invalidateQueries({ queryKey: ['account', 'overview', owner] })]),
   });
   const unread = notifications.data?.filter((item) => !item.readAt).length ?? 0;
 
   return (
-    <SubScreen
+    <PersonalLayout
       title={t('notifications.title')}
-      subtitle={t('notifications.subtitle')}
-      onRefresh={() => notifications.refetch()}
+      fallback="/(tabs)/account"
+      refresh={() => void notifications.refetch()}
       refreshing={notifications.isRefetching}
     >
       {failure ? (
@@ -64,8 +71,8 @@ export default function NotificationsScreen() {
       ) : null}
       {notifications.isLoading ? <LoadingBlock /> : null}
       {notifications.isError ? <ErrorBlock error={notifications.error} onRetry={() => notifications.refetch()} /> : null}
-      {notifications.data && notifications.data.length === 0 ? (
-        <EmptyBlock><AppText variant="body" align="center">{t('notifications.empty')}</AppText></EmptyBlock>
+      {!notifications.isError && notifications.data?.length === 0 ? (
+        <NotificationsEmpty />
       ) : null}
 
       {unread > 0 ? (
@@ -76,7 +83,7 @@ export default function NotificationsScreen() {
         const storyId = item.id.startsWith('story_alert_') ? /^\/stories\?id=([a-zA-Z0-9_-]{1,150})$/.exec(item.actionUrl)?.[1] : undefined;
         return (
           <Card key={item.id} title={item.title || item.type}>
-            <View style={styles.head}>
+            <View style={[styles.head, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
               <AppText variant="caption" color={item.readAt ? theme.colors.muted : theme.status.info.fg}>
                 {item.readAt ? t('notifications.read') : t('notifications.unread')}
               </AppText>
@@ -92,10 +99,10 @@ export default function NotificationsScreen() {
           </Card>
         );
       })}
-    </SubScreen>
+    </PersonalLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  head: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  head: { flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center' },
 });

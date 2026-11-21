@@ -86,7 +86,7 @@ describe('un seul bouton plein principal par écran (14/11 ; encre depuis le 18/
   it('les actions destructrices sont ROUGES (tone="danger")', () => {
     const read = (p: string) => stripComments(fs.readFileSync(path.join(ROOT, p), 'utf8'));
     expect(read('app/(tabs)/account.tsx')).toMatch(/label=\{t\('account\.signOut'\)\}\s*tone="danger"/);
-    expect(read('app/account/addresses.tsx')).toMatch(/label=\{t\('common\.delete'\)\} tone="danger"/);
+    expect(read('src/features/personal/AddressBook.tsx')).toMatch(/label=\{t\('common\.delete'\)\} tone="danger"/);
     expect(read('src/features/shopping/OfficialCartView.tsx')).toMatch(/label=\{t\('cart\.remove'\)\}\s*tone="danger"/);
     expect(read('src/design/ui.tsx')).toMatch(/const dangerInk = theme\.status\.danger\.fg/);
   });

@@ -1,3 +1,5 @@
+import { LoyaltyDemoProvider, useLoyaltyDemo } from '@/features/loyalty/LoyaltyDemoProvider';
+import { Pressable } from 'react-native';
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router } from 'expo-router';
@@ -16,21 +18,21 @@ jest.mock('@/design/appImage', () => ({ AppImage: () => null }));
 
 async function mount() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  render(<QueryClientProvider client={client}><PrefsProvider><I18nProvider><ThemeProvider><AccountScreen />
-  </ThemeProvider></I18nProvider></PrefsProvider></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><PrefsProvider><I18nProvider><ThemeProvider><LoyaltyDemoProvider><AccountScreen />
+  </LoyaltyDemoProvider></ThemeProvider></I18nProvider></PrefsProvider></QueryClientProvider>);
   await act(async () => {});
 }
 
 beforeEach(() => jest.clearAllMocks());
 
-test('shows the new section layout without audience chips or a fictional loyalty balance', async () => {
+test('shows the new section layout without audience chips and labels the loyalty balance as a demo', async () => {
   mockSession.mockReturnValue({ status: 'signedOut' });
   await mount();
   expect(screen.getByRole('header', { name: 'Mon compte' })).toBeTruthy();
   expect(screen.getByRole('header', { name: 'Résumé' })).toBeTruthy();
   expect(screen.getByRole('header', { name: 'Données et confidentialité' })).toBeTruthy();
   const banner = within(screen.getByTestId('account-loyalty-banner'));
-  expect(banner.getByText('Programme de fidélité')).toBeTruthy();
+  expect(banner.getByText('ZAYROVI Plus · Light')).toBeTruthy();
   expect(banner.getByText('Démo')).toBeTruthy();
   fireEvent.press(screen.getByTestId('account-loyalty-banner'));
   expect(router.push).toHaveBeenLastCalledWith('/account/loyalty');
@@ -59,4 +61,34 @@ test('retains functional account links, real unread count and sign-out', async (
   expect(router.push).toHaveBeenLastCalledWith('/account/profile');
   await act(async () => { fireEvent.press(screen.getByTestId('account-sign-out')); });
   expect(signOut).toHaveBeenCalledTimes(1);
+});
+
+
+test('the top profile strip reflects simulated pending points and the confirmed tier, scoped to the current viewer', async () => {
+  mockSession.mockReturnValue({ status: 'signedOut' });
+  function DemoControls() {
+    const [, dispatch] = useLoyaltyDemo();
+    return <>
+      <Pressable testID="try-purchase" onPress={() => dispatch({ type: 'purchase' })} />
+      <Pressable testID="try-confirm" onPress={() => dispatch({ type: 'confirm' })} />
+      <Pressable testID="try-mission" onPress={() => { dispatch({ type: 'mission', id: 'sizes' }); dispatch({ type: 'mission', id: 'birthday' }); }} />
+    </>;
+  }
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+  const tree = (owner: string) => <QueryClientProvider client={client}><PrefsProvider><I18nProvider><ThemeProvider>
+    <LoyaltyDemoProvider owner={owner}><AccountScreen /><DemoControls /></LoyaltyDemoProvider>
+  </ThemeProvider></I18nProvider></PrefsProvider></QueryClientProvider>;
+  const view = render(tree('first'));
+  await act(async () => {});
+  const banner = () => within(screen.getByTestId('account-loyalty-banner'));
+  fireEvent.press(screen.getByTestId('try-purchase'));
+  expect(banner().getByText('À confirmer : 40 points')).toBeTruthy();
+  expect(banner().getByText('0 points confirmés')).toBeTruthy();
+  fireEvent.press(screen.getByTestId('try-confirm'));
+  fireEvent.press(screen.getByTestId('try-mission'));
+  expect(banner().getByText('100 points confirmés')).toBeTruthy();
+  expect(banner().getByText('ZAYROVI Plus · Shine')).toBeTruthy();
+  view.rerender(tree('second'));
+  expect(banner().getByText('0 points confirmés')).toBeTruthy();
+  expect(banner().getByText('ZAYROVI Plus · Light')).toBeTruthy();
 });
