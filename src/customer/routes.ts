@@ -1555,8 +1555,11 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
   router.get('/account/orders', requireCustomer(db), (req, res) => {
     const account = customerFromRequest(req);
     const rows = db.all<any>(`SELECT o.id,o.order_number,o.status,o.payment_status,o.payment_method,o.total_tnd,o.governorate,o.created_at,
-      COALESCE(SUM(oi.quantity),0) item_count,(SELECT image_url FROM order_items WHERE order_id=o.id ORDER BY created_at LIMIT 1) image_url
-      FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id WHERE o.account_id=? GROUP BY o.id ORDER BY o.created_at DESC`, account.id);
+      COALESCE((SELECT SUM(quantity) FROM order_items WHERE order_id=o.id),0) item_count,
+      preview.image_url,preview.product_name AS preview_name,preview.requested_size AS preview_size
+      FROM orders o LEFT JOIN order_items preview ON preview.id=(
+        SELECT id FROM order_items WHERE order_id=o.id ORDER BY created_at,id LIMIT 1
+      ) WHERE o.account_id=? ORDER BY o.created_at DESC,o.id DESC`, account.id);
     return res.json({ success: true, data: rows });
   });
 

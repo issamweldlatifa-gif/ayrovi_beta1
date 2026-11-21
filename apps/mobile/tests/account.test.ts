@@ -229,6 +229,15 @@ describe('détail de commande', () => {
     expect(order.items[0]).toMatchObject({ title: 'Montre', quantity: 2, unitPriceTnd: 99.75 });
     expect(order.tracking).toMatchObject({ carrier: 'Aramex', trackingNumber: 'TN123' });
     expect(order.invoiceNumber).toBe('FAC-2026-001');
+    expect(order.breakdown.subtotal).toBeUndefined();
+  });
+
+  it('reads persisted address and pricing breakdown without creating a billing address', () => {
+    const order = parseOrderDetail({ ...payload, address_line: undefined, address: 'Adresse snapshot',
+      subtotal_tnd: 180, shipping_tnd: 0, customs_tnd: 15.125, discount_tnd: 2 });
+    expect(order.addressLine).toBe('Adresse snapshot');
+    expect(order.breakdown).toMatchObject({ subtotal: 180, shipping: 0, customs: 15.125, discount: 2 });
+    expect(order.breakdown.express).toBeUndefined();
   });
 
   it('compose la variante depuis requested_size/requested_color', () => {

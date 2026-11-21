@@ -1,124 +1,130 @@
-/**
- * Mes commandes — la liste complète, telle que le serveur la connaît.
- *
- * Un seul appel (`/api/customer/account/orders`), et un écran qui dit la vérité
- * dans les trois cas : chargement, erreur réseau (avec réessai), liste vide.
- * Aucune commande n'est inventée ni dupliquée depuis la page d'accueil.
- */
-import { useCallback } from 'react';
+import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { AppText, Button, Card } from '@/design/ui';
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
+import { AppText, Button } from '@/design/ui';
+import { ErrorBlock, LoadingBlock } from '@/design/states';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { rowDirectionFor } from '@/design/layoutLogic';
-import { SubScreen } from '@/design/subScreen';
-import { RHYTHM } from '@/design/rhythm';
+import { RADIUS } from '@/design/tokens.mobile';
 import { useI18n } from '@/i18n';
 import { fetchOrders } from '@/api/account';
 import { statusText } from '@/api/labels';
 import { mediaUrl } from '@/api/client';
 import { useSession } from '@/state/session';
 import { formatMoney } from '@/format/money';
+import { OrderFact, OrderHelp, OrderShell } from '@/features/orders/OrderLayout';
+import { formatOrderDate, orderDate, orderMonth, orderPeriods, sixMonthsBefore, type OrderPeriod } from '@/features/orders/orderPresentation';
 
-/**
- * Filet de sécurité de l'écran : si le rendu de la liste des commandes lève, expo-router
- * affiche le repli (arabe + français, bouton « عاود ») à la place de l'écran —
- * l'application reste ouverte, l'utilisateur peut revenir. Voir
- * `src/design/AppErrorBoundary.tsx` et la cause du 25/10/2026 (ordre des hooks).
- */
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 export default function OrdersScreen() {
   const theme = useTheme();
-  const t = useI18n().t;
+  const { t, locale } = useI18n();
+  const { bottom } = useSafeAreaInsets();
   const { status, account } = useSession();
   const accountId = status === 'signedIn' ? account?.id : undefined;
+  const [helpFor, setHelpFor] = useState<string | null>(null);
+  const [period, setPeriod] = useState<OrderPeriod>('recent');
+  const [choosing, setChoosing] = useState(false);
   const query = useQuery({
-    queryKey: ['account', 'orders', accountId],
-    enabled: Boolean(accountId),
-    queryFn: ({ signal }) => fetchOrders({ signal }),
-    staleTime: 30_000,
+    queryKey: ['account', 'orders', accountId], enabled: Boolean(accountId),
+    queryFn: ({ signal }) => fetchOrders({ signal }), staleTime: 30_000,
   });
+  const now = new Date();
+  const cutoff = sixMonthsBefore(now);
+  const orders = query.data ?? [];
+  const visible = orders.map(order => ({ order, date: orderDate(order.createdAt) }))
+    .filter(({ date }) => period === 'all' || date === null || date >= cutoff);
+  const direction = rowDirectionFor(theme.isRTL);
+  const retry = () => { void query.refetch(); };
 
-  const retry = useCallback(() => query.refetch(), [query]);
-
-  return (
-    <SubScreen scroll={false} title={t('orders.title')} subtitle={t('orders.subtitle')}>
-      {status === 'loading' ? <LoadingBlock /> : !accountId ? (
-        <Button label={t('account.signIn')} onPress={() => router.push('/sign-in')} />
-      ) : (
-      /* Liste virtualisée : l'historique de commandes n'a pas de plafond. */
-      <FlatList
-        style={styles.list}
-        refreshing={query.isRefetching}
-        onRefresh={retry}
-        data={query.data ?? []}
-        keyExtractor={(order) => order.id}
-        contentContainerStyle={{
-          gap: RHYTHM.related,
-          flexGrow: 1,
-        }}
-        ListHeaderComponent={
-          query.isLoading ? (
-            <LoadingBlock />
-          ) : query.isError ? (
-            <ErrorBlock error={query.error} onRetry={retry} />
-          ) : null
-        }
-        ListEmptyComponent={
-          !query.isLoading && !query.isError ? (
-            <EmptyBlock><AppText variant="body" align="center">{t('orders.empty')}</AppText></EmptyBlock>
-          ) : null
-        }
-        renderItem={({ item: order }) => (
-          // Toute la carte ouvre le détail : c'est le geste attendu, et il est
-          // annoncé aux lecteurs d'écran par `accessibilityRole`.
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${order.orderNumber || order.id} — ${statusText('order', order.status, t)}`}
-            onPress={() => router.push(`/orders/${order.id}`)}
-            testID={`order-${order.id}`}
-          >
-            <Card>
-              <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
-                <AppText variant="label" style={styles.orderNumber}>
-                  {order.orderNumber || order.id}
-                </AppText>
-                <AppText variant="caption" color={theme.colors.ink} style={styles.status}>
-                  {statusText('order', order.status, t)}
-                </AppText>
-              </View>
-              <AppText variant="caption" color={theme.colors.muted}>
-                {t('orders.items', { count: order.itemCount })} · {formatMoney(order.totalTnd)}
-              </AppText>
-              <AppText variant="caption" color={theme.colors.muted}>
-                {t('orders.payment')} : {statusText('payment', order.paymentStatus, t)}
-                {order.createdAt ? ` · ${order.createdAt.slice(0, 10)}` : ''}
-              </AppText>
-              {order.imageUrl ? (
-                <AppImage
-                  uri={mediaUrl(order.imageUrl)}
-                  style={[styles.thumb, { borderRadius: theme.radius.control, borderColor: theme.colors.line }]}
-                  contentFit="cover"
-                  accessibilityLabel={order.orderNumber || order.id}
-                />
-              ) : null}
-            </Card>
+  return <OrderShell title={t('orders.title')} fallback="/(tabs)/account">
+    {status === 'loading' ? <LoadingBlock /> : !accountId ? <View style={styles.guest}>
+      <AppText color={theme.colors.muted}>{t('orders.subtitle')}</AppText>
+      <Button label={t('account.signIn')} onPress={() => router.push('/sign-in')} />
+    </View> : <>
+      <FlatList style={styles.list} data={visible} keyExtractor={({ order }) => order.id}
+        refreshing={query.isRefetching} onRefresh={retry}
+        contentContainerStyle={[styles.content, { paddingBottom: bottom + 24 }]}
+        ListHeaderComponent={<View style={styles.tools}>
+          <Button label={t('orders.returnItem')} block size="lg" onPress={() => setHelpFor(accountId)} />
+          <Pressable accessibilityRole="link" style={styles.link} onPress={() => router.push('/legal/terms')}>
+            <AppText variant="bodyStrong" style={styles.underlined}>{t('orders.returnPolicy')}</AppText>
           </Pressable>
-        )}
-      />
-      )}
-    </SubScreen>
-  );
+          <AppText variant="h2" accessibilityRole="header">{t('orders.title')}</AppText>
+          {orders.length > 0 ? <>
+            <Pressable testID="orders-period" accessibilityRole="button" accessibilityState={{ expanded: choosing }}
+              style={[styles.period, { flexDirection: direction, borderColor: theme.colors.lineControl }]} onPress={() => setChoosing(value => !value)}>
+              <AppText style={styles.label}>{t(`orders.period.${period}`)}</AppText>
+              <Ionicons name={choosing ? 'chevron-up' : 'chevron-down'} size={theme.iconSize.md} color={theme.colors.ink} />
+            </Pressable>
+            {choosing ? <View style={[styles.periodChoices, { borderColor: theme.colors.line }]}>
+              {orderPeriods.map(item => <Pressable key={item} accessibilityRole="button" accessibilityState={{ selected: item === period }}
+                style={styles.choice} onPress={() => { setPeriod(item); setChoosing(false); }}>
+                <AppText variant={item === period ? 'bodyStrong' : 'body'}>{t(`orders.period.${item}`)}</AppText>
+              </Pressable>)}
+            </View> : null}
+          </> : null}
+          {query.isLoading ? <LoadingBlock /> : null}
+          {query.isError ? <ErrorBlock error={query.error} onRetry={retry} /> : null}
+        </View>}
+        ListEmptyComponent={!query.isLoading && !query.isError ? <View testID="orders-empty" style={styles.empty}>
+          <View style={[styles.emptyGlyph, { borderColor: theme.colors.lineControl }]}>
+            <Ionicons name="bag-handle-outline" size={theme.iconSize.xl} color={theme.colors.ink} />
+          </View>
+          <AppText variant="subtitle" align="center">{t(orders.length ? 'orders.periodEmpty' : 'orders.empty')}</AppText>
+          {orders.length ? <Button label={t('orders.period.all')} tone="quiet" onPress={() => setPeriod('all')} /> :
+            <Button label={t('orders.continue')} onPress={() => router.navigate('/(tabs)')} />}
+        </View> : null}
+        renderItem={({ item: { order, date }, index }) => {
+          const previous = visible[index - 1]?.date;
+          const month = date ? orderMonth(date) : null;
+          const newMonth = index === 0 || month !== (previous ? orderMonth(previous) : null);
+          const orderStatus = statusText('order', order.status, t);
+          return <View style={styles.group}>
+            {newMonth ? <AppText variant="h3" accessibilityRole="header" style={styles.month}>
+              {month === orderMonth(now) ? t('orders.thisMonth') : date ? formatOrderDate(order.createdAt, locale, true) : t('orders.undated')}
+            </AppText> : null}
+            <Pressable testID={`order-${order.id}`} accessibilityRole="link"
+              accessibilityLabel={`${t('orders.view')} · ${order.orderNumber || order.id} · ${orderStatus}`}
+              onPress={() => router.push({ pathname: '/orders/[id]', params: { id: order.id } })}
+              style={[styles.order, { borderBottomColor: theme.colors.line }]}>
+              <AppText variant="subtitle">{t('orders.number')} : {order.orderNumber || order.id}</AppText>
+              <View style={[styles.viewOrder, { flexDirection: direction }]}>
+                <AppText variant="bodyStrong">{t('orders.view')}</AppText>
+                <Ionicons name={theme.isRTL ? 'arrow-back' : 'arrow-forward'} size={theme.iconSize.sm} color={theme.colors.ink} />
+              </View>
+              <View style={[styles.facts, { flexDirection: direction }]}>
+                <OrderFact label={t('orders.createdAt')} value={formatOrderDate(order.createdAt, locale)} />
+                <OrderFact label={t('orders.total')} value={formatMoney(order.totalTnd)} />
+              </View>
+              <View style={[styles.facts, { flexDirection: direction }]}><OrderFact label={t('orders.payment')} value={statusText('payment', order.paymentStatus, t)} /></View>
+              <AppText variant="bodyStrong">{orderStatus}</AppText>
+              {order.imageUrl || order.previewName || order.previewSize ? <View style={styles.preview}>
+                {order.imageUrl ? <AppImage uri={mediaUrl(order.imageUrl)} decorative contentFit="contain" style={[styles.thumb, { backgroundColor: theme.colors.accentSoft }]} /> : null}
+                {order.previewName ? <AppText variant="bodySmall">{order.previewName}</AppText> : null}
+                {order.previewSize ? <AppText variant="caption" color={theme.colors.muted}>{t('orders.size', { size: order.previewSize })}</AppText> : null}
+              </View> : null}
+              <AppText variant="caption" color={theme.colors.muted}>{t('orders.items', { count: order.itemCount })}</AppText>
+            </Pressable>
+          </View>;
+        }} />
+      {helpFor === accountId ? <OrderHelp title={t('orders.returnItem')} onClose={() => setHelpFor(null)} /> : null}
+    </>}
+  </OrderShell>;
 }
 
 const styles = StyleSheet.create({
-  list: { flex: 1 },
-  row: { justifyContent: 'space-between', alignItems: 'baseline', gap: RHYTHM.tight },
-  orderNumber: { flex: 1, minWidth: 0 },
-  status: { flexShrink: 1, maxWidth: '50%' },
-  thumb: { width: 56, height: 56, borderWidth: StyleSheet.hairlineWidth, marginTop: 6 },
+  list: { flex: 1 }, content: { width: '100%', maxWidth: 620, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 24, flexGrow: 1 },
+  guest: { padding: 24, gap: 16 }, tools: { gap: 12 }, link: { minHeight: 44, justifyContent: 'center' }, underlined: { textDecorationLine: 'underline' },
+  period: { minHeight: 50, borderWidth: 1, borderRadius: RADIUS.sm, alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, gap: 8 }, label: { flex: 1 },
+  periodChoices: { borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.sm }, choice: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12 },
+  group: { gap: 12 }, month: { marginTop: 20 }, order: { paddingVertical: 16, gap: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  viewOrder: { alignItems: 'center', gap: 6 }, facts: { flexWrap: 'wrap', gap: 12 }, preview: { width: '48%', maxWidth: 168, gap: 4 },
+  thumb: { width: '100%', aspectRatio: 0.85, borderRadius: RADIUS.md, overflow: 'hidden' },
+  empty: { paddingVertical: 24, gap: 24, alignItems: 'center' }, emptyGlyph: { width: 96, height: 96, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderStyle: 'dashed', borderRadius: RADIUS.full },
 });

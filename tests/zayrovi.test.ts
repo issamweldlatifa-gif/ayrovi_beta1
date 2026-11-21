@@ -710,6 +710,12 @@ describe('ZAYROVI platform', () => {
     const accountDetail = await customerAgent.get(`/api/customer/account/orders/${persistedOrderId}`);
     expect(accountDetail.status).toBe(200);
     expect(accountDetail.body.data.items).toHaveLength(1);
+    const orders = await customerAgent.get('/api/customer/account/orders').expect(200);
+    expect(orders.body.data.find((item: { id: string }) => item.id === persistedOrderId)).toMatchObject({
+      payment_method: 'BANK_TRANSFER', item_count: accountDetail.body.data.items[0].quantity,
+      preview_name: accountDetail.body.data.items[0].product_name,
+      preview_size: accountDetail.body.data.items[0].requested_size,
+    });
     expect(JSON.parse(accountDetail.body.data.pricing_snapshot).version).toBe(1);
     expect((await secondCustomerAgent.get(`/api/customer/account/orders/${persistedOrderId}`)).status).toBe(404);
   });

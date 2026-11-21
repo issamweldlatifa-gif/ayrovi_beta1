@@ -94,6 +94,8 @@ export interface RecentOrder {
   createdAt: string;
   imageUrl: string;
   itemCount: number;
+  previewName?: string;
+  previewSize?: string;
 }
 
 export interface AccountOverview {
@@ -171,6 +173,7 @@ export interface OrderDetail {
   paymentStatus: string;
   paymentMethod: string;
   totalTnd: number;
+  breakdown: { subtotal?: number; shipping?: number; customs?: number; service?: number; express?: number; discount?: number };
   paidTnd: number;
   remainderTnd: number;
   governorate: string;
@@ -302,6 +305,8 @@ export function parseRecentOrder(payload: unknown): RecentOrder | null {
     createdAt: str(payload.created_at),
     imageUrl: str(payload.image_url),
     itemCount: num(payload.item_count),
+    previewName: str(payload.preview_name) || undefined,
+    previewSize: str(payload.preview_size) || undefined,
   };
 }
 
@@ -455,6 +460,7 @@ export function parseOrderDetail(payload: unknown): OrderDetail {
   const invoice = isRecord(payload.invoice) ? payload.invoice : {};
   const options = isRecord(payload.paymentOptions) ? payload.paymentOptions : {};
   const transfer = isRecord(options.transfer) ? options.transfer : {};
+  const amount = (value: unknown) => typeof value === 'number' && Number.isFinite(value) ? value : undefined;
   return {
     id,
     orderNumber: str(payload.order_number),
@@ -462,11 +468,14 @@ export function parseOrderDetail(payload: unknown): OrderDetail {
     paymentStatus: str(payload.payment_status) || str(payment.status),
     paymentMethod: str(payload.payment_method) || str(payment.method),
     totalTnd: num(payload.total_tnd),
+    breakdown: { subtotal: amount(payload.subtotal_tnd), shipping: amount(payload.shipping_tnd),
+      customs: amount(payload.customs_tnd), service: amount(payload.service_tnd),
+      express: amount(payload.express_tnd), discount: amount(payload.discount_tnd) },
     paidTnd: num(payload.paid_amount_tnd),
     // Le reste à payer vient du serveur : on ne le recalcule pas ici.
     remainderTnd: num(payload.remainder_tnd),
     governorate: str(payload.governorate),
-    addressLine: str(payload.address_line),
+    addressLine: str(payload.address_line) || str(payload.address),
     createdAt: str(payload.created_at),
     items: Array.isArray(payload.items)
       ? payload.items.flatMap((row) => {
@@ -609,11 +618,13 @@ export async function fetchOverview(options?: RequestOptions): Promise<AccountOv
 
 export async function fetchOrders(options?: RequestOptions): Promise<RecentOrder[]> {
   const data = await apiGetData<unknown>('/api/customer/account/orders', options);
-  if (!Array.isArray(data)) return [];
-  return data.flatMap((row) => {
+  if (!Array.isArray(data)) throw new Error('Historique des commandes illisible.');
+  const orders = data.flatMap((row) => {
     const parsed = parseRecentOrder(row);
     return parsed ? [parsed] : [];
   });
+  if (data.length && !orders.length) throw new Error('Historique des commandes illisible.');
+  return orders;
 }
 
 /* ── Appels du compte (suite) ──────────────────────────────────────────────── */
