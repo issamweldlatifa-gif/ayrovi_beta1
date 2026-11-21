@@ -18,10 +18,12 @@ import { useSession } from '@/state/session';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
+const loyaltyRoute = '/account/loyalty' as Href;
 const loyaltyImage = require('../../assets/images/account-loyalty-banner.jpg');
 type MenuItem = { id: string; label: TranslationKey; icon: keyof typeof Ionicons.glyphMap; route: Href; public?: boolean };
 const groups = [
   { id: 'overview', title: 'account.hub.overview', items: [
+    { id: 'loyalty', label: 'account.hub.loyalty', icon: 'star-outline', route: loyaltyRoute, public: true },
     { id: 'notifications', label: 'account.menu.notifications', icon: 'notifications-outline', route: '/account/notifications' },
     { id: 'orders', label: 'account.menu.orders', icon: 'cube-outline', route: '/orders' },
     { id: 'profile', label: 'account.hub.personal', icon: 'person-outline', route: '/account/profile' },
@@ -62,15 +64,16 @@ export default function AccountScreen() {
     onRefresh={signedIn ? () => { void overview.refetch(); } : undefined} refreshing={overview.isRefetching}
     contentStyle={styles.scroll} style={{ backgroundColor: surface, paddingLeft: left, paddingRight: right }}>
     <View style={styles.frame}>
-      <View testID="account-loyalty-banner" style={[styles.banner, { flexDirection: direction }]}>
+      <Pressable testID="account-loyalty-banner" accessibilityRole="link" accessibilityLabel={t('loyalty.brand')}
+        onPress={() => router.push(loyaltyRoute)} style={[styles.banner, { flexDirection: direction }]}>
         <AppImage localSource={loyaltyImage} decorative background={BRAND.lightGray} contentPosition={{ left: '50%', top: '32%' }}
           style={[StyleSheet.absoluteFill, theme.isRTL && styles.flip]} />
         <View style={styles.bannerCopy}>
-          <AppText variant="captionStrong" color={BRAND.black}>ZAYROVI</AppText>
+          <AppText variant="captionStrong" color={BRAND.black}>ZAYROVI PLUS</AppText>
           <AppText variant="subtitle" color={BRAND.black}>{t('account.hub.loyalty')}</AppText>
-          <AppText variant="captionStrong" color={BRAND.black} style={styles.loyaltyStatus}>{t('account.hub.soon')}</AppText>
+          <AppText variant="captionStrong" color={BRAND.black} style={styles.loyaltyStatus}>{t('loyalty.demo')}</AppText>
         </View>
-      </View>
+      </Pressable>
       <View style={styles.identity}>
         <AppText accessibilityRole="header" variant="h2">{t('account.hub.title')}</AppText>
         {status === 'loading' ? <LoadingBlock /> : signedIn ? <>

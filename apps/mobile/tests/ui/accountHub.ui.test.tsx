@@ -31,8 +31,11 @@ test('shows the new section layout without audience chips or a fictional loyalty
   expect(screen.getByRole('header', { name: 'Données et confidentialité' })).toBeTruthy();
   const banner = within(screen.getByTestId('account-loyalty-banner'));
   expect(banner.getByText('Programme de fidélité')).toBeTruthy();
-  expect(banner.getByText('Bientôt')).toBeTruthy();
-  expect(banner.queryAllByRole('link')).toHaveLength(0);
+  expect(banner.getByText('Démo')).toBeTruthy();
+  fireEvent.press(screen.getByTestId('account-loyalty-banner'));
+  expect(router.push).toHaveBeenLastCalledWith('/account/loyalty');
+  fireEvent.press(screen.getByTestId('account-link-loyalty'));
+  expect(router.push).toHaveBeenLastCalledWith('/account/loyalty');
   for (const text of ['Femme', 'Homme', 'Enfant', 'Gérer mon compte']) expect(screen.queryByText(text)).toBeNull();
   fireEvent.press(screen.getByTestId('account-link-orders'));
   expect(router.push).toHaveBeenLastCalledWith('/sign-in');
