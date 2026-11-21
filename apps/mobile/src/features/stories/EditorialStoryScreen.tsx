@@ -18,7 +18,7 @@ import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { ErrorBlock, LoadingBlock } from '@/design/states';
-import { HERO_COPY, ICON_SIZE, OPACITY, RADIUS, veil } from '@/design/tokens.mobile';
+import { HERO_COPY, ICON_SIZE, RADIUS, veil } from '@/design/tokens.mobile';
 import { BRAND, NEUTRALS } from '@/design/tokens.generated';
 import { AppText } from '@/design/ui';
 import { useI18n, useT } from '@/i18n';
@@ -27,7 +27,7 @@ import { StoryEditorialProduct, useStoryFavorites } from './StoryEditorialProduc
 const STORY = { inset: 24, fullInset: 12, maxWidth: 600, title: 26, titleLine: 30, captionLine: 24, aspect: 626 / 602 } as const;
 function StoryVideo({ media, playing, muted, fit, onDuration }: { media: StoryMedia; playing: boolean; muted: boolean; fit: 'cover' | 'contain'; onDuration: (seconds: number) => void }) {
   const [ready, setReady] = useState(false);
-  const player = useVideoPlayer({ uri: mediaUrl(media.url) }, instance => { instance.loop = true; instance.muted = true; });
+  const player = useVideoPlayer({ uri: mediaUrl(media.url) }, instance => { instance.loop = true; instance.muted = muted; });
   useEffect(() => {
     const update = () => {
       setReady(player.status === 'readyToPlay');
@@ -138,8 +138,8 @@ export function StorySlides({ story, composition }: { story: EditorialStory; com
     <StoryVideo key={`${step}:${slide.media.url}`} media={slide.media} playing={playing} muted={muted} fit={fit} onDuration={onDuration} /> :
     slide.media.kind === 'gif' ? <StoryGif key={`${step}:${slide.media.url}`} url={slide.media.url} playing={playing} fit={fit} /> :
       <AppImage key={`${step}:${slide.media.url}`} testID="editorial-story-image" uri={mediaUrl(slide.media.url)} decorative contentFit={fit} style={StyleSheet.absoluteFill} />;
-  const control = (name: React.ComponentProps<typeof Ionicons>['name'], label: string, action: () => void, id: string, disabled = false) =>
-    <Pressable testID={id} accessibilityRole="button" accessibilityLabel={label} onPress={action} disabled={disabled} style={[styles.control, disabled && styles.inactive]}>
+  const control = (name: React.ComponentProps<typeof Ionicons>['name'], label: string, action: () => void, id: string) =>
+    <Pressable testID={id} accessibilityRole="button" accessibilityLabel={label} onPress={action} style={styles.control}>
       <Ionicons name={name} color={BRAND.white} size={ICON_SIZE.lg} />
     </Pressable>;
   const zones = <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.zones, { flexDirection: direction }]}>
@@ -163,7 +163,7 @@ export function StorySlides({ story, composition }: { story: EditorialStory; com
       </View>
       <View style={[styles.controls, { flexDirection: direction }]}>
         {control(paused ? 'play-circle' : 'pause-circle', t(paused ? 'social.play' : 'social.pause'), () => setPaused(value => !value), 'editorial-story-pause')}
-        {control(muted ? 'volume-mute' : 'volume-high', t(muted ? 'social.unmute' : 'social.mute'), () => setMuted(value => !value), 'editorial-story-mute', slide.media.kind !== 'video')}
+        {control(muted ? 'volume-mute' : 'volume-high', t(muted ? 'social.unmute' : 'social.mute'), () => setMuted(value => !value), 'editorial-story-mute')}
         {control('close-outline', t('social.close'), close, 'editorial-story-close')}
       </View>
       {inset ? <ScrollView style={styles.insetScroll} contentContainerStyle={styles.insetCopy}>
@@ -191,7 +191,6 @@ const styles = StyleSheet.create({
   fill: { height: '100%', backgroundColor: BRAND.white },
   controls: { justifyContent: 'flex-end', marginHorizontal: STORY.inset, paddingTop: 12, gap: 4 },
   control: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  inactive: { opacity: OPACITY.subtle },
   mediaSpace: { flex: 1 },
   zones: { justifyContent: 'space-between' },
   zone: { width: '38%' },

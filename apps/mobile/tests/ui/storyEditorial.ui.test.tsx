@@ -61,6 +61,22 @@ it('shows black full-screen, then an exact linked product, then an inset GIF wit
   expect(router.push).toHaveBeenLastCalledWith({ pathname: '/story-article/[id]', params: { id: 'story-a', mode: 'discover' } });
 });
 
+it('lets the viewer turn sound on or off even on silent slides, and keeps Close independent', () => {
+  mount(<EditorialStoryScreen id={story.id} />);
+  const mute = () => screen.getByTestId('editorial-story-mute');
+  expect(mute()).toBeEnabled();
+  fireEvent.press(mute());
+  fireEvent.press(screen.getByRole('button', { name: 'Suivant' }));
+  expect(mockPlayer.muted).toBe(false);
+  fireEvent.press(screen.getByRole('button', { name: 'Suivant' }));
+  expect(mute()).toBeEnabled();
+  fireEvent.press(mute());
+  fireEvent.press(screen.getByRole('button', { name: 'Précédent' }));
+  expect(mockPlayer.muted).toBe(true);
+  fireEvent.press(screen.getByTestId('editorial-story-close'));
+  expect(router.back).toHaveBeenCalledTimes(1);
+});
+
 it('pauses timed advancement and continues from the same progress on resume', () => {
   mockReduced.mockReturnValue(false);
   let now = 1000;
