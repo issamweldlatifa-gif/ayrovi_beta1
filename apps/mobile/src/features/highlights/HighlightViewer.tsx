@@ -12,6 +12,7 @@ import { highlightsKey } from '@/api/zayroviHighlights';
 import { AppImage } from '@/design/appImage';
 import { AppText } from '@/design/ui';
 import { BRAND } from '@/design/tokens.generated';
+import { useTheme } from '@/design/theme';
 import { RADIUS, veil } from '@/design/tokens.mobile';
 import { ReactionButton } from '@/design/reactions/ReactionButton';
 import { useContentReaction } from '@/design/reactions/useContentReaction';
@@ -30,13 +31,15 @@ import { highlightProducts } from './highlightProducts';
 export function HighlightOverlayButton({ icon, label, onPress, testID }: {
   icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void; testID?: string;
 }) {
+  const { iconSize } = useTheme();
   return <Pressable testID={testID} accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={styles.control}>
-    <Ionicons name={icon} size={22} color={BRAND.white} accessibilityElementsHidden />
+    <Ionicons name={icon} size={iconSize.md} color={BRAND.white} accessibilityElementsHidden />
   </Pressable>;
 }
 
 export function HighlightViewer({ reel, focused, onClose }: { reel: Reel; focused: boolean; onClose: () => void }) {
   const { t, locale } = useI18n();
+  const { iconSize } = useTheme();
   const safe = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const client = useQueryClient();
@@ -94,13 +97,13 @@ export function HighlightViewer({ reel, focused, onClose }: { reel: Reel; focuse
             onTap={reaction.tap} onPick={reaction.pick} guest={!signedIn} ink={BRAND.white} />
           <Pressable testID="highlight-comments" accessibilityRole="button" accessibilityLabel={t('social.comments')}
             onPress={() => setComments(true)} style={styles.comment}>
-            <Ionicons name="chatbubble-outline" size={21} color={BRAND.white} accessibilityElementsHidden />
+            <Ionicons name="chatbubble-outline" size={iconSize.md} color={BRAND.white} accessibilityElementsHidden />
             <AppText variant="captionStrong" color={BRAND.white}>{formatRailCount(counts?.comments ?? 0)}</AppText>
           </Pressable>
         </View>
         {extras > 0 ? <Pressable accessibilityRole="button" accessibilityState={{ expanded: showCarousel }} testID="highlight-more-products"
           onPress={() => setExpanded(value => !value)} style={styles.tag}>
-          <Ionicons name={showCarousel ? 'close' : 'pricetag-outline'} size={13} color={BRAND.white} accessibilityElementsHidden />
+          <Ionicons name={showCarousel ? 'close' : 'pricetag-outline'} size={iconSize.xs} color={BRAND.white} accessibilityElementsHidden />
           <AppText variant="captionStrong" color={BRAND.white}>{t(showCarousel ? 'highlights.less' : extras === 1 ? 'highlights.moreOne' : 'highlights.more', { count: extras })}</AppText>
         </Pressable> : null}
         {showCarousel ? <ScrollView testID="highlight-product-carousel" horizontal nestedScrollEnabled directionalLockEnabled
@@ -118,16 +121,16 @@ export function HighlightViewer({ reel, focused, onClose }: { reel: Reel; focuse
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: BRAND.black },
-  topScrim: { position: 'absolute', left: 0, right: 0, top: 0 },
-  bottomScrim: { position: 'absolute', left: 0, right: 0, bottom: 0 },
-  header: { position: 'absolute', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  topScrim: { ...StyleSheet.absoluteFill, bottom: undefined },
+  bottomScrim: { ...StyleSheet.absoluteFill, top: undefined },
+  header: { ...StyleSheet.absoluteFill, bottom: undefined, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
   control: { width: 44, height: 44, borderRadius: RADIUS.full, backgroundColor: veil(0.46), alignItems: 'center', justifyContent: 'center' },
-  footer: { position: 'absolute', flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
-  caption: { flex: 1, gap: 5, paddingBottom: 4 },
+  footer: { ...StyleSheet.absoluteFill, top: undefined, flexDirection: 'row', alignItems: 'flex-end', gap: 10 },
+  caption: { flex: 1, gap: 6, paddingBottom: 4 },
   dock: { alignItems: 'flex-end', gap: 6 },
   actions: { alignItems: 'center', gap: 4 },
   comment: { minWidth: 44, minHeight: 44, borderRadius: RADIUS.full, backgroundColor: veil(0.46), alignItems: 'center', justifyContent: 'center' },
-  tag: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 36, borderRadius: RADIUS.full, backgroundColor: veil(0.65), paddingHorizontal: 9 },
+  tag: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, borderRadius: RADIUS.full, backgroundColor: veil(0.65), paddingHorizontal: 10 },
   carousel: { width: '100%', flexGrow: 0 },
   slides: { gap: 6, paddingBottom: 2 },
 });

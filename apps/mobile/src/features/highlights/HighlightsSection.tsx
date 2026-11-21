@@ -28,14 +28,14 @@ export function HighlightsSection() {
   const query = useZayroviHighlights(visible);
   const hidden = useHiddenReels();
   const { t, locale } = useI18n();
-  const { isRTL } = useTheme();
+  const { isRTL, iconSize } = useTheme();
   const reels = (query.data ?? []).filter(reel => !hidden.includes(reel.id) && reel.videoUrl && reel.posterUrl && hasHighlightImage(reel.product));
   const row = { flexDirection: rowDirectionFor(isRTL) };
   return <View>
     <View ref={anchor} collapsable={false} style={styles.anchor} />
     {reels.length === HIGHLIGHT_LIMIT ? <View testID="home-highlights" style={styles.section}>
       <View style={[styles.eyebrow, row]}>
-        <Ionicons name="sparkles" size={13} color={BRAND.yellow} accessibilityElementsHidden />
+        <Ionicons name="sparkles-outline" size={iconSize.xs} color={BRAND.yellow} accessibilityElementsHidden />
         <AppText variant="captionStrong" color={BRAND.yellow}>ZAYROVI HIGHLIGHTS</AppText>
       </View>
       <AppText variant="h2" accessibilityRole="header" color={BRAND.white}>{t('highlights.title')}</AppText>
@@ -46,7 +46,7 @@ export function HighlightsSection() {
             <Pressable testID={`highlight-tile-${reel.id}`} onPress={() => openHighlight(reel)} accessibilityRole="button"
               accessibilityLabel={`${t('highlights.watch')} · ${reelCaption(reel, locale).title}`}
               style={[StyleSheet.absoluteFill, styles.tileButton]}>
-              <View style={styles.play}><Ionicons name="play" size={16} color={BRAND.white} accessibilityElementsHidden /></View>
+              <View style={styles.play}><Ionicons name="play" size={iconSize.sm} color={BRAND.white} accessibilityElementsHidden /></View>
             </Pressable>
             <View style={styles.productPin} pointerEvents="box-none">
               {reel.product ? <HighlightProductCard compact testID={`highlight-overlay-${reel.id}`} product={reel.product} onPress={() => openHighlight(reel)} /> : null}
@@ -67,5 +67,5 @@ const styles = StyleSheet.create({
   tile: { flex: 1, aspectRatio: MEDIA_RATIO.reel, borderRadius: RADIUS.md, backgroundColor: veil(0.8), overflow: 'hidden' },
   tileButton: { alignItems: 'flex-start', padding: 8 },
   play: { width: 30, height: 30, borderRadius: RADIUS.full, backgroundColor: veil(0.65), alignItems: 'center', justifyContent: 'center' },
-  productPin: { position: 'absolute', right: 7, bottom: 7 },
+  productPin: { ...StyleSheet.absoluteFill, alignItems: 'flex-end', justifyContent: 'flex-end', padding: 6 },
 });

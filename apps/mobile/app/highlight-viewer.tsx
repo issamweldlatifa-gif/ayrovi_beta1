@@ -25,12 +25,12 @@ export default function HighlightViewerScreen() {
   return <View style={styles.screen}>
     {focused ? <StatusBar style="light" /> : null}
     {reel ? <HighlightViewer key={reel.id} reel={reel} focused={focused} onClose={() => goBack()} /> : <>
+      <View style={{ paddingTop: safe.top + 8, paddingLeft: safe.left + 12, alignSelf: 'flex-start' }}>
+        <HighlightOverlayButton icon="close" label={t('common.close')} onPress={() => goBack()} testID="highlight-close" />
+      </View>
       <View style={styles.state}>
         {query.isPending ? <BrandLoadingIndicator size={60} /> : query.isError ? <ErrorBlock error={query.error} onRetry={() => void query.refetch()} />
           : <AppText color={BRAND.white} align="center">{t('highlights.unavailable')}</AppText>}
-      </View>
-      <View style={[styles.back, { top: safe.top + 8, left: safe.left + 12 }]}>
-        <HighlightOverlayButton icon="close" label={t('common.close')} onPress={() => goBack()} testID="highlight-close" />
       </View>
     </>}
   </View>;
@@ -38,5 +38,4 @@ export default function HighlightViewerScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: BRAND.black },
   state: { flex: 1, justifyContent: 'center', padding: 16 },
-  back: { position: 'absolute' },
 });
