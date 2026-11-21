@@ -578,12 +578,25 @@ it('does not play audio if there is no picture and allows a fresh player retry',
 it('exposes a retry rather than waiting indefinitely for the first Android frame', async () => {
   jest.mocked(fetchReferencePublications).mockResolvedValueOnce(fixture('video', 500, 900));
   mount();
-  fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
-  expect(await screen.findByText('Chargement de la vidéo…')).toBeTruthy();
-  expect(mockPlayer.muted).toBe(true);
-  expect(await screen.findByTestId('publication-player-retry', {}, { timeout: 9_000 })).toBeTruthy();
-  expect(within(screen.getByTestId('publication-player-editorial')).getByText('Zayrovi Team')).toBeTruthy();
-}, 12_000);
+  const open = await screen.findByTestId('reference-video-fullscreen');
+  const timers = jest.spyOn(global, 'setTimeout');
+  try {
+    fireEvent.press(open);
+    const runTimer = (ms: number) => {
+      const callback = timers.mock.calls.find(([, delay]) => delay === ms)?.[0];
+      if (typeof callback !== 'function') throw new Error(`Missing player timer: ${ms}`);
+      act(() => callback());
+    };
+    runTimer(650);
+    expect(screen.getByText('Chargement de la vidéo…')).toBeTruthy();
+    expect(mockPlayer.muted).toBe(true);
+    runTimer(8_000);
+    expect(screen.getByTestId('publication-player-retry')).toBeTruthy();
+    expect(within(screen.getByTestId('publication-player-editorial')).getByText('Zayrovi Team')).toBeTruthy();
+  } finally {
+    timers.mockRestore();
+  }
+});
 
 it('reports an unpublished look as unavailable instead of showing an unrelated post', async () => {
   jest.mocked(fetchPublicationLook).mockResolvedValueOnce(null);
