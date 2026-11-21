@@ -1,3 +1,4 @@
+import { BLACK_FRIDAY_KEY, blackFridayOffers, readBlackFridaySettings, saveBlackFridaySettings, searchBlackFridayOffers } from '../catalogue/blackFriday';
 import { isPublicationCampaign } from '../../shared/publicationCampaign';
 import { releaseCatalogueReservations } from '../catalogue/localSale';
 import { isGeneratedPublicationEditorialAsset } from '../../shared/publicationLayouts';
@@ -819,6 +820,23 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       new Date().toISOString());
     audit(db, req, 'UPDATE', 'LENS_HERO', 'global', null, null);
     res.json({ success: true, data: lensRowForApi(db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'")) });
+  });
+
+  router.get('/home-black-friday', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const data = readBlackFridaySettings(db);
+    res.json({ success: true, data, products: blackFridayOffers(db, data.productIds) });
+  });
+  router.get('/home-black-friday/products', requireAdmin(db, 'content:read'), (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: searchBlackFridayOffers(db, typeof req.query.q === 'string' ? req.query.q : '') });
+  });
+  router.put('/home-black-friday', requireAdmin(db, 'content:write'), (req, res) => {
+    const before = readBlackFridaySettings(db);
+    const data = saveBlackFridaySettings(db, req.body, new Date().toISOString());
+    if (!data) return res.status(400).json({ success: false, error: 'Vérifiez les champs et choisissez des produits actifs, avec photo et prix remisé.' });
+    audit(db, req, 'UPDATE', 'HOME_BLACK_FRIDAY', 'global', before, data);
+    res.json({ success: true, data, products: blackFridayOffers(db, data.productIds) });
   });
 
   /* ==================== STORIES — بلوك الصفحة الرئيسية (مرجع Zalando) ==================== */
@@ -2531,13 +2549,14 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   router.get('/settings', requireAdmin(db, 'settings:read'), (req, res) => {
     const category = typeof req.query.category === 'string' ? req.query.category : '';
     const rows = category ? db.all<any>('SELECT * FROM settings WHERE category=? ORDER BY label', category) : db.all<any>('SELECT * FROM settings ORDER BY category,label');
-    res.json({ success: true, data: rows.map((row) => ({ ...row, setting_value: row.value_type === 'JSON' ? (row.setting_key === 'interface_config' ? enforceBrandIdentity(JSON.parse(row.setting_value)) : row.setting_key === 'site_theme' ? enforceLegacyTheme(JSON.parse(row.setting_value)) : JSON.parse(row.setting_value)) : row.value_type === 'NUMBER' ? Number(row.setting_value) : row.value_type === 'BOOLEAN' ? row.setting_value === 'true' : row.setting_value })) });
+    res.json({ success: true, data: rows.filter(row => row.setting_key !== BLACK_FRIDAY_KEY).map((row) => ({ ...row, setting_value: row.value_type === 'JSON' ? (row.setting_key === 'interface_config' ? enforceBrandIdentity(JSON.parse(row.setting_value)) : row.setting_key === 'site_theme' ? enforceLegacyTheme(JSON.parse(row.setting_value)) : JSON.parse(row.setting_value)) : row.value_type === 'NUMBER' ? Number(row.setting_value) : row.value_type === 'BOOLEAN' ? row.setting_value === 'true' : row.setting_value })) });
   });
 
   router.put('/settings/:id', requireAdmin(db, 'settings:write'), (req, res) => {
     const current = db.get<any>('SELECT * FROM settings WHERE id=?', req.params.id);
     if (!current) return res.status(404).json({ success: false, error: 'Paramètre introuvable.' });
     let received = req.body?.value;
+    if (current.setting_key === BLACK_FRIDAY_KEY) return res.status(409).json({ success: false, error: 'Utilisez l’éditeur Black Friday Week.' });
     if (current.setting_key === 'social_commerce_editions_v1') return res.status(409).json({ success: false, error: 'Utilisez l’éditeur Social Commerce.' });
     if (current.setting_key === 'payment_methods') {
       // The accepted codes come from the shared list, NOT from a copy written here.

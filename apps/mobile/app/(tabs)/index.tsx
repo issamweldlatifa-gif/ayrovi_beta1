@@ -27,6 +27,8 @@ import { HeroCarousel, type HeroTint } from '@/features/home/HeroCarousel';
 import { HomeTabs } from '@/features/home/HomeTabs';
 import { HomeCover } from '@/features/home/HomeCover';
 import { StoriesSection } from '@/features/home/StoriesSection';
+import { BlackFridaySection } from '@/features/home/BlackFridaySection';
+import { useBlackFriday } from '@/api/blackFriday';
 import { useStories, useStoriesShowcase } from '@/api/hooks';
 import { LensHomeBlock } from '@/features/home/LensHomeBlock';
 import { ReelsShopSection } from '@/features/home/ReelsShopSection';
@@ -84,6 +86,7 @@ export default function HomeScreen() {
     return () => registerScrollToTopHandler(null);
   }, []);
 
+  const blackFriday = useBlackFriday();
   const stories = useStories();
   const storiesShowcase = useStoriesShowcase();
   const heroSlides = useHeroSlides();
@@ -92,9 +95,9 @@ export default function HomeScreen() {
   const reload = useCallback(() => {
     setRefreshing(true);
     Promise.allSettled([
-      heroSlides.refetch(), heroCarouselSettings.refetch(), stories.refetch(), storiesShowcase.refetch(),
+      heroSlides.refetch(), heroCarouselSettings.refetch(), stories.refetch(), storiesShowcase.refetch(), blackFriday.refetch(),
     ]).finally(() => setRefreshing(false));
-  }, [heroSlides, heroCarouselSettings, stories, storiesShowcase]);
+  }, [heroSlides, heroCarouselSettings, stories, storiesShowcase, blackFriday]);
 
   return (
     <AppScreen
@@ -136,6 +139,8 @@ export default function HomeScreen() {
       <StoriesSection />
 
       <SectionBreak />
+
+      {blackFriday.data ? <BlackFridaySection campaign={blackFriday.data} /> : null}
 
       {/* Lens — même contenu que le site (Admin → LENS) ; le bouton ouvre Lens dans l'app. */}
       <LensHomeBlock />

@@ -10,6 +10,7 @@ import { demoTnd, ZALANDO_DEMO, ZALANDO_DEMO_MIGRATION, zalandoDemoProductId } f
 import { installOfficialCatalogue, officialProductId, purgeCatalogueProducts } from '../src/catalogue/installOfficialCatalogue';
 import { listProducts } from '../src/catalogue/products';
 import { addCatalogueLine } from '../src/catalogue/cartAdd';
+import { BLACK_FRIDAY_DEMO } from '../src/catalogue/blackFriday';
 import { inspectCatalogueSale } from '../src/catalogue/localSale';
 import { recordMovement } from '../src/inventory/stock';
 
@@ -20,7 +21,11 @@ it('launches exactly 24 public catalogue products and 480 pieces of demo invento
   const active = db.all<{ id: string; final_price: number; currency: string; original_price: number }>(
     "SELECT id, final_price, currency, original_price FROM products WHERE status='ACTIVE' AND visibility='CATALOG' ORDER BY product_code",
   );
-  expect(active).toEqual(ZALANDO_DEMO.products.map(item => ({ id: zalandoDemoProductId(item.key), final_price: demoTnd(item.priceEurCents), currency: 'TND', original_price: 0 })));
+  expect(active).toEqual(ZALANDO_DEMO.products.map(item => {
+    const regular = demoTnd(item.priceEurCents);
+    const percent = BLACK_FRIDAY_DEMO.find(([key]) => key === item.key)?.[1] ?? 0;
+    return { id: zalandoDemoProductId(item.key), final_price: Math.floor(Math.round(regular * 1000) * (100 - percent) / 100) / 1000, currency: 'TND', original_price: 0 };
+  }));
   const stocks = db.all<{ id: string; qty: number }>('SELECT product_id id, SUM(quantity) qty FROM inventory_stock_items GROUP BY product_id ORDER BY product_id');
   expect(stocks).toEqual(active.map(item => ({ id: item.id, qty: 20 })));
   expect(listProducts(db, { pageSize: 30 }).pagination.total).toBe(24);

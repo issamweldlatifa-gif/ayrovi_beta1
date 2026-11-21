@@ -1,3 +1,4 @@
+import { readPublicBlackFriday } from '../catalogue/blackFriday';
 import { STORY_CARD_COLUMNS, readPublishedStoryEditorial } from '../services/storyEditorial';
 import { legacyReferenceArtworkFilter } from '../magazine/cataloguePublications';
 import { readShareCard } from '../magazine/publicShare';
@@ -690,6 +691,11 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const family = rootCategoryOf(db, row.category_id ? String(row.category_id) : null);
 
     res.json({ success: true, data: { ...mapProduct(row), family, attributes, sheet: { ...sheet, images, videos } } });
+  });
+
+  router.get('/home-black-friday', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, data: readPublicBlackFriday(db) });
   });
 
   router.get('/promotions', (_req, res) => {

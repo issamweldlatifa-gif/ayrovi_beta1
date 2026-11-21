@@ -1,3 +1,4 @@
+import { BLACK_FRIDAY_DEMO_MIGRATION, installBlackFridayDemo } from '../catalogue/blackFriday';
 import { installCataloguePublications, installSquareVideoPublication } from '../magazine/cataloguePublications';
 import { foldCatalogSearch } from '../../shared/catalogSearch';
 import { RETIRED_PUBLICATION_BLOCKS_SCHEMA } from './retiredPublicationBlocks';
@@ -457,6 +458,10 @@ export class QatafoDatabase {
         const report = installZalandoDemoCatalogue(this);
         console.info('[database] Zalando demo catalogue:', report);
       });
+    }
+    if (!this.get('SELECT 1 FROM applied_data_migrations WHERE key=?', BLACK_FRIDAY_DEMO_MIGRATION)) {
+      if (existingDatabase) backupBeforeReplacement('pre-black-friday-demo');
+      this.runOnceDataMigration(BLACK_FRIDAY_DEMO_MIGRATION, () => installBlackFridayDemo(this, new Date().toISOString()));
     }
     installCataloguePublications(this);
     installSquareVideoPublication(this);

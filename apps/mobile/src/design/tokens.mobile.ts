@@ -904,6 +904,9 @@ export const FOOTER_THEME = {
 
 /** Publication is deliberately a white editorial space, even in system dark mode. */
 export const NAVIGATION_ARROW_SIZE = 28;
+/** Dark navy field is local to the Black Friday reference, not app chrome. */
+export const BLACK_FRIDAY_EDITORIAL = { navy: '#121E2A' } as const;
+
 export const PUBLICATION_THEME = {
   /** Floating media controls stay readable even over a white photograph. */
   viewerDarkSurface: alpha(mix(BRAND.black, BRAND.white, .12), .92),
