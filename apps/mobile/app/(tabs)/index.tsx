@@ -157,7 +157,7 @@ export default function HomeScreen() {
 
       <SectionBreak />
 
-      {/* Pup • Shop — vignettes verticales ; un toucher ouvre la visionneuse plein écran. */}
+      {/* Reels • Shop — vignettes verticales ; un toucher ouvre la visionneuse plein écran. */}
       <ReelsShopSection />
 
       <HighlightsSection />

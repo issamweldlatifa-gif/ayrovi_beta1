@@ -63,7 +63,7 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
     <FadeIn testID="home-reels-shop">
       <View ref={section} collapsable={false}>
         <View style={[styles.section, { paddingBottom: theme.space[2] }]}>
-          <MediaSectionMark lead="Pup" suffix="Shop" />
+          <MediaSectionMark lead="Reels" suffix="Shop" />
           {rows.length > 0 ? <Pressable onPress={() => router.navigate(socialHref('reels'))} accessibilityRole="button"
             style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: gutter }}>
             <AppText variant="label" color={theme.colors.ink}>{t('socialCommerce.explore')}</AppText>

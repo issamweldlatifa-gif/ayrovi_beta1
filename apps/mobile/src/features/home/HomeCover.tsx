@@ -27,6 +27,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useHomeCover } from '@/api/hooks';
 import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
+import { MediaSectionMark } from '@/design/MediaSectionMark';
 import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { useI18n } from '@/i18n';
@@ -160,6 +161,9 @@ export const HomeCover = memo(function HomeCover() {
       style={[styles.section, { marginHorizontal: -gutter }]}
       accessibilityLabel={title || undefined}
     >
+      {isPublicationEntry ? <View style={[styles.heading, { paddingHorizontal: gutter }]}>
+        <MediaSectionMark lead="Pup" suffix="Shop" />
+      </View> : null}
       {/* Plein écran, bords FRANCS (référence splash) : aucun rayon, aucune bande. */}
       <View style={[styles.media, { aspectRatio: COVER_ASPECT }]}>
         <FlatList
@@ -262,6 +266,7 @@ const styles = StyleSheet.create({
   // Marge négative = celle de l'écran : le média vit PLEIN ÉCRAN, bords francs,
   // collé sous les onglets comme le splash de référence.
   section: { paddingTop: 0, paddingBottom: 16 },
+  heading: { paddingBottom: 12 },
   media: { width: '100%', overflow: 'hidden' },
   fill: { ...StyleSheet.absoluteFill },
   veil: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '48%' },

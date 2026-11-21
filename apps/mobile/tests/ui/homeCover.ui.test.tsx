@@ -86,6 +86,7 @@ describe('HomeCover — le nouveau bloc d’entrée', () => {
     expect(screen.getByTestId('home-cover')).toBeTruthy();
     expect(screen.getByTestId('home-cover-title')).toBeTruthy();
     expect(screen.queryByTestId('home-publications-entry-label')).toBeNull();
+    expect(screen.queryByRole('header', { name: 'Pup, Shop' })).toBeNull();
     expect(screen.getByText('NOUVEAUTÉS\nVOTRE DOSE HEBDOMADAIRE')).toBeTruthy();
     // Plein écran : marge négative sur la section, média sans marge interne.
     const section = StyleSheet.flatten(screen.getByTestId('home-cover').props.style);
@@ -104,6 +105,7 @@ describe('HomeCover — le nouveau bloc d’entrée', () => {
     mockCover.data = { ...coverData(), destination: 'publications' };
     await renderCover();
     expect(screen.getByTestId('home-cover-list')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Pup, Shop' })).toBeTruthy();
     expect(screen.getByText('Publications ZAYROVI')).toBeTruthy();
     expect(screen.getByText('NOUVEAUTÉS\nVOTRE DOSE HEBDOMADAIRE')).toBeTruthy();
     fireEvent.press(screen.getByRole('button', { name: 'Voir les publications ZAYROVI' }));
@@ -113,6 +115,7 @@ describe('HomeCover — le nouveau bloc d’entrée', () => {
   it('affiche la cover Publications et son contrôle de lecture sans média CRM dans la démo', async () => {
     mockCover.data = demoHomeCover();
     await renderCover();
+    expect(screen.getByRole('header', { name: 'Pup, Shop' })).toBeTruthy();
     expect(screen.getByText('Je découvre')).toBeTruthy();
     expect(screen.getByTestId('home-cover-list').props.accessibilityLabel).toBe('1/2');
     expect(screen.getByRole('button', { name: 'Mettre le défilement en pause' })).toBeTruthy();

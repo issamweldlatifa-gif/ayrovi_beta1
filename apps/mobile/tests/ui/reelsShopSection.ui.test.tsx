@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { SessionProvider } from '../../src/state/session';
 /**
- * Section « Pup • Shop » de l'accueil.
+ * Section « Reels • Shop » de l'accueil.
  *  • rien ne s'affiche sans Reel publié (pas de bloc vide) ;
  *  • une vignette par Reel, ratio 9:16 ;
  *  • toucher une vignette ouvre la visionneuse plein écran à ce Reel ;
@@ -96,7 +96,7 @@ beforeEach(() => {
   mockUseReels.mockClear();
 });
 
-describe('section Pup • Shop (accueil)', () => {
+describe('section Reels • Shop (accueil)', () => {
   it('ne rend rien sans Reel publié', () => {
     mockReels.data = [];
     render(wrap(<ReelsShopSection />));
@@ -107,8 +107,8 @@ describe('section Pup • Shop (accueil)', () => {
     mockReels.data = [reel('r1', 'Nouveauté'), reel('r2')];
     render(wrap(<ReelsShopSection />));
     expect(screen.getByTestId('home-reels-shop')).toBeTruthy();
-    expect(screen.getByRole('header', { name: 'Pup, Shop' })).toBeTruthy();
-    expect(screen.getByText('Pup')).toBeTruthy();
+    expect(screen.getByRole('header', { name: 'Reels, Shop' })).toBeTruthy();
+    expect(screen.getByText('Reels')).toBeTruthy();
     expect(screen.getByText('Shop')).toBeTruthy();
     const tile = screen.getByTestId('home-reel-media-r1');
     const style = StyleSheet.flatten(tile.props.style);
