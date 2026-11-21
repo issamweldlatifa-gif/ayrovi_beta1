@@ -27,7 +27,7 @@ jest.mock('@/api/publisherFollow');
 jest.mock('@/features/publications/publicationVideoQueue', () => ({ ...jest.requireActual('@/features/publications/publicationVideoQueue'), UP_NEXT_MS: 150 }));
 jest.mock('@/api/catalog', () => ({ ...jest.requireActual('@/api/catalog'), searchCatalog: jest.fn(), fetchCatalogArrivals: jest.fn() }));
 jest.mock('@/api/referencePublications', () => ({ ...jest.requireActual('@/api/referencePublications'), fetchReferencePublications: jest.fn(), fetchPublicationLook: jest.fn(), fetchRelatedPublicationVideos: jest.fn(), savePublicationLook: jest.fn() }));
-const mockPlayer = { play: jest.fn(), pause: jest.fn(), muted: true, currentTime: 0, duration: 20, status: 'readyToPlay', videoTrack: { size: { width: 720, height: 1280 } }, playbackRate: 1, subtitleTrack: null as SubtitleTrack | null, availableSubtitleTracks: [] as SubtitleTrack[], addListener: jest.fn((_event: string, _listener: (payload: unknown) => void) => ({ remove: jest.fn() })) };
+const mockPlayer = { play: jest.fn(), pause: jest.fn(), muted: true, currentTime: 0, duration: 20, status: 'readyToPlay', videoTrack: undefined as { size: { width: number; height: number } } | undefined, playbackRate: 1, subtitleTrack: null as SubtitleTrack | null, availableSubtitleTracks: [] as SubtitleTrack[], addListener: jest.fn((_event: string, _listener: (payload: unknown) => void) => ({ remove: jest.fn() })) };
 jest.mock('expo-video', () => ({ useVideoPlayer: (_source: unknown, setup?: (player: typeof mockPlayer) => void) => {
   const { useState } = require('react');
   return useState(() => { setup?.(mockPlayer); return mockPlayer; })[0];
@@ -45,6 +45,7 @@ beforeEach(() => {
   jest.mocked(fetchRelatedPublicationVideos).mockResolvedValue([]);
   mockReduce.mockReturnValue(true);
   mockSession.mockReturnValue({ status: 'signedOut', account: null });
+  mockPlayer.videoTrack = undefined;
   mockPlayer.currentTime = 0;
   mockPlayer.muted = true;
   mockPlayer.subtitleTrack = null;
@@ -228,7 +229,7 @@ it('uses the campaign toolbar for search, favorites and cart and filters only li
 });
 
 
-it('fills the fullscreen window with black and fits landscape video without cropping', async () => {
+it('keeps landscape video uncropped on the full canvas without a reserved control strip', async () => {
   jest.mocked(fetchReferencePublications).mockResolvedValueOnce(fixture('video', 1200, 600));
   mount();
   fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
@@ -238,15 +239,23 @@ it('fills the fullscreen window with black and fits landscape video without crop
   expect(StyleSheet.flatten(screen.getByTestId('publication-player-window').props.style)).toEqual({ flex: 1, backgroundColor: '#000000' });
   expect(window.UNSAFE_getByType(StatusBar).props.hidden).toBe(true);
   const player = within(window.getByTestId('publication-fullscreen-player'));
-  expect(player.getByTestId('publication-player-video').props.contentFit).toBe('contain');
+  expect(player.getByTestId('publication-player-video').props).toMatchObject({ contentFit: 'contain', nativeControls: false, useExoShutter: false });
+  expect(player.getByTestId('publication-player-aspect-backdrop', { includeHiddenElements: true })).toBeTruthy();
+  const layer = player.getByTestId('publication-player-media-layer');
+  expect(StyleSheet.flatten(layer.props.style)).toMatchObject({ top: 0, bottom: 0, left: 0, right: 0 });
+  expect(player.queryByTestId('publication-player-footer')).toBeNull();
+  expect(player.queryByTestId('publication-player-play')).toBeNull();
   expect(StyleSheet.flatten(player.getByTestId('publication-player-exit').props.style).top).toBe(36);
   expect(player.queryByTestId('publication-player-cc')).toBeNull();
   fireEvent.press(player.getByTestId('publication-player-surface'));
+  expect(player.getByTestId('publication-player-play')).toBeTruthy();
+  expect(player.getByTestId('publication-player-media-layer')).toBe(layer);
+  expect(StyleSheet.flatten(layer.props.style).bottom).toBe(0);
   fireEvent.press(player.getByTestId('publication-player-exit'));
   expect(screen.queryByTestId('publication-fullscreen-player')).toBeNull();
 });
 
-it('shows transparent controls and the official mark on entry, and a down swipe restores the same source and time', async () => {
+it('reveals transparent controls and the official mark on tap, and a down swipe restores the same source and time', async () => {
   const pan = jest.spyOn(PanResponder, 'create');
   jest.mocked(fetchReferencePublications).mockResolvedValueOnce(fixture('video', 1200, 600));
   mount();
@@ -254,6 +263,7 @@ it('shows transparent controls and the official mark on entry, and a down swipe 
     fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
     const player = within(screen.getByTestId('publication-fullscreen-player'));
     expect(mockPlayer.muted).toBe(false);
+    fireEvent.press(player.getByTestId('publication-player-surface'));
     expect(player.getByTestId('publication-player-official-avatar', { includeHiddenElements: true })).toBeTruthy();
     expect(StyleSheet.flatten(player.getByTestId('publication-player-play').props.style).backgroundColor).toBeUndefined();
     const title = StyleSheet.flatten(player.getByTestId('publication-player-title').props.style);
@@ -285,6 +295,8 @@ it('offers CC only when tracks are available and toggles the matching native tra
   const fr = { language: 'fr-FR', label: 'Français' };
   mockPlayer.availableSubtitleTracks = [{ language: 'en', label: 'English', isDefault: true }, fr];
   emit('availableSubtitleTracksChange', { availableSubtitleTracks: mockPlayer.availableSubtitleTracks });
+  expect(player.queryByTestId('publication-player-cc')).toBeNull();
+  fireEvent.press(player.getByTestId('publication-player-surface'));
   const cc = player.getByRole('togglebutton', { name: 'Sous-titres' });
   expect(cc.props.accessibilityState.checked).toBe(false);
   fireEvent.press(cc);
@@ -307,7 +319,20 @@ it('keeps the three entry points of the first video template independent', async
   fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
   const player = within(screen.getByTestId('publication-fullscreen-player'));
   expect(router.push).not.toHaveBeenCalled();
+  expect(mockPlayer.play).toHaveBeenCalled();
+  const video = player.getByTestId('publication-player-video');
+  act(() => video.props.onFirstFrameRender());
+  const mediaStyle = StyleSheet.flatten(video.props.style);
+  expect(mediaStyle.opacity).not.toBe(0);
+  expect(video.props.contentFit).toBe('cover');
+  expect(player.queryByTestId('publication-player-aspect-backdrop', { includeHiddenElements: true })).toBeNull();
+  for (const id of ['play', 'rewind', 'forward', 'seek', 'footer']) expect(player.queryByTestId(`publication-player-${id}`)).toBeNull();
+  mockPlayer.videoTrack = { size: { width: 720, height: 1280 } };
+  emit('videoTrackChange');
+  fireEvent.press(player.getByTestId('publication-player-surface'));
   expect(player.getByTestId('publication-player-play')).toBeTruthy();
+  expect(player.getByTestId('publication-player-video')).toBe(video);
+  expect(StyleSheet.flatten(video.props.style)).toEqual(mediaStyle);
   expect(mockPlayer.muted).toBe(false);
   expect(player.getByText('Ce contenu est sponsorisé par Partenaire.')).toBeTruthy();
   fireEvent.press(player.getByTestId('publication-player-play'));
@@ -334,6 +359,8 @@ it('keeps the three entry points of the first video template independent', async
   expect(mockPlayer.playbackRate).toBe(1.5);
   fireEvent.press(player.getByTestId('publication-player-surface'));
   expect(player.queryByTestId('publication-player-play')).toBeNull();
+  expect(player.queryByTestId('publication-player-footer')).toBeNull();
+  expect(StyleSheet.flatten(video.props.style)).toEqual(mediaStyle);
   fireEvent.press(player.getByTestId('publication-player-exit'));
   expect(screen.queryByTestId('publication-fullscreen-player')).toBeNull();
   fireEvent.press(screen.getByRole('link', { name: 'Produit a' }));
@@ -375,6 +402,7 @@ it('renders the added large square with two real products and opens its detail f
   expect(within(rail).getByRole('button', { name: 'En savoir plus' })).toBeTruthy();
   fireEvent.press(screen.getByTestId('reference-video-fullscreen'));
   const player = within(screen.getByTestId('publication-fullscreen-player'));
+  fireEvent.press(player.getByTestId('publication-player-surface'));
   const caption = player.getByTestId('publication-player-caption');
   fireEvent.press(caption);
   expect(caption.props.accessibilityState.expanded).toBe(true);
@@ -396,6 +424,7 @@ it('opens Shop Products in place and navigates only from a linked product card',
   mount();
   fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
   const player = within(screen.getByTestId('publication-fullscreen-player'));
+  fireEvent.press(player.getByTestId('publication-player-surface'));
   fireEvent.press(player.getByTestId('publication-player-shop'));
   const shop = within(player.getByTestId('publication-player-panel-shop'));
   expect(router.push).not.toHaveBeenCalled();
@@ -415,6 +444,7 @@ it('hides commerce actions and does not query related videos when no product is 
   mount();
   fireEvent.press(await screen.findByTestId('reference-video-fullscreen'));
   const player = within(screen.getByTestId('publication-fullscreen-player'));
+  fireEvent.press(player.getByTestId('publication-player-surface'));
   expect(player.queryByTestId('publication-player-shop')).toBeNull();
   expect(player.queryByTestId('publication-player-more-videos')).toBeNull();
   expect(player.getByRole('link', { name: 'En savoir plus' })).toBeTruthy();
@@ -431,6 +461,7 @@ it('lists only videos with shared products and switches source without reopening
   fireEvent.press(await screen.findByTestId('publication-look-video'));
   const modal = screen.UNSAFE_getByType(Modal);
   const player = within(screen.getByTestId('publication-fullscreen-player'));
+  fireEvent.press(player.getByTestId('publication-player-surface'));
   fireEvent.press(player.getByTestId('publication-player-more-videos'));
   const panel = within(player.getByTestId('publication-player-panel-videos'));
   const choice = await panel.findByRole('button', { name: 'Autre vidéo du produit' });
@@ -441,6 +472,8 @@ it('lists only videos with shared products and switches source without reopening
   expect(unsub).toHaveBeenCalled();
   expect(screen.UNSAFE_getByType(Modal)).toBe(modal);
   const current = within(screen.getByTestId('publication-fullscreen-player'));
+  expect(current.queryByTestId('publication-player-play')).toBeNull();
+  fireEvent.press(current.getByTestId('publication-player-surface'));
   fireEvent.press(current.getByTestId('publication-player-shop'));
   const shop = within(current.getByTestId('publication-player-panel-shop'));
   expect(shop.getByRole('link', { name: 'Produit only_related' })).toBeTruthy();
@@ -469,6 +502,8 @@ it.each([true, false])('ends with a cancellable countdown (cancel=%s) and never 
     expect(current.getByRole('button', { name: 'Revoir la vidéo' })).toBeTruthy();
     expect(current.getByText(origin.title)).toBeTruthy();
   } else {
+    expect(current.queryByTestId('publication-player-play')).toBeNull();
+    fireEvent.press(current.getByTestId('publication-player-surface'));
     expect(current.getByText(target.title)).toBeTruthy();
     emit('playToEnd');
     expect(current.queryByTestId('publication-player-up-next')).toBeNull();

@@ -101,7 +101,7 @@ const drawings: Record<string, string> = {
   'pause-outline': 'M8 4v16M16 4v16',
   play: 'm7 4 13 8-13 8V4Z',
 };
-export function PublicationIcon(props: ComponentProps<typeof NavigationIcon>) {
+export function PublicationIcon({ halo = false, ...props }: ComponentProps<typeof NavigationIcon> & { halo?: boolean }) {
   const {
     name,
     size = PUBLICATION_TYPE.icon,
@@ -134,7 +134,7 @@ export function PublicationIcon(props: ComponentProps<typeof NavigationIcon>) {
         {...hidden}
       >
         {[5, 12, 19].map((cx) => (
-          <Circle key={cx} cx={cx} cy={12} r={1.5} fill={color} />
+          <Circle key={cx} cx={cx} cy={12} r={1.5} fill={color} stroke={halo ? PUBLICATION_PALETTE.backdrop : undefined} strokeWidth={halo ? 0.8 : undefined} />
         ))}
       </Svg>
     );
@@ -150,6 +150,8 @@ export function PublicationIcon(props: ComponentProps<typeof NavigationIcon>) {
       style={style as any}
       {...hidden}
     >
+      {halo ? <Path d={path} fill="none" stroke={PUBLICATION_PALETTE.backdrop}
+        strokeWidth={PUBLICATION_TYPE.stroke + 1.5} strokeLinecap="round" strokeLinejoin="round" /> : null}
       <Path
         d={path}
         fill={name === 'heart' || name === 'bookmark' ? color : 'none'}

@@ -10,7 +10,7 @@ import { formatAmount } from '@/format/money';
 import { RADIUS, veil } from '@/design/tokens.mobile';
 import { useT } from '@/i18n';
 import { PublicationIcon, PublicationText } from './publicationDesign';
-import { PUBLICATION_PALETTE as P, PUBLICATION_PLAYER as C } from './publicationTokens';
+import { PUBLICATION_PALETTE as P, PUBLICATION_PLAYER as C, PUBLICATION_OVERLAY_TEXT } from './publicationTokens';
 import { videoClock } from './publicationVideoQueue';
 
 export type PlayerPanel = 'shop' | 'videos';
@@ -26,9 +26,9 @@ export function PublicationPlayerActions({ panel, hasProducts, showVideos, onPan
     <Pressable testID={`publication-player-${id}`} accessibilityRole={expanded === undefined ? 'link' : 'button'} accessibilityLabel={label}
       accessibilityState={expanded === undefined ? undefined : { expanded }} style={styles.action} onPress={press}>
       <View testID={`publication-player-${id}-icon`} style={styles.actionIcon}>
-        <PublicationIcon name={name} color={P.paper} size={20} />
+        <PublicationIcon halo name={name} color={P.paper} size={20} />
       </View>
-      <PublicationText variant="caption" align="center" color={P.paper}>{label}</PublicationText>
+      <PublicationText variant="caption" align="center" color={P.paper} style={PUBLICATION_OVERLAY_TEXT}>{label}</PublicationText>
     </Pressable>
   );
   return <View style={[styles.actions, { flexDirection: rowDirectionFor(isRTL) }]}>

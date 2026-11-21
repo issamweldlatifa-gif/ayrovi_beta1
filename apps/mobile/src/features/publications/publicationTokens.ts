@@ -67,3 +67,7 @@ export const PUBLICATION_PLAYER = { menu: '#191919', track: '#595959', seekTrack
 
 /** Editorial video chrome, measured from the mobile video references. */
 export const PUBLICATION_VIDEO_TYPE = { overlaySize: 14, overlayLine: 20, infoTitleSize: 22, infoTitleLine: 28, infoBodyLine: 24 } as const;
+
+// Contrast around glyphs/text only; never shade or reserve a section of the video.
+export const PUBLICATION_OVERLAY_TEXT = { textShadowColor: PUBLICATION_PALETTE.backdrop, textShadowRadius: 3,
+  textShadowOffset: { width: 0, height: 1 } } as const;
