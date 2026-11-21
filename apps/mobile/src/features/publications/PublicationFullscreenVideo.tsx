@@ -1,5 +1,5 @@
-import { useEffect, useEffectEvent, useImperativeHandle, useRef, useState, type Ref } from "react";
-import { Alert, AppState, Pressable, Share, StyleSheet, View, useWindowDimensions } from "react-native";
+import { useCallback, useEffect, useEffectEvent, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
+import { Alert, AppState, PanResponder, Pressable, Share, StyleSheet, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
@@ -7,6 +7,7 @@ import { VideoView, useVideoPlayer } from "expo-video";
 import { apiUrl, mediaUrl } from "@/api/client";
 import type { ReferencePublication } from "@/api/referencePublications";
 import { AppImage } from "@/design/appImage";
+import { OFFICIAL_AVATAR, OfficialAvatar } from "@/design/OfficialAvatar";
 import { rowDirectionFor } from "@/design/layoutLogic";
 import { useTheme } from "@/design/theme";
 import { RADIUS, veil } from "@/design/tokens.mobile";
@@ -15,7 +16,9 @@ import { PublicationIcon, PublicationText } from "./publicationDesign";
 import { PublicationPlayerActions, PublicationPlayerPanel, type PlayerPanel, type RelatedStatus } from "./PublicationPlayerPanels";
 import { PUBLICATION_PALETTE as P, PUBLICATION_PLAYER as C } from "./publicationTokens";
 import { PublicationPlayerSettings, type PlayerMenu } from "./PublicationPlayerSettings";
-import { UP_NEXT_MS, videoClock } from "./publicationVideoQueue";
+import { OFFICIAL_PUBLISHER_ID, OFFICIAL_PUBLISHER_NAME } from "./officialPublisher";
+import { PublicationPauseGlyph, PublicationSkipGlyph } from "./PublicationTransportGlyphs";
+import { isPublicationDismissSwipe, UP_NEXT_MS, videoClock } from "./publicationVideoQueue";
 
 export type PublicationPlayback = { time: number; muted: boolean };
 const TOP_BUTTON_SIZE = 44;
@@ -50,7 +53,7 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
   const [ended, setEnded] = useState(false);
   const [cancelled, setCancelled] = useState(false);
   const [muted, setMuted] = useState(start.muted);
-  const [visible, setVisible] = useState(false);
+  const [visible, setVisible] = useState(true);
   const [expanded, setExpanded] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [panel, setPanel] = useState<PlayerPanel | null>(null);
@@ -71,6 +74,8 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
   const { url, poster } = media;
   const title = post.title || post.subtitle;
   const caption = post.description || (post.subtitle !== title ? post.subtitle : "");
+  const official = post.channelId === OFFICIAL_PUBLISHER_ID;
+  const publisher = official ? OFFICIAL_PUBLISHER_NAME : post.channelName;
   const hasProducts = post.products.length > 0;
   const canFindRelated = post.products.some(product => product.available);
   const player = useVideoPlayer({ uri: mediaUrl(url) }, instance => {
@@ -118,14 +123,14 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
     ];
     return () => subs.forEach(item => item.remove());
   }, [player]);
+  useEffect(() => { player.muted = muted; }, [muted, player]);
   useEffect(() => {
     if (foreground && !paused && !sharing && !ended) player.play();
     else player.pause();
   }, [foreground, paused, player, sharing, ended]);
-  useEffect(() => { player.muted = muted; }, [muted, player]);
   useEffect(() => { player.playbackRate = speed; }, [speed, player]);
 
-  const playback = (): PublicationPlayback => ({ time: playhead.current, muted });
+  const playback = useCallback((): PublicationPlayback => ({ time: playhead.current, muted }), [muted]);
   const upNext = ended && !cancelled && status !== "error" ? next : undefined;
   const advance = (item: ReferencePublication) => {
     advanceBlocked.current = true;
@@ -165,8 +170,14 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
       setPaused(false);
     } else setPaused(value => !value);
   };
-  const exitWith = (action: (state: PublicationPlayback) => void) => { advanceBlocked.current = true; action(playback()); };
-  const close = () => exitWith(onClose);
+  const exitWith = useCallback((action: (state: PublicationPlayback) => void) => { advanceBlocked.current = true; action(playback()); }, [playback]);
+  const close = useCallback(() => exitWith(onClose), [exitWith, onClose]);
+  const swipe = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_event, { dx, dy, numberActiveTouches }) => numberActiveTouches === 1 && isPublicationDismissSwipe(dx, dy, 12),
+    onPanResponderRelease: (_event, { dx, dy, vy }) => {
+      if (isPublicationDismissSwipe(dx, dy, vy > 0.65 ? 48 : 84)) close();
+    },
+  }), [close]);
   useImperativeHandle(back, () => () => {
     if (panel) setPanel(null);
     else if (menu) setMenu(menu === "quality" || menu === "diagnostics" ? "settings" : null);
@@ -207,7 +218,7 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
   const skipButton = (delta: number, id: string, label: string) => (
     <Pressable testID={id} accessibilityRole="button" accessibilityLabel={label} disabled={!duration}
       onPress={() => skip(delta)} style={styles.skip}>
-      <PublicationText color={P.paper} variant="bodyStrong">{delta < 0 ? "↶" : "↷"} 10</PublicationText>
+      <PublicationSkipGlyph forward={delta > 0} />
     </Pressable>
   );
 
@@ -220,10 +231,12 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
           surfaceType="textureView" nativeControls={false} contentFit="contain" testID="publication-player-video"
           onFirstFrameRender={() => setReady(true)} />
       </View>
-      {controls || upNext ? <LinearGradient pointerEvents="none" colors={[veil(0.72), veil(0.2), veil(0.55)]} style={StyleSheet.absoluteFill} /> : null}
-      <Pressable onPress={toggleControls} accessibilityRole="button"
-        accessibilityLabel={t(panel || menu || visible ? "publication.playerHide" : "publication.playerShow")}
-        style={StyleSheet.absoluteFill} testID="publication-player-surface" />
+      {controls || upNext ? <LinearGradient pointerEvents="none" colors={[veil(0.42), veil(0.03), veil(0.25)]} style={StyleSheet.absoluteFill} /> : null}
+      <View style={StyleSheet.absoluteFill} testID="publication-player-dismiss-region" {...(!panel && !menu ? swipe.panHandlers : {})}>
+        <Pressable onPress={toggleControls} accessibilityRole="button"
+          accessibilityLabel={t(panel || menu || visible ? "publication.playerHide" : "publication.playerShow")}
+          style={StyleSheet.absoluteFill} testID="publication-player-surface" />
+      </View>
       {status === "error" ? <PublicationText accessibilityRole="alert" color={P.paper} style={[styles.error, { marginTop: top + 60 }]}>{t("publication.videoError")}</PublicationText> : null}
       <Pressable accessibilityRole="button" accessibilityLabel={t("publication.playerExit")} testID="publication-player-exit"
         onPress={close} style={[styles.topButton, topEdge]}>
@@ -232,8 +245,8 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
       {controls ? <>
         {hasSubtitles ? <Pressable accessibilityRole="togglebutton" accessibilityLabel={t("publication.playerSubtitles")}
           accessibilityState={{ checked: subtitlesOn }} testID="publication-player-cc" onPress={toggleSubtitles}
-          style={[styles.topButton, topEdge, edge(TOP_BUTTON_SIZE), subtitlesOn && styles.ccOn]}>
-          <PublicationText color={subtitlesOn ? P.ink : P.paper} variant="caption">CC</PublicationText>
+          style={[styles.topButton, topEdge, edge(TOP_BUTTON_SIZE)]}>
+          <View style={[styles.ccBadge, subtitlesOn && styles.ccOn]}><PublicationText color={subtitlesOn ? P.ink : P.paper} variant="captionStrong">CC</PublicationText></View>
         </Pressable> : null}
         <Pressable accessibilityRole="button" accessibilityLabel={t("publication.playerSettings")} testID="publication-player-options"
           accessibilityState={{ expanded: !!menu }} onPress={() => setMenu(value => value ? null : "settings")}
@@ -242,15 +255,18 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
         </Pressable>
       </> : null}
       {controls && !menu && !compact && status !== "error" ? <View pointerEvents="box-none" style={[styles.info, { top: top + 56, left: left + 12, right: right + 12 }]}>
-        {title ? <PublicationText color={P.paper} variant="bodyStrong" numberOfLines={2}>{title}</PublicationText> : null}
-        {post.channelName ? <View style={[styles.byline, { flexDirection: direction }]}>
-          {post.channelAvatar ? <AppImage uri={mediaUrl(post.channelAvatar)} decorative contentFit="cover" style={styles.avatar} /> : null}
-          <PublicationText color={P.paper} variant="caption" numberOfLines={1}>{post.channelName}</PublicationText>
-        </View> : null}
-        {post.sponsored ? <PublicationText color={P.paper} variant="caption" numberOfLines={2}>{post.sponsorName ? t("publication.sponsoredBy", { name: post.sponsorName }) : t("publication.sponsoredInfo")}</PublicationText> : null}
+        {title ? <PublicationText testID="publication-player-title" color={P.paper} variant="h2" numberOfLines={2}>{title}</PublicationText> : null}
+        {publisher ? <View style={[styles.byline, { flexDirection: direction }]}>
+          {official ? <OfficialAvatar size={OFFICIAL_AVATAR.publication} testID="publication-player-official-avatar" /> : post.channelAvatar ?
+            <AppImage uri={mediaUrl(post.channelAvatar)} decorative contentFit="cover" style={styles.avatar} /> : null}
+          <View style={styles.publisherCopy}>
+            <PublicationText color={P.paper} variant="body" numberOfLines={1}>{publisher}</PublicationText>
+            {post.sponsored ? <PublicationText color={P.paper} variant="caption" numberOfLines={2}>{post.sponsorName ? t("publication.sponsoredBy", { name: post.sponsorName }) : t("publication.sponsoredInfo")}</PublicationText> : null}
+          </View>
+        </View> : post.sponsored ? <PublicationText color={P.paper} variant="caption" numberOfLines={2}>{post.sponsorName ? t("publication.sponsoredBy", { name: post.sponsorName }) : t("publication.sponsoredInfo")}</PublicationText> : null}
         {caption ? <Pressable accessibilityRole="button" accessibilityLabel={caption} accessibilityState={{ expanded }}
           testID="publication-player-caption" onPress={() => setExpanded(value => !value)} style={styles.caption}>
-          <PublicationText color={P.paper} variant="caption" numberOfLines={expanded ? 5 : 1}>{caption}</PublicationText>
+          <PublicationText testID="publication-player-description" color={P.paper} variant="caption" numberOfLines={expanded ? 5 : 1}>{caption}</PublicationText>
           <PublicationText color={P.paper} variant="caption">{t(expanded ? "publication.captionLess" : "reel.captionMore")}</PublicationText>
         </Pressable> : null}
       </View> : null}
@@ -271,7 +287,7 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
           <Pressable testID="publication-player-play" accessibilityRole="button"
             accessibilityLabel={t(ended ? "publication.playerReplay" : paused ? "social.play" : "social.pause")}
             onPress={togglePlayback} style={styles.play}>
-            <PublicationIcon name={ended ? "refresh-outline" : paused ? "play-outline" : "pause-outline"} color={P.paper} size={26} />
+            {!ended && !paused ? <PublicationPauseGlyph /> : <PublicationIcon name={ended ? "refresh-outline" : "play-outline"} color={P.paper} size={26} />}
           </Pressable>
           {skipButton(10, "publication-player-forward", t("publication.playerForward"))}
         </View>}
@@ -309,7 +325,7 @@ export function PublicationFullscreenVideo({ post, media, start, videos, related
               testID="publication-player-seek"
             >
               <View pointerEvents="none" style={styles.seekLine}>
-                <View style={styles.track}><View style={[styles.progress, { width: `${progress * 100}%` }]} /></View>
+                <View style={styles.track}><View style={[styles.played, { width: `${progress * 100}%` }]} /></View>
                 {duration > 0 ? <View style={[styles.thumb, { left: `${progress * 100}%` }]} /> : null}
               </View>
             </View>
@@ -336,27 +352,30 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: P.backdrop },
   buffering: { opacity: 0 },
   topButton: { position: "absolute", zIndex: 1, width: TOP_BUTTON_SIZE, height: TOP_BUTTON_SIZE,
-    borderRadius: TOP_BUTTON_SIZE / 2, backgroundColor: veil(0.65), justifyContent: "center", alignItems: "center" },
+    borderRadius: TOP_BUTTON_SIZE / 2, justifyContent: "center", alignItems: "center" },
+  ccBadge: { borderWidth: 1, borderColor: P.paper, borderRadius: RADIUS.xs, paddingHorizontal: 4 },
   ccOn: { backgroundColor: P.paper },
-  info: { position: "absolute", gap: 2 },
-  byline: { alignItems: "center", gap: 6 },
+  info: { position: "absolute", gap: 8 },
+  byline: { alignItems: "flex-start", gap: 8 },
+  publisherCopy: { flex: 1, gap: 2 },
   avatar: { width: 30, height: 30, borderRadius: 15 },
   caption: { minHeight: 36, alignSelf: "stretch", justifyContent: "center" },
   middle: { ...StyleSheet.absoluteFill, justifyContent: "center", alignItems: "center" },
   transport: { flexDirection: "row", direction: "ltr", alignItems: "center", gap: 12 },
-  play: { width: 54, height: 54, borderRadius: 27, backgroundColor: veil(0.5), borderWidth: 1.5,
+  play: { width: 52, height: 52, borderRadius: 26, borderWidth: 2,
     borderColor: P.paper, alignItems: "center", justifyContent: "center" },
-  skip: { width: 52, height: 46, borderRadius: 23, backgroundColor: veil(0.45), alignItems: "center", justifyContent: "center" },
+  skip: { width: 48, height: 48, alignItems: "center", justifyContent: "center" },
   upNext: { alignItems: "center", borderRadius: RADIUS.sm, backgroundColor: veil(0.82), width: "78%", maxWidth: 300, gap: 4, padding: 8 },
   countdown: { width: 64, height: 3, overflow: "hidden", borderRadius: 2, backgroundColor: C.track },
-  footer: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: veil(0.74) },
+  footer: { position: "absolute", bottom: 0, left: 0, right: 0 },
   bar: { flexDirection: "row", direction: "ltr", alignItems: "center", gap: 4, paddingHorizontal: 10 },
   button: { minWidth: 44, minHeight: 44, paddingHorizontal: 4, justifyContent: "center", alignItems: "center" },
   seek: { flex: 1, height: 44, justifyContent: "center", marginHorizontal: 6 },
   seekLine: { justifyContent: "center" },
   thumb: { position: "absolute", width: 12, height: 12, borderRadius: 6, backgroundColor: P.paper, transform: [{ translateX: -6 }] },
   clock: { fontVariant: ["tabular-nums"] },
-  track: { height: 4, backgroundColor: C.track, borderRadius: 2, overflow: "hidden" },
+  track: { height: 4, backgroundColor: C.seekTrack, borderRadius: 2, overflow: "hidden" },
+  played: { height: "100%", backgroundColor: P.paper },
   progress: { height: "100%", backgroundColor: C.progress },
   error: { alignSelf: "center", padding: 8, backgroundColor: C.menu },
 });

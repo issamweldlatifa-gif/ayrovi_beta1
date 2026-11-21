@@ -70,13 +70,13 @@ export function StoryViewer({ stories, initialIndex = 0, visible, onClose, onOpe
   // الفيديو: مشغّل واحد، يتوقّف مع التوقيف ومع تغيير الستوري.
   const player = useVideoPlayer(current && isVideo ? { uri: mediaUrl(current.mediaUrl) } : null, (instance) => {
     instance.loop = true;
-    instance.play();
+    instance.muted = false;
   });
   useEffect(() => {
     if (!player) return;
-    if (paused) player.pause();
-    else player.play();
-  }, [player, paused]);
+    if (visible && isVideo && !paused) player.play();
+    else player.pause();
+  }, [player, paused, visible, isVideo]);
 
   /** المشاهدة تُسجَّل مرّة وحدة لكل ستوري (الخادم يمنع التكرار أصلاً). */
   const seen = useRef<Set<string>>(new Set());

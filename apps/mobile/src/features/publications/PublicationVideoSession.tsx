@@ -16,7 +16,7 @@ export function PublicationVideoSession({ post, start, onClose, onLearnMore, onP
 }) {
   const owner = useSession().account?.id || 'guest';
   const reduceMotion = useReduceMotion();
-  const [clip, setClip] = useState({ post, start, sequence: 0 });
+  const [clip, setClip] = useState(() => ({ post, start: { ...start, muted: false }, sequence: 0 }));
   const [visited, setVisited] = useState(() => new Set([post.id]));
   const originPlayback = useRef(start);
   const back = useRef<() => void>(null);

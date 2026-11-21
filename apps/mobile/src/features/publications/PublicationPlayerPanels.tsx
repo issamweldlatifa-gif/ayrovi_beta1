@@ -94,7 +94,7 @@ export function PublicationPlayerPanel({ panel, post, videos, status, compact, o
 }
 
 const styles = StyleSheet.create({
-  actions: { backgroundColor: P.backdrop, justifyContent: 'space-evenly', alignItems: 'flex-start', paddingVertical: 4 },
+  actions: { justifyContent: 'space-evenly', alignItems: 'flex-start', paddingVertical: 4 },
   action: { flex: 1, minHeight: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },
   actionIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   actionOn: { backgroundColor: P.paper },

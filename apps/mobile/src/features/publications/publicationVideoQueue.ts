@@ -24,3 +24,8 @@ export function videoClock(seconds: number) {
   const value = Math.max(0, Math.ceil(Number.isFinite(seconds) ? seconds : 0));
   return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, '0')}`;
 }
+
+/** A vertical swipe down belongs to fullscreen; taps, up-swipes and scrubs do not. */
+export function isPublicationDismissSwipe(dx: number, dy: number, minTravel: number) {
+  return dy > minTravel && dy > Math.abs(dx) * 1.35;
+}

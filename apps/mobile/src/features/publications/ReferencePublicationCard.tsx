@@ -25,9 +25,11 @@ function PublicationMedia({ post, width, height, active, autoplay, onActivate, o
   const t = useT();
   const [intent, setIntent] = useState<'play' | 'pause' | null>(null);
   const [muted, setMuted] = useState(true);
+  const soundChoice = useRef<boolean | undefined>(undefined);
   // Sound is always reset when the card leaves the viewport/background.
   useEffect(() => {
     if (!active) {
+      soundChoice.current = undefined;
       setMuted(true);
       playback.current = { ...playback.current, muted: true };
     }
@@ -58,12 +60,21 @@ function PublicationMedia({ post, width, height, active, autoplay, onActivate, o
         style={StyleSheet.absoluteFill} onPress={() => onVideo(playback.current)} /> : null}
       <View style={styles.controls}>
         <Pressable accessibilityRole="button" accessibilityLabel={t(playing ? 'social.pause' : 'social.play')}
-          testID="reference-video-play" style={styles.videoTouch} onPress={() => { setIntent(playing ? 'pause' : 'play'); if (!playing) onActivate(); }}>
+          testID="reference-video-play" style={styles.videoTouch} onPress={() => {
+            setIntent(playing ? 'pause' : 'play');
+            if (!playing) {
+              const next = soundChoice.current ?? false;
+              setMuted(next);
+              playback.current = { ...playback.current, muted: next };
+              onActivate();
+            }
+          }}>
           <View style={styles.videoDisc}><PublicationIcon name={playing ? 'pause-outline' : 'play-outline'} color={PUBLICATION_THEME.paper} /></View>
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel={t(muted || !active ? 'publication.unmute' : 'publication.mute')}
           testID="reference-video-mute" style={styles.videoTouch} onPress={() => {
             const next = active ? !muted : false;
+            soundChoice.current = next;
             if (onVideo) playback.current = { ...playback.current, muted: next };
             setMuted(next);
             if (!active) { setIntent('play'); onActivate(); }

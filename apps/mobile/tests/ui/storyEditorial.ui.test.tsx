@@ -46,8 +46,9 @@ it('shows black full-screen, then an exact linked product, then an inset GIF wit
   expect(router.push).toHaveBeenLastCalledWith({ pathname: '/story-article/[id]', params: { id: 'story-a' } });
   fireEvent.press(screen.getByRole('button', { name: 'Suivant' }));
   expect(screen.getByTestId('editorial-story-video')).toBeTruthy();
-  fireEvent.press(screen.getByTestId('editorial-story-mute'));
   expect(mockPlayer.muted).toBe(false);
+  fireEvent.press(screen.getByTestId('editorial-story-mute'));
+  expect(mockPlayer.muted).toBe(true);
   fireEvent.press(within(screen.getByTestId('editorial-story-product-sku-b')).getByRole('link'));
   expect(router.push).toHaveBeenLastCalledWith({ pathname: '/product/[id]', params: { id: 'sku-b' } });
   expect(screen.queryByTestId('editorial-story-product-sku-a')).toBeNull();
@@ -67,12 +68,12 @@ it('lets the viewer turn sound on or off even on silent slides, and keeps Close 
   expect(mute()).toBeEnabled();
   fireEvent.press(mute());
   fireEvent.press(screen.getByRole('button', { name: 'Suivant' }));
-  expect(mockPlayer.muted).toBe(false);
+  expect(mockPlayer.muted).toBe(true);
   fireEvent.press(screen.getByRole('button', { name: 'Suivant' }));
   expect(mute()).toBeEnabled();
   fireEvent.press(mute());
   fireEvent.press(screen.getByRole('button', { name: 'Précédent' }));
-  expect(mockPlayer.muted).toBe(true);
+  expect(mockPlayer.muted).toBe(false);
   fireEvent.press(screen.getByTestId('editorial-story-close'));
   expect(router.back).toHaveBeenCalledTimes(1);
 });

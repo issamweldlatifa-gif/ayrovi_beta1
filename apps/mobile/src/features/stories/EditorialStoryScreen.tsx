@@ -85,7 +85,7 @@ export function StorySlides({ story, composition }: { story: EditorialStory; com
   const sessionId = useSessionId();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(reduced);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const [foreground, setForeground] = useState(AppState.currentState !== 'background' && AppState.currentState !== 'inactive');
   const [elapsed, setElapsed] = useState(0);
   const [videoSeconds, setVideoSeconds] = useState(15);

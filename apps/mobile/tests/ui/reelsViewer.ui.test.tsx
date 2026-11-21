@@ -61,7 +61,7 @@ it('plays the visible Reel, preloads ONLY the next one, and never unmounts on co
   render(wrap());
   const renderItem = screen.UNSAFE_getByType(FlatList).props.renderItem;
   const card = (index: number) => renderItem({ item: { id: `r${index + 1}` }, index }).props;
-  expect(card(1)).toMatchObject({ active: true, preload: false, suspended: false });
+  expect(card(1)).toMatchObject({ active: true, preload: false, suspended: false, soundOn: true });
   expect(card(2)).toMatchObject({ active: false, preload: true });
   expect(card(0)).toMatchObject({ active: false, preload: false });
   expect(card(3)).toMatchObject({ active: false, preload: false });
