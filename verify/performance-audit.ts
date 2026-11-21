@@ -21,6 +21,22 @@ Object.assign(process.env, {
   FIREBASE_PROJECT_ID: '', FIREBASE_CLIENT_EMAIL: '', FIREBASE_PRIVATE_KEY: '',
 });
 for (const key of ['ANTHROPIC_API_KEY','SERPAPI_KEY','SCRAPERAPI_KEY','GROQ_API_KEY','GEMINI_API_KEY','GOOGLE_API_KEY','OPENAI_API_KEY']) process.env[key] = '';
+// Selected mobile read paths, not all startup requests. Measure individually so a slow
+// request is not hidden by a blended Home number. Keep the old audit cases comparable.
+const mobilePaths = {
+  hero: '/api/public/hero-slides',
+  heroSettings: '/api/public/hero-carousel-settings',
+  dayOffer: '/api/public/zayrovi-news?view=home',
+  homeCover: '/api/public/home-cover',
+  stories: '/api/public/stories',
+  storiesShowcase: '/api/public/stories-showcase',
+  blackFriday: '/api/public/home-black-friday',
+  lens: '/api/public/lens-hero',
+  catalogue: '/api/public/catalog-search?offset=0',
+  socialReels: '/api/public/social/commerce-feed?filter=reels',
+  reels: '/api/public/social/reels?limit=12',
+  publications: '/api/public/social/publication-feed?limit=12&presentation=reference',
+};
 const rounded = (n: number) => Math.round(n * 100) / 100;
 const percentile = (values: number[], fraction: number) => [...values].sort((a, b) => a - b)[Math.max(0, Math.ceil(values.length * fraction) - 1)] ?? 0;
 async function main() {
@@ -104,6 +120,21 @@ async function main() {
       }
       phases.push({ syntheticReels: size, syntheticInteractions: size * 10, syntheticProducts: size / 2, cases });
     }
+    const mobileReads = [];
+    for (const [surface, endpoint] of Object.entries(mobilePaths)) {
+      const call = async () => {
+        const response = await request(app).get(endpoint).set('Accept', 'application/json');
+        if (response.status !== 200 || response.body?.success !== true) throw Error(`${endpoint}: unexpected response (HTTP ${response.status})`);
+        return response;
+      };
+      const first = await call();
+      await call();
+      const result = await measure(surface, Array.from({ length: quick ? 4 : 12 }, () => call));
+      const payload = first.body.data;
+      const rows = Array.isArray(payload) ? payload : Array.isArray(payload?.items) ? payload.items : null;
+      mobileReads.push({ surface, endpoint, items: rows?.length ?? null, responseBytes: Buffer.byteLength(first.text),
+        ...result, sqlCallsPerRequest: rounded(result.sqlCalls / result.requests) });
+    }
     const plans = {
       reels: db.all('EXPLAIN QUERY PLAN SELECT id,publish_at FROM reels WHERE status=? AND publish_at<=? ORDER BY publish_at DESC,id DESC LIMIT 13', 'publie', '2026-11-05'),
       counts: db.all('EXPLAIN QUERY PLAN SELECT COUNT(*) FROM story_interactions WHERE target_id=? AND type=?', 'perf_reel_000001', 'view'),
@@ -124,7 +155,7 @@ async function main() {
     const report = { generatedAt: new Date().toISOString(), commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
       environment: { node: process.version, platform: process.platform, arch: process.arch, cpuModel: os.cpus()[0]?.model, logicalCpus: os.availableParallelism(), hostMemoryMiB: rounded(os.totalmem() / 1048576), mode: 'NODE_ENV=test, in-memory SQLite; local HTTP client and server in same Node process; no production traffic or background workers' },
       caveats: ['Not Render metrics or mobile FPS', 'No claim of production cold-start: importMs covers local module import and empty-database bootstrap only', 'CPU includes benchmark client, SQL instrumentation and JSON parsing', 'RSS samples can miss short-lived peaks; allocator retains earlier allocations', '12 requests/case is diagnostic, not a sustained capacity or p95 SLO study', 'Synthetic data and no network image fetching; SQLite in-memory omits production disk latency'],
-      importMs: rounded(importMs), phases, plans, images: { same: { ...same, fetchCalls: sameFetchCalls }, distinct: { ...distinct, fetchCalls: fetchCalls - sameFetchCalls } },
+      importMs: rounded(importMs), phases, mobileReads, plans, images: { same: { ...same, fetchCalls: sameFetchCalls }, distinct: { ...distinct, fetchCalls: fetchCalls - sameFetchCalls } },
       webAssets: { count: assets.length, largest: assets.slice(0, 10) } };
     fs.mkdirSync(path.dirname(output), { recursive: true });
     fs.writeFileSync(output, JSON.stringify(report, null, 2));
