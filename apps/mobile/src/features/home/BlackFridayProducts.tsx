@@ -15,6 +15,9 @@ import { useSession } from '@/state/session';
 import { BlackFridayBadge } from './BlackFridayBadge';
 import { openBlackFridayProduct } from './BlackFridaySection';
 
+// Keep the currency attached to its amount, while respecting system text scaling.
+const cardMoney = (amount: number) => formatMoney(amount).replace(' ', '\u00a0');
+
 export function BlackFridayProducts({ products, badge, width }: { products: BlackFridayOffer[]; badge: string; width: number }) {
   const t = useT();
   const { isRTL } = useTheme();
@@ -33,7 +36,7 @@ export function BlackFridayProducts({ products, badge, width }: { products: Blac
   const title = (offer: BlackFridayOffer) => offer.brand && offer.name.startsWith(`${offer.brand} · `) ? offer.name.slice(offer.brand.length + 3) : offer.name;
   return <View style={styles.content} testID="black-friday-product-grid">
     <View style={[styles.toolbar, row]}>
-      <AppText variant="body" color={P.muted} style={styles.count}>{visible.length === 1 ? t('blackFriday.countOne') : t('blackFriday.count', { count: visible.length })}</AppText>
+      <AppText variant="bodySmall" color={P.muted} style={styles.count}>{visible.length === 1 ? t('blackFriday.countOne') : t('blackFriday.count', { count: visible.length })}</AppText>
       <Pressable accessibilityRole="button" accessibilityState={{ expanded: panel === 'sort' }} style={[styles.tool, row]} onPress={() => setPanel(panel === 'sort' ? null : 'sort')}>
         <NavigationIcon name="swap-vertical-outline" color={P.ink} size={18} />
         <AppText variant="captionStrong">{t('blackFriday.sort')}</AppText>
@@ -55,20 +58,20 @@ export function BlackFridayProducts({ products, badge, width }: { products: Blac
         return <View key={offer.id} style={{ width: tile }}>
           <Pressable testID={`black-friday-product-${offer.id}`} accessibilityRole="link" accessibilityLabel={offer.name}
             onPress={() => openBlackFridayProduct(offer.id)}>
-            <View style={styles.photo}>
+            <View testID={`black-friday-product-photo-${offer.id}`} style={styles.photo}>
               <AppImage uri={mediaUrl(offer.image)} decorative contentFit="contain" style={StyleSheet.absoluteFill} />
               <View style={[StyleSheet.absoluteFill, styles.marks, isRTL && styles.mirror]} pointerEvents="none">
-                <BlackFridayBadge label={badge} testID="black-friday-product-badge" />
+                <BlackFridayBadge compact label={badge} testID="black-friday-product-badge" />
               </View>
             </View>
             <View style={styles.copy}>
-              {offer.brand ? <AppText variant="bodyStrong" color={P.ink} numberOfLines={1}>{offer.brand}</AppText> : null}
-              <AppText variant="body" color={P.ink} numberOfLines={1}>{title(offer)}</AppText>
+              {offer.brand ? <AppText variant="captionStrong" color={P.ink} numberOfLines={1}>{offer.brand}</AppText> : null}
+              <AppText variant="bodySmall" color={P.ink} numberOfLines={1}>{title(offer)}</AppText>
               <AppText variant="caption" color={P.muted}>{t('blackFriday.reference')}{' '}
-                <AppText variant="caption" color={P.muted} style={styles.compare}>{formatMoney(offer.compareAtPrice)}</AppText>{' '}
+                <AppText variant="caption" color={P.muted} style={styles.compare}>{cardMoney(offer.compareAtPrice)}</AppText>{' '}
                 <AppText variant="captionStrong" color={B.red}>−{offer.discountPercent}%</AppText>
               </AppText>
-              <AppText variant="h2" color={P.ink}>{formatMoney(offer.price)}</AppText>
+              <AppText testID={`black-friday-product-price-${offer.id}`} variant="price" color={P.ink}>{cardMoney(offer.price)}</AppText>
             </View>
           </Pressable>
           {signedIn ? <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.favoriteLayer, isRTL && styles.mirror]}>
@@ -83,14 +86,14 @@ export function BlackFridayProducts({ products, badge, width }: { products: Blac
   </View>;
 }
 const styles = StyleSheet.create({
-  content: { gap: 2 }, grid: { flexWrap: 'wrap', columnGap: 4, rowGap: 24 },
+  content: { gap: 2 }, grid: { flexWrap: 'wrap', columnGap: 4, rowGap: 16 },
   toolbar: { minHeight: 48, alignItems: 'center', gap: 8, paddingHorizontal: 12 },
   count: { flex: 1 }, tool: { gap: 4, minHeight: 44, alignItems: 'center' },
   options: { flexWrap: 'wrap', gap: 6, padding: 8 },
   option: { minHeight: 44, justifyContent: 'center', borderRadius: RADIUS.full, borderWidth: StyleSheet.hairlineWidth, borderColor: P.muted, paddingHorizontal: 8 },
-  photo: { aspectRatio: 0.66, backgroundColor: P.neutral, overflow: 'hidden' },
+  photo: { aspectRatio: 0.82, backgroundColor: P.neutral, overflow: 'hidden' },
   marks: { justifyContent: 'flex-end', alignItems: 'flex-start', padding: 8 }, mirror: { direction: 'rtl' },
   favoriteLayer: { alignItems: 'flex-end', padding: 8 },
   favorite: { width: 44, height: 44, borderRadius: 22, backgroundColor: P.paper, alignItems: 'center', justifyContent: 'center' },
-  copy: { padding: 12, gap: 2 }, compare: { textDecorationLine: 'line-through' },
+  copy: { paddingHorizontal: 10, paddingTop: 8, paddingBottom: 4, gap: 2 }, compare: { textDecorationLine: 'line-through' },
 });

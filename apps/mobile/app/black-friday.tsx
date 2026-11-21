@@ -51,7 +51,7 @@ export default function BlackFridayScreen() {
     <StatusBar style="dark" />
     <View style={[styles.header, { flexDirection: rowDirectionFor(isRTL) }]}>
       <BackButton label={t('common.back')} color={P.ink} onPress={() => goBack(products ? '/black-friday' : '/(tabs)')} />
-      <AppText variant="h2" accessibilityRole="header" numberOfLines={1} color={products ? P.ink : B.red}
+      <AppText testID="black-friday-header-title" variant="bodyStrong" accessibilityRole="header" color={products ? P.ink : B.red}
         style={[styles.headerTitle, !products && styles.active]}>{products ? selected ? label(selected) : title : title.toUpperCase()}</AppText>
     </View>
     <ScrollView key={products ? collection ?? 'all' : 'collections'} refreshControl={<RefreshControl refreshing={query.isRefetching} onRefresh={() => void query.refetch()} />}
@@ -63,8 +63,8 @@ export default function BlackFridayScreen() {
           <BlackFridayProducts products={selected.products} badge={campaign.badge} width={Math.min(width - insets.left - insets.right, 600)} />
         </View> : <>
           <View style={styles.intro}>
-            <AppText testID="black-friday-landing-title" variant="display" align="center" color={P.ink} style={{ fontFamily: font('regular') }}>{title}</AppText>
-            <AppText variant="body" align="center" color={P.ink}>{t('blackFriday.max', { percent: Math.max(...selections.map(item => item.maxDiscount)) })}</AppText>
+            <AppText testID="black-friday-landing-title" variant="h3" align="center" color={P.ink} style={{ fontFamily: font('regular') }}>{title}</AppText>
+            <AppText variant="bodySmall" align="center" color={P.ink}>{t('blackFriday.max', { percent: Math.max(...selections.map(item => item.maxDiscount)) })}</AppText>
             {demo ? <AppText variant="caption" align="center" color={P.muted}>{t('blackFriday.demo')}</AppText> : null}
           </View>
           <View style={styles.collectionList} testID="black-friday-collections">
@@ -90,15 +90,15 @@ function CampaignFeature({ selection, title, badge, now, cta }: { selection: Bla
       </View>
     </View>
     <View style={styles.featureCopy}>
-      <AppText variant="h2" numberOfLines={2} color={P.ink}>{title}</AppText>
+      <AppText testID="black-friday-collection-title" variant="subtitle" numberOfLines={2} color={P.ink}>{title}</AppText>
       <View style={[styles.metrics, { flexDirection: rowDirectionFor(isRTL) }]}>
         <View style={styles.metricCopy}>
-          {countdown ? <><AppText variant="body" color={P.muted}>{t('blackFriday.ends')}</AppText><AppText variant="bodyStrong" color={P.ink}>{t('blackFriday.remaining', countdown)}</AppText></> : null}
-          {cta ? <AppText variant="bodyStrong" color={P.ink} style={styles.active}>{cta}</AppText> : null}
+          {countdown ? <><AppText variant="caption" color={P.muted}>{t('blackFriday.ends')}</AppText><AppText variant="bodySmall" color={P.ink}>{t('blackFriday.remaining', countdown)}</AppText></> : null}
+          {cta ? <AppText variant="bodySmall" color={P.ink} style={styles.active}>{cta}</AppText> : null}
         </View>
         <View>
-          <AppText variant="body" style={{ textAlign: discountAlign }} color={P.muted}>{t('blackFriday.saveUpTo')}</AppText>
-          <AppText variant="bodyStrong" style={{ textAlign: discountAlign }} color={P.ink}>{selection.maxDiscount}%</AppText>
+          <AppText variant="caption" style={{ textAlign: discountAlign }} color={P.muted}>{t('blackFriday.saveUpTo')}</AppText>
+          <AppText variant="bodySmall" style={{ textAlign: discountAlign }} color={P.ink}>{selection.maxDiscount}%</AppText>
         </View>
       </View>
     </View>
@@ -107,14 +107,14 @@ function CampaignFeature({ selection, title, badge, now, cta }: { selection: Bla
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: P.paper },
-  header: { gap: 6, alignItems: 'center', minHeight: 56, paddingHorizontal: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.muted },
-  headerTitle: { flex: 1 }, active: { textDecorationLine: 'underline' },
-  intro: { padding: 12, gap: 2, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.muted },
+  header: { gap: 6, alignItems: 'center', minHeight: 48, paddingHorizontal: 8, paddingVertical: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.muted },
+  headerTitle: { flex: 1, minWidth: 0 }, active: { textDecorationLine: 'underline' },
+  intro: { paddingHorizontal: 12, paddingVertical: 10, gap: 4, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: P.muted },
   collectionList: { gap: 12, backgroundColor: P.neutral, width: '100%', maxWidth: 600, alignSelf: 'center' },
   feature: { backgroundColor: P.paper },
   picture: { aspectRatio: 1.7, backgroundColor: P.neutral },
   featureMark: { justifyContent: 'flex-end', alignItems: 'flex-start', padding: 16 }, mirror: { direction: 'rtl' },
-  featureCopy: { paddingHorizontal: 16, paddingVertical: 12, gap: 8 },
+  featureCopy: { paddingHorizontal: 12, paddingVertical: 10, gap: 6 },
   metrics: { justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }, metricCopy: { flex: 1 },
   gridFrame: { width: '100%', maxWidth: 600, alignSelf: 'center' }, demoNote: { paddingVertical: 8 },
 });

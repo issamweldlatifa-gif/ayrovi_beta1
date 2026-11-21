@@ -31,7 +31,7 @@ export const BlackFridaySection = memo(function BlackFridaySection({ campaign }:
   return <FullBleed>
     <View testID="home-black-friday" style={[styles.section, { backgroundColor: campaign.surfaceColor }]}>
       <View style={[styles.banner, { minHeight: g.bannerHeight, paddingBottom: g.overlap, backgroundColor: campaign.backgroundColor }]} testID="black-friday-banner">
-        <AppText testID="black-friday-title" accessibilityRole="header" variant="display" align="center" color={ink}
+        <AppText testID="black-friday-title" accessibilityRole="header" variant="h2" align="center" color={ink}
           style={{ fontFamily: font('regular') }}>{campaign.title}</AppText>
         <AppText variant="label" align="center" color={ink}>{t('blackFriday.max', { percent: Math.max(...selections.map(item => item.maxDiscount)) })}</AppText>
         {selections.some(item => item.demo) ? <AppText variant="caption" align="center" color={ink}>{t('blackFriday.demo')}</AppText> : null}

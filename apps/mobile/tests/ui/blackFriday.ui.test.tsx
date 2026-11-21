@@ -7,6 +7,7 @@ import BlackFridayScreen from '../../app/black-friday';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
+import { TYPE_SCALE } from '@/design/tokens.generated';
 import { DEFAULT_BLACK_FRIDAY } from '../../../../shared/blackFriday';
 
 const mockParams = jest.fn((): { view?: string; collection?: string } => ({}));
@@ -54,7 +55,10 @@ test('all deals shows the same selections plus additional campaign cards with de
   mockParams.mockReturnValue({});
   jest.mocked(useBlackFriday).mockReturnValue({ data: campaign, isPending: false, isError: false } as ReturnType<typeof useBlackFriday>);
   await mount(<BlackFridayScreen />);
-  expect(screen.getByText('BLACK FRIDAY WEEK')).toBeTruthy();
+  const heading = screen.getByText('BLACK FRIDAY WEEK');
+  expect(heading.props.numberOfLines).toBeUndefined();
+  expect(StyleSheet.flatten(heading.props.style).fontSize).toBe(TYPE_SCALE.bodyStrong);
+  expect(StyleSheet.flatten(screen.getByTestId('black-friday-landing-title').props.style).fontSize).toBe(TYPE_SCALE.h3);
   expect(screen.getByText('Offres de démonstration')).toBeTruthy();
   expect(screen.getAllByText('Se termine dans')).toHaveLength(4);
   expect(screen.getByTestId('black-friday-cover-street').props.accessibilityHint).toMatch(/\/media\/street.jpg$/);
@@ -72,7 +76,10 @@ test('a selection opens only its linked products with existing catalogue routes 
   expect(screen.queryByTestId('black-friday-product-tommy')).toBeNull();
   expect(screen.getByText('1 article affiché')).toBeTruthy();
   expect(screen.getByText('−30%')).toBeTruthy();
-  expect(screen.getByText(/70\.00 TND/)).toBeTruthy();
+  const price = screen.getByTestId('black-friday-product-price-vans');
+  expect(price.props.children).toBe('70.00\u00a0TND');
+  expect(StyleSheet.flatten(price.props.style).fontSize).toBe(TYPE_SCALE.price);
+  expect(StyleSheet.flatten(screen.getByTestId('black-friday-product-photo-vans').props.style).aspectRatio).toBeGreaterThan(0.8);
   fireEvent.press(screen.getByTestId('black-friday-product-vans'));
   expect(router.push).toHaveBeenLastCalledWith({ pathname: '/product/[id]', params: { id: 'vans' } });
 });
@@ -87,6 +94,22 @@ test('sorts and filters within the selection and updates the visible count', asy
   fireEvent.press(screen.getByRole('button', { name: 'Tommy' }));
   expect(screen.getByText('1 article affiché')).toBeTruthy();
   expect(screen.queryByTestId('black-friday-product-vans')).toBeNull();
+});
+
+test('allows the full collection heading to wrap and keeps millimes with TND', async () => {
+  const longTitle = 'Vans – Vestiaire street et accessoires pour la ville';
+  const precise = parseBlackFriday({ ...DEFAULT_BLACK_FRIDAY, cover: '/media/all.jpg',
+    products: [{ ...product, price: 261.726, compareAtPrice: 348.968 }],
+    collections: [collection('street', longTitle, ['vans'])],
+  })!;
+  jest.mocked(useBlackFriday).mockReturnValue({ data: precise, isPending: false, isError: false } as ReturnType<typeof useBlackFriday>);
+  mockParams.mockReturnValue({ view: 'products', collection: 'street' });
+  await mount(<BlackFridayScreen />);
+  const heading = screen.getByTestId('black-friday-header-title');
+  expect(heading.props.children).toBe(longTitle);
+  expect(heading.props.numberOfLines).toBeUndefined();
+  expect(screen.getByTestId('black-friday-product-price-vans').props.children).toBe('261.726\u00a0TND');
+  expect(screen.getByText('348.968 TND')).toBeTruthy();
 });
 
 test.each(['unavailable', 'expired'])('never opens an alternative collection for %s links', async id => {
