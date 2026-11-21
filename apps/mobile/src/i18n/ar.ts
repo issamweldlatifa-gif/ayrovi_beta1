@@ -101,6 +101,10 @@ export const ar = {
   'account.signOut': 'تسجيل الخروج',
   'account.unverified': 'تعذّر تأكيد الجلسة حالياً — يرجى التحقّق من اتصالك.',
 
+  'wallet.title': 'المحفظة',
+  'wallet.inactive': 'موش مفعّلة',
+  'wallet.balance': 'رصيد المحفظة',
+  'wallet.description': 'المحفظة مازالت موش مفعّلة. تعبئة الرصيد موش متاحة توّا.',
   'gift.walletTitle': "بطاقات الهدايا متاعي",
   'gift.preview': "تجربة · موش للبيع",
   'gift.brand': "ZAYROVI",

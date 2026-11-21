@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react-n
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import AccountScreen from '../../app/(tabs)/account';
+import WalletScreen from '../../app/account/wallet';
 import { fetchOverview } from '@/api/account';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
@@ -16,9 +17,9 @@ jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 24, right: 0, bottom: 16, left: 0 }) }));
 jest.mock('@/design/appImage', () => ({ AppImage: () => null }));
 
-async function mount() {
+async function mount(element = <AccountScreen />) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
-  render(<QueryClientProvider client={client}><PrefsProvider><I18nProvider><ThemeProvider><LoyaltyDemoProvider><AccountScreen />
+  render(<QueryClientProvider client={client}><PrefsProvider><I18nProvider><ThemeProvider><LoyaltyDemoProvider>{element}
   </LoyaltyDemoProvider></ThemeProvider></I18nProvider></PrefsProvider></QueryClientProvider>);
   await act(async () => {});
 }
@@ -30,6 +31,12 @@ test('shows the new section layout without audience chips and labels the loyalty
   await mount();
   expect(screen.getByRole('header', { name: 'Mon compte' })).toBeTruthy();
   expect(screen.getByRole('header', { name: 'Résumé' })).toBeTruthy();
+  const titles = screen.getAllByText(/^(Mon compte|Wallet|Résumé)$/);
+  expect(titles.map(node => node.props.children)).toEqual(['Mon compte', 'Wallet', 'Résumé']);
+  const wallet = screen.getByRole('link', { name: 'Wallet · 0.00 TND · Non activé' });
+  expect(within(wallet).getByText('0.00 TND')).toBeTruthy();
+  fireEvent.press(wallet);
+  expect(router.push).toHaveBeenLastCalledWith('/account/wallet');
   expect(screen.getByRole('header', { name: 'Données et confidentialité' })).toBeTruthy();
   const banner = within(screen.getByTestId('account-loyalty-banner'));
   expect(banner.getByText('ZAYROVI Plus · Light')).toBeTruthy();
@@ -54,6 +61,8 @@ test('retains functional account links, real unread count and sign-out', async (
   jest.mocked(fetchOverview).mockResolvedValue({ counts: { unreadNotifications: 3 } } as Awaited<ReturnType<typeof fetchOverview>>);
   await mount();
   expect(screen.getByText('Sami')).toBeTruthy();
+  fireEvent.press(screen.getByTestId('account-wallet-card'));
+  expect(router.push).toHaveBeenLastCalledWith('/account/wallet');
   expect(await within(screen.getByTestId('account-link-notifications')).findByText('3')).toBeTruthy();
   fireEvent.press(screen.getByTestId('account-link-orders'));
   expect(router.push).toHaveBeenLastCalledWith('/orders');
@@ -95,4 +104,23 @@ test('the top profile strip reflects simulated pending points and the confirmed 
   view.rerender(tree('second'));
   expect(banner().getByText('0 points confirmés')).toBeTruthy();
   expect(banner().getByText('ZAYROVI Plus · Light')).toBeTruthy();
+});
+
+
+test('the Wallet screen only shows the inactive balance and has no recharge action', async () => {
+  mockSession.mockReturnValue({ status: 'signedIn', account: { id: 'wallet-owner' } });
+  await mount(<WalletScreen />);
+  expect(screen.getByRole('header', { name: 'Wallet' })).toBeTruthy();
+  expect(screen.getByText('0.00 TND')).toBeTruthy();
+  expect(screen.getByText('Le Wallet n’est pas encore activé. Le rechargement n’est pas disponible.')).toBeTruthy();
+  expect(screen.queryByRole('button', { name: /recharg/i })).toBeNull();
+  expect(fetchOverview).not.toHaveBeenCalled();
+});
+
+test('a guest opening the Wallet screen directly is prompted to sign in', async () => {
+  mockSession.mockReturnValue({ status: 'signedOut' });
+  await mount(<WalletScreen />);
+  expect(screen.queryByText('0.00 TND')).toBeNull();
+  fireEvent.press(screen.getByRole('button', { name: 'Se connecter' }));
+  expect(router.push).toHaveBeenLastCalledWith('/sign-in');
 });

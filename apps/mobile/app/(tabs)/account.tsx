@@ -16,12 +16,14 @@ import { RADIUS } from '@/design/tokens.mobile';
 import { AppText, Button } from '@/design/ui';
 import { useI18n, type TranslationKey } from '@/i18n';
 import { returnsPaths } from '@/features/returns/paths';
+import { WalletCard } from '@/features/wallet/WalletCard';
 import { giftWallet } from '@/features/giftCards/paths';
 import { useSession } from '@/state/session';
 
 export { RouteErrorBoundary as ErrorBoundary } from '@/design/AppErrorBoundary';
 
 const loyaltyRoute = '/account/loyalty' as Href;
+const walletRoute = '/account/wallet' as Href;
 
 type MenuItem = { id: string; label: TranslationKey; icon: keyof typeof Ionicons.glyphMap; route: Href; public?: boolean };
 const groups = [
@@ -95,6 +97,7 @@ export default function AccountScreen() {
           <Button label={t('account.signIn')} onPress={() => router.push('/sign-in')} />
         </>}
       </View>
+      {status !== 'loading' ? <WalletCard onPress={() => router.push(walletRoute)} /> : null}
       {status === 'loading' ? null : groups.map(group => <View key={group.id} testID={`account-group-${group.id}`}>
         <View style={[styles.sectionTitle, { backgroundColor: theme.mode === 'dark' ? theme.colors.canvas : BRAND.lightGray }]}>
           <AppText variant="subtitle" accessibilityRole="header">{t(group.title)}</AppText>

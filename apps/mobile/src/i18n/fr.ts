@@ -104,6 +104,10 @@ export const fr = {
   'account.signOut': 'Se déconnecter',
   'account.unverified': 'Session non confirmée par le serveur — vérifiez votre connexion.',
 
+  'wallet.title': 'Wallet',
+  'wallet.inactive': 'Non activé',
+  'wallet.balance': 'Solde du Wallet',
+  'wallet.description': 'Le Wallet n’est pas encore activé. Le rechargement n’est pas disponible.',
   'gift.walletTitle': "Mes cartes cadeaux",
   'gift.preview': "Aperçu · non commercialisé",
   'gift.brand': "ZAYROVI",
