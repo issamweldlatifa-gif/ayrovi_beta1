@@ -7,9 +7,14 @@
  */
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppText, Button, Card } from '@/design/ui';
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/design/states';
+import { EmptyState } from '@/design/EmptyState';
+import { ErrorBlock, LoadingBlock } from '@/design/states';
+import { EmptyHeartArt } from '@/features/account/EmptyArt';
+import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppImage } from '@/design/appImage';
 import { useI18n } from '@/i18n';
@@ -56,12 +61,19 @@ export default function FavoritesScreen() {
       {favorites.isLoading ? <LoadingBlock /> : null}
       {favorites.isError ? <ErrorBlock error={favorites.error} onRetry={() => favorites.refetch()} /> : null}
       {favorites.data && favorites.data.length === 0 ? (
-        <EmptyBlock><AppText variant="body" align="center">{t('favorites.empty')}</AppText></EmptyBlock>
+        <EmptyState
+          testID="favorites-empty"
+          art={<EmptyHeartArt />}
+          title={t('favorites.emptyTitle')}
+          body={t('favorites.emptyBody')}
+          actionLabel={t('favorites.inspire')}
+          onAction={() => router.push('/(tabs)')}
+        />
       ) : null}
 
       {favorites.data?.map((favorite) => (
         <Card key={favorite.id}>
-          <View style={styles.row}>
+          <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
             {favorite.imageUrl ? (
               <AppImage
                 uri={mediaUrl(favorite.imageUrl)}
@@ -69,7 +81,11 @@ export default function FavoritesScreen() {
                 contentFit="cover"
                 accessibilityLabel={favorite.title}
               />
-            ) : null}
+            ) : (
+              <View style={[styles.thumb, styles.thumbEmpty, { borderRadius: theme.radius.control, borderColor: theme.colors.line, backgroundColor: theme.colors.canvas }]}>
+                <Ionicons name="heart-outline" size={theme.iconSize.lg} color={theme.colors.muted} accessibilityElementsHidden />
+              </View>
+            )}
             <View style={styles.text}>
               <AppText variant="label" >{favorite.title}</AppText>
               {favorite.priceTnd !== null ? (
@@ -95,7 +111,8 @@ export default function FavoritesScreen() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  text: { flex: 1, gap: 2 },
+  row: { gap: 12, alignItems: 'flex-start' },
+  text: { flex: 1, minWidth: 0, gap: 2 },
   thumb: { width: 64, height: 64, borderWidth: StyleSheet.hairlineWidth },
+  thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
 });

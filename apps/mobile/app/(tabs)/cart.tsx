@@ -15,7 +15,9 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { EmptyBlock, ErrorBlock } from '@/design/states';
+import { ErrorBlock } from '@/design/states';
+import { EmptyState } from '@/design/EmptyState';
+import { EmptyBagArt } from '@/features/account/EmptyArt';
 import { ListSkeleton } from '@/design/skeleton';
 import { goBack } from '@/design/navigation';
 import { useTheme } from '@/design/theme';
@@ -327,7 +329,16 @@ export default function ZayroviCartScreen() {
           </View>
         ) : !hasItems ? (
           <View style={styles.stateBlock}>
-            <EmptyBlock>{t('cart.empty')}</EmptyBlock>
+            {/* Panier vide illustré : le dessin, la raison, et l'unique action
+                utile — retourner voir les sélections. */}
+            <EmptyState
+              testID="cart-empty"
+              art={<EmptyBagArt />}
+              title={t('cart.emptyTitle')}
+              body={t('cart.emptyBody')}
+              actionLabel={t('cart.inspire')}
+              onAction={() => router.push('/(tabs)')}
+            />
           </View>
         ) : (
           <>

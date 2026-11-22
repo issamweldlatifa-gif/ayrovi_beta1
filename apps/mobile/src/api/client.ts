@@ -92,6 +92,15 @@ export interface RequestOptions {
   signal?: AbortSignal;
   timeoutMs?: number;
   headers?: Record<string, string>;
+  /**
+   * يرجّع الجسم كما وصل، بلا فكّ غلاف ولا تحقّق منو.
+   *
+   * يستعملو غير المسارات اللي **موش** على عقد `{success,data}` — مثل
+   * `/api/ready` اللي يجاوب `{status,database,version,commit,branch}` مباشرة.
+   * تمريرو على `unwrap` كان يخلّي شاشة «حول التطبيق» تقول «الردّ غير مقروء»
+   * على خادم سليم.
+   */
+  raw?: boolean;
 }
 
 /**
@@ -253,6 +262,11 @@ async function attempt<T>(method: string, path: string, options: SendOptions = {
   const serverTime = typeof (payload as { serverTime?: unknown } | null)?.serverTime === 'string'
     ? String((payload as { serverTime: string }).serverTime)
     : '';
+
+  /* جسم خام مطلوب : المسار ما يتبعش عقد الغلاف — نرجّعو `payload` كما هو. */
+  if (options.raw === true) {
+    return { kind: 'ok', result: { data: payload as T, serverTime } };
+  }
 
   /* الغلاف الكامل مطلوب : هنا ما نفكّوش `data` — `apiSendEnvelope`
      يتولّى التحقّق من الغلاف، ويرمي بنفس معاني `unwrap` بالضبط. */

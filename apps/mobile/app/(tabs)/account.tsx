@@ -7,6 +7,7 @@ import { router, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useQuery } from '@tanstack/react-query';
 import { PurchaseShelf } from '@/features/account/PurchaseShelf';
+import { SavedBoards } from '@/features/account/SavedBoards';
 import { AppImage } from '@/design/appImage';
 import { fetchOverview } from '@/api/account';
 import { AppScreen } from '@/design/layout';
@@ -40,9 +41,6 @@ const groups = [
     { id: 'addresses', label: 'account.menu.addresses', icon: 'location-outline', route: '/account/addresses' },
     { id: 'settings', label: 'settings.title', icon: 'settings-outline', route: '/account/settings' as Href, public: true },
   ] },
-  { id: 'preferences', title: 'account.hub.preferences', items: [
-    { id: 'favorites', label: 'account.menu.favorites', icon: 'heart-outline', route: '/account/favorites' },
-  ] },
   { id: 'more', title: 'account.hub.more', items: [
     { id: 'about', label: 'account.menu.about', icon: 'information-circle-outline', route: '/account/about', public: true },
   ] },
@@ -70,6 +68,8 @@ export default function AccountScreen() {
   });
   const unread = signedIn && verified ? overview.data?.counts.unreadNotifications : undefined;
   const purchases = signedIn && verified && overview.data?.account?.id === account?.id ? overview.data?.purchasedItems ?? [] : [];
+  // Le compteur de favoris vient du serveur, pas d'un état local optimiste.
+  const favorites = signedIn && verified && overview.data?.account?.id === account?.id ? overview.data?.counts.favorites ?? 0 : 0;
   const direction = rowDirectionFor(theme.isRTL);
   const surface = theme.colors.surface;
   const open = (item: MenuItem) => router.push(item.public || signedIn ? item.route : '/sign-in');
@@ -115,6 +115,12 @@ export default function AccountScreen() {
             <Ionicons name={theme.isRTL ? 'chevron-back' : 'chevron-forward'} size={theme.iconSize.sm} color={theme.colors.ink} accessibilityElementsHidden />
           </Pressable>)}
         </View>
+        {group.id === 'overview' ? <SavedBoards
+          favorites={favorites}
+          purchases={purchases.length}
+          onFavorites={() => open({ id: 'favorites', label: 'favorites.title', icon: 'heart-outline', route: '/account/favorites' })}
+          onOrders={() => open({ id: 'orders', label: 'account.menu.orders', icon: 'cube-outline', route: '/orders' })}
+        /> : null}
         {group.id === 'overview' && purchases.length > 0 ? <PurchaseShelf items={purchases} /> : null}
       </View>)}
       {signedIn ? <View style={styles.signOut}>

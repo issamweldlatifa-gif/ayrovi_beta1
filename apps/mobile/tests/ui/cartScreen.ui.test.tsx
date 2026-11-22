@@ -18,7 +18,7 @@
  * qui décide si le bouton de commande apparaît.
  */
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, render, screen, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { ThemeProvider } from '../../src/design/theme';
@@ -139,15 +139,18 @@ describe('panier — aucun plantage au montage', () => {
     clearSonimSession();
   });
 
-  it('panier vide : l’écran monte et ne propose pas de commander', async () => {
+  it('panier vide : illustration, raison, et une seule action utile', async () => {
     require('./cartFixture').setCart(emptyCart);
     const view = mount();
-    // Laisse la requête (déjà résolue) se poser dans l'arbre.
-    await view.findByText(/vide|empty|فارغة/i).catch(() => null);
-    expect(view.toJSON()).not.toBeNull();
+    const empty = await screen.findByTestId('cart-empty');
+    expect(within(empty).getByText('Votre panier est vide')).toBeTruthy();
     // Pas de lignes, donc pas de bouton de commande : on ne propose pas un
     // chemin qui échouera.
     expect(screen.queryByTestId('cart-checkout')).toBeNull();
+    // L'action de l'état vide ramène aux sélections, elle ne promet rien d'autre.
+    fireEvent.press(screen.getByTestId('cart-empty-action'));
+    expect(router.push).toHaveBeenLastCalledWith('/(tabs)');
+    expect(view.toJSON()).not.toBeNull();
     view.unmount();
   });
 

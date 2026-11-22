@@ -4,7 +4,7 @@
  * كل دالة هِنا **تتحقّق من شكل البيانات** قبل ما ترجّعها: خادم يرجّع غلافاً
  * ناجحاً بمحتوى مغلوط لازم يفشل بصوت عالي، موش يرسم شاشة فارغة.
  */
-import { apiGet, apiGetEnvelope, apiSendData, type RequestOptions } from './client';
+import { apiGet, apiSendData, type RequestOptions } from './client';
 import { ApiError } from './errors';
 
 /* ── الأنواع (مطابقة لما يرسله `src/public/routes.ts`) ─────────────────────── */
@@ -65,8 +65,8 @@ export async function fetchNavigation(options?: RequestOptions): Promise<NavLink
 /* ── جاهزية الخادم: «أي كود قاعد يخدم فعلاً» ──────────────────────────────── */
 
 /**
- * `/api/ready` **موش** داخل غلاف `{data:…}`: نقراوه بـ
- * `apiGetEnvelope`. اللي يعنينا هنا: `commit` — الرقم اللي يفرّق بين «تحدّث
+ * `/api/ready` **موش** داخل غلاف `{data:…}`: نقراوه خام (`raw`). اللي
+ * يعنينا هنا: `commit` — الرقم اللي يفرّق بين «تحدّث
  * التطبيق» و«تحدّث الخادم». `local` تعني خادم تشغيل محلي، موش منشور من Git.
  */
 export interface ServerReadiness {
@@ -112,7 +112,11 @@ export function mobileSessionSupport(readiness: ServerReadiness | null | undefin
 
 /** `malformed` كان الخادم جاوب بلا الحقول اللي نعتمدوا عليها — بلا تخمين. */
 export async function fetchServerReadiness(options?: RequestOptions): Promise<ServerReadiness> {
-  const payload = await apiGetEnvelope<unknown>('/api/ready', options);
+  const { data } = await apiGet<unknown>('/api/ready', { ...options, raw: true });
+  // Le serveur répond à plat (`{status,…}`) et non dans l'enveloppe `{data:…}`.
+  // On accepte les deux formes : une enveloppe ajoutée plus tard ne doit pas
+  // casser la lecture, et un ancien serveur à plat reste lisible.
+  const payload = isRecord(data) && isRecord(data.data) ? data.data : data;
   const parsed = parseServerReadiness(payload);
   if (!parsed) throw new ApiError('malformed', 'GET /api/ready : réponse inattendue.');
   return parsed;

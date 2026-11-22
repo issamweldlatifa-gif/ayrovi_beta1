@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppText, Button, Card, Field, ToggleRow } from '@/design/ui';
@@ -11,6 +11,7 @@ import { deleteAvatar, fetchOverview, updateProfile, uploadAvatar } from '@/api/
 import { authMessage } from '@/api/authMessages';
 import { PersonalGuest, PersonalLayout } from '@/features/personal/PersonalLayout';
 import { useSession } from '@/state/session';
+import { shrinkImage } from '@/features/lens/lensImage';
 
 /**
  * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
@@ -86,23 +87,41 @@ function ProfileForm({ accountId }: { accountId: string }) {
     setSaved(false);
     setPhotoBusy(true);
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!permission.granted) { setFailure(t('profile.photoPermission')); return; }
+      /**
+       * ⚠️ Android 13+ : le sélecteur système de photos ne demande AUCUNE
+       * permission. Exiger `requestMediaLibraryPermissionsAsync` avant de
+       * l'ouvrir refusait le choix de photo sur les téléphones qui rendent
+       * « refusé » à cette demande (c'était la panne : le bouton ne faisait
+       * rien). On ne demande donc la permission que sur iOS, où elle est
+       * réellement nécessaire — et un refus reste un message clair.
+       */
+      if (Platform.OS === 'ios') {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) { setFailure(t('profile.photoPermission')); return; }
+      }
       const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8 });
       if (picked.canceled || !picked.assets?.[0]) return;
       const asset = picked.assets[0];
+      /**
+       * La photo est réduite AVANT l'envoi (768 px, JPEG). Une photo de
+       * téléphone pèse 3–8 Mo et dépasse la limite serveur de 2 Mo : l'envoi
+       * échouait alors que l'image était parfaitement valide. `shrinkImage`
+       * retombe sur l'original si la conversion échoue — jamais de blocage.
+       * Sur le web, `asset.file` est déjà un `File` : rien à réduire.
+       */
+      const prepared = asset.file ? null : await shrinkImage(asset.uri, 768, 0.85, { width: asset.width, height: asset.height });
       await uploadAvatar({
-        uri: asset.uri,
-        name: asset.fileName || 'avatar.jpg',
-        type: asset.mimeType || 'image/jpeg',
+        uri: prepared?.uri ?? asset.uri,
+        name: prepared?.created ? 'avatar.jpg' : asset.fileName || 'avatar.jpg',
+        type: prepared?.created ? 'image/jpeg' : asset.mimeType || 'image/jpeg',
         // `file` n'existe que sur le web (aperçu) : un vrai File, que le
         // navigateur sait joindre en multipart sans qu'on le lui décrive.
         blob: asset.file,
-      });
+      }, { timeoutMs: 60_000 });
       await session.refreshAccount();
       await queryClient.invalidateQueries({ queryKey: ['account'] });
     } catch (error) {
-      const message = authMessage(error);
+      const message = authMessage(error, 'profile.photoFailed');
       setFailure('key' in message ? t(message.key) : message[locale]);
     } finally {
       setPhotoBusy(false);

@@ -803,7 +803,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
             accountId, displayNameFromEmail(email), email, now, now, now, now);
           db.run('UPDATE customer_accounts SET locale=? WHERE id=?', req.body?.locale === 'ar' ? 'ar-TN' : 'fr-TN', accountId);
           enqueueWelcomeMail(db, accountId);
-          notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+          notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte est actif. Votre panier, vos commandes et vos favoris vous suivent sur tous vos appareils.', '/compte');
         });
         account = db.get<any>('SELECT * FROM customer_accounts WHERE id=?', accountId);
       }
@@ -848,7 +848,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
           accountId, displayName, email, hashPassword(password), marketingOptIn ? 1 : 0, now, now, now);
         db.run('UPDATE customer_accounts SET locale=? WHERE id=?', req.body?.locale === 'ar' ? 'ar-TN' : 'fr-TN', accountId);
         enqueueWelcomeMail(db, accountId);
-        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte est actif. Votre panier, vos commandes et vos favoris vous suivent sur tous vos appareils.', '/compte');
         const cartSession = validCartSession(req.body?.cartSessionId || req.headers['x-session-id']);
         if (cartSession) db.attachCartToAccount(cartSession, accountId);
         const prior = resolveCustomer(db, req) as any;
@@ -1017,7 +1017,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
           VALUES (?,?,?,?, 'ACTIVE', ?, ?, ?)`,
           accountId, 'Client ZAYROVI', emailVerifiedHere ? email : null, emailVerifiedHere ? nowIso : null, nowIso, nowIso, nowIso);
         enqueueWelcomeMail(db, accountId);
-        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte Apple est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte Apple est actif. Votre panier, vos commandes et vos favoris vous suivent sur tous vos appareils.', '/compte');
       } else {
         const currentAccount = accountRow(db, accountId);
         if (!currentAccount) throw new Error('ACCOUNT_MISSING');
@@ -1090,7 +1090,7 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
       VALUES (?,?,?,?,?,'ACTIVE',?,?,?)`, accountId, String(profile.name || 'Client ZAYROVI').slice(0, 100), email,
     String(profile.picture || '').slice(0, 1000), now, now, now, now);
     enqueueWelcomeMail(db, accountId);
-    notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte Google est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+    notification(db, accountId, 'ACCOUNT', 'Bienvenue chez ZAYROVI', 'Votre compte Google est actif. Votre panier, vos commandes et vos favoris vous suivent sur tous vos appareils.', '/compte');
   } else {
     for (const ownerId of new Set([identityOwnerId, verifiedLegacyEmailOwnerId].filter((id): id is string => Boolean(id)))) {
       if (ownerId !== accountId && accountRow(db, ownerId)) accountId = mergeAccounts(db, ownerId, accountId);
