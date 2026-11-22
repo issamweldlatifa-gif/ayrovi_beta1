@@ -52,6 +52,6 @@ const styles = StyleSheet.create({
   tile: { flex: 1, aspectRatio: MEDIA_RATIO.reel, backgroundColor: veil(0.8), overflow: 'hidden' },
   rounded: { borderRadius: RADIUS.md }, spacer: { flex: 1 },
   tileButton: { alignItems: 'flex-end', padding: 8 },
-  play: { width: 30, height: 30, borderRadius: RADIUS.full, backgroundColor: veil(0.65), alignItems: 'center', justifyContent: 'center' },
-  productPin: { ...StyleSheet.absoluteFill, alignItems: 'flex-end', justifyContent: 'flex-end', padding: 6 },
+  play: { width: 36, height: 36, borderRadius: RADIUS.full, backgroundColor: veil(0.65), alignItems: 'center', justifyContent: 'center' },
+  productPin: { ...StyleSheet.absoluteFill, alignItems: 'flex-end', justifyContent: 'flex-end', padding: 8 },
 });

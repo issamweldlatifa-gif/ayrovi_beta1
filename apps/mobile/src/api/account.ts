@@ -98,11 +98,14 @@ export interface RecentOrder {
   previewSize?: string;
 }
 
+export interface PurchasedItem { id: string; orderId: string; name: string; imageUrl: string }
+
 export interface AccountOverview {
   account: CustomerAccount;
   counts: OverviewCounts;
   totalSpent: number;
   recentOrders: RecentOrder[];
+  purchasedItems: PurchasedItem[];
 }
 
 /* ── Profil, adresses, favoris, notifications, préférences ─────────────────── */
@@ -323,6 +326,11 @@ export function parseOverview(payload: unknown): AccountOverview {
       unreadNotifications: num(counts.unreadNotifications),
     },
     totalSpent: num(payload.totalSpent),
+    purchasedItems: Array.isArray(payload.purchasedItems) ? payload.purchasedItems.flatMap(row =>
+      isRecord(row) && typeof row.id === 'string' && row.id && typeof row.orderId === 'string' && row.orderId &&
+      typeof row.name === 'string' && row.name.trim()
+        ? [{ id: row.id, orderId: row.orderId, name: row.name, imageUrl: typeof row.imageUrl === 'string' ? row.imageUrl : '' }] : [],
+    ).slice(0, 4) : [],
     recentOrders: Array.isArray(payload.recentOrders)
       ? payload.recentOrders.flatMap((row) => {
         const parsed = parseRecentOrder(row);

@@ -23,7 +23,7 @@ export function HighlightProductCard({ product, onPress, compact = false, testID
       <AppImage uri={mediaUrl(product.image)} decorative contentFit="contain" style={StyleSheet.absoluteFill} />
     </View>
     {!compact ? <AppText variant="caption" color={BRAND.black} numberOfLines={1} align="center">{product.name}</AppText> : null}
-    <AppText variant="captionStrong" color={BRAND.black} numberOfLines={1} adjustsFontSizeToFit align="center">{price}</AppText>
+    <AppText variant={compact ? "bodySmall" : "captionStrong"} color={BRAND.black} numberOfLines={1} adjustsFontSizeToFit align="center">{price}</AppText>
     {!compact ? <View style={styles.buy}><AppText variant="captionStrong" color={BRAND.white} align="center">{action}</AppText></View> : null}
   </Pressable>;
 }
@@ -31,8 +31,8 @@ export function HighlightProductCard({ product, onPress, compact = false, testID
 const styles = StyleSheet.create({
   card: { backgroundColor: BRAND.white, borderRadius: RADIUS.md, overflow: 'hidden', gap: 4 },
   shop: { padding: 6, width: '100%' },
-  compact: { padding: 4, width: 76 },
+  compact: { padding: 6, width: '62%', maxWidth: 144, minWidth: 72 },
   photo: { height: 62, backgroundColor: BRAND.lightGray, overflow: 'hidden', borderRadius: RADIUS.sm },
-  compactPhoto: { height: 52 },
+  compactPhoto: { height: undefined, aspectRatio: 1.25 },
   buy: { borderRadius: RADIUS.full, backgroundColor: BRAND.black, minHeight: 28, justifyContent: 'center', paddingHorizontal: 4 },
 });

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { deleteCustomerAccount } from '@/api/account';
@@ -8,7 +8,6 @@ import { userMessage } from '@/api/errors';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useTheme } from '@/design/theme';
 import { AppText, Button, ToggleRow } from '@/design/ui';
-import { OrderHelp } from '@/features/orders/OrderLayout';
 import { PersonalGuest, PersonalLayout } from '@/features/personal/PersonalLayout';
 import { useI18n } from '@/i18n';
 import { useSession } from '@/state/session';
@@ -36,7 +35,6 @@ function DataControls({ finish }: { finish: () => Promise<void> }) {
   const theme = useTheme();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<typeof tabs[number]>('export');
-  const [help, setHelp] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [checked, setChecked] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -66,7 +64,7 @@ function DataControls({ finish }: { finish: () => Promise<void> }) {
     </View>
     {tab === 'export' ? <>
       <AppText>{t('personal.exportBody')}</AppText>
-      <Button label={t('personal.exportContact')} block size="lg" onPress={() => setHelp(true)} />
+      <Button label={t('personal.exportContact')} block size="lg" onPress={() => router.push('/account/settings/support?topic=data' as Href)} />
     </> : <>
       <View style={styles.icon}><Ionicons name="trash-outline" size={theme.iconSize.xl} color={theme.colors.ink} /></View>
       <AppText variant="subtitle">{t('personal.deleteHeading')}</AppText>
@@ -79,7 +77,6 @@ function DataControls({ finish }: { finish: () => Promise<void> }) {
       </> : <Button label={t('personal.deleteStart')} tone="danger" block size="lg" onPress={() => setConfirm(true)} />}
       {failure ? <AppText accessibilityRole="alert" color={theme.status.danger.fg}>{failure}</AppText> : null}
     </>}
-    {help ? <OrderHelp title={t('personal.exportContact')} hint={t('personal.exportBody')} onClose={() => setHelp(false)} showPolicy={false} /> : null}
   </>;
 }
 

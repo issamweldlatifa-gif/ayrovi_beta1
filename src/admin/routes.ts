@@ -1293,7 +1293,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       FROM orders WHERE created_at>=? AND status!='CANCELLED' GROUP BY substr(created_at,1,10) ORDER BY date`, since);
     const sources = db.all<any>(`SELECT source,COUNT(*) orders,ROUND(SUM(total_tnd),2) revenue FROM orders
       WHERE created_at>=? AND status!='CANCELLED' GROUP BY source ORDER BY orders DESC`, since);
-    const recentOrders = db.all<any>(`SELECT o.id,o.order_number,o.status,o.payment_status,o.total_tnd,o.created_at,c.name customer_name
+    const recentOrders = db.all<any>(`SELECT o.id,o.order_number,o.status,o.payment_status,o.total_tnd,o.created_at,COALESCE(NULLIF(o.recipient_name,''),c.name) customer_name
       FROM orders o JOIN customers c ON c.id=o.customer_id ORDER BY o.created_at DESC LIMIT 8`);
     const ratio = (current: number, before: number) => before ? Math.round(((current - before) / before) * 1000) / 10 : null;
     res.json({ success: true, data: {
@@ -1982,7 +1982,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const search = String(req.query.search || '').trim().slice(0, 100);
     const filters: string[] = [];
     const params: any[] = [];
-    if (search) { filters.push('(o.order_number LIKE ? OR c.name LIKE ? OR c.phone LIKE ? OR o.invoice_number LIKE ?)'); params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`); }
+    if (search) { filters.push("(o.order_number LIKE ? OR COALESCE(NULLIF(o.recipient_name,''),c.name) LIKE ? OR o.phone LIKE ? OR o.invoice_number LIKE ?)"); params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`); }
     if (typeof req.query.status === 'string' && orderStatuses.includes(req.query.status)) { filters.push('o.status=?'); params.push(req.query.status); }
     if (typeof req.query.payment_status === 'string' && paymentStatuses.includes(req.query.payment_status)) { filters.push('o.payment_status=?'); params.push(req.query.payment_status); }
     const issued = req.query.invoice === 'issued';
@@ -1994,14 +1994,14 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
     const count = db.get<any>(`SELECT COUNT(*) count FROM orders o JOIN customers c ON c.id=o.customer_id ${join} ${where}`, ...params)?.count || 0;
     const rows = db.all<any>(`SELECT o.id,o.order_number,o.invoice_number,o.source,o.status,o.payment_status,o.deposit_status,
-      o.deposit_amount_tnd,o.total_tnd,o.created_at,c.name customer_name,c.phone customer_phone${fields} FROM orders o JOIN customers c ON c.id=o.customer_id ${join}
+      o.deposit_amount_tnd,o.total_tnd,o.created_at,COALESCE(NULLIF(o.recipient_name,''),c.name) customer_name,o.phone customer_phone${fields} FROM orders o JOIN customers c ON c.id=o.customer_id ${join}
       ${where} ORDER BY ${timeColumn} DESC, o.id DESC LIMIT ? OFFSET ?`, ...params, pageSize, (page - 1) * pageSize);
     res.json({ success: true, data: rows, pagination: { page, pageSize, total: Number(count), totalPages: Math.max(1, Math.ceil(Number(count) / pageSize)) } });
   });
 
   registerDhlTrackingRoute(router, db);
   router.get('/orders/:id', requireAdmin(db, 'commerce:read'), (req, res) => {
-    const order = db.get<any>(`SELECT o.*,c.name customer_name,c.registered_at customer_since FROM orders o JOIN customers c ON c.id=o.customer_id WHERE o.id=?`, req.params.id);
+    const order = db.get<any>(`SELECT o.*,COALESCE(NULLIF(o.recipient_name,''),c.name) customer_name,c.registered_at customer_since FROM orders o JOIN customers c ON c.id=o.customer_id WHERE o.id=?`, req.params.id);
     if (!order) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
     const delivery = db.get<any>('SELECT * FROM deliveries WHERE order_id=?', order.id);
     res.set('Cache-Control', 'private, no-store');
@@ -2094,7 +2094,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
 
   router.get('/payment-proofs/pending', requireAdmin(db, 'commerce:read'), (_req, res) => {
     const rows = db.all<any>(`SELECT pr.id,pr.order_id,pr.original_name,pr.mime_type,pr.size_bytes,pr.transfer_reference,
-      pr.status,pr.submitted_at,o.order_number,o.deposit_amount_tnd,p.payment_number,p.method,c.name customer_name
+      pr.status,pr.submitted_at,o.order_number,o.deposit_amount_tnd,p.payment_number,p.method,COALESCE(NULLIF(o.recipient_name,''),c.name) customer_name
       FROM payment_proofs pr JOIN orders o ON o.id=pr.order_id JOIN payments p ON p.id=pr.payment_id
       JOIN customers c ON c.id=o.customer_id WHERE pr.status='PENDING_VERIFICATION' ORDER BY pr.submitted_at ASC`);
     res.json({ success: true, data: rows });
@@ -2801,7 +2801,7 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
   });
 
   router.get('/reports/orders.csv', requireAdmin(db, 'commerce:read'), (req, res) => {
-    const rows = db.all<any>(`SELECT o.order_number,c.name customer,c.phone,o.status,o.payment_status,o.payment_method,
+    const rows = db.all<any>(`SELECT o.order_number,COALESCE(NULLIF(o.recipient_name,''),c.name) customer,o.phone,o.status,o.payment_status,o.payment_method,
       o.source,o.total_tnd,o.governorate,o.created_at FROM orders o JOIN customers c ON c.id=o.customer_id ORDER BY o.created_at DESC LIMIT 10000`);
     const headers = ['order_number','customer','phone','status','payment_status','payment_method','source','total_tnd','governorate','created_at'];
     const csv = [headers.join(','), ...rows.map((row) => headers.map((key) => csvCell(row[key])).join(','))].join('\n');

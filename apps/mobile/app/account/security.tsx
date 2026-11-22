@@ -115,13 +115,6 @@ export default function SecurityScreen() {
         </Card>
       ) : null}
 
-      {/*
-        * Точно là où le bouton « vérifier » de la caisse atterrit : sans e-mail ni
-        * téléphone vérifié, la commande sera refusée par le serveur
-        * (`CONTACT_VERIFICATION_REQUIRED`). L'écran doit dire POURQUOI et offrir
-        * l'ACTION réelle (la connexion fournisseur / SMS) — un constat sans issue
-        * serait une impasse déguisée en information.
-        */}
       {security.data && !security.data.emailVerified && !security.data.phoneVerified ? (
         <Card title={t('security.verifyCard')} hint={t('security.verifyHint')}>
           <AppText variant="body" color={theme.colors.secondary}>{t('security.verifyHow')}</AppText>

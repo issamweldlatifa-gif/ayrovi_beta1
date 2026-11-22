@@ -121,10 +121,9 @@ describe('شروط الطلب', () => {
   });
 
   it('الرفض يجي بالترتيب وبالسبب', () => {
-    const identity = { authenticated: true, emailVerified: true, phoneVerified: false };
+    const identity = { authenticated: true };
     const base = { name: 'Ali', email: 'ali@example.tn', phone: '98123456', address: 'Rue 1', termsAccepted: true };
     expect(refuseCheckout({ ...identity, authenticated: false }, base)).toBe('AUTH_REQUIRED');
-    expect(refuseCheckout({ authenticated: true, emailVerified: false, phoneVerified: false }, base)).toBe('CONTACT_NOT_VERIFIED');
     expect(refuseCheckout(identity, { ...base, address: '  ' })).toBe('FIELDS_MISSING');
     expect(refuseCheckout(identity, { ...base, email: 'pas-un-email' })).toBe('EMAIL_INVALID');
     expect(refuseCheckout(identity, { ...base, phone: '0612345678' })).toBe('PHONE_INVALID');

@@ -178,8 +178,6 @@ export function isEmail(raw: string): boolean {
 
 export interface CheckoutIdentity {
   authenticated: boolean;
-  emailVerified: boolean;
-  phoneVerified: boolean;
 }
 
 export interface CheckoutForm {
@@ -192,7 +190,6 @@ export interface CheckoutForm {
 
 export type CheckoutRefusal =
   | 'AUTH_REQUIRED'
-  | 'CONTACT_NOT_VERIFIED'
   | 'FIELDS_MISSING'
   | 'EMAIL_INVALID'
   | 'PHONE_INVALID'
@@ -201,7 +198,6 @@ export type CheckoutRefusal =
 /** أول رفض، بالترتيب اللي يهمّ — والسبب يتقال، موش «false». */
 export function refuseCheckout(identity: CheckoutIdentity, form: CheckoutForm): CheckoutRefusal | null {
   if (!identity.authenticated) return 'AUTH_REQUIRED';
-  if (!identity.emailVerified && !identity.phoneVerified) return 'CONTACT_NOT_VERIFIED';
   if (!form.name.trim() || !form.email.trim() || !form.phone.trim() || !form.address.trim()) return 'FIELDS_MISSING';
   if (!isEmail(form.email)) return 'EMAIL_INVALID';
   if (!isTunisianPhone(form.phone)) return 'PHONE_INVALID';
@@ -321,7 +317,6 @@ export async function initiateCardPayment(
 /** الرفض المحلي (نفس الشروط، قبل الشبكة) — يتقال بنفس طريقة رفض الخادم. */
 export const CHECKOUT_LOCAL_REFUSALS: Record<string, string> = {
   AUTH_REQUIRED: 'checkout.refusal.AUTH_REQUIRED',
-  CONTACT_NOT_VERIFIED: 'checkout.refusal.CONTACT_NOT_VERIFIED',
   FIELDS_MISSING: 'checkout.refusal.FIELDS_MISSING',
   EMAIL_INVALID: 'checkout.refusal.EMAIL_INVALID',
   PHONE_INVALID: 'checkout.refusal.PHONE_INVALID',

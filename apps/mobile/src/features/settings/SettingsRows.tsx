@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Switch, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { AppText } from '@/design/ui';
@@ -23,11 +24,12 @@ export function SettingsRow({ title, description, icon, onPress, checked, divide
     style={style}>{body}</Pressable> : <View style={style}>{body}</View>;
 }
 
-export function SettingsSwitch({ title, description, value, onChange, disabled = false }: {
-  title: string; description?: string; value: boolean; onChange: (value: boolean) => void; disabled?: boolean;
+export function SettingsSwitch({ title, description, icon, divided, value, onChange, disabled = false }: {
+  title: string; description?: string; icon?: keyof typeof Ionicons.glyphMap; divided?: boolean; value: boolean; onChange: (value: boolean) => void; disabled?: boolean;
 }) {
   const theme = useTheme();
-  return <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
+  return <View style={[styles.row, { flexDirection: rowDirectionFor(theme.isRTL) }, divided && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.colors.line }]}>
+    {icon ? <Ionicons name={icon} size={theme.iconSize.md} color={theme.colors.ink} accessibilityElementsHidden /> : null}
     <View style={styles.text}>
       <AppText variant="bodyStrong">{title}</AppText>
       {description ? <AppText color={theme.colors.muted}>{description}</AppText> : null}
@@ -37,7 +39,17 @@ export function SettingsSwitch({ title, description, value, onChange, disabled =
   </View>;
 }
 
+export function SettingsGroup({ title, children }: { title: string; children: ReactNode }) {
+  const theme = useTheme();
+  return <View style={[styles.group, { borderColor: theme.colors.line, borderRadius: theme.radius.card, backgroundColor: theme.colors.surface }]}>
+    <AppText variant="subtitle" accessibilityRole="header" style={styles.groupTitle}>{title}</AppText>
+    {children}
+  </View>;
+}
+
 const styles = StyleSheet.create({
+  group: { borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 16, paddingVertical: 8 },
+  groupTitle: { paddingTop: 8, paddingBottom: 4 },
   row: { minHeight: 56, paddingVertical: 12, alignItems: 'center', gap: 16 },
   text: { flex: 1, minWidth: 0, gap: 4 },
 });

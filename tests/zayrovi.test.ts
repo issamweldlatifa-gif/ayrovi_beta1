@@ -795,23 +795,44 @@ describe('ZAYROVI platform', () => {
     db.clearCart(sessionId);
   });
 
-  test('checkout requires at least one verified contact channel', async () => {
+  test('checkout accepts valid delivery details from a signed-in customer without verified contact', async () => {
     const accountId = `account_no_verified_contact_${Date.now()}`;
     const sessionId = uniqueSession('no-verified-contact');
     const now = new Date().toISOString();
     db.run(`INSERT INTO customer_accounts (id,display_name,email,status,created_at,updated_at) VALUES (?,?,?,'ACTIVE',?,?)`, accountId, 'Compte non vérifié', `pending-${Date.now()}@example.com`, now, now);
     const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
+    const phone = '52123456';
+    const existingContact = `contact_${accountId}`;
+    db.run(`INSERT INTO customers (id,name,phone,normalized_phone,governorate,address,registered_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?)`, existingContact, 'Contact existant', phone, phone, 'Tunis', 'Adresse existante', now, now);
     try {
-      expect((await request(app).post('/api/cart/items').set('x-session-id', sessionId).send(createCartItem('Verification required item'))).status).toBe(201);
-      const checkout = await request(app)
+      expect((await request(app).post('/api/cart/items').set('x-session-id', sessionId).send(createCartItem('Delivery contact item'))).status).toBe(201);
+      const checkoutWith = (phone: string) => request(app)
         .post('/api/checkout')
         .set('Cookie', `zayrovi_customer_session=${encodeURIComponent(session.token)}`)
         .set('x-session-id', sessionId)
         .set('x-csrf-token', session.csrfToken)
-        .send({ ...checkoutDefaults, email: `pending-${Date.now()}@example.com`, name: 'Compte non vérifié', phone: '98123456', city: 'Tunis', address: 'Tunis', paymentMethod: 'card' });
-      expect(checkout.status).toBe(403);
-      expect(checkout.body.code).toBe('CONTACT_VERIFICATION_REQUIRED');
+        .send({ ...checkoutDefaults, email: 'billing@example.com', name: 'Destinataire', phone, city: 'Tunis', address: '10 Rue Test', paymentMethod: 'PENDING_SELECTION' });
+      expect((await checkoutWith('123')).status).toBe(400);
       expect(db.get<any>('SELECT COUNT(*) count FROM orders WHERE account_id=?', accountId).count).toBe(0);
+      const checkout = await checkoutWith(phone);
+      expect(checkout.status).toBe(200);
+      const order = db.get<any>('SELECT phone, address, contact_email, recipient_name, payment_method FROM orders WHERE account_id=?', accountId);
+      expect(order).toMatchObject({ phone, address: '10 Rue Test', contact_email: 'billing@example.com', recipient_name: 'Destinataire', payment_method: 'PENDING_SELECTION' });
+      expect(db.get<any>('SELECT name,address FROM customers WHERE id=?', existingContact)).toEqual({ name: 'Contact existant', address: 'Adresse existante' });
+      expect(db.get<any>('SELECT phone_verified_at, email_verified_at FROM customer_accounts WHERE id=?', accountId)).toMatchObject({ phone_verified_at: null, email_verified_at: null });
+      const overview = () => request(app).get('/api/customer/account/overview')
+        .set('Cookie', `zayrovi_customer_session=${encodeURIComponent(session.token)}`);
+      expect((await overview()).body.data.purchasedItems).toEqual([]);
+      db.run("UPDATE orders SET payment_status='PAID' WHERE id=?", checkout.body.orderId);
+      expect((await overview()).body.data.purchasedItems).toEqual([
+        expect.objectContaining({ orderId: checkout.body.orderId, name: 'Delivery contact item' }),
+      ]);
+      const other = await secondCustomerAgent.get('/api/customer/account/overview');
+      expect(other.status).toBe(200);
+      expect(other.body.data.purchasedItems).not.toEqual(expect.arrayContaining([expect.objectContaining({ orderId: checkout.body.orderId })]));
+      db.run("UPDATE orders SET payment_status='REFUNDED' WHERE id=?", checkout.body.orderId);
+      expect((await overview()).body.data.purchasedItems).toEqual([]);
     } finally {
       db.clearCart(sessionId);
       db.run('DELETE FROM customer_sessions WHERE account_id=?', accountId);

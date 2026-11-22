@@ -44,8 +44,6 @@ export function OrderHelp({ title, orderNumber, onClose, hint, context, showPoli
 }) {
   const theme = useTheme();
   const t = useT();
-  const footer = useFooterInfo();
-  const [linkError, setLinkError] = useState(false);
   return <Modal transparent animationType="fade" onRequestClose={onClose}>
     <View style={styles.scrim}>
       <View testID="order-help-dialog" style={[styles.dialog, { backgroundColor: theme.colors.canvas }]} accessibilityViewIsModal>
@@ -54,19 +52,29 @@ export function OrderHelp({ title, orderNumber, onClose, hint, context, showPoli
           <AppText variant="bodySmall">{hint ?? t('orders.contactHint')}</AppText>
           {orderNumber ? <OrderFact label={t('orders.number')} value={orderNumber} /> : null}
           {context}
-          {footer.isPending ? <LoadingBlock /> : footer.isError && !footer.data ? <ErrorBlock error={footer.error} onRetry={() => void footer.refetch()} /> : <>
-            {footer.data?.channels.length ? footer.data.channels.map(channel => <Pressable key={channel.id} accessibilityRole="link" style={styles.contact}
-              onPress={() => { setLinkError(false); void Linking.openURL(channel.href).catch(() => setLinkError(true)); }}>
-              <AppText variant="bodyStrong">{channel.label}</AppText>
-            </Pressable>) : <AppText>{t('footer.noContact')}</AppText>}
-          </>}
-          {linkError ? <AppText accessibilityRole="alert">{t('footer.linkError')}</AppText> : null}
+          <SupportContacts />
           {showPolicy ? <Button label={t('orders.returnPolicy')} tone="quiet" onPress={() => { onClose(); router.push(returnsPaths.policy); }} /> : null}
           <Button label={t('common.close')} onPress={onClose} />
         </ScrollView>
       </View>
     </View>
   </Modal>;
+}
+
+/** Actual contact channels shared by help dialogs and standalone account screens. */
+export function SupportContacts() {
+  const t = useT();
+  const footer = useFooterInfo();
+  const [linkError, setLinkError] = useState(false);
+  return <>
+    {footer.isPending ? <LoadingBlock /> : footer.isError && !footer.data ? <ErrorBlock error={footer.error} onRetry={() => void footer.refetch()} /> : <>
+      {footer.data?.channels.length ? footer.data.channels.map(channel => <Pressable key={channel.id} accessibilityRole="link" style={styles.contact}
+        onPress={() => { setLinkError(false); void Linking.openURL(channel.href).catch(() => setLinkError(true)); }}>
+        <AppText variant="bodyStrong">{channel.label}</AppText>
+      </Pressable>) : <AppText>{t('footer.noContact')}</AppText>}
+    </>}
+    {linkError ? <AppText accessibilityRole="alert">{t('footer.linkError')}</AppText> : null}
+  </>;
 }
 
 const styles = StyleSheet.create({

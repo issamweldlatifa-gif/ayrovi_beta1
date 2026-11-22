@@ -66,3 +66,18 @@ it('writes a new address only after explicit save and clears the draft on a cust
   expect(screen.getByLabelText('Rue et numéro').props.value).toBe('');
   expect(screen.getByLabelText('Nom complet du destinataire').props.value).toBe('Second client');
 });
+
+it('opens and confirms the delivery form without requiring a separate verification step', async () => {
+  mockSession.mockReturnValue({ status: 'signedIn', account: { id: 'buyer', email: 'old@example.test', emailVerified: false, phoneVerified: false } });
+  jest.mocked(submitCheckout).mockResolvedValue({ orderId: 'two', orderNumber: 'CMD-2', totalTND: 80, itemCount: 1, deposit: {} } as CheckoutResult);
+  await mount();
+  expect(screen.queryByRole('button', { name: 'Vérifier mon compte' })).toBeNull();
+  fireEvent.changeText(screen.getByLabelText('Nom complet du destinataire'), 'Destinataire Test');
+  fireEvent.changeText(screen.getByLabelText('Rue et numéro'), '13 Rue Test');
+  fireEvent.changeText(screen.getByLabelText('Téléphone'), '55123456');
+  fireEvent.changeText(screen.getByLabelText('E-mail (facture)'), 'billing@example.test');
+  fireEvent.press(screen.getByRole('checkbox'));
+  fireEvent.press(await screen.findByRole('button', { name: 'Confirmer la commande', disabled: false }));
+  await waitFor(() => expect(submitCheckout).toHaveBeenCalledWith(expect.objectContaining({ name: 'Destinataire Test', address: expect.stringContaining('13 Rue Test'), phone: '55123456', email: 'billing@example.test' }), { sessionId: 'test-session' }));
+  expect(createAddress).not.toHaveBeenCalled();
+});

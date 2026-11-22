@@ -227,6 +227,7 @@ const ORDERS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS orders (
   address TEXT NOT NULL,
   phone TEXT NOT NULL,
   contact_email TEXT NOT NULL DEFAULT '',
+  recipient_name TEXT NOT NULL DEFAULT '',
   delivery_latitude REAL,
   delivery_longitude REAL,
   /* Mode de livraison : sans lui, l'entrepot ne sait pas OU envoyer le colis. */
@@ -2427,6 +2428,7 @@ export class QatafoDatabase {
     this.ensureColumn('customer_oauth_states', 'native_handoff_id', "TEXT NOT NULL DEFAULT ''");
     this.migrateOrdersToAccountLifecycle();
     this.ensureColumn('orders', 'contact_email', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('orders', 'recipient_name', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('orders', 'delivery_latitude', 'REAL');
     this.ensureColumn('orders', 'delivery_longitude', 'REAL');
     // Les bases déjà en service reçoivent les colonnes sans perdre une ligne.
@@ -3705,7 +3707,7 @@ export class QatafoDatabase {
     const normalizedPhone = input.phone.replace(/\s+/g, ' ').trim();
 
     return this.transaction(() => {
-      const account = this.get<any>('SELECT id,status FROM customer_accounts WHERE id=?', accountId);
+      const account = this.get<any>('SELECT id,status,phone_verified_at,email_verified_at FROM customer_accounts WHERE id=?', accountId);
       if (!account || account.status !== 'ACTIVE') {
         throw new Error('ACCOUNT_UNAVAILABLE');
       }
@@ -3723,7 +3725,9 @@ export class QatafoDatabase {
         this.run(`INSERT INTO customers (id,name,phone,normalized_phone,governorate,address,registered_at,status,updated_at)
           VALUES (?,?,?,?,?,?,?,'ACTIVE',?)`, customerId, input.name, normalizedPhone, accountPhoneDigits, input.governorate, input.address, now, now);
         customer = this.get<any>('SELECT * FROM customers WHERE id = ?', customerId)!;
-      } else {
+      } else if (account.phone_verified_at || account.email_verified_at) {
+        // A delivery phone supplied by an unverified account must not overwrite
+        // an existing CRM record. All checkout details live on the order.
         this.run('UPDATE customers SET name=?,normalized_phone=?,governorate=?,address=?,updated_at=? WHERE id=?',
           input.name, accountPhoneDigits, input.governorate, input.address, now, customer.id);
       }
@@ -3774,13 +3778,13 @@ export class QatafoDatabase {
         id,order_number,customer_id,account_id,source,arrival_id,status,payment_status,payment_method,
         deposit_percent,deposit_amount_tnd,deposit_discount_tnd,deposit_status,
         subtotal_tnd,customs_tnd,shipping_tnd,service_tnd,express_tnd,discount_tnd,total_tnd,
-        pricing_snapshot,promo_json,governorate,address,phone,contact_email,delivery_latitude,delivery_longitude,
+        pricing_snapshot,promo_json,governorate,address,phone,contact_email,recipient_name,delivery_latitude,delivery_longitude,
         delivery_mode,pickup_point_id,terms_accepted_at,locale,notes,created_at,updated_at
-      ) VALUES (?,?,?,?,?,?,'AWAITING_DEPOSIT','PENDING',?,?,?,?,'PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      ) VALUES (?,?,?,?,?,?,'AWAITING_DEPOSIT','PENDING',?,?,?,?,'PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       orderId, orderNumber, customer.id, accountId, source, null, input.paymentMethod,
         depositPercent, depositAmount, depositDiscount,
       totals.subtotal, totals.customs, totals.shipping, totals.service, totals.express, totals.discount, totals.total,
-      snapshot, promoApplied.length ? JSON.stringify({ resolvedAt: now, items: promoApplied }) : '', input.governorate, input.address, normalizedPhone, input.email, input.latitude, input.longitude,
+      snapshot, promoApplied.length ? JSON.stringify({ resolvedAt: now, items: promoApplied }) : '', input.governorate, input.address, normalizedPhone, input.email, input.name, input.latitude, input.longitude,
       input.deliveryMode || 'home', input.pickupPointId || '',
       input.termsAcceptedAt, input.locale, '', now, now);
 

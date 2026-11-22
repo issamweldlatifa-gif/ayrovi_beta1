@@ -30,9 +30,9 @@ describe('official editorial Stories gallery', () => {
   it('uses taller cards than Hero and opens the dedicated gallery from both entry points', async () => {
     mockStories.data = [card(1), card(2)];
     await mount();
-    expect(screen.getByText(block.title)).toBeTruthy();
+    expect(screen.queryByText(block.title)).toBeNull();
     expect(screen.getByRole('header', { name: 'Storie, Shop' })).toBeTruthy();
-    expect(within(screen.getByTestId('home-stories')).queryByRole('header', { name: 'Storie, Shop' })).toBeNull();
+    expect(within(screen.getByTestId('home-stories')).getByRole('header', { name: 'Storie, Shop' })).toBeTruthy();
     expect(screen.getByText(block.subtitle)).toBeTruthy();
     expect(StyleSheet.flatten(screen.getByTestId('editorial-story-s1').props.style).aspectRatio).toBeCloseTo((5 / 8) / 1.08);
     fireEvent.press(screen.getByRole('button', { name: /Explorez toutes les stories/ }));
@@ -41,8 +41,10 @@ describe('official editorial Stories gallery', () => {
     expect(router.push).toHaveBeenLastCalledWith({ pathname: '/stories', params: { focus: 's2' } });
   });
   it('honours the CMS card limit and renders text over each image', async () => {
-    mockSettings.data = { ...block, cardCount: 1 }; mockStories.data = [card(1), card(2)];
+    mockSettings.data = { ...block, title: 'L’édition de novembre', cardCount: 1 };
+ mockStories.data = [card(1), card(2)];
     await mount();
+    expect(screen.getByText('L’édition de novembre')).toBeTruthy();
     expect(screen.getByTestId('editorial-story-s1')).toBeTruthy();
     expect(screen.queryByTestId('editorial-story-s2')).toBeNull();
     expect(screen.getByText('Card 1')).toBeTruthy();

@@ -350,7 +350,7 @@ function linkHistoricalOrders(db: QatafoDatabase, accountId: string, verifiedPho
       }
     }
     if (!linked) return 0;
-    const latest = db.get<any>(`SELECT o.*,c.name customer_name FROM orders o
+    const latest = db.get<any>(`SELECT o.*,COALESCE(NULLIF(o.recipient_name,''),c.name) customer_name FROM orders o
       JOIN customers c ON c.id=o.customer_id WHERE o.account_id=? ORDER BY o.created_at DESC LIMIT 1`, accountId);
     const current = accountRow(db, accountId);
     const now = new Date().toISOString();
@@ -1475,11 +1475,19 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
       (SELECT image_url FROM order_items WHERE order_id=o.id ORDER BY created_at LIMIT 1) image_url,
       (SELECT COUNT(*) FROM order_items WHERE order_id=o.id) item_count
       FROM orders o WHERE o.account_id=? ORDER BY o.created_at DESC LIMIT 3`, account.id);
+    // Pending checkout and cancelled/refunded orders never populate the purchase shelf.
+    const purchasedItems = db.all(`SELECT i.id, o.id AS orderId, i.product_name AS name, i.image_url AS imageUrl
+      FROM orders o JOIN order_items i ON i.order_id=o.id
+      WHERE o.account_id=? AND o.status NOT IN ('CANCELLED','REFUNDED','RETURNED')
+        AND o.payment_status NOT IN ('REFUNDED','FAILED')
+        AND (o.payment_status='PAID' OR o.status='DELIVERED')
+      ORDER BY o.created_at DESC, i.created_at DESC, i.id LIMIT 4`, account.id);
     return res.json({ success: true, data: {
       account: publicAccount(accountRow(db, account.id)),
       counts: { orders: Number(summary?.order_count || 0), addresses: addressCount, favorites: favoriteCount, cartItems: cartCount, unreadNotifications: unread },
       totalSpent: Number(summary?.total_spent || 0),
       recentOrders,
+      purchasedItems,
     } });
   });
 

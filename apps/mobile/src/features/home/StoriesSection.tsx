@@ -32,12 +32,14 @@ export const StoriesSection = memo(function StoriesSection() {
 
   if (!settings?.enabled || !rows.length || showcase.isError || stories.isError) return null;
 
-  return <View style={styles.block}>
-    <MediaSectionMark lead="Storie" suffix="Shop" />
-    <FullBleed>
+  const title = local(settings.title, settings.titleAr).trim();
+  const isGenericTitle = /^(?:stories sur zayrovi|stories?|storie\s*[·•]?\s*shop|قصص(?:\s+(?:zayrovi|زايروفي))?)$/iu.test(title);
+
+  return <FullBleed>
     <View testID="home-stories" style={styles.section}>
       <View style={[styles.heading, { paddingHorizontal: gutter }]}>
-        {local(settings.title, settings.titleAr) ? <AppText variant="bodyStrong" color={FOOTER_THEME.paper}>{local(settings.title, settings.titleAr)}</AppText> : null}
+        <MediaSectionMark lead="Storie" suffix="Shop" tone="onMedia" />
+        {title && !isGenericTitle ? <AppText variant="bodyStrong" color={FOOTER_THEME.paper}>{title}</AppText> : null}
         {settings.subtitle ? <AppText variant="body" color={FOOTER_THEME.paper}>{local(settings.subtitle, settings.subtitleAr)}</AppText> : null}
         {settings.ctaLabel ? <Pressable testID="stories-explore" accessibilityRole="button" onPress={() => router.push('/stories')} style={styles.cta}>
           <AppText variant="body" color={FOOTER_THEME.paper}>{local(settings.ctaLabel, settings.ctaLabelAr)} {theme.isRTL ? '←' : '→'}</AppText>
@@ -61,15 +63,13 @@ export const StoriesSection = memo(function StoriesSection() {
           </LinearGradient>
         </Pressable>} />
     </View>
-    </FullBleed>
-  </View>;
+  </FullBleed>;
 });
 
 const styles = StyleSheet.create({
-  block: { gap: 12 },
   section: { backgroundColor: FOOTER_THEME.ink, paddingVertical: 24, gap: 24 },
-  heading: { gap: 2 },
-  cta: { marginTop: 16, minHeight: 44, justifyContent: 'center' },
+  heading: { gap: 8 },
+  cta: { marginTop: 4, minHeight: 44, justifyContent: 'center' },
   card: { overflow: 'hidden', justifyContent: 'flex-end' },
   caption: { paddingTop: 64, paddingHorizontal: 12, paddingBottom: 12, gap: 4 },
 });

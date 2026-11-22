@@ -6,7 +6,7 @@ import { useI18n } from '@/i18n';
 import { savePreferences, type Preferences } from '@/api/account';
 import { userMessage } from '@/api/errors';
 import { PersonalGuest, PersonalLayout } from '@/features/personal/PersonalLayout';
-import { SettingsSwitch } from '@/features/settings/SettingsRows';
+import { SettingsGroup, SettingsSwitch } from '@/features/settings/SettingsRows';
 import { notificationChannels, notificationKey, useNotificationSettings } from '@/features/settings/notificationSettings';
 import { useSession } from '@/state/session';
 
@@ -36,10 +36,11 @@ function NotificationSettings({ owner }: { owner: string }) {
   if (preferences.isError) return <ErrorBlock error={preferences.error} onRetry={() => void preferences.refetch()} />;
   return <>
     <AppText>{t('preferences.subtitle')}</AppText>
-    <AppText variant="h3" accessibilityRole="header">{t('preferences.channels')}</AppText>
-    {notificationChannels.map(channel => <SettingsSwitch key={channel.key} title={t(channel.label)}
-      value={preferences.data[channel.key]} disabled={update.isPending} onChange={value => update.mutate({ [channel.key]: value })} />)}
+    <SettingsGroup title={t('preferences.channels')}>
+      {notificationChannels.map((channel, index) => <SettingsSwitch key={channel.key} title={t(channel.label)} icon={channel.icon}
+        divided={index !== notificationChannels.length - 1} value={preferences.data[channel.key]} disabled={update.isPending}
+        onChange={value => update.mutate({ [channel.key]: value })} />)}
+    </SettingsGroup>
     {update.isError ? <AppText accessibilityRole="alert" color={theme.status.danger.fg}>{userMessage(update.error)[locale]}</AppText> : null}
-    <AppText variant="caption" color={theme.colors.muted}>{t('preferences.note')}</AppText>
   </>;
 }

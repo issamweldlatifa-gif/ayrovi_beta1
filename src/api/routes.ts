@@ -573,10 +573,9 @@ export function createApiRouter(
       return res.status(400).json({ success: false, code: 'TERMS_REQUIRED', error: 'Vous devez accepter les conditions de vente et la politique de retour.' });
     }
     const account = db.get<any>('SELECT email,email_verified_at,phone_verified_at,status FROM customer_accounts WHERE id=?', customer.id);
-    if (!account?.email_verified_at && !account?.phone_verified_at) {
-      return res.status(403).json({ success: false, code: 'CONTACT_VERIFICATION_REQUIRED', error: 'Vérifiez votre e-mail ou votre téléphone avant de confirmer la commande.' });
-    }
-    if (account.email_verified_at && !account.phone_verified_at && contactEmail !== String(account.email || '').toLowerCase()) {
+    // Delivery details are not identity verification. Keep the verified-email
+    // billing rule for accounts that already rely on that verified address.
+    if (account?.email_verified_at && !account.phone_verified_at && contactEmail !== String(account.email || '').toLowerCase()) {
       return res.status(403).json({ success: false, code: 'VERIFIED_EMAIL_REQUIRED', error: 'Utilisez votre adresse e-mail vérifiée, ou vérifiez votre téléphone avant de changer l’adresse de facturation.' });
     }
     const parsedLatitude = latitude === null || latitude === undefined || latitude === '' ? null : Number(latitude);
@@ -591,8 +590,7 @@ export function createApiRouter(
     }
     const checkoutLocale: 'fr-TN' | 'ar-TN' = locale;
 
-    // Le téléphone de livraison peut différer du téléphone vérifié; le compte doit toutefois
-    // posséder au moins un canal vérifié (e-mail OAuth ou téléphone OTP).
+    // Le numéro de livraison sert à joindre le destinataire, sans changer le compte.
     const deliveryPhone = String(phone ?? '').replace(/\s+/g, ' ').trim();
     const deliveryDigits = deliveryPhone.replace(/\D/g, '')
       .replace(/^00216(?=\d{8}$)/, '')

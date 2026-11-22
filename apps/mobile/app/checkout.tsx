@@ -160,12 +160,7 @@ function CheckoutForViewer({ session }: { session: ReturnType<typeof useSession>
 
   const submit = useMutation({
     mutationFn: async () => {
-      const identity = {
-        authenticated,
-        emailVerified: Boolean(account?.emailVerified),
-        phoneVerified: Boolean(account?.phoneVerified),
-      };
-      const refusal = refuseCheckout(identity, {
+      const refusal = refuseCheckout({ authenticated }, {
         name, email: contactEmail, phone, address: addressLine, termsAccepted: terms,
       });
       if (refusal) throw Object.assign(new Error(refusal), { code: refusal });
@@ -197,6 +192,7 @@ function CheckoutForViewer({ session }: { session: ReturnType<typeof useSession>
       setNote('');
       queryClient.invalidateQueries({ queryKey: ['cart', 'zayrovi'] });
       queryClient.invalidateQueries({ queryKey: ['account', 'orders'] });
+      queryClient.invalidateQueries({ queryKey: ['account', 'overview', account?.id] });
     },
     onError: (error) => {
       const refusal = checkoutRefusalText(error);
@@ -225,10 +221,9 @@ function CheckoutForViewer({ session }: { session: ReturnType<typeof useSession>
   const paymentReady = available.length > 0 ? paymentChosen : true;
   const completedSteps = journeyCompletion({ addressValid, paymentValid: paymentReady });
 
-  const identityReady = authenticated && Boolean(account?.emailVerified || account?.phoneVerified);
   const canSubmit = Boolean(sessionId)
     && cartGate.canCheckout
-    && identityReady
+    && authenticated
     && addressValid
     && paymentReady
     && !saveAddress.isPending
@@ -268,17 +263,6 @@ function CheckoutForViewer({ session }: { session: ReturnType<typeof useSession>
         <Card>
           <AppText variant="body">{t('checkout.authRequired')}</AppText>
           <Button label={t('checkout.signIn')} onPress={() => router.push('/sign-in')} />
-        </Card>
-      </SubScreen>
-    );
-  }
-
-  if (session.status !== 'loading' && !identityReady) {
-    return (
-      <SubScreen title={t('checkout.title')} subtitle={t('checkout.hint')} fallback="/panier">
-        <Card>
-          <AppText variant="body">{t('checkout.contactRequired')}</AppText>
-          <Button label={t('checkout.verifyNow')} onPress={() => router.push('/account/security')} />
         </Card>
       </SubScreen>
     );

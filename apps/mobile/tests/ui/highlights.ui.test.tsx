@@ -52,7 +52,9 @@ beforeEach(() => {
 
 it('renders four poster/product pairs without starting playback; both touch targets open the chosen video', () => {
   render(wrap(<HighlightsSection />));
-  expect(screen.getByTestId('home-highlights')).toBeTruthy();
+  expect(StyleSheet.flatten(screen.getByTestId('home-highlights').props.style)).not.toHaveProperty('borderRadius');
+  expect(StyleSheet.flatten(screen.getByTestId('watch-shop-frame-r1').props.style)).not.toHaveProperty('borderRadius');
+  expect(StyleSheet.flatten(screen.getByTestId('highlight-overlay-r1').props.style).width).toBe('62%');
   expect(screen.getByRole('header', { name: 'Watshis, Shop' })).toBeTruthy();
   expect(screen.getAllByTestId(/^highlight-tile-/)).toHaveLength(4);
   expect(screen.getAllByTestId(/^highlight-overlay-/)).toHaveLength(4);

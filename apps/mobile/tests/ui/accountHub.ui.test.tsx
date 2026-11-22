@@ -5,14 +5,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import AccountScreen from '../../app/(tabs)/account';
 import WalletScreen from '../../app/account/wallet';
-import { fetchOverview } from '@/api/account';
+import { fetchOverview, parseOverview } from '@/api/account';
 import { ThemeProvider } from '@/design/theme';
 import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
 
 const mockSession = jest.fn();
 jest.mock('@/state/session', () => ({ useSession: () => mockSession() }));
-jest.mock('@/api/account', () => ({ fetchOverview: jest.fn() }));
+jest.mock('@/api/account', () => ({ ...jest.requireActual('@/api/account'), fetchOverview: jest.fn() }));
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 24, right: 0, bottom: 16, left: 0 }) }));
 jest.mock('@/design/appImage', () => ({ AppImage: () => null }));
@@ -26,7 +26,7 @@ async function mount(element = <AccountScreen />) {
 
 beforeEach(() => jest.clearAllMocks());
 
-test('shows the new section layout without audience chips and labels the loyalty balance as a demo', async () => {
+test('shows the new section layout without audience chips and hides purchase-only blocks for guests', async () => {
   mockSession.mockReturnValue({ status: 'signedOut' });
   await mount();
   expect(screen.getByRole('header', { name: 'Mon compte' })).toBeTruthy();
@@ -38,11 +38,8 @@ test('shows the new section layout without audience chips and labels the loyalty
   fireEvent.press(wallet);
   expect(router.push).toHaveBeenLastCalledWith('/account/wallet');
   expect(screen.getByRole('header', { name: 'Données et confidentialité' })).toBeTruthy();
-  const banner = within(screen.getByTestId('account-loyalty-banner'));
-  expect(banner.getByText('ZAYROVI Plus · Light')).toBeTruthy();
-  expect(banner.getByText('Démo')).toBeTruthy();
-  fireEvent.press(screen.getByTestId('account-loyalty-banner'));
-  expect(router.push).toHaveBeenLastCalledWith('/account/loyalty');
+  expect(screen.queryByTestId('account-loyalty-banner')).toBeNull();
+  expect(screen.queryByTestId('account-purchases')).toBeNull();
   fireEvent.press(screen.getByTestId('account-link-loyalty'));
   expect(router.push).toHaveBeenLastCalledWith('/account/loyalty');
   for (const text of ['Femme', 'Homme', 'Enfant', 'Gérer mon compte']) expect(screen.queryByText(text)).toBeNull();
@@ -58,12 +55,15 @@ test('shows the new section layout without audience chips and labels the loyalty
 test('retains functional account links, real unread count and sign-out', async () => {
   const signOut = jest.fn(async () => {});
   mockSession.mockReturnValue({ status: 'signedIn', verified: true, account: { id: 'x', displayName: 'Sami' }, signOut });
-  jest.mocked(fetchOverview).mockResolvedValue({ counts: { unreadNotifications: 3 } } as Awaited<ReturnType<typeof fetchOverview>>);
+  jest.mocked(fetchOverview).mockResolvedValue(parseOverview({ account: { id: 'x' }, counts: { unreadNotifications: 3, orders: 1 } }));
   await mount();
   expect(screen.getByText('Sami')).toBeTruthy();
   fireEvent.press(screen.getByTestId('account-wallet-card'));
   expect(router.push).toHaveBeenLastCalledWith('/account/wallet');
   expect(await within(screen.getByTestId('account-link-notifications')).findByText('3')).toBeTruthy();
+  // An order count alone does not prove a purchase.
+  expect(screen.queryByTestId('account-loyalty-banner')).toBeNull();
+  expect(screen.queryByTestId('account-purchases')).toBeNull();
   fireEvent.press(screen.getByTestId('account-link-orders'));
   expect(router.push).toHaveBeenLastCalledWith('/orders');
   fireEvent.press(screen.getByTestId('account-link-gifts'));
@@ -78,7 +78,11 @@ test('retains functional account links, real unread count and sign-out', async (
 
 
 test('the top profile strip reflects simulated pending points and the confirmed tier, scoped to the current viewer', async () => {
-  mockSession.mockReturnValue({ status: 'signedOut' });
+  mockSession.mockReturnValue({ status: 'signedIn', verified: true, account: { id: 'first' } });
+  jest.mocked(fetchOverview).mockResolvedValue(parseOverview({
+    account: { id: 'first' }, counts: { unreadNotifications: 0 },
+    purchasedItems: [{ id: 'item', orderId: 'order', name: 'Veste achetée', imageUrl: '' }],
+  }));
   function DemoControls() {
     const [, dispatch] = useLoyaltyDemo();
     return <>
@@ -94,16 +98,21 @@ test('the top profile strip reflects simulated pending points and the confirmed 
   const view = render(tree('first'));
   await act(async () => {});
   const banner = () => within(screen.getByTestId('account-loyalty-banner'));
+  expect(await screen.findByRole('header', { name: 'Articles achetés' })).toBeTruthy();
+  fireEvent.press(screen.getByRole('link', { name: 'Veste achetée' }));
+  expect(router.push).toHaveBeenLastCalledWith({ pathname: '/orders/[id]', params: { id: 'order' } });
+  expect(banner().getByText('Démo')).toBeTruthy();
   fireEvent.press(screen.getByTestId('try-purchase'));
-  expect(banner().getByText('À confirmer : 40 points')).toBeTruthy();
+  expect(banner().getByText('Démo · À confirmer : 40 points')).toBeTruthy();
   expect(banner().getByText('0 points confirmés')).toBeTruthy();
   fireEvent.press(screen.getByTestId('try-confirm'));
   fireEvent.press(screen.getByTestId('try-mission'));
   expect(banner().getByText('100 points confirmés')).toBeTruthy();
   expect(banner().getByText('ZAYROVI Plus · Shine')).toBeTruthy();
+  mockSession.mockReturnValue({ status: 'signedIn', verified: true, account: { id: 'second' } });
   view.rerender(tree('second'));
-  expect(banner().getByText('0 points confirmés')).toBeTruthy();
-  expect(banner().getByText('ZAYROVI Plus · Light')).toBeTruthy();
+  expect(screen.queryByTestId('account-purchases')).toBeNull();
+  expect(screen.queryByTestId('account-loyalty-banner')).toBeNull();
 });
 
 

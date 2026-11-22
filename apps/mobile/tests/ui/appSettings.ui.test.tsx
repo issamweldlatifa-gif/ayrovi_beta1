@@ -51,6 +51,8 @@ it('offers device settings to guests, keeps notification preferences gated and p
   expect(router.push).toHaveBeenLastCalledWith('/account/settings/language');
   fireEvent.press(screen.getByRole('button', { name: 'Notifications' }));
   expect(router.push).toHaveBeenLastCalledWith('/account/preferences');
+  fireEvent.press(screen.getByRole('button', { name: 'Envoyer un avis' }));
+  expect(router.push).toHaveBeenLastCalledWith('/account/settings/support');
   expect(fetchPreferences).not.toHaveBeenCalled();
   fireEvent(screen.getByLabelText('Lecture automatique des vidéos'), 'valueChange', false);
   expect(screen.queryByText('Wi-Fi uniquement')).toBeNull();

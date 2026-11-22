@@ -176,7 +176,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   <div class="meta">
     <div class="card">
       <h3>Facturé à</h3>
-      <p><strong>${escapeHtml(customer?.name || account?.display_name || 'Client ZAYROVI')}</strong><br>
+      <p><strong>${escapeHtml(order.recipient_name || customer?.name || account?.display_name || 'Client ZAYROVI')}</strong><br>
       ${escapeHtml(order.address)}<br>${escapeHtml(order.governorate)}<br>
       ${escapeHtml(order.phone)}${order.contact_email || account?.email ? `<br>${escapeHtml(order.contact_email || account.email)}` : ''}</p>
     </div>
@@ -245,7 +245,7 @@ export function buildInvoiceLines(db: QatafoDatabase, orderId: string): PdfLine[
     { text: String(order.invoice_number), size: 12, bold: true, color: PURPLE },
     { text: `Commande ${order.order_number} — ${new Date(order.created_at).toLocaleDateString('fr-FR')}`, size: 9, color: GREY },
     { text: '', size: 4 },
-    { text: `Facturé à : ${customer?.name || 'Client ZAYROVI'} — ${order.governorate} — ${order.phone}`, size: 10 },
+    { text: `Facturé à : ${order.recipient_name || customer?.name || 'Client ZAYROVI'} — ${order.governorate} — ${order.phone}`, size: 10 },
     { text: `Adresse : ${String(order.address).slice(0, 90)}`, size: 9, color: GREY },
     { text: `Paiement de l'acompte : ${methodLabel}`, size: 9, color: GREY },
     { text: '', size: 4 }, { text: '', rule: true },
