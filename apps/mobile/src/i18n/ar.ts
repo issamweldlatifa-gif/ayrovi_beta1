@@ -441,6 +441,7 @@ export const ar = {
   'favorites.remove': 'إزالة من المفضّلة',
 
   'notifications.title': "الإشعارات متاعك",
+  'notifications.open': 'افتح',
   'notifications.empty': "ما فماش إشعارات لتوّا.",
   'notifications.read': 'مقروء',
   'notifications.unread': 'غير مقروء',

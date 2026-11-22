@@ -445,6 +445,7 @@ export const fr = {
   'favorites.remove': 'Retirer des favoris',
 
   'notifications.title': "Vos notifications",
+  'notifications.open': 'Ouvrir',
   'notifications.empty': "Aucune notification pour le moment.",
   'notifications.read': 'Lu',
   'notifications.unread': 'Non lu',

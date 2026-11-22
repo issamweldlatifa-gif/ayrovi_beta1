@@ -20,6 +20,8 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { QatafoDatabase, SELECTABLE_PAYMENT_METHODS } from '../db/database';
+import { describeUserAgent, maskIp, sessionHandle } from '../customer/accountSecurity';
+import { customerAcceptsNotification, orderStatusChannel } from '../customer/notificationPreferences';
 import multer from 'multer';
 import { normalizeUploadedImage } from '../services/imageValidation';
 import { storeHeroImage } from '../services/heroImageStore';
@@ -2053,9 +2055,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       if (status === 'DELIVERED') db.run("UPDATE deliveries SET status='DELIVERED',delivered_at=?,updated_at=? WHERE order_id=?", now, now, existing.id);
       if (status === 'CANCELLED') releaseCatalogueReservations(db, existing.id);
       // Cancellation never fabricates a refund or payment failure: payment state remains independent.
-      if (existing.account_id) db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+      // La préférence du client décide : un interrupteur coupé n'écrit rien.
+      if (existing.account_id && customerAcceptsNotification(db, existing.account_id, orderStatusChannel(status))) {
+        db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
         VALUES (?,?,'ORDER','Mise à jour de commande',?,?,?)`, `notification_${randomUUID()}`, existing.account_id,
-      `La commande ${existing.order_number} est maintenant au statut ${status}.`, `/compte/commandes/${existing.id}`, now);
+        `La commande ${existing.order_number} est maintenant au statut ${status}.`, `/compte/commandes/${existing.id}`, now);
+      }
     });
     audit(db, req, 'STATUS_CHANGE', 'ORDERS', existing.id, { status: existing.status }, { status, note });
     res.json({ success: true, data: db.get<any>('SELECT * FROM orders WHERE id=?', existing.id) });
@@ -2114,6 +2119,17 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         : db.rejectOrderDeposit(req.params.id, admin(req).id, note);
       audit(db, req, decision === 'approve' ? 'DEPOSIT_APPROVED' : 'DEPOSIT_REJECTED', 'PAYMENT_PROOFS', order.id,
         { payment_status: before.payment_status }, { payment_status: order.payment_status, note });
+      // Le client doit savoir que son justificatif a été traité — sauf s'il a
+      // coupé les notifications de paiement.
+      if (before.account_id && customerAcceptsNotification(db, before.account_id, 'payment')) {
+        db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+          VALUES (?,?,'PAYMENT',?,?,?,?)`, `notification_${randomUUID()}`, before.account_id,
+        decision === 'approve' ? 'Acompte confirmé' : 'Acompte non validé',
+        decision === 'approve'
+          ? `L’acompte de la commande ${before.order_number} est confirmé.`
+          : `L’acompte de la commande ${before.order_number} n’a pas été validé${note ? ` : ${note}` : '.'}`,
+        `/compte/commandes/${before.id}`, new Date().toISOString());
+      }
       return res.json({ success: true, data: { paymentStatus: order.payment_status, orderStatus: order.status } });
     } catch (error: any) {
       if (error?.message === 'REJECTION_REASON_REQUIRED') return res.status(400).json({ success: false, error: 'Le motif du refus est obligatoire.' });
@@ -2180,10 +2196,12 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         db.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at) VALUES (?,?,?,?,?,?,?)`,
           `history_${randomUUID()}`, order.id, order.status, nextOrderStatus,
           nextOrderStatus === 'SHIPPED' ? `Expédiée par ${carrier} — suivi ${trackingNumber}.` : `Livraison : ${nextOrderStatus}.`, admin(req).id, now);
-        if (order.account_id) db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+        if (order.account_id && customerAcceptsNotification(db, order.account_id, 'shipping')) {
+          db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
           VALUES (?,?,'SHIPPING','Mise à jour de livraison',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
-        nextOrderStatus === 'SHIPPED' ? `La commande ${order.order_number} est expédiée par ${carrier}. Suivi : ${trackingNumber}.`
-          : `La livraison de ${order.order_number} est maintenant ${nextOrderStatus}.`, `/compte/suivi`, now);
+          nextOrderStatus === 'SHIPPED' ? `La commande ${order.order_number} est expédiée par ${carrier}. Suivi : ${trackingNumber}.`
+            : `La livraison de ${order.order_number} est maintenant ${nextOrderStatus}.`, `/compte/suivi`, now);
+        }
       }
       const safeBefore = { status: existing.status, carrier: trackingCarrier(String(existing.carrier || '')) ?? (existing.carrier ? 'MANUAL' : null), hasTracking: Boolean(existing.tracking_number) };
       const safeAfter = { status: nextStatus, carrier: trackingCarrier(carrier) ?? (carrier ? 'MANUAL' : null), hasTracking: Boolean(trackingNumber), fields: Object.keys(payload).sort() };
@@ -2277,6 +2295,13 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       await generateInvoicePdf(db, req.params.id);
       const issued = db.get<any>('SELECT * FROM invoices WHERE id=?', invoice.id);
       audit(db, req, 'INVOICE_ISSUED', 'INVOICES', issued.id, null, { invoice_number: issued.invoice_number });
+      const invoiceOrder = db.get<any>('SELECT id,order_number,account_id FROM orders WHERE id=?', req.params.id);
+      if (invoiceOrder?.account_id && customerAcceptsNotification(db, invoiceOrder.account_id, 'invoice')) {
+        db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+          VALUES (?,?,'INVOICE','Facture disponible',?,?,?)`, `notification_${randomUUID()}`, invoiceOrder.account_id,
+        `La facture ${issued.invoice_number} de la commande ${invoiceOrder.order_number} est disponible.`,
+        `/compte/commandes/${invoiceOrder.id}`, new Date().toISOString());
+      }
       return res.status(201).json({ success: true, data: { invoiceNumber: issued.invoice_number, issuedAt: issued.issued_at } });
     } catch (error: any) {
       if (error?.message === 'ORDER_NOT_FOUND') return res.status(404).json({ success: false, error: 'Commande introuvable.' });
@@ -2373,14 +2398,46 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     res.json({ success: true, data: rows, pagination: { page, pageSize, total: Number(count), totalPages: Math.max(1, Math.ceil(Number(count) / pageSize)) } });
   });
 
+  /**
+   * Détail CRM d'un compte client — mêmes faits que ceux que l'application
+   * mobile montre au client, jamais un sous-ensemble qui ferait diverger le
+   * support de la réalité :
+   *   • commandes avec le NOM DU DESTINATAIRE saisi à la caisse (et non plus
+   *     seulement le contact CRM historique) ;
+   *   • favoris enregistrés côté serveur (site + application) ;
+   *   • notifications envoyées et non-lues (ce que le client a réellement lu) ;
+   *   • appareils connectés (poignée dérivée, jamais le jeton de session) ;
+   *   • préférences de notification choisies dans l'application.
+   * L'avatar reste un booléen : son contenu est une image encodée, inutile au
+   * support et coûteux à transporter.
+   */
   router.get('/customer-accounts/:id', requireAdmin(db, 'commerce:read'), (req, res) => {
     res.set('Cache-Control', 'private, no-store');
     const account = db.get<any>(`SELECT id,display_name,email,phone,avatar_url,status,locale,marketing_opt_in,
       email_verified_at,phone_verified_at,created_at,updated_at,last_login_at FROM customer_accounts WHERE id=?`, req.params.id);
     if (!account) return res.status(404).json({ success: false, error: 'Compte client introuvable.' });
-    const orders = db.all<any>('SELECT id,order_number,status,payment_status,total_tnd,created_at FROM orders WHERE account_id=? ORDER BY created_at DESC', account.id);
+    const orders = db.all<any>(`SELECT id,order_number,status,payment_status,total_tnd,created_at,
+      COALESCE(NULLIF(recipient_name,''),'') recipient_name,phone delivery_phone,governorate,address,source,locale
+      FROM orders WHERE account_id=? ORDER BY created_at DESC`, account.id);
     const addresses = db.all<any>('SELECT label,recipient_name,phone,governorate,city,address_line,postal_code,is_default FROM customer_addresses WHERE account_id=? ORDER BY is_default DESC,updated_at DESC', account.id);
-    res.json({ success: true, data: { ...account, orders, addresses } });
+    const favorites = db.all<any>('SELECT id,title,price_tnd,source_url,created_at FROM customer_favorites WHERE account_id=? ORDER BY created_at DESC LIMIT 20', account.id);
+    const notifications = db.all<any>('SELECT id,type,title,message,read_at,created_at FROM customer_notifications WHERE account_id=? ORDER BY created_at DESC LIMIT 10', account.id);
+    const unreadNotifications = Number(db.get<any>('SELECT COUNT(*) count FROM customer_notifications WHERE account_id=? AND read_at IS NULL', account.id)?.count || 0);
+    const preferences = db.get<any>('SELECT dark_mode,order_updates,payment_updates,shipping_updates,invoice_updates,updated_at FROM customer_preferences WHERE account_id=?', account.id) || null;
+    const devices = db.all<any>('SELECT id,created_at,last_seen_at,ip_address,user_agent,expires_at FROM customer_sessions WHERE account_id=? AND expires_at>? ORDER BY last_seen_at DESC', account.id, new Date().toISOString())
+      .map((row) => ({
+        handle: sessionHandle(row.id), ...describeUserAgent(row.user_agent), ipMasked: maskIp(row.ip_address),
+        createdAt: row.created_at, lastSeenAt: row.last_seen_at, expiresAt: row.expires_at,
+      }));
+    // Appareils de notification : le jeton FCM reste côté serveur, jamais dans
+    // la réponse — le support a besoin de savoir si le client est joignable.
+    const pushDevices = db.all<any>('SELECT platform,locale,enabled,created_at,updated_at FROM customer_push_devices WHERE account_id=? ORDER BY updated_at DESC', account.id);
+    const { avatar_url, ...identity } = account;
+    res.json({ success: true, data: {
+      ...identity, has_avatar: Boolean(avatar_url),
+      orders, addresses, favorites, notifications, unreadNotifications, preferences, devices, pushDevices,
+      counts: { orders: orders.length, favorites: favorites.length, devices: devices.length, pushDevices: pushDevices.length },
+    } });
   });
 
   router.put('/customer-accounts/:id/status', requireAdmin(db, 'orders:write'), (req, res) => {

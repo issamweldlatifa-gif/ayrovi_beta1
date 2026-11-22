@@ -13,6 +13,15 @@ import { I18nProvider } from '@/i18n';
 import { PrefsProvider } from '@/state/prefs';
 import { MEDIA_RATIO } from '@/design/tokens.mobile';
 
+/**
+ * 380 cartes se dessinent en ~3,5 s sur une machine au repos. En exécution
+ * parallèle (CI, `--maxWorkers=2`), la même suite frôlait la limite de 5 s et
+ * échouait par TIMEOUT alors que tous les assertions passaient. Le délai est
+ * celui du rendu, pas celui du comportement : 15 s évite ce faux négatif sans
+ * relâcher une seule vérification.
+ */
+jest.setTimeout(15_000);
+
 const mockPush = jest.fn();
 
 jest.mock('expo-router', () => ({

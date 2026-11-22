@@ -4,7 +4,7 @@
  * Le serveur en renvoie jusqu'à 100, les plus récentes d'abord. « Tout marquer
  * comme lu » est une écriture : elle exige le jeton CSRF, comme le reste.
  */
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +18,7 @@ import { useSession } from '@/state/session';
 import { PersonalGuest, PersonalLayout } from '@/features/personal/PersonalLayout';
 import { NotificationsEmpty } from '@/features/personal/NotificationsEmpty';
 import { rowDirectionFor } from '@/design/layoutLogic';
+import { notificationDestination } from '@/features/account/notificationLink';
 
 /**
  * Filet de sécurité de l'écran : si le rendu lève, expo-router affiche le repli
@@ -81,6 +82,8 @@ function Inbox({ owner }: { owner: string }) {
 
       {notifications.data?.map((item) => {
         const storyId = item.id.startsWith('story_alert_') ? /^\/stories\?id=([a-zA-Z0-9_-]{1,150})$/.exec(item.actionUrl)?.[1] : undefined;
+        // Le back office écrit des chemins web ; on les traduit en écrans réels.
+        const destination = storyId ? null : notificationDestination(item.actionUrl);
         return (
           <Card key={item.id} title={item.title || item.type}>
             <View style={[styles.head, { flexDirection: rowDirectionFor(theme.isRTL) }]}>
@@ -96,6 +99,10 @@ function Inbox({ owner }: { owner: string }) {
               if (!item.readAt) markOne.mutate(item.id);
               router.push({ pathname: '/stories', params: { id: storyId } });
             }} /> : null}
+            {destination ? <Button label={t('notifications.open')} onPress={() => {
+              if (!item.readAt) markOne.mutate(item.id);
+              router.push(destination as Href);
+            }} testID={`notification-open-${item.id}`} /> : null}
           </Card>
         );
       })}
