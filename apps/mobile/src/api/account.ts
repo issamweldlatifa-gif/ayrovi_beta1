@@ -840,6 +840,19 @@ export async function confirmEmailVerification(challengeId: string, code: string
   return isRecord(data) && bool(data.emailVerified);
 }
 
+/**
+ * Lien court (10 min) vers le PDF de la facture.
+ *
+ * Le téléphone ne peut pas joindre un PDF protégé par un en-tête d'autorisation
+ * (le lecteur système n'envoie pas nos en-têtes) : le serveur signe donc un lien
+ * lié à cette facture, et ce lien est la seule chose que l'écran ouvre.
+ */
+export async function requestInvoiceLink(orderId: string, options?: RequestOptions): Promise<{ url: string; expiresAt: string }> {
+  const result = await apiSend<unknown>('POST', `/api/customer/account/orders/${encodeURIComponent(orderId)}/invoice/link`, options);
+  const data = typeof result.data === 'object' && result.data !== null ? result.data as Record<string, unknown> : {};
+  return { url: String(data.url ?? ''), expiresAt: String(data.expiresAt ?? '') };
+}
+
 export async function fetchOrderDetail(id: string, options?: RequestOptions): Promise<OrderDetail> {
   return parseOrderDetail(await apiGetData<unknown>(`/api/customer/account/orders/${encodeURIComponent(id)}`, options));
 }

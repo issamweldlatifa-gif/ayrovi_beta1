@@ -2017,6 +2017,8 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       proofs: db.all<any>(`SELECT id,original_name,mime_type,size_bytes,transfer_reference,status,submitted_at,reviewed_at,reviewed_by,rejection_reason
         FROM payment_proofs WHERE order_id=? ORDER BY submitted_at DESC`, order.id),
       invoice: db.get<any>("SELECT id,invoice_number,status,issued_at,(file_path <> '') AS pdf_ready FROM invoices WHERE order_id=?", order.id) || null,
+      refunds: db.listOrderRefunds(order.id),
+      refundBalance: db.orderRefundBalance(order.id),
       delivery,
       dhlTrackingAvailable: Boolean(delivery && canOfferDhlTracking(db, req, order.status, delivery.carrier)),
     } });
@@ -2077,6 +2079,43 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       reason: 'MANUAL_PAYMENT_STATUS_FORBIDDEN', requestedStatus: String(req.body?.status || '').slice(0, 40),
     });
     return res.status(409).json({ success: false, error: 'Le statut est géré uniquement par la vérification Stripe ou la révision du justificatif; aucun paiement/remboursement manuel n’est enregistré ici.' });
+  });
+
+  /**
+   * Remboursement — une DÉCLARATION d'opérateur, plafonnée à l'encaissé.
+   *
+   * Ce n'est volontairement pas une écriture de passerelle : aucun appel Stripe
+   * n'est simulé, le registre dit `source='MANUAL'` et le CRM affiche la même
+   * chose que ce que le client reçoit. Refuser vaut mieux qu'enregistrer un
+   * montant supérieur à l'argent réellement reçu.
+   */
+  router.post('/orders/:id/refunds', requireAdmin(db, 'payments:write'), (req, res) => {
+    const before = db.get<any>('SELECT id,order_number,payment_status FROM orders WHERE id=?', req.params.id);
+    if (!before) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+    try {
+      const refund = db.recordOrderRefund(before.id, admin(req).id, {
+        amountTnd: Number(req.body?.amountTnd ?? req.body?.amount_tnd ?? 0),
+        method: String(req.body?.method || ''),
+        reference: String(req.body?.reference || ''),
+        reason: String(req.body?.reason || ''),
+      });
+      audit(db, req, 'REFUND_RECORDED', 'PAYMENTS', refund.id,
+        { payment_status: before.payment_status }, { amount_tnd: refund.amount_tnd, method: refund.method, refund_number: refund.refund_number });
+      const after = db.get<any>('SELECT payment_status FROM orders WHERE id=?', before.id);
+      return res.status(201).json({ success: true, data: { refund, orderPaymentStatus: after?.payment_status, balance: db.orderRefundBalance(before.id) } });
+    } catch (error: any) {
+      const messages: Record<string, string> = {
+        REFUND_NOTHING_ENCASHED: 'Aucun encaissement sur cette commande : il n’y a rien à rembourser.',
+        REFUND_AMOUNT_INVALID: 'Montant de remboursement invalide.',
+        REFUND_EXCEEDS_ENCASHED: 'Le montant dépasse ce qui reste encaissé sur la commande.',
+        REFUND_ALREADY_SETTLED: 'Tout l’encaissement a déjà été remboursé.',
+        REFUND_REASON_REQUIRED: 'Le motif du remboursement est obligatoire.',
+      };
+      const message = messages[String(error?.message)] || null;
+      if (message) return res.status(409).json({ success: false, code: error.message, error: message });
+      console.error('[Refund]', error);
+      return res.status(500).json({ success: false, error: 'Le remboursement n’a pas pu être enregistré.' });
+    }
   });
 
   // ===== Manual-transfer proof files (admin only, path never exposed) =====
@@ -2439,6 +2478,28 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       audit(db, req, 'UPDATE', 'CUSTOMER_ACCOUNT', account.id, { status: account.status }, { status });
     });
     res.json({ success: true, data: { id: account.id, status } });
+  });
+
+  /**
+   * Fermer UNE session, pas toutes : un téléphone perdu ne doit pas coûter la
+   * déconnexion de la tablette familiale. Le blocage complet reste disponible
+   * sur le statut du compte.
+   */
+  router.delete('/customer-accounts/:id/devices/:handle', requireAdmin(db, 'orders:write'), (req, res) => {
+    const account = db.get<any>('SELECT id FROM customer_accounts WHERE id=?', req.params.id);
+    if (!account) return res.status(404).json({ success: false, error: 'Compte client introuvable.' });
+    // Le CRM ne reçoit qu'un handle (jamais l'identifiant de session) : on
+    // recalcule les handles côté serveur et on ferme la ligne correspondante.
+    const handle = String(req.params.handle || '');
+    const session = db.all<any>('SELECT id,last_seen_at FROM customer_sessions WHERE account_id=? AND expires_at>?', account.id, new Date().toISOString())
+      .find((row) => handle.length >= 8 && sessionHandle(row.id) === handle);
+    if (!session) return res.status(404).json({ success: false, error: 'Session introuvable ou déjà fermée.' });
+    db.transaction(() => {
+      db.run('DELETE FROM customer_sessions WHERE id=? AND account_id=?', session.id, account.id);
+      audit(db, req, 'REVOKE', 'CUSTOMER_SESSION', session.id, { account_id: account.id, last_seen_at: session.last_seen_at }, { revoked: true });
+    });
+    const remaining = Number(db.get<any>('SELECT COUNT(*) count FROM customer_sessions WHERE account_id=? AND expires_at>?', account.id, new Date().toISOString())?.count || 0);
+    return res.json({ success: true, data: { id: session.id, remainingSessions: remaining } });
   });
 
   router.get('/pricing', requireAdmin(db, 'commerce:read'), (_req, res) => {

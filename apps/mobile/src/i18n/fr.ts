@@ -761,6 +761,8 @@ export const fr = {
   'order.paid': 'Payé',
   'order.remainder': 'Reste à payer',
   'order.invoice': 'Facture',
+  'order.invoiceDownload': 'Télécharger la facture (PDF)',
+  'order.invoiceOpened': 'Facture ouverte dans le lecteur.',
   'order.deliveryAddress': "Adresse de livraison",
   'order.tracking': 'Suivi',
   'order.carrier': 'Transporteur',

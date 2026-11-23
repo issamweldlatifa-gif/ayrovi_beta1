@@ -52,9 +52,29 @@ et action (CRM → app).
   traiter quand le branchement du Wallet sera décidé.
 - **Cartes cadeaux** : laboratoire de spécimens uniquement ; l'émission réelle
   (vérification du destinataire, registre) reste un chantier séparé.
-- **Appareils** : le CRM voit les sessions mais ne peut pas en fermer une seule ;
-  le blocage ferme tout. Une révocation unitaire côté support serait une
-  commodité, à ajouter seulement si le support la demande.
+- **Remboursements** : le registre `order_refunds` enregistre une **déclaration**
+  d'opérateur (`source='MANUAL'`), plafonnée aux montants réellement encaissés.
+  Aucun appel de passerelle n'est effectué : si un jour Stripe rembourse
+  lui-même, il faudra une seconde source et non réécrire celle-ci.
+
+## Passe « support » (19/11) — trois gestes ajoutés
+
+1. **Facture téléchargeable depuis le téléphone.** Le serveur expose un lien
+   signé (HMAC, lié à une facture, 10 minutes) : `POST
+   /api/customer/account/orders/:id/invoice/link`, consommé sans session par
+   `GET /api/customer/public/invoices/:invoiceId/:token`. L'écran de commande
+   ouvre ce lien dans le lecteur du téléphone — un PDF derrière un en-tête
+   d'autorisation ne s'ouvre pas depuis un lien.
+2. **Révocation d'un seul appareil.** `DELETE
+   /api/admin/customer-accounts/:id/devices/:handle`. Le CRM ne manipule que le
+   handle calculé côté serveur (jamais l'identifiant de session), et l'autre
+   appareil du client continue de fonctionner — vérifié par test.
+3. **Remboursement traçable.** `order_refunds` + `POST
+   /api/admin/orders/:id/refunds`. Refus explicites : rien d'encaissé, montant
+   au-delà de l'encaissé, motif absent. Le paiement ne passe à `REFUNDED` que
+   lorsque le cumul remboursé atteint l'encaissé ; la fiche CRM affiche encaissé
+   / remboursé / reste, et le client reçoit un message soumis à sa préférence
+   « Paiements ».
 
 ## Vérifications
 
@@ -63,4 +83,7 @@ et action (CRM → app).
   qui ferme la session.
 - `apps/mobile/tests/notifications-link.test.ts` : traduction des liens, refus
   des chemins inconnus et des URL externes.
+- `tests/refund-device-invoice.test.ts` (5 tests) : plafond et refus de
+  remboursement, révocation d'une seule session (l'autre reste valide), lien de
+  facture signé/expiré/altéré.
 - Types serveur + client, tests API de commande et de compte.

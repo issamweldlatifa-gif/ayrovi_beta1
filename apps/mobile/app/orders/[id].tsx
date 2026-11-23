@@ -13,9 +13,9 @@ import { AppImage } from '@/design/appImage';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { useResponsive } from '@/design/layout';
 import { useI18n } from '@/i18n';
-import { fetchOrderDetail } from '@/api/account';
+import { fetchOrderDetail, requestInvoiceLink } from '@/api/account';
 import { statusText } from '@/api/labels';
-import { mediaUrl } from '@/api/client';
+import { apiUrl, mediaUrl } from '@/api/client';
 import { isApiError, userMessage } from '@/api/errors';
 import { initiateCardPayment } from '@/api/checkout';
 import { depositActionable, selectDepositMethod, uploadDepositProof, type DepositMethod } from '@/api/payments';
@@ -82,6 +82,18 @@ export default function OrderDetailScreen() {
       return payment;
     },
     onSuccess: () => { setPayNote(t('order.cardOpened')); reload(); },
+    onError: onPayError,
+  });
+
+  /** Le PDF s'ouvre dans le lecteur du téléphone, jamais dans une WebView sans en-têtes. */
+  const downloadInvoice = useMutation({
+    mutationFn: async () => {
+      const link = await requestInvoiceLink(id);
+      if (!link.url) throw new Error('INVOICE_LINK_EMPTY');
+      await Linking.openURL(apiUrl(link.url));
+      return link;
+    },
+    onSuccess: () => setPayNote(t('order.invoiceOpened')),
     onError: onPayError,
   });
 
@@ -262,6 +274,9 @@ export default function OrderDetailScreen() {
           <KeyValue label={t('order.paid')} value={formatMoney(data.paidTnd)} />
           <KeyValue label={t('order.remainder')} value={formatMoney(data.remainderTnd)} />
           {data.invoiceNumber ? <KeyValue label={t('order.invoice')} value={data.invoiceNumber} /> : null}
+          {data.invoiceNumber ? <Button label={t('order.invoiceDownload')} tone="quiet" block
+            busy={downloadInvoice.isPending} testID="order-invoice-download"
+            onPress={() => downloadInvoice.mutate()} /> : null}
         </OrderSection>
         {data.addressLine || data.governorate ? <OrderSection title={t('order.deliveryAddress')}>
           {data.addressLine ? <AppText>{data.addressLine}</AppText> : null}

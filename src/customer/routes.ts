@@ -1,6 +1,6 @@
 import { syncStoryAlerts } from '../services/storyAlerts';
 import { availableProductParams, availableProductSql } from '../catalogue/contentProducts';
-import { createSign, randomBytes, randomInt, randomUUID } from 'node:crypto';
+import { createHmac, createSign, randomBytes, randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import multer from 'multer';
@@ -26,6 +26,7 @@ import {
   hashToken,
   keyedHash,
   requireCustomer,
+  requireCustomerAuthSecret,
   optionalCustomer,
   resolveCustomer,
   rotateCustomerCsrf,
@@ -1610,6 +1611,8 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
       proofs: db.all<any>(`SELECT id,original_name,mime_type,size_bytes,transfer_reference,status,submitted_at,reviewed_at,rejection_reason
         FROM payment_proofs WHERE order_id=? AND account_id=? ORDER BY submitted_at DESC`, order.id, account.id),
       invoice: db.get<any>(`SELECT id,invoice_number,status,issued_at FROM invoices WHERE order_id=? AND account_id=?`, order.id, account.id) || null,
+      refunds: db.listOrderRefunds(order.id),
+      refunded_tnd: db.orderRefundBalance(order.id).refundedTnd,
       delivery,
       paymentOptions: {
         choices: ['CARD','BANK_TRANSFER','POSTE'],
@@ -1843,6 +1846,51 @@ function linkGoogleProfile(db: QatafoDatabase, profile: any, linkToAccountId?: s
     const target = invoiceAbsolutePath(String(invoice.invoice_number));
     const served = servePrivateDocument(db, req, res, {
       filePath: target, allowedRoots: invoiceRoots(), module: 'INVOICES',
+      resourceType: 'invoice', resourceId: invoice.id, contentType: 'application/pdf',
+      filename: String(invoice.invoice_number).replace(/[^A-Z0-9-]/gi, '') + '.pdf',
+    });
+    if (served.served) return;
+    return res.status(served.status).json({ success: false, code: served.code, error: served.message });
+  });
+
+  /**
+   * Lien de téléchargement court pour le PDF, afin que le téléphone puisse
+   * l'ouvrir dans son lecteur : un lien `Linking.openURL` ne porte pas d'en-tête
+   * d'authentification. Le jeton est signé (HMAC), lié à LA facture et expire en
+   * dix minutes ; il n'ouvre rien d'autre.
+   */
+  router.post('/account/orders/:id/invoice/link', requireCustomer(db), (req, res) => {
+    const account = customerFromRequest(req);
+    const order = db.get<any>('SELECT id,account_id FROM orders WHERE id=?', req.params.id);
+    if (!order || order.account_id !== account.id) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+    const invoice = db.get<any>("SELECT id,file_path FROM invoices WHERE order_id=? AND account_id=? AND status='ISSUED'", order.id, account.id);
+    if (!invoice) return res.status(404).json({ success: false, error: 'Facture non émise pour cette commande.' });
+    if (!invoice.file_path) return res.status(409).json({ success: false, code: 'INVOICE_PDF_NOT_READY', error: 'Le PDF de la facture est en préparation.' });
+    const expiresAt = Date.now() + 10 * 60_000;
+    const signature = createHmac('sha256', requireCustomerAuthSecret()).update(`${invoice.id}.${expiresAt}`).digest('base64url');
+    res.set('Cache-Control', 'private, no-store');
+    return res.json({ success: true, data: { url: `/api/customer/public/invoices/${invoice.id}/${expiresAt}.${signature}`, expiresAt: new Date(expiresAt).toISOString() } });
+  });
+
+  // Sans session : le jeton EST la capacité, bornée dans le temps et à une facture.
+  router.get('/public/invoices/:invoiceId/:token', (req, res) => {
+    const invoice = db.get<any>("SELECT id,account_id,file_path,invoice_number FROM invoices WHERE id=? AND status='ISSUED'", req.params.invoiceId);
+    if (!invoice) {
+      return res.status(404).json({ success: false, error: 'Facture introuvable.' });
+    }
+    const match = /^(\d{10,16})\.([A-Za-z0-9_-]{20,})$/.exec(String(req.params.token));
+    if (!match) return res.status(403).json({ success: false, error: 'Lien de téléchargement invalide.' });
+    const expiresAt = Number(match[1]);
+    if (!Number.isFinite(expiresAt) || Date.now() > expiresAt) {
+      return res.status(410).json({ success: false, code: 'INVOICE_LINK_EXPIRED', error: 'Ce lien a expiré. Ouvrez la commande pour en demander un nouveau.' });
+    }
+    const expected = createHmac('sha256', requireCustomerAuthSecret()).update(`${invoice.id}.${expiresAt}`).digest('base64url');
+    const given = match[2];
+    const valid = given.length === expected.length && timingSafeEqual(Buffer.from(given), Buffer.from(expected));
+    if (!valid) return res.status(403).json({ success: false, error: 'Lien de téléchargement invalide.' });
+    if (!invoice.file_path) return res.status(404).json({ success: false, error: 'Le PDF de la facture est en préparation.' });
+    const served = servePrivateDocument(db, req, res, {
+      filePath: invoiceAbsolutePath(String(invoice.invoice_number)), allowedRoots: invoiceRoots(), module: 'INVOICES',
       resourceType: 'invoice', resourceId: invoice.id, contentType: 'application/pdf',
       filename: String(invoice.invoice_number).replace(/[^A-Z0-9-]/gi, '') + '.pdf',
     });

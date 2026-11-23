@@ -761,6 +761,8 @@ export const ar = {
   'order.paid': 'المبلغ المدفوع',
   'order.remainder': 'المبلغ المتبقّي',
   'order.invoice': 'الفاتورة',
+  'order.invoiceDownload': 'تحميل الفاتورة (PDF)',
+  'order.invoiceOpened': 'تفتحت الفاتورة في القارئ.',
   'order.deliveryAddress': "عنوان التوصيل",
   'order.tracking': 'تتبّع الشحنة',
   'order.carrier': 'شركة الشحن',

@@ -2650,6 +2650,26 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_invoices_account ON invoices(account_id, issued_at DESC);
 
+      /* Un remboursement est une DÉCLARATION d'opérateur, pas une confirmation
+         de passerelle : la colonne source le dit, et le montant est plafonné
+         à ce qui a réellement été encaissé. Un total remboursé égal à l'encaissé
+         fait passer le paiement à REFUNDED — jamais l'inverse (on ne peut pas
+         « rembourser » de l'argent qu'on n'a pas reçu). */
+      CREATE TABLE IF NOT EXISTS order_refunds (
+        id TEXT PRIMARY KEY,
+        refund_number TEXT NOT NULL UNIQUE,
+        order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+        amount_tnd REAL NOT NULL,
+        method TEXT NOT NULL DEFAULT 'BANK_TRANSFER',
+        reference TEXT NOT NULL DEFAULT '',
+        reason TEXT NOT NULL DEFAULT '',
+        source TEXT NOT NULL DEFAULT 'MANUAL',
+        recorded_by TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_order_refunds_order ON order_refunds(order_id, created_at DESC);
+
       CREATE TABLE IF NOT EXISTS customer_preferences (
         account_id TEXT PRIMARY KEY REFERENCES customer_accounts(id) ON DELETE CASCADE,
         dark_mode INTEGER NOT NULL DEFAULT 0,
@@ -3956,6 +3976,78 @@ export class QatafoDatabase {
       if (!this.get<any>('SELECT id FROM payments WHERE payment_number=?', number)) return number;
     }
     return `PAY-${year}-${Date.now()}`;
+  }
+
+  private generateRefundNumber(): string {
+    const year = new Date().getFullYear();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const number = `RMB-${year}-${randomInt(100000, 1000000)}`;
+      if (!this.get<any>('SELECT id FROM order_refunds WHERE refund_number=?', number)) return number;
+    }
+    return `RMB-${year}-${Date.now()}`;
+  }
+
+  /** Montants encaissés et remboursés d'une commande — le plafond, en une forme unique. */
+  public orderRefundBalance(orderId: string) {
+    const payment = this.get<any>('SELECT id,status,amount_tnd FROM payments WHERE order_id=?', orderId);
+    const encashedTransactions = Number(this.get<any>(
+      "SELECT COALESCE(SUM(amount_tnd),0) total FROM payment_transactions WHERE order_id=? AND status='PAID'", orderId)?.total || 0);
+    const encashed = encashedTransactions > 0
+      ? encashedTransactions
+      : (payment && ['PAID', 'REFUNDED', 'PARTIALLY_PAID'].includes(String(payment.status)) ? Number(payment.amount_tnd) : 0);
+    const refunded = Number(this.get<any>('SELECT COALESCE(SUM(amount_tnd),0) total FROM order_refunds WHERE order_id=?', orderId)?.total || 0);
+    const round = (value: number) => Math.round(value * 1000) / 1000;
+    return { encashedTnd: round(encashed), refundedTnd: round(refunded), refundableTnd: round(Math.max(0, encashed - refunded)) };
+  }
+
+  public listOrderRefunds(orderId: string) {
+    return this.all<any>('SELECT * FROM order_refunds WHERE order_id=? ORDER BY created_at DESC', orderId);
+  }
+
+  /**
+   * Enregistre un remboursement déclaré par un opérateur.
+   *
+   * Trois refus explicites, parce qu'un ERP doit refuser plutôt que d'écrire un
+   * chiffre faux : aucun encaissement sur la commande, dépassement de
+   * l'encaissé, et montant/motif absents. La notification client est soumise à
+   * sa préférence « Paiements ».
+   */
+  public recordOrderRefund(orderId: string, adminId: string, input: { amountTnd: number; method?: string; reference?: string; reason: string }) {
+    return this.transaction(() => {
+      const order = this.get<any>('SELECT * FROM orders WHERE id=?', orderId);
+      if (!order) throw new Error('ORDER_NOT_FOUND');
+      const balance = this.orderRefundBalance(orderId);
+      if (balance.encashedTnd <= 0) throw new Error('REFUND_NOTHING_ENCASHED');
+      const amount = Math.round(Number(input.amountTnd) * 1000) / 1000;
+      if (!Number.isFinite(amount) || amount <= 0) throw new Error('REFUND_AMOUNT_INVALID');
+      if (balance.refundableTnd <= 0) throw new Error('REFUND_ALREADY_SETTLED');
+      if (amount > balance.refundableTnd + 0.0005) throw new Error('REFUND_EXCEEDS_ENCASHED');
+      const reason = String(input.reason || '').trim().slice(0, 500);
+      if (!reason) throw new Error('REFUND_REASON_REQUIRED');
+      const method = ['CARD', 'BANK_TRANSFER', 'POSTE', 'CASH', 'WALLET', 'OTHER'].includes(String(input.method || '').toUpperCase())
+        ? String(input.method).toUpperCase() : 'OTHER';
+      const reference = String(input.reference || '').trim().slice(0, 120);
+      const now = new Date().toISOString();
+      const id = `refund_${randomUUID()}`;
+      const number = this.generateRefundNumber();
+      this.run(`INSERT INTO order_refunds (id,refund_number,order_id,account_id,amount_tnd,method,reference,reason,source,recorded_by,created_at)
+        VALUES (?,?,?,?,?,?,?,?,'MANUAL',?,?)`, id, number, orderId, order.account_id, amount, method, reference, reason, adminId, now);
+      const settled = amount >= balance.refundableTnd - 0.0005;
+      if (settled) {
+        this.run("UPDATE orders SET payment_status='REFUNDED',updated_at=? WHERE id=? AND payment_status IN ('PAID','PARTIALLY_PAID')", now, orderId);
+        this.run("UPDATE payments SET status='REFUNDED',updated_at=? WHERE order_id=? AND status='PAID'", now, orderId);
+      }
+      this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
+        VALUES (?,?,?,?,?,?,?)`, `history_${randomUUID()}`, orderId, order.status, order.status,
+        `Remboursement ${number} déclaré : ${amount.toFixed(3)} DT (${method})${settled ? ' — solde encaissé intégralement remboursé.' : '.'} Motif : ${reason.slice(0, 200)}`, adminId, now);
+      if (order.account_id && customerAcceptsNotification(this, order.account_id, 'payment')) {
+        this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+          VALUES (?,?,'PAYMENT','Remboursement enregistré',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
+          `Un remboursement de ${amount.toFixed(3)} DT a été enregistré pour la commande ${order.order_number}. Référence ${number}.`,
+          `/compte/commandes/${orderId}`, now);
+      }
+      return this.get<any>('SELECT * FROM order_refunds WHERE id=?', id);
+    });
   }
 
   public generateTransactionNumber(): string {

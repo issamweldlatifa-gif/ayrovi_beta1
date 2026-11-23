@@ -620,6 +620,25 @@ const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean; initialStatus?:
   const changeStatus = async (next: string) => { if (!selected) return; setBusy(true); try { await adminApi(`/orders/${selected.id}/status`, { method:'PUT', body:JSON.stringify({status:next}) }); await open(selected); await load(pagination.page); setToast({message:'Statut de commande mis à jour.',tone:'success'}); } catch(e:any){setToast({message:e.message,tone:'error'});} finally{setBusy(false);} };
   const changePayment = async (next: string) => { if (!selected) return; setBusy(true); try { await adminApi(`/orders/${selected.id}/payment`, {method:'PUT',body:JSON.stringify({status:next})}); await open(selected); await load(pagination.page); setToast({message:'Paiement mis à jour.',tone:'success'}); }catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);} };
   const [reviewNote, setReviewNote] = useState('');
+  /**
+   * Remboursement = DÉCLARATION d'opérateur, jamais une simulation de
+   * passerelle. Le brouillon reste local ; le serveur plafonne au réellement
+   * encaissé et refuse au-delà.
+   */
+  const [refundDraft, setRefundDraft] = useState({ amount:'', method:'BANK_TRANSFER', reference:'', reason:'' });
+  const recordRefund = async () => {
+    if (!selected || busy) return;
+    setBusy(true);
+    try {
+      await adminApi(`/orders/${selected.id}/refunds`, { method:'POST', body: JSON.stringify({
+        amountTnd: Number(refundDraft.amount), method: refundDraft.method,
+        reference: refundDraft.reference, reason: refundDraft.reason,
+      }) });
+      await open(selected); await load(pagination.page);
+      setRefundDraft({ amount:'', method:'BANK_TRANSFER', reference:'', reason:'' });
+      setToast({ message:'Remboursement enregistré.', tone:'success' });
+    } catch(e:any) { setToast({message:e.message,tone:'error'}); } finally { setBusy(false); }
+  };
   const reviewDeposit = async (decision: 'approve' | 'reject') => { if (!selected || busy) return; setBusy(true); try { await adminApi<any>(`/orders/${selected.id}/deposit/review`, { method:'POST', body: JSON.stringify({ decision, note: reviewNote }) }); await open(selected); await load(pagination.page); setReviewNote(''); setToast({ message: decision === 'approve' ? 'Justificatif validé — paiement et commande confirmés.' : 'Justificatif refusé — le client peut le renvoyer.', tone:'success'}); } catch(e:any){setToast({message:e.message,tone:'error'});} finally{setBusy(false);} };
   const updateDelivery=async()=>{if(!selected||busy)return;setBusy(true);try{await adminApi(`/orders/${selected.id}/delivery`,{method:'PUT',body:JSON.stringify(trackingCarrier(deliveryDraft.carrier) ? { status: deliveryDraft.status, carrier: deliveryDraft.carrier, tracking_number: deliveryDraft.tracking_number } : deliveryDraft)});await open(selected);await load(pagination.page);setToast({message:'Livraison et suivi synchronisés.',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
   const issueInvoice=async()=>{if(!selected||busy)return;setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/issue`,{method:'POST'});await open(selected);await load(pagination.page);setToast({message:`Facture ${r.data?.invoiceNumber} émise.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
@@ -680,6 +699,30 @@ const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean; initialStatus?:
           {canPay&&selected.invoice&&<button className="admin-button admin-button--secondary" disabled={busy} onClick={async()=>{setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/resend`,{method:'POST'});setToast({message:`Facture ${r.data?.invoiceNumber} ${r.data?.mail?.delivered?'renvoyée par e-mail':'régénérée'}.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}}}><RefreshCw size={16}/> Régénérer / renvoyer</button>}
         </div>}
       </section>}
+      <section className="admin-list-card" style={{marginBottom:16}}>
+        <h3>Remboursements</h3>
+        <p className="admin-muted">Un remboursement enregistré ici est une <strong>déclaration de l’équipe</strong>, plafonnée à ce qui a réellement été encaissé. Aucun mouvement de passerelle n’est simulé.</p>
+        <div className="admin-order-summary">
+          <article><span>Encaissé</span><strong>{formatMoney(selected.refundBalance?.encashedTnd ?? 0)}</strong><small>Acompte effectivement payé</small></article>
+          <article><span>Déjà remboursé</span><strong>{formatMoney(selected.refundBalance?.refundedTnd ?? 0)}</strong><small>{(selected.refunds||[]).length} opération(s)</small></article>
+          <article><span>Reste remboursable</span><strong>{formatMoney(selected.refundBalance?.refundableTnd ?? 0)}</strong><small>Plafond strict</small></article>
+        </div>
+        {(selected.refunds||[]).length ? <DataTable<any> rows={selected.refunds} columns={[
+          {key:'refund_number',label:'Référence'},
+          {key:'amount_tnd',label:'Montant',render:(row:any)=>formatMoney(row.amount_tnd)},
+          {key:'method',label:'Moyen'},
+          {key:'reference',label:'Réf. opération',render:(row:any)=>row.reference||'—'},
+          {key:'reason',label:'Motif'},
+          {key:'created_at',label:'Enregistré le',render:(row:any)=>formatDate(row.created_at,true)},
+        ]}/> : <p className="admin-block-small">Aucun remboursement enregistré sur cette commande.</p>}
+        {canPay && Number(selected.refundBalance?.refundableTnd||0) > 0 && <div style={{display:'flex',gap:8,alignItems:'flex-end',marginTop:12,flexWrap:'wrap'}}>
+          <Field label="Montant (TND)"><input type="number" min="0.001" step="0.001" value={refundDraft.amount} onChange={(e)=>setRefundDraft({...refundDraft,amount:e.target.value})} style={{width:140}}/></Field>
+          <Field label="Moyen"><Select value={refundDraft.method} onChange={(e)=>setRefundDraft({...refundDraft,method:e.target.value})} options={['BANK_TRANSFER','CARD','POSTE','CASH','WALLET','OTHER'].map(value=>({value,label:value}))}/></Field>
+          <Field label="Référence (virement, reçu…)"><input value={refundDraft.reference} maxLength={120} onChange={(e)=>setRefundDraft({...refundDraft,reference:e.target.value})}/></Field>
+          <Field label="Motif (obligatoire)"><input value={refundDraft.reason} maxLength={500} onChange={(e)=>setRefundDraft({...refundDraft,reason:e.target.value})} style={{minWidth:220}} placeholder="Article non conforme, annulation…"/></Field>
+          <button className="admin-button admin-button--primary" disabled={busy||!refundDraft.reason.trim()||!(Number(refundDraft.amount)>0)} onClick={recordRefund}>Enregistrer le remboursement</button>
+        </div>}
+      </section>
       <section className="admin-list-card office-shipping" style={{marginBottom:16}}><h3>{t('Expédition & suivi', 'الشحن والتتبّع')}</h3><p className="admin-muted">{t('Le suivi du transporteur ne modifie pas la commande et ne crée pas d’étiquette.', 'التتبّع عند الناقل ما يبدّلش الطلب وما يصدرش ملصق.')}</p><div className="admin-order-controls">
         <Field label="Étape"><Select aria-label="Étape de livraison" disabled={!canWrite||busy} value={deliveryDraft.status} onChange={(e)=>setDeliveryDraft({...deliveryDraft,status:e.target.value})} options={options(['PENDING','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED'])}/></Field>
         <Field label="Transporteur"><input list="delivery-carriers" disabled={!canWrite||busy} maxLength={100} value={deliveryDraft.carrier} onChange={(e)=>setDeliveryDraft({...deliveryDraft,carrier:e.target.value,tracking_url:''})} placeholder="Transporteur réel"/><datalist id="delivery-carriers">{TRACKING_CARRIERS.map(carrier => <option key={carrier} value={carrier} />)}</datalist></Field>
@@ -879,7 +922,24 @@ const AssistantSupportPage: React.FC<{ canWrite: boolean; requestedId?: string; 
 const CustomersPage: React.FC<{ canWrite?: boolean }> = ({canWrite=false}) => {
   const [tab,setTab]=useState<'accounts'|'files'>('accounts');
   const [rows,setRows]=useState<any[]>([]); const [page,setPage]=useState({page:1,totalPages:1,total:0}); const [search,setSearch]=useState(''); const [loading,setLoading]=useState(true); const [selected,setSelected]=useState<any>(null);
-  const [accRows,setAccRows]=useState<any[]>([]); const [accPage,setAccPage]=useState({page:1,totalPages:1,total:0}); const [accSearch,setAccSearch]=useState(''); const [accStatus,setAccStatus]=useState(''); const [accLoading,setAccLoading]=useState(true); const [accSelected,setAccSelected]=useState<any>(null); const [statusBusy,setStatusBusy]=useState(false);
+  const [accRows,setAccRows]=useState<any[]>([]); const [accPage,setAccPage]=useState({page:1,totalPages:1,total:0}); const [accSearch,setAccSearch]=useState(''); const [accStatus,setAccStatus]=useState(''); const [accLoading,setAccLoading]=useState(true); const [accSelected,setAccSelected]=useState<any>(null); const [statusBusy,setStatusBusy]=useState(false); const [deviceBusy,setDeviceBusy]=useState('');
+  /**
+   * Fermer UNE session. Le blocage du compte existe déjà et ferme tout ;
+   * ici, un téléphone perdu ne doit pas déconnecter la tablette familiale.
+   * Le serveur ne reçoit qu'un handle (jamais l'identifiant de session).
+   */
+  const revokeDevice=async(handle:string)=>{
+    if(!accSelected||!canWrite||deviceBusy) return;
+    if(!window.confirm('Fermer cette session ? L’appareil devra se reconnecter.')) return;
+    setDeviceBusy(handle);
+    try{
+      const r=await adminApi<any>(`/customer-accounts/${accSelected.id}/devices/${encodeURIComponent(handle)}`,{method:'DELETE'});
+      setAccSelected((prev:any)=>({ ...prev,
+        devices:(prev.devices||[]).filter((device:any)=>device.handle!==handle),
+        counts:{ ...prev.counts, devices: r.data?.remainingSessions ?? Math.max(0,(prev.counts?.devices||1)-1) } }));
+    }catch(e:any){ window.alert(e.message); }
+    finally{ setDeviceBusy(''); }
+  };
   const load=useCallback(async(p=1)=>{setLoading(true);try{const r=await adminApi<any>(`/customers?${queryString({page:p,pageSize:20,search})}`);setRows(r.data);setPage(r.pagination);}finally{setLoading(false);}},[search]);
   const loadAccounts=useCallback(async(p=1)=>{setAccLoading(true);try{const r=await adminApi<any>(`/customer-accounts?${queryString({page:p,pageSize:20,search:accSearch,status:accStatus})}`);setAccRows(r.data);setAccPage(r.pagination);}finally{setAccLoading(false);}},[accSearch,accStatus]);
   useEffect(()=>{const t=setTimeout(()=>load(),250);return()=>clearTimeout(t);},[search]);
@@ -910,7 +970,7 @@ const CustomersPage: React.FC<{ canWrite?: boolean }> = ({canWrite=false}) => {
         <article><span>Photo de profil</span><strong>{accSelected.has_avatar?'Oui':'Non'}</strong><small>Image stockée avec le compte</small></article>
       </div>
       <h3>Favoris du client</h3>{(accSelected.favorites||[]).length?<DataTable<any> rows={accSelected.favorites} columns={[{key:'title',label:'Produit'},{key:'price_tnd',label:'Prix mémorisé',render:(r)=>r.price_tnd==null?'—':formatMoney(r.price_tnd)},{key:'source_url',label:'Origine',render:(r)=>r.source_url?<a href={r.source_url} target="_blank" rel="noreferrer">Lien</a>:'—'},{key:'created_at',label:'Ajouté le',render:(r)=>formatDate(r.created_at,true)}]}/>:<div className="admin-empty"><User size={26}/><strong>Aucun favori</strong><span>Le client n’a rien mis de côté pour le moment.</span></div>}
-      <h3>Appareils connectés</h3>{(accSelected.devices||[]).length?<DataTable<any> rows={accSelected.devices} columns={[{key:'platform',label:'Plateforme'},{key:'client',label:'Client'},{key:'ipMasked',label:'IP'},{key:'lastSeenAt',label:'Dernière activité',render:(r)=>formatDate(r.lastSeenAt,true)},{key:'createdAt',label:'Ouvert le',render:(r)=>formatDate(r.createdAt,true)}]}/>:<div className="admin-empty"><User size={26}/><strong>Aucun appareil</strong><span>Aucune session active : le client devra se reconnecter.</span></div>}
+      <h3>Appareils connectés</h3>{(accSelected.devices||[]).length?<DataTable<any> rows={accSelected.devices} columns={[{key:'platform',label:'Plateforme'},{key:'client',label:'Client'},{key:'ipMasked',label:'IP'},{key:'lastSeenAt',label:'Dernière activité',render:(r)=>formatDate(r.lastSeenAt,true)},{key:'createdAt',label:'Ouvert le',render:(r)=>formatDate(r.createdAt,true)},{key:'revoke',label:'',render:(r)=>canWrite?<button className="admin-button admin-button--ghost" disabled={Boolean(deviceBusy)} onClick={()=>revokeDevice(r.handle)}>{deviceBusy===r.handle?'Fermeture…':'Révoquer'}</button>:'—'}]}/>:<div className="admin-empty"><User size={26}/><strong>Aucun appareil</strong><span>Aucune session active : le client devra se reconnecter.</span></div>}
       <h3>Notifications récentes</h3>{(accSelected.notifications||[]).length?<DataTable<any> rows={accSelected.notifications} columns={[{key:'type',label:'Type'},{key:'title',label:'Titre'},{key:'message',label:'Message'},{key:'read_at',label:'Lu',render:(r)=>r.read_at?'Lu':'Non lu'},{key:'created_at',label:'Date',render:(r)=>formatDate(r.created_at,true)}]}/>:<div className="admin-empty"><User size={26}/><strong>Aucune notification</strong><span>Aucun message n’a été envoyé à ce compte.</span></div>}
       <h3>Préférences de notification</h3>{accSelected.preferences?<DataTable<any> rows={[{label:'Commandes',value:accSelected.preferences.order_updates},{label:'Paiements',value:accSelected.preferences.payment_updates},{label:'Livraisons',value:accSelected.preferences.shipping_updates},{label:'Factures',value:accSelected.preferences.invoice_updates}]} columns={[{key:'label',label:'Type'},{key:'value',label:'État',render:(r)=>Number(r.value)?'Activé':'Désactivé'}]}/>:<div className="admin-empty"><User size={26}/><strong>Préférences par défaut</strong><span>Le client n’a pas modifié ses notifications.</span></div>}
       <h3>Commandes du compte</h3><DataTable<any> rows={accSelected.orders||[]} columns={[{key:'order_number',label:'Commande'},{key:'recipient_name',label:'Destinataire',render:(r)=>r.recipient_name||'—'},{key:'delivery_phone',label:'Téléphone de livraison',render:(r)=>r.delivery_phone||'—'},{key:'governorate',label:'Gouvernorat',render:(r)=>r.governorate||'—'},{key:'status',label:'Statut',render:(r)=><StatusBadge status={r.status}/>},{key:'payment_status',label:'Paiement',render:(r)=><StatusBadge status={r.payment_status}/>},{key:'total_tnd',label:'Total',render:(r)=>formatMoney(r.total_tnd)},{key:'created_at',label:'Date',render:(r)=>formatDate(r.created_at,true)}]}/></>}</Modal></>}
