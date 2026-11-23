@@ -7,6 +7,8 @@ describe('notificationDestination', () => {
     expect(notificationDestination('/compte/suivi')).toEqual({ pathname: '/orders' });
     expect(notificationDestination('/compte/profil')).toEqual({ pathname: '/account/profile' });
     expect(notificationDestination('/compte')).toEqual({ pathname: '/(tabs)/account' });
+    // Le back office écrivait « facture disponible » vers une page sans écran mobile.
+    expect(notificationDestination('/compte/factures')).toEqual({ pathname: '/orders' });
   });
 
   it('ne fabrique jamais de destination pour un chemin inconnu ou externe', () => {

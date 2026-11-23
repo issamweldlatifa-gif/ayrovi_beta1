@@ -4201,7 +4201,7 @@ export class QatafoDatabase {
       if (order.account_id && customerAcceptsNotification(this, order.account_id, 'invoice')) {
         this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
           VALUES (?,?,'INVOICE','Facture disponible',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
-          `La facture ${number} de la commande ${order.order_number} a été émise.`, `/compte/factures`, now);
+          `La facture ${number} de la commande ${order.order_number} a été émise.`, `/compte/commandes/${orderId}`, now);
       }
       return this.get<any>('SELECT * FROM invoices WHERE id=?', id);
     });

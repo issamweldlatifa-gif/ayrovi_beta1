@@ -20,6 +20,7 @@ const ORDER_ID = /^\/compte\/commandes\/([A-Za-z0-9_-]{1,120})\/?$/;
 const PROFILE = /^\/compte\/(profil|securite|sécurité)\/?$/;
 const TRACKING = /^\/compte\/(suivi|commandes)\/?$/;
 const ACCOUNT = /^\/compte\/?$/;
+const INVOICES = /^\/compte\/(factures|paiements)\/?$/;
 const CART = /^\/(panier|cart)\/?$/;
 
 export function notificationDestination(actionUrl: string | null | undefined): NotificationDestination | null {
@@ -31,7 +32,7 @@ export function notificationDestination(actionUrl: string | null | undefined): N
   const order = ORDER_ID.exec(path);
   if (order) return { pathname: '/orders/[id]', params: { id: order[1] } };
   if (PROFILE.test(path)) return { pathname: '/account/profile' };
-  if (TRACKING.test(path)) return { pathname: '/orders' };
+  if (TRACKING.test(path) || INVOICES.test(path)) return { pathname: '/orders' };
   if (ACCOUNT.test(path)) return { pathname: '/(tabs)/account' };
   if (CART.test(path)) return { pathname: '/(tabs)/cart' };
   return null;
