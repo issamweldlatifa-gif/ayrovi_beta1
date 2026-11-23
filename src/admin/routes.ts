@@ -2119,17 +2119,6 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
         : db.rejectOrderDeposit(req.params.id, admin(req).id, note);
       audit(db, req, decision === 'approve' ? 'DEPOSIT_APPROVED' : 'DEPOSIT_REJECTED', 'PAYMENT_PROOFS', order.id,
         { payment_status: before.payment_status }, { payment_status: order.payment_status, note });
-      // Le client doit savoir que son justificatif a été traité — sauf s'il a
-      // coupé les notifications de paiement.
-      if (before.account_id && customerAcceptsNotification(db, before.account_id, 'payment')) {
-        db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
-          VALUES (?,?,'PAYMENT',?,?,?,?)`, `notification_${randomUUID()}`, before.account_id,
-        decision === 'approve' ? 'Acompte confirmé' : 'Acompte non validé',
-        decision === 'approve'
-          ? `L’acompte de la commande ${before.order_number} est confirmé.`
-          : `L’acompte de la commande ${before.order_number} n’a pas été validé${note ? ` : ${note}` : '.'}`,
-        `/compte/commandes/${before.id}`, new Date().toISOString());
-      }
       return res.json({ success: true, data: { paymentStatus: order.payment_status, orderStatus: order.status } });
     } catch (error: any) {
       if (error?.message === 'REJECTION_REASON_REQUIRED') return res.status(400).json({ success: false, error: 'Le motif du refus est obligatoire.' });
@@ -2295,13 +2284,6 @@ router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
       await generateInvoicePdf(db, req.params.id);
       const issued = db.get<any>('SELECT * FROM invoices WHERE id=?', invoice.id);
       audit(db, req, 'INVOICE_ISSUED', 'INVOICES', issued.id, null, { invoice_number: issued.invoice_number });
-      const invoiceOrder = db.get<any>('SELECT id,order_number,account_id FROM orders WHERE id=?', req.params.id);
-      if (invoiceOrder?.account_id && customerAcceptsNotification(db, invoiceOrder.account_id, 'invoice')) {
-        db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
-          VALUES (?,?,'INVOICE','Facture disponible',?,?,?)`, `notification_${randomUUID()}`, invoiceOrder.account_id,
-        `La facture ${issued.invoice_number} de la commande ${invoiceOrder.order_number} est disponible.`,
-        `/compte/commandes/${invoiceOrder.id}`, new Date().toISOString());
-      }
       return res.status(201).json({ success: true, data: { invoiceNumber: issued.invoice_number, issuedAt: issued.issued_at } });
     } catch (error: any) {
       if (error?.message === 'ORDER_NOT_FOUND') return res.status(404).json({ success: false, error: 'Commande introuvable.' });

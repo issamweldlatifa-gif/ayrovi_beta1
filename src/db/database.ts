@@ -5,6 +5,7 @@ import { foldCatalogSearch } from '../../shared/catalogSearch';
 import { RETIRED_PUBLICATION_BLOCKS_SCHEMA } from './retiredPublicationBlocks';
 import { installOwnerReels, installOwnerReelsV2 } from '../magazine/installOwnerReels';
 import { schemaStatements } from './schemaStatements';
+import { customerAcceptsNotification } from '../customer/notificationPreferences';
 import { ensureSocialTotals, socialTotalsDrift } from './socialTotals';
 import { upgradePublicationMediaPresentation } from '../catalogue/upgradePublicationMediaPresentation';
 import { reserveCatalogueSale, catalogId } from '../catalogue/localSale';
@@ -3811,9 +3812,12 @@ export class QatafoDatabase {
       this.run(`INSERT INTO deliveries (id,order_id,governorate,address,phone,latitude,longitude,status,created_at,updated_at)
         VALUES (?,?,?,?,?,?,?,'PENDING',?,?)`, `delivery_${randomUUID()}`, orderId, input.governorate, input.address, normalizedPhone, input.latitude, input.longitude, now, now);
       const methodNotice = input.paymentMethod === 'PENDING_SELECTION' ? 'choisissez votre mode de paiement' : `mode ${String(input.paymentMethod)}`;
-      this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
-        VALUES (?,?,'ORDER','Acompte à régler',?, ?, ?)`, `notification_${randomUUID()}`, accountId,
-        `Commande ${orderNumber} enregistrée : réglez l'acompte de ${depositAmount.toFixed(3)} DT (${methodNotice}) pour la confirmer.${depositDiscount > 0 ? ` Remise carte −${depositDiscount.toFixed(3)} DT appliquée.` : ''}`, `/compte/commandes/${orderId}`, now);
+      // L'interrupteur « Commandes » du client décide de l'écriture de ce message.
+      if (customerAcceptsNotification(this, accountId, 'order')) {
+        this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+          VALUES (?,?,'ORDER','Acompte à régler',?, ?, ?)`, `notification_${randomUUID()}`, accountId,
+          `Commande ${orderNumber} enregistrée : réglez l'acompte de ${depositAmount.toFixed(3)} DT (${methodNotice}) pour la confirmer.${depositDiscount > 0 ? ` Remise carte −${depositDiscount.toFixed(3)} DT appliquée.` : ''}`, `/compte/commandes/${orderId}`, now);
+      }
       this.notifyAdmins('ORDER', 'Nouvelle commande',
         `${orderNumber} — ${totals.total.toFixed(3)} DT, acompte ${depositAmount.toFixed(3)} DT en attente.`,
         `/admin?section=orders&order=${orderId}`);
@@ -4077,9 +4081,11 @@ export class QatafoDatabase {
       this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
         VALUES (?,?,?,'CONFIRMED',?,'STRIPE',?)`, `history_${randomUUID()}`, transaction.order_id, transaction.order_status,
         `Acompte carte ${Number(transaction.amount_tnd).toFixed(3)} DT vérifié par Stripe. Transaction ${transaction.transaction_number}.`, now);
-      if (transaction.account_id) this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
-        VALUES (?,?,'PAYMENT','Paiement carte confirmé',?,?,?)`, `notification_${randomUUID()}`, transaction.account_id,
-      `L’acompte de la commande ${transaction.order_number} est payé. Transaction ${transaction.transaction_number}.`, `/compte/commandes/${transaction.order_id}`, now);
+      if (transaction.account_id && customerAcceptsNotification(this, transaction.account_id, 'payment')) {
+        this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+          VALUES (?,?,'PAYMENT','Paiement carte confirmé',?,?,?)`, `notification_${randomUUID()}`, transaction.account_id,
+          `L’acompte de la commande ${transaction.order_number} est payé. Transaction ${transaction.transaction_number}.`, `/compte/commandes/${transaction.order_id}`, now);
+      }
       return this.get<any>('SELECT * FROM orders WHERE id=?', transaction.order_id);
     });
   }
@@ -4139,9 +4145,11 @@ export class QatafoDatabase {
       this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
         VALUES (?,?,'AWAITING_PAYMENT_VERIFICATION','CONFIRMED',?,?,?)`, `history_${randomUUID()}`, orderId,
         `Acompte ${Number(order.deposit_amount_tnd).toFixed(3)} DT confirmé. Transaction ${transactionNumber}.${note ? ` ${note.slice(0, 200)}` : ''}`, adminId, now);
-      if (order.account_id) this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
-        VALUES (?,?,'PAYMENT','Acompte confirmé',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
-      `Le justificatif de ${order.order_number} est validé. Transaction ${transactionNumber}; la commande est confirmée.`, `/compte/commandes/${orderId}`, now);
+      if (order.account_id && customerAcceptsNotification(this, order.account_id, 'payment')) {
+        this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+          VALUES (?,?,'PAYMENT','Acompte confirmé',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
+          `Le justificatif de ${order.order_number} est validé. Transaction ${transactionNumber}; la commande est confirmée.`, `/compte/commandes/${orderId}`, now);
+      }
       return this.get<any>('SELECT * FROM orders WHERE id=?', orderId);
     });
   }
@@ -4164,9 +4172,11 @@ export class QatafoDatabase {
       this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
         VALUES (? ,?,'AWAITING_PAYMENT_VERIFICATION','AWAITING_DEPOSIT',?,?,?)`, `history_${randomUUID()}`, orderId,
         `Justificatif refusé : ${safeNote.slice(0, 200)}`, adminId, now);
-      if (order.account_id) this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
-        VALUES (?,?,'PAYMENT','Justificatif refusé',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
-      `Le justificatif de ${order.order_number} a été refusé : ${safeNote.slice(0, 160)} Vous pouvez en envoyer un nouveau.`, `/compte/commandes/${orderId}`, now);
+      if (order.account_id && customerAcceptsNotification(this, order.account_id, 'payment')) {
+        this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+          VALUES (?,?,'PAYMENT','Justificatif refusé',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
+          `Le justificatif de ${order.order_number} a été refusé : ${safeNote.slice(0, 160)} Vous pouvez en envoyer un nouveau.`, `/compte/commandes/${orderId}`, now);
+      }
       return this.get<any>('SELECT * FROM orders WHERE id=?', orderId);
     });
   }
@@ -4188,9 +4198,11 @@ export class QatafoDatabase {
         VALUES (?,?,?,?,'ISSUED','',?,?,?)`, id, number, orderId, order.account_id, now, now, now);
       // Legacy columns remain read-compatible, but invoices are authoritative.
       this.run('UPDATE orders SET invoice_number=?,invoice_path=\'\',updated_at=? WHERE id=?', number, now, orderId);
-      if (order.account_id) this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
-        VALUES (?,?,'INVOICE','Facture disponible',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
-      `La facture ${number} de la commande ${order.order_number} a été émise.`, `/compte/factures`, now);
+      if (order.account_id && customerAcceptsNotification(this, order.account_id, 'invoice')) {
+        this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+          VALUES (?,?,'INVOICE','Facture disponible',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
+          `La facture ${number} de la commande ${order.order_number} a été émise.`, `/compte/factures`, now);
+      }
       return this.get<any>('SELECT * FROM invoices WHERE id=?', id);
     });
   }
