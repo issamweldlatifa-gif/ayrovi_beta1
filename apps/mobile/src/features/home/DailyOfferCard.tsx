@@ -7,6 +7,7 @@ import { AppText } from '@/design/ui';
 import { useTheme } from '@/design/theme';
 import { rowDirectionFor } from '@/design/layoutLogic';
 import { DAILY_OFFER, RADIUS } from '@/design/tokens.mobile';
+import { RHYTHM } from '@/design/rhythm';
 import { useI18n } from '@/i18n';
 
 export const ZAYROVI_NEWS_ROUTE = '/zayrovi-news' as Href;
@@ -35,7 +36,9 @@ export function DailyOfferCard({ daily }: { daily: HomeDailyOffer }) {
 }
 
 const styles = StyleSheet.create({
-  wrap: { marginTop: 12, marginBottom: 16, borderRadius: RADIUS.lg, overflow: 'hidden' },
+  // 19/11 : plus de marges écrites à la main — les mêmes valeurs, nommées
+  // par leur rôle (carte liée au Hero, puis respiration avant la section suivante).
+  wrap: { marginTop: RHYTHM.related, marginBottom: RHYTHM.group, borderRadius: RADIUS.lg, overflow: 'hidden' },
   heading: { padding: 12, gap: 6 },
   top: { alignItems: 'flex-start', gap: 8 }, title: { flex: 1 },
   bar: { backgroundColor: DAILY_OFFER.bar, paddingHorizontal: 8 },
