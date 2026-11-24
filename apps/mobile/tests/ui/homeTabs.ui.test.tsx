@@ -36,9 +36,12 @@ describe('HomeTabs', () => {
 
   it('affiche deux onglets texte, sans icône', async () => {
     await renderTabs();
-    const tabs = screen.getAllByRole('tab');
+    const tabs = screen.getAllByRole('link');
     expect(tabs).toHaveLength(2);
     expect(tabs.map(tab => tab.props.accessibilityLabel)).toEqual(['Zayrovi News', 'Social Shopping']);
+    // 19/11 : ce sont deux destinations d'écrans différents, pas des onglets
+    // d'un même écran — un `tablist` sans onglet sélectionné trompait le lecteur d'écran.
+    expect(screen.queryAllByRole('tab')).toHaveLength(0);
     // Texte seul : aucune icône Ionicons rendue dans la rangée.
     expect(screen.UNSAFE_queryAllByType(require('@expo/vector-icons/Ionicons').default)).toHaveLength(0);
   });
@@ -48,7 +51,7 @@ describe('HomeTabs', () => {
     const strip = StyleSheet.flatten(screen.getByTestId('home-tabs').props.style);
     expect(strip.borderTopWidth).toBeUndefined();
     expect(strip.borderBottomWidth).toBe(StyleSheet.hairlineWidth);
-    for (const tab of screen.getAllByRole('tab')) {
+    for (const tab of screen.getAllByRole('link')) {
       expect(StyleSheet.flatten(tab.props.style).minHeight).toBeGreaterThanOrEqual(44);
     }
   });
@@ -58,15 +61,15 @@ describe('HomeTabs', () => {
     const tint = screen.getByTestId('home-tabs-hero-tint', { includeHiddenElements: true });
     expect(tint.props.pointerEvents).toBe('none');
     expect(StyleSheet.flatten(tint.props.children[0].props.style).backgroundColor).toBe('#FFE1B0');
-    fireEvent.press(screen.getByRole('tab', { name: 'Zayrovi News' }));
+    fireEvent.press(screen.getByRole('link', { name: 'Zayrovi News' }));
     expect(router.navigate).toHaveBeenCalledWith('/zayrovi-news');
   });
 
   it('chaque onglet ouvre une route de l’application (pas une URL de site)', async () => {
     await renderTabs();
-    fireEvent.press(screen.getByRole('tab', { name: 'Social Shopping' }));
+    fireEvent.press(screen.getByRole('link', { name: 'Social Shopping' }));
     expect(router.navigate).toHaveBeenNthCalledWith(1, { pathname: '/(tabs)/social', params: { filter: 'all' } });
-    fireEvent.press(screen.getByRole('tab', { name: 'Zayrovi News' }));
+    fireEvent.press(screen.getByRole('link', { name: 'Zayrovi News' }));
     expect(router.navigate).toHaveBeenNthCalledWith(2, '/zayrovi-news');
   });
 });

@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useStories, useStoriesShowcase } from '@/api/hooks';
 import { mediaUrl } from '@/api/client';
 import { MediaSectionMark } from '@/design/MediaSectionMark';
+import { SectionBreak } from '@/design/SectionRule';
 import { AppText } from '@/design/ui';
 import { AppImage } from '@/design/appImage';
 import { FullBleed, useResponsive } from '@/design/layout';
@@ -35,7 +36,10 @@ export const StoriesSection = memo(function StoriesSection() {
   const title = local(settings.title, settings.titleAr).trim();
   const isGenericTitle = /^(?:stories sur zayrovi|stories?|storie\s*[·•]?\s*shop|قصص(?:\s+(?:zayrovi|زايروفي))?)$/iu.test(title);
 
-  return <FullBleed>
+  return <>
+    {/* Le repos vient AVEC la section : si elle disparaît, l'écart disparaît. */}
+    <SectionBreak />
+    <FullBleed>
     <View testID="home-stories" style={styles.section}>
       <View style={[styles.heading, { paddingHorizontal: gutter }]}>
         <MediaSectionMark lead="Storie" suffix="Shop" tone="onMedia" />
@@ -63,7 +67,8 @@ export const StoriesSection = memo(function StoriesSection() {
           </LinearGradient>
         </Pressable>} />
     </View>
-  </FullBleed>;
+  </FullBleed>
+  </>;
 });
 
 const styles = StyleSheet.create({

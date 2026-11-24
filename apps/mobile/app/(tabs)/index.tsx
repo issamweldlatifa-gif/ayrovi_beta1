@@ -8,8 +8,15 @@ import { HighlightsSection } from '@/features/highlights/HighlightsSection';
  *  1. هيدر **ثابت**، شفاف عند الأعلى ويأخذ سطح الثيم بعد التمرير؛ فيه شعار
  *     يرجّع للرئيسية، وحساب وسلّة وقائمة؛
  *  2. **هيرو**: مساحة إشهار (صورة أو فيديو أو كتابة، بحسب ما يبعثو الخادم)؛
- *  3. **ثلاث تبويبات** يفتحو شاشات **جوّا التطبيق**، موش صفحات في المتصفح؛
- *  4. **الفوتر** بخلفية سوداء: الهوية، القنوات الرسمية، ووسائل الخلاص.
+ *  3. **تبويبان** — Zayrovi News وSocial Commerce — يفتحو شاشات **جوّا
+ *     التطبيق**، موش صفحات في المتصفح؛
+ *  4. ثم الأقسام الاختيارية: عرض اليوم، Cover، Stories، Black Friday، Clean
+ *     (Lens)، Reels • Shop، Watshis — كل واحد يختفي وحدو كي ما عندوش محتوى؛
+ *  5. **الفوتر** بخلفية سوداء: الهوية، القنوات الرسمية، ووسائل الخلاص.
+ *
+ * ── المسافات بين الأقسام ──────────────────────────────────────────────────
+ * ما عادش الشاشة تحطّ فواصل بين أقسام ممكن ما تظهرش: (48 dp فراغ × 2) كانوا
+ * يولّيو ثقب أبيض كي قسمين متتاليَين غايبين. كل قسم يحمل الفاصل متاعو.
  *
  * ── شنوّا يسيّر البار السفلي ──────────────────────────────────────────────
  * تمرير هاذي الشاشة يغذّي `design/chrome`: البار ينسحب نزولاً ويرجع صعوداً.
@@ -37,13 +44,14 @@ import { useBlackFriday } from '@/api/blackFriday';
 import { queryKeys, useStories, useStoriesShowcase } from '@/api/hooks';
 import { LensHomeBlock } from '@/features/home/LensHomeBlock';
 import { ReelsShopSection } from '@/features/home/ReelsShopSection';
-import { SectionBreak } from '@/design/SectionRule';
 import { Footer } from '@/features/shell/Footer';
 import { registerScrollToTopHandler } from '@/features/shell/scrollToTop';
 import {
   useHeroCarouselSettings, useHeroSlides,
 } from '@/api/hooks';
 import { luminanceOfHex } from '@/features/home/heroPalette';
+import { homeLoadFailed } from '@/features/home/homeState';
+import { HomeOfflineBlock } from '@/features/home/HomeOfflineBlock';
 
 /**
  * Barre d'état lisible sur le fond de la photo Hero active : le header prend la
@@ -104,6 +112,9 @@ export default function HomeScreen() {
     Promise.allSettled([
       heroSlides.refetch(), heroCarouselSettings.refetch(), stories.refetch(), storiesShowcase.refetch(), blackFriday.refetch(), dailyOffer.refetch(),
       client.invalidateQueries({ queryKey: highlightsKey }), client.invalidateQueries({ queryKey: queryKeys.homeCover }),
+      // Ces deux rubriques ont leur PROPRE requête : sans elles, un
+      // tirer-pour-rafraîchir laissait Clean et Reels sur du contenu périmé.
+      client.invalidateQueries({ queryKey: ['lens-hero'] }), client.invalidateQueries({ queryKey: queryKeys.reels }),
     ]).finally(() => setRefreshing(false));
   }, [heroSlides, heroCarouselSettings, stories, storiesShowcase, blackFriday, dailyOffer, client]);
 
@@ -139,23 +150,21 @@ export default function HomeScreen() {
         <HomeTabs tint={heroTint} />
       </View>
 
+      {/* Hors ligne : seulement si TOUT a échoué (voir homeState.ts). */}
+      {homeLoadFailed([heroSlides, heroCarouselSettings, stories, storiesShowcase, blackFriday, dailyOffer]) ?
+        <HomeOfflineBlock onRetry={reload} /> : null}
+
       {dailyOffer.data?.showHome ? <DailyOfferCard daily={dailyOffer.data} /> : null}
 
       {/* Cover d'accueil — médias CRM plein écran, texte et bouton posés dessus. */}
       <HomeCover />
 
-      <SectionBreak />
-
       <StoriesSection />
-
-      <SectionBreak />
 
       {blackFriday.data ? <BlackFridaySection campaign={blackFriday.data} /> : null}
 
       {/* Lens — même contenu que le site (Admin → LENS) ; le bouton ouvre Lens dans l'app. */}
       <LensHomeBlock />
-
-      <SectionBreak />
 
       {/* Reels • Shop — vignettes verticales ; un toucher ouvre la visionneuse plein écran. */}
       <ReelsShopSection />

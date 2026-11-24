@@ -16,6 +16,7 @@ import { AppImage } from '@/design/appImage';
 const CLEAN_HOME_RATIO = 16 / 9;
 import { AppText, Button } from '@/design/ui';
 import { useTheme } from '@/design/theme';
+import { SectionBreak } from '@/design/SectionRule';
 import { useT } from '@/i18n';
 import { parseLensHome } from './lensHomeContent';
 
@@ -37,6 +38,7 @@ export const LensHomeBlock = memo(function LensHomeBlock() {
 
   return (
     <View style={styles.section} testID="home-lens">
+      <SectionBreak />
       <AppText variant="caption" color={theme.colors.muted}>Clean</AppText>
       <AppText variant="h3">{t('home.clean.title')}</AppText>
       <AppText variant="body" color={theme.colors.secondary}>{t('home.clean.body')}</AppText>

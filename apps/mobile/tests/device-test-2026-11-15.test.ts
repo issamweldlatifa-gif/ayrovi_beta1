@@ -74,7 +74,9 @@ describe('mise en page du 15/11', () => {
   it('plus de ligne de section sur l’accueil ni sous l’en-tête de Publication', () => {
     const home = read('app/(tabs)/index.tsx');
     expect(home).not.toContain('<SectionRule');
-    expect(home).toContain('<SectionBreak');
+    // 19/11 : l'espace vit DANS la section (sinon un séparateur restait seul
+    // quand une rubrique disparaissait) — vérifié dans home-fallback.test.ts.
+    expect(read('src/features/home/StoriesSection.tsx')).toContain('<SectionBreak');
     expect(read('src/design/SectionRule.tsx')).not.toContain('hairlineWidth');
     expect(read('src/features/publications/PublicationHeader.tsx')).not.toContain('borderBottomWidth');
   });

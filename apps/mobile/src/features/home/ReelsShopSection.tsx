@@ -22,6 +22,7 @@ import { useTheme } from '@/design/theme';
 import { MEDIA_RATIO, REEL_TILE } from '@/design/tokens.mobile';
 import { CARD_SYSTEM } from '@/design/cardSystem';
 import { FadeIn } from '@/design/motion';
+import { SectionBreak } from '@/design/SectionRule';
 import { useT, useI18n } from '@/i18n';
 import { MediaSectionMark } from '@/design/MediaSectionMark';
 import { ReelPreview } from '@/features/reels/ReelPreview';
@@ -61,6 +62,7 @@ export const ReelsShopSection = memo(function ReelsShopSection() {
     router.push({ pathname: '/reels-viewer', params: { id: reel.id } });
   return (
     <FadeIn testID="home-reels-shop">
+      <SectionBreak />
       <View ref={section} collapsable={false}>
         <View style={[styles.section, { paddingBottom: theme.space[2] }]}>
           <MediaSectionMark lead="Reels" suffix="Shop" />

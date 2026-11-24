@@ -17,7 +17,10 @@ describe('official showcase settings', () => {
     const home = readFileSync(new URL('../app/(tabs)/index.tsx', import.meta.url), 'utf8');
     expect(home.indexOf('<HomeCover')).toBeLessThan(home.indexOf('<StoriesSection'));
     expect(home.indexOf('<StoriesSection')).toBeLessThan(home.indexOf('<LensHomeBlock'));
-    expect(home).toMatch(/<HomeCover \/>\s*<SectionBreak \/>\s*<StoriesSection \/>\s*<SectionBreak \/>/);
+    // Since 19/11 the section carries its own 48 dp: when Stories is hidden,
+    // no orphan gap is left between the cover and the next section.
     expect(home).not.toMatch(/<SectionRule/);
+    expect(home).not.toMatch(/<SectionBreak/);
+    expect(readFileSync(new URL('../src/features/home/StoriesSection.tsx', import.meta.url), 'utf8')).toContain('<SectionBreak />');
   });
 });

@@ -707,6 +707,9 @@ export const ar = {
   'home.reelsShop.open': 'فتح الريل',
   'home.hero.slideOf': 'الشريحة {current} من {total}',
   'home.hero.swipeHint': 'اسحب لاستعراض الحملات',
+  'home.offline.title': 'ما فماش اتصال',
+  'home.offline.body': 'تعذّر تحميل الصفحة الرئيسية. تثبّت من الاتصال وعاود المحاولة.',
+  'home.offline.retry': 'عاود',
 
   'offline.banner': 'غير متّصل',
   'offline.title': 'لا يوجد اتصال بالإنترنت',

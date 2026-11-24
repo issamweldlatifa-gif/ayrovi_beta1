@@ -5,6 +5,7 @@ import { blackFridayCollections, type BlackFridayCampaign, type BlackFridaySelec
 import { mediaUrl } from '@/api/client';
 import { AppImage } from '@/design/appImage';
 import { FullBleed } from '@/design/layout';
+import { SectionBreak } from '@/design/SectionRule';
 import { BLACK_FRIDAY_EDITORIAL as B, PUBLICATION_THEME as P, RADIUS, veil } from '@/design/tokens.mobile';
 import { useTheme } from '@/design/theme';
 import { AppText } from '@/design/ui';
@@ -28,7 +29,9 @@ export const BlackFridaySection = memo(function BlackFridaySection({ campaign }:
   const selections = blackFridayCollections(campaign);
   if (!selections.length) return null;
   const items: RailItem[] = [...selections.slice(0, BLACK_FRIDAY_RAIL_COLLECTIONS).map(selection => ({ kind: 'collection' as const, selection })), { kind: 'all' }];
-  return <FullBleed>
+  return <>
+    <SectionBreak />
+    <FullBleed>
     <View testID="home-black-friday" style={[styles.section, { backgroundColor: campaign.surfaceColor }]}>
       <View style={[styles.banner, { minHeight: g.bannerHeight, paddingBottom: g.overlap, backgroundColor: campaign.backgroundColor }]} testID="black-friday-banner">
         <AppText testID="black-friday-title" accessibilityRole="header" variant="h2" align="center" color={ink}
@@ -57,7 +60,8 @@ export const BlackFridaySection = memo(function BlackFridaySection({ campaign }:
         <AppText variant="bodyStrong" align="center" color={surfaceInk}>{cta}</AppText>
       </Pressable>
     </View>
-  </FullBleed>;
+  </FullBleed>
+  </>;
 });
 
 function BlackFridayTile({ selection, width, ink }: { selection: BlackFridaySelection; width: number; ink: string }) {

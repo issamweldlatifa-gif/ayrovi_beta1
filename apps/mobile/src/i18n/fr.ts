@@ -708,6 +708,9 @@ export const fr = {
   /* ── Carrousel Hero (piloté Admin) ─────────────────────────────────────── */
   'home.hero.slideOf': 'Carte {current} sur {total}',
   'home.hero.swipeHint': 'Glissez latéralement pour découvrir les campagnes',
+  'home.offline.title': 'Connexion indisponible',
+  'home.offline.body': 'Impossible de charger l’accueil. Vérifiez votre connexion, puis réessayez.',
+  'home.offline.retry': 'Réessayer',
   /* ── Hors-ligne : l’état promis par `states.tsx`, enfin présent ─────────── */
   'offline.banner': 'Hors ligne',
   'offline.title': 'Pas de connexion',

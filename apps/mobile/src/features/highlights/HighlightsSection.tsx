@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 import { useZayroviHighlights } from '@/api/zayroviHighlights';
 import { MediaSectionMark } from '@/design/MediaSectionMark';
+import { SectionBreak } from '@/design/SectionRule';
 import { AppText } from '@/design/ui';
 import { BRAND } from '@/design/tokens.generated';
 import { FullBleed, useResponsive } from '@/design/layout';
@@ -23,7 +24,9 @@ export function HighlightsSection() {
   const { isRTL, opacity, iconSize } = useTheme();
   const { gutter } = useResponsive();
   const reels = watchShopReels(query.data?.reels ?? [], hidden);
-  return <FullBleed>
+  return <>
+    <SectionBreak />
+    <FullBleed>
     <View ref={anchor} collapsable={false} style={styles.anchor} />
     {query.data?.enabled !== false ? <View testID="home-highlights" style={styles.section}>
       <View style={[styles.heading, { flexDirection: rowDirectionFor(isRTL), paddingHorizontal: gutter }]}>
@@ -37,7 +40,8 @@ export function HighlightsSection() {
       {reels.length ? <WatchShopGrid reels={reels} edgeToEdge /> : !query.isPending ?
         <AppText variant="caption" color={BRAND.white} style={{ marginHorizontal: gutter }}>{t(query.isError ? 'highlights.loadError' : 'highlights.empty')}</AppText> : null}
     </View> : null}
-  </FullBleed>;
+  </FullBleed>
+  </>;
 }
 
 const styles = StyleSheet.create({

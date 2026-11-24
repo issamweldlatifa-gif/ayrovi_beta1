@@ -50,13 +50,14 @@ export function HomeTabs({ tint }: { tint?: HeroTint | null }) {
             // En arabe le premier onglet est à DROITE.
             { flexDirection: theme.isRTL ? 'row-reverse' : 'row', paddingHorizontal: gutter },
           ]}
-          accessibilityRole="tablist"
         >
           {TABS.map((tab) => (
             <Pressable
               key={tab.labelKey}
               onPress={() => { router.navigate(tab.href); }}
-              accessibilityRole="tab"
+              // Deux destinations d'ÉCRANS différents : `tab` + `tablist`
+              // annonçaient un jeu d'onglets sans aucun sélectionné.
+              accessibilityRole="link"
               accessibilityLabel={t(tab.labelKey)}
               style={({ pressed }) => [styles.tab, { opacity: pressed ? theme.opacity.subtle : 1 }]}
             >
