@@ -48,7 +48,7 @@ export function FollowStories({ light = false }: { light?: boolean }) {
   const label = t(follow.state === 'following' ? 'storiesGallery.alertsOn' : follow.state === 'error' ? 'publication.followRetry' : 'storiesGallery.follow');
   const ink = light ? C.black : C.white;
   return <View style={styles.followSection} testID="stories-alerts">
-    <AppText accessibilityRole="header" color={ink} style={styles.title}>{t('storiesGallery.latest')}</AppText>
+    <AppText accessibilityRole="header" color={ink} style={styles.title}>{t('storiesGallery.followTitle')}</AppText>
     <AppText color={ink} style={styles.subtitle}>{t('storiesGallery.followHint')}</AppText>
     <Pressable accessibilityRole="button" accessibilityLabel={label} disabled={follow.disabled} onPress={follow.press}
       accessibilityState={{ selected: follow.state === 'following', disabled: follow.disabled }} style={[styles.follow, { flexDirection: rowDirectionFor(isRTL), borderColor: ink }]}>
@@ -72,9 +72,13 @@ export function StoriesGallery({ focus }: { focus?: string }) {
   const [limit, setLimit] = useState(ARCHIVE_BATCH);
   const [showTop, setShowTop] = useState(false);
   const { featured, newest, archive } = useMemo(() => storiesGalleryContent(stories.data ?? [], settings.data?.cardCount ?? 7, focus), [stories.data, settings.data?.cardCount, focus]);
+  // Chaque bloc n'existe que s'il a du contenu : un titre « nouveaux » ou
+  // « archives » sans rien dessous est un mensonge d'interface.
   const rows: Row[] = settings.data?.enabled === false || !featured.length ? [] : [
     ...featured.map(story => ({ kind: 'feature' as const, story })),
-    { kind: 'new' }, { kind: 'follow' }, { kind: 'archive-title' },
+    ...(newest.length ? [{ kind: 'new' as const }] : []),
+    { kind: 'follow' as const },
+    ...(archive.length ? [{ kind: 'archive-title' as const }] : []),
     ...storyArchiveRows(archive.slice(0, limit)).map(row => ({ kind: 'archive' as const, row })),
   ];
   const m = storiesGalleryMeasures(width);
@@ -91,11 +95,21 @@ export function StoriesGallery({ focus }: { focus?: string }) {
           <NavigationIcon name={isRTL ? 'arrow-forward' : 'arrow-back'} color={C.white} size={20} />
         </Pressable>
         <AppText color={C.white} accessibilityRole="header" style={styles.title}>{t('storiesGallery.featured')}</AppText>
-        <AppText color={C.white} style={styles.title}>{t('storiesGallery.intro')}</AppText>
+        {/* Le sous-titre n'est pas un second titre : même taille = deux titres
+            concurrents, exactement ce qui faisait « titre répété ». */}
+        <AppText color={C.white} style={styles.introNote}>{t('storiesGallery.intro')}</AppText>
       </View>}
-      ListEmptyComponent={<AppText color={C.white} style={styles.notice} accessibilityRole={stories.isError ? 'alert' : undefined}>
-        {t(stories.isError ? 'storiesGallery.unavailable' : stories.isPending ? 'storiesGallery.loading' : 'social.empty')}
-      </AppText>}
+      ListEmptyComponent={<View style={styles.empty}>
+        <AppText color={C.white} style={styles.notice} accessibilityRole={stories.isError ? 'alert' : undefined}>
+          {t(stories.isError ? 'storiesGallery.unavailable' : stories.isPending ? 'storiesGallery.loading' : 'social.empty')}
+        </AppText>
+        {/* Une consigne « tirez vers le bas » sans bouton est un piège sur une
+            liste vide : le geste n'y est pas découvrable. */}
+        {stories.isError ? <Pressable accessibilityRole="button" testID="stories-gallery-retry"
+          onPress={() => { void stories.refetch(); void settings.refetch(); }} style={styles.retry}>
+          <AppText color={C.white}>{t('common.retry')}</AppText>
+        </Pressable> : null}
+      </View>}
       ListFooterComponent={rows.length && archive.length > limit ? <Pressable accessibilityRole="button" onPress={() => setLimit(value => value + ARCHIVE_BATCH)} style={styles.more}>
         <AppText color={C.white}>{t('storiesGallery.more')}</AppText>
       </Pressable> : null}
@@ -136,6 +150,9 @@ const styles = StyleSheet.create({
   intro: { paddingHorizontal: G.inset, paddingBottom: 24, paddingTop: 4 },
   back: { width: 44, height: 44, justifyContent: 'center', marginBottom: 8 },
   title: { fontSize: TYPE.title, lineHeight: TYPE.titleLine },
+  introNote: { fontSize: TYPE.subtitle, lineHeight: TYPE.subtitleLine },
+  empty: { paddingHorizontal: G.inset, gap: 8 },
+  retry: { alignSelf: 'flex-start', minHeight: 48, justifyContent: 'center', paddingHorizontal: 20, marginTop: 8, borderWidth: 1, borderColor: C.white, borderRadius: RADIUS.full },
   feature: { paddingHorizontal: G.inset, marginBottom: G.rowGap },
   card: { backgroundColor: veil(0.42), borderRadius: RADIUS.md, overflow: 'hidden', justifyContent: 'flex-end' },
   shade: { paddingHorizontal: 8, paddingTop: 64, paddingBottom: 10, gap: 2 },

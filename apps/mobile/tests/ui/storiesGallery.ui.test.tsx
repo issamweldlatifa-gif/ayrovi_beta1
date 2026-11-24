@@ -15,10 +15,11 @@ jest.mock('@/features/stories/EditorialStoryScreen', () => ({ EditorialStoryScre
 const mockStory = (i: number) => ({ id: `story-${i}`, mediaType: 'IMAGE', mediaUrl: `/media/stories/${i}.jpg`, title: `Story ${i}`, description: 'Description' });
 const mockStories = { data: Array.from({ length: 12 }, (_, i) => mockStory(i + 1)), refetch: jest.fn(), isPending: false, isError: false, isRefetching: false };
 const mockSettings = { data: { cardCount: 1, enabled: true }, refetch: jest.fn(), isRefetching: false };
-jest.mock('@/api/hooks', () => ({ useStories: () => mockStories, useStoriesShowcase: () => mockSettings }));
+let mockStoriesOverride: typeof mockStories | null = null;
+jest.mock('@/api/hooks', () => ({ useStories: () => mockStoriesOverride ?? mockStories, useStoriesShowcase: () => mockSettings }));
 
 const wrap = (child: React.ReactElement) => <PrefsProvider><I18nProvider><ThemeProvider>{child}</ThemeProvider></I18nProvider></PrefsProvider>;
-beforeEach(() => { jest.clearAllMocks(); mockParams.id = undefined; mockParams.focus = undefined; });
+beforeEach(() => { jest.clearAllMocks(); mockParams.id = undefined; mockParams.focus = undefined; mockStoriesOverride = null; });
 
 it('opens a pure-black gallery, leads with the selected story, and opens its editorial viewer from the gallery', async () => {
   mockParams.focus = 'story-3';
@@ -46,4 +47,19 @@ it('loads more archive cards without fetching mock content and offers return-to-
   expect(screen.queryByText('VOIR PLUS DE STORIES')).toBeNull();
   fireEvent.scroll(screen.getByTestId('stories-gallery-list'), { nativeEvent: { contentOffset: { x: 0, y: 700 }, contentSize: { width: 360, height: 2500 }, layoutMeasurement: { width: 360, height: 640 } } });
   expect(screen.getByRole('button', { name: 'Remonter en haut' })).toBeTruthy();
+});
+
+it('annonce l’échec avec un bouton Réessayer (une liste vide n’a pas de geste à découvrir)', async () => {
+  const refetch = jest.fn();
+  mockStoriesOverride = { data: [], refetch, isPending: false, isError: true, isRefetching: false };
+  render(wrap(<StoriesScreen />));
+  expect(screen.getByText('Impossible de charger les stories pour le moment.')).toBeTruthy();
+  fireEvent.press(screen.getByTestId('stories-gallery-retry'));
+  expect(refetch).toHaveBeenCalled();
+});
+
+it('nomme le bloc d’alertes pour ce qu’il est, pas « les dernières stories »', async () => {
+  render(wrap(<StoriesScreen />));
+  expect(screen.getByText('NE MANQUEZ AUCUNE STORY')).toBeTruthy();
+  expect(screen.queryByText('LES DERNIÈRES STORIES')).toBeNull();
 });

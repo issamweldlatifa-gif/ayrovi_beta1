@@ -17,10 +17,29 @@ describe('dedicated Stories gallery', () => {
     expect(m.large + m.small + 8).toBeCloseTo(m.featured);
     expect(storiesGalleryMeasures(1024).page).toBe(600);
   });
-  it('focuses the Home selection without losing the real CMS order, and sorts the newest rail independently', () => {
+  it('focuses the Home selection, then separates recent and archive without repeating a story', () => {
     const one = card(1), two = card(2), three = card(3);
     const list = [one, three, two, one, card(4, { mediaType: 'VIDEO' }), card(5, { mediaUrl: '' })];
-    expect(storiesGalleryContent(list, 2, two.id)).toEqual({ featured: [two, one], newest: [three, two, one], archive: [one, three, two] });
+    const content = storiesGalleryContent(list, 2, two.id);
+    expect(content.featured).toEqual([two, one]);
+    // « NOUVEAU ! » = les récentes NON déjà montrées en vedette.
+    expect(content.newest).toEqual([three]);
+    expect(content.archive).toEqual([three]);
+    // Défaut corrigé la même story n'est plus en vedette ET dans « nouveau ».
+    const featuredIds = new Set(content.featured.map(story => story.id));
+    expect(content.newest.every(story => !featuredIds.has(story.id))).toBe(true);
+    expect(content.archive.every(story => !featuredIds.has(story.id))).toBe(true);
+    // Le rail « récentes » reste un APERÇU de l'archive, pas une troisième liste
+    // parallèle : tout ce qu'il montre existe en dessous.
+    expect(content.newest.every(story => content.archive.some(row => row.id === story.id))).toBe(true);
+  });
+
+  it('ne laisse pas de bloc « nouveau » vide quand il n’y a rien de neuf', () => {
+    const one = card(1), two = card(2);
+    const content = storiesGalleryContent([one, two], 2);
+    expect(content.featured).toEqual([one, two]);
+    expect(content.newest).toEqual([]);
+    expect(content.archive).toEqual([]);
   });
   it('builds the mixed mosaic without duplicating or dropping real stories including partial rows', () => {
     const stories = Array.from({ length: 14 }, (_, i) => card(i + 1));

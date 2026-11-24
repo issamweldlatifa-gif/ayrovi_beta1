@@ -19,3 +19,25 @@ A one-time data update fills the seven untouched official demo Stories with dist
 Story alerts use the existing authenticated notifications inbox. Opening the account or inbox syncs up to the 20 most recent published, unexpired Stories since following Zayrovi Team, once per Story and account. Old alerts keep their read state; unfollow prevents further alerts. No global notification fan-out or push permission is added.
 
 **CRM → Contenu → Social → Publications:** the current seven mobile layouts are available instead of the retired block-model editor. Existing rows and their legacy types are kept; selecting a new layout explicitly converts it. Retirement archives the record instead of deleting it.
+
+## 19/11/2026 — three defects fixed in the gallery
+
+1. **No story is shown twice in the top blocks.** The "Nouveau" rail was sorted
+   from the full list, so a featured story reappeared just below the featured
+   portrait. `storiesGalleryContent` now splits the published list into
+   *featured* (curated order, optional `focus` first), *recent* (the rest,
+   newest first, eight at most) and *archive* (everything that is not featured).
+   A story can still be both in the rail and in the archive — the rail is a
+   preview of the index, which is documented and asserted in
+   `tests/stories-gallery-layout.test.ts`.
+2. **The intro has one title, not two.** The subtitle was rendered with the
+   title style (30/36), directly under "STORIES SÉLECTIONNÉES" — two competing
+   headings, which read as a repeated title. It is now 16/23 (`introNote`).
+3. **The alerts block is named for what it does.** Its heading said "LES
+   DERNIÈRES STORIES" above a follow button; it now says "NE MANQUEZ AUCUNE
+   STORY" (AR: "ما تفوّتش حتى قصة"). The empty rail and archive headings are no
+   longer rendered when there is nothing under them.
+4. **Failure is actionable.** An empty list previously told the user to pull
+   down — a gesture that cannot be discovered on an empty list. The gallery now
+   shows the reason plus a bordered **Réessayer** button that refetches stories
+   and settings (`tests/ui/storiesGallery.ui.test.tsx`).

@@ -20,8 +20,16 @@ export function storiesGalleryContent(rows: StoryItem[], featuredCount: number, 
   });
   const selected = images.find(row => row.id === focus);
   const featured = (selected ? [selected, ...images.filter(row => row !== selected)] : images).slice(0, Math.min(featuredCount, 12));
-  const newest = [...images].sort((a, b) => time(b.publishAt) - time(a.publishAt)).slice(0, 8);
-  return { featured, newest, archive: images };
+  /**
+   * 19/11 — la même story apparaissait jusqu'à TROIS fois : en vedette, dans
+   * « NOUVEAU ! » (le rail était trié sur la liste complète) et de nouveau dans
+   * l'archive. Les trois blocs racontent maintenant trois choses différentes :
+   * la sélection, les récentes NON sélectionnées, puis les archives.
+   */
+  const featuredIds = new Set(featured.map(row => row.id));
+  const rest = images.filter(row => !featuredIds.has(row.id));
+  const newest = [...rest].sort((a, b) => time(b.publishAt) - time(a.publishAt)).slice(0, 8);
+  return { featured, newest, archive: rest };
 }
 
 export function storyArchiveRows(items: StoryItem[]) {
