@@ -60,7 +60,8 @@ export default function ZayroviCartScreen() {
   const sessionId = useSessionId();
   const { account, status } = useSession();
   const queryClient = useQueryClient();
-  const [note, setNote] = useState('');
+  /** Message de la barre d'état : erreur (rouge) ou information (gris). */
+  const [note, setNote] = useState<{ text: string; tone: 'error' | 'info' } | null>(null);
   const [now, setNow] = useState(Date.now());
 
   const cartQuery = useQuery({
@@ -83,7 +84,7 @@ export default function ZayroviCartScreen() {
 
   const onNote = useCallback(
     (error: unknown, fallbackKey: 'cart.failed' | 'cart.updateFailed' | 'cart.removeFailed' | 'cart.linkFailed') => {
-      setNote(isApiError(error) ? userMessage(error)[locale] : t(fallbackKey));
+      setNote({ text: isApiError(error) ? userMessage(error)[locale] : t(fallbackKey), tone: 'error' });
     },
     [locale, t],
   );
@@ -92,7 +93,7 @@ export default function ZayroviCartScreen() {
     mutationFn: (input: { itemId: string; quantity: number }) =>
       updateZayroviCartQuantity({ ...input, sessionId }),
     onSuccess: () => {
-      setNote('');
+      setNote(null);
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
     onError: (error) => onNote(error, 'cart.updateFailed'),
@@ -101,7 +102,9 @@ export default function ZayroviCartScreen() {
   const removeLine = useMutation({
     mutationFn: (itemId: string) => removeZayroviCartItem({ itemId, sessionId }),
     onSuccess: () => {
-      setNote('');
+      // Le retrait est immédiat : un accusé de réception évite le doute
+      // « est-ce que ça a marché ? » devant une ligne qui disparaît.
+      setNote({ text: t('cart.removed'), tone: 'info' });
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
     },
     onError: (error) => onNote(error, 'cart.removeFailed'),
@@ -119,7 +122,7 @@ export default function ZayroviCartScreen() {
   const linkPending = useMutation({
     mutationFn: () => bridgeAyWebsCartToZayrovi({ sessionId }),
     onSuccess: () => {
-      setNote('');
+      setNote(null);
       void queryClient.invalidateQueries({ queryKey: ['cart'] });
       void queryClient.invalidateQueries({ queryKey: ['aywebs'] });
     },
@@ -128,7 +131,24 @@ export default function ZayroviCartScreen() {
 
   const cart = cartQuery.data ?? null;
   const gate = useMemo(() => zayroviCartReadiness(cart), [cart]);
-  const busy = setQuantity.isPending || removeLine.isPending;
+  /**
+   * 19/11 — l'attente était GLOBALE : changer la quantité d'une ligne
+   * désactivait les boutons de toutes les autres pendant l'aller-retour.
+   * Une seule ligne travaille ; les autres restent utilisables.
+   */
+  const busyItemId = setQuantity.isPending
+    ? String(setQuantity.variables?.itemId ?? '')
+    : removeLine.isPending
+      ? String(removeLine.variables ?? '')
+      : '';
+
+  /** Retirer est immédiat et sans retour : on demande avant, pas après. */
+  const confirmRemove = useCallback((itemId: string) => {
+    Alert.alert(t('cart.removeTitle'), t('cart.removeBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('cart.removeConfirm'), style: 'destructive', onPress: () => removeLine.mutate(itemId) },
+    ]);
+  }, [removeLine, t]);
   const quoteDeadline = earliestCartDeadline(cart);
   const clockOffset = useMemo(
     () => (cart?.serverNow ? serverClockOffset(cart.serverNow, cartQuery.dataUpdatedAt || Date.now()) : 0),
@@ -252,8 +272,9 @@ export default function ZayroviCartScreen() {
             ) : null}
 
             {note ? (
-              <AppText variant="caption" color={theme.status.danger.fg} accessibilityRole="alert">
-                {note}
+              <AppText variant="caption" color={note.tone === 'error' ? theme.status.danger.fg : theme.colors.muted}
+                accessibilityRole={note.tone === 'error' ? 'alert' : undefined} accessibilityLiveRegion="polite">
+                {note.text}
               </AppText>
             ) : null}
 
@@ -346,11 +367,11 @@ export default function ZayroviCartScreen() {
               <OfficialCartRow
                 key={model.id}
                 item={model}
-                busy={busy}
+                busy={busyItemId === model.id}
                 maxQuantity={MAX_QUANTITY}
                 onDecrease={() => setQuantity.mutate({ itemId: model.id, quantity: model.quantity - 1 })}
                 onIncrease={() => setQuantity.mutate({ itemId: model.id, quantity: model.quantity + 1 })}
-                onRemove={() => removeLine.mutate(model.id)}
+                onRemove={() => confirmRemove(model.id)}
                 // 16/11 : chaque carte porte son logo Clean (noir, reflet conservé) à la place du `•••`.
                 cleanDisabled={!sonimOwner(sessionId, status, account?.id)}
                 onAskClean={() => {

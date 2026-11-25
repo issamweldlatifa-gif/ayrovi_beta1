@@ -18,12 +18,13 @@
  * qui décide si le bouton de commande apparaît.
  */
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react-native';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { useSonimSession, clearSonimSession } from '../../src/features/sonim/sonimSession';
+import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import { PrefsProvider } from '../../src/state/prefs';
 
@@ -96,6 +97,10 @@ const poorLine = {
   discountTND: null,
   updatedAt: '',
 };
+
+const secondLine = { ...poorLine, id: 'line_b', title: 'Deuxième ligne' };
+const firstLine = { ...poorLine, id: 'line_a', title: 'Première ligne' };
+const twoLineCart = { ...emptyCart, items: [firstLine, secondLine], units: 2 };
 
 const poorCart = {
   ...emptyCart,
@@ -175,6 +180,47 @@ describe('panier — aucun plantage au montage', () => {
     await view.findByText(/connexion|internet|شبكة|اتصال/i).catch(() => null);
     expect(view.toJSON()).not.toBeNull();
     require('./cartFixture').setError(null);
+    view.unmount();
+  });
+});
+
+describe('panier — gestes qui engagent', () => {
+  it('retirer un article demande confirmation avant d’appeler le serveur', async () => {
+    require('./cartFixture').setCart(poorCart);
+    const spy = jest.spyOn(Alert, 'alert');
+    const api = require('../../src/api/cart');
+    const view = mount();
+    await view.findByText('Article sans photo');
+    fireEvent.press(screen.getByTestId('cart-line-line_poor-remove'));
+    // Rien n'est parti : la boîte de confirmation est ouverte.
+    expect(api.removeZayroviCartItem).not.toHaveBeenCalled();
+    expect(spy).toHaveBeenCalled();
+    const buttons = spy.mock.calls[0]![2] as Array<{ text: string; onPress?: () => void }>;
+    const confirm = buttons.find(button => button.text === 'Retirer');
+    expect(confirm).toBeTruthy();
+    confirm!.onPress!();
+    await waitFor(() => expect(api.removeZayroviCartItem).toHaveBeenCalledWith({ itemId: 'line_poor', sessionId: 'sess_test' }));
+    // Un accusé de réception : la ligne disparaît, l'écran dit pourquoi.
+    expect(await screen.findByText('Article retiré du panier.')).toBeTruthy();
+    spy.mockRestore();
+    view.unmount();
+  });
+
+  it('une ligne qui travaille ne bloque pas les autres', async () => {
+    require('./cartFixture').setCart(twoLineCart);
+    const api = require('../../src/api/cart');
+    // La première ligne reste « en vol » : le serveur ne répond pas encore.
+    api.updateZayroviCartQuantity.mockImplementationOnce(() => new Promise(() => undefined));
+    const view = mount();
+    await view.findByText('Première ligne');
+    fireEvent.press(screen.getByTestId('cart-line-line_a-plus'));
+    // Pendant que la ligne A attend, la ligne B reste cliquable : le défaut
+    // corrigé gelait TOUTE la liste, donc ce second appui n'arrivait jamais.
+    fireEvent.press(screen.getByTestId('cart-line-line_b-plus'));
+    await waitFor(() => expect(api.updateZayroviCartQuantity).toHaveBeenCalledTimes(2));
+    expect(api.updateZayroviCartQuantity.mock.calls.map((call: any[]) => call[0].itemId)).toEqual(['line_a', 'line_b']);
+    // Et la ligne en vol reste affichée pendant l'attente (aucun saut de liste).
+    expect(screen.getByTestId('cart-line-line_a-plus')).toBeTruthy();
     view.unmount();
   });
 });
