@@ -91,8 +91,10 @@ describe('عقد النصوص — المفاتيح المتكوّنة في ال�
       for (const match of file.text.matchAll(/<Tabs\.Screen[^>]*\bname="([^"]+)"/g)) tabs.add(match[1]);
     }
     // Même masqué, un onglet garde sa route et son libellé accessible.
+    // `sbase` remplace `gift-cards` dans la barre ; les cartes gardent leur route
+    // (`href: null`) — donc les deux restent déclarés, et les deux ont un libellé.
     expect([...tabs].sort()).toEqual([
-      'account', 'aywebs', 'cart', 'gift-cards', 'index', 'lens', 'social', 'sonim',
+      'account', 'aywebs', 'cart', 'gift-cards', 'index', 'lens', 'sbase', 'social', 'sonim',
     ]);
     /**
      * ── Ce que ce contrat exigeait, et pourquoi il a changé ───────────────

@@ -2,7 +2,7 @@
  * Contrat des six onglets de navigation et de Sonim.
  *
  * Garantit :
- *   1. l'ordre exact `index` · `lens` · `sonim` · `aywebs` · `gift-cards` · `account` (+ `social` et `cart` masqués) ;
+ *   1. l'ordre exact `index` · `lens` · `sonim` · `aywebs` · `sbase` · `account` (+ `social`, `gift-cards` et `cart` masqués) ;
  *   2. la surface opaque bord à bord, sans ombre interne Android ;
  *   3. les icônes vectorielles officielles intégrées (`TabNavIcons`, `react-native-svg`)
  *      de taille égale (`24 × 24` pt) et le médaillon `AYWEBs` `24 × 24` sans fond gris (`background={null}`) ;
@@ -32,7 +32,10 @@ describe('barre du bas opaque et bord à bord (six onglets)', () => {
 
   it('respecte l’ordre exact Accueil · Lens · Clean · AYWEBs · Cartes cadeaux · Profil (+ cart masqué) et masque la barre sur Lens, Sonim et Panier', () => {
     const names = Array.from(layout.matchAll(/<Tabs\.Screen[\s\S]*?\bname="([^"]+)"/g), (m) => m[1]);
-    expect(names).toEqual(['index', 'lens', 'sonim', 'aywebs', 'gift-cards', 'account', 'social', 'cart']);
+    // 19/11 : `S Base` (recherche marchande SandBase) prend la place de
+    // `Cartes cadeaux` dans la barre ; les cartes basculent en bandeau sous le
+    // hero de leur propre écran et gardent une route valide (`href: null`).
+    expect(names).toEqual(['index', 'lens', 'sonim', 'aywebs', 'sbase', 'account', 'social', 'gift-cards', 'cart']);
     expect(layout).toMatch(/name="cart"\s+options=\{\{\s*href:\s*null,\s*tabBarStyle:\s*\{\s*display:\s*'none'\s*\}/);
     expect(layout).toContain('backBehavior="history"');
     const lensBlock = /<Tabs\.Screen\s+name="lens"[\s\S]*?\/>/.exec(layout)?.[0] ?? '';

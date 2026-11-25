@@ -3,7 +3,7 @@
  * pleine largeur posée bord à bord en bas de l'écran (aucune transparence,
  * aucun vide sous la barre) :
  *
- *   `Accueil` · `Lens` · `Clean` · `AYWEBs` · `Gift Cards` · `Profil`
+ *   `Accueil` · `Lens` · `Clean` · `AYWEBs` · `S Base` · `Profil`
  *
  *   • Aucun libellé visuel; les noms accessibles sont conservés.
  *   • Accueil utilise notre symbole (noir/blanc même actif). Les autres icônes appartiennent à la famille unique officielle (`Ionicons`
@@ -29,6 +29,7 @@ import {
   TabLensIcon,
   TabProfileIcon,
   TabSonimIcon,
+  TabSbaseIcon,
   TabSocialIcon,
 } from '@/design/TabNavIcons';
 import { useTheme } from '@/design/theme';
@@ -200,10 +201,18 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="gift-cards" options={{
-        title: t('tabs.gift-cards'), tabBarAccessibilityLabel: t('tabs.gift-cards'), tabBarIconStyle: standardIconSlot,
-        tabBarIcon: ({ color, focused }) => <TabGiftIcon size={NAV_ICON_SIZE} color={color} focused={focused} />,
-      }} />
+      {/* S Base — recherche marchande (SandBase). Remplace l'ancien onglet
+          « Cartes cadeaux » : les cartes restent accessibles via le hub Profil
+          et par lien direct (`href: null` plus bas). */}
+      <Tabs.Screen
+        name="sbase"
+        options={{
+          title: t('tabs.sbase'),
+          tabBarAccessibilityLabel: t('tabs.sbase'),
+          tabBarIconStyle: standardIconSlot,
+          tabBarIcon: ({ color, focused }) => <TabSbaseIcon size={NAV_ICON_SIZE} color={color} focused={focused} />,
+        }}
+      />
       <Tabs.Screen
         name="account"
         listeners={{
@@ -232,6 +241,8 @@ export default function TabsLayout() {
       {/* Social entry hidden only; existing Publication and deep links remain valid. */}
       <Tabs.Screen name="social" options={{ href: null, title: t('tabs.social'), tabBarIcon: ({ color }) => <TabSocialIcon size={NAV_ICON_SIZE} color={color} /> }} />
       {/* Panier conservé comme route valide pour les liens directs, sans barre d'onglets. */}
+      {/* Cartes cadeaux : plus dans la barre — l'écran reste joignable (Profil, liens). */}
+      <Tabs.Screen name="gift-cards" options={{ href: null, tabBarStyle: { display: 'none' }, title: t('tabs.gift-cards'), tabBarIcon: ({ color, focused }) => <TabGiftIcon size={NAV_ICON_SIZE} color={color} focused={focused} /> }} />
       <Tabs.Screen name="cart" options={{ href: null, tabBarStyle: { display: 'none' }, title: t('tabs.cart') }} />
     </Tabs>
   );

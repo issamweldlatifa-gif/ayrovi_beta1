@@ -8,7 +8,7 @@ import { rowDirectionFor } from '@/design/layoutLogic';
 import { useReduceMotion } from '@/design/motion';
 import { useTheme } from '@/design/theme';
 import { RADIUS } from '@/design/tokens.mobile';
-import { AppText, Button, Field } from '@/design/ui';
+import { AppText, Button, Field, Segmented } from '@/design/ui';
 import { PersonalLayout } from '@/features/personal/PersonalLayout';
 import { formatMoney } from '@/format/money';
 import { useT } from '@/i18n';
@@ -16,7 +16,7 @@ import { useSession } from '@/state/session';
 import { giftDeliveryModes, giftDesignsFor, giftFormats, giftPresets, giftPreviewMax, giftPreviewMin, parseGiftPreviewAmount,
   type GiftDeliveryMode, type GiftDesign, type GiftFormat } from '../../../../../shared/giftCardPreview';
 import { GiftArt, GiftWalletArt } from './GiftArt';
-import { giftDetail, giftShop, giftWallet } from './paths';
+import { giftDetail, giftShop } from './paths';
 
 const brandHero = require('../../../assets/images/gift-cards-hero.jpg');
 const modeIcons = { print: 'print-outline', email: 'mail-outline', link: 'link-outline' } as const;
@@ -52,6 +52,9 @@ export function GiftCatalog() {
   const theme = useTheme(); const t = useT(); const reduced = useReduceMotion();
   const scroll = useRef<ScrollView>(null);
   const position = useRef(0);
+  // Onglet local : le hub garde son hero et propose « Boutique | Mes cartes »
+  // juste en dessous (remplace l'ancien onglet de la barre du bas).
+  const [view, setView] = useState<'catalogue' | 'wallet'>('catalogue');
   const [favorites, setFavorites] = useState<string[]>([]);
   const mark = (key: string) => setFavorites(values => values.includes(key) ? values.filter(value => value !== key) : [...values, key]);
   const direction = rowDirectionFor(theme.isRTL);
@@ -64,9 +67,19 @@ export function GiftCatalog() {
           <AppText variant="h2" accessibilityRole="header">{t('gift.shopHeadline')}</AppText>
           <AppText color={theme.colors.muted}>{t('gift.shopBody')}</AppText>
           <Button label={t('gift.discover')} size="lg" block onPress={() => scroll.current?.scrollTo({ y: position.current, animated: !reduced })} />
-          <Button label={t('gift.walletTitle')} tone="quiet" block onPress={() => router.push(giftWallet)} />
+          <Button label={t('gift.walletTitle')} tone="quiet" block onPress={() => setView('wallet')} />
         </View>
       </View>
+      <Segmented
+        label={t('gift.tabsCatalogueLabel')}
+        value={view}
+        onChange={setView}
+        options={[{ value: 'catalogue', label: t('gift.tabs.catalogue') }, { value: 'wallet', label: t('gift.tabs.wallet') }]}
+      />
+      {view === 'wallet' ? <View style={styles.stack}>
+        <AppText variant="h2" accessibilityRole="header">{t('gift.walletTitle')}</AppText>
+        <GiftWalletBody />
+      </View> : <>
       <GiftInfo />
       {giftFormats.slice().reverse().map(format => <View key={format} style={styles.section}
         onLayout={format === 'physical' ? (event: LayoutChangeEvent) => { position.current = event.nativeEvent.layout.y; } : undefined}>
@@ -97,13 +110,19 @@ export function GiftCatalog() {
           })}
         </View>
       </View>)}
+      </>}
     </ScrollView>
   </AppScreen>;
 }
 
-export function GiftWallet() {
+/**
+ * Corps du portefeuille — partagé par l'écran autonome (`/account/gift-cards`)
+ * et par l'onglet « Mes cartes » du hub. Une seule vérité : le portefeuille ne
+ * prétend jamais contenir une carte qui n'existe pas côté serveur.
+ */
+function GiftWalletBody() {
   const theme = useTheme(); const t = useT();
-  return <PersonalLayout title={t('gift.walletTitle')} fallback="/(tabs)/account">
+  return <>
     <Badge />
     <AppText>{t('gift.purchaseOnly')}</AppText>
     <Field label={t('gift.codeEntry')} placeholder={t('gift.codePlaceholder')} editable={false} />
@@ -115,6 +134,13 @@ export function GiftWallet() {
       <Button label={t('gift.buy')} block size="lg" onPress={() => router.navigate(giftShop)} />
     </View>
     <GiftInfo />
+  </>;
+}
+
+export function GiftWallet() {
+  const t = useT();
+  return <PersonalLayout title={t('gift.walletTitle')} fallback="/(tabs)/account">
+    <GiftWalletBody />
   </PersonalLayout>;
 }
 

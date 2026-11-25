@@ -35,6 +35,7 @@ import { startPriceWatchScheduler } from './zayrovix/services/priceWatch';
 import { createAssistantRouter } from './assistant/routes';
 import { createOcerexRouter } from './ocerex/routes';
 import { createAyWebsRouter } from './aywebs/routes';
+import { createSbaseRouter } from './sbase/routes';
 import { ensureAyWebsSchema } from './aywebs/schema';
 import { ERP_MODULES } from './erp-core/modules';
 import { bootstrapErpCore } from './erp-core/bootstrap';
@@ -265,6 +266,12 @@ const lensDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredLensDailyLimit) ? Math.max(5, Math.min(200, configuredLensDailyLimit)) : 40;
 const zayrovixDailyCostLimit = rateLimit('zayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
 const costlyZayrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
+/* S Base (SandBase) — recherche marchande indépendante : plafond par utilisateur/IP,
+ * indépendant du quota Z Lens. Chaque appel coûte de l'argent chez SandBase. */
+const sbaseSearchRateLimit = rateLimit('sbase-search', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, authenticatedRateLimitKey);
+const sbaseSourcesRateLimit = rateLimit('sbase-sources', process.env.NODE_ENV === 'test' ? 1_000 : 240, 10 * 60_000, authenticatedRateLimitKey);
+app.use('/api/sbase/search', sbaseSearchRateLimit);
+app.use('/api/sbase/sources', sbaseSourcesRateLimit);
 // Z Lens mobile : la détection seule (cadre de sélection + Live) a son PROPRE
 // compteur. Live interroge la caméra quand le téléphone se stabilise : sur le
 // compteur général (12 / 10 min, partagé avec les recherches), quelques visées
@@ -586,6 +593,8 @@ app.use('/api/assistant', createAssistantRouter(db, scraper));
 app.use('/api/voice', createAssistantRouter(db, scraper));
 app.use('/api/public', createPublicRouter(db));
 app.use('/api/v1/aywebs', createAyWebsRouter(db, scraper));
+/* S Base — recherche marchande SandBase, volontairement SÉPARÉE d'AYWEBs et de Z Lens. */
+app.use('/api/sbase', createSbaseRouter());
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
 
 /*

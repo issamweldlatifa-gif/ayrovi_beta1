@@ -115,17 +115,20 @@ describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille
     expect(tabBarStyle.elevation).toBe(0);
     expect(tabBarStyle.paddingBottom).toBe(16);
 
+    // 19/11 : « S Base » prend la place de « Cartes cadeaux ». Les cartes
+    // gardent une route valide mais sortent de la barre (`href: null`).
     expect(mockCapturedScreens.map((s) => s.name)).toEqual([
       'index',
       'lens',
       'sonim',
       'aywebs',
-      'gift-cards',
+      'sbase',
       'account',
       'social',
+      'gift-cards',
       'cart',
     ]);
-    for (const tabName of ['index', 'lens', 'sonim', 'aywebs', 'gift-cards', 'account']) {
+    for (const tabName of ['index', 'lens', 'sonim', 'aywebs', 'sbase', 'account']) {
       const entry = mockCapturedScreens.find((s) => s.name === tabName);
       const iconSlot = entry?.options.tabBarIconStyle as { width: number; height: number };
       expect(iconSlot.width).toBe(28);
@@ -135,7 +138,7 @@ describe('TabsLayout — barre inférieure pleine, affleurante en bas et famille
     expect(mockCapturedScreenOptions?.tabBarShowLabel).toBe(false);
     expect(mockCapturedScreens.find(s => s.name === 'social')?.options.href).toBeNull();
     expect(mockCapturedScreens.filter(s => s.options.href !== null)).toHaveLength(6);
-    for (const name of ['index', 'lens', 'sonim', 'aywebs', 'gift-cards', 'account']) {
+    for (const name of ['index', 'lens', 'sonim', 'aywebs', 'sbase', 'account']) {
       expect(mockCapturedScreens.find(s => s.name === name)?.options.tabBarAccessibilityLabel).toBeTruthy();
     }
     const aywebsEntry = mockCapturedScreens.find((s) => s.name === 'aywebs');

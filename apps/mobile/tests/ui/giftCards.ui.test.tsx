@@ -41,8 +41,12 @@ test('shop displays both formats and opens the exact selected design', async () 
   expect(screen.getByRole('header', { name: 'Cartes numériques' })).toBeTruthy();
   fireEvent.press(screen.getByTestId('gift-tile-digital-orbit'));
   expect(router.push).toHaveBeenLastCalledWith('/gift-cards/design?format=digital&design=orbit');
-  fireEvent.press(screen.getByRole('button', { name: 'Mes cartes cadeaux' }));
-  expect(router.push).toHaveBeenLastCalledWith('/account/gift-cards');
+  // 19/11 : le portefeuille n'est plus un onglet de la barre du bas — il vit
+  // dans le bandeau « Boutique | Mes cartes » posé SOUS le hero. Le contrat
+  // inchangé : le portefeuille s'ouvre sur l'état vide, sans carte inventée.
+  fireEvent.press(screen.getByRole('button', { name: 'Mes cartes' }));
+  expect(screen.getByText('Aucune carte dans cet aperçu')).toBeTruthy();
+  expect(router.push).not.toHaveBeenCalledWith('/account/gift-cards');
 });
 
 test('even printable gifts require an email; sign-in only rehearses recipient-matched access', async () => {

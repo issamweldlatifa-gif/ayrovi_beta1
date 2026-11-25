@@ -61,6 +61,21 @@ export function TabGiftIcon({ size, focused }: TabNavIconProps) {
     </Svg>
   </TabGlyphFrame>;
 }
+/**
+ * S Base — loupe + lignes de fiche : « chercher dans un catalogue marchand ».
+ * Monochrome, même grille 24 et même épaisseur que les autres onglets : la
+ * destination se distingue par sa forme, pas par une couleur de plus.
+ */
+export function TabSbaseIcon({ size, focused }: TabNavIconProps) {
+  const { dim, ink } = useIcon(size);
+  return <TabGlyphFrame dim={dim} focused={focused} ink={ink}>
+    <Svg width={dim} height={dim} viewBox="0 0 24 24" fill="none" stroke={ink} strokeWidth={TAB_ICON_STROKE} strokeLinecap="round" strokeLinejoin="round">
+      <Circle cx="10.5" cy="10.5" r="6.5" />
+      <Path d="M15.6 15.6 21 21" />
+      <Path d="M7.8 9.4h5.4M8.8 12h3.4" />
+    </Svg>
+  </TabGlyphFrame>;
+}
 export function TabLensIcon(props: TabNavIconProps) { return <StrokeGlyph {...props} kind="lens" />; }
 export function TabAyWebsIcon(props: TabNavIconProps) { return <StrokeGlyph {...props} kind="search" />; }
 export const TabAywebsPawIcon = TabAyWebsIcon;

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { checkIconContract, inspectIconSource } from '../scripts/check-icon-contract.mjs';
+import EXCEPTIONS from '../client/src/design/editorial/icon-exceptions.json';
 
 const file='client/src/components/RegressionExample.tsx';
 describe('whole-application icon architecture gate',()=>{
@@ -7,8 +8,9 @@ describe('whole-application icon architecture gate',()=>{
     const report=checkIconContract();
     expect(report.files).toBeGreaterThan(150);
     // Canonical icon renderer + audio waveform + the ZAYROVI loading screen (brand mark, not an icon)
-    // + the approved Clean composer mark (CleanVisuals, reviewed in icon-exceptions.json); Lens uses CSS geometry.
-    expect(report.rawSvg).toBe(4);
+    // + the approved Clean composer mark (CleanVisuals) + the dashboard sales-trend visualization
+    // (`OverviewCharts`, reviewed in icon-exceptions.json) ; Lens uses CSS geometry.
+    expect(report.rawSvg).toBe(Object.keys(EXCEPTIONS.rawSvg).length);
     expect(report.issues).toEqual([]);
   });
   it.each([
