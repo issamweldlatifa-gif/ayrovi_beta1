@@ -376,7 +376,12 @@ export function SbaseScreen() {
     {/* ── نتائج الكلمة: مجموعة لكل متجر ────────────────────────────────── */}
     {keywordResult ? <View style={styles.section}>
       <AppText testID="sbase-summary" variant="bodyStrong">
-        {keywordResult.count > 0 ? t('sbase.results', { count: keywordResult.count }) : t('sbase.empty', { query: keywordResult.query })}
+        {/* « Aucun résultat » pour un échec, c'est mentir sur ce qui s'est passé. */}
+        {keywordResult.count > 0
+          ? t('sbase.results', { count: keywordResult.count })
+          : keywordResult.groups.length > 0 && keywordResult.groups.every((group) => group.status === 'error')
+            ? t('sbase.allFailed')
+            : t('sbase.empty', { query: keywordResult.query })}
       </AppText>
       <AppText testID="sbase-response-time" variant="caption" color={theme.colors.muted}>
         {t('sbase.responseTime')} · {formatDuration(keywordResult.totalMs)} · {t('sbase.viaSandbase')}
@@ -397,7 +402,10 @@ export function SbaseScreen() {
         item={item}
         index={index}
         onOpen={() => openResult(group.source.supports.details, group.source.id, item)} />)}
-      {formatCallCost(group.costUsd) ? <AppText variant="caption" color={theme.colors.muted}>
+      {group.status === 'error' ? <AppText variant="caption" color={theme.colors.muted}>
+        {/* SandBase ne facture pas un appel échoué : afficher un prix serait faux. */}
+        {t('sbase.groupUnbilled')}
+      </AppText> : formatCallCost(group.costUsd) ? <AppText variant="caption" color={theme.colors.muted}>
         {t('sbase.cost')} {formatCallCost(group.costUsd)}{group.billedPerResult ? ` ${t('sbase.costPerResult')}` : ''}
       </AppText> : null}
     </View>)}
@@ -405,7 +413,7 @@ export function SbaseScreen() {
     {/* ── نتائج الصورة: فلتر بالمتجر، والنتائج تحمل مصدرها ──────────────── */}
     {imageResult ? <View style={styles.section}>
       <AppText testID="sbase-image-summary" variant="bodyStrong">
-        {imageResult.count > 0 ? t('sbase.results', { count: imageResult.count }) : t('sbase.empty', { query: '' })}
+        {imageResult.count > 0 ? t('sbase.results', { count: imageResult.count }) : t('sbase.photoEmpty')}
       </AppText>
       <AppText testID="sbase-image-spend" variant="caption" color={theme.colors.muted}>
         {t('sbase.responseTime')} · {formatDuration(imageResult.totalMs)} · {imageResult.channel.label}
@@ -425,7 +433,9 @@ export function SbaseScreen() {
         key={`img-${item.url ?? item.id ?? index}`}
         item={item}
         index={index}
-        onOpen={() => openResult(false, 'google-lens', item)} />)}
+        /* Les résultats d'une photo SONT des produits 1688 : la fiche existe
+           (`item/detail`). L'ancien `google-lens` renvoyait un 404 UNKNOWN_SOURCE. */
+        onOpen={() => openResult(true, '1688', item)} />)}
     </View> : null}
 
     {!busy && !failure && !keywordResult && !imageResult && !sourcesQuery.isLoading ? <View

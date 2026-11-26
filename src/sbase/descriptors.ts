@@ -118,13 +118,19 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     defaultMarket: null,
     arrays: [['items']],
     buildBody: (query) => ({
-      keyword: query, language: SBASE_1688_LANGUAGE, page: '1', pageSize: 20, sort: 'default',
+      /*
+       * `page`/`pageSize` أعداد صحيحة — ماشي نصوص.
+       * 26/11/2026: كنّا نبعثو `'1'` فتردّ SandBase
+       * «parameter validation failed: /page: expected integer, but got string»
+       * وكل البحث بالكلمة كان يطيح. الاختبار يحرّس على النوع.
+       */
+      keyword: query, language: SBASE_1688_LANGUAGE, page: 1, pageSize: 20, sort: 'default',
     }),
     image: {
       endpoint: '/v1/api/1688/search/cross-border-by-image',
       costUsd: 0.014286,
       buildBody: (imageUrl) => ({
-        imgUrl: imageUrl, language: SBASE_1688_LANGUAGE, page: '1', pageSize: 20, sort: 'default',
+        imgUrl: imageUrl, language: SBASE_1688_LANGUAGE, page: 1, pageSize: 20, sort: 'default',
       }),
     },
     detail: {

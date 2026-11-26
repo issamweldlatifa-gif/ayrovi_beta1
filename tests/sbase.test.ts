@@ -61,11 +61,20 @@ const RULES = {
   updatedAt: new Date().toISOString(),
 };
 
-function app(options: { pricingRules?: unknown } = {}) {
+function app(options: { pricingRules?: unknown; photoProbe?: typeof fetch } = {}) {
   const instance = express();
   instance.use(express.json());
   instance.use('/api/sbase', createSbaseRouter({
     getPricingRules: () => (options.pricingRules === undefined ? (RULES as never) : (options.pricingRules as never)),
+    /*
+     * La sonde de publication est gratuite et locale : on la remplace pour que
+     * les stubs `fetch` (qui simulent SandBase) ne soient pas consommés deux fois.
+     * Son comportement réel est couvert juste en dessous.
+     */
+    photoProbe: options.photoProbe ?? (async () => new Response(Buffer.alloc(0), {
+      status: 200,
+      headers: { 'content-type': 'image/jpeg' },
+    })),
   }));
   return instance;
 }
@@ -143,7 +152,8 @@ describe('S Base — catalogue', () => {
 
   test('les bodies utilisent les paramètres documentés', () => {
     expect(findSbaseSource('1688')?.buildBody('case', null))
-      .toMatchObject({ keyword: 'case', language: 'en', page: '1' });
+      // `page` عدد صحيح: النصّ كان يطيّح كل نداء (400 parameter validation).
+      .toMatchObject({ keyword: 'case', language: 'en', page: 1, pageSize: 20 });
     expect(findSbaseSource('1688')?.image?.buildBody('https://x/y.jpg'))
       .toMatchObject({ imgUrl: 'https://x/y.jpg', language: 'en' });
     expect(findSbaseSource('inconnu')).toBeNull();
@@ -552,10 +562,67 @@ describe('S Base — routes', () => {
     expect(response.body.code).toBe('SBASE_IMAGE_URL_REJECTED');
   });
 
+  test('image : une faute de NOTRE requête ne s’affiche pas comme « 1688 n’a pas lu la photo »', async () => {
+    // 26/11/2026 — vu en direct : le body partait avec `page: '1'` (texte) et
+    // l’écran annonçait « image rejetée ». La cause était chez nous.
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      error: 'parameter validation failed: /page: expected integer, but got string',
+    }), { status: 400 })));
+    const response = await request(app())
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(502);
+    expect(response.body.code).toBe('SBASE_IMAGE_REQUEST_INVALID');
+  });
+
   test('image : une vraie image illisible reste 400 SBASE_IMAGE_INVALID', () => {
     const failure = sbaseImageFailureFrom(Object.assign(new Error('Format non supporté'), { code: 'INVALID_IMAGE' }));
     expect(failure.code).toBe('SBASE_IMAGE_INVALID');
     expect(failure.status).toBe(400);
+  });
+});
+
+describe('S Base — corps de requête 1688', () => {
+  test('`page` et `pageSize` partent en nombres, jamais en texte', () => {
+    // SandBase : « /page: expected integer, but got string » ⇒ 400 sur CHAQUE
+    // recherche. Le type est le contrat, pas le rendu JSON.
+    for (const source of SBASE_SOURCES) {
+      const keyword = source.buildBody('nike tn', null);
+      expect(typeof keyword.page).toBe('number');
+      expect(typeof keyword.pageSize).toBe('number');
+      if (source.image) {
+        const image = source.image.buildBody('https://example.com/a.jpg');
+        expect(typeof image.page).toBe('number');
+        expect(typeof image.pageSize).toBe('number');
+        expect(typeof image.imgUrl).toBe('string');
+      }
+    }
+  });
+
+  test('le corps réel de la recherche par image est sérialisable avec des entiers', () => {
+    const source = SBASE_SOURCES.find((entry) => entry.id === '1688');
+    expect(source?.image).toBeTruthy();
+    const body = JSON.parse(JSON.stringify(source!.image!.buildBody('https://example.com/a.jpg')));
+    expect(body.page).toBe(1);
+    expect(body.pageSize).toBe(20);
+    expect(body.language).toBe('en');
+  });
+});
+
+describe('S Base — sonde de publication de la photo', () => {
+  test('rétrograde en SBASE_PHOTO_UNREACHABLE sans appeler SandBase quand notre lien ne répond pas', async () => {
+    const sandbase = vi.fn();
+    vi.stubGlobal('fetch', sandbase);
+    const failure = app({
+      photoProbe: async () => new Response('nope', { status: 404, headers: { 'content-type': 'text/plain' } }),
+    });
+    const response = await request(failure)
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(503);
+    expect(response.body.code).toBe('SBASE_PHOTO_UNREACHABLE');
+    // Aucun appel payant : le lien était mort avant d'atteindre 1688.
+    expect(sandbase).not.toHaveBeenCalled();
   });
 });
 

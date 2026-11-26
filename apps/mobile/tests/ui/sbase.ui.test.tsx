@@ -243,6 +243,18 @@ describe('S Base — un champ, deux boutiques en filtre', () => {
     fireEvent.changeText(await screen.findByTestId('sbase-query'), 'traceur');
     fireEvent.press(screen.getByTestId('sbase-submit'));
     expect(await screen.findByTestId('sbase-group-1688-meta')).toHaveTextContent(/SANDBASE_UNAUTHORIZED/);
+    /*
+     * 26/11/2026 — l'écran affichait « Aucun résultat pour « traceur » » AU-DESSUS
+     * du bloc d'erreur. Zéro résultat et échec ne sont pas la même chose : quand
+     * toutes les boutiques échouent, on ne parle pas de résultat.
+     */
+    expect(screen.getByTestId('sbase-summary')).not.toHaveTextContent(/Aucun résultat/i);
+    expect(screen.getByTestId('sbase-summary')).toHaveTextContent(/Aucune boutique n/i);
+    // L'échec est nommé dans l'en-tête du groupe, avec le code réel.
+    expect(screen.getByTestId('sbase-group-1688-meta')).toHaveTextContent(/SANDBASE_UNAUTHORIZED/);
+    // Un échec n'est pas facturé : afficher un coût serait un mensonge.
+    expect(screen.getByText(/échec non facturé/)).toBeTruthy();
+    expect(screen.queryByText(/0,014/)).toBeNull();
     view.unmount();
   });
 
@@ -356,6 +368,37 @@ describe('S Base — photo (1688, sans SerpApi)', () => {
     // Filtre construit sur les fournisseurs présents dans les résultats.
     fireEvent.press(screen.getByTestId('sbase-store-1688'));
     await waitFor(() => expect(screen.queryByText('Traceur GPS 1688')).not.toBeNull());
+
+    /* 26/11/2026 — la ligne d'une photo ouvrait la source « google-lens » (404
+       UNKNOWN_SOURCE). Les résultats d'une photo SONT des produits 1688. */
+    fireEvent.press(screen.getByTestId('sbase-item-0'));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith(expect.objectContaining({
+      pathname: '/sbase/item',
+      params: expect.objectContaining({ source: '1688' }),
+    })));
+    view.unmount();
+  });
+
+  it('zéro produit similaire : on parle de la photo, pas d’une recherche vide', async () => {
+    imageMock.mockResolvedValue({ ...IMAGE_RESULT, items: [], count: 0, stores: [], status: 'empty' });
+    const view = mount();
+    await screen.findByTestId('sbase-source-1688');
+    fireEvent.press(screen.getByTestId('sbase-photo'));
+    const summary = await screen.findByTestId('sbase-image-summary');
+    expect(summary).toHaveTextContent(/cette photo/i);
+    expect(summary).not.toHaveTextContent(/Aucun résultat pour « »/);
+    view.unmount();
+  });
+
+  it('photo non publiée par notre serveur : expliqué, et sans facture', async () => {
+    imageMock.mockRejectedValue(Object.assign(new Error('رابط الصورة ما يتوصلش.'), {
+      code: 'SBASE_PHOTO_UNREACHABLE',
+    }));
+    const view = mount();
+    await screen.findByTestId('sbase-source-1688');
+    fireEvent.press(screen.getByTestId('sbase-photo'));
+    const message = await screen.findByTestId('sbase-error-message');
+    expect(message).toHaveTextContent(/notre serveur|Aucun appel payant/i);
     view.unmount();
   });
 

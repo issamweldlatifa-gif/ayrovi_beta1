@@ -260,3 +260,53 @@ panier ZAYROVI. Techniquement le panier exige un `store` connu, un prix TND
 pas une boutique AYWEBs. Brancher « ajouter au panier » proprement = mint du
 jeton côté S Base + décision sur le `store`. C'est un chantier à part, pas un
 bouton à moitié câblé.
+
+## 12. Incident du 26/11/2026 (04:32) : « ni mot-clé ni photo »
+
+Trois captures, trois défauts réels — dont **aucun** n'était « le fournisseur n'a
+rien à vendre ».
+
+### 12.1 Pourquoi le mot-clé ne renvoyait jamais rien
+
+`descriptors.ts` envoyait `page: '1'` (chaîne) alors que SandBase attend
+`page: integer`. Réponse : HTTP 400 `parameter validation failed: /page: expected
+integer, but got string` — **sur chaque recherche**, et les 0,014 286 $ étaient
+débités pour un refus. Corrigé (`page: 1`, `pageSize: 20`), et deux tests racine
+verrouillent le **type** (pas seulement la valeur) sur le corps réel des deux
+endpoints. Le paramétrage documenté (`keyword`, `language: 'en'`, `sort:
+'default'`, `page`, `pageSize`) est désormais exact.
+
+### 12.2 Pourquoi la photo échouait
+
+`imgUrl` n'accepte pas un fichier : c'est une URL publique — que 1688 doit
+pouvoir lire. La documentation des deux endpoints image dit explicitement
+« image URL **ou référence renvoyée par Image Conversion** ; convertissez les
+images externes avant la recherche », et SandBase **ne publie pas** d'endpoint
+de conversion pour 1688. Donc : une photo hébergée chez nous peut être refusée
+sans que la photo soit en cause.
+
+Ce qui a été corrigé, dans l'ordre de la chaîne :
+
+1. **Erreur nommée.** `parameter validation failed…` ⇒ `SBASE_IMAGE_REQUEST_INVALID`
+   (« faute de notre côté »), plus jamais `SBASE_IMAGE_URL_REJECTED`
+   (« 1688 n'a pas lu la photo »).
+2. **Sonde gratuite avant l'appel payant.** Le serveur relit sa propre URL
+   publiée (`/api/sbase/photo/:token`) : statut 200 **et** `content-type: image/*`.
+   Sinon `SBASE_PHOTO_UNREACHABLE` (503) — message qui dit que c'est **notre
+   publication** qui est en cause, zéro appel SandBase, zéro dollar.
+3. **Résultat de photo → fiche 1688.** La ligne ouvrait `source: 'google-lens'`
+   (404 `UNKNOWN_SOURCE`, vestige de l'ère SerpApi). Maintenant `1688` + `item/detail`.
+4. **Zéro résultat de photo** ⇒ « Aucun produit 1688 ne correspond à cette
+   photo » (avant : `Aucun résultat pour « »`).
+
+Reste ouvert côté fournisseur : si SandBase publie un jour l'Image Conversion,
+la photo devient fiable pour n'importe quelle image ; d'ici là le mot-clé et le
+lien produit sont les chemins garantis.
+
+### 12.3 Un échec n'est pas un « aucun résultat »
+
+Quand **tous** les groupes sont en `status: 'error'`, l'écran écrit « Aucune
+boutique n'a répondu — rien n'a été facturé » et le code réel de chaque groupe.
+Un appel échoué affiche « échec non facturé » au lieu d'un coût (SandBase ne
+facture pas les échecs). Le compteur de résultats ne sert plus de titre à une
+panne.

@@ -64,6 +64,9 @@ describe('S Base — un échec dit ce qui a échoué', () => {
     expect(failureMessageKey('SBASE_IMAGE_PROVIDER_REFUSED')).toBe('sbase.err.imageProviderRefused');
     expect(failureMessageKey('SBASE_IMAGE_INVALID')).toBe('sbase.err.imageInvalid');
     expect(failureMessageKey('SBASE_IMAGE_RATE_LIMITED')).toBe('sbase.err.imageRateLimited');
+    // 26/11/2026 — deux causes qu'on confondait avec « photo invalide ».
+    expect(failureMessageKey('SBASE_IMAGE_REQUEST_INVALID')).toBe('sbase.err.imageRequestInvalid');
+    expect(failureMessageKey('SBASE_PHOTO_UNREACHABLE')).toBe('sbase.err.photoUnreachable');
   });
 
   test('un quota / une panne fournisseur est reconnu comme tel (jamais la faute de la photo)', () => {

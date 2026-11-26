@@ -76,6 +76,21 @@ export function sbaseImageFailureFrom(error: unknown): SbaseImageError {
   const candidate = (error ?? {}) as { code?: unknown; message?: unknown };
   const providerCode = String(candidate.code ?? '').trim() || null;
   const providerMessage = String(candidate.message ?? '').trim();
+  /*
+   * 26/11/2026 — « parameter validation failed: /page: expected integer, but got
+   * string » : c'était NOTRE requête qui était mal formée (page envoyé en
+   * texte), et l'écran l'affichait comme « 1688 n'a pas pu lire l'image ».
+   * Une faute de notre côté doit se nommer comme telle, jamais comme un défaut
+   * de la photo de l'utilisateur.
+   */
+  if (/parameter validation|expected integer|expected (string|number|boolean)|unexpected/i.test(providerMessage)) {
+    return new SbaseImageError(
+      'SBASE_IMAGE_REQUEST_INVALID',
+      'الطلب اللي بعثناه لـ1688 غير صالح — خطأ من عندنا، ماشي في صورتك.',
+      502,
+      providerCode,
+    );
+  }
   // `SANDBASE_HTTP` perd le statut du fournisseur : il reste dans le message.
   if (providerCode === 'SANDBASE_HTTP' && /HTTP 4\d\d/.test(providerMessage)) {
     return new SbaseImageError(
@@ -124,6 +139,54 @@ export interface SbaseImageResult {
   durationMs: number;
   endpoint: string;
   costUsd: number;
+}
+
+/**
+ * فحص قبل الدفع: الصورة اللي نشرناها **مقروءة فعلاً من الأنترنت**؟
+ *
+ * علاش (26/11/2026): في التجربة الحيّة رجّعت 1688 رفضاً للرابط، والتطبيق قال
+ * «جرّب صورة أخرى» — أي لام المستعمل على عطب في نشرنا. هذا الفحص يسبق النداء
+ * المدفوع: إذا رابطنا ما يتقراش، الخطب في **خادمنا**، والكلفة ما تتصرفش
+ * (`$0.014286` كان يتخلّص حتى في النداء الفاشل من جهتنا).
+ *
+ * ما نصلّحوش الرابط: كان الخادم يخدم `SBASE_PUBLIC_URL` غالطة، الفحص يقولها
+ * بالكود بدل ما نخمّنو من رسالة المزوّد.
+ */
+export async function assertSbasePhotoReachable(
+  imageUrl: string,
+  options: { timeoutMs?: number; fetchImpl?: typeof fetch } = {},
+): Promise<void> {
+  const doFetch = options.fetchImpl ?? fetch;
+  const timeoutMs = options.timeoutMs ?? 6_000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await doFetch(imageUrl, {
+      method: 'GET',
+      headers: { Accept: 'image/*', 'User-Agent': 'ZAYROVI-SBase/1.0' },
+      signal: controller.signal,
+    });
+    const type = String(response.headers.get('content-type') || '').toLowerCase();
+    if (!response.ok || !type.startsWith('image/')) {
+      throw new SbaseImageError(
+        'SBASE_PHOTO_UNREACHABLE',
+        `رابط الصورة اللي نشرناه ما يتقراش (HTTP ${response.status}).`,
+        503,
+      );
+    }
+  } catch (error) {
+    if (error instanceof SbaseImageError) throw error;
+    const name = (error as { name?: string })?.name;
+    throw new SbaseImageError(
+      'SBASE_PHOTO_UNREACHABLE',
+      name === 'AbortError' || name === 'TimeoutError'
+        ? 'رابط الصورة اللي نشرناه ما جاوبش في الوقت المسموح.'
+        : 'رابط الصورة اللي نشرناه ما يتوصلش من الأنترنت — اضبط SBASE_PUBLIC_URL.',
+      503,
+    );
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**

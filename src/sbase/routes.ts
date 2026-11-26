@@ -31,7 +31,13 @@ import { extractDetail, type SbaseDetail } from './detail';
 import { normalizeUploadedImage } from '../services/imageValidation';
 import type { PricingRules } from '../services/pricing';
 import { estimateSbasePrice, type SbasePriceEstimate } from './pricing';
-import { SbaseImageError, sbaseImageFailureFrom, sbaseImageReady, searchSbaseByImage } from './image';
+import {
+  SbaseImageError,
+  assertSbasePhotoReachable,
+  sbaseImageFailureFrom,
+  sbaseImageReady,
+  searchSbaseByImage,
+} from './image';
 
 export const SBASE_CACHE_TTL_MS = 10 * 60_000;
 const SBASE_CACHE_MAX = 200;
@@ -211,6 +217,11 @@ export interface SbaseRouterOptions {
    * المصدر فقط وتقول «تقدير غير متوفّر» — ما نخترعوش معدّلاً.
    */
   getPricingRules?: () => PricingRules;
+  /**
+   * فحص منشور الصورة قبل النداء المدفوع (اختبارات فقط؛ في الإنتاج `fetch` العادي).
+   * الفحص والإنتاج يشاركان نفس الدالة: ما فماش منطق مخفي في الاختبار.
+   */
+  photoProbe?: typeof fetch;
 }
 
 export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
@@ -424,6 +435,12 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
       }
       const token = publishSbasePhoto(normalized.buffer, normalized.mimeType);
       const photoUrl = `${origin}/api/sbase/photo/${token}`;
+      /*
+       * فحص مجّاني قبل النداء المدفوع: كنا ندفع `$0.014286` ونتلقى رفضاً
+       * للرابط، والمستعمل يقرا «جرّب صورة أخرى» — والحقيقة أن النشر عندنا
+       * هو اللي ما يتقراش. توّا الخطب يتسمّى قبل ما يتحاسب.
+       */
+      await assertSbasePhotoReachable(photoUrl, { fetchImpl: options.photoProbe });
       const { items, durationMs, endpoint, costUsd } = await searchSbaseByImage(photoUrl);
       const stores = [...new Set(items.map((item) => item.store).filter((store): store is string => Boolean(store)))];
       const missing = new Set<string>();
