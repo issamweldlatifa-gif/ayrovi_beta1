@@ -26,7 +26,7 @@ import { runSandbaseCall, runSandbaseSearch, sandbaseConfigured, SbaseError } fr
 import { extractProducts, missingFacets, type SbaseProduct } from './extract';
 import { extractDetail, type SbaseDetail } from './detail';
 import { normalizeUploadedImage } from '../services/imageValidation';
-import { SbaseImageError, sbaseImageReady, searchSbaseByImage } from './image';
+import { sbaseImageFailureFrom, sbaseImageReady, searchSbaseByImage } from './image';
 
 export const SBASE_CACHE_TTL_MS = 10 * 60_000;
 const SBASE_CACHE_MAX = 200;
@@ -326,7 +326,7 @@ export function createSbaseRouter(): Router {
     try {
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
       const started = Date.now();
-      const { items, durationMs } = await searchSbaseByImage(normalized.buffer);
+      const { items, durationMs, markets, lensSearches } = await searchSbaseByImage(normalized.buffer);
       const stores = [...new Set(items.map((item) => item.store).filter((store): store is string => Boolean(store)))];
       const missing = new Set<string>();
       for (const item of items) for (const field of item.missing) missing.add(field);
@@ -342,18 +342,26 @@ export function createSbaseRouter(): Router {
           missingFields: [...missing].sort(),
           /** الزمن داخل القناة (Lens) مقابل الزمن الكامل للطلب. */
           durationMs,
+          /** الأسواق المسؤولة + عدد نداءات Lens المدفوعة لهذه الصورة. */
+          markets,
+          lensSearches,
           totalMs: Date.now() - started,
           fetchedAt: new Date().toISOString(),
         },
       });
     } catch (error) {
-      if (error instanceof SbaseImageError) {
-        return res.status(error.status).json({ success: false, code: error.code, error: error.message });
-      }
-      const message = error instanceof Error && /image|format|pixel/i.test(error.message)
-        ? 'الصورة ما تتقراش. جرّب صورة JPEG أو PNG أخرى.'
-        : 'تعذّر تحليل الصورة.';
-      return res.status(400).json({ success: false, code: 'SBASE_IMAGE_INVALID', error: message });
+      /*
+       * خطأ المزوّد ما يولّيش «صورة غالطة» (26/11/2026): كل عطب عند Lens
+       * (quota، 429، timeout) كان يخرج `SBASE_IMAGE_INVALID` + 400 — أي نلومو
+       * صورة المستخدم على عطب خارجي. توّا كل حالة بكودها وحالتها.
+       */
+      const failure = sbaseImageFailureFrom(error);
+      return res.status(failure.status).json({
+        success: false,
+        code: failure.code,
+        error: failure.message,
+        ...(failure.providerCode ? { providerCode: failure.providerCode } : {}),
+      });
     }
   });
 

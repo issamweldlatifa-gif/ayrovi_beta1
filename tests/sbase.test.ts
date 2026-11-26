@@ -43,6 +43,7 @@ import { SbaseError, runSandbaseSearch, sandbaseConfigured } from '../src/sbase/
 import { extractProducts, missingFacets, normalizeProduct, parsePriceText } from '../src/sbase/extract';
 import { extractDetail } from '../src/sbase/detail';
 import { clearSbaseCache, createSbaseRouter } from '../src/sbase/routes';
+import { sbaseImageFailureFrom, sbaseImageMarkets } from '../src/sbase/image';
 
 const KEY = 'sb_test_key';
 
@@ -387,6 +388,57 @@ describe('S Base — routes', () => {
   test('image : sans fichier ⇒ 400 explicite', async () => {
     const response = await request(app()).post('/api/sbase/image').expect(400);
     expect(response.body.code).toBe('SBASE_IMAGE_EMPTY');
+  });
+
+  /*
+   * 26/11/2026 — l'écran affichait « La recherche a échoué / SBASE_IMAGE_INVALID »
+   * alors que la photo était bonne : c'était Lens qui refusait (quota). Un échec
+   * du fournisseur ne doit JAMAIS être déguisé en photo invalide.
+   */
+  test('image : un refus du fournisseur (quota) n’est pas une « photo invalide »', async () => {
+    const visual = await import('../src/zayrovix/services/visualSearch');
+    const spy = vi.mocked(visual.serpApiVisualSearch);
+    spy.mockRejectedValueOnce(Object.assign(new Error('SERPAPI_LENS_API_ERROR'), { code: 'SERPAPI_LENS_API_ERROR' }));
+    const response = await request(app())
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(502);
+    expect(response.body.code).toBe('SBASE_IMAGE_PROVIDER_REFUSED');
+    expect(response.body.providerCode).toBe('SERPAPI_LENS_API_ERROR');
+  });
+
+  test('image : quota (429) et timeout gardent chacun leur code et leur statut', async () => {
+    const visual = await import('../src/zayrovix/services/visualSearch');
+    const spy = vi.mocked(visual.serpApiVisualSearch);
+    spy.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'SERPAPI_LENS_HTTP_429' }));
+    const limited = await request(app())
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(429);
+    expect(limited.body.code).toBe('SBASE_IMAGE_RATE_LIMITED');
+
+    spy.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'SERPAPI_TIMEOUT' }));
+    const slow = await request(app())
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(504);
+    expect(slow.body.code).toBe('SBASE_IMAGE_TIMEOUT');
+  });
+
+  test('image : un marché Lens par défaut (1 appel payant, pas 9)', () => {
+    expect(sbaseImageMarkets()).toEqual(['fr']);
+    process.env.SBASE_IMAGE_MARKETS = 'fr, uk, fr';
+    try {
+      expect(sbaseImageMarkets()).toEqual(['fr', 'uk']);
+    } finally {
+      delete process.env.SBASE_IMAGE_MARKETS;
+    }
+  });
+
+  test('image : une vraie image illisible reste 400 SBASE_IMAGE_INVALID', () => {
+    const failure = sbaseImageFailureFrom(Object.assign(new Error('Format non supporté'), { code: 'INVALID_IMAGE' }));
+    expect(failure.code).toBe('SBASE_IMAGE_INVALID');
+    expect(failure.status).toBe(400);
   });
 });
 

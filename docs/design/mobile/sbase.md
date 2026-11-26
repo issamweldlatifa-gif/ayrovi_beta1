@@ -131,3 +131,42 @@ l'écran affiche « (par résultat) » à côté du coût.
 Elles restent **une tape** dans le filtre — rien n'est caché, et le coût ne part
 jamais sans un choix explicite. Changer les défauts = `defaultEnabled` dans
 `src/sbase/descriptors.ts` (une ligne par boutique).
+
+## 9. Canal image — pourquoi SerpApi, et pourquoi l'erreur était mensongère
+
+**Question posée le 26/11/2026 :** « la recherche par image de S Base passe par
+l'API SerpApi ? » → **Oui, et c'est assumé, mais c'était mal dit.**
+
+- SandBase ne publie **aucun** endpoint image→produits pour ses 7 sources. Le seul
+  endpoint image (1688) est du B2B chinois.
+- Le canal image de S Base **réutilise le service visuel existant**
+  (`zayrovix/services/visualSearch`, Google Lens via SerpApi) **importé tel quel** :
+  aucune route Z Lens touchée, aucun quota Z Lens modifié.
+- Conséquence : une photo = **1 upload + N recherches Lens** (une par marché).
+
+### Ce qui était cassé (et ce qui est corrigé)
+
+| Symptôme vu à l'écran | Cause réelle | Correction |
+|---|---|---|
+| `SBASE_IMAGE_INVALID` + « تعذّر تحليل الصورة » sur une photo valide | http 400 codé en dur pour **tout** échec, y compris un refus de Lens (quota, 429, timeout) | un code + un statut par cause (tableau ci-dessous) |
+| Phrase **arabe** dans un écran **français** | le serveur renvoyait sa langue, l'écran l'affichait telle quelle | l'écran traduit **par code** (`sbase.err.*`), le code reste affiché pour le diagnostic |
+| « ça marchait puis ça s'est arrêté » | chaque photo consommait **9 recherches Lens** (les 9 marchés par défaut de Z Lens) → quota SerpApi épuisé | S Base demande **1 marché** (`fr` par défaut, `SBASE_IMAGE_MARKETS=fr,uk` pour élargir) ; le nombre d'appels facturés est affiché |
+
+### Codes du canal image
+
+| Code | HTTP | Sens |
+|---|---|---|
+| `SBASE_IMAGE_EMPTY` | 400 | aucune photo envoyée |
+| `SBASE_IMAGE_INVALID` | 400 | l'image ne se décode pas (JPEG/PNG/WebP seulement) |
+| `SBASE_IMAGE_TOO_LARGE` | 413 | > 8 Mo |
+| `SBASE_IMAGE_TIMEOUT` | 504 | Lens a dépassé le budget |
+| `SBASE_IMAGE_RATE_LIMITED` | 429 | 429 du fournisseur |
+| `SBASE_IMAGE_PROVIDER_AUTH` | 503 | clé refusée (401/403) |
+| `SBASE_IMAGE_PROVIDER_REFUSED` | 502 | Lens refuse (quota/clé) — **jamais** présenté comme une photo invalide |
+| `SBASE_IMAGE_PROVIDER_DOWN` | 502 | 5xx, JSON illisible, indisponible |
+| `SBASE_IMAGE_NOT_CONFIGURED` | 503 | `SERPAPI_KEY` absent |
+| `SBASE_IMAGE_UNKNOWN` | 502 | cause inconnue, dite comme telle |
+
+Chaque échec de fournisseur renvoie `providerCode` (`SERPAPI_…`) : on diagnostique
+depuis l'app, sans journal serveur. Dans tous ces cas la barre de recherche par
+mot-clé reste utilisable, et l'écran le dit.

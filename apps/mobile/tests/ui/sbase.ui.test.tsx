@@ -310,6 +310,30 @@ describe('S Base — photo', () => {
     view.unmount();
   });
 
+  /*
+   * 26/11/2026 — l'écran français affichait « La recherche a échoué » suivi
+   * d'une phrase ARABE du serveur, et un refus de Google Lens se présentait
+   * comme une photo invalide. Le code doit maintenant choisir la phrase.
+   */
+  it('un refus du fournisseur d’images s’explique en français, pas en « photo invalide »', async () => {
+    imageMock.mockRejectedValue(Object.assign(new Error('تعذّر تحليل الصورة.'), {
+      code: 'SBASE_IMAGE_PROVIDER_REFUSED',
+    }));
+    const view = mount();
+    await screen.findByTestId('sbase-source-aliexpress');
+    fireEvent.press(screen.getByTestId('sbase-photo'));
+
+    const message = await screen.findByTestId('sbase-error-message');
+    // La phrase française du code, pas le texte arabe renvoyé par le serveur.
+    expect(message).toHaveTextContent(/quota ou clé/i);
+    expect(message).not.toHaveTextContent(/تعذّر/);
+    // Le code reste visible pour le diagnostic.
+    expect(screen.getByTestId('sbase-error')).toHaveTextContent(/SBASE_IMAGE_PROVIDER_REFUSED/);
+    // La recherche par mot-clé reste annoncée comme disponible.
+    expect(screen.getByTestId('sbase-error')).not.toHaveTextContent(/SBASE_IMAGE_INVALID/);
+    view.unmount();
+  });
+
   it('sans clé SandBase, la page l’annonce au lieu d’inventer des résultats', async () => {
     sourcesMock.mockResolvedValue({ ...SOURCES, configured: false });
     const view = mount();

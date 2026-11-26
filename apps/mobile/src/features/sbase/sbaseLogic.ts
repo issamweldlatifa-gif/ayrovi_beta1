@@ -43,6 +43,49 @@ export function missingLabelKey(field: string): string | null {
   return MISSING_LABEL_KEYS[field] ?? null;
 }
 
+/**
+ * أكواد الفشل → نصّ **بلغة الواجهة**.
+ *
+ * علاش (26/11/2026): الخادم يبعث رسالة بلغة واحدة (عربية)، والواجهة الفرنسية
+ * كانت تعرضها كما هي ⇒ «La recherche a échoué» وتحتها جملة عربية. صورة واحدة
+ * ما تتقراش كانت تخرج بنفس النصّ حتى وقت ما العطب يكون عند Google Lens.
+ * توّا النصّ يتعوّض بالكود، والكود هو اللي يختار اللغة.
+ */
+export const FAILURE_MESSAGE_KEYS: Record<string, string> = {
+  // ── قناة الصورة (Lens) ──────────────────────────────────────────────
+  SBASE_IMAGE_EMPTY: 'sbase.err.imageEmpty',
+  SBASE_IMAGE_INVALID: 'sbase.err.imageInvalid',
+  SBASE_IMAGE_TOO_LARGE: 'sbase.err.imageTooLarge',
+  SBASE_IMAGE_TIMEOUT: 'sbase.err.imageTimeout',
+  SBASE_IMAGE_RATE_LIMITED: 'sbase.err.imageRateLimited',
+  SBASE_IMAGE_PROVIDER_AUTH: 'sbase.err.imageProviderAuth',
+  SBASE_IMAGE_PROVIDER_REFUSED: 'sbase.err.imageProviderRefused',
+  SBASE_IMAGE_PROVIDER_DOWN: 'sbase.err.imageProviderDown',
+  SBASE_IMAGE_PROVIDER_UNKNOWN: 'sbase.err.imageUnknown',
+  SBASE_IMAGE_UNKNOWN: 'sbase.err.imageUnknown',
+  SBASE_IMAGE_NOT_CONFIGURED: 'sbase.err.imageNotConfigured',
+  // ── قناة الكلمة (SandBase) ──────────────────────────────────────────
+  SANDBASE_NOT_CONFIGURED: 'sbase.err.notConfigured',
+  SANDBASE_UNAUTHORIZED: 'sbase.err.unauthorized',
+  SANDBASE_BALANCE: 'sbase.err.balance',
+  SANDBASE_RATE_LIMIT: 'sbase.err.rateLimit',
+  SANDBASE_TIMEOUT: 'sbase.err.timeout',
+  SANDBASE_NETWORK: 'sbase.err.network',
+  SANDBASE_MALFORMED: 'sbase.err.malformed',
+};
+
+export function failureMessageKey(code: string | null | undefined): string | null {
+  const key = String(code ?? '').trim().toUpperCase();
+  if (!key) return null;
+  return FAILURE_MESSAGE_KEYS[key] ?? null;
+}
+
+/** هل العطب عند مزوّد الصورة (موش في صورة المستخدم)؟ يتبدّل النصّ وتبقى الكلمة متاحة. */
+export function isImageProviderFailure(code: string | null | undefined): boolean {
+  const key = String(code ?? '').trim().toUpperCase();
+  return /^SBASE_IMAGE_(RATE_LIMITED|PROVIDER_AUTH|PROVIDER_REFUSED|PROVIDER_DOWN|TIMEOUT|UNKNOWN|NOT_CONFIGURED)$/.test(key);
+}
+
 /** «812 ms» / «1,4 s» — بلا تقريب مخادع للثواني الصغيرة. */
 export function formatDuration(ms: number | null | undefined, locale: string = 'fr'): string {
   if (ms === null || ms === undefined || !Number.isFinite(ms) || ms < 0) return '—';

@@ -10,7 +10,9 @@ import {
   CAPABILITY_ORDER,
   formatCallCost,
   formatDuration,
+  failureMessageKey,
   formatItemPrice,
+  isImageProviderFailure,
   missingLabelKey,
   supportedCapabilities,
 } from '../src/features/sbase/sbaseLogic';
@@ -54,4 +56,24 @@ describe('S Base — formats honnêtes', () => {
     expect(missingLabelKey('couleur')).toBeNull();
   });
 
+});
+
+describe('S Base — un échec dit ce qui a échoué', () => {
+  test('un refus du fournisseur d’images a sa phrase, pas « photo invalide »', () => {
+    expect(failureMessageKey('SBASE_IMAGE_PROVIDER_REFUSED')).toBe('sbase.err.imageProviderRefused');
+    expect(failureMessageKey('SBASE_IMAGE_INVALID')).toBe('sbase.err.imageInvalid');
+    expect(failureMessageKey('SBASE_IMAGE_RATE_LIMITED')).toBe('sbase.err.imageRateLimited');
+  });
+
+  test('un quota / une panne fournisseur est reconnu comme tel (jamais la faute de la photo)', () => {
+    expect(isImageProviderFailure('SBASE_IMAGE_PROVIDER_REFUSED')).toBe(true);
+    expect(isImageProviderFailure('SBASE_IMAGE_RATE_LIMITED')).toBe(true);
+    expect(isImageProviderFailure('SBASE_IMAGE_INVALID')).toBe(false);
+  });
+
+  test('codes SandBase connus traduits, code inconnu laissé au serveur', () => {
+    expect(failureMessageKey('SANDBASE_NOT_CONFIGURED')).toBe('sbase.err.notConfigured');
+    expect(failureMessageKey(' sb_base_whatever ')).toBeNull();
+    expect(failureMessageKey(null)).toBeNull();
+  });
 });

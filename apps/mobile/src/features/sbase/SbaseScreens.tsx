@@ -42,6 +42,7 @@ import {
   formatCallCost,
   formatDuration,
   formatItemPrice,
+  failureMessageKey,
   missingLabelKey,
   supportedCapabilities,
 } from './sbaseLogic';
@@ -71,10 +72,14 @@ function Chip({
 
 function ErrorCard({ code, message, onRetry }: { code: string; message: string; onRetry?: () => void }) {
   const theme = useTheme(); const t = useT();
+  // Le serveur répond dans SA langue ; l'écran parle celle de l'utilisateur.
+  // Le code choisit la phrase (sinon on retombe sur le texte du serveur).
+  const key = failureMessageKey(code);
+  const text = key ? t(key as TranslationKey) : message;
   return <View testID="sbase-error" style={[styles.card, { borderColor: theme.colors.lineControl, backgroundColor: theme.colors.surface }]}>
     <AppText variant="bodyStrong" accessibilityRole="alert" color={theme.status.danger.fg}>{t('sbase.errorTitle')}</AppText>
-    <AppText variant="bodySmall">{message}</AppText>
-    <AppText variant="caption" color={theme.colors.muted}>{code}</AppText>
+    <AppText testID="sbase-error-message" variant="bodySmall">{text}</AppText>
+    <AppText variant="caption" color={theme.colors.muted}>{t('sbase.err.code')} · {code}</AppText>
     {onRetry ? <Button label={t('common.retry')} tone="quiet" onPress={onRetry} /> : null}
   </View>;
 }
@@ -367,8 +372,10 @@ export function SbaseScreen() {
       <AppText testID="sbase-image-summary" variant="bodyStrong">
         {imageResult.count > 0 ? t('sbase.results', { count: imageResult.count }) : t('sbase.empty', { query: '' })}
       </AppText>
-      <AppText variant="caption" color={theme.colors.muted}>
+      <AppText testID="sbase-image-spend" variant="caption" color={theme.colors.muted}>
         {t('sbase.responseTime')} · {formatDuration(imageResult.totalMs)} · {imageResult.channel.label}
+        {imageResult.markets?.length ? ` · ${t('sbase.markets')} ${imageResult.markets.join(', ').toUpperCase()}` : ''}
+        {imageResult.lensSearches ? ` · ${imageResult.lensSearches} ${t('sbase.lensSearches')}` : ''}
       </AppText>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Chip testID="sbase-store-all" label={t('sbase.allStores')} active={storeFilter === null} onPress={() => setStoreFilter(null)} />

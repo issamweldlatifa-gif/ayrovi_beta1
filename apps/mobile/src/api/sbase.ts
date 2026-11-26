@@ -147,6 +147,9 @@ export interface SbaseImagePayload {
   stores: string[];
   missingFields: string[];
   durationMs: number;
+  /** الأسواق اللي سألناها في Lens (كل سوق = نداء مدفوع). */
+  markets?: string[];
+  lensSearches?: number;
   totalMs: number;
   fetchedAt: string;
 }
