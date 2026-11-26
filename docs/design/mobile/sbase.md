@@ -66,8 +66,8 @@ portent leur magasin, le filtre de l'écran se construit sur les magasins reçus
 
 | Magasin | Actor | Entrée | Coût publié |
 |---|---|---|---|
-| `1688` | `topapi/image-search-1688-api` (Server actor) | `{imageBase64, maxResults:20, excludeAds:true}` — POST unique | 0,20 $/1000 résultats ⇒ **≈ 0,004 $/photo**, gratuit si 0 |
-| `aliexpress` | `piotrv1001/aliexpress-image-search-scraper` (run actor, 320+ utilisateurs) | `imagesBase64:[…]` accepte **base64 directement**, `maxResultsPerImage:20`, `shipTo:US`, `currency:USD` | **0,02 $/photo** (1 page jusqu'à 60 résultats) ; **image en échec ou sans résultats = gratuite** |
+| `1688` | `topapi/image-search-1688-api` (Server actor) | `{imageBase64, maxResults:10, excludeAds:true}` — POST unique | 0,20 $/1000 résultats ⇒ **≈ 0,002 $/photo (10 résultats)**, gratuit si 0 |
+| `aliexpress` | `piotrv1001/aliexpress-image-search-scraper` (run actor, 320+ utilisateurs) | `imagesBase64:[…]` accepte **base64 directement**, `maxResultsPerImage:10`, `shipTo:US`, `currency:USD` | **0,02 $/photo** (1 page jusqu'à 60 résultats) ; **image en échec ou sans résultats = gratuite** |
 
 Pages de sortie documentées de l'actor AliExpress : `productId, title, url,
 image, price, currency, rating, sold, soldText, isBestMatch…` — MOQ/vendeur non
@@ -104,7 +104,7 @@ des magasins cochés : il ne peut pas promettre plus que la plus pauvre.
 
 - **Coûts publiés par le fournisseur** (affichés tels quels) :
   recherche ≈ **0,0848 $** (0,005 $/run + 20 lignes × 3,99 $/1000) ·
-  fiche ≈ **0,00899 $** · photo : **0,004 $** (1688) + **0,02 $** (AliExpress)
+  fiche ≈ **0,00899 $** · photo : **0,002 $** (1688, 10 résultats) + **0,02 $** (AliExpress)
   ⇒ jusqu'à **0,024 $/photo**, chaque magasin gratuit si 0 résultat/failure.
 - Quotas serveur dédiés : 30 recherches /10 min, **12 photos /10 min** — séparés
   du quota Z Lens.
@@ -204,6 +204,7 @@ un appel échoué affiche « échec non facturé » au lieu d'un coût.
 | `APIFY_1688_ACTOR` | optionnel (défaut `sourabhbgp~1688-scraper`) |
 | `APIFY_IMAGE_ACTOR` | optionnel (défaut `topapi~image-search-1688-api`) |
 | `APIFY_ALIEXPRESS_IMAGE_ACTOR` | optionnel (défaut `piotrv1001~aliexpress-image-search-scraper`) |
+| `APIFY_IMAGE_MAX_RESULTS` | optionnel (défaut `10`, borné 1–50) — limite des résultats de recherche d'image (1688 + AliExpress) |
 | `SBASE_PROVIDER` | **obsolète depuis le commit 3** — le fournisseur est unique ; la variable n'a plus aucun effet |
 
 Vérification en direct (clé du propriétaire, sur le serveur publié) :

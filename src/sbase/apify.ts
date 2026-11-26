@@ -66,12 +66,21 @@ export const APIFY_PRICE_PER_1000_RESULTS_USD = 3.99;
 export const APIFY_RUN_FEE_USD = 0.005;
 export const APIFY_IMAGE_PRICE_PER_1000_USD = 0.2;
 export const APIFY_SEARCH_MAX_ITEMS = 20;
-export const APIFY_IMAGE_MAX_RESULTS = 20;
+/**
+ * حدّ نتائج بحث الصورة — قرار المالك (26/11): 5–10 نتائج تكفي، الافتراضي 10.
+ * قابل للضبط بمتغيّر البيئة APIFY_IMAGE_MAX_RESULTS (مقطوع على 1–50 حسب موثّق
+ * الـactor). يُطبَّق على مخزني الصورة معاً: 1688 (maxResults) وAliExpress
+ * (maxResultsPerImage) — وأثمنة العرض مشتقّة منه لا مكتوبة يدوياً.
+ */
+const APIFY_IMAGE_MAX_RESULTS_ENV = Number(process.env.APIFY_IMAGE_MAX_RESULTS);
+export const APIFY_IMAGE_MAX_RESULTS = Number.isFinite(APIFY_IMAGE_MAX_RESULTS_ENV) && APIFY_IMAGE_MAX_RESULTS_ENV >= 1
+  ? Math.min(50, Math.floor(APIFY_IMAGE_MAX_RESULTS_ENV))
+  : 10;
 /** بحث = run + 20 صفّ: 0.005 + 20×3.99/1000 = 0.0848$ — الثمن المنشور على صفحة الـactor. */
 export const APIFY_SEARCH_COST_USD = Number((APIFY_RUN_FEE_USD + (APIFY_SEARCH_MAX_ITEMS / 1000) * APIFY_PRICE_PER_1000_RESULTS_USD).toFixed(5));
 /** تفاصيل = run + صفّ واحد: 0.005 + 3.99/1000 = 0.00899$. */
 export const APIFY_DETAIL_COST_USD = Number((APIFY_RUN_FEE_USD + (1 / 1000) * APIFY_PRICE_PER_1000_RESULTS_USD).toFixed(5));
-/** صورة = 20 نتيجة × 0.20/1000 = 0.004$ — والمصدر ما يفوتر إذا 0 نتيجة. */
+/** صورة = 10 نتائج × 0.20/1000 = 0.002$ — والمصدر ما يفوتر إذا 0 نتيجة. */
 export const APIFY_IMAGE_COST_USD = Number(((APIFY_IMAGE_MAX_RESULTS / 1000) * APIFY_IMAGE_PRICE_PER_1000_USD).toFixed(5));
 
 /** حدّ جسم الطلب الموثّق لactor الصورة (بايت) — نتجاوزه بضغط محلي مجّاني. */
@@ -670,8 +679,8 @@ export async function searchApifyAliexpressByImage(
     apifyAliexpressImageActor(),
     {
       imagesBase64: [payload],
-      // 20 نتيجة داخل الصفّ الأول الموثّق — ثمن واحد 0.02$ بلا صفحات إضافية.
-      maxResultsPerImage: APIFY_SEARCH_MAX_ITEMS,
+      // نفس حدّ نتائج الصورة (افتراضي 10) داخل الصفّ الأول الموثّق — ثمن واحد 0.02$ بلا صفحات إضافية.
+      maxResultsPerImage: APIFY_IMAGE_MAX_RESULTS,
       shipTo: APIFY_ALIEXPRESS_SHIP_TO,
       currency: APIFY_ALIEXPRESS_CURRENCY,
     },

@@ -37,6 +37,7 @@ export default defineConfig({
       APIFY_1688_ACTOR: '',
       APIFY_IMAGE_ACTOR: '',
       APIFY_ALIEXPRESS_IMAGE_ACTOR: '',
+      APIFY_IMAGE_MAX_RESULTS: '',
       GROQ_API_KEY: '',
       GEMINI_API_KEY: '',
       GOOGLE_API_KEY: '',
