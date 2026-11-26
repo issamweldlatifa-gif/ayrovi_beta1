@@ -166,7 +166,8 @@ function taobaoVariants(item: Record<string, unknown>): SbaseVariantGroup[] {
   const groups: SbaseVariantGroup[] = [];
   for (const group of props) {
     if (!isRecord(group)) continue;
-    const name = text(group.name);
+    // Taobao: `name` · 1688: `prop_name`. La même forme, un seul normaliseur.
+    const name = text(group.name) ?? text(group.prop_name);
     const values = Array.isArray(group.values) ? group.values : [];
     if (!name || values.length === 0) continue;
     groups.push({
@@ -221,6 +222,35 @@ function genericVariants(data: unknown): SbaseVariantGroup[] {
   return [];
 }
 
+/**
+ * 1688 (`/v1/api/1688/item/detail`) له شكل خاص: `attribute.propsList`،
+ * `sku_props[].prop_name`، `price_info.price` نصّي بالـCNY، `item.companyName`،
+ * و`is_sold_out`. نحوّلو هنا بدل ما نخلّطو القواعد العامة.
+ */
+function import1688(root: Record<string, unknown>): {
+  specs: SbaseSpec[]; variants: SbaseVariantGroup[]; seller: string | null;
+  amount: number | null; currency: string | null; availability: string | null; url: string | null;
+} {
+  const item = isRecord(root.item) ? root.item : {};
+  const props = isRecord(root.attribute) ? root.attribute.propsList : undefined;
+  const specs = specsFromPairs(props);
+  // Selon l'endpoint, `sku_props` est à la racine ou dans `item`.
+  const variants = taobaoVariants(item.sku_props === undefined ? { ...item, sku_props: root.sku_props } : item);
+  const seller = text(item.companyName)
+    ?? text(at(root, 'shop_info.shop_name'))
+    ?? text(at(root, 'shop_info.company_name'));
+  const rawPrice = text(at(root, 'price_info.price'))
+    ?? text(at(root, 'price_info.price_min'))
+    ?? text(at(root, 'price_info.sale_price'));
+  const amount = rawPrice ? Number(rawPrice.replace(/[^\d.]/g, '')) || null : null;
+  const currency = text(at(root, 'currency'))?.toUpperCase() ?? (amount !== null ? 'CNY' : null);
+  const soldOut = root.is_sold_out;
+  const availability = soldOut === true ? 'out_of_stock' : soldOut === false ? 'in_stock' : null;
+  const itemId = text(at(root, 'item_id')) ?? text(item.item_id);
+  const url = itemId ? `https://detail.1688.com/offer/${itemId}.html` : null;
+  return { specs, variants, seller, amount, currency, availability, url };
+}
+
 /** يحوّل ردّ أي متجر إلى تفاصيل موحّدة، بلا اختراع. */
 export function extractDetail(data: unknown): SbaseDetail {
   const root = isRecord(data) ? data : {};
@@ -228,6 +258,10 @@ export function extractDetail(data: unknown): SbaseDetail {
     : isRecord(root.product_results) ? root.product_results
       : isRecord(root.item) ? root.item
         : root;
+
+  const native1688 = root.attribute !== undefined || root.sku_props !== undefined || root.price_info !== undefined
+    ? import1688(root)
+    : null;
 
   const title = text(at(product, 'title'))
     ?? deepFindString(root, FIRST_KEYS.title);
@@ -252,13 +286,18 @@ export function extractDetail(data: unknown): SbaseDetail {
   } else if (typeof priceNode === 'number') {
     amount = priceNode;
   }
+  if (amount === null && native1688?.amount != null) {
+    amount = native1688.amount;
+    currency = currency ?? native1688.currency;
+  }
 
   const specs = specsFromPairs(product.specifications)
     .concat(specsFromPairs(root.product_details))
     .concat(specsFromPairs(root.item_specifications))
-    .concat(specsFromPairs(isRecord(root.item) ? root.item.properties : undefined));
+    .concat(specsFromPairs(isRecord(root.item) ? root.item.properties : undefined))
+    .concat(native1688 ? native1688.specs : []);
 
-  const variants = taobaoVariants(isRecord(root.item) ? root.item : {})
+  const variants = (native1688 ? native1688.variants : taobaoVariants(isRecord(root.item) ? root.item : {}))
     .concat(genericVariants(root))
     .concat(genericVariants(product));
 
@@ -280,9 +319,13 @@ export function extractDetail(data: unknown): SbaseDetail {
     rating: typeof at(product, 'rating') === 'number' ? at(product, 'rating') as number
       : typeof at(root, 'product_star_rating') === 'string' ? Number(at(root, 'product_star_rating')) || null : null,
     reviews: typeof at(product, 'reviews') === 'number' ? at(product, 'reviews') as number : null,
-    availability: text(at(product, 'availability')) ?? text(at(product, 'quantity.availability_signal')) ?? text(at(root, 'stock')),
-    seller: text(at(root, 'seller.shop_title')) ?? text(at(root, 'seller_results.name')) ?? text(at(product, 'seller')),
-    url: normalizeUrl(text(at(product, 'product_link')) ?? text(at(product, 'detail_url')) ?? ''),
+    availability: text(at(product, 'availability')) ?? text(at(product, 'quantity.availability_signal'))
+      ?? text(at(root, 'stock')) ?? native1688?.availability ?? null,
+    seller: text(at(root, 'seller.shop_title')) ?? text(at(root, 'seller_results.name'))
+      ?? text(at(product, 'seller')) ?? native1688?.seller ?? null,
+    // 1688 renvoie `detail_url` = image CDN : on garde l'URL canonique du produit.
+    url: normalizeUrl(text(at(product, 'product_link')) ?? text(at(root, 'product_url')) ?? '')
+      ?? native1688?.url ?? null,
     images,
     description: description ? description.slice(0, 2000) : null,
     specs,

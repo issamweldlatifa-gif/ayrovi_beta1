@@ -18,20 +18,6 @@ import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 
-vi.mock('../src/zayrovix/services/visualSearch', () => ({
-  serpApiVisualReady: () => true,
-  serpApiVisualSearch: vi.fn(async () => [
-    {
-      id: 'lens_1', title: 'Mini traceur GPS', source: 'Amazon', sourceUrl: 'https://www.amazon.fr/dp/T1',
-      image: 'https://img/1.jpg', price: 29.99, currency: 'EUR',
-    },
-    {
-      id: 'lens_2', title: 'Traceur GPS voiture', source: 'SHEIN', sourceUrl: 'https://shein.com/p/2',
-      image: 'https://img/2.jpg', price: null, currency: null,
-    },
-  ]),
-}));
-
 import {
   SBASE_IMAGE_SOURCE,
   SBASE_SOURCES,
@@ -39,11 +25,11 @@ import {
   findSbaseSource,
   validateSbaseQuery,
 } from '../src/sbase/descriptors';
-import { SbaseError, runSandbaseSearch, sandbaseConfigured } from '../src/sbase/client';
+import { SbaseError, runSandbaseCall, runSandbaseSearch, sandbaseConfigured } from '../src/sbase/client';
 import { extractProducts, missingFacets, normalizeProduct, parsePriceText } from '../src/sbase/extract';
 import { extractDetail } from '../src/sbase/detail';
 import { clearSbaseCache, createSbaseRouter } from '../src/sbase/routes';
-import { sbaseImageFailureFrom, sbaseImageMarkets } from '../src/sbase/image';
+import { sbaseImageFailureFrom } from '../src/sbase/image';
 
 const KEY = 'sb_test_key';
 
@@ -73,10 +59,13 @@ function stubSources(handlers: Record<string, () => Response>) {
   }));
 }
 
-const amazonOk = () => new Response(JSON.stringify(envelope({
-  products: [{
-    asin: 'B01', product_title: 'Casque A', product_price: '99,00 €', currency: 'EUR',
-    product_url: 'https://a/1', product_photo: 'https://a/1.jpg',
+/** Réponse 1688 telle que documentée (cross-border : titres traduits + MOQ). */
+const devOk = () => new Response(JSON.stringify(envelope({
+  items: [{
+    item_id: 990347938140, title: 'Coque téléphone', price: '2.10', currency: 'CNY',
+    img: 'https://cbu01.alicdn.com/a.jpg',
+    product_url: 'https://detail.1688.com/offer/990347938140.html', moq: '1',
+    shop_info: { company_name: 'Shenzhen X' },
   }],
 })), { status: 200 });
 
@@ -92,42 +81,55 @@ afterEach(() => {
 });
 
 describe('S Base — catalogue', () => {
-  test('les 7 boutiques sont des endpoints SandBase réels, en mots-clés seulement', () => {
-    expect(SBASE_SOURCES.length).toBe(8);
-    const ids = new Set<string>();
+  /*
+   * Décision du 26/11/2026 : deux boutiques seulement (1688 + Alibaba.com), et
+   * la recherche par image vient de 1688 elle-même — plus de SerpApi du tout.
+   */
+  test('deux boutiques seulement : 1688 et Alibaba.com', () => {
+    expect(SBASE_SOURCES.map((source) => source.id)).toEqual(['1688', 'alibaba']);
     for (const source of SBASE_SOURCES) {
-      expect(ids.has(source.id)).toBe(false);
-      ids.add(source.id);
       expect(source.endpoint.startsWith('/v1/api/')).toBe(true);
       expect(source.supports.keyword).toBe(true);
-      expect(source.supports.image).toBe(false);
-      expect(source.supports.url).toBe(false);
       expect(source.supports.barcode).toBe(false);
-      expect(source.supports.variants).toBe(false);
-      expect(source.supports.details).toBe(false);
     }
+    expect(findSbaseSource('amazon')).toBeNull();
+    expect(findSbaseSource('google-lens')).toBeNull();
   });
 
-  test('la sélection par défaut est bornée aux boutiques grand public (coût maîtrisé)', () => {
-    const defaults = SBASE_SOURCES.filter((source) => source.defaultEnabled).map((source) => source.id);
-    expect(defaults).toEqual(['aliexpress', 'amazon', 'ebay', 'google-shopping']);
-    // Les sources « sourcing » existent mais ne partent pas sans choix explicite.
-    expect(SBASE_SOURCES.filter((source) => !source.defaultEnabled).map((source) => source.id))
-      .toEqual(['bing-shopping', 'taobao', 'alibaba', '1688']);
+  test('les capacités suivent la documentation, pas le désir', () => {
+    const dev = findSbaseSource('1688')!;
+    const ali = findSbaseSource('alibaba')!;
+    // 1688 : image, détails, module par URL, MOQ — tout est documenté.
+    expect(dev.supports).toMatchObject({ image: true, details: true, url: true, variants: true });
+    expect(dev.image?.endpoint).toBe('/v1/api/1688/search/cross-border-by-image');
+    expect(dev.detail?.endpoint).toBe('/v1/api/1688/item/detail');
+    expect(dev.detail?.byUrl?.endpoint).toBe('/v1/api/1688/item/detail-by-url');
+    // Alibaba.com : mots-clés uniquement — aucun endpoint image ni détail publié.
+    expect(ali.supports).toMatchObject({ image: false, details: false, url: false, variants: false });
+    expect(ali.image).toBeUndefined();
+    expect(ali.detail).toBeUndefined();
   });
 
-  test('la recherche par image est un canal séparé, déclaré avec ses vraies capacités', () => {
-    expect(SBASE_IMAGE_SOURCE.id).toBe('google-lens');
+  test('les deux boutiques partent par défaut, et la facture est dite', () => {
+    expect(SBASE_SOURCES.filter((source) => source.defaultEnabled).map((source) => source.id))
+      .toEqual(['1688', 'alibaba']);
+    expect(findSbaseSource('alibaba')).toMatchObject({ billedPerResult: true, costUsd: 0.00231 });
+    expect(findSbaseSource('1688')).toMatchObject({ billedPerResult: false, costUsd: 0.014286 });
+  });
+
+  test('la recherche par image est celle de 1688, pas un service tiers', () => {
+    expect(SBASE_IMAGE_SOURCE.id).toBe('1688');
+    expect(SBASE_IMAGE_SOURCE.endpoint).toBe('/v1/api/1688/search/cross-border-by-image');
     expect(SBASE_IMAGE_SOURCE.supports.image).toBe(true);
-    expect(SBASE_IMAGE_SOURCE.supports.barcode).toBe(false);
-    expect(SBASE_IMAGE_SOURCE.storeFromResults).toBe(true);
+    expect(SBASE_IMAGE_SOURCE.storeFromResults).toBe(false);
   });
 
   test('les bodies utilisent les paramètres documentés', () => {
-    expect(findSbaseSource('aliexpress')?.buildBody('case', null)).toMatchObject({ q: 'case' });
-    expect(findSbaseSource('amazon')?.buildBody('case', 'DE')).toMatchObject({ keyword: 'case', country: 'DE' });
-    expect(findSbaseSource('ebay')?.buildBody('case', null)).toMatchObject({ _nkw: 'case' });
-    expect(findSbaseSource('google-shopping')?.buildBody('case', 'it')).toMatchObject({ q: 'case', gl: 'it' });
+    expect(findSbaseSource('1688')?.buildBody('case', null))
+      .toMatchObject({ keyword: 'case', language: 'en', page: '1' });
+    expect(findSbaseSource('1688')?.image?.buildBody('https://x/y.jpg'))
+      .toMatchObject({ imgUrl: 'https://x/y.jpg', language: 'en' });
+    expect(findSbaseSource('alibaba')?.buildBody('case', null)).toMatchObject({ query: 'case', limit: 20 });
     expect(findSbaseSource('inconnu')).toBeNull();
   });
 
@@ -162,6 +164,22 @@ describe('S Base — extraction des produits', () => {
       ] } } },
     });
     expect(items[0]).toMatchObject({ id: '1001', title: 'Coque iPhone', amount: 12.5, currency: 'TND' });
+  });
+
+  test('1688 cross-border : titre traduit, prix CNY, MOQ conservé', () => {
+    const items = extractProducts({
+      items: [{
+        item_id: 990347938140, title: 'Phone case', title_origin: '手机壳',
+        price: '2.10', currency: 'CNY', img: 'https://cbu01.alicdn.com/a.jpg',
+        product_url: 'https://detail.1688.com/offer/990347938140.html', moq: '1',
+        shop_info: { company_name: 'Shenzhen X' },
+      }],
+    }, { arrays: [['items']], storeFallback: '1688' });
+    expect(items[0]).toMatchObject({
+      id: '990347938140', title: 'Phone case', amount: 2.1, currency: 'CNY',
+      moq: '1', store: '1688', seller: 'Shenzhen X', image: 'https://cbu01.alicdn.com/a.jpg',
+    });
+    expect(items[0].url).toBe('https://detail.1688.com/offer/990347938140.html');
   });
 
   test('prix : formats FR/US/TN lus, jamais devinés', () => {
@@ -213,8 +231,9 @@ describe('S Base — extraction des détails', () => {
 describe('S Base — client SandBase', () => {
   test('enveloppe synchrone : durée mesurée', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(envelope({ products: [] })), { status: 200 })));
-    const result = await runSandbaseSearch(findSbaseSource('amazon')!, 'casque', 'FR');
+    const result = await runSandbaseSearch(findSbaseSource('1688')!, 'casque', null);
     expect(result.data).toEqual({ products: [] });
+    expect(result.async).toBe(false);
     expect(result.polls).toBe(0);
     expect(result.durationMs).toBeGreaterThanOrEqual(0);
   });
@@ -226,7 +245,8 @@ describe('S Base — client SandBase', () => {
       if (init?.method === 'POST') return new Response(JSON.stringify({ status: 'queued', id: 'run_42' }), { status: 200 });
       return new Response(JSON.stringify(envelope({ shopping_results: [] })), { status: 200 });
     }));
-    const result = await runSandbaseSearch(findSbaseSource('ebay')!, 'iphone', null, { pollIntervalMs: 1 });
+    // 1688 est synchrone selon la doc : on force l'hint async pour couvrir le polling.
+    const result = await runSandbaseCall('/v1/api/1688/search/cross-border', { keyword: 'iphone' }, { pollIntervalMs: 1, asyncHint: true });
     expect(result.runId).toBe('run_42');
     expect(result.polls).toBe(1);
     expect(calls[1]).toContain('GET https://api.sandbase.ai/v1/run/run_42');
@@ -234,7 +254,7 @@ describe('S Base — client SandBase', () => {
 
   test('une clé refusée devient une erreur explicite, pas une liste vide', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'bad key' }), { status: 401 })));
-    await expect(runSandbaseSearch(findSbaseSource('amazon')!, 'x', null)).rejects.toMatchObject({ code: 'SANDBASE_UNAUTHORIZED' });
+    await expect(runSandbaseSearch(findSbaseSource('1688')!, 'x', null)).rejects.toMatchObject({ code: 'SANDBASE_UNAUTHORIZED' });
   });
 
   test('sans clé, le client refuse AVANT tout appel réseau', async () => {
@@ -242,7 +262,7 @@ describe('S Base — client SandBase', () => {
     expect(sandbaseConfigured()).toBe(false);
     const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
-    await expect(runSandbaseSearch(findSbaseSource('amazon')!, 'x', null)).rejects.toBeInstanceOf(SbaseError);
+    await expect(runSandbaseSearch(findSbaseSource('1688')!, 'x', null)).rejects.toBeInstanceOf(SbaseError);
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
@@ -251,8 +271,10 @@ describe('S Base — routes', () => {
   test('sources : capacités réelles, sélection par défaut et canal image', async () => {
     const response = await request(app()).get('/api/sbase/sources').expect(200);
     expect(response.body.data.configured).toBe(true);
-    expect(response.body.data.sources).toHaveLength(8);
-    expect(response.body.data.image).toMatchObject({ id: 'google-lens', supports: { image: true } });
+    expect(response.body.data.sources).toHaveLength(2);
+    expect(response.body.data.sources.map((source: { id: string }) => source.id)).toEqual(['1688', 'alibaba']);
+    // La photo part chez 1688 : le canal image n'est plus un service tiers.
+    expect(response.body.data.image).toMatchObject({ id: '1688', supports: { image: true } });
   });
 
   test('sans clé : 503, aucun appel réseau', async () => {
@@ -264,125 +286,160 @@ describe('S Base — routes', () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  test('requête trop courte : 400 ; liste vide : 400', async () => {
+  test('requête trop courte : 400 ; liste vide ⇒ sélection par défaut', async () => {
     const short = await request(app()).post('/api/sbase/search').send({ q: 'a' }).expect(400);
     expect(short.body.code).toBe('INVALID_QUERY');
     const none = await request(app()).post('/api/sbase/search').send({ q: 'casque', sources: [] }).expect(200);
     // Liste vide explicitement demandée ⇒ on retombe sur la sélection par défaut.
-    expect(none.body.data.groups.length).toBe(4);
+    expect(none.body.data.groups.length).toBe(2);
   });
 
   test('chaque boutique interrogée rend SON groupe, SON temps et SON erreur', async () => {
     stubSources({
-      '/amazon/search-products': amazonOk,
-      '/ebay/search': () => new Response(JSON.stringify({ error: 'quota' }), { status: 401 }),
+      '/1688/search/cross-border': devOk,
+      '/alibaba/search': () => new Response(JSON.stringify({ error: 'quota' }), { status: 401 }),
     });
 
     const response = await request(app())
       .post('/api/sbase/search')
-      .send({ q: 'casque', sources: ['amazon', 'ebay'] })
+      .send({ q: 'coque', sources: ['1688', 'alibaba'] })
       .expect(200);
 
     const groups = response.body.data.groups;
     expect(groups).toHaveLength(2);
-    const amazon = groups.find((group: { source: { id: string } }) => group.source.id === 'amazon');
-    const ebay = groups.find((group: { source: { id: string } }) => group.source.id === 'ebay');
-    expect(amazon).toMatchObject({ status: 'ok', count: 1, error: null });
-    expect(amazon.items[0]).toMatchObject({ title: 'Casque A', amount: 99, currency: 'EUR' });
+    const dev = groups.find((group: { source: { id: string } }) => group.source.id === '1688');
+    const ali = groups.find((group: { source: { id: string } }) => group.source.id === 'alibaba');
+    expect(dev).toMatchObject({ status: 'ok', count: 1, error: null });
+    expect(dev.items[0]).toMatchObject({ title: 'Coque téléphone', amount: 2.1, currency: 'CNY', moq: '1' });
     // Une boutique en échec ne casse pas les autres : son code, pas une liste vide.
-    expect(ebay).toMatchObject({ status: 'error', count: 0 });
-    expect(ebay.error.code).toBe('SANDBASE_UNAUTHORIZED');
+    expect(ali).toMatchObject({ status: 'error', count: 0 });
+    expect(ali.error.code).toBe('SANDBASE_UNAUTHORIZED');
     expect(response.body.data.totalMs).toBeGreaterThanOrEqual(0);
   });
 
   test('boutique vide : groupe `empty` (pas une erreur déguisée)', async () => {
-    stubSources({ '/bing-shopping/search': () => new Response(JSON.stringify(envelope({ shopping_results: [] })), { status: 200 }) });
-    const response = await request(app()).post('/api/sbase/search').send({ q: 'zzz introuvable', sources: ['bing-shopping'] }).expect(200);
+    stubSources({ '/1688/search/cross-border': () => new Response(JSON.stringify(envelope({ items: [] })), { status: 200 }) });
+    const response = await request(app()).post('/api/sbase/search').send({ q: 'zzz introuvable', sources: ['1688'] }).expect(200);
     expect(response.body.data.groups[0]).toMatchObject({ status: 'empty', count: 0, items: [] });
   });
 
-  test('détail Amazon : specs, images et variantes normalisées', async () => {
+  test('détail 1688 : specs, SKU (tailles/couleurs), vendeur et prix CNY', async () => {
     stubSources({
-      '/amazon/product': () => new Response(JSON.stringify(envelope({
-        item_specifications: { brand: 'STANLEY', color: 'Rose' },
-        product_details: { brand_name: 'STANLEY', item_type_name: 'Tumbler' },
-        product_results: {
-          title: 'Quencher Tumbler', price: '$37.51', rating: 4.7,
-          images: ['https://img/a.jpg', 'https://img/b.jpg'],
-          variants: [{ asin: 'B01', title: 'Rose / 30 oz', in_stock: true }],
-        },
+      '/1688/item/detail': () => new Response(JSON.stringify(envelope({
+        item_id: 1046925823679,
+        currency: 'CNY',
+        is_sold_out: false,
+        price_info: { price: '1.20', price_min: '1.20', price_max: '1.60' },
+        attribute: { propsList: [{ name: '芯片类型', value: '杰理' }, { name: '蓝牙版本', value: '5.3' }] },
+        skus: [{ props_names: '黑色/标准', sale_price: '1.20', stock: 320 }],
+        sku_props: [
+          { prop_name: '颜色', values: [{ name: '黑色', vid: '1' }, { name: '白色', vid: '2' }] },
+          { prop_name: '套餐', values: [{ name: '标准', vid: '3' }] },
+        ],
+        images: [{ fullPathImageURI: 'https://cbu01.alicdn.com/p1.jpg' }, { fullPathImageURI: 'https://cbu01.alicdn.com/p2.jpg' }],
+        item: { title: '蓝牙耳机', companyName: '深圳市聚声源电子商务有限公司' },
       })), { status: 200 }),
     });
 
     const response = await request(app())
       .post('/api/sbase/item')
-      .send({ source: 'amazon', id: 'B0CP9YB3Q4', title: 'tumbler' })
+      .send({ source: '1688', id: '1046925823679' })
       .expect(200);
 
     const detail = response.body.data.detail;
-    expect(response.body.data.source.id).toBe('amazon');
-    expect(detail).toMatchObject({ title: 'Quencher Tumbler', brand: 'STANLEY', amount: 37.51, currency: 'USD' });
-    expect(detail.images).toHaveLength(2);
-    expect(detail.specs).toEqual(expect.arrayContaining([{ name: 'color', value: 'Rose' }]));
-    expect(detail.variants[0].values[0]).toMatchObject({ label: 'Rose / 30 oz', available: true });
-    expect(response.body.data.durationMs).toBeGreaterThanOrEqual(0);
+    expect(response.body.data.source.id).toBe('1688');
+    expect(detail).toMatchObject({
+      title: '蓝牙耳机', amount: 1.2, currency: 'CNY', availability: 'in_stock',
+      seller: '深圳市聚声源电子商务有限公司',
+    });
+    expect(detail.specs).toEqual(expect.arrayContaining([{ name: '蓝牙版本', value: '5.3' }]));
+    expect(detail.variants).toHaveLength(2);
+    expect(detail.variants[0]).toMatchObject({ name: '颜色' });
+    expect(detail.variants[0].values.map((value: { label: string }) => value.label)).toEqual(['黑色', '白色']);
+    // La fiche donne l'URL canonique du produit, pas le lien CDN d'image.
+    expect(detail.url).toBe('https://detail.1688.com/offer/1046925823679.html');
+    expect(detail.missing).not.toContain('variants');
   });
 
-  test('détail Taobao : les groupes de SKU deviennent « tailles et couleurs »', async () => {
+  test('détail 1688 par lien : sans identifiant, on utilise detail-by-url', async () => {
     stubSources({
-      '/taobao/item/detail': () => new Response(JSON.stringify(envelope({
-        item: {
-          title: '蓝牙耳机', images: ['//img.alicdn.com/a.jpg'], properties: [{ name: '品牌', value: 'BASEUS' }],
-          sku_props: [
-            { name: '颜色分类', values: [{ name: '黑色', vid: '1' }, { name: '白色', vid: '2' }] },
-            { name: '套餐类型', values: [{ name: '标准', vid: '3' }] },
-          ],
-        },
-        seller: { shop_title: 'baseus旗舰店' },
+      '/1688/item/detail-by-url': () => new Response(JSON.stringify(envelope({
+        item_id: 857511694718, currency: 'CNY', moq: 1,
+        price_info: { price_min: '1.20' },
+        item: { title: 'Câble USB-C', companyName: 'Guangzhou Y' },
       })), { status: 200 }),
     });
 
     const response = await request(app())
       .post('/api/sbase/item')
-      .send({ source: 'taobao', id: '920640959876' })
+      .send({ source: '1688', url: 'https://detail.1688.com/offer/857511694718.html' })
       .expect(200);
 
-    const detail = response.body.data.detail;
-    expect(detail.variants).toHaveLength(2);
-    expect(detail.variants[0]).toMatchObject({ name: '颜色分类' });
-    expect(detail.variants[0].values.map((value: { label: string }) => value.label)).toEqual(['黑色', '白色']);
-    expect(detail.seller).toBe('baseus旗舰店');
-    expect(detail.url).toBeNull();
+    expect(response.body.data.detail).toMatchObject({ title: 'Câble USB-C', seller: 'Guangzhou Y' });
+    expect(response.body.data.detail.amount).toBe(1.2);
   });
 
   test('détail : boutique sans fiche ⇒ 400 honnête (pas une page vide)', async () => {
     const response = await request(app())
       .post('/api/sbase/item')
-      .send({ source: 'aliexpress', id: '100500' })
+      .send({ source: 'alibaba', id: '100500' })
       .expect(400);
     expect(response.body.code).toBe('DETAILS_UNSUPPORTED');
   });
 
   test('détail : identifiant manquant ⇒ 400, et sans clé ⇒ 503', async () => {
-    const missing = await request(app()).post('/api/sbase/item').send({ source: 'amazon', title: 'x' }).expect(400);
+    const missing = await request(app()).post('/api/sbase/item').send({ source: '1688', title: 'x' }).expect(400);
     expect(missing.body.code).toBe('ITEM_ID_REQUIRED');
 
     delete process.env.SANDBASE_API_KEY;
-    const noKey = await request(app()).post('/api/sbase/item').send({ source: 'amazon', id: 'B01' }).expect(503);
+    const noKey = await request(app()).post('/api/sbase/item').send({ source: '1688', id: '1046925823679' }).expect(503);
     expect(noKey.body.code).toBe('SANDBASE_NOT_CONFIGURED');
   });
 
-  test('image : une photo ⇒ résultats visuels, chaque résultat porte sa boutique', async () => {
+  test('image : la photo part chez 1688, chaque résultat porte 1688 et son MOQ', async () => {
+    let sentBody: Record<string, unknown> | null = null;
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (String(url).includes('/1688/search/cross-border-by-image')) {
+        sentBody = JSON.parse(String(init?.body ?? '{}'));
+        return new Response(JSON.stringify(envelope({
+          items: [
+            {
+              item_id: 1056868355487, title: 'Mini traceur GPS', price: '22.8', currency: 'CNY', moq: 1,
+              img: 'https://cbu01.alicdn.com/t.jpg',
+              product_url: 'https://detail.1688.com/offer/1056868355487.html',
+              shop_info: { company_name: 'Shenzhen T' },
+            },
+            {
+              item_id: 1056868355488, title: 'Traceur GPS voiture',
+              product_url: 'https://detail.1688.com/offer/1056868355488.html',
+            },
+          ],
+        })), { status: 200 });
+      }
+      return new Response(JSON.stringify(envelope({ items: [] })), { status: 200 });
+    }));
+
     const response = await request(app())
       .post('/api/sbase/image')
       .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
       .expect(200);
 
-    expect(response.body.data).toMatchObject({ mode: 'image', count: 2, stores: expect.arrayContaining(['Amazon', 'SHEIN']) });
-    expect(response.body.data.items[0]).toMatchObject({ store: 'Amazon', amount: 29.99, currency: 'EUR' });
+    const data = response.body.data;
+    expect(data).toMatchObject({ mode: 'image', count: 2, stores: ['1688'] });
+    expect(data.items[0].seller).toBe('Shenzhen T');
+    expect(data.channel.id).toBe('1688');
+    expect(data.items[0]).toMatchObject({ store: '1688', amount: 22.8, currency: 'CNY', moq: '1' });
     // Le second résultat n'a pas de prix : on le dit, on n'invente pas 0.
-    expect(response.body.data.items[1].missing).toContain('price');
-    expect(response.body.data.durationMs).toBeGreaterThanOrEqual(0);
+    expect(data.items[1].missing).toContain('price');
+    expect(data.durationMs).toBeGreaterThanOrEqual(0);
+    // 1688 reçoit un lien public (pas des octets) : c'est le contrat de l'endpoint.
+    expect(String(sentBody?.imgUrl)).toMatch(/^https?:\/\/.+\/api\/sbase\/photo\/[a-f0-9]{48}$/);
+    expect(sentBody?.language).toBe('en');
+
+    // Le lien publié ne vit que 10 minutes : il est lisible tout de suite…
+    const photoPath = new URL(String(sentBody?.imgUrl)).pathname;
+    const served = await request(app()).get(photoPath).expect(200);
+    expect(served.headers['content-type']).toMatch(/image\//);
   });
 
   test('image : sans fichier ⇒ 400 explicite', async () => {
@@ -395,29 +452,30 @@ describe('S Base — routes', () => {
    * alors que la photo était bonne : c'était Lens qui refusait (quota). Un échec
    * du fournisseur ne doit JAMAIS être déguisé en photo invalide.
    */
-  test('image : un refus du fournisseur (quota) n’est pas une « photo invalide »', async () => {
-    const visual = await import('../src/zayrovix/services/visualSearch');
-    const spy = vi.mocked(visual.serpApiVisualSearch);
-    spy.mockRejectedValueOnce(Object.assign(new Error('SERPAPI_LENS_API_ERROR'), { code: 'SERPAPI_LENS_API_ERROR' }));
+  /*
+   * 26/11/2026 — l'écran affichait « La recherche a échoué / SBASE_IMAGE_INVALID »
+   * alors que la photo était bonne : c'était le fournisseur qui refusait. Un échec
+   * du fournisseur ne doit JAMAIS être déguisé en photo invalide.
+   */
+  test('image : un refus de SandBase n’est pas une « photo invalide »', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'quota exceeded' }), { status: 402 })));
     const response = await request(app())
       .post('/api/sbase/image')
       .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
-      .expect(502);
-    expect(response.body.code).toBe('SBASE_IMAGE_PROVIDER_REFUSED');
-    expect(response.body.providerCode).toBe('SERPAPI_LENS_API_ERROR');
+      .expect(402);
+    expect(response.body.code).toBe('SBASE_IMAGE_BALANCE');
+    expect(response.body.providerCode).toBe('SANDBASE_BALANCE');
   });
 
-  test('image : quota (429) et timeout gardent chacun leur code et leur statut', async () => {
-    const visual = await import('../src/zayrovix/services/visualSearch');
-    const spy = vi.mocked(visual.serpApiVisualSearch);
-    spy.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'SERPAPI_LENS_HTTP_429' }));
+  test('image : 429 et timeout gardent chacun leur code et leur statut', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'slow down' }), { status: 429 })));
     const limited = await request(app())
       .post('/api/sbase/image')
       .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
       .expect(429);
     expect(limited.body.code).toBe('SBASE_IMAGE_RATE_LIMITED');
 
-    spy.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'SERPAPI_TIMEOUT' }));
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new DOMException('timeout', 'TimeoutError'); }));
     const slow = await request(app())
       .post('/api/sbase/image')
       .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
@@ -425,14 +483,13 @@ describe('S Base — routes', () => {
     expect(slow.body.code).toBe('SBASE_IMAGE_TIMEOUT');
   });
 
-  test('image : un marché Lens par défaut (1 appel payant, pas 9)', () => {
-    expect(sbaseImageMarkets()).toEqual(['fr']);
-    process.env.SBASE_IMAGE_MARKETS = 'fr, uk, fr';
-    try {
-      expect(sbaseImageMarkets()).toEqual(['fr', 'uk']);
-    } finally {
-      delete process.env.SBASE_IMAGE_MARKETS;
-    }
+  test('image : une image rejetée par 1688 est dite comme telle (502, pas 400)', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'imgUrl unreachable' }), { status: 422 })));
+    const response = await request(app())
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(502);
+    expect(response.body.code).toBe('SBASE_IMAGE_URL_REJECTED');
   });
 
   test('image : une vraie image illisible reste 400 SBASE_IMAGE_INVALID', () => {
@@ -451,9 +508,11 @@ describe('S Base — isolation', () => {
     }
   });
 
-  test('une seule réutilisation : le service visuel existant, importé tel quel', () => {
-    const image = readFileSync(join(process.cwd(), 'src/sbase/image.ts'), 'utf8');
-    const imports = [...image.matchAll(/from '([^']+)'/g)].map((match) => match[1]).filter((path) => path.includes('zayrovix'));
-    expect(imports).toEqual(['../zayrovix/services/visualSearch']);
+  test('la recherche par image ne touche plus SerpApi du tout', () => {
+    for (const file of ['image.ts', 'routes.ts', 'descriptors.ts']) {
+      const source = readFileSync(join(process.cwd(), 'src/sbase', file), 'utf8');
+      expect(source).not.toMatch(/SERPAPI_KEY|serpapi\.com|serpApiVisualSearch|zayrovix\//);
+      expect(source).not.toMatch(/zayrovix\/services\/visualSearch/);
+    }
   });
 });

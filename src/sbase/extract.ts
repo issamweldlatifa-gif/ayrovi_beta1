@@ -19,10 +19,14 @@ export interface SbaseProduct {
   amount: number | null;
   currency: string | null;
   store: string | null;
+  /** البائع/الشركة داخل المتجر (1688: `shop_info.company_name`). */
+  seller: string | null;
   rating: number | null;
   reviews: number | null;
   shipping: string | null;
   condition: string | null;
+  /** 1688/Alibaba: أدنى كمّية للطلب — معلومة أساسية في الجملة، بلا تفسير من عندنا. */
+  moq: string | null;
   /** حقول ما جابهاش المصدر (تسميات مختصرة: variants/colors/sizes/barcode…). */
   missing: string[];
 }
@@ -36,12 +40,14 @@ export interface ExtractOptions {
 }
 
 const TITLE_KEYS = ['product_title', 'productTitle', 'title', 'itemTitle', 'raw_title', 'productName', 'subject', 'name'];
-const IMAGE_KEYS = ['product_photo', 'thumbnail', 'image', 'imageUrl', 'image_url', 'mainImage', 'imgUrl', 'product_image', 'pic', 'photo', 'picture'];
+const IMAGE_KEYS = ['product_photo', 'thumbnail', 'image', 'imageUrl', 'image_url', 'mainImage', 'imgUrl', 'product_image', 'pic', 'photo', 'picture', 'img'];
+const MOQ_KEYS = ['moq', 'quantity_begin', 'min_order', 'minimum_order', 'moq_num'];
 const URL_KEYS = ['product_url', 'productUrl', 'link', 'url', 'itemUrl', 'item_url', 'detail_url', 'product_link'];
 const PRICE_TEXT_KEYS = ['product_price', 'price', 'salePrice', 'sale_price', 'itemPrice', 'current_price', 'priceText', 'formattedPrice'];
 const PRICE_AMOUNT_KEYS = ['extracted_price', 'priceValue', 'price_value', 'salePriceValue', 'product_minimum_offer_price', 'price_min'];
 const CURRENCY_KEYS = ['currency', 'currency_code', 'currencyCode', 'priceCurrency'];
-const STORE_KEYS = ['source', 'seller', 'shopName', 'sellerName', 'merchant', 'seller_nick', 'store'];
+const STORE_KEYS = ['source', 'merchant', 'store', 'mall', 'channel'];
+const SELLER_KEYS = ['seller', 'seller_name', 'shopName', 'sellerName', 'seller_nick', 'company_name', 'companyName'];
 const RATING_KEYS = ['product_star_rating', 'rating', 'star_rating', 'scoreRate'];
 const REVIEWS_KEYS = ['product_num_ratings', 'reviews', 'review_count', 'ratings_count', 'totalReviews'];
 const SHIPPING_KEYS = ['delivery', 'shipping', 'shippingText', 'freight'];
@@ -62,6 +68,11 @@ function pick(record: Record<string, unknown>, keys: string[]): unknown {
     if (value !== undefined && value !== null && value !== '') return value;
   }
   return undefined;
+}
+
+function shopInfo(record: Record<string, unknown>): Record<string, unknown> {
+  const shop = record.shop_info;
+  return isRecord(shop) ? shop : {};
 }
 
 function asText(value: unknown): string | null {
@@ -147,10 +158,13 @@ export function normalizeProduct(record: Record<string, unknown>, options: Extra
     amount,
     currency,
     store: asText(pick(record, STORE_KEYS)) ?? options.storeFallback ?? null,
+    // 1688 met le vendeur en sous-objet (`shop_info.company_name`), pas à plat.
+    seller: asText(pick(record, SELLER_KEYS)) ?? asText(pick(shopInfo(record), ['company_name', 'shop_name'])) ?? null,
     rating: asNumber(pick(record, RATING_KEYS)),
     reviews: asNumber(pick(record, REVIEWS_KEYS)),
     shipping: asText(pick(record, SHIPPING_KEYS)),
     condition: asText(pick(record, CONDITION_KEYS)),
+    moq: asText(pick(record, MOQ_KEYS)),
     missing: [],
   };
 
@@ -160,6 +174,7 @@ export function normalizeProduct(record: Record<string, unknown>, options: Extra
   if (!product.url) product.missing.push('link');
   if (product.rating === null) product.missing.push('rating');
   if (!product.store) product.missing.push('store');
+  if (!product.seller) product.missing.push('seller');
 
   return product;
 }

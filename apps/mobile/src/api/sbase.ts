@@ -66,6 +66,10 @@ export interface SbaseItem {
   amount: number | null;
   currency: string | null;
   store: string | null;
+  /** Vendeur/entreprise dans la boutique (1688 : société du fournisseur). */
+  seller?: string | null;
+  /** Quantité minimale de commande (1688/Alibaba : commerce de gros). */
+  moq?: string | null;
   rating: number | null;
   reviews: number | null;
   shipping: string | null;
@@ -147,9 +151,11 @@ export interface SbaseImagePayload {
   stores: string[];
   missingFields: string[];
   durationMs: number;
-  /** الأسواق اللي سألناها في Lens (كل سوق = نداء مدفوع). */
-  markets?: string[];
-  lensSearches?: number;
+  /** L'endpoint 1688 réellement appelé + son prix publié. */
+  endpoint?: string;
+  costUsd?: number;
+  /** Fin de vie du lien photo temporaire (10 min). */
+  photoExpiresAt?: string;
   totalMs: number;
   fetchedAt: string;
 }

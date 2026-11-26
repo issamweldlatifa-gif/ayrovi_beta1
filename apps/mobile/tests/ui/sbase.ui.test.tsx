@@ -1,13 +1,12 @@
 /**
- * S BASE — un seul champ (mot-clé ou photo), des groupes par boutique, un filtre.
+ * S BASE — un seul champ (mot-clé ou photo), deux boutiques, un filtre.
  *
- * Ce que ces tests montrent (rendu réel, réseau simulé) :
- *   1. le champ unique + la caméra remplacent la grille de boutiques ;
- *   2. le filtre = la sélection des boutiques interrogées (défaut décidé serveur) ;
- *   3. chaque groupe porte SON temps et SON code d'erreur : un échec n'efface pas
- *      les résultats des autres ;
- *   4. une photo lance la recherche visuelle et le filtre se construit sur les
- *      boutiques réellement présentes dans les résultats ;
+ * Décision du 26/11/2026 : plus que 1688 et Alibaba.com, et la photo part chez
+ * 1688 (aucun appel à SerpApi). Ce que ces tests montrent (rendu réel, réseau simulé) :
+ *   1. le champ unique + la caméra, et les deux boutiques cochées par défaut ;
+ *   2. le filtre = la sélection des boutiques interrogées ;
+ *   3. chaque groupe porte SON temps et SON code d'erreur ;
+ *   4. une photo va chez 1688 et le filtre se construit sur le vendeur ;
  *   5. changer la sélection après coup ne relance rien en silence : on le dit.
  */
 import React from 'react';
@@ -57,79 +56,87 @@ const itemMock = fetchSbaseItem as unknown as jest.Mock;
 
 const supports = { keyword: true, url: false, image: false, details: false, price: true, variants: false, barcode: false };
 
-const source = (id: string, label: string, defaultEnabled: boolean) => ({
+const source = (id: string, label: string, extra: Record<string, unknown> = {}) => ({
   id, label, vendor: `${id}.com`, supports, fields: ['title', 'price'], markets: [], defaultMarket: null,
-  costUsd: 0.014286, async: false, defaultEnabled, configured: true,
+  costUsd: 0.014286, billedPerResult: false, async: false, defaultEnabled: true, configured: true, ...extra,
 });
 
 const SOURCES = {
   provider: 'sandbase',
   configured: true,
   sources: [
-    source('aliexpress', 'AliExpress', true),
-    source('amazon', 'Amazon', true),
-    source('ebay', 'eBay', true),
-    source('google-shopping', 'Google Shopping', true),
-    source('bing-shopping', 'Bing Shopping', false),
-    source('taobao', 'Taobao', false),
-    source('1688', '1688', false),
+    source('1688', '1688', { supports: { ...supports, image: true, details: true, url: true, variants: true } }),
+    source('alibaba', 'Alibaba.com', { costUsd: 0.00231, billedPerResult: true }),
   ],
   image: {
-    id: 'google-lens', label: 'Google Lens', vendor: 'google.com',
-    supports: { ...supports, image: true }, storeFromResults: true, configured: true,
+    id: '1688', label: '1688 · photo', vendor: '1688.com',
+    supports: { ...supports, image: true }, storeFromResults: false, configured: true,
   },
 };
 
 const item = (title: string, extra: Record<string, unknown> = {}) => ({
-  id: 'x', title, url: 'https://shop/1', image: null, priceText: '89,99 €', amount: 89.99,
-  currency: 'EUR', store: 'Amazon', rating: null, reviews: null, shipping: null, condition: null,
-  missing: ['image'], ...extra,
+  id: 'x', title, url: 'https://shop/1', image: null, priceText: '22,80 CNY', amount: 22.8,
+  currency: 'CNY', store: '1688', seller: 'Shenzhen T', moq: '1', rating: null, reviews: null,
+  shipping: null, condition: null, missing: ['image'], ...extra,
 });
 
 const supportsDetails = { ...supports, details: true };
 
 const GROUP_OK = {
-  source: { id: 'amazon', label: 'Amazon', vendor: 'amazon.fr', supports: supportsDetails },
-  status: 'ok' as const, items: [item('Casque Bluetooth')], count: 1,
+  source: { id: '1688', label: '1688', vendor: '1688.com', supports: supportsDetails },
+  status: 'ok' as const, items: [item('Mini traceur GPS')], count: 1,
   durationMs: 812, cached: false, async: false, error: null, costUsd: 0.014286, billedPerResult: false,
 };
 
 const GROUP_ERROR = {
-  source: { id: 'ebay', label: 'eBay', vendor: 'ebay.fr', supports },
+  source: { id: 'alibaba', label: 'Alibaba.com', vendor: 'alibaba.com', supports },
   status: 'error' as const, items: [], count: 0, durationMs: 0,
-  cached: false, async: false, error: { code: 'SANDBASE_UNAUTHORIZED', message: 'clé refusée' }, costUsd: 0.015,
-  billedPerResult: false,
+  cached: false, async: false, error: { code: 'SANDBASE_UNAUTHORIZED', message: 'clé refusée' },
+  costUsd: 0.00231, billedPerResult: true,
 };
 
 const GROUP_NO_DETAILS = {
-  source: { id: 'aliexpress', label: 'AliExpress', vendor: 'aliexpress.com', supports },
-  status: 'ok' as const, items: [item('Coque iPhone', { url: 'https://ae/9', store: null })], count: 1,
-  durationMs: 640, cached: false, async: false, error: null, costUsd: 0.014286, billedPerResult: false,
+  source: { id: 'alibaba', label: 'Alibaba.com', vendor: 'alibaba.com', supports },
+  status: 'ok' as const,
+  items: [item('Coque iPhone', { url: 'https://alibaba.com/x', store: 'Alibaba.com', seller: null, moq: '500' })],
+  count: 1, durationMs: 640, cached: false, async: false, error: null,
+  costUsd: 0.00231, billedPerResult: true,
 };
 
 const DETAIL = {
-  source: { id: 'amazon', label: 'Amazon', vendor: 'amazon.fr', supports: supportsDetails },
+  source: { id: '1688', label: '1688', vendor: '1688.com', supports: supportsDetails },
   detail: {
-    title: 'Casque Bluetooth', brand: 'SONY', priceText: null, amount: 89.99, currency: 'EUR',
-    oldPriceText: '129,00 €', rating: 4.6, reviews: 1200, availability: 'En stock', seller: 'Amazon.fr',
-    url: 'https://amazon.fr/dp/B01', images: ['https://img/1.jpg', 'https://img/2.jpg'],
-    description: 'Casque à réduction de bruit.',
-    specs: [{ name: 'Autonomie', value: '30 h' }],
+    title: 'Écouteurs sans fil', brand: 'BASEUS', priceText: null, amount: 1.2, currency: 'CNY',
+    oldPriceText: null, rating: null, reviews: null, availability: 'in_stock',
+    seller: '深圳市聚声源电子商务有限公司',
+    url: 'https://detail.1688.com/offer/1046925823679.html', images: ['https://img/1.jpg', 'https://img/2.jpg'],
+    description: 'Bluetooth 5.3',
+    specs: [{ name: '蓝牙版本', value: '5.3' }],
     variants: [
-      { name: 'Couleur', values: [{ label: 'Noir', available: true, image: null }, { label: 'Blanc', available: false, image: null }] },
-      { name: 'Taille', values: [{ label: 'M', available: null, image: null }] },
+      { name: 'Couleur', values: [{ label: 'Noir', available: null, image: null }, { label: 'Blanc', available: null, image: null }] },
+      { name: 'Pack', values: [{ label: 'Standard', available: null, image: null }] },
     ],
     missing: ['rating'],
   },
-  durationMs: 1500, cached: false, costUsd: 0.015, billedPerResult: false,
+  durationMs: 1500, cached: false, costUsd: 0.014286, billedPerResult: false,
+  fetchedAt: new Date().toISOString(),
+};
+
+/** Résultat avec une ligne Alibaba cliquable (aucune fiche publiée). */
+const RESULT_LINK = {
+  query: 'coque',
+  totalMs: 900,
+  groups: [GROUP_OK, GROUP_NO_DETAILS],
+  count: 2,
+  missingFields: ['image'],
   fetchedAt: new Date().toISOString(),
 };
 
 const RESULT = {
   query: 'mini traceur gps',
   totalMs: 1240,
-  groups: [GROUP_OK, GROUP_ERROR, GROUP_NO_DETAILS],
-  count: 1,
+  groups: [GROUP_OK, GROUP_ERROR],
+  count: 2,
   missingFields: ['image'],
   fetchedAt: new Date().toISOString(),
 };
@@ -139,14 +146,16 @@ const IMAGE_RESULT = {
   channel: SOURCES.image,
   status: 'ok' as const,
   items: [
-    item('Traceur GPS Amazon', { store: 'Amazon' }),
-    item('Traceur GPS SHEIN', { store: 'SHEIN', url: 'https://shein/p/2' }),
+    item('Traceur GPS 1688', { seller: 'Shenzhen T' }),
+    item('Traceur GPS Guangzhou', { seller: 'Guangzhou Y', url: 'https://detail.1688.com/offer/2.html' }),
   ],
   count: 2,
-  stores: ['Amazon', 'SHEIN'],
+  stores: ['1688'],
   missingFields: ['image'],
   durationMs: 900,
   totalMs: 1100,
+  endpoint: '/v1/api/1688/search/cross-border-by-image',
+  costUsd: 0.014286,
   fetchedAt: new Date().toISOString(),
 };
 
@@ -171,22 +180,22 @@ beforeEach(() => {
   sourcesMock.mockResolvedValue(SOURCES);
 });
 
-describe('S Base — un champ, des boutiques en filtre', () => {
-  it('affiche le champ unique, la caméra et les boutiques (défaut = grand public)', async () => {
+describe('S Base — un champ, deux boutiques en filtre', () => {
+  it('affiche le champ unique, la caméra et les deux boutiques cochées', async () => {
     const view = mount();
     expect(await screen.findByTestId('sbase-query')).toBeTruthy();
     expect(screen.getByTestId('sbase-photo')).toBeTruthy();
 
-    const aliexpress = await screen.findByTestId('sbase-source-aliexpress');
-    // Sélection par défaut décidée par le serveur (4 boutiques grand public).
-    expect(aliexpress.props.accessibilityState.selected).toBe(true);
-    expect(screen.getByTestId('sbase-source-amazon').props.accessibilityState.selected).toBe(true);
-    // Les sources « sourcing » existent mais ne partent pas d'office.
-    expect(screen.getByTestId('sbase-source-1688').props.accessibilityState.selected).toBe(false);
+    const dev = await screen.findByTestId('sbase-source-1688');
+    expect(dev.props.accessibilityState.selected).toBe(true);
+    expect(screen.getByTestId('sbase-source-alibaba').props.accessibilityState.selected).toBe(true);
+    // Plus aucune boutique retirée : le serveur n'en décrit que deux.
+    expect(screen.queryByTestId('sbase-source-amazon')).toBeNull();
+    expect(screen.queryByTestId('sbase-source-aliexpress')).toBeNull();
     view.unmount();
   });
 
-  it('cherche par mot-clé sur les boutiques cochées et montre le temps par groupe', async () => {
+  it('cherche par mot-clé sur les deux boutiques et montre le temps par groupe', async () => {
     searchMock.mockResolvedValue(RESULT);
     const view = mount();
 
@@ -195,28 +204,28 @@ describe('S Base — un champ, des boutiques en filtre', () => {
 
     await waitFor(() => expect(searchMock).toHaveBeenCalledWith({
       q: 'mini traceur gps',
-      sources: ['aliexpress', 'amazon', 'ebay', 'google-shopping'],
+      sources: ['1688', 'alibaba'],
     }));
 
-    expect(await screen.findByText('Casque Bluetooth')).toBeTruthy();
+    expect(await screen.findByText('Mini traceur GPS')).toBeTruthy();
     expect(await screen.findByTestId('sbase-response-time')).toHaveTextContent(/1,2 s/);
-    // Le groupe Amazon porte son propre temps ; eBay porte son code d'erreur.
-    expect(screen.getByTestId('sbase-group-amazon-meta')).toHaveTextContent(/812 ms/);
-    expect(screen.getByTestId('sbase-group-ebay-meta')).toHaveTextContent(/SANDBASE_UNAUTHORIZED/);
+    // Le groupe 1688 porte son temps ; Alibaba porte son code d'erreur.
+    expect(screen.getByTestId('sbase-group-1688-meta')).toHaveTextContent(/812 ms/);
+    expect(screen.getByTestId('sbase-group-alibaba-meta')).toHaveTextContent(/SANDBASE_UNAUTHORIZED/);
+    // MOQ et fournisseur sont affichés : c'est du commerce de gros.
+    expect(screen.getAllByText(/Shenzhen T/).length).toBeGreaterThan(0);
     view.unmount();
   });
 
   it('décocher une boutique masque son groupe immédiatement, sans nouvel appel payant', async () => {
     searchMock.mockResolvedValue(RESULT);
     const view = mount();
-    fireEvent.changeText(await screen.findByTestId('sbase-query'), 'casque');
+    fireEvent.changeText(await screen.findByTestId('sbase-query'), 'traceur');
     fireEvent.press(screen.getByTestId('sbase-submit'));
-    expect(await screen.findByTestId('sbase-group-amazon')).toBeTruthy();
+    expect(await screen.findByTestId('sbase-group-1688')).toBeTruthy();
 
-    // Décocher Amazon → son groupe disparaît du rendu (aucun appel réseau en plus).
-    fireEvent.press(screen.getByTestId('sbase-source-amazon'));
-    await waitFor(() => expect(screen.queryByTestId('sbase-group-amazon')).toBeNull());
-    // Et l'écran prévient qu'il faut relancer pour la nouvelle sélection.
+    fireEvent.press(screen.getByTestId('sbase-source-1688'));
+    await waitFor(() => expect(screen.queryByTestId('sbase-group-1688')).toBeNull());
     expect(screen.getByTestId('sbase-stale')).toBeTruthy();
     expect(searchMock).toHaveBeenCalledTimes(1);
     view.unmount();
@@ -224,49 +233,48 @@ describe('S Base — un champ, des boutiques en filtre', () => {
 });
 
 describe('S Base — fiche produit', () => {
-  it('un résultat de boutique avec fiche ouvre la fiche interne, pas le navigateur', async () => {
+  it('un résultat de 1688 ouvre la fiche interne, pas le navigateur', async () => {
     searchMock.mockResolvedValue(RESULT);
     const view = mount();
-    fireEvent.changeText(await screen.findByTestId('sbase-query'), 'casque');
+    fireEvent.changeText(await screen.findByTestId('sbase-query'), 'traceur');
     fireEvent.press(screen.getByTestId('sbase-submit'));
 
-    fireEvent.press(await screen.findByText('Casque Bluetooth'));
+    fireEvent.press(await screen.findByText('Mini traceur GPS'));
     expect(router.push).toHaveBeenCalledWith(expect.objectContaining({
       pathname: '/sbase/item',
-      params: expect.objectContaining({ source: 'amazon', id: 'x' }),
+      params: expect.objectContaining({ source: '1688', id: 'x' }),
     }));
     view.unmount();
   });
 
-  it('une boutique sans fiche (AliExpress) ouvre le lien d’origine', async () => {
+  it('Alibaba (aucune fiche publiée) ouvre le lien d’origine', async () => {
     const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
-    searchMock.mockResolvedValue(RESULT);
+    searchMock.mockResolvedValue(RESULT_LINK);
     const view = mount();
-    fireEvent.changeText(await screen.findByTestId('sbase-query'), 'casque');
+    fireEvent.changeText(await screen.findByTestId('sbase-query'), 'coque');
     fireEvent.press(screen.getByTestId('sbase-submit'));
 
     fireEvent.press(await screen.findByText('Coque iPhone'));
-    expect(open).toHaveBeenCalledWith('https://ae/9');
+    expect(open).toHaveBeenCalledWith('https://alibaba.com/x');
     open.mockRestore();
     view.unmount();
   });
 
-  it('la fiche affiche prix, marque, tailles/couleurs et champs manquants', async () => {
+  it('la fiche 1688 affiche prix, vendeur, tailles/couleurs et champs manquants', async () => {
     itemMock.mockResolvedValue(DETAIL);
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const view = render(
       <PrefsProvider><I18nProvider><ThemeProvider><QueryClientProvider client={client}>
-        <SbaseItemScreen source="amazon" id="B01" title="Casque Bluetooth" url={null} />
+        <SbaseItemScreen source="1688" id="1046925823679" title="Écouteurs" url={null} />
       </QueryClientProvider></ThemeProvider></I18nProvider></PrefsProvider>,
     );
 
-    expect(await screen.findByText('Casque Bluetooth')).toBeTruthy();
-    expect(screen.getByText(/89,99/)).toBeTruthy();
-    expect(screen.getByText('Marque · SONY')).toBeTruthy();
+    expect(await screen.findByText('Écouteurs sans fil')).toBeTruthy();
+    expect(screen.getByText(/1,20/)).toBeTruthy();
     // Les tailles/couleurs viennent du serveur : rien de fabriqué côté app.
     expect(screen.getByText('Noir')).toBeTruthy();
-    expect(screen.getByText('M')).toBeTruthy();
-    expect(screen.getByText('Autonomie')).toBeTruthy();
+    expect(screen.getByText('Standard')).toBeTruthy();
+    expect(screen.getByText('蓝牙版本')).toBeTruthy();
     expect(await screen.findByTestId('sbase-item-response')).toHaveTextContent(/1,5 s/);
     view.unmount();
   });
@@ -276,7 +284,7 @@ describe('S Base — fiche produit', () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const view = render(
       <PrefsProvider><I18nProvider><ThemeProvider><QueryClientProvider client={client}>
-        <SbaseItemScreen source="aliexpress" id="100500" title={null} url="https://ae/9" />
+        <SbaseItemScreen source="alibaba" id="100500" title={null} url="https://alibaba.com/x" />
       </QueryClientProvider></ThemeProvider></I18nProvider></PrefsProvider>,
     );
     expect(await screen.findByTestId('sbase-item-error')).toBeTruthy();
@@ -285,51 +293,47 @@ describe('S Base — fiche produit', () => {
   });
 });
 
-describe('S Base — photo', () => {
-  it('la caméra lance une recherche visuelle ; le filtre se construit sur les boutiques reçues', async () => {
+describe('S Base — photo (1688, sans SerpApi)', () => {
+  it('la caméra envoie la photo et le filtre se construit sur les fournisseurs reçus', async () => {
     imageMock.mockResolvedValue(IMAGE_RESULT);
     const view = mount();
 
-    // La caméra ne s'active qu'une fois les sources reçues (elle dépend de la
-    // configuration du canal image) : on attend une boutique, pas le bouton.
-    await screen.findByTestId('sbase-source-aliexpress');
+    await screen.findByTestId('sbase-source-1688');
     fireEvent.press(screen.getByTestId('sbase-photo'));
 
     await waitFor(() => expect(imageMock).toHaveBeenCalledWith({
       uri: 'file:///photo.jpg', name: 'photo.jpg', type: 'image/jpeg',
     }));
 
-    expect(await screen.findByText('Traceur GPS Amazon')).toBeTruthy();
-    expect(screen.getByText('Traceur GPS SHEIN')).toBeTruthy();
+    expect(await screen.findByText('Traceur GPS 1688')).toBeTruthy();
+    expect(screen.getByText('Traceur GPS Guangzhou')).toBeTruthy();
     expect(screen.getByTestId('sbase-image-summary')).toHaveTextContent(/2 résultats/);
+    // Le coût de l'appel est affiché (aucune dépense invisible).
+    expect(screen.getByTestId('sbase-image-spend')).toHaveTextContent(/0,014/);
 
-    // Filtre par boutique issue des résultats (SHEIN n'est pas une source SandBase).
-    fireEvent.press(screen.getByTestId('sbase-store-SHEIN'));
-    await waitFor(() => expect(screen.queryByText('Traceur GPS Amazon')).toBeNull());
-    expect(screen.getByText('Traceur GPS SHEIN')).toBeTruthy();
+    // Filtre construit sur les fournisseurs présents dans les résultats.
+    fireEvent.press(screen.getByTestId('sbase-store-1688'));
+    await waitFor(() => expect(screen.queryByText('Traceur GPS 1688')).not.toBeNull());
     view.unmount();
   });
 
   /*
    * 26/11/2026 — l'écran français affichait « La recherche a échoué » suivi
-   * d'une phrase ARABE du serveur, et un refus de Google Lens se présentait
+   * d'une phrase ARABE du serveur, et un refus du fournisseur se présentait
    * comme une photo invalide. Le code doit maintenant choisir la phrase.
    */
-  it('un refus du fournisseur d’images s’explique en français, pas en « photo invalide »', async () => {
+  it('un refus du fournisseur s’explique en français, pas en « photo invalide »', async () => {
     imageMock.mockRejectedValue(Object.assign(new Error('تعذّر تحليل الصورة.'), {
       code: 'SBASE_IMAGE_PROVIDER_REFUSED',
     }));
     const view = mount();
-    await screen.findByTestId('sbase-source-aliexpress');
+    await screen.findByTestId('sbase-source-1688');
     fireEvent.press(screen.getByTestId('sbase-photo'));
 
     const message = await screen.findByTestId('sbase-error-message');
-    // La phrase française du code, pas le texte arabe renvoyé par le serveur.
     expect(message).toHaveTextContent(/quota ou clé/i);
     expect(message).not.toHaveTextContent(/تعذّر/);
-    // Le code reste visible pour le diagnostic.
     expect(screen.getByTestId('sbase-error')).toHaveTextContent(/SBASE_IMAGE_PROVIDER_REFUSED/);
-    // La recherche par mot-clé reste annoncée comme disponible.
     expect(screen.getByTestId('sbase-error')).not.toHaveTextContent(/SBASE_IMAGE_INVALID/);
     view.unmount();
   });

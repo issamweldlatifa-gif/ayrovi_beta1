@@ -170,3 +170,47 @@ l'API SerpApi ? » → **Oui, et c'est assumé, mais c'était mal dit.**
 Chaque échec de fournisseur renvoie `providerCode` (`SERPAPI_…`) : on diagnostique
 depuis l'app, sans journal serveur. Dans tous ces cas la barre de recherche par
 mot-clé reste utilisable, et l'écran le dit.
+
+## 10. v4 — deux boutiques, et la photo vient de 1688 (26/11/2026)
+
+Décision du propriétaire : **« بحث بالصورة لا علاقة له بـ SerpApi »**, et S Base
+ne garde que **1688 + Alibaba.com**.
+
+### Ce qui a changé
+
+| Avant (v3) | Après (v4) |
+|---|---|
+| 8 boutiques (AliExpress, Amazon, eBay, Google Shopping, Bing, Taobao, Alibaba, 1688) | **2 boutiques** : 1688 et Alibaba.com |
+| Photo → Google Lens via **SerpApi** (clé + quota séparés, 1 à 9 appels par photo) | Photo → **1688** (`/v1/api/1688/search/cross-border-by-image`) : une seule clé, celle de SandBase |
+| Aucun endpoint image dans SandBase | La photo est **publiée 10 min** sur `GET /api/sbase/photo/:token` (JPEG, 48 hex aléatoires, `no-store`, `noindex`), puis 1688 la lit |
+| Fiche : Amazon/eBay/Google/Taobao | Fiche : **1688 uniquement** (`item/detail`, ou `item/detail-by-url` si on n'a que le lien) |
+| Résultats sans MOQ | **MOQ + fournisseur** affichés : c'est du commerce de gros |
+
+### Ce que la documentation permet (et ne permet pas)
+
+| | 1688 | Alibaba.com |
+|---|---|---|
+| Recherche par mot-clé | ✅ `search/cross-border` (`language: en`) | ✅ `search` (jusqu'à 25 résultats) |
+| Recherche par image | ✅ `search/cross-border-by-image` (`imgUrl`) | ❌ **aucun endpoint image** |
+| Détails produit | ✅ `item/detail` + `item/detail-by-url` | ❌ aucun endpoint |
+| Tailles/couleurs (SKU) | ✅ `sku_props` → variantes | ❌ |
+| Vendeur, MOQ, prix dégressifs | ✅ | ⚠️ MOQ/prix dans les résultats de recherche seulement |
+| Coût publié | 0,014286 $ / appel | 0,00077 $ / résultat (0,00231 $ annoncé) |
+
+Conséquence assumée : **une photo ne peut pas interroger Alibaba.com**. L'écran le
+dit (« Photo → 1688 ») au lieu de laisser croire à une recherche photo sur les deux.
+
+### Codes d'erreur de la photo (SandBase, plus SerpApi)
+
+`SBASE_IMAGE_EMPTY` 400 · `SBASE_IMAGE_INVALID` 400 (image illisible — seule faute du client)
+· `SBASE_IMAGE_TOO_LARGE` 413 · `SBASE_IMAGE_TIMEOUT` 504 · `SBASE_IMAGE_RATE_LIMITED` 429
+· `SBASE_IMAGE_PROVIDER_AUTH` 503 · `SBASE_IMAGE_BALANCE` 402
+· **`SBASE_IMAGE_URL_REJECTED` 502** (1688 n'a pas pu lire notre lien photo)
+· `SBASE_IMAGE_NOT_CONFIGURED` 503 · `SBASE_IMAGE_UNKNOWN` 502.
+
+### Réglages serveur
+
+- `SANDBASE_API_KEY` : la seule clé nécessaire (SerpApi n'est plus utilisé par S Base).
+- `SBASE_PUBLIC_URL` : origine publique du serveur (ex. `https://…onrender.com`).
+  Sans elle, on la déduit de `x-forwarded-host`/`host` ; si elle manque totalement,
+  la photo répond `503` en le disant, plutôt que d'envoyer un lien local à 1688.

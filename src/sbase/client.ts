@@ -139,7 +139,8 @@ export async function runSandbaseCall(
     if (first.status >= 400) {
       const envelope = isRecord(first.body) ? readEnvelope(first.body) : null;
       const detail = envelope ? envelopeError(envelope) : '';
-      throw new SbaseError('SANDBASE_HTTP', detail || `SandBase رجّعت HTTP ${first.status}.`, 502);
+      // Le statut du fournisseur reste visible : sans lui, 4xx et 5xx se confondent.
+      throw new SbaseError('SANDBASE_HTTP', detail ? `${detail} (HTTP ${first.status})` : `SandBase رجّعت HTTP ${first.status}.`, 502);
     }
 
     let envelope = readEnvelope(first.body);
@@ -179,7 +180,7 @@ export async function runSandbaseCall(
     };
   } catch (error) {
     if (error instanceof SbaseError) throw error;
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')) {
       throw new SbaseError('SANDBASE_TIMEOUT', `تجاوزنا ${Math.round(timeoutMs / 1000)} ثانية بلا رد.`, 504);
     }
     throw new SbaseError('SANDBASE_NETWORK', 'تعذّر الوصول إلى SandBase.', 502);

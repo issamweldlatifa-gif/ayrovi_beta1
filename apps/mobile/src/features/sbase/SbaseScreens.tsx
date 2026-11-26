@@ -97,7 +97,14 @@ function ResultRow({ item, index, onOpen }: { item: SbaseItem; index: number; on
       <AppText variant="bodyStrong" numberOfLines={2}>{item.title}</AppText>
       <AppText variant="bodyStrong">{formatItemPrice(item, t('sbase.missing.price'))}</AppText>
       <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
-        {[item.store, item.rating !== null ? `${item.rating}★` : null, item.shipping].filter(Boolean).join(' · ') || '—'}
+        {[
+          item.store,
+          item.seller && item.seller !== item.store ? item.seller : null,
+          // Achat en gros : le MOQ est la première chose qu'un pro regarde.
+          item.moq ? `${t('sbase.moq')} ${item.moq}` : null,
+          item.rating !== null ? `${item.rating}★` : null,
+          item.shipping,
+        ].filter(Boolean).join(' · ') || '—'}
       </AppText>
       {item.url ? <Pressable
         accessibilityRole="link"
@@ -374,8 +381,7 @@ export function SbaseScreen() {
       </AppText>
       <AppText testID="sbase-image-spend" variant="caption" color={theme.colors.muted}>
         {t('sbase.responseTime')} · {formatDuration(imageResult.totalMs)} · {imageResult.channel.label}
-        {imageResult.markets?.length ? ` · ${t('sbase.markets')} ${imageResult.markets.join(', ').toUpperCase()}` : ''}
-        {imageResult.lensSearches ? ` · ${imageResult.lensSearches} ${t('sbase.lensSearches')}` : ''}
+        {formatCallCost(imageResult.costUsd) ? ` · ${t('sbase.cost')} ${formatCallCost(imageResult.costUsd)}` : ''}
       </AppText>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Chip testID="sbase-store-all" label={t('sbase.allStores')} active={storeFilter === null} onPress={() => setStoreFilter(null)} />

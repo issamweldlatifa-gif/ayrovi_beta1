@@ -4,13 +4,16 @@
  *   GET  /api/sbase/sources → المتاجر + قدراتها الحقيقية + readiness
  *   POST /api/sbase/search  → بحث بكلمة على **المتاجر المختارة**، كل واحد بوحدو،
  *                              بالتوازي، وكل واحد بزمنو/خطئو/كاشو الخاص
- *   POST /api/sbase/image   → بحث بصورة (Google Lens) — نتائج بالمتجر لكل نتيجة
+ *   POST /api/sbase/image   → بحث بصورة على 1688 (بلا SerpApi): الصورة تتنشر
+ *                              في رابط عمومي مؤقّت، و1688 تجيب المتشابهات
+ *   GET  /api/sbase/photo/:token → الصورة المؤقّتة (10 دقائق) اللي تقراها 1688
  *   GET  /api/sbase/health  → حالة المفاتيح (بلا أي كشف)
  *
  * الفكرة: شريط بحث واحد، أما **ما فماش محرّك موحّد**: كل متجر يبقى نداء مستقلّ،
  * ونتائجه تتجمّع في مجموعة موسومة باسمه، والفلتر في الشاشة يخفي/يظهر المجموعات.
  * لهذا الزمن والخطأ والكاش معروضين **لكل متجر** موش للكل.
  */
+import { randomBytes } from 'node:crypto';
 import { Router } from 'express';
 import multer from 'multer';
 
@@ -26,7 +29,7 @@ import { runSandbaseCall, runSandbaseSearch, sandbaseConfigured, SbaseError } fr
 import { extractProducts, missingFacets, type SbaseProduct } from './extract';
 import { extractDetail, type SbaseDetail } from './detail';
 import { normalizeUploadedImage } from '../services/imageValidation';
-import { sbaseImageFailureFrom, sbaseImageReady, searchSbaseByImage } from './image';
+import { SbaseImageError, sbaseImageFailureFrom, sbaseImageReady, searchSbaseByImage } from './image';
 
 export const SBASE_CACHE_TTL_MS = 10 * 60_000;
 const SBASE_CACHE_MAX = 200;
@@ -39,6 +42,49 @@ interface DetailCacheEntry {
   at: number;
 }
 const detailCache = new Map<string, DetailCacheEntry>();
+
+/**
+ * صور مؤقّتة للبحث البصري.
+ *
+ * 1688 ما تقبلش ملفاً، تقبل `imgUrl`. لهذا الصورة اللي يختارها المستعمل تُنشر
+ * 10 دقائق على رابط عشوائي عندنا، 1688 تجيبها، وبعدها تختفي. ما فماش تخزين
+ * دائم، ما فماش قائمة، والرمز 24 بايت عشوائي (غير قابل للتخمين).
+ */
+export const SBASE_PHOTO_TTL_MS = 10 * 60_000;
+const SBASE_PHOTO_MAX = 24;
+interface PhotoEntry { buffer: Buffer; mimeType: string; at: number }
+const photos = new Map<string, PhotoEntry>();
+
+export function clearSbasePhotos(): void {
+  photos.clear();
+}
+
+export function publishSbasePhoto(buffer: Buffer, mimeType: string): string {
+  const token = randomBytes(24).toString('hex');
+  while (photos.size >= SBASE_PHOTO_MAX) photos.delete(photos.keys().next().value as string);
+  photos.set(token, { buffer, mimeType, at: Date.now() });
+  return token;
+}
+
+function readSbasePhoto(token: string): PhotoEntry | null {
+  const entry = photos.get(token);
+  if (!entry) return null;
+  if (Date.now() - entry.at > SBASE_PHOTO_TTL_MS) {
+    photos.delete(token);
+    return null;
+  }
+  return entry;
+}
+
+/** الأصل العمومي (Render/الخادم) اللي تشوفو 1688 — من الطلب أو من الإعداد. */
+function publicOrigin(req: { protocol?: string; get?: (name: string) => string | undefined }, fallbackPortHint = ''): string {
+  const configured = String(process.env.SBASE_PUBLIC_URL || '').trim().replace(/\/+$/, '');
+  if (configured) return configured;
+  const forwardedProto = String(req.get?.('x-forwarded-proto') || '').split(',')[0].trim();
+  const host = String(req.get?.('x-forwarded-host') || req.get?.('host') || '').trim() || fallbackPortHint;
+  const proto = forwardedProto || req.protocol || 'https';
+  return host ? `${proto}://${host}` : '';
+}
 
 interface CacheEntry {
   items: SbaseProduct[];
@@ -258,11 +304,15 @@ export function createSbaseRouter(): Router {
     const title = typeof body.title === 'string' ? body.title.trim().slice(0, 200) : '';
     const url = typeof body.url === 'string' ? body.url.trim().slice(0, 500) : null;
     const market = typeof body.market === 'string' ? body.market.trim().toLowerCase() : source.defaultMarket;
-    if (source.detail.requiresId && !id) {
-      return res.status(400).json({ success: false, code: 'ITEM_ID_REQUIRED', error: 'هذا المتجر يحتاج معرّف المنتج (ASIN/item ID).' });
+    // 1688 تنشر نداء ثانياً بالرابط: بلا معرّف، نجرّبو `detail-by-url` بدل ما نرفضو.
+    const byUrl = source.detail.requiresId && !id && source.detail.byUrl && url
+      ? { endpoint: source.detail.byUrl.endpoint, body: source.detail.byUrl.buildBody({ id, title, url, market }), costUsd: source.detail.byUrl.costUsd }
+      : null;
+    if (source.detail.requiresId && !id && !byUrl) {
+      return res.status(400).json({ success: false, code: 'ITEM_ID_REQUIRED', error: 'هذا المتجر يحتاج معرّف المنتج (item ID) ولا رابطاً صالحاً.' });
     }
-    if (!id && !title) {
-      return res.status(400).json({ success: false, code: 'ITEM_INPUT_REQUIRED', error: 'معرّف المنتج ولا عنوانو مطلوب.' });
+    if (!id && !title && !url) {
+      return res.status(400).json({ success: false, code: 'ITEM_INPUT_REQUIRED', error: 'معرّف المنتج، عنوانو، ولا رابطو مطلوب.' });
     }
     if (!sandbaseConfigured()) {
       return res.status(503).json({
@@ -288,8 +338,8 @@ export function createSbaseRouter(): Router {
 
     try {
       const run = await runSandbaseCall(
-        source.detail.endpoint,
-        source.detail.buildBody({ id, title, url, market }),
+        byUrl ? byUrl.endpoint : source.detail.endpoint,
+        byUrl ? byUrl.body : source.detail.buildBody({ id, title, url, market }),
         { asyncHint: source.detail.async },
       );
       const detail = extractDetail(run.data);
@@ -305,7 +355,7 @@ export function createSbaseRouter(): Router {
           detail,
           durationMs: run.durationMs,
           cached: false,
-          costUsd: source.detail.costUsd,
+          costUsd: byUrl ? byUrl.costUsd : source.detail.costUsd,
           billedPerResult: source.billedPerResult,
           fetchedAt: new Date().toISOString(),
         },
@@ -318,6 +368,23 @@ export function createSbaseRouter(): Router {
     }
   });
 
+  /*
+   * الصورة المؤقّتة اللي تقراها 1688.
+   *
+   * مسار عام (بلا جلسة) لأن SandBase تجيبو بلا ترويسة: الرمز نفسه هو التصريح —
+   * 48 حرفاً عشوائياً، 10 دقائق، صورة JPEG واحدة، وما فماش قائمة.
+   */
+  router.get('/photo/:token', (req, res) => {
+    const token = String(req.params.token || '');
+    if (!/^[a-f0-9]{48}$/.test(token)) return res.status(404).end();
+    const entry = readSbasePhoto(token);
+    if (!entry) return res.status(404).end();
+    res.setHeader('Content-Type', entry.mimeType);
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    return res.end(entry.buffer);
+  });
+
   router.post('/image', upload.single('image'), async (req, res) => {
     const file = req.file;
     if (!file?.buffer?.length) {
@@ -326,7 +393,17 @@ export function createSbaseRouter(): Router {
     try {
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
       const started = Date.now();
-      const { items, durationMs, markets, lensSearches } = await searchSbaseByImage(normalized.buffer);
+      const origin = publicOrigin(req);
+      if (!origin) {
+        throw new SbaseImageError(
+          'SBASE_IMAGE_UNKNOWN',
+          'ما نعرفوش أصل الخادم العمومي: اضبط SBASE_PUBLIC_URL باش 1688 تقرا الصورة.',
+          503,
+        );
+      }
+      const token = publishSbasePhoto(normalized.buffer, normalized.mimeType);
+      const photoUrl = `${origin}/api/sbase/photo/${token}`;
+      const { items, durationMs, endpoint, costUsd } = await searchSbaseByImage(photoUrl);
       const stores = [...new Set(items.map((item) => item.store).filter((store): store is string => Boolean(store)))];
       const missing = new Set<string>();
       for (const item of items) for (const field of item.missing) missing.add(field);
@@ -340,20 +417,21 @@ export function createSbaseRouter(): Router {
           count: items.length,
           stores,
           missingFields: [...missing].sort(),
-          /** الزمن داخل القناة (Lens) مقابل الزمن الكامل للطلب. */
+          /** الزمن اللي خذا نداء 1688 نفسه. */
           durationMs,
-          /** الأسواق المسؤولة + عدد نداءات Lens المدفوعة لهذه الصورة. */
-          markets,
-          lensSearches,
+          endpoint,
+          costUsd,
+          /** رابط الصورة المؤقّت (10 دقائق) — للتشخيص، يتنحّى وحدو. */
+          photoExpiresAt: new Date(Date.now() + SBASE_PHOTO_TTL_MS).toISOString(),
           totalMs: Date.now() - started,
           fetchedAt: new Date().toISOString(),
         },
       });
     } catch (error) {
       /*
-       * خطأ المزوّد ما يولّيش «صورة غالطة» (26/11/2026): كل عطب عند Lens
-       * (quota، 429، timeout) كان يخرج `SBASE_IMAGE_INVALID` + 400 — أي نلومو
-       * صورة المستخدم على عطب خارجي. توّا كل حالة بكودها وحالتها.
+       * خطأ المزوّد ما يولّيش «صورة غالطة» (26/11/2026): كل عطب (quota، 429،
+       * timeout) كان يخرج `SBASE_IMAGE_INVALID` + 400 — أي نلومو صورة المستخدم
+       * على عطب خارجي. توّا كل حالة بكودها وحالتها.
        */
       const failure = sbaseImageFailureFrom(error);
       return res.status(failure.status).json({
