@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 298,
+    "files": 305,
     "customerAndSharedFiles": 214,
     "controls": 488,
     "iconAliases": 104,
@@ -453,9 +453,11 @@
     {
       "file": "client/src/admin/AdminApp.tsx",
       "domain": "admin",
-      "sha256": "110753ccd69140a63b5726dbc2631b33dd80085a2138e4a46035c649fb5d8bdb",
-      "lines": 1108,
+      "sha256": "a1da1f3c3dcf478a6fc137e2a0f6a7690b68b85968d9cc9f0a63604eb7fa8833",
+      "lines": 1183,
       "imports": [
+        "./ZayroviHighlightsStudio",
+        "./ZayroviNewsStudio",
         "../../../shared/shippingTracking",
         "../../../shared/brand.generated",
         "../../../shared/heroDestinations",
@@ -494,6 +496,7 @@
         "./LensSectionPage",
         "./HomeSectionsPage",
         "./HomeFeaturedPage",
+        "./BlackFridayStudio",
         "./MagazineDraftsPanel",
         "./AdminPricingPage",
         "./AdminPromosPage",
@@ -514,32 +517,12 @@
       "controls": [
         {
           "tag": "button",
-          "line": 189,
+          "line": 192,
           "className": null,
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => void probe()}",
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 206,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 207,
-          "className": null,
-          "type": "\"email\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
           "disabled": null
         },
         {
@@ -554,807 +537,7 @@
         },
         {
           "tag": "input",
-          "line": 211,
-          "className": null,
-          "type": "{show ? 'text' : 'password'}",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 212,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "{show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}",
-          "onClick": "{() => setShow(!show)}",
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 222,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 223,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 228,
-          "className": "\"admin-login-submit\"",
-          "type": "\"submit\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 283,
-          "className": "{`admin-queue-card ${count ? 'is-pending' : ''}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => navigate(section, request)}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 315,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => navigate(item.section)}",
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 330,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => retry(revision + 1)}",
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 342,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => navigate('orders')}",
-          "disabled": null
-        },
-        {
-          "tag": "FunnelCard",
-          "line": 359,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "AyWebsOperationsCard",
-          "line": 360,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 484,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "\"Modifier\"",
-          "onClick": "{(event) => { event.stopPropagation(); openEdit(row); }}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 484,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": "\"Archiver\"",
-          "onClick": "{(event) => { event.stopPropagation(); setArchiveTarget(row); }}",
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 488,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{openCreate}",
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 496,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => openEdit(row)}",
-          "disabled": null
-        },
-        {
-          "tag": "Modal",
-          "line": 502,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 554,
-          "className": "{`admin-order-kpi ${active === value ? 'is-active' : ''}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => onSelect(value)}",
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 624,
-          "className": "\"admin-button admin-button--secondary\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 629,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => { setSearch(''); setStatus(''); setPaymentStatus(''); setDays(''); }}",
-          "disabled": null
-        },
-        {
-          "tag": "Modal",
-          "line": 641,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 655,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 655,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 666,
-          "className": "\"admin-button admin-button--secondary\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 669,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 669,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 670,
-          "className": "\"admin-button admin-button--primary\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>reviewDeposit('approve')}",
-          "disabled": "{busy}"
-        },
-        {
-          "tag": "button",
-          "line": 671,
-          "className": "\"admin-button admin-button--danger\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>reviewDeposit('reject')}",
-          "disabled": "{busy||!reviewNote.trim()}"
-        },
-        {
-          "tag": "a",
-          "line": 675,
-          "className": "\"admin-button admin-button--secondary\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 676,
-          "className": "\"admin-button admin-button--primary\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{issueInvoice}",
-          "disabled": "{busy}"
-        },
-        {
-          "tag": "button",
-          "line": 677,
-          "className": "\"admin-button admin-button--secondary\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{async()=>{setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/resend`,{method:'POST'});setToast({message:`Facture ${r.data?.invoiceNumber} ${r.data?.mail?.delivered?'renvoyée par e-mail':'régénérée'}.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}}}",
-          "disabled": "{busy}"
-        },
-        {
-          "tag": "Field",
-          "line": 681,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 682,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 682,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite||busy}"
-        },
-        {
-          "tag": "Field",
-          "line": 683,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 683,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite||busy}"
-        },
-        {
-          "tag": "Field",
-          "line": 684,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 684,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 684,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 684,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite||busy}"
-        },
-        {
-          "tag": "button",
-          "line": 685,
-          "className": "\"admin-button admin-button--primary\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{updateDelivery}",
-          "disabled": "{!canWrite||busy}"
-        },
-        {
-          "tag": "a",
-          "line": 688,
-          "className": "\"admin-link\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 688,
-          "className": "\"admin-block-small\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Modal",
-          "line": 786,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 787,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => setSelected(null)}",
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 787,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{save}",
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 797,
-          "className": "\"admin-button admin-button--secondary\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 801,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 802,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 802,
-          "className": null,
-          "type": "\"number\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite || busy}"
-        },
-        {
-          "tag": "Field",
-          "line": 803,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 804,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 804,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite || busy}"
-        },
-        {
-          "tag": "Field",
-          "line": 805,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 805,
-          "className": null,
-          "type": "\"url\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite || busy}"
-        },
-        {
-          "tag": "Field",
-          "line": 806,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "textarea",
-          "line": 806,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite || busy}"
-        },
-        {
-          "tag": "Field",
-          "line": 807,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "textarea",
-          "line": 807,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite || busy}"
-        },
-        {
-          "tag": "Modal",
-          "line": 866,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 866,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>setSelected(null)}",
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 866,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{save}",
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 870,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 870,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 870,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "textarea",
-          "line": 870,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite||busy}"
-        },
-        {
-          "tag": "Modal",
-          "line": 898,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 899,
-          "className": "\"admin-button admin-button--danger\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>changeAccountStatus('BLOCKED')}",
-          "disabled": "{statusBusy}"
-        },
-        {
-          "tag": "button",
-          "line": 899,
-          "className": "\"admin-button admin-button--primary\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>changeAccountStatus('ACTIVE')}",
-          "disabled": "{statusBusy}"
-        },
-        {
-          "tag": "Modal",
-          "line": 906,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 916,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "textarea",
-          "line": 916,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "input",
-          "line": 916,
-          "className": null,
-          "type": "{row.value_type==='NUMBER'?'number':'text'}",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Button",
-          "line": 916,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>update(row)}",
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 925,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>setModal(true)}",
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 925,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>resetTwoFactor(r)}",
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 925,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>toggle(r)}",
-          "disabled": null
-        },
-        {
-          "tag": "Modal",
-          "line": 926,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 926,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 926,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 926,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 926,
+          "line": 210,
           "className": null,
           "type": "\"email\"",
           "role": null,
@@ -1364,7 +547,7 @@
         },
         {
           "tag": "Field",
-          "line": 926,
+          "line": 212,
           "className": null,
           "type": null,
           "role": null,
@@ -1374,17 +557,37 @@
         },
         {
           "tag": "input",
-          "line": 926,
+          "line": 214,
           "className": null,
-          "type": "\"password\"",
+          "type": "{show ? 'text' : 'password'}",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
           "disabled": null
         },
         {
+          "tag": "button",
+          "line": 215,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}",
+          "onClick": "{() => setShow(!show)}",
+          "disabled": null
+        },
+        {
           "tag": "Field",
-          "line": 926,
+          "line": 225,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 226,
           "className": null,
           "type": null,
           "role": null,
@@ -1394,8 +597,8 @@
         },
         {
           "tag": "Button",
-          "line": 926,
-          "className": null,
+          "line": 231,
+          "className": "\"admin-login-submit\"",
           "type": "\"submit\"",
           "role": null,
           "ariaLabel": null,
@@ -1403,58 +606,158 @@
           "disabled": null
         },
         {
-          "tag": "Button",
-          "line": 951,
+          "tag": "button",
+          "line": 286,
+          "className": "{`admin-queue-card ${count ? 'is-pending' : ''}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => navigate(section, request)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 318,
           "className": null,
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{()=>void load(page.page)}",
+          "onClick": "{() => navigate(item.section)}",
           "disabled": null
         },
         {
           "tag": "Button",
-          "line": 952,
+          "line": 333,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => retry(revision + 1)}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 345,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => navigate('orders')}",
+          "disabled": null
+        },
+        {
+          "tag": "FunnelCard",
+          "line": 362,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "AyWebsOperationsCard",
+          "line": 363,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 487,
           "className": null,
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": null,
-          "onClick": "{()=>downloadCsv(csvFileName('zayrovi-journal-audit'),AUDIT_COLUMNS,rows)}",
-          "disabled": "{loading||rows.length===0}"
+          "ariaLabel": "\"Modifier\"",
+          "onClick": "{(event) => { event.stopPropagation(); openEdit(row); }}",
+          "disabled": null
         },
         {
-          "tag": "input",
-          "line": 979,
+          "tag": "button",
+          "line": 487,
           "className": null,
-          "type": "\"date\"",
+          "type": "\"button\"",
           "role": null,
-          "ariaLabel": "\"Début de la période\"",
+          "ariaLabel": "\"Archiver\"",
+          "onClick": "{(event) => { event.stopPropagation(); setArchiveTarget(row); }}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 491,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{openCreate}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 499,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openEdit(row)}",
+          "disabled": null
+        },
+        {
+          "tag": "Modal",
+          "line": 505,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
           "onClick": null,
           "disabled": null
         },
         {
-          "tag": "input",
-          "line": 979,
-          "className": null,
-          "type": "\"date\"",
+          "tag": "button",
+          "line": 557,
+          "className": "{`admin-order-kpi ${active === value ? 'is-active' : ''}`}",
+          "type": "\"button\"",
           "role": null,
-          "ariaLabel": "\"Fin de la période\"",
+          "ariaLabel": null,
+          "onClick": "{() => onSelect(value)}",
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 646,
+          "className": "\"admin-button admin-button--secondary\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 651,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { setSearch(''); setStatus(''); setPaymentStatus(''); setDays(''); }}",
+          "disabled": null
+        },
+        {
+          "tag": "Modal",
+          "line": 663,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
           "onClick": null,
           "disabled": null
         },
         {
           "tag": "Field",
-          "line": 1008,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 1008,
+          "line": 677,
           "className": null,
           "type": null,
           "role": null,
@@ -1464,7 +767,7 @@
         },
         {
           "tag": "Field",
-          "line": 1008,
+          "line": 677,
           "className": null,
           "type": null,
           "role": null,
@@ -1473,8 +776,18 @@
           "disabled": null
         },
         {
+          "tag": "a",
+          "line": 688,
+          "className": "\"admin-button admin-button--secondary\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "Field",
-          "line": 1008,
+          "line": 691,
           "className": null,
           "type": null,
           "role": null,
@@ -1484,7 +797,77 @@
         },
         {
           "tag": "input",
-          "line": 1008,
+          "line": 691,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 692,
+          "className": "\"admin-button admin-button--primary\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>reviewDeposit('approve')}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "button",
+          "line": 693,
+          "className": "\"admin-button admin-button--danger\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>reviewDeposit('reject')}",
+          "disabled": "{busy||!reviewNote.trim()}"
+        },
+        {
+          "tag": "a",
+          "line": 697,
+          "className": "\"admin-button admin-button--secondary\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 698,
+          "className": "\"admin-button admin-button--primary\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{issueInvoice}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "button",
+          "line": 699,
+          "className": "\"admin-button admin-button--secondary\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{async()=>{setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/resend`,{method:'POST'});setToast({message:`Facture ${r.data?.invoiceNumber} ${r.data?.mail?.delivered?'renvoyée par e-mail':'régénérée'}.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}}}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "Field",
+          "line": 719,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 719,
           "className": null,
           "type": "\"number\"",
           "role": null,
@@ -1494,19 +877,9 @@
         },
         {
           "tag": "Field",
-          "line": 1008,
+          "line": 720,
           "className": null,
           "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 1008,
-          "className": null,
-          "type": "\"date\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
@@ -1514,7 +887,7 @@
         },
         {
           "tag": "Field",
-          "line": 1008,
+          "line": 721,
           "className": null,
           "type": null,
           "role": null,
@@ -1524,7 +897,167 @@
         },
         {
           "tag": "input",
-          "line": 1008,
+          "line": 721,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 722,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 722,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 723,
+          "className": "\"admin-button admin-button--primary\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{recordRefund}",
+          "disabled": "{busy||!refundDraft.reason.trim()||!(Number(refundDraft.amount)>0)}"
+        },
+        {
+          "tag": "Field",
+          "line": 727,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 728,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 728,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite||busy}"
+        },
+        {
+          "tag": "Field",
+          "line": 729,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 729,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite||busy}"
+        },
+        {
+          "tag": "Field",
+          "line": 730,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 730,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 730,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 730,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite||busy}"
+        },
+        {
+          "tag": "button",
+          "line": 731,
+          "className": "\"admin-button admin-button--primary\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{updateDelivery}",
+          "disabled": "{!canWrite||busy}"
+        },
+        {
+          "tag": "a",
+          "line": 734,
+          "className": "\"admin-link\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 734,
+          "className": "\"admin-block-small\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Modal",
+          "line": 832,
           "className": null,
           "type": null,
           "role": null,
@@ -1534,27 +1067,17 @@
         },
         {
           "tag": "Button",
-          "line": 1008,
-          "className": null,
-          "type": "\"submit\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 1009,
+          "line": 833,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
-          "onClick": "{()=>remove(row.id)}",
+          "onClick": "{() => setSelected(null)}",
           "disabled": null
         },
         {
           "tag": "Button",
-          "line": 1038,
+          "line": 833,
           "className": null,
           "type": null,
           "role": null,
@@ -1563,18 +1086,28 @@
           "disabled": null
         },
         {
-          "tag": "button",
-          "line": 1040,
-          "className": "{`admin-theme-card ${theme.preset===preset.id?'is-active':''}`}",
-          "type": "\"button\"",
+          "tag": "a",
+          "line": 843,
+          "className": "\"admin-button admin-button--secondary\"",
+          "type": null,
           "role": null,
           "ariaLabel": null,
-          "onClick": "{()=>applyPreset(preset)}",
-          "disabled": "{!canWrite}"
+          "onClick": null,
+          "disabled": null
         },
         {
           "tag": "Field",
-          "line": 1041,
+          "line": 847,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 848,
           "className": null,
           "type": null,
           "role": null,
@@ -1584,17 +1117,27 @@
         },
         {
           "tag": "input",
-          "line": 1041,
+          "line": 848,
           "className": null,
-          "type": "\"color\"",
+          "type": "\"number\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
-          "disabled": "{!canWrite}"
+          "disabled": "{!canWrite || busy}"
         },
         {
           "tag": "Field",
-          "line": 1041,
+          "line": 849,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 850,
           "className": null,
           "type": null,
           "role": null,
@@ -1604,37 +1147,17 @@
         },
         {
           "tag": "input",
-          "line": 1041,
-          "className": null,
-          "type": "\"color\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
-          "line": 1041,
+          "line": 850,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 1042,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
+          "disabled": "{!canWrite || busy}"
         },
         {
           "tag": "Field",
-          "line": 1044,
+          "line": 851,
           "className": null,
           "type": null,
           "role": null,
@@ -1644,77 +1167,17 @@
         },
         {
           "tag": "input",
-          "line": 1044,
+          "line": 851,
           "className": null,
-          "type": null,
+          "type": "\"url\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
-          "disabled": "{!canWrite}"
+          "disabled": "{!canWrite || busy}"
         },
         {
           "tag": "Field",
-          "line": 1045,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 1045,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
-          "line": 1046,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 1046,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
-          "line": 1047,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 1047,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Field",
-          "line": 1048,
+          "line": 852,
           "className": null,
           "type": null,
           "role": null,
@@ -1724,7 +1187,647 @@
         },
         {
           "tag": "textarea",
-          "line": 1048,
+          "line": 852,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite || busy}"
+        },
+        {
+          "tag": "Field",
+          "line": 853,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 853,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite || busy}"
+        },
+        {
+          "tag": "Modal",
+          "line": 912,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 912,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>setSelected(null)}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 912,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{save}",
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 916,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 916,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 916,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 916,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite||busy}"
+        },
+        {
+          "tag": "Modal",
+          "line": 961,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 962,
+          "className": "\"admin-button admin-button--danger\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>changeAccountStatus('BLOCKED')}",
+          "disabled": "{statusBusy}"
+        },
+        {
+          "tag": "button",
+          "line": 962,
+          "className": "\"admin-button admin-button--primary\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>changeAccountStatus('ACTIVE')}",
+          "disabled": "{statusBusy}"
+        },
+        {
+          "tag": "a",
+          "line": 972,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 973,
+          "className": "\"admin-button admin-button--ghost\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>revokeDevice(r.handle)}",
+          "disabled": "{Boolean(deviceBusy)}"
+        },
+        {
+          "tag": "Modal",
+          "line": 981,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 991,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 991,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "input",
+          "line": 991,
+          "className": null,
+          "type": "{row.value_type==='NUMBER'?'number':'text'}",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Button",
+          "line": 991,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>update(row)}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 1000,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>setModal(true)}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 1000,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>resetTwoFactor(r)}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 1000,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>toggle(r)}",
+          "disabled": null
+        },
+        {
+          "tag": "Modal",
+          "line": 1001,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 1001,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1001,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 1001,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1001,
+          "className": null,
+          "type": "\"email\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 1001,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1001,
+          "className": null,
+          "type": "\"password\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 1001,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 1001,
+          "className": null,
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 1026,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>void load(page.page)}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 1027,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>downloadCsv(csvFileName('zayrovi-journal-audit'),AUDIT_COLUMNS,rows)}",
+          "disabled": "{loading||rows.length===0}"
+        },
+        {
+          "tag": "input",
+          "line": 1054,
+          "className": null,
+          "type": "\"date\"",
+          "role": null,
+          "ariaLabel": "\"Début de la période\"",
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1054,
+          "className": null,
+          "type": "\"date\"",
+          "role": null,
+          "ariaLabel": "\"Fin de la période\"",
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 1083,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1083,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 1083,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 1083,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1083,
+          "className": null,
+          "type": "\"number\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 1083,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1083,
+          "className": null,
+          "type": "\"date\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 1083,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1083,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 1083,
+          "className": null,
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 1084,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>remove(row.id)}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 1113,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{save}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 1115,
+          "className": "{`admin-theme-card ${theme.preset===preset.id?'is-active':''}`}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{()=>applyPreset(preset)}",
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 1116,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1116,
+          "className": null,
+          "type": "\"color\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 1116,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1116,
+          "className": null,
+          "type": "\"color\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 1116,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 1117,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 1119,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1119,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 1120,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1120,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 1121,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1121,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 1122,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 1122,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 1123,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 1123,
           "className": null,
           "type": null,
           "role": null,
@@ -1737,7 +1840,7 @@
         {
           "module": "../components/QatafoIcons",
           "bindings": "{\n  ArrowUpRight, Check, RefreshCw, ExternalLink, AlertCircle, Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, CreditCard, Eye, Gift, Globe2, Grid,\n  History, Home, Image, Info, LayoutGrid, LensBox, Link2, LogOut, Menu, MessageSquare, Package, Palette, Pencil, Percent, Plus, Search as SearchIcon,\n  Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X,\n}",
-          "line": 5
+          "line": 7
         }
       ],
       "inlineSvg": [],
@@ -3800,8 +3903,8 @@
     {
       "file": "client/src/admin/AyWebsCaptureHealthPanel.tsx",
       "domain": "admin",
-      "sha256": "4a65dbb9192315bed374ef1dcbbbca7c83f847e388f25fe5a6a1d1d078197521",
-      "lines": 254,
+      "sha256": "041bb067f61102dc2a42a343731db4c87c631703d9c40bf61882118a8d4a8278",
+      "lines": 206,
       "imports": [
         "react",
         "./api",
@@ -3813,7 +3916,7 @@
       "controls": [
         {
           "tag": "input",
-          "line": 214,
+          "line": 183,
           "className": null,
           "type": null,
           "role": null,
@@ -3823,7 +3926,7 @@
         },
         {
           "tag": "Button",
-          "line": 222,
+          "line": 191,
           "className": null,
           "type": null,
           "role": null,
@@ -3833,23 +3936,13 @@
         },
         {
           "tag": "Button",
-          "line": 230,
+          "line": 199,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => void load()}",
           "disabled": "{loading}"
-        },
-        {
-          "tag": "Button",
-          "line": 240,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => void applyPrinciple()}",
-          "disabled": "{!canControl || busy || !storeId || note.trim().length < 3}"
         }
       ],
       "icons": [],
@@ -5130,7 +5223,7 @@
     {
       "file": "client/src/admin/back-office/workspaces.ts",
       "domain": "admin",
-      "sha256": "a6ecb09fccf4c1620cbdb217b25b0c6f24fa2ef29aecebe00342b4dd44b2b638",
+      "sha256": "cf153016fdf70e2af4e1ced19082158a9b18fecb1cf3ca3b289f222a19b01804",
       "lines": 69,
       "imports": [
         "./framework",
@@ -5221,6 +5314,570 @@
           "line": 2
         }
       ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/admin/BlackFridayStudio.tsx",
+      "domain": "admin",
+      "sha256": "b36183be7228053e3700c13e7587c5cbeb19957eb6b8db56734f1fec3b54dc50",
+      "lines": 183,
+      "imports": [
+        "react",
+        "../../../shared/blackFriday",
+        "./api",
+        "./components",
+        "./StudioMediaField",
+        "./mediaUpload"
+      ],
+      "exports": [
+        "BlackFridayStudio"
+      ],
+      "controls": [
+        {
+          "tag": "Field",
+          "line": 90,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 90,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 91,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 91,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 92,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 92,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 93,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 93,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 94,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 94,
+          "className": null,
+          "type": "\"color\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 95,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 95,
+          "className": null,
+          "type": "\"color\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 96,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 96,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 97,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 97,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 98,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 98,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 99,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 99,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 100,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 100,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 101,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 101,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 102,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 102,
+          "className": null,
+          "type": "\"datetime-local\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 117,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => move(index, -1)}",
+          "disabled": "{index === 0}"
+        },
+        {
+          "tag": "Button",
+          "line": 118,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => move(index, 1)}",
+          "disabled": "{index === draft.productIds.length - 1}"
+        },
+        {
+          "tag": "Button",
+          "line": 119,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => patch({ productIds: draft.productIds.filter(item => item !== id) })}",
+          "disabled": "{draft.collections.some(item => item.productIds.includes(id))}"
+        },
+        {
+          "tag": "Field",
+          "line": 125,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 125,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 128,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { remember([offer]); patch({ productIds: [...draft.productIds, offer.id] }); }}",
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 137,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 138,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 138,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 139,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 139,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 140,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 140,
+          "className": null,
+          "type": "\"datetime-local\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 144,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 144,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 146,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 147,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 152,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => moveCollection(index, -1)}",
+          "disabled": "{index === 0}"
+        },
+        {
+          "tag": "Button",
+          "line": 153,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => moveCollection(index, 1)}",
+          "disabled": "{index === draft.collections.length - 1}"
+        },
+        {
+          "tag": "Button",
+          "line": 154,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => patch({ collections: draft.collections.filter(group => group.id !== item.id) })}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 157,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => patch({\n          collections: [...draft.collections, { id: crypto.randomUUID(), titleFr: '', titleAr: '', cover: '', endsAt: '', productIds: [], demo: false }],\n        })}",
+          "disabled": "{!draft.productIds.length || draft.collections.length >= BLACK_FRIDAY_MAX_COLLECTIONS}"
+        },
+        {
+          "tag": "Button",
+          "line": 161,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void save()}",
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 176,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 177,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 177,
+          "className": null,
+          "type": "\"number\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 178,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 178,
+          "className": null,
+          "type": "\"number\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 179,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onSave(Number(price), Number(compare))}",
+          "disabled": "{!(Number(price) > 0 && Number(compare) > Number(price) && Number(compare) <= 1_000_000) || (Number(price) === offer.price && Number(compare) === offer.compareAtPrice)}"
+        }
+      ],
+      "icons": [],
       "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
@@ -7788,16 +8445,151 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/admin/FinanceGiftCardLab.tsx",
+      "domain": "admin",
+      "sha256": "c145d2877870e14e5112f370d90bda976fc94d41bbca566e943a268164e4caf3",
+      "lines": 103,
+      "imports": [
+        "react",
+        "./api",
+        "./components",
+        "./back-office/OfficeLocale",
+        "./back-office/resource-ui",
+        "../../../shared/giftCardPreview"
+      ],
+      "exports": [
+        "FinanceGiftCardLab"
+      ],
+      "controls": [
+        {
+          "tag": "form",
+          "line": 63,
+          "className": "\"admin-grid\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 64,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 70,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 72,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 72,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 73,
+          "className": null,
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{Boolean(pending) || parseGiftPreviewAmount(amount, format) === null}"
+        },
+        {
+          "tag": "Button",
+          "line": 79,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void approve(review)}",
+          "disabled": "{Boolean(pending)}"
+        },
+        {
+          "tag": "Button",
+          "line": 80,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setReview(null)}",
+          "disabled": "{Boolean(pending)}"
+        },
+        {
+          "tag": "Button",
+          "line": 85,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setSpecimen('')}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 88,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { setError(''); reload(value => value + 1); }}",
+          "disabled": "{loading || Boolean(pending)}"
+        },
+        {
+          "tag": "Button",
+          "line": 97,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { setReview(row); setSpecimen(''); }}",
+          "disabled": "{Boolean(pending)}"
+        }
+      ],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/admin/FinanceWorkspace.tsx",
       "domain": "admin",
-      "sha256": "30511f4276ce97abb138e35bd2db0d2eaca1854f955150a3ce66b1c89cd0ec43",
-      "lines": 76,
+      "sha256": "a13f3d40cfb6c6c2fed2e8ad1873e6ce511dac43169db91566db2885ed03335e",
+      "lines": 78,
       "imports": [
         "react",
         "../components/QatafoIcons",
         "../design/admin/OfficeIcon",
         "../design/admin/OfficeListToolbar",
         "../design/admin/OfficeViewSwitch",
+        "./FinanceGiftCardLab",
         "./api",
         "./components",
         "./back-office/OfficeLocale",
@@ -7811,7 +8603,7 @@
       "controls": [
         {
           "tag": "form",
-          "line": 50,
+          "line": 52,
           "className": null,
           "type": null,
           "role": null,
@@ -7821,7 +8613,7 @@
         },
         {
           "tag": "Button",
-          "line": 52,
+          "line": 54,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -7831,43 +8623,13 @@
         },
         {
           "tag": "Button",
-          "line": 53,
+          "line": 55,
           "className": null,
           "type": "\"submit\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
           "disabled": "{loading}"
-        },
-        {
-          "tag": "Field",
-          "line": 55,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 55,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 56,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
         },
         {
           "tag": "Field",
@@ -7880,8 +8642,38 @@
           "disabled": null
         },
         {
+          "tag": "input",
+          "line": 57,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 58,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 59,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "CreditCard",
-          "line": 65,
+          "line": 67,
           "className": null,
           "type": null,
           "role": null,
@@ -8474,8 +9266,8 @@
     {
       "file": "client/src/admin/HomeFeaturedPage.tsx",
       "domain": "admin",
-      "sha256": "99522e4faee3ef4c2f8f878e96916d0cf42e290a5a6d7240c7921c0a0a13ae30",
-      "lines": 324,
+      "sha256": "36c734030ef005a9aa707f6c622cf89a15e532e55e09e1e76f8c0c65406b709e",
+      "lines": 325,
       "imports": [
         "react",
         "./components",
@@ -8490,7 +9282,7 @@
       "controls": [
         {
           "tag": "Button",
-          "line": 189,
+          "line": 190,
           "className": null,
           "type": null,
           "role": null,
@@ -8500,7 +9292,7 @@
         },
         {
           "tag": "Button",
-          "line": 192,
+          "line": 193,
           "className": null,
           "type": null,
           "role": null,
@@ -8510,7 +9302,7 @@
         },
         {
           "tag": "Button",
-          "line": 212,
+          "line": 213,
           "className": null,
           "type": null,
           "role": null,
@@ -8520,23 +9312,13 @@
         },
         {
           "tag": "Button",
-          "line": 215,
+          "line": 216,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => videoInput.current?.click()}",
           "disabled": "{!canWrite || slides.length >= MAX_COVER_SLIDES}"
-        },
-        {
-          "tag": "input",
-          "line": 218,
-          "className": null,
-          "type": "\"file\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
         },
         {
           "tag": "input",
@@ -8549,8 +9331,18 @@
           "disabled": null
         },
         {
+          "tag": "input",
+          "line": 220,
+          "className": null,
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "Button",
-          "line": 228,
+          "line": 229,
           "className": null,
           "type": null,
           "role": null,
@@ -8560,7 +9352,7 @@
         },
         {
           "tag": "Button",
-          "line": 229,
+          "line": 230,
           "className": null,
           "type": null,
           "role": null,
@@ -8570,7 +9362,7 @@
         },
         {
           "tag": "Button",
-          "line": 230,
+          "line": 231,
           "className": null,
           "type": null,
           "role": null,
@@ -8580,7 +9372,7 @@
         },
         {
           "tag": "input",
-          "line": 236,
+          "line": 237,
           "className": null,
           "type": "\"text\"",
           "role": null,
@@ -8590,7 +9382,7 @@
         },
         {
           "tag": "Button",
-          "line": 247,
+          "line": 248,
           "className": null,
           "type": null,
           "role": null,
@@ -8600,7 +9392,7 @@
         },
         {
           "tag": "textarea",
-          "line": 268,
+          "line": 269,
           "className": null,
           "type": null,
           "role": null,
@@ -8610,7 +9402,7 @@
         },
         {
           "tag": "input",
-          "line": 279,
+          "line": 280,
           "className": null,
           "type": "\"text\"",
           "role": null,
@@ -8620,7 +9412,7 @@
         },
         {
           "tag": "select",
-          "line": 291,
+          "line": 292,
           "className": null,
           "type": null,
           "role": null,
@@ -8630,7 +9422,7 @@
         },
         {
           "tag": "input",
-          "line": 299,
+          "line": 300,
           "className": null,
           "type": "\"number\"",
           "role": null,
@@ -11827,6 +12619,263 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/admin/PublicationStudio.tsx",
+      "domain": "admin",
+      "sha256": "21085e3878aa8b2726547a44d2f1abade380a76c9e40dd53d17847ef3a397c1a",
+      "lines": 114,
+      "imports": [
+        "react",
+        "../../../shared/publicationStudio",
+        "../../../shared/publicationContent",
+        "../../../shared/publicationFeed",
+        "./api",
+        "./components",
+        "./ProductIntegration",
+        "./StudioMediaField",
+        "./mediaUpload"
+      ],
+      "exports": [
+        "PublicationStudio"
+      ],
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 77,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => open(empty)}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "Button",
+          "line": 81,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => open(row)}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "Button",
+          "line": 82,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { if (window.confirm(`Archiver « ${row.title} » ?`)) void save(row); }}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "Modal",
+          "line": 85,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 88,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 88,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 92,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 92,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 95,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 95,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 98,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 98,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 99,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 99,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 100,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 100,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 104,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 104,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 105,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 105,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 106,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 106,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 110,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void save()}",
+          "disabled": null
+        }
+      ],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/admin/PurchasingPage.tsx",
       "domain": "admin",
       "sha256": "aa4e4c2f5e0ca63250d858264260c662810e27d5c479cbc71223d60996213307",
@@ -12353,9 +13402,10 @@
     {
       "file": "client/src/admin/SocialAdminPage.tsx",
       "domain": "admin",
-      "sha256": "78923d664fa6379f773cf8c234cb885314ca5c6619de8b33df5b659bdf74109f",
-      "lines": 170,
+      "sha256": "d837580c75494bda464ffc297409a4e44d6eb332a82c6bff85929a11f97d6888",
+      "lines": 171,
       "imports": [
+        "./PublicationStudio",
         "react",
         "../components/QatafoIcons",
         "./api",
@@ -12371,7 +13421,7 @@
       "controls": [
         {
           "tag": "select",
-          "line": 40,
+          "line": 41,
           "className": null,
           "type": null,
           "role": null,
@@ -12381,7 +13431,7 @@
         },
         {
           "tag": "Button",
-          "line": 75,
+          "line": 76,
           "className": null,
           "type": null,
           "role": null,
@@ -12391,7 +13441,7 @@
         },
         {
           "tag": "Modal",
-          "line": 97,
+          "line": 98,
           "className": null,
           "type": null,
           "role": null,
@@ -12401,7 +13451,7 @@
         },
         {
           "tag": "Button",
-          "line": 98,
+          "line": 99,
           "className": null,
           "type": null,
           "role": null,
@@ -12411,7 +13461,7 @@
         },
         {
           "tag": "Button",
-          "line": 98,
+          "line": 99,
           "className": null,
           "type": null,
           "role": null,
@@ -12421,7 +13471,7 @@
         },
         {
           "tag": "Field",
-          "line": 100,
+          "line": 101,
           "className": null,
           "type": null,
           "role": null,
@@ -12431,16 +13481,6 @@
         },
         {
           "tag": "input",
-          "line": 100,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
           "line": 101,
           "className": null,
           "type": null,
@@ -12460,8 +13500,8 @@
           "disabled": null
         },
         {
-          "tag": "input",
-          "line": 104,
+          "tag": "Field",
+          "line": 103,
           "className": null,
           "type": null,
           "role": null,
@@ -12471,7 +13511,17 @@
         },
         {
           "tag": "input",
-          "line": 107,
+          "line": 105,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 108,
           "className": null,
           "type": "\"file\"",
           "role": null,
@@ -12481,7 +13531,7 @@
         },
         {
           "tag": "Field",
-          "line": 122,
+          "line": 123,
           "className": null,
           "type": null,
           "role": null,
@@ -12491,7 +13541,7 @@
         },
         {
           "tag": "input",
-          "line": 124,
+          "line": 125,
           "className": null,
           "type": null,
           "role": null,
@@ -12501,29 +13551,9 @@
         },
         {
           "tag": "input",
-          "line": 127,
+          "line": 128,
           "className": null,
           "type": "\"file\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 132,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 132,
-          "className": null,
-          "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": null,
@@ -12540,7 +13570,7 @@
           "disabled": null
         },
         {
-          "tag": "select",
+          "tag": "input",
           "line": 133,
           "className": null,
           "type": null,
@@ -12552,6 +13582,26 @@
         {
           "tag": "Field",
           "line": 134,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 134,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 135,
           "className": null,
           "type": null,
           "role": null,
@@ -12561,7 +13611,7 @@
         },
         {
           "tag": "textarea",
-          "line": 134,
+          "line": 135,
           "className": null,
           "type": null,
           "role": null,
@@ -12571,7 +13621,7 @@
         },
         {
           "tag": "Field",
-          "line": 136,
+          "line": 137,
           "className": null,
           "type": null,
           "role": null,
@@ -12581,7 +13631,7 @@
         },
         {
           "tag": "select",
-          "line": 136,
+          "line": 137,
           "className": null,
           "type": null,
           "role": null,
@@ -12591,7 +13641,7 @@
         },
         {
           "tag": "Button",
-          "line": 160,
+          "line": 161,
           "className": null,
           "type": null,
           "role": null,
@@ -12604,7 +13654,7 @@
         {
           "module": "../components/QatafoIcons",
           "bindings": "{ ArrowUp, Pencil, Plus, Trash2 }",
-          "line": 2
+          "line": 3
         }
       ],
       "inlineSvg": [],
@@ -13059,13 +14109,16 @@
     {
       "file": "client/src/admin/StoriesStudio.tsx",
       "domain": "admin",
-      "sha256": "26b4feb67b79ac975464aacba54406ab72ea48096f8244f8dfeca6782c956927",
-      "lines": 136,
+      "sha256": "d34c4338f6cc5b7450ff9bbbaf84924b0b576a877be621affbda62a656d3366b",
+      "lines": 157,
       "imports": [
         "react",
         "./api",
         "./components",
-        "./mediaUpload"
+        "./mediaUpload",
+        "./StorySequenceEditor",
+        "./ProductIntegration",
+        "../../../shared/storyEditorial"
       ],
       "exports": [
         "StoriesStudioPage"
@@ -13073,7 +14126,7 @@
       "controls": [
         {
           "tag": "Field",
-          "line": 79,
+          "line": 91,
           "className": null,
           "type": null,
           "role": null,
@@ -13083,7 +14136,7 @@
         },
         {
           "tag": "input",
-          "line": 81,
+          "line": 93,
           "className": null,
           "type": null,
           "role": null,
@@ -13093,7 +14146,814 @@
         },
         {
           "tag": "Field",
-          "line": 85,
+          "line": 97,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 98,
+          "className": null,
+          "type": "\"number\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 100,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 102,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void saveSettings()}",
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Button",
+          "line": 103,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void load()}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 108,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { setError(''); setLinksChanged(false); setForm({ id: '', title: '', description: '', title_ar: '', description_ar: '', media_url: '',\n        priority: Math.max(0, ...rows.map(row => row.priority)) + 1, status: 'PUBLISHED', publish_at: new Date().toISOString(), expires_at: null }); }}",
+          "disabled": "{busy || !canWrite}"
+        },
+        {
+          "tag": "Button",
+          "line": 115,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void openCard(card)}",
+          "disabled": "{busy || !canWrite}"
+        },
+        {
+          "tag": "Button",
+          "line": 116,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void remove(card)}",
+          "disabled": "{busy || !canWrite}"
+        },
+        {
+          "tag": "Button",
+          "line": 121,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setPage(page - 1)}",
+          "disabled": "{page <= 1 || busy}"
+        },
+        {
+          "tag": "Button",
+          "line": 123,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setPage(page + 1)}",
+          "disabled": "{page >= pages || busy}"
+        },
+        {
+          "tag": "Modal",
+          "line": 126,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 129,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 131,
+          "className": null,
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{uploading || busy}"
+        },
+        {
+          "tag": "Field",
+          "line": 135,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 136,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 139,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 139,
+          "className": null,
+          "type": "\"number\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 140,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 140,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 143,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 143,
+          "className": null,
+          "type": "\"date\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 144,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 144,
+          "className": null,
+          "type": "\"date\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 153,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void saveCard()}",
+          "disabled": "{uploading || !canWrite}"
+        }
+      ],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/admin/StorySequenceEditor.tsx",
+      "domain": "admin",
+      "sha256": "377b33f8e43a75edc3b739c7efc6e11ffe899fce46815fb1bcbcbbf6c08af03f",
+      "lines": 109,
+      "imports": [
+        "react",
+        "../../../shared/storyEditorial",
+        "./StudioMediaField",
+        "./components"
+      ],
+      "exports": [
+        "StorySequenceEditor"
+      ],
+      "controls": [
+        {
+          "tag": "Field",
+          "line": 22,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 23,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 23,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 32,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onChange({ version: 1,\n    slides: [{ ...frame(cover), action: 'read' }, { ...frame(cover, 'inset'), action: 'read' }], article: article(cover) })}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 39,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onMove(-1)}",
+          "disabled": "{index === 0}"
+        },
+        {
+          "tag": "Button",
+          "line": 40,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onMove(1)}",
+          "disabled": "{index + 1 >= length}"
+        },
+        {
+          "tag": "Button",
+          "line": 41,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{remove}",
+          "disabled": "{!removable}"
+        },
+        {
+          "tag": "Field",
+          "line": 50,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 50,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 54,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 54,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 62,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 62,
+          "className": null,
+          "type": "\"number\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 64,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 65,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 69,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 69,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 74,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onChange({ ...value, slides: [...value.slides, frame(cover)] })}",
+          "disabled": "{value.slides.length >= LIMITS.slides}"
+        },
+        {
+          "tag": "Field",
+          "line": 80,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 80,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 87,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 87,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 99,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => updateArticle({ ...selection, blocks: [...selection.blocks, { type: 'text', content: empty() }] })}",
+          "disabled": "{selection.blocks.length >= LIMITS.blocks}"
+        },
+        {
+          "tag": "Button",
+          "line": 100,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => updateArticle({ ...selection, blocks: [...selection.blocks, { type: 'image', url: '', alt: empty() }] })}",
+          "disabled": "{selection.blocks.length >= LIMITS.blocks}"
+        },
+        {
+          "tag": "Button",
+          "line": 101,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => updateArticle({ ...selection, blocks: [...selection.blocks,\n          { type: 'product', productId: productIds[0]!, title: empty(), content: empty(), image: '' }] })}",
+          "disabled": "{!productIds.length || selection.blocks.length >= LIMITS.blocks}"
+        },
+        {
+          "tag": "Button",
+          "line": 103,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => onChange({ ...value, article: undefined, slides: value.slides.map(slide => ({ ...slide, action: undefined })) })}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 106,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => { if (window.confirm('Retirer le parcours personnalisé ? La carte et les produits resteront enregistrés.')) onChange(null); }}",
+          "disabled": null
+        }
+      ],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/admin/StudioMediaField.tsx",
+      "domain": "admin",
+      "sha256": "380453e134d7b4c026feb9ffb076d6540d7a6373f5bfed4d84967a86f591d2d1",
+      "lines": 11,
+      "imports": [
+        "./components"
+      ],
+      "exports": [
+        "StudioMediaField"
+      ],
+      "controls": [
+        {
+          "tag": "Field",
+          "line": 6,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 7,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 8,
+          "className": null,
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        }
+      ],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/admin/ZayroviHighlightsStudio.tsx",
+      "domain": "admin",
+      "sha256": "d6c00a25ecde2aad8afb2be0fb1c878411ff753080702b5e36121785619e893b",
+      "lines": 96,
+      "imports": [
+        "react",
+        "../../../shared/zayroviHighlights",
+        "./api",
+        "./components"
+      ],
+      "exports": [
+        "ZayroviHighlightsStudio"
+      ],
+      "controls": [
+        {
+          "tag": "Field",
+          "line": 63,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 63,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 64,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 64,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 71,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 71,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 81,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 81,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!slot.reelId}"
+        },
+        {
+          "tag": "Button",
+          "line": 87,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => move(i, i - 1)}",
+          "disabled": "{i === 0}"
+        },
+        {
+          "tag": "Button",
+          "line": 88,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => move(i, i + 1)}",
+          "disabled": "{i + 1 === HIGHLIGHT_LIMIT}"
+        },
+        {
+          "tag": "Button",
+          "line": 92,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void save()}",
+          "disabled": null
+        }
+      ],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/admin/ZayroviNewsStudio.tsx",
+      "domain": "admin",
+      "sha256": "34c05bb0e042c05c971e79f40ced9268fe018a0ed76b81867debe41e4370e146",
+      "lines": 129,
+      "imports": [
+        "react",
+        "../../../shared/zayroviNews",
+        "./api",
+        "./mediaUpload",
+        "./components",
+        "./StudioMediaField"
+      ],
+      "exports": [
+        "ZayroviNewsStudio"
+      ],
+      "controls": [
+        {
+          "tag": "Field",
+          "line": 16,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 16,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 16,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 34,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 34,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 35,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 35,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 86,
           "className": null,
           "type": null,
           "role": null,
@@ -13105,7 +14965,7 @@
           "tag": "input",
           "line": 86,
           "className": null,
-          "type": "\"number\"",
+          "type": "\"checkbox\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
@@ -13113,97 +14973,7 @@
         },
         {
           "tag": "Field",
-          "line": 88,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 90,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => void saveSettings()}",
-          "disabled": "{!canWrite}"
-        },
-        {
-          "tag": "Button",
-          "line": 91,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => void load()}",
-          "disabled": null
-        },
-        {
-          "tag": "Button",
-          "line": 96,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => { setError(''); setForm({ id: '', title: '', description: '', title_ar: '', description_ar: '', media_url: '',\n        priority: Math.max(0, ...rows.map(row => row.priority)) + 1, status: 'PUBLISHED', publish_at: new Date().toISOString(), expires_at: null }); }}",
-          "disabled": "{busy || !canWrite}"
-        },
-        {
-          "tag": "Button",
-          "line": 103,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => { setError(''); setForm(card); }}",
-          "disabled": "{busy || !canWrite}"
-        },
-        {
-          "tag": "Button",
-          "line": 104,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => void remove(card)}",
-          "disabled": "{busy || !canWrite}"
-        },
-        {
-          "tag": "Button",
-          "line": 109,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => setPage(page - 1)}",
-          "disabled": "{page <= 1 || busy}"
-        },
-        {
-          "tag": "Button",
-          "line": 111,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => setPage(page + 1)}",
-          "disabled": "{page >= pages || busy}"
-        },
-        {
-          "tag": "Modal",
-          "line": 114,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 117,
+          "line": 87,
           "className": null,
           "type": null,
           "role": null,
@@ -13213,17 +14983,17 @@
         },
         {
           "tag": "input",
-          "line": 119,
+          "line": 87,
           "className": null,
-          "type": "\"file\"",
+          "type": "\"checkbox\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
-          "disabled": "{uploading || busy}"
+          "disabled": null
         },
         {
           "tag": "Field",
-          "line": 123,
+          "line": 93,
           "className": null,
           "type": null,
           "role": null,
@@ -13233,7 +15003,17 @@
         },
         {
           "tag": "input",
-          "line": 124,
+          "line": 93,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 97,
           "className": null,
           "type": null,
           "role": null,
@@ -13243,27 +15023,7 @@
         },
         {
           "tag": "Field",
-          "line": 127,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 127,
-          "className": null,
-          "type": "\"number\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "Field",
-          "line": 128,
+          "line": 98,
           "className": null,
           "type": null,
           "role": null,
@@ -13273,7 +15033,67 @@
         },
         {
           "tag": "select",
-          "line": 128,
+          "line": 98,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 103,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 103,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 106,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 106,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Field",
+          "line": 111,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 111,
           "className": null,
           "type": null,
           "role": null,
@@ -13283,13 +15103,53 @@
         },
         {
           "tag": "Button",
-          "line": 132,
+          "line": 117,
           "className": null,
-          "type": null,
+          "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => void saveCard()}",
-          "disabled": "{uploading || !canWrite}"
+          "onClick": "{() => move(index, -1)}",
+          "disabled": "{index === 0}"
+        },
+        {
+          "tag": "Button",
+          "line": 118,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => move(index, 1)}",
+          "disabled": "{index + 1 === draft.entries.length}"
+        },
+        {
+          "tag": "Button",
+          "line": 119,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setDraft({ ...draft, entries: draft.entries.filter(item => item.id !== entry.id) })}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 122,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setDraft({ ...draft, entries: [...draft.entries,\n          { id: crypto.randomUUID(), kind: 'notice', published: false, title: blank(), body: blank(), image: '' }] })}",
+          "disabled": "{draft.entries.length >= ZAYROVI_NEWS_LIMIT}"
+        },
+        {
+          "tag": "Button",
+          "line": 125,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void save()}",
+          "disabled": null
         }
       ],
       "icons": [],
