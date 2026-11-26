@@ -14,6 +14,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { randomBytes } from 'node:crypto';
 import express from 'express';
 import request from 'supertest';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
@@ -26,6 +27,18 @@ import {
   validateSbaseQuery,
 } from '../src/sbase/descriptors';
 import { SbaseError, runSandbaseCall, runSandbaseSearch, sandbaseConfigured } from '../src/sbase/client';
+import {
+  APIFY_DETAIL_COST_USD,
+  APIFY_IMAGE_BASE64_BUDGET,
+  APIFY_IMAGE_COST_USD,
+  APIFY_SEARCH_COST_USD,
+  apifyConfigured,
+  apifyImageBase64,
+  apifyImageEndpoint,
+  runApifyDetail,
+  runApifySearch,
+  searchApifyByImage,
+} from '../src/sbase/apify';
 import { extractProducts, missingFacets, normalizeProduct, parsePriceText } from '../src/sbase/extract';
 import { extractDetail } from '../src/sbase/detail';
 import { clearSbaseCache, createSbaseRouter } from '../src/sbase/routes';
@@ -641,5 +654,346 @@ describe('S Base — isolation', () => {
       expect(source).not.toMatch(/SERPAPI_KEY|serpapi\.com|serpApiVisualSearch|zayrovix\//);
       expect(source).not.toMatch(/zayrovix\/services\/visualSearch/);
     }
+  });
+});
+
+/*
+ * ── مزوّد Apify (2026-11-26) ─────────────────────────────────────────────────
+ * قرار المالك: نحذفو SandBase نهائياً ونعوّضو بـApify. المرحلة الأولى: المزوّد
+ * يُبنى **جانب** القديم بلا تفعيل — التفعيل بمتغيّر البيئة يأتي بعده، والحذف
+ * بعد التحقيق الحيّ. كل الحقول هنا مأخوذة من أمثلة الردود المنشورة على صفحات
+ * Apify (قُرأت 2026-11-26) — ما فماش حقل مخترَع.
+ */
+describe('S Base — مزوّد Apify', () => {
+  const APIFY_KEY = 'test_apify_token';
+
+  beforeEach(() => {
+    process.env.APIFY_TOKEN = APIFY_KEY;
+    delete process.env.APIFY_1688_ACTOR;
+    delete process.env.APIFY_IMAGE_ACTOR;
+  });
+
+  afterEach(() => {
+    delete process.env.APIFY_TOKEN;
+    vi.unstubAllGlobals();
+  });
+
+  /** جدولة النداءات: POST runs → GET actor-runs → GET datasets/items. */
+  function stubApify(handlers: Array<(url: string, init?: RequestInit) => Response | null>) {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url: String(url), init });
+      for (const handler of handlers) {
+        const response = handler(String(url), init);
+        if (response) return response;
+      }
+      return new Response(JSON.stringify({ error: { type: 'unexpected-url' } }), { status: 500 });
+    }));
+    return calls;
+  }
+
+  const runQueued = () => new Response(JSON.stringify({
+    data: { id: 'run_9', actId: 'act_1', status: 'READY', defaultDatasetId: 'ds_1' },
+  }), { status: 200 });
+
+  const runSucceeded = () => new Response(JSON.stringify({
+    data: { id: 'run_9', status: 'SUCCEEDED', defaultDatasetId: 'ds_1' },
+  }), { status: 200 });
+
+  /** صفّ بحث حقيقي كما ينشره الـREADME (2026-11-26). */
+  const searchRow = {
+    offerId: '1089329678023',
+    title: 'New macaron bowl lid insulated tumbler - large capacity water bottle',
+    priceUsd: 2.38,
+    priceCny: 15.5,
+    minOrderQuantity: 1,
+    sales: '500+ sold',
+    salesCount: 500,
+    supplierName: '义乌市乌桨五金制品厂',
+    supplierYearsOnPlatform: 1,
+    starLevel: 5,
+    sellingPoints: ['Ships within 5h'],
+    isAd: false,
+    url: 'https://detail.1688.com/offer/1089329678023.html',
+    images: ['https://cbu01.alicdn.com/img/ibank/a.jpg'],
+  };
+
+  test('الأثمنة المنشورة تُحسب من الموثّق: بحث 0.0848$ · تفاصيل 0.00899$ · صورة 0.004$', () => {
+    expect(APIFY_SEARCH_COST_USD).toBeCloseTo(0.005 + 20 * 3.99 / 1000, 5);
+    expect(APIFY_DETAIL_COST_USD).toBeCloseTo(0.005 + 3.99 / 1000, 5);
+    expect(APIFY_IMAGE_COST_USD).toBeCloseTo(20 * 0.2 / 1000, 5);
+  });
+
+  test('بدون مفتاح: رفض APIFY_NOT_CONFIGURED قبل أي نداء شبكي', async () => {
+    delete process.env.APIFY_TOKEN;
+    expect(apifyConfigured()).toBe(false);
+    const calls = stubApify([]);
+    await expect(runApifySearch('case')).rejects.toMatchObject({ code: 'APIFY_NOT_CONFIGURED', status: 503 });
+    await expect(searchApifyByImage('QUJD')).rejects.toMatchObject({ code: 'APIFY_NOT_CONFIGURED' });
+    expect(calls).toHaveLength(0);
+  });
+
+  test('بحث بالكلمة: POST runs ثم poll حتى SUCCEEDED ثم dataset — والحقول تُترجم للشكل الداخلي', async () => {
+    const calls = stubApify([
+      (url, init) => {
+        if (!url.includes('/v2/acts/sourabhbgp~1688-scraper/runs')) return null;
+        expect(init?.method).toBe('POST');
+        return runQueued();
+      },
+      (url) => {
+        if (!url.includes('/v2/actor-runs/run_9')) return null;
+        return runSucceeded();
+      },
+      (url) => {
+        if (!url.includes('/v2/datasets/ds_1/items')) return null;
+        return new Response(JSON.stringify([searchRow]), { status: 200 });
+      },
+    ]);
+
+    const result = await runApifySearch('water bottle', { pollIntervalMs: 1 });
+    expect(calls).toHaveLength(3);
+    // المفتاح في ترويسة Bearer فقط — لا token في الرابط ولا في الجسم.
+    for (const call of calls) {
+      expect(call.url).not.toContain(APIFY_KEY);
+      expect((call.init?.headers as Record<string, string>).Authorization).toBe(`Bearer ${APIFY_KEY}`);
+    }
+    const runInput = JSON.parse(String(calls[0].init?.body));
+    expect(runInput).toMatchObject({ mode: 'search', keywords: ['water bottle'], sortType: 'normal', maxItems: 20 });
+
+    expect(result.runId).toBe('run_9');
+    expect(result.costUsd).toBe(APIFY_SEARCH_COST_USD);
+    expect(result.async).toBe(true);
+    // الشكل الداخلي المعروف: نفس مسار استخراج 1688، بلا أي حقل مخترَع.
+    expect(result.data.items[0]).toMatchObject({
+      item_id: '1089329678023',
+      title: 'New macaron bowl lid insulated tumbler - large capacity water bottle',
+      price: '15.5',
+      currency: 'CNY',
+      moq: '1',
+      product_url: 'https://detail.1688.com/offer/1089329678023.html',
+      img: 'https://cbu01.alicdn.com/img/ibank/a.jpg',
+      shop_info: { company_name: '义乌市乌桨五金制品厂' },
+    });
+    // وطبقة الاستخراج الموجودة تُكمل الباقي كما هي.
+    const products = extractProducts(result.data, { arrays: [['items']], limit: 20, storeFallback: '1688' });
+    expect(products[0]).toMatchObject({ id: '1089329678023', amount: 15.5, currency: 'CNY', seller: '义乌市乌桨五金制品厂', moq: '1' });
+  });
+
+  test('تفاصيل المنتج: proxy موثّق + offerIds، والوزن/المواصفات/الـSKU تصل extractDetail', async () => {
+    const calls = stubApify([
+      (url) => (url.includes('/v2/acts/sourabhbgp~1688-scraper/runs') ? runQueued() : null),
+      (url) => (url.includes('/v2/actor-runs/run_9') ? runSucceeded() : null),
+      (url) => {
+        if (!url.includes('/v2/datasets/ds_1/items')) return null;
+        return new Response(JSON.stringify([{
+          offerId: '928596422357',
+          title: 'Magnetic Phone Case Matte Version',
+          priceCny: 4.5,
+          priceRangeCny: '3.00-4.50',
+          priceTiers: [{ minQuantity: 1, priceCny: 4.5 }, { minQuantity: 300, priceCny: 4 }],
+          currency: 'CNY',
+          minOrderQuantity: 1,
+          stock: 730371,
+          specs: { Brand: 'Hong xing', Material: 'Silicone' },
+          supplierName: '深圳市罗湖区洪星电子商行',
+          url: 'https://detail.1688.com/offer/928596422357.html',
+          variants: [{
+            skuId: '6090121414768',
+            specAttributes: 'Pink1 > iPhone17',
+            priceCny: 4.5,
+            stock: 5217,
+            imageUrl: 'https://cbu01.alicdn.com/img/ibank/v.jpg',
+            weightGrams: 45,
+          }],
+        }]), { status: 200 });
+      },
+    ]);
+
+    const result = await runApifyDetail({ id: '928596422357', url: null }, { pollIntervalMs: 1 });
+    const runInput = JSON.parse(String(calls[0].init?.body));
+    // صفحة 1688 ما تتقراش بلا proxy — حدّ منشور على الـactor نفسه.
+    expect(runInput).toMatchObject({
+      mode: 'product_detail',
+      offerIds: ['928596422357'],
+      includeSkuDetails: true,
+      proxyConfiguration: { useApifyProxy: true },
+    });
+    expect(result.costUsd).toBe(APIFY_DETAIL_COST_USD);
+
+    // الجذر الداخلي: نفس الشكل اللي يفهمه extractDetail من 1688.
+    expect(result.data).toMatchObject({
+      item_id: '928596422357',
+      currency: 'CNY',
+      is_sold_out: false,
+      weightGrams: 45,
+    });
+    expect(result.data.price_info).toMatchObject({ price: '4.5' });
+
+    const detail = extractDetail(result.data);
+    expect(detail).toMatchObject({
+      amount: 4.5, currency: 'CNY', availability: 'in_stock', seller: '深圳市罗湖区洪星电子商行',
+      url: 'https://detail.1688.com/offer/928596422357.html',
+    });
+    expect(detail.specs).toEqual(expect.arrayContaining([{ name: 'Brand', value: 'Hong xing' }]));
+    // أسماء الأبعاد غير منشورة عند المصدر ⇒ مجموعة «options» كالـgeneric، بلا اختراع أسماء.
+    expect(detail.variants[0]).toMatchObject({ name: 'options' });
+    expect(detail.variants[0].values[0]).toMatchObject({ label: 'Pink1 > iPhone17', available: true, image: 'https://cbu01.alicdn.com/img/ibank/v.jpg' });
+    expect(detail.images).toContain('https://cbu01.alicdn.com/img/ibank/v.jpg');
+  });
+
+  test('الرابط يكفي بلا معرّف: offerIds يقبل الرابط (موثّق)', async () => {
+    const calls = stubApify([
+      (url) => (url.includes('/v2/acts/sourabhbgp~1688-scraper/runs') ? runQueued() : null),
+      (url) => (url.includes('/v2/actor-runs/run_9') ? runSucceeded() : null),
+      (url) => (url.includes('/v2/datasets/ds_1/items')
+        ? new Response(JSON.stringify([{ offerId: '857511694718', title: 'Cable USB-C', priceCny: 1.2, currency: 'CNY' }]), { status: 200 })
+        : null),
+    ]);
+    const result = await runApifyDetail({ id: null, url: 'https://detail.1688.com/offer/857511694718.html' }, { pollIntervalMs: 1 });
+    const runInput = JSON.parse(String(calls[0].init?.body));
+    expect(runInput.offerIds).toEqual(['https://detail.1688.com/offer/857511694718.html']);
+    expect(result.data).toMatchObject({ item_id: '857511694718' });
+  });
+
+  test('كل فشل بكوده الحقيقي: 401 · 429 · run FAILED · timeout — وما يتلبسش «لا نتائج»', async () => {
+    // 401 على إنشاء الـrun.
+    stubApify([() => new Response(JSON.stringify({ error: { type: 'unauthorized' } }), { status: 401 })]);
+    await expect(runApifySearch('case')).rejects.toMatchObject({ code: 'APIFY_UNAUTHORIZED' });
+
+    // 429.
+    stubApify([() => new Response(JSON.stringify({ error: { type: 'rate-limit' } }), { status: 429 })]);
+    await expect(runApifySearch('case')).rejects.toMatchObject({ code: 'APIFY_RATE_LIMIT', status: 429 });
+
+    // الـrun فشل عند المزوّد (poll أرجع FAILED).
+    stubApify([
+      (url) => (url.includes('/v2/acts/') ? runQueued() : null),
+      (url) => (url.includes('/v2/actor-runs/run_9') ? new Response(JSON.stringify({ data: { id: 'run_9', status: 'FAILED' } }), { status: 200 }) : null),
+    ]);
+    await expect(runApifySearch('case')).rejects.toMatchObject({ code: 'APIFY_FAILED', status: 502 });
+
+    // الوقت تجاوز: الـpoll يبقى RUNNING.
+    stubApify([
+      (url) => (url.includes('/v2/acts/') ? runQueued() : null),
+      (url) => (url.includes('/v2/actor-runs/run_9') ? new Response(JSON.stringify({ data: { id: 'run_9', status: 'RUNNING' } }), { status: 200 }) : null),
+    ]);
+    await expect(runApifySearch('case', { timeoutMs: 30, pollIntervalMs: 5 }))
+      .rejects.toMatchObject({ code: 'APIFY_TIMEOUT', status: 504 });
+
+    // HTTP غير معروف: الكود يحمل الحالة.
+    stubApify([() => new Response(JSON.stringify({ error: { type: 'boom' } }), { status: 503 })]);
+    await expect(runApifySearch('case')).rejects.toMatchObject({ code: 'APIFY_HTTP' });
+  });
+
+  test('dataset بلا صفوف للتفاصيل ⇒ APIFY_EMPTY صريح (404)، موش فيش فارغة', async () => {
+    stubApify([
+      (url) => (url.includes('/v2/acts/') ? runQueued() : null),
+      (url) => (url.includes('/v2/actor-runs/run_9') ? runSucceeded() : null),
+      (url) => (url.includes('/v2/datasets/ds_1/items') ? new Response(JSON.stringify([]), { status: 200 }) : null),
+    ]);
+    await expect(runApifyDetail({ id: '928596422357', url: null }, { pollIntervalMs: 1 }))
+      .rejects.toMatchObject({ code: 'APIFY_EMPTY', status: 404 });
+  });
+
+  test('صورة: POST واحد بbase64 خام + excludeAds إلى نقطة الـServer actor — والنتائج تُترجم', async () => {
+    expect(apifyImageEndpoint()).toBe('https://topapi--image-search-1688-api.apify.actor/search');
+    const calls = stubApify([
+      (url, init) => {
+        if (!url.includes('topapi--image-search-1688-api.apify.actor/search')) return null;
+        expect(init?.method).toBe('POST');
+        return new Response(JSON.stringify({
+          ok: true,
+          count: 2,
+          items: [
+            {
+              rank: 1,
+              similarityScore: 0.3453,
+              offerId: '927875250705',
+              title: '跨境适用苹果18promax手机壳',
+              titleEn: 'Cross-border Apple 18promax phone case',
+              detailUrl: 'https://detail.1688.com/offer/927875250705.html',
+              image: 'https://cbu01.alicdn.com/img/ibank/m.jpg',
+              price: 7.5,
+              priceUsd: 1.1228,
+              currency: 'CNY',
+              minOrderQuantity: 50,
+              isAd: true,
+              supplier: { companyName: '佛山市南海区三丰手机配件有限公司', yearsOnPlatform: 11 },
+            },
+            { offerId: '927875250706', title: '手机壳', titleEn: 'Plain phone case', detailUrl: 'https://detail.1688.com/offer/927875250706.html' },
+          ],
+          meta: { totalMatches: 698, nextOffset: 2, charged: { match: 2 } },
+        }), { status: 200 });
+      },
+    ]);
+
+    const result = await searchApifyByImage('QUJDREVG');
+    expect(calls).toHaveLength(1);
+    const sent = JSON.parse(String(calls[0].init?.body));
+    // base64 خام كما يوثّقه الـactor، والحدّ الأقصى للنتائج + استبعاد الإعلانات.
+    expect(sent).toEqual({ imageBase64: 'QUJDREVG', maxResults: 20, excludeAds: true });
+    expect(calls[0].url).not.toContain(APIFY_KEY);
+    // المفتاح في الترويسة فقط.
+    expect((calls[0].init?.headers as Record<string, string>).Authorization).toBe(`Bearer ${APIFY_KEY}`);
+
+    expect(result.count).toBe(2);
+    expect(result.costUsd).toBe(APIFY_IMAGE_COST_USD);
+    expect(result.data.items[0]).toMatchObject({
+      item_id: '927875250705',
+      // titleEn يتقدّم على العنوان الصيني — قاعدة الشاشة المعروفة.
+      title: 'Cross-border Apple 18promax phone case',
+      price: '7.5',
+      currency: 'CNY',
+      moq: '50',
+      product_url: 'https://detail.1688.com/offer/927875250705.html',
+      img: 'https://cbu01.alicdn.com/img/ibank/m.jpg',
+      shop_info: { company_name: '佛山市南海区三丰手机配件有限公司' },
+    });
+    // النتيجة الثانية بلا سعر: «ما عطاناش» تُسجّل، ما يُخترعش صفر.
+    const products = extractProducts(result.data, { arrays: [['items']], limit: 20, storeFallback: '1688' });
+    expect(products[1].missing).toContain('price');
+  });
+
+  test('صورة: ok=false ⇒ APIFY_FAILED (فشل معلن، ما يتفوترش «لا نتائج»)', async () => {
+    stubApify([() => new Response(JSON.stringify({ ok: false, error: { type: 'image_search_failed' } }), { status: 200 })]);
+    await expect(searchApifyByImage('QUJDREVG')).rejects.toMatchObject({ code: 'APIFY_FAILED', status: 502 });
+  });
+
+  test('صورة: رفض HTTP من الـactor يحمل كوده الحقيقي (401 · 429 · HTTP_x)', async () => {
+    stubApify([() => new Response(JSON.stringify({ error: { type: 'unauthorized' } }), { status: 401 })]);
+    await expect(searchApifyByImage('QUJDREVG')).rejects.toMatchObject({ code: 'APIFY_UNAUTHORIZED' });
+    stubApify([() => new Response(JSON.stringify({ error: { type: 'slow-down' } }), { status: 429 })]);
+    await expect(searchApifyByImage('QUJDREVG')).rejects.toMatchObject({ code: 'APIFY_RATE_LIMIT' });
+    stubApify([() => new Response(JSON.stringify({ error: { type: 'boom' } }), { status: 500 })]);
+    await expect(searchApifyByImage('QUJDREVG')).rejects.toMatchObject({ code: 'APIFY_HTTP' });
+  });
+
+  test('صورة: 0 نتيجة = حالة عادية مجانية، موش خطأ', async () => {
+    stubApify([() => new Response(JSON.stringify({ ok: true, count: 0, items: [], meta: { totalMatches: 0, nextOffset: null, charged: { match: 0 } } }), { status: 200 })]);
+    const result = await searchApifyByImage('QUJDREVG');
+    expect(result.count).toBe(0);
+    expect(result.data.items).toEqual([]);
+  });
+
+  test('صورة: جسم يتجاوز حدّ 1MB الموثّق يُرفض محلياً (413) قبل أي نداء مدفوع', async () => {
+    const calls = stubApify([]);
+    await expect(searchApifyByImage('A'.repeat(1_100_000))).rejects.toMatchObject({ code: 'SBASE_IMAGE_TOO_LARGE', status: 413 });
+    expect(calls).toHaveLength(0);
+  });
+
+  test('صورة كبيرة تتضغط تدرّجياً تحت الميزانية قبل الإرسال (حدّ موثّق: 1,000,000 بايت)', async () => {
+    // PNG ضجيج عشوائي حقيقي 1024×1024 — يفوق الميزانية ولا يفوق سقف التطبيع (5MB).
+    const sharp = (await import('sharp')).default;
+    const noise = randomBytes(1024 * 1024 * 3);
+    const png = await sharp(noise, { raw: { width: 1024, height: 1024, channels: 3 } })
+      .png({ compressionLevel: 1 })
+      .toBuffer();
+    expect(png.length).toBeLessThan(5 * 1024 * 1024);
+
+    const base64 = await apifyImageBase64(png, 'image/png');
+    expect(base64.length).toBeLessThanOrEqual(APIFY_IMAGE_BASE64_BUDGET);
+    // بعد الضغط يبقى JPEG صالحاً (بداية FFD8).
+    const bytes = Buffer.from(base64, 'base64');
+    expect(bytes[0]).toBe(0xff);
+    expect(bytes[1]).toBe(0xd8);
   });
 });

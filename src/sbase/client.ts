@@ -13,21 +13,14 @@
  * هذا هو الرقم اللي يظهر في شاشة الاختبار.
  */
 import type { SbaseSourceDescriptor } from './descriptors';
+// 26/11/2026 — الصنف انتقل إلى errors.ts ليتشاركه مزوّد Apify؛ إعادة التصدير
+// تحفظ كل الاستعمالات القديمة (`import { SbaseError } from './client'`).
+export { SbaseError } from './errors';
+import { SbaseError } from './errors';
 
 export const SANDBASE_DEFAULT_BASE_URL = 'https://api.sandbase.ai';
 export const SANDBASE_TOTAL_TIMEOUT_MS = 28_000;
 export const SANDBASE_POLL_INTERVAL_MS = 700;
-
-export class SbaseError extends Error {
-  code: string;
-  status: number;
-  constructor(code: string, message: string, status = 502) {
-    super(message);
-    this.name = 'SbaseError';
-    this.code = code;
-    this.status = status;
-  }
-}
 
 export function sandbaseApiKey(): string {
   return String(process.env.SANDBASE_API_KEY ?? '').trim();
