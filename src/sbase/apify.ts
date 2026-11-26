@@ -434,6 +434,8 @@ export function mapApifyDetailRow(row: unknown): Record<string, unknown> | null 
     variations,
     item: { title, companyName: asText(row.supplierName) },
   };
+  const description = descriptionText(row);
+  if (description) root.description = description;
   const priceCny = asPositiveNumber(row.priceCny) ?? asPositiveNumber(row.price);
   if (priceCny !== null) root.price_info = { price: String(priceCny) };
   // stock رقمي موثّق ⇒ توفّر صادق (0 = نافد، >0 = متوفّر، غايب = غير معروف).
@@ -445,6 +447,31 @@ export function mapApifyDetailRow(row: unknown): Record<string, unknown> | null 
   const weightGrams = packageWeightGrams(row);
   if (weightGrams !== null) root.weightGrams = weightGrams;
   return root;
+}
+
+/**
+ * وصف المورّد (`includeDescriptionHtml: true`) يصل HTML خاماً — اسم حقل المخرجات
+ * غير منشور على صفحة الـactor، فنقرأ المرشّحات المعروفة ونستعمل ما وصل فعلاً:
+ * إزالة الوسوم + فكّ الكيانات الشائعة + دمج الفراغات. ما قلّ عن نصّ مقروء
+ * يبقى null — القسم لا يظهر، ولا نعرض وسوماً خاماً ولا نصّاً مخترعاً.
+ */
+function descriptionText(row: Record<string, unknown>): string | null {
+  const raw = asText(row.descriptionHtml)
+    ?? asText(row.description)
+    ?? asText(row.detailDescription)
+    ?? asText(row.descHtml);
+  if (!raw) return null;
+  const collapsed = raw
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+  return collapsed.length >= 10 ? collapsed : null;
 }
 
 // ── النداءات الجاهزة ────────────────────────────────────────────────────────
@@ -506,6 +533,9 @@ export async function runApifyDetail(
       mode: 'product_detail',
       offerIds: [offer],
       includeSkuDetails: true,
+      // وصف المورّد الكامل (خيار موثّق، افتراضه false — «large»): الشاشة عندها
+      // قسم الوصف جاهزاً، وما وصلش شيء يبقى غايباً بصدق. لا يغيّر الثمن.
+      includeDescriptionHtml: true,
       // صفحة المنتج ما تتقراش بلا proxy — حدّ موثّق من الـactor نفسه.
       proxyConfiguration: { useApifyProxy: true },
     },

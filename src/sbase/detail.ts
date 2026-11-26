@@ -325,6 +325,7 @@ export function extractDetail(data: unknown): SbaseDetail {
     .slice(0, 10);
 
   const description = text(at(product, 'description'))
+    ?? text(at(root, 'description'))
     ?? (Array.isArray(root.about_item) ? root.about_item.map((entry) => text(entry)).filter(Boolean).join('\n') || null : null);
 
   const detail: SbaseDetail = {

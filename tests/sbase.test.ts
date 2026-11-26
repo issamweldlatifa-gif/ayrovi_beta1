@@ -34,6 +34,7 @@ import {
   apifyConfigured,
   apifyImageBase64,
   apifyImageEndpoint,
+  mapApifyDetailRow,
   runApifyDetail,
   runApifySearch,
   searchApifyAliexpressByImage,
@@ -278,7 +279,29 @@ describe('S Base — استخراج البطاقة', () => {
     const detail = extractDetail({});
     expect(detail.title).toBeNull();
     expect(detail.variants).toEqual([]);
-    expect(detail.missing).toEqual(expect.arrayContaining(['title', 'price', 'images', 'variants', 'specs']));
+    expect(detail.missing).toEqual(expect.arrayContaining(['title', 'price', 'images', 'variants', 'specs', 'description']));
+  });
+
+  test('وصف المورّد (includeDescriptionHtml): HTML خام ⇒ نصّ مقروء بلا وسوم — وما وصلش يبقى غايباً', () => {
+    // ما يرجعه الـactor فعلاً عند تفعيل الخيار يمرّ بمُترجم Apify أولاً.
+    const mapped = mapApifyDetailRow({
+      offerId: '1', currency: 'CNY', priceCny: 4.5,
+      supplierName: 'مورّد',
+      title: 'حالة هاتف',
+      descriptionHtml: '<div>材质：硅胶<br>&nbsp;适合 iPhone 17 Pro Max</div><p>&amp;免运费</p>',
+    });
+    const detail = extractDetail(mapped);
+    expect(detail.description).toBe('材质：硅胶 适合 iPhone 17 Pro Max &免运费');
+    expect(detail.missing).not.toContain('description');
+
+    // ما وصلش وصف (أو وصل وسوماً بلا نصّ) ⇒ يبقى ناقصاً بصدق، والقسم لا يظهر.
+    const without = extractDetail(mapApifyDetailRow({
+      offerId: '2', currency: 'CNY', priceCny: 4.5,
+      supplierName: 'مورّد', title: 'حالة هاتف',
+      descriptionHtml: '<div><img src="https://cbu01.alicdn.com/x.jpg"></div>',
+    }));
+    expect(without.description).toBeNull();
+    expect(without.missing).toContain('description');
   });
 
   test('variantes ككائن {taille: [...]} والتفاهة المجهولة تبقى null', () => {
