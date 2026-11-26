@@ -11,13 +11,13 @@
  *  • الخيار اللي ما نعرفوش متوفّر ولا لا: يظهر عادي، بلا شارة كاذبة.
  *  • السعر كما عطاه المصدر؛ ما نضيفوش تحويل ولا «من …».
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import type { SbaseDetailPayload } from '@/api/sbase';
-import { fetchSbaseItem } from '@/api/sbase';
+import { fetchSbaseItem, searchSbase } from '@/api/sbase';
 import { AppImage } from '@/design/appImage';
 import { AppScreen } from '@/design/layout';
 import { goBack } from '@/design/navigation';
@@ -26,7 +26,8 @@ import { RADIUS } from '@/design/tokens.mobile';
 import { AppText, Button } from '@/design/ui';
 import { useT, type TranslationKey } from '@/i18n';
 import { SkeletonFiche } from './Skeleton';
-import { formatCallCost, formatDuration, formatItemPrice, formatTND, missingLabelKey } from './sbaseLogic';
+import { ResultRow, openResult } from './SbaseScreens';
+import { deriveSimilarQuery, formatCallCost, formatDuration, formatItemPrice, formatTND, missingLabelKey } from './sbaseLogic';
 
 function priceLabel(payload: SbaseDetailPayload, fallback: string): string {
   return formatItemPrice(
@@ -47,6 +48,27 @@ export function SbaseItemScreen({
     staleTime: 60_000,
     retry: false,
   });
+
+  // منتجات مشابهة (قرار المالك، مرجع Alibaba: قسم تحت الفيش). نداء مأجور واحد
+  // لكل ضغطة صريحة — لا إنفاق تلقائي عند الفتح، والنتائج تعمّر كبقية الأقسام.
+  const [similarOn, setSimilarOn] = useState(false);
+  const similarQuery = useQuery({
+    queryKey: ['sbase', 'similar', title ?? ''],
+    queryFn: ({ signal }) => searchSbase({ q: deriveSimilarQuery(title ?? ''), sources: ['1688'] }, { signal }),
+    enabled: similarOn,
+    retry: false,
+  });
+  const similarItems = useMemo(
+    () => similarQuery.data?.groups?.flatMap((group) => group.items) ?? [],
+    [similarQuery.data],
+  );
+  // الكلفة كما ردّها الخادم (مجموع المجموعات)، معروضة بفاصل مُنسّق — بلا اختراع.
+  const similarCost = useMemo(() => {
+    const costs = (similarQuery.data?.groups ?? [])
+      .map((group) => group.costUsd)
+      .filter((cost): cost is number => typeof cost === 'number' && Number.isFinite(cost));
+    return costs.length ? costs.reduce((sum, cost) => sum + cost, 0) : null;
+  }, [similarQuery.data]);
 
   const payload = query.data ?? null;
   const detail = payload?.detail ?? null;
@@ -200,6 +222,38 @@ export function SbaseItemScreen({
         block
         onPress={() => { void Linking.openURL(detail.url as string); }}
       /> : null}
+
+      <View testID="sbase-similar" style={styles.section}>
+        <AppText variant="subtitle" accessibilityRole="header">{t('sbase.similar.title')}</AppText>
+        {!similarOn ? <Pressable
+          testID="sbase-similar-run"
+          accessibilityRole="button"
+          accessibilityLabel={t('sbase.similar.run')}
+          onPress={() => setSimilarOn(true)}
+          style={styles.cta}>
+          <AppText variant="captionStrong">{t('sbase.similar.run')}</AppText>
+        </Pressable> : null}
+        {similarQuery.isFetching ? <AppText testID="sbase-similar-busy" variant="caption" color={theme.colors.muted}>
+          {t('sbase.similar.busy')}
+        </AppText> : null}
+        {similarQuery.isError ? <AppText testID="sbase-similar-error" variant="caption" color={theme.status.danger.fg}>
+          {(similarQuery.error as { code?: string })?.code ?? 'SBASE_SIMILAR_ERROR'}
+        </AppText> : null}
+        {similarQuery.data ? <AppText testID="sbase-similar-meta" variant="caption" color={theme.colors.muted}>
+          {t('sbase.results', { count: similarQuery.data.count })}
+          {formatCallCost(similarCost) ? ` · ${t('sbase.cost')} ${formatCallCost(similarCost)}` : ''}
+        </AppText> : null}
+        {similarItems.length > 0 ? <View style={styles.grid}>
+          {similarItems.map((item, index) => <ResultRow
+            key={`sim-${item.url ?? item.id ?? index}`}
+            item={item}
+            index={index}
+            onOpen={() => openResult(true, '1688', item)}
+          />)}
+        </View> : similarQuery.isSuccess ? <AppText variant="bodySmall" color={theme.colors.muted}>
+          {t('sbase.similar.empty')}
+        </AppText> : null}
+      </View>
     </> : null}
   </AppScreen>;
 }
@@ -222,4 +276,6 @@ const styles = StyleSheet.create({
   specRow: { flexDirection: 'row', gap: 10, paddingVertical: 6, borderTopWidth: StyleSheet.hairlineWidth },
   card: { gap: 8, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, marginTop: 12 },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  cta: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 12, paddingVertical: 8 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
 });

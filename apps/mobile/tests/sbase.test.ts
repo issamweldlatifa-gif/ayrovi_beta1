@@ -8,10 +8,13 @@ import { describe, expect, test } from 'vitest';
 
 import {
   CAPABILITY_ORDER,
+  buildSbaseCartPayload,
+  deriveSimilarQuery,
   formatCallCost,
   formatDuration,
   failureMessageKey,
   formatItemPrice,
+  formatItemPriceWithCurrency,
   formatTND,
   isImageProviderFailure,
   missingLabelKey,
@@ -99,5 +102,37 @@ describe('S Base — prix rendu en Tunisie', () => {
     expect(formatTND(1234.5)?.replace(/\u202f|\u00a0/g, ' ')).toBe('1 234,500 TND');
     expect(formatTND(null)).toBeNull();
     expect(formatTND(Number.NaN)).toBeNull();
+  });
+});
+
+describe('بطاقة S Base — السلّة والمشابهة والعملة', () => {
+  test('formatItemPriceWithCurrency يفضّل amount+currency، والنص الخام بلا عملة فقط', () => {
+    expect(formatItemPriceWithCurrency({ amount: 35, currency: 'CNY', priceText: '35.00' })).toBe('35 CNY');
+    expect(formatItemPriceWithCurrency({ amount: 22.8, currency: 'CNY', priceText: '22,80 CNY' })).toBe('22,8 CNY');
+    expect(formatItemPriceWithCurrency({ amount: null, currency: null, priceText: 'US$6.88' })).toBe('US$6.88');
+    expect(formatItemPriceWithCurrency({ amount: null, currency: null, priceText: null }, '—')).toBe('—');
+  });
+
+  test('deriveSimilarQuery: أول 5 كلمات من العنوان، وبلا كلمات ⇒ العنوان كما هو', () => {
+    expect(deriveSimilarQuery('American-Style Cleanfit Black Drapey Trousers for Men, New High-Street Fashion'))
+      .toBe('american style cleanfit black drapey');
+    expect(deriveSimilarQuery('   ')).toBe('');
+    expect(deriveSimilarQuery('休闲裤男')).toBe('休闲裤男');
+  });
+
+  test('buildSbaseCartPayload: حمولة صادقة بلا quote، وnull عند غياب الأساس', () => {
+    const full = { url: 'https://detail.1688.com/1.html', id: 'x1', title: 'Trouser', image: null, amount: 35, currency: 'CNY', store: '1688' };
+    const payload = buildSbaseCartPayload(full);
+    expect(payload).toMatchObject({
+      store: '1688', externalId: 'x1', sourcePrice: 35, sourceCurrency: 'CNY',
+      variant: null, requestedSize: null, requestedColor: null, quantity: 1,
+    });
+    // الصدق: بحث لا يصدر quote موقّعة — الحقلان غائبان تماماً ⇒ الخادم يضع PENDING_MANUAL.
+    expect(payload && 'priceToken' in payload).toBe(false);
+    expect(payload && 'priceVerificationStatus' in payload).toBe(false);
+    expect(buildSbaseCartPayload({ ...full, url: null })).toBeNull();
+    expect(buildSbaseCartPayload({ ...full, amount: 0 })).toBeNull();
+    expect(buildSbaseCartPayload({ ...full, currency: null })).toBeNull();
+    expect(buildSbaseCartPayload({ ...full, title: '  ' })).toBeNull();
   });
 });

@@ -29,6 +29,8 @@ import type {
   SbaseSource,
 } from '@/api/sbase';
 import { fetchSbaseItem, fetchSbaseSources, searchSbase, searchSbaseImage } from '@/api/sbase';
+import { addSbaseToCart } from '@/api/cart';
+import { useSessionId } from '@/session/session';
 import { AppImage } from '@/design/appImage';
 import { AppScreen } from '@/design/layout';
 import { LoadingBlock } from '@/design/states';
@@ -39,9 +41,10 @@ import { AppText, Button } from '@/design/ui';
 import { useT, type TranslationKey } from '@/i18n';
 import { SkeletonGroup } from './Skeleton';
 import {
+  buildSbaseCartPayload,
   formatCallCost,
   formatDuration,
-  formatItemPrice,
+  formatItemPriceWithCurrency,
   formatTND,
   failureMessageKey,
   missingLabelKey,
@@ -91,28 +94,44 @@ function ErrorCard({ code, message, onRetry }: { code: string; message: string; 
  * التقدير إذا غاب (عملة بلا سعر صرف، ولا المحرّك غير مضبوط) يتكتب «غير متوفّر»
  * — عمرنا ما نعرضو رقم محسوب في التطبيق.
  */
-function ResultRow({ item, index, onOpen }: { item: SbaseItem; index: number; onOpen: () => void }) {
+export function ResultRow({ item, index, onOpen }: { item: SbaseItem; index: number; onOpen: () => void }) {
   const theme = useTheme(); const t = useT();
+  const sessionId = useSessionId();
+  const [cartState, setCartState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
+  const [cartCode, setCartCode] = useState('');
   const estimate = item.priceEstimate ?? null;
   const totalTND = formatTND(estimate?.totalTND ?? null);
+  const cartPayload = useMemo(() => buildSbaseCartPayload(item), [item]);
+  const addToCart = () => {
+    if (!cartPayload || !sessionId || cartState === 'busy') return;
+    setCartState('busy'); setCartCode('');
+    addSbaseToCart({ payload: cartPayload, sessionId })
+      .then(() => setCartState('done'))
+      .catch((error: unknown) => {
+        setCartCode(typeof error === 'object' && error !== null && 'code' in error
+          ? String((error as { code?: unknown }).code ?? 'ERROR')
+          : 'ERROR');
+        setCartState('error');
+      });
+  };
   return <Pressable
     testID={`sbase-item-${index}`}
     accessibilityRole="button"
     accessibilityLabel={`${t('sbase.details')} · ${item.title}`}
     onPress={onOpen}
-    style={({ pressed }) => [styles.item, { borderColor: theme.colors.line, opacity: pressed ? theme.opacity.subtle : 1 }]}>
+    style={({ pressed }) => [styles.itemCard, { borderColor: theme.colors.line, opacity: pressed ? theme.opacity.subtle : 1 }]}>
     <AppImage uri={item.image ?? undefined} decorative style={styles.itemImage} contentFit="cover" />
-    <View style={styles.grow}>
+    <View style={styles.itemBody}>
       <AppText variant="bodyStrong" numberOfLines={2}>{item.title}</AppText>
 
-      <View style={styles.priceLine}>
-        <AppText variant="bodyStrong">{formatItemPrice(item, t('sbase.missing.price'))}</AppText>
-        {totalTND ? <AppText testID={`sbase-estimate-${index}`} variant="bodyStrong" color={theme.colors.ink}>
-          ≈ {totalTND}
-        </AppText> : <AppText testID={`sbase-estimate-${index}`} variant="caption" color={theme.colors.muted}>
-          {t('sbase.estimateUnavailable')}
-        </AppText>}
-      </View>
+      <AppText testID={`sbase-item-price-${index}`} variant="bodyStrong">
+        {formatItemPriceWithCurrency(item, t('sbase.missing.price'))}
+      </AppText>
+      {totalTND ? <AppText testID={`sbase-estimate-${index}`} variant="bodyStrong" color={theme.colors.ink}>
+        ≈ {totalTND}
+      </AppText> : <AppText testID={`sbase-estimate-${index}`} variant="caption" color={theme.colors.muted}>
+        {t('sbase.estimateUnavailable')}
+      </AppText>}
 
       <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
         {[
@@ -131,13 +150,39 @@ function ResultRow({ item, index, onOpen }: { item: SbaseItem; index: number; on
         })}
       </AppText> : null}
 
-      {item.url ? <Pressable
-        accessibilityRole="link"
-        accessibilityLabel={`${t('sbase.open')} · ${item.title}`}
-        onPress={() => { void Linking.openURL(item.url as string); }}
-        style={styles.openLink}>
-        <AppText variant="captionStrong">{t('sbase.open')}</AppText>
-      </Pressable> : null}
+      <View style={styles.itemActions}>
+        {/* سلة Zayrovi: بلا quote موقّعة ⇒ الخادم يضعها مراجعة يدوية (PENDING_MANUAL).
+           بلا رابط/ثمن/عملة لا زرّ أصلاً — لا نعرض زراً نعرف أن الخادم سيرفضه. */}
+        {cartPayload ? <Pressable
+          testID={`sbase-cart-${index}`}
+          accessibilityRole="button"
+          accessibilityLabel={t('sbase.cart.add')}
+          onPress={addToCart}
+          disabled={cartState === 'busy' || !sessionId}
+          style={[styles.cartButton, {
+            borderColor: theme.colors.line,
+            opacity: cartState === 'busy' || !sessionId ? theme.opacity.subtle : 1,
+          }]}>
+          <Ionicons
+            name={cartState === 'done' ? 'checkmark' : 'cart-outline'}
+            size={theme.iconSize.sm}
+            color={theme.colors.ink}
+          />
+          <AppText variant="captionStrong" color={theme.colors.ink}>
+            {cartState === 'done' ? t('sbase.cart.added') : cartState === 'error' ? t('sbase.cart.failed') : t('sbase.cart.add')}
+          </AppText>
+        </Pressable> : null}
+        {cartState === 'error' ? <AppText testID={`sbase-cart-error-${index}`} variant="caption" color={theme.status.danger.fg} numberOfLines={1}>
+          {cartCode}
+        </AppText> : null}
+        {item.url ? <Pressable
+          accessibilityRole="link"
+          accessibilityLabel={`${t('sbase.open')} · ${item.title}`}
+          onPress={() => { void Linking.openURL(item.url as string); }}
+          style={styles.openLink}>
+          <AppText variant="captionStrong">{t('sbase.open')}</AppText>
+        </Pressable> : null}
+      </View>
     </View>
   </Pressable>;
 }
@@ -159,7 +204,7 @@ function GroupHeader({ group }: { group: SbaseGroup }) {
  * نتيجة → فيش داخلية إذا المتجر ينشر endpoint تفاصيل، وإلا الرابط الأصلي.
  * ما نفتحوش فيش فارغة: هذا الفرق بين «ما عندناش» و«ما لقيناش».
  */
-function openResult(supportsDetails: boolean, sourceId: string, item: SbaseItem): void {
+export function openResult(supportsDetails: boolean, sourceId: string, item: SbaseItem): void {
   if (supportsDetails) {
     router.push({
       pathname: '/sbase/item',
@@ -466,7 +511,9 @@ export function SbaseScreen() {
 
     {photo ? <View style={[styles.photoRow, { borderColor: theme.colors.lineControl }]}>
       <AppImage uri={photo.uri} decorative style={styles.photoThumb} contentFit="cover" />
-      <AppText variant="caption" color={theme.colors.muted} style={styles.grow}>{t('sbase.photoNotice')}</AppText>
+      <AppText variant="caption" color={theme.colors.muted} style={styles.grow}>
+        {imageStoreIds.length > 1 ? t('sbase.photoNoticeMulti') : t('sbase.photoNotice')}
+      </AppText>
       <Pressable
         testID="sbase-photo-clear"
         accessibilityRole="button"
@@ -546,11 +593,13 @@ export function SbaseScreen() {
     {groups.map((group) => <View key={group.source.id} testID={`sbase-group-${group.source.id}`} style={styles.group}>
       <GroupHeader group={group} />
       {group.status === 'empty' ? <AppText variant="caption" color={theme.colors.muted}>{t('sbase.empty', { query: keywordQuery })}</AppText> : null}
-      {group.items.map((item, index) => <ResultRow
-        key={`${group.source.id}-${item.url ?? item.id ?? index}`}
-        item={item}
-        index={index}
-        onOpen={() => openResult(group.source.supports.details, group.source.id, item)} />)}
+      <View style={styles.grid}>
+        {group.items.map((item, index) => <ResultRow
+          key={`${group.source.id}-${item.url ?? item.id ?? index}`}
+          item={item}
+          index={index}
+          onOpen={() => openResult(group.source.supports.details, group.source.id, item)} />)}
+      </View>
       {group.status === 'error' ? <AppText variant="caption" color={theme.colors.muted}>
         {/* Le fournisseur ne facture pas un appel échoué : afficher un prix serait faux. */}
         {t('sbase.groupUnbilled')}
@@ -596,13 +645,15 @@ export function SbaseScreen() {
             active={storeFilter === store}
             onPress={() => setStoreFilter(store)} />)}
       </ScrollView> : null}
-      {imageItems.map((item, index) => <ResultRow
-        key={`img-${item.url ?? item.id ?? index}`}
-        item={item}
-        index={index}
-        /* نتائج الصورة تحمل متجرها: 1688 تفتح الفيشة (`item/detail`)، ومتجر
-           بلا تفاصيل منشورة (AliExpress) يفتح الرابط الأصلي — لا فيش فارغة. */
-        onOpen={() => openResult(item.store === '1688', item.store ?? '1688', item)} />)}
+      <View style={styles.grid}>
+        {imageItems.map((item, index) => <ResultRow
+          key={`img-${item.url ?? item.id ?? index}`}
+          item={item}
+          index={index}
+          /* نتائج الصورة تحمل متجرها: 1688 تفتح الفيشة (`item/detail`)، ومتجر
+             بلا تفاصيل منشورة (AliExpress) يفتح الرابط الأصلي — لا فيش فارغة. */
+          onOpen={() => openResult(item.store === '1688', item.store ?? '1688', item)} />)}
+      </View>
     </View> : null}
 
     {!busy && !failure && keywordGroups.length === 0 && imageGroups.length === 0 && !sourcesQuery.isLoading ? <View
@@ -637,15 +688,20 @@ const styles = StyleSheet.create({
   card: { gap: 8, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, marginTop: 12 },
   group: { marginTop: 16, gap: 4 },
   groupHead: { gap: 2, paddingBottom: 6, borderBottomWidth: StyleSheet.hairlineWidth },
-  priceLine: { flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' },
   /*
-   * بطاقة قالب (مرجع Alibaba من المالك): إطار كامل + صورة كبيرة + كتلة سعر —
-   * ليست سطراً مائياً في قائمة، بل قالب بمناطق واضحة: صورة/عنوان/ثمن/مورّد.
+   * شبكة القوالب (مرجع المالك 26/11: Alibaba — عمودان): بطاقة مستقلة بصورة
+   * علوية عريضة؛ 48.5% + space-between ⇒ عمودان متساويان على كل حجم شاشة.
    */
-  item: {
-    flexDirection: 'row', gap: 12, padding: 10, marginBottom: 10,
-    borderWidth: 1, borderRadius: RADIUS.md, backgroundColor: 'transparent',
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
+  itemCard: {
+    width: '48.5%', borderWidth: 1, borderRadius: RADIUS.md, overflow: 'hidden',
   },
-  itemImage: { width: 88, height: 88, borderRadius: RADIUS.md, overflow: 'hidden' },
-  openLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  itemImage: { width: '100%', height: 150 },
+  itemBody: { gap: 4, padding: 10 },
+  itemActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 },
+  cartButton: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    borderWidth: 1, borderRadius: RADIUS.md, paddingHorizontal: 10, paddingVertical: 6,
+  },
+  openLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
 });

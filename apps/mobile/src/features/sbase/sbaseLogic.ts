@@ -6,6 +6,7 @@
  *  • ما نحسبوش سعراً: نعرض نصّ المصدر كما هو، وإذا غاب نقول «غير متوفّر»؛
  *  • الزمن يُعرض كي وصل من الخادم (ms) بلا تجميل.
  */
+import type { SbaseCartPayload } from '@/api/cart';
 import type { SbaseItem, SbaseSupports } from '@/api/sbase';
 
 export type CapabilityKey = keyof SbaseSupports;
@@ -123,4 +124,56 @@ export function formatCallCost(costUsd: number | null | undefined): string | nul
 export function formatTND(amount: number | null | undefined): string | null {
   if (typeof amount !== 'number' || !Number.isFinite(amount)) return null;
   return `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} TND`;
+}
+
+/** ثمن البطاقة: `amount + currency` من الخادم أولاً (مقروء ومُسعّر)؛ النص الخام
+ * فقط حين لا عملة معلنة — عمَر ما نعرضو رقم عاري يُقرأ خطأً ديناراً. */
+export function formatItemPriceWithCurrency(
+  item: Pick<SbaseItem, 'amount' | 'currency' | 'priceText'>,
+  fallback = '—',
+): string {
+  if (typeof item.amount === 'number' && Number.isFinite(item.amount) && item.currency) {
+    return `${item.amount.toLocaleString('fr-FR', { maximumFractionDigits: 2 })} ${item.currency}`;
+  }
+  const raw = item.priceText?.trim();
+  return raw ? raw : fallback;
+}
+
+/** كلمات العنوان الأولى (لاتينية/صينية) للبحث عن مشابهة — 5 كلمات، 60 حرفاً.
+ * بلا كلمات لاتينية؟ نرجّع العنوان مقصوصاً كما هو (المصدر يفهم لغته). */
+export function deriveSimilarQuery(title: string): string {
+  const trimmed = title.trim().slice(0, 60);
+  const words = trimmed.toLowerCase()
+    .split(/[^a-z0-9\u4e00-\u9fff]+/)
+    .filter((word) => word.length >= 2);
+  const query = words.slice(0, 5).join(' ').trim();
+  return query || trimmed;
+}
+
+/**
+ * حمولة سطر السلّة من نتيجة S Base — **بلا `priceToken` وبلا
+ * `priceVerificationStatus`**: بحث لا يصدر quote موقّعة، فالخادم يضع السطر
+ * `PENDING_MANUAL` (مراجعة يدوية) ويحسب `priceTND` بنفسه من محرّك التسعير.
+ * هذا هو الطريق الصادق الوحيد — عمرنا ما نرسل «موثّق» على بحث.
+ * null = ما يُرسَلش أصلاً: بلا رابط، بلا ثمن موجب، بلا عملة ⇒ الخادم يرفض 400.
+ */
+export function buildSbaseCartPayload(item: Pick<SbaseItem, 'url' | 'id' | 'title' | 'image' | 'amount' | 'currency' | 'store'>): SbaseCartPayload | null {
+  if (!item.url || !item.title?.trim()) return null;
+  if (typeof item.amount !== 'number' || !Number.isFinite(item.amount) || item.amount <= 0) return null;
+  if (!item.currency) return null;
+  return {
+    store: item.store && /^[a-z0-9][a-z0-9._-]{0,63}$/i.test(item.store.trim()) ? item.store.trim() : 'generic',
+    externalId: item.id ?? null,
+    url: item.url,
+    referenceUrl: item.url,
+    title: item.title,
+    imageUrl: item.image ?? '',
+    sourcePrice: item.amount,
+    sourceCurrency: item.currency,
+    variant: null,
+    requestedSize: null,
+    requestedColor: null,
+    customerNote: '',
+    quantity: 1,
+  };
 }

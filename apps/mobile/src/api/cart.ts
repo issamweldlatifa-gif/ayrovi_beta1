@@ -286,6 +286,52 @@ export async function addExternalToCart(
   };
 }
 
+/** حمولة نتيجة S Base — **عمداً بلا `priceVerificationStatus`/`priceToken`**:
+ * الخادم يصنّفها `PENDING_MANUAL` (مراجعة يدوية) ويحسب `priceTND` بنفسه. */
+export interface SbaseCartPayload {
+  store: string;
+  externalId: string | null;
+  url: string;
+  referenceUrl: string;
+  title: string;
+  imageUrl: string;
+  sourcePrice: number;
+  sourceCurrency: string;
+  variant: null;
+  requestedSize: null;
+  requestedColor: null;
+  customerNote: string;
+  quantity: number;
+}
+
+/**
+ * إضافة نتيجة S Base إلى سلّة Zayrovi (`POST /api/cart/items`, مسار Lens).
+ * بلا quote موقّعة ⇒ `PENDING_MANUAL`؛ الخادم يرفض 400 صادق إذا محرّك التسعير
+ * ما لقاش قواعد للعملة/الفئة — والكود يُعرض على البطاقة كما هو.
+ */
+export async function addSbaseToCart(
+  input: { payload: SbaseCartPayload; sessionId: string },
+  options: RequestOptions = {},
+): Promise<ExternalCartResult> {
+  const data = await apiSendEnvelope<Record<string, unknown>>('POST', '/api/cart/items', {
+    ...options,
+    headers: { 'x-session-id': input.sessionId, ...(options.headers ?? {}) },
+    body: input.payload,
+  });
+  if (!isRecord(data) || data.success !== true) {
+    throw new ApiError('malformed', 'Réponse panier illisible.');
+  }
+  const cartItem = isRecord(data.cartItem) ? data.cartItem : {};
+  return {
+    cartItemId: str(cartItem.id),
+    totalItemsCount: num(data.totalItemsCount) ?? 0,
+    totalTND: num(data.totalTND) ?? 0,
+    deliveryTND: num(data.deliveryTND) ?? 0,
+    quoteExpiresAt: str(data.quoteExpiresAt),
+    serverNow: str(data.serverNow),
+  };
+}
+
 export interface CatalogueLookInput {
   lookId: string;
   editionNumber: number;

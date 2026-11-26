@@ -250,3 +250,29 @@ l'actor est fiable — un entrée dans `SBASE_IMAGE_SOURCES` + un traducteur
    l'ouverture de la fiche est instantanée ; l'échec du préchargement reste
    muet, l'ouverture réelle dit sa vérité. 1688 uniquement (les stores sans
    fiche publiée ne coûtent rien de plus).
+
+## Cartes-modeles en grille + panier + similaires (26/11 soir — décisions du propriétaire)
+
+Retour du test réel sur APK (screenshots 26/11 19h27) + références Alibaba jointes :
+
+1. **Grille 2 colonnes** (réf. Alibaba « Boutique ») : chaque résultat est une
+   carte autonome — image pleine largeur (h=150), titre 2 lignes, prix source
+   **avec devise explicite** (`35 CNY`, jamais un nombre nu lu comme des dinars),
+   estimation TND du moteur, vendeur·MOQ, actions. `sbase-item-<i>` inchangé.
+2. **Ajout au panier depuis la carte** : `POST /api/cart/items` via
+   `addSbaseToCart` — **sans `priceVerificationStatus` ni `priceToken`** ⇒ le
+   serveur classe la ligne `PENDING_MANUAL` (revue manuelle) et calcule
+   `priceTND` lui-même ; refus ⇒ le code serveur s'affiche tel quel
+   (`INVALID_CART_ITEM`, `PRICE_...`). Pas de bouton quand url/prix/devise
+   manquent — on n'affiche jamais un bouton que le serveur rejettera.
+3. **Section « Produits similaires »** sous la fiche (réf. page produit
+   Alibaba) : **un tap = un appel payant assumé** (aucun auto-appel à l'ouverture) ;
+   mots-clés = 5 premiers mots du titre (`deriveSimilarQuery`), source 1688 ;
+   coût affiché après coup (`costUsd` du serveur), erreurs codées.
+4. **Trois corrections du test réel** :
+   - bandeau photo mensonger (« 1688 le seul… » alors qu'Ali a répondu) ⇒
+     `sbase.photoNoticeMulti` dynamique selon `image.stores` réellement annoncés ;
+   - « Estimation indisponible (taux de change non configuré) » était faux —
+     le taux EST configuré, c'est la **catégorie** que la ligne photo ne porte pas
+     ⇒ message honnête + renvoi vers la fiche ;
+   - prix nu (`35`) ⇒ `formatItemPriceWithCurrency` : `amount+currency` d'abord.

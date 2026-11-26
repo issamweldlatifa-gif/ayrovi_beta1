@@ -19,6 +19,7 @@ import { ThemeProvider } from '../../src/design/theme';
 import { I18nProvider } from '../../src/i18n';
 import { PrefsProvider } from '../../src/state/prefs';
 import { fetchSbaseItem, fetchSbaseSources, searchSbase, searchSbaseImage } from '../../src/api/sbase';
+import { addSbaseToCart } from '../../src/api/cart';
 import { SbaseItemScreen } from '../../src/features/sbase/SbaseItemScreen';
 
 jest.mock('expo-router', () => ({
@@ -48,6 +49,10 @@ jest.mock('expo-image-picker', () => ({
   })),
 }));
 
+jest.mock('../../src/session/session', () => ({ useSessionId: () => 'sess-1' }));
+
+jest.mock('../../src/api/cart', () => ({ addSbaseToCart: jest.fn() }));
+
 jest.mock('../../src/api/sbase', () => ({
   fetchSbaseSources: jest.fn(),
   searchSbase: jest.fn(),
@@ -55,6 +60,7 @@ jest.mock('../../src/api/sbase', () => ({
   fetchSbaseItem: jest.fn(),
 }));
 
+const cartMock = addSbaseToCart as unknown as jest.Mock;
 const sourcesMock = fetchSbaseSources as unknown as jest.Mock;
 const searchMock = searchSbase as unknown as jest.Mock;
 const imageMock = searchSbaseImage as unknown as jest.Mock;
@@ -234,6 +240,8 @@ describe('S Base — un champ, deux boutiques en filtre', () => {
     }));
 
     expect(await screen.findByText('Mini traceur GPS')).toBeTruthy();
+    // الثمن بعملته الصريحة (amount+currency) — رقم عاري لا يُعرض أبداً.
+    expect(screen.getByText(/22,8 CNY/)).toBeTruthy();
     expect(await screen.findByTestId('sbase-response-time')).toHaveTextContent(/812/);
     // Le groupe 1688 porte son temps.
     expect(screen.getByTestId('sbase-group-1688-meta')).toHaveTextContent(/812 ms/);
@@ -337,6 +345,24 @@ describe('S Base — fiche produit', () => {
     // La fiche montre le prix rendu en Tunisie (moteur de prix), livraison incluse.
     expect(screen.getByTestId('sbase-item-estimate-total')).toHaveTextContent(/TND/);
     expect(await screen.findByTestId('sbase-item-response')).toHaveTextContent(/1,5 s/);
+    view.unmount();
+  });
+
+  it('section « produits similaires » : un tap = un appel assumé, les résultats se remplissent', async () => {
+    itemMock.mockResolvedValue(DETAIL);
+    searchMock.mockResolvedValue(RESULT);
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(
+      <PrefsProvider><I18nProvider><ThemeProvider><QueryClientProvider client={client}>
+        <SbaseItemScreen source="1688" id="1046925823679" title="Écouteurs" url={null} />
+      </QueryClientProvider></ThemeProvider></I18nProvider></PrefsProvider>,
+    );
+    await screen.findByText('Écouteurs sans fil');
+    fireEvent.press(screen.getByTestId('sbase-similar-run'));
+    await waitFor(() => expect(searchMock).toHaveBeenCalledWith({ q: expect.any(String), sources: ['1688'] }, expect.anything()));
+    expect(await screen.findByText('Mini traceur GPS')).toBeTruthy();
+    // الكلفة كما ردّها الخادم (0,0848 في الـfixture) — معروضة لا مخفيّة.
+    expect(screen.getByTestId('sbase-similar-meta')).toHaveTextContent(/0,085/);
     view.unmount();
   });
 
@@ -448,6 +474,7 @@ describe('S Base — photo (1688, sans SerpApi)', () => {
     await screen.findByTestId('sbase-source-1688');
     fireEvent.press(screen.getByTestId('sbase-photo'));
 
+    expect(await screen.findByText(/chaque boutique dit sa vérité/)).toBeTruthy();
     expect(await screen.findByTestId('sbase-image-store-1688')).toHaveTextContent(/1688 · photo · 1/);
     // Ali رفض: صفّه يحمل الكود الحقيقي و«échec non facturé»، و1688 تكمّل عادي.
     expect(screen.getByTestId('sbase-image-store-aliexpress')).toHaveTextContent(/SBASE_IMAGE_RATE_LIMITED/);
@@ -480,6 +507,36 @@ describe('S Base — photo (1688, sans SerpApi)', () => {
     fireEvent.press(screen.getByTestId('sbase-submit'));
     expect(await screen.findByTestId('sbase-skeleton-1688')).toBeTruthy();
     expect(screen.getByTestId('sbase-summary')).toHaveTextContent(/Recherche en cours/);
+    view.unmount();
+  });
+
+  it('ajout au panier depuis la carte : charge honnête sans quote signée, confirmation affichée', async () => {
+    searchMock.mockResolvedValue(RESULT);
+    cartMock.mockResolvedValue({ cartItemId: 'c1', totalItemsCount: 1, totalTND: 22.504, deliveryTND: 8, quoteExpiresAt: '', serverNow: '' });
+    const view = mount();
+    fireEvent.changeText(await screen.findByTestId('sbase-query'), 'traceur');
+    fireEvent.press(screen.getByTestId('sbase-submit'));
+    fireEvent.press(await screen.findByTestId('sbase-cart-0'));
+    await waitFor(() => expect(cartMock).toHaveBeenCalledTimes(1));
+    const call = cartMock.mock.calls[0][0] as { payload: Record<string, unknown>; sessionId: string };
+    expect(call.sessionId).toBe('sess-1');
+    expect(call.payload).toMatchObject({ store: '1688', sourcePrice: 22.8, sourceCurrency: 'CNY', quantity: 1 });
+    // الصدق: بحث لا يصدر quote موقّعة — الحمولة تحمل الاثنين أبداً.
+    expect(call.payload.priceVerificationStatus).toBeUndefined();
+    expect(call.payload.priceToken).toBeUndefined();
+    expect(await screen.findByText(/Ajouté au panier/)).toBeTruthy();
+    view.unmount();
+  });
+
+  it('refus du panier : le code du serveur est affiché tel quel', async () => {
+    searchMock.mockResolvedValue(RESULT);
+    cartMock.mockRejectedValue(Object.assign(new Error('refusé'), { code: 'INVALID_CART_ITEM' }));
+    const view = mount();
+    fireEvent.changeText(await screen.findByTestId('sbase-query'), 'traceur');
+    fireEvent.press(screen.getByTestId('sbase-submit'));
+    fireEvent.press(await screen.findByTestId('sbase-cart-0'));
+    expect(await screen.findByText(/Ajout refusé/)).toBeTruthy();
+    expect(screen.getByText('INVALID_CART_ITEM')).toBeTruthy();
     view.unmount();
   });
 
