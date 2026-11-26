@@ -29,6 +29,8 @@ import { runSandbaseCall, runSandbaseSearch, sandbaseConfigured, SbaseError } fr
 import { extractProducts, missingFacets, type SbaseProduct } from './extract';
 import { extractDetail, type SbaseDetail } from './detail';
 import { normalizeUploadedImage } from '../services/imageValidation';
+import type { PricingRules } from '../services/pricing';
+import { estimateSbasePrice, type SbasePriceEstimate } from './pricing';
 import { SbaseImageError, sbaseImageFailureFrom, sbaseImageReady, searchSbaseByImage } from './image';
 
 export const SBASE_CACHE_TTL_MS = 10 * 60_000;
@@ -203,8 +205,25 @@ async function searchOneSource(
   }
 }
 
-export function createSbaseRouter(): Router {
+export interface SbaseRouterOptions {
+  /**
+   * محرّك السعر الموجود (`db.getPricingRules`). بلا هذا، البطاقة تعرض ثمن
+   * المصدر فقط وتقول «تقدير غير متوفّر» — ما نخترعوش معدّلاً.
+   */
+  getPricingRules?: () => PricingRules;
+}
+
+export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
   const router = Router();
+  const estimate = (item: SbaseProduct): SbasePriceEstimate | null => estimateSbasePrice(
+    options.getPricingRules?.() ?? null,
+    { amount: item.amount, currency: item.currency, title: item.title, includeLocalDelivery: false },
+  );
+  /** Sur la fiche d'un produit, la ligne est seule : le transport local compte. */
+  const estimateDetail = (detail: SbaseDetail): SbasePriceEstimate | null => estimateSbasePrice(
+    options.getPricingRules?.() ?? null,
+    { amount: detail.amount, currency: detail.currency, title: detail.title ?? '', includeLocalDelivery: true },
+  );
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 1 } });
 
   router.get('/health', (_req, res) => {
@@ -264,7 +283,9 @@ export function createSbaseRouter(): Router {
     }
 
     const started = Date.now();
-    const groups = await Promise.all(wanted.map((source) => searchOneSource(source, query)));
+    const groups = (await Promise.all(wanted.map((source) => searchOneSource(source, query))))
+      // Prix source + estimation TND (moteur de prix existant) sur CHAQUE ligne.
+      .map((group) => ({ ...group, items: group.items.map((item) => ({ ...item, priceEstimate: estimate(item) })) }));
     const totalMs = Date.now() - started;
     const count = groups.reduce((sum, group) => sum + group.count, 0);
     const facets = new Set<string>();
@@ -329,7 +350,7 @@ export function createSbaseRouter(): Router {
         success: true,
         data: {
           source: { id: source.id, label: source.label, vendor: source.vendor, supports: source.supports },
-          detail: hit.detail, durationMs: hit.durationMs, cached: true,
+          detail: { ...hit.detail, priceEstimate: estimateDetail(hit.detail) }, durationMs: hit.durationMs, cached: true,
           costUsd: source.detail.costUsd, billedPerResult: source.billedPerResult,
           fetchedAt: new Date().toISOString(),
         },
@@ -352,7 +373,7 @@ export function createSbaseRouter(): Router {
         success: true,
         data: {
           source: { id: source.id, label: source.label, vendor: source.vendor, supports: source.supports },
-          detail,
+          detail: { ...detail, priceEstimate: estimateDetail(detail) },
           durationMs: run.durationMs,
           cached: false,
           costUsd: byUrl ? byUrl.costUsd : source.detail.costUsd,
@@ -413,7 +434,7 @@ export function createSbaseRouter(): Router {
           mode: 'image',
           channel: { ...SBASE_IMAGE_SOURCE, configured: sbaseImageReady() },
           status: items.length > 0 ? 'ok' : 'empty',
-          items,
+          items: items.map((item) => ({ ...item, priceEstimate: estimate(item) })),
           count: items.length,
           stores,
           missingFields: [...missing].sort(),

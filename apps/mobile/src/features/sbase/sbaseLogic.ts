@@ -113,3 +113,8 @@ export function formatCallCost(costUsd: number | null | undefined): string | nul
   return `${costUsd.toFixed(decimals).replace('.', ',')} $`;
 }
 
+/** «1 234,500 TND» — millimes compris, séparateurs français, jamais arrondi au dinar. */
+export function formatTND(amount: number | null | undefined): string | null {
+  if (typeof amount !== 'number' || !Number.isFinite(amount)) return null;
+  return `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} TND`;
+}

@@ -214,3 +214,49 @@ dit (« Photo → 1688 ») au lieu de laisser croire à une recherche photo sur 
 - `SBASE_PUBLIC_URL` : origine publique du serveur (ex. `https://…onrender.com`).
   Sans elle, on la déduit de `x-forwarded-host`/`host` ; si elle manque totalement,
   la photo répond `503` en le disant, plutôt que d'envoyer un lien local à 1688.
+
+## 11. v5 — carte produit, prix rendu en Tunisie, et Alibaba.com retirée
+
+### 11.1 Une seule boutique : 1688
+
+Alibaba.com a été *retirée* le 26/11/2026 (décision du propriétaire : « si ça ne
+sert à rien pour nous, on laisse tomber »). Motif factuel : SandBase ne publie
+pour Alibaba **qu'un** endpoint de recherche par mot-clé — ni image, ni détails,
+ni variantes, ni disponibilité. La carte produit qu'on promet ne peut pas être
+remplie avec ça. Retour éventuel = une ligne dans `descriptors.ts`.
+
+### 11.2 La carte produit (mobile)
+
+| Élément | Source | Règle |
+|---|---|---|
+| Image | `img` / `fullPathImageURI` | rien d'inventé ; absence ⇒ pas de bloc |
+| Titre | `title` traduit (cross-border) | jamais le titre chinois quand l'endpoint en fournit un traduit |
+| Prix source | `price` + `currency` | tel quel, en CNY |
+| **Prix rendu TND** | moteur de prix serveur | `≈ 22,504 TND`, ou « estimation indisponible » |
+| Fournisseur | `shop_info.company_name` | affiché à côté, pas à la place du store |
+| MOQ | `moq` / `quantity_begin` | affiché — c'est du gros |
+| Note / livraison | si fournis | sinon absents (pas de « — » trompeur) |
+
+### 11.3 Le moteur de prix
+
+`calculatePrice()` (`src/services/pricing.ts`) **n'est pas dupliqué** : S Base lui
+passe ses règles via `createSbaseRouter({ getPricingRules })` et publie le
+résultat dans `priceEstimate` (résultats + fiche). Détail de la fiche : produit
+converti, fret, douane, TVA, frais de service, livraison locale, total, catégorie
+douanière, `pricingVersion`.
+
+- Sur une ligne de résultat : **sans** livraison locale (elle se paie une fois
+  par commande) ; sur la fiche : **avec**.
+- Devise non cotée ⇒ `priceEstimate: null` ⇒ l'UI écrit « estimation
+  indisponible » (aucun taux codé en dur dans l'app).
+- **CNY ajouté** à `FX_EXTRA_CURRENCIES` (flux marché) : sans lui, 1688 n'aurait
+  jamais eu d'estimation TND.
+
+### 11.4 Ce qui n'est pas encore fait : le panier
+
+S Base reste une **expérience indépendante** : aucune ligne n'est créée dans le
+panier ZAYROVI. Techniquement le panier exige un `store` connu, un prix TND
+*coté par le serveur* et un **jeton de prix signé** (`priceToken`) ; 1688 n'est
+pas une boutique AYWEBs. Brancher « ajouter au panier » proprement = mint du
+jeton côté S Base + décision sur le `store`. C'est un chantier à part, pas un
+bouton à moitié câblé.

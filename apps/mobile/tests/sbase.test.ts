@@ -12,6 +12,7 @@ import {
   formatDuration,
   failureMessageKey,
   formatItemPrice,
+  formatTND,
   isImageProviderFailure,
   missingLabelKey,
   supportedCapabilities,
@@ -75,5 +76,15 @@ describe('S Base — un échec dit ce qui a échoué', () => {
     expect(failureMessageKey('SANDBASE_NOT_CONFIGURED')).toBe('sbase.err.notConfigured');
     expect(failureMessageKey(' sb_base_whatever ')).toBeNull();
     expect(failureMessageKey(null)).toBeNull();
+  });
+});
+
+describe('S Base — prix rendu en Tunisie', () => {
+  test('millimes conservés, séparateurs français, jamais de dinar arrondi', () => {
+    expect(formatTND(22.504)).toBe('22,504 TND');
+    // Espace fine insécable de `toLocaleString('fr-FR')` : on la normalise.
+    expect(formatTND(1234.5)?.replace(/\u202f|\u00a0/g, ' ')).toBe('1 234,500 TND');
+    expect(formatTND(null)).toBeNull();
+    expect(formatTND(Number.NaN)).toBeNull();
   });
 });

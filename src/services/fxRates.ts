@@ -65,7 +65,11 @@ const round6 = (value: number) => Math.round(value * 1e6) / 1e6;
  * quatre principales ; une devise absente ou aberrante est simplement omise.
  */
 export const FX_EXTRA_CURRENCIES = [
-  'CAD', 'AUD', 'NZD', 'SGD', 'MXN', 'BRL', 'PLN', 'SEK', 'TRY', 'INR', 'EGP', 'SAR', 'AED', 'CHF',
+  // CNY (26/11/2026) : S Base lit 1688, qui cotise en yuans. Sans ce taux le
+  // moteur de prix refusait de coter (comportement honnête) mais aucune fiche
+  // 1688 n'avait d'estimation TND. Ajouté ici, pas codé en dur : il vient du
+  // marché comme les autres devises secondaires.
+  'CNY', 'CAD', 'AUD', 'NZD', 'SGD', 'MXN', 'BRL', 'PLN', 'SEK', 'TRY', 'INR', 'EGP', 'SAR', 'AED', 'CHF',
 ] as const;
 
 /** Bande large (TND par unité) : écarte un zéro, un infini ou une inversion de cotation. */

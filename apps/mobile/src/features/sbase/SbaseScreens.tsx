@@ -42,6 +42,7 @@ import {
   formatCallCost,
   formatDuration,
   formatItemPrice,
+  formatTND,
   failureMessageKey,
   missingLabelKey,
   supportedCapabilities,
@@ -84,8 +85,16 @@ function ErrorCard({ code, message, onRetry }: { code: string; message: string; 
   </View>;
 }
 
+/**
+ * بطاقة منتج S Base — **كل ما نعرفو، بلا زينة كاذبة**:
+ *   صورة · عنوان · ثمن المصدر · **تقدير TND** (محرّك السعر) · مورّد · MOQ · توفّر.
+ * التقدير إذا غاب (عملة بلا سعر صرف، ولا المحرّك غير مضبوط) يتكتب «غير متوفّر»
+ * — عمرنا ما نعرضو رقم محسوب في التطبيق.
+ */
 function ResultRow({ item, index, onOpen }: { item: SbaseItem; index: number; onOpen: () => void }) {
   const theme = useTheme(); const t = useT();
+  const estimate = item.priceEstimate ?? null;
+  const totalTND = formatTND(estimate?.totalTND ?? null);
   return <Pressable
     testID={`sbase-item-${index}`}
     accessibilityRole="button"
@@ -95,24 +104,39 @@ function ResultRow({ item, index, onOpen }: { item: SbaseItem; index: number; on
     <AppImage uri={item.image ?? undefined} decorative style={styles.itemImage} contentFit="cover" />
     <View style={styles.grow}>
       <AppText variant="bodyStrong" numberOfLines={2}>{item.title}</AppText>
-      <AppText variant="bodyStrong">{formatItemPrice(item, t('sbase.missing.price'))}</AppText>
+
+      <View style={styles.priceLine}>
+        <AppText variant="bodyStrong">{formatItemPrice(item, t('sbase.missing.price'))}</AppText>
+        {totalTND ? <AppText testID={`sbase-estimate-${index}`} variant="bodyStrong" color={theme.colors.ink}>
+          ≈ {totalTND}
+        </AppText> : <AppText testID={`sbase-estimate-${index}`} variant="caption" color={theme.colors.muted}>
+          {t('sbase.estimateUnavailable')}
+        </AppText>}
+      </View>
+
       <AppText variant="caption" color={theme.colors.muted} numberOfLines={1}>
         {[
-          item.store,
-          item.seller && item.seller !== item.store ? item.seller : null,
+          item.seller ?? item.store,
           // Achat en gros : le MOQ est la première chose qu'un pro regarde.
           item.moq ? `${t('sbase.moq')} ${item.moq}` : null,
           item.rating !== null ? `${item.rating}★` : null,
           item.shipping,
         ].filter(Boolean).join(' · ') || '—'}
       </AppText>
+
+      {estimate ? <AppText testID={`sbase-estimate-basis-${index}`} variant="caption" color={theme.colors.muted} numberOfLines={1}>
+        {t('sbase.estimateBasis', {
+          category: estimate.categoryLabel,
+          rate: estimate.rateTND.toFixed(4),
+        })}
+      </AppText> : null}
+
       {item.url ? <Pressable
         accessibilityRole="link"
         accessibilityLabel={`${t('sbase.open')} · ${item.title}`}
         onPress={() => { void Linking.openURL(item.url as string); }}
         style={styles.openLink}>
         <AppText variant="captionStrong">{t('sbase.open')}</AppText>
-        <Ionicons name="open-outline" size={theme.iconSize.sm} color={theme.colors.ink} />
       </Pressable> : null}
     </View>
   </Pressable>;
@@ -164,15 +188,17 @@ export function SbaseScreen() {
   const [imageResult, setImageResult] = useState<SbaseImagePayload | null>(null);
   const [failure, setFailure] = useState<{ code: string; message: string } | null>(null);
   const [stale, setStale] = useState(false);
+  /** المستعمل لمس الاختيار: ما نرجّعوش لافتراضي فوق راسو. */
+  const [touchedSelection, setTouchedSelection] = useState(false);
   const [storeFilter, setStoreFilter] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
   // Sélection par défaut = les boutiques grand public décidées côté serveur.
   useEffect(() => {
-    if (selected.length > 0 || sources.length === 0) return;
+    if (touchedSelection || selected.length > 0 || sources.length === 0) return;
     setSelected(sources.filter((source) => source.defaultEnabled).map((source) => source.id));
-  }, [sources, selected.length]);
+  }, [sources, selected.length, touchedSelection]);
 
   useEffect(() => {
     if (!busy) return;
@@ -237,6 +263,8 @@ export function SbaseScreen() {
   };
 
   const toggleSource = (id: string) => {
+    // Décocher la dernière boutique est un choix légitime : on ne le réécrase pas.
+    setTouchedSelection(true);
     setSelected((current) => {
       const next = current.includes(id) ? current.filter((value) => value !== id) : [...current, id];
       return next;
@@ -431,6 +459,7 @@ const styles = StyleSheet.create({
   card: { gap: 8, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderRadius: RADIUS.md, marginTop: 12 },
   group: { marginTop: 16, gap: 4 },
   groupHead: { gap: 2, paddingBottom: 6, borderBottomWidth: StyleSheet.hairlineWidth },
+  priceLine: { flexDirection: 'row', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' },
   item: { flexDirection: 'row', gap: 12, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
   itemImage: { width: 72, height: 72, borderRadius: RADIUS.sm, overflow: 'hidden' },
   openLink: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },

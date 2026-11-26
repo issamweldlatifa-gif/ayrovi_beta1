@@ -42,10 +42,31 @@ beforeAll(async () => {
     .toBuffer();
 });
 
-function app() {
+/**
+ * Règles de prix RÉELLES du moteur (`services/pricing`) : S Base ne calcule
+ * rien lui-même, il lui passe juste de quoi lire ses règles.
+ */
+const RULES = {
+  id: 'test', version: 7,
+  rateEUR: 3.4, rateUSD: 3.15, rateGBP: 4.0, rateJPY: 0.021,
+  exchangeBufferPercent: 3,
+  freightPerKgTND: 12, localDeliveryTND: 7,
+  commissionPercent: 12, minimumCommissionTND: 8,
+  rpdPercent: 1, rpdMinimumTND: 0.5,
+  defaultTvaRate: 0.19, expressFeeTND: 25,
+  categories: [],
+  // CNY vient du marché (fxRates) ; on le fournit ici comme le ferait le sync.
+  extraRates: { CNY: 0.43 },
+  fxSource: 'live',
+  updatedAt: new Date().toISOString(),
+};
+
+function app(options: { pricingRules?: unknown } = {}) {
   const instance = express();
   instance.use(express.json());
-  instance.use('/api/sbase', createSbaseRouter());
+  instance.use('/api/sbase', createSbaseRouter({
+    getPricingRules: () => (options.pricingRules === undefined ? (RULES as never) : (options.pricingRules as never)),
+  }));
   return instance;
 }
 
@@ -85,8 +106,9 @@ describe('S Base — catalogue', () => {
    * Décision du 26/11/2026 : deux boutiques seulement (1688 + Alibaba.com), et
    * la recherche par image vient de 1688 elle-même — plus de SerpApi du tout.
    */
-  test('deux boutiques seulement : 1688 et Alibaba.com', () => {
-    expect(SBASE_SOURCES.map((source) => source.id)).toEqual(['1688', 'alibaba']);
+  test('une seule boutique : 1688 (Alibaba.com retirée)', () => {
+    expect(SBASE_SOURCES.map((source) => source.id)).toEqual(['1688']);
+    expect(findSbaseSource('alibaba')).toBeNull();
     for (const source of SBASE_SOURCES) {
       expect(source.endpoint.startsWith('/v1/api/')).toBe(true);
       expect(source.supports.keyword).toBe(true);
@@ -98,22 +120,17 @@ describe('S Base — catalogue', () => {
 
   test('les capacités suivent la documentation, pas le désir', () => {
     const dev = findSbaseSource('1688')!;
-    const ali = findSbaseSource('alibaba')!;
     // 1688 : image, détails, module par URL, MOQ — tout est documenté.
     expect(dev.supports).toMatchObject({ image: true, details: true, url: true, variants: true });
     expect(dev.image?.endpoint).toBe('/v1/api/1688/search/cross-border-by-image');
     expect(dev.detail?.endpoint).toBe('/v1/api/1688/item/detail');
     expect(dev.detail?.byUrl?.endpoint).toBe('/v1/api/1688/item/detail-by-url');
-    // Alibaba.com : mots-clés uniquement — aucun endpoint image ni détail publié.
-    expect(ali.supports).toMatchObject({ image: false, details: false, url: false, variants: false });
-    expect(ali.image).toBeUndefined();
-    expect(ali.detail).toBeUndefined();
+    // Alibaba.com est retirée : aucun endpoint image ni détail n'était publié.
+    expect(SBASE_SOURCES.some((source) => source.id === 'alibaba')).toBe(false);
   });
 
-  test('les deux boutiques partent par défaut, et la facture est dite', () => {
-    expect(SBASE_SOURCES.filter((source) => source.defaultEnabled).map((source) => source.id))
-      .toEqual(['1688', 'alibaba']);
-    expect(findSbaseSource('alibaba')).toMatchObject({ billedPerResult: true, costUsd: 0.00231 });
+  test('la seule boutique part par défaut, et sa facture est dite', () => {
+    expect(SBASE_SOURCES.filter((source) => source.defaultEnabled).map((source) => source.id)).toEqual(['1688']);
     expect(findSbaseSource('1688')).toMatchObject({ billedPerResult: false, costUsd: 0.014286 });
   });
 
@@ -129,7 +146,6 @@ describe('S Base — catalogue', () => {
       .toMatchObject({ keyword: 'case', language: 'en', page: '1' });
     expect(findSbaseSource('1688')?.image?.buildBody('https://x/y.jpg'))
       .toMatchObject({ imgUrl: 'https://x/y.jpg', language: 'en' });
-    expect(findSbaseSource('alibaba')?.buildBody('case', null)).toMatchObject({ query: 'case', limit: 20 });
     expect(findSbaseSource('inconnu')).toBeNull();
   });
 
@@ -271,8 +287,8 @@ describe('S Base — routes', () => {
   test('sources : capacités réelles, sélection par défaut et canal image', async () => {
     const response = await request(app()).get('/api/sbase/sources').expect(200);
     expect(response.body.data.configured).toBe(true);
-    expect(response.body.data.sources).toHaveLength(2);
-    expect(response.body.data.sources.map((source: { id: string }) => source.id)).toEqual(['1688', 'alibaba']);
+    expect(response.body.data.sources).toHaveLength(1);
+    expect(response.body.data.sources.map((source: { id: string }) => source.id)).toEqual(['1688']);
     // La photo part chez 1688 : le canal image n'est plus un service tiers.
     expect(response.body.data.image).toMatchObject({ id: '1688', supports: { image: true } });
   });
@@ -291,29 +307,22 @@ describe('S Base — routes', () => {
     expect(short.body.code).toBe('INVALID_QUERY');
     const none = await request(app()).post('/api/sbase/search').send({ q: 'casque', sources: [] }).expect(200);
     // Liste vide explicitement demandée ⇒ on retombe sur la sélection par défaut.
-    expect(none.body.data.groups.length).toBe(2);
+    expect(none.body.data.groups.length).toBe(1);
   });
 
   test('chaque boutique interrogée rend SON groupe, SON temps et SON erreur', async () => {
-    stubSources({
-      '/1688/search/cross-border': devOk,
-      '/alibaba/search': () => new Response(JSON.stringify({ error: 'quota' }), { status: 401 }),
-    });
+    stubSources({ '/1688/search/cross-border': devOk });
 
     const response = await request(app())
       .post('/api/sbase/search')
-      .send({ q: 'coque', sources: ['1688', 'alibaba'] })
+      .send({ q: 'coque', sources: ['1688'] })
       .expect(200);
 
     const groups = response.body.data.groups;
-    expect(groups).toHaveLength(2);
-    const dev = groups.find((group: { source: { id: string } }) => group.source.id === '1688');
-    const ali = groups.find((group: { source: { id: string } }) => group.source.id === 'alibaba');
+    expect(groups).toHaveLength(1);
+    const dev = groups[0];
     expect(dev).toMatchObject({ status: 'ok', count: 1, error: null });
     expect(dev.items[0]).toMatchObject({ title: 'Coque téléphone', amount: 2.1, currency: 'CNY', moq: '1' });
-    // Une boutique en échec ne casse pas les autres : son code, pas une liste vide.
-    expect(ali).toMatchObject({ status: 'error', count: 0 });
-    expect(ali.error.code).toBe('SANDBASE_UNAUTHORIZED');
     expect(response.body.data.totalMs).toBeGreaterThanOrEqual(0);
   });
 
@@ -379,12 +388,63 @@ describe('S Base — routes', () => {
     expect(response.body.data.detail.amount).toBe(1.2);
   });
 
-  test('détail : boutique sans fiche ⇒ 400 honnête (pas une page vide)', async () => {
+  test('détail : boutique retirée ⇒ 404 explicite (pas une page vide)', async () => {
+    // Alibaba.com a été retirée le 26/11/2026 : le contrat `DETAILS_UNSUPPORTED`
+    // reste dans le code pour la prochaine source sans fiche, mais l'appelant
+    // reçoit d'abord un refus clair sur une source qui n'existe plus.
     const response = await request(app())
       .post('/api/sbase/item')
       .send({ source: 'alibaba', id: '100500' })
-      .expect(400);
-    expect(response.body.code).toBe('DETAILS_UNSUPPORTED');
+      .expect(404);
+    expect(response.body.code).toBe('UNKNOWN_SOURCE');
+  });
+
+  /*
+   * 26/11/2026 — le prix TND vient du moteur de prix de la maison, jamais d'une
+   * conversion improvisée côté app. Sans règles (ou devise non cotée) : null.
+   */
+  test('chaque résultat porte une estimation TND issue du moteur de prix', async () => {
+    stubSources({ '/1688/search/cross-border': devOk });
+    const response = await request(app())
+      .post('/api/sbase/search')
+      .send({ q: 'coque', sources: ['1688'] })
+      .expect(200);
+
+    const estimate = response.body.data.groups[0].items[0].priceEstimate;
+    expect(estimate).toMatchObject({ currency: 'CNY', amount: 2.1 });
+    // 2,10 CNY à 0,43 TND (×1,03 de marge de change) + fret + douane + TVA + service.
+    expect(estimate.totalTND).toBeGreaterThan(estimate.productTND);
+    expect(estimate.productTND).toBeCloseTo(2.1 * 0.43 * 1.03, 1);
+    expect(estimate.rateTND).toBeCloseTo(0.4429, 3);
+    expect(estimate.pricingVersion).toBe(7);
+    // Sur une ligne de résultat, la livraison locale n'est pas comptée.
+    expect(estimate.localDeliveryTND).toBe(0);
+  });
+
+  test('sans moteur de prix, l’estimation reste nulle — on n’invente pas un taux', async () => {
+    stubSources({ '/1688/search/cross-border': devOk });
+    const response = await request(app({ pricingRules: null }))
+      .post('/api/sbase/search')
+      .send({ q: 'coque', sources: ['1688'] })
+      .expect(200);
+    expect(response.body.data.groups[0].items[0].priceEstimate).toBeNull();
+  });
+
+  test('la fiche produit inclut la livraison locale dans son estimation', async () => {
+    stubSources({
+      '/1688/item/detail': () => new Response(JSON.stringify(envelope({
+        item_id: 1046925823679, currency: 'CNY', price_info: { price: '10.00' },
+        item: { title: 'Écouteurs', companyName: 'Shenzhen Z' },
+      })), { status: 200 }),
+    });
+    const response = await request(app())
+      .post('/api/sbase/item')
+      .send({ source: '1688', id: '1046925823679' })
+      .expect(200);
+    const estimate = response.body.data.detail.priceEstimate;
+    expect(estimate.currency).toBe('CNY');
+    expect(estimate.localDeliveryTND).toBe(7);
+    expect(estimate.totalTND).toBeGreaterThan(estimate.productTND + estimate.localDeliveryTND);
   });
 
   test('détail : identifiant manquant ⇒ 400, et sans clé ⇒ 503', async () => {

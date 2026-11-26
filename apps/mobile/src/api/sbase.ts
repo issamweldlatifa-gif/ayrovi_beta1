@@ -57,6 +57,28 @@ export interface SbaseSourcesPayload {
   image: SbaseImageChannel;
 }
 
+/**
+ * تقدير السعر بالدينار — **يحسبو الخادم بمحرّك السعر الرسمي** (تحويل + شحن +
+ * ديوانة + TVA + خدمة). الواجهة تعرضو كما وصل، ما تعاودش تحسب.
+ */
+export interface SbasePriceEstimate {
+  currency: string;
+  amount: number;
+  rateTND: number;
+  productTND: number;
+  freightTND: number;
+  dutyTND: number;
+  tvaTND: number;
+  serviceFeeTND: number;
+  localDeliveryTND: number;
+  totalTND: number;
+  categoryLabel: string;
+  categoryStatus: 'ALLOWED' | 'WARNING' | 'RESTRICTED';
+  restricted: boolean;
+  requiresWeightValidation: boolean;
+  pricingVersion: number;
+}
+
 export interface SbaseItem {
   id: string | null;
   title: string;
@@ -75,6 +97,8 @@ export interface SbaseItem {
   shipping: string | null;
   condition: string | null;
   missing: string[];
+  /** Estimation TND calculée par le moteur de prix du serveur (null = non cotée). */
+  priceEstimate?: SbasePriceEstimate | null;
 }
 
 export interface SbaseGroup {
@@ -120,6 +144,8 @@ export interface SbaseDetail {
   /** « Tailles et couleurs » : un groupe par dimension. */
   variants: SbaseVariantGroup[];
   missing: string[];
+  /** Estimation TND (moteur de prix) — inclut la livraison locale sur la fiche. */
+  priceEstimate?: SbasePriceEstimate | null;
 }
 
 export interface SbaseDetailPayload {

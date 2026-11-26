@@ -1,9 +1,13 @@
 /**
  * S Base — كتالوغ المصادر. **مصدر واحد = endpoint واحد.**
  *
- * قرار المالك (26/11/2026): S Base تتقلّص إلى **مصدرين فقط** — 1688 وAlibaba.com
- * — والبحث بالصورة **ما عندو حتى علاقة بـ SerpApi**: يمرّ من شاشة 1688 نفسها
- * (`/v1/api/1688/search/cross-border-by-image`). Z Lens يتفضّل على حالو.
+ * قرار المالك (26/11/2026): S Base = **1688 وحدها**. البحث بالصورة يمرّ من
+ * شاشة 1688 نفسها (`/v1/api/1688/search/cross-border-by-image`)، وZ Lens يتفضّل
+ * على حالو — ما فماش SerpApi هنا.
+ *
+ * وAlibaba.com تنحّت في نفس اليوم: عندها بحث بالكلمة بركة — لا صورة، لا تفاصيل،
+ * لا مقاسات، لا توفّر. بطاقة المنتج اللي نوعدو بيها ما تنجّمش تتكمّل بها، فما
+ * نبيعوهاش. ترجيعها = سطر واحد هنا إذا تبدّل رأي المالك.
  *
  * الحقائق مأخوذة من صفحات SandBase (قُرأت في 2026‑11‑26):
  *   • 1688: بحث بالكلمة (cross-border, `language`) · بحث بالصورة (`imgUrl`) ·
@@ -73,8 +77,8 @@ export interface SbaseSourceDescriptor {
   /** سعر النداء المعلن (USD) — null إذا الصفحة ما نشرتش سعراً. */
   costUsd: number | null;
   /**
-   * Alibaba تحاسب **بكل نتيجة** (من $0.00077 للنتيجة، سقف $0.0193 للطلب)،
-   * موش سعراً ثابتاً للنداء — نعلنوها باش الشاشة ما تكذبش على الكلفة.
+   * بعض المصادر (Alibaba سابقاً) تحاسب بكل نتيجة بدل سعر ثابت للنداء.
+   * الخانة تبقى موجودة باش الشاشة ما تكذبش إذا رجّعنا مصدراً من هذا النوع.
    */
   billedPerResult: boolean;
   /** الـendpoint يشتغل بـrun + polling حسب التوثيق. */
@@ -135,27 +139,6 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
         buildBody: (input) => ({ url: input.url, language: SBASE_1688_LANGUAGE }),
       },
     },
-  },
-  {
-    id: 'alibaba',
-    label: 'Alibaba.com',
-    vendor: 'alibaba.com',
-    endpoint: '/v1/api/alibaba/search',
-    /** من $0.00231 للنداء؛ الفاتورة الحقيقية = 0,00077 $ لكل نتيجة. */
-    costUsd: 0.00231,
-    billedPerResult: true,
-    async: false,
-    defaultEnabled: true,
-    /*
-     * Alibaba.com في SandBase = بحث بالكلمة فقط. لا صورة، لا تفاصيل، لا رابط
-     * منتج. لهذا صورة المستعمل تروح لـ1688 وحدها، والشاشة تقولها.
-     */
-    supports: { keyword: true, url: false, image: false, details: false, price: true, variants: false, barcode: false },
-    fields: ['title', 'price', 'image', 'link', 'moq', 'store'],
-    markets: [],
-    defaultMarket: null,
-    arrays: [],
-    buildBody: (query) => ({ query, limit: 20 }),
   },
 ];
 

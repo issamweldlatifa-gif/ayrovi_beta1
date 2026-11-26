@@ -66,7 +66,6 @@ const SOURCES = {
   configured: true,
   sources: [
     source('1688', '1688', { supports: { ...supports, image: true, details: true, url: true, variants: true } }),
-    source('alibaba', 'Alibaba.com', { costUsd: 0.00231, billedPerResult: true }),
   ],
   image: {
     id: '1688', label: '1688 · photo', vendor: '1688.com',
@@ -74,10 +73,17 @@ const SOURCES = {
   },
 };
 
+const ESTIMATE = {
+  currency: 'CNY', amount: 22.8, rateTND: 0.4429, productTND: 10.404,
+  freightTND: 6.0, dutyTND: 1.2, tvaTND: 3.4, serviceFeeTND: 1.5,
+  localDeliveryTND: 0, totalTND: 22.504, categoryLabel: 'Gadgets',
+  categoryStatus: 'ALLOWED' as const, restricted: false, requiresWeightValidation: false, pricingVersion: 9,
+};
+
 const item = (title: string, extra: Record<string, unknown> = {}) => ({
   id: 'x', title, url: 'https://shop/1', image: null, priceText: '22,80 CNY', amount: 22.8,
   currency: 'CNY', store: '1688', seller: 'Shenzhen T', moq: '1', rating: null, reviews: null,
-  shipping: null, condition: null, missing: ['image'], ...extra,
+  shipping: null, condition: null, missing: ['image'], priceEstimate: ESTIMATE, ...extra,
 });
 
 const supportsDetails = { ...supports, details: true };
@@ -89,18 +95,18 @@ const GROUP_OK = {
 };
 
 const GROUP_ERROR = {
-  source: { id: 'alibaba', label: 'Alibaba.com', vendor: 'alibaba.com', supports },
+  source: { id: '1688', label: '1688', vendor: '1688.com', supports },
   status: 'error' as const, items: [], count: 0, durationMs: 0,
   cached: false, async: false, error: { code: 'SANDBASE_UNAUTHORIZED', message: 'clé refusée' },
-  costUsd: 0.00231, billedPerResult: true,
+  costUsd: 0.014286, billedPerResult: false,
 };
 
-const GROUP_NO_DETAILS = {
-  source: { id: 'alibaba', label: 'Alibaba.com', vendor: 'alibaba.com', supports },
+const GROUP_NO_ESTIMATE = {
+  source: { id: '1688', label: '1688', vendor: '1688.com', supports },
   status: 'ok' as const,
-  items: [item('Coque iPhone', { url: 'https://alibaba.com/x', store: 'Alibaba.com', seller: null, moq: '500' })],
+  items: [item('Coque iPhone', { url: 'https://detail.1688.com/offer/9.html', priceEstimate: null })],
   count: 1, durationMs: 640, cached: false, async: false, error: null,
-  costUsd: 0.00231, billedPerResult: true,
+  costUsd: 0.014286, billedPerResult: false,
 };
 
 const DETAIL = {
@@ -117,16 +123,29 @@ const DETAIL = {
       { name: 'Pack', values: [{ label: 'Standard', available: null, image: null }] },
     ],
     missing: ['rating'],
+    priceEstimate: {
+      ...ESTIMATE, localDeliveryTND: 7, totalTND: 29.504, categoryLabel: 'Gadgets',
+    },
   },
   durationMs: 1500, cached: false, costUsd: 0.014286, billedPerResult: false,
   fetchedAt: new Date().toISOString(),
 };
 
 /** Résultat avec une ligne Alibaba cliquable (aucune fiche publiée). */
-const RESULT_LINK = {
+const RESULT_ERROR = {
+  query: 'traceur',
+  totalMs: 300,
+  groups: [GROUP_ERROR],
+  count: 0,
+  missingFields: [],
+  fetchedAt: new Date().toISOString(),
+};
+
+/** Résultat sans estimation TND (devise non cotée) : l'écran doit le dire. */
+const RESULT_NO_ESTIMATE = {
   query: 'coque',
   totalMs: 900,
-  groups: [GROUP_OK, GROUP_NO_DETAILS],
+  groups: [GROUP_OK, GROUP_NO_ESTIMATE],
   count: 2,
   missingFields: ['image'],
   fetchedAt: new Date().toISOString(),
@@ -135,8 +154,8 @@ const RESULT_LINK = {
 const RESULT = {
   query: 'mini traceur gps',
   totalMs: 1240,
-  groups: [GROUP_OK, GROUP_ERROR],
-  count: 2,
+  groups: [GROUP_OK],
+  count: 1,
   missingFields: ['image'],
   fetchedAt: new Date().toISOString(),
 };
@@ -188,8 +207,8 @@ describe('S Base — un champ, deux boutiques en filtre', () => {
 
     const dev = await screen.findByTestId('sbase-source-1688');
     expect(dev.props.accessibilityState.selected).toBe(true);
-    expect(screen.getByTestId('sbase-source-alibaba').props.accessibilityState.selected).toBe(true);
-    // Plus aucune boutique retirée : le serveur n'en décrit que deux.
+    // Alibaba.com retirée, comme les 6 autres : le serveur n'en décrit qu'une.
+    expect(screen.queryByTestId('sbase-source-alibaba')).toBeNull();
     expect(screen.queryByTestId('sbase-source-amazon')).toBeNull();
     expect(screen.queryByTestId('sbase-source-aliexpress')).toBeNull();
     view.unmount();
@@ -204,16 +223,37 @@ describe('S Base — un champ, deux boutiques en filtre', () => {
 
     await waitFor(() => expect(searchMock).toHaveBeenCalledWith({
       q: 'mini traceur gps',
-      sources: ['1688', 'alibaba'],
+      sources: ['1688'],
     }));
 
     expect(await screen.findByText('Mini traceur GPS')).toBeTruthy();
     expect(await screen.findByTestId('sbase-response-time')).toHaveTextContent(/1,2 s/);
-    // Le groupe 1688 porte son temps ; Alibaba porte son code d'erreur.
+    // Le groupe 1688 porte son temps.
     expect(screen.getByTestId('sbase-group-1688-meta')).toHaveTextContent(/812 ms/);
-    expect(screen.getByTestId('sbase-group-alibaba-meta')).toHaveTextContent(/SANDBASE_UNAUTHORIZED/);
     // MOQ et fournisseur sont affichés : c'est du commerce de gros.
     expect(screen.getAllByText(/Shenzhen T/).length).toBeGreaterThan(0);
+    // Le prix rendu en Tunisie vient du moteur de prix (calculé serveur).
+    expect(screen.getByTestId('sbase-estimate-0')).toHaveTextContent(/22,504 TND/);
+    view.unmount();
+  });
+
+  it('une boutique en échec affiche son code, pas une liste vide', async () => {
+    searchMock.mockResolvedValue(RESULT_ERROR);
+    const view = mount();
+    fireEvent.changeText(await screen.findByTestId('sbase-query'), 'traceur');
+    fireEvent.press(screen.getByTestId('sbase-submit'));
+    expect(await screen.findByTestId('sbase-group-1688-meta')).toHaveTextContent(/SANDBASE_UNAUTHORIZED/);
+    view.unmount();
+  });
+
+  it('sans devise cotée, la carte dit « estimation indisponible » au lieu d’un chiffre', async () => {
+    searchMock.mockResolvedValue(RESULT_NO_ESTIMATE);
+    const view = mount();
+    fireEvent.changeText(await screen.findByTestId('sbase-query'), 'coque');
+    fireEvent.press(screen.getByTestId('sbase-submit'));
+    await screen.findByText('Coque iPhone');
+    // Deux groupes, donc deux fois l'index 0 : on vise le texte, pas le testID.
+    expect(screen.getAllByText(/indisponible/i).length).toBeGreaterThan(0);
     view.unmount();
   });
 
@@ -247,15 +287,15 @@ describe('S Base — fiche produit', () => {
     view.unmount();
   });
 
-  it('Alibaba (aucune fiche publiée) ouvre le lien d’origine', async () => {
+  it('un résultat sans fiche ouvre le lien d’origine sur 1688', async () => {
     const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true as never);
-    searchMock.mockResolvedValue(RESULT_LINK);
+    searchMock.mockResolvedValue(RESULT_NO_ESTIMATE);
     const view = mount();
     fireEvent.changeText(await screen.findByTestId('sbase-query'), 'coque');
     fireEvent.press(screen.getByTestId('sbase-submit'));
 
     fireEvent.press(await screen.findByText('Coque iPhone'));
-    expect(open).toHaveBeenCalledWith('https://alibaba.com/x');
+    expect(open).toHaveBeenCalledWith('https://detail.1688.com/offer/9.html');
     open.mockRestore();
     view.unmount();
   });
@@ -270,11 +310,13 @@ describe('S Base — fiche produit', () => {
     );
 
     expect(await screen.findByText('Écouteurs sans fil')).toBeTruthy();
-    expect(screen.getByText(/1,20/)).toBeTruthy();
+    expect(screen.getAllByText(/1,20/).length).toBeGreaterThan(0);
     // Les tailles/couleurs viennent du serveur : rien de fabriqué côté app.
     expect(screen.getByText('Noir')).toBeTruthy();
     expect(screen.getByText('Standard')).toBeTruthy();
     expect(screen.getByText('蓝牙版本')).toBeTruthy();
+    // La fiche montre le prix rendu en Tunisie (moteur de prix), livraison incluse.
+    expect(screen.getByTestId('sbase-item-estimate-total')).toHaveTextContent(/TND/);
     expect(await screen.findByTestId('sbase-item-response')).toHaveTextContent(/1,5 s/);
     view.unmount();
   });

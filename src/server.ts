@@ -595,8 +595,12 @@ app.use('/api/assistant', createAssistantRouter(db, scraper));
 app.use('/api/voice', createAssistantRouter(db, scraper));
 app.use('/api/public', createPublicRouter(db));
 app.use('/api/v1/aywebs', createAyWebsRouter(db, scraper));
-/* S Base — recherche marchande SandBase, volontairement SÉPARÉE d'AYWEBs et de Z Lens. */
-app.use('/api/sbase', createSbaseRouter());
+/*
+ * S Base — recherche marchande SandBase, volontairement SÉPARÉE d'AYWEBs et de Z Lens.
+ * Le moteur de prix est celui de la maison : on lui passe seulement de quoi lire
+ * ses règles (aucune écriture, aucune commande créée par S Base).
+ */
+app.use('/api/sbase', createSbaseRouter({ getPricingRules: () => db.getPricingRules() }));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
 
 /*

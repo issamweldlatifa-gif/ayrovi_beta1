@@ -26,7 +26,7 @@ import { useTheme } from '@/design/theme';
 import { RADIUS } from '@/design/tokens.mobile';
 import { AppText, Button } from '@/design/ui';
 import { useT, type TranslationKey } from '@/i18n';
-import { formatCallCost, formatDuration, formatItemPrice, missingLabelKey } from './sbaseLogic';
+import { formatCallCost, formatDuration, formatItemPrice, formatTND, missingLabelKey } from './sbaseLogic';
 
 function priceLabel(payload: SbaseDetailPayload, fallback: string): string {
   return formatItemPrice(
@@ -106,6 +106,39 @@ export function SbaseItemScreen({
       {detail.availability ? <AppText variant="caption" color={theme.colors.muted}>
         {t('sbase.availability')} · {detail.availability}
       </AppText> : null}
+
+      {/*
+        * تقدير الوصول لتونس — من **محرّك السعر الرسمي** (تحويل + شحن + ديوانة +
+        * TVA + خدمة، بمصفوفة جمركية حسب العنوان). إذا المحرّك ما نجّمش يقتبس
+        * (عملة بلا سعر صرف) نكتبوها، ما نحسبوش في التطبيق.
+        */}
+      <View testID="sbase-item-estimate" style={[styles.card, { borderColor: theme.colors.lineControl, backgroundColor: theme.colors.surface }]}>
+        <AppText variant="bodyStrong">{t('sbase.estimateTitle')}</AppText>
+        {detail.priceEstimate ? <>
+          <View style={styles.specRow}><AppText variant="caption" color={theme.colors.muted} style={styles.grow}>{t('sbase.estimateProduct')}</AppText>
+            <AppText variant="caption">{formatTND(detail.priceEstimate.productTND)}</AppText></View>
+          <View style={styles.specRow}><AppText variant="caption" color={theme.colors.muted} style={styles.grow}>{t('sbase.estimateFreight')}</AppText>
+            <AppText variant="caption">{formatTND(detail.priceEstimate.freightTND)}</AppText></View>
+          <View style={styles.specRow}><AppText variant="caption" color={theme.colors.muted} style={styles.grow}>{t('sbase.estimateDuty')}</AppText>
+            <AppText variant="caption">{formatTND(detail.priceEstimate.dutyTND)}</AppText></View>
+          <View style={styles.specRow}><AppText variant="caption" color={theme.colors.muted} style={styles.grow}>{t('sbase.estimateVat')}</AppText>
+            <AppText variant="caption">{formatTND(detail.priceEstimate.tvaTND)}</AppText></View>
+          <View style={styles.specRow}><AppText variant="caption" color={theme.colors.muted} style={styles.grow}>{t('sbase.estimateService')}</AppText>
+            <AppText variant="caption">{formatTND(detail.priceEstimate.serviceFeeTND)}</AppText></View>
+          <View style={styles.specRow}><AppText variant="caption" color={theme.colors.muted} style={styles.grow}>{t('sbase.estimateDelivery')}</AppText>
+            <AppText variant="caption">{formatTND(detail.priceEstimate.localDeliveryTND)}</AppText></View>
+          <View style={[styles.specRow, { borderColor: theme.colors.line }]}>
+            <AppText variant="bodyStrong" style={styles.grow}>{t('sbase.estimateTotal')}</AppText>
+            <AppText testID="sbase-item-estimate-total" variant="bodyStrong">{formatTND(detail.priceEstimate.totalTND)}</AppText>
+          </View>
+          <AppText variant="caption" color={theme.colors.muted}>
+            {t('sbase.estimateBasis', { category: detail.priceEstimate.categoryLabel, rate: detail.priceEstimate.rateTND.toFixed(4) })}
+          </AppText>
+          {detail.priceEstimate.restricted ? <AppText variant="caption" color={theme.status.danger.fg}>{t('sbase.estimateRestricted')}</AppText> : null}
+          {detail.priceEstimate.requiresWeightValidation ? <AppText variant="caption" color={theme.colors.muted}>{t('sbase.estimateHeavy')}</AppText> : null}
+          <AppText variant="caption" color={theme.colors.muted}>{t('sbase.estimateNote')}</AppText>
+        </> : <AppText variant="bodySmall" color={theme.colors.muted}>{t('sbase.estimateUnavailable')}</AppText>}
+      </View>
 
       <View style={styles.section}>
         <AppText variant="subtitle" accessibilityRole="header">{t('sbase.variants')}</AppText>
