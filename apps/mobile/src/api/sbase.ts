@@ -33,6 +33,8 @@ export interface SbaseSource {
   markets: SbaseMarket[];
   defaultMarket: string | null;
   costUsd: number | null;
+  /** Facturation par résultat (Alibaba) : le libellé de coût le dit. */
+  billedPerResult: boolean;
   async: boolean;
   /** مقترح في البحث الافتراضي (المتاجر الموجّهة للحريف). */
   defaultEnabled: boolean;
@@ -81,6 +83,49 @@ export interface SbaseGroup {
   async: boolean;
   error: { code: string; message: string } | null;
   costUsd: number | null;
+  billedPerResult: boolean;
+}
+
+export interface SbaseVariantValue {
+  label: string;
+  /** null = la source ne l'a pas dit (on n'écrit ni « en stock » ni « épuisé »). */
+  available: boolean | null;
+  image: string | null;
+}
+
+export interface SbaseVariantGroup {
+  name: string;
+  values: SbaseVariantValue[];
+}
+
+export interface SbaseDetail {
+  title: string | null;
+  brand: string | null;
+  priceText: string | null;
+  amount: number | null;
+  currency: string | null;
+  oldPriceText: string | null;
+  rating: number | null;
+  reviews: number | null;
+  availability: string | null;
+  seller: string | null;
+  url: string | null;
+  images: string[];
+  description: string | null;
+  specs: { name: string; value: string }[];
+  /** « Tailles et couleurs » : un groupe par dimension. */
+  variants: SbaseVariantGroup[];
+  missing: string[];
+}
+
+export interface SbaseDetailPayload {
+  source: { id: string; label: string; vendor: string; supports: SbaseSupports };
+  detail: SbaseDetail;
+  durationMs: number;
+  cached: boolean;
+  costUsd: number | null;
+  billedPerResult: boolean;
+  fetchedAt: string;
 }
 
 export interface SbaseSearchPayload {
@@ -130,5 +175,26 @@ export function searchSbaseImage(
   return apiUploadFileData<SbaseImagePayload>('/api/sbase/image', 'image', file, {
     timeoutMs: options?.timeoutMs ?? 45_000,
     signal: options?.signal,
+  });
+}
+
+/**
+ * تفاصيل منتج واحد. المتاجر اللي ما تنشرش تفاصيل (AliExpress) تردّ
+ * `DETAILS_UNSUPPORTED` — والشاشة تفتح الرابط الأصلي بدل ما تعرض صفحة فارغة.
+ */
+export async function fetchSbaseItem(
+  input: { source: string; id?: string | null; title?: string | null; url?: string | null; market?: string | null },
+  options?: RequestOptions,
+): Promise<SbaseDetailPayload> {
+  return apiSendData<SbaseDetailPayload>('POST', '/api/sbase/item', {
+    ...options,
+    body: {
+      source: input.source,
+      id: input.id ?? null,
+      title: input.title ?? null,
+      url: input.url ?? null,
+      market: input.market ?? null,
+    },
+    timeoutMs: options?.timeoutMs ?? 35_000,
   });
 }

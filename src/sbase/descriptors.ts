@@ -25,6 +25,27 @@ export interface SbaseMarket {
   label: string;
 }
 
+/**
+ * بنية نداء التفاصيل: **كل متجر بوحدو**، والـbody يتبنى من نتيجة البحث
+ * (`id` = ASIN / item_id / product_id…). إذا المتجر ما عندوش endpoint تفاصيل
+ * موثّق، `detail` يبقى غايب و`supports.details=false` — ما نخترعوش واحداً.
+ */
+export interface SbaseDetailInput {
+  id: string | null;
+  title: string;
+  url: string | null;
+  market: string | null;
+}
+
+export interface SbaseDetailDescriptor {
+  endpoint: string;
+  costUsd: number;
+  async: boolean;
+  /** يشترط معرّف منتج (ASIN/item_id/…) قبل النداء. */
+  requiresId: boolean;
+  buildBody: (input: SbaseDetailInput) => Record<string, unknown>;
+}
+
 export interface SbaseSourceDescriptor {
   id: string;
   label: string;
@@ -34,6 +55,11 @@ export interface SbaseSourceDescriptor {
   endpoint: string;
   /** سعر النداء المعلن (USD) — null إذا الصفحة ما نشرتش سعراً. */
   costUsd: number | null;
+  /**
+   * Alibaba تحاسب **بكل نتيجة** (من $0.00077 للنتيجة، سقف $0.0193 للطلب)،
+   * موش سعراً ثابتاً للنداء — نعلنوها باش الشاشة ما تكذبش على الكلفة.
+   */
+  billedPerResult: boolean;
   /** الـendpoint يشتغل بـrun + polling حسب التوثيق. */
   async: boolean;
   /**
@@ -49,6 +75,8 @@ export interface SbaseSourceDescriptor {
   /** مسارات المصفوفة المعروفة داخل `outputs[0].data`. */
   arrays: string[][];
   buildBody: (query: string, market: string | null) => Record<string, unknown>;
+  /** نداء التفاصيل + الخيارات. غايب ⇒ `supports.details=false`. */
+  detail?: SbaseDetailDescriptor;
 }
 
 const SUPPORTS_KEYWORD: SbaseSupports = {
@@ -70,6 +98,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     vendor: 'aliexpress.com',
     endpoint: '/v1/api/aliexpress/search/products',
     costUsd: 0.014286,
+    billedPerResult: false,
     async: false,
     supports: SUPPORTS_KEYWORD,
     fields: ['title', 'price', 'image', 'link'],
@@ -85,6 +114,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     vendor: 'amazon.fr',
     endpoint: '/v1/api/amazon/search-products',
     costUsd: 0.014286,
+    billedPerResult: false,
     async: false,
     supports: SUPPORTS_KEYWORD,
     fields: ['title', 'price', 'image', 'link', 'store', 'rating', 'reviews', 'shipping'],
@@ -92,6 +122,13 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     defaultMarket: 'FR',
     arrays: [['products']],
     buildBody: (query, market) => ({ keyword: query, country: market || 'FR', page: 1 }),
+    detail: {
+      endpoint: '/v1/api/amazon/product',
+      costUsd: 0.015,
+      async: true,
+      requiresId: true,
+      buildBody: (input) => ({ asin: input.id }),
+    },
   },
   {
     id: 'ebay',
@@ -100,6 +137,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     vendor: 'ebay.fr',
     endpoint: '/v1/api/ebay/search',
     costUsd: 0.015,
+    billedPerResult: false,
     async: true,
     supports: { ...SUPPORTS_KEYWORD, details: false },
     fields: ['title', 'price', 'image', 'link', 'store', 'rating', 'shipping', 'condition'],
@@ -107,6 +145,13 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     defaultMarket: null,
     arrays: [['organic_results'], ['items']],
     buildBody: (query) => ({ _nkw: query, _pgn: '1' }),
+    detail: {
+      endpoint: '/v1/api/ebay/product',
+      costUsd: 0.015,
+      async: true,
+      requiresId: true,
+      buildBody: (input) => ({ product_id: input.id }),
+    },
   },
   {
     id: 'google-shopping',
@@ -115,6 +160,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     vendor: 'google.com',
     endpoint: '/v1/api/google-shopping/search',
     costUsd: 0.015,
+    billedPerResult: false,
     async: true,
     supports: SUPPORTS_KEYWORD,
     fields: ['title', 'price', 'image', 'link', 'store', 'rating'],
@@ -125,6 +171,18 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     defaultMarket: 'fr',
     arrays: [['shopping_results']],
     buildBody: (query, market) => ({ q: query, gl: market || 'fr', hl: 'fr' }),
+    detail: {
+      endpoint: '/v1/api/google-shopping/product',
+      costUsd: 0.00015,
+      async: false,
+      // `q` est le seul paramètre requis ; `gpcid` améliore la résolution.
+      requiresId: false,
+      buildBody: (input) => ({
+        q: input.title,
+        ...(input.id ? { gpcid: input.id } : {}),
+        ...(input.market ? { gl: input.market.toLowerCase() } : {}),
+      }),
+    },
   },
   {
     id: 'bing-shopping',
@@ -133,6 +191,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     vendor: 'bing.com',
     endpoint: '/v1/api/bing-shopping/search',
     costUsd: 0.015,
+    billedPerResult: false,
     async: true,
     supports: SUPPORTS_KEYWORD,
     fields: ['title', 'price', 'image', 'link', 'store', 'rating'],
@@ -151,6 +210,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     vendor: 'taobao.com',
     endpoint: '/v1/api/taobao/search/items',
     costUsd: 0.0278,
+    billedPerResult: false,
     async: false,
     supports: SUPPORTS_KEYWORD,
     fields: ['title', 'price', 'image', 'link', 'store'],
@@ -158,6 +218,31 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     defaultMarket: null,
     arrays: [['model', 'itemList']],
     buildBody: (query) => ({ keyword: query, page: 1 }),
+    detail: {
+      endpoint: '/v1/api/taobao/item/detail',
+      costUsd: 0.021429,
+      async: false,
+      requiresId: true,
+      buildBody: (input) => ({ itemId: input.id }),
+    },
+  },
+  {
+    id: 'alibaba',
+    label: 'Alibaba.com',
+    vendor: 'alibaba.com',
+    endpoint: '/v1/api/alibaba/search',
+    /** من $0.00231 للنداء؛ الفاتورة الحقيقية = 0,00077 $ لكل نتيجة. */
+    costUsd: 0.00231,
+    billedPerResult: true,
+    async: false,
+    // B2B/جملة: نفس سبب Taobao/1688 — موجود، أما موش مفعّل افتراضياً.
+    supports: SUPPORTS_KEYWORD,
+    fields: ['title', 'price', 'image', 'link', 'store'],
+    markets: [],
+    defaultMarket: null,
+    arrays: [],
+    buildBody: (query) => ({ query, limit: 20 }),
+    defaultEnabled: false,
   },
   {
     id: '1688',
@@ -166,6 +251,7 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     vendor: '1688.com',
     endpoint: '/v1/api/1688/search/items',
     costUsd: null,
+    billedPerResult: false,
     async: false,
     supports: SUPPORTS_KEYWORD,
     fields: ['title', 'price', 'image', 'link', 'store'],
@@ -205,6 +291,7 @@ export function describeSbaseSources(options: { configured: boolean } = { config
     markets: source.markets,
     defaultMarket: source.defaultMarket,
     costUsd: source.costUsd,
+    billedPerResult: source.billedPerResult,
     async: source.async,
     defaultEnabled: source.defaultEnabled,
     /** «مضبوط» يعني مفتاح السيرفر موجود — موش نتيجة اختبار حيّة. */

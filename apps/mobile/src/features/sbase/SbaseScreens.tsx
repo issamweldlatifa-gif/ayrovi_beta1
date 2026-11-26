@@ -18,6 +18,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -78,9 +79,14 @@ function ErrorCard({ code, message, onRetry }: { code: string; message: string; 
   </View>;
 }
 
-function ResultRow({ item, index }: { item: SbaseItem; index: number }) {
+function ResultRow({ item, index, onOpen }: { item: SbaseItem; index: number; onOpen: () => void }) {
   const theme = useTheme(); const t = useT();
-  return <View testID={`sbase-item-${index}`} style={[styles.item, { borderColor: theme.colors.line }]}>
+  return <Pressable
+    testID={`sbase-item-${index}`}
+    accessibilityRole="button"
+    accessibilityLabel={`${t('sbase.details')} · ${item.title}`}
+    onPress={onOpen}
+    style={({ pressed }) => [styles.item, { borderColor: theme.colors.line, opacity: pressed ? theme.opacity.subtle : 1 }]}>
     <AppImage uri={item.image ?? undefined} decorative style={styles.itemImage} contentFit="cover" />
     <View style={styles.grow}>
       <AppText variant="bodyStrong" numberOfLines={2}>{item.title}</AppText>
@@ -97,7 +103,7 @@ function ResultRow({ item, index }: { item: SbaseItem; index: number }) {
         <Ionicons name="open-outline" size={theme.iconSize.sm} color={theme.colors.ink} />
       </Pressable> : null}
     </View>
-  </View>;
+  </Pressable>;
 }
 
 function GroupHeader({ group }: { group: SbaseGroup }) {
@@ -111,6 +117,21 @@ function GroupHeader({ group }: { group: SbaseGroup }) {
         : `${t('sbase.results', { count: group.count })} · ${formatDuration(group.durationMs)}${group.cached ? ` · ${t('sbase.cachedNote')}` : ''}`}
     </AppText>
   </View>;
+}
+
+/**
+ * نتيجة → فيش داخلية إذا المتجر ينشر endpoint تفاصيل، وإلا الرابط الأصلي.
+ * ما نفتحوش فيش فارغة: هذا الفرق بين «ما عندناش» و«ما لقيناش».
+ */
+function openResult(supportsDetails: boolean, sourceId: string, item: SbaseItem): void {
+  if (supportsDetails) {
+    router.push({
+      pathname: '/sbase/item',
+      params: { source: sourceId, id: item.id ?? '', title: item.title, url: item.url ?? '' },
+    } as never);
+    return;
+  }
+  if (item.url) void Linking.openURL(item.url);
 }
 
 export function SbaseScreen() {
@@ -331,9 +352,13 @@ export function SbaseScreen() {
     {groups.map((group) => <View key={group.source.id} testID={`sbase-group-${group.source.id}`} style={styles.group}>
       <GroupHeader group={group} />
       {group.status === 'empty' ? <AppText variant="caption" color={theme.colors.muted}>{t('sbase.empty', { query: keywordResult?.query ?? '' })}</AppText> : null}
-      {group.items.map((item, index) => <ResultRow key={`${group.source.id}-${item.url ?? item.id ?? index}`} item={item} index={index} />)}
+      {group.items.map((item, index) => <ResultRow
+        key={`${group.source.id}-${item.url ?? item.id ?? index}`}
+        item={item}
+        index={index}
+        onOpen={() => openResult(group.source.supports.details, group.source.id, item)} />)}
       {formatCallCost(group.costUsd) ? <AppText variant="caption" color={theme.colors.muted}>
-        {t('sbase.cost')} {formatCallCost(group.costUsd)}
+        {t('sbase.cost')} {formatCallCost(group.costUsd)}{group.billedPerResult ? ` ${t('sbase.costPerResult')}` : ''}
       </AppText> : null}
     </View>)}
 
@@ -355,7 +380,11 @@ export function SbaseScreen() {
             active={storeFilter === store}
             onPress={() => setStoreFilter(store)} />)}
       </ScrollView>
-      {imageItems.map((item, index) => <ResultRow key={`img-${item.url ?? item.id ?? index}`} item={item} index={index} />)}
+      {imageItems.map((item, index) => <ResultRow
+        key={`img-${item.url ?? item.id ?? index}`}
+        item={item}
+        index={index}
+        onOpen={() => openResult(false, 'google-lens', item)} />)}
     </View> : null}
 
     {!busy && !failure && !keywordResult && !imageResult && !sourcesQuery.isLoading ? <View

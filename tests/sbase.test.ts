@@ -41,6 +41,7 @@ import {
 } from '../src/sbase/descriptors';
 import { SbaseError, runSandbaseSearch, sandbaseConfigured } from '../src/sbase/client';
 import { extractProducts, missingFacets, normalizeProduct, parsePriceText } from '../src/sbase/extract';
+import { extractDetail } from '../src/sbase/detail';
 import { clearSbaseCache, createSbaseRouter } from '../src/sbase/routes';
 
 const KEY = 'sb_test_key';
@@ -91,7 +92,7 @@ afterEach(() => {
 
 describe('S Base — catalogue', () => {
   test('les 7 boutiques sont des endpoints SandBase réels, en mots-clés seulement', () => {
-    expect(SBASE_SOURCES.length).toBe(7);
+    expect(SBASE_SOURCES.length).toBe(8);
     const ids = new Set<string>();
     for (const source of SBASE_SOURCES) {
       expect(ids.has(source.id)).toBe(false);
@@ -111,7 +112,7 @@ describe('S Base — catalogue', () => {
     expect(defaults).toEqual(['aliexpress', 'amazon', 'ebay', 'google-shopping']);
     // Les sources « sourcing » existent mais ne partent pas sans choix explicite.
     expect(SBASE_SOURCES.filter((source) => !source.defaultEnabled).map((source) => source.id))
-      .toEqual(['bing-shopping', 'taobao', '1688']);
+      .toEqual(['bing-shopping', 'taobao', 'alibaba', '1688']);
   });
 
   test('la recherche par image est un canal séparé, déclaré avec ses vraies capacités', () => {
@@ -177,6 +178,37 @@ describe('S Base — extraction des produits', () => {
   });
 });
 
+describe('S Base — extraction des détails', () => {
+  test('sans données : tout est nommé manquant, rien n’est inventé', () => {
+    const detail = extractDetail({});
+    expect(detail.title).toBeNull();
+    expect(detail.variants).toEqual([]);
+    expect(detail.missing).toEqual(expect.arrayContaining(['title', 'price', 'images', 'variants', 'specs']));
+  });
+
+  test('variantes objet {taille: [...]} et disponibilité inconnue restent null', () => {
+    const detail = extractDetail({
+      product_results: {
+        title: 'Sweat', price: { amount: 45, currency: 'eur' },
+        variations: { Taille: [{ name: 'M' }, { name: 'L', in_stock: false }] },
+      },
+    });
+    expect(detail.amount).toBe(45);
+    expect(detail.currency).toBe('EUR');
+    expect(detail.variants[0].name).toBe('Taille');
+    expect(detail.variants[0].values).toEqual([
+      { label: 'M', available: null, image: null },
+      { label: 'L', available: false, image: null },
+    ]);
+  });
+
+  test('aucune fausse promesse : une fiche sans variantes ne fabrique pas de tailles', () => {
+    const detail = extractDetail({ product_result: { title: 'Câble USB', specifications: [{ name: 'Longueur', value: '1 m' }] } });
+    expect(detail.variants).toEqual([]);
+    expect(detail.missing).toContain('variants');
+  });
+});
+
 describe('S Base — client SandBase', () => {
   test('enveloppe synchrone : durée mesurée', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(envelope({ products: [] })), { status: 200 })));
@@ -218,7 +250,7 @@ describe('S Base — routes', () => {
   test('sources : capacités réelles, sélection par défaut et canal image', async () => {
     const response = await request(app()).get('/api/sbase/sources').expect(200);
     expect(response.body.data.configured).toBe(true);
-    expect(response.body.data.sources).toHaveLength(7);
+    expect(response.body.data.sources).toHaveLength(8);
     expect(response.body.data.image).toMatchObject({ id: 'google-lens', supports: { image: true } });
   });
 
@@ -266,6 +298,77 @@ describe('S Base — routes', () => {
     stubSources({ '/bing-shopping/search': () => new Response(JSON.stringify(envelope({ shopping_results: [] })), { status: 200 }) });
     const response = await request(app()).post('/api/sbase/search').send({ q: 'zzz introuvable', sources: ['bing-shopping'] }).expect(200);
     expect(response.body.data.groups[0]).toMatchObject({ status: 'empty', count: 0, items: [] });
+  });
+
+  test('détail Amazon : specs, images et variantes normalisées', async () => {
+    stubSources({
+      '/amazon/product': () => new Response(JSON.stringify(envelope({
+        item_specifications: { brand: 'STANLEY', color: 'Rose' },
+        product_details: { brand_name: 'STANLEY', item_type_name: 'Tumbler' },
+        product_results: {
+          title: 'Quencher Tumbler', price: '$37.51', rating: 4.7,
+          images: ['https://img/a.jpg', 'https://img/b.jpg'],
+          variants: [{ asin: 'B01', title: 'Rose / 30 oz', in_stock: true }],
+        },
+      })), { status: 200 }),
+    });
+
+    const response = await request(app())
+      .post('/api/sbase/item')
+      .send({ source: 'amazon', id: 'B0CP9YB3Q4', title: 'tumbler' })
+      .expect(200);
+
+    const detail = response.body.data.detail;
+    expect(response.body.data.source.id).toBe('amazon');
+    expect(detail).toMatchObject({ title: 'Quencher Tumbler', brand: 'STANLEY', amount: 37.51, currency: 'USD' });
+    expect(detail.images).toHaveLength(2);
+    expect(detail.specs).toEqual(expect.arrayContaining([{ name: 'color', value: 'Rose' }]));
+    expect(detail.variants[0].values[0]).toMatchObject({ label: 'Rose / 30 oz', available: true });
+    expect(response.body.data.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  test('détail Taobao : les groupes de SKU deviennent « tailles et couleurs »', async () => {
+    stubSources({
+      '/taobao/item/detail': () => new Response(JSON.stringify(envelope({
+        item: {
+          title: '蓝牙耳机', images: ['//img.alicdn.com/a.jpg'], properties: [{ name: '品牌', value: 'BASEUS' }],
+          sku_props: [
+            { name: '颜色分类', values: [{ name: '黑色', vid: '1' }, { name: '白色', vid: '2' }] },
+            { name: '套餐类型', values: [{ name: '标准', vid: '3' }] },
+          ],
+        },
+        seller: { shop_title: 'baseus旗舰店' },
+      })), { status: 200 }),
+    });
+
+    const response = await request(app())
+      .post('/api/sbase/item')
+      .send({ source: 'taobao', id: '920640959876' })
+      .expect(200);
+
+    const detail = response.body.data.detail;
+    expect(detail.variants).toHaveLength(2);
+    expect(detail.variants[0]).toMatchObject({ name: '颜色分类' });
+    expect(detail.variants[0].values.map((value: { label: string }) => value.label)).toEqual(['黑色', '白色']);
+    expect(detail.seller).toBe('baseus旗舰店');
+    expect(detail.url).toBeNull();
+  });
+
+  test('détail : boutique sans fiche ⇒ 400 honnête (pas une page vide)', async () => {
+    const response = await request(app())
+      .post('/api/sbase/item')
+      .send({ source: 'aliexpress', id: '100500' })
+      .expect(400);
+    expect(response.body.code).toBe('DETAILS_UNSUPPORTED');
+  });
+
+  test('détail : identifiant manquant ⇒ 400, et sans clé ⇒ 503', async () => {
+    const missing = await request(app()).post('/api/sbase/item').send({ source: 'amazon', title: 'x' }).expect(400);
+    expect(missing.body.code).toBe('ITEM_ID_REQUIRED');
+
+    delete process.env.SANDBASE_API_KEY;
+    const noKey = await request(app()).post('/api/sbase/item').send({ source: 'amazon', id: 'B01' }).expect(503);
+    expect(noKey.body.code).toBe('SANDBASE_NOT_CONFIGURED');
   });
 
   test('image : une photo ⇒ résultats visuels, chaque résultat porte sa boutique', async () => {

@@ -96,13 +96,13 @@ export interface SandbaseRunResult {
 }
 
 /**
- * ينفّذ بحثاً واحداً على مصدر واحد. ما يعاودش المحاولة: كل نداء يتخلّص.
+ * ينفّذ **نداءً واحداً** على endpoint واحد (بحث أو تفاصيل). ما يعاودش المحاولة:
+ * كل نداء يتخلّص.
  */
-export async function runSandbaseSearch(
-  source: SbaseSourceDescriptor,
-  query: string,
-  market: string | null,
-  options: { timeoutMs?: number; pollIntervalMs?: number; now?: () => number } = {},
+export async function runSandbaseCall(
+  endpoint: string,
+  body: unknown,
+  options: { timeoutMs?: number; pollIntervalMs?: number; now?: () => number; asyncHint?: boolean } = {},
 ): Promise<SandbaseRunResult> {
   if (!sandbaseConfigured()) {
     throw new SbaseError('SANDBASE_NOT_CONFIGURED', 'مفتاح SandBase غير مضبوط على الخادم.', 503);
@@ -122,8 +122,8 @@ export async function runSandbaseSearch(
 
   try {
     const first = await requestJson(
-      `${sandbaseBaseUrl()}${source.endpoint}`,
-      { method: 'POST', headers, body: JSON.stringify(source.buildBody(query, market)) },
+      `${sandbaseBaseUrl()}${endpoint}`,
+      { method: 'POST', headers, body: JSON.stringify(body) },
       controller.signal,
     );
 
@@ -175,7 +175,7 @@ export async function runSandbaseSearch(
       durationMs: Math.max(0, now() - started),
       polls,
       runId,
-      async: polls > 0 || source.async,
+      async: polls > 0 || Boolean(options.asyncHint),
     };
   } catch (error) {
     if (error instanceof SbaseError) throw error;
@@ -186,4 +186,14 @@ export async function runSandbaseSearch(
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** بحث بكلمة على مصدر واحد (يغلّف `runSandbaseCall`). */
+export async function runSandbaseSearch(
+  source: SbaseSourceDescriptor,
+  query: string,
+  market: string | null,
+  options: { timeoutMs?: number; pollIntervalMs?: number; now?: () => number } = {},
+): Promise<SandbaseRunResult> {
+  return runSandbaseCall(source.endpoint, source.buildBody(query, market), { ...options, asyncHint: source.async });
 }

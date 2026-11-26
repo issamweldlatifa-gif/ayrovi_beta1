@@ -1,7 +1,7 @@
 # S Base — recherche marchande (SandBase) + photo
 
 **Date** : 19/11/2026 (v2 le même jour) · **Portée** : `apps/mobile` + `src/sbase`
-**Statut** : v2 — **un seul champ** (mot-clé **ou** photo), résultats groupés par boutique, filtre par boutique
+**Statut** : v3 — champ unique (mot-clé **ou** photo), résultats groupés + filtre, **fiche produit unifiée** avec tailles/couleurs
 
 ---
 
@@ -83,3 +83,51 @@ des boutiques cochées : il ne peut donc pas promettre plus que la plus pauvre.
 - Pas de page détails produit (le lien d'origine s'ouvre dans le navigateur).
 - Pas de pagination par boutique.
 - 1688/Taobao : titres en chinois, prix CNY — non convertis (règle maison).
+
+
+---
+
+## 8. v3 — fiche produit et « tailles / couleurs »
+
+### Une seule fiche pour toutes les boutiques
+`app/sbase/item.tsx` → `SbaseItemScreen` : même écran, même hiérarchie, quelle
+que soit la boutique. Ce qui change, c'est la **donnée** :
+
+| Boutique | Endpoint de fiche | Type | Ce qu'elle donne |
+|---|---|---|---|
+| Amazon | `/v1/api/amazon/product` (`asin`) | async | specs, images, **variantes**, offres |
+| eBay | `/v1/api/ebay/product` (`product_id`) | async | item specifics, images, variations |
+| Google Shopping | `/v1/api/google-shopping/product` (`q` + `gpcid`) | sync | specs, description, offres |
+| Taobao | `/v1/api/taobao/item/detail` (`itemId`) | sync | images, **SKU (couleur/format)**, vendeur |
+| AliExpress | — | — | **aucune fiche publiée** : le tap ouvre le lien d'origine |
+
+Règle : un résultat n'ouvre la fiche interne **que** si `supports.details` est
+vrai ; sinon il ouvre le navigateur. Aucune fiche vide, aucun « bientôt ».
+
+### Tailles / couleurs
+`src/sbase/detail.ts` normalise trois familles de payloads :
+- Taobao/1688 : `item.sku_props[{name, values[{name, image}]}]` ;
+- eBay : `variations` (objet `{Taille: [...], Couleur: [...]}`) ;
+- Amazon : `variants[]` (un groupe « options » avec le titre de chaque variante).
+
+Chaque valeur porte `available: true | false | null` — **null quand la source ne
+le dit pas** (on n'écrit ni « en stock » ni « épuisé »). Si aucune variante n'est
+publiée : la section affiche « cette boutique ne fournit pas les tailles ni les
+couleurs » et `variants` apparaît dans « champs non fournis ».
+
+### Alibaba.com (ajouté en v3)
+`/v1/api/alibaba/search` — recherche B2B documentée (titre, fourchette de prix,
+MOQ, fournisseur), **facturée par résultat** (≈ 0,00077 $/résultat, plafond
+0,0193 $). Présent dans le filtre, décoché par défaut (comme Taobao/1688), et
+l'écran affiche « (par résultat) » à côté du coût.
+
+### Pourquoi trois boutiques sont décochées par défaut
+| Boutique | Raison |
+|---|---|
+| Bing Shopping | Doublon de Google Shopping (+0,015 $/recherche pour les mêmes offres) |
+| Taobao | Consommateur chinois : titres en chinois, pas de livraison TN directe |
+| 1688 / Alibaba | **B2B** : MOQ, prix de gros en CNY, achat via agent |
+
+Elles restent **une tape** dans le filtre — rien n'est caché, et le coût ne part
+jamais sans un choix explicite. Changer les défauts = `defaultEnabled` dans
+`src/sbase/descriptors.ts` (une ligne par boutique).

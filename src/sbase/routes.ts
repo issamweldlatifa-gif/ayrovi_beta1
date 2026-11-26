@@ -22,8 +22,9 @@ import {
   type SbaseSourceDescriptor,
   type SbaseSupports,
 } from './descriptors';
-import { runSandbaseSearch, sandbaseConfigured, SbaseError } from './client';
+import { runSandbaseCall, runSandbaseSearch, sandbaseConfigured, SbaseError } from './client';
 import { extractProducts, missingFacets, type SbaseProduct } from './extract';
+import { extractDetail, type SbaseDetail } from './detail';
 import { normalizeUploadedImage } from '../services/imageValidation';
 import { SbaseImageError, sbaseImageReady, searchSbaseByImage } from './image';
 
@@ -31,6 +32,13 @@ export const SBASE_CACHE_TTL_MS = 10 * 60_000;
 const SBASE_CACHE_MAX = 200;
 /** سقف عدد المتاجر في بحث واحد: كل متجر = نداء مدفوع. */
 export const SBASE_MAX_SOURCES_PER_SEARCH = 7;
+
+interface DetailCacheEntry {
+  detail: SbaseDetail;
+  durationMs: number;
+  at: number;
+}
+const detailCache = new Map<string, DetailCacheEntry>();
 
 interface CacheEntry {
   items: SbaseProduct[];
@@ -45,6 +53,7 @@ const cache = new Map<string, CacheEntry>();
 
 export function clearSbaseCache(): void {
   cache.clear();
+  detailCache.clear();
 }
 
 function remember(key: string, entry: CacheEntry): void {
@@ -75,6 +84,8 @@ export interface SbaseGroup {
   /** كود الخطأ عندما `status==='error'` — ما نبدّلوش برسالة عامة. */
   error: { code: string; message: string } | null;
   costUsd: number | null;
+  /** Alibaba : facturation par résultat, pas par appel — on l'affiche. */
+  billedPerResult: boolean;
 }
 
 export interface SbaseSearchPayload {
@@ -103,6 +114,7 @@ async function searchOneSource(
     return {
       source: base, status: hit.items.length > 0 ? 'ok' : 'empty', items: hit.items, count: hit.items.length,
       durationMs: hit.durationMs, cached: true, async: hit.async, error: null, costUsd: source.costUsd,
+      billedPerResult: source.billedPerResult,
     };
   }
 
@@ -124,6 +136,7 @@ async function searchOneSource(
       async: run.async,
       error: null,
       costUsd: source.costUsd,
+      billedPerResult: source.billedPerResult,
     };
   } catch (error) {
     const failure = error instanceof SbaseError
@@ -139,6 +152,7 @@ async function searchOneSource(
       async: source.async,
       error: { code: failure.code, message: failure.message },
       costUsd: source.costUsd,
+      billedPerResult: source.billedPerResult,
     };
   }
 }
@@ -219,6 +233,89 @@ export function createSbaseRouter(): Router {
       fetchedAt: new Date().toISOString(),
     };
     return res.json({ success: true, data: payload });
+  });
+
+  /**
+   * تفاصيل منتج واحد + الخيارات (مقاسات/ألوان). التصميم واحد لكل المتاجر،
+   * أما الداتا فمن endpoint المتجر نفسو — واللي ما عندوش endpoint يرجع 400
+   * صريح (`DETAILS_UNSUPPORTED`) موش صفحة فارغة.
+   */
+  router.post('/item', async (req, res) => {
+    const body = (req.body ?? {}) as Record<string, unknown>;
+    const sourceId = typeof body.source === 'string' ? body.source.trim() : '';
+    const source = findSbaseSource(sourceId);
+    if (!source) {
+      return res.status(404).json({ success: false, code: 'UNKNOWN_SOURCE', error: 'مصدر غير معروف.' });
+    }
+    if (!source.detail) {
+      return res.status(400).json({
+        success: false,
+        code: 'DETAILS_UNSUPPORTED',
+        error: `${source.label} ما تنشرش تفاصيل منتج في SandBase — نفتحلك الرابط الأصلي.`,
+      });
+    }
+    const id = typeof body.id === 'string' && body.id.trim() ? body.id.trim() : null;
+    const title = typeof body.title === 'string' ? body.title.trim().slice(0, 200) : '';
+    const url = typeof body.url === 'string' ? body.url.trim().slice(0, 500) : null;
+    const market = typeof body.market === 'string' ? body.market.trim().toLowerCase() : source.defaultMarket;
+    if (source.detail.requiresId && !id) {
+      return res.status(400).json({ success: false, code: 'ITEM_ID_REQUIRED', error: 'هذا المتجر يحتاج معرّف المنتج (ASIN/item ID).' });
+    }
+    if (!id && !title) {
+      return res.status(400).json({ success: false, code: 'ITEM_INPUT_REQUIRED', error: 'معرّف المنتج ولا عنوانو مطلوب.' });
+    }
+    if (!sandbaseConfigured()) {
+      return res.status(503).json({
+        success: false,
+        code: 'SANDBASE_NOT_CONFIGURED',
+        error: 'S Base غير مفعّل: مفتاح SandBase ما زال غير مضبوط على الخادم.',
+      });
+    }
+
+    const cacheKey = `${source.id}|${id ?? ''}|${title}`;
+    const hit = detailCache.get(cacheKey);
+    if (hit && Date.now() - hit.at < SBASE_CACHE_TTL_MS) {
+      return res.json({
+        success: true,
+        data: {
+          source: { id: source.id, label: source.label, vendor: source.vendor, supports: source.supports },
+          detail: hit.detail, durationMs: hit.durationMs, cached: true,
+          costUsd: source.detail.costUsd, billedPerResult: source.billedPerResult,
+          fetchedAt: new Date().toISOString(),
+        },
+      });
+    }
+
+    try {
+      const run = await runSandbaseCall(
+        source.detail.endpoint,
+        source.detail.buildBody({ id, title, url, market }),
+        { asyncHint: source.detail.async },
+      );
+      const detail = extractDetail(run.data);
+      if (detailCache.size >= SBASE_CACHE_MAX) {
+        const oldest = detailCache.keys().next().value;
+        if (oldest) detailCache.delete(oldest);
+      }
+      detailCache.set(cacheKey, { detail, durationMs: run.durationMs, at: Date.now() });
+      return res.json({
+        success: true,
+        data: {
+          source: { id: source.id, label: source.label, vendor: source.vendor, supports: source.supports },
+          detail,
+          durationMs: run.durationMs,
+          cached: false,
+          costUsd: source.detail.costUsd,
+          billedPerResult: source.billedPerResult,
+          fetchedAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      const failure = error instanceof SbaseError
+        ? error
+        : new SbaseError('SANDBASE_UNKNOWN', 'خطأ غير متوقّع أثناء جلب التفاصيل.', 502);
+      return res.status(failure.status).json({ success: false, code: failure.code, error: failure.message });
+    }
   });
 
   router.post('/image', upload.single('image'), async (req, res) => {
