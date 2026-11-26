@@ -43,6 +43,11 @@ import { normalizeUploadedImage } from '../services/imageValidation';
 export const APIFY_API_BASE = 'https://api.apify.com';
 export const APIFY_DEFAULT_1688_ACTOR = 'sourabhbgp~1688-scraper';
 export const APIFY_DEFAULT_IMAGE_ACTOR = 'topapi~image-search-1688-api';
+/** صورة AliExpress: actor موثّق يقبل base64 — 0.02$/صورة، ومجّانية إذا 0 نتيجة/فشل. */
+export const APIFY_DEFAULT_ALIEXPRESS_IMAGE_ACTOR = 'piotrv1001~aliexpress-image-search-scraper';
+export const APIFY_ALIEXPRESS_IMAGE_COST_USD = 0.02;
+export const APIFY_ALIEXPRESS_SHIP_TO = 'US';
+export const APIFY_ALIEXPRESS_CURRENCY = 'USD';
 
 /**
  * الأزمنة — مضبوطة على **القياس الحيّ** لا على التخمين (26/11/2026، خادم المالك):
@@ -122,6 +127,11 @@ export function apifyImageActor(): string {
  */
 export function apifyImageEndpoint(): string {
   return `https://${apifyImageActor().replace('~', '--')}.apify.actor/search`;
+}
+
+export function apifyAliexpressImageActor(): string {
+  const raw = String(process.env.APIFY_ALIEXPRESS_IMAGE_ACTOR ?? '').trim();
+  return normalizeApifyActor(raw || APIFY_DEFAULT_ALIEXPRESS_IMAGE_ACTOR);
 }
 
 // ── عميل run-based ──────────────────────────────────────────────────────────
@@ -574,6 +584,89 @@ export async function searchApifyByImage(
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * صفّ بحث صورة AliExpress الموثّق (مثال حقيقي من صفحة الـactor، قُريء 26/11/2026):
+ * `productId, title, url, image, price, currency, rating, sold, isBestMatch…`
+ * ⇒ الشكل الداخلي الموحّد. العملة تأتي من الردّ كما هي (USD…) — ما نخمّنوش CNY؛
+ * MOQ/البائع غير منشورين في هذا الـactor ⇒ يبقيان غايبين (`missing`)، بلا اختراع.
+ */
+export function mapApifyAliexpressImageRecord(record: unknown): Record<string, unknown> | null {
+  if (!isRecord(record)) return null;
+  const productId = asText(record.productId);
+  const title = asText(record.title);
+  if (!productId || !title) return null;
+  const mapped: Record<string, unknown> = { item_id: productId, title };
+  const price = asPositiveNumber(record.price);
+  if (price !== null) mapped.price = String(price);
+  const currency = asText(record.currency)?.toUpperCase();
+  if (currency) mapped.currency = currency;
+  const url = asText(record.url);
+  if (url) mapped.product_url = url;
+  const image = firstImage(record);
+  if (image) mapped.img = image;
+  return mapped;
+}
+
+export interface ApifyAliexpressImageResult {
+  data: { items: Record<string, unknown>[] };
+  durationMs: number;
+  polls: number;
+  runId: string | null;
+  async: true;
+}
+
+/**
+ * بحث بالصورة على AliExpress عبر `piotrv1001/aliexpress-image-search-scraper`
+ * (run-based: POST runs ثم poll ثم dataset).
+ *
+ * الموثّق على صفحة الـactor:
+ *   • `imageUrls` يقبل **base64** مباشرة (والاختصار `imagesBase64`) — بلا رابط عمومي.
+ *   • 0.02$/صورة (حتى 60 نتيجة)؛ **الصور الفاشلة أو بلا نتائج مجانية**.
+ *   • صفوف الفشل: `{status: 'image_error' | 'no_matches' | 'failed', error}` —
+ *     والـrun ينجح حتى معها؛ كل واحدة بكودها الحقيقي هنا، ولا واحدة تتفورت
+ *     «لا نتائج».
+ */
+export async function searchApifyAliexpressByImage(
+  imageBase64: string,
+  options: ApifyActorCallOptions = {},
+): Promise<ApifyAliexpressImageResult> {
+  const payload = String(imageBase64 ?? '').trim();
+  if (!payload) {
+    throw new SbaseError('SBASE_IMAGE_TOO_LARGE', 'بيانات الصورة فارغة.', 400);
+  }
+  const run = await runApifyActor(
+    apifyAliexpressImageActor(),
+    {
+      imagesBase64: [payload],
+      // 20 نتيجة داخل الصفّ الأول الموثّق — ثمن واحد 0.02$ بلا صفحات إضافية.
+      maxResultsPerImage: APIFY_SEARCH_MAX_ITEMS,
+      shipTo: APIFY_ALIEXPRESS_SHIP_TO,
+      currency: APIFY_ALIEXPRESS_CURRENCY,
+    },
+    { timeoutMs: options.timeoutMs ?? APIFY_IMAGE_TIMEOUT_MS, pollIntervalMs: options.pollIntervalMs, now: options.now },
+  );
+
+  const rows = run.data.filter(isRecord);
+  const items = rows
+    .map((record) => mapApifyAliexpressImageRecord(record))
+    .filter((record): record is Record<string, unknown> => record !== null);
+  if (items.length === 0 && rows.length > 0) {
+    // لا صفّ منتج ⇒ صفوف الفشل الموثّقة فقط: كل واحد بمعناه الحقيقي.
+    const failure = rows.find((row) => typeof row.status === 'string');
+    const reason = asText(failure?.error) ?? 'المتجر ما رجّعش منتجات.';
+    const status = String(failure?.status ?? 'failed');
+    if (status === 'no_matches') {
+      // حالة عادية **مجانية** — تردّ فارغة، ما تمسّش كخطأ.
+      return { data: { items: [] }, durationMs: run.durationMs, polls: run.polls, runId: run.runId, async: true };
+    }
+    if (status === 'image_error') {
+      throw new SbaseError('SBASE_IMAGE_STORE_REFUSED', `AliExpress ما قبلش الصورة (${reason}) — ما تخلّصش والو.`, 502);
+    }
+    throw new SbaseError('APIFY_FAILED', reason, 502);
+  }
+  return { data: { items }, durationMs: run.durationMs, polls: run.polls, runId: run.runId, async: true };
 }
 
 /**

@@ -173,9 +173,23 @@ export interface SbaseSearchPayload {
   fetchedAt: string;
 }
 
+/** حقيقة كل متجر صورة (1688 + AliExpress) — نفس صدق مجموعات البحث بالكلمة. */
+export interface SbaseImageStoreGroup {
+  source: { id: string; label: string; vendor: string };
+  status: 'ok' | 'empty' | 'error';
+  count: number;
+  items: SbaseItem[];
+  durationMs: number;
+  error: { code: string; message: string } | null;
+  /** 0 في `empty` و`error` — الـactors موثّقان «مجّاني إذا 0 نتيجة/فشل». */
+  costUsd: number;
+}
+
 export interface SbaseImagePayload {
   mode: 'image';
   channel: SbaseImageChannel;
+  /** الحقيقة لكل متجر صورة — حضر منذ تعدّد المتاجر (26/11/2026). */
+  groups?: SbaseImageStoreGroup[];
   status: 'ok' | 'empty';
   items: SbaseItem[];
   count: number;

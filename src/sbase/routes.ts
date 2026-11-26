@@ -21,6 +21,7 @@ import { Router } from 'express';
 import multer from 'multer';
 
 import {
+  SBASE_IMAGE_SOURCES,
   SBASE_IMAGE_SOURCE,
   describeSbaseSources,
   findSbaseSource,
@@ -36,6 +37,7 @@ import {
   apifyImageEndpoint,
   runApifyDetail,
   runApifySearch,
+  searchApifyAliexpressByImage,
   searchApifyByImage,
 } from './apify';
 import { extractProducts, missingFacets, type SbaseProduct } from './extract';
@@ -120,6 +122,18 @@ export interface SbaseSearchPayload {
   /** المزوّد اللي جاوب فعلاً — الشاشة تعرضه بصدق. */
   provider: SbaseProviderId;
   fetchedAt: string;
+}
+
+/** حقيقة كل متجر صورة — نفس صدق مجموعات البحث بالكلمة. */
+export interface SbaseImageStoreGroup {
+  source: { id: string; label: string; vendor: string };
+  status: 'ok' | 'empty' | 'error';
+  count: number;
+  items: SbaseProduct[];
+  durationMs: number;
+  error: { code: string; message: string } | null;
+  /** 0 في `empty` و`error`: كلا الـactors موثّقان «مجّاني إذا 0 نتيجة/فشل». */
+  costUsd: number;
 }
 
 async function searchOneSource(
@@ -231,6 +245,14 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
           // نقطة النهاية الفعلية للـServer actor (تقرأ APIFY_IMAGE_ACTOR وقت النداء).
           endpoint: apifyImageEndpoint(),
           configured,
+          /** كل متجر صورة بثمنه المنشور — الشاشة تعرضه بصدق. */
+          stores: SBASE_IMAGE_SOURCES.map((source) => ({
+            id: source.id,
+            label: source.label,
+            vendor: source.vendor,
+            actor: source.actor,
+            costUsd: source.costUsd,
+          })),
         },
       },
     });
@@ -368,37 +390,92 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
       const started = Date.now();
       /*
-       * Apify: الصورة تُرسل **base64** في request واحد للـServer actor — بلا
-       * نشر رابط عمومي ولا سَبر شبكي. السَبر المجّاني هنا محلي: فكّ الشفرة
-       * والتحقق والضغط التدرّجي تحت حدّ 1MB الموثّق، كل ذلك قبل أي نداء مدفوع
-       * (الرفض المحلي 413 ما يكلف حتى سنتاً).
+       * Apify: الصورة تُرسل **base64** في request واحد لكل متجر — بلا نشر رابط
+       * عمومي ولا سَبر شبكي. السَبر المجّاني هنا محلي: فكّ الشفرة والتحقق والضغط
+       * التدرّجي تحت حدّ الـ1MB الموثّق، كل ذلك قبل أي نداء مدفوع (الرفض المحلي
+       * 413 ما يكلف حتى سنتاً).
        */
       const imageBase64 = await apifyImageBase64(normalized.buffer, normalized.mimeType);
-      const result = await searchApifyByImage(imageBase64);
-      const items = extractProducts(result.data, {
-        arrays: [['items']],
-        limit: 20,
-        // كل نتيجة من هذا النداء = 1688، والنصّ يقولها بدل ما يخمّن متجراً.
-        storeFallback: '1688',
-      }).map((item) => ({ ...item, store: '1688' }));
 
+      /*
+       * كل متجر صورة = نداء مستقلّ، بالتوازي، وكل واحد بزمنو/خطئو/كلفته.
+       * متجر فاشل ما يمنعش الآخر: مجموعته تحمل كودها الحقيقي — ما تتفورتش
+       * «لا نتائج» ولا تتخبّى في قائمة موحّدة.
+       */
+      const failures: Array<ReturnType<typeof sbaseImageFailureFrom>> = [];
+      const groups: SbaseImageStoreGroup[] = await Promise.all(
+        SBASE_IMAGE_SOURCES.map(async (source) => {
+          const label = { id: source.id, label: source.label, vendor: source.vendor };
+          try {
+            const result = source.kind === 'server-actor'
+              ? await searchApifyByImage(imageBase64)
+              : await searchApifyAliexpressByImage(imageBase64);
+            const items = extractProducts(result.data, {
+              arrays: [['items']],
+              limit: 20,
+              // كل نتيجة من هذا النداء = متجر الـactor نفسه، والنصّ يقولها.
+              storeFallback: source.store,
+            }).map((item) => ({ ...item, store: source.store }));
+            return {
+              source: label,
+              status: (items.length > 0 ? 'ok' : 'empty') as 'ok' | 'empty',
+              count: items.length,
+              items,
+              durationMs: result.durationMs,
+              error: null,
+              // الاثنان موثّقان: 0 نتيجة = مجّاني، والفشل غير مفوتر — الصفر صادق.
+              costUsd: items.length > 0 ? source.costUsd : 0,
+            };
+          } catch (error) {
+            const failure = sbaseImageFailureFrom(error);
+            failures.push(failure);
+            return {
+              source: label,
+              status: 'error' as const,
+              count: 0,
+              items: [],
+              durationMs: 0,
+              error: { code: failure.code, message: failure.message },
+              costUsd: 0,
+            };
+          }
+        }),
+      );
+
+      const allFailed = groups.every((group) => group.status === 'error');
+      if (allFailed) {
+        // كل المتاجر فشلت: نفس صدق القناة الواحدة — أول فشل بكوده وحالته الحقيقية.
+        const first = failures[0];
+        return res.status(first?.status ?? 502).json({
+          success: false,
+          code: first?.code ?? 'SBASE_IMAGE_UNKNOWN',
+          error: first?.message ?? 'تعذّر البحث بالصورة.',
+          ...(first?.providerCode ? { providerCode: first.providerCode } : {}),
+          groups,
+        });
+      }
+
+      const items = groups.flatMap((group) => group.items);
       const stores = [...new Set(items.map((item) => item.store).filter((store): store is string => Boolean(store)))];
       const missing = new Set<string>();
       for (const item of items) for (const field of item.missing) missing.add(field);
+      const costUsd = groups.reduce((sum, group) => sum + group.costUsd, 0);
       return res.json({
         success: true,
         data: {
           mode: 'image',
           channel: { ...SBASE_IMAGE_SOURCE, endpoint: apifyImageEndpoint(), costUsd: SBASE_IMAGE_SOURCE.costUsd, configured: apifyConfigured() },
+          /** الحقيقة لكل متجر: ok/empty/error بزمنو وكلفته — الشاشة تعرضه كما هو. */
+          groups,
           status: items.length > 0 ? 'ok' : 'empty',
-          items: items.map((item) => ({ ...item, priceEstimate: estimate(item) })),
+          items,
           count: items.length,
           stores,
           missingFields: [...missing].sort(),
-          /** الزمن اللي خذا نداء 1688 نفسه. */
-          durationMs: result.durationMs,
+          /** أبطأ متجر — موش مجموع الأزمنة (التوازي). */
+          durationMs: Math.max(...groups.map((group) => group.durationMs), 0),
           endpoint: apifyImageEndpoint(),
-          costUsd: SBASE_IMAGE_SOURCE.costUsd,
+          costUsd,
           provider: activeSbaseProvider(),
           totalMs: Date.now() - started,
           fetchedAt: new Date().toISOString(),

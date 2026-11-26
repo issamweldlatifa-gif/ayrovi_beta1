@@ -417,9 +417,19 @@ export function SbaseScreen() {
         {imageResult.count > 0 ? t('sbase.results', { count: imageResult.count }) : t('sbase.photoEmpty')}
       </AppText>
       <AppText testID="sbase-image-spend" variant="caption" color={theme.colors.muted}>
-        {t('sbase.responseTime')} · {formatDuration(imageResult.totalMs)} · {imageResult.channel.label}
+        {t('sbase.responseTime')} · {formatDuration(imageResult.totalMs)}
         {formatCallCost(imageResult.costUsd) ? ` · ${t('sbase.cost')} ${formatCallCost(imageResult.costUsd)}` : ''}
       </AppText>
+      {/* الحقيقة لكل متجر صورة: زمنو ونتائجه أو خطؤه — ومتجر فاشل غير مفوتر. */}
+      {(imageResult.groups ?? []).map((group) => <AppText
+        key={group.source.id}
+        testID={`sbase-image-store-${group.source.id}`}
+        variant="caption"
+        color={group.status === 'error' ? theme.status.danger.fg : theme.colors.muted}>
+        {group.status === 'error'
+          ? `${group.source.label} · ${group.error?.code ?? 'ERROR'} · ${t('sbase.groupUnbilled')}`
+          : `${group.source.label} · ${group.count} · ${formatDuration(group.durationMs)}`}
+      </AppText>)}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Chip testID="sbase-store-all" label={t('sbase.allStores')} active={storeFilter === null} onPress={() => setStoreFilter(null)} />
         {[...new Set(imageResult.items.map((item) => item.store).filter((store): store is string => Boolean(store)))]
@@ -434,9 +444,9 @@ export function SbaseScreen() {
         key={`img-${item.url ?? item.id ?? index}`}
         item={item}
         index={index}
-        /* Les résultats d'une photo SONT des produits 1688 : la fiche existe
-           (`item/detail`). L'ancien `google-lens` renvoyait un 404 UNKNOWN_SOURCE. */
-        onOpen={() => openResult(true, '1688', item)} />)}
+        /* نتائج الصورة تحمل متجرها: 1688 تفتح الفيشة (`item/detail`)، ومتجر
+           بلا تفاصيل منشورة (AliExpress) يفتح الرابط الأصلي — لا فيش فارغة. */
+        onOpen={() => openResult(item.store === '1688', item.store ?? '1688', item)} />)}
     </View> : null}
 
     {!busy && !failure && !keywordResult && !imageResult && !sourcesQuery.isLoading ? <View

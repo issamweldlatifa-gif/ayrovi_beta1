@@ -17,7 +17,12 @@
  *
  * الأثمنة كلها **منشورة** على صفحات Apify وتظهر في الشاشة كما هي — ما نلمّسهاش.
  */
-import { APIFY_DETAIL_COST_USD, APIFY_IMAGE_COST_USD, APIFY_SEARCH_COST_USD } from './apify';
+import {
+  APIFY_ALIEXPRESS_IMAGE_COST_USD,
+  APIFY_DETAIL_COST_USD,
+  APIFY_IMAGE_COST_USD,
+  APIFY_SEARCH_COST_USD,
+} from './apify';
 
 /** المزوّد — واحد منذ 26/11/2026. */
 export type SbaseProviderId = 'apify';
@@ -91,22 +96,46 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
 ];
 
 /**
- * قناة الصورة = **1688 عبر Server actor** — POST واحد بbase64.
+ * قناة الصورة = **عدة متاجر، كل واحد بactor موثّق** — النتائج تُجمَّع بلا دمج:
+ * كل متجر بمجموعته (زمنو/خطئو/كلفته) ونتائجه موسومة باسمه.
  *
- * `topapi/image-search-1688-api`: ما فماش run ولا dataset — الردّ يرجع في
- * نفس الطلب ({ok, count, items[], meta})، ومجّاني إذا 0 نتيجة. أسماء الـactors
- * القابلة للتجاوز بمتغيّرات البيئة تُقرأ في `apify.ts` وقت النداء.
+ *   • `1688` — Server actor بPOST واحد بbase64، ما فماش run ولا dataset؛
+ *     الردّ في نفس الطلب ({ok, count, items[], meta})، مجّاني إذا 0 نتيجة.
+ *   • `aliexpress` — run actor يقبل base64 مباشرة (`imagesBase64`)؛
+ *     0.02$/صورة، مجّانية إذا 0 نتيجة أو فشل. بلا MOQ/بائع منشورين —
+ *     الحقول الغايبة تبقى غايبة (`missing`).
+ *
+ * أسماء الـactors القابلة للتجاوز بمتغيّرات البيئة تُقرأ في `apify.ts` وقت النداء.
  */
-export const SBASE_IMAGE_SOURCE = {
-  id: '1688',
-  label: '1688 · photo',
-  vendor: '1688.com',
-  actor: 'topapi~image-search-1688-api',
-  costUsd: APIFY_IMAGE_COST_USD,
-  store: '1688' as const,
-  supports: { keyword: false, url: false, image: true, details: false, price: true, variants: false, barcode: false },
-  storeFromResults: false,
-} as const;
+export const SBASE_IMAGE_SOURCES = [
+  {
+    id: '1688',
+    label: '1688 · photo',
+    vendor: '1688.com',
+    actor: 'topapi~image-search-1688-api',
+    /** Server actor: POST واحد للنقطة `.apify.actor` — بلا run ولا polling. */
+    kind: 'server-actor' as const,
+    costUsd: APIFY_IMAGE_COST_USD,
+    store: '1688' as const,
+    supports: { keyword: false, url: false, image: true, details: false, price: true, variants: false, barcode: false },
+    storeFromResults: false,
+  },
+  {
+    id: 'aliexpress',
+    label: 'AliExpress · photo',
+    vendor: 'aliexpress.com',
+    actor: 'piotrv1001~aliexpress-image-search-scraper',
+    /** run actor: POST runs → poll → dataset (نفس آلة البحث بالكلمة). */
+    kind: 'run' as const,
+    costUsd: APIFY_ALIEXPRESS_IMAGE_COST_USD,
+    store: 'aliexpress' as const,
+    supports: { keyword: false, url: false, image: true, details: false, price: true, variants: false, barcode: false },
+    storeFromResults: false,
+  },
+];
+
+/** القناة الأولى (1688) تبقى معروضة كما هي للتوافق — المصدر الكامل في `SBASE_IMAGE_SOURCES`. */
+export const SBASE_IMAGE_SOURCE = SBASE_IMAGE_SOURCES[0];
 
 export function findSbaseSource(id: string): SbaseSourceDescriptor | null {
   return SBASE_SOURCES.find((source) => source.id === id) ?? null;

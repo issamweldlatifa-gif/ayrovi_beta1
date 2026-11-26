@@ -404,6 +404,36 @@ describe('S Base — photo (1688, sans SerpApi)', () => {
   });
 
   /*
+   * 26/11/2026 — la photo part sur PLUSIEURS magasins (1688 + AliExpress) :
+   * chaque magasin porte sa vérité (résultats/temps, ou code + « échec non
+   * facturé »), et une ligne AliExpress ouvre le lien d'origine — pas de fiche.
+   */
+  it('photo multi-magasins : chaque magasin dit sa vérité, la ligne AliExpress ouvre le lien', async () => {
+    imageMock.mockResolvedValue({
+      ...IMAGE_RESULT,
+      items: [
+        item('Traceur GPS 1688', { store: '1688', seller: 'Shenzhen T' }),
+        item('Fraises artificielles', { store: 'aliexpress', url: 'https://www.aliexpress.com/item/1005012800262062.html' }),
+      ],
+      groups: [
+        { source: { id: '1688', label: '1688 · photo', vendor: '1688.com' }, status: 'ok', count: 1, items: [], durationMs: 2100, error: null, costUsd: 0.004 },
+        { source: { id: 'aliexpress', label: 'AliExpress · photo', vendor: 'aliexpress.com' }, status: 'error', count: 0, items: [], durationMs: 0, error: { code: 'SBASE_IMAGE_RATE_LIMITED', message: '429' }, costUsd: 0 },
+      ],
+    });
+    const view = mount();
+    await screen.findByTestId('sbase-source-1688');
+    fireEvent.press(screen.getByTestId('sbase-photo'));
+
+    expect(await screen.findByTestId('sbase-image-store-1688')).toHaveTextContent(/1688 · photo · 1/);
+    expect(screen.getByTestId('sbase-image-store-aliexpress')).toHaveTextContent(/SBASE_IMAGE_RATE_LIMITED/);
+    expect(screen.getByTestId('sbase-image-store-aliexpress')).toHaveTextContent(/échec non facturé/);
+    // Le filtre propose les deux magasins reçus, et la ligne AliExpress est là.
+    expect(screen.getByTestId('sbase-store-aliexpress')).toBeTruthy();
+    expect(screen.getByText('Fraises artificielles')).toBeTruthy();
+    view.unmount();
+  });
+
+  /*
    * 26/11/2026 — l'écran français affichait « La recherche a échoué » suivi
    * d'une phrase ARABE du serveur, et un refus du fournisseur se présentait
    * comme une photo invalide. Le code doit maintenant choisir la phrase.

@@ -54,15 +54,32 @@ attend jusqu'à 110 s côté app : la lecture de la page 1688 est documentée
 15–90 s par produit. Elle porte `weightKg` (`variants[].weightGrams`) qui nourrit
 le fret réel du moteur de prix.
 
-### Photo (Apify `topapi/image-search-1688-api`, Server actor)
-`POST /api/sbase/image` (multipart) → `{ items[], stores[] }`. La photo part en
-**base64** dans un POST unique vers
-`https://topapi--image-search-1688-api.apify.actor/search` (`{imageBase64,
-maxResults: 20, excludeAds: true}`) : **aucune publication publique, aucune
-sonde réseau**. Le garde-fou gratuit est **local** : décodage + compression
-dégradée sous la limite documentée (corps ≤ 1 Mo) ; au-delà, refus `413`
-**avant tout appel payant**. 0 résultat = cas normal **gratuit** chez le
-fournisseur — affiché « empty », jamais transformé en panne.
+### Photo (Apify Server actor + actors run)
+`POST /api/sbase/image` (multipart) → `{ items[], stores[], groups[] }`. La photo part en
+**base64** — **aucune publication publique, aucune sonde réseau**. Le garde-fou
+gratuit est **local** : décodage + compression dégradée sous la limite
+documentée (corps ≤ 1 Mo) ; au-delà, refus `413` **avant tout appel payant**.
+
+**Plusieurs magasins en parallèle** (26/11/2026) — chaque magasin = un appel
+indépendant, avec SON temps, SON erreur et SON coût publié ; les résultats
+portent leur magasin, le filtre de l'écran se construit sur les magasins reçus :
+
+| Magasin | Actor | Entrée | Coût publié |
+|---|---|---|---|
+| `1688` | `topapi/image-search-1688-api` (Server actor) | `{imageBase64, maxResults:20, excludeAds:true}` — POST unique | 0,20 $/1000 résultats ⇒ **≈ 0,004 $/photo**, gratuit si 0 |
+| `aliexpress` | `piotrv1001/aliexpress-image-search-scraper` (run actor, 320+ utilisateurs) | `imagesBase64:[…]` accepte **base64 directement**, `maxResultsPerImage:20`, `shipTo:US`, `currency:USD` | **0,02 $/photo** (1 page jusqu'à 60 résultats) ; **image en échec ou sans résultats = gratuite** |
+
+Pages de sortie documentées de l'actor AliExpress : `productId, title, url,
+image, price, currency, rating, sold, soldText, isBestMatch…` — MOQ/vendeur non
+publiés ⇒ restent dans `missing`. Lignes d'échec documentées
+(`no_matches` / `image_error` / `failed`) → chacune son code honnête
+(`empty` gratuit / `SBASE_IMAGE_STORE_REFUSED` / `APIFY_FAILED`), jamais «
+aucun résultat ». Si **tous** les magasins échouent, la réponse porte le code du
+premier échec avec son vrai statut (402/429/504…) — un échec n'est jamais
+facturé ni présenté comme une photo invalide.
+
+0 résultat = cas normal **gratuit** chez chaque fournisseur — affiché « empty »,
+jamais transformé en panne.
 
 **Latence mesurée en direct (26/11/2026, serveur du propriétaire)** : photo
 31 s, recherche par mot-clé ≈ 42 s — les budgets ont été alignés sur la réalité
@@ -87,7 +104,8 @@ des magasins cochés : il ne peut pas promettre plus que la plus pauvre.
 
 - **Coûts publiés par le fournisseur** (affichés tels quels) :
   recherche ≈ **0,0848 $** (0,005 $/run + 20 lignes × 3,99 $/1000) ·
-  fiche ≈ **0,00899 $** · photo ≈ **0,004 $** (gratuite si 0 résultat).
+  fiche ≈ **0,00899 $** · photo : **0,004 $** (1688) + **0,02 $** (AliExpress)
+  ⇒ jusqu'à **0,024 $/photo**, chaque magasin gratuit si 0 résultat/failure.
 - Quotas serveur dédiés : 30 recherches /10 min, **12 photos /10 min** — séparés
   du quota Z Lens.
 - Clé `APIFY_TOKEN` uniquement côté serveur (tête `Authorization: Bearer` — le
@@ -185,6 +203,7 @@ un appel échoué affiche « échec non facturé » au lieu d'un coût.
 | `APIFY_TOKEN` | **la seule clé requise** — absente ⇒ 503 avant tout appel |
 | `APIFY_1688_ACTOR` | optionnel (défaut `sourabhbgp~1688-scraper`) |
 | `APIFY_IMAGE_ACTOR` | optionnel (défaut `topapi~image-search-1688-api`) |
+| `APIFY_ALIEXPRESS_IMAGE_ACTOR` | optionnel (défaut `piotrv1001~aliexpress-image-search-scraper`) |
 | `SBASE_PROVIDER` | **obsolète depuis le commit 3** — le fournisseur est unique ; la variable n'a plus aucun effet |
 
 Vérification en direct (clé du propriétaire, sur le serveur publié) :
@@ -196,6 +215,15 @@ curl -s -X POST "https://topapi--image-search-1688-api.apify.actor/search" \
 # attendu : {"ok":true,"count":5,"items":[…],"meta":{…}}
 ```
 
-Ce qui reste **non vérifié en direct** : les deux runs d'actor (recherche et
-fiche) et la latence réelle de bout en bout — tout le reste est verrouillé par
-les tests racine (45) et les tests mobile (unitaires + UI).
+Vérifié **en direct** le 26/11/2026 (serveur du propriétaire) : photo 1688
+(31 s, 20 résultats, 0,0040 $ affichés). Ce qui reste **non vérifié en direct** :
+le run recherche, la fiche, et l'actor image AliExpress — tout le reste est
+verrouillé par les tests racine (47) et les tests mobile (unitaires + UI).
+
+**SHEIN (reporté, décision factuelle)** : l'actor `factual_biscotti/shein-visual-search-actor`
+est marqué **« Under maintenance »** par son développeur, la documentation
+précise que **hors des États-Unis la protection anti-bot bloque souvent la
+recherche visuelle** (CAPTCHA), et son mode d'entrée « raw bytes » n'est pas
+clairement utilisable via API. Coût 5 $/1000 résultats. À réintégrer dès que
+l'actor est fiable — un entrée dans `SBASE_IMAGE_SOURCES` + un traducteur
++ des tests suffisent.
