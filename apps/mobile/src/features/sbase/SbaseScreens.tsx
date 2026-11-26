@@ -11,7 +11,7 @@
  *    «المجموعة» عرض للنتائج، موش دمج ولا ترتيب موحّد.
  *  • **الفلتر = اختيار المتاجر**: كي تبدّل الاختيار، ما نعاودوش نجريو بصمت —
  *    نقولو «relancez» باش ما تتضاعفش الكلفة بلا علم المستعمل.
- *  • **الصورة**: الكاميرا ترفع صورة → بحث بصري (Google Lens) → النتائج تحمل
+ *  • **الصورة**: الكاميرا ترفع صورة → نتائج 1688 المتشابهة → النتائج تحمل
  *    متجرها، والفلتر يتبنى من المتاجر اللي رجّعتها الصورة نفسها.
  *  • ما فماش mic ولا زرّ ما يخدمش: كل أيقونة في الشريط عندها فعل حقيقي.
  */
@@ -384,7 +384,8 @@ export function SbaseScreen() {
             : t('sbase.empty', { query: keywordResult.query })}
       </AppText>
       <AppText testID="sbase-response-time" variant="caption" color={theme.colors.muted}>
-        {t('sbase.responseTime')} · {formatDuration(keywordResult.totalMs)} · {t('sbase.viaSandbase')}
+        {/* المزوّد اللي جاوب فعلاً يظهر باسمه — ما ننسبش النتيجة لمزوّد ما جاوبش. */}
+        {t('sbase.responseTime')} · {formatDuration(keywordResult.totalMs)} · {t('sbase.viaProvider', { provider: keywordResult.provider ?? 'S Base' })}
       </AppText>
       {keywordResult.missingFields.length > 0 ? <View style={styles.chips}>
         {keywordResult.missingFields.map((field) => {

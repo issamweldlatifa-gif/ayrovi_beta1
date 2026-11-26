@@ -1,7 +1,8 @@
 /**
- * S Base — عميل الـAPI (SandBase عبر خادمنا).
+ * S Base — عميل الـAPI (المزوّد عبر خادمنا).
  *
- * التطبيق ما يعرفش المفتاح ولا `api.sandbase.ai`: كل شيء يمرّ من `/api/sbase/*`.
+ * التطبيق ما يعرفش المفتاح ولا نقاط نهاية المزوّد (SandBase ولا Apify):
+ * كل شيء يمرّ من `/api/sbase/*`، والخادم هو اللي يقرّر المزوّد (SBASE_PROVIDER).
  *
  * عقد البحث: **شريط واحد، مجموعات منفصلة**. كل متجر يرجّع مجموعتو بزمنها
  * وخطئها وكاشها؛ الفلتر في الشاشة يخفي/يظهر المجموعات، وما فماش دمج نتائج.
@@ -143,6 +144,8 @@ export interface SbaseDetail {
   specs: { name: string; value: string }[];
   /** « Tailles et couleurs » : un groupe par dimension. */
   variants: SbaseVariantGroup[];
+  /** وزن الحزمة كما أعلنه المصدر (kg) — يغذّي الشحن في محرّك السعر؛ غايب = غير معروف. */
+  weightKg?: number | null;
   missing: string[];
   /** Estimation TND (moteur de prix) — inclut la livraison locale sur la fiche. */
   priceEstimate?: SbasePriceEstimate | null;
@@ -165,6 +168,8 @@ export interface SbaseSearchPayload {
   groups: SbaseGroup[];
   count: number;
   missingFields: string[];
+  /** المزوّد اللي جاوب فعلاً — يُعرض كما هو، بلا تزيين. */
+  provider?: string;
   fetchedAt: string;
 }
 
@@ -180,6 +185,8 @@ export interface SbaseImagePayload {
   /** L'endpoint 1688 réellement appelé + son prix publié. */
   endpoint?: string;
   costUsd?: number;
+  /** المزوّد اللي جاوب فعلاً (sandbase | apify). */
+  provider?: string;
   /** Fin de vie du lien photo temporaire (10 min). */
   photoExpiresAt?: string;
   totalMs: number;
@@ -197,12 +204,12 @@ export async function searchSbase(
   return apiSendData<SbaseSearchPayload>('POST', '/api/sbase/search', {
     ...options,
     body: { q: input.q, sources: input.sources },
-    // N متجر بالتوازي، أبطأهم قد يصل 28 ثانية (polling SandBase).
+    // N متجر بالتوازي، أبطأهم قد يصل 30 ثانية (run-based عند المزوّد).
     timeoutMs: options?.timeoutMs ?? 35_000,
   });
 }
 
-/** صورة من المعرض → نتائج بصرية (Google Lens)، عبر خادمنا. */
+/** صورة من المعرض → نتائج 1688 المتشابهة، عبر خادمنا. */
 export function searchSbaseImage(
   file: { uri: string; name: string; type: string },
   options?: RequestOptions,
@@ -230,6 +237,7 @@ export async function fetchSbaseItem(
       url: input.url ?? null,
       market: input.market ?? null,
     },
-    timeoutMs: options?.timeoutMs ?? 35_000,
+    // قراءة صفحة المنتج عند 1688 موثّقة 15-90 ثانية للمنتج — ننتظرها بصدق.
+    timeoutMs: options?.timeoutMs ?? 110_000,
   });
 }

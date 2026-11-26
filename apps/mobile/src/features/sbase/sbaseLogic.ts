@@ -52,7 +52,7 @@ export function missingLabelKey(field: string): string | null {
  * توّا النصّ يتعوّض بالكود، والكود هو اللي يختار اللغة.
  */
 export const FAILURE_MESSAGE_KEYS: Record<string, string> = {
-  // ── قناة الصورة (Lens) ──────────────────────────────────────────────
+  // ── قناة الصورة ─────────────────────────────────────────────────────
   SBASE_IMAGE_EMPTY: 'sbase.err.imageEmpty',
   SBASE_IMAGE_INVALID: 'sbase.err.imageInvalid',
   SBASE_IMAGE_TOO_LARGE: 'sbase.err.imageTooLarge',
@@ -68,7 +68,7 @@ export const FAILURE_MESSAGE_KEYS: Record<string, string> = {
   SBASE_IMAGE_PROVIDER_UNKNOWN: 'sbase.err.imageUnknown',
   SBASE_IMAGE_UNKNOWN: 'sbase.err.imageUnknown',
   SBASE_IMAGE_NOT_CONFIGURED: 'sbase.err.imageNotConfigured',
-  // ── قناة الكلمة (SandBase) ──────────────────────────────────────────
+  // ── قناة الكلمة (المزوّد: SandBase أو Apify حسب SBASE_PROVIDER) ──────
   SANDBASE_NOT_CONFIGURED: 'sbase.err.notConfigured',
   SANDBASE_UNAUTHORIZED: 'sbase.err.unauthorized',
   SANDBASE_BALANCE: 'sbase.err.balance',
@@ -76,6 +76,16 @@ export const FAILURE_MESSAGE_KEYS: Record<string, string> = {
   SANDBASE_TIMEOUT: 'sbase.err.timeout',
   SANDBASE_NETWORK: 'sbase.err.network',
   SANDBASE_MALFORMED: 'sbase.err.malformed',
+  // ── مزوّد Apify (نفس الجُمَل الصادقة، الكود هو اللي يميّز) ────────────
+  APIFY_NOT_CONFIGURED: 'sbase.err.notConfigured',
+  APIFY_UNAUTHORIZED: 'sbase.err.unauthorized',
+  APIFY_BALANCE: 'sbase.err.balance',
+  APIFY_RATE_LIMIT: 'sbase.err.rateLimit',
+  APIFY_TIMEOUT: 'sbase.err.timeout',
+  APIFY_FAILED: 'sbase.err.failed',
+  APIFY_EMPTY: 'sbase.err.empty',
+  APIFY_NETWORK: 'sbase.err.network',
+  APIFY_MALFORMED: 'sbase.err.malformed',
 };
 
 export function failureMessageKey(code: string | null | undefined): string | null {

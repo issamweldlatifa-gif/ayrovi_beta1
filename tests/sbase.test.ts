@@ -997,3 +997,188 @@ describe('S Base — مزوّد Apify', () => {
     expect(bytes[1]).toBe(0xd8);
   });
 });
+
+/*
+ * ── الخطوة 2: التفعيل بمتغيّر البيئة ─────────────────────────────────────────
+ * SBASE_PROVIDER=apify يمرّ كل نداءات /api/sbase/* من مزوّد Apify؛ الافتراضي
+ * يُبقي SandBase. الكاش يفرق بين المزوّدين، والكلفة المعروضة هي المنشورة
+ * عند المزوّد النشيط.
+ */
+describe('S Base — التفعيل عبر SBASE_PROVIDER', () => {
+  const APIFY_KEY = 'test_apify_token';
+
+  /** جدولة Apify: بحث/تفاصيل/صورة على نفس الـstubs. */
+  function stubApify(handlers: Array<(url: string, init?: RequestInit) => Response | null>) {
+    const calls: Array<{ url: string; init?: RequestInit }> = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url: String(url), init });
+      for (const handler of handlers) {
+        const response = handler(String(url), init);
+        if (response) return response;
+      }
+      return new Response(JSON.stringify({ error: { type: 'unexpected-url' } }), { status: 500 });
+    }));
+    return calls;
+  }
+
+  const apifyFlow = (dataset: unknown) => [
+    (url: string) => (url.includes('/v2/acts/sourabhbgp~1688-scraper/runs')
+      ? new Response(JSON.stringify({ data: { id: 'run_9', status: 'READY', defaultDatasetId: 'ds_1' } }), { status: 200 })
+      : null),
+    (url: string) => (url.includes('/v2/actor-runs/run_9')
+      ? new Response(JSON.stringify({ data: { id: 'run_9', status: 'SUCCEEDED', defaultDatasetId: 'ds_1' } }), { status: 200 })
+      : null),
+    (url: string) => (url.includes('/v2/datasets/ds_1/items') ? new Response(JSON.stringify(dataset), { status: 200 }) : null),
+  ];
+
+  afterEach(() => {
+    delete process.env.SBASE_PROVIDER;
+    delete process.env.APIFY_TOKEN;
+    vi.unstubAllGlobals();
+  });
+
+  test('الافتراضي بلا متغيّر: sandbase يبقى هو المزوّد (لا تبديل صامت)', async () => {
+    stubSources({ '/1688/search/cross-border': devOk });
+    const response = await request(app()).post('/api/sbase/search').send({ q: 'coque', sources: ['1688'] }).expect(200);
+    expect(response.body.data.provider).toBe('sandbase');
+    // كلفة SandBase المنشورة (0.014286$) لا كلفة Apify.
+    expect(response.body.data.groups[0].costUsd).toBe(0.014286);
+  });
+
+  test('SBASE_PROVIDER=apify: /sources تعلن المزوّد وكلفته المنشورة (0.0848$)', async () => {
+    process.env.SBASE_PROVIDER = 'apify';
+    process.env.APIFY_TOKEN = APIFY_KEY;
+    const response = await request(app()).get('/api/sbase/sources').expect(200);
+    expect(response.body.data.provider).toBe('apify');
+    expect(response.body.data.configured).toBe(true);
+    expect(response.body.data.sources[0].costUsd).toBeCloseTo(0.0848, 5);
+    expect(response.body.data.image.endpoint).toBe('https://topapi--image-search-1688-api.apify.actor/search');
+    expect(response.body.data.image.costUsd).toBeCloseTo(0.004, 5);
+  });
+
+  test('SBASE_PROVIDER=apify بلا مفتاح: 503 APIFY_NOT_CONFIGURED وبلا أي نداء', async () => {
+    process.env.SBASE_PROVIDER = 'apify';
+    delete process.env.APIFY_TOKEN;
+    const calls = stubApify([]);
+    const response = await request(app()).post('/api/sbase/search').send({ q: 'coque' }).expect(503);
+    expect(response.body.code).toBe('APIFY_NOT_CONFIGURED');
+    expect(calls).toHaveLength(0);
+  });
+
+  test('البحث يمشي من Apify: النتائج والكلفة الجديدة وتقدير المحرّك', async () => {
+    process.env.SBASE_PROVIDER = 'apify';
+    process.env.APIFY_TOKEN = APIFY_KEY;
+    stubApify(apifyFlow([{
+      offerId: '1089329678023',
+      title: 'New macaron bowl lid insulated tumbler',
+      priceCny: 15.5,
+      minOrderQuantity: 1,
+      supplierName: '义乌市乌桨五金制品厂',
+      url: 'https://detail.1688.com/offer/1089329678023.html',
+      images: ['https://cbu01.alicdn.com/img/ibank/a.jpg'],
+    }]));
+
+    const response = await request(app()).post('/api/sbase/search').send({ q: 'water bottle', sources: ['1688'] }).expect(200);
+    expect(response.body.data.provider).toBe('apify');
+    const group = response.body.data.groups[0];
+    expect(group).toMatchObject({ status: 'ok', count: 1 });
+    expect(group.costUsd).toBeCloseTo(0.0848, 5);
+    expect(group.items[0]).toMatchObject({ id: '1089329678023', amount: 15.5, currency: 'CNY', moq: '1' });
+    // تقدير TND يبقى من محرّك السعر المنزلي (ما تغيّرش).
+    expect(group.items[0].priceEstimate).toMatchObject({ currency: 'CNY', amount: 15.5 });
+  });
+
+  test('البطاقة عبر Apify: الوزن المعلن (variants[].weightGrams) يغذّي الشحن في المحرّك', async () => {
+    process.env.SBASE_PROVIDER = 'apify';
+    process.env.APIFY_TOKEN = APIFY_KEY;
+    stubApify(apifyFlow([{
+      offerId: '928596422357',
+      title: 'Magnetic Phone Case Matte Version',
+      priceCny: 4.5,
+      currency: 'CNY',
+      stock: 730371,
+      specs: { Brand: 'Hong xing', Material: 'Silicone' },
+      supplierName: '深圳市罗湖区洪星电子商行',
+      url: 'https://detail.1688.com/offer/928596422357.html',
+      variants: [{ skuId: '6090121414768', specAttributes: 'Pink1 > iPhone17', priceCny: 4.5, stock: 5217, imageUrl: 'https://cbu01.alicdn.com/img/ibank/v.jpg', weightGrams: 45 }],
+    }]));
+
+    const response = await request(app()).post('/api/sbase/item').send({ source: '1688', id: '928596422357' }).expect(200);
+    const detail = response.body.data.detail;
+    expect(detail).toMatchObject({ amount: 4.5, currency: 'CNY', weightKg: 0.045, seller: '深圳市罗湖区洪星电子商行' });
+    const estimate = response.body.data.detail.priceEstimate;
+    // 45 غرام = 0.045kg × 12 TND/kg = 0.54 TND شحن حقيقي، موش وزن تصنيف افتراضي.
+    expect(estimate.freightTND).toBeCloseTo(0.54, 3);
+    expect(estimate.localDeliveryTND).toBe(7);
+    expect(response.body.data.costUsd).toBeCloseTo(0.00899, 5);
+  });
+
+  test('الصورة عبر Apify: base64 خام للـServer actor — بلا نشر رابط عمومي وبلا سَبر شبكي', async () => {
+    process.env.SBASE_PROVIDER = 'apify';
+    process.env.APIFY_TOKEN = APIFY_KEY;
+    const calls = stubApify([
+      (url, init) => {
+        if (!url.includes('topapi--image-search-1688-api.apify.actor/search')) return null;
+        expect(init?.method).toBe('POST');
+        const sent = JSON.parse(String(init?.body));
+        // الصورة تُرسل base64 خام — لا data URI، لا رابط photo/… عندنا.
+        expect(sent.imageBase64).toMatch(/^[A-Za-z0-9+/=]+$/);
+        expect(sent.maxResults).toBe(20);
+        expect(sent.excludeAds).toBe(true);
+        return new Response(JSON.stringify({
+          ok: true, count: 1,
+          items: [{
+            offerId: '927875250705', title: '手机壳', titleEn: 'Cross-border phone case',
+            detailUrl: 'https://detail.1688.com/offer/927875250705.html', image: 'https://cbu01.alicdn.com/m.jpg',
+            price: 7.5, currency: 'CNY', minOrderQuantity: 50, supplier: { companyName: '佛山三丰' },
+          }],
+          meta: { totalMatches: 12, nextOffset: 1 },
+        }), { status: 200 });
+      },
+    ]);
+
+    const response = await request(app())
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(200);
+
+    // نداء واحد فقط: الـServer actor. ما فماش publish ولا photoProbe ولا رابط عمومي.
+    expect(calls).toHaveLength(1);
+    expect(calls[0].url).toContain('topapi--image-search-1688-api.apify.actor/search');
+    const data = response.body.data;
+    expect(data.provider).toBe('apify');
+    expect(data).toMatchObject({ mode: 'image', count: 1, stores: ['1688'] });
+    expect(data.items[0]).toMatchObject({ store: '1688', title: 'Cross-border phone case', amount: 7.5, currency: 'CNY', moq: '50' });
+    expect(data.costUsd).toBeCloseTo(0.004, 5);
+    expect(data.photoExpiresAt).toBeUndefined();
+    // نتيجة الصورة تفتح فيش 1688 (المسار المعروف، ماشي google-lens).
+    expect(data.items[0].url).toBe('https://detail.1688.com/offer/927875250705.html');
+  });
+
+  test('الكاش يفرق بين المزوّدين: نتيجة SandBase لا تُقدَّم لبحث Apify', async () => {
+    // بحث أول بمزوّد SandBase (الافتراضي) — الردّ يقول «Old SandBase row».
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (String(url).includes('/1688/search/cross-border')) {
+        return new Response(JSON.stringify(envelope({
+          items: [{ item_id: 111, title: 'Old SandBase row', price: '9.99', currency: 'CNY' }],
+        })), { status: 200 });
+      }
+      return new Response(JSON.stringify(envelope({ items: [] })), { status: 200 });
+    }));
+    const first = await request(app()).post('/api/sbase/search').send({ q: 'coque', sources: ['1688'] }).expect(200);
+    expect(first.body.data.groups[0].items[0].title).toBe('Old SandBase row');
+
+    // نفس الطلب، المزوّد يتبدّل إلى Apify: الكاش ما يخدمش النتيجة القديمة.
+    process.env.SBASE_PROVIDER = 'apify';
+    process.env.APIFY_TOKEN = APIFY_KEY;
+    clearSbaseCache();
+    stubApify(apifyFlow([{
+      offerId: '222', title: 'New Apify row', priceCny: 12.5, currency: 'CNY',
+      url: 'https://detail.1688.com/offer/222.html',
+    }]));
+    const second = await request(app()).post('/api/sbase/search').send({ q: 'coque', sources: ['1688'] }).expect(200);
+    expect(second.body.data.provider).toBe('apify');
+    expect(second.body.data.groups[0].items[0].title).toBe('New Apify row');
+    expect(second.body.data.groups[0].cached).toBe(false);
+  });
+});

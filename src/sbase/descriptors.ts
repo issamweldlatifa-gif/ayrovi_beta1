@@ -1,21 +1,25 @@
 /**
  * S Base — كتالوغ المصادر. **مصدر واحد = endpoint واحد.**
  *
- * قرار المالك (26/11/2026): S Base = **1688 وحدها**. البحث بالصورة يمرّ من
- * شاشة 1688 نفسها (`/v1/api/1688/search/cross-border-by-image`)، وZ Lens يتفضّل
- * على حالو — ما فماش SerpApi هنا.
+ * قرار المالك (26/11/2026): S Base = **1688 وحدها**، والمزوّد يتبدّل من SandBase
+ * إلى **Apify**. التحويل بالترتيب الإلزامي: المزوّد الجديد بُني جانب القديم،
+ * والتفعيل بمتغيّر البيئة `SBASE_PROVIDER` (`sandbase` الافتراضي · `apify`)،
+ * والحذف النهائي بعد التحقيق الحيّ — ما يبقى التطبيق بلا مصدر لحظة.
  *
- * وAlibaba.com تنحّت في نفس اليوم: عندها بحث بالكلمة بركة — لا صورة، لا تفاصيل،
- * لا مقاسات، لا توفّر. بطاقة المنتج اللي نوعدو بيها ما تنجّمش تتكمّل بها، فما
- * نبيعوهاش. ترجيعها = سطر واحد هنا إذا تبدّل رأي المالك.
+ * وAlibaba.com تنحّت سابقاً: عندها بحث بالكلمة بركة. ترجيعها = سطر واحد هنا.
  *
- * الحقائق مأخوذة من صفحات SandBase (قُرأت في 2026‑11‑26):
- *   • 1688: بحث بالكلمة (cross-border, `language`) · بحث بالصورة (`imgUrl`) ·
- *     تفاصيل بالمعرّف أو بالرابط (`item/detail`, `item/detail-by-url`) ·
- *     مراجعات · شحن · متجر.  ← كل هذا موثّق.
- *   • Alibaba.com: **بحث بالكلمة فقط** (`/v1/api/alibaba/search`, حتى 25 نتيجة).
- *     ما فماش صورة، ما فماش تفاصيل، ما فماش رابط منتج. نعلنوها كما هي.
+ * الحقائق مأخوذة من صفحات Apify (قُرأت في 2026‑11‑26) ومن صفحات SandBase
+ * القديمة: الثمنان **كلاهما منشوران** — الكلفة تُعرض حسب المزوّد النشيط.
  */
+
+/** المزوّد النشيط لمصدر 1688. */
+export type SbaseProviderId = 'sandbase' | 'apify';
+
+import {
+  APIFY_DETAIL_COST_USD,
+  APIFY_IMAGE_COST_USD,
+  APIFY_SEARCH_COST_USD,
+} from './apify';
 
 export interface SbaseSupports {
   keyword: boolean;
@@ -47,6 +51,8 @@ export interface SbaseDetailInput {
 export interface SbaseDetailDescriptor {
   endpoint: string;
   costUsd: number;
+  /** ثمن نداء التفاصيل عند مزوّد Apify (run + صفّ واحد) — منشور على صفحات Apify. */
+  apifyCostUsd?: number;
   async: boolean;
   /** يشترط معرّف منتج قبل النداء. */
   requiresId: boolean;
@@ -76,6 +82,8 @@ export interface SbaseSourceDescriptor {
   endpoint: string;
   /** سعر النداء المعلن (USD) — null إذا الصفحة ما نشرتش سعراً. */
   costUsd: number | null;
+  /** ثمن البحث عند مزوّد Apify (run + 20 صفّ = 0.0848$) — منشور على صفحات Apify. */
+  apifyCostUsd?: number;
   /**
    * بعض المصادر (Alibaba سابقاً) تحاسب بكل نتيجة بدل سعر ثابت للنداء.
    * الخانة تبقى موجودة باش الشاشة ما تكذبش إذا رجّعنا مصدراً من هذا النوع.
@@ -109,6 +117,8 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     vendor: '1688.com',
     endpoint: '/v1/api/1688/search/cross-border',
     costUsd: 0.014286,
+    // Apify (sourabhbgp/1688-scraper): 0.005$/run + 20 صفّ × 3.99$/1000 = 0.0848$.
+    apifyCostUsd: APIFY_SEARCH_COST_USD,
     billedPerResult: false,
     async: false,
     defaultEnabled: true,
@@ -136,6 +146,8 @@ export const SBASE_SOURCES: SbaseSourceDescriptor[] = [
     detail: {
       endpoint: '/v1/api/1688/item/detail',
       costUsd: 0.014286,
+      // Apify: 0.005$/run + صفّ واحد × 3.99$/1000 = 0.00899$.
+      apifyCostUsd: APIFY_DETAIL_COST_USD,
       async: false,
       requiresId: true,
       buildBody: (input) => ({ itemId: input.id }),
@@ -162,6 +174,8 @@ export const SBASE_IMAGE_SOURCE = {
   vendor: '1688.com',
   endpoint: '/v1/api/1688/search/cross-border-by-image',
   costUsd: 0.014286,
+  // Apify (topapi/image-search-1688-api): 20 نتيجة × 0.20$/1000 = 0.004$، مجّاناً إذا 0.
+  apifyCostUsd: APIFY_IMAGE_COST_USD,
   store: '1688' as const,
   supports: { keyword: false, url: false, image: true, details: false, price: true, variants: false, barcode: false },
   storeFromResults: false,
@@ -172,7 +186,19 @@ export function findSbaseSource(id: string): SbaseSourceDescriptor | null {
 }
 
 /** ما تعرضه الشاشة للعميل: القدرات الحقيقية + الكلفة + الأسواق. */
-export function describeSbaseSources(options: { configured: boolean } = { configured: false }) {
+/** ثمن البحث المعلن حسب المزوّد النشيط — كل الأثمنة منشورة عند أصحابها. */
+export function sbaseSourceCostUsd(source: SbaseSourceDescriptor, provider: SbaseProviderId): number | null {
+  return provider === 'apify' ? (source.apifyCostUsd ?? source.costUsd) : source.costUsd;
+}
+
+/** ثمن نداء التفاصيل حسب المزوّد النشيط. */
+export function sbaseDetailCostUsd(source: SbaseSourceDescriptor, provider: SbaseProviderId): number | null {
+  if (provider === 'apify') return source.detail?.apifyCostUsd ?? source.detail?.costUsd ?? null;
+  return source.detail?.costUsd ?? null;
+}
+
+export function describeSbaseSources(options: { configured: boolean; provider?: SbaseProviderId } = { configured: false }) {
+  const provider: SbaseProviderId = options.provider ?? 'sandbase';
   return SBASE_SOURCES.map((source) => ({
     id: source.id,
     label: source.label,
@@ -181,7 +207,7 @@ export function describeSbaseSources(options: { configured: boolean } = { config
     fields: source.fields,
     markets: source.markets,
     defaultMarket: source.defaultMarket,
-    costUsd: source.costUsd,
+    costUsd: sbaseSourceCostUsd(source, provider),
     billedPerResult: source.billedPerResult,
     async: source.async,
     defaultEnabled: source.defaultEnabled,

@@ -310,3 +310,44 @@ boutique n'a répondu — rien n'a été facturé » et le code réel de chaque 
 Un appel échoué affiche « échec non facturé » au lieu d'un coût (SandBase ne
 facture pas les échecs). Le compteur de résultats ne sert plus de titre à une
 panne.
+
+## 13. Migration Apify — le fournisseur devient commutable (26/11/2026)
+
+Décision du propriétaire (finale, non discutable) : **« احذف امتداد sandbase نهائيا وعوّض
+المشروع بـapify »**. Exécution en trois commits, dans cet ordre — l'app ne reste jamais
+sans source :
+
+1. **Le fournisseur Apify est construit À CÔTÉ de SandBase** (`src/sbase/apify.ts`) — rien n'est activé, rien ne change.
+2. **Activation par variable d'environnement** : `SBASE_PROVIDER=apify` bascule TOUT
+   `/api/sbase/*` vers Apify ; sans la variable, SandBase reste le fournisseur (testé
+   dans les deux sens). Variables Render : `APIFY_TOKEN` · `SBASE_PROVIDER=apify` ·
+   optionnels `APIFY_1688_ACTOR` / `APIFY_IMAGE_ACTOR`.
+3. Ce n'est qu'après la vérification en direct (clé du propriétaire, serveur publié) que
+   SandBase est supprimé (commit 3) — jamais avant.
+
+### Les deux acteurs Apify (pages lues le 26/11/2026)
+
+| Canal | Actor | Entrée documentée | Coût publié |
+|---|---|---|---|
+| Mot-clé | `sourabhbgp/1688-scraper` | `mode:search`, `keywords[]` (EN/中文), `sortType:normal`, `maxItems:20` — pas de proxy | 3,99 $/1000 lignes + 0,005 $/run ⇒ **≈ 0,085 $/recherche** (20 résultats) |
+| Fiche produit | même actor | `mode:product_detail`, `offerIds[]` (id **ou** lien), `includeSkuDetails:true`, **`proxyConfiguration.useApifyProxy:true` obligatoire** | ⇒ **0,00899 $/fiche** |
+| Photo | `topapi/image-search-1688-api` (Server actor) | POST unique `https://topapi--image-search-1688-api.apify.actor/search` — `{imageBase64, maxResults:20, excludeAds:true}`, **corps ≤ 1 Mo** | 0,20 $/1000 résultats ⇒ **≈ 0,004 $/photo**, gratuit si 0 résultat |
+
+### Ce qui change (et ce qui ne change pas)
+
+| Élément | Changement |
+|---|---|
+| Coût affiché | celui du fournisseur **actif** : 0,085 $/recherche (au lieu de 0,0143 $), photo 0,004 $ |
+| Ligne « via … » | `via {provider}` depuis la charge utile — plus de nom gravé en dur |
+| Codes d'erreur | prévendeur réel (`APIFY_*`) traduit par les **mêmes phrases honnêtes** `sbase.err.*` |
+| Fiche produit | porte désormais `weightKg` (`variants[].weightGrams`, documenté) : le fret du moteur de prix utilise le **vrai poids** au lieu du poids de catégorie |
+| Photo | part en **base64** vers le Server actor : plus de publication publique ni de sonde réseau ; le garde-fou gratuit devient **local** (décodage + compression dégradée sous la limite 1 Mo documentée, refus 413 avant tout appel payant) |
+| Détail (timeout) | la fiche attend jusqu'à 110 s côté app : la lecture de la page 1688 est documentée 15–90 s par produit |
+| Cache & quotas | inchangés (10 min, 30 recherches/10 min, 12 photos/10 min) ; la clé de cache **inclut le fournisseur** — aucune réponse SandBase ne peut être servie à un appel Apify |
+| UI | aucune modification : mêmes écrans, mêmes `SbaseItem`/`SbaseDetail` |
+
+### Ce qui reste à faire (commit 3, après vérification en direct)
+
+Suppression de SandBase : `src/sbase/client.ts`, `SANDBASE_*`, la publication de photo
+(`publishSbasePhoto`, `/photo/:token`, sonde, `SBASE_PUBLIC_URL`), les tests SandBase,
+et la purge des sections historiques de ce document.

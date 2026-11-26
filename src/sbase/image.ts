@@ -20,7 +20,7 @@ export const SBASE_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
 export class SbaseImageError extends Error {
   code: string;
   status: number;
-  /** كود المزوّد (SANDBASE_…) عندما يكون السبب من SandBase — للتشخيص. */
+  /** كود المزوّد (SANDBASE_… / APIFY_…) عندما يكون السبب من المزوّد — للتشخيص. */
   providerCode: string | null;
   constructor(code: string, message: string, status = 502, providerCode: string | null = null) {
     super(message);
@@ -56,7 +56,18 @@ const PROVIDER_FAILURES: Array<{ match: RegExp; code: string; status: number; me
   {
     match: /UNAUTHORIZED/,
     code: 'SBASE_IMAGE_PROVIDER_AUTH', status: 503,
-    message: 'SandBase رفضت مفتاح الخادم (401/403).',
+    message: 'المزوّد رفض مفتاح الخادم (401/403).',
+  },
+  {
+    // 26/11/2026 — مزوّد Apify: تنفيذ البحث فشل عنده (ok=false) — فشل معلن.
+    match: /APIFY_FAILED/,
+    code: 'SBASE_IMAGE_PROVIDER_REFUSED', status: 502,
+    message: 'بحث الصورة ما كمّلش عند المزوّد. جرّب مرة أخرى.',
+  },
+  {
+    match: /APIFY_HTTP|APIFY_NETWORK|APIFY_MALFORMED/,
+    code: 'SBASE_IMAGE_PROVIDER_DOWN', status: 502,
+    message: 'خدمة الصور موش متاحة توّا — جرّب بعد دقيقة.',
   },
   {
     match: /BALANCE/,
@@ -108,6 +119,15 @@ export function sbaseImageFailureFrom(error: unknown): SbaseImageError {
       400,
       providerCode,
     );
+  }
+  /*
+   * 26/11/2026 — مزوّد Apify: أكواد قناة الصورة المصوّرة مسبقاً (SBASE_IMAGE_*،
+   * مثال الرفض المحلي المجّاني SBASE_IMAGE_TOO_LARGE/413) تمرّ **كما هي** —
+   * حالتها الصحيحة وصلت من عندنا، وما يتعادش تفسيرها «صورة غالطة» ولا «مزوّد نازل».
+   */
+  const candidateStatus = (candidate as { status?: unknown }).status;
+  if (providerCode && providerCode.startsWith('SBASE_IMAGE_') && typeof candidateStatus === 'number') {
+    return new SbaseImageError(providerCode, providerMessage, candidateStatus, null);
   }
   for (const failure of PROVIDER_FAILURES) {
     if (providerCode && failure.match.test(providerCode)) {

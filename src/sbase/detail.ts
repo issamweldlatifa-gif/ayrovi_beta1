@@ -46,6 +46,12 @@ export interface SbaseDetail {
   specs: SbaseSpec[];
   /** «المقاسات والحركات»: مجموعة لكل بُعد (المقاس، اللون…). */
   variants: SbaseVariantGroup[];
+  /**
+   * وزن الحزمة كما أعلنه المصدر (kg) — يغذّي الشحن في **محرّك السعر** بدون أي
+   * تقدير من عندنا. null = المصدر ما نشرش وزناً (المحرّك يستعمل وزن التصنيف).
+   * Apify: `variants[].weightGrams` موثّق على صفحة الـactor (26/11/2026).
+   */
+  weightKg: number | null;
   /** حقول ما عطاهاش المصدر (variants/specs/description/images/price/…). */
   missing: string[];
 }
@@ -251,6 +257,18 @@ function import1688(root: Record<string, unknown>): {
   return { specs, variants, seller, amount, currency, availability, url };
 }
 
+/**
+ * وزن الحزمة من الحقول الموثّقة فقط: `weightGrams` (Apify، من variants أو
+ * علوي)، `packageDimensions.weightG`، `weightG`. الغياب = null — ما نقدّرش
+ * وزناً ولا نحوّلوه من حجم.
+ */
+function weightKgFrom(root: Record<string, unknown>): number | null {
+  const packageDimensions = isRecord(root.packageDimensions) ? root.packageDimensions : {};
+  const grams = [root.weightGrams, root.packageWeightGrams, root.packageWeightG, packageDimensions.weightG, root.weightG]
+    .find((value) => typeof value === 'number' && Number.isFinite(value) && value > 0);
+  return typeof grams === 'number' ? grams / 1000 : null;
+}
+
 /** يحوّل ردّ أي متجر إلى تفاصيل موحّدة، بلا اختراع. */
 export function extractDetail(data: unknown): SbaseDetail {
   const root = isRecord(data) ? data : {};
@@ -330,6 +348,7 @@ export function extractDetail(data: unknown): SbaseDetail {
     description: description ? description.slice(0, 2000) : null,
     specs,
     variants: variants.filter((group) => group.values.length > 0),
+    weightKg: weightKgFrom(root),
     missing: [],
   };
 

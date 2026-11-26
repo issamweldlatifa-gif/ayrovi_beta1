@@ -21,11 +21,22 @@ import {
   SBASE_IMAGE_SOURCE,
   describeSbaseSources,
   findSbaseSource,
+  sbaseDetailCostUsd,
+  sbaseSourceCostUsd,
   validateSbaseQuery,
+  type SbaseProviderId,
   type SbaseSourceDescriptor,
   type SbaseSupports,
 } from './descriptors';
 import { runSandbaseCall, runSandbaseSearch, sandbaseConfigured, SbaseError } from './client';
+import {
+  apifyConfigured,
+  apifyImageBase64,
+  apifyImageEndpoint,
+  runApifyDetail,
+  runApifySearch,
+  searchApifyByImage,
+} from './apify';
 import { extractProducts, missingFacets, type SbaseProduct } from './extract';
 import { extractDetail, type SbaseDetail } from './detail';
 import { normalizeUploadedImage } from '../services/imageValidation';
@@ -35,7 +46,6 @@ import {
   SbaseImageError,
   assertSbasePhotoReachable,
   sbaseImageFailureFrom,
-  sbaseImageReady,
   searchSbaseByImage,
 } from './image';
 
@@ -43,6 +53,29 @@ export const SBASE_CACHE_TTL_MS = 10 * 60_000;
 const SBASE_CACHE_MAX = 200;
 /** سقف عدد المتاجر في بحث واحد: كل متجر = نداء مدفوع. */
 export const SBASE_MAX_SOURCES_PER_SEARCH = 7;
+
+/**
+ * المزوّد النشيط: `SBASE_PROVIDER=apify` يفعّل مزوّد Apify (قرار المالك
+ * 26/11/2026)، وأي قيمة أخرى تُبقي SandBase — **التفعيل بمتغيّر البيئة** حتى
+ * لا يبقى التطبيق بلا مصدر لحظة، والحذف النهائي يأتي بعد التحقيق الحيّ فقط.
+ */
+export function activeSbaseProvider(): SbaseProviderId {
+  return String(process.env.SBASE_PROVIDER ?? '').trim().toLowerCase() === 'apify' ? 'apify' : 'sandbase';
+}
+
+function providerConfigured(provider: SbaseProviderId): boolean {
+  return provider === 'apify' ? apifyConfigured() : sandbaseConfigured();
+}
+
+function providerNotConfiguredCode(provider: SbaseProviderId): string {
+  return provider === 'apify' ? 'APIFY_NOT_CONFIGURED' : 'SANDBASE_NOT_CONFIGURED';
+}
+
+function providerNotConfiguredMessage(provider: SbaseProviderId): string {
+  return provider === 'apify'
+    ? 'S Base غير مفعّل: مفتاح Apify ما زال غير مضبوط على الخادم.'
+    : 'S Base غير مفعّل: مفتاح SandBase ما زال غير مضبوط على الخادم.';
+}
 
 interface DetailCacheEntry {
   detail: SbaseDetail;
@@ -149,12 +182,15 @@ export interface SbaseSearchPayload {
   groups: SbaseGroup[];
   count: number;
   missingFields: string[];
+  /** المزوّد اللي جاوب فعلاً (sandbase | apify) — الشاشة تعرضه بصدق. */
+  provider: SbaseProviderId;
   fetchedAt: string;
 }
 
 async function searchOneSource(
   source: SbaseSourceDescriptor,
   query: string,
+  provider: SbaseProviderId,
 ): Promise<SbaseGroup> {
   const base: SbaseGroupSource = {
     id: source.id,
@@ -162,18 +198,22 @@ async function searchOneSource(
     vendor: source.vendor,
     supports: source.supports,
   };
-  const cacheKey = `${source.id}|${query.toLowerCase()}`;
+  // المزوّد في مفتاح الكاش: نتيجة SandBase لا تُقدَّم أبداً لبحث Apify (والعكس).
+  const cacheKey = `${provider}|${source.id}|${query.toLowerCase()}`;
+  const costUsd = sbaseSourceCostUsd(source, provider);
   const hit = cache.get(cacheKey);
   if (hit && Date.now() - hit.at < SBASE_CACHE_TTL_MS) {
     return {
       source: base, status: hit.items.length > 0 ? 'ok' : 'empty', items: hit.items, count: hit.items.length,
-      durationMs: hit.durationMs, cached: true, async: hit.async, error: null, costUsd: source.costUsd,
+      durationMs: hit.durationMs, cached: true, async: hit.async, error: null, costUsd,
       billedPerResult: source.billedPerResult,
     };
   }
 
   try {
-    const run = await runSandbaseSearch(source, query, source.defaultMarket);
+    const run = provider === 'apify'
+      ? await runApifySearch(query)
+      : await runSandbaseSearch(source, query, source.defaultMarket);
     const items = extractProducts(run.data, { arrays: source.arrays, limit: 20 });
     const missingFields = items.length > 0 ? missingFacets(items) : [];
     remember(cacheKey, {
@@ -189,7 +229,7 @@ async function searchOneSource(
       cached: false,
       async: run.async,
       error: null,
-      costUsd: source.costUsd,
+      costUsd,
       billedPerResult: source.billedPerResult,
     };
   } catch (error) {
@@ -205,7 +245,7 @@ async function searchOneSource(
       cached: false,
       async: source.async,
       error: { code: failure.code, message: failure.message },
-      costUsd: source.costUsd,
+      costUsd,
       billedPerResult: source.billedPerResult,
     };
   }
@@ -233,31 +273,42 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
   /** Sur la fiche d'un produit, la ligne est seule : le transport local compte. */
   const estimateDetail = (detail: SbaseDetail): SbasePriceEstimate | null => estimateSbasePrice(
     options.getPricingRules?.() ?? null,
-    { amount: detail.amount, currency: detail.currency, title: detail.title ?? '', includeLocalDelivery: true },
+    {
+      amount: detail.amount, currency: detail.currency, title: detail.title ?? '', includeLocalDelivery: true,
+      // وزن الحزمة المعلن من المصدر يغذّي الشحن — غايب ⇒ وزن التصنيف، بلا اختراع.
+      ...(detail.weightKg ? { weightKg: detail.weightKg } : {}),
+    },
   );
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 1 } });
 
   router.get('/health', (_req, res) => {
+    const provider = activeSbaseProvider();
     res.json({
       success: true,
       data: {
-        provider: 'sandbase',
-        configured: sandbaseConfigured(),
-        image: sbaseImageReady(),
-        sources: describeSbaseSources({ configured: sandbaseConfigured() }).length,
+        provider,
+        configured: providerConfigured(provider),
+        image: providerConfigured(provider),
+        sources: describeSbaseSources({ configured: providerConfigured(provider), provider }).length,
       },
     });
   });
 
   router.get('/sources', (_req, res) => {
-    const configured = sandbaseConfigured();
+    const provider = activeSbaseProvider();
+    const configured = providerConfigured(provider);
     res.json({
       success: true,
       data: {
-        provider: 'sandbase',
+        provider,
         configured,
-        sources: describeSbaseSources({ configured }),
-        image: { ...SBASE_IMAGE_SOURCE, configured: sbaseImageReady() },
+        sources: describeSbaseSources({ configured, provider }),
+        image: {
+          ...SBASE_IMAGE_SOURCE,
+          // عند Apify: نقطة النهاية هي الـServer actor، والثمن المنشور عند Apify.
+          ...(provider === 'apify' ? { endpoint: apifyImageEndpoint(), costUsd: SBASE_IMAGE_SOURCE.apifyCostUsd } : {}),
+          configured: providerConfigured(provider),
+        },
       },
     });
   });
@@ -285,16 +336,17 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
     if (wanted.length === 0) {
       return res.status(400).json({ success: false, code: 'NO_SOURCE', error: 'اختار متجراً واحداً على الأقل.' });
     }
-    if (!sandbaseConfigured()) {
+    const provider = activeSbaseProvider();
+    if (!providerConfigured(provider)) {
       return res.status(503).json({
         success: false,
-        code: 'SANDBASE_NOT_CONFIGURED',
-        error: 'S Base غير مفعّل: مفتاح SandBase ما زال غير مضبوط على الخادم.',
+        code: providerNotConfiguredCode(provider),
+        error: providerNotConfiguredMessage(provider),
       });
     }
 
     const started = Date.now();
-    const groups = (await Promise.all(wanted.map((source) => searchOneSource(source, query))))
+    const groups = (await Promise.all(wanted.map((source) => searchOneSource(source, query, provider))))
       // Prix source + estimation TND (moteur de prix existant) sur CHAQUE ligne.
       .map((group) => ({ ...group, items: group.items.map((item) => ({ ...item, priceEstimate: estimate(item) })) }));
     const totalMs = Date.now() - started;
@@ -308,6 +360,7 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
       groups,
       count,
       missingFields: [...facets].sort(),
+      provider,
       fetchedAt: new Date().toISOString(),
     };
     return res.json({ success: true, data: payload });
@@ -336,25 +389,28 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
     const title = typeof body.title === 'string' ? body.title.trim().slice(0, 200) : '';
     const url = typeof body.url === 'string' ? body.url.trim().slice(0, 500) : null;
     const market = typeof body.market === 'string' ? body.market.trim().toLowerCase() : source.defaultMarket;
-    // 1688 تنشر نداء ثانياً بالرابط: بلا معرّف، نجرّبو `detail-by-url` بدل ما نرفضو.
-    const byUrl = source.detail.requiresId && !id && source.detail.byUrl && url
+    const provider = activeSbaseProvider();
+    // عند Apify: `offerIds` يقبل المعرّف **ولا الرابط** (موثّق) — بلا بدنيل منفصل.
+    const byUrl = provider === 'sandbase' && source.detail.requiresId && !id && source.detail.byUrl && url
       ? { endpoint: source.detail.byUrl.endpoint, body: source.detail.byUrl.buildBody({ id, title, url, market }), costUsd: source.detail.byUrl.costUsd }
       : null;
-    if (source.detail.requiresId && !id && !byUrl) {
+    if (provider === 'apify' ? !id && !url : source.detail.requiresId && !id && !byUrl) {
       return res.status(400).json({ success: false, code: 'ITEM_ID_REQUIRED', error: 'هذا المتجر يحتاج معرّف المنتج (item ID) ولا رابطاً صالحاً.' });
     }
     if (!id && !title && !url) {
       return res.status(400).json({ success: false, code: 'ITEM_INPUT_REQUIRED', error: 'معرّف المنتج، عنوانو، ولا رابطو مطلوب.' });
     }
-    if (!sandbaseConfigured()) {
+    if (!providerConfigured(provider)) {
       return res.status(503).json({
         success: false,
-        code: 'SANDBASE_NOT_CONFIGURED',
-        error: 'S Base غير مفعّل: مفتاح SandBase ما زال غير مضبوط على الخادم.',
+        code: providerNotConfiguredCode(provider),
+        error: providerNotConfiguredMessage(provider),
       });
     }
 
-    const cacheKey = `${source.id}|${id ?? ''}|${title}`;
+    const detailCostUsd = sbaseDetailCostUsd(source, provider);
+    // المزوّد في مفتاح الكاش: بطاقة SandBase لا تُقدَّم أبداً على Apify (والعكس).
+    const cacheKey = `${provider}|${source.id}|${id ?? ''}|${url ?? ''}|${title}`;
     const hit = detailCache.get(cacheKey);
     if (hit && Date.now() - hit.at < SBASE_CACHE_TTL_MS) {
       return res.json({
@@ -362,18 +418,20 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
         data: {
           source: { id: source.id, label: source.label, vendor: source.vendor, supports: source.supports },
           detail: { ...hit.detail, priceEstimate: estimateDetail(hit.detail) }, durationMs: hit.durationMs, cached: true,
-          costUsd: source.detail.costUsd, billedPerResult: source.billedPerResult,
+          costUsd: detailCostUsd, billedPerResult: source.billedPerResult,
           fetchedAt: new Date().toISOString(),
         },
       });
     }
 
     try {
-      const run = await runSandbaseCall(
-        byUrl ? byUrl.endpoint : source.detail.endpoint,
-        byUrl ? byUrl.body : source.detail.buildBody({ id, title, url, market }),
-        { asyncHint: source.detail.async },
-      );
+      const run = provider === 'apify'
+        ? await runApifyDetail({ id, url })
+        : await runSandbaseCall(
+          byUrl ? byUrl.endpoint : source.detail.endpoint,
+          byUrl ? byUrl.body : source.detail.buildBody({ id, title, url, market }),
+          { asyncHint: source.detail.async },
+        );
       const detail = extractDetail(run.data);
       if (detailCache.size >= SBASE_CACHE_MAX) {
         const oldest = detailCache.keys().next().value;
@@ -387,7 +445,7 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
           detail: { ...detail, priceEstimate: estimateDetail(detail) },
           durationMs: run.durationMs,
           cached: false,
-          costUsd: byUrl ? byUrl.costUsd : source.detail.costUsd,
+          costUsd: provider === 'apify' ? detailCostUsd : (byUrl ? byUrl.costUsd : detailCostUsd),
           billedPerResult: source.billedPerResult,
           fetchedAt: new Date().toISOString(),
         },
@@ -422,26 +480,59 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
     if (!file?.buffer?.length) {
       return res.status(400).json({ success: false, code: 'SBASE_IMAGE_EMPTY', error: 'صورة مطلوبة.' });
     }
+    const provider = activeSbaseProvider();
     try {
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
       const started = Date.now();
-      const origin = publicOrigin(req);
-      if (!origin) {
-        throw new SbaseImageError(
-          'SBASE_IMAGE_UNKNOWN',
-          'ما نعرفوش أصل الخادم العمومي: اضبط SBASE_PUBLIC_URL باش 1688 تقرا الصورة.',
-          503,
-        );
+      let items: SbaseProduct[];
+      let durationMs = 0;
+      let endpoint: string;
+      let costUsd: number | undefined;
+      let photoExpiresAt: string | undefined;
+
+      if (provider === 'apify') {
+        /*
+         * Apify: الصورة تُرسل **base64** في request واحد للـServer actor — بلا
+         * نشر رابط عمومي ولا سَبر شبكي. السَبر المجّاني هنا محلي: فكّ الشفرة
+         * والتحقق والضغط التدرّجي تحت حدّ 1MB الموثّق، كل ذلك قبل أي نداء مدفوع
+         * (الرفض المحلي 413 ما يكلف حتى سنتاً).
+         */
+        const imageBase64 = await apifyImageBase64(normalized.buffer, normalized.mimeType);
+        const result = await searchApifyByImage(imageBase64);
+        items = extractProducts(result.data, {
+          arrays: [['items']],
+          limit: 20,
+          // كل نتيجة من هذا النداء = 1688، والنصّ يقولها بدل ما يخمّن متجراً.
+          storeFallback: '1688',
+        }).map((item) => ({ ...item, store: '1688' }));
+        durationMs = result.durationMs;
+        endpoint = apifyImageEndpoint();
+        costUsd = SBASE_IMAGE_SOURCE.apifyCostUsd;
+      } else {
+        const origin = publicOrigin(req);
+        if (!origin) {
+          throw new SbaseImageError(
+            'SBASE_IMAGE_UNKNOWN',
+            'ما نعرفوش أصل الخادم العمومي: اضبط SBASE_PUBLIC_URL باش 1688 تقرا الصورة.',
+            503,
+          );
+        }
+        const token = publishSbasePhoto(normalized.buffer, normalized.mimeType);
+        const photoUrl = `${origin}/api/sbase/photo/${token}`;
+        /*
+         * فحص مجّاني قبل النداء المدفوع: كنا ندفع `$0.014286` ونتلقى رفضاً
+         * للرابط، والمستعمل يقرا «جرّب صورة أخرى» — والحقيقة أن النشر عندنا
+         * هو اللي ما يتقراش. توّا الخطب يتسمّى قبل ما يتحاسب.
+         */
+        await assertSbasePhotoReachable(photoUrl, { fetchImpl: options.photoProbe });
+        const sandbase = await searchSbaseByImage(photoUrl);
+        items = sandbase.items;
+        durationMs = sandbase.durationMs;
+        endpoint = sandbase.endpoint;
+        costUsd = sandbase.costUsd;
+        photoExpiresAt = new Date(Date.now() + SBASE_PHOTO_TTL_MS).toISOString();
       }
-      const token = publishSbasePhoto(normalized.buffer, normalized.mimeType);
-      const photoUrl = `${origin}/api/sbase/photo/${token}`;
-      /*
-       * فحص مجّاني قبل النداء المدفوع: كنا ندفع `$0.014286` ونتلقى رفضاً
-       * للرابط، والمستعمل يقرا «جرّب صورة أخرى» — والحقيقة أن النشر عندنا
-       * هو اللي ما يتقراش. توّا الخطب يتسمّى قبل ما يتحاسب.
-       */
-      await assertSbasePhotoReachable(photoUrl, { fetchImpl: options.photoProbe });
-      const { items, durationMs, endpoint, costUsd } = await searchSbaseByImage(photoUrl);
+
       const stores = [...new Set(items.map((item) => item.store).filter((store): store is string => Boolean(store)))];
       const missing = new Set<string>();
       for (const item of items) for (const field of item.missing) missing.add(field);
@@ -449,7 +540,7 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
         success: true,
         data: {
           mode: 'image',
-          channel: { ...SBASE_IMAGE_SOURCE, configured: sbaseImageReady() },
+          channel: { ...SBASE_IMAGE_SOURCE, ...(provider === 'apify' ? { endpoint, costUsd } : {}), configured: providerConfigured(provider) },
           status: items.length > 0 ? 'ok' : 'empty',
           items: items.map((item) => ({ ...item, priceEstimate: estimate(item) })),
           count: items.length,
@@ -459,8 +550,9 @@ export function createSbaseRouter(options: SbaseRouterOptions = {}): Router {
           durationMs,
           endpoint,
           costUsd,
-          /** رابط الصورة المؤقّت (10 دقائق) — للتشخيص، يتنحّى وحدو. */
-          photoExpiresAt: new Date(Date.now() + SBASE_PHOTO_TTL_MS).toISOString(),
+          /** رابط الصورة المؤقّت (10 دقائق) — للتشخيص، يتنحّى وحدو (SandBase فقط). */
+          ...(photoExpiresAt ? { photoExpiresAt } : {}),
+          provider,
           totalMs: Date.now() - started,
           fetchedAt: new Date().toISOString(),
         },

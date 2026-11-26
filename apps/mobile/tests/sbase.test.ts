@@ -80,6 +80,18 @@ describe('S Base — un échec dit ce qui a échoué', () => {
     expect(failureMessageKey(' sb_base_whatever ')).toBeNull();
     expect(failureMessageKey(null)).toBeNull();
   });
+
+  test('codes Apify traduits par les mêmes phrases honnêtes (migration 26/11/2026)', () => {
+    expect(failureMessageKey('APIFY_NOT_CONFIGURED')).toBe('sbase.err.notConfigured');
+    expect(failureMessageKey('APIFY_UNAUTHORIZED')).toBe('sbase.err.unauthorized');
+    expect(failureMessageKey('APIFY_BALANCE')).toBe('sbase.err.balance');
+    expect(failureMessageKey('APIFY_RATE_LIMIT')).toBe('sbase.err.rateLimit');
+    expect(failureMessageKey('APIFY_TIMEOUT')).toBe('sbase.err.timeout');
+    expect(failureMessageKey('APIFY_FAILED')).toBe('sbase.err.failed');
+    expect(failureMessageKey('APIFY_EMPTY')).toBe('sbase.err.empty');
+    expect(failureMessageKey('APIFY_NETWORK')).toBe('sbase.err.network');
+    expect(failureMessageKey('APIFY_MALFORMED')).toBe('sbase.err.malformed');
+  });
 });
 
 describe('S Base — prix rendu en Tunisie', () => {
