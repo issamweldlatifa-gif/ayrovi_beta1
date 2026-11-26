@@ -64,6 +64,12 @@ dégradée sous la limite documentée (corps ≤ 1 Mo) ; au-delà, refus `413`
 **avant tout appel payant**. 0 résultat = cas normal **gratuit** chez le
 fournisseur — affiché « empty », jamais transformé en panne.
 
+**Latence mesurée en direct (26/11/2026, serveur du propriétaire)** : photo
+31 s, recherche par mot-clé ≈ 42 s — les budgets ont été alignés sur la réalité
+(recherche 90 s, photo 75 s côté serveur ; 100 s / 85 s côté app) : avant, des
+appels **réussis** mais lents étaient coupés en `APIFY_TIMEOUT` pendant que le
+run continuait et se facturait chez le fournisseur.
+
 ## 4. Matrice de capacités
 
 | Capacité | 1688 (Apify) | Canal photo |

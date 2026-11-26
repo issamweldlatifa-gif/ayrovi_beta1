@@ -45,13 +45,15 @@ export const APIFY_DEFAULT_1688_ACTOR = 'sourabhbgp~1688-scraper';
 export const APIFY_DEFAULT_IMAGE_ACTOR = 'topapi~image-search-1688-api';
 
 /**
- * الأزمنة: البحث بلا proxy سريع (30 ثانية كالسقف السابق)؛ تفاصيل المنتج تقرأ
- * صفحة 1688 (15–90 ثانية للمنتج حسب الـREADME) فسقفها أوسع؛ الصورة Server
- * actor (request واحد، نحو 4–20 ثانية).
+ * الأزمنة — مضبوطة على **القياس الحيّ** لا على التخمين (26/11/2026، خادم المالك):
+ * صورة = 31 ثانية فعلياً، وبحث بالكلمة قارب 42 ثانية — السقوف القديمة (30/40 ثانية)
+ * كانت تقطع نداءات **ناجحة** بينما الـrun عند المزوّد يكمل ويُحتسب. تفاصيل المنتج
+ * تقرأ صفحة 1688 (15–90 ثانية للمنتج حسب الـREADME) فسقفها أوسع أصلاً.
+ * تجاوز السقف يبقى APIFY_TIMEOUT صريحاً — الفشل يُقال، ولا يُتنكّر «لا نتائج».
  */
-export const APIFY_TOTAL_TIMEOUT_MS = 30_000;
+export const APIFY_TOTAL_TIMEOUT_MS = 90_000;
 export const APIFY_DETAIL_TIMEOUT_MS = 100_000;
-export const APIFY_IMAGE_TIMEOUT_MS = 40_000;
+export const APIFY_IMAGE_TIMEOUT_MS = 75_000;
 export const APIFY_POLL_INTERVAL_MS = 1_000;
 
 /** أثمنة منشورة على صفحات Apify (قُرأت 2026‑11‑26) — للمعلومة، موش للفاتورة. */

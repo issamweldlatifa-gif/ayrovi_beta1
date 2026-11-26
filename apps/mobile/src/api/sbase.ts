@@ -204,8 +204,8 @@ export async function searchSbase(
   return apiSendData<SbaseSearchPayload>('POST', '/api/sbase/search', {
     ...options,
     body: { q: input.q, sources: input.sources },
-    // N متجر بالتوازي، أبطأهم قد يصل 30 ثانية (run-based عند المزوّد).
-    timeoutMs: options?.timeoutMs ?? 35_000,
+    // run-based عند المزوّد: قياس حيّ 26/11/2026 قارب 42 ثانية، وسقف الخادم 90 ثانية.
+    timeoutMs: options?.timeoutMs ?? 100_000,
   });
 }
 
@@ -215,7 +215,8 @@ export function searchSbaseImage(
   options?: RequestOptions,
 ): Promise<SbaseImagePayload> {
   return apiUploadFileData<SbaseImagePayload>('/api/sbase/image', 'image', file, {
-    timeoutMs: options?.timeoutMs ?? 45_000,
+    // قياس حيّ 26/11/2026: 31 ثانية فعلياً — سقف الخادم 75 ثانية، وننتظرها بصدق.
+    timeoutMs: options?.timeoutMs ?? 85_000,
     signal: options?.signal,
   });
 }
