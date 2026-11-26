@@ -1,26 +1,23 @@
 /**
- * S Base — البحث بالصورة. **من 1688 نفسها، بلا SerpApi.**
+ * S Base — قناة الصورة: **كل فشل بكوده وحالتو الحقيقية**.
  *
- * قرار المالك (26/11/2026): «بحث بالصورة لا علاقة له بـ SerpApi». قبل، هذي
- * القناة كانت تمرّ من Google Lens عبر SerpApi: مفتاح ثانٍ، فاتورة ثانية،
- * quota ينفد، وأسواق أجنبية على نتيجة متجرين صينيين. توّا:
+ * التاريخ (26/11/2026): القناة مرّت من SerpApi/Google Lens (رابط عمومي وسَبر
+ * شبكي)، وتوّا من **Apify** (Server actor، base64 في POST واحد — بلا نشر ولا سَبر). الموحّد عبر كل العهود: خطأ المزوّد **ما يتفوترش**
+ * «ما فماش نتائج» وما يتلبسش «صورة غالطة» — الكود يحمل السبب والحالة تختار
+ * سلوك الشاشة، وكود المزوّد يُعاد للتشخيص من التطبيق بلا سجلّات خادم.
  *
- *   صورة المستعمل → خادمنا ينشرها في رابط عمومي مؤقّت → 1688 تجيب المتشابهات.
- *
- * علاش رابط عمومي: `/v1/api/1688/search/cross-border-by-image` ما تقبلش ملفاً،
- * تقبل `imgUrl` (صورة على الأنترنت). لهذا الصورة تتخزّن في الذاكرة عندنا
- * 10 دقائق، برمز عشوائي، وتتحوّل JPEG قبل ما تنشر — والـTTL يكفي لنداء 1688.
- *
- * الصدق: كل نتيجة تحمل 1688 وحدها، الثمن بالـCNY كما عطاه المصدر، وMOQ كما هو.
- * ما نضيفوش سعراً، ما نحوّلوش عملة، وما نخترعوش نتيجة إذا الردّ فارغ.
+ * الأكواد: SBASE_IMAGE_EMPTY 400 · SBASE_IMAGE_INVALID 400 (الصورة لا تُفكّ —
+ * الغلطة العميلية الوحيدة) · SBASE_IMAGE_TOO_LARGE 413 (رفض محلي مجّاني تحت
+ * حدّ الـ1MB الموثّق) · SBASE_IMAGE_TIMEOUT 504 · SBASE_IMAGE_RATE_LIMITED 429 ·
+ * SBASE_IMAGE_PROVIDER_AUTH 503 · SBASE_IMAGE_BALANCE 402 ·
+ * SBASE_IMAGE_PROVIDER_REFUSED 502 · SBASE_IMAGE_PROVIDER_DOWN 502 ·
+ * SBASE_IMAGE_NOT_CONFIGURED 503 · SBASE_IMAGE_UNKNOWN 502.
  */
-
-export const SBASE_IMAGE_MAX_BYTES = 8 * 1024 * 1024;
 
 export class SbaseImageError extends Error {
   code: string;
   status: number;
-  /** كود المزوّد (SANDBASE_… / APIFY_…) عندما يكون السبب من المزوّد — للتشخيص. */
+  /** كود المزوّد (APIFY_…) عندما يكون السبب من المزوّد — للتشخيص. */
   providerCode: string | null;
   constructor(code: string, message: string, status = 502, providerCode: string | null = null) {
     super(message);
@@ -32,16 +29,16 @@ export class SbaseImageError extends Error {
 }
 
 /**
- * خطأ المزوّد → خطأ S Base **بمعناه الحقيقي**.
+ * خطأ المزوّد → خطأ قناة الصورة **بمعناه الحقيقي**.
  *
- * 26/11/2026: كل فشل كان يخرج `SBASE_IMAGE_INVALID` + 400، أي **يلوم صورة
- * المستخدم** على عطب خارجي. توّا كل سبب بكودو وحالتو، وكود المزوّد محفوظ.
+ * 26/11/2026: كل فشل كان يخرج `SBASE_IMAGE_INVALID` + 400، أي يلوم صورة
+ * المستخدم على عطب خارجي. توّا كل سبب بكودو وحالتو، وكود المزوّد محفوظ.
  */
 const PROVIDER_FAILURES: Array<{ match: RegExp; code: string; status: number; message: string }> = [
   {
     match: /NOT_CONFIGURED/,
     code: 'SBASE_IMAGE_NOT_CONFIGURED', status: 503,
-    message: 'مفتاح SandBase موش مضبوط على الخادم: البحث بالصورة موقوف.',
+    message: 'مفتاح Apify موش مضبوط على الخادم: البحث بالصورة موقوف.',
   },
   {
     match: /TIMEOUT/,
@@ -51,7 +48,7 @@ const PROVIDER_FAILURES: Array<{ match: RegExp; code: string; status: number; me
   {
     match: /RATE_LIMIT/,
     code: 'SBASE_IMAGE_RATE_LIMITED', status: 429,
-    message: 'SandBase طلبت تخفيف النداءات (429). استنّى دقيقة.',
+    message: 'المزوّد طلبت تخفيف النداءات (429). استنّى دقيقة.',
   },
   {
     match: /UNAUTHORIZED/,
@@ -72,15 +69,12 @@ const PROVIDER_FAILURES: Array<{ match: RegExp; code: string; status: number; me
   {
     match: /BALANCE/,
     code: 'SBASE_IMAGE_BALANCE', status: 402,
-    message: 'رصيد SandBase ما يكفيش لبحث بالصورة.',
-  },
-  {
-    // SandBase رجّعت 4xx على `imgUrl`: ما نجحتش تجيب الصورة من رابطنا.
-    match: /HTTP_4\d\d/,
-    code: 'SBASE_IMAGE_URL_REJECTED', status: 502,
-    message: '1688 ما نجحتش تقرا رابط الصورة اللي نشرناه. جرّب صورة أخرى.',
+    message: 'رصيد المزوّد ما يكفيش لبحث بالصورة.',
   },
 ];
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export function sbaseImageFailureFrom(error: unknown): SbaseImageError {
   if (error instanceof SbaseImageError) return error;
@@ -88,25 +82,15 @@ export function sbaseImageFailureFrom(error: unknown): SbaseImageError {
   const providerCode = String(candidate.code ?? '').trim() || null;
   const providerMessage = String(candidate.message ?? '').trim();
   /*
-   * 26/11/2026 — « parameter validation failed: /page: expected integer, but got
-   * string » : c'était NOTRE requête qui était mal formée (page envoyé en
-   * texte), et l'écran l'affichait comme « 1688 n'a pas pu lire l'image ».
-   * Une faute de notre côté doit se nommer comme telle, jamais comme un défaut
-   * de la photo de l'utilisateur.
+   * 26/11/2026 — « parameter validation failed… » : c'était NOTRE requête qui
+   * était mal formée, et l'écran l'affichait comme « 1688 n'a pas pu lire
+   * l'image ». Une faute de notre côté doit se nommer comme telle, jamais
+   * comme un défaut de la photo de l'utilisateur.
    */
   if (/parameter validation|expected integer|expected (string|number|boolean)|unexpected/i.test(providerMessage)) {
     return new SbaseImageError(
       'SBASE_IMAGE_REQUEST_INVALID',
       'الطلب اللي بعثناه لـ1688 غير صالح — خطأ من عندنا، ماشي في صورتك.',
-      502,
-      providerCode,
-    );
-  }
-  // `SANDBASE_HTTP` perd le statut du fournisseur : il reste dans le message.
-  if (providerCode === 'SANDBASE_HTTP' && /HTTP 4\d\d/.test(providerMessage)) {
-    return new SbaseImageError(
-      'SBASE_IMAGE_URL_REJECTED',
-      '1688 ما نجحتش تقرا رابط الصورة اللي نشرناه. جرّب صورة أخرى.',
       502,
       providerCode,
     );
@@ -143,104 +127,4 @@ export function sbaseImageFailureFrom(error: unknown): SbaseImageError {
     502,
     providerCode,
   );
-}
-
-import { SBASE_IMAGE_SOURCE, findSbaseSource } from './descriptors';
-import { runSandbaseCall, sandbaseConfigured } from './client';
-import { extractProducts, type SbaseProduct } from './extract';
-
-/** القناة جاهزة = مفتاح SandBase موجود (ما فماش مفتاح ثانٍ، ما فماش SerpApi). */
-export function sbaseImageReady(): boolean {
-  return sandbaseConfigured();
-}
-
-export interface SbaseImageResult {
-  items: SbaseProduct[];
-  durationMs: number;
-  endpoint: string;
-  costUsd: number;
-}
-
-/**
- * فحص قبل الدفع: الصورة اللي نشرناها **مقروءة فعلاً من الأنترنت**؟
- *
- * علاش (26/11/2026): في التجربة الحيّة رجّعت 1688 رفضاً للرابط، والتطبيق قال
- * «جرّب صورة أخرى» — أي لام المستعمل على عطب في نشرنا. هذا الفحص يسبق النداء
- * المدفوع: إذا رابطنا ما يتقراش، الخطب في **خادمنا**، والكلفة ما تتصرفش
- * (`$0.014286` كان يتخلّص حتى في النداء الفاشل من جهتنا).
- *
- * ما نصلّحوش الرابط: كان الخادم يخدم `SBASE_PUBLIC_URL` غالطة، الفحص يقولها
- * بالكود بدل ما نخمّنو من رسالة المزوّد.
- */
-export async function assertSbasePhotoReachable(
-  imageUrl: string,
-  options: { timeoutMs?: number; fetchImpl?: typeof fetch } = {},
-): Promise<void> {
-  const doFetch = options.fetchImpl ?? fetch;
-  const timeoutMs = options.timeoutMs ?? 6_000;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await doFetch(imageUrl, {
-      method: 'GET',
-      headers: { Accept: 'image/*', 'User-Agent': 'ZAYROVI-SBase/1.0' },
-      signal: controller.signal,
-    });
-    const type = String(response.headers.get('content-type') || '').toLowerCase();
-    if (!response.ok || !type.startsWith('image/')) {
-      throw new SbaseImageError(
-        'SBASE_PHOTO_UNREACHABLE',
-        `رابط الصورة اللي نشرناه ما يتقراش (HTTP ${response.status}).`,
-        503,
-      );
-    }
-  } catch (error) {
-    if (error instanceof SbaseImageError) throw error;
-    const name = (error as { name?: string })?.name;
-    throw new SbaseImageError(
-      'SBASE_PHOTO_UNREACHABLE',
-      name === 'AbortError' || name === 'TimeoutError'
-        ? 'رابط الصورة اللي نشرناه ما جاوبش في الوقت المسموح.'
-        : 'رابط الصورة اللي نشرناه ما يتوصلش من الأنترنت — اضبط SBASE_PUBLIC_URL.',
-      503,
-    );
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-/**
- * رابط صورة عمومي → منتجات 1688 متشابهة.
- *
- * `imageUrl` لازم يكون **متاح للأنترنت**: 1688 تجيبو بنفسها. الخادم ينشر
- * الصورة المؤقّتة (شوف `publishSbasePhoto` في routes.ts) ويعطينا الرابط.
- */
-export async function searchSbaseByImage(imageUrl: string): Promise<SbaseImageResult> {
-  if (!sbaseImageReady()) {
-    throw new SbaseImageError(
-      'SBASE_IMAGE_NOT_CONFIGURED',
-      'مفتاح SandBase موش مضبوط على الخادم: البحث بالصورة موقوف.',
-      503,
-    );
-  }
-  const url = String(imageUrl ?? '').trim();
-  if (!/^https?:\/\//i.test(url)) {
-    // ما نوعدوش بمستحيل: بلا رابط عمومي ما فماش بحث بالصورة.
-    throw new SbaseImageError('SBASE_IMAGE_UNKNOWN', 'رابط الصورة موش صالح للبحث.', 502);
-  }
-  const source = findSbaseSource(SBASE_IMAGE_SOURCE.id);
-  const descriptor = source?.image;
-  if (!descriptor) {
-    throw new SbaseImageError('SBASE_IMAGE_NOT_CONFIGURED', 'هذا المتجر ما عندوش بحث بالصورة.', 503);
-  }
-  const run = await runSandbaseCall(descriptor.endpoint, descriptor.buildBody(url), { asyncHint: false });
-  const items = extractProducts(run.data, {
-    arrays: [['items']],
-    limit: 20,
-    // كل نتيجة من هذا النداء = 1688، والنصّ يقولها بدل ما يخمّن متجراً.
-    storeFallback: source.label,
-    // Tous ces résultats viennent de 1688 : le vendeur reste dans `seller`.
-  }).map((item) => ({ ...item, store: source.label }));
-  // بلا نتائج = حالة عادية (`empty` في المسار)، موش خطأ.
-  return { items, durationMs: run.durationMs, endpoint: descriptor.endpoint, costUsd: descriptor.costUsd };
 }

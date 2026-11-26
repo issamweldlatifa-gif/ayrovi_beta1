@@ -1,7 +1,7 @@
 /**
  * S Base — عميل الـAPI (المزوّد عبر خادمنا).
  *
- * التطبيق ما يعرفش المفتاح ولا نقاط نهاية المزوّد (SandBase ولا Apify):
+ * التطبيق ما يعرفش المفتاح ولا نقاط نهاية المزوّد (Apify):
  * كل شيء يمرّ من `/api/sbase/*`، والخادم هو اللي يقرّر المزوّد (SBASE_PROVIDER).
  *
  * عقد البحث: **شريط واحد، مجموعات منفصلة**. كل متجر يرجّع مجموعتو بزمنها
@@ -185,7 +185,7 @@ export interface SbaseImagePayload {
   /** L'endpoint 1688 réellement appelé + son prix publié. */
   endpoint?: string;
   costUsd?: number;
-  /** المزوّد اللي جاوب فعلاً (sandbase | apify). */
+  /** المزوّد اللي جاوب فعلاً — Apify هو الوحيد منذ 26/11/2026. */
   provider?: string;
   /** Fin de vie du lien photo temporaire (10 min). */
   photoExpiresAt?: string;

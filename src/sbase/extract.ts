@@ -1,8 +1,7 @@
 /**
- * S Base — استخراج المنتجات من ردود SandBase.
+ * S Base — استخراج المنتجات من ردود المصدر.
  *
- * القاعدة الحاكمة: كل منصّة (Amazon, AliExpress, eBay…) ترجّع **شكلها الأصلي**،
- * وSandBase ما توحّدش الحقول. لذلك هنا:
+ * القاعدة الحاكمة: كل منصّة ترجّع **شكلها الأصلي** وما توحّدش الحقول. لذلك هنا:
  *   1. مسار مفضّل معروف (مثال `products` لأمازون، `shopping_results` لـGoogle)؛
  *   2. وإلا بحث عميق عن أي كائن «يشبه منتجاً» (عنوان + سعر/صورة).
  *
@@ -221,7 +220,7 @@ function dedupe(products: SbaseProduct[]): SbaseProduct[] {
   return result;
 }
 
-/** يحوّل ردّ SandBase إلى قائمة منتجات موحّدة (بلا اختراع حقول). */
+/** يحوّل ردّ المصدر إلى قائمة منتجات موحّدة (بلا اختراع حقول). */
 export function extractProducts(data: unknown, options: ExtractOptions = {}): SbaseProduct[] {
   const limit = options.limit ?? 20;
   const preferred = options.arrays ?? [];

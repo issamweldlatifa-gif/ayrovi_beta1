@@ -1,18 +1,16 @@
 /**
- * S Base — recherche marchande (SandBase) + canal image (Google Lens).
+ * S Base — بحث 1688 عبر Apify (مزوّد واحد منذ 26/11/2026).
  *
- * Ce que ces tests protègent :
- *   1. la matrice de capacités reste HONNÊTE (les 7 endpoints SandBase sont
- *      « mots-clés » ; la recherche par image est un canal distinct, déclaré) ;
- *   2. le client gère l'enveloppe synchrone ET le mode run + polling ;
- *   3. `durationMs` est un temps réel mesuré, par boutique ;
- *   4. un barreau qui tombe (401, timeout) ne casse pas les autres : le groupe
- *      en erreur porte son code, les autres rendent leurs résultats ;
- *   5. aucune requête payante ne part sans clé, sans requête, ou sans boutique ;
- *   6. l'isolation : seule la recherche par image réutilise le service visuel
- *      existant (aucune réécriture de Z Lens) — et aucun fichier d'API/route.
+ * ما تحميه هذه الاختبارات:
+ *   1. الكتالوغ صادق: مصدر واحد (1688 عبر actor Apify)، والكلفة المنشورة تُقال؛
+ *   2. المزوّد يدير وضع run + polling، والصورة تمرّ في POST واحد بbase64 —
+ *      بلا token في الرابط ولا في الجسم؛
+ *   3. كل فشل بكوده الحقيقي — ولا فشل يتلبس «ما فماش نتائج» ولا «صورة غالطة»؛
+ *   4. بلا مفتاح: رفض 503 قبل أي نداء مدفوع؛
+ *   5. الكلفة/الزمن لكل متجر، والكاش 10 دقائق، والتقدير من محرّك السعر المنزلي؛
+ *   6. العزل: لا aywebs، لا zayrovix، ولا أثر لأي مزوّد قديم في src.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import express from 'express';
@@ -26,7 +24,6 @@ import {
   findSbaseSource,
   validateSbaseQuery,
 } from '../src/sbase/descriptors';
-import { SbaseError, runSandbaseCall, runSandbaseSearch, sandbaseConfigured } from '../src/sbase/client';
 import {
   APIFY_DETAIL_COST_USD,
   APIFY_IMAGE_BASE64_BUDGET,
@@ -44,7 +41,7 @@ import { extractDetail } from '../src/sbase/detail';
 import { clearSbaseCache, createSbaseRouter } from '../src/sbase/routes';
 import { sbaseImageFailureFrom } from '../src/sbase/image';
 
-const KEY = 'sb_test_key';
+const APIFY_KEY = 'test_apify_token';
 
 // Vraie petite image PNG générée localement : `sharp` la valide sans réseau.
 let PHOTO: Buffer = Buffer.alloc(0);
@@ -74,138 +71,153 @@ const RULES = {
   updatedAt: new Date().toISOString(),
 };
 
-function app(options: { pricingRules?: unknown; photoProbe?: typeof fetch } = {}) {
+function app(options: { pricingRules?: unknown } = {}) {
   const instance = express();
   instance.use(express.json());
   instance.use('/api/sbase', createSbaseRouter({
     getPricingRules: () => (options.pricingRules === undefined ? (RULES as never) : (options.pricingRules as never)),
-    /*
-     * La sonde de publication est gratuite et locale : on la remplace pour que
-     * les stubs `fetch` (qui simulent SandBase) ne soient pas consommés deux fois.
-     * Son comportement réel est couvert juste en dessous.
-     */
-    photoProbe: options.photoProbe ?? (async () => new Response(Buffer.alloc(0), {
-      status: 200,
-      headers: { 'content-type': 'image/jpeg' },
-    })),
   }));
   return instance;
 }
 
-const envelope = (data: unknown) => ({ status: 'completed', id: 'run_1', outputs: [{ data }] });
-
-/** Réponse par boutique : l'URL contient l'endpoint de la plateforme. */
-function stubSources(handlers: Record<string, () => Response>) {
+/** جدولة Apify: POST runs → GET actor-runs → GET datasets/items (+ الـServer actor للصورة). */
+function stubApify(handlers: Array<(url: string, init?: RequestInit) => Response | null>) {
+  const calls: Array<{ url: string; init?: RequestInit }> = [];
   vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
-    for (const [needle, handler] of Object.entries(handlers)) if (String(url).includes(needle)) return handler();
-    return new Response(JSON.stringify(envelope({ products: [] })), { status: 200, headers: init ? undefined : undefined });
+    calls.push({ url: String(url), init });
+    for (const handler of handlers) {
+      const response = handler(String(url), init);
+      if (response) return response;
+    }
+    return new Response(JSON.stringify({ error: { type: 'unexpected-url' } }), { status: 500 });
   }));
+  return calls;
 }
 
-/** Réponse 1688 telle que documentée (cross-border : titres traduits + MOQ). */
-const devOk = () => new Response(JSON.stringify(envelope({
-  items: [{
-    item_id: 990347938140, title: 'Coque téléphone', price: '2.10', currency: 'CNY',
-    img: 'https://cbu01.alicdn.com/a.jpg',
-    product_url: 'https://detail.1688.com/offer/990347938140.html', moq: '1',
-    shop_info: { company_name: 'Shenzhen X' },
+const runQueued = () => new Response(JSON.stringify({
+  data: { id: 'run_9', actId: 'act_1', status: 'READY', defaultDatasetId: 'ds_1' },
+}), { status: 200 });
+
+const runSucceeded = () => new Response(JSON.stringify({
+  data: { id: 'run_9', status: 'SUCCEEDED', defaultDatasetId: 'ds_1' },
+}), { status: 200 });
+
+const apifyFlow = (dataset: unknown) => [
+  (url: string) => (url.includes('/v2/acts/sourabhbgp~1688-scraper/runs')
+    ? new Response(JSON.stringify({ data: { id: 'run_9', status: 'READY', defaultDatasetId: 'ds_1' } }), { status: 200 })
+    : null),
+  (url: string) => (url.includes('/v2/actor-runs/run_9')
+    ? new Response(JSON.stringify({ data: { id: 'run_9', status: 'SUCCEEDED', defaultDatasetId: 'ds_1' } }), { status: 200 })
+    : null),
+  (url: string) => (url.includes('/v2/datasets/ds_1/items') ? new Response(JSON.stringify(dataset), { status: 200 }) : null),
+];
+
+/** صفّ بحث حقيقي كما ينشره README الـactor (قُريء 26/11/2026). */
+const searchRow = {
+  offerId: '1089329678023',
+  title: 'New macaron bowl lid insulated tumbler - large capacity water bottle',
+  priceUsd: 2.38,
+  priceCny: 15.5,
+  minOrderQuantity: 1,
+  sales: '500+ sold',
+  salesCount: 500,
+  supplierName: '义乌市乌桨五金制品厂',
+  supplierYearsOnPlatform: 1,
+  starLevel: 5,
+  sellingPoints: ['Ships within 5h'],
+  isAd: false,
+  url: 'https://detail.1688.com/offer/1089329678023.html',
+  images: ['https://cbu01.alicdn.com/img/ibank/a.jpg'],
+};
+
+/** بطاقة منتج حقيقية كما ينشرها `product_detail` (الوزن يغذّي الشحن). */
+const detailRow = {
+  offerId: '928596422357',
+  title: 'Magnetic Phone Case Matte Version',
+  priceCny: 4.5,
+  priceRangeCny: '3.00-4.50',
+  priceTiers: [{ minQuantity: 1, priceCny: 4.5 }, { minQuantity: 300, priceCny: 4 }],
+  currency: 'CNY',
+  minOrderQuantity: 1,
+  stock: 730371,
+  specs: { Brand: 'Hong xing', Material: 'Silicone' },
+  supplierName: '深圳市罗湖区洪星电子商行',
+  url: 'https://detail.1688.com/offer/928596422357.html',
+  variants: [{
+    skuId: '6090121414768',
+    specAttributes: 'Pink1 > iPhone17',
+    priceCny: 4.5,
+    stock: 5217,
+    imageUrl: 'https://cbu01.alicdn.com/img/ibank/v.jpg',
+    weightGrams: 45,
   }],
-})), { status: 200 });
+};
 
 beforeEach(() => {
-  process.env.SANDBASE_API_KEY = KEY;
+  process.env.APIFY_TOKEN = APIFY_KEY;
+  delete process.env.APIFY_1688_ACTOR;
+  delete process.env.APIFY_IMAGE_ACTOR;
+  delete process.env.SBASE_PROVIDER;
   clearSbaseCache();
 });
 
 afterEach(() => {
-  delete process.env.SANDBASE_API_KEY;
+  delete process.env.APIFY_TOKEN;
+  delete process.env.APIFY_1688_ACTOR;
+  delete process.env.APIFY_IMAGE_ACTOR;
+  delete process.env.SBASE_PROVIDER;
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
 
 describe('S Base — catalogue', () => {
-  /*
-   * Décision du 26/11/2026 : deux boutiques seulement (1688 + Alibaba.com), et
-   * la recherche par image vient de 1688 elle-même — plus de SerpApi du tout.
-   */
-  test('une seule boutique : 1688 (Alibaba.com retirée)', () => {
+  test('مصدر واحد: 1688 عبر actor Apify — لا Alibaba ولا Amazon ولا Lens', () => {
     expect(SBASE_SOURCES.map((source) => source.id)).toEqual(['1688']);
     expect(findSbaseSource('alibaba')).toBeNull();
-    for (const source of SBASE_SOURCES) {
-      expect(source.endpoint.startsWith('/v1/api/')).toBe(true);
-      expect(source.supports.keyword).toBe(true);
-      expect(source.supports.barcode).toBe(false);
-    }
     expect(findSbaseSource('amazon')).toBeNull();
     expect(findSbaseSource('google-lens')).toBeNull();
-  });
-
-  test('les capacités suivent la documentation, pas le désir', () => {
-    const dev = findSbaseSource('1688')!;
-    // 1688 : image, détails, module par URL, MOQ — tout est documenté.
-    expect(dev.supports).toMatchObject({ image: true, details: true, url: true, variants: true });
-    expect(dev.image?.endpoint).toBe('/v1/api/1688/search/cross-border-by-image');
-    expect(dev.detail?.endpoint).toBe('/v1/api/1688/item/detail');
-    expect(dev.detail?.byUrl?.endpoint).toBe('/v1/api/1688/item/detail-by-url');
-    // Alibaba.com est retirée : aucun endpoint image ni détail n'était publié.
-    expect(SBASE_SOURCES.some((source) => source.id === 'alibaba')).toBe(false);
-  });
-
-  test('la seule boutique part par défaut, et sa facture est dite', () => {
-    expect(SBASE_SOURCES.filter((source) => source.defaultEnabled).map((source) => source.id)).toEqual(['1688']);
-    expect(findSbaseSource('1688')).toMatchObject({ billedPerResult: false, costUsd: 0.014286 });
-  });
-
-  test('la recherche par image est celle de 1688, pas un service tiers', () => {
-    expect(SBASE_IMAGE_SOURCE.id).toBe('1688');
-    expect(SBASE_IMAGE_SOURCE.endpoint).toBe('/v1/api/1688/search/cross-border-by-image');
-    expect(SBASE_IMAGE_SOURCE.supports.image).toBe(true);
-    expect(SBASE_IMAGE_SOURCE.storeFromResults).toBe(false);
-  });
-
-  test('les bodies utilisent les paramètres documentés', () => {
-    expect(findSbaseSource('1688')?.buildBody('case', null))
-      // `page` عدد صحيح: النصّ كان يطيّح كل نداء (400 parameter validation).
-      .toMatchObject({ keyword: 'case', language: 'en', page: 1, pageSize: 20 });
-    expect(findSbaseSource('1688')?.image?.buildBody('https://x/y.jpg'))
-      .toMatchObject({ imgUrl: 'https://x/y.jpg', language: 'en' });
     expect(findSbaseSource('inconnu')).toBeNull();
+    for (const source of SBASE_SOURCES) {
+      expect(source.actor).toBe('sourabhbgp~1688-scraper');
+      expect(source.supports).toMatchObject({
+        keyword: true, url: true, image: true, details: true, variants: true,
+      });
+      expect(source.supports.barcode).toBe(false);
+      // استخراج الردّ يمشي على `items[]` المنشور.
+      expect(source.arrays).toEqual([['items']]);
+    }
   });
 
-  test('readiness est un état de configuration, et la requête est validée avant tout appel', () => {
+  test('الفاتورة المنشورة تُقال: بحث ≈0.0848$ · بطاقة ≈0.00899$ · صورة ≈0.004$', () => {
+    expect(SBASE_SOURCES.filter((source) => source.defaultEnabled).map((source) => source.id)).toEqual(['1688']);
+    const dev = findSbaseSource('1688')!;
+    expect(dev.billedPerResult).toBe(false);
+    expect(dev.costUsd).toBeCloseTo(0.0848, 5);
+    expect(dev.detail?.costUsd).toBeCloseTo(0.00899, 5);
+    // التفاصيل تقبل المعرّف ولا الرابط — بلا بدنيل منفصل (موثّق على الـactor).
+    expect(dev.detail?.requiresId).toBe(false);
+    expect(SBASE_IMAGE_SOURCE.costUsd).toBeCloseTo(0.004, 5);
+  });
+
+  test('قناة الصورة = Server actor (POST واحد بbase64) على 1688 نفسها', () => {
+    expect(SBASE_IMAGE_SOURCE.id).toBe('1688');
+    expect(SBASE_IMAGE_SOURCE.actor).toBe('topapi~image-search-1688-api');
+    expect(SBASE_IMAGE_SOURCE.store).toBe('1688');
+    expect(SBASE_IMAGE_SOURCE.storeFromResults).toBe(false);
+    expect(SBASE_IMAGE_SOURCE.supports.image).toBe(true);
+  });
+
+  test('readiness هو حالة المفتاح، والطلب يُتحقّق قبل أي نداء', () => {
     expect(describeSbaseSources({ configured: false }).every((source) => source.configured === false)).toBe(true);
+    expect(describeSbaseSources({ configured: true }).every((source) => source.configured === true)).toBe(true);
     expect(validateSbaseQuery('a')).toEqual({ error: expect.any(String) });
     expect(validateSbaseQuery('x'.repeat(91))).toEqual({ error: expect.any(String) });
     expect(validateSbaseQuery('  mini   traceur ')).toEqual({ query: 'mini traceur' });
   });
 });
 
-describe('S Base — extraction des produits', () => {
-  test('Amazon (`products[]`) : champs réels, aucun champ inventé', () => {
-    const items = extractProducts({
-      products: [{
-        asin: 'B0TEST', product_title: 'Casque Bluetooth', product_price: '89,99 €', currency: 'EUR',
-        product_url: 'https://www.amazon.fr/dp/B0TEST', product_photo: 'https://img/1.jpg',
-        product_star_rating: '4.5', product_num_ratings: 1200, delivery: 'Livraison gratuite',
-      }],
-    }, { arrays: [['products']] });
-    expect(items[0]).toMatchObject({
-      id: 'B0TEST', title: 'Casque Bluetooth', amount: 89.99, currency: 'EUR',
-      url: 'https://www.amazon.fr/dp/B0TEST', store: null, rating: 4.5, reviews: 1200,
-    });
-    expect(items[0].missing).toContain('store');
-  });
-
-  test('AliExpress (forme libre) : le parcours profond trouve les produits', () => {
-    const items = extractProducts({
-      result: { mods: { itemList: { content: [
-        { itemId: 1001, title: 'Coque iPhone', salePrice: 'TND 12,500', imageUrl: 'https://ae/1.jpg', detailUrl: 'https://ae/1' },
-      ] } } },
-    });
-    expect(items[0]).toMatchObject({ id: '1001', title: 'Coque iPhone', amount: 12.5, currency: 'TND' });
-  });
-
-  test('1688 cross-border : titre traduit, prix CNY, MOQ conservé', () => {
+describe('S Base — استخراج المنتجات', () => {
+  test('صفّ 1688: عنوان، سعر CNY، MOQ، البائع — بلا أي حقل مخترَع', () => {
     const items = extractProducts({
       items: [{
         item_id: 990347938140, title: 'Phone case', title_origin: '手机壳',
@@ -221,30 +233,39 @@ describe('S Base — extraction des produits', () => {
     expect(items[0].url).toBe('https://detail.1688.com/offer/990347938140.html');
   });
 
-  test('prix : formats FR/US/TN lus, jamais devinés', () => {
+  test('الأشكال الحرّة: المسار العميق يجد المنتجات أينما كانت', () => {
+    const items = extractProducts({
+      result: { mods: { itemList: { content: [
+        { itemId: 1001, title: 'Coque iPhone', salePrice: 'TND 12,500', imageUrl: 'https://ae/1.jpg', detailUrl: 'https://ae/1' },
+      ] } } },
+    });
+    expect(items[0]).toMatchObject({ id: '1001', title: 'Coque iPhone', amount: 12.5, currency: 'TND' });
+  });
+
+  test('الأثمنة: صيغ FR/US/TN تُقرأ، ولا شيء يُخمَّن', () => {
     expect(parsePriceText('1 234,56 €')).toEqual({ amount: 1234.56, currency: 'EUR' });
     expect(parsePriceText('$1,549.00')).toEqual({ amount: 1549, currency: 'USD' });
-    // «45,000 TND» = 45 dinars et 000 millimes : la 3e décimale est réelle en Tunisie.
+    // «45,000 TND» = 45 دينار و000 مليم: الخانة الثالثة حقيقية في تونس.
     expect(parsePriceText('TND 45,000')).toEqual({ amount: 45, currency: 'TND' });
     expect(parsePriceText('')).toEqual({ amount: null, currency: null });
   });
 
-  test('les facettes manquantes sont nommées', () => {
+  test('الحقول الناقصة تُسمّى، ولا صفّ وهمي يُصنع', () => {
     const items = extractProducts({ products: [{ asin: 'A', product_title: 'X' }] }, { arrays: [['products']] });
     expect(missingFacets(items)).toEqual(expect.arrayContaining(['image', 'price', 'currency', 'link']));
     expect(normalizeProduct({ not: 'a product' })).toBeNull();
   });
 });
 
-describe('S Base — extraction des détails', () => {
-  test('sans données : tout est nommé manquant, rien n’est inventé', () => {
+describe('S Base — استخراج البطاقة', () => {
+  test('بدون بيانات: كل شيء يُسمّى ناقصاً، ولا شيء يُخترَع', () => {
     const detail = extractDetail({});
     expect(detail.title).toBeNull();
     expect(detail.variants).toEqual([]);
     expect(detail.missing).toEqual(expect.arrayContaining(['title', 'price', 'images', 'variants', 'specs']));
   });
 
-  test('variantes objet {taille: [...]} et disponibilité inconnue restent null', () => {
+  test('variantes ككائن {taille: [...]} والتفاهة المجهولة تبقى null', () => {
     const detail = extractDetail({
       product_results: {
         title: 'Sweat', price: { amount: 45, currency: 'eur' },
@@ -260,464 +281,14 @@ describe('S Base — extraction des détails', () => {
     ]);
   });
 
-  test('aucune fausse promesse : une fiche sans variantes ne fabrique pas de tailles', () => {
+  test('بلا وعود كاذبة: بطاقة بلا variantes لا تصنع مقاسات', () => {
     const detail = extractDetail({ product_result: { title: 'Câble USB', specifications: [{ name: 'Longueur', value: '1 m' }] } });
     expect(detail.variants).toEqual([]);
     expect(detail.missing).toContain('variants');
   });
 });
 
-describe('S Base — client SandBase', () => {
-  test('enveloppe synchrone : durée mesurée', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(envelope({ products: [] })), { status: 200 })));
-    const result = await runSandbaseSearch(findSbaseSource('1688')!, 'casque', null);
-    expect(result.data).toEqual({ products: [] });
-    expect(result.async).toBe(false);
-    expect(result.polls).toBe(0);
-    expect(result.durationMs).toBeGreaterThanOrEqual(0);
-  });
-
-  test('mode asynchrone : POST puis GET /v1/run/{id}', async () => {
-    const calls: string[] = [];
-    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
-      calls.push(`${init?.method ?? 'GET'} ${String(url)}`);
-      if (init?.method === 'POST') return new Response(JSON.stringify({ status: 'queued', id: 'run_42' }), { status: 200 });
-      return new Response(JSON.stringify(envelope({ shopping_results: [] })), { status: 200 });
-    }));
-    // 1688 est synchrone selon la doc : on force l'hint async pour couvrir le polling.
-    const result = await runSandbaseCall('/v1/api/1688/search/cross-border', { keyword: 'iphone' }, { pollIntervalMs: 1, asyncHint: true });
-    expect(result.runId).toBe('run_42');
-    expect(result.polls).toBe(1);
-    expect(calls[1]).toContain('GET https://api.sandbase.ai/v1/run/run_42');
-  });
-
-  test('une clé refusée devient une erreur explicite, pas une liste vide', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'bad key' }), { status: 401 })));
-    await expect(runSandbaseSearch(findSbaseSource('1688')!, 'x', null)).rejects.toMatchObject({ code: 'SANDBASE_UNAUTHORIZED' });
-  });
-
-  test('sans clé, le client refuse AVANT tout appel réseau', async () => {
-    delete process.env.SANDBASE_API_KEY;
-    expect(sandbaseConfigured()).toBe(false);
-    const fetchSpy = vi.fn();
-    vi.stubGlobal('fetch', fetchSpy);
-    await expect(runSandbaseSearch(findSbaseSource('1688')!, 'x', null)).rejects.toBeInstanceOf(SbaseError);
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-});
-
-describe('S Base — routes', () => {
-  test('sources : capacités réelles, sélection par défaut et canal image', async () => {
-    const response = await request(app()).get('/api/sbase/sources').expect(200);
-    expect(response.body.data.configured).toBe(true);
-    expect(response.body.data.sources).toHaveLength(1);
-    expect(response.body.data.sources.map((source: { id: string }) => source.id)).toEqual(['1688']);
-    // La photo part chez 1688 : le canal image n'est plus un service tiers.
-    expect(response.body.data.image).toMatchObject({ id: '1688', supports: { image: true } });
-  });
-
-  test('sans clé : 503, aucun appel réseau', async () => {
-    delete process.env.SANDBASE_API_KEY;
-    const fetchSpy = vi.fn();
-    vi.stubGlobal('fetch', fetchSpy);
-    const response = await request(app()).post('/api/sbase/search').send({ q: 'casque' }).expect(503);
-    expect(response.body.code).toBe('SANDBASE_NOT_CONFIGURED');
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  test('requête trop courte : 400 ; liste vide ⇒ sélection par défaut', async () => {
-    const short = await request(app()).post('/api/sbase/search').send({ q: 'a' }).expect(400);
-    expect(short.body.code).toBe('INVALID_QUERY');
-    const none = await request(app()).post('/api/sbase/search').send({ q: 'casque', sources: [] }).expect(200);
-    // Liste vide explicitement demandée ⇒ on retombe sur la sélection par défaut.
-    expect(none.body.data.groups.length).toBe(1);
-  });
-
-  test('chaque boutique interrogée rend SON groupe, SON temps et SON erreur', async () => {
-    stubSources({ '/1688/search/cross-border': devOk });
-
-    const response = await request(app())
-      .post('/api/sbase/search')
-      .send({ q: 'coque', sources: ['1688'] })
-      .expect(200);
-
-    const groups = response.body.data.groups;
-    expect(groups).toHaveLength(1);
-    const dev = groups[0];
-    expect(dev).toMatchObject({ status: 'ok', count: 1, error: null });
-    expect(dev.items[0]).toMatchObject({ title: 'Coque téléphone', amount: 2.1, currency: 'CNY', moq: '1' });
-    expect(response.body.data.totalMs).toBeGreaterThanOrEqual(0);
-  });
-
-  test('boutique vide : groupe `empty` (pas une erreur déguisée)', async () => {
-    stubSources({ '/1688/search/cross-border': () => new Response(JSON.stringify(envelope({ items: [] })), { status: 200 }) });
-    const response = await request(app()).post('/api/sbase/search').send({ q: 'zzz introuvable', sources: ['1688'] }).expect(200);
-    expect(response.body.data.groups[0]).toMatchObject({ status: 'empty', count: 0, items: [] });
-  });
-
-  test('détail 1688 : specs, SKU (tailles/couleurs), vendeur et prix CNY', async () => {
-    stubSources({
-      '/1688/item/detail': () => new Response(JSON.stringify(envelope({
-        item_id: 1046925823679,
-        currency: 'CNY',
-        is_sold_out: false,
-        price_info: { price: '1.20', price_min: '1.20', price_max: '1.60' },
-        attribute: { propsList: [{ name: '芯片类型', value: '杰理' }, { name: '蓝牙版本', value: '5.3' }] },
-        skus: [{ props_names: '黑色/标准', sale_price: '1.20', stock: 320 }],
-        sku_props: [
-          { prop_name: '颜色', values: [{ name: '黑色', vid: '1' }, { name: '白色', vid: '2' }] },
-          { prop_name: '套餐', values: [{ name: '标准', vid: '3' }] },
-        ],
-        images: [{ fullPathImageURI: 'https://cbu01.alicdn.com/p1.jpg' }, { fullPathImageURI: 'https://cbu01.alicdn.com/p2.jpg' }],
-        item: { title: '蓝牙耳机', companyName: '深圳市聚声源电子商务有限公司' },
-      })), { status: 200 }),
-    });
-
-    const response = await request(app())
-      .post('/api/sbase/item')
-      .send({ source: '1688', id: '1046925823679' })
-      .expect(200);
-
-    const detail = response.body.data.detail;
-    expect(response.body.data.source.id).toBe('1688');
-    expect(detail).toMatchObject({
-      title: '蓝牙耳机', amount: 1.2, currency: 'CNY', availability: 'in_stock',
-      seller: '深圳市聚声源电子商务有限公司',
-    });
-    expect(detail.specs).toEqual(expect.arrayContaining([{ name: '蓝牙版本', value: '5.3' }]));
-    expect(detail.variants).toHaveLength(2);
-    expect(detail.variants[0]).toMatchObject({ name: '颜色' });
-    expect(detail.variants[0].values.map((value: { label: string }) => value.label)).toEqual(['黑色', '白色']);
-    // La fiche donne l'URL canonique du produit, pas le lien CDN d'image.
-    expect(detail.url).toBe('https://detail.1688.com/offer/1046925823679.html');
-    expect(detail.missing).not.toContain('variants');
-  });
-
-  test('détail 1688 par lien : sans identifiant, on utilise detail-by-url', async () => {
-    stubSources({
-      '/1688/item/detail-by-url': () => new Response(JSON.stringify(envelope({
-        item_id: 857511694718, currency: 'CNY', moq: 1,
-        price_info: { price_min: '1.20' },
-        item: { title: 'Câble USB-C', companyName: 'Guangzhou Y' },
-      })), { status: 200 }),
-    });
-
-    const response = await request(app())
-      .post('/api/sbase/item')
-      .send({ source: '1688', url: 'https://detail.1688.com/offer/857511694718.html' })
-      .expect(200);
-
-    expect(response.body.data.detail).toMatchObject({ title: 'Câble USB-C', seller: 'Guangzhou Y' });
-    expect(response.body.data.detail.amount).toBe(1.2);
-  });
-
-  test('détail : boutique retirée ⇒ 404 explicite (pas une page vide)', async () => {
-    // Alibaba.com a été retirée le 26/11/2026 : le contrat `DETAILS_UNSUPPORTED`
-    // reste dans le code pour la prochaine source sans fiche, mais l'appelant
-    // reçoit d'abord un refus clair sur une source qui n'existe plus.
-    const response = await request(app())
-      .post('/api/sbase/item')
-      .send({ source: 'alibaba', id: '100500' })
-      .expect(404);
-    expect(response.body.code).toBe('UNKNOWN_SOURCE');
-  });
-
-  /*
-   * 26/11/2026 — le prix TND vient du moteur de prix de la maison, jamais d'une
-   * conversion improvisée côté app. Sans règles (ou devise non cotée) : null.
-   */
-  test('chaque résultat porte une estimation TND issue du moteur de prix', async () => {
-    stubSources({ '/1688/search/cross-border': devOk });
-    const response = await request(app())
-      .post('/api/sbase/search')
-      .send({ q: 'coque', sources: ['1688'] })
-      .expect(200);
-
-    const estimate = response.body.data.groups[0].items[0].priceEstimate;
-    expect(estimate).toMatchObject({ currency: 'CNY', amount: 2.1 });
-    // 2,10 CNY à 0,43 TND (×1,03 de marge de change) + fret + douane + TVA + service.
-    expect(estimate.totalTND).toBeGreaterThan(estimate.productTND);
-    expect(estimate.productTND).toBeCloseTo(2.1 * 0.43 * 1.03, 1);
-    expect(estimate.rateTND).toBeCloseTo(0.4429, 3);
-    expect(estimate.pricingVersion).toBe(7);
-    // Sur une ligne de résultat, la livraison locale n'est pas comptée.
-    expect(estimate.localDeliveryTND).toBe(0);
-  });
-
-  test('sans moteur de prix, l’estimation reste nulle — on n’invente pas un taux', async () => {
-    stubSources({ '/1688/search/cross-border': devOk });
-    const response = await request(app({ pricingRules: null }))
-      .post('/api/sbase/search')
-      .send({ q: 'coque', sources: ['1688'] })
-      .expect(200);
-    expect(response.body.data.groups[0].items[0].priceEstimate).toBeNull();
-  });
-
-  test('la fiche produit inclut la livraison locale dans son estimation', async () => {
-    stubSources({
-      '/1688/item/detail': () => new Response(JSON.stringify(envelope({
-        item_id: 1046925823679, currency: 'CNY', price_info: { price: '10.00' },
-        item: { title: 'Écouteurs', companyName: 'Shenzhen Z' },
-      })), { status: 200 }),
-    });
-    const response = await request(app())
-      .post('/api/sbase/item')
-      .send({ source: '1688', id: '1046925823679' })
-      .expect(200);
-    const estimate = response.body.data.detail.priceEstimate;
-    expect(estimate.currency).toBe('CNY');
-    expect(estimate.localDeliveryTND).toBe(7);
-    expect(estimate.totalTND).toBeGreaterThan(estimate.productTND + estimate.localDeliveryTND);
-  });
-
-  test('détail : identifiant manquant ⇒ 400, et sans clé ⇒ 503', async () => {
-    const missing = await request(app()).post('/api/sbase/item').send({ source: '1688', title: 'x' }).expect(400);
-    expect(missing.body.code).toBe('ITEM_ID_REQUIRED');
-
-    delete process.env.SANDBASE_API_KEY;
-    const noKey = await request(app()).post('/api/sbase/item').send({ source: '1688', id: '1046925823679' }).expect(503);
-    expect(noKey.body.code).toBe('SANDBASE_NOT_CONFIGURED');
-  });
-
-  test('image : la photo part chez 1688, chaque résultat porte 1688 et son MOQ', async () => {
-    let sentBody: Record<string, unknown> | null = null;
-    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
-      if (String(url).includes('/1688/search/cross-border-by-image')) {
-        sentBody = JSON.parse(String(init?.body ?? '{}'));
-        return new Response(JSON.stringify(envelope({
-          items: [
-            {
-              item_id: 1056868355487, title: 'Mini traceur GPS', price: '22.8', currency: 'CNY', moq: 1,
-              img: 'https://cbu01.alicdn.com/t.jpg',
-              product_url: 'https://detail.1688.com/offer/1056868355487.html',
-              shop_info: { company_name: 'Shenzhen T' },
-            },
-            {
-              item_id: 1056868355488, title: 'Traceur GPS voiture',
-              product_url: 'https://detail.1688.com/offer/1056868355488.html',
-            },
-          ],
-        })), { status: 200 });
-      }
-      return new Response(JSON.stringify(envelope({ items: [] })), { status: 200 });
-    }));
-
-    const response = await request(app())
-      .post('/api/sbase/image')
-      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
-      .expect(200);
-
-    const data = response.body.data;
-    expect(data).toMatchObject({ mode: 'image', count: 2, stores: ['1688'] });
-    expect(data.items[0].seller).toBe('Shenzhen T');
-    expect(data.channel.id).toBe('1688');
-    expect(data.items[0]).toMatchObject({ store: '1688', amount: 22.8, currency: 'CNY', moq: '1' });
-    // Le second résultat n'a pas de prix : on le dit, on n'invente pas 0.
-    expect(data.items[1].missing).toContain('price');
-    expect(data.durationMs).toBeGreaterThanOrEqual(0);
-    // 1688 reçoit un lien public (pas des octets) : c'est le contrat de l'endpoint.
-    expect(String(sentBody?.imgUrl)).toMatch(/^https?:\/\/.+\/api\/sbase\/photo\/[a-f0-9]{48}$/);
-    expect(sentBody?.language).toBe('en');
-
-    // Le lien publié ne vit que 10 minutes : il est lisible tout de suite…
-    const photoPath = new URL(String(sentBody?.imgUrl)).pathname;
-    const served = await request(app()).get(photoPath).expect(200);
-    expect(served.headers['content-type']).toMatch(/image\//);
-  });
-
-  test('image : sans fichier ⇒ 400 explicite', async () => {
-    const response = await request(app()).post('/api/sbase/image').expect(400);
-    expect(response.body.code).toBe('SBASE_IMAGE_EMPTY');
-  });
-
-  /*
-   * 26/11/2026 — l'écran affichait « La recherche a échoué / SBASE_IMAGE_INVALID »
-   * alors que la photo était bonne : c'était Lens qui refusait (quota). Un échec
-   * du fournisseur ne doit JAMAIS être déguisé en photo invalide.
-   */
-  /*
-   * 26/11/2026 — l'écran affichait « La recherche a échoué / SBASE_IMAGE_INVALID »
-   * alors que la photo était bonne : c'était le fournisseur qui refusait. Un échec
-   * du fournisseur ne doit JAMAIS être déguisé en photo invalide.
-   */
-  test('image : un refus de SandBase n’est pas une « photo invalide »', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'quota exceeded' }), { status: 402 })));
-    const response = await request(app())
-      .post('/api/sbase/image')
-      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
-      .expect(402);
-    expect(response.body.code).toBe('SBASE_IMAGE_BALANCE');
-    expect(response.body.providerCode).toBe('SANDBASE_BALANCE');
-  });
-
-  test('image : 429 et timeout gardent chacun leur code et leur statut', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'slow down' }), { status: 429 })));
-    const limited = await request(app())
-      .post('/api/sbase/image')
-      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
-      .expect(429);
-    expect(limited.body.code).toBe('SBASE_IMAGE_RATE_LIMITED');
-
-    vi.stubGlobal('fetch', vi.fn(async () => { throw new DOMException('timeout', 'TimeoutError'); }));
-    const slow = await request(app())
-      .post('/api/sbase/image')
-      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
-      .expect(504);
-    expect(slow.body.code).toBe('SBASE_IMAGE_TIMEOUT');
-  });
-
-  test('image : une image rejetée par 1688 est dite comme telle (502, pas 400)', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ error: 'imgUrl unreachable' }), { status: 422 })));
-    const response = await request(app())
-      .post('/api/sbase/image')
-      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
-      .expect(502);
-    expect(response.body.code).toBe('SBASE_IMAGE_URL_REJECTED');
-  });
-
-  test('image : une faute de NOTRE requête ne s’affiche pas comme « 1688 n’a pas lu la photo »', async () => {
-    // 26/11/2026 — vu en direct : le body partait avec `page: '1'` (texte) et
-    // l’écran annonçait « image rejetée ». La cause était chez nous.
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
-      error: 'parameter validation failed: /page: expected integer, but got string',
-    }), { status: 400 })));
-    const response = await request(app())
-      .post('/api/sbase/image')
-      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
-      .expect(502);
-    expect(response.body.code).toBe('SBASE_IMAGE_REQUEST_INVALID');
-  });
-
-  test('image : une vraie image illisible reste 400 SBASE_IMAGE_INVALID', () => {
-    const failure = sbaseImageFailureFrom(Object.assign(new Error('Format non supporté'), { code: 'INVALID_IMAGE' }));
-    expect(failure.code).toBe('SBASE_IMAGE_INVALID');
-    expect(failure.status).toBe(400);
-  });
-});
-
-describe('S Base — corps de requête 1688', () => {
-  test('`page` et `pageSize` partent en nombres, jamais en texte', () => {
-    // SandBase : « /page: expected integer, but got string » ⇒ 400 sur CHAQUE
-    // recherche. Le type est le contrat, pas le rendu JSON.
-    for (const source of SBASE_SOURCES) {
-      const keyword = source.buildBody('nike tn', null);
-      expect(typeof keyword.page).toBe('number');
-      expect(typeof keyword.pageSize).toBe('number');
-      if (source.image) {
-        const image = source.image.buildBody('https://example.com/a.jpg');
-        expect(typeof image.page).toBe('number');
-        expect(typeof image.pageSize).toBe('number');
-        expect(typeof image.imgUrl).toBe('string');
-      }
-    }
-  });
-
-  test('le corps réel de la recherche par image est sérialisable avec des entiers', () => {
-    const source = SBASE_SOURCES.find((entry) => entry.id === '1688');
-    expect(source?.image).toBeTruthy();
-    const body = JSON.parse(JSON.stringify(source!.image!.buildBody('https://example.com/a.jpg')));
-    expect(body.page).toBe(1);
-    expect(body.pageSize).toBe(20);
-    expect(body.language).toBe('en');
-  });
-});
-
-describe('S Base — sonde de publication de la photo', () => {
-  test('rétrograde en SBASE_PHOTO_UNREACHABLE sans appeler SandBase quand notre lien ne répond pas', async () => {
-    const sandbase = vi.fn();
-    vi.stubGlobal('fetch', sandbase);
-    const failure = app({
-      photoProbe: async () => new Response('nope', { status: 404, headers: { 'content-type': 'text/plain' } }),
-    });
-    const response = await request(failure)
-      .post('/api/sbase/image')
-      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
-      .expect(503);
-    expect(response.body.code).toBe('SBASE_PHOTO_UNREACHABLE');
-    // Aucun appel payant : le lien était mort avant d'atteindre 1688.
-    expect(sandbase).not.toHaveBeenCalled();
-  });
-});
-
-describe('S Base — isolation', () => {
-  test('le module n’importe ni les routes AYWEBs ni les routes Zayrovix', () => {
-    for (const file of ['descriptors.ts', 'client.ts', 'extract.ts', 'routes.ts', 'image.ts']) {
-      const source = readFileSync(join(process.cwd(), 'src/sbase', file), 'utf8');
-      expect(source).not.toMatch(/from '\.\.\/aywebs/);
-      expect(source).not.toMatch(/from '\.\.\/zayrovix\/routes/);
-    }
-  });
-
-  test('la recherche par image ne touche plus SerpApi du tout', () => {
-    for (const file of ['image.ts', 'routes.ts', 'descriptors.ts']) {
-      const source = readFileSync(join(process.cwd(), 'src/sbase', file), 'utf8');
-      expect(source).not.toMatch(/SERPAPI_KEY|serpapi\.com|serpApiVisualSearch|zayrovix\//);
-      expect(source).not.toMatch(/zayrovix\/services\/visualSearch/);
-    }
-  });
-});
-
-/*
- * ── مزوّد Apify (2026-11-26) ─────────────────────────────────────────────────
- * قرار المالك: نحذفو SandBase نهائياً ونعوّضو بـApify. المرحلة الأولى: المزوّد
- * يُبنى **جانب** القديم بلا تفعيل — التفعيل بمتغيّر البيئة يأتي بعده، والحذف
- * بعد التحقيق الحيّ. كل الحقول هنا مأخوذة من أمثلة الردود المنشورة على صفحات
- * Apify (قُرأت 2026-11-26) — ما فماش حقل مخترَع.
- */
 describe('S Base — مزوّد Apify', () => {
-  const APIFY_KEY = 'test_apify_token';
-
-  beforeEach(() => {
-    process.env.APIFY_TOKEN = APIFY_KEY;
-    delete process.env.APIFY_1688_ACTOR;
-    delete process.env.APIFY_IMAGE_ACTOR;
-  });
-
-  afterEach(() => {
-    delete process.env.APIFY_TOKEN;
-    vi.unstubAllGlobals();
-  });
-
-  /** جدولة النداءات: POST runs → GET actor-runs → GET datasets/items. */
-  function stubApify(handlers: Array<(url: string, init?: RequestInit) => Response | null>) {
-    const calls: Array<{ url: string; init?: RequestInit }> = [];
-    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
-      calls.push({ url: String(url), init });
-      for (const handler of handlers) {
-        const response = handler(String(url), init);
-        if (response) return response;
-      }
-      return new Response(JSON.stringify({ error: { type: 'unexpected-url' } }), { status: 500 });
-    }));
-    return calls;
-  }
-
-  const runQueued = () => new Response(JSON.stringify({
-    data: { id: 'run_9', actId: 'act_1', status: 'READY', defaultDatasetId: 'ds_1' },
-  }), { status: 200 });
-
-  const runSucceeded = () => new Response(JSON.stringify({
-    data: { id: 'run_9', status: 'SUCCEEDED', defaultDatasetId: 'ds_1' },
-  }), { status: 200 });
-
-  /** صفّ بحث حقيقي كما ينشره الـREADME (2026-11-26). */
-  const searchRow = {
-    offerId: '1089329678023',
-    title: 'New macaron bowl lid insulated tumbler - large capacity water bottle',
-    priceUsd: 2.38,
-    priceCny: 15.5,
-    minOrderQuantity: 1,
-    sales: '500+ sold',
-    salesCount: 500,
-    supplierName: '义乌市乌桨五金制品厂',
-    supplierYearsOnPlatform: 1,
-    starLevel: 5,
-    sellingPoints: ['Ships within 5h'],
-    isAd: false,
-    url: 'https://detail.1688.com/offer/1089329678023.html',
-    images: ['https://cbu01.alicdn.com/img/ibank/a.jpg'],
-  };
-
   test('الأثمنة المنشورة تُحسب من الموثّق: بحث 0.0848$ · تفاصيل 0.00899$ · صورة 0.004$', () => {
     expect(APIFY_SEARCH_COST_USD).toBeCloseTo(0.005 + 20 * 3.99 / 1000, 5);
     expect(APIFY_DETAIL_COST_USD).toBeCloseTo(0.005 + 3.99 / 1000, 5);
@@ -785,27 +356,7 @@ describe('S Base — مزوّد Apify', () => {
       (url) => (url.includes('/v2/actor-runs/run_9') ? runSucceeded() : null),
       (url) => {
         if (!url.includes('/v2/datasets/ds_1/items')) return null;
-        return new Response(JSON.stringify([{
-          offerId: '928596422357',
-          title: 'Magnetic Phone Case Matte Version',
-          priceCny: 4.5,
-          priceRangeCny: '3.00-4.50',
-          priceTiers: [{ minQuantity: 1, priceCny: 4.5 }, { minQuantity: 300, priceCny: 4 }],
-          currency: 'CNY',
-          minOrderQuantity: 1,
-          stock: 730371,
-          specs: { Brand: 'Hong xing', Material: 'Silicone' },
-          supplierName: '深圳市罗湖区洪星电子商行',
-          url: 'https://detail.1688.com/offer/928596422357.html',
-          variants: [{
-            skuId: '6090121414768',
-            specAttributes: 'Pink1 > iPhone17',
-            priceCny: 4.5,
-            stock: 5217,
-            imageUrl: 'https://cbu01.alicdn.com/img/ibank/v.jpg',
-            weightGrams: 45,
-          }],
-        }]), { status: 200 });
+        return new Response(JSON.stringify([detailRow]), { status: 200 });
       },
     ]);
 
@@ -884,7 +435,7 @@ describe('S Base — مزوّد Apify', () => {
     await expect(runApifySearch('case')).rejects.toMatchObject({ code: 'APIFY_HTTP' });
   });
 
-  test('dataset بلا صفوف للتفاصيل ⇒ APIFY_EMPTY صريح (404)، موش فيش فارغة', async () => {
+  test('dataset بلا صفوف للتفاصيل ⇒ APIFY_EMPTY صريح (404)، موش «فيش» فارغة', async () => {
     stubApify([
       (url) => (url.includes('/v2/acts/') ? runQueued() : null),
       (url) => (url.includes('/v2/actor-runs/run_9') ? runSucceeded() : null),
@@ -998,124 +549,145 @@ describe('S Base — مزوّد Apify', () => {
   });
 });
 
-/*
- * ── الخطوة 2: التفعيل بمتغيّر البيئة ─────────────────────────────────────────
- * SBASE_PROVIDER=apify يمرّ كل نداءات /api/sbase/* من مزوّد Apify؛ الافتراضي
- * يُبقي SandBase. الكاش يفرق بين المزوّدين، والكلفة المعروضة هي المنشورة
- * عند المزوّد النشيط.
- */
-describe('S Base — التفعيل عبر SBASE_PROVIDER', () => {
-  const APIFY_KEY = 'test_apify_token';
-
-  /** جدولة Apify: بحث/تفاصيل/صورة على نفس الـstubs. */
-  function stubApify(handlers: Array<(url: string, init?: RequestInit) => Response | null>) {
-    const calls: Array<{ url: string; init?: RequestInit }> = [];
-    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
-      calls.push({ url: String(url), init });
-      for (const handler of handlers) {
-        const response = handler(String(url), init);
-        if (response) return response;
-      }
-      return new Response(JSON.stringify({ error: { type: 'unexpected-url' } }), { status: 500 });
-    }));
-    return calls;
-  }
-
-  const apifyFlow = (dataset: unknown) => [
-    (url: string) => (url.includes('/v2/acts/sourabhbgp~1688-scraper/runs')
-      ? new Response(JSON.stringify({ data: { id: 'run_9', status: 'READY', defaultDatasetId: 'ds_1' } }), { status: 200 })
-      : null),
-    (url: string) => (url.includes('/v2/actor-runs/run_9')
-      ? new Response(JSON.stringify({ data: { id: 'run_9', status: 'SUCCEEDED', defaultDatasetId: 'ds_1' } }), { status: 200 })
-      : null),
-    (url: string) => (url.includes('/v2/datasets/ds_1/items') ? new Response(JSON.stringify(dataset), { status: 200 }) : null),
-  ];
-
-  afterEach(() => {
-    delete process.env.SBASE_PROVIDER;
-    delete process.env.APIFY_TOKEN;
-    vi.unstubAllGlobals();
-  });
-
-  test('الافتراضي بلا متغيّر: sandbase يبقى هو المزوّد (لا تبديل صامت)', async () => {
-    stubSources({ '/1688/search/cross-border': devOk });
-    const response = await request(app()).post('/api/sbase/search').send({ q: 'coque', sources: ['1688'] }).expect(200);
-    expect(response.body.data.provider).toBe('sandbase');
-    // كلفة SandBase المنشورة (0.014286$) لا كلفة Apify.
-    expect(response.body.data.groups[0].costUsd).toBe(0.014286);
-  });
-
-  test('SBASE_PROVIDER=apify: /sources تعلن المزوّد وكلفته المنشورة (0.0848$)', async () => {
-    process.env.SBASE_PROVIDER = 'apify';
-    process.env.APIFY_TOKEN = APIFY_KEY;
+describe('S Base — المسارات', () => {
+  test('/sources: المزوّد والكلفة المنشورة ونقطة الـServer actor', async () => {
     const response = await request(app()).get('/api/sbase/sources').expect(200);
     expect(response.body.data.provider).toBe('apify');
     expect(response.body.data.configured).toBe(true);
+    expect(response.body.data.sources).toHaveLength(1);
+    expect(response.body.data.sources[0]).toMatchObject({ id: '1688', actor: 'sourabhbgp~1688-scraper' });
     expect(response.body.data.sources[0].costUsd).toBeCloseTo(0.0848, 5);
     expect(response.body.data.image.endpoint).toBe('https://topapi--image-search-1688-api.apify.actor/search');
     expect(response.body.data.image.costUsd).toBeCloseTo(0.004, 5);
   });
 
-  test('SBASE_PROVIDER=apify بلا مفتاح: 503 APIFY_NOT_CONFIGURED وبلا أي نداء', async () => {
-    process.env.SBASE_PROVIDER = 'apify';
+  test('بلا مفتاح: 503 APIFY_NOT_CONFIGURED وبلا أي نداء', async () => {
     delete process.env.APIFY_TOKEN;
     const calls = stubApify([]);
-    const response = await request(app()).post('/api/sbase/search').send({ q: 'coque' }).expect(503);
+    const response = await request(app()).post('/api/sbase/search').send({ q: 'casque' }).expect(503);
     expect(response.body.code).toBe('APIFY_NOT_CONFIGURED');
     expect(calls).toHaveLength(0);
   });
 
-  test('البحث يمشي من Apify: النتائج والكلفة الجديدة وتقدير المحرّك', async () => {
-    process.env.SBASE_PROVIDER = 'apify';
-    process.env.APIFY_TOKEN = APIFY_KEY;
-    stubApify(apifyFlow([{
-      offerId: '1089329678023',
-      title: 'New macaron bowl lid insulated tumbler',
-      priceCny: 15.5,
-      minOrderQuantity: 1,
-      supplierName: '义乌市乌桨五金制品厂',
-      url: 'https://detail.1688.com/offer/1089329678023.html',
-      images: ['https://cbu01.alicdn.com/img/ibank/a.jpg'],
-    }]));
-
-    const response = await request(app()).post('/api/sbase/search').send({ q: 'water bottle', sources: ['1688'] }).expect(200);
-    expect(response.body.data.provider).toBe('apify');
-    const group = response.body.data.groups[0];
-    expect(group).toMatchObject({ status: 'ok', count: 1 });
-    expect(group.costUsd).toBeCloseTo(0.0848, 5);
-    expect(group.items[0]).toMatchObject({ id: '1089329678023', amount: 15.5, currency: 'CNY', moq: '1' });
-    // تقدير TND يبقى من محرّك السعر المنزلي (ما تغيّرش).
-    expect(group.items[0].priceEstimate).toMatchObject({ currency: 'CNY', amount: 15.5 });
+  test('طلب قصير ⇒ 400؛ قائمة فارغة ⇒ الاختيار الافتراضي', async () => {
+    stubApify(apifyFlow([searchRow]));
+    const short = await request(app()).post('/api/sbase/search').send({ q: 'a' }).expect(400);
+    expect(short.body.code).toBe('INVALID_QUERY');
+    const none = await request(app()).post('/api/sbase/search').send({ q: 'casque', sources: [] }).expect(200);
+    expect(none.body.data.groups.length).toBe(1);
+    expect(none.body.data.provider).toBe('apify');
   });
 
-  test('البطاقة عبر Apify: الوزن المعلن (variants[].weightGrams) يغذّي الشحن في المحرّك', async () => {
-    process.env.SBASE_PROVIDER = 'apify';
-    process.env.APIFY_TOKEN = APIFY_KEY;
-    stubApify(apifyFlow([{
-      offerId: '928596422357',
-      title: 'Magnetic Phone Case Matte Version',
-      priceCny: 4.5,
-      currency: 'CNY',
-      stock: 730371,
-      specs: { Brand: 'Hong xing', Material: 'Silicone' },
-      supplierName: '深圳市罗湖区洪星电子商行',
-      url: 'https://detail.1688.com/offer/928596422357.html',
-      variants: [{ skuId: '6090121414768', specAttributes: 'Pink1 > iPhone17', priceCny: 4.5, stock: 5217, imageUrl: 'https://cbu01.alicdn.com/img/ibank/v.jpg', weightGrams: 45 }],
-    }]));
+  test('البحث يمرّ من Apify: مجموعة واحدة بزمنها وكفتها المنشورة', async () => {
+    stubApify(apifyFlow([searchRow]));
+    const response = await request(app())
+      .post('/api/sbase/search')
+      .send({ q: 'coque', sources: ['1688'] })
+      .expect(200);
 
+    const groups = response.body.data.groups;
+    expect(groups).toHaveLength(1);
+    const group = groups[0];
+    expect(group).toMatchObject({ status: 'ok', count: 1, error: null, cached: false, async: true });
+    expect(group.costUsd).toBeCloseTo(0.0848, 5);
+    expect(group.items[0]).toMatchObject({
+      id: '1089329678023', amount: 15.5, currency: 'CNY', moq: '1',
+    });
+    // المتجر معروف من المجموعة نفسها (source.label) — الصورة وحدها تختم store.
+    expect(response.body.data.provider).toBe('apify');
+    expect(response.body.data.totalMs).toBeGreaterThanOrEqual(0);
+  });
+
+  test('مصدر ما رجّعش حتى صفّ: مجموعة `empty` صريحة (مش خطأ متخبّي)', async () => {
+    stubApify(apifyFlow([]));
+    const response = await request(app()).post('/api/sbase/search').send({ q: 'zzz introuvable', sources: ['1688'] }).expect(200);
+    expect(response.body.data.groups[0]).toMatchObject({ status: 'empty', count: 0, items: [] });
+  });
+
+  test('فشل المزوّد: المجموعة تحمل كوده الحقيقي، وما تتفورتش «لا نتائج»', async () => {
+    stubApify([() => new Response(JSON.stringify({ error: { type: 'unauthorized' } }), { status: 401 })]);
+    const response = await request(app()).post('/api/sbase/search').send({ q: 'coque', sources: ['1688'] }).expect(200);
+    expect(response.body.data.groups[0]).toMatchObject({
+      status: 'error', count: 0,
+      error: { code: 'APIFY_UNAUTHORIZED' },
+    });
+  });
+
+  test('الكاش يخدم نفس الطلب 10 دقائق — النداءات المدفوعة مرة واحدة', async () => {
+    const calls = stubApify(apifyFlow([searchRow]));
+    await request(app()).post('/api/sbase/search').send({ q: 'coque', sources: ['1688'] }).expect(200);
+    const second = await request(app()).post('/api/sbase/search').send({ q: 'coque', sources: ['1688'] }).expect(200);
+    expect(second.body.data.groups[0].cached).toBe(true);
+    // run + poll + dataset مرة واحدة فقط.
+    expect(calls).toHaveLength(3);
+  });
+
+  test('البطاقة عبر Apify: الوزن المعلن يغذّي الشحن في محرّك السعر', async () => {
+    stubApify(apifyFlow([detailRow]));
     const response = await request(app()).post('/api/sbase/item').send({ source: '1688', id: '928596422357' }).expect(200);
     const detail = response.body.data.detail;
-    expect(detail).toMatchObject({ amount: 4.5, currency: 'CNY', weightKg: 0.045, seller: '深圳市罗湖区洪星电子商行' });
+    expect(detail).toMatchObject({
+      amount: 4.5, currency: 'CNY', weightKg: 0.045, seller: '深圳市罗湖区洪星电子商行',
+    });
     const estimate = response.body.data.detail.priceEstimate;
     // 45 غرام = 0.045kg × 12 TND/kg = 0.54 TND شحن حقيقي، موش وزن تصنيف افتراضي.
     expect(estimate.freightTND).toBeCloseTo(0.54, 3);
+    // البطاقة تحسب التوصيل المنزلي (السطر الوحيد في الشاشة).
     expect(estimate.localDeliveryTND).toBe(7);
     expect(response.body.data.costUsd).toBeCloseTo(0.00899, 5);
   });
 
-  test('الصورة عبر Apify: base64 خام للـServer actor — بلا نشر رابط عمومي وبلا سَبر شبكي', async () => {
-    process.env.SBASE_PROVIDER = 'apify';
-    process.env.APIFY_TOKEN = APIFY_KEY;
+  test('البطاقة بالرابط بلا معرّف: offerIds يقبل detail.1688.com (موثّق)', async () => {
+    stubApify(apifyFlow([{
+      offerId: '857511694718', title: 'Cable USB-C', priceCny: 1.2, currency: 'CNY',
+      url: 'https://detail.1688.com/offer/857511694718.html',
+    }]));
+    const response = await request(app())
+      .post('/api/sbase/item')
+      .send({ source: '1688', url: 'https://detail.1688.com/offer/857511694718.html' })
+      .expect(200);
+    expect(response.body.data.detail).toMatchObject({ title: 'Cable USB-C', amount: 1.2 });
+  });
+
+  test('مصدر غير معروف ⇒ 404 صريح، ومعرّف ناقص ⇒ 400، وبلا مفتاح ⇒ 503', async () => {
+    const unknown = await request(app()).post('/api/sbase/item').send({ source: 'alibaba', id: '100500' }).expect(404);
+    expect(unknown.body.code).toBe('UNKNOWN_SOURCE');
+
+    const missing = await request(app()).post('/api/sbase/item').send({ source: '1688', title: 'x' }).expect(400);
+    expect(missing.body.code).toBe('ITEM_ID_REQUIRED');
+
+    delete process.env.APIFY_TOKEN;
+    const noKey = await request(app()).post('/api/sbase/item').send({ source: '1688', id: '928596422357' }).expect(503);
+    expect(noKey.body.code).toBe('APIFY_NOT_CONFIGURED');
+  });
+
+  test('كل نتيجة بحث تحمل تقدير TND من محرّك السعر المنزلي', async () => {
+    stubApify(apifyFlow([searchRow]));
+    const response = await request(app())
+      .post('/api/sbase/search')
+      .send({ q: 'coque', sources: ['1688'] })
+      .expect(200);
+
+    const estimate = response.body.data.groups[0].items[0].priceEstimate;
+    expect(estimate).toMatchObject({ currency: 'CNY', amount: 15.5 });
+    expect(estimate.totalTND).toBeGreaterThan(estimate.productTND);
+    expect(estimate.productTND).toBeCloseTo(15.5 * 0.43 * 1.03, 1);
+    expect(estimate.rateTND).toBeCloseTo(0.4429, 3);
+    expect(estimate.pricingVersion).toBe(7);
+    // سطر النتائج ما يحسبش التوصيل المنزلي.
+    expect(estimate.localDeliveryTND).toBe(0);
+  });
+
+  test('بلا محرّك سعر: التقدير null — ما ناخترعوش تفا', async () => {
+    stubApify(apifyFlow([searchRow]));
+    const response = await request(app({ pricingRules: null }))
+      .post('/api/sbase/search')
+      .send({ q: 'coque', sources: ['1688'] })
+      .expect(200);
+    expect(response.body.data.groups[0].items[0].priceEstimate).toBeNull();
+  });
+
+  test('الصورة: POST واحد بbase64 للـServer actor — بلا نشر رابط عمومي وبلا سَبر شبكي', async () => {
     const calls = stubApify([
       (url, init) => {
         if (!url.includes('topapi--image-search-1688-api.apify.actor/search')) return null;
@@ -1142,7 +714,7 @@ describe('S Base — التفعيل عبر SBASE_PROVIDER', () => {
       .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
       .expect(200);
 
-    // نداء واحد فقط: الـServer actor. ما فماش publish ولا photoProbe ولا رابط عمومي.
+    // نداء واحد فقط: الـServer actor. ما فماش نشر ولا سَبر شبكي ولا رابط عمومي.
     expect(calls).toHaveLength(1);
     expect(calls[0].url).toContain('topapi--image-search-1688-api.apify.actor/search');
     const data = response.body.data;
@@ -1155,30 +727,96 @@ describe('S Base — التفعيل عبر SBASE_PROVIDER', () => {
     expect(data.items[0].url).toBe('https://detail.1688.com/offer/927875250705.html');
   });
 
-  test('الكاش يفرق بين المزوّدين: نتيجة SandBase لا تُقدَّم لبحث Apify', async () => {
-    // بحث أول بمزوّد SandBase (الافتراضي) — الردّ يقول «Old SandBase row».
-    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
-      if (String(url).includes('/1688/search/cross-border')) {
-        return new Response(JSON.stringify(envelope({
-          items: [{ item_id: 111, title: 'Old SandBase row', price: '9.99', currency: 'CNY' }],
-        })), { status: 200 });
-      }
-      return new Response(JSON.stringify(envelope({ items: [] })), { status: 200 });
-    }));
-    const first = await request(app()).post('/api/sbase/search').send({ q: 'coque', sources: ['1688'] }).expect(200);
-    expect(first.body.data.groups[0].items[0].title).toBe('Old SandBase row');
+  test('الصورة: 0 نتيجة تُعرض «empty» بشكل طبيعي — وهي مجّانية عند المزوّد', async () => {
+    stubApify([() => new Response(JSON.stringify({
+      ok: true, count: 0, items: [], meta: { totalMatches: 0, nextOffset: null, charged: { match: 0 } },
+    }), { status: 200 })]);
+    const response = await request(app())
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(200);
+    expect(response.body.data).toMatchObject({ status: 'empty', count: 0, items: [] });
+  });
 
-    // نفس الطلب، المزوّد يتبدّل إلى Apify: الكاش ما يخدمش النتيجة القديمة.
-    process.env.SBASE_PROVIDER = 'apify';
-    process.env.APIFY_TOKEN = APIFY_KEY;
-    clearSbaseCache();
-    stubApify(apifyFlow([{
-      offerId: '222', title: 'New Apify row', priceCny: 12.5, currency: 'CNY',
-      url: 'https://detail.1688.com/offer/222.html',
-    }]));
-    const second = await request(app()).post('/api/sbase/search').send({ q: 'coque', sources: ['1688'] }).expect(200);
-    expect(second.body.data.provider).toBe('apify');
-    expect(second.body.data.groups[0].items[0].title).toBe('New Apify row');
-    expect(second.body.data.groups[0].cached).toBe(false);
+  test('الصورة: بلا ملف ⇒ 400 صريح', async () => {
+    const response = await request(app()).post('/api/sbase/image').expect(400);
+    expect(response.body.code).toBe('SBASE_IMAGE_EMPTY');
+  });
+
+  /*
+   * 26/11/2026 — الشاشة كانت تعرض «فشل البحث / صورة غير صالحة» رغم أن الصورة
+   * سليمة: العطب عند المزوّد. فشل المزوّد لا يُتنكّر أبداً في هيئة «صورة غالطة».
+   */
+  test('الصورة: رفض المزوّد يحتفظ بمعناه الحقيقي (402 · 429 · timeout)', async () => {
+    stubApify([() => new Response(JSON.stringify({ error: { type: 'insufficient balance' } }), { status: 402 })]);
+    const balance = await request(app())
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(402);
+    expect(balance.body.code).toBe('SBASE_IMAGE_BALANCE');
+    expect(balance.body.providerCode).toBe('APIFY_BALANCE');
+
+    stubApify([() => new Response(JSON.stringify({ error: { type: 'slow-down' } }), { status: 429 })]);
+    const limited = await request(app())
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(429);
+    expect(limited.body.code).toBe('SBASE_IMAGE_RATE_LIMITED');
+
+    stubApify([() => { throw new DOMException('timeout', 'TimeoutError'); }]);
+    const slow = await request(app())
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(504);
+    expect(slow.body.code).toBe('SBASE_IMAGE_TIMEOUT');
+  });
+
+  test('الصورة: غلطة في طلبنا لا تُعرض «1688 ما قراش صورتك»', async () => {
+    // 26/11/2026 — شوهنا في حيّ: جسم طلب مشكّل غلط، والشاشة لومت الصورة.
+    stubApify([() => new Response(JSON.stringify({
+      error: { type: 'parameter validation failed: /maxResults: expected integer, but got string' },
+    }), { status: 400 })]);
+    const response = await request(app())
+      .post('/api/sbase/image')
+      .attach('image', PHOTO, { filename: 'photo.png', contentType: 'image/png' })
+      .expect(502);
+    expect(response.body.code).toBe('SBASE_IMAGE_REQUEST_INVALID');
+  });
+
+  test('الصورة: صورة تعذّر فكّها فعلاً تبقى 400 SBASE_IMAGE_INVALID (الغلطة العميلية الوحيدة)', () => {
+    const failure = sbaseImageFailureFrom(Object.assign(new Error('Format non supporté'), { code: 'INVALID_IMAGE' }));
+    expect(failure.code).toBe('SBASE_IMAGE_INVALID');
+    expect(failure.status).toBe(400);
+  });
+});
+
+describe('S Base — isolation', () => {
+  /** ملفات القالب: العزل الكامل (لا aywebs، لا zayrovix، لا serpapi). */
+  const moduleFiles = [
+    'descriptors.ts', 'extract.ts', 'detail.ts', 'pricing.ts', 'errors.ts',
+    'image.ts', 'routes.ts', 'apify.ts',
+  ].map((name) => join(process.cwd(), 'src/sbase', name));
+  /** server.ts يربط القوالب ببعضها — فيه مراجع zayrovix مشروعة (مفاتيح الحدود). */
+  const allFiles = moduleFiles.concat(join(process.cwd(), 'src/server.ts'));
+
+  test('العميل القديم محذوف فعلاً من الشجرة', () => {
+    expect(existsSync(join(process.cwd(), 'src/sbase/client.ts'))).toBe(false);
+  });
+
+  test('لا استيراد لـAYWEBs ولا Zayrovix ولا SerpApi في ملفات القالب', () => {
+    for (const file of moduleFiles) {
+      const source = readFileSync(file, 'utf8');
+      expect(source).not.toMatch(/from '\.\.\/aywebs/);
+      expect(source).not.toMatch(/zayrovix/);
+      expect(source).not.toMatch(/SERPAPI_KEY|serpapi\.com/);
+    }
+  });
+
+  test('المزوّد القديم مختفٍ كلياً من src: لا اسم، لا نطاق، لا متغيّر بيئة', () => {
+    for (const file of allFiles) {
+      const source = readFileSync(file, 'utf8');
+      expect(source).not.toMatch(/sandbase/i);
+      expect(source).not.toMatch(/SANDBASE_API_KEY|SBASE_PROVIDER/);
+    }
   });
 });

@@ -32,12 +32,10 @@ export default defineConfig({
       ANTHROPIC_API_KEY: '',
       SERPAPI_KEY: '',
       SCRAPERAPI_KEY: '',
-      // S Base hermétique : le fournisseur actif et ses clés ne fuient pas d'un .env local.
+      // S Base hermétique : la clé Apify ne fuit pas d'un .env local.
       APIFY_TOKEN: '',
       APIFY_1688_ACTOR: '',
       APIFY_IMAGE_ACTOR: '',
-      SBASE_PROVIDER: '',
-      SANDBASE_API_KEY: '',
       GROQ_API_KEY: '',
       GEMINI_API_KEY: '',
       GOOGLE_API_KEY: '',

@@ -404,7 +404,7 @@ export function SbaseScreen() {
         index={index}
         onOpen={() => openResult(group.source.supports.details, group.source.id, item)} />)}
       {group.status === 'error' ? <AppText variant="caption" color={theme.colors.muted}>
-        {/* SandBase ne facture pas un appel échoué : afficher un prix serait faux. */}
+        {/* Le fournisseur ne facture pas un appel échoué : afficher un prix serait faux. */}
         {t('sbase.groupUnbilled')}
       </AppText> : formatCallCost(group.costUsd) ? <AppText variant="caption" color={theme.colors.muted}>
         {t('sbase.cost')} {formatCallCost(group.costUsd)}{group.billedPerResult ? ` ${t('sbase.costPerResult')}` : ''}

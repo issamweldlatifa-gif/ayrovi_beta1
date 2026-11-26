@@ -266,8 +266,8 @@ const lensDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
   : Number.isInteger(configuredLensDailyLimit) ? Math.max(5, Math.min(200, configuredLensDailyLimit)) : 40;
 const zayrovixDailyCostLimit = rateLimit('zayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000, authenticatedRateLimitKey);
 const costlyZayrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
-/* S Base (SandBase) — recherche marchande indépendante : plafond par utilisateur/IP,
- * indépendant du quota Z Lens. Chaque appel coûte de l'argent chez SandBase. */
+/* S Base (Apify) — recherche marchande indépendante : plafond par utilisateur/IP,
+ * indépendant du quota Z Lens. Chaque appel coûte de l'argent chez le fournisseur. */
 const sbaseSearchRateLimit = rateLimit('sbase-search', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000, authenticatedRateLimitKey);
 const sbaseSourcesRateLimit = rateLimit('sbase-sources', process.env.NODE_ENV === 'test' ? 1_000 : 240, 10 * 60_000, authenticatedRateLimitKey);
 const sbaseImageRateLimit = rateLimit('sbase-image', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000, authenticatedRateLimitKey);
@@ -596,10 +596,10 @@ app.use('/api/voice', createAssistantRouter(db, scraper));
 app.use('/api/public', createPublicRouter(db));
 app.use('/api/v1/aywebs', createAyWebsRouter(db, scraper));
 /*
- * S Base — recherche marchande 1688, volontairement SÉPARÉE d'AYWEBs et de Z Lens.
- * Le fournisseur se bascule par env : SBASE_PROVIDER=sandbase (défaut) | apify
- * (migration 26/11/2026). Le moteur de prix est celui de la maison : on lui passe
- * seulement de quoi lire ses règles (aucune écriture, aucune commande créée par S Base).
+ * S Base — recherche marchande 1688 via Apify (fournisseur unique depuis le
+ * 26/11/2026), volontairement SÉPARÉE d'AYWEBs et de Z Lens. Le moteur de prix est celui de la
+ * maison : on lui passe seulement de quoi lire ses règles (aucune écriture, aucune
+ * commande créée par S Base).
  */
 app.use('/api/sbase', createSbaseRouter({ getPricingRules: () => db.getPricingRules() }));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));

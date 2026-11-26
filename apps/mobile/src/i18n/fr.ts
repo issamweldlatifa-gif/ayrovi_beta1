@@ -1530,7 +1530,7 @@ export const fr = {
   'publication.followRetry': 'Réessayer',
   'publication.followError': 'Action impossible. Réessayez.',
   'publication.newBadge': 'Nouveau',
-  /* ── S Base (SandBase) — recherche marchande indépendante ─────────────────── */
+  /* ── S Base (Apify) — recherche marchande indépendante ─────────────────── */
   'tabs.sbase': 'S Base',
   'sbase.heroTitle': 'Cherchez, comparez, choisissez la boutique',
   'sbase.heroBody': 'Un mot-clé ou une photo : chaque boutique est interrogée séparément, avec son prix, son temps de réponse et ses erreurs.',
@@ -1599,9 +1599,7 @@ export const fr = {
   'sbase.estimateHeavy': 'Colis lourd : le fret est validé par l’équipe avant expédition.',
   'sbase.err.imageRequestInvalid': 'Requête mal formée de notre côté (pas un défaut de votre photo) — réessayez, et signalez-le si ça persiste.',
   'sbase.err.imageBalance': 'Crédit du fournisseur insuffisant pour analyser une photo.',
-  'sbase.err.imageUrlRejected': "1688 n'a pas pu lire la photo publiée par le serveur. Réessayez dans un instant.",
   'sbase.groupUnbilled': 'échec non facturé',
-  'sbase.err.photoUnreachable': "Notre serveur n'a pas pu publier votre photo pour 1688 (lien injoignable). Aucun appel payant n'a été envoyé — réessayez dans un instant.",
   'sbase.photoEmpty': 'Aucun produit 1688 ne correspond à cette photo. Essayez un mot-clé (ex. le nom du modèle).',
   'sbase.allFailed': 'Aucune boutique n’a répondu — rien n’a été facturé.',
   'sbase.moq': 'min.',

@@ -32,7 +32,7 @@ describe('barre du bas opaque et bord à bord (six onglets)', () => {
 
   it('respecte l’ordre exact Accueil · Lens · Clean · AYWEBs · Cartes cadeaux · Profil (+ cart masqué) et masque la barre sur Lens, Sonim et Panier', () => {
     const names = Array.from(layout.matchAll(/<Tabs\.Screen[\s\S]*?\bname="([^"]+)"/g), (m) => m[1]);
-    // 19/11 : `S Base` (recherche marchande SandBase) prend la place de
+    // 19/11 : `S Base` (recherche marchande indépendante) prend la place de
     // `Cartes cadeaux` dans la barre ; les cartes basculent en bandeau sous le
     // hero de leur propre écran et gardent une route valide (`href: null`).
     expect(names).toEqual(['index', 'lens', 'sonim', 'aywebs', 'sbase', 'account', 'social', 'gift-cards', 'cart']);

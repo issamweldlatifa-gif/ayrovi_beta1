@@ -62,21 +62,11 @@ export const FAILURE_MESSAGE_KEYS: Record<string, string> = {
   SBASE_IMAGE_PROVIDER_REFUSED: 'sbase.err.imageProviderRefused',
   SBASE_IMAGE_PROVIDER_DOWN: 'sbase.err.imageProviderDown',
   SBASE_IMAGE_REQUEST_INVALID: 'sbase.err.imageRequestInvalid',
-  SBASE_PHOTO_UNREACHABLE: 'sbase.err.photoUnreachable',
   SBASE_IMAGE_BALANCE: 'sbase.err.imageBalance',
-  SBASE_IMAGE_URL_REJECTED: 'sbase.err.imageUrlRejected',
   SBASE_IMAGE_PROVIDER_UNKNOWN: 'sbase.err.imageUnknown',
   SBASE_IMAGE_UNKNOWN: 'sbase.err.imageUnknown',
   SBASE_IMAGE_NOT_CONFIGURED: 'sbase.err.imageNotConfigured',
-  // ── قناة الكلمة (المزوّد: SandBase أو Apify حسب SBASE_PROVIDER) ──────
-  SANDBASE_NOT_CONFIGURED: 'sbase.err.notConfigured',
-  SANDBASE_UNAUTHORIZED: 'sbase.err.unauthorized',
-  SANDBASE_BALANCE: 'sbase.err.balance',
-  SANDBASE_RATE_LIMIT: 'sbase.err.rateLimit',
-  SANDBASE_TIMEOUT: 'sbase.err.timeout',
-  SANDBASE_NETWORK: 'sbase.err.network',
-  SANDBASE_MALFORMED: 'sbase.err.malformed',
-  // ── مزوّد Apify (نفس الجُمَل الصادقة، الكود هو اللي يميّز) ────────────
+  // ── قناة الكلمة (المزوّد الوحيد: Apify — نفس الجُمَل الصادقة) ────────
   APIFY_NOT_CONFIGURED: 'sbase.err.notConfigured',
   APIFY_UNAUTHORIZED: 'sbase.err.unauthorized',
   APIFY_BALANCE: 'sbase.err.balance',
@@ -119,7 +109,7 @@ export function formatItemPrice(item: Pick<SbaseItem, 'amount' | 'currency' | 'p
   return fallback;
 }
 
-/** كلفة النداء كما تنشرها SandBase (USD) — للمعلومة، موش للفاتورة. */
+/** كلفة النداء كما ينشرها المزوّد (USD) — للمعلومة، موش للفاتورة. */
 export function formatCallCost(costUsd: number | null | undefined): string | null {
   if (typeof costUsd !== 'number' || !Number.isFinite(costUsd) || costUsd < 0) return null;
   if (costUsd === 0) return '0 $';

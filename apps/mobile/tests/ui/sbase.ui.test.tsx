@@ -58,18 +58,19 @@ const supports = { keyword: true, url: false, image: false, details: false, pric
 
 const source = (id: string, label: string, extra: Record<string, unknown> = {}) => ({
   id, label, vendor: `${id}.com`, supports, fields: ['title', 'price'], markets: [], defaultMarket: null,
-  costUsd: 0.014286, billedPerResult: false, async: false, defaultEnabled: true, configured: true, ...extra,
+  costUsd: 0.0848, billedPerResult: false, async: true, defaultEnabled: true, configured: true, ...extra,
 });
 
 const SOURCES = {
-  provider: 'sandbase',
+  provider: 'apify',
   configured: true,
   sources: [
     source('1688', '1688', { supports: { ...supports, image: true, details: true, url: true, variants: true } }),
   ],
   image: {
     id: '1688', label: '1688 · photo', vendor: '1688.com',
-    supports: { ...supports, image: true }, storeFromResults: false, configured: true,
+    supports: { ...supports, image: true }, store: '1688', storeFromResults: false, configured: true,
+    endpoint: 'https://topapi--image-search-1688-api.apify.actor/search', costUsd: 0.004,
   },
 };
 
@@ -91,22 +92,22 @@ const supportsDetails = { ...supports, details: true };
 const GROUP_OK = {
   source: { id: '1688', label: '1688', vendor: '1688.com', supports: supportsDetails },
   status: 'ok' as const, items: [item('Mini traceur GPS')], count: 1,
-  durationMs: 812, cached: false, async: false, error: null, costUsd: 0.014286, billedPerResult: false,
+  durationMs: 812, cached: false, async: true, error: null, costUsd: 0.0848, billedPerResult: false,
 };
 
 const GROUP_ERROR = {
   source: { id: '1688', label: '1688', vendor: '1688.com', supports },
   status: 'error' as const, items: [], count: 0, durationMs: 0,
-  cached: false, async: false, error: { code: 'SANDBASE_UNAUTHORIZED', message: 'clé refusée' },
-  costUsd: 0.014286, billedPerResult: false,
+  cached: false, async: true, error: { code: 'APIFY_UNAUTHORIZED', message: 'clé refusée' },
+  costUsd: 0.0848, billedPerResult: false,
 };
 
 const GROUP_NO_ESTIMATE = {
   source: { id: '1688', label: '1688', vendor: '1688.com', supports },
   status: 'ok' as const,
   items: [item('Coque iPhone', { url: 'https://detail.1688.com/offer/9.html', priceEstimate: null })],
-  count: 1, durationMs: 640, cached: false, async: false, error: null,
-  costUsd: 0.014286, billedPerResult: false,
+  count: 1, durationMs: 640, cached: false, async: true, error: null,
+  costUsd: 0.0848, billedPerResult: false,
 };
 
 const DETAIL = {
@@ -127,7 +128,7 @@ const DETAIL = {
       ...ESTIMATE, localDeliveryTND: 7, totalTND: 29.504, categoryLabel: 'Gadgets',
     },
   },
-  durationMs: 1500, cached: false, costUsd: 0.014286, billedPerResult: false,
+  durationMs: 1500, cached: false, costUsd: 0.00899, billedPerResult: false,
   fetchedAt: new Date().toISOString(),
 };
 
@@ -173,8 +174,8 @@ const IMAGE_RESULT = {
   missingFields: ['image'],
   durationMs: 900,
   totalMs: 1100,
-  endpoint: '/v1/api/1688/search/cross-border-by-image',
-  costUsd: 0.014286,
+  endpoint: 'https://topapi--image-search-1688-api.apify.actor/search',
+  costUsd: 0.004,
   fetchedAt: new Date().toISOString(),
 };
 
@@ -242,7 +243,7 @@ describe('S Base — un champ, deux boutiques en filtre', () => {
     const view = mount();
     fireEvent.changeText(await screen.findByTestId('sbase-query'), 'traceur');
     fireEvent.press(screen.getByTestId('sbase-submit'));
-    expect(await screen.findByTestId('sbase-group-1688-meta')).toHaveTextContent(/SANDBASE_UNAUTHORIZED/);
+    expect(await screen.findByTestId('sbase-group-1688-meta')).toHaveTextContent(/APIFY_UNAUTHORIZED/);
     /*
      * 26/11/2026 — l'écran affichait « Aucun résultat pour « traceur » » AU-DESSUS
      * du bloc d'erreur. Zéro résultat et échec ne sont pas la même chose : quand
@@ -251,10 +252,10 @@ describe('S Base — un champ, deux boutiques en filtre', () => {
     expect(screen.getByTestId('sbase-summary')).not.toHaveTextContent(/Aucun résultat/i);
     expect(screen.getByTestId('sbase-summary')).toHaveTextContent(/Aucune boutique n/i);
     // L'échec est nommé dans l'en-tête du groupe, avec le code réel.
-    expect(screen.getByTestId('sbase-group-1688-meta')).toHaveTextContent(/SANDBASE_UNAUTHORIZED/);
+    expect(screen.getByTestId('sbase-group-1688-meta')).toHaveTextContent(/APIFY_UNAUTHORIZED/);
     // Un échec n'est pas facturé : afficher un coût serait un mensonge.
     expect(screen.getByText(/échec non facturé/)).toBeTruthy();
-    expect(screen.queryByText(/0,014/)).toBeNull();
+    expect(screen.queryByText(/0,084/)).toBeNull();
     view.unmount();
   });
 
@@ -362,8 +363,8 @@ describe('S Base — photo (1688, sans SerpApi)', () => {
     expect(await screen.findByText('Traceur GPS 1688')).toBeTruthy();
     expect(screen.getByText('Traceur GPS Guangzhou')).toBeTruthy();
     expect(screen.getByTestId('sbase-image-summary')).toHaveTextContent(/2 résultats/);
-    // Le coût de l'appel est affiché (aucune dépense invisible).
-    expect(screen.getByTestId('sbase-image-spend')).toHaveTextContent(/0,014/);
+    // Le coût de l'appel est affiché (aucune dépense invisible) : 0,004 $ chez l'actor image.
+    expect(screen.getByTestId('sbase-image-spend')).toHaveTextContent(/0,004/);
 
     // Filtre construit sur les fournisseurs présents dans les résultats.
     fireEvent.press(screen.getByTestId('sbase-store-1688'));
@@ -390,15 +391,15 @@ describe('S Base — photo (1688, sans SerpApi)', () => {
     view.unmount();
   });
 
-  it('photo non publiée par notre serveur : expliqué, et sans facture', async () => {
-    imageMock.mockRejectedValue(Object.assign(new Error('رابط الصورة ما يتوصلش.'), {
-      code: 'SBASE_PHOTO_UNREACHABLE',
+  it('image non configurée sur le serveur : expliqué, sans accusation de photo', async () => {
+    imageMock.mockRejectedValue(Object.assign(new Error('تحليل الصور موش مضبوط على الخادم.'), {
+      code: 'SBASE_IMAGE_NOT_CONFIGURED',
     }));
     const view = mount();
     await screen.findByTestId('sbase-source-1688');
     fireEvent.press(screen.getByTestId('sbase-photo'));
     const message = await screen.findByTestId('sbase-error-message');
-    expect(message).toHaveTextContent(/notre serveur|Aucun appel payant/i);
+    expect(message).toHaveTextContent(/configur/i);
     view.unmount();
   });
 
@@ -423,7 +424,7 @@ describe('S Base — photo (1688, sans SerpApi)', () => {
     view.unmount();
   });
 
-  it('sans clé SandBase, la page l’annonce au lieu d’inventer des résultats', async () => {
+  it('sans clé APIFY, la page l’annonce au lieu d’inventer des résultats', async () => {
     sourcesMock.mockResolvedValue({ ...SOURCES, configured: false });
     const view = mount();
     expect(await screen.findByTestId('sbase-unconfigured')).toBeTruthy();

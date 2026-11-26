@@ -201,7 +201,7 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* S Base — recherche marchande (SandBase). Remplace l'ancien onglet
+      {/* S Base — recherche marchande 1688 via Apify. Remplace l'ancien onglet
           « Cartes cadeaux » : les cartes restent accessibles via le hub Profil
           et par lien direct (`href: null` plus bas). */}
       <Tabs.Screen

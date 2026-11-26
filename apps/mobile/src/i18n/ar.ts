@@ -1529,7 +1529,7 @@ export const ar = {
   'publication.followRetry': 'إعادة المحاولة',
   'publication.followError': 'تعذّرت المتابعة. حاول مجددًا.',
   'publication.newBadge': 'جديد',
-  /* ── S Base (SandBase) — بحث تجاري مستقلّ ─────────────────────────────────── */
+  /* ── S Base (Apify) — بحث تجاري مستقلّ ─────────────────────────────────── */
   'tabs.sbase': 'S Base',
   'sbase.heroTitle': 'ابحث، قارن، واختار المتجر',
   'sbase.heroBody': 'كلمة ولا صورة: كل متجر يتسأل بوحدو، بسعرُه وزمن استجابتو وأخطائو.',
@@ -1598,9 +1598,7 @@ export const ar = {
   'sbase.estimateHeavy': 'طرد ثقيل: الشحن يتأكّد من الفريق قبل الإرسال.',
   'sbase.err.imageRequestInvalid': 'الطلب اللي بعثناه غير صالح — الخطأ من عندنا ماشي في صورتك. جرّب مرة أخرى.',
   'sbase.err.imageBalance': 'رصيد المزوّد ما يكفيش لتحليل صورة.',
-  'sbase.err.imageUrlRejected': '1688 ما نجحتش تقرا الصورة اللي نشرها الخادم. جرّب بعد لحظة.',
   'sbase.groupUnbilled': 'فشل غير مفوتر',
-  'sbase.err.photoUnreachable': 'خادمنا ما نجحش ينشر صورتك لـ1688 (الرابط ما يتوصلش). ما تصرفش حتى نداء مدفوع — جرّب بعد لحظة.',
   'sbase.photoEmpty': 'ما لقيناش منتج 1688 يشبه لهذي الصورة. جرّب بكلمة (مثلاً اسم الموديل).',
   'sbase.allFailed': 'حتى متجر ما جاوب — ما تفوتر شي.',
   'sbase.moq': 'أدنى كمّية',

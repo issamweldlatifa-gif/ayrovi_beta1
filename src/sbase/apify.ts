@@ -31,7 +31,7 @@
  * الشكل: الـscraper run-based (POST /v2/acts/{actor}/runs ثم poll على
  * /v2/actor-runs/{runId} حتى SUCCEEDED ثم /v2/datasets/{datasetId}/items)،
  * وactor الصورة request واحد مباشر. الترجمة تُحفظ هنا: كل صفّ Apify يتحوّل إلى
- * **الشكل الداخلي المعروف** (نفس شكل 1688 في SandBase) — هكذا طبقة الاستخراج
+ * **الشكل الداخلي المعروف** (شكل 1688 الموحّد) — هكذا طبقة الاستخراج
  * (`extract.ts`/`detail.ts`) والشاشة ما تتبدّلش إطلاقاً، وما نخترعش حقولاً:
  * كل حقل ناقص يبقى ناقصاً (`missing`).
  */
@@ -60,7 +60,7 @@ export const APIFY_RUN_FEE_USD = 0.005;
 export const APIFY_IMAGE_PRICE_PER_1000_USD = 0.2;
 export const APIFY_SEARCH_MAX_ITEMS = 20;
 export const APIFY_IMAGE_MAX_RESULTS = 20;
-/** بحث = run + 20 صفّ: 0.005 + 20×3.99/1000 = 0.0848$ (مقابل 0.0143$ عند SandBase). */
+/** بحث = run + 20 صفّ: 0.005 + 20×3.99/1000 = 0.0848$ — الثمن المنشور على صفحة الـactor. */
 export const APIFY_SEARCH_COST_USD = Number((APIFY_RUN_FEE_USD + (APIFY_SEARCH_MAX_ITEMS / 1000) * APIFY_PRICE_PER_1000_RESULTS_USD).toFixed(5));
 /** تفاصيل = run + صفّ واحد: 0.005 + 3.99/1000 = 0.00899$. */
 export const APIFY_DETAIL_COST_USD = Number((APIFY_RUN_FEE_USD + (1 / 1000) * APIFY_PRICE_PER_1000_RESULTS_USD).toFixed(5));
@@ -309,7 +309,7 @@ export interface InternalRecordFields {
 }
 
 /**
- * الشكل الداخلي المعروف (نفسه اللي جاء من 1688 في SandBase): `item_id`, `title`,
+ * الشكل الداخلي المعروف (شكل 1688 الموحّد): `item_id`, `title`,
  * `price` (نصّ CNY), `currency`, `img`, `product_url`, `moq`, `shop_info.company_name`.
  * طبقة الاستخراج تُكمل الباقي (`missing`) بلا تغيير.
  */
@@ -438,7 +438,7 @@ export function mapApifyDetailRow(row: unknown): Record<string, unknown> | null 
 // ── النداءات الجاهزة ────────────────────────────────────────────────────────
 
 export interface ApifySearchResult {
-  /** `{ items: [...] }` بالشكل الداخلي — نفس مسار الاستخراج عند SandBase. */
+  /** `{ items: [...] }` بالشكل الداخلي — نفس مسار الاستخراج الموحّد. */
   data: { items: Record<string, unknown>[] };
   durationMs: number;
   polls: number;

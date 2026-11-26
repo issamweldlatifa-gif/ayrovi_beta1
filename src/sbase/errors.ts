@@ -1,11 +1,10 @@
 /**
- * S Base — خطأ موحّد لكل المزوّدين (SandBase وApify).
+ * S Base — صنف الخطأ الموحّد.
  *
- * لماذا ملف مستقل (26/11/2026): بعد بناء مزوّد Apify جانب SandBase، يجب أن
- * تحمل كل الأخطاء **الصنف نفسه** (`SbaseError`) حتى تفهمها المسارات و`instanceof`
- * في الاختبارات بغضّ النظر عن المزوّد اللي رماها. المزوّدان يرميان بالأكواد
- * الموثّقة نفسها: NOT_CONFIGURED / UNAUTHORIZED / RATE_LIMIT / TIMEOUT / HTTP_x /
- * FAILED / EMPTY / NETWORK / MALFORMED — مع بادئة المزوّد (SANDBASE_ · APIFY_).
+ * لماذا ملف مستقل (26/11/2026): المسارات و`instanceof` يحتاجون صنفاً واحداً
+ * بغضّ النظر عن مصدر الخطأ — الملف هو بيت `SbaseError`، والأكواد الموثّقة نفسها:
+ * NOT_CONFIGURED / UNAUTHORIZED / RATE_LIMIT / TIMEOUT / HTTP_x / FAILED /
+ * EMPTY / NETWORK / MALFORMED، ببادئة المزوّد (APIFY_).
  *
  * قاعدة المالك: الفشل **ما يتفوترش وما يتلبسش** «ما فماش نتائج» — الكود يقول
  * الحقيقة، والحالة (status) هي اللي تختار سلوك الشاشة.
